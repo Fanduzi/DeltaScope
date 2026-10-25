@@ -78,8 +78,12 @@ for individual cells are noted per group below.
 
 ## Tail reds (R2-tail, on `988560c2` before the tail fix)
 
-`tail_f_a_red_988560c2.log` — `rc=1`, 4 FAIL markers, captured on the
-committed R2 product `988560c2` before the tail patch:
+`tail_f_a_red_988560c2.log` — `rc=1`, **5 `--- FAIL` markers over
+3 parent test functions = 4 failing leaves** (group F: 4 markers /
+3 leaves; group A: 1 marker / 1 leaf), captured on the committed R2
+product `988560c2` before the tail patch. The log's own head comment
+says "4 FAIL markers" — that figure was the leaf count mislabeled as the
+marker count; the marker truth is five:
 
 - `TestT11R2DropConstraintUnknownKindUnvouches/{index_kind_unknown,empty_kind}`
   — `applyDropCheck` bound a proven name with an unproven kind as a

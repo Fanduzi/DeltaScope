@@ -1,0 +1,9 @@
+python3 ./scripts/ddl_golden.py run --task "T12" --artifact-dir "/tmp/ddl-golden-t12"
+
+earlier development runs (run1-run3 under red/) hit the runner/provider
+shape bugs documented below; the frozen manifest was re-run after the
+MySQL join fix and TiDB TIDB_CHECK_CONSTRAINTS arm.
+
+[ddl-golden] task=T12 head=1f8e5a0b4e89 cases=25 passed=25 assertions=280
+[ddl-golden] artifact=/private/tmp/ddl-golden-t12/T12/artifact.json
+[ddl-golden] PASS

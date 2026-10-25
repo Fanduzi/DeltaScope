@@ -1,0 +1,146 @@
+=== RUN   TestT12AddThenAlterSequence
+=== PAUSE TestT12AddThenAlterSequence
+=== RUN   TestT12AddThenDropSequence
+=== PAUSE TestT12AddThenDropSequence
+=== RUN   TestT12AddColumnInColumnCheckLands
+=== PAUSE TestT12AddColumnInColumnCheckLands
+=== RUN   TestT12CreateTableCheckArmSplit
+=== PAUSE TestT12CreateTableCheckArmSplit
+=== RUN   TestT12AlterConstraintAlias
+=== PAUSE TestT12AlterConstraintAlias
+=== RUN   TestT12DropColumnCheckCascade
+=== PAUSE TestT12DropColumnCheckCascade
+=== RUN   TestT12BareAddCheckNameUnknown
+=== PAUSE TestT12BareAddCheckNameUnknown
+=== RUN   TestT12AddCheckDuplicateNameRefuses
+=== PAUSE TestT12AddCheckDuplicateNameRefuses
+=== RUN   TestT12TiDBSequenceArms
+=== PAUSE TestT12TiDBSequenceArms
+=== RUN   TestT12RenameColumnCheckReferenceRefused
+=== PAUSE TestT12RenameColumnCheckReferenceRefused
+=== RUN   TestT12ChangeColumnCheckReferenceRefusedMySQL
+=== PAUSE TestT12ChangeColumnCheckReferenceRefusedMySQL
+=== RUN   TestT12ChangeColumnCheckReferenceCascadeTiDB
+=== PAUSE TestT12ChangeColumnCheckReferenceCascadeTiDB
+=== RUN   TestT12RenameColumnCheckReferenceRefusedTiDB
+=== PAUSE TestT12RenameColumnCheckReferenceRefusedTiDB
+=== RUN   TestT12RenameColumnCheckUnvouchedUnsafe
+=== PAUSE TestT12RenameColumnCheckUnvouchedUnsafe
+=== RUN   TestT12ChangeColumnCarryingCheckTombstones
+=== PAUSE TestT12ChangeColumnCarryingCheckTombstones
+=== RUN   TestT12AlterCheckNotEnforcedGoldenPath
+=== PAUSE TestT12AlterCheckNotEnforcedGoldenPath
+=== RUN   TestT12AlterCheckEnforcedReverseDoesNotFire
+=== PAUSE TestT12AlterCheckEnforcedReverseDoesNotFire
+=== RUN   TestT12OrdinaryColumnChangeDoesNotFire
+=== PAUSE TestT12OrdinaryColumnChangeDoesNotFire
+=== RUN   TestT12AlterCheckMissingNameExistsFinding
+=== PAUSE TestT12AlterCheckMissingNameExistsFinding
+=== RUN   TestT12AlterCheckNonCheckNameExistsFinding
+=== PAUSE TestT12AlterCheckNonCheckNameExistsFinding
+=== RUN   TestT12MySQL57CheckDeclarationIgnoredReveal
+=== PAUSE TestT12MySQL57CheckDeclarationIgnoredReveal
+=== RUN   TestT12MySQL57AlterCheckSyntaxRefused
+=== PAUSE TestT12MySQL57AlterCheckSyntaxRefused
+=== RUN   TestT12TiDBFlagOffIgnoredArm
+=== PAUSE TestT12TiDBFlagOffIgnoredArm
+=== RUN   TestT12TiDBFlagOnAlterCheckNotEnforced
+=== PAUSE TestT12TiDBFlagOnAlterCheckNotEnforced
+=== RUN   TestT12AddCheckNotEnforcedDeclaresDisabled
+=== PAUSE TestT12AddCheckNotEnforcedDeclaresDisabled
+=== RUN   TestT12TiDBFlagUnobservedGap
+=== PAUSE TestT12TiDBFlagUnobservedGap
+=== RUN   TestT12AlterAddCheckNameJudged
+=== PAUSE TestT12AlterAddCheckNameJudged
+=== CONT  TestT12AddThenAlterSequence
+=== CONT  TestT12ChangeColumnCarryingCheckTombstones
+=== CONT  TestT12AddCheckDuplicateNameRefuses
+=== CONT  TestT12ChangeColumnCheckReferenceCascadeTiDB
+=== CONT  TestT12AlterConstraintAlias
+=== CONT  TestT12DropColumnCheckCascade
+=== CONT  TestT12RenameColumnCheckUnvouchedUnsafe
+=== CONT  TestT12RenameColumnCheckReferenceRefusedTiDB
+=== CONT  TestT12AddColumnInColumnCheckLands
+=== CONT  TestT12CreateTableCheckArmSplit
+=== CONT  TestT12RenameColumnCheckReferenceRefused
+=== CONT  TestT12ChangeColumnCheckReferenceRefusedMySQL
+=== RUN   TestT12DropColumnCheckCascade/referencing_member_cascades_silently
+=== RUN   TestT12CreateTableCheckArmSplit/enforcing_arm_keeps_members
+=== PAUSE TestT12DropColumnCheckCascade/referencing_member_cascades_silently
+=== RUN   TestT12DropColumnCheckCascade/unvouched_reference_set_stays_unsafe
+=== PAUSE TestT12DropColumnCheckCascade/unvouched_reference_set_stays_unsafe
+=== CONT  TestT12TiDBSequenceArms
+=== RUN   TestT12TiDBSequenceArms/flag_ON_stores_and_flips_members
+=== PAUSE TestT12TiDBSequenceArms/flag_ON_stores_and_flips_members
+=== RUN   TestT12TiDBSequenceArms/flag_OFF_stores_nothing_and_later_ops_no-op
+=== PAUSE TestT12TiDBSequenceArms/flag_OFF_stores_nothing_and_later_ops_no-op
+=== CONT  TestT12AddThenDropSequence
+=== RUN   TestT12AddThenDropSequence/CHECK
+=== PAUSE TestT12AddThenDropSequence/CHECK
+=== RUN   TestT12AddThenDropSequence/CONSTRAINT
+=== PAUSE TestT12AddThenDropSequence/CONSTRAINT
+=== CONT  TestT12MySQL57AlterCheckSyntaxRefused
+=== PAUSE TestT12CreateTableCheckArmSplit/enforcing_arm_keeps_members
+=== RUN   TestT12CreateTableCheckArmSplit/ignored_arm_stores_no_member
+=== PAUSE TestT12CreateTableCheckArmSplit/ignored_arm_stores_no_member
+=== RUN   TestT12CreateTableCheckArmSplit/unobserved_version_unvouches_the_collection
+=== PAUSE TestT12CreateTableCheckArmSplit/unobserved_version_unvouches_the_collection
+=== CONT  TestT12AlterAddCheckNameJudged
+--- PASS: TestT12AddThenAlterSequence (0.00s)
+--- PASS: TestT12AddCheckDuplicateNameRefuses (0.00s)
+--- PASS: TestT12ChangeColumnCheckReferenceRefusedMySQL (0.00s)
+=== CONT  TestT12OrdinaryColumnChangeDoesNotFire
+--- PASS: TestT12RenameColumnCheckReferenceRefusedTiDB (0.00s)
+--- PASS: TestT12ChangeColumnCheckReferenceCascadeTiDB (0.00s)
+--- PASS: TestT12RenameColumnCheckUnvouchedUnsafe (0.00s)
+=== CONT  TestT12AlterCheckEnforcedReverseDoesNotFire
+--- PASS: TestT12AlterConstraintAlias (0.00s)
+--- PASS: TestT12RenameColumnCheckReferenceRefused (0.00s)
+--- PASS: TestT12AddColumnInColumnCheckLands (0.00s)
+=== CONT  TestT12AlterCheckMissingNameExistsFinding
+=== CONT  TestT12TiDBFlagOffIgnoredArm
+=== CONT  TestT12AlterCheckNotEnforcedGoldenPath
+=== CONT  TestT12TiDBFlagUnobservedGap
+=== CONT  TestT12TiDBFlagOnAlterCheckNotEnforced
+=== CONT  TestT12MySQL57CheckDeclarationIgnoredReveal
+=== CONT  TestT12AlterCheckNonCheckNameExistsFinding
+=== CONT  TestT12AddCheckNotEnforcedDeclaresDisabled
+--- PASS: TestT12ChangeColumnCarryingCheckTombstones (0.00s)
+--- PASS: TestT12OrdinaryColumnChangeDoesNotFire (0.01s)
+=== CONT  TestT12BareAddCheckNameUnknown
+--- PASS: TestT12BareAddCheckNameUnknown (0.00s)
+=== CONT  TestT12DropColumnCheckCascade/referencing_member_cascades_silently
+=== CONT  TestT12TiDBSequenceArms/flag_ON_stores_and_flips_members
+=== CONT  TestT12DropColumnCheckCascade/unvouched_reference_set_stays_unsafe
+--- PASS: TestT12DropColumnCheckCascade (0.00s)
+    --- PASS: TestT12DropColumnCheckCascade/referencing_member_cascades_silently (0.00s)
+    --- PASS: TestT12DropColumnCheckCascade/unvouched_reference_set_stays_unsafe (0.00s)
+=== CONT  TestT12AddThenDropSequence/CHECK
+=== CONT  TestT12TiDBSequenceArms/flag_OFF_stores_nothing_and_later_ops_no-op
+--- PASS: TestT12TiDBSequenceArms (0.00s)
+    --- PASS: TestT12TiDBSequenceArms/flag_ON_stores_and_flips_members (0.00s)
+    --- PASS: TestT12TiDBSequenceArms/flag_OFF_stores_nothing_and_later_ops_no-op (0.00s)
+=== CONT  TestT12CreateTableCheckArmSplit/enforcing_arm_keeps_members
+=== CONT  TestT12AddThenDropSequence/CONSTRAINT
+--- PASS: TestT12AddThenDropSequence (0.00s)
+    --- PASS: TestT12AddThenDropSequence/CHECK (0.00s)
+    --- PASS: TestT12AddThenDropSequence/CONSTRAINT (0.00s)
+=== CONT  TestT12CreateTableCheckArmSplit/ignored_arm_stores_no_member
+=== CONT  TestT12CreateTableCheckArmSplit/unobserved_version_unvouches_the_collection
+--- PASS: TestT12CreateTableCheckArmSplit (0.00s)
+    --- PASS: TestT12CreateTableCheckArmSplit/enforcing_arm_keeps_members (0.00s)
+    --- PASS: TestT12CreateTableCheckArmSplit/ignored_arm_stores_no_member (0.00s)
+    --- PASS: TestT12CreateTableCheckArmSplit/unobserved_version_unvouches_the_collection (0.00s)
+--- PASS: TestT12TiDBFlagOffIgnoredArm (0.01s)
+--- PASS: TestT12AlterCheckNotEnforcedGoldenPath (0.01s)
+--- PASS: TestT12TiDBFlagUnobservedGap (0.01s)
+--- PASS: TestT12AddCheckNotEnforcedDeclaresDisabled (0.01s)
+--- PASS: TestT12AlterCheckNonCheckNameExistsFinding (0.01s)
+--- PASS: TestT12AlterAddCheckNameJudged (0.01s)
+--- PASS: TestT12MySQL57CheckDeclarationIgnoredReveal (0.01s)
+--- PASS: TestT12AlterCheckEnforcedReverseDoesNotFire (0.01s)
+--- PASS: TestT12TiDBFlagOnAlterCheckNotEnforced (0.01s)
+--- PASS: TestT12MySQL57AlterCheckSyntaxRefused (0.01s)
+--- PASS: TestT12AlterCheckMissingNameExistsFinding (0.01s)
+PASS
+ok  	github.com/Fanduzi/DeltaScope/internal/application/audit	0.980s

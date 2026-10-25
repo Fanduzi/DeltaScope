@@ -36,8 +36,9 @@ changed source module's README updated → rc=0.
 | T10 | 126/126 | 3175 | `27edfea2f41e…` | `89073e28…` |
 | T11 | 40/40 | 505 | `27edfea2f41e…` | `89073e28…` |
 
-Artifacts: `golden/<T>/<T>/artifact.json` — `cli/build/head_sha` equals
-the product SHA in all three.
+Artifacts: `golden/T09-artifact.json`, `golden/T10-artifact.json`,
+`golden/T11-artifact.json` — `cli/build/head_sha` equals the product SHA
+in all three.
 
 ## Evidence corrections (same delivery, archived in the R2 bundle)
 

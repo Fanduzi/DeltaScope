@@ -1,0 +1,4960 @@
+{
+  "task_id": "T12",
+  "issue": "https://github.com/Fanduzi/DeltaScope/issues/91",
+  "head_sha": "1f8e5a0b4e89d8cc4e6f8dd34708476808e2ba91",
+  "generated_at": "2026-10-25T16:27:37.218992+00:00",
+  "cli": {
+    "path": "/private/tmp/ddl-golden-t12/T12/bin/deltascope",
+    "sha256": "71c6ca99c1bfd9cbe26432bee11409f77d56cb2a5fade294aaf7d302f91d4e5c",
+    "build": {
+      "command": "CGO_ENABLED=0 go build -o <artifact>/deltascope ./cmd/deltascope",
+      "cgo_enabled": "0",
+      "go_version": "go1.26.1",
+      "built_at": "2026-10-25T16:27:17.951022+00:00",
+      "head_sha": "1f8e5a0b4e89d8cc4e6f8dd34708476808e2ba91"
+    }
+  },
+  "policy_profile": {
+    "profile": "all-rules-disabled",
+    "path": "/private/tmp/ddl-golden-t12/T12/golden-policy-all-off.yaml",
+    "sha256": "ab862db3189917784340e3b3b70f18f9f93aa9bcbffa81f6abab57dfb68588e2",
+    "catalog_rules": 395,
+    "enabled_rules": {},
+    "disabled_rules": 395
+  },
+  "policies": [
+    {
+      "profile": "all-rules-disabled",
+      "path": "/private/tmp/ddl-golden-t12/T12/golden-policy-all-off.yaml",
+      "sha256": "ab862db3189917784340e3b3b70f18f9f93aa9bcbffa81f6abab57dfb68588e2",
+      "catalog_rules": 395,
+      "enabled_rules": {},
+      "disabled_rules": 395
+    },
+    {
+      "profile": "t12-all",
+      "path": "/private/tmp/ddl-golden-t12/T12/golden-policy-t12-all.yaml",
+      "sha256": "16479bc8138ea97622151889cd7491a4b4df7fc3b42024566907af53468d2786",
+      "catalog_rules": 395,
+      "enabled_rules": {
+        "ddl.constraint.check.not_enforced.notice": {
+          "level": "blocker"
+        },
+        "ddl.constraint.check.ignored.notice": {
+          "level": "warning"
+        },
+        "ddl.alter.alter_check.exists.require": {
+          "level": "blocker"
+        },
+        "ddl.alter.drop_check.exists.require": {
+          "level": "blocker"
+        },
+        "ddl.alter.alter_check.version.require": {
+          "level": "blocker",
+          "params": {
+            "required": true
+          }
+        }
+      },
+      "disabled_rules": 390
+    },
+    {
+      "profile": "t12-exists",
+      "path": "/private/tmp/ddl-golden-t12/T12/golden-policy-t12-exists.yaml",
+      "sha256": "821812d34ef1155b5ef887e3b925181c75e596c0b1ea2f9ffa90172ee1953d64",
+      "catalog_rules": 395,
+      "enabled_rules": {
+        "ddl.alter.alter_check.exists.require": {
+          "level": "blocker"
+        },
+        "ddl.alter.drop_check.exists.require": {
+          "level": "blocker"
+        }
+      },
+      "disabled_rules": 393
+    },
+    {
+      "profile": "t12-ignored",
+      "path": "/private/tmp/ddl-golden-t12/T12/golden-policy-t12-ignored.yaml",
+      "sha256": "0345f32f3eafcee04a610dd228f7d5b89b822c48f15f27f9d857521818ef5ff5",
+      "catalog_rules": 395,
+      "enabled_rules": {
+        "ddl.constraint.check.ignored.notice": {
+          "level": "warning"
+        }
+      },
+      "disabled_rules": 394
+    },
+    {
+      "profile": "t12-notice",
+      "path": "/private/tmp/ddl-golden-t12/T12/golden-policy-t12-notice.yaml",
+      "sha256": "034ab0ac2e7a823574b09482964e1435186425b7b7fd6c338100664147666de6",
+      "catalog_rules": 395,
+      "enabled_rules": {
+        "ddl.constraint.check.not_enforced.notice": {
+          "level": "blocker"
+        }
+      },
+      "disabled_rules": 394
+    },
+    {
+      "profile": "t12-version",
+      "path": "/private/tmp/ddl-golden-t12/T12/golden-policy-t12-version.yaml",
+      "sha256": "e9468d191d318b634d6e6f67216dc51f5d928fff72748be6e77db22ebc50c759",
+      "catalog_rules": 395,
+      "enabled_rules": {
+        "ddl.alter.alter_check.version.require": {
+          "level": "blocker",
+          "params": {
+            "required": true
+          }
+        }
+      },
+      "disabled_rules": 394
+    }
+  ],
+  "required_case_ids": [
+    "T12.db.mysql57.ddl",
+    "T12.db.mysql57.syntax_negative",
+    "T12.db.mysql80.ddl",
+    "T12.db.mysql80.syntax_negative",
+    "T12.db.mysql84.ddl",
+    "T12.db.mysql84.syntax_negative",
+    "T12.db.tidb85.ddl",
+    "T12.db.tidb85.syntax_negative",
+    "T12.cli.t12-cli-alter-check-offline-gap",
+    "T12.cli.t12-cli-alter-check-enforced-offline",
+    "T12.cli.t12-cli-drop-check-offline-gap",
+    "T12.cli.t12-cli-alter-constraint-alias-offline",
+    "T12.cli.t12-cli-alter-check-tidb-offline-gap",
+    "T12.cli.t12-cli-create-notenforced-offline-gap",
+    "T12.cli.t12-cli-add-check-declared-offline-gap",
+    "T12.cli.t12-cli-addcol-control",
+    "T12.cli.t12-cli-alter-check-off",
+    "T12.meta.t12-mysql80-golden",
+    "T12.meta.t12-mysql84-golden",
+    "T12.meta.t12-mysql80-alter-missing",
+    "T12.meta.t12-mysql80-drop-present",
+    "T12.meta.t12-mysql57-ignored",
+    "T12.meta.t12-mysql57-version-refusal",
+    "T12.meta.t12-tidb85-golden",
+    "T12.meta.t12-tidb85-flag-off-ignored"
+  ],
+  "cases": [
+    {
+      "case_id": "T12.db.mysql57.ddl",
+      "kind": "db_ddl",
+      "anchor": "mysql57",
+      "input_sql": [
+        "CREATE TABLE t12g (id INT, v INT, CONSTRAINT chk_id CHECK (id > 0), CONSTRAINT chk_v CHECK (v > 0))",
+        "ALTER TABLE t12g ADD COLUMN w INT",
+        "INSERT INTO t12g VALUES (1, 1, 1)",
+        "DROP TABLE t12g"
+      ],
+      "expected": {
+        "steps": [
+          {
+            "name": "create-check-table",
+            "rc": 0,
+            "verify": [
+              {
+                "assert": "fixture table lands on every anchor arm",
+                "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t12g'",
+                "expect": "1"
+              }
+            ]
+          },
+          {
+            "name": "add-plain-column",
+            "rc": 0,
+            "verify": [
+              {
+                "assert": "column lands",
+                "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t12g'",
+                "expect": "3"
+              }
+            ]
+          },
+          {
+            "name": "insert-clean-row",
+            "rc": 0,
+            "verify": [
+              {
+                "assert": "clean row lands under every arm",
+                "sql": "SELECT COUNT(*) FROM golden.t12g",
+                "expect": "1"
+              }
+            ]
+          },
+          {
+            "name": "drop-fixture",
+            "rc": 0,
+            "verify": [
+              {
+                "assert": "fixture dropped",
+                "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t12g'",
+                "expect": "0"
+              }
+            ]
+          }
+        ]
+      },
+      "actual": {
+        "steps": [
+          {
+            "name": "create-check-table",
+            "sql": "CREATE TABLE t12g (id INT, v INT, CONSTRAINT chk_id CHECK (id > 0), CONSTRAINT chk_v CHECK (v > 0))",
+            "verify": [
+              {
+                "assert": "fixture table lands on every anchor arm",
+                "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t12g'",
+                "rc": 0,
+                "output": "1",
+                "stderr": ""
+              }
+            ],
+            "rc": 0,
+            "stdout": "",
+            "stderr": ""
+          },
+          {
+            "name": "add-plain-column",
+            "sql": "ALTER TABLE t12g ADD COLUMN w INT",
+            "verify": [
+              {
+                "assert": "column lands",
+                "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t12g'",
+                "rc": 0,
+                "output": "3",
+                "stderr": ""
+              }
+            ],
+            "rc": 0,
+            "stdout": "",
+            "stderr": ""
+          },
+          {
+            "name": "insert-clean-row",
+            "sql": "INSERT INTO t12g VALUES (1, 1, 1)",
+            "verify": [
+              {
+                "assert": "clean row lands under every arm",
+                "sql": "SELECT COUNT(*) FROM golden.t12g",
+                "rc": 0,
+                "output": "1",
+                "stderr": ""
+              }
+            ],
+            "rc": 0,
+            "stdout": "",
+            "stderr": ""
+          },
+          {
+            "name": "drop-fixture",
+            "sql": "DROP TABLE t12g",
+            "verify": [
+              {
+                "assert": "fixture dropped",
+                "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t12g'",
+                "rc": 0,
+                "output": "0",
+                "stderr": ""
+              }
+            ],
+            "rc": 0,
+            "stdout": "",
+            "stderr": ""
+          }
+        ],
+        "database": {
+          "product": "mysql",
+          "image": "mysql:5.7.44",
+          "image_digest": "mysql@sha256:4bc6bc963e6d8443453676cae56536f4b8156d78bae03c0145cbe47c2aad73bb",
+          "container": "deltascope-ddl-golden-mysql57",
+          "reachable": true,
+          "version": "5.7.44"
+        }
+      },
+      "assertions": [
+        {
+          "name": "database reachable with expected version",
+          "ok": true,
+          "detail": "SELECT VERSION() rc=0 version='5.7.44' expected_contains='5.7.44'"
+        },
+        {
+          "name": "create-check-table return code",
+          "ok": true,
+          "detail": "rc=0 expected=0 stderr=''"
+        },
+        {
+          "name": "create-check-table: fixture table lands on every anchor arm",
+          "ok": true,
+          "detail": "rc=0 output='1' expected='1'"
+        },
+        {
+          "name": "add-plain-column return code",
+          "ok": true,
+          "detail": "rc=0 expected=0 stderr=''"
+        },
+        {
+          "name": "add-plain-column: column lands",
+          "ok": true,
+          "detail": "rc=0 output='3' expected='3'"
+        },
+        {
+          "name": "insert-clean-row return code",
+          "ok": true,
+          "detail": "rc=0 expected=0 stderr=''"
+        },
+        {
+          "name": "insert-clean-row: clean row lands under every arm",
+          "ok": true,
+          "detail": "rc=0 output='1' expected='1'"
+        },
+        {
+          "name": "drop-fixture return code",
+          "ok": true,
+          "detail": "rc=0 expected=0 stderr=''"
+        },
+        {
+          "name": "drop-fixture: fixture dropped",
+          "ok": true,
+          "detail": "rc=0 output='0' expected='0'"
+        }
+      ],
+      "status": "pass"
+    },
+    {
+      "case_id": "T12.db.mysql57.syntax_negative",
+      "kind": "db_syntax_negative",
+      "anchor": "mysql57",
+      "input_sql": "ALTER TABLE golden_t ALTER CHECK x (",
+      "expected": {
+        "rc_nonzero": true,
+        "error_class": "1064",
+        "forbidden_markers": [
+          "ERROR 1045",
+          "ERROR 1044",
+          "ERROR 1049",
+          "ERROR 1142",
+          "ERROR 1143",
+          "ERROR 2002",
+          "ERROR 2003",
+          "ERROR 2005",
+          "Access denied",
+          "Unknown database",
+          "Can't connect",
+          "Connection refused",
+          "already exists"
+        ]
+      },
+      "actual": {
+        "rc": 1,
+        "stdout": "",
+        "stderr": "ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'CHECK x (' at line 1",
+        "error_class": "1064"
+      },
+      "assertions": [
+        {
+          "name": "nonzero syntax failure",
+          "ok": true,
+          "detail": "rc=1"
+        },
+        {
+          "name": "expected error class",
+          "ok": true,
+          "detail": "error_class='1064' expected='1064'"
+        },
+        {
+          "name": "no permission/connection/object-conflict markers",
+          "ok": true,
+          "detail": "forbidden markers found: []"
+        }
+      ],
+      "status": "pass"
+    },
+    {
+      "case_id": "T12.db.mysql80.ddl",
+      "kind": "db_ddl",
+      "anchor": "mysql80",
+      "input_sql": [
+        "CREATE TABLE t12g (id INT, v INT, CONSTRAINT chk_id CHECK (id > 0), CONSTRAINT chk_v CHECK (v > 0))",
+        "ALTER TABLE t12g ADD COLUMN w INT",
+        "INSERT INTO t12g VALUES (1, 1, 1)",
+        "DROP TABLE t12g"
+      ],
+      "expected": {
+        "steps": [
+          {
+            "name": "create-check-table",
+            "rc": 0,
+            "verify": [
+              {
+                "assert": "fixture table lands on every anchor arm",
+                "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t12g'",
+                "expect": "1"
+              }
+            ]
+          },
+          {
+            "name": "add-plain-column",
+            "rc": 0,
+            "verify": [
+              {
+                "assert": "column lands",
+                "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t12g'",
+                "expect": "3"
+              }
+            ]
+          },
+          {
+            "name": "insert-clean-row",
+            "rc": 0,
+            "verify": [
+              {
+                "assert": "clean row lands under every arm",
+                "sql": "SELECT COUNT(*) FROM golden.t12g",
+                "expect": "1"
+              }
+            ]
+          },
+          {
+            "name": "drop-fixture",
+            "rc": 0,
+            "verify": [
+              {
+                "assert": "fixture dropped",
+                "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t12g'",
+                "expect": "0"
+              }
+            ]
+          }
+        ]
+      },
+      "actual": {
+        "steps": [
+          {
+            "name": "create-check-table",
+            "sql": "CREATE TABLE t12g (id INT, v INT, CONSTRAINT chk_id CHECK (id > 0), CONSTRAINT chk_v CHECK (v > 0))",
+            "verify": [
+              {
+                "assert": "fixture table lands on every anchor arm",
+                "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t12g'",
+                "rc": 0,
+                "output": "1",
+                "stderr": ""
+              }
+            ],
+            "rc": 0,
+            "stdout": "",
+            "stderr": ""
+          },
+          {
+            "name": "add-plain-column",
+            "sql": "ALTER TABLE t12g ADD COLUMN w INT",
+            "verify": [
+              {
+                "assert": "column lands",
+                "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t12g'",
+                "rc": 0,
+                "output": "3",
+                "stderr": ""
+              }
+            ],
+            "rc": 0,
+            "stdout": "",
+            "stderr": ""
+          },
+          {
+            "name": "insert-clean-row",
+            "sql": "INSERT INTO t12g VALUES (1, 1, 1)",
+            "verify": [
+              {
+                "assert": "clean row lands under every arm",
+                "sql": "SELECT COUNT(*) FROM golden.t12g",
+                "rc": 0,
+                "output": "1",
+                "stderr": ""
+              }
+            ],
+            "rc": 0,
+            "stdout": "",
+            "stderr": ""
+          },
+          {
+            "name": "drop-fixture",
+            "sql": "DROP TABLE t12g",
+            "verify": [
+              {
+                "assert": "fixture dropped",
+                "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t12g'",
+                "rc": 0,
+                "output": "0",
+                "stderr": ""
+              }
+            ],
+            "rc": 0,
+            "stdout": "",
+            "stderr": ""
+          }
+        ],
+        "database": {
+          "product": "mysql",
+          "image": "mysql:8.0.46",
+          "image_digest": "mysql@sha256:7dcddc01f13bab2f15cde676d44d01f61fc9f99fe7785e86196dfc07d358ae2b",
+          "container": "deltascope-ddl-golden-mysql80",
+          "reachable": true,
+          "version": "8.0.46"
+        }
+      },
+      "assertions": [
+        {
+          "name": "database reachable with expected version",
+          "ok": true,
+          "detail": "SELECT VERSION() rc=0 version='8.0.46' expected_contains='8.0.46'"
+        },
+        {
+          "name": "create-check-table return code",
+          "ok": true,
+          "detail": "rc=0 expected=0 stderr=''"
+        },
+        {
+          "name": "create-check-table: fixture table lands on every anchor arm",
+          "ok": true,
+          "detail": "rc=0 output='1' expected='1'"
+        },
+        {
+          "name": "add-plain-column return code",
+          "ok": true,
+          "detail": "rc=0 expected=0 stderr=''"
+        },
+        {
+          "name": "add-plain-column: column lands",
+          "ok": true,
+          "detail": "rc=0 output='3' expected='3'"
+        },
+        {
+          "name": "insert-clean-row return code",
+          "ok": true,
+          "detail": "rc=0 expected=0 stderr=''"
+        },
+        {
+          "name": "insert-clean-row: clean row lands under every arm",
+          "ok": true,
+          "detail": "rc=0 output='1' expected='1'"
+        },
+        {
+          "name": "drop-fixture return code",
+          "ok": true,
+          "detail": "rc=0 expected=0 stderr=''"
+        },
+        {
+          "name": "drop-fixture: fixture dropped",
+          "ok": true,
+          "detail": "rc=0 output='0' expected='0'"
+        }
+      ],
+      "status": "pass"
+    },
+    {
+      "case_id": "T12.db.mysql80.syntax_negative",
+      "kind": "db_syntax_negative",
+      "anchor": "mysql80",
+      "input_sql": "ALTER TABLE golden_t ALTER CHECK x (",
+      "expected": {
+        "rc_nonzero": true,
+        "error_class": "1064",
+        "forbidden_markers": [
+          "ERROR 1045",
+          "ERROR 1044",
+          "ERROR 1049",
+          "ERROR 1142",
+          "ERROR 1143",
+          "ERROR 2002",
+          "ERROR 2003",
+          "ERROR 2005",
+          "Access denied",
+          "Unknown database",
+          "Can't connect",
+          "Connection refused",
+          "already exists"
+        ]
+      },
+      "actual": {
+        "rc": 1,
+        "stdout": "",
+        "stderr": "ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '(' at line 1",
+        "error_class": "1064"
+      },
+      "assertions": [
+        {
+          "name": "nonzero syntax failure",
+          "ok": true,
+          "detail": "rc=1"
+        },
+        {
+          "name": "expected error class",
+          "ok": true,
+          "detail": "error_class='1064' expected='1064'"
+        },
+        {
+          "name": "no permission/connection/object-conflict markers",
+          "ok": true,
+          "detail": "forbidden markers found: []"
+        }
+      ],
+      "status": "pass"
+    },
+    {
+      "case_id": "T12.db.mysql84.ddl",
+      "kind": "db_ddl",
+      "anchor": "mysql84",
+      "input_sql": [
+        "CREATE TABLE t12g (id INT, v INT, CONSTRAINT chk_id CHECK (id > 0), CONSTRAINT chk_v CHECK (v > 0))",
+        "ALTER TABLE t12g ADD COLUMN w INT",
+        "INSERT INTO t12g VALUES (1, 1, 1)",
+        "DROP TABLE t12g"
+      ],
+      "expected": {
+        "steps": [
+          {
+            "name": "create-check-table",
+            "rc": 0,
+            "verify": [
+              {
+                "assert": "fixture table lands on every anchor arm",
+                "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t12g'",
+                "expect": "1"
+              }
+            ]
+          },
+          {
+            "name": "add-plain-column",
+            "rc": 0,
+            "verify": [
+              {
+                "assert": "column lands",
+                "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t12g'",
+                "expect": "3"
+              }
+            ]
+          },
+          {
+            "name": "insert-clean-row",
+            "rc": 0,
+            "verify": [
+              {
+                "assert": "clean row lands under every arm",
+                "sql": "SELECT COUNT(*) FROM golden.t12g",
+                "expect": "1"
+              }
+            ]
+          },
+          {
+            "name": "drop-fixture",
+            "rc": 0,
+            "verify": [
+              {
+                "assert": "fixture dropped",
+                "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t12g'",
+                "expect": "0"
+              }
+            ]
+          }
+        ]
+      },
+      "actual": {
+        "steps": [
+          {
+            "name": "create-check-table",
+            "sql": "CREATE TABLE t12g (id INT, v INT, CONSTRAINT chk_id CHECK (id > 0), CONSTRAINT chk_v CHECK (v > 0))",
+            "verify": [
+              {
+                "assert": "fixture table lands on every anchor arm",
+                "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t12g'",
+                "rc": 0,
+                "output": "1",
+                "stderr": ""
+              }
+            ],
+            "rc": 0,
+            "stdout": "",
+            "stderr": ""
+          },
+          {
+            "name": "add-plain-column",
+            "sql": "ALTER TABLE t12g ADD COLUMN w INT",
+            "verify": [
+              {
+                "assert": "column lands",
+                "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t12g'",
+                "rc": 0,
+                "output": "3",
+                "stderr": ""
+              }
+            ],
+            "rc": 0,
+            "stdout": "",
+            "stderr": ""
+          },
+          {
+            "name": "insert-clean-row",
+            "sql": "INSERT INTO t12g VALUES (1, 1, 1)",
+            "verify": [
+              {
+                "assert": "clean row lands under every arm",
+                "sql": "SELECT COUNT(*) FROM golden.t12g",
+                "rc": 0,
+                "output": "1",
+                "stderr": ""
+              }
+            ],
+            "rc": 0,
+            "stdout": "",
+            "stderr": ""
+          },
+          {
+            "name": "drop-fixture",
+            "sql": "DROP TABLE t12g",
+            "verify": [
+              {
+                "assert": "fixture dropped",
+                "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t12g'",
+                "rc": 0,
+                "output": "0",
+                "stderr": ""
+              }
+            ],
+            "rc": 0,
+            "stdout": "",
+            "stderr": ""
+          }
+        ],
+        "database": {
+          "product": "mysql",
+          "image": "mysql:8.4.10",
+          "image_digest": "mysql@sha256:c592c15aaf4a1961e15d82eb31ea5987dda862d1c4b1e93424438c0e91dc1f8d",
+          "container": "deltascope-ddl-golden-mysql84",
+          "reachable": true,
+          "version": "8.4.10"
+        }
+      },
+      "assertions": [
+        {
+          "name": "database reachable with expected version",
+          "ok": true,
+          "detail": "SELECT VERSION() rc=0 version='8.4.10' expected_contains='8.4.10'"
+        },
+        {
+          "name": "create-check-table return code",
+          "ok": true,
+          "detail": "rc=0 expected=0 stderr=''"
+        },
+        {
+          "name": "create-check-table: fixture table lands on every anchor arm",
+          "ok": true,
+          "detail": "rc=0 output='1' expected='1'"
+        },
+        {
+          "name": "add-plain-column return code",
+          "ok": true,
+          "detail": "rc=0 expected=0 stderr=''"
+        },
+        {
+          "name": "add-plain-column: column lands",
+          "ok": true,
+          "detail": "rc=0 output='3' expected='3'"
+        },
+        {
+          "name": "insert-clean-row return code",
+          "ok": true,
+          "detail": "rc=0 expected=0 stderr=''"
+        },
+        {
+          "name": "insert-clean-row: clean row lands under every arm",
+          "ok": true,
+          "detail": "rc=0 output='1' expected='1'"
+        },
+        {
+          "name": "drop-fixture return code",
+          "ok": true,
+          "detail": "rc=0 expected=0 stderr=''"
+        },
+        {
+          "name": "drop-fixture: fixture dropped",
+          "ok": true,
+          "detail": "rc=0 output='0' expected='0'"
+        }
+      ],
+      "status": "pass"
+    },
+    {
+      "case_id": "T12.db.mysql84.syntax_negative",
+      "kind": "db_syntax_negative",
+      "anchor": "mysql84",
+      "input_sql": "ALTER TABLE golden_t ALTER CHECK x (",
+      "expected": {
+        "rc_nonzero": true,
+        "error_class": "1064",
+        "forbidden_markers": [
+          "ERROR 1045",
+          "ERROR 1044",
+          "ERROR 1049",
+          "ERROR 1142",
+          "ERROR 1143",
+          "ERROR 2002",
+          "ERROR 2003",
+          "ERROR 2005",
+          "Access denied",
+          "Unknown database",
+          "Can't connect",
+          "Connection refused",
+          "already exists"
+        ]
+      },
+      "actual": {
+        "rc": 1,
+        "stdout": "",
+        "stderr": "ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '(' at line 1",
+        "error_class": "1064"
+      },
+      "assertions": [
+        {
+          "name": "nonzero syntax failure",
+          "ok": true,
+          "detail": "rc=1"
+        },
+        {
+          "name": "expected error class",
+          "ok": true,
+          "detail": "error_class='1064' expected='1064'"
+        },
+        {
+          "name": "no permission/connection/object-conflict markers",
+          "ok": true,
+          "detail": "forbidden markers found: []"
+        }
+      ],
+      "status": "pass"
+    },
+    {
+      "case_id": "T12.db.tidb85.ddl",
+      "kind": "db_ddl",
+      "anchor": "tidb85",
+      "input_sql": [
+        "CREATE TABLE t12g (id INT, v INT, CONSTRAINT chk_id CHECK (id > 0), CONSTRAINT chk_v CHECK (v > 0))",
+        "ALTER TABLE t12g ADD COLUMN w INT",
+        "INSERT INTO t12g VALUES (1, 1, 1)",
+        "DROP TABLE t12g"
+      ],
+      "expected": {
+        "steps": [
+          {
+            "name": "create-check-table",
+            "rc": 0,
+            "verify": [
+              {
+                "assert": "fixture table lands on every anchor arm",
+                "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t12g'",
+                "expect": "1"
+              }
+            ]
+          },
+          {
+            "name": "add-plain-column",
+            "rc": 0,
+            "verify": [
+              {
+                "assert": "column lands",
+                "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t12g'",
+                "expect": "3"
+              }
+            ]
+          },
+          {
+            "name": "insert-clean-row",
+            "rc": 0,
+            "verify": [
+              {
+                "assert": "clean row lands under every arm",
+                "sql": "SELECT COUNT(*) FROM golden.t12g",
+                "expect": "1"
+              }
+            ]
+          },
+          {
+            "name": "drop-fixture",
+            "rc": 0,
+            "verify": [
+              {
+                "assert": "fixture dropped",
+                "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t12g'",
+                "expect": "0"
+              }
+            ]
+          }
+        ]
+      },
+      "actual": {
+        "steps": [
+          {
+            "name": "create-check-table",
+            "sql": "CREATE TABLE t12g (id INT, v INT, CONSTRAINT chk_id CHECK (id > 0), CONSTRAINT chk_v CHECK (v > 0))",
+            "verify": [
+              {
+                "assert": "fixture table lands on every anchor arm",
+                "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t12g'",
+                "rc": 0,
+                "output": "1",
+                "stderr": ""
+              }
+            ],
+            "rc": 0,
+            "stdout": "",
+            "stderr": ""
+          },
+          {
+            "name": "add-plain-column",
+            "sql": "ALTER TABLE t12g ADD COLUMN w INT",
+            "verify": [
+              {
+                "assert": "column lands",
+                "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t12g'",
+                "rc": 0,
+                "output": "3",
+                "stderr": ""
+              }
+            ],
+            "rc": 0,
+            "stdout": "",
+            "stderr": ""
+          },
+          {
+            "name": "insert-clean-row",
+            "sql": "INSERT INTO t12g VALUES (1, 1, 1)",
+            "verify": [
+              {
+                "assert": "clean row lands under every arm",
+                "sql": "SELECT COUNT(*) FROM golden.t12g",
+                "rc": 0,
+                "output": "1",
+                "stderr": ""
+              }
+            ],
+            "rc": 0,
+            "stdout": "",
+            "stderr": ""
+          },
+          {
+            "name": "drop-fixture",
+            "sql": "DROP TABLE t12g",
+            "verify": [
+              {
+                "assert": "fixture dropped",
+                "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t12g'",
+                "rc": 0,
+                "output": "0",
+                "stderr": ""
+              }
+            ],
+            "rc": 0,
+            "stdout": "",
+            "stderr": ""
+          }
+        ],
+        "database": {
+          "product": "tidb",
+          "image": "pingcap/tidb:v8.5.0",
+          "image_digest": "pingcap/tidb@sha256:490861bd4a2fa643dbe76b77ffecafcad66e6a42774e580b82f4ec2429a80e57",
+          "container": "deltascope-ddl-golden-tidb85",
+          "reachable": true,
+          "version": "8.0.11-TiDB-v8.5.0"
+        }
+      },
+      "assertions": [
+        {
+          "name": "database reachable with expected version",
+          "ok": true,
+          "detail": "SELECT VERSION() rc=0 version='8.0.11-TiDB-v8.5.0' expected_contains='v8.5.0'"
+        },
+        {
+          "name": "fixture database created",
+          "ok": true,
+          "detail": "CREATE DATABASE rc=0 stderr=''"
+        },
+        {
+          "name": "create-check-table return code",
+          "ok": true,
+          "detail": "rc=0 expected=0 stderr=''"
+        },
+        {
+          "name": "create-check-table: fixture table lands on every anchor arm",
+          "ok": true,
+          "detail": "rc=0 output='1' expected='1'"
+        },
+        {
+          "name": "add-plain-column return code",
+          "ok": true,
+          "detail": "rc=0 expected=0 stderr=''"
+        },
+        {
+          "name": "add-plain-column: column lands",
+          "ok": true,
+          "detail": "rc=0 output='3' expected='3'"
+        },
+        {
+          "name": "insert-clean-row return code",
+          "ok": true,
+          "detail": "rc=0 expected=0 stderr=''"
+        },
+        {
+          "name": "insert-clean-row: clean row lands under every arm",
+          "ok": true,
+          "detail": "rc=0 output='1' expected='1'"
+        },
+        {
+          "name": "drop-fixture return code",
+          "ok": true,
+          "detail": "rc=0 expected=0 stderr=''"
+        },
+        {
+          "name": "drop-fixture: fixture dropped",
+          "ok": true,
+          "detail": "rc=0 output='0' expected='0'"
+        }
+      ],
+      "status": "pass"
+    },
+    {
+      "case_id": "T12.db.tidb85.syntax_negative",
+      "kind": "db_syntax_negative",
+      "anchor": "tidb85",
+      "input_sql": "ALTER TABLE golden_t ALTER CHECK x (",
+      "expected": {
+        "rc_nonzero": true,
+        "error_class": "1064",
+        "forbidden_markers": [
+          "ERROR 1045",
+          "ERROR 1044",
+          "ERROR 1049",
+          "ERROR 1142",
+          "ERROR 1143",
+          "ERROR 2002",
+          "ERROR 2003",
+          "ERROR 2005",
+          "Access denied",
+          "Unknown database",
+          "Can't connect",
+          "Connection refused",
+          "already exists"
+        ]
+      },
+      "actual": {
+        "rc": 1,
+        "stdout": "",
+        "stderr": "ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your TiDB version for the right syntax to use line 1 column 36 near \"(\"",
+        "error_class": "1064"
+      },
+      "assertions": [
+        {
+          "name": "nonzero syntax failure",
+          "ok": true,
+          "detail": "rc=1"
+        },
+        {
+          "name": "expected error class",
+          "ok": true,
+          "detail": "error_class='1064' expected='1064'"
+        },
+        {
+          "name": "no permission/connection/object-conflict markers",
+          "ok": true,
+          "detail": "forbidden markers found: []"
+        }
+      ],
+      "status": "pass"
+    },
+    {
+      "case_id": "T12.cli.t12-cli-alter-check-offline-gap",
+      "kind": "cli_audit",
+      "cli_case": "t12-cli-alter-check-offline-gap",
+      "dialect": "mysql",
+      "input_sql": "ALTER TABLE t ALTER CHECK chk_id NOT ENFORCED;",
+      "policy_profile": "t12-all",
+      "policy_path": "/private/tmp/ddl-golden-t12/T12/golden-policy-t12-all.yaml",
+      "command": [
+        "/private/tmp/ddl-golden-t12/T12/bin/deltascope",
+        "audit",
+        "--dialect",
+        "mysql",
+        "--sql",
+        "ALTER TABLE t ALTER CHECK chk_id NOT ENFORCED;",
+        "--config",
+        "/private/tmp/ddl-golden-t12/T12/golden-policy-t12-all.yaml",
+        "--format",
+        "json"
+      ],
+      "expected": {
+        "exit": 0,
+        "verdict": "review",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "unverified",
+        "statement_coverage": [
+          "unverified"
+        ],
+        "evidence_gaps": 3,
+        "evidence_gap_entries": [
+          {
+            "index": 0,
+            "rule_id": "ddl.constraint.check.not_enforced.notice",
+            "reason_code": "missing_target_version",
+            "required_facts": [
+              "target.version"
+            ]
+          },
+          {
+            "index": 0,
+            "rule_id": "ddl.alter.alter_check.exists.require",
+            "reason_code": "missing_target_version",
+            "required_facts": [
+              "target.version"
+            ]
+          },
+          {
+            "index": 0,
+            "rule_id": "ddl.alter.alter_check.version.require",
+            "reason_code": "missing_target_version",
+            "required_facts": [
+              "target.version"
+            ]
+          }
+        ],
+        "rule_summary_applicable": 3
+      },
+      "actual": {
+        "exit": 0,
+        "stdout": "{\"verdict\":\"review\",\"coverage\":{\"status\":\"unverified\"},\"summary\":{\"statements\":1,\"blockers\":0,\"warnings\":0,\"notices\":0},\"statements\":[{\"index\":0,\"kind\":\"ddl\",\"raw_sql\":\"ALTER TABLE t ALTER CHECK chk_id NOT ENFORCED;\",\"normalized_sql\":\"ALTER TABLE t ALTER CHECK chk_id NOT ENFORCED\",\"evidence_gaps\":[{\"rule_id\":\"ddl.constraint.check.not_enforced.notice\",\"reason_code\":\"missing_target_version\",\"required_facts\":[\"target.version\"]},{\"rule_id\":\"ddl.alter.alter_check.exists.require\",\"reason_code\":\"missing_target_version\",\"required_facts\":[\"target.version\"]},{\"rule_id\":\"ddl.alter.alter_check.version.require\",\"reason_code\":\"missing_target_version\",\"required_facts\":[\"target.version\"]}],\"coverage\":{\"status\":\"unverified\"}}],\"fail_on_triggered\":false,\"rule_summary\":{\"loaded\":5,\"applicable\":3,\"skipped\":[]},\"context\":{\"mode\":\"offline\",\"dialect\":\"mysql\",\"dialect_source\":\"flag\",\"note\":\"existence not checked (no database connection)\",\"unproven\":[\"column_exists\",\"table_exists\"]}}\n",
+        "stderr": "",
+        "parsed": {
+          "verdict": "review",
+          "coverage": {
+            "status": "unverified"
+          },
+          "summary": {
+            "statements": 1,
+            "blockers": 0,
+            "warnings": 0,
+            "notices": 0
+          },
+          "statements": [
+            {
+              "index": 0,
+              "kind": "ddl",
+              "raw_sql": "ALTER TABLE t ALTER CHECK chk_id NOT ENFORCED;",
+              "normalized_sql": "ALTER TABLE t ALTER CHECK chk_id NOT ENFORCED",
+              "evidence_gaps": [
+                {
+                  "rule_id": "ddl.constraint.check.not_enforced.notice",
+                  "reason_code": "missing_target_version",
+                  "required_facts": [
+                    "target.version"
+                  ]
+                },
+                {
+                  "rule_id": "ddl.alter.alter_check.exists.require",
+                  "reason_code": "missing_target_version",
+                  "required_facts": [
+                    "target.version"
+                  ]
+                },
+                {
+                  "rule_id": "ddl.alter.alter_check.version.require",
+                  "reason_code": "missing_target_version",
+                  "required_facts": [
+                    "target.version"
+                  ]
+                }
+              ],
+              "coverage": {
+                "status": "unverified"
+              }
+            }
+          ],
+          "fail_on_triggered": false,
+          "rule_summary": {
+            "loaded": 5,
+            "applicable": 3,
+            "skipped": []
+          },
+          "context": {
+            "mode": "offline",
+            "dialect": "mysql",
+            "dialect_source": "flag",
+            "note": "existence not checked (no database connection)",
+            "unproven": [
+              "column_exists",
+              "table_exists"
+            ]
+          }
+        },
+        "version_evidence": {
+          "target_raw": null,
+          "target_canonical": null,
+          "observed_raw": null,
+          "observed_canonical": null,
+          "resolved": null
+        }
+      },
+      "assertions": [
+        {
+          "name": "exit code",
+          "ok": true,
+          "detail": "rc=0 expected=0"
+        },
+        {
+          "name": "verdict",
+          "ok": true,
+          "detail": "verdict='review'"
+        },
+        {
+          "name": "top-level statements",
+          "ok": true,
+          "detail": "statements=1 expected=1"
+        },
+        {
+          "name": "zero findings",
+          "ok": true,
+          "detail": "findings=0"
+        },
+        {
+          "name": "no diagnostics",
+          "ok": true,
+          "detail": "diagnostics=[]"
+        },
+        {
+          "name": "no unsupported",
+          "ok": true,
+          "detail": "unsupported=[]"
+        },
+        {
+          "name": "applicable rule count",
+          "ok": true,
+          "detail": "applicable=3"
+        },
+        {
+          "name": "aggregate coverage",
+          "ok": true,
+          "detail": "coverage='unverified'"
+        },
+        {
+          "name": "per-statement coverage",
+          "ok": true,
+          "detail": "statement_coverage=['unverified']"
+        },
+        {
+          "name": "evidence gap count",
+          "ok": true,
+          "detail": "gaps=3"
+        },
+        {
+          "name": "evidence gap entries",
+          "ok": true,
+          "detail": "gaps=[(0, 'ddl.alter.alter_check.exists.require', 'missing_target_version'), (0, 'ddl.alter.alter_check.version.require', 'missing_target_version'), (0, 'ddl.constraint.check.not_enforced.notice', 'missing_target_version')] expected=[(0, 'ddl.alter.alter_check.exists.require', 'missing_target_version'), (0, 'ddl.alter.alter_check.version.require', 'missing_target_version'), (0, 'ddl.constraint.check.not_enforced.notice', 'missing_target_version')]"
+        },
+        {
+          "name": "evidence gap required_facts (0, 'ddl.constraint.check.not_enforced.notice', 'missing_target_version')",
+          "ok": true,
+          "detail": "gaps=[{'rule_id': 'ddl.constraint.check.not_enforced.notice', 'reason_code': 'missing_target_version', 'required_facts': ['target.version']}, {'rule_id': 'ddl.alter.alter_check.exists.require', 'reason_code': 'missing_target_version', 'required_facts': ['target.version']}, {'rule_id': 'ddl.alter.alter_check.version.require', 'reason_code': 'missing_target_version', 'required_facts': ['target.version']}] expected_facts=['target.version']"
+        },
+        {
+          "name": "evidence gap required_facts (0, 'ddl.alter.alter_check.exists.require', 'missing_target_version')",
+          "ok": true,
+          "detail": "gaps=[{'rule_id': 'ddl.constraint.check.not_enforced.notice', 'reason_code': 'missing_target_version', 'required_facts': ['target.version']}, {'rule_id': 'ddl.alter.alter_check.exists.require', 'reason_code': 'missing_target_version', 'required_facts': ['target.version']}, {'rule_id': 'ddl.alter.alter_check.version.require', 'reason_code': 'missing_target_version', 'required_facts': ['target.version']}] expected_facts=['target.version']"
+        },
+        {
+          "name": "evidence gap required_facts (0, 'ddl.alter.alter_check.version.require', 'missing_target_version')",
+          "ok": true,
+          "detail": "gaps=[{'rule_id': 'ddl.constraint.check.not_enforced.notice', 'reason_code': 'missing_target_version', 'required_facts': ['target.version']}, {'rule_id': 'ddl.alter.alter_check.exists.require', 'reason_code': 'missing_target_version', 'required_facts': ['target.version']}, {'rule_id': 'ddl.alter.alter_check.version.require', 'reason_code': 'missing_target_version', 'required_facts': ['target.version']}] expected_facts=['target.version']"
+        },
+        {
+          "name": "no gap encoded as finding",
+          "ok": true,
+          "detail": "findings carrying gap shape=[]"
+        }
+      ],
+      "status": "pass"
+    },
+    {
+      "case_id": "T12.cli.t12-cli-alter-check-enforced-offline",
+      "kind": "cli_audit",
+      "cli_case": "t12-cli-alter-check-enforced-offline",
+      "dialect": "mysql",
+      "input_sql": "ALTER TABLE t ALTER CHECK chk_id ENFORCED;",
+      "policy_profile": "t12-all",
+      "policy_path": "/private/tmp/ddl-golden-t12/T12/golden-policy-t12-all.yaml",
+      "command": [
+        "/private/tmp/ddl-golden-t12/T12/bin/deltascope",
+        "audit",
+        "--dialect",
+        "mysql",
+        "--sql",
+        "ALTER TABLE t ALTER CHECK chk_id ENFORCED;",
+        "--config",
+        "/private/tmp/ddl-golden-t12/T12/golden-policy-t12-all.yaml",
+        "--format",
+        "json"
+      ],
+      "expected": {
+        "exit": 0,
+        "verdict": "review",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "unverified",
+        "evidence_gaps": 2,
+        "evidence_gap_entries": [
+          {
+            "index": 0,
+            "rule_id": "ddl.alter.alter_check.exists.require",
+            "reason_code": "missing_target_version",
+            "required_facts": [
+              "target.version"
+            ]
+          },
+          {
+            "index": 0,
+            "rule_id": "ddl.alter.alter_check.version.require",
+            "reason_code": "missing_target_version",
+            "required_facts": [
+              "target.version"
+            ]
+          }
+        ]
+      },
+      "actual": {
+        "exit": 0,
+        "stdout": "{\"verdict\":\"review\",\"coverage\":{\"status\":\"unverified\"},\"summary\":{\"statements\":1,\"blockers\":0,\"warnings\":0,\"notices\":0},\"statements\":[{\"index\":0,\"kind\":\"ddl\",\"raw_sql\":\"ALTER TABLE t ALTER CHECK chk_id ENFORCED;\",\"normalized_sql\":\"ALTER TABLE t ALTER CHECK chk_id ENFORCED\",\"evidence_gaps\":[{\"rule_id\":\"ddl.alter.alter_check.exists.require\",\"reason_code\":\"missing_target_version\",\"required_facts\":[\"target.version\"]},{\"rule_id\":\"ddl.alter.alter_check.version.require\",\"reason_code\":\"missing_target_version\",\"required_facts\":[\"target.version\"]}],\"coverage\":{\"status\":\"unverified\"}}],\"fail_on_triggered\":false,\"rule_summary\":{\"loaded\":5,\"applicable\":2,\"skipped\":[]},\"context\":{\"mode\":\"offline\",\"dialect\":\"mysql\",\"dialect_source\":\"flag\",\"note\":\"existence not checked (no database connection)\",\"unproven\":[\"column_exists\",\"table_exists\"]}}\n",
+        "stderr": "",
+        "parsed": {
+          "verdict": "review",
+          "coverage": {
+            "status": "unverified"
+          },
+          "summary": {
+            "statements": 1,
+            "blockers": 0,
+            "warnings": 0,
+            "notices": 0
+          },
+          "statements": [
+            {
+              "index": 0,
+              "kind": "ddl",
+              "raw_sql": "ALTER TABLE t ALTER CHECK chk_id ENFORCED;",
+              "normalized_sql": "ALTER TABLE t ALTER CHECK chk_id ENFORCED",
+              "evidence_gaps": [
+                {
+                  "rule_id": "ddl.alter.alter_check.exists.require",
+                  "reason_code": "missing_target_version",
+                  "required_facts": [
+                    "target.version"
+                  ]
+                },
+                {
+                  "rule_id": "ddl.alter.alter_check.version.require",
+                  "reason_code": "missing_target_version",
+                  "required_facts": [
+                    "target.version"
+                  ]
+                }
+              ],
+              "coverage": {
+                "status": "unverified"
+              }
+            }
+          ],
+          "fail_on_triggered": false,
+          "rule_summary": {
+            "loaded": 5,
+            "applicable": 2,
+            "skipped": []
+          },
+          "context": {
+            "mode": "offline",
+            "dialect": "mysql",
+            "dialect_source": "flag",
+            "note": "existence not checked (no database connection)",
+            "unproven": [
+              "column_exists",
+              "table_exists"
+            ]
+          }
+        },
+        "version_evidence": {
+          "target_raw": null,
+          "target_canonical": null,
+          "observed_raw": null,
+          "observed_canonical": null,
+          "resolved": null
+        }
+      },
+      "assertions": [
+        {
+          "name": "exit code",
+          "ok": true,
+          "detail": "rc=0 expected=0"
+        },
+        {
+          "name": "verdict",
+          "ok": true,
+          "detail": "verdict='review'"
+        },
+        {
+          "name": "top-level statements",
+          "ok": true,
+          "detail": "statements=1 expected=1"
+        },
+        {
+          "name": "zero findings",
+          "ok": true,
+          "detail": "findings=0"
+        },
+        {
+          "name": "no diagnostics",
+          "ok": true,
+          "detail": "diagnostics=[]"
+        },
+        {
+          "name": "no unsupported",
+          "ok": true,
+          "detail": "unsupported=[]"
+        },
+        {
+          "name": "aggregate coverage",
+          "ok": true,
+          "detail": "coverage='unverified'"
+        },
+        {
+          "name": "evidence gap count",
+          "ok": true,
+          "detail": "gaps=2"
+        },
+        {
+          "name": "evidence gap entries",
+          "ok": true,
+          "detail": "gaps=[(0, 'ddl.alter.alter_check.exists.require', 'missing_target_version'), (0, 'ddl.alter.alter_check.version.require', 'missing_target_version')] expected=[(0, 'ddl.alter.alter_check.exists.require', 'missing_target_version'), (0, 'ddl.alter.alter_check.version.require', 'missing_target_version')]"
+        },
+        {
+          "name": "evidence gap required_facts (0, 'ddl.alter.alter_check.exists.require', 'missing_target_version')",
+          "ok": true,
+          "detail": "gaps=[{'rule_id': 'ddl.alter.alter_check.exists.require', 'reason_code': 'missing_target_version', 'required_facts': ['target.version']}, {'rule_id': 'ddl.alter.alter_check.version.require', 'reason_code': 'missing_target_version', 'required_facts': ['target.version']}] expected_facts=['target.version']"
+        },
+        {
+          "name": "evidence gap required_facts (0, 'ddl.alter.alter_check.version.require', 'missing_target_version')",
+          "ok": true,
+          "detail": "gaps=[{'rule_id': 'ddl.alter.alter_check.exists.require', 'reason_code': 'missing_target_version', 'required_facts': ['target.version']}, {'rule_id': 'ddl.alter.alter_check.version.require', 'reason_code': 'missing_target_version', 'required_facts': ['target.version']}] expected_facts=['target.version']"
+        },
+        {
+          "name": "no gap encoded as finding",
+          "ok": true,
+          "detail": "findings carrying gap shape=[]"
+        }
+      ],
+      "status": "pass"
+    },
+    {
+      "case_id": "T12.cli.t12-cli-drop-check-offline-gap",
+      "kind": "cli_audit",
+      "cli_case": "t12-cli-drop-check-offline-gap",
+      "dialect": "mysql",
+      "input_sql": "ALTER TABLE t DROP CHECK chk_id;",
+      "policy_profile": "t12-all",
+      "policy_path": "/private/tmp/ddl-golden-t12/T12/golden-policy-t12-all.yaml",
+      "command": [
+        "/private/tmp/ddl-golden-t12/T12/bin/deltascope",
+        "audit",
+        "--dialect",
+        "mysql",
+        "--sql",
+        "ALTER TABLE t DROP CHECK chk_id;",
+        "--config",
+        "/private/tmp/ddl-golden-t12/T12/golden-policy-t12-all.yaml",
+        "--format",
+        "json"
+      ],
+      "expected": {
+        "exit": 0,
+        "verdict": "review",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "unverified",
+        "evidence_gaps": 2,
+        "evidence_gap_entries": [
+          {
+            "index": 0,
+            "rule_id": "ddl.alter.drop_check.exists.require",
+            "reason_code": "missing_target_version",
+            "required_facts": [
+              "target.version"
+            ]
+          },
+          {
+            "index": 0,
+            "rule_id": "ddl.alter.alter_check.version.require",
+            "reason_code": "missing_target_version",
+            "required_facts": [
+              "target.version"
+            ]
+          }
+        ]
+      },
+      "actual": {
+        "exit": 0,
+        "stdout": "{\"verdict\":\"review\",\"coverage\":{\"status\":\"unverified\"},\"summary\":{\"statements\":1,\"blockers\":0,\"warnings\":0,\"notices\":0},\"statements\":[{\"index\":0,\"kind\":\"ddl\",\"raw_sql\":\"ALTER TABLE t DROP CHECK chk_id;\",\"normalized_sql\":\"ALTER TABLE t DROP CHECK chk_id\",\"evidence_gaps\":[{\"rule_id\":\"ddl.alter.drop_check.exists.require\",\"reason_code\":\"missing_target_version\",\"required_facts\":[\"target.version\"]},{\"rule_id\":\"ddl.alter.alter_check.version.require\",\"reason_code\":\"missing_target_version\",\"required_facts\":[\"target.version\"]}],\"coverage\":{\"status\":\"unverified\"}}],\"fail_on_triggered\":false,\"rule_summary\":{\"loaded\":5,\"applicable\":2,\"skipped\":[]},\"context\":{\"mode\":\"offline\",\"dialect\":\"mysql\",\"dialect_source\":\"flag\",\"note\":\"existence not checked (no database connection)\",\"unproven\":[\"column_exists\",\"table_exists\"]}}\n",
+        "stderr": "",
+        "parsed": {
+          "verdict": "review",
+          "coverage": {
+            "status": "unverified"
+          },
+          "summary": {
+            "statements": 1,
+            "blockers": 0,
+            "warnings": 0,
+            "notices": 0
+          },
+          "statements": [
+            {
+              "index": 0,
+              "kind": "ddl",
+              "raw_sql": "ALTER TABLE t DROP CHECK chk_id;",
+              "normalized_sql": "ALTER TABLE t DROP CHECK chk_id",
+              "evidence_gaps": [
+                {
+                  "rule_id": "ddl.alter.drop_check.exists.require",
+                  "reason_code": "missing_target_version",
+                  "required_facts": [
+                    "target.version"
+                  ]
+                },
+                {
+                  "rule_id": "ddl.alter.alter_check.version.require",
+                  "reason_code": "missing_target_version",
+                  "required_facts": [
+                    "target.version"
+                  ]
+                }
+              ],
+              "coverage": {
+                "status": "unverified"
+              }
+            }
+          ],
+          "fail_on_triggered": false,
+          "rule_summary": {
+            "loaded": 5,
+            "applicable": 2,
+            "skipped": []
+          },
+          "context": {
+            "mode": "offline",
+            "dialect": "mysql",
+            "dialect_source": "flag",
+            "note": "existence not checked (no database connection)",
+            "unproven": [
+              "column_exists",
+              "table_exists"
+            ]
+          }
+        },
+        "version_evidence": {
+          "target_raw": null,
+          "target_canonical": null,
+          "observed_raw": null,
+          "observed_canonical": null,
+          "resolved": null
+        }
+      },
+      "assertions": [
+        {
+          "name": "exit code",
+          "ok": true,
+          "detail": "rc=0 expected=0"
+        },
+        {
+          "name": "verdict",
+          "ok": true,
+          "detail": "verdict='review'"
+        },
+        {
+          "name": "top-level statements",
+          "ok": true,
+          "detail": "statements=1 expected=1"
+        },
+        {
+          "name": "zero findings",
+          "ok": true,
+          "detail": "findings=0"
+        },
+        {
+          "name": "no diagnostics",
+          "ok": true,
+          "detail": "diagnostics=[]"
+        },
+        {
+          "name": "no unsupported",
+          "ok": true,
+          "detail": "unsupported=[]"
+        },
+        {
+          "name": "aggregate coverage",
+          "ok": true,
+          "detail": "coverage='unverified'"
+        },
+        {
+          "name": "evidence gap count",
+          "ok": true,
+          "detail": "gaps=2"
+        },
+        {
+          "name": "evidence gap entries",
+          "ok": true,
+          "detail": "gaps=[(0, 'ddl.alter.alter_check.version.require', 'missing_target_version'), (0, 'ddl.alter.drop_check.exists.require', 'missing_target_version')] expected=[(0, 'ddl.alter.alter_check.version.require', 'missing_target_version'), (0, 'ddl.alter.drop_check.exists.require', 'missing_target_version')]"
+        },
+        {
+          "name": "evidence gap required_facts (0, 'ddl.alter.drop_check.exists.require', 'missing_target_version')",
+          "ok": true,
+          "detail": "gaps=[{'rule_id': 'ddl.alter.drop_check.exists.require', 'reason_code': 'missing_target_version', 'required_facts': ['target.version']}, {'rule_id': 'ddl.alter.alter_check.version.require', 'reason_code': 'missing_target_version', 'required_facts': ['target.version']}] expected_facts=['target.version']"
+        },
+        {
+          "name": "evidence gap required_facts (0, 'ddl.alter.alter_check.version.require', 'missing_target_version')",
+          "ok": true,
+          "detail": "gaps=[{'rule_id': 'ddl.alter.drop_check.exists.require', 'reason_code': 'missing_target_version', 'required_facts': ['target.version']}, {'rule_id': 'ddl.alter.alter_check.version.require', 'reason_code': 'missing_target_version', 'required_facts': ['target.version']}] expected_facts=['target.version']"
+        },
+        {
+          "name": "no gap encoded as finding",
+          "ok": true,
+          "detail": "findings carrying gap shape=[]"
+        }
+      ],
+      "status": "pass"
+    },
+    {
+      "case_id": "T12.cli.t12-cli-alter-constraint-alias-offline",
+      "kind": "cli_audit",
+      "cli_case": "t12-cli-alter-constraint-alias-offline",
+      "dialect": "mysql",
+      "input_sql": "ALTER TABLE t ALTER CONSTRAINT chk_id NOT ENFORCED;",
+      "policy_profile": "t12-all",
+      "policy_path": "/private/tmp/ddl-golden-t12/T12/golden-policy-t12-all.yaml",
+      "command": [
+        "/private/tmp/ddl-golden-t12/T12/bin/deltascope",
+        "audit",
+        "--dialect",
+        "mysql",
+        "--sql",
+        "ALTER TABLE t ALTER CONSTRAINT chk_id NOT ENFORCED;",
+        "--config",
+        "/private/tmp/ddl-golden-t12/T12/golden-policy-t12-all.yaml",
+        "--format",
+        "json"
+      ],
+      "expected": {
+        "exit": 0,
+        "verdict": "review",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "unverified",
+        "evidence_gaps": 3
+      },
+      "actual": {
+        "exit": 0,
+        "stdout": "{\"verdict\":\"review\",\"coverage\":{\"status\":\"unverified\"},\"summary\":{\"statements\":1,\"blockers\":0,\"warnings\":0,\"notices\":0},\"statements\":[{\"index\":0,\"kind\":\"ddl\",\"raw_sql\":\"ALTER TABLE t ALTER CONSTRAINT chk_id NOT ENFORCED;\",\"normalized_sql\":\"ALTER TABLE t ALTER CONSTRAINT chk_id NOT ENFORCED\",\"evidence_gaps\":[{\"rule_id\":\"ddl.constraint.check.not_enforced.notice\",\"reason_code\":\"missing_target_version\",\"required_facts\":[\"target.version\"]},{\"rule_id\":\"ddl.alter.alter_check.exists.require\",\"reason_code\":\"missing_target_version\",\"required_facts\":[\"target.version\"]},{\"rule_id\":\"ddl.alter.alter_check.version.require\",\"reason_code\":\"missing_target_version\",\"required_facts\":[\"target.version\"]}],\"coverage\":{\"status\":\"unverified\"}}],\"fail_on_triggered\":false,\"rule_summary\":{\"loaded\":5,\"applicable\":3,\"skipped\":[]},\"context\":{\"mode\":\"offline\",\"dialect\":\"mysql\",\"dialect_source\":\"flag\",\"note\":\"existence not checked (no database connection)\",\"unproven\":[\"column_exists\",\"table_exists\"]}}\n",
+        "stderr": "",
+        "parsed": {
+          "verdict": "review",
+          "coverage": {
+            "status": "unverified"
+          },
+          "summary": {
+            "statements": 1,
+            "blockers": 0,
+            "warnings": 0,
+            "notices": 0
+          },
+          "statements": [
+            {
+              "index": 0,
+              "kind": "ddl",
+              "raw_sql": "ALTER TABLE t ALTER CONSTRAINT chk_id NOT ENFORCED;",
+              "normalized_sql": "ALTER TABLE t ALTER CONSTRAINT chk_id NOT ENFORCED",
+              "evidence_gaps": [
+                {
+                  "rule_id": "ddl.constraint.check.not_enforced.notice",
+                  "reason_code": "missing_target_version",
+                  "required_facts": [
+                    "target.version"
+                  ]
+                },
+                {
+                  "rule_id": "ddl.alter.alter_check.exists.require",
+                  "reason_code": "missing_target_version",
+                  "required_facts": [
+                    "target.version"
+                  ]
+                },
+                {
+                  "rule_id": "ddl.alter.alter_check.version.require",
+                  "reason_code": "missing_target_version",
+                  "required_facts": [
+                    "target.version"
+                  ]
+                }
+              ],
+              "coverage": {
+                "status": "unverified"
+              }
+            }
+          ],
+          "fail_on_triggered": false,
+          "rule_summary": {
+            "loaded": 5,
+            "applicable": 3,
+            "skipped": []
+          },
+          "context": {
+            "mode": "offline",
+            "dialect": "mysql",
+            "dialect_source": "flag",
+            "note": "existence not checked (no database connection)",
+            "unproven": [
+              "column_exists",
+              "table_exists"
+            ]
+          }
+        },
+        "version_evidence": {
+          "target_raw": null,
+          "target_canonical": null,
+          "observed_raw": null,
+          "observed_canonical": null,
+          "resolved": null
+        }
+      },
+      "assertions": [
+        {
+          "name": "exit code",
+          "ok": true,
+          "detail": "rc=0 expected=0"
+        },
+        {
+          "name": "verdict",
+          "ok": true,
+          "detail": "verdict='review'"
+        },
+        {
+          "name": "top-level statements",
+          "ok": true,
+          "detail": "statements=1 expected=1"
+        },
+        {
+          "name": "zero findings",
+          "ok": true,
+          "detail": "findings=0"
+        },
+        {
+          "name": "no diagnostics",
+          "ok": true,
+          "detail": "diagnostics=[]"
+        },
+        {
+          "name": "no unsupported",
+          "ok": true,
+          "detail": "unsupported=[]"
+        },
+        {
+          "name": "aggregate coverage",
+          "ok": true,
+          "detail": "coverage='unverified'"
+        },
+        {
+          "name": "evidence gap count",
+          "ok": true,
+          "detail": "gaps=3"
+        }
+      ],
+      "status": "pass"
+    },
+    {
+      "case_id": "T12.cli.t12-cli-alter-check-tidb-offline-gap",
+      "kind": "cli_audit",
+      "cli_case": "t12-cli-alter-check-tidb-offline-gap",
+      "dialect": "tidb",
+      "input_sql": "ALTER TABLE t ALTER CHECK chk_id NOT ENFORCED;",
+      "policy_profile": "t12-all",
+      "policy_path": "/private/tmp/ddl-golden-t12/T12/golden-policy-t12-all.yaml",
+      "command": [
+        "/private/tmp/ddl-golden-t12/T12/bin/deltascope",
+        "audit",
+        "--dialect",
+        "tidb",
+        "--sql",
+        "ALTER TABLE t ALTER CHECK chk_id NOT ENFORCED;",
+        "--config",
+        "/private/tmp/ddl-golden-t12/T12/golden-policy-t12-all.yaml",
+        "--format",
+        "json"
+      ],
+      "expected": {
+        "exit": 0,
+        "verdict": "review",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "unverified",
+        "evidence_gaps": 2,
+        "evidence_gap_entries": [
+          {
+            "index": 0,
+            "rule_id": "ddl.constraint.check.not_enforced.notice",
+            "reason_code": "missing_instance_fact",
+            "required_facts": [
+              "instance.tidb_enable_check_constraint"
+            ]
+          },
+          {
+            "index": 0,
+            "rule_id": "ddl.alter.alter_check.exists.require",
+            "reason_code": "missing_instance_fact",
+            "required_facts": [
+              "instance.tidb_enable_check_constraint"
+            ]
+          }
+        ]
+      },
+      "actual": {
+        "exit": 0,
+        "stdout": "{\"verdict\":\"review\",\"coverage\":{\"status\":\"unverified\"},\"summary\":{\"statements\":1,\"blockers\":0,\"warnings\":0,\"notices\":0},\"statements\":[{\"index\":0,\"kind\":\"ddl\",\"raw_sql\":\"ALTER TABLE t ALTER CHECK chk_id NOT ENFORCED;\",\"normalized_sql\":\"ALTER TABLE t ALTER CHECK chk_id NOT ENFORCED\",\"evidence_gaps\":[{\"rule_id\":\"ddl.constraint.check.not_enforced.notice\",\"reason_code\":\"missing_instance_fact\",\"required_facts\":[\"instance.tidb_enable_check_constraint\"]},{\"rule_id\":\"ddl.alter.alter_check.exists.require\",\"reason_code\":\"missing_instance_fact\",\"required_facts\":[\"instance.tidb_enable_check_constraint\"]}],\"coverage\":{\"status\":\"unverified\"}}],\"fail_on_triggered\":false,\"rule_summary\":{\"loaded\":5,\"applicable\":2,\"skipped\":[]},\"context\":{\"mode\":\"offline\",\"dialect\":\"tidb\",\"dialect_source\":\"flag\",\"note\":\"existence not checked (no database connection)\",\"unproven\":[\"column_exists\",\"table_exists\"]}}\n",
+        "stderr": "",
+        "parsed": {
+          "verdict": "review",
+          "coverage": {
+            "status": "unverified"
+          },
+          "summary": {
+            "statements": 1,
+            "blockers": 0,
+            "warnings": 0,
+            "notices": 0
+          },
+          "statements": [
+            {
+              "index": 0,
+              "kind": "ddl",
+              "raw_sql": "ALTER TABLE t ALTER CHECK chk_id NOT ENFORCED;",
+              "normalized_sql": "ALTER TABLE t ALTER CHECK chk_id NOT ENFORCED",
+              "evidence_gaps": [
+                {
+                  "rule_id": "ddl.constraint.check.not_enforced.notice",
+                  "reason_code": "missing_instance_fact",
+                  "required_facts": [
+                    "instance.tidb_enable_check_constraint"
+                  ]
+                },
+                {
+                  "rule_id": "ddl.alter.alter_check.exists.require",
+                  "reason_code": "missing_instance_fact",
+                  "required_facts": [
+                    "instance.tidb_enable_check_constraint"
+                  ]
+                }
+              ],
+              "coverage": {
+                "status": "unverified"
+              }
+            }
+          ],
+          "fail_on_triggered": false,
+          "rule_summary": {
+            "loaded": 5,
+            "applicable": 2,
+            "skipped": []
+          },
+          "context": {
+            "mode": "offline",
+            "dialect": "tidb",
+            "dialect_source": "flag",
+            "note": "existence not checked (no database connection)",
+            "unproven": [
+              "column_exists",
+              "table_exists"
+            ]
+          }
+        },
+        "version_evidence": {
+          "target_raw": null,
+          "target_canonical": null,
+          "observed_raw": null,
+          "observed_canonical": null,
+          "resolved": null
+        }
+      },
+      "assertions": [
+        {
+          "name": "exit code",
+          "ok": true,
+          "detail": "rc=0 expected=0"
+        },
+        {
+          "name": "verdict",
+          "ok": true,
+          "detail": "verdict='review'"
+        },
+        {
+          "name": "top-level statements",
+          "ok": true,
+          "detail": "statements=1 expected=1"
+        },
+        {
+          "name": "zero findings",
+          "ok": true,
+          "detail": "findings=0"
+        },
+        {
+          "name": "no diagnostics",
+          "ok": true,
+          "detail": "diagnostics=[]"
+        },
+        {
+          "name": "no unsupported",
+          "ok": true,
+          "detail": "unsupported=[]"
+        },
+        {
+          "name": "aggregate coverage",
+          "ok": true,
+          "detail": "coverage='unverified'"
+        },
+        {
+          "name": "evidence gap count",
+          "ok": true,
+          "detail": "gaps=2"
+        },
+        {
+          "name": "evidence gap entries",
+          "ok": true,
+          "detail": "gaps=[(0, 'ddl.alter.alter_check.exists.require', 'missing_instance_fact'), (0, 'ddl.constraint.check.not_enforced.notice', 'missing_instance_fact')] expected=[(0, 'ddl.alter.alter_check.exists.require', 'missing_instance_fact'), (0, 'ddl.constraint.check.not_enforced.notice', 'missing_instance_fact')]"
+        },
+        {
+          "name": "evidence gap required_facts (0, 'ddl.constraint.check.not_enforced.notice', 'missing_instance_fact')",
+          "ok": true,
+          "detail": "gaps=[{'rule_id': 'ddl.constraint.check.not_enforced.notice', 'reason_code': 'missing_instance_fact', 'required_facts': ['instance.tidb_enable_check_constraint']}, {'rule_id': 'ddl.alter.alter_check.exists.require', 'reason_code': 'missing_instance_fact', 'required_facts': ['instance.tidb_enable_check_constraint']}] expected_facts=['instance.tidb_enable_check_constraint']"
+        },
+        {
+          "name": "evidence gap required_facts (0, 'ddl.alter.alter_check.exists.require', 'missing_instance_fact')",
+          "ok": true,
+          "detail": "gaps=[{'rule_id': 'ddl.constraint.check.not_enforced.notice', 'reason_code': 'missing_instance_fact', 'required_facts': ['instance.tidb_enable_check_constraint']}, {'rule_id': 'ddl.alter.alter_check.exists.require', 'reason_code': 'missing_instance_fact', 'required_facts': ['instance.tidb_enable_check_constraint']}] expected_facts=['instance.tidb_enable_check_constraint']"
+        },
+        {
+          "name": "no gap encoded as finding",
+          "ok": true,
+          "detail": "findings carrying gap shape=[]"
+        }
+      ],
+      "status": "pass"
+    },
+    {
+      "case_id": "T12.cli.t12-cli-create-notenforced-offline-gap",
+      "kind": "cli_audit",
+      "cli_case": "t12-cli-create-notenforced-offline-gap",
+      "dialect": "mysql",
+      "input_sql": "CREATE TABLE t (id INT, CONSTRAINT chk_a CHECK (id > 0) NOT ENFORCED);",
+      "policy_profile": "t12-all",
+      "policy_path": "/private/tmp/ddl-golden-t12/T12/golden-policy-t12-all.yaml",
+      "command": [
+        "/private/tmp/ddl-golden-t12/T12/bin/deltascope",
+        "audit",
+        "--dialect",
+        "mysql",
+        "--sql",
+        "CREATE TABLE t (id INT, CONSTRAINT chk_a CHECK (id > 0) NOT ENFORCED);",
+        "--config",
+        "/private/tmp/ddl-golden-t12/T12/golden-policy-t12-all.yaml",
+        "--format",
+        "json"
+      ],
+      "expected": {
+        "exit": 0,
+        "verdict": "review",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "unverified",
+        "evidence_gaps": 2,
+        "evidence_gap_entries": [
+          {
+            "index": 0,
+            "rule_id": "ddl.constraint.check.not_enforced.notice",
+            "reason_code": "missing_target_version",
+            "required_facts": [
+              "target.version"
+            ]
+          },
+          {
+            "index": 0,
+            "rule_id": "ddl.constraint.check.ignored.notice",
+            "reason_code": "missing_target_version",
+            "required_facts": [
+              "target.version"
+            ]
+          }
+        ]
+      },
+      "actual": {
+        "exit": 0,
+        "stdout": "{\"verdict\":\"review\",\"coverage\":{\"status\":\"unverified\"},\"summary\":{\"statements\":1,\"blockers\":0,\"warnings\":0,\"notices\":0},\"statements\":[{\"index\":0,\"kind\":\"ddl\",\"raw_sql\":\"CREATE TABLE t (id INT, CONSTRAINT chk_a CHECK (id \\u003e 0) NOT ENFORCED);\",\"normalized_sql\":\"CREATE TABLE t (id INT, CONSTRAINT chk_a CHECK (id \\u003e 0) NOT ENFORCED)\",\"evidence_gaps\":[{\"rule_id\":\"ddl.constraint.check.not_enforced.notice\",\"reason_code\":\"missing_target_version\",\"required_facts\":[\"target.version\"]},{\"rule_id\":\"ddl.constraint.check.ignored.notice\",\"reason_code\":\"missing_target_version\",\"required_facts\":[\"target.version\"]}],\"coverage\":{\"status\":\"unverified\"}}],\"fail_on_triggered\":false,\"rule_summary\":{\"loaded\":5,\"applicable\":2,\"skipped\":[]},\"context\":{\"mode\":\"offline\",\"dialect\":\"mysql\",\"dialect_source\":\"flag\",\"note\":\"existence not checked (no database connection)\",\"unproven\":[\"column_exists\",\"table_exists\"]}}\n",
+        "stderr": "",
+        "parsed": {
+          "verdict": "review",
+          "coverage": {
+            "status": "unverified"
+          },
+          "summary": {
+            "statements": 1,
+            "blockers": 0,
+            "warnings": 0,
+            "notices": 0
+          },
+          "statements": [
+            {
+              "index": 0,
+              "kind": "ddl",
+              "raw_sql": "CREATE TABLE t (id INT, CONSTRAINT chk_a CHECK (id > 0) NOT ENFORCED);",
+              "normalized_sql": "CREATE TABLE t (id INT, CONSTRAINT chk_a CHECK (id > 0) NOT ENFORCED)",
+              "evidence_gaps": [
+                {
+                  "rule_id": "ddl.constraint.check.not_enforced.notice",
+                  "reason_code": "missing_target_version",
+                  "required_facts": [
+                    "target.version"
+                  ]
+                },
+                {
+                  "rule_id": "ddl.constraint.check.ignored.notice",
+                  "reason_code": "missing_target_version",
+                  "required_facts": [
+                    "target.version"
+                  ]
+                }
+              ],
+              "coverage": {
+                "status": "unverified"
+              }
+            }
+          ],
+          "fail_on_triggered": false,
+          "rule_summary": {
+            "loaded": 5,
+            "applicable": 2,
+            "skipped": []
+          },
+          "context": {
+            "mode": "offline",
+            "dialect": "mysql",
+            "dialect_source": "flag",
+            "note": "existence not checked (no database connection)",
+            "unproven": [
+              "column_exists",
+              "table_exists"
+            ]
+          }
+        },
+        "version_evidence": {
+          "target_raw": null,
+          "target_canonical": null,
+          "observed_raw": null,
+          "observed_canonical": null,
+          "resolved": null
+        }
+      },
+      "assertions": [
+        {
+          "name": "exit code",
+          "ok": true,
+          "detail": "rc=0 expected=0"
+        },
+        {
+          "name": "verdict",
+          "ok": true,
+          "detail": "verdict='review'"
+        },
+        {
+          "name": "top-level statements",
+          "ok": true,
+          "detail": "statements=1 expected=1"
+        },
+        {
+          "name": "zero findings",
+          "ok": true,
+          "detail": "findings=0"
+        },
+        {
+          "name": "no diagnostics",
+          "ok": true,
+          "detail": "diagnostics=[]"
+        },
+        {
+          "name": "no unsupported",
+          "ok": true,
+          "detail": "unsupported=[]"
+        },
+        {
+          "name": "aggregate coverage",
+          "ok": true,
+          "detail": "coverage='unverified'"
+        },
+        {
+          "name": "evidence gap count",
+          "ok": true,
+          "detail": "gaps=2"
+        },
+        {
+          "name": "evidence gap entries",
+          "ok": true,
+          "detail": "gaps=[(0, 'ddl.constraint.check.ignored.notice', 'missing_target_version'), (0, 'ddl.constraint.check.not_enforced.notice', 'missing_target_version')] expected=[(0, 'ddl.constraint.check.ignored.notice', 'missing_target_version'), (0, 'ddl.constraint.check.not_enforced.notice', 'missing_target_version')]"
+        },
+        {
+          "name": "evidence gap required_facts (0, 'ddl.constraint.check.not_enforced.notice', 'missing_target_version')",
+          "ok": true,
+          "detail": "gaps=[{'rule_id': 'ddl.constraint.check.not_enforced.notice', 'reason_code': 'missing_target_version', 'required_facts': ['target.version']}, {'rule_id': 'ddl.constraint.check.ignored.notice', 'reason_code': 'missing_target_version', 'required_facts': ['target.version']}] expected_facts=['target.version']"
+        },
+        {
+          "name": "evidence gap required_facts (0, 'ddl.constraint.check.ignored.notice', 'missing_target_version')",
+          "ok": true,
+          "detail": "gaps=[{'rule_id': 'ddl.constraint.check.not_enforced.notice', 'reason_code': 'missing_target_version', 'required_facts': ['target.version']}, {'rule_id': 'ddl.constraint.check.ignored.notice', 'reason_code': 'missing_target_version', 'required_facts': ['target.version']}] expected_facts=['target.version']"
+        },
+        {
+          "name": "no gap encoded as finding",
+          "ok": true,
+          "detail": "findings carrying gap shape=[]"
+        }
+      ],
+      "status": "pass"
+    },
+    {
+      "case_id": "T12.cli.t12-cli-add-check-declared-offline-gap",
+      "kind": "cli_audit",
+      "cli_case": "t12-cli-add-check-declared-offline-gap",
+      "dialect": "mysql",
+      "input_sql": "ALTER TABLE t ADD CONSTRAINT chk2 CHECK (id < 100) NOT ENFORCED;",
+      "policy_profile": "t12-all",
+      "policy_path": "/private/tmp/ddl-golden-t12/T12/golden-policy-t12-all.yaml",
+      "command": [
+        "/private/tmp/ddl-golden-t12/T12/bin/deltascope",
+        "audit",
+        "--dialect",
+        "mysql",
+        "--sql",
+        "ALTER TABLE t ADD CONSTRAINT chk2 CHECK (id < 100) NOT ENFORCED;",
+        "--config",
+        "/private/tmp/ddl-golden-t12/T12/golden-policy-t12-all.yaml",
+        "--format",
+        "json"
+      ],
+      "expected": {
+        "exit": 0,
+        "verdict": "review",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "unverified",
+        "evidence_gaps": 2,
+        "evidence_gap_entries": [
+          {
+            "index": 0,
+            "rule_id": "ddl.constraint.check.not_enforced.notice",
+            "reason_code": "missing_target_version",
+            "required_facts": [
+              "target.version"
+            ]
+          },
+          {
+            "index": 0,
+            "rule_id": "ddl.constraint.check.ignored.notice",
+            "reason_code": "missing_target_version",
+            "required_facts": [
+              "target.version"
+            ]
+          }
+        ]
+      },
+      "actual": {
+        "exit": 0,
+        "stdout": "{\"verdict\":\"review\",\"coverage\":{\"status\":\"unverified\"},\"summary\":{\"statements\":1,\"blockers\":0,\"warnings\":0,\"notices\":0},\"statements\":[{\"index\":0,\"kind\":\"ddl\",\"raw_sql\":\"ALTER TABLE t ADD CONSTRAINT chk2 CHECK (id \\u003c 100) NOT ENFORCED;\",\"normalized_sql\":\"ALTER TABLE t ADD CONSTRAINT chk2 CHECK (id \\u003c 100) NOT ENFORCED\",\"evidence_gaps\":[{\"rule_id\":\"ddl.constraint.check.not_enforced.notice\",\"reason_code\":\"missing_target_version\",\"required_facts\":[\"target.version\"]},{\"rule_id\":\"ddl.constraint.check.ignored.notice\",\"reason_code\":\"missing_target_version\",\"required_facts\":[\"target.version\"]}],\"coverage\":{\"status\":\"unverified\"}}],\"fail_on_triggered\":false,\"rule_summary\":{\"loaded\":5,\"applicable\":2,\"skipped\":[]},\"context\":{\"mode\":\"offline\",\"dialect\":\"mysql\",\"dialect_source\":\"flag\",\"note\":\"existence not checked (no database connection)\",\"unproven\":[\"column_exists\",\"table_exists\"]}}\n",
+        "stderr": "",
+        "parsed": {
+          "verdict": "review",
+          "coverage": {
+            "status": "unverified"
+          },
+          "summary": {
+            "statements": 1,
+            "blockers": 0,
+            "warnings": 0,
+            "notices": 0
+          },
+          "statements": [
+            {
+              "index": 0,
+              "kind": "ddl",
+              "raw_sql": "ALTER TABLE t ADD CONSTRAINT chk2 CHECK (id < 100) NOT ENFORCED;",
+              "normalized_sql": "ALTER TABLE t ADD CONSTRAINT chk2 CHECK (id < 100) NOT ENFORCED",
+              "evidence_gaps": [
+                {
+                  "rule_id": "ddl.constraint.check.not_enforced.notice",
+                  "reason_code": "missing_target_version",
+                  "required_facts": [
+                    "target.version"
+                  ]
+                },
+                {
+                  "rule_id": "ddl.constraint.check.ignored.notice",
+                  "reason_code": "missing_target_version",
+                  "required_facts": [
+                    "target.version"
+                  ]
+                }
+              ],
+              "coverage": {
+                "status": "unverified"
+              }
+            }
+          ],
+          "fail_on_triggered": false,
+          "rule_summary": {
+            "loaded": 5,
+            "applicable": 2,
+            "skipped": []
+          },
+          "context": {
+            "mode": "offline",
+            "dialect": "mysql",
+            "dialect_source": "flag",
+            "note": "existence not checked (no database connection)",
+            "unproven": [
+              "column_exists",
+              "table_exists"
+            ]
+          }
+        },
+        "version_evidence": {
+          "target_raw": null,
+          "target_canonical": null,
+          "observed_raw": null,
+          "observed_canonical": null,
+          "resolved": null
+        }
+      },
+      "assertions": [
+        {
+          "name": "exit code",
+          "ok": true,
+          "detail": "rc=0 expected=0"
+        },
+        {
+          "name": "verdict",
+          "ok": true,
+          "detail": "verdict='review'"
+        },
+        {
+          "name": "top-level statements",
+          "ok": true,
+          "detail": "statements=1 expected=1"
+        },
+        {
+          "name": "zero findings",
+          "ok": true,
+          "detail": "findings=0"
+        },
+        {
+          "name": "no diagnostics",
+          "ok": true,
+          "detail": "diagnostics=[]"
+        },
+        {
+          "name": "no unsupported",
+          "ok": true,
+          "detail": "unsupported=[]"
+        },
+        {
+          "name": "aggregate coverage",
+          "ok": true,
+          "detail": "coverage='unverified'"
+        },
+        {
+          "name": "evidence gap count",
+          "ok": true,
+          "detail": "gaps=2"
+        },
+        {
+          "name": "evidence gap entries",
+          "ok": true,
+          "detail": "gaps=[(0, 'ddl.constraint.check.ignored.notice', 'missing_target_version'), (0, 'ddl.constraint.check.not_enforced.notice', 'missing_target_version')] expected=[(0, 'ddl.constraint.check.ignored.notice', 'missing_target_version'), (0, 'ddl.constraint.check.not_enforced.notice', 'missing_target_version')]"
+        },
+        {
+          "name": "evidence gap required_facts (0, 'ddl.constraint.check.not_enforced.notice', 'missing_target_version')",
+          "ok": true,
+          "detail": "gaps=[{'rule_id': 'ddl.constraint.check.not_enforced.notice', 'reason_code': 'missing_target_version', 'required_facts': ['target.version']}, {'rule_id': 'ddl.constraint.check.ignored.notice', 'reason_code': 'missing_target_version', 'required_facts': ['target.version']}] expected_facts=['target.version']"
+        },
+        {
+          "name": "evidence gap required_facts (0, 'ddl.constraint.check.ignored.notice', 'missing_target_version')",
+          "ok": true,
+          "detail": "gaps=[{'rule_id': 'ddl.constraint.check.not_enforced.notice', 'reason_code': 'missing_target_version', 'required_facts': ['target.version']}, {'rule_id': 'ddl.constraint.check.ignored.notice', 'reason_code': 'missing_target_version', 'required_facts': ['target.version']}] expected_facts=['target.version']"
+        },
+        {
+          "name": "no gap encoded as finding",
+          "ok": true,
+          "detail": "findings carrying gap shape=[]"
+        }
+      ],
+      "status": "pass"
+    },
+    {
+      "case_id": "T12.cli.t12-cli-addcol-control",
+      "kind": "cli_audit",
+      "cli_case": "t12-cli-addcol-control",
+      "dialect": "mysql",
+      "input_sql": "ALTER TABLE t ADD COLUMN w INT;",
+      "policy_profile": "t12-all",
+      "policy_path": "/private/tmp/ddl-golden-t12/T12/golden-policy-t12-all.yaml",
+      "command": [
+        "/private/tmp/ddl-golden-t12/T12/bin/deltascope",
+        "audit",
+        "--dialect",
+        "mysql",
+        "--sql",
+        "ALTER TABLE t ADD COLUMN w INT;",
+        "--config",
+        "/private/tmp/ddl-golden-t12/T12/golden-policy-t12-all.yaml",
+        "--format",
+        "json"
+      ],
+      "expected": {
+        "exit": 0,
+        "verdict": "pass",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "complete"
+      },
+      "actual": {
+        "exit": 0,
+        "stdout": "{\"verdict\":\"pass\",\"coverage\":{\"status\":\"complete\"},\"summary\":{\"statements\":1,\"blockers\":0,\"warnings\":0,\"notices\":0},\"statements\":[{\"index\":0,\"kind\":\"ddl\",\"raw_sql\":\"ALTER TABLE t ADD COLUMN w INT;\",\"normalized_sql\":\"ALTER TABLE t ADD COLUMN w INT\",\"coverage\":{\"status\":\"complete\"}}],\"fail_on_triggered\":false,\"rule_summary\":{\"loaded\":5,\"applicable\":0,\"skipped\":[]},\"context\":{\"mode\":\"offline\",\"dialect\":\"mysql\",\"dialect_source\":\"flag\",\"note\":\"existence not checked (no database connection)\",\"unproven\":[\"column_exists\",\"table_exists\"]}}\n",
+        "stderr": "",
+        "parsed": {
+          "verdict": "pass",
+          "coverage": {
+            "status": "complete"
+          },
+          "summary": {
+            "statements": 1,
+            "blockers": 0,
+            "warnings": 0,
+            "notices": 0
+          },
+          "statements": [
+            {
+              "index": 0,
+              "kind": "ddl",
+              "raw_sql": "ALTER TABLE t ADD COLUMN w INT;",
+              "normalized_sql": "ALTER TABLE t ADD COLUMN w INT",
+              "coverage": {
+                "status": "complete"
+              }
+            }
+          ],
+          "fail_on_triggered": false,
+          "rule_summary": {
+            "loaded": 5,
+            "applicable": 0,
+            "skipped": []
+          },
+          "context": {
+            "mode": "offline",
+            "dialect": "mysql",
+            "dialect_source": "flag",
+            "note": "existence not checked (no database connection)",
+            "unproven": [
+              "column_exists",
+              "table_exists"
+            ]
+          }
+        },
+        "version_evidence": {
+          "target_raw": null,
+          "target_canonical": null,
+          "observed_raw": null,
+          "observed_canonical": null,
+          "resolved": null
+        }
+      },
+      "assertions": [
+        {
+          "name": "exit code",
+          "ok": true,
+          "detail": "rc=0 expected=0"
+        },
+        {
+          "name": "verdict",
+          "ok": true,
+          "detail": "verdict='pass'"
+        },
+        {
+          "name": "top-level statements",
+          "ok": true,
+          "detail": "statements=1 expected=1"
+        },
+        {
+          "name": "zero findings",
+          "ok": true,
+          "detail": "findings=0"
+        },
+        {
+          "name": "no diagnostics",
+          "ok": true,
+          "detail": "diagnostics=[]"
+        },
+        {
+          "name": "no unsupported",
+          "ok": true,
+          "detail": "unsupported=[]"
+        },
+        {
+          "name": "aggregate coverage",
+          "ok": true,
+          "detail": "coverage='complete'"
+        }
+      ],
+      "status": "pass"
+    },
+    {
+      "case_id": "T12.cli.t12-cli-alter-check-off",
+      "kind": "cli_audit",
+      "cli_case": "t12-cli-alter-check-off",
+      "dialect": "mysql",
+      "input_sql": "ALTER TABLE t ALTER CHECK chk_id NOT ENFORCED;",
+      "policy_profile": "all-rules-disabled",
+      "policy_path": "/private/tmp/ddl-golden-t12/T12/golden-policy-all-off.yaml",
+      "command": [
+        "/private/tmp/ddl-golden-t12/T12/bin/deltascope",
+        "audit",
+        "--dialect",
+        "mysql",
+        "--sql",
+        "ALTER TABLE t ALTER CHECK chk_id NOT ENFORCED;",
+        "--config",
+        "/private/tmp/ddl-golden-t12/T12/golden-policy-all-off.yaml",
+        "--format",
+        "json"
+      ],
+      "expected": {
+        "exit": 0,
+        "verdict": "pass",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "complete"
+      },
+      "actual": {
+        "exit": 0,
+        "stdout": "{\"verdict\":\"pass\",\"coverage\":{\"status\":\"complete\"},\"summary\":{\"statements\":1,\"blockers\":0,\"warnings\":0,\"notices\":0},\"statements\":[{\"index\":0,\"kind\":\"ddl\",\"raw_sql\":\"ALTER TABLE t ALTER CHECK chk_id NOT ENFORCED;\",\"normalized_sql\":\"ALTER TABLE t ALTER CHECK chk_id NOT ENFORCED\",\"coverage\":{\"status\":\"complete\"}}],\"fail_on_triggered\":false,\"context\":{\"mode\":\"offline\",\"dialect\":\"mysql\",\"dialect_source\":\"flag\",\"note\":\"existence not checked (no database connection)\",\"unproven\":[\"column_exists\",\"table_exists\"]}}\n",
+        "stderr": "",
+        "parsed": {
+          "verdict": "pass",
+          "coverage": {
+            "status": "complete"
+          },
+          "summary": {
+            "statements": 1,
+            "blockers": 0,
+            "warnings": 0,
+            "notices": 0
+          },
+          "statements": [
+            {
+              "index": 0,
+              "kind": "ddl",
+              "raw_sql": "ALTER TABLE t ALTER CHECK chk_id NOT ENFORCED;",
+              "normalized_sql": "ALTER TABLE t ALTER CHECK chk_id NOT ENFORCED",
+              "coverage": {
+                "status": "complete"
+              }
+            }
+          ],
+          "fail_on_triggered": false,
+          "context": {
+            "mode": "offline",
+            "dialect": "mysql",
+            "dialect_source": "flag",
+            "note": "existence not checked (no database connection)",
+            "unproven": [
+              "column_exists",
+              "table_exists"
+            ]
+          }
+        },
+        "version_evidence": {
+          "target_raw": null,
+          "target_canonical": null,
+          "observed_raw": null,
+          "observed_canonical": null,
+          "resolved": null
+        }
+      },
+      "assertions": [
+        {
+          "name": "exit code",
+          "ok": true,
+          "detail": "rc=0 expected=0"
+        },
+        {
+          "name": "verdict",
+          "ok": true,
+          "detail": "verdict='pass'"
+        },
+        {
+          "name": "top-level statements",
+          "ok": true,
+          "detail": "statements=1 expected=1"
+        },
+        {
+          "name": "zero findings",
+          "ok": true,
+          "detail": "findings=0"
+        },
+        {
+          "name": "no diagnostics",
+          "ok": true,
+          "detail": "diagnostics=[]"
+        },
+        {
+          "name": "no unsupported",
+          "ok": true,
+          "detail": "unsupported=[]"
+        },
+        {
+          "name": "aggregate coverage",
+          "ok": true,
+          "detail": "coverage='complete'"
+        }
+      ],
+      "status": "pass"
+    },
+    {
+      "case_id": "T12.meta.t12-mysql80-golden",
+      "kind": "cli_metadata",
+      "cli_case": "t12-mysql80-golden",
+      "anchor": "mysql80",
+      "dialect": "mysql",
+      "input_sql": "ALTER TABLE t12g ALTER CHECK chk_id NOT ENFORCED;",
+      "policy_profile": "t12-all",
+      "policy_path": "/private/tmp/ddl-golden-t12/T12/golden-policy-t12-all.yaml",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 23380,
+        "user": "root",
+        "schema": "golden",
+        "password_env": "DS_T12_GOLDEN_PW"
+      },
+      "expected": {
+        "exit": 1,
+        "verdict": "reject",
+        "statements": 1,
+        "findings": 1,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "complete",
+        "statement_coverage": [
+          "complete"
+        ],
+        "evidence_gaps": 0,
+        "finding_entries": [
+          {
+            "index": 0,
+            "rule_id": "ddl.constraint.check.not_enforced.notice",
+            "level": "blocker"
+          }
+        ],
+        "finding_metadata": [
+          {
+            "index": 0,
+            "rule_id": "ddl.constraint.check.not_enforced.notice",
+            "metadata": {
+              "table": "t12g",
+              "constraint": "chk_id",
+              "enforced": "not_enforced"
+            }
+          }
+        ],
+        "rule_summary_applicable": 3,
+        "version": {
+          "product": "mysql",
+          "version": "8.0.46"
+        }
+      },
+      "actual": {
+        "database": {
+          "product": "mysql",
+          "image": "mysql:8.0.46",
+          "image_digest": "mysql@sha256:7dcddc01f13bab2f15cde676d44d01f61fc9f99fe7785e86196dfc07d358ae2b",
+          "container": "deltascope-ddl-golden-mysql80",
+          "reachable": true,
+          "version": "8.0.46"
+        },
+        "setup": [
+          {
+            "name": "create-fixture",
+            "sql": "CREATE TABLE t12g (id INT, CONSTRAINT chk_id CHECK (id > 0));",
+            "rc": 0,
+            "stdout": "",
+            "stderr": "",
+            "verify": [
+              {
+                "assert": "check stored and enforcing",
+                "sql": "SELECT ENFORCED FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t12g' AND CONSTRAINT_NAME='chk_id'",
+                "rc": 0,
+                "output": "YES",
+                "stderr": ""
+              }
+            ]
+          }
+        ],
+        "post_verify": [],
+        "execute": [
+          {
+            "name": "apply-audited-flip",
+            "sql": "ALTER TABLE t12g ALTER CHECK chk_id NOT ENFORCED;",
+            "rc": 0,
+            "stdout": "",
+            "stderr": "",
+            "verify": [
+              {
+                "assert": "catalog records ENFORCED=NO after the flip",
+                "sql": "SELECT ENFORCED FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t12g' AND CONSTRAINT_NAME='chk_id'",
+                "rc": 0,
+                "output": "NO",
+                "stderr": ""
+              }
+            ]
+          }
+        ],
+        "structure": [],
+        "teardown": [
+          {
+            "name": "drop-t12g",
+            "sql": "DROP TABLE IF EXISTS t12g;",
+            "rc": 0,
+            "stderr": ""
+          }
+        ],
+        "exit": 1,
+        "stdout": "{\"verdict\":\"reject\",\"coverage\":{\"status\":\"complete\"},\"summary\":{\"statements\":1,\"blockers\":1,\"warnings\":0,\"notices\":0},\"statements\":[{\"index\":0,\"kind\":\"ddl\",\"raw_sql\":\"ALTER TABLE t12g ALTER CHECK chk_id NOT ENFORCED;\",\"normalized_sql\":\"ALTER TABLE t12g ALTER CHECK chk_id NOT ENFORCED\",\"findings\":[{\"rule_id\":\"ddl.constraint.check.not_enforced.notice\",\"level\":\"blocker\",\"message\":\"check constraint \\\"chk_id\\\" on table \\\"t12g\\\" is switched to NOT ENFORCED\",\"statement_kind\":\"ddl\",\"location\":{\"line\":1,\"column\":1},\"suggestion\":\"keep check constraints enforced, or confirm the disabled state is intentional\",\"metadata\":{\"action\":\"alter_check\",\"constraint\":\"chk_id\",\"enforced\":\"not_enforced\",\"table\":\"t12g\"},\"explanation\":{\"summary\":\"Check DDL constraint check not enforced notice\",\"why\":\"The statement matched the shipped governance rule for this pattern.\",\"risk\":\"Ignoring this rule can hide live-schema or instance-state risks that only metadata reveals.\",\"suggestion\":\"keep check constraints enforced, or confirm the disabled state is intentional\",\"metadata\":{\"status\":\"available\",\"note\":\"Live metadata is available, so this explanation can use schema or instance facts for a more accurate judgment.\"}}}],\"coverage\":{\"status\":\"complete\"}}],\"version\":{\"product\":\"mysql\",\"version\":\"8.0.46\",\"major\":8,\"minor\":0,\"patch\":46,\"source\":\"observed\",\"validated_range\":true},\"fail_on_triggered\":true,\"rule_summary\":{\"loaded\":5,\"applicable\":3,\"skipped\":[]},\"context\":{\"mode\":\"metadata-aware\",\"dialect\":\"mysql\",\"dialect_source\":\"detected\",\"schema\":\"golden\",\"schema_source\":\"flag\"}}\n",
+        "stderr": "",
+        "parsed": {
+          "verdict": "reject",
+          "coverage": {
+            "status": "complete"
+          },
+          "summary": {
+            "statements": 1,
+            "blockers": 1,
+            "warnings": 0,
+            "notices": 0
+          },
+          "statements": [
+            {
+              "index": 0,
+              "kind": "ddl",
+              "raw_sql": "ALTER TABLE t12g ALTER CHECK chk_id NOT ENFORCED;",
+              "normalized_sql": "ALTER TABLE t12g ALTER CHECK chk_id NOT ENFORCED",
+              "findings": [
+                {
+                  "rule_id": "ddl.constraint.check.not_enforced.notice",
+                  "level": "blocker",
+                  "message": "check constraint \"chk_id\" on table \"t12g\" is switched to NOT ENFORCED",
+                  "statement_kind": "ddl",
+                  "location": {
+                    "line": 1,
+                    "column": 1
+                  },
+                  "suggestion": "keep check constraints enforced, or confirm the disabled state is intentional",
+                  "metadata": {
+                    "action": "alter_check",
+                    "constraint": "chk_id",
+                    "enforced": "not_enforced",
+                    "table": "t12g"
+                  },
+                  "explanation": {
+                    "summary": "Check DDL constraint check not enforced notice",
+                    "why": "The statement matched the shipped governance rule for this pattern.",
+                    "risk": "Ignoring this rule can hide live-schema or instance-state risks that only metadata reveals.",
+                    "suggestion": "keep check constraints enforced, or confirm the disabled state is intentional",
+                    "metadata": {
+                      "status": "available",
+                      "note": "Live metadata is available, so this explanation can use schema or instance facts for a more accurate judgment."
+                    }
+                  }
+                }
+              ],
+              "coverage": {
+                "status": "complete"
+              }
+            }
+          ],
+          "version": {
+            "product": "mysql",
+            "version": "8.0.46",
+            "major": 8,
+            "minor": 0,
+            "patch": 46,
+            "source": "observed",
+            "validated_range": true
+          },
+          "fail_on_triggered": true,
+          "rule_summary": {
+            "loaded": 5,
+            "applicable": 3,
+            "skipped": []
+          },
+          "context": {
+            "mode": "metadata-aware",
+            "dialect": "mysql",
+            "dialect_source": "detected",
+            "schema": "golden",
+            "schema_source": "flag"
+          }
+        },
+        "version_evidence": {
+          "target_raw": null,
+          "target_canonical": null,
+          "observed_raw": "8.0.46",
+          "observed_canonical": {
+            "product": "mysql",
+            "version": "8.0.46"
+          },
+          "resolved": {
+            "product": "mysql",
+            "version": "8.0.46",
+            "major": 8,
+            "minor": 0,
+            "patch": 46,
+            "source": "observed",
+            "validated_range": true
+          }
+        }
+      },
+      "assertions": [
+        {
+          "name": "database reachable with expected version",
+          "ok": true,
+          "detail": "SELECT VERSION() rc=0 version='8.0.46' expected_contains='8.0.46'"
+        },
+        {
+          "name": "setup create-fixture return code",
+          "ok": true,
+          "detail": "rc=0 expected=0 stderr=''"
+        },
+        {
+          "name": "setup create-fixture: check stored and enforcing",
+          "ok": true,
+          "detail": "rc=0 output='YES' expected='YES'"
+        },
+        {
+          "name": "exit code",
+          "ok": true,
+          "detail": "rc=1 expected=1"
+        },
+        {
+          "name": "verdict",
+          "ok": true,
+          "detail": "verdict='reject'"
+        },
+        {
+          "name": "top-level statements",
+          "ok": true,
+          "detail": "statements=1 expected=1"
+        },
+        {
+          "name": "zero findings",
+          "ok": true,
+          "detail": "findings=1"
+        },
+        {
+          "name": "no diagnostics",
+          "ok": true,
+          "detail": "diagnostics=[]"
+        },
+        {
+          "name": "no unsupported",
+          "ok": true,
+          "detail": "unsupported=[]"
+        },
+        {
+          "name": "applicable rule count",
+          "ok": true,
+          "detail": "applicable=3"
+        },
+        {
+          "name": "aggregate coverage",
+          "ok": true,
+          "detail": "coverage='complete'"
+        },
+        {
+          "name": "per-statement coverage",
+          "ok": true,
+          "detail": "statement_coverage=['complete']"
+        },
+        {
+          "name": "evidence gap count",
+          "ok": true,
+          "detail": "gaps=0"
+        },
+        {
+          "name": "finding entries",
+          "ok": true,
+          "detail": "findings=[(0, 'ddl.constraint.check.not_enforced.notice', 'blocker')] expected=[(0, 'ddl.constraint.check.not_enforced.notice', 'blocker')]"
+        },
+        {
+          "name": "finding metadata (0, 'ddl.constraint.check.not_enforced.notice')",
+          "ok": true,
+          "detail": "findings=[{'action': 'alter_check', 'constraint': 'chk_id', 'enforced': 'not_enforced', 'table': 't12g'}] expected_subset={'table': 't12g', 'constraint': 'chk_id', 'enforced': 'not_enforced'}"
+        },
+        {
+          "name": "version identity",
+          "ok": true,
+          "detail": "version={'product': 'mysql', 'version': '8.0.46', 'major': 8, 'minor': 0, 'patch': 46, 'source': 'observed', 'validated_range': True} expected={'product': 'mysql', 'version': '8.0.46'}"
+        },
+        {
+          "name": "execute apply-audited-flip return code",
+          "ok": true,
+          "detail": "rc=0 expected=0 stderr=''"
+        },
+        {
+          "name": "execute apply-audited-flip: catalog records ENFORCED=NO after the flip",
+          "ok": true,
+          "detail": "rc=0 output='NO' expected='NO'"
+        },
+        {
+          "name": "teardown drop-t12g return code",
+          "ok": true,
+          "detail": "rc=0 expected=0 stderr=''"
+        }
+      ],
+      "status": "pass",
+      "command": [
+        "/private/tmp/ddl-golden-t12/T12/bin/deltascope",
+        "audit",
+        "--dialect",
+        "mysql",
+        "--sql",
+        "ALTER TABLE t12g ALTER CHECK chk_id NOT ENFORCED;",
+        "--config",
+        "/private/tmp/ddl-golden-t12/T12/golden-policy-t12-all.yaml",
+        "--format",
+        "json",
+        "--host",
+        "127.0.0.1",
+        "--port",
+        "23380",
+        "--user",
+        "root",
+        "--password-env",
+        "DS_T12_GOLDEN_PW",
+        "--schema",
+        "golden"
+      ]
+    },
+    {
+      "case_id": "T12.meta.t12-mysql84-golden",
+      "kind": "cli_metadata",
+      "cli_case": "t12-mysql84-golden",
+      "anchor": "mysql84",
+      "dialect": "mysql",
+      "input_sql": "ALTER TABLE t12g ALTER CONSTRAINT chk_id NOT ENFORCED;",
+      "policy_profile": "t12-all",
+      "policy_path": "/private/tmp/ddl-golden-t12/T12/golden-policy-t12-all.yaml",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 23384,
+        "user": "root",
+        "schema": "golden",
+        "password_env": "DS_T12_GOLDEN_PW"
+      },
+      "expected": {
+        "exit": 1,
+        "verdict": "reject",
+        "statements": 1,
+        "findings": 1,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "complete",
+        "evidence_gaps": 0,
+        "finding_entries": [
+          {
+            "index": 0,
+            "rule_id": "ddl.constraint.check.not_enforced.notice",
+            "level": "blocker"
+          }
+        ],
+        "finding_metadata": [
+          {
+            "index": 0,
+            "rule_id": "ddl.constraint.check.not_enforced.notice",
+            "metadata": {
+              "table": "t12g",
+              "constraint": "chk_id",
+              "enforced": "not_enforced"
+            }
+          }
+        ],
+        "version": {
+          "product": "mysql",
+          "version": "8.4.10"
+        }
+      },
+      "actual": {
+        "database": {
+          "product": "mysql",
+          "image": "mysql:8.4.10",
+          "image_digest": "mysql@sha256:c592c15aaf4a1961e15d82eb31ea5987dda862d1c4b1e93424438c0e91dc1f8d",
+          "container": "deltascope-ddl-golden-mysql84",
+          "reachable": true,
+          "version": "8.4.10"
+        },
+        "setup": [
+          {
+            "name": "create-fixture",
+            "sql": "CREATE TABLE t12g (id INT, CONSTRAINT chk_id CHECK (id > 0));",
+            "rc": 0,
+            "stdout": "",
+            "stderr": ""
+          }
+        ],
+        "post_verify": [],
+        "execute": [
+          {
+            "name": "apply-audited-flip",
+            "sql": "ALTER TABLE t12g ALTER CONSTRAINT chk_id NOT ENFORCED;",
+            "rc": 0,
+            "stdout": "",
+            "stderr": "",
+            "verify": [
+              {
+                "assert": "alias flip lands ENFORCED=NO",
+                "sql": "SELECT ENFORCED FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t12g' AND CONSTRAINT_NAME='chk_id'",
+                "rc": 0,
+                "output": "NO",
+                "stderr": ""
+              }
+            ]
+          }
+        ],
+        "structure": [],
+        "teardown": [
+          {
+            "name": "drop-t12g",
+            "sql": "DROP TABLE IF EXISTS t12g;",
+            "rc": 0,
+            "stderr": ""
+          }
+        ],
+        "exit": 1,
+        "stdout": "{\"verdict\":\"reject\",\"coverage\":{\"status\":\"complete\"},\"summary\":{\"statements\":1,\"blockers\":1,\"warnings\":0,\"notices\":0},\"statements\":[{\"index\":0,\"kind\":\"ddl\",\"raw_sql\":\"ALTER TABLE t12g ALTER CONSTRAINT chk_id NOT ENFORCED;\",\"normalized_sql\":\"ALTER TABLE t12g ALTER CONSTRAINT chk_id NOT ENFORCED\",\"findings\":[{\"rule_id\":\"ddl.constraint.check.not_enforced.notice\",\"level\":\"blocker\",\"message\":\"check constraint \\\"chk_id\\\" on table \\\"t12g\\\" is switched to NOT ENFORCED\",\"statement_kind\":\"ddl\",\"location\":{\"line\":1,\"column\":1},\"suggestion\":\"keep check constraints enforced, or confirm the disabled state is intentional\",\"metadata\":{\"action\":\"alter_check\",\"constraint\":\"chk_id\",\"enforced\":\"not_enforced\",\"table\":\"t12g\"},\"explanation\":{\"summary\":\"Check DDL constraint check not enforced notice\",\"why\":\"The statement matched the shipped governance rule for this pattern.\",\"risk\":\"Ignoring this rule can hide live-schema or instance-state risks that only metadata reveals.\",\"suggestion\":\"keep check constraints enforced, or confirm the disabled state is intentional\",\"metadata\":{\"status\":\"available\",\"note\":\"Live metadata is available, so this explanation can use schema or instance facts for a more accurate judgment.\"}}}],\"coverage\":{\"status\":\"complete\"}}],\"version\":{\"product\":\"mysql\",\"version\":\"8.4.10\",\"major\":8,\"minor\":4,\"patch\":10,\"source\":\"observed\",\"validated_range\":true},\"fail_on_triggered\":true,\"rule_summary\":{\"loaded\":5,\"applicable\":3,\"skipped\":[]},\"context\":{\"mode\":\"metadata-aware\",\"dialect\":\"mysql\",\"dialect_source\":\"detected\",\"schema\":\"golden\",\"schema_source\":\"flag\"}}\n",
+        "stderr": "",
+        "parsed": {
+          "verdict": "reject",
+          "coverage": {
+            "status": "complete"
+          },
+          "summary": {
+            "statements": 1,
+            "blockers": 1,
+            "warnings": 0,
+            "notices": 0
+          },
+          "statements": [
+            {
+              "index": 0,
+              "kind": "ddl",
+              "raw_sql": "ALTER TABLE t12g ALTER CONSTRAINT chk_id NOT ENFORCED;",
+              "normalized_sql": "ALTER TABLE t12g ALTER CONSTRAINT chk_id NOT ENFORCED",
+              "findings": [
+                {
+                  "rule_id": "ddl.constraint.check.not_enforced.notice",
+                  "level": "blocker",
+                  "message": "check constraint \"chk_id\" on table \"t12g\" is switched to NOT ENFORCED",
+                  "statement_kind": "ddl",
+                  "location": {
+                    "line": 1,
+                    "column": 1
+                  },
+                  "suggestion": "keep check constraints enforced, or confirm the disabled state is intentional",
+                  "metadata": {
+                    "action": "alter_check",
+                    "constraint": "chk_id",
+                    "enforced": "not_enforced",
+                    "table": "t12g"
+                  },
+                  "explanation": {
+                    "summary": "Check DDL constraint check not enforced notice",
+                    "why": "The statement matched the shipped governance rule for this pattern.",
+                    "risk": "Ignoring this rule can hide live-schema or instance-state risks that only metadata reveals.",
+                    "suggestion": "keep check constraints enforced, or confirm the disabled state is intentional",
+                    "metadata": {
+                      "status": "available",
+                      "note": "Live metadata is available, so this explanation can use schema or instance facts for a more accurate judgment."
+                    }
+                  }
+                }
+              ],
+              "coverage": {
+                "status": "complete"
+              }
+            }
+          ],
+          "version": {
+            "product": "mysql",
+            "version": "8.4.10",
+            "major": 8,
+            "minor": 4,
+            "patch": 10,
+            "source": "observed",
+            "validated_range": true
+          },
+          "fail_on_triggered": true,
+          "rule_summary": {
+            "loaded": 5,
+            "applicable": 3,
+            "skipped": []
+          },
+          "context": {
+            "mode": "metadata-aware",
+            "dialect": "mysql",
+            "dialect_source": "detected",
+            "schema": "golden",
+            "schema_source": "flag"
+          }
+        },
+        "version_evidence": {
+          "target_raw": null,
+          "target_canonical": null,
+          "observed_raw": "8.4.10",
+          "observed_canonical": {
+            "product": "mysql",
+            "version": "8.4.10"
+          },
+          "resolved": {
+            "product": "mysql",
+            "version": "8.4.10",
+            "major": 8,
+            "minor": 4,
+            "patch": 10,
+            "source": "observed",
+            "validated_range": true
+          }
+        }
+      },
+      "assertions": [
+        {
+          "name": "database reachable with expected version",
+          "ok": true,
+          "detail": "SELECT VERSION() rc=0 version='8.4.10' expected_contains='8.4.10'"
+        },
+        {
+          "name": "setup create-fixture return code",
+          "ok": true,
+          "detail": "rc=0 expected=0 stderr=''"
+        },
+        {
+          "name": "exit code",
+          "ok": true,
+          "detail": "rc=1 expected=1"
+        },
+        {
+          "name": "verdict",
+          "ok": true,
+          "detail": "verdict='reject'"
+        },
+        {
+          "name": "top-level statements",
+          "ok": true,
+          "detail": "statements=1 expected=1"
+        },
+        {
+          "name": "zero findings",
+          "ok": true,
+          "detail": "findings=1"
+        },
+        {
+          "name": "no diagnostics",
+          "ok": true,
+          "detail": "diagnostics=[]"
+        },
+        {
+          "name": "no unsupported",
+          "ok": true,
+          "detail": "unsupported=[]"
+        },
+        {
+          "name": "aggregate coverage",
+          "ok": true,
+          "detail": "coverage='complete'"
+        },
+        {
+          "name": "evidence gap count",
+          "ok": true,
+          "detail": "gaps=0"
+        },
+        {
+          "name": "finding entries",
+          "ok": true,
+          "detail": "findings=[(0, 'ddl.constraint.check.not_enforced.notice', 'blocker')] expected=[(0, 'ddl.constraint.check.not_enforced.notice', 'blocker')]"
+        },
+        {
+          "name": "finding metadata (0, 'ddl.constraint.check.not_enforced.notice')",
+          "ok": true,
+          "detail": "findings=[{'action': 'alter_check', 'constraint': 'chk_id', 'enforced': 'not_enforced', 'table': 't12g'}] expected_subset={'table': 't12g', 'constraint': 'chk_id', 'enforced': 'not_enforced'}"
+        },
+        {
+          "name": "version identity",
+          "ok": true,
+          "detail": "version={'product': 'mysql', 'version': '8.4.10', 'major': 8, 'minor': 4, 'patch': 10, 'source': 'observed', 'validated_range': True} expected={'product': 'mysql', 'version': '8.4.10'}"
+        },
+        {
+          "name": "execute apply-audited-flip return code",
+          "ok": true,
+          "detail": "rc=0 expected=0 stderr=''"
+        },
+        {
+          "name": "execute apply-audited-flip: alias flip lands ENFORCED=NO",
+          "ok": true,
+          "detail": "rc=0 output='NO' expected='NO'"
+        },
+        {
+          "name": "teardown drop-t12g return code",
+          "ok": true,
+          "detail": "rc=0 expected=0 stderr=''"
+        }
+      ],
+      "status": "pass",
+      "command": [
+        "/private/tmp/ddl-golden-t12/T12/bin/deltascope",
+        "audit",
+        "--dialect",
+        "mysql",
+        "--sql",
+        "ALTER TABLE t12g ALTER CONSTRAINT chk_id NOT ENFORCED;",
+        "--config",
+        "/private/tmp/ddl-golden-t12/T12/golden-policy-t12-all.yaml",
+        "--format",
+        "json",
+        "--host",
+        "127.0.0.1",
+        "--port",
+        "23384",
+        "--user",
+        "root",
+        "--password-env",
+        "DS_T12_GOLDEN_PW",
+        "--schema",
+        "golden"
+      ]
+    },
+    {
+      "case_id": "T12.meta.t12-mysql80-alter-missing",
+      "kind": "cli_metadata",
+      "cli_case": "t12-mysql80-alter-missing",
+      "anchor": "mysql80",
+      "dialect": "mysql",
+      "input_sql": "ALTER TABLE t12g ALTER CHECK missing_x NOT ENFORCED;",
+      "policy_profile": "t12-all",
+      "policy_path": "/private/tmp/ddl-golden-t12/T12/golden-policy-t12-all.yaml",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 23380,
+        "user": "root",
+        "schema": "golden",
+        "password_env": "DS_T12_GOLDEN_PW"
+      },
+      "expected": {
+        "exit": 1,
+        "verdict": "reject",
+        "statements": 1,
+        "findings": 1,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "complete",
+        "evidence_gaps": 0,
+        "finding_entries": [
+          {
+            "index": 0,
+            "rule_id": "ddl.alter.alter_check.exists.require",
+            "level": "blocker"
+          }
+        ],
+        "finding_metadata": [
+          {
+            "index": 0,
+            "rule_id": "ddl.alter.alter_check.exists.require",
+            "metadata": {
+              "table": "t12g",
+              "name": "missing_x",
+              "exists": false
+            }
+          }
+        ]
+      },
+      "actual": {
+        "database": {
+          "product": "mysql",
+          "image": "mysql:8.0.46",
+          "image_digest": "mysql@sha256:7dcddc01f13bab2f15cde676d44d01f61fc9f99fe7785e86196dfc07d358ae2b",
+          "container": "deltascope-ddl-golden-mysql80",
+          "reachable": true,
+          "version": "8.0.46"
+        },
+        "setup": [
+          {
+            "name": "create-fixture",
+            "sql": "CREATE TABLE t12g (id INT, CONSTRAINT chk_id CHECK (id > 0));",
+            "rc": 0,
+            "stdout": "",
+            "stderr": ""
+          }
+        ],
+        "post_verify": [],
+        "execute": [
+          {
+            "name": "native-confirms-refusal",
+            "sql": "ALTER TABLE t12g ALTER CHECK missing_x NOT ENFORCED;",
+            "rc": 1,
+            "stdout": "",
+            "stderr": "ERROR 3821 (HY000) at line 1: Check constraint 'missing_x' is not found in the table."
+          }
+        ],
+        "structure": [],
+        "teardown": [
+          {
+            "name": "drop-t12g",
+            "sql": "DROP TABLE IF EXISTS t12g;",
+            "rc": 0,
+            "stderr": ""
+          }
+        ],
+        "exit": 1,
+        "stdout": "{\"verdict\":\"reject\",\"coverage\":{\"status\":\"complete\"},\"summary\":{\"statements\":1,\"blockers\":1,\"warnings\":0,\"notices\":0},\"statements\":[{\"index\":0,\"kind\":\"ddl\",\"raw_sql\":\"ALTER TABLE t12g ALTER CHECK missing_x NOT ENFORCED;\",\"normalized_sql\":\"ALTER TABLE t12g ALTER CHECK missing_x NOT ENFORCED\",\"findings\":[{\"rule_id\":\"ddl.alter.alter_check.exists.require\",\"level\":\"blocker\",\"message\":\"check constraint \\\"missing_x\\\" does not exist on table \\\"t12g\\\"\",\"statement_kind\":\"ddl\",\"location\":{\"line\":1,\"column\":1},\"suggestion\":\"fix the check constraint name or refresh metadata before auditing this change\",\"metadata\":{\"action\":\"alter_check\",\"exists\":false,\"name\":\"missing_x\",\"table\":\"t12g\"},\"explanation\":{\"summary\":\"Require DDL alter alter check exists require\",\"why\":\"The statement is missing a clause, option, or object that the shipped policy requires.\",\"risk\":\"Ignoring this rule can hide live-schema or instance-state risks that only metadata reveals.\",\"suggestion\":\"fix the check constraint name or refresh metadata before auditing this change\",\"metadata\":{\"status\":\"available\",\"note\":\"Live metadata is available, so this explanation can use schema or instance facts for a more accurate judgment.\"}}}],\"coverage\":{\"status\":\"complete\"}}],\"version\":{\"product\":\"mysql\",\"version\":\"8.0.46\",\"major\":8,\"minor\":0,\"patch\":46,\"source\":\"observed\",\"validated_range\":true},\"fail_on_triggered\":true,\"rule_summary\":{\"loaded\":5,\"applicable\":3,\"skipped\":[]},\"context\":{\"mode\":\"metadata-aware\",\"dialect\":\"mysql\",\"dialect_source\":\"detected\",\"schema\":\"golden\",\"schema_source\":\"flag\"}}\n",
+        "stderr": "",
+        "parsed": {
+          "verdict": "reject",
+          "coverage": {
+            "status": "complete"
+          },
+          "summary": {
+            "statements": 1,
+            "blockers": 1,
+            "warnings": 0,
+            "notices": 0
+          },
+          "statements": [
+            {
+              "index": 0,
+              "kind": "ddl",
+              "raw_sql": "ALTER TABLE t12g ALTER CHECK missing_x NOT ENFORCED;",
+              "normalized_sql": "ALTER TABLE t12g ALTER CHECK missing_x NOT ENFORCED",
+              "findings": [
+                {
+                  "rule_id": "ddl.alter.alter_check.exists.require",
+                  "level": "blocker",
+                  "message": "check constraint \"missing_x\" does not exist on table \"t12g\"",
+                  "statement_kind": "ddl",
+                  "location": {
+                    "line": 1,
+                    "column": 1
+                  },
+                  "suggestion": "fix the check constraint name or refresh metadata before auditing this change",
+                  "metadata": {
+                    "action": "alter_check",
+                    "exists": false,
+                    "name": "missing_x",
+                    "table": "t12g"
+                  },
+                  "explanation": {
+                    "summary": "Require DDL alter alter check exists require",
+                    "why": "The statement is missing a clause, option, or object that the shipped policy requires.",
+                    "risk": "Ignoring this rule can hide live-schema or instance-state risks that only metadata reveals.",
+                    "suggestion": "fix the check constraint name or refresh metadata before auditing this change",
+                    "metadata": {
+                      "status": "available",
+                      "note": "Live metadata is available, so this explanation can use schema or instance facts for a more accurate judgment."
+                    }
+                  }
+                }
+              ],
+              "coverage": {
+                "status": "complete"
+              }
+            }
+          ],
+          "version": {
+            "product": "mysql",
+            "version": "8.0.46",
+            "major": 8,
+            "minor": 0,
+            "patch": 46,
+            "source": "observed",
+            "validated_range": true
+          },
+          "fail_on_triggered": true,
+          "rule_summary": {
+            "loaded": 5,
+            "applicable": 3,
+            "skipped": []
+          },
+          "context": {
+            "mode": "metadata-aware",
+            "dialect": "mysql",
+            "dialect_source": "detected",
+            "schema": "golden",
+            "schema_source": "flag"
+          }
+        },
+        "version_evidence": {
+          "target_raw": null,
+          "target_canonical": null,
+          "observed_raw": "8.0.46",
+          "observed_canonical": {
+            "product": "mysql",
+            "version": "8.0.46"
+          },
+          "resolved": {
+            "product": "mysql",
+            "version": "8.0.46",
+            "major": 8,
+            "minor": 0,
+            "patch": 46,
+            "source": "observed",
+            "validated_range": true
+          }
+        }
+      },
+      "assertions": [
+        {
+          "name": "database reachable with expected version",
+          "ok": true,
+          "detail": "SELECT VERSION() rc=0 version='8.0.46' expected_contains='8.0.46'"
+        },
+        {
+          "name": "setup create-fixture return code",
+          "ok": true,
+          "detail": "rc=0 expected=0 stderr=''"
+        },
+        {
+          "name": "exit code",
+          "ok": true,
+          "detail": "rc=1 expected=1"
+        },
+        {
+          "name": "verdict",
+          "ok": true,
+          "detail": "verdict='reject'"
+        },
+        {
+          "name": "top-level statements",
+          "ok": true,
+          "detail": "statements=1 expected=1"
+        },
+        {
+          "name": "zero findings",
+          "ok": true,
+          "detail": "findings=1"
+        },
+        {
+          "name": "no diagnostics",
+          "ok": true,
+          "detail": "diagnostics=[]"
+        },
+        {
+          "name": "no unsupported",
+          "ok": true,
+          "detail": "unsupported=[]"
+        },
+        {
+          "name": "aggregate coverage",
+          "ok": true,
+          "detail": "coverage='complete'"
+        },
+        {
+          "name": "evidence gap count",
+          "ok": true,
+          "detail": "gaps=0"
+        },
+        {
+          "name": "finding entries",
+          "ok": true,
+          "detail": "findings=[(0, 'ddl.alter.alter_check.exists.require', 'blocker')] expected=[(0, 'ddl.alter.alter_check.exists.require', 'blocker')]"
+        },
+        {
+          "name": "finding metadata (0, 'ddl.alter.alter_check.exists.require')",
+          "ok": true,
+          "detail": "findings=[{'action': 'alter_check', 'exists': False, 'name': 'missing_x', 'table': 't12g'}] expected_subset={'table': 't12g', 'name': 'missing_x', 'exists': False}"
+        },
+        {
+          "name": "execute native-confirms-refusal return code",
+          "ok": true,
+          "detail": "rc=1 expected=1 stderr=\"ERROR 3821 (HY000) at line 1: Check constraint 'missing_x' is not found in the table.\""
+        },
+        {
+          "name": "execute native-confirms-refusal stderr marker",
+          "ok": true,
+          "detail": "3821"
+        },
+        {
+          "name": "teardown drop-t12g return code",
+          "ok": true,
+          "detail": "rc=0 expected=0 stderr=''"
+        }
+      ],
+      "status": "pass",
+      "command": [
+        "/private/tmp/ddl-golden-t12/T12/bin/deltascope",
+        "audit",
+        "--dialect",
+        "mysql",
+        "--sql",
+        "ALTER TABLE t12g ALTER CHECK missing_x NOT ENFORCED;",
+        "--config",
+        "/private/tmp/ddl-golden-t12/T12/golden-policy-t12-all.yaml",
+        "--format",
+        "json",
+        "--host",
+        "127.0.0.1",
+        "--port",
+        "23380",
+        "--user",
+        "root",
+        "--password-env",
+        "DS_T12_GOLDEN_PW",
+        "--schema",
+        "golden"
+      ]
+    },
+    {
+      "case_id": "T12.meta.t12-mysql80-drop-present",
+      "kind": "cli_metadata",
+      "cli_case": "t12-mysql80-drop-present",
+      "anchor": "mysql80",
+      "dialect": "mysql",
+      "input_sql": "ALTER TABLE t12g DROP CHECK chk_id;",
+      "policy_profile": "t12-all",
+      "policy_path": "/private/tmp/ddl-golden-t12/T12/golden-policy-t12-all.yaml",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 23380,
+        "user": "root",
+        "schema": "golden",
+        "password_env": "DS_T12_GOLDEN_PW"
+      },
+      "expected": {
+        "exit": 0,
+        "verdict": "pass",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "complete",
+        "evidence_gaps": 0
+      },
+      "actual": {
+        "database": {
+          "product": "mysql",
+          "image": "mysql:8.0.46",
+          "image_digest": "mysql@sha256:7dcddc01f13bab2f15cde676d44d01f61fc9f99fe7785e86196dfc07d358ae2b",
+          "container": "deltascope-ddl-golden-mysql80",
+          "reachable": true,
+          "version": "8.0.46"
+        },
+        "setup": [
+          {
+            "name": "create-fixture",
+            "sql": "CREATE TABLE t12g (id INT, CONSTRAINT chk_id CHECK (id > 0));",
+            "rc": 0,
+            "stdout": "",
+            "stderr": ""
+          }
+        ],
+        "post_verify": [],
+        "execute": [
+          {
+            "name": "apply-audited-drop",
+            "sql": "ALTER TABLE t12g DROP CHECK chk_id;",
+            "rc": 0,
+            "stdout": "",
+            "stderr": "",
+            "verify": [
+              {
+                "assert": "check member gone from catalog",
+                "sql": "SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t12g' AND CONSTRAINT_NAME='chk_id'",
+                "rc": 0,
+                "output": "0",
+                "stderr": ""
+              }
+            ]
+          }
+        ],
+        "structure": [],
+        "teardown": [
+          {
+            "name": "drop-t12g",
+            "sql": "DROP TABLE IF EXISTS t12g;",
+            "rc": 0,
+            "stderr": ""
+          }
+        ],
+        "exit": 0,
+        "stdout": "{\"verdict\":\"pass\",\"coverage\":{\"status\":\"complete\"},\"summary\":{\"statements\":1,\"blockers\":0,\"warnings\":0,\"notices\":0},\"statements\":[{\"index\":0,\"kind\":\"ddl\",\"raw_sql\":\"ALTER TABLE t12g DROP CHECK chk_id;\",\"normalized_sql\":\"ALTER TABLE t12g DROP CHECK chk_id\",\"coverage\":{\"status\":\"complete\"}}],\"version\":{\"product\":\"mysql\",\"version\":\"8.0.46\",\"major\":8,\"minor\":0,\"patch\":46,\"source\":\"observed\",\"validated_range\":true},\"fail_on_triggered\":false,\"rule_summary\":{\"loaded\":5,\"applicable\":2,\"skipped\":[]},\"context\":{\"mode\":\"metadata-aware\",\"dialect\":\"mysql\",\"dialect_source\":\"detected\",\"schema\":\"golden\",\"schema_source\":\"flag\"}}\n",
+        "stderr": "",
+        "parsed": {
+          "verdict": "pass",
+          "coverage": {
+            "status": "complete"
+          },
+          "summary": {
+            "statements": 1,
+            "blockers": 0,
+            "warnings": 0,
+            "notices": 0
+          },
+          "statements": [
+            {
+              "index": 0,
+              "kind": "ddl",
+              "raw_sql": "ALTER TABLE t12g DROP CHECK chk_id;",
+              "normalized_sql": "ALTER TABLE t12g DROP CHECK chk_id",
+              "coverage": {
+                "status": "complete"
+              }
+            }
+          ],
+          "version": {
+            "product": "mysql",
+            "version": "8.0.46",
+            "major": 8,
+            "minor": 0,
+            "patch": 46,
+            "source": "observed",
+            "validated_range": true
+          },
+          "fail_on_triggered": false,
+          "rule_summary": {
+            "loaded": 5,
+            "applicable": 2,
+            "skipped": []
+          },
+          "context": {
+            "mode": "metadata-aware",
+            "dialect": "mysql",
+            "dialect_source": "detected",
+            "schema": "golden",
+            "schema_source": "flag"
+          }
+        },
+        "version_evidence": {
+          "target_raw": null,
+          "target_canonical": null,
+          "observed_raw": "8.0.46",
+          "observed_canonical": {
+            "product": "mysql",
+            "version": "8.0.46"
+          },
+          "resolved": {
+            "product": "mysql",
+            "version": "8.0.46",
+            "major": 8,
+            "minor": 0,
+            "patch": 46,
+            "source": "observed",
+            "validated_range": true
+          }
+        }
+      },
+      "assertions": [
+        {
+          "name": "database reachable with expected version",
+          "ok": true,
+          "detail": "SELECT VERSION() rc=0 version='8.0.46' expected_contains='8.0.46'"
+        },
+        {
+          "name": "setup create-fixture return code",
+          "ok": true,
+          "detail": "rc=0 expected=0 stderr=''"
+        },
+        {
+          "name": "exit code",
+          "ok": true,
+          "detail": "rc=0 expected=0"
+        },
+        {
+          "name": "verdict",
+          "ok": true,
+          "detail": "verdict='pass'"
+        },
+        {
+          "name": "top-level statements",
+          "ok": true,
+          "detail": "statements=1 expected=1"
+        },
+        {
+          "name": "zero findings",
+          "ok": true,
+          "detail": "findings=0"
+        },
+        {
+          "name": "no diagnostics",
+          "ok": true,
+          "detail": "diagnostics=[]"
+        },
+        {
+          "name": "no unsupported",
+          "ok": true,
+          "detail": "unsupported=[]"
+        },
+        {
+          "name": "aggregate coverage",
+          "ok": true,
+          "detail": "coverage='complete'"
+        },
+        {
+          "name": "evidence gap count",
+          "ok": true,
+          "detail": "gaps=0"
+        },
+        {
+          "name": "execute apply-audited-drop return code",
+          "ok": true,
+          "detail": "rc=0 expected=0 stderr=''"
+        },
+        {
+          "name": "execute apply-audited-drop: check member gone from catalog",
+          "ok": true,
+          "detail": "rc=0 output='0' expected='0'"
+        },
+        {
+          "name": "teardown drop-t12g return code",
+          "ok": true,
+          "detail": "rc=0 expected=0 stderr=''"
+        }
+      ],
+      "status": "pass",
+      "command": [
+        "/private/tmp/ddl-golden-t12/T12/bin/deltascope",
+        "audit",
+        "--dialect",
+        "mysql",
+        "--sql",
+        "ALTER TABLE t12g DROP CHECK chk_id;",
+        "--config",
+        "/private/tmp/ddl-golden-t12/T12/golden-policy-t12-all.yaml",
+        "--format",
+        "json",
+        "--host",
+        "127.0.0.1",
+        "--port",
+        "23380",
+        "--user",
+        "root",
+        "--password-env",
+        "DS_T12_GOLDEN_PW",
+        "--schema",
+        "golden"
+      ]
+    },
+    {
+      "case_id": "T12.meta.t12-mysql57-ignored",
+      "kind": "cli_metadata",
+      "cli_case": "t12-mysql57-ignored",
+      "anchor": "mysql57",
+      "dialect": "mysql",
+      "input_sql": "CREATE TABLE t57 (id INT, CONSTRAINT chk_ign CHECK (id > 0));",
+      "policy_profile": "t12-all",
+      "policy_path": "/private/tmp/ddl-golden-t12/T12/golden-policy-t12-all.yaml",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 23357,
+        "user": "root",
+        "schema": "golden",
+        "password_env": "DS_T12_GOLDEN_PW"
+      },
+      "expected": {
+        "exit": 0,
+        "verdict": "review",
+        "statements": 1,
+        "findings": 1,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "complete",
+        "evidence_gaps": 0,
+        "finding_entries": [
+          {
+            "index": 0,
+            "rule_id": "ddl.constraint.check.ignored.notice",
+            "level": "warning"
+          }
+        ],
+        "finding_metadata": [
+          {
+            "index": 0,
+            "rule_id": "ddl.constraint.check.ignored.notice",
+            "metadata": {
+              "table": "t57",
+              "constraint": "chk_ign",
+              "enforced": "ignored"
+            }
+          }
+        ],
+        "version": {
+          "product": "mysql",
+          "version": "5.7.44"
+        }
+      },
+      "actual": {
+        "database": {
+          "product": "mysql",
+          "image": "mysql:5.7.44",
+          "image_digest": "mysql@sha256:4bc6bc963e6d8443453676cae56536f4b8156d78bae03c0145cbe47c2aad73bb",
+          "container": "deltascope-ddl-golden-mysql57",
+          "reachable": true,
+          "version": "5.7.44"
+        },
+        "setup": [],
+        "post_verify": [],
+        "execute": [
+          {
+            "name": "native-accepts-but-stores-nothing",
+            "sql": "CREATE TABLE t57 (id INT, CONSTRAINT chk_ign CHECK (id > 0));",
+            "rc": 0,
+            "stdout": "",
+            "stderr": "",
+            "verify": [
+              {
+                "assert": "5.7 silently drops the declaration",
+                "sql": "SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA='golden' AND CONSTRAINT_TYPE='CHECK'",
+                "rc": 0,
+                "output": "0",
+                "stderr": ""
+              }
+            ]
+          },
+          {
+            "name": "violating-row-lands",
+            "sql": "INSERT INTO t57 VALUES (-1);",
+            "rc": 0,
+            "stdout": "",
+            "stderr": ""
+          }
+        ],
+        "structure": [],
+        "teardown": [
+          {
+            "name": "drop-t57",
+            "sql": "DROP TABLE IF EXISTS t57;",
+            "rc": 0,
+            "stderr": ""
+          }
+        ],
+        "exit": 0,
+        "stdout": "{\"verdict\":\"review\",\"coverage\":{\"status\":\"complete\"},\"summary\":{\"statements\":1,\"blockers\":0,\"warnings\":1,\"notices\":0},\"statements\":[{\"index\":0,\"kind\":\"ddl\",\"raw_sql\":\"CREATE TABLE t57 (id INT, CONSTRAINT chk_ign CHECK (id \\u003e 0));\",\"normalized_sql\":\"CREATE TABLE t57 (id INT, CONSTRAINT chk_ign CHECK (id \\u003e 0))\",\"findings\":[{\"rule_id\":\"ddl.constraint.check.ignored.notice\",\"level\":\"warning\",\"message\":\"check constraint \\\"chk_ign\\\" on table \\\"t57\\\" is parsed but ignored on this product\",\"statement_kind\":\"ddl\",\"location\":{\"line\":1,\"column\":1},\"suggestion\":\"verify the target product actually enforces check constraints before relying on this declaration\",\"metadata\":{\"constraint\":\"chk_ign\",\"enforced\":\"ignored\",\"table\":\"t57\"},\"explanation\":{\"summary\":\"Check DDL constraint check ignored notice\",\"why\":\"The statement matched the shipped governance rule for this pattern.\",\"risk\":\"Ignoring this rule can hide live-schema or instance-state risks that only metadata reveals.\",\"suggestion\":\"verify the target product actually enforces check constraints before relying on this declaration\",\"metadata\":{\"status\":\"available\",\"note\":\"Live metadata is available, so this explanation can use schema or instance facts for a more accurate judgment.\"}}}],\"coverage\":{\"status\":\"complete\"}}],\"version\":{\"product\":\"mysql\",\"version\":\"5.7.44\",\"major\":5,\"minor\":7,\"patch\":44,\"source\":\"observed\",\"validated_range\":true},\"fail_on_triggered\":false,\"rule_summary\":{\"loaded\":5,\"applicable\":1,\"skipped\":[]},\"context\":{\"mode\":\"metadata-aware\",\"dialect\":\"mysql\",\"dialect_source\":\"detected\",\"schema\":\"golden\",\"schema_source\":\"flag\"}}\n",
+        "stderr": "",
+        "parsed": {
+          "verdict": "review",
+          "coverage": {
+            "status": "complete"
+          },
+          "summary": {
+            "statements": 1,
+            "blockers": 0,
+            "warnings": 1,
+            "notices": 0
+          },
+          "statements": [
+            {
+              "index": 0,
+              "kind": "ddl",
+              "raw_sql": "CREATE TABLE t57 (id INT, CONSTRAINT chk_ign CHECK (id > 0));",
+              "normalized_sql": "CREATE TABLE t57 (id INT, CONSTRAINT chk_ign CHECK (id > 0))",
+              "findings": [
+                {
+                  "rule_id": "ddl.constraint.check.ignored.notice",
+                  "level": "warning",
+                  "message": "check constraint \"chk_ign\" on table \"t57\" is parsed but ignored on this product",
+                  "statement_kind": "ddl",
+                  "location": {
+                    "line": 1,
+                    "column": 1
+                  },
+                  "suggestion": "verify the target product actually enforces check constraints before relying on this declaration",
+                  "metadata": {
+                    "constraint": "chk_ign",
+                    "enforced": "ignored",
+                    "table": "t57"
+                  },
+                  "explanation": {
+                    "summary": "Check DDL constraint check ignored notice",
+                    "why": "The statement matched the shipped governance rule for this pattern.",
+                    "risk": "Ignoring this rule can hide live-schema or instance-state risks that only metadata reveals.",
+                    "suggestion": "verify the target product actually enforces check constraints before relying on this declaration",
+                    "metadata": {
+                      "status": "available",
+                      "note": "Live metadata is available, so this explanation can use schema or instance facts for a more accurate judgment."
+                    }
+                  }
+                }
+              ],
+              "coverage": {
+                "status": "complete"
+              }
+            }
+          ],
+          "version": {
+            "product": "mysql",
+            "version": "5.7.44",
+            "major": 5,
+            "minor": 7,
+            "patch": 44,
+            "source": "observed",
+            "validated_range": true
+          },
+          "fail_on_triggered": false,
+          "rule_summary": {
+            "loaded": 5,
+            "applicable": 1,
+            "skipped": []
+          },
+          "context": {
+            "mode": "metadata-aware",
+            "dialect": "mysql",
+            "dialect_source": "detected",
+            "schema": "golden",
+            "schema_source": "flag"
+          }
+        },
+        "version_evidence": {
+          "target_raw": null,
+          "target_canonical": null,
+          "observed_raw": "5.7.44",
+          "observed_canonical": {
+            "product": "mysql",
+            "version": "5.7.44"
+          },
+          "resolved": {
+            "product": "mysql",
+            "version": "5.7.44",
+            "major": 5,
+            "minor": 7,
+            "patch": 44,
+            "source": "observed",
+            "validated_range": true
+          }
+        }
+      },
+      "assertions": [
+        {
+          "name": "database reachable with expected version",
+          "ok": true,
+          "detail": "SELECT VERSION() rc=0 version='5.7.44' expected_contains='5.7.44'"
+        },
+        {
+          "name": "exit code",
+          "ok": true,
+          "detail": "rc=0 expected=0"
+        },
+        {
+          "name": "verdict",
+          "ok": true,
+          "detail": "verdict='review'"
+        },
+        {
+          "name": "top-level statements",
+          "ok": true,
+          "detail": "statements=1 expected=1"
+        },
+        {
+          "name": "zero findings",
+          "ok": true,
+          "detail": "findings=1"
+        },
+        {
+          "name": "no diagnostics",
+          "ok": true,
+          "detail": "diagnostics=[]"
+        },
+        {
+          "name": "no unsupported",
+          "ok": true,
+          "detail": "unsupported=[]"
+        },
+        {
+          "name": "aggregate coverage",
+          "ok": true,
+          "detail": "coverage='complete'"
+        },
+        {
+          "name": "evidence gap count",
+          "ok": true,
+          "detail": "gaps=0"
+        },
+        {
+          "name": "finding entries",
+          "ok": true,
+          "detail": "findings=[(0, 'ddl.constraint.check.ignored.notice', 'warning')] expected=[(0, 'ddl.constraint.check.ignored.notice', 'warning')]"
+        },
+        {
+          "name": "finding metadata (0, 'ddl.constraint.check.ignored.notice')",
+          "ok": true,
+          "detail": "findings=[{'constraint': 'chk_ign', 'enforced': 'ignored', 'table': 't57'}] expected_subset={'table': 't57', 'constraint': 'chk_ign', 'enforced': 'ignored'}"
+        },
+        {
+          "name": "version identity",
+          "ok": true,
+          "detail": "version={'product': 'mysql', 'version': '5.7.44', 'major': 5, 'minor': 7, 'patch': 44, 'source': 'observed', 'validated_range': True} expected={'product': 'mysql', 'version': '5.7.44'}"
+        },
+        {
+          "name": "execute native-accepts-but-stores-nothing return code",
+          "ok": true,
+          "detail": "rc=0 expected=0 stderr=''"
+        },
+        {
+          "name": "execute native-accepts-but-stores-nothing: 5.7 silently drops the declaration",
+          "ok": true,
+          "detail": "rc=0 output='0' expected='0'"
+        },
+        {
+          "name": "execute violating-row-lands return code",
+          "ok": true,
+          "detail": "rc=0 expected=0 stderr=''"
+        },
+        {
+          "name": "teardown drop-t57 return code",
+          "ok": true,
+          "detail": "rc=0 expected=0 stderr=''"
+        }
+      ],
+      "status": "pass",
+      "command": [
+        "/private/tmp/ddl-golden-t12/T12/bin/deltascope",
+        "audit",
+        "--dialect",
+        "mysql",
+        "--sql",
+        "CREATE TABLE t57 (id INT, CONSTRAINT chk_ign CHECK (id > 0));",
+        "--config",
+        "/private/tmp/ddl-golden-t12/T12/golden-policy-t12-all.yaml",
+        "--format",
+        "json",
+        "--host",
+        "127.0.0.1",
+        "--port",
+        "23357",
+        "--user",
+        "root",
+        "--password-env",
+        "DS_T12_GOLDEN_PW",
+        "--schema",
+        "golden"
+      ]
+    },
+    {
+      "case_id": "T12.meta.t12-mysql57-version-refusal",
+      "kind": "cli_metadata",
+      "cli_case": "t12-mysql57-version-refusal",
+      "anchor": "mysql57",
+      "dialect": "mysql",
+      "input_sql": "ALTER TABLE t57 ALTER CHECK x NOT ENFORCED;",
+      "policy_profile": "t12-all",
+      "policy_path": "/private/tmp/ddl-golden-t12/T12/golden-policy-t12-all.yaml",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 23357,
+        "user": "root",
+        "schema": "golden",
+        "password_env": "DS_T12_GOLDEN_PW"
+      },
+      "expected": {
+        "exit": 1,
+        "verdict": "reject",
+        "statements": 1,
+        "findings": 1,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "complete",
+        "evidence_gaps": 0,
+        "finding_entries": [
+          {
+            "index": 0,
+            "rule_id": "ddl.alter.alter_check.version.require",
+            "level": "blocker"
+          }
+        ]
+      },
+      "actual": {
+        "database": {
+          "product": "mysql",
+          "image": "mysql:5.7.44",
+          "image_digest": "mysql@sha256:4bc6bc963e6d8443453676cae56536f4b8156d78bae03c0145cbe47c2aad73bb",
+          "container": "deltascope-ddl-golden-mysql57",
+          "reachable": true,
+          "version": "5.7.44"
+        },
+        "setup": [
+          {
+            "name": "create-fixture",
+            "sql": "CREATE TABLE t57 (id INT);",
+            "rc": 0,
+            "stdout": "",
+            "stderr": ""
+          }
+        ],
+        "post_verify": [],
+        "execute": [
+          {
+            "name": "native-syntax-refusal",
+            "sql": "ALTER TABLE t57 ALTER CHECK x NOT ENFORCED;",
+            "rc": 1,
+            "stdout": "",
+            "stderr": "ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'CHECK x NOT ENFORCED' at line 1"
+          }
+        ],
+        "structure": [],
+        "teardown": [
+          {
+            "name": "drop-t57",
+            "sql": "DROP TABLE IF EXISTS t57;",
+            "rc": 0,
+            "stderr": ""
+          }
+        ],
+        "exit": 1,
+        "stdout": "{\"verdict\":\"reject\",\"coverage\":{\"status\":\"complete\"},\"summary\":{\"statements\":1,\"blockers\":1,\"warnings\":0,\"notices\":0},\"statements\":[{\"index\":0,\"kind\":\"ddl\",\"raw_sql\":\"ALTER TABLE t57 ALTER CHECK x NOT ENFORCED;\",\"normalized_sql\":\"ALTER TABLE t57 ALTER CHECK x NOT ENFORCED\",\"findings\":[{\"rule_id\":\"ddl.alter.alter_check.version.require\",\"level\":\"blocker\",\"message\":\"alter_check on table \\\"t57\\\" requires MySQL \\u003e= 8.0.19 (check constraint alter/drop syntax)\",\"statement_kind\":\"ddl\",\"location\":{\"line\":1,\"column\":1},\"suggestion\":\"run this change on a MySQL version that supports check-constraint alter/drop syntax\",\"metadata\":{\"action\":\"alter_check\",\"required_version\":\"8.0.19\",\"table\":\"t57\",\"version\":\"5.7.44\"},\"explanation\":{\"summary\":\"Require DDL alter alter check version require\",\"why\":\"The statement is missing a clause, option, or object that the shipped policy requires.\",\"risk\":\"Ignoring this rule can hide live-schema or instance-state risks that only metadata reveals.\",\"suggestion\":\"run this change on a MySQL version that supports check-constraint alter/drop syntax\",\"metadata\":{\"status\":\"available\",\"note\":\"Live metadata is available, so this explanation can use schema or instance facts for a more accurate judgment.\"}}}],\"coverage\":{\"status\":\"complete\"}}],\"version\":{\"product\":\"mysql\",\"version\":\"5.7.44\",\"major\":5,\"minor\":7,\"patch\":44,\"source\":\"observed\",\"validated_range\":true},\"fail_on_triggered\":true,\"rule_summary\":{\"loaded\":5,\"applicable\":3,\"skipped\":[]},\"context\":{\"mode\":\"metadata-aware\",\"dialect\":\"mysql\",\"dialect_source\":\"detected\",\"schema\":\"golden\",\"schema_source\":\"flag\"}}\n",
+        "stderr": "",
+        "parsed": {
+          "verdict": "reject",
+          "coverage": {
+            "status": "complete"
+          },
+          "summary": {
+            "statements": 1,
+            "blockers": 1,
+            "warnings": 0,
+            "notices": 0
+          },
+          "statements": [
+            {
+              "index": 0,
+              "kind": "ddl",
+              "raw_sql": "ALTER TABLE t57 ALTER CHECK x NOT ENFORCED;",
+              "normalized_sql": "ALTER TABLE t57 ALTER CHECK x NOT ENFORCED",
+              "findings": [
+                {
+                  "rule_id": "ddl.alter.alter_check.version.require",
+                  "level": "blocker",
+                  "message": "alter_check on table \"t57\" requires MySQL >= 8.0.19 (check constraint alter/drop syntax)",
+                  "statement_kind": "ddl",
+                  "location": {
+                    "line": 1,
+                    "column": 1
+                  },
+                  "suggestion": "run this change on a MySQL version that supports check-constraint alter/drop syntax",
+                  "metadata": {
+                    "action": "alter_check",
+                    "required_version": "8.0.19",
+                    "table": "t57",
+                    "version": "5.7.44"
+                  },
+                  "explanation": {
+                    "summary": "Require DDL alter alter check version require",
+                    "why": "The statement is missing a clause, option, or object that the shipped policy requires.",
+                    "risk": "Ignoring this rule can hide live-schema or instance-state risks that only metadata reveals.",
+                    "suggestion": "run this change on a MySQL version that supports check-constraint alter/drop syntax",
+                    "metadata": {
+                      "status": "available",
+                      "note": "Live metadata is available, so this explanation can use schema or instance facts for a more accurate judgment."
+                    }
+                  }
+                }
+              ],
+              "coverage": {
+                "status": "complete"
+              }
+            }
+          ],
+          "version": {
+            "product": "mysql",
+            "version": "5.7.44",
+            "major": 5,
+            "minor": 7,
+            "patch": 44,
+            "source": "observed",
+            "validated_range": true
+          },
+          "fail_on_triggered": true,
+          "rule_summary": {
+            "loaded": 5,
+            "applicable": 3,
+            "skipped": []
+          },
+          "context": {
+            "mode": "metadata-aware",
+            "dialect": "mysql",
+            "dialect_source": "detected",
+            "schema": "golden",
+            "schema_source": "flag"
+          }
+        },
+        "version_evidence": {
+          "target_raw": null,
+          "target_canonical": null,
+          "observed_raw": "5.7.44",
+          "observed_canonical": {
+            "product": "mysql",
+            "version": "5.7.44"
+          },
+          "resolved": {
+            "product": "mysql",
+            "version": "5.7.44",
+            "major": 5,
+            "minor": 7,
+            "patch": 44,
+            "source": "observed",
+            "validated_range": true
+          }
+        }
+      },
+      "assertions": [
+        {
+          "name": "database reachable with expected version",
+          "ok": true,
+          "detail": "SELECT VERSION() rc=0 version='5.7.44' expected_contains='5.7.44'"
+        },
+        {
+          "name": "setup create-fixture return code",
+          "ok": true,
+          "detail": "rc=0 expected=0 stderr=''"
+        },
+        {
+          "name": "exit code",
+          "ok": true,
+          "detail": "rc=1 expected=1"
+        },
+        {
+          "name": "verdict",
+          "ok": true,
+          "detail": "verdict='reject'"
+        },
+        {
+          "name": "top-level statements",
+          "ok": true,
+          "detail": "statements=1 expected=1"
+        },
+        {
+          "name": "zero findings",
+          "ok": true,
+          "detail": "findings=1"
+        },
+        {
+          "name": "no diagnostics",
+          "ok": true,
+          "detail": "diagnostics=[]"
+        },
+        {
+          "name": "no unsupported",
+          "ok": true,
+          "detail": "unsupported=[]"
+        },
+        {
+          "name": "aggregate coverage",
+          "ok": true,
+          "detail": "coverage='complete'"
+        },
+        {
+          "name": "evidence gap count",
+          "ok": true,
+          "detail": "gaps=0"
+        },
+        {
+          "name": "finding entries",
+          "ok": true,
+          "detail": "findings=[(0, 'ddl.alter.alter_check.version.require', 'blocker')] expected=[(0, 'ddl.alter.alter_check.version.require', 'blocker')]"
+        },
+        {
+          "name": "execute native-syntax-refusal return code",
+          "ok": true,
+          "detail": "rc=1 expected=1 stderr=\"ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'CHECK x NOT ENFORCED' at line 1\""
+        },
+        {
+          "name": "execute native-syntax-refusal stderr marker",
+          "ok": true,
+          "detail": "1064"
+        },
+        {
+          "name": "teardown drop-t57 return code",
+          "ok": true,
+          "detail": "rc=0 expected=0 stderr=''"
+        }
+      ],
+      "status": "pass",
+      "command": [
+        "/private/tmp/ddl-golden-t12/T12/bin/deltascope",
+        "audit",
+        "--dialect",
+        "mysql",
+        "--sql",
+        "ALTER TABLE t57 ALTER CHECK x NOT ENFORCED;",
+        "--config",
+        "/private/tmp/ddl-golden-t12/T12/golden-policy-t12-all.yaml",
+        "--format",
+        "json",
+        "--host",
+        "127.0.0.1",
+        "--port",
+        "23357",
+        "--user",
+        "root",
+        "--password-env",
+        "DS_T12_GOLDEN_PW",
+        "--schema",
+        "golden"
+      ]
+    },
+    {
+      "case_id": "T12.meta.t12-tidb85-golden",
+      "kind": "cli_metadata",
+      "cli_case": "t12-tidb85-golden",
+      "anchor": "tidb85",
+      "dialect": "tidb",
+      "input_sql": "ALTER TABLE t12g ALTER CHECK chk_id NOT ENFORCED;",
+      "policy_profile": "t12-all",
+      "policy_path": "/private/tmp/ddl-golden-t12/T12/golden-policy-t12-all.yaml",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 24000,
+        "user": "root",
+        "schema": "golden"
+      },
+      "expected": {
+        "exit": 1,
+        "verdict": "reject",
+        "statements": 1,
+        "findings": 1,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "complete",
+        "evidence_gaps": 0,
+        "finding_entries": [
+          {
+            "index": 0,
+            "rule_id": "ddl.constraint.check.not_enforced.notice",
+            "level": "blocker"
+          }
+        ],
+        "finding_metadata": [
+          {
+            "index": 0,
+            "rule_id": "ddl.constraint.check.not_enforced.notice",
+            "metadata": {
+              "table": "t12g",
+              "constraint": "chk_id",
+              "enforced": "not_enforced"
+            }
+          }
+        ],
+        "version": {
+          "product": "tidb",
+          "version": "8.5.0"
+        },
+        "instance_facts": {
+          "tidb_enable_check_constraint": "ON"
+        }
+      },
+      "actual": {
+        "database": {
+          "product": "tidb",
+          "image": "pingcap/tidb:v8.5.0",
+          "image_digest": "pingcap/tidb@sha256:490861bd4a2fa643dbe76b77ffecafcad66e6a42774e580b82f4ec2429a80e57",
+          "container": "deltascope-ddl-golden-tidb85",
+          "reachable": true,
+          "version": "8.0.11-TiDB-v8.5.0"
+        },
+        "setup": [
+          {
+            "name": "flag-on",
+            "sql": "SET GLOBAL tidb_enable_check_constraint=ON;",
+            "rc": 0,
+            "stdout": "",
+            "stderr": ""
+          },
+          {
+            "name": "create-fixture",
+            "sql": "CREATE TABLE t12g (id INT, CONSTRAINT chk_id CHECK (id > 0));",
+            "rc": 0,
+            "stdout": "",
+            "stderr": "",
+            "verify": [
+              {
+                "assert": "check stored under flag ON",
+                "sql": "SELECT COUNT(*) FROM information_schema.TIDB_CHECK_CONSTRAINTS WHERE CONSTRAINT_SCHEMA='golden' AND TABLE_NAME='t12g' AND CONSTRAINT_NAME='chk_id'",
+                "rc": 0,
+                "output": "1",
+                "stderr": ""
+              }
+            ]
+          }
+        ],
+        "post_verify": [],
+        "execute": [
+          {
+            "name": "apply-audited-flip",
+            "sql": "ALTER TABLE t12g ALTER CHECK chk_id NOT ENFORCED;",
+            "rc": 0,
+            "stdout": "",
+            "stderr": ""
+          },
+          {
+            "name": "violating-row-lands",
+            "sql": "INSERT INTO t12g VALUES (-1);",
+            "rc": 0,
+            "stdout": "",
+            "stderr": "",
+            "verify": [
+              {
+                "assert": "negative id lands under NOT ENFORCED",
+                "sql": "SELECT COUNT(*) FROM golden.t12g WHERE id=-1",
+                "rc": 0,
+                "output": "1",
+                "stderr": ""
+              }
+            ]
+          }
+        ],
+        "structure": [],
+        "teardown": [
+          {
+            "name": "clear-violating-row",
+            "sql": "DELETE FROM t12g;",
+            "rc": 0,
+            "stderr": ""
+          },
+          {
+            "name": "drop-t12g",
+            "sql": "DROP TABLE IF EXISTS t12g;",
+            "rc": 0,
+            "stderr": ""
+          }
+        ],
+        "exit": 1,
+        "stdout": "{\"verdict\":\"reject\",\"coverage\":{\"status\":\"complete\"},\"summary\":{\"statements\":1,\"blockers\":1,\"warnings\":0,\"notices\":0},\"statements\":[{\"index\":0,\"kind\":\"ddl\",\"raw_sql\":\"ALTER TABLE t12g ALTER CHECK chk_id NOT ENFORCED;\",\"normalized_sql\":\"ALTER TABLE t12g ALTER CHECK chk_id NOT ENFORCED\",\"findings\":[{\"rule_id\":\"ddl.constraint.check.not_enforced.notice\",\"level\":\"blocker\",\"message\":\"check constraint \\\"chk_id\\\" on table \\\"t12g\\\" is switched to NOT ENFORCED\",\"statement_kind\":\"ddl\",\"location\":{\"line\":1,\"column\":1},\"suggestion\":\"keep check constraints enforced, or confirm the disabled state is intentional\",\"metadata\":{\"action\":\"alter_check\",\"constraint\":\"chk_id\",\"enforced\":\"not_enforced\",\"table\":\"t12g\"},\"explanation\":{\"summary\":\"Check DDL constraint check not enforced notice\",\"why\":\"The statement matched the shipped governance rule for this pattern.\",\"risk\":\"Ignoring this rule can hide live-schema or instance-state risks that only metadata reveals.\",\"suggestion\":\"keep check constraints enforced, or confirm the disabled state is intentional\",\"metadata\":{\"status\":\"available\",\"note\":\"Live metadata is available, so this explanation can use schema or instance facts for a more accurate judgment.\"}}}],\"coverage\":{\"status\":\"complete\"}}],\"version\":{\"product\":\"tidb\",\"version\":\"8.5.0\",\"major\":8,\"minor\":5,\"patch\":0,\"source\":\"observed\",\"validated_range\":true},\"fail_on_triggered\":true,\"rule_summary\":{\"loaded\":5,\"applicable\":2,\"skipped\":[]},\"context\":{\"mode\":\"metadata-aware\",\"dialect\":\"tidb\",\"dialect_source\":\"detected\",\"schema\":\"golden\",\"schema_source\":\"flag\"}}\n",
+        "stderr": "",
+        "parsed": {
+          "verdict": "reject",
+          "coverage": {
+            "status": "complete"
+          },
+          "summary": {
+            "statements": 1,
+            "blockers": 1,
+            "warnings": 0,
+            "notices": 0
+          },
+          "statements": [
+            {
+              "index": 0,
+              "kind": "ddl",
+              "raw_sql": "ALTER TABLE t12g ALTER CHECK chk_id NOT ENFORCED;",
+              "normalized_sql": "ALTER TABLE t12g ALTER CHECK chk_id NOT ENFORCED",
+              "findings": [
+                {
+                  "rule_id": "ddl.constraint.check.not_enforced.notice",
+                  "level": "blocker",
+                  "message": "check constraint \"chk_id\" on table \"t12g\" is switched to NOT ENFORCED",
+                  "statement_kind": "ddl",
+                  "location": {
+                    "line": 1,
+                    "column": 1
+                  },
+                  "suggestion": "keep check constraints enforced, or confirm the disabled state is intentional",
+                  "metadata": {
+                    "action": "alter_check",
+                    "constraint": "chk_id",
+                    "enforced": "not_enforced",
+                    "table": "t12g"
+                  },
+                  "explanation": {
+                    "summary": "Check DDL constraint check not enforced notice",
+                    "why": "The statement matched the shipped governance rule for this pattern.",
+                    "risk": "Ignoring this rule can hide live-schema or instance-state risks that only metadata reveals.",
+                    "suggestion": "keep check constraints enforced, or confirm the disabled state is intentional",
+                    "metadata": {
+                      "status": "available",
+                      "note": "Live metadata is available, so this explanation can use schema or instance facts for a more accurate judgment."
+                    }
+                  }
+                }
+              ],
+              "coverage": {
+                "status": "complete"
+              }
+            }
+          ],
+          "version": {
+            "product": "tidb",
+            "version": "8.5.0",
+            "major": 8,
+            "minor": 5,
+            "patch": 0,
+            "source": "observed",
+            "validated_range": true
+          },
+          "fail_on_triggered": true,
+          "rule_summary": {
+            "loaded": 5,
+            "applicable": 2,
+            "skipped": []
+          },
+          "context": {
+            "mode": "metadata-aware",
+            "dialect": "tidb",
+            "dialect_source": "detected",
+            "schema": "golden",
+            "schema_source": "flag"
+          }
+        },
+        "version_evidence": {
+          "target_raw": null,
+          "target_canonical": null,
+          "observed_raw": "8.0.11-TiDB-v8.5.0",
+          "observed_canonical": {
+            "product": "tidb",
+            "version": "8.5.0"
+          },
+          "resolved": {
+            "product": "tidb",
+            "version": "8.5.0",
+            "major": 8,
+            "minor": 5,
+            "patch": 0,
+            "source": "observed",
+            "validated_range": true
+          }
+        },
+        "instance_facts": {
+          "tidb_enable_check_constraint": "ON"
+        }
+      },
+      "assertions": [
+        {
+          "name": "database reachable with expected version",
+          "ok": true,
+          "detail": "SELECT VERSION() rc=0 version='8.0.11-TiDB-v8.5.0' expected_contains='v8.5.0'"
+        },
+        {
+          "name": "setup flag-on return code",
+          "ok": true,
+          "detail": "rc=0 expected=0 stderr=''"
+        },
+        {
+          "name": "setup create-fixture return code",
+          "ok": true,
+          "detail": "rc=0 expected=0 stderr=''"
+        },
+        {
+          "name": "setup create-fixture: check stored under flag ON",
+          "ok": true,
+          "detail": "rc=0 output='1' expected='1'"
+        },
+        {
+          "name": "instance fact tidb_enable_check_constraint",
+          "ok": true,
+          "detail": "tidb_enable_check_constraint='ON' expected='ON'"
+        },
+        {
+          "name": "exit code",
+          "ok": true,
+          "detail": "rc=1 expected=1"
+        },
+        {
+          "name": "verdict",
+          "ok": true,
+          "detail": "verdict='reject'"
+        },
+        {
+          "name": "top-level statements",
+          "ok": true,
+          "detail": "statements=1 expected=1"
+        },
+        {
+          "name": "zero findings",
+          "ok": true,
+          "detail": "findings=1"
+        },
+        {
+          "name": "no diagnostics",
+          "ok": true,
+          "detail": "diagnostics=[]"
+        },
+        {
+          "name": "no unsupported",
+          "ok": true,
+          "detail": "unsupported=[]"
+        },
+        {
+          "name": "aggregate coverage",
+          "ok": true,
+          "detail": "coverage='complete'"
+        },
+        {
+          "name": "evidence gap count",
+          "ok": true,
+          "detail": "gaps=0"
+        },
+        {
+          "name": "finding entries",
+          "ok": true,
+          "detail": "findings=[(0, 'ddl.constraint.check.not_enforced.notice', 'blocker')] expected=[(0, 'ddl.constraint.check.not_enforced.notice', 'blocker')]"
+        },
+        {
+          "name": "finding metadata (0, 'ddl.constraint.check.not_enforced.notice')",
+          "ok": true,
+          "detail": "findings=[{'action': 'alter_check', 'constraint': 'chk_id', 'enforced': 'not_enforced', 'table': 't12g'}] expected_subset={'table': 't12g', 'constraint': 'chk_id', 'enforced': 'not_enforced'}"
+        },
+        {
+          "name": "version identity",
+          "ok": true,
+          "detail": "version={'product': 'tidb', 'version': '8.5.0', 'major': 8, 'minor': 5, 'patch': 0, 'source': 'observed', 'validated_range': True} expected={'product': 'tidb', 'version': '8.5.0'}"
+        },
+        {
+          "name": "execute apply-audited-flip return code",
+          "ok": true,
+          "detail": "rc=0 expected=0 stderr=''"
+        },
+        {
+          "name": "execute violating-row-lands return code",
+          "ok": true,
+          "detail": "rc=0 expected=0 stderr=''"
+        },
+        {
+          "name": "execute violating-row-lands: negative id lands under NOT ENFORCED",
+          "ok": true,
+          "detail": "rc=0 output='1' expected='1'"
+        },
+        {
+          "name": "teardown clear-violating-row return code",
+          "ok": true,
+          "detail": "rc=0 expected=0 stderr=''"
+        },
+        {
+          "name": "teardown drop-t12g return code",
+          "ok": true,
+          "detail": "rc=0 expected=0 stderr=''"
+        }
+      ],
+      "status": "pass",
+      "command": [
+        "/private/tmp/ddl-golden-t12/T12/bin/deltascope",
+        "audit",
+        "--dialect",
+        "tidb",
+        "--sql",
+        "ALTER TABLE t12g ALTER CHECK chk_id NOT ENFORCED;",
+        "--config",
+        "/private/tmp/ddl-golden-t12/T12/golden-policy-t12-all.yaml",
+        "--format",
+        "json",
+        "--host",
+        "127.0.0.1",
+        "--port",
+        "24000",
+        "--user",
+        "root",
+        "--schema",
+        "golden"
+      ]
+    },
+    {
+      "case_id": "T12.meta.t12-tidb85-flag-off-ignored",
+      "kind": "cli_metadata",
+      "cli_case": "t12-tidb85-flag-off-ignored",
+      "anchor": "tidb85",
+      "dialect": "tidb",
+      "input_sql": "CREATE TABLE t_off (id INT, CONSTRAINT chk_ign CHECK (id > 0));",
+      "policy_profile": "t12-all",
+      "policy_path": "/private/tmp/ddl-golden-t12/T12/golden-policy-t12-all.yaml",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 24000,
+        "user": "root",
+        "schema": "golden"
+      },
+      "expected": {
+        "exit": 0,
+        "verdict": "review",
+        "statements": 1,
+        "findings": 1,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "complete",
+        "evidence_gaps": 0,
+        "finding_entries": [
+          {
+            "index": 0,
+            "rule_id": "ddl.constraint.check.ignored.notice",
+            "level": "warning"
+          }
+        ],
+        "instance_facts": {
+          "tidb_enable_check_constraint": "OFF"
+        }
+      },
+      "actual": {
+        "database": {
+          "product": "tidb",
+          "image": "pingcap/tidb:v8.5.0",
+          "image_digest": "pingcap/tidb@sha256:490861bd4a2fa643dbe76b77ffecafcad66e6a42774e580b82f4ec2429a80e57",
+          "container": "deltascope-ddl-golden-tidb85",
+          "reachable": true,
+          "version": "8.0.11-TiDB-v8.5.0"
+        },
+        "setup": [
+          {
+            "name": "flag-off",
+            "sql": "SET GLOBAL tidb_enable_check_constraint=OFF;",
+            "rc": 0,
+            "stdout": "",
+            "stderr": "",
+            "verify": [
+              {
+                "assert": "flag observed OFF",
+                "sql": "SELECT @@global.tidb_enable_check_constraint",
+                "rc": 0,
+                "output": "0",
+                "stderr": ""
+              }
+            ]
+          }
+        ],
+        "post_verify": [],
+        "execute": [
+          {
+            "name": "native-accepts-but-stores-nothing",
+            "sql": "CREATE TABLE t_off (id INT, CONSTRAINT chk_ign CHECK (id > 0));",
+            "rc": 0,
+            "stdout": "",
+            "stderr": "",
+            "verify": [
+              {
+                "assert": "flag OFF stores no member",
+                "sql": "SELECT COUNT(*) FROM information_schema.TIDB_CHECK_CONSTRAINTS WHERE CONSTRAINT_SCHEMA='golden' AND TABLE_NAME='t_off'",
+                "rc": 0,
+                "output": "0",
+                "stderr": ""
+              }
+            ]
+          },
+          {
+            "name": "violating-row-lands",
+            "sql": "INSERT INTO t_off VALUES (-1);",
+            "rc": 0,
+            "stdout": "",
+            "stderr": "",
+            "verify": [
+              {
+                "assert": "negative id lands under ignored check",
+                "sql": "SELECT COUNT(*) FROM golden.t_off WHERE id=-1",
+                "rc": 0,
+                "output": "1",
+                "stderr": ""
+              }
+            ]
+          }
+        ],
+        "structure": [],
+        "teardown": [
+          {
+            "name": "drop-t_off",
+            "sql": "DROP TABLE IF EXISTS t_off;",
+            "rc": 0,
+            "stderr": ""
+          },
+          {
+            "name": "flag-restore",
+            "sql": "SET GLOBAL tidb_enable_check_constraint=ON;",
+            "rc": 0,
+            "stderr": "",
+            "verify": [
+              {
+                "assert": "shared anchor restored ON",
+                "sql": "SELECT @@global.tidb_enable_check_constraint",
+                "rc": 0,
+                "output": "1",
+                "stderr": ""
+              }
+            ]
+          }
+        ],
+        "exit": 0,
+        "stdout": "{\"verdict\":\"review\",\"coverage\":{\"status\":\"complete\"},\"summary\":{\"statements\":1,\"blockers\":0,\"warnings\":1,\"notices\":0},\"statements\":[{\"index\":0,\"kind\":\"ddl\",\"raw_sql\":\"CREATE TABLE t_off (id INT, CONSTRAINT chk_ign CHECK (id \\u003e 0));\",\"normalized_sql\":\"CREATE TABLE t_off (id INT, CONSTRAINT chk_ign CHECK (id \\u003e 0))\",\"findings\":[{\"rule_id\":\"ddl.constraint.check.ignored.notice\",\"level\":\"warning\",\"message\":\"check constraint \\\"chk_ign\\\" on table \\\"t_off\\\" is parsed but ignored on this product\",\"statement_kind\":\"ddl\",\"location\":{\"line\":1,\"column\":1},\"suggestion\":\"verify the target product actually enforces check constraints before relying on this declaration\",\"metadata\":{\"constraint\":\"chk_ign\",\"enforced\":\"ignored\",\"table\":\"t_off\"},\"explanation\":{\"summary\":\"Check DDL constraint check ignored notice\",\"why\":\"The statement matched the shipped governance rule for this pattern.\",\"risk\":\"Ignoring this rule can hide live-schema or instance-state risks that only metadata reveals.\",\"suggestion\":\"verify the target product actually enforces check constraints before relying on this declaration\",\"metadata\":{\"status\":\"available\",\"note\":\"Live metadata is available, so this explanation can use schema or instance facts for a more accurate judgment.\"}}}],\"coverage\":{\"status\":\"complete\"}}],\"version\":{\"product\":\"tidb\",\"version\":\"8.5.0\",\"major\":8,\"minor\":5,\"patch\":0,\"source\":\"observed\",\"validated_range\":true},\"fail_on_triggered\":false,\"rule_summary\":{\"loaded\":5,\"applicable\":1,\"skipped\":[]},\"context\":{\"mode\":\"metadata-aware\",\"dialect\":\"tidb\",\"dialect_source\":\"detected\",\"schema\":\"golden\",\"schema_source\":\"flag\"}}\n",
+        "stderr": "",
+        "parsed": {
+          "verdict": "review",
+          "coverage": {
+            "status": "complete"
+          },
+          "summary": {
+            "statements": 1,
+            "blockers": 0,
+            "warnings": 1,
+            "notices": 0
+          },
+          "statements": [
+            {
+              "index": 0,
+              "kind": "ddl",
+              "raw_sql": "CREATE TABLE t_off (id INT, CONSTRAINT chk_ign CHECK (id > 0));",
+              "normalized_sql": "CREATE TABLE t_off (id INT, CONSTRAINT chk_ign CHECK (id > 0))",
+              "findings": [
+                {
+                  "rule_id": "ddl.constraint.check.ignored.notice",
+                  "level": "warning",
+                  "message": "check constraint \"chk_ign\" on table \"t_off\" is parsed but ignored on this product",
+                  "statement_kind": "ddl",
+                  "location": {
+                    "line": 1,
+                    "column": 1
+                  },
+                  "suggestion": "verify the target product actually enforces check constraints before relying on this declaration",
+                  "metadata": {
+                    "constraint": "chk_ign",
+                    "enforced": "ignored",
+                    "table": "t_off"
+                  },
+                  "explanation": {
+                    "summary": "Check DDL constraint check ignored notice",
+                    "why": "The statement matched the shipped governance rule for this pattern.",
+                    "risk": "Ignoring this rule can hide live-schema or instance-state risks that only metadata reveals.",
+                    "suggestion": "verify the target product actually enforces check constraints before relying on this declaration",
+                    "metadata": {
+                      "status": "available",
+                      "note": "Live metadata is available, so this explanation can use schema or instance facts for a more accurate judgment."
+                    }
+                  }
+                }
+              ],
+              "coverage": {
+                "status": "complete"
+              }
+            }
+          ],
+          "version": {
+            "product": "tidb",
+            "version": "8.5.0",
+            "major": 8,
+            "minor": 5,
+            "patch": 0,
+            "source": "observed",
+            "validated_range": true
+          },
+          "fail_on_triggered": false,
+          "rule_summary": {
+            "loaded": 5,
+            "applicable": 1,
+            "skipped": []
+          },
+          "context": {
+            "mode": "metadata-aware",
+            "dialect": "tidb",
+            "dialect_source": "detected",
+            "schema": "golden",
+            "schema_source": "flag"
+          }
+        },
+        "version_evidence": {
+          "target_raw": null,
+          "target_canonical": null,
+          "observed_raw": "8.0.11-TiDB-v8.5.0",
+          "observed_canonical": {
+            "product": "tidb",
+            "version": "8.5.0"
+          },
+          "resolved": {
+            "product": "tidb",
+            "version": "8.5.0",
+            "major": 8,
+            "minor": 5,
+            "patch": 0,
+            "source": "observed",
+            "validated_range": true
+          }
+        },
+        "instance_facts": {
+          "tidb_enable_check_constraint": "OFF"
+        }
+      },
+      "assertions": [
+        {
+          "name": "database reachable with expected version",
+          "ok": true,
+          "detail": "SELECT VERSION() rc=0 version='8.0.11-TiDB-v8.5.0' expected_contains='v8.5.0'"
+        },
+        {
+          "name": "setup flag-off return code",
+          "ok": true,
+          "detail": "rc=0 expected=0 stderr=''"
+        },
+        {
+          "name": "setup flag-off: flag observed OFF",
+          "ok": true,
+          "detail": "rc=0 output='0' expected='0'"
+        },
+        {
+          "name": "instance fact tidb_enable_check_constraint",
+          "ok": true,
+          "detail": "tidb_enable_check_constraint='OFF' expected='OFF'"
+        },
+        {
+          "name": "exit code",
+          "ok": true,
+          "detail": "rc=0 expected=0"
+        },
+        {
+          "name": "verdict",
+          "ok": true,
+          "detail": "verdict='review'"
+        },
+        {
+          "name": "top-level statements",
+          "ok": true,
+          "detail": "statements=1 expected=1"
+        },
+        {
+          "name": "zero findings",
+          "ok": true,
+          "detail": "findings=1"
+        },
+        {
+          "name": "no diagnostics",
+          "ok": true,
+          "detail": "diagnostics=[]"
+        },
+        {
+          "name": "no unsupported",
+          "ok": true,
+          "detail": "unsupported=[]"
+        },
+        {
+          "name": "aggregate coverage",
+          "ok": true,
+          "detail": "coverage='complete'"
+        },
+        {
+          "name": "evidence gap count",
+          "ok": true,
+          "detail": "gaps=0"
+        },
+        {
+          "name": "finding entries",
+          "ok": true,
+          "detail": "findings=[(0, 'ddl.constraint.check.ignored.notice', 'warning')] expected=[(0, 'ddl.constraint.check.ignored.notice', 'warning')]"
+        },
+        {
+          "name": "execute native-accepts-but-stores-nothing return code",
+          "ok": true,
+          "detail": "rc=0 expected=0 stderr=''"
+        },
+        {
+          "name": "execute native-accepts-but-stores-nothing: flag OFF stores no member",
+          "ok": true,
+          "detail": "rc=0 output='0' expected='0'"
+        },
+        {
+          "name": "execute violating-row-lands return code",
+          "ok": true,
+          "detail": "rc=0 expected=0 stderr=''"
+        },
+        {
+          "name": "execute violating-row-lands: negative id lands under ignored check",
+          "ok": true,
+          "detail": "rc=0 output='1' expected='1'"
+        },
+        {
+          "name": "teardown drop-t_off return code",
+          "ok": true,
+          "detail": "rc=0 expected=0 stderr=''"
+        },
+        {
+          "name": "teardown flag-restore return code",
+          "ok": true,
+          "detail": "rc=0 expected=0 stderr=''"
+        },
+        {
+          "name": "teardown flag-restore: shared anchor restored ON",
+          "ok": true,
+          "detail": "rc=0 output='1' expected='1'"
+        }
+      ],
+      "status": "pass",
+      "command": [
+        "/private/tmp/ddl-golden-t12/T12/bin/deltascope",
+        "audit",
+        "--dialect",
+        "tidb",
+        "--sql",
+        "CREATE TABLE t_off (id INT, CONSTRAINT chk_ign CHECK (id > 0));",
+        "--config",
+        "/private/tmp/ddl-golden-t12/T12/golden-policy-t12-all.yaml",
+        "--format",
+        "json",
+        "--host",
+        "127.0.0.1",
+        "--port",
+        "24000",
+        "--user",
+        "root",
+        "--schema",
+        "golden"
+      ]
+    }
+  ],
+  "executed_count": 25,
+  "cleanup": {
+    "compose_down_rc": 0,
+    "compose_down_stderr": "Container deltascope-ddl-golden-mysql84 Stopping \n Container deltascope-ddl-golden-tidb85-client Stopping \n Container deltascope-ddl-golden-mysql80 Stopping \n Container deltascope-ddl-golden-mysql57 Stopping \n Container deltascope-ddl-golden-mysql84 Stopped \n Container deltascope-ddl-golden-mysql84 Removing \n Container deltascope-ddl-golden-mysql84 Removed \n Container deltascope-ddl-golden-mysql80 Stopped \n Container deltascope-ddl-golden-mysql80 Removing \n Container deltascope-ddl-golden-mysql80 Removed \n Container deltascope-ddl-golden-mysql57 Stopped \n Container deltascope-ddl-golden-mysql57 Removing \n Container deltascope-ddl-golden-mysql57 Removed \n Container deltascope-ddl-golden-tidb85-client Stopped \n Container deltascope-ddl-golden-tidb85-client Removing \n Container deltascope-ddl-golden-tidb85-client Removed \n Container deltascope-ddl-golden-tidb85 Stopping \n Container deltascope-ddl-golden-tidb85 Stopped \n Container deltascope-ddl-golden-tidb85 Removing \n Container deltascope-ddl-golden-tidb85 Removed \n Network deltascope-ddl-golden_default Removing \n Network deltascope-ddl-golden_default Removed",
+    "residual_containers": []
+  },
+  "container_health": {
+    "deltascope-ddl-golden-mysql57": "healthy",
+    "deltascope-ddl-golden-mysql80": "healthy",
+    "deltascope-ddl-golden-mysql84": "healthy",
+    "deltascope-ddl-golden-tidb85": "healthy",
+    "deltascope-ddl-golden-tidb85-client": "healthy"
+  }
+}

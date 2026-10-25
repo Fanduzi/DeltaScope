@@ -1,0 +1,27 @@
+product_sha: 1f8e5a0b4e89d8cc4e6f8dd34708476808e2ba91
+product_parent: 186710db69088d59eae82726bbc6ad4789f8a353 (T11-R2-tail evidence)
+prior_chain: 186710db -> 27edfea2 (T11-R2-tail product) -> efc004c7 (T11-R2 evidence) -> 988560c2 (R2 product) -> d0c7cf33 (L3 retirement)
+branch: milestone/mysql-tidb-ddl-completion (local working branch; push target is origin/workfree)
+cli_sha256: 71c6ca99c1bfd9cbe26432bee11409f77d56cb2a5fade294aaf7d302f91d4e5c
+cli_build: artifact-managed build under each golden dir; cli/build/head_sha=1f8e5a0b4e89 in all four artifacts
+
+golden:
+  T09: 125/125 cases, 3442 assertions, head_sha=1f8e5a0b4e89d8cc4e6f8dd34708476808e2ba91
+  T10: 126/126 cases, 3175 assertions, head_sha=1f8e5a0b4e89d8cc4e6f8dd34708476808e2ba91
+  T11: 40/40 cases, 506 assertions, head_sha=1f8e5a0b4e89d8cc4e6f8dd34708476808e2ba91
+       (authorized oracle update: dropfk-check-bearing, CONTRACT §3a — was 505)
+  T12: 25/25 cases, 280 assertions, head_sha=1f8e5a0b4e89d8cc4e6f8dd34708476808e2ba91
+
+anchors (ddl-golden compose, all healthy during gate+golden runs):
+  mysql57  = mysql:5.7.44
+  mysql80  = mysql:8.0.46
+  mysql84  = mysql:8.4.10
+  tidb85   = pingcap/tidb:v8.5.0 (via mysql-client sidecar)
+
+credential convention: per-task <TASK>_MYSQL_PASSWORD env (root), as in
+`make ddl-golden` runs; never committed.
+
+remote status at archive time:
+  origin/workfree = 186710db (T11-R2-tail evidence)
+  origin/milestone/mysql-tidb-ddl-completion = d0c7cf33 — ahead of the
+  declared 1d60d578 baseline; drift recorded previously, untouched here.

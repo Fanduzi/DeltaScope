@@ -1,0 +1,11 @@
+internal/application/audit
+internal/application/auditmeta
+internal/domain/policy
+internal/domain/rule/catalog
+internal/domain/rule/ddl
+internal/domain/spec
+internal/infrastructure/metadata/mysql
+internal/infrastructure/parser/tidb
+internal/interfaces/http
+pkg/deltascope
+scripts/t06a17proof

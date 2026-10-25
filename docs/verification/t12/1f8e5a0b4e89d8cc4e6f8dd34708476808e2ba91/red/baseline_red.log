@@ -1,0 +1,57 @@
+=== RUN   TestT12AlterCheckNotEnforcedGoldenPath
+=== PAUSE TestT12AlterCheckNotEnforcedGoldenPath
+=== RUN   TestT12AlterCheckEnforcedReverseDoesNotFire
+=== PAUSE TestT12AlterCheckEnforcedReverseDoesNotFire
+=== RUN   TestT12OrdinaryColumnChangeDoesNotFire
+=== PAUSE TestT12OrdinaryColumnChangeDoesNotFire
+=== RUN   TestT12AlterCheckMissingNameExistsFinding
+=== PAUSE TestT12AlterCheckMissingNameExistsFinding
+=== RUN   TestT12AlterCheckNonCheckNameExistsFinding
+=== PAUSE TestT12AlterCheckNonCheckNameExistsFinding
+=== RUN   TestT12MySQL57CheckDeclarationIgnoredReveal
+=== PAUSE TestT12MySQL57CheckDeclarationIgnoredReveal
+=== RUN   TestT12MySQL57AlterCheckSyntaxRefused
+=== PAUSE TestT12MySQL57AlterCheckSyntaxRefused
+=== RUN   TestT12TiDBFlagOffIgnoredArm
+=== PAUSE TestT12TiDBFlagOffIgnoredArm
+=== RUN   TestT12TiDBFlagOnAlterCheckNotEnforced
+=== PAUSE TestT12TiDBFlagOnAlterCheckNotEnforced
+=== RUN   TestT12AddCheckNotEnforcedDeclaresDisabled
+=== PAUSE TestT12AddCheckNotEnforcedDeclaresDisabled
+=== RUN   TestT12TiDBFlagUnobservedGap
+=== PAUSE TestT12TiDBFlagUnobservedGap
+=== CONT  TestT12AlterCheckNotEnforcedGoldenPath
+=== CONT  TestT12MySQL57AlterCheckSyntaxRefused
+=== CONT  TestT12AddCheckNotEnforcedDeclaresDisabled
+=== CONT  TestT12TiDBFlagOnAlterCheckNotEnforced
+=== CONT  TestT12TiDBFlagUnobservedGap
+=== CONT  TestT12MySQL57CheckDeclarationIgnoredReveal
+=== CONT  TestT12AlterCheckNonCheckNameExistsFinding
+=== CONT  TestT12AlterCheckMissingNameExistsFinding
+=== CONT  TestT12OrdinaryColumnChangeDoesNotFire
+=== CONT  TestT12AlterCheckEnforcedReverseDoesNotFire
+=== CONT  TestT12TiDBFlagOffIgnoredArm
+=== NAME  TestT12AlterCheckNotEnforcedGoldenPath
+    batch_state_t12_check_test.go:73: coverage="incomplete", want complete
+=== NAME  TestT12AlterCheckEnforcedReverseDoesNotFire
+    batch_state_t12_check_test.go:112: post-state snapshot missing entirely
+--- PASS: TestT12TiDBFlagUnobservedGap (0.01s)
+--- FAIL: TestT12AlterCheckNotEnforcedGoldenPath (0.01s)
+--- FAIL: TestT12AlterCheckEnforcedReverseDoesNotFire (0.01s)
+=== NAME  TestT12TiDBFlagOnAlterCheckNotEnforced
+    batch_state_t12_check_test.go:266: post-state snapshot missing entirely
+=== NAME  TestT12AddCheckNotEnforcedDeclaresDisabled
+    batch_state_t12_check_test.go:292: post-state snapshot missing entirely
+=== NAME  TestT12AlterCheckNonCheckNameExistsFinding
+    batch_state_t12_check_test.go:182: non-check target lost its proven member state
+--- FAIL: TestT12AddCheckNotEnforcedDeclaresDisabled (0.01s)
+--- FAIL: TestT12TiDBFlagOnAlterCheckNotEnforced (0.01s)
+--- PASS: TestT12OrdinaryColumnChangeDoesNotFire (0.01s)
+--- FAIL: TestT12AlterCheckNonCheckNameExistsFinding (0.01s)
+--- PASS: TestT12MySQL57CheckDeclarationIgnoredReveal (0.01s)
+--- PASS: TestT12TiDBFlagOffIgnoredArm (0.01s)
+--- PASS: TestT12AlterCheckMissingNameExistsFinding (0.01s)
+--- PASS: TestT12MySQL57AlterCheckSyntaxRefused (0.01s)
+FAIL
+FAIL	github.com/Fanduzi/DeltaScope/internal/application/audit	0.562s
+FAIL

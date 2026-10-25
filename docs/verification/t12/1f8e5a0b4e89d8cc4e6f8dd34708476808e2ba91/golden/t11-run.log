@@ -1,0 +1,9 @@
+python3 ./scripts/ddl_golden.py run --task "T11" --artifact-dir "/tmp/ddl-golden-t12"
+
+first run on 0c34247c failed one cell: t11-mysql80-dropfk-check-bearing
+(check-bearing constraint collection became fully vouched once CHECK
+members loaded; oracle updated per CONTRACT section 3a)
+
+[ddl-golden] task=T11 head=1f8e5a0b4e89 cases=40 passed=40 assertions=506
+[ddl-golden] artifact=/private/tmp/ddl-golden-t12/T11/artifact.json
+[ddl-golden] PASS

@@ -1,0 +1,31 @@
+python3 ./scripts/ddl_golden.py run --task "T12" --artifact-dir "/tmp/ddl-golden-t12"
+[ddl-golden][FAIL] case T12.meta.t12-mysql80-alter-missing: status='fail'
+[ddl-golden][FAIL] case T12.meta.t12-mysql80-alter-missing: failed assertion 'zero findings': 'findings=2'
+[ddl-golden][FAIL] case T12.meta.t12-mysql80-alter-missing: failed assertion 'finding entries': "findings=[(0, 'ddl.alter.alter_check.exists.require', 'blocker'), (0, 'ddl.constraint.check.not_enforced.notice', 'blocker')] expected=[(0, 'ddl.alter.alter_check.exists.require', 'blocker')]"
+[ddl-golden][FAIL] case T12.meta.t12-mysql80-alter-missing: zero findings: findings=2
+[ddl-golden][FAIL] case T12.meta.t12-mysql80-alter-missing: finding entries: findings=[(0, 'ddl.alter.alter_check.exists.require', 'blocker'), (0, 'ddl.constraint.check.not_enforced.notice', 'blocker')] expected=[(0, 'ddl.alter.alter_check.exists.require', 'blocker')]
+[ddl-golden][FAIL] case T12.meta.t12-tidb85-golden: status='fail'
+[ddl-golden][FAIL] case T12.meta.t12-tidb85-golden: failed assertion 'exit code': 'rc=3 expected=1'
+[ddl-golden][FAIL] case T12.meta.t12-tidb85-golden: failed assertion 'verdict': 'verdict=None'
+[ddl-golden][FAIL] case T12.meta.t12-tidb85-golden: failed assertion 'top-level statements': 'statements=0 expected=1'
+[ddl-golden][FAIL] case T12.meta.t12-tidb85-golden: failed assertion 'zero findings': 'findings=0'
+[ddl-golden][FAIL] case T12.meta.t12-tidb85-golden: failed assertion 'no diagnostics': 'diagnostics=[]'
+[ddl-golden][FAIL] case T12.meta.t12-tidb85-golden: failed assertion 'no unsupported': 'unsupported=[]'
+[ddl-golden][FAIL] case T12.meta.t12-tidb85-golden: failed assertion 'aggregate coverage': 'coverage=None'
+[ddl-golden][FAIL] case T12.meta.t12-tidb85-golden: failed assertion 'finding entries': "findings=[] expected=[(0, 'ddl.constraint.check.not_enforced.notice', 'blocker')]"
+[ddl-golden][FAIL] case T12.meta.t12-tidb85-golden: failed assertion "finding metadata (0, 'ddl.constraint.check.not_enforced.notice')": "findings=[] expected_subset={'table': 't12g', 'constraint': 'chk_id', 'enforced': 'not_enforced'}"
+[ddl-golden][FAIL] case T12.meta.t12-tidb85-golden: failed assertion 'version identity': "version=None expected={'product': 'tidb', 'version': '8.5.0'}"
+[ddl-golden][FAIL] case T12.meta.t12-tidb85-golden: CLI stdout is not JSON
+[ddl-golden][FAIL] case T12.meta.t12-tidb85-flag-off-ignored: status='fail'
+[ddl-golden][FAIL] case T12.meta.t12-tidb85-flag-off-ignored: failed assertion 'exit code': 'rc=3 expected=0'
+[ddl-golden][FAIL] case T12.meta.t12-tidb85-flag-off-ignored: failed assertion 'verdict': 'verdict=None'
+[ddl-golden][FAIL] case T12.meta.t12-tidb85-flag-off-ignored: failed assertion 'top-level statements': 'statements=0 expected=1'
+[ddl-golden][FAIL] case T12.meta.t12-tidb85-flag-off-ignored: failed assertion 'zero findings': 'findings=0'
+[ddl-golden][FAIL] case T12.meta.t12-tidb85-flag-off-ignored: failed assertion 'no diagnostics': 'diagnostics=[]'
+[ddl-golden][FAIL] case T12.meta.t12-tidb85-flag-off-ignored: failed assertion 'no unsupported': 'unsupported=[]'
+[ddl-golden][FAIL] case T12.meta.t12-tidb85-flag-off-ignored: failed assertion 'aggregate coverage': 'coverage=None'
+[ddl-golden][FAIL] case T12.meta.t12-tidb85-flag-off-ignored: failed assertion 'finding entries': "findings=[] expected=[(0, 'ddl.constraint.check.ignored.notice', 'warning')]"
+[ddl-golden][FAIL] case T12.meta.t12-tidb85-flag-off-ignored: CLI stdout is not JSON
+[ddl-golden] task=T12 head=186710db6908 cases=25 passed=22 assertions=280
+[ddl-golden] artifact=/private/tmp/ddl-golden-t12/T12/artifact.json
+make: *** [ddl-golden] Error 1
