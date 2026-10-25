@@ -106,11 +106,11 @@ func TestPostgreSQLDDLConsolidatedCoverageCensus(t *testing.T) {
 		}
 	}
 
-	assertExpected("representative", summaries[0].Summary, 97, 93, 4, 0, 0)
+	assertExpected("representative", summaries[0].Summary, 97, 92, 5, 0, 0)
 	assertExpected("completion", summaries[1].Summary, 31, 31, 0, 0, 0)
 	assertExpected("deep", summaries[2].Summary, 39, 38, 0, 0, 1)
 	assertExpected("long_tail", summaries[3].Summary, 57, 57, 0, 0, 0)
-	assertExpected("alter_residual", summaries[4].Summary, 66, 60, 2, 0, 4)
+	assertExpected("alter_residual", summaries[4].Summary, 66, 59, 3, 0, 4)
 }
 
 func adaptCensusResult(r censusResult) ddlCensusResult {

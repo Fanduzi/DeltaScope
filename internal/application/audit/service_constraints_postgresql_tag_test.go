@@ -315,9 +315,14 @@ func TestAuditSQLPostgreSQLAlterTableAddConstraintRuleCoverage(t *testing.T) {
 		wantRuleID string
 	}{
 		{
-			name:       "primary_key_bigint_required",
-			sql:        "ALTER TABLE users ADD CONSTRAINT users_pkey PRIMARY KEY (id);",
-			wantRuleID: "ddl.table.primary_key.bigint.require",
+			// The ALTER-declared member carries only a name — no column
+			// facts exist on this path, so the bigint predicate is
+			// unevaluable and must not fabricate the violation. The old
+			// oracle pinned the name-only stub reading Type="" as a
+			// proven non-bigint column; the correct premise withholds
+			// the finding until ordered column evidence exists.
+			name: "primary_key_bigint_required_no_column_facts",
+			sql:  "ALTER TABLE users ADD CONSTRAINT users_pkey PRIMARY KEY (id);",
 		},
 		{
 			name:       "unique_prefix_required",
@@ -351,7 +356,7 @@ func TestAuditSQLPostgreSQLAlterTableAddConstraintRuleCoverage(t *testing.T) {
 					break
 				}
 			}
-			if !found {
+			if tt.wantRuleID != "" && !found {
 				t.Fatalf("expected finding with rule %q, got %#v", tt.wantRuleID, result.Statements[0].Findings)
 			}
 

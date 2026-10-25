@@ -7,8 +7,12 @@ expect:
     count: 0
   findings:
     include:
-      - ddl.table.primary_key.bigint.require
       - ddl.alter.add_index.unique.prefix.require
+    exclude:
+      # ALTER-declared member names carry no column facts; without ordered
+      # pre-state column evidence the bigint premise is unevaluable, so a
+      # name-only member never fabricates the violation.
+      - ddl.table.primary_key.bigint.require
 config:
   rules:
     ddl.table.primary_key.bigint.require:
