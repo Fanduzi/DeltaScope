@@ -338,7 +338,7 @@ func (r indexExistenceRule) EvidenceGaps(statement spec.Statement) []rule.Eviden
 		if !strings.EqualFold(name, "primary") && statement.Dialect != spec.DialectTiDB {
 			continue
 		}
-		if snapshot.PrimaryKeyUnknown || snapshot.ConstraintsUnknown ||
+		if snapshot.PrimaryKeyUnknown ||
 			snapshot.PrimaryKeyHandleUnknown ||
 			(snapshot.PrimaryKey != nil && snapshot.PrimaryKey.NameUnknown) {
 			return append(gaps, rule.EvidenceGap{

@@ -2,8 +2,7 @@
 // input: single-action ALTER index transitions (add_index, index-producing
 // add_constraint, drop_index, rename_index, drop_primary_key, alter_index)
 // plus standalone DROP INDEX — `primary` resolves member-first then
-// dialect-aware (TiDB member may own the name, else MySQL PK / TiDB real
-// index object vs PKIsHandle row-id promotion)
+// dialect-aware (member may own the name, else PK object vs handle row-id)
 // output: one updated batch entry per provable transition — appended,
 // removed, renamed, cleared-PK, or visibility-flipped member — or the
 // shared tombstone when the premise cannot be proven; the primary branch
@@ -14,8 +13,9 @@
 // resolves spec.ResolveIndexNameBinding first — a renamed PK claims only
 // its stored name, a freed `primary` never fabricates PK presence, a
 // proven-absent PK ignores stale unknowns, ambiguous bindings unvouch
-// only the moved side, and a proven-FK sole covering index refuses
-// drop_index (1553 no-op) while unprovable dependency facts tombstone
+// only the moved side; and every removal entry (member/PK spellings,
+// DROP PRIMARY KEY, standalone, loaded parent) answers the 1553
+// sole-coverer dependency before dropping (tombstone if unanswerable)
 // pos: T09 index chain + T10 visibility + T11 foreign-key dependency gate
 // note: if this file changes, update this header and module README.md.
 package audit
@@ -254,6 +254,32 @@ func (s *batchState) publishPrimaryKeyVisibility(key batchTableKey, entry *batch
 	s.entries[key] = &batchTableEntry{state: tablePresent, shape: shape, displaySchema: entry.displaySchema, displayTable: entry.displayTable}
 }
 
+// foreignKeyMemberDependency reports whether dropping the member at
+// indexPos is refused — the member is the sole covering index of a proven
+// local foreign key, or the sole eligible referenced key a loaded child's
+// foreign key binds on the parent side. Both arms share the native 1553
+// refusal class; either side unanswerable leaves the outcome unprovable.
+func (s *batchState) foreignKeyMemberDependency(key batchTableKey, shape *spec.TableSnapshot, indexPos int) (needed bool, provable bool) {
+	needed, provable = foreignKeyIndexDependency(shape, indexPos)
+	if needed || !provable {
+		return needed, provable
+	}
+	return s.referencedDropDependency(key, shape, indexPos, false)
+}
+
+// foreignKeyPKDependency reports whether dropping the primary object is
+// refused — the object is the sole covering index of a proven local
+// foreign key, or the sole eligible referenced key a loaded child's
+// foreign key binds. The caller invokes it only when the object is proven
+// present and already passed the dialect's own refusal classes.
+func (s *batchState) foreignKeyPKDependency(key batchTableKey, shape *spec.TableSnapshot) (needed bool, provable bool) {
+	needed, provable = foreignKeyPKObjectDependency(shape)
+	if needed || !provable {
+		return needed, provable
+	}
+	return s.referencedDropDependency(key, shape, -1, true)
+}
+
 // dropIndexMemberAt removes the proven-named member at indexPos and
 // republishes. When the dropped fold is unique-capable under an
 // attribution-withheld PK placeholder it may itself have been the PK
@@ -427,7 +453,9 @@ func (s *batchState) applyAddIndex(_ spec.Statement, alter *spec.Alter, targets 
 				member.DefaultParenthesized = false
 			}
 		}
-		if shape.Constraints != nil && !shape.ConstraintsUnknown {
+		if !shape.ConstraintsUnknown {
+			// A nil Constraints is a loaded empty set per the collection
+			// contract — appending to it stays vouched.
 			shape.Constraints = append(shape.Constraints, spec.Constraint{Type: "primary_key", Name: "PRIMARY", Columns: append([]string(nil), def.Columns...)})
 		}
 		s.entries[key] = &batchTableEntry{state: tablePresent, shape: shape, displaySchema: entry.displaySchema, displayTable: entry.displayTable}
@@ -449,8 +477,7 @@ func (s *batchState) applyAddIndex(_ spec.Statement, alter *spec.Alter, targets 
 		return
 	}
 	if _, nameProven := spec.PrimaryKeyObjectName(entry.shape); !nameProven &&
-		(entry.shape.HasPrimaryKey() || entry.shape.PrimaryKeyUnknown ||
-			entry.shape.ConstraintsUnknown) {
+		(entry.shape.HasPrimaryKey() || entry.shape.PrimaryKeyUnknown) {
 		// PK presence or its stored name is unproven — the authored name
 		// may collide with a hidden PK object (1061), so membership stays
 		// unvouched rather than appending a member the statement may
@@ -573,7 +600,17 @@ func (s *batchState) applyDropIndex(statement spec.Statement, alter *spec.Alter,
 		// The name-keyed drop reaches the real PK object under its
 		// actual name and drops it — verified on v8.5.0 where DROP
 		// INDEX pk2 cleared even a common-handle PK: the 8200
-		// clustered refusal class gates the `primary` name only.
+		// clustered refusal class gates the `primary` name only. The
+		// shared foreign-key dependency still binds first — an object
+		// sole-covering a proven foreign key refuses the drop (1553).
+		needed, provable := s.foreignKeyPKDependency(key, entry.shape)
+		if !provable {
+			s.invalidateKey(key)
+			return
+		}
+		if needed {
+			return
+		}
 		s.publishPrimaryKeyDrop(key, entry)
 		return
 	}
@@ -614,10 +651,11 @@ func (s *batchState) applyDropIndex(statement spec.Statement, alter *spec.Alter,
 		return
 	}
 	// A member still needed as the sole covering index of a proven foreign
-	// key refuses the drop natively (1553) — a provable no-op. When the
+	// key — local, or a loaded child's referenced binding on the parent
+	// side — refuses the drop natively (1553) — a provable no-op. When the
 	// constraint space or member shape cannot answer the dependency, the
 	// outcome is unprovable and the entry tombstones.
-	needed, provable := foreignKeyIndexDependency(entry.shape, indexPos)
+	needed, provable := s.foreignKeyMemberDependency(key, entry.shape, indexPos)
 	if !provable {
 		s.invalidateKey(key)
 		return
@@ -1007,10 +1045,20 @@ func (s *batchState) applyDropPrimaryKey(_ spec.Statement, targets []spec.Table)
 	if s.dialect == spec.DialectTiDB {
 		switch spec.ResolvePrimaryNameBinding(s.dialect, entry.shape) {
 		case spec.PrimaryNameBindsMember:
-			// The name-keyed drop hits the member, not the PK.
+			// The name-keyed drop hits the member, not the PK — but the
+			// member still answers the shared foreign-key dependency: a
+			// sole covering member refuses the drop natively (1553).
 			indexPos, _ := provenIndexMatch(entry.shape.Indexes, "primary")
 			if indexPos < 0 {
 				s.markIndexesUnknown(key)
+				return
+			}
+			needed, provable := s.foreignKeyMemberDependency(key, entry.shape, indexPos)
+			if !provable {
+				s.invalidateKey(key)
+				return
+			}
+			if needed {
 				return
 			}
 			s.dropIndexMemberAt(key, entry, indexPos)
@@ -1058,6 +1106,17 @@ func (s *batchState) applyDropPrimaryKey(_ spec.Statement, targets []spec.Table)
 			s.invalidateKey(key)
 			return
 		}
+	}
+	// A primary object still needed as the sole covering index of a proven
+	// foreign key refuses the drop natively (1553 — verified 8.0.46, and
+	// TiDB v8.5.0 nonclustered). An unanswerable dependency tombstones.
+	needed, provable := s.foreignKeyPKDependency(key, entry.shape)
+	if !provable {
+		s.invalidateKey(key)
+		return
+	}
+	if needed {
+		return
 	}
 	s.publishPrimaryKeyDrop(key, entry)
 }

@@ -148,7 +148,12 @@ func primaryKeyStatement(column spec.Column) spec.Statement {
 
 // TestPostgreSQLAlterTableAddPrimaryKeyBigintRuleCoverage proves that the
 // primary-key bigint rule fires on the PostgreSQL ALTER TABLE ADD CONSTRAINT
-// shape after Task 2 primary-key projection.
+// shape when the member's column facts arrive through the target-table
+// snapshot — the declared name resolves to a proven INT member and the
+// predicate answers. The previous oracle asserted the same finding from a
+// name-only stub (no type facts at all), which fabricated the violation;
+// the corrected control adds the metadata path the rule now requires and
+// keeps a no-facts control asserting silence.
 func TestPostgreSQLAlterTableAddPrimaryKeyBigintRuleCoverage(t *testing.T) {
 	t.Parallel()
 	statementRule, err := newSinglePrimaryKeyColumnRule(
@@ -165,22 +170,30 @@ func TestPostgreSQLAlterTableAddPrimaryKeyBigintRuleCoverage(t *testing.T) {
 		t.Fatalf("new rule: %v", err)
 	}
 
-	statement := spec.Statement{
-		Kind:    spec.KindDDL,
-		Dialect: spec.DialectPostgreSQL,
-		DDL: &spec.DDL{
-			Operation: spec.DDLOperationAlterTable,
-			Table:     &spec.Table{Name: "users"},
-			Alter: []spec.Alter{{
-				Action: "add_constraint",
-				Name:   "users_pkey",
-				Options: map[string]string{
-					"constraint_type": "primary_key",
-					"columns":         "id",
-				},
-			}},
-		},
+	newStatement := func(metadata *spec.Metadata) spec.Statement {
+		return spec.Statement{
+			Kind:    spec.KindDDL,
+			Dialect: spec.DialectPostgreSQL,
+			DDL: &spec.DDL{
+				Operation: spec.DDLOperationAlterTable,
+				Table:     &spec.Table{Name: "users"},
+				Alter: []spec.Alter{{
+					Action: "add_constraint",
+					Name:   "users_pkey",
+					Options: map[string]string{
+						"constraint_type": "primary_key",
+						"columns":         "id",
+					},
+				}},
+			},
+			Metadata: metadata,
+		}
 	}
+
+	statement := newStatement(&spec.Metadata{TargetTable: &spec.TableSnapshot{
+		Exists:  true,
+		Columns: []spec.Column{{Name: "id", Type: "int"}},
+	}})
 
 	if !statementRule.AppliesTo(statement) {
 		t.Fatal("expected rule to apply to ALTER TABLE ADD CONSTRAINT PRIMARY KEY")
@@ -195,5 +208,15 @@ func TestPostgreSQLAlterTableAddPrimaryKeyBigintRuleCoverage(t *testing.T) {
 	}
 	if findings[0].Level != rule.LevelBlocker {
 		t.Fatalf("expected blocker level, got %s", findings[0].Level)
+	}
+
+	// No proven column facts → no provable answer → silence, never a
+	// violation computed from the zero-value stub.
+	factsWithheld, err := statementRule.Evaluate(context.Background(), newStatement(nil))
+	if err != nil {
+		t.Fatalf("evaluate withheld: %v", err)
+	}
+	if len(factsWithheld) != 0 {
+		t.Fatalf("withheld column facts must not fabricate a violation, got %v", factsWithheld)
 	}
 }

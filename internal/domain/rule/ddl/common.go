@@ -1,6 +1,6 @@
 // Package ddl defines Tier-1 DDL rules.
 // input: normalized Statement specs emitted by application extraction, including alter-table and standalone rename payloads
-// output: reusable DDL rule predicates and rule identifier constants, including the CHANGE and RENAME destination-name, RENAME COLUMN version, and T07 advanced-column identifiers, plus shared alter-action and rename matching helpers, the indexPlainComparable plain-key premise shared by the pair-comparison rules, and the memberComparisonGap/declaredComparisonGap attribution for applicable pair comparisons a non-plain member leaves unverifiable (declared-vs-existing on create_index, declaration-vs-declaration inside create_table — R6: a kind-withheld maybe-PK candidate also unverifies the pairing and owes target_table.indexes), and the T10 alter_index/invisibility/advanced-index-compatibility rule identifiers — left-prefix pairing treats any member the key-part list counts beyond the named columns (expression-bearing or unmodeled alike) as a truncated projection, so a declared prefix of the named columns is pairable even at equal length — plus the T11 dual-path constraint applicability helpers (alter.Constraint on MySQL/TiDB beside the PostgreSQL options vocabulary, the produced index definition for primary keys, and the drop_foreign_key existence rule identifier)
+// output: reusable DDL rule predicates and rule identifier constants, including the CHANGE and RENAME destination-name, RENAME COLUMN version, and T07 advanced-column identifiers, plus shared alter-action and rename matching helpers, the indexPlainComparable plain-key premise shared by the pair-comparison rules, and the memberComparisonGap/declaredComparisonGap attribution for applicable pair comparisons a non-plain member leaves unverifiable (declared-vs-existing on create_index, declaration-vs-declaration inside create_table — R6: a kind-withheld maybe-PK candidate also unverifies the pairing and owes target_table.indexes), and the T10 alter_index/invisibility/advanced-index-compatibility rule identifiers — left-prefix pairing treats any member the key-part list counts beyond the named columns (expression-bearing or unmodeled alike) as a truncated projection, so a declared prefix of the named columns is pairable even at equal length — plus the T11 dual-path constraint applicability helpers (alter.Constraint on MySQL/TiDB beside the PostgreSQL options vocabulary, the produced index definition for primary keys, the ordered-state column-fact resolution that binds an ALTER-side PK declaration's member names to pre-state column facts, and the drop_foreign_key existence rule identifier)
 // pos: DDL rule common helpers shared across concrete rules and parser-neutral rename semantics
 // note: if this file changes, update this header and module README.md.
 package ddl
@@ -776,19 +776,52 @@ func primaryKeyColumnSpecs(statement spec.Statement) []spec.Column {
 		}
 		return columns
 	}
-	// ALTER TABLE ADD CONSTRAINT PRIMARY KEY path: name-only specs (no type info)
+	return nil
+}
+
+// alterDeclaredPrimaryKeyMembers returns the member column names the ALTER
+// add-primary-key action declares. MySQL/TiDB carry the structured index
+// definition (alter.Index), PostgreSQL the options vocabulary, and any
+// structured constraint payload (alter.Constraint) is honored the same —
+// names only, never column facts; callers resolve facts through
+// orderedColumnFact.
+func alterDeclaredPrimaryKeyMembers(statement spec.Statement) []string {
+	if !appliesToAlterTable(statement) {
+		return nil
+	}
 	for _, alter := range statement.DDL.Alter {
-		if alter.Action == "add_constraint" && alter.Options["constraint_type"] == "primary_key" {
-			if cols := splitAlterConstraintColumns(alter.Options["columns"]); len(cols) > 0 {
-				columns := make([]spec.Column, 0, len(cols))
-				for _, name := range cols {
-					columns = append(columns, spec.Column{Name: name})
-				}
-				return columns
+		if alter.Action != "add_constraint" {
+			continue
+		}
+		if index, ok := alterIndexDefinition(alter); ok && index.Kind == spec.IndexKindPrimary && len(index.Columns) > 0 {
+			return index.Columns
+		}
+		if alter.Constraint != nil && alter.Constraint.Type == "primary_key" && len(alter.Constraint.Columns) > 0 {
+			return alter.Constraint.Columns
+		}
+		if alter.Options["constraint_type"] == "primary_key" {
+			if members := splitAlterConstraintColumns(alter.Options["columns"]); len(members) > 0 {
+				return members
 			}
 		}
 	}
 	return nil
+}
+
+// orderedColumnFact resolves one declared member name through the
+// statement's ordered pre-state column facts. Only a proven member
+// answers: an absent snapshot, a settled-absent table, a withheld column
+// set, or a member outside the proven set all return false so consumers
+// never predicate on name-only stubs.
+func orderedColumnFact(statement spec.Statement, name string) (spec.Column, bool) {
+	snapshot, ok := targetTableSnapshot(statement)
+	if !ok || snapshot == nil || !snapshot.Exists || snapshot.Columns == nil {
+		return spec.Column{}, false
+	}
+	if column := snapshot.FindColumn(name); column != nil {
+		return *column, true
+	}
+	return spec.Column{}, false
 }
 
 func appliesToCreateTableOrAlterFKConstraint(statement spec.Statement) bool {

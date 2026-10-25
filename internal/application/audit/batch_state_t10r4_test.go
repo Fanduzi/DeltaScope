@@ -73,6 +73,7 @@ func t10r4PostState(t *testing.T, dialect spec.Dialect, provider MetadataProvide
 	// enrichOrderedStatements — the clustered-mode and alter-primary-key
 	// derivations read them there.
 	state.instanceFacts = facts
+	state.resolvedVersion = t10r4Version(dialect)
 	parsed, err := parseSQL(context.Background(), sql, dialect)
 	if err != nil {
 		t.Fatalf("parse %q: %v", sql, err)
@@ -125,6 +126,7 @@ func t10r4Apply(t *testing.T, dialect spec.Dialect, shape *spec.TableSnapshot, s
 		t.Fatalf("instance facts: %v", err)
 	}
 	state.instanceFacts = facts
+	state.resolvedVersion = t10r4Version(dialect)
 	key := state.keyFor("golden", spec.Table{Name: "t"})
 	state.entries[key] = &batchTableEntry{state: tablePresent, shape: shape}
 	parsed, err := parseSQL(context.Background(), sql, dialect)

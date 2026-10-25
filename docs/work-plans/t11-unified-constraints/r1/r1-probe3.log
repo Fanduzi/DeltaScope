@@ -1,0 +1,69 @@
+############ ANCHOR deltascope-ddl-golden-mysql80
+===== e3 setup
+----- done
+===== e3 child pk support
+----- done
+===== e3 drop child pk (sole support)
+| ERROR 1553 (HY000) at line 1: Cannot drop index 'PRIMARY': needed in a foreign key constraint
+----- done
+===== e3 pk after drop
+| Table	Create Table
+| c_pk	CREATE TABLE `c_pk` (\n  `c` int NOT NULL,\n  PRIMARY KEY (`c`),\n  CONSTRAINT `fk_p` FOREIGN KEY (`c`) REFERENCES `p3` (`id`)\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+----- done
+===== e3 add cover then drop pk
+----- done
+===== e3 pk2 after
+| Table	Create Table
+| c_pk2	CREATE TABLE `c_pk2` (\n  `c` int NOT NULL,\n  KEY `ix_c` (`c`),\n  CONSTRAINT `fk_p2` FOREIGN KEY (`c`) REFERENCES `p3` (`id`)\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+----- done
+===== e4 setup
+----- done
+===== e4 drop unique cover
+----- done
+===== e4 p4 indexes after
+| INDEX_NAME
+| ix_a
+----- done
+===== e4 drop remaining cover
+| ERROR 1553 (HY000) at line 1: Cannot drop index 'ix_a': needed in a foreign key constraint
+----- done
+===== e5 setup
+----- done
+===== e5 fk on fulltext col
+| ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '(10))' at line 1
+----- done
+############ ANCHOR deltascope-ddl-golden-tidb85-client
+===== e3 setup
+----- done
+===== e3 child pk support
+----- done
+===== e3 drop child pk (sole support)
+| ERROR 8200 (HY000) at line 1: Unsupported drop primary key when the table is using clustered index
+----- done
+===== e3 pk after drop
+| Table	Create Table
+| c_pk	CREATE TABLE `c_pk` (\n  `c` int NOT NULL,\n  PRIMARY KEY (`c`) /*T![clustered_index] CLUSTERED */,\n  CONSTRAINT `fk_p` FOREIGN KEY (`c`) REFERENCES `p3` (`id`)\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+----- done
+===== e3 add cover then drop pk
+| ERROR 8200 (HY000) at line 1: Unsupported drop primary key when the table is using clustered index
+----- done
+===== e3 pk2 after
+| Table	Create Table
+| c_pk2	CREATE TABLE `c_pk2` (\n  `c` int NOT NULL,\n  PRIMARY KEY (`c`) /*T![clustered_index] CLUSTERED */,\n  KEY `ix_c` (`c`),\n  CONSTRAINT `fk_p2` FOREIGN KEY (`c`) REFERENCES `p3` (`id`)\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+----- done
+===== e4 setup
+----- done
+===== e4 drop unique cover
+----- done
+===== e4 p4 indexes after
+| INDEX_NAME
+| ix_a
+----- done
+===== e4 drop remaining cover
+| ERROR 1553 (HY000) at line 1: Cannot drop index 'ix_a': needed in a foreign key constraint
+----- done
+===== e5 setup
+----- done
+===== e5 fk on fulltext col
+| ERROR 1822 (HY000) at line 1: Failed to add the foreign key constraint. Missing index for constraint 'fk_p5' in the referenced table 'p5'
+----- done

@@ -1,6 +1,6 @@
 // Package ddl defines Tier-1 DDL rules.
-// input: create-table Statement specs with primary-key declarations and enriched column metadata
-// output: findings for primary-key semantic requirements beyond simple presence/count checks
+// input: create-table Statement specs with primary-key declarations and enriched column metadata, plus alter-table add-PK actions resolved against the statement's ordered pre-state column facts
+// output: findings for primary-key semantic requirements beyond simple presence/count checks, and evidence gaps when the member columns' facts are genuinely withheld (a name-only column stub is never read as a known type)
 // pos: DDL rule implementations for primary-key semantic governance
 // note: if this file changes, update this header and module README.md.
 package ddl
@@ -58,23 +58,72 @@ func (r singlePrimaryKeyColumnRule) Evaluate(ctx context.Context, statement spec
 	if !r.AppliesTo(statement) {
 		return nil, nil
 	}
+	// The ALTER-declared member carries no type facts of its own — resolve
+	// its name through the statement's ordered pre-state column set. A
+	// withheld or unmatched member answers nothing here; EvidenceGaps owns
+	// the missing-fact boundary so a zero-value column never fabricates a
+	// violation.
+	if appliesToAlterTable(statement) {
+		members := alterDeclaredPrimaryKeyMembers(statement)
+		if len(members) != 1 {
+			return nil, nil
+		}
+		column, ok := orderedColumnFact(statement, members[0])
+		if !ok || r.predicate(column) {
+			return nil, nil
+		}
+		return []rule.Finding{r.finding(statement, column)}, nil
+	}
 	columns := primaryKeyColumnSpecs(statement)
-	if len(columns) != 1 {
+	if len(columns) != 1 || r.predicate(columns[0]) {
 		return nil, nil
 	}
-	if r.predicate(columns[0]) {
-		return nil, nil
-	}
-	return []rule.Finding{{
+	return []rule.Finding{r.finding(statement, columns[0])}, nil
+}
+
+func (r singlePrimaryKeyColumnRule) finding(statement spec.Statement, column spec.Column) rule.Finding {
+	return rule.Finding{
 		Level:      r.level,
-		Message:    fmt.Sprintf("primary key column %q %s", columns[0].Name, r.message),
+		Message:    fmt.Sprintf("primary key column %q %s", column.Name, r.message),
 		Suggestion: r.suggest,
 		Metadata: map[string]any{
 			"table":  statement.DDL.Table.Name,
-			"column": columns[0].Name,
-			"type":   columns[0].Type,
+			"column": column.Name,
+			"type":   column.Type,
 		},
-	}}, nil
+	}
+}
+
+// EvidenceGaps reports the ALTER-path premise gaps under the same
+// conditions Evaluate skips: a target whose state was never provided owes
+// the existence-plus-columns facts, a present table with a withheld column
+// set owes the columns fact, and a settled-absent table or out-of-scope
+// member count owes nothing — the member's own name resolution is a fact
+// of the statement, not of the catalog.
+func (r singlePrimaryKeyColumnRule) EvidenceGaps(statement spec.Statement) []rule.EvidenceGap {
+	if !orderedGapDialect(statement.Dialect) || !r.AppliesTo(statement) || !appliesToAlterTable(statement) {
+		return nil
+	}
+	if len(alterDeclaredPrimaryKeyMembers(statement)) != 1 {
+		return nil
+	}
+	snapshot, ok := targetTableSnapshot(statement)
+	if !ok || snapshot == nil {
+		return []rule.EvidenceGap{{
+			ReasonCode:    gapReasonUnknownTableState,
+			RequiredFacts: []string{"target_table.columns", "target_table.existence"},
+		}}
+	}
+	if !snapshot.Exists {
+		return nil
+	}
+	if snapshot.Columns == nil {
+		return []rule.EvidenceGap{{
+			ReasonCode:    gapReasonUnknownTableState,
+			RequiredFacts: []string{"target_table.columns"},
+		}}
+	}
+	return nil
 }
 
 type primaryKeyNotNullRule struct {

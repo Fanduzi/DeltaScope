@@ -1,5 +1,5 @@
 // Package spec defines normalized statement specifications for rule evaluation.
-// input: optional metadata-aware audit facts such as explicit known-bit instance variables, target-table snapshots, and the canonical version identity
+// input: optional metadata-aware audit facts such as explicit known-bit instance variables (including the MySQL 8.4 restrict_fk_on_non_standard_key observation with its own known bit — absent on pre-8.4 MySQL and TiDB, where the variable's nonexistence must stay an unknown rather than a guessed default), target-table snapshots, and the canonical version identity
 // output: parser-neutral metadata structures (including per-collection unknown markers and the index/foreign-key name-space markers on table snapshots) and lookup helpers for future rules — FindProvenIndex/HasUnprovenIndexName/IndexNameSpaceUnvouched and FindForeignKeyConstraint/HasUnprovenForeignKeyName/ForeignKeyNameSpaceUnvouched bind name-keyed consumers to per-member proven names
 // pos: domain metadata model shared by offline and metadata-aware audit paths
 // note: if this file changes, update this header and module README.md.
@@ -49,6 +49,16 @@ type InstanceFacts struct {
 	// value is never read as evidence. TiDB only.
 	TiDBAlterPrimaryKey      bool `json:"tidb_alter_primary_key,omitempty"`
 	TiDBAlterPrimaryKeyKnown bool `json:"tidb_alter_primary_key_known,omitempty"`
+
+	// RestrictNonStandardKey is the observed
+	// restrict_fk_on_non_standard_key value — MySQL 8.4+'s refusal of
+	// foreign keys whose referenced columns are covered only by a
+	// non-unique index (native 6125, verified 8.4.10 ON; the variable
+	// does not exist on 5.7/8.0/TiDB, so an unobserved read resolves the
+	// eligibility question by dialect and version instead of guessing a
+	// default). The Known bit separates "probed off" from "never probed".
+	RestrictNonStandardKey      bool `json:"restrict_non_standard_key,omitempty"`
+	RestrictNonStandardKeyKnown bool `json:"restrict_non_standard_key_known,omitempty"`
 }
 
 // TableSnapshot is the current metadata-backed shape of a target table.
@@ -218,8 +228,9 @@ func (s TableSnapshot) IndexNameSpaceUnvouched() bool {
 // FindForeignKeyConstraint binds a name-keyed foreign-key lookup to a
 // proven member of the loaded constraint set (case-insensitive like the
 // catalog's foreign-key name space). It returns nil when no member carries
-// the name; callers must treat nil with Constraints==nil/ConstraintsUnknown
-// as "unknown", not absence.
+// the name; callers must treat nil under ConstraintsUnknown or an
+// unproven member name as "unknown", not absence — a nil Constraints is
+// itself a loaded empty set per the collection contract.
 func (s TableSnapshot) FindForeignKeyConstraint(name string) *Constraint {
 	if strings.TrimSpace(name) == "" {
 		return nil
@@ -252,11 +263,14 @@ func (s TableSnapshot) HasUnprovenForeignKeyName() bool {
 }
 
 // ForeignKeyNameSpaceUnvouched reports whether the foreign-key member name
-// space cannot vouch every stored name — the collection unread or
-// unvouched, or one member's stored name unproven. Name-keyed consumers
-// share this check so "not found" can never read as confirmed absence.
+// space cannot vouch every stored name — the collection flagged
+// unvouched, or one member's stored name unproven. Per the collection
+// contract at the top of this file a nil Constraints is a loaded empty
+// set, never an unread one; providers and projections mark the unread
+// case through ConstraintsUnknown. Name-keyed consumers share this check
+// so "not found" can never read as confirmed absence.
 func (s TableSnapshot) ForeignKeyNameSpaceUnvouched() bool {
-	return s.Constraints == nil || s.ConstraintsUnknown || s.HasUnprovenForeignKeyName()
+	return s.ConstraintsUnknown || s.HasUnprovenForeignKeyName()
 }
 
 // HasPrimaryKey reports whether the snapshot currently has a primary key.

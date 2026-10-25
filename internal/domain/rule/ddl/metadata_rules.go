@@ -1,6 +1,6 @@
 // Package ddl defines Tier-1 DDL rules.
 // input: metadata-enriched DDL Statement specs plus per-rule policy values, where enriched snapshots may be unknown, known-absent, complete, or complete-present with incomplete structural collections
-// output: existence and snapshot-backed findings for create-table, alter-table, and standalone create-index operations, plus evidence gaps (unknown_table_state / table_not_found) on the whitelisted existence rules when the ordered schema state cannot prove a premise — a decided `primary` binding (member-owned, PK-bound, or freed) owes no primary_key gap since unproven PK-side facts were never consulted, and the foreign-key member rule binds only proven constraint names under a vouched name space while owing target_table.constraints
+// output: existence and snapshot-backed findings for create-table, alter-table, and standalone create-index operations, plus evidence gaps (unknown_table_state / table_not_found) on the whitelisted existence rules when the ordered schema state cannot prove a premise — a decided `primary` binding (member-owned, PK-bound, or freed) owes no primary_key gap since unproven PK-side facts were never consulted, and the foreign-key member rule binds proven constraint names under a vouched name space — a proven target answers even while the sibling space stays unvouched (an unmodeled CHECK marks the collection unknown without hiding the proven binding), so the target_table.constraints gap is owed per-target only when the unvouched space may hide it
 // pos: DDL rule implementations that depend on optional metadata-aware or batch-derived facts
 // note: if this file changes, update this header and module README.md.
 package ddl
@@ -236,8 +236,13 @@ func (r alterObjectExistenceRule) EvidenceGaps(statement spec.Statement) []rule.
 		return nil
 	}
 	snapshot, ok := targetTableSnapshot(statement)
-	if ok && snapshot != nil && snapshot.Exists && r.objectLabel == "index" {
-		return r.indexMemberExistenceGaps(statement, snapshot)
+	if ok && snapshot != nil && snapshot.Exists {
+		switch r.objectLabel {
+		case "index":
+			return r.indexMemberExistenceGaps(statement, snapshot)
+		case "foreign_key":
+			return r.fkMemberExistenceGaps(statement, snapshot)
+		}
 	}
 	return memberExistenceGaps(snapshot, ok, r.objectLabel)
 }
@@ -283,6 +288,31 @@ func (r alterObjectExistenceRule) indexMemberExistenceGaps(
 		ReasonCode:    gapReasonUnknownTableState,
 		RequiredFacts: []string{"target_table.indexes"},
 	}}
+}
+
+// fkMemberExistenceGaps mirrors the per-target skip premise in Evaluate:
+// a proven member name answers under an otherwise unvouched constraint
+// space — an unmodeled CHECK sibling marks the collection unknown without
+// hiding the proven binding — so the collection gap is owed only for a
+// target whose name has no proven match while the space may hide it.
+func (r alterObjectExistenceRule) fkMemberExistenceGaps(
+	statement spec.Statement, snapshot *spec.TableSnapshot) []rule.EvidenceGap {
+	if !snapshot.ForeignKeyNameSpaceUnvouched() {
+		return nil
+	}
+	for _, alter := range matchingAlterObjectActions(statement, r.actions...) {
+		name := r.selectName(alter)
+		if name == "" {
+			continue
+		}
+		if !snapshotHasForeignKeyConstraint(statement, snapshot, name) {
+			return []rule.EvidenceGap{{
+				ReasonCode:    gapReasonUnknownTableState,
+				RequiredFacts: []string{"target_table.constraints"},
+			}}
+		}
+	}
+	return nil
 }
 
 type alterPrimaryKeyExistenceRule struct {
@@ -338,7 +368,7 @@ func (r alterPrimaryKeyExistenceRule) Evaluate(ctx context.Context, statement sp
 				return nil, nil
 			}
 		}
-	} else if snapshot.PrimaryKeyUnknown || snapshot.ConstraintsUnknown || snapshot.HasPrimaryKey() {
+	} else if snapshot.PrimaryKeyUnknown || snapshot.HasPrimaryKey() {
 		return nil, nil
 	}
 	return []rule.Finding{{
@@ -380,7 +410,7 @@ func (r alterPrimaryKeyExistenceRule) EvidenceGaps(statement spec.Statement) []r
 	// identity fact). The suppressed finding owes exactly the facts it
 	// could not prove — no unrelated gap. A drop_constraint-derived match
 	// routes by constraint identity, so only the PK fact gates it.
-	pkSideUnproven := snapshot.PrimaryKeyUnknown || snapshot.ConstraintsUnknown ||
+	pkSideUnproven := snapshot.PrimaryKeyUnknown ||
 		snapshot.PrimaryKeyHandleUnknown ||
 		(snapshot.PrimaryKey != nil && snapshot.PrimaryKey.NameUnknown)
 	if len(matchingAlterActions(statement, "drop_primary_key")) > 0 {

@@ -507,7 +507,7 @@ func cloneSpecColumn(in spec.Column) spec.Column {
 }
 
 func cloneIndexes(in []spec.Index) []spec.Index {
-	if len(in) == 0 {
+	if in == nil {
 		return nil
 	}
 	out := make([]spec.Index, len(in))
@@ -528,7 +528,7 @@ func cloneIndex(in *spec.Index) *spec.Index {
 }
 
 func cloneConstraints(in []spec.Constraint) []spec.Constraint {
-	if len(in) == 0 {
+	if in == nil {
 		return nil
 	}
 	out := make([]spec.Constraint, len(in))

@@ -1,7 +1,7 @@
 // Package audit orchestrates audit use cases at the application layer.
 // input: request context, ordered statements, optional metadata provider, the request's already-resolved version identity, and parse-failure positions for one audit request
 // output: request-local ordered table facts (unknown / known-absent / known-present, per-collection member knowledge, including the declared table comment on complete CREATE-derived shapes, product-derived stored index names under the native auto-naming rule — or an unvouched name space when any member's name is unprovable — the CREATE-derived primary key stored under its native `primary` object name while the authored CONSTRAINT symbol stays on the parsed spec for naming rules, and a CREATE-derived bare foreign key keeping its server-derived name unproven (NameUnknown) exactly like a bare ALTER-side add, and the TiDB handle and clustered-storage answers deferring to the observed clustered mode plus the alter-primary-key config fact) feeding per-statement pre-state snapshots
-// pos: prospective schema-state ownership for the first migration path — the effective (dialect, schema, table) identity drives provider reads, keys, writes, and invalidation; unsupported or executable-but-unmodeled effects settle before kind dispatch; deterministic conditional transitions update derived facts, including the bounded single-pair RENAME identity migration onto a known-absent destination, a bounded single-target DROP identity retirement, an ordinary single-column MODIFY definition replacement, a precise single CHANGE COLUMN or RENAME COLUMN identity migration, and an ordinary dependency-free single-column DROP COLUMN that removes only that column, keeps unrelated members, and clears the accepted MODIFY statistic set, FIRST|AFTER column-position moves inside admitted ADD/MODIFY/CHANGE templates, and the bounded dialect-parametrized multi-action successor (MySQL accumulated working state vs TiDB pre-statement premises, whole-statement tombstone on unprovable net effect); each tombstones loaded dependents that the transition cannot keep; a non-precise MODIFY, CHANGE, RENAME, or DROP COLUMN tombstones every named table identity and the loaded dependents of those identities, a precise replacement is withheld when a loaded foreign key cannot be recomputed, an unsupported RENAME version withholds publication, and cancellation is checked before publishing effects; unaudited, unbound, or contaminated operations invalidate them; recognized CREATE/DROP PROCEDURE statements preserve outer table facts while keeping their own audit evidence; the shared T07 advanced-column and T10 advanced-index assessments block publication of provably refused or unresolved transitions, and T11 foreign-key add_constraint/drop_foreign_key actions delegate to batch_state_fk.go (non-foreign-key constraint adds stay conservative tombstones)
+// pos: prospective schema-state ownership for the first migration path — the effective (dialect, schema, table) identity drives provider reads, keys, writes, and invalidation; unsupported or executable-but-unmodeled effects settle before kind dispatch; deterministic conditional transitions update derived facts, including the bounded single-pair RENAME identity migration onto a known-absent destination, a bounded single-target DROP identity retirement, an ordinary single-column MODIFY definition replacement, a precise single CHANGE COLUMN or RENAME COLUMN identity migration, and an ordinary dependency-free single-column DROP COLUMN that removes only that column, keeps unrelated members, and clears the accepted MODIFY statistic set, FIRST|AFTER column-position moves inside admitted ADD/MODIFY/CHANGE templates, and the bounded dialect-parametrized multi-action successor (MySQL accumulated working state vs TiDB pre-statement premises, whole-statement tombstone on unprovable net effect); each tombstones loaded dependents that the transition cannot keep; a non-precise MODIFY, CHANGE, RENAME, or DROP COLUMN tombstones every named table identity and the loaded dependents of those identities, a precise replacement is withheld when a loaded foreign key cannot be recomputed, an unsupported RENAME version withholds publication, and cancellation is checked before publishing effects; unaudited, unbound, or contaminated operations invalidate them; recognized CREATE/DROP PROCEDURE statements preserve outer table facts while keeping their own audit evidence; the shared T07 advanced-column and T10 advanced-index assessments block publication of provably refused or unresolved transitions, and T11 foreign-key add_constraint/drop_foreign_key actions delegate to batch_state_fk.go (non-foreign-key constraint adds stay conservative tombstones); a CREATE TABLE carrying declared foreign keys runs the same landing premise before publishing and derives the implicit supporting index like the ALTER add; a sole DROP CHECK|CONSTRAINT action publishes its bounded target-type-decided post-state instead of tombstoning facts it provably kept
 // note: if this file changes, update this header and module README.md.
 package audit
 
@@ -309,7 +309,7 @@ func (s *batchState) apply(ctx context.Context, statement spec.Statement) error 
 	}
 	switch ddl.Operation {
 	case spec.DDLOperationCreateTable:
-		s.applyCreateTable(statement)
+		return s.applyCreateTable(ctx, statement)
 	case spec.DDLOperationAlterTable:
 		return s.applyAlterTable(ctx, statement)
 	case spec.DDLOperationCreateIndex:
@@ -425,38 +425,59 @@ func presentIncompleteEntry(schema, table string) *batchTableEntry {
 // known-present target it is a no-op that keeps the real fact. A plain create
 // on a known-present target can never have succeeded — the premise is broken
 // and the entry invalidates instead of inventing which shape survived.
-func (s *batchState) applyCreateTable(statement spec.Statement) {
+func (s *batchState) applyCreateTable(ctx context.Context, statement spec.Statement) error {
 	ddl := statement.DDL
 	targets := ddl.TableTargets()
 	if len(targets) == 0 || ddl.Table == nil {
-		return
+		return nil
 	}
 	key := s.keyFor(s.schema, targets[0])
 	if !fullyAuditedCreateTable(s.dialect, statement) {
 		s.invalidateKey(key)
-		return
+		return nil
 	}
 	entry := s.entries[key]
 	ifNotExists := ddl.Options["if_not_exists"] == "true"
 	displaySchema, displayTable := s.effectiveSchema(s.schema, targets[0]), targets[0].Name
+	// Declared foreign keys carry the same landing premise an ALTER-side
+	// add does — local member/refer-action facts plus the referenced
+	// parent's usable key — decided against the pre-state. A proven
+	// refusal fails the statement before the table lands (the entry is
+	// provably unchanged); an unprovable premise cannot publish the
+	// declared shape because the statement may never have landed. A
+	// present target under IF NOT EXISTS skips creation entirely, so the
+	// premise never engages there.
+	if entry == nil || entry.state == tableUnknown || entry.state == tableAbsent {
+		refused, decided, err := s.createTableForeignKeyPremise(ctx, key, displaySchema, displayTable, ddl)
+		if err != nil {
+			return err
+		}
+		if !decided {
+			s.invalidateKey(key)
+			return nil
+		}
+		if refused {
+			return nil
+		}
+	}
 	switch {
 	case entry == nil || entry.state == tableUnknown:
 		if ifNotExists {
 			// Conditional create on an unknown target cannot prove the
 			// declared shape landed — existence is proven, members are not.
 			s.entries[key] = presentIncompleteEntry(displaySchema, displayTable)
-			return
+			return nil
 		}
 		s.entries[key] = &batchTableEntry{
 			state:         tablePresent,
-			shape:         derivedCreateShape(s.dialect, displaySchema, displayTable, ddl, s.tidbClusteredMode(), s.tidbAlterPrimaryKey()),
+			shape:         s.derivedCreateShape(displaySchema, displayTable, ddl),
 			displaySchema: displaySchema,
 			displayTable:  displayTable,
 		}
 	case entry.state == tableAbsent:
 		s.entries[key] = &batchTableEntry{
 			state:         tablePresent,
-			shape:         derivedCreateShape(s.dialect, displaySchema, displayTable, ddl, s.tidbClusteredMode(), s.tidbAlterPrimaryKey()),
+			shape:         s.derivedCreateShape(displaySchema, displayTable, ddl),
 			displaySchema: displaySchema,
 			displayTable:  displayTable,
 		}
@@ -465,6 +486,27 @@ func (s *batchState) applyCreateTable(statement spec.Statement) {
 			s.invalidateKey(key)
 		}
 	}
+	return nil
+}
+
+// derivedCreateShape derives the declared post-state and folds in each
+// foreign key's implicit supporting index — CREATE and ALTER share the
+// native derivation rule through publishForeignKeySupportingIndex, so a
+// create-derived member leaves the same index facts an add would.
+func (s *batchState) derivedCreateShape(displaySchema, displayTable string, ddl *spec.DDL) *spec.TableSnapshot {
+	shape := derivedCreateShape(s.dialect, displaySchema, displayTable, ddl, s.tidbClusteredMode(), s.tidbAlterPrimaryKey())
+	for i := range shape.Constraints {
+		member := &shape.Constraints[i]
+		if member.Type != "foreign_key" {
+			continue
+		}
+		authored := ""
+		if !member.NameUnknown {
+			authored = member.Name
+		}
+		s.publishForeignKeySupportingIndex(shape, *member, authored)
+	}
+	return shape
 }
 
 // fullyAuditedCreateTable reports whether a CREATE TABLE's post-state shape is
@@ -629,6 +671,13 @@ func (s *batchState) applyAlterTable(ctx context.Context, statement spec.Stateme
 	// invalidate-all branch does not see loaded dependents.
 	if drop := firstDropColumnAlter(ddl); drop != nil {
 		return s.applyDropColumn(ctx, statement, drop, targets)
+	}
+	// DROP CHECK|CONSTRAINT carries no rule consumer, so the coverage aspect
+	// still reports it — but its post-state is decidable from the proven
+	// target type and must not tombstone facts it provably kept.
+	if dropCheck := firstDropCheckAlter(ddl); dropCheck != nil && len(targets) > 0 {
+		s.applyDropCheck(statement, dropCheck, targets)
+		return nil
 	}
 	if !fullyAuditedStatement(s.dialect, statement) || len(ddl.Alter) != 1 || len(targets) == 0 {
 		s.invalidateAll(targets)
@@ -994,8 +1043,7 @@ func (s *batchState) applyCreateIndex(statement spec.Statement) {
 			return
 		}
 		if _, nameProven := spec.PrimaryKeyObjectName(entry.shape); !nameProven &&
-			(entry.shape.HasPrimaryKey() || entry.shape.PrimaryKeyUnknown ||
-				entry.shape.ConstraintsUnknown) {
+			(entry.shape.HasPrimaryKey() || entry.shape.PrimaryKeyUnknown) {
 			// PK presence or its stored name is unproven — a hidden 1061
 			// against a maybe-present PK object cannot be ruled out, so
 			// membership stays unvouched.

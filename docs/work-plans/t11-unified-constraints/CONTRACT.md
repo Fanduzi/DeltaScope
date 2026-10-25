@@ -44,11 +44,16 @@ both sides:
   index publication, and dependent edges.
 
 Out of scope: CHECK constraint semantics (T12), partitioning (T13+), DML,
-EXPLAIN/cost, engine capabilities beyond catalog facts, FK *referencing-key
-legality* beyond column existence (MySQL permits non-unique referenced
-indexes; the ticket's "key legality" is bounded to referenced table/column
-existence — uniqueness requirements differ per version and are not a policy
-surface here). Inline column `REFERENCES` stays parse-and-ignore per vendor
+EXPLAIN/cost, engine capabilities beyond catalog facts. FK *referencing-key
+legality* is not a policy surface (no rule asserts it), but it is an
+ordered-state landing premise: R1 verified on all four anchors that a
+proven parent without a usable referenced key refuses the add
+(1215/1822/6125/1822), so the batch state must model the usable-key answer
+— kind eligibility and leftmost order, non-unique members admitted on
+pre-8.4 MySQL and TiDB v8.5, refused by MySQL 8.4 under observed
+`restrict_fk_on_non_standard_key=ON` — or the published post-state
+fabricates a member native never landed. Uniqueness requirements stay
+version/product-parametrized facts, not a rule. Inline column `REFERENCES` stays parse-and-ignore per vendor
 fact (existing `create_table.column.reference` unsupported evidence — no
 constraint exists natively, so no rule fires).
 
@@ -172,12 +177,14 @@ finding set for the same fact.
 | E1 | TiDB bare FK → derived name fk_1; MySQL → table_ibfk_1, index first-col | native verify + state publish |
 | E2 | TiDB FK referencing clustered-PK parent | fk-forbid fires; native accepted |
 | E3 | 5.7 default RESTRICT vs 8.x/TiDB NO ACTION | native catalog assertions (ddl_steps) |
-| E4 | TiDB `DROP CONSTRAINT fk` drops FK natively — kept as `drop_check` unsupported evidence (CHECK-clause spelling, T12 boundary; documented, not silently governed) |
+| E4 | `DROP CONSTRAINT`/`DROP CHECK` share one AST node — post-state answers by proven target type, never the unrecoverable keyword: TiDB never removes a foreign key that way (v8.5.0 probe — warned no-op under `tidb_enable_check_constraint=OFF`, 3940 under ON; an earlier `rc=0` oracle was probe-falsified), MySQL 5.7 rejects the syntax, and MySQL 8.x drops the FK under `DROP CONSTRAINT` but refuses `DROP CHECK` (3821) so a proven-FK name unvouches that member's fate. Real CHECK removal stays T12 |
 
 Anti-false-green: negative SQL must fail for the intended reason (missing
-column → 1072, dup name → 1022/1826, non-unique-unindexed ref → 1215/1822/
-6125, drop needed index → 1553), asserted via expected error codes in
-ddl_steps native checks — never "succeeds" by missing fixtures or privileges.
+column → 1072, dup name → 1022/1826, no usable referenced key → 1215 on
+MySQL 5.7, 1822 on MySQL 8.0 and TiDB 8.5, 6125 on MySQL 8.4 under
+`restrict_fk_on_non_standard_key=ON`, drop needed index → 1553), asserted
+via expected error codes in ddl_steps native checks — never "succeeds" by
+missing fixtures or privileges.
 
 ## 5. Ordered-state semantics (batch_state)
 
@@ -202,6 +209,34 @@ ddl_steps native checks — never "succeeds" by missing fixtures or privileges.
   affected set (IndexesUnknown/ConstraintsUnknown), never fabricate names.
 - mixed-action ALTER keeps the existing multi-action boundary (first-action
   state published only when provable — existing contract unchanged).
+
+T11-R1 additions (verified against the r1/ probe logs):
+- landing premises before any publish: refer-action structure (SET NULL on
+  a proven NOT NULL member refuses 1830 on every anchor; SET DEFAULT
+  refuses 1215 on pre-8.0 MySQL and lands on 8.x/TiDB v8.5 — an unproven
+  version leaves it undecidable) and the usable referenced-key premise
+  (leftmost-order coverage by an eligibility-class member; non-unique
+  members qualify on pre-8.4 MySQL and TiDB v8.5, refused 6125 by MySQL
+  8.4 under observed `restrict_fk_on_non_standard_key=ON` — the variable
+  absent elsewhere stays unknown; specialized kinds never qualify; an
+  unprovable answer unvouches rather than publishing or refusing).
+- cross-schema: an unqualified `REFERENCES parent` resolves inside the
+  child's effective schema — provider read, cache key, display identity,
+  and dependency edges share one resolved identity (two-db probe:
+  `db_b child db_b PRIMARY parent`).
+- an undecidable add whose member columns are not provably covered also
+  unvouches the index set (the implicit supporting index may have landed);
+  a provably covered member keeps the index facts.
+- the 1553 dependency gate binds every removal entry — member `drop_index`,
+  a `primary` spelling bound to the PK object, `DROP PRIMARY KEY` on both
+  dialects, TiDB member-first `primary`, and an already-loaded referenced
+  parent's sole covering member — with alternate eligible coverers freeing
+  the drop; unanswerable dependency facts tombstone.
+- supporting-index coverage is a leftmost-prefix question with kind
+  eligibility: FULLTEXT/SPATIAL/vector/columnar members never qualify,
+  unproven kinds and unvouched collections make the answer unprovable.
+- `DROP CHECK`/`DROP CONSTRAINT` publishes by proven target type (row E4);
+  a real CHECK member remains unmodeled and out of audited scope (T12).
 
 `applyDropForeignKey` (new):
 - proven constraint name → remove that row only; the supporting index
@@ -240,10 +275,11 @@ archived under docs/verification/t11/): named+bare add, auto index naming
 (named→constraint name; unnamed MySQL→first column, TiDB→fk_N pair),
 REFERENTIAL_CONSTRAINTS defaults (5.7 RESTRICT, 8.x/TiDB NO ACTION),
 declared actions recorded, DROP FOREIGN KEY keeps the index, dup name
-(1022/1826), missing column (1072), unindexed referenced (1215/1822/6125),
-drop-needed-index (1553), TiDB tidb_enable_foreign_key=ON, TiDB
-`DROP CONSTRAINT` drops FK (T12 boundary row E4), TiDB clustered-PK parent
-reference accepted.
+(1022/1826), missing column (1072), no usable referenced key (1215 on
+5.7 / 1822 on 8.0 and TiDB / 6125 on 8.4-restrict-ON), drop-needed-index
+(1553 on child and loaded parent sides), TiDB tidb_enable_foreign_key=ON,
+the DROP CHECK|CONSTRAINT target-type seam (row E4), TiDB clustered-PK
+parent reference accepted.
 
 ## 8. Inventory/catalog/docs sync
 
@@ -254,7 +290,9 @@ reference accepted.
 - ddl-coverage catalog: new rule id + narrowed refer-actions evidence
   (ON DELETE/UPDATE modeled; MATCH stays evidence).
 - ADR records the new rule id, provider constraint completeness boundary,
-  implicit-index naming, and the T12 DROP-CONSTRAINT boundary.
+  implicit-index naming, and the DROP CHECK|CONSTRAINT target-type seam
+  (TiDB no-op / 5.7 syntax refusal / MySQL 8.x keyword divergence —
+  real CHECK semantics remain T12).
 - L2 READMEs + L3 headers updated on changed files; root architecture map
   row for the new rule family if required by the check.
 - configs/deltascope.example.yaml gains the new rule.

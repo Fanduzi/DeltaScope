@@ -79,11 +79,12 @@ func t10Policy(t *testing.T, rules ...t10Rule) string {
 // unwritten; tidbAlterPK carries the alter-primary-key config fact the
 // int_only mode additionally defers to (nil = unobserved).
 type t10Provider struct {
-	version     string
-	tidbMode    string
-	tidbAlterPK *bool
-	tables      map[string]*spec.TableSnapshot
-	calls       []string
+	version             string
+	tidbMode            string
+	tidbAlterPK         *bool
+	restrictNonStandard *bool
+	tables              map[string]*spec.TableSnapshot
+	calls               []string
 }
 
 func (p *t10Provider) LoadInstanceFacts(context.Context, spec.Dialect, string) (*spec.InstanceFacts, error) {
@@ -91,6 +92,10 @@ func (p *t10Provider) LoadInstanceFacts(context.Context, spec.Dialect, string) (
 	if p.tidbAlterPK != nil {
 		facts.TiDBAlterPrimaryKey = *p.tidbAlterPK
 		facts.TiDBAlterPrimaryKeyKnown = true
+	}
+	if p.restrictNonStandard != nil {
+		facts.RestrictNonStandardKey = *p.restrictNonStandard
+		facts.RestrictNonStandardKeyKnown = true
 	}
 	return facts, nil
 }

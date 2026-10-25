@@ -187,14 +187,32 @@ func TestAuditSQLT05A5R1KnownEmptyMembersStayAbsent(t *testing.T) {
 		}
 	})
 
-	t.Run("unknown constraint stays unknown", func(t *testing.T) {
+	t.Run("unknown constraint does not gate proven PK absence", func(t *testing.T) {
 		t.Parallel()
+		// The unified constraint contract: ConstraintsUnknown vouches
+		// member-collection completeness only — the PK object truth lives
+		// on PrimaryKey/PrimaryKeyUnknown, and no transition can hide a
+		// primary-key member without flagging PrimaryKeyUnknown. A nil
+		// PrimaryKey under the flag is therefore proven-absent, so the
+		// drop-primary-key rule fires the missing blocker (the old
+		// premise read ConstraintsUnknown as an ambiguous PK answer).
 		shape := t05A5R1PartialTable(true)
 		shape.ConstraintsUnknown = true
 		result, enriched := t05A5R1Audit(t, pkSQL[0].sql, spec.DialectMySQL, shape, false, t05PolicyPath(t, map[string]string{t05A5DropPKExists: ""}))
 		post := t05A5R1Post(t, enriched)
-		if !post.ConstraintsUnknown || len(t05FindingsByRule(result, 1, t05A5DropPKExists)) != 0 || len(t05GapsByRule(result, 1, t05A5DropPKExists)) != 1 {
-			t.Fatalf("unknown constraint consumer = post %#v findings %#v gaps %#v", post, result.Statements[1].Findings, result.Statements[1].EvidenceGaps)
+		if !post.ConstraintsUnknown || len(t05FindingsByRule(result, 1, t05A5DropPKExists)) != 1 || len(t05GapsByRule(result, 1, t05A5DropPKExists)) != 0 {
+			t.Fatalf("proven-absent PK consumer = post %#v findings %#v gaps %#v", post, result.Statements[1].Findings, result.Statements[1].EvidenceGaps)
+		}
+	})
+
+	t.Run("unknown primary key stays unknown", func(t *testing.T) {
+		t.Parallel()
+		shape := t05A5R1PartialTable(true)
+		shape.PrimaryKeyUnknown = true
+		result, enriched := t05A5R1Audit(t, pkSQL[0].sql, spec.DialectMySQL, shape, false, t05PolicyPath(t, map[string]string{t05A5DropPKExists: ""}))
+		post := t05A5R1Post(t, enriched)
+		if !post.PrimaryKeyUnknown || len(t05FindingsByRule(result, 1, t05A5DropPKExists)) != 0 || len(t05GapsByRule(result, 1, t05A5DropPKExists)) != 1 {
+			t.Fatalf("unknown PK consumer = post %#v findings %#v gaps %#v", post, result.Statements[1].Findings, result.Statements[1].EvidenceGaps)
 		}
 	})
 

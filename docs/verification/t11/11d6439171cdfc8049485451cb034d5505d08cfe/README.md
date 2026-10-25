@@ -10,7 +10,7 @@ under parent issue #79.
 | gates/ | Per-gate quad files (`<gate>.{command,stdout,stderr,rc}.txt`) executed against the bound SHA on this host |
 | green/ | Verbose `go test -count=1 -v` logs for all nine packages touched by the product diff on `11d64391` |
 | red/ | Worktree-replay red evidence: the T11 manifest run against a detached `8b6f3098` worktree — registry red (rule unknown) plus 15/32 behavioral FAILs. See `red/README.md` |
-| golden/ | `T11-artifact.json` (40/40, 505 assertions), `T09-artifact.json` (125/125, 3442), `T10-artifact.json` (126/126, 3175), verbatim derived run logs — all `head_sha=11d64391` |
+| golden/ | `T11-artifact.json` (40/40, 505 assertions), `T09-artifact.json` (125/125, 3442), `T10-artifact.json` (126/126, 3175), plus per-task run-log summaries derived from each artifact JSON (they are artifact-derived digests, not the runner's verbatim stdout) — all `head_sha=11d64391` |
 | native-probe/ | Raw four-anchor FK probe logs (MySQL 5.7.44/8.0.46/8.4.10, TiDB v8.5.0) recorded before oracle freeze |
 | identity.txt | Product SHA, parent chain, CLI sha256, golden totals, anchor versions, credential-env convention |
 

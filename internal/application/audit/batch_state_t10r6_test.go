@@ -517,16 +517,29 @@ func TestT10R6DropPKMemberBoundOwesNoPrimaryKeyGap(t *testing.T) {
 	if stmt.Coverage.Status != report.CoverageComplete || result.Verdict != report.VerdictPass {
 		t.Fatalf("a decided member target is complete+pass, got %+v / %v", stmt.Coverage, result.Verdict)
 	}
-	entry := t10r4Apply(t, spec.DialectTiDB, shape, "ALTER TABLE t DROP PRIMARY KEY;")
-	if entry == nil || entry.state != tablePresent || entry.shape == nil {
-		t.Fatalf("the member drop publishes cleanly, got %+v", entry)
-	}
-	if len(entry.shape.Indexes) != 0 {
-		t.Fatalf("the member-first drop removes only the `primary` member, got %+v", entry.shape.Indexes)
-	}
-	if !entry.shape.PrimaryKeyUnknown || !entry.shape.ConstraintsUnknown || entry.shape.HasPrimaryKey() {
-		t.Fatalf("the drop fabricates no PK presence or absence — the unproven facts stay, got %+v", entry.shape)
-	}
+	t.Run("member drop under an unvouched constraint space", func(t *testing.T) {
+		t.Parallel()
+		entry := t10r4Apply(t, spec.DialectTiDB, shape, "ALTER TABLE t DROP PRIMARY KEY;")
+		if entry == nil || entry.state != tableUnknown {
+			t.Fatalf("a hidden FK may need the member — the dependency is unanswerable, tombstone expected, got %+v", entry)
+		}
+	})
+	t.Run("member drop under a vouched constraint space", func(t *testing.T) {
+		t.Parallel()
+		vouched := *shape
+		vouched.ConstraintsUnknown = false
+		vouched.Constraints = []spec.Constraint{}
+		entry := t10r4Apply(t, spec.DialectTiDB, &vouched, "ALTER TABLE t DROP PRIMARY KEY;")
+		if entry == nil || entry.state != tablePresent || entry.shape == nil {
+			t.Fatalf("the member drop publishes cleanly, got %+v", entry)
+		}
+		if len(entry.shape.Indexes) != 0 {
+			t.Fatalf("the member-first drop removes only the `primary` member, got %+v", entry.shape.Indexes)
+		}
+		if !entry.shape.PrimaryKeyUnknown || entry.shape.ConstraintsUnknown || entry.shape.HasPrimaryKey() {
+			t.Fatalf("the drop fabricates no PK presence or absence — the unproven facts stay, got %+v", entry.shape)
+		}
+	})
 }
 
 // Tail-A sibling: a proven-deleted PK cannot have its absence re-opened

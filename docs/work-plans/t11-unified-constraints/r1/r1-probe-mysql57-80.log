@@ -1,0 +1,140 @@
+############ ANCHOR deltascope-ddl-golden-mysql57
+===== version
+| mysql: [Warning] Using a password on the command line interface can be insecure.
+| 5.7.44
+----- rc=0
+===== cleanup
+| mysql: [Warning] Using a password on the command line interface can be insecure.
+----- rc=0
+===== r1c setup
+| mysql: [Warning] Using a password on the command line interface can be insecure.
+----- rc=0
+===== r1c unqualified references parent
+| mysql: [Warning] Using a password on the command line interface can be insecure.
+----- rc=0
+===== r1c referenced schema
+| mysql: [Warning] Using a password on the command line interface can be insecure.
+| ERROR 1054 (42S22) at line 1: Unknown column 'REFERENCED_TABLE_SCHEMA' in 'field list'
+----- rc=0
+===== r1c explicit db_a.parent
+| mysql: [Warning] Using a password on the command line interface can be insecure.
+----- rc=0
+===== r1c self ref
+| mysql: [Warning] Using a password on the command line interface can be insecure.
+----- rc=0
+===== r1d setup
+| mysql: [Warning] Using a password on the command line interface can be insecure.
+----- rc=0
+===== r1d unique parent
+| mysql: [Warning] Using a password on the command line interface can be insecure.
+----- rc=0
+===== r1d nonunique parent
+| mysql: [Warning] Using a password on the command line interface can be insecure.
+----- rc=0
+===== r1d noindex parent
+| mysql: [Warning] Using a password on the command line interface can be insecure.
+| ERROR 1215 (HY000) at line 1: Cannot add foreign key constraint
+----- rc=0
+===== r1d non-leftmost parent
+| mysql: [Warning] Using a password on the command line interface can be insecure.
+| ERROR 1215 (HY000) at line 1: Cannot add foreign key constraint
+----- rc=0
+===== r1d order-mismatch parent
+| mysql: [Warning] Using a password on the command line interface can be insecure.
+| ERROR 1215 (HY000) at line 1: Cannot add foreign key constraint
+----- rc=0
+===== r1d order-match parent
+| mysql: [Warning] Using a password on the command line interface can be insecure.
+----- rc=0
+===== r1d nonunique-over-unique parent
+| mysql: [Warning] Using a password on the command line interface can be insecure.
+----- rc=0
+===== r1d set default
+| mysql: [Warning] Using a password on the command line interface can be insecure.
+| ERROR 1215 (HY000) at line 1: Cannot add foreign key constraint
+----- rc=0
+===== r1d set null on not-null
+| mysql: [Warning] Using a password on the command line interface can be insecure.
+| ERROR 1215 (HY000) at line 1: Cannot add foreign key constraint
+----- rc=0
+===== r1e parent index drop
+| mysql: [Warning] Using a password on the command line interface can be insecure.
+| ERROR 1553 (HY000) at line 1: Cannot drop index 'uq_id': needed in a foreign key constraint
+----- rc=0
+===== r1e parent index drop if fk exists
+| mysql: [Warning] Using a password on the command line interface can be insecure.
+| 1
+----- rc=0
+===== r1f mysql drop constraint syntax
+| mysql: [Warning] Using a password on the command line interface can be insecure.
+| ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'CONSTRAINT fk_uq' at line 1
+----- rc=0
+############ ANCHOR deltascope-ddl-golden-mysql80
+===== version
+| mysql: [Warning] Using a password on the command line interface can be insecure.
+| 8.0.46
+----- rc=0
+===== cleanup
+| mysql: [Warning] Using a password on the command line interface can be insecure.
+----- rc=0
+===== r1c setup
+| mysql: [Warning] Using a password on the command line interface can be insecure.
+----- rc=0
+===== r1c unqualified references parent
+| mysql: [Warning] Using a password on the command line interface can be insecure.
+----- rc=0
+===== r1c referenced schema
+| mysql: [Warning] Using a password on the command line interface can be insecure.
+| ERROR 1054 (42S22) at line 1: Unknown column 'REFERENCED_TABLE_SCHEMA' in 'field list'
+----- rc=0
+===== r1c explicit db_a.parent
+| mysql: [Warning] Using a password on the command line interface can be insecure.
+----- rc=0
+===== r1c self ref
+| mysql: [Warning] Using a password on the command line interface can be insecure.
+----- rc=0
+===== r1d setup
+| mysql: [Warning] Using a password on the command line interface can be insecure.
+----- rc=0
+===== r1d unique parent
+| mysql: [Warning] Using a password on the command line interface can be insecure.
+----- rc=0
+===== r1d nonunique parent
+| mysql: [Warning] Using a password on the command line interface can be insecure.
+----- rc=0
+===== r1d noindex parent
+| mysql: [Warning] Using a password on the command line interface can be insecure.
+| ERROR 1822 (HY000) at line 1: Failed to add the foreign key constraint. Missing index for constraint 'fk_none' in the referenced table 'pk_none'
+----- rc=0
+===== r1d non-leftmost parent
+| mysql: [Warning] Using a password on the command line interface can be insecure.
+| ERROR 1822 (HY000) at line 1: Failed to add the foreign key constraint. Missing index for constraint 'fk_left' in the referenced table 'pk_left'
+----- rc=0
+===== r1d order-mismatch parent
+| mysql: [Warning] Using a password on the command line interface can be insecure.
+| ERROR 1822 (HY000) at line 1: Failed to add the foreign key constraint. Missing index for constraint 'fk_rev' in the referenced table 'pk_rev'
+----- rc=0
+===== r1d order-match parent
+| mysql: [Warning] Using a password on the command line interface can be insecure.
+----- rc=0
+===== r1d nonunique-over-unique parent
+| mysql: [Warning] Using a password on the command line interface can be insecure.
+----- rc=0
+===== r1d set default
+| mysql: [Warning] Using a password on the command line interface can be insecure.
+----- rc=0
+===== r1d set null on not-null
+| mysql: [Warning] Using a password on the command line interface can be insecure.
+| ERROR 1830 (HY000) at line 1: Column 'c' cannot be NOT NULL: needed in a foreign key constraint 'fk_sn' SET NULL
+----- rc=0
+===== r1e parent index drop
+| mysql: [Warning] Using a password on the command line interface can be insecure.
+| ERROR 1553 (HY000) at line 1: Cannot drop index 'uq_id': needed in a foreign key constraint
+----- rc=0
+===== r1e parent index drop if fk exists
+| mysql: [Warning] Using a password on the command line interface can be insecure.
+| 1
+----- rc=0
+===== r1f mysql drop constraint syntax
+| mysql: [Warning] Using a password on the command line interface can be insecure.
+----- rc=0

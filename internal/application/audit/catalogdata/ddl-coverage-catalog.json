@@ -21,16 +21,16 @@
     },
     "postgresql": {
       "total": 290,
-      "finding_covered": 279,
-      "normalized_silent": 6,
+      "finding_covered": 277,
+      "normalized_silent": 8,
       "unsupported_boundary": 0,
       "parser_error": 5,
       "unclassified": 0
     },
     "postgresql_alter_table_residual": {
       "total": 66,
-      "finding_covered": 60,
-      "normalized_silent": 2,
+      "finding_covered": 59,
+      "normalized_silent": 3,
       "unsupported_boundary": 0,
       "parser_error": 4,
       "unclassified": 0
@@ -791,11 +791,9 @@
       "dialect": "postgresql",
       "family": "alter_table",
       "form": "ALTER TABLE ADD CONSTRAINT PRIMARY KEY",
-      "classification": "finding_covered",
-      "finding_rule_ids": [
-        "ddl.table.primary_key.bigint.require"
-      ],
-      "notes": ""
+      "classification": "normalized_silent",
+      "finding_rule_ids": [],
+      "notes": "normalized, no finding under default policy"
     },
     {
       "dialect": "postgresql",
@@ -1407,11 +1405,9 @@
       "dialect": "postgresql",
       "family": "constraints",
       "form": "PRIMARY KEY INCLUDE",
-      "classification": "finding_covered",
-      "finding_rule_ids": [
-        "ddl.table.primary_key.bigint.require"
-      ],
-      "notes": ""
+      "classification": "normalized_silent",
+      "finding_rule_ids": [],
+      "notes": "normalized, no finding under default policy"
     },
     {
       "dialect": "postgresql",

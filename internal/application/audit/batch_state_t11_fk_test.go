@@ -31,13 +31,18 @@ func t11fkShape(indexes ...spec.Index) *spec.TableSnapshot {
 }
 
 // t11fkParent returns a proven parent table carrying the referenced
-// columns — the premise an add needs before it may publish a member.
+// columns and a usable referenced key — the first column as its primary
+// key, the premise an add needs before it may publish a member.
 func t11fkParent(columns ...string) *spec.TableSnapshot {
 	cols := make([]spec.Column, 0, len(columns))
 	for _, name := range columns {
 		cols = append(cols, t10r2Col(name, "int", true, 0))
 	}
-	return t10r2Table("p", cols)
+	shape := t10r2Table("p", cols)
+	if len(columns) > 0 {
+		shape.PrimaryKey = &spec.Index{Name: "primary", Kind: spec.IndexKindPrimary, Columns: []string{columns[0]}}
+	}
+	return shape
 }
 
 // t11Apply mirrors t10r4Apply but lets the batch resolve referenced
@@ -56,6 +61,10 @@ func t11Apply(t *testing.T, dialect spec.Dialect, shape *spec.TableSnapshot, par
 		t.Fatalf("instance facts: %v", err)
 	}
 	state.instanceFacts = facts
+	// enrichOrderedStatements sets the request-level version before any
+	// statement runs — version-gated premises read it from state, not the
+	// per-statement metadata.
+	state.resolvedVersion = t10r4Version(dialect)
 	key := state.keyFor("golden", spec.Table{Name: "t"})
 	state.entries[key] = &batchTableEntry{state: tablePresent, shape: shape}
 	parsed, err := parseSQL(context.Background(), sql, dialect)
@@ -348,8 +357,18 @@ func TestT11OrderedAddThenDropKeepsDerivedIndex(t *testing.T) {
 // pairing in order — the second target is as much a fact as the first.
 func TestT11CompositeForeignKeyKeepsOrderedPairs(t *testing.T) {
 	t.Parallel()
-	entry := t11Entry(t11Apply(t, spec.DialectMySQL, t11fkShape(),
-		map[string]*spec.TableSnapshot{"p": t11fkParent("y", "z")},
+	// The referenced pair must be covered by a usable parent key in the
+	// same order — a composite primary key over (y, z) — and the local
+	// members must be nullable for ON UPDATE SET NULL to land natively
+	// (a proven NOT NULL member column refuses it, 1830).
+	parent := t11fkParent("y", "z")
+	parent.PrimaryKey.Columns = []string{"y", "z"}
+	child := t10r2Table("t", []spec.Column{
+		t10r2Col("a", "int", false, 0),
+		t10r2Col("c", "int", false, 0),
+	})
+	entry := t11Entry(t11Apply(t, spec.DialectMySQL, child,
+		map[string]*spec.TableSnapshot{"p": parent},
 		"ALTER TABLE t ADD CONSTRAINT fk_bx FOREIGN KEY (a, c) REFERENCES p (y, z) ON DELETE CASCADE ON UPDATE SET NULL;"), "t")
 	if entry == nil || entry.state != tablePresent || entry.shape == nil {
 		t.Fatalf("expected present entry, got %#v", entry)
@@ -446,10 +465,12 @@ func TestT11AddForeignKeyUnknownParentUnvouchesSet(t *testing.T) {
 }
 
 // A self-referencing foreign key answers the referenced premise against
-// the child's own pre-transition shape.
+// the child's own pre-transition shape — including its own usable key.
 func TestT11AddForeignKeySelfReferenceUsesOwnShape(t *testing.T) {
 	t.Parallel()
-	entry := t11Entry(t11Apply(t, spec.DialectMySQL, t11fkShape(), nil,
+	shape := t11fkShape()
+	shape.PrimaryKey = &spec.Index{Name: "primary", Kind: spec.IndexKindPrimary, Columns: []string{"a"}}
+	entry := t11Entry(t11Apply(t, spec.DialectMySQL, shape, nil,
 		"ALTER TABLE t ADD CONSTRAINT fk_self FOREIGN KEY (c) REFERENCES t(a);"), "t")
 	if entry == nil || entry.state != tablePresent || entry.shape == nil {
 		t.Fatalf("expected present entry, got %#v", entry)
@@ -466,7 +487,8 @@ func TestT11AddForeignKeySelfReferenceUsesOwnShape(t *testing.T) {
 // rather than firing a proven-missing answer the server would land.
 func TestT11CreateDerivedBareForeignKeyKeepsNameUnproven(t *testing.T) {
 	t.Parallel()
-	provider := &t10Provider{version: "8.0.46"}
+	provider := &t10Provider{version: "8.0.46",
+		tables: map[string]*spec.TableSnapshot{"p": t11fkParent("id")}}
 	shape := t10r4PostState(t, spec.DialectMySQL, provider,
 		"CREATE TABLE t (a INT, c INT, FOREIGN KEY (c) REFERENCES p(id)); "+
 			"ALTER TABLE t DROP FOREIGN KEY t_ibfk_1;")

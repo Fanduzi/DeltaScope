@@ -156,3 +156,77 @@ before the contract froze:
 - Provider: grouped ordered pairs, action vocabulary, proven-empty vs error
   propagation; T06A17 proof harness extended for the extra catalog read.
 - Golden: `T11.json`, 38 cases / 474 assertions on the four anchors.
+
+## R1 amendment (2026-10-28, verified against `docs/work-plans/t11-unified-constraints/r1/` probe logs)
+
+Independent acceptance re-probed the boundary claims and corrected three
+recorded premises. The original text above is retained for history; the
+corrected contract follows.
+
+1. **TiDB `DROP CONSTRAINT` never removes a foreign key.** The earlier
+   claim that TiDB accepts the spelling for FK removal came from an `rc=0`
+   probe that did not verify post-state. R1 probes on v8.5.0 show the
+   statement is a warned no-op under `tidb_enable_check_constraint=OFF`
+   and error 3940 under ON — the member survives either way. Since
+   `DROP CHECK` and `DROP CONSTRAINT` share one AST node and the authored
+   keyword is unrecoverable, the ordered state answers by proven target
+   type: TiDB is a provable no-op; MySQL 5.7 rejects the syntax (1064);
+   MySQL 8.x removes the FK under `DROP CONSTRAINT` but refuses `DROP
+   CHECK` on the same name (3821), so a proven-FK name unvouches that
+   member's fate (`unvouchForeignKeyMember`) rather than guessing the
+   keyword. Real CHECK semantics stay T12.
+2. **Referenced-key usability is an ordered-state landing premise, not a
+   rule.** The contract bounded "key legality" to parent/column existence.
+   R1 probes show every anchor refuses an add whose parent lacks a usable
+   key (1215 on 5.7, 1822 on 8.0 and TiDB 8.5, 6125 on 8.4 under observed
+   `restrict_fk_on_non_standard_key=ON`), so `applyAddForeignKey` and the
+   CREATE path now evaluate the usable-key answer before publishing:
+   leftmost-order coverage by an eligibility-class member (primary /
+   unique / plain secondary where the product allows non-unique keys —
+   refused by 8.4-restrict-ON, accepted on pre-8.4 and TiDB; specialized
+   kinds never qualify). The policy surface is unchanged — no rule asserts
+   key legality; this is transition correctness only. Referential actions
+   gained the same treatment: SET NULL on a proven NOT NULL member refuses
+   (1830 everywhere); SET DEFAULT refuses on pre-8.0 MySQL (1215) and
+   lands on 8.x/TiDB.
+3. **The constraint-collection vouch is not a PK premise.** Provider-side
+   `ConstraintsUnknown` marks *unmodeled constraint types* (e.g. a CHECK
+   sibling); it cannot hide the PK object, which carries its own facts.
+   PK consumers (`ResolvePrimaryRole`, `ResolveIndexPrimaryObject`,
+   `ResolveIndexNameBinding`, name-binding readers, exists-gap premises)
+   no longer consult it, so a proven-absent or proven-present PK is never
+   re-lowered by an unrelated unmodeled type. Related: a nil `Constraints`
+   is a loaded empty set under the collection contract —
+   `ForeignKeyNameSpaceUnvouched` reports `ConstraintsUnknown` or unproven
+   member names, and the SDK clone preserves nil-vs-empty on both member
+   collections (`cloneIndexes`/`cloneConstraints`).
+4. **Cross-schema identity is one resolution.** An unqualified
+   `REFERENCES parent` resolves inside the child's effective schema —
+   provider read, cache key, display identity, and dependency edges share
+   it (two-db probe: `db_b child db_b PRIMARY parent`).
+5. **The 1553 dependency gate binds every removal entry.** Member
+   `drop_index`, `primary` spellings bound to the PK object,
+   `DROP PRIMARY KEY` on both dialects, TiDB member-first `primary`, and
+   an already-loaded referenced parent's sole covering member all answer
+   the sole-coverer refusal; alternate eligible coverers free the drop;
+   unanswerable facts tombstone. An undecidable add whose columns are not
+   provably covered unvouches the index set alongside the constraint set.
+   CREATE-derived foreign keys publish the implicit supporting index the
+   same way the ALTER add does.
+6. **The CREATE-table FK boundary is closed.** `createTableForeignKeyPremise`
+   evaluates the same landing premises (member columns, refer actions,
+   usable referenced key — a self-reference against the derived shape)
+   before publishing, removing the recorded "premise modeling belongs to
+   ALTER" boundary.
+7. **PK structural rules evaluate ALTER `ADD PRIMARY KEY`.** The bigint /
+   unsigned / auto_increment rules now resolve declared member names
+   against the statement's ordered pre-state column facts on MySQL/TiDB
+   `alter.Index`/`alter.Constraint` (and PG options) — a proven violation
+   finds its blocker, withheld member-column facts owe
+   `target_table.columns`, and a name-only stub is never read as a type.
+
+Related tests: `batch_state_t11r1_c_test.go` (cross-schema),
+`batch_state_t11r1_pk_test.go` (PK rules + B3 consumers),
+`batch_state_t11r1_de_test.go` (premise + dependency matrix),
+`batch_state_t11r1_f_test.go` (DROP CHECK|CONSTRAINT seam),
+`pkg/deltascope/audit_t11r1_test.go` (SDK clone + entry parity).

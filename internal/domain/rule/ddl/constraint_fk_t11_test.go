@@ -294,18 +294,36 @@ func TestT11DropForeignKeyExistsRule(t *testing.T) {
 		t.Fatalf("expected target_table.constraints gap, got %v", gaps)
 	}
 
-	// Nil collection (provider did not vouch): same as unknown.
+	// Nil collection is the loaded empty set under the unified collection
+	// contract — identical to the proven-empty arm: one missing finding,
+	// no gap. The old oracle read nil as "provider did not vouch"; the
+	// contract now reserves unknown for ConstraintsUnknown, so the arm
+	// below pins the flagged-unknown shape instead.
 	nilSet := mk(nil, false, false)
 	findings, err = r.Evaluate(context.Background(), nilSet)
 	if err != nil {
 		t.Fatalf("evaluate nil: %v", err)
 	}
-	if len(findings) != 0 {
-		t.Fatalf("expected no finding under nil set, got %d", len(findings))
+	if len(findings) != 1 {
+		t.Fatalf("nil = proven-empty set must answer the missing finding, got %d", len(findings))
 	}
-	gaps = reporter.EvidenceGaps(nilSet)
+	if gaps = reporter.EvidenceGaps(nilSet); len(gaps) != 0 {
+		t.Fatalf("proven-empty nil set owes no gap, got %v", gaps)
+	}
+
+	// Nil collection plus the explicit unknown flag: the flagged shape
+	// stays the withholding arm — no finding, collection gap.
+	nilUnknown := mk(nil, true, false)
+	findings, err = r.Evaluate(context.Background(), nilUnknown)
+	if err != nil {
+		t.Fatalf("evaluate nil+unknown: %v", err)
+	}
+	if len(findings) != 0 {
+		t.Fatalf("expected no finding under flagged-unknown set, got %d", len(findings))
+	}
+	gaps = reporter.EvidenceGaps(nilUnknown)
 	if len(gaps) != 1 || gaps[0].RequiredFacts[0] != "target_table.constraints" {
-		t.Fatalf("expected constraints gap under nil set, got %v", gaps)
+		t.Fatalf("expected constraints gap under flagged-unknown set, got %v", gaps)
 	}
 
 	// No snapshot: existence+constraints gap ordered like member rules.

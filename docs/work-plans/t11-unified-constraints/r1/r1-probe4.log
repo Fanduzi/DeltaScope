@@ -1,0 +1,133 @@
+############ ANCHOR deltascope-ddl-golden-mysql57
+| mysql: [Warning] Using a password on the command line interface can be insecure.
+----- done
+| mysql: [Warning] Using a password on the command line interface can be insecure.
+----- done
+===== drop CONSTRAINT fk
+| mysql: [Warning] Using a password on the command line interface can be insecure.
+| ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'constraint fk_c4' at line 1
+----- done
+===== fk count after
+| mysql: [Warning] Using a password on the command line interface can be insecure.
+| count(*)
+| 1
+----- done
+| mysql: [Warning] Using a password on the command line interface can be insecure.
+----- done
+===== drop CHECK on fk name
+| mysql: [Warning] Using a password on the command line interface can be insecure.
+| ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'check fk_c5' at line 1
+----- done
+===== fk count after drop check
+| mysql: [Warning] Using a password on the command line interface can be insecure.
+| count(*)
+| 1
+----- done
+===== drop CHECK on real check
+| mysql: [Warning] Using a password on the command line interface can be insecure.
+| ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'check chk6' at line 1
+----- done
+===== drop CONSTRAINT missing
+| mysql: [Warning] Using a password on the command line interface can be insecure.
+| ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'constraint nosuch' at line 1
+----- done
+############ ANCHOR deltascope-ddl-golden-mysql80
+| mysql: [Warning] Using a password on the command line interface can be insecure.
+----- done
+| mysql: [Warning] Using a password on the command line interface can be insecure.
+----- done
+===== drop CONSTRAINT fk
+| mysql: [Warning] Using a password on the command line interface can be insecure.
+----- done
+===== fk count after
+| mysql: [Warning] Using a password on the command line interface can be insecure.
+| count(*)
+| 0
+----- done
+| mysql: [Warning] Using a password on the command line interface can be insecure.
+----- done
+===== drop CHECK on fk name
+| mysql: [Warning] Using a password on the command line interface can be insecure.
+| ERROR 3821 (HY000) at line 1: Check constraint 'fk_c5' is not found in the table.
+----- done
+===== fk count after drop check
+| mysql: [Warning] Using a password on the command line interface can be insecure.
+| count(*)
+| 1
+----- done
+===== drop CHECK on real check
+| mysql: [Warning] Using a password on the command line interface can be insecure.
+| count(*)
+| 0
+----- done
+===== drop CONSTRAINT missing
+| mysql: [Warning] Using a password on the command line interface can be insecure.
+| ERROR 3940 (HY000) at line 1: Constraint 'nosuch' does not exist.
+----- done
+############ ANCHOR deltascope-ddl-golden-mysql84
+| mysql: [Warning] Using a password on the command line interface can be insecure.
+----- done
+| mysql: [Warning] Using a password on the command line interface can be insecure.
+----- done
+===== drop CONSTRAINT fk
+| mysql: [Warning] Using a password on the command line interface can be insecure.
+----- done
+===== fk count after
+| mysql: [Warning] Using a password on the command line interface can be insecure.
+| count(*)
+| 0
+----- done
+| mysql: [Warning] Using a password on the command line interface can be insecure.
+----- done
+===== drop CHECK on fk name
+| mysql: [Warning] Using a password on the command line interface can be insecure.
+| ERROR 3821 (HY000) at line 1: Check constraint 'fk_c5' is not found in the table.
+----- done
+===== fk count after drop check
+| mysql: [Warning] Using a password on the command line interface can be insecure.
+| count(*)
+| 1
+----- done
+===== drop CHECK on real check
+| mysql: [Warning] Using a password on the command line interface can be insecure.
+| count(*)
+| 0
+----- done
+===== drop CONSTRAINT missing
+| mysql: [Warning] Using a password on the command line interface can be insecure.
+| ERROR 3940 (HY000) at line 1: Constraint 'nosuch' does not exist.
+----- done
+############ ANCHOR tidb85
+----- done
+| ERROR 1046 (3D000) at line 1: No database selected
+----- done
+| ERROR 1046 (3D000) at line 1: No database selected
+----- done
+===== tidb nonclustered pk drop (sole support)
+| ERROR 1046 (3D000) at line 1: No database selected
+----- done
+===== tidb c7 after
+| ERROR 1046 (3D000) at line 1: No database selected
+----- done
+===== tidb member-primary fk support
+| ERROR 1280 (42000) at line 1: Incorrect index name 'primary'
+----- done
+| ERROR 1046 (3D000) at line 1: No database selected
+----- done
+############ ANCHOR tidb85
+----- done
+----- done
+===== tidb nonclustered pk drop (sole support)
+| ERROR 1553 (HY000) at line 1: Cannot drop index 'PRIMARY': needed in a foreign key constraint
+----- done
+===== tidb c7 after
+| Table	Create Table
+| c7	CREATE TABLE `c7` (\n  `c` int NOT NULL,\n  PRIMARY KEY (`c`) /*T![clustered_index] NONCLUSTERED */,\n  CONSTRAINT `fk_c7` FOREIGN KEY (`c`) REFERENCES `p7` (`id`)\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+----- done
+===== tidb member primary (backticked) + fk
+| ERROR 1280 (42000) at line 1: Incorrect index name 'primary'
+----- done
+| ERROR 1146 (42S02) at line 1: Table 'golden.c8' doesn't exist
+----- done
+| ERROR 1146 (42S02) at line 1: Table 'golden.c8' doesn't exist
+----- done

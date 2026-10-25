@@ -9,11 +9,10 @@
 // tidb_enable_clustered_index — int_only defers to alter-primary-key);
 // PrimaryKeyClustered answering the TiDB 8200 drop premise beside the
 // handle answer (common-handle PKs are clustered yet addressable); and the
-// shared name bindings backing every name-keyed consumer — ordered
-// state, rules, assessment: ResolvePrimaryNameBinding answers `primary`
-// four ways and ResolveIndexNameBinding a target five (member / PK object
-// by stored name / handle identity / free / ambiguous) — a proven-absent
-// PK frees names despite a dropped object's stale storage unknowns
+// shared name bindings backing every name-keyed consumer — ordered state,
+// rules, assessment: `primary` answers four ways, a target five (member /
+// PK object / handle / free / ambiguous) — a proven-absent PK frees names
+// despite stale storage unknowns or an unvouched constraint collection
 // pos: T10-R2/R4/R5 primary-role/clustered/name-binding model (issue #89);
 // anchors — MySQL 8.0.46 invisible_indexes.result L247-289, TiDB v8.5.0
 // TableInfo.GetPrimaryKey + checkInvisibleIndexOnPK
@@ -85,7 +84,7 @@ func ResolvePrimaryRole(dialect Dialect, snapshot *TableSnapshot, candidateOrder
 	if snapshot == nil || !snapshot.Exists {
 		return PrimaryRoleResolution{Resolved: true}
 	}
-	if snapshot.PrimaryKeyUnknown || snapshot.ConstraintsUnknown {
+	if snapshot.PrimaryKeyUnknown {
 		return PrimaryRoleResolution{GapFacts: []string{PrimaryRoleGapPrimaryKey}}
 	}
 	if snapshot.HasPrimaryKey() {
@@ -210,7 +209,7 @@ func ResolveIndexPrimaryObject(snapshot *TableSnapshot, dialect Dialect) (exists
 	if snapshot == nil {
 		return false, false
 	}
-	if snapshot.PrimaryKeyUnknown || snapshot.ConstraintsUnknown {
+	if snapshot.PrimaryKeyUnknown {
 		return false, false
 	}
 	if !snapshot.HasPrimaryKey() {
@@ -494,8 +493,7 @@ func ResolveIndexNameBinding(dialect Dialect, snapshot *TableSnapshot, name stri
 		if proven && strings.EqualFold(pkName, name) {
 			return IndexNameBindsPKObject
 		}
-		if !proven && !snapshot.HasPrimaryKey() &&
-			!snapshot.PrimaryKeyUnknown && !snapshot.ConstraintsUnknown {
+		if !proven && !snapshot.HasPrimaryKey() && !snapshot.PrimaryKeyUnknown {
 			return IndexNameBindsNone
 		}
 		return IndexNameBindsAmbiguous
