@@ -1,9 +1,14 @@
 #!/bin/bash
 # input: live mysql80/tidb85 docker anchors and golden-schema fixtures
 # output: renamed-PK successor ops, freed `primary` name reuse, DROP PRIMARY
-#   KEY member routing, and auto-name 61-64 byte suffix boundaries with rc
+#   KEY member routing, and the covered auto-name suffix cases (MySQL 62c
+#   collision + 63c control; TiDB 62c + 64c) — not a full 61-64 matrix
 # pos: T10-R5 native evidence complementing r4-m10/r4-pk-presence probes
 # note: re-run of the R5 probe set — every case is idempotent (fresh table).
+#   T10-R6 wording pass: the 16 run blocks are 1 version check + 15 behavior
+#   probes; the a1c2 block stopped at its first statement (DROP PRIMARY KEY
+#   1091) so the trailing RENAME never executed — the archived log carries
+#   the pre-correction "post-drop confirmations" label verbatim.
 MY='docker exec --env MYSQL_PWD=root deltascope-ddl-golden-mysql80 mysql -uroot'
 TI='docker exec deltascope-ddl-golden-tidb85-client mysql -h tidb85 -P4000 -uroot'
 run() { echo; echo "=== $1 ==="; echo "\$ $2"; eval "$2"; echo "rc=$?"; }
@@ -15,6 +20,10 @@ echo; echo "=== R5-A TiDB: renamed-PK object (pk2) successor ops ==="
 run "a1a pk2 ALTER VISIBLE no-op" "$TI -e 'DROP TABLE IF EXISTS golden.r5a1; CREATE TABLE golden.r5a1(id VARCHAR(32) PRIMARY KEY NONCLUSTERED, c INT); ALTER TABLE golden.r5a1 RENAME INDEX \`PRIMARY\` TO pk2; ALTER TABLE golden.r5a1 ALTER INDEX pk2 VISIBLE;'"
 run "a1b pk2 ALTER INVISIBLE refused" "$TI -e 'DROP TABLE IF EXISTS golden.r5a1; CREATE TABLE golden.r5a1(id VARCHAR(32) PRIMARY KEY NONCLUSTERED, c INT); ALTER TABLE golden.r5a1 RENAME INDEX \`PRIMARY\` TO pk2; ALTER TABLE golden.r5a1 ALTER INDEX pk2 INVISIBLE; SHOW INDEX FROM golden.r5a1;'"
 run "a1c common-handle DROP INDEX pk2 drops the PK object" "$TI -e 'DROP TABLE IF EXISTS golden.r5a2; CREATE TABLE golden.r5a2(id VARCHAR(32) PRIMARY KEY CLUSTERED, c INT); ALTER TABLE golden.r5a2 RENAME INDEX \`PRIMARY\` TO pk2; DROP INDEX pk2 ON golden.r5a2; SHOW INDEX FROM golden.r5a2; SELECT COUNT(*) pk_left FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA=\"golden\" AND TABLE_NAME=\"r5a2\" AND CONSTRAINT_TYPE=\"PRIMARY KEY\";'"
+# a1c2: the -e block aborts on the first error — DROP PRIMARY KEY answers
+# 1091 (pk_left=0 in a1c already independently proves the object was
+# deleted) and the trailing RENAME never executes; this is not a "double
+# successor confirmation". Archived log keeps the original label verbatim.
 run "a1c2 post-drop confirmations" "$TI -e 'ALTER TABLE golden.r5a2 DROP PRIMARY KEY; ALTER TABLE golden.r5a2 RENAME INDEX pk2 TO pk3;'"
 run "a1d renamed-object renames again pk2->pk3" "$TI -e 'DROP TABLE IF EXISTS golden.r5a3; CREATE TABLE golden.r5a3(id VARCHAR(32) PRIMARY KEY NONCLUSTERED, c INT); ALTER TABLE golden.r5a3 RENAME INDEX \`PRIMARY\` TO pk2; ALTER TABLE golden.r5a3 RENAME INDEX pk2 TO pk3; SHOW INDEX FROM golden.r5a3;'"
 run "a1e freed primary name after rename" "$TI -e 'DROP INDEX \`PRIMARY\` ON golden.r5a3;'"

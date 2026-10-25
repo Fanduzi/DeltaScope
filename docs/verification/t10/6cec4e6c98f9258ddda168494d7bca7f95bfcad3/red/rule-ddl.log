@@ -1,0 +1,10 @@
+--- FAIL: TestT10R6DropPrimaryKeyFreedNameFiresMissing (0.00s)
+    index_exists_t10r6_test.go:69: the freed `primary` name is a proven-missing target — the blocker must fire, got []
+--- FAIL: TestT10R6DropPrimaryKeyAmbiguousGapFacts (0.00s)
+    --- FAIL: TestT10R6DropPrimaryKeyAmbiguousGapFacts/both_sides_unproven_owe_both_facts (0.00s)
+        index_exists_t10r6_test.go:201: the suppressed binding owes target_table.primary_key, got [{RuleID: ReasonCode:unknown_table_state RequiredFacts:[target_table.indexes]}]
+    --- FAIL: TestT10R6DropPrimaryKeyAmbiguousGapFacts/pk_object_name_withheld_under_vouched_members (0.00s)
+        index_exists_t10r6_test.go:177: the suppressed binding owes target_table.primary_key, got [{RuleID: ReasonCode:unknown_table_state RequiredFacts:[target_table.indexes]}]
+FAIL
+FAIL	github.com/Fanduzi/DeltaScope/internal/domain/rule/ddl	0.298s
+FAIL

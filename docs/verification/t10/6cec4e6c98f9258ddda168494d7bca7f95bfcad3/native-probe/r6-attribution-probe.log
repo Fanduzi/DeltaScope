@@ -1,0 +1,97 @@
+## version
+$ mysql --protocol=tcp -h 127.0.0.1 -P 24000 -uroot --password= -Nse SELECT VERSION()
+mysql: [Warning] Using a password on the command line interface can be insecure.
+8.0.11-TiDB-v8.5.0
+rc=0
+
+## drop db
+$ mysql --protocol=tcp -h 127.0.0.1 -P 24000 -uroot --password= -Nse DROP DATABASE IF EXISTS r6probe
+mysql: [Warning] Using a password on the command line interface can be insecure.
+rc=0
+
+## create db
+$ mysql --protocol=tcp -h 127.0.0.1 -P 24000 -uroot --password= -Nse CREATE DATABASE r6probe
+mysql: [Warning] Using a password on the command line interface can be insecure.
+rc=0
+
+## a1 create
+$ mysql --protocol=tcp -h 127.0.0.1 -P 24000 -uroot --password= -Nse CREATE TABLE r6probe.t1(id VARCHAR(32) NOT NULL, PRIMARY KEY(id) NONCLUSTERED, UNIQUE KEY aa(id))
+mysql: [Warning] Using a password on the command line interface can be insecure.
+rc=0
+
+## a1 rename
+$ mysql --protocol=tcp -h 127.0.0.1 -P 24000 -uroot --password= -Nse ALTER TABLE r6probe.t1 RENAME INDEX `PRIMARY` TO pk2
+mysql: [Warning] Using a password on the command line interface can be insecure.
+rc=0
+
+## a1 statistics
+$ mysql --protocol=tcp -h 127.0.0.1 -P 24000 -uroot --password= -Nse SELECT KEY_NAME, COLUMN_NAME, SEQ_IN_INDEX, CLUSTERED FROM information_schema.TIDB_INDEXES WHERE TABLE_SCHEMA='r6probe' AND TABLE_NAME='t1' ORDER BY KEY_NAME, SEQ_IN_INDEX
+mysql: [Warning] Using a password on the command line interface can be insecure.
+aa	id	1	NO
+pk2	id	1	NO
+rc=0
+
+## a1 kcu
+$ mysql --protocol=tcp -h 127.0.0.1 -P 24000 -uroot --password= -Nse SELECT CONSTRAINT_NAME, COLUMN_NAME, ORDINAL_POSITION FROM information_schema.KEY_COLUMN_USAGE WHERE TABLE_SCHEMA='r6probe' AND TABLE_NAME='t1' AND CONSTRAINT_NAME='PRIMARY' ORDER BY ORDINAL_POSITION
+mysql: [Warning] Using a password on the command line interface can be insecure.
+PRIMARY	id	1
+rc=0
+
+## a1 constraints
+$ mysql --protocol=tcp -h 127.0.0.1 -P 24000 -uroot --password= -Nse SELECT CONSTRAINT_NAME, CONSTRAINT_TYPE FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA='r6probe' AND TABLE_NAME='t1' ORDER BY CONSTRAINT_NAME
+mysql: [Warning] Using a password on the command line interface can be insecure.
+PRIMARY	PRIMARY KEY
+aa	UNIQUE
+rc=0
+
+## a1 show index
+$ mysql --protocol=tcp -h 127.0.0.1 -P 24000 -uroot --password= -Nse SHOW INDEX FROM r6probe.t1
+mysql: [Warning] Using a password on the command line interface can be insecure.
+t1	0	pk2	1	id	A	0	NULL	NULL		BTREE			YES	NULL	NO	NO
+t1	0	aa	1	id	A	0	NULL	NULL		BTREE			YES	NULL	NO	NO
+rc=0
+
+## a2 create
+$ mysql --protocol=tcp -h 127.0.0.1 -P 24000 -uroot --password= -Nse CREATE TABLE r6probe.t2(a INT NOT NULL, b INT NOT NULL, PRIMARY KEY(a,b) NONCLUSTERED, UNIQUE KEY aa(b,a))
+mysql: [Warning] Using a password on the command line interface can be insecure.
+rc=0
+
+## a2 rename
+$ mysql --protocol=tcp -h 127.0.0.1 -P 24000 -uroot --password= -Nse ALTER TABLE r6probe.t2 RENAME INDEX `PRIMARY` TO pk2
+mysql: [Warning] Using a password on the command line interface can be insecure.
+rc=0
+
+## a2 statistics
+$ mysql --protocol=tcp -h 127.0.0.1 -P 24000 -uroot --password= -Nse SELECT KEY_NAME, COLUMN_NAME, SEQ_IN_INDEX, CLUSTERED FROM information_schema.TIDB_INDEXES WHERE TABLE_SCHEMA='r6probe' AND TABLE_NAME='t2' ORDER BY KEY_NAME, SEQ_IN_INDEX
+mysql: [Warning] Using a password on the command line interface can be insecure.
+aa	b	1	NO
+aa	a	2	NO
+pk2	a	1	NO
+pk2	b	2	NO
+rc=0
+
+## a2 kcu
+$ mysql --protocol=tcp -h 127.0.0.1 -P 24000 -uroot --password= -Nse SELECT CONSTRAINT_NAME, COLUMN_NAME, ORDINAL_POSITION FROM information_schema.KEY_COLUMN_USAGE WHERE TABLE_SCHEMA='r6probe' AND TABLE_NAME='t2' AND CONSTRAINT_NAME='PRIMARY' ORDER BY ORDINAL_POSITION
+mysql: [Warning] Using a password on the command line interface can be insecure.
+PRIMARY	a	1
+PRIMARY	b	2
+rc=0
+
+## a3 create
+$ mysql --protocol=tcp -h 127.0.0.1 -P 24000 -uroot --password= -Nse CREATE TABLE r6probe.t3(id INT NOT NULL PRIMARY KEY CLUSTERED, u INT, UNIQUE KEY uq(u))
+mysql: [Warning] Using a password on the command line interface can be insecure.
+rc=0
+
+## a3 statistics
+$ mysql --protocol=tcp -h 127.0.0.1 -P 24000 -uroot --password= -Nse SELECT KEY_NAME, COLUMN_NAME, SEQ_IN_INDEX, CLUSTERED FROM information_schema.TIDB_INDEXES WHERE TABLE_SCHEMA='r6probe' AND TABLE_NAME='t3' ORDER BY KEY_NAME, SEQ_IN_INDEX
+mysql: [Warning] Using a password on the command line interface can be insecure.
+PRIMARY	id	1	YES
+uq	u	1	NO
+rc=0
+
+## a3 kcu
+$ mysql --protocol=tcp -h 127.0.0.1 -P 24000 -uroot --password= -Nse SELECT CONSTRAINT_NAME, COLUMN_NAME, ORDINAL_POSITION FROM information_schema.KEY_COLUMN_USAGE WHERE TABLE_SCHEMA='r6probe' AND TABLE_NAME='t3' AND CONSTRAINT_NAME='PRIMARY' ORDER BY ORDINAL_POSITION
+mysql: [Warning] Using a password on the command line interface can be insecure.
+PRIMARY	id	1
+rc=0
+

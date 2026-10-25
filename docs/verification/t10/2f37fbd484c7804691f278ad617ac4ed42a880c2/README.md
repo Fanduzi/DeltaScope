@@ -41,8 +41,8 @@ corrections:
   applies MySQL's `make_unique_key_name` truncation: colliding bases
   >61 bytes store `61c+"_N"` (verified 8.0.46: 62-byte base →
   `61c+"_2"`=63). TiDB does not truncate — a 62-byte base derives
-  `62c+"_2"`=64 (verified), while 63/64-byte derivations exceed the
-  identifier limit natively (1059 verified) and stay unprovable.
+  `62c+"_2"`=64 (verified), while a 64-byte base fails the CREATE
+  natively (1059 verified on v8.5.0) and stays unprovable.
 
 Review-pass corrections folded into the same diff (rounds noted in
 `red/` and commit history; final re-review verified all dispositions):
@@ -91,14 +91,19 @@ Review-pass corrections folded into the same diff (rounds noted in
   documentation loop check — each captured as command/stdout/stderr/rc
   quads.
 - `native-probe/` — `r5-bounded-probes.sh`/`.log`, verbatim transcript
-  against mysql:8.0.46 and pingcap/tidb:v8.5.0 of every R5-load-bearing
-  native fact: renamed-PK `pk2` successor ops (VISIBLE no-op / INVISIBLE
-  3522 / common-handle `DROP INDEX pk2` rc=0 deleting the object /
-  re-rename), freed-`primary` outcomes (1091 target-miss, member
-  takeover rc=0, PK rename-back 1061), DROP PRIMARY KEY member-first
-  routing on a handle table, the nonclustered member-`primary` 1061
-  coexistence refusal, and the MySQL-vs-TiDB 61/62/63/64-byte
-  auto-name suffix boundaries. The earlier in-session probe transcript
+  against mysql:8.0.46 and pingcap/tidb:v8.5.0 of the R5-load-bearing
+  native facts (16 run blocks: 1 version check + 15 behavior probes):
+  renamed-PK `pk2` successor ops (VISIBLE no-op / INVISIBLE
+  3522 / common-handle `DROP INDEX pk2` rc=0 deleting the object —
+  `pk_left=0` proves it independently; the `a1c2` follow-up block
+  stopped at its first `DROP PRIMARY KEY` 1091 and the trailing
+  RENAME never executed / re-rename pk2→pk3 on a fresh table),
+  freed-`primary` outcomes (1091 target-miss, member takeover rc=0,
+  PK rename-back 1061), DROP PRIMARY KEY member-first routing on a
+  handle table, the nonclustered member-`primary` 1061 coexistence
+  refusal, and the covered auto-name suffix bases (MySQL 62c
+  collision→`61c_2` + 63c control; TiDB 62c→`62c_2` + 64c→1059 — not
+  a full 61–64 matrix). The earlier in-session probe transcript
   was lost with the pre-commit session log; this script re-runs the
   same probe set against the same anchors — every case is idempotent
   and the log is a real current transcript.

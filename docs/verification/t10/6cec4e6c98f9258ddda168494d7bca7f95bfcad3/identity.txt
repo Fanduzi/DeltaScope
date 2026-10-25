@@ -1,0 +1,8 @@
+product_sha: 6cec4e6c98f9258ddda168494d7bca7f95bfcad3
+parent: b24655fa798336576816665740f118c0247562ee (T10-R5 evidence archive, origin/workfree)
+branch: milestone/mysql-tidb-ddl-completion (local) -> pushed to origin/workfree
+work_cli: bin/deltascope built from worktree at 6cec4e6c98f9258ddda168494d7bca7f95bfcad3
+work_cli_sha256: 363782e6865dedeedcc54bdeffe058beebc775e52c4ec98c1208efb975205c0d
+golden_cli_sha256 (T09): 363782e6865dedeedcc54bdeffe058beebc775e52c4ec98c1208efb975205c0d
+golden_cli_sha256 (T10): 363782e6865dedeedcc54bdeffe058beebc775e52c4ec98c1208efb975205c0d
+anchors: docker/ddl-golden-compose.yaml — mysql:5.7.44, mysql:8.0.46, mysql:8.4.10, pingcap/tidb:v8.5.0

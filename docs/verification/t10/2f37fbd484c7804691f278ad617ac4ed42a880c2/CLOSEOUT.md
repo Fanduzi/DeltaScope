@@ -17,7 +17,7 @@ golden suites (T09, T10) re-run green at the bound SHA.
 | R5-A: provider reload lost the actual PK object name | Fixed — `resolveTiDBPrimaryName` separates constraint presence (`table_constraints`) from object attribution (unique STATISTICS folds + `tidb_indexes.CLUSTERED` + `key_column_usage`); ambiguity keeps presence but withholds identity (`PrimaryKey.NameUnknown`) and demotes candidates to `IndexKindUnknown` |
 | R5-A: authored `CONSTRAINT symbol` conflated with object name | Fixed — the parser keeps the authored symbol for naming rules; derived snapshots and published PK objects normalize the stored name to `primary` |
 | R5-B: provider probe failures silently withheld facts | Fixed — actual query/scan/connection failures propagate as load errors (all-rules-disabled included); clean absence, NULL, and inconsistent successful reads withhold only dependent facts |
-| R5-C: `StoredIndexNames` missed MySQL's 61-byte suffix truncation | Fixed — dialect-split suffix branch (MySQL `61c+"_N"`, TiDB full-base), verified at 62/63/64-byte bases on both anchors |
+| R5-C: `StoredIndexNames` missed MySQL's 61-byte suffix truncation | Fixed — dialect-split suffix branch (MySQL `61c+"_N"`, TiDB full-base), verified at the covered bases: MySQL 62c (→`61c_2`) and 63c (control), TiDB 62c (→`62c_2`) and 64c (→1059) |
 
 ## Fixes vs. independent-review findings
 
@@ -43,13 +43,15 @@ golden suites (T09, T10) re-run green at the bound SHA.
   R4, `golangci-lint` reports baseline classes only (the two R5-diff
   findings were fixed pre-archive).
 - Native verification (`native-probe/r5-bounded-probes.log`): 16
-  idempotent probe cases on mysql:8.0.46 + pingcap/tidb:v8.5.0 —
-  renamed-PK `pk2` successors (VISIBLE rc=0, INVISIBLE 3522,
-  common-handle `DROP INDEX pk2` rc=0 with `pk_left=0`, re-rename
-  pk2→pk3), freed `primary` (1091 target-miss, member takeover rc=0,
-  PK rename-back 1061), DROP PRIMARY KEY member-first on a handle
-  table, nonclustered member-`primary` 1061 coexistence refusal, and
-  suffix boundaries (MySQL 62c→`61c_2`, 63c control; TiDB 62c→`62c_2`,
+  idempotent run blocks on mysql:8.0.46 + pingcap/tidb:v8.5.0 — 1
+  version check plus 15 behavior probes covering renamed-PK `pk2`
+  successors (VISIBLE rc=0, INVISIBLE 3522, common-handle `DROP INDEX
+  pk2` rc=0 with `pk_left=0` independently proving object deletion,
+  re-rename pk2→pk3 on a fresh table), freed `primary` (1091
+  target-miss, member takeover rc=0, PK rename-back 1061), DROP
+  PRIMARY KEY member-first on a handle table, nonclustered
+  member-`primary` 1061 coexistence refusal, and the covered suffix
+  bases (MySQL 62c→`61c_2`, 63c control; TiDB 62c→`62c_2`,
   64c→1059).
 - Red→green (`red/`): the new R5 test files replayed on a `1d60d578`
   worktree produce 28 top-level behavioral FAILs (spec/rule/provider/
@@ -63,6 +65,15 @@ golden suites (T09, T10) re-run green at the bound SHA.
   script re-ran live against the same anchors (`native-probe/`), and
   the red set was replayed on a clean `1d60d578` worktree (`red/`).
   Nothing in the archive claims the original transcript bytes.
+- Wording corrections appended in T10-R6 (no evidence re-run needed):
+  the `a1c2` block stopped at its first statement — `DROP PRIMARY KEY`
+  answered 1091 and the trailing `RENAME INDEX pk2 TO pk3` never
+  executed, so it is not a "double successor confirmation"; the object
+  deletion is proven independently by `pk_left=0` in `a1c`. The suffix
+  probes cover exactly the bases listed above, not a full 61–64-byte
+  matrix on either anchor. The `red/` replay produced 28 top-level
+  behavioral FAILs — a count of failed test units, not of every inner
+  assertion.
 - Golden ran twice: once pre-commit on identical content and once at
   the amended bound SHA — the archived artifacts are the bound-SHA
   run.
