@@ -1,0 +1,1 @@
+bash -c gofmt -l ./internal ./pkg ./cmd 2>&1 | tee /dev/stderr; exit 0

@@ -1,0 +1,12 @@
+go test ./internal/application/audit -count=1 -run TestDDLParserErrorUnsupportedContract
+ok  	github.com/Fanduzi/DeltaScope/internal/application/audit	0.356s
+go test ./internal/application/audit -count=1 -tags postgresql -run TestDDLParserErrorUnsupportedContract
+ok  	github.com/Fanduzi/DeltaScope/internal/application/audit	0.417s
+go test ./pkg/deltascope -count=1 -run ParserErrorUnsupportedContract
+ok  	github.com/Fanduzi/DeltaScope/pkg/deltascope	0.605s
+go test ./internal/interfaces/cli -count=1 -run CLIparserErrorUnsupported
+ok  	github.com/Fanduzi/DeltaScope/internal/interfaces/cli	0.385s
+go test ./internal/interfaces/http -count=1 -run HandlerAuditParserErrorUnsupportedContract
+ok  	github.com/Fanduzi/DeltaScope/internal/interfaces/http	0.682s
+go test ./internal/interfaces/mcp -count=1 -run MCPParserErrorUnsupportedContract
+ok  	github.com/Fanduzi/DeltaScope/internal/interfaces/mcp	0.598s

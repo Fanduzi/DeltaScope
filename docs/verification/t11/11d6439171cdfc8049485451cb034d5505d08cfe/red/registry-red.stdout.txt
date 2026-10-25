@@ -1,0 +1,1 @@
+[ddl-golden][FAIL] manifest policy profile 't11-fk-exists' enables unknown rule: ddl.alter.drop_foreign_key.exists.require

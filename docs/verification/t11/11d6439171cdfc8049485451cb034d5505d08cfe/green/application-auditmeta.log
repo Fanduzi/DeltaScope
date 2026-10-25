@@ -1,0 +1,426 @@
+=== RUN   TestT06A17ProviderTypeReachesPreState
+=== RUN   TestT06A17ProviderTypeReachesPreState/d
+=== RUN   TestT06A17ProviderTypeReachesPreState/e
+=== RUN   TestT06A17ProviderTypeReachesPreState/s
+--- PASS: TestT06A17ProviderTypeReachesPreState (0.01s)
+    --- PASS: TestT06A17ProviderTypeReachesPreState/d (0.00s)
+    --- PASS: TestT06A17ProviderTypeReachesPreState/e (0.00s)
+    --- PASS: TestT06A17ProviderTypeReachesPreState/s (0.00s)
+=== RUN   TestT06A4RealProviderTextNullDropStaysConservative
+--- PASS: TestT06A4RealProviderTextNullDropStaysConservative (0.00s)
+=== RUN   TestT06A4RealProviderTextNilDropStaysConservative
+--- PASS: TestT06A4RealProviderTextNilDropStaysConservative (0.00s)
+=== RUN   TestT06A4RealProviderNullDropStaysPrecise
+--- PASS: TestT06A4RealProviderNullDropStaysPrecise (0.00s)
+=== RUN   TestT06A4SourceContrastSameOutcome
+--- PASS: TestT06A4SourceContrastSameOutcome (0.01s)
+=== RUN   TestT06A4RealProviderErrorPropagates
+--- PASS: TestT06A4RealProviderErrorPropagates (0.00s)
+=== RUN   TestT06A4DefaultRequireReadsOnlySubmittedDDL
+--- PASS: TestT06A4DefaultRequireReadsOnlySubmittedDDL (0.00s)
+=== RUN   TestT06A4DisabledRulesStaySilent
+--- PASS: TestT06A4DisabledRulesStaySilent (0.00s)
+=== RUN   TestT08R1ProviderLiteralMatrix
+=== RUN   TestT08R1ProviderLiteralMatrix/mysql/modify/s1_same_string
+=== RUN   TestT08R1ProviderLiteralMatrix/mysql/modify/s2_same_empty
+=== RUN   TestT08R1ProviderLiteralMatrix/mysql/modify/s3_same_text_null
+=== RUN   TestT08R1ProviderLiteralMatrix/mysql/modify/s4_content_quotes
+=== RUN   TestT08R1ProviderLiteralMatrix/mysql/modify/s5_content_quotes_reverse
+=== RUN   TestT08R1ProviderLiteralMatrix/mysql/modify/s6_different
+=== RUN   TestT08R1ProviderLiteralMatrix/mysql/modify/s7_quote_in_content
+=== RUN   TestT08R1ProviderLiteralMatrix/mysql/modify/keyword_string_stays_literal
+=== RUN   TestT08R1ProviderLiteralMatrix/mysql/modify/numeric_same
+=== RUN   TestT08R1ProviderLiteralMatrix/mysql/modify/numeric_diff
+=== RUN   TestT08R1ProviderLiteralMatrix/mysql/change/s1_same_string
+=== RUN   TestT08R1ProviderLiteralMatrix/mysql/change/s2_same_empty
+=== RUN   TestT08R1ProviderLiteralMatrix/mysql/change/s3_same_text_null
+=== RUN   TestT08R1ProviderLiteralMatrix/mysql/change/s4_content_quotes
+=== RUN   TestT08R1ProviderLiteralMatrix/mysql/change/s5_content_quotes_reverse
+=== RUN   TestT08R1ProviderLiteralMatrix/mysql/change/s6_different
+=== RUN   TestT08R1ProviderLiteralMatrix/mysql/change/s7_quote_in_content
+=== RUN   TestT08R1ProviderLiteralMatrix/mysql/change/keyword_string_stays_literal
+=== RUN   TestT08R1ProviderLiteralMatrix/mysql/change/numeric_same
+=== RUN   TestT08R1ProviderLiteralMatrix/mysql/change/numeric_diff
+=== RUN   TestT08R1ProviderLiteralMatrix/tidb/modify/s1_same_string
+=== RUN   TestT08R1ProviderLiteralMatrix/tidb/modify/s2_same_empty
+=== RUN   TestT08R1ProviderLiteralMatrix/tidb/modify/s3_same_text_null
+=== RUN   TestT08R1ProviderLiteralMatrix/tidb/modify/s4_content_quotes
+=== RUN   TestT08R1ProviderLiteralMatrix/tidb/modify/s5_content_quotes_reverse
+=== RUN   TestT08R1ProviderLiteralMatrix/tidb/modify/s6_different
+=== RUN   TestT08R1ProviderLiteralMatrix/tidb/modify/s7_quote_in_content
+=== RUN   TestT08R1ProviderLiteralMatrix/tidb/modify/keyword_string_stays_literal
+=== RUN   TestT08R1ProviderLiteralMatrix/tidb/modify/numeric_same
+=== RUN   TestT08R1ProviderLiteralMatrix/tidb/modify/numeric_diff
+=== RUN   TestT08R1ProviderLiteralMatrix/tidb/change/s1_same_string
+=== RUN   TestT08R1ProviderLiteralMatrix/tidb/change/s2_same_empty
+=== RUN   TestT08R1ProviderLiteralMatrix/tidb/change/s3_same_text_null
+=== RUN   TestT08R1ProviderLiteralMatrix/tidb/change/s4_content_quotes
+=== RUN   TestT08R1ProviderLiteralMatrix/tidb/change/s5_content_quotes_reverse
+=== RUN   TestT08R1ProviderLiteralMatrix/tidb/change/s6_different
+=== RUN   TestT08R1ProviderLiteralMatrix/tidb/change/s7_quote_in_content
+=== RUN   TestT08R1ProviderLiteralMatrix/tidb/change/keyword_string_stays_literal
+=== RUN   TestT08R1ProviderLiteralMatrix/tidb/change/numeric_same
+=== RUN   TestT08R1ProviderLiteralMatrix/tidb/change/numeric_diff
+--- PASS: TestT08R1ProviderLiteralMatrix (0.11s)
+    --- PASS: TestT08R1ProviderLiteralMatrix/mysql/modify/s1_same_string (0.00s)
+    --- PASS: TestT08R1ProviderLiteralMatrix/mysql/modify/s2_same_empty (0.00s)
+    --- PASS: TestT08R1ProviderLiteralMatrix/mysql/modify/s3_same_text_null (0.00s)
+    --- PASS: TestT08R1ProviderLiteralMatrix/mysql/modify/s4_content_quotes (0.00s)
+    --- PASS: TestT08R1ProviderLiteralMatrix/mysql/modify/s5_content_quotes_reverse (0.00s)
+    --- PASS: TestT08R1ProviderLiteralMatrix/mysql/modify/s6_different (0.00s)
+    --- PASS: TestT08R1ProviderLiteralMatrix/mysql/modify/s7_quote_in_content (0.00s)
+    --- PASS: TestT08R1ProviderLiteralMatrix/mysql/modify/keyword_string_stays_literal (0.00s)
+    --- PASS: TestT08R1ProviderLiteralMatrix/mysql/modify/numeric_same (0.00s)
+    --- PASS: TestT08R1ProviderLiteralMatrix/mysql/modify/numeric_diff (0.00s)
+    --- PASS: TestT08R1ProviderLiteralMatrix/mysql/change/s1_same_string (0.00s)
+    --- PASS: TestT08R1ProviderLiteralMatrix/mysql/change/s2_same_empty (0.00s)
+    --- PASS: TestT08R1ProviderLiteralMatrix/mysql/change/s3_same_text_null (0.00s)
+    --- PASS: TestT08R1ProviderLiteralMatrix/mysql/change/s4_content_quotes (0.00s)
+    --- PASS: TestT08R1ProviderLiteralMatrix/mysql/change/s5_content_quotes_reverse (0.00s)
+    --- PASS: TestT08R1ProviderLiteralMatrix/mysql/change/s6_different (0.00s)
+    --- PASS: TestT08R1ProviderLiteralMatrix/mysql/change/s7_quote_in_content (0.00s)
+    --- PASS: TestT08R1ProviderLiteralMatrix/mysql/change/keyword_string_stays_literal (0.00s)
+    --- PASS: TestT08R1ProviderLiteralMatrix/mysql/change/numeric_same (0.00s)
+    --- PASS: TestT08R1ProviderLiteralMatrix/mysql/change/numeric_diff (0.00s)
+    --- PASS: TestT08R1ProviderLiteralMatrix/tidb/modify/s1_same_string (0.00s)
+    --- PASS: TestT08R1ProviderLiteralMatrix/tidb/modify/s2_same_empty (0.00s)
+    --- PASS: TestT08R1ProviderLiteralMatrix/tidb/modify/s3_same_text_null (0.00s)
+    --- PASS: TestT08R1ProviderLiteralMatrix/tidb/modify/s4_content_quotes (0.00s)
+    --- PASS: TestT08R1ProviderLiteralMatrix/tidb/modify/s5_content_quotes_reverse (0.00s)
+    --- PASS: TestT08R1ProviderLiteralMatrix/tidb/modify/s6_different (0.00s)
+    --- PASS: TestT08R1ProviderLiteralMatrix/tidb/modify/s7_quote_in_content (0.00s)
+    --- PASS: TestT08R1ProviderLiteralMatrix/tidb/modify/keyword_string_stays_literal (0.00s)
+    --- PASS: TestT08R1ProviderLiteralMatrix/tidb/modify/numeric_same (0.00s)
+    --- PASS: TestT08R1ProviderLiteralMatrix/tidb/modify/numeric_diff (0.00s)
+    --- PASS: TestT08R1ProviderLiteralMatrix/tidb/change/s1_same_string (0.00s)
+    --- PASS: TestT08R1ProviderLiteralMatrix/tidb/change/s2_same_empty (0.00s)
+    --- PASS: TestT08R1ProviderLiteralMatrix/tidb/change/s3_same_text_null (0.00s)
+    --- PASS: TestT08R1ProviderLiteralMatrix/tidb/change/s4_content_quotes (0.00s)
+    --- PASS: TestT08R1ProviderLiteralMatrix/tidb/change/s5_content_quotes_reverse (0.00s)
+    --- PASS: TestT08R1ProviderLiteralMatrix/tidb/change/s6_different (0.00s)
+    --- PASS: TestT08R1ProviderLiteralMatrix/tidb/change/s7_quote_in_content (0.00s)
+    --- PASS: TestT08R1ProviderLiteralMatrix/tidb/change/keyword_string_stays_literal (0.00s)
+    --- PASS: TestT08R1ProviderLiteralMatrix/tidb/change/numeric_same (0.00s)
+    --- PASS: TestT08R1ProviderLiteralMatrix/tidb/change/numeric_diff (0.00s)
+=== RUN   TestT08R2NumericComparableDomain
+=== RUN   TestT08R2NumericComparableDomain/mysql/modify/n1_decimal_scale
+=== RUN   TestT08R2NumericComparableDomain/mysql/modify/n2_decimal_zero
+=== RUN   TestT08R2NumericComparableDomain/mysql/modify/n3_decimal_negative
+=== RUN   TestT08R2NumericComparableDomain/mysql/modify/i1_int_same
+=== RUN   TestT08R2NumericComparableDomain/mysql/modify/i2_int_diff
+=== RUN   TestT08R2NumericComparableDomain/mysql/modify/s1_string_same
+=== RUN   TestT08R2NumericComparableDomain/mysql/modify/d1_decimal_scale0_same
+=== RUN   TestT08R2NumericComparableDomain/mysql/modify/d2_decimal_scale0_declared_scale
+=== RUN   TestT08R2NumericComparableDomain/mysql/modify/y1_year_normalized
+=== RUN   TestT08R2NumericComparableDomain/mysql/modify/y2_year_full_same
+=== RUN   TestT08R2NumericComparableDomain/mysql/modify/y3_year_diff_unproven
+=== RUN   TestT08R2NumericComparableDomain/mysql/change/n1_decimal_scale
+=== RUN   TestT08R2NumericComparableDomain/mysql/change/n2_decimal_zero
+=== RUN   TestT08R2NumericComparableDomain/mysql/change/n3_decimal_negative
+=== RUN   TestT08R2NumericComparableDomain/mysql/change/i1_int_same
+=== RUN   TestT08R2NumericComparableDomain/mysql/change/i2_int_diff
+=== RUN   TestT08R2NumericComparableDomain/mysql/change/s1_string_same
+=== RUN   TestT08R2NumericComparableDomain/mysql/change/d1_decimal_scale0_same
+=== RUN   TestT08R2NumericComparableDomain/mysql/change/d2_decimal_scale0_declared_scale
+=== RUN   TestT08R2NumericComparableDomain/mysql/change/y1_year_normalized
+=== RUN   TestT08R2NumericComparableDomain/mysql/change/y2_year_full_same
+=== RUN   TestT08R2NumericComparableDomain/mysql/change/y3_year_diff_unproven
+=== RUN   TestT08R2NumericComparableDomain/tidb/modify/n1_decimal_scale
+=== RUN   TestT08R2NumericComparableDomain/tidb/modify/n2_decimal_zero
+=== RUN   TestT08R2NumericComparableDomain/tidb/modify/n3_decimal_negative
+=== RUN   TestT08R2NumericComparableDomain/tidb/modify/i1_int_same
+=== RUN   TestT08R2NumericComparableDomain/tidb/modify/i2_int_diff
+=== RUN   TestT08R2NumericComparableDomain/tidb/modify/s1_string_same
+=== RUN   TestT08R2NumericComparableDomain/tidb/modify/d1_decimal_scale0_same
+=== RUN   TestT08R2NumericComparableDomain/tidb/modify/d2_decimal_scale0_declared_scale
+=== RUN   TestT08R2NumericComparableDomain/tidb/modify/y1_year_normalized
+=== RUN   TestT08R2NumericComparableDomain/tidb/modify/y2_year_full_same
+=== RUN   TestT08R2NumericComparableDomain/tidb/modify/y3_year_diff_unproven
+=== RUN   TestT08R2NumericComparableDomain/tidb/change/n1_decimal_scale
+=== RUN   TestT08R2NumericComparableDomain/tidb/change/n2_decimal_zero
+=== RUN   TestT08R2NumericComparableDomain/tidb/change/n3_decimal_negative
+=== RUN   TestT08R2NumericComparableDomain/tidb/change/i1_int_same
+=== RUN   TestT08R2NumericComparableDomain/tidb/change/i2_int_diff
+=== RUN   TestT08R2NumericComparableDomain/tidb/change/s1_string_same
+=== RUN   TestT08R2NumericComparableDomain/tidb/change/d1_decimal_scale0_same
+=== RUN   TestT08R2NumericComparableDomain/tidb/change/d2_decimal_scale0_declared_scale
+=== RUN   TestT08R2NumericComparableDomain/tidb/change/y1_year_normalized
+=== RUN   TestT08R2NumericComparableDomain/tidb/change/y2_year_full_same
+=== RUN   TestT08R2NumericComparableDomain/tidb/change/y3_year_diff_unproven
+--- PASS: TestT08R2NumericComparableDomain (0.13s)
+    --- PASS: TestT08R2NumericComparableDomain/mysql/modify/n1_decimal_scale (0.00s)
+    --- PASS: TestT08R2NumericComparableDomain/mysql/modify/n2_decimal_zero (0.00s)
+    --- PASS: TestT08R2NumericComparableDomain/mysql/modify/n3_decimal_negative (0.00s)
+    --- PASS: TestT08R2NumericComparableDomain/mysql/modify/i1_int_same (0.00s)
+    --- PASS: TestT08R2NumericComparableDomain/mysql/modify/i2_int_diff (0.00s)
+    --- PASS: TestT08R2NumericComparableDomain/mysql/modify/s1_string_same (0.00s)
+    --- PASS: TestT08R2NumericComparableDomain/mysql/modify/d1_decimal_scale0_same (0.00s)
+    --- PASS: TestT08R2NumericComparableDomain/mysql/modify/d2_decimal_scale0_declared_scale (0.00s)
+    --- PASS: TestT08R2NumericComparableDomain/mysql/modify/y1_year_normalized (0.00s)
+    --- PASS: TestT08R2NumericComparableDomain/mysql/modify/y2_year_full_same (0.00s)
+    --- PASS: TestT08R2NumericComparableDomain/mysql/modify/y3_year_diff_unproven (0.00s)
+    --- PASS: TestT08R2NumericComparableDomain/mysql/change/n1_decimal_scale (0.00s)
+    --- PASS: TestT08R2NumericComparableDomain/mysql/change/n2_decimal_zero (0.00s)
+    --- PASS: TestT08R2NumericComparableDomain/mysql/change/n3_decimal_negative (0.00s)
+    --- PASS: TestT08R2NumericComparableDomain/mysql/change/i1_int_same (0.00s)
+    --- PASS: TestT08R2NumericComparableDomain/mysql/change/i2_int_diff (0.00s)
+    --- PASS: TestT08R2NumericComparableDomain/mysql/change/s1_string_same (0.00s)
+    --- PASS: TestT08R2NumericComparableDomain/mysql/change/d1_decimal_scale0_same (0.00s)
+    --- PASS: TestT08R2NumericComparableDomain/mysql/change/d2_decimal_scale0_declared_scale (0.00s)
+    --- PASS: TestT08R2NumericComparableDomain/mysql/change/y1_year_normalized (0.00s)
+    --- PASS: TestT08R2NumericComparableDomain/mysql/change/y2_year_full_same (0.00s)
+    --- PASS: TestT08R2NumericComparableDomain/mysql/change/y3_year_diff_unproven (0.00s)
+    --- PASS: TestT08R2NumericComparableDomain/tidb/modify/n1_decimal_scale (0.00s)
+    --- PASS: TestT08R2NumericComparableDomain/tidb/modify/n2_decimal_zero (0.00s)
+    --- PASS: TestT08R2NumericComparableDomain/tidb/modify/n3_decimal_negative (0.00s)
+    --- PASS: TestT08R2NumericComparableDomain/tidb/modify/i1_int_same (0.00s)
+    --- PASS: TestT08R2NumericComparableDomain/tidb/modify/i2_int_diff (0.00s)
+    --- PASS: TestT08R2NumericComparableDomain/tidb/modify/s1_string_same (0.00s)
+    --- PASS: TestT08R2NumericComparableDomain/tidb/modify/d1_decimal_scale0_same (0.00s)
+    --- PASS: TestT08R2NumericComparableDomain/tidb/modify/d2_decimal_scale0_declared_scale (0.00s)
+    --- PASS: TestT08R2NumericComparableDomain/tidb/modify/y1_year_normalized (0.00s)
+    --- PASS: TestT08R2NumericComparableDomain/tidb/modify/y2_year_full_same (0.00s)
+    --- PASS: TestT08R2NumericComparableDomain/tidb/modify/y3_year_diff_unproven (0.00s)
+    --- PASS: TestT08R2NumericComparableDomain/tidb/change/n1_decimal_scale (0.00s)
+    --- PASS: TestT08R2NumericComparableDomain/tidb/change/n2_decimal_zero (0.00s)
+    --- PASS: TestT08R2NumericComparableDomain/tidb/change/n3_decimal_negative (0.00s)
+    --- PASS: TestT08R2NumericComparableDomain/tidb/change/i1_int_same (0.00s)
+    --- PASS: TestT08R2NumericComparableDomain/tidb/change/i2_int_diff (0.00s)
+    --- PASS: TestT08R2NumericComparableDomain/tidb/change/s1_string_same (0.00s)
+    --- PASS: TestT08R2NumericComparableDomain/tidb/change/d1_decimal_scale0_same (0.00s)
+    --- PASS: TestT08R2NumericComparableDomain/tidb/change/d2_decimal_scale0_declared_scale (0.00s)
+    --- PASS: TestT08R2NumericComparableDomain/tidb/change/y1_year_normalized (0.00s)
+    --- PASS: TestT08R2NumericComparableDomain/tidb/change/y2_year_full_same (0.00s)
+    --- PASS: TestT08R2NumericComparableDomain/tidb/change/y3_year_diff_unproven (0.00s)
+=== RUN   TestT08R2DerivedNumericDomain
+=== RUN   TestT08R2DerivedNumericDomain/mysql/derived_int_same
+=== RUN   TestT08R2DerivedNumericDomain/mysql/derived_int_diff
+=== RUN   TestT08R2DerivedNumericDomain/mysql/derived_decimal_unproven
+=== RUN   TestT08R2DerivedNumericDomain/mysql/derived_decimal_diff_unproven
+=== RUN   TestT08R2DerivedNumericDomain/mysql/derived_year_same
+=== RUN   TestT08R2DerivedNumericDomain/mysql/derived_year_normalized_unproven
+=== RUN   TestT08R2DerivedNumericDomain/mysql/derived_year_full_same
+=== RUN   TestT08R2DerivedNumericDomain/tidb/derived_int_same
+=== RUN   TestT08R2DerivedNumericDomain/tidb/derived_int_diff
+=== RUN   TestT08R2DerivedNumericDomain/tidb/derived_decimal_unproven
+=== RUN   TestT08R2DerivedNumericDomain/tidb/derived_decimal_diff_unproven
+=== RUN   TestT08R2DerivedNumericDomain/tidb/derived_year_same
+=== RUN   TestT08R2DerivedNumericDomain/tidb/derived_year_normalized_unproven
+=== RUN   TestT08R2DerivedNumericDomain/tidb/derived_year_full_same
+--- PASS: TestT08R2DerivedNumericDomain (0.04s)
+    --- PASS: TestT08R2DerivedNumericDomain/mysql/derived_int_same (0.00s)
+    --- PASS: TestT08R2DerivedNumericDomain/mysql/derived_int_diff (0.00s)
+    --- PASS: TestT08R2DerivedNumericDomain/mysql/derived_decimal_unproven (0.00s)
+    --- PASS: TestT08R2DerivedNumericDomain/mysql/derived_decimal_diff_unproven (0.00s)
+    --- PASS: TestT08R2DerivedNumericDomain/mysql/derived_year_same (0.00s)
+    --- PASS: TestT08R2DerivedNumericDomain/mysql/derived_year_normalized_unproven (0.00s)
+    --- PASS: TestT08R2DerivedNumericDomain/mysql/derived_year_full_same (0.00s)
+    --- PASS: TestT08R2DerivedNumericDomain/tidb/derived_int_same (0.00s)
+    --- PASS: TestT08R2DerivedNumericDomain/tidb/derived_int_diff (0.00s)
+    --- PASS: TestT08R2DerivedNumericDomain/tidb/derived_decimal_unproven (0.00s)
+    --- PASS: TestT08R2DerivedNumericDomain/tidb/derived_decimal_diff_unproven (0.00s)
+    --- PASS: TestT08R2DerivedNumericDomain/tidb/derived_year_same (0.00s)
+    --- PASS: TestT08R2DerivedNumericDomain/tidb/derived_year_normalized_unproven (0.00s)
+    --- PASS: TestT08R2DerivedNumericDomain/tidb/derived_year_full_same (0.00s)
+=== RUN   TestT08R2TypeChangeKeepsDefaultVerdict
+=== RUN   TestT08R2TypeChangeKeepsDefaultVerdict/mysql/modify
+=== RUN   TestT08R2TypeChangeKeepsDefaultVerdict/mysql/change
+=== RUN   TestT08R2TypeChangeKeepsDefaultVerdict/tidb/modify
+=== RUN   TestT08R2TypeChangeKeepsDefaultVerdict/tidb/change
+--- PASS: TestT08R2TypeChangeKeepsDefaultVerdict (0.01s)
+    --- PASS: TestT08R2TypeChangeKeepsDefaultVerdict/mysql/modify (0.00s)
+    --- PASS: TestT08R2TypeChangeKeepsDefaultVerdict/mysql/change (0.00s)
+    --- PASS: TestT08R2TypeChangeKeepsDefaultVerdict/tidb/modify (0.00s)
+    --- PASS: TestT08R2TypeChangeKeepsDefaultVerdict/tidb/change (0.00s)
+=== RUN   TestT08R1ChangeRenameReadsOldName
+--- PASS: TestT08R1ChangeRenameReadsOldName (0.00s)
+=== RUN   TestT08R1ExpressionIdentityMatrix
+=== RUN   TestT08R1ExpressionIdentityMatrix/mysql/expr_same
+=== RUN   TestT08R1ExpressionIdentityMatrix/mysql/expr_diff
+=== RUN   TestT08R1ExpressionIdentityMatrix/mysql/expr_unknown_source
+=== RUN   TestT08R1ExpressionIdentityMatrix/mysql/literal_unknown_target
+=== RUN   TestT08R1ExpressionIdentityMatrix/tidb/expr_same
+=== RUN   TestT08R1ExpressionIdentityMatrix/tidb/expr_diff
+=== RUN   TestT08R1ExpressionIdentityMatrix/tidb/expr_unknown_source
+=== RUN   TestT08R1ExpressionIdentityMatrix/tidb/literal_unknown_target
+--- PASS: TestT08R1ExpressionIdentityMatrix (0.02s)
+    --- PASS: TestT08R1ExpressionIdentityMatrix/mysql/expr_same (0.00s)
+    --- PASS: TestT08R1ExpressionIdentityMatrix/mysql/expr_diff (0.00s)
+    --- PASS: TestT08R1ExpressionIdentityMatrix/mysql/expr_unknown_source (0.00s)
+    --- PASS: TestT08R1ExpressionIdentityMatrix/mysql/literal_unknown_target (0.00s)
+    --- PASS: TestT08R1ExpressionIdentityMatrix/tidb/expr_same (0.00s)
+    --- PASS: TestT08R1ExpressionIdentityMatrix/tidb/expr_diff (0.00s)
+    --- PASS: TestT08R1ExpressionIdentityMatrix/tidb/expr_unknown_source (0.00s)
+    --- PASS: TestT08R1ExpressionIdentityMatrix/tidb/literal_unknown_target (0.00s)
+=== RUN   TestT08R1DerivedVsProviderSameOutcome
+=== RUN   TestT08R1DerivedVsProviderSameOutcome/mysql/same
+=== RUN   TestT08R1DerivedVsProviderSameOutcome/mysql/diff
+=== RUN   TestT08R1DerivedVsProviderSameOutcome/mysql/cleared
+=== RUN   TestT08R1DerivedVsProviderSameOutcome/tidb/same
+=== RUN   TestT08R1DerivedVsProviderSameOutcome/tidb/diff
+=== RUN   TestT08R1DerivedVsProviderSameOutcome/tidb/cleared
+--- PASS: TestT08R1DerivedVsProviderSameOutcome (0.02s)
+    --- PASS: TestT08R1DerivedVsProviderSameOutcome/mysql/same (0.00s)
+    --- PASS: TestT08R1DerivedVsProviderSameOutcome/mysql/diff (0.00s)
+    --- PASS: TestT08R1DerivedVsProviderSameOutcome/mysql/cleared (0.00s)
+    --- PASS: TestT08R1DerivedVsProviderSameOutcome/tidb/same (0.00s)
+    --- PASS: TestT08R1DerivedVsProviderSameOutcome/tidb/diff (0.00s)
+    --- PASS: TestT08R1DerivedVsProviderSameOutcome/tidb/cleared (0.00s)
+=== RUN   TestT08R1DerivedStateChains
+=== RUN   TestT08R1DerivedStateChains/mysql/set_default_publishes_new_identity
+=== RUN   TestT08R1DerivedStateChains/mysql/drop_default_clears_identity
+=== RUN   TestT08R1DerivedStateChains/mysql/change_rename_carries_identity
+=== RUN   TestT08R1DerivedStateChains/tidb/set_default_publishes_new_identity
+=== RUN   TestT08R1DerivedStateChains/tidb/drop_default_clears_identity
+=== RUN   TestT08R1DerivedStateChains/tidb/change_rename_carries_identity
+--- PASS: TestT08R1DerivedStateChains (0.02s)
+    --- PASS: TestT08R1DerivedStateChains/mysql/set_default_publishes_new_identity (0.00s)
+    --- PASS: TestT08R1DerivedStateChains/mysql/drop_default_clears_identity (0.00s)
+    --- PASS: TestT08R1DerivedStateChains/mysql/change_rename_carries_identity (0.00s)
+    --- PASS: TestT08R1DerivedStateChains/tidb/set_default_publishes_new_identity (0.00s)
+    --- PASS: TestT08R1DerivedStateChains/tidb/drop_default_clears_identity (0.00s)
+    --- PASS: TestT08R1DerivedStateChains/tidb/change_rename_carries_identity (0.00s)
+=== RUN   TestT08R1ExplicitPolicySeparation
+--- PASS: TestT08R1ExplicitPolicySeparation (0.00s)
+=== RUN   TestT08R1ProviderSnapshotUntouched
+--- PASS: TestT08R1ProviderSnapshotUntouched (0.00s)
+=== RUN   TestPrepareReturnsCapabilityBoundaryErrorWithoutSchemaWrapperForExplicitPostgreSQL
+=== PAUSE TestPrepareReturnsCapabilityBoundaryErrorWithoutSchemaWrapperForExplicitPostgreSQL
+=== RUN   TestPrepareReturnsResolvedDialectAndSchema
+=== PAUSE TestPrepareReturnsResolvedDialectAndSchema
+=== RUN   TestPrepareInfersSchemaFromValidStatementsAroundParserError
+=== PAUSE TestPrepareInfersSchemaFromValidStatementsAroundParserError
+=== RUN   TestPrepareUsesExplicitSchemaWithoutInference
+=== PAUSE TestPrepareUsesExplicitSchemaWithoutInference
+=== RUN   TestPrepareUsesMySQLCompatibleDatabaseAsSchemaAlias
+=== PAUSE TestPrepareUsesMySQLCompatibleDatabaseAsSchemaAlias
+=== RUN   TestPrepareRejectsConflictingMySQLCompatibleDatabaseAndSchema
+=== PAUSE TestPrepareRejectsConflictingMySQLCompatibleDatabaseAndSchema
+=== RUN   TestPrepareKeepsPostgreSQLDatabaseAndSchemaDistinct
+=== PAUSE TestPrepareKeepsPostgreSQLDatabaseAndSchemaDistinct
+=== RUN   TestPrepareRejectsPostgreSQLSchemaWithoutDatabase
+=== PAUSE TestPrepareRejectsPostgreSQLSchemaWithoutDatabase
+=== RUN   TestPrepareInfersSchemaAcrossEveryDropTarget
+=== PAUSE TestPrepareInfersSchemaAcrossEveryDropTarget
+=== RUN   TestPrepareDetectsAmbiguousSchemaAcrossEveryDropTarget
+=== PAUSE TestPrepareDetectsAmbiguousSchemaAcrossEveryDropTarget
+=== RUN   TestPrepareDetectsDistinctDottedQualifiedTargets
+=== PAUSE TestPrepareDetectsDistinctDottedQualifiedTargets
+=== RUN   TestPrepareInfersSchemaFromAlterSubjectOnly
+=== PAUSE TestPrepareInfersSchemaFromAlterSubjectOnly
+=== RUN   TestPrepareFailsWhenSchemaInferenceIsAmbiguous
+=== PAUSE TestPrepareFailsWhenSchemaInferenceIsAmbiguous
+=== RUN   TestPrepareAllowsCreateTableWithoutResolvableSchema
+=== PAUSE TestPrepareAllowsCreateTableWithoutResolvableSchema
+=== RUN   TestPrepareRejectsDialectMismatch
+=== PAUSE TestPrepareRejectsDialectMismatch
+=== RUN   TestPrepareKeepsSchemaWrapperForNonCapabilityInvalidSQL
+=== PAUSE TestPrepareKeepsSchemaWrapperForNonCapabilityInvalidSQL
+=== RUN   TestPrepareReturnsOpenError
+=== PAUSE TestPrepareReturnsOpenError
+=== RUN   TestPrepareReturnsDialectDetectErrorWhenDetectionFails
+=== PAUSE TestPrepareReturnsDialectDetectErrorWhenDetectionFails
+=== RUN   TestPrepareReturnsSchemaHintRequiredForExistingTableWithNoSchemas
+=== PAUSE TestPrepareReturnsSchemaHintRequiredForExistingTableWithNoSchemas
+=== RUN   TestPrepareResolvesExplicitSchemaSource
+=== PAUSE TestPrepareResolvesExplicitSchemaSource
+=== RUN   TestPrepareResolvesNoneSchemaForStatementWithNoTargets
+=== PAUSE TestPrepareResolvesNoneSchemaForStatementWithNoTargets
+=== RUN   TestPrepareFallsBackToPostgresOpenWhenInitialOpenFailsWithoutExplicitDialect
+=== PAUSE TestPrepareFallsBackToPostgresOpenWhenInitialOpenFailsWithoutExplicitDialect
+=== RUN   TestPrepareDefaultPathFailsFastOnCanceledContext
+--- PASS: TestPrepareDefaultPathFailsFastOnCanceledContext (0.00s)
+=== RUN   TestPreparePassesConnectTimeoutToInjectedOpenClient
+=== PAUSE TestPreparePassesConnectTimeoutToInjectedOpenClient
+=== CONT  TestPreparePassesConnectTimeoutToInjectedOpenClient
+=== CONT  TestPrepareResolvesNoneSchemaForStatementWithNoTargets
+=== CONT  TestPrepareDetectsDistinctDottedQualifiedTargets
+=== CONT  TestPrepareKeepsSchemaWrapperForNonCapabilityInvalidSQL
+=== CONT  TestPrepareReturnsSchemaHintRequiredForExistingTableWithNoSchemas
+--- PASS: TestPrepareKeepsSchemaWrapperForNonCapabilityInvalidSQL (0.00s)
+=== CONT  TestPrepareReturnsOpenError
+--- PASS: TestPrepareReturnsOpenError (0.00s)
+=== CONT  TestPrepareRejectsConflictingMySQLCompatibleDatabaseAndSchema
+=== RUN   TestPrepareRejectsConflictingMySQLCompatibleDatabaseAndSchema/mysql
+=== CONT  TestPrepareInfersSchemaFromAlterSubjectOnly
+=== CONT  TestPrepareReturnsDialectDetectErrorWhenDetectionFails
+--- PASS: TestPrepareReturnsDialectDetectErrorWhenDetectionFails (0.00s)
+=== PAUSE TestPrepareRejectsConflictingMySQLCompatibleDatabaseAndSchema/mysql
+=== RUN   TestPrepareRejectsConflictingMySQLCompatibleDatabaseAndSchema/tidb
+=== CONT  TestPrepareAllowsCreateTableWithoutResolvableSchema
+=== PAUSE TestPrepareRejectsConflictingMySQLCompatibleDatabaseAndSchema/tidb
+=== RUN   TestPrepareRejectsConflictingMySQLCompatibleDatabaseAndSchema/mysql_auto-detected
+=== PAUSE TestPrepareRejectsConflictingMySQLCompatibleDatabaseAndSchema/mysql_auto-detected
+--- PASS: TestPrepareInfersSchemaFromAlterSubjectOnly (0.00s)
+=== CONT  TestPrepareFallsBackToPostgresOpenWhenInitialOpenFailsWithoutExplicitDialect
+=== CONT  TestPrepareUsesExplicitSchemaWithoutInference
+=== CONT  TestPrepareKeepsPostgreSQLDatabaseAndSchemaDistinct
+=== CONT  TestPrepareUsesMySQLCompatibleDatabaseAsSchemaAlias
+=== CONT  TestPrepareResolvesExplicitSchemaSource
+=== CONT  TestPrepareRejectsConflictingMySQLCompatibleDatabaseAndSchema/mysql
+=== CONT  TestPrepareRejectsConflictingMySQLCompatibleDatabaseAndSchema/mysql_auto-detected
+=== CONT  TestPrepareRejectsConflictingMySQLCompatibleDatabaseAndSchema/tidb
+=== CONT  TestPrepareReturnsCapabilityBoundaryErrorWithoutSchemaWrapperForExplicitPostgreSQL
+=== CONT  TestPrepareRejectsDialectMismatch
+=== CONT  TestPrepareDetectsAmbiguousSchemaAcrossEveryDropTarget
+=== CONT  TestPrepareFailsWhenSchemaInferenceIsAmbiguous
+--- PASS: TestPrepareAllowsCreateTableWithoutResolvableSchema (0.00s)
+--- PASS: TestPrepareFallsBackToPostgresOpenWhenInitialOpenFailsWithoutExplicitDialect (0.00s)
+--- PASS: TestPrepareUsesExplicitSchemaWithoutInference (0.00s)
+--- PASS: TestPrepareKeepsPostgreSQLDatabaseAndSchemaDistinct (0.00s)
+--- PASS: TestPrepareDetectsDistinctDottedQualifiedTargets (0.00s)
+--- PASS: TestPreparePassesConnectTimeoutToInjectedOpenClient (0.00s)
+--- PASS: TestPrepareResolvesExplicitSchemaSource (0.00s)
+--- PASS: TestPrepareReturnsSchemaHintRequiredForExistingTableWithNoSchemas (0.00s)
+--- PASS: TestPrepareRejectsConflictingMySQLCompatibleDatabaseAndSchema (0.00s)
+    --- PASS: TestPrepareRejectsConflictingMySQLCompatibleDatabaseAndSchema/mysql_auto-detected (0.00s)
+    --- PASS: TestPrepareRejectsConflictingMySQLCompatibleDatabaseAndSchema/tidb (0.00s)
+    --- PASS: TestPrepareRejectsConflictingMySQLCompatibleDatabaseAndSchema/mysql (0.00s)
+=== CONT  TestPrepareRejectsPostgreSQLSchemaWithoutDatabase
+=== CONT  TestPrepareReturnsResolvedDialectAndSchema
+=== RUN   TestPrepareRejectsPostgreSQLSchemaWithoutDatabase/explicit_dialect
+=== RUN   TestPrepareUsesMySQLCompatibleDatabaseAsSchemaAlias/mysql_database_only
+=== CONT  TestPrepareInfersSchemaAcrossEveryDropTarget
+=== PAUSE TestPrepareUsesMySQLCompatibleDatabaseAsSchemaAlias/mysql_database_only
+=== CONT  TestPrepareInfersSchemaFromValidStatementsAroundParserError
+--- PASS: TestPrepareResolvesNoneSchemaForStatementWithNoTargets (0.00s)
+--- PASS: TestPrepareRejectsDialectMismatch (0.00s)
+--- PASS: TestPrepareReturnsCapabilityBoundaryErrorWithoutSchemaWrapperForExplicitPostgreSQL (0.00s)
+--- PASS: TestPrepareDetectsAmbiguousSchemaAcrossEveryDropTarget (0.00s)
+--- PASS: TestPrepareInfersSchemaAcrossEveryDropTarget (0.00s)
+--- PASS: TestPrepareReturnsResolvedDialectAndSchema (0.00s)
+=== RUN   TestPrepareUsesMySQLCompatibleDatabaseAsSchemaAlias/mysql_auto-detected_database_only
+=== RUN   TestPrepareRejectsPostgreSQLSchemaWithoutDatabase/detected_dialect
+=== PAUSE TestPrepareUsesMySQLCompatibleDatabaseAsSchemaAlias/mysql_auto-detected_database_only
+--- PASS: TestPrepareFailsWhenSchemaInferenceIsAmbiguous (0.00s)
+=== RUN   TestPrepareUsesMySQLCompatibleDatabaseAsSchemaAlias/mysql_schema_only
+=== PAUSE TestPrepareUsesMySQLCompatibleDatabaseAsSchemaAlias/mysql_schema_only
+=== RUN   TestPrepareUsesMySQLCompatibleDatabaseAsSchemaAlias/mysql_matching_values
+=== PAUSE TestPrepareUsesMySQLCompatibleDatabaseAsSchemaAlias/mysql_matching_values
+=== RUN   TestPrepareUsesMySQLCompatibleDatabaseAsSchemaAlias/tidb_database_only
+=== PAUSE TestPrepareUsesMySQLCompatibleDatabaseAsSchemaAlias/tidb_database_only
+--- PASS: TestPrepareRejectsPostgreSQLSchemaWithoutDatabase (0.00s)
+    --- PASS: TestPrepareRejectsPostgreSQLSchemaWithoutDatabase/explicit_dialect (0.00s)
+    --- PASS: TestPrepareRejectsPostgreSQLSchemaWithoutDatabase/detected_dialect (0.00s)
+=== RUN   TestPrepareUsesMySQLCompatibleDatabaseAsSchemaAlias/tidb_schema_only
+=== PAUSE TestPrepareUsesMySQLCompatibleDatabaseAsSchemaAlias/tidb_schema_only
+=== RUN   TestPrepareUsesMySQLCompatibleDatabaseAsSchemaAlias/tidb_matching_values
+=== PAUSE TestPrepareUsesMySQLCompatibleDatabaseAsSchemaAlias/tidb_matching_values
+=== CONT  TestPrepareUsesMySQLCompatibleDatabaseAsSchemaAlias/mysql_database_only
+=== CONT  TestPrepareUsesMySQLCompatibleDatabaseAsSchemaAlias/tidb_schema_only
+=== CONT  TestPrepareUsesMySQLCompatibleDatabaseAsSchemaAlias/tidb_matching_values
+=== CONT  TestPrepareUsesMySQLCompatibleDatabaseAsSchemaAlias/tidb_database_only
+=== CONT  TestPrepareUsesMySQLCompatibleDatabaseAsSchemaAlias/mysql_matching_values
+=== CONT  TestPrepareUsesMySQLCompatibleDatabaseAsSchemaAlias/mysql_auto-detected_database_only
+--- PASS: TestPrepareInfersSchemaFromValidStatementsAroundParserError (0.00s)
+=== CONT  TestPrepareUsesMySQLCompatibleDatabaseAsSchemaAlias/mysql_schema_only
+--- PASS: TestPrepareUsesMySQLCompatibleDatabaseAsSchemaAlias (0.00s)
+    --- PASS: TestPrepareUsesMySQLCompatibleDatabaseAsSchemaAlias/mysql_database_only (0.00s)
+    --- PASS: TestPrepareUsesMySQLCompatibleDatabaseAsSchemaAlias/tidb_schema_only (0.00s)
+    --- PASS: TestPrepareUsesMySQLCompatibleDatabaseAsSchemaAlias/tidb_matching_values (0.00s)
+    --- PASS: TestPrepareUsesMySQLCompatibleDatabaseAsSchemaAlias/tidb_database_only (0.00s)
+    --- PASS: TestPrepareUsesMySQLCompatibleDatabaseAsSchemaAlias/mysql_matching_values (0.00s)
+    --- PASS: TestPrepareUsesMySQLCompatibleDatabaseAsSchemaAlias/mysql_auto-detected_database_only (0.00s)
+    --- PASS: TestPrepareUsesMySQLCompatibleDatabaseAsSchemaAlias/mysql_schema_only (0.00s)
+PASS
+ok  	github.com/Fanduzi/DeltaScope/internal/application/auditmeta	0.950s

@@ -1,0 +1,161 @@
+orig task_id: T11
+T11.json replaced with replay subset
+[ddl-golden][FAIL] case T11.cli.t11-cli-fk-alter-firstpath: status='fail'
+[ddl-golden][FAIL] case T11.cli.t11-cli-fk-alter-firstpath: failed assertion 'exit code': 'rc=0 expected=1'
+[ddl-golden][FAIL] case T11.cli.t11-cli-fk-alter-firstpath: failed assertion 'verdict': "verdict='pass'"
+[ddl-golden][FAIL] case T11.cli.t11-cli-fk-alter-firstpath: failed assertion 'zero findings': 'findings=0'
+[ddl-golden][FAIL] case T11.cli.t11-cli-fk-alter-firstpath: failed assertion 'applicable rule count': 'applicable=0'
+[ddl-golden][FAIL] case T11.cli.t11-cli-fk-alter-firstpath: failed assertion 'finding entries': "findings=[] expected=[(0, 'ddl.table.foreign_key.forbid', 'blocker')]"
+[ddl-golden][FAIL] case T11.cli.t11-cli-fk-alter-firstpath: failed assertion "finding metadata (0, 'ddl.table.foreign_key.forbid')": "findings=[] expected_subset={'table': 'child', 'constraint': 'fk_c', 'columns': ['c'], 'referenced_table': 'parent', 'referenced_columns': ['id']}"
+[ddl-golden][FAIL] case T11.cli.t11-cli-fk-alter-firstpath: exit code: rc=0 expected=1
+[ddl-golden][FAIL] case T11.cli.t11-cli-fk-alter-firstpath: verdict: verdict='pass'
+[ddl-golden][FAIL] case T11.cli.t11-cli-fk-alter-firstpath: zero findings: findings=0
+[ddl-golden][FAIL] case T11.cli.t11-cli-fk-alter-firstpath: applicable rule count: applicable=0
+[ddl-golden][FAIL] case T11.cli.t11-cli-fk-alter-firstpath: finding entries: findings=[] expected=[(0, 'ddl.table.foreign_key.forbid', 'blocker')]
+[ddl-golden][FAIL] case T11.cli.t11-cli-fk-alter-firstpath: finding metadata (0, 'ddl.table.foreign_key.forbid'): findings=[] expected_subset={'table': 'child', 'constraint': 'fk_c', 'columns': ['c'], 'referenced_table': 'parent', 'referenced_columns': ['id']}
+[ddl-golden][FAIL] case T11.cli.t11-cli-fk-alter-bare: status='fail'
+[ddl-golden][FAIL] case T11.cli.t11-cli-fk-alter-bare: failed assertion 'exit code': 'rc=0 expected=1'
+[ddl-golden][FAIL] case T11.cli.t11-cli-fk-alter-bare: failed assertion 'verdict': "verdict='pass'"
+[ddl-golden][FAIL] case T11.cli.t11-cli-fk-alter-bare: failed assertion 'zero findings': 'findings=0'
+[ddl-golden][FAIL] case T11.cli.t11-cli-fk-alter-bare: failed assertion 'finding entries': "findings=[] expected=[(0, 'ddl.table.foreign_key.forbid', 'blocker')]"
+[ddl-golden][FAIL] case T11.cli.t11-cli-fk-alter-bare: failed assertion "finding metadata (0, 'ddl.table.foreign_key.forbid')": "findings=[] expected_subset={'table': 'child', 'columns': ['c'], 'referenced_table': 'parent', 'referenced_columns': ['id']}"
+[ddl-golden][FAIL] case T11.cli.t11-cli-fk-alter-bare: exit code: rc=0 expected=1
+[ddl-golden][FAIL] case T11.cli.t11-cli-fk-alter-bare: verdict: verdict='pass'
+[ddl-golden][FAIL] case T11.cli.t11-cli-fk-alter-bare: zero findings: findings=0
+[ddl-golden][FAIL] case T11.cli.t11-cli-fk-alter-bare: finding entries: findings=[] expected=[(0, 'ddl.table.foreign_key.forbid', 'blocker')]
+[ddl-golden][FAIL] case T11.cli.t11-cli-fk-alter-bare: finding metadata (0, 'ddl.table.foreign_key.forbid'): findings=[] expected_subset={'table': 'child', 'columns': ['c'], 'referenced_table': 'parent', 'referenced_columns': ['id']}
+[ddl-golden][FAIL] case T11.cli.t11-cli-fk-alter-composite-actions: status='fail'
+[ddl-golden][FAIL] case T11.cli.t11-cli-fk-alter-composite-actions: failed assertion 'verdict': "verdict='review'"
+[ddl-golden][FAIL] case T11.cli.t11-cli-fk-alter-composite-actions: failed assertion 'zero findings': 'findings=0'
+[ddl-golden][FAIL] case T11.cli.t11-cli-fk-alter-composite-actions: failed assertion 'no diagnostics': "diagnostics=[{'classification': 'unsupported_statement', 'reason': 'DeltaScope recognized this statement or feature but does not audit it yet', 'action_hint': 'treat this statement as not covered by DeltaScope policy checks; review it manually or track support in a future DeltaScope release', 'audited': False, 'dialect': 'mysql'}]"
+[ddl-golden][FAIL] case T11.cli.t11-cli-fk-alter-composite-actions: failed assertion 'no unsupported': "unsupported=[{'feature': 'alter_table.add_constraint.constraint.foreign_key.parts', 'sql': 'ALTER TABLE child ADD CONSTRAINT fk_bx FOREIGN KEY (b, x) REFERENCES ref (y, z) ON DELETE CASCADE ON UPDATE SET NULL;', 'reason': 'parsed by the shared parser but not covered by audited semantics', 'metadata': {'action': 'add_constraint', 'aspect': 'constraint_parts', 'constraint_type': 'foreign_key', 'local_parts': 0, 'refer_actions': 2, 'referenced_parts': 0}}]"
+[ddl-golden][FAIL] case T11.cli.t11-cli-fk-alter-composite-actions: failed assertion 'aggregate coverage': "coverage='incomplete'"
+[ddl-golden][FAIL] case T11.cli.t11-cli-fk-alter-composite-actions: failed assertion 'finding entries': "findings=[] expected=[(0, 'ddl.table.foreign_key.forbid', 'blocker')]"
+[ddl-golden][FAIL] case T11.cli.t11-cli-fk-alter-composite-actions: failed assertion "finding metadata (0, 'ddl.table.foreign_key.forbid')": "findings=[] expected_subset={'table': 'child', 'constraint': 'fk_bx', 'columns': ['b', 'x'], 'referenced_table': 'ref', 'referenced_columns': ['y', 'z'], 'on_delete': 'cascade', 'on_update': 'set_null'}"
+[ddl-golden][FAIL] case T11.cli.t11-cli-fk-alter-composite-actions: verdict: verdict='review'
+[ddl-golden][FAIL] case T11.cli.t11-cli-fk-alter-composite-actions: zero findings: findings=0
+[ddl-golden][FAIL] case T11.cli.t11-cli-fk-alter-composite-actions: no diagnostics: diagnostics=[{'classification': 'unsupported_statement', 'reason': 'DeltaScope recognized this statement or feature but does not audit it yet', 'action_hint': 'treat this statement as not covered by DeltaScope policy checks; review it manually or track support in a future DeltaScope release', 'audited': False, 'dialect': 'mysql'}]
+[ddl-golden][FAIL] case T11.cli.t11-cli-fk-alter-composite-actions: no unsupported: unsupported=[{'feature': 'alter_table.add_constraint.constraint.foreign_key.parts', 'sql': 'ALTER TABLE child ADD CONSTRAINT fk_bx FOREIGN KEY (b, x) REFERENCES ref (y, z) ON DELETE CASCADE ON UPDATE SET NULL;', 'reason': 'parsed by the shared parser but not covered by audited semantics', 'metadata': {'action': 'add_constraint', 'aspect': 'constraint_parts', 'constraint_type': 'foreign_key', 'local_parts': 0, 'refer_actions': 2, 'referenced_parts': 0}}]
+[ddl-golden][FAIL] case T11.cli.t11-cli-fk-alter-composite-actions: aggregate coverage: coverage='incomplete'
+[ddl-golden][FAIL] case T11.cli.t11-cli-fk-alter-composite-actions: finding entries: findings=[] expected=[(0, 'ddl.table.foreign_key.forbid', 'blocker')]
+[ddl-golden][FAIL] case T11.cli.t11-cli-fk-alter-composite-actions: finding metadata (0, 'ddl.table.foreign_key.forbid'): findings=[] expected_subset={'table': 'child', 'constraint': 'fk_bx', 'columns': ['b', 'x'], 'referenced_table': 'ref', 'referenced_columns': ['y', 'z'], 'on_delete': 'cascade', 'on_update': 'set_null'}
+[ddl-golden][FAIL] case T11.cli.t11-cli-fk-alter-two: status='fail'
+[ddl-golden][FAIL] case T11.cli.t11-cli-fk-alter-two: failed assertion 'exit code': 'rc=0 expected=1'
+[ddl-golden][FAIL] case T11.cli.t11-cli-fk-alter-two: failed assertion 'verdict': "verdict='pass'"
+[ddl-golden][FAIL] case T11.cli.t11-cli-fk-alter-two: failed assertion 'zero findings': 'findings=0'
+[ddl-golden][FAIL] case T11.cli.t11-cli-fk-alter-two: failed assertion 'finding entries': "findings=[] expected=[(0, 'ddl.table.foreign_key.forbid', 'blocker'), (0, 'ddl.table.foreign_key.forbid', 'blocker')]"
+[ddl-golden][FAIL] case T11.cli.t11-cli-fk-alter-two: exit code: rc=0 expected=1
+[ddl-golden][FAIL] case T11.cli.t11-cli-fk-alter-two: verdict: verdict='pass'
+[ddl-golden][FAIL] case T11.cli.t11-cli-fk-alter-two: zero findings: findings=0
+[ddl-golden][FAIL] case T11.cli.t11-cli-fk-alter-two: finding entries: findings=[] expected=[(0, 'ddl.table.foreign_key.forbid', 'blocker'), (0, 'ddl.table.foreign_key.forbid', 'blocker')]
+[ddl-golden][FAIL] case T11.cli.t11-cli-fk-alter-tidb: status='fail'
+[ddl-golden][FAIL] case T11.cli.t11-cli-fk-alter-tidb: failed assertion 'exit code': 'rc=0 expected=1'
+[ddl-golden][FAIL] case T11.cli.t11-cli-fk-alter-tidb: failed assertion 'verdict': "verdict='pass'"
+[ddl-golden][FAIL] case T11.cli.t11-cli-fk-alter-tidb: failed assertion 'zero findings': 'findings=0'
+[ddl-golden][FAIL] case T11.cli.t11-cli-fk-alter-tidb: failed assertion 'finding entries': "findings=[] expected=[(0, 'ddl.table.foreign_key.forbid', 'blocker')]"
+[ddl-golden][FAIL] case T11.cli.t11-cli-fk-alter-tidb: failed assertion "finding metadata (0, 'ddl.table.foreign_key.forbid')": "findings=[] expected_subset={'table': 'child', 'constraint': 'fk_c', 'columns': ['c'], 'referenced_table': 'parent', 'referenced_columns': ['id']}"
+[ddl-golden][FAIL] case T11.cli.t11-cli-fk-alter-tidb: exit code: rc=0 expected=1
+[ddl-golden][FAIL] case T11.cli.t11-cli-fk-alter-tidb: verdict: verdict='pass'
+[ddl-golden][FAIL] case T11.cli.t11-cli-fk-alter-tidb: zero findings: findings=0
+[ddl-golden][FAIL] case T11.cli.t11-cli-fk-alter-tidb: finding entries: findings=[] expected=[(0, 'ddl.table.foreign_key.forbid', 'blocker')]
+[ddl-golden][FAIL] case T11.cli.t11-cli-fk-alter-tidb: finding metadata (0, 'ddl.table.foreign_key.forbid'): findings=[] expected_subset={'table': 'child', 'constraint': 'fk_c', 'columns': ['c'], 'referenced_table': 'parent', 'referenced_columns': ['id']}
+[ddl-golden][FAIL] case T11.cli.t11-cli-fk-name-alter-bad: status='fail'
+[ddl-golden][FAIL] case T11.cli.t11-cli-fk-name-alter-bad: failed assertion 'verdict': "verdict='pass'"
+[ddl-golden][FAIL] case T11.cli.t11-cli-fk-name-alter-bad: failed assertion 'zero findings': 'findings=0'
+[ddl-golden][FAIL] case T11.cli.t11-cli-fk-name-alter-bad: failed assertion 'applicable rule count': 'applicable=0'
+[ddl-golden][FAIL] case T11.cli.t11-cli-fk-name-alter-bad: failed assertion 'finding entries': "findings=[] expected=[(0, 'ddl.constraint.foreign_key.name.prefix.require', 'warning')]"
+[ddl-golden][FAIL] case T11.cli.t11-cli-fk-name-alter-bad: verdict: verdict='pass'
+[ddl-golden][FAIL] case T11.cli.t11-cli-fk-name-alter-bad: zero findings: findings=0
+[ddl-golden][FAIL] case T11.cli.t11-cli-fk-name-alter-bad: applicable rule count: applicable=0
+[ddl-golden][FAIL] case T11.cli.t11-cli-fk-name-alter-bad: finding entries: findings=[] expected=[(0, 'ddl.constraint.foreign_key.name.prefix.require', 'warning')]
+[ddl-golden][FAIL] case T11.cli.t11-cli-fk-name-alter-ok: status='fail'
+[ddl-golden][FAIL] case T11.cli.t11-cli-fk-name-alter-ok: failed assertion 'applicable rule count': 'applicable=0'
+[ddl-golden][FAIL] case T11.cli.t11-cli-fk-name-alter-ok: applicable rule count: applicable=0
+[ddl-golden][FAIL] case T11.cli.t11-cli-pk-max-alter: status='fail'
+[ddl-golden][FAIL] case T11.cli.t11-cli-pk-max-alter: failed assertion 'exit code': 'rc=0 expected=1'
+[ddl-golden][FAIL] case T11.cli.t11-cli-pk-max-alter: failed assertion 'verdict': "verdict='pass'"
+[ddl-golden][FAIL] case T11.cli.t11-cli-pk-max-alter: failed assertion 'zero findings': 'findings=0'
+[ddl-golden][FAIL] case T11.cli.t11-cli-pk-max-alter: failed assertion 'applicable rule count': 'applicable=0'
+[ddl-golden][FAIL] case T11.cli.t11-cli-pk-max-alter: failed assertion 'finding entries': "findings=[] expected=[(0, 'ddl.table.primary_key.columns.max_count', 'blocker')]"
+[ddl-golden][FAIL] case T11.cli.t11-cli-pk-max-alter: exit code: rc=0 expected=1
+[ddl-golden][FAIL] case T11.cli.t11-cli-pk-max-alter: verdict: verdict='pass'
+[ddl-golden][FAIL] case T11.cli.t11-cli-pk-max-alter: zero findings: findings=0
+[ddl-golden][FAIL] case T11.cli.t11-cli-pk-max-alter: applicable rule count: applicable=0
+[ddl-golden][FAIL] case T11.cli.t11-cli-pk-max-alter: finding entries: findings=[] expected=[(0, 'ddl.table.primary_key.columns.max_count', 'blocker')]
+[ddl-golden][FAIL] case T11.cli.t11-cli-fk-actions-modeled: status='fail'
+[ddl-golden][FAIL] case T11.cli.t11-cli-fk-actions-modeled: failed assertion 'exit code': 'rc=1 expected=0'
+[ddl-golden][FAIL] case T11.cli.t11-cli-fk-actions-modeled: failed assertion 'verdict': "verdict='review'"
+[ddl-golden][FAIL] case T11.cli.t11-cli-fk-actions-modeled: failed assertion 'no diagnostics': "diagnostics=[{'classification': 'unsupported_statement', 'reason': 'DeltaScope recognized this statement or feature but does not audit it yet', 'action_hint': 'treat this statement as not covered by DeltaScope policy checks; review it manually or track support in a future DeltaScope release', 'audited': False, 'dialect': 'mysql'}]"
+[ddl-golden][FAIL] case T11.cli.t11-cli-fk-actions-modeled: failed assertion 'no unsupported': "unsupported=[{'feature': 'create_table.constraint.foreign_key.parts', 'sql': 'CREATE TABLE c (a INT, CONSTRAINT fk_a FOREIGN KEY (a) REFERENCES p(id) ON DELETE CASCADE ON UPDATE RESTRICT);', 'reason': 'parsed by the shared parser but not covered by audited semantics', 'metadata': {'aspect': 'constraint_parts', 'constraint_type': 'foreign_key', 'local_parts': 0, 'refer_actions': 2, 'referenced_parts': 0}}]"
+[ddl-golden][FAIL] case T11.cli.t11-cli-fk-actions-modeled: failed assertion 'aggregate coverage': "coverage='incomplete'"
+[ddl-golden][FAIL] case T11.cli.t11-cli-fk-actions-modeled: exit code: rc=1 expected=0
+[ddl-golden][FAIL] case T11.cli.t11-cli-fk-actions-modeled: verdict: verdict='review'
+[ddl-golden][FAIL] case T11.cli.t11-cli-fk-actions-modeled: no diagnostics: diagnostics=[{'classification': 'unsupported_statement', 'reason': 'DeltaScope recognized this statement or feature but does not audit it yet', 'action_hint': 'treat this statement as not covered by DeltaScope policy checks; review it manually or track support in a future DeltaScope release', 'audited': False, 'dialect': 'mysql'}]
+[ddl-golden][FAIL] case T11.cli.t11-cli-fk-actions-modeled: no unsupported: unsupported=[{'feature': 'create_table.constraint.foreign_key.parts', 'sql': 'CREATE TABLE c (a INT, CONSTRAINT fk_a FOREIGN KEY (a) REFERENCES p(id) ON DELETE CASCADE ON UPDATE RESTRICT);', 'reason': 'parsed by the shared parser but not covered by audited semantics', 'metadata': {'aspect': 'constraint_parts', 'constraint_type': 'foreign_key', 'local_parts': 0, 'refer_actions': 2, 'referenced_parts': 0}}]
+[ddl-golden][FAIL] case T11.cli.t11-cli-fk-actions-modeled: aggregate coverage: coverage='incomplete'
+[ddl-golden][FAIL] case T11.cli.t11-cli-fk-schema-ref: status='fail'
+[ddl-golden][FAIL] case T11.cli.t11-cli-fk-schema-ref: failed assertion 'exit code': 'rc=0 expected=1'
+[ddl-golden][FAIL] case T11.cli.t11-cli-fk-schema-ref: failed assertion 'verdict': "verdict='pass'"
+[ddl-golden][FAIL] case T11.cli.t11-cli-fk-schema-ref: failed assertion 'zero findings': 'findings=0'
+[ddl-golden][FAIL] case T11.cli.t11-cli-fk-schema-ref: failed assertion "finding metadata (0, 'ddl.table.foreign_key.forbid')": "findings=[] expected_subset={'table': 'child', 'constraint': 'fk_s', 'columns': ['c'], 'referenced_schema': 'other', 'referenced_table': 'parent', 'referenced_columns': ['id']}"
+[ddl-golden][FAIL] case T11.cli.t11-cli-fk-schema-ref: exit code: rc=0 expected=1
+[ddl-golden][FAIL] case T11.cli.t11-cli-fk-schema-ref: verdict: verdict='pass'
+[ddl-golden][FAIL] case T11.cli.t11-cli-fk-schema-ref: zero findings: findings=0
+[ddl-golden][FAIL] case T11.cli.t11-cli-fk-schema-ref: finding metadata (0, 'ddl.table.foreign_key.forbid'): findings=[] expected_subset={'table': 'child', 'constraint': 'fk_s', 'columns': ['c'], 'referenced_schema': 'other', 'referenced_table': 'parent', 'referenced_columns': ['id']}
+[ddl-golden][FAIL] case T11.meta.t11-mysql80-firstpath: status='fail'
+[ddl-golden][FAIL] case T11.meta.t11-mysql80-firstpath: failed assertion 'exit code': 'rc=0 expected=1'
+[ddl-golden][FAIL] case T11.meta.t11-mysql80-firstpath: failed assertion 'verdict': "verdict='pass'"
+[ddl-golden][FAIL] case T11.meta.t11-mysql80-firstpath: failed assertion 'zero findings': 'findings=0'
+[ddl-golden][FAIL] case T11.meta.t11-mysql80-firstpath: failed assertion 'applicable rule count': 'applicable=0'
+[ddl-golden][FAIL] case T11.meta.t11-mysql80-firstpath: failed assertion 'finding entries': "findings=[] expected=[(0, 'ddl.table.foreign_key.forbid', 'blocker')]"
+[ddl-golden][FAIL] case T11.meta.t11-mysql80-firstpath: failed assertion "finding metadata (0, 'ddl.table.foreign_key.forbid')": "findings=[] expected_subset={'table': 't11c', 'constraint': 'fk_c', 'columns': ['c'], 'referenced_table': 't11p', 'referenced_columns': ['id']}"
+[ddl-golden][FAIL] case T11.meta.t11-mysql80-firstpath: exit code: rc=0 expected=1
+[ddl-golden][FAIL] case T11.meta.t11-mysql80-firstpath: verdict: verdict='pass'
+[ddl-golden][FAIL] case T11.meta.t11-mysql80-firstpath: zero findings: findings=0
+[ddl-golden][FAIL] case T11.meta.t11-mysql80-firstpath: applicable rule count: applicable=0
+[ddl-golden][FAIL] case T11.meta.t11-mysql80-firstpath: finding entries: findings=[] expected=[(0, 'ddl.table.foreign_key.forbid', 'blocker')]
+[ddl-golden][FAIL] case T11.meta.t11-mysql80-firstpath: finding metadata (0, 'ddl.table.foreign_key.forbid'): findings=[] expected_subset={'table': 't11c', 'constraint': 'fk_c', 'columns': ['c'], 'referenced_table': 't11p', 'referenced_columns': ['id']}
+[ddl-golden][FAIL] case T11.meta.t11-mysql80-drop-needed-index: status='fail'
+[ddl-golden][FAIL] case T11.meta.t11-mysql80-drop-needed-index: failed assertion 'verdict': "verdict='review'"
+[ddl-golden][FAIL] case T11.meta.t11-mysql80-drop-needed-index: failed assertion 'aggregate coverage': "coverage='unverified'"
+[ddl-golden][FAIL] case T11.meta.t11-mysql80-drop-needed-index: failed assertion 'per-statement coverage': "statement_coverage=['complete', 'unverified', 'unverified']"
+[ddl-golden][FAIL] case T11.meta.t11-mysql80-drop-needed-index: failed assertion 'evidence gap count': 'gaps=3'
+[ddl-golden][FAIL] case T11.meta.t11-mysql80-drop-needed-index: verdict: verdict='review'
+[ddl-golden][FAIL] case T11.meta.t11-mysql80-drop-needed-index: aggregate coverage: coverage='unverified'
+[ddl-golden][FAIL] case T11.meta.t11-mysql80-drop-needed-index: per-statement coverage: statement_coverage=['complete', 'unverified', 'unverified']
+[ddl-golden][FAIL] case T11.meta.t11-mysql80-drop-needed-index: evidence gap count: gaps=3
+[ddl-golden][FAIL] case T11.meta.t11-mysql80-composite-actions: status='fail'
+[ddl-golden][FAIL] case T11.meta.t11-mysql80-composite-actions: failed assertion 'verdict': "verdict='review'"
+[ddl-golden][FAIL] case T11.meta.t11-mysql80-composite-actions: failed assertion 'zero findings': 'findings=0'
+[ddl-golden][FAIL] case T11.meta.t11-mysql80-composite-actions: failed assertion 'no diagnostics': "diagnostics=[{'classification': 'unsupported_statement', 'reason': 'DeltaScope recognized this statement or feature but does not audit it yet', 'action_hint': 'treat this statement as not covered by DeltaScope policy checks; review it manually or track support in a future DeltaScope release', 'audited': False, 'dialect': 'mysql'}]"
+[ddl-golden][FAIL] case T11.meta.t11-mysql80-composite-actions: failed assertion 'no unsupported': "unsupported=[{'feature': 'alter_table.add_constraint.constraint.foreign_key.parts', 'sql': 'ALTER TABLE t11c ADD CONSTRAINT fk_bx FOREIGN KEY (b, x) REFERENCES t11r (y, z) ON DELETE SET NULL ON UPDATE CASCADE;', 'reason': 'parsed by the shared parser but not covered by audited semantics', 'metadata': {'action': 'add_constraint', 'aspect': 'constraint_parts', 'constraint_type': 'foreign_key', 'local_parts': 0, 'refer_actions': 2, 'referenced_parts': 0}}]"
+[ddl-golden][FAIL] case T11.meta.t11-mysql80-composite-actions: failed assertion 'aggregate coverage': "coverage='incomplete'"
+[ddl-golden][FAIL] case T11.meta.t11-mysql80-composite-actions: failed assertion "finding metadata (0, 'ddl.table.foreign_key.forbid')": "findings=[] expected_subset={'table': 't11c', 'constraint': 'fk_bx', 'columns': ['b', 'x'], 'referenced_table': 't11r', 'referenced_columns': ['y', 'z'], 'on_delete': 'set_null', 'on_update': 'cascade'}"
+[ddl-golden][FAIL] case T11.meta.t11-mysql80-composite-actions: verdict: verdict='review'
+[ddl-golden][FAIL] case T11.meta.t11-mysql80-composite-actions: zero findings: findings=0
+[ddl-golden][FAIL] case T11.meta.t11-mysql80-composite-actions: no diagnostics: diagnostics=[{'classification': 'unsupported_statement', 'reason': 'DeltaScope recognized this statement or feature but does not audit it yet', 'action_hint': 'treat this statement as not covered by DeltaScope policy checks; review it manually or track support in a future DeltaScope release', 'audited': False, 'dialect': 'mysql'}]
+[ddl-golden][FAIL] case T11.meta.t11-mysql80-composite-actions: no unsupported: unsupported=[{'feature': 'alter_table.add_constraint.constraint.foreign_key.parts', 'sql': 'ALTER TABLE t11c ADD CONSTRAINT fk_bx FOREIGN KEY (b, x) REFERENCES t11r (y, z) ON DELETE SET NULL ON UPDATE CASCADE;', 'reason': 'parsed by the shared parser but not covered by audited semantics', 'metadata': {'action': 'add_constraint', 'aspect': 'constraint_parts', 'constraint_type': 'foreign_key', 'local_parts': 0, 'refer_actions': 2, 'referenced_parts': 0}}]
+[ddl-golden][FAIL] case T11.meta.t11-mysql80-composite-actions: aggregate coverage: coverage='incomplete'
+[ddl-golden][FAIL] case T11.meta.t11-mysql80-composite-actions: finding metadata (0, 'ddl.table.foreign_key.forbid'): findings=[] expected_subset={'table': 't11c', 'constraint': 'fk_bx', 'columns': ['b', 'x'], 'referenced_table': 't11r', 'referenced_columns': ['y', 'z'], 'on_delete': 'set_null', 'on_update': 'cascade'}
+[ddl-golden][FAIL] case T11.meta.t11-tidb85-firstpath: status='fail'
+[ddl-golden][FAIL] case T11.meta.t11-tidb85-firstpath: failed assertion 'exit code': 'rc=0 expected=1'
+[ddl-golden][FAIL] case T11.meta.t11-tidb85-firstpath: failed assertion 'verdict': "verdict='pass'"
+[ddl-golden][FAIL] case T11.meta.t11-tidb85-firstpath: failed assertion 'zero findings': 'findings=0'
+[ddl-golden][FAIL] case T11.meta.t11-tidb85-firstpath: failed assertion 'finding entries': "findings=[] expected=[(0, 'ddl.table.foreign_key.forbid', 'blocker')]"
+[ddl-golden][FAIL] case T11.meta.t11-tidb85-firstpath: failed assertion "finding metadata (0, 'ddl.table.foreign_key.forbid')": "findings=[] expected_subset={'table': 't11c', 'constraint': 'fk_c', 'columns': ['c'], 'referenced_table': 't11p', 'referenced_columns': ['id']}"
+[ddl-golden][FAIL] case T11.meta.t11-tidb85-firstpath: exit code: rc=0 expected=1
+[ddl-golden][FAIL] case T11.meta.t11-tidb85-firstpath: verdict: verdict='pass'
+[ddl-golden][FAIL] case T11.meta.t11-tidb85-firstpath: zero findings: findings=0
+[ddl-golden][FAIL] case T11.meta.t11-tidb85-firstpath: finding entries: findings=[] expected=[(0, 'ddl.table.foreign_key.forbid', 'blocker')]
+[ddl-golden][FAIL] case T11.meta.t11-tidb85-firstpath: finding metadata (0, 'ddl.table.foreign_key.forbid'): findings=[] expected_subset={'table': 't11c', 'constraint': 'fk_c', 'columns': ['c'], 'referenced_table': 't11p', 'referenced_columns': ['id']}
+[ddl-golden][FAIL] case T11.meta.t11-tidb85-clustered-parent: status='fail'
+[ddl-golden][FAIL] case T11.meta.t11-tidb85-clustered-parent: failed assertion 'exit code': 'rc=0 expected=1'
+[ddl-golden][FAIL] case T11.meta.t11-tidb85-clustered-parent: failed assertion 'verdict': "verdict='pass'"
+[ddl-golden][FAIL] case T11.meta.t11-tidb85-clustered-parent: failed assertion 'zero findings': 'findings=0'
+[ddl-golden][FAIL] case T11.meta.t11-tidb85-clustered-parent: failed assertion 'finding entries': "findings=[] expected=[(0, 'ddl.table.foreign_key.forbid', 'blocker')]"
+[ddl-golden][FAIL] case T11.meta.t11-tidb85-clustered-parent: exit code: rc=0 expected=1
+[ddl-golden][FAIL] case T11.meta.t11-tidb85-clustered-parent: verdict: verdict='pass'
+[ddl-golden][FAIL] case T11.meta.t11-tidb85-clustered-parent: zero findings: findings=0
+[ddl-golden][FAIL] case T11.meta.t11-tidb85-clustered-parent: finding entries: findings=[] expected=[(0, 'ddl.table.foreign_key.forbid', 'blocker')]
+[ddl-golden] task=T11 head=8b6f30984d1c cases=32 passed=17 assertions=386
+[ddl-golden] artifact=/private/tmp/t11-red-golden/T11/artifact.json

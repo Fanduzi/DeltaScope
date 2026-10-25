@@ -1,0 +1,2023 @@
+=== RUN   TestDatabaseLifecycleASTCharacterization
+=== PAUSE TestDatabaseLifecycleASTCharacterization
+=== RUN   TestDatabaseLifecycleCreateSchemaIsAlias
+=== PAUSE TestDatabaseLifecycleCreateSchemaIsAlias
+=== RUN   TestDatabaseLifecycleDropSchemaIsAlias
+=== PAUSE TestDatabaseLifecycleDropSchemaIsAlias
+=== RUN   TestDatabaseLifecycleCharsetCollation
+=== PAUSE TestDatabaseLifecycleCharsetCollation
+=== RUN   TestT07R1ExpressionTopForm
+=== PAUSE TestT07R1ExpressionTopForm
+=== RUN   TestT07R1ColumnRefTopForm
+=== PAUSE TestT07R1ColumnRefTopForm
+=== RUN   TestT07R1SupplementSitesCarryColumn
+=== PAUSE TestT07R1SupplementSitesCarryColumn
+=== RUN   TestParseCatalogExpressionFactsBareExpressions
+=== PAUSE TestParseCatalogExpressionFactsBareExpressions
+=== RUN   TestParseCatalogExpressionFactsRejectsSelectStructure
+=== PAUSE TestParseCatalogExpressionFactsRejectsSelectStructure
+=== RUN   TestParseCatalogExpressionFactsEscapeBoundary
+=== PAUSE TestParseCatalogExpressionFactsEscapeBoundary
+=== RUN   TestSupplementedDefaultPreservesRawText
+=== PAUSE TestSupplementedDefaultPreservesRawText
+=== RUN   TestExtractorT06A10AutoIncrementFacts
+=== PAUSE TestExtractorT06A10AutoIncrementFacts
+=== RUN   TestExtractorT06A11PKMemberTypeAndUnsignedFacts
+=== PAUSE TestExtractorT06A11PKMemberTypeAndUnsignedFacts
+=== RUN   TestExtractorT06A11PKMemberBindsDeclaredColumn
+=== PAUSE TestExtractorT06A11PKMemberBindsDeclaredColumn
+=== RUN   TestExtractorT06A11ZerofillParserObservation
+=== PAUSE TestExtractorT06A11ZerofillParserObservation
+=== RUN   TestExtractorT06A12NullabilityFacts
+=== PAUSE TestExtractorT06A12NullabilityFacts
+=== RUN   TestExtractorT06A12NullClauseASTShape
+=== PAUSE TestExtractorT06A12NullClauseASTShape
+=== RUN   TestExtractorT06A13ColumnFacts
+=== PAUSE TestExtractorT06A13ColumnFacts
+=== RUN   TestExtractorT06A13BinaryCharsetBoundary
+=== PAUSE TestExtractorT06A13BinaryCharsetBoundary
+=== RUN   TestExtractorT06A14TableOptions
+=== PAUSE TestExtractorT06A14TableOptions
+=== RUN   TestExtractorT06A14ColumnCharsetNotTableOption
+=== PAUSE TestExtractorT06A14ColumnCharsetNotTableOption
+=== RUN   TestT06A17DecimalDeclarations
+--- PASS: TestT06A17DecimalDeclarations (0.00s)
+=== RUN   TestT06A17FloatDoubleDeclarations
+--- PASS: TestT06A17FloatDoubleDeclarations (0.00s)
+=== RUN   TestT06A17EnumSetMemberFidelity
+--- PASS: TestT06A17EnumSetMemberFidelity (0.00s)
+=== RUN   TestT06A17MemberRoundTrip
+--- PASS: TestT06A17MemberRoundTrip (0.00s)
+=== RUN   TestT06A17FloatSingleParamControls
+--- PASS: TestT06A17FloatSingleParamControls (0.00s)
+=== RUN   TestT06A17BackslashMemberControl
+--- PASS: TestT06A17BackslashMemberControl (0.00s)
+=== RUN   TestT06A17OrdinaryTypeControls
+--- PASS: TestT06A17OrdinaryTypeControls (0.00s)
+=== RUN   TestT06A17AlterColumnDefinitions
+=== RUN   TestT06A17AlterColumnDefinitions/add
+=== RUN   TestT06A17AlterColumnDefinitions/modify
+=== RUN   TestT06A17AlterColumnDefinitions/change
+--- PASS: TestT06A17AlterColumnDefinitions (0.00s)
+    --- PASS: TestT06A17AlterColumnDefinitions/add (0.00s)
+    --- PASS: TestT06A17AlterColumnDefinitions/modify (0.00s)
+    --- PASS: TestT06A17AlterColumnDefinitions/change (0.00s)
+=== RUN   TestT06A2PrimaryKeyMemberNullability
+=== RUN   TestT06A2PrimaryKeyMemberNullability/mysql/inline
+=== RUN   TestT06A2PrimaryKeyMemberNullability/mysql/table_single
+=== RUN   TestT06A2PrimaryKeyMemberNullability/mysql/table_explicit_not_null
+=== RUN   TestT06A2PrimaryKeyMemberNullability/mysql/table_composite_reordered
+=== RUN   TestT06A2PrimaryKeyMemberNullability/mysql/table_prefix_member
+=== RUN   TestT06A2PrimaryKeyMemberNullability/mysql/explicit_null_table
+=== RUN   TestT06A2PrimaryKeyMemberNullability/mysql/explicit_null_inline
+=== RUN   TestT06A2PrimaryKeyMemberNullability/mysql/no_pk
+=== RUN   TestT06A2PrimaryKeyMemberNullability/mysql/secondary_key
+=== RUN   TestT06A2PrimaryKeyMemberNullability/mysql/unique_key
+=== RUN   TestT06A2PrimaryKeyMemberNullability/mysql/foreign_key_member
+=== RUN   TestT06A2PrimaryKeyMemberNullability/mysql/mixed_case_binding
+=== RUN   TestT06A2PrimaryKeyMemberNullability/tidb/inline
+=== RUN   TestT06A2PrimaryKeyMemberNullability/tidb/table_single
+=== RUN   TestT06A2PrimaryKeyMemberNullability/tidb/table_explicit_not_null
+=== RUN   TestT06A2PrimaryKeyMemberNullability/tidb/table_composite_reordered
+=== RUN   TestT06A2PrimaryKeyMemberNullability/tidb/table_prefix_member
+=== RUN   TestT06A2PrimaryKeyMemberNullability/tidb/explicit_null_table
+=== RUN   TestT06A2PrimaryKeyMemberNullability/tidb/explicit_null_inline
+=== RUN   TestT06A2PrimaryKeyMemberNullability/tidb/no_pk
+=== RUN   TestT06A2PrimaryKeyMemberNullability/tidb/secondary_key
+=== RUN   TestT06A2PrimaryKeyMemberNullability/tidb/unique_key
+=== RUN   TestT06A2PrimaryKeyMemberNullability/tidb/foreign_key_member
+=== RUN   TestT06A2PrimaryKeyMemberNullability/tidb/mixed_case_binding
+--- PASS: TestT06A2PrimaryKeyMemberNullability (0.00s)
+    --- PASS: TestT06A2PrimaryKeyMemberNullability/mysql/inline (0.00s)
+    --- PASS: TestT06A2PrimaryKeyMemberNullability/mysql/table_single (0.00s)
+    --- PASS: TestT06A2PrimaryKeyMemberNullability/mysql/table_explicit_not_null (0.00s)
+    --- PASS: TestT06A2PrimaryKeyMemberNullability/mysql/table_composite_reordered (0.00s)
+    --- PASS: TestT06A2PrimaryKeyMemberNullability/mysql/table_prefix_member (0.00s)
+    --- PASS: TestT06A2PrimaryKeyMemberNullability/mysql/explicit_null_table (0.00s)
+    --- PASS: TestT06A2PrimaryKeyMemberNullability/mysql/explicit_null_inline (0.00s)
+    --- PASS: TestT06A2PrimaryKeyMemberNullability/mysql/no_pk (0.00s)
+    --- PASS: TestT06A2PrimaryKeyMemberNullability/mysql/secondary_key (0.00s)
+    --- PASS: TestT06A2PrimaryKeyMemberNullability/mysql/unique_key (0.00s)
+    --- PASS: TestT06A2PrimaryKeyMemberNullability/mysql/foreign_key_member (0.00s)
+    --- PASS: TestT06A2PrimaryKeyMemberNullability/mysql/mixed_case_binding (0.00s)
+    --- PASS: TestT06A2PrimaryKeyMemberNullability/tidb/inline (0.00s)
+    --- PASS: TestT06A2PrimaryKeyMemberNullability/tidb/table_single (0.00s)
+    --- PASS: TestT06A2PrimaryKeyMemberNullability/tidb/table_explicit_not_null (0.00s)
+    --- PASS: TestT06A2PrimaryKeyMemberNullability/tidb/table_composite_reordered (0.00s)
+    --- PASS: TestT06A2PrimaryKeyMemberNullability/tidb/table_prefix_member (0.00s)
+    --- PASS: TestT06A2PrimaryKeyMemberNullability/tidb/explicit_null_table (0.00s)
+    --- PASS: TestT06A2PrimaryKeyMemberNullability/tidb/explicit_null_inline (0.00s)
+    --- PASS: TestT06A2PrimaryKeyMemberNullability/tidb/no_pk (0.00s)
+    --- PASS: TestT06A2PrimaryKeyMemberNullability/tidb/secondary_key (0.00s)
+    --- PASS: TestT06A2PrimaryKeyMemberNullability/tidb/unique_key (0.00s)
+    --- PASS: TestT06A2PrimaryKeyMemberNullability/tidb/foreign_key_member (0.00s)
+    --- PASS: TestT06A2PrimaryKeyMemberNullability/tidb/mixed_case_binding (0.00s)
+=== RUN   TestT06A2PrimaryKeyIndexFactsPreserved
+--- PASS: TestT06A2PrimaryKeyIndexFactsPreserved (0.00s)
+=== RUN   TestT06A2DefaultFactsPreserved
+--- PASS: TestT06A2DefaultFactsPreserved (0.00s)
+=== RUN   TestT06A2AlterColumnExtractionUnchanged
+--- PASS: TestT06A2AlterColumnExtractionUnchanged (0.00s)
+=== RUN   TestT06A3DefaultNullFieldMatrix
+=== RUN   TestT06A3DefaultNullFieldMatrix/mysql/no_clause
+=== RUN   TestT06A3DefaultNullFieldMatrix/mysql/sql_null
+=== RUN   TestT06A3DefaultNullFieldMatrix/mysql/text_null
+=== RUN   TestT06A3DefaultNullFieldMatrix/mysql/text_nil
+=== RUN   TestT06A3DefaultNullFieldMatrix/mysql/text_null_lower
+=== RUN   TestT06A3DefaultNullFieldMatrix/tidb/no_clause
+=== RUN   TestT06A3DefaultNullFieldMatrix/tidb/sql_null
+=== RUN   TestT06A3DefaultNullFieldMatrix/tidb/text_null
+=== RUN   TestT06A3DefaultNullFieldMatrix/tidb/text_nil
+=== RUN   TestT06A3DefaultNullFieldMatrix/tidb/text_null_lower
+--- PASS: TestT06A3DefaultNullFieldMatrix (0.00s)
+    --- PASS: TestT06A3DefaultNullFieldMatrix/mysql/no_clause (0.00s)
+    --- PASS: TestT06A3DefaultNullFieldMatrix/mysql/sql_null (0.00s)
+    --- PASS: TestT06A3DefaultNullFieldMatrix/mysql/text_null (0.00s)
+    --- PASS: TestT06A3DefaultNullFieldMatrix/mysql/text_nil (0.00s)
+    --- PASS: TestT06A3DefaultNullFieldMatrix/mysql/text_null_lower (0.00s)
+    --- PASS: TestT06A3DefaultNullFieldMatrix/tidb/no_clause (0.00s)
+    --- PASS: TestT06A3DefaultNullFieldMatrix/tidb/sql_null (0.00s)
+    --- PASS: TestT06A3DefaultNullFieldMatrix/tidb/text_null (0.00s)
+    --- PASS: TestT06A3DefaultNullFieldMatrix/tidb/text_nil (0.00s)
+    --- PASS: TestT06A3DefaultNullFieldMatrix/tidb/text_null_lower (0.00s)
+=== RUN   TestT06A3NullLiteralHelperBoundaries
+--- PASS: TestT06A3NullLiteralHelperBoundaries (0.00s)
+=== RUN   TestT06A3DefaultLiteralPreservation
+--- PASS: TestT06A3DefaultLiteralPreservation (0.00s)
+=== RUN   TestT06A3AlterDefinitionDefaultNull
+=== RUN   TestT06A3AlterDefinitionDefaultNull/mysql
+=== RUN   TestT06A3AlterDefinitionDefaultNull/tidb
+--- PASS: TestT06A3AlterDefinitionDefaultNull (0.00s)
+    --- PASS: TestT06A3AlterDefinitionDefaultNull/mysql (0.00s)
+    --- PASS: TestT06A3AlterDefinitionDefaultNull/tidb (0.00s)
+=== RUN   TestT06A3R1DuplicateDefaultFieldMatrix
+=== RUN   TestT06A3R1DuplicateDefaultFieldMatrix/mysql/null_then_text_null
+=== RUN   TestT06A3R1DuplicateDefaultFieldMatrix/mysql/null_then_text_nil
+=== RUN   TestT06A3R1DuplicateDefaultFieldMatrix/mysql/null_then_zero
+=== RUN   TestT06A3R1DuplicateDefaultFieldMatrix/mysql/null_then_empty
+=== RUN   TestT06A3R1DuplicateDefaultFieldMatrix/mysql/text_null_then_null
+=== RUN   TestT06A3R1DuplicateDefaultFieldMatrix/mysql/null_then_null
+=== RUN   TestT06A3R1DuplicateDefaultFieldMatrix/mysql/triple_ending_null
+=== RUN   TestT06A3R1DuplicateDefaultFieldMatrix/mysql/single_null
+=== RUN   TestT06A3R1DuplicateDefaultFieldMatrix/mysql/single_text_null
+=== RUN   TestT06A3R1DuplicateDefaultFieldMatrix/mysql/single_text_nil
+=== RUN   TestT06A3R1DuplicateDefaultFieldMatrix/mysql/no_default
+=== RUN   TestT06A3R1DuplicateDefaultFieldMatrix/tidb/null_then_text_null
+=== RUN   TestT06A3R1DuplicateDefaultFieldMatrix/tidb/null_then_text_nil
+=== RUN   TestT06A3R1DuplicateDefaultFieldMatrix/tidb/null_then_zero
+=== RUN   TestT06A3R1DuplicateDefaultFieldMatrix/tidb/null_then_empty
+=== RUN   TestT06A3R1DuplicateDefaultFieldMatrix/tidb/text_null_then_null
+=== RUN   TestT06A3R1DuplicateDefaultFieldMatrix/tidb/null_then_null
+=== RUN   TestT06A3R1DuplicateDefaultFieldMatrix/tidb/triple_ending_null
+=== RUN   TestT06A3R1DuplicateDefaultFieldMatrix/tidb/single_null
+=== RUN   TestT06A3R1DuplicateDefaultFieldMatrix/tidb/single_text_null
+=== RUN   TestT06A3R1DuplicateDefaultFieldMatrix/tidb/single_text_nil
+=== RUN   TestT06A3R1DuplicateDefaultFieldMatrix/tidb/no_default
+--- PASS: TestT06A3R1DuplicateDefaultFieldMatrix (0.00s)
+    --- PASS: TestT06A3R1DuplicateDefaultFieldMatrix/mysql/null_then_text_null (0.00s)
+    --- PASS: TestT06A3R1DuplicateDefaultFieldMatrix/mysql/null_then_text_nil (0.00s)
+    --- PASS: TestT06A3R1DuplicateDefaultFieldMatrix/mysql/null_then_zero (0.00s)
+    --- PASS: TestT06A3R1DuplicateDefaultFieldMatrix/mysql/null_then_empty (0.00s)
+    --- PASS: TestT06A3R1DuplicateDefaultFieldMatrix/mysql/text_null_then_null (0.00s)
+    --- PASS: TestT06A3R1DuplicateDefaultFieldMatrix/mysql/null_then_null (0.00s)
+    --- PASS: TestT06A3R1DuplicateDefaultFieldMatrix/mysql/triple_ending_null (0.00s)
+    --- PASS: TestT06A3R1DuplicateDefaultFieldMatrix/mysql/single_null (0.00s)
+    --- PASS: TestT06A3R1DuplicateDefaultFieldMatrix/mysql/single_text_null (0.00s)
+    --- PASS: TestT06A3R1DuplicateDefaultFieldMatrix/mysql/single_text_nil (0.00s)
+    --- PASS: TestT06A3R1DuplicateDefaultFieldMatrix/mysql/no_default (0.00s)
+    --- PASS: TestT06A3R1DuplicateDefaultFieldMatrix/tidb/null_then_text_null (0.00s)
+    --- PASS: TestT06A3R1DuplicateDefaultFieldMatrix/tidb/null_then_text_nil (0.00s)
+    --- PASS: TestT06A3R1DuplicateDefaultFieldMatrix/tidb/null_then_zero (0.00s)
+    --- PASS: TestT06A3R1DuplicateDefaultFieldMatrix/tidb/null_then_empty (0.00s)
+    --- PASS: TestT06A3R1DuplicateDefaultFieldMatrix/tidb/text_null_then_null (0.00s)
+    --- PASS: TestT06A3R1DuplicateDefaultFieldMatrix/tidb/null_then_null (0.00s)
+    --- PASS: TestT06A3R1DuplicateDefaultFieldMatrix/tidb/triple_ending_null (0.00s)
+    --- PASS: TestT06A3R1DuplicateDefaultFieldMatrix/tidb/single_null (0.00s)
+    --- PASS: TestT06A3R1DuplicateDefaultFieldMatrix/tidb/single_text_null (0.00s)
+    --- PASS: TestT06A3R1DuplicateDefaultFieldMatrix/tidb/single_text_nil (0.00s)
+    --- PASS: TestT06A3R1DuplicateDefaultFieldMatrix/tidb/no_default (0.00s)
+=== RUN   TestT06A3R1DuplicateDefaultIsolation
+=== RUN   TestT06A3R1DuplicateDefaultIsolation/mysql
+=== RUN   TestT06A3R1DuplicateDefaultIsolation/tidb
+--- PASS: TestT06A3R1DuplicateDefaultIsolation (0.00s)
+    --- PASS: TestT06A3R1DuplicateDefaultIsolation/mysql (0.00s)
+    --- PASS: TestT06A3R1DuplicateDefaultIsolation/tidb (0.00s)
+=== RUN   TestT06A3R1AlterDefinitionDuplicateDefault
+=== RUN   TestT06A3R1AlterDefinitionDuplicateDefault/mysql/ALTER_TABLE_t_MODIFY_COLU
+=== RUN   TestT06A3R1AlterDefinitionDuplicateDefault/mysql/ALTER_TABLE_t_CHANGE_COLU
+=== RUN   TestT06A3R1AlterDefinitionDuplicateDefault/mysql/ALTER_TABLE_t_ADD_COLUMN_
+=== RUN   TestT06A3R1AlterDefinitionDuplicateDefault/tidb/ALTER_TABLE_t_MODIFY_COLU
+=== RUN   TestT06A3R1AlterDefinitionDuplicateDefault/tidb/ALTER_TABLE_t_CHANGE_COLU
+=== RUN   TestT06A3R1AlterDefinitionDuplicateDefault/tidb/ALTER_TABLE_t_ADD_COLUMN_
+--- PASS: TestT06A3R1AlterDefinitionDuplicateDefault (0.00s)
+    --- PASS: TestT06A3R1AlterDefinitionDuplicateDefault/mysql/ALTER_TABLE_t_MODIFY_COLU (0.00s)
+    --- PASS: TestT06A3R1AlterDefinitionDuplicateDefault/mysql/ALTER_TABLE_t_CHANGE_COLU (0.00s)
+    --- PASS: TestT06A3R1AlterDefinitionDuplicateDefault/mysql/ALTER_TABLE_t_ADD_COLUMN_ (0.00s)
+    --- PASS: TestT06A3R1AlterDefinitionDuplicateDefault/tidb/ALTER_TABLE_t_MODIFY_COLU (0.00s)
+    --- PASS: TestT06A3R1AlterDefinitionDuplicateDefault/tidb/ALTER_TABLE_t_CHANGE_COLU (0.00s)
+    --- PASS: TestT06A3R1AlterDefinitionDuplicateDefault/tidb/ALTER_TABLE_t_ADD_COLUMN_ (0.00s)
+=== RUN   TestT06A3R1HelperBoundariesPreserved
+--- PASS: TestT06A3R1HelperBoundariesPreserved (0.00s)
+=== RUN   TestT06A5DeclaredLengthSentinelMatrix
+=== RUN   TestT06A5DeclaredLengthSentinelMatrix/mysql/char_declared
+=== RUN   TestT06A5DeclaredLengthSentinelMatrix/mysql/char_zero
+=== RUN   TestT06A5DeclaredLengthSentinelMatrix/mysql/char_bare_unspecified
+=== RUN   TestT06A5DeclaredLengthSentinelMatrix/mysql/varchar_declared
+=== RUN   TestT06A5DeclaredLengthSentinelMatrix/tidb/char_declared
+=== RUN   TestT06A5DeclaredLengthSentinelMatrix/tidb/char_zero
+=== RUN   TestT06A5DeclaredLengthSentinelMatrix/tidb/char_bare_unspecified
+=== RUN   TestT06A5DeclaredLengthSentinelMatrix/tidb/varchar_declared
+--- PASS: TestT06A5DeclaredLengthSentinelMatrix (0.00s)
+    --- PASS: TestT06A5DeclaredLengthSentinelMatrix/mysql/char_declared (0.00s)
+    --- PASS: TestT06A5DeclaredLengthSentinelMatrix/mysql/char_zero (0.00s)
+    --- PASS: TestT06A5DeclaredLengthSentinelMatrix/mysql/char_bare_unspecified (0.00s)
+    --- PASS: TestT06A5DeclaredLengthSentinelMatrix/mysql/varchar_declared (0.00s)
+    --- PASS: TestT06A5DeclaredLengthSentinelMatrix/tidb/char_declared (0.00s)
+    --- PASS: TestT06A5DeclaredLengthSentinelMatrix/tidb/char_zero (0.00s)
+    --- PASS: TestT06A5DeclaredLengthSentinelMatrix/tidb/char_bare_unspecified (0.00s)
+    --- PASS: TestT06A5DeclaredLengthSentinelMatrix/tidb/varchar_declared (0.00s)
+=== RUN   TestT06A5LengthRequiringFormsReject
+=== RUN   TestT06A5LengthRequiringFormsReject/mysql/CREATE_TABLE_t_(c_VARCHAR);
+=== RUN   TestT06A5LengthRequiringFormsReject/mysql/CREATE_TABLE_t_(c_CHAR_BYTE);
+=== RUN   TestT06A5LengthRequiringFormsReject/tidb/CREATE_TABLE_t_(c_VARCHAR);
+=== RUN   TestT06A5LengthRequiringFormsReject/tidb/CREATE_TABLE_t_(c_CHAR_BYTE);
+--- PASS: TestT06A5LengthRequiringFormsReject (0.00s)
+    --- PASS: TestT06A5LengthRequiringFormsReject/mysql/CREATE_TABLE_t_(c_VARCHAR); (0.00s)
+    --- PASS: TestT06A5LengthRequiringFormsReject/mysql/CREATE_TABLE_t_(c_CHAR_BYTE); (0.00s)
+    --- PASS: TestT06A5LengthRequiringFormsReject/tidb/CREATE_TABLE_t_(c_VARCHAR); (0.00s)
+    --- PASS: TestT06A5LengthRequiringFormsReject/tidb/CREATE_TABLE_t_(c_CHAR_BYTE); (0.00s)
+=== RUN   TestT06A7DeclaredCharsetCollationFields
+=== RUN   TestT06A7DeclaredCharsetCollationFields/mysql/pair
+=== RUN   TestT06A7DeclaredCharsetCollationFields/mysql/collate_only
+=== RUN   TestT06A7DeclaredCharsetCollationFields/mysql/charset_only
+=== RUN   TestT06A7DeclaredCharsetCollationFields/mysql/mismatched
+=== RUN   TestT06A7DeclaredCharsetCollationFields/mysql/undeclared
+=== RUN   TestT06A7DeclaredCharsetCollationFields/tidb/pair
+=== RUN   TestT06A7DeclaredCharsetCollationFields/tidb/collate_only
+=== RUN   TestT06A7DeclaredCharsetCollationFields/tidb/charset_only
+=== RUN   TestT06A7DeclaredCharsetCollationFields/tidb/mismatched
+=== RUN   TestT06A7DeclaredCharsetCollationFields/tidb/undeclared
+--- PASS: TestT06A7DeclaredCharsetCollationFields (0.00s)
+    --- PASS: TestT06A7DeclaredCharsetCollationFields/mysql/pair (0.00s)
+    --- PASS: TestT06A7DeclaredCharsetCollationFields/mysql/collate_only (0.00s)
+    --- PASS: TestT06A7DeclaredCharsetCollationFields/mysql/charset_only (0.00s)
+    --- PASS: TestT06A7DeclaredCharsetCollationFields/mysql/mismatched (0.00s)
+    --- PASS: TestT06A7DeclaredCharsetCollationFields/mysql/undeclared (0.00s)
+    --- PASS: TestT06A7DeclaredCharsetCollationFields/tidb/pair (0.00s)
+    --- PASS: TestT06A7DeclaredCharsetCollationFields/tidb/collate_only (0.00s)
+    --- PASS: TestT06A7DeclaredCharsetCollationFields/tidb/charset_only (0.00s)
+    --- PASS: TestT06A7DeclaredCharsetCollationFields/tidb/mismatched (0.00s)
+    --- PASS: TestT06A7DeclaredCharsetCollationFields/tidb/undeclared (0.00s)
+=== RUN   TestT06A7TableCollateOptionField
+=== RUN   TestT06A7TableCollateOptionField/mysql/declared
+=== RUN   TestT06A7TableCollateOptionField/mysql/undeclared
+=== RUN   TestT06A7TableCollateOptionField/tidb/declared
+=== RUN   TestT06A7TableCollateOptionField/tidb/undeclared
+--- PASS: TestT06A7TableCollateOptionField (0.00s)
+    --- PASS: TestT06A7TableCollateOptionField/mysql/declared (0.00s)
+    --- PASS: TestT06A7TableCollateOptionField/mysql/undeclared (0.00s)
+    --- PASS: TestT06A7TableCollateOptionField/tidb/declared (0.00s)
+    --- PASS: TestT06A7TableCollateOptionField/tidb/undeclared (0.00s)
+=== RUN   TestT06A8CommentDecodingMatrix
+=== RUN   TestT06A8CommentDecodingMatrix/mysql/none
+=== RUN   TestT06A8CommentDecodingMatrix/mysql/table_empty
+=== RUN   TestT06A8CommentDecodingMatrix/mysql/table_blank
+=== RUN   TestT06A8CommentDecodingMatrix/mysql/table_multibyte
+=== RUN   TestT06A8CommentDecodingMatrix/mysql/table_edge_spaces
+=== RUN   TestT06A8CommentDecodingMatrix/mysql/table_apostrophe
+=== RUN   TestT06A8CommentDecodingMatrix/mysql/table_lone_quote
+=== RUN   TestT06A8CommentDecodingMatrix/mysql/column_empty
+=== RUN   TestT06A8CommentDecodingMatrix/mysql/column_blank
+=== RUN   TestT06A8CommentDecodingMatrix/mysql/column_multibyte
+=== RUN   TestT06A8CommentDecodingMatrix/mysql/column_edge_spaces
+=== RUN   TestT06A8CommentDecodingMatrix/mysql/column_apostrophe
+=== RUN   TestT06A8CommentDecodingMatrix/mysql/column_lone_quote
+=== RUN   TestT06A8CommentDecodingMatrix/mysql/both
+=== RUN   TestT06A8CommentDecodingMatrix/tidb/none
+=== RUN   TestT06A8CommentDecodingMatrix/tidb/table_empty
+=== RUN   TestT06A8CommentDecodingMatrix/tidb/table_blank
+=== RUN   TestT06A8CommentDecodingMatrix/tidb/table_multibyte
+=== RUN   TestT06A8CommentDecodingMatrix/tidb/table_edge_spaces
+=== RUN   TestT06A8CommentDecodingMatrix/tidb/table_apostrophe
+=== RUN   TestT06A8CommentDecodingMatrix/tidb/table_lone_quote
+=== RUN   TestT06A8CommentDecodingMatrix/tidb/column_empty
+=== RUN   TestT06A8CommentDecodingMatrix/tidb/column_blank
+=== RUN   TestT06A8CommentDecodingMatrix/tidb/column_multibyte
+=== RUN   TestT06A8CommentDecodingMatrix/tidb/column_edge_spaces
+=== RUN   TestT06A8CommentDecodingMatrix/tidb/column_apostrophe
+=== RUN   TestT06A8CommentDecodingMatrix/tidb/column_lone_quote
+=== RUN   TestT06A8CommentDecodingMatrix/tidb/both
+--- PASS: TestT06A8CommentDecodingMatrix (0.00s)
+    --- PASS: TestT06A8CommentDecodingMatrix/mysql/none (0.00s)
+    --- PASS: TestT06A8CommentDecodingMatrix/mysql/table_empty (0.00s)
+    --- PASS: TestT06A8CommentDecodingMatrix/mysql/table_blank (0.00s)
+    --- PASS: TestT06A8CommentDecodingMatrix/mysql/table_multibyte (0.00s)
+    --- PASS: TestT06A8CommentDecodingMatrix/mysql/table_edge_spaces (0.00s)
+    --- PASS: TestT06A8CommentDecodingMatrix/mysql/table_apostrophe (0.00s)
+    --- PASS: TestT06A8CommentDecodingMatrix/mysql/table_lone_quote (0.00s)
+    --- PASS: TestT06A8CommentDecodingMatrix/mysql/column_empty (0.00s)
+    --- PASS: TestT06A8CommentDecodingMatrix/mysql/column_blank (0.00s)
+    --- PASS: TestT06A8CommentDecodingMatrix/mysql/column_multibyte (0.00s)
+    --- PASS: TestT06A8CommentDecodingMatrix/mysql/column_edge_spaces (0.00s)
+    --- PASS: TestT06A8CommentDecodingMatrix/mysql/column_apostrophe (0.00s)
+    --- PASS: TestT06A8CommentDecodingMatrix/mysql/column_lone_quote (0.00s)
+    --- PASS: TestT06A8CommentDecodingMatrix/mysql/both (0.00s)
+    --- PASS: TestT06A8CommentDecodingMatrix/tidb/none (0.00s)
+    --- PASS: TestT06A8CommentDecodingMatrix/tidb/table_empty (0.00s)
+    --- PASS: TestT06A8CommentDecodingMatrix/tidb/table_blank (0.00s)
+    --- PASS: TestT06A8CommentDecodingMatrix/tidb/table_multibyte (0.00s)
+    --- PASS: TestT06A8CommentDecodingMatrix/tidb/table_edge_spaces (0.00s)
+    --- PASS: TestT06A8CommentDecodingMatrix/tidb/table_apostrophe (0.00s)
+    --- PASS: TestT06A8CommentDecodingMatrix/tidb/table_lone_quote (0.00s)
+    --- PASS: TestT06A8CommentDecodingMatrix/tidb/column_empty (0.00s)
+    --- PASS: TestT06A8CommentDecodingMatrix/tidb/column_blank (0.00s)
+    --- PASS: TestT06A8CommentDecodingMatrix/tidb/column_multibyte (0.00s)
+    --- PASS: TestT06A8CommentDecodingMatrix/tidb/column_edge_spaces (0.00s)
+    --- PASS: TestT06A8CommentDecodingMatrix/tidb/column_apostrophe (0.00s)
+    --- PASS: TestT06A8CommentDecodingMatrix/tidb/column_lone_quote (0.00s)
+    --- PASS: TestT06A8CommentDecodingMatrix/tidb/both (0.00s)
+=== RUN   TestT06A8RepeatedCommentOverwrite
+=== RUN   TestT06A8RepeatedCommentOverwrite/mysql/nonempty_to_empty
+=== RUN   TestT06A8RepeatedCommentOverwrite/mysql/empty_to_nonempty
+=== RUN   TestT06A8RepeatedCommentOverwrite/mysql/nonempty_to_nonempty
+=== RUN   TestT06A8RepeatedCommentOverwrite/tidb/nonempty_to_empty
+=== RUN   TestT06A8RepeatedCommentOverwrite/tidb/empty_to_nonempty
+=== RUN   TestT06A8RepeatedCommentOverwrite/tidb/nonempty_to_nonempty
+--- PASS: TestT06A8RepeatedCommentOverwrite (0.00s)
+    --- PASS: TestT06A8RepeatedCommentOverwrite/mysql/nonempty_to_empty (0.00s)
+    --- PASS: TestT06A8RepeatedCommentOverwrite/mysql/empty_to_nonempty (0.00s)
+    --- PASS: TestT06A8RepeatedCommentOverwrite/mysql/nonempty_to_nonempty (0.00s)
+    --- PASS: TestT06A8RepeatedCommentOverwrite/tidb/nonempty_to_empty (0.00s)
+    --- PASS: TestT06A8RepeatedCommentOverwrite/tidb/empty_to_nonempty (0.00s)
+    --- PASS: TestT06A8RepeatedCommentOverwrite/tidb/nonempty_to_nonempty (0.00s)
+=== RUN   TestT06A8AlterColumnCommentDecoding
+=== RUN   TestT06A8AlterColumnCommentDecoding/mysql/add
+=== RUN   TestT06A8AlterColumnCommentDecoding/mysql/modify
+=== RUN   TestT06A8AlterColumnCommentDecoding/mysql/change
+=== RUN   TestT06A8AlterColumnCommentDecoding/mysql/add_empty
+=== RUN   TestT06A8AlterColumnCommentDecoding/tidb/add
+=== RUN   TestT06A8AlterColumnCommentDecoding/tidb/modify
+=== RUN   TestT06A8AlterColumnCommentDecoding/tidb/change
+=== RUN   TestT06A8AlterColumnCommentDecoding/tidb/add_empty
+--- PASS: TestT06A8AlterColumnCommentDecoding (0.00s)
+    --- PASS: TestT06A8AlterColumnCommentDecoding/mysql/add (0.00s)
+    --- PASS: TestT06A8AlterColumnCommentDecoding/mysql/modify (0.00s)
+    --- PASS: TestT06A8AlterColumnCommentDecoding/mysql/change (0.00s)
+    --- PASS: TestT06A8AlterColumnCommentDecoding/mysql/add_empty (0.00s)
+    --- PASS: TestT06A8AlterColumnCommentDecoding/tidb/add (0.00s)
+    --- PASS: TestT06A8AlterColumnCommentDecoding/tidb/modify (0.00s)
+    --- PASS: TestT06A8AlterColumnCommentDecoding/tidb/change (0.00s)
+    --- PASS: TestT06A8AlterColumnCommentDecoding/tidb/add_empty (0.00s)
+=== RUN   TestT06A9TimestampSpellingNormalization
+=== RUN   TestT06A9TimestampSpellingNormalization/mysql/current_timestamp
+=== RUN   TestT06A9TimestampSpellingNormalization/mysql/current_timestamp_parens
+=== RUN   TestT06A9TimestampSpellingNormalization/mysql/now
+=== RUN   TestT06A9TimestampSpellingNormalization/mysql/localtime
+=== RUN   TestT06A9TimestampSpellingNormalization/mysql/localtimestamp
+=== RUN   TestT06A9TimestampSpellingNormalization/mysql/on_update_now
+=== RUN   TestT06A9TimestampSpellingNormalization/mysql/literal_default
+=== RUN   TestT06A9TimestampSpellingNormalization/mysql/numeric_default
+=== RUN   TestT06A9TimestampSpellingNormalization/tidb/current_timestamp
+=== RUN   TestT06A9TimestampSpellingNormalization/tidb/current_timestamp_parens
+=== RUN   TestT06A9TimestampSpellingNormalization/tidb/now
+=== RUN   TestT06A9TimestampSpellingNormalization/tidb/localtime
+=== RUN   TestT06A9TimestampSpellingNormalization/tidb/localtimestamp
+=== RUN   TestT06A9TimestampSpellingNormalization/tidb/on_update_now
+=== RUN   TestT06A9TimestampSpellingNormalization/tidb/literal_default
+=== RUN   TestT06A9TimestampSpellingNormalization/tidb/numeric_default
+--- PASS: TestT06A9TimestampSpellingNormalization (0.00s)
+    --- PASS: TestT06A9TimestampSpellingNormalization/mysql/current_timestamp (0.00s)
+    --- PASS: TestT06A9TimestampSpellingNormalization/mysql/current_timestamp_parens (0.00s)
+    --- PASS: TestT06A9TimestampSpellingNormalization/mysql/now (0.00s)
+    --- PASS: TestT06A9TimestampSpellingNormalization/mysql/localtime (0.00s)
+    --- PASS: TestT06A9TimestampSpellingNormalization/mysql/localtimestamp (0.00s)
+    --- PASS: TestT06A9TimestampSpellingNormalization/mysql/on_update_now (0.00s)
+    --- PASS: TestT06A9TimestampSpellingNormalization/mysql/literal_default (0.00s)
+    --- PASS: TestT06A9TimestampSpellingNormalization/mysql/numeric_default (0.00s)
+    --- PASS: TestT06A9TimestampSpellingNormalization/tidb/current_timestamp (0.00s)
+    --- PASS: TestT06A9TimestampSpellingNormalization/tidb/current_timestamp_parens (0.00s)
+    --- PASS: TestT06A9TimestampSpellingNormalization/tidb/now (0.00s)
+    --- PASS: TestT06A9TimestampSpellingNormalization/tidb/localtime (0.00s)
+    --- PASS: TestT06A9TimestampSpellingNormalization/tidb/localtimestamp (0.00s)
+    --- PASS: TestT06A9TimestampSpellingNormalization/tidb/on_update_now (0.00s)
+    --- PASS: TestT06A9TimestampSpellingNormalization/tidb/literal_default (0.00s)
+    --- PASS: TestT06A9TimestampSpellingNormalization/tidb/numeric_default (0.00s)
+=== RUN   TestT06A9TimestampASTNodeKind
+--- PASS: TestT06A9TimestampASTNodeKind (0.00s)
+=== RUN   TestT06A9SpecRoleFlags
+=== RUN   TestT06A9SpecRoleFlags/mysql/A-complete-pair
+=== RUN   TestT06A9SpecRoleFlags/mysql/B-missing-created
+=== RUN   TestT06A9SpecRoleFlags/mysql/C-missing-updated
+=== RUN   TestT06A9SpecRoleFlags/mysql/E-now-spelling
+=== RUN   TestT06A9SpecRoleFlags/mysql/fsp-preserved
+=== RUN   TestT06A9SpecRoleFlags/tidb/A-complete-pair
+=== RUN   TestT06A9SpecRoleFlags/tidb/B-missing-created
+=== RUN   TestT06A9SpecRoleFlags/tidb/C-missing-updated
+=== RUN   TestT06A9SpecRoleFlags/tidb/E-now-spelling
+=== RUN   TestT06A9SpecRoleFlags/tidb/fsp-preserved
+--- PASS: TestT06A9SpecRoleFlags (0.00s)
+    --- PASS: TestT06A9SpecRoleFlags/mysql/A-complete-pair (0.00s)
+    --- PASS: TestT06A9SpecRoleFlags/mysql/B-missing-created (0.00s)
+    --- PASS: TestT06A9SpecRoleFlags/mysql/C-missing-updated (0.00s)
+    --- PASS: TestT06A9SpecRoleFlags/mysql/E-now-spelling (0.00s)
+    --- PASS: TestT06A9SpecRoleFlags/mysql/fsp-preserved (0.00s)
+    --- PASS: TestT06A9SpecRoleFlags/tidb/A-complete-pair (0.00s)
+    --- PASS: TestT06A9SpecRoleFlags/tidb/B-missing-created (0.00s)
+    --- PASS: TestT06A9SpecRoleFlags/tidb/C-missing-updated (0.00s)
+    --- PASS: TestT06A9SpecRoleFlags/tidb/E-now-spelling (0.00s)
+    --- PASS: TestT06A9SpecRoleFlags/tidb/fsp-preserved (0.00s)
+=== RUN   TestExtractorT08ColumnPosition
+=== PAUSE TestExtractorT08ColumnPosition
+=== RUN   TestExtractorT08MultiColumnAddPosition
+=== PAUSE TestExtractorT08MultiColumnAddPosition
+=== RUN   TestT08R1DeclaredLiteralIdentity
+=== RUN   TestT08R1DeclaredLiteralIdentity/mysql/string
+=== RUN   TestT08R1DeclaredLiteralIdentity/mysql/string_empty
+=== RUN   TestT08R1DeclaredLiteralIdentity/mysql/string_text_null
+=== RUN   TestT08R1DeclaredLiteralIdentity/mysql/string_content_quotes
+=== RUN   TestT08R1DeclaredLiteralIdentity/mysql/string_quote_in_content
+=== RUN   TestT08R1DeclaredLiteralIdentity/mysql/string_keyword_ct
+=== RUN   TestT08R1DeclaredLiteralIdentity/mysql/int
+=== RUN   TestT08R1DeclaredLiteralIdentity/mysql/int_zero
+=== RUN   TestT08R1DeclaredLiteralIdentity/mysql/int_negative
+=== RUN   TestT08R1DeclaredLiteralIdentity/mysql/int_plus
+=== RUN   TestT08R1DeclaredLiteralIdentity/mysql/int_leading_zeros
+=== RUN   TestT08R1DeclaredLiteralIdentity/mysql/paren_string
+=== RUN   TestT08R1DeclaredLiteralIdentity/mysql/decimal_unproven
+=== RUN   TestT08R1DeclaredLiteralIdentity/mysql/bit_unproven
+=== RUN   TestT08R1DeclaredLiteralIdentity/mysql/hex_unproven
+=== RUN   TestT08R1DeclaredLiteralIdentity/tidb/string
+=== RUN   TestT08R1DeclaredLiteralIdentity/tidb/string_empty
+=== RUN   TestT08R1DeclaredLiteralIdentity/tidb/string_text_null
+=== RUN   TestT08R1DeclaredLiteralIdentity/tidb/string_content_quotes
+=== RUN   TestT08R1DeclaredLiteralIdentity/tidb/string_quote_in_content
+=== RUN   TestT08R1DeclaredLiteralIdentity/tidb/string_keyword_ct
+=== RUN   TestT08R1DeclaredLiteralIdentity/tidb/int
+=== RUN   TestT08R1DeclaredLiteralIdentity/tidb/int_zero
+=== RUN   TestT08R1DeclaredLiteralIdentity/tidb/int_negative
+=== RUN   TestT08R1DeclaredLiteralIdentity/tidb/int_plus
+=== RUN   TestT08R1DeclaredLiteralIdentity/tidb/int_leading_zeros
+=== RUN   TestT08R1DeclaredLiteralIdentity/tidb/paren_string
+=== RUN   TestT08R1DeclaredLiteralIdentity/tidb/decimal_unproven
+=== RUN   TestT08R1DeclaredLiteralIdentity/tidb/bit_unproven
+=== RUN   TestT08R1DeclaredLiteralIdentity/tidb/hex_unproven
+--- PASS: TestT08R1DeclaredLiteralIdentity (0.00s)
+    --- PASS: TestT08R1DeclaredLiteralIdentity/mysql/string (0.00s)
+    --- PASS: TestT08R1DeclaredLiteralIdentity/mysql/string_empty (0.00s)
+    --- PASS: TestT08R1DeclaredLiteralIdentity/mysql/string_text_null (0.00s)
+    --- PASS: TestT08R1DeclaredLiteralIdentity/mysql/string_content_quotes (0.00s)
+    --- PASS: TestT08R1DeclaredLiteralIdentity/mysql/string_quote_in_content (0.00s)
+    --- PASS: TestT08R1DeclaredLiteralIdentity/mysql/string_keyword_ct (0.00s)
+    --- PASS: TestT08R1DeclaredLiteralIdentity/mysql/int (0.00s)
+    --- PASS: TestT08R1DeclaredLiteralIdentity/mysql/int_zero (0.00s)
+    --- PASS: TestT08R1DeclaredLiteralIdentity/mysql/int_negative (0.00s)
+    --- PASS: TestT08R1DeclaredLiteralIdentity/mysql/int_plus (0.00s)
+    --- PASS: TestT08R1DeclaredLiteralIdentity/mysql/int_leading_zeros (0.00s)
+    --- PASS: TestT08R1DeclaredLiteralIdentity/mysql/paren_string (0.00s)
+    --- PASS: TestT08R1DeclaredLiteralIdentity/mysql/decimal_unproven (0.00s)
+    --- PASS: TestT08R1DeclaredLiteralIdentity/mysql/bit_unproven (0.00s)
+    --- PASS: TestT08R1DeclaredLiteralIdentity/mysql/hex_unproven (0.00s)
+    --- PASS: TestT08R1DeclaredLiteralIdentity/tidb/string (0.00s)
+    --- PASS: TestT08R1DeclaredLiteralIdentity/tidb/string_empty (0.00s)
+    --- PASS: TestT08R1DeclaredLiteralIdentity/tidb/string_text_null (0.00s)
+    --- PASS: TestT08R1DeclaredLiteralIdentity/tidb/string_content_quotes (0.00s)
+    --- PASS: TestT08R1DeclaredLiteralIdentity/tidb/string_quote_in_content (0.00s)
+    --- PASS: TestT08R1DeclaredLiteralIdentity/tidb/string_keyword_ct (0.00s)
+    --- PASS: TestT08R1DeclaredLiteralIdentity/tidb/int (0.00s)
+    --- PASS: TestT08R1DeclaredLiteralIdentity/tidb/int_zero (0.00s)
+    --- PASS: TestT08R1DeclaredLiteralIdentity/tidb/int_negative (0.00s)
+    --- PASS: TestT08R1DeclaredLiteralIdentity/tidb/int_plus (0.00s)
+    --- PASS: TestT08R1DeclaredLiteralIdentity/tidb/int_leading_zeros (0.00s)
+    --- PASS: TestT08R1DeclaredLiteralIdentity/tidb/paren_string (0.00s)
+    --- PASS: TestT08R1DeclaredLiteralIdentity/tidb/decimal_unproven (0.00s)
+    --- PASS: TestT08R1DeclaredLiteralIdentity/tidb/bit_unproven (0.00s)
+    --- PASS: TestT08R1DeclaredLiteralIdentity/tidb/hex_unproven (0.00s)
+=== RUN   TestT08R1DeclaredLiteralNullAndExpression
+=== RUN   TestT08R1DeclaredLiteralNullAndExpression/mysql/default_null
+=== RUN   TestT08R1DeclaredLiteralNullAndExpression/tidb/default_null
+=== RUN   TestT08R1DeclaredLiteralNullAndExpression/mysql/expression_default
+--- PASS: TestT08R1DeclaredLiteralNullAndExpression (0.00s)
+    --- PASS: TestT08R1DeclaredLiteralNullAndExpression/mysql/default_null (0.00s)
+    --- PASS: TestT08R1DeclaredLiteralNullAndExpression/tidb/default_null (0.00s)
+    --- PASS: TestT08R1DeclaredLiteralNullAndExpression/mysql/expression_default (0.00s)
+=== RUN   TestExtractorT10AlterIndexVisibility
+=== PAUSE TestExtractorT10AlterIndexVisibility
+=== RUN   TestExtractorT10DeclaredIndexVisibility
+=== PAUSE TestExtractorT10DeclaredIndexVisibility
+=== RUN   TestExtractorT10NoVisibilityAttribute
+=== PAUSE TestExtractorT10NoVisibilityAttribute
+=== RUN   TestExtractorT10MultiValuedKeyParts
+=== PAUSE TestExtractorT10MultiValuedKeyParts
+=== RUN   TestExtractorT10R1MemberLevelKeyParts
+=== PAUSE TestExtractorT10R1MemberLevelKeyParts
+=== RUN   TestExtractorT10R1DescendingMemberOrder
+=== PAUSE TestExtractorT10R1DescendingMemberOrder
+=== RUN   TestExtractorT10R1PrimaryKeyType
+=== PAUSE TestExtractorT10R1PrimaryKeyType
+=== RUN   TestExtractorCreateTableCapturesStructuralFacts
+=== PAUSE TestExtractorCreateTableCapturesStructuralFacts
+=== RUN   TestExtractorAlterTableCapturesColumnAndIndexActions
+=== PAUSE TestExtractorAlterTableCapturesColumnAndIndexActions
+=== RUN   TestExtractorDMLCapturesInsertUpdateDeleteFacts
+=== PAUSE TestExtractorDMLCapturesInsertUpdateDeleteFacts
+=== RUN   TestExtractorDMLCapturesJoinAndSubqueryShapes
+=== PAUSE TestExtractorDMLCapturesJoinAndSubqueryShapes
+=== RUN   TestExtractorDMLProjectsReturningClause
+=== PAUSE TestExtractorDMLProjectsReturningClause
+=== RUN   TestExtractorDMLReturningAliasDoesNotProjectClause
+=== PAUSE TestExtractorDMLReturningAliasDoesNotProjectClause
+=== RUN   TestExtractorCapturesCreateViewDropAndTruncateFacts
+=== PAUSE TestExtractorCapturesCreateViewDropAndTruncateFacts
+=== RUN   TestExtractorDropTablePreservesEveryTarget
+=== PAUSE TestExtractorDropTablePreservesEveryTarget
+=== RUN   TestExtractorRenameTablePreservesEverySourceAndDestination
+=== PAUSE TestExtractorRenameTablePreservesEverySourceAndDestination
+=== RUN   TestExtractorAlterRenameTableKeepsSourceAndDestinationTargets
+=== PAUSE TestExtractorAlterRenameTableKeepsSourceAndDestinationTargets
+=== RUN   TestExtractorRenameDestinationKeepsAsWrittenQualifier
+=== PAUSE TestExtractorRenameDestinationKeepsAsWrittenQualifier
+=== RUN   TestExtractorHelperMappingsCoverSwitchVariants
+=== PAUSE TestExtractorHelperMappingsCoverSwitchVariants
+=== RUN   TestExtractorHelperPredicatesAndAlterVariants
+=== PAUSE TestExtractorHelperPredicatesAndAlterVariants
+=== RUN   TestExtractorDMLTablesContainMutationTargets
+=== PAUSE TestExtractorDMLTablesContainMutationTargets
+=== RUN   TestExtractorDatabaseLifecycleCreateDatabase
+=== PAUSE TestExtractorDatabaseLifecycleCreateDatabase
+=== RUN   TestExtractorDatabaseLifecycleDropDatabase
+=== PAUSE TestExtractorDatabaseLifecycleDropDatabase
+=== RUN   TestFieldDispositionCensus
+--- PASS: TestFieldDispositionCensus (0.00s)
+=== RUN   TestFieldReachabilityCensus
+--- PASS: TestFieldReachabilityCensus (0.00s)
+=== RUN   TestParserParsesMultiStatementSQL
+=== PAUSE TestParserParsesMultiStatementSQL
+=== RUN   TestParserReturnsErrorForInvalidSQL
+=== PAUSE TestParserReturnsErrorForInvalidSQL
+=== RUN   TestWrapStatementsReturnsExtractorBackedResults
+=== PAUSE TestWrapStatementsReturnsExtractorBackedResults
+=== RUN   TestQueryAccessASTCensus
+=== PAUSE TestQueryAccessASTCensus
+=== RUN   TestQueryAccessClassificationConsistency
+=== PAUSE TestQueryAccessClassificationConsistency
+=== RUN   TestQueryAccessAuditRegression
+=== PAUSE TestQueryAccessAuditRegression
+=== RUN   TestCommonPureEffects_TiDBParser_FunctionsIndeterminate
+=== PAUSE TestCommonPureEffects_TiDBParser_FunctionsIndeterminate
+=== RUN   TestCommonPureEffects_TiDBParser_GroupingAndWindowUsages
+=== PAUSE TestCommonPureEffects_TiDBParser_GroupingAndWindowUsages
+=== RUN   TestDependencyCompleteness_TiDB_PropagatesDerivedFunctionEffects
+=== PAUSE TestDependencyCompleteness_TiDB_PropagatesDerivedFunctionEffects
+=== RUN   TestDependencyCompleteness_TiDB_InspectsFunctionEffectsInHolders
+=== PAUSE TestDependencyCompleteness_TiDB_InspectsFunctionEffectsInHolders
+=== RUN   TestDependencyCompleteness_TiDB_PreservesWindowDependencyUsages
+=== PAUSE TestDependencyCompleteness_TiDB_PreservesWindowDependencyUsages
+=== RUN   TestDependencyCompleteness_TiDB_ExistingFailClosedAndAdmissibleFormsRemainStable
+=== PAUSE TestDependencyCompleteness_TiDB_ExistingFailClosedAndAdmissibleFormsRemainStable
+=== RUN   TestQueryAccessEffectCandidates_CountStarAndDirectColumn
+=== PAUSE TestQueryAccessEffectCandidates_CountStarAndDirectColumn
+=== RUN   TestQueryAccessEffectCandidates_WindowModifiersAndFrame
+=== PAUSE TestQueryAccessEffectCandidates_WindowModifiersAndFrame
+=== RUN   TestQueryAccessEffectCandidates_NestedAndModifierClosure
+=== PAUSE TestQueryAccessEffectCandidates_NestedAndModifierClosure
+=== RUN   TestQueryAccessEffectCandidates_QualifiedQuotedAndDeterministic
+=== PAUSE TestQueryAccessEffectCandidates_QualifiedQuotedAndDeterministic
+=== RUN   TestQueryAccessEffectCandidates_RetainRelationQualification
+=== PAUSE TestQueryAccessEffectCandidates_RetainRelationQualification
+=== RUN   TestQueryAccessEffectCandidates_RejectNonCanonicalSpacing
+=== PAUSE TestQueryAccessEffectCandidates_RejectNonCanonicalSpacing
+=== RUN   TestQueryAccessEffectCandidates_AllExpressionLocations
+=== PAUSE TestQueryAccessEffectCandidates_AllExpressionLocations
+=== RUN   TestQueryAccessEffectCandidates_UnsupportedTraversalMarker
+=== PAUSE TestQueryAccessEffectCandidates_UnsupportedTraversalMarker
+=== RUN   TestQueryAccessEffectCandidates_ScalarFunctionInProjection
+=== PAUSE TestQueryAccessEffectCandidates_ScalarFunctionInProjection
+=== RUN   TestQueryAccessEffectCandidates_CoalesceVariableArity
+=== PAUSE TestQueryAccessEffectCandidates_CoalesceVariableArity
+=== RUN   TestQueryAccessEffectCandidates_ScalarNotCollectedWithLiteral
+=== PAUSE TestQueryAccessEffectCandidates_ScalarNotCollectedWithLiteral
+=== RUN   TestQueryAccessEffectCandidates_ScalarNotCollectedWithNestedCall
+=== PAUSE TestQueryAccessEffectCandidates_ScalarNotCollectedWithNestedCall
+=== RUN   TestQueryAccessEffectCandidates_ScalarInWhere
+=== PAUSE TestQueryAccessEffectCandidates_ScalarInWhere
+=== RUN   TestQueryAccessEffectCandidates_ScalarInGroupBy
+=== PAUSE TestQueryAccessEffectCandidates_ScalarInGroupBy
+=== RUN   TestQueryAccessEffectCandidates_ScalarInOrderBy
+=== PAUSE TestQueryAccessEffectCandidates_ScalarInOrderBy
+=== RUN   TestQueryAccessEffectCandidates_AggregateRegression
+=== PAUSE TestQueryAccessEffectCandidates_AggregateRegression
+=== RUN   TestQueryAccessEffectCandidates_WindowRegression
+=== PAUSE TestQueryAccessEffectCandidates_WindowRegression
+=== RUN   TestQueryAccessEffectCandidates_MixedLiteralOperandShape
+=== PAUSE TestQueryAccessEffectCandidates_MixedLiteralOperandShape
+=== RUN   TestQueryAccessRelationlessLiteralAdmittedShapes
+=== PAUSE TestQueryAccessRelationlessLiteralAdmittedShapes
+=== RUN   TestQueryAccessRelationlessRejectedShapes
+=== PAUSE TestQueryAccessRelationlessRejectedShapes
+=== RUN   TestQueryAccessRelationlessCandidateFreeSelectOneUnchanged
+=== PAUSE TestQueryAccessRelationlessCandidateFreeSelectOneUnchanged
+=== RUN   TestQueryAccessExtractor_SimpleSelect
+=== PAUSE TestQueryAccessExtractor_SimpleSelect
+=== RUN   TestQueryAccessExtractor_SelectWithWhere
+=== PAUSE TestQueryAccessExtractor_SelectWithWhere
+=== RUN   TestQueryAccessExtractor_SelectWithJoin
+=== PAUSE TestQueryAccessExtractor_SelectWithJoin
+=== RUN   TestQueryAccessExtractor_SelectWithAliases
+=== PAUSE TestQueryAccessExtractor_SelectWithAliases
+=== RUN   TestQueryAccessExtractor_SelectWithCTE
+=== PAUSE TestQueryAccessExtractor_SelectWithCTE
+=== RUN   TestQueryAccessExtractor_SelectWithSubquery
+=== PAUSE TestQueryAccessExtractor_SelectWithSubquery
+=== RUN   TestQueryAccessExtractor_SelectStar
+=== PAUSE TestQueryAccessExtractor_SelectStar
+=== RUN   TestQueryAccessExtractor_SelectWithFunction
+=== PAUSE TestQueryAccessExtractor_SelectWithFunction
+=== RUN   TestQueryAccessExtractor_SelectForUpdate
+=== PAUSE TestQueryAccessExtractor_SelectForUpdate
+=== RUN   TestQueryAccessExtractor_SelectIntoOutfile
+=== PAUSE TestQueryAccessExtractor_SelectIntoOutfile
+=== RUN   TestQueryAccessExtractor_MultiStatementSelectDelete
+=== PAUSE TestQueryAccessExtractor_MultiStatementSelectDelete
+=== RUN   TestQueryAccessExtractor_EmptyInput
+=== PAUSE TestQueryAccessExtractor_EmptyInput
+=== RUN   TestQueryAccessExtractor_ParserError
+=== PAUSE TestQueryAccessExtractor_ParserError
+=== RUN   TestQueryAccessExtractor_Union
+=== PAUSE TestQueryAccessExtractor_Union
+=== RUN   TestQueryAccessExtractor_DerivedTable
+=== PAUSE TestQueryAccessExtractor_DerivedTable
+=== RUN   TestQueryAccessExtractor_GroupByWithFunction
+=== PAUSE TestQueryAccessExtractor_GroupByWithFunction
+=== RUN   TestQueryAccessExtractor_OrderBy
+=== PAUSE TestQueryAccessExtractor_OrderBy
+=== RUN   TestQueryAccessExtractor_OutputLineage
+=== PAUSE TestQueryAccessExtractor_OutputLineage
+=== RUN   TestQueryAccessExtractor_DefaultSchema
+=== PAUSE TestQueryAccessExtractor_DefaultSchema
+=== RUN   TestQueryAccessExtractor_SchemaQualified
+=== PAUSE TestQueryAccessExtractor_SchemaQualified
+=== RUN   TestQueryAccessExtractor_UnqualifiedColumnAmbiguous
+=== PAUSE TestQueryAccessExtractor_UnqualifiedColumnAmbiguous
+=== RUN   TestQueryAccessExtractor_ForShare
+=== PAUSE TestQueryAccessExtractor_ForShare
+=== RUN   TestQueryAccessExtractor_LockInShareMode
+=== PAUSE TestQueryAccessExtractor_LockInShareMode
+=== RUN   TestQueryAccessExtractor_DDLNotReadOnly
+=== PAUSE TestQueryAccessExtractor_DDLNotReadOnly
+=== RUN   TestQueryAccessExtractor_InsertNotReadOnly
+=== PAUSE TestQueryAccessExtractor_InsertNotReadOnly
+=== RUN   TestQueryAccessExtractor_RecursiveCTE
+=== PAUSE TestQueryAccessExtractor_RecursiveCTE
+=== RUN   TestStatementTypeDisposition
+--- PASS: TestStatementTypeDisposition (0.00s)
+=== RUN   TestExtractedTypesReachExtractor
+--- PASS: TestExtractedTypesReachExtractor (0.00s)
+=== RUN   TestExtractedDispatchAliasRegistration
+--- PASS: TestExtractedDispatchAliasRegistration (0.00s)
+=== RUN   TestStatementTypeCensusDrift
+--- PASS: TestStatementTypeCensusDrift (0.02s)
+=== RUN   TestScanStmtCandidatesShapes
+--- PASS: TestScanStmtCandidatesShapes (0.00s)
+=== CONT  TestDatabaseLifecycleASTCharacterization
+=== CONT  TestCommonPureEffects_TiDBParser_GroupingAndWindowUsages
+=== CONT  TestQueryAccessExtractor_SimpleSelect
+=== CONT  TestQueryAccessRelationlessLiteralAdmittedShapes
+=== RUN   TestQueryAccessRelationlessLiteralAdmittedShapes/lower_const
+=== PAUSE TestQueryAccessRelationlessLiteralAdmittedShapes/lower_const
+=== RUN   TestQueryAccessRelationlessLiteralAdmittedShapes/upper_const
+=== PAUSE TestQueryAccessRelationlessLiteralAdmittedShapes/upper_const
+=== RUN   TestQueryAccessRelationlessLiteralAdmittedShapes/length_const
+=== NAME  TestDatabaseLifecycleASTCharacterization
+    database_lifecycle_ast_test.go:36: 
+=== PAUSE TestQueryAccessRelationlessLiteralAdmittedShapes/length_const
+=== NAME  TestDatabaseLifecycleASTCharacterization
+    database_lifecycle_ast_test.go:37: === TiDB/MySQL Database Lifecycle AST Characterization ===
+    database_lifecycle_ast_test.go:38: Case                                 | AST Node Type             | Name   | IF Flag      | Options
+    database_lifecycle_ast_test.go:40: 
+    database_lifecycle_ast_test.go:44: create database                      | CreateDatabaseStmt        | app    | if_not_exists=false | (none)
+=== CONT  TestQueryAccessRelationlessCandidateFreeSelectOneUnchanged
+=== RUN   TestQueryAccessRelationlessLiteralAdmittedShapes/char_length_const
+=== CONT  TestQueryAccessEffectCandidates_MixedLiteralOperandShape
+=== CONT  TestQueryAccessRelationlessRejectedShapes
+=== CONT  TestQueryAccessEffectCandidates_AggregateRegression
+=== RUN   TestQueryAccessEffectCandidates_MixedLiteralOperandShape/coalesce_column_const
+=== NAME  TestDatabaseLifecycleASTCharacterization
+    database_lifecycle_ast_test.go:44: create database if not exists        | CreateDatabaseStmt        | app    | if_not_exists=true | (none)
+=== CONT  TestQueryAccessEffectCandidates_WindowRegression
+=== NAME  TestDatabaseLifecycleASTCharacterization
+    database_lifecycle_ast_test.go:44: create schema                        | CreateDatabaseStmt        | app    | if_not_exists=false | (none)
+=== PAUSE TestQueryAccessEffectCandidates_MixedLiteralOperandShape/coalesce_column_const
+=== RUN   TestQueryAccessEffectCandidates_MixedLiteralOperandShape/nullif_column_const
+=== RUN   TestQueryAccessRelationlessRejectedShapes/parameter_operand
+=== PAUSE TestQueryAccessEffectCandidates_MixedLiteralOperandShape/nullif_column_const
+=== NAME  TestDatabaseLifecycleASTCharacterization
+    database_lifecycle_ast_test.go:44: create schema if not exists          | CreateDatabaseStmt        | app    | if_not_exists=true | (none)
+=== CONT  TestQueryAccessEffectCandidates_ScalarInOrderBy
+=== PAUSE TestQueryAccessRelationlessLiteralAdmittedShapes/char_length_const
+=== CONT  TestQueryAccessEffectCandidates_QualifiedQuotedAndDeterministic
+=== CONT  TestQueryAccessEffectCandidates_WindowModifiersAndFrame
+=== RUN   TestQueryAccessRelationlessLiteralAdmittedShapes/abs_const
+=== PAUSE TestQueryAccessRelationlessRejectedShapes/parameter_operand
+=== RUN   TestQueryAccessEffectCandidates_MixedLiteralOperandShape/ifnull_column_const
+=== PAUSE TestQueryAccessEffectCandidates_MixedLiteralOperandShape/ifnull_column_const
+--- PASS: TestQueryAccessRelationlessCandidateFreeSelectOneUnchanged (0.00s)
+=== RUN   TestQueryAccessEffectCandidates_MixedLiteralOperandShape/literal_only_coalesce
+=== CONT  TestQueryAccessEffectCandidates_ScalarInGroupBy
+=== RUN   TestCommonPureEffects_TiDBParser_GroupingAndWindowUsages/grouping
+=== PAUSE TestCommonPureEffects_TiDBParser_GroupingAndWindowUsages/grouping
+=== RUN   TestCommonPureEffects_TiDBParser_GroupingAndWindowUsages/window
+=== CONT  TestQueryAccessEffectCandidates_CountStarAndDirectColumn
+=== CONT  TestQueryAccessEffectCandidates_NestedAndModifierClosure
+=== NAME  TestDatabaseLifecycleASTCharacterization
+    database_lifecycle_ast_test.go:44: drop database                        | DropDatabaseStmt          | app    | if_exists=false | (none)
+=== PAUSE TestQueryAccessEffectCandidates_MixedLiteralOperandShape/literal_only_coalesce
+--- PASS: TestQueryAccessExtractor_SimpleSelect (0.00s)
+=== RUN   TestQueryAccessEffectCandidates_MixedLiteralOperandShape/reversed_coalesce
+=== PAUSE TestQueryAccessEffectCandidates_MixedLiteralOperandShape/reversed_coalesce
+=== RUN   TestQueryAccessEffectCandidates_MixedLiteralOperandShape/literal_only_lower
+=== PAUSE TestQueryAccessEffectCandidates_MixedLiteralOperandShape/literal_only_lower
+=== RUN   TestQueryAccessEffectCandidates_MixedLiteralOperandShape/literal_only_upper
+=== NAME  TestDatabaseLifecycleASTCharacterization
+    database_lifecycle_ast_test.go:44: drop database if exists              | DropDatabaseStmt          | app    | if_exists=true | (none)
+--- PASS: TestQueryAccessEffectCandidates_AggregateRegression (0.00s)
+=== NAME  TestDatabaseLifecycleASTCharacterization
+    database_lifecycle_ast_test.go:44: drop schema                          | DropDatabaseStmt          | app    | if_exists=false | (none)
+=== PAUSE TestQueryAccessEffectCandidates_MixedLiteralOperandShape/literal_only_upper
+=== NAME  TestDatabaseLifecycleASTCharacterization
+    database_lifecycle_ast_test.go:44: drop schema if exists                | DropDatabaseStmt          | app    | if_exists=true | (none)
+=== PAUSE TestQueryAccessRelationlessLiteralAdmittedShapes/abs_const
+=== RUN   TestQueryAccessRelationlessRejectedShapes/cast_call
+=== RUN   TestQueryAccessEffectCandidates_MixedLiteralOperandShape/literal_only_length
+=== PAUSE TestCommonPureEffects_TiDBParser_GroupingAndWindowUsages/window
+--- PASS: TestQueryAccessEffectCandidates_ScalarInGroupBy (0.00s)
+--- PASS: TestQueryAccessEffectCandidates_ScalarInOrderBy (0.00s)
+=== CONT  TestDependencyCompleteness_TiDB_ExistingFailClosedAndAdmissibleFormsRemainStable
+=== RUN   TestDependencyCompleteness_TiDB_ExistingFailClosedAndAdmissibleFormsRemainStable/having_function
+=== RUN   TestQueryAccessRelationlessLiteralAdmittedShapes/ceil_const
+--- PASS: TestQueryAccessEffectCandidates_WindowRegression (0.00s)
+=== CONT  TestDependencyCompleteness_TiDB_PreservesWindowDependencyUsages
+=== CONT  TestDependencyCompleteness_TiDB_PropagatesDerivedFunctionEffects
+=== NAME  TestDatabaseLifecycleASTCharacterization
+    database_lifecycle_ast_test.go:44: create database charset              | CreateDatabaseStmt        | app    | if_not_exists=false | charset=utf8mb4
+=== PAUSE TestDependencyCompleteness_TiDB_ExistingFailClosedAndAdmissibleFormsRemainStable/having_function
+=== NAME  TestDatabaseLifecycleASTCharacterization
+    database_lifecycle_ast_test.go:44:   option: type=1 value="utf8mb4"
+=== RUN   TestDependencyCompleteness_TiDB_ExistingFailClosedAndAdmissibleFormsRemainStable/operator_where
+--- PASS: TestQueryAccessEffectCandidates_NestedAndModifierClosure (0.00s)
+=== CONT  TestExtractorRenameDestinationKeepsAsWrittenQualifier
+=== PAUSE TestQueryAccessRelationlessRejectedShapes/cast_call
+=== CONT  TestDependencyCompleteness_TiDB_InspectsFunctionEffectsInHolders
+=== PAUSE TestQueryAccessRelationlessLiteralAdmittedShapes/ceil_const
+=== PAUSE TestQueryAccessEffectCandidates_MixedLiteralOperandShape/literal_only_length
+--- PASS: TestQueryAccessEffectCandidates_WindowModifiersAndFrame (0.00s)
+=== CONT  TestCommonPureEffects_TiDBParser_FunctionsIndeterminate
+=== RUN   TestQueryAccessRelationlessLiteralAdmittedShapes/ceiling_const
+=== PAUSE TestDependencyCompleteness_TiDB_ExistingFailClosedAndAdmissibleFormsRemainStable/operator_where
+=== RUN   TestQueryAccessRelationlessRejectedShapes/nested_function
+=== RUN   TestQueryAccessEffectCandidates_MixedLiteralOperandShape/literal_only_char_length
+=== PAUSE TestQueryAccessRelationlessRejectedShapes/nested_function
+=== NAME  TestDatabaseLifecycleASTCharacterization
+    database_lifecycle_ast_test.go:44: create database collate              | CreateDatabaseStmt        | app    | if_not_exists=false | collate=utf8mb4_bin
+=== CONT  TestQueryAccessEffectCandidates_RetainRelationQualification
+=== NAME  TestDatabaseLifecycleASTCharacterization
+    database_lifecycle_ast_test.go:44:   option: type=2 value="utf8mb4_bin"
+=== PAUSE TestQueryAccessRelationlessLiteralAdmittedShapes/ceiling_const
+--- PASS: TestDatabaseLifecycleASTCharacterization (0.00s)
+=== RUN   TestQueryAccessRelationlessLiteralAdmittedShapes/floor_const
+=== CONT  TestQueryAccessEffectCandidates_ScalarInWhere
+=== RUN   TestQueryAccessRelationlessRejectedShapes/unknown_function
+=== PAUSE TestQueryAccessRelationlessRejectedShapes/unknown_function
+=== PAUSE TestQueryAccessEffectCandidates_MixedLiteralOperandShape/literal_only_char_length
+=== RUN   TestQueryAccessRelationlessRejectedShapes/three_arg_coalesce
+=== CONT  TestQueryAccessClassificationConsistency
+=== PAUSE TestQueryAccessRelationlessRejectedShapes/three_arg_coalesce
+=== RUN   TestCommonPureEffects_TiDBParser_FunctionsIndeterminate/SELECT_COUNT(*)_FROM_users
+=== RUN   TestQueryAccessEffectCandidates_MixedLiteralOperandShape/literal_only_abs
+=== PAUSE TestCommonPureEffects_TiDBParser_FunctionsIndeterminate/SELECT_COUNT(*)_FROM_users
+=== PAUSE TestQueryAccessEffectCandidates_MixedLiteralOperandShape/literal_only_abs
+=== RUN   TestQueryAccessRelationlessRejectedShapes/column_operand
+=== RUN   TestCommonPureEffects_TiDBParser_FunctionsIndeterminate/SELECT_SUM(amount)_FROM_orders
+=== PAUSE TestQueryAccessRelationlessRejectedShapes/column_operand
+--- PASS: TestQueryAccessEffectCandidates_CountStarAndDirectColumn (0.00s)
+=== RUN   TestDependencyCompleteness_TiDB_InspectsFunctionEffectsInHolders/order_by_count
+=== PAUSE TestDependencyCompleteness_TiDB_InspectsFunctionEffectsInHolders/order_by_count
+=== RUN   TestDependencyCompleteness_TiDB_InspectsFunctionEffectsInHolders/order_by_now
+=== CONT  TestQueryAccessEffectCandidates_CoalesceVariableArity
+=== PAUSE TestDependencyCompleteness_TiDB_InspectsFunctionEffectsInHolders/order_by_now
+=== RUN   TestDependencyCompleteness_TiDB_InspectsFunctionEffectsInHolders/group_by_function
+=== RUN   TestQueryAccessEffectCandidates_CoalesceVariableArity/two_args
+=== CONT  TestQueryAccessEffectCandidates_ScalarNotCollectedWithLiteral
+=== PAUSE TestQueryAccessEffectCandidates_CoalesceVariableArity/two_args
+=== RUN   TestQueryAccessRelationlessRejectedShapes/qualified_call
+=== RUN   TestQueryAccessEffectCandidates_CoalesceVariableArity/three_args
+=== PAUSE TestDependencyCompleteness_TiDB_InspectsFunctionEffectsInHolders/group_by_function
+=== RUN   TestDependencyCompleteness_TiDB_InspectsFunctionEffectsInHolders/join_on_function
+=== CONT  TestQueryAccessEffectCandidates_ScalarNotCollectedWithNestedCall
+=== PAUSE TestQueryAccessRelationlessRejectedShapes/qualified_call
+=== RUN   TestQueryAccessRelationlessRejectedShapes/quoted_call
+=== PAUSE TestDependencyCompleteness_TiDB_InspectsFunctionEffectsInHolders/join_on_function
+=== PAUSE TestQueryAccessRelationlessRejectedShapes/quoted_call
+=== RUN   TestQueryAccessRelationlessRejectedShapes/noncanonical_call
+=== CONT  TestQueryAccessAuditRegression
+=== RUN   TestQueryAccessAuditRegression/create_table
+=== RUN   TestQueryAccessEffectCandidates_MixedLiteralOperandShape/literal_only_ceil
+=== CONT  TestWrapStatementsReturnsExtractorBackedResults
+=== PAUSE TestQueryAccessRelationlessLiteralAdmittedShapes/floor_const
+=== RUN   TestQueryAccessRelationlessLiteralAdmittedShapes/count_literal
+=== PAUSE TestQueryAccessAuditRegression/create_table
+=== CONT  TestQueryAccessEffectCandidates_RejectNonCanonicalSpacing
+=== RUN   TestQueryAccessAuditRegression/insert
+=== PAUSE TestQueryAccessRelationlessLiteralAdmittedShapes/count_literal
+=== PAUSE TestQueryAccessAuditRegression/insert
+=== PAUSE TestCommonPureEffects_TiDBParser_FunctionsIndeterminate/SELECT_SUM(amount)_FROM_orders
+=== RUN   TestQueryAccessRelationlessLiteralAdmittedShapes/coalesce_const_const
+=== RUN   TestCommonPureEffects_TiDBParser_FunctionsIndeterminate/SELECT_AVG(amount)_FROM_orders
+=== PAUSE TestCommonPureEffects_TiDBParser_FunctionsIndeterminate/SELECT_AVG(amount)_FROM_orders
+=== RUN   TestQueryAccessAuditRegression/update
+=== CONT  TestParserReturnsErrorForInvalidSQL
+=== PAUSE TestQueryAccessEffectCandidates_MixedLiteralOperandShape/literal_only_ceil
+=== CONT  TestQueryAccessEffectCandidates_ScalarFunctionInProjection
+=== RUN   TestQueryAccessEffectCandidates_ScalarFunctionInProjection/lower
+=== CONT  TestParserParsesMultiStatementSQL
+=== PAUSE TestQueryAccessAuditRegression/update
+=== PAUSE TestQueryAccessRelationlessLiteralAdmittedShapes/coalesce_const_const
+=== RUN   TestQueryAccessAuditRegression/delete
+=== RUN   TestQueryAccessRelationlessLiteralAdmittedShapes/nullif_const_const
+=== PAUSE TestQueryAccessAuditRegression/delete
+=== PAUSE TestQueryAccessEffectCandidates_CoalesceVariableArity/three_args
+=== CONT  TestQueryAccessEffectCandidates_UnsupportedTraversalMarker
+=== CONT  TestExtractorDatabaseLifecycleDropDatabase
+=== CONT  TestExtractorDatabaseLifecycleCreateDatabase
+=== PAUSE TestQueryAccessRelationlessRejectedShapes/noncanonical_call
+=== RUN   TestExtractorDatabaseLifecycleCreateDatabase/CREATE_DATABASE
+=== RUN   TestQueryAccessRelationlessRejectedShapes/count_star
+=== PAUSE TestExtractorDatabaseLifecycleCreateDatabase/CREATE_DATABASE
+--- PASS: TestQueryAccessEffectCandidates_QualifiedQuotedAndDeterministic (0.00s)
+=== PAUSE TestQueryAccessRelationlessRejectedShapes/count_star
+=== CONT  TestExtractorDMLTablesContainMutationTargets
+=== RUN   TestQueryAccessRelationlessRejectedShapes/subquery_operand
+=== PAUSE TestQueryAccessRelationlessRejectedShapes/subquery_operand
+--- PASS: TestDependencyCompleteness_TiDB_PropagatesDerivedFunctionEffects (0.00s)
+=== CONT  TestQueryAccessASTCensus
+=== RUN   TestQueryAccessASTCensus/simple_select
+=== RUN   TestQueryAccessEffectCandidates_MixedLiteralOperandShape/literal_only_ceiling
+=== PAUSE TestQueryAccessEffectCandidates_MixedLiteralOperandShape/literal_only_ceiling
+=== RUN   TestCommonPureEffects_TiDBParser_FunctionsIndeterminate/SELECT_MIN(amount)_FROM_orders
+=== RUN   TestQueryAccessEffectCandidates_MixedLiteralOperandShape/literal_only_floor
+=== PAUSE TestCommonPureEffects_TiDBParser_FunctionsIndeterminate/SELECT_MIN(amount)_FROM_orders
+=== PAUSE TestQueryAccessEffectCandidates_MixedLiteralOperandShape/literal_only_floor
+=== RUN   TestCommonPureEffects_TiDBParser_FunctionsIndeterminate/SELECT_MAX(amount)_FROM_orders
+=== PAUSE TestCommonPureEffects_TiDBParser_FunctionsIndeterminate/SELECT_MAX(amount)_FROM_orders
+=== RUN   TestQueryAccessEffectCandidates_MixedLiteralOperandShape/count_literal
+=== RUN   TestCommonPureEffects_TiDBParser_FunctionsIndeterminate/SELECT_ROW_NUMBER()_OVER_(PARTITION_BY_dept_ORDER_BY_id)_FROM_employees
+=== PAUSE TestCommonPureEffects_TiDBParser_FunctionsIndeterminate/SELECT_ROW_NUMBER()_OVER_(PARTITION_BY_dept_ORDER_BY_id)_FROM_employees
+=== RUN   TestCommonPureEffects_TiDBParser_FunctionsIndeterminate/SELECT_RANK()_OVER_(PARTITION_BY_dept_ORDER_BY_id)_FROM_employees
+=== PAUSE TestCommonPureEffects_TiDBParser_FunctionsIndeterminate/SELECT_RANK()_OVER_(PARTITION_BY_dept_ORDER_BY_id)_FROM_employees
+=== RUN   TestCommonPureEffects_TiDBParser_FunctionsIndeterminate/SELECT_DENSE_RANK()_OVER_(PARTITION_BY_dept_ORDER_BY_id)_FROM_employees
+=== PAUSE TestQueryAccessEffectCandidates_MixedLiteralOperandShape/count_literal
+=== PAUSE TestCommonPureEffects_TiDBParser_FunctionsIndeterminate/SELECT_DENSE_RANK()_OVER_(PARTITION_BY_dept_ORDER_BY_id)_FROM_employees
+=== PAUSE TestQueryAccessEffectCandidates_ScalarFunctionInProjection/lower
+=== RUN   TestQueryAccessEffectCandidates_MixedLiteralOperandShape/reversed_nullif
+=== RUN   TestQueryAccessEffectCandidates_ScalarFunctionInProjection/upper
+=== CONT  TestExtractorHelperMappingsCoverSwitchVariants
+=== PAUSE TestQueryAccessEffectCandidates_ScalarFunctionInProjection/upper
+=== RUN   TestQueryAccessAuditRegression/alter_table
+=== RUN   TestQueryAccessEffectCandidates_ScalarFunctionInProjection/length
+=== PAUSE TestQueryAccessAuditRegression/alter_table
+=== CONT  TestExtractorHelperPredicatesAndAlterVariants
+=== PAUSE TestQueryAccessEffectCandidates_ScalarFunctionInProjection/length
+=== CONT  TestExtractorT06A11PKMemberBindsDeclaredColumn
+=== RUN   TestExtractorDatabaseLifecycleDropDatabase/DROP_DATABASE
+=== CONT  TestQueryAccessEffectCandidates_AllExpressionLocations
+=== RUN   TestQueryAccessEffectCandidates_AllExpressionLocations/cte
+--- PASS: TestDependencyCompleteness_TiDB_PreservesWindowDependencyUsages (0.00s)
+--- PASS: TestExtractorRenameDestinationKeepsAsWrittenQualifier (0.00s)
+--- PASS: TestQueryAccessClassificationConsistency (0.00s)
+=== PAUSE TestQueryAccessASTCensus/simple_select
+=== RUN   TestQueryAccessASTCensus/select_with_aliases
+=== CONT  TestExtractorT10MultiValuedKeyParts
+=== RUN   TestExtractorT10MultiValuedKeyParts/array_cast
+=== PAUSE TestQueryAccessASTCensus/select_with_aliases
+=== PAUSE TestExtractorT10MultiValuedKeyParts/array_cast
+=== RUN   TestQueryAccessASTCensus/schema_qualified
+=== PAUSE TestQueryAccessASTCensus/schema_qualified
+=== RUN   TestQueryAccessASTCensus/inner_join
+=== PAUSE TestQueryAccessRelationlessLiteralAdmittedShapes/nullif_const_const
+=== PAUSE TestQueryAccessASTCensus/inner_join
+=== PAUSE TestQueryAccessEffectCandidates_MixedLiteralOperandShape/reversed_nullif
+=== RUN   TestQueryAccessEffectCandidates_MixedLiteralOperandShape/reversed_ifnull
+=== PAUSE TestQueryAccessEffectCandidates_MixedLiteralOperandShape/reversed_ifnull
+=== RUN   TestQueryAccessEffectCandidates_MixedLiteralOperandShape/literal_only_nullif
+=== PAUSE TestQueryAccessEffectCandidates_MixedLiteralOperandShape/literal_only_nullif
+=== RUN   TestQueryAccessEffectCandidates_MixedLiteralOperandShape/literal_only_ifnull
+=== RUN   TestQueryAccessEffectCandidates_ScalarFunctionInProjection/char_length
+=== PAUSE TestQueryAccessEffectCandidates_MixedLiteralOperandShape/literal_only_ifnull
+=== RUN   TestQueryAccessEffectCandidates_MixedLiteralOperandShape/three_arg_coalesce
+=== PAUSE TestQueryAccessEffectCandidates_MixedLiteralOperandShape/three_arg_coalesce
+=== PAUSE TestQueryAccessEffectCandidates_ScalarFunctionInProjection/char_length
+=== RUN   TestQueryAccessEffectCandidates_MixedLiteralOperandShape/nested_expr
+=== PAUSE TestQueryAccessEffectCandidates_MixedLiteralOperandShape/nested_expr
+=== RUN   TestQueryAccessEffectCandidates_MixedLiteralOperandShape/cast_expr
+=== PAUSE TestQueryAccessEffectCandidates_MixedLiteralOperandShape/cast_expr
+=== RUN   TestQueryAccessEffectCandidates_MixedLiteralOperandShape/param
+=== RUN   TestQueryAccessEffectCandidates_ScalarFunctionInProjection/abs
+=== PAUSE TestQueryAccessEffectCandidates_MixedLiteralOperandShape/param
+=== PAUSE TestQueryAccessEffectCandidates_ScalarFunctionInProjection/abs
+=== RUN   TestQueryAccessEffectCandidates_ScalarFunctionInProjection/ceil
+=== PAUSE TestQueryAccessEffectCandidates_ScalarFunctionInProjection/ceil
+=== RUN   TestQueryAccessEffectCandidates_ScalarFunctionInProjection/ceiling
+=== CONT  TestExtractorT10NoVisibilityAttribute
+=== CONT  TestExtractorT10R1MemberLevelKeyParts
+--- PASS: TestQueryAccessEffectCandidates_ScalarNotCollectedWithLiteral (0.00s)
+--- PASS: TestQueryAccessEffectCandidates_ScalarInWhere (0.00s)
+--- PASS: TestQueryAccessEffectCandidates_ScalarNotCollectedWithNestedCall (0.00s)
+--- PASS: TestQueryAccessEffectCandidates_RetainRelationQualification (0.00s)
+=== CONT  TestExtractorT10DeclaredIndexVisibility
+=== RUN   TestExtractorT10DeclaredIndexVisibility/mysql/create_index_invisible
+=== RUN   TestQueryAccessRelationlessLiteralAdmittedShapes/ifnull_const_const
+=== PAUSE TestExtractorT10DeclaredIndexVisibility/mysql/create_index_invisible
+=== PAUSE TestQueryAccessRelationlessLiteralAdmittedShapes/ifnull_const_const
+=== RUN   TestQueryAccessASTCensus/left_join
+=== RUN   TestExtractorT10DeclaredIndexVisibility/mysql/create_index_visible
+=== CONT  TestExtractorT10AlterIndexVisibility
+=== RUN   TestExtractorT10AlterIndexVisibility/mysql/invisible
+=== CONT  TestExtractorT08MultiColumnAddPosition
+=== PAUSE TestExtractorT10AlterIndexVisibility/mysql/invisible
+=== RUN   TestQueryAccessAuditRegression/drop_table
+=== RUN   TestExtractorT10AlterIndexVisibility/mysql/visible
+=== PAUSE TestExtractorDatabaseLifecycleDropDatabase/DROP_DATABASE
+=== PAUSE TestQueryAccessASTCensus/left_join
+=== RUN   TestExtractorDatabaseLifecycleDropDatabase/DROP_DATABASE_IF_EXISTS
+=== RUN   TestQueryAccessASTCensus/right_join
+=== PAUSE TestExtractorDatabaseLifecycleDropDatabase/DROP_DATABASE_IF_EXISTS
+=== PAUSE TestQueryAccessASTCensus/right_join
+=== RUN   TestExtractorDatabaseLifecycleDropDatabase/DROP_SCHEMA_synonym
+=== RUN   TestQueryAccessRelationlessRejectedShapes/operator_inside_call
+=== RUN   TestQueryAccessASTCensus/cross_join
+--- PASS: TestQueryAccessEffectCandidates_RejectNonCanonicalSpacing (0.00s)
+--- PASS: TestParserReturnsErrorForInvalidSQL (0.00s)
+=== RUN   TestExtractorDatabaseLifecycleCreateDatabase/CREATE_DATABASE_IF_NOT_EXISTS
+=== PAUSE TestExtractorDatabaseLifecycleCreateDatabase/CREATE_DATABASE_IF_NOT_EXISTS
+=== PAUSE TestExtractorT10AlterIndexVisibility/mysql/visible
+=== PAUSE TestQueryAccessRelationlessRejectedShapes/operator_inside_call
+=== RUN   TestExtractorT10AlterIndexVisibility/mysql/backticked_primary
+=== PAUSE TestExtractorT10AlterIndexVisibility/mysql/backticked_primary
+=== RUN   TestExtractorDatabaseLifecycleCreateDatabase/CREATE_SCHEMA_synonym
+=== RUN   TestExtractorT10AlterIndexVisibility/tidb/invisible
+=== PAUSE TestExtractorDatabaseLifecycleCreateDatabase/CREATE_SCHEMA_synonym
+=== CONT  TestExtractorT08ColumnPosition
+--- PASS: TestExtractorT10R1MemberLevelKeyParts (0.00s)
+=== RUN   TestExtractorDatabaseLifecycleCreateDatabase/CREATE_SCHEMA_IF_NOT_EXISTS_synonym
+=== RUN   TestExtractorT08ColumnPosition/mysql/add_first
+=== PAUSE TestQueryAccessASTCensus/cross_join
+=== PAUSE TestExtractorDatabaseLifecycleCreateDatabase/CREATE_SCHEMA_IF_NOT_EXISTS_synonym
+=== RUN   TestQueryAccessASTCensus/full_outer_join
+=== PAUSE TestExtractorT10AlterIndexVisibility/tidb/invisible
+=== RUN   TestExtractorT10AlterIndexVisibility/tidb/visible
+=== RUN   TestExtractorT10MultiValuedKeyParts/json_array_cast
+=== PAUSE TestExtractorT10MultiValuedKeyParts/json_array_cast
+=== RUN   TestExtractorT10MultiValuedKeyParts/scalar_cast_is_not_multi-valued
+=== PAUSE TestExtractorT10MultiValuedKeyParts/scalar_cast_is_not_multi-valued
+=== RUN   TestExtractorT10MultiValuedKeyParts/plain_expression
+=== PAUSE TestExtractorT10MultiValuedKeyParts/plain_expression
+=== PAUSE TestExtractorT10AlterIndexVisibility/tidb/visible
+=== CONT  TestExtractorDMLProjectsReturningClause
+=== PAUSE TestExtractorDatabaseLifecycleDropDatabase/DROP_SCHEMA_synonym
+=== RUN   TestExtractorT10AlterIndexVisibility/tidb/backticked_primary
+=== PAUSE TestExtractorT10AlterIndexVisibility/tidb/backticked_primary
+=== RUN   TestExtractorDMLProjectsReturningClause/INSERT_RETURNING_sets_fact
+=== CONT  TestExtractorT06A14ColumnCharsetNotTableOption
+=== RUN   TestExtractorDatabaseLifecycleDropDatabase/DROP_SCHEMA_IF_EXISTS_synonym
+=== RUN   TestExtractorT06A14ColumnCharsetNotTableOption/mysql
+=== PAUSE TestExtractorDMLProjectsReturningClause/INSERT_RETURNING_sets_fact
+=== PAUSE TestExtractorT06A14ColumnCharsetNotTableOption/mysql
+=== RUN   TestExtractorDMLProjectsReturningClause/UPDATE_RETURNING_sets_fact
+=== PAUSE TestExtractorDMLProjectsReturningClause/UPDATE_RETURNING_sets_fact
+=== NAME  TestExtractorT08MultiColumnAddPosition
+    extractor_t08_test.go:91: parser rejects spec-level position on multi-column add: parse sql: line 1 column 38 near "FIRST" 
+=== RUN   TestExtractorDMLProjectsReturningClause/single-table_DELETE_RETURNING_sets_fact
+=== CONT  TestExtractorAlterRenameTableKeepsSourceAndDestinationTargets
+=== PAUSE TestExtractorDMLProjectsReturningClause/single-table_DELETE_RETURNING_sets_fact
+=== RUN   TestExtractorT06A14ColumnCharsetNotTableOption/tidb
+=== RUN   TestExtractorDMLProjectsReturningClause/INSERT_without_RETURNING_omits_fact
+=== PAUSE TestExtractorT06A14ColumnCharsetNotTableOption/tidb
+=== PAUSE TestExtractorT10DeclaredIndexVisibility/mysql/create_index_visible
+=== PAUSE TestQueryAccessEffectCandidates_ScalarFunctionInProjection/ceiling
+=== PAUSE TestExtractorT08ColumnPosition/mysql/add_first
+=== RUN   TestQueryAccessEffectCandidates_ScalarFunctionInProjection/floor
+=== RUN   TestExtractorT08ColumnPosition/mysql/add_after
+=== RUN   TestExtractorDatabaseLifecycleCreateDatabase/CREATE_DATABASE_charset
+=== PAUSE TestExtractorT08ColumnPosition/mysql/add_after
+=== PAUSE TestQueryAccessAuditRegression/drop_table
+=== CONT  TestExtractorDMLCapturesJoinAndSubqueryShapes
+=== RUN   TestQueryAccessAuditRegression/truncate
+=== PAUSE TestQueryAccessAuditRegression/truncate
+=== CONT  TestExtractorT06A13BinaryCharsetBoundary
+=== PAUSE TestExtractorDatabaseLifecycleDropDatabase/DROP_SCHEMA_IF_EXISTS_synonym
+=== PAUSE TestExtractorDMLProjectsReturningClause/INSERT_without_RETURNING_omits_fact
+=== RUN   TestExtractorDMLProjectsReturningClause/UPDATE_without_RETURNING_omits_fact
+=== RUN   TestQueryAccessAuditRegression/select
+=== CONT  TestExtractorT06A13ColumnFacts
+=== RUN   TestExtractorT06A13ColumnFacts/mysql/mixed
+=== PAUSE TestQueryAccessAuditRegression/select
+=== PAUSE TestExtractorT06A13ColumnFacts/mysql/mixed
+=== RUN   TestQueryAccessAuditRegression/explain
+=== PAUSE TestQueryAccessAuditRegression/explain
+=== CONT  TestExtractorT06A12NullClauseASTShape
+=== CONT  TestQueryAccessExtractor_Union
+=== RUN   TestExtractorT06A12NullClauseASTShape/mysql/omitted-nullability
+=== PAUSE TestExtractorT06A12NullClauseASTShape/mysql/omitted-nullability
+=== PAUSE TestQueryAccessEffectCandidates_ScalarFunctionInProjection/floor
+=== RUN   TestQueryAccessEffectCandidates_ScalarFunctionInProjection/nullif
+=== PAUSE TestQueryAccessEffectCandidates_ScalarFunctionInProjection/nullif
+=== RUN   TestQueryAccessEffectCandidates_ScalarFunctionInProjection/ifnull
+--- PASS: TestWrapStatementsReturnsExtractorBackedResults (0.00s)
+--- PASS: TestParserParsesMultiStatementSQL (0.00s)
+--- PASS: TestQueryAccessEffectCandidates_UnsupportedTraversalMarker (0.00s)
+--- PASS: TestExtractorHelperMappingsCoverSwitchVariants (0.00s)
+=== PAUSE TestQueryAccessASTCensus/full_outer_join
+=== PAUSE TestExtractorDatabaseLifecycleCreateDatabase/CREATE_DATABASE_charset
+=== RUN   TestExtractorDatabaseLifecycleCreateDatabase/CREATE_DATABASE_collate
+=== PAUSE TestExtractorDatabaseLifecycleCreateDatabase/CREATE_DATABASE_collate
+=== CONT  TestExtractorT06A11ZerofillParserObservation
+=== RUN   TestExtractorT08ColumnPosition/mysql/add_unpositioned
+=== PAUSE TestExtractorT08ColumnPosition/mysql/add_unpositioned
+=== RUN   TestExtractorT06A13BinaryCharsetBoundary/mysql
+=== RUN   TestExtractorT08ColumnPosition/mysql/modify_first
+=== PAUSE TestExtractorT08ColumnPosition/mysql/modify_first
+=== PAUSE TestExtractorDMLProjectsReturningClause/UPDATE_without_RETURNING_omits_fact
+=== RUN   TestExtractorT08ColumnPosition/mysql/modify_after
+=== PAUSE TestExtractorT08ColumnPosition/mysql/modify_after
+=== RUN   TestExtractorT08ColumnPosition/mysql/change_first
+=== PAUSE TestExtractorT08ColumnPosition/mysql/change_first
+=== PAUSE TestExtractorT06A13BinaryCharsetBoundary/mysql
+=== RUN   TestExtractorT08ColumnPosition/mysql/change_after
+=== RUN   TestExtractorT06A13BinaryCharsetBoundary/tidb
+=== PAUSE TestExtractorT08ColumnPosition/mysql/change_after
+=== PAUSE TestExtractorT06A13BinaryCharsetBoundary/tidb
+=== RUN   TestExtractorT08ColumnPosition/mysql/setter_no_position
+=== CONT  TestExtractorCreateTableCapturesStructuralFacts
+=== CONT  TestExtractorAlterTableCapturesColumnAndIndexActions
+=== RUN   TestExtractorT06A13ColumnFacts/mysql/safe
+=== PAUSE TestExtractorT06A13ColumnFacts/mysql/safe
+=== RUN   TestExtractorT06A12NullClauseASTShape/mysql/explicit-null
+=== RUN   TestExtractorT06A13ColumnFacts/tidb/mixed
+=== PAUSE TestExtractorT06A13ColumnFacts/tidb/mixed
+=== PAUSE TestExtractorT06A12NullClauseASTShape/mysql/explicit-null
+=== RUN   TestExtractorT06A13ColumnFacts/tidb/safe
+--- PASS: TestExtractorT06A11PKMemberBindsDeclaredColumn (0.00s)
+=== PAUSE TestExtractorT06A13ColumnFacts/tidb/safe
+=== CONT  TestExtractorRenameTablePreservesEverySourceAndDestination
+=== RUN   TestQueryAccessEffectCandidates_AllExpressionLocations/join
+=== RUN   TestQueryAccessASTCensus/using_join
+--- PASS: TestExtractorDMLTablesContainMutationTargets (0.00s)
+--- PASS: TestExtractorHelperPredicatesAndAlterVariants (0.00s)
+--- PASS: TestExtractorT10NoVisibilityAttribute (0.00s)
+=== PAUSE TestQueryAccessASTCensus/using_join
+=== RUN   TestQueryAccessASTCensus/natural_join
+=== CONT  TestExtractorT06A14TableOptions
+=== RUN   TestExtractorT06A14TableOptions/mysql/s0-omitted
+=== PAUSE TestExtractorT06A14TableOptions/mysql/s0-omitted
+=== RUN   TestExtractorT06A14TableOptions/mysql/engine-allowed
+=== PAUSE TestExtractorT06A14TableOptions/mysql/engine-allowed
+=== RUN   TestExtractorT10DeclaredIndexVisibility/mysql/create_table_key_invisible
+=== RUN   TestExtractorDMLProjectsReturningClause/DELETE_without_RETURNING_omits_fact
+=== PAUSE TestExtractorT10DeclaredIndexVisibility/mysql/create_table_key_invisible
+=== PAUSE TestExtractorDMLProjectsReturningClause/DELETE_without_RETURNING_omits_fact
+=== RUN   TestExtractorT10DeclaredIndexVisibility/mysql/create_table_primary_invisible
+=== RUN   TestExtractorDMLProjectsReturningClause/INSERT_column_named_returning_is_not_a_clause
+=== PAUSE TestExtractorT10DeclaredIndexVisibility/mysql/create_table_primary_invisible
+=== RUN   TestExtractorT06A12NullClauseASTShape/mysql/not-null
+=== RUN   TestExtractorT10DeclaredIndexVisibility/mysql/alter_add_index_invisible
+=== PAUSE TestExtractorT10DeclaredIndexVisibility/mysql/alter_add_index_invisible
+=== PAUSE TestExtractorDMLProjectsReturningClause/INSERT_column_named_returning_is_not_a_clause
+=== RUN   TestExtractorT10DeclaredIndexVisibility/mysql/alter_add_unique_visible
+=== RUN   TestExtractorDMLProjectsReturningClause/UPDATE_column_named_returning_is_not_a_clause
+=== PAUSE TestExtractorDMLProjectsReturningClause/UPDATE_column_named_returning_is_not_a_clause
+=== PAUSE TestExtractorT10DeclaredIndexVisibility/mysql/alter_add_unique_visible
+=== CONT  TestExtractorDMLReturningAliasDoesNotProjectClause
+=== PAUSE TestExtractorT06A12NullClauseASTShape/mysql/not-null
+=== CONT  TestQueryAccessExtractor_RecursiveCTE
+=== PAUSE TestQueryAccessEffectCandidates_ScalarFunctionInProjection/ifnull
+=== CONT  TestExtractorT06A12NullabilityFacts
+=== CONT  TestQueryAccessExtractor_SchemaQualified
+=== RUN   TestExtractorT06A12NullClauseASTShape/tidb/omitted-nullability
+=== RUN   TestExtractorT06A12NullabilityFacts/mysql/ordinary-nullable
+=== PAUSE TestQueryAccessASTCensus/natural_join
+=== CONT  TestExtractorCapturesCreateViewDropAndTruncateFacts
+=== RUN   TestExtractorT06A14TableOptions/mysql/engine-denied
+=== PAUSE TestExtractorT08ColumnPosition/mysql/setter_no_position
+=== PAUSE TestExtractorT06A14TableOptions/mysql/engine-denied
+=== CONT  TestQueryAccessExtractor_DDLNotReadOnly
+=== RUN   TestExtractorT06A14TableOptions/mysql/charset-allowed
+=== RUN   TestExtractorT10DeclaredIndexVisibility/tidb/create_index_invisible
+--- SKIP: TestExtractorT08MultiColumnAddPosition (0.00s)
+--- PASS: TestExtractorAlterRenameTableKeepsSourceAndDestinationTargets (0.00s)
+=== CONT  TestQueryAccessExtractor_DefaultSchema
+--- PASS: TestExtractorDMLCapturesJoinAndSubqueryShapes (0.00s)
+--- PASS: TestQueryAccessExtractor_Union (0.00s)
+--- PASS: TestExtractorT06A11ZerofillParserObservation (0.00s)
+--- PASS: TestExtractorRenameTablePreservesEverySourceAndDestination (0.00s)
+=== CONT  TestExtractorDropTablePreservesEveryTarget
+=== CONT  TestQueryAccessExtractor_InsertNotReadOnly
+=== PAUSE TestExtractorT06A12NullClauseASTShape/tidb/omitted-nullability
+=== PAUSE TestExtractorT06A12NullabilityFacts/mysql/ordinary-nullable
+=== RUN   TestExtractorT06A12NullClauseASTShape/tidb/explicit-null
+=== PAUSE TestExtractorT06A12NullClauseASTShape/tidb/explicit-null
+=== RUN   TestExtractorT06A12NullClauseASTShape/tidb/not-null
+=== RUN   TestExtractorT06A12NullabilityFacts/mysql/ordinary-not-null
+=== PAUSE TestExtractorT06A12NullClauseASTShape/tidb/not-null
+=== CONT  TestQueryAccessExtractor_ForShare
+=== PAUSE TestExtractorT06A12NullabilityFacts/mysql/ordinary-not-null
+=== RUN   TestExtractorT06A12NullabilityFacts/mysql/time-exempt
+=== PAUSE TestExtractorT06A12NullabilityFacts/mysql/time-exempt
+=== CONT  TestExtractorT10R1DescendingMemberOrder
+=== CONT  TestQueryAccessExtractor_UnqualifiedColumnAmbiguous
+=== CONT  TestQueryAccessExtractor_OutputLineage
+=== RUN   TestQueryAccessASTCensus/where_literal_equality
+=== RUN   TestExtractorT08ColumnPosition/tidb/add_first
+=== CONT  TestQueryAccessExtractor_OrderBy
+=== PAUSE TestExtractorT08ColumnPosition/tidb/add_first
+=== PAUSE TestExtractorT06A14TableOptions/mysql/charset-allowed
+=== RUN   TestExtractorT08ColumnPosition/tidb/add_after
+=== PAUSE TestExtractorT08ColumnPosition/tidb/add_after
+=== RUN   TestExtractorT08ColumnPosition/tidb/add_unpositioned
+=== CONT  TestQueryAccessExtractor_MultiStatementSelectDelete
+=== CONT  TestQueryAccessExtractor_GroupByWithFunction
+=== RUN   TestQueryAccessEffectCandidates_AllExpressionLocations/where
+--- PASS: TestExtractorAlterTableCapturesColumnAndIndexActions (0.00s)
+--- PASS: TestExtractorDMLReturningAliasDoesNotProjectClause (0.00s)
+--- PASS: TestExtractorCreateTableCapturesStructuralFacts (0.00s)
+=== CONT  TestExtractorDMLCapturesInsertUpdateDeleteFacts
+=== CONT  TestQueryAccessExtractor_ParserError
+=== CONT  TestExtractorT10R1PrimaryKeyType
+=== CONT  TestQueryAccessExtractor_DerivedTable
+=== CONT  TestT07R1SupplementSitesCarryColumn
+=== CONT  TestQueryAccessExtractor_LockInShareMode
+=== CONT  TestExtractorT06A11PKMemberTypeAndUnsignedFacts
+=== RUN   TestExtractorT06A11PKMemberTypeAndUnsignedFacts/bigint-pass
+=== RUN   TestExtractorT06A12NullabilityFacts/mysql/text-exempt
+=== PAUSE TestExtractorT06A11PKMemberTypeAndUnsignedFacts/bigint-pass
+=== RUN   TestExtractorT06A11PKMemberTypeAndUnsignedFacts/bigint-reject
+=== PAUSE TestExtractorT06A11PKMemberTypeAndUnsignedFacts/bigint-reject
+=== PAUSE TestExtractorT06A12NullabilityFacts/mysql/text-exempt
+=== RUN   TestExtractorT06A11PKMemberTypeAndUnsignedFacts/bigint-composite-skip
+=== PAUSE TestExtractorT06A11PKMemberTypeAndUnsignedFacts/bigint-composite-skip
+=== CONT  TestQueryAccessExtractor_SelectWithFunction
+=== RUN   TestExtractorT06A12NullabilityFacts/mysql/mixed-attribution
+=== CONT  TestExtractorT06A10AutoIncrementFacts
+=== PAUSE TestExtractorT06A12NullabilityFacts/mysql/mixed-attribution
+=== RUN   TestExtractorT06A10AutoIncrementFacts/pk-auto
+=== CONT  TestSupplementedDefaultPreservesRawText
+=== RUN   TestExtractorT06A11PKMemberTypeAndUnsignedFacts/bigint-off
+=== PAUSE TestQueryAccessASTCensus/where_literal_equality
+=== PAUSE TestExtractorT06A11PKMemberTypeAndUnsignedFacts/bigint-off
+=== PAUSE TestExtractorT06A10AutoIncrementFacts/pk-auto
+=== RUN   TestExtractorT06A10AutoIncrementFacts/pk-no-auto
+=== RUN   TestQueryAccessASTCensus/where_comparison
+=== RUN   TestExtractorT06A12NullabilityFacts/mysql/reordered-mixed
+=== PAUSE TestQueryAccessASTCensus/where_comparison
+=== PAUSE TestExtractorT06A12NullabilityFacts/mysql/reordered-mixed
+--- PASS: TestQueryAccessExtractor_SchemaQualified (0.00s)
+--- PASS: TestQueryAccessExtractor_RecursiveCTE (0.00s)
+=== RUN   TestQueryAccessASTCensus/where_exists_subquery
+=== PAUSE TestQueryAccessASTCensus/where_exists_subquery
+=== RUN   TestQueryAccessASTCensus/group_by
+=== PAUSE TestQueryAccessASTCensus/group_by
+=== CONT  TestParseCatalogExpressionFactsEscapeBoundary
+=== PAUSE TestExtractorT10DeclaredIndexVisibility/tidb/create_index_invisible
+=== RUN   TestExtractorT10DeclaredIndexVisibility/tidb/create_index_visible
+=== PAUSE TestExtractorT10DeclaredIndexVisibility/tidb/create_index_visible
+=== RUN   TestExtractorT10DeclaredIndexVisibility/tidb/create_table_key_invisible
+=== PAUSE TestExtractorT10DeclaredIndexVisibility/tidb/create_table_key_invisible
+=== RUN   TestExtractorT10DeclaredIndexVisibility/tidb/create_table_primary_invisible
+=== PAUSE TestExtractorT10DeclaredIndexVisibility/tidb/create_table_primary_invisible
+=== RUN   TestExtractorT10DeclaredIndexVisibility/tidb/alter_add_index_invisible
+=== PAUSE TestExtractorT10DeclaredIndexVisibility/tidb/alter_add_index_invisible
+=== RUN   TestExtractorT10DeclaredIndexVisibility/tidb/alter_add_unique_visible
+=== CONT  TestParseCatalogExpressionFactsRejectsSelectStructure
+=== RUN   TestExtractorT06A11PKMemberTypeAndUnsignedFacts/unsigned-pass
+=== RUN   TestExtractorT06A14TableOptions/mysql/charset-denied
+=== CONT  TestParseCatalogExpressionFactsBareExpressions
+=== RUN   TestParseCatalogExpressionFactsBareExpressions/simple_arith
+=== PAUSE TestExtractorT06A11PKMemberTypeAndUnsignedFacts/unsigned-pass
+=== PAUSE TestExtractorT06A10AutoIncrementFacts/pk-no-auto
+=== CONT  TestQueryAccessExtractor_SelectForUpdate
+=== RUN   TestExtractorT06A11PKMemberTypeAndUnsignedFacts/unsigned-reject
+=== PAUSE TestExtractorT06A11PKMemberTypeAndUnsignedFacts/unsigned-reject
+=== CONT  TestQueryAccessExtractor_SelectWithJoin
+=== RUN   TestExtractorT06A10AutoIncrementFacts/composite
+=== RUN   TestExtractorT06A11PKMemberTypeAndUnsignedFacts/unsigned-composite-skip
+=== PAUSE TestExtractorT08ColumnPosition/tidb/add_unpositioned
+=== CONT  TestQueryAccessExtractor_SelectWithAliases
+=== PAUSE TestExtractorT06A14TableOptions/mysql/charset-denied
+--- PASS: TestQueryAccessExtractor_DDLNotReadOnly (0.00s)
+=== RUN   TestQueryAccessASTCensus/having
+=== RUN   TestExtractorT06A14TableOptions/mysql/rowformat-allowed
+=== RUN   TestExtractorT06A12NullabilityFacts/tidb/ordinary-nullable
+=== RUN   TestExtractorT08ColumnPosition/tidb/modify_first
+--- PASS: TestExtractorCapturesCreateViewDropAndTruncateFacts (0.00s)
+--- PASS: TestQueryAccessExtractor_DefaultSchema (0.00s)
+--- PASS: TestExtractorDropTablePreservesEveryTarget (0.00s)
+--- PASS: TestQueryAccessExtractor_ForShare (0.00s)
+--- PASS: TestQueryAccessExtractor_InsertNotReadOnly (0.00s)
+--- PASS: TestQueryAccessExtractor_UnqualifiedColumnAmbiguous (0.00s)
+=== PAUSE TestExtractorT06A11PKMemberTypeAndUnsignedFacts/unsigned-composite-skip
+=== PAUSE TestExtractorT10DeclaredIndexVisibility/tidb/alter_add_unique_visible
+=== PAUSE TestExtractorT06A10AutoIncrementFacts/composite
+=== RUN   TestExtractorT06A10AutoIncrementFacts/pk-off
+=== RUN   TestExtractorT06A11PKMemberTypeAndUnsignedFacts/unsigned-off
+=== PAUSE TestExtractorT06A14TableOptions/mysql/rowformat-allowed
+--- PASS: TestQueryAccessExtractor_OutputLineage (0.00s)
+--- PASS: TestExtractorT10R1DescendingMemberOrder (0.00s)
+=== RUN   TestExtractorT06A14TableOptions/mysql/rowformat-denied
+=== PAUSE TestExtractorT08ColumnPosition/tidb/modify_first
+--- PASS: TestQueryAccessExtractor_OrderBy (0.00s)
+--- PASS: TestQueryAccessExtractor_GroupByWithFunction (0.00s)
+=== PAUSE TestExtractorT06A10AutoIncrementFacts/pk-off
+=== PAUSE TestExtractorT06A12NullabilityFacts/tidb/ordinary-nullable
+=== RUN   TestExtractorT06A10AutoIncrementFacts/init-match
+=== RUN   TestExtractorT06A12NullabilityFacts/tidb/ordinary-not-null
+=== CONT  TestT07R1ExpressionTopForm
+=== PAUSE TestExtractorT06A12NullabilityFacts/tidb/ordinary-not-null
+--- PASS: TestQueryAccessExtractor_MultiStatementSelectDelete (0.00s)
+=== PAUSE TestExtractorT06A14TableOptions/mysql/rowformat-denied
+--- PASS: TestQueryAccessExtractor_SelectWithJoin (0.00s)
+=== CONT  TestDatabaseLifecycleCharsetCollation
+=== RUN   TestExtractorT06A14TableOptions/tidb/s0-omitted
+=== PAUSE TestExtractorT06A14TableOptions/tidb/s0-omitted
+=== PAUSE TestExtractorT06A10AutoIncrementFacts/init-match
+=== PAUSE TestExtractorT06A11PKMemberTypeAndUnsignedFacts/unsigned-off
+=== CONT  TestDatabaseLifecycleDropSchemaIsAlias
+=== RUN   TestT07R1ExpressionTopForm/call
+=== RUN   TestExtractorT08ColumnPosition/tidb/modify_after
+=== RUN   TestQueryAccessEffectCandidates_AllExpressionLocations/group
+=== PAUSE TestExtractorT08ColumnPosition/tidb/modify_after
+=== RUN   TestExtractorT08ColumnPosition/tidb/change_first
+=== PAUSE TestQueryAccessASTCensus/having
+=== NAME  TestDatabaseLifecycleCharsetCollation
+    database_lifecycle_ast_test.go:204: charset option: value="utf8mb4"
+    database_lifecycle_ast_test.go:210: collate option: value="utf8mb4_bin"
+=== RUN   TestQueryAccessASTCensus/order_by
+=== CONT  TestQueryAccessExtractor_SelectWithWhere
+=== PAUSE TestQueryAccessASTCensus/order_by
+=== RUN   TestExtractorT06A12NullabilityFacts/tidb/time-exempt
+=== PAUSE TestExtractorT06A12NullabilityFacts/tidb/time-exempt
+=== RUN   TestExtractorT06A12NullabilityFacts/tidb/text-exempt
+=== PAUSE TestExtractorT06A12NullabilityFacts/tidb/text-exempt
+=== NAME  TestDatabaseLifecycleDropSchemaIsAlias
+    database_lifecycle_ast_test.go:177: DROP DATABASE -> *ast.DropDatabaseStmt
+=== RUN   TestExtractorT06A12NullabilityFacts/tidb/mixed-attribution
+=== CONT  TestQueryAccessExtractor_SelectWithCTE
+=== RUN   TestExtractorT06A10AutoIncrementFacts/init-mismatch
+=== PAUSE TestExtractorT06A10AutoIncrementFacts/init-mismatch
+=== RUN   TestExtractorT06A10AutoIncrementFacts/init-omitted
+=== PAUSE TestExtractorT06A10AutoIncrementFacts/init-omitted
+=== PAUSE TestExtractorT08ColumnPosition/tidb/change_first
+=== RUN   TestExtractorT06A10AutoIncrementFacts/init-off
+--- PASS: TestQueryAccessExtractor_ParserError (0.00s)
+=== CONT  TestT07R1ColumnRefTopForm
+=== CONT  TestQueryAccessExtractor_SelectStar
+=== CONT  TestDatabaseLifecycleCreateSchemaIsAlias
+=== RUN   TestExtractorT06A14TableOptions/tidb/engine-allowed
+=== RUN   TestQueryAccessASTCensus/window_function
+=== NAME  TestDatabaseLifecycleCreateSchemaIsAlias
+    database_lifecycle_ast_test.go:155: CREATE DATABASE -> *ast.CreateDatabaseStmt
+    database_lifecycle_ast_test.go:156: CREATE SCHEMA   -> *ast.CreateDatabaseStmt
+=== CONT  TestQueryAccessExtractor_SelectWithSubquery
+=== PAUSE TestQueryAccessASTCensus/window_function
+=== RUN   TestQueryAccessASTCensus/scalar_subquery
+=== PAUSE TestQueryAccessASTCensus/scalar_subquery
+=== RUN   TestQueryAccessASTCensus/correlated_subquery_in_where
+=== PAUSE TestQueryAccessASTCensus/correlated_subquery_in_where
+=== NAME  TestDatabaseLifecycleDropSchemaIsAlias
+    database_lifecycle_ast_test.go:178: DROP SCHEMA   -> *ast.DropDatabaseStmt
+=== CONT  TestCommonPureEffects_TiDBParser_GroupingAndWindowUsages/grouping
+=== RUN   TestExtractorT06A11PKMemberTypeAndUnsignedFacts/table-level-single
+=== PAUSE TestExtractorT06A11PKMemberTypeAndUnsignedFacts/table-level-single
+=== RUN   TestExtractorT06A11PKMemberTypeAndUnsignedFacts/non-pk-precursor
+=== PAUSE TestExtractorT06A10AutoIncrementFacts/init-off
+=== PAUSE TestExtractorT06A11PKMemberTypeAndUnsignedFacts/non-pk-precursor
+=== RUN   TestExtractorT06A10AutoIncrementFacts/table-level-pk-auto
+=== CONT  TestDependencyCompleteness_TiDB_ExistingFailClosedAndAdmissibleFormsRemainStable/having_function
+=== PAUSE TestExtractorT06A10AutoIncrementFacts/table-level-pk-auto
+--- PASS: TestQueryAccessExtractor_DerivedTable (0.00s)
+--- PASS: TestT07R1SupplementSitesCarryColumn (0.00s)
+=== CONT  TestDependencyCompleteness_TiDB_ExistingFailClosedAndAdmissibleFormsRemainStable/operator_where
+=== RUN   TestExtractorT08ColumnPosition/tidb/change_after
+=== CONT  TestCommonPureEffects_TiDBParser_GroupingAndWindowUsages/window
+--- PASS: TestExtractorT10R1PrimaryKeyType (0.00s)
+--- PASS: TestQueryAccessExtractor_LockInShareMode (0.00s)
+--- PASS: TestParseCatalogExpressionFactsEscapeBoundary (0.00s)
+=== CONT  TestDependencyCompleteness_TiDB_InspectsFunctionEffectsInHolders/order_by_count
+--- PASS: TestQueryAccessExtractor_SelectWithFunction (0.00s)
+=== CONT  TestDependencyCompleteness_TiDB_InspectsFunctionEffectsInHolders/group_by_function
+=== CONT  TestQueryAccessExtractor_EmptyInput
+=== CONT  TestDependencyCompleteness_TiDB_InspectsFunctionEffectsInHolders/order_by_now
+=== PAUSE TestExtractorT06A12NullabilityFacts/tidb/mixed-attribution
+=== RUN   TestExtractorT06A12NullabilityFacts/tidb/reordered-mixed
+=== CONT  TestQueryAccessEffectCandidates_CoalesceVariableArity/three_args
+=== PAUSE TestExtractorT06A12NullabilityFacts/tidb/reordered-mixed
+=== CONT  TestCommonPureEffects_TiDBParser_FunctionsIndeterminate/SELECT_COUNT(*)_FROM_users
+=== CONT  TestCommonPureEffects_TiDBParser_FunctionsIndeterminate/SELECT_DENSE_RANK()_OVER_(PARTITION_BY_dept_ORDER_BY_id)_FROM_employees
+=== RUN   TestQueryAccessASTCensus/derived_table
+=== PAUSE TestQueryAccessASTCensus/derived_table
+=== RUN   TestQueryAccessASTCensus/simple_cte
+=== CONT  TestQueryAccessExtractor_SelectIntoOutfile
+=== PAUSE TestExtractorT08ColumnPosition/tidb/change_after
+=== PAUSE TestExtractorT06A14TableOptions/tidb/engine-allowed
+--- PASS: TestSupplementedDefaultPreservesRawText (0.00s)
+=== CONT  TestQueryAccessEffectCandidates_CoalesceVariableArity/two_args
+=== PAUSE TestQueryAccessASTCensus/simple_cte
+=== CONT  TestDependencyCompleteness_TiDB_InspectsFunctionEffectsInHolders/join_on_function
+=== RUN   TestQueryAccessASTCensus/recursive_cte
+=== CONT  TestCommonPureEffects_TiDBParser_FunctionsIndeterminate/SELECT_RANK()_OVER_(PARTITION_BY_dept_ORDER_BY_id)_FROM_employees
+=== CONT  TestCommonPureEffects_TiDBParser_FunctionsIndeterminate/SELECT_ROW_NUMBER()_OVER_(PARTITION_BY_dept_ORDER_BY_id)_FROM_employees
+=== CONT  TestCommonPureEffects_TiDBParser_FunctionsIndeterminate/SELECT_SUM(amount)_FROM_orders
+=== PAUSE TestQueryAccessASTCensus/recursive_cte
+=== CONT  TestCommonPureEffects_TiDBParser_FunctionsIndeterminate/SELECT_MAX(amount)_FROM_orders
+=== CONT  TestQueryAccessEffectCandidates_MixedLiteralOperandShape/coalesce_column_const
+=== RUN   TestQueryAccessASTCensus/union
+=== CONT  TestCommonPureEffects_TiDBParser_FunctionsIndeterminate/SELECT_MIN(amount)_FROM_orders
+=== CONT  TestQueryAccessEffectCandidates_MixedLiteralOperandShape/literal_only_ceiling
+=== RUN   TestExtractorT08ColumnPosition/tidb/setter_no_position
+=== CONT  TestQueryAccessEffectCandidates_MixedLiteralOperandShape/literal_only_nullif
+=== PAUSE TestExtractorT08ColumnPosition/tidb/setter_no_position
+--- PASS: TestExtractorDMLCapturesInsertUpdateDeleteFacts (0.00s)
+=== CONT  TestQueryAccessEffectCandidates_MixedLiteralOperandShape/reversed_ifnull
+=== CONT  TestQueryAccessEffectCandidates_MixedLiteralOperandShape/reversed_nullif
+=== CONT  TestQueryAccessEffectCandidates_MixedLiteralOperandShape/literal_only_floor
+=== CONT  TestQueryAccessEffectCandidates_MixedLiteralOperandShape/param
+=== CONT  TestQueryAccessEffectCandidates_MixedLiteralOperandShape/literal_only_coalesce
+=== CONT  TestQueryAccessEffectCandidates_MixedLiteralOperandShape/count_literal
+=== CONT  TestQueryAccessEffectCandidates_MixedLiteralOperandShape/reversed_coalesce
+=== CONT  TestQueryAccessEffectCandidates_MixedLiteralOperandShape/ifnull_column_const
+=== PAUSE TestQueryAccessASTCensus/union
+=== CONT  TestQueryAccessEffectCandidates_MixedLiteralOperandShape/literal_only_length
+=== RUN   TestQueryAccessASTCensus/union_all
+=== CONT  TestQueryAccessEffectCandidates_MixedLiteralOperandShape/nested_expr
+=== PAUSE TestQueryAccessASTCensus/union_all
+=== CONT  TestQueryAccessEffectCandidates_MixedLiteralOperandShape/three_arg_coalesce
+=== RUN   TestQueryAccessASTCensus/intersect
+=== PAUSE TestQueryAccessASTCensus/intersect
+=== CONT  TestQueryAccessEffectCandidates_MixedLiteralOperandShape/literal_only_lower
+=== RUN   TestQueryAccessASTCensus/except
+=== PAUSE TestQueryAccessASTCensus/except
+=== RUN   TestQueryAccessASTCensus/select_star
+=== PAUSE TestQueryAccessASTCensus/select_star
+=== CONT  TestQueryAccessEffectCandidates_MixedLiteralOperandShape/literal_only_upper
+=== RUN   TestQueryAccessASTCensus/qualified_wildcard
+=== CONT  TestQueryAccessEffectCandidates_MixedLiteralOperandShape/literal_only_ifnull
+=== PAUSE TestQueryAccessASTCensus/qualified_wildcard
+=== CONT  TestQueryAccessEffectCandidates_MixedLiteralOperandShape/nullif_column_const
+=== CONT  TestQueryAccessEffectCandidates_MixedLiteralOperandShape/literal_only_abs
+=== RUN   TestQueryAccessASTCensus/for_update
+--- PASS: TestQueryAccessExtractor_SelectForUpdate (0.00s)
+=== RUN   TestParseCatalogExpressionFactsBareExpressions/paren_arith
+=== CONT  TestQueryAccessRelationlessLiteralAdmittedShapes/coalesce_const_const
+=== CONT  TestQueryAccessRelationlessLiteralAdmittedShapes/ceiling_const
+=== PAUSE TestQueryAccessASTCensus/for_update
+=== RUN   TestQueryAccessASTCensus/for_share
+--- PASS: TestParseCatalogExpressionFactsRejectsSelectStructure (0.00s)
+=== PAUSE TestQueryAccessASTCensus/for_share
+=== CONT  TestQueryAccessEffectCandidates_MixedLiteralOperandShape/cast_expr
+=== RUN   TestQueryAccessASTCensus/lock_in_share_mode
+=== PAUSE TestQueryAccessASTCensus/lock_in_share_mode
+=== RUN   TestQueryAccessASTCensus/select_into_outfile
+--- PASS: TestDatabaseLifecycleCharsetCollation (0.00s)
+=== CONT  TestQueryAccessEffectCandidates_MixedLiteralOperandShape/literal_only_char_length
+--- PASS: TestQueryAccessExtractor_SelectWithWhere (0.00s)
+=== CONT  TestQueryAccessRelationlessLiteralAdmittedShapes/nullif_const_const
+=== RUN   TestT07R1ExpressionTopForm/parens_call
+=== CONT  TestQueryAccessRelationlessLiteralAdmittedShapes/upper_const
+--- PASS: TestQueryAccessExtractor_SelectWithCTE (0.00s)
+--- PASS: TestQueryAccessExtractor_SelectStar (0.00s)
+--- PASS: TestT07R1ColumnRefTopForm (0.00s)
+=== CONT  TestQueryAccessRelationlessLiteralAdmittedShapes/ceil_const
+=== CONT  TestQueryAccessRelationlessLiteralAdmittedShapes/abs_const
+=== CONT  TestQueryAccessRelationlessLiteralAdmittedShapes/count_literal
+=== CONT  TestQueryAccessRelationlessLiteralAdmittedShapes/char_length_const
+=== CONT  TestQueryAccessRelationlessLiteralAdmittedShapes/length_const
+=== CONT  TestQueryAccessRelationlessLiteralAdmittedShapes/floor_const
+=== RUN   TestExtractorT06A14TableOptions/tidb/engine-denied
+=== CONT  TestQueryAccessRelationlessRejectedShapes/subquery_operand
+=== CONT  TestCommonPureEffects_TiDBParser_FunctionsIndeterminate/SELECT_AVG(amount)_FROM_orders
+=== CONT  TestQueryAccessRelationlessRejectedShapes/count_star
+=== CONT  TestQueryAccessRelationlessRejectedShapes/parameter_operand
+=== CONT  TestQueryAccessRelationlessRejectedShapes/noncanonical_call
+=== PAUSE TestExtractorT06A14TableOptions/tidb/engine-denied
+=== RUN   TestExtractorT06A14TableOptions/tidb/charset-allowed
+=== CONT  TestQueryAccessRelationlessRejectedShapes/quoted_call
+=== CONT  TestQueryAccessRelationlessLiteralAdmittedShapes/ifnull_const_const
+=== CONT  TestQueryAccessRelationlessRejectedShapes/qualified_call
+=== PAUSE TestQueryAccessASTCensus/select_into_outfile
+=== RUN   TestQueryAccessEffectCandidates_AllExpressionLocations/having
+=== CONT  TestQueryAccessRelationlessRejectedShapes/unknown_function
+=== CONT  TestQueryAccessRelationlessRejectedShapes/nested_function
+=== CONT  TestQueryAccessRelationlessLiteralAdmittedShapes/lower_const
+=== RUN   TestQueryAccessASTCensus/select_into_dumpfile
+=== CONT  TestQueryAccessEffectCandidates_MixedLiteralOperandShape/literal_only_ceil
+=== CONT  TestExtractorT10MultiValuedKeyParts/scalar_cast_is_not_multi-valued
+=== CONT  TestExtractorT10MultiValuedKeyParts/array_cast
+--- PASS: TestDatabaseLifecycleCreateSchemaIsAlias (0.00s)
+=== CONT  TestExtractorT10MultiValuedKeyParts/plain_expression
+=== CONT  TestQueryAccessRelationlessRejectedShapes/three_arg_coalesce
+=== CONT  TestQueryAccessRelationlessRejectedShapes/operator_inside_call
+=== CONT  TestQueryAccessRelationlessRejectedShapes/column_operand
+=== PAUSE TestExtractorT06A14TableOptions/tidb/charset-allowed
+=== RUN   TestExtractorT06A14TableOptions/tidb/charset-denied
+=== CONT  TestQueryAccessRelationlessRejectedShapes/cast_call
+=== PAUSE TestExtractorT06A14TableOptions/tidb/charset-denied
+=== RUN   TestExtractorT06A14TableOptions/tidb/rowformat-allowed
+=== CONT  TestExtractorT10AlterIndexVisibility/tidb/invisible
+=== PAUSE TestQueryAccessASTCensus/select_into_dumpfile
+=== PAUSE TestExtractorT06A14TableOptions/tidb/rowformat-allowed
+--- PASS: TestQueryAccessExtractor_SelectWithSubquery (0.00s)
+--- PASS: TestDatabaseLifecycleDropSchemaIsAlias (0.00s)
+--- PASS: TestCommonPureEffects_TiDBParser_GroupingAndWindowUsages (0.00s)
+    --- PASS: TestCommonPureEffects_TiDBParser_GroupingAndWindowUsages/grouping (0.00s)
+    --- PASS: TestCommonPureEffects_TiDBParser_GroupingAndWindowUsages/window (0.00s)
+--- PASS: TestQueryAccessExtractor_EmptyInput (0.00s)
+--- PASS: TestQueryAccessExtractor_SelectIntoOutfile (0.00s)
+=== RUN   TestQueryAccessASTCensus/select_into_variable
+--- PASS: TestDependencyCompleteness_TiDB_ExistingFailClosedAndAdmissibleFormsRemainStable (0.00s)
+    --- PASS: TestDependencyCompleteness_TiDB_ExistingFailClosedAndAdmissibleFormsRemainStable/operator_where (0.00s)
+    --- PASS: TestDependencyCompleteness_TiDB_ExistingFailClosedAndAdmissibleFormsRemainStable/having_function (0.00s)
+=== CONT  TestExtractorT10AlterIndexVisibility/tidb/visible
+=== PAUSE TestQueryAccessASTCensus/select_into_variable
+=== CONT  TestExtractorT10AlterIndexVisibility/tidb/backticked_primary
+=== CONT  TestExtractorT10MultiValuedKeyParts/json_array_cast
+=== CONT  TestExtractorT10AlterIndexVisibility/mysql/visible
+=== RUN   TestQueryAccessASTCensus/builtin_now
+=== CONT  TestExtractorT10AlterIndexVisibility/mysql/invisible
+=== PAUSE TestQueryAccessASTCensus/builtin_now
+=== CONT  TestExtractorT10AlterIndexVisibility/mysql/backticked_primary
+=== CONT  TestExtractorT06A14ColumnCharsetNotTableOption/mysql
+=== RUN   TestQueryAccessASTCensus/builtin_concat
+=== CONT  TestExtractorDatabaseLifecycleDropDatabase/DROP_DATABASE
+=== PAUSE TestQueryAccessASTCensus/builtin_concat
+=== CONT  TestExtractorDatabaseLifecycleDropDatabase/DROP_DATABASE_IF_EXISTS
+=== CONT  TestExtractorDatabaseLifecycleDropDatabase/DROP_SCHEMA_synonym
+=== CONT  TestExtractorDatabaseLifecycleDropDatabase/DROP_SCHEMA_IF_EXISTS_synonym
+--- PASS: TestQueryAccessEffectCandidates_CoalesceVariableArity (0.00s)
+    --- PASS: TestQueryAccessEffectCandidates_CoalesceVariableArity/three_args (0.00s)
+    --- PASS: TestQueryAccessEffectCandidates_CoalesceVariableArity/two_args (0.00s)
+=== CONT  TestQueryAccessAuditRegression/drop_table
+=== CONT  TestQueryAccessAuditRegression/explain
+--- PASS: TestQueryAccessExtractor_SelectWithAliases (0.00s)
+=== CONT  TestQueryAccessAuditRegression/truncate
+=== RUN   TestParseCatalogExpressionFactsBareExpressions/concat_escaped
+=== CONT  TestQueryAccessAuditRegression/delete
+=== CONT  TestQueryAccessAuditRegression/select
+=== CONT  TestQueryAccessAuditRegression/alter_table
+=== RUN   TestQueryAccessASTCensus/unknown_function
+=== CONT  TestQueryAccessAuditRegression/update
+=== CONT  TestExtractorT06A14ColumnCharsetNotTableOption/tidb
+=== CONT  TestQueryAccessAuditRegression/insert
+=== CONT  TestExtractorDatabaseLifecycleCreateDatabase/CREATE_DATABASE
+=== CONT  TestExtractorDatabaseLifecycleCreateDatabase/CREATE_SCHEMA_IF_NOT_EXISTS_synonym
+=== RUN   TestExtractorT06A14TableOptions/tidb/rowformat-denied
+--- PASS: TestQueryAccessRelationlessLiteralAdmittedShapes (0.00s)
+    --- PASS: TestQueryAccessRelationlessLiteralAdmittedShapes/coalesce_const_const (0.00s)
+    --- PASS: TestQueryAccessRelationlessLiteralAdmittedShapes/ceiling_const (0.00s)
+    --- PASS: TestQueryAccessRelationlessLiteralAdmittedShapes/nullif_const_const (0.00s)
+    --- PASS: TestQueryAccessRelationlessLiteralAdmittedShapes/upper_const (0.00s)
+    --- PASS: TestQueryAccessRelationlessLiteralAdmittedShapes/abs_const (0.00s)
+    --- PASS: TestQueryAccessRelationlessLiteralAdmittedShapes/ceil_const (0.00s)
+    --- PASS: TestQueryAccessRelationlessLiteralAdmittedShapes/char_length_const (0.00s)
+    --- PASS: TestQueryAccessRelationlessLiteralAdmittedShapes/count_literal (0.00s)
+    --- PASS: TestQueryAccessRelationlessLiteralAdmittedShapes/floor_const (0.00s)
+    --- PASS: TestQueryAccessRelationlessLiteralAdmittedShapes/length_const (0.00s)
+    --- PASS: TestQueryAccessRelationlessLiteralAdmittedShapes/ifnull_const_const (0.00s)
+    --- PASS: TestQueryAccessRelationlessLiteralAdmittedShapes/lower_const (0.00s)
+--- PASS: TestQueryAccessRelationlessRejectedShapes (0.00s)
+    --- PASS: TestQueryAccessRelationlessRejectedShapes/subquery_operand (0.00s)
+    --- PASS: TestQueryAccessRelationlessRejectedShapes/count_star (0.00s)
+    --- PASS: TestQueryAccessRelationlessRejectedShapes/noncanonical_call (0.00s)
+    --- PASS: TestQueryAccessRelationlessRejectedShapes/parameter_operand (0.00s)
+    --- PASS: TestQueryAccessRelationlessRejectedShapes/quoted_call (0.00s)
+    --- PASS: TestQueryAccessRelationlessRejectedShapes/qualified_call (0.00s)
+    --- PASS: TestQueryAccessRelationlessRejectedShapes/unknown_function (0.00s)
+    --- PASS: TestQueryAccessRelationlessRejectedShapes/nested_function (0.00s)
+    --- PASS: TestQueryAccessRelationlessRejectedShapes/three_arg_coalesce (0.00s)
+    --- PASS: TestQueryAccessRelationlessRejectedShapes/operator_inside_call (0.00s)
+    --- PASS: TestQueryAccessRelationlessRejectedShapes/cast_call (0.00s)
+    --- PASS: TestQueryAccessRelationlessRejectedShapes/column_operand (0.00s)
+=== PAUSE TestQueryAccessASTCensus/unknown_function
+=== RUN   TestQueryAccessASTCensus/multi_select
+=== PAUSE TestExtractorT06A14TableOptions/tidb/rowformat-denied
+--- PASS: TestDependencyCompleteness_TiDB_InspectsFunctionEffectsInHolders (0.00s)
+    --- PASS: TestDependencyCompleteness_TiDB_InspectsFunctionEffectsInHolders/order_by_count (0.00s)
+    --- PASS: TestDependencyCompleteness_TiDB_InspectsFunctionEffectsInHolders/order_by_now (0.00s)
+    --- PASS: TestDependencyCompleteness_TiDB_InspectsFunctionEffectsInHolders/group_by_function (0.00s)
+    --- PASS: TestDependencyCompleteness_TiDB_InspectsFunctionEffectsInHolders/join_on_function (0.00s)
+--- PASS: TestCommonPureEffects_TiDBParser_FunctionsIndeterminate (0.00s)
+    --- PASS: TestCommonPureEffects_TiDBParser_FunctionsIndeterminate/SELECT_COUNT(*)_FROM_users (0.00s)
+    --- PASS: TestCommonPureEffects_TiDBParser_FunctionsIndeterminate/SELECT_DENSE_RANK()_OVER_(PARTITION_BY_dept_ORDER_BY_id)_FROM_employees (0.00s)
+    --- PASS: TestCommonPureEffects_TiDBParser_FunctionsIndeterminate/SELECT_RANK()_OVER_(PARTITION_BY_dept_ORDER_BY_id)_FROM_employees (0.00s)
+    --- PASS: TestCommonPureEffects_TiDBParser_FunctionsIndeterminate/SELECT_ROW_NUMBER()_OVER_(PARTITION_BY_dept_ORDER_BY_id)_FROM_employees (0.00s)
+    --- PASS: TestCommonPureEffects_TiDBParser_FunctionsIndeterminate/SELECT_SUM(amount)_FROM_orders (0.00s)
+    --- PASS: TestCommonPureEffects_TiDBParser_FunctionsIndeterminate/SELECT_MIN(amount)_FROM_orders (0.00s)
+    --- PASS: TestCommonPureEffects_TiDBParser_FunctionsIndeterminate/SELECT_MAX(amount)_FROM_orders (0.00s)
+    --- PASS: TestCommonPureEffects_TiDBParser_FunctionsIndeterminate/SELECT_AVG(amount)_FROM_orders (0.00s)
+=== RUN   TestT07R1ExpressionTopForm/arithmetic_constant
+=== PAUSE TestQueryAccessASTCensus/multi_select
+=== CONT  TestExtractorDatabaseLifecycleCreateDatabase/CREATE_DATABASE_charset
+=== RUN   TestQueryAccessEffectCandidates_AllExpressionLocations/order
+--- PASS: TestExtractorT06A14ColumnCharsetNotTableOption (0.00s)
+    --- PASS: TestExtractorT06A14ColumnCharsetNotTableOption/mysql (0.00s)
+    --- PASS: TestExtractorT06A14ColumnCharsetNotTableOption/tidb (0.00s)
+=== RUN   TestQueryAccessASTCensus/mixed_dml_select
+=== CONT  TestExtractorDatabaseLifecycleCreateDatabase/CREATE_DATABASE_IF_NOT_EXISTS
+=== CONT  TestExtractorDatabaseLifecycleCreateDatabase/CREATE_DATABASE_collate
+=== CONT  TestExtractorT06A13BinaryCharsetBoundary/tidb
+=== CONT  TestQueryAccessAuditRegression/create_table
+--- PASS: TestExtractorT10MultiValuedKeyParts (0.00s)
+    --- PASS: TestExtractorT10MultiValuedKeyParts/plain_expression (0.00s)
+    --- PASS: TestExtractorT10MultiValuedKeyParts/array_cast (0.00s)
+    --- PASS: TestExtractorT10MultiValuedKeyParts/json_array_cast (0.00s)
+    --- PASS: TestExtractorT10MultiValuedKeyParts/scalar_cast_is_not_multi-valued (0.00s)
+=== CONT  TestExtractorDatabaseLifecycleCreateDatabase/CREATE_SCHEMA_synonym
+=== CONT  TestExtractorT06A13ColumnFacts/tidb/mixed
+=== CONT  TestExtractorT06A13ColumnFacts/tidb/safe
+=== CONT  TestExtractorDMLProjectsReturningClause/INSERT_RETURNING_sets_fact
+=== PAUSE TestQueryAccessASTCensus/mixed_dml_select
+--- PASS: TestExtractorT10AlterIndexVisibility (0.00s)
+    --- PASS: TestExtractorT10AlterIndexVisibility/tidb/invisible (0.00s)
+    --- PASS: TestExtractorT10AlterIndexVisibility/tidb/visible (0.00s)
+    --- PASS: TestExtractorT10AlterIndexVisibility/mysql/visible (0.00s)
+    --- PASS: TestExtractorT10AlterIndexVisibility/mysql/invisible (0.00s)
+    --- PASS: TestExtractorT10AlterIndexVisibility/mysql/backticked_primary (0.00s)
+    --- PASS: TestExtractorT10AlterIndexVisibility/tidb/backticked_primary (0.00s)
+=== RUN   TestQueryAccessEffectCandidates_AllExpressionLocations/limit_offset
+=== RUN   TestQueryAccessASTCensus/parser_error_select_from
+--- PASS: TestQueryAccessEffectCandidates_MixedLiteralOperandShape (0.00s)
+    --- PASS: TestQueryAccessEffectCandidates_MixedLiteralOperandShape/coalesce_column_const (0.00s)
+    --- PASS: TestQueryAccessEffectCandidates_MixedLiteralOperandShape/literal_only_ceiling (0.00s)
+    --- PASS: TestQueryAccessEffectCandidates_MixedLiteralOperandShape/reversed_ifnull (0.00s)
+    --- PASS: TestQueryAccessEffectCandidates_MixedLiteralOperandShape/reversed_nullif (0.00s)
+    --- PASS: TestQueryAccessEffectCandidates_MixedLiteralOperandShape/literal_only_nullif (0.00s)
+    --- PASS: TestQueryAccessEffectCandidates_MixedLiteralOperandShape/literal_only_floor (0.00s)
+    --- PASS: TestQueryAccessEffectCandidates_MixedLiteralOperandShape/literal_only_coalesce (0.00s)
+    --- PASS: TestQueryAccessEffectCandidates_MixedLiteralOperandShape/param (0.00s)
+    --- PASS: TestQueryAccessEffectCandidates_MixedLiteralOperandShape/reversed_coalesce (0.00s)
+    --- PASS: TestQueryAccessEffectCandidates_MixedLiteralOperandShape/ifnull_column_const (0.00s)
+    --- PASS: TestQueryAccessEffectCandidates_MixedLiteralOperandShape/count_literal (0.00s)
+    --- PASS: TestQueryAccessEffectCandidates_MixedLiteralOperandShape/literal_only_length (0.00s)
+    --- PASS: TestQueryAccessEffectCandidates_MixedLiteralOperandShape/three_arg_coalesce (0.00s)
+    --- PASS: TestQueryAccessEffectCandidates_MixedLiteralOperandShape/literal_only_lower (0.00s)
+    --- PASS: TestQueryAccessEffectCandidates_MixedLiteralOperandShape/nested_expr (0.00s)
+    --- PASS: TestQueryAccessEffectCandidates_MixedLiteralOperandShape/literal_only_upper (0.00s)
+    --- PASS: TestQueryAccessEffectCandidates_MixedLiteralOperandShape/literal_only_ifnull (0.00s)
+    --- PASS: TestQueryAccessEffectCandidates_MixedLiteralOperandShape/literal_only_abs (0.00s)
+    --- PASS: TestQueryAccessEffectCandidates_MixedLiteralOperandShape/nullif_column_const (0.00s)
+    --- PASS: TestQueryAccessEffectCandidates_MixedLiteralOperandShape/cast_expr (0.00s)
+    --- PASS: TestQueryAccessEffectCandidates_MixedLiteralOperandShape/literal_only_char_length (0.00s)
+    --- PASS: TestQueryAccessEffectCandidates_MixedLiteralOperandShape/literal_only_ceil (0.00s)
+=== CONT  TestExtractorT06A13BinaryCharsetBoundary/mysql
+=== CONT  TestExtractorT06A13ColumnFacts/mysql/mixed
+=== PAUSE TestQueryAccessASTCensus/parser_error_select_from
+=== CONT  TestExtractorDMLProjectsReturningClause/UPDATE_column_named_returning_is_not_a_clause
+=== RUN   TestQueryAccessASTCensus/parser_error_invalid
+=== CONT  TestExtractorDMLProjectsReturningClause/UPDATE_without_RETURNING_omits_fact
+=== CONT  TestExtractorDMLProjectsReturningClause/DELETE_without_RETURNING_omits_fact
+=== CONT  TestExtractorT06A13ColumnFacts/mysql/safe
+=== CONT  TestExtractorDMLProjectsReturningClause/UPDATE_RETURNING_sets_fact
+=== CONT  TestQueryAccessEffectCandidates_ScalarFunctionInProjection/lower
+=== CONT  TestQueryAccessEffectCandidates_ScalarFunctionInProjection/ceiling
+=== CONT  TestQueryAccessEffectCandidates_ScalarFunctionInProjection/char_length
+=== CONT  TestQueryAccessEffectCandidates_ScalarFunctionInProjection/ceil
+--- PASS: TestExtractorDatabaseLifecycleDropDatabase (0.00s)
+    --- PASS: TestExtractorDatabaseLifecycleDropDatabase/DROP_DATABASE (0.00s)
+    --- PASS: TestExtractorDatabaseLifecycleDropDatabase/DROP_SCHEMA_synonym (0.00s)
+    --- PASS: TestExtractorDatabaseLifecycleDropDatabase/DROP_DATABASE_IF_EXISTS (0.00s)
+    --- PASS: TestExtractorDatabaseLifecycleDropDatabase/DROP_SCHEMA_IF_EXISTS_synonym (0.00s)
+=== RUN   TestParseCatalogExpressionFactsBareExpressions/json_escaped
+=== CONT  TestQueryAccessEffectCandidates_ScalarFunctionInProjection/abs
+=== CONT  TestQueryAccessEffectCandidates_ScalarFunctionInProjection/upper
+=== CONT  TestQueryAccessEffectCandidates_ScalarFunctionInProjection/nullif
+=== CONT  TestQueryAccessEffectCandidates_ScalarFunctionInProjection/ifnull
+--- PASS: TestExtractorDatabaseLifecycleCreateDatabase (0.00s)
+    --- PASS: TestExtractorDatabaseLifecycleCreateDatabase/CREATE_DATABASE (0.00s)
+    --- PASS: TestExtractorDatabaseLifecycleCreateDatabase/CREATE_DATABASE_charset (0.00s)
+    --- PASS: TestExtractorDatabaseLifecycleCreateDatabase/CREATE_SCHEMA_IF_NOT_EXISTS_synonym (0.00s)
+    --- PASS: TestExtractorDatabaseLifecycleCreateDatabase/CREATE_DATABASE_IF_NOT_EXISTS (0.00s)
+    --- PASS: TestExtractorDatabaseLifecycleCreateDatabase/CREATE_DATABASE_collate (0.00s)
+    --- PASS: TestExtractorDatabaseLifecycleCreateDatabase/CREATE_SCHEMA_synonym (0.00s)
+=== CONT  TestQueryAccessEffectCandidates_ScalarFunctionInProjection/length
+=== RUN   TestQueryAccessEffectCandidates_AllExpressionLocations/scalar
+=== CONT  TestQueryAccessEffectCandidates_ScalarFunctionInProjection/floor
+=== CONT  TestExtractorT06A12NullClauseASTShape/tidb/not-null
+=== CONT  TestExtractorT06A12NullClauseASTShape/tidb/explicit-null
+=== CONT  TestExtractorT06A12NullClauseASTShape/mysql/omitted-nullability
+--- PASS: TestExtractorT06A13BinaryCharsetBoundary (0.00s)
+    --- PASS: TestExtractorT06A13BinaryCharsetBoundary/tidb (0.00s)
+    --- PASS: TestExtractorT06A13BinaryCharsetBoundary/mysql (0.00s)
+=== CONT  TestExtractorDMLProjectsReturningClause/INSERT_column_named_returning_is_not_a_clause
+=== RUN   TestQueryAccessEffectCandidates_AllExpressionLocations/set
+=== CONT  TestExtractorT06A12NullClauseASTShape/mysql/not-null
+=== CONT  TestExtractorT06A12NullClauseASTShape/mysql/explicit-null
+=== CONT  TestExtractorT06A12NullClauseASTShape/tidb/omitted-nullability
+=== CONT  TestExtractorT10DeclaredIndexVisibility/mysql/create_index_invisible
+=== CONT  TestExtractorT10DeclaredIndexVisibility/mysql/alter_add_unique_visible
+--- PASS: TestQueryAccessEffectCandidates_AllExpressionLocations (0.01s)
+    --- PASS: TestQueryAccessEffectCandidates_AllExpressionLocations/cte (0.00s)
+    --- PASS: TestQueryAccessEffectCandidates_AllExpressionLocations/join (0.00s)
+    --- PASS: TestQueryAccessEffectCandidates_AllExpressionLocations/where (0.00s)
+    --- PASS: TestQueryAccessEffectCandidates_AllExpressionLocations/group (0.00s)
+    --- PASS: TestQueryAccessEffectCandidates_AllExpressionLocations/having (0.00s)
+    --- PASS: TestQueryAccessEffectCandidates_AllExpressionLocations/order (0.00s)
+    --- PASS: TestQueryAccessEffectCandidates_AllExpressionLocations/limit_offset (0.00s)
+    --- PASS: TestQueryAccessEffectCandidates_AllExpressionLocations/scalar (0.00s)
+    --- PASS: TestQueryAccessEffectCandidates_AllExpressionLocations/set (0.00s)
+=== CONT  TestExtractorT10DeclaredIndexVisibility/mysql/alter_add_index_invisible
+--- PASS: TestExtractorT06A12NullClauseASTShape (0.00s)
+    --- PASS: TestExtractorT06A12NullClauseASTShape/tidb/not-null (0.00s)
+    --- PASS: TestExtractorT06A12NullClauseASTShape/tidb/explicit-null (0.00s)
+    --- PASS: TestExtractorT06A12NullClauseASTShape/mysql/omitted-nullability (0.00s)
+    --- PASS: TestExtractorT06A12NullClauseASTShape/mysql/not-null (0.00s)
+    --- PASS: TestExtractorT06A12NullClauseASTShape/mysql/explicit-null (0.00s)
+    --- PASS: TestExtractorT06A12NullClauseASTShape/tidb/omitted-nullability (0.00s)
+=== CONT  TestExtractorT10DeclaredIndexVisibility/mysql/create_table_primary_invisible
+--- PASS: TestExtractorT06A13ColumnFacts (0.00s)
+    --- PASS: TestExtractorT06A13ColumnFacts/tidb/safe (0.00s)
+    --- PASS: TestExtractorT06A13ColumnFacts/tidb/mixed (0.00s)
+    --- PASS: TestExtractorT06A13ColumnFacts/mysql/mixed (0.00s)
+    --- PASS: TestExtractorT06A13ColumnFacts/mysql/safe (0.00s)
+--- PASS: TestQueryAccessAuditRegression (0.00s)
+    --- PASS: TestQueryAccessAuditRegression/drop_table (0.00s)
+    --- PASS: TestQueryAccessAuditRegression/truncate (0.00s)
+    --- PASS: TestQueryAccessAuditRegression/select (0.00s)
+    --- PASS: TestQueryAccessAuditRegression/insert (0.00s)
+    --- PASS: TestQueryAccessAuditRegression/explain (0.00s)
+    --- PASS: TestQueryAccessAuditRegression/update (0.00s)
+    --- PASS: TestQueryAccessAuditRegression/alter_table (0.00s)
+    --- PASS: TestQueryAccessAuditRegression/delete (0.00s)
+    --- PASS: TestQueryAccessAuditRegression/create_table (0.00s)
+=== CONT  TestExtractorT10DeclaredIndexVisibility/tidb/alter_add_unique_visible
+=== CONT  TestExtractorT10DeclaredIndexVisibility/mysql/create_table_key_invisible
+=== CONT  TestExtractorT10DeclaredIndexVisibility/tidb/create_index_invisible
+=== RUN   TestParseCatalogExpressionFactsBareExpressions/json_extract_unhex_sha2
+--- PASS: TestQueryAccessEffectCandidates_ScalarFunctionInProjection (0.00s)
+    --- PASS: TestQueryAccessEffectCandidates_ScalarFunctionInProjection/lower (0.00s)
+    --- PASS: TestQueryAccessEffectCandidates_ScalarFunctionInProjection/ceil (0.00s)
+    --- PASS: TestQueryAccessEffectCandidates_ScalarFunctionInProjection/char_length (0.00s)
+    --- PASS: TestQueryAccessEffectCandidates_ScalarFunctionInProjection/abs (0.00s)
+    --- PASS: TestQueryAccessEffectCandidates_ScalarFunctionInProjection/ceiling (0.00s)
+    --- PASS: TestQueryAccessEffectCandidates_ScalarFunctionInProjection/upper (0.00s)
+    --- PASS: TestQueryAccessEffectCandidates_ScalarFunctionInProjection/nullif (0.00s)
+    --- PASS: TestQueryAccessEffectCandidates_ScalarFunctionInProjection/ifnull (0.00s)
+    --- PASS: TestQueryAccessEffectCandidates_ScalarFunctionInProjection/length (0.00s)
+    --- PASS: TestQueryAccessEffectCandidates_ScalarFunctionInProjection/floor (0.00s)
+=== PAUSE TestQueryAccessASTCensus/parser_error_invalid
+=== CONT  TestExtractorT10DeclaredIndexVisibility/tidb/create_index_visible
+=== CONT  TestExtractorT10DeclaredIndexVisibility/tidb/create_table_primary_invisible
+=== CONT  TestExtractorDMLProjectsReturningClause/single-table_DELETE_RETURNING_sets_fact
+=== RUN   TestQueryAccessASTCensus/explain_select
+=== PAUSE TestQueryAccessASTCensus/explain_select
+=== RUN   TestQueryAccessASTCensus/values_row
+=== PAUSE TestQueryAccessASTCensus/values_row
+=== RUN   TestQueryAccessASTCensus/create_table_is_ddl
+=== PAUSE TestQueryAccessASTCensus/create_table_is_ddl
+=== RUN   TestQueryAccessASTCensus/insert_is_dml
+=== PAUSE TestQueryAccessASTCensus/insert_is_dml
+=== RUN   TestQueryAccessASTCensus/update_is_dml
+=== RUN   TestT07R1ExpressionTopForm/arithmetic_wrapped
+=== PAUSE TestQueryAccessASTCensus/update_is_dml
+=== RUN   TestQueryAccessASTCensus/delete_is_dml
+=== PAUSE TestQueryAccessASTCensus/delete_is_dml
+=== CONT  TestExtractorT10DeclaredIndexVisibility/mysql/create_index_visible
+=== RUN   TestQueryAccessASTCensus/empty_input
+=== PAUSE TestQueryAccessASTCensus/empty_input
+=== RUN   TestQueryAccessASTCensus/comment_only
+=== PAUSE TestQueryAccessASTCensus/comment_only
+=== RUN   TestQueryAccessASTCensus/semicolon_only
+=== PAUSE TestQueryAccessASTCensus/semicolon_only
+=== CONT  TestExtractorT06A11PKMemberTypeAndUnsignedFacts/unsigned-reject
+=== CONT  TestExtractorT10DeclaredIndexVisibility/tidb/alter_add_index_invisible
+=== CONT  TestExtractorT06A11PKMemberTypeAndUnsignedFacts/unsigned-off
+=== CONT  TestExtractorT06A11PKMemberTypeAndUnsignedFacts/table-level-single
+=== RUN   TestParseCatalogExpressionFactsBareExpressions/unhex_sha2_cast
+=== CONT  TestExtractorT06A10AutoIncrementFacts/pk-auto
+=== CONT  TestExtractorDMLProjectsReturningClause/INSERT_without_RETURNING_omits_fact
+=== CONT  TestExtractorT06A11PKMemberTypeAndUnsignedFacts/unsigned-composite-skip
+=== CONT  TestExtractorT10DeclaredIndexVisibility/tidb/create_table_key_invisible
+=== RUN   TestT07R1ExpressionTopForm/arithmetic_column
+=== CONT  TestExtractorT06A11PKMemberTypeAndUnsignedFacts/bigint-pass
+=== CONT  TestExtractorT06A11PKMemberTypeAndUnsignedFacts/non-pk-precursor
+--- PASS: TestExtractorT10DeclaredIndexVisibility (0.00s)
+    --- PASS: TestExtractorT10DeclaredIndexVisibility/mysql/alter_add_unique_visible (0.00s)
+    --- PASS: TestExtractorT10DeclaredIndexVisibility/mysql/create_index_invisible (0.00s)
+    --- PASS: TestExtractorT10DeclaredIndexVisibility/tidb/alter_add_unique_visible (0.00s)
+    --- PASS: TestExtractorT10DeclaredIndexVisibility/mysql/create_table_primary_invisible (0.00s)
+    --- PASS: TestExtractorT10DeclaredIndexVisibility/tidb/create_index_invisible (0.00s)
+    --- PASS: TestExtractorT10DeclaredIndexVisibility/mysql/alter_add_index_invisible (0.00s)
+    --- PASS: TestExtractorT10DeclaredIndexVisibility/mysql/create_table_key_invisible (0.00s)
+    --- PASS: TestExtractorT10DeclaredIndexVisibility/tidb/create_index_visible (0.00s)
+    --- PASS: TestExtractorT10DeclaredIndexVisibility/mysql/create_index_visible (0.00s)
+    --- PASS: TestExtractorT10DeclaredIndexVisibility/tidb/create_table_primary_invisible (0.00s)
+    --- PASS: TestExtractorT10DeclaredIndexVisibility/tidb/alter_add_index_invisible (0.00s)
+    --- PASS: TestExtractorT10DeclaredIndexVisibility/tidb/create_table_key_invisible (0.00s)
+=== RUN   TestParseCatalogExpressionFactsBareExpressions/unknown_fn
+=== CONT  TestExtractorT06A10AutoIncrementFacts/init-mismatch
+=== CONT  TestExtractorT06A10AutoIncrementFacts/table-level-pk-auto
+=== CONT  TestExtractorT06A11PKMemberTypeAndUnsignedFacts/unsigned-pass
+=== CONT  TestExtractorT06A11PKMemberTypeAndUnsignedFacts/bigint-off
+=== RUN   TestParseCatalogExpressionFactsBareExpressions/literal_only
+=== CONT  TestExtractorT06A10AutoIncrementFacts/init-off
+=== CONT  TestExtractorT06A10AutoIncrementFacts/init-omitted
+=== RUN   TestParseCatalogExpressionFactsBareExpressions/empty
+=== RUN   TestParseCatalogExpressionFactsBareExpressions/whitespace
+=== CONT  TestExtractorT06A10AutoIncrementFacts/pk-off
+=== CONT  TestExtractorT06A10AutoIncrementFacts/init-match
+--- PASS: TestParseCatalogExpressionFactsBareExpressions (0.00s)
+    --- PASS: TestParseCatalogExpressionFactsBareExpressions/simple_arith (0.00s)
+    --- PASS: TestParseCatalogExpressionFactsBareExpressions/paren_arith (0.00s)
+    --- PASS: TestParseCatalogExpressionFactsBareExpressions/concat_escaped (0.00s)
+    --- PASS: TestParseCatalogExpressionFactsBareExpressions/json_escaped (0.00s)
+    --- PASS: TestParseCatalogExpressionFactsBareExpressions/json_extract_unhex_sha2 (0.00s)
+    --- PASS: TestParseCatalogExpressionFactsBareExpressions/unhex_sha2_cast (0.00s)
+    --- PASS: TestParseCatalogExpressionFactsBareExpressions/unknown_fn (0.00s)
+    --- PASS: TestParseCatalogExpressionFactsBareExpressions/literal_only (0.00s)
+    --- PASS: TestParseCatalogExpressionFactsBareExpressions/empty (0.00s)
+    --- PASS: TestParseCatalogExpressionFactsBareExpressions/whitespace (0.00s)
+=== CONT  TestExtractorT06A11PKMemberTypeAndUnsignedFacts/bigint-reject
+=== CONT  TestExtractorT06A10AutoIncrementFacts/composite
+=== CONT  TestExtractorT06A10AutoIncrementFacts/pk-no-auto
+=== CONT  TestExtractorT06A11PKMemberTypeAndUnsignedFacts/bigint-composite-skip
+=== CONT  TestExtractorT06A12NullabilityFacts/tidb/mixed-attribution
+=== CONT  TestExtractorT06A12NullabilityFacts/tidb/reordered-mixed
+=== CONT  TestExtractorT06A12NullabilityFacts/tidb/ordinary-nullable
+--- PASS: TestExtractorDMLProjectsReturningClause (0.00s)
+    --- PASS: TestExtractorDMLProjectsReturningClause/INSERT_RETURNING_sets_fact (0.00s)
+    --- PASS: TestExtractorDMLProjectsReturningClause/UPDATE_column_named_returning_is_not_a_clause (0.00s)
+    --- PASS: TestExtractorDMLProjectsReturningClause/UPDATE_without_RETURNING_omits_fact (0.00s)
+    --- PASS: TestExtractorDMLProjectsReturningClause/DELETE_without_RETURNING_omits_fact (0.00s)
+    --- PASS: TestExtractorDMLProjectsReturningClause/UPDATE_RETURNING_sets_fact (0.00s)
+    --- PASS: TestExtractorDMLProjectsReturningClause/INSERT_column_named_returning_is_not_a_clause (0.00s)
+    --- PASS: TestExtractorDMLProjectsReturningClause/single-table_DELETE_RETURNING_sets_fact (0.00s)
+    --- PASS: TestExtractorDMLProjectsReturningClause/INSERT_without_RETURNING_omits_fact (0.00s)
+=== CONT  TestExtractorT06A12NullabilityFacts/mysql/mixed-attribution
+=== CONT  TestExtractorT06A12NullabilityFacts/mysql/time-exempt
+=== CONT  TestExtractorT06A12NullabilityFacts/mysql/text-exempt
+=== CONT  TestExtractorT06A12NullabilityFacts/mysql/ordinary-not-null
+=== CONT  TestExtractorT06A12NullabilityFacts/tidb/time-exempt
+=== CONT  TestExtractorT06A12NullabilityFacts/mysql/ordinary-nullable
+=== CONT  TestExtractorT08ColumnPosition/mysql/add_first
+--- PASS: TestExtractorT06A11PKMemberTypeAndUnsignedFacts (0.00s)
+    --- PASS: TestExtractorT06A11PKMemberTypeAndUnsignedFacts/unsigned-reject (0.00s)
+    --- PASS: TestExtractorT06A11PKMemberTypeAndUnsignedFacts/table-level-single (0.00s)
+    --- PASS: TestExtractorT06A11PKMemberTypeAndUnsignedFacts/bigint-pass (0.00s)
+    --- PASS: TestExtractorT06A11PKMemberTypeAndUnsignedFacts/bigint-off (0.00s)
+    --- PASS: TestExtractorT06A11PKMemberTypeAndUnsignedFacts/unsigned-pass (0.00s)
+    --- PASS: TestExtractorT06A11PKMemberTypeAndUnsignedFacts/unsigned-composite-skip (0.00s)
+    --- PASS: TestExtractorT06A11PKMemberTypeAndUnsignedFacts/bigint-reject (0.00s)
+    --- PASS: TestExtractorT06A11PKMemberTypeAndUnsignedFacts/non-pk-precursor (0.00s)
+    --- PASS: TestExtractorT06A11PKMemberTypeAndUnsignedFacts/unsigned-off (0.00s)
+    --- PASS: TestExtractorT06A11PKMemberTypeAndUnsignedFacts/bigint-composite-skip (0.00s)
+=== CONT  TestExtractorT06A12NullabilityFacts/mysql/reordered-mixed
+=== CONT  TestExtractorT08ColumnPosition/tidb/setter_no_position
+=== CONT  TestExtractorT08ColumnPosition/tidb/change_after
+=== CONT  TestExtractorT08ColumnPosition/tidb/change_first
+=== CONT  TestExtractorT08ColumnPosition/tidb/modify_after
+=== CONT  TestExtractorT06A12NullabilityFacts/tidb/ordinary-not-null
+=== CONT  TestExtractorT08ColumnPosition/tidb/add_unpositioned
+=== CONT  TestExtractorT08ColumnPosition/tidb/add_first
+=== CONT  TestExtractorT08ColumnPosition/tidb/add_after
+=== CONT  TestExtractorT08ColumnPosition/mysql/modify_after
+=== CONT  TestExtractorT08ColumnPosition/mysql/setter_no_position
+--- PASS: TestExtractorT06A10AutoIncrementFacts (0.00s)
+    --- PASS: TestExtractorT06A10AutoIncrementFacts/init-mismatch (0.00s)
+    --- PASS: TestExtractorT06A10AutoIncrementFacts/init-omitted (0.00s)
+    --- PASS: TestExtractorT06A10AutoIncrementFacts/pk-auto (0.00s)
+    --- PASS: TestExtractorT06A10AutoIncrementFacts/composite (0.00s)
+    --- PASS: TestExtractorT06A10AutoIncrementFacts/init-match (0.00s)
+    --- PASS: TestExtractorT06A10AutoIncrementFacts/pk-no-auto (0.00s)
+    --- PASS: TestExtractorT06A10AutoIncrementFacts/table-level-pk-auto (0.00s)
+    --- PASS: TestExtractorT06A10AutoIncrementFacts/init-off (0.00s)
+    --- PASS: TestExtractorT06A10AutoIncrementFacts/pk-off (0.00s)
+=== CONT  TestExtractorT08ColumnPosition/mysql/change_after
+=== CONT  TestExtractorT08ColumnPosition/mysql/change_first
+=== CONT  TestExtractorT08ColumnPosition/mysql/add_unpositioned
+=== CONT  TestExtractorT08ColumnPosition/mysql/modify_first
+=== CONT  TestExtractorT08ColumnPosition/mysql/add_after
+=== CONT  TestExtractorT06A14TableOptions/tidb/engine-allowed
+=== CONT  TestExtractorT06A14TableOptions/mysql/s0-omitted
+=== CONT  TestExtractorT06A14TableOptions/tidb/s0-omitted
+=== CONT  TestExtractorT06A14TableOptions/mysql/rowformat-allowed
+=== CONT  TestExtractorT06A14TableOptions/mysql/charset-denied
+=== CONT  TestExtractorT06A14TableOptions/mysql/rowformat-denied
+=== CONT  TestExtractorT08ColumnPosition/tidb/modify_first
+=== CONT  TestExtractorT06A14TableOptions/tidb/rowformat-denied
+=== CONT  TestExtractorT06A14TableOptions/mysql/engine-allowed
+=== CONT  TestExtractorT06A14TableOptions/mysql/charset-allowed
+=== CONT  TestExtractorT06A14TableOptions/tidb/charset-allowed
+--- PASS: TestExtractorT08ColumnPosition (0.00s)
+    --- PASS: TestExtractorT08ColumnPosition/tidb/change_after (0.00s)
+    --- PASS: TestExtractorT08ColumnPosition/tidb/change_first (0.00s)
+    --- PASS: TestExtractorT08ColumnPosition/tidb/setter_no_position (0.00s)
+    --- PASS: TestExtractorT08ColumnPosition/tidb/modify_after (0.00s)
+    --- PASS: TestExtractorT08ColumnPosition/tidb/add_unpositioned (0.00s)
+    --- PASS: TestExtractorT08ColumnPosition/tidb/add_first (0.00s)
+    --- PASS: TestExtractorT08ColumnPosition/mysql/setter_no_position (0.00s)
+    --- PASS: TestExtractorT08ColumnPosition/mysql/modify_after (0.00s)
+    --- PASS: TestExtractorT08ColumnPosition/mysql/change_first (0.00s)
+    --- PASS: TestExtractorT08ColumnPosition/mysql/change_after (0.00s)
+    --- PASS: TestExtractorT08ColumnPosition/mysql/add_unpositioned (0.00s)
+    --- PASS: TestExtractorT08ColumnPosition/mysql/add_first (0.00s)
+    --- PASS: TestExtractorT08ColumnPosition/mysql/add_after (0.00s)
+    --- PASS: TestExtractorT08ColumnPosition/tidb/add_after (0.00s)
+    --- PASS: TestExtractorT08ColumnPosition/mysql/modify_first (0.00s)
+    --- PASS: TestExtractorT08ColumnPosition/tidb/modify_first (0.00s)
+=== CONT  TestExtractorT06A14TableOptions/tidb/engine-denied
+=== CONT  TestExtractorT06A12NullabilityFacts/tidb/text-exempt
+=== CONT  TestExtractorT06A14TableOptions/tidb/rowformat-allowed
+=== CONT  TestExtractorT06A14TableOptions/mysql/engine-denied
+=== CONT  TestExtractorT06A14TableOptions/tidb/charset-denied
+=== CONT  TestQueryAccessASTCensus/union_all
+=== CONT  TestQueryAccessASTCensus/union
+=== CONT  TestQueryAccessASTCensus/qualified_wildcard
+=== CONT  TestQueryAccessASTCensus/derived_table
+=== RUN   TestT07R1ExpressionTopForm/arith_function
+=== CONT  TestQueryAccessASTCensus/correlated_subquery_in_where
+=== CONT  TestQueryAccessASTCensus/simple_cte
+=== CONT  TestQueryAccessASTCensus/scalar_subquery
+=== CONT  TestQueryAccessASTCensus/select_star
+=== CONT  TestQueryAccessASTCensus/order_by
+=== CONT  TestQueryAccessASTCensus/simple_select
+=== CONT  TestQueryAccessASTCensus/having
+=== CONT  TestQueryAccessASTCensus/group_by
+=== CONT  TestQueryAccessASTCensus/intersect
+=== NAME  TestQueryAccessASTCensus/correlated_subquery_in_where
+    query_access_ast_census_test.go:472: census[correlated_subquery_in_where]: FuncCallExpr discovered → indeterminate under empty allowlist
+=== CONT  TestQueryAccessASTCensus/where_exists_subquery
+=== CONT  TestQueryAccessASTCensus/where_literal_equality
+=== NAME  TestQueryAccessASTCensus/scalar_subquery
+    query_access_ast_census_test.go:472: census[scalar_subquery]: FuncCallExpr discovered → indeterminate under empty allowlist
+=== CONT  TestQueryAccessASTCensus/right_join
+=== CONT  TestQueryAccessASTCensus/natural_join
+=== CONT  TestQueryAccessASTCensus/recursive_cte
+=== CONT  TestQueryAccessASTCensus/left_join
+=== CONT  TestQueryAccessASTCensus/using_join
+=== NAME  TestQueryAccessASTCensus/having
+    query_access_ast_census_test.go:472: census[having]: FuncCallExpr discovered → indeterminate under empty allowlist
+=== CONT  TestQueryAccessASTCensus/inner_join
+=== NAME  TestQueryAccessASTCensus/group_by
+    query_access_ast_census_test.go:472: census[group_by]: FuncCallExpr discovered → indeterminate under empty allowlist
+=== CONT  TestQueryAccessASTCensus/full_outer_join
+=== CONT  TestQueryAccessASTCensus/schema_qualified
+=== CONT  TestQueryAccessASTCensus/comment_only
+=== CONT  TestQueryAccessASTCensus/mixed_dml_select
+=== CONT  TestQueryAccessASTCensus/empty_input
+=== NAME  TestQueryAccessASTCensus/comment_only
+    query_access_ast_census_test.go:452: census[comment_only]: zero statements → indeterminate (fail-closed invariant)
+=== CONT  TestQueryAccessASTCensus/update_is_dml
+=== CONT  TestQueryAccessASTCensus/where_comparison
+=== CONT  TestQueryAccessASTCensus/insert_is_dml
+=== CONT  TestQueryAccessASTCensus/select_with_aliases
+=== NAME  TestQueryAccessASTCensus/empty_input
+    query_access_ast_census_test.go:452: census[empty_input]: zero statements → indeterminate (fail-closed invariant)
+=== NAME  TestQueryAccessASTCensus/mixed_dml_select
+    query_access_ast_census_test.go:478: census[mixed_dml_select]: multi-statement[0] node=*ast.SelectStmt
+=== CONT  TestQueryAccessASTCensus/except
+=== CONT  TestQueryAccessASTCensus/values_row
+=== CONT  TestQueryAccessASTCensus/delete_is_dml
+=== CONT  TestQueryAccessASTCensus/cross_join
+=== CONT  TestQueryAccessASTCensus/parser_error_invalid
+=== CONT  TestQueryAccessASTCensus/parser_error_select_from
+=== CONT  TestQueryAccessASTCensus/select_into_variable
+=== CONT  TestQueryAccessASTCensus/multi_select
+--- PASS: TestExtractorT06A12NullabilityFacts (0.00s)
+    --- PASS: TestExtractorT06A12NullabilityFacts/tidb/ordinary-nullable (0.00s)
+    --- PASS: TestExtractorT06A12NullabilityFacts/tidb/reordered-mixed (0.00s)
+    --- PASS: TestExtractorT06A12NullabilityFacts/mysql/time-exempt (0.00s)
+    --- PASS: TestExtractorT06A12NullabilityFacts/mysql/mixed-attribution (0.00s)
+    --- PASS: TestExtractorT06A12NullabilityFacts/mysql/text-exempt (0.00s)
+    --- PASS: TestExtractorT06A12NullabilityFacts/tidb/time-exempt (0.00s)
+    --- PASS: TestExtractorT06A12NullabilityFacts/mysql/ordinary-nullable (0.00s)
+    --- PASS: TestExtractorT06A12NullabilityFacts/mysql/ordinary-not-null (0.00s)
+    --- PASS: TestExtractorT06A12NullabilityFacts/tidb/mixed-attribution (0.00s)
+    --- PASS: TestExtractorT06A12NullabilityFacts/tidb/ordinary-not-null (0.00s)
+    --- PASS: TestExtractorT06A12NullabilityFacts/mysql/reordered-mixed (0.00s)
+    --- PASS: TestExtractorT06A12NullabilityFacts/tidb/text-exempt (0.00s)
+=== CONT  TestQueryAccessASTCensus/builtin_concat
+=== CONT  TestQueryAccessASTCensus/unknown_function
+=== CONT  TestQueryAccessASTCensus/window_function
+=== CONT  TestQueryAccessASTCensus/select_into_dumpfile
+=== CONT  TestQueryAccessASTCensus/explain_select
+=== NAME  TestQueryAccessASTCensus/window_function
+    query_access_ast_census_test.go:472: census[window_function]: FuncCallExpr discovered → indeterminate under empty allowlist
+=== CONT  TestQueryAccessASTCensus/for_update
+=== NAME  TestQueryAccessASTCensus/mixed_dml_select
+    query_access_ast_census_test.go:478: census[mixed_dml_select]: multi-statement[1] node=*ast.DeleteStmt
+=== CONT  TestQueryAccessASTCensus/select_into_outfile
+=== CONT  TestQueryAccessASTCensus/semicolon_only
+=== NAME  TestQueryAccessASTCensus/select_into_outfile
+    query_access_ast_census_test.go:470: census[select_into_outfile]: stmt[0] SelectIntoOpt != nil confirms not_read_only
+=== CONT  TestQueryAccessASTCensus/create_table_is_ddl
+=== NAME  TestQueryAccessASTCensus/semicolon_only
+    query_access_ast_census_test.go:452: census[semicolon_only]: zero statements → indeterminate (fail-closed invariant)
+=== CONT  TestQueryAccessASTCensus/for_share
+=== NAME  TestQueryAccessASTCensus/builtin_concat
+    query_access_ast_census_test.go:472: census[builtin_concat]: FuncCallExpr discovered → indeterminate under empty allowlist
+=== RUN   TestT07R1ExpressionTopForm/case
+=== NAME  TestQueryAccessASTCensus/for_share
+    query_access_ast_census_test.go:470: census[for_share]: stmt[0] LockInfo.LockType=2 confirms not_read_only
+--- PASS: TestExtractorT06A14TableOptions (0.00s)
+    --- PASS: TestExtractorT06A14TableOptions/tidb/s0-omitted (0.00s)
+    --- PASS: TestExtractorT06A14TableOptions/tidb/engine-allowed (0.00s)
+    --- PASS: TestExtractorT06A14TableOptions/mysql/s0-omitted (0.00s)
+    --- PASS: TestExtractorT06A14TableOptions/mysql/rowformat-allowed (0.00s)
+    --- PASS: TestExtractorT06A14TableOptions/tidb/rowformat-denied (0.00s)
+    --- PASS: TestExtractorT06A14TableOptions/mysql/charset-denied (0.00s)
+    --- PASS: TestExtractorT06A14TableOptions/mysql/engine-allowed (0.00s)
+    --- PASS: TestExtractorT06A14TableOptions/tidb/charset-allowed (0.00s)
+    --- PASS: TestExtractorT06A14TableOptions/tidb/rowformat-allowed (0.00s)
+    --- PASS: TestExtractorT06A14TableOptions/tidb/engine-denied (0.00s)
+    --- PASS: TestExtractorT06A14TableOptions/mysql/rowformat-denied (0.00s)
+    --- PASS: TestExtractorT06A14TableOptions/mysql/charset-allowed (0.00s)
+    --- PASS: TestExtractorT06A14TableOptions/mysql/engine-denied (0.00s)
+    --- PASS: TestExtractorT06A14TableOptions/tidb/charset-denied (0.00s)
+=== CONT  TestQueryAccessASTCensus/lock_in_share_mode
+=== NAME  TestQueryAccessASTCensus/multi_select
+    query_access_ast_census_test.go:478: census[multi_select]: multi-statement[0] node=*ast.SelectStmt
+=== NAME  TestQueryAccessASTCensus/lock_in_share_mode
+    query_access_ast_census_test.go:470: census[lock_in_share_mode]: stmt[0] LockInfo.LockType=2 confirms not_read_only
+=== NAME  TestQueryAccessASTCensus/multi_select
+    query_access_ast_census_test.go:478: census[multi_select]: multi-statement[1] node=*ast.SelectStmt
+=== NAME  TestQueryAccessASTCensus/unknown_function
+    query_access_ast_census_test.go:472: census[unknown_function]: FuncCallExpr discovered → indeterminate under empty allowlist
+=== CONT  TestQueryAccessASTCensus/builtin_now
+=== RUN   TestT07R1ExpressionTopForm/unary
+=== NAME  TestQueryAccessASTCensus/for_update
+    query_access_ast_census_test.go:470: census[for_update]: stmt[0] LockInfo.LockType=1 confirms not_read_only
+=== NAME  TestQueryAccessASTCensus/builtin_now
+    query_access_ast_census_test.go:472: census[builtin_now]: FuncCallExpr discovered → indeterminate under empty allowlist
+--- PASS: TestQueryAccessASTCensus (0.01s)
+    --- PASS: TestQueryAccessASTCensus/union_all (0.00s)
+    --- PASS: TestQueryAccessASTCensus/union (0.00s)
+    --- PASS: TestQueryAccessASTCensus/qualified_wildcard (0.00s)
+    --- PASS: TestQueryAccessASTCensus/derived_table (0.00s)
+    --- PASS: TestQueryAccessASTCensus/select_star (0.00s)
+    --- PASS: TestQueryAccessASTCensus/order_by (0.00s)
+    --- PASS: TestQueryAccessASTCensus/simple_cte (0.00s)
+    --- PASS: TestQueryAccessASTCensus/simple_select (0.00s)
+    --- PASS: TestQueryAccessASTCensus/correlated_subquery_in_where (0.00s)
+    --- PASS: TestQueryAccessASTCensus/scalar_subquery (0.00s)
+    --- PASS: TestQueryAccessASTCensus/where_exists_subquery (0.00s)
+    --- PASS: TestQueryAccessASTCensus/where_literal_equality (0.00s)
+    --- PASS: TestQueryAccessASTCensus/natural_join (0.00s)
+    --- PASS: TestQueryAccessASTCensus/having (0.00s)
+    --- PASS: TestQueryAccessASTCensus/group_by (0.00s)
+    --- PASS: TestQueryAccessASTCensus/recursive_cte (0.00s)
+    --- PASS: TestQueryAccessASTCensus/left_join (0.00s)
+    --- PASS: TestQueryAccessASTCensus/right_join (0.00s)
+    --- PASS: TestQueryAccessASTCensus/inner_join (0.00s)
+    --- PASS: TestQueryAccessASTCensus/using_join (0.00s)
+    --- PASS: TestQueryAccessASTCensus/full_outer_join (0.00s)
+    --- PASS: TestQueryAccessASTCensus/comment_only (0.00s)
+    --- PASS: TestQueryAccessASTCensus/intersect (0.00s)
+    --- PASS: TestQueryAccessASTCensus/empty_input (0.00s)
+    --- PASS: TestQueryAccessASTCensus/schema_qualified (0.00s)
+    --- PASS: TestQueryAccessASTCensus/except (0.00s)
+    --- PASS: TestQueryAccessASTCensus/select_with_aliases (0.00s)
+    --- PASS: TestQueryAccessASTCensus/update_is_dml (0.00s)
+    --- PASS: TestQueryAccessASTCensus/where_comparison (0.00s)
+    --- PASS: TestQueryAccessASTCensus/parser_error_select_from (0.00s)
+    --- PASS: TestQueryAccessASTCensus/parser_error_invalid (0.00s)
+    --- PASS: TestQueryAccessASTCensus/delete_is_dml (0.00s)
+    --- PASS: TestQueryAccessASTCensus/cross_join (0.00s)
+    --- PASS: TestQueryAccessASTCensus/values_row (0.00s)
+    --- PASS: TestQueryAccessASTCensus/select_into_variable (0.00s)
+    --- PASS: TestQueryAccessASTCensus/insert_is_dml (0.00s)
+    --- PASS: TestQueryAccessASTCensus/window_function (0.00s)
+    --- PASS: TestQueryAccessASTCensus/select_into_dumpfile (0.00s)
+    --- PASS: TestQueryAccessASTCensus/mixed_dml_select (0.00s)
+    --- PASS: TestQueryAccessASTCensus/explain_select (0.00s)
+    --- PASS: TestQueryAccessASTCensus/select_into_outfile (0.00s)
+    --- PASS: TestQueryAccessASTCensus/semicolon_only (0.00s)
+    --- PASS: TestQueryAccessASTCensus/create_table_is_ddl (0.00s)
+    --- PASS: TestQueryAccessASTCensus/builtin_concat (0.00s)
+    --- PASS: TestQueryAccessASTCensus/for_share (0.00s)
+    --- PASS: TestQueryAccessASTCensus/lock_in_share_mode (0.00s)
+    --- PASS: TestQueryAccessASTCensus/multi_select (0.00s)
+    --- PASS: TestQueryAccessASTCensus/unknown_function (0.00s)
+    --- PASS: TestQueryAccessASTCensus/for_update (0.00s)
+    --- PASS: TestQueryAccessASTCensus/builtin_now (0.00s)
+=== RUN   TestT07R1ExpressionTopForm/column
+=== RUN   TestT07R1ExpressionTopForm/nested_same_callee
+=== RUN   TestT07R1ExpressionTopForm/nested_mixed_calls
+--- PASS: TestT07R1ExpressionTopForm (0.01s)
+    --- PASS: TestT07R1ExpressionTopForm/call (0.00s)
+    --- PASS: TestT07R1ExpressionTopForm/parens_call (0.00s)
+    --- PASS: TestT07R1ExpressionTopForm/arithmetic_constant (0.00s)
+    --- PASS: TestT07R1ExpressionTopForm/arithmetic_wrapped (0.00s)
+    --- PASS: TestT07R1ExpressionTopForm/arithmetic_column (0.00s)
+    --- PASS: TestT07R1ExpressionTopForm/arith_function (0.00s)
+    --- PASS: TestT07R1ExpressionTopForm/case (0.00s)
+    --- PASS: TestT07R1ExpressionTopForm/unary (0.00s)
+    --- PASS: TestT07R1ExpressionTopForm/column (0.00s)
+    --- PASS: TestT07R1ExpressionTopForm/nested_same_callee (0.00s)
+    --- PASS: TestT07R1ExpressionTopForm/nested_mixed_calls (0.00s)
+PASS
+ok  	github.com/Fanduzi/DeltaScope/internal/infrastructure/parser/tidb	0.583s

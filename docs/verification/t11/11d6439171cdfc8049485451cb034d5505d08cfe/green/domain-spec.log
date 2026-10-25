@@ -1,0 +1,702 @@
+=== RUN   TestT07R1PremiseUnresolvedCandidateSet
+=== PAUSE TestT07R1PremiseUnresolvedCandidateSet
+=== RUN   TestT07R1PremiseAlterSameStatementBind
+=== PAUSE TestT07R1PremiseAlterSameStatementBind
+=== RUN   TestT07R1PremiseAlterUnknownPrior
+=== PAUSE TestT07R1PremiseAlterUnknownPrior
+=== RUN   TestT07R1PremiseQualifiedReference
+=== PAUSE TestT07R1PremiseQualifiedReference
+=== RUN   TestT07R1CloneExpressionFacts
+=== PAUSE TestT07R1CloneExpressionFacts
+=== RUN   TestT07PostgreSQLDoesNotActivate
+=== PAUSE TestT07PostgreSQLDoesNotActivate
+=== RUN   TestT07ColumnDependentsUnknownVsKnownEmpty
+=== PAUSE TestT07ColumnDependentsUnknownVsKnownEmpty
+=== RUN   TestT07ColumnDependentsTransitiveOrder
+=== PAUSE TestT07ColumnDependentsTransitiveOrder
+=== RUN   TestT07ColumnDependentsCycleIsUnknown
+=== PAUSE TestT07ColumnDependentsCycleIsUnknown
+=== RUN   TestT07ColumnDependentsBounded
+=== PAUSE TestT07ColumnDependentsBounded
+=== RUN   TestT07ColumnDependentsQualifierBinding
+=== PAUSE TestT07ColumnDependentsQualifierBinding
+=== RUN   TestT10AssessVisibilityGateMySQL57
+=== PAUSE TestT10AssessVisibilityGateMySQL57
+=== RUN   TestT10AssessVisibilitySupportedMySQL80
+=== PAUSE TestT10AssessVisibilitySupportedMySQL80
+=== RUN   TestT10AssessMissingVersionGap
+=== PAUSE TestT10AssessMissingVersionGap
+=== RUN   TestT10AssessOutOfRangeGap
+=== PAUSE TestT10AssessOutOfRangeGap
+=== RUN   TestT10AssessDescendingTiDBUnconditional
+=== PAUSE TestT10AssessDescendingTiDBUnconditional
+=== RUN   TestT10AssessDescendingMySQL57
+=== PAUSE TestT10AssessDescendingMySQL57
+=== RUN   TestT10AssessPrimaryVisibility
+=== PAUSE TestT10AssessPrimaryVisibility
+=== RUN   TestT10AssessAlterIndexPrimaryMySQL
+=== PAUSE TestT10AssessAlterIndexPrimaryMySQL
+=== RUN   TestT10AssessMultiValuedFeaturePairing
+=== PAUSE TestT10AssessMultiValuedFeaturePairing
+=== RUN   TestT10AssessNonMySQLFamilySilent
+=== PAUSE TestT10AssessNonMySQLFamilySilent
+=== RUN   TestT10R4StoredIndexNamesDialectMatrix
+=== PAUSE TestT10R4StoredIndexNamesDialectMatrix
+=== RUN   TestT10R4StoredIndexNamesLengthBoundary
+=== PAUSE TestT10R4StoredIndexNamesLengthBoundary
+=== RUN   TestT10R4PrimaryKeyClustered
+=== PAUSE TestT10R4PrimaryKeyClustered
+=== RUN   TestT10R5MySQLSuffixTruncationBoundary
+=== PAUSE TestT10R5MySQLSuffixTruncationBoundary
+=== RUN   TestT10R5TiDBSuffixLengthBoundary
+=== PAUSE TestT10R5TiDBSuffixLengthBoundary
+=== RUN   TestMetadataStatusConstants
+=== PAUSE TestMetadataStatusConstants
+=== RUN   TestObjectSnapshotStatusHelpers
+=== PAUSE TestObjectSnapshotStatusHelpers
+=== RUN   TestObjectSnapshotZeroValueIsUnavailable
+=== PAUSE TestObjectSnapshotZeroValueIsUnavailable
+=== RUN   TestObjectSnapshotRoundTrip
+=== PAUSE TestObjectSnapshotRoundTrip
+=== RUN   TestObjectSnapshotOmitsEmptyFields
+=== PAUSE TestObjectSnapshotOmitsEmptyFields
+=== RUN   TestObjectSnapshotAmbiguousWithCandidates
+=== PAUSE TestObjectSnapshotAmbiguousWithCandidates
+=== RUN   TestSafeAttributesBlocksSensitiveKeys
+=== PAUSE TestSafeAttributesBlocksSensitiveKeys
+=== RUN   TestSafeAttributesNilAttributes
+=== PAUSE TestSafeAttributesNilAttributes
+=== RUN   TestSafeAttributesEmptyMap
+=== PAUSE TestSafeAttributesEmptyMap
+=== RUN   TestFindObjectByTypeAndName
+=== PAUSE TestFindObjectByTypeAndName
+=== RUN   TestFindObjectEdgeCases
+=== PAUSE TestFindObjectEdgeCases
+=== RUN   TestFindObjectsByType
+=== PAUSE TestFindObjectsByType
+=== RUN   TestMetadataObjectsFieldRoundTrip
+=== PAUSE TestMetadataObjectsFieldRoundTrip
+=== RUN   TestMetadataObjectsOittedWhenNil
+=== PAUSE TestMetadataObjectsOittedWhenNil
+=== RUN   TestPGObjectTypes
+=== PAUSE TestPGObjectTypes
+=== RUN   TestT10R2ExplicitPrimaryNewUniqueInvisibleAllowed
+=== PAUSE TestT10R2ExplicitPrimaryNewUniqueInvisibleAllowed
+=== RUN   TestT10R2NoPrimaryFirstCandidateStillRefused
+=== PAUSE TestT10R2NoPrimaryFirstCandidateStillRefused
+=== RUN   TestT10R2ExistingHolderNewUniqueInvisibleAllowed
+=== PAUSE TestT10R2ExistingHolderNewUniqueInvisibleAllowed
+=== RUN   TestT10R2UnnamedUniqueMembersDistinctHolders
+=== PAUSE TestT10R2UnnamedUniqueMembersDistinctHolders
+=== RUN   TestT10R2UnnamedFirstUniqueInvisibleRefused
+=== PAUSE TestT10R2UnnamedFirstUniqueInvisibleRefused
+=== RUN   TestT10R2UnknownPrimaryBlocksPublication
+=== PAUSE TestT10R2UnknownPrimaryBlocksPublication
+=== RUN   TestT10R2PrimaryKeyHandleTriState
+=== PAUSE TestT10R2PrimaryKeyHandleTriState
+=== RUN   TestT10R2PrimaryObjectUnknownHandle
+=== PAUSE TestT10R2PrimaryObjectUnknownHandle
+=== RUN   TestT10R2FulltextTextNoPrefixRequired
+=== PAUSE TestT10R2FulltextTextNoPrefixRequired
+=== RUN   TestT10R2MemberLegalityKindRouting
+=== PAUSE TestT10R2MemberLegalityKindRouting
+=== RUN   TestT10R2FulltextUnknownTypeGapAttribution
+=== PAUSE TestT10R2FulltextUnknownTypeGapAttribution
+=== RUN   TestT10R2PrefixLegality
+=== PAUSE TestT10R2PrefixLegality
+=== RUN   TestT10R2MultiValuedCastLegality
+=== PAUSE TestT10R2MultiValuedCastLegality
+=== RUN   TestT10R2PrimaryRoleFourStates
+=== PAUSE TestT10R2PrimaryRoleFourStates
+=== RUN   TestT10R3PrimaryKeyHandleIntOnlyAlterPrimaryKey
+=== PAUSE TestT10R3PrimaryKeyHandleIntOnlyAlterPrimaryKey
+=== RUN   TestT10R3PrimaryKeyHandleModeControls
+=== PAUSE TestT10R3PrimaryKeyHandleModeControls
+=== RUN   TestT10R3StoredIndexNames
+=== PAUSE TestT10R3StoredIndexNames
+=== RUN   TestKindAndDialectStringReturnUnderlyingValue
+=== PAUSE TestKindAndDialectStringReturnUnderlyingValue
+=== RUN   TestMutationTargetTablesPrefersNamedTargets
+=== PAUSE TestMutationTargetTablesPrefersNamedTargets
+=== RUN   TestMutationTargetTablesFallsBackToTables
+=== PAUSE TestMutationTargetTablesFallsBackToTables
+=== RUN   TestDDLTableTargetsPrefersPopulatedTargets
+=== PAUSE TestDDLTableTargetsPrefersPopulatedTargets
+=== RUN   TestDDLTableTargetsFallsBackToPrimaryTable
+=== PAUSE TestDDLTableTargetsFallsBackToPrimaryTable
+=== RUN   TestStatementKindAndDialectTypes
+=== PAUSE TestStatementKindAndDialectTypes
+=== RUN   TestStatementMetadataSupportsInstanceAndTargetTableFacts
+=== PAUSE TestStatementMetadataSupportsInstanceAndTargetTableFacts
+=== RUN   TestTableSnapshotHasPrimaryKeyRecognizesConstraintOnlySnapshot
+=== PAUSE TestTableSnapshotHasPrimaryKeyRecognizesConstraintOnlySnapshot
+=== RUN   TestTableSnapshotHasPrimaryKeyRecognizesIndexOnlySnapshot
+=== PAUSE TestTableSnapshotHasPrimaryKeyRecognizesIndexOnlySnapshot
+=== RUN   TestTableSnapshotHasPrimaryKeyReturnsFalseWithoutPrimaryKeyFacts
+=== PAUSE TestTableSnapshotHasPrimaryKeyReturnsFalseWithoutPrimaryKeyFacts
+=== RUN   TestDDLTracksExplicitNamesForNamingGovernanceTargets
+=== PAUSE TestDDLTracksExplicitNamesForNamingGovernanceTargets
+=== RUN   TestConstraintPreservesForeignKeyReferencedObjectFacts
+=== PAUSE TestConstraintPreservesForeignKeyReferencedObjectFacts
+=== RUN   TestConstraintOmitsForeignKeyReferencedFieldsWhenAbsent
+=== PAUSE TestConstraintOmitsForeignKeyReferencedFieldsWhenAbsent
+=== RUN   TestConstraintPreservesForeignKeyReferencedSchemaFacts
+=== PAUSE TestConstraintPreservesForeignKeyReferencedSchemaFacts
+=== RUN   TestConstraintOmitsReferencedSchemaWhenAbsent
+=== PAUSE TestConstraintOmitsReferencedSchemaWhenAbsent
+=== RUN   TestStatementDMLImpactFieldsPreserveZeroValueAndJSONBehavior
+=== PAUSE TestStatementDMLImpactFieldsPreserveZeroValueAndJSONBehavior
+=== RUN   TestDMLPreservesHasReturningWhenTrue
+=== PAUSE TestDMLPreservesHasReturningWhenTrue
+=== RUN   TestDMLOmitsHasReturningWhenFalse
+=== PAUSE TestDMLOmitsHasReturningWhenFalse
+=== RUN   TestColumnPreservesGeneratedWhenFact
+=== PAUSE TestColumnPreservesGeneratedWhenFact
+=== RUN   TestColumnOmitsGeneratedWhenWhenEmpty
+=== PAUSE TestColumnOmitsGeneratedWhenWhenEmpty
+=== RUN   TestColumnPreservesIsIdentityFact
+=== PAUSE TestColumnPreservesIsIdentityFact
+=== RUN   TestColumnOmitsIsIdentityWhenFalse
+=== PAUSE TestColumnOmitsIsIdentityWhenFalse
+=== RUN   TestColumnPreservesIdentityOptionsFact
+=== PAUSE TestColumnPreservesIdentityOptionsFact
+=== RUN   TestColumnOmitsIdentityOptionsWhenNil
+=== PAUSE TestColumnOmitsIdentityOptionsWhenNil
+=== RUN   TestUnsupportedDetailPreservesMetadata
+=== PAUSE TestUnsupportedDetailPreservesMetadata
+=== RUN   TestUnsupportedDetailOmitsMetadataWhenNil
+=== PAUSE TestUnsupportedDetailOmitsMetadataWhenNil
+=== RUN   TestIndexPreservesAdvancedFactsInJSON
+=== PAUSE TestIndexPreservesAdvancedFactsInJSON
+=== RUN   TestIndexOmitsAdvancedFactsWhenZero
+=== PAUSE TestIndexOmitsAdvancedFactsWhenZero
+=== RUN   TestDDLObjectLifecycleFieldsSerializeCorrectly
+=== PAUSE TestDDLObjectLifecycleFieldsSerializeCorrectly
+=== RUN   TestDDLTypeLifecycleOperationsSerializeCorrectly
+=== PAUSE TestDDLTypeLifecycleOperationsSerializeCorrectly
+=== RUN   TestDDLDomainOperationsRoundTrip
+=== PAUSE TestDDLDomainOperationsRoundTrip
+=== RUN   TestDDLGrantTableOperationsRoundTrip
+=== PAUSE TestDDLGrantTableOperationsRoundTrip
+=== RUN   TestDDLObjectFieldsOmitWhenEmpty
+=== PAUSE TestDDLObjectFieldsOmitWhenEmpty
+=== RUN   TestRenameColumnVersionSupportFor
+=== PAUSE TestRenameColumnVersionSupportFor
+=== RUN   TestParseTargetVersionCanonicalizesValidInput
+=== PAUSE TestParseTargetVersionCanonicalizesValidInput
+=== RUN   TestParseTargetVersionRejectsMalformedInput
+=== PAUSE TestParseTargetVersionRejectsMalformedInput
+=== RUN   TestVersionInValidatedSeriesCoversMilestoneAnchors
+=== PAUSE TestVersionInValidatedSeriesCoversMilestoneAnchors
+=== RUN   TestParseObservedVersionCanonicalizesBanners
+=== PAUSE TestParseObservedVersionCanonicalizesBanners
+=== RUN   TestParseObservedVersionReturnsNilWithoutFact
+=== PAUSE TestParseObservedVersionReturnsNilWithoutFact
+=== RUN   TestVersionIdentitySerializesZeroComponents
+=== PAUSE TestVersionIdentitySerializesZeroComponents
+=== RUN   TestValidateTargetVersionIsSharedPreflight
+=== PAUSE TestValidateTargetVersionIsSharedPreflight
+=== RUN   TestWithTargetSourceStampsProductAndRange
+=== PAUSE TestWithTargetSourceStampsProductAndRange
+=== RUN   TestVersionProductForDialect
+=== PAUSE TestVersionProductForDialect
+=== CONT  TestT07R1PremiseUnresolvedCandidateSet
+=== CONT  TestDDLObjectLifecycleFieldsSerializeCorrectly
+=== CONT  TestVersionInValidatedSeriesCoversMilestoneAnchors
+--- PASS: TestVersionInValidatedSeriesCoversMilestoneAnchors (0.00s)
+=== CONT  TestVersionProductForDialect
+--- PASS: TestVersionProductForDialect (0.00s)
+=== CONT  TestWithTargetSourceStampsProductAndRange
+--- PASS: TestWithTargetSourceStampsProductAndRange (0.00s)
+=== CONT  TestValidateTargetVersionIsSharedPreflight
+--- PASS: TestValidateTargetVersionIsSharedPreflight (0.00s)
+=== CONT  TestVersionIdentitySerializesZeroComponents
+=== CONT  TestDDLObjectFieldsOmitWhenEmpty
+=== CONT  TestParseObservedVersionReturnsNilWithoutFact
+--- PASS: TestParseObservedVersionReturnsNilWithoutFact (0.00s)
+=== CONT  TestParseObservedVersionCanonicalizesBanners
+=== RUN   TestParseObservedVersionCanonicalizesBanners/mysql_plain
+=== RUN   TestParseObservedVersionCanonicalizesBanners/mysql_suffix
+=== CONT  TestParseTargetVersionRejectsMalformedInput
+=== RUN   TestParseObservedVersionCanonicalizesBanners/mysql_community
+=== RUN   TestParseTargetVersionRejectsMalformedInput/#00
+=== RUN   TestParseObservedVersionCanonicalizesBanners/mysql_unvalidated
+=== RUN   TestParseObservedVersionCanonicalizesBanners/mysql_banner_never_inherits_a_tidb_product
+=== RUN   TestParseTargetVersionRejectsMalformedInput/v
+=== RUN   TestParseObservedVersionCanonicalizesBanners/tidb_compatibility_prefix_keeps_tidb_version
+=== RUN   TestParseTargetVersionRejectsMalformedInput/8.4
+=== RUN   TestParseObservedVersionCanonicalizesBanners/tidb_banner_is_tidb_even_under_a_mysql_request
+=== RUN   TestParseTargetVersionRejectsMalformedInput/8.4.x
+--- PASS: TestParseObservedVersionCanonicalizesBanners (0.00s)
+    --- PASS: TestParseObservedVersionCanonicalizesBanners/mysql_plain (0.00s)
+    --- PASS: TestParseObservedVersionCanonicalizesBanners/mysql_suffix (0.00s)
+    --- PASS: TestParseObservedVersionCanonicalizesBanners/mysql_community (0.00s)
+    --- PASS: TestParseObservedVersionCanonicalizesBanners/mysql_unvalidated (0.00s)
+    --- PASS: TestParseObservedVersionCanonicalizesBanners/mysql_banner_never_inherits_a_tidb_product (0.00s)
+    --- PASS: TestParseObservedVersionCanonicalizesBanners/tidb_compatibility_prefix_keeps_tidb_version (0.00s)
+    --- PASS: TestParseObservedVersionCanonicalizesBanners/tidb_banner_is_tidb_even_under_a_mysql_request (0.00s)
+=== CONT  TestIndexPreservesAdvancedFactsInJSON
+=== RUN   TestParseTargetVersionRejectsMalformedInput/8.4.10-extra
+=== CONT  TestParseTargetVersionCanonicalizesValidInput
+=== RUN   TestParseTargetVersionCanonicalizesValidInput/plain
+=== CONT  TestDDLDomainOperationsRoundTrip
+--- PASS: TestT07R1PremiseUnresolvedCandidateSet (0.00s)
+=== CONT  TestUnsupportedDetailOmitsMetadataWhenNil
+=== CONT  TestDDLGrantTableOperationsRoundTrip
+=== CONT  TestTableSnapshotHasPrimaryKeyRecognizesConstraintOnlySnapshot
+--- PASS: TestTableSnapshotHasPrimaryKeyRecognizesConstraintOnlySnapshot (0.00s)
+=== CONT  TestUnsupportedDetailPreservesMetadata
+=== CONT  TestIndexOmitsAdvancedFactsWhenZero
+=== RUN   TestParseTargetVersionRejectsMalformedInput/8.0.11-TiDB-v8.5.0
+=== CONT  TestRenameColumnVersionSupportFor
+=== RUN   TestParseTargetVersionRejectsMalformedInput/-8.4.10
+=== RUN   TestRenameColumnVersionSupportFor/nil
+=== PAUSE TestRenameColumnVersionSupportFor/nil
+=== RUN   TestRenameColumnVersionSupportFor/empty_product
+=== PAUSE TestRenameColumnVersionSupportFor/empty_product
+=== RUN   TestRenameColumnVersionSupportFor/mysql_5.7
+=== RUN   TestParseTargetVersionRejectsMalformedInput/8.4.10.1
+=== PAUSE TestRenameColumnVersionSupportFor/mysql_5.7
+=== RUN   TestRenameColumnVersionSupportFor/mysql_8.0.0
+=== RUN   TestParseTargetVersionCanonicalizesValidInput/lower_v_prefix
+=== RUN   TestParseTargetVersionRejectsMalformedInput/eight.point.four.ten
+=== RUN   TestParseTargetVersionCanonicalizesValidInput/upper_V_prefix
+=== PAUSE TestRenameColumnVersionSupportFor/mysql_8.0.0
+=== RUN   TestParseTargetVersionRejectsMalformedInput/99999999999999999999999.0.0
+=== RUN   TestParseTargetVersionCanonicalizesValidInput/surrounding_whitespace
+=== RUN   TestRenameColumnVersionSupportFor/mysql_8.0.2
+--- PASS: TestUnsupportedDetailOmitsMetadataWhenNil (0.00s)
+=== CONT  TestColumnPreservesIdentityOptionsFact
+=== CONT  TestColumnOmitsIdentityOptionsWhenNil
+--- PASS: TestVersionIdentitySerializesZeroComponents (0.00s)
+=== RUN   TestParseTargetVersionRejectsMalformedInput/8.-4.10
+=== PAUSE TestRenameColumnVersionSupportFor/mysql_8.0.2
+--- PASS: TestUnsupportedDetailPreservesMetadata (0.00s)
+=== RUN   TestRenameColumnVersionSupportFor/mysql_8.0.3
+=== RUN   TestParseTargetVersionRejectsMalformedInput/8.4.-10
+--- PASS: TestColumnOmitsIdentityOptionsWhenNil (0.00s)
+=== CONT  TestColumnOmitsIsIdentityWhenFalse
+--- PASS: TestParseTargetVersionRejectsMalformedInput (0.00s)
+    --- PASS: TestParseTargetVersionRejectsMalformedInput/#00 (0.00s)
+    --- PASS: TestParseTargetVersionRejectsMalformedInput/v (0.00s)
+    --- PASS: TestParseTargetVersionRejectsMalformedInput/8.4 (0.00s)
+    --- PASS: TestParseTargetVersionRejectsMalformedInput/8.4.x (0.00s)
+    --- PASS: TestParseTargetVersionRejectsMalformedInput/8.4.10-extra (0.00s)
+    --- PASS: TestParseTargetVersionRejectsMalformedInput/8.0.11-TiDB-v8.5.0 (0.00s)
+    --- PASS: TestParseTargetVersionRejectsMalformedInput/-8.4.10 (0.00s)
+    --- PASS: TestParseTargetVersionRejectsMalformedInput/8.4.10.1 (0.00s)
+    --- PASS: TestParseTargetVersionRejectsMalformedInput/eight.point.four.ten (0.00s)
+    --- PASS: TestParseTargetVersionRejectsMalformedInput/99999999999999999999999.0.0 (0.00s)
+    --- PASS: TestParseTargetVersionRejectsMalformedInput/8.-4.10 (0.00s)
+    --- PASS: TestParseTargetVersionRejectsMalformedInput/8.4.-10 (0.00s)
+=== CONT  TestColumnOmitsGeneratedWhenWhenEmpty
+--- PASS: TestColumnOmitsIsIdentityWhenFalse (0.00s)
+=== CONT  TestColumnPreservesGeneratedWhenFact
+--- PASS: TestColumnOmitsGeneratedWhenWhenEmpty (0.00s)
+=== CONT  TestDMLOmitsHasReturningWhenFalse
+--- PASS: TestColumnPreservesIdentityOptionsFact (0.00s)
+=== CONT  TestDMLPreservesHasReturningWhenTrue
+=== CONT  TestColumnPreservesIsIdentityFact
+--- PASS: TestColumnPreservesIsIdentityFact (0.00s)
+=== CONT  TestStatementDMLImpactFieldsPreserveZeroValueAndJSONBehavior
+--- PASS: TestIndexPreservesAdvancedFactsInJSON (0.00s)
+=== CONT  TestConstraintOmitsReferencedSchemaWhenAbsent
+--- PASS: TestColumnPreservesGeneratedWhenFact (0.00s)
+=== CONT  TestConstraintPreservesForeignKeyReferencedSchemaFacts
+--- PASS: TestDMLOmitsHasReturningWhenFalse (0.00s)
+=== CONT  TestConstraintOmitsForeignKeyReferencedFieldsWhenAbsent
+=== PAUSE TestRenameColumnVersionSupportFor/mysql_8.0.3
+=== RUN   TestRenameColumnVersionSupportFor/mysql_8.0.46
+--- PASS: TestConstraintOmitsForeignKeyReferencedFieldsWhenAbsent (0.00s)
+=== PAUSE TestRenameColumnVersionSupportFor/mysql_8.0.46
+=== RUN   TestRenameColumnVersionSupportFor/mysql_8.4.10
+=== PAUSE TestRenameColumnVersionSupportFor/mysql_8.4.10
+=== RUN   TestRenameColumnVersionSupportFor/tidb_8.5.0
+--- PASS: TestDMLPreservesHasReturningWhenTrue (0.00s)
+=== PAUSE TestRenameColumnVersionSupportFor/tidb_8.5.0
+--- PASS: TestConstraintOmitsReferencedSchemaWhenAbsent (0.00s)
+=== CONT  TestDDLTracksExplicitNamesForNamingGovernanceTargets
+--- PASS: TestIndexOmitsAdvancedFactsWhenZero (0.00s)
+=== CONT  TestTableSnapshotHasPrimaryKeyRecognizesIndexOnlySnapshot
+--- PASS: TestTableSnapshotHasPrimaryKeyRecognizesIndexOnlySnapshot (0.00s)
+=== CONT  TestT10R2PrimaryRoleFourStates
+--- PASS: TestDDLTracksExplicitNamesForNamingGovernanceTargets (0.00s)
+=== CONT  TestStatementMetadataSupportsInstanceAndTargetTableFacts
+--- PASS: TestDDLObjectLifecycleFieldsSerializeCorrectly (0.00s)
+=== CONT  TestStatementKindAndDialectTypes
+--- PASS: TestStatementKindAndDialectTypes (0.00s)
+=== CONT  TestDDLTableTargetsFallsBackToPrimaryTable
+--- PASS: TestDDLTableTargetsFallsBackToPrimaryTable (0.00s)
+=== CONT  TestDDLTableTargetsPrefersPopulatedTargets
+--- PASS: TestConstraintPreservesForeignKeyReferencedSchemaFacts (0.00s)
+--- PASS: TestDDLTableTargetsPrefersPopulatedTargets (0.00s)
+=== CONT  TestTableSnapshotHasPrimaryKeyReturnsFalseWithoutPrimaryKeyFacts
+=== CONT  TestT10R3StoredIndexNames
+=== CONT  TestT10R3PrimaryKeyHandleModeControls
+=== CONT  TestT10R3PrimaryKeyHandleIntOnlyAlterPrimaryKey
+=== RUN   TestT10R3StoredIndexNames/authored_names_pass_through_verbatim
+=== PAUSE TestT10R3StoredIndexNames/authored_names_pass_through_verbatim
+=== RUN   TestT10R3StoredIndexNames/unnamed_member_takes_first_column_member_name
+=== PAUSE TestT10R3StoredIndexNames/unnamed_member_takes_first_column_member_name
+=== CONT  TestConstraintPreservesForeignKeyReferencedObjectFacts
+=== RUN   TestT10R3StoredIndexNames/two_unnamed_members_sharing_a_first_column_suffix_in_order
+=== PAUSE TestT10R3StoredIndexNames/two_unnamed_members_sharing_a_first_column_suffix_in_order
+=== RUN   TestT10R3StoredIndexNames/auto_name_against_an_authored_collision_suffixes
+=== PAUSE TestT10R3StoredIndexNames/auto_name_against_an_authored_collision_suffixes
+=== CONT  TestMutationTargetTablesPrefersNamedTargets
+=== CONT  TestT10R2FulltextTextNoPrefixRequired
+=== CONT  TestT10R2MultiValuedCastLegality
+=== CONT  TestT10R2FulltextUnknownTypeGapAttribution
+=== CONT  TestT10R2PrefixLegality
+=== CONT  TestMutationTargetTablesFallsBackToTables
+=== CONT  TestT10R2UnknownPrimaryBlocksPublication
+=== CONT  TestT10R2PrimaryObjectUnknownHandle
+=== CONT  TestT10R2PrimaryKeyHandleTriState
+=== CONT  TestKindAndDialectStringReturnUnderlyingValue
+=== CONT  TestT10R2ExplicitPrimaryNewUniqueInvisibleAllowed
+=== CONT  TestPGObjectTypes
+=== CONT  TestMetadataObjectsOittedWhenNil
+=== CONT  TestMetadataObjectsFieldRoundTrip
+=== CONT  TestFindObjectsByType
+--- PASS: TestDDLObjectFieldsOmitWhenEmpty (0.00s)
+--- PASS: TestT10R2PrimaryRoleFourStates (0.00s)
+--- PASS: TestTableSnapshotHasPrimaryKeyReturnsFalseWithoutPrimaryKeyFacts (0.00s)
+--- PASS: TestT10R3PrimaryKeyHandleModeControls (0.00s)
+--- PASS: TestStatementMetadataSupportsInstanceAndTargetTableFacts (0.00s)
+--- PASS: TestT10R3PrimaryKeyHandleIntOnlyAlterPrimaryKey (0.00s)
+--- PASS: TestConstraintPreservesForeignKeyReferencedObjectFacts (0.00s)
+--- PASS: TestDDLGrantTableOperationsRoundTrip (0.00s)
+=== CONT  TestT10R2NoPrimaryFirstCandidateStillRefused
+=== RUN   TestRenameColumnVersionSupportFor/mysql_9.0.0
+=== CONT  TestFindObjectByTypeAndName
+=== CONT  TestDDLTypeLifecycleOperationsSerializeCorrectly
+=== CONT  TestSafeAttributesNilAttributes
+=== CONT  TestObjectSnapshotAmbiguousWithCandidates
+=== CONT  TestObjectSnapshotOmitsEmptyFields
+=== PAUSE TestRenameColumnVersionSupportFor/mysql_9.0.0
+=== CONT  TestObjectSnapshotZeroValueIsUnavailable
+=== CONT  TestObjectSnapshotRoundTrip
+=== CONT  TestObjectSnapshotStatusHelpers
+=== CONT  TestMetadataStatusConstants
+=== CONT  TestT10R5MySQLSuffixTruncationBoundary
+=== CONT  TestT10R2UnnamedFirstUniqueInvisibleRefused
+=== CONT  TestT10R5TiDBSuffixLengthBoundary
+=== CONT  TestT10AssessVisibilityGateMySQL57
+=== RUN   TestT10R5TiDBSuffixLengthBoundary/62-byte_base_appends_without_truncation_(64-byte_stored_name)
+=== CONT  TestT10AssessNonMySQLFamilySilent
+=== CONT  TestT10R2MemberLegalityKindRouting
+=== CONT  TestT10R4StoredIndexNamesDialectMatrix
+=== CONT  TestT10AssessAlterIndexPrimaryMySQL
+=== CONT  TestT10R4StoredIndexNamesLengthBoundary
+=== CONT  TestT10AssessDescendingMySQL57
+=== CONT  TestFindObjectEdgeCases
+=== CONT  TestT10AssessDescendingTiDBUnconditional
+=== RUN   TestParseTargetVersionCanonicalizesValidInput/zero_components
+=== CONT  TestT10AssessOutOfRangeGap
+=== CONT  TestT10AssessMissingVersionGap
+=== CONT  TestT10AssessVisibilitySupportedMySQL80
+=== CONT  TestT07ColumnDependentsUnknownVsKnownEmpty
+=== CONT  TestT07ColumnDependentsBounded
+=== CONT  TestSafeAttributesEmptyMap
+=== CONT  TestT07ColumnDependentsCycleIsUnknown
+=== CONT  TestSafeAttributesBlocksSensitiveKeys
+=== CONT  TestT07ColumnDependentsTransitiveOrder
+=== CONT  TestT07R1PremiseQualifiedReference
+=== RUN   TestT07R1PremiseQualifiedReference/own_table
+=== CONT  TestT07PostgreSQLDoesNotActivate
+=== CONT  TestT07R1CloneExpressionFacts
+=== CONT  TestT10R2ExistingHolderNewUniqueInvisibleAllowed
+=== CONT  TestT10R4PrimaryKeyClustered
+=== RUN   TestT10R4PrimaryKeyClustered/mysql_always_droppable
+=== RUN   TestT10R5MySQLSuffixTruncationBoundary/61-byte_base_keeps_the_full_base_under_the_suffix_(63-byte_stored_name)
+=== PAUSE TestT10R5MySQLSuffixTruncationBoundary/61-byte_base_keeps_the_full_base_under_the_suffix_(63-byte_stored_name)
+=== CONT  TestT10AssessMultiValuedFeaturePairing
+=== RUN   TestT10R5MySQLSuffixTruncationBoundary/62-byte_base_truncates_before_suffixing
+=== PAUSE TestT10R5MySQLSuffixTruncationBoundary/62-byte_base_truncates_before_suffixing
+=== RUN   TestT10R5MySQLSuffixTruncationBoundary/63-byte_base_truncates_before_suffixing
+=== PAUSE TestT10R5MySQLSuffixTruncationBoundary/63-byte_base_truncates_before_suffixing
+=== PAUSE TestT10R5TiDBSuffixLengthBoundary/62-byte_base_appends_without_truncation_(64-byte_stored_name)
+=== RUN   TestT10R5MySQLSuffixTruncationBoundary/64-byte_base_truncates_before_suffixing
+=== PAUSE TestT10R5MySQLSuffixTruncationBoundary/64-byte_base_truncates_before_suffixing
+=== CONT  TestT10AssessPrimaryVisibility
+=== CONT  TestT07R1PremiseAlterUnknownPrior
+=== CONT  TestT07R1PremiseAlterSameStatementBind
+=== RUN   TestT10R5TiDBSuffixLengthBoundary/63-byte_base_crosses_the_limit_natively_—_the_shape_is_unproven
+=== CONT  TestRenameColumnVersionSupportFor/nil
+=== RUN   TestT10R5MySQLSuffixTruncationBoundary/63-byte_base_without_collision_keeps_the_verbatim_name
+=== PAUSE TestT10R5MySQLSuffixTruncationBoundary/63-byte_base_without_collision_keeps_the_verbatim_name
+=== RUN   TestT10R4StoredIndexNamesDialectMatrix/mysql_reserved_primary_skips_to_primary_2_(P1)
+=== CONT  TestRenameColumnVersionSupportFor/mysql_8.4.10
+=== CONT  TestRenameColumnVersionSupportFor/mysql_9.0.0
+=== CONT  TestRenameColumnVersionSupportFor/mysql_8.0.0
+=== CONT  TestRenameColumnVersionSupportFor/mysql_8.0.46
+=== PAUSE TestT10R4StoredIndexNamesDialectMatrix/mysql_reserved_primary_skips_to_primary_2_(P1)
+=== CONT  TestRenameColumnVersionSupportFor/mysql_8.0.3
+=== RUN   TestT10R4StoredIndexNamesDialectMatrix/mysql_primary_collides_through_the_used_set_to_primary_3_(P2)
+=== PAUSE TestT10R4StoredIndexNamesDialectMatrix/mysql_primary_collides_through_the_used_set_to_primary_3_(P2)
+=== CONT  TestRenameColumnVersionSupportFor/empty_product
+=== RUN   TestT10R4StoredIndexNamesDialectMatrix/mysql_expression_member_names_functional_index_(P12)
+=== PAUSE TestT10R4StoredIndexNamesDialectMatrix/mysql_expression_member_names_functional_index_(P12)
+=== CONT  TestT10R5MySQLSuffixTruncationBoundary/61-byte_base_keeps_the_full_base_under_the_suffix_(63-byte_stored_name)
+=== CONT  TestT10R5MySQLSuffixTruncationBoundary/63-byte_base_without_collision_keeps_the_verbatim_name
+=== RUN   TestT10R4StoredIndexNamesDialectMatrix/mysql_expression_in_any_position_names_functional_index_(P13)
+=== RUN   TestT10R3StoredIndexNames/prefix_member_still_names_its_column
+=== PAUSE TestT10R4StoredIndexNamesDialectMatrix/mysql_expression_in_any_position_names_functional_index_(P13)
+=== CONT  TestT10R5MySQLSuffixTruncationBoundary/64-byte_base_truncates_before_suffixing
+=== RUN   TestT10R4StoredIndexNamesDialectMatrix/mysql_two_functional_members_suffix_in_order_(P14)
+=== PAUSE TestT10R3StoredIndexNames/prefix_member_still_names_its_column
+=== PAUSE TestT10R5TiDBSuffixLengthBoundary/63-byte_base_crosses_the_limit_natively_—_the_shape_is_unproven
+=== CONT  TestT10R5MySQLSuffixTruncationBoundary/63-byte_base_truncates_before_suffixing
+=== RUN   TestT10R3StoredIndexNames/expression_member_names_functional_index_(P12_probe)
+=== PAUSE TestT10R3StoredIndexNames/expression_member_names_functional_index_(P12_probe)
+=== CONT  TestT10R5MySQLSuffixTruncationBoundary/62-byte_base_truncates_before_suffixing
+=== RUN   TestT10R3StoredIndexNames/authored_duplicate_name_is_unprovable_(native_1061)
+=== CONT  TestRenameColumnVersionSupportFor/mysql_5.7
+=== PAUSE TestT10R3StoredIndexNames/authored_duplicate_name_is_unprovable_(native_1061)
+--- PASS: TestMutationTargetTablesPrefersNamedTargets (0.00s)
+--- PASS: TestDDLDomainOperationsRoundTrip (0.00s)
+--- PASS: TestMutationTargetTablesFallsBackToTables (0.00s)
+--- PASS: TestStatementDMLImpactFieldsPreserveZeroValueAndJSONBehavior (0.00s)
+=== RUN   TestT10R3StoredIndexNames/member_projection_without_key_parts_falls_back_to_columns
+=== CONT  TestT07ColumnDependentsQualifierBinding
+=== PAUSE TestT10R3StoredIndexNames/member_projection_without_key_parts_falls_back_to_columns
+--- PASS: TestT10R2PrimaryObjectUnknownHandle (0.00s)
+=== RUN   TestT10R3StoredIndexNames/empty_member_list_leaves_the_name_unproven
+=== PAUSE TestT10R3StoredIndexNames/empty_member_list_leaves_the_name_unproven
+--- PASS: TestT10R2PrimaryKeyHandleTriState (0.00s)
+=== CONT  TestT10R2UnnamedUniqueMembersDistinctHolders
+=== PAUSE TestT10R4PrimaryKeyClustered/mysql_always_droppable
+=== PAUSE TestT10R4StoredIndexNamesDialectMatrix/mysql_two_functional_members_suffix_in_order_(P14)
+=== CONT  TestRenameColumnVersionSupportFor/mysql_8.0.2
+=== RUN   TestT10R4PrimaryKeyClustered/tidb_declared_nonclustered
+=== CONT  TestT10R3StoredIndexNames/prefix_member_still_names_its_column
+=== RUN   TestT10R5TiDBSuffixLengthBoundary/64-byte_base_crosses_the_limit_natively_—_the_shape_is_unproven
+=== CONT  TestRenameColumnVersionSupportFor/tidb_8.5.0
+=== CONT  TestT10R3StoredIndexNames/two_unnamed_members_sharing_a_first_column_suffix_in_order
+=== CONT  TestT10R3StoredIndexNames/unnamed_member_takes_first_column_member_name
+=== CONT  TestT10R3StoredIndexNames/authored_names_pass_through_verbatim
+=== CONT  TestT10R3StoredIndexNames/empty_member_list_leaves_the_name_unproven
+=== CONT  TestT10R3StoredIndexNames/member_projection_without_key_parts_falls_back_to_columns
+=== CONT  TestT10R3StoredIndexNames/authored_duplicate_name_is_unprovable_(native_1061)
+--- PASS: TestT10R2UnknownPrimaryBlocksPublication (0.00s)
+=== CONT  TestT10R3StoredIndexNames/expression_member_names_functional_index_(P12_probe)
+=== PAUSE TestT10R4PrimaryKeyClustered/tidb_declared_nonclustered
+=== RUN   TestT10R4PrimaryKeyClustered/tidb_declared_clustered_varchar_(P5)
+=== CONT  TestT10R3StoredIndexNames/auto_name_against_an_authored_collision_suffixes
+=== PAUSE TestT10R4PrimaryKeyClustered/tidb_declared_clustered_varchar_(P5)
+=== RUN   TestT10R4PrimaryKeyClustered/tidb_declared_clustered_composite_(P6)
+=== RUN   TestT10R4StoredIndexNamesDialectMatrix/mysql_unnamed-then-authored_same_derived_name_fails_natively_(P9)
+=== PAUSE TestT10R5TiDBSuffixLengthBoundary/64-byte_base_crosses_the_limit_natively_—_the_shape_is_unproven
+=== PAUSE TestT10R4StoredIndexNamesDialectMatrix/mysql_unnamed-then-authored_same_derived_name_fails_natively_(P9)
+=== CONT  TestT10R5TiDBSuffixLengthBoundary/62-byte_base_appends_without_truncation_(64-byte_stored_name)
+=== RUN   TestT10R4StoredIndexNamesDialectMatrix/tidb_reserved_primary_skips_to_primary_2_(M8g)
+=== CONT  TestT10R5TiDBSuffixLengthBoundary/64-byte_base_crosses_the_limit_natively_—_the_shape_is_unproven
+--- PASS: TestKindAndDialectStringReturnUnderlyingValue (0.00s)
+--- PASS: TestT10R2FulltextUnknownTypeGapAttribution (0.00s)
+--- PASS: TestT10R2FulltextTextNoPrefixRequired (0.00s)
+--- PASS: TestT10R2PrefixLegality (0.00s)
+--- PASS: TestMetadataObjectsOittedWhenNil (0.00s)
+=== PAUSE TestT10R4PrimaryKeyClustered/tidb_declared_clustered_composite_(P6)
+=== RUN   TestT10R4PrimaryKeyClustered/tidb_unstated_mode_on_clusters_any_shape_(P7)
+=== CONT  TestT10R5TiDBSuffixLengthBoundary/63-byte_base_crosses_the_limit_natively_—_the_shape_is_unproven
+=== PAUSE TestT10R4StoredIndexNamesDialectMatrix/tidb_reserved_primary_skips_to_primary_2_(M8g)
+=== RUN   TestT10R4StoredIndexNamesDialectMatrix/tidb_authored_primary_fails_natively_(M8h)
+=== PAUSE TestT10R4StoredIndexNamesDialectMatrix/tidb_authored_primary_fails_natively_(M8h)
+=== RUN   TestT10R4StoredIndexNamesDialectMatrix/mysql_authored_primary_fails_natively_(M8b)
+=== PAUSE TestT10R4StoredIndexNamesDialectMatrix/mysql_authored_primary_fails_natively_(M8b)
+=== RUN   TestT10R4StoredIndexNamesDialectMatrix/tidb_expression_member_names_expression_index_(P3)
+=== PAUSE TestT10R4StoredIndexNamesDialectMatrix/tidb_expression_member_names_expression_index_(P3)
+=== RUN   TestT10R4StoredIndexNamesDialectMatrix/tidb_leading_expression_names_expression_index_(P4)
+=== PAUSE TestT10R4StoredIndexNamesDialectMatrix/tidb_leading_expression_names_expression_index_(P4)
+=== RUN   TestT10R4StoredIndexNamesDialectMatrix/tidb_two_expression_members_suffix_in_order_(P11)
+=== PAUSE TestT10R4StoredIndexNamesDialectMatrix/tidb_two_expression_members_suffix_in_order_(P11)
+=== RUN   TestT10R4StoredIndexNamesDialectMatrix/tidb_authored_names_pre-occupy_before_derivation_(P8)
+=== PAUSE TestT10R4StoredIndexNamesDialectMatrix/tidb_authored_names_pre-occupy_before_derivation_(P8)
+=== RUN   TestT10R4StoredIndexNamesDialectMatrix/tidb_authored_first_column_stays_sequential_(P10)
+=== PAUSE TestT10R4PrimaryKeyClustered/tidb_unstated_mode_on_clusters_any_shape_(P7)
+=== RUN   TestT10R4PrimaryKeyClustered/tidb_unstated_mode_off_stays_nonclustered
+=== PAUSE TestT10R4StoredIndexNamesDialectMatrix/tidb_authored_first_column_stays_sequential_(P10)
+=== PAUSE TestT10R4PrimaryKeyClustered/tidb_unstated_mode_off_stays_nonclustered
+=== RUN   TestT10R4PrimaryKeyClustered/tidb_int_only_single-int_without_alter-pk_clusters
+--- PASS: TestFindObjectsByType (0.00s)
+--- PASS: TestT10R2NoPrimaryFirstCandidateStillRefused (0.00s)
+=== RUN   TestT10R4StoredIndexNamesDialectMatrix/tidb_authored_expression_index_pre-occupies_the_base
+--- PASS: TestFindObjectByTypeAndName (0.00s)
+--- PASS: TestT10R2MultiValuedCastLegality (0.00s)
+=== PAUSE TestT10R4StoredIndexNamesDialectMatrix/tidb_authored_expression_index_pre-occupies_the_base
+=== PAUSE TestT10R4PrimaryKeyClustered/tidb_int_only_single-int_without_alter-pk_clusters
+--- PASS: TestMetadataObjectsFieldRoundTrip (0.00s)
+=== RUN   TestT10R4PrimaryKeyClustered/tidb_int_only_single-int_with_alter-pk_stays_real
+--- PASS: TestT10R2ExplicitPrimaryNewUniqueInvisibleAllowed (0.00s)
+=== RUN   TestT10R4StoredIndexNamesDialectMatrix/unmodeled_member_leaves_the_name_unproven
+--- PASS: TestSafeAttributesNilAttributes (0.00s)
+--- PASS: TestObjectSnapshotOmitsEmptyFields (0.00s)
+--- PASS: TestObjectSnapshotAmbiguousWithCandidates (0.00s)
+--- PASS: TestDDLTypeLifecycleOperationsSerializeCorrectly (0.00s)
+--- PASS: TestObjectSnapshotStatusHelpers (0.00s)
+--- PASS: TestPGObjectTypes (0.00s)
+--- PASS: TestObjectSnapshotZeroValueIsUnavailable (0.00s)
+--- PASS: TestMetadataStatusConstants (0.00s)
+=== PAUSE TestT10R4PrimaryKeyClustered/tidb_int_only_single-int_with_alter-pk_stays_real
+=== PAUSE TestT10R4StoredIndexNamesDialectMatrix/unmodeled_member_leaves_the_name_unproven
+--- PASS: TestObjectSnapshotRoundTrip (0.00s)
+=== RUN   TestT10R4StoredIndexNamesDialectMatrix/empty_member_list_leaves_the_name_unproven
+--- PASS: TestT10AssessVisibilityGateMySQL57 (0.00s)
+=== RUN   TestT10R4PrimaryKeyClustered/tidb_int_only_single-int_unobserved_alter-pk_stays_unknown
+=== PAUSE TestT10R4PrimaryKeyClustered/tidb_int_only_single-int_unobserved_alter-pk_stays_unknown
+=== PAUSE TestT10R4StoredIndexNamesDialectMatrix/empty_member_list_leaves_the_name_unproven
+--- PASS: TestT10R2UnnamedFirstUniqueInvisibleRefused (0.00s)
+--- PASS: TestT10AssessNonMySQLFamilySilent (0.00s)
+--- PASS: TestT10R2MemberLegalityKindRouting (0.00s)
+=== RUN   TestT10R4PrimaryKeyClustered/tidb_int_only_non-int_is_nonclustered
+=== PAUSE TestT10R4PrimaryKeyClustered/tidb_int_only_non-int_is_nonclustered
+=== RUN   TestT10R4StoredIndexNamesDialectMatrix/duplicate_authored_names_stay_unprovable_on_either_dialect
+=== PAUSE TestT10R4StoredIndexNamesDialectMatrix/duplicate_authored_names_stay_unprovable_on_either_dialect
+=== RUN   TestT10R4PrimaryKeyClustered/tidb_int_only_composite_is_nonclustered
+=== CONT  TestT10R4StoredIndexNamesDialectMatrix/tidb_leading_expression_names_expression_index_(P4)
+=== CONT  TestT10R4StoredIndexNamesDialectMatrix/tidb_authored_first_column_stays_sequential_(P10)
+=== CONT  TestT10R4StoredIndexNamesDialectMatrix/tidb_expression_member_names_expression_index_(P3)
+=== CONT  TestT10R4StoredIndexNamesDialectMatrix/unmodeled_member_leaves_the_name_unproven
+=== CONT  TestT10R4StoredIndexNamesDialectMatrix/mysql_unnamed-then-authored_same_derived_name_fails_natively_(P9)
+=== CONT  TestT10R4StoredIndexNamesDialectMatrix/mysql_expression_in_any_position_names_functional_index_(P13)
+=== CONT  TestT10R4StoredIndexNamesDialectMatrix/mysql_reserved_primary_skips_to_primary_2_(P1)
+=== CONT  TestT10R4StoredIndexNamesDialectMatrix/tidb_authored_expression_index_pre-occupies_the_base
+=== CONT  TestT10R4StoredIndexNamesDialectMatrix/mysql_expression_member_names_functional_index_(P12)
+=== CONT  TestT10R4StoredIndexNamesDialectMatrix/empty_member_list_leaves_the_name_unproven
+=== CONT  TestT10R4StoredIndexNamesDialectMatrix/tidb_reserved_primary_skips_to_primary_2_(M8g)
+=== PAUSE TestT10R4PrimaryKeyClustered/tidb_int_only_composite_is_nonclustered
+=== RUN   TestT10R4PrimaryKeyClustered/tidb_int_only_unprovable_member_stays_unknown
+=== PAUSE TestT10R4PrimaryKeyClustered/tidb_int_only_unprovable_member_stays_unknown
+=== RUN   TestT10R4PrimaryKeyClustered/tidb_unobserved_mode_stays_unknown
+=== PAUSE TestT10R4PrimaryKeyClustered/tidb_unobserved_mode_stays_unknown
+=== RUN   TestT10R4PrimaryKeyClustered/tidb_unrecognized_mode_stays_unknown
+=== PAUSE TestT10R4PrimaryKeyClustered/tidb_unrecognized_mode_stays_unknown
+=== CONT  TestT10R4StoredIndexNamesDialectMatrix/tidb_two_expression_members_suffix_in_order_(P11)
+=== CONT  TestT10R4PrimaryKeyClustered/tidb_unobserved_mode_stays_unknown
+--- PASS: TestT10AssessAlterIndexPrimaryMySQL (0.00s)
+--- PASS: TestT10R4StoredIndexNamesLengthBoundary (0.00s)
+=== CONT  TestT10R4StoredIndexNamesDialectMatrix/duplicate_authored_names_stay_unprovable_on_either_dialect
+=== CONT  TestT10R4PrimaryKeyClustered/tidb_declared_clustered_composite_(P6)
+=== CONT  TestT10R4PrimaryKeyClustered/tidb_declared_clustered_varchar_(P5)
+=== CONT  TestT10R4StoredIndexNamesDialectMatrix/mysql_two_functional_members_suffix_in_order_(P14)
+=== CONT  TestT10R4PrimaryKeyClustered/tidb_int_only_single-int_without_alter-pk_clusters
+=== CONT  TestT10R4PrimaryKeyClustered/tidb_int_only_unprovable_member_stays_unknown
+=== CONT  TestT10R4PrimaryKeyClustered/tidb_int_only_non-int_is_nonclustered
+=== CONT  TestT10R4PrimaryKeyClustered/tidb_int_only_single-int_unobserved_alter-pk_stays_unknown
+=== CONT  TestT10R4PrimaryKeyClustered/tidb_int_only_composite_is_nonclustered
+=== CONT  TestT10R4PrimaryKeyClustered/tidb_declared_nonclustered
+=== CONT  TestT10R4PrimaryKeyClustered/tidb_int_only_single-int_with_alter-pk_stays_real
+=== CONT  TestT10R4StoredIndexNamesDialectMatrix/mysql_primary_collides_through_the_used_set_to_primary_3_(P2)
+=== CONT  TestT10R4StoredIndexNamesDialectMatrix/tidb_authored_primary_fails_natively_(M8h)
+=== CONT  TestT10R4StoredIndexNamesDialectMatrix/tidb_authored_names_pre-occupy_before_derivation_(P8)
+=== CONT  TestT10R4PrimaryKeyClustered/mysql_always_droppable
+=== CONT  TestT10R4PrimaryKeyClustered/tidb_unrecognized_mode_stays_unknown
+=== CONT  TestT10R4PrimaryKeyClustered/tidb_unstated_mode_off_stays_nonclustered
+=== CONT  TestT10R4PrimaryKeyClustered/tidb_unstated_mode_on_clusters_any_shape_(P7)
+--- PASS: TestFindObjectEdgeCases (0.00s)
+--- PASS: TestT10AssessDescendingMySQL57 (0.00s)
+--- PASS: TestT10AssessDescendingTiDBUnconditional (0.00s)
+=== CONT  TestT10R4StoredIndexNamesDialectMatrix/mysql_authored_primary_fails_natively_(M8b)
+--- PASS: TestParseTargetVersionCanonicalizesValidInput (0.00s)
+    --- PASS: TestParseTargetVersionCanonicalizesValidInput/plain (0.00s)
+    --- PASS: TestParseTargetVersionCanonicalizesValidInput/lower_v_prefix (0.00s)
+    --- PASS: TestParseTargetVersionCanonicalizesValidInput/upper_V_prefix (0.00s)
+    --- PASS: TestParseTargetVersionCanonicalizesValidInput/surrounding_whitespace (0.00s)
+    --- PASS: TestParseTargetVersionCanonicalizesValidInput/zero_components (0.00s)
+--- PASS: TestT10AssessMissingVersionGap (0.00s)
+--- PASS: TestT10AssessVisibilitySupportedMySQL80 (0.00s)
+--- PASS: TestT07ColumnDependentsUnknownVsKnownEmpty (0.00s)
+--- PASS: TestSafeAttributesEmptyMap (0.00s)
+--- PASS: TestT07ColumnDependentsCycleIsUnknown (0.00s)
+--- PASS: TestSafeAttributesBlocksSensitiveKeys (0.00s)
+--- PASS: TestT07ColumnDependentsTransitiveOrder (0.00s)
+--- PASS: TestT07PostgreSQLDoesNotActivate (0.00s)
+--- PASS: TestT07R1CloneExpressionFacts (0.00s)
+=== RUN   TestT07R1PremiseQualifiedReference/own_table_late_generated
+--- PASS: TestT10R2ExistingHolderNewUniqueInvisibleAllowed (0.00s)
+--- PASS: TestT10AssessMultiValuedFeaturePairing (0.00s)
+--- PASS: TestT07R1PremiseAlterUnknownPrior (0.00s)
+--- PASS: TestT10AssessPrimaryVisibility (0.00s)
+--- PASS: TestT07R1PremiseAlterSameStatementBind (0.00s)
+--- PASS: TestT07ColumnDependentsBounded (0.00s)
+=== RUN   TestT07R1PremiseQualifiedReference/own_schema_table
+--- PASS: TestT10R5MySQLSuffixTruncationBoundary (0.00s)
+    --- PASS: TestT10R5MySQLSuffixTruncationBoundary/61-byte_base_keeps_the_full_base_under_the_suffix_(63-byte_stored_name) (0.00s)
+    --- PASS: TestT10R5MySQLSuffixTruncationBoundary/63-byte_base_without_collision_keeps_the_verbatim_name (0.00s)
+    --- PASS: TestT10R5MySQLSuffixTruncationBoundary/64-byte_base_truncates_before_suffixing (0.00s)
+    --- PASS: TestT10R5MySQLSuffixTruncationBoundary/63-byte_base_truncates_before_suffixing (0.00s)
+    --- PASS: TestT10R5MySQLSuffixTruncationBoundary/62-byte_base_truncates_before_suffixing (0.00s)
+--- PASS: TestT07ColumnDependentsQualifierBinding (0.00s)
+--- PASS: TestT10R2UnnamedUniqueMembersDistinctHolders (0.00s)
+=== RUN   TestT07R1PremiseQualifiedReference/other_table
+--- PASS: TestRenameColumnVersionSupportFor (0.00s)
+    --- PASS: TestRenameColumnVersionSupportFor/nil (0.00s)
+    --- PASS: TestRenameColumnVersionSupportFor/mysql_8.4.10 (0.00s)
+    --- PASS: TestRenameColumnVersionSupportFor/mysql_9.0.0 (0.00s)
+    --- PASS: TestRenameColumnVersionSupportFor/mysql_8.0.0 (0.00s)
+    --- PASS: TestRenameColumnVersionSupportFor/mysql_8.0.46 (0.00s)
+    --- PASS: TestRenameColumnVersionSupportFor/mysql_8.0.3 (0.00s)
+    --- PASS: TestRenameColumnVersionSupportFor/empty_product (0.00s)
+    --- PASS: TestRenameColumnVersionSupportFor/mysql_5.7 (0.00s)
+    --- PASS: TestRenameColumnVersionSupportFor/mysql_8.0.2 (0.00s)
+    --- PASS: TestRenameColumnVersionSupportFor/tidb_8.5.0 (0.00s)
+=== RUN   TestT07R1PremiseQualifiedReference/other_schema
+--- PASS: TestT10R3StoredIndexNames (0.00s)
+    --- PASS: TestT10R3StoredIndexNames/prefix_member_still_names_its_column (0.00s)
+    --- PASS: TestT10R3StoredIndexNames/two_unnamed_members_sharing_a_first_column_suffix_in_order (0.00s)
+    --- PASS: TestT10R3StoredIndexNames/unnamed_member_takes_first_column_member_name (0.00s)
+    --- PASS: TestT10R3StoredIndexNames/authored_names_pass_through_verbatim (0.00s)
+    --- PASS: TestT10R3StoredIndexNames/empty_member_list_leaves_the_name_unproven (0.00s)
+    --- PASS: TestT10R3StoredIndexNames/member_projection_without_key_parts_falls_back_to_columns (0.00s)
+    --- PASS: TestT10R3StoredIndexNames/authored_duplicate_name_is_unprovable_(native_1061) (0.00s)
+    --- PASS: TestT10R3StoredIndexNames/expression_member_names_functional_index_(P12_probe) (0.00s)
+    --- PASS: TestT10R3StoredIndexNames/auto_name_against_an_authored_collision_suffixes (0.00s)
+--- PASS: TestT10R5TiDBSuffixLengthBoundary (0.00s)
+    --- PASS: TestT10R5TiDBSuffixLengthBoundary/62-byte_base_appends_without_truncation_(64-byte_stored_name) (0.00s)
+    --- PASS: TestT10R5TiDBSuffixLengthBoundary/64-byte_base_crosses_the_limit_natively_—_the_shape_is_unproven (0.00s)
+    --- PASS: TestT10R5TiDBSuffixLengthBoundary/63-byte_base_crosses_the_limit_natively_—_the_shape_is_unproven (0.00s)
+--- PASS: TestT10R4StoredIndexNamesDialectMatrix (0.00s)
+    --- PASS: TestT10R4StoredIndexNamesDialectMatrix/tidb_leading_expression_names_expression_index_(P4) (0.00s)
+    --- PASS: TestT10R4StoredIndexNamesDialectMatrix/tidb_expression_member_names_expression_index_(P3) (0.00s)
+    --- PASS: TestT10R4StoredIndexNamesDialectMatrix/tidb_authored_first_column_stays_sequential_(P10) (0.00s)
+    --- PASS: TestT10R4StoredIndexNamesDialectMatrix/unmodeled_member_leaves_the_name_unproven (0.00s)
+    --- PASS: TestT10R4StoredIndexNamesDialectMatrix/mysql_unnamed-then-authored_same_derived_name_fails_natively_(P9) (0.00s)
+    --- PASS: TestT10R4StoredIndexNamesDialectMatrix/mysql_reserved_primary_skips_to_primary_2_(P1) (0.00s)
+    --- PASS: TestT10R4StoredIndexNamesDialectMatrix/mysql_expression_in_any_position_names_functional_index_(P13) (0.00s)
+    --- PASS: TestT10R4StoredIndexNamesDialectMatrix/tidb_authored_expression_index_pre-occupies_the_base (0.00s)
+    --- PASS: TestT10R4StoredIndexNamesDialectMatrix/mysql_expression_member_names_functional_index_(P12) (0.00s)
+    --- PASS: TestT10R4StoredIndexNamesDialectMatrix/empty_member_list_leaves_the_name_unproven (0.00s)
+    --- PASS: TestT10R4StoredIndexNamesDialectMatrix/tidb_reserved_primary_skips_to_primary_2_(M8g) (0.00s)
+    --- PASS: TestT10R4StoredIndexNamesDialectMatrix/tidb_two_expression_members_suffix_in_order_(P11) (0.00s)
+    --- PASS: TestT10R4StoredIndexNamesDialectMatrix/duplicate_authored_names_stay_unprovable_on_either_dialect (0.00s)
+    --- PASS: TestT10R4StoredIndexNamesDialectMatrix/mysql_two_functional_members_suffix_in_order_(P14) (0.00s)
+    --- PASS: TestT10R4StoredIndexNamesDialectMatrix/mysql_primary_collides_through_the_used_set_to_primary_3_(P2) (0.00s)
+    --- PASS: TestT10R4StoredIndexNamesDialectMatrix/tidb_authored_primary_fails_natively_(M8h) (0.00s)
+    --- PASS: TestT10R4StoredIndexNamesDialectMatrix/tidb_authored_names_pre-occupy_before_derivation_(P8) (0.00s)
+    --- PASS: TestT10R4StoredIndexNamesDialectMatrix/mysql_authored_primary_fails_natively_(M8b) (0.00s)
+--- PASS: TestT10R4PrimaryKeyClustered (0.00s)
+    --- PASS: TestT10R4PrimaryKeyClustered/tidb_unobserved_mode_stays_unknown (0.00s)
+    --- PASS: TestT10R4PrimaryKeyClustered/tidb_declared_clustered_composite_(P6) (0.00s)
+    --- PASS: TestT10R4PrimaryKeyClustered/tidb_declared_clustered_varchar_(P5) (0.00s)
+    --- PASS: TestT10R4PrimaryKeyClustered/tidb_int_only_single-int_without_alter-pk_clusters (0.00s)
+    --- PASS: TestT10R4PrimaryKeyClustered/tidb_int_only_unprovable_member_stays_unknown (0.00s)
+    --- PASS: TestT10R4PrimaryKeyClustered/tidb_int_only_non-int_is_nonclustered (0.00s)
+    --- PASS: TestT10R4PrimaryKeyClustered/tidb_int_only_single-int_unobserved_alter-pk_stays_unknown (0.00s)
+    --- PASS: TestT10R4PrimaryKeyClustered/tidb_int_only_composite_is_nonclustered (0.00s)
+    --- PASS: TestT10R4PrimaryKeyClustered/tidb_int_only_single-int_with_alter-pk_stays_real (0.00s)
+    --- PASS: TestT10R4PrimaryKeyClustered/tidb_declared_nonclustered (0.00s)
+    --- PASS: TestT10R4PrimaryKeyClustered/mysql_always_droppable (0.00s)
+    --- PASS: TestT10R4PrimaryKeyClustered/tidb_unrecognized_mode_stays_unknown (0.00s)
+    --- PASS: TestT10R4PrimaryKeyClustered/tidb_unstated_mode_off_stays_nonclustered (0.00s)
+    --- PASS: TestT10R4PrimaryKeyClustered/tidb_unstated_mode_on_clusters_any_shape_(P7) (0.00s)
+--- PASS: TestT10AssessOutOfRangeGap (0.00s)
+=== RUN   TestT07R1PremiseQualifiedReference/own_table_missing
+--- PASS: TestT07R1PremiseQualifiedReference (0.00s)
+    --- PASS: TestT07R1PremiseQualifiedReference/own_table (0.00s)
+    --- PASS: TestT07R1PremiseQualifiedReference/own_table_late_generated (0.00s)
+    --- PASS: TestT07R1PremiseQualifiedReference/own_schema_table (0.00s)
+    --- PASS: TestT07R1PremiseQualifiedReference/other_table (0.00s)
+    --- PASS: TestT07R1PremiseQualifiedReference/other_schema (0.00s)
+    --- PASS: TestT07R1PremiseQualifiedReference/own_table_missing (0.00s)
+PASS
+ok  	github.com/Fanduzi/DeltaScope/internal/domain/spec	0.435s

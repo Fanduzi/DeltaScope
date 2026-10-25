@@ -1,0 +1,588 @@
+=== RUN   TestProviderT06A10CatalogAllocatorValueWritesSnapshotOption
+=== PAUSE TestProviderT06A10CatalogAllocatorValueWritesSnapshotOption
+=== RUN   TestT06A17ProviderParameterFidelity
+--- PASS: TestT06A17ProviderParameterFidelity (0.00s)
+=== RUN   TestT06A17ProviderDistinctness
+--- PASS: TestT06A17ProviderDistinctness (0.00s)
+=== RUN   TestT06A17ProviderParamBoundary
+--- PASS: TestT06A17ProviderParamBoundary (0.00s)
+=== RUN   TestT06A4ProviderDefaultIdentityMatrix
+=== RUN   TestT06A4ProviderDefaultIdentityMatrix/sql_null_stores_null
+=== RUN   TestT06A4ProviderDefaultIdentityMatrix/text_NULL_is_literal
+=== RUN   TestT06A4ProviderDefaultIdentityMatrix/text_null_lowercase
+=== RUN   TestT06A4ProviderDefaultIdentityMatrix/text_NuLl_mixed
+=== RUN   TestT06A4ProviderDefaultIdentityMatrix/text_nil_literal
+=== RUN   TestT06A4ProviderDefaultIdentityMatrix/empty_string_literal
+=== RUN   TestT06A4ProviderDefaultIdentityMatrix/zero_literal
+--- PASS: TestT06A4ProviderDefaultIdentityMatrix (0.00s)
+    --- PASS: TestT06A4ProviderDefaultIdentityMatrix/sql_null_stores_null (0.00s)
+    --- PASS: TestT06A4ProviderDefaultIdentityMatrix/text_NULL_is_literal (0.00s)
+    --- PASS: TestT06A4ProviderDefaultIdentityMatrix/text_null_lowercase (0.00s)
+    --- PASS: TestT06A4ProviderDefaultIdentityMatrix/text_NuLl_mixed (0.00s)
+    --- PASS: TestT06A4ProviderDefaultIdentityMatrix/text_nil_literal (0.00s)
+    --- PASS: TestT06A4ProviderDefaultIdentityMatrix/empty_string_literal (0.00s)
+    --- PASS: TestT06A4ProviderDefaultIdentityMatrix/zero_literal (0.00s)
+=== RUN   TestT06A4ProviderDefaultsDoNotCrossRows
+--- PASS: TestT06A4ProviderDefaultsDoNotCrossRows (0.00s)
+=== RUN   TestT06A4ProviderColumnQueryErrorPropagates
+--- PASS: TestT06A4ProviderColumnQueryErrorPropagates (0.00s)
+=== RUN   TestT07ProviderGeneratedColumnFacts
+--- PASS: TestT07ProviderGeneratedColumnFacts (0.00s)
+=== RUN   TestT07ProviderExpressionDefaultFacts
+--- PASS: TestT07ProviderExpressionDefaultFacts (0.00s)
+=== RUN   TestT07ProviderUndecodableCatalogExpressions
+--- PASS: TestT07ProviderUndecodableCatalogExpressions (0.00s)
+=== RUN   TestT07ProviderInvisibleColumn
+--- PASS: TestT07ProviderInvisibleColumn (0.00s)
+=== RUN   TestT08R1ProviderLiteralIdentity
+=== RUN   TestT08R1ProviderLiteralIdentity/varchar_literal
+=== RUN   TestT08R1ProviderLiteralIdentity/varchar_empty
+=== RUN   TestT08R1ProviderLiteralIdentity/varchar_text_null
+=== RUN   TestT08R1ProviderLiteralIdentity/varchar_content_quotes
+=== RUN   TestT08R1ProviderLiteralIdentity/varchar_quote_in_content
+=== RUN   TestT08R1ProviderLiteralIdentity/int_numeric
+=== RUN   TestT08R1ProviderLiteralIdentity/bigint_unsigned_numeric
+=== RUN   TestT08R1ProviderLiteralIdentity/decimal_param_numeric
+=== RUN   TestT08R1ProviderLiteralIdentity/char_string
+=== RUN   TestT08R1ProviderLiteralIdentity/enum_param_string
+=== RUN   TestT08R1ProviderLiteralIdentity/sql_null_row
+--- PASS: TestT08R1ProviderLiteralIdentity (0.00s)
+    --- PASS: TestT08R1ProviderLiteralIdentity/varchar_literal (0.00s)
+    --- PASS: TestT08R1ProviderLiteralIdentity/varchar_empty (0.00s)
+    --- PASS: TestT08R1ProviderLiteralIdentity/varchar_text_null (0.00s)
+    --- PASS: TestT08R1ProviderLiteralIdentity/varchar_content_quotes (0.00s)
+    --- PASS: TestT08R1ProviderLiteralIdentity/varchar_quote_in_content (0.00s)
+    --- PASS: TestT08R1ProviderLiteralIdentity/int_numeric (0.00s)
+    --- PASS: TestT08R1ProviderLiteralIdentity/bigint_unsigned_numeric (0.00s)
+    --- PASS: TestT08R1ProviderLiteralIdentity/decimal_param_numeric (0.00s)
+    --- PASS: TestT08R1ProviderLiteralIdentity/char_string (0.00s)
+    --- PASS: TestT08R1ProviderLiteralIdentity/enum_param_string (0.00s)
+    --- PASS: TestT08R1ProviderLiteralIdentity/sql_null_row (0.00s)
+=== RUN   TestT08R1ProviderTemporalGate
+=== RUN   TestT08R1ProviderTemporalGate/datetime_is_temporal
+=== RUN   TestT08R1ProviderTemporalGate/datetime6_is_temporal
+=== RUN   TestT08R1ProviderTemporalGate/timestamp_is_temporal
+=== RUN   TestT08R1ProviderTemporalGate/varchar_ct_is_string_literal
+=== RUN   TestT08R1ProviderTemporalGate/char_ct_is_string_literal
+--- PASS: TestT08R1ProviderTemporalGate (0.00s)
+    --- PASS: TestT08R1ProviderTemporalGate/datetime_is_temporal (0.00s)
+    --- PASS: TestT08R1ProviderTemporalGate/datetime6_is_temporal (0.00s)
+    --- PASS: TestT08R1ProviderTemporalGate/timestamp_is_temporal (0.00s)
+    --- PASS: TestT08R1ProviderTemporalGate/varchar_ct_is_string_literal (0.00s)
+    --- PASS: TestT08R1ProviderTemporalGate/char_ct_is_string_literal (0.00s)
+=== RUN   TestT08R1ProviderExpressionRoutesOffLiteral
+=== RUN   TestT08R1ProviderExpressionRoutesOffLiteral/expression_generated
+=== RUN   TestT08R1ProviderExpressionRoutesOffLiteral/expression_undecodable
+--- PASS: TestT08R1ProviderExpressionRoutesOffLiteral (0.00s)
+    --- PASS: TestT08R1ProviderExpressionRoutesOffLiteral/expression_generated (0.00s)
+    --- PASS: TestT08R1ProviderExpressionRoutesOffLiteral/expression_undecodable (0.00s)
+=== RUN   TestT09R1ProviderMemberRowClassification
+=== RUN   TestT09R1ProviderMemberRowClassification/plain_ascending_whole_column
+=== RUN   TestT09R1ProviderMemberRowClassification/prefix_length_marks_PrefixParts_but_keeps_the_column
+=== RUN   TestT09R1ProviderMemberRowClassification/descending_collation_marks_DescParts
+=== RUN   TestT09R1ProviderMemberRowClassification/NULL_column_name_is_an_expression_key_part
+=== RUN   TestT09R1ProviderMemberRowClassification/NULL_collation_on_a_named_member_is_unclassifiable
+=== RUN   TestT09R1ProviderMemberRowClassification/unrecognized_collation_value_is_unclassifiable
+--- PASS: TestT09R1ProviderMemberRowClassification (0.00s)
+    --- PASS: TestT09R1ProviderMemberRowClassification/plain_ascending_whole_column (0.00s)
+    --- PASS: TestT09R1ProviderMemberRowClassification/prefix_length_marks_PrefixParts_but_keeps_the_column (0.00s)
+    --- PASS: TestT09R1ProviderMemberRowClassification/descending_collation_marks_DescParts (0.00s)
+    --- PASS: TestT09R1ProviderMemberRowClassification/NULL_column_name_is_an_expression_key_part (0.00s)
+    --- PASS: TestT09R1ProviderMemberRowClassification/NULL_collation_on_a_named_member_is_unclassifiable (0.00s)
+    --- PASS: TestT09R1ProviderMemberRowClassification/unrecognized_collation_value_is_unclassifiable (0.00s)
+=== RUN   TestT09R1ProviderLoadIndexesMarksNonPlain
+--- PASS: TestT09R1ProviderLoadIndexesMarksNonPlain (0.00s)
+=== RUN   TestT10R2LiteralNullColumnNameIsColumn
+=== PAUSE TestT10R2LiteralNullColumnNameIsColumn
+=== RUN   TestT10R2LiteralNullWithExpressionTextIsExpression
+=== PAUSE TestT10R2LiteralNullWithExpressionTextIsExpression
+=== RUN   TestT10R2LiteralNullUnprovenIsUnmodeled
+=== PAUSE TestT10R2LiteralNullUnprovenIsUnmodeled
+=== RUN   TestT10R2SQLNullColumnNameWithoutExpression
+=== PAUSE TestT10R2SQLNullColumnNameWithoutExpression
+=== RUN   TestT10R2MixedMembersKeepIdentities
+=== PAUSE TestT10R2MixedMembersKeepIdentities
+=== RUN   TestT10R2TiDBHandleUnknownOnMissingClusteredRow
+=== PAUSE TestT10R2TiDBHandleUnknownOnMissingClusteredRow
+=== RUN   TestT10R3ExpressionMemberCollationMatrix
+=== PAUSE TestT10R3ExpressionMemberCollationMatrix
+=== RUN   TestT10R3DescendingExpressionKeepsIdentity
+=== PAUSE TestT10R3DescendingExpressionKeepsIdentity
+=== RUN   TestT10R3LiteralNullExpressionKeepsDirection
+=== PAUSE TestT10R3LiteralNullExpressionKeepsDirection
+=== RUN   TestT10R3TiDBAlterPrimaryKeyFactMatrix
+=== PAUSE TestT10R3TiDBAlterPrimaryKeyFactMatrix
+=== RUN   TestT10R3LiteralNullColumnStillColumn
+=== PAUSE TestT10R3LiteralNullColumnStillColumn
+=== RUN   TestT10R4DirectionUnknownExpressionKeepsIdentity
+=== PAUSE TestT10R4DirectionUnknownExpressionKeepsIdentity
+=== RUN   TestT10R4DirectionUnknownMultiValuedKeepsMarks
+=== PAUSE TestT10R4DirectionUnknownMultiValuedKeepsMarks
+=== RUN   TestT10R4NamedUnmodeledMemberStaysUnmodeled
+=== PAUSE TestT10R4NamedUnmodeledMemberStaysUnmodeled
+=== RUN   TestT10R4TiDBClusteredFactMatrix
+=== PAUSE TestT10R4TiDBClusteredFactMatrix
+=== RUN   TestT10R4TiDBPrimaryNameBindingMatrix
+=== PAUSE TestT10R4TiDBPrimaryNameBindingMatrix
+=== RUN   TestT10R5TiDBRenamedPKReload
+=== PAUSE TestT10R5TiDBRenamedPKReload
+=== RUN   TestT10R5TiDBRenamedPKColumnResolvedAttribution
+=== PAUSE TestT10R5TiDBRenamedPKColumnResolvedAttribution
+=== RUN   TestT10R5TiDBRenamedPKAmbiguousAttribution
+=== PAUSE TestT10R5TiDBRenamedPKAmbiguousAttribution
+=== RUN   TestT10R5TiDBPKProvenNoCandidateFold
+=== PAUSE TestT10R5TiDBPKProvenNoCandidateFold
+=== RUN   TestT10R5TiDBHandleWithMemberPrimaryFolds
+=== PAUSE TestT10R5TiDBHandleWithMemberPrimaryFolds
+=== RUN   TestT10R5TiDBConstraintProbeFailurePropagates
+=== PAUSE TestT10R5TiDBConstraintProbeFailurePropagates
+=== RUN   TestT10R5TiDBClusteredProbeFailurePropagates
+=== PAUSE TestT10R5TiDBClusteredProbeFailurePropagates
+=== RUN   TestT10R6TiDBSameSequenceCandidatesWithhold
+=== PAUSE TestT10R6TiDBSameSequenceCandidatesWithhold
+=== RUN   TestT10R6TiDBReverseOrderCandidateRejected
+=== PAUSE TestT10R6TiDBReverseOrderCandidateRejected
+=== RUN   TestT10R6TiDBUniqueClusteredCandidatePromotes
+=== PAUSE TestT10R6TiDBUniqueClusteredCandidatePromotes
+=== RUN   TestT10R6TiDBMissingClusteredRowKeepsStorageUnknown
+=== PAUSE TestT10R6TiDBMissingClusteredRowKeepsStorageUnknown
+=== RUN   TestT10R6TiDBUnrecognizedClusteredValueKeepsStorageUnknown
+=== PAUSE TestT10R6TiDBUnrecognizedClusteredValueKeepsStorageUnknown
+=== RUN   TestT10R6TiDBCompleteClusteredCoverageProvesNonclustered
+=== PAUSE TestT10R6TiDBCompleteClusteredCoverageProvesNonclustered
+=== RUN   TestT10R6TiDBPKCountMultipleDemotesCandidates
+=== PAUSE TestT10R6TiDBPKCountMultipleDemotesCandidates
+=== RUN   TestT10R6TiDBKeyColumnUsageProbeFailurePropagates
+=== PAUSE TestT10R6TiDBKeyColumnUsageProbeFailurePropagates
+=== RUN   TestT10R6TiDBFoldedClusteredRowKeepsUnproven
+=== PAUSE TestT10R6TiDBFoldedClusteredRowKeepsUnproven
+=== RUN   TestT10R6TiDBFoldedClusteredAllNOProvesNonclustered
+=== PAUSE TestT10R6TiDBFoldedClusteredAllNOProvesNonclustered
+=== RUN   TestConnectionConfigDSNUsesTCPHostAndPort
+--- PASS: TestConnectionConfigDSNUsesTCPHostAndPort (0.00s)
+=== RUN   TestConnectionConfigDSNUsesUnixSocket
+--- PASS: TestConnectionConfigDSNUsesUnixSocket (0.00s)
+=== RUN   TestConnectionConfigDefaultsWhenEmpty
+--- PASS: TestConnectionConfigDefaultsWhenEmpty (0.00s)
+=== RUN   TestConnectTimeoutDefaultsToFiveSeconds
+--- PASS: TestConnectTimeoutDefaultsToFiveSeconds (0.00s)
+=== RUN   TestConnectTimeoutPreservesCustomValue
+--- PASS: TestConnectTimeoutPreservesCustomValue (0.00s)
+=== RUN   TestConnectTimeoutDSNIncludesDefaultTimeout
+--- PASS: TestConnectTimeoutDSNIncludesDefaultTimeout (0.00s)
+=== RUN   TestConnectTimeoutDSNReflectsCustomValue
+--- PASS: TestConnectTimeoutDSNReflectsCustomValue (0.00s)
+=== RUN   TestOpenDBContextReturnsCanceledWhenCtxAlreadyCanceled
+--- PASS: TestOpenDBContextReturnsCanceledWhenCtxAlreadyCanceled (0.00s)
+=== RUN   TestOpenDBContextDoesNotPanicOnNilContext
+--- PASS: TestOpenDBContextDoesNotPanicOnNilContext (0.00s)
+=== RUN   TestConnectionConfigDSNFormat
+--- PASS: TestConnectionConfigDSNFormat (0.00s)
+=== RUN   TestConnectionConfigDSNSocketFormat
+--- PASS: TestConnectionConfigDSNSocketFormat (0.00s)
+=== RUN   TestConnectionConfigDSNIncludesDatabase
+--- PASS: TestConnectionConfigDSNIncludesDatabase (0.00s)
+=== RUN   TestConnectionConfigDSNOmitsDatabaseWhenEmpty
+--- PASS: TestConnectionConfigDSNOmitsDatabaseWhenEmpty (0.00s)
+=== RUN   TestConnectionConfigTLSEnabledSetsServerName
+--- PASS: TestConnectionConfigTLSEnabledSetsServerName (0.00s)
+=== RUN   TestConnectionConfigTLSEnabledDefaultsServerNameToLocalhost
+--- PASS: TestConnectionConfigTLSEnabledDefaultsServerNameToLocalhost (0.00s)
+=== RUN   TestConnectionConfigTLSDisabledDoesNotSetTLS
+--- PASS: TestConnectionConfigTLSDisabledDoesNotSetTLS (0.00s)
+=== RUN   TestConnectionConfigTLSEmptyDoesNotSetTLS
+--- PASS: TestConnectionConfigTLSEmptyDoesNotSetTLS (0.00s)
+=== RUN   TestConnectionConfigTLSCACertDoesNotFallBackToSystemRoots
+--- PASS: TestConnectionConfigTLSCACertDoesNotFallBackToSystemRoots (0.00s)
+=== RUN   TestConnectionConfigTLSNilCACertUsesSystemRoots
+--- PASS: TestConnectionConfigTLSNilCACertUsesSystemRoots (0.00s)
+=== RUN   TestDetectDialectFromVersion
+=== RUN   TestDetectDialectFromVersion/8.0.36
+=== RUN   TestDetectDialectFromVersion/8.0.11-TiDB-v8.5.0
+=== RUN   TestDetectDialectFromVersion/5.7.44
+=== RUN   TestDetectDialectFromVersion/TiDB-v7.6.0
+=== RUN   TestDetectDialectFromVersion/8.0.11-tidb-v8.5.0
+--- PASS: TestDetectDialectFromVersion (0.00s)
+    --- PASS: TestDetectDialectFromVersion/8.0.36 (0.00s)
+    --- PASS: TestDetectDialectFromVersion/8.0.11-TiDB-v8.5.0 (0.00s)
+    --- PASS: TestDetectDialectFromVersion/5.7.44 (0.00s)
+    --- PASS: TestDetectDialectFromVersion/TiDB-v7.6.0 (0.00s)
+    --- PASS: TestDetectDialectFromVersion/8.0.11-tidb-v8.5.0 (0.00s)
+=== RUN   TestNormalizeOnOff
+=== RUN   TestNormalizeOnOff/ON
+=== RUN   TestNormalizeOnOff/on
+=== RUN   TestNormalizeOnOff/1
+=== RUN   TestNormalizeOnOff/yes
+=== RUN   TestNormalizeOnOff/true
+=== RUN   TestNormalizeOnOff/_True_
+=== RUN   TestNormalizeOnOff/OFF
+=== RUN   TestNormalizeOnOff/0
+=== RUN   TestNormalizeOnOff/no
+=== RUN   TestNormalizeOnOff/false
+=== RUN   TestNormalizeOnOff/maybe
+=== RUN   TestNormalizeOnOff/#00
+--- PASS: TestNormalizeOnOff (0.00s)
+    --- PASS: TestNormalizeOnOff/ON (0.00s)
+    --- PASS: TestNormalizeOnOff/on (0.00s)
+    --- PASS: TestNormalizeOnOff/1 (0.00s)
+    --- PASS: TestNormalizeOnOff/yes (0.00s)
+    --- PASS: TestNormalizeOnOff/true (0.00s)
+    --- PASS: TestNormalizeOnOff/_True_ (0.00s)
+    --- PASS: TestNormalizeOnOff/OFF (0.00s)
+    --- PASS: TestNormalizeOnOff/0 (0.00s)
+    --- PASS: TestNormalizeOnOff/no (0.00s)
+    --- PASS: TestNormalizeOnOff/false (0.00s)
+    --- PASS: TestNormalizeOnOff/maybe (0.00s)
+    --- PASS: TestNormalizeOnOff/#00 (0.00s)
+=== RUN   TestCharsetFromCollation
+=== RUN   TestCharsetFromCollation/utf8mb4_general_ci
+=== RUN   TestCharsetFromCollation/utf8_general_ci
+=== RUN   TestCharsetFromCollation/latin1_swedish_ci
+=== RUN   TestCharsetFromCollation/binary
+=== RUN   TestCharsetFromCollation/#00
+=== RUN   TestCharsetFromCollation/_underscore_first
+--- PASS: TestCharsetFromCollation (0.00s)
+    --- PASS: TestCharsetFromCollation/utf8mb4_general_ci (0.00s)
+    --- PASS: TestCharsetFromCollation/utf8_general_ci (0.00s)
+    --- PASS: TestCharsetFromCollation/latin1_swedish_ci (0.00s)
+    --- PASS: TestCharsetFromCollation/binary (0.00s)
+    --- PASS: TestCharsetFromCollation/#00 (0.00s)
+    --- PASS: TestCharsetFromCollation/_underscore_first (0.00s)
+=== RUN   TestParseColumnType
+=== RUN   TestParseColumnType/varchar(255)
+=== RUN   TestParseColumnType/bigint(20)_unsigned
+=== RUN   TestParseColumnType/int
+=== RUN   TestParseColumnType/text
+=== RUN   TestParseColumnType/decimal(10,2)
+=== RUN   TestParseColumnType/bigint_unsigned
+=== RUN   TestParseColumnType/tinyint(1)
+=== RUN   TestParseColumnType/varchar(64)_unsigned
+--- PASS: TestParseColumnType (0.00s)
+    --- PASS: TestParseColumnType/varchar(255) (0.00s)
+    --- PASS: TestParseColumnType/bigint(20)_unsigned (0.00s)
+    --- PASS: TestParseColumnType/int (0.00s)
+    --- PASS: TestParseColumnType/text (0.00s)
+    --- PASS: TestParseColumnType/decimal(10,2) (0.00s)
+    --- PASS: TestParseColumnType/bigint_unsigned (0.00s)
+    --- PASS: TestParseColumnType/tinyint(1) (0.00s)
+    --- PASS: TestParseColumnType/varchar(64)_unsigned (0.00s)
+=== RUN   TestClassifyIndex
+--- PASS: TestClassifyIndex (0.00s)
+=== RUN   TestAccumulateIndexCardinalityPreservesMaximumNonNilValue
+--- PASS: TestAccumulateIndexCardinalityPreservesMaximumNonNilValue (0.00s)
+=== RUN   TestAccumulateIndexRowMultipleIndexes
+--- PASS: TestAccumulateIndexRowMultipleIndexes (0.00s)
+=== RUN   TestDetectDialectWithMockDB
+--- PASS: TestDetectDialectWithMockDB (0.00s)
+=== RUN   TestDetectDialectTiDBWithMockDB
+--- PASS: TestDetectDialectTiDBWithMockDB (0.00s)
+=== RUN   TestLoadInstanceFactsWithMockDB
+--- PASS: TestLoadInstanceFactsWithMockDB (0.00s)
+=== RUN   TestLoadInstanceFactsInnoDBPageSize
+=== RUN   TestLoadInstanceFactsInnoDBPageSize/16k_page
+=== RUN   TestLoadInstanceFactsInnoDBPageSize/4k_page
+=== RUN   TestLoadInstanceFactsInnoDBPageSize/missing_row
+=== RUN   TestLoadInstanceFactsInnoDBPageSize/zero_is_unknown
+=== RUN   TestLoadInstanceFactsInnoDBPageSize/unparsable_is_unknown
+--- PASS: TestLoadInstanceFactsInnoDBPageSize (0.00s)
+    --- PASS: TestLoadInstanceFactsInnoDBPageSize/16k_page (0.00s)
+    --- PASS: TestLoadInstanceFactsInnoDBPageSize/4k_page (0.00s)
+    --- PASS: TestLoadInstanceFactsInnoDBPageSize/missing_row (0.00s)
+    --- PASS: TestLoadInstanceFactsInnoDBPageSize/zero_is_unknown (0.00s)
+    --- PASS: TestLoadInstanceFactsInnoDBPageSize/unparsable_is_unknown (0.00s)
+=== RUN   TestLoadInstanceFactsTiDBMaxIndexLength
+=== RUN   TestLoadInstanceFactsTiDBMaxIndexLength/single_row_becomes_known
+=== RUN   TestLoadInstanceFactsTiDBMaxIndexLength/same_value_across_rows_becomes_known
+=== RUN   TestLoadInstanceFactsTiDBMaxIndexLength/disagreeing_rows_ascending_stays_unknown
+=== RUN   TestLoadInstanceFactsTiDBMaxIndexLength/disagreeing_rows_descending_stays_unknown
+=== RUN   TestLoadInstanceFactsTiDBMaxIndexLength/zero_rows_stays_unknown
+=== RUN   TestLoadInstanceFactsTiDBMaxIndexLength/unparsable_value_stays_unknown
+=== RUN   TestLoadInstanceFactsTiDBMaxIndexLength/non-positive_value_stays_unknown
+=== RUN   TestLoadInstanceFactsTiDBMaxIndexLength/unparsable_row_among_consistent_rows_stays_unknown
+=== RUN   TestLoadInstanceFactsTiDBMaxIndexLength/unparsable_first_row_then_valid_stays_unknown
+=== RUN   TestLoadInstanceFactsTiDBMaxIndexLength/query_error_propagates_as_provider_error
+=== RUN   TestLoadInstanceFactsTiDBMaxIndexLength/scan_error_propagates_as_provider_error
+=== RUN   TestLoadInstanceFactsTiDBMaxIndexLength/mid-iteration_error_propagates_as_provider_error
+=== RUN   TestLoadInstanceFactsTiDBMaxIndexLength/invalid_value_still_surfaces_following_iteration_error
+=== RUN   TestLoadInstanceFactsTiDBMaxIndexLength/non-positive_value_still_surfaces_following_iteration_error
+=== RUN   TestLoadInstanceFactsTiDBMaxIndexLength/consistent_prefix_still_surfaces_trailing_iteration_error
+=== RUN   TestLoadInstanceFactsTiDBMaxIndexLength/invalid_value_still_surfaces_following_scan_error
+=== RUN   TestLoadInstanceFactsTiDBMaxIndexLength/mysql_banner_never_probes_tidb_config
+--- PASS: TestLoadInstanceFactsTiDBMaxIndexLength (0.00s)
+    --- PASS: TestLoadInstanceFactsTiDBMaxIndexLength/single_row_becomes_known (0.00s)
+    --- PASS: TestLoadInstanceFactsTiDBMaxIndexLength/same_value_across_rows_becomes_known (0.00s)
+    --- PASS: TestLoadInstanceFactsTiDBMaxIndexLength/disagreeing_rows_ascending_stays_unknown (0.00s)
+    --- PASS: TestLoadInstanceFactsTiDBMaxIndexLength/disagreeing_rows_descending_stays_unknown (0.00s)
+    --- PASS: TestLoadInstanceFactsTiDBMaxIndexLength/zero_rows_stays_unknown (0.00s)
+    --- PASS: TestLoadInstanceFactsTiDBMaxIndexLength/unparsable_value_stays_unknown (0.00s)
+    --- PASS: TestLoadInstanceFactsTiDBMaxIndexLength/non-positive_value_stays_unknown (0.00s)
+    --- PASS: TestLoadInstanceFactsTiDBMaxIndexLength/unparsable_row_among_consistent_rows_stays_unknown (0.00s)
+    --- PASS: TestLoadInstanceFactsTiDBMaxIndexLength/unparsable_first_row_then_valid_stays_unknown (0.00s)
+    --- PASS: TestLoadInstanceFactsTiDBMaxIndexLength/query_error_propagates_as_provider_error (0.00s)
+    --- PASS: TestLoadInstanceFactsTiDBMaxIndexLength/scan_error_propagates_as_provider_error (0.00s)
+    --- PASS: TestLoadInstanceFactsTiDBMaxIndexLength/mid-iteration_error_propagates_as_provider_error (0.00s)
+    --- PASS: TestLoadInstanceFactsTiDBMaxIndexLength/invalid_value_still_surfaces_following_iteration_error (0.00s)
+    --- PASS: TestLoadInstanceFactsTiDBMaxIndexLength/non-positive_value_still_surfaces_following_iteration_error (0.00s)
+    --- PASS: TestLoadInstanceFactsTiDBMaxIndexLength/consistent_prefix_still_surfaces_trailing_iteration_error (0.00s)
+    --- PASS: TestLoadInstanceFactsTiDBMaxIndexLength/invalid_value_still_surfaces_following_scan_error (0.00s)
+    --- PASS: TestLoadInstanceFactsTiDBMaxIndexLength/mysql_banner_never_probes_tidb_config (0.00s)
+=== RUN   TestLoadTableSnapshotReturnsNotExistsWhenNoTableRow
+--- PASS: TestLoadTableSnapshotReturnsNotExistsWhenNoTableRow (0.00s)
+=== RUN   TestFindSchemasForTableWithMockDB
+--- PASS: TestFindSchemasForTableWithMockDB (0.00s)
+=== RUN   TestLoadTableSnapshotPreservesIndexCardinalityFromStatisticsRows
+--- PASS: TestLoadTableSnapshotPreservesIndexCardinalityFromStatisticsRows (0.00s)
+=== RUN   TestLoadTableSnapshotUnmodeledConstraintTypeUnvouchesCollection
+=== PAUSE TestLoadTableSnapshotUnmodeledConstraintTypeUnvouchesCollection
+=== RUN   TestPureEffectProofDeferDisposition
+=== PAUSE TestPureEffectProofDeferDisposition
+=== RUN   TestPureEffectProofFeasibility
+=== PAUSE TestPureEffectProofFeasibility
+=== RUN   TestQueryAccessConnResolver_TableKindAndColumns
+--- PASS: TestQueryAccessConnResolver_TableKindAndColumns (0.00s)
+=== RUN   TestQueryAccessConnResolver_ColumnOrderPreserved
+--- PASS: TestQueryAccessConnResolver_ColumnOrderPreserved (0.00s)
+=== RUN   TestQueryAccessConnResolver_ViewKind
+--- PASS: TestQueryAccessConnResolver_ViewKind (0.00s)
+=== RUN   TestQueryAccessConnResolver_MissingRelation
+--- PASS: TestQueryAccessConnResolver_MissingRelation (0.00s)
+=== RUN   TestQueryAccessConnResolver_EmptyColumns
+--- PASS: TestQueryAccessConnResolver_EmptyColumns (0.00s)
+=== RUN   TestQueryAccessConnResolver_Cancellation
+--- PASS: TestQueryAccessConnResolver_Cancellation (0.00s)
+=== RUN   TestQueryAccessConnResolver_RejectsSystemView
+--- PASS: TestQueryAccessConnResolver_RejectsSystemView (0.00s)
+=== CONT  TestProviderT06A10CatalogAllocatorValueWritesSnapshotOption
+=== CONT  TestT10R5TiDBRenamedPKAmbiguousAttribution
+=== RUN   TestProviderT06A10CatalogAllocatorValueWritesSnapshotOption/catalog_value_lands_on_snapshot_option
+=== CONT  TestT10R3TiDBAlterPrimaryKeyFactMatrix
+=== CONT  TestT10R2LiteralNullColumnNameIsColumn
+=== RUN   TestT10R2LiteralNullColumnNameIsColumn/uppercase_NULL
+=== RUN   TestT10R2LiteralNullColumnNameIsColumn/lowercase_null
+=== PAUSE TestProviderT06A10CatalogAllocatorValueWritesSnapshotOption/catalog_value_lands_on_snapshot_option
+=== CONT  TestT10R3LiteralNullExpressionKeepsDirection
+--- PASS: TestT10R5TiDBRenamedPKAmbiguousAttribution (0.00s)
+=== CONT  TestT10R4TiDBClusteredFactMatrix
+=== CONT  TestT10R3DescendingExpressionKeepsIdentity
+=== CONT  TestT10R3ExpressionMemberCollationMatrix
+=== CONT  TestT10R2TiDBHandleUnknownOnMissingClusteredRow
+=== CONT  TestT10R2MixedMembersKeepIdentities
+=== CONT  TestT10R2SQLNullColumnNameWithoutExpression
+=== RUN   TestT10R4TiDBClusteredFactMatrix/clustered_yes_+_varchar_PK_is_a_common-handle_real_object_(P5)
+=== CONT  TestT10R5TiDBRenamedPKColumnResolvedAttribution
+=== PAUSE TestT10R4TiDBClusteredFactMatrix/clustered_yes_+_varchar_PK_is_a_common-handle_real_object_(P5)
+=== RUN   TestT10R4TiDBClusteredFactMatrix/clustered_yes_+_composite_PK_is_a_common-handle_real_object_(P6)
+=== PAUSE TestT10R4TiDBClusteredFactMatrix/clustered_yes_+_composite_PK_is_a_common-handle_real_object_(P6)
+=== RUN   TestT10R4TiDBClusteredFactMatrix/clustered_yes_+_single_int_is_the_handle
+=== PAUSE TestT10R4TiDBClusteredFactMatrix/clustered_yes_+_single_int_is_the_handle
+=== RUN   TestT10R4TiDBClusteredFactMatrix/clustered_no_is_nonclustered_storage
+=== PAUSE TestT10R4TiDBClusteredFactMatrix/clustered_no_is_nonclustered_storage
+=== RUN   TestT10R4TiDBClusteredFactMatrix/missing_clustered_row_leaves_both_answers_unknown
+=== PAUSE TestT10R4TiDBClusteredFactMatrix/missing_clustered_row_leaves_both_answers_unknown
+=== RUN   TestT10R4TiDBClusteredFactMatrix/NULL_clustered_value_leaves_both_answers_unknown
+=== PAUSE TestT10R4TiDBClusteredFactMatrix/NULL_clustered_value_leaves_both_answers_unknown
+--- PASS: TestT10R2SQLNullColumnNameWithoutExpression (0.00s)
+--- PASS: TestT10R3LiteralNullExpressionKeepsDirection (0.00s)
+=== CONT  TestT10R5TiDBRenamedPKReload
+=== CONT  TestT10R2LiteralNullUnprovenIsUnmodeled
+--- PASS: TestT10R2LiteralNullUnprovenIsUnmodeled (0.00s)
+=== CONT  TestT10R4NamedUnmodeledMemberStaysUnmodeled
+--- PASS: TestT10R4NamedUnmodeledMemberStaysUnmodeled (0.00s)
+=== CONT  TestT10R4DirectionUnknownMultiValuedKeepsMarks
+=== CONT  TestT10R4TiDBPrimaryNameBindingMatrix
+=== RUN   TestT10R2LiteralNullColumnNameIsColumn/mixed_NuLl
+=== RUN   TestT10R3ExpressionMemberCollationMatrix/D_keeps_descending
+=== CONT  TestT10R2LiteralNullWithExpressionTextIsExpression
+--- PASS: TestT10R2LiteralNullColumnNameIsColumn (0.00s)
+    --- PASS: TestT10R2LiteralNullColumnNameIsColumn/uppercase_NULL (0.00s)
+    --- PASS: TestT10R2LiteralNullColumnNameIsColumn/lowercase_null (0.00s)
+    --- PASS: TestT10R2LiteralNullColumnNameIsColumn/mixed_NuLl (0.00s)
+=== CONT  TestT10R4DirectionUnknownExpressionKeepsIdentity
+=== RUN   TestT10R4DirectionUnknownExpressionKeepsIdentity/NULL_collation
+=== PAUSE TestT10R4DirectionUnknownExpressionKeepsIdentity/NULL_collation
+=== RUN   TestT10R4DirectionUnknownExpressionKeepsIdentity/unrecognized_collation
+=== PAUSE TestT10R4DirectionUnknownExpressionKeepsIdentity/unrecognized_collation
+=== PAUSE TestT10R3ExpressionMemberCollationMatrix/D_keeps_descending
+=== CONT  TestT10R3LiteralNullColumnStillColumn
+=== RUN   TestT10R3ExpressionMemberCollationMatrix/A_stays_ascending
+=== PAUSE TestT10R3ExpressionMemberCollationMatrix/A_stays_ascending
+=== CONT  TestT10R6TiDBFoldedClusteredRowKeepsUnproven
+=== RUN   TestT10R3ExpressionMemberCollationMatrix/NULL_collation_keeps_expression,_direction_unknown
+=== PAUSE TestT10R3ExpressionMemberCollationMatrix/NULL_collation_keeps_expression,_direction_unknown
+=== CONT  TestT10R6TiDBFoldedClusteredAllNOProvesNonclustered
+--- PASS: TestT10R2MixedMembersKeepIdentities (0.00s)
+--- PASS: TestT10R3LiteralNullColumnStillColumn (0.00s)
+--- PASS: TestT10R5TiDBRenamedPKReload (0.00s)
+--- PASS: TestT10R2LiteralNullWithExpressionTextIsExpression (0.00s)
+=== RUN   TestT10R3TiDBAlterPrimaryKeyFactMatrix/true_across_instances_becomes_known
+=== PAUSE TestT10R3TiDBAlterPrimaryKeyFactMatrix/true_across_instances_becomes_known
+=== RUN   TestT10R3TiDBAlterPrimaryKeyFactMatrix/false_becomes_known
+=== CONT  TestPureEffectProofFeasibility
+=== RUN   TestT10R4DirectionUnknownMultiValuedKeepsMarks/NULL_collation
+=== PAUSE TestT10R4DirectionUnknownMultiValuedKeepsMarks/NULL_collation
+=== RUN   TestPureEffectProofFeasibility/mysql_static_phase-1_assumption_(superseded_by_live_probes)
+=== RUN   TestT10R4DirectionUnknownMultiValuedKeepsMarks/unrecognized_collation
+=== PAUSE TestT10R4DirectionUnknownMultiValuedKeepsMarks/unrecognized_collation
+=== CONT  TestLoadTableSnapshotUnmodeledConstraintTypeUnvouchesCollection
+=== RUN   TestT10R3ExpressionMemberCollationMatrix/unrecognized_collation_keeps_expression,_direction_unknown
+=== PAUSE TestT10R3ExpressionMemberCollationMatrix/unrecognized_collation_keeps_expression,_direction_unknown
+=== RUN   TestLoadTableSnapshotUnmodeledConstraintTypeUnvouchesCollection/check-bearing_table_unvouches_the_constraint_set
+=== PAUSE TestT10R3TiDBAlterPrimaryKeyFactMatrix/false_becomes_known
+=== RUN   TestT10R3TiDBAlterPrimaryKeyFactMatrix/disagreeing_instances_stay_unknown
+--- PASS: TestT10R5TiDBRenamedPKColumnResolvedAttribution (0.00s)
+=== CONT  TestT10R6TiDBUnrecognizedClusteredValueKeepsStorageUnknown
+=== RUN   TestProviderT06A10CatalogAllocatorValueWritesSnapshotOption/null_catalog_value_keeps_key_absent
+=== CONT  TestT10R6TiDBMissingClusteredRowKeepsStorageUnknown
+=== PAUSE TestProviderT06A10CatalogAllocatorValueWritesSnapshotOption/null_catalog_value_keeps_key_absent
+=== CONT  TestT10R6TiDBKeyColumnUsageProbeFailurePropagates
+=== CONT  TestT10R5TiDBConstraintProbeFailurePropagates
+=== RUN   TestT10R4DirectionUnknownExpressionKeepsIdentity/A_ascending_proven
+=== PAUSE TestT10R4DirectionUnknownExpressionKeepsIdentity/A_ascending_proven
+=== RUN   TestT10R4DirectionUnknownMultiValuedKeepsMarks/A_ascending_proven
+=== PAUSE TestT10R4DirectionUnknownMultiValuedKeepsMarks/A_ascending_proven
+=== RUN   TestT10R4TiDBPrimaryNameBindingMatrix/no_PRIMARY_KEY_constraint:_member_primary_stays_a_secondary_(renamed_member_on_a_PK-less_table)
+=== PAUSE TestT10R4TiDBPrimaryNameBindingMatrix/no_PRIMARY_KEY_constraint:_member_primary_stays_a_secondary_(renamed_member_on_a_PK-less_table)
+=== CONT  TestT10R5TiDBClusteredProbeFailurePropagates
+=== RUN   TestT10R4DirectionUnknownExpressionKeepsIdentity/D_descending_proven
+=== CONT  TestT10R6TiDBReverseOrderCandidateRejected
+=== CONT  TestPureEffectProofDeferDisposition
+=== CONT  TestT10R6TiDBSameSequenceCandidatesWithhold
+=== PAUSE TestLoadTableSnapshotUnmodeledConstraintTypeUnvouchesCollection/check-bearing_table_unvouches_the_constraint_set
+=== RUN   TestT10R4DirectionUnknownMultiValuedKeepsMarks/D_descending_proven
+=== PAUSE TestT10R4DirectionUnknownMultiValuedKeepsMarks/D_descending_proven
+=== RUN   TestT10R4TiDBPrimaryNameBindingMatrix/PK_constraint_+_single_fold_promotes_to_the_constraint_object
+=== PAUSE TestT10R4TiDBPrimaryNameBindingMatrix/PK_constraint_+_single_fold_promotes_to_the_constraint_object
+=== RUN   TestT10R4TiDBPrimaryNameBindingMatrix/PK_constraint_+_unique_PRIMARY_fold_plus_member_`primary`_is_the_legal_handle-table_coexistence_(verified_v8.5.0:_the_member_is_dropped_by_name_while_the_PK_survives)
+=== CONT  TestT10R5TiDBHandleWithMemberPrimaryFolds
+=== PAUSE TestT10R4TiDBPrimaryNameBindingMatrix/PK_constraint_+_unique_PRIMARY_fold_plus_member_`primary`_is_the_legal_handle-table_coexistence_(verified_v8.5.0:_the_member_is_dropped_by_name_while_the_PK_survives)
+=== RUN   TestT10R4TiDBPrimaryNameBindingMatrix/unproven_constraint_probe_propagates_as_a_provider_error_(issue_#79:_actual_failures_stay_errors)
+=== CONT  TestT10R6TiDBPKCountMultipleDemotesCandidates
+=== PAUSE TestT10R4TiDBPrimaryNameBindingMatrix/unproven_constraint_probe_propagates_as_a_provider_error_(issue_#79:_actual_failures_stay_errors)
+=== RUN   TestT10R4TiDBPrimaryNameBindingMatrix/no_primary-fold_row_and_no_PK_constraint:_provably_PK-less_member_table
+=== RUN   TestLoadTableSnapshotUnmodeledConstraintTypeUnvouchesCollection/clean_modeled_types_keep_the_collection_vouched
+=== PAUSE TestT10R4TiDBPrimaryNameBindingMatrix/no_primary-fold_row_and_no_PK_constraint:_provably_PK-less_member_table
+=== RUN   TestPureEffectProofDeferDisposition/mysql_static_phase-1_deferral_(superseded_by_live_DEFER)
+=== CONT  TestT10R4TiDBClusteredFactMatrix/clustered_yes_+_varchar_PK_is_a_common-handle_real_object_(P5)
+=== PAUSE TestPureEffectProofDeferDisposition/mysql_static_phase-1_deferral_(superseded_by_live_DEFER)
+=== RUN   TestPureEffectProofDeferDisposition/tidb_static_phase-1_deferral_(superseded_by_live_DEFER)
+=== CONT  TestT10R4TiDBClusteredFactMatrix/NULL_clustered_value_leaves_both_answers_unknown
+=== PAUSE TestPureEffectProofDeferDisposition/tidb_static_phase-1_deferral_(superseded_by_live_DEFER)
+--- PASS: TestT10R2TiDBHandleUnknownOnMissingClusteredRow (0.00s)
+--- PASS: TestT10R3DescendingExpressionKeepsIdentity (0.00s)
+--- PASS: TestT10R6TiDBFoldedClusteredAllNOProvesNonclustered (0.00s)
+--- PASS: TestT10R6TiDBFoldedClusteredRowKeepsUnproven (0.00s)
+--- PASS: TestT10R6TiDBMissingClusteredRowKeepsStorageUnknown (0.00s)
+--- PASS: TestT10R5TiDBConstraintProbeFailurePropagates (0.00s)
+--- PASS: TestT10R6TiDBKeyColumnUsageProbeFailurePropagates (0.00s)
+--- PASS: TestT10R6TiDBSameSequenceCandidatesWithhold (0.00s)
+--- PASS: TestT10R5TiDBClusteredProbeFailurePropagates (0.00s)
+=== CONT  TestT10R4TiDBClusteredFactMatrix/missing_clustered_row_leaves_both_answers_unknown
+=== PAUSE TestT10R3TiDBAlterPrimaryKeyFactMatrix/disagreeing_instances_stay_unknown
+=== CONT  TestT10R6TiDBCompleteClusteredCoverageProvesNonclustered
+=== CONT  TestT10R4TiDBClusteredFactMatrix/clustered_no_is_nonclustered_storage
+=== PAUSE TestLoadTableSnapshotUnmodeledConstraintTypeUnvouchesCollection/clean_modeled_types_keep_the_collection_vouched
+=== CONT  TestT10R4TiDBClusteredFactMatrix/clustered_yes_+_single_int_is_the_handle
+=== CONT  TestT10R5TiDBPKProvenNoCandidateFold
+--- PASS: TestT10R5TiDBHandleWithMemberPrimaryFolds (0.00s)
+--- PASS: TestT10R6TiDBPKCountMultipleDemotesCandidates (0.00s)
+=== RUN   TestLoadTableSnapshotUnmodeledConstraintTypeUnvouchesCollection/type-scan_failure_propagates_as_provider_error
+=== CONT  TestT10R4TiDBClusteredFactMatrix/clustered_yes_+_composite_PK_is_a_common-handle_real_object_(P6)
+=== PAUSE TestLoadTableSnapshotUnmodeledConstraintTypeUnvouchesCollection/type-scan_failure_propagates_as_provider_error
+=== CONT  TestT10R3ExpressionMemberCollationMatrix/D_keeps_descending
+=== RUN   TestT10R3TiDBAlterPrimaryKeyFactMatrix/unparsable_value_stays_unknown
+=== PAUSE TestT10R3TiDBAlterPrimaryKeyFactMatrix/unparsable_value_stays_unknown
+=== RUN   TestT10R3TiDBAlterPrimaryKeyFactMatrix/zero_rows_stays_unknown
+--- PASS: TestT10R6TiDBUnrecognizedClusteredValueKeepsStorageUnknown (0.00s)
+=== PAUSE TestPureEffectProofFeasibility/mysql_static_phase-1_assumption_(superseded_by_live_probes)
+=== PAUSE TestT10R3TiDBAlterPrimaryKeyFactMatrix/zero_rows_stays_unknown
+=== RUN   TestPureEffectProofFeasibility/tidb_static_phase-1_assumption_(superseded_by_live_probes)
+=== PAUSE TestPureEffectProofFeasibility/tidb_static_phase-1_assumption_(superseded_by_live_probes)
+=== RUN   TestT10R3TiDBAlterPrimaryKeyFactMatrix/query_error_propagates_as_provider_error
+--- PASS: TestT10R6TiDBReverseOrderCandidateRejected (0.00s)
+=== PAUSE TestT10R4DirectionUnknownExpressionKeepsIdentity/D_descending_proven
+=== CONT  TestT10R6TiDBUniqueClusteredCandidatePromotes
+=== CONT  TestT10R3ExpressionMemberCollationMatrix/unrecognized_collation_keeps_expression,_direction_unknown
+=== CONT  TestT10R4DirectionUnknownMultiValuedKeepsMarks/D_descending_proven
+=== CONT  TestT10R4DirectionUnknownMultiValuedKeepsMarks/A_ascending_proven
+=== CONT  TestT10R4DirectionUnknownMultiValuedKeepsMarks/unrecognized_collation
+=== CONT  TestT10R4TiDBPrimaryNameBindingMatrix/no_PRIMARY_KEY_constraint:_member_primary_stays_a_secondary_(renamed_member_on_a_PK-less_table)
+=== CONT  TestT10R4DirectionUnknownMultiValuedKeepsMarks/NULL_collation
+=== CONT  TestT10R3ExpressionMemberCollationMatrix/NULL_collation_keeps_expression,_direction_unknown
+=== CONT  TestPureEffectProofDeferDisposition/mysql_static_phase-1_deferral_(superseded_by_live_DEFER)
+=== CONT  TestPureEffectProofDeferDisposition/tidb_static_phase-1_deferral_(superseded_by_live_DEFER)
+=== CONT  TestT10R4TiDBPrimaryNameBindingMatrix/unproven_constraint_probe_propagates_as_a_provider_error_(issue_#79:_actual_failures_stay_errors)
+=== CONT  TestProviderT06A10CatalogAllocatorValueWritesSnapshotOption/catalog_value_lands_on_snapshot_option
+=== CONT  TestLoadTableSnapshotUnmodeledConstraintTypeUnvouchesCollection/check-bearing_table_unvouches_the_constraint_set
+=== CONT  TestT10R4TiDBPrimaryNameBindingMatrix/PK_constraint_+_unique_PRIMARY_fold_plus_member_`primary`_is_the_legal_handle-table_coexistence_(verified_v8.5.0:_the_member_is_dropped_by_name_while_the_PK_survives)
+=== CONT  TestLoadTableSnapshotUnmodeledConstraintTypeUnvouchesCollection/type-scan_failure_propagates_as_provider_error
+=== CONT  TestLoadTableSnapshotUnmodeledConstraintTypeUnvouchesCollection/clean_modeled_types_keep_the_collection_vouched
+=== CONT  TestT10R3ExpressionMemberCollationMatrix/A_stays_ascending
+--- PASS: TestT10R6TiDBCompleteClusteredCoverageProvesNonclustered (0.00s)
+=== CONT  TestPureEffectProofFeasibility/tidb_static_phase-1_assumption_(superseded_by_live_probes)
+--- PASS: TestT10R5TiDBPKProvenNoCandidateFold (0.00s)
+=== CONT  TestT10R4DirectionUnknownExpressionKeepsIdentity/NULL_collation
+--- PASS: TestT10R6TiDBUniqueClusteredCandidatePromotes (0.00s)
+=== CONT  TestT10R4DirectionUnknownExpressionKeepsIdentity/D_descending_proven
+=== PAUSE TestT10R3TiDBAlterPrimaryKeyFactMatrix/query_error_propagates_as_provider_error
+--- PASS: TestPureEffectProofDeferDisposition (0.00s)
+    --- PASS: TestPureEffectProofDeferDisposition/mysql_static_phase-1_deferral_(superseded_by_live_DEFER) (0.00s)
+    --- PASS: TestPureEffectProofDeferDisposition/tidb_static_phase-1_deferral_(superseded_by_live_DEFER) (0.00s)
+=== CONT  TestT10R3TiDBAlterPrimaryKeyFactMatrix/query_error_propagates_as_provider_error
+--- PASS: TestT10R4TiDBClusteredFactMatrix (0.00s)
+    --- PASS: TestT10R4TiDBClusteredFactMatrix/clustered_yes_+_varchar_PK_is_a_common-handle_real_object_(P5) (0.00s)
+    --- PASS: TestT10R4TiDBClusteredFactMatrix/NULL_clustered_value_leaves_both_answers_unknown (0.00s)
+    --- PASS: TestT10R4TiDBClusteredFactMatrix/missing_clustered_row_leaves_both_answers_unknown (0.00s)
+    --- PASS: TestT10R4TiDBClusteredFactMatrix/clustered_yes_+_single_int_is_the_handle (0.00s)
+    --- PASS: TestT10R4TiDBClusteredFactMatrix/clustered_yes_+_composite_PK_is_a_common-handle_real_object_(P6) (0.00s)
+    --- PASS: TestT10R4TiDBClusteredFactMatrix/clustered_no_is_nonclustered_storage (0.00s)
+=== CONT  TestPureEffectProofFeasibility/mysql_static_phase-1_assumption_(superseded_by_live_probes)
+=== CONT  TestProviderT06A10CatalogAllocatorValueWritesSnapshotOption/null_catalog_value_keeps_key_absent
+--- PASS: TestPureEffectProofFeasibility (0.00s)
+    --- PASS: TestPureEffectProofFeasibility/tidb_static_phase-1_assumption_(superseded_by_live_probes) (0.00s)
+    --- PASS: TestPureEffectProofFeasibility/mysql_static_phase-1_assumption_(superseded_by_live_probes) (0.00s)
+--- PASS: TestT10R4DirectionUnknownMultiValuedKeepsMarks (0.00s)
+    --- PASS: TestT10R4DirectionUnknownMultiValuedKeepsMarks/A_ascending_proven (0.00s)
+    --- PASS: TestT10R4DirectionUnknownMultiValuedKeepsMarks/unrecognized_collation (0.00s)
+    --- PASS: TestT10R4DirectionUnknownMultiValuedKeepsMarks/D_descending_proven (0.00s)
+    --- PASS: TestT10R4DirectionUnknownMultiValuedKeepsMarks/NULL_collation (0.00s)
+--- PASS: TestT10R3ExpressionMemberCollationMatrix (0.00s)
+    --- PASS: TestT10R3ExpressionMemberCollationMatrix/D_keeps_descending (0.00s)
+    --- PASS: TestT10R3ExpressionMemberCollationMatrix/unrecognized_collation_keeps_expression,_direction_unknown (0.00s)
+    --- PASS: TestT10R3ExpressionMemberCollationMatrix/NULL_collation_keeps_expression,_direction_unknown (0.00s)
+    --- PASS: TestT10R3ExpressionMemberCollationMatrix/A_stays_ascending (0.00s)
+=== CONT  TestT10R4TiDBPrimaryNameBindingMatrix/no_primary-fold_row_and_no_PK_constraint:_provably_PK-less_member_table
+=== CONT  TestT10R4DirectionUnknownExpressionKeepsIdentity/A_ascending_proven
+=== CONT  TestT10R4DirectionUnknownExpressionKeepsIdentity/unrecognized_collation
+=== CONT  TestT10R3TiDBAlterPrimaryKeyFactMatrix/true_across_instances_becomes_known
+=== CONT  TestT10R4TiDBPrimaryNameBindingMatrix/PK_constraint_+_single_fold_promotes_to_the_constraint_object
+=== CONT  TestT10R3TiDBAlterPrimaryKeyFactMatrix/zero_rows_stays_unknown
+=== CONT  TestT10R3TiDBAlterPrimaryKeyFactMatrix/unparsable_value_stays_unknown
+=== CONT  TestT10R3TiDBAlterPrimaryKeyFactMatrix/disagreeing_instances_stay_unknown
+=== CONT  TestT10R3TiDBAlterPrimaryKeyFactMatrix/false_becomes_known
+--- PASS: TestLoadTableSnapshotUnmodeledConstraintTypeUnvouchesCollection (0.00s)
+    --- PASS: TestLoadTableSnapshotUnmodeledConstraintTypeUnvouchesCollection/check-bearing_table_unvouches_the_constraint_set (0.00s)
+    --- PASS: TestLoadTableSnapshotUnmodeledConstraintTypeUnvouchesCollection/clean_modeled_types_keep_the_collection_vouched (0.00s)
+    --- PASS: TestLoadTableSnapshotUnmodeledConstraintTypeUnvouchesCollection/type-scan_failure_propagates_as_provider_error (0.00s)
+--- PASS: TestProviderT06A10CatalogAllocatorValueWritesSnapshotOption (0.00s)
+    --- PASS: TestProviderT06A10CatalogAllocatorValueWritesSnapshotOption/catalog_value_lands_on_snapshot_option (0.00s)
+    --- PASS: TestProviderT06A10CatalogAllocatorValueWritesSnapshotOption/null_catalog_value_keeps_key_absent (0.00s)
+--- PASS: TestT10R4TiDBPrimaryNameBindingMatrix (0.00s)
+    --- PASS: TestT10R4TiDBPrimaryNameBindingMatrix/no_PRIMARY_KEY_constraint:_member_primary_stays_a_secondary_(renamed_member_on_a_PK-less_table) (0.00s)
+    --- PASS: TestT10R4TiDBPrimaryNameBindingMatrix/unproven_constraint_probe_propagates_as_a_provider_error_(issue_#79:_actual_failures_stay_errors) (0.00s)
+    --- PASS: TestT10R4TiDBPrimaryNameBindingMatrix/PK_constraint_+_unique_PRIMARY_fold_plus_member_`primary`_is_the_legal_handle-table_coexistence_(verified_v8.5.0:_the_member_is_dropped_by_name_while_the_PK_survives) (0.00s)
+    --- PASS: TestT10R4TiDBPrimaryNameBindingMatrix/no_primary-fold_row_and_no_PK_constraint:_provably_PK-less_member_table (0.00s)
+    --- PASS: TestT10R4TiDBPrimaryNameBindingMatrix/PK_constraint_+_single_fold_promotes_to_the_constraint_object (0.00s)
+--- PASS: TestT10R4DirectionUnknownExpressionKeepsIdentity (0.00s)
+    --- PASS: TestT10R4DirectionUnknownExpressionKeepsIdentity/NULL_collation (0.00s)
+    --- PASS: TestT10R4DirectionUnknownExpressionKeepsIdentity/D_descending_proven (0.00s)
+    --- PASS: TestT10R4DirectionUnknownExpressionKeepsIdentity/A_ascending_proven (0.00s)
+    --- PASS: TestT10R4DirectionUnknownExpressionKeepsIdentity/unrecognized_collation (0.00s)
+--- PASS: TestT10R3TiDBAlterPrimaryKeyFactMatrix (0.00s)
+    --- PASS: TestT10R3TiDBAlterPrimaryKeyFactMatrix/query_error_propagates_as_provider_error (0.00s)
+    --- PASS: TestT10R3TiDBAlterPrimaryKeyFactMatrix/true_across_instances_becomes_known (0.00s)
+    --- PASS: TestT10R3TiDBAlterPrimaryKeyFactMatrix/zero_rows_stays_unknown (0.00s)
+    --- PASS: TestT10R3TiDBAlterPrimaryKeyFactMatrix/unparsable_value_stays_unknown (0.00s)
+    --- PASS: TestT10R3TiDBAlterPrimaryKeyFactMatrix/disagreeing_instances_stay_unknown (0.00s)
+    --- PASS: TestT10R3TiDBAlterPrimaryKeyFactMatrix/false_becomes_known (0.00s)
+PASS
+ok  	github.com/Fanduzi/DeltaScope/internal/infrastructure/metadata/mysql	0.545s

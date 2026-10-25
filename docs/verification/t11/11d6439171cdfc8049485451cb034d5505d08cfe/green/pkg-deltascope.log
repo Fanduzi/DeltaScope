@@ -1,0 +1,998 @@
+=== RUN   TestT06A10PrimaryKeyAutoIncrementSDK
+--- PASS: TestT06A10PrimaryKeyAutoIncrementSDK (0.01s)
+=== RUN   TestT06A10InitValueMismatchSDK
+--- PASS: TestT06A10InitValueMismatchSDK (0.00s)
+=== RUN   TestT06A5VarcharLengthSDK
+--- PASS: TestT06A5VarcharLengthSDK (0.00s)
+=== RUN   TestT06A5VarcharOverLimitSDK
+--- PASS: TestT06A5VarcharOverLimitSDK (0.00s)
+=== RUN   TestT06A12TimeExemptSDK
+--- PASS: TestT06A12TimeExemptSDK (0.00s)
+=== RUN   TestT06A12MixedRejectSDK
+--- PASS: TestT06A12MixedRejectSDK (0.00s)
+=== RUN   TestT06A9AuditColumnPairSDK
+--- PASS: TestT06A9AuditColumnPairSDK (0.00s)
+=== RUN   TestT06A9AuditColumnMissingBothSDK
+--- PASS: TestT06A9AuditColumnMissingBothSDK (0.00s)
+=== RUN   TestT06A8ColumnEmptyCommentSDK
+--- PASS: TestT06A8ColumnEmptyCommentSDK (0.00s)
+=== RUN   TestT06A8TableCommentRuneLengthSDK
+--- PASS: TestT06A8TableCommentRuneLengthSDK (0.00s)
+=== RUN   TestT06A2PrimaryKeyNullabilitySDK
+=== RUN   TestT06A2PrimaryKeyNullabilitySDK/mysql_table_pk
+=== RUN   TestT06A2PrimaryKeyNullabilitySDK/tidb_table_pk
+=== RUN   TestT06A2PrimaryKeyNullabilitySDK/mysql_explicit_null_table
+=== RUN   TestT06A2PrimaryKeyNullabilitySDK/tidb_explicit_null_inline
+--- PASS: TestT06A2PrimaryKeyNullabilitySDK (0.01s)
+    --- PASS: TestT06A2PrimaryKeyNullabilitySDK/mysql_table_pk (0.00s)
+    --- PASS: TestT06A2PrimaryKeyNullabilitySDK/tidb_table_pk (0.00s)
+    --- PASS: TestT06A2PrimaryKeyNullabilitySDK/mysql_explicit_null_table (0.00s)
+    --- PASS: TestT06A2PrimaryKeyNullabilitySDK/tidb_explicit_null_inline (0.00s)
+=== RUN   TestT06A1PrimaryKeyPresenceSDK
+=== RUN   TestT06A1PrimaryKeyPresenceSDK/mysql_no_pk
+=== RUN   TestT06A1PrimaryKeyPresenceSDK/tidb_no_pk
+=== RUN   TestT06A1PrimaryKeyPresenceSDK/mysql_table_pk
+--- PASS: TestT06A1PrimaryKeyPresenceSDK (0.01s)
+    --- PASS: TestT06A1PrimaryKeyPresenceSDK/mysql_no_pk (0.00s)
+    --- PASS: TestT06A1PrimaryKeyPresenceSDK/tidb_no_pk (0.00s)
+    --- PASS: TestT06A1PrimaryKeyPresenceSDK/mysql_table_pk (0.00s)
+=== RUN   TestAuditMySQLDDLLifecycleRuleCoverage
+=== RUN   TestAuditMySQLDDLLifecycleRuleCoverage/rename_table_notice
+=== RUN   TestAuditMySQLDDLLifecycleRuleCoverage/create_index_notice
+=== RUN   TestAuditMySQLDDLLifecycleRuleCoverage/alter_add_index_notice
+=== RUN   TestAuditMySQLDDLLifecycleRuleCoverage/create_user_notice
+=== RUN   TestAuditMySQLDDLLifecycleRuleCoverage/grant_notice
+=== RUN   TestAuditMySQLDDLLifecycleRuleCoverage/drop_resource_group_notice
+--- PASS: TestAuditMySQLDDLLifecycleRuleCoverage (0.00s)
+    --- PASS: TestAuditMySQLDDLLifecycleRuleCoverage/rename_table_notice (0.00s)
+    --- PASS: TestAuditMySQLDDLLifecycleRuleCoverage/create_index_notice (0.00s)
+    --- PASS: TestAuditMySQLDDLLifecycleRuleCoverage/alter_add_index_notice (0.00s)
+    --- PASS: TestAuditMySQLDDLLifecycleRuleCoverage/create_user_notice (0.00s)
+    --- PASS: TestAuditMySQLDDLLifecycleRuleCoverage/grant_notice (0.00s)
+    --- PASS: TestAuditMySQLDDLLifecycleRuleCoverage/drop_resource_group_notice (0.00s)
+=== RUN   TestAuditTiDBDDLLifecycleRuleCoverage
+=== RUN   TestAuditTiDBDDLLifecycleRuleCoverage/rename_table_notice
+=== RUN   TestAuditTiDBDDLLifecycleRuleCoverage/create_index_notice
+=== RUN   TestAuditTiDBDDLLifecycleRuleCoverage/alter_add_index_notice
+=== RUN   TestAuditTiDBDDLLifecycleRuleCoverage/create_user_notice
+=== RUN   TestAuditTiDBDDLLifecycleRuleCoverage/grant_notice
+=== RUN   TestAuditTiDBDDLLifecycleRuleCoverage/create_placement_policy_notice
+=== RUN   TestAuditTiDBDDLLifecycleRuleCoverage/create_sequence_notice
+=== RUN   TestAuditTiDBDDLLifecycleRuleCoverage/alter_table_placement_policy_notice
+--- PASS: TestAuditTiDBDDLLifecycleRuleCoverage (0.00s)
+    --- PASS: TestAuditTiDBDDLLifecycleRuleCoverage/rename_table_notice (0.00s)
+    --- PASS: TestAuditTiDBDDLLifecycleRuleCoverage/create_index_notice (0.00s)
+    --- PASS: TestAuditTiDBDDLLifecycleRuleCoverage/alter_add_index_notice (0.00s)
+    --- PASS: TestAuditTiDBDDLLifecycleRuleCoverage/create_user_notice (0.00s)
+    --- PASS: TestAuditTiDBDDLLifecycleRuleCoverage/grant_notice (0.00s)
+    --- PASS: TestAuditTiDBDDLLifecycleRuleCoverage/create_placement_policy_notice (0.00s)
+    --- PASS: TestAuditTiDBDDLLifecycleRuleCoverage/create_sequence_notice (0.00s)
+    --- PASS: TestAuditTiDBDDLLifecycleRuleCoverage/alter_table_placement_policy_notice (0.00s)
+=== RUN   TestAuditAlterIndexUsesCreateIndexNoticeAndActionMetadata
+=== PAUSE TestAuditAlterIndexUsesCreateIndexNoticeAndActionMetadata
+=== RUN   TestAuditMySQLDDLNoticeMessagesUseNormalizedIdentifiers
+--- PASS: TestAuditMySQLDDLNoticeMessagesUseNormalizedIdentifiers (0.00s)
+=== RUN   TestAuditMySQLDDLNoLeakSensitivePayloads
+=== RUN   TestAuditMySQLDDLNoLeakSensitivePayloads/create_user_password
+=== RUN   TestAuditMySQLDDLNoLeakSensitivePayloads/grant_privilege_path
+=== RUN   TestAuditMySQLDDLNoLeakSensitivePayloads/create_procedure_body
+--- PASS: TestAuditMySQLDDLNoLeakSensitivePayloads (0.00s)
+    --- PASS: TestAuditMySQLDDLNoLeakSensitivePayloads/create_user_password (0.00s)
+    --- PASS: TestAuditMySQLDDLNoLeakSensitivePayloads/grant_privilege_path (0.00s)
+    --- PASS: TestAuditMySQLDDLNoLeakSensitivePayloads/create_procedure_body (0.00s)
+=== RUN   TestAuditTiDBDDLNoLeakSensitivePayloads
+=== RUN   TestAuditTiDBDDLNoLeakSensitivePayloads/create_user_password
+=== RUN   TestAuditTiDBDDLNoLeakSensitivePayloads/grant_privilege_path
+=== RUN   TestAuditTiDBDDLNoLeakSensitivePayloads/placement_policy_regions
+=== RUN   TestAuditTiDBDDLNoLeakSensitivePayloads/sequence_options
+=== RUN   TestAuditTiDBDDLNoLeakSensitivePayloads/alter_placement_regions
+--- PASS: TestAuditTiDBDDLNoLeakSensitivePayloads (0.00s)
+    --- PASS: TestAuditTiDBDDLNoLeakSensitivePayloads/create_user_password (0.00s)
+    --- PASS: TestAuditTiDBDDLNoLeakSensitivePayloads/grant_privilege_path (0.00s)
+    --- PASS: TestAuditTiDBDDLNoLeakSensitivePayloads/placement_policy_regions (0.00s)
+    --- PASS: TestAuditTiDBDDLNoLeakSensitivePayloads/sequence_options (0.00s)
+    --- PASS: TestAuditTiDBDDLNoLeakSensitivePayloads/alter_placement_regions (0.00s)
+=== RUN   TestT06A3NullDropStateSDK
+=== RUN   TestT06A3NullDropStateSDK/mysql
+=== RUN   TestT06A3NullDropStateSDK/tidb
+--- PASS: TestT06A3NullDropStateSDK (0.00s)
+    --- PASS: TestT06A3NullDropStateSDK/mysql (0.00s)
+    --- PASS: TestT06A3NullDropStateSDK/tidb (0.00s)
+=== RUN   TestT06A3DefaultRequireSDK
+=== RUN   TestT06A3DefaultRequireSDK/mysql
+=== RUN   TestT06A3DefaultRequireSDK/tidb
+--- PASS: TestT06A3DefaultRequireSDK (0.01s)
+    --- PASS: TestT06A3DefaultRequireSDK/mysql (0.00s)
+    --- PASS: TestT06A3DefaultRequireSDK/tidb (0.00s)
+=== RUN   TestAuditPublicDMLTableExistenceContract
+=== RUN   TestAuditPublicDMLTableExistenceContract/mysql/INSERT
+=== RUN   TestAuditPublicDMLTableExistenceContract/mysql/UPDATE
+=== RUN   TestAuditPublicDMLTableExistenceContract/mysql/DELETE
+=== RUN   TestAuditPublicDMLTableExistenceContract/tidb/INSERT
+=== RUN   TestAuditPublicDMLTableExistenceContract/tidb/UPDATE
+=== RUN   TestAuditPublicDMLTableExistenceContract/tidb/DELETE
+--- PASS: TestAuditPublicDMLTableExistenceContract (0.00s)
+    --- PASS: TestAuditPublicDMLTableExistenceContract/mysql/INSERT (0.00s)
+    --- PASS: TestAuditPublicDMLTableExistenceContract/mysql/UPDATE (0.00s)
+    --- PASS: TestAuditPublicDMLTableExistenceContract/mysql/DELETE (0.00s)
+    --- PASS: TestAuditPublicDMLTableExistenceContract/tidb/INSERT (0.00s)
+    --- PASS: TestAuditPublicDMLTableExistenceContract/tidb/UPDATE (0.00s)
+    --- PASS: TestAuditPublicDMLTableExistenceContract/tidb/DELETE (0.00s)
+=== RUN   TestAuditPublicDMLTableExistenceSkipsExistingAndOffline
+=== RUN   TestAuditPublicDMLTableExistenceSkipsExistingAndOffline/existing
+=== RUN   TestAuditPublicDMLTableExistenceSkipsExistingAndOffline/offline
+--- PASS: TestAuditPublicDMLTableExistenceSkipsExistingAndOffline (0.00s)
+    --- PASS: TestAuditPublicDMLTableExistenceSkipsExistingAndOffline/existing (0.00s)
+    --- PASS: TestAuditPublicDMLTableExistenceSkipsExistingAndOffline/offline (0.00s)
+=== RUN   TestAuditT04EvidenceGapProjectsThroughSDK
+=== PAUSE TestAuditT04EvidenceGapProjectsThroughSDK
+=== RUN   TestAuditT04GapWithUnsupportedKeepsErrorContract
+=== PAUSE TestAuditT04GapWithUnsupportedKeepsErrorContract
+=== RUN   TestAuditT05A3DropRecreateFirstPath
+=== PAUSE TestAuditT05A3DropRecreateFirstPath
+=== RUN   TestAuditT05A3IsolatedUnknownDropGap
+=== PAUSE TestAuditT05A3IsolatedUnknownDropGap
+=== RUN   TestAuditT05A6DropColumnPass
+=== PAUSE TestAuditT05A6DropColumnPass
+=== RUN   TestAuditT05A6RemovedIndexReject
+=== PAUSE TestAuditT05A6RemovedIndexReject
+=== RUN   TestAuditT05A5ChangePass
+=== PAUSE TestAuditT05A5ChangePass
+=== RUN   TestAuditT05A5RenameVersionReject
+=== PAUSE TestAuditT05A5RenameVersionReject
+=== RUN   TestAuditT05A5RenameMissingVersionGap
+=== PAUSE TestAuditT05A5RenameMissingVersionGap
+=== RUN   TestAuditT05A5ProviderError
+=== PAUSE TestAuditT05A5ProviderError
+=== RUN   TestAuditT05A4ModifyNarrowReject
+=== PAUSE TestAuditT05A4ModifyNarrowReject
+=== RUN   TestAuditT05A4ModifyWidePass
+=== PAUSE TestAuditT05A4ModifyWidePass
+=== RUN   TestAuditT05A4ModifyNoProviderKeepsCreateGap
+=== PAUSE TestAuditT05A4ModifyNoProviderKeepsCreateGap
+=== RUN   TestAuditT05A4ProviderError
+=== PAUSE TestAuditT05A4ProviderError
+=== RUN   TestAuditParserErrorUnsupportedContractMySQL
+=== PAUSE TestAuditParserErrorUnsupportedContractMySQL
+=== RUN   TestAuditParserErrorUnsupportedContractTiDB
+=== PAUSE TestAuditParserErrorUnsupportedContractTiDB
+=== RUN   TestT06A11UnsignedPassSDK
+--- PASS: TestT06A11UnsignedPassSDK (0.00s)
+=== RUN   TestT06A11BigintRejectSDK
+--- PASS: TestT06A11BigintRejectSDK (0.00s)
+=== RUN   TestT05A8ProcedureOuterState
+=== RUN   TestT05A8ProcedureOuterState/tidb_create
+=== RUN   TestT05A8ProcedureOuterState/mysql_drop
+--- PASS: TestT05A8ProcedureOuterState (0.00s)
+    --- PASS: TestT05A8ProcedureOuterState/tidb_create (0.00s)
+    --- PASS: TestT05A8ProcedureOuterState/mysql_drop (0.00s)
+=== RUN   TestT06A4ProviderTextNullStaysConservative
+--- PASS: TestT06A4ProviderTextNullStaysConservative (0.00s)
+=== RUN   TestT06A4ProviderNullStaysPrecise
+--- PASS: TestT06A4ProviderNullStaysPrecise (0.00s)
+=== RUN   TestT07ProviderSnapshotOwnership
+=== PAUSE TestT07ProviderSnapshotOwnership
+=== RUN   TestT07ProviderSnapshotOwnershipConcurrent
+=== PAUSE TestT07ProviderSnapshotOwnershipConcurrent
+=== RUN   TestT05A7AuditBudgetsOrderedStatements
+--- PASS: TestT05A7AuditBudgetsOrderedStatements (0.02s)
+=== RUN   TestT06A15DeclaredOverLimitRejectSDK
+--- PASS: TestT06A15DeclaredOverLimitRejectSDK (0.00s)
+=== RUN   TestT06A15MissingCharsetReviewSDK
+--- PASS: TestT06A15MissingCharsetReviewSDK (0.00s)
+=== RUN   TestT06A15MissingFormatOverRejectSDK
+--- PASS: TestT06A15MissingFormatOverRejectSDK (0.00s)
+=== RUN   TestT06A7TableCollateAllOffSDK
+--- PASS: TestT06A7TableCollateAllOffSDK (0.00s)
+=== RUN   TestT06A7TableCollateDeniedSDK
+--- PASS: TestT06A7TableCollateDeniedSDK (0.00s)
+=== RUN   TestT06A7CoexistingUnsupportedSDK
+--- PASS: TestT06A7CoexistingUnsupportedSDK (0.00s)
+=== RUN   TestT06A14EngineDeniedOptionalRejectSDK
+--- PASS: TestT06A14EngineDeniedOptionalRejectSDK (0.00s)
+=== RUN   TestT06A14EngineOmittedOptionalPassSDK
+--- PASS: TestT06A14EngineOmittedOptionalPassSDK (0.00s)
+=== RUN   TestPublicResultJSONOmitsFailOnTriggered
+=== PAUSE TestPublicResultJSONOmitsFailOnTriggered
+=== RUN   TestAuditLeadingUTF8BOMMatchesBOMFreeInput
+=== PAUSE TestAuditLeadingUTF8BOMMatchesBOMFreeInput
+=== RUN   TestAuditOnlyStripsLeadingUTF8BOM
+=== PAUSE TestAuditOnlyStripsLeadingUTF8BOM
+=== RUN   TestAuditDoesNotStripASecondLeadingUTF8BOM
+=== PAUSE TestAuditDoesNotStripASecondLeadingUTF8BOM
+=== RUN   TestAuditBOMOnlyInputIsEmpty
+=== PAUSE TestAuditBOMOnlyInputIsEmpty
+=== RUN   TestAuditUsesDefaultPolicy
+--- PASS: TestAuditUsesDefaultPolicy (0.00s)
+=== RUN   TestAuditSupportsConfigOverridePath
+--- PASS: TestAuditSupportsConfigOverridePath (0.00s)
+=== RUN   TestAuditMultiTargetDropAndRenameCheckEveryDenylistTarget
+=== PAUSE TestAuditMultiTargetDropAndRenameCheckEveryDenylistTarget
+=== RUN   TestAuditRenameDestinationResolvesRequestSchema
+=== PAUSE TestAuditRenameDestinationResolvesRequestSchema
+=== RUN   TestAuditReturnsGroupedMultiStatementResults
+--- PASS: TestAuditReturnsGroupedMultiStatementResults (0.00s)
+=== RUN   TestAuditSupportsPostgreSQLDialectMapping
+--- PASS: TestAuditSupportsPostgreSQLDialectMapping (0.00s)
+=== RUN   TestAuditReturnsCapabilityBoundaryErrorForExplicitPostgreSQLOnUnsupportedBuild
+--- PASS: TestAuditReturnsCapabilityBoundaryErrorForExplicitPostgreSQLOnUnsupportedBuild (0.00s)
+=== RUN   TestAuditMySQLParseablePGSyntaxReturnsBoundedDiagnosticResult
+--- PASS: TestAuditMySQLParseablePGSyntaxReturnsBoundedDiagnosticResult (0.00s)
+=== RUN   TestAuditMySQLReturningEmitsUnsupportedNotice
+--- PASS: TestAuditMySQLReturningEmitsUnsupportedNotice (0.00s)
+=== RUN   TestAuditMySQLSerialDoesNotAddGlobalNotice
+--- PASS: TestAuditMySQLSerialDoesNotAddGlobalNotice (0.00s)
+=== RUN   TestAuditRejectsUnsupportedDialect
+--- PASS: TestAuditRejectsUnsupportedDialect (0.00s)
+=== RUN   TestAuditSupportsTopLevelMetadataRequestFields
+--- PASS: TestAuditSupportsTopLevelMetadataRequestFields (0.00s)
+=== RUN   TestFromDomainResultMapsTopLevelExplanation
+--- PASS: TestFromDomainResultMapsTopLevelExplanation (0.00s)
+=== RUN   TestFromDomainResultMapsStatementExplanation
+--- PASS: TestFromDomainResultMapsStatementExplanation (0.00s)
+=== RUN   TestFromDomainResultMapsStatementImpact
+--- PASS: TestFromDomainResultMapsStatementImpact (0.00s)
+=== RUN   TestAuditBuildsAggregateExplanations
+--- PASS: TestAuditBuildsAggregateExplanations (0.00s)
+=== RUN   TestFromDomainResultMapsFindingExplanation
+--- PASS: TestFromDomainResultMapsFindingExplanation (0.00s)
+=== RUN   TestFromDomainResultDeepCopiesFindingMetadata
+--- PASS: TestFromDomainResultDeepCopiesFindingMetadata (0.00s)
+=== RUN   TestFromDomainResultDeepCopiesNestedFindingMetadata
+--- PASS: TestFromDomainResultDeepCopiesNestedFindingMetadata (0.00s)
+=== RUN   TestPublicMetadataProviderClonesProviderResults
+--- PASS: TestPublicMetadataProviderClonesProviderResults (0.00s)
+=== RUN   TestAuditDefaultPolicyDialectHygieneMySQLExcludesPostgreSQLRules
+--- PASS: TestAuditDefaultPolicyDialectHygieneMySQLExcludesPostgreSQLRules (0.00s)
+=== RUN   TestAuditDefaultPolicyDialectHygieneTiDBExcludesPostgreSQLRules
+--- PASS: TestAuditDefaultPolicyDialectHygieneTiDBExcludesPostgreSQLRules (0.00s)
+=== RUN   TestAuditReturnsSourceLocationsForMultiStatementFileLikeSQL
+--- PASS: TestAuditReturnsSourceLocationsForMultiStatementFileLikeSQL (0.00s)
+=== RUN   TestAuditMySQLDatabaseSchemaLifecycleRules
+=== RUN   TestAuditMySQLDatabaseSchemaLifecycleRules/create_database_notice
+=== RUN   TestAuditMySQLDatabaseSchemaLifecycleRules/drop_database_warn
+=== RUN   TestAuditMySQLDatabaseSchemaLifecycleRules/tidb_create_database_notice
+=== RUN   TestAuditMySQLDatabaseSchemaLifecycleRules/tidb_drop_database_warn
+=== RUN   TestAuditMySQLDatabaseSchemaLifecycleRules/tidb_create_schema_synonym_notice
+--- PASS: TestAuditMySQLDatabaseSchemaLifecycleRules (0.00s)
+    --- PASS: TestAuditMySQLDatabaseSchemaLifecycleRules/create_database_notice (0.00s)
+    --- PASS: TestAuditMySQLDatabaseSchemaLifecycleRules/drop_database_warn (0.00s)
+    --- PASS: TestAuditMySQLDatabaseSchemaLifecycleRules/tidb_create_database_notice (0.00s)
+    --- PASS: TestAuditMySQLDatabaseSchemaLifecycleRules/tidb_drop_database_warn (0.00s)
+    --- PASS: TestAuditMySQLDatabaseSchemaLifecycleRules/tidb_create_schema_synonym_notice (0.00s)
+=== RUN   TestAuditMySQLDatabaseSchemaDialectIsolation
+--- PASS: TestAuditMySQLDatabaseSchemaDialectIsolation (0.00s)
+=== RUN   TestT06A17TypeFactsSDKTransport
+--- PASS: TestT06A17TypeFactsSDKTransport (0.00s)
+=== RUN   TestT06A13FloatDoubleRejectSDK
+--- PASS: TestT06A13FloatDoubleRejectSDK (0.00s)
+=== RUN   TestT06A13FloatDoubleSafeSDK
+--- PASS: TestT06A13FloatDoubleSafeSDK (0.00s)
+=== RUN   TestUnsupportedDiagnosticsEvidenceSDKParserError
+=== PAUSE TestUnsupportedDiagnosticsEvidenceSDKParserError
+=== RUN   TestAuditParserErrorPreservesPartialSDKResult
+=== PAUSE TestAuditParserErrorPreservesPartialSDKResult
+=== RUN   TestUnsupportedDiagnosticsGuidanceCodeSDKMySQL
+=== PAUSE TestUnsupportedDiagnosticsGuidanceCodeSDKMySQL
+=== RUN   TestAuditT04BTargetVersionContract
+=== PAUSE TestAuditT04BTargetVersionContract
+=== RUN   TestAuditT04BProviderFailureContract
+=== PAUSE TestAuditT04BProviderFailureContract
+=== RUN   TestDialectSessionAPI_DeprecationNotices
+=== RUN   TestDialectSessionAPI_DeprecationNotices/PostgreSQLQueryAccessSession@query_access_session_common.go
+=== RUN   TestDialectSessionAPI_DeprecationNotices/NewPostgreSQLQueryAccessSessionFromConn@query_access_session.go
+=== RUN   TestDialectSessionAPI_DeprecationNotices/AnalyzePostgreSQLQueryAccessWithSession@query_access_session.go
+=== RUN   TestDialectSessionAPI_DeprecationNotices/NewPostgreSQLQueryAccessSessionFromConn@query_access_session_stub.go
+=== RUN   TestDialectSessionAPI_DeprecationNotices/AnalyzePostgreSQLQueryAccessWithSession@query_access_session_stub.go
+=== RUN   TestDialectSessionAPI_DeprecationNotices/MySQLTiDBQueryAccessSession@query_access_session_mysql_tidb.go
+=== RUN   TestDialectSessionAPI_DeprecationNotices/NewMySQLTiDBQueryAccessSessionFromConn@query_access_session_mysql_tidb.go
+=== RUN   TestDialectSessionAPI_DeprecationNotices/AnalyzeMySQLTiDBQueryAccessWithSession@query_access_session_mysql_tidb.go
+--- PASS: TestDialectSessionAPI_DeprecationNotices (0.00s)
+    --- PASS: TestDialectSessionAPI_DeprecationNotices/PostgreSQLQueryAccessSession@query_access_session_common.go (0.00s)
+    --- PASS: TestDialectSessionAPI_DeprecationNotices/NewPostgreSQLQueryAccessSessionFromConn@query_access_session.go (0.00s)
+    --- PASS: TestDialectSessionAPI_DeprecationNotices/AnalyzePostgreSQLQueryAccessWithSession@query_access_session.go (0.00s)
+    --- PASS: TestDialectSessionAPI_DeprecationNotices/NewPostgreSQLQueryAccessSessionFromConn@query_access_session_stub.go (0.00s)
+    --- PASS: TestDialectSessionAPI_DeprecationNotices/AnalyzePostgreSQLQueryAccessWithSession@query_access_session_stub.go (0.00s)
+    --- PASS: TestDialectSessionAPI_DeprecationNotices/MySQLTiDBQueryAccessSession@query_access_session_mysql_tidb.go (0.00s)
+    --- PASS: TestDialectSessionAPI_DeprecationNotices/NewMySQLTiDBQueryAccessSessionFromConn@query_access_session_mysql_tidb.go (0.00s)
+    --- PASS: TestDialectSessionAPI_DeprecationNotices/AnalyzeMySQLTiDBQueryAccessWithSession@query_access_session_mysql_tidb.go (0.00s)
+=== RUN   TestOnlineQueryAccessSession_NoTagPG17CapabilityUnsupported
+--- PASS: TestOnlineQueryAccessSession_NoTagPG17CapabilityUnsupported (0.00s)
+=== RUN   TestOnlineQueryAccessSession_NoTagPG17AnalysisFailsClosed
+=== RUN   TestOnlineQueryAccessSession_NoTagPG17AnalysisFailsClosed/valid_request
+=== RUN   TestOnlineQueryAccessSession_NoTagPG17AnalysisFailsClosed/capability_sentinel_beats_invalid_mode
+--- PASS: TestOnlineQueryAccessSession_NoTagPG17AnalysisFailsClosed (0.00s)
+    --- PASS: TestOnlineQueryAccessSession_NoTagPG17AnalysisFailsClosed/valid_request (0.00s)
+    --- PASS: TestOnlineQueryAccessSession_NoTagPG17AnalysisFailsClosed/capability_sentinel_beats_invalid_mode (0.00s)
+=== RUN   TestOnlineQueryAccessSession_NoTagLegacyStubsUnchanged
+--- PASS: TestOnlineQueryAccessSession_NoTagLegacyStubsUnchanged (0.00s)
+=== RUN   TestOnlineQueryAccessSession_NoTagCompileContract
+--- PASS: TestOnlineQueryAccessSession_NoTagCompileContract (0.00s)
+=== RUN   TestOnlineQueryAccessSession_Signatures
+--- PASS: TestOnlineQueryAccessSession_Signatures (0.00s)
+=== RUN   TestOnlineQueryAccessSessionFromIdentifiedConnReusesIdentity
+=== PAUSE TestOnlineQueryAccessSessionFromIdentifiedConnReusesIdentity
+=== RUN   TestOnlineQueryAccessSession_GenericSentinels
+--- PASS: TestOnlineQueryAccessSession_GenericSentinels (0.00s)
+=== RUN   TestOnlineQueryAccessSession_NoExportedState
+--- PASS: TestOnlineQueryAccessSession_NoExportedState (0.00s)
+=== RUN   TestOnlineQueryAccessSession_JSONOpaque
+--- PASS: TestOnlineQueryAccessSession_JSONOpaque (0.00s)
+=== RUN   TestOnlineQueryAccessSession_ConstructorUnavailableInputs
+=== RUN   TestOnlineQueryAccessSession_ConstructorUnavailableInputs/nil_context
+=== RUN   TestOnlineQueryAccessSession_ConstructorUnavailableInputs/nil_connection
+=== RUN   TestOnlineQueryAccessSession_ConstructorUnavailableInputs/ping_failure
+=== RUN   TestOnlineQueryAccessSession_ConstructorUnavailableInputs/identity_failure
+=== RUN   TestOnlineQueryAccessSession_ConstructorUnavailableInputs/version_query_failure
+--- PASS: TestOnlineQueryAccessSession_ConstructorUnavailableInputs (0.00s)
+    --- PASS: TestOnlineQueryAccessSession_ConstructorUnavailableInputs/nil_context (0.00s)
+    --- PASS: TestOnlineQueryAccessSession_ConstructorUnavailableInputs/nil_connection (0.00s)
+    --- PASS: TestOnlineQueryAccessSession_ConstructorUnavailableInputs/ping_failure (0.00s)
+    --- PASS: TestOnlineQueryAccessSession_ConstructorUnavailableInputs/identity_failure (0.00s)
+    --- PASS: TestOnlineQueryAccessSession_ConstructorUnavailableInputs/version_query_failure (0.00s)
+=== RUN   TestOnlineQueryAccessSession_ConstructorDoesNotLeak
+=== RUN   TestOnlineQueryAccessSession_ConstructorDoesNotLeak/pg17
+=== RUN   TestOnlineQueryAccessSession_ConstructorDoesNotLeak/garbage_identity
+=== RUN   TestOnlineQueryAccessSession_ConstructorDoesNotLeak/ping_failure
+--- PASS: TestOnlineQueryAccessSession_ConstructorDoesNotLeak (0.00s)
+    --- PASS: TestOnlineQueryAccessSession_ConstructorDoesNotLeak/pg17 (0.00s)
+    --- PASS: TestOnlineQueryAccessSession_ConstructorDoesNotLeak/garbage_identity (0.00s)
+    --- PASS: TestOnlineQueryAccessSession_ConstructorDoesNotLeak/ping_failure (0.00s)
+=== RUN   TestOnlineQueryAccessSession_PostgreSQLTargetCapabilityBoundary
+--- PASS: TestOnlineQueryAccessSession_PostgreSQLTargetCapabilityBoundary (0.00s)
+=== RUN   TestOnlineQueryAccessSession_CallerOwnsConnection
+--- PASS: TestOnlineQueryAccessSession_CallerOwnsConnection (0.00s)
+=== RUN   TestOnlineQueryAccessSession_RecognizedButUnsupportedVersion
+=== RUN   TestOnlineQueryAccessSession_RecognizedButUnsupportedVersion/mysql81
+=== RUN   TestOnlineQueryAccessSession_RecognizedButUnsupportedVersion/tidb75
+=== RUN   TestOnlineQueryAccessSession_RecognizedButUnsupportedVersion/pg16
+--- PASS: TestOnlineQueryAccessSession_RecognizedButUnsupportedVersion (0.00s)
+    --- PASS: TestOnlineQueryAccessSession_RecognizedButUnsupportedVersion/mysql81 (0.00s)
+    --- PASS: TestOnlineQueryAccessSession_RecognizedButUnsupportedVersion/tidb75 (0.00s)
+    --- PASS: TestOnlineQueryAccessSession_RecognizedButUnsupportedVersion/pg16 (0.00s)
+=== RUN   TestOnlineQueryAccessSession_ValidationPriority
+=== RUN   TestOnlineQueryAccessSession_ValidationPriority/session_unavailable_beats_all
+=== RUN   TestOnlineQueryAccessSession_ValidationPriority/dialect_mismatch_beats_profile_resolver_capability_mode
+=== RUN   TestOnlineQueryAccessSession_ValidationPriority/profile_beats_resolver_capability_mode
+=== RUN   TestOnlineQueryAccessSession_ValidationPriority/resolver_beats_capability_mode
+=== RUN   TestOnlineQueryAccessSession_ValidationPriority/capability_beats_mode
+=== RUN   TestOnlineQueryAccessSession_ValidationPriority/existing_mode_validation_last
+--- PASS: TestOnlineQueryAccessSession_ValidationPriority (0.00s)
+    --- PASS: TestOnlineQueryAccessSession_ValidationPriority/session_unavailable_beats_all (0.00s)
+    --- PASS: TestOnlineQueryAccessSession_ValidationPriority/dialect_mismatch_beats_profile_resolver_capability_mode (0.00s)
+    --- PASS: TestOnlineQueryAccessSession_ValidationPriority/profile_beats_resolver_capability_mode (0.00s)
+    --- PASS: TestOnlineQueryAccessSession_ValidationPriority/resolver_beats_capability_mode (0.00s)
+    --- PASS: TestOnlineQueryAccessSession_ValidationPriority/capability_beats_mode (0.00s)
+    --- PASS: TestOnlineQueryAccessSession_ValidationPriority/existing_mode_validation_last (0.00s)
+=== RUN   TestOnlineQueryAccessSession_MatchesDialectSpecificOnFailure
+=== RUN   TestOnlineQueryAccessSession_MatchesDialectSpecificOnFailure/cancellation
+=== RUN   TestOnlineQueryAccessSession_MatchesDialectSpecificOnFailure/closed_connection
+=== RUN   TestOnlineQueryAccessSession_MatchesDialectSpecificOnFailure/catalog_failure
+--- PASS: TestOnlineQueryAccessSession_MatchesDialectSpecificOnFailure (0.00s)
+    --- PASS: TestOnlineQueryAccessSession_MatchesDialectSpecificOnFailure/cancellation (0.00s)
+    --- PASS: TestOnlineQueryAccessSession_MatchesDialectSpecificOnFailure/closed_connection (0.00s)
+    --- PASS: TestOnlineQueryAccessSession_MatchesDialectSpecificOnFailure/catalog_failure (0.00s)
+=== RUN   TestOnlineQueryAccessSession_MySQLTiDBSemanticMatrix
+=== RUN   TestOnlineQueryAccessSession_MySQLTiDBSemanticMatrix/mysql57_count
+=== RUN   TestOnlineQueryAccessSession_MySQLTiDBSemanticMatrix/mysql80_count
+=== RUN   TestOnlineQueryAccessSession_MySQLTiDBSemanticMatrix/mysql84_count
+=== RUN   TestOnlineQueryAccessSession_MySQLTiDBSemanticMatrix/tidb85_count
+=== RUN   TestOnlineQueryAccessSession_MySQLTiDBSemanticMatrix/mysql84_sum
+=== RUN   TestOnlineQueryAccessSession_MySQLTiDBSemanticMatrix/literal
+=== RUN   TestOnlineQueryAccessSession_MySQLTiDBSemanticMatrix/reversed
+=== RUN   TestOnlineQueryAccessSession_MySQLTiDBSemanticMatrix/unknown
+=== RUN   TestOnlineQueryAccessSession_MySQLTiDBSemanticMatrix/mysql84_insert
+=== RUN   TestOnlineQueryAccessSession_MySQLTiDBSemanticMatrix/mysql84_parse_failure
+=== RUN   TestOnlineQueryAccessSession_MySQLTiDBSemanticMatrix/relationless_lower
+=== RUN   TestOnlineQueryAccessSession_MySQLTiDBSemanticMatrix/relationless_upper
+=== RUN   TestOnlineQueryAccessSession_MySQLTiDBSemanticMatrix/relationless_length
+=== RUN   TestOnlineQueryAccessSession_MySQLTiDBSemanticMatrix/relationless_char_length
+=== RUN   TestOnlineQueryAccessSession_MySQLTiDBSemanticMatrix/relationless_abs
+=== RUN   TestOnlineQueryAccessSession_MySQLTiDBSemanticMatrix/relationless_ceil
+=== RUN   TestOnlineQueryAccessSession_MySQLTiDBSemanticMatrix/relationless_ceiling
+=== RUN   TestOnlineQueryAccessSession_MySQLTiDBSemanticMatrix/relationless_floor
+=== RUN   TestOnlineQueryAccessSession_MySQLTiDBSemanticMatrix/relationless_count_literal
+=== RUN   TestOnlineQueryAccessSession_MySQLTiDBSemanticMatrix/relationless_coalesce
+=== RUN   TestOnlineQueryAccessSession_MySQLTiDBSemanticMatrix/relationless_nullif
+=== RUN   TestOnlineQueryAccessSession_MySQLTiDBSemanticMatrix/relationless_ifnull
+--- PASS: TestOnlineQueryAccessSession_MySQLTiDBSemanticMatrix (0.00s)
+    --- PASS: TestOnlineQueryAccessSession_MySQLTiDBSemanticMatrix/mysql57_count (0.00s)
+    --- PASS: TestOnlineQueryAccessSession_MySQLTiDBSemanticMatrix/mysql80_count (0.00s)
+    --- PASS: TestOnlineQueryAccessSession_MySQLTiDBSemanticMatrix/mysql84_count (0.00s)
+    --- PASS: TestOnlineQueryAccessSession_MySQLTiDBSemanticMatrix/tidb85_count (0.00s)
+    --- PASS: TestOnlineQueryAccessSession_MySQLTiDBSemanticMatrix/mysql84_sum (0.00s)
+    --- PASS: TestOnlineQueryAccessSession_MySQLTiDBSemanticMatrix/literal (0.00s)
+    --- PASS: TestOnlineQueryAccessSession_MySQLTiDBSemanticMatrix/reversed (0.00s)
+    --- PASS: TestOnlineQueryAccessSession_MySQLTiDBSemanticMatrix/unknown (0.00s)
+    --- PASS: TestOnlineQueryAccessSession_MySQLTiDBSemanticMatrix/mysql84_insert (0.00s)
+    --- PASS: TestOnlineQueryAccessSession_MySQLTiDBSemanticMatrix/mysql84_parse_failure (0.00s)
+    --- PASS: TestOnlineQueryAccessSession_MySQLTiDBSemanticMatrix/relationless_lower (0.00s)
+    --- PASS: TestOnlineQueryAccessSession_MySQLTiDBSemanticMatrix/relationless_upper (0.00s)
+    --- PASS: TestOnlineQueryAccessSession_MySQLTiDBSemanticMatrix/relationless_length (0.00s)
+    --- PASS: TestOnlineQueryAccessSession_MySQLTiDBSemanticMatrix/relationless_char_length (0.00s)
+    --- PASS: TestOnlineQueryAccessSession_MySQLTiDBSemanticMatrix/relationless_abs (0.00s)
+    --- PASS: TestOnlineQueryAccessSession_MySQLTiDBSemanticMatrix/relationless_ceil (0.00s)
+    --- PASS: TestOnlineQueryAccessSession_MySQLTiDBSemanticMatrix/relationless_ceiling (0.00s)
+    --- PASS: TestOnlineQueryAccessSession_MySQLTiDBSemanticMatrix/relationless_floor (0.00s)
+    --- PASS: TestOnlineQueryAccessSession_MySQLTiDBSemanticMatrix/relationless_count_literal (0.00s)
+    --- PASS: TestOnlineQueryAccessSession_MySQLTiDBSemanticMatrix/relationless_coalesce (0.00s)
+    --- PASS: TestOnlineQueryAccessSession_MySQLTiDBSemanticMatrix/relationless_nullif (0.00s)
+    --- PASS: TestOnlineQueryAccessSession_MySQLTiDBSemanticMatrix/relationless_ifnull (0.00s)
+=== RUN   TestOnlineQueryAccessSession_MySQLTiDBRecordingMatrix
+=== RUN   TestOnlineQueryAccessSession_MySQLTiDBRecordingMatrix/mysql57
+=== RUN   TestOnlineQueryAccessSession_MySQLTiDBRecordingMatrix/mysql80
+=== RUN   TestOnlineQueryAccessSession_MySQLTiDBRecordingMatrix/mysql84
+=== RUN   TestOnlineQueryAccessSession_MySQLTiDBRecordingMatrix/tidb85
+--- PASS: TestOnlineQueryAccessSession_MySQLTiDBRecordingMatrix (0.00s)
+    --- PASS: TestOnlineQueryAccessSession_MySQLTiDBRecordingMatrix/mysql57 (0.00s)
+    --- PASS: TestOnlineQueryAccessSession_MySQLTiDBRecordingMatrix/mysql80 (0.00s)
+    --- PASS: TestOnlineQueryAccessSession_MySQLTiDBRecordingMatrix/mysql84 (0.00s)
+    --- PASS: TestOnlineQueryAccessSession_MySQLTiDBRecordingMatrix/tidb85 (0.00s)
+=== RUN   TestOnlineQueryAccessSession_DoesNotExecuteUserSQL
+--- PASS: TestOnlineQueryAccessSession_DoesNotExecuteUserSQL (0.00s)
+=== RUN   TestOnlineQueryAccessSession_NoLeak
+--- PASS: TestOnlineQueryAccessSession_NoLeak (0.00s)
+=== RUN   TestAnalyzeQueryAccess_MySQLTiDBProbeBoundary_NoLeak
+=== PAUSE TestAnalyzeQueryAccess_MySQLTiDBProbeBoundary_NoLeak
+=== RUN   TestAnalyzeQueryAccess_MySQLTiDBProbeBoundary_FunctionFreeAdmissibleNoLeak
+=== PAUSE TestAnalyzeQueryAccess_MySQLTiDBProbeBoundary_FunctionFreeAdmissibleNoLeak
+=== RUN   TestQueryAccessAnalysisProfileConstants
+=== RUN   TestQueryAccessAnalysisProfileConstants/empty
+=== RUN   TestQueryAccessAnalysisProfileConstants/mysql_5.7
+=== RUN   TestQueryAccessAnalysisProfileConstants/mysql_8.0
+=== RUN   TestQueryAccessAnalysisProfileConstants/mysql_8.4
+=== RUN   TestQueryAccessAnalysisProfileConstants/tidb_8.5
+--- PASS: TestQueryAccessAnalysisProfileConstants (0.00s)
+    --- PASS: TestQueryAccessAnalysisProfileConstants/empty (0.00s)
+    --- PASS: TestQueryAccessAnalysisProfileConstants/mysql_5.7 (0.00s)
+    --- PASS: TestQueryAccessAnalysisProfileConstants/mysql_8.0 (0.00s)
+    --- PASS: TestQueryAccessAnalysisProfileConstants/mysql_8.4 (0.00s)
+    --- PASS: TestQueryAccessAnalysisProfileConstants/tidb_8.5 (0.00s)
+=== RUN   TestAnalyzeQueryAccessDefaultProfileRemainsOffline
+--- PASS: TestAnalyzeQueryAccessDefaultProfileRemainsOffline (0.00s)
+=== RUN   TestAnalyzeQueryAccessValidProfilesRemainOfflineAndFailClosed
+=== RUN   TestAnalyzeQueryAccessValidProfilesRemainOfflineAndFailClosed/mysql_5.7
+=== RUN   TestAnalyzeQueryAccessValidProfilesRemainOfflineAndFailClosed/mysql_8.0
+=== RUN   TestAnalyzeQueryAccessValidProfilesRemainOfflineAndFailClosed/mysql_8.4
+=== RUN   TestAnalyzeQueryAccessValidProfilesRemainOfflineAndFailClosed/tidb_8.5
+--- PASS: TestAnalyzeQueryAccessValidProfilesRemainOfflineAndFailClosed (0.00s)
+    --- PASS: TestAnalyzeQueryAccessValidProfilesRemainOfflineAndFailClosed/mysql_5.7 (0.00s)
+    --- PASS: TestAnalyzeQueryAccessValidProfilesRemainOfflineAndFailClosed/mysql_8.0 (0.00s)
+    --- PASS: TestAnalyzeQueryAccessValidProfilesRemainOfflineAndFailClosed/mysql_8.4 (0.00s)
+    --- PASS: TestAnalyzeQueryAccessValidProfilesRemainOfflineAndFailClosed/tidb_8.5 (0.00s)
+=== RUN   TestAnalyzeQueryAccessRejectsUnknownProfileWithoutEcho
+--- PASS: TestAnalyzeQueryAccessRejectsUnknownProfileWithoutEcho (0.00s)
+=== RUN   TestAnalyzeQueryAccessRejectsProfileDialectMismatchWithoutEcho
+--- PASS: TestAnalyzeQueryAccessRejectsProfileDialectMismatchWithoutEcho (0.00s)
+=== RUN   TestQueryAccessResultJSONOmitsAnalysisProfile
+--- PASS: TestQueryAccessResultJSONOmitsAnalysisProfile (0.00s)
+=== RUN   TestMySQLTiDBQueryAccessSessionBoundaryValidation
+=== RUN   TestMySQLTiDBQueryAccessSessionBoundaryValidation/nil_session_with_empty_profile
+=== RUN   TestMySQLTiDBQueryAccessSessionBoundaryValidation/wrong_dialect
+=== RUN   TestMySQLTiDBQueryAccessSessionBoundaryValidation/profile_not_allowed
+=== RUN   TestMySQLTiDBQueryAccessSessionBoundaryValidation/external_resolver
+--- PASS: TestMySQLTiDBQueryAccessSessionBoundaryValidation (0.00s)
+    --- PASS: TestMySQLTiDBQueryAccessSessionBoundaryValidation/nil_session_with_empty_profile (0.00s)
+    --- PASS: TestMySQLTiDBQueryAccessSessionBoundaryValidation/wrong_dialect (0.00s)
+    --- PASS: TestMySQLTiDBQueryAccessSessionBoundaryValidation/profile_not_allowed (0.00s)
+    --- PASS: TestMySQLTiDBQueryAccessSessionBoundaryValidation/external_resolver (0.00s)
+=== RUN   TestMySQLTiDBQueryAccessSessionHasNoPublicState
+--- PASS: TestMySQLTiDBQueryAccessSessionHasNoPublicState (0.00s)
+=== RUN   TestMySQLTiDBQueryAccessSessionUsesCallerConnection
+--- PASS: TestMySQLTiDBQueryAccessSessionUsesCallerConnection (0.00s)
+=== RUN   TestMySQLTiDBQueryAccessSession_DoesNotExecuteUserSQL
+=== RUN   TestMySQLTiDBQueryAccessSession_DoesNotExecuteUserSQL/relationless_lower
+=== RUN   TestMySQLTiDBQueryAccessSession_DoesNotExecuteUserSQL/relationless_count
+=== RUN   TestMySQLTiDBQueryAccessSession_DoesNotExecuteUserSQL/relation_bearing
+--- PASS: TestMySQLTiDBQueryAccessSession_DoesNotExecuteUserSQL (0.00s)
+    --- PASS: TestMySQLTiDBQueryAccessSession_DoesNotExecuteUserSQL/relationless_lower (0.00s)
+    --- PASS: TestMySQLTiDBQueryAccessSession_DoesNotExecuteUserSQL/relationless_count (0.00s)
+    --- PASS: TestMySQLTiDBQueryAccessSession_DoesNotExecuteUserSQL/relation_bearing (0.00s)
+=== RUN   TestNewSessionFromConn_NilConn
+--- PASS: TestNewSessionFromConn_NilConn (0.00s)
+=== RUN   TestSession_NoJSONLeak
+--- PASS: TestSession_NoJSONLeak (0.00s)
+=== RUN   TestSession_NoReflectionLeak
+--- PASS: TestSession_NoReflectionLeak (0.00s)
+=== RUN   TestSession_DefaultAnalyzeUnchanged
+--- PASS: TestSession_DefaultAnalyzeUnchanged (0.00s)
+=== RUN   TestAnalyzeQueryAccessLeadingUTF8BOMMatchesBOMFreeInput
+=== PAUSE TestAnalyzeQueryAccessLeadingUTF8BOMMatchesBOMFreeInput
+=== RUN   TestAnalyzeQueryAccessBOMOnlyInputIsRejectedAsEmpty
+=== PAUSE TestAnalyzeQueryAccessBOMOnlyInputIsRejectedAsEmpty
+=== RUN   TestAnalyzeQueryAccessBOMFreeEmptyInputKeepsZeroStatements
+=== PAUSE TestAnalyzeQueryAccessBOMFreeEmptyInputKeepsZeroStatements
+=== RUN   TestAnalyzeQueryAccessMySQLSelect
+--- PASS: TestAnalyzeQueryAccessMySQLSelect (0.00s)
+=== RUN   TestAnalyzeQueryAccessMySQLDelete
+--- PASS: TestAnalyzeQueryAccessMySQLDelete (0.00s)
+=== RUN   TestAnalyzeQueryAccessProjectionOnlyMode
+--- PASS: TestAnalyzeQueryAccessProjectionOnlyMode (0.00s)
+=== RUN   TestAnalyzeQueryAccessResultJSONStructure
+--- PASS: TestAnalyzeQueryAccessResultJSONStructure (0.00s)
+=== RUN   TestAnalyzeQueryAccessJSONParity
+--- PASS: TestAnalyzeQueryAccessJSONParity (0.00s)
+=== RUN   TestAnalyzeQueryAccessCancelledContext
+--- PASS: TestAnalyzeQueryAccessCancelledContext (0.00s)
+=== RUN   TestAnalyzeQueryAccessInvalidModeRejected
+--- PASS: TestAnalyzeQueryAccessInvalidModeRejected (0.00s)
+=== RUN   TestAnalyzeQueryAccessDefaultModeIsStrict
+--- PASS: TestAnalyzeQueryAccessDefaultModeIsStrict (0.00s)
+=== RUN   TestAnalyzeQueryAccessMalformedSQLErrorDoesNotDiscloseSQL
+--- PASS: TestAnalyzeQueryAccessMalformedSQLErrorDoesNotDiscloseSQL (0.00s)
+=== RUN   TestAnalyzeQueryAccess_MixedConstOperand_OfflineIndeterminate
+=== PAUSE TestAnalyzeQueryAccess_MixedConstOperand_OfflineIndeterminate
+=== RUN   TestAnalyzeQueryAccess_LiteralAndReversedOperands_OfflineIndeterminate
+=== PAUSE TestAnalyzeQueryAccess_LiteralAndReversedOperands_OfflineIndeterminate
+=== RUN   TestReportedVersionFromBuildInfo
+=== RUN   TestReportedVersionFromBuildInfo/absent_build_info_uses_DefaultVersion
+=== RUN   TestReportedVersionFromBuildInfo/nil_build_info_uses_DefaultVersion
+=== RUN   TestReportedVersionFromBuildInfo/tagged_main_module_reports_the_release_tag
+=== RUN   TestReportedVersionFromBuildInfo/pseudo-version_main_module_reports_the_pseudo-version
+=== RUN   TestReportedVersionFromBuildInfo/dirty_pseudo-version_main_module_reports_the_module_version
+=== RUN   TestReportedVersionFromBuildInfo/devel_main_module_with_revision_does_not_claim_DefaultVersion
+=== RUN   TestReportedVersionFromBuildInfo/devel_main_module_with_short_revision_keeps_the_full_hash
+=== RUN   TestReportedVersionFromBuildInfo/dirty_devel_main_module_appends_dirty
+=== RUN   TestReportedVersionFromBuildInfo/devel_main_module_without_vcs_reports_devel
+=== RUN   TestReportedVersionFromBuildInfo/empty_main_version_with_vcs_reports_devel_revision
+=== RUN   TestReportedVersionFromBuildInfo/dependency_tagged_version_is_used_when_this_module_is_not_main
+=== RUN   TestReportedVersionFromBuildInfo/dependency_pseudo-version_is_used_when_this_module_is_not_main
+=== RUN   TestReportedVersionFromBuildInfo/dependency_devel_does_not_claim_DefaultVersion
+=== RUN   TestReportedVersionFromBuildInfo/unknown_module_without_this_dependency_uses_DefaultVersion
+--- PASS: TestReportedVersionFromBuildInfo (0.00s)
+    --- PASS: TestReportedVersionFromBuildInfo/absent_build_info_uses_DefaultVersion (0.00s)
+    --- PASS: TestReportedVersionFromBuildInfo/nil_build_info_uses_DefaultVersion (0.00s)
+    --- PASS: TestReportedVersionFromBuildInfo/tagged_main_module_reports_the_release_tag (0.00s)
+    --- PASS: TestReportedVersionFromBuildInfo/pseudo-version_main_module_reports_the_pseudo-version (0.00s)
+    --- PASS: TestReportedVersionFromBuildInfo/dirty_pseudo-version_main_module_reports_the_module_version (0.00s)
+    --- PASS: TestReportedVersionFromBuildInfo/devel_main_module_with_revision_does_not_claim_DefaultVersion (0.00s)
+    --- PASS: TestReportedVersionFromBuildInfo/devel_main_module_with_short_revision_keeps_the_full_hash (0.00s)
+    --- PASS: TestReportedVersionFromBuildInfo/dirty_devel_main_module_appends_dirty (0.00s)
+    --- PASS: TestReportedVersionFromBuildInfo/devel_main_module_without_vcs_reports_devel (0.00s)
+    --- PASS: TestReportedVersionFromBuildInfo/empty_main_version_with_vcs_reports_devel_revision (0.00s)
+    --- PASS: TestReportedVersionFromBuildInfo/dependency_tagged_version_is_used_when_this_module_is_not_main (0.00s)
+    --- PASS: TestReportedVersionFromBuildInfo/dependency_pseudo-version_is_used_when_this_module_is_not_main (0.00s)
+    --- PASS: TestReportedVersionFromBuildInfo/dependency_devel_does_not_claim_DefaultVersion (0.00s)
+    --- PASS: TestReportedVersionFromBuildInfo/unknown_module_without_this_dependency_uses_DefaultVersion (0.00s)
+=== RUN   TestReportedVersionLiveBuildDoesNotClaimDefaultReleaseWhenUntagged
+--- PASS: TestReportedVersionLiveBuildDoesNotClaimDefaultReleaseWhenUntagged (0.00s)
+=== CONT  TestAuditAlterIndexUsesCreateIndexNoticeAndActionMetadata
+=== CONT  TestUnsupportedDiagnosticsGuidanceCodeSDKMySQL
+=== CONT  TestAuditParserErrorPreservesPartialSDKResult
+=== CONT  TestAnalyzeQueryAccessLeadingUTF8BOMMatchesBOMFreeInput
+=== CONT  TestAuditT05A4ProviderError
+=== CONT  TestAuditOnlyStripsLeadingUTF8BOM
+=== CONT  TestAuditMultiTargetDropAndRenameCheckEveryDenylistTarget
+=== CONT  TestAuditBOMOnlyInputIsEmpty
+=== CONT  TestAuditDoesNotStripASecondLeadingUTF8BOM
+=== CONT  TestAuditT05A4ModifyNoProviderKeepsCreateGap
+--- PASS: TestAuditBOMOnlyInputIsEmpty (0.00s)
+=== CONT  TestAnalyzeQueryAccess_LiteralAndReversedOperands_OfflineIndeterminate
+=== RUN   TestAnalyzeQueryAccess_LiteralAndReversedOperands_OfflineIndeterminate/literal_only_lower
+=== CONT  TestAnalyzeQueryAccess_MixedConstOperand_OfflineIndeterminate
+=== RUN   TestAnalyzeQueryAccess_MixedConstOperand_OfflineIndeterminate/mysql_coalesce_mixed_const
+=== RUN   TestAuditAlterIndexUsesCreateIndexNoticeAndActionMetadata/mysql_add_index
+=== PAUSE TestAuditAlterIndexUsesCreateIndexNoticeAndActionMetadata/mysql_add_index
+=== RUN   TestAuditAlterIndexUsesCreateIndexNoticeAndActionMetadata/tidb_add_key
+=== CONT  TestAnalyzeQueryAccessBOMFreeEmptyInputKeepsZeroStatements
+=== PAUSE TestAuditAlterIndexUsesCreateIndexNoticeAndActionMetadata/tidb_add_key
+=== PAUSE TestAnalyzeQueryAccess_MixedConstOperand_OfflineIndeterminate/mysql_coalesce_mixed_const
+--- PASS: TestAnalyzeQueryAccessLeadingUTF8BOMMatchesBOMFreeInput (0.00s)
+--- PASS: TestAnalyzeQueryAccessBOMFreeEmptyInputKeepsZeroStatements (0.00s)
+=== RUN   TestAuditAlterIndexUsesCreateIndexNoticeAndActionMetadata/mysql_unique_index
+=== CONT  TestAnalyzeQueryAccessBOMOnlyInputIsRejectedAsEmpty
+=== RUN   TestAnalyzeQueryAccess_MixedConstOperand_OfflineIndeterminate/tidb_coalesce_mixed_const
+=== PAUSE TestAnalyzeQueryAccess_LiteralAndReversedOperands_OfflineIndeterminate/literal_only_lower
+=== PAUSE TestAnalyzeQueryAccess_MixedConstOperand_OfflineIndeterminate/tidb_coalesce_mixed_const
+=== RUN   TestAnalyzeQueryAccess_LiteralAndReversedOperands_OfflineIndeterminate/count_literal
+=== CONT  TestUnsupportedDiagnosticsEvidenceSDKParserError
+=== RUN   TestAnalyzeQueryAccess_MixedConstOperand_OfflineIndeterminate/mysql_nullif_mixed_const
+=== PAUSE TestAnalyzeQueryAccess_LiteralAndReversedOperands_OfflineIndeterminate/count_literal
+=== PAUSE TestAnalyzeQueryAccess_MixedConstOperand_OfflineIndeterminate/mysql_nullif_mixed_const
+=== RUN   TestAnalyzeQueryAccess_MixedConstOperand_OfflineIndeterminate/mysql_ifnull_mixed_const
+=== PAUSE TestAnalyzeQueryAccess_MixedConstOperand_OfflineIndeterminate/mysql_ifnull_mixed_const
+=== RUN   TestAnalyzeQueryAccess_LiteralAndReversedOperands_OfflineIndeterminate/reversed_coalesce
+=== PAUSE TestAnalyzeQueryAccess_LiteralAndReversedOperands_OfflineIndeterminate/reversed_coalesce
+=== RUN   TestAnalyzeQueryAccess_LiteralAndReversedOperands_OfflineIndeterminate/all_constant_coalesce
+--- PASS: TestAnalyzeQueryAccessBOMOnlyInputIsRejectedAsEmpty (0.00s)
+=== CONT  TestAuditT05A4ModifyWidePass
+=== PAUSE TestAnalyzeQueryAccess_LiteralAndReversedOperands_OfflineIndeterminate/all_constant_coalesce
+=== PAUSE TestAuditAlterIndexUsesCreateIndexNoticeAndActionMetadata/mysql_unique_index
+=== CONT  TestAuditT05A5ChangePass
+=== RUN   TestAuditT05A5ChangePass/mysql
+=== PAUSE TestAuditT05A5ChangePass/mysql
+=== CONT  TestAuditT05A4ModifyNarrowReject
+=== RUN   TestAuditT05A4ModifyNarrowReject/mysql
+=== PAUSE TestAuditT05A4ModifyNarrowReject/mysql
+=== RUN   TestAuditT05A4ModifyNarrowReject/tidb
+=== PAUSE TestAuditT05A4ModifyNarrowReject/tidb
+=== RUN   TestAuditAlterIndexUsesCreateIndexNoticeAndActionMetadata/tidb_fulltext_index
+=== PAUSE TestAuditAlterIndexUsesCreateIndexNoticeAndActionMetadata/tidb_fulltext_index
+=== CONT  TestAuditT05A5ProviderError
+=== RUN   TestAuditT05A4ModifyWidePass/mysql
+=== CONT  TestAuditT05A5RenameMissingVersionGap
+=== PAUSE TestAuditT05A4ModifyWidePass/mysql
+=== RUN   TestAuditT05A5ChangePass/tidb
+=== RUN   TestAuditT05A4ModifyWidePass/tidb
+=== PAUSE TestAuditT05A4ModifyWidePass/tidb
+=== PAUSE TestAuditT05A5ChangePass/tidb
+=== CONT  TestAuditT05A5RenameVersionReject
+=== CONT  TestAuditRenameDestinationResolvesRequestSchema
+--- PASS: TestAuditDoesNotStripASecondLeadingUTF8BOM (0.00s)
+=== CONT  TestAuditT05A3IsolatedUnknownDropGap
+=== RUN   TestAuditT05A3IsolatedUnknownDropGap/mysql_DROP_TABLE_t;
+=== CONT  TestAuditT05A6RemovedIndexReject
+=== RUN   TestAuditRenameDestinationResolvesRequestSchema/mysql/alter_unqualified_uses_request_schema
+--- PASS: TestUnsupportedDiagnosticsGuidanceCodeSDKMySQL (0.00s)
+--- PASS: TestUnsupportedDiagnosticsEvidenceSDKParserError (0.00s)
+=== CONT  TestAuditT05A6DropColumnPass
+=== RUN   TestAuditT05A6DropColumnPass/mysql
+=== PAUSE TestAuditT05A6DropColumnPass/mysql
+=== RUN   TestAuditT05A6DropColumnPass/tidb
+=== PAUSE TestAuditT05A6DropColumnPass/tidb
+=== CONT  TestOnlineQueryAccessSessionFromIdentifiedConnReusesIdentity
+--- PASS: TestOnlineQueryAccessSessionFromIdentifiedConnReusesIdentity (0.00s)
+=== CONT  TestAnalyzeQueryAccess_MySQLTiDBProbeBoundary_FunctionFreeAdmissibleNoLeak
+=== PAUSE TestAuditT05A3IsolatedUnknownDropGap/mysql_DROP_TABLE_t;
+=== RUN   TestAnalyzeQueryAccess_MySQLTiDBProbeBoundary_FunctionFreeAdmissibleNoLeak/mysql_where_marker_literal
+=== PAUSE TestAnalyzeQueryAccess_MySQLTiDBProbeBoundary_FunctionFreeAdmissibleNoLeak/mysql_where_marker_literal
+=== RUN   TestAnalyzeQueryAccess_MySQLTiDBProbeBoundary_FunctionFreeAdmissibleNoLeak/tidb_where_marker_literal
+=== PAUSE TestAuditRenameDestinationResolvesRequestSchema/mysql/alter_unqualified_uses_request_schema
+=== RUN   TestAuditRenameDestinationResolvesRequestSchema/mysql/rename_unqualified_uses_request_schema
+=== PAUSE TestAuditRenameDestinationResolvesRequestSchema/mysql/rename_unqualified_uses_request_schema
+=== PAUSE TestAnalyzeQueryAccess_MySQLTiDBProbeBoundary_FunctionFreeAdmissibleNoLeak/tidb_where_marker_literal
+=== RUN   TestAuditT05A3IsolatedUnknownDropGap/mysql_DROP_TABLE_IF_EXISTS_t;
+=== CONT  TestAnalyzeQueryAccess_MySQLTiDBProbeBoundary_NoLeak
+=== RUN   TestAnalyzeQueryAccess_MySQLTiDBProbeBoundary_NoLeak/mysql_udf_marker_function
+=== PAUSE TestAuditT05A3IsolatedUnknownDropGap/mysql_DROP_TABLE_IF_EXISTS_t;
+=== RUN   TestAuditRenameDestinationResolvesRequestSchema/mysql/rename_first_pair_uses_request_schema
+=== RUN   TestAuditT05A3IsolatedUnknownDropGap/tidb_DROP_TABLE_t;
+=== PAUSE TestAuditT05A3IsolatedUnknownDropGap/tidb_DROP_TABLE_t;
+--- PASS: TestAuditOnlyStripsLeadingUTF8BOM (0.00s)
+=== RUN   TestAuditT05A3IsolatedUnknownDropGap/tidb_DROP_TABLE_IF_EXISTS_t;
+=== PAUSE TestAuditRenameDestinationResolvesRequestSchema/mysql/rename_first_pair_uses_request_schema
+=== PAUSE TestAuditT05A3IsolatedUnknownDropGap/tidb_DROP_TABLE_IF_EXISTS_t;
+=== RUN   TestAuditRenameDestinationResolvesRequestSchema/mysql/rename_middle_pair_uses_request_schema
+=== CONT  TestAuditT04BProviderFailureContract
+=== CONT  TestAuditT04BTargetVersionContract
+=== PAUSE TestAnalyzeQueryAccess_MySQLTiDBProbeBoundary_NoLeak/mysql_udf_marker_function
+=== RUN   TestAnalyzeQueryAccess_MySQLTiDBProbeBoundary_NoLeak/tidb_udf_marker_function
+=== PAUSE TestAnalyzeQueryAccess_MySQLTiDBProbeBoundary_NoLeak/tidb_udf_marker_function
+=== RUN   TestAnalyzeQueryAccess_MySQLTiDBProbeBoundary_NoLeak/mysql_count_with_marker_literal
+=== PAUSE TestAnalyzeQueryAccess_MySQLTiDBProbeBoundary_NoLeak/mysql_count_with_marker_literal
+=== RUN   TestAnalyzeQueryAccess_MySQLTiDBProbeBoundary_NoLeak/tidb_count_with_marker_literal
+=== PAUSE TestAnalyzeQueryAccess_MySQLTiDBProbeBoundary_NoLeak/tidb_count_with_marker_literal
+=== RUN   TestAnalyzeQueryAccess_MySQLTiDBProbeBoundary_NoLeak/mysql_qualified_marker_function
+=== PAUSE TestAnalyzeQueryAccess_MySQLTiDBProbeBoundary_NoLeak/mysql_qualified_marker_function
+=== RUN   TestAnalyzeQueryAccess_MySQLTiDBProbeBoundary_NoLeak/tidb_qualified_marker_function
+=== PAUSE TestAnalyzeQueryAccess_MySQLTiDBProbeBoundary_NoLeak/tidb_qualified_marker_function
+=== RUN   TestAnalyzeQueryAccess_MySQLTiDBProbeBoundary_NoLeak/mysql_coalesce_mixed_const_marker
+=== PAUSE TestAnalyzeQueryAccess_MySQLTiDBProbeBoundary_NoLeak/mysql_coalesce_mixed_const_marker
+=== RUN   TestAnalyzeQueryAccess_MySQLTiDBProbeBoundary_NoLeak/tidb_coalesce_mixed_const_marker
+=== PAUSE TestAnalyzeQueryAccess_MySQLTiDBProbeBoundary_NoLeak/tidb_coalesce_mixed_const_marker
+=== RUN   TestAnalyzeQueryAccess_MySQLTiDBProbeBoundary_NoLeak/mysql_nullif_mixed_const_marker
+=== PAUSE TestAnalyzeQueryAccess_MySQLTiDBProbeBoundary_NoLeak/mysql_nullif_mixed_const_marker
+=== RUN   TestAnalyzeQueryAccess_MySQLTiDBProbeBoundary_NoLeak/mysql_ifnull_mixed_const_marker
+=== PAUSE TestAnalyzeQueryAccess_MySQLTiDBProbeBoundary_NoLeak/mysql_ifnull_mixed_const_marker
+=== CONT  TestAuditT04GapWithUnsupportedKeepsErrorContract
+=== PAUSE TestAuditRenameDestinationResolvesRequestSchema/mysql/rename_middle_pair_uses_request_schema
+=== RUN   TestAuditRenameDestinationResolvesRequestSchema/mysql/rename_later_pair_uses_request_schema
+=== PAUSE TestAuditRenameDestinationResolvesRequestSchema/mysql/rename_later_pair_uses_request_schema
+=== RUN   TestAuditRenameDestinationResolvesRequestSchema/mysql/alter_explicit_destination_wins
+=== PAUSE TestAuditRenameDestinationResolvesRequestSchema/mysql/alter_explicit_destination_wins
+=== RUN   TestAuditRenameDestinationResolvesRequestSchema/mysql/rename_explicit_destination_wins
+=== PAUSE TestAuditRenameDestinationResolvesRequestSchema/mysql/rename_explicit_destination_wins
+=== RUN   TestAuditRenameDestinationResolvesRequestSchema/mysql/tables_selector_matches_without_schema
+=== PAUSE TestAuditRenameDestinationResolvesRequestSchema/mysql/tables_selector_matches_without_schema
+=== RUN   TestAuditRenameDestinationResolvesRequestSchema/mysql/alter_request_schema_not_source_schema
+=== PAUSE TestAuditRenameDestinationResolvesRequestSchema/mysql/alter_request_schema_not_source_schema
+=== RUN   TestAuditRenameDestinationResolvesRequestSchema/mysql/rename_request_schema_not_source_schema
+=== PAUSE TestAuditRenameDestinationResolvesRequestSchema/mysql/rename_request_schema_not_source_schema
+=== RUN   TestAuditRenameDestinationResolvesRequestSchema/mysql/explicit_destination_not_overridden
+=== PAUSE TestAuditRenameDestinationResolvesRequestSchema/mysql/explicit_destination_not_overridden
+=== RUN   TestAuditRenameDestinationResolvesRequestSchema/mysql/alter_unqualified_unknown_without_request_schema
+=== PAUSE TestAuditRenameDestinationResolvesRequestSchema/mysql/alter_unqualified_unknown_without_request_schema
+=== RUN   TestAuditRenameDestinationResolvesRequestSchema/mysql/rename_unqualified_unknown_without_request_schema
+=== PAUSE TestAuditRenameDestinationResolvesRequestSchema/mysql/rename_unqualified_unknown_without_request_schema
+=== RUN   TestAuditRenameDestinationResolvesRequestSchema/mysql/all_allowed
+=== PAUSE TestAuditRenameDestinationResolvesRequestSchema/mysql/all_allowed
+=== RUN   TestAuditRenameDestinationResolvesRequestSchema/tidb/alter_unqualified_uses_request_schema
+=== PAUSE TestAuditRenameDestinationResolvesRequestSchema/tidb/alter_unqualified_uses_request_schema
+=== RUN   TestAuditRenameDestinationResolvesRequestSchema/tidb/rename_unqualified_uses_request_schema
+=== PAUSE TestAuditRenameDestinationResolvesRequestSchema/tidb/rename_unqualified_uses_request_schema
+=== RUN   TestAuditRenameDestinationResolvesRequestSchema/tidb/rename_first_pair_uses_request_schema
+=== RUN   TestAuditMultiTargetDropAndRenameCheckEveryDenylistTarget/mysql/single
+=== PAUSE TestAuditMultiTargetDropAndRenameCheckEveryDenylistTarget/mysql/single
+=== RUN   TestAuditMultiTargetDropAndRenameCheckEveryDenylistTarget/mysql/second
+=== PAUSE TestAuditMultiTargetDropAndRenameCheckEveryDenylistTarget/mysql/second
+=== RUN   TestAuditMultiTargetDropAndRenameCheckEveryDenylistTarget/mysql/first
+=== PAUSE TestAuditMultiTargetDropAndRenameCheckEveryDenylistTarget/mysql/first
+=== RUN   TestAuditMultiTargetDropAndRenameCheckEveryDenylistTarget/mysql/middle
+=== PAUSE TestAuditMultiTargetDropAndRenameCheckEveryDenylistTarget/mysql/middle
+=== PAUSE TestAuditRenameDestinationResolvesRequestSchema/tidb/rename_first_pair_uses_request_schema
+--- PASS: TestAuditParserErrorPreservesPartialSDKResult (0.00s)
+=== RUN   TestAuditRenameDestinationResolvesRequestSchema/tidb/rename_middle_pair_uses_request_schema
+=== CONT  TestAuditT05A3DropRecreateFirstPath
+=== PAUSE TestAuditRenameDestinationResolvesRequestSchema/tidb/rename_middle_pair_uses_request_schema
+=== RUN   TestAuditRenameDestinationResolvesRequestSchema/tidb/rename_later_pair_uses_request_schema
+=== RUN   TestAuditT05A3DropRecreateFirstPath/mysql
+=== PAUSE TestAuditRenameDestinationResolvesRequestSchema/tidb/rename_later_pair_uses_request_schema
+=== PAUSE TestAuditT05A3DropRecreateFirstPath/mysql
+=== RUN   TestAuditRenameDestinationResolvesRequestSchema/tidb/alter_explicit_destination_wins
+=== RUN   TestAuditT05A3DropRecreateFirstPath/tidb
+=== PAUSE TestAuditRenameDestinationResolvesRequestSchema/tidb/alter_explicit_destination_wins
+=== RUN   TestAuditRenameDestinationResolvesRequestSchema/tidb/rename_explicit_destination_wins
+=== PAUSE TestAuditT05A3DropRecreateFirstPath/tidb
+=== PAUSE TestAuditRenameDestinationResolvesRequestSchema/tidb/rename_explicit_destination_wins
+=== RUN   TestAuditMultiTargetDropAndRenameCheckEveryDenylistTarget/mysql/all_allowed
+=== RUN   TestAuditRenameDestinationResolvesRequestSchema/tidb/tables_selector_matches_without_schema
+=== CONT  TestT07ProviderSnapshotOwnership
+=== PAUSE TestAuditMultiTargetDropAndRenameCheckEveryDenylistTarget/mysql/all_allowed
+=== RUN   TestAuditMultiTargetDropAndRenameCheckEveryDenylistTarget/mysql/rename_source
+=== PAUSE TestAuditMultiTargetDropAndRenameCheckEveryDenylistTarget/mysql/rename_source
+=== RUN   TestAuditMultiTargetDropAndRenameCheckEveryDenylistTarget/mysql/rename_destination
+=== PAUSE TestAuditRenameDestinationResolvesRequestSchema/tidb/tables_selector_matches_without_schema
+=== PAUSE TestAuditMultiTargetDropAndRenameCheckEveryDenylistTarget/mysql/rename_destination
+=== RUN   TestAuditMultiTargetDropAndRenameCheckEveryDenylistTarget/mysql/rename_allowed
+=== RUN   TestAuditRenameDestinationResolvesRequestSchema/tidb/alter_request_schema_not_source_schema
+=== PAUSE TestAuditRenameDestinationResolvesRequestSchema/tidb/alter_request_schema_not_source_schema
+=== RUN   TestAuditRenameDestinationResolvesRequestSchema/tidb/rename_request_schema_not_source_schema
+=== PAUSE TestAuditMultiTargetDropAndRenameCheckEveryDenylistTarget/mysql/rename_allowed
+=== PAUSE TestAuditRenameDestinationResolvesRequestSchema/tidb/rename_request_schema_not_source_schema
+=== RUN   TestAuditMultiTargetDropAndRenameCheckEveryDenylistTarget/mysql/quoted
+=== RUN   TestAuditRenameDestinationResolvesRequestSchema/tidb/explicit_destination_not_overridden
+=== PAUSE TestAuditMultiTargetDropAndRenameCheckEveryDenylistTarget/mysql/quoted
+=== RUN   TestAuditMultiTargetDropAndRenameCheckEveryDenylistTarget/mysql/qualified
+=== PAUSE TestAuditMultiTargetDropAndRenameCheckEveryDenylistTarget/mysql/qualified
+=== RUN   TestAuditMultiTargetDropAndRenameCheckEveryDenylistTarget/tidb/single
+=== PAUSE TestAuditMultiTargetDropAndRenameCheckEveryDenylistTarget/tidb/single
+=== RUN   TestAuditMultiTargetDropAndRenameCheckEveryDenylistTarget/tidb/second
+=== PAUSE TestAuditMultiTargetDropAndRenameCheckEveryDenylistTarget/tidb/second
+=== RUN   TestAuditMultiTargetDropAndRenameCheckEveryDenylistTarget/tidb/first
+=== PAUSE TestAuditMultiTargetDropAndRenameCheckEveryDenylistTarget/tidb/first
+=== RUN   TestAuditMultiTargetDropAndRenameCheckEveryDenylistTarget/tidb/middle
+=== PAUSE TestAuditMultiTargetDropAndRenameCheckEveryDenylistTarget/tidb/middle
+=== RUN   TestAuditMultiTargetDropAndRenameCheckEveryDenylistTarget/tidb/all_allowed
+=== PAUSE TestAuditMultiTargetDropAndRenameCheckEveryDenylistTarget/tidb/all_allowed
+=== RUN   TestAuditMultiTargetDropAndRenameCheckEveryDenylistTarget/tidb/rename_source
+=== PAUSE TestAuditMultiTargetDropAndRenameCheckEveryDenylistTarget/tidb/rename_source
+=== RUN   TestAuditMultiTargetDropAndRenameCheckEveryDenylistTarget/tidb/rename_destination
+=== PAUSE TestAuditMultiTargetDropAndRenameCheckEveryDenylistTarget/tidb/rename_destination
+=== RUN   TestAuditMultiTargetDropAndRenameCheckEveryDenylistTarget/tidb/rename_allowed
+=== PAUSE TestAuditMultiTargetDropAndRenameCheckEveryDenylistTarget/tidb/rename_allowed
+=== RUN   TestAuditMultiTargetDropAndRenameCheckEveryDenylistTarget/tidb/quoted
+=== PAUSE TestAuditMultiTargetDropAndRenameCheckEveryDenylistTarget/tidb/quoted
+=== RUN   TestAuditMultiTargetDropAndRenameCheckEveryDenylistTarget/tidb/qualified
+=== PAUSE TestAuditMultiTargetDropAndRenameCheckEveryDenylistTarget/tidb/qualified
+=== CONT  TestAuditLeadingUTF8BOMMatchesBOMFreeInput
+=== PAUSE TestAuditRenameDestinationResolvesRequestSchema/tidb/explicit_destination_not_overridden
+=== RUN   TestAuditRenameDestinationResolvesRequestSchema/tidb/alter_unqualified_unknown_without_request_schema
+=== PAUSE TestAuditRenameDestinationResolvesRequestSchema/tidb/alter_unqualified_unknown_without_request_schema
+=== RUN   TestAuditRenameDestinationResolvesRequestSchema/tidb/rename_unqualified_unknown_without_request_schema
+=== PAUSE TestAuditRenameDestinationResolvesRequestSchema/tidb/rename_unqualified_unknown_without_request_schema
+=== RUN   TestAuditRenameDestinationResolvesRequestSchema/tidb/all_allowed
+=== PAUSE TestAuditRenameDestinationResolvesRequestSchema/tidb/all_allowed
+=== CONT  TestPublicResultJSONOmitsFailOnTriggered
+=== RUN   TestAuditT04BTargetVersionContract/absent_version_yields_bounded_gap
+=== RUN   TestAuditT04BProviderFailureContract/provider_failure_stays_an_error
+--- PASS: TestPublicResultJSONOmitsFailOnTriggered (0.00s)
+=== CONT  TestT07ProviderSnapshotOwnershipConcurrent
+--- PASS: TestT07ProviderSnapshotOwnership (0.00s)
+=== CONT  TestAuditT04EvidenceGapProjectsThroughSDK
+--- PASS: TestAuditLeadingUTF8BOMMatchesBOMFreeInput (0.01s)
+=== CONT  TestAuditParserErrorUnsupportedContractMySQL
+--- PASS: TestAuditParserErrorUnsupportedContractMySQL (0.00s)
+=== CONT  TestAuditParserErrorUnsupportedContractTiDB
+--- PASS: TestAuditParserErrorUnsupportedContractTiDB (0.00s)
+=== CONT  TestAnalyzeQueryAccess_MixedConstOperand_OfflineIndeterminate/mysql_coalesce_mixed_const
+=== CONT  TestAnalyzeQueryAccess_MixedConstOperand_OfflineIndeterminate/mysql_ifnull_mixed_const
+=== CONT  TestAnalyzeQueryAccess_MixedConstOperand_OfflineIndeterminate/mysql_nullif_mixed_const
+--- PASS: TestT07ProviderSnapshotOwnershipConcurrent (0.00s)
+=== CONT  TestAnalyzeQueryAccess_MixedConstOperand_OfflineIndeterminate/tidb_coalesce_mixed_const
+=== CONT  TestAnalyzeQueryAccess_LiteralAndReversedOperands_OfflineIndeterminate/all_constant_coalesce
+--- PASS: TestAnalyzeQueryAccess_MixedConstOperand_OfflineIndeterminate (0.00s)
+    --- PASS: TestAnalyzeQueryAccess_MixedConstOperand_OfflineIndeterminate/mysql_coalesce_mixed_const (0.00s)
+    --- PASS: TestAnalyzeQueryAccess_MixedConstOperand_OfflineIndeterminate/mysql_ifnull_mixed_const (0.00s)
+    --- PASS: TestAnalyzeQueryAccess_MixedConstOperand_OfflineIndeterminate/mysql_nullif_mixed_const (0.00s)
+    --- PASS: TestAnalyzeQueryAccess_MixedConstOperand_OfflineIndeterminate/tidb_coalesce_mixed_const (0.00s)
+=== CONT  TestAnalyzeQueryAccess_LiteralAndReversedOperands_OfflineIndeterminate/literal_only_lower
+=== CONT  TestAnalyzeQueryAccess_LiteralAndReversedOperands_OfflineIndeterminate/reversed_coalesce
+=== CONT  TestAnalyzeQueryAccess_LiteralAndReversedOperands_OfflineIndeterminate/count_literal
+=== RUN   TestAuditT04BTargetVersionContract/valid_version_projects_canonical_identity
+=== CONT  TestAuditT05A4ModifyNarrowReject/mysql
+--- PASS: TestAnalyzeQueryAccess_LiteralAndReversedOperands_OfflineIndeterminate (0.00s)
+    --- PASS: TestAnalyzeQueryAccess_LiteralAndReversedOperands_OfflineIndeterminate/all_constant_coalesce (0.00s)
+    --- PASS: TestAnalyzeQueryAccess_LiteralAndReversedOperands_OfflineIndeterminate/literal_only_lower (0.00s)
+    --- PASS: TestAnalyzeQueryAccess_LiteralAndReversedOperands_OfflineIndeterminate/count_literal (0.00s)
+    --- PASS: TestAnalyzeQueryAccess_LiteralAndReversedOperands_OfflineIndeterminate/reversed_coalesce (0.00s)
+=== CONT  TestAuditAlterIndexUsesCreateIndexNoticeAndActionMetadata/mysql_add_index
+=== RUN   TestAuditT04BProviderFailureContract/successful_read_with_unknown_fact_is_unverified_gap_not_error
+--- PASS: TestAuditT05A5RenameVersionReject (0.01s)
+=== CONT  TestAuditT05A4ModifyNarrowReject/tidb
+--- PASS: TestAuditT04GapWithUnsupportedKeepsErrorContract (0.01s)
+=== CONT  TestAuditAlterIndexUsesCreateIndexNoticeAndActionMetadata/mysql_unique_index
+--- PASS: TestAuditT05A5RenameMissingVersionGap (0.01s)
+=== CONT  TestAuditAlterIndexUsesCreateIndexNoticeAndActionMetadata/tidb_fulltext_index
+--- PASS: TestAuditT05A4ProviderError (0.01s)
+=== CONT  TestAuditAlterIndexUsesCreateIndexNoticeAndActionMetadata/tidb_add_key
+=== CONT  TestAuditT05A4ModifyWidePass/mysql
+=== CONT  TestAuditT05A4ModifyWidePass/tidb
+=== CONT  TestAuditT05A5ChangePass/tidb
+=== CONT  TestAuditT05A6DropColumnPass/mysql
+--- PASS: TestAuditT05A5ProviderError (0.01s)
+--- PASS: TestAuditT05A6RemovedIndexReject (0.01s)
+=== CONT  TestAuditT05A5ChangePass/mysql
+--- PASS: TestAuditAlterIndexUsesCreateIndexNoticeAndActionMetadata (0.00s)
+    --- PASS: TestAuditAlterIndexUsesCreateIndexNoticeAndActionMetadata/mysql_add_index (0.00s)
+    --- PASS: TestAuditAlterIndexUsesCreateIndexNoticeAndActionMetadata/mysql_unique_index (0.00s)
+    --- PASS: TestAuditAlterIndexUsesCreateIndexNoticeAndActionMetadata/tidb_fulltext_index (0.00s)
+    --- PASS: TestAuditAlterIndexUsesCreateIndexNoticeAndActionMetadata/tidb_add_key (0.00s)
+=== CONT  TestAuditT05A6DropColumnPass/tidb
+--- PASS: TestAuditT04EvidenceGapProjectsThroughSDK (0.01s)
+=== CONT  TestAnalyzeQueryAccess_MySQLTiDBProbeBoundary_FunctionFreeAdmissibleNoLeak/mysql_where_marker_literal
+=== CONT  TestAnalyzeQueryAccess_MySQLTiDBProbeBoundary_FunctionFreeAdmissibleNoLeak/tidb_where_marker_literal
+--- PASS: TestAnalyzeQueryAccess_MySQLTiDBProbeBoundary_FunctionFreeAdmissibleNoLeak (0.00s)
+    --- PASS: TestAnalyzeQueryAccess_MySQLTiDBProbeBoundary_FunctionFreeAdmissibleNoLeak/mysql_where_marker_literal (0.00s)
+    --- PASS: TestAnalyzeQueryAccess_MySQLTiDBProbeBoundary_FunctionFreeAdmissibleNoLeak/tidb_where_marker_literal (0.00s)
+=== CONT  TestAuditT05A3IsolatedUnknownDropGap/mysql_DROP_TABLE_t;
+=== RUN   TestAuditT04BTargetVersionContract/valid_version_with_unknown_page_size_degrades_to_instance_fact_gap
+--- PASS: TestAuditT04BProviderFailureContract (0.02s)
+    --- PASS: TestAuditT04BProviderFailureContract/provider_failure_stays_an_error (0.01s)
+    --- PASS: TestAuditT04BProviderFailureContract/successful_read_with_unknown_fact_is_unverified_gap_not_error (0.01s)
+=== CONT  TestAuditT05A3IsolatedUnknownDropGap/tidb_DROP_TABLE_t;
+--- PASS: TestAuditT05A4ModifyNoProviderKeepsCreateGap (0.02s)
+=== CONT  TestAuditT05A3IsolatedUnknownDropGap/tidb_DROP_TABLE_IF_EXISTS_t;
+=== CONT  TestAuditT05A3IsolatedUnknownDropGap/mysql_DROP_TABLE_IF_EXISTS_t;
+=== CONT  TestAnalyzeQueryAccess_MySQLTiDBProbeBoundary_NoLeak/mysql_udf_marker_function
+=== CONT  TestAnalyzeQueryAccess_MySQLTiDBProbeBoundary_NoLeak/tidb_qualified_marker_function
+=== CONT  TestAnalyzeQueryAccess_MySQLTiDBProbeBoundary_NoLeak/mysql_ifnull_mixed_const_marker
+=== CONT  TestAnalyzeQueryAccess_MySQLTiDBProbeBoundary_NoLeak/mysql_nullif_mixed_const_marker
+=== CONT  TestAnalyzeQueryAccess_MySQLTiDBProbeBoundary_NoLeak/tidb_coalesce_mixed_const_marker
+=== CONT  TestAnalyzeQueryAccess_MySQLTiDBProbeBoundary_NoLeak/mysql_coalesce_mixed_const_marker
+=== CONT  TestAnalyzeQueryAccess_MySQLTiDBProbeBoundary_NoLeak/tidb_count_with_marker_literal
+=== CONT  TestAnalyzeQueryAccess_MySQLTiDBProbeBoundary_NoLeak/mysql_qualified_marker_function
+=== CONT  TestAnalyzeQueryAccess_MySQLTiDBProbeBoundary_NoLeak/mysql_count_with_marker_literal
+--- PASS: TestAuditT05A6DropColumnPass (0.00s)
+    --- PASS: TestAuditT05A6DropColumnPass/mysql (0.01s)
+    --- PASS: TestAuditT05A6DropColumnPass/tidb (0.01s)
+=== CONT  TestAnalyzeQueryAccess_MySQLTiDBProbeBoundary_NoLeak/tidb_udf_marker_function
+=== CONT  TestAuditT05A3DropRecreateFirstPath/mysql
+--- PASS: TestAnalyzeQueryAccess_MySQLTiDBProbeBoundary_NoLeak (0.00s)
+    --- PASS: TestAnalyzeQueryAccess_MySQLTiDBProbeBoundary_NoLeak/mysql_udf_marker_function (0.00s)
+    --- PASS: TestAnalyzeQueryAccess_MySQLTiDBProbeBoundary_NoLeak/tidb_qualified_marker_function (0.00s)
+    --- PASS: TestAnalyzeQueryAccess_MySQLTiDBProbeBoundary_NoLeak/mysql_ifnull_mixed_const_marker (0.00s)
+    --- PASS: TestAnalyzeQueryAccess_MySQLTiDBProbeBoundary_NoLeak/mysql_nullif_mixed_const_marker (0.00s)
+    --- PASS: TestAnalyzeQueryAccess_MySQLTiDBProbeBoundary_NoLeak/tidb_coalesce_mixed_const_marker (0.00s)
+    --- PASS: TestAnalyzeQueryAccess_MySQLTiDBProbeBoundary_NoLeak/mysql_coalesce_mixed_const_marker (0.00s)
+    --- PASS: TestAnalyzeQueryAccess_MySQLTiDBProbeBoundary_NoLeak/tidb_count_with_marker_literal (0.00s)
+    --- PASS: TestAnalyzeQueryAccess_MySQLTiDBProbeBoundary_NoLeak/mysql_qualified_marker_function (0.00s)
+    --- PASS: TestAnalyzeQueryAccess_MySQLTiDBProbeBoundary_NoLeak/mysql_count_with_marker_literal (0.00s)
+    --- PASS: TestAnalyzeQueryAccess_MySQLTiDBProbeBoundary_NoLeak/tidb_udf_marker_function (0.00s)
+=== CONT  TestAuditT05A3DropRecreateFirstPath/tidb
+=== RUN   TestAuditT04BTargetVersionContract/malformed_version_returns_typed_input_error
+=== RUN   TestAuditT04BTargetVersionContract/out-of-range_version_returns_range_gap
+=== CONT  TestAuditMultiTargetDropAndRenameCheckEveryDenylistTarget/mysql/single
+--- PASS: TestAuditT05A4ModifyWidePass (0.00s)
+    --- PASS: TestAuditT05A4ModifyWidePass/mysql (0.01s)
+    --- PASS: TestAuditT05A4ModifyWidePass/tidb (0.01s)
+=== CONT  TestAuditMultiTargetDropAndRenameCheckEveryDenylistTarget/tidb/single
+--- PASS: TestAuditT05A4ModifyNarrowReject (0.00s)
+    --- PASS: TestAuditT05A4ModifyNarrowReject/mysql (0.01s)
+    --- PASS: TestAuditT05A4ModifyNarrowReject/tidb (0.01s)
+=== CONT  TestAuditMultiTargetDropAndRenameCheckEveryDenylistTarget/tidb/qualified
+=== CONT  TestAuditMultiTargetDropAndRenameCheckEveryDenylistTarget/tidb/quoted
+--- PASS: TestAuditT05A5ChangePass (0.00s)
+    --- PASS: TestAuditT05A5ChangePass/tidb (0.01s)
+    --- PASS: TestAuditT05A5ChangePass/mysql (0.01s)
+=== CONT  TestAuditMultiTargetDropAndRenameCheckEveryDenylistTarget/tidb/rename_allowed
+=== CONT  TestAuditMultiTargetDropAndRenameCheckEveryDenylistTarget/tidb/rename_destination
+=== CONT  TestAuditMultiTargetDropAndRenameCheckEveryDenylistTarget/tidb/rename_source
+=== CONT  TestAuditMultiTargetDropAndRenameCheckEveryDenylistTarget/tidb/all_allowed
+=== CONT  TestAuditMultiTargetDropAndRenameCheckEveryDenylistTarget/tidb/middle
+=== CONT  TestAuditMultiTargetDropAndRenameCheckEveryDenylistTarget/tidb/first
+--- PASS: TestAuditT05A3IsolatedUnknownDropGap (0.00s)
+    --- PASS: TestAuditT05A3IsolatedUnknownDropGap/tidb_DROP_TABLE_IF_EXISTS_t; (0.01s)
+    --- PASS: TestAuditT05A3IsolatedUnknownDropGap/mysql_DROP_TABLE_t; (0.01s)
+    --- PASS: TestAuditT05A3IsolatedUnknownDropGap/tidb_DROP_TABLE_t; (0.01s)
+    --- PASS: TestAuditT05A3IsolatedUnknownDropGap/mysql_DROP_TABLE_IF_EXISTS_t; (0.01s)
+=== CONT  TestAuditMultiTargetDropAndRenameCheckEveryDenylistTarget/tidb/second
+--- PASS: TestAuditT05A3DropRecreateFirstPath (0.00s)
+    --- PASS: TestAuditT05A3DropRecreateFirstPath/mysql (0.01s)
+    --- PASS: TestAuditT05A3DropRecreateFirstPath/tidb (0.01s)
+=== CONT  TestAuditMultiTargetDropAndRenameCheckEveryDenylistTarget/mysql/rename_source
+=== CONT  TestAuditMultiTargetDropAndRenameCheckEveryDenylistTarget/mysql/qualified
+=== RUN   TestAuditT04BTargetVersionContract/tidb_valid_target_projects_tidb_product
+=== CONT  TestAuditMultiTargetDropAndRenameCheckEveryDenylistTarget/mysql/rename_allowed
+=== CONT  TestAuditMultiTargetDropAndRenameCheckEveryDenylistTarget/mysql/quoted
+=== CONT  TestAuditMultiTargetDropAndRenameCheckEveryDenylistTarget/mysql/rename_destination
+=== CONT  TestAuditRenameDestinationResolvesRequestSchema/mysql/alter_unqualified_uses_request_schema
+=== CONT  TestAuditRenameDestinationResolvesRequestSchema/tidb/all_allowed
+=== CONT  TestAuditRenameDestinationResolvesRequestSchema/tidb/rename_unqualified_unknown_without_request_schema
+=== CONT  TestAuditRenameDestinationResolvesRequestSchema/tidb/alter_unqualified_unknown_without_request_schema
+=== CONT  TestAuditRenameDestinationResolvesRequestSchema/tidb/explicit_destination_not_overridden
+=== CONT  TestAuditRenameDestinationResolvesRequestSchema/tidb/rename_request_schema_not_source_schema
+--- PASS: TestAuditT04BTargetVersionContract (0.04s)
+    --- PASS: TestAuditT04BTargetVersionContract/absent_version_yields_bounded_gap (0.01s)
+    --- PASS: TestAuditT04BTargetVersionContract/valid_version_projects_canonical_identity (0.01s)
+    --- PASS: TestAuditT04BTargetVersionContract/valid_version_with_unknown_page_size_degrades_to_instance_fact_gap (0.01s)
+    --- PASS: TestAuditT04BTargetVersionContract/malformed_version_returns_typed_input_error (0.00s)
+    --- PASS: TestAuditT04BTargetVersionContract/out-of-range_version_returns_range_gap (0.01s)
+    --- PASS: TestAuditT04BTargetVersionContract/tidb_valid_target_projects_tidb_product (0.01s)
+=== CONT  TestAuditRenameDestinationResolvesRequestSchema/tidb/alter_request_schema_not_source_schema
+=== CONT  TestAuditRenameDestinationResolvesRequestSchema/tidb/tables_selector_matches_without_schema
+=== CONT  TestAuditRenameDestinationResolvesRequestSchema/tidb/rename_explicit_destination_wins
+=== CONT  TestAuditRenameDestinationResolvesRequestSchema/tidb/alter_explicit_destination_wins
+=== CONT  TestAuditRenameDestinationResolvesRequestSchema/tidb/rename_later_pair_uses_request_schema
+=== CONT  TestAuditRenameDestinationResolvesRequestSchema/tidb/rename_middle_pair_uses_request_schema
+=== CONT  TestAuditMultiTargetDropAndRenameCheckEveryDenylistTarget/mysql/all_allowed
+=== CONT  TestAuditRenameDestinationResolvesRequestSchema/tidb/rename_first_pair_uses_request_schema
+=== CONT  TestAuditMultiTargetDropAndRenameCheckEveryDenylistTarget/mysql/middle
+=== CONT  TestAuditRenameDestinationResolvesRequestSchema/tidb/rename_unqualified_uses_request_schema
+=== CONT  TestAuditMultiTargetDropAndRenameCheckEveryDenylistTarget/mysql/first
+=== CONT  TestAuditRenameDestinationResolvesRequestSchema/tidb/alter_unqualified_uses_request_schema
+=== CONT  TestAuditRenameDestinationResolvesRequestSchema/mysql/all_allowed
+=== CONT  TestAuditRenameDestinationResolvesRequestSchema/mysql/rename_unqualified_unknown_without_request_schema
+=== CONT  TestAuditMultiTargetDropAndRenameCheckEveryDenylistTarget/mysql/second
+=== CONT  TestAuditRenameDestinationResolvesRequestSchema/mysql/alter_unqualified_unknown_without_request_schema
+=== CONT  TestAuditRenameDestinationResolvesRequestSchema/mysql/explicit_destination_not_overridden
+=== CONT  TestAuditRenameDestinationResolvesRequestSchema/mysql/rename_request_schema_not_source_schema
+=== CONT  TestAuditRenameDestinationResolvesRequestSchema/mysql/alter_request_schema_not_source_schema
+=== CONT  TestAuditRenameDestinationResolvesRequestSchema/mysql/rename_later_pair_uses_request_schema
+=== CONT  TestAuditRenameDestinationResolvesRequestSchema/mysql/tables_selector_matches_without_schema
+=== CONT  TestAuditRenameDestinationResolvesRequestSchema/mysql/rename_explicit_destination_wins
+=== CONT  TestAuditRenameDestinationResolvesRequestSchema/mysql/alter_explicit_destination_wins
+=== CONT  TestAuditRenameDestinationResolvesRequestSchema/mysql/rename_first_pair_uses_request_schema
+--- PASS: TestAuditMultiTargetDropAndRenameCheckEveryDenylistTarget (0.00s)
+    --- PASS: TestAuditMultiTargetDropAndRenameCheckEveryDenylistTarget/tidb/single (0.01s)
+    --- PASS: TestAuditMultiTargetDropAndRenameCheckEveryDenylistTarget/tidb/rename_destination (0.00s)
+    --- PASS: TestAuditMultiTargetDropAndRenameCheckEveryDenylistTarget/tidb/quoted (0.01s)
+    --- PASS: TestAuditMultiTargetDropAndRenameCheckEveryDenylistTarget/mysql/single (0.01s)
+    --- PASS: TestAuditMultiTargetDropAndRenameCheckEveryDenylistTarget/tidb/all_allowed (0.00s)
+    --- PASS: TestAuditMultiTargetDropAndRenameCheckEveryDenylistTarget/tidb/rename_source (0.01s)
+    --- PASS: TestAuditMultiTargetDropAndRenameCheckEveryDenylistTarget/tidb/rename_allowed (0.01s)
+    --- PASS: TestAuditMultiTargetDropAndRenameCheckEveryDenylistTarget/tidb/second (0.00s)
+    --- PASS: TestAuditMultiTargetDropAndRenameCheckEveryDenylistTarget/tidb/middle (0.01s)
+    --- PASS: TestAuditMultiTargetDropAndRenameCheckEveryDenylistTarget/tidb/qualified (0.01s)
+    --- PASS: TestAuditMultiTargetDropAndRenameCheckEveryDenylistTarget/mysql/rename_source (0.01s)
+    --- PASS: TestAuditMultiTargetDropAndRenameCheckEveryDenylistTarget/tidb/first (0.01s)
+    --- PASS: TestAuditMultiTargetDropAndRenameCheckEveryDenylistTarget/mysql/qualified (0.01s)
+    --- PASS: TestAuditMultiTargetDropAndRenameCheckEveryDenylistTarget/mysql/rename_allowed (0.01s)
+    --- PASS: TestAuditMultiTargetDropAndRenameCheckEveryDenylistTarget/mysql/quoted (0.01s)
+    --- PASS: TestAuditMultiTargetDropAndRenameCheckEveryDenylistTarget/mysql/rename_destination (0.01s)
+    --- PASS: TestAuditMultiTargetDropAndRenameCheckEveryDenylistTarget/mysql/middle (0.00s)
+    --- PASS: TestAuditMultiTargetDropAndRenameCheckEveryDenylistTarget/mysql/all_allowed (0.01s)
+    --- PASS: TestAuditMultiTargetDropAndRenameCheckEveryDenylistTarget/mysql/first (0.01s)
+    --- PASS: TestAuditMultiTargetDropAndRenameCheckEveryDenylistTarget/mysql/second (0.01s)
+=== CONT  TestAuditRenameDestinationResolvesRequestSchema/mysql/rename_middle_pair_uses_request_schema
+=== CONT  TestAuditRenameDestinationResolvesRequestSchema/mysql/rename_unqualified_uses_request_schema
+--- PASS: TestAuditRenameDestinationResolvesRequestSchema (0.00s)
+    --- PASS: TestAuditRenameDestinationResolvesRequestSchema/mysql/alter_unqualified_uses_request_schema (0.01s)
+    --- PASS: TestAuditRenameDestinationResolvesRequestSchema/tidb/explicit_destination_not_overridden (0.01s)
+    --- PASS: TestAuditRenameDestinationResolvesRequestSchema/tidb/alter_unqualified_unknown_without_request_schema (0.01s)
+    --- PASS: TestAuditRenameDestinationResolvesRequestSchema/tidb/rename_request_schema_not_source_schema (0.01s)
+    --- PASS: TestAuditRenameDestinationResolvesRequestSchema/tidb/all_allowed (0.01s)
+    --- PASS: TestAuditRenameDestinationResolvesRequestSchema/tidb/tables_selector_matches_without_schema (0.01s)
+    --- PASS: TestAuditRenameDestinationResolvesRequestSchema/tidb/alter_request_schema_not_source_schema (0.01s)
+    --- PASS: TestAuditRenameDestinationResolvesRequestSchema/tidb/rename_unqualified_unknown_without_request_schema (0.01s)
+    --- PASS: TestAuditRenameDestinationResolvesRequestSchema/tidb/rename_later_pair_uses_request_schema (0.01s)
+    --- PASS: TestAuditRenameDestinationResolvesRequestSchema/tidb/rename_explicit_destination_wins (0.01s)
+    --- PASS: TestAuditRenameDestinationResolvesRequestSchema/tidb/rename_middle_pair_uses_request_schema (0.01s)
+    --- PASS: TestAuditRenameDestinationResolvesRequestSchema/tidb/alter_explicit_destination_wins (0.01s)
+    --- PASS: TestAuditRenameDestinationResolvesRequestSchema/tidb/rename_first_pair_uses_request_schema (0.01s)
+    --- PASS: TestAuditRenameDestinationResolvesRequestSchema/tidb/alter_unqualified_uses_request_schema (0.01s)
+    --- PASS: TestAuditRenameDestinationResolvesRequestSchema/mysql/alter_unqualified_unknown_without_request_schema (0.01s)
+    --- PASS: TestAuditRenameDestinationResolvesRequestSchema/tidb/rename_unqualified_uses_request_schema (0.01s)
+    --- PASS: TestAuditRenameDestinationResolvesRequestSchema/mysql/rename_unqualified_unknown_without_request_schema (0.01s)
+    --- PASS: TestAuditRenameDestinationResolvesRequestSchema/mysql/all_allowed (0.01s)
+    --- PASS: TestAuditRenameDestinationResolvesRequestSchema/mysql/rename_request_schema_not_source_schema (0.01s)
+    --- PASS: TestAuditRenameDestinationResolvesRequestSchema/mysql/explicit_destination_not_overridden (0.01s)
+    --- PASS: TestAuditRenameDestinationResolvesRequestSchema/mysql/tables_selector_matches_without_schema (0.01s)
+    --- PASS: TestAuditRenameDestinationResolvesRequestSchema/mysql/rename_explicit_destination_wins (0.01s)
+    --- PASS: TestAuditRenameDestinationResolvesRequestSchema/mysql/alter_explicit_destination_wins (0.01s)
+    --- PASS: TestAuditRenameDestinationResolvesRequestSchema/mysql/rename_later_pair_uses_request_schema (0.01s)
+    --- PASS: TestAuditRenameDestinationResolvesRequestSchema/mysql/alter_request_schema_not_source_schema (0.01s)
+    --- PASS: TestAuditRenameDestinationResolvesRequestSchema/mysql/rename_first_pair_uses_request_schema (0.01s)
+    --- PASS: TestAuditRenameDestinationResolvesRequestSchema/mysql/rename_unqualified_uses_request_schema (0.00s)
+    --- PASS: TestAuditRenameDestinationResolvesRequestSchema/mysql/rename_middle_pair_uses_request_schema (0.01s)
+PASS
+ok  	github.com/Fanduzi/DeltaScope/pkg/deltascope	0.802s
