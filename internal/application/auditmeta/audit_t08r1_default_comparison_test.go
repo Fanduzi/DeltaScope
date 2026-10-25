@@ -134,6 +134,12 @@ func (c t08r1Conn) QueryContext(_ context.Context, query string, _ []driver.Name
 		return &t08r1Rows{
 			cols: []string{"constraint_name", "column_name", "referenced_table_schema", "referenced_table_name", "referenced_column_name", "delete_rule", "update_rule", "match_option"},
 		}, nil
+	case strings.Contains(query, "constraint_type = 'CHECK'"):
+		// T12 CHECK member projection — this fixture stores no checks.
+		return &t08r1Rows{cols: []string{"constraint_name", "enforced", "check_clause"}}, nil
+	case strings.Contains(query, "column_name = 'ENFORCED'"), strings.Contains(query, "table_name = 'CHECK_CONSTRAINTS'"), strings.Contains(query, "table_name = 'TIDB_CHECK_CONSTRAINTS'"):
+		// T12 catalog capability probes — this fixture predates them.
+		return &t08r1Rows{cols: []string{"count(*)"}, rows: [][]driver.Value{{int64(0)}}}, nil
 	case strings.Contains(query, "table_constraints"):
 		// The fixture table declares a single-int PRIMARY — the pk-presence
 		// probe answers a real PK so the catalog row binds to it.

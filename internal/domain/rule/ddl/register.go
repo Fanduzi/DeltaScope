@@ -674,6 +674,11 @@ func Register(registry *rule.Registry, cfg policy.Policy) error {
 				[]string{"drop_foreign_key"}, "foreign_key", false, rule.LevelBlocker, cfg,
 				alterObjectName, snapshotHasForeignKeyConstraint)
 		}},
+		{ruleID: ruleIDConstraintCheckNotEnforcedNotice, construct: newCheckNotEnforcedNoticeRule},
+		{ruleID: ruleIDConstraintCheckIgnoredNotice, construct: newCheckIgnoredNoticeRule},
+		{ruleID: ruleIDAlterCheckExistsRequire, construct: newAlterCheckExistsRule},
+		{ruleID: ruleIDAlterDropCheckExistsRequire, construct: newDropCheckExistsRule},
+		{ruleID: ruleIDAlterCheckVersionRequire, construct: newAlterCheckVersionRule},
 		{ruleID: ruleIDTiDBAlterTablePlacementPolicyNotice, construct: newTiDBAlterTablePlacementPolicyNoticeRule},
 	} {
 		ruleCfg, ok := cfg.Rules[factory.ruleID]

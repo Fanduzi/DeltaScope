@@ -981,6 +981,16 @@ func registerTestDriverResults(name string, results map[string]testQueryResult) 
 			rows:    [][]driver.Value{{int64(0)}},
 		}
 	}
+	// The CHECK member select shares table_constraints with the pk-presence
+	// count and the unmodeled-type probe, so its stub lives under the longer
+	// constraint_type-'CHECK' fragment. A fixture without it means "no check
+	// members" — a clean empty set; the capability probes stay unstubbed and
+	// answer ErrNoRows like an old catalog would.
+	if _, ok := cloned[testCheckMemberFragment]; !ok {
+		cloned[testCheckMemberFragment] = testQueryResult{
+			columns: []string{"constraint_name", "enforced", "check_clause"},
+		}
+	}
 	testDriverResults.Store(name, cloned)
 }
 
@@ -1007,6 +1017,11 @@ const testForeignKeyFragment = "left join information_schema.referential_constra
 // table_constraints fragment so longest-match keeps the pk-presence count
 // and the type scan deterministic.
 const testUnmodeledConstraintFragment = "constraint_type not in"
+
+// testCheckMemberFragment is the stub key for the CHECK member select —
+// longer than the shared table_constraints fragment and the
+// unmodeled-type probe's, so longest-match routing stays deterministic.
+const testCheckMemberFragment = "constraint_type = 'CHECK'"
 
 func (c testConn) QueryContext(_ context.Context, query string, _ []driver.NamedValue) (driver.Rows, error) {
 	// Longest matching fragment wins: loaders sharing a catalog table (the
@@ -1059,8 +1074,8 @@ func (r *testRows) Next(dest []driver.Value) error {
 	return nil
 }
 
-// An unmodeled TABLE_CONSTRAINTS type (CHECK and friends) is a member the
-// constraint projection cannot represent — the collection reports loaded
+// An unmodeled TABLE_CONSTRAINTS type is a member the constraint
+// projection cannot represent — the collection reports loaded
 // foreign-key members but does not vouch for completeness. A clean zero
 // count keeps the collection vouched; the probe failure itself propagates
 // because a failed catalog read is not an answerable absence.
@@ -1135,6 +1150,166 @@ func TestLoadTableSnapshotUnmodeledConstraintTypeUnvouchesCollection(t *testing.
 		defer db.Close()
 		if _, err := NewProvider(db).LoadTableSnapshot(context.Background(), spec.DialectMySQL, "app", "t"); err == nil {
 			t.Fatal("a failed constraint-type read is a provider error, not a clean absence")
+		}
+	})
+}
+
+// T12: the CHECK member loader binds name, enforcement state, and parsed
+// clause facts from TABLE_CONSTRAINTS + CHECK_CONSTRAINTS. A catalog
+// without the ENFORCED column or clause table leaves that member fact
+// unproven rather than guessed; member-query failures propagate; a check
+// member is now a modeled type and never unvouches the collection.
+func TestLoadTableSnapshotCheckConstraintMembers(t *testing.T) {
+	t.Parallel()
+	baseResults := func() map[string]testQueryResult {
+		return map[string]testQueryResult{
+			"from information_schema.tables": {
+				columns: []string{"engine", "table_collation", "table_comment", "auto_increment", "row_format", "table_rows"},
+				rows:    [][]driver.Value{{"InnoDB", "utf8mb4_general_ci", "t", nil, "Dynamic", int64(10)}},
+			},
+			"from information_schema.columns": {
+				columns: []string{"column_name", "column_type", "character_set_name", "collation_name", "column_comment", "column_default", "is_nullable", "extra", "generation_expression"},
+				rows:    [][]driver.Value{{"id", "int", nil, nil, "", nil, "NO", "", ""}},
+			},
+			"from information_schema.statistics": {
+				columns: []string{"index_name", "non_unique", "index_type", "column_name", "cardinality", "sub_part", "collation"},
+				rows:    [][]driver.Value{{"PRIMARY", int64(0), "BTREE", "id", int64(10), nil, "A"}},
+			},
+			"column_name = 'ENFORCED'": {
+				columns: []string{"count"},
+				rows:    [][]driver.Value{{int64(1)}},
+			},
+			"table_name = 'CHECK_CONSTRAINTS'": {
+				columns: []string{"count"},
+				rows:    [][]driver.Value{{int64(1)}},
+			},
+		}
+	}
+
+	t.Run("named member carries enforcement state and clause facts", func(t *testing.T) {
+		t.Parallel()
+		results := baseResults()
+		results[testCheckMemberFragment] = testQueryResult{
+			columns: []string{"constraint_name", "enforced", "check_clause"},
+			rows:    [][]driver.Value{{"chk_id", "NO", "(id > 0)"}},
+		}
+		db := openTestDB(t, results)
+		defer db.Close()
+		snapshot, err := NewProvider(db).LoadTableSnapshot(context.Background(), spec.DialectMySQL, "app", "t")
+		if err != nil {
+			t.Fatalf("load: %v", err)
+		}
+		if snapshot.ConstraintsUnknown {
+			t.Fatal("a modeled check member must not unvouch the collection")
+		}
+		member := snapshot.FindCheckConstraint("chk_id")
+		if member == nil {
+			t.Fatalf("check member missing from snapshot: %+v", snapshot.Constraints)
+		}
+		if member.Enforced != "not_enforced" {
+			t.Fatalf("enforced = %q, want not_enforced", member.Enforced)
+		}
+		if member.Expression == nil || !member.Expression.Known {
+			t.Fatalf("clause facts missing: %+v", member.Expression)
+		}
+		if len(member.Columns) != 1 || member.Columns[0] != "id" {
+			t.Fatalf("referenced columns wrong: %+v", member.Columns)
+		}
+	})
+
+	t.Run("old catalog without clause table keeps name and enforcement", func(t *testing.T) {
+		t.Parallel()
+		results := baseResults()
+		delete(results, "table_name = 'CHECK_CONSTRAINTS'")
+		results[testCheckMemberFragment] = testQueryResult{
+			columns: []string{"constraint_name", "enforced", "check_clause"},
+			rows:    [][]driver.Value{{"chk_id", "YES", nil}},
+		}
+		db := openTestDB(t, results)
+		defer db.Close()
+		snapshot, err := NewProvider(db).LoadTableSnapshot(context.Background(), spec.DialectMySQL, "app", "t")
+		if err != nil {
+			t.Fatalf("load: %v", err)
+		}
+		member := snapshot.FindCheckConstraint("chk_id")
+		if member == nil {
+			t.Fatalf("check member missing: %+v", snapshot.Constraints)
+		}
+		if member.Enforced != "enforced" {
+			t.Fatalf("enforced = %q, want enforced", member.Enforced)
+		}
+		if member.Expression != nil {
+			t.Fatalf("no clause table must not fabricate expression facts: %+v", member.Expression)
+		}
+	})
+
+	t.Run("missing enforced column leaves the state unproven", func(t *testing.T) {
+		t.Parallel()
+		results := baseResults()
+		delete(results, "column_name = 'ENFORCED'")
+		results[testCheckMemberFragment] = testQueryResult{
+			columns: []string{"constraint_name", "enforced", "check_clause"},
+			rows:    [][]driver.Value{{"chk_id", nil, "(id > 0)"}},
+		}
+		db := openTestDB(t, results)
+		defer db.Close()
+		snapshot, err := NewProvider(db).LoadTableSnapshot(context.Background(), spec.DialectMySQL, "app", "t")
+		if err != nil {
+			t.Fatalf("load: %v", err)
+		}
+		member := snapshot.FindCheckConstraint("chk_id")
+		if member == nil || member.Enforced != "" {
+			t.Fatalf("unproven enforced must stay empty, got %+v", member)
+		}
+	})
+
+	t.Run("tidb shape loads members without vouching enforcement", func(t *testing.T) {
+		t.Parallel()
+		results := baseResults()
+		results["table_name = 'TIDB_CHECK_CONSTRAINTS'"] = testQueryResult{
+			columns: []string{"count"},
+			rows:    [][]driver.Value{{int64(1)}},
+		}
+		results["constraint_type = 'PRIMARY KEY'"] = testQueryResult{
+			columns: []string{"count"},
+			rows:    [][]driver.Value{{int64(0)}},
+		}
+		results["from information_schema.tidb_check_constraints"] = testQueryResult{
+			columns: []string{"constraint_name", "check_clause"},
+			rows:    [][]driver.Value{{"chk_id", "(`id` > 0)"}},
+		}
+		db := openTestDB(t, results)
+		defer db.Close()
+		snapshot, err := NewProvider(db).LoadTableSnapshot(context.Background(), spec.DialectTiDB, "app", "t")
+		if err != nil {
+			t.Fatalf("load: %v", err)
+		}
+		member := snapshot.FindCheckConstraint("chk_id")
+		if member == nil {
+			t.Fatalf("tidb member missing from snapshot: %+v", snapshot.Constraints)
+		}
+		if member.Enforced != "" {
+			t.Fatalf("tidb catalog cannot vouch enforcement, got %q", member.Enforced)
+		}
+		if member.Expression == nil || !member.Expression.Known {
+			t.Fatalf("tidb clause facts missing: %+v", member.Expression)
+		}
+		if len(member.Columns) != 1 || member.Columns[0] != "id" {
+			t.Fatalf("tidb referenced columns wrong: %+v", member.Columns)
+		}
+	})
+
+	t.Run("member query failure propagates as provider error", func(t *testing.T) {
+		t.Parallel()
+		results := baseResults()
+		results[testCheckMemberFragment] = testQueryResult{
+			columns:  []string{"constraint_name", "enforced", "check_clause"},
+			queryErr: errors.New("catalog down"),
+		}
+		db := openTestDB(t, results)
+		defer db.Close()
+		if _, err := NewProvider(db).LoadTableSnapshot(context.Background(), spec.DialectMySQL, "app", "t"); err == nil {
+			t.Fatal("a failed check-member read is a provider error, not a clean absence")
 		}
 	})
 }

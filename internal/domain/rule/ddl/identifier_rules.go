@@ -402,7 +402,32 @@ func selectForeignKeyConstraintNames(statement spec.Statement) []identifierSubje
 }
 
 func selectCheckConstraintNames(statement spec.Statement) []identifierSubject {
-	return selectConstraintNamesByType(statement, "check", "constraint.check")
+	subjects := selectConstraintNamesByType(statement, "check", "constraint.check")
+	if !appliesToAlterTable(statement) {
+		return subjects
+	}
+	seen := make(map[string]bool, len(subjects))
+	for _, subject := range subjects {
+		seen[strings.ToLower(subject.name)] = true
+	}
+	for _, alter := range matchingAlterActions(statement, "add_constraint") {
+		var name string
+		switch {
+		case alter.Constraint != nil && alter.Constraint.Type == "check":
+			// MySQL/TiDB carry the declared name on the constraint payload;
+			// a bare ADD CHECK has no authored name to judge.
+			name = strings.TrimSpace(alter.Constraint.Name)
+		case alter.Options["constraint_type"] == "check":
+			// PostgreSQL carries the constraint name on alter.Name.
+			name = strings.TrimSpace(alter.Name)
+		}
+		if name == "" || seen[strings.ToLower(name)] {
+			continue
+		}
+		seen[strings.ToLower(name)] = true
+		subjects = append(subjects, identifierSubject{kind: "constraint.check", name: name})
+	}
+	return subjects
 }
 
 func selectConstraintNamesByType(statement spec.Statement, constraintType, kind string) []identifierSubject {

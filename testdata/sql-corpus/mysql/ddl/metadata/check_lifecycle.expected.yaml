@@ -1,0 +1,29 @@
+name: check_lifecycle
+dialect: mysql
+category: ddl
+expect:
+  parse_ok: true
+  statement_kind: ddl
+  operation: alter_table
+  statements:
+    count: 4
+  unsupported:
+    count: 0
+  findings:
+    include:
+      - ddl.constraint.check.not_enforced.notice
+      - ddl.alter.alter_check.exists.require
+      - ddl.alter.drop_check.exists.require
+    exclude:
+      - ddl.alter.alter_check.version.require
+metadata:
+  schema: app
+  instance:
+    version: "8.0.46"
+  tables:
+    t:
+      exists: true
+      columns:
+        - {name: id, type: int}
+      constraints:
+        - {type: check, name: chk_id, columns: [id], enforced: enforced}

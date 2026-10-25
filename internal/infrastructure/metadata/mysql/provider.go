@@ -198,7 +198,7 @@ var _ appaudit.MetadataProvider = (*Provider)(nil)
 func (p *Provider) LoadInstanceFacts(ctx context.Context, _ spec.Dialect, _ string) (*spec.InstanceFacts, error) {
 	rows, err := p.db.QueryContext(ctx, `
 		show variables where Variable_name in
-		('version','character_set_database','innodb_large_prefix','innodb_default_row_format','innodb_adaptive_hash_index','innodb_page_size','tidb_enable_clustered_index','restrict_fk_on_non_standard_key')
+		('version','character_set_database','innodb_large_prefix','innodb_default_row_format','innodb_adaptive_hash_index','innodb_page_size','tidb_enable_clustered_index','restrict_fk_on_non_standard_key','tidb_enable_check_constraint')
 	`)
 	if err != nil {
 		return nil, fmt.Errorf("query instance facts: %w", err)
@@ -240,6 +240,12 @@ func (p *Provider) LoadInstanceFacts(ctx context.Context, _ spec.Dialect, _ stri
 			// by dialect and version downstream, never by a guessed value.
 			facts.RestrictNonStandardKey = normalizeOnOff(value)
 			facts.RestrictNonStandardKeyKnown = true
+		case "tidb_enable_check_constraint":
+			// TiDB's CHECK storage/enforcement switch (v8.5.0) — OFF means
+			// CHECK syntax parses but no member is stored or enforced.
+			// MySQL never returns the row; unobserved stays Known=false.
+			facts.TiDBEnableCheckConstraint = normalizeOnOff(value)
+			facts.TiDBEnableCheckConstraintKnown = true
 		}
 	}
 	if err := rows.Err(); err != nil {
@@ -420,6 +426,9 @@ func (p *Provider) LoadTableSnapshot(ctx context.Context, dialect spec.Dialect, 
 	}
 	if err := p.loadForeignKeys(ctx, snapshot); err != nil {
 		return nil, fmt.Errorf("load table %s.%s foreign keys: %w", snapshot.Schema, snapshot.Table.Name, err)
+	}
+	if err := p.loadCheckConstraints(ctx, snapshot); err != nil {
+		return nil, fmt.Errorf("load table %s.%s check constraints: %w", snapshot.Schema, snapshot.Table.Name, err)
 	}
 	if dialect == spec.DialectTiDB {
 		// Only TiDB consumers read Partitioned (the GLOBAL index gate) and
@@ -1222,18 +1231,147 @@ func (p *Provider) loadForeignKeys(ctx context.Context, snapshot *spec.TableSnap
 		return fmt.Errorf("iterate table foreign keys: %w", err)
 	}
 	snapshot.Constraints = constraints
+	return nil
+}
 
-	// The collection vouches for foreign-key members only — primary keys
-	// live on PrimaryKey and unique keys on index members. Any other
-	// TABLE_CONSTRAINTS type (CHECK and friends) is a member this
-	// projection cannot represent, so its presence unvouches the
-	// collection rather than letting a partial answer pose as complete.
+// loadCheckConstraints loads the table's CHECK members into
+// snapshot.Constraints after the foreign keys — name, enforcement state,
+// and the parsed clause's structural facts (never the raw expression
+// text). Two live catalog shapes exist, probed on the anchors:
+//   - MySQL 8.0.16+: members sit in TABLE_CONSTRAINTS with ENFORCED; the
+//     clause joins from CHECK_CONSTRAINTS on catalog+schema+name (that
+//     table has no TABLE_NAME column on MySQL).
+//   - TiDB v8.5.0: members sit only in TIDB_CHECK_CONSTRAINTS (which does
+//     carry TABLE_NAME); TABLE_CONSTRAINTS stores no CHECK rows and no
+//     catalog column exposes the enforcement bit — SHOW CREATE's
+//     /*!80016 NOT ENFORCED */ marker is the only surface, so provider
+//     members stay enforcement-unvouched on TiDB.
+//
+// MySQL 5.7 stores no CHECK members at all. A catalog without the
+// relevant capability leaves member facts unproven rather than guessed.
+// Query failures propagate — a failed catalog read is not an answerable
+// absence.
+func (p *Provider) loadCheckConstraints(ctx context.Context, snapshot *spec.TableSnapshot) error {
+	hasTidb, err := p.tidbCheckConstraintsTableExists(ctx)
+	if err != nil {
+		return fmt.Errorf("probe tidb_check_constraints table: %w", err)
+	}
+	if hasTidb {
+		return p.loadTiDBCheckConstraints(ctx, snapshot)
+	}
+	hasEnforced, err := p.tableConstraintsHasEnforced(ctx)
+	if err != nil {
+		return fmt.Errorf("probe table_constraints.enforced: %w", err)
+	}
+	hasClauses, err := p.checkConstraintsTableExists(ctx)
+	if err != nil {
+		return fmt.Errorf("probe check_constraints table: %w", err)
+	}
+
+	enforcedSel, clauseSel, join := "null", "null", ""
+	if hasEnforced {
+		enforcedSel = "tc.enforced"
+	}
+	if hasClauses {
+		clauseSel = "cc.check_clause"
+		join = `
+		left join information_schema.check_constraints cc
+			on cc.constraint_catalog = tc.constraint_catalog
+			and cc.constraint_schema = tc.constraint_schema
+			and cc.constraint_name = tc.constraint_name`
+	}
+	rows, err := p.db.QueryContext(ctx, `
+		select tc.constraint_name, `+enforcedSel+`, `+clauseSel+`
+		from information_schema.table_constraints tc`+join+`
+		where tc.table_schema = ? and tc.table_name = ?
+			and tc.constraint_type = 'CHECK'
+		order by tc.constraint_name
+	`, snapshot.Schema, snapshot.Table.Name)
+	if err != nil {
+		return fmt.Errorf("query table check constraints: %w", err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var name string
+		var enforced, clause sql.NullString
+		if err := rows.Scan(&name, &enforced, &clause); err != nil {
+			return fmt.Errorf("scan table check constraint: %w", err)
+		}
+		member := spec.Constraint{Type: "check", Name: name}
+		if enforced.Valid {
+			member.Enforced = checkEnforcementName(enforced.String)
+		}
+		if clause.Valid {
+			facts := tidbparser.ParseCatalogExpressionFacts(clause.String)
+			member.Expression = &facts
+			for _, ref := range facts.References {
+				if !ref.Qualified() {
+					member.Columns = append(member.Columns, ref.Name)
+				}
+			}
+		}
+		snapshot.Constraints = append(snapshot.Constraints, member)
+	}
+	if err := rows.Err(); err != nil {
+		return fmt.Errorf("iterate table check constraints: %w", err)
+	}
+
+	return p.finishCheckConstraintLoad(ctx, snapshot)
+}
+
+// loadTiDBCheckConstraints loads CHECK members on the TiDB catalog shape:
+// TIDB_CHECK_CONSTRAINTS carries TABLE_NAME and CHECK_CLAUSE but no
+// enforcement column (verified on the v8.5.0 anchor — enforcement is only
+// rendered inside SHOW CREATE output). Members therefore arrive with
+// Enforced unvouched; ordered state transitions carry the flip knowledge.
+func (p *Provider) loadTiDBCheckConstraints(ctx context.Context, snapshot *spec.TableSnapshot) error {
+	rows, err := p.db.QueryContext(ctx, `
+		select constraint_name, check_clause
+		from information_schema.tidb_check_constraints
+		where constraint_schema = ? and table_name = ?
+		order by constraint_name
+	`, snapshot.Schema, snapshot.Table.Name)
+	if err != nil {
+		return fmt.Errorf("query tidb check constraints: %w", err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var name, clause string
+		if err := rows.Scan(&name, &clause); err != nil {
+			return fmt.Errorf("scan tidb check constraint: %w", err)
+		}
+		member := spec.Constraint{Type: "check", Name: name}
+		facts := tidbparser.ParseCatalogExpressionFacts(clause)
+		member.Expression = &facts
+		for _, ref := range facts.References {
+			if !ref.Qualified() {
+				member.Columns = append(member.Columns, ref.Name)
+			}
+		}
+		snapshot.Constraints = append(snapshot.Constraints, member)
+	}
+	if err := rows.Err(); err != nil {
+		return fmt.Errorf("iterate tidb check constraints: %w", err)
+	}
+	return p.finishCheckConstraintLoad(ctx, snapshot)
+}
+
+// finishCheckConstraintLoad applies the shared tail of
+// loadCheckConstraints: the collection vouches for foreign keys, checks,
+// and statement-proven primary_key members — primary keys live on
+// PrimaryKey and unique keys on index members. Any other
+// TABLE_CONSTRAINTS type is a member this projection cannot represent, so
+// its presence unvouches the collection rather than letting a partial
+// answer pose as complete.
+func (p *Provider) finishCheckConstraintLoad(ctx context.Context, snapshot *spec.TableSnapshot) error {
 	var unmodeled int
-	err = p.db.QueryRowContext(ctx, `
+	err := p.db.QueryRowContext(ctx, `
 		select count(*)
 		from information_schema.table_constraints
 		where table_schema = ? and table_name = ?
-			and constraint_type not in ('PRIMARY KEY', 'UNIQUE', 'FOREIGN KEY')
+			and constraint_type not in ('PRIMARY KEY', 'UNIQUE', 'FOREIGN KEY', 'CHECK')
 	`, snapshot.Schema, snapshot.Table.Name).Scan(&unmodeled)
 	if err != nil {
 		return fmt.Errorf("query table unmodeled constraint types: %w", err)
@@ -1242,6 +1380,82 @@ func (p *Provider) loadForeignKeys(ctx context.Context, snapshot *spec.TableSnap
 		snapshot.ConstraintsUnknown = true
 	}
 	return nil
+}
+
+// tidbCheckConstraintsTableExists reports whether this server's
+// information_schema exposes the TiDB-specific TIDB_CHECK_CONSTRAINTS
+// member table (the only catalog with TABLE_NAME attribution for checks
+// on TiDB; absent on MySQL).
+func (p *Provider) tidbCheckConstraintsTableExists(ctx context.Context) (bool, error) {
+	var n int
+	err := p.db.QueryRowContext(ctx, `
+		select count(*) from information_schema.`+"`tables`"+`
+		where table_schema = 'information_schema'
+			and table_name = 'TIDB_CHECK_CONSTRAINTS'
+	`).Scan(&n)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return false, nil
+		}
+		return false, err
+	}
+	return n > 0, nil
+}
+
+// checkEnforcementName normalizes the catalog ENFORCED token into the
+// constraint vocabulary — an unrecognized value stays empty rather than a
+// guessed fact.
+func checkEnforcementName(token string) string {
+	switch strings.ToUpper(strings.TrimSpace(token)) {
+	case "YES":
+		return "enforced"
+	case "NO":
+		return "not_enforced"
+	default:
+		return ""
+	}
+}
+
+// tableConstraintsHasEnforced reports whether this server's
+// information_schema.TABLE_CONSTRAINTS exposes the ENFORCED column
+// (MySQL 8.0.16+, TiDB; absent on MySQL 5.7). The probe queries the
+// catalog itself so the answer reflects the connected server, not a
+// version guess.
+func (p *Provider) tableConstraintsHasEnforced(ctx context.Context) (bool, error) {
+	var n int
+	err := p.db.QueryRowContext(ctx, `
+		select count(*) from information_schema.`+"`columns`"+`
+		where table_schema = 'information_schema'
+			and table_name = 'TABLE_CONSTRAINTS'
+			and column_name = 'ENFORCED'
+	`).Scan(&n)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return false, nil
+		}
+		return false, err
+	}
+	return n > 0, nil
+}
+
+// checkConstraintsTableExists reports whether this server's
+// information_schema exposes the CHECK_CONSTRAINTS clause table (MySQL
+// 8.0.16+, TiDB; absent on MySQL 5.7 where CHECK syntax parses but is
+// ignored).
+func (p *Provider) checkConstraintsTableExists(ctx context.Context) (bool, error) {
+	var n int
+	err := p.db.QueryRowContext(ctx, `
+		select count(*) from information_schema.`+"`tables`"+`
+		where table_schema = 'information_schema'
+			and table_name = 'CHECK_CONSTRAINTS'
+	`).Scan(&n)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return false, nil
+		}
+		return false, err
+	}
+	return n > 0, nil
 }
 
 // referActionName normalizes a catalog DELETE_RULE/UPDATE_RULE token into

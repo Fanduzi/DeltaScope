@@ -1,0 +1,1124 @@
+{
+  "task_id": "T12",
+  "issue": "https://github.com/Fanduzi/DeltaScope/issues/91",
+  "policy_profile": "all-rules-disabled",
+  "description": "Frozen CHECK-constraint lifecycle contract: normalized check members (name, references, enforcement state, expression facts), ALTER CHECK|CONSTRAINT enforcement flips, DROP CHECK|CONSTRAINT binding, create/add landing, provider-loaded members with TABLE_CONSTRAINTS.ENFORCED and CHECK_CONSTRAINTS clause facts, TiDB tidb_enable_check_constraint arms, MySQL 5.7 parsed-but-ignored and pre-8.0.19 syntax boundaries, and ordered post-state transitions — independent T12 acceptance contract",
+  "anchors": {
+    "mysql57": {
+      "service": "mysql57",
+      "container": "deltascope-ddl-golden-mysql57",
+      "image": "mysql:5.7.44",
+      "product": "mysql",
+      "version_contains": "5.7.44",
+      "database": "golden",
+      "exec_client": [
+        "mysql",
+        "-uroot",
+        "--default-character-set=utf8mb4"
+      ],
+      "needs_database_create": false,
+      "exec_password_env": "T12_MYSQL_PASSWORD"
+    },
+    "mysql80": {
+      "service": "mysql80",
+      "container": "deltascope-ddl-golden-mysql80",
+      "image": "mysql:8.0.46",
+      "product": "mysql",
+      "version_contains": "8.0.46",
+      "database": "golden",
+      "exec_client": [
+        "mysql",
+        "-uroot",
+        "--default-character-set=utf8mb4"
+      ],
+      "needs_database_create": false,
+      "exec_password_env": "T12_MYSQL_PASSWORD"
+    },
+    "mysql84": {
+      "service": "mysql84",
+      "container": "deltascope-ddl-golden-mysql84",
+      "image": "mysql:8.4.10",
+      "product": "mysql",
+      "version_contains": "8.4.10",
+      "database": "golden",
+      "exec_client": [
+        "mysql",
+        "-uroot",
+        "--default-character-set=utf8mb4"
+      ],
+      "needs_database_create": false,
+      "exec_password_env": "T12_MYSQL_PASSWORD"
+    },
+    "tidb85": {
+      "service": "tidb85",
+      "container": "deltascope-ddl-golden-tidb85",
+      "client_container": "deltascope-ddl-golden-tidb85-client",
+      "client_service": "tidb85-client",
+      "image": "pingcap/tidb:v8.5.0",
+      "product": "tidb",
+      "version_contains": "v8.5.0",
+      "database": "golden",
+      "exec_client": [
+        "mysql",
+        "--protocol=tcp",
+        "-h",
+        "tidb85",
+        "-P",
+        "4000",
+        "-uroot",
+        "--default-character-set=utf8mb4"
+      ],
+      "needs_database_create": true
+    }
+  },
+  "ddl_steps": [
+    {
+      "name": "create-check-table",
+      "sql": "CREATE TABLE t12g (id INT, v INT, CONSTRAINT chk_id CHECK (id > 0), CONSTRAINT chk_v CHECK (v > 0))",
+      "expect_rc": 0,
+      "verify": [
+        {
+          "assert": "fixture table lands on every anchor arm",
+          "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t12g'",
+          "expect": "1"
+        }
+      ]
+    },
+    {
+      "name": "add-plain-column",
+      "sql": "ALTER TABLE t12g ADD COLUMN w INT",
+      "expect_rc": 0,
+      "verify": [
+        {
+          "assert": "column lands",
+          "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t12g'",
+          "expect": "3"
+        }
+      ]
+    },
+    {
+      "name": "insert-clean-row",
+      "sql": "INSERT INTO t12g VALUES (1, 1, 1)",
+      "expect_rc": 0,
+      "verify": [
+        {
+          "assert": "clean row lands under every arm",
+          "sql": "SELECT COUNT(*) FROM golden.t12g",
+          "expect": "1"
+        }
+      ]
+    },
+    {
+      "name": "drop-fixture",
+      "sql": "DROP TABLE t12g",
+      "expect_rc": 0,
+      "verify": [
+        {
+          "assert": "fixture dropped",
+          "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t12g'",
+          "expect": "0"
+        }
+      ]
+    }
+  ],
+  "syntax_negative": {
+    "sql": "ALTER TABLE golden_t ALTER CHECK x (",
+    "expect": {
+      "rc_nonzero": true,
+      "error_class": "1064",
+      "forbidden_markers": [
+        "ERROR 1045",
+        "ERROR 1044",
+        "ERROR 1049",
+        "ERROR 1142",
+        "ERROR 1143",
+        "ERROR 2002",
+        "ERROR 2003",
+        "ERROR 2005",
+        "Access denied",
+        "Unknown database",
+        "Can't connect",
+        "Connection refused",
+        "already exists"
+      ]
+    }
+  },
+  "cli_audit": {
+    "dialects": [
+      "mysql",
+      "tidb"
+    ],
+    "sql": "CREATE TABLE t (a INT);",
+    "expect": {
+      "exit": 0,
+      "verdict": "pass",
+      "statements": 1,
+      "findings": 0,
+      "diagnostics": 0,
+      "unsupported": 0,
+      "coverage": "complete"
+    }
+  },
+  "policy": {
+    "profiles": {
+      "t12-all": {
+        "enable": {
+          "ddl.constraint.check.not_enforced.notice": {
+            "level": "blocker"
+          },
+          "ddl.constraint.check.ignored.notice": {
+            "level": "warning"
+          },
+          "ddl.alter.alter_check.exists.require": {
+            "level": "blocker"
+          },
+          "ddl.alter.drop_check.exists.require": {
+            "level": "blocker"
+          },
+          "ddl.alter.alter_check.version.require": {
+            "level": "blocker",
+            "params": {
+              "required": true
+            }
+          }
+        }
+      },
+      "t12-notice": {
+        "enable": {
+          "ddl.constraint.check.not_enforced.notice": {
+            "level": "blocker"
+          }
+        }
+      },
+      "t12-ignored": {
+        "enable": {
+          "ddl.constraint.check.ignored.notice": {
+            "level": "warning"
+          }
+        }
+      },
+      "t12-exists": {
+        "enable": {
+          "ddl.alter.alter_check.exists.require": {
+            "level": "blocker"
+          },
+          "ddl.alter.drop_check.exists.require": {
+            "level": "blocker"
+          }
+        }
+      },
+      "t12-version": {
+        "enable": {
+          "ddl.alter.alter_check.version.require": {
+            "level": "blocker",
+            "params": {
+              "required": true
+            }
+          }
+        }
+      }
+    }
+  },
+  "cli_cases": [
+    {
+      "id": "t12-cli-alter-check-offline-gap",
+      "dialect": "mysql",
+      "sql": "ALTER TABLE t ALTER CHECK chk_id NOT ENFORCED;",
+      "expect": {
+        "exit": 0,
+        "verdict": "review",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "unverified",
+        "statement_coverage": [
+          "unverified"
+        ],
+        "evidence_gaps": 3,
+        "evidence_gap_entries": [
+          {
+            "index": 0,
+            "rule_id": "ddl.constraint.check.not_enforced.notice",
+            "reason_code": "missing_target_version",
+            "required_facts": [
+              "target.version"
+            ]
+          },
+          {
+            "index": 0,
+            "rule_id": "ddl.alter.alter_check.exists.require",
+            "reason_code": "missing_target_version",
+            "required_facts": [
+              "target.version"
+            ]
+          },
+          {
+            "index": 0,
+            "rule_id": "ddl.alter.alter_check.version.require",
+            "reason_code": "missing_target_version",
+            "required_facts": [
+              "target.version"
+            ]
+          }
+        ],
+        "rule_summary_applicable": 3
+      },
+      "policy": "t12-all"
+    },
+    {
+      "id": "t12-cli-alter-check-enforced-offline",
+      "dialect": "mysql",
+      "sql": "ALTER TABLE t ALTER CHECK chk_id ENFORCED;",
+      "expect": {
+        "exit": 0,
+        "verdict": "review",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "unverified",
+        "evidence_gaps": 2,
+        "evidence_gap_entries": [
+          {
+            "index": 0,
+            "rule_id": "ddl.alter.alter_check.exists.require",
+            "reason_code": "missing_target_version",
+            "required_facts": [
+              "target.version"
+            ]
+          },
+          {
+            "index": 0,
+            "rule_id": "ddl.alter.alter_check.version.require",
+            "reason_code": "missing_target_version",
+            "required_facts": [
+              "target.version"
+            ]
+          }
+        ]
+      },
+      "policy": "t12-all"
+    },
+    {
+      "id": "t12-cli-drop-check-offline-gap",
+      "dialect": "mysql",
+      "sql": "ALTER TABLE t DROP CHECK chk_id;",
+      "expect": {
+        "exit": 0,
+        "verdict": "review",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "unverified",
+        "evidence_gaps": 2,
+        "evidence_gap_entries": [
+          {
+            "index": 0,
+            "rule_id": "ddl.alter.drop_check.exists.require",
+            "reason_code": "missing_target_version",
+            "required_facts": [
+              "target.version"
+            ]
+          },
+          {
+            "index": 0,
+            "rule_id": "ddl.alter.alter_check.version.require",
+            "reason_code": "missing_target_version",
+            "required_facts": [
+              "target.version"
+            ]
+          }
+        ]
+      },
+      "policy": "t12-all"
+    },
+    {
+      "id": "t12-cli-alter-constraint-alias-offline",
+      "dialect": "mysql",
+      "sql": "ALTER TABLE t ALTER CONSTRAINT chk_id NOT ENFORCED;",
+      "expect": {
+        "exit": 0,
+        "verdict": "review",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "unverified",
+        "evidence_gaps": 3
+      },
+      "policy": "t12-all"
+    },
+    {
+      "id": "t12-cli-alter-check-tidb-offline-gap",
+      "dialect": "tidb",
+      "sql": "ALTER TABLE t ALTER CHECK chk_id NOT ENFORCED;",
+      "expect": {
+        "exit": 0,
+        "verdict": "review",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "unverified",
+        "evidence_gaps": 2,
+        "evidence_gap_entries": [
+          {
+            "index": 0,
+            "rule_id": "ddl.constraint.check.not_enforced.notice",
+            "reason_code": "missing_instance_fact",
+            "required_facts": [
+              "instance.tidb_enable_check_constraint"
+            ]
+          },
+          {
+            "index": 0,
+            "rule_id": "ddl.alter.alter_check.exists.require",
+            "reason_code": "missing_instance_fact",
+            "required_facts": [
+              "instance.tidb_enable_check_constraint"
+            ]
+          }
+        ]
+      },
+      "policy": "t12-all"
+    },
+    {
+      "id": "t12-cli-create-notenforced-offline-gap",
+      "dialect": "mysql",
+      "sql": "CREATE TABLE t (id INT, CONSTRAINT chk_a CHECK (id > 0) NOT ENFORCED);",
+      "expect": {
+        "exit": 0,
+        "verdict": "review",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "unverified",
+        "evidence_gaps": 2,
+        "evidence_gap_entries": [
+          {
+            "index": 0,
+            "rule_id": "ddl.constraint.check.not_enforced.notice",
+            "reason_code": "missing_target_version",
+            "required_facts": [
+              "target.version"
+            ]
+          },
+          {
+            "index": 0,
+            "rule_id": "ddl.constraint.check.ignored.notice",
+            "reason_code": "missing_target_version",
+            "required_facts": [
+              "target.version"
+            ]
+          }
+        ]
+      },
+      "policy": "t12-all"
+    },
+    {
+      "id": "t12-cli-add-check-declared-offline-gap",
+      "dialect": "mysql",
+      "sql": "ALTER TABLE t ADD CONSTRAINT chk2 CHECK (id < 100) NOT ENFORCED;",
+      "expect": {
+        "exit": 0,
+        "verdict": "review",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "unverified",
+        "evidence_gaps": 2,
+        "evidence_gap_entries": [
+          {
+            "index": 0,
+            "rule_id": "ddl.constraint.check.not_enforced.notice",
+            "reason_code": "missing_target_version",
+            "required_facts": [
+              "target.version"
+            ]
+          },
+          {
+            "index": 0,
+            "rule_id": "ddl.constraint.check.ignored.notice",
+            "reason_code": "missing_target_version",
+            "required_facts": [
+              "target.version"
+            ]
+          }
+        ]
+      },
+      "policy": "t12-all"
+    },
+    {
+      "id": "t12-cli-addcol-control",
+      "dialect": "mysql",
+      "sql": "ALTER TABLE t ADD COLUMN w INT;",
+      "expect": {
+        "exit": 0,
+        "verdict": "pass",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "complete"
+      },
+      "policy": "t12-all"
+    },
+    {
+      "id": "t12-cli-alter-check-off",
+      "dialect": "mysql",
+      "sql": "ALTER TABLE t ALTER CHECK chk_id NOT ENFORCED;",
+      "expect": {
+        "exit": 0,
+        "verdict": "pass",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "complete"
+      },
+      "policy": "all-rules-disabled"
+    }
+  ],
+  "metadata_cases": [
+    {
+      "id": "t12-mysql80-golden",
+      "anchor": "mysql80",
+      "dialect": "mysql",
+      "sql": "ALTER TABLE t12g ALTER CHECK chk_id NOT ENFORCED;",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 23380,
+        "user": "root",
+        "schema": "golden",
+        "password_env": "DS_T12_GOLDEN_PW",
+        "password": "root"
+      },
+      "expect": {
+        "exit": 1,
+        "verdict": "reject",
+        "statements": 1,
+        "findings": 1,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "complete",
+        "statement_coverage": [
+          "complete"
+        ],
+        "evidence_gaps": 0,
+        "finding_entries": [
+          {
+            "index": 0,
+            "rule_id": "ddl.constraint.check.not_enforced.notice",
+            "level": "blocker"
+          }
+        ],
+        "finding_metadata": [
+          {
+            "index": 0,
+            "rule_id": "ddl.constraint.check.not_enforced.notice",
+            "metadata": {
+              "table": "t12g",
+              "constraint": "chk_id",
+              "enforced": "not_enforced"
+            }
+          }
+        ],
+        "rule_summary_applicable": 3,
+        "version": {
+          "product": "mysql",
+          "version": "8.0.46"
+        }
+      },
+      "policy": "t12-all",
+      "setup": [
+        {
+          "name": "create-fixture",
+          "sql": "CREATE TABLE t12g (id INT, CONSTRAINT chk_id CHECK (id > 0));",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "check stored and enforcing",
+              "sql": "SELECT ENFORCED FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t12g' AND CONSTRAINT_NAME='chk_id'",
+              "expect": "YES",
+              "use_database": true
+            }
+          ]
+        }
+      ],
+      "execute": [
+        {
+          "name": "apply-audited-flip",
+          "sql": "ALTER TABLE t12g ALTER CHECK chk_id NOT ENFORCED;",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "catalog records ENFORCED=NO after the flip",
+              "sql": "SELECT ENFORCED FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t12g' AND CONSTRAINT_NAME='chk_id'",
+              "expect": "NO",
+              "use_database": true
+            }
+          ]
+        }
+      ],
+      "teardown": [
+        {
+          "name": "drop-t12g",
+          "sql": "DROP TABLE IF EXISTS t12g;",
+          "expect_rc": 0
+        }
+      ]
+    },
+    {
+      "id": "t12-mysql84-golden",
+      "anchor": "mysql84",
+      "dialect": "mysql",
+      "sql": "ALTER TABLE t12g ALTER CONSTRAINT chk_id NOT ENFORCED;",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 23384,
+        "user": "root",
+        "schema": "golden",
+        "password_env": "DS_T12_GOLDEN_PW",
+        "password": "root"
+      },
+      "expect": {
+        "exit": 1,
+        "verdict": "reject",
+        "statements": 1,
+        "findings": 1,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "complete",
+        "evidence_gaps": 0,
+        "finding_entries": [
+          {
+            "index": 0,
+            "rule_id": "ddl.constraint.check.not_enforced.notice",
+            "level": "blocker"
+          }
+        ],
+        "finding_metadata": [
+          {
+            "index": 0,
+            "rule_id": "ddl.constraint.check.not_enforced.notice",
+            "metadata": {
+              "table": "t12g",
+              "constraint": "chk_id",
+              "enforced": "not_enforced"
+            }
+          }
+        ],
+        "version": {
+          "product": "mysql",
+          "version": "8.4.10"
+        }
+      },
+      "policy": "t12-all",
+      "setup": [
+        {
+          "name": "create-fixture",
+          "sql": "CREATE TABLE t12g (id INT, CONSTRAINT chk_id CHECK (id > 0));",
+          "expect_rc": 0
+        }
+      ],
+      "execute": [
+        {
+          "name": "apply-audited-flip",
+          "sql": "ALTER TABLE t12g ALTER CONSTRAINT chk_id NOT ENFORCED;",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "alias flip lands ENFORCED=NO",
+              "sql": "SELECT ENFORCED FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t12g' AND CONSTRAINT_NAME='chk_id'",
+              "expect": "NO",
+              "use_database": true
+            }
+          ]
+        }
+      ],
+      "teardown": [
+        {
+          "name": "drop-t12g",
+          "sql": "DROP TABLE IF EXISTS t12g;",
+          "expect_rc": 0
+        }
+      ]
+    },
+    {
+      "id": "t12-mysql80-alter-missing",
+      "anchor": "mysql80",
+      "dialect": "mysql",
+      "sql": "ALTER TABLE t12g ALTER CHECK missing_x NOT ENFORCED;",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 23380,
+        "user": "root",
+        "schema": "golden",
+        "password_env": "DS_T12_GOLDEN_PW",
+        "password": "root"
+      },
+      "expect": {
+        "exit": 1,
+        "verdict": "reject",
+        "statements": 1,
+        "findings": 1,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "complete",
+        "evidence_gaps": 0,
+        "finding_entries": [
+          {
+            "index": 0,
+            "rule_id": "ddl.alter.alter_check.exists.require",
+            "level": "blocker"
+          }
+        ],
+        "finding_metadata": [
+          {
+            "index": 0,
+            "rule_id": "ddl.alter.alter_check.exists.require",
+            "metadata": {
+              "table": "t12g",
+              "name": "missing_x",
+              "exists": false
+            }
+          }
+        ]
+      },
+      "policy": "t12-all",
+      "setup": [
+        {
+          "name": "create-fixture",
+          "sql": "CREATE TABLE t12g (id INT, CONSTRAINT chk_id CHECK (id > 0));",
+          "expect_rc": 0
+        }
+      ],
+      "execute": [
+        {
+          "name": "native-confirms-refusal",
+          "sql": "ALTER TABLE t12g ALTER CHECK missing_x NOT ENFORCED;",
+          "expect_rc": 1,
+          "stderr_contains": [
+            "3821"
+          ]
+        }
+      ],
+      "teardown": [
+        {
+          "name": "drop-t12g",
+          "sql": "DROP TABLE IF EXISTS t12g;",
+          "expect_rc": 0
+        }
+      ]
+    },
+    {
+      "id": "t12-mysql80-drop-present",
+      "anchor": "mysql80",
+      "dialect": "mysql",
+      "sql": "ALTER TABLE t12g DROP CHECK chk_id;",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 23380,
+        "user": "root",
+        "schema": "golden",
+        "password_env": "DS_T12_GOLDEN_PW",
+        "password": "root"
+      },
+      "expect": {
+        "exit": 0,
+        "verdict": "pass",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "complete",
+        "evidence_gaps": 0
+      },
+      "policy": "t12-all",
+      "setup": [
+        {
+          "name": "create-fixture",
+          "sql": "CREATE TABLE t12g (id INT, CONSTRAINT chk_id CHECK (id > 0));",
+          "expect_rc": 0
+        }
+      ],
+      "execute": [
+        {
+          "name": "apply-audited-drop",
+          "sql": "ALTER TABLE t12g DROP CHECK chk_id;",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "check member gone from catalog",
+              "sql": "SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t12g' AND CONSTRAINT_NAME='chk_id'",
+              "expect": "0",
+              "use_database": true
+            }
+          ]
+        }
+      ],
+      "teardown": [
+        {
+          "name": "drop-t12g",
+          "sql": "DROP TABLE IF EXISTS t12g;",
+          "expect_rc": 0
+        }
+      ]
+    },
+    {
+      "id": "t12-mysql57-ignored",
+      "anchor": "mysql57",
+      "dialect": "mysql",
+      "sql": "CREATE TABLE t57 (id INT, CONSTRAINT chk_ign CHECK (id > 0));",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 23357,
+        "user": "root",
+        "schema": "golden",
+        "password_env": "DS_T12_GOLDEN_PW",
+        "password": "root"
+      },
+      "expect": {
+        "exit": 0,
+        "verdict": "review",
+        "statements": 1,
+        "findings": 1,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "complete",
+        "evidence_gaps": 0,
+        "finding_entries": [
+          {
+            "index": 0,
+            "rule_id": "ddl.constraint.check.ignored.notice",
+            "level": "warning"
+          }
+        ],
+        "finding_metadata": [
+          {
+            "index": 0,
+            "rule_id": "ddl.constraint.check.ignored.notice",
+            "metadata": {
+              "table": "t57",
+              "constraint": "chk_ign",
+              "enforced": "ignored"
+            }
+          }
+        ],
+        "version": {
+          "product": "mysql",
+          "version": "5.7.44"
+        }
+      },
+      "policy": "t12-all",
+      "execute": [
+        {
+          "name": "native-accepts-but-stores-nothing",
+          "sql": "CREATE TABLE t57 (id INT, CONSTRAINT chk_ign CHECK (id > 0));",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "5.7 silently drops the declaration",
+              "sql": "SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA='golden' AND CONSTRAINT_TYPE='CHECK'",
+              "expect": "0",
+              "use_database": true
+            }
+          ]
+        },
+        {
+          "name": "violating-row-lands",
+          "sql": "INSERT INTO t57 VALUES (-1);",
+          "expect_rc": 0
+        }
+      ],
+      "teardown": [
+        {
+          "name": "drop-t57",
+          "sql": "DROP TABLE IF EXISTS t57;",
+          "expect_rc": 0
+        }
+      ]
+    },
+    {
+      "id": "t12-mysql57-version-refusal",
+      "anchor": "mysql57",
+      "dialect": "mysql",
+      "sql": "ALTER TABLE t57 ALTER CHECK x NOT ENFORCED;",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 23357,
+        "user": "root",
+        "schema": "golden",
+        "password_env": "DS_T12_GOLDEN_PW",
+        "password": "root"
+      },
+      "expect": {
+        "exit": 1,
+        "verdict": "reject",
+        "statements": 1,
+        "findings": 1,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "complete",
+        "evidence_gaps": 0,
+        "finding_entries": [
+          {
+            "index": 0,
+            "rule_id": "ddl.alter.alter_check.version.require",
+            "level": "blocker"
+          }
+        ]
+      },
+      "policy": "t12-all",
+      "setup": [
+        {
+          "name": "create-fixture",
+          "sql": "CREATE TABLE t57 (id INT);",
+          "expect_rc": 0
+        }
+      ],
+      "execute": [
+        {
+          "name": "native-syntax-refusal",
+          "sql": "ALTER TABLE t57 ALTER CHECK x NOT ENFORCED;",
+          "expect_rc": 1,
+          "stderr_contains": [
+            "1064"
+          ]
+        }
+      ],
+      "teardown": [
+        {
+          "name": "drop-t57",
+          "sql": "DROP TABLE IF EXISTS t57;",
+          "expect_rc": 0
+        }
+      ]
+    },
+    {
+      "id": "t12-tidb85-golden",
+      "anchor": "tidb85",
+      "dialect": "tidb",
+      "sql": "ALTER TABLE t12g ALTER CHECK chk_id NOT ENFORCED;",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 24000,
+        "user": "root",
+        "schema": "golden"
+      },
+      "expect": {
+        "exit": 1,
+        "verdict": "reject",
+        "statements": 1,
+        "findings": 1,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "complete",
+        "evidence_gaps": 0,
+        "finding_entries": [
+          {
+            "index": 0,
+            "rule_id": "ddl.constraint.check.not_enforced.notice",
+            "level": "blocker"
+          }
+        ],
+        "finding_metadata": [
+          {
+            "index": 0,
+            "rule_id": "ddl.constraint.check.not_enforced.notice",
+            "metadata": {
+              "table": "t12g",
+              "constraint": "chk_id",
+              "enforced": "not_enforced"
+            }
+          }
+        ],
+        "version": {
+          "product": "tidb",
+          "version": "8.5.0"
+        },
+        "instance_facts": {
+          "tidb_enable_check_constraint": "ON"
+        }
+      },
+      "policy": "t12-all",
+      "setup": [
+        {
+          "name": "flag-on",
+          "sql": "SET GLOBAL tidb_enable_check_constraint=ON;",
+          "expect_rc": 0
+        },
+        {
+          "name": "create-fixture",
+          "sql": "CREATE TABLE t12g (id INT, CONSTRAINT chk_id CHECK (id > 0));",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "check stored under flag ON",
+              "sql": "SELECT COUNT(*) FROM information_schema.TIDB_CHECK_CONSTRAINTS WHERE CONSTRAINT_SCHEMA='golden' AND TABLE_NAME='t12g' AND CONSTRAINT_NAME='chk_id'",
+              "expect": "1",
+              "use_database": true
+            }
+          ]
+        }
+      ],
+      "execute": [
+        {
+          "name": "apply-audited-flip",
+          "sql": "ALTER TABLE t12g ALTER CHECK chk_id NOT ENFORCED;",
+          "expect_rc": 0
+        },
+        {
+          "name": "violating-row-lands",
+          "sql": "INSERT INTO t12g VALUES (-1);",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "negative id lands under NOT ENFORCED",
+              "sql": "SELECT COUNT(*) FROM golden.t12g WHERE id=-1",
+              "expect": "1",
+              "use_database": true
+            }
+          ]
+        }
+      ],
+      "teardown": [
+        {
+          "name": "clear-violating-row",
+          "sql": "DELETE FROM t12g;",
+          "expect_rc": 0
+        },
+        {
+          "name": "drop-t12g",
+          "sql": "DROP TABLE IF EXISTS t12g;",
+          "expect_rc": 0
+        }
+      ]
+    },
+    {
+      "id": "t12-tidb85-flag-off-ignored",
+      "anchor": "tidb85",
+      "dialect": "tidb",
+      "sql": "CREATE TABLE t_off (id INT, CONSTRAINT chk_ign CHECK (id > 0));",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 24000,
+        "user": "root",
+        "schema": "golden"
+      },
+      "expect": {
+        "exit": 0,
+        "verdict": "review",
+        "statements": 1,
+        "findings": 1,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "complete",
+        "evidence_gaps": 0,
+        "finding_entries": [
+          {
+            "index": 0,
+            "rule_id": "ddl.constraint.check.ignored.notice",
+            "level": "warning"
+          }
+        ],
+        "instance_facts": {
+          "tidb_enable_check_constraint": "OFF"
+        }
+      },
+      "policy": "t12-all",
+      "setup": [
+        {
+          "name": "flag-off",
+          "sql": "SET GLOBAL tidb_enable_check_constraint=OFF;",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "flag observed OFF",
+              "sql": "SELECT @@global.tidb_enable_check_constraint",
+              "expect": "0"
+            }
+          ]
+        }
+      ],
+      "execute": [
+        {
+          "name": "native-accepts-but-stores-nothing",
+          "sql": "CREATE TABLE t_off (id INT, CONSTRAINT chk_ign CHECK (id > 0));",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "flag OFF stores no member",
+              "sql": "SELECT COUNT(*) FROM information_schema.TIDB_CHECK_CONSTRAINTS WHERE CONSTRAINT_SCHEMA='golden' AND TABLE_NAME='t_off'",
+              "expect": "0",
+              "use_database": true
+            }
+          ]
+        },
+        {
+          "name": "violating-row-lands",
+          "sql": "INSERT INTO t_off VALUES (-1);",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "negative id lands under ignored check",
+              "sql": "SELECT COUNT(*) FROM golden.t_off WHERE id=-1",
+              "expect": "1",
+              "use_database": true
+            }
+          ]
+        }
+      ],
+      "teardown": [
+        {
+          "name": "drop-t_off",
+          "sql": "DROP TABLE IF EXISTS t_off;",
+          "expect_rc": 0
+        },
+        {
+          "name": "flag-restore",
+          "sql": "SET GLOBAL tidb_enable_check_constraint=ON;",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "shared anchor restored ON",
+              "sql": "SELECT @@global.tidb_enable_check_constraint",
+              "expect": "1"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "required_case_ids": [
+    "T12.db.mysql57.ddl",
+    "T12.db.mysql57.syntax_negative",
+    "T12.db.mysql80.ddl",
+    "T12.db.mysql80.syntax_negative",
+    "T12.db.mysql84.ddl",
+    "T12.db.mysql84.syntax_negative",
+    "T12.db.tidb85.ddl",
+    "T12.db.tidb85.syntax_negative",
+    "T12.cli.t12-cli-alter-check-offline-gap",
+    "T12.cli.t12-cli-alter-check-enforced-offline",
+    "T12.cli.t12-cli-drop-check-offline-gap",
+    "T12.cli.t12-cli-alter-constraint-alias-offline",
+    "T12.cli.t12-cli-alter-check-tidb-offline-gap",
+    "T12.cli.t12-cli-create-notenforced-offline-gap",
+    "T12.cli.t12-cli-add-check-declared-offline-gap",
+    "T12.cli.t12-cli-addcol-control",
+    "T12.cli.t12-cli-alter-check-off",
+    "T12.meta.t12-mysql80-golden",
+    "T12.meta.t12-mysql84-golden",
+    "T12.meta.t12-mysql80-alter-missing",
+    "T12.meta.t12-mysql80-drop-present",
+    "T12.meta.t12-mysql57-ignored",
+    "T12.meta.t12-mysql57-version-refusal",
+    "T12.meta.t12-tidb85-golden",
+    "T12.meta.t12-tidb85-flag-off-ignored"
+  ]
+}

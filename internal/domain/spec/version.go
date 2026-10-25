@@ -241,3 +241,79 @@ func RenameColumnVersionSupportFor(version *VersionIdentity) RenameColumnVersion
 		GapFacts:  []string{renameColumnFactValidated},
 	}
 }
+
+// CHECK constraint version boundaries (documented; anchors probe ≥8.0.46 so
+// sub-anchor versions inherit the documented boundary only, never probe
+// evidence). MySQL 8.0.16 first enforces CHECK constraints; 8.0.19 adds the
+// ALTER CHECK / DROP CHECK syntax. TiDB's boundary is the
+// tidb_enable_check_constraint runtime switch, not a version — the syntax
+// parses on both arms while the flag decides whether anything is stored.
+const (
+	CheckMinEnforcementMySQL = "8.0.16"
+	CheckMinAlterSyntaxMySQL = "8.0.19"
+)
+
+// CheckArm is the resolved CHECK capability of one product arm:
+// parse-and-ignore, store-and-enforce, or undecidable because the governing
+// fact (version, runtime flag) was never observed.
+type CheckArm int
+
+const (
+	// CheckArmUnknown means the governing fact was unobserved — the arm's
+	// CHECK semantics cannot be answered either way.
+	CheckArmUnknown CheckArm = iota
+	// CheckArmIgnored means the arm parses CHECK syntax but never stores or
+	// enforces it: MySQL before 8.0.16, or TiDB under an observed
+	// tidb_enable_check_constraint=OFF.
+	CheckArmIgnored
+	// CheckArmEnforced means CHECK members land and enforce: MySQL
+	// ≥8.0.16, or TiDB under an observed tidb_enable_check_constraint=ON.
+	CheckArmEnforced
+)
+
+// ResolveCheckArm classifies the statement's arm from the resolved version
+// and instance facts. A missing or unvalidated version answers Unknown on
+// MySQL (5.7 and 8.x cannot be told apart); TiDB answers only from the
+// observed flag — its Known bit keeps "probed OFF" distinct from "never
+// probed".
+func ResolveCheckArm(dialect Dialect, version *VersionIdentity, instance *InstanceFacts) CheckArm {
+	switch dialect {
+	case DialectMySQL:
+		if version == nil || !version.ValidatedRange || version.Major == 0 {
+			return CheckArmUnknown
+		}
+		if version.Major < 8 || (version.Major == 8 && version.Minor == 0 && version.Patch < 16) {
+			return CheckArmIgnored
+		}
+		return CheckArmEnforced
+	case DialectTiDB:
+		if instance == nil || !instance.TiDBEnableCheckConstraintKnown {
+			return CheckArmUnknown
+		}
+		if instance.TiDBEnableCheckConstraint {
+			return CheckArmEnforced
+		}
+		return CheckArmIgnored
+	default:
+		return CheckArmUnknown
+	}
+}
+
+// CheckAlterSyntaxSupported reports whether the ALTER|DROP CHECK syntax
+// executes on the arm — MySQL ≥8.0.19 per the documented boundary. TiDB
+// parses the syntax on both flag arms, so the flag, not this gate, decides
+// the effect. A nil/unvalidated version reports false; callers that must
+// distinguish "refused" from "unobserved" check the version fact first.
+func CheckAlterSyntaxSupported(dialect Dialect, version *VersionIdentity) bool {
+	switch dialect {
+	case DialectMySQL:
+		if version == nil || !version.ValidatedRange || version.Major == 0 {
+			return false
+		}
+		return version.Major > 8 || (version.Major == 8 && (version.Minor > 0 || version.Patch >= 19))
+	case DialectTiDB:
+		return true
+	default:
+		return false
+	}
+}

@@ -1,0 +1,203 @@
+=== CELL lifecycle (deltascope-ddl-golden-mysql80)
+version: mysql: [Warning] Using a password on the command line interface can be insecure.
+8.0.46
+mysql: [Warning] Using a password on the command line interface can be insecure.
+$ CREATE TABLE t12.t(id INT, CONSTRAINT chk_id CHECK (id > 0));
+mysql: [Warning] Using a password on the command line interface can be insecure.
+  rc=0
+  catalog: n=mysql: [Warning] Using a password on the command line interface can be insecure.
+1 enforced=mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1054 (42S22) at line 1: Unknown column 'enforced' in 'field list'
+$ INSERT id=-1 (violating, proves enforcement)
+mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 3819 (HY000) at line 1: Check constraint 'chk_id' is violated.
+  rc=1
+$ ALTER TABLE t12.t ALTER CHECK chk_id NOT ENFORCED;
+mysql: [Warning] Using a password on the command line interface can be insecure.
+  rc=0
+  catalog: enforced=mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1054 (42S22) at line 1: Unknown column 'enforced' in 'field list'
+$ INSERT id=-1 again (should land under NOT ENFORCED)
+mysql: [Warning] Using a password on the command line interface can be insecure.
+  rc=0
+  rows=mysql: [Warning] Using a password on the command line interface can be insecure.
+1
+$ ALTER TABLE t12.t ALTER CHECK chk_id ENFORCED;  (violating row present!)
+mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 3819 (HY000) at line 1: Check constraint 'chk_id' is violated.
+  rc=1
+  catalog: enforced=mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1054 (42S22) at line 1: Unknown column 'enforced' in 'field list' rows=mysql: [Warning] Using a password on the command line interface can be insecure.
+1
+$ ALTER TABLE t12.t ALTER CONSTRAINT chk_id NOT ENFORCED;  (PG-style alias)
+mysql: [Warning] Using a password on the command line interface can be insecure.
+  rc=0
+$ ALTER TABLE t12.t ALTER CHECK missing_x NOT ENFORCED;
+mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 3821 (HY000) at line 1: Check constraint 'missing_x' is not found in the table.
+  rc=1
+$ ALTER TABLE t12.t ALTER CHECK uk_v NOT ENFORCED;  (non-check name)
+mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 3821 (HY000) at line 1: Check constraint 'uk_v' is not found in the table.
+  rc=1
+$ ALTER TABLE t12.t DROP CHECK chk_id; post catalog
+mysql: [Warning] Using a password on the command line interface can be insecure.
+  rc=0
+  catalog: n=mysql: [Warning] Using a password on the command line interface can be insecure.
+0
+$ ALTER TABLE t12.t ADD CONSTRAINT chk2 CHECK (id < 100) NOT ENFORCED;
+mysql: [Warning] Using a password on the command line interface can be insecure.
+  rc=0
+  catalog n2=mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1054 (42S22) at line 1: Unknown column 'enforced' in 'field list'
+=== CELL lifecycle (deltascope-ddl-golden-mysql84)
+version: mysql: [Warning] Using a password on the command line interface can be insecure.
+8.4.10
+mysql: [Warning] Using a password on the command line interface can be insecure.
+$ CREATE TABLE t12.t(id INT, CONSTRAINT chk_id CHECK (id > 0));
+mysql: [Warning] Using a password on the command line interface can be insecure.
+  rc=0
+  catalog: n=mysql: [Warning] Using a password on the command line interface can be insecure.
+1 enforced=mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1054 (42S22) at line 1: Unknown column 'enforced' in 'field list'
+$ INSERT id=-1 (violating, proves enforcement)
+mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 3819 (HY000) at line 1: Check constraint 'chk_id' is violated.
+  rc=1
+$ ALTER TABLE t12.t ALTER CHECK chk_id NOT ENFORCED;
+mysql: [Warning] Using a password on the command line interface can be insecure.
+  rc=0
+  catalog: enforced=mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1054 (42S22) at line 1: Unknown column 'enforced' in 'field list'
+$ INSERT id=-1 again (should land under NOT ENFORCED)
+mysql: [Warning] Using a password on the command line interface can be insecure.
+  rc=0
+  rows=mysql: [Warning] Using a password on the command line interface can be insecure.
+1
+$ ALTER TABLE t12.t ALTER CHECK chk_id ENFORCED;  (violating row present!)
+mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 3819 (HY000) at line 1: Check constraint 'chk_id' is violated.
+  rc=1
+  catalog: enforced=mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1054 (42S22) at line 1: Unknown column 'enforced' in 'field list' rows=mysql: [Warning] Using a password on the command line interface can be insecure.
+1
+$ ALTER TABLE t12.t ALTER CONSTRAINT chk_id NOT ENFORCED;  (PG-style alias)
+mysql: [Warning] Using a password on the command line interface can be insecure.
+  rc=0
+$ ALTER TABLE t12.t ALTER CHECK missing_x NOT ENFORCED;
+mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 3821 (HY000) at line 1: Check constraint 'missing_x' is not found in the table.
+  rc=1
+$ ALTER TABLE t12.t ALTER CHECK uk_v NOT ENFORCED;  (non-check name)
+mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 3821 (HY000) at line 1: Check constraint 'uk_v' is not found in the table.
+  rc=1
+$ ALTER TABLE t12.t DROP CHECK chk_id; post catalog
+mysql: [Warning] Using a password on the command line interface can be insecure.
+  rc=0
+  catalog: n=mysql: [Warning] Using a password on the command line interface can be insecure.
+0
+$ ALTER TABLE t12.t ADD CONSTRAINT chk2 CHECK (id < 100) NOT ENFORCED;
+mysql: [Warning] Using a password on the command line interface can be insecure.
+  rc=0
+  catalog n2=mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1054 (42S22) at line 1: Unknown column 'enforced' in 'field list'
+=== CELL 5.7 parsed-but-ignored (deltascope-ddl-golden-mysql57)
+version: mysql: [Warning] Using a password on the command line interface can be insecure.
+5.7.44
+mysql: [Warning] Using a password on the command line interface can be insecure.
+$ CREATE TABLE t12.t(id INT, CONSTRAINT chk_id CHECK (id > 0));
+mysql: [Warning] Using a password on the command line interface can be insecure.
+  rc=0
+  SHOW CREATE keeps it?
+mysql: [Warning] Using a password on the command line interface can be insecure.
+t	CREATE TABLE `t` (\n  `id` int(11) DEFAULT NULL\n) ENGINE=InnoDB DEFAULT CHARSET=latin1
+  rc=0
+$ INSERT id=-1 (should LAND — check ignored on 5.7)
+mysql: [Warning] Using a password on the command line interface can be insecure.
+  rc=0
+  rows=mysql: [Warning] Using a password on the command line interface can be insecure.
+1
+$ ALTER TABLE t12.t ALTER CHECK chk_id NOT ENFORCED;
+mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'check chk_id not enforced' at line 1
+  rc=1
+$ ALTER TABLE t12.t DROP CHECK chk_id;
+mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'check chk_id' at line 1
+  rc=1
+$ ALTER TABLE t12.t ADD CONSTRAINT chk2 CHECK (id < 100);
+mysql: [Warning] Using a password on the command line interface can be insecure.
+  rc=0
+  SHOW CREATE post-add:
+mysql: [Warning] Using a password on the command line interface can be insecure.
+t	CREATE TABLE `t` (\n  `id` int(11) DEFAULT NULL\n) ENGINE=InnoDB DEFAULT CHARSET=latin1
+  rc=0
+=== CELL TiDB v8.5.0 flag arms
+version: Release Version: v8.5.0\nEdition: Community\nGit Commit Hash: d13e52ed6e22cc5789bed7c64c861578cd2ed55b\nGit Branch: HEAD\nUTC Build Time: 2024-12-18 02:26:12\nGoVersion: go1.23.3\nRace Enabled: false\nCheck Table Before Drop: false\nStore: unistore
+--- tidb_enable_check_constraint=OFF
+  var=0
+$ CREATE TABLE t12.t(id INT, CONSTRAINT chk_id CHECK (id > 0));
+
+  rc=0
+  SHOW WARNINGS:
+Error	1054	Unknown column '$$' in 'field list'
+$ INSERT id=-1
+
+  rc=0
+  rows=1
+$ ALTER TABLE t12.t ALTER CHECK chk_id NOT ENFORCED;
+
+  rc=0
+  SHOW WARNINGS:
+Error	1054	Unknown column '$$' in 'field list'
+$ ALTER TABLE t12.t ALTER CHECK chk_id ENFORCED;
+
+  rc=0
+$ ALTER TABLE t12.t ADD CONSTRAINT chk2 CHECK (id < 100);
+
+  rc=0
+  SHOW WARNINGS:
+Error	1054	Unknown column '$$' in 'field list'
+$ ALTER TABLE t12.t DROP CHECK chk_id;
+
+  rc=0
+  SHOW WARNINGS:
+Error	1054	Unknown column '$$' in 'field list'
+  SHOW CREATE post:
+t	CREATE TABLE `t` (\n  `id` int DEFAULT NULL\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+  rc=0
+--- tidb_enable_check_constraint=ON
+  var=1
+$ CREATE TABLE t12.t(id INT, CONSTRAINT chk_id CHECK (id > 0));
+
+  rc=0
+  SHOW WARNINGS:
+Error	1054	Unknown column '$$' in 'field list'
+$ INSERT id=-1
+ERROR 3819 (HY000) at line 1: Check constraint 'chk_id' is violated.
+  rc=1
+  rows=0
+$ ALTER TABLE t12.t ALTER CHECK chk_id NOT ENFORCED;
+
+  rc=0
+  SHOW WARNINGS:
+Error	1054	Unknown column '$$' in 'field list'
+$ ALTER TABLE t12.t ALTER CHECK chk_id ENFORCED;
+
+  rc=0
+$ ALTER TABLE t12.t ADD CONSTRAINT chk2 CHECK (id < 100);
+
+  rc=0
+  SHOW WARNINGS:
+Error	1054	Unknown column '$$' in 'field list'
+$ ALTER TABLE t12.t DROP CHECK chk_id;
+
+  rc=0
+  SHOW WARNINGS:
+Error	1054	Unknown column '$$' in 'field list'
+  SHOW CREATE post:
+t	CREATE TABLE `t` (\n  `id` int DEFAULT NULL,\n  CONSTRAINT `chk2` CHECK ((`id` < 100))\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+  rc=0

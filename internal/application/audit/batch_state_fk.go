@@ -492,16 +492,55 @@ func (s *batchState) applyDropCheck(_ spec.Statement, alter *spec.Alter, targets
 		// proven either way.
 		return
 	}
+	name := strings.TrimSpace(alter.Name)
+	if s.dialect == spec.DialectTiDB {
+		// TiDB v8.5.0 probed: a present CHECK member drops under BOTH
+		// keywords when the flag is ON; nothing is ever stored under OFF,
+		// so the drop is a no-op there; an unobserved flag leaves the
+		// member's fate undecidable.
+		if name == "" {
+			return
+		}
+		switch s.checkArmFor() {
+		case spec.CheckArmEnforced:
+			if member := entry.shape.FindCheckConstraint(name); member != nil {
+				idx := memberIndex(entry.shape, member)
+				s.withClonedShape(key, func(shape *spec.TableSnapshot) {
+					shape.Constraints = append(shape.Constraints[:idx], shape.Constraints[idx+1:]...)
+				})
+			}
+		case spec.CheckArmUnknown:
+			if entry.shape.FindCheckConstraint(name) != nil {
+				s.markConstraintsUnknown(key)
+			}
+		}
+		return
+	}
 	if s.dialect != spec.DialectMySQL {
 		return
 	}
-	name := strings.TrimSpace(alter.Name)
 	if name == "" {
 		return
 	}
 	version := s.resolvedVersion
 	if version != nil && version.Major != 0 && version.Major < 8 {
 		// Pre-8.0 rejects the syntax — provably unchanged.
+		return
+	}
+	if member := entry.shape.FindCheckConstraint(name); member != nil {
+		// A proven CHECK member drops under BOTH keywords on MySQL 8.x
+		// (DROP CHECK and DROP CONSTRAINT each probed removing the
+		// still-present member) — deterministic removal; the collection
+		// stays vouched. An unobserved version cannot prove the arm
+		// supports the syntax, so the member's fate is undecidable.
+		if version == nil || !version.ValidatedRange || version.Major == 0 {
+			s.markConstraintsUnknown(key)
+			return
+		}
+		idx := memberIndex(entry.shape, member)
+		s.withClonedShape(key, func(shape *spec.TableSnapshot) {
+			shape.Constraints = append(shape.Constraints[:idx], shape.Constraints[idx+1:]...)
+		})
 		return
 	}
 	bound := false

@@ -55,6 +55,16 @@ type InstanceFacts struct {
 	// default). The Known bit separates "probed off" from "never probed".
 	RestrictNonStandardKey      bool `json:"restrict_non_standard_key,omitempty"`
 	RestrictNonStandardKeyKnown bool `json:"restrict_non_standard_key_known,omitempty"`
+
+	// TiDBEnableCheckConstraint is the observed
+	// tidb_enable_check_constraint value — TiDB's CHECK runtime switch.
+	// OFF means CHECK syntax parses but stores and enforces nothing; ON
+	// means CHECK members land and enforce. The Known bit separates
+	// "probed off" from "never probed" so an unobserved value resolves to
+	// undecidable, never a guessed ON. TiDB only; MySQL never returns the
+	// row.
+	TiDBEnableCheckConstraint      bool `json:"tidb_enable_check_constraint,omitempty"`
+	TiDBEnableCheckConstraintKnown bool `json:"tidb_enable_check_constraint_known,omitempty"`
 }
 
 // TableSnapshot is the current metadata-backed shape of a target table.
@@ -245,6 +255,39 @@ func (s TableSnapshot) FindForeignKeyConstraint(name string) *Constraint {
 	return nil
 }
 
+// FindCheckConstraint binds a name-keyed CHECK lookup to a proven member of
+// the loaded constraint set — the check-namespace counterpart of
+// FindForeignKeyConstraint. A nil result under ConstraintsUnknown or an
+// unproven member name means "unknown", never confirmed absence.
+func (s TableSnapshot) FindCheckConstraint(name string) *Constraint {
+	if strings.TrimSpace(name) == "" {
+		return nil
+	}
+	for i := range s.Constraints {
+		if s.Constraints[i].Type != "check" {
+			continue
+		}
+		if s.Constraints[i].NameUnknown {
+			continue
+		}
+		if strings.EqualFold(s.Constraints[i].Name, name) {
+			return &s.Constraints[i]
+		}
+	}
+	return nil
+}
+
+// HasUnprovenCheckName reports whether any CHECK member's stored name is
+// unproven — the check arm of an unvouched constraint name space.
+func (s TableSnapshot) HasUnprovenCheckName() bool {
+	for i := range s.Constraints {
+		if s.Constraints[i].Type == "check" && s.Constraints[i].NameUnknown {
+			return true
+		}
+	}
+	return false
+}
+
 // HasUnprovenForeignKeyName reports whether any foreign-key member's stored
 // name is unproven — the granular form of an unvouched constraint name
 // space used by name-keyed transitions to tell a provable target from a
@@ -256,6 +299,14 @@ func (s TableSnapshot) HasUnprovenForeignKeyName() bool {
 		}
 	}
 	return false
+}
+
+// CheckNameSpaceUnvouched reports whether the CHECK member name space
+// cannot vouch every stored name — the collection flagged unvouched, or one
+// check member's stored name unproven. The check namespace on MySQL/TiDB is
+// separate from index names, so only check members participate.
+func (s TableSnapshot) CheckNameSpaceUnvouched() bool {
+	return s.ConstraintsUnknown || s.HasUnprovenCheckName()
 }
 
 // ForeignKeyNameSpaceUnvouched reports whether the foreign-key member name

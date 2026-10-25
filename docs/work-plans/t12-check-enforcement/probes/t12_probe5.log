@@ -1,0 +1,47 @@
+=== CELL CHANGE COLUMN check reference (deltascope-ddl-golden-mysql80)
+version: mysql: [Warning] Using a password on the command line interface can be insecure.
+8.0.46
+mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+  rc=0
+$ CHANGE COLUMN id TO id2 BIGINT (renaming, referenced)
+mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 3959 (HY000) at line 1: Check constraint 'chk_id' uses column 'id', hence column cannot be dropped or renamed.
+  rc=1
+$ CHANGE COLUMN id TO id BIGINT (same name retype, referenced)
+mysql: [Warning] Using a password on the command line interface can be insecure.
+  rc=0
+  SHOW CREATE:
+mysql: [Warning] Using a password on the command line interface can be insecure.
+t	CREATE TABLE `t` (\n  `id` bigint DEFAULT NULL,\n  `v` int DEFAULT NULL,\n  CONSTRAINT `chk_id` CHECK ((`id` > 0))\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+  rc=0
+=== CELL CHANGE COLUMN check reference (deltascope-ddl-golden-mysql84)
+version: mysql: [Warning] Using a password on the command line interface can be insecure.
+8.4.10
+mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+  rc=0
+$ CHANGE COLUMN id TO id2 BIGINT (renaming, referenced)
+mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 3959 (HY000) at line 1: Check constraint 'chk_id' uses column 'id', hence column cannot be dropped or renamed.
+  rc=1
+$ CHANGE COLUMN id TO id BIGINT (same name retype, referenced)
+mysql: [Warning] Using a password on the command line interface can be insecure.
+  rc=0
+  SHOW CREATE:
+mysql: [Warning] Using a password on the command line interface can be insecure.
+t	CREATE TABLE `t` (\n  `id` bigint DEFAULT NULL,\n  `v` int DEFAULT NULL,\n  CONSTRAINT `chk_id` CHECK ((`id` > 0))\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+  rc=0
+=== CELL CHANGE COLUMN check reference (tidb85 flag ON)
+var: tidb_enable_check_constraint	ON
+
+  rc=0
+$ CHANGE COLUMN id TO id2 BIGINT (renaming, referenced)
+
+  rc=0
+$ CHANGE COLUMN id TO id BIGINT (same name retype, referenced)
+ERROR 1054 (42S22) at line 1: Unknown column 'id' in 't'
+  rc=1
+  SHOW CREATE:
+t	CREATE TABLE `t` (\n  `id2` bigint DEFAULT NULL,\n  `v` int DEFAULT NULL\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+  rc=0

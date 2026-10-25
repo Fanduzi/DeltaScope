@@ -152,6 +152,16 @@ func (c *faultConn) QueryContext(_ context.Context, query string, _ []driver.Nam
 		f.providerQueries++
 		return newFaultRows([]string{"column_name", "column_type", "character_set_name", "collation_name", "column_comment", "column_default", "is_nullable", "extra", "generation_expression"}, f.provider, -1), nil
 	}
+	if strings.Contains(query, "constraint_type = 'CHECK'") {
+		f.providerQueries++
+		// T12 CHECK member projection — this fixture stores no checks.
+		return newFaultRows([]string{"constraint_name", "enforced", "check_clause"}, nil, -1), nil
+	}
+	if strings.Contains(query, "table_name = 'CHECK_CONSTRAINTS'") || strings.Contains(query, "table_name = 'TIDB_CHECK_CONSTRAINTS'") || strings.Contains(query, "column_name = 'ENFORCED'") {
+		f.providerQueries++
+		// T12 catalog capability probes — this fixture predates them.
+		return newFaultRows([]string{"count(*)"}, [][]driver.Value{{int64(0)}}, -1), nil
+	}
 	if strings.Contains(query, "from information_schema.`columns`") {
 		f.providerQueries++
 		// IS_VISIBLE capability probe: this fixture models a catalog without
@@ -233,12 +243,14 @@ func TestT06A17R1CollectorComplete(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	// providerQueries: tables row + columns + the IS_VISIBLE and EXPRESSION
-	// capability probes + statistics member rows + the T11 foreign-key
-	// catalog join + the unmodeled-constraint-type scan = 7 catalog
-	// round-trips (the PARTITIONS/TIDB_INDEXES probes run only for TiDB,
-	// and this fixture loads as MySQL).
-	if fixture.creates != 1 || fixture.drops != 1 || fixture.created || fixture.counts != 2 || fixture.providerQueries != 7 {
+	// providerQueries: tables row + columns + the IS_VISIBLE, EXPRESSION,
+	// TABLE_CONSTRAINTS.ENFORCED, CHECK_CONSTRAINTS, and
+	// TIDB_CHECK_CONSTRAINTS capability probes + statistics member rows +
+	// the T11 foreign-key catalog join + the T12 CHECK member read + the
+	// unmodeled-constraint-type scan = 11 catalog round-trips (the
+	// PARTITIONS/TIDB_INDEXES probes run only for TiDB, and this fixture
+	// loads as MySQL).
+	if fixture.creates != 1 || fixture.drops != 1 || fixture.created || fixture.counts != 2 || fixture.providerQueries != 11 {
 		t.Fatalf("incomplete lifecycle/provider calls: %+v", fixture)
 	}
 	var pairs []pair

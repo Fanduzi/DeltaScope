@@ -1,0 +1,91 @@
+=== CELL DROP CONSTRAINT vs DROP CHECK on STILL-PRESENT check (deltascope-ddl-golden-mysql80)
+version: mysql: [Warning] Using a password on the command line interface can be insecure.
+8.0.46
+mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+  n_checks=mysql: [Warning] Using a password on the command line interface can be insecure.
+3
+$ DROP CONSTRAINT chk_id (real check, present)
+mysql: [Warning] Using a password on the command line interface can be insecure.
+  rc=0
+  n_checks=mysql: [Warning] Using a password on the command line interface can be insecure.
+2
+$ DROP CHECK chk2 (real check, present)
+mysql: [Warning] Using a password on the command line interface can be insecure.
+  rc=0
+  n_checks=mysql: [Warning] Using a password on the command line interface can be insecure.
+1
+$ ALTER TABLE t12c.t ADD CONSTRAINT chk3 CHECK (id < 200)  (duplicate name)
+mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 3822 (HY000) at line 1: Duplicate check constraint name 'chk3'.
+  rc=1
+$ ALTER TABLE t12c.t ADD CHECK (id < 300)  (bare add auto-name)
+mysql: [Warning] Using a password on the command line interface can be insecure.
+  rc=0
+  names=mysql: [Warning] Using a password on the command line interface can be insecure.
+chk3,t_chk_1
+$ ALTER CHECK chk3 NOT ENFORCED on table where chk3 is a CHECK — and TC.ENFORCED on TiDB-like catalog
+  enforced=mysql: [Warning] Using a password on the command line interface can be insecure.
+YES
+=== CELL DROP CONSTRAINT vs DROP CHECK on STILL-PRESENT check (deltascope-ddl-golden-mysql84)
+version: mysql: [Warning] Using a password on the command line interface can be insecure.
+8.4.10
+mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+  n_checks=mysql: [Warning] Using a password on the command line interface can be insecure.
+3
+$ DROP CONSTRAINT chk_id (real check, present)
+mysql: [Warning] Using a password on the command line interface can be insecure.
+  rc=0
+  n_checks=mysql: [Warning] Using a password on the command line interface can be insecure.
+2
+$ DROP CHECK chk2 (real check, present)
+mysql: [Warning] Using a password on the command line interface can be insecure.
+  rc=0
+  n_checks=mysql: [Warning] Using a password on the command line interface can be insecure.
+1
+$ ALTER TABLE t12c.t ADD CONSTRAINT chk3 CHECK (id < 200)  (duplicate name)
+mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 3822 (HY000) at line 1: Duplicate check constraint name 'chk3'.
+  rc=1
+$ ALTER TABLE t12c.t ADD CHECK (id < 300)  (bare add auto-name)
+mysql: [Warning] Using a password on the command line interface can be insecure.
+  rc=0
+  names=mysql: [Warning] Using a password on the command line interface can be insecure.
+chk3,t_chk_1
+$ ALTER CHECK chk3 NOT ENFORCED on table where chk3 is a CHECK — and TC.ENFORCED on TiDB-like catalog
+  enforced=mysql: [Warning] Using a password on the command line interface can be insecure.
+YES
+=== CELL TiDB flag ON: DROP keyword arms on present check + ALTER CONSTRAINT missing
+  var=1
+  SHOW CREATE pre:
+t	CREATE TABLE `t` (\n  `id` int DEFAULT NULL,\n  CONSTRAINT `chk_id` CHECK ((`id` > 0)),\n  CONSTRAINT `chk2` CHECK ((`id` < 100))\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+  rc=0
+$ DROP CONSTRAINT chk_id (real check, present, TiDB ON)
+
+  rc=0
+  SHOW CREATE:
+t	CREATE TABLE `t` (\n  `id` int DEFAULT NULL,\n  CONSTRAINT `chk2` CHECK ((`id` < 100))\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+  rc=0
+$ DROP CHECK chk2 (real check, present, TiDB ON)
+
+  rc=0
+  SHOW CREATE:
+t	CREATE TABLE `t` (\n  `id` int DEFAULT NULL\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+  rc=0
+$ ALTER CONSTRAINT missing_x NOT ENFORCED (TiDB ON)
+ERROR 3940 (HY000) at line 1: Constraint 'missing_x' does not exist.
+  rc=1
+=== CELL TiDB flag OFF: ALTER/DROP on never-stored check
+$ ALTER CHECK chk_id NOT ENFORCED (never stored)
+
+  rc=0
+$ DROP CHECK chk_id (never stored)
+
+  rc=0
+$ DROP CONSTRAINT chk_id (never stored)
+
+  rc=0
+  SHOW CREATE:
+t	CREATE TABLE `t` (\n  `id` int DEFAULT NULL\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+  rc=0

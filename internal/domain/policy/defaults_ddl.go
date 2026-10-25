@@ -427,6 +427,16 @@ func ddlCoreRules() map[string]RulePolicy {
 				"contains": []string{},
 			},
 		},
+		"ddl.constraint.check.not_enforced.notice": {
+			Enabled: true,
+			Level:   rule.LevelNotice,
+			Params:  map[string]any{},
+		},
+		"ddl.constraint.check.ignored.notice": {
+			Enabled: true,
+			Level:   rule.LevelNotice,
+			Params:  map[string]any{},
+		},
 		"ddl.index.duplicate.forbid": {
 			Enabled: true,
 			Level:   rule.LevelWarning,

@@ -297,6 +297,33 @@ rules:
     params:
       required: true
 
+  # T12 CHECK lifecycle: enforcement state, target binding, arm boundaries.
+  ddl.constraint.check.not_enforced.notice:
+    enabled: true
+    level: notice
+    params:
+
+  ddl.constraint.check.ignored.notice:
+    enabled: true
+    level: notice
+    params:
+
+  ddl.alter.alter_check.exists.require:
+    enabled: true
+    level: blocker
+    params:
+
+  ddl.alter.drop_check.exists.require:
+    enabled: true
+    level: blocker
+    params:
+
+  ddl.alter.alter_check.version.require:
+    enabled: true
+    level: blocker
+    params:
+      required: true
+
   ddl.alter.column.dependency.require:
     enabled: true
     level: blocker

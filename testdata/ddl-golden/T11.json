@@ -1257,27 +1257,38 @@
         "password": "root"
       },
       "expect": {
-        "exit": 0,
-        "verdict": "review",
+        "exit": 1,
+        "verdict": "reject",
         "statements": 1,
-        "findings": 0,
+        "findings": 1,
         "diagnostics": 0,
         "unsupported": 0,
-        "coverage": "unverified",
+        "coverage": "complete",
         "statement_coverage": [
-          "unverified"
+          "complete"
         ],
-        "evidence_gaps": 1,
-        "evidence_gap_entries": [
+        "evidence_gaps": 0,
+        "finding_entries": [
           {
             "index": 0,
             "rule_id": "ddl.alter.drop_foreign_key.exists.require",
-            "reason_code": "unknown_table_state",
-            "required_facts": [
-              "target_table.constraints"
-            ]
+            "level": "blocker"
           }
-        ]
+        ],
+        "finding_metadata": [
+          {
+            "index": 0,
+            "rule_id": "ddl.alter.drop_foreign_key.exists.require",
+            "metadata": {
+              "action": "drop_foreign_key",
+              "exists": false,
+              "name": "ghost_fk",
+              "table": "t11ck"
+            }
+          }
+        ],
+        "rule_summary_loaded": 1,
+        "rule_summary_applicable": 1
       },
       "policy": "t11-fk-exists",
       "setup": [

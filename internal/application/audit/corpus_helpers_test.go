@@ -56,12 +56,14 @@ func newCorpusMetadataProvider(metadata *corpusMetadata) *corpusFixtureMetadataP
 	}
 	if metadata.Instance != nil {
 		provider.instance = &spec.InstanceFacts{
-			Version:                   metadata.Instance.Version,
-			DefaultCharset:            metadata.Instance.DefaultCharset,
-			InnoDBLargePrefixEnabled:  metadata.Instance.InnoDBLargePrefixEnabled,
-			InnoDBLargePrefixKnown:    metadata.Instance.InnoDBLargePrefixKnown,
-			InnoDBDefaultRowFormat:    metadata.Instance.InnoDBDefaultRowFormat,
-			InnoDBAdaptiveHashEnabled: metadata.Instance.InnoDBAdaptiveHashEnabled,
+			Version:                        metadata.Instance.Version,
+			DefaultCharset:                 metadata.Instance.DefaultCharset,
+			InnoDBLargePrefixEnabled:       metadata.Instance.InnoDBLargePrefixEnabled,
+			InnoDBLargePrefixKnown:         metadata.Instance.InnoDBLargePrefixKnown,
+			InnoDBDefaultRowFormat:         metadata.Instance.InnoDBDefaultRowFormat,
+			InnoDBAdaptiveHashEnabled:      metadata.Instance.InnoDBAdaptiveHashEnabled,
+			TiDBEnableCheckConstraint:      metadata.Instance.TiDBEnableCheckConstraint,
+			TiDBEnableCheckConstraintKnown: metadata.Instance.TiDBEnableCheckConstraintKnown,
 		}
 	}
 	for tableName, snapshot := range metadata.Tables {
@@ -166,6 +168,7 @@ func corpusConstraintToSpec(constraint corpusConstraint) spec.Constraint {
 		Type:              constraint.Type,
 		Name:              constraint.Name,
 		Columns:           append([]string(nil), constraint.Columns...),
+		Enforced:          constraint.Enforced,
 		ReferencedSchema:  constraint.ReferencedSchema,
 		ReferencedTable:   constraint.ReferencedTable,
 		ReferencedColumns: append([]string(nil), constraint.ReferencedColumns...),

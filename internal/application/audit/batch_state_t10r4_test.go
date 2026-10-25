@@ -65,7 +65,10 @@ func t10r4PostState(t *testing.T, dialect spec.Dialect, provider MetadataProvide
 	// enrichOrderedStatements — the clustered-mode and alter-primary-key
 	// derivations read them there.
 	state.instanceFacts = facts
-	state.resolvedVersion = t10r4Version(dialect)
+	// Production resolves the version from the provider banner
+	// (resolvedVersion = observed): a parseable banner becomes the
+	// governing fact; an empty or unparseable one stays unobserved.
+	state.resolvedVersion = spec.ParseObservedVersion(facts.Version)
 	parsed, err := parseSQL(context.Background(), sql, dialect)
 	if err != nil {
 		t.Fatalf("parse %q: %v", sql, err)

@@ -430,6 +430,23 @@ func ddlAlterRules() map[string]RulePolicy {
 			Level:   rule.LevelBlocker,
 			Params:  map[string]any{},
 		},
+		"ddl.alter.alter_check.exists.require": {
+			Enabled: true,
+			Level:   rule.LevelBlocker,
+			Params:  map[string]any{},
+		},
+		"ddl.alter.drop_check.exists.require": {
+			Enabled: true,
+			Level:   rule.LevelBlocker,
+			Params:  map[string]any{},
+		},
+		"ddl.alter.alter_check.version.require": {
+			Enabled: true,
+			Level:   rule.LevelBlocker,
+			Params: map[string]any{
+				"required": true,
+			},
+		},
 		"ddl.alter.rename_index.exists.require": {
 			Enabled: true,
 			Level:   rule.LevelBlocker,

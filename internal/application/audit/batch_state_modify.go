@@ -471,6 +471,11 @@ func modifyDeclaresExtraMember(alter *spec.Alter, definition spec.Column) bool {
 	if len(definition.UnextractedOptions) > 0 {
 		return true
 	}
+	// A column-definition CHECK the change may carry cannot be silently
+	// dropped or fabricated — the transition refuses to publish it.
+	if alter != nil && len(alter.Constraints) > 0 {
+		return true
+	}
 	return modifyDeclaresPrimaryKey(alter)
 }
 

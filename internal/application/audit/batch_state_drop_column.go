@@ -76,6 +76,9 @@ func (s *batchState) prepareDropColumn(statement spec.Statement, alter *spec.Alt
 		remaining = append(remaining, column)
 	}
 	shape.Columns = remaining
+	// The column's referencing CHECK members are silently dropped with it —
+	// a proven cascade, not a refusal.
+	dropColumnCascadedChecks(shape, source.Name)
 	clearModifyAffectedStats(shape)
 	return modifyPublication{
 		replaceKey: primary,
@@ -192,11 +195,39 @@ func dropColumnLocalUnsafe(shape *spec.TableSnapshot, columnName string) bool {
 		if primaryKeyConstraint(constraint.Type) {
 			continue
 		}
+		if constraint.Type == "check" {
+			if checkMemberReferences(constraint, columnName) {
+				// Probed on 8.0.46/8.4.10/TiDB-ON: dropping the column
+				// silently drops the referencing check — a modeled
+				// cascade, not an unsafe dependency.
+				continue
+			}
+			if checkMayReferenceUnvouched(constraint) {
+				return true
+			}
+			continue
+		}
 		if !dropConstraintProvesUnrelated(shape, constraint, columnName) {
 			return true
 		}
 	}
 	return false
+}
+
+// checkMayReferenceUnvouched reports whether a check member cannot vouch
+// its reference set — a withheld expression fact or a member with no
+// modeled references at all — so it may reference the dropped column and
+// the drop is unsafe to model.
+func checkMayReferenceUnvouched(constraint spec.Constraint) bool {
+	if constraint.UnmodeledParts > 0 {
+		// Unmodeled fragments may carry a reference the column list does
+		// not vouch for.
+		return true
+	}
+	if constraint.Expression != nil && !constraint.Expression.Known {
+		return true
+	}
+	return constraint.Expression == nil && len(constraint.Columns) == 0
 }
 
 func dropPrimaryKeyProvesUnrelated(shape *spec.TableSnapshot, columnName string) bool {

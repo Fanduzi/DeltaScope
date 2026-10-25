@@ -112,6 +112,12 @@ func (c t06a4Conn) answer(query string) t06a4Result {
 			cols: []string{"Variable_name", "Value"},
 			rows: [][]driver.Value{{"version", "8.4.10"}},
 		}
+	case strings.Contains(query, "constraint_type = 'CHECK'"):
+		// T12 CHECK member projection — this fixture stores no checks.
+		return t06a4Result{cols: []string{"constraint_name", "enforced", "check_clause"}}
+	case strings.Contains(query, "column_name = 'ENFORCED'"), strings.Contains(query, "table_name = 'CHECK_CONSTRAINTS'"), strings.Contains(query, "table_name = 'TIDB_CHECK_CONSTRAINTS'"):
+		// T12 catalog capability probes — this fixture predates them.
+		return t06a4Result{cols: []string{"count(*)"}, rows: [][]driver.Value{{int64(0)}}}
 	case strings.Contains(query, "information_schema.columns"):
 		if c.fixture.columnsEr != nil {
 			return t06a4Result{err: c.fixture.columnsEr}

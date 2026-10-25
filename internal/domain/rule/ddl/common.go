@@ -149,6 +149,11 @@ const (
 	ruleIDIndexAdvancedCompatibilityRequire                  = "ddl.index.advanced.compatibility.require"
 	ruleIDAlterDropPrimaryKeyExistsRequire                   = "ddl.alter.drop_primary_key.exists.require"
 	ruleIDAlterDropForeignKeyExistsRequire                   = "ddl.alter.drop_foreign_key.exists.require"
+	ruleIDConstraintCheckNotEnforcedNotice                   = "ddl.constraint.check.not_enforced.notice"
+	ruleIDConstraintCheckIgnoredNotice                       = "ddl.constraint.check.ignored.notice"
+	ruleIDAlterCheckExistsRequire                            = "ddl.alter.alter_check.exists.require"
+	ruleIDAlterDropCheckExistsRequire                        = "ddl.alter.drop_check.exists.require"
+	ruleIDAlterCheckVersionRequire                           = "ddl.alter.alter_check.version.require"
 	ruleIDAlterModifyColumnCompatibilityRequire              = "ddl.alter.modify_column.compatibility.require"
 	ruleIDAlterChangeColumnCompatibilityRequire              = "ddl.alter.change_column.compatibility.require"
 	ruleIDAlterTableOptionCompatibilityRequire               = "ddl.alter.table_option.compatibility.require"
@@ -977,7 +982,15 @@ func appliesToCreateTableOrAlterCheckConstraint(statement spec.Statement) bool {
 		return false
 	}
 	for _, alter := range statement.DDL.Alter {
-		if alter.Action == "add_constraint" && alter.Options["constraint_type"] == "check" {
+		if alter.Action != "add_constraint" {
+			continue
+		}
+		if alter.Options["constraint_type"] == "check" {
+			return true
+		}
+		// MySQL/TiDB carry the CHECK payload on the structured constraint,
+		// never on the options map.
+		if alter.Constraint != nil && alter.Constraint.Type == "check" {
 			return true
 		}
 	}

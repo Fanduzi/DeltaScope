@@ -1,0 +1,7 @@
+=== MySQL 8.0.46 CHECK_CONSTRAINTS column shape (join fix evidence)
+8.0.46
+CONSTRAINT_CATALOG	varchar(64)	NO		NULL	
+CONSTRAINT_SCHEMA	varchar(64)	NO		NULL	
+CONSTRAINT_NAME	varchar(64)	NO		NULL	
+CHECK_CLAUSE	longtext	NO		NULL	
+1

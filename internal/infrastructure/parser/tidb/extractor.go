@@ -315,6 +315,21 @@ func extractCreateTable(stmt *ast.CreateTableStmt) *spec.DDL {
 			ddl.Constraints = append(ddl.Constraints, extractConstraint(c))
 		}
 	}
+	// Column-option CHECK(...) declarations land as table-level CHECK
+	// members in the catalog — model them as constraint members with the
+	// InColumn binding so ordered state and rules see the same object the
+	// database stores.
+	for _, col := range stmt.Cols {
+		if col == nil || col.Name == nil {
+			continue
+		}
+		for _, option := range col.Options {
+			if option == nil || option.Tp != ast.ColumnOptionCheck {
+				continue
+			}
+			ddl.Constraints = append(ddl.Constraints, checkConstraintFromColumnOption(option, col.Name.Name.L))
+		}
+	}
 
 	normalizeCreatePrimaryKeyNullability(ddl, stmt.Cols)
 
@@ -538,6 +553,12 @@ func extractAlterSpecs(specification *ast.AlterTableSpec, clause string) []spec.
 				continue
 			}
 			alter := spec.Alter{Action: alterActionName(specification.Tp), Name: column.Name.Name.L, Column: alterColumnFromColumnDef(column)}
+			for _, option := range column.Options {
+				if option == nil || option.Tp != ast.ColumnOptionCheck {
+					continue
+				}
+				alter.Constraints = append(alter.Constraints, checkConstraintFromColumnOption(option, column.Name.Name.L))
+			}
 			if specLevelPosition {
 				if len(alters) == 0 {
 					alter.UnextractedOptions = append(alter.UnextractedOptions, "column_position")
@@ -618,8 +639,73 @@ func extractAlterSpec(specification *ast.AlterTableSpec, clause string) spec.Alt
 		}
 		alter.Constraint = &constraint
 	}
+	if specification.Tp == ast.AlterTableAlterCheck && specification.Constraint != nil {
+		// ALTER CHECK|CONSTRAINT x [NOT] ENFORCED carries the enforcement
+		// direction on the constraint payload — the only place the
+		// normalized model can read it, since both directions share the
+		// same action name.
+		if alter.Options == nil {
+			alter.Options = map[string]string{}
+		}
+		if specification.Constraint.Enforced {
+			alter.Options["check_enforced"] = "true"
+		} else {
+			alter.Options["check_enforced"] = "false"
+		}
+	}
+	for _, column := range specification.NewColumns {
+		if column == nil {
+			continue
+		}
+		for _, option := range column.Options {
+			if option == nil || option.Tp != ast.ColumnOptionCheck {
+				continue
+			}
+			check := checkConstraintFromColumnOption(option, column.Name.Name.L)
+			alter.Constraints = append(alter.Constraints, check)
+		}
+	}
 	markAlterExistenceClauses(specification, &alter)
 	return alter
+}
+
+// checkEnforcedName normalizes the AST enforcement bool to the shared
+// tri-state vocabulary; the grammar cannot distinguish an undeclared
+// keyword from ENFORCED (both set true) — a distinction with no native
+// difference.
+func checkEnforcedName(enforced bool) string {
+	if enforced {
+		return "enforced"
+	}
+	return "not_enforced"
+}
+
+// checkConstraintFromColumnOption models a column-option CHECK(...) as the
+// constraint member the catalog creates: Type=check, InColumn bound to the
+// owning column, expression facts and declared enforcement carried; the
+// authored CONSTRAINT symbol names it when present. Raw expression text is
+// never retained.
+func checkConstraintFromColumnOption(option *ast.ColumnOption, columnName string) spec.Constraint {
+	check := spec.Constraint{
+		Type:     "check",
+		Name:     strings.TrimSpace(option.ConstraintName),
+		Columns:  []string{columnName},
+		InColumn: true,
+		Enforced: checkEnforcedName(option.Enforced),
+	}
+	if option.Expr != nil {
+		facts := expressionFacts(option.Expr)
+		check.Expression = &facts
+		seen := map[string]bool{strings.ToLower(columnName): true}
+		for _, ref := range facts.LocalReferences() {
+			if seen[strings.ToLower(ref.Name)] {
+				continue
+			}
+			seen[strings.ToLower(ref.Name)] = true
+			check.Columns = append(check.Columns, ref.Name)
+		}
+	}
+	return check
 }
 
 // markAlterExistenceClauses records parsed IF EXISTS / IF NOT EXISTS clauses
@@ -836,6 +922,9 @@ func extractColumn(col *ast.ColumnDef) spec.Column {
 			column.UnextractedOptions = append(column.UnextractedOptions, name)
 		case ast.ColumnOptionNull:
 			// NULL is the default nullability — a no-op marker, not a gap.
+		case ast.ColumnOptionCheck:
+			// Modeled as an InColumn CHECK member on the constraint
+			// collection — no longer an unextracted option.
 		default:
 			column.UnextractedOptions = append(column.UnextractedOptions, columnOptionName(option.Tp))
 		}
@@ -1979,6 +2068,21 @@ func extractConstraint(c *ast.Constraint) spec.Constraint {
 		Name:           normalizeConstraintName(c),
 		Columns:        extractIndexColumns(c.Keys),
 		UnmodeledParts: countUnmodeledIndexParts(c.Keys),
+	}
+	if c.Tp == ast.ConstraintCheck {
+		// The AST stores the declared enforcement direction on
+		// Constraint.Enforced; the grammar defaults it true when the
+		// keywords are absent, so the AST cannot distinguish "ENFORCED"
+		// from undeclared — both produce the same native state anyway.
+		constraint.Enforced = checkEnforcedName(c.Enforced)
+		if c.Expr != nil {
+			facts := expressionFacts(c.Expr)
+			constraint.Expression = &facts
+			for _, ref := range facts.LocalReferences() {
+				constraint.Columns = append(constraint.Columns, ref.Name)
+			}
+		}
+		constraint.InColumn = c.InColumn
 	}
 	if c.Refer != nil {
 		constraint.ReferencedSchema = c.Refer.Table.Schema.L

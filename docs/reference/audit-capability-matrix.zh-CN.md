@@ -183,6 +183,25 @@ TiDB 使用同一审计批次内先前语句派生的状态。表存在性（`ex
 | `ddl.alter.index.rename.exists` | 待重命名的索引在当前 Schema 中不存在 | ✗ | ✓ | blocker |
 | `ddl.alter.primary_key.drop.exists` | 待删除的主键在表上不存在 | ✗ | ✓ | blocker |
 
+### CHECK 约束生命周期（#91）
+
+MySQL/TiDB 的 CHECK 生命周期由共享 arm 判定治理：MySQL 8.0.16+ 存储并执行
+CHECK 约束（`ALTER CHECK`/`DROP CHECK` 语法要求 8.0.19+），MySQL 8.0.16 以下解析
+但忽略声明，TiDB 以 `tidb_enable_check_constraint` 控制存储与执行。版本或开关
+事实未决时产生有界证据缺口而非 finding。`ALTER CONSTRAINT` 是 `ALTER CHECK`
+的别名；`DROP CHECK` 与 `DROP CONSTRAINT` 共享同一 CHECK 成员绑定。TiDB 的
+成员来自 `TIDB_CHECK_CONSTRAINTS`，执行状态经 catalog 不可观测（仅
+`SHOW CREATE TABLE`）——由已声明的转移携带执行事实。CHECK 命名规则同时评估
+`ALTER TABLE ... ADD CONSTRAINT ... CHECK` 名与列级 CHECK 选项。
+
+| 规则 ID | 检查描述 | 离线 | 元数据 | 默认级别 |
+|---------|---------|:----:|:------:|---------|
+| `ddl.constraint.check.not_enforced.notice` | 存储/执行 arm 上声明或翻转的 `NOT ENFORCED` CHECK 给出复核 notice | ✓ | ✓ | notice |
+| `ddl.constraint.check.ignored.notice` | 接受但忽略 arm（MySQL <8.0.16、TiDB 开关 OFF）上的 CHECK 声明被揭示而非当作已执行 | ✓ | ✓ | notice |
+| `ddl.alter.alter_check.exists.require` | `ALTER CHECK`/`ALTER CONSTRAINT` 目标必须是已证 CHECK 成员 | ✗ | ✓ | blocker |
+| `ddl.alter.drop_check.exists.require` | `DROP CHECK`/`DROP CONSTRAINT` 目标必须是已证 CHECK 成员 | ✗ | ✓ | blocker |
+| `ddl.alter.alter_check.version.require` | MySQL 上 `ALTER CHECK`/`DROP CHECK` 语法要求 8.0.19+（5.7 家族拒绝） | ✗ | ✓ | blocker |
+
 ### 全局规则：合并 ALTER
 
 | 规则 ID | 检查描述 | 离线 | 元数据 | 默认级别 |

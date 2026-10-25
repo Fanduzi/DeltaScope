@@ -332,7 +332,8 @@ func TestAuditSQLT03RecognizedUnauditedAspectsIncomplete(t *testing.T) {
 		// TestT10AlterIndex* — so the action no longer lands here.
 		{name: "mysql alter algorithm", sql: "ALTER TABLE t ALGORITHM=INPLACE;", dialect: spec.DialectMySQL, wantFeature: "alter_table.algorithm", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
 		{name: "mysql alter lock", sql: "ALTER TABLE t LOCK=NONE;", dialect: spec.DialectMySQL, wantFeature: "alter_table.lock", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
-		{name: "tidb drop check", sql: "ALTER TABLE t DROP CHECK chk;", dialect: spec.DialectTiDB, wantFeature: "alter_table.drop_check", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
+		// ALTER|DROP CHECK graduated to audited semantics in T12 — see
+		// TestT12* — so the action no longer lands here.
 		{name: "mysql nested placement policy", sql: "CREATE TABLE t (id INT) PLACEMENT POLICY=p;", dialect: spec.DialectMySQL, wantFeature: "create_table.option.placement_policy", wantReason: spec.UnsupportedVendorBoundaryReason, wantKind: "ddl"},
 		{name: "tidb nested placement policy", sql: "CREATE TABLE t (id INT) PLACEMENT POLICY=p;", dialect: spec.DialectTiDB, wantFeature: "create_table.option.placement_policy", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
 		{name: "tidb drop procedure", sql: "DROP PROCEDURE IF EXISTS p;", dialect: spec.DialectTiDB, wantFeature: "drop_procedure", wantReason: spec.UnsupportedVendorBoundaryReason, wantKind: "ddl"},
@@ -380,7 +381,7 @@ func TestAuditSQLT03RecognizedUnauditedAspectsIncomplete(t *testing.T) {
 		// they produce findings/gaps through the compat assessment, never
 		// unsupported evidence. See the T10-R2 audited-form tests.
 		{name: "mysql alter add list primary global", sql: "ALTER TABLE t ADD (c INT, PRIMARY KEY (c) GLOBAL);", dialect: spec.DialectMySQL, wantFeature: "alter_table.add_constraint.index.global", wantReason: spec.UnsupportedVendorBoundaryReason, wantKind: "ddl"},
-		{name: "mysql alter add list check", sql: "ALTER TABLE t ADD (c INT, CHECK (c > 0));", dialect: spec.DialectMySQL, wantFeature: "alter_table.add_constraint.check", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
+		// ALTER ADD CHECK graduated to audited semantics in T12.
 		{name: "mysql alter add list comment interference", sql: "ALTER TABLE t ADD (c INT COMMENT 'ADD CONSTRAINT', UNIQUE KEY uk (c) GLOBAL);", dialect: spec.DialectMySQL, wantFeature: "alter_table.add_index.index.global", wantReason: spec.UnsupportedVendorBoundaryReason, wantKind: "ddl"},
 		{name: "mysql drop user multi", sql: "DROP USER u1, u2;", dialect: spec.DialectMySQL, wantFeature: "drop_user.unaudited_targets", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
 		{name: "tidb drop sequence multi", sql: "DROP SEQUENCE s1, s2;", dialect: spec.DialectTiDB, wantFeature: "drop_sequence.unaudited_targets", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
@@ -420,7 +421,7 @@ func TestAuditSQLT03RecognizedUnauditedAspectsIncomplete(t *testing.T) {
 		{name: "mysql create procedure body", sql: "CREATE PROCEDURE p() SELECT 1;", dialect: spec.DialectMySQL, wantFeature: "create_procedure.body", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
 		{name: "mysql create table generated column unknown function", sql: "CREATE TABLE t (a INT, b INT GENERATED ALWAYS AS (T07_UNKNOWN_FN(a)) STORED);", dialect: spec.DialectMySQL, wantFeature: "create_table.column.expression_dependencies", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
 		{name: "mysql create table inline reference", sql: "CREATE TABLE t (id INT, pid INT REFERENCES parent(id));", dialect: spec.DialectMySQL, wantFeature: "create_table.column.reference", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
-		{name: "tidb create table inline check", sql: "CREATE TABLE t (id INT CHECK (id > 0));", dialect: spec.DialectTiDB, wantFeature: "create_table.column.check", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
+		// Column-level CHECK graduated to audited constraint facts in T12.
 		{name: "mysql create table inline unique", sql: "CREATE TABLE t (id INT UNIQUE);", dialect: spec.DialectMySQL, wantFeature: "create_table.column.unique", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
 		// Statement-level boundaries: executable forms outside the audited
 		// surface stay retained with bounded evidence.
@@ -549,8 +550,9 @@ func TestAuditSQLT03UnsupportedFeatureReasonPairs(t *testing.T) {
 			{"create_table.column.unique_global", spec.UnsupportedVendorBoundaryReason},
 		}},
 		{name: "mysql alter add list index global and check", sql: "ALTER TABLE t ADD (c INT, UNIQUE KEY uk (c) GLOBAL, CHECK (c > 0));", dialect: spec.DialectMySQL, want: [][2]string{
+			// The CHECK member is audited since T12; only the GLOBAL
+			// index modifier remains a vendor boundary.
 			{"alter_table.add_index.index.global", spec.UnsupportedVendorBoundaryReason},
-			{"alter_table.add_constraint.check", spec.UnsupportedUnauditedReason},
 		}},
 		{name: "mysql unsupported second statement", sql: "ALTER TABLE t ADD COLUMN c INT; CREATE TEMPORARY TABLE x (id INT);", dialect: spec.DialectMySQL, wantIndex: 1, want: [][2]string{
 			{"create_table.temporary", spec.UnsupportedUnauditedReason},

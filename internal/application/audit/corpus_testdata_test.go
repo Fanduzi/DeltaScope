@@ -113,12 +113,14 @@ type corpusMetadata struct {
 }
 
 type corpusInstanceFacts struct {
-	Version                   string `yaml:"version,omitempty"`
-	DefaultCharset            string `yaml:"default_charset,omitempty"`
-	InnoDBLargePrefixEnabled  bool   `yaml:"innodb_large_prefix_enabled,omitempty"`
-	InnoDBLargePrefixKnown    bool   `yaml:"innodb_large_prefix_known,omitempty"`
-	InnoDBDefaultRowFormat    string `yaml:"innodb_default_row_format,omitempty"`
-	InnoDBAdaptiveHashEnabled bool   `yaml:"innodb_adaptive_hash_enabled,omitempty"`
+	Version                        string `yaml:"version,omitempty"`
+	DefaultCharset                 string `yaml:"default_charset,omitempty"`
+	InnoDBLargePrefixEnabled       bool   `yaml:"innodb_large_prefix_enabled,omitempty"`
+	InnoDBLargePrefixKnown         bool   `yaml:"innodb_large_prefix_known,omitempty"`
+	InnoDBDefaultRowFormat         string `yaml:"innodb_default_row_format,omitempty"`
+	InnoDBAdaptiveHashEnabled      bool   `yaml:"innodb_adaptive_hash_enabled,omitempty"`
+	TiDBEnableCheckConstraint      bool   `yaml:"tidb_enable_check_constraint,omitempty"`
+	TiDBEnableCheckConstraintKnown bool   `yaml:"tidb_enable_check_constraint_known,omitempty"`
 }
 
 type corpusTableSnapshot struct {
@@ -169,6 +171,7 @@ type corpusConstraint struct {
 	Type              string   `yaml:"type"`
 	Name              string   `yaml:"name,omitempty"`
 	Columns           []string `yaml:"columns,omitempty"`
+	Enforced          string   `yaml:"enforced,omitempty"`
 	ReferencedSchema  string   `yaml:"referenced_schema,omitempty"`
 	ReferencedTable   string   `yaml:"referenced_table,omitempty"`
 	ReferencedColumns []string `yaml:"referenced_columns,omitempty"`

@@ -410,7 +410,7 @@ These rules check that column type and attribute changes made via `MODIFY COLUMN
 | `ddl.alter.change_column.explicit_auto_increment_change.forbid` | CHANGE COLUMN must not add or remove AUTO_INCREMENT | blocker | **Yes** |
 | `ddl.alter.table_option.compatibility.require` | Table option changes must be compatible with current table options | warning | **Yes** |
 
-### Existence and Column-Identity Rules (18 rules — metadata-backed)
+### Existence and Column-Identity Rules (20 rules — metadata-backed)
 
 These rules verify that the objects referenced by a DDL statement actually exist (or do not
 already exist) in the request-local ordered schema view: a live table snapshot when metadata
@@ -451,6 +451,8 @@ On MySQL and TiDB, one ordinary single-action `DROP COLUMN` removes that column 
 | `ddl.alter.rename_index.exists.require` | RENAME INDEX source must exist | blocker | **Yes** |
 | `ddl.alter.drop_primary_key.exists.require` | DROP PRIMARY KEY requires a primary key to exist | blocker | **Yes** |
 | `ddl.create_index.columns.exists.require` | Standalone `CREATE INDEX` column references must exist on the target table | blocker | **Yes** |
+| `ddl.alter.alter_check.exists.require` | `ALTER CHECK`/`ALTER CONSTRAINT` target must be a proven CHECK member | blocker | **Yes** |
+| `ddl.alter.drop_check.exists.require` | `DROP CHECK`/`DROP CONSTRAINT` target must be a proven CHECK member | blocker | **Yes** |
 
 ### Advanced Column Rules (2 rules)
 
@@ -464,6 +466,26 @@ These rules cover the MySQL/TiDB advanced column family — generated columns, e
 |---------|-------------|:-------------:|:-----------------:|
 | `ddl.alter.column.dependency.require` | Column drop/rename/identity-change is blocked while a sibling generated or expression-default column references it (same-name MODIFY is out of scope) | blocker | **Yes** |
 | `ddl.column.advanced.compatibility.require` | Generated, expression-default, and visibility declarations and transitions must satisfy the target product/version contract | blocker | **Yes** |
+
+### CHECK Constraint Lifecycle Rules (5 rules — #91)
+
+These rules cover the MySQL/TiDB CHECK constraint lifecycle — declarations on `CREATE TABLE`, column-level `CHECK` options, `ALTER TABLE ... ADD CONSTRAINT ... CHECK`, `DROP CHECK`/`DROP CONSTRAINT`, and `ALTER CHECK`/`ALTER CONSTRAINT ... [NOT] ENFORCED` — through a shared arm resolver that first decides whether the target actually stores and enforces CHECK constraints. `ALTER CONSTRAINT` is normalized as an alias of `ALTER CHECK`, and `DROP CHECK`/`DROP CONSTRAINT` share one target binding. Raw CHECK expression text is never retained or emitted; only normalized structure/reference facts and the constraint name participate.
+
+`ddl.constraint.check.not_enforced.notice` fires once per declared or flipped `NOT ENFORCED` CHECK on an arm that stores and enforces constraints (MySQL 8.0.16+; TiDB with `tidb_enable_check_constraint=ON`). It does not fire for `ENFORCED`, ordinary column changes, or missing/non-CHECK flip targets — a proven-missing target instead takes the existence blocker, and an arm that cannot be resolved (missing version, missing TiDB flag) yields an attributable evidence gap instead of the finding.
+
+`ddl.constraint.check.ignored.notice` exposes accepted-but-ignored declarations: MySQL below 8.0.16 parses CHECK syntax but neither stores nor enforces it, and TiDB parses but silently ignores CHECK while `tidb_enable_check_constraint=OFF`. The notice fires instead of letting the declaration read as effective enforcement. An unresolved arm produces the bounded gap, never the notice.
+
+`ddl.alter.alter_check.exists.require` and `ddl.alter.drop_check.exists.require` bind `ALTER CHECK`/`ALTER CONSTRAINT` and `DROP CHECK`/`DROP CONSTRAINT` targets against the request-local CHECK member space — a proven-missing or proven non-CHECK name is one blocker (native 3821/3940-class refusal); an unvouched member collection is a `check_members_unvouched` gap, not a guess. `ddl.alter.alter_check.version.require` reports the pre-8.0.19 MySQL syntax refusal as one blocker; on TiDB and supported MySQL versions it stays silent, and a missing version stays a `missing_target_version` gap without a false refusal claim.
+
+| Rule ID | Description | Default Level | Metadata Required |
+|---------|-------------|:-------------:|:-----------------:|
+| `ddl.constraint.check.not_enforced.notice` | Declared or flipped `NOT ENFORCED` CHECK on a storing/enforcing arm is a review notice | notice | **Yes** |
+| `ddl.constraint.check.ignored.notice` | CHECK declaration on an accept-but-ignore arm (MySQL <8.0.16, TiDB flag OFF) is disclosed, not passed as enforced | notice | **Yes** |
+| `ddl.alter.alter_check.exists.require` | `ALTER CHECK`/`ALTER CONSTRAINT` target must be a proven CHECK member | blocker | **Yes** |
+| `ddl.alter.drop_check.exists.require` | `DROP CHECK`/`DROP CONSTRAINT` target must be a proven CHECK member | blocker | **Yes** |
+| `ddl.alter.alter_check.version.require` | `ALTER CHECK`/`DROP CHECK` syntax on MySQL requires 8.0.19+ (5.7 family refuses) | blocker | **Yes** |
+
+> **Note:** Ordered schema state carries each CHECK member's normalized enforcement (`enforced`/`not_enforced`) across `ALTER CHECK`/`ALTER CONSTRAINT` transitions, so `ADD CHECK` → `ALTER`/`DROP` sequences stay bound within one request. On MySQL the metadata provider reads members from `TABLE_CONSTRAINTS` (`ENFORCED` when the column exists) joined to `CHECK_CONSTRAINTS` on catalog/schema/name; on TiDB members come from `TIDB_CHECK_CONSTRAINTS` — enforcement state is not observable through the catalog there (`SHOW CREATE TABLE` is the only surface), so ordered state tracks declared transitions instead of fabricating a catalog enforcement fact. A `CHANGE COLUMN` on a referenced column drops the CHECK silently on TiDB (MySQL refuses), matching probed native behavior.
 
 ---
 
@@ -1048,6 +1070,11 @@ source, not a connectivity prerequisite.
 | `ddl.alter.rename_index.exists.require` |
 | `ddl.alter.drop_primary_key.exists.require` |
 | `ddl.create_index.columns.exists.require` |
+| `ddl.alter.alter_check.exists.require` |
+| `ddl.alter.drop_check.exists.require` |
+| `ddl.alter.alter_check.version.require` |
+| `ddl.constraint.check.not_enforced.notice` |
+| `ddl.constraint.check.ignored.notice` |
 | `ddl.alter.column.dependency.require` |
 | `ddl.column.advanced.compatibility.require` |
 | `ddl.table.drop.exists.require` |

@@ -32,6 +32,8 @@ var auditedAlterActionsMySQL = map[string]struct{}{
 	"rename_index":     {},
 	"alter_index":      {},
 	"drop_foreign_key": {},
+	"alter_check":      {},
+	"drop_check":       {},
 	"table_option":     {},
 	// T07: the canonical MySQL/TiDB SET/DROP DEFAULT actions are audited by
 	// the advanced-column facts and ordered-state setter. SET
@@ -43,8 +45,9 @@ var auditedAlterActionsMySQL = map[string]struct{}{
 }
 
 // auditedAlterActionsTiDB extends the shared audited set with the TiDB
-// placement binding the inventory covers at notice level. DROP CHECK parses but
-// has no rule consumer, so it stays unaudited. SET VISIBLE|INVISIBLE stays in
+// placement binding the inventory covers at notice level. ALTER|DROP CHECK
+// are audited on both dialects — the CHECK lifecycle rules and ordered-state
+// transitions model them. SET VISIBLE|INVISIBLE stays in
 // the audited set for both dialects: the action itself is modeled, and the
 // column aspect below emits the TiDB vendor-boundary evidence.
 var auditedAlterActionsTiDB = func() map[string]struct{} {
@@ -131,7 +134,9 @@ func alterConstraintGap(dialect spec.Dialect, constraintType string) (gap bool, 
 	case constraintTypeVector, constraintTypeColumnar:
 		return true, extensionTypeVendor(dialect)
 	case constraintTypeCheck:
-		return dialect == spec.DialectMySQL, false
+		// T12 audits CHECK payloads on both dialects — the lifecycle
+		// rules and ordered-state transitions consume them.
+		return false, false
 	default:
 		return false, false
 	}

@@ -1,0 +1,112 @@
+=== CELL enforced column + dependent column (deltascope-ddl-golden-mysql80)
+version: mysql: [Warning] Using a password on the command line interface can be insecure.
+8.0.46
+mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+  rc=0
+  TC.ENFORCED chk_id=mysql: [Warning] Using a password on the command line interface can be insecure.
+YES
+  SHOW CREATE (auto-name of bare CHECK):
+mysql: [Warning] Using a password on the command line interface can be insecure.
+t	CREATE TABLE `t` (\n  `id` int DEFAULT NULL,\n  `v` int DEFAULT NULL,\n  CONSTRAINT `chk_id` CHECK ((`id` > 0)),\n  CONSTRAINT `t_chk_1` CHECK ((`v` > 0))\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+  rc=0
+$ ALTER CHECK chk_id NOT ENFORCED -> TC.ENFORCED + SHOW CREATE marker
+mysql: [Warning] Using a password on the command line interface can be insecure.
+  rc=0
+  TC.ENFORCED chk_id=mysql: [Warning] Using a password on the command line interface can be insecure.
+NO
+$ ALTER CHECK chk_id NOT ENFORCED again (no-op arm)
+mysql: [Warning] Using a password on the command line interface can be insecure.
+  rc=0
+$ ALTER CHECK chk_id ENFORCED (clean data — expect rc=0)
+mysql: [Warning] Using a password on the command line interface can be insecure.
+  rc=0
+  TC.ENFORCED chk_id=mysql: [Warning] Using a password on the command line interface can be insecure.
+YES
+$ DROP COLUMN id (referenced by chk_id — dependency refusal?)
+mysql: [Warning] Using a password on the command line interface can be insecure.
+  rc=0
+$ DROP COLUMN v (referenced by bare check)
+mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1090 (42000) at line 1: You can't delete all columns with ALTER TABLE; use DROP TABLE instead
+  rc=1
+  columns left: mysql: [Warning] Using a password on the command line interface can be insecure.
+v
+  checks left: mysql: [Warning] Using a password on the command line interface can be insecure.
+t_chk_1
+$ ALTER TABLE t12b.t DROP CONSTRAINT chk_id;  (CONSTRAINT keyword on real check)
+mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 3940 (HY000) at line 1: Constraint 'chk_id' does not exist.
+  rc=1
+  checks left: mysql: [Warning] Using a password on the command line interface can be insecure.
+t_chk_1
+=== CELL enforced column + dependent column (deltascope-ddl-golden-mysql84)
+version: mysql: [Warning] Using a password on the command line interface can be insecure.
+8.4.10
+mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+  rc=0
+  TC.ENFORCED chk_id=mysql: [Warning] Using a password on the command line interface can be insecure.
+YES
+  SHOW CREATE (auto-name of bare CHECK):
+mysql: [Warning] Using a password on the command line interface can be insecure.
+t	CREATE TABLE `t` (\n  `id` int DEFAULT NULL,\n  `v` int DEFAULT NULL,\n  CONSTRAINT `chk_id` CHECK ((`id` > 0)),\n  CONSTRAINT `t_chk_1` CHECK ((`v` > 0))\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+  rc=0
+$ ALTER CHECK chk_id NOT ENFORCED -> TC.ENFORCED + SHOW CREATE marker
+mysql: [Warning] Using a password on the command line interface can be insecure.
+  rc=0
+  TC.ENFORCED chk_id=mysql: [Warning] Using a password on the command line interface can be insecure.
+NO
+$ ALTER CHECK chk_id NOT ENFORCED again (no-op arm)
+mysql: [Warning] Using a password on the command line interface can be insecure.
+  rc=0
+$ ALTER CHECK chk_id ENFORCED (clean data — expect rc=0)
+mysql: [Warning] Using a password on the command line interface can be insecure.
+  rc=0
+  TC.ENFORCED chk_id=mysql: [Warning] Using a password on the command line interface can be insecure.
+YES
+$ DROP COLUMN id (referenced by chk_id — dependency refusal?)
+mysql: [Warning] Using a password on the command line interface can be insecure.
+  rc=0
+$ DROP COLUMN v (referenced by bare check)
+mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1090 (42000) at line 1: You can't delete all columns with ALTER TABLE; use DROP TABLE instead
+  rc=1
+  columns left: mysql: [Warning] Using a password on the command line interface can be insecure.
+v
+  checks left: mysql: [Warning] Using a password on the command line interface can be insecure.
+t_chk_1
+$ ALTER TABLE t12b.t DROP CONSTRAINT chk_id;  (CONSTRAINT keyword on real check)
+mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 3940 (HY000) at line 1: Constraint 'chk_id' does not exist.
+  rc=1
+  checks left: mysql: [Warning] Using a password on the command line interface can be insecure.
+t_chk_1
+=== CELL TiDB flag ON bindings
+  SHOW CREATE (auto-name + stored?)
+t	CREATE TABLE `t` (\n  `id` int DEFAULT NULL,\n  `v` int DEFAULT NULL,\n  CONSTRAINT `chk_id` CHECK ((`id` > 0)),\n  CONSTRAINT `t_chk_1` CHECK ((`v` > 0))\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+  rc=0
+$ ALTER CHECK chk_id NOT ENFORCED
+
+  rc=0
+$ ALTER CHECK missing_x NOT ENFORCED
+ERROR 3940 (HY000) at line 1: Constraint 'missing_x' does not exist.
+  rc=1
+$ ALTER CHECK uk_w NOT ENFORCED (non-check name)
+ERROR 3940 (HY000) at line 1: Constraint 'uk_w' does not exist.
+  rc=1
+$ ALTER CONSTRAINT chk_id NOT ENFORCED (alias on TiDB)
+
+  rc=0
+$ DROP COLUMN id (referenced)
+
+  rc=0
+$ DROP CONSTRAINT chk_id (CONSTRAINT keyword on real check)
+ERROR 3940 (HY000) at line 1: Constraint 'chk_id' does not exist.
+  rc=1
+  SHOW CREATE post:
+t	CREATE TABLE `t` (\n  `v` int DEFAULT NULL,\n  CONSTRAINT `t_chk_1` CHECK ((`v` > 0))\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+  rc=0
+$ ALTER CHECK ENFORCED on non-enforced chk2 (clean data)
+
+  rc=0

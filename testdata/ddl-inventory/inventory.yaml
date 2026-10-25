@@ -335,11 +335,11 @@ rows:
     sql_shape: "CREATE TABLE tf (id INT, pid INT, CONSTRAINT fk FOREIGN KEY (pid) REFERENCES tp(id))"
     prerequisites: "InnoDB for FK; CHECK enforcement needs 8.0.16+"
     status: semantically_checked
-    status_evidence: "2026-09-22 CLI probe: ddl.table.foreign_key.forbid fires on CREATE; CHECK parses but no constraint-policy check fires; table-level UNIQUE/PRIMARY KEY ... GLOBAL now records create_table.index.global evidence; 2026-09-24 T03 rework (#82): FK local/referenced key parts beyond plain columns (expression, explicit prefix incl. zero length, DESC) and ON DELETE/UPDATE/MATCH actions now record create_table.constraint.foreign_key.parts evidence — the referenced target and columns are also normalized into the constraint. 2026-10-25 T11 (#90): CREATE/ALTER FK parity delivered — the same forbid finding with identical constraint/reference/action metadata fires on both paths; ON DELETE/UPDATE are modeled spec facts (MATCH stays unmodeled evidence)"
+    status_evidence: "2026-09-22 CLI probe: ddl.table.foreign_key.forbid fires on CREATE; CHECK parses but no constraint-policy check fires; table-level UNIQUE/PRIMARY KEY ... GLOBAL now records create_table.index.global evidence; 2026-09-24 T03 rework (#82): FK local/referenced key parts beyond plain columns (expression, explicit prefix incl. zero length, DESC) and ON DELETE/UPDATE/MATCH actions now record create_table.constraint.foreign_key.parts evidence — the referenced target and columns are also normalized into the constraint. 2026-10-25 T11 (#90): CREATE/ALTER FK parity delivered — the same forbid finding with identical constraint/reference/action metadata fires on both paths; ON DELETE/UPDATE are modeled spec facts (MATCH stays unmodeled evidence). 2026-10-30 T12 (#91): CHECK declarations are modeled members — check naming rules judge them, NOT ENFORCED declarations emit ddl.constraint.check.not_enforced.notice, and MySQL <8.0.16 declarations emit ddl.constraint.check.ignored.notice instead of passing as effective enforcement"
     targets: "constraint identity, referenced parent, referential actions, CHECK enforcement state by version"
     acceptance:
       dimensions: "CREATE vs ALTER FK parity (T11), CHECK version semantics (T12), UNIQUE consistency"
-      refs: ["file:testdata/sql-corpus/mysql/ddl/findings", "file:testdata/ddl-golden/T11.json"]
+      refs: ["file:testdata/sql-corpus/mysql/ddl/findings", "file:testdata/ddl-golden/T11.json", "file:testdata/ddl-golden/T12.json", "file:testdata/sql-corpus/mysql/ddl/metadata/check_lifecycle.sql"]
     owner: T11
 
   - id: mysql.create-table-partitioning
@@ -623,12 +623,12 @@ rows:
     subactions: ["ADD CONSTRAINT CHECK", "DROP CONSTRAINT", "ALTER CHECK ... ENFORCED/NOT ENFORCED"]
     sql_shape: "ALTER TABLE t ALTER CHECK c1 NOT ENFORCED"
     prerequisites: "8.0.16+ for enforced CHECK; 5.7 parses-and-ignores (vendor boundary row below covers 5.7)"
-    status: parse_only
-    status_evidence: "2026-09-22 CLI probe: ADD CONSTRAINT CHECK emits only add_constraint.notice; DROP CONSTRAINT and ALTER CHECK ENFORCED/NOT ENFORCED parse without constraint semantics. 2026-09-23 T03 (#82): check-bearing alter actions now carry bounded unsupported evidence (alter_table.add_constraint.check / alter_table.drop_check) and coverage=incomplete instead of silently passing"
+    status: semantically_checked
+    status_evidence: "2026-09-22 CLI probe: ADD CONSTRAINT CHECK emits only add_constraint.notice; DROP CONSTRAINT and ALTER CHECK ENFORCED/NOT ENFORCED parse without constraint semantics. 2026-09-23 T03 (#82): check-bearing alter actions now carry bounded unsupported evidence (alter_table.add_constraint.check / alter_table.drop_check) and coverage=incomplete instead of silently passing. 2026-10-30 T12 (#91): CHECK lifecycle delivered — ADD/DROP CHECK|CONSTRAINT and ALTER CHECK|CONSTRAINT [NOT] ENFORCED audited on 8.0/8.4 with the not_enforced/ignored notices, exists blockers (3821 class), ENFORCED data-conditional unvouch, and ordered-state transitions; 5.7 reveals the accepted-but-ignored declaration plus the pre-8.0.19 1064 syntax-refusal blocker; provider members load from TABLE_CONSTRAINTS.ENFORCED + CHECK_CONSTRAINTS clause facts"
     targets: "table, constraint identity, enforcement state transitions"
     acceptance:
       dimensions: "enforcement-state risk, 5.7 accept-and-ignore disclosure (vendor fact, not silent pass)"
-      refs: ["missing: owner adds CHECK lifecycle fixtures"]
+      refs: ["file:testdata/ddl-golden/T12.json", "file:testdata/sql-corpus/mysql/ddl/metadata/check_lifecycle.sql", "file:testdata/sql-corpus/mysql/ddl/metadata/check_ignored_57.sql"]
     owner: T12
 
   - id: mysql.alter-table.partition-destructive
@@ -1529,11 +1529,11 @@ rows:
     sql_shape: "ALTER TABLE t ADD CONSTRAINT fk FOREIGN KEY (c) REFERENCES p (id)"
     prerequisites: "TiDB FK enforcement exists (6.6+) unlike older compat"
     status: semantically_checked
-    status_evidence: "2026-09-22 CLI probe: only add_constraint.notice on FK and CHECK adds. 2026-09-24 T03 rework (#82): DROP CHECK has no rule consumer and now carries bounded unsupported evidence (alter_table.drop_check) with coverage=incomplete. 2026-10-25 T11 (#90): the FK half is delivered — forbid/naming/exists rules fire on TiDB ALTER paths and ordered state publishes FK facts under tidb_enable_foreign_key=ON anchors; the CHECK half stays a T12 boundary (bounded evidence, not silent pass)"
+    status_evidence: "2026-09-22 CLI probe: only add_constraint.notice on FK and CHECK adds. 2026-09-24 T03 rework (#82): DROP CHECK has no rule consumer and now carries bounded unsupported evidence (alter_table.drop_check) with coverage=incomplete. 2026-10-25 T11 (#90): the FK half is delivered — forbid/naming/exists rules fire on TiDB ALTER paths and ordered state publishes FK facts under tidb_enable_foreign_key=ON anchors; the CHECK half stays a T12 boundary (bounded evidence, not silent pass). 2026-10-30 T12 (#91): the CHECK half delivered — the observed tidb_enable_check_constraint arm gates every transition (OFF parses-and-ignores, ON mirrors MySQL with 3940-class refusals and the CHANGE COLUMN silent-cascade divergence); members load from TIDB_CHECK_CONSTRAINTS with enforcement unvouched (SHOW CREATE is the only enforcement surface on TiDB)"
     targets: "constraint identity, TiDB enforcement facts"
     acceptance:
       dimensions: "FK/CHECK parity under TiDB enforcement semantics"
-      refs: ["file:testdata/ddl-golden/T11.json"]
+      refs: ["file:testdata/ddl-golden/T11.json", "file:testdata/ddl-golden/T12.json", "file:testdata/sql-corpus/tidb/ddl/metadata/check_lifecycle.sql", "file:testdata/sql-corpus/tidb/ddl/metadata/check_ignored_off.sql"]
     owner: T11
 
   - id: tidb.alter-table.partition-ops

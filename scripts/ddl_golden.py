@@ -735,6 +735,9 @@ INSTANCE_FACT_QUERIES = {
     "innodb_large_prefix": "show variables like 'innodb_large_prefix'",
     "innodb_default_row_format": "show variables like 'innodb_default_row_format'",
     "tidb_max_index_length": "show config where Type = 'tidb' and Name = 'max-index-length'",
+    # TiDB CHECK-constraint runtime arm (issue #79 T12): recorded so the
+    # audit's observed flag can never masquerade as a guessed default.
+    "tidb_enable_check_constraint": "show variables like 'tidb_enable_check_constraint'",
     # MySQL 8.0/8.4 GIPK knobs (issue #85 T06): recorded so a server-generated
     # invisible primary key can never masquerade as a declared PRIMARY KEY.
     "sql_require_primary_key": "show variables like 'sql_require_primary_key'",

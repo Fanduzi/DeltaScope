@@ -57,7 +57,7 @@ Explanation-oriented metadata for shipped DeltaScope rules, with discoverability
 
 Catalog entries derive from the shipped default policy (`domainpolicy.Default()`) unioned with catalog-only opt-in rules. Catalog generation is not Default Policy keys only.
 - **Enabled/Level/Params**: read from default policy when present; catalog-only rules ship `default_enabled: false` with their intended enable-time level/params
-- **Dialects**: derived from rule ID prefix (`ddl.pg.*` → `postgresql`, `ddl.tidb.*` → `tidb`, `.merge.mysql.` → `mysql`, `.merge.tidb.` → `tidb`, the MODIFY unknown-prior-state advisory and `dml.table.exists.require` → `mysql`/`tidb`, else → `common`)
+- **Dialects**: derived from rule ID prefix (`ddl.pg.*` → `postgresql`, `ddl.tidb.*` → `tidb`, `.merge.mysql.` → `mysql`, `.merge.tidb.` → `tidb`, the MODIFY unknown-prior-state advisory, `dml.table.exists.require`, and the T12 CHECK lifecycle IDs → `mysql`/`tidb`, `ddl.alter.alter_check.version.require` → `mysql` only, else → `common`)
 - **Category**: derived from rule ID segments (e.g., `ddl.table.*` → `table`, `ddl.alter.*` → `alter_table`, `dml.*` → `dml_safety`)
 - **Tags**: synthesized from kind + dialect + category + action suffix
 - **Source**: `policy` for shipped product metadata, including default-disabled catalog-only rules

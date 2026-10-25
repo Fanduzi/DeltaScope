@@ -1,0 +1,25 @@
+name: check_ignored_57
+dialect: mysql
+category: ddl
+expect:
+  parse_ok: true
+  statement_kind: ddl
+  statements:
+    count: 2
+  unsupported:
+    count: 0
+  findings:
+    include:
+      - ddl.constraint.check.ignored.notice
+      - ddl.alter.alter_check.version.require
+metadata:
+  schema: app
+  instance:
+    version: "5.7.44"
+  tables:
+    t57:
+      exists: true
+      columns:
+        - {name: id, type: int}
+      constraints:
+        - {type: check, name: chk57, columns: [id], enforced: enforced}

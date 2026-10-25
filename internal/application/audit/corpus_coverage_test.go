@@ -51,6 +51,10 @@ func corpusRuleDialectTargets(ruleID string) []string {
 		// TiDB 8.5 accepts RENAME COLUMN, so the incompatible finding is a
 		// MySQL applicability result. TiDB never emits it.
 		return []string{"mysql"}
+	case "ddl.alter.alter_check.version.require":
+		// TiDB accepts every ALTER CHECK|CONSTRAINT enforcement form, so the
+		// incompatible finding is a MySQL-only applicability result.
+		return []string{"mysql"}
 	}
 	if strings.HasPrefix(ruleID, "ddl.pg.") || isPostgreSQLOnlyRule(ruleID) {
 		return []string{"postgresql"}
@@ -227,6 +231,12 @@ func isMySQLFamilyOnlyRule(ruleID string) bool {
 		"ddl.alter.drop_index.notice",
 		"ddl.alter.drop_foreign_key.notice",
 		"ddl.alter.drop_foreign_key.exists.require",
+		// T12 CHECK lifecycle rules bind only MySQL-family constraint facts;
+		// PostgreSQL never produces these normalized actions or members.
+		"ddl.alter.alter_check.exists.require",
+		"ddl.alter.drop_check.exists.require",
+		"ddl.constraint.check.not_enforced.notice",
+		"ddl.constraint.check.ignored.notice",
 		// The advanced-column assessment only applies to MySQL/TiDB
 		// statements; PostgreSQL never binds these facts.
 		"ddl.alter.column.dependency.require",

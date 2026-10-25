@@ -78,6 +78,12 @@ func (c t06a4SDKConn) QueryContext(_ context.Context, query string, _ []driver.N
 	switch {
 	case strings.Contains(query, "show variables"):
 		return &t06a4SDKRows{cols: []string{"Variable_name", "Value"}, rows: [][]driver.Value{{"version", "8.4.10"}}}, nil
+	case strings.Contains(query, "constraint_type = 'CHECK'"):
+		// T12 CHECK member projection — this fixture stores no checks.
+		return &t06a4SDKRows{cols: []string{"constraint_name", "enforced", "check_clause"}}, nil
+	case strings.Contains(query, "column_name = 'ENFORCED'"), strings.Contains(query, "table_name = 'CHECK_CONSTRAINTS'"), strings.Contains(query, "table_name = 'TIDB_CHECK_CONSTRAINTS'"):
+		// T12 catalog capability probes — this fixture predates them.
+		return &t06a4SDKRows{cols: []string{"count(*)"}, rows: [][]driver.Value{{int64(0)}}}, nil
 	case strings.Contains(query, "information_schema.columns"):
 		return &t06a4SDKRows{
 			cols: []string{"column_name", "column_type", "character_set_name", "collation_name", "column_comment", "column_default", "is_nullable", "extra", "generation_expression"},

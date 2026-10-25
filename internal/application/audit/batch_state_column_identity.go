@@ -90,11 +90,24 @@ func (s *batchState) prepareColumnIdentity(statement spec.Statement, alter *spec
 			return invalidate(primary)
 		}
 	}
+	checkOutcome := s.checkColumnIdentityOutcome(entry.shape, alter.Action, oldName, newName)
+	switch checkOutcome {
+	case checkIdentityRefused:
+		// 3959: the statement provably never executes — the target keeps
+		// its pre-state exactly instead of tombstoning.
+		return modifyPublication{replaceKey: primary, replace: entry}
+	case checkIdentityUnsafe:
+		return invalidate(primary)
+	}
 	if columnIdentityLocalUnsafe(entry.shape, oldName, newName) || len(dependents) > 0 {
 		return invalidate(primary)
 	}
 	source := entry.shape.Columns[index]
 	shape := cloneTableSnapshot(entry.shape)
+	if checkOutcome == checkIdentityCascade {
+		// TiDB CHANGE COLUMN silently drops the referencing members.
+		dropColumnCascadedChecks(shape, oldName)
+	}
 	if alter.Action == "change_column" {
 		definition := alter.Column.Definition
 		inPK, pkKnown := primaryKeyMembership(entry.shape, source.Name)
@@ -223,16 +236,30 @@ func columnIdentityConflict(columns []spec.Column, self int, oldName, newName st
 }
 
 func columnIdentityLocalUnsafe(shape *spec.TableSnapshot, oldName, newName string) bool {
-	if modifyLocalUnsafe(shape, oldName) {
+	// Check members are handled by the dedicated checkColumnIdentityOutcome
+	// gate (refuse/cascade/proceed per the probed arms) — masking them out
+	// here keeps the generic scan for FK/index/other dependencies only.
+	masked := *shape
+	masked.Constraints = nil
+	for i := range shape.Constraints {
+		if shape.Constraints[i].Type == "check" {
+			continue
+		}
+		masked.Constraints = append(masked.Constraints, shape.Constraints[i])
+	}
+	if modifyLocalUnsafe(&masked, oldName) {
 		return true
 	}
-	return !strings.EqualFold(oldName, newName) && modifyLocalUnsafe(shape, newName)
+	return !strings.EqualFold(oldName, newName) && modifyLocalUnsafe(&masked, newName)
 }
 
 // rewriteIdentityColumnRefs renames column references on the ordinary primary
 // key, primary-key constraints, and ordinary secondary or unique indexes.
 // Index names and key order stay. Foreign keys and CHECK constraints are left
-// untouched; callers withhold publication when those cannot be recomputed.
+// untouched: foreign keys withhold publication when they cannot be
+// recomputed, and check members are decided upstream by
+// checkColumnIdentityOutcome (a referencing member natively refuses the
+// rename or is silently dropped — its references are never rewritten).
 func rewriteIdentityColumnRefs(shape *spec.TableSnapshot, oldName, newName string) {
 	if shape == nil || strings.EqualFold(oldName, newName) {
 		return
@@ -243,6 +270,7 @@ func rewriteIdentityColumnRefs(shape *spec.TableSnapshot, oldName, newName strin
 	for i := range shape.Constraints {
 		if primaryKeyConstraint(shape.Constraints[i].Type) {
 			shape.Constraints[i].Columns = rewriteColumnRefs(shape.Constraints[i].Columns, oldName, newName)
+			continue
 		}
 	}
 	for i := range shape.Indexes {

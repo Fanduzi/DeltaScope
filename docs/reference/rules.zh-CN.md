@@ -408,7 +408,7 @@ rules:
 | `ddl.alter.change_column.explicit_auto_increment_change.forbid` | CHANGE COLUMN 不得添加或删除 AUTO_INCREMENT | blocker | **是** |
 | `ddl.alter.table_option.compatibility.require` | 表选项变更必须与当前表选项兼容 | warning | **是** |
 
-### 存在性与列身份规则（18 条 — 元数据支撑）
+### 存在性与列身份规则（20 条 — 元数据支撑）
 
 这些规则验证 DDL 语句引用的对象在请求内有序 schema 视图中确实存在（或确实不存在）：配置了元数据时取实时表快照，否则对 MySQL 与 TiDB 使用同一审计批次内先前语句派生的状态。`ddl.table.exists.alter.require`、`ddl.table.exists.create.forbid`、全部列/索引成员存在性规则（`add`/`drop`/`modify`/`change`/`rename` 列、`add`/`drop`/`rename` 索引、`set_default`/`drop_default` 目标列以及 `AFTER` 相对列位置引用）、CHANGE 与 RENAME 的目的名规则、`ddl.alter.drop_primary_key.exists.require`、`ddl.create_index.columns.exists.require` 与 `ddl.table.drop.exists.require` 在 MySQL/TiDB 上状态无法确定时产生 `unknown_table_state` 证据缺口；其余规则在无可用状态时仍静默跳过。该缺口投影从不适用于 PostgreSQL——它保留既有 finding/跳过契约。
 
@@ -438,6 +438,8 @@ rules:
 | `ddl.alter.rename_index.exists.require` | RENAME INDEX 源索引必须存在 | blocker | **是** |
 | `ddl.alter.drop_primary_key.exists.require` | DROP PRIMARY KEY 要求主键存在 | blocker | **是** |
 | `ddl.create_index.columns.exists.require` | 独立 `CREATE INDEX` 引用的列必须在目标表上存在 | blocker | **是** |
+| `ddl.alter.alter_check.exists.require` | `ALTER CHECK`/`ALTER CONSTRAINT` 目标必须是已证 CHECK 成员 | blocker | **是** |
+| `ddl.alter.drop_check.exists.require` | `DROP CHECK`/`DROP CONSTRAINT` 目标必须是已证 CHECK 成员 | blocker | **是** |
 
 ### 高级列规则（2 条）
 
@@ -451,6 +453,26 @@ rules:
 |---------|------|:--------:|:--------------:|
 | `ddl.alter.column.dependency.require` | 当兄弟生成列或表达式默认列仍引用源列时，阻止其删除/改名/变更身份（同名列的 MODIFY 不在范围内） | blocker | **是** |
 | `ddl.column.advanced.compatibility.require` | 生成列、表达式默认值与可见性声明及转移必须满足目标产品/版本契约 | blocker | **是** |
+
+### CHECK 约束生命周期规则（5 条 — #91）
+
+这组规则覆盖 MySQL/TiDB CHECK 约束生命周期——`CREATE TABLE` 声明、列级 `CHECK` 选项、`ALTER TABLE ... ADD CONSTRAINT ... CHECK`、`DROP CHECK`/`DROP CONSTRAINT`、以及 `ALTER CHECK`/`ALTER CONSTRAINT ... [NOT] ENFORCED`——由一个共享的 arm 判定先回答目标是否真正存储并执行 CHECK 约束。`ALTER CONSTRAINT` 归一化为 `ALTER CHECK` 的别名，`DROP CHECK`/`DROP CONSTRAINT` 共享同一目标绑定。CHECK 原始表达式文本从不保留也不发出；只有归一化的结构/引用事实与约束名参与判定。
+
+`ddl.constraint.check.not_enforced.notice` 在真实存储并执行约束的 arm 上（MySQL 8.0.16+；`tidb_enable_check_constraint=ON` 的 TiDB）对每个声明或翻转的 `NOT ENFORCED` CHECK 触发一次。`ENFORCED`、普通列变更、缺失或非 CHECK 的翻转目标不触发同一 finding——已证缺失目标改由存在性 blocker 覆盖，arm 无法判定时（版本缺失、TiDB 开关缺失）产生可归属证据缺口而非 finding。
+
+`ddl.constraint.check.ignored.notice` 揭示接受但忽略的声明：MySQL 8.0.16 以下解析 CHECK 语法但既不存储也不执行，TiDB 在 `tidb_enable_check_constraint=OFF` 时解析但静默忽略。该 notice 代替"声明即有效执行"的假象。arm 未决时只产生有界缺口，绝不发此 notice。
+
+`ddl.alter.alter_check.exists.require` 与 `ddl.alter.drop_check.exists.require` 把 `ALTER CHECK`/`ALTER CONSTRAINT`、`DROP CHECK`/`DROP CONSTRAINT` 的目标绑定到请求内有序 schema 视图的 CHECK 成员空间——已证缺失或非 CHECK 名是一条 blocker（原生 3821/3940 类拒绝）；成员集合未证是 `check_members_unvouched` 缺口而非猜测。`ddl.alter.alter_check.version.require` 把 MySQL 8.0.19 之前的语法拒绝报告为一条 blocker；TiDB 与受支持的 MySQL 版本上保持静默，版本缺失时仍是 `missing_target_version` 缺口，不伪造拒绝。
+
+| 规则 ID | 描述 | 默认级别 | 是否需要元数据 |
+|---------|------|:--------:|:--------------:|
+| `ddl.constraint.check.not_enforced.notice` | 存储/执行 arm 上声明或翻转的 `NOT ENFORCED` CHECK 给出复核 notice | notice | **是** |
+| `ddl.constraint.check.ignored.notice` | 接受但忽略 arm（MySQL <8.0.16、TiDB 开关 OFF）上的 CHECK 声明被揭示而非当作已执行 | notice | **是** |
+| `ddl.alter.alter_check.exists.require` | `ALTER CHECK`/`ALTER CONSTRAINT` 目标必须是已证 CHECK 成员 | blocker | **是** |
+| `ddl.alter.drop_check.exists.require` | `DROP CHECK`/`DROP CONSTRAINT` 目标必须是已证 CHECK 成员 | blocker | **是** |
+| `ddl.alter.alter_check.version.require` | MySQL 上 `ALTER CHECK`/`DROP CHECK` 语法要求 8.0.19+（5.7 家族拒绝） | blocker | **是** |
+
+> **注：** 有序 schema 状态在 `ALTER CHECK`/`ALTER CONSTRAINT` 转移间携带每个 CHECK 成员的归一化执行位（`enforced`/`not_enforced`），同一请求内的 `ADD CHECK` → `ALTER`/`DROP` 序列保持绑定。MySQL 的元数据 provider 从 `TABLE_CONSTRAINTS` 读成员（存在 `ENFORCED` 列时读取），按 catalog/schema/name 关联 `CHECK_CONSTRAINTS`；TiDB 成员来自 `TIDB_CHECK_CONSTRAINTS`——执行状态经 catalog 不可观测（`SHOW CREATE TABLE` 是唯一出口），有序状态改为跟踪已声明的转移而非伪造 catalog 执行事实。引用列上的 `CHANGE COLUMN` 在 TiDB 上静默连带删除 CHECK（MySQL 拒绝），与探针实测一致。
 
 ---
 
@@ -1020,6 +1042,11 @@ unknown-prior-state advisory 会在元数据可用时消费实时状态，因此
 | `ddl.alter.rename_index.exists.require` |
 | `ddl.alter.drop_primary_key.exists.require` |
 | `ddl.create_index.columns.exists.require` |
+| `ddl.alter.alter_check.exists.require` |
+| `ddl.alter.drop_check.exists.require` |
+| `ddl.alter.alter_check.version.require` |
+| `ddl.constraint.check.not_enforced.notice` |
+| `ddl.constraint.check.ignored.notice` |
 | `ddl.alter.column.dependency.require` |
 | `ddl.column.advanced.compatibility.require` |
 | `ddl.table.drop.exists.require` |

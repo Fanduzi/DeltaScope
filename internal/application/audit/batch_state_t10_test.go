@@ -72,6 +72,7 @@ type t10Provider struct {
 	tidbMode            string
 	tidbAlterPK         *bool
 	restrictNonStandard *bool
+	tidbCheck           *bool
 	tables              map[string]*spec.TableSnapshot
 	calls               []string
 }
@@ -85,6 +86,10 @@ func (p *t10Provider) LoadInstanceFacts(context.Context, spec.Dialect, string) (
 	if p.restrictNonStandard != nil {
 		facts.RestrictNonStandardKey = *p.restrictNonStandard
 		facts.RestrictNonStandardKeyKnown = true
+	}
+	if p.tidbCheck != nil {
+		facts.TiDBEnableCheckConstraint = *p.tidbCheck
+		facts.TiDBEnableCheckConstraintKnown = true
 	}
 	return facts, nil
 }

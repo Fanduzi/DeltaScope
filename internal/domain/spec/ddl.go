@@ -557,6 +557,24 @@ type Constraint struct {
 	// carries that the normalized model does not keep: MATCH clauses. ON
 	// DELETE and ON UPDATE are modeled facts in OnDelete/OnUpdate.
 	UnmodeledReferActions int `json:"unmodeled_refer_actions,omitempty"`
+	// Enforced is the CHECK member's enforcement state: "enforced",
+	// "not_enforced", or "" when the state is unproven (provider did not
+	// read it, a data-conditional flip could not be decided, or the member
+	// lives on an arm where the state is not real). Only CHECK members
+	// carry it; other constraint types leave it empty.
+	Enforced string `json:"enforced,omitempty"`
+	// Expression records the evaluation-free structural facts of a CHECK
+	// member's expression: column references, function names, feature
+	// markers, root form, and a structural fingerprint. Raw expression
+	// text is never retained. Expression.Known=false means the clause
+	// could not be modeled — never an empty-expression claim. A nil
+	// pointer means the member carries no modeled expression (all
+	// non-CHECK members).
+	Expression *ExpressionFacts `json:"expression,omitempty"`
+	// InColumn marks a CHECK declared as a column option rather than a
+	// table constraint — the catalog member is the same object type but
+	// the declared identity binds the owning column.
+	InColumn bool `json:"in_column,omitempty"`
 	// NameUnknown marks a member whose stored name is unproven — a bare
 	// foreign key added through ordered state, where the server derives a
 	// catalog name the statement itself does not author. Name-keyed
@@ -616,8 +634,12 @@ type Alter struct {
 	// Constraint carries the declared constraint payload for constraint-bearing
 	// alter specs (ADD CONSTRAINT ...) so coverage and rules can see the
 	// constraint type even when no index definition is produced.
-	Constraint *Constraint       `json:"constraint,omitempty"`
-	Options    map[string]string `json:"options,omitempty"`
+	Constraint *Constraint `json:"constraint,omitempty"`
+	// Constraints carries CHECK members declared inside column definitions
+	// of the same alter spec (ADD/MODIFY/CHANGE COLUMN ... CHECK(...)) —
+	// the in-column form the catalog stores as a table-level CHECK member.
+	Constraints []Constraint      `json:"constraints,omitempty"`
+	Options     map[string]string `json:"options,omitempty"`
 	// HasColumnPosition records a parsed FIRST|AFTER column-position clause;
 	// Position carries the normalized fact (non-nil exactly when
 	// HasColumnPosition is true).

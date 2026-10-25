@@ -461,8 +461,26 @@ func dialectsForRule(ruleID string) []string {
 		return []string{"tidb"}
 	case ruleID == unknownPriorNullabilityAdvisoryRuleID:
 		return []string{"mysql", "tidb"}
+	case isCheckLifecycleRule(ruleID):
+		// CHECK lifecycle semantics are a MySQL-family surface; the shared
+		// parser produces these normalized actions only there.
+		return []string{"mysql", "tidb"}
 	default:
 		return []string{"common"}
+	}
+}
+
+func isCheckLifecycleRule(ruleID string) bool {
+	switch ruleID {
+	case
+		"ddl.alter.alter_check.exists.require",
+		"ddl.alter.drop_check.exists.require",
+		"ddl.alter.alter_check.version.require",
+		"ddl.constraint.check.not_enforced.notice",
+		"ddl.constraint.check.ignored.notice":
+		return true
+	default:
+		return false
 	}
 }
 
@@ -723,20 +741,27 @@ var metadataAwareRuleIDs = map[string]bool{
 	"ddl.alter.rename_column.version.require":       true,
 	"ddl.alter.rename_index.exists.require":         true,
 	"ddl.alter.alter_index.exists.require":          true,
-	"ddl.index.advanced.compatibility.require":      true,
-	"ddl.table.drop.adaptive_hash.warn":             true,
-	"ddl.table.drop.exists.require":                 true,
-	"ddl.table.drop.rows.max_count":                 true,
-	"ddl.table.exists.alter.require":                true,
-	"ddl.table.exists.create.forbid":                true,
-	"ddl.table.row_size.max_bytes.require":          true,
-	"ddl.table.truncate.adaptive_hash.warn":         true,
-	"ddl.table.truncate.exists.require":             true,
-	"ddl.table.truncate.rows.max_count":             true,
-	"dml.table.denylist.forbid":                     true,
-	"dml.table.exists.require":                      true,
-	"ddl.table.denylist.forbid":                     true,
-	"ddl.alter.add_column.exists.forbid":            true,
-	"ddl.alter.add_index.exists.forbid":             true,
-	"ddl.index.key_length.max_bytes.require":        true,
+	// T12 CHECK lifecycle rules read the target table's constraint members
+	// and the instance's CHECK arm facts.
+	"ddl.alter.alter_check.exists.require":     true,
+	"ddl.alter.drop_check.exists.require":      true,
+	"ddl.alter.alter_check.version.require":    true,
+	"ddl.constraint.check.not_enforced.notice": true,
+	"ddl.constraint.check.ignored.notice":      true,
+	"ddl.index.advanced.compatibility.require": true,
+	"ddl.table.drop.adaptive_hash.warn":        true,
+	"ddl.table.drop.exists.require":            true,
+	"ddl.table.drop.rows.max_count":            true,
+	"ddl.table.exists.alter.require":           true,
+	"ddl.table.exists.create.forbid":           true,
+	"ddl.table.row_size.max_bytes.require":     true,
+	"ddl.table.truncate.adaptive_hash.warn":    true,
+	"ddl.table.truncate.exists.require":        true,
+	"ddl.table.truncate.rows.max_count":        true,
+	"dml.table.denylist.forbid":                true,
+	"dml.table.exists.require":                 true,
+	"ddl.table.denylist.forbid":                true,
+	"ddl.alter.add_column.exists.forbid":       true,
+	"ddl.alter.add_index.exists.forbid":        true,
+	"ddl.index.key_length.max_bytes.require":   true,
 }

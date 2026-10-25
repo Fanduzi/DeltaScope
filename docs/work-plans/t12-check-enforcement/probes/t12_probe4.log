@@ -1,0 +1,76 @@
+=== CELL RENAME COLUMN check reference update (deltascope-ddl-golden-mysql80)
+version: mysql: [Warning] Using a password on the command line interface can be insecure.
+8.0.46
+mysql: [Warning] Using a password on the command line interface can be insecure.
+$ CREATE TABLE t12r.t(id INT, v INT, CONSTRAINT chk_id CHECK (id > 0));
+mysql: [Warning] Using a password on the command line interface can be insecure.
+  rc=0
+  checks: mysql: [Warning] Using a password on the command line interface can be insecure.
+chk_id
+$ ALTER TABLE t12r.t RENAME COLUMN id TO id2;  (native reference update?)
+mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 3959 (HY000) at line 1: Check constraint 'chk_id' uses column 'id', hence column cannot be dropped or renamed.
+  rc=1
+  SHOW CREATE:
+mysql: [Warning] Using a password on the command line interface can be insecure.
+t	CREATE TABLE `t` (\n  `id` int DEFAULT NULL,\n  `v` int DEFAULT NULL,\n  CONSTRAINT `chk_id` CHECK ((`id` > 0))\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+  rc=0
+  check still enforces on id2? insert violating id2=-1:
+mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1054 (42S22) at line 1: Unknown column 'id2' in 'field list'
+  rc=1
+$ RENAME COLUMN to a name bound by ANOTHER check (collision probe)
+mysql: [Warning] Using a password on the command line interface can be insecure.
+$ ALTER TABLE t12r.t RENAME COLUMN v TO id2;  (v->id2 collides w/ chk_id refs)
+mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 3959 (HY000) at line 1: Check constraint 'chk_v' uses column 'v', hence column cannot be dropped or renamed.
+  rc=1
+  SHOW CREATE:
+mysql: [Warning] Using a password on the command line interface can be insecure.
+t	CREATE TABLE `t` (\n  `id` int DEFAULT NULL,\n  `v` int DEFAULT NULL,\n  CONSTRAINT `chk_id` CHECK ((`id` > 0)),\n  CONSTRAINT `chk_v` CHECK ((`v` > 0))\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+  rc=0
+=== CELL RENAME COLUMN check reference update (deltascope-ddl-golden-mysql84)
+version: mysql: [Warning] Using a password on the command line interface can be insecure.
+8.4.10
+mysql: [Warning] Using a password on the command line interface can be insecure.
+$ CREATE TABLE t12r.t(id INT, v INT, CONSTRAINT chk_id CHECK (id > 0));
+mysql: [Warning] Using a password on the command line interface can be insecure.
+  rc=0
+  checks: mysql: [Warning] Using a password on the command line interface can be insecure.
+chk_id
+$ ALTER TABLE t12r.t RENAME COLUMN id TO id2;  (native reference update?)
+mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 3959 (HY000) at line 1: Check constraint 'chk_id' uses column 'id', hence column cannot be dropped or renamed.
+  rc=1
+  SHOW CREATE:
+mysql: [Warning] Using a password on the command line interface can be insecure.
+t	CREATE TABLE `t` (\n  `id` int DEFAULT NULL,\n  `v` int DEFAULT NULL,\n  CONSTRAINT `chk_id` CHECK ((`id` > 0))\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+  rc=0
+  check still enforces on id2? insert violating id2=-1:
+mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1054 (42S22) at line 1: Unknown column 'id2' in 'field list'
+  rc=1
+$ RENAME COLUMN to a name bound by ANOTHER check (collision probe)
+mysql: [Warning] Using a password on the command line interface can be insecure.
+$ ALTER TABLE t12r.t RENAME COLUMN v TO id2;  (v->id2 collides w/ chk_id refs)
+mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 3959 (HY000) at line 1: Check constraint 'chk_v' uses column 'v', hence column cannot be dropped or renamed.
+  rc=1
+  SHOW CREATE:
+mysql: [Warning] Using a password on the command line interface can be insecure.
+t	CREATE TABLE `t` (\n  `id` int DEFAULT NULL,\n  `v` int DEFAULT NULL,\n  CONSTRAINT `chk_id` CHECK ((`id` > 0)),\n  CONSTRAINT `chk_v` CHECK ((`v` > 0))\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+  rc=0
+=== CELL TiDB flag ON: RENAME COLUMN check reference update
+var: tidb_enable_check_constraint	ON
+$ CREATE TABLE t12r.t(id INT, v INT, CONSTRAINT chk_id CHECK (id > 0));
+
+  rc=0
+$ ALTER TABLE t12r.t RENAME COLUMN id TO id2;
+ERROR 3959 (HY000) at line 1: Check constraint 'chk_id' uses column 'id', hence column cannot be dropped or renamed.
+  rc=1
+  SHOW CREATE:
+t	CREATE TABLE `t` (\n  `id` int DEFAULT NULL,\n  `v` int DEFAULT NULL,\n  CONSTRAINT `chk_id` CHECK ((`id` > 0))\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+  rc=0
+  violating insert id2=-1:
+ERROR 1054 (42S22) at line 1: Unknown column 'id2' in 'field list'
+  rc=1

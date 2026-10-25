@@ -491,6 +491,34 @@ func (s *batchState) applyCreateTable(ctx context.Context, statement spec.Statem
 // create-derived member leaves the same index facts an add would.
 func (s *batchState) derivedCreateShape(displaySchema, displayTable string, ddl *spec.DDL) *spec.TableSnapshot {
 	shape := derivedCreateShape(s.dialect, displaySchema, displayTable, ddl, s.tidbClusteredMode(), s.tidbAlterPrimaryKey())
+	// CHECK members land only on enforcing arms: parse+ignore arms (MySQL
+	// <8.0.16, TiDB flag OFF) store nothing, and an unobserved arm cannot
+	// prove either direction — the declared members leave the collection
+	// unvouched rather than fabricating presence or absence.
+	switch s.checkArmFor() {
+	case spec.CheckArmIgnored:
+		kept := shape.Constraints[:0]
+		for _, member := range shape.Constraints {
+			if member.Type != "check" {
+				kept = append(kept, member)
+			}
+		}
+		shape.Constraints = kept
+	case spec.CheckArmUnknown:
+		hadCheck := false
+		kept := shape.Constraints[:0]
+		for _, member := range shape.Constraints {
+			if member.Type == "check" {
+				hadCheck = true
+				continue
+			}
+			kept = append(kept, member)
+		}
+		shape.Constraints = kept
+		if hadCheck {
+			shape.ConstraintsUnknown = true
+		}
+	}
 	for i := range shape.Constraints {
 		member := &shape.Constraints[i]
 		if member.Type != "foreign_key" {
@@ -675,6 +703,13 @@ func (s *batchState) applyAlterTable(ctx context.Context, statement spec.Stateme
 		s.applyDropCheck(statement, dropCheck, targets)
 		return nil
 	}
+	// ALTER CHECK|CONSTRAINT [NOT] ENFORCED flips a proven check member's
+	// enforcement state — NOT ENFORCED deterministically, ENFORCED only as
+	// far as the data-conditional refusal allows — never a tombstone.
+	if alterCheck := firstAlterCheckAlter(ddl); alterCheck != nil && len(targets) > 0 {
+		s.applyAlterCheck(statement, alterCheck, targets)
+		return nil
+	}
 	if !fullyAuditedStatement(s.dialect, statement) || len(ddl.Alter) != 1 || len(targets) == 0 {
 		s.invalidateAll(targets)
 		return nil
@@ -709,7 +744,11 @@ func (s *batchState) applyAlterTable(ctx context.Context, statement spec.Stateme
 		if alter.Constraint.Type == "foreign_key" {
 			return s.applyAddForeignKey(ctx, statement, alter, targets)
 		}
-		// CHECK and other non-foreign-key constraint adds are unmodeled
+		if alter.Constraint.Type == "check" {
+			s.applyAddCheck(statement, alter, targets)
+			return nil
+		}
+		// Other non-foreign-key constraint adds are unmodeled
 		// post-state transitions — tombstone rather than guess the member.
 		s.invalidateAll(targets)
 		return nil
@@ -781,6 +820,9 @@ func (s *batchState) applyAlterTable(ctx context.Context, statement spec.Stateme
 			return nil
 		}
 		s.entries[key] = &batchTableEntry{state: tablePresent, shape: shape, displaySchema: entry.displaySchema, displayTable: entry.displayTable}
+		// CHECK members declared inside the added column's definition land
+		// with it — or unvouch the collection when the arm cannot decide.
+		s.applyInColumnChecks(key, alter.Constraints)
 	}
 	// present-incomplete stays incomplete: the conditional add proves the
 	// column exists, but the shape model cannot express a partial column set.
@@ -1225,5 +1267,6 @@ func cloneConstraint(in spec.Constraint) spec.Constraint {
 	out := in
 	out.Columns = append([]string(nil), in.Columns...)
 	out.ReferencedColumns = append([]string(nil), in.ReferencedColumns...)
+	out.Expression = spec.CloneExpressionFacts(in.Expression)
 	return out
 }
