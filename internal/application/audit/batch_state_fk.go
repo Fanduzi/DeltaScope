@@ -518,12 +518,14 @@ func (s *batchState) applyDropCheck(_ spec.Statement, alter *spec.Alter, targets
 	}
 	if member := entry.shape.FindProvenIndex(name); member != nil {
 		bound = true
-		if member.Kind == spec.IndexKindUnique {
+		if member.Kind != spec.IndexKindSecondary {
 			// A unique member drops under DROP CONSTRAINT, refuses
-			// under DROP CHECK — divergent like the FK arm.
+			// under DROP CHECK — divergent like the FK arm. An
+			// unknown/empty kind may BE a unique member, and no
+			// other kind's refusal is proven: only a secondary
+			// member provably survives both keywords.
 			s.unvouchIndexMember(key, name)
 		}
-		// Any other proven member kind provably survives both keywords.
 	}
 	if entry.shape.FindForeignKeyConstraint(name) != nil {
 		// DROP CONSTRAINT removes this member; DROP CHECK refuses on it.

@@ -202,6 +202,11 @@ func TestT11R2MySQLRenameCarriesPreStateFact(t *testing.T) {
 		t.Fatalf("the renamed member carries the proven INT facts — blocker owed, got findings=%#v gaps=%#v",
 			stmt.Findings, stmt.EvidenceGaps)
 	}
+	if finding := stmt.Findings[0]; finding.Metadata["column"] != "id" ||
+		!strings.HasPrefix(fmt.Sprint(finding.Metadata["type"]), "int") {
+		t.Fatalf("the finding binds the NEW member name while the type fact comes from the renamed column — column=%v type=%v",
+			finding.Metadata["column"], finding.Metadata["type"])
+	}
 }
 
 // A member the statement drops before the key lands cannot resolve a

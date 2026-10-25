@@ -919,9 +919,14 @@ func orderedColumnFact(statement spec.Statement, name string) (spec.Column, orde
 			default:
 				// rename pass-through: the new name carries the prior
 				// name's proven facts when the pre-state knows them.
+				// The returned copy binds the new member name so
+				// findings attribute the effective column, never the
+				// pre-state's old spelling.
 				if snapOK && snapshot != nil && snapshot.Exists && snapshot.Columns != nil {
 					if column := snapshot.FindColumn(outcome.rename); column != nil {
-						return *column, orderedColumnResolved
+						effective := *column
+						effective.Name = name
+						return effective, orderedColumnResolved
 					}
 				}
 				return spec.Column{}, orderedColumnUndecidable

@@ -11,8 +11,10 @@
 package audit
 
 import (
+	"context"
 	"testing"
 
+	"github.com/Fanduzi/DeltaScope/internal/domain/report"
 	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
 )
 
@@ -68,6 +70,99 @@ func TestT11R2DropConstraintUnvouchesPrimaryKeyObject(t *testing.T) {
 	}
 	if len(drop.EvidenceGaps) == 0 {
 		t.Fatalf("an undecidable primary-key fate owes the gap, got none")
+	}
+}
+
+// A proven name with an unproven kind cannot prove survival — the member
+// may be a UNIQUE (DROP CONSTRAINT removes it). Both the IndexKindUnknown
+// and the empty-kind cell leave the member's fate undecidable: the member
+// projection drops, the index set unvouches, and the successor drop owes
+// the attributed index gap instead of binding a maybe-gone member or
+// fabricating a proven-missing answer.
+func TestT11R2DropConstraintUnknownKindUnvouches(t *testing.T) {
+	t.Parallel()
+	for _, tc := range []struct {
+		name string
+		kind spec.IndexKind
+	}{
+		{name: "index_kind_unknown", kind: spec.IndexKindUnknown},
+		{name: "empty_kind", kind: ""},
+	} {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			fixture := t11r2DropConstraintFixture()
+			fixture.Indexes = []spec.Index{
+				{Name: "uk_v", Kind: tc.kind, Columns: []string{"v"}},
+				{Name: "ix_u", Kind: spec.IndexKindSecondary, Columns: []string{"u"}},
+			}
+			result := t10Audit(t, spec.DialectMySQL,
+				"ALTER TABLE t DROP CONSTRAINT uk_v; ALTER TABLE t DROP INDEX uk_v;",
+				&t10Provider{version: "8.0.46", tables: map[string]*spec.TableSnapshot{"t": fixture}},
+				t10Policy(t, t10Rule{id: "ddl.alter.drop_index.exists.require"}))
+			drop := result.Statements[1]
+			if len(drop.Findings) != 0 {
+				t.Fatalf("the member may already be gone — no proven-missing and no proven drop, got %#v", drop.Findings)
+			}
+			if len(drop.EvidenceGaps) == 0 {
+				t.Fatalf("an undecidable member fate owes the index-set gap, got none")
+			}
+			factFound := false
+			for _, gap := range drop.EvidenceGaps {
+				for _, fact := range gap.RequiredFacts {
+					if fact == "target_table.indexes" {
+						factFound = true
+					}
+				}
+			}
+			if !factFound {
+				t.Fatalf("the gap must attribute the index fact — required_facts=%#v", drop.EvidenceGaps)
+			}
+			if drop.Coverage.Status != report.CoverageUnverified {
+				t.Fatalf("the successor statement's own coverage stays unverified, got %s", drop.Coverage.Status)
+			}
+			if result.Verdict != report.VerdictReview {
+				t.Fatalf("an undecidable fate reviews rather than passes, got %s", result.Verdict)
+			}
+		})
+	}
+}
+
+// The successor statement's own pre-state must not keep a proven uk_v —
+// the ambiguous drop cannot leave the member bindable by name.
+func TestT11R2DropConstraintUnknownKindPreStateUnvouched(t *testing.T) {
+	t.Parallel()
+	provider := &t10Provider{version: "8.0.46", tables: map[string]*spec.TableSnapshot{"t": func() *spec.TableSnapshot {
+		shape := t11r2DropConstraintFixture()
+		shape.Indexes = []spec.Index{
+			{Name: "uk_v", Kind: spec.IndexKindUnknown, Columns: []string{"v"}},
+			{Name: "ix_u", Kind: spec.IndexKindSecondary, Columns: []string{"u"}},
+		}
+		return shape
+	}()}}
+	parsed, err := parseSQL(context.Background(),
+		"ALTER TABLE t DROP CONSTRAINT uk_v; ALTER TABLE t DROP INDEX uk_v;", spec.DialectMySQL)
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	statements, err := Extract(context.Background(), parsed)
+	if err != nil {
+		t.Fatalf("extract: %v", err)
+	}
+	enriched, err := enrichStatementsWithMetadata(context.Background(), spec.DialectMySQL,
+		&MetadataRequest{Schema: "golden", Provider: provider}, statements, parsed.failures)
+	if err != nil {
+		t.Fatalf("enrich: %v", err)
+	}
+	pre := enriched[1].Metadata.TargetTable
+	if pre == nil || !pre.IndexesUnknown {
+		t.Fatalf("the successor pre-state must carry the unvouched index set, got %+v", pre)
+	}
+	if member := pre.FindProvenIndex("uk_v"); member != nil {
+		t.Fatalf("the maybe-gone member cannot stay provable by name, got %+v", member)
+	}
+	if member := pre.FindProvenIndex("ix_u"); member == nil {
+		t.Fatalf("the untouched member keeps its proven facts, got %+v", pre.Indexes)
 	}
 }
 
