@@ -5,7 +5,10 @@
 // clean-read-but-unproven CLUSTERED coverage keeps the storage facts
 // unknown (a missing or unrecognized row is never a proven NO), and an
 // inconsistent constraint count demotes every maybe-PK fold rather than
-// leaving it a proven UNIQUE member.
+// leaving it a proven UNIQUE member, and the folded same-name CLUSTERED
+// merge stays unproven while any sibling row is — a NO row never covers
+// a NULL/unrecognized row under one key, in either read order (partial
+// injected catalog fixture, not a native NULL-coexistence observation).
 // input: sqlmock-shaped STATISTICS/table_constraints/TIDB_INDEXES/
 // KEY_COLUMN_USAGE stubs
 // output: snapshot PrimaryKey attribution, per-member kind provability,
@@ -324,5 +327,94 @@ func TestT10R6TiDBKeyColumnUsageProbeFailurePropagates(t *testing.T) {
 	defer db.Close()
 	if _, err := NewProvider(db).LoadTableSnapshot(context.Background(), spec.DialectTiDB, "app", "t"); err == nil {
 		t.Fatal("a failed key_column_usage probe must surface as a provider error, not a withheld snapshot")
+	}
+}
+
+// Tail-C: folded same-name CLUSTERED rows merge conservatively — a NO row
+// may never overwrite an unproven (NULL/unrecognized) sibling under the
+// same lowercased key, in either read order. The fixture is an explicitly
+// labeled PARTIAL catalog injection: a `PRIMARY` unique fold beside a
+// `primary` member fold (both NON_UNIQUE=0 on id — the case-variant
+// coexistence TiDB permits), a proven PRIMARY KEY constraint, and
+// TIDB_INDEXES rows PRIMARY=NULL plus primary=NO. It models the merge
+// rule's obligation when two catalog names fold to one key; it is NOT a
+// native observation that TiDB actually emits this NULL coexistence.
+// Because both candidates share the folded `primary` key, an unproven
+// merge keeps every candidate's clustered coverage unproven — the
+// withheld attribution must keep handle/clustered unknown instead of
+// letting the NO row prove NONCLUSTERED for both.
+func TestT10R6TiDBFoldedClusteredRowKeepsUnproven(t *testing.T) {
+	t.Parallel()
+	for _, rows := range [][][]driver.Value{
+		{{"PRIMARY", nil}, {"primary", "NO"}},
+		{{"primary", "NO"}, {"PRIMARY", nil}},
+	} {
+		rows := rows
+		cols := [][]driver.Value{
+			{"id", "int(11)", nil, nil, "", nil, "NO", "", nil},
+		}
+		stats := [][]driver.Value{
+			{"PRIMARY", 0, "BTREE", "id", nil, nil, "A", "YES", nil},
+			{"primary", 0, "BTREE", "id", nil, nil, "A", "YES", nil},
+		}
+		queries := t10r5Base(cols, stats)
+		queries["table_constraints"] = t10r5ConstraintRow(1)
+		queries["key_name, clustered"] = testQueryResult{
+			columns: []string{"key_name", "clustered"},
+			rows:    rows}
+		queries["information_schema.key_column_usage"] = testQueryResult{
+			columns: []string{"column_name"},
+			rows:    [][]driver.Value{{"id"}}}
+		db := openTestDB(t, queries)
+		snapshot, err := NewProvider(db).LoadTableSnapshot(context.Background(), spec.DialectTiDB, "app", "t")
+		db.Close()
+		if err != nil {
+			t.Fatalf("rows %v: LoadTableSnapshot: %v", rows, err)
+		}
+		if !snapshot.HasPrimaryKey() || snapshot.PrimaryKeyUnknown {
+			t.Fatalf("rows %v: the proven constraint row keeps PK presence vouched, got %+v", rows, snapshot)
+		}
+		if snapshot.PrimaryKey == nil || !snapshot.PrimaryKey.NameUnknown {
+			t.Fatalf("rows %v: two equal-sequence candidates cannot attribute the object, got %+v", rows, snapshot.PrimaryKey)
+		}
+		if !snapshot.PrimaryKeyClusteredUnknown || !snapshot.PrimaryKeyHandleUnknown {
+			t.Fatalf("rows %v: the NULL row's unproven answer must survive the sibling NO — storage stays unknown, got %+v",
+				rows, snapshot)
+		}
+	}
+}
+
+// Tail-C positive control: when every row under the folded name is a
+// recognized NO the merge answers NO — conservative folding only protects
+// unproven rows, it never blocks a complete proven-NO coverage.
+func TestT10R6TiDBFoldedClusteredAllNOProvesNonclustered(t *testing.T) {
+	t.Parallel()
+	cols := [][]driver.Value{
+		{"id", "int(11)", nil, nil, "", nil, "NO", "", nil},
+	}
+	stats := [][]driver.Value{
+		{"PRIMARY", 0, "BTREE", "id", nil, nil, "A", "YES", nil},
+		{"primary", 0, "BTREE", "id", nil, nil, "A", "YES", nil},
+	}
+	queries := t10r5Base(cols, stats)
+	queries["table_constraints"] = t10r5ConstraintRow(1)
+	queries["key_name, clustered"] = testQueryResult{
+		columns: []string{"key_name", "clustered"},
+		rows:    [][]driver.Value{{"PRIMARY", "NO"}, {"primary", "NO"}}}
+	queries["information_schema.key_column_usage"] = testQueryResult{
+		columns: []string{"column_name"},
+		rows:    [][]driver.Value{{"id"}}}
+	db := openTestDB(t, queries)
+	defer db.Close()
+	snapshot, err := NewProvider(db).LoadTableSnapshot(context.Background(), spec.DialectTiDB, "app", "t")
+	if err != nil {
+		t.Fatalf("LoadTableSnapshot: %v", err)
+	}
+	if snapshot.PrimaryKey == nil || !snapshot.PrimaryKey.NameUnknown {
+		t.Fatalf("two equal-sequence candidates cannot attribute the object, got %+v", snapshot.PrimaryKey)
+	}
+	if snapshot.PrimaryKeyClusteredUnknown || snapshot.PrimaryKeyHandleUnknown ||
+		snapshot.PrimaryKeyClustered || snapshot.PrimaryKeyIsHandle {
+		t.Fatalf("every folded row reading a recognized NO proves nonclustered/not-handle, got %+v", snapshot)
 	}
 }

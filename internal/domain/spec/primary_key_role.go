@@ -9,11 +9,11 @@
 // tidb_enable_clustered_index — int_only defers to alter-primary-key);
 // PrimaryKeyClustered answering the TiDB 8200 drop premise beside the
 // handle answer (common-handle PKs are clustered yet addressable); and the
-// shared name bindings backing every name-keyed consumer — ordered state,
-// rules, assessment: ResolvePrimaryNameBinding answers `primary` four ways
-// (member / PK / ambiguous / provably nothing) and ResolveIndexNameBinding
-// answers an arbitrary target five ways (member / PK object under its actual
-// stored name / handle-PK identity / provably free / ambiguous)
+// shared name bindings backing every name-keyed consumer — ordered
+// state, rules, assessment: ResolvePrimaryNameBinding answers `primary`
+// four ways and ResolveIndexNameBinding a target five (member / PK object
+// by stored name / handle identity / free / ambiguous) — a proven-absent
+// PK frees names despite a dropped object's stale storage unknowns
 // pos: T10-R2/R4/R5 primary-role/clustered/name-binding model (issue #89);
 // anchors — MySQL 8.0.46 invisible_indexes.result L247-289, TiDB v8.5.0
 // TableInfo.GetPrimaryKey + checkInvisibleIndexOnPK
@@ -515,8 +515,12 @@ func ResolveIndexNameBinding(dialect Dialect, snapshot *TableSnapshot, name stri
 					return IndexNameBindsAmbiguous
 				}
 				// Only a proven-absent PK makes the name free — an
-				// unproven PK fact could still hide a named object.
-				if snapshot.PrimaryKeyUnknown || (dialect == DialectTiDB && snapshot.PrimaryKeyHandleUnknown) {
+				// unproven PK presence could still hide a named object.
+				// Storage unknowns are attributes of a PK that exists;
+				// once presence is proven absent — a dropped object's
+				// stale handle/clustered flags — they describe nothing
+				// that can own a name.
+				if snapshot.PrimaryKeyUnknown {
 					return IndexNameBindsAmbiguous
 				}
 				return IndexNameBindsNone

@@ -1,6 +1,6 @@
 // Package ddl defines Tier-1 DDL rules.
 // input: metadata-enriched DDL Statement specs plus per-rule policy values, where enriched snapshots may be unknown, known-absent, complete, or complete-present with incomplete structural collections
-// output: existence and snapshot-backed findings for create-table, alter-table, and standalone create-index operations, plus evidence gaps (unknown_table_state / table_not_found) on the whitelisted existence rules when the ordered schema state cannot prove a premise
+// output: existence and snapshot-backed findings for create-table, alter-table, and standalone create-index operations, plus evidence gaps (unknown_table_state / table_not_found) on the whitelisted existence rules when the ordered schema state cannot prove a premise — a decided `primary` binding (member-owned, PK-bound, or freed) owes no primary_key gap since unproven PK-side facts were never consulted
 // pos: DDL rule implementations that depend on optional metadata-aware or batch-derived facts
 // note: if this file changes, update this header and module README.md.
 package ddl
@@ -299,12 +299,9 @@ func (r alterPrimaryKeyExistenceRule) Evaluate(ctx context.Context, statement sp
 		return nil, nil
 	}
 	snapshot, ok := targetTableSnapshot(statement)
-	// Unknown member collections must not read as "primary key absent":
-	// PrimaryKeyUnknown/ConstraintsUnknown mark projections that cannot
-	// vouch for those sets, and nil-provider/derived-incomplete shapes
-	// stay silent instead of fabricating a missing-key finding.
-	if !ok || snapshot == nil || !snapshot.Exists ||
-		snapshot.PrimaryKeyUnknown || snapshot.ConstraintsUnknown {
+	// Missing or confirmed-absent table facts stay silent instead of
+	// fabricating a missing-key finding.
+	if !ok || snapshot == nil || !snapshot.Exists {
 		return nil, nil
 	}
 	// TiDB routes DROP PRIMARY KEY through dropIndex(…, "PRIMARY")
@@ -315,9 +312,14 @@ func (r alterPrimaryKeyExistenceRule) Evaluate(ctx context.Context, statement sp
 	// existence only while it actually binds `primary` — a renamed object
 	// (pk2) frees the name, and the freed name is a proven-missing
 	// target exactly like a proven-absent PK (1091 verified on v8.5.0).
-	// The routing applies only to a genuine name-keyed DROP PRIMARY KEY
-	// action — a drop_constraint-derived match routes by constraint
-	// identity, so its premise stays plain PK existence.
+	// The name-keyed premise is the shared binding itself — a decided
+	// binding answers the target's existence outright regardless of
+	// unproven PK-side flags (a freed `primary` is still 1091 while the
+	// constraint set stays unvouched, since the object's stored name
+	// carries its own proof). The routing applies only to a genuine
+	// name-keyed DROP PRIMARY KEY action — a drop_constraint-derived
+	// match routes by constraint identity, so its premise stays plain
+	// PK existence and unvouched PK/constraint facts still gate it.
 	if len(matchingAlterActions(statement, "drop_primary_key")) > 0 {
 		switch spec.ResolvePrimaryNameBinding(statement.Dialect, snapshot) {
 		case spec.PrimaryNameBindsMember, spec.PrimaryNameBindsAmbiguous:
@@ -327,7 +329,7 @@ func (r alterPrimaryKeyExistenceRule) Evaluate(ctx context.Context, statement sp
 				return nil, nil
 			}
 		}
-	} else if snapshot.HasPrimaryKey() {
+	} else if snapshot.PrimaryKeyUnknown || snapshot.ConstraintsUnknown || snapshot.HasPrimaryKey() {
 		return nil, nil
 	}
 	return []rule.Finding{{
@@ -372,21 +374,25 @@ func (r alterPrimaryKeyExistenceRule) EvidenceGaps(statement spec.Statement) []r
 	pkSideUnproven := snapshot.PrimaryKeyUnknown || snapshot.ConstraintsUnknown ||
 		snapshot.PrimaryKeyHandleUnknown ||
 		(snapshot.PrimaryKey != nil && snapshot.PrimaryKey.NameUnknown)
-	if len(matchingAlterActions(statement, "drop_primary_key")) > 0 &&
-		spec.ResolvePrimaryNameBinding(statement.Dialect, snapshot) == spec.PrimaryNameBindsAmbiguous {
-		var facts []string
-		if statement.Dialect == spec.DialectTiDB && snapshot.IndexNameSpaceUnvouched() {
-			facts = append(facts, "target_table.indexes")
+	if len(matchingAlterActions(statement, "drop_primary_key")) > 0 {
+		if spec.ResolvePrimaryNameBinding(statement.Dialect, snapshot) == spec.PrimaryNameBindsAmbiguous {
+			var facts []string
+			if statement.Dialect == spec.DialectTiDB && snapshot.IndexNameSpaceUnvouched() {
+				facts = append(facts, "target_table.indexes")
+			}
+			if pkSideUnproven {
+				facts = append(facts, "target_table.primary_key")
+			}
+			if len(facts) > 0 {
+				return []rule.EvidenceGap{{
+					ReasonCode:    gapReasonUnknownTableState,
+					RequiredFacts: facts,
+				}}
+			}
 		}
-		if pkSideUnproven {
-			facts = append(facts, "target_table.primary_key")
-		}
-		if len(facts) > 0 {
-			return []rule.EvidenceGap{{
-				ReasonCode:    gapReasonUnknownTableState,
-				RequiredFacts: facts,
-			}}
-		}
+		// A decided binding — member-owned, PK-bound, or a freed name —
+		// resolves the name-keyed target without consulting the unproven
+		// PK-side facts, so it owes no primary_key gap.
 		return nil
 	}
 	if pkSideUnproven {

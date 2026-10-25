@@ -4,7 +4,10 @@
 // alter on a maybe-PK fold reports the missing PK-identity fact instead of
 // silently passing, kind-withheld members keep pair comparisons honest,
 // DROP PRIMARY KEY existence routes through the actual stored name, and a
-// proven PK-object name (pk2) binds even while member names stay unproven.
+// proven PK-object name (pk2) binds even while member names stay unproven —
+// plus the fact-handling tails: a proven-deleted PK frees `primary` and
+// keeps its proven absence against unrelated name-keyed ambiguity, and a
+// decided `primary` binding (member-owned or freed) owes no PK-side gap.
 // input: hand-built provider snapshots plus parsed TiDB statements through
 // the public audit seams (AuditSQL/enrich/batch apply)
 // output: findings, evidence gaps, coverage, verdicts and published
@@ -431,4 +434,151 @@ func findGapByFact(gaps []rule.EvidenceGap, fact string) *rule.EvidenceGap {
 		}
 	}
 	return nil
+}
+
+// Tail-A: a proven-deleted PK object cannot be re-read as maybe-present
+// through its stale storage unknowns. DROP INDEX pk2 publishes the proven
+// drop; the next DROP PRIMARY KEY must see the proven-absent PK and fire
+// the proven-missing finding — the deleted object's leftover
+// HandleUnknown/ClusteredUnknown describe nothing that can own `primary`,
+// so they cannot resurrect ambiguity. Storage unknowns on a still-present
+// PK keep their meaning (the F1/R6 sibling pins above stay in force).
+func TestT10R6DroppedPKStaleStorageUnknownKeepsAbsenceDecided(t *testing.T) {
+	t.Parallel()
+	provider := &t10Provider{
+		version: "8.0.11-TiDB-v8.5.0",
+		tables:  map[string]*spec.TableSnapshot{"t": t10r6HandleUnknownPKObjectShape()},
+	}
+	sqlText := "ALTER TABLE t DROP INDEX pk2; ALTER TABLE t DROP PRIMARY KEY;"
+	result := t10Audit(t, spec.DialectTiDB, sqlText,
+		provider, t10Policy(t, t10Rule{id: "ddl.alter.drop_primary_key.exists.require"}))
+	if len(result.Statements) != 2 {
+		t.Fatalf("both statements must audit, got %+v", result.Statements)
+	}
+	if len(result.Statements[0].Findings) != 0 || len(result.Statements[0].EvidenceGaps) != 0 {
+		t.Fatalf("the proven pk2 drop resolves cleanly, got findings=%+v gaps=%+v",
+			result.Statements[0].Findings, result.Statements[0].EvidenceGaps)
+	}
+	stmt := result.Statements[1]
+	enriched := enrichA3(t, sqlText, spec.DialectTiDB, provider)
+	pre := enriched[1].Metadata.TargetTable
+	if pre == nil {
+		t.Fatal("the proven drop publishes its post-state — the second statement keeps a table")
+	}
+	if pre.HasPrimaryKey() || pre.PrimaryKeyUnknown {
+		t.Fatalf("the post-state reads the PK absent and proven, got %+v", pre)
+	}
+	if len(stmt.Findings) != 1 {
+		t.Fatalf("the dropped PK is proven absent — the proven-missing finding must fire, got %+v", stmt.Findings)
+	}
+	finding := stmt.Findings[0]
+	if finding.RuleID != "ddl.alter.drop_primary_key.exists.require" ||
+		finding.Metadata["table"] != "t" || finding.Metadata["action"] != "drop_primary_key" ||
+		finding.Metadata["exists"] != false {
+		t.Fatalf("the exists rule reports the table's PK absent, got %+v", finding)
+	}
+	if len(stmt.EvidenceGaps) != 0 {
+		t.Fatalf("the deleted object's stale storage unknowns owe no fact, got %+v", stmt.EvidenceGaps)
+	}
+	if stmt.Coverage.Status != report.CoverageComplete || result.Verdict != report.VerdictReject {
+		t.Fatalf("a proven-missing blocker stays complete+reject, got %+v / %v", stmt.Coverage, result.Verdict)
+	}
+}
+
+// Tail-B: a member that provably owns `primary` decides the DROP PRIMARY
+// KEY target by itself — the name-keyed statement provably hits the
+// member, so unproven PK-side facts were never consulted and the rule
+// owes no primary_key gap. The fixture is an explicitly labeled partial
+// snapshot: PK presence unvouched, constraint set unvouched, one proven
+// secondary member literally named `primary` (legal on TiDB v8.5.0).
+// Publication still drops only the member and fabricates no PK truth.
+func TestT10R6DropPKMemberBoundOwesNoPrimaryKeyGap(t *testing.T) {
+	t.Parallel()
+	shape := t10r2Table("t", []spec.Column{t10r2Col("c", "int", true, 0)})
+	shape.PrimaryKeyUnknown = true
+	shape.ConstraintsUnknown = true
+	shape.Indexes = []spec.Index{{Name: "primary", Kind: spec.IndexKindSecondary, Columns: []string{"c"}}}
+	provider := &t10Provider{
+		version: "8.0.11-TiDB-v8.5.0",
+		tables:  map[string]*spec.TableSnapshot{"t": shape},
+	}
+	result := t10Audit(t, spec.DialectTiDB, "ALTER TABLE t DROP PRIMARY KEY;",
+		provider, t10Policy(t, t10Rule{id: "ddl.alter.drop_primary_key.exists.require"}))
+	stmt := result.Statements[0]
+	if len(stmt.Findings) != 0 {
+		t.Fatalf("a member-owned `primary` decides the target — no missing finding, got %+v", stmt.Findings)
+	}
+	if gap := findGapByFact(stmt.EvidenceGaps, "target_table.primary_key"); gap != nil {
+		t.Fatalf("the member binding never consulted PK facts — no primary_key gap, got %+v", stmt.EvidenceGaps)
+	}
+	if len(stmt.EvidenceGaps) != 0 {
+		t.Fatalf("nothing else is owed either — the decided target is gap-free, got %+v", stmt.EvidenceGaps)
+	}
+	if stmt.Coverage.Status != report.CoverageComplete || result.Verdict != report.VerdictPass {
+		t.Fatalf("a decided member target is complete+pass, got %+v / %v", stmt.Coverage, result.Verdict)
+	}
+	entry := t10r4Apply(t, spec.DialectTiDB, shape, "ALTER TABLE t DROP PRIMARY KEY;")
+	if entry == nil || entry.state != tablePresent || entry.shape == nil {
+		t.Fatalf("the member drop publishes cleanly, got %+v", entry)
+	}
+	if len(entry.shape.Indexes) != 0 {
+		t.Fatalf("the member-first drop removes only the `primary` member, got %+v", entry.shape.Indexes)
+	}
+	if !entry.shape.PrimaryKeyUnknown || !entry.shape.ConstraintsUnknown || entry.shape.HasPrimaryKey() {
+		t.Fatalf("the drop fabricates no PK presence or absence — the unproven facts stay, got %+v", entry.shape)
+	}
+}
+
+// Tail-A sibling: a proven-deleted PK cannot have its absence re-opened
+// by stale storage unknowns on an unrelated name-keyed operation either —
+// DROP INDEX pk2 publishes the drop under an unvouched member space, and
+// the next DROP INDEX ghost may unvouch the member side but must never
+// unvouch the proven PK absence the deleted object's handle flag tried to
+// keep alive.
+func TestT10R6DroppedPKUnrelatedNameKeepsAbsenceDecided(t *testing.T) {
+	t.Parallel()
+	shape := t10r6HandleUnknownPKObjectShape()
+	shape.IndexNamesUnknown = true
+	provider := &t10Provider{
+		version: "8.0.11-TiDB-v8.5.0",
+		tables:  map[string]*spec.TableSnapshot{"t": shape},
+	}
+	post := t10r4PostState(t, spec.DialectTiDB, provider,
+		"ALTER TABLE t DROP INDEX pk2; ALTER TABLE t DROP INDEX ghost;")
+	if post == nil {
+		t.Fatal("the proven pk2 drop publishes — the table survives")
+	}
+	if post.HasPrimaryKey() || post.PrimaryKeyUnknown {
+		t.Fatalf("an unrelated ambiguous name must not re-open the proven-absent PK, got %+v", post)
+	}
+	if !post.IndexNameSpaceUnvouched() {
+		t.Fatalf("the member side still unvouches on the ambiguous target, got %+v", post)
+	}
+}
+
+// Tail-B sibling: a freed `primary` is a decided missing target even
+// while the constraint set is unvouched — the name-keyed premise is the
+// shared binding, so ConstraintsUnknown cannot suppress the 1091 answer
+// (the PK object's stored name pk2 is proven independently of constraint
+// rows; the fixture is an explicitly labeled partial snapshot).
+func TestT10R6DropPKFreedPrimaryFiresUnderConstraintsUnknown(t *testing.T) {
+	t.Parallel()
+	shape := t10r5RenamedPKShape()
+	shape.ConstraintsUnknown = true
+	provider := &t10Provider{
+		version: "8.0.11-TiDB-v8.5.0",
+		tables:  map[string]*spec.TableSnapshot{"t": shape},
+	}
+	result := t10Audit(t, spec.DialectTiDB, "ALTER TABLE t DROP PRIMARY KEY;",
+		provider, t10Policy(t, t10Rule{id: "ddl.alter.drop_primary_key.exists.require"}))
+	stmt := result.Statements[0]
+	if len(stmt.Findings) != 1 || stmt.Findings[0].Metadata["exists"] != false {
+		t.Fatalf("the freed `primary` name is a decided missing target — the finding fires, got %+v", stmt.Findings)
+	}
+	if len(stmt.EvidenceGaps) != 0 {
+		t.Fatalf("the binding is decided — no gaps owed, got %+v", stmt.EvidenceGaps)
+	}
+	if stmt.Coverage.Status != report.CoverageComplete || result.Verdict != report.VerdictReject {
+		t.Fatalf("a proven-missing blocker is complete+reject, got %+v / %v", stmt.Coverage, result.Verdict)
+	}
 }

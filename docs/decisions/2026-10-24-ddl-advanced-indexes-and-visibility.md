@@ -557,6 +557,31 @@ consumer gaps on the R5-A path; all close in place:
   freedom is unprovable), and an ambiguous binding unvouches exactly
   the side that may have moved.
 
+### R6-tail amendment — proven absence, member-bound gaps, folded merge
+
+- **Proven absence outranks stale storage unknowns.** A dropped PK
+  object's leftover handle/clustered unknowns can no longer resurrect
+  an ambiguous `primary` owner — `ResolveIndexNameBinding` consults
+  storage unknowns only while PK presence is not proven absent. The
+  published shape keeps the flags honest (no global fact reset); the
+  binding just stops reading facts of a provably nonexistent object;
+  `primaryNameMayOwnTarget` applies the same precedence so an
+  unrelated ambiguous name-keyed drop cannot re-open the absence.
+- **A decided `primary` binding owes no PK gap.** The
+  drop-primary-key exists rule's gap tail now returns no facts for
+  member-owned, PK-bound, or freed-name bindings — only a genuinely
+  ambiguous binding owes the unproven side, and only the
+  constraint-identity path keeps the plain PK-fact gap. Evaluate now
+  premises the name-keyed route on the binding alone — the flag gate
+  moved into the constraint-identity branch — so a freed `primary`
+  fires its 1091 finding even while the constraint set is unvouched
+  (the object's proven stored name answers independently).
+- **Folded CLUSTERED merge is YES > unproven > NO.** Case-variant
+  `TIDB_INDEXES` names collapse to one key; a NO row can no longer
+  overwrite an unproven sibling under that key regardless of catalog
+  read order. Verified by a partial injected fixture — no native NULL
+  coexistence claim.
+
 ## References
 
 - Issue: Fanduzi/DeltaScope#79 (milestone), #89 (T10 scope)

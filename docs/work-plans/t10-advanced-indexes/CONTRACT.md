@@ -758,3 +758,46 @@ the PK side (`markPrimaryKeyNameUnknown` on rename,
 `markPrimaryUnknown` on drop, and a vouched member space narrowing
 the target to PK-object-or-nothing invalidates INVISIBLE since every
 native outcome refuses).
+
+
+### 9.8 Amendment R6-tail — fact-handling precedence, member-bound gaps, folded tri-state merge
+
+Three bounded fact-handling corrections follow R6 without expanding
+T10 scope:
+
+(a) A proven PK absence outranks stale object storage unknowns. Once a
+PK object is provably deleted (ordered-state `publishPrimaryKeyDrop`),
+`spec.ResolveIndexNameBinding` reads the freed name as bound-nothing —
+the deleted object's leftover `PrimaryKeyHandleUnknown` /
+`PrimaryKeyClusteredUnknown` describe a PK that exists and can never
+resurrect an ambiguous owner, and the batch-side `primaryNameMayOwnTarget`
+consulted the same way cannot re-open the proven absence on an
+unrelated name-keyed drop. Storage unknowns keep their meaning
+while the PK exists (a present PK with an unproven stored name still
+binds ambiguous), and nothing outside the dropped object's facts is
+cleared.
+
+(b) A member-owned `primary` decides `DROP PRIMARY KEY` without
+consuming PK facts. When `spec.ResolvePrimaryNameBinding` resolves a
+member owner, the name-keyed target is decided: the exists rule emits
+no finding and owes no `target_table.primary_key` gap, however
+unproven the PK-side flags (the member premise never consulted them).
+Genuine ambiguity still owes exactly the unproven side, a withheld PK
+object name still owes the PK fact, the freed-`primary` missing
+finding and MySQL reserved-name semantics stand, and
+`drop_constraint`-derived actions still route by constraint identity.
+Evaluate and EvidenceGaps share that premise: the flag gate
+(`PrimaryKeyUnknown`/`ConstraintsUnknown`) applies only to the
+constraint-identity path, so a decided binding fires the missing
+finding even under an unvouched constraint set rather than passing
+silently.
+
+(c) The folded same-name CLUSTERED merge is conservative and
+read-order independent. `loadTiDBClusteredRows` folds case-variant
+catalog names (e.g. `PRIMARY` beside `primary`) to one key and merges
+YES over unproven over NO: an unproven (NULL/unrecognized) row may
+never be covered by a same-key NO, so the folded answer stays
+unproven until every row under the key is a recognized NO — and a YES
+from either row still answers clustered. Pinned by a partial injected
+catalog fixture; no native TiDB NULL-coexistence observation is
+claimed.

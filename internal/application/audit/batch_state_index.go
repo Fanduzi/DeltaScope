@@ -14,8 +14,8 @@
 // spaces unvouch the member set (hidden 1061), and every name-keyed entry
 // resolves spec.ResolveIndexNameBinding before member gates — a renamed PK
 // object claims only its actual stored name, a freed `primary` never
-// fabricates PK presence, a member may own `primary` beside a handle PK, and
-// ambiguous bindings unvouch only the side that may have moved
+// fabricates PK presence, a proven-absent PK ignores the dropped object's
+// stale storage unknowns, and ambiguous bindings unvouch only the moved side
 // pos: T09 index state chain plus the T10 visibility transition
 // note: if this file changes, update this header and module README.md.
 package audit
@@ -212,6 +212,12 @@ func primaryNameMayOwnTarget(dialect spec.Dialect, shape *spec.TableSnapshot) bo
 		return false
 	}
 	if _, proven := spec.PrimaryKeyObjectName(shape); proven {
+		return false
+	}
+	// A proven-absent PK owns nothing — a dropped object's stale
+	// handle/clustered flags describe a PK that exists, never an owner
+	// that could have been hit by the drop.
+	if !shape.HasPrimaryKey() && !shape.PrimaryKeyUnknown {
 		return false
 	}
 	return shape.HasPrimaryKey() || shape.PrimaryKeyUnknown ||
