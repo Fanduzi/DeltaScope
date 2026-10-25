@@ -1,0 +1,8 @@
+product_sha   fd849db52ef2f2291fedde4680dcea2f7bbf16be
+parent        248f8c055fa332f59d2720de2e63cb3f60190b17 (docs(t10): T10-R6 verification archive bound to 6cec4e6c)
+grandparent   6cec4e6c98f9258ddda168494d7bca7f95bfcad3 (fix(t10): T10-R6 product)
+branch        milestone/mysql-tidb-ddl-completion
+cli_sha256    e22931ada0a59ea1f905980385de516743ab49ed04302bd12eb2349fa9db9c01
+  (work CLI at /tmp/r6tail-cli/deltascope == both golden artifact CLIs — deterministic CGO_ENABLED=0 build, go1.26.1)
+golden        T09 125/125 cases 3442 assertions head_sha=fd849db5; T10 126/126 cases 3175 assertions head_sha=fd849db5 — frozen oracle denominators preserved
+anchors       MySQL 5.7.44 / 8.0.46 / 8.4.10, TiDB v8.5.0 (shared ddl-golden compose anchors, serial use, runner-managed lifecycle)

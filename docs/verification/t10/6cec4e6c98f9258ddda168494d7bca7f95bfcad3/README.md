@@ -23,9 +23,12 @@ and batch-state gaps the R5-A independent review confirmed.
 ## Gate index (all bound to 6cec4e6c)
 
 Every gate under `gates/` records the exact command, stdout, stderr, and
-exit code. Summary: `go test ./...` 0, `go vet ./...` 0,
-`go test -race -count=1 ./internal/...` 0, `gofmt` clean on
-internal/pkg/cmd, `sql-corpus-gates` 0, `query-access-corpus-gates` 0,
+exit code — 16 gate quads as archived. Summary: `go test ./...` 0,
+`go vet ./...` 0,
+`go test -race -count=1 ./internal/...` 0, `gofmt` reports no new
+formatting issues this round — the two accepted T07 baseline files
+(`batch_state_t07_matrix_test.go`, `batch_state_t07_test.go`) remain —
+`sql-corpus-gates` 0, `query-access-corpus-gates` 0,
 `ddl-inventory-gate` 0, `ddl-coverage-catalog-test` 0,
 `ddl-golden-validator-test` 0, `parser-error-unsupported-contract-test`
 0, `unsupported-diagnostics-evidence-test` 0, `docs-example-gates` 0,

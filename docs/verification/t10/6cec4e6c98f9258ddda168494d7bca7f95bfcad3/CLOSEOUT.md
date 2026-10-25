@@ -52,8 +52,10 @@ intentional.
 
 ## Gates bound to 6cec4e6c
 
-`gates/` quads: go test ./... 0 · go vet 0 · race ./internal/... 0 ·
-gofmt clean · sql-corpus 0 · query-access-corpus 0 · ddl-inventory 0 ·
+`gates/` quads (16 gate sets as archived): go test ./... 0 · go vet 0 ·
+race ./internal/... 0 ·
+gofmt — no new formatting issues this round; the two accepted T07
+baseline files remain · sql-corpus 0 · query-access-corpus 0 · ddl-inventory 0 ·
 ddl-coverage-catalog 0 · ddl-golden-validator 0 ·
 parser-error-unsupported-contract 0 · unsupported-diagnostics-evidence 0
 · docs-example 0 · decision-record 0 · pg-confidence-gates 0 ·

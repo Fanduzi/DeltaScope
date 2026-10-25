@@ -1,0 +1,3 @@
+mkdir -p bin
+CGO_ENABLED=1 go build -tags postgresql  -o bin/deltascope ./cmd/deltascope
+DELTASCOPE_BIN="bin/deltascope" bash ./scripts/verify_release_dialect_hygiene.sh

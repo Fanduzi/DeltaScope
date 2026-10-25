@@ -1,0 +1,39 @@
+=== RUN   TestT10R6DropPKObjectUnderUnvouchedMembers
+=== PAUSE TestT10R6DropPKObjectUnderUnvouchedMembers
+=== RUN   TestT10R6DroppedPKStaleStorageUnknownKeepsAbsenceDecided
+=== PAUSE TestT10R6DroppedPKStaleStorageUnknownKeepsAbsenceDecided
+=== RUN   TestT10R6DropPKMemberBoundOwesNoPrimaryKeyGap
+=== PAUSE TestT10R6DropPKMemberBoundOwesNoPrimaryKeyGap
+=== RUN   TestT10R6DroppedPKUnrelatedNameKeepsAbsenceDecided
+=== PAUSE TestT10R6DroppedPKUnrelatedNameKeepsAbsenceDecided
+=== RUN   TestT10R6DropPKFreedPrimaryFiresUnderConstraintsUnknown
+=== PAUSE TestT10R6DropPKFreedPrimaryFiresUnderConstraintsUnknown
+=== CONT  TestT10R6DropPKObjectUnderUnvouchedMembers
+=== RUN   TestT10R6DropPKObjectUnderUnvouchedMembers/names_unvouched
+=== PAUSE TestT10R6DropPKObjectUnderUnvouchedMembers/names_unvouched
+=== RUN   TestT10R6DropPKObjectUnderUnvouchedMembers/indexes_unknown
+=== CONT  TestT10R6DroppedPKUnrelatedNameKeepsAbsenceDecided
+=== CONT  TestT10R6DropPKFreedPrimaryFiresUnderConstraintsUnknown
+=== PAUSE TestT10R6DropPKObjectUnderUnvouchedMembers/indexes_unknown
+=== CONT  TestT10R6DropPKObjectUnderUnvouchedMembers/names_unvouched
+=== CONT  TestT10R6DropPKMemberBoundOwesNoPrimaryKeyGap
+=== CONT  TestT10R6DropPKObjectUnderUnvouchedMembers/indexes_unknown
+=== CONT  TestT10R6DroppedPKStaleStorageUnknownKeepsAbsenceDecided
+--- PASS: TestT10R6DropPKObjectUnderUnvouchedMembers (0.00s)
+    --- PASS: TestT10R6DropPKObjectUnderUnvouchedMembers/indexes_unknown (0.00s)
+    --- PASS: TestT10R6DropPKObjectUnderUnvouchedMembers/names_unvouched (0.00s)
+=== NAME  TestT10R6DroppedPKUnrelatedNameKeepsAbsenceDecided
+    batch_state_t10r6_test.go:552: an unrelated ambiguous name must not re-open the proven-absent PK, got &{Schema: Exists:true Table:0x4cf850d1e780 Columns:[{Name:id Type:varchar(32) Length:0 Charset: Collation: Comment: Unsigned:false NotNull:true AutoIncrement:false HasDefault:false DefaultValue: DefaultKind: DefaultIsNull:false DefaultIsCurrentTimestamp:false OnUpdateCurrentTimestamp:false GeneratedWhen: IsIdentity:false IdentityOptions:map[] AutoRandom:false UnextractedOptions:[] Generated:<nil> DefaultExpression:<nil> Visibility: VisibilityExplicit:false DefaultParenthesized:false DefaultLiteral:<nil>} {Name:c Type:int Length:0 Charset: Collation: Comment: Unsigned:false NotNull:true AutoIncrement:false HasDefault:false DefaultValue: DefaultKind: DefaultIsNull:false DefaultIsCurrentTimestamp:false OnUpdateCurrentTimestamp:false GeneratedWhen: IsIdentity:false IdentityOptions:map[] AutoRandom:false UnextractedOptions:[] Generated:<nil> DefaultExpression:<nil> Visibility: VisibilityExplicit:false DefaultParenthesized:false DefaultLiteral:<nil>}] PrimaryKey:<nil> Indexes:[{Name:s Kind:secondary Columns:[c] KeyParts:[] Cardinality:<nil> AccessMethod: IncludedColumns:[] HasPredicate:false HasExpressionKeys:false ExpressionCount:0 PrefixParts:0 DescParts:0 MultiValuedParts:0 Visibility: VisibilityExplicit:false UnmodeledKeyParts:0 DirectionUnknownParts:0 Global:false PrimaryKeyType: UnmodeledOptions:[] NameUnknown:false}] Constraints:[] Options:map[] PrimaryKeyIsHandle:false PrimaryKeyHandleUnknown:true PrimaryKeyClustered:false PrimaryKeyClusteredUnknown:true PrimaryKeyUnknown:true IndexesUnknown:true ConstraintsUnknown:true IndexOrderCatalog:false IndexNamesUnknown:true Partitioned:<nil>}
+--- FAIL: TestT10R6DroppedPKUnrelatedNameKeepsAbsenceDecided (0.00s)
+=== NAME  TestT10R6DropPKMemberBoundOwesNoPrimaryKeyGap
+    batch_state_t10r6_test.go:512: the member binding never consulted PK facts — no primary_key gap, got [{RuleID:ddl.alter.drop_primary_key.exists.require ReasonCode:unknown_table_state RequiredFacts:[target_table.primary_key]}]
+=== NAME  TestT10R6DroppedPKStaleStorageUnknownKeepsAbsenceDecided
+    batch_state_t10r6_test.go:472: the dropped PK is proven absent — the proven-missing finding must fire, got []
+=== NAME  TestT10R6DropPKFreedPrimaryFiresUnderConstraintsUnknown
+    batch_state_t10r6_test.go:576: the freed `primary` name is a decided missing target — the finding fires, got []
+--- FAIL: TestT10R6DropPKMemberBoundOwesNoPrimaryKeyGap (0.01s)
+--- FAIL: TestT10R6DroppedPKStaleStorageUnknownKeepsAbsenceDecided (0.01s)
+--- FAIL: TestT10R6DropPKFreedPrimaryFiresUnderConstraintsUnknown (0.01s)
+FAIL
+FAIL	github.com/Fanduzi/DeltaScope/internal/application/audit	0.551s
+FAIL

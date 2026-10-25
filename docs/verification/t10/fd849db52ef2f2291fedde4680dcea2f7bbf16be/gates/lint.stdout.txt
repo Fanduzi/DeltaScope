@@ -1,0 +1,52 @@
+internal/domain/rule/ddl/metadata_rules.go:477:46: Error return value is not checked (errcheck)
+	return alterColumnPositionExistsRule{inner: inner.(alterObjectExistenceRule)}, nil
+	                                            ^
+internal/application/audit/batch_state_t07_default_test.go:331:9: stringConcatSimplify: suggestion: "CREATE TABLE t (\n  a INT,\n  b INT DEFAULT (a + 1)\n)" + ";\n" + "ALTER TABLE t DROP COLUMN a" (gocritic)
+	sql := strings.Join([]string{
+	       ^
+internal/application/audit/batch_state_t07_matrix_test.go:178:1: tooManyResultsChecker: function has more than 5 results, consider to simplify the function (gocritic)
+func t07ActualEntries(result report.Result) (findings, metadata, locations, gaps, unsupported []any, exact []any) {
+^
+internal/application/audit/batch_state_t07_visibility_test.go:132:30: stringConcatSimplify: suggestion: "CREATE TABLE t (id INT PRIMARY KEY, hidden_c INT INVISIBLE, visible_c INT)" + ";\n" + "ALTER TABLE t MODIFY COLUMN hidden_c BIGINT" (gocritic)
+	statements := t07Columns(t, strings.Join([]string{
+	                            ^
+internal/domain/rule/ddl/alter_compatibility_rules.go:367:5: emptyStringTest: replace `len(digits) == 0` with `digits == ""` (gocritic)
+	if len(digits) == 0 || digits[0] == '0' {
+	   ^
+internal/domain/spec/ddl.go:472:1: typeDefFirst: definition of type 'Index' should appear before its methods (gocritic)
+type Index struct {
+^
+internal/application/audit/batch_state_t07_matrix_test.go:29:1: File is not properly formatted (gofmt)
+	ID       string          `json:"id"`
+^
+internal/application/audit/batch_state_t07_test.go:188:1: File is not properly formatted (gofmt)
+					t07RuleDependency:                      "      required: true\n",
+^
+internal/domain/rule/ddl/metadata_rules.go:532:37: QF1001: could apply De Morgan's law (staticcheck)
+			!producedName(produced, name) && !(snapshotHasColumn(statement, snapshot, name) && !removedName(removed, name)) {
+			                                 ^
+internal/domain/spec/advanced_columns.go:915:4: QF1001: could apply De Morgan's law (staticcheck)
+			!(version.Version == AdvancedTiDBStoredToOrdinaryVersion && prior.Generated.Storage == GeneratedStorageStored):
+			^
+internal/application/audit/batch_state_t07_matrix_test.go:283:60: unnecessary conversion (unconvert)
+				t07ExpectEqual(t, tc.ID, "statement_coverage", v, []any(statementCoverage))
+				                                                       ^
+internal/application/audit/batch_state_t07_matrix_test.go:286:55: unnecessary conversion (unconvert)
+				t07ExpectEqual(t, tc.ID, "statement_sql", v, []any(statementSQL))
+				                                                  ^
+internal/application/audit/batch_state_t07_matrix_test.go:289:59: unnecessary conversion (unconvert)
+				t07ExpectEqual(t, tc.ID, "statement_indices", v, []any(indices))
+				                                                      ^
+internal/application/audit/batch_state_multi.go:143:30: multiActionPremiseHolds - s is unused (unparam)
+func multiActionPremiseHolds(s *batchState, alter *spec.Alter, validation *spec.TableSnapshot) bool {
+                             ^
+internal/application/audit/batch_state_multi.go:184:38: multiActionApply - statement is unused (unparam)
+func multiActionApply(s *batchState, statement spec.Statement, alter *spec.Alter, working *spec.TableSnapshot) bool {
+                                     ^
+15 issues:
+* errcheck: 1
+* gocritic: 5
+* gofmt: 2
+* staticcheck: 2
+* unconvert: 3
+* unparam: 2

@@ -1,0 +1,30 @@
+=== RUN   TestT10R6DropPKObjectUnderUnvouchedMembers
+=== PAUSE TestT10R6DropPKObjectUnderUnvouchedMembers
+=== RUN   TestT10R6DroppedPKStaleStorageUnknownKeepsAbsenceDecided
+=== PAUSE TestT10R6DroppedPKStaleStorageUnknownKeepsAbsenceDecided
+=== RUN   TestT10R6DropPKMemberBoundOwesNoPrimaryKeyGap
+=== PAUSE TestT10R6DropPKMemberBoundOwesNoPrimaryKeyGap
+=== RUN   TestT10R6DroppedPKUnrelatedNameKeepsAbsenceDecided
+=== PAUSE TestT10R6DroppedPKUnrelatedNameKeepsAbsenceDecided
+=== RUN   TestT10R6DropPKFreedPrimaryFiresUnderConstraintsUnknown
+=== PAUSE TestT10R6DropPKFreedPrimaryFiresUnderConstraintsUnknown
+=== CONT  TestT10R6DropPKObjectUnderUnvouchedMembers
+=== RUN   TestT10R6DropPKObjectUnderUnvouchedMembers/names_unvouched
+=== CONT  TestT10R6DroppedPKUnrelatedNameKeepsAbsenceDecided
+=== CONT  TestT10R6DropPKFreedPrimaryFiresUnderConstraintsUnknown
+=== PAUSE TestT10R6DropPKObjectUnderUnvouchedMembers/names_unvouched
+=== CONT  TestT10R6DropPKMemberBoundOwesNoPrimaryKeyGap
+=== RUN   TestT10R6DropPKObjectUnderUnvouchedMembers/indexes_unknown
+=== PAUSE TestT10R6DropPKObjectUnderUnvouchedMembers/indexes_unknown
+=== CONT  TestT10R6DropPKObjectUnderUnvouchedMembers/names_unvouched
+=== CONT  TestT10R6DropPKObjectUnderUnvouchedMembers/indexes_unknown
+=== CONT  TestT10R6DroppedPKStaleStorageUnknownKeepsAbsenceDecided
+--- PASS: TestT10R6DropPKObjectUnderUnvouchedMembers (0.00s)
+    --- PASS: TestT10R6DropPKObjectUnderUnvouchedMembers/names_unvouched (0.00s)
+    --- PASS: TestT10R6DropPKObjectUnderUnvouchedMembers/indexes_unknown (0.00s)
+--- PASS: TestT10R6DroppedPKUnrelatedNameKeepsAbsenceDecided (0.00s)
+--- PASS: TestT10R6DropPKMemberBoundOwesNoPrimaryKeyGap (0.00s)
+--- PASS: TestT10R6DropPKFreedPrimaryFiresUnderConstraintsUnknown (0.01s)
+--- PASS: TestT10R6DroppedPKStaleStorageUnknownKeepsAbsenceDecided (0.00s)
+PASS
+ok  	github.com/Fanduzi/DeltaScope/internal/application/audit	(cached)

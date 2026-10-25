@@ -1,0 +1,10 @@
+=== RUN   TestT10R6TiDBFoldedClusteredRowKeepsUnproven
+=== PAUSE TestT10R6TiDBFoldedClusteredRowKeepsUnproven
+=== RUN   TestT10R6TiDBFoldedClusteredAllNOProvesNonclustered
+=== PAUSE TestT10R6TiDBFoldedClusteredAllNOProvesNonclustered
+=== CONT  TestT10R6TiDBFoldedClusteredRowKeepsUnproven
+=== CONT  TestT10R6TiDBFoldedClusteredAllNOProvesNonclustered
+--- PASS: TestT10R6TiDBFoldedClusteredAllNOProvesNonclustered (0.00s)
+--- PASS: TestT10R6TiDBFoldedClusteredRowKeepsUnproven (0.00s)
+PASS
+ok  	github.com/Fanduzi/DeltaScope/internal/infrastructure/metadata/mysql	0.290s
