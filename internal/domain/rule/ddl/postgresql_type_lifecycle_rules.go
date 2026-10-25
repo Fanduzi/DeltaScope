@@ -1,8 +1,4 @@
 // Package ddl defines Tier-1 DDL rules.
-// input: normalized Statement specs for PostgreSQL type lifecycle DDL operations
-// output: findings for PostgreSQL enum type creation, value addition, type drop, and composite type attribute lifecycle risks
-// pos: PostgreSQL-specific type lifecycle rule implementations
-// note: if this file changes, update this header and module README.md.
 package ddl
 
 import (

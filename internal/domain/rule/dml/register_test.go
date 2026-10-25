@@ -1,8 +1,4 @@
 // Package dml verifies DML rule registration behavior.
-// input: policy objects, synthetic DML statements, and the shared registry
-// output: deterministic registration and evaluation coverage for the shipped DML rule batch
-// pos: domain DML rule integration tests across policy-backed registry assembly
-// note: if this file changes, update this header and module README.md.
 package dml
 
 import (

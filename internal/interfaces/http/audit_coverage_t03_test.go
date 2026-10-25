@@ -1,8 +1,4 @@
 // Package httpapi verifies the T03 incomplete-coverage HTTP contract.
-// input: offline HTTP audit requests containing recognized-but-unsupported DDL
-// output: HTTP 400 envelope with the partial audit result and coverage fields
-// pos: HTTP transport contract tests for incomplete audit results (issue #82)
-// note: if this file changes, update this header and module README.md.
 package httpapi
 
 import (

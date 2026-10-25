@@ -1,9 +1,4 @@
 // Package spec verifies T07 advanced-column assessment boundaries.
-// input: hand-built column fact sets (dependency graphs, dialects, versions)
-// output: non-activation for PostgreSQL, known-vs-unknown fact discipline, and
-// bounded dependency-walk answers
-// pos: domain-level T07 contract pins beside the audit-layer matrix
-// note: if this file changes, update this header and module README.md.
 package spec
 
 import (

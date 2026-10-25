@@ -1,8 +1,4 @@
 // Package connresolve turns caller connection input into a ready-to-open configuration.
-// input: connection, TLS, timeout, and authentication errors from later openers
-// output: a Connection Failure Class with no host, DSN, driver text, or credential
-// pos: shared classification for Transport Connection Resolution; surfaces map class to their own words
-// note: if this file changes, update this header and module README.md.
 package connresolve
 
 import (

@@ -1,8 +1,4 @@
 // Package deltascope exposes the public library surface for consumers.
-// input: public audit requests carrying SQL text, dialect, optional target_version, optional config path, and optional metadata providers
-// output: stable audit results with per-statement evidence gaps and an optional resolved canonical version identity for embedding DeltaScope in tools and agents
-// pos: public audit API above the internal application service
-// note: if this file changes, update this header and module README.md.
 package deltascope
 
 import (

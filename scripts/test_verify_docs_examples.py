@@ -1,7 +1,3 @@
-# input: verify_docs_examples helpers, canonical fixtures, and temporary documentation trees
-# output: regression evidence for the static public documentation drift contract
-# pos: unit-test owner for the documentation example release gate
-# note: if this file changes, update this header and scripts/README.md.
 """Unit tests for the static docs/examples drift checker.
 
 Run with:
@@ -113,7 +109,7 @@ sql-audit:
 """
 
 VALID_ACTION = """\
-# pos: composite action entrypoint consumed by caller workflows via `uses: Fanduzi/deltascope@v0.330.0`
+# Caller usage: uses: Fanduzi/deltascope@v0.330.0
 name: 'DeltaScope SQL Audit'
 """
 

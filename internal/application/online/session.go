@@ -1,8 +1,4 @@
 // Package online provides the shared online session factory for SDK, CLI, and HTTP.
-// input: SessionConfig with connection parameters, TLS mode, and expected dialect
-// output: pinned *sql.Conn with validated ServerIdentity and CapabilityTarget, with bounded authentication and connection failures
-// pos: shared session lifecycle for online query access (open, pin, identify, close)
-// note: if this file changes, update this header and module README.md.
 package online
 
 import (

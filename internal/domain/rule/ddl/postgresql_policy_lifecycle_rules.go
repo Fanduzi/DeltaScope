@@ -1,8 +1,4 @@
 // Package ddl defines Tier-1 DDL rules.
-// input: normalized Statement specs for PostgreSQL policy and RLS lifecycle DDL operations
-// output: findings for PostgreSQL policy creation, alteration, removal, and row-level security changes
-// pos: PostgreSQL-specific policy lifecycle rule implementations
-// note: if this file changes, update this header and module README.md.
 package ddl
 
 import (

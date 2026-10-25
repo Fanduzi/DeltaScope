@@ -1,8 +1,4 @@
 // Package dml verifies metadata-backed DML rule behavior.
-// input: synthetic DML statements with optional target-table snapshots
-// output: stable missing-target findings and dialect/metadata boundary coverage
-// pos: domain DML metadata rule test seam
-// note: if this file changes, update this header and module README.md.
 package dml
 
 import (

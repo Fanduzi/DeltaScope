@@ -5,28 +5,6 @@
 // *sql.Conn connections to the live servers started by
 // `docker compose -f docker/cli-e2e-compose.yaml up -d --wait` and assert
 // server-returned evidence. They do NOT execute promotion code.
-//
-// input: live Docker MySQL 8.4 (mysql:8.4) and TiDB 8.5 (pingcap/tidb:v8.5.0)
-//
-//	probes over a caller-owned *sql.Conn
-//
-// output: per-dialect live server evidence locked against the actual server
-//
-//	response; the tests FAIL if the Docker server returns materially different
-//	evidence (they do not self-assert hardcoded struct literals). The
-//	disposition tests execute real probes and skip themselves only when the
-//	Docker service is unreachable.
-//
-// pos: integration evidence only; skipped when Docker/compose is unavailable
-//
-//	(not claimed via mocks). MySQL and TiDB are independent proof domains;
-//	neither dialect's probes infer the other's evidence.
-//
-// note: if this file changes, update this header, the module README.md, and
-//
-//	the decision record's evidence section. See
-//	docs/decisions/2026-07-17-query-access-mysql-tidb-effect-identity-feasibility.md
-//	for the per-dialect KILL/DEFER disposition and its scope.
 package mysqlmeta
 
 import (

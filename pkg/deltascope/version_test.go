@@ -1,8 +1,4 @@
 // Package deltascope verifies the public build-version helper.
-// input: synthetic Go module and VCS build-info fixtures plus the live test binary
-// output: assertions that untagged, devel, and pseudo-version builds do not claim DefaultVersion as the sole version, tagged versions are preserved, and DefaultVersion is used only when build info is absent
-// pos: public version-string seam for CLI, server, and MCP binaries
-// note: if this file changes, update this header and module README.md.
 package deltascope
 
 import (

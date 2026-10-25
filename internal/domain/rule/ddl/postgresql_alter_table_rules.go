@@ -1,8 +1,4 @@
 // Package ddl defines Tier-1 DDL rules.
-// input: normalized Statement specs for PostgreSQL ALTER TABLE operations
-// output: advisory and notice findings for PG-only alter table gap coverage
-// pos: PostgreSQL-specific alter table advisory rule implementations
-// note: if this file changes, update this header and module README.md.
 package ddl
 
 import (

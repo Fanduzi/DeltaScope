@@ -1,9 +1,5 @@
 // Package deltascope pins the canonical Go deprecation notices on the six
 // dialect-specific compatibility identifiers.
-// input: local package source files parsed with go/parser and go/ast
-// output: assertions that every deprecated identifier carries a Deprecated: notice naming its replacement
-// pos: minimal deprecation-contract seam for the public compatibility API
-// note: if this file changes, update this header and module README.md.
 package deltascope
 
 import (

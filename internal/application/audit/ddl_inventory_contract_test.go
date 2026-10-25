@@ -1,8 +1,4 @@
 // Package audit verifies the official DDL acceptance inventory contract.
-// input: testdata/ddl-inventory/inventory.yaml rows, sources, owners, and proposed tasks
-// output: gate evidence that every inventory row is classified, sourced, and assigned
-// pos: application-level DDL inventory gate for the mysql-tidb-ddl-completion milestone
-// note: if this file changes, update this header and module README.md.
 package audit
 
 import (

@@ -1,8 +1,4 @@
 // Package markdown renders audit results as human-readable Markdown.
-// input: internal report results from the audit application flow
-// output: deterministic Markdown bytes for CLI and agent consumption, including skip reasons, unsupported statements, and diagnostics
-// pos: infrastructure output adapter for the default human-oriented renderer
-// note: if this file changes, update this header and module README.md.
 package markdown
 
 import (

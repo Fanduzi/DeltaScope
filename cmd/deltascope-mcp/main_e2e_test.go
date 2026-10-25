@@ -1,10 +1,6 @@
 //go:build e2e
 
 // Package main verifies Docker-backed MCP metadata-aware end-to-end behavior.
-// input: real MySQL fixtures, the MCP stdio entrypoint, and SDK command-transport clients
-// output: end-to-end proof that deltascope-mcp can audit through the live metadata path
-// pos: slower external e2e verification kept outside the default go test loop
-// note: if this file changes, update this header and module README.md.
 package main
 
 import (

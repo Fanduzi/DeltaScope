@@ -1,8 +1,4 @@
 // Package ddl defines Tier-1 DDL rules.
-// input: T11 unified PK/UNIQUE/FK CREATE/ALTER contract tests — foreign-key forbid and naming parity on alter.Constraint payloads, ALTER primary-key column-count parity, and the drop_foreign_key existence member rule over the constraint collection
-// output: assertions that pin the frozen T11 public contract on the landed implementation
-// pos: T11 rule tests (constraint-fk acceptance rows)
-// note: if this file changes, update this header and module README.md.
 package ddl
 
 import (

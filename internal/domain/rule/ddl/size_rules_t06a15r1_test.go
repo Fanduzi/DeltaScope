@@ -1,14 +1,5 @@
 // Package ddl verifies the T06-A15-R1 declared-COMPRESSED row-format
 // identity fix at the fact-resolution seam.
-// input: create-table statements carrying explicit ROW_FORMAT=COMPRESSED
-// declarations plus opposite-format controls across nil/empty/defaulted
-// instance shapes under MySQL and TiDB
-// output: the resolver preserving the declared COMPRESSED identity over any
-// instance default, zero fabricated missing facts for known declarations,
-// and the unchanged COMPACT/REDUNDANT/DEFAULT control behavior
-// pos: DDL row-size fact-resolution regression for the R1 declared-format
-// identity fix (issue #85)
-// note: if this file changes, update this header and module README.md.
 package ddl
 
 import (

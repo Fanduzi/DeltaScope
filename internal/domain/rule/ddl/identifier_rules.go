@@ -1,8 +1,4 @@
 // Package ddl defines Tier-1 DDL rules.
-// input: create-table and alter-table Statement specs carrying table, column, index, and constraint names plus per-rule policy values
-// output: identifier-pattern and reserved-keyword findings for declared object names — foreign-key subjects include ALTER add_constraint authored names on both dialect paths, a bare ADD FOREIGN KEY producing none
-// pos: DDL rule implementations for identifier governance
-// note: if this file changes, update this header and module README.md.
 package ddl
 
 import (

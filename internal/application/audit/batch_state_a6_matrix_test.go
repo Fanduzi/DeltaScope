@@ -1,8 +1,4 @@
 // Package audit verifies the T05-A6 DROP COLUMN boundaries beyond the first path.
-// input: real parser statements and shared AuditSQL requests, plus loaded snapshots
-// output: precise removal only for one ordinary dependency-free column; every other form tombstones the whole affected set
-// pos: T05-A6 regression for absence, members, dependents, multi-action scope, stats, and policy orthogonality
-// note: if this file changes, update this header and module README.md.
 package audit
 
 import (

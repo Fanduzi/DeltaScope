@@ -2,10 +2,6 @@
 // layer: limit parameter bounds, shipped default levels, explicit-level
 // overrides, type applicability, and the CREATE-only scope of the two
 // column-length rules.
-// input: synthetic column/type shapes plus policy overrides through the real rule constructors
-// output: constructor validation, default-level, applicability, and scope pinning for char/varchar length rules
-// pos: domain DDL rule test coverage for issue #85 T06-A5
-// note: if this file changes, update this header and module README.md.
 package ddl
 
 import (

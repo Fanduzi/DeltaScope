@@ -1,15 +1,5 @@
 // Package audit verifies the T06-A15-R1 declared-COMPRESSED row-format
 // identity fix through the real parser, extractor, and AuditSQL seam.
-// input: four fixed CREATE TABLE inputs declaring ROW_FORMAT=COMPRESSED plus
-// opposite-format controls, executed under the isolated row-size profile
-// across offline/nil/empty/defaulted instance shapes and both dialects
-// output: real Options["row_format"]=="COMPRESSED" extraction, the
-// declaration-over-instance resolution contract in public verdicts and
-// finding metadata, a charset-only missing_instance_fact projection, exact
-// provider call ledgers, and input-fact immutability
-// pos: application-layer integration regression for the A15-R1
-// declared-format identity fix (issue #85)
-// note: if this file changes, update this header and module README.md.
 package audit
 
 import (

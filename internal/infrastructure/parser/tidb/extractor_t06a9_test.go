@@ -5,10 +5,6 @@
 // DefaultIsCurrentTimestamp/OnUpdateCurrentTimestamp flags the role rule
 // consumes — never depending on the expression text, which is empty for
 // function defaults.
-// input: MySQL and TiDB CREATE TABLE inputs with current-timestamp spellings and counter shapes
-// output: Column.HasDefault/DefaultIsCurrentTimestamp/OnUpdateCurrentTimestamp facts per declared option
-// pos: parser-layer contract tests for issue #85 T06-A9
-// note: if this file changes, update this header and module README.md.
 package tidbparser
 
 import (

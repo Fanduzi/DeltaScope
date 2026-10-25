@@ -1,8 +1,4 @@
 // Package httpapi verifies HTTP diagnostic result contracts.
-// input: offline HTTP audit requests containing parser-error and valid SQL statements
-// output: bounded error envelopes that preserve review-floored partial audit results and diagnostic evidence
-// pos: HTTP interface parser-diagnostic and partial-result regression coverage
-// note: if this file changes, update this header and module README.md.
 package httpapi
 
 import (

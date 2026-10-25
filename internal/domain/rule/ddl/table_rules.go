@@ -1,8 +1,4 @@
 // Package ddl defines Tier-1 DDL rules.
-// input: create-table Statement specs and per-rule policy values
-// output: table-level findings for missing comments and oversized names
-// pos: DDL rule implementations for table naming and comments
-// note: if this file changes, update this header and module README.md.
 package ddl
 
 import (

@@ -4,12 +4,6 @@
 // are no longer truncated to the base keyword plus first integer. Rows are
 // constructed catalog input (a live server may normalize differently; the
 // provider must only preserve what it actually receives).
-// input: constructed information_schema row sets for the five target types
-// output: the complete 22-row column set in catalog order — identity, order,
-// and presence pinned alongside faithful Type/Length/Unsigned per stored
-// column_type
-// pos: infrastructure metadata adapter regression tests for issue #85 T06-A17
-// note: if this file changes, update this header and module README.md.
 package mysqlmeta
 
 import (

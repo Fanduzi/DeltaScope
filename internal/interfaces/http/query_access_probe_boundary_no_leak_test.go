@@ -8,24 +8,6 @@
 // injected driver-error-like text, and asserts those markers, identity facts,
 // candidates, session/context data, manifest data, raw SQL, and `severity` are
 // absent from the HTTP response body.
-//
-// input: HTTP requests with MySQL/TiDB function-bearing SQL carrying injected
-//
-//	marker function names, literals, DSN/credential-shaped strings, and
-//	driver-error-like text (via the analyzeQueryAccess function variable)
-//
-// output: HTTP response body contains none of the injected markers, no
-//
-//	identity/candidate/manifest/session fields, no raw SQL, no `severity` field
-//
-// pos: HTTP no-leak regression for the MySQL/TiDB probe boundary; no new HTTP
-//
-//	path is introduced or exercised here
-//
-// note: if this file changes, update this header, the module README.md, and
-//
-//	the decision record's no-leak evidence section. See
-//	docs/decisions/2026-07-17-query-access-mysql-tidb-effect-identity-feasibility.md
 package httpapi
 
 import (

@@ -1,7 +1,4 @@
 // Package tidbparser characterizes ordered MySQL/TiDB effect candidates.
-// input: function-bearing expressions across query and modifier locations
-// output: deterministic internal candidates without public-result exposure
-// pos: parser-level candidate closure regression coverage
 package tidbparser
 
 import (

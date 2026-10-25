@@ -1,8 +1,4 @@
 // Package tidbparser verifies TiDB-backed parser adapter behavior.
-// input: SQL text covering multi-statement parsing and parse failures
-// output: test coverage for parser adapter parsing and error handling
-// pos: infrastructure parser adapter test coverage
-// note: if this file changes, update this header and module README.md.
 package tidbparser
 
 import (

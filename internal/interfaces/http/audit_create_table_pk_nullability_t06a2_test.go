@@ -1,8 +1,4 @@
 // Package httpapi verifies the T06-A2 primary-key member nullability contract at the HTTP seam.
-// input: MySQL/TiDB CREATE TABLE /v1/audit requests with the isolated ddl.table.primary_key.not_null.require policy
-// output: HTTP 200 pass for legal PK members and HTTP 200 reject for explicit-NULL member declarations
-// pos: HTTP transport contract test for the frozen T06-A2 oracle (issue #85)
-// note: if this file changes, update this header and module README.md.
 package httpapi
 
 import (

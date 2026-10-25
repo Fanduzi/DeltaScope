@@ -1,8 +1,4 @@
 // Package httpapi verifies metadata-aware HTTP audit execution wiring.
-// input: HTTP audit requests, fake metadata preparation results, and stub public audit functions
-// output: focused coverage for offline context emission and registry-based metadata-aware adapter behavior
-// pos: interface-layer tests for HTTP metadata-aware audit execution
-// note: if this file changes, update this header and module README.md.
 package httpapi
 
 import (

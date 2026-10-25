@@ -2,14 +2,6 @@
 // for MySQL/TiDB (Task 2). A function hidden in a derived table, subquery,
 // ORDER BY, HAVING, JOIN subquery, CASE WHEN, or nested expression position
 // must never be silently admitted on either dialect.
-//
-// input: function-bearing SQL with the function hidden in non-projection
-//
-//	positions (derived table, WHERE subquery, ORDER BY, HAVING, JOIN
-//	subquery, CASE WHEN, nested function call, nested derived table)
-//
-// output: every case remains indeterminate with unknown_function_effect
-// pos: application-level negative regression; no promotion
 package queryaccess_test
 
 import (

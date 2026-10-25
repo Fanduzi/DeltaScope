@@ -1,10 +1,4 @@
 // Package deltascope verifies the public ordered MODIFY contract (T05-A4).
-// input: public audit requests under the isolated four-rule policy for the
-// VARCHAR(10) then VARCHAR(20) then VARCHAR(15|30) sequence
-// output: nil-error reject/pass results that pin source_length and
-// target_length, plus the offline gap shapes and a wrapped provider error
-// pos: public SDK contract tests for ordinary single-column MODIFY post-state
-// note: if this file changes, update this header and module README.md.
 package deltascope
 
 import (

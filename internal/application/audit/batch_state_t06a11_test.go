@@ -1,11 +1,5 @@
 // Package audit verifies the T06-A11 single-member primary-key BIGINT/UNSIGNED
 // audit and derived-state boundary.
-// input: the eight frozen CREATE TABLE roles under the two isolated profiles
-// through AuditSQL, plus create+alter inputs through the enrich seam
-// output: per-role verdicts, complete finding identity, composite-skip
-// semantics, and follower pre-state Type/Unsigned/Length/PK propagation
-// pos: application-layer contract tests for the frozen T06-A11 oracle (issue #85)
-// note: if this file changes, update this header and module README.md.
 package audit
 
 import (

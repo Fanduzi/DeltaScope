@@ -1,9 +1,4 @@
 // Package mcpapi verifies the T05-A5 column-identity contract at the MCP seam.
-// input: offline eleven-rule audit_sql calls for a published CHANGE, a MySQL
-// 5.7 RENAME rejection, a missing-version RENAME, and an unknown dialect
-// output: isError=false review, reject, and gap results, plus isError=true
-// pos: MCP transport contract tests for CHANGE and RENAME COLUMN post-state
-// note: if this file changes, update this header and module README.md.
 package mcpapi
 
 import (

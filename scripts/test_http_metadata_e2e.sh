@@ -1,9 +1,4 @@
 #!/usr/bin/env bash
-# input: docker compose MySQL/TiDB fixtures plus tagged HTTP end-to-end Go tests
-# output: repeatable metadata-aware HTTP smoke validation against real MySQL and TiDB targets
-# pos: shell-based Docker harness for slower HTTP metadata e2e verification
-# note: if this file changes, update this header and module README.md.
-
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"

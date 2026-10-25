@@ -1,8 +1,4 @@
 // Package cli exposes the command-line adapter for DeltaScope.
-// input: version command invocations and the optional ldflags version variable
-// output: a printable version string from release ldflags or Go build information
-// pos: CLI metadata command implementation
-// note: if this file changes, update this header and module README.md.
 package cli
 
 import (

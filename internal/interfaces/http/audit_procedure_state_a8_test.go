@@ -1,8 +1,4 @@
 // Package httpapi verifies the T05-A8 procedure lifecycle at the HTTP seam.
-// input: four-statement TiDB CREATE PROCEDURE and MySQL DROP PROCEDURE /v1/audit requests through the real handler
-// output: HTTP 400 vendor-boundary envelope versus HTTP 200 supported MySQL DROP result
-// pos: HTTP transport contract test for procedure table-state isolation (T05-A8)
-// note: if this file changes, update this header and module README.md.
 package httpapi
 
 import (

@@ -1,10 +1,6 @@
 //go:build postgresql
 
 // Package postgresql tests internal effect-candidate extraction (T5).
-// input: PostgreSQL SQL with operator/function/cast effects
-// output: ordered EffectCandidate facts + unchanged unproven_* reason codes
-// pos: parser coverage for internal candidates (not public Result fields)
-// note: if this file changes, update this header and module README.md.
 package postgresql
 
 import (

@@ -1,8 +1,4 @@
 // Package audit verifies the T04-B/#83 target_version and observed-version evidence contract.
-// input: audit requests carrying strict target_version, optional observed provider banners, and the isolated key-length policy
-// output: version identity propagation, bounded evidence gaps, typed input errors, and preserved mixed-aggregation semantics
-// pos: application audit version-evidence regression tests for issue #83 (T04-B slice)
-// note: if this file changes, update this header and module README.md.
 package audit
 
 import (

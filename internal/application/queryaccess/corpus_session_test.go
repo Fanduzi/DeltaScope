@@ -1,7 +1,4 @@
 // Package queryaccess_test provides corpus-only proof-session fixtures.
-// input: declared corpus session proof and direct physical column metadata
-// output: the service capability required to verify admitted corpus cases
-// pos: test-only session seam; production adapters remain independently tested
 package queryaccess_test
 
 import (

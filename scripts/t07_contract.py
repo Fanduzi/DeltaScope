@@ -1,7 +1,3 @@
-# input: fixed T07 semantic roles, versioned sources, and independently declared schema/result expectations
-# output: immutable role specs for the T07 manifest and full-entry artifact validation; never reads product actuals
-# pos: independent T07 acceptance oracle beside the existing DDL Golden runner
-# note: if this file changes, update this header and scripts/README.md.
 import copy
 import hashlib
 import json

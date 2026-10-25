@@ -3,10 +3,6 @@
 // (never the re-quoted display text) and a kind domain, while literal
 // shapes whose cross-source identity is not provable — decimal, bit, hex,
 // byte, boolean forms — carry nil, the honest unknown.
-// input: CREATE/ALTER DEFAULT clauses through the real parser and extractor
-// output: spec.Column.DefaultLiteral kind+value (or nil for unproven shapes)
-// pos: infrastructure parser extractor test coverage for issue #87 T08-R1
-// note: if this file changes, update this header and module README.md.
 package tidbparser
 
 import (

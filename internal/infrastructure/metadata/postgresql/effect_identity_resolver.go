@@ -1,10 +1,6 @@
 //go:build postgresql
 
 // Package postgresqlmeta implements facts-only EffectIdentityResolver against pg_catalog.
-// input: session-pinned PinnedSession + EffectIdentityRequest (candidates + type OIDs)
-// output: EffectIdentityBatch statuses/facts only (no Trusted / admission / free-text)
-// pos: T7 catalog adapter; not wired into Service.Analyze
-// note: if this file changes, update this header and module README.md.
 package postgresqlmeta
 
 import (

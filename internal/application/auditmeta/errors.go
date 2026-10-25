@@ -1,8 +1,4 @@
 // Package auditmeta prepares metadata-aware audit requests for multiple adapters.
-// input: metadata-preparation failures encountered while opening connections, validating dialects, and resolving schemas
-// output: typed shared errors, including MySQL/TiDB alias conflicts and PostgreSQL schema/database validation, that let adapters classify metadata-prep failures without brittle string matching
-// pos: shared error taxonomy for CLI and MCP metadata-aware preparation flows
-// note: if this file changes, update this header and module README.md.
 package auditmeta
 
 import "fmt"

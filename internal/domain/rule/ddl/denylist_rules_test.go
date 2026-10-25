@@ -1,8 +1,4 @@
 // Package ddl verifies DDL denylist governance rules.
-// input: parser-neutral multi-target drop/rename statement specs and schema/table denylist policies
-// output: coverage for per-target denylist evaluation, qualified-name resolution, deduplication, and ordering
-// pos: DDL denylist rule test coverage for multi-target completeness
-// note: if this file changes, update this header and module README.md.
 package ddl
 
 import (

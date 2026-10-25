@@ -1,8 +1,4 @@
 // Package deltascope verifies the MySQL/TiDB session connection boundary.
-// input: a custom database/sql driver and caller-owned *sql.Conn
-// output: deprecated-session caller ownership and no-execution compatibility
-// pos: public MySQL/TiDB session integration tests without Docker
-// note: if this file changes, update this header and module README.md.
 package deltascope
 
 import (

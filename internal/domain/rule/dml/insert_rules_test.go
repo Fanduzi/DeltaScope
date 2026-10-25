@@ -1,8 +1,4 @@
 // Package dml verifies Tier-1 DML insert-rule behavior.
-// input: synthetic insert Statement specs and rule policy overrides
-// output: deterministic findings for insert row-count, replace, insert-select, and on-duplicate checks
-// pos: domain DML rule test coverage for insert-family guardrails
-// note: if this file changes, update this header and module README.md.
 package dml
 
 import (

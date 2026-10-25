@@ -1,10 +1,6 @@
 //go:build postgresql
 
 // Package httpapi_test verifies CLI and HTTP Query Access state parity.
-// input: the issue-35 schema-qualified PostgreSQL offline query
-// output: matching classification, admission, and reason-code JSON fields
-// pos: cross-surface transport regression at the public CLI and HTTP seams
-// note: if this file changes, update this header and module README.md.
 package httpapi_test
 
 import (

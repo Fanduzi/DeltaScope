@@ -1,8 +1,4 @@
 // Package markdown verifies Markdown rendering behavior.
-// input: representative internal audit results with statement and global findings
-// output: regression coverage for deterministic Markdown rendering including unsupported statements and diagnostics
-// pos: infrastructure output test coverage for the Markdown renderer
-// note: if this file changes, update this header and module README.md.
 package markdown
 
 import (

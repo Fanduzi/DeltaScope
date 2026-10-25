@@ -4,10 +4,6 @@
 // error channels. The public contract never exposed Column.Type, so this test
 // proves transport identity only — field fidelity is pinned at the parser,
 // provider, and state seams.
-// input: CREATE with case-bearing members and parameterized numerics under all-off policy
-// output: one clean pass statement, stable kind/index, nil error channel
-// pos: public SDK transport regression test for issue #85 T06-A17
-// note: if this file changes, update this header and module README.md.
 package deltascope
 
 import (

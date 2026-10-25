@@ -1,10 +1,6 @@
 //go:build postgresql
 
 // Package httpapi verifies PostgreSQL-only metadata-aware HTTP audit behavior.
-// input: HTTP audit requests with PostgreSQL dialect plus fake shared metadata preparation results
-// output: focused coverage for PG-capable metadata-aware context and public audit request wiring
-// pos: tagged HTTP adapter regression coverage for PostgreSQL metadata-aware support
-// note: if this file changes, update this header and module README.md.
 package httpapi
 
 import (

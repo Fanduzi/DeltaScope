@@ -1,8 +1,4 @@
 // Package ddl verifies Tier-1 DDL primary-key rule behavior.
-// input: create-table Statement specs and rule policy overrides
-// output: deterministic findings for primary-key presence and shape rules
-// pos: domain DDL rule test coverage for primary-key constraints
-// note: if this file changes, update this header and module README.md.
 package ddl
 
 import (

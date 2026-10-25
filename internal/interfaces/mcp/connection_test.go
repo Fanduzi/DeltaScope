@@ -1,8 +1,4 @@
 // Package mcpapi verifies MCP connection resolution and validation behavior.
-// input: direct MCP connection parameters, named connection configs, database/schema selections, and secret sources
-// output: regression coverage for MCP connection normalization, database preservation, and safety rules
-// pos: interface-layer tests for MCP metadata-aware connection handling
-// note: if this file changes, update this header and module README.md.
 package mcpapi
 
 import (

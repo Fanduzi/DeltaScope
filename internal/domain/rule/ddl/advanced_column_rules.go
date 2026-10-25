@@ -1,8 +1,4 @@
 // Package ddl defines Tier-1 DDL rules.
-// input: advanced-column shared assessments (dependency effects, compatibility issues/gaps) and policy config
-// output: the column-dependency and advanced-compatibility statement rules with contract-frozen finding/gap shapes
-// pos: DDL rule registration for T07 generated/expression-default/visibility checks
-// note: if this file changes, update this header and module README.md.
 package ddl
 
 import (

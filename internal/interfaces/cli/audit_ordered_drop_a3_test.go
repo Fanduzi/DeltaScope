@@ -1,10 +1,4 @@
 // Package cli verifies the T05-A3 ordered DROP contract at the CLI seam.
-// input: isolated five-rule audit invocations for plain and IF EXISTS drops
-// across both ordered dialects and every fail threshold
-// output: exit-code and JSON evidence_gaps/coverage assertions for the
-// drop-existence unknown_table_state gap
-// pos: CLI transport contract tests for the ordered-state drop transition
-// note: if this file changes, update this header and module README.md.
 package cli
 
 import (

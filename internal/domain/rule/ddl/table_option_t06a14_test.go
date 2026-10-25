@@ -1,14 +1,5 @@
 // Package ddl verifies the T06-A14 three ordinary CREATE TABLE
 // table-option allowlist policies on synthetic statements.
-// input: the frozen allowed/denied/omitted option sets through each rule's
-// registered constructor and through the real registry seam
-// output: per-role findings pinned for the six-role matrix (allowed /
-// denied / omitted-strict / omitted-optional / denied-optional / disabled),
-// the require_explicit semantics, default level/params, invalid-parameter
-// controls, the case-insensitive comparison, and the CREATE-only/PG
-// applicability seams
-// pos: domain DDL rule regression for issue #85 T06-A14
-// note: if this file changes, update this header and module README.md.
 package ddl
 
 import (

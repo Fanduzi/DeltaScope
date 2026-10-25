@@ -1,8 +1,4 @@
 // Package spec defines parser-neutral advanced-column facts and assessments.
-// input: normalized statements carrying generated/default-expression/visibility facts plus version and pre-state metadata
-// output: internal GeneratedColumn/ExpressionFacts/ColumnReference model, shared ColumnDependents and AssessAdvancedColumns answers
-// pos: T07 advanced-column domain model consumed by rules and the ordered-state pass
-// note: if this file changes, update this header and module README.md.
 package spec
 
 import "strings"

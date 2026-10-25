@@ -1,8 +1,4 @@
 // Package audit orchestrates audit use cases at the application layer.
-// input: normalized SQL text and its selected MySQL, TiDB, or PostgreSQL dialect
-// output: ordered top-level statement slices with 1-based source start locations
-// pos: bounded lexical statement-boundary scanner before dialect parser adapters
-// note: if this file changes, update this header and module README.md.
 package audit
 
 import (

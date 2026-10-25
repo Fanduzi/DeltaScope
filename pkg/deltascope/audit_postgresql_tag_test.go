@@ -1,10 +1,6 @@
 //go:build postgresql
 
 // Package deltascope verifies the public PostgreSQL offline impact contract.
-// input: public audit requests for PostgreSQL DML
-// output: stable statement-level impact fields exposed to SDK callers
-// pos: PostgreSQL-tagged public API regression coverage
-// note: if this file changes, update this header and module README.md.
 package deltascope
 
 import (

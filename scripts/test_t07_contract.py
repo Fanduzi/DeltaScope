@@ -1,8 +1,4 @@
 #!/usr/bin/env python3
-# input: independent frozen T07 roles and explicitly constructed offline validator artifacts
-# output: full validate_artifact valid-control/adversarial sensitivity plus owned fixture and environment-only credential controls; no product/database acceptance claim
-# pos: T07 artifact-integrity tests beside the existing T02–T06 validator suite
-# note: if this file changes, update this header and scripts/README.md.
 import copy
 import json
 import os

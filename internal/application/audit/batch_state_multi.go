@@ -1,19 +1,4 @@
 // Package audit derives the bounded multi-action ALTER TABLE post-state.
-// input: one ALTER TABLE statement with more than one audited action, the
-// immutable request-local entries captured before the statement, and loaded
-// facts already present in this batch
-// output: one net-effect replacement when every action is in the provable
-// template set and every dialect premise resolves, or one tombstone of every
-// bound identity plus already-loaded dependents — never a prefix of applied
-// actions
-// pos: T08-A8 multi-action successor. Premise resolution is dialect-owned:
-// MySQL validates each action against the state accumulated from preceding
-// actions (left-to-right), TiDB validates every action's premises against
-// the pre-state only, and two actions touching the same primary object are a
-// known failure on either dialect. Conditional (IF [NOT] EXISTS), positional
-// anomalies, dependency-bearing and otherwise unprovable forms keep the
-// tombstone. It does not read the provider again.
-// note: if this file changes, update this header and module README.md.
 package audit
 
 import (

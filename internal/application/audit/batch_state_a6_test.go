@@ -1,10 +1,4 @@
 // Package audit verifies the T05-A6 ordinary single-column DROP post-state.
-// input: real parser statements and shared AuditSQL requests whose later
-// MODIFY and CREATE INDEX must read the columns left by DROP COLUMN
-// output: public results plus direct pre-state assertions for the remaining
-// column order, length, and primary key
-// pos: T05-A6 regression for a dependency-free DROP COLUMN state transition
-// note: if this file changes, update this header and module README.md.
 package audit
 
 import (

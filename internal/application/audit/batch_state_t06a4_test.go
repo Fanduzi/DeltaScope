@@ -7,10 +7,6 @@
 // here — mysqlmeta already asserts the audit.MetadataProvider interface);
 // this file pins the state-machine half with provider-shaped stubs whose
 // fields mirror the post-fix production output.
-// input: two-statement ALTER DROP COLUMN + CREATE INDEX batches over stored-shape snapshots
-// output: conservative unknown_table_state for literal siblings; precise post-drop state for stored SQL NULL
-// pos: application-layer internal-state contract tests for issue #85 T06-A4
-// note: if this file changes, update this header and module README.md.
 package audit
 
 import (

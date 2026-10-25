@@ -1,8 +1,4 @@
 // Package cli verifies CLI unsupported-diagnostics evidence rendering.
-// input: parser-error SQL through Execute and diagnostic render helpers
-// output: JSON/text/markdown/quiet diagnostic fields, partial-result review floors, and no-leak coverage
-// pos: interface-layer diagnostics evidence tests
-// note: if this file changes, update this header and module README.md.
 package cli
 
 import (

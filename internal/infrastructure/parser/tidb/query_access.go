@@ -1,8 +1,4 @@
 // Package tidbparser extracts query access facts from TiDB AST nodes.
-// input: SQL text, dialect, and default schema through the TiDB parser
-// output: parser-neutral QueryAccessFacts for relation, column, output, and read-classification analysis
-// pos: infrastructure query access adapter between TiDB AST and application query access contracts
-// note: if this file changes, update this header and module README.md.
 package tidbparser
 
 import (

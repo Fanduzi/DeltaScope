@@ -1,8 +1,4 @@
 // Package cli exposes the command-line adapter for DeltaScope.
-// input: process control from cmd/deltascope, Cobra command execution requests, and legacy audit flag placement
-// output: executable CLI behavior and stable process exit codes, including legacy audit flag normalization and Cobra usage-error mapping for audit and query-access command paths
-// pos: interface adapter between process entrypoint and application services
-// note: if this file changes, update this header and module README.md.
 package cli
 
 import (

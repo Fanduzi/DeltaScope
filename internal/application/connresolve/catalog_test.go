@@ -1,8 +1,4 @@
 // Package connresolve verifies Transport Connection Resolution catalog binding.
-// input: dialect and MySQL/TiDB database, connection schema, and request default hints
-// output: catalog and qualifier pairs plus conflict failures
-// pos: application tests at the BindMySQLTiDBCatalog seam
-// note: if this file changes, update this header and module README.md.
 package connresolve
 
 import (

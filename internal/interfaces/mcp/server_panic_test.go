@@ -1,8 +1,4 @@
 // Package mcpapi verifies MCP panic recovery behavior.
-// input: tool handler functions that panic intentionally
-// output: regression coverage ensuring panics are caught and converted to structured errors
-// pos: panic-recovery tests for MCP tool handler wrapper
-// note: if this file changes, update this header and module README.md.
 package mcpapi
 
 import (

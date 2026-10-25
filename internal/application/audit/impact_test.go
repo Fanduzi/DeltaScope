@@ -1,8 +1,4 @@
 // Package audit verifies conservative shape-only DML impact estimation behavior.
-// input: normalized statement specs with extracted DML shape hints
-// output: test coverage for shape-only statement impact estimates
-// pos: application audit impact-estimation test coverage
-// note: if this file changes, update this header and module README.md.
 package audit
 
 import (

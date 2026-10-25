@@ -1,10 +1,6 @@
 //go:build postgresql
 
 // Package deltascope benchmarks the public audit API on representative PostgreSQL SQL inputs.
-// input: deterministic PostgreSQL public audit requests without metadata providers
-// output: benchmark timing and allocation measurements for public API cache evaluation
-// pos: PostgreSQL-tagged public API benchmark coverage for parser/cache evaluation
-// note: if this file changes, update this header and module README.md.
 package deltascope
 
 import (

@@ -1,8 +1,4 @@
 // Package ddl verifies semantic alter rule behavior.
-// input: synthetic alter-table statements with rename, add-index, target-type, explicit-change, and metadata payloads plus policy overrides
-// output: focused coverage for semantic alter rename, nullability state handling, alter-added index governance, and target-type-family rules
-// pos: domain DDL semantic alter rule and registration-path test coverage
-// note: if this file changes, update this header and module README.md.
 package ddl
 
 import (

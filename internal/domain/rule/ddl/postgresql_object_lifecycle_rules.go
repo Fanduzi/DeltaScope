@@ -1,8 +1,4 @@
 // Package ddl defines Tier-1 DDL rules.
-// input: normalized Statement specs for PostgreSQL object lifecycle DDL operations
-// output: findings for PostgreSQL schema, sequence, and materialized view lifecycle risks
-// pos: PostgreSQL-specific object lifecycle rule implementations
-// note: if this file changes, update this header and module README.md.
 package ddl
 
 import (

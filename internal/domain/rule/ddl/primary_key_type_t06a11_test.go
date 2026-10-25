@@ -1,11 +1,5 @@
 // Package ddl verifies the T06-A11 single-member primary-key BIGINT/UNSIGNED
 // rule boundaries on synthetic statements.
-// input: synthetic create-table statements exercising the pk bigint and
-// unsigned require rules under boundary policies
-// output: required=false/disabled/default-level/invalid-parameter controls,
-// the member-count gate, and the two rules' factual independence pinned
-// pos: domain DDL rule regression for issue #85 T06-A11
-// note: if this file changes, update this header and module README.md.
 package ddl
 
 import (

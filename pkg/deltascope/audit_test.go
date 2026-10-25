@@ -1,8 +1,4 @@
 // Package deltascope verifies the public SQL audit API.
-// input: public audit requests across dialect, parser, metadata, and policy boundaries
-// output: stable public result, partial-result, error, finding, and metadata contract coverage, including JSON that omits CLI-only fail_on_triggered
-// pos: primary public SDK audit regression suite
-// note: if this file changes, update this header and module README.md.
 package deltascope
 
 import (

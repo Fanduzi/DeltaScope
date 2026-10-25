@@ -1,14 +1,5 @@
 // Package audit verifies the T06-A14 three ordinary CREATE TABLE
 // table-option allowlist policies at the application seam.
-// input: the frozen allowed/denied/omitted inputs through AuditSQL under
-// the isolated strict/optional/off profiles, plus the option-declared
-// CREATE+ALTER inputs through the enrich seam
-// output: per-role verdicts, complete finding identity, the
-// loaded/applicable/absent rule_summary distinction, and follower
-// pre-state Options propagation without back-mutation
-// pos: application-layer contract tests for the frozen T06-A14 oracle
-// (issue #85)
-// note: if this file changes, update this header and module README.md.
 package audit
 
 import (

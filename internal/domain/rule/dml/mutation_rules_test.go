@@ -1,8 +1,4 @@
 // Package dml verifies Tier-1 DML mutation-rule behavior.
-// input: synthetic update/delete Statement specs and rule policy overrides
-// output: deterministic findings for WHERE, LIMIT, ORDER BY, subquery, and JOIN ... ON checks
-// pos: domain DML rule test coverage for update/delete guardrails
-// note: if this file changes, update this header and module README.md.
 package dml
 
 import (

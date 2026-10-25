@@ -1,8 +1,4 @@
 // Package main collects bounded T07 source/catalog/provider fact evidence.
-// input: one fixed loopback anchor, environment-only fixture credentials, and a new output directory
-// output: raw catalog/session/projections, typed private facts, strict ordered checks, query ledger, and owned cleanup
-// pos: supplemental advanced-column proof outside product SQL execution and the Golden business denominator
-// note: if this file changes, update this header and module README.md.
 package main
 
 import (

@@ -1,16 +1,5 @@
 // Package configstatus derives the effective status of one shipped rule under the
 // default policy and an optional YAML config file.
-// input: a rule ID, an optional config path, built-in default policy, the rule catalog,
-//
-//	rulepresence.Of, and the existing Viper-backed policy loader
-//
-// output: a stable Result describing whether the rule is ON or OFF, whether it is Loaded,
-//
-//	its effective level, default versus current policy snapshot, FK-forbid suppression,
-//	and what the user's config changed
-//
-// pos: application use case for single-rule config status, below the CLI surface
-// note: if this file changes, update this header and module README.md.
 package configstatus
 
 import (

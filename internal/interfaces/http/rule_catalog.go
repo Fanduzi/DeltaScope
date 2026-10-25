@@ -1,8 +1,4 @@
 // Package httpapi exposes the HTTP adapter for DeltaScope.
-// input: HTTP rule-discovery requests plus shipped catalog and capability metadata
-// output: JSON rule-list, rule-detail, and capability payloads including offline existence context_fields and stable online identity errors for the HTTP adapter
-// pos: HTTP discovery helpers above the domain rule catalog and shared JSON writers
-// note: if this file changes, update this header and module README.md.
 package httpapi
 
 import (

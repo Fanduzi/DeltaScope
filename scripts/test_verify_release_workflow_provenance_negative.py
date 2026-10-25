@@ -1,8 +1,4 @@
 #!/usr/bin/env python3
-# input: check_provenance_contract and temporary workflow fixtures
-# output: pass/fail evidence that provenance DAG and npm/Homebrew channel checks reject tampered workflows
-# pos: adversarial tests for the tag-triggered release workflow provenance checker
-# note: if this file changes, update this header and scripts/README.md.
 """Adversarial and negative tests for the provenance contract checker.
 
 Table-driven fixtures covering:

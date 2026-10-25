@@ -1,10 +1,4 @@
 // Package audit verifies the T05-A4 MODIFY state matrix beyond the first path.
-// input: ordered MySQL/TiDB batches and loaded snapshots covering widening,
-// continuation, omitted attributes, primary-key nullability, charset
-// defaults, loaded dependents, and the conservative non-template boundaries
-// output: public findings/gaps plus direct pre-state facts for each frozen cell
-// pos: T05-A4 proof groups for conditional MODIFY state supply
-// note: if this file changes, update this header and module README.md.
 package audit
 
 import (

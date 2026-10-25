@@ -1,8 +1,4 @@
 // Package spec defines normalized statement specifications for rule evaluation.
-// input: statement kind and dialect domain scenarios
-// output: coverage for typed statement metadata and Mutation Target lookup
-// pos: domain specification test coverage
-// note: if this file changes, update this header and module README.md.
 package spec
 
 import (

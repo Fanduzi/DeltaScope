@@ -1,9 +1,5 @@
 // Package report verifies audit result aggregation behavior.
 // This file verifies the derived action summary that groups findings by rule.
-// input: synthetic report results, rule findings, and catalog entries
-// output: regression coverage for action summary grouping, ordering, and fallbacks
-// pos: domain verification of derived human-report behavior
-// note: if this file changes, update this header and module README.md.
 package report
 
 import (

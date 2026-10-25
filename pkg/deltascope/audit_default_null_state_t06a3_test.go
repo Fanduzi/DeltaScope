@@ -1,8 +1,4 @@
 // Package deltascope verifies the T06-A3 typed DEFAULT NULL contract at the public SDK seam.
-// input: MySQL and TiDB CREATE+DROP+INDEX batches and CREATE default-presence audits with isolated policies
-// output: the three-statement path passes with a known initial state; the default-presence reject stays a policy finding
-// pos: public SDK contract test for the frozen T06-A3 oracle (issue #85)
-// note: if this file changes, update this header and module README.md.
 package deltascope
 
 import (

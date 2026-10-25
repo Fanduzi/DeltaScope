@@ -1,10 +1,6 @@
 //go:build postgresql
 
 // Package cli verifies CLI unsupported-statement result contracts.
-// input: Execute audit commands containing structured unsupported PostgreSQL statements
-// output: JSON and Markdown review floors with exit 1 and audited-only statement counts
-// pos: CLI adapter regression coverage for the unsupported-statement verdict floor
-// note: if this file changes, update this header and module README.md.
 package cli
 
 import (

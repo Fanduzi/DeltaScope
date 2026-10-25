@@ -1,8 +1,4 @@
 // Package githubsummary verifies the GitHub job-summary renderer.
-// input: synthetic report results, rule findings, and catalog entries
-// output: regression coverage for job-summary Markdown rendering and no-leak behavior
-// pos: infrastructure verification of the CI job-summary output adapter
-// note: if this file changes, update this header and module README.md.
 package githubsummary
 
 import (

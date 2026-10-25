@@ -1,10 +1,6 @@
 //go:build postgresql
 
 // Package postgresqlmeta provides a session-pinned PostgreSQL handle for effect identity.
-// input: a single *sql.Conn (never a multi-connection *sql.DB pool)
-// output: live EffectIdentityResolutionContext and catalog query surface
-// pos: T7 infrastructure; facts only; no trust / admission
-// note: if this file changes, update this header and module README.md.
 package postgresqlmeta
 
 import (

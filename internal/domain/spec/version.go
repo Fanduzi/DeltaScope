@@ -1,15 +1,4 @@
 // Package spec defines normalized statement specifications for rule evaluation.
-// input: explicit caller target_version strings and provider-reported product/version banners
-// output: a shared parser-neutral VersionIdentity with strict [v]MAJOR.MINOR.PATCH target parsing,
-//
-//	the shared ValidateTargetVersion transport preflight, observed-banner canonicalization
-//	deriving product from the banner itself (including the TiDB compatibility prefix), the
-//	milestone-validated product/version series, RenameColumnVersionSupport,
-//	RenameColumnVersionSupportFor, RenameColumnMinimumSupportedVersion, and
-//	always-serialized numeric components
-//
-// pos: shared version fact model consumed by the application audit path and version-dependent rules
-// note: if this file changes, update this header and module README.md.
 package spec
 
 import (

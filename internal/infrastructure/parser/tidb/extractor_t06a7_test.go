@@ -3,10 +3,6 @@
 // named column option, both stay explicit-declaration facts (no inheritance is
 // inferred), and the table-level COLLATE clause lands verbatim in
 // DDL.Options["collate"].
-// input: MySQL and TiDB CREATE TABLE inputs covering the S1–S4 baseline shapes plus a bare control
-// output: pinned AST FieldType/column-option and spec.Charset/Collation/Options fields for each shape
-// pos: infrastructure parser extractor test coverage for issue #85 T06-A7
-// note: if this file changes, update this header and module README.md.
 package tidbparser
 
 import (

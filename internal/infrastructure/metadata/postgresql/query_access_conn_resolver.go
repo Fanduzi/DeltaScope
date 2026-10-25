@@ -1,10 +1,6 @@
 //go:build postgresql
 
 // Package postgresqlmeta provides the conn-backed PostgreSQL query access adapter.
-// input: caller-owned *sql.Conn, context, dialect, and schema-qualified relation name
-// output: same-session RelationSchema or the existing PostgreSQL catalog resolution error
-// pos: session-pinned ownership adapter delegating catalog behavior to the private core
-// note: if this file changes, update this header and module README.md.
 package postgresqlmeta
 
 import (

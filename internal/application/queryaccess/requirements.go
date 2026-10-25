@@ -1,8 +1,4 @@
 // Package queryaccess implements requirement generation for query access analysis.
-// input: resolved query access facts (relations, columns, outputs, unresolved) and mode
-// output: access requirements, warnings, and reason codes
-// pos: application requirement layer bridging resolved facts to permission requirements
-// note: if this file changes, update this header and module README.md.
 package queryaccess
 
 import (

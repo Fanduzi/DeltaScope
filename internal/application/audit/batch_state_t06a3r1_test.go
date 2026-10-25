@@ -2,10 +2,6 @@
 // the shared audit path: a repeated DEFAULT ending in a string literal must
 // keep the A6 conservative drop boundary, while one ending in SQL NULL stays
 // provably column-free.
-// input: three-statement CREATE+DROP+INDEX batches with repeated DEFAULT options through AuditSQL
-// output: conservative unknown_table_state gap for string-ending duplicates; complete path for NULL-ending ones
-// pos: application-layer contract tests for issue #85 T06-A3-R1
-// note: if this file changes, update this header and module README.md.
 package audit
 
 import (

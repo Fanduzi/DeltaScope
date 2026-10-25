@@ -1,8 +1,4 @@
 // Package mcpapi exposes the MCP adapter for DeltaScope.
-// input: audit_sql MCP requests (including target_version), shared DeltaScope public audit API, and resolved run-context metadata
-// output: structured MCP audit_sql responses, partial parser-error results, and compact finding summaries with offline existence caveats and resolved catalog-aware metadata audits
-// pos: MCP audit tool adapter between tool invocations and the shared audit engine
-// note: if this file changes, update this header and module README.md.
 package mcpapi
 
 import (

@@ -2,10 +2,6 @@
 
 // Package audit verifies PostgreSQL object-lifecycle rules and their dialect
 // hygiene across audit requests.
-// input: PostgreSQL and cross-dialect lifecycle statements (sequence, schema, view)
-// output: expected lifecycle findings or their absence per dialect
-// pos: application-layer PostgreSQL lifecycle rule regression coverage
-// note: if this file changes, update this header and module README.md.
 package audit
 
 import (

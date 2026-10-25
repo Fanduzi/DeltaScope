@@ -1,8 +1,4 @@
 // Package mcpapi verifies the MCP interface bootstrap and tool surface.
-// input: MCP server construction, in-memory transports, tool discovery requests, and inline metadata connection fields
-// output: regression coverage for the official DeltaScope MCP server bootstrap, capability discovery, and database-aware audit wiring
-// pos: interface-level tests for the MCP adapter module
-// note: if this file changes, update this header and module README.md.
 package mcpapi
 
 import (

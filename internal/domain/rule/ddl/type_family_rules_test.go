@@ -1,8 +1,4 @@
 // Package ddl verifies create-table type-family breadth behavior.
-// input: synthetic create-table Statement specs with column type and charset metadata plus policy overrides
-// output: focused coverage for forbidden type families, char-length, and charset/collation findings
-// pos: domain DDL rule test coverage for create-table type-family governance
-// note: if this file changes, update this header and module README.md.
 package ddl
 
 import (

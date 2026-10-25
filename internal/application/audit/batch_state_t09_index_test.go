@@ -1,12 +1,4 @@
 // Package audit verifies the T09 index state chain end to end.
-// input: real MySQL/TiDB ALTER/CREATE/DROP/RENAME INDEX batches audited
-// through AuditSQL with a stub provider whose table snapshots carry a
-// known-empty index set
-// output: statement-bound findings proving added, dropped and renamed
-// indexes are visible to later statements — and never leak across tables
-// pos: application-layer ordered-state regression for issue #88 T09; the
-// batch-state transitions under test live in batch_state_index.go
-// note: if this file changes, update this header and module README.md.
 package audit
 
 import (

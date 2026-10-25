@@ -1,8 +1,4 @@
 // Package audit orchestrates audit use cases at the application layer.
-// input: audit requests carrying SQL text, dialect, optional target_version, optional policy override paths, optional metadata providers, and shared input normalization
-// output: end-to-end audit results assembled from policy loading, parsing, extraction, bounded ordered-state metadata enrichment, rule evaluation, a resolved canonical version identity, and a review floor for partial parser failures and structured unsupported statements
-// pos: application service entrypoint for the unified offline/metadata-aware SQL audit use case with preserved statement impact estimates and target/observed version reconciliation
-// note: if this file changes, update this header and module README.md.
 package audit
 
 import (

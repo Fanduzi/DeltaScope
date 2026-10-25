@@ -1,8 +1,4 @@
 // Package audit verifies the application audit service behavior.
-// input: audit service requests with SQL, dialect, optional config, and metadata provider
-// output: end-to-end application audit coverage over policy loading, partial-parser verdict floors, extraction, metadata enrichment, and rules
-// pos: application audit service test coverage
-// note: if this file changes, update this header and module README.md.
 package audit
 
 import (

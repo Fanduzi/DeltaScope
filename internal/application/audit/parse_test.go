@@ -1,8 +1,4 @@
 // Package audit verifies application parsing boundaries.
-// input: SQL text and application parsing entrypoints
-// output: test coverage for application-owned parsed results
-// pos: application audit boundary test coverage
-// note: if this file changes, update this header and module README.md.
 package audit
 
 import (

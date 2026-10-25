@@ -1,9 +1,4 @@
 // Package ddl verifies the T06-A10 AUTO_INCREMENT rule boundaries.
-// input: synthetic create-table statements exercising the pk auto_increment
-// require rule and the table init-value equality rule under boundary policies
-// output: required/disabled/level/parameter and composite-skip semantics pinned
-// pos: domain DDL rule regression for issue #85 T06-A10
-// note: if this file changes, update this header and module README.md.
 package ddl
 
 import (

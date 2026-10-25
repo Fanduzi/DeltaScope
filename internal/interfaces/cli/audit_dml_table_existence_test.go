@@ -1,8 +1,4 @@
 // Package cli verifies the CLI DML table-existence contract.
-// input: metadata-aware CLI audit arguments and fake MySQL/TiDB metadata clients
-// output: stable missing-target blocker findings in rendered JSON
-// pos: CLI public audit seam for metadata-aware DML existence behavior
-// note: if this file changes, update this header and module README.md.
 package cli
 
 import (

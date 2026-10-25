@@ -1,10 +1,4 @@
 // Package cli verifies the T05-A5 column-identity contract at the CLI seam.
-// input: offline eleven-rule audit invocations for the CHANGE publication and
-// the MySQL 5.7 RENAME blocker across the fail thresholds
-// output: exit-code and JSON assertions for the version blocker and the
-// leading CREATE gap that stays when no provider is attached
-// pos: CLI transport contract tests for CHANGE and RENAME COLUMN post-state
-// note: if this file changes, update this header and module README.md.
 package cli
 
 import (

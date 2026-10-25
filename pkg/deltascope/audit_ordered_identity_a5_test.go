@@ -1,10 +1,4 @@
 // Package deltascope verifies the public column-identity contract (T05-A5).
-// input: public audit requests under the isolated eleven-rule policy for
-// CHANGE publication, a MySQL 5.7 RENAME rejection, a missing version, and a
-// provider error
-// output: nil-error pass, reject, and gap results, plus a wrapped provider error
-// pos: public SDK contract tests for CHANGE and RENAME COLUMN post-state
-// note: if this file changes, update this header and module README.md.
 package deltascope
 
 import (

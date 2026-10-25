@@ -1,13 +1,4 @@
 // Package mysqlmeta verifies the T09-R1 provider member-fact mapping.
-// input: synthetic information_schema.statistics member rows covering every
-// plain-key knownness classification (plain ascending, prefix length,
-// descending, expression key part, unclassifiable collation)
-// output: the spec.Index non-plain marks each row must produce — provider
-// member definitions carry the same knownness vocabulary declarations do,
-// so an unqueried or unclassifiable attribute never reads as known-plain
-// pos: provider fact-sufficiency coverage for issue #88 T09-R1; the marks
-// feed indexPlainComparable in internal/domain/rule/ddl
-// note: if this file changes, update this header and module README.md.
 package mysqlmeta
 
 import (

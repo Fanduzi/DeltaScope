@@ -1,10 +1,4 @@
 // Package mysql verifies the T06-A10 provider provenance boundary.
-// input: constructed information_schema rows for a single table
-// output: TABLES.AUTO_INCREMENT lands on snapshot.Options["auto_increment"]
-// and COLUMNS.EXTRA lands on Column.AutoIncrement — both as catalog
-// observations, never as reconstructed input declarations
-// pos: infrastructure provider regression for issue #85 T06-A10
-// note: if this file changes, update this header and module README.md.
 package mysqlmeta
 
 import (

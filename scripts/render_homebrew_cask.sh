@@ -1,8 +1,4 @@
 #!/usr/bin/env bash
-# input: release version and darwin archive sha256 values for amd64 and arm64 main assets
-# output: rendered Homebrew Cask content for the deltascope tap
-# pos: deterministic cask rendering helper for native darwin PG-capable release convergence
-
 set -euo pipefail
 
 VERSION="${VERSION:-}"

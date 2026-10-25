@@ -1,9 +1,4 @@
 #!/usr/bin/env bash
-# input: docker compose services, fixture SQL, and deltascope CLI invocations against local MySQL/TiDB targets
-# output: repeatable metadata-aware CLI e2e execution with JSON assertion helpers and deterministic cleanup
-# pos: shell-based end-to-end harness for live metadata CLI validation
-# note: if this file changes, update this header and module README.md.
-
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"

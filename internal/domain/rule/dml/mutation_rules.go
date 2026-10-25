@@ -1,8 +1,4 @@
 // Package dml defines Tier-1 DML rules.
-// input: update/delete Statement specs and per-rule policy values
-// output: mutation findings for WHERE, LIMIT, ORDER BY, subquery, and JOIN ... ON checks
-// pos: DML rule implementations for update/delete guardrails
-// note: if this file changes, update this header and module README.md.
 package dml
 
 import (

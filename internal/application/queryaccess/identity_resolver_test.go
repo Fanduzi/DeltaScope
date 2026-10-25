@@ -1,8 +1,4 @@
 // Package queryaccess tests the effect-identity resolver contract (T6, facts only).
-// input: synthetic candidate batches and fake resolvers
-// output: bounded statuses, ordinal determinism, fail-closed/no-leak assertions
-// pos: contract unit tests; no catalog SQL, no admission promotion
-// note: if this file changes, update this header and module README.md.
 package queryaccess
 
 import (

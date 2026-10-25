@@ -1,8 +1,4 @@
 // Package ddl defines Tier-1 DDL rules.
-// input: PostgreSQL DDL statement batches with NOT VALID and VALIDATE constraint alter actions
-// output: global findings for NOT VALID constraints without later validation in the same audit batch
-// pos: PostgreSQL global migration-safety rule for deferred constraint validation pairing
-// note: if this file changes, update this header and module README.md.
 package ddl
 
 import (

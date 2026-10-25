@@ -1,8 +1,4 @@
 // Package queryaccess provides TiDB query access extraction bridging infrastructure facts to domain types.
-// input: SQL text, dialect, mode, default schema, and optional schema resolver
-// output: domain-typed query access results for transport adapters
-// pos: application adapter bridging TiDB infrastructure query access facts to domain query access types
-// note: if this file changes, update this header and module README.md.
 package queryaccess
 
 import (

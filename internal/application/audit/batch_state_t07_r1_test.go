@@ -2,12 +2,6 @@
 // generated-column reference premises and the TiDB expression-default
 // boundary — proven bare/temporal positives, determined negatives, and the
 // R2 eval-unproven gap for value-dependent setter folds.
-// input: real-parser AuditSQL runs over the frozen R1 inputs with isolated
-// policies and controlled provider snapshots
-// output: exact reason_code findings, bounded evidence gaps, ordered-state
-// publication and tombstone behavior, plus MySQL opposite controls
-// pos: T07-R1 regression seam beside the frozen T07 matrix suite
-// note: if this file changes, update this header and module README.md.
 package audit
 
 import (

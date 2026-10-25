@@ -1,8 +1,4 @@
 // Package catalog verifies rule catalog metadata coverage.
-// input: built-in policy defaults plus catalog lookups and search queries, including default-disabled opt-in rules
-// output: regression coverage for catalog completeness, lookup stability, and metadata-aware flags
-// pos: explanation-oriented rule catalog test coverage
-// note: if this file changes, update this header and module README.md.
 package catalog
 
 import (

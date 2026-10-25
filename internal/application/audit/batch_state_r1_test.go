@@ -1,13 +1,5 @@
 // Package audit verifies the T05-A1-R1 rework contract for the ordered
 // schema-state path.
-// input: multi-statement MySQL/TiDB batches exercising cross-schema identity,
-// unbound unsupported effects, multi-action alters, partial provider
-// snapshots, and the frozen evidence-gap vocabulary
-// output: failing-then-fixed assertions pinning effective-identity
-// resolution, scope-bounded invalidation, the three frozen success
-// templates, per-collection completeness, and frozen gap reason codes
-// pos: application-layer rework regressions for issue #84/T05-A1-R1
-// note: if this file changes, update this header and module README.md.
 package audit
 
 import (

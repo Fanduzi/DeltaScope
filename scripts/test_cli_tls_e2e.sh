@@ -1,8 +1,4 @@
 #!/usr/bin/env bash
-# input: Docker TLS fixtures, SQL cases, and built DeltaScope CLI
-# output: live audit/query-access TLS results with bounded cleanup
-# pos: CLI Docker end-to-end verification harness
-# note: if this file changes, update this header and scripts/README.md.
 # TLS E2E tests for DeltaScope CLI audit and query-access.
 # Generates certs, starts TLS database fixtures (no server), builds CLI,
 # runs 12 test cases (MySQL 8.4 + PostgreSQL 17 x audit + query-access

@@ -1,11 +1,6 @@
 // Package spec tests the T10 shared advanced-index assessment: the same
 // answer the compatibility rule and the ordered-state publication gate
 // consume, computed from declared index facts plus the bound version.
-// input: constructed normalized statements across dialects and versions
-// output: feature sets, determined issues, bounded gaps, and the
-// InvalidTransition publication signal
-// pos: spec-level T10 decision-table coverage beside the audit-level chain tests
-// note: if this file changes, update this header and module README.md.
 package spec
 
 import (

@@ -1,8 +1,4 @@
 // Package audit orchestrates audit use cases at the application layer.
-// input: extracted domain statements (including ordered-state budget-blocked markers) and the registered rule engine
-// output: aggregated report results with statement/global findings, retained blocked statements carrying incomplete coverage plus resource-limit evidence, rule-declared evidence gaps lowering complete coverage to unverified, and preserved statement-level impact estimates
-// pos: application evaluation step between extraction/metadata refinement and reporting
-// note: if this file changes, update this header and module README.md.
 package audit
 
 import (

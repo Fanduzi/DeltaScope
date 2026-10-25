@@ -1,8 +1,4 @@
 // Package ddl verifies metadata-backed DDL existence rules.
-// input: metadata-enriched create-table and alter-table statement scenarios
-// output: coverage for table, column, index, and primary-key existence checks
-// pos: DDL metadata rule test coverage
-// note: if this file changes, update this header and module README.md.
 package ddl
 
 import (

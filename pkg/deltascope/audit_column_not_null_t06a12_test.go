@@ -1,11 +1,5 @@
 // Package deltascope verifies the T06-A12 ordinary CREATE TABLE non-PK-column
 // NOT NULL contract at the public SDK seam.
-// input: MySQL CREATE TABLE audits under the isolated time-allow policy
-// output: a passing time-exempt declaration and a policy reject bound to the
-// owning column both return ordinary audit results — never transport-level
-// errors
-// pos: public SDK contract test for the frozen T06-A12 oracle (issue #85)
-// note: if this file changes, update this header and module README.md.
 package deltascope
 
 import (

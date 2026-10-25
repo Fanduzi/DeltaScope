@@ -2,13 +2,6 @@
 
 // Package audit verifies that the T05-A3 drop-existence evidence gap stays
 // scoped to the MySQL/TiDB ordered-state machine.
-// input: PostgreSQL DROP TABLE requests across the no-provider, schema-only,
-// and provider-absent request shapes
-// output: assertions that PostgreSQL keeps its legacy lifecycle contract —
-// provider facts still drive the strict blocker and no new evidence gap is
-// emitted under any request shape
-// pos: application-layer dialect-scope guard for the T05-A3 drop existence gap
-// note: if this file changes, update this header and module README.md.
 package audit
 
 import (

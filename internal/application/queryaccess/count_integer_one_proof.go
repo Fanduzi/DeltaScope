@@ -1,8 +1,4 @@
 // Package queryaccess contains the narrow PostgreSQL COUNT(integer_one) proof predicate.
-// input: exact parser envelope, resolved domain result, requirements, and internal candidate facts
-// output: fail-closed proof-completeness decision for one physical table
-// pos: PostgreSQL-only proof gate before catalog identity promotion
-// note: if this file changes, update this header and module README.md.
 package queryaccess
 
 import domain "github.com/Fanduzi/DeltaScope/internal/domain/queryaccess"

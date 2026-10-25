@@ -1,8 +1,4 @@
 #!/usr/bin/env bash
-# input: DELTASCOPE_BIN (optional, defaults to bin/deltascope)
-# output: release-blocking MySQL, TiDB, and PostgreSQL default-policy dialect smoke checks
-# pos: release contract gate verifying dialect isolation — PG audits must not emit MySQL/TiDB-only rules and vice versa
-
 set -euo pipefail
 
 DELTASCOPE_BIN="${DELTASCOPE_BIN:-bin/deltascope}"

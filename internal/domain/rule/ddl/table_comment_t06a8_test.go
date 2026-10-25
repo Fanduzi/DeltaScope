@@ -1,8 +1,4 @@
 // Package ddl verifies the T06-A8 comment contracts at the rule layer.
-// input: synthetic create-table statements and per-rule policy values
-// output: code-point length boundaries, per-field presence semantics, constructor guards
-// pos: domain DDL rule test coverage for comment declaration fidelity (issue #85 T06-A8)
-// note: if this file changes, update this header and module README.md.
 package ddl
 
 import (

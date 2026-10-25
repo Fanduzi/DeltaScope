@@ -1,8 +1,4 @@
 // Package audit verifies report-flow integration for audit evaluation.
-// input: extracted statements and registered rules
-// output: test coverage for application-owned evaluation and report aggregation
-// pos: application audit integration test coverage
-// note: if this file changes, update this header and module README.md.
 package audit
 
 import (

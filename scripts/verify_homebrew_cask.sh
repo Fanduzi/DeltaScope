@@ -1,8 +1,4 @@
 #!/usr/bin/env bash
-# input: rendered Homebrew cask plus release version and expected darwin archive sha256 values
-# output: cask contract validation for version, platform URLs, sha256 values, and binary stanza
-# pos: pre-publish guard for the Homebrew tap update path
-
 set -euo pipefail
 
 CASK="${CASK:-}"

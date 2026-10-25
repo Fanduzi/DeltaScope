@@ -1,8 +1,4 @@
 // Package dml defines Tier-1 DML rules.
-// input: domain policy values and a shared rule registry
-// output: deterministic registration of the shipped DML rule batch
-// pos: DML rule assembly entrypoint for application wiring
-// note: if this file changes, update this header and module README.md.
 package dml
 
 import (

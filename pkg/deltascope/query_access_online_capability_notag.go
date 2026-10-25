@@ -5,10 +5,6 @@
 // observed PostgreSQL target with ErrOnlineQueryAccessCapabilityUnsupported.
 // This is source-build compatibility only and is not a separate official
 // product edition.
-// input: none (build-tag capability leaf)
-// output: queryAccessPostgreSQLCapabilityLinked() = false
-// pos: no-postgresql-tag private capability leaf for the unified online entry
-// note: if this file changes, update this header and module README.md.
 package deltascope
 
 // queryAccessPostgreSQLCapabilityLinked reports that PostgreSQL 17 proof is

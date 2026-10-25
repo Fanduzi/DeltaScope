@@ -1,8 +1,4 @@
 // Package mysqlmeta verifies metadata normalization helpers for the MySQL provider.
-// input: synthetic variable, version, DSN, collation, type, column-nullability, and index classification scenarios
-// output: stable provider helper behavior and normalized column metadata without requiring a live database — the query stub answers the foreign-key join fragment with a default zero-row result under longest-fragment matching so existing fixtures keep their intent
-// pos: infrastructure metadata adapter test coverage
-// note: if this file changes, update this header and module README.md.
 package mysqlmeta
 
 import (

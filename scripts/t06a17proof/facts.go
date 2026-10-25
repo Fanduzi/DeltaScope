@@ -1,8 +1,4 @@
 // Package main fixes the independent T06-A17-R1 24-column proof contract.
-// input: ordered native catalog rows and a real MySQL-compatible provider snapshot
-// output: exact identity, independent numeric/member facts, and complete catalog/provider pairs
-// pos: bounded A17 evidence oracle; not a production type parser or Golden validator
-// note: if this file changes, update this header and module README.md.
 package main
 
 import (

@@ -1,8 +1,4 @@
 // Package dml defines Tier-1 DML rules.
-// input: DML impact estimates and policy-backed threshold values
-// output: conservative affected-row findings for mutation statements
-// pos: DML impact estimation rule implementations
-// note: if this file changes, update this header and module README.md.
 package dml
 
 import (

@@ -1,8 +1,4 @@
 // Package cli exposes the command-line adapter for DeltaScope.
-// input: query-access command flags including -h/--help versus -H/--host, dialect-aware connection and catalog/schema hints, flag-presence-aware SQL text from --sql/--file/stdin, and the unified public online query access API
-// output: rendered offline or alias-bound identity-routed online query access results in JSON format, command-named empty-SQL usage errors, advertised Query Access exit table, exit-code mapping, and connresolve.Classify mapped to Query Access TLS/authentication sentences
-// pos: CLI query-access command implementation above offline analysis and the opaque unified online session boundary
-// note: if this file changes, update this header and module README.md.
 package cli
 
 import (

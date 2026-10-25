@@ -1,8 +1,4 @@
 // Package httpapi verifies the HTTP DML table-existence contract.
-// input: registry-backed HTTP audit requests and fake MySQL/TiDB metadata clients
-// output: stable missing-target blocker findings in the HTTP audit response
-// pos: HTTP public audit seam for metadata-aware DML existence behavior
-// note: if this file changes, update this header and module README.md.
 package httpapi
 
 import (

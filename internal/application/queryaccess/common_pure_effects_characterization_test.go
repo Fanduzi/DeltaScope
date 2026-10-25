@@ -1,7 +1,4 @@
 // Package queryaccess characterizes the current MySQL/TiDB pure-effect boundary.
-// input: aggregate, grouping, window, and adjacent SELECT forms
-// output: current indeterminate classification, requirements, and bounded reasons
-// pos: application-level characterization; no admission or trust promotion
 package queryaccess
 
 import (

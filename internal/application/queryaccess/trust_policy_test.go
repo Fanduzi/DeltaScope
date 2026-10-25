@@ -1,8 +1,4 @@
 // Package queryaccess tests the TrustPolicy contract.
-// input: TrustPolicy, manifest, resolved batches
-// output: verification of manifest proof logic
-// pos: T8 trust policy contract tests (RED → GREEN → SURFACE)
-// note: if this file changes, update this header and module README.md.
 package queryaccess
 
 import (

@@ -1,9 +1,5 @@
 // Package audit censuses MySQL/TiDB normalized statements whose rule-relevant
 // metadata is silently absent after extraction.
-// input: representative MySQL and TiDB DDL/DML statements per census case
-// output: per-case expectations for extracted metadata presence and unsupported status
-// pos: application-layer census guarding against silent metadata loss
-// note: if this file changes, update this header and module README.md.
 package audit
 
 import (

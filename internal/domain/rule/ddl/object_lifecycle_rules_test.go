@@ -1,8 +1,4 @@
 // Package ddl verifies DDL object lifecycle governance rules.
-// input: parser-neutral create-view, drop-table, and truncate-table statement specs
-// output: coverage for object lifecycle forbids, metadata-backed existence checks, and adaptive-hash cautions
-// pos: DDL lifecycle rule test coverage for remaining matrix gaps plus the drop-existence evidence-gap reporter guards
-// note: if this file changes, update this header and module README.md.
 package ddl
 
 import (

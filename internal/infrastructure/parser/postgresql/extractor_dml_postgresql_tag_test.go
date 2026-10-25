@@ -1,10 +1,6 @@
 //go:build postgresql
 
 // Package postgresql verifies PostgreSQL DML predicate normalization.
-// input: PostgreSQL DML SQL parsed into PostgreSQL AST nodes
-// output: normalized predicate shapes and primary-key lookup facts
-// pos: PostgreSQL parser adapter contract tests for shared DML impact estimation
-// note: if this file changes, update this header and module README.md.
 package postgresql
 
 import (

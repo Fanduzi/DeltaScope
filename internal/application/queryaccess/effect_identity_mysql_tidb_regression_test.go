@@ -1,9 +1,5 @@
 // Package queryaccess_test freezes MySQL/TiDB operator-bearing SELECT admission
 // so pure-read PostgreSQL work cannot regress cross-dialect behavior (T3).
-// input: operator-bearing SELECT SQL for mysql and tidb
-// output: read_only + admissible assertions for comparison operators
-// pos: application regression characterization (no production changes)
-// note: COUNT remains indeterminate on these dialects; only operator SELECT is locked admissible.
 package queryaccess_test
 
 import (

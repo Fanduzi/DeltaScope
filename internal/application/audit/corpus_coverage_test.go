@@ -1,8 +1,4 @@
 // Package audit verifies SQL corpus coverage for default policy rules.
-// input: checked-in SQL corpus expectations and default policy rule identifiers
-// output: dialect coverage guarantees for supported and non-deferred default rules, with RENAME COLUMN version applicability limited to MySQL and the two destination-name rules plus the drop-foreign-key existence rule limited to the MySQL family
-// pos: application audit corpus inventory and coverage test seam
-// note: if this file changes, update this header and module README.md.
 package audit
 
 import (

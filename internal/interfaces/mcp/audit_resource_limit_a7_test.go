@@ -1,8 +1,4 @@
 // Package mcpapi verifies the T05-A7 ordered-state budget at the MCP seam.
-// input: a 1025-statement TiDB audit_sql call through the real in-process protocol
-// output: isError=true diagnostic result carrying the retained partial audit and the exact bounded resource-limit projection
-// pos: MCP transport contract test for the shared ordered-state admission budget (issue #84/T05-A7)
-// note: if this file changes, update this header and module README.md.
 package mcpapi
 
 import (

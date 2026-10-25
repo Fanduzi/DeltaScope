@@ -2,10 +2,6 @@
 
 // Package audit verifies PostgreSQL policy dialect hygiene: PG-only rules must
 // not fire on other dialects.
-// input: MySQL/TiDB/PostgreSQL audit requests exercising PG-scoped rule surfaces
-// output: assertions that ddl.pg.* findings stay absent outside PostgreSQL
-// pos: application-layer dialect-isolation regression coverage
-// note: if this file changes, update this header and module README.md.
 package audit
 
 import (

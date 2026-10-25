@@ -1,9 +1,4 @@
 // Package httpapi verifies the T05-A5 column-identity contract at the HTTP seam.
-// input: offline eleven-rule HTTP audit requests for a published CHANGE, a
-// MySQL 5.7 RENAME rejection, a missing-version RENAME, and an empty SQL request
-// output: HTTP 200 pass-shaped review, reject, and gap payloads, plus one HTTP 400
-// pos: HTTP transport contract tests for CHANGE and RENAME COLUMN post-state
-// note: if this file changes, update this header and module README.md.
 package httpapi
 
 import (

@@ -1,8 +1,4 @@
 // Package main verifies the DeltaScope MCP bootstrap behavior.
-// input: CLI args, stub MCP server builders, and captured stdout/stderr buffers
-// output: regression coverage for meta-invocation fast paths and connections-path startup wiring
-// pos: command-layer tests for the MCP stdio entrypoint
-// note: if this file changes, update this header and module README.md.
 package main
 
 import (

@@ -1,8 +1,4 @@
 // Package tidbparser verifies TiDB-backed parser adapter behavior.
-// input: SQL text covering database/schema lifecycle DDL AST facts
-// output: characterization of TiDB parser AST for CREATE/DROP DATABASE|SCHEMA
-// pos: infrastructure parser adapter AST characterization
-// note: if this file changes, update this header and module README.md.
 package tidbparser
 
 import (

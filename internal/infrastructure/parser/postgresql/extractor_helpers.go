@@ -1,10 +1,6 @@
 //go:build postgresql
 
 // Package postgresql provides shared AST-to-spec conversion helpers.
-// input: pg_query nodes for names, relations, and typed values
-// output: parser-neutral spec values including multi-relation target lists
-// pos: infrastructure extraction helpers shared by PostgreSQL extractors
-// note: if this file changes, update this header and module README.md.
 package postgresql
 
 import (

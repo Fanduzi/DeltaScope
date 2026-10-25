@@ -1,8 +1,4 @@
 // Package audit verifies the T05-A7 ordered-state statement budget.
-// input: small MySQL/TiDB first-path batches driven through the real auditWithLimits core under explicit quotas, plus a direct batchState.enrichStatements call for state-level proof
-// output: quota-exhaustion assertions on retained blocked statements, ordered-state resource-limit evidence, control-prefix equality, provider-call bounds, post-state non-publication, and input/provider immutability
-// pos: application-layer regression for the T05-A7 shared ordered-state resource boundary (issue #84)
-// note: if this file changes, update this header and module README.md.
 package audit
 
 import (

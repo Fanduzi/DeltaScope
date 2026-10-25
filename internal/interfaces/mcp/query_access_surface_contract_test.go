@@ -1,7 +1,4 @@
 // Package mcpapi verifies that Query Access remains outside the MCP tool surface.
-// input: MCP server tool discovery
-// output: no query-access tool registration; official tool list remains the four existing tools
-// pos: cross-surface contract coverage
 package mcpapi
 
 import (

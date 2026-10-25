@@ -1,10 +1,6 @@
 //go:build postgresql
 
 // Package deltascope verifies SDK surface passthrough of unproven-effect reason codes.
-// input: PostgreSQL SQL via public AnalyzeQueryAccess
-// output: reason_codes machine ids, no severity, no SQL leakage, admission freeze
-// pos: public API coverage for Query Access T4 reason explanation
-// note: if this file changes, update this header and module README.md.
 package deltascope
 
 import (

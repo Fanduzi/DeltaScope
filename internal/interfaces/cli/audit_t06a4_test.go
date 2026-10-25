@@ -3,10 +3,6 @@
 // at blocker/none and 1 at warning/notice. The result shape itself is proven
 // against the real provider in the shared auditmeta tests; this file pins
 // only the exit mapping on that shape — no duplicated database case.
-// input: a constructed report.Result matching the frozen A-path shape
-// output: exitOK/exitAudit per --fail-on level; fail_on_triggered false at blocker
-// pos: CLI exit-table contract test for issue #85 T06-A4
-// note: if this file changes, update this header and module README.md.
 package cli
 
 import (

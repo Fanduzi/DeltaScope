@@ -1,8 +1,4 @@
 // Package ddl defines Tier-1 DDL rules.
-// input: normalized Statement specs for PostgreSQL foreign object lifecycle DDL operations
-// output: findings for PostgreSQL foreign table, server, user mapping, and FDW lifecycle events
-// pos: PostgreSQL-specific foreign object lifecycle rule implementations
-// note: if this file changes, update this header and module README.md.
 package ddl
 
 import (

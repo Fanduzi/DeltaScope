@@ -1,8 +1,4 @@
 // Package mcpapi exposes the MCP adapter for DeltaScope.
-// input: MCP server construction inputs, DeltaScope version metadata, and tool registration definitions
-// output: ready-to-run MCP server instances that expose the official DeltaScope tool surface
-// pos: interface adapter between the Go MCP SDK and DeltaScope audit/rule capabilities
-// note: if this file changes, update this header and module README.md.
 package mcpapi
 
 import (

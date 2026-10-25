@@ -1,12 +1,5 @@
 // Package ddl verifies the T06-A15 field-level fact resolution for the
 // row-size rule.
-// input: create-table statements with declared options, per-column charsets,
-// and nil/empty/partial instance facts across MySQL, TiDB, and PostgreSQL
-// output: coverage for the declaration-first estimate, the
-// missing_instance_fact gap contract, determined findings coexisting with
-// unresolved-branch gaps, and the preserved non-MySQL-family instance gate
-// pos: DDL row-size fact-resolution rule test coverage (issue #85)
-// note: if this file changes, update this header and module README.md.
 package ddl
 
 import (

@@ -3,10 +3,6 @@
 // Package httpapi verifies that the PostgreSQL 17 query-access HTTP surface
 // does not leak SQL markers, credentials, catalog facts, server identity,
 // backend details, or raw driver errors across online and guarded paths.
-// input: PostgreSQL 17 HTTP query-access requests with unique markers
-// output: bounded JSON responses with no forbidden fields or marker leakage
-// pos: HTTP no-leak regression coverage for the PG17 COUNT(1) online contract
-// note: if this file changes, update this header and module README.md.
 package httpapi
 
 import (

@@ -1,10 +1,6 @@
 //go:build postgresql
 
 // Package postgresqlmeta verifies the *sql.Conn-backed query access resolver.
-// input: fake and real PostgreSQL connections
-// output: regression coverage for conn-backed resolver construction and schema resolution
-// pos: test coverage for QueryAccessConnResolver
-// note: if this file changes, update this header and module README.md.
 package postgresqlmeta
 
 import (

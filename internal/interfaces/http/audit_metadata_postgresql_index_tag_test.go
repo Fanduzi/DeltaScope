@@ -1,10 +1,6 @@
 //go:build postgresql
 
 // Package httpapi verifies PostgreSQL standalone index metadata-aware HTTP behavior.
-// input: HTTP audit requests for standalone PostgreSQL index statements with fake metadata clients
-// output: focused transport parity coverage for standalone index owner resolution paths
-// pos: tagged HTTP adapter regression coverage for PostgreSQL standalone index metadata support
-// note: if this file changes, update this header and module README.md.
 package httpapi
 
 import (

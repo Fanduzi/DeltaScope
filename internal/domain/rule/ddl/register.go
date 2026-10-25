@@ -1,8 +1,4 @@
 // Package ddl defines Tier-1 DDL rules.
-// input: domain policy values and a shared rule registry
-// output: deterministic registration of shipped create-table and alter-table DDL rule batches, including the column-identity destination, RENAME version, T07 advanced-column, T10 advanced-index rules (alter-index existence, invisibility, per-feature compatibility), and the T11 foreign-key existence rule plus ALTER-path selector wiring
-// pos: DDL rule assembly entrypoint for application wiring
-// note: if this file changes, update this header and module README.md.
 package ddl
 
 import (

@@ -1,11 +1,4 @@
 // Package audit verifies the T05-A4 ordinary single-column MODIFY post-state.
-// input: ordered MySQL/TiDB statements whose later MODIFY must read the
-// conditional column definition published by the previous ordinary MODIFY
-// output: public AuditSQL results that pin source and target lengths, plus
-// direct pre-state length assertions on the enriched statements
-// pos: T05-A4 regression for conditional MODIFY state supply; compatibility
-// rule meaning stays on the accepted #83 contract
-// note: if this file changes, update this header and module README.md.
 package audit
 
 import (

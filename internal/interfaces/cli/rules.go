@@ -1,8 +1,4 @@
 // Package cli exposes the command-line adapter for DeltaScope.
-// input: rule catalog queries, CLI filters, and stdout/stderr command surfaces
-// output: shipped-rule list, detail, and search rendering for CLI discovery workflows
-// pos: CLI rule catalog command group above the explanation-oriented domain catalog
-// note: if this file changes, update this header and module README.md.
 package cli
 
 import (

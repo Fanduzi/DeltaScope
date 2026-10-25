@@ -1,10 +1,4 @@
 // Package audit runs the frozen T07 contract matrix offline.
-// input: testdata/ddl-golden/T07.json metadata_cases and cli_cases (the
-// provider-backed cells are excluded — they need a live catalog)
-// output: per-cell verdict/coverage/finding/gap/unsupported comparisons
-// against the frozen expectations, never derived from the implementation
-// pos: T07 matrix verification seam beside the focused batch-state suites
-// note: if this file changes, update this header and module README.md.
 package audit
 
 import (

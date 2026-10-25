@@ -1,8 +1,4 @@
 // Package audit_test verifies the public ordered audit resource boundary.
-// input: short MySQL/TiDB batches through the existing AuditSQL entrypoint
-// output: retained statement identity and default-budget unsupported assertions
-// pos: public application regression for T05-A7 before and after implementation
-// note: if this file changes, update this header and module README.md.
 package audit_test
 
 import (

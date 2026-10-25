@@ -1,11 +1,6 @@
 //go:build postgresql
 
 // Package audit verifies that T05-A4 MODIFY state stays off the PostgreSQL path.
-// input: PostgreSQL MODIFY requests in the no-provider, schema-only, and
-// provider-backed forms
-// output: the legacy per-statement contract, with no ordered-state gap added
-// pos: dialect-scope guard for the T05-A4 MODIFY post-state
-// note: if this file changes, update this header and module README.md.
 package audit
 
 import (

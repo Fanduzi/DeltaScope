@@ -2,10 +2,6 @@
 
 // Package deltascope verifies the public SDK unsupported-statement contract for
 // PostgreSQL audits.
-// input: public Audit requests containing unsupported PostgreSQL statements
-// output: unsupported sentinel errors plus partial results with retained statements
-// pos: public SDK regression coverage for the unsupported-statement contract
-// note: if this file changes, update this header and module README.md.
 package deltascope
 
 import (

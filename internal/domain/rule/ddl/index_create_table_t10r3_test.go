@@ -5,14 +5,6 @@
 // an attributable key-parts gap — "no redundancy found" is unverifiable,
 // never a silent pass. Controls pin that self-pairs, non-pairing members,
 // plain pairs, and disabled rules still emit nothing.
-// input: create-table spec statements whose declared indexes mix plain and
-// non-plain member forms
-// output: rule-level EvidenceGaps attribution for duplicate, left-prefix,
-// and unique-overlap pairings — plus the preserved plain-pair findings
-// pos: domain DDL rule test coverage for issue #89 T10-R3 repair A; the
-// shared lifecycle gap path lives in internal/domain/rule/ddl/index_rules.go
-// and common.go
-// note: if this file changes, update this header and module README.md.
 package ddl
 
 import (

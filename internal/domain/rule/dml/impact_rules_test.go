@@ -1,8 +1,4 @@
 // Package dml verifies Tier-1 DML impact-rule behavior.
-// input: synthetic update/delete Statement specs and rule policy overrides
-// output: deterministic findings for impact estimate guardrails
-// pos: domain DML rule test coverage for affected-row threshold rules
-// note: if this file changes, update this header and module README.md.
 package dml
 
 import (

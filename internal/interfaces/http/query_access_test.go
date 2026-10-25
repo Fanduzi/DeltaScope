@@ -1,8 +1,4 @@
 // Package httpapi verifies HTTP query access request binding and response mapping.
-// input: synthetic HTTP requests with catalog/schema hints against offline analysis and unified online-session routing
-// output: focused coverage for JSON behavior, alias/conflict and schema/catalog separation, unified entry use, bounded failures including the PostgreSQL PG17 version boundary, zero-open authorization, and close ownership
-// pos: HTTP adapter behavior and unified online migration coverage for query access
-// note: if this file changes, update this header and module README.md.
 package httpapi
 
 import (

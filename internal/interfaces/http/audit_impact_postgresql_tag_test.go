@@ -1,10 +1,6 @@
 //go:build postgresql
 
 // Package httpapi verifies PostgreSQL offline impact rendering.
-// input: HTTP audit requests selecting PostgreSQL without a connection
-// output: public impact fields in the HTTP JSON response
-// pos: PostgreSQL-tagged HTTP adapter regression coverage
-// note: if this file changes, update this header and module README.md.
 package httpapi
 
 import (

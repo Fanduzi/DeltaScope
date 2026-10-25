@@ -1,10 +1,6 @@
 //go:build postgresql && integration
 
 // Package cli verifies the PostgreSQL online query-access transport boundary.
-// input: CLI query-access invocation and a recording database/sql driver
-// output: PG17 COUNT(1) admission, one-close no-execution/no-leak adapter evidence, and bounded cancellation/closed-session/connection/catalog failures without SDK-owned detailed probe assertions
-// pos: adapter-level proof that the CLI delegates to the unified online session contract
-// note: if this file changes, update this header and module README.md.
 package cli
 
 import (

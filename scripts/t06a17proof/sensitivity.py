@@ -1,8 +1,4 @@
 #!/usr/bin/env python3
-# input: old committed A17 assertions, R1 assertions, and controlled in-memory omissions via Go test overlays
-# output: raw old-pass/new-assertion-failure records without changing production or checkout files
-# pos: bounded T06-A17-R1 assertion-sensitivity evidence, not native database observations
-# note: if this file changes, update this header and module README.md.
 import argparse
 import datetime
 import hashlib

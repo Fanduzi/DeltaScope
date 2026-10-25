@@ -1,8 +1,4 @@
 // Package ddl defines Tier-1 DDL rules.
-// input: policy-backed rule configuration values
-// output: normalized per-rule settings for DDL rule constructors
-// pos: DDL rule configuration parsing helpers
-// note: if this file changes, update this header and module README.md.
 package ddl
 
 import (

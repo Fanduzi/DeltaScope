@@ -1,10 +1,6 @@
 //go:build postgresql
 
 // Package audit verifies the application audit service behavior.
-// input: PostgreSQL multi-target DROP statements naming distinct dotted qualified identities
-// output: one denylist finding per distinct protected object without cross-identity dedup
-// pos: application-layer regression coverage for multi-target denylist identity handling
-// note: if this file changes, update this header and module README.md.
 package audit
 
 import (

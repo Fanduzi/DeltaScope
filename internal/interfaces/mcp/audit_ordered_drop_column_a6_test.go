@@ -1,9 +1,4 @@
 // Package mcpapi verifies the T05-A6 ordered DROP COLUMN contract at the MCP seam.
-// input: offline six-rule audit_sql calls for the first path and the
-// removed-column index
-// output: isError=false review and reject results
-// pos: MCP transport contract tests for ordinary single-column DROP COLUMN post-state
-// note: if this file changes, update this header and module README.md.
 package mcpapi
 
 import (

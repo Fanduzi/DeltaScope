@@ -1,8 +1,4 @@
 #!/usr/bin/env bash
-# input: git diff range (default: main...HEAD), or staged/working-tree changes
-# output: exit 0 if decision record discipline is satisfied, exit 1 if a record may be required
-# pos: heuristic gate that checks whether changed paths + diff keywords suggest a decision record is needed
-
 set -euo pipefail
 
 # --- Override ---

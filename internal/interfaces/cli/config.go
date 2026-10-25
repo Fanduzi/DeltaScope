@@ -1,8 +1,4 @@
 // Package cli exposes the command-line adapter for DeltaScope.
-// input: config command invocations and YAML config files
-// output: config lint results with validation errors and replacement warnings, default-config rendering, and rule config status wiring
-// pos: CLI config command group for policy inspection and validation
-// note: if this file changes, update this header and module README.md.
 package cli
 
 import (

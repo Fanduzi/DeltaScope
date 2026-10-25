@@ -1,8 +1,4 @@
 // Package deltascope verifies the public target_version contract (T04-B/#83).
-// input: public audit requests carrying TargetVersion under the isolated key-length policy
-// output: typed input errors, canonical VersionIdentity projection, and bounded version evidence gaps
-// pos: public SDK contract tests for version evidence
-// note: if this file changes, update this header and module README.md.
 package deltascope
 
 import (

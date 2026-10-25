@@ -1,8 +1,4 @@
 // Package metadata exposes shared helpers for metadata-aware and offline interface adapters.
-// input: transport-layer connection inputs, secret lookup sources, and offline-audit context needs
-// output: normalized connection helpers, including database/catalog selection, plus the shared offline existence caveat for interface adapters
-// pos: shared helper boundary used by CLI, HTTP, and MCP transports
-// note: if this file changes, update this header and module README.md.
 package metadata
 
 import (

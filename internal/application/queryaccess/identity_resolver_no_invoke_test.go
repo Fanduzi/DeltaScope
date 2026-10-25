@@ -1,8 +1,4 @@
 // Package queryaccess verifies T6 does not invoke identity resolution or change admission.
-// input: PostgreSQL and MySQL Analyze paths
-// output: classification/admission freeze unchanged from T5; no public identity leak
-// pos: public-behavior freeze for resolver contract introduction
-// note: if this file changes, update this header and module README.md.
 package queryaccess
 
 import (

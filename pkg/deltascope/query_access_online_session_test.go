@@ -1,8 +1,4 @@
 // Package deltascope verifies the unified online query access session contract.
-// input: caller-owned *sql.Conn backed by configurable stub and recording drivers
-// output: contract evidence for signatures including identified-conn construction, opacity, ownership, validation priority, generic and PostgreSQL-version sentinels, direct MySQL/TiDB semantics including parse-failure, compatibility equivalence, and recording-driver no-execution/no-leak
-// pos: public unified online session contract tests (default and PostgreSQL-tagged builds)
-// note: if this file changes, update this header and module README.md.
 package deltascope
 
 import (

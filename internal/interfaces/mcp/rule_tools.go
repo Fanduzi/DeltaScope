@@ -1,8 +1,4 @@
 // Package mcpapi exposes the MCP adapter for DeltaScope.
-// input: shipped rule catalog entries and DeltaScope capability metadata for MCP rule tools
-// output: full describe_rule bodies, compact list_rules rows plus text catalog, and get_capabilities summaries including query_access unavailability, the public connection.connect_timeout capability, and offline existence context_fields
-// pos: MCP rule-discovery helpers above the domain rule catalog
-// note: if this file changes, update this header and module README.md.
 package mcpapi
 
 import (

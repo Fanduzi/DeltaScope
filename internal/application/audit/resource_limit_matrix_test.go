@@ -1,8 +1,4 @@
 // Package audit verifies the T05-A7 ordered-state budget matrix.
-// input: quota-bounded MySQL/TiDB audit runs against recording spies, synthetic rule consumers, and error/cancellation injectors
-// output: gap/policy/reject, provider call-stop, rule-consumer, error/identity, and counting contract assertions for blocked statements
-// pos: application-layer contract tests for the shared ordered-state admission seam (issue #84/T05-A7)
-// note: if this file changes, update this header and module README.md.
 package audit
 
 import (

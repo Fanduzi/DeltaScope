@@ -3,10 +3,6 @@
 // Package cli verifies that the PostgreSQL 17 query-access CLI surface does not
 // leak SQL markers, credentials, catalog facts, server identity, backend
 // details, or raw driver errors across online and default-offline paths.
-// input: PostgreSQL 17 query-access CLI invocations with unique SQL markers
-// output: bounded JSON on stdout, bounded errors on stderr, and no forbidden fields
-// pos: CLI no-leak regression coverage for the PG17 COUNT(1) online contract
-// note: if this file changes, update this header and module README.md.
 package cli
 
 import (

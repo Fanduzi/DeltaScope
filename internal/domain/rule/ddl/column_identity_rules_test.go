@@ -1,8 +1,4 @@
 // Package ddl verifies the T05-A5 destination-conflict exception on mixed-case names.
-// input: one CHANGE or RENAME statement whose old and new names differ only by case
-// output: zero findings and zero gaps from the destination rule, while a different name still gaps
-// pos: rule-level same-identity premise shared by Evaluate and EvidenceGaps; the parser folds case before AuditSQL
-// note: if this file changes, update this header and module README.md.
 package ddl
 
 import (

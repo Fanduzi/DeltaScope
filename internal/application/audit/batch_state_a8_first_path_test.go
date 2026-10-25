@@ -1,8 +1,4 @@
 // Package audit verifies the T05-A8 procedure outer-state first path.
-// input: real MySQL/TiDB CREATE or DROP PROCEDURE migration batches with known-absent table metadata
-// output: retained procedure boundaries, complete followers, exact table pre-states, and once-only table lookup assertions
-// pos: public application and production enrichment regression for procedure lifecycle isolation
-// note: if this file changes, update this header and module README.md.
 package audit
 
 import (

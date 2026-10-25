@@ -1,8 +1,4 @@
 // Package gitlabcodequality_test verifies GitLab Code Quality output generation.
-// input: synthetic report findings and parser diagnostics with source locations
-// output: stable GitLab issue shape, severity, fingerprint, and location coverage
-// pos: black-box infrastructure output adapter regression coverage
-// note: if this file changes, update this header and module README.md.
 package gitlabcodequality_test
 
 import (

@@ -1,8 +1,4 @@
 // Package ddl characterizes PostgreSQL generated/identity rule coverage.
-// input: synthetic DDL statements for all supported generated/identity forms
-// output: proof of which existing rules fire and which forms are currently silent
-// pos: v0.36.0 Task 1 characterization — read-only, no production behavior changes
-// note: if this file changes, update this header and module README.md.
 package ddl
 
 import (

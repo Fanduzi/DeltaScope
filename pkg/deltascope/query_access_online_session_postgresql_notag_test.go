@@ -2,10 +2,6 @@
 
 // Package deltascope verifies the unified online session compiles without the
 // postgresql tag and fails closed for an observed PostgreSQL target.
-// input: caller-owned *sql.Conn backed by the stub driver reporting PostgreSQL 17 identity
-// output: ErrOnlineQueryAccessCapabilityUnsupported for PG17, unchanged legacy PostgreSQL stubs, bounded no-leak text
-// pos: no-tag source-compatibility contract for unified online PG17 fail-closed routing
-// note: if this file changes, update this header and module README.md.
 package deltascope
 
 import (

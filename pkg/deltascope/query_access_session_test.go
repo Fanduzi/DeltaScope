@@ -1,8 +1,4 @@
 // Package deltascope verifies the public PostgreSQL session API.
-// input: various connection states and reflection checks
-// output: regression coverage for session construction, lifecycle, and leak prevention
-// pos: public API test coverage for PostgreSQLQueryAccessSession
-// note: if this file changes, update this header and module README.md.
 package deltascope
 
 import (

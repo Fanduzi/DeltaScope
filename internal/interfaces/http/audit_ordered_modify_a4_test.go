@@ -1,9 +1,4 @@
 // Package httpapi verifies the T05-A4 ordered MODIFY contract at the HTTP seam.
-// input: offline four-rule HTTP audit requests for the VARCHAR narrow and wide
-// sequences, an isolated unknown MODIFY, and an empty SQL request
-// output: HTTP 200 reject/review/gap payloads and one HTTP 400 bad_request
-// pos: HTTP transport contract tests for ordinary single-column MODIFY post-state
-// note: if this file changes, update this header and module README.md.
 package httpapi
 
 import (

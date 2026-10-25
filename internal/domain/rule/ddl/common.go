@@ -1,8 +1,4 @@
 // Package ddl defines Tier-1 DDL rules.
-// input: normalized Statement specs emitted by application extraction, including alter-table and standalone rename payloads
-// output: reusable DDL rule predicates and rule identifier constants, including the CHANGE and RENAME destination-name, RENAME COLUMN version, and T07 advanced-column identifiers, plus shared alter-action and rename matching helpers, the indexPlainComparable plain-key premise shared by the pair-comparison rules, and the memberComparisonGap/declaredComparisonGap attribution for applicable pair comparisons a non-plain member leaves unverifiable (declared-vs-existing on create_index, declaration-vs-declaration inside create_table — R6: a kind-withheld maybe-PK candidate also unverifies the pairing and owes target_table.indexes), and the T10 alter_index/invisibility/advanced-index-compatibility rule identifiers — left-prefix pairing treats any member the key-part list counts beyond the named columns (expression-bearing or unmodeled alike) as a truncated projection, so a declared prefix of the named columns is pairable even at equal length — plus the T11 dual-path constraint applicability helpers (alter.Constraint on MySQL/TiDB beside the PostgreSQL options vocabulary, the produced index definition for primary keys, the ordered-state column-fact resolution that binds an ALTER-side PK declaration's member names to pre-state column facts, and the drop_foreign_key existence rule identifier)
-// pos: DDL rule common helpers shared across concrete rules and parser-neutral rename semantics
-// note: if this file changes, update this header and module README.md.
 package ddl
 
 import (

@@ -1,8 +1,4 @@
 // Package spec defines normalized statement specifications for rule evaluation.
-// input: statement data extracted from parser-specific AST adapters
-// output: parser-neutral statement models, nonserialized execution markers, and source-located audit diagnostics for domain processing
-// pos: domain specification model for all auditable SQL statements
-// note: if this file changes, update this header and module README.md.
 package spec
 
 // Kind identifies the normalized statement family.

@@ -1,12 +1,5 @@
 // Package httpapi verifies the T06-A12 ordinary CREATE TABLE non-PK-column
 // NOT NULL contract at the HTTP seam.
-// input: POST /v1/audit bodies carrying the frozen time-exempt and
-// mixed-attribution inputs under the isolated time-allow policy
-// output: HTTP 200 with a pass payload and a one-blocker reject payload
-// bound to the owning column — policy rejects stay ordinary audit results,
-// never transport errors
-// pos: HTTP transport contract test for issue #85 T06-A12
-// note: if this file changes, update this header and module README.md.
 package httpapi
 
 import (

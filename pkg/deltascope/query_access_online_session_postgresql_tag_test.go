@@ -1,10 +1,6 @@
 //go:build postgresql
 
 // Package deltascope verifies PostgreSQL 17 routing through the unified online session entry.
-// input: caller-owned *sql.Conn backed by the recording driver, including relkind='f' responses and count-lookup failures
-// output: unified PG17 constructor/analysis routing, exact COUNT(1) admission, excluded-shape fail-closed, ordered no-execution/no-leak evidence
-// pos: postgresql-tagged unified online PG17 routing contract tests
-// note: if this file changes, update this header and module README.md.
 package deltascope
 
 import (

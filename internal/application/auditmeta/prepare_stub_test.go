@@ -1,10 +1,6 @@
 //go:build !postgresql
 
 // Package auditmeta verifies shared metadata-aware audit preparation for non-PG builds.
-// input: metadata-aware audit requests where PostgreSQL parsing hits the capability boundary stub
-// output: coverage for the capability-boundary error unwrapping path in Prepare
-// pos: these tests only compile without the postgresql build tag — the stub returns PostgreSQLCapabilityBoundaryError
-// note: if this file changes, update this header and module README.md.
 package auditmeta
 
 import (

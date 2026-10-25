@@ -1,10 +1,6 @@
 //go:build postgresql
 
 // Package mcpapi verifies PostgreSQL standalone index metadata-aware MCP behavior.
-// input: MCP audit_sql calls for standalone PostgreSQL index statements with fake metadata clients
-// output: focused transport parity coverage for standalone index owner resolution paths
-// pos: tagged MCP adapter regression coverage for PostgreSQL standalone index metadata support
-// note: if this file changes, update this header and module README.md.
 package mcpapi
 
 import (

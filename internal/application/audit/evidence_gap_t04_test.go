@@ -1,8 +1,4 @@
 // Package audit verifies the T04-A/#83 metadata evidence-gap contract.
-// input: audit requests over the isolated modify-column compatibility policy with missing, complete, or partial metadata
-// output: coverage unverified plus bounded evidence gaps, never silent pass and never fabricated findings
-// pos: application audit evidence-gap regression tests for issue #83 (T04-A slice)
-// note: if this file changes, update this header and module README.md.
 package audit
 
 import (

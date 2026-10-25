@@ -1,10 +1,6 @@
 //go:build postgresql
 
 // Package audit verifies PostgreSQL non-table object metadata enrichment.
-// input: PostgreSQL DDL statements with a fake object resolver returning confirmed, not-found, ambiguous, and unavailable object facts
-// output: metadata_status / metadata_object_type / metadata_exists enrichment assertions plus preserved table-metadata behavior
-// pos: application-layer PostgreSQL object-metadata regression coverage
-// note: if this file changes, update this header and module README.md.
 package audit
 
 import (

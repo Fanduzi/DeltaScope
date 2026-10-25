@@ -1,9 +1,4 @@
 #!/usr/bin/env bash
-# input: docker compose PostgreSQL service, object metadata fixtures, and deltascope CLI invocations with explicit database/schema selection
-# output: repeatable metadata-object-aware CLI e2e execution for PostgreSQL with JSON assertion helpers
-# pos: shell-based end-to-end harness for live object metadata PG CLI validation
-# note: if this file changes, update this header and module README.md.
-
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"

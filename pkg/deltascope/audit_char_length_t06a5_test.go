@@ -1,10 +1,6 @@
 // Package deltascope verifies the T06-A5 declared-length policy contract at
 // the public SDK seam — one under-limit and one over-limit representative;
 // the full 16-cell matrix lives in the shared audit layer and the Golden run.
-// input: CREATE TABLE statements with declared VARCHAR lengths through Audit
-// output: pass for the under-limit control; reject with one pinned blocker for the over-limit case
-// pos: public SDK contract test for issue #85 T06-A5
-// note: if this file changes, update this header and module README.md.
 package deltascope
 
 import (

@@ -1,8 +1,4 @@
 // Package ddl verifies create-table option and shape rule behavior.
-// input: synthetic create-table statements with options, constraints, and shape flags plus rule-specific policy overrides
-// output: focused coverage for table comment, engine/charset, and object-shape findings
-// pos: domain DDL rule test coverage for create-table option governance
-// note: if this file changes, update this header and module README.md.
 package ddl
 
 import (

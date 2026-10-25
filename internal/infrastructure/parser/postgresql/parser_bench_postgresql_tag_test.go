@@ -1,10 +1,6 @@
 //go:build postgresql
 
 // Package postgresql benchmarks PostgreSQL parser throughput for representative DDL/DCL SQL shapes.
-// input: deterministic PostgreSQL SQL strings and parser benchmark loops
-// output: benchmark timing and allocation measurements for parser evaluation
-// pos: PostgreSQL-tagged parser benchmark coverage for cache evaluation
-// note: if this file changes, update this header and module README.md.
 package postgresql
 
 import (

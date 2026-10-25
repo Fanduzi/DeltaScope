@@ -1,10 +1,6 @@
 // Package deltascope verifies the T06-A8 comment fidelity upgrade at the
 // public SDK seam — an explicitly empty column COMMENT is a policy finding,
 // and a multibyte table comment is measured in code points.
-// input: CREATE TABLE statements with declared comments through Audit
-// output: reject with one pinned blocker for empty column comment, pass for the 3-code-point comment under limit 8
-// pos: public SDK contract test for issue #85 T06-A8
-// note: if this file changes, update this header and module README.md.
 package deltascope
 
 import (

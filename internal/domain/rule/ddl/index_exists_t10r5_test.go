@@ -3,12 +3,6 @@
 // answers bind the object's real stored name (pk2 → exists), the freed
 // `primary` name no longer asserts presence merely because a PK exists,
 // and an unproven PK-object name suppresses instead of guessing.
-// input: direct predicate evaluations over hand-built renamed-PK snapshots
-// output: snapshotHasIndex / dropIndexTargetExists /
-// renameIndexTargetExists / alterIndexTargetExists answers
-// pos: rule-side T10-R5 binding coverage beside index_exists_t10r4_test.go
-// (issue #89)
-// note: if this file changes, update this header and module README.md.
 package ddl
 
 import (

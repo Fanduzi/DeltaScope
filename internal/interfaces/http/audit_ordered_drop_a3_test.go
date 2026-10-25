@@ -1,10 +1,4 @@
 // Package httpapi verifies the T05-A3 ordered DROP contract at the HTTP seam.
-// input: offline five-rule HTTP audit requests covering the drop-recreate path
-// and isolated DROP forms
-// output: HTTP 200 payloads pinning the first-statement gap, complete derived
-// followers, and the bounded unknown_table_state drop gap
-// pos: HTTP transport contract tests for the ordered-state drop transition
-// note: if this file changes, update this header and module README.md.
 package httpapi
 
 import (

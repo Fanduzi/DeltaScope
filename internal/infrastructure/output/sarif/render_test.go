@@ -1,8 +1,4 @@
 // Package sarif verifies SARIF 2.1.0 output generation.
-// input: synthetic report results with findings at various severity levels
-// output: test coverage for SARIF version, rule metadata, result entries, and severity mapping
-// pos: infrastructure output adapter test coverage for CI-native SARIF format
-// note: if this file changes, update this header and module README.md.
 package sarif
 
 import (

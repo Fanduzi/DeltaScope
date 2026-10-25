@@ -1,15 +1,5 @@
 // Package audit verifies the T06-A13 five ordinary CREATE TABLE type-family
 // forbid policies at the application seam.
-// input: the frozen mixed-type and safe inputs through AuditSQL under the
-// isolated on/false/off profiles, plus the M+ALTER input through the enrich
-// seam
-// output: per-role verdicts, complete per-column finding identity, the
-// loaded/applicable/absent rule_summary distinction, declaration-order
-// attribution, and follower pre-state Type/Charset propagation without
-// back-mutation
-// pos: application-layer contract tests for the frozen T06-A13 oracle
-// (issue #85)
-// note: if this file changes, update this header and module README.md.
 package audit
 
 import (

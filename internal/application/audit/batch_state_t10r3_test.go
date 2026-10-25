@@ -5,15 +5,6 @@
 // is unvouched; unnamed index members keep their product-derived stored
 // names so successor ALTER/DROP statements resolve them; and provider-loaded
 // expression members keep their catalog sort direction through publication.
-// input: real MySQL/TiDB CREATE/ALTER batches audited through AuditSQL with
-// stub providers carrying vouched member facts and TiDB handle modes
-// output: statement-bound findings, evidence gaps, coverage statuses, and
-// post-state resolution proving member identity and direction survive
-// pos: application-layer regression for issue #89 T10-R3; the gap path
-// lives in internal/domain/rule/ddl, name/handle resolution in
-// internal/domain/spec, publication in batch_state*.go, and member
-// classification in internal/infrastructure/metadata/mysql
-// note: if this file changes, update this header and module README.md.
 package audit
 
 import (

@@ -1,8 +1,4 @@
 #!/usr/bin/env bash
-# input: DELTASCOPE_BIN (optional, defaults to bin/deltascope)
-# output: validates source location fidelity across GitHub Actions, SARIF, GitLab Code Quality, and TiDB outputs
-# pos: release contract gate for source location propagation in CI renderers
-
 set -euo pipefail
 
 DELTASCOPE_BIN="${DELTASCOPE_BIN:-bin/deltascope}"

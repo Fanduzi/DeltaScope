@@ -1,8 +1,4 @@
 // Package githubactions renders audit results as GitHub Actions workflow commands.
-// input: internal report findings and source-located parser diagnostics from the audit application flow
-// output: GitHub Actions finding and parser-error annotation commands for CI pipeline integration
-// pos: infrastructure output adapter for the GitHub Actions CI-native renderer
-// note: if this file changes, update this header and module README.md.
 package githubactions
 
 import (

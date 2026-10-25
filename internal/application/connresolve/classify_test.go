@@ -1,8 +1,4 @@
 // Package connresolve verifies Connection Failure Class mapping.
-// input: wrapped network, TLS, and authentication errors
-// output: bounded failure classes without driver text
-// pos: application tests at the Classify seam
-// note: if this file changes, update this header and module README.md.
 package connresolve
 
 import (

@@ -1,9 +1,4 @@
 // Package audit verifies the T05-A5 column-identity migration.
-// input: real parser statements and shared AuditSQL requests whose later
-// MODIFY and CREATE INDEX must read the column published by CHANGE or RENAME
-// output: public results plus direct pre-state assertions for c versus c2
-// pos: T05-A5 regression for single-column CHANGE and RENAME COLUMN state
-// note: if this file changes, update this header and module README.md.
 package audit
 
 import (

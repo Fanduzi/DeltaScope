@@ -1,8 +1,4 @@
 // Package ddl verifies Tier-1 DDL column rule behavior.
-// input: create-table Statement specs with synthetic column metadata and rule policy overrides
-// output: deterministic findings for column-count, comment, naming, default, nullability, and type rules
-// pos: domain DDL rule test coverage for column governance
-// note: if this file changes, update this header and module README.md.
 package ddl
 
 import (

@@ -1,9 +1,6 @@
 //go:build postgresql
 
 // Package queryaccess verifies PostgreSQL candidate mapping and public-result privacy.
-// input: PostgreSQL aggregate and window queries
-// output: mapped internal candidates with unchanged indeterminate admission
-// pos: application coverage for parser candidate facts without promotion
 package queryaccess
 
 import (

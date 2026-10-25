@@ -1,8 +1,4 @@
 // Package queryaccess defines application-level query access contracts.
-// input: query access requests, results, resolvers, and online catalog hints
-// output: domain-typed query access contracts and MySQL/TiDB catalog binding via connresolve
-// pos: application contract layer above parsing and transport adapters
-// note: if this file changes, update this header and module README.md.
 package queryaccess
 
 import (

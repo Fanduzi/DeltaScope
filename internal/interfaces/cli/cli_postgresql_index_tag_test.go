@@ -1,10 +1,6 @@
 //go:build postgresql
 
 // Package cli verifies PostgreSQL standalone index metadata-aware CLI behavior.
-// input: CLI audit invocations for standalone PostgreSQL index statements with fake metadata clients
-// output: focused transport parity coverage for standalone index owner resolution paths
-// pos: tagged CLI adapter regression coverage for PostgreSQL standalone index metadata support
-// note: if this file changes, update this header and module README.md.
 package cli
 
 import (

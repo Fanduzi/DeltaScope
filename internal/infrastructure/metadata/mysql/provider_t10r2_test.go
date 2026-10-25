@@ -5,13 +5,6 @@
 // (expression text, the loaded column set), never on the literal alone;
 // and the TiDB PKIsHandle loader must keep the handle answer unknown
 // whenever the clustered catalog fact is missing or NULL.
-// input: sqlmock STATISTICS/TIDB_INDEXES row shapes mirroring each product's
-// real catalog emission
-// output: member KeyParts with honest kind/column/expression facts and
-// tri-state handle answers
-// pos: provider-side T10-R2 decision coverage beside the spec resolution
-// tests
-// note: if this file changes, update this header and module README.md.
 package mysqlmeta
 
 import (

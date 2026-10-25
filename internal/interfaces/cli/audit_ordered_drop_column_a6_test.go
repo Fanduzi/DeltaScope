@@ -1,10 +1,4 @@
 // Package cli verifies the T05-A6 ordered DROP COLUMN contract at the CLI seam.
-// input: offline six-rule audit invocations for the first path and the
-// removed-column index across both ordered dialects and the fail thresholds
-// output: exit-code and JSON assertions for the leading CREATE gap and the
-// old-column blocker
-// pos: CLI transport contract tests for ordinary single-column DROP COLUMN post-state
-// note: if this file changes, update this header and module README.md.
 package cli
 
 import (

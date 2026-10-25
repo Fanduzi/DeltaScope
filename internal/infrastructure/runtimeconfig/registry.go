@@ -1,8 +1,4 @@
 // Package runtimeconfig loads non-policy process settings for server and MCP operations.
-// input: optional YAML runtime config path
-// output: structured runtime Config for logging and metadata settings
-// pos: infrastructure adapter for runtime configuration loading
-// note: if this file changes, update this header and module README.md.
 package runtimeconfig
 
 import (

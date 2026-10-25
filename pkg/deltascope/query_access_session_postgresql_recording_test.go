@@ -1,10 +1,6 @@
 //go:build postgresql
 
 // Package deltascope verifies the PostgreSQL trusted session does not execute analysis SQL.
-// input: caller-owned connection backed by a recording database/sql driver, including relkind='f' responses
-// output: recording-driver support for unified ordered probes plus deprecated-session foreign-table and bounded-failure no-leak compatibility
-// pos: PostgreSQL deprecated-session trust and privacy compatibility tests
-// note: if this file changes, update this header and module README.md.
 package deltascope
 
 import (

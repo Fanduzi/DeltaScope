@@ -8,11 +8,6 @@ verify-homebrew-cask-install job.
 This is a structural checker that validates job ownership and command ordering,
 not just whole-file substring presence. It uses a narrow indentation-aware parser
 to locate the verification job and inspect its step commands.
-
-input: .github/workflows/release.yml, .github/workflows/release-recover.yml
-output: validation that Homebrew cask trust command exists before install in verification job
-pos: release contract gate protecting Homebrew cask trust sequence from silent removal
-note: if this file changes, update this header and scripts/README.md.
 """
 
 import re

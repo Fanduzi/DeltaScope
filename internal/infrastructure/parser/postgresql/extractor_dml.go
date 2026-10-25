@@ -1,10 +1,6 @@
 //go:build postgresql
 
 // Package postgresql extracts PostgreSQL DML into normalized statement facts.
-// input: PostgreSQL DML AST nodes from pg_query_go
-// output: parser-neutral DML operations, mentioned tables, MutationTargets, and bounded predicate facts
-// pos: PostgreSQL parser adapter DML extraction beneath the application audit flow
-// note: if this file changes, update this header and module README.md.
 package postgresql
 
 import (

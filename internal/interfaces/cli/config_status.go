@@ -1,8 +1,4 @@
 // Package cli exposes the command-line adapter for DeltaScope.
-// input: a rule ID, the global --config policy path, and the config status application service
-// output: human and JSON status for one shipped rule under the default policy plus optional config, including Loaded and fk_forbid suppression
-// pos: CLI config status command above the application config status use case
-// note: if this file changes, update this header and module README.md.
 package cli
 
 import (

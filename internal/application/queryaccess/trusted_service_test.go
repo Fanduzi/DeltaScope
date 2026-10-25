@@ -1,8 +1,4 @@
 // Package queryaccess tests the trusted service integration.
-// input: Service with trusted bundle, effect identity resolver, trust policy
-// output: verification of manifest-gated promotion logic
-// pos: T8 trusted service integration tests (non-postgresql)
-// note: if this file changes, update this header and module README.md.
 package queryaccess
 
 import (

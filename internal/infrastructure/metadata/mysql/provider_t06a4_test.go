@@ -3,10 +3,6 @@
 // never proof of a SQL NULL default. The tests run the real
 // Provider.LoadTableSnapshot/loadColumns against constructed database/sql
 // rows — this is "real provider + constructed DB rows", not a live anchor.
-// input: synthetic information_schema row sets covering NULL/string literal defaults
-// output: corrected HasDefault/DefaultValue/DefaultIsNull identity per stored value
-// pos: infrastructure metadata adapter regression tests for issue #85 T06-A4
-// note: if this file changes, update this header and module README.md.
 package mysqlmeta
 
 import (

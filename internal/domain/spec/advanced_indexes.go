@@ -1,20 +1,4 @@
 // Package spec defines parser-neutral advanced-index facts and assessments.
-// input: normalized statements carrying member-level key-part facts
-// (ordinal/kind/prefix/direction/expression identity), index visibility
-// facts, bound table snapshots (columns/indexes/PK handle/partition state),
-// and version metadata
-// output: the shared AssessAdvancedIndexes answer — features, determined
-// product/version and kind-aware member-legality issues, the four-state
-// implicit-primary role verdict, and bounded version/fact gaps —
-// InvalidTransition marks determined negatives and UnresolvedTransition
-// marks feature-bearing answers that could not be proven either way (R6:
-// a kind-withheld maybe-PK visibility target resolves Unresolved too),
-// both consumed by the ordered-state publication gate; `alter_index primary`
-// skips the primary-object path only on a proven member binding via
-// ResolvePrimaryNameBinding (a TiDB member may own the name) — ambiguous
-// bindings still resolve through the PRIMARY-object existence probe
-// pos: T10 domain model + T10-R2/R4/R6 primary-role/name-binding answers
-// note: if this file changes, update this header and module README.md.
 package spec
 
 import "strings"

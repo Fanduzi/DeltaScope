@@ -1,12 +1,4 @@
 // Package ddl verifies the T09 standalone-CREATE-INDEX unification contract.
-// input: real MySQL-family spec shapes — standalone CREATE INDEX carries its
-// index under the create_index alter action, never in DDL.Indexes — plus
-// target-table snapshots for lifecycle candidates
-// output: the same ddl.index.* findings a create-table entry produces, plus
-// lifecycle duplicate/redundant verdicts against the known existing index set
-// and honest target_table.indexes gaps when that set is unknowable
-// pos: domain DDL rule test coverage for issue #88 T09 first-path unification
-// note: if this file changes, update this header and module README.md.
 package ddl
 
 import (

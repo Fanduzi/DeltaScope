@@ -1,10 +1,6 @@
 //go:build postgresql
 
 // Package postgresql extracts query access facts from PostgreSQL AST.
-// input: SQL text, dialect, default schema
-// output: QueryAccessFacts with read classification, relations, column references, and output lineage
-// pos: infrastructure adapter for PostgreSQL query access extraction
-// note: if this file changes, update this header and module README.md.
 package postgresql
 
 import (

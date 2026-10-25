@@ -1,9 +1,6 @@
 //go:build postgresql
 
 // Package queryaccess characterizes the default PostgreSQL pure-effect boundary.
-// input: schema-qualified and unqualified aggregate/window SELECT forms
-// output: unproven function effects, requirements, and fail-closed admission
-// pos: application-level characterization; no trusted-bundle promotion
 package queryaccess
 
 import (

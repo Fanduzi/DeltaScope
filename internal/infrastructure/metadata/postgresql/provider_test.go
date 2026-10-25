@@ -1,8 +1,4 @@
 // Package postgresqlmeta verifies metadata normalization helpers for the PostgreSQL provider.
-// input: synthetic version, schema, instance-fact, table snapshot, and plan-estimate query scenarios
-// output: stable provider helper behavior without requiring a live database
-// pos: infrastructure metadata adapter test coverage
-// note: if this file changes, update this header and module README.md.
 package postgresqlmeta
 
 import (

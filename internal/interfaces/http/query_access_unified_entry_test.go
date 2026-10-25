@@ -1,8 +1,4 @@
 // Package httpapi verifies the HTTP query access adapter structure.
-// input: HTTP query access source and online routing implementation
-// output: structural evidence that online Query Access uses the unified SDK entry and reuses Observed Server Identity
-// pos: HTTP migration contract tests
-// note: if this file changes, update this header and module README.md.
 package httpapi
 
 import (

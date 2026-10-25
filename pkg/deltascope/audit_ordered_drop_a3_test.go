@@ -1,10 +1,4 @@
 // Package deltascope verifies the public ordered DROP contract (T05-A3).
-// input: public audit requests under the isolated five-rule policy with a
-// provider-confirmed-absent or unknown target
-// output: pass results for the drop-recreate first path and the bounded
-// unknown_table_state drop gap for an isolated unknown DROP
-// pos: public SDK contract tests for the ordered-state drop transition
-// note: if this file changes, update this header and module README.md.
 package deltascope
 
 import (

@@ -1,8 +1,4 @@
 // Package auditmeta verifies shared metadata-aware audit preparation.
-// input: metadata-aware audit requests plus fake metadata clients that simulate dialect and schema lookups
-// output: focused coverage for shared connection setup, MySQL/TiDB database/schema aliases and conflicts, partial-parse schema inference, dialect validation, and PostgreSQL schema/database validation
-// pos: application-layer preparation tests shared by CLI and MCP adapters
-// note: if this file changes, update this header and module README.md.
 package auditmeta
 
 import (

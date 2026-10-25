@@ -1,10 +1,6 @@
 // Package audit verifies the T07 expression-default family: supplemented
 // parenthesized defaults, ALTER SET/DROP DEFAULT, typed facts, ordered state,
 // and the compatibility/dependency rule behavior for both dialects.
-// input: real-parser SQL plus controlled provider snapshots
-// output: exact column facts, actions, findings, gaps, and post-state shapes
-// pos: T07 default-expression coverage beside the generated-column suite
-// note: if this file changes, update this header and module README.md.
 package audit
 
 import (

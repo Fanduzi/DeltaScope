@@ -1,9 +1,4 @@
 // Package deltascope verifies the public dependency-free DROP COLUMN contract (T05-A6).
-// input: public audit requests under the isolated six-rule policy for the
-// first path and the removed-column index
-// output: nil-error pass and reject results, with schema golden on the finding
-// pos: public SDK contract tests for ordinary single-column DROP COLUMN post-state
-// note: if this file changes, update this header and module README.md.
 package deltascope
 
 import (

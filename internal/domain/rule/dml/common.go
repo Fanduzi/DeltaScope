@@ -1,8 +1,4 @@
 // Package dml defines Tier-1 DML rules.
-// input: normalized DML Statement specs and policy-backed rule IDs
-// output: reusable DML predicates and rule identifier constants
-// pos: DML rule common helpers shared across concrete rules
-// note: if this file changes, update this header and module README.md.
 package dml
 
 import "github.com/Fanduzi/DeltaScope/internal/domain/spec"

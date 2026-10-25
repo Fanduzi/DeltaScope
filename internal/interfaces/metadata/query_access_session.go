@@ -1,8 +1,4 @@
 // Package metadata exposes shared helpers for metadata-aware and offline interface adapters.
-// input: an opened online.Session and the transport's injectable from-conn constructor
-// output: a unified OnlineQueryAccessSession that reuses Observed Server Identity when present
-// pos: shared CLI/HTTP attach seam above the public identified-conn constructor
-// note: if this file changes, update this header and module README.md.
 package metadata
 
 import (

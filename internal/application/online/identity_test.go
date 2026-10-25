@@ -1,8 +1,4 @@
 // Package online provides tests for the identity parser.
-// input: version strings and expected dialects
-// output: validated ServerIdentity or bounded identity/version rejection
-// pos: unit tests for ParseServerIdentity
-// note: if this file changes, update this header and module README.md.
 package online
 
 import (

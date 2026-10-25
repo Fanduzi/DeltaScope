@@ -1,8 +1,4 @@
 // Package connresolve turns caller connection input into a ready-to-open configuration.
-// input: dialect plus MySQL/TiDB database, connection schema, and request default catalog hints
-// output: one catalog and one qualifier, or ErrCatalogConflict
-// pos: shared MySQL/TiDB catalog-alias rule for metadata-aware Audit and Online Query Access
-// note: if this file changes, update this header and module README.md.
 package connresolve
 
 import (

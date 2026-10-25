@@ -5,13 +5,6 @@
 // kind-aware member legality (FULLTEXT/SPATIAL vs ordinary kinds), and the
 // prefix-length and multi-valued cast checks pinned against MySQL 8.0.46
 // and TiDB v8.5.0 (2026-10 native probes).
-// input: constructed snapshots and declared statements exercising every
-// state the resolution and member checks can reach
-// output: determined issues, bounded gaps, and the UnresolvedTransition
-// publication signal — never a fabricated refusal or pass
-// pos: spec-level T10-R2 decision-table coverage beside the audit-level
-// chain tests
-// note: if this file changes, update this header and module README.md.
 package spec
 
 import "testing"

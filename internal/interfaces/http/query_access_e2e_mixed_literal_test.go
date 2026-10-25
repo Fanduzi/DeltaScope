@@ -2,10 +2,6 @@
 
 // Package httpapi verifies HTTP Query Access transport smoke and error boundaries
 // against real Docker-backed MySQL 8.4 and TiDB 8.5, including schema-only binding.
-// input: real MySQL/TiDB fixtures, HTTP JSON requests, and configured registries
-// output: admitted and fail-closed transport results, schema binding, bounded failures, and no-leak responses and logs
-// pos: HTTP online Query Access real-route smoke and credential-error coverage
-// note: if this file changes, update this header and module README.md.
 package httpapi
 
 import (

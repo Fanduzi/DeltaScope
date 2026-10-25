@@ -1,8 +1,4 @@
 // Package cli verifies CLI help versus host shorthand flags.
-// input: Execute args for audit and query-access analyze -h/--help/-H/--host
-// output: exit 0 help text for -h/--help, host binding for -H/--host, no flag-needs-argument on bare -h
-// pos: interface-layer contract tests for issue #75
-// note: if this file changes, update this header and module README.md.
 package cli
 
 import (

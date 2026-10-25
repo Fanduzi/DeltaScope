@@ -1,8 +1,4 @@
 // Package audit verifies the T05-A5-R1 partial-snapshot and same-identity corrections.
-// input: real parser statements and AuditSQL requests against partial provider snapshots
-// output: definite member-absence findings, conservative invalidation gaps, and zero same-identity destination gaps
-// pos: T05-A5-R1 shared regression for known-empty collections, declaration-level gates, and the destination-conflict exception
-// note: if this file changes, update this header and module README.md.
 package audit
 
 import (

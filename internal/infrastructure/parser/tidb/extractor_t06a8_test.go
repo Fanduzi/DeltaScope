@@ -2,10 +2,6 @@
 // stores the parser-decoded string content — never a quoted SQL literal — and
 // repeated COMMENT options overwrite per occurrence. ALTER column definitions
 // share the same decoding.
-// input: MySQL and TiDB CREATE TABLE plus ALTER column-definition inputs with comment literals
-// output: Column.Comment/Table.Comment facts equal the decoded comment text, including empty and edge literals
-// pos: parser-layer contract tests for issue #85 T06-A8
-// note: if this file changes, update this header and module README.md.
 package tidbparser
 
 import (

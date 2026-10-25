@@ -1,10 +1,6 @@
 //go:build postgresql
 
 // Package mcpapi verifies PostgreSQL metadata-aware MCP audit behavior.
-// input: in-process MCP audit_sql calls, separate PostgreSQL database/schema inputs, and fake metadata clients
-// output: PostgreSQL metadata-aware result context, rule findings, planner behavior, and connection propagation
-// pos: PostgreSQL-tagged interface tests for the MCP adapter
-// note: if this file changes, update this header and module README.md.
 package mcpapi
 
 import (

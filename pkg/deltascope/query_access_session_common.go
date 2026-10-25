@@ -1,8 +1,4 @@
 // Package deltascope exposes the public library surface for consumers.
-// input: caller-owned *sql.Conn for PostgreSQL trusted query access
-// output: shared types and errors for session API across build tags
-// pos: public shared session types (no build tag)
-// note: if this file changes, update this header and module README.md.
 package deltascope
 
 import (

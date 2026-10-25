@@ -1,8 +1,4 @@
 // Package ddl verifies PostgreSQL table privilege rule behavior.
-// input: synthetic DDL statements with PostgreSQL table privilege DCL signals and cross-dialect policy controls
-// output: focused coverage for the four PostgreSQL table privilege rules with PG-only gating
-// pos: domain DDL rule test coverage for PG table privilege DCL
-// note: if this file changes, update this header and module README.md.
 package ddl
 
 import (

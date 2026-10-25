@@ -1,9 +1,4 @@
 // Package httpapi verifies the T05-A6 ordered DROP COLUMN contract at the HTTP seam.
-// input: offline six-rule HTTP audit requests for the first path and the
-// removed-column index, with schema golden and no connection
-// output: HTTP 200 review and reject payloads
-// pos: HTTP transport contract tests for ordinary single-column DROP COLUMN post-state
-// note: if this file changes, update this header and module README.md.
 package httpapi
 
 import (

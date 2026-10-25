@@ -1,8 +1,4 @@
 #!/usr/bin/env python3
-# input: curated public docs/examples, optional repository root, and VERSION environment value
-# output: exit status plus line-anchored findings for known public documentation and launcher drift
-# pos: static release contract gate for public documentation and example consistency
-# note: if this file changes, update this header and scripts/README.md.
 """Static docs/examples drift checker for DeltaScope public docs.
 
 This checker is intentionally STATIC and CURATED. It never executes Markdown

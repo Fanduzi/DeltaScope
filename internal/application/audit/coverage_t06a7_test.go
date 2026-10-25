@@ -2,10 +2,6 @@
 // declared table COLLATE clause moves from an always-unsupported aspect to a
 // governed policy fact, the column charset/collation rules stay isolated per
 // rule, and the CREATE-derived state carries the declared option through.
-// input: CREATE TABLE batches with declared column charset/collation and table COLLATE through AuditSQL plus the enrichment seam
-// output: exact per-rule findings, complete/pass under all-off and allowed policies, preserved Options facts in derived state
-// pos: application-layer contract tests for the T06-A7 collation-policy oracle (issue #85)
-// note: if this file changes, update this header and module README.md.
 package audit
 
 import (

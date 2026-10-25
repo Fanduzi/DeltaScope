@@ -1,8 +1,4 @@
 // Package httpapi exposes the HTTP adapter for DeltaScope.
-// input: parsed HTTP audit requests (including target_version), shared metadata-preparation helpers, and public audit execution functions
-// output: additive HTTP audit context including offline existence caveats plus offline or registry-based metadata-aware audit execution results
-// pos: HTTP adapter glue between request-scoped metadata inputs and the public DeltaScope audit API
-// note: if this file changes, update this header and module README.md.
 package httpapi
 
 import (

@@ -9,12 +9,6 @@
 // merge stays unproven while any sibling row is — a NO row never covers
 // a NULL/unrecognized row under one key, in either read order (partial
 // injected catalog fixture, not a native NULL-coexistence observation).
-// input: sqlmock-shaped STATISTICS/table_constraints/TIDB_INDEXES/
-// KEY_COLUMN_USAGE stubs
-// output: snapshot PrimaryKey attribution, per-member kind provability,
-// the three primary unknowns, and provider error propagation
-// pos: provider-side T10-R6 attribution tests (issue #89)
-// note: if this file changes, update this header and module README.md.
 package mysqlmeta
 
 import (

@@ -1,8 +1,4 @@
 // Package ddl verifies create-table index rule behavior.
-// input: synthetic create-table statements with typed index metadata and rule-specific policy overrides
-// output: focused coverage for index count, prefix, and duplicate-index findings
-// pos: domain DDL rule test coverage for index governance
-// note: if this file changes, update this header and module README.md.
 package ddl
 
 import (

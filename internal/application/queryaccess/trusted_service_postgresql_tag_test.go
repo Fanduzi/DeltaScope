@@ -1,10 +1,6 @@
 //go:build postgresql
 
 // Package queryaccess tests trusted service promotion via Service.Analyze.
-// input: Service with trusted bundle calling real PostgreSQL extraction and a foreign-table failure
-// output: verification of manifest-gated promotion through full Analyze path, including foreign-table fail-closed behavior
-// pos: T8 trusted service promotion integration tests
-// note: if this file changes, update this header and module README.md.
 package queryaccess
 
 import (

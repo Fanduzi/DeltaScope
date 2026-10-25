@@ -1,8 +1,4 @@
 // Package ddl verifies global merge-alter governance rules.
-// input: statement batches with repeated alter-table operations on the same target
-// output: coverage for dialect-specific merge-alter findings
-// pos: DDL global-rule test coverage for cross-statement alter governance
-// note: if this file changes, update this header and module README.md.
 package ddl
 
 import (

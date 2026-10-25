@@ -1,9 +1,6 @@
 //go:build postgresql
 
 // Package postgresql records PostgreSQL's complete traversal of common effect holders.
-// input: derived queries, ordering expressions, and join predicates
-// output: fail-closed classification with bounded unproven-function reasons
-// pos: parser-level characterization; no admission promotion
 package postgresql
 
 import (

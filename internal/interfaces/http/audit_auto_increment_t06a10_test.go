@@ -1,10 +1,4 @@
 // Package httpapi verifies the T06-A10 AUTO_INCREMENT contract at the HTTP seam.
-// input: POST /v1/audit bodies carrying the frozen pk-auto and init-mismatch
-// inputs under their isolated policies
-// output: HTTP 200 with a pass payload and a one-blocker reject payload —
-// policy rejects stay ordinary audit results, never transport errors
-// pos: HTTP transport contract test for issue #85 T06-A10
-// note: if this file changes, update this header and module README.md.
 package httpapi
 
 import (

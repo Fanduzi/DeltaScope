@@ -1,11 +1,5 @@
 // Package deltascope verifies the T06-A13 FLOAT/DOUBLE forbid policy at the
 // public SDK seam.
-// input: MySQL CREATE TABLE audits under the isolated float-double policy
-// output: a two-finding policy reject bound to each declared column and a
-// clean pass on the safe input — both ordinary audit results, never
-// transport-level errors
-// pos: public SDK contract test for the frozen T06-A13 oracle (issue #85)
-// note: if this file changes, update this header and module README.md.
 package deltascope
 
 import (

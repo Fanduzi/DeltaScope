@@ -1,8 +1,4 @@
 #!/usr/bin/env python3
-# input: release docs, landing release cards, and versioned release facts
-# output: release-surface consistency errors or a labeled fact summary
-# pos: static release contract checker for cross-surface facts
-# note: if this file changes, update this header and scripts/README.md.
 """Release surface consistency checker.
 
 Validates that release-domain facts are consistent across all release surfaces:

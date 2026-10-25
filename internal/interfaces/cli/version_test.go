@@ -1,8 +1,4 @@
 // Package cli verifies the CLI version-string seam.
-// input: version command and --version flag with ldflags override, empty override, and release-tag override
-// output: assertions that an unset version uses ReportedVersion, release ldflags keep the tag, and untagged builds do not print DefaultVersion as the sole version
-// pos: CLI adapter tests for the public version helper
-// note: if this file changes, update this header and module README.md.
 package cli
 
 import (

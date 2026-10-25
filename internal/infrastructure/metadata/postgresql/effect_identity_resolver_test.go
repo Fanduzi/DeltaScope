@@ -1,10 +1,6 @@
 //go:build postgresql
 
 // Package postgresqlmeta tests the T7 facts-only effect identity adapter.
-// input: fake session-pinned catalog + synthetic candidates
-// output: bounded statuses, OID stamps, fail-closed gates; no public leak
-// pos: unit coverage without claiming PG17 integration
-// note: if this file changes, update this header and module README.md.
 package postgresqlmeta
 
 import (

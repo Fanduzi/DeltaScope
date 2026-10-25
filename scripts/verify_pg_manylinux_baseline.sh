@@ -1,9 +1,4 @@
 #!/usr/bin/env bash
-# input: local git checkout, Docker daemon, manylinux image, and the PostgreSQL build tag
-# output: repeatable Linux PG-capable builds for the converged primary binaries plus automated glibc baseline verification
-# pos: reusable manylinux/glibc verification gate for the converged Linux PG release lanes
-# note: if this file changes, update this header and module README.md.
-
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"

@@ -1,8 +1,4 @@
 // Package audit provides application-layer parser mismatch hints.
-// input: parser-failed MySQL or TiDB SQL text masked of literals and comments
-// output: bounded PostgreSQL-syntax notice tokens without raw SQL payloads
-// pos: application diagnostic hinting beside parser-error aggregation
-// note: if this file changes, update this header and module README.md.
 package audit
 
 import (

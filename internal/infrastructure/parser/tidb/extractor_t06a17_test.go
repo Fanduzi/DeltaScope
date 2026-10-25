@@ -3,11 +3,6 @@
 // literals survive extractColumn into spec.Column.Type without the formatted
 // layer's default substitution or keyword-driven case folding. The tests run
 // the real parser + extractor (t06a2Extract) for both dialects.
-// input: frozen declaration shapes from the T06-A17 baseline fixtures
-// output: faithful Column.Type/Length/Unsigned per declared spelling, plus
-// exactly-once ALTER action/subject/old-name/definition identity checks
-// pos: infrastructure extraction regression tests for issue #85 T06-A17
-// note: if this file changes, update this header and module README.md.
 package tidbparser
 
 import (

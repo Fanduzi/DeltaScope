@@ -1,8 +1,4 @@
 // Package sarif renders audit results as SARIF 2.1.0 JSON.
-// input: internal report findings and source-located parser diagnostics from the audit application flow
-// output: SARIF 2.1.0 finding and parser-error results for CI pipeline integration
-// pos: infrastructure output adapter for the SARIF CI-native renderer
-// note: if this file changes, update this header and module README.md.
 package sarif
 
 import (

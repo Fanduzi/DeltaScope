@@ -1,10 +1,6 @@
 //go:build postgresql
 
 // Package postgresql verifies PostgreSQL multi-target table extraction.
-// input: PostgreSQL DROP TABLE and TRUNCATE statements naming several relations
-// output: coverage that every named relation lands in the shared DDL target list
-// pos: infrastructure parser extractor test coverage for multi-target completeness
-// note: if this file changes, update this header and module README.md.
 package postgresql
 
 import (

@@ -1,10 +1,6 @@
 //go:build postgresql
 
 // Package queryaccess_test verifies the shared Query Access result invariant.
-// input: dialect-specific SQL and optional relation metadata
-// output: stable read classification, admission, and reason-code assertions
-// pos: application seam regression coverage for cross-surface Query Access state
-// note: if this file changes, update this header and module README.md.
 package queryaccess_test
 
 import (

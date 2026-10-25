@@ -1,8 +1,4 @@
 // Package ddl verifies metadata-backed size-estimation rules.
-// input: create-table statements plus instance facts for charset, row format, and index-length limits
-// output: coverage for rough row-size and index-key-length findings
-// pos: DDL metadata-backed size rule test coverage
-// note: if this file changes, update this header and module README.md.
 package ddl
 
 import (

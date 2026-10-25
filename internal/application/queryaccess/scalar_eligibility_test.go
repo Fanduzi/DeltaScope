@@ -1,8 +1,4 @@
 // Package queryaccess tests scalar function Phase-1 eligibility and gateway matching.
-// input: scalar candidate shapes and manifest entries
-// output: deterministic eligibility and matching decisions
-// pos: application-layer scalar candidate proof boundary tests
-// note: if this file changes, update this header and module README.md.
 package queryaccess
 
 import (

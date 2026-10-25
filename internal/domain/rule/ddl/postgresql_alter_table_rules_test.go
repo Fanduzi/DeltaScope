@@ -1,8 +1,4 @@
 // Package ddl verifies PostgreSQL alter table advisory rule behavior.
-// input: synthetic DDL statements with PostgreSQL alter table signals and cross-dialect policy controls
-// output: focused coverage for the three PG-only alter table gap rules with PG-only gating
-// pos: domain DDL rule test coverage for PG alter table advisories
-// note: if this file changes, update this header and module README.md.
 package ddl
 
 import (

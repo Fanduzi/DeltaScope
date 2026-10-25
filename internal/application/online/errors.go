@@ -1,8 +1,4 @@
 // Package online provides the shared online session factory for SDK, CLI, and HTTP.
-// input: errors from online operations (session open, identity, authorization) and connresolve Connection Failure Class
-// output: bounded error taxonomy and status mapping that never leaks secrets, endpoints, observed identity, authentication details, or driver text
-// pos: shared error boundary for all online surfaces (HTTP, MCP, CLI)
-// note: if this file changes, update this header and module README.md.
 package online
 
 import (

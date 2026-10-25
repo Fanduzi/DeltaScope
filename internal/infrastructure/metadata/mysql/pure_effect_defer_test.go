@@ -3,20 +3,6 @@
 // claim live evidence. The live Docker probes that supersede this static
 // deferral assumption live in builtin_effect_identity_live_probes_test.go
 // (build tag: integration).
-//
-// input: static Phase-1 deferral assumption (no live server)
-// output: explicit deferred status until a separately audited proof model exists
-//
-// pos: research assumption only; superseded for MySQL/TiDB by the live probes
-//
-//	in builtin_effect_identity_live_probes_test.go which established DEFER
-//
-// note: if this file changes, update this header, the module README.md, and
-//
-//	the decision record's evidence section. See
-//	docs/decisions/2026-07-17-query-access-mysql-tidb-effect-identity-feasibility.md
-//	for the live-evidence-backed DEFER disposition that supersedes this static
-//	Phase-1 deferral.
 package mysqlmeta
 
 import "testing"

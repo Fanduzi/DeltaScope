@@ -1,8 +1,4 @@
 // Package mcpapi verifies MCP audit_sql tool behavior.
-// input: in-process MCP audit_sql CallTool sessions and shipped default policy
-// output: coverage for compact audit_sql text, structured result without CLI-only fail_on_triggered, and offline existence caveats
-// pos: interface-layer tests for MCP audit_sql content vs structuredContent
-// note: if this file changes, update this header and module README.md.
 package mcpapi
 
 import (

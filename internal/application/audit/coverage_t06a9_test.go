@@ -3,10 +3,6 @@
 // facts (time type + current-timestamp default + ON UPDATE), never from
 // column names, and emits exactly one blocker per missing role — including
 // the two-finding missing-both shape.
-// input: frozen CREATE TABLE roles through AuditSQL plus the enrichment seam
-// output: exact per-role findings, counter-control rejections, and preserved flags in derived state
-// pos: issue #85 T06-A9 audit-layer contract tests
-// note: if this file changes, update this header and module README.md.
 package audit
 
 import (

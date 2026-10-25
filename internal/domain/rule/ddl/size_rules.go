@@ -1,8 +1,4 @@
 // Package ddl defines Tier-1 DDL rules.
-// input: create-table statements plus, for the index rule, instance facts for large-prefix behavior and the canonical version identity; the row-size rule additionally consumes declared charset/row_format first and treats instance.default_charset/instance.innodb_default_row_format as optional per-field fallbacks
-// output: metadata-backed rough row-size and index-key-length findings plus bounded version/instance-fact evidence gaps
-// pos: DDL size-estimation rules for audit completion, including the version-dependent key-length bound contract and the field-level row-size fact resolution (T06-A15)
-// note: if this file changes, update this header and module README.md.
 package ddl
 
 import (

@@ -1,10 +1,6 @@
 //go:build e2e && postgresql
 
 // Package main verifies Docker-backed MCP metadata-aware end-to-end behavior for PostgreSQL.
-// input: real PostgreSQL fixtures, the MCP stdio entrypoint, and a PG-capable MCP binary
-// output: end-to-end proof that deltascope-mcp can audit through the live PG metadata path with distinct database/schema inputs
-// pos: slower external e2e verification kept outside the default go test loop
-// note: if this file changes, update this header and module README.md.
 package main
 
 import (

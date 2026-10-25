@@ -1,8 +1,4 @@
 #!/usr/bin/env bash
-# input: DELTASCOPE_BIN (optional, defaults to bin/deltascope)
-# output: validates --format gitlab-codequality JSON output contract
-# pos: release contract gate for GitLab Code Quality output surface
-
 set -euo pipefail
 
 DELTASCOPE_BIN="${DELTASCOPE_BIN:-bin/deltascope}"

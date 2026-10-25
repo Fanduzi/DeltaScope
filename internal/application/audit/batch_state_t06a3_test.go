@@ -1,9 +1,5 @@
 // Package audit verifies the T06-A3 typed DEFAULT NULL contract through the
 // shared audit path and the ordered-state DROP COLUMN seam.
-// input: three-statement CREATE+DROP+INDEX batches through AuditSQL plus the enrichment seam
-// output: typed DEFAULT NULL facts flowing into prospective state, string-literal conservative controls, and unchanged default-rule behavior
-// pos: application-layer contract tests for the frozen T06-A3 oracle (issue #85)
-// note: if this file changes, update this header and module README.md.
 package audit
 
 import (

@@ -1,8 +1,4 @@
 // Package githubsummary renders concise GitHub Actions job summaries.
-// input: internal report findings, unsupported details, and bounded diagnostics from the audit application flow
-// output: GitHub-flavored Markdown with finding summaries and unaudited-statement counts
-// pos: infrastructure output adapter for CI job-summary rendering
-// note: if this file changes, update this header and module README.md.
 package githubsummary
 
 import (

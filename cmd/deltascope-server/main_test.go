@@ -1,8 +1,4 @@
 // Package main verifies CLI flag parsing helpers for the HTTP server entrypoint.
-// input: raw comma-separated flag strings
-// output: normalized token slices used by auth flag parsing
-// pos: lightweight unit tests for command bootstrap helpers
-// note: if this file changes, update this header and module README.md.
 package main
 
 import (

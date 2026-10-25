@@ -1,8 +1,4 @@
 // Package cli verifies the Cobra CLI adapter behavior.
-// input: config lint command invocations and temporary YAML config files
-// output: focused CLI coverage for config lint warnings, --strict, error precedence, and ordering
-// pos: interface-layer CLI config lint test coverage
-// note: if this file changes, update this header and module README.md.
 package cli
 
 import (

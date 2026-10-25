@@ -1,8 +1,4 @@
 // Package queryaccess provides the application service for query access analysis.
-// input: SQL text, dialect, mode, profile, default schema, optional schema resolver, and shared input normalization
-// output: domain-typed query access results with metadata resolution, normalized final state, or a bounded BOM-empty input error
-// pos: application orchestration and cross-surface state-normalization layer for query access
-// note: if this file changes, update this header and module README.md.
 package queryaccess
 
 import (

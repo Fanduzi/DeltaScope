@@ -1,9 +1,4 @@
 #!/usr/bin/env bash
-# input: install.sh plus local fake curl/wget clients and a fixture archive
-# output: hermetic regression coverage for release discovery, pinned installs, and unprefixed semver pins
-# pos: shell-level contract test for the public POSIX installer boundary
-# note: if this file changes, update this header and scripts/README.md.
-
 set -euo pipefail
 
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"

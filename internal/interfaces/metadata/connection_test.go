@@ -1,8 +1,4 @@
 // Package metadata verifies shared direct-connection validation and secret resolution behavior.
-// input: connection inputs and secret lookup sources used by transport adapters
-// output: regression coverage for shared metadata connection helpers
-// pos: shared interface-layer tests for connection normalization helpers
-// note: if this file changes, update this header and module README.md.
 package metadata
 
 import (

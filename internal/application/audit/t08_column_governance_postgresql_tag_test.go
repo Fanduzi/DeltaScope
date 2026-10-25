@@ -2,13 +2,6 @@
 
 // Package audit verifies the T08 MySQL-family rule bindings stay inert on
 // PostgreSQL statements.
-// input: a PostgreSQL ALTER COLUMN setter against a present provider
-// snapshot
-// output: no mysql-family existence or position findings on the
-// PostgreSQL action vocabulary (set_default), while the PG-side rules keep
-// their own contract
-// pos: T08 PostgreSQL boundary regression (issue #87)
-// note: if this file changes, update this header and module README.md.
 package audit
 
 import (

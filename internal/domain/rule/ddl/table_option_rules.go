@@ -1,8 +1,4 @@
 // Package ddl defines Tier-1 DDL rules.
-// input: create-table and alter-table Statement specs with table options, constraints, alter constraint payloads, and shape flags plus per-rule policy values
-// output: findings for table options and object-shape restrictions — the foreign-key forbid fires the same finding on CREATE constraints and ALTER add_constraint declarations (issue #90 T11 parity)
-// pos: DDL rule implementations for table option and foreign-key governance
-// note: if this file changes, update this header and module README.md.
 package ddl
 
 import (

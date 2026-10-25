@@ -1,8 +1,4 @@
 // Package ddl defines Tier-1 DDL rules.
-// input: normalized Statement specs for MySQL/TiDB DDL lifecycle operations
-// output: notice-level findings for MySQL/TiDB rename, index, ALTER-index, DCL, user, role, procedure, placement, sequence, and resource group operations
-// pos: MySQL/TiDB lifecycle rule implementations for v0.200.0 normalized-silent coverage
-// note: if this file changes, update this header and module README.md.
 package ddl
 
 import (

@@ -1,8 +1,4 @@
 // Package ddl verifies PG-native alter-action restriction behavior.
-// input: synthetic alter-table statements with PG-native actions and dialect-specific policy overrides
-// output: focused coverage for PG-native alter action forbid rules with dialect gating
-// pos: domain DDL rule test coverage for PG alter governance
-// note: if this file changes, update this header and module README.md.
 package ddl
 
 import (

@@ -1,8 +1,4 @@
 // Package deltascope exposes the unified online query access capability seam.
-// input: identity-derived online capability target
-// output: single private routing definition for which capabilities are linked and routable in this build
-// pos: private unified online capability routing seam shared by constructor and analysis entry
-// note: if this file changes, update this header and module README.md.
 package deltascope
 
 import online "github.com/Fanduzi/DeltaScope/internal/application/online"

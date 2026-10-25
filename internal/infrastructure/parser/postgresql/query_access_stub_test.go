@@ -1,10 +1,6 @@
 //go:build !postgresql
 
 // Package postgresql tests the PostgreSQL query access stub.
-// input: any SQL text
-// output: ErrPostgreSQLNotAvailable
-// pos: infrastructure stub test for non-PostgreSQL builds
-// note: if this file changes, update this header and module README.md.
 package postgresql
 
 import (

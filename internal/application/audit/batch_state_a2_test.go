@@ -1,13 +1,5 @@
 // Package audit verifies the T05-A2 bounded single-pair RENAME identity
 // migration inside the request-local ordered state.
-// input: ordered MySQL/TiDB statements exercising the frozen endpoint
-// existence table, both equivalent rename syntaxes, loaded dependent
-// references, plain primary-key constraint payloads, and cancellation timing
-// output: deterministic state transitions, provider read ledgers, dependent
-// invalidation boundaries, cancellation error identity, and the unchanged
-// policy/coverage contract for in-scope and out-of-scope forms
-// pos: T05-A2/A2-R1 regression matrix for the conditional-structure state machine
-// note: if this file changes, update this header and module README.md.
 package audit
 
 import (

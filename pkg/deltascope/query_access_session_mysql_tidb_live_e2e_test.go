@@ -1,10 +1,6 @@
 //go:build integration
 
 // Package deltascope verifies the live MySQL/TiDB SDK profile and unified-entry E2E boundary.
-// input: caller-owned *sql.Conn against running MySQL 5.7/8.0/8.4 and TiDB 8.5
-// output: unified profile semantics plus deprecated identity-target and result equivalence across all four targets
-// pos: live SDK compatibility E2E for the four production builtin semantic profiles
-// note: if this file changes, update this header and module README.md.
 package deltascope
 
 import (

@@ -1,8 +1,4 @@
 // Package ddl defines Tier-1 DDL rules.
-// input: statement batches plus dialect-specific merge-alter policy values
-// output: global findings when repeated alter-table statements should be merged
-// pos: DDL global-rule implementations for cross-statement alter governance
-// note: if this file changes, update this header and module README.md.
 package ddl
 
 import (

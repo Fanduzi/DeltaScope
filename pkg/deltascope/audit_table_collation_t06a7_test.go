@@ -2,10 +2,6 @@
 // public SDK seam — the declared table COLLATE now returns a normal audit
 // result instead of ErrUnsupportedStatement, and a policy rejection stays a
 // populated Result rather than an SDK error.
-// input: CREATE TABLE statements with declared table COLLATE through Audit
-// output: complete/pass under all-off, reject with one pinned blocker under the required profile, ErrUnsupportedStatement gone
-// pos: public SDK contract test for issue #85 T06-A7
-// note: if this file changes, update this header and module README.md.
 package deltascope
 
 import (

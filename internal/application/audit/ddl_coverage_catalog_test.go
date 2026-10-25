@@ -1,10 +1,6 @@
 //go:build postgresql
 
 // Package audit verifies the generated DDL coverage catalog against census baselines.
-// input: census fixtures and the checked-in docs/reference plus catalogdata JSON copies
-// output: drift detection for generated catalog JSON used by docs and the embedded binary copy
-// pos: catalog generator and release drift gate
-// note: if this file changes, update this header and module README.md.
 package audit
 
 import (

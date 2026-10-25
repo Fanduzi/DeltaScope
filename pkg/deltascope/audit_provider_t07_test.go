@@ -1,10 +1,6 @@
 // Package deltascope verifies T07 snapshot ownership at the SDK seam: the
 // publicMetadataProvider boundary deep-copies provider-owned snapshots so
 // generated/default-expression facts can never alias into request state.
-// input: a shared provider-owned TableSnapshot with T07 column facts
-// output: proof that audit mutations never reach the provider object across requests and races
-// pos: public SDK ownership tests for issue #86 T07
-// note: if this file changes, update this header and module README.md.
 package deltascope
 
 import (

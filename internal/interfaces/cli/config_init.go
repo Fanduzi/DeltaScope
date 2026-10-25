@@ -1,8 +1,4 @@
 // Package cli exposes the command-line adapter for DeltaScope.
-// input: config init command invocations and the built-in default policy model
-// output: a lint-round-trippable YAML policy template for local users and automation
-// pos: CLI config generation command for bootstrapping DeltaScope policy files
-// note: if this file changes, update this header and module README.md.
 package cli
 
 import (

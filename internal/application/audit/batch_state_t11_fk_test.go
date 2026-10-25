@@ -7,11 +7,6 @@
 // column or absent table invalidates; a proven drop removes only the
 // constraint member while its supporting index survives; and a
 // still-needed index drop is the native 1553 refusal.
-// input: seeded batch entries plus parsed ALTER statements
-// output: post-state entries whose constraint/index membership and
-// name-space provability mirror native semantics
-// pos: T11 FK ordered-state unit coverage under batch state
-// note: if this file changes, update this header and module README.md.
 package audit
 
 import (

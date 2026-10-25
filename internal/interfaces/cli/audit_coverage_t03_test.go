@@ -1,8 +1,4 @@
 // Package cli verifies the T03 incomplete-coverage CLI contract.
-// input: recognized-but-unsupported and parser-failure audit invocations
-// output: exit-code and JSON coverage assertions for issue #82
-// pos: CLI transport contract tests for incomplete audit results
-// note: if this file changes, update this header and module README.md.
 package cli
 
 import (

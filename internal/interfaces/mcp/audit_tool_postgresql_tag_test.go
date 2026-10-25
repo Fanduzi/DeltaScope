@@ -1,10 +1,6 @@
 //go:build postgresql
 
 // Package mcpapi verifies MCP audit_sql text on the PostgreSQL-capable build.
-// input: in-process MCP audit_sql CallTool sessions with dialect=postgresql
-// output: coverage for compact review-verdict finding text
-// pos: PG-tagged interface-layer tests for MCP audit_sql text
-// note: if this file changes, update this header and module README.md.
 package mcpapi
 
 import (

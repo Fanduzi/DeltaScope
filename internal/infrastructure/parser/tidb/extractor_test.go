@@ -1,8 +1,4 @@
 // Package tidbparser verifies TiDB AST extraction into parser-neutral specs.
-// input: TiDB parser statements covering DDL and DML extraction paths
-// output: coverage for TiDB extractor normalization into domain spec statements
-// pos: infrastructure parser extractor test coverage
-// note: if this file changes, update this header and module README.md.
 package tidbparser
 
 import (

@@ -1,8 +1,4 @@
 #!/usr/bin/env bash
-# input: a DeltaScope release archive, optional checksum sidecar, expected VERSION, and optional GLIBC baseline
-# output: release-archive contract validation for packaged binaries, docs, checksums, version output, PostgreSQL CLI smoke, and Linux glibc baseline
-# pos: release artifact verifier used by Makefile package targets before upload/install surfaces consume archives
-
 set -euo pipefail
 
 ARCHIVE="${ARCHIVE:-}"

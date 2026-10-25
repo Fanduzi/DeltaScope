@@ -1,10 +1,6 @@
 //go:build postgresql
 
 // Package deltascope verifies PostgreSQL session behavior without Docker.
-// input: AnalyzeQueryAccess with PostgreSQL dialect
-// output: regression coverage for default PostgreSQL fail-closed behavior
-// pos: postgresql-tagged non-integration test for default fail-closed
-// note: if this file changes, update this header and module README.md.
 package deltascope
 
 import (

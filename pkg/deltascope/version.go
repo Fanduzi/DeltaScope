@@ -1,8 +1,4 @@
 // Package deltascope exposes the stable public audit API.
-// input: build metadata consumers and public version/logo queries
-// output: reported build version from Go module/VCS info, DefaultVersion fallback, and ASCII logo values for CLIs and services
-// pos: public package metadata alongside the stable audit entrypoint
-// note: if this file changes, update this header and module README.md.
 package deltascope
 
 import "runtime/debug"

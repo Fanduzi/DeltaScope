@@ -1,8 +1,4 @@
 // Package queryaccess defines the closed internal query access profile contract.
-// input: validated profile values and canonical dialect names
-// output: bounded profile validation errors for application requests
-// pos: shared profile authority used by public SDK and application service
-// note: if this file changes, update this header and module README.md.
 package queryaccess
 
 import "errors"

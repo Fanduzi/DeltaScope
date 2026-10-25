@@ -1,10 +1,6 @@
 // Package tidbparser verifies the T06-A3-R1 per-option DEFAULT contract: every
 // DEFAULT clause re-derives the typed facts from its own expression, so a
 // later spelling can never inherit an earlier NULL flag.
-// input: MySQL and TiDB CREATE/ALTER inputs with repeated DEFAULT options through the real parser and extractor
-// output: HasDefault/DefaultValue/DefaultIsNull bound to the last written DEFAULT expression on every path
-// pos: infrastructure parser extractor test coverage for issue #85 T06-A3-R1
-// note: if this file changes, update this header and module README.md.
 package tidbparser
 
 import (

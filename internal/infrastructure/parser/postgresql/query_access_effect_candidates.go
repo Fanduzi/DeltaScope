@@ -1,10 +1,6 @@
 //go:build postgresql
 
 // Package postgresql defines internal effect-candidate facts for Query Access.
-// input: raw parse-tree operator / function / cast nodes during effect traversal
-// output: ordered EffectCandidate slices (untrusted; never public Result fields)
-// pos: internal facts for future catalog identity resolution (T5); not a trust root
-// note: if this file changes, update this header and module README.md.
 package postgresql
 
 import (

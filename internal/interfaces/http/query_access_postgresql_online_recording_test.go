@@ -1,10 +1,6 @@
 //go:build postgresql && integration
 
 // Package httpapi verifies the PostgreSQL online query-access transport boundary.
-// input: HTTP query-access requests with connection_id and a recording database/sql driver
-// output: bounded PG17 adapter delegation, close, error, and no-execution/no-leak evidence
-// pos: focused adapter proof; unified SDK tests own detailed probe sequencing
-// note: if this file changes, update this header and module README.md.
 package httpapi
 
 import (

@@ -1,8 +1,4 @@
 #!/usr/bin/env bash
-# input: VERSION with leading v
-# output: validation that source, npm, MCP Registry, README, release-note, release index, and landing current-version surfaces match VERSION
-# pos: release contract gate called by Makefile and release workflow before publishing
-
 set -euo pipefail
 
 VERSION="${VERSION:-}"

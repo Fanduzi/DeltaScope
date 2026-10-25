@@ -1,10 +1,6 @@
 // Package audit covers the R1-F TiDB DROP CHECK|CONSTRAINT seam through
 // the public audit path: one shared AST shape, two authored keywords, and
 // a target-type-decided post-state that never guesses the keyword.
-// input: provider fixtures plus two-statement SQL through AuditSQL
-// output: assertions on successor findings, gaps, coverage, verdict
-// pos: T11-R1 acceptance tests for group F
-// note: if this file changes, update this header and module README.md.
 package audit
 
 import (

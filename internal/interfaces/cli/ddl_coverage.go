@@ -1,8 +1,4 @@
 // Package cli exposes the command-line adapter for DeltaScope.
-// input: ddl-coverage command flags, LoadEmbeddedCatalog, and optional LoadCatalogFile path override
-// output: filtered catalog entries rendered as human-readable text or machine-readable JSON
-// pos: CLI ddl-coverage command for querying the generated DDL coverage catalog
-// note: if this file changes, update this header and module README.md.
 package cli
 
 import (

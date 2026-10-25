@@ -1,8 +1,4 @@
 // Package rule_test verifies rule registration and evaluation behavior.
-// input: synthetic statements and test rule implementations
-// output: test coverage for deterministic rule execution, ID enforcement, Loaded Contains, and finding collection
-// pos: domain rule engine test coverage
-// note: if this file changes, update this header and module README.md.
 package rule_test
 
 import (

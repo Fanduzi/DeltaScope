@@ -1,10 +1,6 @@
 //go:build postgresql
 
 // Package audit verifies the application audit service behavior.
-// input: PostgreSQL audit requests containing structured unsupported statements
-// output: AuditSQL completeness floor from pass to review with audited-only statements
-// pos: application-layer regression coverage for the unsupported-statement verdict floor
-// note: if this file changes, update this header and module README.md.
 package audit
 
 import (

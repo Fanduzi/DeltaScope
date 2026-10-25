@@ -1,10 +1,6 @@
 //go:build postgresql
 
 // Package deltascope exposes the public library surface for consumers.
-// input: caller-owned *sql.Conn for PostgreSQL trusted query access
-// output: opaque session wrapper for manifest-gated analysis plus the shared private PG17 proof core used by the unified online entry
-// pos: public trusted query access session API and shared PG proof execution core (postgresql build tag)
-// note: if this file changes, update this header and module README.md.
 package deltascope
 
 import (

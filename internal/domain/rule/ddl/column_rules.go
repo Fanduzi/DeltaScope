@@ -1,8 +1,4 @@
 // Package ddl defines Tier-1 DDL rules.
-// input: create-table Statement specs with enriched column metadata and per-rule policy values
-// output: column-level findings for naming, comments, defaults, nullability, and types
-// pos: DDL rule implementations for column governance
-// note: if this file changes, update this header and module README.md.
 package ddl
 
 import (

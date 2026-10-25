@@ -5,13 +5,6 @@
 // inherits the same member-first name routing DROP INDEX already used
 // (native: dropIndex("PRIMARY") — verified on v8.5.0), and a proven 1061
 // collision against the PK object's stored name preserves the shape.
-// input: seeded ordered-state entries carrying renamed-PK and member-
-// `primary` fixture shapes, applied through the same parse→extract→apply
-// chain production uses
-// output: post-state shape assertions per successor statement
-// pos: application-layer regression for issue #89 T10-R5; native pins live
-// in docs/verification/t10 native-probe records
-// note: if this file changes, update this header and module README.md.
 package audit
 
 import (

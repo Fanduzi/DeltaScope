@@ -1,8 +1,4 @@
 // Package deltascope exposes the public library surface for consumers.
-// input: public query access requests carrying SQL text, dialect, mode, profile, and optional schema resolver
-// output: stable query access analysis results for embedding DeltaScope in tools and agents
-// pos: public query access API above the internal application service
-// note: if this file changes, update this header and module README.md.
 //
 // Defense in Depth: Query access analysis is one layer in a defense-in-depth authorization strategy.
 // It supplements, but does not replace, database authorization, grant evaluation, row-level security,

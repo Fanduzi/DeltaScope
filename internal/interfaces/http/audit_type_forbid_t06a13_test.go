@@ -1,12 +1,5 @@
 // Package httpapi verifies the T06-A13 BLOB/TEXT forbid policy at the HTTP
 // seam.
-// input: POST /v1/audit bodies carrying the frozen mixed-type and safe
-// inputs under the isolated blob-text policy
-// output: HTTP 200 with a two-blocker reject payload bound to the declared
-// columns and a pass payload — policy rejects stay ordinary audit results,
-// never transport errors
-// pos: HTTP transport contract test for issue #85 T06-A13
-// note: if this file changes, update this header and module README.md.
 package httpapi
 
 import (

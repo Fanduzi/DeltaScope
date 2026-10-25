@@ -1,8 +1,4 @@
 // Package queryaccess regression coverage for MySQL/TiDB under unproven-effect reasons (T4).
-// input: MySQL/TiDB operator-bearing SELECT forms that are currently admissible
-// output: classification/admission must not regress; unproven_* PG codes must not appear
-// pos: dialect non-alignment guard for Query Access pure-read reason work
-// note: if this file changes, update this header and module README.md.
 package queryaccess
 
 import (

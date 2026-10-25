@@ -1,8 +1,4 @@
 // Package mysqlmeta provides the same-connection MySQL/TiDB query access resolver.
-// input: caller-owned *sql.Conn and relation metadata lookups
-// output: relation schemas bound to the supplied connection
-// pos: internal metadata boundary for explicit query access sessions
-// note: if this file changes, update this header and module README.md.
 package mysqlmeta
 
 import (

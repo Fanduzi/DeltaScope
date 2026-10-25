@@ -1,12 +1,4 @@
 #!/usr/bin/env bash
-# input: none — invoked via `make test-e2e-cli-tls-regression`
-# output: exit 0 if the CLI TLS E2E fixture lifecycle regression passes; exit
-#         nonzero with per-port ownership diagnostics on any failure
-# pos: legacy ports may already be occupied by external listeners ([external],
-#      reused as-is, owner never touched); the harness owns only the holders it
-#      starts ([owned]) and releases exactly those on every exit path
-# note: test-lifecycle ownership safety fix; no product behavior change, no new
-#      decision record required (see scripts/README.md for lifecycle contract)
 #
 # Regression harness for CLI TLS E2E fixture lifecycle.
 # Occupies legacy hardcoded ports (13306, 15432, 13307, 15433) to prove the

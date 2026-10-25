@@ -1,8 +1,4 @@
 // Package dml defines Tier-1 DML rules.
-// input: policy-backed rule configuration values
-// output: normalized per-rule settings for DML rule constructors
-// pos: DML rule configuration parsing helpers
-// note: if this file changes, update this header and module README.md.
 package dml
 
 import (

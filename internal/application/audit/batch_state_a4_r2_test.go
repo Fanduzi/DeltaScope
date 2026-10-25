@@ -1,10 +1,4 @@
 // Package audit verifies the T05-A4-R2 closure of MODIFY affected-set scope.
-// input: real parser statements and shared AuditSQL requests for multi-action
-// ALTER targets and a precise MODIFY whose loaded foreign key cannot be recomputed
-// output: unknown tombstones for every touched table identity, no fabricated
-// absence finding, and no precise column successor beside an unrecomputable child
-// pos: T05-A4-R2 regression for the two remaining R1 publication boundaries
-// note: if this file changes, update this header and module README.md.
 package audit
 
 import (

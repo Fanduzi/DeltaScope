@@ -1,8 +1,4 @@
 // Package dml defines Tier-1 DML rules.
-// input: insert Statement specs and per-rule policy values
-// output: insert findings for row-count, replace, insert-select, and on-duplicate checks
-// pos: DML rule implementations for insert-family guardrails
-// note: if this file changes, update this header and module README.md.
 package dml
 
 import (

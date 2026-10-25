@@ -1,13 +1,6 @@
 // Package tidbparser verifies T06-A11 single-member primary-key BIGINT/UNSIGNED
 // extraction: the declared column facts and the ordered PK member binding the
 // two policies consume.
-// input: the eight frozen CREATE TABLE inputs, a table-level single-PK control,
-// a non-PK-unsigned-precursor control, and a ZEROFILL parser-only observation,
-// parsed through the real TiDB parser and extractor under both dialects
-// output: Column.Type/Length/Unsigned/AutoIncrement and ordered DDL.PrimaryKey
-// members pinned to the actual fields — never reconstructed from findings
-// pos: infrastructure parser extractor regression for issue #85 T06-A11
-// note: if this file changes, update this header and module README.md.
 package tidbparser
 
 import (

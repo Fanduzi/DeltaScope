@@ -1,8 +1,4 @@
 // Package ddl verifies audit-column DDL rule behavior.
-// input: create-table Statement specs with synthetic timestamp metadata and rule policy overrides
-// output: deterministic findings for missing created/updated audit timestamp columns
-// pos: domain DDL rule test coverage for audit-column governance
-// note: if this file changes, update this header and module README.md.
 package ddl
 
 import (

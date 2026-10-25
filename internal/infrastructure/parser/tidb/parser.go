@@ -1,8 +1,4 @@
 // Package tidbparser loads SQL text through the TiDB parser.
-// input: SQL text and TiDB parser runtime dependencies
-// output: raw parsed statement nodes and parser warnings for application orchestration
-// pos: infrastructure parser adapter for MySQL and TiDB SQL parsing
-// note: if this file changes, update this header and module README.md.
 package tidbparser
 
 import (

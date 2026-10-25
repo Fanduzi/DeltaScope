@@ -1,10 +1,4 @@
 // Package audit verifies the T05-A4-R1 MODIFY rework boundaries.
-// input: real parser statements and shared AuditSQL requests whose later
-// statements read the ordered pre-state left by an ordinary MODIFY
-// output: findings, evidence gaps, and pre-state assertions for loaded
-// dependents, inline PRIMARY KEY declarations, and TiDB primary-key signedness
-// pos: T05-A4-R1 regression for the three rejected MODIFY boundaries
-// note: if this file changes, update this header and module README.md.
 package audit
 
 import (

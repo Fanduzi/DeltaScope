@@ -4,12 +4,6 @@
 // into the withheld form — so a name-keyed foreign-key drop answers the
 // native missing-name refusal through both public and internal entries,
 // while a genuinely unvouched name space still reports its bounded gap.
-// input: public Audit requests plus the internal AuditSQL entry over an
-// external MetadataProvider fixture
-// output: identical findings/verdicts at both entries, proven-empty
-// collection fidelity, and unvouched-space evidence-gap controls
-// pos: T11-R1 SDK clone/contract coverage under the public API
-// note: if this file changes, update this header and module README.md.
 package deltascope
 
 import (

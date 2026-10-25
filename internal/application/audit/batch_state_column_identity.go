@@ -1,8 +1,4 @@
 // Package audit orchestrates audit use cases at the application layer.
-// input: one fully parsed CHANGE COLUMN or RENAME COLUMN statement, the request-local pre-state, and the already-resolved version identity
-// output: one publication that either migrates the source column in place or tombstones the affected tables and loaded dependents; a loaded empty member collection stays empty, and a CHANGE declaration outside the ordinary template tombstones before a withheld column set is kept
-// pos: T05-A5 column-identity transition beside the ordinary MODIFY replacement; it reuses A4 definition helpers and does not rewrite foreign keys
-// note: if this file changes, update this header and module README.md.
 package audit
 
 import (

@@ -1,8 +1,4 @@
 // Package queryaccess defines the Phase-1 PG17 trusted effect manifest.
-// input: T2 ledger plus PG17 pure aggregate/window expansion
-// output: immutable TrustedEffectManifest for PG17
-// pos: T8 Phase-1 manifest; compile-time owned, versioned, deterministically hashed
-// note: if this file changes, update this header and module README.md.
 package queryaccess
 
 // pg17ManifestData is the Phase-1 trusted effect manifest for PostgreSQL 17.

@@ -1,8 +1,4 @@
 // Package spec defines normalized statement specifications for rule evaluation.
-// input: optional metadata-aware audit facts such as explicit known-bit instance variables (including the MySQL 8.4 restrict_fk_on_non_standard_key observation with its own known bit — absent on pre-8.4 MySQL and TiDB, where the variable's nonexistence must stay an unknown rather than a guessed default), target-table snapshots, and the canonical version identity
-// output: parser-neutral metadata structures (including per-collection unknown markers and the index/foreign-key name-space markers on table snapshots) and lookup helpers for future rules — FindProvenIndex/HasUnprovenIndexName/IndexNameSpaceUnvouched and FindForeignKeyConstraint/HasUnprovenForeignKeyName/ForeignKeyNameSpaceUnvouched bind name-keyed consumers to per-member proven names
-// pos: domain metadata model shared by offline and metadata-aware audit paths
-// note: if this file changes, update this header and module README.md.
 package spec
 
 import "strings"

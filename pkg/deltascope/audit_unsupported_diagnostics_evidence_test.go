@@ -1,8 +1,4 @@
 // Package deltascope verifies public SDK diagnostic result contracts.
-// input: public audit requests containing parser-error and valid SQL statements
-// output: bounded SDK errors that preserve review-floored partial audit results and diagnostic evidence
-// pos: stable public package parser-diagnostic and partial-result regression coverage
-// note: if this file changes, update this header and module README.md.
 package deltascope
 
 import (

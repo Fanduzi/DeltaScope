@@ -7,26 +7,6 @@
 // those markers, identity facts, candidates, session/context data, manifest
 // data, raw SQL, and `severity` are absent from the public result and its JSON
 // mapping.
-//
-// input: MySQL/TiDB function-bearing SQL with injected function-name and
-//
-//	literal markers on the SDK normal path
-//
-// output: public SDK result + JSON marshal contain none of the injected
-//
-//	markers, no identity/candidate/manifest/session fields, no raw SQL, no
-//	`severity` field; DSN/credential/driver-error injection is covered by the
-//
-// # HTTP error-boundary test
-//
-// pos: public SDK no-leak regression for the MySQL/TiDB probe boundary;
-//
-//	no new public path is introduced or exercised here
-//
-// note: if this file changes, update this header, the module README.md, and
-//
-//	the decision record's no-leak evidence section. See
-//	docs/decisions/2026-07-17-query-access-mysql-tidb-effect-identity-feasibility.md
 package deltascope
 
 import (

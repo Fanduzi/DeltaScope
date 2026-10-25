@@ -1,11 +1,6 @@
 // Package spec verifies the T07-R1 premise edges the AuditSQL surface
 // cannot reach: unresolvable candidate sets, same-statement name-space
 // binds, qualifier binding, and reference-fact clone isolation.
-// input: hand-built column fact sets exercising the premise checker edges
-// output: bounded gaps instead of guessed verdicts, plus deep-copy
-// isolation for the new fact fields
-// pos: domain-level T07-R1 pins beside the frozen T07 boundary suite
-// note: if this file changes, update this header and module README.md.
 package spec
 
 import (

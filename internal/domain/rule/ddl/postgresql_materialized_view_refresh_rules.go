@@ -1,8 +1,4 @@
 // Package ddl defines Tier-1 DDL rules.
-// input: normalized Statement specs for PostgreSQL REFRESH MATERIALIZED VIEW operations
-// output: findings for non-concurrent refresh and WITH NO DATA refresh risks
-// pos: PostgreSQL-specific materialized view refresh rule implementations
-// note: if this file changes, update this header and module README.md.
 package ddl
 
 import (

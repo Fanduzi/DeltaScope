@@ -1,8 +1,4 @@
 // Package mcpapi exposes the MCP adapter for DeltaScope.
-// input: adapter and audit errors plus partial audit results arising during MCP tool execution; connection-open errors classified by connresolve; typed target_version input errors
-// output: stable MCP tool error payloads with machine-readable codes (bad_request for version input errors), messages, and partial results when available
-// pos: shared error-shaping helpers for MCP tool handlers
-// note: if this file changes, update this header and module README.md.
 package mcpapi
 
 import (

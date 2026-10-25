@@ -1,8 +1,4 @@
 // Package postgresqlmeta implements metadata-aware audit adapters over PostgreSQL.
-// input: sql.DB access plus version/schema/table lookup requests and PostgreSQL catalog queries
-// output: normalized instance facts, dialect detection, schema discovery, table snapshots, and plan estimates for application-level audit enrichment
-// pos: infrastructure metadata adapter between database/sql and domain metadata specs
-// note: if this file changes, update this header and module README.md.
 package postgresqlmeta
 
 import (

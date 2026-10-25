@@ -1,7 +1,3 @@
-# input: pinned MySQL 5.7.44/8.0.46/8.4.10 and TiDB 8.5.0 images for isolated DDL golden fixtures, plus docker/tidb/ddl-golden-max-index-length.toml for the T04-B auxiliary TiDB variant
-# output: disposable per-anchor database services reachable inside the compose network; all four anchors publish loopback ports for host-CLI metadata audit cases (T04-B version identity), and two T04-B auxiliary fixtures (mysql84 4KB pages, tidb85 max-index-length=12288) prove configured instance facts
-# pos: Docker fixtures consumed by scripts/ddl_golden.py via `make ddl-golden`
-# note: if this file changes, update this header and module README.md.
 # Version pins are normative anchors from milestone issue #79/#81. Do not move to
 # floating tags or other patch versions; observed versions and image digests are
 # recorded into the golden artifact and verified against these pins.

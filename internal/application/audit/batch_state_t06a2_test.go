@@ -1,9 +1,5 @@
 // Package audit verifies the T06-A2 CREATE TABLE primary-key member
 // nullability contract through the shared audit path.
-// input: single-statement CREATE variants and CREATE+ALTER batches through AuditSQL plus the enrichment seam
-// output: PK member NotNull facts, preserved explicit-NULL conflicts, and unchanged default/compat behavior
-// pos: application-layer contract tests for the frozen T06-A2 oracle (issue #85)
-// note: if this file changes, update this header and module README.md.
 package audit
 
 import (

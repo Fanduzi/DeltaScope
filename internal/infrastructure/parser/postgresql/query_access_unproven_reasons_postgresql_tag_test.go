@@ -1,10 +1,6 @@
 //go:build postgresql
 
 // Package postgresql tests bounded unproven-effect reason emission for Query Access.
-// input: PostgreSQL SQL with operator / function / cast presence
-// output: presence-only reason codes without effect spellings or SQL leakage
-// pos: parser-level coverage for T4 unproven effect reason codes
-// note: if this file changes, update this header and module README.md.
 package postgresql
 
 import (

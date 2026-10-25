@@ -1,8 +1,4 @@
 // Package ddl defines Tier-1 DDL rules.
-// input: create-table Statement specs with typed index metadata and per-rule policy values
-// output: index-governance findings for count, naming, duplicate-index, and redundancy concerns — pair comparisons apply only to sufficiently known plain keys, and an applicable pair carrying a non-plain member reports an attributable evidence gap (declared-vs-existing on create_index, declaration-vs-declaration inside create_table)
-// pos: DDL rule implementations for create-table index governance
-// note: if this file changes, update this header and module README.md.
 package ddl
 
 import (

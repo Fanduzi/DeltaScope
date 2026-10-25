@@ -1,8 +1,4 @@
 // Package catalog verifies rule catalog discoverability metadata.
-// input: built-in policy defaults plus catalog entries, including default-disabled opt-in rules, with dialects, category, tags, and source
-// output: regression coverage for catalog completeness, field validity, deterministic ordering, and discoverability contract
-// pos: shipped rule discoverability catalog test coverage
-// note: if this file changes, update this header and module README.md.
 package catalog
 
 import (

@@ -6,10 +6,6 @@
 // production code (never a hand-built spec.Column, never a copied
 // loadColumns). Package audit cannot host this test because mysqlmeta
 // already asserts the audit.MetadataProvider interface (import cycle).
-// input: two-statement ALTER DROP COLUMN + CREATE INDEX batches against driver-fed catalog rows
-// output: review/unverified for string-literal siblings (A/B), complete/pass for stored SQL NULL (C)
-// pos: application-layer real-provider contract tests for issue #85 T06-A4
-// note: if this file changes, update this header and module README.md.
 package auditmeta
 
 import (

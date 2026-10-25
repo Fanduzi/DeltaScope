@@ -1,9 +1,6 @@
 //go:build postgresql && integration
 
 // Package postgresqlmeta records the PG17 catalog proof feasibility ledger.
-// input: live pg_catalog.pg_proc rows from the repository's PG17 integration service
-// output: exact identity and negative-case evidence for the Phase 1 candidates
-// pos: research evidence only; this file does not modify admission or manifests
 package postgresqlmeta
 
 import (

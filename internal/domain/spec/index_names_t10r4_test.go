@@ -5,16 +5,6 @@
 // it `expression_index` and pre-occupies authored names before deriving),
 // and PrimaryKeyClustered separates clustered storage (DROP PRIMARY KEY
 // refusal 8200) from the PRIMARY-object addressability answer.
-// input: declared index member lists across dialects and declared TiDB
-// primary keys across member shapes, session modes, and config facts
-// output: proven stored names or a withheld name space; a tri-state
-// clustered-storage answer (nil = unprovable)
-// pos: spec-side T10-R4 coverage beside primary_key_role_t10r3_test.go;
-// upstream anchors — MySQL 8.0.46 sql/sql_table.cc make_unique_key_name
-// (P1-P2/P9/P12-P14 probes), TiDB v8.5.0 pkg/ddl/create_table.go
-// setEmptyConstraintName (P3-P4/P8/P10-P11 probes), pkg/ddl/executor.go
-// IsCommonHandle||PKIsHandle drop refusal (P5-P7 probes)
-// note: if this file changes, update this header and module README.md.
 package spec
 
 import (

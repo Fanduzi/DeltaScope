@@ -1,8 +1,4 @@
 // Package policy defines audit policy configuration in domain terms.
-// input: rule policy values and validation scenarios
-// output: policy behavior coverage for broader parameter shapes
-// pos: domain policy test coverage
-// note: if this file changes, update this header and module README.md.
 package policy
 
 import (

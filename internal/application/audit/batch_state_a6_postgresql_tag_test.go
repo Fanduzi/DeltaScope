@@ -1,12 +1,6 @@
 //go:build postgresql
 
 // Package audit verifies that T05-A6 DROP COLUMN state stays off the PostgreSQL path.
-// input: PostgreSQL DROP COLUMN requests in the no-provider, schema-only, and
-// provider-backed forms under the six-rule profile
-// output: the legacy per-statement snapshot, with obsolete still present on the
-// second statement and no ordered-state gap
-// pos: dialect-scope guard for the T05-A6 DROP COLUMN post-state
-// note: if this file changes, update this header and module README.md.
 package audit
 
 import (

@@ -1,9 +1,4 @@
 #!/usr/bin/env sh
-# input: release version selectors (bare or v-prefixed major.minor.patch), host os/arch facts, GitHub release metadata, and release archives from the DeltaScope repository
-# output: installed DeltaScope release binaries under a local operator-selected bin directory
-# pos: release-facing installer that resolves a validated release tag into local binaries
-# note: if this file changes, update this header and module README.md.
-
 set -eu
 
 REPO="${DELTASCOPE_REPO:-Fanduzi/DeltaScope}"

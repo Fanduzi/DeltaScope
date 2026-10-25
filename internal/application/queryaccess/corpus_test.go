@@ -1,8 +1,4 @@
 // Package queryaccess provides corpus-driven tests for query access analysis.
-// input: testdata/query-access/{dialect}/*.sql + *.expected.yaml pairs
-// output: deterministic corpus gate verifying Service.Analyze() against expected results
-// pos: application corpus test layer for query access analysis foundation
-// note: if this file changes, update this header and module README.md.
 package queryaccess_test
 
 import (

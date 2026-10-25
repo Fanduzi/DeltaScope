@@ -1,8 +1,4 @@
 // Package rulepresence computes Catalog, Default Policy, Loaded, and Suppression for one rule.
-// input: a shipped rule ID and the effective policy that registration would use
-// output: Presence naming the four facts without collapsing them
-// pos: application module that config status and discovery share
-// note: if this file changes, update this header and module README.md.
 package rulepresence
 
 import (

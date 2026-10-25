@@ -1,9 +1,4 @@
 #!/usr/bin/env python3
-# input: .github/workflows/release.yml
-# output: validation that provenance gates mutation jobs and that npm publication
-#         stays independent of Homebrew while remaining on platform-build jobs
-# pos: release contract gate for the tag-triggered release workflow needs DAG
-# note: if this file changes, update this header and scripts/README.md.
 """Workflow provenance contract checker.
 
 Parses .github/workflows/release.yml using stdlib-only YAML parsing

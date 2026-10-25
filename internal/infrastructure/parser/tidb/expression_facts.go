@@ -1,8 +1,4 @@
 // Package tidbparser extracts evaluation-free expression facts from parsed expressions.
-// input: TiDB AST expression nodes from column declarations and catalog generation text
-// output: spec.ExpressionFacts (references/functions/call-count/features/fingerprint/known) plus ParseCatalogExpressionFacts and MultiValuedCastFacts (the CAST(… AS <T> ARRAY) element family + authored-length bit the member-legality check consumes — FieldType.GetType reports JSON for the array wrapper, so the element byte type/length come from Tp.ArrayType())
-// pos: shared expression-fact collector used by the column extractor and the MySQL metadata provider
-// note: if this file changes, update this header and module README.md.
 package tidbparser
 
 import (

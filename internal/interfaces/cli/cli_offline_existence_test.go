@@ -1,8 +1,4 @@
 // Package cli verifies offline existence caveats on default audit surfaces.
-// input: offline ALTER DROP COLUMN / ALTER missing-table CLI invocations
-// output: review verdict plus evidence-gap contract (unknown_table_state, context.unproven) that existence was not checked
-// pos: CLI contract coverage for issue #28 and the T05 offline existence-gap behavior
-// note: if this file changes, update this header and module README.md.
 package cli
 
 import (

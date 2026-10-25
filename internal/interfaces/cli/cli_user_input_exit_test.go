@@ -1,8 +1,4 @@
 // Package cli verifies CLI process exit mapping for bad user input.
-// input: Execute args for unknown flags and unparseable SQL
-// output: exit-code, diagnostic classification, and no-leak coverage
-// pos: interface-layer contract tests for issue #24
-// note: if this file changes, update this header and module README.md.
 package cli
 
 import (

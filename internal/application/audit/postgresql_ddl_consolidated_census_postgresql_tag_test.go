@@ -1,10 +1,6 @@
 //go:build postgresql
 
 // Package audit verifies the consolidated PostgreSQL DDL census.
-// input: PostgreSQL representative, completion, deep, long-tail, and residual census cases
-// output: per-source and consolidated DDL coverage summaries
-// pos: PostgreSQL-tagged application audit census aggregation gate
-// note: if this file changes, update this header and module README.md.
 package audit
 
 import (

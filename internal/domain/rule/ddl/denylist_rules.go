@@ -1,8 +1,4 @@
 // Package ddl defines Tier-1 DDL rules.
-// input: DDL statements plus policy-backed schema/table denylist entries
-// output: findings that block DDL against protected schemas or tables
-// pos: DDL object-scope denylist guardrails for audit completion
-// note: if this file changes, update this header and module README.md.
 package ddl
 
 import (

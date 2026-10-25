@@ -1,10 +1,4 @@
 // Package ddl defines Tier-1 DDL rules.
-// input: metadata-enriched alter-table Statement specs with current and target column shapes
-// output: source-aware alter compatibility findings and bounded evidence gaps for change/modify column operations,
-// with the shared three-state default comparison (proven-same / proven-different inside a comparable domain /
-// unproven) driving both
-// pos: DDL compatibility rules layered above metadata-backed existence checks
-// note: if this file changes, update this header and module README.md.
 package ddl
 
 import (

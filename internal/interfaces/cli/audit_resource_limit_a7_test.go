@@ -1,8 +1,4 @@
 // Package cli verifies the T05-A7 ordered-state budget at the CLI seam.
-// input: 1025-statement MySQL audit invocations across every fail threshold, plus a trailing parser failure
-// output: exit codes and JSON assertions for the retained partial result, bounded resource-limit projection, and parser-error priority
-// pos: CLI transport contract tests for the shared ordered-state admission budget (issue #84/T05-A7)
-// note: if this file changes, update this header and module README.md.
 package cli
 
 import (

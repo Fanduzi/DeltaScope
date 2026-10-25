@@ -1,8 +1,4 @@
 // Package audit publishes the T05-A6 dependency-free DROP COLUMN post-state.
-// input: one ALTER statement, its drop_column action, and the table identities it names
-// output: either a precise column removal with unrelated members kept and the accepted statistic set cleared, or one tombstone publication of every named identity and its loaded dependents
-// pos: ordered-state successor for a single ordinary DROP COLUMN; multi-action and dependency-bearing forms stay conservative; the T07 shared ColumnDependents answer proves which generated/default-expression siblings actually bind the dropped name
-// note: if this file changes, update this header and module README.md.
 package audit
 
 import (

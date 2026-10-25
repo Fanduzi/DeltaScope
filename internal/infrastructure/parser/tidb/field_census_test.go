@@ -1,12 +1,5 @@
 // Package tidbparser pins a disposition for every field of every census-scope
 // AST struct the extractor can reach.
-// input: the pinned parser's struct fields on extracted statement types and
-// their option/fact carriers, plus the extractor's field reads
-// output: a fail-closed check that no exported field on an audited-path struct
-// is silently dropped — every field is projected, evidence, carried, subsumed,
-// exempt, or explicitly deferred
-// pos: coverage-boundary census for issue #82 (field-level completeness)
-// note: if this file changes, update this header and module README.md.
 package tidbparser
 
 import (

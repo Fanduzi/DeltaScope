@@ -1,8 +1,4 @@
 // Package tidbparser tests the TiDB query access extractor.
-// input: SQL text exercising SELECT, JOIN, CTE, subquery, locking, function, and multi-statement forms
-// output: QueryAccessFacts assertions for read classification, relations, columns, outputs, and unresolved references
-// pos: infrastructure-level tests for the TiDB query access adapter
-// note: if this file changes, update this header and module README.md.
 package tidbparser
 
 import (

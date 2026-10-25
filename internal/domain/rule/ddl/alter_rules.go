@@ -1,8 +1,4 @@
 // Package ddl defines Tier-1 DDL rules.
-// input: alter-table Statement specs with normalized alter actions and per-rule policy values
-// output: findings for forbidden ALTER TABLE actions
-// pos: DDL rule implementations for action-level alter restrictions
-// note: if this file changes, update this header and module README.md.
 package ddl
 
 import (

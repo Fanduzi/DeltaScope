@@ -1,8 +1,4 @@
 // Package queryaccess implements metadata-backed resolution for query access analysis.
-// input: domain Result with extracted facts, SchemaResolver for metadata lookup
-// output: enriched Result with resolved wildcards, columns, aliases, and lineage
-// pos: application resolution layer bridging extracted facts to metadata-resolved results
-// note: if this file changes, update this header and module README.md.
 package queryaccess
 
 import (

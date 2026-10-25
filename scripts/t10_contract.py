@@ -1,8 +1,4 @@
 #!/usr/bin/env python3
-# input: fixed T10 advanced-index and visibility roles, native four-anchor observations, and independently declared schema/result expectations
-# output: immutable role specs for the T10 manifest and full-entry artifact validation; never reads product actuals
-# pos: independent T10 acceptance oracle beside the existing DDL Golden runner
-# note: if this file changes, update this header and scripts/README.md.
 import hashlib
 import json
 from pathlib import Path

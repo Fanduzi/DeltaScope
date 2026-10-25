@@ -1,10 +1,4 @@
 // Package mcpapi verifies the T07 advanced-column MCP contract.
-// input: audit_sql tool calls carrying visibility/expression SQL under the
-// default policy for MySQL and TiDB
-// output: isError/result envelope shapes for pass, reject, and vendor
-// boundaries through the shared public audit seam
-// pos: MCP transport coverage for issue #86 advanced columns
-// note: if this file changes, update this header and module README.md.
 package mcpapi
 
 import (

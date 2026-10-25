@@ -1,19 +1,5 @@
 // Package audit derives the conditional post-state of ordinary MODIFY and
 // T07 default-only setters.
-// input: one ALTER TABLE MODIFY COLUMN or ALTER COLUMN SET/DROP DEFAULT, the
-// immutable request-local entries captured before the statement, and loaded
-// constraint facts already present in this batch
-// output: an in-place column replacement, or one conservative invalidation of
-// every table identity the statement touches and the already-loaded dependents
-// that reference those identities
-// pos: T05-A4 state supply for ordinary VARCHAR and integer MODIFY; a
-// non-precise statement invalidates every table target and loaded dependents
-// of those identities, a precise replacement is withheld when a loaded foreign
-// key cannot be recomputed, an inline PRIMARY KEY is read from the parser
-// presence fact, and a TiDB known-primary-key signedness change stays
-// conservative. It does not change compatibility-rule meaning and does not
-// read the provider again
-// note: if this file changes, update this header and module README.md.
 package audit
 
 import (

@@ -1,9 +1,5 @@
 // Package tidbparser verifies the T06-A3 typed SQL NULL literal recognition for
 // column DEFAULT extraction and the preserved literal/alter fact contract.
-// input: MySQL and TiDB CREATE/ALTER inputs through the real parser and extractor
-// output: typed HasDefault/DefaultValue/DefaultIsNull facts and unchanged literal/comment/alter fields
-// pos: infrastructure parser extractor test coverage for issue #85 T06-A3
-// note: if this file changes, update this header and module README.md.
 package tidbparser
 
 import (

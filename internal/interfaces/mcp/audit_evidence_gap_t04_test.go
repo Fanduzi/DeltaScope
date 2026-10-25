@@ -1,8 +1,4 @@
 // Package mcpapi verifies the T04-A/#83 evidence-gap MCP contract.
-// input: audit_sql tool calls under the isolated modify-column compatibility policy
-// output: isError=false results carrying evidence_gaps and preserved isError=true unsupported semantics
-// pos: MCP transport contract tests for metadata evidence gaps (issue #83 T04-A slice)
-// note: if this file changes, update this header and module README.md.
 package mcpapi
 
 import (

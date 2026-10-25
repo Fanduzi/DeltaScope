@@ -1,8 +1,4 @@
 // Package ddl defines Tier-1 DDL rules.
-// input: metadata-enriched DDL Statement specs plus per-rule policy values, where enriched snapshots may be unknown, known-absent, complete, or complete-present with incomplete structural collections
-// output: existence and snapshot-backed findings for create-table, alter-table, and standalone create-index operations, plus evidence gaps (unknown_table_state / table_not_found) on the whitelisted existence rules when the ordered schema state cannot prove a premise — a decided `primary` binding (member-owned, PK-bound, or freed) owes no primary_key gap since unproven PK-side facts were never consulted, and the foreign-key member rule binds proven constraint names under a vouched name space — a proven target answers even while the sibling space stays unvouched (an unmodeled CHECK marks the collection unknown without hiding the proven binding), so the target_table.constraints gap is owed per-target only when the unvouched space may hide it
-// pos: DDL rule implementations that depend on optional metadata-aware or batch-derived facts
-// note: if this file changes, update this header and module README.md.
 package ddl
 
 import (

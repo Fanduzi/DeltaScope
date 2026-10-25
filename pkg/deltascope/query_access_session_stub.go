@@ -1,10 +1,6 @@
 //go:build !postgresql
 
 // Package deltascope provides the PostgreSQL session stub when built without the postgresql tag.
-// input: none (stub only)
-// output: ErrPostgreSQLSessionNotAvailable for legacy calls; fail-closed unified PG17 route stub
-// pos: public stub for non-PostgreSQL builds
-// note: if this file changes, update this header and module README.md.
 package deltascope
 
 import (

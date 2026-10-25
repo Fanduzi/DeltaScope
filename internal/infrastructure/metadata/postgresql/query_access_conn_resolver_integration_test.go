@@ -2,10 +2,6 @@
 
 // Package postgresqlmeta runs conn-backed resolver and same-connection proof
 // against a live PostgreSQL 17 session.
-// input: DELTASCOPE_PG_* env or docker compose defaults (localhost:5500)
-// output: real metadata resolution and same-backend-PID evidence
-// pos: integration evidence for same-connection property
-// note: if this file changes, update this header and module README.md.
 package postgresqlmeta
 
 import (

@@ -1,8 +1,4 @@
 #!/usr/bin/env python3
-# input: release consistency checker and temporary release-surface/card fixtures
-# output: passing or failing assertions for release consistency contracts
-# pos: unit tests for the static release contract checker
-# note: if this file changes, update this header and scripts/README.md.
 """Unit tests for release surface consistency checker.
 
 These tests define the expected behavior of scripts/verify_release_consistency.py.

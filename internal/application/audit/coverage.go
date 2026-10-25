@@ -1,8 +1,4 @@
 // Package audit computes statement and aggregate audit-coverage status.
-// input: extracted domain statements with parser-attached boundary markers, ordered-state resource-limit markers, and extraction facts
-// output: per-statement coverage status plus bounded unsupported evidence for unaudited aspects (including the T07 expression_dependencies unknown-function boundary) and exhausted-budget markers
-// pos: application coverage classification between extraction and reporting (issue #82)
-// note: if this file changes, update this header and module README.md.
 package audit
 
 import (

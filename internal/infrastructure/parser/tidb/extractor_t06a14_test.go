@@ -1,13 +1,5 @@
 // Package tidb verifies the T06-A14 extracted table-option facts the three
 // allowlist policies consume.
-// input: the frozen allowed/denied/omitted CREATE TABLE inputs and the
-// column-level CHARACTER SET scope control through the real parse+extract
-// seam under both dialects
-// output: AST TableOption payload kinds (StrValue vs UintValue), the
-// extracted spec.Options key/value pairs, absent keys staying absent, and
-// the column-vs-table charset distinction pinned
-// pos: extractor contract tests for the frozen T06-A14 oracle (issue #85)
-// note: if this file changes, update this header and module README.md.
 package tidbparser
 
 import (

@@ -1,8 +1,4 @@
 // Package rulepresence verifies Catalog vs Default Policy vs Loaded vs Suppression.
-// input: shipped rule IDs and Default Policy
-// output: Loaded matches registration; FK naming is suppressed not missing
-// pos: application tests at the Presence seam
-// note: if this file changes, update this header and module README.md.
 package rulepresence
 
 import (

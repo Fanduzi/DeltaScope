@@ -1,8 +1,4 @@
 // Package deltascope verifies the T05-A7 ordered-state budget at the public SDK seam.
-// input: a 1025-statement MySQL audit request through the public Audit entrypoint
-// output: ErrUnsupportedStatement with the retained partial result and the exact bounded resource-limit projection
-// pos: public SDK contract test for the shared ordered-state admission budget (issue #84/T05-A7)
-// note: if this file changes, update this header and module README.md.
 package deltascope
 
 import (

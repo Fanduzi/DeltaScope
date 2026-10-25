@@ -1,10 +1,6 @@
 //go:build postgresql
 
 // Package mcpapi verifies MCP unsupported-statement result contracts.
-// input: audit_sql calls containing structured unsupported PostgreSQL statements
-// output: MCP error results that serialize the review-floored unsupported contract
-// pos: MCP adapter regression coverage for the unsupported-statement verdict floor
-// note: if this file changes, update this header and module README.md.
 package mcpapi
 
 import (

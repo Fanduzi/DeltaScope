@@ -1,8 +1,3 @@
-# input: versioned official MySQL 5.7/8.0/8.4 and TiDB 8.5 DDL statement lists plus current-tool probe evidence
-# output: machine-checkable acceptance inventory rows consumed by the ddl inventory contract gate
-# pos: official DDL denominator for the mysql-tidb-ddl-completion milestone (issue #79 task T02/#81)
-# note: if this file changes, update this header and testdata README / docs/dev/testing.md.
-
 version: 1
 verified: "2026-09-22"
 purpose: >

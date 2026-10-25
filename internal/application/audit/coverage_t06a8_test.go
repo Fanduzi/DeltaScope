@@ -2,10 +2,6 @@
 // values keep the parser-decoded content without literal quote wrappers, the
 // table comment length policy counts Unicode code points, and the
 // CREATE-derived table snapshot carries the declared table comment.
-// input: CREATE TABLE batches with declared table/column comments through AuditSQL plus the enrichment seam
-// output: exact per-rule findings, rune-counted comment lengths, preserved comment facts in derived state
-// pos: issue #85 T06-A8 audit-layer contract tests
-// note: if this file changes, update this header and module README.md.
 package audit
 
 import (

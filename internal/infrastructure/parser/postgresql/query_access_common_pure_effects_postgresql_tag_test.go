@@ -1,9 +1,6 @@
 //go:build postgresql
 
 // Package postgresql characterizes PostgreSQL extraction of common pure-effect forms.
-// input: schema-qualified aggregate and window SELECT forms
-// output: unproven function reason and current partition/order usages
-// pos: parser-level characterization; no admission promotion
 package postgresql
 
 import (

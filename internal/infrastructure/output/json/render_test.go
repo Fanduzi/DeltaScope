@@ -1,8 +1,4 @@
 // Package jsonrender verifies JSON rendering behavior.
-// input: representative internal audit results with stable JSON field names
-// output: regression coverage for machine-oriented JSON rendering
-// pos: infrastructure output test coverage for the JSON renderer
-// note: if this file changes, update this header and module README.md.
 package jsonrender
 
 import (

@@ -1,8 +1,4 @@
 // Package githubactions verifies GitHub Actions annotation output.
-// input: synthetic report results with blocker/warning/notice findings and optional locations
-// output: test coverage for GitHub Actions annotation severity mapping and location formatting
-// pos: infrastructure output adapter test coverage for CI-native GitHub Actions format
-// note: if this file changes, update this header and module README.md.
 package githubactions
 
 import (

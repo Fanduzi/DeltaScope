@@ -1,8 +1,4 @@
 // Package deltascope verifies the T06-A1 primary-key-presence contract at the public SDK seam.
-// input: MySQL and TiDB CREATE TABLE audits with the isolated ddl.table.primary_key.require policy
-// output: a reject verdict carrying exactly one blocker finding, or a clean pass when the rule is off
-// pos: public SDK contract test for the frozen T06-A1 oracle (issue #85)
-// note: if this file changes, update this header and module README.md.
 package deltascope
 
 import (

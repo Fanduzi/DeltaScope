@@ -1,7 +1,4 @@
 // Package tidbparser defines bounded internal effect-candidate facts.
-// input: TiDB AST function-like nodes and resolved parser scope
-// output: ordered, untrusted candidate facts for application-internal gateways
-// pos: parser candidate contract; never a public result contract
 package tidbparser
 
 import (

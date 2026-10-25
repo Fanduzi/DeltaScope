@@ -1,8 +1,4 @@
 // Package main verifies MCP top-level panic recovery.
-// input: subprocess environment triggering panic during server construction
-// output: regression coverage ensuring top-level recover logs and exits with code 4
-// pos: subprocess-based test for top-level panic recovery in the MCP entrypoint
-// note: if this file changes, update this header and module README.md.
 package main
 
 import (

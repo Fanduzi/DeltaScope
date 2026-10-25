@@ -1,13 +1,5 @@
 // Package ddl verifies the T06-A13 five ordinary CREATE TABLE type-family
 // forbid policies on synthetic statements.
-// input: the frozen mixed-type and safe column sets through each rule's
-// registered constructor and through the real registry seam
-// output: per-rule per-column attribution including the JSON and DATETIME
-// exclusions, the FLOAT/DOUBLE split finding shapes, forbid=true/false,
-// enabled=false, default level/params, invalid-parameter controls, the
-// declaration-order control, and the CREATE-only applicability seam
-// pos: domain DDL rule regression for issue #85 T06-A13
-// note: if this file changes, update this header and module README.md.
 package ddl
 
 import (

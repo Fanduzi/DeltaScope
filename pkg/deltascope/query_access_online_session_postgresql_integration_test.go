@@ -2,10 +2,6 @@
 
 // Package deltascope verifies the unified online session entry against a real
 // PostgreSQL 17 backend.
-// input: real PostgreSQL connection from Docker PG17, including foreign-table metadata
-// output: unified PG17 routing, aggregate/comparison/parse-failure/fail-closed semantics, equivalence, same-backend-session proof, foreign-table fail-closed, caller ownership
-// pos: integration test coverage for the unified online PG17 entry
-// note: if this file changes, update this header and module README.md.
 package deltascope
 
 import (

@@ -1,14 +1,5 @@
 // Package httpapi verifies the T06-A15 row-size field-level fact contract at
 // the HTTP seam.
-// input: POST /v1/audit bodies carrying the frozen over-limit,
-// missing-charset, and determined-finding-plus-gap inputs under the
-// isolated row-size policy — all without a metadata provider
-// output: HTTP 200 with an ordinary reject payload, an ordinary
-// review/unverified payload carrying the field-scoped gap, and a reject
-// payload carrying both — policy outcomes stay ordinary audit results,
-// never transport errors
-// pos: HTTP transport contract test for issue #85 T06-A15
-// note: if this file changes, update this header and module README.md.
 package httpapi
 
 import (

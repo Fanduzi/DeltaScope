@@ -1,10 +1,6 @@
 // Package tidbparser verifies the T07 catalog expression boundary:
 // ParseCatalogExpressionFacts accepts exactly one bare data expression and
 // decodes exactly one recognized escaped SQL-string layer.
-// input: catalog GENERATION_EXPRESSION / DEFAULT_GENERATED text plus malformed controls
-// output: structured ExpressionFacts or explicit unknown — never fabricated completeness
-// pos: catalog expression parser tests for issue #86 T07
-// note: if this file changes, update this header and module README.md.
 package tidbparser
 
 import (

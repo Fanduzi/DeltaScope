@@ -1,8 +1,4 @@
 // Package catalog tests the structured query core for rule discoverability.
-// input: catalog entries and query filters
-// output: filtered results with validation behavior
-// pos: v0.290.0 Task 3 query-core test coverage
-// note: if this file changes, update this header and module README.md.
 package catalog
 
 import (

@@ -1,8 +1,4 @@
 // Package audit verifies the T05-A1 ordered schema-state path.
-// input: multi-statement MySQL/TiDB DDL batches against fake metadata providers
-// output: per-statement pre-state isolation, conditional derivation, invalidation, evidence-gap, and provider-call assertions
-// pos: application-layer contract tests for the first prospective migration path (issue #84/T05-A1)
-// note: if this file changes, update this header and module README.md.
 package audit
 
 import (

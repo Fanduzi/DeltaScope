@@ -1,8 +1,4 @@
 // Package postgresqlmeta implements metadata-aware audit adapters over PostgreSQL.
-// input: connection configs for PostgreSQL metadata reads
-// output: pgx stdlib database/sql handles for metadata providers
-// pos: infrastructure connection opener for PostgreSQL metadata access
-// note: if this file changes, update this header and module README.md.
 package postgresqlmeta
 
 import (

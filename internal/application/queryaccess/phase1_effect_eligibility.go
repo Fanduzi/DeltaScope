@@ -1,8 +1,4 @@
 // Package queryaccess defines the fail-closed Phase-1 pure-effect eligibility gate.
-// input: internal effect candidates collected from PostgreSQL query extraction
-// output: bounded eligibility decision and reason code
-// pos: application proof boundary before catalog identity promotion
-// note: if this file changes, update this header and module README.md.
 package queryaccess
 
 import (

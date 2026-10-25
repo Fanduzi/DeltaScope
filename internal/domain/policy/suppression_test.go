@@ -1,8 +1,4 @@
 // Package policy verifies FK-forbid naming suppression stays a named fact.
-// input: Default Policy and forbid enablement variants
-// output: coverage that suppressed naming rules remain enabled, not missing
-// pos: domain policy tests for Catalog vs Default Policy vs Loaded
-// note: if this file changes, update this header and module README.md.
 package policy
 
 import "testing"

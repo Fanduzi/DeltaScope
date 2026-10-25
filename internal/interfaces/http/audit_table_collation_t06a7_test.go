@@ -1,10 +1,6 @@
 // Package httpapi verifies the T06-A7 table-collation upgrade at the HTTP
 // seam — the declared table COLLATE is an ordinary audit result (HTTP 200),
 // a policy rejection stays a populated response, never a transport error.
-// input: POST /v1/audit bodies carrying declared table COLLATE clauses under isolated policies
-// output: HTTP 200 with pass/reject audit payloads; no unsupported-statement diagnostics for collate
-// pos: HTTP transport contract test for issue #85 T06-A7
-// note: if this file changes, update this header and module README.md.
 package httpapi
 
 import (

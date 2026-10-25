@@ -1,10 +1,6 @@
 //go:build postgresql
 
 // Package ddl verifies PostgreSQL publication/subscription lifecycle rule behavior.
-// input: synthetic DDL statements with PostgreSQL replication lifecycle signals and cross-dialect policy controls
-// output: focused coverage for the seven PostgreSQL publication/subscription lifecycle rules with PG-only gating
-// pos: domain DDL rule test coverage for PG replication lifecycle
-// note: if this file changes, update this header and module README.md.
 package ddl
 
 import (

@@ -1,8 +1,4 @@
 // Package cli verifies CLI query access command behavior.
-// input: synthetic CLI invocations covering audit-only flag boundaries, SQL sources, catalog/schema hints, unified online-session routing, and the PostgreSQL PG17 version boundary
-// output: coverage for query access JSON output, exit codes, command-named empty --sql errors, advertised Query Access exit table, input-source validation, alias/conflict binding, bounded connection/authentication/version messages, and close ownership
-// pos: CLI adapter behavior and unified online migration coverage for query access
-// note: if this file changes, update this header and module README.md.
 package cli
 
 import (

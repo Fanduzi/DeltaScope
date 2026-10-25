@@ -1,8 +1,4 @@
 // Package ddl defines Tier-1 DDL rules.
-// input: create-table Statement specs with primary-key declarations and enriched column metadata, plus alter-table add-PK actions resolved against the statement's ordered pre-state column facts
-// output: findings for primary-key semantic requirements beyond simple presence/count checks, and evidence gaps when the member columns' facts are genuinely withheld (a name-only column stub is never read as a known type)
-// pos: DDL rule implementations for primary-key semantic governance
-// note: if this file changes, update this header and module README.md.
 package ddl
 
 import (

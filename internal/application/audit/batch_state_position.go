@@ -1,12 +1,5 @@
 // Package audit resolves the declared FIRST|AFTER column position against a
 // known column list and applies the bounded move/insert.
-// input: a normalized spec.AlterPosition fact and an ordered column slice
-// output: a resolved insertion index or the failed-premise marker
-// pos: T08 column-position successor semantics shared by single-action
-// publications and the bounded multi-action successor; the validation list is
-// the dialect-owned premise set (MySQL accumulating, TiDB frozen pre-state)
-// while the applied list is the evolving working shape
-// note: if this file changes, update this header and module README.md.
 package audit
 
 import (

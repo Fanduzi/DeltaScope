@@ -2,10 +2,6 @@
 
 // Package audit characterizes PostgreSQL schema-aware FK facts and mixed
 // supported/unsupported statement results.
-// input: PostgreSQL audit requests over schema-qualified FK and mixed-statement SQL
-// output: observable extractor/rule facts plus retained unsupported statement contracts
-// pos: application-layer PostgreSQL regression coverage for schema and unsupported behavior
-// note: if this file changes, update this header and module README.md.
 package audit
 
 import (

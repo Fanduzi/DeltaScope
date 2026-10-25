@@ -1,8 +1,4 @@
 // Package audit orchestrates audit use cases at the application layer.
-// input: generated DDL coverage catalog JSON (embedded at compile time) and optional filesystem catalog paths
-// output: catalog entries, catalog version, and filtered query results
-// pos: application catalog query core for the CLI ddl-coverage command
-// note: if this file changes, update this header and module README.md.
 package audit
 
 import (

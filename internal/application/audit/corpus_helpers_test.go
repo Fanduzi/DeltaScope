@@ -1,8 +1,4 @@
 // Package audit provides shared SQL-corpus test helpers.
-// input: corpus YAML expectations, SQL fixtures, and parser-neutral statements
-// output: reusable corpus metadata, semantic, and impact assertions
-// pos: application audit test support for dialect corpus runners
-// note: if this file changes, update this header and module README.md.
 package audit
 
 import (

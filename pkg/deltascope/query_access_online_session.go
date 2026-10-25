@@ -1,8 +1,4 @@
 // Package deltascope exposes the unified online query access session boundary.
-// input: caller-owned *sql.Conn, optional already-observed Server Identity, context, and a query access request with optional dialect constraint
-// output: opaque unified session, identified-conn constructor that skips a second identity probe, generic online analysis entry, bounded sentinel errors, and MySQL/TiDB/PG17 routing
-// pos: public unified online query access session API above dialect-specific entries
-// note: if this file changes, update this header and module README.md.
 package deltascope
 
 import (

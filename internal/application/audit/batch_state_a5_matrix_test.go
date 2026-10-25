@@ -1,8 +1,4 @@
 // Package audit verifies the T05-A5 column-identity matrix beyond the first path.
-// input: real parser statements and AuditSQL requests for CHANGE and RENAME COLUMN
-// output: public findings, gaps, and direct pre-state for conflict, version, members, and publication
-// pos: T05-A5 shared regression for the frozen identity, attribute, and version contracts
-// note: if this file changes, update this header and module README.md.
 package audit
 
 import (

@@ -1,8 +1,4 @@
 // Package auditmeta prepares metadata-aware audit requests for multiple adapters.
-// input: MySQL-compatible metadata connections and provider methods from infrastructure adapters
-// output: shared client wrapper implementing the metadata preparation client contract
-// pos: infrastructure-backed client bridge for shared metadata-aware audit preparation
-// note: if this file changes, update this header and module README.md.
 package auditmeta
 
 import (

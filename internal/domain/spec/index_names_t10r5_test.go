@@ -5,12 +5,6 @@
 // TiDB v8.5.0 appends the suffix to the full base and fails the statement
 // (1059) once the derived name crosses the 64-byte identifier limit
 // (probed on the R5 anchors).
-// input: declared index lists at the 61-64 byte base boundary on both
-// dialects, plus the primary-name binding matrix after a PK rename
-// output: exact derived names or a withheld (unprovable) name space; the
-// `primary` binding verdict after the PK object moves its stored name
-// pos: spec-side T10-R5 boundary coverage beside index_names_t10r4_test.go
-// note: if this file changes, update this header and module README.md.
 package spec
 
 import (

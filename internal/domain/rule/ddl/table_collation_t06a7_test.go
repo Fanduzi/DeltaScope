@@ -1,10 +1,6 @@
 // Package ddl verifies the T06-A7 table-collation allowlist contract at the
 // rule-method layer: constructor params, dialect and statement-shape gating,
 // and the default-disabled registration entry.
-// input: synthetic CREATE TABLE statements plus rule policies for the new table collation allowlist
-// output: exact AppliesTo/Evaluate behavior for allowed, denied, missing, disabled, PG, and non-CREATE shapes
-// pos: rule-layer contract tests for issue #85 T06-A7
-// note: if this file changes, update this header and module README.md.
 package ddl
 
 import (

@@ -1,8 +1,4 @@
 // Package auditmeta prepares metadata-aware audit requests for multiple adapters.
-// input: audit SQL text, requested dialect/schema preferences, metadata connection configs, and metadata clients
-// output: prepared metadata-aware audit context with opened client, connresolve MySQL/TiDB catalog aliases, or bounded MySQL/TiDB and PostgreSQL connection validation errors
-// pos: shared application helper between transport adapters and the core audit service
-// note: if this file changes, update this header and module README.md.
 package auditmeta
 
 import (

@@ -1,8 +1,4 @@
 // Package audit verifies the T03/#82 coverage contract for recognized-but-uncovered DDL.
-// input: audit service requests over parsed-but-unsupported, audited, and parse-failing statement mixes
-// output: end-to-end coverage.status assertions proving incomplete audits never silently pass
-// pos: application audit coverage regression tests for issue #82
-// note: if this file changes, update this header and module README.md.
 package audit
 
 import (

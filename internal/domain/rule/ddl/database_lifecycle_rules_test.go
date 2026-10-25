@@ -1,8 +1,4 @@
 // Package ddl verifies MySQL/TiDB database lifecycle rule behavior.
-// input: synthetic DDL statements with database/schema lifecycle signals and cross-dialect policy controls
-// output: focused coverage for database create/drop rules with MySQL/TiDB-only gating
-// pos: domain DDL rule test coverage for MySQL/TiDB database lifecycle
-// note: if this file changes, update this header and module README.md.
 package ddl
 
 import (

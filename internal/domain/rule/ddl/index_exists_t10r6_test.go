@@ -3,10 +3,6 @@
 // PK presence — a renamed PK frees `primary` (1091 verified), a proven
 // member `primary` answers member-first, the occupying PK object answers
 // PK-side, and withheld bindings report the exact missing member/PK fact.
-// input: hand-built table snapshots bound to drop_primary_key statements
-// output: alterPrimaryKeyExistenceRule Evaluate findings and EvidenceGaps
-// pos: rule-side T10-R6 actual-name routing coverage (issue #89)
-// note: if this file changes, update this header and module README.md.
 package ddl
 
 import (

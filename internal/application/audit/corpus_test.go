@@ -1,8 +1,4 @@
 // Package audit verifies the MySQL and TiDB SQL corpus.
-// input: dialect corpus SQL and expected YAML files
-// output: full-pipeline parser, statement, unsupported, finding, impact, and semantic contract coverage
-// pos: untagged corpus regression runner for the application audit pipeline
-// note: if this file changes, update this header and module README.md.
 package audit
 
 import (

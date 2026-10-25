@@ -1,8 +1,4 @@
 // Package viperconfig verifies YAML-backed policy loading behavior.
-// input: temporary YAML config files and default policy loading scenarios
-// output: test coverage for Viper-based policy loading
-// pos: infrastructure config adapter test coverage
-// note: if this file changes, update this header and module README.md.
 package viperconfig
 
 import (

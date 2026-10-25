@@ -1,12 +1,5 @@
 // Package tidbparser pins the coverage disposition of every statement-node
 // candidate in the pinned TiDB parser.
-// input: the parser's statement-node candidates (transitive stmtNode embedders
-// plus direct statement() definers) and the real extractor/boundary switches
-// output: drift detection when the parser adds or renames statement types, and
-// a fail-closed check that every ast.StmtNode implementer is extracted,
-// explicitly named as unsupported evidence, or deliberately exempt
-// pos: coverage-boundary census for issue #82 (statement-type completeness)
-// note: if this file changes, update this header and module README.md.
 package tidbparser
 
 import (

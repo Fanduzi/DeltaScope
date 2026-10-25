@@ -1,22 +1,4 @@
 // Package audit publishes bounded foreign-key ordered-state transitions.
-// input: one audited ALTER TABLE action carrying add_constraint with a
-// foreign-key payload, drop_foreign_key, or the shared DROP CHECK|
-// CONSTRAINT node, plus the request-local entries captured before the
-// statement
-// output: post-state member/index publications mirroring native semantics —
-// a landing add merges the member (bare name stays unproven) plus the
-// implicit supporting index only after the refer-action structure (SET
-// NULL on NOT NULL refuses 1830; SET DEFAULT refuses 1215 pre-8.0 MySQL)
-// and the usable referenced-key premise (leftmost-order eligibility-class
-// coverer; non-unique refused 6125 on 8.4-restrict-ON, admitted pre-8.4
-// and TiDB; specialized kinds never) are proven — a proven refusal is a
-// no-op, an unprovable answer unvouches; DROP CHECK|CONSTRAINT answers by
-// proven target type (TiDB no-op, 5.7 syntax refusal, MySQL 8.x keyword
-// divergence unvouches the member's fate); every removal entry answers
-// the 1553 sole-coverer dependency (child members, PK object, loaded
-// parent) before dropping.
-// pos: T11 foreign-key ordered-state transitions under batch state
-// note: if this file changes, update this header and module README.md.
 package audit
 
 import (

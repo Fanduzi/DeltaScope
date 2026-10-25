@@ -1,8 +1,4 @@
 // Package ddl verifies alter-action restriction behavior.
-// input: synthetic alter-table statements with normalized alter actions and rule-specific policy overrides
-// output: focused coverage for action-level ALTER TABLE restrictions
-// pos: domain DDL rule test coverage for alter governance
-// note: if this file changes, update this header and module README.md.
 package ddl
 
 import (

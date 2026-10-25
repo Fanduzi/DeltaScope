@@ -1,9 +1,5 @@
 // Package tidbparser verifies the T06-A2 CREATE TABLE primary-key member
 // nullability normalization and the preserved default/alter fact contract.
-// input: MySQL and TiDB CREATE TABLE inputs through the real parser and extractor
-// output: normalized Column.NotNull/DDL.PrimaryKey member facts and unchanged default/alter extractions
-// pos: infrastructure parser extractor test coverage for issue #85 T06-A2
-// note: if this file changes, update this header and module README.md.
 package tidbparser
 
 import (

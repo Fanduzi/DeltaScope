@@ -1,8 +1,4 @@
 // Package policy defines audit policy configuration in domain terms.
-// input: shipped rule identifiers and Default Policy values
-// output: FK-forbid suppression facts used by registration and config status
-// pos: domain helper that names Default Policy rules which are not Loaded
-// note: if this file changes, update this header and module README.md.
 package policy
 
 // ForeignKeyForbidRuleID is the Default Policy rule that suppresses foreign-key

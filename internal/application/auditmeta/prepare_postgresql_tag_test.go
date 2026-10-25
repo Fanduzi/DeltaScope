@@ -1,10 +1,6 @@
 //go:build postgresql
 
 // Package auditmeta verifies shared metadata-aware audit preparation for PostgreSQL.
-// input: metadata-aware audit requests with PostgreSQL dialect and fake metadata clients
-// output: focused coverage for PostgreSQL-specific schema inference, fallback open, valid database/schema combinations, and client contracts
-// pos: application-layer preparation tests gated behind the postgresql build tag
-// note: if this file changes, update this header and module README.md.
 package auditmeta
 
 import (

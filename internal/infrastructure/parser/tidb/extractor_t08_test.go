@@ -1,14 +1,4 @@
 // Package tidb verifies the T08 normalized column-position facts.
-// input: positioned FIRST|AFTER clauses on add_columns, modify_column, and
-// change_column actions plus the parenthesized multi-column add anomaly,
-// through the real parse+extract seam
-// output: Alter.Position carrying the normalized {kind, after} pair,
-// HasColumnPosition staying consistent with Position, identifier
-// normalization to lowercase, and spec-level positions on multi-column
-// ADD (...) surfacing as the column_position unextracted option instead of
-// per-column position facts
-// pos: extractor contract tests for the T08 position model (issue #87)
-// note: if this file changes, update this header and module README.md.
 package tidbparser
 
 import (

@@ -4,10 +4,6 @@
 // UnspecifiedLength (-1) and an explicit CHAR(0) lands as 0 — two distinct
 // facts that must never merge. Bare VARCHAR and the CHAR BYTE alias record
 // the real parser-refusal controls for this slice.
-// input: MySQL and TiDB CREATE TABLE inputs through the real parser and extractor
-// output: pinned Flen→Length mappings for declared, omitted, and zero lengths plus parser-error controls
-// pos: infrastructure parser extractor test coverage for issue #85 T06-A5
-// note: if this file changes, update this header and module README.md.
 package tidbparser
 
 import (

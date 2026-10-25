@@ -3,14 +3,6 @@
 // name can never assert existence, so a `primary` target resolves through
 // the primary-key identity facts and the binding tri-state instead of
 // binding the stale projection.
-// input: direct predicate evaluations over hand-built snapshots across the
-// member-first/PK/ambiguous binding matrix on both dialects
-// output: dropIndexTargetExists / renameIndexTargetExists /
-// alterIndexTargetExists answers plus the snapshotHasIndex proven-name
-// binding
-// pos: rule-side T10-R4 member-name provability coverage beside
-// index_visibility_rules.go (issue #89)
-// note: if this file changes, update this header and module README.md.
 package ddl
 
 import (

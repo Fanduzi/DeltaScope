@@ -1,10 +1,6 @@
 //go:build postgresql
 
 // Package cli verifies PostgreSQL offline impact rendering.
-// input: CLI audit arguments selecting PostgreSQL JSON output
-// output: public impact fields rendered in the CLI result
-// pos: PostgreSQL-tagged CLI adapter regression coverage
-// note: if this file changes, update this header and module README.md.
 package cli
 
 import (

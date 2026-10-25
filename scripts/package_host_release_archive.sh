@@ -1,8 +1,4 @@
 #!/usr/bin/env bash
-# input: host-native PG-capable deltascope, deltascope-server, deltascope-mcp binaries plus release docs and a VERSION
-# output: a host-platform main release archive and matching checksum file under dist/
-# pos: packaging helper for native runner smoke validation before full cross-platform release convergence
-
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"

@@ -1,8 +1,4 @@
 // Package viperconfig loads YAML policy files through Viper.
-// input: optional YAML config paths, built-in domain policy defaults, and Viper unmarshaling
-// output: effective audit policy values for application services
-// pos: infrastructure adapter for v1 policy configuration loading
-// note: if this file changes, update this header and module README.md.
 package viperconfig
 
 import (

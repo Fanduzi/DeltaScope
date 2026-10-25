@@ -1,10 +1,6 @@
 //go:build postgresql
 
 // Package postgresql extracts parser-neutral statements from PostgreSQL AST nodes.
-// input: pg_query DropStmt and TruncateStmt nodes carrying one or more relation targets
-// output: normalized DROP/TRUNCATE DDL facts preserving every named relation in Targets
-// pos: infrastructure extraction adapter between PostgreSQL AST and domain spec
-// note: if this file changes, update this header and module README.md.
 package postgresql
 
 import (

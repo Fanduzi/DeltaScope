@@ -293,7 +293,7 @@ parent reference accepted.
   implicit-index naming, and the DROP CHECK|CONSTRAINT target-type seam
   (TiDB no-op / 5.7 syntax refusal / MySQL 8.x keyword divergence —
   real CHECK semantics remain T12).
-- L2 READMEs + L3 headers updated on changed files; root architecture map
+- L2 READMEs updated on changed files; root architecture map
   row for the new rule family if required by the check.
 - configs/deltascope.example.yaml gains the new rule.
 

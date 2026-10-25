@@ -1,10 +1,6 @@
 // Package mysqlmeta verifies the T07 catalog column facts: GENERATION_EXPRESSION
 // plus EXTRA tokens feed generated storage, expression defaults, and effective
 // visibility on the same single ordered COLUMNS read.
-// input: synthetic information_schema row sets covering generated/expression-default/invisible columns
-// output: typed spec facts — never known-empty facts for undecodable catalog text
-// pos: infrastructure metadata adapter tests for issue #86 T07
-// note: if this file changes, update this header and module README.md.
 package mysqlmeta
 
 import (

@@ -1,8 +1,4 @@
 // Package cli verifies metadata-aware CLI audit wiring.
-// input: audit command args plus fake metadata clients that simulate dialect, schema, and connection-option resolution
-// output: focused coverage for metadata-mode connection setup, MySQL/TiDB catalog aliases and conflicts, schema inference, dialect validation, PostgreSQL schema/database usage errors, and port defaults
-// pos: interface-layer metadata-aware audit test coverage
-// note: if this file changes, update this header and module README.md.
 package cli
 
 import (

@@ -2,25 +2,6 @@
 // feasibility baseline (Task 1). This file characterizes the current boundary
 // across the full candidate matrix, the mandatory fail-closed matrix, both
 // strict and projection_only modes, and no-leak assertions.
-//
-// input: MySQL/TiDB aggregate, window, stored/UDF, parameter/literal/NULL/cast,
-//
-//	DISTINCT, aggregate-local order, named window, explicit frame, nested
-//	expression, wildcard, ambiguity, view-looking, CTE/derived, locking read,
-//	multi-statement, and function-free admissible SELECT forms
-//
-// output: every function-bearing candidate remains indeterminate with
-//
-//	unknown_function_effect; every function-free admissible SELECT remains
-//	read_only/admissible; strict vs projection_only boundaries are recorded;
-//	no public result leaks SQL, literals, credentials, driver errors, severity,
-//	function names, or effect candidates
-//
-// pos: application-level characterization; no admission or trust promotion
-// note: MySQL and TiDB are independent proof domains; this file characterizes
-//
-//	current behavior on both but never infers one from the other. If this file
-//	changes, update this header and module README.md.
 package queryaccess_test
 
 import (

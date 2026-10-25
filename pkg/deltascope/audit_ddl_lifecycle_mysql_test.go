@@ -1,8 +1,4 @@
 // Package deltascope verifies the stable public audit API.
-// input: MySQL/TiDB DDL SQL requests and public audit results
-// output: public lifecycle rule coverage and privacy-safe finding assertions
-// pos: public SDK contract tests for audit result behavior
-// note: if this file changes, update this header and module README.md.
 package deltascope
 
 import (

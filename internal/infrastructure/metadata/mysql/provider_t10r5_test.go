@@ -7,11 +7,6 @@
 // members, catalog probe failures propagate as provider errors per the
 // issue #79 contract (only clean-read absences stay unknown), and a member
 // `primary` coexisting with a handle PK does not poison the handle probe.
-// input: sqlmock-shaped STATISTICS/table_constraints/TIDB_INDEXES stubs
-// output: snapshot PrimaryKey attribution, per-member kind provability,
-// the three primary unknowns, and provider error propagation
-// pos: provider-side T10-R5 catalog-fidelity tests (issue #89)
-// note: if this file changes, update this header and module README.md.
 package mysqlmeta
 
 import (

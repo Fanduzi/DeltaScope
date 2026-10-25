@@ -1,10 +1,6 @@
 // Package deltascope verifies the T06-A9 audit-column role contract at the
 // public SDK seam — a complete pair passes and a table missing both roles
 // returns an ordinary two-blocker reject result.
-// input: CREATE TABLE statements with explicit DATETIME audit columns through Audit
-// output: pass for the complete pair; reject with the created+updated blocker pair otherwise
-// pos: public SDK contract test for issue #85 T06-A9
-// note: if this file changes, update this header and module README.md.
 package deltascope
 
 import (

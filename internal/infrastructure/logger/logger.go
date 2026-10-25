@@ -1,8 +1,4 @@
 // Package logger provides a unified structured logging foundation for DeltaScope surfaces.
-// input: logging configuration (level, format, output path) and surface identifier
-// output: configured *slog.Logger instances and bridges to *log.Logger for legacy consumers
-// pos: infrastructure adapter for structured logging across server and MCP surfaces
-// note: if this file changes, update this header and module README.md.
 package logger
 
 import (

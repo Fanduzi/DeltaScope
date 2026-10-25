@@ -1,8 +1,4 @@
 // Package ddl defines Tier-1 DDL rules.
-// input: create-table and alter-table Statement specs and per-rule policy values
-// output: primary-key findings for missing or oversized primary-key definitions — the column-count rule measures the produced primary key on both paths (CREATE declaration and ALTER add_constraint via the produced index/constraint columns or PostgreSQL options)
-// pos: DDL rule implementations for primary-key requirements and shape
-// note: if this file changes, update this header and module README.md.
 package ddl
 
 import (

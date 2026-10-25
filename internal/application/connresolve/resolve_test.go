@@ -1,8 +1,4 @@
 // Package connresolve verifies Resolve before open.
-// input: connection requests with TLS, password, timeout, and catalog hints
-// output: ready-to-open Config or classified Error
-// pos: application tests at the Resolve seam
-// note: if this file changes, update this header and module README.md.
 package connresolve
 
 import (

@@ -1,8 +1,4 @@
 // Package httpapi verifies the T06-A3 typed DEFAULT NULL contract at the HTTP seam.
-// input: MySQL/TiDB CREATE+DROP+INDEX /v1/audit requests with the isolated four-rule drop-state policy
-// output: HTTP 200 pass for the three-statement path with a known initial state, HTTP 200 reject for a missing DEFAULT
-// pos: HTTP transport contract test for the frozen T06-A3 oracle (issue #85)
-// note: if this file changes, update this header and module README.md.
 package httpapi
 
 import (

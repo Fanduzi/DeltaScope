@@ -1,10 +1,6 @@
 //go:build postgresql
 
 // Package httpapi verifies HTTP passthrough of unproven-effect reason codes.
-// input: POST /v1/query-access/analyze for PostgreSQL unproven effects
-// output: JSON reason_codes, indeterminate admission, no severity/SQL leak
-// pos: HTTP surface coverage for Query Access T4 reason explanation
-// note: if this file changes, update this header and module README.md.
 package httpapi
 
 import (

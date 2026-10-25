@@ -1,10 +1,4 @@
 // Package tidbparser verifies T06-A10 AUTO_INCREMENT declaration extraction.
-// input: the eight frozen CREATE TABLE inputs plus a table-level single-PK
-// control, parsed through the real TiDB parser and extractor under both dialects
-// output: Column.AutoIncrement, ordered PrimaryKey members, and the
-// Options["auto_increment"] declaration key pinned to the actual fields
-// pos: infrastructure parser extractor regression for issue #85 T06-A10
-// note: if this file changes, update this header and module README.md.
 package tidbparser
 
 import (

@@ -2,12 +2,6 @@
 
 // Package audit verifies that the T05 ordered schema-state machine is scoped
 // to MySQL/TiDB only.
-// input: PostgreSQL audit requests across every request/provider shape
-// output: assertions that no request shape enters the ordered derivation
-// path or emits this slice's new evidence gaps — PostgreSQL keeps its
-// pre-T05 enrichment and result contract unchanged
-// pos: application-layer dialect-scope guard for issue #84/T05-A1-R1/R2
-// note: if this file changes, update this header and module README.md.
 package audit
 
 import (

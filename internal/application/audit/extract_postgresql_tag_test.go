@@ -1,10 +1,6 @@
 //go:build postgresql
 
 // Package audit verifies PostgreSQL-tagged AST-to-StatementSpec extraction behavior.
-// input: PostgreSQL parsed SQL statements produced by the application parsing flow
-// output: test coverage for PostgreSQL-only extraction boundaries
-// pos: application audit PostgreSQL extraction test coverage
-// note: if this file changes, update this header and module README.md.
 package audit
 
 import (

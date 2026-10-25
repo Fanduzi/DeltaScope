@@ -1,8 +1,4 @@
 // Package audit verifies the T05-A8 procedure outer-state regression groups.
-// input: real MySQL/TiDB CREATE/DROP PROCEDURE batches against known-absent, seeded, failing, and recording providers
-// output: metadata premises, definition identity/preservation, whitelist scope, contamination/budget, and error/consumer assertions
-// pos: application-level regression matrix for procedure lifecycle table-state isolation
-// note: if this file changes, update this header and module README.md.
 package audit
 
 import (

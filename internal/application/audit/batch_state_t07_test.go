@@ -1,12 +1,6 @@
 // Package audit verifies the frozen T07 advanced-column contract: generated
 // columns, expression defaults, and column visibility on the ordered
 // MySQL/TiDB path.
-// input: real-parser AuditSQL runs over the frozen role SQL with isolated
-// policies that enable only the new advanced-column rules
-// output: exact finding/message/metadata/location, coverage, verdict, and
-// statement-identity assertions matching the frozen T07 oracle
-// pos: T07 shared-layer acceptance seam beside the T05/T06 batch-state suites
-// note: if this file changes, update this header and module README.md.
 package audit
 
 import (

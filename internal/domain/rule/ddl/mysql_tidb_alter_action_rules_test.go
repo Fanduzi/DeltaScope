@@ -1,8 +1,4 @@
 // Package ddl verifies MySQL/TiDB ALTER TABLE action notice wording.
-// input: synthetic alter-table statements for add/drop column notices
-// output: coverage that offline-safe notices do not claim live-schema existence
-// pos: domain DDL rule test coverage for MySQL/TiDB alter action notices
-// note: if this file changes, update this header and module README.md.
 package ddl
 
 import (

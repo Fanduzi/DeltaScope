@@ -1,8 +1,4 @@
 // Package audit verifies cross-dialect DDL coverage classifications.
-// input: representative MySQL/TiDB DDL statements and their expected coverage class
-// output: parser, normalization, and finding-covered census evidence for catalog generation
-// pos: application audit DDL coverage census gate
-// note: if this file changes, update this header and module README.md.
 package audit
 
 import (

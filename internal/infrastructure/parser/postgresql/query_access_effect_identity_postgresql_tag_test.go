@@ -1,10 +1,6 @@
 //go:build postgresql
 
 // Package postgresql AST characterizations for pure-read effect identity (T3).
-// input: SQL spanning structural BoolExpr, comparison candidates, count, rejected forms
-// output: QueryAccessFacts classification freeze (no identity proof / promotion)
-// pos: infrastructure-level characterization tests for query access extractor
-// note: tests only; does not implement effect candidate projection or OID resolution.
 package postgresql
 
 import (

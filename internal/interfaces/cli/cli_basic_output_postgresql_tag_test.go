@@ -2,10 +2,6 @@
 
 // Package cli verifies CLI output rendering for PostgreSQL audits including
 // partial results with retained unsupported statements.
-// input: audit commands over PostgreSQL SQL with supported and unsupported statements
-// output: rendered JSON/Markdown payloads and exit codes
-// pos: CLI adapter output-contract regression coverage
-// note: if this file changes, update this header and module README.md.
 package cli
 
 import (

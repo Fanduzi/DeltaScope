@@ -1,8 +1,4 @@
 // Package gitlabcodequality renders audit results as GitLab Code Quality JSON.
-// input: internal report findings and source-located parser diagnostics from the audit application flow
-// output: GitLab Code Quality finding and parser-error issues for CI pipeline integration
-// pos: infrastructure output adapter for the GitLab Code Quality CI-native renderer
-// note: if this file changes, update this header and module README.md.
 package gitlabcodequality
 
 import (

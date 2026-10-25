@@ -1,8 +1,4 @@
 // Package cli exposes the command-line adapter for DeltaScope.
-// input: --sql/--file/stdin text plus command-specific empty-input copy
-// output: SQL text or a user error that names the command
-// pos: shared CLI SQL loader used by audit and query-access
-// note: if this file changes, update this header and module README.md.
 package cli
 
 import (

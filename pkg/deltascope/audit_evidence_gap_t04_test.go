@@ -1,8 +1,4 @@
 // Package deltascope verifies the public evidence-gap projection (T04-A/#83).
-// input: public audit requests under an isolated modify-column compatibility policy
-// output: stable unverified/review results with evidence_gaps, preserving unsupported error semantics
-// pos: public SDK contract tests for metadata evidence gaps
-// note: if this file changes, update this header and module README.md.
 package deltascope
 
 import (

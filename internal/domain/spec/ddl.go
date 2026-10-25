@@ -1,12 +1,4 @@
 // Package spec defines normalized statement specifications for rule evaluation.
-// input: DDL facts extracted from parser-specific AST adapters
-// output: parser-neutral DDL specification components for rules, including
-// the comparable literal-default identity (LiteralDefaultFacts) sources agree
-// on, the per-member index name provability marker (Index.NameUnknown), and
-// the foreign-key constraint refer-action facts (OnDelete/OnUpdate) plus the
-// member name provability marker (Constraint.NameUnknown)
-// pos: domain DDL specification model under the unified Statement spec
-// note: if this file changes, update this header and module README.md.
 package spec
 
 // DDL contains the structural metadata extracted from a DDL statement.

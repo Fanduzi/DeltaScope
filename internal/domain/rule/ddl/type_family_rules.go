@@ -1,8 +1,4 @@
 // Package ddl defines Tier-1 DDL rules.
-// input: create-table Statement specs with enriched column type and charset metadata plus policy values
-// output: findings for type-family, char-length, and charset/collation governance
-// pos: DDL rule implementations for create-table type-family breadth checks
-// note: if this file changes, update this header and module README.md.
 package ddl
 
 import (

@@ -1,10 +1,6 @@
 //go:build postgresql
 
 // Package audit verifies PostgreSQL parser-error and partial-recovery contracts.
-// input: PostgreSQL SQL with parser-error boundaries and valid surrounding statements
-// output: fail-closed diagnostics plus preserved valid PostgreSQL audit results and locations
-// pos: PostgreSQL-tagged application audit parser recovery regression coverage
-// note: if this file changes, update this header and module README.md.
 package audit
 
 import (

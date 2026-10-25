@@ -1,10 +1,6 @@
 // Package http verifies the T06-A5 declared-length policy contract at the
 // HTTP seam — one under-limit and one over-limit representative through
 // /v1/audit; the full matrix lives in the shared audit layer and Golden.
-// input: CREATE TABLE statements with declared VARCHAR lengths through /v1/audit
-// output: HTTP 200 with pass for the control; HTTP 200 with reject for the policy violation
-// pos: HTTP transport contract test for issue #85 T06-A5
-// note: if this file changes, update this header and module README.md.
 package httpapi
 
 import (

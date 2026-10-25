@@ -1,10 +1,4 @@
 // Package mcpapi verifies the T05-A3 ordered DROP contract at the MCP seam.
-// input: offline five-rule audit_sql tool calls covering the drop-recreate
-// path and isolated DROP forms
-// output: isError=false structured results pinning the first-statement gap,
-// complete derived followers, and the bounded unknown_table_state drop gap
-// pos: MCP transport contract tests for the ordered-state drop transition
-// note: if this file changes, update this header and module README.md.
 package mcpapi
 
 import (

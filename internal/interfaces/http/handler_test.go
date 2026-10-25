@@ -1,8 +1,4 @@
 // Package httpapi verifies HTTP request binding and response mapping.
-// input: synthetic HTTP requests against the DeltaScope HTTP adapter
-// output: focused coverage for health, version, rule/capability discovery, audit success JSON without CLI-only fail_on_triggered, structured error responses including advertised online identity/authentication errors, and field-level rejection of MCP connection_ref
-// pos: interface adapter test coverage for the HTTP service surface
-// note: if this file changes, update this header and module README.md.
 package httpapi
 
 import (

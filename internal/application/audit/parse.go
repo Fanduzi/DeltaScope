@@ -1,8 +1,4 @@
 // Package audit orchestrates audit use cases at the application layer.
-// input: SQL text, selected dialect, shared input normalization, statement boundaries, and infrastructure-backed parser adapters
-// output: application-owned parsed statements plus bounded per-statement parse failures for later audit aggregation
-// pos: application parsing entrypoint between interfaces and parser infrastructure
-// note: if this file changes, update this header and module README.md.
 package audit
 
 import (

@@ -1,7 +1,4 @@
 // Package tidbparser verifies dependency completeness for common pure-effect holders.
-// input: derived queries, ordering/grouping/join expressions, and window clauses
-// output: fail-closed classifications, bounded function reasons, and semantic usages
-// pos: parser-level regression coverage; no admission promotion
 package tidbparser
 
 import (

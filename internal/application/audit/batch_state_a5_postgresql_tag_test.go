@@ -1,11 +1,6 @@
 //go:build postgresql
 
 // Package audit verifies that T05-A5 column identity stays off the PostgreSQL path.
-// input: PostgreSQL ALTER COLUMN requests in the no-provider, schema-only, and
-// provider-backed forms under the eleven-rule identity policy
-// output: the legacy per-statement contract, with no ordered-state gap added
-// pos: dialect-scope guard for the T05-A5 CHANGE and RENAME COLUMN post-state
-// note: if this file changes, update this header and module README.md.
 package audit
 
 import (

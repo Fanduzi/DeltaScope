@@ -4,10 +4,6 @@
 // ENUM/SET member case) reaches the compatibility finding's source_type echo
 // — never a truncated base keyword. This is "real provider + constructed DB
 // rows", not a live anchor.
-// input: ALTER MODIFY batches against driver-fed catalog rows for t06_a17_type_facts
-// output: compatibility findings carrying verbatim provider Type in source_type
-// pos: application-layer real-provider contract tests for issue #85 T06-A17
-// note: if this file changes, update this header and module README.md.
 package auditmeta
 
 import (

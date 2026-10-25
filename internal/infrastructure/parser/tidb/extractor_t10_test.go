@@ -1,14 +1,4 @@
 // Package tidb verifies the T10 advanced-index and visibility facts.
-// input: ALTER INDEX VISIBLE|INVISIBLE actions, declared index visibility
-// attributes on every index-producing path, and CAST(... AS ... ARRAY)
-// multi-valued key parts, through the real parse+extract seam
-// output: spec.AlterIndex carrying the target name plus the requested
-// visibility under a bounded alter_index payload; Index.Visibility/
-// VisibilityExplicit modeled facts instead of bounded option names;
-// Index.MultiValuedParts counting array-cast members that still count as
-// expression key parts
-// pos: extractor contract tests for the T10 index visibility model (issue #89)
-// note: if this file changes, update this header and module README.md.
 package tidbparser
 
 import (

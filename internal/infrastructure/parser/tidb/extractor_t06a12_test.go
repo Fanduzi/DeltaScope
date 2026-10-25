@@ -1,14 +1,6 @@
 // Package tidbparser verifies T06-A12 ordinary CREATE TABLE non-PK-column
 // nullability extraction: the declared facts and the AST option shapes the
 // NOT NULL policy consumes.
-// input: the frozen A12 CREATE TABLE inputs, an explicit-NULL parser-only
-// control, and a reordered mixed-column control, parsed through the real
-// TiDB parser and extractor under both dialects
-// output: Column.Name/Type/NotNull ordering, absent primary key, absent
-// default/on-update flags, and the AST-level distinction between an omitted
-// nullability clause, ColumnOptionNull, and ColumnOptionNotNull
-// pos: infrastructure parser extractor regression for issue #85 T06-A12
-// note: if this file changes, update this header and module README.md.
 package tidbparser
 
 import (

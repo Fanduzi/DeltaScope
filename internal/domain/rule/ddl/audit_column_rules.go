@@ -1,8 +1,4 @@
 // Package ddl defines Tier-1 DDL rules.
-// input: create-table Statement specs with timestamp/default metadata and policy values
-// output: findings for missing audit timestamp column patterns
-// pos: DDL rule implementations for audit-column governance
-// note: if this file changes, update this header and module README.md.
 package ddl
 
 import (

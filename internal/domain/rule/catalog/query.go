@@ -1,9 +1,5 @@
 // Package catalog defines explanation-oriented metadata for shipped audit rules.
 // This file adds structured query support for filtering catalog entries.
-// input: catalog entries and a structured query with dialect/level/kind/category/search/limit filters
-// output: filtered result set with total count
-// pos: query core for rule discoverability (v0.290.0 Task 3)
-// note: if this file changes, update this header and module README.md.
 package catalog
 
 import (

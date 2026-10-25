@@ -1,8 +1,4 @@
 // Package spec verifies the shared T04-B/#83 version fact model.
-// input: caller target_version strings and provider product/version banners
-// output: strict [v]MAJOR.MINOR.PATCH parsing, TiDB compatibility-prefix canonicalization, validated series, and bounded input errors
-// pos: version parser contract tests shared by every transport
-// note: if this file changes, update this header and module README.md.
 package spec
 
 import (

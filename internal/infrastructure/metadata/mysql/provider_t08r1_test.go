@@ -4,10 +4,6 @@
 // domain — keyword-looking bytes on a non-temporal column stay literal.
 // The tests run the real Provider.LoadTableSnapshot/loadColumns against
 // constructed database/sql rows — real provider, constructed DB rows.
-// input: synthetic information_schema rows per (column_type, column_default, extra)
-// output: DefaultLiteral kind+value, temporal flag, expression-fact routing
-// pos: infrastructure metadata adapter regression tests for issue #87 T08-R1
-// note: if this file changes, update this header and module README.md.
 package mysqlmeta
 
 import (

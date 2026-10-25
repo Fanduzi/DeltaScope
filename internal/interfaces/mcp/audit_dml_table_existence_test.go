@@ -1,8 +1,4 @@
 // Package mcpapi verifies the MCP DML table-existence contract.
-// input: metadata-aware MCP audit_sql requests and fake MySQL/TiDB metadata clients
-// output: stable missing-target blocker findings in structured MCP results
-// pos: MCP public audit seam for metadata-aware DML existence behavior
-// note: if this file changes, update this header and module README.md.
 package mcpapi
 
 import (

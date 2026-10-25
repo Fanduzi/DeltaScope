@@ -1,8 +1,4 @@
 // Package tidbparser benchmarks TiDB/MySQL parser throughput for representative SQL shapes.
-// input: deterministic DDL/DML SQL strings and parser benchmark loops
-// output: benchmark timing and allocation measurements for parser evaluation
-// pos: parser benchmark coverage for cache evaluation
-// note: if this file changes, update this header and module README.md.
 package tidbparser
 
 import (

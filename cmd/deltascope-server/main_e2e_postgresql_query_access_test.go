@@ -1,10 +1,6 @@
 //go:build e2e && postgresql
 
 // Package main verifies Docker-backed HTTP PostgreSQL query-access behavior.
-// input: the PG17 Docker fixture, named connection runtime config, and HTTP requests
-// output: end-to-end proof of the PostgreSQL COUNT(1) connection_id contract
-// pos: slower external verification kept outside the default go test loop
-// note: if this file changes, update this header and module README.md.
 package main
 
 import (

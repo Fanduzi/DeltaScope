@@ -1,8 +1,4 @@
 // Package cli verifies the T04-A/#83 evidence-gap CLI contract.
-// input: isolated-policy audit invocations with missing metadata and mixed unsupported input
-// output: exit-code and JSON evidence_gaps/coverage assertions for the warning-equivalent fail threshold
-// pos: CLI transport contract tests for metadata evidence gaps (issue #83 T04-A slice)
-// note: if this file changes, update this header and module README.md.
 package cli
 
 import (

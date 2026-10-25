@@ -1,23 +1,4 @@
 // Package audit derives the bounded index-lifecycle post-state.
-// input: single-action ALTER index transitions (add_index, index-producing
-// add_constraint, drop_index, rename_index, drop_primary_key, alter_index)
-// plus standalone DROP INDEX — `primary` resolves member-first then
-// dialect-aware (member may own the name, else PK object vs handle row-id)
-// output: one updated batch entry per provable transition — appended,
-// removed, renamed, cleared-PK, or visibility-flipped member — or the
-// shared tombstone when the premise cannot be proven; the primary branch
-// proves its member premise and reconciles nullability, clearing only a
-// proven SQL-NULL default; a handle-table drop keeps the entry (8200);
-// name-keyed members bind proven stored names only and member-adds under
-// unproven name spaces unvouch the set (1061); every name-keyed entry
-// resolves spec.ResolveIndexNameBinding first — a renamed PK claims only
-// its stored name, a freed `primary` never fabricates PK presence, a
-// proven-absent PK ignores stale unknowns, ambiguous bindings unvouch
-// only the moved side; and every removal entry (member/PK spellings,
-// DROP PRIMARY KEY, standalone, loaded parent) answers the 1553
-// sole-coverer dependency before dropping (tombstone if unanswerable)
-// pos: T09 index chain + T10 visibility + T11 foreign-key dependency gate
-// note: if this file changes, update this header and module README.md.
 package audit
 
 import (

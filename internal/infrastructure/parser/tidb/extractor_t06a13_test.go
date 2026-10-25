@@ -1,13 +1,5 @@
 // Package tidb verifies the T06-A13 extracted facts the five type-family
 // forbid policies consume.
-// input: the frozen mixed-type and safe CREATE TABLE inputs through the real
-// parse+extract seam under both dialects
-// output: per-column AST rendering and spec Column facts pinned in
-// declaration order — including the blob BINARY render, the AST-binary vs
-// spec-Charset="" distinction, and the absence of undeclared default/update
-// semantics
-// pos: extractor contract tests for the frozen T06-A13 oracle (issue #85)
-// note: if this file changes, update this header and module README.md.
 package tidbparser
 
 import (

@@ -1,8 +1,4 @@
 // Package queryaccess verifies the application proof-orchestration contract at the Service.Analyze seam.
-// input: MySQL/TiDB queries over fixture builtin semantic capability and default services
-// output: read_only/admissible only when the no-effect or builtin proof applicability rule permits promotion
-// pos: application orchestration contract coverage (untagged builds)
-// note: if this file changes, update this header and module README.md.
 package queryaccess
 
 import (

@@ -6,13 +6,6 @@
 // branch must read the same collation fact the column branch does; a
 // missing or unrecognized direction (T10-R4) keeps the expression kind and
 // withholds only the direction answer, never a guessed ascending.
-// input: sqlmock-shaped member rows covering the collation matrix on
-// expression members plus the named-member controls
-// output: KeyParts with honest kind/direction/expression facts and the
-// derived DescParts count
-// pos: provider-side T10-R3 member-fidelity coverage beside the spec
-// resolution tests
-// note: if this file changes, update this header and module README.md.
 package mysqlmeta
 
 import (

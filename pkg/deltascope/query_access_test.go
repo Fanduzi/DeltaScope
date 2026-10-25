@@ -1,8 +1,4 @@
 // Package deltascope verifies the public library query access API.
-// input: inline SQL text, dialect, mode, and the public query access request contract
-// output: regression coverage for public query access orchestration and stable result mapping
-// pos: public API test coverage for query access in pkg/deltascope
-// note: if this file changes, update this header and module README.md.
 package deltascope
 
 import (

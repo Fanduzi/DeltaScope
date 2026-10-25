@@ -1,8 +1,4 @@
 // Package deltascope exposes the explicit MySQL/TiDB query access session boundary.
-// input: caller-owned *sql.Conn and a validated MySQL/TiDB query access request
-// output: query access results with same-connection relation metadata resolution
-// pos: public opt-in session API and shared private proof core for same-connection semantic promotion
-// note: if this file changes, update this header and module README.md.
 package deltascope
 
 import (

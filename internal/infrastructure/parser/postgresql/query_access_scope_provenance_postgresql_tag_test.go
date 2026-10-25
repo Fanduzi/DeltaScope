@@ -1,10 +1,6 @@
 //go:build postgresql
 
 // Package postgresql tests scope resolution and operand column provenance.
-// input: PostgreSQL SQL with JOINs, CTEs, derived tables, and column references
-// output: ColumnRefResult provenance and EffectCandidate OperandColumnRefs
-// pos: parser coverage for scope resolution and provenance collection
-// note: if this file changes, update this header and module README.md.
 package postgresql
 
 import (

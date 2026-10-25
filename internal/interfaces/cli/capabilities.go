@@ -1,8 +1,4 @@
 // Package cli exposes the command-line adapter for DeltaScope.
-// input: capability command invocations plus shipped product-surface metadata
-// output: stable human-readable summaries of supported dialects, modes, inputs, outputs, and shipped surfaces across CLI, HTTP, MCP, and Go API entrypoints
-// pos: CLI capability discovery command above the current shipped product surface
-// note: if this file changes, update this header and module README.md.
 package cli
 
 import (

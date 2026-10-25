@@ -1,9 +1,6 @@
 //go:build postgresql
 
 // Package postgresqlmeta resolves direct-column operand types for exact catalog lookup.
-// input: session-pinned catalog, effect candidate, and captured search-path OIDs
-// output: complete ordered argument type OIDs or a fail-closed miss
-// pos: PostgreSQL scalar overload resolution helper
 package postgresqlmeta
 
 import (

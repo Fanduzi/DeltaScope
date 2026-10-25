@@ -1,11 +1,5 @@
 // Package deltascope verifies the T06-A11 single-member primary-key
 // BIGINT/UNSIGNED contract at the public SDK seam.
-// input: MySQL CREATE TABLE audits under the isolated pk-bigint and
-// pk-unsigned policies
-// output: a passing declaration and a policy reject both return ordinary audit
-// results — never transport-level errors
-// pos: public SDK contract test for the frozen T06-A11 oracle (issue #85)
-// note: if this file changes, update this header and module README.md.
 package deltascope
 
 import (

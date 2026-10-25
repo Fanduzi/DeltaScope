@@ -1,7 +1,4 @@
 // Package queryaccess verifies application-level dependency completeness for MySQL/TiDB.
-// input: common pure-effect holders and an operator-bearing control query
-// output: indeterminate admission for unproven functions without promotion
-// pos: application-level regression coverage; no trust-policy changes
 package queryaccess
 
 import (

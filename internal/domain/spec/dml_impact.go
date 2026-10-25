@@ -1,8 +1,4 @@
 // Package spec defines normalized statement specifications for rule evaluation.
-// input: parser-neutral DML impact estimation facts attached during audit orchestration
-// output: shared impact contract reused across domain, report, and public API layers
-// pos: domain DML impact model under the unified Statement spec
-// note: if this file changes, update this header and module README.md.
 package spec
 
 // ImpactSource identifies where a DML impact estimate came from.

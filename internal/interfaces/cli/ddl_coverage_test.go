@@ -1,8 +1,4 @@
 // Package cli verifies the Cobra CLI adapter behavior.
-// input: ddl-coverage CLI args, the embedded generated catalog, and optional --catalog paths
-// output: coverage for catalog lookup exit codes, filters, and text/JSON rendering
-// pos: interface-layer CLI test coverage for ddl-coverage
-// note: if this file changes, update this header and module README.md.
 package cli
 
 import (

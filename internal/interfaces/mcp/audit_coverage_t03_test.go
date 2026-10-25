@@ -1,8 +1,4 @@
 // Package mcpapi verifies the T03 incomplete-coverage MCP contract.
-// input: audit_sql tool calls containing recognized-but-unsupported DDL
-// output: isError=true tool results carrying the partial audit payload
-// pos: MCP transport contract tests for incomplete audit results (issue #82)
-// note: if this file changes, update this header and module README.md.
 package mcpapi
 
 import (

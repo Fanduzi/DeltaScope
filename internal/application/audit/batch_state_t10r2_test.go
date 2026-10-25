@@ -4,19 +4,6 @@
 // kind (FULLTEXT, SPATIAL, prefix, JSON, GLOBAL, multi-valued), the
 // coverage graduation of formerly unsupported member forms, and the
 // ordered post-state those forms publish.
-// input: CREATE/ADD/ALTER index statements audited through AuditSQL with a
-// stub provider carrying versioned instance facts, observed
-// tidb_enable_clustered_index modes, and vouched column/index/constraint
-// sets (the shared fixture now carries a proven-empty constraint
-// collection so the T11 dependency gate never misreads it as withheld)
-// output: statement-bound findings, evidence gaps, coverage statuses, and
-// post-state behavior proving member facts survive publication — and the
-// controls proving unknown role/member facts tombstone instead of
-// fabricating a success shape
-// pos: application-layer ordered-state regression for issue #89 T10-R2;
-// the determination lives in internal/domain/spec/advanced_indexes.go and
-// primary_key_role.go, publication in batch_state*.go
-// note: if this file changes, update this header and module README.md.
 package audit
 
 import (

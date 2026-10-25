@@ -1,8 +1,4 @@
 // Package deltascope verifies the T05-A8 procedure lifecycle at the public SDK seam.
-// input: four-statement TiDB CREATE PROCEDURE and MySQL DROP PROCEDURE migration batches through the public Audit entrypoint
-// output: ErrUnsupportedStatement partial results versus nil-error gap-only results, with complete outer followers
-// pos: public SDK contract test for procedure table-state isolation (T05-A8)
-// note: if this file changes, update this header and module README.md.
 package deltascope
 
 import (

@@ -81,7 +81,7 @@ Finish each work cycle with:
 - Root blocker, if any; unknown facts remain explicit
 - Next smallest change within the current ticket
 
-Task completion additionally requires its remaining acceptance rows, focused regressions, current-checkout evidence, changed module READMEs/file headers where required, ADR/public-contract notes, and Standards + Spec review. Do not claim the entire milestone complete from one golden seed.
+Task completion additionally requires its remaining acceptance rows, focused regressions, current-checkout evidence, changed module READMEs where required, ADR/public-contract notes, and Standards + Spec review. Do not claim the entire milestone complete from one golden seed.
 
 ## Task-specific first paths
 

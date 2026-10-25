@@ -1,12 +1,5 @@
 // Package httpapi verifies the T06-A14 table ROW_FORMAT allowlist policy at
 // the HTTP seam.
-// input: POST /v1/audit bodies carrying the omitted ROW_FORMAT declaration
-// under the isolated strict and optional profiles
-// output: HTTP 200 with a one-blocker reject payload under strict and a
-// pass payload under optional — policy rejects stay ordinary audit
-// results, never transport errors
-// pos: HTTP transport contract test for issue #85 T06-A14
-// note: if this file changes, update this header and module README.md.
 package httpapi
 
 import (

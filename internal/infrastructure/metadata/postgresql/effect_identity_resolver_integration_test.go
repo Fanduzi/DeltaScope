@@ -2,13 +2,6 @@
 
 // Package postgresqlmeta runs T7 adapter and trusted-service E2E against a live
 // PostgreSQL 17 session when available.
-// input: DELTASCOPE_PG_* env or docker compose defaults (localhost:5500)
-// output: real catalog facts for operators, aggregates, and scalar effects under a pinned session;
-//
-//	real Service.Analyze promotion for count(*) via NewTrustedService
-//
-// pos: non-skippable PostgreSQL 17 integration evidence
-// note: if this file changes, update this header and module README.md.
 package postgresqlmeta
 
 import (

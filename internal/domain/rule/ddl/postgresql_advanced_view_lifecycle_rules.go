@@ -1,8 +1,4 @@
 // Package ddl defines Tier-1 DDL rules.
-// input: normalized Statement specs for PostgreSQL advanced view lifecycle DDL operations
-// output: findings for PostgreSQL CREATE OR REPLACE VIEW, TEMP VIEW, CHECK OPTION, ALTER VIEW, and DROP VIEW CASCADE risks
-// pos: PostgreSQL-specific advanced view lifecycle rule implementations
-// note: if this file changes, update this header and module README.md.
 package ddl
 
 import (

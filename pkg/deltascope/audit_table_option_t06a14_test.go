@@ -1,12 +1,5 @@
 // Package deltascope verifies the T06-A14 table ENGINE allowlist policy at
 // the public SDK seam.
-// input: MySQL CREATE TABLE audits under the isolated engine optional
-// profile — the disallowed explicit value and the omitted declaration
-// output: an ordinary one-blocker reject on the explicit MyISAM input and a
-// clean pass on the omitted input — both ordinary audit results, never
-// transport-level errors
-// pos: public SDK contract test for the frozen T06-A14 oracle (issue #85)
-// note: if this file changes, update this header and module README.md.
 package deltascope
 
 import (

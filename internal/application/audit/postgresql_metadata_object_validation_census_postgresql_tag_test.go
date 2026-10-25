@@ -1,10 +1,6 @@
 //go:build postgresql
 
 // Package audit censuses PostgreSQL non-table object metadata validation.
-// input: PostgreSQL DDL statements targeting non-table objects (types, domains, extensions, publications, subscriptions, foreign objects, annotation targets, event triggers, rewrite rules)
-// output: per-case classification of metadata_confirmed / metadata_unavailable / offline_only / parser_or_extractor_blocked enrichment behavior
-// pos: application-layer PostgreSQL object-metadata census; observes behavior only, must not modify production code
-// note: if this file changes, update this header and module README.md.
 package audit
 
 import (

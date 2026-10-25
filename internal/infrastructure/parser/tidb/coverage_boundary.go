@@ -1,8 +1,4 @@
 // Package tidbparser marks parser-recognized but unaudited statement boundaries.
-// input: parsed TiDB AST nodes, extracted spec statements, and the selected dialect
-// output: UnsupportedDetail markers for dialect vendor boundaries and unhandled parsed statements
-// pos: infrastructure boundary classification for audit coverage reporting (issue #82)
-// note: if this file changes, update this header and module README.md.
 package tidbparser
 
 import (

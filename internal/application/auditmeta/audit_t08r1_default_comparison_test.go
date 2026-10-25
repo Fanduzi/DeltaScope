@@ -7,17 +7,6 @@
 // provider-sourced and CREATE-derived pre-state, MODIFY and CHANGE actions,
 // and both MySQL/TiDB dialects. Package audit cannot host the real-provider
 // cells because mysqlmeta already asserts audit.MetadataProvider.
-// input: string/numeric NULL columns with provider-catalog or derived
-// defaults exercised through MODIFY/CHANGE (YEAR cells whose MySQL catalog
-// normalizes the declared short-year integer to the full year) — the TiDB
-// leg stubs table_constraints so the catalog PRIMARY fold binds a real PK
-// output: zero findings for proven-same literals, one transition finding for
-// proven-different ones inside a comparable domain, bounded evidence gaps
-// for unproven or cross-encoding identities (including year-type literal
-// pairs whose recorded text is not a proven final encoding, T08-R3), and an
-// independent type-family finding while the identical default identity stays silent
-// pos: application-layer real-provider regression tests for issue #87 T08-R1
-// note: if this file changes, update this header and module README.md.
 package auditmeta
 
 import (

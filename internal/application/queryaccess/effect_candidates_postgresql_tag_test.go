@@ -1,10 +1,6 @@
 //go:build postgresql
 
 // Package queryaccess tests that internal effect candidates do not alter public output (T5).
-// input: PostgreSQL SQL with effect candidates
-// output: classification/admission/reason unchanged; candidates internal-only
-// pos: application-level freeze for candidate extraction without promotion
-// note: if this file changes, update this header and module README.md.
 package queryaccess
 
 import (

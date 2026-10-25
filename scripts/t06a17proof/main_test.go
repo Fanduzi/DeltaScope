@@ -1,8 +1,4 @@
 // Package main verifies bounded failures in the T06-A17-R1 proof collector.
-// input: controlled database/sql driver rows/errors and failing evidence writers, never live fault injection
-// output: explicit errors for incomplete facts and failed evidence, plus owned-table cleanup assertions
-// pos: task-local collector regression tests; production provider code remains unchanged
-// note: if this file changes, update this header and module README.md.
 package main
 
 import (

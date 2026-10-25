@@ -1,8 +1,4 @@
 // Package ddl verifies PostgreSQL event trigger and rewrite rule lifecycle rule behavior.
-// input: synthetic DDL statements with PostgreSQL event trigger and rule lifecycle signals and cross-dialect policy controls
-// output: focused coverage for the seven PostgreSQL event trigger and rule lifecycle rules with PG-only gating
-// pos: domain DDL rule test coverage for PG event trigger and rule lifecycle
-// note: if this file changes, update this header and module README.md.
 package ddl
 
 import (

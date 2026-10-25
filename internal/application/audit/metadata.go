@@ -1,8 +1,4 @@
 // Package audit orchestrates audit use cases at the application layer.
-// input: optional metadata providers, parsed statement MutationTargets, the validated target_version for observed-identity reconciliation, parse-failure positions that contaminate later derived state, and the ordered-state admission budget
-// output: metadata-enriched statements with resolved target schemas, per-statement pre-state snapshots from the request-local ordered batch state (provider facts or in-batch derivations for MySQL/TiDB — PostgreSQL keeps its original enrichment in every request shape), a canonical Version identity for rules that can use live instance or schema facts, that same resolved version stored on the batch state, and retained statements beyond the budget marked with a nonserialized ResourceLimit instead of derivation
-// pos: application-layer bridge between provider-backed metadata and domain statements, owning the ordered schema-state seam (batch_state.go) and the effective-identity resolver (explicit qualifiers win over the request schema); the ordered state reads the resolved version passed here and does not assume the original statement already carries Metadata.Version, and each post-state transition consumes the enriched statement carrying its own pre-state snapshot
-// note: if this file changes, update this header and module README.md.
 package audit
 
 import (

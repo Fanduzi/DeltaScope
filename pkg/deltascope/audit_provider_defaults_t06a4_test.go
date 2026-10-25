@@ -2,10 +2,6 @@
 // the public SDK seam with the real mysqlmeta.Provider behind a controlled
 // database/sql driver — one conservative A representative and one precise C
 // representative; the full matrix lives in the shared layer and Golden runs.
-// input: provider-fed ALTER DROP COLUMN + CREATE INDEX audits through Audit
-// output: review/unverified for the stored 'NULL' literal; pass/complete for stored SQL NULL
-// pos: public SDK contract test for issue #85 T06-A4
-// note: if this file changes, update this header and module README.md.
 package deltascope
 
 import (

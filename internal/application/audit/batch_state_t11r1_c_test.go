@@ -5,12 +5,6 @@
 // server's own rule) — and the same identity feeds the provider read, the
 // cache key, the display identity, and the dependency edge. A request
 // schema must never pollute another database's parent facts.
-// input: schema-aware provider fixtures across two databases and public
-// AuditSQL ALTER statements
-// output: provider reads against the correct object, post-state members
-// landing only where the real parent premise holds
-// pos: T11-R1 cross-schema identity coverage under ordered batch state
-// note: if this file changes, update this header and module README.md.
 package audit
 
 import (

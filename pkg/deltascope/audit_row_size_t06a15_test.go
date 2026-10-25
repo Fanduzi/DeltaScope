@@ -1,14 +1,5 @@
 // Package deltascope verifies the T06-A15 row-size field-level fact contract
 // at the public SDK seam.
-// input: MySQL CREATE TABLE audits under the isolated row-size profile —
-// the over-limit declared input, the missing-charset input, and the
-// determined-finding-plus-gap input, each audited without a provider
-// output: an ordinary reject with the complete blocker identity, an
-// ordinary review with the field-scoped missing_instance_fact gap, and a
-// reject carrying both — all ordinary audit results, never transport-level
-// errors
-// pos: public SDK contract test for the frozen T06-A15 oracle (issue #85)
-// note: if this file changes, update this header and module README.md.
 package deltascope
 
 import (

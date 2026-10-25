@@ -5,10 +5,6 @@
 // a proven violating member emits the same blocker, a proven compliant
 // member stays clean, and missing column facts report the bounded gap
 // instead of fabricating a violation on a zero-value spec.Column.
-// input: seeded provider snapshots plus public AuditSQL ALTER/CREATE pairs
-// output: statement findings and evidence gaps asserting CREATE/ALTER parity
-// pos: T11-R1 PK structural parity coverage under public audit
-// note: if this file changes, update this header and module README.md.
 package audit
 
 import (

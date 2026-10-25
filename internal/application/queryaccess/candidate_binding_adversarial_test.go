@@ -1,10 +1,6 @@
 //go:build postgresql
 
 // Package queryaccess verifies adversarial candidate-to-fact binding.
-// input: mismatched operator names, schemas, and operand facts
-// output: fail-closed identity batches when resolved facts do not match candidates
-// pos: PostgreSQL-tagged binding safety tests for identity helpers
-// note: if this file changes, update this header and module README.md.
 package queryaccess
 
 import (

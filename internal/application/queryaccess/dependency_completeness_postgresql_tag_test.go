@@ -1,9 +1,6 @@
 //go:build postgresql
 
 // Package queryaccess records PostgreSQL's complete application-level effect traversal.
-// input: derived queries and ORDER BY function expressions
-// output: indeterminate admission with bounded unproven-function reasons
-// pos: application-level characterization; no trust-policy changes
 package queryaccess
 
 import (

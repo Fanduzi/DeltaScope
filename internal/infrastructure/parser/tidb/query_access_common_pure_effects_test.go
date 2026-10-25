@@ -1,8 +1,4 @@
 // Package tidbparser characterizes TiDB extraction of common pure-effect forms.
-// input: aggregate, grouping, and window SELECT forms
-// output: function-call reason and current dependency usages
-// pos: parser-level characterization; no admission promotion
-// note: if this file changes, update this header and module README.md.
 package tidbparser
 
 import (

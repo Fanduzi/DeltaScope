@@ -1,11 +1,4 @@
 // Package audit verifies the T06-A10 AUTO_INCREMENT contract end to end.
-// input: the eight frozen CREATE TABLE inputs under the isolated P_PK,
-// P_INIT, and all-disabled policies plus create-then-alter batches
-// output: independent rule attribution, exact finding identities, and the
-// derived post-state carrying the column attribute and the declared table
-// option as separate facts across statement boundaries
-// pos: application audit regression for issue #85 T06-A10
-// note: if this file changes, update this header and module README.md.
 package audit
 
 import (

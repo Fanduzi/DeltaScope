@@ -1,10 +1,6 @@
 //go:build postgresql
 
 // Package postgresql tests the PostgreSQL query access extractor.
-// input: SQL text exercising SELECT, JOIN, CTE, subquery, locking, function, and multi-statement forms
-// output: QueryAccessFacts assertions for read classification, relations, columns, outputs, and unresolved references
-// pos: infrastructure-level tests for the PostgreSQL query access adapter
-// note: if this file changes, update this header and module README.md.
 package postgresql
 
 import (

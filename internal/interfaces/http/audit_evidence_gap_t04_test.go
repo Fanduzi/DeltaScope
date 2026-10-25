@@ -1,8 +1,4 @@
 // Package httpapi verifies the T04-A/#83 evidence-gap HTTP contract.
-// input: offline HTTP audit requests under the isolated modify-column compatibility policy
-// output: HTTP 200 unverified results with evidence_gaps and preserved 400 unsupported semantics
-// pos: HTTP transport contract tests for metadata evidence gaps (issue #83 T04-A slice)
-// note: if this file changes, update this header and module README.md.
 package httpapi
 
 import (

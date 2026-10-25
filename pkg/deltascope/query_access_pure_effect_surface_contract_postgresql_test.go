@@ -1,9 +1,6 @@
 //go:build postgresql
 
 // Package deltascope verifies the public pure-effect admission matrix.
-// input: default SDK analysis for PostgreSQL, MySQL, and TiDB function SQL
-// output: trusted-only PostgreSQL promotion boundary and bounded public JSON
-// pos: cross-surface SDK contract coverage
 package deltascope
 
 import (

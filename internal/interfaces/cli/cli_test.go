@@ -1,8 +1,4 @@
 // Package cli verifies the Cobra CLI adapter behavior.
-// input: command-line args including audit-local output and skipped-rule flags, stdin/file SQL sources, unread-stdin doubles for explicit --sql, password-prompt doubles, MySQL-style -H/-P/-u/-D connection flags, and config-init/version requests
-// output: end-to-end CLI behavior coverage for audit rendering/thresholds, CLI JSON fail_on_triggered beside unchanged Verdict, compact and opt-in JSON skipped-rule contracts, quiet JSON stability, exit codes, distinct audit-named empty --sql errors, advertised audit exit table, rendered output, and connection-flag validation including -H host shorthand
-// pos: interface-layer CLI test coverage
-// note: if this file changes, update this header and module README.md.
 package cli
 
 import (

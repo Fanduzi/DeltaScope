@@ -1,8 +1,4 @@
 // Package deltascope verifies the T06-A2 primary-key member nullability contract at the public SDK seam.
-// input: MySQL and TiDB CREATE TABLE audits with the isolated ddl.table.primary_key.not_null.require policy
-// output: legal PK members pass, while explicit-NULL member declarations keep one policy blocker
-// pos: public SDK contract test for the frozen T06-A2 oracle (issue #85)
-// note: if this file changes, update this header and module README.md.
 package deltascope
 
 import (

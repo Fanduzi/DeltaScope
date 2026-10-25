@@ -1,8 +1,4 @@
 // Package deltascope verifies the closed query access analysis-profile contract.
-// input: query access requests with bounded analysis profiles
-// output: profile validation, offline fail-closed behavior, and no-leak guarantees
-// pos: public API contract tests for query access analysis profiles
-// note: if this file changes, update this header and module README.md.
 package deltascope
 
 import (

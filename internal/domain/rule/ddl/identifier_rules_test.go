@@ -1,8 +1,4 @@
 // Package ddl verifies create-table identifier governance behavior.
-// input: synthetic create-table Statement specs with table, column, and index names plus policy overrides
-// output: focused coverage for identifier-pattern and reserved-keyword findings
-// pos: domain DDL rule test coverage for identifier and keyword governance
-// note: if this file changes, update this header and module README.md.
 package ddl
 
 import (

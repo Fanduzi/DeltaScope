@@ -1,8 +1,4 @@
 // Package ddl verifies object metadata projection into lifecycle rule findings.
-// input: synthetic statements with ObjectSnapshot metadata attached
-// output: coverage for projectObjectMetadata helper and projection across all PG lifecycle rule families
-// pos: domain DDL rule test coverage for metadata object validation projection
-// note: if this file changes, update this header and module README.md.
 package ddl
 
 import (

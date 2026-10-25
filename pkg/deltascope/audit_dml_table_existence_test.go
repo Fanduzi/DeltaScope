@@ -1,8 +1,4 @@
 // Package deltascope verifies the public DML table-existence contract.
-// input: public MySQL/TiDB audit requests and metadata providers
-// output: stable missing-target blocker findings without offline claims
-// pos: public SDK audit seam for metadata-aware DML existence behavior
-// note: if this file changes, update this header and module README.md.
 package deltascope
 
 import (

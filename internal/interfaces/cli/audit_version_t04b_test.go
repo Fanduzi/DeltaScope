@@ -1,8 +1,4 @@
 // Package cli verifies the T04-B/#83 target-version CLI contract.
-// input: audit invocations with --target-version under the isolated key-length policy
-// output: exit-2 input errors, canonical version projection, and bounded version evidence gaps
-// pos: CLI transport contract tests for version evidence (issue #83 T04-B slice)
-// note: if this file changes, update this header and module README.md.
 package cli
 
 import (

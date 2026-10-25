@@ -8,15 +8,6 @@
 // plus the fact-handling tails: a proven-deleted PK frees `primary` and
 // keeps its proven absence against unrelated name-keyed ambiguity, and a
 // decided `primary` binding (member-owned or freed) owes no PK-side gap.
-// input: hand-built provider snapshots plus parsed TiDB statements through
-// the public audit seams (AuditSQL/enrich/batch apply)
-// output: findings, evidence gaps, coverage, verdicts and published
-// post-state shape assertions
-// pos: T10-R6 audit-side closure tests (issue #89); the
-// IndexNamesUnknown fixtures below are explicitly labeled partial
-// snapshots — they model provider states the reload can produce, not a
-// claim that pure-SQL transitions mint this shape
-// note: if this file changes, update this header and module README.md.
 package audit
 
 import (

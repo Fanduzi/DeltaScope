@@ -1,10 +1,4 @@
 // Package cli verifies the T05-A4 ordered MODIFY contract at the CLI seam.
-// input: offline four-rule audit invocations for the VARCHAR narrow and wide
-// sequences across both ordered dialects and the fail thresholds
-// output: exit-code and JSON assertions for the shrink blocker and the
-// leading CREATE gap that stays when no provider is attached
-// pos: CLI transport contract tests for ordinary single-column MODIFY post-state
-// note: if this file changes, update this header and module README.md.
 package cli
 
 import (

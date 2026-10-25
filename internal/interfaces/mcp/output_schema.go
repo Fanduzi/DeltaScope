@@ -1,8 +1,4 @@
 // Package mcpapi exposes the MCP adapter for DeltaScope.
-// input: MCP success payload types that need explicit output-schema publication
-// output: resolved JSON Schema objects for official DeltaScope MCP tool outputs
-// pos: schema publication helpers for MCP tool registration metadata
-// note: if this file changes, update this header and module README.md.
 package mcpapi
 
 import (

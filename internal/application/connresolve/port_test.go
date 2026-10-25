@@ -1,8 +1,4 @@
 // Package connresolve verifies PostgreSQL omitted-port defaulting.
-// input: dialect, configured port, and whether the caller set the port explicitly
-// output: 5432 for explicit PostgreSQL when the port was omitted
-// pos: application tests at the ApplyPostgreSQLDefaultPort seam
-// note: if this file changes, update this header and module README.md.
 package connresolve
 
 import "testing"

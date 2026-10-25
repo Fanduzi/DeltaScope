@@ -1,10 +1,6 @@
 //go:build postgresql
 
 // Package mcpapi verifies PostgreSQL offline impact rendering.
-// input: MCP audit_sql requests selecting PostgreSQL without a connection
-// output: public impact fields in structuredContent
-// pos: PostgreSQL-tagged MCP adapter regression coverage
-// note: if this file changes, update this header and module README.md.
 package mcpapi
 
 import (

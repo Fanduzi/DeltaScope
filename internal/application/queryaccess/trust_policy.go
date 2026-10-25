@@ -1,8 +1,4 @@
 // Package queryaccess implements the TrustPolicy for PostgreSQL effect identity proof.
-// input: resolved EffectIdentityBatch + immutable PG17 manifest
-// output: TrustDecision indicating whether all effects are manifest-proven
-// pos: T8 trust policy layer; sole path to Trusted for PostgreSQL admission
-// note: if this file changes, update this header and module README.md.
 package queryaccess
 
 import (

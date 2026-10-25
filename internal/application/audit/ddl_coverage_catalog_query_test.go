@@ -1,8 +1,4 @@
 // Package audit verifies DDL coverage catalog query behavior.
-// input: the embedded generated catalog and the checked-in docs/reference catalog JSON
-// output: coverage for LoadEmbeddedCatalog, LoadCatalog, QueryCatalog, and Validate
-// pos: application catalog query tests
-// note: if this file changes, update this header and module README.md.
 package audit
 
 import (

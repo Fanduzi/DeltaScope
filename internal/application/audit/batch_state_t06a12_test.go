@@ -1,13 +1,6 @@
 // Package audit verifies the T06-A12 ordinary CREATE TABLE non-PK-column
 // NOT NULL audit, the time-like exemption, per-column finding attribution,
 // and the derived-state boundary.
-// input: the frozen A12 CREATE TABLE roles under the isolated profiles
-// through AuditSQL, plus create+alter inputs through the enrich seam
-// output: per-role verdicts, complete finding identity bound to the owning
-// column, the required=false/disabled distinction, and follower pre-state
-// NotNull/Type propagation without back-mutation
-// pos: application-layer contract tests for the frozen T06-A12 oracle (issue #85)
-// note: if this file changes, update this header and module README.md.
 package audit
 
 import (

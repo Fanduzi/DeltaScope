@@ -1,10 +1,6 @@
 //go:build e2e
 
 // Package main verifies Docker-backed HTTP metadata-aware end-to-end behavior via registry-backed connection_id selection.
-// input: real MySQL/TiDB fixtures, registry-backed authorized connection_id runtime config, and the test binary as a server process
-// output: end-to-end proof that deltascope-server serves metadata-aware audit results over HTTP without inline connection details
-// pos: slower external e2e verification kept outside the default go test loop
-// note: if this file changes, update this header and module README.md.
 package main
 
 import (

@@ -1,8 +1,4 @@
 // Package ddl defines Tier-1 DDL rules.
-// input: normalized Statement specs for PostgreSQL table privilege DCL operations
-// output: findings for PostgreSQL GRANT/REVOKE table privilege risks
-// pos: PostgreSQL-specific table privilege rule implementations
-// note: if this file changes, update this header and module README.md.
 package ddl
 
 import (

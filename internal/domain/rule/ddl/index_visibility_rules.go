@@ -1,18 +1,4 @@
 // Package ddl defines Tier-1 DDL rules.
-// input: normalized statements carrying T10 index visibility declarations
-// and advanced-index member marks, plus metadata-enriched ordered snapshots
-// output: invisibility-forbid findings, dialect-aware name-keyed index
-// existence findings and evidence gaps shared by alter/drop/rename_index
-// (member-first `primary` precedence — a TiDB member may own the name;
-// else MySQL primary key / TiDB PK presence for drop or real object for
-// alter/rename vs PKIsHandle — an unproven handle answer or unproven member
-// name space reports the primary_key/indexes identity gap instead of a
-// fabricated absence), and product/version compatibility findings and gaps for
-// visibility, expression keys, descending keys, multi-valued members,
-// prefix length, fulltext, spatial, and global forms — including the
-// implicit-primary role refusal on qualifying UNIQUE indexes
-// pos: T10 advanced-index and visibility rule implementations
-// note: if this file changes, update this header and module README.md.
 package ddl
 
 import (

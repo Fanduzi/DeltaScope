@@ -7,13 +7,6 @@
 // mysql-test/r/invisible_indexes.result L274-285 — an unnamed index member
 // takes its first column member's name, with a numeric suffix on
 // collision).
-// input: constructed primary-key/index declarations exercising the
-// handle and naming decision tables
-// output: tri-state handle answers, provable stored names, and bounded
-// unprovable answers instead of guessed identities
-// pos: spec-level T10-R3 decision-table coverage beside the audit-level
-// chain tests
-// note: if this file changes, update this header and module README.md.
 package spec
 
 import "testing"

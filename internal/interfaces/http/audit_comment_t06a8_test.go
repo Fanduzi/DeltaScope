@@ -1,10 +1,6 @@
 // Package httpapi verifies the T06-A8 comment fidelity upgrade at the HTTP
 // seam — an empty column COMMENT and a rune-counted table comment are
 // ordinary audit payloads at HTTP 200, never transport errors.
-// input: POST /v1/audit bodies carrying declared comments under isolated policies
-// output: HTTP 200 with reject/pass audit payloads
-// pos: HTTP transport contract test for issue #85 T06-A8
-// note: if this file changes, update this header and module README.md.
 package httpapi
 
 import (

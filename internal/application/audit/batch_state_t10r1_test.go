@@ -3,15 +3,6 @@
 // the first qualifying UNIQUE index (MySQL invisible_indexes.result L247-289,
 // TiDB GetPrimaryKey), and TiDB's PRIMARY name resolving to a real index
 // object only when the PK is not the row handle.
-// input: ALTER INDEX / declared-invisibility statements against snapshots
-// carrying explicit-PK, qualifying-UNIQUE, and handle-PK shapes
-// output: compatibility refusals on the primary role holder, bounded gaps
-// when the role cannot be proven, and no falsely published invisible
-// post-state for successors to read
-// pos: application-layer ordered-state regression for issue #89 T10-R1; the
-// transitions under test live in batch_state_index.go and the shared
-// determination in internal/domain/spec
-// note: if this file changes, update this header and module README.md.
 package audit
 
 import (

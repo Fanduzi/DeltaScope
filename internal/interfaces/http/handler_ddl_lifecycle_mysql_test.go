@@ -1,8 +1,4 @@
 // Package httpapi verifies HTTP audit lifecycle findings for MySQL/TiDB DDL.
-// input: offline HTTP audit requests for lifecycle-covered DDL forms
-// output: status-code and per-finding rule_id assertions, including incomplete-coverage 400 envelopes
-// pos: HTTP transport tests for DDL lifecycle coverage (issue #82)
-// note: if this file changes, update this header and module README.md.
 package httpapi
 
 import (

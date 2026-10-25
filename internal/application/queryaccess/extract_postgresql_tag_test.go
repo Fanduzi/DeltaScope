@@ -1,10 +1,6 @@
 //go:build postgresql
 
 // Package queryaccess tests the PostgreSQL query access application adapter.
-// input: QueryAccessRequest with SQL exercising PostgreSQL-specific features
-// output: QueryAccessResult assertions for read classification, relations, columns, and admission
-// pos: application-level tests for the PostgreSQL query access adapter
-// note: if this file changes, update this header and module README.md.
 package queryaccess
 
 import (

@@ -1,10 +1,6 @@
 //go:build postgresql
 
 // Package queryaccess provides the PostgreSQL query access application adapter.
-// input: QueryAccessRequest with SQL, dialect, mode, and default schema
-// output: QueryAccessResult wrapping the domain Result
-// pos: application adapter for PostgreSQL query access analysis
-// note: if this file changes, update this header and module README.md.
 package queryaccess
 
 import (

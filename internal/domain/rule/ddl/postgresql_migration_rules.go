@@ -1,8 +1,4 @@
 // Package ddl defines Tier-1 DDL rules.
-// input: normalized Statement specs for PostgreSQL DDL operations
-// output: findings for PostgreSQL migration-safety risks (lock/rewrite/constraint validation)
-// pos: PostgreSQL-specific migration-safety rule implementations
-// note: if this file changes, update this header and module README.md.
 package ddl
 
 import (

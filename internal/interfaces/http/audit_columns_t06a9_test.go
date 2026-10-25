@@ -1,10 +1,6 @@
 // Package httpapi verifies the T06-A9 audit-column role contract at the HTTP
 // seam — the complete pair and the two-blocker missing-both reject are both
 // ordinary audit payloads at HTTP 200, never transport errors.
-// input: POST /v1/audit bodies carrying explicit DATETIME audit columns under the isolated policy
-// output: HTTP 200 with pass or two-finding reject audit payloads
-// pos: HTTP transport contract test for issue #85 T06-A9
-// note: if this file changes, update this header and module README.md.
 package httpapi
 
 import (

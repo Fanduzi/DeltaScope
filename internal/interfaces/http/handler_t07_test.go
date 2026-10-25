@@ -1,10 +1,4 @@
 // Package httpapi verifies the T07 advanced-column transport contract.
-// input: /v1/audit JSON requests carrying generated/expression-default/
-// visibility SQL for both dialects under the default policy
-// output: success, version-reject, vendor-boundary diagnostic, and
-// privacy-bounded unsupported shapes through the shared audit seam
-// pos: HTTP transport coverage for issue #86 advanced columns
-// note: if this file changes, update this header and module README.md.
 package httpapi
 
 import (

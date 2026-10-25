@@ -6,24 +6,6 @@
 // MySQL/TiDB function-bearing SQL with injected markers, and asserts those
 // markers, identity facts, candidates, session/context data, manifest data,
 // raw SQL, and `severity` are absent from stdout/stderr/JSON output.
-//
-// input: CLI invocations with MySQL/TiDB function-bearing SQL carrying injected
-//
-//	function-name and literal markers on the normal path
-//
-// output: CLI stdout/stderr/JSON contain none of the injected markers, no
-//
-//	identity/candidate/manifest/session fields, no raw SQL, no `severity` field;
-//	DSN/credential/driver-error injection is covered by the HTTP error boundary
-//
-// pos: CLI no-leak regression for the MySQL/TiDB probe boundary; no new CLI
-//
-//	path is introduced or exercised here
-//
-// note: if this file changes, update this header, the module README.md, and
-//
-//	the decision record's no-leak evidence section. See
-//	docs/decisions/2026-07-17-query-access-mysql-tidb-effect-identity-feasibility.md
 package cli
 
 import (

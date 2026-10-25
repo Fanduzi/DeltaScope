@@ -1,8 +1,4 @@
 // Package queryaccess verifies profile-specific builtin semantic promotion.
-// input: profiled MySQL/TiDB query access requests over the production registry
-// output: read_only + admissible for proven entries; indeterminate for every excluded shape
-// pos: profile-specific regression coverage for MySQL 5.7/8.0/8.4 and TiDB 8.5
-// note: if this file changes, update this header and module README.md.
 package queryaccess
 
 import (

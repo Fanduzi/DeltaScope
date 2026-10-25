@@ -1,8 +1,4 @@
 #!/usr/bin/env python3
-# input: repository root and pull-request / main-push workflows
-# output: exit 0 when PR/main keep unguarded unit, PostgreSQL unit, and SQL corpus gates
-# pos: static CI contract test for pull-request unit and corpus wiring
-# note: if this file changes, update this header and scripts/README.md.
 """Regression test for pull-request unit and SQL corpus gate wiring."""
 
 import re

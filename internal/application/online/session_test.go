@@ -1,8 +1,4 @@
 // Package online provides tests for the session factory.
-// input: mock database driver configurations
-// output: verified session lifecycle behavior and distinct bounded authentication/dial failure classification
-// pos: unit tests for OpenSession with mock drivers
-// note: if this file changes, update this header and module README.md.
 package online
 
 import (

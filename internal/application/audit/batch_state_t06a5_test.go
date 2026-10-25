@@ -3,10 +3,6 @@
 // both dialects, per-statement/per-column finding attribution, real-parser
 // type controls, and the pinned consumption of the same Length fact by the
 // CREATE-derived pre-state and the MODIFY compatibility shrink check.
-// input: CREATE TABLE batches with declared CHAR/VARCHAR lengths through AuditSQL plus the enrichment seam
-// output: exact blocker findings at the boundary, silent non-matches, and preserved Length facts in derived state
-// pos: application-layer contract tests for the T06-A5 length-policy oracle (issue #85)
-// note: if this file changes, update this header and module README.md.
 package audit
 
 import (

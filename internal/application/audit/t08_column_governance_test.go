@@ -1,15 +1,4 @@
 // Package audit verifies the T08 column-governance ordered-state contract.
-// input: real parse+enrich chains over positioned add/modify/change actions,
-// bounded multi-action successors on both dialect families, and the frozen
-// setter/position existence rules against present, absent, and unknown
-// provider states
-// output: exact column order in published shapes, dialect-parametrized
-// premise validation (MySQL accumulates left-to-right, TiDB validates
-// against the pre-state), whole-statement tombstones on unprovable net
-// effects with no prefix publication, and existence findings/gaps carrying
-// the frozen table/action/name/exists metadata
-// pos: T08-A8 state machine + rule regression matrix (issue #87)
-// note: if this file changes, update this header and module README.md.
 package audit
 
 import (

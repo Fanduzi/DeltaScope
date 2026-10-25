@@ -1,8 +1,4 @@
 // Package audit verifies AST-to-StatementSpec extraction behavior.
-// input: parsed SQL statements produced by the application parsing flow
-// output: test coverage for first-pass StatementSpec extraction
-// pos: application audit extraction test coverage
-// note: if this file changes, update this header and module README.md.
 package audit
 
 import (

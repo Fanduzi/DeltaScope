@@ -1,8 +1,4 @@
 // Package cli verifies the Cobra CLI adapter behavior.
-// input: config init/show-default invocations, shipped example YAML, handwritten full-spec overrides, and default-policy audit JSON
-// output: focused CLI coverage for quoted empty-string encoding, lint-clean templates, and default vs generated-config finding equality
-// pos: interface-layer CLI config generation test coverage
-// note: if this file changes, update this header and module README.md.
 package cli
 
 import (

@@ -1,8 +1,4 @@
 // Package connresolve turns caller connection input into a ready-to-open configuration.
-// input: host, socket, user, password sources, TLS files, timeout, dialect, and catalog hints
-// output: a Config ready for auditmeta.Prepare or online.OpenSession, or an Error with FailureClass
-// pos: Transport Connection Resolution entry that stops before open
-// note: if this file changes, update this header and module README.md.
 package connresolve
 
 import (

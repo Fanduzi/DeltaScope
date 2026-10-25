@@ -1,10 +1,6 @@
 //go:build postgresql
 
 // Package deltascope verifies public SDK unsupported-statement result contracts.
-// input: public Audit requests containing structured unsupported PostgreSQL statements
-// output: SDK errors that preserve the review-floored unsupported result contract
-// pos: public package regression coverage for the unsupported-statement verdict floor
-// note: if this file changes, update this header and module README.md.
 package deltascope
 
 import (

@@ -1,10 +1,6 @@
 //go:build postgresql
 
 // Package queryaccess tests the narrow PostgreSQL COUNT(integer_one) proof gate.
-// input: internal statement-shape facts, domain result facts, requirements, and candidates
-// output: exact proof-gate decisions with fail-closed relation and requirement checks
-// pos: application proof-gate boundary tests; no public output or SQL execution
-// note: if this file changes, update this header and module README.md.
 package queryaccess
 
 import (

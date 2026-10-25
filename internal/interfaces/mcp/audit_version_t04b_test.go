@@ -1,8 +1,4 @@
 // Package mcpapi verifies the T04-B/#83 target-version MCP contract.
-// input: audit_sql tool calls carrying target_version under the isolated key-length policy
-// output: isError=false results with canonical version/gap evidence and isError=true bad_request for malformed input
-// pos: MCP transport contract tests for version evidence (issue #83 T04-B slice)
-// note: if this file changes, update this header and module README.md.
 package mcpapi
 
 import (

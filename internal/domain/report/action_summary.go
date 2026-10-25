@@ -1,9 +1,5 @@
 // Package report defines audit results, summaries, and verdict aggregation.
 // This file adds a derived action summary that groups findings by rule for human reports.
-// input: report.Result findings and rule catalog entries
-// output: derived action summary items ordered by remediation priority
-// pos: derived human-report helper; does not change Result JSON and does not run the audit
-// note: if this file changes, update this header and module README.md.
 package report
 
 import (

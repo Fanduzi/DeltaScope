@@ -1,8 +1,4 @@
 // Package dml defines Tier-1 DML rules.
-// input: DML statements plus policy-backed schema/table denylist entries
-// output: findings that block DML against protected schemas or tables
-// pos: DML object-scope denylist guardrails for audit completion
-// note: if this file changes, update this header and module README.md.
 package dml
 
 import (

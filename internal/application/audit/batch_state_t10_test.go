@@ -4,17 +4,6 @@
 // carry modeled facts, the version/applicability rule answers for the
 // advanced index forms, and the published post-state preserves member
 // visibility so later statements read the derived catalog.
-// input: ALTER INDEX statements plus declared visibility/prefix/expression/
-// descending/multi-valued index forms audited through AuditSQL with a stub
-// provider carrying versioned instance facts and vouched index sets
-// output: statement-bound findings and evidence gaps proving visibility
-// transitions, existence, product/version applicability, and post-state
-// fidelity — and the controls proving unvouched or inapplicable cases never
-// fabricate a finding
-// pos: application-layer ordered-state regression for issue #89 T10; the
-// transitions under test live in batch_state_index.go and the rules in
-// internal/domain/rule/ddl
-// note: if this file changes, update this header and module README.md.
 package audit
 
 import (

@@ -1,8 +1,4 @@
 // Package ddl verifies PostgreSQL annotation lifecycle rule behavior.
-// input: synthetic DDL statements with PostgreSQL annotation lifecycle signals and cross-dialect policy controls
-// output: focused coverage for the four PostgreSQL annotation lifecycle rules with PG-only gating
-// pos: domain DDL rule test coverage for PG annotation lifecycle
-// note: if this file changes, update this header and module README.md.
 package ddl
 
 import (

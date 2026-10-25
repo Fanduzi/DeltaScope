@@ -1,9 +1,4 @@
 #!/usr/bin/env bash
-# input: docker compose MySQL fixtures plus tagged MCP end-to-end Go tests
-# output: repeatable metadata-aware MCP smoke validation against a real MySQL target
-# pos: shell-based Docker harness for slower MCP metadata e2e verification
-# note: if this file changes, update this header and module README.md.
-
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"

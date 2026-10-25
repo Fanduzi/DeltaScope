@@ -1,8 +1,4 @@
 // Package ddl defines Tier-1 DDL rules.
-// input: create-view, drop-table, and truncate-table statement specs plus optional metadata facts
-// output: lifecycle-governance findings and the drop-existence unknown-state evidence gap for object creation, drop, truncate, existence, and adaptive-hash cautions
-// pos: DDL rule implementations for object lifecycle gaps outside create/alter table structure checks
-// note: if this file changes, update this header and module README.md.
 package ddl
 
 import (

@@ -1,8 +1,4 @@
 // Package main verifies the T07 supplemental proof rejects incomplete private facts and evidence failures.
-// input: independently fixed eight-column facts and controlled corruptions or filesystem/encoding errors
-// output: exact complete-set/known-state/provenance sensitivity and fail-closed evidence-write assertions
-// pos: bounded proof-collector tests, not product/native acceptance results
-// note: if this file changes, update this header and module README.md.
 package main
 
 import (

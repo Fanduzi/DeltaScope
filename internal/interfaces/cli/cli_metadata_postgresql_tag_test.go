@@ -1,10 +1,6 @@
 //go:build postgresql
 
 // Package cli verifies PostgreSQL-specific CLI metadata-aware audit behavior.
-// input: PostgreSQL audit arguments and fake metadata clients
-// output: PostgreSQL metadata rule findings and valid database/schema connection coverage
-// pos: interface-layer PostgreSQL-tagged CLI audit tests
-// note: if this file changes, update this header and module README.md.
 package cli
 
 import (

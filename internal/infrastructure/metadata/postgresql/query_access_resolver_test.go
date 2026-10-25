@@ -1,10 +1,6 @@
 //go:build postgresql
 
 // Package postgresqlmeta verifies the conn-backed PostgreSQL Query Access resolver.
-// input: synthetic pg_catalog rows via the package test driver
-// output: conn-backed relation metadata, errors, ordering, and fail-closed behavior
-// pos: conn contract and adapter-specific unit coverage
-// note: if this file changes, update this header and module README.md.
 package postgresqlmeta
 
 import (

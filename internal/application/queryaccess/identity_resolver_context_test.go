@@ -1,8 +1,4 @@
 // Package queryaccess tests execution-bound resolution context policy (T6 P1).
-// input: unqualified/explicit candidates, bound/unbound contexts, fake resolvers
-// output: fail-closed statuses for shadowing, overload, db/role/version mismatch
-// pos: contract safety for session binding / TOCTOU before T7 catalog adapter
-// note: if this file changes, update this header and module README.md.
 package queryaccess
 
 import (

@@ -1,22 +1,5 @@
 // Package spec resolves the logical primary-key role a unique index can
 // hold independently of an explicitly declared PRIMARY KEY.
-// input: a table's index members (with key-part facts), column nullability,
-// and the explicit-PK state of a snapshot or declared CREATE TABLE shape
-// output: PrimaryRoleResolution — the four-state answer (explicit primary,
-// proven implicit holder by member identity, proven no-candidate, bounded
-// unresolved listing the withheld facts); the TiDB handle tri-state *bool
-// (nil unprovable, CLUSTERED|NONCLUSTERED overrides the session mode, else
-// tidb_enable_clustered_index — int_only defers to alter-primary-key);
-// PrimaryKeyClustered answering the TiDB 8200 drop premise beside the
-// handle answer (common-handle PKs are clustered yet addressable); and the
-// shared name bindings backing every name-keyed consumer — ordered state,
-// rules, assessment: `primary` answers four ways, a target five (member /
-// PK object / handle / free / ambiguous) — a proven-absent PK frees names
-// despite stale storage unknowns or an unvouched constraint collection
-// pos: T10-R2/R4/R5 primary-role/clustered/name-binding model (issue #89);
-// anchors — MySQL 8.0.46 invisible_indexes.result L247-289, TiDB v8.5.0
-// TableInfo.GetPrimaryKey + checkInvisibleIndexOnPK
-// note: if this file changes, update this header and module README.md.
 package spec
 
 import "strings"

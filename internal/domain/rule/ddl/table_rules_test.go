@@ -1,8 +1,4 @@
 // Package ddl verifies Tier-1 DDL table-level rule behavior.
-// input: create-table Statement specs and rule policy overrides
-// output: deterministic findings for table comment and table-name rules
-// pos: domain DDL rule test coverage for table naming and comments
-// note: if this file changes, update this header and module README.md.
 package ddl
 
 import (

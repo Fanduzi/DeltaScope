@@ -1,8 +1,4 @@
 // Package httpapi verifies the T06-A1 primary-key-presence contract at the HTTP seam.
-// input: MySQL/TiDB CREATE TABLE /v1/audit requests with the isolated ddl.table.primary_key.require policy
-// output: HTTP 200 reject verdict carrying the blocker finding, and HTTP 200 pass when a PK is declared
-// pos: HTTP transport contract test for the frozen T06-A1 oracle (issue #85)
-// note: if this file changes, update this header and module README.md.
 package httpapi
 
 import (

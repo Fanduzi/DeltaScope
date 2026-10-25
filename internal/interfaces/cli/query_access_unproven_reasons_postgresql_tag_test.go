@@ -1,10 +1,6 @@
 //go:build postgresql
 
 // Package cli verifies CLI passthrough of unproven-effect reason codes.
-// input: CLI query-access analyze for PostgreSQL unproven effects
-// output: JSON reason_codes, indeterminate admission exit code, no severity/SQL leak
-// pos: CLI surface coverage for Query Access T4 reason explanation
-// note: if this file changes, update this header and module README.md.
 package cli
 
 import (

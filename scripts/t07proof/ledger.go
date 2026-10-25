@@ -1,8 +1,4 @@
 // Package main records native and real-provider queries without connection credentials.
-// input: a provisioned database/sql driver connector and fixed proof queries
-// output: ordered query/exec/provider ledger entries across the real metadata provider
-// pos: T07 supplemental proof-only driver instrumentation
-// note: if this file changes, update this header and module README.md.
 package main
 
 import (

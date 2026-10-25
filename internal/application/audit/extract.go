@@ -1,8 +1,4 @@
 // Package audit orchestrates audit use cases at the application layer.
-// input: application-owned parsed SQL statements and parser-neutral extractors
-// output: first-pass StatementSpec values plus attached shape-only impact facts for later rule evaluation
-// pos: application extraction step between parsing and rule execution
-// note: if this file changes, update this header and module README.md.
 package audit
 
 import (

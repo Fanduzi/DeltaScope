@@ -1,10 +1,6 @@
 //go:build postgresql
 
 // Package postgresql verifies pg_query parser adapter behavior.
-// input: SQL text covering schema lifecycle DDL AST facts
-// output: characterization of pg_query AST for CREATE SCHEMA variants
-// pos: infrastructure parser adapter AST characterization
-// note: if this file changes, update this header and module README.md.
 package postgresql
 
 import (

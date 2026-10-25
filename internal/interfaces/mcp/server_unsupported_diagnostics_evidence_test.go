@@ -1,8 +1,4 @@
 // Package mcpapi verifies MCP diagnostic result contracts.
-// input: audit_sql calls containing parser-error and valid SQL statements
-// output: bounded MCP errors that preserve review-floored partial audit results and diagnostic evidence
-// pos: MCP interface parser-diagnostic and partial-result regression coverage
-// note: if this file changes, update this header and module README.md.
 package mcpapi
 
 import (

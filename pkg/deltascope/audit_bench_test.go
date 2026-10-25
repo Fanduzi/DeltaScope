@@ -1,8 +1,4 @@
 // Package deltascope benchmarks the public audit API on representative MySQL/TiDB SQL inputs.
-// input: deterministic public audit requests without metadata providers
-// output: benchmark timing and allocation measurements for public API cache evaluation
-// pos: public API benchmark coverage for parser/cache evaluation
-// note: if this file changes, update this header and module README.md.
 package deltascope
 
 import (

@@ -1,10 +1,6 @@
 //go:build postgresql
 
 // Package queryaccess tests adversarial scenarios for atomic-proof and no-leak.
-// input: Service with trusted bundle, various mismatched contexts
-// output: verification of fail-closed behavior under adversarial conditions
-// pos: P2-2 adversarial tests for atomic resolver and no-leak assertions
-// note: if this file changes, update this header and module README.md.
 package queryaccess
 
 import (

@@ -1,8 +1,4 @@
 // Package ddl verifies source-aware alter compatibility rules.
-// input: metadata-enriched alter-table statements with source and target column shapes
-// output: coverage for source-to-target compatibility findings on change/modify column
-// pos: DDL alter compatibility test coverage
-// note: if this file changes, update this header and module README.md.
 package ddl
 
 import (

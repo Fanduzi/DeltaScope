@@ -1,8 +1,4 @@
 // Package online provides the shared online session factory for SDK, CLI, and HTTP.
-// input: pinned *sql.Conn, server version string, expected dialect
-// output: validated ServerIdentity, CapabilityTarget, and bounded identity errors including the fixed PostgreSQL Query Access version requirement
-// pos: shared identity parsing and session lifecycle for online query access
-// note: if this file changes, update this header and module README.md.
 package online
 
 import (

@@ -1,8 +1,4 @@
 // Package audit verifies default-disabled DML impact-rule behavior.
-// input: default and opt-in policy audits of UPDATE/DELETE statements
-// output: no default impact-rule findings, preserved statement impact objects, and config-enabled findings
-// pos: application audit proof that dml.impact.* rules stay cataloged but Default Policy disabled
-// note: if this file changes, update this header and module README.md.
 package audit
 
 import (

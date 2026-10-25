@@ -1,10 +1,6 @@
 //go:build postgresql
 
 // Package audit verifies PostgreSQL DML impact estimates at the application seam.
-// input: PostgreSQL offline and planner-backed audit requests
-// output: shared statement-level impact contracts for PostgreSQL DML
-// pos: PostgreSQL-tagged application audit regression coverage
-// note: if this file changes, update this header and module README.md.
 package audit
 
 import (

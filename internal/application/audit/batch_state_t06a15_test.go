@@ -1,14 +1,5 @@
 // Package audit verifies the T06-A15 row-size field-level fact contract at
 // the application seam.
-// input: the ten frozen T06-A15 CREATE TABLE inputs through real AuditSQL
-// under the isolated required/not-required/off profiles, plus the controlled
-// nil/empty/partial instance-facts provider matrix
-// output: per-role verdict/coverage/findings/gap identities, the
-// pointer-presence-independent estimate, deterministic required_facts order,
-// and error-channel preservation for provider failures
-// pos: application-layer contract tests for the T06-A15 row-size fact
-// resolution fix (issue #85)
-// note: if this file changes, update this header and module README.md.
 package audit
 
 import (

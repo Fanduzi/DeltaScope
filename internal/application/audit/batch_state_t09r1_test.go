@@ -1,18 +1,5 @@
 // Package audit verifies the T09-R1 index-facts and primary-key premise
 // amendment end to end.
-// input: real MySQL/TiDB CREATE TABLE/CREATE INDEX/ALTER batches audited
-// through AuditSQL or the real enrich seam, with stub providers carrying
-// vouched index and column facts — including provider-loaded indexes that
-// carry non-plain key parts
-// output: suppressed pair-comparison whenever either candidate side is not a
-// known plain key; kept plain positive findings; ADD PRIMARY KEY post-states
-// that honor member-existence and member-nullability premises; and the R3
-// truncated-projection gap — an expression-bearing existing member whose
-// named columns match the declared index leaves left-prefix unverifiable
-// pos: application-layer regression for issue #88 T09-R1; the comparability
-// gate lives in internal/domain/rule/ddl, the member-premise gate in
-// batch_state_index.go
-// note: if this file changes, update this header and module README.md.
 package audit
 
 import (

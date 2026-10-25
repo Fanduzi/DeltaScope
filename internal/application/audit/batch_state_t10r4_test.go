@@ -7,14 +7,6 @@
 // a clustered TiDB primary key survives DROP PRIMARY KEY (8200) while
 // staying addressable; and a direction-unknown expression member keeps its
 // kind, expression identity, multi-valued marks, and aggregate counts.
-// input: real MySQL/TiDB batches audited through AuditSQL with stub
-// providers carrying vouched member facts and TiDB handle modes, plus
-// direct batch-state applications for the mutation mechanics
-// output: statement-bound findings, evidence gaps, coverage statuses,
-// verdicts, and post-state member/key-part assertions
-// pos: application-layer regression for issue #89 T10-R4; gaps live in
-// internal/domain/rule/ddl, publication in batch_state*.go
-// note: if this file changes, update this header and module README.md.
 package audit
 
 import (

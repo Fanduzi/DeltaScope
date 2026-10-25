@@ -1,8 +1,4 @@
 // Package configstatus verifies rule config status derivation.
-// input: temporary YAML config files, rule IDs, and built-in default policy metadata
-// output: test coverage for the config status derivation layer
-// pos: application config status adapter test coverage
-// note: if this file changes, update this header and module README.md.
 package configstatus
 
 import (

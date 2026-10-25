@@ -1,12 +1,4 @@
 // Package audit verifies the T05-A3 bounded single-table DROP lifecycle.
-// input: ordered MySQL/TiDB statements exercising the frozen drop state
-// table, both drop variants, loaded dependent references, cancellation
-// timing, and the drop-existence evidence-gap reporter
-// output: deterministic drop transitions, provider read ledgers, dependent
-// invalidation, recreated-shape isolation, and the unchanged
-// policy/coverage contract for out-of-scope forms
-// pos: T05-A3 regression matrix for the conditional-structure state machine
-// note: if this file changes, update this header and module README.md.
 package audit
 
 import (

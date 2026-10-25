@@ -1,8 +1,4 @@
 // Package httpapi verifies the T05-A7 ordered-state budget at the HTTP seam.
-// input: a 1025-statement MySQL /v1/audit request through the real handler
-// output: HTTP 400 diagnostic envelope carrying the retained partial result and the exact bounded resource-limit projection
-// pos: HTTP transport contract test for the shared ordered-state admission budget (issue #84/T05-A7)
-// note: if this file changes, update this header and module README.md.
 package httpapi
 
 import (

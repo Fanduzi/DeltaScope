@@ -1,12 +1,5 @@
 // Package ddl verifies the T06-A12 ordinary CREATE TABLE non-PK-column
 // NOT NULL rule boundaries on synthetic statements.
-// input: synthetic create-table statements exercising the not-null require
-// rule under boundary policies
-// output: required=false/disabled-style non-applicability, the
-// allow_time_null switch, default level/params, invalid-parameter controls,
-// and per-column finding attribution pinned
-// pos: domain DDL rule regression for issue #85 T06-A12
-// note: if this file changes, update this header and module README.md.
 package ddl
 
 import (

@@ -1,8 +1,4 @@
 // Package rule defines domain findings and rule-engine types.
-// input: rule evaluation details, source-location metadata, and statement/global rule implementations
-// output: normalized findings, evidence-gap declarations for rules missing required metadata facts, skip reasons for loaded-but-inapplicable rules, and registry-facing rule contracts
-// pos: domain rule vocabulary and execution contracts shared across audit evaluation
-// note: if this file changes, update this header and module README.md.
 package rule
 
 import (

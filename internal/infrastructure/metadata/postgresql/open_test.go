@@ -1,8 +1,4 @@
 // Package postgresqlmeta verifies PostgreSQL metadata connection config helpers.
-// input: synthetic TCP and unix-socket PostgreSQL connection configs
-// output: stable DSN/address formatting behavior without opening a live database
-// pos: infrastructure connection helper test coverage
-// note: if this file changes, update this header and module README.md.
 package postgresqlmeta
 
 import (

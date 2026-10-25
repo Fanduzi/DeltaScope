@@ -1,8 +1,4 @@
 // Package mcpapi verifies MCP audit lifecycle findings for MySQL/TiDB DDL.
-// input: audit_sql tool calls for lifecycle-covered DDL forms
-// output: isError and per-finding rule_id assertions, including incomplete-coverage tool errors
-// pos: MCP transport tests for DDL lifecycle coverage (issue #82)
-// note: if this file changes, update this header and module README.md.
 package mcpapi
 
 import (

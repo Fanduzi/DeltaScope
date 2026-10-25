@@ -1,8 +1,4 @@
 // Package main collects the bounded T06-A17-R1 native catalog/provider proof.
-// input: one of four pinned loopback anchors, environment-only credentials, and a new evidence directory
-// output: complete raw observations, query ledgers, strict pairs, and owned-table cleanup results; any failure is nonzero
-// pos: task-specific proof command outside the product audit and Golden runner
-// note: if this file changes, update this header and module README.md.
 package main
 
 import (

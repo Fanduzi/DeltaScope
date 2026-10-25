@@ -1,10 +1,6 @@
 //go:build postgresql
 
 // Package queryaccess characterizations for pure-read effect identity (T3).
-// input: PostgreSQL SQL spanning T2 candidate/rejected ledgers
-// output: classification + admission freeze assertions (no production promotion)
-// pos: application-level characterization tests for effect identity preconditions
-// note: tests only; does not implement resolver, manifest, or proof engine.
 package queryaccess
 
 import (

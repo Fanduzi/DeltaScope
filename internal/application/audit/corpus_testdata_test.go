@@ -1,8 +1,4 @@
 // Package audit defines and validates shared SQL corpus expectations.
-// input: expected YAML files and application audit results
-// output: validated corpus schemas plus reusable partial-result and impact assertions
-// pos: shared corpus test-data contract for tagged and untagged audit runners
-// note: if this file changes, update this header and module README.md.
 package audit
 
 import (

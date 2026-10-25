@@ -1,8 +1,4 @@
 // Package main starts the DeltaScope MCP server.
-// input: process flags and sole positional meta invocations plus stdio MCP transport startup
-// output: a long-running MCP stdio server process over DeltaScope audit and rule capabilities
-// pos: MCP service entrypoint above the internal MCP adapter
-// note: if this file changes, update this header and module README.md.
 package main
 
 import (

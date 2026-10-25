@@ -1,10 +1,4 @@
 // Package mcpapi verifies the T05-A4 ordered MODIFY contract at the MCP seam.
-// input: offline four-rule audit_sql calls for the VARCHAR narrow sequence,
-// an isolated unknown MODIFY, and an unknown dialect
-// output: isError=false reject and gap results, plus isError=true for the
-// dialect error
-// pos: MCP transport contract tests for ordinary single-column MODIFY post-state
-// note: if this file changes, update this header and module README.md.
 package mcpapi
 
 import (

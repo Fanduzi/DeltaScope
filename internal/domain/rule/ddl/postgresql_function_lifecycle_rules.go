@@ -1,8 +1,4 @@
 // Package ddl defines Tier-1 DDL rules.
-// input: normalized Statement specs for PostgreSQL function and procedure lifecycle DDL operations
-// output: findings for PostgreSQL function/procedure lifecycle risks including SECURITY DEFINER and OR REPLACE
-// pos: PostgreSQL-specific function/procedure lifecycle rule implementations
-// note: if this file changes, update this header and module README.md.
 package ddl
 
 import (

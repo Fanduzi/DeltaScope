@@ -1,8 +1,4 @@
 // Package ddl verifies PostgreSQL migration-safety rule behavior.
-// input: synthetic DDL statements with PostgreSQL migration-safety signals and cross-dialect policy controls
-// output: focused coverage for the four PostgreSQL migration-safety rules with PG-only gating
-// pos: domain DDL rule test coverage for PG migration safety
-// note: if this file changes, update this header and module README.md.
 package ddl
 
 import (

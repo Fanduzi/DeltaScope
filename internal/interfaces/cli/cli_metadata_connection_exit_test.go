@@ -1,8 +1,4 @@
 // Package cli verifies metadata-aware connection failure exit codes and bounded messages.
-// input: Execute args and typed/wrapped network or driver errors for connection refusal, generic dial, timeout, authentication, password-source, and TLS failures
-// output: exit-code, one-line bounded stderr, connection/TLS categories, and no-leak coverage for metadata connection errors
-// pos: interface-layer contract tests for metadata connection error mapping
-// note: if this file changes, update this header and module README.md.
 package cli
 
 import (

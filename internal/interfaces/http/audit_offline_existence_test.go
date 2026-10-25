@@ -1,8 +1,4 @@
 // Package httpapi verifies HTTP offline existence caveats on audit context.
-// input: offline ALTER DROP COLUMN HTTP audit requests
-// output: review verdict plus JSON evidence-gap contract matching the CLI caveat (context.unproven, unknown_table_state)
-// pos: HTTP contract coverage for issue #28 and the T05 offline existence-gap behavior
-// note: if this file changes, update this header and module README.md.
 package httpapi
 
 import (

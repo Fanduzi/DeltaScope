@@ -1,17 +1,4 @@
 // Package ddl verifies the T09-R1 shared index-comparability contract.
-// input: extractor/provider-verbatim spec.Index shapes — plain keys plus
-// indexes marked with the recorded non-plain key-part facts (prefix lengths,
-// descending parts, expression keys, predicates, include columns, unmodeled
-// options, GLOBAL)
-// output: duplicate, left-prefix and unique-overlap rules share one
-// comparability premise — a pair involving a non-plain member never reports,
-// while plain same-column pairs keep their accurate findings; R3 adds the
-// truncated-projection pairing: an expression-bearing member's Columns omits
-// hidden parts, so equal length cannot disprove a left-prefix pairing
-// pos: domain rule coverage for issue #88 T09-R1; the audit-level matrix in
-// internal/application/audit/batch_state_t09r1_test.go covers the real
-// parser/provider chain
-// note: if this file changes, update this header and module README.md.
 package ddl
 
 import (

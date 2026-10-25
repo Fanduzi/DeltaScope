@@ -1,8 +1,4 @@
 // Package audit verifies the T06-A1 CREATE TABLE primary-key-presence baseline.
-// input: single-statement and multi-table CREATE TABLE inputs through AuditSQL plus the enrichment seam
-// output: isolated ddl.table.primary_key.require identity, normalization equivalence, and pre-state propagation
-// pos: application-layer contract tests for the frozen T06-A1 oracle (issue #85)
-// note: if this file changes, update this header and module README.md.
 package audit
 
 import (

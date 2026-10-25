@@ -1,8 +1,4 @@
 // Package audit enriches evaluated findings with shared explanation metadata.
-// input: rule findings, shipped catalog entries, and optional statement metadata context
-// output: additive per-finding explanation data without changing verdict semantics
-// pos: application explanation enrichment between evaluation and report aggregation
-// note: if this file changes, update this header and module README.md.
 package audit
 
 import (

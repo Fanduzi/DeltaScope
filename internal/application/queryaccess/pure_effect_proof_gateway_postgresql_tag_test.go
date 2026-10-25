@@ -1,10 +1,6 @@
 //go:build postgresql
 
 // Package queryaccess verifies the Phase-1 pure-effect proof gateway.
-// input: PostgreSQL effect candidates and controlled resolver facts
-// output: fail-closed promotion decisions with no candidate leakage
-// pos: PostgreSQL Phase-1 proof completeness and eligibility coverage
-// note: if this file changes, update this header and module README.md.
 package queryaccess
 
 import (

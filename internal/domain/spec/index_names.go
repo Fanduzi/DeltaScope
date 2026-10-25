@@ -1,14 +1,6 @@
 // Package spec records how the product names index members a CREATE TABLE
 // leaves unnamed, so ordered post-state keeps the stored identity a
 // successor ALTER/DROP resolves against instead of a known-empty name.
-// input: a declaration-ordered Index list exactly as the statement authored
-// it (authored names verbatim, empty names unclaimed)
-// output: the same list with every member's stored name filled — or a
-// provable=false answer when any member's stored name cannot be derived
-// under the native rule, meaning the name space is unvouched as a whole
-// pos: derived-state naming beside primary_key_role.go; consumed by the
-// batch-state create-table projection (issue #89 T10-R3/R4)
-// note: if this file changes, update this header and module README.md.
 package spec
 
 import (

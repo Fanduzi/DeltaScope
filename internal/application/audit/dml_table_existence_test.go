@@ -1,8 +1,4 @@
 // Package audit verifies metadata-aware DML table-existence behavior.
-// input: MySQL/TiDB DML SQL and metadata providers returning target-table snapshots
-// output: regression coverage for the shared missing-target blocker contract
-// pos: application audit seam for metadata-enriched DML rule evaluation
-// note: if this file changes, update this header and module README.md.
 package audit
 
 import (

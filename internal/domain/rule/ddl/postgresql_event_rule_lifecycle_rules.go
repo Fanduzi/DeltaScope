@@ -1,8 +1,4 @@
 // Package ddl defines Tier-1 DDL rules.
-// input: normalized Statement specs for PostgreSQL event trigger and rewrite rule lifecycle DDL operations
-// output: findings for PostgreSQL event trigger and rule lifecycle events
-// pos: PostgreSQL-specific event trigger and rewrite rule lifecycle rule implementations
-// note: if this file changes, update this header and module README.md.
 package ddl
 
 import (

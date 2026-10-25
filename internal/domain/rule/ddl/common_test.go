@@ -1,8 +1,4 @@
 // Package ddl verifies shared DDL helper behavior.
-// input: synthetic alter-table statements and rule identifier constants
-// output: test coverage for reusable alter helper boundaries
-// pos: domain DDL common helper and rule-ID test coverage
-// note: if this file changes, update this header and module README.md.
 package ddl
 
 import (

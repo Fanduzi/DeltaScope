@@ -1,10 +1,6 @@
 //go:build postgresql
 
 // Package queryaccess verifies the PostgreSQL proof-orchestration contract at the Service.Analyze seam.
-// input: PostgreSQL queries over a trusted service with fixture manifest proof
-// output: read_only/admissible only for all_proven ordinary or exact COUNT(1) proof; fail closed otherwise
-// pos: application orchestration contract coverage (postgresql-tagged builds)
-// note: if this file changes, update this header and module README.md.
 package queryaccess
 
 import (

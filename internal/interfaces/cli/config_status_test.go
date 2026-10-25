@@ -1,8 +1,4 @@
 // Package cli verifies the config status command.
-// input: command-line args, temporary YAML config files, and the config status application service
-// output: end-to-end CLI behavior coverage for config status exit codes, text rendering, and JSON shape
-// pos: interface-layer CLI test coverage for config status
-// note: if this file changes, update this header and module README.md.
 package cli
 
 import (

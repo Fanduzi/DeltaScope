@@ -1,13 +1,5 @@
 // Package audit verifies the T05-A1-R2 residual fixes for the ordered
 // schema-state path.
-// input: MySQL/TiDB batches whose member collections are unknown
-// (conditional-create derivations, partial provider shapes) plus
-// PostgreSQL batches under every metadata request shape
-// output: failing-then-fixed assertions pinning per-collection evidence
-// gaps on every member-existence rule and the MySQL/TiDB-only dialect
-// boundary of the new gap projection
-// pos: application-layer rework regressions for issue #84/T05-A1-R2
-// note: if this file changes, update this header and module README.md.
 package audit
 
 import (

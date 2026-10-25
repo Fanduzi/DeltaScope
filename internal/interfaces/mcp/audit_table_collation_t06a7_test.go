@@ -1,10 +1,6 @@
 // Package mcpapi verifies the T06-A7 table-collation upgrade at the MCP seam
 // — the declared table COLLATE produces a normal audit_sql result body, not
 // the unsupported-statement diagnostic it carried before.
-// input: audit_sql calls carrying a declared table COLLATE under isolated policies
-// output: complete/pass verdict body without unsupported diagnostics; policy rejection stays result data
-// pos: MCP transport contract test for issue #85 T06-A7
-// note: if this file changes, update this header and module README.md.
 package mcpapi
 
 import (

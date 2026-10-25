@@ -3,12 +3,6 @@
 // explicit-zero FLOAT/DOUBLE scale, ENUM/SET member case) inside the derived
 // pre-state a later batch statement consumes — cloneColumn drops nothing the
 // extractor now carries.
-// input: real parser/extractor statements applied into batchState
-// output: the complete derived pre-state column set — identity, order, and
-// presence pinned alongside faithful Type facts, plus proof a returned
-// projection is detached from both parser-owned and state-owned columns
-// pos: application-layer ordered-state regression tests for issue #85 T06-A17
-// note: if this file changes, update this header and module README.md.
 package audit
 
 import (

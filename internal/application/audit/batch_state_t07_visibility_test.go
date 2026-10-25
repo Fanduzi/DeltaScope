@@ -1,10 +1,4 @@
 // Package audit verifies the T07 column-visibility family on ordered state.
-// input: real-parser visibility declarations, setters, and full MODIFY/CHANGE
-// forms under the isolated advanced-column policies
-// output: exact visibility facts on pre-state shapes, preservation across
-// unrelated setters, and the native omission-reset semantics
-// pos: T07 visibility ordered-state seam beside the default-family suite
-// note: if this file changes, update this header and module README.md.
 package audit
 
 import (

@@ -1,10 +1,6 @@
 //go:build postgresql
 
 // Package queryaccess tests bounded unproven-effect reason codes (T4).
-// input: PostgreSQL SQL spanning operator/function/cast and identity-failure categories
-// output: classification/admission freeze + reason id assertions + no-leak checks
-// pos: application-level coverage for Query Access pure-read reason explanation
-// note: if this file changes, update this header and module README.md.
 package queryaccess
 
 import (

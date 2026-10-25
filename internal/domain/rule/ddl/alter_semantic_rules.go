@@ -1,8 +1,4 @@
 // Package ddl defines Tier-1 DDL rules.
-// input: parser-neutral alter Statement specs with richer rename, add-index, target-type, explicit-change, and metadata state detail
-// output: findings for semantic alter rename, normalized add-index lifecycle, conservative target-type-family checks, and nullability state advisories — lifecycle wrappers also report the member-comparability evidence gap when a vouched existing index cannot complete a plain-key pairing
-// pos: DDL semantic alter rule implementations layered above action-level forbids and shared rename semantics
-// note: if this file changes, update this header and module README.md.
 package ddl
 
 import (

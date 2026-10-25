@@ -1,10 +1,6 @@
 //go:build postgresql
 
 // Package audit characterizes representative PostgreSQL DDL forms.
-// input: representative PostgreSQL DDL SQL strings and corpus coverage markers
-// output: tagged census classifications used by the DDL coverage catalog
-// pos: PostgreSQL-specific application audit coverage census
-// note: if this file changes, update this header and module README.md.
 package audit
 
 import (

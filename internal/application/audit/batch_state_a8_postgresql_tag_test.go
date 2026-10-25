@@ -1,10 +1,6 @@
 //go:build postgresql
 
 // Package audit verifies the T05-A8 PostgreSQL procedure lifecycle control.
-// input: a real PostgreSQL CREATE/DROP PROCEDURE batch through AuditSQL with the isolated pg lifecycle policy
-// output: unchanged legacy per-statement notices and no ordered-state procedure boundary
-// pos: tagged regression control proving the MySQL/TiDB procedure table-state branch never fires for PostgreSQL
-// note: if this file changes, update this header and module README.md.
 package audit
 
 import (

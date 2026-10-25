@@ -2,11 +2,6 @@
 // top-level root form classification, the authored-root parens wrapper
 // fact, and the authored-parenthesis syntax fact bound through the
 // same-width supplement.
-// input: real-parser statement texts over the R1 expression shapes
-// output: exact TopForm classes, RootParenthesized flags, CallCount node
-// counts, DefaultParenthesized flags, and unchanged literal/bare controls
-// pos: T07-R1 parser-side fact pins beside the catalog expression suite
-// note: if this file changes, update this header and module README.md.
 package tidbparser
 
 import (

@@ -1,8 +1,4 @@
 // Package cli verifies CLI parser-error unsupported-contract behavior.
-// input: unparseable SQL through Execute
-// output: exit-code, diagnostic, and no-leak coverage for parser-error SQL
-// pos: interface-layer parser-error contract tests
-// note: if this file changes, update this header and module README.md.
 package cli
 
 import (

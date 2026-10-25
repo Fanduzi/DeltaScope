@@ -1,10 +1,6 @@
 //go:build integration
 
 // Package online provides integration tests for the session factory against real databases.
-// input: Docker-backed MySQL and PostgreSQL services
-// output: verified identity detection and capability target derivation
-// pos: integration tests for OpenSession with real database connections
-// note: if this file changes, update this header and module README.md.
 package online
 
 import (

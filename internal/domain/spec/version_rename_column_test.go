@@ -1,8 +1,4 @@
 // Package spec verifies RENAME COLUMN version applicability.
-// input: parsed VersionIdentity values, including missing and out-of-series identities
-// output: supported, incompatible, or gap classifications shared by the rule and the state machine
-// pos: T05-A5 pure version boundary for RENAME COLUMN, including MySQL 8.0.2 versus 8.0.3
-// note: if this file changes, update this header and module README.md.
 package spec
 
 import "testing"

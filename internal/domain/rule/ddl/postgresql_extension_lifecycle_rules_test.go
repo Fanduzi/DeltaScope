@@ -1,8 +1,4 @@
 // Package ddl verifies PostgreSQL extension lifecycle rule behavior.
-// input: synthetic DDL statements with PostgreSQL extension lifecycle signals and cross-dialect policy controls
-// output: focused coverage for the six PostgreSQL extension lifecycle rules with PG-only gating
-// pos: domain DDL rule test coverage for PG extension lifecycle
-// note: if this file changes, update this header and module README.md.
 package ddl
 
 import (

@@ -1,8 +1,4 @@
 // Package ddl verifies the T04-B/#83 version-dependent key-length rule contract.
-// input: create-table statements with explicit version identities and instance facts across MySQL 5.7/8.0/8.4 and TiDB 8.5
-// output: bounded evidence gaps for missing/out-of-range/unknown facts and proven-bound findings, never silent defaults
-// pos: version-fact resolution matrix for ddl.index.key_length.max_bytes.require
-// note: if this file changes, update this header and module README.md.
 package ddl
 
 import (

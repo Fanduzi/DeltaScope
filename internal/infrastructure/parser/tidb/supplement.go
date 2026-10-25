@@ -1,8 +1,4 @@
 // Package tidbparser recovers bounded grammar gaps the locked TiDB grammar rejects.
-// input: raw SQL text before the base parse
-// output: a same-width rewritten text plus per-statement typed facts bound to parsed identities
-// pos: infrastructure supplement layer — structural column-option sites only, never regex on failure
-// note: if this file changes, update this header and module README.md.
 package tidbparser
 
 import (

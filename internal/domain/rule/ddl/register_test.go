@@ -1,8 +1,4 @@
 // Package ddl verifies DDL rule registration behavior.
-// input: policy objects, synthetic create-table and metadata-backed alter statements, and the shared registry
-// output: deterministic registration and evaluation coverage for the DDL rule batch
-// pos: domain DDL rule integration tests across policy-backed registry assembly
-// note: if this file changes, update this header and module README.md.
 package ddl
 
 import (

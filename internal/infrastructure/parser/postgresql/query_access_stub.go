@@ -1,10 +1,6 @@
 //go:build !postgresql
 
 // Package postgresql provides the PostgreSQL query access stub when built without the postgresql tag.
-// input: none (stub only)
-// output: ErrPostgreSQLNotAvailable for all calls
-// pos: infrastructure stub for non-PostgreSQL builds
-// note: if this file changes, update this header and module README.md.
 package postgresql
 
 import (

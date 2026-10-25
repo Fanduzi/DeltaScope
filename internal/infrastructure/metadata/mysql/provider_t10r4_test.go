@@ -9,15 +9,6 @@
 // with exactly one fold (proven-absent keeps folds secondary, zero folds
 // prove no PK object, unanswerable or multi-fold states withhold all three
 // primary facts).
-// input: sqlmock-shaped member rows across the direction matrix,
-// TIDB_INDEXES clustered rows across PK member shapes, and the
-// table_constraints PRIMARY KEY count matrix
-// output: KeyParts kind=expression + DirectionUnknown and derived
-// aggregates, PrimaryKeyClustered/PrimaryKeyClusteredUnknown facts, and
-// `primary`-fold binding verdicts (snapshot.PrimaryKey promotion or the
-// three primary unknowns withheld together)
-// pos: provider-side T10-R4 member/catalog fidelity tests (issue #89)
-// note: if this file changes, update this header and module README.md.
 package mysqlmeta
 
 import (

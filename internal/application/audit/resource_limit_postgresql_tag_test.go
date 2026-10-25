@@ -1,10 +1,6 @@
 //go:build postgresql
 
 // Package audit verifies PostgreSQL never enters the T05-A7 ordered-state statement budget.
-// input: 1025-statement PostgreSQL CREATE/ALTER batches under the bare, schema-only, provider, and legacy Metadata request shapes
-// output: identical results between the production default budget and a zero quota, complete coverage, and untouched provider snapshots
-// pos: application-layer PostgreSQL bypass contract for the ordered-state admission seam (issue #84/T05-A7)
-// note: if this file changes, update this header and module README.md.
 package audit
 
 import (

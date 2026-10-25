@@ -1,10 +1,6 @@
 //go:build postgresql
 
 // Package httpapi verifies HTTP unsupported-statement result contracts.
-// input: offline HTTP audit requests containing structured unsupported PostgreSQL statements
-// output: non-success envelopes that serialize the review-floored unsupported result
-// pos: HTTP adapter regression coverage for the unsupported-statement verdict floor
-// note: if this file changes, update this header and module README.md.
 package httpapi
 
 import (

@@ -1,8 +1,4 @@
 // Package queryaccess defines the effect-identity resolver contract (facts only).
-// input: internal EffectCandidate batch keyed by stable ordinal
-// output: per-ordinal IdentityStatus + optional catalog facts (never Trusted/admission)
-// pos: facts-only identity helpers; only PostgreSQL adapter-called functions stay exported
-// note: if this file changes, update this header and module README.md.
 package queryaccess
 
 import (

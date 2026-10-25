@@ -1,7 +1,4 @@
 // Package queryaccess owns the immutable MySQL/TiDB builtin semantic manifest.
-// input: application-owned profile and parser-shape entries
-// output: copy-safe semantic manifests and the session-only service capability
-// pos: private semantic proof root, independent from PostgreSQL catalog trust
 package queryaccess
 
 import (

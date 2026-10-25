@@ -2,12 +2,6 @@
 // the public audit path: referenced-key landing premises, refer-action
 // version boundaries, CREATE/ALTER supporting-index parity, unknown
 // propagation, and every index-removal dependency entry point.
-// input: provider fixtures plus multi-statement SQL through AuditSQL or a
-// seeded batch applier
-// output: assertions on per-statement findings, evidence gaps, coverage,
-// verdict, and the ordered post-state successors observe
-// pos: T11-R1 acceptance tests for groups D and E
-// note: if this file changes, update this header and module README.md.
 package audit
 
 import (

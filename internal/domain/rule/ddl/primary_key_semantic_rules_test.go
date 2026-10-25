@@ -1,8 +1,4 @@
 // Package ddl verifies primary-key semantic rule behavior.
-// input: synthetic create-table statements with primary-key declarations and enriched column metadata
-// output: focused coverage for bigint, unsigned, auto-increment, and not-null primary-key findings
-// pos: domain DDL rule test coverage for primary-key semantic governance
-// note: if this file changes, update this header and module README.md.
 package ddl
 
 import (

@@ -1,8 +1,4 @@
 // Package mysqlmeta verifies the caller-owned conn-backed MySQL/TiDB query access resolver.
-// input: synthetic information_schema results via custom test driver on a *sql.Conn
-// output: stable conn resolver behavior without requiring a live database
-// pos: infrastructure metadata adapter test coverage for the conn-backed resolver
-// note: if this file changes, update this header and module README.md.
 package mysqlmeta
 
 import (
