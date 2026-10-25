@@ -1,0 +1,132 @@
+############ ANCHOR deltascope-ddl-golden-mysql57
+===== version
+| 5.7.44
+----- done
+===== restrict var
+----- done
+===== sd referential rules
+----- done
+===== sd kcu
+----- done
+===== drop-constraint poststate (8.x only)
+| 1
+----- done
+===== r1c unqualified bound schema
+| db_b	child	db_b	PRIMARY	parent
+----- done
+############ ANCHOR deltascope-ddl-golden-mysql80
+===== version
+| 8.0.46
+----- done
+===== restrict var
+----- done
+===== sd referential rules
+| fk_sd	c8	SET DEFAULT	NO ACTION
+----- done
+===== sd kcu
+| fk_sd	c8	c	pk_uq	id
+----- done
+===== drop-constraint poststate (8.x only)
+| 0
+----- done
+===== r1c unqualified bound schema
+| db_b	child	db_b	PRIMARY	parent
+----- done
+############ ANCHOR deltascope-ddl-golden-mysql84
+===== version
+| 8.4.10
+----- done
+===== restrict var
+| restrict_fk_on_non_standard_key	ON
+----- done
+===== sd referential rules
+| fk_sd	c8	SET DEFAULT	NO ACTION
+----- done
+===== sd kcu
+| fk_sd	c8	c	pk_uq	id
+----- done
+===== drop-constraint poststate (8.x only)
+| 0
+----- done
+===== r1c unqualified bound schema
+| db_b	child	db_b	PRIMARY	parent
+----- done
+############ ANCHOR deltascope-ddl-golden-tidb85-client
+===== version
+| 8.0.11-TiDB-v8.5.0
+----- done
+===== restrict var
+----- done
+===== sd referential rules
+| ERROR 1049 (42000): Unknown database 'golden'
+----- done
+===== sd kcu
+| ERROR 1049 (42000): Unknown database 'golden'
+----- done
+===== drop-constraint poststate (8.x only)
+| ERROR 1049 (42000): Unknown database 'golden'
+----- done
+===== r1c unqualified bound schema
+| ERROR 1049 (42000): Unknown database 'golden'
+----- done
+############ TIDB ROUND deltascope-ddl-golden-tidb85-client
+===== tidb fk var
+| tidb_enable_foreign_key	ON
+----- done
+===== restrict var tidb
+----- done
+===== cleanup2
+----- done
+===== r1c setup
+----- done
+===== r1c unqualified
+----- done
+===== r1c bound schema
+| db_b	child	db_b	PRIMARY	parent
+----- done
+===== r1d setup
+----- done
+===== r1d unique
+----- done
+===== r1d nonunique
+----- done
+===== r1d noindex
+| ERROR 1822 (HY000) at line 1: Failed to add the foreign key constraint. Missing index for constraint 'fk_none' in the referenced table 'pk_none'
+----- done
+===== r1d non-leftmost
+| ERROR 1822 (HY000) at line 1: Failed to add the foreign key constraint. Missing index for constraint 'fk_left' in the referenced table 'pk_left'
+----- done
+===== r1d set default
+----- done
+===== r1d sd rule
+| fk_sd	SET DEFAULT	NO ACTION
+----- done
+===== r1d set null notnull
+| ERROR 1830 (HY000) at line 1: Column 'c' cannot be NOT NULL: needed in a foreign key constraint 'fk_sn' SET NULL
+----- done
+===== r1e parent drop
+| ERROR 1553 (HY000) at line 1: Cannot drop index 'uq_id': needed in a foreign key constraint
+----- done
+===== r1f setup
+----- done
+===== r1f drop CHECK on fk
+----- done
+===== r1f fk after dropcheck
+| fk_dc	dc_c	dc_p
+----- done
+===== r1f drop CONSTRAINT on fk
+----- done
+===== r1f fk after dropconstraint
+| fk_dc	dc_c	dc_p
+----- done
+===== r1f idx after dropconstraint
+| fk_dc	c
+----- done
+===== r1f drop CONSTRAINT on check
+----- done
+===== r1f check after dropconstraint
+----- done
+===== r1f drop CHECK on check
+----- done
+===== r1f drop CONSTRAINT missing
+----- done

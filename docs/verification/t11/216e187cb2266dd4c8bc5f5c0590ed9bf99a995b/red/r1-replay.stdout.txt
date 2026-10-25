@@ -1,0 +1,43 @@
+REPLAY of the R1 red cycle — five revert-stubs inserted (marked REDSTUB) on top of final product 216e187c; each stub disables one R1 seam so the corresponding red tests must fail.
+stubs: referencedKeyPremise→usable; foreignKeyReferActionPremise→never refused; applyDropCheck→noop; orderedColumnFact→unresolvable; SDK cloneConstraints→collapse empty.
+command: go test ./internal/application/audit -run "TestT11R1|TestT11R1PK|TestT11AlterPK" -count=1 -v
+--- FAIL: TestT11R1DCreateTableRefusalParity (0.00s)
+    batch_state_t11r1_de_test.go:316: a refused CREATE publishes no shape, got &{Schema:golden Exists:true Table:0x55df5fa422a0 Columns:[{Name:c Type:int(11) Length:-1 Charset: Collation: Comment: Unsigned:false NotNull:false AutoIncrement:false HasDefault:false DefaultValue: DefaultKind: DefaultIsNull:false DefaultIsCurrentTimestamp:false OnUpdateCurrentTimestamp:false GeneratedWhen: IsIdentity:false IdentityOptions:map[] AutoRandom:false UnextractedOptions:[] Generated:<nil> DefaultExpression:<nil> Visibility:visible VisibilityExplicit:false DefaultParenthesized:false DefaultLiteral:<nil>}] PrimaryKey:<nil> Indexes:[{Name:fk_c Kind:secondary Columns:[c] KeyParts:[] Cardinality:<nil> AccessMethod: IncludedColumns:[] HasPredicate:false HasExpressionKeys:false ExpressionCount:0 PrefixParts:0 DescParts:0 MultiValuedParts:0 Visibility: VisibilityExplicit:false UnmodeledKeyParts:0 DirectionUnknownParts:0 Global:false PrimaryKeyType: UnmodeledOptions:[] NameUnknown:false}] Constraints:[{Type:foreign_key Name:fk_c Columns:[c] ReferencedSchema: ReferencedTable:p ReferencedColumns:[id] UnmodeledParts:0 UnmodeledReferencedParts:0 OnDelete: OnUpdate: UnmodeledReferActions:0 NameUnknown:false}] Options:map[] PrimaryKeyIsHandle:false PrimaryKeyHandleUnknown:false PrimaryKeyClustered:false PrimaryKeyClusteredUnknown:false PrimaryKeyUnknown:false IndexesUnknown:false ConstraintsUnknown:false IndexOrderCatalog:true IndexNamesUnknown:false Partitioned:0x55df5fd82028}
+--- FAIL: TestT11R1FMySQLDropConstraintAmbiguousOnProvenForeignKey (0.01s)
+    batch_state_t11r1_f_test.go:121: the unvouched member space owes the constraint-set gap, got [] / {Status:complete}
+--- FAIL: TestT11R1AlterAddConstraintPrimaryKeyParity (0.01s)
+    batch_state_t11r1_pk_test.go:200: add_constraint PK form must emit the blocker: []rule.Finding(nil)
+--- FAIL: TestT11R1DUnvouchedParentKeyPropagates (0.01s)
+    batch_state_t11r1_de_test.go:247: an undecidable add owes the constraint-set gap, got [] / {Status:complete}
+--- FAIL: TestT11R1AlterAddPrimaryKeySiblingRules (0.00s)
+    --- FAIL: TestT11R1AlterAddPrimaryKeySiblingRules/ddl.table.primary_key.unsigned.require/violates=yes (0.01s)
+        batch_state_t11r1_pk_test.go:139: proven violating member must emit the blocker: []rule.Finding(nil)
+    --- FAIL: TestT11R1AlterAddPrimaryKeySiblingRules/ddl.table.primary_key.auto_increment.require/violates=yes (0.01s)
+        batch_state_t11r1_pk_test.go:139: proven violating member must emit the blocker: []rule.Finding(nil)
+--- FAIL: TestT11R1DNoUsableParentKeyRefusesAdd (0.00s)
+    --- FAIL: TestT11R1DNoUsableParentKeyRefusesAdd/mysql (0.01s)
+        batch_state_t11r1_de_test.go:126: the add could never land — the drop must report proven-missing, got []
+    --- FAIL: TestT11R1DNoUsableParentKeyRefusesAdd/tidb (0.01s)
+        batch_state_t11r1_de_test.go:126: the add could never land — the drop must report proven-missing, got []
+--- FAIL: TestT11R1DReferActionBoundaries (0.00s)
+    --- FAIL: TestT11R1DReferActionBoundaries/set_null_on_not-null_member_refuses (0.01s)
+        batch_state_t11r1_de_test.go:271: mysql: 1830-class refusal leaves no member — drop answers missing, got []
+    --- FAIL: TestT11R1DReferActionBoundaries/set_default_refuses_on_mysql_5.7 (0.01s)
+        batch_state_t11r1_de_test.go:284: 5.7 refuses SET DEFAULT — drop answers missing, got []
+--- FAIL: TestT11R1AlterAddPrimaryKeyBigintParity (0.02s)
+    --- FAIL: TestT11R1AlterAddPrimaryKeyBigintParity/mysql (0.01s)
+        batch_state_t11r1_pk_test.go:60: ALTER add pk on INT must emit one bigint blocker, got findings=[]rule.Finding(nil) gaps=[]rule.EvidenceGap(nil)
+    --- FAIL: TestT11R1AlterAddPrimaryKeyBigintParity/tidb (0.00s)
+        batch_state_t11r1_pk_test.go:60: ALTER add pk on INT must emit one bigint blocker, got findings=[]rule.Finding(nil) gaps=[]rule.EvidenceGap(nil)
+--- FAIL: TestT11R1DReferencedKeyEligibilityByProduct (0.00s)
+    --- FAIL: TestT11R1DReferencedKeyEligibilityByProduct/non-leftmost_member_columns_refuse (0.01s)
+        batch_state_t11r1_de_test.go:213: id is not the leftmost member of (x,id) — the add refuses, got []
+    --- FAIL: TestT11R1DReferencedKeyEligibilityByProduct/fulltext_member_never_qualifies (0.01s)
+        batch_state_t11r1_de_test.go:202: a fulltext member is never a usable referenced key — drop answers missing, got []
+    --- FAIL: TestT11R1DReferencedKeyEligibilityByProduct/secondary_member_refused_on_mysql_8.4_restrict_on (0.01s)
+        batch_state_t11r1_de_test.go:170: 6125 refused the add — the drop answers missing, got []
+    --- FAIL: TestT11R1DReferencedKeyEligibilityByProduct/secondary_member_undecidable_on_mysql_8.4_restrict_unread (0.01s)
+        batch_state_t11r1_de_test.go:178: an unread restrict flag leaves the landing unprovable — gap owed, got []
+FAIL
+FAIL	github.com/Fanduzi/DeltaScope/internal/application/audit	0.730s
+FAIL

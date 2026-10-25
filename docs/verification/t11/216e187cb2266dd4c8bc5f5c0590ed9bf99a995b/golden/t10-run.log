@@ -1,0 +1,4 @@
+command: env T10_MYSQL_PASSWORD=root python3 ./scripts/ddl_golden.py run --task T10 --artifact-dir /tmp/ddl-golden-t11r1-T10
+[ddl-golden] task=T10 head=216e187cb226 cases=126 passed=126 assertions=3175
+[ddl-golden] artifact=/private/tmp/ddl-golden-t11r1-T10/T10/artifact.json
+[ddl-golden] PASS

@@ -1,0 +1,9 @@
+product_sha   216e187cb2266dd4c8bc5f5c0590ed9bf99a995b
+parent        206499195e21f3644b814486fd3cab2d7f6c97b7 (fix(t11): R1 landing premises, collection contract, dependency gates)
+grandparent   661e57563190c5cda86b99625bdca9b8c31225aa (docs(t11): T11 verification archive bound to 11d64391)
+branch        milestone/mysql-tidb-ddl-completion
+cli_sha256    4b366a4f10cddb73272982c9ed0e3bfd426bf74dc94aafb9415c51a50616608b
+  (work CLI at /tmp/t11r1-cli/deltascope == all three golden artifact CLIs — deterministic CGO_ENABLED=0 build, go1.26.1)
+golden        T11 40/40 cases 505 assertions head_sha=216e187c; T09 125/125 cases 3442 assertions head_sha=216e187c; T10 126/126 cases 3175 assertions head_sha=216e187c — frozen oracle denominators preserved
+anchors       MySQL 5.7.44 / 8.0.46 / 8.4.10, TiDB v8.5.0 (shared ddl-golden compose anchors, serial use, runner-managed lifecycle)
+env           T09/T10/T11_MYSQL_PASSWORD exported per manifest exec_password_env convention (fixture root password 'root' — see docker/ddl-golden-compose.yaml)

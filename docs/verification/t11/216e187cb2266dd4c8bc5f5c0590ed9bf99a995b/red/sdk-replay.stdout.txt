@@ -1,0 +1,6 @@
+command: go test ./pkg/deltascope -run TestT11R1 -count=1
+--- FAIL: TestT11R1B1PublicProviderClonePreservesEmptyFidelity (0.00s)
+    audit_t11r1_test.go:193: proven-empty Constraints must survive the clone as non-nil empty, not collapse to nil
+FAIL
+FAIL	github.com/Fanduzi/DeltaScope/pkg/deltascope	0.610s
+FAIL
