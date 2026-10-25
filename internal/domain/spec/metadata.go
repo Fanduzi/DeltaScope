@@ -1,6 +1,6 @@
 // Package spec defines normalized statement specifications for rule evaluation.
 // input: optional metadata-aware audit facts such as explicit known-bit instance variables, target-table snapshots, and the canonical version identity
-// output: parser-neutral metadata structures (including per-collection unknown markers and the index name-space marker on table snapshots) and lookup helpers for future rules — FindProvenIndex/HasUnprovenIndexName bind name-keyed consumers to per-member proven names
+// output: parser-neutral metadata structures (including per-collection unknown markers and the index name-space marker on table snapshots) and lookup helpers for future rules — FindProvenIndex/HasUnprovenIndexName/IndexNameSpaceUnvouched bind name-keyed consumers to per-member proven names
 // pos: domain metadata model shared by offline and metadata-aware audit paths
 // note: if this file changes, update this header and module README.md.
 package spec
@@ -120,11 +120,12 @@ type TableSnapshot struct {
 	// product's auto-naming rule (expression first member, authored-name
 	// collision), or the post-state of a name-keyed transition whose target
 	// or outcome could not be proven under the prior name space. The flag
-	// covers the PRIMARY index object's stored name too
-	// (PrimaryKey.Name): a rename that may have moved it leaves that name
-	// unproven. The members stay known; name-based consumers must treat
-	// lookups as unresolved rather than reading an unmatched name as
-	// confirmed absence. Internal audit marker; not serialized.
+	// covers the member name space only: the PK object's stored name has
+	// its own provability marker (PrimaryKey.NameUnknown), which the
+	// transitions that may have moved it set separately. The members stay
+	// known; name-based consumers must treat lookups as unresolved rather
+	// than reading an unmatched name as confirmed absence. Internal audit
+	// marker; not serialized.
 	IndexNamesUnknown bool `json:"-"`
 
 	// Partitioned reports whether the table is partitioned — the fact TiDB's
@@ -204,6 +205,14 @@ func (s TableSnapshot) HasUnprovenIndexName() bool {
 		}
 	}
 	return false
+}
+
+// IndexNameSpaceUnvouched reports whether the member name space cannot vouch
+// every stored name — the collection unread, the whole space unvouched, or
+// one member's stored name unproven. Name-keyed consumers share this check
+// so they cannot drift on what "the member space is vouched" means.
+func (s TableSnapshot) IndexNameSpaceUnvouched() bool {
+	return s.IndexesUnknown || s.IndexNamesUnknown || s.HasUnprovenIndexName()
 }
 
 // HasPrimaryKey reports whether the snapshot currently has a primary key.

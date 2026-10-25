@@ -175,12 +175,12 @@ func (r alterObjectExistenceRule) Evaluate(ctx context.Context, statement spec.S
 			continue
 		}
 		if r.objectLabel == "index" && (!r.primaryResolves || !strings.EqualFold(name, "primary")) {
-			// Name-keyed existence is per-member: an unvouched member set
-			// answers nothing, while a provable member name binds even
-			// when a sibling's name is unproven — only the absence of a
-			// proven match under an unproven name space is unanswerable.
-			if snapshot.IndexesUnknown ||
-				(snapshot.FindProvenIndex(name) == nil && snapshot.HasUnprovenIndexName()) {
+			// Name-keyed existence is per-target: an unvouched name space
+			// answers nothing for an unmatched name, while a provable
+			// binding — a member name or the PK object's actual stored
+			// name — answers even when a sibling's name is unproven.
+			if !snapshotHasIndex(statement, snapshot, name) &&
+				(snapshot.IndexesUnknown || snapshot.HasUnprovenIndexName()) {
 				continue
 			}
 		}
@@ -257,7 +257,11 @@ func (r alterObjectExistenceRule) indexMemberExistenceGaps(
 				}
 				continue
 			}
-			if snapshot.FindProvenIndex(name) == nil && snapshot.HasUnprovenIndexName() {
+			// Mirrors the per-target skip in Evaluate: a target with no
+			// proven binding owes the member facts only while some member
+			// name is unvouched — including the PK object's actual stored
+			// name, which a renamed pk2 answers through.
+			if !snapshotHasIndex(statement, snapshot, name) && snapshot.HasUnprovenIndexName() {
 				answerable = false
 				break
 			}
@@ -303,6 +307,15 @@ func (r alterPrimaryKeyExistenceRule) Evaluate(ctx context.Context, statement sp
 		snapshot.PrimaryKeyUnknown || snapshot.ConstraintsUnknown || snapshot.HasPrimaryKey() {
 		return nil, nil
 	}
+	// TiDB routes DROP PRIMARY KEY through dropIndex(…, "PRIMARY")
+	// member-first — a proven member literally named `primary` owns the
+	// target and drops without the PK, and an unvouched member space
+	// leaves the binding ambiguous. Neither is a proven PK-absent
+	// premise, so neither fires the blocker.
+	switch spec.ResolvePrimaryNameBinding(statement.Dialect, snapshot) {
+	case spec.PrimaryNameBindsMember, spec.PrimaryNameBindsAmbiguous:
+		return nil, nil
+	}
 	return []rule.Finding{{
 		Level:      r.level,
 		Message:    fmt.Sprintf("primary key does not exist on table %q", statement.DDL.Table.Name),
@@ -335,6 +348,16 @@ func (r alterPrimaryKeyExistenceRule) EvidenceGaps(statement spec.Statement) []r
 		return []rule.EvidenceGap{{
 			ReasonCode:    gapReasonUnknownTableState,
 			RequiredFacts: []string{"target_table.primary_key"},
+		}}
+	}
+	// Member-first routing means a `primary` member may hide under an
+	// unvouched member space — the member collection fact decides whether
+	// the target binds a member or the (provably absent) PK side.
+	if snapshot.Exists &&
+		spec.ResolvePrimaryNameBinding(statement.Dialect, snapshot) == spec.PrimaryNameBindsAmbiguous {
+		return []rule.EvidenceGap{{
+			ReasonCode:    gapReasonUnknownTableState,
+			RequiredFacts: []string{"target_table.indexes"},
 		}}
 	}
 	return nil
@@ -385,10 +408,11 @@ func primaryKeyConstraintName(snapshot *spec.TableSnapshot) string {
 			return constraint.Name
 		}
 	}
-	if snapshot.PrimaryKey != nil && !snapshot.IndexNamesUnknown {
-		// The index-object name is a stored-name fact — under an unproven
-		// name space it may be stale (a rename may have moved it).
-		return snapshot.PrimaryKey.Name
+	if snapshot.PrimaryKey != nil && !snapshot.PrimaryKeyUnknown {
+		// The constraint identity stays PRIMARY across index renames —
+		// verified constraint_named_PRIMARY=1 after RENAME INDEX `PRIMARY`
+		// TO pk2 on TiDB v8.5.0 — so it is never the object's stored name.
+		return "PRIMARY"
 	}
 	return ""
 }
@@ -576,7 +600,19 @@ func snapshotHasIndex(_ spec.Statement, snapshot *spec.TableSnapshot, name strin
 	// Only a member whose stored name is provable may bind a name-keyed
 	// lookup — under an unvouched name space a retained member's projected
 	// name can equal-fold the target without being its real stored name.
-	return snapshot.FindProvenIndex(name) != nil
+	if snapshot.FindProvenIndex(name) != nil {
+		return true
+	}
+	// The PK object answers under its actual stored catalog name — a
+	// renamed TiDB PK keeps its index-row existence under e.g. pk2. The
+	// `primary` name itself is excluded: each operation resolves it
+	// through the primary branch (member-first, object-vs-identity),
+	// which a synthesized handle row must not shortcut.
+	if pkName, proven := spec.PrimaryKeyObjectName(snapshot); proven &&
+		!strings.EqualFold(pkName, "primary") && strings.EqualFold(pkName, name) {
+		return true
+	}
+	return false
 }
 
 // memberCollectionFact returns the required_facts name of the collection a

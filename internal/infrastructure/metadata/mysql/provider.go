@@ -1,6 +1,6 @@
 // Package mysqlmeta implements metadata-aware audit adapters over the MySQL protocol.
 // input: sql.DB access plus connection configs, version/schema/table lookup requests, and MySQL/TiDB metadata queries
-// output: normalized instance facts with explicit known bits (innodb_page_size, 5.7 large-prefix, TiDB max-index-length and alter-primary-key via all-rows SHOW CONFIG verification, TiDB tidb_enable_clustered_index session mode — read failures propagate as provider errors, only absent/ambiguous values stay unknown), dialect detection, schema discovery, and table snapshots with preserved index cardinality plus per-member plain-key knownness facts (STATISTICS SUB_PART/COLLATION and NULL COLUMN_NAME classified into prefix/desc/expression/unmodeled marks — provider-loaded indexes carry the same comparability vocabulary declarations do, including catalog sort direction on expression members), verbatim COLUMN_TYPE parameter spans on the five declared-parameter bases (DECIMAL/FLOAT/DOUBLE/ENUM/SET — member literals keep catalog case and attribute words inside quotes never set Unsigned), stored-representation default facts (COLUMN_DEFAULT IS NOT NULL → HasDefault with verbatim DefaultValue bytes; NULL rows and literal "null" text never set DefaultIsNull on this path), the comparable literal-default identity keyed by the column's own base type (temporal markers asserted only on temporal bases), and T07 advanced-column facts read from the same COLUMNS row (EXTRA DEFAULT_GENERATED → parsed DefaultExpression facts, STORED/VIRTUAL GENERATED + GENERATION_EXPRESSION → generated storage + expression facts, INVISIBLE → effective visibility; undecodable expression text stays an explicit unknown fact), per-index effective visibility via the STATISTICS.IS_VISIBLE capability probe (a catalog-count query — capable catalogs select the column, MySQL 5.7/zero-count leaves member Visibility empty rather than guessed, real probe failures propagate as load errors) plus SPATIAL/FULLTEXT INDEX_TYPE classification into spec.Index.Kind, member-level KeyParts with an EXPRESSION capability probe (catalog functional text parsed into ExpressionFacts + multi-valued marks — TiDB reports expression members as the literal string 'NULL' in COLUMN_NAME, so the literal is classified three ways: SQL NULL or literal-with-expression-text stays an expression member, a literal matching a loaded real column name stays a plain column member — a backticked `NULL` column is legal MySQL — and neither provable stays unmodeled), PARTITIONS-derived Partitioned (unanswerable probe stays unknown), and the two independent TiDB primary facts via TIDB_INDEXES.CLUSTERED — PrimaryKeyClustered (the DROP PRIMARY KEY 8200 refusal class) plus PrimaryKeyIsHandle via the single-integer member shape (a missing CLUSTERED row or unmatchable member shape stays unknown — never defaulted false into a fabricated PRIMARY object), and the TiDB `primary` name binding via table_constraints pk-presence — a `primary`-fold STATISTICS row is not self-evidently the constraint object (a secondary can literally own the name), so zero folds prove no PK object, a proven PRIMARY KEY constraint plus exactly one fold promotes it, proven-absent keeps folds secondary, and multi-fold or unproven-plus-candidate states withhold all three primary facts — a failed probe is itself the unanswerable case (the count query can never be empty), so it withholds rather than failing the table load, context cancellation aside) for application-level audit enrichment
+// output: normalized instance facts with explicit known bits (innodb_page_size, 5.7 large-prefix, TiDB max-index-length and alter-primary-key via all-rows SHOW CONFIG verification, TiDB tidb_enable_clustered_index session mode — read failures propagate as provider errors, only absent/ambiguous values stay unknown), dialect detection, schema discovery, and table snapshots with preserved index cardinality plus per-member plain-key knownness facts (STATISTICS SUB_PART/COLLATION and NULL COLUMN_NAME classified into prefix/desc/expression/unmodeled marks — provider-loaded indexes carry the same comparability vocabulary declarations do, including catalog sort direction on expression members), verbatim COLUMN_TYPE parameter spans on the five declared-parameter bases (DECIMAL/FLOAT/DOUBLE/ENUM/SET — member literals keep catalog case and attribute words inside quotes never set Unsigned), stored-representation default facts (COLUMN_DEFAULT IS NOT NULL → HasDefault with verbatim DefaultValue bytes; NULL rows and literal "null" text never set DefaultIsNull on this path), the comparable literal-default identity keyed by the column's own base type (temporal markers asserted only on temporal bases), and T07 advanced-column facts read from the same COLUMNS row (EXTRA DEFAULT_GENERATED → parsed DefaultExpression facts, STORED/VIRTUAL GENERATED + GENERATION_EXPRESSION → generated storage + expression facts, INVISIBLE → effective visibility; undecodable expression text stays an explicit unknown fact), per-index effective visibility via the STATISTICS.IS_VISIBLE capability probe (a catalog-count query — capable catalogs select the column, MySQL 5.7/zero-count leaves member Visibility empty rather than guessed, real probe failures propagate as load errors) plus SPATIAL/FULLTEXT INDEX_TYPE classification into spec.Index.Kind, member-level KeyParts with an EXPRESSION capability probe (catalog functional text parsed into ExpressionFacts + multi-valued marks — TiDB reports expression members as the literal string 'NULL' in COLUMN_NAME, so the literal is classified three ways: SQL NULL or literal-with-expression-text stays an expression member, a literal matching a loaded real column name stays a plain column member — a backticked `NULL` column is legal MySQL — and neither provable stays unmodeled), PARTITIONS-derived Partitioned (unanswerable probe stays unknown), and the two independent TiDB primary facts via TIDB_INDEXES.CLUSTERED — PrimaryKeyClustered (the DROP PRIMARY KEY 8200 refusal class) plus PrimaryKeyIsHandle via the single-integer member shape (a missing CLUSTERED row or unmatchable member shape stays unknown — never defaulted false into a fabricated PRIMARY object), and the TiDB `primary` name binding via table_constraints pk-presence — a `primary`-fold STATISTICS row is not self-evidently the constraint object (a secondary can literally own the name), so zero folds prove no PK object, a proven PRIMARY KEY constraint plus exactly one fold promotes it, proven-absent keeps folds secondary, and multi-fold or unproven-plus-candidate states withhold all three primary facts — probe failures (constraint count, clustered rows, column list) propagate as provider errors because a failed read is not an answerable absence (issue #79), context cancellation included; only clean proven-absent and unattributable-catalog states stay unknown, never fabricated) for application-level audit enrichment
 // pos: infrastructure metadata adapter between database/sql and domain metadata specs
 // note: if this file changes, update this header and module README.md.
 package mysqlmeta
@@ -457,34 +457,45 @@ func (p *Provider) loadPartitioned(ctx context.Context, snapshot *spec.TableSnap
 	return nil
 }
 
-// resolveTiDBPrimaryName binds `primary`-named index members to the PK
-// identity under the table's proven constraint presence
-// (information_schema.table_constraints — a `PRIMARY KEY` row means a real
-// PK object; verified on the TiDB v8.5.0 anchor that tidb_pk_type cannot
-// answer this — it reports NONCLUSTERED both for PK-less tables and for
-// real nonclustered primaries). On TiDB a secondary can literally own
-// `primary` (RENAME … TO `primary` is legal on PK-less and PKIsHandle
-// tables), so the catalog name alone cannot promote. A real PK always
-// emits a `primary`-fold STATISTICS row (handle tables synthesize one
-// too), so zero folds proves no PK object exists with no probe needed.
-// A proven PK constraint plus exactly one fold promotes it to
-// snapshot.PrimaryKey; a proven absent constraint keeps every fold a
-// renamed secondary; an unanswerable probe with a candidate fold — or a
-// proven PK with zero/multiple folds (catalog inconsistency — a member
-// `primary` can never coexist with a real PRIMARY object, 1061) —
-// withholds the primary identity, and with it the handle and clustered
-// answers (the probes below could bind the wrong row).
+// resolveTiDBPrimaryName binds the PK identity to an index-object fold
+// under the table's proven constraint presence
+// (information_schema.table_constraints — a `PRIMARY KEY` row proves the
+// constraint exists; verified on the TiDB v8.5.0 anchor that tidb_pk_type
+// cannot answer this — it reports NONCLUSTERED both for PK-less tables and
+// for real nonclustered primaries). Presence and attribution are judged
+// separately: a proven constraint with zero `primary`-fold rows means the
+// PK object was renamed (RENAME INDEX `PRIMARY` TO pk2 is legal on v8.5.0
+// and moves the object's stored catalog name while the constraint stays
+// PRIMARY), never that no PK exists — the constraint row and the name
+// space answer different questions.
+//
+// Attribution resolves by unique-fold candidacy — a PK object always
+// emits a NON_UNIQUE=0 STATISTICS fold (handle tables synthesize one):
+//   - exactly one `primary`-fold row promotes it (a member `primary` can
+//     never coexist with a real PRIMARY object, 1061);
+//   - several `primary`-fold rows can only pair a synthesized handle row
+//     with a member `primary` — the unique fold is the object;
+//   - zero `primary`-fold rows means the object carries a renamed name,
+//     so every unique fold is a candidate;
+//   - a still-ambiguous candidate set consults TIDB_INDEXES clustered —
+//     only the PK object's row can read YES, so exactly one clustered
+//     candidate identifies it;
+//   - anything else withholds: the constraint still proves presence (a
+//     name-unknown placeholder), the surviving candidates demote to kind
+//     unknown so unique-overlap consumers never read a maybe-PK fold as
+//     an ordinary UNIQUE member, and the handle/clustered answers stay
+//     unproven unless every candidate already proved NONCLUSTERED.
+//
+// A proven-absent constraint (count 0) keeps every fold a secondary; a
+// failed constraint or disambiguation probe is a provider failure and
+// propagates — issue #79 requires actual query/connection errors to stay
+// errors rather than degrade into withheld facts.
 func (p *Provider) resolveTiDBPrimaryName(ctx context.Context, snapshot *spec.TableSnapshot) error {
-	positions := make([]int, 0, 2)
+	uniquePositions := make([]int, 0, 2)
 	for i := range snapshot.Indexes {
-		if strings.EqualFold(snapshot.Indexes[i].Name, "primary") {
-			positions = append(positions, i)
+		if snapshot.Indexes[i].Kind == spec.IndexKindUnique {
+			uniquePositions = append(uniquePositions, i)
 		}
-	}
-	if len(positions) == 0 {
-		// STATISTICS synthesizes a PRIMARY row even on handle tables, so
-		// no `primary`-fold row means no PK object exists — proven absent.
-		return nil
 	}
 	var pkCount int
 	err := p.db.QueryRowContext(ctx, `
@@ -493,43 +504,200 @@ func (p *Provider) resolveTiDBPrimaryName(ctx context.Context, snapshot *spec.Ta
 		where table_schema = ? and table_name = ? and constraint_type = 'PRIMARY KEY'
 	`, snapshot.Schema, snapshot.Table.Name).Scan(&pkCount)
 	if err != nil {
-		// count(*) can never be empty — any failure here is an
-		// unanswerable catalog probe: withhold the primary identity, and
-		// with it the handle and clustered answers (the probes below
-		// could bind the wrong row), rather than discarding the rest of
-		// the loaded shape. Context cancellation still propagates.
-		if ctx.Err() != nil {
-			return fmt.Errorf("query table_constraints: %w", err)
-		}
+		// count(*) can never be empty — a failed read is a provider
+		// failure (issue #79: actual failures stay errors), not an
+		// answerable absence. Context cancellation propagates the same.
+		return fmt.Errorf("query table_constraints: %w", err)
+	}
+	if pkCount == 0 {
+		// Proven PK-less: every fold is a secondary — members, not the
+		// constraint object.
+		return nil
+	}
+	if pkCount > 1 {
+		// A constraint count beyond one is a catalog inconsistency the
+		// binding cannot resolve — withhold all three primary facts.
 		snapshot.PrimaryKeyUnknown = true
 		snapshot.PrimaryKeyHandleUnknown = true
 		snapshot.PrimaryKeyClusteredUnknown = true
 		return nil
 	}
-	if pkCount == 0 {
-		// Proven PK-less: every `primary`-fold row is a renamed secondary
-		// — members, not the constraint object.
+	// pkCount == 1 — the constraint proves presence; attribute the object.
+	// Every unique fold is a candidate: a PK object always emits a
+	// NON_UNIQUE=0 fold, a secondary may be unique too, and a member may
+	// even own `primary` uniquely (a unique member `primary` beside a
+	// renamed pk2 object is legal — the name alone cannot pick).
+	switch len(uniquePositions) {
+	case 0:
+		// A proven PK with no NON_UNIQUE=0 fold is a catalog
+		// inconsistency — presence stays vouched but nothing can be
+		// attributed, and the stored shape answers nothing.
+		p.withholdTiDBPrimaryAttribution(snapshot, nil, false)
+		return nil
+	case 1:
+		// Exactly one unique fold can only be the PK object — the
+		// constraint requires a unique fold and none other exists.
+		p.promoteTiDBPrimary(snapshot, uniquePositions[0])
 		return nil
 	}
-	if pkCount == 1 && len(positions) == 1 {
-		// Proven PK plus exactly one `primary`-fold member — it is the
-		// constraint object (a member `primary` can never coexist with a
-		// real PRIMARY object, 1061).
-		pos := positions[0]
-		index := snapshot.Indexes[pos]
-		index.Kind = spec.IndexKindPrimary
-		snapshot.PrimaryKey = &index
-		snapshot.Indexes = append(snapshot.Indexes[:pos], snapshot.Indexes[pos+1:]...)
+	// Multiple unique candidates — the clustered fact first: only the PK
+	// object's TIDB_INDEXES row can read YES.
+	clustered, err := p.loadTiDBClusteredRows(ctx, snapshot)
+	if err != nil {
+		return fmt.Errorf("query tidb_indexes clustered: %w", err)
+	}
+	clusteredCount := 0
+	clusteredPos := -1
+	for _, pos := range uniquePositions {
+		if clustered[strings.ToLower(snapshot.Indexes[pos].Name)] {
+			clusteredCount++
+			clusteredPos = pos
+		}
+	}
+	if clusteredCount == 1 {
+		p.promoteTiDBPrimary(snapshot, clusteredPos)
+		snapshot.PrimaryKeyClustered = true
 		return nil
 	}
-	// A proven PK with multiple `primary`-fold rows — or a constraint
-	// count beyond one — is a catalog inconsistency the binding cannot
-	// resolve (zero folds already returned proven-absent above): withhold
-	// all three primary facts rather than binding a maybe-member row.
-	snapshot.PrimaryKeyUnknown = true
-	snapshot.PrimaryKeyHandleUnknown = true
-	snapshot.PrimaryKeyClusteredUnknown = true
+	if clusteredCount > 1 {
+		// Two clustered candidates contradicts the catalog's own rule —
+		// withhold the object identity.
+		p.withholdTiDBPrimaryAttribution(snapshot, uniquePositions, false)
+		return nil
+	}
+	// No clustered candidate — the PK object is nonclustered, so
+	// clustered/handle are both proven false. The constraint's declared
+	// column list still separates the object from unique members.
+	pkColumns, err := p.loadTiDBPrimaryKeyColumns(ctx, snapshot)
+	if err != nil {
+		return fmt.Errorf("query key_column_usage primary: %w", err)
+	}
+	if len(pkColumns) > 0 {
+		for _, pos := range uniquePositions {
+			if columnsEqualFold(snapshot.Indexes[pos].Columns, pkColumns) {
+				p.promoteTiDBPrimary(snapshot, pos)
+				return nil
+			}
+		}
+	}
+	p.withholdTiDBPrimaryAttribution(snapshot, uniquePositions, true)
 	return nil
+}
+
+// columnsEqualFold compares two column-name lists order-insensitively —
+// the constraint's declared member set against a candidate fold's parts.
+func columnsEqualFold(a, b []string) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	remaining := make(map[string]int, len(b))
+	for _, name := range b {
+		remaining[strings.ToLower(name)]++
+	}
+	for _, name := range a {
+		lower := strings.ToLower(name)
+		if remaining[lower] == 0 {
+			return false
+		}
+		remaining[lower]--
+	}
+	return true
+}
+
+// loadTiDBPrimaryKeyColumns returns the PRIMARY KEY constraint's declared
+// column names — the fact that separates the PK object fold from ordinary
+// UNIQUE members when every candidate proves nonclustered.
+func (p *Provider) loadTiDBPrimaryKeyColumns(ctx context.Context, snapshot *spec.TableSnapshot) ([]string, error) {
+	rows, err := p.db.QueryContext(ctx, `
+		select column_name
+		from information_schema.key_column_usage
+		where table_schema = ? and table_name = ? and constraint_name = 'PRIMARY'
+		order by ordinal_position
+	`, snapshot.Schema, snapshot.Table.Name)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			// ErrNoRows from Query is the row-absent answer — no declared
+			// member list — not a provider failure.
+			return nil, nil
+		}
+		return nil, err
+	}
+	defer rows.Close()
+	var columns []string
+	for rows.Next() {
+		var name string
+		if err := rows.Scan(&name); err != nil {
+			return nil, err
+		}
+		columns = append(columns, name)
+	}
+	return columns, rows.Err()
+}
+
+// promoteTiDBPrimary moves the candidate fold to snapshot.PrimaryKey —
+// the constraint object's real index-member identity. The remaining folds
+// keep their member slots.
+func (p *Provider) promoteTiDBPrimary(snapshot *spec.TableSnapshot, pos int) {
+	index := snapshot.Indexes[pos]
+	index.Kind = spec.IndexKindPrimary
+	snapshot.PrimaryKey = &index
+	snapshot.Indexes = append(snapshot.Indexes[:pos], snapshot.Indexes[pos+1:]...)
+}
+
+// withholdTiDBPrimaryAttribution keeps the proven PK presence (a
+// name-unknown placeholder) while unvouching the object identity: each
+// surviving candidate demotes to kind unknown so member-comparison rules
+// never consume a maybe-PK fold as a proven UNIQUE, and the
+// handle/clustered answers stay unknown unless every candidate already
+// proved nonclustered storage.
+func (p *Provider) withholdTiDBPrimaryAttribution(snapshot *spec.TableSnapshot, candidates []int, provenNonClustered bool) {
+	snapshot.PrimaryKey = &spec.Index{Kind: spec.IndexKindPrimary, NameUnknown: true}
+	for _, pos := range candidates {
+		snapshot.Indexes[pos].Kind = spec.IndexKindUnknown
+	}
+	if !provenNonClustered {
+		snapshot.PrimaryKeyHandleUnknown = true
+		snapshot.PrimaryKeyClusteredUnknown = true
+	}
+}
+
+// loadTiDBClusteredRows reads every index row's clustered flag from
+// information_schema.TIDB_INDEXES — the catalog's own clustered-storage
+// fact, keyed by stored index name (lowercased). Only the PK object's row
+// can read YES, which is exactly what separates a common-handle object
+// from ordinary UNIQUE members.
+func (p *Provider) loadTiDBClusteredRows(ctx context.Context, snapshot *spec.TableSnapshot) (map[string]bool, error) {
+	rows, err := p.db.QueryContext(ctx, `
+		select key_name, clustered
+		from information_schema.tidb_indexes
+		where table_schema = ? and table_name = ?
+	`, snapshot.Schema, snapshot.Table.Name)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			// A driver reporting ErrNoRows from Query means an empty
+			// result — the row-absent answer, not a failure.
+			return map[string]bool{}, nil
+		}
+		return nil, err
+	}
+	defer rows.Close()
+	clustered := make(map[string]bool)
+	for rows.Next() {
+		var name, value string
+		if err := rows.Scan(&name, &value); err != nil {
+			return nil, err
+		}
+		if strings.EqualFold(value, "yes") {
+			// Keys fold to lowercase for the case-insensitive name match —
+			// identifier folds compare EqualFold everywhere else. Two
+			// case-variant rows (a member `primary` beside a synthesized
+			// `PRIMARY`) collapse to one key, which can only over-count
+			// clustered candidates and pushes attribution toward the
+			// withhold arm — never toward a wrong promotion.
+			clustered[strings.ToLower(name)] = true
+		}
+	}
+	return clustered, rows.Err()
 }
 
 // loadTiDBPrimaryKeyHandle resolves the two independent TiDB primary facts
@@ -548,44 +716,77 @@ func (p *Provider) loadTiDBPrimaryKeyHandle(ctx context.Context, snapshot *spec.
 		// answered from them.
 		return nil
 	}
-	var clustered sql.NullString
-	if err := p.db.QueryRowContext(ctx, `
+	if snapshot.PrimaryKey.NameUnknown || strings.TrimSpace(snapshot.PrimaryKey.Name) == "" {
+		// A present-but-unattributed PK (the constraint proved presence
+		// while no fold could be picked) has no proven stored name to
+		// probe — the attribution pass already set the handle/clustered
+		// answers it could prove, so nothing more can settle here.
+		return nil
+	}
+	// Probe by the PK object's actual stored name — a renamed object no
+	// longer answers `primary`, and a case-insensitive match may return a
+	// member `primary` row alongside the synthesized PRIMARY row, so the
+	// clustered fact takes the YES row whenever one exists (only the PK
+	// object's row can be clustered).
+	rows, err := p.db.QueryContext(ctx, `
 		select clustered
 		from information_schema.tidb_indexes
-		where table_schema = ? and table_name = ? and key_name = 'PRIMARY'
-	`, snapshot.Schema, snapshot.Table.Name).Scan(&clustered); err != nil {
-		if err == sql.ErrNoRows {
-			// STATISTICS vouched a PRIMARY member but TIDB_INDEXES lacks the
-			// row — the stored shape is unproven either way, so the handle
-			// and clustered answers both stay unknown instead of
-			// defaulting to a real object.
-			snapshot.PrimaryKeyHandleUnknown = true
-			snapshot.PrimaryKeyClusteredUnknown = true
-			return nil
-		}
-		// An unanswerable catalog probe cannot prove either fact — keep
-		// the loaded shape and withhold both rather than failing the
-		// whole table load (context cancellation still propagates).
-		if ctx.Err() != nil {
+		where table_schema = ? and table_name = ? and key_name = ?
+	`, snapshot.Schema, snapshot.Table.Name, snapshot.PrimaryKey.Name)
+	if err != nil {
+		if err != sql.ErrNoRows {
+			// A failed catalog read is a provider failure (issue #79) —
+			// propagate rather than fabricating a withheld answer.
+			// Context cancellation propagates identically.
 			return fmt.Errorf("query tidb_indexes clustered: %w", err)
 		}
+		// ErrNoRows from Query is the row-absent answer — the stored
+		// shape stays unproven both ways.
 		snapshot.PrimaryKeyHandleUnknown = true
 		snapshot.PrimaryKeyClusteredUnknown = true
 		return nil
 	}
-	if !clustered.Valid {
-		// A NULL CLUSTERED value is equally unproven.
-		snapshot.PrimaryKeyHandleUnknown = true
-		snapshot.PrimaryKeyClusteredUnknown = true
-		return nil
-	}
-	if !strings.EqualFold(clustered.String, "yes") {
-		if !strings.EqualFold(clustered.String, "no") {
-			// An unrecognized CLUSTERED value cannot answer either fact.
-			snapshot.PrimaryKeyHandleUnknown = true
-			snapshot.PrimaryKeyClusteredUnknown = true
-			return nil
+	defer rows.Close()
+	rowCount := 0
+	clusteredYes := false
+	unrecognized := false
+	for rows.Next() {
+		var value sql.NullString
+		if err := rows.Scan(&value); err != nil {
+			return fmt.Errorf("scan tidb_indexes clustered: %w", err)
 		}
+		rowCount++
+		if !value.Valid {
+			unrecognized = true
+			continue
+		}
+		switch {
+		case strings.EqualFold(value.String, "yes"):
+			clusteredYes = true
+		case strings.EqualFold(value.String, "no"):
+		default:
+			unrecognized = true
+		}
+	}
+	if err := rows.Err(); err != nil {
+		return fmt.Errorf("iterate tidb_indexes clustered: %w", err)
+	}
+	if rowCount == 0 {
+		// STATISTICS vouched the object but TIDB_INDEXES lacks the row —
+		// the stored shape is unproven either way, so the handle and
+		// clustered answers both stay unknown instead of defaulting to a
+		// real object.
+		snapshot.PrimaryKeyHandleUnknown = true
+		snapshot.PrimaryKeyClusteredUnknown = true
+		return nil
+	}
+	if unrecognized && !clusteredYes {
+		// A NULL or unrecognized CLUSTERED value is equally unproven.
+		snapshot.PrimaryKeyHandleUnknown = true
+		snapshot.PrimaryKeyClusteredUnknown = true
+		return nil
+	}
+	if !clusteredYes {
 		// CLUSTERED=no is a real nonclustered PRIMARY index object — a
 		// determined answer on both facts.
 		return nil

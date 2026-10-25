@@ -617,14 +617,12 @@ primaries (both answer NONCLUSTERED). A real PK always emits a
 zero folds prove no PK object without probing; a proven constraint plus
 exactly one fold promotes it to `snapshot.PrimaryKey`; a proven-absent
 constraint keeps folds as secondary members; and multiple folds or an
-unanswerable probe with a candidate member withhold
+unanswerable attribution probe with a candidate member withhold
 `PrimaryKeyUnknown`/`PrimaryKeyHandleUnknown`/`PrimaryKeyClusteredUnknown`
-together rather than binding a maybe-member row — the probe's
-`count(*)` answer can never be empty, so any probe failure IS the
-unanswerable case and withholds the three facts instead of failing the
-whole table load (context cancellation still propagates); the
-`tidb_indexes` clustered probe withholds its two facts on the same
-posture. Rule-side, name-keyed
+together rather than binding a maybe-member row. Actual query/scan/
+connection failures on those probes are NOT the unanswerable case —
+they propagate as load errors per issue #79 (§9.6(c) corrects the R4
+wording that had recorded them as withholding). Rule-side, name-keyed
 existence predicates bind only *proven* member names
 (`FindProvenIndex`), so an unproven projected name can never assert
 existence — a `primary` target under an unproven member name resolves
@@ -636,3 +634,61 @@ match while a sibling name stays unproven — a statement whose targets
 all bind proven names answers without paying an unrelated collection
 gap, and a `primary` target on the resolving variant owes the member
 fact exactly in the ambiguous-binding case.
+
+### 9.6 Amendment R5 — actual-name continuity, error propagation, suffix boundary
+
+(a) Actual stored PK-object name continuity. A TiDB `RENAME INDEX
+`PRIMARY` TO pk2` stores the PK object under `pk2` — STATISTICS emits
+the `pk2` fold, not `primary` (M10 log, t10/16915291 archive). The model
+therefore binds name-keyed index operations through
+`spec.ResolveIndexNameBinding` instead of the literal `primary`: the PK
+object claims only its actual stored name (`PrimaryKeyObjectName`), a
+proven member name wins member-first on TiDB (including a member legally
+named `primary` beside a handle PK), a handle PK claims `primary` as a
+logical identity without an operable object, a proven-free name binds
+nothing, and an unvouched name space binds ambiguous. All ordered-state
+and rule consumers (`add`/`create` collision checks, `drop_index`,
+`rename_index`, `drop_primary_key`, `alter_index` visibility, the
+existence/gap mirrors, `snapshotHasIndex`, `ResolveIndexPrimaryObject`)
+resolve through this binding — `primary` never short-circuits to a real
+object on a handle table, and a renamed object's old name never
+fabricates presence. TiDB `DROP PRIMARY KEY` is member-first per the
+native executor route (`dropIndex(…, "PRIMARY")`), so a member literally
+named `primary` drops while a handle PK survives; a bound PK falls back
+to the droppability answer (clustered refuses 8200, PKIsHandle/non-handle
+objects drop by their actual name — natively `DROP INDEX pk2` removes
+even a clustered object). A drop on a unique-capable fold under an
+attribution-withheld PK placeholder unvouches PK presence and constraint
+truth together, since the dropped fold may have been the object.
+
+(b) Provider reload attribution, separated. Constraint presence is proven
+by `information_schema.table_constraints` (`PRIMARY KEY` row); object
+attribution is proven separately among unique STATISTICS folds — exactly
+one candidate promotes under its stored name, multiple candidates
+disambiguate through `TIDB_INDEXES.CLUSTERED` then the
+`KEY_COLUMN_USAGE` primary column list, and an unattributable constraint
+keeps a name-unknown `PrimaryKey` placeholder with every unique
+candidate demoted to `IndexKindUnknown` so member comparisons never
+treat a maybe-PK fold as a proven UNIQUE. `loadTiDBPrimaryKeyHandle`
+probes `CLUSTERED` on the object's actual stored name.
+
+(c) Provider error contract restored (issue #79). R4 recorded "any probe
+failure IS the unanswerable case and withholds"; that misstated the
+parent contract — actual query/scan/connection failures are NOT clean
+absence. R5 separates the arms: a successful query returning
+missing/NULL/inconsistent facts withholds the dependent facts (unknown,
+never fabricated), while any actual provider failure propagates as a
+load error through metadata loading and the audit seam — including with
+every rule disabled. `count(*)` returning 0 is a clean answer distinct
+from a failed count query; context cancellation keeps its existing
+semantics. No new error framework — the existing provider error path
+carries it.
+
+(d) MySQL auto-name 61-byte suffix boundary. `make_unique_key_name`
+truncates a colliding base to 61 bytes before appending `_2`/`_3`
+(mysql-8.0.46 `sql_table.cc`), so `StoredIndexNames` derives
+`base[:61]+"_n"` on the MySQL suffix path; TiDB does not truncate — a
+62-byte base suffixes to the 64-byte stored name while 63/64-byte bases
+cross the identifier limit natively (1059) and stay unprovable.
+Successor name-keyed operations on the derived name bind normally; an
+unprovable name space keeps its existing evidence gap.

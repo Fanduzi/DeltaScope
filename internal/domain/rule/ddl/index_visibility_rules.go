@@ -134,77 +134,93 @@ func (r indexInvisibleForbidRule) Evaluate(ctx context.Context, statement spec.S
 // existence answers stay suppressed instead of asserting member-first or
 // PK-first resolution.
 func indexPrimaryMemberMayOwnName(statement spec.Statement, snapshot *spec.TableSnapshot) bool {
-	// A member `primary` may own the name exactly when the shared binding
-	// resolution cannot pin it to the PK identity — the member-provably-
-	// owns case is already answered by the member-set check above.
-	return spec.ResolvePrimaryNameBinding(statement.Dialect, snapshot) == spec.PrimaryNameBindsAmbiguous
+	if snapshot == nil {
+		return true
+	}
+	if statement.Dialect == spec.DialectMySQL {
+		// MySQL reserves `primary` for the PK object outright — a member
+		// can never own it.
+		return false
+	}
+	if pkName, proven := spec.PrimaryKeyObjectName(snapshot); proven &&
+		strings.EqualFold(pkName, "primary") &&
+		!snapshot.PrimaryKeyHandleUnknown && !snapshot.PrimaryKeyIsHandle {
+		// A real PRIMARY index object provably occupies the name — the
+		// 1061 refusal rules out any member `primary` regardless of the
+		// member-space vouchers (verified v8.5.0: rename TO `primary`
+		// refused while a real object holds it). A synthesized handle
+		// row does not occupy it — member `primary` coexists legally.
+		return false
+	}
+	// A member `primary` may own the name exactly while the member name
+	// space cannot vouch every stored name — a proven member `primary`
+	// is already answered by the member-set check above.
+	return snapshot.IndexNameSpaceUnvouched()
 }
 
 // alterIndexTargetExists resolves the ALTER INDEX target against the
-// ordered snapshot with a dialect-aware PRIMARY shortcut: MySQL names the
-// primary key itself (the 3522 visibility refusal then belongs to the
-// compatibility rule). TiDB resolves `PRIMARY` to a real index object only
-// on non-handle tables — a PKIsHandle single-int clustered PK names no
-// index object (1176), while NONCLUSTERED and non-int clustered primary
-// keys are operable objects — unless a member literally owns `primary`,
-// which the member-set check above already answered. An unvouched
-// primary-key collection answers true on either dialect — presence is
-// unproven rather than absent, and the rule's EvidenceGaps reports the
-// missing primary_key fact instead of a fabricated blocker.
+// ordered snapshot through the shared actual-name binding: a proven member
+// or a real PK object under its stored name (a renamed pk2, or `primary`
+// itself) is a present, operable target; a handle PK's synthesized
+// `primary` fold names no operable object (1176, absent like a missing
+// member); a provably free name is absent; and an ambiguous binding
+// suppresses the blocker — the rule's EvidenceGaps reports the missing
+// fact instead of fabricating either answer.
 func alterIndexTargetExists(statement spec.Statement, snapshot *spec.TableSnapshot, name string) bool {
+	return operableIndexTargetExists(statement, snapshot, name)
+}
+
+// operableIndexTargetExists answers the ALTER/RENAME INDEX target classes —
+// both operate on a real index object, so they share one binding answer.
+func operableIndexTargetExists(statement spec.Statement, snapshot *spec.TableSnapshot, name string) bool {
 	if snapshotHasIndex(statement, snapshot, name) {
 		return true
 	}
-	if (statement.Dialect == spec.DialectMySQL || statement.Dialect == spec.DialectTiDB) && strings.EqualFold(name, "primary") {
-		exists, resolved := spec.ResolveIndexPrimaryObject(snapshot, statement.Dialect)
-		if !resolved || exists {
-			// An unvouched primary-key state suppresses the blocker — the
-			// rule's EvidenceGaps reports the missing primary_key fact
-			// instead of a fabricated absence.
-			return true
-		}
-		// No PRIMARY index object — on TiDB a member can literally own the
-		// `primary` name, so an unvouched member set cannot prove absence.
-		return indexPrimaryMemberMayOwnName(statement, snapshot)
+	if statement.Dialect != spec.DialectMySQL && statement.Dialect != spec.DialectTiDB {
+		return false
 	}
-	return false
+	switch spec.ResolveIndexNameBinding(statement.Dialect, snapshot, name) {
+	case spec.IndexNameBindsMember, spec.IndexNameBindsPKObject:
+		return true
+	case spec.IndexNameBindsAmbiguous:
+		return true
+	default:
+		// IndexNameBindsNone — provably free — and IndexNameBindsPKIdentity
+		// — a handle PK's `primary` row owns no operable object (1176).
+		return false
+	}
 }
 
-// dropIndexTargetExists resolves the DROP INDEX target. `primary` names the
-// primary key itself on both anchors — MySQL drops it outright and TiDB
-// routes the statement to the drop-primary-key outcome (8200 clustered) —
-// so presence is the PK presence question, not the operable-object one.
-// On TiDB a member literally named `primary` wins the name first, so an
-// unvouched member set cannot prove absence.
+// dropIndexTargetExists resolves the DROP INDEX target through the shared
+// binding. The PK identity counts for drop — `primary` names the primary
+// key itself on both anchors (MySQL drops it outright; TiDB routes the
+// statement to the drop-primary-key outcome, 8200 clustered) — while a PK
+// renamed off `primary` frees the name (1091 on the freed name). An
+// ambiguous binding suppresses the blocker instead of fabricating an
+// absence.
 func dropIndexTargetExists(statement spec.Statement, snapshot *spec.TableSnapshot, name string) bool {
 	if snapshotHasIndex(statement, snapshot, name) {
 		return true
 	}
-	if (statement.Dialect == spec.DialectMySQL || statement.Dialect == spec.DialectTiDB) && strings.EqualFold(name, "primary") {
-		if snapshot.PrimaryKeyUnknown || snapshot.ConstraintsUnknown || snapshot.HasPrimaryKey() {
-			return true
-		}
-		return indexPrimaryMemberMayOwnName(statement, snapshot)
+	if statement.Dialect != spec.DialectMySQL && statement.Dialect != spec.DialectTiDB {
+		return false
 	}
-	return false
-}
-
-// renameIndexTargetExists resolves the RENAME INDEX source name. `primary`
-// names the PRIMARY index object — on TiDB a PKIsHandle primary owns no
-// such object (1176, absent like a missing member) — unless a member
-// literally owns `primary`, which the member-set check answers first.
-func renameIndexTargetExists(statement spec.Statement, snapshot *spec.TableSnapshot, name string) bool {
-	if snapshotHasIndex(statement, snapshot, name) {
+	switch spec.ResolveIndexNameBinding(statement.Dialect, snapshot, name) {
+	case spec.IndexNameBindsNone:
+		return false
+	default:
+		// Member, real PK object, PK identity all exist for a drop;
+		// an ambiguous binding suppresses the fabricated-absence blocker.
 		return true
 	}
-	if (statement.Dialect == spec.DialectMySQL || statement.Dialect == spec.DialectTiDB) && strings.EqualFold(name, "primary") {
-		exists, resolved := spec.ResolveIndexPrimaryObject(snapshot, statement.Dialect)
-		if !resolved || exists {
-			return true
-		}
-		return indexPrimaryMemberMayOwnName(statement, snapshot)
-	}
-	return false
+}
+
+// renameIndexTargetExists resolves the RENAME INDEX source name through the
+// shared binding — same operable-object semantics as ALTER: a handle PK's
+// `primary` row names no operable object (1176, absent like a missing
+// member), while a renamed PK object's actual stored name binds it.
+func renameIndexTargetExists(statement spec.Statement, snapshot *spec.TableSnapshot, name string) bool {
+	return operableIndexTargetExists(statement, snapshot, name)
 }
 
 // indexExistenceRule reuses the shared existence frame for every
@@ -275,38 +291,63 @@ func (r indexExistenceRule) EvidenceGaps(statement spec.Statement) []rule.Eviden
 			allPrimary = false
 		}
 	}
-	if !hasPrimary {
+	snapshot, ok := targetTableSnapshot(statement)
+	if hasPrimary {
+		if !ok || snapshot == nil {
+			if !allPrimary {
+				// Ordinary targets still owe the member collection fact;
+				// the `primary` target owes the primary-key identity fact.
+				return append(gaps, rule.EvidenceGap{
+					ReasonCode:    gapReasonUnknownTableState,
+					RequiredFacts: []string{"target_table.primary_key"},
+				})
+			}
+			// An all-`primary` target list on an unprovable table owes the
+			// primary-key identity fact in place of the member collection —
+			// MySQL never needs the member set (the reserved name binds only
+			// the PK); TiDB keeps it alongside because a member `primary`
+			// may own the name while the whole table state is unproven.
+			return rewritePrimaryExistenceGapFacts(gaps, statement.Dialect)
+		}
+		if snapshot.Exists && allPrimary && memberCollectionUnknown(snapshot, "index") &&
+			!indexPrimaryMemberMayOwnName(statement, snapshot) {
+			gaps = dropRequiredFactGap(gaps, "target_table.indexes")
+		}
+	}
+	if !ok || snapshot == nil || !snapshot.Exists {
 		return gaps
 	}
-	snapshot, ok := targetTableSnapshot(statement)
-	if !ok || snapshot == nil {
-		if !allPrimary {
-			// Ordinary targets still owe the member collection fact; the
-			// `primary` target owes the primary-key identity fact.
+	// A name-keyed target owes the primary-key identity fact exactly while
+	// the shared binding still needs the PK side: a proven member owning
+	// the name answers without consulting the PK at all, and a provably
+	// PK-bound or provably free name is already decided — the flag check
+	// alone cannot see those because ambiguity also comes from an
+	// unvouched member space or a withheld PK object name under a vouched
+	// presence. The PK side can only own the target while it may carry a
+	// non-`primary` name — a TiDB object renamed off `primary` — or the
+	// target is `primary` itself; on MySQL the PK name is always `primary`
+	// (rename refused), so member-keyed ambiguity there is purely
+	// member-space sourced and stays with the member-collection fact the
+	// inner projection already owes.
+	for _, alter := range matchingAlterObjectActions(statement, r.inner.actions...) {
+		name := alterIndexTargetName(alter)
+		if name == "" ||
+			spec.ResolveIndexNameBinding(statement.Dialect, snapshot, name) != spec.IndexNameBindsAmbiguous {
+			continue
+		}
+		if !strings.EqualFold(name, "primary") && statement.Dialect != spec.DialectTiDB {
+			continue
+		}
+		if snapshot.PrimaryKeyUnknown || snapshot.ConstraintsUnknown ||
+			snapshot.PrimaryKeyHandleUnknown ||
+			(snapshot.PrimaryKey != nil && snapshot.PrimaryKey.NameUnknown) {
 			return append(gaps, rule.EvidenceGap{
 				ReasonCode:    gapReasonUnknownTableState,
 				RequiredFacts: []string{"target_table.primary_key"},
 			})
 		}
-		// An all-`primary` target list on an unprovable table owes the
-		// primary-key identity fact in place of the member collection —
-		// MySQL never needs the member set (the reserved name binds only
-		// the PK); TiDB keeps it alongside because a member `primary` may
-		// own the name while the whole table state is unproven.
-		return rewritePrimaryExistenceGapFacts(gaps, statement.Dialect)
 	}
-	if snapshot.Exists && allPrimary && memberCollectionUnknown(snapshot, "index") &&
-		!indexPrimaryMemberMayOwnName(statement, snapshot) {
-		gaps = dropRequiredFactGap(gaps, "target_table.indexes")
-	}
-	if !snapshot.Exists ||
-		(!snapshot.PrimaryKeyUnknown && !snapshot.ConstraintsUnknown && !snapshot.PrimaryKeyHandleUnknown) {
-		return gaps
-	}
-	return append(gaps, rule.EvidenceGap{
-		ReasonCode:    gapReasonUnknownTableState,
-		RequiredFacts: []string{"target_table.primary_key"},
-	})
+	return gaps
 }
 
 // rewritePrimaryExistenceGapFacts trades the member-collection fact inside

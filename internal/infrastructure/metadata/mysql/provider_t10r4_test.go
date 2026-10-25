@@ -356,6 +356,7 @@ func TestT10R4TiDBPrimaryNameBindingMatrix(t *testing.T) {
 		wantPKUnknown  bool
 		wantHandleUnk  bool
 		wantClusterUnk bool
+		wantErr        bool
 	}{
 		{
 			name:        "no PRIMARY KEY constraint: member primary stays a secondary (renamed member on a PK-less table)",
@@ -372,24 +373,24 @@ func TestT10R4TiDBPrimaryNameBindingMatrix(t *testing.T) {
 			wantMembers: 0,
 		},
 		{
-			name:           "PK constraint + two folds is a catalog inconsistency — the constraint row cannot be told apart",
-			queries:        withQuery(base(colsID, append(append([][]driver.Value{}, pkRow...), memberPrimary...)), "table_constraints", constraintRow(1)),
-			wantMembers:    2,
-			wantPKUnknown:  true,
-			wantHandleUnk:  true,
-			wantClusterUnk: true,
+			name: "PK constraint + unique PRIMARY fold plus member `primary` is the legal handle-table coexistence (verified v8.5.0: the member is dropped by name while the PK survives)",
+			queries: withQuery(
+				withQuery(base(colsID, append(append([][]driver.Value{}, pkRow...), memberPrimary...)), "table_constraints", constraintRow(1)),
+				"information_schema.tidb_indexes",
+				testQueryResult{columns: []string{"clustered"}, rows: [][]driver.Value{{"NO"}}}),
+			wantPK:      true,
+			wantMembers: 1,
 		},
 		{
-			name:           "unproven constraint probe + candidate member withholds all three facts",
-			queries:        base(colsID, pkRow),
-			wantMembers:    1,
-			wantPKUnknown:  true,
-			wantHandleUnk:  true,
-			wantClusterUnk: true,
+			name:    "unproven constraint probe propagates as a provider error (issue #79: actual failures stay errors)",
+			queries: base(colsID, pkRow),
+			wantErr: true,
 		},
 		{
-			name:        "no primary-fold row: provably no PK (the constraint probe never fires)",
-			queries:     base(colsID, [][]driver.Value{{"s", 1, "BTREE", "c", nil, nil, "A", "YES", nil}}),
+			name: "no primary-fold row and no PK constraint: provably PK-less member table",
+			queries: withQuery(
+				base(colsID, [][]driver.Value{{"s", 1, "BTREE", "c", nil, nil, "A", "YES", nil}}),
+				"table_constraints", constraintRow(0)),
 			wantMembers: 1,
 		},
 	}
@@ -400,6 +401,12 @@ func TestT10R4TiDBPrimaryNameBindingMatrix(t *testing.T) {
 			db := openTestDB(t, tc.queries)
 			defer db.Close()
 			snapshot, err := NewProvider(db).LoadTableSnapshot(context.Background(), spec.DialectTiDB, "app", "t")
+			if tc.wantErr {
+				if err == nil {
+					t.Fatalf("an unanswerable constraint probe must surface as a provider error, got %+v", snapshot)
+				}
+				return
+			}
 			if err != nil {
 				t.Fatalf("LoadTableSnapshot: %v", err)
 			}

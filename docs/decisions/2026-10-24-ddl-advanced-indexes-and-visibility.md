@@ -486,6 +486,38 @@ fidelity defects, all closed in place:
   name-fold; and `ResolvePrimaryNameBinding` ignores the bare
   collection flag once every member name is individually proven.
 
+### R5 amendment — actual stored names, error contract, suffix boundary
+
+Independent review of the R4 candidate pinned three remaining fact
+boundaries; all close in place without re-expanding T10:
+
+- **Actual PK-object name continuity (R5-A).** `RENAME INDEX \`PRIMARY\`
+  TO pk2` leaves the TiDB object stored as `pk2` (M10 log). All
+  name-keyed consumers — ordered-state successors, provider reload,
+  `snapshotHasIndex`, the `primary`-target existence/visibility paths —
+  now resolve through `spec.ResolveIndexNameBinding`: the PK object
+  claims only its actual stored name, a proven member name binds
+  member-first (a member may legally own `primary` beside a handle PK),
+  a handle PK claims `primary` as a logical identity with no operable
+  object, and an unvouched name space stays ambiguous rather than
+  guessing. `DROP PRIMARY KEY` is member-first per the native
+  `dropIndex(…, "PRIMARY")` route; an attribution-withheld reload keeps
+  a name-unknown PK placeholder with unique candidates demoted to
+  `IndexKindUnknown`, and a drop on such a candidate unvouches PK
+  presence. Constraint presence is proven by `table_constraints` while
+  object attribution disambiguates unique folds through
+  `TIDB_INDEXES.CLUSTERED` then the `KEY_COLUMN_USAGE` column list.
+- **Provider error contract restored (R5-B).** The R4 note above
+  recorded probe failures as withholding; that misstated issue #79's
+  contract. Actual query/scan/connection failures propagate as load
+  errors — even with all rules disabled — while clean absence keeps the
+  unknown-fact posture; `count(*)`=0 is an answer, not a failure.
+- **MySQL 61-byte suffix boundary (R5-C).** `make_unique_key_name`
+  truncates a colliding base to 61 bytes before `_n` suffixing, so
+  `StoredIndexNames` derives `base[:61]+"_2"` on MySQL; TiDB does not
+  truncate — a 62-byte base suffixes to a 64-byte stored name while
+  63/64-byte bases cross the limit natively (1059) and stay unprovable.
+
 ## References
 
 - Issue: Fanduzi/DeltaScope#79 (milestone), #89 (T10 scope)

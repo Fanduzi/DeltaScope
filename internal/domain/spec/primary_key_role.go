@@ -9,10 +9,12 @@
 // tidb_enable_clustered_index — int_only defers to alter-primary-key);
 // PrimaryKeyClustered answering the TiDB 8200 drop premise beside the
 // handle answer (common-handle PKs are clustered yet addressable); and the
-// shared ResolvePrimaryNameBinding tri-state (member / PK / ambiguous)
-// backing every `primary` consumer — ordered state, existence rules,
-// assessment
-// pos: T10-R2/R4 primary-role/clustered/name-binding model (issue #89);
+// shared name bindings backing every name-keyed consumer — ordered state,
+// rules, assessment: ResolvePrimaryNameBinding answers `primary` four ways
+// (member / PK / ambiguous / provably nothing) and ResolveIndexNameBinding
+// answers an arbitrary target five ways (member / PK object under its actual
+// stored name / handle-PK identity / provably free / ambiguous)
+// pos: T10-R2/R4/R5 primary-role/clustered/name-binding model (issue #89);
 // anchors — MySQL 8.0.46 invisible_indexes.result L247-289, TiDB v8.5.0
 // TableInfo.GetPrimaryKey + checkInvisibleIndexOnPK
 // note: if this file changes, update this header and module README.md.
@@ -214,6 +216,16 @@ func ResolveIndexPrimaryObject(snapshot *TableSnapshot, dialect Dialect) (exists
 	if !snapshot.HasPrimaryKey() {
 		return false, true
 	}
+	// The object binds only its actual stored name — a renamed PK frees
+	// `primary` (1176 ALTER / 1091 DROP on the freed name), while a
+	// present PK whose stored name stayed unproven may still own it.
+	pkName, proven := PrimaryKeyObjectName(snapshot)
+	if proven && !strings.EqualFold(pkName, "primary") {
+		return false, true
+	}
+	if !proven {
+		return false, false
+	}
 	if dialect == DialectTiDB {
 		switch {
 		case snapshot.PrimaryKeyHandleUnknown:
@@ -414,34 +426,150 @@ const (
 	// member `primary` cannot be ruled out — the name may bind a member
 	// or the PK identity.
 	PrimaryNameBindsAmbiguous
+	// PrimaryNameBindsNothing: member space vouched and the PK object's
+	// proven stored name is not `primary` — a renamed PK freed the name
+	// (verified v8.5.0: 1176 ALTER / 1091 DROP on the freed name, and a
+	// member may legally claim it while the PK object stays named pk3).
+	// Reachable only on TiDB; MySQL never frees the reserved name.
+	PrimaryNameBindsNothing
 )
+
+// PrimaryKeyObjectName returns the primary-key object's proven stored
+// catalog name. The constraint identity stays PRIMARY across renames but
+// the object name moves, so name-keyed consumers must bind this answer —
+// not the literal `primary`. proven=false covers both an absent PK and a
+// present PK whose attribution/name could not be proven on reload.
+func PrimaryKeyObjectName(snapshot *TableSnapshot) (name string, proven bool) {
+	if snapshot == nil || snapshot.PrimaryKey == nil || snapshot.PrimaryKeyUnknown ||
+		snapshot.PrimaryKey.NameUnknown || strings.TrimSpace(snapshot.PrimaryKey.Name) == "" {
+		return "", false
+	}
+	return snapshot.PrimaryKey.Name, true
+}
+
+// IndexNameBinding classifies what an arbitrary catalog name binds inside
+// a table shape — the generalized form of PrimaryNameBinding. The ordered
+// state publisher uses it to route name-keyed successors; the existence
+// rules use it for presence answers. Member claims always win the name
+// natively (a member literally holding the target name provably owns it);
+// the PK object claims the name only through its actual stored catalog
+// name, never through the logical identity.
+type IndexNameBinding int
+
+const (
+	// IndexNameBindsMember: a member with a proven stored name owns it.
+	IndexNameBindsMember IndexNameBinding = iota
+	// IndexNameBindsPKObject: a proven operable PK object owns it — the
+	// name-keyed statement reaches the real index object (visible in
+	// SHOW INDEX; alterable, renamable, droppable under that name).
+	IndexNameBindsPKObject
+	// IndexNameBindsPKIdentity: the synthesized `primary` catalog row of a
+	// handle/common-handle PK owns it — the row exists for existence
+	// answers but no operable object stands behind it (1176 on ALTER).
+	IndexNameBindsPKIdentity
+	// IndexNameBindsNone: the name is provably free — every member name is
+	// vouched, no member holds it, and the PK's proven stored name differs
+	// (or no PK exists / the name was freed by a rename).
+	IndexNameBindsNone
+	// IndexNameBindsAmbiguous: the binding cannot be proven — an unvouched
+	// member name or an unproven PK-object name may claim the target.
+	IndexNameBindsAmbiguous
+)
+
+// ResolveIndexNameBinding answers what an arbitrary index name binds.
+// Ordering mirrors the native name lookup: a proven member name wins
+// first; the PK object binds only through its proven stored name (a
+// renamed PK frees `primary` and claims its new name instead); a handle
+// PK's synthetic row binds `primary` as a non-operable identity; whatever
+// cannot be proven stays ambiguous rather than guessing.
+func ResolveIndexNameBinding(dialect Dialect, snapshot *TableSnapshot, name string) IndexNameBinding {
+	if snapshot == nil {
+		return IndexNameBindsAmbiguous
+	}
+	if dialect == DialectMySQL && strings.EqualFold(name, "primary") {
+		// MySQL reserves `primary` for the PK object outright — no member
+		// may ever own it (1280 on add/rename), so the member name space
+		// is irrelevant to the binding.
+		pkName, proven := PrimaryKeyObjectName(snapshot)
+		if proven && strings.EqualFold(pkName, name) {
+			return IndexNameBindsPKObject
+		}
+		if !proven && !snapshot.HasPrimaryKey() &&
+			!snapshot.PrimaryKeyUnknown && !snapshot.ConstraintsUnknown {
+			return IndexNameBindsNone
+		}
+		return IndexNameBindsAmbiguous
+	}
+	if !snapshot.IndexesUnknown {
+		if member := snapshot.FindProvenIndex(name); member != nil {
+			return IndexNameBindsMember
+		}
+		if !snapshot.IndexNamesUnknown && !snapshot.HasUnprovenIndexName() {
+			// The member name space is fully vouched — only the PK
+			// answer left.
+			pkName, proven := PrimaryKeyObjectName(snapshot)
+			if !proven {
+				if snapshot.HasPrimaryKey() && !snapshot.PrimaryKeyUnknown {
+					// PK present but its stored name is unproven — it
+					// may own the target name.
+					return IndexNameBindsAmbiguous
+				}
+				// Only a proven-absent PK makes the name free — an
+				// unproven PK fact could still hide a named object.
+				if snapshot.PrimaryKeyUnknown || (dialect == DialectTiDB && snapshot.PrimaryKeyHandleUnknown) {
+					return IndexNameBindsAmbiguous
+				}
+				return IndexNameBindsNone
+			}
+			if !strings.EqualFold(pkName, name) {
+				return IndexNameBindsNone
+			}
+			if dialect == DialectTiDB {
+				if snapshot.PrimaryKeyHandleUnknown {
+					return IndexNameBindsAmbiguous
+				}
+				if snapshot.PrimaryKeyIsHandle {
+					return IndexNameBindsPKIdentity
+				}
+			}
+			return IndexNameBindsPKObject
+		}
+	}
+	// Member name space unvouched — a member may hold the target name.
+	// A proven real PK object still rules the member out natively (1061
+	// forbids the coexistence); a synthesized handle row does not occupy
+	// the name against a member (verified: member `primary` coexists
+	// with the synth PRIMARY row), so it stays ambiguous here.
+	if pkName, proven := PrimaryKeyObjectName(snapshot); proven && strings.EqualFold(pkName, name) {
+		if dialect == DialectTiDB &&
+			(snapshot.PrimaryKeyHandleUnknown || snapshot.PrimaryKeyIsHandle) {
+			return IndexNameBindsAmbiguous
+		}
+		return IndexNameBindsPKObject
+	}
+	return IndexNameBindsAmbiguous
+}
 
 // ResolvePrimaryNameBinding classifies a `primary` name-keyed target. A
 // member whose stored name is provable (!NameUnknown) always wins the
 // name; an unvouched member collection leaves the answer ambiguous unless
 // the dialect — MySQL reserves `primary` outright — or a provable real
-// PRIMARY index object rules the member out.
+// PRIMARY index object rules the member out. Once a TiDB PK object is
+// renamed off `primary`, the freed name binds nothing.
 func ResolvePrimaryNameBinding(dialect Dialect, snapshot *TableSnapshot) PrimaryNameBinding {
 	if snapshot == nil {
 		return PrimaryNameBindsAmbiguous
 	}
-	if !snapshot.IndexesUnknown {
-		if snapshot.FindProvenIndex("primary") != nil {
-			return PrimaryNameBindsMember
-		}
-		// The member-owned question is answered by the per-member bits:
-		// every member name proven means no member can own `primary`, so
-		// the name binds the PK identity space — the bare collection flag
-		// alone does not unset that per-member proof.
-		if !snapshot.HasUnprovenIndexName() {
+	switch ResolveIndexNameBinding(dialect, snapshot, "primary") {
+	case IndexNameBindsMember:
+		return PrimaryNameBindsMember
+	case IndexNameBindsPKObject, IndexNameBindsPKIdentity:
+		return PrimaryNameBindsPK
+	case IndexNameBindsNone:
+		if dialect == DialectMySQL {
 			return PrimaryNameBindsPK
 		}
-	}
-	if dialect == DialectMySQL {
-		return PrimaryNameBindsPK
-	}
-	if exists, resolved := ResolveIndexPrimaryObject(snapshot, dialect); resolved && exists {
-		return PrimaryNameBindsPK
+		return PrimaryNameBindsNothing
 	}
 	return PrimaryNameBindsAmbiguous
 }

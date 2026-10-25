@@ -21,6 +21,14 @@ import (
 // natively, so the shape stays unprovable instead.
 const indexNameLengthLimit = 64
 
+// mysqlSuffixBaseLimit is MySQL's NAME_CHAR_LEN-3 bound: inside the suffix
+// branch make_unique_key_name truncates the base to 61 bytes before
+// appending `_N` (sql_table.cc L10377-10397 on 8.0.46), so colliding bases
+// of 62/63/64 bytes all store the same 61-byte-base + "_2" name. TiDB has
+// no such truncation — its suffix appends to the full base and fails the
+// whole CREATE (1059) once the derived name crosses the limit.
+const mysqlSuffixBaseLimit = 61
+
 // StoredIndexNames applies the product's auto-naming rule to a CREATE
 // TABLE's declared index list. The rule is dialect-bound, anchored
 // natively on MySQL 8.0.46 and TiDB v8.5.0:
@@ -97,16 +105,22 @@ func StoredIndexNames(dialect Dialect, indexes []Index) (resolved []Index, prova
 			return nil, false
 		}
 		name = base
-		for suffix := 2; ; suffix++ {
-			if len(name) > indexNameLengthLimit {
-				// A suffix beyond the identifier limit truncates natively —
-				// the stored string is unprovable rather than guessed.
-				return nil, false
+		if _, taken := used[strings.ToLower(name)]; taken {
+			// The suffix branch: MySQL truncates the base to 61 bytes first,
+			// TiDB appends to the full base. A derived name crossing the
+			// identifier limit fails the CREATE natively — unprovable.
+			if dialect == DialectMySQL && len(base) > mysqlSuffixBaseLimit {
+				base = base[:mysqlSuffixBaseLimit]
 			}
-			if _, taken := used[strings.ToLower(name)]; !taken {
-				break
+			for suffix := 2; ; suffix++ {
+				name = fmt.Sprintf("%s_%d", base, suffix)
+				if len(name) > indexNameLengthLimit {
+					return nil, false
+				}
+				if _, taken := used[strings.ToLower(name)]; !taken {
+					break
+				}
 			}
-			name = fmt.Sprintf("%s_%d", base, suffix)
 		}
 		used[strings.ToLower(name)] = struct{}{}
 		resolved[i].Name = name

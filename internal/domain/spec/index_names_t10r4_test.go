@@ -18,6 +18,7 @@
 package spec
 
 import (
+	"strings"
 	"testing"
 )
 
@@ -238,9 +239,11 @@ func TestT10R4StoredIndexNamesDialectMatrix(t *testing.T) {
 	}
 }
 
-// The 64-char boundary: a base at the identifier limit cannot gain a suffix
-// without the product truncating — that shape is unprovable rather than
-// derived wrongly.
+// The 64-char boundary is dialect-split: MySQL's suffix branch truncates
+// the base to 61 bytes first, so a 64-byte base still derives `61c+"_2"`
+// (verified on 8.0.46 via the 62-byte probe — the same code path
+// truncates any base >61); TiDB appends to the full base, so a 64-byte
+// base fails the CREATE natively (1059 — probed) and stays unprovable.
 func TestT10R4StoredIndexNamesLengthBoundary(t *testing.T) {
 	t.Parallel()
 	long := make([]byte, 64)
@@ -253,8 +256,15 @@ func TestT10R4StoredIndexNamesLengthBoundary(t *testing.T) {
 		{Kind: IndexKindSecondary, Columns: []string{base}, KeyParts: []IndexKeyPart{t10r4Col(base)}},
 	}
 	resolved, provable := StoredIndexNames(DialectMySQL, indexes)
+	if !provable || len(resolved) != 2 {
+		t.Fatalf("MySQL truncates the suffix base to 61 — derivable, got provable=%v %+v", provable, resolved)
+	}
+	if want := strings.Repeat("c", 61) + "_2"; resolved[1].Name != want {
+		t.Fatalf("MySQL suffix name = %q, want %q", resolved[1].Name, want)
+	}
+	resolved, provable = StoredIndexNames(DialectTiDB, indexes)
 	if provable {
-		t.Fatalf("a suffix needing truncation must stay unproven, got %+v", resolved)
+		t.Fatalf("TiDB's 64-byte base + suffix exceeds the limit (1059) — unprovable, got %+v", resolved)
 	}
 }
 

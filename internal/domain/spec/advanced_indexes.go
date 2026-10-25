@@ -435,6 +435,18 @@ func assessIndexFact(assessment *AdvancedIndexAssessment, fact advancedIndexFact
 		}
 		return
 	}
+	if fact.action == "alter_index" && !strings.EqualFold(fact.name, "primary") &&
+		ResolveIndexNameBinding(dialect, snapshot, fact.name) == IndexNameBindsPKObject {
+		// The PK object under its actual stored name (a renamed pk2) —
+		// the visibility operation reaches the real index object, so
+		// INVISIBLE is the same 3522 refusal a `primary`-spelled alter
+		// reports (verified on the renamed object, v8.5.0); VISIBLE is a
+		// proven no-op and needs no issue.
+		if index.Visibility == ColumnVisibilityInvisible {
+			assessment.appendIssue(fact.name, AdvancedIndexFeatureVisibility, fact.action, AdvancedIndexReasonPrimaryVisibility, "")
+		}
+		return
+	}
 	assessImplicitPrimaryVisibility(assessment, fact, dialect, ddl, snapshot)
 	assessIndexMembers(assessment, fact, dialect, ddl, snapshot)
 }
@@ -749,8 +761,7 @@ func assessImplicitPrimaryVisibility(assessment *AdvancedIndexAssessment, fact a
 			// Holder identity is the member pointer itself — two unnamed
 			// unique members share the empty name but never share the
 			// role (products auto-name and only the first qualifies).
-			holds = role.HolderIndex == index ||
-				(role.HolderIndex == nil && strings.EqualFold(role.Holder, index.Name))
+			holds = role.HolderIndex == index
 		}
 	case "add_index", "add_constraint", "create_index":
 		// A newly created index appends after every existing member — it can
@@ -808,9 +819,7 @@ func assessImplicitPrimaryVisibility(assessment *AdvancedIndexAssessment, fact a
 			unresolvedRole(role)
 			return
 		}
-		holds = role.HasHolder &&
-			(role.HolderIndex == target ||
-				(role.HolderIndex == nil && strings.EqualFold(role.Holder, target.Name)))
+		holds = role.HasHolder && role.HolderIndex == target
 	}
 	if holds {
 		// The refusal holds on every supported version — MySQL <8.0 rejects

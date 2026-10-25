@@ -7,15 +7,16 @@
 // output: one updated batch entry per provable transition — appended index,
 // removed index, renamed index, cleared primary key, or visibility-flipped
 // member — or the shared tombstone when the premise cannot be proven; the
-// primary branch proves its member premise (known column set, plain key
-// parts, every member present) before publishing and reconciles member
-// nullability — clearing only a proven SQL-NULL default (DefaultIsNull) —
-// while a handle-table drop keeps the entry (8200) and an unproven answer
-// invalidates; name-keyed members bind only by a proven stored name, and a
-// member-adding transition under an unproven member name space unvouches the
-// member set (hidden 1061) instead of appending a maybe-refused index
-// pos: T09 index state chain plus the T10 visibility transition — multi-action
-// statements keep the bounded tombstone upstream and never reach here
+// primary branch proves its member premise before publishing and reconciles
+// member nullability, clearing only a proven SQL-NULL default; a handle-table
+// drop keeps the entry (8200) and an unproven answer invalidates; name-keyed
+// members bind only by a proven stored name and a member-add under an
+// unproven name space unvouches the member set (hidden 1061); every name-keyed
+// entry resolves through spec.ResolveIndexNameBinding — a renamed PK object
+// claims only its actual stored name, a freed `primary` never fabricates PK
+// presence, a member may own `primary` beside a handle PK, and published PK
+// objects store `primary` (an authored CONSTRAINT symbol is not the object)
+// pos: T09 index state chain plus the T10 visibility transition
 // note: if this file changes, update this header and module README.md.
 package audit
 
@@ -204,6 +205,42 @@ func (s *batchState) markPrimaryUnknown(key batchTableKey) {
 	})
 }
 
+// markPrimaryKeyNameUnknown unvouches only the PK object's stored name —
+// the post-state a name-keyed transition leaves behind when the PK object's
+// provenance is vouched but its actual catalog name may have moved (a
+// rename whose destination freedom is unprovable). Presence and member
+// facts stay vouched; the name-keyed binding reads the marker through
+// spec.PrimaryKeyObjectName and stays ambiguous.
+func (s *batchState) markPrimaryKeyNameUnknown(key batchTableKey) {
+	s.withClonedShape(key, func(shape *spec.TableSnapshot) {
+		if shape.PrimaryKey != nil {
+			shape.PrimaryKey.NameUnknown = true
+		}
+	})
+}
+
+// publishPrimaryKeyDrop publishes the post-state a dropped PK object
+// leaves behind — the primary key cleared plus its constraint row when the
+// constraint set is vouched. Shared by applyDropPrimaryKey and the
+// name-keyed drop path that binds the PK object under its actual stored
+// name (verified: DROP INDEX pk2 drops even a common-handle renamed PK —
+// the 8200 refusal class gates the `primary` name only).
+func (s *batchState) publishPrimaryKeyDrop(key batchTableKey, entry *batchTableEntry) {
+	shape := cloneTableSnapshot(entry.shape)
+	shape.PrimaryKey = nil
+	if shape.Constraints != nil && !shape.ConstraintsUnknown {
+		remaining := shape.Constraints[:0]
+		for _, constraint := range shape.Constraints {
+			if constraint.Type == "primary_key" {
+				continue
+			}
+			remaining = append(remaining, constraint)
+		}
+		shape.Constraints = remaining
+	}
+	s.entries[key] = &batchTableEntry{state: tablePresent, shape: shape, displaySchema: entry.displaySchema, displayTable: entry.displayTable}
+}
+
 // applyStandaloneDropIndex publishes the DROP INDEX operation's bounded
 // post-state through the same template the ALTER-side drop uses.
 func (s *batchState) applyStandaloneDropIndex(statement spec.Statement) {
@@ -271,9 +308,11 @@ func (s *batchState) applyAddIndex(statement spec.Statement, alter *spec.Alter, 
 		// TiDB the new PK may be a handle (no index object — no collision)
 		// or a real PRIMARY object (1061 against the member's name).
 		// Whether a member provably or possibly owns `primary` decides the
-		// binding; anything short of a proven PK-bound name space leaves
-		// the outcome unprovable and invalidates.
-		if spec.ResolvePrimaryNameBinding(s.dialect, entry.shape) != spec.PrimaryNameBindsPK {
+		// binding — a member-owned or ambiguous name space leaves the
+		// outcome unprovable and invalidates, while a proven-free name
+		// (PK-bound on MySQL, freed/unclaimed on TiDB) adds cleanly.
+		switch spec.ResolvePrimaryNameBinding(s.dialect, entry.shape) {
+		case spec.PrimaryNameBindsMember, spec.PrimaryNameBindsAmbiguous:
 			s.invalidateKey(key)
 			return
 		}
@@ -312,7 +351,10 @@ func (s *batchState) applyAddIndex(statement spec.Statement, alter *spec.Alter, 
 		// the row handle — TiDB v8.5.0 stores it NONCLUSTERED under on and
 		// int_only alike with alter-primary-key=false (verified natively),
 		// and MySQL has no handle concept — so no handle resolution is
-		// needed here.
+		// needed here. The stored object is always named PRIMARY — an
+		// authored CONSTRAINT symbol names the declaration, not the
+		// object.
+		pk.Name = "primary"
 		shape.PrimaryKey = &pk
 		// Every supported anchor converts PK members to NOT NULL — a
 		// published member still claiming nullable would contradict the
@@ -335,7 +377,7 @@ func (s *batchState) applyAddIndex(statement spec.Statement, alter *spec.Alter, 
 			}
 		}
 		if shape.Constraints != nil && !shape.ConstraintsUnknown {
-			shape.Constraints = append(shape.Constraints, spec.Constraint{Type: "primary_key", Name: def.Name, Columns: append([]string(nil), def.Columns...)})
+			shape.Constraints = append(shape.Constraints, spec.Constraint{Type: "primary_key", Name: "PRIMARY", Columns: append([]string(nil), def.Columns...)})
 		}
 		s.entries[key] = &batchTableEntry{state: tablePresent, shape: shape, displaySchema: entry.displaySchema, displayTable: entry.displayTable}
 		return
@@ -346,6 +388,23 @@ func (s *batchState) applyAddIndex(statement spec.Statement, alter *spec.Alter, 
 		// is provably unchanged, so the entry keeps its facts. A member
 		// whose name is unproven may share the authored name without
 		// proving the refusal either way — the next branch unvouches.
+		return
+	}
+	if pkName, proven := spec.PrimaryKeyObjectName(entry.shape); proven &&
+		strings.EqualFold(pkName, def.Name) {
+		// The authored name collides with the PK object's actual stored
+		// name — a renamed PK still occupies its new name (1061), so the
+		// add is refused and the table provably unchanged.
+		return
+	}
+	if _, nameProven := spec.PrimaryKeyObjectName(entry.shape); !nameProven &&
+		(entry.shape.HasPrimaryKey() || entry.shape.PrimaryKeyUnknown ||
+			entry.shape.ConstraintsUnknown) {
+		// PK presence or its stored name is unproven — the authored name
+		// may collide with a hidden PK object (1061), so membership stays
+		// unvouched rather than appending a member the statement may
+		// never have landed.
+		s.markIndexesUnknown(key)
 		return
 	}
 	if entry.shape.HasUnprovenIndexName() {
@@ -374,6 +433,27 @@ func (s *batchState) applyAddIndex(statement spec.Statement, alter *spec.Alter, 
 	shape := cloneTableSnapshot(entry.shape)
 	shape.Indexes = append(shape.Indexes, cloneIndex(*def))
 	s.entries[key] = &batchTableEntry{state: tablePresent, shape: shape, displaySchema: entry.displaySchema, displayTable: entry.displayTable}
+}
+
+// ambiguousPrimaryDropOutcome publishes the shared unvouch a `primary`-keyed
+// drop leaves when the binding cannot be proven because the member name
+// space is unvouched: a stored `primary` member may own the name, so the
+// member set stays unvouched either way, and the PK fact unvouches when its
+// object state is unresolved (a real nonclustered object would have been
+// dropped while a handle/clustered/absent PK survives). Returns false when
+// the member space is already vouched — the caller then decides the
+// PK-side-only outcome.
+func (s *batchState) ambiguousPrimaryDropOutcome(key batchTableKey, entry *batchTableEntry) bool {
+	if entry.shape == nil || !entry.shape.IndexNameSpaceUnvouched() {
+		return false
+	}
+	s.markIndexesUnknown(key)
+	if entry.shape.HasPrimaryKey() {
+		if _, resolved := spec.ResolveIndexPrimaryObject(entry.shape, s.dialect); !resolved {
+			s.markPrimaryUnknown(key)
+		}
+	}
+	return true
 }
 
 // applyDropIndex publishes a bounded drop-index transition for both the ALTER
@@ -419,22 +499,19 @@ func (s *batchState) applyDropIndex(statement spec.Statement, alter *spec.Alter,
 			s.applyDropPrimaryKey(statement, targets)
 			return
 		case spec.PrimaryNameBindsAmbiguous:
-			// TiDB only: a stored `primary` member may own the name. The
-			// drop either removed that member or hit the PK — the member
-			// set stays unvouched either way. The PK fact also unvouches
-			// when its object state is unresolved: a real nonclustered
-			// object would have been dropped while a handle/clustered/absent
-			// PK survives (8200 / no object to drop).
-			s.markIndexesUnknown(key)
-			if entry.shape != nil && entry.shape.HasPrimaryKey() {
-				if _, resolved := spec.ResolveIndexPrimaryObject(entry.shape, s.dialect); !resolved {
-					s.markPrimaryUnknown(key)
-				}
+			if s.ambiguousPrimaryDropOutcome(key, entry) {
+				return
 			}
+			// The member space is vouched — the drop provably targets the
+			// PK side only, but its outcome is unprovable (an unproven
+			// stored name or an undecided handle/clustered answer).
+			s.invalidateKey(key)
 			return
 		}
-		// spec.PrimaryNameBindsMember falls through to the ordinary member
-		// path.
+		// spec.PrimaryNameBindsMember and spec.PrimaryNameBindsNothing fall
+		// through to the ordinary member path — the freed `primary` name
+		// (PK renamed away) binds nothing, so the drop takes the
+		// missing-name outcome like any unmatched target.
 	}
 	if !indexSetKnown(entry) {
 		return
@@ -455,6 +532,22 @@ func (s *batchState) applyDropIndex(statement spec.Statement, alter *spec.Alter,
 			s.markIndexesUnknown(key)
 			return
 		}
+		// The member space is fully vouched — only the PK object can still
+		// own the name, through its actual stored catalog name.
+		switch spec.ResolveIndexNameBinding(s.dialect, entry.shape, name) {
+		case spec.IndexNameBindsPKObject:
+			// The name-keyed drop reaches the real PK object under its
+			// actual name and drops it — verified on v8.5.0 where DROP
+			// INDEX pk2 cleared even a common-handle PK: the 8200
+			// clustered refusal class gates the `primary` name only.
+			s.publishPrimaryKeyDrop(key, entry)
+			return
+		case spec.IndexNameBindsAmbiguous:
+			// The PK object's stored name is unproven — the drop may have
+			// hit it; unvouch the primary facts while members stay.
+			s.markPrimaryUnknown(key)
+			return
+		}
 		if alter.Options["if_exists"] == "true" {
 			return
 		}
@@ -462,7 +555,16 @@ func (s *batchState) applyDropIndex(statement spec.Statement, alter *spec.Alter,
 		return
 	}
 	shape := cloneTableSnapshot(entry.shape)
+	dropped := shape.Indexes[indexPos]
 	shape.Indexes = append(shape.Indexes[:indexPos], shape.Indexes[indexPos+1:]...)
+	if shape.PrimaryKey != nil && shape.PrimaryKey.NameUnknown &&
+		(dropped.Kind == spec.IndexKindUnique || dropped.Kind == spec.IndexKindUnknown) {
+		// The dropped fold may itself have been the PK object — the
+		// attribution-withheld shape cannot prove which unique fold the
+		// constraint owns, so presence and constraint truth unvouch too.
+		shape.PrimaryKeyUnknown = true
+		shape.ConstraintsUnknown = true
+	}
 	s.entries[key] = &batchTableEntry{state: tablePresent, shape: shape, displaySchema: entry.displaySchema, displayTable: entry.displayTable}
 }
 
@@ -512,6 +614,13 @@ func (s *batchState) applyAlterIndexVisibility(statement spec.Statement, alter *
 		}
 		switch spec.ResolvePrimaryNameBinding(s.dialect, entry.shape) {
 		case spec.PrimaryNameBindsAmbiguous:
+			if !entry.shape.IndexNameSpaceUnvouched() {
+				// The member space is vouched — `primary` can only bind
+				// the PK side, where every native outcome leaves the
+				// table unchanged: 1176/1091 refuses, 3522 refuses
+				// INVISIBLE, VISIBLE is a proven no-op.
+				return
+			}
 			// A stored `primary` member may own the name — the flip may
 			// have landed on a member the unvouched name space cannot
 			// read. Membership itself cannot change on this path, but the
@@ -539,8 +648,9 @@ func (s *batchState) applyAlterIndexVisibility(statement spec.Statement, alter *
 			s.entries[key] = &batchTableEntry{state: tablePresent, shape: shape, displaySchema: entry.displaySchema, displayTable: entry.displayTable}
 			return
 		}
-		// spec.PrimaryNameBindsMember falls through to the ordinary member
-		// path.
+		// spec.PrimaryNameBindsMember and spec.PrimaryNameBindsNothing fall
+		// through to the ordinary member path — the freed `primary` name
+		// fails natively like any unmatched target (1176).
 	}
 	switch {
 	case entry == nil || entry.state == tableUnknown:
@@ -568,6 +678,30 @@ func (s *batchState) applyAlterIndexVisibility(statement spec.Statement, alter *
 			s.markIndexesUnknown(key)
 			return
 		}
+		// The member space is fully vouched — only the PK object can still
+		// own the name, through its actual stored catalog name.
+		switch spec.ResolveIndexNameBinding(s.dialect, entry.shape, name) {
+		case spec.IndexNameBindsPKObject:
+			if target == spec.ColumnVisibilityInvisible {
+				// A real PK object refuses the invisible flip outright
+				// (3522, verified on the renamed pk2 object on v8.5.0).
+				s.invalidateKey(key)
+				return
+			}
+			// VISIBLE on the real object is a proven no-op — publish the
+			// shape with the effective visibility pinned.
+			shape := cloneTableSnapshot(entry.shape)
+			if shape.PrimaryKey != nil {
+				shape.PrimaryKey.Visibility = spec.ColumnVisibilityVisible
+			}
+			s.entries[key] = &batchTableEntry{state: tablePresent, shape: shape, displaySchema: entry.displaySchema, displayTable: entry.displayTable}
+			return
+		case spec.IndexNameBindsAmbiguous:
+			// The PK object's stored name is unproven — the flip may have
+			// landed on it; unvouch the primary facts while members stay.
+			s.markPrimaryUnknown(key)
+			return
+		}
 		s.invalidateKey(key)
 		return
 	}
@@ -582,9 +716,19 @@ func (s *batchState) applyAlterIndexVisibility(statement spec.Statement, alter *
 			s.invalidateKey(key)
 			return
 		}
-		if role.HasHolder && strings.EqualFold(role.Holder, entry.shape.Indexes[indexPos].Name) {
+		if role.HasHolder && role.HolderIndex == &entry.shape.Indexes[indexPos] {
 			return
 		}
+	}
+	if target == spec.ColumnVisibilityInvisible &&
+		entry.shape.Indexes[indexPos].Kind == spec.IndexKindUnknown {
+		// A demoted attribution candidate may be the PK object — INVISIBLE
+		// on the object is natively refused (3522), so the member outcome
+		// is unprovable; the member set unvouches instead of publishing a
+		// maybe-refused flip. VISIBLE stays publishable because both
+		// native outcomes agree (a member flips, the object no-ops).
+		s.markIndexesUnknown(key)
+		return
 	}
 	shape := cloneTableSnapshot(entry.shape)
 	shape.Indexes[indexPos].Visibility = target
@@ -627,12 +771,24 @@ func (s *batchState) applyRenameIndex(statement spec.Statement, alter *spec.Alte
 		// constraint_named_PRIMARY=1 after RENAME INDEX `PRIMARY` TO pk2).
 		switch spec.ResolvePrimaryNameBinding(s.dialect, entry.shape) {
 		case spec.PrimaryNameBindsAmbiguous:
+			if !entry.shape.IndexNameSpaceUnvouched() {
+				// The member space is vouched — `primary` can only bind
+				// the PK side. The rename either moved the PK object
+				// (its stored name is then newName) or refused outright —
+				// the object's stored-name fact unvouches while every
+				// member name stays proven.
+				s.markPrimaryKeyNameUnknown(key)
+				return
+			}
 			// A stored `primary` member may own the name — the rename may
 			// have moved a member the unvouched name space cannot read, or
 			// renamed a real PRIMARY object whose stored name is then
-			// stale. The stored-name space unvouches either way; the PK
-			// presence itself cannot change on a rename.
+			// stale. The member name space unvouches either way, and the
+			// PK object's stored name unvouches separately — it may have
+			// moved to newName (the PK presence itself cannot change on a
+			// rename, only its stored-name fact).
 			s.markIndexNamesUnknown(key)
+			s.markPrimaryKeyNameUnknown(key)
 			return
 		case spec.PrimaryNameBindsPK:
 			exists, resolved := spec.ResolveIndexPrimaryObject(entry.shape, s.dialect)
@@ -642,11 +798,15 @@ func (s *batchState) applyRenameIndex(statement spec.Statement, alter *spec.Alte
 				s.invalidateKey(key)
 				return
 			}
-			if entry.shape.IndexesUnknown || entry.shape.IndexNamesUnknown || entry.shape.HasUnprovenIndexName() {
+			if entry.shape.IndexNameSpaceUnvouched() {
 				// A member holding the new name can hide under the
 				// unvouched name space — the 1061 collision cannot be
-				// ruled out, so the rename outcome is unprovable.
+				// ruled out, so the rename outcome is unprovable. The PK
+				// object's stored name unvouches too: the rename either
+				// moved it to newName or refused, and the shape cannot
+				// prove which.
 				s.markIndexNamesUnknown(key)
+				s.markPrimaryKeyNameUnknown(key)
 				return
 			}
 			if entry.shape.FindProvenIndex(newName) != nil {
@@ -682,48 +842,82 @@ func (s *batchState) applyRenameIndex(statement spec.Statement, alter *spec.Alte
 			s.markIndexNamesUnknown(key)
 			return
 		}
+		// The member space is fully vouched — only the PK object can still
+		// own the source name, through its actual stored catalog name.
+		switch spec.ResolveIndexNameBinding(s.dialect, entry.shape, oldName) {
+		case spec.IndexNameBindsPKObject:
+			s.renamePrimaryObject(key, entry, oldName, newName)
+			return
+		case spec.IndexNameBindsAmbiguous:
+			// The PK object's stored name is unproven — the rename may
+			// have moved it; unvouch the name fact while presence stays.
+			s.markPrimaryKeyNameUnknown(key)
+			return
+		}
 		if alter.Options["if_exists"] == "true" {
 			return
 		}
 		s.invalidateKey(key)
 		return
 	}
-	if s.dialect == spec.DialectTiDB && strings.EqualFold(newName, "primary") {
-		// A `primary` new name is refused while a real PRIMARY index
-		// object occupies the name (1061); on PKIsHandle/PK-less tables
-		// the name is free and the member takes it (verified v8.5.0).
-		if exists, resolved := spec.ResolveIndexPrimaryObject(entry.shape, s.dialect); resolved && exists {
+	if !strings.EqualFold(newName, oldName) {
+		// The destination name must be free: a proven member or the PK
+		// object under its actual stored name (a renamed pk2 as well as
+		// `primary`) refuses the rename 1061 — the table stays provably
+		// unchanged. An unprovable occupancy — an unvouched member name
+		// space, or a PK whose stored name is withheld — means the rename
+		// may not have landed, so the member's name unvouches instead of
+		// staying bindable on a possibly-stale name. A handle table's
+		// synthesized PRIMARY row and a freed `primary` bind nothing —
+		// the destination is free (verified v8.5.0: a member legally
+		// takes `primary` while the PK object stays pk3).
+		switch spec.ResolveIndexNameBinding(s.dialect, entry.shape, newName) {
+		case spec.IndexNameBindsPKObject, spec.IndexNameBindsMember:
 			return
-		} else if !resolved {
-			// Destination freedom is unprovable — the matched member's
-			// stored name may now be `primary` (rename landed) or its old
-			// name (1061 refused), so the member's name unvouches rather
-			// than staying bindable on a possibly-stale name.
+		case spec.IndexNameBindsAmbiguous:
 			s.markIndexMemberNameUnknown(key, entry.shape.Indexes[indexPos].Name)
 			return
 		}
-	}
-	if entry.shape.HasUnprovenIndexName() {
-		// A member whose real stored name is unproven may already hold
-		// the new name — the 1061 collision cannot be ruled out, so the
-		// matched member's name unvouches instead of publishing a rename
-		// that may never have happened.
-		s.markIndexMemberNameUnknown(key, entry.shape.Indexes[indexPos].Name)
-		return
-	}
-	if entry.shape.FindIndex(newName) != nil && !strings.EqualFold(newName, oldName) {
-		// The new name collides with a member (1061) — the rename is
-		// refused, so the table is provably unchanged.
-		return
 	}
 	shape := cloneTableSnapshot(entry.shape)
 	shape.Indexes[indexPos].Name = newName
 	s.entries[key] = &batchTableEntry{state: tablePresent, shape: shape, displaySchema: entry.displaySchema, displayTable: entry.displayTable}
 }
 
+// renamePrimaryObject publishes the post-state of renaming the real PK
+// index object: the constraint identity stays PRIMARY (verified
+// constraint_named_PRIMARY=1 after RENAME INDEX `PRIMARY` TO pk2 on
+// v8.5.0) while the object's stored catalog name moves. The destination
+// must be free — a proven member collision (or an occupying member
+// `primary` for a `primary` destination) refuses 1061 and keeps the
+// shape; an unvouched member name space or unproven PK name cannot prove
+// the outcome and unvouches only the name fact.
+func (s *batchState) renamePrimaryObject(key batchTableKey, entry *batchTableEntry, oldName, newName string) {
+	if entry.shape.IndexNameSpaceUnvouched() {
+		s.markPrimaryKeyNameUnknown(key)
+		return
+	}
+	if entry.shape.FindProvenIndex(newName) != nil && !strings.EqualFold(newName, oldName) {
+		// The new name collides with a member (1061) — refused.
+		return
+	}
+	shape := cloneTableSnapshot(entry.shape)
+	if shape.PrimaryKey != nil {
+		shape.PrimaryKey.Name = newName
+	}
+	s.entries[key] = &batchTableEntry{state: tablePresent, shape: shape, displaySchema: entry.displaySchema, displayTable: entry.displayTable}
+}
+
 // applyDropPrimaryKey publishes a bounded drop-primary-key transition: a
 // vouched primary key is cleared (with its constraint entry when the
 // constraint set is also vouched); an absent primary key premise invalidates.
+// On TiDB the statement is name-keyed — DROP PRIMARY KEY routes to
+// dropIndex("PRIMARY") (upstream pkg/ddl/executor.go L1763-1766 on v8.5.0),
+// so a member literally named `primary` provably owns the name first:
+// verified natively — the member is dropped while pk_left=1 survives.
+// The freed `primary` name after a PK rename binds nothing (1091 — a
+// broken premise), and an ambiguous binding unvouches rather than guessing.
+// MySQL has no member-first routing: `primary` binds the PK space only.
 func (s *batchState) applyDropPrimaryKey(statement spec.Statement, targets []spec.Table) {
 	if len(targets) != 1 {
 		s.invalidateAll(targets)
@@ -741,6 +935,47 @@ func (s *batchState) applyDropPrimaryKey(statement spec.Statement, targets []spe
 	}
 	if entry.shape == nil {
 		return
+	}
+	if s.dialect == spec.DialectTiDB {
+		switch spec.ResolvePrimaryNameBinding(s.dialect, entry.shape) {
+		case spec.PrimaryNameBindsMember:
+			// The name-keyed drop hits the member, not the PK.
+			indexPos, _ := provenIndexMatch(entry.shape.Indexes, "primary")
+			if indexPos < 0 {
+				s.markIndexesUnknown(key)
+				return
+			}
+			shape := cloneTableSnapshot(entry.shape)
+			dropped := shape.Indexes[indexPos]
+			shape.Indexes = append(shape.Indexes[:indexPos], shape.Indexes[indexPos+1:]...)
+			if shape.PrimaryKey != nil && shape.PrimaryKey.NameUnknown &&
+				(dropped.Kind == spec.IndexKindUnique || dropped.Kind == spec.IndexKindUnknown) {
+				// The dropped `primary` fold may itself have been the PK
+				// object under withheld attribution — presence and
+				// constraint truth unvouch together, mirroring
+				// applyDropIndex.
+				shape.PrimaryKeyUnknown = true
+				shape.ConstraintsUnknown = true
+			}
+			s.entries[key] = &batchTableEntry{state: tablePresent, shape: shape, displaySchema: entry.displaySchema, displayTable: entry.displayTable}
+			return
+		case spec.PrimaryNameBindsAmbiguous:
+			if s.ambiguousPrimaryDropOutcome(key, entry) {
+				return
+			}
+			// The member space is vouched — no member owns `primary`, so
+			// the drop provably targets the PK side only. Its outcome is
+			// still unprovable (an unproven stored name or an undecided
+			// handle/clustered answer) — invalidate rather than publish.
+			s.invalidateKey(key)
+			return
+		case spec.PrimaryNameBindsNothing:
+			// The freed `primary` name binds nothing (1091) — a proven
+			// broken premise.
+			s.invalidateKey(key)
+			return
+		}
+		// spec.PrimaryNameBindsPK falls through to the PK drop below.
 	}
 	if entry.shape.PrimaryKeyUnknown || !entry.shape.HasPrimaryKey() {
 		// An unknown PK state cannot prove the drop premise; a vouched
@@ -768,17 +1003,5 @@ func (s *batchState) applyDropPrimaryKey(statement spec.Statement, targets []spe
 			return
 		}
 	}
-	shape := cloneTableSnapshot(entry.shape)
-	shape.PrimaryKey = nil
-	if shape.Constraints != nil && !shape.ConstraintsUnknown {
-		remaining := shape.Constraints[:0]
-		for _, constraint := range shape.Constraints {
-			if constraint.Type == "primary_key" {
-				continue
-			}
-			remaining = append(remaining, constraint)
-		}
-		shape.Constraints = remaining
-	}
-	s.entries[key] = &batchTableEntry{state: tablePresent, shape: shape, displaySchema: entry.displaySchema, displayTable: entry.displayTable}
+	s.publishPrimaryKeyDrop(key, entry)
 }
