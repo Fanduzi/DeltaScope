@@ -1,6 +1,6 @@
 // Package ddl defines Tier-1 DDL rules.
 // input: normalized Statement specs emitted by application extraction, including alter-table and standalone rename payloads
-// output: reusable DDL rule predicates and rule identifier constants, including the CHANGE and RENAME destination-name, RENAME COLUMN version, and T07 advanced-column identifiers, plus shared alter-action and rename matching helpers, the indexPlainComparable plain-key premise shared by the pair-comparison rules, and the memberComparisonGap/declaredComparisonGap attribution for applicable pair comparisons a non-plain member leaves unverifiable (declared-vs-existing on create_index, declaration-vs-declaration inside create_table), and the T10 alter_index/invisibility/advanced-index-compatibility rule identifiers — left-prefix pairing treats any member the key-part list counts beyond the named columns (expression-bearing or unmodeled alike) as a truncated projection, so a declared prefix of the named columns is pairable even at equal length
+// output: reusable DDL rule predicates and rule identifier constants, including the CHANGE and RENAME destination-name, RENAME COLUMN version, and T07 advanced-column identifiers, plus shared alter-action and rename matching helpers, the indexPlainComparable plain-key premise shared by the pair-comparison rules, and the memberComparisonGap/declaredComparisonGap attribution for applicable pair comparisons a non-plain member leaves unverifiable (declared-vs-existing on create_index, declaration-vs-declaration inside create_table — R6: a kind-withheld maybe-PK candidate also unverifies the pairing and owes target_table.indexes), and the T10 alter_index/invisibility/advanced-index-compatibility rule identifiers — left-prefix pairing treats any member the key-part list counts beyond the named columns (expression-bearing or unmodeled alike) as a truncated projection, so a declared prefix of the named columns is pairable even at equal length
 // pos: DDL rule common helpers shared across concrete rules and parser-neutral rename semantics
 // note: if this file changes, update this header and module README.md.
 package ddl
@@ -582,22 +582,45 @@ func indexPlainComparable(idx spec.Index) bool {
 // member comparability stay distinct facts.
 const indexKeyPartsGapFact = "target_table.indexes.key_parts"
 
+// indexPairVerdict classifies one declared/existing pair's comparison
+// reach — the pairing can apply, cannot apply, or is blocked only by the
+// existing member's withheld kind (a demoted PK-attribution candidate that
+// may still satisfy the kind side).
+type indexPairVerdict int
+
+const (
+	indexPairNone indexPairVerdict = iota
+	indexPairApplies
+	indexPairKindWithheld
+)
+
 // indexPairing encodes a rule's plain-key comparison reach: whether the
 // declared index could have been compared against the existing member.
 // A non-plain member on either side leaves the comparison unanswerable —
 // the gap functions below report it as attributable key-parts evidence
-// rather than reading the declared subject as standalone unaudited.
-type indexPairing func(declared, existing spec.Index) bool
+// rather than reading the declared subject as standalone unaudited — and
+// an existing member whose kind is withheld leaves the pair itself
+// unanswerable when its column shape otherwise matches.
+type indexPairing func(declared, existing spec.Index) indexPairVerdict
 
-func duplicatePairing(declared, existing spec.Index) bool {
-	return existing.Kind == declared.Kind && slices.Equal(existing.Columns, declared.Columns)
+func duplicatePairing(declared, existing spec.Index) indexPairVerdict {
+	if !slices.Equal(existing.Columns, declared.Columns) {
+		return indexPairNone
+	}
+	if existing.Kind == spec.IndexKindUnknown {
+		return indexPairKindWithheld
+	}
+	if existing.Kind == declared.Kind {
+		return indexPairApplies
+	}
+	return indexPairNone
 }
 
-func leftPrefixPairing(declared, existing spec.Index) bool {
-	if declared.Kind != spec.IndexKindSecondary || existing.Kind != spec.IndexKindSecondary ||
-		len(declared.Columns) == 0 {
-		return false
+func leftPrefixPairing(declared, existing spec.Index) indexPairVerdict {
+	if declared.Kind != spec.IndexKindSecondary || len(declared.Columns) == 0 {
+		return indexPairNone
 	}
+	pairable := false
 	if existing.ExpressionCount > 0 || existing.HasExpressionKeys ||
 		len(existing.KeyParts) > len(existing.Columns) {
 		// Expression parts never enter Columns, so the recorded columns are
@@ -611,9 +634,20 @@ func leftPrefixPairing(declared, existing spec.Index) bool {
 		// else (a declared column absent from the named parts, or a
 		// declared prefix reaching past them) is unrelated under every
 		// interleaving.
-		return hasKeyPartPrefix(declared.Columns, existing.Columns)
+		pairable = hasKeyPartPrefix(declared.Columns, existing.Columns)
+	} else {
+		pairable = isLeftPrefix(declared.Columns, existing.Columns)
 	}
-	return isLeftPrefix(declared.Columns, existing.Columns)
+	if !pairable {
+		return indexPairNone
+	}
+	if existing.Kind == spec.IndexKindUnknown {
+		return indexPairKindWithheld
+	}
+	if existing.Kind == spec.IndexKindSecondary {
+		return indexPairApplies
+	}
+	return indexPairNone
 }
 
 // hasKeyPartPrefix reports whether prefix matches the head of the named
@@ -631,10 +665,18 @@ func hasKeyPartPrefix(prefix, sequence []string) bool {
 	return true
 }
 
-func uniqueOverlapPairing(declared, existing spec.Index) bool {
-	return declared.Kind == spec.IndexKindSecondary &&
-		existing.Kind == spec.IndexKindUnique &&
-		slices.Equal(existing.Columns, declared.Columns)
+func uniqueOverlapPairing(declared, existing spec.Index) indexPairVerdict {
+	if declared.Kind != spec.IndexKindSecondary ||
+		!slices.Equal(existing.Columns, declared.Columns) {
+		return indexPairNone
+	}
+	if existing.Kind == spec.IndexKindUnknown {
+		return indexPairKindWithheld
+	}
+	if existing.Kind == spec.IndexKindUnique {
+		return indexPairApplies
+	}
+	return indexPairNone
 }
 
 // memberComparisonGap reports one attributable gap when a declared index and
@@ -649,19 +691,40 @@ func uniqueOverlapPairing(declared, existing spec.Index) bool {
 // scoped to actually-affected pairings — a non-plain member no declared
 // index can pair with emits nothing.
 func memberComparisonGap(declared, existing []spec.Index, pairing indexPairing) []rule.EvidenceGap {
+	kindWithheld := false
+	keyPartsWithheld := false
 	for i := range declared {
 		for j := range existing {
-			if !pairing(declared[i], existing[j]) {
+			switch verdict := pairing(declared[i], existing[j]); verdict {
+			case indexPairKindWithheld:
+				kindWithheld = true
+				continue
+			case indexPairApplies:
+				// compare member shapes below
+			default:
 				continue
 			}
 			if indexPlainComparable(declared[i]) && indexPlainComparable(existing[j]) {
 				continue
 			}
-			return []rule.EvidenceGap{{
-				ReasonCode:    gapReasonUnknownTableState,
-				RequiredFacts: []string{indexKeyPartsGapFact},
-			}}
+			keyPartsWithheld = true
 		}
+	}
+	var facts []string
+	if kindWithheld {
+		// A pair whose column shape matches but whose existing-side kind is
+		// withheld could apply under either answer — "no comparison hit"
+		// is unverifiable, so the member collection fact is what's owed.
+		facts = append(facts, "target_table.indexes")
+	}
+	if keyPartsWithheld {
+		facts = append(facts, indexKeyPartsGapFact)
+	}
+	if len(facts) > 0 {
+		return []rule.EvidenceGap{{
+			ReasonCode:    gapReasonUnknownTableState,
+			RequiredFacts: facts,
+		}}
 	}
 	return nil
 }
@@ -680,7 +743,7 @@ func declaredComparisonGap(declared []spec.Index, pairing indexPairing) []rule.E
 			if i == j {
 				continue
 			}
-			if !pairing(declared[i], declared[j]) {
+			if pairing(declared[i], declared[j]) != indexPairApplies {
 				continue
 			}
 			if indexPlainComparable(declared[i]) && indexPlainComparable(declared[j]) {

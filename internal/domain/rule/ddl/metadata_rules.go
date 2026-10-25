@@ -304,16 +304,30 @@ func (r alterPrimaryKeyExistenceRule) Evaluate(ctx context.Context, statement sp
 	// vouch for those sets, and nil-provider/derived-incomplete shapes
 	// stay silent instead of fabricating a missing-key finding.
 	if !ok || snapshot == nil || !snapshot.Exists ||
-		snapshot.PrimaryKeyUnknown || snapshot.ConstraintsUnknown || snapshot.HasPrimaryKey() {
+		snapshot.PrimaryKeyUnknown || snapshot.ConstraintsUnknown {
 		return nil, nil
 	}
 	// TiDB routes DROP PRIMARY KEY through dropIndex(…, "PRIMARY")
 	// member-first — a proven member literally named `primary` owns the
 	// target and drops without the PK, and an unvouched member space
 	// leaves the binding ambiguous. Neither is a proven PK-absent
-	// premise, so neither fires the blocker.
-	switch spec.ResolvePrimaryNameBinding(statement.Dialect, snapshot) {
-	case spec.PrimaryNameBindsMember, spec.PrimaryNameBindsAmbiguous:
+	// premise, so neither fires the blocker. The PK side answers
+	// existence only while it actually binds `primary` — a renamed object
+	// (pk2) frees the name, and the freed name is a proven-missing
+	// target exactly like a proven-absent PK (1091 verified on v8.5.0).
+	// The routing applies only to a genuine name-keyed DROP PRIMARY KEY
+	// action — a drop_constraint-derived match routes by constraint
+	// identity, so its premise stays plain PK existence.
+	if len(matchingAlterActions(statement, "drop_primary_key")) > 0 {
+		switch spec.ResolvePrimaryNameBinding(statement.Dialect, snapshot) {
+		case spec.PrimaryNameBindsMember, spec.PrimaryNameBindsAmbiguous:
+			return nil, nil
+		case spec.PrimaryNameBindsPK:
+			if snapshot.HasPrimaryKey() {
+				return nil, nil
+			}
+		}
+	} else if snapshot.HasPrimaryKey() {
 		return nil, nil
 	}
 	return []rule.Finding{{
@@ -344,20 +358,41 @@ func (r alterPrimaryKeyExistenceRule) EvidenceGaps(statement spec.Statement) []r
 			RequiredFacts: []string{"target_table.primary_key", "target_table.existence"},
 		}}
 	}
-	if snapshot.Exists && (snapshot.PrimaryKeyUnknown || snapshot.ConstraintsUnknown) {
+	if !snapshot.Exists {
+		return nil
+	}
+	// Member-first routing leaves the binding ambiguous while either side
+	// is unproven — an unvouched member space may hide a `primary` member
+	// (member collection fact — TiDB only, since MySQL reserves the name
+	// outright), and a withheld PK object name, handle/clustered answer,
+	// or unvouched PK/constraint truth may hide the PK side (primary-key
+	// identity fact). The suppressed finding owes exactly the facts it
+	// could not prove — no unrelated gap. A drop_constraint-derived match
+	// routes by constraint identity, so only the PK fact gates it.
+	pkSideUnproven := snapshot.PrimaryKeyUnknown || snapshot.ConstraintsUnknown ||
+		snapshot.PrimaryKeyHandleUnknown ||
+		(snapshot.PrimaryKey != nil && snapshot.PrimaryKey.NameUnknown)
+	if len(matchingAlterActions(statement, "drop_primary_key")) > 0 &&
+		spec.ResolvePrimaryNameBinding(statement.Dialect, snapshot) == spec.PrimaryNameBindsAmbiguous {
+		var facts []string
+		if statement.Dialect == spec.DialectTiDB && snapshot.IndexNameSpaceUnvouched() {
+			facts = append(facts, "target_table.indexes")
+		}
+		if pkSideUnproven {
+			facts = append(facts, "target_table.primary_key")
+		}
+		if len(facts) > 0 {
+			return []rule.EvidenceGap{{
+				ReasonCode:    gapReasonUnknownTableState,
+				RequiredFacts: facts,
+			}}
+		}
+		return nil
+	}
+	if pkSideUnproven {
 		return []rule.EvidenceGap{{
 			ReasonCode:    gapReasonUnknownTableState,
 			RequiredFacts: []string{"target_table.primary_key"},
-		}}
-	}
-	// Member-first routing means a `primary` member may hide under an
-	// unvouched member space — the member collection fact decides whether
-	// the target binds a member or the (provably absent) PK side.
-	if snapshot.Exists &&
-		spec.ResolvePrimaryNameBinding(statement.Dialect, snapshot) == spec.PrimaryNameBindsAmbiguous {
-		return []rule.EvidenceGap{{
-			ReasonCode:    gapReasonUnknownTableState,
-			RequiredFacts: []string{"target_table.indexes"},
 		}}
 	}
 	return nil

@@ -692,3 +692,69 @@ truncates a colliding base to 61 bytes before appending `_2`/`_3`
 cross the identifier limit natively (1059) and stay unprovable.
 Successor name-keyed operations on the derived name bind normally; an
 unprovable name space keeps its existing evidence gap.
+
+### 9.7 Amendment R6 — attribution ordering, ambiguous consumers, name-keyed routing closure
+
+(a) Provider attribution is ordered and tri-state. The R5 attribution
+compared candidate folds to the `KEY_COLUMN_USAGE` primary list by
+unordered set equality and promoted the first match — wrong twice over:
+`[a,b]` and `[b,a]` are different objects (verified on the v8.5.0
+anchor: a renamed `pk2(a,b)` coexists with `aa(b,a)`), and multiple
+same-sequence candidates exist natively (verified: `aa(id)` and
+`pk2(id)` coexist with ordered KCU `[id]` — the ordered match hits
+both, so it cannot uniquely attribute). R6 compares ordered sequences
+(`columnsSequenceEqualFold`), promotes only on exactly one ordered
+match, and otherwise keeps PK presence under a name-unknown
+`PrimaryKey` placeholder with every potentially-PK unique candidate
+demoted to `IndexKindUnknown`. `TIDB_INDEXES.CLUSTERED` reads as a
+tri-state (YES/NO/unproven): a missing row, NULL, or unrecognized
+value never counts as a proven NO, so NONCLUSTERED publishes only
+when every candidate proved NO (verified: only the PK object's row
+reads YES). An inconsistent `pkCount > 1` demotes every potentially-PK
+candidate and unvouches all primary facts rather than leaving
+maybe-PK folds as definite UNIQUE members. The R5-B error contract is
+unchanged — actual probe failures still propagate.
+
+(b) Ambiguous candidates close through the consumers, not around
+them. An `ALTER INDEX` target whose name binds a `KindUnknown`
+candidate under withheld primary attribution resolves
+`UnresolvedTransition` with a `target_table.primary_key` gap — the
+object may be the PK or an ordinary UNIQUE, so the visibility
+assessment neither silently passes nor fabricates the 3522 refusal.
+Duplicate/unique-overlap pairings become tri-state: an
+otherwise-applicable pair blocked by a withheld-kind candidate emits
+the bounded `target_table.indexes` gap instead of a clean pass (kind
+truth lives on the member, not its key parts), while proven members
+and fully comparable pairs answer
+normally — existence of the object is not its kind, so an `exists`
+finding never masks a missing kind fact.
+
+(c) `DROP PRIMARY KEY` routes by the shared name binding for genuine
+name-keyed actions. A TiDB `primary` freed by a PK-object rename is a
+proven-missing target (1091 — verified on the v8.5.0 anchor and
+archived in the R5 probe log a2b), so the existence rule fires its
+missing finding instead of answering "exists" off stale presence; a
+member literally named `primary` still answers member-first, a bound
+PK still answers exists, and an ambiguous binding suppresses the
+finding while owing exactly the unproven side — the member collection
+fact only on TiDB (MySQL reserves `primary` outright) plus the
+primary-key fact when the object name or handle/clustered answer
+stays withheld. A `drop_constraint`-derived match routes by
+constraint identity — its premise stays plain PK existence and never
+enters name binding.
+
+(d) Ordered-state name-keyed transitions resolve the shared binding
+before member-side gates. `applyDropIndex`, `applyRenameIndex`, and
+`applyAlterIndexVisibility` consult `spec.ResolveIndexNameBinding`
+ahead of the member-set/member-name provability checks — a proven PK
+object name binds the object even while member facts stay unvouched
+(an unvouched member name space can never coexist with the object's
+name natively — 1061), so `DROP INDEX pk2` removes the proven object,
+`RENAME INDEX pk2 TO pk3` unvouches only the object's stored-name
+fact when destination freedom is unprovable, and visibility flips
+keep their refuse/no-op outcomes. An ambiguous binding unvouches
+exactly the side that may have moved — the member name space and/or
+the PK side (`markPrimaryKeyNameUnknown` on rename,
+`markPrimaryUnknown` on drop, and a vouched member space narrowing
+the target to PK-object-or-nothing invalidates INVISIBLE since every
+native outcome refuses).

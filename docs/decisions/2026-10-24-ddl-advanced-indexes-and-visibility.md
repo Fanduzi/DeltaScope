@@ -518,6 +518,45 @@ boundaries; all close in place without re-expanding T10:
   truncate — a 62-byte base suffixes to a 64-byte stored name while
   63/64-byte bases cross the limit natively (1059) and stay unprovable.
 
+### R6 amendment — attribution ordering, ambiguous consumers, batch-state closure
+
+Independent review of the R5 candidate found the last attribution and
+consumer gaps on the R5-A path; all close in place:
+
+- **Ordered, tri-state provider attribution.** Candidate folds now
+  match the `KEY_COLUMN_USAGE` primary list by ordered sequence — a
+  reversed `[b,a]` member never binds a `[a,b]` primary (verified on
+  the v8.5.0 anchor), and multiple same-sequence candidates withhold
+  object identity rather than promoting the first STATISTICS hit
+  (verified: `aa(id)` and `pk2(id)` coexist with ordered KCU `[id]`).
+  `TIDB_INDEXES.CLUSTERED` reads as YES/NO/unproven — missing, NULL,
+  or unrecognized rows never count as a proven NO — and an
+  inconsistent `pkCount > 1` demotes every potentially-PK candidate
+  with all primary facts unvouched. The R5-B error contract is
+  unchanged.
+- **Ambiguous candidates close through consumers.** A proven-name
+  `IndexKindUnknown` visibility target under withheld attribution
+  resolves `UnresolvedTransition` with a `target_table.primary_key`
+  gap — never a silent pass nor a fabricated 3522 — and
+  duplicate/unique-overlap pairings emit `target_table.indexes` for an
+  otherwise-applicable pair blocked by a withheld kind (kind truth
+  lives on the member, not its key parts), while proven members keep
+  their findings.
+- **DROP PRIMARY KEY name-keyed routing.** Genuine `drop_primary_key`
+  actions resolve `spec.ResolvePrimaryNameBinding`: a freed `primary`
+  name is a proven-missing target (1091), a member-owned `primary`
+  answers member-first, ambiguous bindings owe only the unproven side
+  (`target_table.indexes` is TiDB-only — MySQL reserves the name).
+  `drop_constraint`-derived matches keep the plain PK-existence
+  premise — they never enter name binding.
+- **Binding before member gates in batch state.** The drop, rename,
+  and visibility applies resolve `ResolveIndexNameBinding` ahead of
+  the member-set provability gates, so a proven PK object binds its
+  actual stored name under unvouched member metadata (drop removes
+  it; rename unvouches only the stored-name fact when destination
+  freedom is unprovable), and an ambiguous binding unvouches exactly
+  the side that may have moved.
+
 ## References
 
 - Issue: Fanduzi/DeltaScope#79 (milestone), #89 (T10 scope)

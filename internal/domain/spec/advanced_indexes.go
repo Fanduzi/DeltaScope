@@ -7,12 +7,13 @@
 // product/version and kind-aware member-legality issues, the four-state
 // implicit-primary role verdict, and bounded version/fact gaps —
 // InvalidTransition marks determined negatives and UnresolvedTransition
-// marks feature-bearing answers that could not be proven either way, both
-// consumed by the ordered-state publication gate; `alter_index primary`
+// marks feature-bearing answers that could not be proven either way (R6:
+// a kind-withheld maybe-PK visibility target resolves Unresolved too),
+// both consumed by the ordered-state publication gate; `alter_index primary`
 // skips the primary-object path only on a proven member binding via
 // ResolvePrimaryNameBinding (a TiDB member may own the name) — ambiguous
 // bindings still resolve through the PRIMARY-object existence probe
-// pos: T10 domain model + T10-R2/R4 primary-role/name-binding answers
+// pos: T10 domain model + T10-R2/R4/R6 primary-role/name-binding answers
 // note: if this file changes, update this header and module README.md.
 package spec
 
@@ -806,6 +807,17 @@ func assessImplicitPrimaryVisibility(assessment *AdvancedIndexAssessment, fact a
 			// question never arises; the existence rule owns the
 			// finding/gap either way. A proven target binds even while a
 			// sibling's stored name stays unproven.
+			return
+		}
+		if target.Kind == IndexKindUnknown &&
+			(snapshot.PrimaryKeyUnknown ||
+				(snapshot.PrimaryKey != nil && snapshot.PrimaryKey.NameUnknown)) {
+			// An attribution-demoted candidate may BE the PK object —
+			// INVISIBLE on the object refuses (3522) while on a member it
+			// lands, so the outcome is unprovable while the PK identity is
+			// withheld. Never silently pass and never fabricate the
+			// refusal: the primary-key identity fact is what's missing.
+			unresolvedRole(PrimaryRoleResolution{GapFacts: []string{PrimaryRoleGapPrimaryKey}})
 			return
 		}
 		if target.Kind != IndexKindUnique {

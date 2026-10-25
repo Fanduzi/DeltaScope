@@ -524,7 +524,11 @@ func ResolveIndexNameBinding(dialect Dialect, snapshot *TableSnapshot, name stri
 			if !strings.EqualFold(pkName, name) {
 				return IndexNameBindsNone
 			}
-			if dialect == DialectTiDB {
+			if dialect == DialectTiDB && strings.EqualFold(name, "primary") {
+				// The handle caveat applies to `primary` only — a handle
+				// synth row is always named PRIMARY, so a proven
+				// non-`primary` object name is already a real operable
+				// object regardless of the undecided handle answer.
 				if snapshot.PrimaryKeyHandleUnknown {
 					return IndexNameBindsAmbiguous
 				}
@@ -538,10 +542,12 @@ func ResolveIndexNameBinding(dialect Dialect, snapshot *TableSnapshot, name stri
 	// Member name space unvouched — a member may hold the target name.
 	// A proven real PK object still rules the member out natively (1061
 	// forbids the coexistence); a synthesized handle row does not occupy
-	// the name against a member (verified: member `primary` coexists
-	// with the synth PRIMARY row), so it stays ambiguous here.
+	// the `primary` name against a member (verified: member `primary`
+	// coexists with the synth PRIMARY row), so a `primary` target stays
+	// ambiguous while the handle answer is undecided or proven — a proven
+	// non-`primary` object name is already a real operable object.
 	if pkName, proven := PrimaryKeyObjectName(snapshot); proven && strings.EqualFold(pkName, name) {
-		if dialect == DialectTiDB &&
+		if dialect == DialectTiDB && strings.EqualFold(name, "primary") &&
 			(snapshot.PrimaryKeyHandleUnknown || snapshot.PrimaryKeyIsHandle) {
 			return IndexNameBindsAmbiguous
 		}
