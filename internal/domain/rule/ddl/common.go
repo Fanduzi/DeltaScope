@@ -804,20 +804,141 @@ func alterDeclaredPrimaryKeyMembers(statement spec.Statement) []string {
 	return nil
 }
 
+// orderedColumnVerdict classifies a member's column-fact answer:
+// resolved carries a usable fact, absent is the proven native refusal
+// (no such column at the key action — the statement fails, silently),
+// and undecidable is the unprovable middle the gap contract owns.
+type orderedColumnVerdict int
+
+const (
+	orderedColumnAbsent orderedColumnVerdict = iota
+	orderedColumnResolved
+	orderedColumnUndecidable
+)
+
+// declaredColumnOutcome is one column name's effective outcome after the
+// statement's column actions fold: a final declared definition, a removal
+// (drop or rename-away), a rename pass-through to a prior name, or a
+// touch whose resulting shape is unprovable.
+type declaredColumnOutcome struct {
+	def     *spec.Column
+	removed bool
+	rename  string
+	touched bool
+}
+
+// statementColumnDecls folds the ALTER's column actions in authored order
+// into each touched name's effective outcome — the shape MySQL evaluates
+// the key action against (probed on 8.0.46: ADD COLUMN + ADD PRIMARY KEY
+// lands in either order, MODIFY + ADD PRIMARY KEY reads the new
+// definition). A change-column rename moves the identity; a rename_column
+// passes the prior name's facts through under the new spelling.
+func statementColumnDecls(statement spec.Statement) map[string]declaredColumnOutcome {
+	decls := make(map[string]declaredColumnOutcome)
+	if statement.DDL == nil {
+		return decls
+	}
+	put := func(name string, outcome declaredColumnOutcome) {
+		if trimmed := strings.ToLower(strings.TrimSpace(name)); trimmed != "" {
+			decls[trimmed] = outcome
+		}
+	}
+	for _, alter := range statement.DDL.Alter {
+		switch alter.Action {
+		case "add_columns":
+			if alter.Column == nil || alter.Column.Definition == nil {
+				continue
+			}
+			put(alter.Column.Definition.Name, declaredColumnOutcome{def: alter.Column.Definition, touched: true})
+		case "modify_column", "change_column":
+			if alter.Column == nil {
+				continue
+			}
+			oldName := alter.Column.OldName
+			def := alter.Column.Definition
+			if def == nil {
+				if oldName == "" {
+					oldName = alter.Name
+				}
+				put(oldName, declaredColumnOutcome{touched: true})
+				continue
+			}
+			if oldName != "" && !strings.EqualFold(oldName, def.Name) {
+				put(oldName, declaredColumnOutcome{removed: true, touched: true})
+			}
+			put(def.Name, declaredColumnOutcome{def: def, touched: true})
+		case "rename_column":
+			if alter.Column == nil {
+				continue
+			}
+			oldName := alter.Column.OldName
+			newName := ""
+			if alter.Column.Definition != nil {
+				newName = alter.Column.Definition.Name
+			}
+			if oldName != "" && newName != "" && !strings.EqualFold(oldName, newName) {
+				put(oldName, declaredColumnOutcome{removed: true, touched: true})
+				put(newName, declaredColumnOutcome{rename: oldName, touched: true})
+				continue
+			}
+			if oldName != "" {
+				put(oldName, declaredColumnOutcome{touched: true})
+			}
+		case "drop_column":
+			name := alter.Name
+			if alter.Column != nil && alter.Column.OldName != "" {
+				name = alter.Column.OldName
+			}
+			put(name, declaredColumnOutcome{removed: true, touched: true})
+		}
+	}
+	return decls
+}
+
 // orderedColumnFact resolves one declared member name through the
-// statement's ordered pre-state column facts. Only a proven member
-// answers: an absent snapshot, a settled-absent table, a withheld column
-// set, or a member outside the proven set all return false so consumers
-// never predicate on name-only stubs.
-func orderedColumnFact(statement spec.Statement, name string) (spec.Column, bool) {
-	snapshot, ok := targetTableSnapshot(statement)
-	if !ok || snapshot == nil || !snapshot.Exists || snapshot.Columns == nil {
-		return spec.Column{}, false
+// statement's ordered column facts. MySQL reads the member's effective
+// declared shape — same-statement column actions fold in authored order,
+// so an ADD supplies a member the pre-state never had and a MODIFY
+// supplies the new definition (both directions probed on 8.0.46). TiDB
+// validates every action against the pre-state — a same-statement
+// declaration touching the member refuses the statement natively (1072
+// for an unknown member, 8200 for an operated same column), so a touched
+// member is undecidable rather than wrong; an untouched member answers
+// from the pre-state set as before. PostgreSQL keeps the ordered
+// pre-state contract unchanged.
+func orderedColumnFact(statement spec.Statement, name string) (spec.Column, orderedColumnVerdict) {
+	snapshot, snapOK := targetTableSnapshot(statement)
+	switch statement.Dialect {
+	case spec.DialectMySQL:
+		if outcome, touched := statementColumnDecls(statement)[strings.ToLower(strings.TrimSpace(name))]; touched {
+			switch {
+			case outcome.removed || outcome.def == nil && outcome.rename == "":
+				return spec.Column{}, orderedColumnUndecidable
+			case outcome.def != nil:
+				return *outcome.def, orderedColumnResolved
+			default:
+				// rename pass-through: the new name carries the prior
+				// name's proven facts when the pre-state knows them.
+				if snapOK && snapshot != nil && snapshot.Exists && snapshot.Columns != nil {
+					if column := snapshot.FindColumn(outcome.rename); column != nil {
+						return *column, orderedColumnResolved
+					}
+				}
+				return spec.Column{}, orderedColumnUndecidable
+			}
+		}
+	case spec.DialectTiDB:
+		if statementColumnDecls(statement)[strings.ToLower(strings.TrimSpace(name))].touched {
+			return spec.Column{}, orderedColumnUndecidable
+		}
+	}
+	if !snapOK || snapshot == nil || !snapshot.Exists || snapshot.Columns == nil {
+		return spec.Column{}, orderedColumnUndecidable
 	}
 	if column := snapshot.FindColumn(name); column != nil {
-		return *column, true
+		return *column, orderedColumnResolved
 	}
-	return spec.Column{}, false
+	return spec.Column{}, orderedColumnAbsent
 }
 
 func appliesToCreateTableOrAlterFKConstraint(statement spec.Statement) bool {

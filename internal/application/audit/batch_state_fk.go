@@ -249,22 +249,25 @@ func (s *batchState) createTableForeignKeyPremise(ctx context.Context, key batch
 // unclassifiable candidates answer unprovable rather than fabricating
 // either absence or usability.
 func (s *batchState) referencedKeyPremise(shape *spec.TableSnapshot, referencedColumns []string) (usable bool, provable bool) {
-	return s.referencedAlternativeCoverer(shape, -1, false, referencedColumns)
+	return s.referencedAlternativeCoverer(shape, -1, false, referencedColumns, false)
 }
 
 // referencedAlternativeCoverer reports whether the shape still carries an
 // eligible referenced-key coverer once the drop target (member indexPos,
 // or the primary object when dropPK) is gone. Shared by the add premise
-// (indexPos=-1: does any usable key exist) and the parent-side drop
-// dependency (would the surviving set still back a loaded child's foreign
-// key — the native 1553 check that only the last eligible coverer trips).
-func (s *batchState) referencedAlternativeCoverer(shape *spec.TableSnapshot, indexPos int, dropPK bool, referencedColumns []string) (covered bool, provable bool) {
+// (indexPos=-1, forBinding=false: does any usable key exist for a NEW
+// reference — the creatability question the restrict flag gates) and the
+// parent-side drop dependency (forBinding=true: would the surviving set
+// still back a loaded child's foreign key — the native 1553 check, which
+// is a physical-binding question the current flag cannot retroactively
+// change).
+func (s *batchState) referencedAlternativeCoverer(shape *spec.TableSnapshot, indexPos int, dropPK bool, referencedColumns []string, forBinding bool) (covered bool, provable bool) {
 	if shape == nil {
 		return false, false
 	}
 	unprovable := false
 	if !dropPK && shape.PrimaryKey != nil {
-		if covered, provable := indexCoversColumns(*shape.PrimaryKey, referencedColumns); covered {
+		if covered, provable := s.referencedKeyMatch(*shape.PrimaryKey, referencedColumns, forBinding); covered {
 			return true, true
 		} else if !provable {
 			unprovable = true
@@ -274,7 +277,12 @@ func (s *batchState) referencedAlternativeCoverer(shape *spec.TableSnapshot, ind
 		if i == indexPos {
 			continue
 		}
-		eligible, eligibleProvable := s.referencedKeyMemberEligible(shape.Indexes[i].Kind)
+		var eligible, eligibleProvable bool
+		if forBinding {
+			eligible, eligibleProvable = supportingIndexCandidate(shape.Indexes[i].Kind)
+		} else {
+			eligible, eligibleProvable = s.referencedKeyMemberEligible(shape.Indexes[i].Kind)
+		}
 		if !eligibleProvable {
 			unprovable = true
 			continue
@@ -282,7 +290,7 @@ func (s *batchState) referencedAlternativeCoverer(shape *spec.TableSnapshot, ind
 		if !eligible {
 			continue
 		}
-		if covered, provable := indexCoversColumns(shape.Indexes[i], referencedColumns); covered {
+		if covered, provable := s.referencedKeyMatch(shape.Indexes[i], referencedColumns, forBinding); covered {
 			return true, true
 		} else if !provable {
 			unprovable = true
@@ -297,6 +305,65 @@ func (s *batchState) referencedAlternativeCoverer(shape *spec.TableSnapshot, ind
 		unprovable = true
 	}
 	return false, !unprovable
+}
+
+// referencedKeyMatch reports whether the index can serve the referenced
+// columns. An existing binding needs only the physical leftmost-prefix
+// coverage (TiDB accepts partial references for new keys too — probed
+// v8.5.0). For a NEW reference on MySQL the strict anchor adds the
+// complete-key rule: under observed restrict_fk_on_non_standard_key=ON
+// the columns must equal the member's entire key — a partial unique or
+// partial primary reference refuses with 6125 (probed on 8.4.10). An
+// unobserved flag on a version that could run 8.4+ leaves a
+// prefix-only match undecidable; an exact match is safe under either
+// arm, and a proven pre-8.4 version keeps the plain prefix rule.
+func (s *batchState) referencedKeyMatch(index spec.Index, referencedColumns []string, forBinding bool) (covered bool, provable bool) {
+	if forBinding || s.dialect != spec.DialectMySQL {
+		return indexCoversColumns(index, referencedColumns)
+	}
+	prefixCovered, prefixProvable := indexCoversColumns(index, referencedColumns)
+	if !prefixCovered || !prefixProvable {
+		return prefixCovered, prefixProvable
+	}
+	if s.instanceFacts != nil && s.instanceFacts.RestrictNonStandardKeyKnown {
+		if !s.instanceFacts.RestrictNonStandardKey {
+			return true, true
+		}
+		return indexMatchesColumnsExactly(index, referencedColumns)
+	}
+	if exact, exactProvable := indexMatchesColumnsExactly(index, referencedColumns); exact {
+		return true, true
+	} else if !exactProvable {
+		return false, false
+	}
+	version := s.resolvedVersion
+	if version == nil || version.Major == 0 {
+		return false, false
+	}
+	if version.Major > 8 || (version.Major == 8 && version.Minor >= 4) {
+		return false, false
+	}
+	return true, true
+}
+
+// indexMatchesColumnsExactly reports whether the index's plain stored
+// columns equal the given columns as a complete ordered key — the
+// strict-anchor referenced-key test. Unmodeled key parts leave the
+// answer unanswerable, same as coverage.
+func indexMatchesColumnsExactly(index spec.Index, columns []string) (matched bool, provable bool) {
+	if index.PrefixParts > 0 || index.DescParts > 0 || index.ExpressionCount > 0 ||
+		index.HasExpressionKeys || index.UnmodeledKeyParts > 0 {
+		return false, false
+	}
+	if len(columns) == 0 || len(index.Columns) != len(columns) {
+		return false, true
+	}
+	for i, column := range columns {
+		if !strings.EqualFold(index.Columns[i], column) {
+			return false, true
+		}
+	}
+	return true, true
 }
 
 // referencedKeyMemberEligible reports whether a member kind can serve as a
@@ -400,13 +467,18 @@ func firstDropCheckAlter(ddl *spec.DDL) *spec.Alter {
 // modeled member, so the transition has no modeled effect at all.
 //
 // MySQL 5.7 rejects the syntax outright (1064) — provably unchanged.
-// MySQL 8.x removes the foreign key under DROP CONSTRAINT but refuses
-// DROP CHECK on the same name (3821): when the authored name binds a
-// proven FK member the two keywords diverge and the outcome is
-// unprovable, so the constraint set unvouches. Every other name answer is
-// provable — an unmatched name on a vouched set refuses under both
-// keywords (3940/3821), and a hidden CHECK under an unvouched set leaves
-// the modeled members unchanged either way.
+// MySQL 8.x removes every constraint kind under DROP CONSTRAINT — a
+// foreign-key member, a unique member, the primary-key object under its
+// stored PRIMARY name, and a real CHECK — while DROP CHECK removes only
+// a CHECK and refuses the rest (3821, 3940 on a secondary member or a
+// missing name; all probed on 8.0.46 and 8.4.10). When the authored name
+// binds a proven removable target the two keywords diverge and the
+// outcome is unprovable, so the affected collection unvouches — a proven
+// match would fabricate survival, a vouched absent member would
+// fabricate removal. A non-unique member refuses under both keywords
+// and keeps its proven state; an unmatched name on a vouched shape
+// refuses under both; a hidden CHECK under an unvouched constraint set
+// leaves the modeled members unchanged either way.
 func (s *batchState) applyDropCheck(_ spec.Statement, alter *spec.Alter, targets []spec.Table) {
 	if len(targets) != 1 {
 		s.invalidateAll(targets)
@@ -432,6 +504,27 @@ func (s *batchState) applyDropCheck(_ spec.Statement, alter *spec.Alter, targets
 		// Pre-8.0 rejects the syntax — provably unchanged.
 		return
 	}
+	bound := false
+	if pkName, proven := spec.PrimaryKeyObjectName(entry.shape); proven && strings.EqualFold(pkName, name) {
+		// The PK object drops under DROP CONSTRAINT and refuses under
+		// DROP CHECK — its fate is unprovable.
+		s.unvouchPrimaryKeyObject(key)
+		bound = true
+	} else if entry.shape.PrimaryKey != nil && strings.EqualFold(name, "primary") {
+		// The MySQL stored name is always PRIMARY; an unproven
+		// attribution still spells the object.
+		s.unvouchPrimaryKeyObject(key)
+		bound = true
+	}
+	if member := entry.shape.FindProvenIndex(name); member != nil {
+		bound = true
+		if member.Kind == spec.IndexKindUnique {
+			// A unique member drops under DROP CONSTRAINT, refuses
+			// under DROP CHECK — divergent like the FK arm.
+			s.unvouchIndexMember(key, name)
+		}
+		// Any other proven member kind provably survives both keywords.
+	}
 	if entry.shape.FindForeignKeyConstraint(name) != nil {
 		// DROP CONSTRAINT removes this member; DROP CHECK refuses on it.
 		// The authored keyword is unrecoverable, so the member's fate is
@@ -441,11 +534,17 @@ func (s *batchState) applyDropCheck(_ spec.Statement, alter *spec.Alter, targets
 		s.unvouchForeignKeyMember(key, name)
 		return
 	}
-	// An unvouched member name may hide the FK the constraint form would
-	// remove — the already-unvouched set stays unvouched; a vouched set
-	// with no match is a proven refusal and keeps its facts.
-	if entry.shape.ForeignKeyNameSpaceUnvouched() {
-		s.markConstraintsUnknown(key)
+	// An unvouched member name may hide a removable target — a hidden FK
+	// or a hidden unique member the constraint form would remove. The
+	// already-unvouched sets stay unvouched; a vouched set with no proven
+	// match is a refusal under both keywords and keeps its facts.
+	if !bound {
+		if entry.shape.ForeignKeyNameSpaceUnvouched() {
+			s.markConstraintsUnknown(key)
+		}
+		if entry.shape.IndexNameSpaceUnvouched() {
+			s.markIndexesUnknown(key)
+		}
 	}
 }
 
@@ -466,6 +565,37 @@ func (s *batchState) unvouchForeignKeyMember(key batchTableKey, name string) {
 		}
 		shape.Constraints = kept
 		shape.ConstraintsUnknown = true
+	})
+}
+
+// unvouchIndexMember drops the named member's projection and unvouches
+// the index collection — the same undecidable-fate shape
+// unvouchForeignKeyMember records for the constraint space. Presence-keyed
+// readers owe the set gap rather than answering either way.
+func (s *batchState) unvouchIndexMember(key batchTableKey, name string) {
+	s.withClonedShape(key, func(shape *spec.TableSnapshot) {
+		kept := shape.Indexes[:0]
+		for i := range shape.Indexes {
+			member := &shape.Indexes[i]
+			if !member.NameUnknown && strings.EqualFold(member.Name, name) {
+				continue
+			}
+			kept = append(kept, *member)
+		}
+		shape.Indexes = kept
+		shape.IndexesUnknown = true
+	})
+}
+
+// unvouchPrimaryKeyObject clears the primary-key projection and marks its
+// presence unproven — the shape a possibly-dropped, possibly-kept object
+// leaves when the model cannot decide. The stored-name and handle facts
+// stay as last-known attributes; presence-keyed consumers answer only
+// through PrimaryKeyUnknown.
+func (s *batchState) unvouchPrimaryKeyObject(key batchTableKey) {
+	s.withClonedShape(key, func(shape *spec.TableSnapshot) {
+		shape.PrimaryKey = nil
+		shape.PrimaryKeyUnknown = true
 	})
 }
 
@@ -774,7 +904,7 @@ func foreignKeyPKObjectDependency(shape *spec.TableSnapshot) (needed bool, prova
 // shapes cannot answer coverage, leaves the answer unprovable.
 func (s *batchState) referencedDropDependency(key batchTableKey, shape *spec.TableSnapshot, indexPos int, dropPK bool) (needed bool, provable bool) {
 	for otherKey, other := range s.entries {
-		if otherKey == key || other == nil || other.state != tablePresent || other.shape == nil {
+		if other == nil || other.state != tablePresent || other.shape == nil {
 			continue
 		}
 		if other.shape.ConstraintsUnknown {
@@ -805,9 +935,11 @@ func (s *batchState) referencedDropDependency(key batchTableKey, shape *spec.Tab
 				targetCovers, targetProvable = indexCoversColumns(shape.Indexes[indexPos], constraint.ReferencedColumns)
 				if targetCovers && targetProvable {
 					// Only a member covering this key's referenced
-					// columns can be its bound key — the referenced-key
-					// eligibility class decides whether it counts.
-					eligible, eligibleProvable := s.referencedKeyMemberEligible(shape.Indexes[indexPos].Kind)
+					// columns can be its bound key — physical backing is
+					// the binding question (a loaded relationship keeps
+					// binding a non-standard member even where a new
+					// equivalent reference would refuse now).
+					eligible, eligibleProvable := supportingIndexCandidate(shape.Indexes[indexPos].Kind)
 					if !eligibleProvable {
 						return false, false
 					}
@@ -822,7 +954,7 @@ func (s *batchState) referencedDropDependency(key batchTableKey, shape *spec.Tab
 			if !targetCovers {
 				continue
 			}
-			remains, remainsProvable := s.referencedAlternativeCoverer(shape, indexPos, dropPK, constraint.ReferencedColumns)
+			remains, remainsProvable := s.referencedAlternativeCoverer(shape, indexPos, dropPK, constraint.ReferencedColumns, true)
 			if !remainsProvable {
 				return false, false
 			}

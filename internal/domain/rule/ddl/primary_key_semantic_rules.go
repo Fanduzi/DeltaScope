@@ -55,17 +55,17 @@ func (r singlePrimaryKeyColumnRule) Evaluate(ctx context.Context, statement spec
 		return nil, nil
 	}
 	// The ALTER-declared member carries no type facts of its own — resolve
-	// its name through the statement's ordered pre-state column set. A
-	// withheld or unmatched member answers nothing here; EvidenceGaps owns
-	// the missing-fact boundary so a zero-value column never fabricates a
-	// violation.
+	// its name through the statement's ordered column facts. Only a
+	// resolved member predicates; an absent member is the native refusal
+	// and an undecidable one is the missing-fact boundary EvidenceGaps
+	// owns — a zero-value column never fabricates a violation.
 	if appliesToAlterTable(statement) {
 		members := alterDeclaredPrimaryKeyMembers(statement)
 		if len(members) != 1 {
 			return nil, nil
 		}
-		column, ok := orderedColumnFact(statement, members[0])
-		if !ok || r.predicate(column) {
+		column, verdict := orderedColumnFact(statement, members[0])
+		if verdict != orderedColumnResolved || r.predicate(column) {
 			return nil, nil
 		}
 		return []rule.Finding{r.finding(statement, column)}, nil
@@ -91,16 +91,20 @@ func (r singlePrimaryKeyColumnRule) finding(statement spec.Statement, column spe
 }
 
 // EvidenceGaps reports the ALTER-path premise gaps under the same
-// conditions Evaluate skips: a target whose state was never provided owes
-// the existence-plus-columns facts, a present table with a withheld column
-// set owes the columns fact, and a settled-absent table or out-of-scope
-// member count owes nothing — the member's own name resolution is a fact
-// of the statement, not of the catalog.
+// decidability premise Evaluate shares: a target whose state was never
+// provided owes the existence-plus-columns facts, a present table with a
+// withheld column set owes the columns fact, a member whose outcome the
+// statement cannot decide (dropped mid-statement, or a same-statement
+// declaration TiDB refuses to apply) owes the same columns fact, and a
+// settled-absent table, an out-of-scope member count, or a member
+// proven-absent at the key action owes nothing — a proven native refusal
+// is not a fact gap.
 func (r singlePrimaryKeyColumnRule) EvidenceGaps(statement spec.Statement) []rule.EvidenceGap {
 	if !orderedGapDialect(statement.Dialect) || !r.AppliesTo(statement) || !appliesToAlterTable(statement) {
 		return nil
 	}
-	if len(alterDeclaredPrimaryKeyMembers(statement)) != 1 {
+	members := alterDeclaredPrimaryKeyMembers(statement)
+	if len(members) != 1 {
 		return nil
 	}
 	snapshot, ok := targetTableSnapshot(statement)
@@ -114,6 +118,12 @@ func (r singlePrimaryKeyColumnRule) EvidenceGaps(statement spec.Statement) []rul
 		return nil
 	}
 	if snapshot.Columns == nil {
+		return []rule.EvidenceGap{{
+			ReasonCode:    gapReasonUnknownTableState,
+			RequiredFacts: []string{"target_table.columns"},
+		}}
+	}
+	if _, verdict := orderedColumnFact(statement, members[0]); verdict == orderedColumnUndecidable {
 		return []rule.EvidenceGap{{
 			ReasonCode:    gapReasonUnknownTableState,
 			RequiredFacts: []string{"target_table.columns"},
