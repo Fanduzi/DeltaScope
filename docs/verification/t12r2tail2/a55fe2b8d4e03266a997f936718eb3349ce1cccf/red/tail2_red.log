@@ -1,0 +1,20 @@
+--- PASS: TestT12R2Tail2SiblingDropControls (0.00s)
+    --- PASS: TestT12R2Tail2SiblingDropControls/proven_secondary_index_keeps_the_unlock (0.00s)
+    --- PASS: TestT12R2Tail2SiblingDropControls/unrelated_unproven_drop_keeps_the_refusal (0.00s)
+    --- PASS: TestT12R2Tail2SiblingDropControls/definite_second_referencing_member_keeps_the_refusal (0.00s)
+    --- PASS: TestT12R2Tail2SiblingDropControls/proven_unique_index_keeps_the_ambiguity_refusal (0.00s)
+--- FAIL: TestT12R2Tail2UnprovenSiblingDropWithholdsSuccessor (0.00s)
+    --- FAIL: TestT12R2Tail2UnprovenSiblingDropWithholdsSuccessor/kind="unknown"/ALTER_TABLE_t_CHANGE_COLUMN_a_a2_INT,_DROP_CONSTRAINT_chk_a; (0.00s)
+    --- FAIL: TestT12R2Tail2UnprovenSiblingDropWithholdsSuccessor/kind="unknown"/ALTER_TABLE_t_DROP_CONSTRAINT_chk_a,_CHANGE_COLUMN_a_a2_INT; (0.00s)
+    --- FAIL: TestT12R2Tail2UnprovenSiblingDropWithholdsSuccessor/kind=""/ALTER_TABLE_t_DROP_CONSTRAINT_chk_a,_CHANGE_COLUMN_a_a2_INT; (0.00s)
+    --- FAIL: TestT12R2Tail2UnprovenSiblingDropWithholdsSuccessor/kind=""/ALTER_TABLE_t_DROP_CONSTRAINT_chk_a,_RENAME_COLUMN_a_TO_a2; (0.00s)
+    --- FAIL: TestT12R2Tail2UnprovenSiblingDropWithholdsSuccessor/kind="unknown"/ALTER_TABLE_t_RENAME_COLUMN_a_TO_a2,_DROP_CONSTRAINT_chk_a; (0.00s)
+    --- FAIL: TestT12R2Tail2UnprovenSiblingDropWithholdsSuccessor/kind="unknown"/ALTER_TABLE_t_DROP_CONSTRAINT_chk_a,_RENAME_COLUMN_a_TO_a2; (0.00s)
+    --- FAIL: TestT12R2Tail2UnprovenSiblingDropWithholdsSuccessor/kind=""/ALTER_TABLE_t_CHANGE_COLUMN_a_a2_INT,_DROP_CONSTRAINT_chk_a; (0.00s)
+    --- FAIL: TestT12R2Tail2UnprovenSiblingDropWithholdsSuccessor/kind=""/ALTER_TABLE_t_RENAME_COLUMN_a_TO_a2,_DROP_CONSTRAINT_chk_a; (0.00s)
+--- FAIL: TestT12R2Tail2UnprovenSiblingDropSuccessorReport (0.00s)
+    --- FAIL: TestT12R2Tail2UnprovenSiblingDropSuccessorReport/kind="" (0.01s)
+    --- FAIL: TestT12R2Tail2UnprovenSiblingDropSuccessorReport/kind="unknown" (0.01s)
+FAIL
+FAIL	github.com/Fanduzi/DeltaScope/internal/application/audit	0.335s
+FAIL

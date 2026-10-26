@@ -1,0 +1,8 @@
+docs/decisions/2026-10-30-ddl-check-constraint-enforcement-state.md
+docs/work-plans/t12-check-enforcement/CONTRACT.md
+internal/application/audit/README.md
+internal/application/audit/batch_state_multi.go
+internal/application/audit/batch_state_t12r2tail_test.go
+internal/application/audit/batch_state_multi.go: SYNCED
+internal/application/audit/batch_state_t12r2tail_test.go: SYNCED
+RESULT: PASS

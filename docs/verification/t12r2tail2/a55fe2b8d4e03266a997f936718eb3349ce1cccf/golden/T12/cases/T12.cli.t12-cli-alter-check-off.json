@@ -1,0 +1,114 @@
+{
+  "case_id": "T12.cli.t12-cli-alter-check-off",
+  "kind": "cli_audit",
+  "cli_case": "t12-cli-alter-check-off",
+  "dialect": "mysql",
+  "input_sql": "ALTER TABLE t ALTER CHECK chk_id NOT ENFORCED;",
+  "policy_profile": "all-rules-disabled",
+  "policy_path": "/Users/fan/GolangProjects/DeltaScope/docs/verification/t12r2tail2/a55fe2b8d4e03266a997f936718eb3349ce1cccf/golden/T12/golden-policy-all-off.yaml",
+  "command": [
+    "/Users/fan/GolangProjects/DeltaScope/docs/verification/t12r2tail2/a55fe2b8d4e03266a997f936718eb3349ce1cccf/golden/T12/bin/deltascope",
+    "audit",
+    "--dialect",
+    "mysql",
+    "--sql",
+    "ALTER TABLE t ALTER CHECK chk_id NOT ENFORCED;",
+    "--config",
+    "/Users/fan/GolangProjects/DeltaScope/docs/verification/t12r2tail2/a55fe2b8d4e03266a997f936718eb3349ce1cccf/golden/T12/golden-policy-all-off.yaml",
+    "--format",
+    "json"
+  ],
+  "expected": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete"
+  },
+  "actual": {
+    "exit": 0,
+    "stdout": "{\"verdict\":\"pass\",\"coverage\":{\"status\":\"complete\"},\"summary\":{\"statements\":1,\"blockers\":0,\"warnings\":0,\"notices\":0},\"statements\":[{\"index\":0,\"kind\":\"ddl\",\"raw_sql\":\"ALTER TABLE t ALTER CHECK chk_id NOT ENFORCED;\",\"normalized_sql\":\"ALTER TABLE t ALTER CHECK chk_id NOT ENFORCED\",\"coverage\":{\"status\":\"complete\"}}],\"fail_on_triggered\":false,\"context\":{\"mode\":\"offline\",\"dialect\":\"mysql\",\"dialect_source\":\"flag\",\"note\":\"existence not checked (no database connection)\",\"unproven\":[\"column_exists\",\"table_exists\"]}}\n",
+    "stderr": "",
+    "parsed": {
+      "verdict": "pass",
+      "coverage": {
+        "status": "complete"
+      },
+      "summary": {
+        "statements": 1,
+        "blockers": 0,
+        "warnings": 0,
+        "notices": 0
+      },
+      "statements": [
+        {
+          "index": 0,
+          "kind": "ddl",
+          "raw_sql": "ALTER TABLE t ALTER CHECK chk_id NOT ENFORCED;",
+          "normalized_sql": "ALTER TABLE t ALTER CHECK chk_id NOT ENFORCED",
+          "coverage": {
+            "status": "complete"
+          }
+        }
+      ],
+      "fail_on_triggered": false,
+      "context": {
+        "mode": "offline",
+        "dialect": "mysql",
+        "dialect_source": "flag",
+        "note": "existence not checked (no database connection)",
+        "unproven": [
+          "column_exists",
+          "table_exists"
+        ]
+      }
+    },
+    "version_evidence": {
+      "target_raw": null,
+      "target_canonical": null,
+      "observed_raw": null,
+      "observed_canonical": null,
+      "resolved": null
+    }
+  },
+  "assertions": [
+    {
+      "name": "exit code",
+      "ok": true,
+      "detail": "rc=0 expected=0"
+    },
+    {
+      "name": "verdict",
+      "ok": true,
+      "detail": "verdict='pass'"
+    },
+    {
+      "name": "top-level statements",
+      "ok": true,
+      "detail": "statements=1 expected=1"
+    },
+    {
+      "name": "zero findings",
+      "ok": true,
+      "detail": "findings=0"
+    },
+    {
+      "name": "no diagnostics",
+      "ok": true,
+      "detail": "diagnostics=[]"
+    },
+    {
+      "name": "no unsupported",
+      "ok": true,
+      "detail": "unsupported=[]"
+    },
+    {
+      "name": "aggregate coverage",
+      "ok": true,
+      "detail": "coverage='complete'"
+    }
+  ],
+  "status": "pass"
+}

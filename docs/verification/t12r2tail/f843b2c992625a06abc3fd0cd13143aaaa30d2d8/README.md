@@ -28,18 +28,22 @@ Three tail items only; R2 fixes are preserved untouched.
 
 `red/tail_red.log` — captured on the R2 product (`a4ce0e2d`) before the tail
 fixes, via `git stash` of the implementation with the new regression file left
-untracked. Five red cases (A ×2 with bare-CHECK control green, B ×2, D ×3
-families), two controls green as designed.
+untracked. Five failing parent tests (A ×1 explicit-clause case, B ×2, D ×2)
+and two passing parent controls (real `-- ` comment; unrelated DROP CHECK
+keeps the refusal). Subtest cells after a parent's first `Fatal` are not
+individually evidenced in the log — only the parent-level red is claimed.
 
 ## Green
 
-`gates/go_test_internal.run.log` and `gates/go_test_all.run.log` — all R2-tail
+`gates/go_test______.*` and `gates/go_race.*` four-tuples — all R2-tail
 regressions green on `f843b2c9`; whole-repo `go test ./...` and
 `go test -race ./internal/...` zero failures.
 
-Regression file: `internal/application/audit/batch_state_t12r2tail_test.go`
-(public Audit path; successor Metadata/findings/gaps asserted, not just
-first-statement findings).
+Regression file: `internal/application/audit/batch_state_t12r2tail_test.go`.
+Assertion layers per item — A checks the public Audit finding/notice and the
+post-state through the internal `t10r4PostState` helper; B adds public
+successor `EvidenceGaps` assertions (RuleID + RequiredFacts); D asserts the
+internal post-state plus a public successor gap-presence check.
 
 ## Native probes (bounded, archived under docs/work-plans/t12-check-enforcement/probes/r2/)
 
@@ -48,14 +52,18 @@ first-statement findings).
   `CHECK(v--1>0)` → rc=0 lands column v; `CHECK(w>0) -- NOT ENFORCED` → rc=0
   (real comment still hides the clause). Confirms `v--1` parses as `v - -1`.
 - `zz_r2tail_p4d_mysql80_drop_rename.log` — MySQL 8.0.46. `DROP CHECK chk_a,
-  RENAME COLUMN a TO a2` and the reversed action order → rc=0; CHANGE COLUMN
-  same-family → rc=0; generic `DROP CONSTRAINT chk_a` + RENAME → rc=0; control
-  `RENAME` with surviving referencing CHECK → rc=1, 3959 (atomic). Column and
-  CHECK catalog captured before/after each statement.
+  RENAME COLUMN a TO a2` in both action orders → rc=0; `DROP CHECK` +
+  `CHANGE COLUMN` drop-first → rc=0 (the rename-first CHANGE order is
+  covered by unit regression only); generic `DROP CONSTRAINT chk_a` +
+  RENAME → rc=0; control `RENAME` with surviving referencing CHECK → rc=1,
+  3959 (atomic). Column and CHECK catalog captured before/after each
+  statement.
 
 ## Gates (18 groups, serial, bound to f843b2c9)
 
-`gates/` holds per-gate four-tuples (`*.cmd`, `*.out`, `*.err`, `*.rc`).
+`gates/` holds per-gate four-tuples
+(`<gate>.command.txt`, `<gate>.stdout.txt`, `<gate>.stderr.txt`,
+`<gate>.rc.txt`).
 
 | gate | rc |
 |------|----|
@@ -80,7 +88,8 @@ first-statement findings).
 
 ## Golden suites (serial, shared anchors, bound to f843b2c9)
 
-`golden/<TASK>/artifact.json` (+ per-case records and built CLI under `bin/`).
+`golden/<TASK>/artifact.json`, per-case records under `golden/<TASK>/cases/`,
+and the audited CLI build at `golden/<TASK>/bin/deltascope`.
 
 | suite | cases | assertions | status |
 |-------|-------|------------|--------|
