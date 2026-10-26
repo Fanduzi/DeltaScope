@@ -1,0 +1,75 @@
+=== RUN   TestT12R2EnforcedIdentifierNotClauseOn57
+=== PAUSE TestT12R2EnforcedIdentifierNotClauseOn57
+=== RUN   TestT12R2CommentParensNotElementBodyOn57
+=== PAUSE TestT12R2CommentParensNotElementBodyOn57
+=== RUN   TestT12R2CommentedCommaKeepsSpellingOn8017
+=== PAUSE TestT12R2CommentedCommaKeepsSpellingOn8017
+=== RUN   TestT12R2TiDBOffExplicitClauseStillIgnored
+=== PAUSE TestT12R2TiDBOffExplicitClauseStillIgnored
+=== RUN   TestT12R2GenericDropPrimaryRespectsFKDependency
+=== PAUSE TestT12R2GenericDropPrimaryRespectsFKDependency
+=== RUN   TestT12R2UnknownKindSameNameLeavesCheckUnvouched
+=== PAUSE TestT12R2UnknownKindSameNameLeavesCheckUnvouched
+=== RUN   TestT12R2GenericPrimaryBindsPKUnknown
+=== PAUSE TestT12R2GenericPrimaryBindsPKUnknown
+=== RUN   TestT12R2TiDBInColumnFreshCheckNeverStores
+=== PAUSE TestT12R2TiDBInColumnFreshCheckNeverStores
+=== RUN   TestT12R2MySQLInColumnCrossColumnRefRefused
+=== PAUSE TestT12R2MySQLInColumnCrossColumnRefRefused
+=== RUN   TestT12R2MultiActionRenameCheckRefAtomic
+=== PAUSE TestT12R2MultiActionRenameCheckRefAtomic
+=== RUN   TestT12R2MultiActionChangeCheckRefAtomic
+=== PAUSE TestT12R2MultiActionChangeCheckRefAtomic
+=== RUN   TestT12R2TiDBMultiActionChangeDropsMultiColCheck
+=== PAUSE TestT12R2TiDBMultiActionChangeDropsMultiColCheck
+=== CONT  TestT12R2EnforcedIdentifierNotClauseOn57
+=== CONT  TestT12R2GenericPrimaryBindsPKUnknown
+=== CONT  TestT12R2TiDBOffExplicitClauseStillIgnored
+=== CONT  TestT12R2CommentedCommaKeepsSpellingOn8017
+=== CONT  TestT12R2CommentParensNotElementBodyOn57
+=== CONT  TestT12R2GenericDropPrimaryRespectsFKDependency
+=== CONT  TestT12R2MySQLInColumnCrossColumnRefRefused
+=== CONT  TestT12R2TiDBMultiActionChangeDropsMultiColCheck
+=== CONT  TestT12R2MultiActionChangeCheckRefAtomic
+=== CONT  TestT12R2TiDBInColumnFreshCheckNeverStores
+=== CONT  TestT12R2UnknownKindSameNameLeavesCheckUnvouched
+=== CONT  TestT12R2MultiActionRenameCheckRefAtomic
+=== NAME  TestT12R2MultiActionChangeCheckRefAtomic
+    batch_state_t12r2_test.go:463: atomic 3959 refusal must keep columns a,b only: [{Name:a2 Type:int(11) Length:-1 Charset: Collation: Comment: Unsigned:false NotNull:false AutoIncrement:false HasDefault:false DefaultValue: DefaultKind: DefaultIsNull:false DefaultIsCurrentTimestamp:false OnUpdateCurrentTimestamp:false GeneratedWhen: IsIdentity:false IdentityOptions:map[] AutoRandom:false UnextractedOptions:[] Generated:<nil> DefaultExpression:<nil> Visibility:visible VisibilityExplicit:false DefaultParenthesized:false DefaultLiteral:<nil>} {Name:b Type:int Length:0 Charset: Collation: Comment: Unsigned:false NotNull:false AutoIncrement:false HasDefault:false DefaultValue: DefaultKind: DefaultIsNull:false DefaultIsCurrentTimestamp:false OnUpdateCurrentTimestamp:false GeneratedWhen: IsIdentity:false IdentityOptions:map[] AutoRandom:false UnextractedOptions:[] Generated:<nil> DefaultExpression:<nil> Visibility: VisibilityExplicit:false DefaultParenthesized:false DefaultLiteral:<nil>} {Name:c Type:int(11) Length:-1 Charset: Collation: Comment: Unsigned:false NotNull:false AutoIncrement:false HasDefault:false DefaultValue: DefaultKind: DefaultIsNull:false DefaultIsCurrentTimestamp:false OnUpdateCurrentTimestamp:false GeneratedWhen: IsIdentity:false IdentityOptions:map[] AutoRandom:false UnextractedOptions:[] Generated:<nil> DefaultExpression:<nil> Visibility:visible VisibilityExplicit:false DefaultParenthesized:false DefaultLiteral:<nil>}]
+=== NAME  TestT12R2MultiActionRenameCheckRefAtomic
+    batch_state_t12r2_test.go:435: atomic 3959 refusal must keep columns a,b only: [{Name:a2 Type:int Length:0 Charset: Collation: Comment: Unsigned:false NotNull:false AutoIncrement:false HasDefault:false DefaultValue: DefaultKind: DefaultIsNull:false DefaultIsCurrentTimestamp:false OnUpdateCurrentTimestamp:false GeneratedWhen: IsIdentity:false IdentityOptions:map[] AutoRandom:false UnextractedOptions:[] Generated:<nil> DefaultExpression:<nil> Visibility: VisibilityExplicit:false DefaultParenthesized:false DefaultLiteral:<nil>} {Name:b Type:int Length:0 Charset: Collation: Comment: Unsigned:false NotNull:false AutoIncrement:false HasDefault:false DefaultValue: DefaultKind: DefaultIsNull:false DefaultIsCurrentTimestamp:false OnUpdateCurrentTimestamp:false GeneratedWhen: IsIdentity:false IdentityOptions:map[] AutoRandom:false UnextractedOptions:[] Generated:<nil> DefaultExpression:<nil> Visibility: VisibilityExplicit:false DefaultParenthesized:false DefaultLiteral:<nil>} {Name:c Type:int(11) Length:-1 Charset: Collation: Comment: Unsigned:false NotNull:false AutoIncrement:false HasDefault:false DefaultValue: DefaultKind: DefaultIsNull:false DefaultIsCurrentTimestamp:false OnUpdateCurrentTimestamp:false GeneratedWhen: IsIdentity:false IdentityOptions:map[] AutoRandom:false UnextractedOptions:[] Generated:<nil> DefaultExpression:<nil> Visibility:visible VisibilityExplicit:false DefaultParenthesized:false DefaultLiteral:<nil>}]
+=== NAME  TestT12R2TiDBInColumnFreshCheckNeverStores
+    batch_state_t12r2_test.go:353: TiDB in-column CHECK must never store — the member was fabricated
+=== NAME  TestT12R2TiDBMultiActionChangeDropsMultiColCheck
+    batch_state_t12r2_test.go:491: TiDB CHANGE must drop the referencing member, not leave it citing a dropped name: {Type:check Name:chk_ab Columns:[a b] ReferencedSchema: ReferencedTable: ReferencedColumns:[] UnmodeledParts:0 UnmodeledReferencedParts:0 OnDelete: OnUpdate: UnmodeledReferActions:0 Enforced:enforced EnforcedExplicit:false Expression:<nil> InColumn:false NameUnknown:false}
+--- FAIL: TestT12R2MultiActionChangeCheckRefAtomic (0.00s)
+--- FAIL: TestT12R2MultiActionRenameCheckRefAtomic (0.00s)
+--- FAIL: TestT12R2TiDBInColumnFreshCheckNeverStores (0.00s)
+--- FAIL: TestT12R2TiDBMultiActionChangeDropsMultiColCheck (0.00s)
+=== NAME  TestT12R2MySQLInColumnCrossColumnRefRefused
+    batch_state_t12r2_test.go:390: 3813-refused ADD COLUMN still published column v
+--- FAIL: TestT12R2MySQLInColumnCrossColumnRefRefused (0.00s)
+=== NAME  TestT12R2TiDBOffExplicitClauseStillIgnored
+    batch_state_t12r2_test.go:152: TiDB flag-OFF explicit clause must stay parsed-and-ignored: CREATE TABLE n (a INT, CONSTRAINT chk_a CHECK(a > 0) ENFORCED);
+=== NAME  TestT12R2CommentParensNotElementBodyOn57
+    batch_state_t12r2_test.go:89: refused declaration misreported as parsed-and-ignored: {RuleID:ddl.constraint.check.ignored.notice Level:blocker Message:check constraint "(unnamed)" on table "e2" is parsed but ignored on this product StatementIndex:0 StatementKind:ddl Location:0x3022ff784070 Suggestion:verify the target product actually enforces check constraints before relying on this declaration Metadata:map[constraint: enforced:ignored table:e2] Explanation:0x3022feef41e0}
+=== NAME  TestT12R2UnknownKindSameNameLeavesCheckUnvouched
+    batch_state_t12r2_test.go:278: successor owes a constraints gap after an undecidable generic drop: gaps=[] findings=[]
+=== NAME  TestT12R2GenericPrimaryBindsPKUnknown
+    batch_state_t12r2_test.go:307: PK presence unproven — `primary` is not a proven-missing blocker: {RuleID:ddl.alter.drop_check.exists.require Level:blocker Message:constraint "primary" does not exist on table "t" StatementIndex:0 StatementKind:ddl Location:0x3022fef9e3f0 Suggestion:fix the constraint name or use the CHECK-specific keyword, and refresh metadata before auditing this change Metadata:map[action:drop_check exists:false name:primary table:t] Explanation:0x3022ff418140}
+=== NAME  TestT12R2EnforcedIdentifierNotClauseOn57
+    batch_state_t12r2_test.go:65: identifier 'enforced' must not masquerade as the ENFORCED clause — bare-CHECK ignored notice owed
+--- FAIL: TestT12R2TiDBOffExplicitClauseStillIgnored (0.01s)
+=== NAME  TestT12R2CommentedCommaKeepsSpellingOn8017
+    batch_state_t12r2_test.go:122: CONSTRAINT-spelled action lost its spelling — the 8.0.19 gate must refuse on 8.0.17
+--- FAIL: TestT12R2CommentParensNotElementBodyOn57 (0.01s)
+=== NAME  TestT12R2GenericDropPrimaryRespectsFKDependency
+    batch_state_t12r2_test.go:202: proven 1553 refusal must keep the pre-state, not tombstone
+--- FAIL: TestT12R2UnknownKindSameNameLeavesCheckUnvouched (0.01s)
+--- FAIL: TestT12R2GenericDropPrimaryRespectsFKDependency (0.01s)
+--- FAIL: TestT12R2EnforcedIdentifierNotClauseOn57 (0.01s)
+--- FAIL: TestT12R2CommentedCommaKeepsSpellingOn8017 (0.01s)
+--- FAIL: TestT12R2GenericPrimaryBindsPKUnknown (0.01s)
+FAIL
+FAIL	github.com/Fanduzi/DeltaScope/internal/application/audit	0.685s
+FAIL

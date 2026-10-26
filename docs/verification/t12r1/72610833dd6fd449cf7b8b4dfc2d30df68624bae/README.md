@@ -64,9 +64,14 @@ the diff `2f16db0a..72610833` (37 files, +2550/−350).
 
 ## Gates (bound to the product SHA)
 
-17 groups under `gates/`: 16×rc=0; `lint` rc=1 is the byte-identical
-15-issue baseline (errcheck 1, gocritic 5, gofmt 2, staticcheck 2,
-unconvert 3, unparam 2) with zero hits in R1-touched code; `gofmt`
+18 groups under `gates/` — 17 standard gates plus the `three-level-doc-diff`
+committed-diff group (each group keeps the four-tuple
+`command/rc/stdout/stderr`; `three-level-doc-diff.stderr.txt` is empty
+because the diff command writes nothing to stderr). 17×rc=0; `lint` rc=1
+matches the 15-issue historical baseline (errcheck 1, gocritic 5, gofmt 2,
+staticcheck 2, unconvert 3, unparam 2) with zero hits in R1-touched code —
+same issue set, not byte-identical output: two line numbers inside the
+pre-existing `batch_state_multi.go` entries moved with the diff. `gofmt`
 reports only the two accepted T07 baseline files.
 
 ## Golden (serial, one anchor set, bound to the product SHA)
