@@ -326,7 +326,9 @@ no longer diverge. Outcomes: `CheckTargetProven`,
 - `applyAlterCheck`/`applyDropCheck` gate on the authored spelling through
   `spec.CheckAlterSyntaxOutcome` (CHECK ≥8.0.16, generic ≥8.0.19) and bind
   through the shared classifier; proven refusals publish unchanged,
-  deterministic removals drop only the bound member, unproven arms unvouch
+  deterministic removals drop only the bound member (subject to the FK
+  sole-coverer dependency premise refined in §5.7 — a successful binding
+  does not by itself prove the drop lands), unproven arms unvouch
   the consulted namespaces.
 - `applyCreateTable`, `inColumnChecksOutcome`: a MySQL ignored-arm member
   carrying an authored enforcement clause is a proven 1064 refusal —
@@ -353,8 +355,10 @@ no longer diverge. Outcomes: `CheckTargetProven`,
   refusals (3821/3940), cross-type same-name generic targets are the
   proven 3939 ambiguity, and missing names stay blockers.
 - `ddl.constraint.check.ignored.notice` suppresses members carrying an
-  authored enforcement clause on the ignored arm — those are the proven
-  1064 refusal handled by the version rule, not "parsed and ignored".
+  authored enforcement clause only where the clause is a proven refusal —
+  MySQL's ignored arm (1064, handled by the version rule). TiDB's flag-OFF
+  arm accepts and ignores authored clauses, so its ignored notice stands
+  (§5.7).
 - `ddl.constraint.check.name.*` governance now reads `alter.Constraints`
   (inline ALTER CHECK members) in both applicability and name selection,
   deduplicating names already carried on `ddl.Constraints`/`alter.Constraint`.
@@ -366,3 +370,55 @@ no longer diverge. Outcomes: `CheckTargetProven`,
 - TiDB generic-drop resolution beyond the probed cells → Unproven.
 - MySQL patches other than the probed anchors (5.7.44, 8.0.17, 8.0.46,
   8.4.10) are not individually vouched.
+
+### 5.7 T12-R2 corrections (reviewer groups A–D)
+
+**A — attribution, not keyword presence.** The extractor proves an
+authored `[NOT] ENFORCED` clause only in binding position — the first bare
+word after a `CHECK(...)` close paren inside the element/clause text that
+was already correlated to its AST spec. `ENFORCED` as a column or
+expression identifier never sets `EnforcedExplicit` (probed: 5.7 accepts
+`CHECK(enforced > 0)` as ignored, refuses only the authored clause 1064).
+Element and clause splitting skip comments and quoted text, so `/* , */`
+and `/* ( */` can no longer fake boundaries or bodies. When the AST count
+and the clause text cannot be aligned the statement marks the affected
+members `Constraint.EnforcedUnproven` instead of claiming a proven
+omission — the version rule emits an evidence gap and no copy of a
+sibling action's spelling or clause fact is reused.
+
+**A4 — TiDB OFF keeps the ignored notice.** Suppression of
+`ddl.constraint.check.ignored.notice` on authored enforcement clauses is
+gated through `spec.CheckExplicitClauseRefused`, which is MySQL-only;
+TiDB's flag-OFF arm accepts and ignores authored clauses (probed), so the
+ignored finding/review verdict is restored there.
+
+**B — binding success does not imply landing.** Generic `DROP
+CONSTRAINT` bound to the primary object or a unique member now runs the
+same FK sole-coverer dependency premise the dedicated drops use
+(probed 1553 on 8.0.46 for `DROP CONSTRAINT \`primary\``, `DROP PRIMARY
+KEY`, and a sole-covering `DROP CONSTRAINT ux_p`; a replacement coverer
+drops clean). A same-name pair of check member plus unknown-kind index
+member keeps the generic binding unproven AND unvouches the check
+member's existence afterward — either world (secondary → check removed,
+unique → 3939 refusal) is native, so coverage reports the gap rather than
+a complete/pass. A name that could bind the primary object honors a
+standalone `PrimaryKeyUnknown` fact as Unproven instead of Missing.
+
+**C — column-scoped CHECKs.** TiDB never stores an in-column CHECK
+member (probed flag-ON: fresh name lands the column but no member —
+`DROP CHECK` then answers the proven 3940 absence; the R1
+duplicate-name silent-ignore is the same storage rule, not a
+name-collision special case), so `applyInColumnChecks` skips member
+publication for TiDB entirely. MySQL in-column CHECKs may reference only
+their own column — a cross-column reference is the probed 3813
+whole-statement refusal, and `NOT ENFORCED` does not relax it.
+
+**D — multi-action identity.** `prepareMultiAction` runs a
+statement-level refusal scan before any action publishes: a
+CHECK-referenced RENAME/CHANGE evaluated through
+`checkColumnIdentityOutcome` against the pre-state (probed 3959 atomic on
+8.0.46 — sibling ADD never lands), or a proven syntax refusal on any
+action, preserves the exact pre-state. TiDB flag-ON `CHANGE COLUMN`
+cascades every provably-referencing CHECK member — the single-column
+limit applies to DROP COLUMN only; the multi-column cascade is now
+probed, not extrapolated.

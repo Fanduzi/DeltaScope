@@ -548,25 +548,45 @@ func (s *batchState) applyDropCheck(_ spec.Statement, alter *spec.Alter, targets
 // publishCheckDropTarget lands a provably-bound DROP removal: the check or
 // foreign-key member leaves Constraints, a unique index member leaves
 // Indexes, and the primary-key object or primary index member publishes
-// the shared PK-drop post-state.
+// the shared PK-drop post-state. Binding only proves which object the
+// name reaches — the same foreign-key dependencies that gate DROP INDEX
+// and DROP PRIMARY KEY still refuse a sole-covering target (1553, probed
+// under the generic spelling on 8.0.46), and an unanswerable dependency
+// keeps the outcome unproven rather than deleting anyway.
 func (s *batchState) publishCheckDropTarget(key batchTableKey, entry *batchTableEntry, res spec.CheckTarget) {
 	switch res.Kind {
 	case spec.CheckTargetKindCheck, spec.CheckTargetKindForeignKey:
 		s.removeCheckMember(key, entry.shape, res.Constraint)
-	case spec.CheckTargetKindUnique:
+	case spec.CheckTargetKindUnique, spec.CheckTargetKindPrimary:
+		if res.PKObject {
+			needed, provable := s.foreignKeyPKDependency(key, entry.shape)
+			if !provable {
+				s.invalidateKey(key)
+				return
+			}
+			if needed {
+				return
+			}
+			s.publishPrimaryKeyDrop(key, entry)
+			return
+		}
 		if res.Index == nil {
 			return
 		}
-		s.withClonedShape(key, func(shape *spec.TableSnapshot) {
-			for i := range shape.Indexes {
-				if !shape.Indexes[i].NameUnknown && strings.EqualFold(shape.Indexes[i].Name, res.Index.Name) {
-					shape.Indexes = append(shape.Indexes[:i], shape.Indexes[i+1:]...)
-					return
-				}
-			}
-		})
-	case spec.CheckTargetKindPrimary:
-		s.publishPrimaryKeyDrop(key, entry)
+		indexPos, matches := provenIndexMatch(entry.shape.Indexes, res.Index.Name)
+		if matches != 1 || indexPos < 0 {
+			s.invalidateKey(key)
+			return
+		}
+		needed, provable := s.foreignKeyMemberDependency(key, entry.shape, indexPos)
+		if !provable {
+			s.invalidateKey(key)
+			return
+		}
+		if needed {
+			return
+		}
+		s.dropIndexMemberAt(key, entry, indexPos)
 	}
 }
 
@@ -633,31 +653,53 @@ func (s *batchState) dropCheckUndecidable(key batchTableKey, entry *batchTableEn
 	if pkName, proven := spec.PrimaryKeyObjectName(shape); proven && strings.EqualFold(pkName, name) {
 		pkFound = true
 	}
-	if shape.PrimaryKey != nil && strings.EqualFold(name, "primary") {
+	if shape.PrimaryKey != nil && !shape.PrimaryKeyUnknown && strings.EqualFold(name, "primary") {
 		pkFound = true
 	}
-	kindCount := 0
-	for _, found := range []bool{checkFound, fkFound, indexMember != nil || pkFound || indexKindUnproven} {
+	// `primary` with an unproven PK presence may still bind the object —
+	// a possible kind, never a definite one.
+	pkMayBind := shape.PrimaryKeyUnknown && strings.EqualFold(name, "primary")
+	definiteCount := 0
+	for _, found := range []bool{checkFound, fkFound, indexMember != nil || pkFound} {
 		if found {
-			kindCount++
+			definiteCount++
+		}
+	}
+	unvouchBoundMember := func() {
+		switch {
+		case checkFound:
+			s.unvouchCheckMember(key, name)
+		case fkFound:
+			s.unvouchForeignKeyMember(key, name)
+		case pkFound:
+			s.unvouchPrimaryKeyObject(key)
+		case indexMember != nil:
+			s.unvouchIndexMember(key, name)
 		}
 	}
 	if spelling == spec.CheckSpellingConstraint {
 		// Generic executes: exactly one bound kind drops; ambiguity or a
-		// missing name refuses — but execution itself was unproven, so a
-		// bound member may be gone or kept.
+		// missing name refuses. An uncertain kind (unknown index kind, an
+		// unproven PK presence) splits the worlds: it either adds the
+		// ambiguity that keeps everything, or it is the lone binding that
+		// dies — while a definite member set that already refuses stays
+		// vouched in every world.
 		switch {
-		case kindCount == 1 && checkFound:
-			s.markConstraintsUnknown(key)
-		case kindCount == 1 && fkFound:
-			s.unvouchForeignKeyMember(key, name)
-		case kindCount == 1 && pkFound:
-			s.unvouchPrimaryKeyObject(key)
-		case kindCount == 1 && indexMember != nil:
-			s.unvouchIndexMember(key, name)
-		case kindCount == 1 && indexKindUnproven:
-			// May be unique (removed) or secondary (survives).
-			s.unvouchIndexMember(key, name)
+		case definiteCount >= 2:
+			// Ambiguity is proven with or without the uncertain kind.
+		case definiteCount == 1:
+			// The sole definite member dies unless the uncertain kind
+			// adds the ambiguity refusal — undecidable.
+			unvouchBoundMember()
+		default:
+			if indexKindUnproven {
+				// Unique → removed; anything else → missing refusal.
+				s.unvouchIndexMember(key, name)
+			}
+			if pkMayBind {
+				// Present → sole binding removed; absent → missing.
+				s.unvouchPrimaryKeyObject(key)
+			}
 		}
 		return
 	}
@@ -666,18 +708,39 @@ func (s *batchState) dropCheckUndecidable(key batchTableKey, entry *batchTableEn
 	// member survives under both (check-spelling refuses non-check,
 	// generic refuses the ambiguous set).
 	if checkFound {
-		s.markConstraintsUnknown(key)
+		s.unvouchCheckMember(key, name)
 	}
-	if kindCount == 1 && !checkFound {
-		switch {
-		case fkFound:
-			s.unvouchForeignKeyMember(key, name)
-		case pkFound:
-			s.unvouchPrimaryKeyObject(key)
-		case indexMember != nil || indexKindUnproven:
+	if definiteCount == 1 && !checkFound {
+		unvouchBoundMember()
+	}
+	if definiteCount == 0 {
+		if indexKindUnproven {
 			s.unvouchIndexMember(key, name)
 		}
+		if pkMayBind {
+			s.unvouchPrimaryKeyObject(key)
+		}
 	}
+}
+
+// unvouchCheckMember drops the named member's projection and unvouches
+// the constraint collection — the same undecidable-fate shape
+// unvouchForeignKeyMember records, for a CHECK member that may have been
+// removed or kept. Name-keyed readers owe the collection gap rather than
+// answering either way.
+func (s *batchState) unvouchCheckMember(key batchTableKey, name string) {
+	s.withClonedShape(key, func(shape *spec.TableSnapshot) {
+		kept := shape.Constraints[:0]
+		for i := range shape.Constraints {
+			constraint := &shape.Constraints[i]
+			if constraint.Type == "check" && !constraint.NameUnknown && strings.EqualFold(constraint.Name, name) {
+				continue
+			}
+			kept = append(kept, *constraint)
+		}
+		shape.Constraints = kept
+		shape.ConstraintsUnknown = true
+	})
 }
 
 // unvouchForeignKeyMember drops the named member's projection and

@@ -32,9 +32,10 @@ import (
 //     ambiguity refusal MySQL emits.
 
 // gapReasonUnprovenStatementFact marks a fact owned by the statement text
-// itself — the authored CHECK|CONSTRAINT spelling — that the parser
-// adaptation layer could not recover, so version and binding answers that
-// depend on it stay undecidable.
+// itself — the authored CHECK|CONSTRAINT spelling or an authored [NOT]
+// ENFORCED clause — that the parser adaptation layer could not recover,
+// so version, binding, and ignored-or-refused answers that depend on it
+// stay undecidable.
 const gapReasonUnprovenStatementFact = "unproven_statement_fact"
 
 // checkArm resolves the statement's CHECK arm from the enriched facts.
@@ -466,14 +467,23 @@ func (r *checkIgnoredNoticeRule) Evaluate(_ context.Context, statement spec.Stat
 	tableName := metadataTargetTableName(statement, snapshot)
 	findings := make([]rule.Finding, 0)
 	for _, member := range declaredCheckConstraints(statement) {
-		if member.EnforcedExplicit {
-			// An authored [NOT] ENFORCED clause on a parse-and-ignore arm
-			// is a 1064 refusal — the whole statement fails, so no member
-			// here is "parsed but ignored" (probed 5.7.44).
+		if spec.CheckExplicitClauseRefused(statement.Dialect, spec.CheckArmIgnored, member) {
+			// An authored [NOT] ENFORCED clause on MySQL's parse-and-ignore
+			// arm is a 1064 refusal — the whole statement fails, so no
+			// member here is "parsed but ignored" (probed 5.7.44). TiDB's
+			// ignored arm accepts and ignores the clause (probed v8.5.0
+			// flag OFF), so the notice stays owed there.
 			return nil, nil
 		}
 	}
 	for _, member := range declaredCheckConstraints(statement) {
+		if member.EnforcedUnproven && statement.Dialect == spec.DialectMySQL {
+			// The member's clause could not be attributed — on MySQL's
+			// ignored arm the statement may have refused 1064, so an
+			// "ignored" answer is not provable. EvidenceGaps carries the
+			// missing fact; TiDB ignores either way.
+			continue
+		}
 		name := member.Name
 		if name == "" {
 			name = "(unnamed)"
@@ -493,10 +503,29 @@ func (r *checkIgnoredNoticeRule) Evaluate(_ context.Context, statement spec.Stat
 }
 
 func (r *checkIgnoredNoticeRule) EvidenceGaps(statement spec.Statement) []rule.EvidenceGap {
-	if !r.AppliesTo(statement) || checkArm(statement) != spec.CheckArmUnknown {
+	if !r.AppliesTo(statement) {
 		return nil
 	}
-	return checkArmGap(statement)
+	switch checkArm(statement) {
+	case spec.CheckArmUnknown:
+		return checkArmGap(statement)
+	case spec.CheckArmIgnored:
+		if statement.Dialect != spec.DialectMySQL {
+			return nil
+		}
+		for _, member := range declaredCheckConstraints(statement) {
+			if member.EnforcedUnproven {
+				// The member's enforcement clause could not be attributed:
+				// the statement may have refused 1064 instead of landing
+				// an ignored member.
+				return []rule.EvidenceGap{{
+					ReasonCode:    gapReasonUnprovenStatementFact,
+					RequiredFacts: []string{"statement.check.enforced_clause"},
+				}}
+			}
+		}
+	}
+	return nil
 }
 
 // declaredCheckConstraints collects every check member a statement declares
@@ -553,7 +582,7 @@ func (r *alterCheckVersionRule) AppliesTo(statement spec.Statement) bool {
 		return true
 	}
 	for _, member := range declaredCheckConstraints(statement) {
-		if member.EnforcedExplicit {
+		if member.EnforcedExplicit || member.EnforcedUnproven {
 			return true
 		}
 	}
@@ -638,6 +667,18 @@ func (r *alterCheckVersionRule) EvidenceGaps(statement spec.Statement) []rule.Ev
 				ReasonCode:    gapReasonUnprovenStatementFact,
 				RequiredFacts: []string{"statement.check_spelling"},
 			}}
+		}
+	}
+	// Below 8.0.16 the explicit enforcement clause is a syntax refusal —
+	// an unattributed clause leaves refused-or-ignored undecidable.
+	if version.Major < 8 || (version.Major == 8 && version.Minor == 0 && version.Patch < 16) {
+		for _, member := range declaredCheckConstraints(statement) {
+			if member.EnforcedUnproven {
+				return []rule.EvidenceGap{{
+					ReasonCode:    gapReasonUnprovenStatementFact,
+					RequiredFacts: []string{"statement.check.enforced_clause"},
+				}}
+			}
 		}
 	}
 	return nil

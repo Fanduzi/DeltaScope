@@ -51,6 +51,19 @@ func (s *batchState) prepareMultiAction(statement spec.Statement, targets []spec
 		return invalidate(primary)
 	}
 
+	// Whole-statement premise scan: an ALTER fails atomically, so a
+	// provably refused action at any position keeps the table's pre-state
+	// exactly — earlier siblings never partially publish (probed 8.0.46:
+	// a 1064/3959 action leaves every sibling column and member
+	// untouched). The CHECK-referenced rename/change premise is evaluated
+	// on the pre-state — the refusal does not depend on sibling order.
+	for i := range ddl.Alter {
+		alter := &ddl.Alter[i]
+		if multiActionCheckActionRefused(s, alter) ||
+			multiActionIdentityCheckRefused(s, alter, entry.shape) {
+			return modifyPublication{replaceKey: primary, replace: entry}
+		}
+	}
 	// Primary-object ledger: two actions operating on the same column
 	// identity are a known failure on both dialect families (MySQL 1054,
 	// TiDB 8200) and are never modeled.
@@ -67,10 +80,13 @@ func (s *batchState) prepareMultiAction(statement spec.Statement, targets []spec
 			// TiDB validates every premise against the pre-state.
 			validation = entry.shape
 		}
-		if !multiActionPremiseHolds(s, alter, validation) {
+		if !multiActionPremiseHolds(alter, validation) {
 			return invalidate(primary)
 		}
-		if !multiActionApply(s, statement, alter, working) {
+		switch multiActionApply(s, alter, working) {
+		case multiActionApplyRefused:
+			return modifyPublication{replaceKey: primary, replace: entry}
+		case multiActionApplyUnprovable:
 			return invalidate(primary)
 		}
 		touched[object] = true
@@ -131,7 +147,7 @@ func multiActionPrimaryObject(alter *spec.Alter) (string, bool) {
 // multiActionPremiseHolds checks the action's object/position premises
 // against the dialect's validation set: every named reference must resolve
 // the way the server resolves it, and destination names must not collide.
-func multiActionPremiseHolds(s *batchState, alter *spec.Alter, validation *spec.TableSnapshot) bool {
+func multiActionPremiseHolds(alter *spec.Alter, validation *spec.TableSnapshot) bool {
 	afterOK := func() bool {
 		if alter.Position == nil || alter.Position.Kind != "after" {
 			return true
@@ -168,11 +184,61 @@ func multiActionPremiseHolds(s *batchState, alter *spec.Alter, validation *spec.
 	}
 }
 
+// multiActionVerdict is the three-way outcome of applying one action to
+// the working shape: applied, provably refused (the whole statement keeps
+// its pre-state), or unprovable (the bounded successor is withheld).
+type multiActionVerdict int
+
+const (
+	multiActionApplyOK multiActionVerdict = iota
+	multiActionApplyRefused
+	multiActionApplyUnprovable
+)
+
+// multiActionIdentityCheckRefused reports whether a rename/change action
+// inside a multi-action statement provably refuses through the CHECK
+// identity premise — a proven member references the renamed column and
+// the arm answers 3959 (MySQL always; TiDB refuses RENAME but cascades
+// CHANGE). The premise is a statement-level validation read on the
+// pre-state — the same shape the server validates against before any
+// action executes — so sibling order cannot weaken it. Only the proven
+// refusal counts here; an unvouched member set or an arm that cannot
+// decide stays with the ordinary unprovable path.
+func multiActionIdentityCheckRefused(s *batchState, alter *spec.Alter, shape *spec.TableSnapshot) bool {
+	if alter.Action != "rename_column" && alter.Action != "change_column" {
+		return false
+	}
+	oldName, newName, ok := columnIdentityNames(alter)
+	if !ok {
+		return false
+	}
+	return s.checkColumnIdentityOutcome(shape, alter.Action, oldName, newName) == checkIdentityRefused
+}
+
+// multiActionCheckActionRefused reports whether a CHECK|CONSTRAINT
+// alter/drop action inside a multi-action statement is a proven syntax
+// refusal on the resolved version — the CONSTRAINT spelling on MySQL
+// 8.0.16–8.0.18 refuses 1064 and fails the whole statement atomically.
+// Supported and unproven actions stay outside the bounded template and
+// keep their invalidate answer.
+func multiActionCheckActionRefused(s *batchState, alter *spec.Alter) bool {
+	if alter.Action != "drop_check" && alter.Action != "alter_check" {
+		return false
+	}
+	return spec.CheckAlterSyntaxOutcome(s.dialect, s.resolvedVersion, alter.Options["check_spelling"]) == spec.CheckSyntaxRefused
+}
+
 // multiActionApply applies one provable action to the working shape. Every
 // safety template the single-action publications enforce is re-checked on
-// the working shape — a refused template is a tombstone, not a skipped
-// action.
-func multiActionApply(s *batchState, statement spec.Statement, alter *spec.Alter, working *spec.TableSnapshot) bool {
+// the working shape — a proven refusal keeps the pre-state, an unprovable
+// template withholds the successor, never a skipped action.
+func multiActionApply(s *batchState, alter *spec.Alter, working *spec.TableSnapshot) multiActionVerdict {
+	applied := func(ok bool) multiActionVerdict {
+		if !ok {
+			return multiActionApplyUnprovable
+		}
+		return multiActionApplyOK
+	}
 	switch alter.Action {
 	case "add_columns":
 		def := alter.Column.Definition
@@ -180,37 +246,37 @@ func multiActionApply(s *batchState, statement spec.Statement, alter *spec.Alter
 			// TiDB validates the add premise against the pre-state, so a
 			// name a sibling already materialized still passes there —
 			// the server then refuses the duplicate. Never publish it.
-			return false
+			return multiActionApplyUnprovable
 		}
 		next := cloneColumn(*def)
 		if alter.Position == nil {
 			working.Columns = append(working.Columns, next)
-			return true
+			return multiActionApplyOK
 		}
 		if alter.Position.Kind == "first" {
 			working.Columns = insertColumnAt(working.Columns, next, 0)
-			return true
+			return multiActionApplyOK
 		}
 		idx, ok := positionResolveIndex(working.Columns, alter.Position, def.Name)
 		if !ok || idx < 0 {
-			return false
+			return multiActionApplyUnprovable
 		}
 		working.Columns = insertColumnAt(working.Columns, next, idx+1)
-		return true
+		return multiActionApplyOK
 	case "modify_column":
-		return multiActionModify(s, alter, working)
+		return applied(multiActionModify(s, alter, working))
 	case "change_column":
 		return multiActionChange(s, alter, working)
 	case "rename_column":
 		return multiActionRename(s, alter, working)
 	case "drop_column":
-		return multiActionDrop(alter, working)
+		return applied(multiActionDrop(alter, working))
 	case "set_column_default", "drop_column_default":
-		return multiActionSetter(s, alter, working)
+		return applied(multiActionSetter(s, alter, working))
 	case "set_column_visibility":
-		return multiActionVisibility(alter, working)
+		return applied(multiActionVisibility(alter, working))
 	default:
-		return false
+		return multiActionApplyUnprovable
 	}
 }
 
@@ -250,16 +316,39 @@ func multiActionModify(s *batchState, alter *spec.Alter, working *spec.TableSnap
 	return true
 }
 
-func multiActionChange(s *batchState, alter *spec.Alter, working *spec.TableSnapshot) bool {
+// multiActionChangeRenameVerdict runs the shared CHECK identity gate for a
+// rename/change action inside a multi-action statement — the same premise
+// the single-action publication enforces. A proven 3959 refuses the whole
+// statement atomically; an unvouched member set withholds the successor.
+func multiActionChangeRenameVerdict(s *batchState, alter *spec.Alter, working *spec.TableSnapshot, oldName, newName string) multiActionVerdict {
+	switch s.checkColumnIdentityOutcome(working, alter.Action, oldName, newName) {
+	case checkIdentityRefused:
+		return multiActionApplyRefused
+	case checkIdentityUnsafe:
+		return multiActionApplyUnprovable
+	case checkIdentityCascade:
+		// TiDB flag-ON CHANGE silently drops every referencing member —
+		// single- and multi-column references alike (probed v8.5.0).
+		dropIdentityCascadedChecks(working, oldName)
+	}
+	return multiActionApplyOK
+}
+
+func multiActionChange(s *batchState, alter *spec.Alter, working *spec.TableSnapshot) multiActionVerdict {
 	oldName, newName, _ := columnIdentityNames(alter)
 	index := modifyColumnIndex(working.Columns, oldName)
-	if index < 0 || columnIdentityConflict(working.Columns, index, oldName, newName) ||
-		columnIdentityLocalUnsafe(working, oldName, newName) {
-		return false
+	if index < 0 || columnIdentityConflict(working.Columns, index, oldName, newName) {
+		return multiActionApplyUnprovable
+	}
+	if verdict := multiActionChangeRenameVerdict(s, alter, working, oldName, newName); verdict != multiActionApplyOK {
+		return verdict
+	}
+	if columnIdentityLocalUnsafe(working, oldName, newName) {
+		return multiActionApplyUnprovable
 	}
 	definition := alter.Column.Definition
 	if strings.TrimSpace(definition.Type) == "" {
-		return false
+		return multiActionApplyUnprovable
 	}
 	source := working.Columns[index]
 	inPK, pkKnown := primaryKeyMembership(working, source.Name)
@@ -269,7 +358,7 @@ func multiActionChange(s *batchState, alter *spec.Alter, working *spec.TableSnap
 		modifyTiDBAutoIncrementRemoval(s.dialect, source, *definition) ||
 		(!pkKnown && !modifyExplicitNotNull(alter, *definition)) ||
 		(inPK && modifyExplicitNull(alter, *definition)) {
-		return false
+		return multiActionApplyUnprovable
 	}
 	next := cloneColumn(*definition)
 	if inPK {
@@ -281,28 +370,33 @@ func multiActionChange(s *batchState, alter *spec.Alter, working *spec.TableSnap
 	if alter.Position != nil {
 		moved, ok := applyColumnPosition(working.Columns, index, alter.Position, newName)
 		if !ok {
-			return false
+			return multiActionApplyUnprovable
 		}
 		working.Columns = moved
 	}
-	return true
+	return multiActionApplyOK
 }
 
-func multiActionRename(s *batchState, alter *spec.Alter, working *spec.TableSnapshot) bool {
+func multiActionRename(s *batchState, alter *spec.Alter, working *spec.TableSnapshot) multiActionVerdict {
 	oldName, newName, _ := columnIdentityNames(alter)
 	index := modifyColumnIndex(working.Columns, oldName)
-	if index < 0 || columnIdentityConflict(working.Columns, index, oldName, newName) ||
-		columnIdentityLocalUnsafe(working, oldName, newName) {
-		return false
+	if index < 0 || columnIdentityConflict(working.Columns, index, oldName, newName) {
+		return multiActionApplyUnprovable
+	}
+	if verdict := multiActionChangeRenameVerdict(s, alter, working, oldName, newName); verdict != multiActionApplyOK {
+		return verdict
+	}
+	if columnIdentityLocalUnsafe(working, oldName, newName) {
+		return multiActionApplyUnprovable
 	}
 	if !spec.RenameColumnVersionSupportFor(s.resolvedVersion).Supported {
-		return false
+		return multiActionApplyUnprovable
 	}
 	next := cloneColumn(working.Columns[index])
 	next.Name = newName
 	working.Columns[index] = next
 	rewriteIdentityColumnRefs(working, oldName, newName)
-	return true
+	return multiActionApplyOK
 }
 
 func multiActionDrop(alter *spec.Alter, working *spec.TableSnapshot) bool {

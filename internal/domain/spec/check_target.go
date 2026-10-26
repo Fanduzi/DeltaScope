@@ -62,10 +62,10 @@ type CheckTarget struct {
 // indexKindUnproven marks a proven-named index member whose stored kind
 // is unproven: it may hide a unique binding the generic keyword would
 // remove, so callers can never answer Missing against it.
-func genericConstraintKinds(snapshot *TableSnapshot, name string) (kinds map[CheckTargetKind]bool, indexKindUnproven bool) {
+func genericConstraintKinds(snapshot *TableSnapshot, name string) (kinds map[CheckTargetKind]bool, indexKindUnproven, pkUnproven bool) {
 	kinds = map[CheckTargetKind]bool{}
 	if snapshot == nil || name == "" {
-		return kinds, false
+		return kinds, false, false
 	}
 	if snapshot.FindCheckConstraint(name) != nil {
 		kinds[CheckTargetKindCheck] = true
@@ -88,10 +88,17 @@ func genericConstraintKinds(snapshot *TableSnapshot, name string) (kinds map[Che
 	if pkName, proven := PrimaryKeyObjectName(snapshot); proven && strings.EqualFold(pkName, name) {
 		kinds[CheckTargetKindPrimary] = true
 	}
-	if snapshot.PrimaryKey != nil && strings.EqualFold(name, "primary") {
+	if !snapshot.PrimaryKeyUnknown && snapshot.PrimaryKey != nil && strings.EqualFold(name, "primary") {
 		kinds[CheckTargetKindPrimary] = true
 	}
-	return kinds, indexKindUnproven
+	if snapshot.PrimaryKeyUnknown && strings.EqualFold(name, "primary") {
+		// The PK object's native catalog name is always `primary` — an
+		// unproven presence flag (nil projection or residual projection
+		// alike) can hide the binding: the generic keyword may bind the
+		// object, so neither Missing nor a sole-other-kind answer holds.
+		pkUnproven = true
+	}
+	return kinds, indexKindUnproven, pkUnproven
 }
 
 // checkTargetNameSpaceUnvouched reports whether the collections the
@@ -147,7 +154,7 @@ func CheckDropTarget(dialect Dialect, snapshot *TableSnapshot, spelling, name st
 		t.Binding = CheckTargetUnproven
 		return t
 	}
-	kinds, indexKindUnproven := genericConstraintKinds(snapshot, name)
+	kinds, indexKindUnproven, pkUnproven := genericConstraintKinds(snapshot, name)
 	checkFound := kinds[CheckTargetKindCheck]
 	delete(kinds, CheckTargetKindCheck)
 	if dialect == DialectTiDB {
@@ -155,7 +162,7 @@ func CheckDropTarget(dialect Dialect, snapshot *TableSnapshot, spelling, name st
 		case checkFound:
 			t.Binding = CheckTargetProven
 			checkTargetMember(snapshot, name, CheckTargetKindCheck, &t)
-		case len(kinds) > 0 || indexKindUnproven:
+		case len(kinds) > 0 || indexKindUnproven || pkUnproven:
 			t.Binding = CheckTargetUnproven
 		default:
 			t.Binding = CheckTargetMissing
@@ -171,10 +178,14 @@ func CheckDropTarget(dialect Dialect, snapshot *TableSnapshot, spelling, name st
 		}
 		return ""
 	}
+	definiteKinds := len(kinds)
+	if checkFound {
+		definiteKinds++
+	}
 	switch spelling {
 	case CheckSpellingCheck:
-		// The CHECK keyword never consults the index namespace — an
-		// unproven index kind cannot move its answer.
+		// The CHECK keyword never consults the index or PK namespace — an
+		// unproven index kind or PK presence cannot move its answer.
 		if checkFound {
 			t.Binding = CheckTargetProven
 			checkTargetMember(snapshot, name, CheckTargetKindCheck, &t)
@@ -186,13 +197,15 @@ func CheckDropTarget(dialect Dialect, snapshot *TableSnapshot, spelling, name st
 		case indexKindUnproven:
 			// A hidden unique may bind here — undecidable.
 			t.Binding = CheckTargetUnproven
-		case checkFound && len(kinds) > 0:
+		case definiteKinds >= 2:
 			t.Binding = CheckTargetAmbiguous
-		case checkFound || len(kinds) == 1:
+		case pkUnproven:
+			// A hidden `primary` object may bind or add a kind — neither
+			// the sole-member drop nor the missing name is provable.
+			t.Binding = CheckTargetUnproven
+		case definiteKinds == 1:
 			t.Binding = CheckTargetProven
 			checkTargetMember(snapshot, name, sole(), &t)
-		case len(kinds) > 1:
-			t.Binding = CheckTargetAmbiguous
 		default:
 			t.Binding = CheckTargetMissing
 		}
@@ -201,10 +214,10 @@ func CheckDropTarget(dialect Dialect, snapshot *TableSnapshot, spelling, name st
 		// keyword; a name neither spelling binds refuses under both.
 		// Everything else diverges — undecidable.
 		switch {
-		case checkFound && len(kinds) == 0 && !indexKindUnproven:
+		case checkFound && definiteKinds == 1 && !indexKindUnproven && !pkUnproven:
 			t.Binding = CheckTargetProven
 			checkTargetMember(snapshot, name, CheckTargetKindCheck, &t)
-		case !checkFound && len(kinds) == 0 && !indexKindUnproven:
+		case definiteKinds == 0 && !indexKindUnproven && !pkUnproven:
 			t.Binding = CheckTargetMissing
 		default:
 			t.Binding = CheckTargetUnproven
@@ -226,7 +239,7 @@ func CheckAlterTarget(dialect Dialect, snapshot *TableSnapshot, spelling, name s
 		t.Binding = CheckTargetUnproven
 		return t
 	}
-	kinds, indexKindUnproven := genericConstraintKinds(snapshot, name)
+	kinds, indexKindUnproven, pkUnproven := genericConstraintKinds(snapshot, name)
 	checkFound := kinds[CheckTargetKindCheck]
 	delete(kinds, CheckTargetKindCheck)
 	if dialect == DialectTiDB {
@@ -234,12 +247,16 @@ func CheckAlterTarget(dialect Dialect, snapshot *TableSnapshot, spelling, name s
 		case checkFound:
 			t.Binding = CheckTargetProven
 			checkTargetMember(snapshot, name, CheckTargetKindCheck, &t)
-		case len(kinds) > 0 || indexKindUnproven:
+		case len(kinds) > 0 || indexKindUnproven || pkUnproven:
 			t.Binding = CheckTargetUnproven
 		default:
 			t.Binding = CheckTargetMissing
 		}
 		return t
+	}
+	definiteKinds := len(kinds)
+	if checkFound {
+		definiteKinds++
 	}
 	switch spelling {
 	case CheckSpellingCheck:
@@ -255,8 +272,16 @@ func CheckAlterTarget(dialect Dialect, snapshot *TableSnapshot, spelling, name s
 			// A hidden unique may be the refused-or-bound target —
 			// undecidable.
 			t.Binding = CheckTargetUnproven
-		case checkFound && len(kinds) > 0:
+		case definiteKinds >= 2:
 			t.Binding = CheckTargetAmbiguous
+		case pkUnproven && definiteKinds == 0:
+			// A hidden `primary` may wrong-kind where Missing was read.
+			t.Binding = CheckTargetUnproven
+		case pkUnproven && checkFound:
+			// A hidden `primary` adds a kind to the sole CHECK member —
+			// ambiguous-or-proven stays undecidable. Sole non-check kinds
+			// stay WrongKind either way.
+			t.Binding = CheckTargetUnproven
 		case checkFound:
 			t.Binding = CheckTargetProven
 			checkTargetMember(snapshot, name, CheckTargetKindCheck, &t)
@@ -266,10 +291,10 @@ func CheckAlterTarget(dialect Dialect, snapshot *TableSnapshot, spelling, name s
 			t.Binding = CheckTargetMissing
 		}
 	default:
-		if checkFound && len(kinds) == 0 && !indexKindUnproven {
+		if checkFound && definiteKinds == 1 && !indexKindUnproven && !pkUnproven {
 			t.Binding = CheckTargetProven
 			checkTargetMember(snapshot, name, CheckTargetKindCheck, &t)
-		} else if !checkFound && len(kinds) == 0 && !indexKindUnproven {
+		} else if definiteKinds == 0 && !indexKindUnproven && !pkUnproven {
 			t.Binding = CheckTargetMissing
 		} else {
 			t.Binding = CheckTargetUnproven

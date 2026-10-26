@@ -1,0 +1,48 @@
+== R2-P3 TiDB v8.5.0 flag-ON in-column/change edges (2026-10-26T04:52:33Z)
+VERSION()
+8.0.11-TiDB-v8.5.0
+Variable_name	Value
+tidb_enable_check_constraint	ON
+-- C1: ADD COLUMN carrying a fresh-name in-column CHECK
+  $ CREATE TABLE c1 (id INT)
+  rc=0
+    
+  $ ALTER TABLE c1 ADD COLUMN v INT CONSTRAINT ck_v CHECK(v > 0) NOT ENFORCED
+  rc=0
+    
+    c1	CREATE TABLE `c1` (\n  `id` int DEFAULT NULL,\n  `v` int DEFAULT NULL\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+  catalog check members on c1:
+    0
+  successor: DROP CHECK ck_v reads the proven absence
+  $ ALTER TABLE c1 DROP CHECK ck_v
+  rc=1
+    ERROR 3940 (HY000) at line 1: Constraint 'ck_v' does not exist.
+  control: standalone ADD CONSTRAINT lands the member
+  $ ALTER TABLE c1 ADD CONSTRAINT ck_t CHECK(id > 0) NOT ENFORCED
+  rc=0
+    
+    1
+-- C1b: duplicate-name in-column CHECK (R1 silent-ignore control)
+  $ ALTER TABLE c1 ADD COLUMN w INT CONSTRAINT ck_t CHECK(w > 0) NOT ENFORCED
+  rc=0
+    
+    c1	CREATE TABLE `c1` (\n  `id` int DEFAULT NULL,\n  `v` int DEFAULT NULL,\n  `w` int DEFAULT NULL,\n  CONSTRAINT `ck_t` CHECK ((`id` > 0)) /*!80016 NOT ENFORCED */\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+-- D-edge: TiDB CHANGE COLUMN on multi-column CHECK reference
+  $ CREATE TABLE d1 (a INT, b INT, CONSTRAINT chk_ab CHECK(a < b) ENFORCED)
+  rc=0
+    
+  $ ALTER TABLE d1 CHANGE COLUMN a a2 INT
+  rc=0
+    
+    d1	CREATE TABLE `d1` (\n  `a2` int DEFAULT NULL,\n  `b` int DEFAULT NULL\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+    a2,b
+  catalog check members on d1:
+    0
+-- D-edge2: single-column reference control
+  $ CREATE TABLE d2 (a INT, CONSTRAINT chk_d2 CHECK(a > 0) ENFORCED)
+  rc=0
+    
+  $ ALTER TABLE d2 CHANGE COLUMN a a2 INT
+  rc=0
+    
+    0

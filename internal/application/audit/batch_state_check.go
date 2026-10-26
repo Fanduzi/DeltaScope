@@ -248,6 +248,11 @@ func (s *batchState) inColumnChecksOutcome(shape *spec.TableSnapshot, columnName
 			// lands. TiDB's ignored arm accepts and ignores it.
 			return inColumnCheckRefused
 		}
+		if member.Type == "check" && member.EnforcedUnproven &&
+			s.dialect == spec.DialectMySQL && arm == spec.CheckArmIgnored {
+			// Unattributed clause: refused-or-landed is undecidable.
+			return inColumnCheckUndecidable
+		}
 	}
 	switch arm {
 	case spec.CheckArmIgnored:
@@ -272,11 +277,15 @@ func (s *batchState) inColumnChecksOutcome(shape *spec.TableSnapshot, columnName
 		}
 		return inColumnCheckLand
 	}
-	// Enforcing arm: MySQL refuses a colliding name (3822) or a missing
-	// referenced column (1054) atomically — nothing lands. TiDB flag-ON
-	// diverges (probed): a colliding in-column name is silently ignored
-	// while the column still lands; its missing-reference answer is
-	// unprobed, so only the name collision is provably landable there.
+	// Enforcing arm: MySQL refuses a colliding name (3822), a missing
+	// referenced column, or a reference outside the declaring column
+	// (3813) atomically — nothing lands. TiDB flag-ON never stores an
+	// in-column CHECK member — fresh and duplicate names alike (probed
+	// v8.5.0: catalog empty, SHOW CREATE lacks the member while the
+	// column lands) — so nothing the member says can refuse the column.
+	if s.dialect == spec.DialectTiDB {
+		return inColumnCheckLand
+	}
 	if shape.CheckNameSpaceUnvouched() || shape.Columns == nil {
 		return inColumnCheckUndecidable
 	}
@@ -287,8 +296,7 @@ func (s *batchState) inColumnChecksOutcome(shape *spec.TableSnapshot, columnName
 		}
 		name := strings.TrimSpace(member.Name)
 		if name != "" {
-			if s.dialect == spec.DialectMySQL &&
-				(seen[strings.ToLower(name)] || shape.FindCheckConstraint(name) != nil) {
+			if seen[strings.ToLower(name)] || shape.FindCheckConstraint(name) != nil {
 				return inColumnCheckRefused
 			}
 			seen[strings.ToLower(name)] = true
@@ -297,14 +305,11 @@ func (s *batchState) inColumnChecksOutcome(shape *spec.TableSnapshot, columnName
 			return inColumnCheckUndecidable
 		}
 		for _, ref := range member.Columns {
-			if strings.EqualFold(ref, columnName) {
-				continue
-			}
-			if shape.FindColumn(ref) == nil {
-				if s.dialect == spec.DialectMySQL {
-					return inColumnCheckRefused
-				}
-				return inColumnCheckUndecidable
+			if !strings.EqualFold(ref, columnName) {
+				// A column-level CHECK may reference only its own
+				// column — any other reference refuses 3813 and the
+				// whole statement fails atomically (probed 8.0.46).
+				return inColumnCheckRefused
 			}
 		}
 	}
@@ -322,6 +327,15 @@ func (s *batchState) applyInColumnChecks(key batchTableKey, checks []spec.Constr
 	if entry == nil || entry.state != tablePresent || entry.shape == nil {
 		return
 	}
+	if s.dialect == spec.DialectTiDB {
+		// TiDB never stores an in-column CHECK member — fresh and
+		// duplicate names alike are silently discarded while the column
+		// lands (probed v8.5.0 flag-ON: catalog empty, SHOW CREATE lacks
+		// the member; CreateNewColumn drops the constraint the column
+		// builder returns). The flag changes enforcement, not storage —
+		// the member is absent under every arm.
+		return
+	}
 	switch s.checkArmFor() {
 	case spec.CheckArmIgnored:
 		return
@@ -334,12 +348,6 @@ func (s *batchState) applyInColumnChecks(key batchTableKey, checks []spec.Constr
 			member := cloneConstraint(declared)
 			name := strings.TrimSpace(member.Name)
 			if name != "" && shape.FindCheckConstraint(name) != nil {
-				if s.dialect == spec.DialectTiDB {
-					// TiDB flag-ON probed: a colliding in-column name is
-					// silently ignored — the member never lands while the
-					// column does.
-					continue
-				}
 				// Duplicate check name would refuse the whole statement —
 				// cannot happen on a landed column; keep it unvouched.
 				shape.ConstraintsUnknown = true
@@ -366,6 +374,30 @@ func dropColumnCascadedChecks(shape *spec.TableSnapshot, columnName string) {
 	kept := shape.Constraints[:0]
 	for _, member := range shape.Constraints {
 		if member.Type == "check" && len(member.Columns) == 1 && strings.EqualFold(member.Columns[0], columnName) {
+			continue
+		}
+		kept = append(kept, member)
+	}
+	for i := len(kept); i < len(shape.Constraints); i++ {
+		shape.Constraints[i] = spec.Constraint{}
+	}
+	shape.Constraints = kept
+}
+
+// dropIdentityCascadedChecks filters out every CHECK member that provably
+// references the renamed column — the probed TiDB flag-ON CHANGE COLUMN
+// cascade drops single- and multi-column referencing members alike
+// (v8.5.0: chk(a) and chk(a,b) both disappear with the rename). This is
+// the identity-change cascade, not the DROP COLUMN one: MySQL refuses the
+// rename before it can run, and a member whose reference set is unvouched
+// is gated by the unsafe path before this runs.
+func dropIdentityCascadedChecks(shape *spec.TableSnapshot, columnName string) {
+	if shape == nil || len(shape.Constraints) == 0 {
+		return
+	}
+	kept := shape.Constraints[:0]
+	for _, member := range shape.Constraints {
+		if member.Type == "check" && checkMemberReferences(member, columnName) {
 			continue
 		}
 		kept = append(kept, member)

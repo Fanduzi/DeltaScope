@@ -1,0 +1,62 @@
+== R2-P2 MySQL 8.0.46 binding/dependency/atomicity (2026-10-26T04:51:41Z)
+VERSION()
+8.0.46
+-- B1: self-FK depends on PK; generic DROP CONSTRAINT `primary`
+  $ CREATE TABLE b1 (id INT NOT NULL PRIMARY KEY, parent_id INT, KEY ix_parent(parent_id), CONSTRAINT fk_parent FOREIGN KEY(parent_id) REFERENCES b1(id))
+  rc=0
+  $ ALTER TABLE b1 DROP CONSTRAINT `primary`
+  rc=1
+    ERROR 1553 (HY000) at line 1: Cannot drop index 'PRIMARY': needed in a foreign key constraint
+  PK still present:
+    1
+  $ ALTER TABLE b1 DROP PRIMARY KEY
+  rc=1
+    ERROR 1553 (HY000) at line 1: Cannot drop index 'PRIMARY': needed in a foreign key constraint
+  PK still present:
+    1
+-- B1c: generic DROP of a UNIQUE sole-covering member
+  $ CREATE TABLE b2 (id INT PRIMARY KEY, parent_id INT, CONSTRAINT ux_p UNIQUE(parent_id), CONSTRAINT fk2 FOREIGN KEY(parent_id) REFERENCES b2(id))
+  rc=0
+  $ ALTER TABLE b2 DROP CONSTRAINT ux_p
+  rc=1
+    ERROR 1553 (HY000) at line 1: Cannot drop index 'ux_p': needed in a foreign key constraint
+  ux_p still present:
+    1
+  control: unique member with a replacement coverer drops clean
+  $ CREATE TABLE b3 (id INT PRIMARY KEY, parent_id INT, KEY ix2(parent_id), CONSTRAINT ux_q UNIQUE(parent_id), CONSTRAINT fk3 FOREIGN KEY(parent_id) REFERENCES b3(id))
+  rc=0
+  $ ALTER TABLE b3 DROP CONSTRAINT ux_q
+  rc=0
+  ux_q gone:
+    0
+-- C2: in-column CHECK referencing another existing column
+  $ CREATE TABLE c2 (id INT)
+  rc=0
+  $ ALTER TABLE c2 ADD COLUMN v INT CONSTRAINT ck_v CHECK(v > id) NOT ENFORCED
+  rc=1
+    ERROR 3813 (HY000) at line 1: Column check constraint 'ck_v' references other column.
+  columns of c2:
+    id
+  control: in-column CHECK referencing only its own column
+  $ ALTER TABLE c2 ADD COLUMN w INT CONSTRAINT ck_w CHECK(w > 0) NOT ENFORCED
+  rc=0
+    ck_w	NO
+-- D: multi-action RENAME of check-referenced column + ADD
+  $ CREATE TABLE d1 (a INT, b INT, CONSTRAINT chk_a CHECK(a > 0) ENFORCED)
+  rc=0
+  $ ALTER TABLE d1 RENAME COLUMN a TO a2, ADD COLUMN c INT
+  rc=1
+    ERROR 3959 (HY000) at line 1: Check constraint 'chk_a' uses column 'a', hence column cannot be dropped or renamed.
+  columns of d1:
+    a,b
+  control: RENAME of unreferenced column + ADD
+  $ ALTER TABLE d1 RENAME COLUMN b TO b2, ADD COLUMN c INT
+  rc=0
+    a,b2,c
+-- D2: multi-action CHANGE of check-referenced column + ADD
+  $ CREATE TABLE d2 (a INT, b INT, CONSTRAINT chk_d2 CHECK(a > 0) ENFORCED)
+  rc=0
+  $ ALTER TABLE d2 CHANGE COLUMN a a2 INT, ADD COLUMN c INT
+  rc=1
+    ERROR 3959 (HY000) at line 1: Check constraint 'chk_d2' uses column 'a', hence column cannot be dropped or renamed.
+    a,b

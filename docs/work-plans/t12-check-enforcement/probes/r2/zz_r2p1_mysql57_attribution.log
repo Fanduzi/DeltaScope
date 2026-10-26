@@ -1,0 +1,28 @@
+== R2-P1 MySQL 5.7.44 syntax-attribution edges (2026-10-26T04:51:00Z)
+VERSION()
+5.7.44
+-- A1: identifier 'enforced' inside CHECK expr, bare CHECK declaration
+  $ CREATE TABLE a1(enforced INT, CHECK(enforced > 0))
+  rc=0
+  catalog check members on a1:
+    0
+    a1	CREATE TABLE `a1` (\n  `enforced` int(11) DEFAULT NULL\n) ENGINE=InnoDB DEFAULT CHARSET=latin1
+  control: authored NOT ENFORCED clause
+  $ CREATE TABLE a1x(enforced INT, CHECK(enforced > 0) NOT ENFORCED)
+  rc=1
+    ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'NOT ENFORCED)' at line 1
+-- A2: comment carrying parens before the element body + authored NOT ENFORCED
+  $ CREATE TABLE a2 /* (ignored) */ (id INT, CHECK(id > 0) NOT ENFORCED)
+  rc=1
+    ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'NOT ENFORCED)' at line 1
+  tables present:
+    a1
+  control: same shape without the comment
+  $ CREATE TABLE a2b (id INT, CHECK(id > 0) NOT ENFORCED)
+  rc=1
+    ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'NOT ENFORCED)' at line 1
+-- A2c: comment carrying a comma inside the element list + authored clause
+  $ CREATE TABLE a2c (id INT /* , fake element */ , CHECK(id > 0) NOT ENFORCED)
+  rc=1
+    ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'NOT ENFORCED)' at line 1
+    a1

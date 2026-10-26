@@ -281,7 +281,7 @@ func extractCreateTable(stmt *ast.CreateTableStmt, rawSQL string) *spec.DDL {
 	// clause into a bare bool; the element text is the only place the
 	// authored clause is still readable. Correlate each comma-split
 	// element with the matching Cols/Constraints entry in authored order.
-	constraintExplicit, columnExplicit := createCheckExplicitFlags(stmt, rawSQL)
+	constraintExplicit, columnExplicit, explicitAttributed := createCheckExplicitFlags(stmt, rawSQL)
 
 	for _, col := range stmt.Cols {
 		column := extractColumn(col)
@@ -339,6 +339,16 @@ func extractCreateTable(stmt *ast.CreateTableStmt, rawSQL string) *spec.DDL {
 			check := checkConstraintFromColumnOption(option, col.Name.Name.L)
 			check.EnforcedExplicit = columnExplicit[colIdx]
 			ddl.Constraints = append(ddl.Constraints, check)
+		}
+	}
+	if !explicitAttributed {
+		// Element text could not be aligned to the AST members — every
+		// declared check keeps its enforcement clause unproven rather than
+		// reading false as a proven clause-free declaration.
+		for i := range ddl.Constraints {
+			if ddl.Constraints[i].Type == "check" {
+				ddl.Constraints[i].EnforcedUnproven = true
+			}
 		}
 	}
 
@@ -453,11 +463,29 @@ func extractAlterTable(stmt *ast.AlterTableStmt, rawSQL string) *spec.DDL {
 	ddl := &spec.DDL{Operation: spec.DDLOperationAlterTable, Table: &spec.Table{Schema: stmt.Table.Schema.L, Name: stmt.Table.Name.L}, Alter: make([]spec.Alter, 0, len(stmt.Specs))}
 	clauses := splitAlterTableClauses(rawSQL)
 	for index, s := range stmt.Specs {
-		clause := rawSQL
+		clause := ""
 		if len(clauses) == len(stmt.Specs) {
 			clause = clauses[index]
 		}
-		ddl.Alter = append(ddl.Alter, extractAlterSpecs(s, clause)...)
+		// An unattributed clause must not borrow the whole statement:
+		// copying rawSQL would stamp this action with another action's
+		// CHECK/CONSTRAINT spelling and enforcement facts. An empty clause
+		// keeps the spelling unproven and marks check members unproven
+		// instead of reading them as clause-free declarations.
+		alts := extractAlterSpecs(s, clause)
+		if clause == "" {
+			for altIdx := range alts {
+				if alts[altIdx].Constraint != nil && alts[altIdx].Constraint.Type == "check" {
+					alts[altIdx].Constraint.EnforcedUnproven = true
+				}
+				for memberIdx := range alts[altIdx].Constraints {
+					if alts[altIdx].Constraints[memberIdx].Type == "check" {
+						alts[altIdx].Constraints[memberIdx].EnforcedUnproven = true
+					}
+				}
+			}
+		}
+		ddl.Alter = append(ddl.Alter, alts...)
 		if s.Tp == ast.AlterTableRenameTable && s.NewTable != nil {
 			// The destination keeps its as-written qualifier: an unqualified
 			// RENAME TO target resolves to the current schema downstream, not
@@ -821,6 +849,26 @@ func splitAlterTableClauses(sql string) []string {
 		switch char {
 		case '\'', '"', '`':
 			quote = char
+		case '-':
+			if i+1 < len(sql) && sql[i+1] == '-' {
+				for i < len(sql) && sql[i] != '\n' {
+					i++
+				}
+			}
+		case '#':
+			for i < len(sql) && sql[i] != '\n' {
+				i++
+			}
+		case '/':
+			if i+1 < len(sql) && sql[i+1] == '*' {
+				i += 2
+				for i+1 < len(sql) && (sql[i] != '*' || sql[i+1] != '/') {
+					i++
+				}
+				if i+1 < len(sql) {
+					i++
+				}
+			}
 		case '(':
 			depth++
 		case ')':
@@ -2721,7 +2769,7 @@ func sqlBareWords(text string) []string {
 			}
 		case c == '/' && i+1 < n && text[i+1] == '*':
 			i += 2
-			for i+1 < n && !(text[i] == '*' && text[i+1] == '/') {
+			for i+1 < n && (text[i] != '*' || text[i+1] != '/') {
 				i++
 			}
 			if i+1 < n {
@@ -2769,20 +2817,161 @@ func checkSpellingForClause(clause string) string {
 	return ""
 }
 
-// clauseDeclaresEnforced reports whether the clause's bare words carry an
-// authored ENFORCED token — the word appears only in the CHECK [NOT]
-// ENFORCED clause, so its presence proves the enforcement clause was
-// written somewhere inside the fragment. Callers apply it at clause scope:
-// a shared multi-member clause marks every declared member, which stays
-// sound because an explicit clause refuses the whole statement on the one
-// boundary where the fact matters (MySQL <8.0.16).
+// clauseDeclaresEnforced reports whether the clause carries an authored
+// [NOT] ENFORCED clause in binding position: a bare ENFORCED word must
+// immediately follow the closing parenthesis of a CHECK(...) expression,
+// optionally preceded by NOT. `enforced` is a legal non-reserved
+// identifier — a word inside the CHECK expression, a column or constraint
+// name, or a comment never declares the clause. Callers apply the answer
+// at clause scope: a shared multi-member clause marks every declared
+// member, which stays sound because an explicit clause refuses the whole
+// statement on the one boundary where the fact matters (MySQL <8.0.16).
 func clauseDeclaresEnforced(clause string) bool {
-	for _, word := range sqlBareWords(clause) {
+	i, n := 0, len(clause)
+	for i < n {
+		if next := skipCommentOrQuoted(clause, i); next > i {
+			i = next
+			continue
+		}
+		if !isBareWordChar(clause[i]) {
+			i++
+			continue
+		}
+		start := i
+		for i < n && isBareWordChar(clause[i]) {
+			i++
+		}
+		if strings.ToLower(clause[start:i]) != "check" {
+			continue
+		}
+		open := skipSpaceAndComments(clause, i)
+		if open >= n || clause[open] != '(' {
+			continue
+		}
+		closeIdx, ok := matchingParenClose(clause, open)
+		if !ok {
+			return false
+		}
+		word, wordEnd, found := nextBareWordAfter(clause, closeIdx+1)
+		if !found {
+			continue
+		}
 		if word == "enforced" {
+			return true
+		}
+		if word != "not" {
+			continue
+		}
+		if word, _, found = nextBareWordAfter(clause, wordEnd); found && word == "enforced" {
 			return true
 		}
 	}
 	return false
+}
+
+// skipCommentOrQuoted returns the index just past a comment or quoted
+// section starting at i, or i itself when the position starts neither.
+func skipCommentOrQuoted(text string, i int) int {
+	n := len(text)
+	switch text[i] {
+	case '\'', '"', '`':
+		quote := text[i]
+		i++
+		for i < n {
+			if text[i] == '\\' && quote != '`' {
+				i += 2
+				continue
+			}
+			if text[i] == quote {
+				if quote != '`' && i+1 < n && text[i+1] == quote {
+					i += 2
+					continue
+				}
+				return i + 1
+			}
+			i++
+		}
+		return i
+	case '-':
+		if i+1 < n && text[i+1] == '-' {
+			for i < n && text[i] != '\n' {
+				i++
+			}
+			return i
+		}
+	case '#':
+		for i < n && text[i] != '\n' {
+			i++
+		}
+		return i
+	case '/':
+		if i+1 < n && text[i+1] == '*' {
+			i += 2
+			for i+1 < n && (text[i] != '*' || text[i+1] != '/') {
+				i++
+			}
+			if i+1 < n {
+				return i + 2
+			}
+			return n
+		}
+	}
+	return i
+}
+
+// skipSpaceAndComments returns the first index at or after i that is
+// neither whitespace nor comment text.
+func skipSpaceAndComments(text string, i int) int {
+	n := len(text)
+	for i < n {
+		c := text[i]
+		if c == ' ' || c == '\t' || c == '\n' || c == '\r' || c == '\f' || c == '\v' {
+			i++
+			continue
+		}
+		if next := skipCommentOrQuoted(text, i); next > i {
+			i = next
+			continue
+		}
+		break
+	}
+	return i
+}
+
+// matchingParenClose finds the ')' closing the '(' at open, skipping
+// quoted and commented text. ok=false means the parens never balance.
+func matchingParenClose(text string, open int) (int, bool) {
+	depth := 0
+	for i := open; i < len(text); i++ {
+		if next := skipCommentOrQuoted(text, i); next > i {
+			i = next - 1
+			continue
+		}
+		switch text[i] {
+		case '(':
+			depth++
+		case ')':
+			depth--
+			if depth == 0 {
+				return i, true
+			}
+		}
+	}
+	return 0, false
+}
+
+// nextBareWordAfter reads the first bare word at or after i, skipping
+// whitespace and comments.
+func nextBareWordAfter(text string, i int) (word string, end int, ok bool) {
+	i = skipSpaceAndComments(text, i)
+	if i >= len(text) || !isBareWordChar(text[i]) {
+		return "", 0, false
+	}
+	start := i
+	for i < len(text) && isBareWordChar(text[i]) {
+		i++
+	}
+	return strings.ToLower(text[start:i]), i, true
 }
 
 // createCheckExplicitFlags splits the CREATE TABLE element list and marks
@@ -2793,27 +2982,21 @@ func clauseDeclaresEnforced(clause string) bool {
 // Constraints order, everything else consumes the Cols order. An
 // unalignable body answers empty maps — the fact stays unproven rather
 // than guessed.
-func createCheckExplicitFlags(stmt *ast.CreateTableStmt, rawSQL string) (constraintExplicit, columnExplicit map[int]bool) {
+func createCheckExplicitFlags(stmt *ast.CreateTableStmt, rawSQL string) (constraintExplicit, columnExplicit map[int]bool, attributed bool) {
 	constraintExplicit = map[int]bool{}
 	columnExplicit = map[int]bool{}
 	body := createTableElementBody(rawSQL)
 	if body == "" {
-		return constraintExplicit, columnExplicit
+		return constraintExplicit, columnExplicit, false
 	}
 	elements := splitAlterTableClauses(body)
 	if len(elements) != len(stmt.Cols)+len(stmt.Constraints) {
-		return constraintExplicit, columnExplicit
+		return constraintExplicit, columnExplicit, false
 	}
 	constraintIdx, columnIdx := 0, 0
 	for _, element := range elements {
 		words := sqlBareWords(element)
-		explicit := false
-		for _, word := range words {
-			if word == "enforced" {
-				explicit = true
-				break
-			}
-		}
+		explicit := clauseDeclaresEnforced(element)
 		if len(words) > 0 && createElementIsConstraint(words[0]) {
 			if explicit {
 				constraintExplicit[constraintIdx] = true
@@ -2827,9 +3010,9 @@ func createCheckExplicitFlags(stmt *ast.CreateTableStmt, rawSQL string) (constra
 		columnIdx++
 	}
 	if constraintIdx != len(stmt.Constraints) || columnIdx != len(stmt.Cols) {
-		return map[int]bool{}, map[int]bool{}
+		return map[int]bool{}, map[int]bool{}, false
 	}
-	return constraintExplicit, columnExplicit
+	return constraintExplicit, columnExplicit, true
 }
 
 // createTableElementBody extracts the parenthesized element list of a
@@ -2858,6 +3041,26 @@ func createTableElementBody(rawSQL string) string {
 		switch c {
 		case '\'', '"', '`':
 			quote = c
+		case '-':
+			if i+1 < len(rawSQL) && rawSQL[i+1] == '-' {
+				for i < len(rawSQL) && rawSQL[i] != '\n' {
+					i++
+				}
+			}
+		case '#':
+			for i < len(rawSQL) && rawSQL[i] != '\n' {
+				i++
+			}
+		case '/':
+			if i+1 < len(rawSQL) && rawSQL[i+1] == '*' {
+				i += 2
+				for i+1 < len(rawSQL) && (rawSQL[i] != '*' || rawSQL[i+1] != '/') {
+					i++
+				}
+				if i+1 < len(rawSQL) {
+					i++
+				}
+			}
 		case '(':
 			if depth == 0 {
 				start = i + 1

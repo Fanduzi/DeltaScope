@@ -105,8 +105,9 @@ func (s *batchState) prepareColumnIdentity(statement spec.Statement, alter *spec
 	source := entry.shape.Columns[index]
 	shape := cloneTableSnapshot(entry.shape)
 	if checkOutcome == checkIdentityCascade {
-		// TiDB CHANGE COLUMN silently drops the referencing members.
-		dropColumnCascadedChecks(shape, oldName)
+		// TiDB CHANGE COLUMN silently drops the referencing members —
+		// single- and multi-column references alike (probed v8.5.0).
+		dropIdentityCascadedChecks(shape, oldName)
 	}
 	if alter.Action == "change_column" {
 		definition := alter.Column.Definition

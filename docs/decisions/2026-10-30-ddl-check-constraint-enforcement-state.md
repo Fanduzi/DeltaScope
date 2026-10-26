@@ -127,6 +127,49 @@ band, unknown-kind index members under generic binding, TiDB generic-drop
 resolution beyond the probed cells, and MySQL patches other than
 5.7.44/8.0.17/8.0.46/8.4.10.
 
+## Amendment: R2 acceptance remediation (2026-10-26)
+
+Reviewer groups A–D located four defect clusters against the R1 contract;
+each was re-probed natively (`probes/r2/` — 5.7.44 attribution, 8.0.46
+dependency/atomicity, TiDB v8.5.0 flag-ON storage/change edges) and
+encoded after a public-path red baseline:
+
+1. **Clause attribution, not keyword presence.** An authored
+   `[NOT] ENFORCED` clause is proven only in binding position — the first
+   bare word after the `CHECK(...)` close paren of the element/clause text
+   already aligned to its AST spec. `ENFORCED` as a column or expression
+   identifier never qualifies (probed 5.7: identifier form ignored,
+   authored clause 1064). Comment/quote-aware splitting keeps `/* , */`
+   and `/* ( */` from faking boundaries; unalignable text marks members
+   `Constraint.EnforcedUnproven` and the version rule emits an evidence
+   gap — a sibling action's spelling or clause fact is never copied.
+   TiDB's flag-OFF arm keeps the ignored notice on authored clauses since
+   suppression routes through the MySQL-only
+   `spec.CheckExplicitClauseRefused`.
+2. **Binding success does not imply landing.** A generic
+   `DROP CONSTRAINT` bound to the primary object or a unique member runs
+   the same FK sole-coverer dependency premise as the dedicated drops
+   (probed 1553 on 8.0.46; a replacement coverer drops clean). Check +
+   unknown-kind index same-name pairs keep binding unproven AND unvouch
+   the check member's existence — both native worlds exist (secondary →
+   dropped, unique → 3939). `PrimaryKeyUnknown` honors names that could
+   bind the primary object as Unproven.
+3. **Column-scoped CHECK storage.** TiDB never stores an in-column CHECK
+   member — probed flag-ON: the column lands, the member does not
+   (`DROP CHECK` then reads the proven 3940 absence) — so TiDB skips
+   member publication there entirely. MySQL in-column CHECKs reference
+   only their own column; a cross-column reference is the probed 3813
+   whole-statement refusal that `NOT ENFORCED` does not relax.
+4. **Multi-action identity goes through the CHECK verdict.**
+   `prepareMultiAction` scans every action for a proven refusal
+   (CHECK-referenced RENAME/CHANGE via `checkColumnIdentityOutcome`
+   against the pre-state — probed 3959 atomic, or a syntax-gated action)
+   before publishing anything; a refusal preserves the exact pre-state,
+   an unprovable action withholds the successor. TiDB flag-ON `CHANGE
+   COLUMN` cascades every provably-referencing CHECK member — the
+   single-column limit is a DROP COLUMN rule only; the multi-column
+   cascade is now a probed fact.
+
 ## Consequences and deferred scope
 
 - Expression evaluation stays out of scope — facts, not semantics.

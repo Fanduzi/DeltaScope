@@ -467,6 +467,15 @@ func (s *batchState) applyCreateTable(ctx context.Context, statement spec.Statem
 			if spec.CheckExplicitClauseRefused(s.dialect, arm, member) {
 				return nil
 			}
+			if member.Type == "check" && member.EnforcedUnproven &&
+				s.dialect == spec.DialectMySQL && arm == spec.CheckArmIgnored {
+				// The authored clause could not be attributed: the
+				// statement may have refused 1064 or landed the table —
+				// existence is undecidable, so the entry is unvouched
+				// rather than published.
+				s.invalidateKey(key)
+				return nil
+			}
 		}
 	}
 	switch {

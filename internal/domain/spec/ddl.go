@@ -570,6 +570,14 @@ type Constraint struct {
 	// CHECK parses-and-ignores there while an explicit clause refuses
 	// 1064.
 	EnforcedExplicit bool `json:"enforced_explicit,omitempty"`
+	// EnforcedUnproven records that the authored text's enforcement clause
+	// could not be attributed to this declaration — the clause text was
+	// unavailable or unalignable (comment-split boundaries, multi-action
+	// clauses whose elements could not be matched to AST members). It is
+	// never set together with a decisive EnforcedExplicit answer: the
+	// member's clause stays unproven instead of reading false as a proven
+	// clause-free declaration.
+	EnforcedUnproven bool `json:"enforced_unproven,omitempty"`
 	// Expression records the evaluation-free structural facts of a CHECK
 	// member's expression: column references, function names, feature
 	// markers, root form, and a structural fingerprint. Raw expression
