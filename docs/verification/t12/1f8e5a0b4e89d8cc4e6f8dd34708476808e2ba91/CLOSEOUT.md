@@ -37,6 +37,6 @@ Evidence: this bundle + T11-tail README corrections (same commit).
 
 ## Delivered commits
 
-- `1f8e5a0b` product (73 files)
+- `1f8e5a0b` product (74 files)
 - evidence commit (this bundle + T11-tail corrections) — pushed ff to
   origin/workfree; origin/milestone/mysql-tidb-ddl-completion untouched.

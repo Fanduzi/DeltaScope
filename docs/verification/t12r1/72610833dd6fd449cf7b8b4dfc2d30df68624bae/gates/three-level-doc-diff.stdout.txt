@@ -1,0 +1,13 @@
+OK  internal/application/audit/batch_state.go -> internal/application/audit/README.md
+OK  internal/application/audit/batch_state_check.go -> internal/application/audit/README.md
+OK  internal/application/audit/batch_state_drop_column.go -> internal/application/audit/README.md
+OK  internal/application/audit/batch_state_fk.go -> internal/application/audit/README.md
+OK  internal/application/audit/batch_state_multi.go -> internal/application/audit/README.md
+OK  internal/domain/rule/ddl/check_constraint_rules.go -> internal/domain/rule/ddl/README.md
+OK  internal/domain/rule/ddl/common.go -> internal/domain/rule/ddl/README.md
+OK  internal/domain/rule/ddl/identifier_rules.go -> internal/domain/rule/ddl/README.md
+OK  internal/domain/spec/check_target.go -> internal/domain/spec/README.md
+OK  internal/domain/spec/ddl.go -> internal/domain/spec/README.md
+OK  internal/domain/spec/version.go -> internal/domain/spec/README.md
+OK  internal/infrastructure/parser/tidb/extractor.go -> internal/infrastructure/parser/tidb/README.md
+4

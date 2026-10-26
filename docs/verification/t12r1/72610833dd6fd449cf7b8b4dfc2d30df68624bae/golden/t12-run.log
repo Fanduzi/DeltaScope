@@ -1,0 +1,4 @@
+python3 scripts/ddl_golden.py run --task "T12" --artifact-dir /tmp/r1-golden
+(serial battery: T09 -> T10 -> T11 -> T12 on head 72610833dd6fd449cf7b8b4dfc2d30df68624bae)
+T12: cases=25 passed=25 assertions=282
+PASS

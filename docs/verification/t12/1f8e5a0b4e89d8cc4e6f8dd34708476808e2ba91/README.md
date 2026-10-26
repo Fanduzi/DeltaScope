@@ -43,10 +43,15 @@ Parent: `186710db69088d59eae82726bbc6ad4789f8a353` (T11-R2-tail evidence).
 17 × rc=0. `lint` rc=1 carries the accepted 15-issue baseline — byte-
 identical stdout to the T11-R2-tail bundle (zero findings on any T12
 file; one new `S1021` found during this gate was fixed and folded into
-the product SHA via amend). `gofmt -l` reports only the two accepted T07
-baseline files. `three-level-doc-diff` replicates the script rule
-against `186710db..1f8e5a0b` (script reads the worktree only): every
-changed source module's README updated → rc=0.
+the product SHA via amend, then lint was re-run rc=1-baseline). `gofmt -l`
+reports only the two accepted T07 baseline files. `three-level-doc-diff`
+replicates the script rule (script reads the worktree only) and was
+executed while the worktree was `0c34247c` — the diff it checked was
+`186710db..0c34247c`; the subsequent amend to `1f8e5a0b` merged one
+`if`/`else` pair inside `batch_state_check.go` (no README-bearing or
+L3-header surface), so the check's conclusion carries over but the
+diff-range it directly covered ended at `0c34247c`. Every changed source
+module's README updated → rc=0.
 
 ## Goldens (serial, shared anchors, bound to the product SHA)
 
@@ -69,9 +74,13 @@ for 4 finding assertions → 506. All other T11 expectations are frozen.
 
 ## Red → green
 
-- `red/baseline_red.log` — first-run behavioral red on the pre-T12
-  worktree (spec fields + registered rule skeletons, no implementation),
-  via the public `Audit` path: 8 `--- FAIL` markers. The Golden Path,
+- `red/baseline_red.log` — first-run behavioral red recorded on a
+  development worktree where the T12 carrier fields and rule skeletons
+  were already added but the transitions/rules were not yet implemented
+  (the log is preserved as recorded; it is not the pristine pre-T12
+  product): 5 `--- FAIL` test markers / 6 `--- PASS` markers — the three
+  trailing bare `FAIL` lines are go-test package/exit summary lines, not
+  additional test failures. The Golden Path,
   reverse-ENFORCED, ordinary-column, non-CHECK-name, and ADD-declare
   cases all red on tombstoned post-state / `coverage=incomplete` / the
   missing notice — the positive controls (missing-name blocker,
@@ -83,8 +92,10 @@ for 4 finding assertions → 506. All other T11 expectations are frozen.
   (join → catalog/schema/name); run3 = TiDB stores members in
   `TIDB_CHECK_CONSTRAINTS` only + `@@global.` returns `1`/`0` (manifest
   verify + provider TiDB arm added).
-- `green/t12-focused.stdout.txt` — 36 `--- PASS` markers / 0 FAIL for
-  `go test -run TestT12` on the product SHA.
+- `green/t12-focused.stdout.txt` — 27 `--- PASS` markers (37 leaf lines
+  including `--- PASS:` sub-test entries) / 0 FAIL for
+  `go test -count=1 -v ./internal/application/audit -run 'TestT12'` on
+  the product SHA.
 - `green/pkg.stdout.txt` — provider + rule + spec + parser + public API
   packages green on the product SHA.
 - `green/t12_full_test.log` — earlier full-suite run during development.

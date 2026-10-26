@@ -1,0 +1,29 @@
+--- FAIL: TestT12R1MultiColumnCheckBlocksDropColumn (0.00s)
+    batch_state_t12r1_test.go:396: 3959-refused drop removed column a
+--- FAIL: TestT12R1GenericAlterSameNameAmbiguityRefused (0.00s)
+    batch_state_t12r1_test.go:365: 3939-refused generic alter flipped member=&{Type:check Name:ck Columns:[a] ReferencedSchema: ReferencedTable: ReferencedColumns:[] UnmodeledParts:0 UnmodeledReferencedParts:0 OnDelete: OnUpdate: UnmodeledReferActions:0 Enforced:not_enforced Expression:<nil> InColumn:false NameUnknown:false}, want enforced kept
+--- FAIL: TestT12R1UnmodeledCheckExpressionNeverCascades (0.00s)
+    batch_state_t12r1_test.go:429: unvouched reference set still produced a clean cascade: &{Schema: Exists:true Table:0x46e401978ae0 Columns:[{Name:b Type:int Length:0 Charset: Collation: Comment: Unsigned:false NotNull:false AutoIncrement:false HasDefault:false DefaultValue: DefaultKind: DefaultIsNull:false DefaultIsCurrentTimestamp:false OnUpdateCurrentTimestamp:false GeneratedWhen: IsIdentity:false IdentityOptions:map[] AutoRandom:false UnextractedOptions:[] Generated:<nil> DefaultExpression:<nil> Visibility: VisibilityExplicit:false DefaultParenthesized:false DefaultLiteral:<nil>}] PrimaryKey:<nil> Indexes:[] Constraints:[] Options:map[] PrimaryKeyIsHandle:false PrimaryKeyHandleUnknown:false PrimaryKeyClustered:false PrimaryKeyClusteredUnknown:false PrimaryKeyUnknown:false IndexesUnknown:false ConstraintsUnknown:false IndexOrderCatalog:false IndexNamesUnknown:false Partitioned:<nil>}
+--- FAIL: TestT12R1AddCheckMissingColumnRefused (0.00s)
+    batch_state_t12r1_test.go:449: 1054-refused ADD CHECK published the ghost member
+--- FAIL: TestT12R1TiDBInColumnDuplicateLandsColumn (0.00s)
+    batch_state_t12r1_test.go:517: TiDB silent-ignore must not degrade the proven constraint collection
+--- FAIL: TestT12R1InColumnDuplicateNameRefusesAtomically (0.00s)
+    batch_state_t12r1_test.go:486: 3822-refused statement still published column v
+--- FAIL: TestT12R1AlterCheckCheckSpellingOn8017Executes (0.01s)
+    batch_state_t12r1_test.go:65: 8.0.17 ALTER CHECK misreported as version refusal: {RuleID:ddl.alter.alter_check.version.require Level:blocker Message:alter_check on table "t" requires MySQL >= 8.0.19 (check constraint alter/drop syntax) StatementIndex:0 StatementKind:ddl Location:0x46e401640640 Suggestion:run this change on a MySQL version that supports check-constraint alter/drop syntax Metadata:map[action:alter_check required_version:8.0.19 table:t version:8.0.17] Explanation:0x46e401340190}
+--- FAIL: TestT12R1DropCheckOnSecondaryIndexRefuses (0.01s)
+    batch_state_t12r1_test.go:258: ALTER TABLE t DROP CHECK ix_u; on a secondary index must refuse (3821/3940) — no finding: []
+--- FAIL: TestT12R1GenericDropSameNameAmbiguityRefused (0.01s)
+    batch_state_t12r1_test.go:302: DROP CONSTRAINT on a same-name CHECK+UNIQUE pair must refuse 3939: []
+--- FAIL: TestT12R1InColumnCheckNameGoverned (0.01s)
+    batch_state_t12r1_test.go:541: in-column CHECK name escaped naming governance: []
+--- FAIL: TestT12R1ExplicitEnforcedDeclOn57Refuses (0.01s)
+    batch_state_t12r1_test.go:187: refused declaration misreported as parsed-and-ignored: {RuleID:ddl.constraint.check.ignored.notice Level:blocker Message:check constraint "c1" on table "t" is parsed but ignored on this product StatementIndex:0 StatementKind:ddl Location:0x46e4017200e0 Suggestion:verify the target product actually enforces check constraints before relying on this declaration Metadata:map[constraint:c1 enforced:ignored table:t] Explanation:0x46e401230230}
+--- FAIL: TestT12R1ExplicitEnforcedCreateOn57Refuses (0.01s)
+    batch_state_t12r1_test.go:206: refused CREATE declaration misreported as ignored: {RuleID:ddl.constraint.check.ignored.notice Level:blocker Message:check constraint "(unnamed)" on table "n1" is parsed but ignored on this product StatementIndex:0 StatementKind:ddl Location:0x46e4017e40f0 Suggestion:verify the target product actually enforces check constraints before relying on this declaration Metadata:map[constraint: enforced:ignored table:n1] Explanation:0x46e401e28140}
+--- FAIL: TestT12R1DropCheckSpellingOn8017 (0.01s)
+    batch_state_t12r1_test.go:141: refused DROP CONSTRAINT removed the member
+FAIL
+FAIL	github.com/Fanduzi/DeltaScope/internal/application/audit	0.358s
+FAIL
