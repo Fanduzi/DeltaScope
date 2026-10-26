@@ -252,13 +252,15 @@ func multiActionDroppedCheckNames(s *batchState, ddl *spec.DDL, shape *spec.Tabl
 }
 
 // multiActionIdentityCheckVerdict answers a rename/change action's CHECK
-// premise inside a multi-action statement. The premise is evaluated on
-// the pre-state minus the check members sibling drop_check actions
-// provably remove — a proven drop lifts the premise natively, so the
-// statement is then undecidable in the bounded template rather than a
-// fabricated refusal preserving the old member and column. A member an
-// unproven sibling drop may hit keeps the whole outcome undecidable —
-// neither the refusal nor the landing is provable.
+// premise inside a multi-action statement. Members split three ways: a
+// sibling drop_check provably removes some (value 2), may hit others
+// under an unproven binding (value 1), and the rest definitely remain.
+// Only a definitely-remaining member that references the target column
+// supports a proven refusal — in every compatible world the statement
+// still refuses. A member a sibling may have dropped can never prop up
+// that refusal: it either lands and lifts the premise or refuses first,
+// so the statement is undecidable, not refused. A proven removal still
+// leaves the statement undecidable too — the landing is unmodeled here.
 func multiActionIdentityCheckVerdict(s *batchState, alter *spec.Alter, shape *spec.TableSnapshot, dropped map[string]int) identityScanVerdict {
 	if alter.Action != "rename_column" && alter.Action != "change_column" {
 		return identityScanClean
@@ -267,11 +269,14 @@ func multiActionIdentityCheckVerdict(s *batchState, alter *spec.Alter, shape *sp
 	if !ok {
 		return identityScanClean
 	}
-	effective := shape
+	definite := shape
+	provenRemoved := false
 	if len(dropped) > 0 && shape != nil {
 		kept := make([]spec.Constraint, 0, len(shape.Constraints))
 		for _, member := range shape.Constraints {
-			if member.Type == "check" && dropped[strings.ToLower(member.Name)] == 2 {
+			mark := dropped[strings.ToLower(member.Name)]
+			if member.Type == "check" && mark != 0 {
+				provenRemoved = provenRemoved || mark == 2
 				continue
 			}
 			kept = append(kept, member)
@@ -279,19 +284,15 @@ func multiActionIdentityCheckVerdict(s *batchState, alter *spec.Alter, shape *sp
 		if len(kept) != len(shape.Constraints) {
 			clone := *shape
 			clone.Constraints = kept
-			effective = &clone
+			definite = &clone
 		}
 	}
-	switch s.checkColumnIdentityOutcome(effective, alter.Action, oldName, newName) {
+	switch s.checkColumnIdentityOutcome(definite, alter.Action, oldName, newName) {
 	case checkIdentityRefused:
+		// A member no sibling action can remove still vouches the
+		// refusal — every compatible world keeps the pre-state.
 		return identityScanRefused
 	case checkIdentityUnsafe:
-		return identityScanUndecidable
-	}
-	if effective != shape {
-		// The refusal was voided only because a sibling provably drops
-		// the referencing member — the statement may land, but the drop
-		// itself is unmodeled, so neither answer is provable here.
 		return identityScanUndecidable
 	}
 	for i := range shape.Constraints {
@@ -302,6 +303,12 @@ func multiActionIdentityCheckVerdict(s *batchState, alter *spec.Alter, shape *sp
 		if checkMemberReferences(*member, oldName) || checkMayReferenceUnvouched(*member) {
 			return identityScanUndecidable
 		}
+	}
+	if provenRemoved {
+		// The refusal was voided only because a sibling provably drops
+		// the referencing member — the statement may land, but the drop
+		// itself is unmodeled, so neither answer is provable here.
+		return identityScanUndecidable
 	}
 	return identityScanClean
 }

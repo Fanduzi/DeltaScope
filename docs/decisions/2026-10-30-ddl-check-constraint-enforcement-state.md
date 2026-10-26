@@ -192,11 +192,16 @@ encoded after a red baseline (`docs/verification/t12r2tail/`):
    `checkBindingGapFacts` (`target_table.primary_key` alone when that is
    the only gap).
 3. **A same-statement proven DROP CHECK lifts the identity premise.**
-   Probed on 8.0.46: `DROP CHECK chk_a` plus `RENAME COLUMN a TO a2` or
-   `CHANGE COLUMN a a2 INT` lands in either action order; an unrelated
+   Probed on 8.0.46: `DROP CHECK chk_a` plus `RENAME COLUMN a TO a2`
+   lands in either action order, and `DROP CHECK` + `CHANGE COLUMN`
+   lands drop-first (rename-first covered by unit regression); an unrelated
    drop still refuses 3959 atomically. The premise scan subtracts
    provably dropped members (`multiActionDroppedCheckNames` +
-   `multiActionIdentityCheckVerdict`) — a voided or unprovable answer
+   `multiActionIdentityCheckVerdict`) and asks whether a
+   definitely-remaining member still references the column — a member an
+   unproven sibling drop may hit can never prop up the refusal, so a
+   generic `DROP CONSTRAINT` on a same-named unknown-kind index stays
+   undecidable. A voided or unprovable answer
    withholds the successor instead of fabricating a refusal that keeps
    the old member and column.
 

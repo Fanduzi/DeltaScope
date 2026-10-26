@@ -452,9 +452,16 @@ whole-statement premise scan evaluates a rename/change's CHECK premise
 on the pre-state minus the members same-statement `drop_check` actions
 provably remove (`multiActionDroppedCheckNames` +
 `multiActionIdentityCheckVerdict`): probed on 8.0.46, `DROP CHECK chk_a`
-plus `RENAME COLUMN a TO a2` or `CHANGE COLUMN a a2 INT` lands in either
-action order (columns `a2,b`, empty check catalog) while an unrelated
-drop still refuses 3959 atomically. A voided or unprovable answer
+plus `RENAME COLUMN a TO a2` lands in either action order and
+`DROP CHECK` + `CHANGE COLUMN` lands drop-first (columns `a2,b`, empty
+check catalog; the rename-first CHANGE order is covered by unit
+regression, not a separate probe) while an unrelated
+drop still refuses 3959 atomically. A member only a possibly-bound
+sibling drop could hit can never prop up the refusal either — the
+verdict asks whether a definitely-remaining member still references the
+column, so an undecidable generic `DROP CONSTRAINT` on a same-named
+unknown-kind index withholds the successor rather than preserving a
+fabricated pre-state. A voided or unprovable answer
 withholds the successor — never a fabricated refusal preserving the old
 member and column. The earlier "the refusal does not depend on sibling
 order" contract wording was corrected accordingly.

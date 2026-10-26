@@ -1,8 +1,10 @@
 package audit
 
 import (
+	"fmt"
 	"testing"
 
+	"github.com/Fanduzi/DeltaScope/internal/domain/report"
 	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
 )
 
@@ -393,4 +395,172 @@ func TestT12R2TailGenericSpellingAndUnprovenDrop(t *testing.T) {
 	if post != nil && t12r1ColumnPresent(post, "a2") {
 		t.Fatal("unprovable drop + rename must not fabricate the rename either")
 	}
+}
+
+// --- Tail2 D: an unproven sibling drop cannot prop up a refusal -----------
+
+// t12r2tAmbiguousCheckFixture builds the reviewer counterexample: a proven
+// chk_a CHECK referencing column `a` plus a same-named index whose stored
+// kind cannot be vouched. The generic DROP then binds unproven — the index
+// may be secondary (the drop removes the check and the rename may land) or
+// unique (the drop refuses 3939 and everything survives). Neither world is
+// the proven refusal the buggy scan claimed.
+func t12r2tAmbiguousCheckFixture(kind spec.IndexKind) *spec.TableSnapshot {
+	snap := t12Table("t", []string{"a", "b"}, t12CheckMember("chk_a", "enforced", "a"))
+	snap.Indexes = []spec.Index{{Name: "chk_a", Kind: kind, Columns: []string{"a"}}}
+	return snap
+}
+
+// Every undecidable-binding matrix cell must withhold the successor — never
+// an exact pre-state the next statement can consume as proven.
+func TestT12R2Tail2UnprovenSiblingDropWithholdsSuccessor(t *testing.T) {
+	t.Parallel()
+	for _, kind := range []spec.IndexKind{spec.IndexKindUnknown, spec.IndexKind("")} {
+		for _, sql := range []string{
+			"ALTER TABLE t DROP CONSTRAINT chk_a, RENAME COLUMN a TO a2;",
+			"ALTER TABLE t RENAME COLUMN a TO a2, DROP CONSTRAINT chk_a;",
+			"ALTER TABLE t DROP CONSTRAINT chk_a, CHANGE COLUMN a a2 INT;",
+			"ALTER TABLE t CHANGE COLUMN a a2 INT, DROP CONSTRAINT chk_a;",
+		} {
+			kind, sql := kind, sql
+			t.Run(fmt.Sprintf("kind=%q/%s", kind, sql), func(t *testing.T) {
+				t.Parallel()
+				provider := &t10Provider{
+					version: "8.0.46",
+					tables:  map[string]*spec.TableSnapshot{"t": t12r2tAmbiguousCheckFixture(kind)},
+				}
+				post := t10r4PostState(t, spec.DialectMySQL, provider, sql)
+				if post != nil {
+					t.Fatalf("unproven generic drop cannot prove a refusal — kept an exact pre-state: %+v", post)
+				}
+			})
+		}
+	}
+}
+
+// The public two-statement path: after the undecidable statement the
+// successor DROP CHECK must meet the unvouched table — a gap with the
+// withheld-level RequiredFacts, unverified coverage, a review verdict —
+// never a bound chk_a member answering silently, and never a fabricated
+// missing finding.
+func TestT12R2Tail2UnprovenSiblingDropSuccessorReport(t *testing.T) {
+	t.Parallel()
+	for _, kind := range []spec.IndexKind{spec.IndexKindUnknown, spec.IndexKind("")} {
+		kind := kind
+		t.Run(fmt.Sprintf("kind=%q", kind), func(t *testing.T) {
+			t.Parallel()
+			provider := &t10Provider{
+				version: "8.0.46",
+				tables:  map[string]*spec.TableSnapshot{"t": t12r2tAmbiguousCheckFixture(kind)},
+			}
+			result := t10Audit(t, spec.DialectMySQL,
+				"ALTER TABLE t DROP CONSTRAINT chk_a, RENAME COLUMN a TO a2; ALTER TABLE t DROP CHECK chk_a;",
+				provider, t10Policy(t, t10Rule{id: t12DropCheckExists}))
+			second := result.Statements[1]
+			for _, f := range second.Findings {
+				if f.RuleID == t12DropCheckExists {
+					t.Fatalf("the successor must not fabricate an exists finding on unvouched state: %+v", f)
+				}
+			}
+			var existenceGap bool
+			for _, g := range second.EvidenceGaps {
+				if g.RuleID != t12DropCheckExists {
+					continue
+				}
+				for _, fact := range g.RequiredFacts {
+					if fact == "target_table.existence" {
+						existenceGap = true
+					}
+				}
+			}
+			if !existenceGap {
+				t.Fatalf("withheld successor owes target_table.existence under %s: gaps=%+v",
+					t12DropCheckExists, second.EvidenceGaps)
+			}
+			if second.Coverage.Status != report.CoverageUnverified {
+				t.Fatalf("gap-bearing successor must be unverified, got %s", second.Coverage.Status)
+			}
+			if result.Verdict != report.VerdictReview {
+				t.Fatalf("evidence gap holds the review floor, got %s", result.Verdict)
+			}
+		})
+	}
+}
+
+// Controls: only the maybe-dropped member's reference status distinguishes
+// the outcomes — a proven-secondary same-name index keeps the tail1 unlock,
+// a proven-unique one keeps the 3939/pre-state refusal, a definite second
+// referencing member or an unrelated unproven drop keeps the identity
+// refusal exactly.
+func TestT12R2Tail2SiblingDropControls(t *testing.T) {
+	t.Parallel()
+	t.Run("proven secondary index keeps the unlock", func(t *testing.T) {
+		t.Parallel()
+		snap := t12Table("t", []string{"a", "b"}, t12CheckMember("chk_a", "enforced", "a"))
+		snap.Indexes = []spec.Index{{Name: "chk_a", Kind: spec.IndexKindSecondary, Columns: []string{"a"}}}
+		provider := &t10Provider{
+			version: "8.0.46",
+			tables:  map[string]*spec.TableSnapshot{"t": snap},
+		}
+		post := t10r4PostState(t, spec.DialectMySQL, provider,
+			"ALTER TABLE t DROP CONSTRAINT chk_a, RENAME COLUMN a TO a2;")
+		if post != nil {
+			t.Fatalf("proven generic drop of the check still lifts the premise — withheld, not refused: %+v", post)
+		}
+	})
+	t.Run("proven unique index keeps the ambiguity refusal", func(t *testing.T) {
+		t.Parallel()
+		snap := t12Table("t", []string{"a", "b"}, t12CheckMember("chk_a", "enforced", "a"))
+		snap.Indexes = []spec.Index{{Name: "chk_a", Kind: spec.IndexKindUnique, Columns: []string{"a"}}}
+		provider := &t10Provider{
+			version: "8.0.46",
+			tables:  map[string]*spec.TableSnapshot{"t": snap},
+		}
+		post := t10r4PostState(t, spec.DialectMySQL, provider,
+			"ALTER TABLE t DROP CONSTRAINT chk_a, RENAME COLUMN a TO a2;")
+		if post == nil {
+			t.Fatal("ambiguous generic target provably refuses — the exact pre-state must survive")
+		}
+		if !t12r1ColumnPresent(post, "a") || t12r1FindCheckMember(t, post, "chk_a") == nil {
+			t.Fatalf("refused statement keeps every member: %+v", post)
+		}
+	})
+	t.Run("definite second referencing member keeps the refusal", func(t *testing.T) {
+		t.Parallel()
+		snap := t12Table("t", []string{"a", "b"},
+			t12CheckMember("chk_a", "enforced", "a"),
+			t12CheckMember("chk_b", "enforced", "a"))
+		snap.Indexes = []spec.Index{{Name: "chk_a", Kind: spec.IndexKindUnknown, Columns: []string{"a"}}}
+		provider := &t10Provider{
+			version: "8.0.46",
+			tables:  map[string]*spec.TableSnapshot{"t": snap},
+		}
+		post := t10r4PostState(t, spec.DialectMySQL, provider,
+			"ALTER TABLE t DROP CONSTRAINT chk_a, RENAME COLUMN a TO a2;")
+		if post == nil {
+			t.Fatal("chk_b definitely remains and references a — the 3959 refusal is provable")
+		}
+		if !t12r1ColumnPresent(post, "a") || t12r1FindCheckMember(t, post, "chk_b") == nil {
+			t.Fatalf("definite referencing member supports the refusal: %+v", post)
+		}
+	})
+	t.Run("unrelated unproven drop keeps the refusal", func(t *testing.T) {
+		t.Parallel()
+		snap := t12Table("t", []string{"a", "b"},
+			t12CheckMember("chk_a", "enforced", "a"),
+			t12CheckMember("chk_x", "enforced", "b"))
+		snap.Indexes = []spec.Index{{Name: "chk_x", Kind: spec.IndexKindUnknown, Columns: []string{"b"}}}
+		provider := &t10Provider{
+			version: "8.0.46",
+			tables:  map[string]*spec.TableSnapshot{"t": snap},
+		}
+		post := t10r4PostState(t, spec.DialectMySQL, provider,
+			"ALTER TABLE t DROP CONSTRAINT chk_x, RENAME COLUMN a TO a2;")
+		if post == nil {
+			t.Fatal("an unrelated unproven drop cannot lift the refusal chk_a supports")
+		}
+		if !t12r1ColumnPresent(post, "a") || t12r1FindCheckMember(t, post, "chk_a") == nil {
+			t.Fatalf("chk_a definitely remains — the refusal keeps the pre-state: %+v", post)
+		}
+	})
 }
