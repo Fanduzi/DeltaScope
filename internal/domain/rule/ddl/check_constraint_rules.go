@@ -14,14 +14,28 @@ import (
 //   - MySQL 8.0.46/8.4.10: CHECK enforces by default (3819 on violation);
 //     ALTER CHECK|CONSTRAINT x NOT ENFORCED lands ENFORCED=NO and is
 //     idempotent, ENFORCED is data-conditional (3819 refuses with violating
-//     rows); missing/non-check names refuse 3821; both DROP keywords remove
-//     a present CHECK; duplicate check names refuse 3822; DROP COLUMN
-//     silently drops referencing checks.
-//   - MySQL 5.7.44: CHECK declarations parse but are silently dropped
-//     (never stored, never enforced); ALTER/DROP CHECK syntax refuses 1064.
+//     rows); missing/non-check names refuse 3821/3940; a secondary index
+//     is outside the constraint namespace under both spellings; the
+//     generic keyword binds {check,unique,pk,fk} and refuses a cross-type
+//     same-name pair 3939; DROP COLUMN silently drops single-referencing
+//     checks and refuses 3959 on multi-column ones.
+//   - MySQL 8.0.17 (band anchor): ALTER|DROP CHECK executes; the generic
+//     CONSTRAINT alias refuses 1064 — the 8.0.19 boundary applies to the
+//     alias spelling only.
+//   - MySQL 5.7.44: bare CHECK declarations parse but are silently
+//     dropped; an authored ENFORCED/NOT ENFORCED clause and any
+//     ALTER|DROP spelling refuse 1064.
 //   - TiDB v8.5.0: tidb_enable_check_constraint gates everything — OFF
 //     parses and ignores (nothing stored, all ops rc=0 no-ops), ON stores
-//     and enforces with MySQL-equivalent semantics (3940 refusal class).
+//     and enforces with MySQL-equivalent semantics (3940 refusal class);
+//     the generic keyword binds the CHECK member first without the
+//     ambiguity refusal MySQL emits.
+
+// gapReasonUnprovenStatementFact marks a fact owned by the statement text
+// itself — the authored CHECK|CONSTRAINT spelling — that the parser
+// adaptation layer could not recover, so version and binding answers that
+// depend on it stay undecidable.
+const gapReasonUnprovenStatementFact = "unproven_statement_fact"
 
 // checkArm resolves the statement's CHECK arm from the enriched facts.
 func checkArm(statement spec.Statement) spec.CheckArm {
@@ -186,10 +200,13 @@ func (r *alterCheckExistsRule) AppliesTo(statement spec.Statement) bool {
 		len(alterCheckActions(statement)) > 0
 }
 
-// armExecutable reports whether the statement reaches target binding at all:
-// MySQL needs the 8.0.19+ syntax gate; TiDB needs the flag ON; unknown arms
-// are undecidable.
-func (r *alterCheckExistsRule) armExecutable(statement spec.Statement) (executable, undecidable bool) {
+// checkActionOutcome classifies whether one alter_check|drop_check action
+// reaches target binding on the resolved arm — the spelling-aware version
+// gate lives here so Evaluate, EvidenceGaps, and ordered state share one
+// answer. MySQL needs the per-spelling floor (CHECK 8.0.16, generic
+// CONSTRAINT 8.0.19, unproven spelling in-band undecidable); TiDB needs
+// the flag ON; unknown arms are undecidable.
+func checkActionOutcome(statement spec.Statement, alter spec.Alter) (executable, undecidable bool) {
 	var version *spec.VersionIdentity
 	if statement.Metadata != nil {
 		version = statement.Metadata.Version
@@ -200,10 +217,17 @@ func (r *alterCheckExistsRule) armExecutable(statement spec.Statement) (executab
 		if arm == spec.CheckArmUnknown {
 			return false, true
 		}
-		if arm == spec.CheckArmIgnored || !spec.CheckAlterSyntaxSupported(statement.Dialect, version) {
+		if arm == spec.CheckArmIgnored {
 			return false, false
 		}
-		return true, false
+		switch spec.CheckAlterSyntaxOutcome(statement.Dialect, version, alter.Options["check_spelling"]) {
+		case spec.CheckSyntaxSupported:
+			return true, false
+		case spec.CheckSyntaxUnproven:
+			return false, true
+		default:
+			return false, false
+		}
 	case spec.DialectTiDB:
 		switch checkArm(statement) {
 		case spec.CheckArmEnforced:
@@ -218,12 +242,19 @@ func (r *alterCheckExistsRule) armExecutable(statement spec.Statement) (executab
 	}
 }
 
+// checkDropTargetBinding / checkAlterTargetBinding delegate to the shared
+// spec-layer classifier — the ordered-state machine consumes the same
+// answers so findings, gaps, and post-state never diverge.
+func checkDropTargetBinding(dialect spec.Dialect, snapshot *spec.TableSnapshot, alter spec.Alter, name string) spec.CheckTargetBinding {
+	return spec.CheckDropTarget(dialect, snapshot, alter.Options["check_spelling"], name).Binding
+}
+
+func checkAlterTargetBinding(dialect spec.Dialect, snapshot *spec.TableSnapshot, alter spec.Alter, name string) spec.CheckTargetBinding {
+	return spec.CheckAlterTarget(dialect, snapshot, alter.Options["check_spelling"], name).Binding
+}
+
 func (r *alterCheckExistsRule) Evaluate(_ context.Context, statement spec.Statement) ([]rule.Finding, error) {
 	if !r.AppliesTo(statement) {
-		return nil, nil
-	}
-	executable, undecidable := r.armExecutable(statement)
-	if !executable || undecidable {
 		return nil, nil
 	}
 	snapshot, ok := targetTableSnapshot(statement)
@@ -233,22 +264,30 @@ func (r *alterCheckExistsRule) Evaluate(_ context.Context, statement spec.Statem
 	tableName := metadataTargetTableName(statement, snapshot)
 	findings := make([]rule.Finding, 0)
 	for _, alter := range alterCheckActions(statement) {
+		executable, undecidable := checkActionOutcome(statement, alter)
+		if !executable || undecidable {
+			continue
+		}
 		name := strings.TrimSpace(alter.Name)
 		if name == "" {
 			continue
 		}
-		if snapshot.FindCheckConstraint(name) != nil {
-			continue
-		}
-		// An unvouched check name space cannot confirm absence; the gap is
-		// owed by EvidenceGaps, not a fabricated finding.
-		if snapshot.CheckNameSpaceUnvouched() {
+		binding := checkAlterTargetBinding(statement.Dialect, snapshot, alter, name)
+		var message string
+		switch binding {
+		case spec.CheckTargetMissing:
+			message = fmt.Sprintf("check constraint %q does not exist on table %q", name, tableName)
+		case spec.CheckTargetWrongKind:
+			message = fmt.Sprintf("constraint %q on table %q exists but is not a check constraint — the generic spelling cannot alter its enforcement", name, tableName)
+		case spec.CheckTargetAmbiguous:
+			message = fmt.Sprintf("constraint name %q on table %q is shared by multiple constraint kinds — the generic spelling refuses ambiguous targets", name, tableName)
+		default:
 			continue
 		}
 		findings = append(findings, rule.Finding{
 			Level:      r.level,
-			Message:    fmt.Sprintf("check constraint %q does not exist on table %q", name, tableName),
-			Suggestion: "fix the check constraint name or refresh metadata before auditing this change",
+			Message:    message,
+			Suggestion: "fix the constraint name or use the CHECK-specific keyword, and refresh metadata before auditing this change",
 			Metadata: map[string]any{
 				"table":  tableName,
 				"action": alter.Action,
@@ -264,12 +303,11 @@ func (r *alterCheckExistsRule) EvidenceGaps(statement spec.Statement) []rule.Evi
 	if !r.AppliesTo(statement) {
 		return nil
 	}
-	executable, undecidable := r.armExecutable(statement)
-	if undecidable {
-		return checkArmGap(statement)
-	}
-	if !executable {
-		return nil
+	for _, alter := range alterCheckActions(statement) {
+		_, undecidable := checkActionOutcome(statement, alter)
+		if undecidable {
+			return checkArmGap(statement)
+		}
 	}
 	snapshot, ok := targetTableSnapshot(statement)
 	if !ok || snapshot == nil || !snapshot.Exists {
@@ -279,11 +317,15 @@ func (r *alterCheckExistsRule) EvidenceGaps(statement spec.Statement) []rule.Evi
 		}}
 	}
 	for _, alter := range alterCheckActions(statement) {
+		executable, _ := checkActionOutcome(statement, alter)
+		if !executable {
+			continue
+		}
 		name := strings.TrimSpace(alter.Name)
 		if name == "" {
 			continue
 		}
-		if snapshot.FindCheckConstraint(name) == nil && snapshot.CheckNameSpaceUnvouched() {
+		if checkAlterTargetBinding(statement.Dialect, snapshot, alter, name) == spec.CheckTargetUnproven {
 			return []rule.EvidenceGap{{
 				ReasonCode:    gapReasonUnknownTableState,
 				RequiredFacts: []string{"target_table.constraints"},
@@ -317,10 +359,6 @@ func (r *dropCheckExistsRule) Evaluate(_ context.Context, statement spec.Stateme
 	if !r.AppliesTo(statement) {
 		return nil, nil
 	}
-	executable, undecidable := dropCheckArmExecutable(statement)
-	if !executable || undecidable {
-		return nil, nil
-	}
 	snapshot, ok := targetTableSnapshot(statement)
 	if !ok || snapshot == nil || !snapshot.Exists {
 		return nil, nil
@@ -328,20 +366,30 @@ func (r *dropCheckExistsRule) Evaluate(_ context.Context, statement spec.Stateme
 	tableName := metadataTargetTableName(statement, snapshot)
 	findings := make([]rule.Finding, 0)
 	for _, alter := range matchingAlterActions(statement, "drop_check") {
+		executable, undecidable := checkActionOutcome(statement, alter)
+		if !executable || undecidable {
+			continue
+		}
 		name := strings.TrimSpace(alter.Name)
 		if name == "" {
 			continue
 		}
-		if dropCheckNameBinds(snapshot, name) {
-			continue
-		}
-		if dropCheckNameSpaceUnvouched(snapshot) {
+		binding := checkDropTargetBinding(statement.Dialect, snapshot, alter, name)
+		var message string
+		switch binding {
+		case spec.CheckTargetMissing:
+			message = fmt.Sprintf("constraint %q does not exist on table %q", name, tableName)
+		case spec.CheckTargetWrongKind:
+			message = fmt.Sprintf("constraint %q on table %q exists but is not a check constraint — the CHECK keyword cannot drop it", name, tableName)
+		case spec.CheckTargetAmbiguous:
+			message = fmt.Sprintf("constraint name %q on table %q is shared by multiple constraint kinds — the generic spelling refuses ambiguous targets", name, tableName)
+		default:
 			continue
 		}
 		findings = append(findings, rule.Finding{
 			Level:      r.level,
-			Message:    fmt.Sprintf("constraint %q does not exist on table %q", name, tableName),
-			Suggestion: "fix the constraint name or refresh metadata before auditing this change",
+			Message:    message,
+			Suggestion: "fix the constraint name or use the CHECK-specific keyword, and refresh metadata before auditing this change",
 			Metadata: map[string]any{
 				"table":  tableName,
 				"action": alter.Action,
@@ -357,12 +405,11 @@ func (r *dropCheckExistsRule) EvidenceGaps(statement spec.Statement) []rule.Evid
 	if !r.AppliesTo(statement) {
 		return nil
 	}
-	executable, undecidable := dropCheckArmExecutable(statement)
-	if undecidable {
-		return checkArmGap(statement)
-	}
-	if !executable {
-		return nil
+	for _, alter := range matchingAlterActions(statement, "drop_check") {
+		_, undecidable := checkActionOutcome(statement, alter)
+		if undecidable {
+			return checkArmGap(statement)
+		}
 	}
 	snapshot, ok := targetTableSnapshot(statement)
 	if !ok || snapshot == nil || !snapshot.Exists {
@@ -372,83 +419,22 @@ func (r *dropCheckExistsRule) EvidenceGaps(statement spec.Statement) []rule.Evid
 		}}
 	}
 	for _, alter := range matchingAlterActions(statement, "drop_check") {
+		executable, _ := checkActionOutcome(statement, alter)
+		if !executable {
+			continue
+		}
 		name := strings.TrimSpace(alter.Name)
 		if name == "" {
 			continue
 		}
-		if !dropCheckNameBinds(snapshot, name) && dropCheckNameSpaceUnvouched(snapshot) {
+		if checkDropTargetBinding(statement.Dialect, snapshot, alter, name) == spec.CheckTargetUnproven {
 			return []rule.EvidenceGap{{
 				ReasonCode:    gapReasonUnknownTableState,
-				RequiredFacts: dropCheckUnvouchedFacts(snapshot),
+				RequiredFacts: []string{"target_table.constraints", "target_table.indexes"},
 			}}
 		}
 	}
 	return nil
-}
-
-// dropCheckArmExecutable shares the arm gate with ALTER CHECK: MySQL needs
-// the 8.0.19 syntax boundary; TiDB needs flag ON; unknown is undecidable.
-func dropCheckArmExecutable(statement spec.Statement) (executable, undecidable bool) {
-	var version *spec.VersionIdentity
-	if statement.Metadata != nil {
-		version = statement.Metadata.Version
-	}
-	switch statement.Dialect {
-	case spec.DialectMySQL:
-		arm := checkArm(statement)
-		if arm == spec.CheckArmUnknown {
-			return false, true
-		}
-		if arm == spec.CheckArmIgnored || !spec.CheckAlterSyntaxSupported(statement.Dialect, version) {
-			return false, false
-		}
-		return true, false
-	case spec.DialectTiDB:
-		switch checkArm(statement) {
-		case spec.CheckArmEnforced:
-			return true, false
-		case spec.CheckArmUnknown:
-			return false, true
-		default:
-			return false, false
-		}
-	default:
-		return false, false
-	}
-}
-
-// dropCheckNameBinds answers whether the authored name binds a removable
-// member any vouched collection proves: a CHECK member, a foreign key, an
-// index member, or the primary-key object under its stored name.
-func dropCheckNameBinds(snapshot *spec.TableSnapshot, name string) bool {
-	if snapshot.FindCheckConstraint(name) != nil ||
-		snapshot.FindForeignKeyConstraint(name) != nil ||
-		snapshot.FindProvenIndex(name) != nil {
-		return true
-	}
-	if pkName, proven := spec.PrimaryKeyObjectName(snapshot); proven && strings.EqualFold(pkName, name) {
-		return true
-	}
-	return snapshot.PrimaryKey != nil && strings.EqualFold(name, "primary")
-}
-
-// dropCheckNameSpaceUnvouched reports whether any collection the binding
-// question consults cannot vouch its name space.
-func dropCheckNameSpaceUnvouched(snapshot *spec.TableSnapshot) bool {
-	return snapshot.CheckNameSpaceUnvouched() ||
-		snapshot.ForeignKeyNameSpaceUnvouched() ||
-		snapshot.IndexNameSpaceUnvouched()
-}
-
-func dropCheckUnvouchedFacts(snapshot *spec.TableSnapshot) []string {
-	facts := make([]string, 0, 3)
-	if snapshot.CheckNameSpaceUnvouched() || snapshot.ForeignKeyNameSpaceUnvouched() {
-		facts = append(facts, "target_table.constraints")
-	}
-	if snapshot.IndexNameSpaceUnvouched() {
-		facts = append(facts, "target_table.indexes")
-	}
-	return facts
 }
 
 // checkIgnoredNoticeRule reveals CHECK declarations an arm provably parses
@@ -479,6 +465,14 @@ func (r *checkIgnoredNoticeRule) Evaluate(_ context.Context, statement spec.Stat
 	snapshot, _ := targetTableSnapshot(statement)
 	tableName := metadataTargetTableName(statement, snapshot)
 	findings := make([]rule.Finding, 0)
+	for _, member := range declaredCheckConstraints(statement) {
+		if member.EnforcedExplicit {
+			// An authored [NOT] ENFORCED clause on a parse-and-ignore arm
+			// is a 1064 refusal — the whole statement fails, so no member
+			// here is "parsed but ignored" (probed 5.7.44).
+			return nil, nil
+		}
+	}
 	for _, member := range declaredCheckConstraints(statement) {
 		name := member.Name
 		if name == "" {
@@ -555,7 +549,15 @@ func (r *alterCheckVersionRule) AppliesTo(statement spec.Statement) bool {
 	if !r.required || statement.Dialect != spec.DialectMySQL {
 		return false
 	}
-	return len(matchingAlterActions(statement, "alter_check", "drop_check")) > 0
+	if len(matchingAlterActions(statement, "alter_check", "drop_check")) > 0 {
+		return true
+	}
+	for _, member := range declaredCheckConstraints(statement) {
+		if member.EnforcedExplicit {
+			return true
+		}
+	}
+	return false
 }
 
 func (r *alterCheckVersionRule) Evaluate(_ context.Context, statement spec.Statement) ([]rule.Finding, error) {
@@ -566,29 +568,52 @@ func (r *alterCheckVersionRule) Evaluate(_ context.Context, statement spec.State
 	if statement.Metadata != nil {
 		version = statement.Metadata.Version
 	}
-	if spec.CheckAlterSyntaxSupported(statement.Dialect, version) {
-		return nil, nil
-	}
-	if version == nil || !version.ValidatedRange || version.Major == 0 {
-		// An unobserved version cannot prove refusal — the gap is owed by
-		// EvidenceGaps, not a fabricated incompatible finding.
-		return nil, nil
-	}
 	snapshot, _ := targetTableSnapshot(statement)
 	tableName := metadataTargetTableName(statement, snapshot)
 	findings := make([]rule.Finding, 0)
 	for _, alter := range matchingAlterActions(statement, "alter_check", "drop_check") {
+		spelling := alter.Options["check_spelling"]
+		if spec.CheckAlterSyntaxOutcome(statement.Dialect, version, spelling) != spec.CheckSyntaxRefused {
+			continue
+		}
+		required := spec.CheckAlterSyntaxMinVersion(spelling)
 		findings = append(findings, rule.Finding{
 			Level:      r.level,
-			Message:    fmt.Sprintf("%s on table %q requires MySQL >= %s (check constraint alter/drop syntax)", alter.Action, tableName, spec.CheckMinAlterSyntaxMySQL),
+			Message:    fmt.Sprintf("%s on table %q requires MySQL >= %s (check constraint alter/drop syntax)", alter.Action, tableName, required),
 			Suggestion: "run this change on a MySQL version that supports check-constraint alter/drop syntax",
 			Metadata: map[string]any{
 				"table":            tableName,
 				"action":           alter.Action,
 				"version":          version.Version,
-				"required_version": spec.CheckMinAlterSyntaxMySQL,
+				"required_version": required,
 			},
 		})
+	}
+	// An authored [NOT] ENFORCED clause refuses before 8.0.16 — bare CHECK
+	// declarations are the only parsed-and-ignored form (probed 5.7.44).
+	if version != nil && version.ValidatedRange && version.Major != 0 &&
+		(version.Major < 8 || (version.Major == 8 && version.Minor == 0 && version.Patch < 16)) {
+		for _, member := range declaredCheckConstraints(statement) {
+			if !member.EnforcedExplicit {
+				continue
+			}
+			name := member.Name
+			if name == "" {
+				name = "(unnamed)"
+			}
+			findings = append(findings, rule.Finding{
+				Level:      r.level,
+				Message:    fmt.Sprintf("check constraint %q on table %q declares [NOT] ENFORCED — requires MySQL >= %s", name, tableName, spec.CheckMinEnforcementMySQL),
+				Suggestion: "run this change on a MySQL version that supports check-constraint enforcement syntax",
+				Metadata: map[string]any{
+					"table":            tableName,
+					"action":           "check_constraint_declaration",
+					"constraint":       member.Name,
+					"version":          version.Version,
+					"required_version": spec.CheckMinEnforcementMySQL,
+				},
+			})
+		}
 	}
 	return findings, nil
 }
@@ -606,6 +631,14 @@ func (r *alterCheckVersionRule) EvidenceGaps(statement spec.Statement) []rule.Ev
 			ReasonCode:    gapReasonMissingTargetVersion,
 			RequiredFacts: []string{factTargetVersion},
 		}}
+	}
+	for _, alter := range matchingAlterActions(statement, "alter_check", "drop_check") {
+		if spec.CheckAlterSyntaxOutcome(statement.Dialect, version, alter.Options["check_spelling"]) == spec.CheckSyntaxUnproven {
+			return []rule.EvidenceGap{{
+				ReasonCode:    gapReasonUnprovenStatementFact,
+				RequiredFacts: []string{"statement.check_spelling"},
+			}}
+		}
 	}
 	return nil
 }

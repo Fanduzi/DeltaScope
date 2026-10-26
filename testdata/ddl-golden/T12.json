@@ -396,8 +396,16 @@
         "diagnostics": 0,
         "unsupported": 0,
         "coverage": "unverified",
-        "evidence_gaps": 2,
+        "evidence_gaps": 3,
         "evidence_gap_entries": [
+          {
+            "index": 0,
+            "rule_id": "ddl.alter.alter_check.version.require",
+            "reason_code": "missing_target_version",
+            "required_facts": [
+              "target.version"
+            ]
+          },
           {
             "index": 0,
             "rule_id": "ddl.constraint.check.not_enforced.notice",
@@ -430,8 +438,16 @@
         "diagnostics": 0,
         "unsupported": 0,
         "coverage": "unverified",
-        "evidence_gaps": 2,
+        "evidence_gaps": 3,
         "evidence_gap_entries": [
+          {
+            "index": 0,
+            "rule_id": "ddl.alter.alter_check.version.require",
+            "reason_code": "missing_target_version",
+            "required_facts": [
+              "target.version"
+            ]
+          },
           {
             "index": 0,
             "rule_id": "ddl.constraint.check.not_enforced.notice",

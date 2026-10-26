@@ -76,7 +76,7 @@ func (e tidbExtractor) Extract(dialect spec.Dialect, rawSQL string) (spec.Statem
 
 	switch node := e.node.(type) {
 	case *ast.CreateTableStmt:
-		statement.DDL = extractCreateTable(node)
+		statement.DDL = extractCreateTable(node, rawSQL)
 	case *ast.CreateViewStmt:
 		statement.DDL = extractCreateView(node)
 	case *ast.AlterTableStmt:
@@ -252,7 +252,7 @@ func normalizeSQL(sql string) string {
 	return strings.TrimSuffix(strings.TrimSpace(sql), ";")
 }
 
-func extractCreateTable(stmt *ast.CreateTableStmt) *spec.DDL {
+func extractCreateTable(stmt *ast.CreateTableStmt, rawSQL string) *spec.DDL {
 	ddl := &spec.DDL{
 		Operation: spec.DDLOperationCreateTable,
 		Table: &spec.Table{
@@ -277,6 +277,11 @@ func extractCreateTable(stmt *ast.CreateTableStmt) *spec.DDL {
 		ddl.TemporaryScope = spec.TemporaryScopeGlobal
 		ddl.OnCommitDelete = stmt.OnCommitDelete
 	}
+	// The AST folds every CHECK declaration's optional [NOT] ENFORCED
+	// clause into a bare bool; the element text is the only place the
+	// authored clause is still readable. Correlate each comma-split
+	// element with the matching Cols/Constraints entry in authored order.
+	constraintExplicit, columnExplicit := createCheckExplicitFlags(stmt, rawSQL)
 
 	for _, col := range stmt.Cols {
 		column := extractColumn(col)
@@ -294,7 +299,7 @@ func extractCreateTable(stmt *ast.CreateTableStmt) *spec.DDL {
 		}
 	}
 
-	for _, c := range stmt.Constraints {
+	for i, c := range stmt.Constraints {
 		switch c.Tp {
 		case ast.ConstraintPrimaryKey:
 			global, hasPredicate, visibility, primaryKeyType, unmodeled := indexOptionFacts(c.Option)
@@ -312,14 +317,18 @@ func extractCreateTable(stmt *ast.CreateTableStmt) *spec.DDL {
 			index.SetKeyParts(extractIndexKeyParts(c.Keys))
 			ddl.Indexes = append(ddl.Indexes, index)
 		default:
-			ddl.Constraints = append(ddl.Constraints, extractConstraint(c))
+			member := extractConstraint(c)
+			if c.Tp == ast.ConstraintCheck && constraintExplicit[i] {
+				member.EnforcedExplicit = true
+			}
+			ddl.Constraints = append(ddl.Constraints, member)
 		}
 	}
 	// Column-option CHECK(...) declarations land as table-level CHECK
 	// members in the catalog — model them as constraint members with the
 	// InColumn binding so ordered state and rules see the same object the
 	// database stores.
-	for _, col := range stmt.Cols {
+	for colIdx, col := range stmt.Cols {
 		if col == nil || col.Name == nil {
 			continue
 		}
@@ -327,7 +336,9 @@ func extractCreateTable(stmt *ast.CreateTableStmt) *spec.DDL {
 			if option == nil || option.Tp != ast.ColumnOptionCheck {
 				continue
 			}
-			ddl.Constraints = append(ddl.Constraints, checkConstraintFromColumnOption(option, col.Name.Name.L))
+			check := checkConstraintFromColumnOption(option, col.Name.Name.L)
+			check.EnforcedExplicit = columnExplicit[colIdx]
+			ddl.Constraints = append(ddl.Constraints, check)
 		}
 	}
 
@@ -557,7 +568,9 @@ func extractAlterSpecs(specification *ast.AlterTableSpec, clause string) []spec.
 				if option == nil || option.Tp != ast.ColumnOptionCheck {
 					continue
 				}
-				alter.Constraints = append(alter.Constraints, checkConstraintFromColumnOption(option, column.Name.Name.L))
+				check := checkConstraintFromColumnOption(option, column.Name.Name.L)
+				check.EnforcedExplicit = clauseDeclaresEnforced(clause)
+				alter.Constraints = append(alter.Constraints, check)
 			}
 			if specLevelPosition {
 				if len(alters) == 0 {
@@ -581,8 +594,16 @@ func extractAlterSpecs(specification *ast.AlterTableSpec, clause string) []spec.
 			// Pass an empty clause: alterActionNameForSpec derives the action
 			// from constraint type only. The parent clause text (e.g. a column
 			// comment containing "ADD CONSTRAINT") must not leak into a
-			// sibling constraint's action name.
-			alters = append(alters, extractAlterSpec(&ast.AlterTableSpec{Tp: ast.AlterTableAddConstraint, Constraint: constraint}, ""))
+			// sibling constraint's action name. The parenthesized element
+			// text is not split, so an authored ENFORCED clause anywhere in
+			// the shared clause marks the check member — sound at clause
+			// scope because the whole statement refuses anyway where the
+			// fact decides (MySQL <8.0.16).
+			added := extractAlterSpec(&ast.AlterTableSpec{Tp: ast.AlterTableAddConstraint, Constraint: constraint}, "")
+			if added.Constraint != nil && added.Constraint.Type == "check" {
+				added.Constraint.EnforcedExplicit = clauseDeclaresEnforced(clause)
+			}
+			alters = append(alters, added)
 		}
 		if len(alters) > 0 {
 			return alters
@@ -638,15 +659,26 @@ func extractAlterSpec(specification *ast.AlterTableSpec, clause string) spec.Alt
 			constraint.UnmodeledReferActions = 0
 		}
 		alter.Constraint = &constraint
+		if constraint.Type == "check" {
+			alter.Constraint.EnforcedExplicit = clauseDeclaresEnforced(clause)
+		}
+	}
+	if specification.Tp == ast.AlterTableAlterCheck || specification.Tp == ast.AlterTableDropCheck {
+		// The PingCAP AST collapses both authored keywords into one node;
+		// the clause text of this spec is the only place the spelling is
+		// still readable, and an unreadable clause stays unproven.
+		if alter.Options == nil {
+			alter.Options = map[string]string{}
+		}
+		if spelling := checkSpellingForClause(clause); spelling != "" {
+			alter.Options["check_spelling"] = spelling
+		}
 	}
 	if specification.Tp == ast.AlterTableAlterCheck && specification.Constraint != nil {
 		// ALTER CHECK|CONSTRAINT x [NOT] ENFORCED carries the enforcement
 		// direction on the constraint payload — the only place the
 		// normalized model can read it, since both directions share the
 		// same action name.
-		if alter.Options == nil {
-			alter.Options = map[string]string{}
-		}
 		if specification.Constraint.Enforced {
 			alter.Options["check_enforced"] = "true"
 		} else {
@@ -662,6 +694,7 @@ func extractAlterSpec(specification *ast.AlterTableSpec, clause string) spec.Alt
 				continue
 			}
 			check := checkConstraintFromColumnOption(option, column.Name.Name.L)
+			check.EnforcedExplicit = clauseDeclaresEnforced(clause)
 			alter.Constraints = append(alter.Constraints, check)
 		}
 	}
@@ -2643,5 +2676,212 @@ func constraintTypeName(tp ast.ConstraintType) string {
 		return "columnar"
 	default:
 		return fmt.Sprintf("constraint_%d", tp)
+	}
+}
+
+// sqlBareWords returns the unquoted, uncommented word tokens of one SQL
+// fragment — the parser adaptation layer's way to recover facts the PingCAP
+// AST normalized away (CHECK vs CONSTRAINT spelling, an authored [NOT]
+// ENFORCED clause) from the exact clause text the grammar consumed. Quoted
+// identifiers and string literals contribute nothing; comments, including
+// versioned /*! ... */ blocks, are skipped wholesale (their inner text is
+// not trusted as a fact source). Input is guaranteed to have parsed, so
+// unterminated constructs simply end the scan.
+func sqlBareWords(text string) []string {
+	words := make([]string, 0, 8)
+	i, n := 0, len(text)
+	for i < n {
+		c := text[i]
+		switch {
+		case c == '\'' || c == '"' || c == '`':
+			quote := c
+			i++
+			for i < n {
+				if text[i] == '\\' && quote != '`' {
+					i += 2
+					continue
+				}
+				if text[i] == quote {
+					if quote != '`' && i+1 < n && text[i+1] == quote {
+						i += 2
+						continue
+					}
+					i++
+					break
+				}
+				i++
+			}
+		case c == '-' && i+1 < n && text[i+1] == '-':
+			for i < n && text[i] != '\n' {
+				i++
+			}
+		case c == '#':
+			for i < n && text[i] != '\n' {
+				i++
+			}
+		case c == '/' && i+1 < n && text[i+1] == '*':
+			i += 2
+			for i+1 < n && !(text[i] == '*' && text[i+1] == '/') {
+				i++
+			}
+			if i+1 < n {
+				i += 2
+			}
+		case isBareWordChar(c):
+			start := i
+			for i < n && isBareWordChar(text[i]) {
+				i++
+			}
+			words = append(words, strings.ToLower(text[start:i]))
+		default:
+			i++
+		}
+	}
+	return words
+}
+
+func isBareWordChar(c byte) bool {
+	return c == '_' || c == '$' || ('0' <= c && c <= '9') || ('a' <= c && c <= 'z') || ('A' <= c && c <= 'Z')
+}
+
+// checkSpellingForClause recovers whether one alter_check|drop_check
+// action was authored as CHECK or as the generic CONSTRAINT alias: the
+// spelling keyword is the word immediately after the action verb. The
+// clause may still carry its ALTER TABLE <name> prefix (or be the whole
+// raw statement when splitting could not align), so the answer is the
+// first check|constraint word that directly follows an alter|drop verb —
+// a table or constraint name spelled "check" elsewhere in the text is
+// never preceded by a verb and cannot collide. Anything else answers ""
+// — the spelling is then unproven, never guessed.
+func checkSpellingForClause(clause string) string {
+	words := sqlBareWords(clause)
+	for i := 1; i < len(words); i++ {
+		if words[i-1] != "alter" && words[i-1] != "drop" {
+			continue
+		}
+		switch words[i] {
+		case "check":
+			return spec.CheckSpellingCheck
+		case "constraint":
+			return spec.CheckSpellingConstraint
+		}
+	}
+	return ""
+}
+
+// clauseDeclaresEnforced reports whether the clause's bare words carry an
+// authored ENFORCED token — the word appears only in the CHECK [NOT]
+// ENFORCED clause, so its presence proves the enforcement clause was
+// written somewhere inside the fragment. Callers apply it at clause scope:
+// a shared multi-member clause marks every declared member, which stays
+// sound because an explicit clause refuses the whole statement on the one
+// boundary where the fact matters (MySQL <8.0.16).
+func clauseDeclaresEnforced(clause string) bool {
+	for _, word := range sqlBareWords(clause) {
+		if word == "enforced" {
+			return true
+		}
+	}
+	return false
+}
+
+// createCheckExplicitFlags splits the CREATE TABLE element list and marks
+// which Constraints and Cols entries provably carried an authored
+// ENFORCED token — the AST records neither the clause's presence nor the
+// element boundary, so the comma-split element text (same splitter ALTER
+// clauses use) is correlated by position: constraint elements consume the
+// Constraints order, everything else consumes the Cols order. An
+// unalignable body answers empty maps — the fact stays unproven rather
+// than guessed.
+func createCheckExplicitFlags(stmt *ast.CreateTableStmt, rawSQL string) (constraintExplicit, columnExplicit map[int]bool) {
+	constraintExplicit = map[int]bool{}
+	columnExplicit = map[int]bool{}
+	body := createTableElementBody(rawSQL)
+	if body == "" {
+		return constraintExplicit, columnExplicit
+	}
+	elements := splitAlterTableClauses(body)
+	if len(elements) != len(stmt.Cols)+len(stmt.Constraints) {
+		return constraintExplicit, columnExplicit
+	}
+	constraintIdx, columnIdx := 0, 0
+	for _, element := range elements {
+		words := sqlBareWords(element)
+		explicit := false
+		for _, word := range words {
+			if word == "enforced" {
+				explicit = true
+				break
+			}
+		}
+		if len(words) > 0 && createElementIsConstraint(words[0]) {
+			if explicit {
+				constraintExplicit[constraintIdx] = true
+			}
+			constraintIdx++
+			continue
+		}
+		if explicit {
+			columnExplicit[columnIdx] = true
+		}
+		columnIdx++
+	}
+	if constraintIdx != len(stmt.Constraints) || columnIdx != len(stmt.Cols) {
+		return map[int]bool{}, map[int]bool{}
+	}
+	return constraintExplicit, columnExplicit
+}
+
+// createTableElementBody extracts the parenthesized element list of a
+// CREATE TABLE statement — the first top-level (...) after the table
+// name. Statements without an element list (LIKE, pure AS SELECT) answer "".
+func createTableElementBody(rawSQL string) string {
+	var quote byte
+	depth := 0
+	start := -1
+	for i := 0; i < len(rawSQL); i++ {
+		c := rawSQL[i]
+		if quote != 0 {
+			if c == '\\' && quote != '`' {
+				i++
+				continue
+			}
+			if c == quote {
+				if quote != '`' && i+1 < len(rawSQL) && rawSQL[i+1] == quote {
+					i++
+					continue
+				}
+				quote = 0
+			}
+			continue
+		}
+		switch c {
+		case '\'', '"', '`':
+			quote = c
+		case '(':
+			if depth == 0 {
+				start = i + 1
+			}
+			depth++
+		case ')':
+			depth--
+			if depth == 0 && start >= 0 {
+				return rawSQL[start:i]
+			}
+		}
+	}
+	return ""
+}
+
+// createElementIsConstraint classifies a split element's first bare word:
+// everything the grammar allows to open a table-level constraint or index
+// clause consumes a Constraints slot; identifiers and column types fall
+// through to the Cols order.
+func createElementIsConstraint(word string) bool {
+	switch word {
+	case "constraint", "check", "primary", "unique", "key", "index", "foreign", "fulltext", "spatial", "vector":
+		return true
+	default:
+		return false
 	}
 }

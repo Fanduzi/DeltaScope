@@ -427,6 +427,22 @@ func selectCheckConstraintNames(statement spec.Statement) []identifierSubject {
 		seen[strings.ToLower(name)] = true
 		subjects = append(subjects, identifierSubject{kind: "constraint.check", name: name})
 	}
+	for _, alter := range statement.DDL.Alter {
+		// In-column CHECK members (ADD/MODIFY/CHANGE COLUMN ... CONSTRAINT
+		// x CHECK(...)) declare names through the same governance channel —
+		// the extractor projects them onto alter.Constraints.
+		for _, member := range alter.Constraints {
+			if member.Type != "check" {
+				continue
+			}
+			name := strings.TrimSpace(member.Name)
+			if name == "" || seen[strings.ToLower(name)] {
+				continue
+			}
+			seen[strings.ToLower(name)] = true
+			subjects = append(subjects, identifierSubject{kind: "constraint.check", name: name})
+		}
+	}
 	return subjects
 }
 

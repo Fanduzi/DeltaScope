@@ -1,0 +1,81 @@
+== P2 MySQL 8.0.46 target-kind / same-name / cascade / add-prereq (2026-10-26T00:58:21Z)
+mysql: [Warning] Using a password on the command line interface can be insecure.
+VERSION()
+8.0.46
+mysql: [Warning] Using a password on the command line interface can be insecure.
+-- B1 fixture: ordinary index only
+mysql: [Warning] Using a password on the command line interface can be insecure.
+  drop CHECK ix_u:
+mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 3821 (HY000) at line 1: Check constraint 'ix_u' is not found in the table.
+rc=1
+  drop CONSTRAINT ix_u:
+mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 3940 (HY000) at line 1: Constraint 'ix_u' does not exist.
+rc=1
+-- B2 fixture: same-name CHECK + UNIQUE
+mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+  add check rc=0
+mysql: [Warning] Using a password on the command line interface can be insecure.
+  add unique-same-name rc=0
+mysql: [Warning] Using a password on the command line interface can be insecure.
+CONSTRAINT_NAME	CONSTRAINT_TYPE
+ck	UNIQUE
+ck	CHECK
+mysql: [Warning] Using a password on the command line interface can be insecure.
+Table	Non_unique	Key_name	Seq_in_index	Column_name	Collation	Cardinality	Sub_part	Packed	Null	Index_type	Comment	Index_comment	Visible	Expression
+b2	0	ck	1	a	A	0	NULL	NULL	YES	BTREE			YES	NULL
+  drop CONSTRAINT ck:
+mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 3939 (HY000) at line 1: Table has multiple constraints with the name 'ck'. Please use constraint specific 'DROP' clause.
+rc=1
+mysql: [Warning] Using a password on the command line interface can be insecure.
+CONSTRAINT_NAME	CONSTRAINT_TYPE
+ck	UNIQUE
+ck	CHECK
+-- B2b fresh: same-name again, drop CHECK spelling
+mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+  drop CHECK ck:
+mysql: [Warning] Using a password on the command line interface can be insecure.
+rc=0
+mysql: [Warning] Using a password on the command line interface can be insecure.
+CONSTRAINT_NAME	CONSTRAINT_TYPE
+ck	UNIQUE
+-- B2c: ALTER CONSTRAINT/ALTER CHECK on same-name
+mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+  alter CONSTRAINT ck NOT ENFORCED:
+mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 3939 (HY000) at line 1: Table has multiple constraints with the name 'ck'. Please use constraint specific 'ALTER' clause.
+rc=1
+  alter CHECK ck NOT ENFORCED:
+mysql: [Warning] Using a password on the command line interface can be insecure.
+rc=0
+-- C: multi-column CHECK + drop column
+mysql: [Warning] Using a password on the command line interface can be insecure.
+  drop col a:
+mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 3959 (HY000) at line 1: Check constraint 'chk_ab' uses column 'a', hence column cannot be dropped or renamed.
+rc=1
+mysql: [Warning] Using a password on the command line interface can be insecure.
+CONSTRAINT_NAME
+chk_ab
+-- D1: add check on missing column
+mysql: [Warning] Using a password on the command line interface can be insecure.
+  add ghost check:
+mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1054 (42S22) at line 1: Unknown column 'ghost' in 'check constraint ck_ghost expression'
+rc=1
+mysql: [Warning] Using a password on the command line interface can be insecure.
+-- D2: column-level duplicate check name
+mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 3822 (HY000) at line 1: Duplicate check constraint name 'ck'.
+  add col v CONSTRAINT ck CHECK:
+mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1146 (42S02) at line 1: Table 'p2db.d2' doesn't exist
+rc=1
+mysql: [Warning] Using a password on the command line interface can be insecure.

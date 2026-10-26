@@ -456,6 +456,19 @@ func (s *batchState) applyCreateTable(ctx context.Context, statement spec.Statem
 			return nil
 		}
 	}
+	// A declared CHECK carrying an authored enforcement clause is a proven
+	// syntax refusal on MySQL's parse-and-ignore arm (5.7 answers 1064, not
+	// silent drop) — the statement fails atomically and the entry keeps its
+	// pre-state. A present target under IF NOT EXISTS never executes the
+	// body, so the clause cannot refuse there.
+	arm := s.checkArmFor()
+	if entry == nil || entry.state != tablePresent || !ifNotExists {
+		for _, member := range ddl.Constraints {
+			if spec.CheckExplicitClauseRefused(s.dialect, arm, member) {
+				return nil
+			}
+		}
+	}
 	switch {
 	case entry == nil || entry.state == tableUnknown:
 		if ifNotExists {
@@ -796,6 +809,17 @@ func (s *batchState) applyAlterTable(ctx context.Context, statement spec.Stateme
 			}
 			// Duplicate plain ADD can never succeed — do not fabricate the
 			// added column, invalidate the table instead.
+			s.invalidateKey(key)
+			return nil
+		}
+		// The column and its inline CHECK members are ONE statement
+		// result: a proven name collision or missing referenced column
+		// refuses everything (3822/1054) — nothing lands; an undecidable
+		// arm or name space leaves the column's own fate unprovable.
+		switch s.inColumnChecksOutcome(entry.shape, def.Name, alter.Constraints) {
+		case inColumnCheckRefused:
+			return nil
+		case inColumnCheckUndecidable:
 			s.invalidateKey(key)
 			return nil
 		}

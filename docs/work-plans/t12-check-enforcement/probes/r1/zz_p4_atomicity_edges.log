@@ -1,0 +1,42 @@
+== P4 (2026-10-26T01:07:27Z)
+mysql: [Warning] Using a password on the command line interface can be insecure.
+-- TiDB flag OFF explicit ENFORCED/NOT ENFORCED decls
+Variable_name	Value
+tidb_enable_check_constraint	OFF
+rc=0
+rc=0
+rc=0
+Table	Create Table
+e3	CREATE TABLE `e3` (\n  `a` int DEFAULT NULL,\n  `v` int DEFAULT NULL\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+-- multi-action atomicity: refused first action vs landed second
+mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 3821 (HY000) at line 1: Check constraint 'nope' is not found in the table.
+rc=1
+mysql: [Warning] Using a password on the command line interface can be insecure.
+Field	Type	Null	Key	Default	Extra
+a	int	YES		NULL	
+mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 3822 (HY000) at line 1: Duplicate check constraint name 'dup_chk'.
+rc=1
+mysql: [Warning] Using a password on the command line interface can be insecure.
+Field	Type	Null	Key	Default	Extra
+a	int	YES		NULL	
+mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 3822 (HY000) at line 1: Duplicate check constraint name 'dup_chk'.
+rc=1
+mysql: [Warning] Using a password on the command line interface can be insecure.
+Field	Type	Null	Key	Default	Extra
+a	int	YES		NULL	
+-- same-name check+fk generic drop
+mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1826 (HY000) at line 1: Duplicate foreign key constraint name 'fk9'
+mk rc=1
+mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1146 (42S02) at line 1: Table 'p2db.c5' doesn't exist
+rc=1
+mysql: [Warning] Using a password on the command line interface can be insecure.

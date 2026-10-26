@@ -6,7 +6,6 @@ package audit
 import (
 	"testing"
 
-	"github.com/Fanduzi/DeltaScope/internal/domain/report"
 	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
 )
 
@@ -98,9 +97,10 @@ func TestT11R1FTiDBAddThenDropConstraintKeepsMemberAndIndex(t *testing.T) {
 	}
 }
 
-// MySQL 8.x: DROP CONSTRAINT removes the member while DROP CHECK on the
-// same name refuses — the authored keyword is unrecoverable, so the
-// member set unvouches while the vouched index facts stay.
+// MySQL 8.x: the recovered generic spelling binds the lone FK member and
+// removes it deterministically (probed rc=0 on 8.0.46) — the successor
+// DROP FOREIGN KEY binds a proven-missing name and reports the blocker
+// while the supporting index stays vouched.
 func TestT11R1FMySQLDropConstraintAmbiguousOnProvenForeignKey(t *testing.T) {
 	t.Parallel()
 	provider := &t10Provider{version: "8.0.46", tables: map[string]*spec.TableSnapshot{
@@ -110,14 +110,20 @@ func TestT11R1FMySQLDropConstraintAmbiguousOnProvenForeignKey(t *testing.T) {
 			"ALTER TABLE t DROP FOREIGN KEY fk_c;",
 		provider, t10Policy(t, t10Rule{id: "ddl.alter.drop_foreign_key.exists.require"}))
 	drop := result.Statements[1]
-	if len(drop.Findings) != 0 {
-		t.Fatalf("the member's fate is unprovable — no proven-missing finding, got %+v", drop.Findings)
+	if len(drop.EvidenceGaps) != 0 {
+		t.Fatalf("a deterministic removal owes no gap, got %+v", drop.EvidenceGaps)
 	}
-	if len(drop.EvidenceGaps) == 0 || drop.Coverage.Status == report.CoverageComplete {
-		t.Fatalf("the unvouched member space owes the constraint-set gap, got %+v / %+v", drop.EvidenceGaps, drop.Coverage)
+	found := false
+	for _, f := range drop.Findings {
+		if f.RuleID == "ddl.alter.drop_foreign_key.exists.require" {
+			found = true
+		}
 	}
-	// The index side never joined the ambiguity — name-keyed index work
-	// still reads the proven member.
+	if !found {
+		t.Fatalf("the removed member is a proven-missing blocker for the successor, got %+v", drop.Findings)
+	}
+	// The index side never joined the drop — name-keyed index work still
+	// reads the proven member.
 	post := t11r1Apply(t, spec.DialectMySQL,
 		map[string]*spec.TableSnapshot{"t": t11r1FKShape()}, nil,
 		"ALTER TABLE t DROP CONSTRAINT fk_c;")

@@ -563,6 +563,13 @@ type Constraint struct {
 	// lives on an arm where the state is not real). Only CHECK members
 	// carry it; other constraint types leave it empty.
 	Enforced string `json:"enforced,omitempty"`
+	// EnforcedExplicit records that the authored text provably wrote an
+	// ENFORCED or NOT ENFORCED clause on this CHECK declaration — a
+	// parser-adapted fact read from the member's own clause, never guessed
+	// from the Enforced default. It decides the pre-8.0.16 boundary: bare
+	// CHECK parses-and-ignores there while an explicit clause refuses
+	// 1064.
+	EnforcedExplicit bool `json:"enforced_explicit,omitempty"`
 	// Expression records the evaluation-free structural facts of a CHECK
 	// member's expression: column references, function names, feature
 	// markers, root form, and a structural fingerprint. Raw expression

@@ -1,0 +1,25 @@
+== P2d edges (2026-10-26T01:02:43Z)
+mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+-- alter CONSTRAINT on missing name
+mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 3940 (HY000) at line 1: Constraint 'nope' does not exist.
+rc=1
+-- alter CONSTRAINT on secondary index
+mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 3940 (HY000) at line 1: Constraint 'ix_a' does not exist.
+rc=1
+-- alter CHECK on secondary index
+mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 3821 (HY000) at line 1: Check constraint 'ix_a' is not found in the table.
+rc=1
+-- same-name check+secondary-index, generic drop
+mysql: [Warning] Using a password on the command line interface can be insecure.
+mk rc=0
+mysql: [Warning] Using a password on the command line interface can be insecure.
+CONSTRAINT_NAME	CONSTRAINT_TYPE
+ck	CHECK
+mysql: [Warning] Using a password on the command line interface can be insecure.
+rc=0
+  KEY `ck` (`a`)
+mysql: [Warning] Using a password on the command line interface can be insecure.

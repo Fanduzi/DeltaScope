@@ -237,23 +237,30 @@ remaining rules are still skipped without usable state. PostgreSQL never emits t
 ### CHECK Constraint Lifecycle (#91)
 
 MySQL/TiDB CHECK lifecycle is governed through a shared arm resolver: MySQL 8.0.16+
-stores and enforces CHECK constraints (8.0.19+ required for `ALTER CHECK`/`DROP CHECK`
-syntax), MySQL below 8.0.16 parses but ignores declarations, and TiDB gates storage and
+stores and enforces CHECK constraints, MySQL below 8.0.16 parses but ignores bare
+declarations (an authored `ENFORCED`/`NOT ENFORCED` clause there is a proven 1064
+syntax refusal, not an ignored declaration), and TiDB gates storage and
 enforcement on `tidb_enable_check_constraint`. Unresolved version or flag facts yield
-bounded evidence gaps instead of findings. `ALTER CONSTRAINT` aliases `ALTER CHECK`;
-`DROP CHECK` and `DROP CONSTRAINT` share one CHECK member binding. On TiDB, members load
+bounded evidence gaps instead of findings. `ALTER CONSTRAINT` aliases `ALTER CHECK`
+with a spelling-aware floor — the `CHECK` spelling executes from 8.0.16, the generic
+`CONSTRAINT` alias from 8.0.19 (probed on the 8.0.17 anchor); `DROP CHECK` and
+`DROP CONSTRAINT` share one target classifier where the `CHECK` spelling binds only
+CHECK members and the generic keyword binds a uniquely-named check/unique/PK/FK
+member (a secondary index is never a target; a cross-type same-name pair is the
+proven 3939 ambiguity). On TiDB, members load
 from `TIDB_CHECK_CONSTRAINTS` and the enforcement state is not catalog-observable
 (`SHOW CREATE TABLE` only) — declared transitions carry the enforcement fact instead.
 CHECK naming rules also evaluate `ALTER TABLE ... ADD CONSTRAINT ... CHECK` names and
-column-level CHECK options alongside table-level declarations.
+column-level CHECK options (CREATE and ALTER column payloads) alongside table-level
+declarations.
 
 | Rule ID | Check Description | Offline | Metadata | Default Level |
 |---------|-------------------|:-------:|:--------:|---------------|
 | `ddl.constraint.check.not_enforced.notice` | A declared or flipped `NOT ENFORCED` CHECK on a storing/enforcing arm is a review notice | ✓ | ✓ | notice |
-| `ddl.constraint.check.ignored.notice` | A CHECK declaration on an accept-but-ignore arm (MySQL <8.0.16, TiDB flag OFF) is disclosed rather than passed as enforced | ✓ | ✓ | notice |
-| `ddl.alter.alter_check.exists.require` | `ALTER CHECK`/`ALTER CONSTRAINT` target must be a proven CHECK member | ✗ | ✓ | blocker |
-| `ddl.alter.drop_check.exists.require` | `DROP CHECK`/`DROP CONSTRAINT` target must be a proven CHECK member | ✗ | ✓ | blocker |
-| `ddl.alter.alter_check.version.require` | `ALTER CHECK`/`DROP CHECK` syntax on MySQL requires 8.0.19+ (5.7 family refuses) | ✗ | ✓ | blocker |
+| `ddl.constraint.check.ignored.notice` | A bare CHECK declaration on an accept-but-ignore arm (MySQL <8.0.16, TiDB flag OFF) is disclosed rather than passed as enforced — an authored enforcement clause on MySQL's ignored arm is the proven syntax refusal instead | ✓ | ✓ | notice |
+| `ddl.alter.alter_check.exists.require` | `ALTER CHECK`/`ALTER CONSTRAINT` target must bind exactly one valid member for its spelling (proven refusal for missing, non-CHECK, or cross-type same-name targets) | ✗ | ✓ | blocker |
+| `ddl.alter.drop_check.exists.require` | `DROP CHECK`/`DROP CONSTRAINT` target must bind exactly one valid member for its spelling | ✗ | ✓ | blocker |
+| `ddl.alter.alter_check.version.require` | `ALTER CHECK`/`DROP CHECK` spelling requires MySQL 8.0.16+; the generic `CONSTRAINT` alias requires 8.0.19+ (5.7 family refuses both) | ✗ | ✓ | blocker |
 
 ### Global: Merge-Alter
 

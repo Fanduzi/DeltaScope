@@ -33,10 +33,10 @@ func t11r2DropConstraintFixture() *spec.TableSnapshot {
 	return shape
 }
 
-// DROP CONSTRAINT uk_v may remove the proven unique member (DROP CHECK
-// refuses it) — the member's fate is unprovable, so the index set
-// unvouches and the successor drop owes the gap instead of binding a
-// member that may be gone.
+// DROP CONSTRAINT uk_v removes the proven unique member outright — the
+// T12-R1 spelling fact proves the generic keyword, and the probed 8.0.46
+// answer (rc=0) drops the member deterministically. The successor DROP
+// INDEX therefore binds a proven-missing name and reports the blocker.
 func TestT11R2DropConstraintUnvouchesUniqueMember(t *testing.T) {
 	t.Parallel()
 	result := t10Audit(t, spec.DialectMySQL,
@@ -44,18 +44,24 @@ func TestT11R2DropConstraintUnvouchesUniqueMember(t *testing.T) {
 		&t10Provider{version: "8.0.46", tables: map[string]*spec.TableSnapshot{"t": t11r2DropConstraintFixture()}},
 		t10Policy(t, t10Rule{id: "ddl.alter.drop_index.exists.require"}))
 	drop := result.Statements[1]
-	if len(drop.Findings) != 0 {
-		t.Fatalf("the member may already be gone — no proven-missing and no proven drop, got %#v", drop.Findings)
+	if len(drop.EvidenceGaps) != 0 {
+		t.Fatalf("a deterministic removal owes no gap, got %#v", drop.EvidenceGaps)
 	}
-	if len(drop.EvidenceGaps) == 0 {
-		t.Fatalf("an undecidable member fate owes the index-set gap, got none")
+	found := false
+	for _, f := range drop.Findings {
+		if f.RuleID == "ddl.alter.drop_index.exists.require" {
+			found = true
+		}
+	}
+	if !found {
+		t.Fatalf("the removed member is a proven-missing blocker for the successor drop, got %#v", drop.Findings)
 	}
 }
 
-// The backticked primary name binds the PK object on MySQL 8.x — DROP
-// CONSTRAINT `primary` removes it, DROP CHECK `primary` refuses, so the
-// primary-key facts unvouch and the successor drop owes the gap rather
-// than answering present or missing.
+// The backticked primary name binds the PK object on MySQL 8.x — the
+// generic spelling removes it deterministically (probed rc=0), so the
+// successor DROP PRIMARY KEY reports a proven-missing blocker rather
+// than a gap.
 func TestT11R2DropConstraintUnvouchesPrimaryKeyObject(t *testing.T) {
 	t.Parallel()
 	fixture := t11r2DropConstraintFixture()
@@ -65,11 +71,17 @@ func TestT11R2DropConstraintUnvouchesPrimaryKeyObject(t *testing.T) {
 		&t10Provider{version: "8.0.46", tables: map[string]*spec.TableSnapshot{"t": fixture}},
 		t10Policy(t, t10Rule{id: "ddl.alter.drop_primary_key.exists.require"}))
 	drop := result.Statements[1]
-	if len(drop.Findings) != 0 {
-		t.Fatalf("the PK object may be gone — no finding either way, got %#v", drop.Findings)
+	if len(drop.EvidenceGaps) != 0 {
+		t.Fatalf("a deterministic PK removal owes no gap, got %#v", drop.EvidenceGaps)
 	}
-	if len(drop.EvidenceGaps) == 0 {
-		t.Fatalf("an undecidable primary-key fate owes the gap, got none")
+	found := false
+	for _, f := range drop.Findings {
+		if f.RuleID == "ddl.alter.drop_primary_key.exists.require" {
+			found = true
+		}
+	}
+	if !found {
+		t.Fatalf("the dropped PK is a proven-missing blocker for the successor, got %#v", drop.Findings)
 	}
 }
 
@@ -200,8 +212,9 @@ func TestT11R2DropConstraintMissingNameKeepsFacts(t *testing.T) {
 	}
 }
 
-// DROP CHECK spelled targets run through the same shared AST node — the
-// unique member's fate stays undecidable either way.
+// DROP CHECK binds only the CHECK name space — on a unique member it
+// refuses 3821 (probed 8.0.46), so the member provably survives and the
+// successor DROP INDEX binds it cleanly.
 func TestT11R2DropCheckKeywordSameAmbiguity(t *testing.T) {
 	t.Parallel()
 	result := t10Audit(t, spec.DialectMySQL,
@@ -210,10 +223,10 @@ func TestT11R2DropCheckKeywordSameAmbiguity(t *testing.T) {
 		t10Policy(t, t10Rule{id: "ddl.alter.drop_index.exists.require"}))
 	drop := result.Statements[1]
 	if len(drop.Findings) != 0 {
-		t.Fatalf("the member may already be gone — no finding, got %#v", drop.Findings)
+		t.Fatalf("the surviving member drops cleanly, got %#v", drop.Findings)
 	}
-	if len(drop.EvidenceGaps) == 0 {
-		t.Fatalf("the ambiguous keyword leaves the fate unprovable — gap owed")
+	if len(drop.EvidenceGaps) != 0 {
+		t.Fatalf("a proven refusal under the CHECK keyword owes no gap, got %#v", drop.EvidenceGaps)
 	}
 }
 
@@ -267,9 +280,9 @@ func TestT11R2UnknownVersionDropConstraintUnvouches(t *testing.T) {
 	}
 }
 
-// Unrelated proven facts survive the unvouch: the columns and the
-// non-targeted members' authored facts stay in the shape even while the
-// index name space loses its vouch.
+// The generic drop removes the bound member and nothing else: the columns
+// and the untargeted secondary member keep their proven facts, and the
+// index set stays vouched — a deterministic removal never unvouches.
 func TestT11R2DropConstraintPreservesUntargetedFacts(t *testing.T) {
 	t.Parallel()
 	state := t11r1Apply(t, spec.DialectMySQL,
@@ -283,7 +296,13 @@ func TestT11R2DropConstraintPreservesUntargetedFacts(t *testing.T) {
 	if entry.shape.Columns == nil || len(entry.shape.Columns) != 3 {
 		t.Fatalf("column facts are unaffected, got %+v", entry.shape.Columns)
 	}
-	if !entry.shape.IndexesUnknown {
-		t.Fatalf("the member's fate is undecidable — the index set unvouches, got %+v", entry.shape.Indexes)
+	if entry.shape.IndexesUnknown {
+		t.Fatalf("a deterministic removal never unvouches the index set, got %+v", entry.shape.Indexes)
+	}
+	if member := entry.shape.FindProvenIndex("uk_v"); member != nil {
+		t.Fatalf("the bound unique member is removed, got %+v", member)
+	}
+	if member := entry.shape.FindProvenIndex("ix_u"); member == nil {
+		t.Fatalf("the untargeted member keeps its proven facts, got %+v", entry.shape.Indexes)
 	}
 }

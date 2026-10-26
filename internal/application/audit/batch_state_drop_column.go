@@ -64,7 +64,15 @@ func (s *batchState) prepareDropColumn(statement spec.Statement, alter *spec.Alt
 		return invalidate(primary), false
 	}
 	source := entry.shape.Columns[index]
-	if dropTargetColumnSpecial(source) || dropColumnLocalUnsafe(entry.shape, source.Name) || len(dependents) > 0 {
+	local := dropColumnLocalVerdict(entry.shape, source.Name)
+	if local == dropColumnLocalRefused {
+		// A provably-multi-column CHECK referencing this column refuses
+		// the drop natively (3959, probed MySQL 8.0.46/8.4.10 and TiDB
+		// flag-ON) — the statement fails, so column, constraint, and
+		// dependents all keep their pre-state.
+		return modifyPublication{}, false
+	}
+	if dropTargetColumnSpecial(source) || local == dropColumnLocalUnsafe || len(dependents) > 0 {
 		return invalidate(primary), false
 	}
 	shape := cloneTableSnapshot(entry.shape)
@@ -159,20 +167,41 @@ func dropTargetColumnSpecial(column spec.Column) bool {
 	return len(column.UnextractedOptions) > 0
 }
 
-// dropColumnLocalUnsafe reports loaded facts that do not prove the column can
-// disappear without rewriting a member. Ordinary indexes are not safe merely
-// because a type change could keep them: any reference, or any list that is
-// not a complete set of unrelated names, refuses the precise template.
-func dropColumnLocalUnsafe(shape *spec.TableSnapshot, columnName string) bool {
+// dropColumnLocalOutcome classifies what loaded local facts prove about
+// the column's disappearance.
+type dropColumnLocalOutcome int
+
+const (
+	// dropColumnLocalSafe means no loaded member provably references the
+	// column and every vouched list is a complete set of unrelated names.
+	dropColumnLocalSafe dropColumnLocalOutcome = iota
+	// dropColumnLocalUnsafe means some fact cannot vouch the drop —
+	// publication stays withheld rather than guessing.
+	dropColumnLocalUnsafe
+	// dropColumnLocalRefused means a provably-multi-column CHECK
+	// references the column — the drop natively refuses 3959 and the
+	// whole statement fails, so the table keeps its pre-state.
+	dropColumnLocalRefused
+)
+
+// dropColumnLocalVerdict reports loaded facts about whether the column can
+// disappear without rewriting a member. Ordinary indexes are not safe
+// merely because a type change could keep them: any reference, or any
+// list that is not a complete set of unrelated names, refuses the precise
+// template. A CHECK member is the one modeled exception — and only when
+// its vouched reference set is exactly the dropped column (the probed
+// silent cascade); a reference set that provably reaches other columns
+// makes the drop itself a proven refusal.
+func dropColumnLocalVerdict(shape *spec.TableSnapshot, columnName string) dropColumnLocalOutcome {
 	if shape == nil || shape.PrimaryKeyUnknown || shape.IndexesUnknown || shape.ConstraintsUnknown {
-		return true
+		return dropColumnLocalUnsafe
 	}
 	if !dropPrimaryKeyProvesUnrelated(shape, columnName) {
-		return true
+		return dropColumnLocalUnsafe
 	}
 	for _, index := range shape.Indexes {
 		if !dropIndexProvesUnrelated(index, columnName) {
-			return true
+			return dropColumnLocalUnsafe
 		}
 	}
 	var table spec.Table
@@ -181,37 +210,46 @@ func dropColumnLocalUnsafe(shape *spec.TableSnapshot, columnName string) bool {
 	}
 	dependency := spec.ColumnDependents(table, shape.Columns, columnName)
 	if !dependency.Known || len(dependency.Dependents) > 0 {
-		return true
+		return dropColumnLocalUnsafe
 	}
 	for _, column := range shape.Columns {
 		if strings.EqualFold(column.Name, columnName) {
 			continue
 		}
 		if dropOtherColumnMayReference(column) {
-			return true
+			return dropColumnLocalUnsafe
 		}
 	}
+	outcome := dropColumnLocalSafe
 	for _, constraint := range shape.Constraints {
 		if primaryKeyConstraint(constraint.Type) {
 			continue
 		}
 		if constraint.Type == "check" {
-			if checkMemberReferences(constraint, columnName) {
-				// Probed on 8.0.46/8.4.10/TiDB-ON: dropping the column
-				// silently drops the referencing check — a modeled
-				// cascade, not an unsafe dependency.
+			if checkMayReferenceUnvouched(constraint) {
+				return dropColumnLocalUnsafe
+			}
+			if !checkMemberReferences(constraint, columnName) {
 				continue
 			}
-			if checkMayReferenceUnvouched(constraint) {
-				return true
+			if len(constraint.Columns) == 1 {
+				// Probed on 8.0.46/8.4.10/TiDB-ON: dropping the column
+				// silently drops a check that references only it — a
+				// modeled cascade, not an unsafe dependency.
+				continue
 			}
+			// The vouched reference set reaches other columns — the
+			// drop refuses 3959 natively. A refusal outranks other
+			// unsafe facts only as a proven answer: keep scanning, an
+			// unvouched member still makes the outcome undecidable.
+			outcome = dropColumnLocalRefused
 			continue
 		}
 		if !dropConstraintProvesUnrelated(shape, constraint, columnName) {
-			return true
+			return dropColumnLocalUnsafe
 		}
 	}
-	return false
+	return outcome
 }
 
 // checkMayReferenceUnvouched reports whether a check member cannot vouch

@@ -1,0 +1,34 @@
+== P6 MySQL 8.0.17 CHECK-vs-CONSTRAINT spelling gate (2026-10-26T01:11:18Z)
+mysql: [Warning] Using a password on the command line interface can be insecure.
+VERSION()
+8.0.17
+mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+CONSTRAINT_NAME	ENFORCED
+ck	YES
+-- CHECK spelling on 8.0.17
+mysql: [Warning] Using a password on the command line interface can be insecure.
+rc=0
+mysql: [Warning] Using a password on the command line interface can be insecure.
+rc=0
+mysql: [Warning] Using a password on the command line interface can be insecure.
+rc=0
+mysql: [Warning] Using a password on the command line interface can be insecure.
+-- CONSTRAINT spelling on 8.0.17
+mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'CONSTRAINT ck NOT ENFORCED' at line 1
+rc=1
+mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'CONSTRAINT ck' at line 1
+rc=1
+mysql: [Warning] Using a password on the command line interface can be insecure.
+CONSTRAINT_NAME
+ck
+-- decl explicit enforcement on 8.0.17
+mysql: [Warning] Using a password on the command line interface can be insecure.
+rc=0
+mysql: [Warning] Using a password on the command line interface can be insecure.
+CONSTRAINT_NAME	ENFORCED
+p8_chk_1	NO
+mysql: [Warning] Using a password on the command line interface can be insecure.

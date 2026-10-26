@@ -457,28 +457,27 @@ func firstDropCheckAlter(ddl *spec.DDL) *spec.Alter {
 	return alter
 }
 
-// applyDropCheck publishes the bounded post-state of a DROP CHECK|CONSTRAINT
-// — an action whose two authored keywords share one AST node, so the model
-// separates them by what the proven target can be.
+// applyDropCheck publishes the bounded post-state of a DROP
+// CHECK|CONSTRAINT. The extractor recovers the authored keyword
+// (alter.Options["check_spelling"]) so the two spellings bind their own
+// namespaces instead of an unrecoverable union guess.
 //
-// TiDB never removes a foreign key this way (v8.5.0 probe: warned no-op
-// under tidb_enable_check_constraint=OFF, error 3940 under ON — the member
-// survives either way) and a hidden CHECK it could remove is never a
-// modeled member, so the transition has no modeled effect at all.
+// MySQL (probed 8.0.46/8.4.10): DROP CHECK removes only a CHECK member —
+// a non-check target or missing name refuses 3821, unchanged. DROP
+// CONSTRAINT removes the single member its generic namespace {check,
+// unique, pk, fk} binds — each kind probed rc=0 — while zero binds refuse
+// 3940 and a cross-type same-name set refuses 3939, both unchanged.
+// MySQL gates the keywords separately (CHECK 8.0.16, generic 8.0.19; the
+// 8.0.17 band anchor probed CHECK executes while CONSTRAINT refuses
+// 1064). An unproven spelling or execution gate diverges member-by-
+// member: a lone CHECK member drops under either keyword; a lone
+// non-check member drops under generic and survives under CHECK; a
+// cross-type set leaves only the CHECK member's fate undecidable.
 //
-// MySQL 5.7 rejects the syntax outright (1064) — provably unchanged.
-// MySQL 8.x removes every constraint kind under DROP CONSTRAINT — a
-// foreign-key member, a unique member, the primary-key object under its
-// stored PRIMARY name, and a real CHECK — while DROP CHECK removes only
-// a CHECK and refuses the rest (3821, 3940 on a secondary member or a
-// missing name; all probed on 8.0.46 and 8.4.10). When the authored name
-// binds a proven removable target the two keywords diverge and the
-// outcome is unprovable, so the affected collection unvouches — a proven
-// match would fabricate survival, a vouched absent member would
-// fabricate removal. A non-unique member refuses under both keywords
-// and keeps its proven state; an unmatched name on a vouched shape
-// refuses under both; a hidden CHECK under an unvouched constraint set
-// leaves the modeled members unchanged either way.
+// TiDB v8.5.0 flag-ON binds the CHECK member first under either keyword
+// and never detects the cross-type ambiguity (probed); non-check-only
+// bindings are unprobed and stay undecidable. Flag OFF is a parse-only
+// no-op; an unobserved flag leaves the member fate undecidable.
 func (s *batchState) applyDropCheck(_ spec.Statement, alter *spec.Alter, targets []spec.Table) {
 	if len(targets) != 1 {
 		s.invalidateAll(targets)
@@ -493,21 +492,22 @@ func (s *batchState) applyDropCheck(_ spec.Statement, alter *spec.Alter, targets
 		return
 	}
 	name := strings.TrimSpace(alter.Name)
+	if name == "" {
+		return
+	}
+	spelling := alter.Options["check_spelling"]
 	if s.dialect == spec.DialectTiDB {
-		// TiDB v8.5.0 probed: a present CHECK member drops under BOTH
-		// keywords when the flag is ON; nothing is ever stored under OFF,
-		// so the drop is a no-op there; an unobserved flag leaves the
-		// member's fate undecidable.
-		if name == "" {
-			return
-		}
 		switch s.checkArmFor() {
 		case spec.CheckArmEnforced:
-			if member := entry.shape.FindCheckConstraint(name); member != nil {
-				idx := memberIndex(entry.shape, member)
-				s.withClonedShape(key, func(shape *spec.TableSnapshot) {
-					shape.Constraints = append(shape.Constraints[:idx], shape.Constraints[idx+1:]...)
-				})
+			res := spec.CheckDropTarget(s.dialect, entry.shape, spelling, name)
+			switch res.Binding {
+			case spec.CheckTargetProven:
+				s.removeCheckMember(key, entry.shape, res.Constraint)
+			case spec.CheckTargetMissing, spec.CheckTargetWrongKind, spec.CheckTargetAmbiguous:
+				return
+			default:
+				// Non-check-only or unvouched binding — unprobed fate.
+				s.markConstraintsUnknown(key)
 			}
 		case spec.CheckArmUnknown:
 			if entry.shape.FindCheckConstraint(name) != nil {
@@ -519,72 +519,163 @@ func (s *batchState) applyDropCheck(_ spec.Statement, alter *spec.Alter, targets
 	if s.dialect != spec.DialectMySQL {
 		return
 	}
-	if name == "" {
+	// The syntax gate runs before binding: a refused spelling never
+	// reaches the server (provably unchanged); an unproven one leaves
+	// every member it could have removed undecidable.
+	syntaxExecutable := true
+	switch spec.CheckAlterSyntaxOutcome(s.dialect, s.resolvedVersion, spelling) {
+	case spec.CheckSyntaxRefused:
+		return
+	case spec.CheckSyntaxUnproven:
+		syntaxExecutable = false
+	}
+	res := spec.CheckDropTarget(s.dialect, entry.shape, spelling, name)
+	if !syntaxExecutable {
+		s.dropCheckUndecidable(key, entry, name, spelling)
 		return
 	}
-	version := s.resolvedVersion
-	if version != nil && version.Major != 0 && version.Major < 8 {
-		// Pre-8.0 rejects the syntax — provably unchanged.
+	switch res.Binding {
+	case spec.CheckTargetMissing, spec.CheckTargetWrongKind, spec.CheckTargetAmbiguous:
+		// Proven refusal — unchanged (3821/3940/3939).
+		return
+	case spec.CheckTargetUnproven:
+		s.dropCheckUndecidable(key, entry, name, spelling)
 		return
 	}
-	if member := entry.shape.FindCheckConstraint(name); member != nil {
-		// A proven CHECK member drops under BOTH keywords on MySQL 8.x
-		// (DROP CHECK and DROP CONSTRAINT each probed removing the
-		// still-present member) — deterministic removal; the collection
-		// stays vouched. An unobserved version cannot prove the arm
-		// supports the syntax, so the member's fate is undecidable.
-		if version == nil || !version.ValidatedRange || version.Major == 0 {
+	s.publishCheckDropTarget(key, entry, res)
+}
+
+// publishCheckDropTarget lands a provably-bound DROP removal: the check or
+// foreign-key member leaves Constraints, a unique index member leaves
+// Indexes, and the primary-key object or primary index member publishes
+// the shared PK-drop post-state.
+func (s *batchState) publishCheckDropTarget(key batchTableKey, entry *batchTableEntry, res spec.CheckTarget) {
+	switch res.Kind {
+	case spec.CheckTargetKindCheck, spec.CheckTargetKindForeignKey:
+		s.removeCheckMember(key, entry.shape, res.Constraint)
+	case spec.CheckTargetKindUnique:
+		if res.Index == nil {
+			return
+		}
+		s.withClonedShape(key, func(shape *spec.TableSnapshot) {
+			for i := range shape.Indexes {
+				if !shape.Indexes[i].NameUnknown && strings.EqualFold(shape.Indexes[i].Name, res.Index.Name) {
+					shape.Indexes = append(shape.Indexes[:i], shape.Indexes[i+1:]...)
+					return
+				}
+			}
+		})
+	case spec.CheckTargetKindPrimary:
+		s.publishPrimaryKeyDrop(key, entry)
+	}
+}
+
+// removeCheckMember drops a constraint member by identity — the shared
+// deterministic-removal publish for CHECK and foreign-key members.
+func (s *batchState) removeCheckMember(key batchTableKey, shape *spec.TableSnapshot, member *spec.Constraint) {
+	if member == nil {
+		return
+	}
+	idx := memberIndex(shape, member)
+	if idx < 0 {
+		return
+	}
+	s.withClonedShape(key, func(cloned *spec.TableSnapshot) {
+		cloned.Constraints = append(cloned.Constraints[:idx], cloned.Constraints[idx+1:]...)
+	})
+}
+
+// dropCheckUndecidable publishes the honest undecidable post-state when
+// the statement's execution or authored spelling cannot be proven: every
+// member a surviving reading could remove unvouches at member
+// granularity; a consulted-but-unvouched name space unvouches its
+// collection. Members that refuse under every reading keep their facts.
+func (s *batchState) dropCheckUndecidable(key batchTableKey, entry *batchTableEntry, name, spelling string) {
+	shape := entry.shape
+	if spelling == spec.CheckSpellingCheck {
+		// Only the CHECK name space is consulted.
+		if shape.CheckNameSpaceUnvouched() {
 			s.markConstraintsUnknown(key)
 			return
 		}
-		idx := memberIndex(entry.shape, member)
-		s.withClonedShape(key, func(shape *spec.TableSnapshot) {
-			shape.Constraints = append(shape.Constraints[:idx], shape.Constraints[idx+1:]...)
-		})
-		return
-	}
-	bound := false
-	if pkName, proven := spec.PrimaryKeyObjectName(entry.shape); proven && strings.EqualFold(pkName, name) {
-		// The PK object drops under DROP CONSTRAINT and refuses under
-		// DROP CHECK — its fate is unprovable.
-		s.unvouchPrimaryKeyObject(key)
-		bound = true
-	} else if entry.shape.PrimaryKey != nil && strings.EqualFold(name, "primary") {
-		// The MySQL stored name is always PRIMARY; an unproven
-		// attribution still spells the object.
-		s.unvouchPrimaryKeyObject(key)
-		bound = true
-	}
-	if member := entry.shape.FindProvenIndex(name); member != nil {
-		bound = true
-		if member.Kind != spec.IndexKindSecondary {
-			// A unique member drops under DROP CONSTRAINT, refuses
-			// under DROP CHECK — divergent like the FK arm. An
-			// unknown/empty kind may BE a unique member, and no
-			// other kind's refusal is proven: only a secondary
-			// member provably survives both keywords.
-			s.unvouchIndexMember(key, name)
-		}
-	}
-	if entry.shape.FindForeignKeyConstraint(name) != nil {
-		// DROP CONSTRAINT removes this member; DROP CHECK refuses on it.
-		// The authored keyword is unrecoverable, so the member's fate is
-		// unprovable: record it gone and unvouch the collection — a
-		// proven match would fabricate survival, a vouched absent set
-		// would fabricate removal.
-		s.unvouchForeignKeyMember(key, name)
-		return
-	}
-	// An unvouched member name may hide a removable target — a hidden FK
-	// or a hidden unique member the constraint form would remove. The
-	// already-unvouched sets stay unvouched; a vouched set with no proven
-	// match is a refusal under both keywords and keeps its facts.
-	if !bound {
-		if entry.shape.ForeignKeyNameSpaceUnvouched() {
+		if member := shape.FindCheckConstraint(name); member != nil {
+			// Executes → removed; refuses → kept.
 			s.markConstraintsUnknown(key)
 		}
-		if entry.shape.IndexNameSpaceUnvouched() {
-			s.markIndexesUnknown(key)
+		return
+	}
+	// Generic or unproven spelling consults every collection.
+	unvouched := shape.CheckNameSpaceUnvouched() ||
+		shape.ForeignKeyNameSpaceUnvouched() ||
+		shape.IndexNameSpaceUnvouched()
+	if unvouched {
+		s.markConstraintsUnknown(key)
+		s.markIndexesUnknown(key)
+		return
+	}
+	checkFound := shape.FindCheckConstraint(name) != nil
+	fkFound := shape.FindForeignKeyConstraint(name) != nil
+	var indexMember *spec.Index
+	indexKindUnproven := false
+	if member := shape.FindProvenIndex(name); member != nil {
+		switch member.Kind {
+		case spec.IndexKindUnique, spec.IndexKindPrimary:
+			indexMember = member
+		case spec.IndexKindSecondary:
+			// Provably outside the constraint namespace.
+		default:
+			// The stored kind may hide a unique member the generic
+			// keyword would remove — its fate is undecidable.
+			indexKindUnproven = true
+		}
+	}
+	pkFound := false
+	if pkName, proven := spec.PrimaryKeyObjectName(shape); proven && strings.EqualFold(pkName, name) {
+		pkFound = true
+	}
+	if shape.PrimaryKey != nil && strings.EqualFold(name, "primary") {
+		pkFound = true
+	}
+	kindCount := 0
+	for _, found := range []bool{checkFound, fkFound, indexMember != nil || pkFound || indexKindUnproven} {
+		if found {
+			kindCount++
+		}
+	}
+	if spelling == spec.CheckSpellingConstraint {
+		// Generic executes: exactly one bound kind drops; ambiguity or a
+		// missing name refuses — but execution itself was unproven, so a
+		// bound member may be gone or kept.
+		switch {
+		case kindCount == 1 && checkFound:
+			s.markConstraintsUnknown(key)
+		case kindCount == 1 && fkFound:
+			s.unvouchForeignKeyMember(key, name)
+		case kindCount == 1 && pkFound:
+			s.unvouchPrimaryKeyObject(key)
+		case kindCount == 1 && indexMember != nil:
+			s.unvouchIndexMember(key, name)
+		case kindCount == 1 && indexKindUnproven:
+			// May be unique (removed) or secondary (survives).
+			s.unvouchIndexMember(key, name)
+		}
+		return
+	}
+	// Unproven spelling: the CHECK member drops under the CHECK keyword;
+	// a lone bound member also drops under the generic keyword; any other
+	// member survives under both (check-spelling refuses non-check,
+	// generic refuses the ambiguous set).
+	if checkFound {
+		s.markConstraintsUnknown(key)
+	}
+	if kindCount == 1 && !checkFound {
+		switch {
+		case fkFound:
+			s.unvouchForeignKeyMember(key, name)
+		case pkFound:
+			s.unvouchPrimaryKeyObject(key)
+		case indexMember != nil || indexKindUnproven:
+			s.unvouchIndexMember(key, name)
 		}
 	}
 }

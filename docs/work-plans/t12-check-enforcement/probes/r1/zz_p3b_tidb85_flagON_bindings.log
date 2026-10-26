@@ -1,0 +1,35 @@
+== P3b TiDB v8.5.0 flag=ON bindings (2026-10-26T00:59:40Z)
+Variable_name	Value
+tidb_enable_check_constraint	ON
+-- B1: ordinary index only
+  drop CHECK ix_u:
+ERROR 3940 (HY000) at line 1: Constraint 'ix_u' does not exist.
+rc=1
+  drop CONSTRAINT ix_u:
+ERROR 3940 (HY000) at line 1: Constraint 'ix_u' does not exist.
+rc=1
+-- B2: same-name CHECK+UNIQUE
+  add unique rc=0
+CONSTRAINT_NAME
+ck
+  drop CONSTRAINT ck:
+rc=0
+  drop CHECK ck:
+rc=0
+  alter CONSTRAINT ck:
+rc=0
+  alter CHECK ck:
+rc=0
+-- C: multi-column CHECK drop column
+  drop col a:
+ERROR 3959 (HY000) at line 1: Check constraint 'chk_ab' uses column 'a', hence column cannot be dropped or renamed.
+rc=1
+-- D1: add check missing column
+  add ghost:
+ERROR 1054 (42S22) at line 1: Unknown column 'ghost' in 'check constraint ck_ghost expression'
+rc=1
+-- D2: in-column dup name
+  add col dup:
+rc=0
+Table	Create Table
+d2	CREATE TABLE `d2` (\n  `id` int DEFAULT NULL,\n  `v` int DEFAULT NULL,\n  CONSTRAINT `ck2` CHECK ((`id` > 0))\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin

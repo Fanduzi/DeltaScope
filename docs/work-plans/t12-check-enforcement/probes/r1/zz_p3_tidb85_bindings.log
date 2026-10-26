@@ -1,0 +1,31 @@
+== P3 TiDB v8.5.0 flag-ON bindings (2026-10-26T00:59:32Z)
+VERSION()
+8.0.11-TiDB-v8.5.0
+Variable_name	Value
+tidb_enable_check_constraint	OFF
+-- B1: ordinary index only
+  drop CHECK ix_u:
+rc=0
+  drop CONSTRAINT ix_u:
+rc=0
+-- B2: same-name CHECK+UNIQUE
+  add unique rc=0
+  drop CONSTRAINT ck:
+rc=0
+  drop CHECK ck:
+rc=0
+  alter CONSTRAINT ck:
+rc=0
+  alter CHECK ck:
+rc=0
+-- C: multi-column CHECK drop column
+  drop col a:
+rc=0
+-- D1: add check missing column
+  add ghost:
+rc=0
+-- D2: in-column dup name
+  add col dup:
+rc=0
+Table	Create Table
+d2	CREATE TABLE `d2` (\n  `id` int DEFAULT NULL,\n  `v` int DEFAULT NULL\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin

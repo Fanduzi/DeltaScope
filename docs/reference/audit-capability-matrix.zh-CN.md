@@ -186,21 +186,26 @@ TiDB 使用同一审计批次内先前语句派生的状态。表存在性（`ex
 ### CHECK 约束生命周期（#91）
 
 MySQL/TiDB 的 CHECK 生命周期由共享 arm 判定治理：MySQL 8.0.16+ 存储并执行
-CHECK 约束（`ALTER CHECK`/`DROP CHECK` 语法要求 8.0.19+），MySQL 8.0.16 以下解析
-但忽略声明，TiDB 以 `tidb_enable_check_constraint` 控制存储与执行。版本或开关
+CHECK 约束，MySQL 8.0.16 以下解析但忽略裸声明（写了 `ENFORCED`/`NOT ENFORCED`
+子句的声明在那里是已证 1064 语法拒绝而非被忽略），TiDB 以
+`tidb_enable_check_constraint` 控制存储与执行。版本或开关
 事实未决时产生有界证据缺口而非 finding。`ALTER CONSTRAINT` 是 `ALTER CHECK`
-的别名；`DROP CHECK` 与 `DROP CONSTRAINT` 共享同一 CHECK 成员绑定。TiDB 的
+的别名，但按拼写分段——`CHECK` 拼写自 8.0.16 起执行、通用 `CONSTRAINT` 别名
+自 8.0.19 起（8.0.17 锚点实证）；`DROP CHECK` 与 `DROP CONSTRAINT` 共享同一
+目标分类器：`CHECK` 拼写只绑定 CHECK 成员，通用关键字绑定唯一命名的
+check/unique/PK/FK 成员（普通索引永不是目标，跨类型同名对已证 3939 歧义）。TiDB 的
 成员来自 `TIDB_CHECK_CONSTRAINTS`，执行状态经 catalog 不可观测（仅
 `SHOW CREATE TABLE`）——由已声明的转移携带执行事实。CHECK 命名规则同时评估
-`ALTER TABLE ... ADD CONSTRAINT ... CHECK` 名与列级 CHECK 选项。
+`ALTER TABLE ... ADD CONSTRAINT ... CHECK` 名与列级 CHECK 选项（CREATE 与
+ALTER 列载荷）。
 
 | 规则 ID | 检查描述 | 离线 | 元数据 | 默认级别 |
 |---------|---------|:----:|:------:|---------|
 | `ddl.constraint.check.not_enforced.notice` | 存储/执行 arm 上声明或翻转的 `NOT ENFORCED` CHECK 给出复核 notice | ✓ | ✓ | notice |
-| `ddl.constraint.check.ignored.notice` | 接受但忽略 arm（MySQL <8.0.16、TiDB 开关 OFF）上的 CHECK 声明被揭示而非当作已执行 | ✓ | ✓ | notice |
-| `ddl.alter.alter_check.exists.require` | `ALTER CHECK`/`ALTER CONSTRAINT` 目标必须是已证 CHECK 成员 | ✗ | ✓ | blocker |
-| `ddl.alter.drop_check.exists.require` | `DROP CHECK`/`DROP CONSTRAINT` 目标必须是已证 CHECK 成员 | ✗ | ✓ | blocker |
-| `ddl.alter.alter_check.version.require` | MySQL 上 `ALTER CHECK`/`DROP CHECK` 语法要求 8.0.19+（5.7 家族拒绝） | ✗ | ✓ | blocker |
+| `ddl.constraint.check.ignored.notice` | 接受但忽略 arm（MySQL <8.0.16、TiDB 开关 OFF）上的裸 CHECK 声明被揭示而非当作已执行——MySQL 忽略臂上的显式执行子句属已证语法拒绝而非此 notice | ✓ | ✓ | notice |
+| `ddl.alter.alter_check.exists.require` | `ALTER CHECK`/`ALTER CONSTRAINT` 目标必须按其拼写绑定唯一有效成员（缺失、非 CHECK、跨类型同名均为已证拒绝） | ✗ | ✓ | blocker |
+| `ddl.alter.drop_check.exists.require` | `DROP CHECK`/`DROP CONSTRAINT` 目标必须按其拼写绑定唯一有效成员 | ✗ | ✓ | blocker |
+| `ddl.alter.alter_check.version.require` | MySQL 上 `ALTER CHECK`/`DROP CHECK` 拼写要求 8.0.16+，通用 `CONSTRAINT` 别名要求 8.0.19+（5.7 家族两者皆拒绝） | ✗ | ✓ | blocker |
 
 ### 全局规则：合并 ALTER
 

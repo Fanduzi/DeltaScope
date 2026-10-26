@@ -1,0 +1,28 @@
+== P2b MySQL 8.0.46 in-column CHECK duplicate name atomicity (2026-10-26T00:58:51Z)
+mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+-- add col v with duplicate name ck2 (in-column CHECK)
+mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 3822 (HY000) at line 1: Duplicate check constraint name 'ck2'.
+rc=1
+-- post: v must not exist, original ck2 intact
+mysql: [Warning] Using a password on the command line interface can be insecure.
+  `id` int DEFAULT NULL,
+  CONSTRAINT `ck2` CHECK ((`id` > 0))
+mysql: [Warning] Using a password on the command line interface can be insecure.
+CONSTRAINT_NAME	ENFORCED
+ck2	YES
+-- control: legal unique name in-column check
+mysql: [Warning] Using a password on the command line interface can be insecure.
+rc=0
+mysql: [Warning] Using a password on the command line interface can be insecure.
+*************************** 1. row ***************************
+  `w` int DEFAULT NULL,
+  CONSTRAINT `ck2` CHECK ((`id` > 0)),
+  CONSTRAINT `ck3` CHECK ((`w` > 0)) /*!80016 NOT ENFORCED */
+-- control: check-name schema-wide uniqueness (dup across tables)
+mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 3822 (HY000) at line 1: Duplicate check constraint name 'ck2'.
+rc=1
+mysql: [Warning] Using a password on the command line interface can be insecure.

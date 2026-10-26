@@ -1,0 +1,14 @@
+== P5 (2026-10-26T01:07:50Z)
+mysql: [Warning] Using a password on the command line interface can be insecure.
+-- TiDB ON: add_constraint dup check name
+ERROR 3822 (HY000) at line 1: Duplicate check constraint name 'ck'.
+rc=1
+-- TiDB ON: add_constraint dup vs FK name
+rc=0
+-- MySQL: add check named as existing unique index (coexist?)
+mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+rc=0
+  UNIQUE KEY `uk9` (`a`),
+  CONSTRAINT `uk9` CHECK ((`a` > 0))
+mysql: [Warning] Using a password on the command line interface can be insecure.

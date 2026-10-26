@@ -1,0 +1,36 @@
+== P2c MySQL 8.0.46 generic DROP/ALTER CONSTRAINT target matrix (2026-10-26T01:02:32Z)
+mysql: [Warning] Using a password on the command line interface can be insecure.
+-- unique-only name
+mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+rc=0
+mysql: [Warning] Using a password on the command line interface can be insecure.
+-- pk stored name
+mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+rc=0
+mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'primary' at line 1
+rc=1
+-- fk name
+mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+rc=0
+-- DROP CHECK spelling on non-check targets
+mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 3821 (HY000) at line 1: Check constraint 'uk2' is not found in the table.
+rc=1
+mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 3821 (HY000) at line 1: Check constraint 'PRIMARY' is not found in the table.
+rc=1
+mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 3821 (HY000) at line 1: Check constraint 'fkc2' is not found in the table.
+rc=1
+-- ALTER CONSTRAINT on non-check targets (unique-only)
+mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 3941 (HY000) at line 1: Altering constraint enforcement is not supported for the constraint 'uk2'. Enforcement state alter is not supported for the PRIMARY, UNIQUE and FOREIGN KEY type constraints.
+rc=1
+mysql: [Warning] Using a password on the command line interface can be insecure.

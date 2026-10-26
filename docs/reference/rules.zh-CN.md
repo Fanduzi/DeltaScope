@@ -460,9 +460,9 @@ rules:
 
 `ddl.constraint.check.not_enforced.notice` 在真实存储并执行约束的 arm 上（MySQL 8.0.16+；`tidb_enable_check_constraint=ON` 的 TiDB）对每个声明或翻转的 `NOT ENFORCED` CHECK 触发一次。`ENFORCED`、普通列变更、缺失或非 CHECK 的翻转目标不触发同一 finding——已证缺失目标改由存在性 blocker 覆盖，arm 无法判定时（版本缺失、TiDB 开关缺失）产生可归属证据缺口而非 finding。
 
-`ddl.constraint.check.ignored.notice` 揭示接受但忽略的声明：MySQL 8.0.16 以下解析 CHECK 语法但既不存储也不执行，TiDB 在 `tidb_enable_check_constraint=OFF` 时解析但静默忽略。该 notice 代替"声明即有效执行"的假象。arm 未决时只产生有界缺口，绝不发此 notice。
+`ddl.constraint.check.ignored.notice` 揭示接受但忽略的声明：MySQL 8.0.16 以下解析裸 CHECK 声明但既不存储也不执行，TiDB 在 `tidb_enable_check_constraint=OFF` 时解析但静默忽略。该 notice 代替"声明即有效执行"的假象——但只覆盖真正被接受的声明：MySQL 忽略臂上写了 `ENFORCED`/`NOT ENFORCED` 子句的声明是已证 1064 语法拒绝（5.7 探针），由版本规则处理而非此 notice。arm 未决时只产生有界缺口，绝不发此 notice。
 
-`ddl.alter.alter_check.exists.require` 与 `ddl.alter.drop_check.exists.require` 把 `ALTER CHECK`/`ALTER CONSTRAINT`、`DROP CHECK`/`DROP CONSTRAINT` 的目标绑定到请求内有序 schema 视图的 CHECK 成员空间——已证缺失或非 CHECK 名是一条 blocker（原生 3821/3940 类拒绝）；成员集合未证是 `check_members_unvouched` 缺口而非猜测。`ddl.alter.alter_check.version.require` 把 MySQL 8.0.19 之前的语法拒绝报告为一条 blocker；TiDB 与受支持的 MySQL 版本上保持静默，版本缺失时仍是 `missing_target_version` 缺口，不伪造拒绝。
+`ddl.alter.alter_check.exists.require` 与 `ddl.alter.drop_check.exists.require` 把 `ALTER CHECK`/`ALTER CONSTRAINT`、`DROP CHECK`/`DROP CONSTRAINT` 的目标经共享的作者拼写分类器绑定——`CHECK` 关键字只绑定 CHECK 成员，通用 `CONSTRAINT` 关键字绑定唯一命名的 check/unique/PK/FK 成员——已证缺失、已证非 CHECK（普通索引）、或跨类型同名目标都是一条 blocker（原生 3821/3940/3941/3939 类拒绝）；相关命名空间未证是缺口而非猜测。`ddl.alter.alter_check.version.require` 按拼写分段报告 MySQL 语法拒绝——`CHECK` 拼写自 8.0.16 起执行、通用 `CONSTRAINT` 别名自 8.0.19 起（8.0.17 探针实证），5.7 家族两种拼写都拒绝；TiDB 与受支持的 MySQL 版本上保持静默，版本缺失或拼写不可恢复时仍是有界缺口，不伪造拒绝。
 
 | 规则 ID | 描述 | 默认级别 | 是否需要元数据 |
 |---------|------|:--------:|:--------------:|
@@ -470,7 +470,7 @@ rules:
 | `ddl.constraint.check.ignored.notice` | 接受但忽略 arm（MySQL <8.0.16、TiDB 开关 OFF）上的 CHECK 声明被揭示而非当作已执行 | notice | **是** |
 | `ddl.alter.alter_check.exists.require` | `ALTER CHECK`/`ALTER CONSTRAINT` 目标必须是已证 CHECK 成员 | blocker | **是** |
 | `ddl.alter.drop_check.exists.require` | `DROP CHECK`/`DROP CONSTRAINT` 目标必须是已证 CHECK 成员 | blocker | **是** |
-| `ddl.alter.alter_check.version.require` | MySQL 上 `ALTER CHECK`/`DROP CHECK` 语法要求 8.0.19+（5.7 家族拒绝） | blocker | **是** |
+| `ddl.alter.alter_check.version.require` | MySQL 上 `ALTER CHECK`/`DROP CHECK` 拼写要求 8.0.16+，通用 `CONSTRAINT` 别名要求 8.0.19+（5.7 家族两者皆拒绝） | blocker | **是** |
 
 > **注：** 有序 schema 状态在 `ALTER CHECK`/`ALTER CONSTRAINT` 转移间携带每个 CHECK 成员的归一化执行位（`enforced`/`not_enforced`），同一请求内的 `ADD CHECK` → `ALTER`/`DROP` 序列保持绑定。MySQL 的元数据 provider 从 `TABLE_CONSTRAINTS` 读成员（存在 `ENFORCED` 列时读取），按 catalog/schema/name 关联 `CHECK_CONSTRAINTS`；TiDB 成员来自 `TIDB_CHECK_CONSTRAINTS`——执行状态经 catalog 不可观测（`SHOW CREATE TABLE` 是唯一出口），有序状态改为跟踪已声明的转移而非伪造 catalog 执行事实。引用列上的 `CHANGE COLUMN` 在 TiDB 上静默连带删除 CHECK（MySQL 拒绝），与探针实测一致。
 

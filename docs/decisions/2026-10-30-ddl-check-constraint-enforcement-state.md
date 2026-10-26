@@ -5,7 +5,8 @@ Status: Accepted
 Related milestone/version: mysql-tidb-ddl-completion (issue #79, task T12 under #91)
 Related commits: this task's commits on the workfree line after `186710db`
 Related tests: `internal/application/audit/batch_state_t12_check_test.go`,
-`batch_state_t12_check_sequences_test.go`, provider `TestLoadTableSnapshotCheckConstraintMembers`,
+`batch_state_t12_check_sequences_test.go`, `batch_state_t12r1_test.go`
+(R1 remediation cells), provider `TestLoadTableSnapshotCheckConstraintMembers`,
 `make ddl-golden TASK=T12 ARTIFACT_DIR=...`, `testdata/ddl-golden/T12.json`,
 corpus fixtures under `testdata/sql-corpus/{mysql,tidb}/ddl/metadata/check_*`
 Related docs: `docs/work-plans/t12-check-enforcement/CONTRACT.md`,
@@ -76,6 +77,55 @@ the contract froze:
 5. **No-leak boundary.** Raw `CHECK_CLAUSE`/literals never cross the
    provider or report boundary; only `ExpressionFacts`, `Enforced`,
    `Name`, `Columns` surface. T11 PK/UNIQUE/FK behavior is unchanged.
+
+## Amendment: R1 acceptance remediation (2026-10-26)
+
+Independent acceptance located five defects; each was re-probed natively
+before being encoded (probe logs `probes/r1/`, public-path red baseline
+`docs/verification/t12r1/red/baseline_red.log` — 13 `--- FAIL` markers on
+the pre-remediation product, all green after):
+
+1. **Authored spelling is now a recovered fact.** `ast.Constraint` drops
+   whether the text wrote `CHECK` or `CONSTRAINT`; the extractor recovers
+   it from the already-split clause text into
+   `alter.Options["check_spelling"]`. The MySQL syntax floor splits per
+   probed behavior — CHECK spelling executes from 8.0.16 (probed 8.0.17),
+   the generic alias from 8.0.19 (probed 1064 on 8.0.17) — via
+   `spec.CheckAlterSyntaxOutcome`. An unrecoverable spelling inside the
+   8.0.16–8.0.18 band answers unproven, never a guessed floor.
+2. **`Constraint.EnforcedExplicit` records only authored clauses.** MySQL
+   5.7 parses a bare CHECK declaration but refuses an authored
+   `[NOT] ENFORCED` clause with 1064 (probed on table-level, named,
+   ADD-CONSTRAINT, and inline column forms); TiDB's ignored arm accepts
+   and ignores it. `spec.CheckExplicitClauseRefused` gates CREATE/ADD
+   publication so a refused statement lands neither table, column, nor
+   member — the default `Enforced` value is never reverse-read as the
+   clause's presence.
+3. **One shared target classifier.** `spec.CheckDropTarget` /
+   `spec.CheckAlterTarget` (`internal/domain/spec/check_target.go`)
+   is consumed identically by findings, evidence gaps, and ordered state:
+   CHECK spelling binds only check members; the generic keyword counts
+   check+unique+PK+FK and refuses a cross-type same-name pair with the
+   probed 3939 (MySQL) while TiDB-ON binds the check member first
+   (probed). Secondary indexes never bind (probed 3821/3940), and an
+   index member of unvouched kind downgrades generic binding to
+   Unproven rather than Missing.
+4. **Statement-atomic premises.** ADD CHECK requires every modeled
+   referenced column to exist (probed 1054); a duplicate in-column CHECK
+   name refuses the whole statement on MySQL (probed 3822 — the added
+   column never lands) while TiDB-ON silently ignores the colliding
+   member and lands the column (probed). `DROP COLUMN` cascades only a
+   member whose proven reference set is exactly the dropped column;
+   multi-column references refuse 3959 (probed) and unvouched reference
+   sets stay unsafe.
+5. **ALTER inline CHECKs join naming governance.** `alter.Constraints`
+   members are read by the `check.name.*` applicability and selection
+   paths, deduplicated against names already declared elsewhere.
+
+Boundaries kept unproven: unrecoverable spelling in the 8.0.16–8.0.18
+band, unknown-kind index members under generic binding, TiDB generic-drop
+resolution beyond the probed cells, and MySQL patches other than
+5.7.44/8.0.17/8.0.46/8.4.10.
 
 ## Consequences and deferred scope
 

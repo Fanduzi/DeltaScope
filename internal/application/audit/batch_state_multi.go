@@ -107,6 +107,12 @@ func multiActionPrimaryObject(alter *spec.Alter) (string, bool) {
 		if alter.Column == nil || alter.Column.Definition == nil {
 			return "", false
 		}
+		if len(alter.Constraints) > 0 {
+			// Inline CHECK members share the statement's atomic fate
+			// (3822/1054 premise classes the working copy cannot model)
+			// — a multi-action add carrying them is unprovable.
+			return "", false
+		}
 		name := strings.TrimSpace(alter.Column.Definition.Name)
 		return name, name != ""
 	case "modify_column", "drop_column", "set_column_default", "drop_column_default", "set_column_visibility":
@@ -305,10 +311,11 @@ func multiActionDrop(alter *spec.Alter, working *spec.TableSnapshot) bool {
 		return false
 	}
 	source := working.Columns[index]
-	if dropTargetColumnSpecial(source) || dropColumnLocalUnsafe(working, source.Name) {
+	if dropTargetColumnSpecial(source) || dropColumnLocalVerdict(working, source.Name) != dropColumnLocalSafe {
 		return false
 	}
 	working.Columns = removeColumnAt(working.Columns, index)
+	dropColumnCascadedChecks(working, source.Name)
 	return true
 }
 

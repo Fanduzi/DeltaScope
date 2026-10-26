@@ -1,0 +1,59 @@
+== P1 MySQL 5.7.44 explicit enforcement syntax (2026-10-26T00:58:04Z)
+mysql: [Warning] Using a password on the command line interface can be insecure.
+VERSION()
+5.7.44
+mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+-- create bare CHECK
+mysql: [Warning] Using a password on the command line interface can be insecure.
+rc=0
+-- create CHECK ENFORCED
+mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'ENFORCED)' at line 1
+rc=1
+-- create CHECK NOT ENFORCED
+mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'NOT ENFORCED)' at line 1
+rc=1
+-- create CONSTRAINT ENFORCED
+mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'ENFORCED)' at line 1
+rc=1
+mysql: [Warning] Using a password on the command line interface can be insecure.
+-- alter add CONSTRAINT ENFORCED
+mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'ENFORCED' at line 1
+rc=1
+-- alter add col CHECK NOT ENF
+mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'NOT ENFORCED' at line 1
+rc=1
+-- alter add col CHECK bare
+mysql: [Warning] Using a password on the command line interface can be insecure.
+rc=0
+-- alter check
+mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'CHECK c5 NOT ENFORCED' at line 1
+rc=1
+-- drop check
+mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'CHECK c5' at line 1
+rc=1
+-- show p1_5
+mysql: [Warning] Using a password on the command line interface can be insecure.
+*************************** 1. row ***************************
+       Table: p1_5
+Create Table: CREATE TABLE `p1_5` (
+  `a` int(11) DEFAULT NULL,
+  `c` int(11) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=latin1
+mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.

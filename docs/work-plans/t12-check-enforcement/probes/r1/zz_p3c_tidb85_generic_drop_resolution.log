@@ -1,0 +1,9 @@
+== P3c TiDB generic DROP CONSTRAINT resolution (2026-10-26T00:59:52Z)
+-- post: check catalog + index + create
+Table	Non_unique	Key_name	Seq_in_index	Column_name	Collation	Cardinality	Sub_part	Packed	Null	Index_type	Comment	Index_comment	Visible	Expression	Clustered	Global
+b2	0	ck	1	a	A	0	NULL	NULL	YES	BTREE			YES	NULL	NO	NO
+Table	Create Table
+b2	CREATE TABLE `b2` (\n  `a` int DEFAULT NULL,\n  UNIQUE KEY `ck` (`a`)\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+-- fresh: ALTER CONSTRAINT which member?
+Table	Create Table
+b2	CREATE TABLE `b2` (\n  `a` int DEFAULT NULL,\n  UNIQUE KEY `ck` (`a`),\n  CONSTRAINT `ck` CHECK ((`a` > 0)) /*!80016 NOT ENFORCED */\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin

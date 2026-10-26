@@ -250,7 +250,40 @@ func RenameColumnVersionSupportFor(version *VersionIdentity) RenameColumnVersion
 // parses on both arms while the flag decides whether anything is stored.
 const (
 	CheckMinEnforcementMySQL = "8.0.16"
+	// CheckMinAlterSyntaxMySQL is the floor for the generic CONSTRAINT
+	// spelling of ALTER|DROP (8.0.19, probed on 8.0.17 vs 8.0.46). The
+	// CHECK spelling is allowed one boundary earlier.
 	CheckMinAlterSyntaxMySQL = "8.0.19"
+	// CheckMinCheckSpellingMySQL is the floor for the CHECK spelling of
+	// ALTER|DROP — 8.0.16 introduced both the syntax and the [NOT]
+	// ENFORCED declaration clause.
+	CheckMinCheckSpellingMySQL = "8.0.16"
+)
+
+// CheckSpellingCheck / CheckSpellingConstraint are the normalized values
+// the parser adaptation layer records on an alter_check|drop_check
+// action's Options["check_spelling"]; an absent option means the authored
+// spelling is unproven and must never be guessed.
+const (
+	CheckSpellingCheck      = "check"
+	CheckSpellingConstraint = "constraint"
+)
+
+// CheckSyntaxOutcome classifies whether one authored spelling executes on
+// the resolved arm — a three-way answer so a provable refusal, a provable
+// pass, and an unprovable middle band never collapse into one bool.
+type CheckSyntaxOutcome int
+
+const (
+	// CheckSyntaxRefused means the spelling provably refused on the arm —
+	// the statement fails and the pre-state is the post-state.
+	CheckSyntaxRefused CheckSyntaxOutcome = iota
+	// CheckSyntaxSupported means the spelling provably executes.
+	CheckSyntaxSupported
+	// CheckSyntaxUnproven means the answer cannot be decided: the version
+	// was never observed, or the authored spelling is unproven inside the
+	// 8.0.16–8.0.18 band where the two spellings diverge.
+	CheckSyntaxUnproven
 )
 
 // CheckArm is the resolved CHECK capability of one product arm:
@@ -299,21 +332,68 @@ func ResolveCheckArm(dialect Dialect, version *VersionIdentity, instance *Instan
 	}
 }
 
+// CheckAlterSyntaxMinVersion returns the proven floor for one authored
+// spelling — CHECK spelling executes from 8.0.16, the generic CONSTRAINT
+// alias from 8.0.19; an unproven spelling defers to the generic bound so
+// nothing is claimed that the text cannot back.
+func CheckAlterSyntaxMinVersion(spelling string) string {
+	if spelling == CheckSpellingCheck {
+		return CheckMinCheckSpellingMySQL
+	}
+	return CheckMinAlterSyntaxMySQL
+}
+
 // CheckAlterSyntaxSupported reports whether the ALTER|DROP CHECK syntax
-// executes on the arm — MySQL ≥8.0.19 per the documented boundary. TiDB
-// parses the syntax on both flag arms, so the flag, not this gate, decides
-// the effect. A nil/unvalidated version reports false; callers that must
-// distinguish "refused" from "unobserved" check the version fact first.
-func CheckAlterSyntaxSupported(dialect Dialect, version *VersionIdentity) bool {
+// executes on the arm under the authored spelling — MySQL ≥8.0.16 for the
+// CHECK keyword, ≥8.0.19 for the generic CONSTRAINT alias (probed:
+// 8.0.17 accepts CHECK and refuses CONSTRAINT 1064; 8.0.46 accepts both).
+// An unproven spelling answers true only where both spellings execute.
+// TiDB parses both spellings on either flag arm, so the flag, not this
+// gate, decides the effect. Callers that must separate "refused" from
+// "unobserved" use CheckAlterSyntaxOutcome.
+func CheckAlterSyntaxSupported(dialect Dialect, version *VersionIdentity, spelling string) bool {
+	return CheckAlterSyntaxOutcome(dialect, version, spelling) == CheckSyntaxSupported
+}
+
+// CheckExplicitClauseRefused reports whether a declared CHECK member
+// carrying an authored ENFORCED/NOT ENFORCED clause is a proven syntax
+// refusal on the arm — MySQL before 8.0.16 parses a bare CHECK declaration
+// but refuses the explicit enforcement clause with 1064 (probed 5.7.44),
+// while TiDB's ignored arm accepts and ignores the clause (probed v8.5.0
+// flag OFF). Only the authored fact marks the refusal — the enforcement
+// clause's absence can never be inferred from a default Enforced value.
+func CheckExplicitClauseRefused(dialect Dialect, arm CheckArm, member Constraint) bool {
+	return dialect == DialectMySQL && arm == CheckArmIgnored && member.EnforcedExplicit
+}
+
+// CheckAlterSyntaxOutcome is the three-way spelling-aware gate shared by
+// rule evaluation, evidence gaps, and ordered state.
+func CheckAlterSyntaxOutcome(dialect Dialect, version *VersionIdentity, spelling string) CheckSyntaxOutcome {
 	switch dialect {
 	case DialectMySQL:
 		if version == nil || !version.ValidatedRange || version.Major == 0 {
-			return false
+			return CheckSyntaxUnproven
 		}
-		return version.Major > 8 || (version.Major == 8 && (version.Minor > 0 || version.Patch >= 19))
+		if version.Major < 8 || (version.Major == 8 && version.Minor == 0 && version.Patch < 16) {
+			return CheckSyntaxRefused
+		}
+		if version.Major > 8 || version.Minor > 0 || version.Patch >= 19 {
+			return CheckSyntaxSupported
+		}
+		// The 8.0.16–8.0.18 band: the CHECK spelling executes, the
+		// CONSTRAINT alias refuses, and an unproven spelling cannot be
+		// decided either way.
+		switch spelling {
+		case CheckSpellingCheck:
+			return CheckSyntaxSupported
+		case CheckSpellingConstraint:
+			return CheckSyntaxRefused
+		default:
+			return CheckSyntaxUnproven
+		}
 	case DialectTiDB:
-		return true
+		return CheckSyntaxSupported
 	default:
-		return false
+		return CheckSyntaxRefused
 	}
 }

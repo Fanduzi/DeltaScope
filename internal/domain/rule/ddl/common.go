@@ -982,6 +982,11 @@ func appliesToCreateTableOrAlterCheckConstraint(statement spec.Statement) bool {
 		return false
 	}
 	for _, alter := range statement.DDL.Alter {
+		for _, member := range alter.Constraints {
+			if member.Type == "check" {
+				return true
+			}
+		}
 		if alter.Action != "add_constraint" {
 			continue
 		}
