@@ -1,0 +1,230 @@
+{
+  "case_id": "T12.meta.t12-mysql80-drop-present",
+  "kind": "cli_metadata",
+  "cli_case": "t12-mysql80-drop-present",
+  "anchor": "mysql80",
+  "dialect": "mysql",
+  "input_sql": "ALTER TABLE t12g DROP CHECK chk_id;",
+  "policy_profile": "t12-all",
+  "policy_path": "/Users/fan/GolangProjects/DeltaScope/docs/verification/t12r2tail/f843b2c992625a06abc3fd0cd13143aaaa30d2d8/golden/T12/golden-policy-t12-all.yaml",
+  "connect": {
+    "host": "127.0.0.1",
+    "port": 23380,
+    "user": "root",
+    "schema": "golden",
+    "password_env": "DS_T12_GOLDEN_PW"
+  },
+  "expected": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "evidence_gaps": 0
+  },
+  "actual": {
+    "database": {
+      "product": "mysql",
+      "image": "mysql:8.0.46",
+      "image_digest": "mysql@sha256:7dcddc01f13bab2f15cde676d44d01f61fc9f99fe7785e86196dfc07d358ae2b",
+      "container": "deltascope-ddl-golden-mysql80",
+      "reachable": true,
+      "version": "8.0.46"
+    },
+    "setup": [
+      {
+        "name": "create-fixture",
+        "sql": "CREATE TABLE t12g (id INT, CONSTRAINT chk_id CHECK (id > 0));",
+        "rc": 0,
+        "stdout": "",
+        "stderr": ""
+      }
+    ],
+    "post_verify": [],
+    "execute": [
+      {
+        "name": "apply-audited-drop",
+        "sql": "ALTER TABLE t12g DROP CHECK chk_id;",
+        "rc": 0,
+        "stdout": "",
+        "stderr": "",
+        "verify": [
+          {
+            "assert": "check member gone from catalog",
+            "sql": "SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t12g' AND CONSTRAINT_NAME='chk_id'",
+            "rc": 0,
+            "output": "0",
+            "stderr": ""
+          }
+        ]
+      }
+    ],
+    "structure": [],
+    "teardown": [
+      {
+        "name": "drop-t12g",
+        "sql": "DROP TABLE IF EXISTS t12g;",
+        "rc": 0,
+        "stderr": ""
+      }
+    ],
+    "exit": 0,
+    "stdout": "{\"verdict\":\"pass\",\"coverage\":{\"status\":\"complete\"},\"summary\":{\"statements\":1,\"blockers\":0,\"warnings\":0,\"notices\":0},\"statements\":[{\"index\":0,\"kind\":\"ddl\",\"raw_sql\":\"ALTER TABLE t12g DROP CHECK chk_id;\",\"normalized_sql\":\"ALTER TABLE t12g DROP CHECK chk_id\",\"coverage\":{\"status\":\"complete\"}}],\"version\":{\"product\":\"mysql\",\"version\":\"8.0.46\",\"major\":8,\"minor\":0,\"patch\":46,\"source\":\"observed\",\"validated_range\":true},\"fail_on_triggered\":false,\"rule_summary\":{\"loaded\":5,\"applicable\":2,\"skipped\":[]},\"context\":{\"mode\":\"metadata-aware\",\"dialect\":\"mysql\",\"dialect_source\":\"detected\",\"schema\":\"golden\",\"schema_source\":\"flag\"}}\n",
+    "stderr": "",
+    "parsed": {
+      "verdict": "pass",
+      "coverage": {
+        "status": "complete"
+      },
+      "summary": {
+        "statements": 1,
+        "blockers": 0,
+        "warnings": 0,
+        "notices": 0
+      },
+      "statements": [
+        {
+          "index": 0,
+          "kind": "ddl",
+          "raw_sql": "ALTER TABLE t12g DROP CHECK chk_id;",
+          "normalized_sql": "ALTER TABLE t12g DROP CHECK chk_id",
+          "coverage": {
+            "status": "complete"
+          }
+        }
+      ],
+      "version": {
+        "product": "mysql",
+        "version": "8.0.46",
+        "major": 8,
+        "minor": 0,
+        "patch": 46,
+        "source": "observed",
+        "validated_range": true
+      },
+      "fail_on_triggered": false,
+      "rule_summary": {
+        "loaded": 5,
+        "applicable": 2,
+        "skipped": []
+      },
+      "context": {
+        "mode": "metadata-aware",
+        "dialect": "mysql",
+        "dialect_source": "detected",
+        "schema": "golden",
+        "schema_source": "flag"
+      }
+    },
+    "version_evidence": {
+      "target_raw": null,
+      "target_canonical": null,
+      "observed_raw": "8.0.46",
+      "observed_canonical": {
+        "product": "mysql",
+        "version": "8.0.46"
+      },
+      "resolved": {
+        "product": "mysql",
+        "version": "8.0.46",
+        "major": 8,
+        "minor": 0,
+        "patch": 46,
+        "source": "observed",
+        "validated_range": true
+      }
+    }
+  },
+  "assertions": [
+    {
+      "name": "database reachable with expected version",
+      "ok": true,
+      "detail": "SELECT VERSION() rc=0 version='8.0.46' expected_contains='8.0.46'"
+    },
+    {
+      "name": "setup create-fixture return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "exit code",
+      "ok": true,
+      "detail": "rc=0 expected=0"
+    },
+    {
+      "name": "verdict",
+      "ok": true,
+      "detail": "verdict='pass'"
+    },
+    {
+      "name": "top-level statements",
+      "ok": true,
+      "detail": "statements=1 expected=1"
+    },
+    {
+      "name": "zero findings",
+      "ok": true,
+      "detail": "findings=0"
+    },
+    {
+      "name": "no diagnostics",
+      "ok": true,
+      "detail": "diagnostics=[]"
+    },
+    {
+      "name": "no unsupported",
+      "ok": true,
+      "detail": "unsupported=[]"
+    },
+    {
+      "name": "aggregate coverage",
+      "ok": true,
+      "detail": "coverage='complete'"
+    },
+    {
+      "name": "evidence gap count",
+      "ok": true,
+      "detail": "gaps=0"
+    },
+    {
+      "name": "execute apply-audited-drop return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "execute apply-audited-drop: check member gone from catalog",
+      "ok": true,
+      "detail": "rc=0 output='0' expected='0'"
+    },
+    {
+      "name": "teardown drop-t12g return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    }
+  ],
+  "status": "pass",
+  "command": [
+    "/Users/fan/GolangProjects/DeltaScope/docs/verification/t12r2tail/f843b2c992625a06abc3fd0cd13143aaaa30d2d8/golden/T12/bin/deltascope",
+    "audit",
+    "--dialect",
+    "mysql",
+    "--sql",
+    "ALTER TABLE t12g DROP CHECK chk_id;",
+    "--config",
+    "/Users/fan/GolangProjects/DeltaScope/docs/verification/t12r2tail/f843b2c992625a06abc3fd0cd13143aaaa30d2d8/golden/T12/golden-policy-t12-all.yaml",
+    "--format",
+    "json",
+    "--host",
+    "127.0.0.1",
+    "--port",
+    "23380",
+    "--user",
+    "root",
+    "--password-env",
+    "DS_T12_GOLDEN_PW",
+    "--schema",
+    "golden"
+  ]
+}

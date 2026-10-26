@@ -68,10 +68,10 @@ remains `2f16db0a..72610833`.
 
 ## Red → green
 
-- `red/baseline_red.log` — 12 `--- FAIL` markers on the pre-remediation
-  product (`ebc9fbf0` product `72610833` + the new R2 test file), captured
-  via the public `Audit` path; each failure asserts first-statement result
-  AND successor `Metadata.TargetTable`/findings/gaps/coverage/verdict.
+- `red/baseline_red.log` — 12 `--- FAIL` markers, re-collected on the
+  baseline product (`ebc9fbf0` tree = R1 product `72610833` plus the new
+  R2 test file) after the original run output was not preserved — a real
+  behavior-red re-capture, not a retained first run.
 - Green: `go test ./internal/application/audit -run 'TestT12R2'` — 12/12
   pass on the product SHA; full `go test ./...` rc=0.
 
@@ -119,8 +119,8 @@ exact SQL, per-statement rc, stderr, and before/after catalog state:
   (`tidb_enable_check_constraint`): a fresh-name in-column CHECK lands the
   column but stores no member (`TIDB_CHECK_CONSTRAINTS` stays 0; the
   successor `DROP CHECK` reads 3940), a standalone `ADD CONSTRAINT` lands
-  the member (catalog 1), and `CHANGE COLUMN` drops both multi-column and
-  single-column referencing members (catalog 0).
+  the member (catalog 1), and a single-action `CHANGE COLUMN` drops both
+  multi-column and single-column referencing members (catalog 0).
 
 An earlier B1c fixture and a D2 fixture in the first pass collided with
 fixture errors (1822 missing referenced key, 3822 duplicate check name);
@@ -137,3 +137,28 @@ corrected observations.
   facts withhold publication.
 - CHECK expression evaluation stays out of scope; only reference sets are
   modeled.
+
+## Wording corrections applied during T12-R2-tail
+
+The R2-tail round corrected the following descriptions without touching
+the archived logs or re-running established evidence:
+
+- `red/baseline_red.log` is a real behavior-red log **re-collected** on
+  the baseline product after the original run output was not preserved —
+  it is not a retained first run, and earlier wording suggesting
+  otherwise was corrected above.
+- The R2 test file mixes two test paths: public `Audit`-path cells
+  (`t10Audit`, asserting report findings/gaps/coverage) and internal
+  ordered-state cells (`t10r4PostState`/`t12r1PostStateFor`, asserting
+  successor `Metadata.TargetTable` shape). Earlier wording implying every
+  cell ran the public path and asserted every report field was overbroad.
+- The probed TiDB CHANGE-cascade evidence is **single-action**
+  `ALTER ... CHANGE COLUMN` on a multi-column CHECK reference. The
+  `CHANGE + ADD` multi-action composition is covered by unit tests
+  (`TestT12R2TiDBMultiActionChangeDropsMultiColCheck`), not by that probe.
+- "The refusal does not depend on sibling order" (the R2 premise-scan
+  comment) was overbroad: a same-statement proven `DROP CHECK` does lift
+  the identity premise natively. R2-tail replaced the scan with
+  `multiActionIdentityCheckVerdict`, which subtracts provably dropped
+  members before judging; the R2 claim holds only absent such a sibling
+  drop.

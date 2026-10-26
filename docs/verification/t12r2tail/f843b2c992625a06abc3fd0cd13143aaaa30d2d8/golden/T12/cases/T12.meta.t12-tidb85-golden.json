@@ -1,0 +1,353 @@
+{
+  "case_id": "T12.meta.t12-tidb85-golden",
+  "kind": "cli_metadata",
+  "cli_case": "t12-tidb85-golden",
+  "anchor": "tidb85",
+  "dialect": "tidb",
+  "input_sql": "ALTER TABLE t12g ALTER CHECK chk_id NOT ENFORCED;",
+  "policy_profile": "t12-all",
+  "policy_path": "/Users/fan/GolangProjects/DeltaScope/docs/verification/t12r2tail/f843b2c992625a06abc3fd0cd13143aaaa30d2d8/golden/T12/golden-policy-t12-all.yaml",
+  "connect": {
+    "host": "127.0.0.1",
+    "port": 24000,
+    "user": "root",
+    "schema": "golden"
+  },
+  "expected": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "evidence_gaps": 0,
+    "finding_entries": [
+      {
+        "index": 0,
+        "rule_id": "ddl.constraint.check.not_enforced.notice",
+        "level": "blocker"
+      }
+    ],
+    "finding_metadata": [
+      {
+        "index": 0,
+        "rule_id": "ddl.constraint.check.not_enforced.notice",
+        "metadata": {
+          "table": "t12g",
+          "constraint": "chk_id",
+          "enforced": "not_enforced"
+        }
+      }
+    ],
+    "version": {
+      "product": "tidb",
+      "version": "8.5.0"
+    },
+    "instance_facts": {
+      "tidb_enable_check_constraint": "ON"
+    }
+  },
+  "actual": {
+    "database": {
+      "product": "tidb",
+      "image": "pingcap/tidb:v8.5.0",
+      "image_digest": "pingcap/tidb@sha256:490861bd4a2fa643dbe76b77ffecafcad66e6a42774e580b82f4ec2429a80e57",
+      "container": "deltascope-ddl-golden-tidb85",
+      "reachable": true,
+      "version": "8.0.11-TiDB-v8.5.0"
+    },
+    "setup": [
+      {
+        "name": "flag-on",
+        "sql": "SET GLOBAL tidb_enable_check_constraint=ON;",
+        "rc": 0,
+        "stdout": "",
+        "stderr": ""
+      },
+      {
+        "name": "create-fixture",
+        "sql": "CREATE TABLE t12g (id INT, CONSTRAINT chk_id CHECK (id > 0));",
+        "rc": 0,
+        "stdout": "",
+        "stderr": "",
+        "verify": [
+          {
+            "assert": "check stored under flag ON",
+            "sql": "SELECT COUNT(*) FROM information_schema.TIDB_CHECK_CONSTRAINTS WHERE CONSTRAINT_SCHEMA='golden' AND TABLE_NAME='t12g' AND CONSTRAINT_NAME='chk_id'",
+            "rc": 0,
+            "output": "1",
+            "stderr": ""
+          }
+        ]
+      }
+    ],
+    "post_verify": [],
+    "execute": [
+      {
+        "name": "apply-audited-flip",
+        "sql": "ALTER TABLE t12g ALTER CHECK chk_id NOT ENFORCED;",
+        "rc": 0,
+        "stdout": "",
+        "stderr": ""
+      },
+      {
+        "name": "violating-row-lands",
+        "sql": "INSERT INTO t12g VALUES (-1);",
+        "rc": 0,
+        "stdout": "",
+        "stderr": "",
+        "verify": [
+          {
+            "assert": "negative id lands under NOT ENFORCED",
+            "sql": "SELECT COUNT(*) FROM golden.t12g WHERE id=-1",
+            "rc": 0,
+            "output": "1",
+            "stderr": ""
+          }
+        ]
+      }
+    ],
+    "structure": [],
+    "teardown": [
+      {
+        "name": "clear-violating-row",
+        "sql": "DELETE FROM t12g;",
+        "rc": 0,
+        "stderr": ""
+      },
+      {
+        "name": "drop-t12g",
+        "sql": "DROP TABLE IF EXISTS t12g;",
+        "rc": 0,
+        "stderr": ""
+      }
+    ],
+    "exit": 1,
+    "stdout": "{\"verdict\":\"reject\",\"coverage\":{\"status\":\"complete\"},\"summary\":{\"statements\":1,\"blockers\":1,\"warnings\":0,\"notices\":0},\"statements\":[{\"index\":0,\"kind\":\"ddl\",\"raw_sql\":\"ALTER TABLE t12g ALTER CHECK chk_id NOT ENFORCED;\",\"normalized_sql\":\"ALTER TABLE t12g ALTER CHECK chk_id NOT ENFORCED\",\"findings\":[{\"rule_id\":\"ddl.constraint.check.not_enforced.notice\",\"level\":\"blocker\",\"message\":\"check constraint \\\"chk_id\\\" on table \\\"t12g\\\" is switched to NOT ENFORCED\",\"statement_kind\":\"ddl\",\"location\":{\"line\":1,\"column\":1},\"suggestion\":\"keep check constraints enforced, or confirm the disabled state is intentional\",\"metadata\":{\"action\":\"alter_check\",\"constraint\":\"chk_id\",\"enforced\":\"not_enforced\",\"table\":\"t12g\"},\"explanation\":{\"summary\":\"Check DDL constraint check not enforced notice\",\"why\":\"The statement matched the shipped governance rule for this pattern.\",\"risk\":\"Ignoring this rule can hide live-schema or instance-state risks that only metadata reveals.\",\"suggestion\":\"keep check constraints enforced, or confirm the disabled state is intentional\",\"metadata\":{\"status\":\"available\",\"note\":\"Live metadata is available, so this explanation can use schema or instance facts for a more accurate judgment.\"}}}],\"coverage\":{\"status\":\"complete\"}}],\"version\":{\"product\":\"tidb\",\"version\":\"8.5.0\",\"major\":8,\"minor\":5,\"patch\":0,\"source\":\"observed\",\"validated_range\":true},\"fail_on_triggered\":true,\"rule_summary\":{\"loaded\":5,\"applicable\":2,\"skipped\":[]},\"context\":{\"mode\":\"metadata-aware\",\"dialect\":\"tidb\",\"dialect_source\":\"detected\",\"schema\":\"golden\",\"schema_source\":\"flag\"}}\n",
+    "stderr": "",
+    "parsed": {
+      "verdict": "reject",
+      "coverage": {
+        "status": "complete"
+      },
+      "summary": {
+        "statements": 1,
+        "blockers": 1,
+        "warnings": 0,
+        "notices": 0
+      },
+      "statements": [
+        {
+          "index": 0,
+          "kind": "ddl",
+          "raw_sql": "ALTER TABLE t12g ALTER CHECK chk_id NOT ENFORCED;",
+          "normalized_sql": "ALTER TABLE t12g ALTER CHECK chk_id NOT ENFORCED",
+          "findings": [
+            {
+              "rule_id": "ddl.constraint.check.not_enforced.notice",
+              "level": "blocker",
+              "message": "check constraint \"chk_id\" on table \"t12g\" is switched to NOT ENFORCED",
+              "statement_kind": "ddl",
+              "location": {
+                "line": 1,
+                "column": 1
+              },
+              "suggestion": "keep check constraints enforced, or confirm the disabled state is intentional",
+              "metadata": {
+                "action": "alter_check",
+                "constraint": "chk_id",
+                "enforced": "not_enforced",
+                "table": "t12g"
+              },
+              "explanation": {
+                "summary": "Check DDL constraint check not enforced notice",
+                "why": "The statement matched the shipped governance rule for this pattern.",
+                "risk": "Ignoring this rule can hide live-schema or instance-state risks that only metadata reveals.",
+                "suggestion": "keep check constraints enforced, or confirm the disabled state is intentional",
+                "metadata": {
+                  "status": "available",
+                  "note": "Live metadata is available, so this explanation can use schema or instance facts for a more accurate judgment."
+                }
+              }
+            }
+          ],
+          "coverage": {
+            "status": "complete"
+          }
+        }
+      ],
+      "version": {
+        "product": "tidb",
+        "version": "8.5.0",
+        "major": 8,
+        "minor": 5,
+        "patch": 0,
+        "source": "observed",
+        "validated_range": true
+      },
+      "fail_on_triggered": true,
+      "rule_summary": {
+        "loaded": 5,
+        "applicable": 2,
+        "skipped": []
+      },
+      "context": {
+        "mode": "metadata-aware",
+        "dialect": "tidb",
+        "dialect_source": "detected",
+        "schema": "golden",
+        "schema_source": "flag"
+      }
+    },
+    "version_evidence": {
+      "target_raw": null,
+      "target_canonical": null,
+      "observed_raw": "8.0.11-TiDB-v8.5.0",
+      "observed_canonical": {
+        "product": "tidb",
+        "version": "8.5.0"
+      },
+      "resolved": {
+        "product": "tidb",
+        "version": "8.5.0",
+        "major": 8,
+        "minor": 5,
+        "patch": 0,
+        "source": "observed",
+        "validated_range": true
+      }
+    },
+    "instance_facts": {
+      "tidb_enable_check_constraint": "ON"
+    }
+  },
+  "assertions": [
+    {
+      "name": "database reachable with expected version",
+      "ok": true,
+      "detail": "SELECT VERSION() rc=0 version='8.0.11-TiDB-v8.5.0' expected_contains='v8.5.0'"
+    },
+    {
+      "name": "setup flag-on return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "setup create-fixture return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "setup create-fixture: check stored under flag ON",
+      "ok": true,
+      "detail": "rc=0 output='1' expected='1'"
+    },
+    {
+      "name": "instance fact tidb_enable_check_constraint",
+      "ok": true,
+      "detail": "tidb_enable_check_constraint='ON' expected='ON'"
+    },
+    {
+      "name": "exit code",
+      "ok": true,
+      "detail": "rc=1 expected=1"
+    },
+    {
+      "name": "verdict",
+      "ok": true,
+      "detail": "verdict='reject'"
+    },
+    {
+      "name": "top-level statements",
+      "ok": true,
+      "detail": "statements=1 expected=1"
+    },
+    {
+      "name": "zero findings",
+      "ok": true,
+      "detail": "findings=1"
+    },
+    {
+      "name": "no diagnostics",
+      "ok": true,
+      "detail": "diagnostics=[]"
+    },
+    {
+      "name": "no unsupported",
+      "ok": true,
+      "detail": "unsupported=[]"
+    },
+    {
+      "name": "aggregate coverage",
+      "ok": true,
+      "detail": "coverage='complete'"
+    },
+    {
+      "name": "evidence gap count",
+      "ok": true,
+      "detail": "gaps=0"
+    },
+    {
+      "name": "finding entries",
+      "ok": true,
+      "detail": "findings=[(0, 'ddl.constraint.check.not_enforced.notice', 'blocker')] expected=[(0, 'ddl.constraint.check.not_enforced.notice', 'blocker')]"
+    },
+    {
+      "name": "finding metadata (0, 'ddl.constraint.check.not_enforced.notice')",
+      "ok": true,
+      "detail": "findings=[{'action': 'alter_check', 'constraint': 'chk_id', 'enforced': 'not_enforced', 'table': 't12g'}] expected_subset={'table': 't12g', 'constraint': 'chk_id', 'enforced': 'not_enforced'}"
+    },
+    {
+      "name": "version identity",
+      "ok": true,
+      "detail": "version={'product': 'tidb', 'version': '8.5.0', 'major': 8, 'minor': 5, 'patch': 0, 'source': 'observed', 'validated_range': True} expected={'product': 'tidb', 'version': '8.5.0'}"
+    },
+    {
+      "name": "execute apply-audited-flip return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "execute violating-row-lands return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "execute violating-row-lands: negative id lands under NOT ENFORCED",
+      "ok": true,
+      "detail": "rc=0 output='1' expected='1'"
+    },
+    {
+      "name": "teardown clear-violating-row return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "teardown drop-t12g return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    }
+  ],
+  "status": "pass",
+  "command": [
+    "/Users/fan/GolangProjects/DeltaScope/docs/verification/t12r2tail/f843b2c992625a06abc3fd0cd13143aaaa30d2d8/golden/T12/bin/deltascope",
+    "audit",
+    "--dialect",
+    "tidb",
+    "--sql",
+    "ALTER TABLE t12g ALTER CHECK chk_id NOT ENFORCED;",
+    "--config",
+    "/Users/fan/GolangProjects/DeltaScope/docs/verification/t12r2tail/f843b2c992625a06abc3fd0cd13143aaaa30d2d8/golden/T12/golden-policy-t12-all.yaml",
+    "--format",
+    "json",
+    "--host",
+    "127.0.0.1",
+    "--port",
+    "24000",
+    "--user",
+    "root",
+    "--schema",
+    "golden"
+  ]
+}

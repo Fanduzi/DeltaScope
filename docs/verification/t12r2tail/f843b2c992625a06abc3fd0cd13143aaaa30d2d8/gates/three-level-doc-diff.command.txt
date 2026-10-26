@@ -1,0 +1,1 @@
+git diff --name-only --diff-filter=ACMR 0c7ee19f..f843b2c9 + per-source-file module README presence check

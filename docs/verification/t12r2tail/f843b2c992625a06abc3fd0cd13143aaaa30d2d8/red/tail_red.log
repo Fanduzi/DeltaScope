@@ -1,0 +1,41 @@
+=== RUN   TestT12R2TailDashDashExprKeepsExplicitClauseOn57
+=== PAUSE TestT12R2TailDashDashExprKeepsExplicitClauseOn57
+=== RUN   TestT12R2TailDashDashRealCommentStillComment
+=== PAUSE TestT12R2TailDashDashRealCommentStillComment
+=== RUN   TestT12R2TailGenericDropUnvouchesPK
+=== PAUSE TestT12R2TailGenericDropUnvouchesPK
+=== RUN   TestT12R2TailGenericDropGapNamesPrimaryKeyFact
+=== PAUSE TestT12R2TailGenericDropGapNamesPrimaryKeyFact
+=== RUN   TestT12R2TailSameStmtDropCheckUnblocksIdentity
+=== PAUSE TestT12R2TailSameStmtDropCheckUnblocksIdentity
+=== RUN   TestT12R2TailUnrelatedDropCheckKeepsIdentityRefusal
+=== PAUSE TestT12R2TailUnrelatedDropCheckKeepsIdentityRefusal
+=== RUN   TestT12R2TailGenericSpellingAndUnprovenDrop
+=== PAUSE TestT12R2TailGenericSpellingAndUnprovenDrop
+=== CONT  TestT12R2TailDashDashExprKeepsExplicitClauseOn57
+=== CONT  TestT12R2TailSameStmtDropCheckUnblocksIdentity
+=== CONT  TestT12R2TailGenericSpellingAndUnprovenDrop
+=== CONT  TestT12R2TailGenericDropUnvouchesPK
+=== CONT  TestT12R2TailGenericDropGapNamesPrimaryKeyFact
+=== CONT  TestT12R2TailDashDashRealCommentStillComment
+=== CONT  TestT12R2TailUnrelatedDropCheckKeepsIdentityRefusal
+--- PASS: TestT12R2TailUnrelatedDropCheckKeepsIdentityRefusal (0.00s)
+=== NAME  TestT12R2TailGenericDropUnvouchesPK
+    batch_state_t12r2tail_test.go:143: PK possibly removed by the generic drop must be unvouched: &{Name:PRIMARY Kind:primary Columns:[id] KeyParts:[] Cardinality:<nil> AccessMethod: IncludedColumns:[] HasPredicate:false HasExpressionKeys:false ExpressionCount:0 PrefixParts:0 DescParts:0 MultiValuedParts:0 Visibility: VisibilityExplicit:false UnmodeledKeyParts:0 DirectionUnknownParts:0 Global:false PrimaryKeyType: UnmodeledOptions:[] NameUnknown:false} unknown=false
+=== NAME  TestT12R2TailSameStmtDropCheckUnblocksIdentity
+    batch_state_t12r2tail_test.go:281: "ALTER TABLE t DROP CHECK chk_a, RENAME COLUMN a TO a2;" fabricated a refusal that keeps chk_a — the same-statement drop already removed it
+--- FAIL: TestT12R2TailGenericDropUnvouchesPK (0.00s)
+--- FAIL: TestT12R2TailSameStmtDropCheckUnblocksIdentity (0.00s)
+=== NAME  TestT12R2TailGenericSpellingAndUnprovenDrop
+    batch_state_t12r2tail_test.go:363: generic drop + rename must not fabricate a preserved pre-state: &{Schema: Exists:true Table:0x34058811c0c0 Columns:[{Name:a Type:int Length:0 Charset: Collation: Comment: Unsigned:false NotNull:false AutoIncrement:false HasDefault:false DefaultValue: DefaultKind: DefaultIsNull:false DefaultIsCurrentTimestamp:false OnUpdateCurrentTimestamp:false GeneratedWhen: IsIdentity:false IdentityOptions:map[] AutoRandom:false UnextractedOptions:[] Generated:<nil> DefaultExpression:<nil> Visibility: VisibilityExplicit:false DefaultParenthesized:false DefaultLiteral:<nil>} {Name:b Type:int Length:0 Charset: Collation: Comment: Unsigned:false NotNull:false AutoIncrement:false HasDefault:false DefaultValue: DefaultKind: DefaultIsNull:false DefaultIsCurrentTimestamp:false OnUpdateCurrentTimestamp:false GeneratedWhen: IsIdentity:false IdentityOptions:map[] AutoRandom:false UnextractedOptions:[] Generated:<nil> DefaultExpression:<nil> Visibility: VisibilityExplicit:false DefaultParenthesized:false DefaultLiteral:<nil>}] PrimaryKey:<nil> Indexes:[] Constraints:[{Type:check Name:chk_a Columns:[a] ReferencedSchema: ReferencedTable: ReferencedColumns:[] UnmodeledParts:0 UnmodeledReferencedParts:0 OnDelete: OnUpdate: UnmodeledReferActions:0 Enforced:enforced EnforcedExplicit:false EnforcedUnproven:false Expression:<nil> InColumn:false NameUnknown:false}] Options:map[] PrimaryKeyIsHandle:false PrimaryKeyHandleUnknown:false PrimaryKeyClustered:false PrimaryKeyClusteredUnknown:false PrimaryKeyUnknown:false IndexesUnknown:false ConstraintsUnknown:false IndexOrderCatalog:false IndexNamesUnknown:false Partitioned:<nil>}
+--- FAIL: TestT12R2TailGenericSpellingAndUnprovenDrop (0.00s)
+=== NAME  TestT12R2TailGenericDropGapNamesPrimaryKeyFact
+    batch_state_t12r2tail_test.go:251: only the PK fact is missing — RequiredFacts must be exactly [target_table.primary_key]: [target_table.constraints target_table.indexes]
+--- FAIL: TestT12R2TailGenericDropGapNamesPrimaryKeyFact (0.01s)
+=== NAME  TestT12R2TailDashDashExprKeepsExplicitClauseOn57
+    batch_state_t12r2tail_test.go:41: -- inside the expression swallowed the authored clause; refused declaration misreported as ignored: {RuleID:ddl.constraint.check.ignored.notice Level:blocker Message:check constraint "(unnamed)" on table "t" is parsed but ignored on this product StatementIndex:0 StatementKind:ddl Location:0x340587f4a420 Suggestion:verify the target product actually enforces check constraints before relying on this declaration Metadata:map[constraint: enforced:ignored table:t] Explanation:0x3405880a4190}
+--- FAIL: TestT12R2TailDashDashExprKeepsExplicitClauseOn57 (0.01s)
+--- PASS: TestT12R2TailDashDashRealCommentStillComment (0.01s)
+FAIL
+FAIL	github.com/Fanduzi/DeltaScope/internal/application/audit	0.336s
+FAIL

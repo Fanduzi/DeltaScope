@@ -1,0 +1,16 @@
+docs/decisions/2026-10-30-ddl-check-constraint-enforcement-state.md
+docs/work-plans/t12-check-enforcement/CONTRACT.md
+docs/work-plans/t12-check-enforcement/probes/r2/zz_r2tail_p4a_mysql57_dashdash.log
+docs/work-plans/t12-check-enforcement/probes/r2/zz_r2tail_p4d_mysql80_drop_rename.log
+internal/application/audit/README.md
+internal/application/audit/batch_state_fk.go
+internal/application/audit/batch_state_multi.go
+internal/application/audit/batch_state_t12r2tail_test.go
+internal/domain/rule/ddl/README.md
+internal/domain/rule/ddl/check_constraint_rules.go
+internal/infrastructure/parser/tidb/README.md
+internal/infrastructure/parser/tidb/extractor.go
+--- module README sync check ---
+SYNCED internal/application/audit/README.md
+SYNCED internal/domain/rule/ddl/README.md
+SYNCED internal/infrastructure/parser/tidb/README.md
