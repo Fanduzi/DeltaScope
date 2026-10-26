@@ -88,8 +88,11 @@ internal post-state plus a public successor gap-presence check.
 
 ## Golden suites (serial, shared anchors, bound to f843b2c9)
 
-`golden/<TASK>/artifact.json`, per-case records under `golden/<TASK>/cases/`,
-and the audited CLI build at `golden/<TASK>/bin/deltascope`.
+`golden/<TASK>/artifact.json` and per-case records under
+`golden/<TASK>/cases/` are committed; `cli.path` inside each artifact is a
+runtime path — the built binary itself is `.gitignore`d (`bin/`) and not
+readable from the repository tree. The artifact retains the build record
+(command, go version, `head_sha`) and the binary's sha256 fingerprint.
 
 | suite | cases | assertions | status |
 |-------|-------|------------|--------|
@@ -110,9 +113,10 @@ are the credentialed runs only.
 
 ## Observed vs unobserved
 
-Observed natively this round: 5.7.44 dash-dash lexing (3 forms), 8.0.46
-same-statement DROP CHECK + RENAME/CHANGE in both orders plus generic-spelling
-and surviving-CHECK controls.
+Observed natively this round: 5.7.44 dash-dash lexing (3 forms); 8.0.46
+same-statement DROP CHECK + RENAME in both action orders, DROP CHECK +
+CHANGE drop-first (the rename-first CHANGE order is unit-test coverage),
+plus generic-spelling and surviving-CHECK controls.
 Unobserved (modeled conservatively, no claim of proof): TiDB same-statement
 DROP CHECK + identity combinations, DROP CHECK + RENAME on versions other than
 8.0.46, full success templates for the unblocked identity action (successor

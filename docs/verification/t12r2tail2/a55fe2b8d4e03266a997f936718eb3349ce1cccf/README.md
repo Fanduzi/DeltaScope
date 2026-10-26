@@ -15,20 +15,22 @@ may hit (value 1) stayed in that shape, so a referencing member under an
 undecidable generic `DROP CONSTRAINT` still forced `identityScanRefused` —
 the maybe-dropped check ran too late to undo it.
 
-Fix: members split three ways (proven-removed / maybe-hit / definite). The
-refusal is evaluated on the definitely-remaining set only; a maybe-hit
-member that references (or may reference) the column makes the verdict
-undecidable before any refusal is honored; a proven removal still withholds
-the successor (unmodeled landing).
+Fix: members split three ways (proven-removed / maybe-hit / definite).
+The definite set is judged first — when it still carries a member
+referencing the column the refusal is proven and stands; only when the
+definite set cannot prove refusal does a maybe-hit member that references
+(or may reference) the column make the verdict undecidable; a proven
+removal still withholds the successor (unmodeled landing).
 
 ## Red baseline
 
 `red/tail2_red.log` — captured on the prior product (`f843b2c9`) before the
-fix: 10 failing cells — `UnprovenSiblingDropWithholdsSuccessor` all 8
-(kind `"unknown"`/`""` × RENAME both orders + CHANGE both orders) and
-`UnprovenSiblingDropSuccessorReport` both kinds (`gaps=[]` — old chk_a
-falsely bindable). The four controls already passed on the buggy product,
-as intended.
+fix. It is a pass/fail result summary — 12 `--- FAIL` markers (10 leaf
+cells: `UnprovenSiblingDropWithholdsSuccessor` all 8,
+kind `"unknown"`/`""` × RENAME both orders + CHANGE both orders;
+`UnprovenSiblingDropSuccessorReport` both kinds — plus the 2 parent tests)
+and the 4 controls passing on the buggy product as intended; it does not
+retain assertion diagnostic text.
 
 ## Regression cells (all green on a55fe2b8)
 
@@ -38,10 +40,12 @@ as intended.
   (2 kinds × 4 statements); internal post-state must be nil (withheld),
   never an exact pre-state.
 - `TestT12R2Tail2UnprovenSiblingDropSuccessorReport` — 2 `t.Run` cells on
-  the public two-statement Audit path asserting the successor's gap carries
-  `RuleID=ddl.alter.drop_check.exists.require` with
-  `RequiredFacts=[target_table.existence]`, no fabricated exists finding,
-  `Coverage=unverified`, `Verdict=review`.
+  the public two-statement Audit path asserting the successor's
+  findings/gaps/coverage/verdict report fields: a gap carrying
+  `RuleID=ddl.alter.drop_check.exists.require` whose RequiredFacts include
+  `target_table.existence` (containment checked, not exact array length),
+  no fabricated exists finding, `Coverage=unverified`, `Verdict=review`.
+  It does not read `Metadata.TargetTable` directly.
 - `TestT12R2Tail2SiblingDropControls` — 4 controls: proven-secondary same-name
   index keeps the unlock-withheld; proven-unique keeps the ambiguity refusal
   (exact pre-state); a definite second referencing member keeps the 3959
@@ -58,8 +62,11 @@ baseline files.
 
 ## Golden suites (serial, shared anchors, bound to a55fe2b8)
 
-`golden/<TASK>/artifact.json`, cases under `golden/<TASK>/cases/`, audited
-CLI at `golden/<TASK>/bin/deltascope`.
+`golden/<TASK>/artifact.json` and per-case records under
+`golden/<TASK>/cases/` are committed; `cli.path` inside each artifact is a
+runtime path — the built binary itself is `.gitignore`d (`bin/`) and not
+readable from the repository tree. The artifact retains the build record
+(command, go version, `head_sha`) and the binary's sha256 fingerprint.
 
 | suite | cases | assertions | status |
 |-------|-------|------------|--------|
@@ -79,8 +86,11 @@ CGO_ENABLED=0); `residual_containers=[]` per run.
   parent's first `Fatal`.
 - Green references point at real four-tuple names (`go_test______.*`,
   `go_race.*`); gate tuple suffixes documented as `.command/.stdout/
-  .stderr/.rc.txt`; golden index lists `cases/` and `bin/deltascope` paths
-  that exist.
+  .stderr/.rc.txt`; golden index lists `cases/` paths — `bin/deltascope`
+  is a runtime path, not committed (`.gitignore` covers `bin/`).
+- `gates/three-level-doc-diff.stderr.txt` was re-captured post-push on the
+  same `c70be195..a55fe2b8` range (the original stream was not persisted);
+  the command tuple records the supplement.
 - Assertion layers stated per item (A: public finding + internal post-state;
   B: public successor gaps; D: internal post-state + public gap).
 - Native probe scope corrected: RENAME both orders probed; CHANGE probed

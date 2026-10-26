@@ -1,1 +1,2 @@
 git diff --name-only --diff-filter=ACMR c70be195..a55fe2b8 + per-source-file module README presence check
+# supplement: stderr.txt re-captured post-push (original stream not persisted); same c70be195..a55fe2b8 range and check identity
