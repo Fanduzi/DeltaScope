@@ -170,6 +170,36 @@ encoded after a public-path red baseline:
    single-column limit is a DROP COLUMN rule only; the multi-column
    cascade is now a probed fact.
 
+## Amendment: R2-tail corrections (2026-10-26)
+
+Reviewer tail items A/B/D located three residual defects against the R2
+contract; each was re-probed natively (`probes/r2/zz_r2tail_*`) and
+encoded after a red baseline (`docs/verification/t12r2tail/`):
+
+1. **`--` is a comment only before whitespace/control.** Every `--`
+   comment check in `extractor.go` now routes through
+   `dashDashOpensComment`, matching the MySQL manual and the locked TiDB
+   lexer's `startWithDash`: `--` opens a comment only at end-of-input or
+   before a whitespace/control character. `v--1` is `v - -1`, so
+   `CHECK(v--1>0) NOT ENFORCED` keeps its authored clause and refuses
+   1064 on 5.7 — it can no longer masquerade as parsed-and-ignored.
+2. **Undecidable generic drops unvouch the PK too.**
+   `dropCheckUndecidable` evaluates the PK binding before its
+   collection-vouching early return, so a target name that could bind
+   the PK object unvouches the PK projection at member granularity — a
+   proven-absent PK stays absent and unrelated names never lower
+   certainty. Rule-layer gaps name the actually missing side through
+   `checkBindingGapFacts` (`target_table.primary_key` alone when that is
+   the only gap).
+3. **A same-statement proven DROP CHECK lifts the identity premise.**
+   Probed on 8.0.46: `DROP CHECK chk_a` plus `RENAME COLUMN a TO a2` or
+   `CHANGE COLUMN a a2 INT` lands in either action order; an unrelated
+   drop still refuses 3959 atomically. The premise scan subtracts
+   provably dropped members (`multiActionDroppedCheckNames` +
+   `multiActionIdentityCheckVerdict`) — a voided or unprovable answer
+   withholds the successor instead of fabricating a refusal that keeps
+   the old member and column.
+
 ## Consequences and deferred scope
 
 - Expression evaluation stays out of scope — facts, not semantics.

@@ -1,0 +1,31 @@
+== R2-tail P4a MySQL 5.7.44 dash-dash lexing (2026-10-26T16:33:50Z)
+    mysql: [Warning] Using a password on the command line interface can be insecure.
+    5.7.44
+mysql: [Warning] Using a password on the command line interface can be insecure.
+-- A: authored clause after v--1 expression
+  $ CREATE TABLE t12tail.t (id INT)
+  rc=0
+    mysql: [Warning] Using a password on the command line interface can be insecure.
+  $ ALTER TABLE t12tail.t ADD COLUMN v INT CHECK(v--1>0) NOT ENFORCED
+  rc=1
+    mysql: [Warning] Using a password on the command line interface can be insecure.
+    ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'NOT ENFORCED' at line 1
+  columns after refusal:
+    mysql: [Warning] Using a password on the command line interface can be insecure.
+    id
+-- A-c1: bare CHECK(v--1>0) control
+  $ ALTER TABLE t12tail.t ADD COLUMN v INT CHECK(v--1>0)
+  rc=0
+    mysql: [Warning] Using a password on the command line interface can be insecure.
+  columns after bare decl:
+    mysql: [Warning] Using a password on the command line interface can be insecure.
+    id,v
+-- A-c2: real '-- ' comment control
+  $ ALTER TABLE t12tail.t ADD COLUMN w INT CHECK(w>0) -- NOT ENFORCED inside comment
+  rc=0
+    mysql: [Warning] Using a password on the command line interface can be insecure.
+  columns after comment decl:
+    mysql: [Warning] Using a password on the command line interface can be insecure.
+    id,v,w
+mysql: [Warning] Using a password on the command line interface can be insecure.
+-- cleanup: dropped t12tail

@@ -55,13 +55,23 @@ func (s *batchState) prepareMultiAction(statement spec.Statement, targets []spec
 	// provably refused action at any position keeps the table's pre-state
 	// exactly — earlier siblings never partially publish (probed 8.0.46:
 	// a 1064/3959 action leaves every sibling column and member
-	// untouched). The CHECK-referenced rename/change premise is evaluated
-	// on the pre-state — the refusal does not depend on sibling order.
+	// untouched). The CHECK-referenced rename/change premise reads the
+	// pre-state minus the members the same statement's drop_check
+	// actions provably remove — the server resolves the constraint drop
+	// so a same-statement drop can lift the identity premise (probed
+	// 8.0.46, MySQL docs). When that happens the statement is neither a
+	// proven refusal nor publishable — the successor stays withheld.
+	dropped := multiActionDroppedCheckNames(s, ddl, entry.shape)
 	for i := range ddl.Alter {
 		alter := &ddl.Alter[i]
-		if multiActionCheckActionRefused(s, alter) ||
-			multiActionIdentityCheckRefused(s, alter, entry.shape) {
+		if multiActionCheckActionRefused(s, alter) {
 			return modifyPublication{replaceKey: primary, replace: entry}
+		}
+		switch multiActionIdentityCheckVerdict(s, alter, entry.shape, dropped) {
+		case identityScanRefused:
+			return modifyPublication{replaceKey: primary, replace: entry}
+		case identityScanUndecidable:
+			return invalidate(primary)
 		}
 	}
 	// Primary-object ledger: two actions operating on the same column
@@ -195,24 +205,105 @@ const (
 	multiActionApplyUnprovable
 )
 
-// multiActionIdentityCheckRefused reports whether a rename/change action
-// inside a multi-action statement provably refuses through the CHECK
-// identity premise — a proven member references the renamed column and
-// the arm answers 3959 (MySQL always; TiDB refuses RENAME but cascades
-// CHANGE). The premise is a statement-level validation read on the
-// pre-state — the same shape the server validates against before any
-// action executes — so sibling order cannot weaken it. Only the proven
-// refusal counts here; an unvouched member set or an arm that cannot
-// decide stays with the ordinary unprovable path.
-func multiActionIdentityCheckRefused(s *batchState, alter *spec.Alter, shape *spec.TableSnapshot) bool {
+// identityScanVerdict is the three-way answer a rename/change action's
+// CHECK premise gives at the whole-statement scan — proven refusal
+// (pre-state preserved), undecidable (withheld), or clean (the per-action
+// template decides).
+type identityScanVerdict int
+
+const (
+	identityScanClean identityScanVerdict = iota
+	identityScanRefused
+	identityScanUndecidable
+)
+
+// multiActionDroppedCheckNames collects the check members this
+// statement's drop_check actions provably remove (value 2) plus the
+// member names an unproven binding may still hit (value 1) — all
+// evaluated on the pre-state, the same shape the server validates
+// against. A refused binding (missing/wrong-kind/ambiguous) contributes
+// nothing: the statement refuses on that action and the referencing
+// member still vouches the identity premise.
+func multiActionDroppedCheckNames(s *batchState, ddl *spec.DDL, shape *spec.TableSnapshot) map[string]int {
+	dropped := map[string]int{}
+	for i := range ddl.Alter {
+		alter := &ddl.Alter[i]
+		if alter.Action != "drop_check" {
+			continue
+		}
+		name := strings.TrimSpace(alter.Name)
+		if name == "" {
+			continue
+		}
+		target := spec.CheckDropTarget(s.dialect, shape, alter.Options["check_spelling"], name)
+		switch target.Binding {
+		case spec.CheckTargetProven:
+			if target.Kind == spec.CheckTargetKindCheck && target.Constraint != nil {
+				dropped[strings.ToLower(target.Constraint.Name)] = 2
+			}
+		case spec.CheckTargetUnproven:
+			key := strings.ToLower(name)
+			if dropped[key] < 1 {
+				dropped[key] = 1
+			}
+		}
+	}
+	return dropped
+}
+
+// multiActionIdentityCheckVerdict answers a rename/change action's CHECK
+// premise inside a multi-action statement. The premise is evaluated on
+// the pre-state minus the check members sibling drop_check actions
+// provably remove — a proven drop lifts the premise natively, so the
+// statement is then undecidable in the bounded template rather than a
+// fabricated refusal preserving the old member and column. A member an
+// unproven sibling drop may hit keeps the whole outcome undecidable —
+// neither the refusal nor the landing is provable.
+func multiActionIdentityCheckVerdict(s *batchState, alter *spec.Alter, shape *spec.TableSnapshot, dropped map[string]int) identityScanVerdict {
 	if alter.Action != "rename_column" && alter.Action != "change_column" {
-		return false
+		return identityScanClean
 	}
 	oldName, newName, ok := columnIdentityNames(alter)
 	if !ok {
-		return false
+		return identityScanClean
 	}
-	return s.checkColumnIdentityOutcome(shape, alter.Action, oldName, newName) == checkIdentityRefused
+	effective := shape
+	if len(dropped) > 0 && shape != nil {
+		kept := make([]spec.Constraint, 0, len(shape.Constraints))
+		for _, member := range shape.Constraints {
+			if member.Type == "check" && dropped[strings.ToLower(member.Name)] == 2 {
+				continue
+			}
+			kept = append(kept, member)
+		}
+		if len(kept) != len(shape.Constraints) {
+			clone := *shape
+			clone.Constraints = kept
+			effective = &clone
+		}
+	}
+	switch s.checkColumnIdentityOutcome(effective, alter.Action, oldName, newName) {
+	case checkIdentityRefused:
+		return identityScanRefused
+	case checkIdentityUnsafe:
+		return identityScanUndecidable
+	}
+	if effective != shape {
+		// The refusal was voided only because a sibling provably drops
+		// the referencing member — the statement may land, but the drop
+		// itself is unmodeled, so neither answer is provable here.
+		return identityScanUndecidable
+	}
+	for i := range shape.Constraints {
+		member := &shape.Constraints[i]
+		if member.Type != "check" || dropped[strings.ToLower(member.Name)] != 1 {
+			continue
+		}
+		if checkMemberReferences(*member, oldName) || checkMayReferenceUnvouched(*member) {
+			return identityScanUndecidable
+		}
+	}
+	return identityScanClean
 }
 
 // multiActionCheckActionRefused reports whether a CHECK|CONSTRAINT

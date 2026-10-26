@@ -422,3 +422,39 @@ action, preserves the exact pre-state. TiDB flag-ON `CHANGE COLUMN`
 cascades every provably-referencing CHECK member — the single-column
 limit applies to DROP COLUMN only; the multi-column cascade is now
 probed, not extrapolated.
+
+### 5.8 T12-R2-tail corrections (reviewer tail items A/B/D)
+
+**A — `--` is a comment only before whitespace/control.** Every `--`
+line-comment check in `extractor.go` routes through
+`dashDashOpensComment`, matching the MySQL manual and the locked TiDB
+lexer's `startWithDash` rule: `--` opens a comment only at end-of-input
+or when the next byte is a whitespace/control character. `v--1` lexes as
+`v - -1`, so `CHECK(v--1>0) NOT ENFORCED` keeps its authored clause and
+refuses 1064 on 5.7 (probed: error near `'NOT ENFORCED'`, column never
+lands) instead of masquerading as parsed-and-ignored. Bare
+`CHECK(v--1>0)` and real `-- `/`--\t` comments keep their existing
+answers.
+
+**B — undecidable generic drops unvouch the PK too.**
+`dropCheckUndecidable` evaluates the PK binding before the
+collection-vouching early return: when any consulted name space is
+already unvouched and the target name could bind the PK object, the PK
+projection is unvouched (`unvouchPrimaryKeyObject`) at member
+granularity — no whole-table tombstone. A proven-absent PK stays absent
+and unrelated names never lower PK certainty. Rule-layer gaps follow the
+same attribution: `checkBindingGapFacts` emits exactly the unvouched
+sides — `target_table.primary_key` alone when that is the only missing
+fact — instead of the blanket constraints/indexes pair.
+
+**D — same-statement drops lift the identity premise.** The
+whole-statement premise scan evaluates a rename/change's CHECK premise
+on the pre-state minus the members same-statement `drop_check` actions
+provably remove (`multiActionDroppedCheckNames` +
+`multiActionIdentityCheckVerdict`): probed on 8.0.46, `DROP CHECK chk_a`
+plus `RENAME COLUMN a TO a2` or `CHANGE COLUMN a a2 INT` lands in either
+action order (columns `a2,b`, empty check catalog) while an unrelated
+drop still refuses 3959 atomically. A voided or unprovable answer
+withholds the successor — never a fabricated refusal preserving the old
+member and column. The earlier "the refusal does not depend on sibling
+order" contract wording was corrected accordingly.

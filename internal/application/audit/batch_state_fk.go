@@ -624,6 +624,20 @@ func (s *batchState) dropCheckUndecidable(key batchTableKey, entry *batchTableEn
 		}
 		return
 	}
+	// The PK answer is evaluated before the collection-vouching gate: an
+	// unvouched member name space cannot rule out that the generic
+	// spelling hit the PK object, so a possibly bound PK loses its proof
+	// even when the member collections were already unvouched.
+	pkFound := false
+	if pkName, proven := spec.PrimaryKeyObjectName(shape); proven && strings.EqualFold(pkName, name) {
+		pkFound = true
+	}
+	if shape.PrimaryKey != nil && !shape.PrimaryKeyUnknown && strings.EqualFold(name, "primary") {
+		pkFound = true
+	}
+	// `primary` with an unproven PK presence may still bind the object —
+	// a possible kind, never a definite one.
+	pkMayBind := shape.PrimaryKeyUnknown && strings.EqualFold(name, "primary")
 	// Generic or unproven spelling consults every collection.
 	unvouched := shape.CheckNameSpaceUnvouched() ||
 		shape.ForeignKeyNameSpaceUnvouched() ||
@@ -631,6 +645,12 @@ func (s *batchState) dropCheckUndecidable(key batchTableKey, entry *batchTableEn
 	if unvouched {
 		s.markConstraintsUnknown(key)
 		s.markIndexesUnknown(key)
+		if pkFound || pkMayBind {
+			// The name may have bound the PK object — a proven-present
+			// PK can no longer vouch presence; a proven-absent PK (nil
+			// object, no unvouched flag) never reaches this branch.
+			s.unvouchPrimaryKeyObject(key)
+		}
 		return
 	}
 	checkFound := shape.FindCheckConstraint(name) != nil
@@ -649,16 +669,6 @@ func (s *batchState) dropCheckUndecidable(key batchTableKey, entry *batchTableEn
 			indexKindUnproven = true
 		}
 	}
-	pkFound := false
-	if pkName, proven := spec.PrimaryKeyObjectName(shape); proven && strings.EqualFold(pkName, name) {
-		pkFound = true
-	}
-	if shape.PrimaryKey != nil && !shape.PrimaryKeyUnknown && strings.EqualFold(name, "primary") {
-		pkFound = true
-	}
-	// `primary` with an unproven PK presence may still bind the object —
-	// a possible kind, never a definite one.
-	pkMayBind := shape.PrimaryKeyUnknown && strings.EqualFold(name, "primary")
 	definiteCount := 0
 	for _, found := range []bool{checkFound, fkFound, indexMember != nil || pkFound} {
 		if found {

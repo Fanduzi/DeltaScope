@@ -1,0 +1,58 @@
+== R2-tail P4d MySQL 8.0.46 same-statement drop+identity (2026-10-26T16:38:29Z)
+    mysql: [Warning] Using a password on the command line interface can be insecure.
+    8.0.46
+mysql: [Warning] Using a password on the command line interface can be insecure.
+  $ CREATE TABLE t12tail.d1 (a INT, b INT, CONSTRAINT chk_a CHECK(a>0))
+  rc=0
+    mysql: [Warning] Using a password on the command line interface can be insecure.
+-- D1: DROP CHECK chk_a, RENAME COLUMN a TO a2 — drop first
+  columns: a,b
+  check catalog: chk_a
+  $ ALTER TABLE t12tail.d1 DROP CHECK chk_a, RENAME COLUMN a TO a2
+  rc=0
+    mysql: [Warning] Using a password on the command line interface can be insecure.
+  columns: a2,b
+  check catalog: NULL
+-- D2: RENAME first, DROP CHECK second — reverse order
+  $ CREATE TABLE t12tail.d2 (a INT, b INT, CONSTRAINT chk_a CHECK(a>0))
+  rc=0
+    mysql: [Warning] Using a password on the command line interface can be insecure.
+  columns: a,b
+  check catalog: chk_a
+  $ ALTER TABLE t12tail.d2 RENAME COLUMN a TO a2, DROP CHECK chk_a
+  rc=0
+    mysql: [Warning] Using a password on the command line interface can be insecure.
+  columns: a2,b
+  check catalog: NULL
+-- D3: DROP CHECK + CHANGE COLUMN — change family
+  $ CREATE TABLE t12tail.d3 (a INT, b INT, CONSTRAINT chk_a CHECK(a>0))
+  rc=0
+    mysql: [Warning] Using a password on the command line interface can be insecure.
+  columns: a,b
+  check catalog: chk_a
+  $ ALTER TABLE t12tail.d3 DROP CHECK chk_a, CHANGE COLUMN a a2 INT
+  rc=0
+    mysql: [Warning] Using a password on the command line interface can be insecure.
+  columns: a2,b
+  check catalog: NULL
+-- D4: generic CONSTRAINT spelling same-statement
+  $ CREATE TABLE t12tail.d4 (a INT, b INT, CONSTRAINT chk_a CHECK(a>0))
+  rc=0
+    mysql: [Warning] Using a password on the command line interface can be insecure.
+  $ ALTER TABLE t12tail.d4 DROP CONSTRAINT chk_a, RENAME COLUMN a TO a2
+  rc=0
+    mysql: [Warning] Using a password on the command line interface can be insecure.
+  columns: a2,b
+  check catalog: NULL
+-- D5: control — drop an unrelated check does not unblock
+  $ CREATE TABLE t12tail.d5 (a INT, b INT, CONSTRAINT chk_a CHECK(a>0), CONSTRAINT chk_b CHECK(b>0))
+  rc=0
+    mysql: [Warning] Using a password on the command line interface can be insecure.
+  $ ALTER TABLE t12tail.d5 DROP CHECK chk_b, RENAME COLUMN a TO a2
+  rc=1
+    mysql: [Warning] Using a password on the command line interface can be insecure.
+    ERROR 3959 (HY000) at line 1: Check constraint 'chk_a' uses column 'a', hence column cannot be dropped or renamed.
+  columns: a,b
+  check catalog: chk_a,chk_b
+mysql: [Warning] Using a password on the command line interface can be insecure.
+-- cleanup: dropped t12tail

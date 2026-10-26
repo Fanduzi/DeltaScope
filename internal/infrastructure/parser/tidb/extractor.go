@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"unicode"
 
 	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
 	"github.com/pingcap/tidb/pkg/parser/ast"
@@ -850,7 +851,7 @@ func splitAlterTableClauses(sql string) []string {
 		case '\'', '"', '`':
 			quote = char
 		case '-':
-			if i+1 < len(sql) && sql[i+1] == '-' {
+			if dashDashOpensComment(sql, i) {
 				for i < len(sql) && sql[i] != '\n' {
 					i++
 				}
@@ -2759,7 +2760,7 @@ func sqlBareWords(text string) []string {
 				}
 				i++
 			}
-		case c == '-' && i+1 < n && text[i+1] == '-':
+		case c == '-' && dashDashOpensComment(text, i):
 			for i < n && text[i] != '\n' {
 				i++
 			}
@@ -2869,6 +2870,17 @@ func clauseDeclaresEnforced(clause string) bool {
 	return false
 }
 
+// dashDashOpensComment reports whether the `--` at text[i] opens a MySQL
+// line comment — only at end-of-input or when a whitespace/control
+// character follows (the MySQL manual's comment syntax and the locked
+// TiDB lexer's startWithDash rule). `v--1` is `v - -1`, never a comment,
+// so the closing paren and an authored [NOT] ENFORCED clause after it
+// still reach the attribution scan.
+func dashDashOpensComment(text string, i int) bool {
+	return i+1 < len(text) && text[i+1] == '-' &&
+		(i+2 >= len(text) || unicode.IsSpace(rune(text[i+2])))
+}
+
 // skipCommentOrQuoted returns the index just past a comment or quoted
 // section starting at i, or i itself when the position starts neither.
 func skipCommentOrQuoted(text string, i int) int {
@@ -2893,7 +2905,7 @@ func skipCommentOrQuoted(text string, i int) int {
 		}
 		return i
 	case '-':
-		if i+1 < n && text[i+1] == '-' {
+		if dashDashOpensComment(text, i) {
 			for i < n && text[i] != '\n' {
 				i++
 			}
@@ -3042,7 +3054,7 @@ func createTableElementBody(rawSQL string) string {
 		case '\'', '"', '`':
 			quote = c
 		case '-':
-			if i+1 < len(rawSQL) && rawSQL[i+1] == '-' {
+			if dashDashOpensComment(rawSQL, i) {
 				for i < len(rawSQL) && rawSQL[i] != '\n' {
 					i++
 				}

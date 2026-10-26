@@ -254,6 +254,50 @@ func checkAlterTargetBinding(dialect spec.Dialect, snapshot *spec.TableSnapshot,
 	return spec.CheckAlterTarget(dialect, snapshot, alter.Options["check_spelling"], name).Binding
 }
 
+// checkBindingGapFacts attributes the member/identity facts a
+// CheckTargetUnproven binding actually lacked: each unvouched name space
+// the spelling consulted, the indexes fact when a proven name carries an
+// unproven stored kind, and target_table.primary_key when an unproven PK
+// presence may hide a `primary` binding. The CHECK spelling only ever
+// consults the check name space. A binding left unproven by a semantic
+// boundary alone (TiDB's non-check-only arm) owes the broad pair it
+// always did — no member fact is missing there.
+func checkBindingGapFacts(snapshot *spec.TableSnapshot, spelling, name string) []string {
+	facts := []string{}
+	add := func(fact string) {
+		for _, existing := range facts {
+			if existing == fact {
+				return
+			}
+		}
+		facts = append(facts, fact)
+	}
+	if snapshot.CheckNameSpaceUnvouched() {
+		add("target_table.constraints")
+	}
+	if spelling != spec.CheckSpellingCheck {
+		if snapshot.ForeignKeyNameSpaceUnvouched() {
+			add("target_table.constraints")
+		}
+		if snapshot.IndexNameSpaceUnvouched() {
+			add("target_table.indexes")
+		} else if member := snapshot.FindProvenIndex(name); member != nil {
+			switch member.Kind {
+			case spec.IndexKindUnique, spec.IndexKindPrimary, spec.IndexKindSecondary:
+			default:
+				add("target_table.indexes")
+			}
+		}
+		if strings.EqualFold(name, "primary") && snapshot.PrimaryKeyUnknown {
+			add("target_table.primary_key")
+		}
+	}
+	if len(facts) == 0 {
+		return []string{"target_table.constraints", "target_table.indexes"}
+	}
+	return facts
+}
+
 func (r *alterCheckExistsRule) Evaluate(_ context.Context, statement spec.Statement) ([]rule.Finding, error) {
 	if !r.AppliesTo(statement) {
 		return nil, nil
@@ -329,7 +373,7 @@ func (r *alterCheckExistsRule) EvidenceGaps(statement spec.Statement) []rule.Evi
 		if checkAlterTargetBinding(statement.Dialect, snapshot, alter, name) == spec.CheckTargetUnproven {
 			return []rule.EvidenceGap{{
 				ReasonCode:    gapReasonUnknownTableState,
-				RequiredFacts: []string{"target_table.constraints"},
+				RequiredFacts: checkBindingGapFacts(snapshot, alter.Options["check_spelling"], name),
 			}}
 		}
 	}
@@ -431,7 +475,7 @@ func (r *dropCheckExistsRule) EvidenceGaps(statement spec.Statement) []rule.Evid
 		if checkDropTargetBinding(statement.Dialect, snapshot, alter, name) == spec.CheckTargetUnproven {
 			return []rule.EvidenceGap{{
 				ReasonCode:    gapReasonUnknownTableState,
-				RequiredFacts: []string{"target_table.constraints", "target_table.indexes"},
+				RequiredFacts: checkBindingGapFacts(snapshot, alter.Options["check_spelling"], name),
 			}}
 		}
 	}
