@@ -1,0 +1,48 @@
+docs/decisions/2026-11-05-ddl-partition-r2-remediation.md
+docs/work-plans/t13-partition-risk/CONTRACT.md
+docs/work-plans/t13-partition-risk/probes/README.md
+docs/work-plans/t13-partition-risk/probes/p10_tidb_validation_arms.log
+docs/work-plans/t13-partition-risk/probes/p11_subpartition_interval_bounds_inplace.log
+docs/work-plans/t13-partition-risk/probes/p9_engine_exchange.log
+docs/work-plans/t13-partition-risk/probes/probe10_tidb_validation.sh
+docs/work-plans/t13-partition-risk/probes/probe11_t13r2.sh
+docs/work-plans/t13-partition-risk/probes/probe9_t13r2.sh
+internal/application/audit/README.md
+internal/application/audit/batch_state.go
+internal/application/audit/batch_state_t13r1_test.go
+internal/application/audit/batch_state_t13r2_test.go
+internal/application/audit/coverage.go
+internal/application/audit/extract_partition_facts_t13r2_test.go
+internal/application/audit/metadata.go
+internal/domain/rule/ddl/README.md
+internal/domain/rule/ddl/partition_applicability_rules.go
+internal/domain/rule/ddl/partition_applicability_rules_t13r2_test.go
+internal/domain/rule/ddl/partition_applicability_rules_test.go
+internal/infrastructure/metadata/mysql/README.md
+internal/infrastructure/metadata/mysql/provider.go
+internal/infrastructure/metadata/mysql/provider_t10r2_test.go
+internal/infrastructure/metadata/mysql/provider_t10r4_test.go
+internal/infrastructure/metadata/mysql/provider_t10r5_test.go
+internal/infrastructure/metadata/mysql/provider_t13r2_test.go
+internal/infrastructure/parser/tidb/README.md
+internal/infrastructure/parser/tidb/extractor.go
+scripts/t06a17proof/main_test.go
+testdata/ddl-golden/T13.json
+testdata/sql-corpus/mysql/ddl/findings/alter_table_partition_applicability.expected.yaml
+testdata/sql-corpus/tidb/ddl/findings/alter_table_partition_applicability.expected.yaml
+internal/application/audit/batch_state.go: SYNCED
+internal/application/audit/batch_state_t13r1_test.go: SYNCED
+internal/application/audit/batch_state_t13r2_test.go: SYNCED
+internal/application/audit/coverage.go: SYNCED
+internal/application/audit/extract_partition_facts_t13r2_test.go: SYNCED
+internal/application/audit/metadata.go: SYNCED
+internal/domain/rule/ddl/partition_applicability_rules.go: SYNCED
+internal/domain/rule/ddl/partition_applicability_rules_t13r2_test.go: SYNCED
+internal/domain/rule/ddl/partition_applicability_rules_test.go: SYNCED
+internal/infrastructure/metadata/mysql/provider.go: SYNCED
+internal/infrastructure/metadata/mysql/provider_t10r2_test.go: SYNCED
+internal/infrastructure/metadata/mysql/provider_t10r4_test.go: SYNCED
+internal/infrastructure/metadata/mysql/provider_t10r5_test.go: SYNCED
+internal/infrastructure/metadata/mysql/provider_t13r2_test.go: SYNCED
+internal/infrastructure/parser/tidb/extractor.go: SYNCED
+RESULT: PASS

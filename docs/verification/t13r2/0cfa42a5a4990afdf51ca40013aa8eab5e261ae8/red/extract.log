@@ -1,0 +1,28 @@
+--- FAIL: TestT13R2UnboundedPartitionsNeverExpands (0.00s)
+panic: runtime error: makeslice: cap out of range [recovered, repanicked]
+
+goroutine 35 [running]:
+testing.tRunner.func1.2({0x101345720, 0x10141afb0})
+	/Users/fan/.asdf/installs/golang/1.26.1/go/src/testing/testing.go:1974 +0x1a0
+testing.tRunner.func1()
+	/Users/fan/.asdf/installs/golang/1.26.1/go/src/testing/testing.go:1977 +0x318
+panic({0x101345720?, 0x10141afb0?})
+	/Users/fan/.asdf/installs/golang/1.26.1/go/src/runtime/panic.go:860 +0x12c
+github.com/Fanduzi/DeltaScope/internal/infrastructure/parser/tidb.partitionMemberNames(0x2697cc6fc000)
+	/Users/fan/GolangProjects/DeltaScope/internal/infrastructure/parser/tidb/extractor.go:2228 +0x70
+github.com/Fanduzi/DeltaScope/internal/infrastructure/parser/tidb.extractCreateTable(0x2697cc6fa000, {0x100d2983c, 0x4d})
+	/Users/fan/GolangProjects/DeltaScope/internal/infrastructure/parser/tidb/extractor.go:273 +0x1d0
+github.com/Fanduzi/DeltaScope/internal/infrastructure/parser/tidb.tidbExtractor.Extract({{0x100ca5239, 0x3}, {0x101d5dbc0, 0x0, 0x0}, {0x10142c8a0, 0x2697cc6fa000}, 0x0}, {0x100ca61e8, 0x5}, ...)
+	/Users/fan/GolangProjects/DeltaScope/internal/infrastructure/parser/tidb/extractor.go:80 +0x2a4
+github.com/Fanduzi/DeltaScope/internal/application/audit.Extract({0x101424788, 0x101d5dbc0}, {{0x100ca61e8, 0x5}, {0x2697cca340c0, 0x1, 0x1}, {0x0, 0x0, 0x0}, ...})
+	/Users/fan/GolangProjects/DeltaScope/internal/application/audit/extract.go:21 +0x14c
+github.com/Fanduzi/DeltaScope/internal/application/audit.t13r1ExtractOne(0x2697cc7d0d88, {0x100ca61e8, 0x5}, {0x100d2983c, 0x4d})
+	/Users/fan/GolangProjects/DeltaScope/internal/application/audit/extract_partition_facts_test.go:20 +0x18c
+github.com/Fanduzi/DeltaScope/internal/application/audit.TestT13R2UnboundedPartitionsNeverExpands(0x2697cc7d0d88)
+	/Users/fan/GolangProjects/DeltaScope/internal/application/audit/extract_partition_facts_t13r2_test.go:59 +0x8c
+testing.tRunner(0x2697cc7d0d88, 0x101416168)
+	/Users/fan/.asdf/installs/golang/1.26.1/go/src/testing/testing.go:2036 +0xc4
+created by testing.(*T).Run in goroutine 1
+	/Users/fan/.asdf/installs/golang/1.26.1/go/src/testing/testing.go:2101 +0x3a8
+FAIL	github.com/Fanduzi/DeltaScope/internal/application/audit	0.350s
+FAIL

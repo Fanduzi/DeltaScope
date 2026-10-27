@@ -1,0 +1,31 @@
+--- FAIL: TestT13R2CounterpartPKAbsenceHonored (0.00s)
+    partition_applicability_rules_t13r2_test.go:116: proven PK absence vs proven PK must block with 1736, got []rule.Finding{}
+--- FAIL: TestT13R2CounterpartSharedComparePremise (0.00s)
+    --- FAIL: TestT13R2CounterpartSharedComparePremise/column_count_blocks_while_pk_unproven (0.00s)
+        partition_applicability_rules_t13r2_test.go:178: proven column-count difference must block independently, got []rule.Finding{}
+--- FAIL: TestT13R2CounterpartEngineApplicability (0.00s)
+    --- FAIL: TestT13R2CounterpartEngineApplicability/mysql_mismatch_blocks_1497 (0.00s)
+        partition_applicability_rules_t13r2_test.go:326: engine mismatch must block once with 1497, got []rule.Finding{}
+    --- FAIL: TestT13R2CounterpartEngineApplicability/mysql_unobserved_side_owes_engine_fact (0.00s)
+        partition_applicability_rules_t13r2_test.go:358: unobserved counterpart engine owes exchange_table.engine, got []
+--- FAIL: TestT13R2TargetRuleOwnsItsPremises (0.00s)
+    --- FAIL: TestT13R2TargetRuleOwnsItsPremises/truncate_partition (0.00s)
+        --- FAIL: TestT13R2TargetRuleOwnsItsPremises/truncate_partition/partitioned_unobserved (0.00s)
+            partition_applicability_rules_t13r2_test.go:228: truncate_partition/partitioned unobserved owes exactly one gap, got []
+        --- FAIL: TestT13R2TargetRuleOwnsItsPremises/truncate_partition/table_unobserved (0.00s)
+            partition_applicability_rules_t13r2_test.go:228: truncate_partition/table unobserved owes exactly one gap, got []
+    --- FAIL: TestT13R2TargetRuleOwnsItsPremises/drop_partition (0.00s)
+        --- FAIL: TestT13R2TargetRuleOwnsItsPremises/drop_partition/table_unobserved (0.00s)
+            partition_applicability_rules_t13r2_test.go:228: drop_partition/table unobserved owes exactly one gap, got []
+        --- FAIL: TestT13R2TargetRuleOwnsItsPremises/drop_partition/partitioned_unobserved (0.00s)
+            partition_applicability_rules_t13r2_test.go:228: drop_partition/partitioned unobserved owes exactly one gap, got []
+    --- FAIL: TestT13R2TargetRuleOwnsItsPremises/exchange_partition (0.00s)
+        --- FAIL: TestT13R2TargetRuleOwnsItsPremises/exchange_partition/table_unobserved (0.00s)
+            partition_applicability_rules_t13r2_test.go:228: exchange_partition/table unobserved owes exactly one gap, got []
+        --- FAIL: TestT13R2TargetRuleOwnsItsPremises/exchange_partition/partitioned_unobserved (0.00s)
+            partition_applicability_rules_t13r2_test.go:228: exchange_partition/partitioned unobserved owes exactly one gap, got []
+--- FAIL: TestT13R2CounterpartComparesEffectiveTypes (0.00s)
+    partition_applicability_rules_t13r2_test.go:55: effective-equal definitions must not fabricate 1736, got []rule.Finding{rule.Finding{RuleID:"", Level:"blocker", Message:"ALTER TABLE exchange partition counterpart \"t2\" has a different definition (native 1736)", StatementIndex:0, StatementKind:"", Location:(*rule.Location)(nil), Suggestion:"verify the counterpart is a non-partitioned table with a matching definition", Metadata:map[string]interface {}{"action":"exchange_partition", "exchange_schema":"", "exchange_table":"t2", "exists":"true", "native_error":"1736", "partition":"p0", "reason_code":"counterpart_definition_mismatch", "table":"t"}, Explanation:(*rule.FindingExplanation)(nil)}}
+FAIL
+FAIL	github.com/Fanduzi/DeltaScope/internal/domain/rule/ddl	0.254s
+FAIL

@@ -1,0 +1,7 @@
+--- FAIL: TestT13R2SubpartitionedCatalogKeepsNamesUnobserved (0.00s)
+    provider_t13r2_test.go:47: LoadTableSnapshot: load table golden.t partition state: scan partition for table golden.t: sql: expected 3 destination arguments in Scan, not 2
+--- FAIL: TestT13R2PlainCatalogStillComplete (0.00s)
+    provider_t13r2_test.go:85: LoadTableSnapshot: load table golden.t partition state: scan partition for table golden.t: sql: expected 3 destination arguments in Scan, not 2
+FAIL
+FAIL	github.com/Fanduzi/DeltaScope/internal/infrastructure/metadata/mysql	0.329s
+FAIL

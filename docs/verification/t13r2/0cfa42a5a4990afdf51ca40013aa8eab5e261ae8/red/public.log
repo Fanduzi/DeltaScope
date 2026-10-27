@@ -1,0 +1,20 @@
+--- FAIL: TestT13R2ExchangeOnlyMetadataMounts (0.01s)
+    batch_state_t13r2_test.go:195: mounted exchange fact must prove 1732, got findings=[]rule.Finding(nil) gaps=[{RuleID:ddl.alter.exchange_partition.counterpart ReasonCode:unknown_table_state RequiredFacts:[exchange_table.existence]}]
+--- FAIL: TestT13R2IntervalDirectoryStaysUnknown (0.01s)
+    batch_state_t13r2_test.go:142: unexpanded interval directory must not judge member absence, got []rule.Finding{rule.Finding{RuleID:"ddl.alter.truncate_partition.target", Level:"blocker", Message:"ALTER TABLE truncate partition names partition \"p_lt_10\", which is not a member of the table (native 1735)", StatementIndex:1, StatementKind:"ddl", Location:(*rule.Location)(0x4d9d8464e070), Suggestion:"verify the partition name against the observed member set", Metadata:map[string]interface {}{"action":"truncate_partition", "exists":"false", "native_error":"1735", "partition":"p_lt_10", "reason_code":"partition_absent", "table":"t"}, Explanation:(*rule.FindingExplanation)(0x4d9d83e1c320)}}
+--- FAIL: TestT13R2UnprovenModifierKeepsCoverageBoundary (0.01s)
+    batch_state_t13r2_test.go:234: unproven ALGORITHM=COPY combination must not report complete, got complete
+--- FAIL: TestT13R2SubpartitionedDirectoryStaysUnknown (0.01s)
+    batch_state_t13r2_test.go:113: unprojected leaf must not be judged proven-absent, got []rule.Finding{rule.Finding{RuleID:"ddl.alter.exchange_partition.target", Level:"blocker", Message:"ALTER TABLE exchange partition names partition \"p0sp0\", which is not a member of the table (native 1735)", StatementIndex:2, StatementKind:"ddl", Location:(*rule.Location)(0x4d9d8457e0a0), Suggestion:"verify the partition name against the observed member set", Metadata:map[string]interface {}{"action":"exchange_partition", "exists":"false", "native_error":"1735", "partition":"p0sp0", "reason_code":"partition_absent", "table":"t"}, Explanation:(*rule.FindingExplanation)(0x4d9d843a8230)}}
+--- FAIL: TestT13R2DropPostStateSurvivorAndModifier (0.01s)
+    batch_state_t13r2_test.go:96: modifier+drop must leave the same precise post-state, got []rule.Finding(nil)
+--- FAIL: TestT13R2DropPostStateSuccessorTargets (0.00s)
+    --- FAIL: TestT13R2DropPostStateSuccessorTargets/successor_drop (0.01s)
+        batch_state_t13r2_test.go:71: dropped member must not stay proven — ALTER TABLE t DROP PARTITION p0 owes partition_absent/1507, got []rule.Finding(nil)
+    --- FAIL: TestT13R2DropPostStateSuccessorTargets/successor_exchange (0.01s)
+        batch_state_t13r2_test.go:71: dropped member must not stay proven — ALTER TABLE t EXCHANGE PARTITION p0 WITH TABLE x owes partition_absent/1735, got []rule.Finding(nil)
+    --- FAIL: TestT13R2DropPostStateSuccessorTargets/successor_truncate (0.01s)
+        batch_state_t13r2_test.go:71: dropped member must not stay proven — ALTER TABLE t TRUNCATE PARTITION p0 owes partition_absent/1735, got []rule.Finding(nil)
+FAIL
+FAIL	github.com/Fanduzi/DeltaScope/internal/application/audit	0.359s
+FAIL
