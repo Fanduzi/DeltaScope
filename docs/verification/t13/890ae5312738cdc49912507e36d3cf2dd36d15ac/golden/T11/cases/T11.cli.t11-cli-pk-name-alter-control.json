@@ -1,0 +1,156 @@
+{
+  "case_id": "T11.cli.t11-cli-pk-name-alter-control",
+  "kind": "cli_audit",
+  "cli_case": "t11-cli-pk-name-alter-control",
+  "dialect": "mysql",
+  "input_sql": "ALTER TABLE t ADD CONSTRAINT bad PRIMARY KEY (a);",
+  "policy_profile": "t11-pk-name",
+  "policy_path": "/private/tmp/ddl-golden-f13/T11/golden-policy-t11-pk-name.yaml",
+  "command": [
+    "/private/tmp/ddl-golden-f13/T11/bin/deltascope",
+    "audit",
+    "--dialect",
+    "mysql",
+    "--sql",
+    "ALTER TABLE t ADD CONSTRAINT bad PRIMARY KEY (a);",
+    "--config",
+    "/private/tmp/ddl-golden-f13/T11/golden-policy-t11-pk-name.yaml",
+    "--format",
+    "json"
+  ],
+  "expected": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "finding_entries": [
+      {
+        "index": 0,
+        "rule_id": "ddl.constraint.primary_key.name.prefix.require",
+        "level": "warning"
+      }
+    ]
+  },
+  "actual": {
+    "exit": 0,
+    "stdout": "{\"verdict\":\"review\",\"coverage\":{\"status\":\"complete\"},\"summary\":{\"statements\":1,\"blockers\":0,\"warnings\":1,\"notices\":0},\"statements\":[{\"index\":0,\"kind\":\"ddl\",\"raw_sql\":\"ALTER TABLE t ADD CONSTRAINT bad PRIMARY KEY (a);\",\"normalized_sql\":\"ALTER TABLE t ADD CONSTRAINT bad PRIMARY KEY (a)\",\"findings\":[{\"rule_id\":\"ddl.constraint.primary_key.name.prefix.require\",\"level\":\"warning\",\"message\":\"primary key constraint name \\\"bad\\\" must start with \\\"pk_\\\"\",\"statement_kind\":\"ddl\",\"location\":{\"line\":1,\"column\":1},\"suggestion\":\"rename the primary key constraint to start with \\\"pk_\\\"\",\"metadata\":{\"name\":\"bad\",\"prefix\":\"pk_\",\"subject\":\"constraint.primary_key\",\"table\":\"t\"},\"explanation\":{\"summary\":\"Require DDL constraint primary key name prefix require\",\"why\":\"The statement is missing a clause, option, or object that the shipped policy requires.\",\"risk\":\"Ignoring this rule can weaken schema-governance guarantees and make changes harder to review safely.\",\"suggestion\":\"rename the primary key constraint to start with \\\"pk_\\\"\"}}],\"coverage\":{\"status\":\"complete\"}}],\"fail_on_triggered\":false,\"rule_summary\":{\"loaded\":1,\"applicable\":1,\"skipped\":[]},\"context\":{\"mode\":\"offline\",\"dialect\":\"mysql\",\"dialect_source\":\"flag\",\"note\":\"existence not checked (no database connection)\",\"unproven\":[\"column_exists\",\"table_exists\"]}}\n",
+    "stderr": "",
+    "parsed": {
+      "verdict": "review",
+      "coverage": {
+        "status": "complete"
+      },
+      "summary": {
+        "statements": 1,
+        "blockers": 0,
+        "warnings": 1,
+        "notices": 0
+      },
+      "statements": [
+        {
+          "index": 0,
+          "kind": "ddl",
+          "raw_sql": "ALTER TABLE t ADD CONSTRAINT bad PRIMARY KEY (a);",
+          "normalized_sql": "ALTER TABLE t ADD CONSTRAINT bad PRIMARY KEY (a)",
+          "findings": [
+            {
+              "rule_id": "ddl.constraint.primary_key.name.prefix.require",
+              "level": "warning",
+              "message": "primary key constraint name \"bad\" must start with \"pk_\"",
+              "statement_kind": "ddl",
+              "location": {
+                "line": 1,
+                "column": 1
+              },
+              "suggestion": "rename the primary key constraint to start with \"pk_\"",
+              "metadata": {
+                "name": "bad",
+                "prefix": "pk_",
+                "subject": "constraint.primary_key",
+                "table": "t"
+              },
+              "explanation": {
+                "summary": "Require DDL constraint primary key name prefix require",
+                "why": "The statement is missing a clause, option, or object that the shipped policy requires.",
+                "risk": "Ignoring this rule can weaken schema-governance guarantees and make changes harder to review safely.",
+                "suggestion": "rename the primary key constraint to start with \"pk_\""
+              }
+            }
+          ],
+          "coverage": {
+            "status": "complete"
+          }
+        }
+      ],
+      "fail_on_triggered": false,
+      "rule_summary": {
+        "loaded": 1,
+        "applicable": 1,
+        "skipped": []
+      },
+      "context": {
+        "mode": "offline",
+        "dialect": "mysql",
+        "dialect_source": "flag",
+        "note": "existence not checked (no database connection)",
+        "unproven": [
+          "column_exists",
+          "table_exists"
+        ]
+      }
+    },
+    "version_evidence": {
+      "target_raw": null,
+      "target_canonical": null,
+      "observed_raw": null,
+      "observed_canonical": null,
+      "resolved": null
+    }
+  },
+  "assertions": [
+    {
+      "name": "exit code",
+      "ok": true,
+      "detail": "rc=0 expected=0"
+    },
+    {
+      "name": "verdict",
+      "ok": true,
+      "detail": "verdict='review'"
+    },
+    {
+      "name": "top-level statements",
+      "ok": true,
+      "detail": "statements=1 expected=1"
+    },
+    {
+      "name": "zero findings",
+      "ok": true,
+      "detail": "findings=1"
+    },
+    {
+      "name": "no diagnostics",
+      "ok": true,
+      "detail": "diagnostics=[]"
+    },
+    {
+      "name": "no unsupported",
+      "ok": true,
+      "detail": "unsupported=[]"
+    },
+    {
+      "name": "aggregate coverage",
+      "ok": true,
+      "detail": "coverage='complete'"
+    },
+    {
+      "name": "finding entries",
+      "ok": true,
+      "detail": "findings=[(0, 'ddl.constraint.primary_key.name.prefix.require', 'warning')] expected=[(0, 'ddl.constraint.primary_key.name.prefix.require', 'warning')]"
+    }
+  ],
+  "status": "pass"
+}

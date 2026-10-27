@@ -1,0 +1,14 @@
+# github.com/Fanduzi/DeltaScope/internal/domain/rule/ddl [github.com/Fanduzi/DeltaScope/internal/domain/rule/ddl.test]
+internal/domain/rule/ddl/partition_rules_test.go:35:12: undefined: newDropPartitionForbidRule
+internal/domain/rule/ddl/partition_rules_test.go:40:41: unknown field Partitions in struct literal of type spec.Alter
+internal/domain/rule/ddl/partition_rules_test.go:67:12: undefined: newTruncatePartitionForbidRule
+internal/domain/rule/ddl/partition_rules_test.go:72:45: unknown field Partitions in struct literal of type spec.Alter
+internal/domain/rule/ddl/partition_rules_test.go:82:33: unknown field AllPartitions in struct literal of type spec.Alter
+internal/domain/rule/ddl/partition_rules_test.go:101:12: undefined: newExchangePartitionWarnRule
+internal/domain/rule/ddl/partition_rules_test.go:108:3: unknown field Partitions in struct literal of type spec.Alter
+internal/domain/rule/ddl/partition_rules_test.go:109:3: unknown field ExchangeTable in struct literal of type spec.Alter
+internal/domain/rule/ddl/partition_rules_test.go:110:3: unknown field ExchangeValidation in struct literal of type spec.Alter
+internal/domain/rule/ddl/partition_rules_test.go:133:15: undefined: newDropPartitionForbidRule
+internal/domain/rule/ddl/partition_rules_test.go:133:15: too many errors
+FAIL	github.com/Fanduzi/DeltaScope/internal/domain/rule/ddl [build failed]
+FAIL

@@ -1,0 +1,343 @@
+{
+  "case_id": "T12.meta.t12-tidb85-flag-off-ignored",
+  "kind": "cli_metadata",
+  "cli_case": "t12-tidb85-flag-off-ignored",
+  "anchor": "tidb85",
+  "dialect": "tidb",
+  "input_sql": "CREATE TABLE t_off (id INT, CONSTRAINT chk_ign CHECK (id > 0));",
+  "policy_profile": "t12-all",
+  "policy_path": "/private/tmp/ddl-golden-f13/T12/golden-policy-t12-all.yaml",
+  "connect": {
+    "host": "127.0.0.1",
+    "port": 24000,
+    "user": "root",
+    "schema": "golden"
+  },
+  "expected": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "evidence_gaps": 0,
+    "finding_entries": [
+      {
+        "index": 0,
+        "rule_id": "ddl.constraint.check.ignored.notice",
+        "level": "warning"
+      }
+    ],
+    "instance_facts": {
+      "tidb_enable_check_constraint": "OFF"
+    }
+  },
+  "actual": {
+    "database": {
+      "product": "tidb",
+      "image": "pingcap/tidb:v8.5.0",
+      "image_digest": "pingcap/tidb@sha256:490861bd4a2fa643dbe76b77ffecafcad66e6a42774e580b82f4ec2429a80e57",
+      "container": "deltascope-ddl-golden-tidb85",
+      "reachable": true,
+      "version": "8.0.11-TiDB-v8.5.0"
+    },
+    "setup": [
+      {
+        "name": "flag-off",
+        "sql": "SET GLOBAL tidb_enable_check_constraint=OFF;",
+        "rc": 0,
+        "stdout": "",
+        "stderr": "",
+        "verify": [
+          {
+            "assert": "flag observed OFF",
+            "sql": "SELECT @@global.tidb_enable_check_constraint",
+            "rc": 0,
+            "output": "0",
+            "stderr": ""
+          }
+        ]
+      }
+    ],
+    "post_verify": [],
+    "execute": [
+      {
+        "name": "native-accepts-but-stores-nothing",
+        "sql": "CREATE TABLE t_off (id INT, CONSTRAINT chk_ign CHECK (id > 0));",
+        "rc": 0,
+        "stdout": "",
+        "stderr": "",
+        "verify": [
+          {
+            "assert": "flag OFF stores no member",
+            "sql": "SELECT COUNT(*) FROM information_schema.TIDB_CHECK_CONSTRAINTS WHERE CONSTRAINT_SCHEMA='golden' AND TABLE_NAME='t_off'",
+            "rc": 0,
+            "output": "0",
+            "stderr": ""
+          }
+        ]
+      },
+      {
+        "name": "violating-row-lands",
+        "sql": "INSERT INTO t_off VALUES (-1);",
+        "rc": 0,
+        "stdout": "",
+        "stderr": "",
+        "verify": [
+          {
+            "assert": "negative id lands under ignored check",
+            "sql": "SELECT COUNT(*) FROM golden.t_off WHERE id=-1",
+            "rc": 0,
+            "output": "1",
+            "stderr": ""
+          }
+        ]
+      }
+    ],
+    "structure": [],
+    "teardown": [
+      {
+        "name": "drop-t_off",
+        "sql": "DROP TABLE IF EXISTS t_off;",
+        "rc": 0,
+        "stderr": ""
+      },
+      {
+        "name": "flag-restore",
+        "sql": "SET GLOBAL tidb_enable_check_constraint=ON;",
+        "rc": 0,
+        "stderr": "",
+        "verify": [
+          {
+            "assert": "shared anchor restored ON",
+            "sql": "SELECT @@global.tidb_enable_check_constraint",
+            "rc": 0,
+            "output": "1",
+            "stderr": ""
+          }
+        ]
+      }
+    ],
+    "exit": 0,
+    "stdout": "{\"verdict\":\"review\",\"coverage\":{\"status\":\"complete\"},\"summary\":{\"statements\":1,\"blockers\":0,\"warnings\":1,\"notices\":0},\"statements\":[{\"index\":0,\"kind\":\"ddl\",\"raw_sql\":\"CREATE TABLE t_off (id INT, CONSTRAINT chk_ign CHECK (id \\u003e 0));\",\"normalized_sql\":\"CREATE TABLE t_off (id INT, CONSTRAINT chk_ign CHECK (id \\u003e 0))\",\"findings\":[{\"rule_id\":\"ddl.constraint.check.ignored.notice\",\"level\":\"warning\",\"message\":\"check constraint \\\"chk_ign\\\" on table \\\"t_off\\\" is parsed but ignored on this product\",\"statement_kind\":\"ddl\",\"location\":{\"line\":1,\"column\":1},\"suggestion\":\"verify the target product actually enforces check constraints before relying on this declaration\",\"metadata\":{\"constraint\":\"chk_ign\",\"enforced\":\"ignored\",\"table\":\"t_off\"},\"explanation\":{\"summary\":\"Check DDL constraint check ignored notice\",\"why\":\"The statement matched the shipped governance rule for this pattern.\",\"risk\":\"Ignoring this rule can hide live-schema or instance-state risks that only metadata reveals.\",\"suggestion\":\"verify the target product actually enforces check constraints before relying on this declaration\",\"metadata\":{\"status\":\"available\",\"note\":\"Live metadata is available, so this explanation can use schema or instance facts for a more accurate judgment.\"}}}],\"coverage\":{\"status\":\"complete\"}}],\"version\":{\"product\":\"tidb\",\"version\":\"8.5.0\",\"major\":8,\"minor\":5,\"patch\":0,\"source\":\"observed\",\"validated_range\":true},\"fail_on_triggered\":false,\"rule_summary\":{\"loaded\":5,\"applicable\":1,\"skipped\":[]},\"context\":{\"mode\":\"metadata-aware\",\"dialect\":\"tidb\",\"dialect_source\":\"detected\",\"schema\":\"golden\",\"schema_source\":\"flag\"}}\n",
+    "stderr": "",
+    "parsed": {
+      "verdict": "review",
+      "coverage": {
+        "status": "complete"
+      },
+      "summary": {
+        "statements": 1,
+        "blockers": 0,
+        "warnings": 1,
+        "notices": 0
+      },
+      "statements": [
+        {
+          "index": 0,
+          "kind": "ddl",
+          "raw_sql": "CREATE TABLE t_off (id INT, CONSTRAINT chk_ign CHECK (id > 0));",
+          "normalized_sql": "CREATE TABLE t_off (id INT, CONSTRAINT chk_ign CHECK (id > 0))",
+          "findings": [
+            {
+              "rule_id": "ddl.constraint.check.ignored.notice",
+              "level": "warning",
+              "message": "check constraint \"chk_ign\" on table \"t_off\" is parsed but ignored on this product",
+              "statement_kind": "ddl",
+              "location": {
+                "line": 1,
+                "column": 1
+              },
+              "suggestion": "verify the target product actually enforces check constraints before relying on this declaration",
+              "metadata": {
+                "constraint": "chk_ign",
+                "enforced": "ignored",
+                "table": "t_off"
+              },
+              "explanation": {
+                "summary": "Check DDL constraint check ignored notice",
+                "why": "The statement matched the shipped governance rule for this pattern.",
+                "risk": "Ignoring this rule can hide live-schema or instance-state risks that only metadata reveals.",
+                "suggestion": "verify the target product actually enforces check constraints before relying on this declaration",
+                "metadata": {
+                  "status": "available",
+                  "note": "Live metadata is available, so this explanation can use schema or instance facts for a more accurate judgment."
+                }
+              }
+            }
+          ],
+          "coverage": {
+            "status": "complete"
+          }
+        }
+      ],
+      "version": {
+        "product": "tidb",
+        "version": "8.5.0",
+        "major": 8,
+        "minor": 5,
+        "patch": 0,
+        "source": "observed",
+        "validated_range": true
+      },
+      "fail_on_triggered": false,
+      "rule_summary": {
+        "loaded": 5,
+        "applicable": 1,
+        "skipped": []
+      },
+      "context": {
+        "mode": "metadata-aware",
+        "dialect": "tidb",
+        "dialect_source": "detected",
+        "schema": "golden",
+        "schema_source": "flag"
+      }
+    },
+    "version_evidence": {
+      "target_raw": null,
+      "target_canonical": null,
+      "observed_raw": "8.0.11-TiDB-v8.5.0",
+      "observed_canonical": {
+        "product": "tidb",
+        "version": "8.5.0"
+      },
+      "resolved": {
+        "product": "tidb",
+        "version": "8.5.0",
+        "major": 8,
+        "minor": 5,
+        "patch": 0,
+        "source": "observed",
+        "validated_range": true
+      }
+    },
+    "instance_facts": {
+      "tidb_enable_check_constraint": "OFF"
+    }
+  },
+  "assertions": [
+    {
+      "name": "database reachable with expected version",
+      "ok": true,
+      "detail": "SELECT VERSION() rc=0 version='8.0.11-TiDB-v8.5.0' expected_contains='v8.5.0'"
+    },
+    {
+      "name": "setup flag-off return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "setup flag-off: flag observed OFF",
+      "ok": true,
+      "detail": "rc=0 output='0' expected='0'"
+    },
+    {
+      "name": "instance fact tidb_enable_check_constraint",
+      "ok": true,
+      "detail": "tidb_enable_check_constraint='OFF' expected='OFF'"
+    },
+    {
+      "name": "exit code",
+      "ok": true,
+      "detail": "rc=0 expected=0"
+    },
+    {
+      "name": "verdict",
+      "ok": true,
+      "detail": "verdict='review'"
+    },
+    {
+      "name": "top-level statements",
+      "ok": true,
+      "detail": "statements=1 expected=1"
+    },
+    {
+      "name": "zero findings",
+      "ok": true,
+      "detail": "findings=1"
+    },
+    {
+      "name": "no diagnostics",
+      "ok": true,
+      "detail": "diagnostics=[]"
+    },
+    {
+      "name": "no unsupported",
+      "ok": true,
+      "detail": "unsupported=[]"
+    },
+    {
+      "name": "aggregate coverage",
+      "ok": true,
+      "detail": "coverage='complete'"
+    },
+    {
+      "name": "evidence gap count",
+      "ok": true,
+      "detail": "gaps=0"
+    },
+    {
+      "name": "finding entries",
+      "ok": true,
+      "detail": "findings=[(0, 'ddl.constraint.check.ignored.notice', 'warning')] expected=[(0, 'ddl.constraint.check.ignored.notice', 'warning')]"
+    },
+    {
+      "name": "execute native-accepts-but-stores-nothing return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "execute native-accepts-but-stores-nothing: flag OFF stores no member",
+      "ok": true,
+      "detail": "rc=0 output='0' expected='0'"
+    },
+    {
+      "name": "execute violating-row-lands return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "execute violating-row-lands: negative id lands under ignored check",
+      "ok": true,
+      "detail": "rc=0 output='1' expected='1'"
+    },
+    {
+      "name": "teardown drop-t_off return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "teardown flag-restore return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "teardown flag-restore: shared anchor restored ON",
+      "ok": true,
+      "detail": "rc=0 output='1' expected='1'"
+    }
+  ],
+  "status": "pass",
+  "command": [
+    "/private/tmp/ddl-golden-f13/T12/bin/deltascope",
+    "audit",
+    "--dialect",
+    "tidb",
+    "--sql",
+    "CREATE TABLE t_off (id INT, CONSTRAINT chk_ign CHECK (id > 0));",
+    "--config",
+    "/private/tmp/ddl-golden-f13/T12/golden-policy-t12-all.yaml",
+    "--format",
+    "json",
+    "--host",
+    "127.0.0.1",
+    "--port",
+    "24000",
+    "--user",
+    "root",
+    "--schema",
+    "golden"
+  ]
+}

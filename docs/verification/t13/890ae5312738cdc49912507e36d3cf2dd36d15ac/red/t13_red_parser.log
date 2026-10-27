@@ -1,0 +1,14 @@
+# github.com/Fanduzi/DeltaScope/internal/infrastructure/parser/tidb [github.com/Fanduzi/DeltaScope/internal/infrastructure/parser/tidb.test]
+internal/infrastructure/parser/tidb/extractor_t13_test.go:31:17: alter.Partitions undefined (type spec.Alter has no field or method Partitions)
+internal/infrastructure/parser/tidb/extractor_t13_test.go:32:75: alter.Partitions undefined (type spec.Alter has no field or method Partitions)
+internal/infrastructure/parser/tidb/extractor_t13_test.go:34:13: alter.AllPartitions undefined (type spec.Alter has no field or method AllPartitions)
+internal/infrastructure/parser/tidb/extractor_t13_test.go:57:26: named.DDL.Alter[0].AllPartitions undefined (type spec.Alter has no field or method AllPartitions)
+internal/infrastructure/parser/tidb/extractor_t13_test.go:57:66: named.DDL.Alter[0].Partitions undefined (type spec.Alter has no field or method Partitions)
+internal/infrastructure/parser/tidb/extractor_t13_test.go:64:25: all.DDL.Alter[0].AllPartitions undefined (type spec.Alter has no field or method AllPartitions)
+internal/infrastructure/parser/tidb/extractor_t13_test.go:64:63: all.DDL.Alter[0].Partitions undefined (type spec.Alter has no field or method Partitions)
+internal/infrastructure/parser/tidb/extractor_t13_test.go:102:18: alter.Partitions undefined (type spec.Alter has no field or method Partitions)
+internal/infrastructure/parser/tidb/extractor_t13_test.go:103:52: alter.Partitions undefined (type spec.Alter has no field or method Partitions)
+internal/infrastructure/parser/tidb/extractor_t13_test.go:105:14: alter.ExchangeTable undefined (type spec.Alter has no field or method ExchangeTable)
+internal/infrastructure/parser/tidb/extractor_t13_test.go:105:14: too many errors
+FAIL	github.com/Fanduzi/DeltaScope/internal/infrastructure/parser/tidb [build failed]
+FAIL

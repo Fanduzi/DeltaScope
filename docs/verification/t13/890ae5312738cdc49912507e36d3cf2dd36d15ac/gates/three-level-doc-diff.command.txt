@@ -1,0 +1,1 @@
+bash /tmp/t13_docdiff.sh

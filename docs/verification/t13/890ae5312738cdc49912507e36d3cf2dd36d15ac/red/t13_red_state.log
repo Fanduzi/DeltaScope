@@ -1,0 +1,62 @@
+--- FAIL: TestT13PartitionSingleActionPostState (0.00s)
+    --- FAIL: TestT13PartitionSingleActionPostState/tidb/truncate_all (0.00s)
+        batch_state_t13_test.go:104: partition action must keep the present entry, got &{state:1 shape:<nil> displaySchema: displayTable:}
+    --- FAIL: TestT13PartitionSingleActionPostState/mysql/drop (0.00s)
+        batch_state_t13_test.go:104: partition action must keep the present entry, got &{state:1 shape:<nil> displaySchema: displayTable:}
+    --- FAIL: TestT13PartitionSingleActionPostState/tidb/truncate_named (0.00s)
+        batch_state_t13_test.go:104: partition action must keep the present entry, got &{state:1 shape:<nil> displaySchema: displayTable:}
+    --- FAIL: TestT13PartitionSingleActionPostState/tidb/drop (0.00s)
+        batch_state_t13_test.go:104: partition action must keep the present entry, got &{state:1 shape:<nil> displaySchema: displayTable:}
+    --- FAIL: TestT13PartitionSingleActionPostState/tidb/drop_multi_name (0.00s)
+        batch_state_t13_test.go:104: partition action must keep the present entry, got &{state:1 shape:<nil> displaySchema: displayTable:}
+    --- FAIL: TestT13PartitionSingleActionPostState/mysql/truncate_named (0.00s)
+        batch_state_t13_test.go:104: partition action must keep the present entry, got &{state:1 shape:<nil> displaySchema: displayTable:}
+    --- FAIL: TestT13PartitionSingleActionPostState/mysql/drop_multi_name (0.00s)
+        batch_state_t13_test.go:104: partition action must keep the present entry, got &{state:1 shape:<nil> displaySchema: displayTable:}
+    --- FAIL: TestT13PartitionSingleActionPostState/mysql/truncate_all (0.00s)
+        batch_state_t13_test.go:104: partition action must keep the present entry, got &{state:1 shape:<nil> displaySchema: displayTable:}
+--- FAIL: TestT13ExchangePostStateClearsBothSides (0.00s)
+    --- FAIL: TestT13ExchangePostStateClearsBothSides/tidb (0.00s)
+        batch_state_t13_test.go:149: exchange side t must keep the present entry, got &{state:1 shape:<nil> displaySchema: displayTable:}
+    --- FAIL: TestT13ExchangePostStateClearsBothSides/mysql (0.00s)
+        batch_state_t13_test.go:149: exchange side t must keep the present entry, got &{state:1 shape:<nil> displaySchema: displayTable:}
+--- FAIL: TestT13PartitionMultiSpecRefusalKeepsPreState (0.00s)
+    --- FAIL: TestT13PartitionMultiSpecRefusalKeepsPreState/mysql/drop_after_add (0.00s)
+        batch_state_t13_test.go:175: refused statement must keep the present entry, got &{state:1 shape:<nil> displaySchema: displayTable:}
+    --- FAIL: TestT13PartitionMultiSpecRefusalKeepsPreState/tidb/drop_after_add (0.00s)
+        batch_state_t13_test.go:175: refused statement must keep the present entry, got &{state:1 shape:<nil> displaySchema: displayTable:}
+    --- FAIL: TestT13PartitionMultiSpecRefusalKeepsPreState/tidb/exchange_sibling (0.00s)
+        batch_state_t13_test.go:175: refused statement must keep the present entry, got &{state:1 shape:<nil> displaySchema: displayTable:}
+    --- FAIL: TestT13PartitionMultiSpecRefusalKeepsPreState/mysql/exchange_sibling (0.00s)
+        batch_state_t13_test.go:175: refused statement must keep the present entry, got &{state:1 shape:<nil> displaySchema: displayTable:}
+    --- FAIL: TestT13PartitionMultiSpecRefusalKeepsPreState/mysql/truncate_sibling (0.00s)
+        batch_state_t13_test.go:175: refused statement must keep the present entry, got &{state:1 shape:<nil> displaySchema: displayTable:}
+    --- FAIL: TestT13PartitionMultiSpecRefusalKeepsPreState/tidb/truncate_sibling (0.00s)
+        batch_state_t13_test.go:175: refused statement must keep the present entry, got &{state:1 shape:<nil> displaySchema: displayTable:}
+--- FAIL: TestT13DropPartitionMultipleNames (0.01s)
+    batch_state_t13_test.go:252: audit: audit includes unsupported statements: 1 item(s)
+--- FAIL: TestT13TruncatePartitionGoverned (0.00s)
+    --- FAIL: TestT13TruncatePartitionGoverned/named (0.02s)
+        batch_state_t13_test.go:283: audit: audit includes unsupported statements: 1 item(s)
+    --- FAIL: TestT13TruncatePartitionGoverned/all (0.02s)
+        batch_state_t13_test.go:283: audit: audit includes unsupported statements: 1 item(s)
+--- FAIL: TestT13DisabledRuleKeepsCompleteCoverage (0.02s)
+    batch_state_t13_test.go:413: audit: audit includes unsupported statements: 1 item(s)
+--- FAIL: TestT13DropPartitionGovernedPublicPath (0.00s)
+    --- FAIL: TestT13DropPartitionGovernedPublicPath/mysql (0.01s)
+        batch_state_t13_test.go:212: audit: audit includes unsupported statements: 1 item(s)
+    --- FAIL: TestT13DropPartitionGovernedPublicPath/tidb (0.02s)
+        batch_state_t13_test.go:212: audit: audit includes unsupported statements: 1 item(s)
+--- FAIL: TestT13ExchangePartitionGoverned (0.00s)
+    --- FAIL: TestT13ExchangePartitionGoverned/absent_clause (0.01s)
+        batch_state_t13_test.go:327: audit: audit includes unsupported statements: 1 item(s)
+    --- FAIL: TestT13ExchangePartitionGoverned/without (0.02s)
+        batch_state_t13_test.go:327: audit: audit includes unsupported statements: 1 item(s)
+--- FAIL: TestT13ExchangeDenylistBothDirections (0.00s)
+    --- FAIL: TestT13ExchangeDenylistBothDirections/counterpart_side (0.01s)
+        batch_state_t13_test.go:383: audit: audit includes unsupported statements: 1 item(s)
+    --- FAIL: TestT13ExchangeDenylistBothDirections/partitioned_side (0.01s)
+        batch_state_t13_test.go:383: audit: audit includes unsupported statements: 1 item(s)
+FAIL
+FAIL	github.com/Fanduzi/DeltaScope/internal/application/audit	0.700s
+FAIL
