@@ -21,6 +21,7 @@ package ddl
 import (
 	"context"
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/Fanduzi/DeltaScope/internal/domain/policy"
@@ -560,19 +561,28 @@ func exchangeComparisonFacts(primary, counterpart *spec.TableSnapshot, dialect s
 		}
 	}
 	var pkMembers, cpMembers []string
-	var pkPresent, cpPresent, pkOK bool
+	var pkPresent, cpPresent, pkMembersOK, cpMembersOK, pkOK, cpOK bool
 	if primaryKnown {
-		pkPresent, pkMembers, pkOK = primaryKeyIdentityFacts(primary)
+		pkPresent, pkMembers, pkMembersOK, pkOK = primaryKeyIdentityFacts(primary)
 	}
-	cpPresent, cpMembers, cpOK := primaryKeyIdentityFacts(counterpart)
+	cpPresent, cpMembers, cpMembersOK, cpOK = primaryKeyIdentityFacts(counterpart)
 	if primaryKnown && !pkOK {
 		out.missing = append(out.missing, "target_table.primary_key")
 	}
 	if !cpOK {
 		out.missing = append(out.missing, "exchange_table.primary_key")
 	}
+	// A vouched presence whose member sequence never resolved owes the
+	// same fact — presence answered but members cannot compare.
+	if primaryKnown && pkOK && pkPresent && !pkMembersOK {
+		out.missing = append(out.missing, "target_table.primary_key")
+	}
+	if cpOK && cpPresent && !cpMembersOK {
+		out.missing = append(out.missing, "exchange_table.primary_key")
+	}
 	if pkOK && cpOK {
-		if pkPresent != cpPresent || (pkPresent && !equalFoldedNames(pkMembers, cpMembers)) {
+		if pkPresent != cpPresent ||
+			(pkPresent && pkMembersOK && cpMembersOK && !equalFoldedNames(pkMembers, cpMembers)) {
 			out.definitionMismatch = true
 		}
 	}
@@ -644,9 +654,17 @@ func exchangeColumnComparison(a, b spec.Column) (equal, comparable bool) {
 		return false, true
 	}
 	if exchangeFaithfulBases[baseA] {
-		// The full parameter text is the effective type: bare `decimal`
-		// folds to `decimal(10,0)`, the rest compare verbatim.
-		return normalizeFaithfulColumnType(a.Type, baseA) == normalizeFaithfulColumnType(b.Type, baseA), true
+		// The effective parameter set is the identity: DECIMAL/NUMERIC
+		// spellings fold to base(M,D) against native defaults, other
+		// faithful bases compare the verbatim parameter text. A spelling
+		// the bounded normalizer cannot project keeps the comparison
+		// unproven — never read as a difference.
+		normalizedA, okA := normalizeFaithfulColumnType(a.Type, baseA)
+		normalizedB, okB := normalizeFaithfulColumnType(b.Type, baseB)
+		if !okA || !okB {
+			return false, false
+		}
+		return normalizedA == normalizedB, true
 	}
 	if exchangeIntegerBases[baseA] {
 		return true, true
@@ -670,36 +688,77 @@ func exchangeColumnComparison(a, b spec.Column) (equal, comparable bool) {
 	return lengthA == lengthB, true
 }
 
-// normalizeFaithfulColumnType folds a bare faithful-base type to its
-// catalog-default spelling so the declared and catalog channels align.
-func normalizeFaithfulColumnType(typeText, base string) string {
+// normalizeFaithfulColumnType folds a faithful-base type spelling to its
+// effective form so the declared and catalog channels align. DECIMAL and
+// NUMERIC share the fixed-point default-parameter contract — a bare
+// spelling is base(10,0) and a single parameter is base(M,0) — while a
+// trailing `unsigned` attribute word is consumed by the dedicated
+// signedness compare. Other faithful bases keep their verbatim parameter
+// text (member literals are the identity). A faithful form the bounded
+// normalizer cannot project returns ok=false — undecidable, never a
+// difference.
+func normalizeFaithfulColumnType(typeText, base string) (string, bool) {
 	trimmed := strings.ToLower(strings.TrimSpace(typeText))
-	if trimmed == base && base == "decimal" {
-		return "decimal(10,0)"
+	if base != "decimal" && base != "numeric" {
+		return trimmed, true
 	}
-	return trimmed
+	trimmed = strings.TrimSpace(strings.TrimSuffix(trimmed, " unsigned"))
+	if trimmed == base {
+		return base + "(10,0)", true
+	}
+	rest, ok := strings.CutPrefix(trimmed, base+"(")
+	if !ok || !strings.HasSuffix(rest, ")") {
+		return "", false
+	}
+	params := strings.Split(rest[:len(rest)-1], ",")
+	if len(params) > 2 {
+		return "", false
+	}
+	var normalized strings.Builder
+	normalized.WriteString(base)
+	normalized.WriteString("(")
+	for i, param := range params {
+		value, err := strconv.Atoi(strings.TrimSpace(param))
+		if err != nil {
+			return "", false
+		}
+		if i > 0 {
+			normalized.WriteString(",")
+		}
+		normalized.WriteString(strconv.Itoa(value))
+	}
+	if len(params) == 1 {
+		normalized.WriteString(",0")
+	}
+	normalized.WriteString(")")
+	return normalized.String(), true
 }
 
 // primaryKeyIdentityFacts resolves PK presence and member columns from the
-// vouched member facts. ok=false means the fact could not be vouched —
-// never read as "no PK". The dedicated PrimaryKey channel decides first: a
-// proven-absent PK is not reopened by an unvouched CHECK/FK constraint set
-// (ConstraintsUnknown covers the constraint collection, not PK presence).
-func primaryKeyIdentityFacts(snapshot *spec.TableSnapshot) (present bool, members []string, ok bool) {
-	if snapshot.PrimaryKey != nil {
-		return true, snapshot.PrimaryKey.Columns, true
+// vouched member facts. ok=false means presence could not be vouched —
+// never read as "no PK"; membersOK=false on a proven-present PK means the
+// member sequence was never observed (the unattributed-object placeholder
+// carries nil Columns — a real key always has members, so nil is unproven,
+// never an empty key). PrimaryKeyUnknown outranks any residual pointer the
+// ordered-state unvouch leaves attached. The dedicated PrimaryKey channel
+// decides presence: a proven-absent PK is not reopened by an unvouched
+// CHECK/FK constraint set (ConstraintsUnknown covers the constraint
+// collection, not PK presence).
+func primaryKeyIdentityFacts(snapshot *spec.TableSnapshot) (present bool, members []string, membersOK, ok bool) {
+	if snapshot == nil || snapshot.PrimaryKeyUnknown {
+		return false, nil, false, false
 	}
-	if snapshot.PrimaryKeyUnknown {
-		return false, nil, false
+	if snapshot.PrimaryKey != nil {
+		return true, snapshot.PrimaryKey.Columns, snapshot.PrimaryKey.Columns != nil, true
 	}
 	if !snapshot.ConstraintsUnknown {
 		for _, constraint := range snapshot.Constraints {
 			if constraint.Type == "primary_key" {
-				return true, constraint.Columns, true
+				return true, constraint.Columns, constraint.Columns != nil, true
 			}
 		}
 	}
-	return false, nil, true
+	return false, nil, false, true
 }
 
 func equalFoldedNames(a, b []string) bool {

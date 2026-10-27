@@ -1,0 +1,407 @@
+############ ANCHOR mysql80 ############
+=== [mysql80] version
+--- SQL: SELECT VERSION()
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+VERSION()
+8.0.46
+=== [mysql80] ensure-db
+--- SQL: CREATE DATABASE IF NOT EXISTS golden
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql80] decM-vs-decM0-drop
+--- SQL: DROP TABLE IF EXISTS golden.t13d; DROP TABLE IF EXISTS golden.t13x
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql80] decM-vs-decM0-create-t
+--- SQL: CREATE TABLE golden.t13d (id INT, v DECIMAL(12)) ENGINE=InnoDB PARTITION BY RANGE(id) (PARTITION p0 VALUES LESS THAN (10), PARTITION p1 VALUES LESS THAN (20))
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql80] decM-vs-decM0-create-x
+--- SQL: CREATE TABLE golden.t13x (id INT, v DECIMAL(12,0)) ENGINE=InnoDB
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql80] decM-vs-decM0-exchange
+--- SQL: ALTER TABLE golden.t13d EXCHANGE PARTITION p0 WITH TABLE golden.t13x
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql80] decM-vs-decM0-catalog
+--- SQL: SELECT TABLE_NAME, COLUMN_TYPE FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND COLUMN_NAME='v' AND TABLE_NAME IN ('t13d','t13x') ORDER BY TABLE_NAME
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+TABLE_NAME	COLUMN_TYPE
+t13d	decimal(12,0)
+t13x	decimal(12,0)
+=== [mysql80] decM-vs-decM0-cleanup
+--- SQL: DROP TABLE IF EXISTS golden.t13d; DROP TABLE IF EXISTS golden.t13x
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql80] decBare-vs-dec100-drop
+--- SQL: DROP TABLE IF EXISTS golden.t13d; DROP TABLE IF EXISTS golden.t13x
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql80] decBare-vs-dec100-create-t
+--- SQL: CREATE TABLE golden.t13d (id INT, v DECIMAL) ENGINE=InnoDB PARTITION BY RANGE(id) (PARTITION p0 VALUES LESS THAN (10), PARTITION p1 VALUES LESS THAN (20))
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql80] decBare-vs-dec100-create-x
+--- SQL: CREATE TABLE golden.t13x (id INT, v DECIMAL(10,0)) ENGINE=InnoDB
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql80] decBare-vs-dec100-exchange
+--- SQL: ALTER TABLE golden.t13d EXCHANGE PARTITION p0 WITH TABLE golden.t13x
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql80] decBare-vs-dec100-catalog
+--- SQL: SELECT TABLE_NAME, COLUMN_TYPE FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND COLUMN_NAME='v' AND TABLE_NAME IN ('t13d','t13x') ORDER BY TABLE_NAME
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+TABLE_NAME	COLUMN_TYPE
+t13d	decimal(10,0)
+t13x	decimal(10,0)
+=== [mysql80] decBare-vs-dec100-cleanup
+--- SQL: DROP TABLE IF EXISTS golden.t13d; DROP TABLE IF EXISTS golden.t13x
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql80] decM-uns-vs-decM0-uns-drop
+--- SQL: DROP TABLE IF EXISTS golden.t13d; DROP TABLE IF EXISTS golden.t13x
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql80] decM-uns-vs-decM0-uns-create-t
+--- SQL: CREATE TABLE golden.t13d (id INT, v DECIMAL(12) UNSIGNED) ENGINE=InnoDB PARTITION BY RANGE(id) (PARTITION p0 VALUES LESS THAN (10), PARTITION p1 VALUES LESS THAN (20))
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql80] decM-uns-vs-decM0-uns-create-x
+--- SQL: CREATE TABLE golden.t13x (id INT, v DECIMAL(12,0) UNSIGNED) ENGINE=InnoDB
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql80] decM-uns-vs-decM0-uns-exchange
+--- SQL: ALTER TABLE golden.t13d EXCHANGE PARTITION p0 WITH TABLE golden.t13x
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql80] decM-uns-vs-decM0-uns-catalog
+--- SQL: SELECT TABLE_NAME, COLUMN_TYPE FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND COLUMN_NAME='v' AND TABLE_NAME IN ('t13d','t13x') ORDER BY TABLE_NAME
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+TABLE_NAME	COLUMN_TYPE
+t13d	decimal(12,0) unsigned
+t13x	decimal(12,0) unsigned
+=== [mysql80] decM-uns-vs-decM0-uns-cleanup
+--- SQL: DROP TABLE IF EXISTS golden.t13d; DROP TABLE IF EXISTS golden.t13x
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql80] int10-vs-int11-drop
+--- SQL: DROP TABLE IF EXISTS golden.t13d; DROP TABLE IF EXISTS golden.t13x
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql80] int10-vs-int11-create-t
+--- SQL: CREATE TABLE golden.t13d (id INT, v INT(10)) ENGINE=InnoDB PARTITION BY RANGE(id) (PARTITION p0 VALUES LESS THAN (10), PARTITION p1 VALUES LESS THAN (20))
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql80] int10-vs-int11-create-x
+--- SQL: CREATE TABLE golden.t13x (id INT, v INT(11)) ENGINE=InnoDB
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql80] int10-vs-int11-exchange
+--- SQL: ALTER TABLE golden.t13d EXCHANGE PARTITION p0 WITH TABLE golden.t13x
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql80] int10-vs-int11-catalog
+--- SQL: SELECT TABLE_NAME, COLUMN_TYPE FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND COLUMN_NAME='v' AND TABLE_NAME IN ('t13d','t13x') ORDER BY TABLE_NAME
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+TABLE_NAME	COLUMN_TYPE
+t13d	int
+t13x	int
+=== [mysql80] int10-vs-int11-cleanup
+--- SQL: DROP TABLE IF EXISTS golden.t13d; DROP TABLE IF EXISTS golden.t13x
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql80] dec121-vs-dec120-drop
+--- SQL: DROP TABLE IF EXISTS golden.t13d; DROP TABLE IF EXISTS golden.t13x
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql80] dec121-vs-dec120-create-t
+--- SQL: CREATE TABLE golden.t13d (id INT, v DECIMAL(12,1)) ENGINE=InnoDB PARTITION BY RANGE(id) (PARTITION p0 VALUES LESS THAN (10), PARTITION p1 VALUES LESS THAN (20))
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql80] dec121-vs-dec120-create-x
+--- SQL: CREATE TABLE golden.t13x (id INT, v DECIMAL(12,0)) ENGINE=InnoDB
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql80] dec121-vs-dec120-exchange
+--- SQL: ALTER TABLE golden.t13d EXCHANGE PARTITION p0 WITH TABLE golden.t13x
+--- rc=1
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1736 (HY000) at line 1: Tables have different definitions
+=== [mysql80] dec121-vs-dec120-catalog
+--- SQL: SELECT TABLE_NAME, COLUMN_TYPE FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND COLUMN_NAME='v' AND TABLE_NAME IN ('t13d','t13x') ORDER BY TABLE_NAME
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+TABLE_NAME	COLUMN_TYPE
+t13d	decimal(12,1)
+t13x	decimal(12,0)
+=== [mysql80] dec121-vs-dec120-cleanup
+--- SQL: DROP TABLE IF EXISTS golden.t13d; DROP TABLE IF EXISTS golden.t13x
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql80] dec11-vs-dec12-drop
+--- SQL: DROP TABLE IF EXISTS golden.t13d; DROP TABLE IF EXISTS golden.t13x
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql80] dec11-vs-dec12-create-t
+--- SQL: CREATE TABLE golden.t13d (id INT, v DECIMAL(11)) ENGINE=InnoDB PARTITION BY RANGE(id) (PARTITION p0 VALUES LESS THAN (10), PARTITION p1 VALUES LESS THAN (20))
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql80] dec11-vs-dec12-create-x
+--- SQL: CREATE TABLE golden.t13x (id INT, v DECIMAL(12)) ENGINE=InnoDB
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql80] dec11-vs-dec12-exchange
+--- SQL: ALTER TABLE golden.t13d EXCHANGE PARTITION p0 WITH TABLE golden.t13x
+--- rc=1
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1736 (HY000) at line 1: Tables have different definitions
+=== [mysql80] dec11-vs-dec12-catalog
+--- SQL: SELECT TABLE_NAME, COLUMN_TYPE FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND COLUMN_NAME='v' AND TABLE_NAME IN ('t13d','t13x') ORDER BY TABLE_NAME
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+TABLE_NAME	COLUMN_TYPE
+t13d	decimal(11,0)
+t13x	decimal(12,0)
+=== [mysql80] dec11-vs-dec12-cleanup
+--- SQL: DROP TABLE IF EXISTS golden.t13d; DROP TABLE IF EXISTS golden.t13x
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql80] decM-vs-decM-uns-drop
+--- SQL: DROP TABLE IF EXISTS golden.t13d; DROP TABLE IF EXISTS golden.t13x
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql80] decM-vs-decM-uns-create-t
+--- SQL: CREATE TABLE golden.t13d (id INT, v DECIMAL(12)) ENGINE=InnoDB PARTITION BY RANGE(id) (PARTITION p0 VALUES LESS THAN (10), PARTITION p1 VALUES LESS THAN (20))
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql80] decM-vs-decM-uns-create-x
+--- SQL: CREATE TABLE golden.t13x (id INT, v DECIMAL(12) UNSIGNED) ENGINE=InnoDB
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql80] decM-vs-decM-uns-exchange
+--- SQL: ALTER TABLE golden.t13d EXCHANGE PARTITION p0 WITH TABLE golden.t13x
+--- rc=1
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1736 (HY000) at line 1: Tables have different definitions
+=== [mysql80] decM-vs-decM-uns-catalog
+--- SQL: SELECT TABLE_NAME, COLUMN_TYPE FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND COLUMN_NAME='v' AND TABLE_NAME IN ('t13d','t13x') ORDER BY TABLE_NAME
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+TABLE_NAME	COLUMN_TYPE
+t13d	decimal(12,0)
+t13x	decimal(12,0) unsigned
+=== [mysql80] decM-vs-decM-uns-cleanup
+--- SQL: DROP TABLE IF EXISTS golden.t13d; DROP TABLE IF EXISTS golden.t13x
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+############ ANCHOR mysql57 ############
+=== [mysql57] version
+--- SQL: SELECT VERSION()
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+VERSION()
+5.7.44
+=== [mysql57] ensure-db
+--- SQL: CREATE DATABASE IF NOT EXISTS golden
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql57] decM-vs-decM0-drop
+--- SQL: DROP TABLE IF EXISTS golden.t13d; DROP TABLE IF EXISTS golden.t13x
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql57] decM-vs-decM0-create-t
+--- SQL: CREATE TABLE golden.t13d (id INT, v DECIMAL(12)) ENGINE=InnoDB PARTITION BY RANGE(id) (PARTITION p0 VALUES LESS THAN (10), PARTITION p1 VALUES LESS THAN (20))
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql57] decM-vs-decM0-create-x
+--- SQL: CREATE TABLE golden.t13x (id INT, v DECIMAL(12,0)) ENGINE=InnoDB
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql57] decM-vs-decM0-exchange
+--- SQL: ALTER TABLE golden.t13d EXCHANGE PARTITION p0 WITH TABLE golden.t13x
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql57] decM-vs-decM0-catalog
+--- SQL: SELECT TABLE_NAME, COLUMN_TYPE FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND COLUMN_NAME='v' AND TABLE_NAME IN ('t13d','t13x') ORDER BY TABLE_NAME
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+TABLE_NAME	COLUMN_TYPE
+t13d	decimal(12,0)
+t13x	decimal(12,0)
+=== [mysql57] decM-vs-decM0-cleanup
+--- SQL: DROP TABLE IF EXISTS golden.t13d; DROP TABLE IF EXISTS golden.t13x
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql57] decBare-vs-dec100-drop
+--- SQL: DROP TABLE IF EXISTS golden.t13d; DROP TABLE IF EXISTS golden.t13x
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql57] decBare-vs-dec100-create-t
+--- SQL: CREATE TABLE golden.t13d (id INT, v DECIMAL) ENGINE=InnoDB PARTITION BY RANGE(id) (PARTITION p0 VALUES LESS THAN (10), PARTITION p1 VALUES LESS THAN (20))
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql57] decBare-vs-dec100-create-x
+--- SQL: CREATE TABLE golden.t13x (id INT, v DECIMAL(10,0)) ENGINE=InnoDB
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql57] decBare-vs-dec100-exchange
+--- SQL: ALTER TABLE golden.t13d EXCHANGE PARTITION p0 WITH TABLE golden.t13x
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql57] decBare-vs-dec100-catalog
+--- SQL: SELECT TABLE_NAME, COLUMN_TYPE FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND COLUMN_NAME='v' AND TABLE_NAME IN ('t13d','t13x') ORDER BY TABLE_NAME
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+TABLE_NAME	COLUMN_TYPE
+t13d	decimal(10,0)
+t13x	decimal(10,0)
+=== [mysql57] decBare-vs-dec100-cleanup
+--- SQL: DROP TABLE IF EXISTS golden.t13d; DROP TABLE IF EXISTS golden.t13x
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql57] decM-uns-vs-decM0-uns-drop
+--- SQL: DROP TABLE IF EXISTS golden.t13d; DROP TABLE IF EXISTS golden.t13x
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql57] decM-uns-vs-decM0-uns-create-t
+--- SQL: CREATE TABLE golden.t13d (id INT, v DECIMAL(12) UNSIGNED) ENGINE=InnoDB PARTITION BY RANGE(id) (PARTITION p0 VALUES LESS THAN (10), PARTITION p1 VALUES LESS THAN (20))
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql57] decM-uns-vs-decM0-uns-create-x
+--- SQL: CREATE TABLE golden.t13x (id INT, v DECIMAL(12,0) UNSIGNED) ENGINE=InnoDB
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql57] decM-uns-vs-decM0-uns-exchange
+--- SQL: ALTER TABLE golden.t13d EXCHANGE PARTITION p0 WITH TABLE golden.t13x
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql57] decM-uns-vs-decM0-uns-catalog
+--- SQL: SELECT TABLE_NAME, COLUMN_TYPE FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND COLUMN_NAME='v' AND TABLE_NAME IN ('t13d','t13x') ORDER BY TABLE_NAME
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+TABLE_NAME	COLUMN_TYPE
+t13d	decimal(12,0) unsigned
+t13x	decimal(12,0) unsigned
+=== [mysql57] decM-uns-vs-decM0-uns-cleanup
+--- SQL: DROP TABLE IF EXISTS golden.t13d; DROP TABLE IF EXISTS golden.t13x
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql57] int10-vs-int11-drop
+--- SQL: DROP TABLE IF EXISTS golden.t13d; DROP TABLE IF EXISTS golden.t13x
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql57] int10-vs-int11-create-t
+--- SQL: CREATE TABLE golden.t13d (id INT, v INT(10)) ENGINE=InnoDB PARTITION BY RANGE(id) (PARTITION p0 VALUES LESS THAN (10), PARTITION p1 VALUES LESS THAN (20))
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql57] int10-vs-int11-create-x
+--- SQL: CREATE TABLE golden.t13x (id INT, v INT(11)) ENGINE=InnoDB
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql57] int10-vs-int11-exchange
+--- SQL: ALTER TABLE golden.t13d EXCHANGE PARTITION p0 WITH TABLE golden.t13x
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql57] int10-vs-int11-catalog
+--- SQL: SELECT TABLE_NAME, COLUMN_TYPE FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND COLUMN_NAME='v' AND TABLE_NAME IN ('t13d','t13x') ORDER BY TABLE_NAME
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+TABLE_NAME	COLUMN_TYPE
+t13d	int(10)
+t13x	int(11)
+=== [mysql57] int10-vs-int11-cleanup
+--- SQL: DROP TABLE IF EXISTS golden.t13d; DROP TABLE IF EXISTS golden.t13x
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql57] dec121-vs-dec120-drop
+--- SQL: DROP TABLE IF EXISTS golden.t13d; DROP TABLE IF EXISTS golden.t13x
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql57] dec121-vs-dec120-create-t
+--- SQL: CREATE TABLE golden.t13d (id INT, v DECIMAL(12,1)) ENGINE=InnoDB PARTITION BY RANGE(id) (PARTITION p0 VALUES LESS THAN (10), PARTITION p1 VALUES LESS THAN (20))
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql57] dec121-vs-dec120-create-x
+--- SQL: CREATE TABLE golden.t13x (id INT, v DECIMAL(12,0)) ENGINE=InnoDB
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql57] dec121-vs-dec120-exchange
+--- SQL: ALTER TABLE golden.t13d EXCHANGE PARTITION p0 WITH TABLE golden.t13x
+--- rc=1
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1736 (HY000) at line 1: Tables have different definitions
+=== [mysql57] dec121-vs-dec120-catalog
+--- SQL: SELECT TABLE_NAME, COLUMN_TYPE FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND COLUMN_NAME='v' AND TABLE_NAME IN ('t13d','t13x') ORDER BY TABLE_NAME
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+TABLE_NAME	COLUMN_TYPE
+t13d	decimal(12,1)
+t13x	decimal(12,0)
+=== [mysql57] dec121-vs-dec120-cleanup
+--- SQL: DROP TABLE IF EXISTS golden.t13d; DROP TABLE IF EXISTS golden.t13x
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql57] dec11-vs-dec12-drop
+--- SQL: DROP TABLE IF EXISTS golden.t13d; DROP TABLE IF EXISTS golden.t13x
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql57] dec11-vs-dec12-create-t
+--- SQL: CREATE TABLE golden.t13d (id INT, v DECIMAL(11)) ENGINE=InnoDB PARTITION BY RANGE(id) (PARTITION p0 VALUES LESS THAN (10), PARTITION p1 VALUES LESS THAN (20))
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql57] dec11-vs-dec12-create-x
+--- SQL: CREATE TABLE golden.t13x (id INT, v DECIMAL(12)) ENGINE=InnoDB
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql57] dec11-vs-dec12-exchange
+--- SQL: ALTER TABLE golden.t13d EXCHANGE PARTITION p0 WITH TABLE golden.t13x
+--- rc=1
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1736 (HY000) at line 1: Tables have different definitions
+=== [mysql57] dec11-vs-dec12-catalog
+--- SQL: SELECT TABLE_NAME, COLUMN_TYPE FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND COLUMN_NAME='v' AND TABLE_NAME IN ('t13d','t13x') ORDER BY TABLE_NAME
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+TABLE_NAME	COLUMN_TYPE
+t13d	decimal(11,0)
+t13x	decimal(12,0)
+=== [mysql57] dec11-vs-dec12-cleanup
+--- SQL: DROP TABLE IF EXISTS golden.t13d; DROP TABLE IF EXISTS golden.t13x
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql57] decM-vs-decM-uns-drop
+--- SQL: DROP TABLE IF EXISTS golden.t13d; DROP TABLE IF EXISTS golden.t13x
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql57] decM-vs-decM-uns-create-t
+--- SQL: CREATE TABLE golden.t13d (id INT, v DECIMAL(12)) ENGINE=InnoDB PARTITION BY RANGE(id) (PARTITION p0 VALUES LESS THAN (10), PARTITION p1 VALUES LESS THAN (20))
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql57] decM-vs-decM-uns-create-x
+--- SQL: CREATE TABLE golden.t13x (id INT, v DECIMAL(12) UNSIGNED) ENGINE=InnoDB
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql57] decM-vs-decM-uns-exchange
+--- SQL: ALTER TABLE golden.t13d EXCHANGE PARTITION p0 WITH TABLE golden.t13x
+--- rc=1
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1736 (HY000) at line 1: Tables have different definitions
+=== [mysql57] decM-vs-decM-uns-catalog
+--- SQL: SELECT TABLE_NAME, COLUMN_TYPE FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND COLUMN_NAME='v' AND TABLE_NAME IN ('t13d','t13x') ORDER BY TABLE_NAME
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+TABLE_NAME	COLUMN_TYPE
+t13d	decimal(12,0)
+t13x	decimal(12,0) unsigned
+=== [mysql57] decM-vs-decM-uns-cleanup
+--- SQL: DROP TABLE IF EXISTS golden.t13d; DROP TABLE IF EXISTS golden.t13x
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+############ DONE ############

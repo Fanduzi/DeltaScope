@@ -36,7 +36,7 @@ implementation); ADR:
   genuinely unproven PK blocks only the PK dimension, while an
   independently proven column-count mismatch still emits 1736. Each
   enabled rule owns only the facts it consumes (target rules now report
-  `target_table.partitioned`/`partition_names`/`existence` themselves
+  `target_table.partitioned`/`partitions`/`existence` themselves
   instead of relying on the applicability rule). Engine applicability is
   dialect-scoped: MySQL compares `Options["engine"]` when both sides are
   observed (mismatch → `counterpart_engine_mismatch`, native 1497;
@@ -60,15 +60,18 @@ implementation); ADR:
 `red/` — replayed while the R2 test files sat on the pre-R2 product
 (`c8f8948c` line); all failures are behavioral, none compile-driven:
 
-- `extract.log` — `TestT13R2UnboundedPartitionsNeverExpands` panics on
-  the base with `makeslice: cap out of range` (the A3 bound); the
-  INTERVAL/subpartition member-list tests fail on the nil→empty
-  collapse.
-- `provider.log` — `TestT13R2SubpartitionedCatalogKeepsNamesUnobserved`
-  fails (base treats the top-level list as complete).
-  `TestT13R2PlainCatalogStillComplete` fails on the mock-column shape
-  (fixture feeds the new 3-column query; the base Scan expects 2) —
-  recorded as a fixture-shape red, not a semantic assertion.
+- `extract.log` — records exactly one failure:
+  `TestT13R2UnboundedPartitionsNeverExpands` panics on the base with
+  `makeslice: cap out of range` (the A3 bound). The run was cut short
+  by the panic, so no other extractor-level semantic red is recorded in
+  this log.
+- `provider.log` — both recorded failures are the same mock-column
+  shape error: `TestT13R2SubpartitionedCatalogKeepsNamesUnobserved` and
+  `TestT13R2PlainCatalogStillComplete` each fail at Scan with
+  `expected 3 destination arguments in Scan, not 2` (the fixture feeds
+  the new 3-column query while the base reads 2). Neither test reached
+  its directory-semantics assertion on the base — recorded as
+  fixture-shape reds, not semantic assertions.
 - `rules.log` — B-class reds: PK absence reopened by
   `ConstraintsUnknown`, column-count mismatch swallowed by the PK
   knownness gate, engine comparison absent, target rules not owning
@@ -112,18 +115,31 @@ All PASS; `executed_count` equals the manifest `required_case_ids` set
 for every task (verified set-equal, no missing, no extras);
 `residual_containers=[]`, `compose_down_rc=0`. T09–T12 denominators are
 byte-stable against the R1 bundle. T13 keeps the R1 38-cell set and adds
-7 T13-R2 cells: 1 offline CLI cell (`ALGORITHM=INPLACE, DROP` without a
-version fact keeps the unsupported aspect + `target_table.partitioned`
-gap on the same statement) and 6 live-anchor cells: MySQL 8.0 engine
-mismatch → 1497 `counterpart_engine_mismatch`; TiDB declared-`MyISAM`
-normalized to `InnoDB` → EXCHANGE executes; `INT(10)`/`INT(11)`
-compat pair; subpartitioned EXCHANGE target → `unknown_table_state`
-(`target_table.partition_names`), never a fabricated 1735; TiDB
-INTERVAL `p_lt_10` TRUNCATE → `unknown_table_state` + native executes
-(interval member real, catalog uppercase); drop-then-truncate-absent
-sequence asserting the atomic-refusal pre-state (1735 — corrected from
-the manifest's initial 1507 after native probing; the product emitted
-1735 all along).
+7 T13-R2 cells:
+
+- `t13r2-cli-inplace-drop-noversion-unsupported` — offline CLI cell:
+  `ALGORITHM=INPLACE, DROP` without a version fact keeps the
+  unsupported `alter_table.algorithm` aspect and the
+  `target_table.partitioned` gap on the same statement.
+- `t13r2-mysql80-exchange-engine-mismatch` — MySQL 8.0: MyISAM
+  counterpart → 1497 `counterpart_engine_mismatch`.
+- `t13r2-tidb85-exchange-engine-normalized` — TiDB: declared-`MyISAM`
+  counterpart stored `InnoDB` → EXCHANGE executes.
+- `t13r2-mysql80-drop-then-truncate-absent` — the successor TRUNCATE
+  answers 1735 against the preserved directory after the proven drop
+  removed `p0` (the manifest expectation was corrected from 1507 to
+  1735 after native probing; the product emitted 1735 all along).
+- `t13r2-mysql80-drop-then-truncate-survives` — the proven drop shrinks
+  the directory; the successor truncates survivor `p1` and the member
+  row count is verified empty.
+- `t13r2-mysql80-exchange-subpartition-leaf-gap` — subpartitioned
+  target → `unknown_table_state` (`target_table.partitions`),
+  review/unverified, never a fabricated 1735.
+- `t13r2-tidb85-interval-generated-member` — online TiDB materializes
+  the interval-generated member (`P_LT_10`, catalog uppercase) into
+  `information_schema.PARTITIONS`, so the named TRUNCATE is
+  complete/pass/0-gap and executes — distinct from the declared-side
+  `RANGE ... INTERVAL` clause, which stays nil-directory.
 
 ## Native archives
 
@@ -142,9 +158,12 @@ the manifest's initial 1507 after native probing; the product emitted
   `probes/` with an annotation.
 - `p11_subpartition_interval_bounds_inplace.log` — subpartitioned
   catalog shape (top-level + leaf names are distinct rows), TiDB
-  `RANGE INTERVAL` catalog (`P_LT_10` uppercase member, `PARTITION
-  EXPRESSION`/`INTERVAL` metadata), bounded `PARTITIONS n` behavior,
-  and `ALGORITHM=INPLACE` + TRUNCATE/EXCHANGE executing on all four
+  `RANGE INTERVAL` materializing the `P_LT_10` member name into the
+  catalog (the log did not query `PARTITION_EXPRESSION`/`INTERVAL`
+  columns), `PARTITIONS 18446744073709551615` and `PARTITIONS 8193`
+  both refused with 1499 on 8.0.46 with a post-refusal member count of
+  0 — the 8192 boundary itself was never created — and
+  `ALGORITHM=INPLACE` + TRUNCATE/EXCHANGE executing on all four
   anchors (the D2 success arms the classifier's combinable verdict
   relies on).
 - Source scripts: `probe9_t13r2.sh`, `probe10_tidb_validation.sh`,
@@ -156,10 +175,15 @@ the manifest's initial 1507 after native probing; the product emitted
 Verified this round: MySQL engine mismatch → 1497 (three anchors);
 TiDB engine label normalization → EXCHANGE executes; TiDB validation
 absent/WITH → 1737, WITHOUT lands violating rows; subpartition/interval
-catalogs keep `PartitionNames` unobserved on both entry paths;
-`INT(10)` vs `INT(11)` compatible; `ALGORITHM=INPLACE` +
-TRUNCATE/EXCHANGE execute on all four anchors; missing TRUNCATE member
-→ 1735 (MySQL); 8192-member bound observed at the catalog level.
+catalogs keep `PartitionNames` unobserved on both entry paths (the
+online TiDB interval catalog does materialize member names — the
+unobserved boundary holds on the declared-side clause and the
+subpartitioned catalog); `INT(10)` vs `INT(11)` compatible;
+`ALGORITHM=INPLACE` + TRUNCATE/EXCHANGE execute on all four anchors;
+missing TRUNCATE member → 1735 (MySQL); `PARTITIONS` above the
+catalog bound refused with 1499 (8193 and max uint64 observed refused
+with an empty directory — the 8192 boundary itself was never
+materialized).
 Unverified and honestly surfaced: subpartition/interval member
 operations themselves (gap, not finding); row-content compatibility
 solving (clean compare still never claims the exchange validated);

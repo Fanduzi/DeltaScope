@@ -1388,11 +1388,16 @@ func partitionModifierOutcome(action, value, partitionAction string, version *sp
 // constraints — while every data-derived statistic the action could have
 // moved or destroyed is dropped. The member directory carries its own
 // post-state rule:
-//   - DROP removes exactly the named members when every named member is
-//     proven present and a member survives — the directory minus the
-//     named set. A name the directory never carried, or a drop consuming
-//     the whole member set, is a proven native refusal (1507 / last
-//     partition) so the exact pre-state stands untouched. TRUNCATE and
+//   - DROP removes exactly the named members when the action is proven
+//     applicable, every named member is proven present, and a member
+//     survives — the directory minus the named set. A name the directory
+//     never carried, a drop consuming the whole member set, or a proven
+//     hash|key method is a proven native refusal (1507 / last-partition /
+//     1512), so the exact pre-state stands untouched. A method the
+//     snapshot never observed (or one outside the modeled vocabulary)
+//     leaves the outcome undecidable: the directory unvouches rather than
+//     publishing a removal it cannot prove or a retention it cannot
+//     vouch — every unrelated structural fact stays. TRUNCATE and
 //     EXCHANGE keep every member name.
 //   - An unobserved or incomplete directory (nil) never gains a member
 //     proof from the operation.
@@ -1410,15 +1415,24 @@ func (s *batchState) applyPartitionOperation(targets []spec.Table, alter *spec.A
 		if alter != nil && alter.Action == "drop_partition" && entry.shape.PartitionNames != nil {
 			// The drop is atomic: any named member absent from the proven
 			// directory — or a drop consuming the whole member set — is a
-			// proven native refusal (1507 / last-partition 1508-class), so
-			// the exact pre-state stands: no stats cleared, no directory
-			// changed.
+			// proven native refusal under every method state (1507 /
+			// last-partition 1508-class), and a proven inapplicable
+			// method refuses outright (1512). Both keep the exact
+			// pre-state: no stats cleared, no directory changed.
 			members, provable := dropPartitionMembers(entry.shape.PartitionNames, alter)
-			if !provable {
+			outcome := partitionDropApplicability(entry.shape.PartitionType)
+			if !provable || outcome == partitionOutcomeRefused {
 				continue
 			}
 			shape := cloneTableSnapshot(entry.shape)
-			shape.PartitionNames = members
+			if outcome == partitionOutcomeUnproven {
+				// The method never answered — the drop may have executed
+				// or refused, so the member directory unvouches while
+				// the unaffected structural facts stay attached.
+				shape.PartitionNames = nil
+			} else {
+				shape.PartitionNames = members
+			}
 			clearMutationStats(shape)
 			clearModifyAffectedStats(shape)
 			s.entries[key] = &batchTableEntry{state: tablePresent, shape: shape, displaySchema: entry.displaySchema, displayTable: entry.displayTable}
@@ -1429,6 +1443,25 @@ func (s *batchState) applyPartitionOperation(targets []spec.Table, alter *spec.A
 		clearModifyAffectedStats(shape)
 		s.entries[key] = &batchTableEntry{state: tablePresent, shape: shape, displaySchema: entry.displaySchema, displayTable: entry.displayTable}
 	}
+}
+
+// partitionDropApplicability resolves DROP PARTITION against the observed
+// partition method — the action gate the directory publication consumes.
+// Only the range|list families accept DROP PARTITION natively (hash|key
+// refuse with 1512 — probed p6; the same vocabulary
+// partitionActionApplicableTypes carries on the rule side). An unobserved
+// or unmodeled method leaves the outcome undecidable.
+func partitionDropApplicability(method *string) partitionOutcome {
+	if method == nil {
+		return partitionOutcomeUnproven
+	}
+	switch *method {
+	case "range", "range columns", "list", "list columns":
+		return partitionOutcomeCombinable
+	case "hash", "key", "linear hash", "linear key":
+		return partitionOutcomeRefused
+	}
+	return partitionOutcomeUnproven
 }
 
 // dropPartitionMembers computes the post-DROP member set, reporting

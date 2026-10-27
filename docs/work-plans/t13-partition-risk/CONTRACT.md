@@ -640,3 +640,83 @@ COPY/LOCK/multi-modifier governance is unchanged scope.
   18446744073709551615` and `PARTITIONS 8193` both refuse 1499 on 8.0.46;
   `ALGORITHM=INPLACE, TRUNCATE PARTITION` and `ALGORITHM=INPLACE, EXCHANGE
   PARTITION` execute on all four anchors.
+
+## 11. T13-R3 — drop-applicability directory gating, effective DECIMAL parameters, and PK proof separation (appended amendment)
+
+### 11.1 Directory publication consumes action applicability (A)
+
+`applyPartitionOperation` publishes a post-DROP member directory only
+when the action's own applicability premise is proven:
+
+- `range|list` methods (incl. `* columns`) combine → the named members
+  are removed under the existing 1507/last-member provability gate.
+- `hash|key` methods (incl. linear) are a proven refusal (1512, p6) →
+  the exact pre-state stands, identical to the missing-name and
+  last-member refusals: no stats cleared, no member touched.
+- An unobserved or unmodeled method leaves the outcome undecidable →
+  the directory unvouches (`PartitionNames = nil`); unrelated
+  structural facts stay. Neither a removal it cannot prove nor a
+  retention it cannot vouch is published.
+
+The gate applies identically to the single-action and combinable
+modifier routes, and rule enable/disable never changes ordered-state
+semantics. `t13r3-mysql80-hash-drop-keeps-directory` binds the public
+chain: refused DROP on `PARTITIONS 2` keeps `p0` proven, the successor
+TRUNCATE executes and removes exactly p0's rows.
+
+### 11.2 Effective DECIMAL/NUMERIC parameters (B)
+
+The faithful-base normalizer folds `decimal`/`numeric` spellings to
+`base(M,D)` against native defaults — bare `(10,0)`, one parameter
+`(M,0)` — after consuming the trailing `unsigned` attribute word
+(signedness remains its own dimension). A faithful form the bounded
+parser cannot project returns unproven and owes the column fact —
+never read as a difference. p12 archives the equivalence pairs on
+mysql80 + mysql57 (`DECIMAL(12)`↔`DECIMAL(12,0)`, `DECIMAL`↔
+`DECIMAL(10,0)`, unsigned variants, `INT(10)`↔`INT(11)` execute;
+`DECIMAL(12,1)`, `DECIMAL(11)`, signedness-mismatched controls refuse
+1736). The T06 faithful-spelling contract is unchanged.
+`t13r3-mysql80-exchange-decimal-effective` binds the public pair.
+
+### 11.3 PK presence and member-sequence proofs (C)
+
+`primaryKeyIdentityFacts` resolves presence and members independently:
+
+- `PrimaryKeyUnknown` outranks any residual pointer the ordered-state
+  unvouch leaves attached — presence itself is unproven and owes that
+  side's `*_table.primary_key` fact.
+- A proven-present key whose member sequence was never observed (the
+  unattributed-object placeholder, `Kind=Primary` + `NameUnknown` +
+  nil `Columns`) owes the same fact — nil members are unproven, never
+  an empty key.
+- Members compare only when both sides' sequences are vouched; a
+  proven presence-vs-absence pair still emits 1736 independently, and
+  proven absence is never reopened by an unrelated
+  `ConstraintsUnknown`.
+
+The public chain `DROP INDEX <unbound-name>` →
+`EXCHANGE PARTITION` covers the residual-pointer regression through
+`markPrimaryUnknown` without manufacturing an uncertain live catalog
+— the C-group is a metadata-certainty regression verified through the
+public audit path.
+
+### 11.4 Native evidence ledger additions (D)
+
+- `p12_exchange_effective_types.log` (`probe12_t13r3.sh`): B-group
+  equivalence pairs and real-difference controls on mysql80 + mysql57,
+  one rebuilt fixture pair per arm, DDL rc plus catalog `COLUMN_TYPE`
+  reads — no post-state row claims. Also backfills the `INT(10)`↔
+  `INT(11)` display-width pair the R2 ADR cited from an unarchived
+  5.7 check.
+- Evidence-text alignment (this round): the R2 bundle README's golden
+  list now names the actual 7 T13-R2 cells; the TiDB interval cell is
+  complete/pass/0-gap (the online catalog materializes member names —
+  only the declared-side clause stays nil); gap facts read
+  `target_table.partitions`; p11's bounds section records 1499
+  refusals and count=0 (no 8192 creation cell, no
+  PARTITION_EXPRESSION/INTERVAL column queries); provider.log both
+  failures are Scan-column mismatches and extract.log records the
+  panic only; p5's valid scope is MySQL-only (TiDB section was 1049
+  throughout, p10 supersedes), p5_tidb_post is marked incomplete; p8
+  MySQL observed option-first only; p9's appended COUNT queries
+  failed and are not evidence.

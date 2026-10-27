@@ -73,9 +73,11 @@ commit did not close:
    catalog itself materializes `P_LT_*` names.
 3. **Effective-type comparison.** The counterpart rule compares
    column name/order, effective type family, relevant length and
-   signedness: integer display widths (`INT(10)` vs `INT(11)`,
-   proven compatible on 5.7 in p9) and defaulted lengths (`CHAR` ≡
-   `CHAR(1)`, plus DECIMAL/NUMERIC/BIT defaults) are normalized;
+   signedness: integer display widths (`INT(10)` vs `INT(11)` —
+   archived on 5.7 and 8.0 in p12) and defaulted lengths (`CHAR` ≡
+   `CHAR(1)`, plus DECIMAL/NUMERIC/BIT defaults — the `DECIMAL(M)` ≡
+   `DECIMAL(M,0)` pair is likewise archived on both anchors in p12)
+   are normalized;
    bounded faithful-type parameters keep their text. The global
    `Length` sentinel contract is unchanged — normalization lives
    inside the rule. Evaluate and EvidenceGaps share one

@@ -2534,6 +2534,140 @@
      "expect_rc": 0
     }
    ]
+  },
+  {
+   "id": "t13r3-mysql80-hash-drop-keeps-directory",
+   "anchor": "mysql80",
+   "dialect": "mysql",
+   "sql": "ALTER TABLE t13h DROP PARTITION p0;\nALTER TABLE t13h TRUNCATE PARTITION p0;",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23380,
+    "user": "root",
+    "schema": "golden",
+    "password_env": "DS_T13_GOLDEN_PW",
+    "password": "root"
+   },
+   "policy": "t13r1-truncate-target",
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 2,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete",
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "rule_summary_applicable": 1,
+    "version": {
+     "product": "mysql",
+     "version": "8.0.46"
+    }
+   },
+   "setup": [
+    {
+     "name": "create-hash-fixture",
+     "sql": "CREATE TABLE t13h (id INT, c INT) PARTITION BY HASH(id) PARTITIONS 2",
+     "expect_rc": 0
+    },
+    {
+     "name": "seed-rows",
+     "sql": "INSERT INTO t13h VALUES (1,1),(2,2)",
+     "expect_rc": 0
+    }
+   ],
+   "execute": [
+    {
+     "name": "apply-audited-drop",
+     "sql": "ALTER TABLE t13h DROP PARTITION p0",
+     "expect_rc": 1,
+     "stderr_contains": [
+      "ERROR 1512"
+     ]
+    },
+    {
+     "name": "apply-audited-truncate",
+     "sql": "ALTER TABLE t13h TRUNCATE PARTITION p0",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "directory preserved through the refused drop — p0 truncates, the p1 member row survives",
+       "sql": "SELECT COUNT(*) FROM golden.t13h",
+       "expect": "1"
+      }
+     ]
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop-fixture",
+     "sql": "DROP TABLE IF EXISTS t13h",
+     "expect_rc": 0
+    }
+   ]
+  },
+  {
+   "id": "t13r3-mysql80-exchange-decimal-effective",
+   "anchor": "mysql80",
+   "dialect": "mysql",
+   "sql": "ALTER TABLE t13d EXCHANGE PARTITION p0 WITH TABLE t13x;",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23380,
+    "user": "root",
+    "schema": "golden",
+    "password_env": "DS_T13_GOLDEN_PW",
+    "password": "root"
+   },
+   "policy": "t13r1-exchange-counterpart",
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "rule_summary_applicable": 1,
+    "version": {
+     "product": "mysql",
+     "version": "8.0.46"
+    }
+   },
+   "setup": [
+    {
+     "name": "create-partitioned-decimal",
+     "sql": "CREATE TABLE t13d (id INT, v DECIMAL(12)) ENGINE=InnoDB PARTITION BY RANGE(id) (PARTITION p0 VALUES LESS THAN (10), PARTITION p1 VALUES LESS THAN (20))",
+     "expect_rc": 0
+    },
+    {
+     "name": "create-counterpart-decimal-default-scale",
+     "sql": "CREATE TABLE t13x (id INT, v DECIMAL(12,0)) ENGINE=InnoDB",
+     "expect_rc": 0
+    }
+   ],
+   "execute": [
+    {
+     "name": "apply-audited-exchange",
+     "sql": "ALTER TABLE t13d EXCHANGE PARTITION p0 WITH TABLE t13x",
+     "expect_rc": 0
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop-fixtures",
+     "sql": "DROP TABLE IF EXISTS t13d; DROP TABLE IF EXISTS t13x",
+     "expect_rc": 0
+    }
+   ]
   }
  ],
  "required_case_ids": [
@@ -2581,6 +2715,8 @@
   "T13.meta.t13r2-mysql80-drop-then-truncate-absent",
   "T13.meta.t13r2-mysql80-drop-then-truncate-survives",
   "T13.meta.t13r2-mysql80-exchange-subpartition-leaf-gap",
-  "T13.meta.t13r2-tidb85-interval-generated-member"
+  "T13.meta.t13r2-tidb85-interval-generated-member",
+  "T13.meta.t13r3-mysql80-hash-drop-keeps-directory",
+  "T13.meta.t13r3-mysql80-exchange-decimal-effective"
  ]
 }
