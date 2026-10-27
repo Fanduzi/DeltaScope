@@ -1,0 +1,55 @@
+name: alter_table_partition_applicability
+dialect: tidb
+category: ddl
+expect:
+  parse_ok: true
+  statements:
+    count: 7
+  unsupported:
+    count: 0
+  findings:
+    include:
+      - ddl.alter.drop_partition.applicability
+      - ddl.alter.truncate_partition.applicability
+      - ddl.alter.exchange_partition.applicability
+      - ddl.alter.drop_partition.target
+      - ddl.alter.truncate_partition.target
+      - ddl.alter.exchange_partition.target
+      - ddl.alter.exchange_partition.counterpart
+metadata:
+  schema: golden
+  tables:
+    np:
+      exists: true
+      partitioned: false
+      columns:
+        - name: id
+          type: int
+          not_null: true
+    hp:
+      exists: true
+      partitioned: true
+      partition_type: hash
+      partition_names: [p0, p1]
+      columns:
+        - name: id
+          type: int
+          not_null: true
+    rp:
+      exists: true
+      partitioned: true
+      partition_type: range
+      partition_names: [p0, p1]
+      columns:
+        - name: id
+          type: int
+          not_null: true
+    c:
+      exists: true
+      partitioned: false
+      columns:
+        - name: id
+          type: int
+          not_null: true
+    missing_t:
+      exists: false

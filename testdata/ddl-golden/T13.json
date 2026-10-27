@@ -1,1045 +1,2108 @@
 {
-  "task_id": "T13",
-  "issue": "https://github.com/Fanduzi/DeltaScope/issues/92",
-  "policy_profile": "all-rules-disabled",
-  "description": "Frozen destructive/data-moving partition contract: DROP PARTITION / TRUNCATE PARTITION / EXCHANGE PARTITION are audited actions with frozen rule IDs (ddl.alter.drop_partition.forbid blocker, ddl.alter.truncate_partition.forbid blocker, ddl.alter.exchange_partition.warn warning), partition-name attribution, the exchanged-table identity entering TableTargets so protected-object rules see both sides, complete coverage on all four anchors, and ordered-state that keeps member facts while dropping data-derived statistics (multi-spec partition ALTER is a proven native refusal) — independent T13 acceptance contract",
-  "anchors": {
-    "mysql57": {
-      "service": "mysql57",
-      "container": "deltascope-ddl-golden-mysql57",
-      "image": "mysql:5.7.44",
-      "product": "mysql",
-      "version_contains": "5.7.44",
-      "database": "golden",
-      "exec_client": [
-        "mysql",
-        "-uroot",
-        "--default-character-set=utf8mb4"
-      ],
-      "needs_database_create": false,
-      "exec_password_env": "T13_MYSQL_PASSWORD"
-    },
-    "mysql80": {
-      "service": "mysql80",
-      "container": "deltascope-ddl-golden-mysql80",
-      "image": "mysql:8.0.46",
-      "product": "mysql",
-      "version_contains": "8.0.46",
-      "database": "golden",
-      "exec_client": [
-        "mysql",
-        "-uroot",
-        "--default-character-set=utf8mb4"
-      ],
-      "needs_database_create": false,
-      "exec_password_env": "T13_MYSQL_PASSWORD"
-    },
-    "mysql84": {
-      "service": "mysql84",
-      "container": "deltascope-ddl-golden-mysql84",
-      "image": "mysql:8.4.10",
-      "product": "mysql",
-      "version_contains": "8.4.10",
-      "database": "golden",
-      "exec_client": [
-        "mysql",
-        "-uroot",
-        "--default-character-set=utf8mb4"
-      ],
-      "needs_database_create": false,
-      "exec_password_env": "T13_MYSQL_PASSWORD"
-    },
-    "tidb85": {
-      "service": "tidb85",
-      "container": "deltascope-ddl-golden-tidb85",
-      "client_container": "deltascope-ddl-golden-tidb85-client",
-      "client_service": "tidb85-client",
-      "image": "pingcap/tidb:v8.5.0",
-      "product": "tidb",
-      "version_contains": "v8.5.0",
-      "database": "golden",
-      "exec_client": [
-        "mysql",
-        "--protocol=tcp",
-        "-h",
-        "tidb85",
-        "-P",
-        "4000",
-        "-uroot",
-        "--default-character-set=utf8mb4"
-      ],
-      "needs_database_create": true
-    }
+ "task_id": "T13",
+ "issue": "https://github.com/Fanduzi/DeltaScope/issues/92",
+ "policy_profile": "all-rules-disabled",
+ "description": "Frozen destructive/data-moving partition contract: DROP PARTITION / TRUNCATE PARTITION / EXCHANGE PARTITION are audited actions with frozen rule IDs (ddl.alter.drop_partition.forbid blocker, ddl.alter.truncate_partition.forbid blocker, ddl.alter.exchange_partition.warn warning), partition-name attribution, the exchanged-table identity entering TableTargets so protected-object rules see both sides, complete coverage on all four anchors, and ordered-state that keeps member facts while dropping data-derived statistics (multi-spec partition ALTER is a proven native refusal) — independent T13 acceptance contract",
+ "anchors": {
+  "mysql57": {
+   "service": "mysql57",
+   "container": "deltascope-ddl-golden-mysql57",
+   "image": "mysql:5.7.44",
+   "product": "mysql",
+   "version_contains": "5.7.44",
+   "database": "golden",
+   "exec_client": [
+    "mysql",
+    "-uroot",
+    "--default-character-set=utf8mb4"
+   ],
+   "needs_database_create": false,
+   "exec_password_env": "T13_MYSQL_PASSWORD"
   },
-  "ddl_steps": [
+  "mysql80": {
+   "service": "mysql80",
+   "container": "deltascope-ddl-golden-mysql80",
+   "image": "mysql:8.0.46",
+   "product": "mysql",
+   "version_contains": "8.0.46",
+   "database": "golden",
+   "exec_client": [
+    "mysql",
+    "-uroot",
+    "--default-character-set=utf8mb4"
+   ],
+   "needs_database_create": false,
+   "exec_password_env": "T13_MYSQL_PASSWORD"
+  },
+  "mysql84": {
+   "service": "mysql84",
+   "container": "deltascope-ddl-golden-mysql84",
+   "image": "mysql:8.4.10",
+   "product": "mysql",
+   "version_contains": "8.4.10",
+   "database": "golden",
+   "exec_client": [
+    "mysql",
+    "-uroot",
+    "--default-character-set=utf8mb4"
+   ],
+   "needs_database_create": false,
+   "exec_password_env": "T13_MYSQL_PASSWORD"
+  },
+  "tidb85": {
+   "service": "tidb85",
+   "container": "deltascope-ddl-golden-tidb85",
+   "client_container": "deltascope-ddl-golden-tidb85-client",
+   "client_service": "tidb85-client",
+   "image": "pingcap/tidb:v8.5.0",
+   "product": "tidb",
+   "version_contains": "v8.5.0",
+   "database": "golden",
+   "exec_client": [
+    "mysql",
+    "--protocol=tcp",
+    "-h",
+    "tidb85",
+    "-P",
+    "4000",
+    "-uroot",
+    "--default-character-set=utf8mb4"
+   ],
+   "needs_database_create": true
+  }
+ },
+ "ddl_steps": [
+  {
+   "name": "create-partitioned-fixture",
+   "sql": "CREATE TABLE t13g (id INT, c INT) PARTITION BY RANGE (id) (PARTITION p0 VALUES LESS THAN (100), PARTITION p1 VALUES LESS THAN (200))",
+   "expect_rc": 0,
+   "verify": [
     {
-      "name": "create-partitioned-fixture",
-      "sql": "CREATE TABLE t13g (id INT, c INT) PARTITION BY RANGE (id) (PARTITION p0 VALUES LESS THAN (100), PARTITION p1 VALUES LESS THAN (200))",
-      "expect_rc": 0,
-      "verify": [
-        {
-          "assert": "range fixture lands with two named partitions on every anchor",
-          "sql": "SELECT COUNT(*) FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t13g' AND PARTITION_NAME IS NOT NULL",
-          "expect": "2"
-        }
-      ]
-    },
-    {
-      "name": "seed-partition-rows",
-      "sql": "INSERT INTO t13g VALUES (10, 1), (150, 2)",
-      "expect_rc": 0,
-      "verify": [
-        {
-          "assert": "the p1-range row lands",
-          "sql": "SELECT COUNT(*) FROM golden.t13g WHERE id >= 100",
-          "expect": "1"
-        }
-      ]
-    },
-    {
-      "name": "drop-partition-p0",
-      "sql": "ALTER TABLE t13g DROP PARTITION p0",
-      "expect_rc": 0,
-      "verify": [
-        {
-          "assert": "p0 definition is gone after DROP PARTITION",
-          "sql": "SELECT COUNT(*) FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t13g' AND PARTITION_NAME='p0'",
-          "expect": "0"
-        },
-        {
-          "assert": "p1's row survives the drop",
-          "sql": "SELECT COUNT(*) FROM golden.t13g WHERE id >= 100",
-          "expect": "1"
-        }
-      ]
-    },
-    {
-      "name": "truncate-partition-p1",
-      "sql": "ALTER TABLE t13g TRUNCATE PARTITION p1",
-      "expect_rc": 0,
-      "verify": [
-        {
-          "assert": "p1 definition survives TRUNCATE while its rows are gone",
-          "sql": "SELECT COUNT(*) FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t13g' AND PARTITION_NAME='p1'",
-          "expect": "1"
-        },
-        {
-          "assert": "no rows remain in the table after both partitions emptied",
-          "sql": "SELECT COUNT(*) FROM golden.t13g",
-          "expect": "0"
-        }
-      ]
-    },
-    {
-      "name": "create-exchange-counterpart",
-      "sql": "CREATE TABLE t13x (id INT, c INT)",
-      "expect_rc": 0,
-      "verify": [
-        {
-          "assert": "exchange counterpart is a plain non-partitioned table",
-          "sql": "SELECT COUNT(*) FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t13x' AND PARTITION_NAME IS NOT NULL",
-          "expect": "0"
-        }
-      ]
-    },
-    {
-      "name": "seed-exchange-row",
-      "sql": "INSERT INTO t13x VALUES (160, 9)",
-      "expect_rc": 0,
-      "verify": [
-        {
-          "assert": "counterpart row lands inside p1 range (100 <= 160 < 200)",
-          "sql": "SELECT COUNT(*) FROM golden.t13x",
-          "expect": "1"
-        }
-      ]
-    },
-    {
-      "name": "exchange-partition-p1",
-      "sql": "ALTER TABLE t13g EXCHANGE PARTITION p1 WITH TABLE t13x WITHOUT VALIDATION",
-      "expect_rc": 0,
-      "verify": [
-        {
-          "assert": "the counterpart row moved into the partitioned table",
-          "sql": "SELECT COUNT(*) FROM golden.t13g",
-          "expect": "1"
-        },
-        {
-          "assert": "the counterpart is empty after the swap",
-          "sql": "SELECT COUNT(*) FROM golden.t13x",
-          "expect": "0"
-        }
-      ]
-    },
-    {
-      "name": "cleanup",
-      "sql": "DROP TABLE t13g, t13x",
-      "expect_rc": 0,
-      "verify": [
-        {
-          "assert": "fixtures removed",
-          "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME IN ('t13g','t13x')",
-          "expect": "0"
-        }
-      ]
+     "assert": "range fixture lands with two named partitions on every anchor",
+     "sql": "SELECT COUNT(*) FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t13g' AND PARTITION_NAME IS NOT NULL",
+     "expect": "2"
     }
+   ]
+  },
+  {
+   "name": "seed-partition-rows",
+   "sql": "INSERT INTO t13g VALUES (10, 1), (150, 2)",
+   "expect_rc": 0,
+   "verify": [
+    {
+     "assert": "the p1-range row lands",
+     "sql": "SELECT COUNT(*) FROM golden.t13g WHERE id >= 100",
+     "expect": "1"
+    }
+   ]
+  },
+  {
+   "name": "drop-partition-p0",
+   "sql": "ALTER TABLE t13g DROP PARTITION p0",
+   "expect_rc": 0,
+   "verify": [
+    {
+     "assert": "p0 definition is gone after DROP PARTITION",
+     "sql": "SELECT COUNT(*) FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t13g' AND PARTITION_NAME='p0'",
+     "expect": "0"
+    },
+    {
+     "assert": "p1's row survives the drop",
+     "sql": "SELECT COUNT(*) FROM golden.t13g WHERE id >= 100",
+     "expect": "1"
+    }
+   ]
+  },
+  {
+   "name": "truncate-partition-p1",
+   "sql": "ALTER TABLE t13g TRUNCATE PARTITION p1",
+   "expect_rc": 0,
+   "verify": [
+    {
+     "assert": "p1 definition survives TRUNCATE while its rows are gone",
+     "sql": "SELECT COUNT(*) FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t13g' AND PARTITION_NAME='p1'",
+     "expect": "1"
+    },
+    {
+     "assert": "no rows remain in the table after both partitions emptied",
+     "sql": "SELECT COUNT(*) FROM golden.t13g",
+     "expect": "0"
+    }
+   ]
+  },
+  {
+   "name": "create-exchange-counterpart",
+   "sql": "CREATE TABLE t13x (id INT, c INT)",
+   "expect_rc": 0,
+   "verify": [
+    {
+     "assert": "exchange counterpart is a plain non-partitioned table",
+     "sql": "SELECT COUNT(*) FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t13x' AND PARTITION_NAME IS NOT NULL",
+     "expect": "0"
+    }
+   ]
+  },
+  {
+   "name": "seed-exchange-row",
+   "sql": "INSERT INTO t13x VALUES (160, 9)",
+   "expect_rc": 0,
+   "verify": [
+    {
+     "assert": "counterpart row lands inside p1 range (100 <= 160 < 200)",
+     "sql": "SELECT COUNT(*) FROM golden.t13x",
+     "expect": "1"
+    }
+   ]
+  },
+  {
+   "name": "exchange-partition-p1",
+   "sql": "ALTER TABLE t13g EXCHANGE PARTITION p1 WITH TABLE t13x WITHOUT VALIDATION",
+   "expect_rc": 0,
+   "verify": [
+    {
+     "assert": "the counterpart row moved into the partitioned table",
+     "sql": "SELECT COUNT(*) FROM golden.t13g",
+     "expect": "1"
+    },
+    {
+     "assert": "the counterpart is empty after the swap",
+     "sql": "SELECT COUNT(*) FROM golden.t13x",
+     "expect": "0"
+    }
+   ]
+  },
+  {
+   "name": "cleanup",
+   "sql": "DROP TABLE t13g, t13x",
+   "expect_rc": 0,
+   "verify": [
+    {
+     "assert": "fixtures removed",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME IN ('t13g','t13x')",
+     "expect": "0"
+    }
+   ]
+  }
+ ],
+ "syntax_negative": {
+  "sql": "ALTER TABLE t13g DROP PARTITION (",
+  "expect": {
+   "rc_nonzero": true,
+   "error_class": "1064",
+   "forbidden_markers": [
+    "ERROR 1045",
+    "ERROR 1044",
+    "ERROR 1049",
+    "ERROR 1142",
+    "ERROR 1143",
+    "ERROR 2002",
+    "ERROR 2003",
+    "ERROR 2005",
+    "Access denied",
+    "Unknown database",
+    "Can't connect",
+    "Connection refused",
+    "already exists"
+   ]
+  }
+ },
+ "cli_audit": {
+  "dialects": [
+   "mysql",
+   "tidb"
   ],
-  "syntax_negative": {
-    "sql": "ALTER TABLE t13g DROP PARTITION (",
-    "expect": {
-      "rc_nonzero": true,
-      "error_class": "1064",
-      "forbidden_markers": [
-        "ERROR 1045",
-        "ERROR 1044",
-        "ERROR 1049",
-        "ERROR 1142",
-        "ERROR 1143",
-        "ERROR 2002",
-        "ERROR 2003",
-        "ERROR 2005",
-        "Access denied",
-        "Unknown database",
-        "Can't connect",
-        "Connection refused",
-        "already exists"
-      ]
+  "sql": "ALTER TABLE t DROP PARTITION p0;",
+  "expect": {
+   "exit": 0,
+   "verdict": "pass",
+   "statements": 1,
+   "findings": 0,
+   "diagnostics": 0,
+   "unsupported": 0,
+   "coverage": "complete"
+  }
+ },
+ "policy": {
+  "profiles": {
+   "t13-drop": {
+    "enable": {
+     "ddl.alter.drop_partition.forbid": {
+      "level": "blocker"
+     }
     }
-  },
-  "cli_audit": {
-    "dialects": [
-      "mysql",
-      "tidb"
+   },
+   "t13-truncate": {
+    "enable": {
+     "ddl.alter.truncate_partition.forbid": {
+      "level": "blocker"
+     }
+    }
+   },
+   "t13-exchange": {
+    "enable": {
+     "ddl.alter.exchange_partition.warn": {
+      "level": "warning"
+     }
+    }
+   },
+   "t13-deny-x": {
+    "enable": {
+     "ddl.table.denylist.forbid": {
+      "level": "blocker",
+      "params": {
+       "tables": [
+        "t13x"
+       ]
+      }
+     }
+    }
+   },
+   "t13-deny-t": {
+    "enable": {
+     "ddl.table.denylist.forbid": {
+      "level": "blocker",
+      "params": {
+       "tables": [
+        "t"
+       ]
+      }
+     }
+    }
+   },
+   "t13r1-drop-applicability": {
+    "enable": {
+     "ddl.alter.drop_partition.applicability": {
+      "level": "blocker"
+     }
+    }
+   },
+   "t13r1-drop-target": {
+    "enable": {
+     "ddl.alter.drop_partition.target": {
+      "level": "blocker"
+     }
+    }
+   },
+   "t13r1-truncate-target": {
+    "enable": {
+     "ddl.alter.truncate_partition.target": {
+      "level": "blocker"
+     }
+    }
+   },
+   "t13r1-exchange-applicability": {
+    "enable": {
+     "ddl.alter.exchange_partition.applicability": {
+      "level": "blocker"
+     }
+    }
+   },
+   "t13r1-exchange-target": {
+    "enable": {
+     "ddl.alter.exchange_partition.target": {
+      "level": "blocker"
+     }
+    }
+   },
+   "t13r1-exchange-counterpart": {
+    "enable": {
+     "ddl.alter.exchange_partition.counterpart": {
+      "level": "blocker"
+     }
+    }
+   },
+   "t13r1-truncate-rows": {
+    "enable": {
+     "ddl.table.truncate.rows.max_count": {
+      "level": "blocker",
+      "params": {
+       "limit": 1
+      }
+     }
+    }
+   }
+  }
+ },
+ "cli_cases": [
+  {
+   "id": "t13-cli-drop-partition-blocker",
+   "dialect": "mysql",
+   "sql": "ALTER TABLE t DROP PARTITION p0;",
+   "policy": "t13-drop",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
     ],
-    "sql": "ALTER TABLE t DROP PARTITION p0;",
-    "expect": {
-      "exit": 0,
-      "verdict": "pass",
-      "statements": 1,
-      "findings": 0,
-      "diagnostics": 0,
-      "unsupported": 0,
-      "coverage": "complete"
-    }
+    "evidence_gaps": 0,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.alter.drop_partition.forbid",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.alter.drop_partition.forbid",
+      "metadata": {
+       "table": "t",
+       "partition": "p0",
+       "action": "drop_partition"
+      }
+     }
+    ],
+    "rule_summary_applicable": 1
+   }
   },
-  "policy": {
-    "profiles": {
-      "t13-drop": {
-        "enable": {
-          "ddl.alter.drop_partition.forbid": {
-            "level": "blocker"
-          }
-        }
-      },
-      "t13-truncate": {
-        "enable": {
-          "ddl.alter.truncate_partition.forbid": {
-            "level": "blocker"
-          }
-        }
-      },
-      "t13-exchange": {
-        "enable": {
-          "ddl.alter.exchange_partition.warn": {
-            "level": "warning"
-          }
-        }
-      },
-      "t13-deny-x": {
-        "enable": {
-          "ddl.table.denylist.forbid": {
-            "level": "blocker",
-            "params": {
-              "tables": [
-                "t13x"
-              ]
-            }
-          }
-        }
-      },
-      "t13-deny-t": {
-        "enable": {
-          "ddl.table.denylist.forbid": {
-            "level": "blocker",
-            "params": {
-              "tables": [
-                "t"
-              ]
-            }
-          }
-        }
+  {
+   "id": "t13-cli-drop-partition-tidb-blocker",
+   "dialect": "tidb",
+   "sql": "ALTER TABLE t DROP PARTITION p0;",
+   "policy": "t13-drop",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.alter.drop_partition.forbid",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.alter.drop_partition.forbid",
+      "metadata": {
+       "table": "t",
+       "partition": "p0"
       }
-    }
+     }
+    ],
+    "rule_summary_applicable": 1
+   }
   },
-  "cli_cases": [
-    {
-      "id": "t13-cli-drop-partition-blocker",
-      "dialect": "mysql",
-      "sql": "ALTER TABLE t DROP PARTITION p0;",
-      "policy": "t13-drop",
-      "args": [
-        "--fail-on",
-        "blocker"
-      ],
-      "expect": {
-        "exit": 1,
-        "verdict": "reject",
-        "statements": 1,
-        "findings": 1,
-        "diagnostics": 0,
-        "unsupported": 0,
-        "coverage": "complete",
-        "statement_coverage": [
-          "complete"
-        ],
-        "evidence_gaps": 0,
-        "finding_entries": [
-          {
-            "index": 0,
-            "rule_id": "ddl.alter.drop_partition.forbid",
-            "level": "blocker"
-          }
-        ],
-        "finding_metadata": [
-          {
-            "index": 0,
-            "rule_id": "ddl.alter.drop_partition.forbid",
-            "metadata": {
-              "table": "t",
-              "partition": "p0",
-              "action": "drop_partition"
-            }
-          }
-        ],
-        "rule_summary_applicable": 1
+  {
+   "id": "t13-cli-drop-partition-multi",
+   "dialect": "mysql",
+   "sql": "ALTER TABLE t DROP PARTITION p0, p1;",
+   "policy": "t13-drop",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 2,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.alter.drop_partition.forbid",
+      "level": "blocker"
+     },
+     {
+      "index": 0,
+      "rule_id": "ddl.alter.drop_partition.forbid",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.alter.drop_partition.forbid",
+      "metadata": {
+       "table": "t",
+       "partition": "p0"
       }
-    },
-    {
-      "id": "t13-cli-drop-partition-tidb-blocker",
-      "dialect": "tidb",
-      "sql": "ALTER TABLE t DROP PARTITION p0;",
-      "policy": "t13-drop",
-      "args": [
-        "--fail-on",
-        "blocker"
-      ],
-      "expect": {
-        "exit": 1,
-        "verdict": "reject",
-        "statements": 1,
-        "findings": 1,
-        "diagnostics": 0,
-        "unsupported": 0,
-        "coverage": "complete",
-        "statement_coverage": [
-          "complete"
-        ],
-        "evidence_gaps": 0,
-        "finding_entries": [
-          {
-            "index": 0,
-            "rule_id": "ddl.alter.drop_partition.forbid",
-            "level": "blocker"
-          }
-        ],
-        "finding_metadata": [
-          {
-            "index": 0,
-            "rule_id": "ddl.alter.drop_partition.forbid",
-            "metadata": {
-              "table": "t",
-              "partition": "p0"
-            }
-          }
-        ],
-        "rule_summary_applicable": 1
+     },
+     {
+      "index": 0,
+      "rule_id": "ddl.alter.drop_partition.forbid",
+      "metadata": {
+       "table": "t",
+       "partition": "p1"
       }
-    },
-    {
-      "id": "t13-cli-drop-partition-multi",
-      "dialect": "mysql",
-      "sql": "ALTER TABLE t DROP PARTITION p0, p1;",
-      "policy": "t13-drop",
-      "args": [
-        "--fail-on",
-        "blocker"
-      ],
-      "expect": {
-        "exit": 1,
-        "verdict": "reject",
-        "statements": 1,
-        "findings": 2,
-        "diagnostics": 0,
-        "unsupported": 0,
-        "coverage": "complete",
-        "statement_coverage": [
-          "complete"
-        ],
-        "finding_entries": [
-          {
-            "index": 0,
-            "rule_id": "ddl.alter.drop_partition.forbid",
-            "level": "blocker"
-          },
-          {
-            "index": 0,
-            "rule_id": "ddl.alter.drop_partition.forbid",
-            "level": "blocker"
-          }
-        ],
-        "finding_metadata": [
-          {
-            "index": 0,
-            "rule_id": "ddl.alter.drop_partition.forbid",
-            "metadata": {
-              "table": "t",
-              "partition": "p0"
-            }
-          },
-          {
-            "index": 0,
-            "rule_id": "ddl.alter.drop_partition.forbid",
-            "metadata": {
-              "table": "t",
-              "partition": "p1"
-            }
-          }
-        ]
+     }
+    ]
+   }
+  },
+  {
+   "id": "t13-cli-drop-partition-off",
+   "dialect": "mysql",
+   "sql": "ALTER TABLE t DROP PARTITION p0;",
+   "policy": "all-rules-disabled",
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ]
+   }
+  },
+  {
+   "id": "t13-cli-truncate-partition-blocker",
+   "dialect": "mysql",
+   "sql": "ALTER TABLE t TRUNCATE PARTITION p0;",
+   "policy": "t13-truncate",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.alter.truncate_partition.forbid",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.alter.truncate_partition.forbid",
+      "metadata": {
+       "table": "t",
+       "partition": "p0"
       }
-    },
-    {
-      "id": "t13-cli-drop-partition-off",
-      "dialect": "mysql",
-      "sql": "ALTER TABLE t DROP PARTITION p0;",
-      "policy": "all-rules-disabled",
-      "expect": {
-        "exit": 0,
-        "verdict": "pass",
-        "statements": 1,
-        "findings": 0,
-        "diagnostics": 0,
-        "unsupported": 0,
-        "coverage": "complete",
-        "statement_coverage": [
-          "complete"
-        ]
+     }
+    ],
+    "rule_summary_applicable": 1
+   }
+  },
+  {
+   "id": "t13-cli-truncate-partition-all",
+   "dialect": "tidb",
+   "sql": "ALTER TABLE t TRUNCATE PARTITION ALL;",
+   "policy": "t13-truncate",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.alter.truncate_partition.forbid",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.alter.truncate_partition.forbid",
+      "metadata": {
+       "table": "t",
+       "all_partitions": "true"
       }
-    },
-    {
-      "id": "t13-cli-truncate-partition-blocker",
-      "dialect": "mysql",
-      "sql": "ALTER TABLE t TRUNCATE PARTITION p0;",
-      "policy": "t13-truncate",
-      "args": [
-        "--fail-on",
-        "blocker"
-      ],
-      "expect": {
-        "exit": 1,
-        "verdict": "reject",
-        "statements": 1,
-        "findings": 1,
-        "diagnostics": 0,
-        "unsupported": 0,
-        "coverage": "complete",
-        "statement_coverage": [
-          "complete"
-        ],
-        "finding_entries": [
-          {
-            "index": 0,
-            "rule_id": "ddl.alter.truncate_partition.forbid",
-            "level": "blocker"
-          }
-        ],
-        "finding_metadata": [
-          {
-            "index": 0,
-            "rule_id": "ddl.alter.truncate_partition.forbid",
-            "metadata": {
-              "table": "t",
-              "partition": "p0"
-            }
-          }
-        ],
-        "rule_summary_applicable": 1
+     }
+    ],
+    "rule_summary_applicable": 1
+   }
+  },
+  {
+   "id": "t13-cli-exchange-warn",
+   "dialect": "mysql",
+   "sql": "ALTER TABLE t EXCHANGE PARTITION p0 WITH TABLE t2;",
+   "policy": "t13-exchange",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.alter.exchange_partition.warn",
+      "level": "warning"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.alter.exchange_partition.warn",
+      "metadata": {
+       "table": "t",
+       "partition": "p0",
+       "exchange_table": "t2",
+       "exchange_schema": "",
+       "validation": "with"
       }
-    },
-    {
-      "id": "t13-cli-truncate-partition-all",
-      "dialect": "tidb",
-      "sql": "ALTER TABLE t TRUNCATE PARTITION ALL;",
-      "policy": "t13-truncate",
-      "args": [
-        "--fail-on",
-        "blocker"
-      ],
-      "expect": {
-        "exit": 1,
-        "verdict": "reject",
-        "statements": 1,
-        "findings": 1,
-        "diagnostics": 0,
-        "unsupported": 0,
-        "coverage": "complete",
-        "statement_coverage": [
-          "complete"
-        ],
-        "finding_entries": [
-          {
-            "index": 0,
-            "rule_id": "ddl.alter.truncate_partition.forbid",
-            "level": "blocker"
-          }
-        ],
-        "finding_metadata": [
-          {
-            "index": 0,
-            "rule_id": "ddl.alter.truncate_partition.forbid",
-            "metadata": {
-              "table": "t",
-              "all_partitions": "true"
-            }
-          }
-        ],
-        "rule_summary_applicable": 1
+     }
+    ],
+    "rule_summary_applicable": 1
+   }
+  },
+  {
+   "id": "t13-cli-exchange-noval-fail-on-warning",
+   "dialect": "tidb",
+   "sql": "ALTER TABLE t EXCHANGE PARTITION p0 WITH TABLE t2 WITHOUT VALIDATION;",
+   "policy": "t13-exchange",
+   "args": [
+    "--fail-on",
+    "warning"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "fail_on_triggered": true,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.alter.exchange_partition.warn",
+      "level": "warning"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.alter.exchange_partition.warn",
+      "metadata": {
+       "table": "t",
+       "partition": "p0",
+       "exchange_table": "t2",
+       "validation": "without"
       }
-    },
-    {
-      "id": "t13-cli-exchange-warn",
-      "dialect": "mysql",
-      "sql": "ALTER TABLE t EXCHANGE PARTITION p0 WITH TABLE t2;",
-      "policy": "t13-exchange",
-      "args": [
-        "--fail-on",
-        "blocker"
-      ],
-      "expect": {
-        "exit": 0,
-        "verdict": "review",
-        "statements": 1,
-        "findings": 1,
-        "diagnostics": 0,
-        "unsupported": 0,
-        "coverage": "complete",
-        "statement_coverage": [
-          "complete"
-        ],
-        "finding_entries": [
-          {
-            "index": 0,
-            "rule_id": "ddl.alter.exchange_partition.warn",
-            "level": "warning"
-          }
-        ],
-        "finding_metadata": [
-          {
-            "index": 0,
-            "rule_id": "ddl.alter.exchange_partition.warn",
-            "metadata": {
-              "table": "t",
-              "partition": "p0",
-              "exchange_table": "t2",
-              "exchange_schema": "",
-              "validation": "with"
-            }
-          }
-        ],
-        "rule_summary_applicable": 1
+     }
+    ],
+    "rule_summary_applicable": 1
+   }
+  },
+  {
+   "id": "t13-cli-exchange-qualified",
+   "dialect": "mysql",
+   "sql": "ALTER TABLE t EXCHANGE PARTITION p0 WITH TABLE s2.t2;",
+   "policy": "t13-exchange",
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.alter.exchange_partition.warn",
+      "metadata": {
+       "table": "t",
+       "partition": "p0",
+       "exchange_table": "t2",
+       "exchange_schema": "s2",
+       "validation": "with"
       }
-    },
-    {
-      "id": "t13-cli-exchange-noval-fail-on-warning",
-      "dialect": "tidb",
-      "sql": "ALTER TABLE t EXCHANGE PARTITION p0 WITH TABLE t2 WITHOUT VALIDATION;",
-      "policy": "t13-exchange",
-      "args": [
-        "--fail-on",
-        "warning"
-      ],
-      "expect": {
-        "exit": 1,
-        "verdict": "review",
-        "statements": 1,
-        "findings": 1,
-        "diagnostics": 0,
-        "unsupported": 0,
-        "coverage": "complete",
-        "statement_coverage": [
-          "complete"
-        ],
-        "fail_on_triggered": true,
-        "finding_entries": [
-          {
-            "index": 0,
-            "rule_id": "ddl.alter.exchange_partition.warn",
-            "level": "warning"
-          }
-        ],
-        "finding_metadata": [
-          {
-            "index": 0,
-            "rule_id": "ddl.alter.exchange_partition.warn",
-            "metadata": {
-              "table": "t",
-              "partition": "p0",
-              "exchange_table": "t2",
-              "validation": "without"
-            }
-          }
-        ],
-        "rule_summary_applicable": 1
+     }
+    ]
+   }
+  },
+  {
+   "id": "t13-cli-exchange-protected-other-side",
+   "dialect": "mysql",
+   "sql": "ALTER TABLE t EXCHANGE PARTITION p0 WITH TABLE t13x;",
+   "policy": "t13-deny-x",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.denylist.forbid",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.denylist.forbid",
+      "metadata": {
+       "table": "t13x"
       }
-    },
-    {
-      "id": "t13-cli-exchange-qualified",
-      "dialect": "mysql",
-      "sql": "ALTER TABLE t EXCHANGE PARTITION p0 WITH TABLE s2.t2;",
-      "policy": "t13-exchange",
-      "expect": {
-        "exit": 0,
-        "verdict": "review",
-        "statements": 1,
-        "findings": 1,
-        "diagnostics": 0,
-        "unsupported": 0,
-        "coverage": "complete",
-        "statement_coverage": [
-          "complete"
-        ],
-        "finding_metadata": [
-          {
-            "index": 0,
-            "rule_id": "ddl.alter.exchange_partition.warn",
-            "metadata": {
-              "table": "t",
-              "partition": "p0",
-              "exchange_table": "t2",
-              "exchange_schema": "s2",
-              "validation": "with"
-            }
-          }
-        ]
+     }
+    ],
+    "rule_summary_applicable": 1
+   }
+  },
+  {
+   "id": "t13-cli-exchange-protected-left",
+   "dialect": "mysql",
+   "sql": "ALTER TABLE t EXCHANGE PARTITION p0 WITH TABLE t13x;",
+   "policy": "t13-deny-t",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.denylist.forbid",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.denylist.forbid",
+      "metadata": {
+       "table": "t"
       }
-    },
-    {
-      "id": "t13-cli-exchange-protected-other-side",
-      "dialect": "mysql",
-      "sql": "ALTER TABLE t EXCHANGE PARTITION p0 WITH TABLE t13x;",
-      "policy": "t13-deny-x",
-      "args": [
-        "--fail-on",
-        "blocker"
-      ],
-      "expect": {
-        "exit": 1,
-        "verdict": "reject",
-        "statements": 1,
-        "findings": 1,
-        "diagnostics": 0,
-        "unsupported": 0,
-        "coverage": "complete",
-        "statement_coverage": [
-          "complete"
-        ],
-        "finding_entries": [
-          {
-            "index": 0,
-            "rule_id": "ddl.table.denylist.forbid",
-            "level": "blocker"
-          }
-        ],
-        "finding_metadata": [
-          {
-            "index": 0,
-            "rule_id": "ddl.table.denylist.forbid",
-            "metadata": {
-              "table": "t13x"
-            }
-          }
-        ],
-        "rule_summary_applicable": 1
+     }
+    ],
+    "rule_summary_applicable": 1
+   }
+  },
+  {
+   "id": "t13-cli-addcol-control",
+   "dialect": "mysql",
+   "sql": "ALTER TABLE t ADD COLUMN c INT;",
+   "policy": "t13-drop",
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "rule_summary_applicable": 1
+   }
+  },
+  {
+   "id": "t13-cli-mixed-refusal",
+   "dialect": "mysql",
+   "sql": "ALTER TABLE t ADD COLUMN x INT, DROP PARTITION p0;",
+   "policy": "t13-drop",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.alter.drop_partition.forbid",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.alter.drop_partition.forbid",
+      "metadata": {
+       "table": "t",
+       "partition": "p0"
       }
-    },
-    {
-      "id": "t13-cli-exchange-protected-left",
-      "dialect": "mysql",
-      "sql": "ALTER TABLE t EXCHANGE PARTITION p0 WITH TABLE t13x;",
-      "policy": "t13-deny-t",
-      "args": [
-        "--fail-on",
-        "blocker"
-      ],
-      "expect": {
-        "exit": 1,
-        "verdict": "reject",
-        "statements": 1,
-        "findings": 1,
-        "diagnostics": 0,
-        "unsupported": 0,
-        "coverage": "complete",
-        "statement_coverage": [
-          "complete"
-        ],
-        "finding_entries": [
-          {
-            "index": 0,
-            "rule_id": "ddl.table.denylist.forbid",
-            "level": "blocker"
-          }
-        ],
-        "finding_metadata": [
-          {
-            "index": 0,
-            "rule_id": "ddl.table.denylist.forbid",
-            "metadata": {
-              "table": "t"
-            }
-          }
-        ],
-        "rule_summary_applicable": 1
+     }
+    ]
+   }
+  },
+  {
+   "id": "t13r1-cli-drop-applicability-gap",
+   "dialect": "mysql",
+   "sql": "ALTER TABLE t DROP PARTITION p0;",
+   "policy": "t13r1-drop-applicability",
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": [
+     "unverified"
+    ],
+    "evidence_gaps": 1,
+    "evidence_gap_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.alter.drop_partition.applicability",
+      "reason_code": "unknown_table_state",
+      "required_facts": [
+       "target_table.partitioned"
+      ]
+     }
+    ],
+    "rule_summary_applicable": 1
+   }
+  },
+  {
+   "id": "t13r1-cli-drop-applicability-gap-tidb",
+   "dialect": "tidb",
+   "sql": "ALTER TABLE t DROP PARTITION p0;",
+   "policy": "t13r1-drop-applicability",
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": [
+     "unverified"
+    ],
+    "evidence_gaps": 1,
+    "evidence_gap_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.alter.drop_partition.applicability",
+      "reason_code": "unknown_table_state",
+      "required_facts": [
+       "target_table.partitioned"
+      ]
+     }
+    ],
+    "rule_summary_applicable": 1
+   }
+  },
+  {
+   "id": "t13r1-cli-exchange-counterpart-gap",
+   "dialect": "mysql",
+   "sql": "ALTER TABLE t EXCHANGE PARTITION p0 WITH TABLE t2;",
+   "policy": "t13r1-exchange-counterpart",
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": [
+     "unverified"
+    ],
+    "evidence_gaps": 1,
+    "evidence_gap_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.alter.exchange_partition.counterpart",
+      "reason_code": "unknown_table_state",
+      "required_facts": [
+       "exchange_table.existence"
+      ]
+     }
+    ],
+    "rule_summary_applicable": 1
+   }
+  }
+ ],
+ "metadata_cases": [
+  {
+   "id": "t13-mysql80-golden",
+   "anchor": "mysql80",
+   "dialect": "mysql",
+   "sql": "ALTER TABLE t13g DROP PARTITION p0;",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23380,
+    "user": "root",
+    "schema": "golden",
+    "password_env": "DS_T13_GOLDEN_PW",
+    "password": "root"
+   },
+   "policy": "t13-drop",
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.alter.drop_partition.forbid",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.alter.drop_partition.forbid",
+      "metadata": {
+       "table": "t13g",
+       "partition": "p0"
       }
-    },
-    {
-      "id": "t13-cli-addcol-control",
-      "dialect": "mysql",
-      "sql": "ALTER TABLE t ADD COLUMN c INT;",
-      "policy": "t13-drop",
-      "expect": {
-        "exit": 0,
-        "verdict": "pass",
-        "statements": 1,
-        "findings": 0,
-        "diagnostics": 0,
-        "unsupported": 0,
-        "coverage": "complete",
-        "statement_coverage": [
-          "complete"
-        ],
-        "rule_summary_applicable": 1
-      }
-    },
-    {
-      "id": "t13-cli-mixed-refusal",
-      "dialect": "mysql",
-      "sql": "ALTER TABLE t ADD COLUMN x INT, DROP PARTITION p0;",
-      "policy": "t13-drop",
-      "args": [
-        "--fail-on",
-        "blocker"
-      ],
-      "expect": {
-        "exit": 1,
-        "verdict": "reject",
-        "statements": 1,
-        "findings": 1,
-        "diagnostics": 0,
-        "unsupported": 0,
-        "coverage": "complete",
-        "statement_coverage": [
-          "complete"
-        ],
-        "finding_entries": [
-          {
-            "index": 0,
-            "rule_id": "ddl.alter.drop_partition.forbid",
-            "level": "blocker"
-          }
-        ],
-        "finding_metadata": [
-          {
-            "index": 0,
-            "rule_id": "ddl.alter.drop_partition.forbid",
-            "metadata": {
-              "table": "t",
-              "partition": "p0"
-            }
-          }
-        ]
-      }
+     }
+    ],
+    "rule_summary_applicable": 1,
+    "version": {
+     "product": "mysql",
+     "version": "8.0.46"
     }
-  ],
-  "metadata_cases": [
+   },
+   "setup": [
     {
-      "id": "t13-mysql80-golden",
-      "anchor": "mysql80",
-      "dialect": "mysql",
-      "sql": "ALTER TABLE t13g DROP PARTITION p0;",
-      "connect": {
-        "host": "127.0.0.1",
-        "port": 23380,
-        "user": "root",
-        "schema": "golden",
-        "password_env": "DS_T13_GOLDEN_PW",
-        "password": "root"
-      },
-      "policy": "t13-drop",
-      "expect": {
-        "exit": 1,
-        "verdict": "reject",
-        "statements": 1,
-        "findings": 1,
-        "diagnostics": 0,
-        "unsupported": 0,
-        "coverage": "complete",
-        "statement_coverage": [
-          "complete"
-        ],
-        "evidence_gaps": 0,
-        "finding_entries": [
-          {
-            "index": 0,
-            "rule_id": "ddl.alter.drop_partition.forbid",
-            "level": "blocker"
-          }
-        ],
-        "finding_metadata": [
-          {
-            "index": 0,
-            "rule_id": "ddl.alter.drop_partition.forbid",
-            "metadata": {
-              "table": "t13g",
-              "partition": "p0"
-            }
-          }
-        ],
-        "rule_summary_applicable": 1,
-        "version": {
-          "product": "mysql",
-          "version": "8.0.46"
-        }
-      },
-      "setup": [
-        {
-          "name": "create-partitioned-fixture",
-          "sql": "CREATE TABLE t13g (id INT, c INT) PARTITION BY RANGE (id) (PARTITION p0 VALUES LESS THAN (100), PARTITION p1 VALUES LESS THAN (200))",
-          "expect_rc": 0
-        },
-        {
-          "name": "seed-partition-rows",
-          "sql": "INSERT INTO t13g VALUES (10, 1), (150, 2)",
-          "expect_rc": 0
-        }
-      ],
-      "execute": [
-        {
-          "name": "apply-audited-drop",
-          "sql": "ALTER TABLE t13g DROP PARTITION p0",
-          "expect_rc": 0,
-          "verify": [
-            {
-              "assert": "p0 and its rows are gone",
-              "sql": "SELECT COUNT(*) FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t13g' AND PARTITION_NAME='p0'",
-              "expect": "0"
-            },
-            {
-              "assert": "p1's row survives the audited drop",
-              "sql": "SELECT COUNT(*) FROM golden.t13g WHERE id >= 100",
-              "expect": "1"
-            }
-          ]
-        }
-      ],
-      "teardown": [
-        {
-          "name": "drop-fixture",
-          "sql": "DROP TABLE t13g",
-          "expect_rc": 0
-        }
-      ]
+     "name": "create-partitioned-fixture",
+     "sql": "CREATE TABLE t13g (id INT, c INT) PARTITION BY RANGE (id) (PARTITION p0 VALUES LESS THAN (100), PARTITION p1 VALUES LESS THAN (200))",
+     "expect_rc": 0
     },
     {
-      "id": "t13-tidb85-golden",
-      "anchor": "tidb85",
-      "dialect": "tidb",
-      "sql": "ALTER TABLE t13g DROP PARTITION p0;",
-      "connect": {
-        "host": "127.0.0.1",
-        "port": 24000,
-        "user": "root",
-        "schema": "golden"
-      },
-      "policy": "t13-drop",
-      "expect": {
-        "exit": 1,
-        "verdict": "reject",
-        "statements": 1,
-        "findings": 1,
-        "diagnostics": 0,
-        "unsupported": 0,
-        "coverage": "complete",
-        "statement_coverage": [
-          "complete"
-        ],
-        "evidence_gaps": 0,
-        "finding_entries": [
-          {
-            "index": 0,
-            "rule_id": "ddl.alter.drop_partition.forbid",
-            "level": "blocker"
-          }
-        ],
-        "finding_metadata": [
-          {
-            "index": 0,
-            "rule_id": "ddl.alter.drop_partition.forbid",
-            "metadata": {
-              "table": "t13g",
-              "partition": "p0"
-            }
-          }
-        ],
-        "rule_summary_applicable": 1,
-        "version": {
-          "product": "tidb",
-          "version": "8.5.0"
-        }
-      },
-      "setup": [
-        {
-          "name": "create-partitioned-fixture",
-          "sql": "CREATE TABLE t13g (id INT, c INT) PARTITION BY RANGE (id) (PARTITION p0 VALUES LESS THAN (100), PARTITION p1 VALUES LESS THAN (200))",
-          "expect_rc": 0
-        },
-        {
-          "name": "seed-partition-rows",
-          "sql": "INSERT INTO t13g VALUES (10, 1), (150, 2)",
-          "expect_rc": 0
-        }
-      ],
-      "execute": [
-        {
-          "name": "apply-audited-drop",
-          "sql": "ALTER TABLE t13g DROP PARTITION p0",
-          "expect_rc": 0,
-          "verify": [
-            {
-              "assert": "p0 and its rows are gone",
-              "sql": "SELECT COUNT(*) FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t13g' AND PARTITION_NAME='p0'",
-              "expect": "0"
-            },
-            {
-              "assert": "p1's row survives the audited drop",
-              "sql": "SELECT COUNT(*) FROM golden.t13g WHERE id >= 100",
-              "expect": "1"
-            }
-          ]
-        }
-      ],
-      "teardown": [
-        {
-          "name": "drop-fixture",
-          "sql": "DROP TABLE t13g",
-          "expect_rc": 0
-        }
-      ]
-    },
-    {
-      "id": "t13-mysql80-exchange-protected-other-side",
-      "anchor": "mysql80",
-      "dialect": "mysql",
-      "sql": "ALTER TABLE t13g EXCHANGE PARTITION p1 WITH TABLE t13x;",
-      "connect": {
-        "host": "127.0.0.1",
-        "port": 23380,
-        "user": "root",
-        "schema": "golden",
-        "password_env": "DS_T13_GOLDEN_PW",
-        "password": "root"
-      },
-      "policy": "t13-deny-x",
-      "expect": {
-        "exit": 1,
-        "verdict": "reject",
-        "statements": 1,
-        "findings": 1,
-        "diagnostics": 0,
-        "unsupported": 0,
-        "coverage": "complete",
-        "statement_coverage": [
-          "complete"
-        ],
-        "finding_entries": [
-          {
-            "index": 0,
-            "rule_id": "ddl.table.denylist.forbid",
-            "level": "blocker"
-          }
-        ],
-        "finding_metadata": [
-          {
-            "index": 0,
-            "rule_id": "ddl.table.denylist.forbid",
-            "metadata": {
-              "table": "t13x"
-            }
-          }
-        ],
-        "rule_summary_applicable": 1,
-        "version": {
-          "product": "mysql",
-          "version": "8.0.46"
-        }
-      },
-      "setup": [
-        {
-          "name": "create-partitioned-fixture",
-          "sql": "CREATE TABLE t13g (id INT, c INT) PARTITION BY RANGE (id) (PARTITION p0 VALUES LESS THAN (100), PARTITION p1 VALUES LESS THAN (200))",
-          "expect_rc": 0
-        },
-        {
-          "name": "create-exchange-counterpart",
-          "sql": "CREATE TABLE t13x (id INT, c INT)",
-          "expect_rc": 0
-        }
-      ],
-      "execute": [
-        {
-          "name": "apply-audited-exchange",
-          "sql": "ALTER TABLE t13g EXCHANGE PARTITION p1 WITH TABLE t13x",
-          "expect_rc": 0,
-          "verify": [
-            {
-              "assert": "exchange lands on the counterpart side natively",
-              "sql": "SELECT COUNT(*) FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t13g' AND PARTITION_NAME='p1'",
-              "expect": "1"
-            }
-          ]
-        }
-      ],
-      "teardown": [
-        {
-          "name": "drop-fixtures",
-          "sql": "DROP TABLE t13g, t13x",
-          "expect_rc": 0
-        }
-      ]
+     "name": "seed-partition-rows",
+     "sql": "INSERT INTO t13g VALUES (10, 1), (150, 2)",
+     "expect_rc": 0
     }
-  ],
-  "required_case_ids": [
-    "T13.db.mysql57.ddl",
-    "T13.db.mysql57.syntax_negative",
-    "T13.db.mysql80.ddl",
-    "T13.db.mysql80.syntax_negative",
-    "T13.db.mysql84.ddl",
-    "T13.db.mysql84.syntax_negative",
-    "T13.db.tidb85.ddl",
-    "T13.db.tidb85.syntax_negative",
-    "T13.cli.t13-cli-drop-partition-blocker",
-    "T13.cli.t13-cli-drop-partition-tidb-blocker",
-    "T13.cli.t13-cli-drop-partition-multi",
-    "T13.cli.t13-cli-drop-partition-off",
-    "T13.cli.t13-cli-truncate-partition-blocker",
-    "T13.cli.t13-cli-truncate-partition-all",
-    "T13.cli.t13-cli-exchange-warn",
-    "T13.cli.t13-cli-exchange-noval-fail-on-warning",
-    "T13.cli.t13-cli-exchange-qualified",
-    "T13.cli.t13-cli-exchange-protected-other-side",
-    "T13.cli.t13-cli-exchange-protected-left",
-    "T13.cli.t13-cli-addcol-control",
-    "T13.cli.t13-cli-mixed-refusal",
-    "T13.meta.t13-mysql80-golden",
-    "T13.meta.t13-tidb85-golden",
-    "T13.meta.t13-mysql80-exchange-protected-other-side"
-  ]
+   ],
+   "execute": [
+    {
+     "name": "apply-audited-drop",
+     "sql": "ALTER TABLE t13g DROP PARTITION p0",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "p0 and its rows are gone",
+       "sql": "SELECT COUNT(*) FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t13g' AND PARTITION_NAME='p0'",
+       "expect": "0"
+      },
+      {
+       "assert": "p1's row survives the audited drop",
+       "sql": "SELECT COUNT(*) FROM golden.t13g WHERE id >= 100",
+       "expect": "1"
+      }
+     ]
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop-fixture",
+     "sql": "DROP TABLE t13g",
+     "expect_rc": 0
+    }
+   ]
+  },
+  {
+   "id": "t13-tidb85-golden",
+   "anchor": "tidb85",
+   "dialect": "tidb",
+   "sql": "ALTER TABLE t13g DROP PARTITION p0;",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 24000,
+    "user": "root",
+    "schema": "golden"
+   },
+   "policy": "t13-drop",
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.alter.drop_partition.forbid",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.alter.drop_partition.forbid",
+      "metadata": {
+       "table": "t13g",
+       "partition": "p0"
+      }
+     }
+    ],
+    "rule_summary_applicable": 1,
+    "version": {
+     "product": "tidb",
+     "version": "8.5.0"
+    }
+   },
+   "setup": [
+    {
+     "name": "create-partitioned-fixture",
+     "sql": "CREATE TABLE t13g (id INT, c INT) PARTITION BY RANGE (id) (PARTITION p0 VALUES LESS THAN (100), PARTITION p1 VALUES LESS THAN (200))",
+     "expect_rc": 0
+    },
+    {
+     "name": "seed-partition-rows",
+     "sql": "INSERT INTO t13g VALUES (10, 1), (150, 2)",
+     "expect_rc": 0
+    }
+   ],
+   "execute": [
+    {
+     "name": "apply-audited-drop",
+     "sql": "ALTER TABLE t13g DROP PARTITION p0",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "p0 and its rows are gone",
+       "sql": "SELECT COUNT(*) FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t13g' AND PARTITION_NAME='p0'",
+       "expect": "0"
+      },
+      {
+       "assert": "p1's row survives the audited drop",
+       "sql": "SELECT COUNT(*) FROM golden.t13g WHERE id >= 100",
+       "expect": "1"
+      }
+     ]
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop-fixture",
+     "sql": "DROP TABLE t13g",
+     "expect_rc": 0
+    }
+   ]
+  },
+  {
+   "id": "t13-mysql80-exchange-protected-other-side",
+   "anchor": "mysql80",
+   "dialect": "mysql",
+   "sql": "ALTER TABLE t13g EXCHANGE PARTITION p1 WITH TABLE t13x;",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23380,
+    "user": "root",
+    "schema": "golden",
+    "password_env": "DS_T13_GOLDEN_PW",
+    "password": "root"
+   },
+   "policy": "t13-deny-x",
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.denylist.forbid",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.denylist.forbid",
+      "metadata": {
+       "table": "t13x"
+      }
+     }
+    ],
+    "rule_summary_applicable": 1,
+    "version": {
+     "product": "mysql",
+     "version": "8.0.46"
+    }
+   },
+   "setup": [
+    {
+     "name": "create-partitioned-fixture",
+     "sql": "CREATE TABLE t13g (id INT, c INT) PARTITION BY RANGE (id) (PARTITION p0 VALUES LESS THAN (100), PARTITION p1 VALUES LESS THAN (200))",
+     "expect_rc": 0
+    },
+    {
+     "name": "create-exchange-counterpart",
+     "sql": "CREATE TABLE t13x (id INT, c INT)",
+     "expect_rc": 0
+    }
+   ],
+   "execute": [
+    {
+     "name": "apply-audited-exchange",
+     "sql": "ALTER TABLE t13g EXCHANGE PARTITION p1 WITH TABLE t13x",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "exchange lands on the counterpart side natively",
+       "sql": "SELECT COUNT(*) FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t13g' AND PARTITION_NAME='p1'",
+       "expect": "1"
+      }
+     ]
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop-fixtures",
+     "sql": "DROP TABLE t13g, t13x",
+     "expect_rc": 0
+    }
+   ]
+  },
+  {
+   "id": "t13r1-mysql80-drop-nonpartitioned",
+   "anchor": "mysql80",
+   "dialect": "mysql",
+   "sql": "ALTER TABLE t13np DROP PARTITION p0;",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23380,
+    "user": "root",
+    "schema": "golden",
+    "password_env": "DS_T13_GOLDEN_PW",
+    "password": "root"
+   },
+   "policy": "t13r1-drop-applicability",
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.alter.drop_partition.applicability",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.alter.drop_partition.applicability",
+      "metadata": {
+       "table": "t13np",
+       "partition": "p0",
+       "action": "drop_partition",
+       "reason_code": "not_partitioned",
+       "native_error": "1505",
+       "exists": "true",
+       "partitioned": "false"
+      }
+     }
+    ],
+    "rule_summary_applicable": 1,
+    "version": {
+     "product": "mysql",
+     "version": "8.0.46"
+    }
+   },
+   "setup": [
+    {
+     "name": "create-plain-fixture",
+     "sql": "CREATE TABLE t13np (id INT, c INT)",
+     "expect_rc": 0
+    }
+   ],
+   "execute": [
+    {
+     "name": "apply-audited-drop",
+     "sql": "ALTER TABLE t13np DROP PARTITION p0",
+     "expect_rc": 1,
+     "verify": [
+      {
+       "assert": "plain table survives refused drop",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t13np'",
+       "expect": "1"
+      }
+     ],
+     "stderr_contains": [
+      "ERROR 1505"
+     ]
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop-fixture",
+     "sql": "DROP TABLE IF EXISTS t13np",
+     "expect_rc": 0
+    }
+   ]
+  },
+  {
+   "id": "t13r1-tidb85-drop-hash",
+   "anchor": "tidb85",
+   "dialect": "tidb",
+   "sql": "ALTER TABLE t13h DROP PARTITION p0;",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 24000,
+    "user": "root",
+    "schema": "golden"
+   },
+   "policy": "t13r1-drop-applicability",
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.alter.drop_partition.applicability",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.alter.drop_partition.applicability",
+      "metadata": {
+       "table": "t13h",
+       "partition": "p0",
+       "action": "drop_partition",
+       "reason_code": "partition_type_inapplicable",
+       "native_error": "1512",
+       "partitioned": "true",
+       "partition_type": "hash"
+      }
+     }
+    ],
+    "rule_summary_applicable": 1,
+    "version": {
+     "product": "tidb",
+     "version": "8.5.0"
+    }
+   },
+   "setup": [
+    {
+     "name": "create-hash-fixture",
+     "sql": "CREATE TABLE t13h (id INT, c INT) PARTITION BY HASH(id) PARTITIONS 2",
+     "expect_rc": 0
+    }
+   ],
+   "execute": [
+    {
+     "name": "apply-audited-drop",
+     "sql": "ALTER TABLE t13h DROP PARTITION p0",
+     "expect_rc": 1,
+     "verify": [
+      {
+       "assert": "hash member set intact after refused drop",
+       "sql": "SELECT COUNT(*) FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t13h' AND PARTITION_NAME IS NOT NULL",
+       "expect": "2"
+      }
+     ],
+     "stderr_contains": [
+      "ERROR 1512"
+     ]
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop-fixture",
+     "sql": "DROP TABLE IF EXISTS t13h",
+     "expect_rc": 0
+    }
+   ]
+  },
+  {
+   "id": "t13r1-mysql80-drop-partition-absent",
+   "anchor": "mysql80",
+   "dialect": "mysql",
+   "sql": "ALTER TABLE t13r DROP PARTITION p99;",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23380,
+    "user": "root",
+    "schema": "golden",
+    "password_env": "DS_T13_GOLDEN_PW",
+    "password": "root"
+   },
+   "policy": "t13r1-drop-target",
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.alter.drop_partition.target",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.alter.drop_partition.target",
+      "metadata": {
+       "table": "t13r",
+       "partition": "p99",
+       "action": "drop_partition",
+       "reason_code": "partition_absent",
+       "native_error": "1507",
+       "exists": "false"
+      }
+     }
+    ],
+    "rule_summary_applicable": 1,
+    "version": {
+     "product": "mysql",
+     "version": "8.0.46"
+    }
+   },
+   "setup": [
+    {
+     "name": "create-range-fixture",
+     "sql": "CREATE TABLE t13r (id INT, c INT) PARTITION BY RANGE (id) (PARTITION p0 VALUES LESS THAN (100), PARTITION p1 VALUES LESS THAN (200))",
+     "expect_rc": 0
+    }
+   ],
+   "execute": [
+    {
+     "name": "apply-audited-drop",
+     "sql": "ALTER TABLE t13r DROP PARTITION p99",
+     "expect_rc": 1,
+     "verify": [
+      {
+       "assert": "member set intact after refused drop",
+       "sql": "SELECT COUNT(*) FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t13r' AND PARTITION_NAME IS NOT NULL",
+       "expect": "2"
+      }
+     ],
+     "stderr_contains": [
+      "ERROR 1507"
+     ]
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop-fixture",
+     "sql": "DROP TABLE IF EXISTS t13r",
+     "expect_rc": 0
+    }
+   ]
+  },
+  {
+   "id": "t13r1-tidb85-truncate-partition-absent",
+   "anchor": "tidb85",
+   "dialect": "tidb",
+   "sql": "ALTER TABLE t13r TRUNCATE PARTITION p99;",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 24000,
+    "user": "root",
+    "schema": "golden"
+   },
+   "policy": "t13r1-truncate-target",
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.alter.truncate_partition.target",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.alter.truncate_partition.target",
+      "metadata": {
+       "table": "t13r",
+       "partition": "p99",
+       "action": "truncate_partition",
+       "reason_code": "partition_absent",
+       "native_error": "1735",
+       "exists": "false"
+      }
+     }
+    ],
+    "rule_summary_applicable": 1,
+    "version": {
+     "product": "tidb",
+     "version": "8.5.0"
+    }
+   },
+   "setup": [
+    {
+     "name": "create-range-fixture",
+     "sql": "CREATE TABLE t13r (id INT, c INT) PARTITION BY RANGE (id) (PARTITION p0 VALUES LESS THAN (100), PARTITION p1 VALUES LESS THAN (200))",
+     "expect_rc": 0
+    }
+   ],
+   "execute": [
+    {
+     "name": "apply-audited-truncate",
+     "sql": "ALTER TABLE t13r TRUNCATE PARTITION p99",
+     "expect_rc": 1,
+     "verify": [
+      {
+       "assert": "member set intact after refused truncate",
+       "sql": "SELECT COUNT(*) FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t13r' AND PARTITION_NAME IS NOT NULL",
+       "expect": "2"
+      }
+     ],
+     "stderr_contains": [
+      "ERROR 1735"
+     ]
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop-fixture",
+     "sql": "DROP TABLE IF EXISTS t13r",
+     "expect_rc": 0
+    }
+   ]
+  },
+  {
+   "id": "t13r1-mysql80-exchange-counterpart-absent",
+   "anchor": "mysql80",
+   "dialect": "mysql",
+   "sql": "ALTER TABLE t13e EXCHANGE PARTITION p0 WITH TABLE t13miss;",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23380,
+    "user": "root",
+    "schema": "golden",
+    "password_env": "DS_T13_GOLDEN_PW",
+    "password": "root"
+   },
+   "policy": "t13r1-exchange-counterpart",
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.alter.exchange_partition.counterpart",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.alter.exchange_partition.counterpart",
+      "metadata": {
+       "table": "t13e",
+       "partition": "p0",
+       "exchange_table": "t13miss",
+       "reason_code": "counterpart_absent",
+       "native_error": "1146",
+       "exists": "false"
+      }
+     }
+    ],
+    "rule_summary_applicable": 1,
+    "version": {
+     "product": "mysql",
+     "version": "8.0.46"
+    }
+   },
+   "setup": [
+    {
+     "name": "create-range-fixture",
+     "sql": "CREATE TABLE t13e (id INT, c INT) PARTITION BY RANGE (id) (PARTITION p0 VALUES LESS THAN (100), PARTITION p1 VALUES LESS THAN (200))",
+     "expect_rc": 0
+    },
+    {
+     "name": "ensure-counterpart-absent",
+     "sql": "DROP TABLE IF EXISTS t13miss",
+     "expect_rc": 0
+    }
+   ],
+   "execute": [
+    {
+     "name": "apply-audited-exchange",
+     "sql": "ALTER TABLE t13e EXCHANGE PARTITION p0 WITH TABLE t13miss",
+     "expect_rc": 1,
+     "stderr_contains": [
+      "ERROR 1146"
+     ]
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop-fixture",
+     "sql": "DROP TABLE IF EXISTS t13e",
+     "expect_rc": 0
+    }
+   ]
+  },
+  {
+   "id": "t13r1-mysql80-exchange-counterpart-partitioned",
+   "anchor": "mysql80",
+   "dialect": "mysql",
+   "sql": "ALTER TABLE t13e EXCHANGE PARTITION p0 WITH TABLE t13cp;",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23380,
+    "user": "root",
+    "schema": "golden",
+    "password_env": "DS_T13_GOLDEN_PW",
+    "password": "root"
+   },
+   "policy": "t13r1-exchange-counterpart",
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.alter.exchange_partition.counterpart",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.alter.exchange_partition.counterpart",
+      "metadata": {
+       "table": "t13e",
+       "partition": "p0",
+       "exchange_table": "t13cp",
+       "reason_code": "counterpart_partitioned",
+       "native_error": "1732",
+       "exists": "true"
+      }
+     }
+    ],
+    "rule_summary_applicable": 1,
+    "version": {
+     "product": "mysql",
+     "version": "8.0.46"
+    }
+   },
+   "setup": [
+    {
+     "name": "create-range-fixture",
+     "sql": "CREATE TABLE t13e (id INT, c INT) PARTITION BY RANGE (id) (PARTITION p0 VALUES LESS THAN (100), PARTITION p1 VALUES LESS THAN (200))",
+     "expect_rc": 0
+    },
+    {
+     "name": "create-partitioned-counterpart",
+     "sql": "CREATE TABLE t13cp (id INT, c INT) PARTITION BY RANGE (id) (PARTITION p0 VALUES LESS THAN (100), PARTITION p1 VALUES LESS THAN (200))",
+     "expect_rc": 0
+    }
+   ],
+   "execute": [
+    {
+     "name": "apply-audited-exchange",
+     "sql": "ALTER TABLE t13e EXCHANGE PARTITION p0 WITH TABLE t13cp",
+     "expect_rc": 1,
+     "stderr_contains": [
+      "ERROR 1732"
+     ]
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop-fixtures",
+     "sql": "DROP TABLE IF EXISTS t13e, t13cp",
+     "expect_rc": 0
+    }
+   ]
+  },
+  {
+   "id": "t13r1-mysql80-exchange-def-mismatch",
+   "anchor": "mysql80",
+   "dialect": "mysql",
+   "sql": "ALTER TABLE t13e EXCHANGE PARTITION p0 WITH TABLE t13m;",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23380,
+    "user": "root",
+    "schema": "golden",
+    "password_env": "DS_T13_GOLDEN_PW",
+    "password": "root"
+   },
+   "policy": "t13r1-exchange-counterpart",
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.alter.exchange_partition.counterpart",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.alter.exchange_partition.counterpart",
+      "metadata": {
+       "table": "t13e",
+       "partition": "p0",
+       "exchange_table": "t13m",
+       "reason_code": "counterpart_definition_mismatch",
+       "native_error": "1736",
+       "exists": "true"
+      }
+     }
+    ],
+    "rule_summary_applicable": 1,
+    "version": {
+     "product": "mysql",
+     "version": "8.0.46"
+    }
+   },
+   "setup": [
+    {
+     "name": "create-range-fixture",
+     "sql": "CREATE TABLE t13e (id INT, c INT) PARTITION BY RANGE (id) (PARTITION p0 VALUES LESS THAN (100), PARTITION p1 VALUES LESS THAN (200))",
+     "expect_rc": 0
+    },
+    {
+     "name": "create-mismatched-counterpart",
+     "sql": "CREATE TABLE t13m (id INT, c VARCHAR(10))",
+     "expect_rc": 0
+    }
+   ],
+   "execute": [
+    {
+     "name": "apply-audited-exchange",
+     "sql": "ALTER TABLE t13e EXCHANGE PARTITION p0 WITH TABLE t13m",
+     "expect_rc": 1,
+     "stderr_contains": [
+      "ERROR 1736"
+     ]
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop-fixtures",
+     "sql": "DROP TABLE IF EXISTS t13e, t13m",
+     "expect_rc": 0
+    }
+   ]
+  },
+  {
+   "id": "t13r1-mysql80-exchange-clears-counterpart-stats",
+   "anchor": "mysql80",
+   "dialect": "mysql",
+   "sql": "ALTER TABLE t13e EXCHANGE PARTITION p0 WITH TABLE t13c WITHOUT VALIDATION; TRUNCATE TABLE t13c;",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23380,
+    "user": "root",
+    "schema": "golden",
+    "password_env": "DS_T13_GOLDEN_PW",
+    "password": "root"
+   },
+   "policy": "t13r1-truncate-rows",
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 2,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete",
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "rule_summary_applicable": 1,
+    "version": {
+     "product": "mysql",
+     "version": "8.0.46"
+    }
+   },
+   "setup": [
+    {
+     "name": "create-range-fixture",
+     "sql": "CREATE TABLE t13e (id INT, c INT) PARTITION BY RANGE (id) (PARTITION p0 VALUES LESS THAN (100), PARTITION p1 VALUES LESS THAN (200))",
+     "expect_rc": 0
+    },
+    {
+     "name": "create-counterpart",
+     "sql": "CREATE TABLE t13c (id INT, c INT)",
+     "expect_rc": 0
+    },
+    {
+     "name": "seed-counterpart",
+     "sql": "INSERT INTO t13c VALUES (1,1),(2,2),(3,3),(4,4),(5,5),(6,6),(7,7),(8,8)",
+     "expect_rc": 0
+    },
+    {
+     "name": "analyze-counterpart",
+     "sql": "ANALYZE TABLE t13c",
+     "expect_rc": 0
+    }
+   ],
+   "execute": [
+    {
+     "name": "apply-audited-exchange",
+     "sql": "ALTER TABLE t13e EXCHANGE PARTITION p0 WITH TABLE t13c WITHOUT VALIDATION",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "counterpart rows moved into p0",
+       "sql": "SELECT COUNT(*) FROM golden.t13e WHERE id BETWEEN 0 AND 99",
+       "expect": "8"
+      }
+     ]
+    },
+    {
+     "name": "apply-audited-truncate",
+     "sql": "TRUNCATE TABLE t13c",
+     "expect_rc": 0
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop-fixtures",
+     "sql": "DROP TABLE IF EXISTS t13e, t13c",
+     "expect_rc": 0
+    }
+   ]
+  },
+  {
+   "id": "t13r1-mysql80-truncate-rows-control",
+   "anchor": "mysql80",
+   "dialect": "mysql",
+   "sql": "TRUNCATE TABLE t13c;",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23380,
+    "user": "root",
+    "schema": "golden",
+    "password_env": "DS_T13_GOLDEN_PW",
+    "password": "root"
+   },
+   "policy": "t13r1-truncate-rows",
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.truncate.rows.max_count",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.truncate.rows.max_count",
+      "metadata": {
+       "table": "t13c",
+       "operation": "truncate_table"
+      }
+     }
+    ],
+    "rule_summary_applicable": 1,
+    "version": {
+     "product": "mysql",
+     "version": "8.0.46"
+    }
+   },
+   "setup": [
+    {
+     "name": "create-counterpart",
+     "sql": "CREATE TABLE t13c (id INT, c INT)",
+     "expect_rc": 0
+    },
+    {
+     "name": "seed-counterpart",
+     "sql": "INSERT INTO t13c VALUES (1,1),(2,2),(3,3),(4,4),(5,5),(6,6),(7,7),(8,8)",
+     "expect_rc": 0
+    },
+    {
+     "name": "analyze-counterpart",
+     "sql": "ANALYZE TABLE t13c",
+     "expect_rc": 0
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop-fixture",
+     "sql": "DROP TABLE IF EXISTS t13c",
+     "expect_rc": 0
+    }
+   ]
+  },
+  {
+   "id": "t13r1-mysql57-algorithm-drop-refused",
+   "anchor": "mysql57",
+   "dialect": "mysql",
+   "sql": "ALTER TABLE t13a ALGORITHM=INPLACE, DROP PARTITION p0; TRUNCATE TABLE t13a;",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23357,
+    "user": "root",
+    "schema": "golden",
+    "password_env": "DS_T13_GOLDEN_PW",
+    "password": "root"
+   },
+   "policy": "t13r1-truncate-rows",
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 2,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete",
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "finding_entries": [
+     {
+      "index": 1,
+      "rule_id": "ddl.table.truncate.rows.max_count",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 1,
+      "rule_id": "ddl.table.truncate.rows.max_count",
+      "metadata": {
+       "table": "t13a",
+       "operation": "truncate_table"
+      }
+     }
+    ],
+    "rule_summary_applicable": 1,
+    "version": {
+     "product": "mysql",
+     "version": "5.7.44"
+    }
+   },
+   "setup": [
+    {
+     "name": "create-range-fixture",
+     "sql": "CREATE TABLE t13a (id INT, c INT) PARTITION BY RANGE (id) (PARTITION p0 VALUES LESS THAN (100), PARTITION p1 VALUES LESS THAN (200))",
+     "expect_rc": 0
+    },
+    {
+     "name": "seed-rows",
+     "sql": "INSERT INTO t13a VALUES (1,1),(2,2),(3,3),(4,4),(5,5),(6,6),(7,7),(8,8)",
+     "expect_rc": 0
+    },
+    {
+     "name": "analyze-fixture",
+     "sql": "ANALYZE TABLE t13a",
+     "expect_rc": 0
+    }
+   ],
+   "execute": [
+    {
+     "name": "apply-audited-mixed",
+     "sql": "ALTER TABLE t13a ALGORITHM=INPLACE, DROP PARTITION p0",
+     "expect_rc": 1,
+     "verify": [
+      {
+       "assert": "member set intact after refused mixed drop",
+       "sql": "SELECT COUNT(*) FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t13a' AND PARTITION_NAME IS NOT NULL",
+       "expect": "2"
+      }
+     ],
+     "stderr_contains": [
+      "ERROR 1846"
+     ]
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop-fixture",
+     "sql": "DROP TABLE IF EXISTS t13a",
+     "expect_rc": 0
+    }
+   ]
+  },
+  {
+   "id": "t13r1-mysql80-algorithm-drop-executes",
+   "anchor": "mysql80",
+   "dialect": "mysql",
+   "sql": "ALTER TABLE t13a ALGORITHM=INPLACE, DROP PARTITION p0; TRUNCATE TABLE t13a;",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23380,
+    "user": "root",
+    "schema": "golden",
+    "password_env": "DS_T13_GOLDEN_PW",
+    "password": "root"
+   },
+   "policy": "t13r1-truncate-rows",
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 2,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete",
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "rule_summary_applicable": 1,
+    "version": {
+     "product": "mysql",
+     "version": "8.0.46"
+    }
+   },
+   "setup": [
+    {
+     "name": "create-range-fixture",
+     "sql": "CREATE TABLE t13a (id INT, c INT) PARTITION BY RANGE (id) (PARTITION p0 VALUES LESS THAN (100), PARTITION p1 VALUES LESS THAN (200))",
+     "expect_rc": 0
+    },
+    {
+     "name": "seed-rows",
+     "sql": "INSERT INTO t13a VALUES (1,1),(2,2),(3,3),(4,4),(5,5),(6,6),(7,7),(8,8)",
+     "expect_rc": 0
+    },
+    {
+     "name": "analyze-fixture",
+     "sql": "ANALYZE TABLE t13a",
+     "expect_rc": 0
+    }
+   ],
+   "execute": [
+    {
+     "name": "apply-audited-mixed",
+     "sql": "ALTER TABLE t13a ALGORITHM=INPLACE, DROP PARTITION p0",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "p0 dropped under inplace modifier",
+       "sql": "SELECT COUNT(*) FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t13a' AND PARTITION_NAME='p0'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop-fixture",
+     "sql": "DROP TABLE IF EXISTS t13a",
+     "expect_rc": 0
+    }
+   ]
+  }
+ ],
+ "required_case_ids": [
+  "T13.db.mysql57.ddl",
+  "T13.db.mysql57.syntax_negative",
+  "T13.db.mysql80.ddl",
+  "T13.db.mysql80.syntax_negative",
+  "T13.db.mysql84.ddl",
+  "T13.db.mysql84.syntax_negative",
+  "T13.db.tidb85.ddl",
+  "T13.db.tidb85.syntax_negative",
+  "T13.cli.t13-cli-drop-partition-blocker",
+  "T13.cli.t13-cli-drop-partition-tidb-blocker",
+  "T13.cli.t13-cli-drop-partition-multi",
+  "T13.cli.t13-cli-drop-partition-off",
+  "T13.cli.t13-cli-truncate-partition-blocker",
+  "T13.cli.t13-cli-truncate-partition-all",
+  "T13.cli.t13-cli-exchange-warn",
+  "T13.cli.t13-cli-exchange-noval-fail-on-warning",
+  "T13.cli.t13-cli-exchange-qualified",
+  "T13.cli.t13-cli-exchange-protected-other-side",
+  "T13.cli.t13-cli-exchange-protected-left",
+  "T13.cli.t13-cli-addcol-control",
+  "T13.cli.t13-cli-mixed-refusal",
+  "T13.meta.t13-mysql80-golden",
+  "T13.meta.t13-tidb85-golden",
+  "T13.meta.t13-mysql80-exchange-protected-other-side",
+  "T13.cli.t13r1-cli-drop-applicability-gap",
+  "T13.cli.t13r1-cli-drop-applicability-gap-tidb",
+  "T13.cli.t13r1-cli-exchange-counterpart-gap",
+  "T13.meta.t13r1-mysql80-drop-nonpartitioned",
+  "T13.meta.t13r1-tidb85-drop-hash",
+  "T13.meta.t13r1-mysql80-drop-partition-absent",
+  "T13.meta.t13r1-tidb85-truncate-partition-absent",
+  "T13.meta.t13r1-mysql80-exchange-counterpart-absent",
+  "T13.meta.t13r1-mysql80-exchange-counterpart-partitioned",
+  "T13.meta.t13r1-mysql80-exchange-def-mismatch",
+  "T13.meta.t13r1-mysql80-exchange-clears-counterpart-stats",
+  "T13.meta.t13r1-mysql80-truncate-rows-control",
+  "T13.meta.t13r1-mysql57-algorithm-drop-refused",
+  "T13.meta.t13r1-mysql80-algorithm-drop-executes"
+ ]
 }

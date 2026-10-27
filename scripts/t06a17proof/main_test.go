@@ -183,7 +183,9 @@ func (c *faultConn) QueryContext(_ context.Context, query string, _ []driver.Nam
 	}
 	if strings.Contains(query, "from information_schema.partitions") {
 		f.providerQueries++
-		return newFaultRows([]string{"count(*)"}, [][]driver.Value{{int64(0)}}, -1), nil
+		// T13-R1 row-shaped catalog probe (partition_method, partition_name):
+		// an empty set observes a non-partitioned table.
+		return newFaultRows([]string{"partition_method", "partition_name"}, nil, -1), nil
 	}
 	return nil, fmt.Errorf("unexpected query %q", query)
 }
@@ -247,10 +249,11 @@ func TestT06A17R1CollectorComplete(t *testing.T) {
 	// TABLE_CONSTRAINTS.ENFORCED, CHECK_CONSTRAINTS, and
 	// TIDB_CHECK_CONSTRAINTS capability probes + statistics member rows +
 	// the T11 foreign-key catalog join + the T12 CHECK member read + the
-	// unmodeled-constraint-type scan = 11 catalog round-trips (the
-	// PARTITIONS/TIDB_INDEXES probes run only for TiDB, and this fixture
-	// loads as MySQL).
-	if fixture.creates != 1 || fixture.drops != 1 || fixture.created || fixture.counts != 2 || fixture.providerQueries != 11 {
+	// unmodeled-constraint-type scan + the T13-R1 PARTITIONS probe = 12
+	// catalog round-trips (PARTITIONS now runs on both dialects — an empty
+	// set observes a non-partitioned table; TIDB_INDEXES still runs only
+	// for TiDB, and this fixture loads as MySQL).
+	if fixture.creates != 1 || fixture.drops != 1 || fixture.created || fixture.counts != 2 || fixture.providerQueries != 12 {
 		t.Fatalf("incomplete lifecycle/provider calls: %+v", fixture)
 	}
 	var pairs []pair

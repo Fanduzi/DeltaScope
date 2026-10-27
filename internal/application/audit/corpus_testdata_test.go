@@ -124,14 +124,19 @@ type corpusInstanceFacts struct {
 }
 
 type corpusTableSnapshot struct {
-	Schema      string             `yaml:"schema,omitempty"`
-	Exists      bool               `yaml:"exists"`
-	Table       *corpusTable       `yaml:"table,omitempty"`
-	Columns     []corpusColumn     `yaml:"columns,omitempty"`
-	PrimaryKey  *corpusIndex       `yaml:"primary_key,omitempty"`
-	Indexes     []corpusIndex      `yaml:"indexes,omitempty"`
-	Constraints []corpusConstraint `yaml:"constraints,omitempty"`
-	Options     map[string]string  `yaml:"options,omitempty"`
+	Schema             string             `yaml:"schema,omitempty"`
+	Exists             bool               `yaml:"exists"`
+	Table              *corpusTable       `yaml:"table,omitempty"`
+	Columns            []corpusColumn     `yaml:"columns,omitempty"`
+	PrimaryKey         *corpusIndex       `yaml:"primary_key,omitempty"`
+	PrimaryKeyUnknown  bool               `yaml:"primary_key_unknown,omitempty"`
+	Indexes            []corpusIndex      `yaml:"indexes,omitempty"`
+	Constraints        []corpusConstraint `yaml:"constraints,omitempty"`
+	ConstraintsUnknown bool               `yaml:"constraints_unknown,omitempty"`
+	Options            map[string]string  `yaml:"options,omitempty"`
+	Partitioned        *bool              `yaml:"partitioned,omitempty"`
+	PartitionType      string             `yaml:"partition_type,omitempty"`
+	PartitionNames     []string           `yaml:"partition_names,omitempty"`
 }
 
 type corpusTable struct {

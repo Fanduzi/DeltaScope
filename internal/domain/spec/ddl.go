@@ -34,6 +34,16 @@ type DDL struct {
 	HasReferTable  bool `json:"has_refer_table,omitempty"`
 	HasSelect      bool `json:"has_select,omitempty"`
 	HasPartition   bool `json:"has_partition,omitempty"`
+	// PartitionType is the CREATE TABLE partition method normalized
+	// lowercase (`range`, `list`, `hash`, `key`, `linear hash`,
+	// `linear key`, `range columns`, `list columns`); empty when the
+	// statement declares no partitioning.
+	PartitionType string `json:"partition_type,omitempty"`
+	// PartitionNames carries the declared partition member names in
+	// declaration order — explicit definition names, or the implicit
+	// `p0..p(n-1)` set the engine assigns under `PARTITIONS n` on both
+	// products. Empty when no members are declared.
+	PartitionNames []string `json:"partition_names,omitempty"`
 	// TemporaryScope records a parsed temporary-table keyword on
 	// CREATE/DROP TABLE. The scope changes object identity and lifetime, so a
 	// non-empty value is a recognized-but-unaudited fact until temporary-table

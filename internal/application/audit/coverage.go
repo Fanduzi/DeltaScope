@@ -454,6 +454,13 @@ func statementCoverageAspects(dialect spec.Dialect, statement spec.Statement) []
 	}
 	for _, alter := range ddl.Alter {
 		if ddl.Operation == spec.DDLOperationAlterTable && !auditedAlterAction(dialect, alter.Action) {
+			// An ALGORITHM/LOCK modifier accompanying a partition action is
+			// consumed by the ordered-state combination classifier — audited
+			// for that combination. Standalone modifiers stay unaudited
+			// (owner T15).
+			if hasPartitionAlterAction(ddl) && (alter.Action == "algorithm" || alter.Action == "lock") {
+				continue
+			}
 			// PLACEMENT POLICY is TiDB-only: under MySQL the action is a vendor
 			// boundary, not merely unaudited analysis.
 			vendor := dialect == spec.DialectMySQL && alter.Action == "placement_policy"

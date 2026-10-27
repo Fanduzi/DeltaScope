@@ -262,3 +262,225 @@ mysql80 denylist.
   (table_rows/auto_increment/cardinality); data_length/index_length/
   avg_row_length are cleared too via the same call as defensible
   data-derived facts.
+
+## 9. T13-R1 amendment — applicability, ordered-state fix, refusal narrowing
+
+Amends §1.1/§1.2/§4/§5/§6/§8 where marked. §1–§8 stays the T13 baseline;
+where this section and earlier text disagree, this section wins. Probed
+2026-10-28 on the same four anchors; raw outputs archived under
+`docs/verification/t13r1/<product-sha>/native/`.
+
+### 9.1 Corrected native facts (supersedes §1.1/§1.2)
+
+- `EXCHANGE ... WITH TABLE t2` carrying an out-of-range row: the absent
+  validation clause behaves identically to `WITH VALIDATION` — refused on
+  every anchor (MySQL 5.7/8.0/8.4: ERROR 1526 "Table has no partition for
+  value 999"; TiDB 8.5: ERROR 1737 "Found a row that does not match the
+  partition"). Only `WITHOUT VALIDATION` lands the row. §1.1's claim that
+  the absent clause "→ rc=0" was produced by a probe that ran the absent
+  arm against an already-emptied counterpart; the three-arm fixture rerun
+  (identical violating fixture reset per arm) corrects it. The
+  `with`-covers-absent normalization in §2.1/§3 stays correct as written.
+- `TRUNCATE PARTITION p99` (missing name) → ERROR 1735 "Unknown partition"
+  on every anchor (new cell, probed this round).
+- `EXCHANGE PARTITION p0` on a non-partitioned primary → ERROR 1505
+  "Partition management on a not partitioned table is not possible" on
+  every anchor (new cell).
+- Partition type applicability, all anchors: `DROP PARTITION` on a
+  HASH-partitioned table → 1512 (RANGE/LIST only); `TRUNCATE PARTITION`
+  and `EXCHANGE PARTITION` on a HASH table → rc=0.
+- Mixed-action ALTER containing a partition action, all anchors
+  (`partition_options` may only appear as the statement tail and never
+  combine with structural specs):
+  - `DROP PARTITION p0, DROP PARTITION p1`, `DROP PARTITION p0, DROP
+    COLUMN c`, `TRUNCATE PARTITION p1, DROP COLUMN c` → MySQL 1064;
+    TiDB 1064 (partition spec leading is a grammar-tail error).
+    `ADD COLUMN x INT, DROP PARTITION p0` → MySQL 1064; TiDB 8200
+    "Unsupported multi schema change". `EXCHANGE ... , DROP COLUMN c`
+    and `DROP COLUMN c, EXCHANGE ...` → MySQL 1064; TiDB 8200 on BOTH
+    orders (EXCHANGE in a multi-spec list is a semantic multi-schema
+    refusal regardless of position). `ENGINE=InnoDB, DROP PARTITION p0`
+    → MySQL 1064; TiDB 8200 (probed p8); `DROP PARTITION p0,
+    ENGINE=InnoDB` → TiDB 1064.
+  - `ALGORITHM=INPLACE, DROP PARTITION p0` → executes on MySQL 8.0.46,
+    8.4.10 and TiDB 8.5; **ERROR 1846 on MySQL 5.7.44** ("Partition
+    specific operations do not yet support LOCK/ALGORITHM").
+    `ALGORITHM=INPLACE, TRUNCATE PARTITION` and `ALGORITHM=INPLACE,
+    EXCHANGE PARTITION` execute on **all four** anchors.
+  - `ALGORITHM=DEFAULT, DROP PARTITION` and `LOCK=DEFAULT, DROP
+    PARTITION` execute on all four anchors.
+  - Modifier-after-partition (`DROP PARTITION p0, ALGORITHM=INPLACE`) →
+    1064 on all anchors.
+- The partition-type/member catalog is now modeled (§9.2/§9.3); §1.2's
+  "never statically provable" and §8's member-catalog boundary are
+  narrowed to the facts this amendment does not model (bounds values,
+  expression solving, row content).
+
+### 9.2 Normalized facts added
+
+`spec.TableSnapshot` gains (provider-loaded on MySQL AND TiDB now — the
+prior TiDB-only `Partitioned` gate is extended, not duplicated):
+
+- `PartitionType *string` — observed `PARTITION_METHOD`, normalized
+  lowercase (`range`, `list`, `hash`, `key`, `linear hash`, `linear key`,
+  `range columns`, `list columns`); nil = unobserved. Vacuous on a
+  known-non-partitioned table (Partitioned=false answers alone).
+- `PartitionNames []string` — observed member names in catalog order;
+  nil = unobserved, empty non-nil = observed-empty (non-partitioned).
+
+`spec.DDL` gains `PartitionType string` + `PartitionNames []string`
+(parser-extracted on CREATE TABLE; type normalized to the same
+vocabulary), so `derivedCreateShape` publishes partition knownness for
+batch-declared tables. `cloneTableSnapshot` clones both new fields.
+
+`spec.Metadata` gains `ExchangeTable *TableSnapshot` — the ordered
+pre-state projection of the `exchange_partition` counterpart, loaded
+through the same `preState`/`resolve` once-per-key seam as the primary
+target. `nil` when the counterpart is unknown or the statement carries
+no exchange action.
+
+`spec.Alter.Options` gains `algorithm`/`lock` keyword values
+(`algorithm`=`default|inplace|copy|instant|merge|temportable`,
+`lock`=`none|default|shared|exclusive`, normalized lowercase) for the
+refusal classifier — modifier identity alone was previously extracted
+but not the keyword.
+
+### 9.3 Frozen applicability rule set (all default blocker, no params)
+
+| Rule ID | Checks (finding when PROVEN) | RequiredFacts on gap |
+|---|---|---|
+| `ddl.alter.drop_partition.applicability` | `Partitioned==false` → 1505-class; `Partitioned==true` + type ∈ {hash,key,linear hash,linear key} → 1512-class | `target_table.partitioned` (no snapshot); `target_table.partition_type` (partitioned but type unobserved) |
+| `ddl.alter.truncate_partition.applicability` | `Partitioned==false` → 1505-class | `target_table.partitioned` |
+| `ddl.alter.exchange_partition.applicability` | `Partitioned==false` → 1505-class | `target_table.partitioned` |
+| `ddl.alter.drop_partition.target` | member set known + named partition absent → 1507/1508-class | `target_table.partitions` (set unobserved) |
+| `ddl.alter.truncate_partition.target` | member set known + named partition absent → 1735-class; `ALL` form carries no name check | `target_table.partitions` |
+| `ddl.alter.exchange_partition.target` | member set known + named partition absent → 1735-class | `target_table.partitions` |
+| `ddl.alter.exchange_partition.counterpart` | counterpart `Exists==false` → 1146-class; counterpart partitioned → 1732-class; counterpart vs primary column-sequence or PK identity provably different → 1736-class | `exchange_table.existence` (counterpart snapshot missing); `exchange_table.partitioned`; `exchange_table.columns`/`exchange_table.primary_key`/`target_table.columns`/`target_table.primary_key` for unproven structural sides |
+
+Semantics shared by all seven:
+
+- AppliesTo: `orderedGapDialect` + `appliesToAlterTable` + the statement
+  contains the matching partition action (per action, not per spec
+  count — multi-spec partition ALTs are already proven refusals at the
+  grammar layer, so applicability checks stay meaningful only on the
+  same auditable shapes the risk rules consume: they evaluate on every
+  statement carrying the action).
+- A proven-inapplicable cell produces exactly one blocker finding per
+  ALTER entry carrying that action, metadata `{action, table,
+  partition?, exchange_table?, exchange_schema?, reason_code,
+  native_error}` where `reason_code` is a stable enum:
+  `not_partitioned`, `partition_type_inapplicable`, `partition_absent`,
+  `counterpart_absent`, `counterpart_partitioned`,
+  `counterpart_definition_mismatch`; `native_error` is the probed error
+  number (1505/1512/1507/1735/1146/1732/1736). No finding claims the
+  engine executed or validated anything else.
+- Known-applicable or not-proven-inapplicable → silent (no finding).
+  Unproven facts → `EvidenceGaps` with `unknown_table_state` and only
+  the actually-missing facts; a rule never reports a fact it does not
+  consume. `enabled:false` removes the rule entirely — no gaps owed.
+- The structural compare for counterpart covers column name+type
+  sequence and PK identity only; a match does NOT assert all exchange
+  conditions pass (engine/row data/storage unmodeled → never claimed).
+- Risk rules (forbid/warn) are unchanged: they fire on the action alone
+  and never consume metadata.
+
+### 9.4 Ordered-state fixes (B)
+
+- `enrichStatements` preloads the `exchange_partition` counterpart
+  through `state.preState` whenever the statement carries the action and
+  the identity is bound — `metadata.ExchangeTable` receives the same
+  three-state projection (nil=unknown, `Exists=false`, present shape) as
+  the primary. This also seeds the entry for post-state publication.
+- `applyPartitionOperation` already iterates `ddl.TableTargets()` (which
+  includes the counterpart); the preload makes the first-touch
+  counterpart entry resolve exactly like every other loaded identity, so
+  its post-state keeps member facts and drops the five data-derived
+  Options stats + cardinalities. Unknown/absent entries are never
+  upgraded.
+- Both statements' projections stay isolated (clone discipline
+  unchanged); later reads hit the cached, mutated entry — provider is
+  never re-asked.
+
+### 9.5 Mixed-action refusal narrowing (C)
+
+Replace §5's blanket "any multi-spec + partition action → pre-state"
+with the classified outcome:
+
+- **Refused (exact pre-state kept)**: >1 partition action; any partition
+  action followed by ANY sibling; any structural sibling (every action
+  except `algorithm`/`lock`) anywhere; a `table_option` sibling
+  (`ENGINE=` probed 1064/8200 on all anchors) — all probed §9.1.
+- **Combinable (partition semantics applied — stats cleared, members
+  kept)**: exactly ONE `algorithm` or `lock` modifier positioned BEFORE
+  the partition action whose keyword value is probe-covered:
+  - `lock`=`default` → combinable on all anchors.
+  - `algorithm`=`default` → combinable on all anchors.
+  - `algorithm`=`inplace`: `drop_partition` → combinable on MySQL ≥8 and
+    TiDB, refused on MySQL 5.x (1846), unproven when the version is
+    unknown; `truncate_partition`/`exchange_partition` → combinable on
+    all anchors.
+- **Unproven (tombstone — never "refused" and never "executed")**: any
+  other modifier value; more than one modifier; version unknown where
+  the gate needs it; `placement_policy` siblings (unprobed); any other
+  unprobed combination. These route through
+  `invalidateAll(targets)`.
+
+### 9.6 Golden manifest revision (frozen)
+
+Existing 24 cases keep every expectation — the manifest's top-level
+`policy_profile` is `all-rules-disabled` and every case runs under an
+isolated `policy.profiles` enable-list, so the seven new default rules
+are enabled in none of the 24 existing cells: inputs, expected outputs,
+and the 289-assertion denominator stay byte-stable. Fourteen cases were
+appended (required set only grows; the `t13r1-*` profiles enable only
+the asserted rule per cell):
+
+Offline CLI cells (verdict `review`, coverage `unverified`, the owned
+gap asserted by rule_id + reason_code + required_facts):
+
+- `t13r1-cli-drop-applicability-gap` (+ `-tidb`): isolated
+  `drop_partition.applicability` owes `target_table.partitioned`.
+- `t13r1-cli-exchange-counterpart-gap`: isolated
+  `exchange_partition.counterpart` owes `exchange_table.existence`.
+
+Live-anchor cells (each asserts the blocker finding's rule_id +
+reason_code + `exists`/`native_error` metadata AND replays the audited
+statement on the anchor, expecting the same native error):
+
+- `t13r1-mysql80-drop-nonpartitioned` → `not_partitioned` / 1505.
+- `t13r1-tidb85-drop-hash` → `partition_type_inapplicable` / 1512.
+- `t13r1-mysql80-drop-partition-absent` → `partition_absent` / 1507.
+- `t13r1-tidb85-truncate-partition-absent` → `partition_absent` / 1735.
+- `t13r1-mysql80-exchange-counterpart-absent` → `counterpart_absent` /
+  1146.
+- `t13r1-mysql80-exchange-counterpart-partitioned` →
+  `counterpart_partitioned` / 1732.
+- `t13r1-mysql80-exchange-def-mismatch` →
+  `counterpart_definition_mismatch` / 1736.
+- `t13r1-mysql80-exchange-clears-counterpart-stats` (B): two-statement
+  audit `EXCHANGE ... WITHOUT VALIDATION; TRUNCATE TABLE t13c` under
+  `truncate.rows.max_count(limit=1)` → zero findings — the cleared
+  counterpart statistics answer nothing. Paired with
+  `t13r1-mysql80-truncate-rows-control`, the same fixture read directly
+  → one blocker: proves the fixture's `table_rows` would have answered
+  had the exchange not invalidated them.
+- `t13r1-mysql57-algorithm-drop-refused` / `-mysql80-algorithm-drop-executes`
+  (C): `ALGORITHM=INPLACE, DROP PARTITION p0; TRUNCATE TABLE t13a` —
+  5.7 preserves exact pre-state so the successor TRUNCATE still sees
+  `table_rows` and blocks (native replay 1846); 8.0 executes, clears
+  the statistics, and the successor is silent (native replay rc=0).
+
+### 9.7 Red→green ownership
+
+- A: rule-level red tests (`partition_applicability_rules_test.go`,
+  `extract_partition_facts_test.go`) + public Audit red tests
+  (`batch_state_t13r1_applicability_test.go`). Compile-red (new
+  snapshot/metadata fields absent on baseline) and behavior-red recorded
+  separately.
+- B: public Audit two-statement red test — EXCHANGE then first-read of
+  the counterpart through successor findings and the provider call
+  ledger (real behavior red on the old baseline: the stale batch-prior
+  statistics answer the successor where they must be cleared).
+- C: public Audit red test — `ALGORITHM=INPLACE, DROP PARTITION` keeps
+  exact pre-state on the old baseline (wrong: statement executes);
+  mysql57-versioned variant keeps pre-state (right, proven refusal).

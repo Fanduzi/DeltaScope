@@ -9,7 +9,13 @@ type Metadata struct {
 	Instance    *InstanceFacts   `json:"instance,omitempty"`
 	Version     *VersionIdentity `json:"version,omitempty"`
 	TargetTable *TableSnapshot   `json:"target_table,omitempty"`
-	Objects     []ObjectSnapshot `json:"objects,omitempty"`
+	// ExchangeTable is the ordered pre-state projection of the
+	// EXCHANGE PARTITION counterpart table — the second object identity
+	// the action touches, resolved through the same once-per-key seam as
+	// the primary target. nil means the counterpart was never resolved
+	// (no exchange action on the statement, or the identity is unknown).
+	ExchangeTable *TableSnapshot   `json:"exchange_table,omitempty"`
+	Objects       []ObjectSnapshot `json:"objects,omitempty"`
 }
 
 // InstanceFacts are normalized server-level facts that influence audit behavior.
@@ -145,10 +151,22 @@ type TableSnapshot struct {
 	IndexNamesUnknown bool `json:"-"`
 
 	// Partitioned reports whether the table is partitioned — the fact TiDB's
-	// GLOBAL index option is gated on. nil means the fact was never loaded
-	// (offline statement or a pre-expansion provider), not "not
-	// partitioned".
+	// GLOBAL index option and the partition-action applicability checks are
+	// gated on. nil means the fact was never loaded (offline statement or a
+	// pre-expansion provider), not "not partitioned".
 	Partitioned *bool `json:"-"`
+
+	// PartitionType is the observed PARTITION_METHOD normalized lowercase
+	// (`range`, `list`, `hash`, `key`, `linear hash`, `linear key`,
+	// `range columns`, `list columns`). nil means the catalog probe never
+	// answered — never read as "no type". The fact is vacuous on a
+	// known-non-partitioned table.
+	PartitionType *string `json:"-"`
+
+	// PartitionNames is the observed partition-member name list in catalog
+	// order. nil means unobserved; a non-nil empty slice is an
+	// observed-empty set (a known-non-partitioned table).
+	PartitionNames []string `json:"-"`
 }
 
 // HasColumn reports whether the snapshot contains a column by name, case-insensitively.

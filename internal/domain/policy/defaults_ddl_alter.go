@@ -44,6 +44,36 @@ func ddlAlterRules() map[string]RulePolicy {
 			Enabled: true,
 			Level:   rule.LevelWarning,
 		},
+		// T13-R1 partition applicability family: proven-inapplicable cells
+		// block; unobserved premises downgrade to bounded evidence gaps.
+		"ddl.alter.drop_partition.applicability": {
+			Enabled: true,
+			Level:   rule.LevelBlocker,
+		},
+		"ddl.alter.truncate_partition.applicability": {
+			Enabled: true,
+			Level:   rule.LevelBlocker,
+		},
+		"ddl.alter.exchange_partition.applicability": {
+			Enabled: true,
+			Level:   rule.LevelBlocker,
+		},
+		"ddl.alter.drop_partition.target": {
+			Enabled: true,
+			Level:   rule.LevelBlocker,
+		},
+		"ddl.alter.truncate_partition.target": {
+			Enabled: true,
+			Level:   rule.LevelBlocker,
+		},
+		"ddl.alter.exchange_partition.target": {
+			Enabled: true,
+			Level:   rule.LevelBlocker,
+		},
+		"ddl.alter.exchange_partition.counterpart": {
+			Enabled: true,
+			Level:   rule.LevelBlocker,
+		},
 		"ddl.alter.rename_table.forbid": {
 			Enabled: true,
 			Level:   rule.LevelBlocker,

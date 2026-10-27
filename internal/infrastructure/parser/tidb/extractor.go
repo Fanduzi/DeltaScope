@@ -268,6 +268,10 @@ func extractCreateTable(stmt *ast.CreateTableStmt, rawSQL string) *spec.DDL {
 		HasSelect:     stmt.Select != nil,
 		HasPartition:  stmt.Partition != nil,
 	}
+	if stmt.Partition != nil {
+		ddl.PartitionType = partitionMethodName(stmt.Partition)
+		ddl.PartitionNames = partitionMemberNames(stmt.Partition)
+	}
 	if stmt.IfNotExists {
 		ddl.Options["if_not_exists"] = "true"
 	}
@@ -702,6 +706,22 @@ func extractAlterSpec(specification *ast.AlterTableSpec, clause string) spec.Alt
 		if _, ok := options["placement_policy"]; ok && alter.Action == "table_option" {
 			alter.Action = "placement_policy"
 		}
+	}
+	// ALGORITHM/LOCK specs carry the authored keyword as a bounded option —
+	// the refusal classifier reads the value by name (the AST collapses the
+	// absent keyword and ALGORITHM=DEFAULT into one enum, but a spec only
+	// exists when the clause was authored).
+	switch specification.Tp {
+	case ast.AlterTableAlgorithm:
+		if alter.Options == nil {
+			alter.Options = map[string]string{}
+		}
+		alter.Options["algorithm"] = strings.ToLower(specification.Algorithm.String())
+	case ast.AlterTableLock:
+		if alter.Options == nil {
+			alter.Options = map[string]string{}
+		}
+		alter.Options["lock"] = strings.ToLower(specification.LockType.String())
 	}
 	if len(unextracted) > 0 {
 		alter.UnextractedOptions = unextracted
@@ -2166,6 +2186,48 @@ func partitionOptionNames(partition *ast.PartitionOptions) []string {
 	}
 	if len(partition.UpdateIndexes) > 0 && !seen["partition_update_indexes"] {
 		names = append(names, "partition_update_indexes")
+	}
+	return names
+}
+
+// partitionMethodName normalizes the declared partition method to the
+// bounded type vocabulary the partition applicability rules consume:
+// `range`, `list`, `hash`, `key`, `linear hash`, `linear key`,
+// `range columns`, `list columns` (the columns form is expressed by
+// ColumnNames on the RANGE/LIST types; LINEAR applies to HASH/KEY).
+func partitionMethodName(partition *ast.PartitionOptions) string {
+	base := strings.ToLower(partition.Tp.String())
+	switch partition.Tp {
+	case ast.PartitionTypeRange, ast.PartitionTypeList:
+		if len(partition.ColumnNames) > 0 {
+			return base + " columns"
+		}
+	case ast.PartitionTypeHash, ast.PartitionTypeKey:
+		if partition.Linear {
+			return "linear " + base
+		}
+	}
+	return base
+}
+
+// partitionMemberNames returns the declared partition member names in
+// declaration order. `PARTITIONS n` without definitions assigns implicit
+// names p0..p(n-1) on both products — the published set names them rather
+// than staying silent.
+func partitionMemberNames(partition *ast.PartitionOptions) []string {
+	if len(partition.Definitions) > 0 {
+		names := make([]string, 0, len(partition.Definitions))
+		for _, definition := range partition.Definitions {
+			if definition == nil {
+				continue
+			}
+			names = append(names, definition.Name.L)
+		}
+		return names
+	}
+	names := make([]string, 0, partition.Num)
+	for i := uint64(0); i < partition.Num; i++ {
+		names = append(names, fmt.Sprintf("p%d", i))
 	}
 	return names
 }

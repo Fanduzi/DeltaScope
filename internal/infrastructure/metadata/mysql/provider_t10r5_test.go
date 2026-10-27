@@ -44,8 +44,7 @@ func t10r5Base(columnRows, statRows [][]driver.Value) map[string]testQueryResult
 			rows:    statRows,
 		},
 		"information_schema.partitions": {
-			columns: []string{"count"},
-			rows:    [][]driver.Value{{0}},
+			columns: []string{"partition_method", "partition_name"},
 		},
 	}
 }

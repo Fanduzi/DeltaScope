@@ -230,6 +230,21 @@ func (state *batchState) enrichStatements(ctx context.Context, request *Metadata
 			metadata.TargetTable = snapshot
 		}
 
+		// An EXCHANGE counterpart is a second named identity the action
+		// touches: it must be preloaded through the same once-per-key seam
+		// so a first touch after the exchange never revives provider-stale
+		// statistics, and so the counterpart rules see bounded facts. The
+		// qualified counterpart keeps its own schema qualifier through
+		// preState's effective-schema resolution.
+		if counterpart := exchangeCounterpartTarget(statement); counterpart != nil &&
+			strings.TrimSpace(counterpart.Name) != "" {
+			snapshot, err := state.preState(ctx, metadataSchema, *counterpart)
+			if err != nil {
+				return nil, fmt.Errorf("load table snapshot for %s: %w", counterpart.Name, err)
+			}
+			metadata.ExchangeTable = snapshot
+		}
+
 		if metadata.Schema != "" || metadata.Instance != nil || metadata.TargetTable != nil || metadata.Version != nil {
 			enriched[i].Metadata = metadata
 		}
@@ -260,6 +275,23 @@ func (state *batchState) enrichStatements(ctx context.Context, request *Metadata
 		return nil, err
 	}
 	return enriched, nil
+}
+
+// exchangeCounterpartTarget returns the authored EXCHANGE counterpart
+// identity (schema qualifier preserved; the effective-schema fallback is
+// applied inside preState), or nil when the statement carries no exchange
+// action or the clause never named a table.
+func exchangeCounterpartTarget(statement spec.Statement) *spec.Table {
+	if statement.DDL == nil {
+		return nil
+	}
+	for i := range statement.DDL.Alter {
+		alter := &statement.DDL.Alter[i]
+		if alter.Action == "exchange_partition" && alter.ExchangeTable != nil {
+			return alter.ExchangeTable
+		}
+	}
+	return nil
 }
 
 // orderedTargetTable resolves the effective table identity a statement's

@@ -222,6 +222,31 @@ rules:
     params:
       forbid: true
 
+  ddl.alter.drop_partition.applicability:
+    enabled: true
+    level: blocker
+    params:
+
+  ddl.alter.drop_partition.target:
+    enabled: true
+    level: blocker
+    params:
+
+  ddl.alter.exchange_partition.applicability:
+    enabled: true
+    level: blocker
+    params:
+
+  ddl.alter.exchange_partition.target:
+    enabled: true
+    level: blocker
+    params:
+
+  ddl.alter.exchange_partition.counterpart:
+    enabled: true
+    level: blocker
+    params:
+
   ddl.alter.exchange_partition.warn:
     enabled: true
     level: warning
@@ -422,6 +447,16 @@ rules:
     level: warning
     params:
       forbid: true
+
+  ddl.alter.truncate_partition.applicability:
+    enabled: true
+    level: blocker
+    params:
+
+  ddl.alter.truncate_partition.target:
+    enabled: true
+    level: blocker
+    params:
 
   ddl.alter.truncate_partition.forbid:
     enabled: true

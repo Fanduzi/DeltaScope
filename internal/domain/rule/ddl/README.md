@@ -20,6 +20,8 @@ Expanded DDL rule catalog for create-table governance, table options/object shap
 | alter_rules.go | Implements action-level ALTER TABLE restriction rules plus approved standalone DDL action reuse for PostgreSQL DROP INDEX, with T09 standalone detection driven by the operation rather than table-nil shape so `ddl.alter.drop_index.forbid`/`ddl.alter.rename_index.forbid` reach standalone `DROP INDEX`/`ALTER`-less index actions with names resolved through `Definition`/`OldName` fallback |
 | partition_rules.go | Implements the T13 destructive-partition rules for MySQL/TiDB: `ddl.alter.drop_partition.forbid` and `ddl.alter.truncate_partition.forbid` are default blockers firing on the authored action (one finding per named partition, `TRUNCATE PARTITION ALL` carries `all_partitions` and no `partition` key; a `forbid:false` param disarms), and `ddl.alter.exchange_partition.warn` is a default warning carrying `exchange_table`/`exchange_schema`/`validation` — rules are independent of metadata availability and native executability, partition-member existence is never statically proven (issue #92 T13) |
 | partition_rules_test.go | Verifies the T13 partition rules: per-partition and ALL-finding shapes, both-sided exchange metadata with effective validation, dialect binding (MySQL+TiDB, silent on PostgreSQL), forbid disarm, registration, and defaults (issue #92 T13) |
+| partition_applicability_rules.go | Implements the T13-R1 metadata-bounded applicability rules for MySQL/TiDB — separate from the AST risk rules: `ddl.alter.{drop,truncate,exchange}_partition.applicability` bind the primary's observed partitioned state and partition method (1505 on a known-plain table; 1512 for hash/key-family DROP; a partitioned primary with an unobserved method owes the type gap); `ddl.alter.{drop,truncate,exchange}_partition.target` bind the observed member set against each named partition (1507/1735, `ALL` consumes no member name); and `ddl.alter.exchange_partition.counterpart` binds counterpart existence (1146), partitioned state (1732), and the bounded column-sequence/PK-identity compare (1736) — a clean compare never claims the engine validated all exchange conditions. Every rule reports `EvidenceGaps` only for facts it consumes (`unknown_table_state`; disabled rules owe nothing), finding metadata carries `reason_code`/`native_error`/`exists`, and proven-applicable cells stay silent (issue #92 T13-R1) |
+| partition_applicability_rules_test.go | Verifies the T13-R1 applicability rules: partitioned/type/member/counterpart proven-refusal cells, unknown-vs-known-absent-vs-observed-empty three-state handling, gap ownership per consumed fact, ALL-form member exemption, dialect gating, registration, and defaults (issue #92 T13-R1) |
 | database_lifecycle_rules.go | Implements MySQL/TiDB database lifecycle rules: create-database notice, drop-database warning |
 | database_lifecycle_rules_test.go | Verifies MySQL/TiDB database lifecycle rules with positive, negative, cross-dialect, registration, and defaults coverage |
 | mysql_tidb_lifecycle_rules.go | Implements MySQL/TiDB standalone lifecycle notices plus create-index notice reuse for normalized ALTER add-index actions, with normalized object-identifier messages |
@@ -192,6 +194,13 @@ Expanded DDL rule catalog for create-table governance, table options/object shap
 - `ddl.alter.drop_partition.forbid`
 - `ddl.alter.truncate_partition.forbid`
 - `ddl.alter.exchange_partition.warn`
+- `ddl.alter.drop_partition.applicability`
+- `ddl.alter.truncate_partition.applicability`
+- `ddl.alter.exchange_partition.applicability`
+- `ddl.alter.drop_partition.target`
+- `ddl.alter.truncate_partition.target`
+- `ddl.alter.exchange_partition.target`
+- `ddl.alter.exchange_partition.counterpart`
 - `ddl.alter.modify_column.target_type_family.allowlist`
 - `ddl.alter.change_column.target_type_family.allowlist`
 - `ddl.alter.modify_column.compatibility.require`

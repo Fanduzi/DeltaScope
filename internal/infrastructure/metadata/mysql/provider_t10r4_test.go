@@ -185,8 +185,7 @@ func TestT10R4TiDBClusteredFactMatrix(t *testing.T) {
 				rows:    statRows,
 			},
 			"information_schema.partitions": {
-				columns: []string{"count"},
-				rows:    [][]driver.Value{{0}},
+				columns: []string{"partition_method", "partition_name"},
 			},
 			"table_constraints": {
 				columns: []string{"count"},
@@ -323,8 +322,7 @@ func TestT10R4TiDBPrimaryNameBindingMatrix(t *testing.T) {
 				rows:    statRows,
 			},
 			"information_schema.partitions": {
-				columns: []string{"count"},
-				rows:    [][]driver.Value{{0}},
+				columns: []string{"partition_method", "partition_name"},
 			},
 		}
 	}

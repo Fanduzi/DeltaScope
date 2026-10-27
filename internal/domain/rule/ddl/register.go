@@ -202,6 +202,27 @@ func Register(registry *rule.Registry, cfg policy.Policy) error {
 		{ruleID: ruleIDAlterExchangePartitionWarn, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
 			return newExchangePartitionWarnRule(cfg)
 		}},
+		{ruleID: ruleIDAlterDropPartitionApplicability, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newDropPartitionApplicabilityRule(cfg)
+		}},
+		{ruleID: ruleIDAlterTruncatePartitionApplicability, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newTruncatePartitionApplicabilityRule(cfg)
+		}},
+		{ruleID: ruleIDAlterExchangePartitionApplicability, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newExchangePartitionApplicabilityRule(cfg)
+		}},
+		{ruleID: ruleIDAlterDropPartitionTarget, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newDropPartitionTargetRule(cfg)
+		}},
+		{ruleID: ruleIDAlterTruncatePartitionTarget, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newTruncatePartitionTargetRule(cfg)
+		}},
+		{ruleID: ruleIDAlterExchangePartitionTarget, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newExchangePartitionTargetRule(cfg)
+		}},
+		{ruleID: ruleIDAlterExchangePartitionCounterpart, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newExchangeCounterpartCompatibilityRule(cfg)
+		}},
 		{ruleID: ruleIDAlterAddIndexColumnsMaxCount, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
 			return newAlterAddedIndexColumnsMaxCountRule(8, rule.LevelWarning, cfg)
 		}},

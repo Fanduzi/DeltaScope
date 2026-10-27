@@ -606,6 +606,17 @@ func derivedCreateShape(dialect spec.Dialect, schema, table string, ddl *spec.DD
 	snapshot.IndexOrderCatalog = true
 	partitioned := ddl.HasPartition
 	snapshot.Partitioned = &partitioned
+	if partitioned {
+		if ddl.PartitionType != "" {
+			partitionType := ddl.PartitionType
+			snapshot.PartitionType = &partitionType
+		}
+		snapshot.PartitionNames = append([]string{}, ddl.PartitionNames...)
+	} else {
+		// A declared-plain CREATE observes an empty member set, never an
+		// unobserved one.
+		snapshot.PartitionNames = []string{}
+	}
 	if ddl.PrimaryKey != nil {
 		pk := cloneIndex(*ddl.PrimaryKey)
 		// The stored PK index object is always named PRIMARY on both
@@ -691,13 +702,25 @@ func (s *batchState) tidbAlterPrimaryKey() *bool {
 func (s *batchState) applyAlterTable(ctx context.Context, statement spec.Statement) error {
 	ddl := statement.DDL
 	targets := ddl.TableTargets()
-	// A partition action sharing a multi-spec ALTER is a proven refusal on
-	// every anchor: MySQL rejects partition ops inside the alter list at the
-	// grammar level (1064) and TiDB refuses the multi-schema change (8200).
-	// The statement can never execute, so the exact pre-state stands — no
-	// sibling action applies and no statistic moves.
+	// A partition action sharing a multi-spec ALTER is settled by the
+	// probed combination matrix, not by a blanket refusal: structural
+	// siblings, table-option siblings, and multiple partition actions are
+	// proven refusals (MySQL 1064, TiDB 8200), a single supported
+	// ALGORITHM/LOCK modifier is gated by the probed value+version matrix
+	// (ALGORITHM=INPLACE+DROP refuses on MySQL 5.x, executes on 8+/TiDB),
+	// and every unprobed combination invalidates rather than claiming
+	// either outcome.
 	if len(ddl.Alter) > 1 && hasPartitionAlterAction(ddl) {
-		return nil
+		switch s.partitionMixedOutcome(ddl) {
+		case partitionOutcomeRefused:
+			return nil
+		case partitionOutcomeCombinable:
+			s.applyPartitionOperation(targets)
+			return nil
+		default:
+			s.invalidateAll(targets)
+			return nil
+		}
 	}
 	// A multi-action ALTER is one statement: its net successor is the bounded
 	// dialect-parametrized model, or one tombstone — never a prefix of
@@ -1226,6 +1249,125 @@ func hasPartitionAlterAction(ddl *spec.DDL) bool {
 	return false
 }
 
+// partitionOutcome is the evidence-bounded verdict of a partition action
+// sharing a multi-spec ALTER.
+type partitionOutcome int
+
+const (
+	// partitionOutcomeRefused is a proven refusal — the statement can never
+	// execute, so the exact pre-state stands.
+	partitionOutcomeRefused partitionOutcome = iota
+	// partitionOutcomeCombinable is a proven-executed form — the partition
+	// action's modeled post-state applies.
+	partitionOutcomeCombinable
+	// partitionOutcomeUnproven covers combinations no anchor probed — the
+	// bound identities invalidate rather than claiming refusal or success.
+	partitionOutcomeUnproven
+)
+
+// partitionMixedOutcome classifies a multi-spec ALTER that carries at
+// least one partition action against the probed anchor matrix:
+//   - more than one partition action, any structural sibling, or any
+//     table-option sibling (ENGINE= et al.) → refused (MySQL 1064
+//     grammar-level, TiDB 8200/1064 multi-schema — probed p6/p8).
+//   - placement-policy siblings and multiple modifiers are unprobed →
+//     unproven.
+//   - one supported ALGORITHM/LOCK modifier → the probed value+version
+//     gate decides refused/combinable/unproven.
+//
+// The shared grammar never accepts a spec after a partition clause, so
+// partition-first mixes cannot reach this point.
+func (s *batchState) partitionMixedOutcome(ddl *spec.DDL) partitionOutcome {
+	partitionActions := 0
+	partitionAction := ""
+	modifierCount := 0
+	for i := range ddl.Alter {
+		action := ddl.Alter[i].Action
+		switch {
+		case isPartitionAlterAction(action):
+			partitionActions++
+			partitionAction = action
+		case action == "algorithm" || action == "lock":
+			modifierCount++
+		case action == "table_option":
+			// ENGINE= + partition action: refused on every anchor —
+			// MySQL 1064 at the grammar layer (partition spec must be
+			// the ALTER tail), TiDB 8200 multi-schema. Probed p6/p8.
+			return partitionOutcomeRefused
+		case action == "placement_policy":
+			// Placement bindings are table-option writes no anchor
+			// probed against a partition action.
+			return partitionOutcomeUnproven
+		default:
+			return partitionOutcomeRefused
+		}
+	}
+	if partitionActions != 1 {
+		return partitionOutcomeRefused
+	}
+	if modifierCount != 1 {
+		return partitionOutcomeUnproven
+	}
+	for i := range ddl.Alter {
+		alter := &ddl.Alter[i]
+		if isPartitionAlterAction(alter.Action) {
+			continue
+		}
+		value := ""
+		if alter.Options != nil {
+			value = alter.Options[alter.Action]
+		}
+		if outcome := s.partitionModifierOutcome(alter.Action, value, partitionAction); outcome != partitionOutcomeCombinable {
+			return outcome
+		}
+	}
+	return partitionOutcomeCombinable
+}
+
+// partitionModifierOutcome applies the probed modifier matrix:
+//   - LOCK=DEFAULT combines on all anchors; other LOCK values are
+//     unprobed.
+//   - ALGORITHM=DEFAULT combines on all anchors; ALGORITHM=INPLACE
+//     combines with TRUNCATE/EXCHANGE on all anchors, combines with DROP
+//     on MySQL >=8 and TiDB, refuses on MySQL 5.x (1846), and stays
+//     unproven when no version fact resolved. Other algorithms are
+//     unprobed.
+func (s *batchState) partitionModifierOutcome(action, value, partitionAction string) partitionOutcome {
+	switch action {
+	case "lock":
+		if value == "default" {
+			return partitionOutcomeCombinable
+		}
+		return partitionOutcomeUnproven
+	case "algorithm":
+		switch value {
+		case "default":
+			return partitionOutcomeCombinable
+		case "inplace":
+			if partitionAction != "drop_partition" {
+				return partitionOutcomeCombinable
+			}
+			version := s.resolvedVersion
+			if version == nil {
+				return partitionOutcomeUnproven
+			}
+			switch version.Product {
+			case spec.VersionProductTiDB:
+				return partitionOutcomeCombinable
+			case spec.VersionProductMySQL:
+				if version.Major >= 8 {
+					return partitionOutcomeCombinable
+				}
+				return partitionOutcomeRefused
+			}
+			return partitionOutcomeUnproven
+		default:
+			return partitionOutcomeUnproven
+		}
+	}
+	return partitionOutcomeUnproven
+}
+
 // applyPartitionOperation publishes the shared successor for a single-action
 // partition ALTER. Member-level schema facts are invariant under every
 // outcome — partitions never add/remove/rename columns, indexes, or
@@ -1315,6 +1457,15 @@ func cloneTableSnapshot(in *spec.TableSnapshot) *spec.TableSnapshot {
 	if in.Partitioned != nil {
 		partitioned := *in.Partitioned
 		out.Partitioned = &partitioned
+	}
+	if in.PartitionType != nil {
+		partitionType := *in.PartitionType
+		out.PartitionType = &partitionType
+	}
+	if in.PartitionNames != nil {
+		// append(nil, ...) would collapse an observed-empty set back to
+		// unobserved — keep the non-nil shape through the clone.
+		out.PartitionNames = append([]string{}, in.PartitionNames...)
 	}
 	return &out
 }

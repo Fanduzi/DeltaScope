@@ -129,6 +129,19 @@ func corpusTableSnapshotToSpec(tableName, defaultSchema string, snapshot corpusT
 	for _, constraint := range snapshot.Constraints {
 		out.Constraints = append(out.Constraints, corpusConstraintToSpec(constraint))
 	}
+	out.PrimaryKeyUnknown = snapshot.PrimaryKeyUnknown
+	out.ConstraintsUnknown = snapshot.ConstraintsUnknown
+	if snapshot.Partitioned != nil {
+		partitioned := *snapshot.Partitioned
+		out.Partitioned = &partitioned
+	}
+	if snapshot.PartitionType != "" {
+		partitionType := snapshot.PartitionType
+		out.PartitionType = &partitionType
+	}
+	if snapshot.PartitionNames != nil {
+		out.PartitionNames = append([]string{}, snapshot.PartitionNames...)
+	}
 	return out
 }
 

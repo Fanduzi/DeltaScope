@@ -430,12 +430,13 @@ func (p *Provider) LoadTableSnapshot(ctx context.Context, dialect spec.Dialect, 
 	if err := p.loadCheckConstraints(ctx, snapshot); err != nil {
 		return nil, fmt.Errorf("load table %s.%s check constraints: %w", snapshot.Schema, snapshot.Table.Name, err)
 	}
+	// Partition facts are loaded on both products — the TiDB GLOBAL index
+	// gate and the partition-action applicability checks both consume them.
+	if err := p.loadPartitionFacts(ctx, snapshot); err != nil {
+		return nil, fmt.Errorf("load table %s.%s partition state: %w", snapshot.Schema, snapshot.Table.Name, err)
+	}
 	if dialect == spec.DialectTiDB {
-		// Only TiDB consumers read Partitioned (the GLOBAL index gate) and
-		// PrimaryKeyIsHandle — skip the probes on MySQL.
-		if err := p.loadPartitioned(ctx, snapshot); err != nil {
-			return nil, fmt.Errorf("load table %s.%s partition state: %w", snapshot.Schema, snapshot.Table.Name, err)
-		}
+		// PrimaryKeyIsHandle is TiDB-only — skip those probes on MySQL.
 		if err := p.resolveTiDBPrimaryName(ctx, snapshot); err != nil {
 			return nil, fmt.Errorf("load table %s.%s primary-key identity: %w", snapshot.Schema, snapshot.Table.Name, err)
 		}
@@ -447,27 +448,63 @@ func (p *Provider) LoadTableSnapshot(ctx context.Context, dialect spec.Dialect, 
 	return snapshot, nil
 }
 
-// loadPartitioned records whether the table is partitioned — the fact the
-// TiDB GLOBAL index option and partition-aware checks consult. A zero-count
-// row answers false; a catalog the query cannot read keeps the fact
-// unknown (Partitioned nil).
-func (p *Provider) loadPartitioned(ctx context.Context, snapshot *spec.TableSnapshot) error {
-	var n int
-	if err := p.db.QueryRowContext(ctx, `
-		select count(*)
+// loadPartitionFacts records the observed partition catalog: whether the
+// table is partitioned, the PARTITION_METHOD normalized lowercase
+// (`range`, `hash`, `linear key`, `range columns`, ...), and the member
+// names in ordinal order. A query the catalog cannot answer keeps every
+// fact unknown (nil) — a bounded gap, not a guessed "not partitioned".
+// A partitioned table's catalog answer always carries a method, so a
+// nil PartitionType under partitioned=true is itself an unobserved fact.
+func (p *Provider) loadPartitionFacts(ctx context.Context, snapshot *spec.TableSnapshot) error {
+	rows, err := p.db.QueryContext(ctx, `
+		select partition_method, partition_name
 		from information_schema.partitions
 		where table_schema = ? and table_name = ?
 			and partition_name is not null
-	`, snapshot.Schema, snapshot.Table.Name).Scan(&n); err != nil {
+		order by partition_ordinal_position
+	`, snapshot.Schema, snapshot.Table.Name)
+	if err != nil {
 		if err == sql.ErrNoRows {
-			// An unanswerable catalog probe keeps the fact unknown — a
-			// bounded gap, not a guessed "not partitioned".
+			// An unanswerable catalog probe keeps every partition fact
+			// unknown — a bounded gap, never a guessed "not partitioned".
 			return nil
 		}
 		return fmt.Errorf("query partitions: %w", err)
 	}
-	partitioned := n > 0
+	defer rows.Close()
+
+	names := make([]string, 0)
+	seen := make(map[string]bool)
+	var method string
+	for rows.Next() {
+		var rawMethod, name sql.NullString
+		if err := rows.Scan(&rawMethod, &name); err != nil {
+			return fmt.Errorf("scan partition for table %s.%s: %w", snapshot.Schema, snapshot.Table.Name, err)
+		}
+		if method == "" && rawMethod.Valid {
+			method = strings.ToLower(rawMethod.String)
+		}
+		if name.Valid && !seen[name.String] {
+			seen[name.String] = true
+			names = append(names, name.String)
+		}
+	}
+	if err := rows.Err(); err != nil {
+		return fmt.Errorf("iterate partitions for table %s.%s: %w", snapshot.Schema, snapshot.Table.Name, err)
+	}
+
+	partitioned := len(names) > 0
 	snapshot.Partitioned = &partitioned
+	if partitioned {
+		if method != "" {
+			snapshot.PartitionType = &method
+		}
+		snapshot.PartitionNames = names
+	} else {
+		// No partition rows is an observed-empty member set on a
+		// known-plain table — never confused with an unobserved set.
+		snapshot.PartitionNames = []string{}
+	}
 	return nil
 }
 

@@ -1,0 +1,27 @@
+=== deltascope-ddl-golden-mysql57 ===
+--- ENGINE=InnoDB, DROP PARTITION p0
+ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'PARTITION p0' at line 1
+rc=1
+--- after: p0,p1
+=== deltascope-ddl-golden-mysql80 ===
+--- ENGINE=InnoDB, DROP PARTITION p0
+ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'PARTITION p0' at line 1
+rc=1
+--- after: p0,p1
+=== deltascope-ddl-golden-mysql84 ===
+--- ENGINE=InnoDB, DROP PARTITION p0
+ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'PARTITION p0' at line 1
+rc=1
+--- after: p0,p1
+=== tidb85 ===
+--- ENGINE=InnoDB, DROP PARTITION p0
+ERROR 1049 (42000): Unknown database 'golden'
+rc=1
+--- after: ERROR 1049 (42000): Unknown database 'golden'
+=== tidb85 (rerun after golden db create) ===
+--- ALTER TABLE t13e ENGINE=InnoDB, DROP PARTITION p0
+ERROR 8200 (HY000) at line 1: Unsupported multi schema change for drop partition
+rc=1
+--- ALTER TABLE t13e DROP PARTITION p0, ENGINE=InnoDB
+ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your TiDB version for the right syntax to use line 1 column 43 near "=InnoDB"
+rc=1

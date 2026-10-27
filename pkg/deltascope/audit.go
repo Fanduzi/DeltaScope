@@ -481,6 +481,17 @@ func cloneTableSnapshot(in *spec.TableSnapshot) *spec.TableSnapshot {
 	} else {
 		out.Options = nil
 	}
+	if in.Partitioned != nil {
+		partitioned := *in.Partitioned
+		out.Partitioned = &partitioned
+	}
+	if in.PartitionType != nil {
+		partitionType := *in.PartitionType
+		out.PartitionType = &partitionType
+	}
+	if in.PartitionNames != nil {
+		out.PartitionNames = append([]string{}, in.PartitionNames...)
+	}
 	return &out
 }
 

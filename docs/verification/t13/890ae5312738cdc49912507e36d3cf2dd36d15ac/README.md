@@ -74,9 +74,11 @@ zero new issues). `gofmt` clean except the two accepted T07 files.
 
 `golden/<TASK>/` — five serial runs sharing anchors, each bound to
 `890ae531` (`head_sha` and `cli.build.head_sha` in every artifact.json;
-one CLI sha256 `2dcdce5f68ab673a` across all five; `cli.path` is the
-runtime build path — the binary under `bin/` is archived here for
-inspection):
+one CLI sha256 `2dcdce5f68ab673a` across all five). `cli.path` records
+the runtime build path used at run time; the built binary itself is NOT
+archived in this bundle — rebuild from product SHA `890ae531`
+(`CGO_ENABLED=0 go build -o bin/deltascope ./cmd/deltascope`) to
+reproduce it, and check it against the recorded sha256.
 
 | Task | Cases | Assertions |
 |------|-------|------------|
@@ -94,11 +96,15 @@ explicit schema-qualified `COUNT(*)`/`PARTITIONS` catalog queries —
 `information_schema.TABLE_ROWS` statistics were rejected as
 unreliable during this task's run.
 
-## Unverified boundaries (contract §8)
+## Unverified boundaries (contract §8, as of 890ae531)
 
 - Partition member catalog/type/bounds unmodeled; member existence and
-  partition-type applicability never statically proven.
+  partition-type applicability never statically proven. *(Superseded by
+  the T13-R1 amendment: member catalog + partition-type applicability
+  are now modeled; bounds values/expression solving remain unmodeled.)*
 - `WITH VALIDATION` explicit-vs-absent indistinguishable in the AST —
   only the effective `with`/`without` fact recorded.
 - Sub-partitioned DROP, MySQL-side `Partitioned` catalog load, and the
-  T14 topology actions stay unprobed/out of scope.
+  T14 topology actions stay unprobed/out of scope. *(T13-R1: MySQL-side
+  partition catalog load is now enabled; sub-partitioned DROP and T14
+  actions remain out of scope.)*
