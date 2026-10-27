@@ -7,6 +7,7 @@ package audit
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
@@ -234,8 +235,10 @@ func TestT13R1AlgorithmDropPartitionVersionGate(t *testing.T) {
 			ConfigPath:       t13r1StatsPolicy(t),
 			MetadataProvider: provider,
 		})
-		if err != nil {
-			t.Fatalf("audit: %v", err)
+		// Without a version fact the INPLACE+DROP combination is unproven —
+		// the current statement keeps its unsupported aspect (T13-R2 C2).
+		if !errors.Is(err, ErrUnsupportedStatement) {
+			t.Fatalf("unproven modifier combination must surface as unsupported, got err=%v", err)
 		}
 		successor := result.Statements[1]
 		if len(successor.EvidenceGaps) == 0 {

@@ -899,6 +899,47 @@
     ],
     "rule_summary_applicable": 1
    }
+  },
+  {
+   "id": "t13r2-cli-inplace-drop-noversion-unsupported",
+   "dialect": "mysql",
+   "sql": "ALTER TABLE t ALGORITHM=INPLACE, DROP PARTITION p0;",
+   "policy": "t13r1-drop-target",
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "evidence_gaps": 1,
+    "evidence_gap_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.alter.drop_partition.target",
+      "reason_code": "unknown_table_state",
+      "required_facts": [
+       "target_table.partitioned"
+      ]
+     }
+    ],
+    "unsupported_entries": [
+     {
+      "index": 0,
+      "feature": "alter_table.algorithm",
+      "reason": "parsed by the shared parser but not covered by audited semantics",
+      "metadata": {
+       "action": "algorithm",
+       "aspect": "action"
+      }
+     }
+    ],
+    "rule_summary_applicable": 1
+   }
   }
  ],
  "metadata_cases": [
@@ -2063,6 +2104,436 @@
      "expect_rc": 0
     }
    ]
+  },
+  {
+   "id": "t13r2-mysql80-exchange-engine-mismatch",
+   "anchor": "mysql80",
+   "dialect": "mysql",
+   "sql": "ALTER TABLE t13e EXCHANGE PARTITION p0 WITH TABLE t13g;",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23380,
+    "user": "root",
+    "schema": "golden",
+    "password_env": "DS_T13_GOLDEN_PW",
+    "password": "root"
+   },
+   "policy": "t13r1-exchange-counterpart",
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.alter.exchange_partition.counterpart",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.alter.exchange_partition.counterpart",
+      "metadata": {
+       "table": "t13e",
+       "partition": "p0",
+       "exchange_table": "t13g",
+       "reason_code": "counterpart_engine_mismatch",
+       "native_error": "1497",
+       "exists": "true"
+      }
+     }
+    ],
+    "rule_summary_applicable": 1,
+    "version": {
+     "product": "mysql",
+     "version": "8.0.46"
+    }
+   },
+   "setup": [
+    {
+     "name": "create-range-fixture",
+     "sql": "CREATE TABLE t13e (id INT, c INT) ENGINE=InnoDB PARTITION BY RANGE (id) (PARTITION p0 VALUES LESS THAN (100), PARTITION p1 VALUES LESS THAN (200))",
+     "expect_rc": 0
+    },
+    {
+     "name": "create-myisam-counterpart",
+     "sql": "CREATE TABLE t13g (id INT, c INT) ENGINE=MyISAM",
+     "expect_rc": 0
+    }
+   ],
+   "execute": [
+    {
+     "name": "apply-audited-exchange",
+     "sql": "ALTER TABLE t13e EXCHANGE PARTITION p0 WITH TABLE t13g",
+     "expect_rc": 1,
+     "stderr_contains": [
+      "ERROR 1497"
+     ]
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop-fixtures",
+     "sql": "DROP TABLE IF EXISTS t13e, t13g",
+     "expect_rc": 0
+    }
+   ]
+  },
+  {
+   "id": "t13r2-tidb85-exchange-engine-normalized",
+   "anchor": "tidb85",
+   "dialect": "tidb",
+   "sql": "ALTER TABLE t13e EXCHANGE PARTITION p0 WITH TABLE t13g;",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 24000,
+    "user": "root",
+    "schema": "golden"
+   },
+   "policy": "t13r1-exchange-counterpart",
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "rule_summary_applicable": 1,
+    "version": {
+     "product": "tidb",
+     "version": "8.5.0"
+    }
+   },
+   "setup": [
+    {
+     "name": "create-range-fixture",
+     "sql": "CREATE TABLE t13e (id INT, c INT) ENGINE=InnoDB PARTITION BY RANGE (id) (PARTITION p0 VALUES LESS THAN (100), PARTITION p1 VALUES LESS THAN (200))",
+     "expect_rc": 0
+    },
+    {
+     "name": "create-myisam-declared-counterpart",
+     "sql": "CREATE TABLE t13g (id INT, c INT) ENGINE=MyISAM",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "TiDB normalizes the declared engine label to InnoDB in the catalog",
+       "sql": "SELECT ENGINE FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t13g'",
+       "expect": "InnoDB"
+      }
+     ]
+    }
+   ],
+   "execute": [
+    {
+     "name": "apply-audited-exchange",
+     "sql": "ALTER TABLE t13e EXCHANGE PARTITION p0 WITH TABLE t13g",
+     "expect_rc": 0
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop-fixtures",
+     "sql": "DROP TABLE IF EXISTS t13e, t13g",
+     "expect_rc": 0
+    }
+   ]
+  },
+  {
+   "id": "t13r2-mysql80-drop-then-truncate-absent",
+   "anchor": "mysql80",
+   "dialect": "mysql",
+   "sql": "ALTER TABLE t13e DROP PARTITION p0;\nALTER TABLE t13e TRUNCATE PARTITION p0;",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23380,
+    "user": "root",
+    "schema": "golden",
+    "password_env": "DS_T13_GOLDEN_PW",
+    "password": "root"
+   },
+   "policy": "t13r1-truncate-target",
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 2,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete",
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "finding_entries": [
+     {
+      "index": 1,
+      "rule_id": "ddl.alter.truncate_partition.target",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 1,
+      "rule_id": "ddl.alter.truncate_partition.target",
+      "metadata": {
+       "table": "t13e",
+       "partition": "p0",
+       "reason_code": "partition_absent",
+       "native_error": "1735",
+       "exists": "false"
+      }
+     }
+    ],
+    "rule_summary_applicable": 1,
+    "version": {
+     "product": "mysql",
+     "version": "8.0.46"
+    }
+   },
+   "setup": [
+    {
+     "name": "create-range-fixture",
+     "sql": "CREATE TABLE t13e (id INT, c INT) PARTITION BY RANGE (id) (PARTITION p0 VALUES LESS THAN (100), PARTITION p1 VALUES LESS THAN (200))",
+     "expect_rc": 0
+    }
+   ],
+   "execute": [
+    {
+     "name": "apply-audited-drop",
+     "sql": "ALTER TABLE t13e DROP PARTITION p0",
+     "expect_rc": 0
+    },
+    {
+     "name": "apply-audited-truncate",
+     "sql": "ALTER TABLE t13e TRUNCATE PARTITION p0",
+     "expect_rc": 1,
+     "stderr_contains": [
+      "ERROR 1735"
+     ]
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop-fixture",
+     "sql": "DROP TABLE IF EXISTS t13e",
+     "expect_rc": 0
+    }
+   ]
+  },
+  {
+   "id": "t13r2-mysql80-drop-then-truncate-survives",
+   "anchor": "mysql80",
+   "dialect": "mysql",
+   "sql": "ALTER TABLE t13e DROP PARTITION p0;\nALTER TABLE t13e TRUNCATE PARTITION p1;",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23380,
+    "user": "root",
+    "schema": "golden",
+    "password_env": "DS_T13_GOLDEN_PW",
+    "password": "root"
+   },
+   "policy": "t13r1-truncate-target",
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 2,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete",
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "rule_summary_applicable": 1,
+    "version": {
+     "product": "mysql",
+     "version": "8.0.46"
+    }
+   },
+   "setup": [
+    {
+     "name": "create-range-fixture",
+     "sql": "CREATE TABLE t13e (id INT, c INT) PARTITION BY RANGE (id) (PARTITION p0 VALUES LESS THAN (100), PARTITION p1 VALUES LESS THAN (200))",
+     "expect_rc": 0
+    },
+    {
+     "name": "seed-rows",
+     "sql": "INSERT INTO t13e VALUES (1,1),(150,2)",
+     "expect_rc": 0
+    }
+   ],
+   "execute": [
+    {
+     "name": "apply-audited-drop",
+     "sql": "ALTER TABLE t13e DROP PARTITION p0",
+     "expect_rc": 0
+    },
+    {
+     "name": "apply-audited-truncate",
+     "sql": "ALTER TABLE t13e TRUNCATE PARTITION p1",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "surviving member truncated — p1 row removed",
+       "sql": "SELECT COUNT(*) FROM golden.t13e",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop-fixture",
+     "sql": "DROP TABLE IF EXISTS t13e",
+     "expect_rc": 0
+    }
+   ]
+  },
+  {
+   "id": "t13r2-mysql80-exchange-subpartition-leaf-gap",
+   "anchor": "mysql80",
+   "dialect": "mysql",
+   "sql": "ALTER TABLE t13sp EXCHANGE PARTITION p0sp0 WITH TABLE t13spx;",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23380,
+    "user": "root",
+    "schema": "golden",
+    "password_env": "DS_T13_GOLDEN_PW",
+    "password": "root"
+   },
+   "policy": "t13r1-exchange-target",
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": [
+     "unverified"
+    ],
+    "evidence_gaps": 1,
+    "evidence_gap_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.alter.exchange_partition.target",
+      "reason_code": "unknown_table_state",
+      "required_facts": [
+       "target_table.partitions"
+      ]
+     }
+    ],
+    "rule_summary_applicable": 1,
+    "version": {
+     "product": "mysql",
+     "version": "8.0.46"
+    }
+   },
+   "setup": [
+    {
+     "name": "create-subpartitioned-fixture",
+     "sql": "CREATE TABLE t13sp (id INT) PARTITION BY RANGE(id) SUBPARTITION BY HASH(id) SUBPARTITIONS 2 (PARTITION p0 VALUES LESS THAN (10), PARTITION p1 VALUES LESS THAN (20))",
+     "expect_rc": 0
+    },
+    {
+     "name": "create-counterpart",
+     "sql": "CREATE TABLE t13spx (id INT)",
+     "expect_rc": 0
+    }
+   ],
+   "execute": [
+    {
+     "name": "apply-audited-exchange",
+     "sql": "ALTER TABLE t13sp EXCHANGE PARTITION p0sp0 WITH TABLE t13spx",
+     "expect_rc": 0
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop-fixtures",
+     "sql": "DROP TABLE IF EXISTS t13sp, t13spx",
+     "expect_rc": 0
+    }
+   ]
+  },
+  {
+   "id": "t13r2-tidb85-interval-generated-member",
+   "anchor": "tidb85",
+   "dialect": "tidb",
+   "sql": "ALTER TABLE t13i TRUNCATE PARTITION p_lt_10;",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 24000,
+    "user": "root",
+    "schema": "golden"
+   },
+   "policy": "t13r1-truncate-target",
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "rule_summary_applicable": 1,
+    "version": {
+     "product": "tidb",
+     "version": "8.5.0"
+    }
+   },
+   "setup": [
+    {
+     "name": "create-interval-fixture",
+     "sql": "CREATE TABLE t13i (id INT) PARTITION BY RANGE(id) INTERVAL(10) FIRST PARTITION LESS THAN(10) LAST PARTITION LESS THAN(30)",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "TiDB materializes generated member names in the catalog",
+       "sql": "SELECT COUNT(*) FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t13i' AND PARTITION_NAME='P_LT_10'",
+       "expect": "1"
+      }
+     ]
+    }
+   ],
+   "execute": [
+    {
+     "name": "apply-audited-truncate",
+     "sql": "ALTER TABLE t13i TRUNCATE PARTITION p_lt_10",
+     "expect_rc": 0
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop-fixture",
+     "sql": "DROP TABLE IF EXISTS t13i",
+     "expect_rc": 0
+    }
+   ]
   }
  ],
  "required_case_ids": [
@@ -2103,6 +2574,13 @@
   "T13.meta.t13r1-mysql80-exchange-clears-counterpart-stats",
   "T13.meta.t13r1-mysql80-truncate-rows-control",
   "T13.meta.t13r1-mysql57-algorithm-drop-refused",
-  "T13.meta.t13r1-mysql80-algorithm-drop-executes"
+  "T13.meta.t13r1-mysql80-algorithm-drop-executes",
+  "T13.cli.t13r2-cli-inplace-drop-noversion-unsupported",
+  "T13.meta.t13r2-mysql80-exchange-engine-mismatch",
+  "T13.meta.t13r2-tidb85-exchange-engine-normalized",
+  "T13.meta.t13r2-mysql80-drop-then-truncate-absent",
+  "T13.meta.t13r2-mysql80-drop-then-truncate-survives",
+  "T13.meta.t13r2-mysql80-exchange-subpartition-leaf-gap",
+  "T13.meta.t13r2-tidb85-interval-generated-member"
  ]
 }

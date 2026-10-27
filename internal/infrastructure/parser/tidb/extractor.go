@@ -2210,12 +2210,35 @@ func partitionMethodName(partition *ast.PartitionOptions) string {
 	return base
 }
 
+// maxPartitionMembers is the native member bound (MySQL refuses more than
+// 8192 partitions including subpartitions with error 1499 — probed on
+// 8.0.46). Implicit `PARTITIONS n` expansion never enumerates past it: an
+// over-bound declaration produces no member proof at all rather than an
+// uncontrolled allocation or a truncated list.
+const maxPartitionMembers = 8192
+
 // partitionMemberNames returns the declared partition member names in
-// declaration order. `PARTITIONS n` without definitions assigns implicit
-// names p0..p(n-1) on both products — the published set names them rather
-// than staying silent.
+// declaration order, or nil when the declaration cannot project a complete
+// member set: a subpartitioned table's top-level list is not the member
+// space (leaf names live in the subpartition catalog), a RANGE INTERVAL
+// declaration materializes generated names the model never evaluates, and
+// a PARTITIONS n above the native bound refuses enumeration. nil means
+// "unobserved" — never a complete-empty claim. `PARTITIONS n` without
+// definitions assigns implicit names p0..p(n-1) on both products — the
+// published set names them rather than staying silent.
 func partitionMemberNames(partition *ast.PartitionOptions) []string {
+	if partition.Sub != nil {
+		return nil
+	}
+	if partition.Interval != nil {
+		return nil
+	}
 	if len(partition.Definitions) > 0 {
+		for _, definition := range partition.Definitions {
+			if definition != nil && len(definition.Sub) > 0 {
+				return nil
+			}
+		}
 		names := make([]string, 0, len(partition.Definitions))
 		for _, definition := range partition.Definitions {
 			if definition == nil {
@@ -2225,7 +2248,10 @@ func partitionMemberNames(partition *ast.PartitionOptions) []string {
 		}
 		return names
 	}
-	names := make([]string, 0, partition.Num)
+	if partition.Num == 0 || partition.Num > maxPartitionMembers {
+		return nil
+	}
+	names := make([]string, 0, int(partition.Num))
 	for i := uint64(0); i < partition.Num; i++ {
 		names = append(names, fmt.Sprintf("p%d", i))
 	}

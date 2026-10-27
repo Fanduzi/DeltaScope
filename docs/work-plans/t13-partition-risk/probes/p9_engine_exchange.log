@@ -1,0 +1,196 @@
+############ ANCHOR mysql57 ############
+=== [mysql57] version
+--- SQL: SELECT VERSION()
+--- rc=0
+--- out: VERSION()
+5.7.44
+=== [mysql57] cleanup
+--- SQL: DROP TABLE IF EXISTS golden.t13e; DROP TABLE IF EXISTS golden.t13x
+--- rc=0
+--- out: 
+=== [mysql57] create-t
+--- SQL: CREATE TABLE golden.t13e (id INT, c INT) ENGINE=InnoDB PARTITION BY RANGE(id) (PARTITION p0 VALUES LESS THAN (100), PARTITION p1 VALUES LESS THAN (200))
+--- rc=0
+--- out: 
+=== [mysql57] create-x-myisam
+--- SQL: CREATE TABLE golden.t13x (id INT, c INT) ENGINE=MyISAM
+--- rc=0
+--- out: 
+=== [mysql57] x-myisam-exchange
+--- SQL: ALTER TABLE golden.t13e EXCHANGE PARTITION p0 WITH TABLE golden.t13x
+--- rc=1
+--- out: ERROR 1497 (HY000) at line 1: The mix of handlers in the partitions is not allowed in this version of MySQL
+=== [mysql57] x-myisam-post
+--- SQL: SELECT TABLE_NAME, ENGINE FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME IN ('t13e','t13x')
+--- rc=0
+--- out: TABLE_NAME	ENGINE
+t13e	InnoDB
+t13x	MyISAM
+=== [mysql57] drop-x
+--- SQL: DROP TABLE IF EXISTS golden.t13x
+--- rc=0
+--- out: 
+=== [mysql57] create-x-innodb
+--- SQL: CREATE TABLE golden.t13x (id INT, c INT) ENGINE=InnoDB
+--- rc=0
+--- out: 
+=== [mysql57] x-innodb-exchange
+--- SQL: ALTER TABLE golden.t13e EXCHANGE PARTITION p0 WITH TABLE golden.t13x
+--- rc=0
+--- out: 
+=== [mysql57] x-innodb-post
+--- SQL: SELECT TABLE_NAME, COUNT(*) AS n FROM golden.t13x
+--- rc=1
+--- out: ERROR 1054 (42S22) at line 1: Unknown column 'TABLE_NAME' in 'field list'
+=== [mysql57] cleanup2
+--- SQL: DROP TABLE IF EXISTS golden.t13e; DROP TABLE IF EXISTS golden.t13x
+--- rc=0
+--- out: 
+############ ANCHOR mysql80 ############
+=== [mysql80] version
+--- SQL: SELECT VERSION()
+--- rc=0
+--- out: VERSION()
+8.0.46
+=== [mysql80] cleanup
+--- SQL: DROP TABLE IF EXISTS golden.t13e; DROP TABLE IF EXISTS golden.t13x
+--- rc=0
+--- out: 
+=== [mysql80] create-t
+--- SQL: CREATE TABLE golden.t13e (id INT, c INT) ENGINE=InnoDB PARTITION BY RANGE(id) (PARTITION p0 VALUES LESS THAN (100), PARTITION p1 VALUES LESS THAN (200))
+--- rc=0
+--- out: 
+=== [mysql80] create-x-myisam
+--- SQL: CREATE TABLE golden.t13x (id INT, c INT) ENGINE=MyISAM
+--- rc=0
+--- out: 
+=== [mysql80] x-myisam-exchange
+--- SQL: ALTER TABLE golden.t13e EXCHANGE PARTITION p0 WITH TABLE golden.t13x
+--- rc=1
+--- out: ERROR 1497 (HY000) at line 1: The mix of handlers in the partitions is not allowed in this version of MySQL
+=== [mysql80] x-myisam-post
+--- SQL: SELECT TABLE_NAME, ENGINE FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME IN ('t13e','t13x')
+--- rc=0
+--- out: TABLE_NAME	ENGINE
+t13e	InnoDB
+t13x	MyISAM
+=== [mysql80] drop-x
+--- SQL: DROP TABLE IF EXISTS golden.t13x
+--- rc=0
+--- out: 
+=== [mysql80] create-x-innodb
+--- SQL: CREATE TABLE golden.t13x (id INT, c INT) ENGINE=InnoDB
+--- rc=0
+--- out: 
+=== [mysql80] x-innodb-exchange
+--- SQL: ALTER TABLE golden.t13e EXCHANGE PARTITION p0 WITH TABLE golden.t13x
+--- rc=0
+--- out: 
+=== [mysql80] x-innodb-post
+--- SQL: SELECT TABLE_NAME, COUNT(*) AS n FROM golden.t13x
+--- rc=1
+--- out: ERROR 1054 (42S22) at line 1: Unknown column 'TABLE_NAME' in 'field list'
+=== [mysql80] cleanup2
+--- SQL: DROP TABLE IF EXISTS golden.t13e; DROP TABLE IF EXISTS golden.t13x
+--- rc=0
+--- out: 
+############ ANCHOR mysql84 ############
+=== [mysql84] version
+--- SQL: SELECT VERSION()
+--- rc=0
+--- out: VERSION()
+8.4.10
+=== [mysql84] cleanup
+--- SQL: DROP TABLE IF EXISTS golden.t13e; DROP TABLE IF EXISTS golden.t13x
+--- rc=0
+--- out: 
+=== [mysql84] create-t
+--- SQL: CREATE TABLE golden.t13e (id INT, c INT) ENGINE=InnoDB PARTITION BY RANGE(id) (PARTITION p0 VALUES LESS THAN (100), PARTITION p1 VALUES LESS THAN (200))
+--- rc=0
+--- out: 
+=== [mysql84] create-x-myisam
+--- SQL: CREATE TABLE golden.t13x (id INT, c INT) ENGINE=MyISAM
+--- rc=0
+--- out: 
+=== [mysql84] x-myisam-exchange
+--- SQL: ALTER TABLE golden.t13e EXCHANGE PARTITION p0 WITH TABLE golden.t13x
+--- rc=1
+--- out: ERROR 1497 (HY000) at line 1: The mix of handlers in the partitions is not allowed in this version of MySQL
+=== [mysql84] x-myisam-post
+--- SQL: SELECT TABLE_NAME, ENGINE FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME IN ('t13e','t13x')
+--- rc=0
+--- out: TABLE_NAME	ENGINE
+t13e	InnoDB
+t13x	MyISAM
+=== [mysql84] drop-x
+--- SQL: DROP TABLE IF EXISTS golden.t13x
+--- rc=0
+--- out: 
+=== [mysql84] create-x-innodb
+--- SQL: CREATE TABLE golden.t13x (id INT, c INT) ENGINE=InnoDB
+--- rc=0
+--- out: 
+=== [mysql84] x-innodb-exchange
+--- SQL: ALTER TABLE golden.t13e EXCHANGE PARTITION p0 WITH TABLE golden.t13x
+--- rc=0
+--- out: 
+=== [mysql84] x-innodb-post
+--- SQL: SELECT TABLE_NAME, COUNT(*) AS n FROM golden.t13x
+--- rc=1
+--- out: ERROR 1054 (42S22) at line 1: Unknown column 'TABLE_NAME' in 'field list'
+=== [mysql84] cleanup2
+--- SQL: DROP TABLE IF EXISTS golden.t13e; DROP TABLE IF EXISTS golden.t13x
+--- rc=0
+--- out: 
+############ ANCHOR tidb85 ############
+=== [tidb85] version
+--- SQL: SELECT VERSION()
+--- rc=0
+--- out: VERSION()
+8.0.11-TiDB-v8.5.0
+=== [tidb85] ensure-db
+--- SQL: CREATE DATABASE IF NOT EXISTS golden
+--- rc=0
+--- out: 
+=== [tidb85] cleanup
+--- SQL: DROP TABLE IF EXISTS golden.t13e; DROP TABLE IF EXISTS golden.t13x
+--- rc=0
+--- out: 
+=== [tidb85] create-t
+--- SQL: CREATE TABLE golden.t13e (id INT, c INT) ENGINE=InnoDB PARTITION BY RANGE(id) (PARTITION p0 VALUES LESS THAN (100), PARTITION p1 VALUES LESS THAN (200))
+--- rc=0
+--- out: 
+=== [tidb85] create-x-myisam
+--- SQL: CREATE TABLE golden.t13x (id INT, c INT) ENGINE=MyISAM
+--- rc=0
+--- out: 
+=== [tidb85] x-myisam-exchange
+--- SQL: ALTER TABLE golden.t13e EXCHANGE PARTITION p0 WITH TABLE golden.t13x
+--- rc=0
+--- out: 
+=== [tidb85] x-myisam-post
+--- SQL: SELECT TABLE_NAME, ENGINE FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME IN ('t13e','t13x')
+--- rc=0
+--- out: TABLE_NAME	ENGINE
+t13e	InnoDB
+t13x	InnoDB
+=== [tidb85] drop-x
+--- SQL: DROP TABLE IF EXISTS golden.t13x
+--- rc=0
+--- out: 
+=== [tidb85] create-x-innodb
+--- SQL: CREATE TABLE golden.t13x (id INT, c INT) ENGINE=InnoDB
+--- rc=0
+--- out: 
+=== [tidb85] x-innodb-exchange
+--- SQL: ALTER TABLE golden.t13e EXCHANGE PARTITION p0 WITH TABLE golden.t13x
+--- rc=0
+--- out: 
+=== [tidb85] x-innodb-post
+--- SQL: SELECT TABLE_NAME, COUNT(*) AS n FROM golden.t13x
+--- rc=1
+--- out: ERROR 8123 (HY000) at line 1: In aggregated query without GROUP BY, expression #1 of SELECT list contains nonaggregated column 'TABLE_NAME'; this is incompatible with sql_mode=only_full_group_by
+=== [tidb85] cleanup2
+--- SQL: DROP TABLE IF EXISTS golden.t13e; DROP TABLE IF EXISTS golden.t13x
+--- rc=0
+--- out: 

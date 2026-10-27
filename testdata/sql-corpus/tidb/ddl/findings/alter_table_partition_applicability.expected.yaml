@@ -21,6 +21,8 @@ metadata:
   tables:
     np:
       exists: true
+      options:
+        engine: InnoDB
       partitioned: false
       columns:
         - name: id
@@ -28,6 +30,8 @@ metadata:
           not_null: true
     hp:
       exists: true
+      options:
+        engine: InnoDB
       partitioned: true
       partition_type: hash
       partition_names: [p0, p1]
@@ -37,6 +41,8 @@ metadata:
           not_null: true
     rp:
       exists: true
+      options:
+        engine: InnoDB
       partitioned: true
       partition_type: range
       partition_names: [p0, p1]
@@ -46,6 +52,8 @@ metadata:
           not_null: true
     c:
       exists: true
+      options:
+        engine: InnoDB
       partitioned: false
       columns:
         - name: id

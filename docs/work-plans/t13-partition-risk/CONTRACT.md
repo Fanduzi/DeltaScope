@@ -484,3 +484,159 @@ statement on the anchor, expecting the same native error):
 - C: public Audit red test — `ALGORITHM=INPLACE, DROP PARTITION` keeps
   exact pre-state on the old baseline (wrong: statement executes);
   mysql57-versioned variant keeps pre-state (right, proven refusal).
+
+## 10. T13-R2 — partition catalog post-state, completeness, comparison validity, and modifier coverage (appended amendment)
+
+R1 delivered the seven applicability rules, counterpart preloading, and the
+version-aware modifier classifier. R2 closes the same-family defects found
+in independent review: the DROP post-state kept proving the pre-state
+catalog, incomplete catalogs were silently treated as complete, member
+expansion was unbounded, the counterpart comparison used raw declaration
+sentinels instead of effective types, target-rule gaps depended on another
+rule being enabled, `Metadata` mounting skipped the exchange-table-only
+shape, and coverage removed the unsupported aspect for modifier forms the
+classifier never proved. This section is additive; §1–§9 remain in force.
+
+### 10.1 Catalog post-state (A1)
+
+`applyPartitionOperation` must not republish the pre-state member directory
+after DROP. The exact post-state is provable for a named DROP: the named
+members — and only those — are removed, every other fact is preserved. The
+rule is therefore precise removal, not revocation and not assumption:
+
+- `DROP PARTITION p0` on a complete observed directory removes `p0` and
+  keeps every other member; a successor targeting `p0` owes a real
+  `partition_absent` finding, a successor targeting `p1` still proves.
+- If the pre-state directory was unobserved or incomplete (`nil`), it stays
+  `nil` — a successor owes a real `partitions` evidence gap.
+- If the statement is already proven-refused (mixed-alter tombstone), no
+  post-state mutation happens at all.
+- TRUNCATE keeps the member names (native keeps the partition, empties the
+  rows); EXCHANGE keeps them likewise.
+- Columns, indexes, PK, CHECK, engine, and every other invariant fact are
+  never touched by the partition operation.
+- Provider-owned objects and the previous statement's snapshot are never
+  aliased or mutated; the post-state is a fresh clone.
+
+### 10.2 Catalog completeness (A2)
+
+A directory is only a proof of membership when it is complete. Three states
+hold throughout: `nil` = unobserved/incomplete, non-nil empty = observed
+non-partitioned, non-empty = complete member list.
+
+- A table observed or declared to carry subpartitions has an incomplete
+  top-level-only projection: `PartitionNames` is revoked to `nil` (unknown),
+  so no rule may claim a member is proven-absent. On MySQL the catalog rows
+  expose `SUBPARTITION_NAME`; on TiDB the authored clause is parsed but the
+  catalog normalizes it away — the declared-side marker is still honored
+  conservatively. Native scope (p11): MySQL 5.7/8.0/8.4 exchange a leaf
+  name (`p0sp0`) successfully and refuse the top-level name with 1734;
+  TiDB v8.5.0 has no leaf names and refuses them with 1735.
+- A TiDB `RANGE ... INTERVAL` declaration (`PartitionMethod.Interval` set)
+  is never expanded client-side: `PartitionNames` stays `nil` even if the
+  AST carries partial `Definitions`. Native scope (p11): the catalog
+  materializes generated names (`P_LT_10`, `P_LT_20`, `P_LT_30`) and a
+  named TRUNCATE executes — provider-loaded catalogs stay complete because
+  they read the real names.
+- An unbounded `PARTITIONS n` never reaches allocation: expansion is
+  refused above the native bound (8192, MySQL error 1499 proven on 8.0.46
+  in p11) and the directory degrades to `nil`, never a truncated list or a
+  fake empty set.
+- A plain non-partitioned table still publishes the observed empty
+  directory — `nil` is reserved for genuine unknowns.
+
+### 10.3 Counterpart comparison validity (B1, B3)
+
+The EXCHANGE counterpart comparison must compare *effective* column types
+and primary-key identity, and must attribute outcomes to the facts that
+were actually compared:
+
+- Column comparison consumes the effective type (catalog-declared length
+  honored; absent length normalized to the type default, e.g. `CHAR`
+  ≡ `CHAR(1)`), never the raw `-1` declaration sentinel. The global
+  `Length` contract is unchanged — normalization happens inside the rule.
+- Column count/order and effective-type mismatches still produce 1736;
+  the provider-loaded `INT` vs declared `INT` control stays clean.
+- `primaryKeyIdentityFacts` respects the established PK-absence contract:
+  a proven absent PK (`PrimaryKey=nil`, `PrimaryKeyUnknown=false`) is not
+  reopened by an unrelated `ConstraintsUnknown` (CHECK/FK sets). When PK
+  identity is genuinely unproven the comparison reports it as that side's
+  gap and Evaluate holds the same premise — Evaluate and EvidenceGaps share
+  one comparison premise.
+- A proven dimension mismatch is reported independently of the other
+  dimension's knownness: `[id,c]` vs `[id,c,x]` produces the column-count
+  finding even while PK identity is unproven.
+
+### 10.4 Independent gap ownership (B2)
+
+Each enabled `*.target` rule owns every premise it consumes: when the rule
+is enabled and the operation names a member, it owes
+
+- `target_table.partitioned` when the table's partitioned state is
+  unobserved (or the table itself is unobserved),
+- `target_table.partitions` when partitioned is proven but the member
+  directory is unobserved or incomplete,
+
+and reports the corresponding finding when the facts are observed.
+Disabling the rule removes its gap. `TRUNCATE PARTITION ALL` consumes no
+member name and owes no `partitions` fact. A proven-absent or proven
+non-partitioned table is a finding path, not a gap path. No required fact
+outside what the rule consumes is emitted.
+
+### 10.5 Engine applicability (B4)
+
+EXCHANGE binds a bounded engine premise on MySQL only:
+
+- Both engines observed and different → proven refusal
+  `counterpart_engine_mismatch`, native class 1497 (p9: InnoDB
+  partitioned + MyISAM counterpart, 5.7/8.0/8.4 identical).
+- Both observed and equal → this premise satisfied.
+- Either side unobserved → the rule owes `target_table.engine` and/or
+  `exchange_table.engine`; nothing is inferred.
+- On TiDB the ENGINE label is catalog-normalized (p9: `ENGINE=MyISAM`
+  counterpart stores InnoDB and the exchange executes) — there is no
+  observable mismatch class, so the premise is not required and no gap is
+  owed on TiDB.
+- The 1064/8200 `ENGINE=` mixed-alter refusals (p8) are a different
+  mechanism (grammar/multi-change), not evidence about the two tables'
+  engines.
+
+### 10.6 Metadata mounting (C1)
+
+`Metadata.ExchangeTable` participates in the mount condition: a statement
+carrying only a counterpart fact (no schema, no version, no provider
+snapshot) still mounts `Metadata`. Declared-side, preloaded, and
+schema-qualified counterpart shapes all reach the rule; a non-EXCHANGE
+statement never observes a stale counterpart.
+
+### 10.7 Modifier coverage boundary (C2)
+
+Coverage removes the `algorithm`/`lock` unsupported aspect only when the
+classifier proved the combination (single `DEFAULT` modifier on any anchor;
+`INPLACE` + DROP on 8.0/8.4/TiDB proven executed, on 5.7 proven refused
+1846; `INPLACE` + TRUNCATE/EXCHANGE proven executed on all four anchors in
+p11). Every other shape — `COPY`, a non-`DEFAULT` lock value, multiple
+modifiers, a version-dependent form without the version fact — keeps the
+statement inside coverage: the unsupported aspect stays attached to the
+current statement, not laundered through a successor tombstone. T15
+COPY/LOCK/multi-modifier governance is unchanged scope.
+
+### 10.8 Native evidence ledger additions (D)
+
+- `p9_engine_exchange.log`: MySQL 1497 engine-mismatch refusal on
+  5.7/8.0/8.4, InnoDB control executes, TiDB ENGINE coercion + execute.
+- `p10_tidb_validation_arms.log`: complete TiDB three-arm re-run — each
+  arm rebuilds the fixture, logs pre/post rows on both sides and the member
+  catalog; absent and `WITH VALIDATION` both refuse 1737 with the violating
+  row retained on the counterpart side, `WITHOUT VALIDATION` executes and
+  the violating row lands in the partition. This log supersedes the
+  1049-contaminated TiDB section of `p5_validation_arms.log` and the
+  incomplete `p5_validation_tidb_post.log`; both originals are preserved.
+- `p11_subpartition_interval_bounds_inplace.log`: MySQL subpartitioned
+  catalog shape (leaf names in `SUBPARTITION_NAME`), leaf EXCHANGE
+  executes, top-level EXCHANGE 1734; TiDB subpartition clause normalized
+  away (leaf 1735, top-level executes); TiDB RANGE INTERVAL materializes
+  `P_LT_*` names and named TRUNCATE executes; `PARTITIONS
+  18446744073709551615` and `PARTITIONS 8193` both refuse 1499 on 8.0.46;
+  `ALGORITHM=INPLACE, TRUNCATE PARTITION` and `ALGORITHM=INPLACE, EXCHANGE
+  PARTITION` execute on all four anchors.

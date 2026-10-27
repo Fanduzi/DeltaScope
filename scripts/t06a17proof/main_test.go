@@ -183,9 +183,9 @@ func (c *faultConn) QueryContext(_ context.Context, query string, _ []driver.Nam
 	}
 	if strings.Contains(query, "from information_schema.partitions") {
 		f.providerQueries++
-		// T13-R1 row-shaped catalog probe (partition_method, partition_name):
-		// an empty set observes a non-partitioned table.
-		return newFaultRows([]string{"partition_method", "partition_name"}, nil, -1), nil
+		// T13-R2 row-shaped catalog probe (partition_method, partition_name,
+		// subpartition_name): an empty set observes a non-partitioned table.
+		return newFaultRows([]string{"partition_method", "partition_name", "subpartition_name"}, nil, -1), nil
 	}
 	return nil, fmt.Errorf("unexpected query %q", query)
 }

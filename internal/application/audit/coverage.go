@@ -455,10 +455,15 @@ func statementCoverageAspects(dialect spec.Dialect, statement spec.Statement) []
 	for _, alter := range ddl.Alter {
 		if ddl.Operation == spec.DDLOperationAlterTable && !auditedAlterAction(dialect, alter.Action) {
 			// An ALGORITHM/LOCK modifier accompanying a partition action is
-			// consumed by the ordered-state combination classifier — audited
-			// for that combination. Standalone modifiers stay unaudited
-			// (owner T15).
-			if hasPartitionAlterAction(ddl) && (alter.Action == "algorithm" || alter.Action == "lock") {
+			// consumed by the ordered-state combination classifier — but only
+			// when the classifier reached a proven verdict for the whole
+			// combination. An unproven shape (COPY, a non-DEFAULT lock,
+			// multiple modifiers, a version-gated form without the version
+			// fact) keeps its aspect on the current statement — the boundary
+			// is never laundered through a successor tombstone. Standalone
+			// modifiers stay unaudited (owner T15).
+			if (alter.Action == "algorithm" || alter.Action == "lock") &&
+				partitionCombinationProven(ddl, statement) {
 				continue
 			}
 			// PLACEMENT POLICY is TiDB-only: under MySQL the action is a vendor
@@ -523,6 +528,21 @@ func statementCoverageAspects(dialect spec.Dialect, statement spec.Statement) []
 		}
 	}
 	return gaps
+}
+
+// partitionCombinationProven reports whether the ordered-state classifier
+// reached a proven verdict — combinable or refused — for a partition ALTER
+// carrying modifier specs. The statement's enriched version fact is the
+// same premise the ordered-state application consumed.
+func partitionCombinationProven(ddl *spec.DDL, statement spec.Statement) bool {
+	if !hasPartitionAlterAction(ddl) || len(ddl.Alter) < 2 {
+		return false
+	}
+	var version *spec.VersionIdentity
+	if statement.Metadata != nil {
+		version = statement.Metadata.Version
+	}
+	return partitionMixedOutcome(ddl, version) != partitionOutcomeUnproven
 }
 
 // statementCoverage resolves the coverage status for one extracted statement:

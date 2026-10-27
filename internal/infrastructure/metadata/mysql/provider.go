@@ -457,7 +457,7 @@ func (p *Provider) LoadTableSnapshot(ctx context.Context, dialect spec.Dialect, 
 // nil PartitionType under partitioned=true is itself an unobserved fact.
 func (p *Provider) loadPartitionFacts(ctx context.Context, snapshot *spec.TableSnapshot) error {
 	rows, err := p.db.QueryContext(ctx, `
-		select partition_method, partition_name
+		select partition_method, partition_name, subpartition_name
 		from information_schema.partitions
 		where table_schema = ? and table_name = ?
 			and partition_name is not null
@@ -476,13 +476,20 @@ func (p *Provider) loadPartitionFacts(ctx context.Context, snapshot *spec.TableS
 	names := make([]string, 0)
 	seen := make(map[string]bool)
 	var method string
+	subpartitioned := false
 	for rows.Next() {
-		var rawMethod, name sql.NullString
-		if err := rows.Scan(&rawMethod, &name); err != nil {
+		var rawMethod, name, subName sql.NullString
+		if err := rows.Scan(&rawMethod, &name, &subName); err != nil {
 			return fmt.Errorf("scan partition for table %s.%s: %w", snapshot.Schema, snapshot.Table.Name, err)
 		}
 		if method == "" && rawMethod.Valid {
 			method = strings.ToLower(rawMethod.String)
+		}
+		if subName.Valid {
+			// Leaf members live in SUBPARTITION_NAME — the top-level
+			// projection is not the member space, so the directory is
+			// incomplete: MySQL exchanges a leaf name natively.
+			subpartitioned = true
 		}
 		if name.Valid && !seen[name.String] {
 			seen[name.String] = true
@@ -499,7 +506,12 @@ func (p *Provider) loadPartitionFacts(ctx context.Context, snapshot *spec.TableS
 		if method != "" {
 			snapshot.PartitionType = &method
 		}
-		snapshot.PartitionNames = names
+		if !subpartitioned {
+			snapshot.PartitionNames = names
+		}
+		// A subpartitioned catalog is an incomplete projection: the
+		// member directory stays unobserved (nil) so no rule can claim
+		// a name was proven absent.
 	} else {
 		// No partition rows is an observed-empty member set on a
 		// known-plain table — never confused with an unobserved set.

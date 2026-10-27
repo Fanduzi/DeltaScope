@@ -1,0 +1,199 @@
+############ ANCHOR tidb85 D1 validation arms ############
+=== [tidb85] version
+--- SQL: SELECT VERSION()
+--- rc=0
+--- out: VERSION()
+8.0.11-TiDB-v8.5.0
+=== [tidb85] ensure-db
+--- SQL: CREATE DATABASE IF NOT EXISTS golden
+--- rc=0
+--- out: 
+######## ARM absent ########
+=== [tidb85] absent-fixture-drop
+--- SQL: DROP TABLE IF EXISTS golden.t13v; DROP TABLE IF EXISTS golden.t13w
+--- rc=0
+--- out: 
+=== [tidb85] absent-fixture-t
+--- SQL: CREATE TABLE golden.t13v (id INT, c INT) PARTITION BY RANGE(id) (PARTITION p0 VALUES LESS THAN (100), PARTITION p1 VALUES LESS THAN (200))
+--- rc=0
+--- out: 
+=== [tidb85] absent-fixture-w
+--- SQL: CREATE TABLE golden.t13w (id INT, c INT)
+--- rc=0
+--- out: 
+=== [tidb85] absent-seed-t
+--- SQL: INSERT INTO golden.t13v VALUES (1,1),(150,1)
+--- rc=0
+--- out: 
+=== [tidb85] absent-seed-w-violating
+--- SQL: INSERT INTO golden.t13w VALUES (500,9)
+--- rc=0
+--- out: 
+=== [tidb85] absent-pre-t-rows
+--- SQL: SELECT * FROM golden.t13v ORDER BY id
+--- rc=0
+--- out: id	c
+1	1
+150	1
+=== [tidb85] absent-pre-w-rows
+--- SQL: SELECT * FROM golden.t13w ORDER BY id
+--- rc=0
+--- out: id	c
+500	9
+=== [tidb85] absent-pre-t-parts
+--- SQL: SELECT PARTITION_NAME FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t13v' AND PARTITION_NAME IS NOT NULL ORDER BY PARTITION_NAME
+--- rc=0
+--- out: PARTITION_NAME
+p0
+p1
+=== [tidb85] absent-exchange
+--- SQL: ALTER TABLE golden.t13v EXCHANGE PARTITION p0 WITH TABLE golden.t13w
+--- rc=1
+--- out: ERROR 1737 (HY000) at line 1: Found a row that does not match the partition
+=== [tidb85] absent-post-t-rows
+--- SQL: SELECT * FROM golden.t13v ORDER BY id
+--- rc=0
+--- out: id	c
+1	1
+150	1
+=== [tidb85] absent-post-w-rows
+--- SQL: SELECT * FROM golden.t13w ORDER BY id
+--- rc=0
+--- out: id	c
+500	9
+=== [tidb85] absent-post-t-parts
+--- SQL: SELECT PARTITION_NAME FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t13v' AND PARTITION_NAME IS NOT NULL ORDER BY PARTITION_NAME
+--- rc=0
+--- out: PARTITION_NAME
+p0
+p1
+=== [tidb85] absent-cleanup
+--- SQL: DROP TABLE IF EXISTS golden.t13v; DROP TABLE IF EXISTS golden.t13w
+--- rc=0
+--- out: 
+######## ARM with ########
+=== [tidb85] with-fixture-drop
+--- SQL: DROP TABLE IF EXISTS golden.t13v; DROP TABLE IF EXISTS golden.t13w
+--- rc=0
+--- out: 
+=== [tidb85] with-fixture-t
+--- SQL: CREATE TABLE golden.t13v (id INT, c INT) PARTITION BY RANGE(id) (PARTITION p0 VALUES LESS THAN (100), PARTITION p1 VALUES LESS THAN (200))
+--- rc=0
+--- out: 
+=== [tidb85] with-fixture-w
+--- SQL: CREATE TABLE golden.t13w (id INT, c INT)
+--- rc=0
+--- out: 
+=== [tidb85] with-seed-t
+--- SQL: INSERT INTO golden.t13v VALUES (1,1),(150,1)
+--- rc=0
+--- out: 
+=== [tidb85] with-seed-w-violating
+--- SQL: INSERT INTO golden.t13w VALUES (500,9)
+--- rc=0
+--- out: 
+=== [tidb85] with-pre-t-rows
+--- SQL: SELECT * FROM golden.t13v ORDER BY id
+--- rc=0
+--- out: id	c
+1	1
+150	1
+=== [tidb85] with-pre-w-rows
+--- SQL: SELECT * FROM golden.t13w ORDER BY id
+--- rc=0
+--- out: id	c
+500	9
+=== [tidb85] with-pre-t-parts
+--- SQL: SELECT PARTITION_NAME FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t13v' AND PARTITION_NAME IS NOT NULL ORDER BY PARTITION_NAME
+--- rc=0
+--- out: PARTITION_NAME
+p0
+p1
+=== [tidb85] with-exchange
+--- SQL: ALTER TABLE golden.t13v EXCHANGE PARTITION p0 WITH TABLE golden.t13w WITH VALIDATION
+--- rc=1
+--- out: ERROR 1737 (HY000) at line 1: Found a row that does not match the partition
+=== [tidb85] with-post-t-rows
+--- SQL: SELECT * FROM golden.t13v ORDER BY id
+--- rc=0
+--- out: id	c
+1	1
+150	1
+=== [tidb85] with-post-w-rows
+--- SQL: SELECT * FROM golden.t13w ORDER BY id
+--- rc=0
+--- out: id	c
+500	9
+=== [tidb85] with-post-t-parts
+--- SQL: SELECT PARTITION_NAME FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t13v' AND PARTITION_NAME IS NOT NULL ORDER BY PARTITION_NAME
+--- rc=0
+--- out: PARTITION_NAME
+p0
+p1
+=== [tidb85] with-cleanup
+--- SQL: DROP TABLE IF EXISTS golden.t13v; DROP TABLE IF EXISTS golden.t13w
+--- rc=0
+--- out: 
+######## ARM without ########
+=== [tidb85] without-fixture-drop
+--- SQL: DROP TABLE IF EXISTS golden.t13v; DROP TABLE IF EXISTS golden.t13w
+--- rc=0
+--- out: 
+=== [tidb85] without-fixture-t
+--- SQL: CREATE TABLE golden.t13v (id INT, c INT) PARTITION BY RANGE(id) (PARTITION p0 VALUES LESS THAN (100), PARTITION p1 VALUES LESS THAN (200))
+--- rc=0
+--- out: 
+=== [tidb85] without-fixture-w
+--- SQL: CREATE TABLE golden.t13w (id INT, c INT)
+--- rc=0
+--- out: 
+=== [tidb85] without-seed-t
+--- SQL: INSERT INTO golden.t13v VALUES (1,1),(150,1)
+--- rc=0
+--- out: 
+=== [tidb85] without-seed-w-violating
+--- SQL: INSERT INTO golden.t13w VALUES (500,9)
+--- rc=0
+--- out: 
+=== [tidb85] without-pre-t-rows
+--- SQL: SELECT * FROM golden.t13v ORDER BY id
+--- rc=0
+--- out: id	c
+1	1
+150	1
+=== [tidb85] without-pre-w-rows
+--- SQL: SELECT * FROM golden.t13w ORDER BY id
+--- rc=0
+--- out: id	c
+500	9
+=== [tidb85] without-pre-t-parts
+--- SQL: SELECT PARTITION_NAME FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t13v' AND PARTITION_NAME IS NOT NULL ORDER BY PARTITION_NAME
+--- rc=0
+--- out: PARTITION_NAME
+p0
+p1
+=== [tidb85] without-exchange
+--- SQL: ALTER TABLE golden.t13v EXCHANGE PARTITION p0 WITH TABLE golden.t13w WITHOUT VALIDATION
+--- rc=0
+--- out: 
+=== [tidb85] without-post-t-rows
+--- SQL: SELECT * FROM golden.t13v ORDER BY id
+--- rc=0
+--- out: id	c
+150	1
+500	9
+=== [tidb85] without-post-w-rows
+--- SQL: SELECT * FROM golden.t13w ORDER BY id
+--- rc=0
+--- out: id	c
+1	1
+=== [tidb85] without-post-t-parts
+--- SQL: SELECT PARTITION_NAME FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t13v' AND PARTITION_NAME IS NOT NULL ORDER BY PARTITION_NAME
+--- rc=0
+--- out: PARTITION_NAME
+p0
+p1
+=== [tidb85] without-cleanup
+--- SQL: DROP TABLE IF EXISTS golden.t13v; DROP TABLE IF EXISTS golden.t13w
+--- rc=0
+--- out: 

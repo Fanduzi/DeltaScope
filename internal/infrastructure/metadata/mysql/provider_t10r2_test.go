@@ -189,7 +189,7 @@ func TestT10R2TiDBHandleUnknownOnMissingClusteredRow(t *testing.T) {
 			},
 		},
 		"information_schema.partitions": {
-			columns: []string{"partition_method", "partition_name"},
+			columns: []string{"partition_method", "partition_name", "subpartition_name"},
 		},
 		"table_constraints": {
 			columns: []string{"count"},

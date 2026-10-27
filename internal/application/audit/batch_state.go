@@ -611,7 +611,11 @@ func derivedCreateShape(dialect spec.Dialect, schema, table string, ddl *spec.DD
 			partitionType := ddl.PartitionType
 			snapshot.PartitionType = &partitionType
 		}
-		snapshot.PartitionNames = append([]string{}, ddl.PartitionNames...)
+		// A nil declared list is an unobserved member space (subpartitioned
+		// or interval-shaped) — never collapse it into a known-empty set.
+		if ddl.PartitionNames != nil {
+			snapshot.PartitionNames = append([]string{}, ddl.PartitionNames...)
+		}
 	} else {
 		// A declared-plain CREATE observes an empty member set, never an
 		// unobserved one.
@@ -715,7 +719,14 @@ func (s *batchState) applyAlterTable(ctx context.Context, statement spec.Stateme
 		case partitionOutcomeRefused:
 			return nil
 		case partitionOutcomeCombinable:
-			s.applyPartitionOperation(targets)
+			var partitionAlter *spec.Alter
+			for i := range ddl.Alter {
+				if isPartitionAlterAction(ddl.Alter[i].Action) {
+					partitionAlter = &ddl.Alter[i]
+					break
+				}
+			}
+			s.applyPartitionOperation(targets, partitionAlter)
 			return nil
 		default:
 			s.invalidateAll(targets)
@@ -827,7 +838,7 @@ func (s *batchState) applyAlterTable(ctx context.Context, statement spec.Stateme
 		return nil
 	}
 	if isPartitionAlterAction(alter.Action) {
-		s.applyPartitionOperation(targets)
+		s.applyPartitionOperation(targets, alter)
 		return nil
 	}
 	if alter.Action != "add_columns" || alter.Column == nil || alter.Column.Definition == nil {
@@ -1278,6 +1289,10 @@ const (
 // The shared grammar never accepts a spec after a partition clause, so
 // partition-first mixes cannot reach this point.
 func (s *batchState) partitionMixedOutcome(ddl *spec.DDL) partitionOutcome {
+	return partitionMixedOutcome(ddl, s.resolvedVersion)
+}
+
+func partitionMixedOutcome(ddl *spec.DDL, version *spec.VersionIdentity) partitionOutcome {
 	partitionActions := 0
 	partitionAction := ""
 	modifierCount := 0
@@ -1317,7 +1332,7 @@ func (s *batchState) partitionMixedOutcome(ddl *spec.DDL) partitionOutcome {
 		if alter.Options != nil {
 			value = alter.Options[alter.Action]
 		}
-		if outcome := s.partitionModifierOutcome(alter.Action, value, partitionAction); outcome != partitionOutcomeCombinable {
+		if outcome := partitionModifierOutcome(alter.Action, value, partitionAction, version); outcome != partitionOutcomeCombinable {
 			return outcome
 		}
 	}
@@ -1332,7 +1347,7 @@ func (s *batchState) partitionMixedOutcome(ddl *spec.DDL) partitionOutcome {
 //     on MySQL >=8 and TiDB, refuses on MySQL 5.x (1846), and stays
 //     unproven when no version fact resolved. Other algorithms are
 //     unprobed.
-func (s *batchState) partitionModifierOutcome(action, value, partitionAction string) partitionOutcome {
+func partitionModifierOutcome(action, value, partitionAction string, version *spec.VersionIdentity) partitionOutcome {
 	switch action {
 	case "lock":
 		if value == "default" {
@@ -1347,7 +1362,6 @@ func (s *batchState) partitionModifierOutcome(action, value, partitionAction str
 			if partitionAction != "drop_partition" {
 				return partitionOutcomeCombinable
 			}
-			version := s.resolvedVersion
 			if version == nil {
 				return partitionOutcomeUnproven
 			}
@@ -1371,16 +1385,43 @@ func (s *batchState) partitionModifierOutcome(action, value, partitionAction str
 // applyPartitionOperation publishes the shared successor for a single-action
 // partition ALTER. Member-level schema facts are invariant under every
 // outcome — partitions never add/remove/rename columns, indexes, or
-// constraints, and the engine refuses to remove the last partition, so
-// Partitioned cannot flip — while every data-derived statistic the action
-// could have moved or destroyed is dropped. EXCHANGE applies to both named
-// identities. Unknown or absent entries are left untouched: an unvouched
-// table is never upgraded by an unproven outcome.
-func (s *batchState) applyPartitionOperation(targets []spec.Table) {
+// constraints — while every data-derived statistic the action could have
+// moved or destroyed is dropped. The member directory carries its own
+// post-state rule:
+//   - DROP removes exactly the named members when every named member is
+//     proven present and a member survives — the directory minus the
+//     named set. A name the directory never carried, or a drop consuming
+//     the whole member set, is a proven native refusal (1507 / last
+//     partition) so the exact pre-state stands untouched. TRUNCATE and
+//     EXCHANGE keep every member name.
+//   - An unobserved or incomplete directory (nil) never gains a member
+//     proof from the operation.
+//
+// EXCHANGE applies to both named identities. Unknown or absent entries are
+// left untouched: an unvouched table is never upgraded by an unproven
+// outcome.
+func (s *batchState) applyPartitionOperation(targets []spec.Table, alter *spec.Alter) {
 	for _, target := range targets {
 		key := s.keyFor(s.schema, target)
 		entry, ok := s.entries[key]
 		if !ok || entry.state != tablePresent || entry.shape == nil {
+			continue
+		}
+		if alter != nil && alter.Action == "drop_partition" && entry.shape.PartitionNames != nil {
+			// The drop is atomic: any named member absent from the proven
+			// directory — or a drop consuming the whole member set — is a
+			// proven native refusal (1507 / last-partition 1508-class), so
+			// the exact pre-state stands: no stats cleared, no directory
+			// changed.
+			members, provable := dropPartitionMembers(entry.shape.PartitionNames, alter)
+			if !provable {
+				continue
+			}
+			shape := cloneTableSnapshot(entry.shape)
+			shape.PartitionNames = members
+			clearMutationStats(shape)
+			clearModifyAffectedStats(shape)
+			s.entries[key] = &batchTableEntry{state: tablePresent, shape: shape, displaySchema: entry.displaySchema, displayTable: entry.displayTable}
 			continue
 		}
 		shape := cloneTableSnapshot(entry.shape)
@@ -1388,6 +1429,36 @@ func (s *batchState) applyPartitionOperation(targets []spec.Table) {
 		clearModifyAffectedStats(shape)
 		s.entries[key] = &batchTableEntry{state: tablePresent, shape: shape, displaySchema: entry.displaySchema, displayTable: entry.displayTable}
 	}
+}
+
+// dropPartitionMembers computes the post-DROP member set, reporting
+// provable=false whenever the statement could not have executed: a named
+// member absent from the proven directory (1507) or a drop consuming the
+// whole member set (the engine never removes the last partition). The
+// comparison is case-insensitive against the observed member names.
+func dropPartitionMembers(members []string, alter *spec.Alter) ([]string, bool) {
+	dropped := make(map[string]bool, len(alter.Partitions))
+	for _, name := range alter.Partitions {
+		dropped[strings.ToLower(name)] = true
+	}
+	present := make(map[string]bool, len(members))
+	remaining := make([]string, 0, len(members))
+	for _, name := range members {
+		if dropped[strings.ToLower(name)] {
+			present[strings.ToLower(name)] = true
+			continue
+		}
+		remaining = append(remaining, name)
+	}
+	for name := range dropped {
+		if !present[name] {
+			return nil, false
+		}
+	}
+	if len(remaining) == 0 {
+		return nil, false
+	}
+	return remaining, true
 }
 
 // clearMutationStats removes the statistics a mutation can no longer vouch

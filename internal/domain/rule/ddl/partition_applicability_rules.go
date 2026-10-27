@@ -36,6 +36,7 @@ const (
 	partitionReasonCounterpartAbsent      = "counterpart_absent"
 	partitionReasonCounterpartPartitioned = "counterpart_partitioned"
 	partitionReasonDefinitionMismatch     = "counterpart_definition_mismatch"
+	partitionReasonEngineMismatch         = "counterpart_engine_mismatch"
 )
 
 // gapReasonPartitionFacts reuses the shared unknown-table-state reason:
@@ -290,17 +291,16 @@ func (r partitionTargetRule) Evaluate(ctx context.Context, statement spec.Statem
 	return findings, nil
 }
 
-// EvidenceGaps reports the member-set fact the rule needed. The gap is
-// owed only when the member check itself could run — a primary whose
-// partitioned state is unproven or proven-false does not owe the member
-// fact (the applicability rule owns that arm).
+// EvidenceGaps reports every premise the rule consumed but could not
+// observe — the target rule never borrows the applicability rule's job:
+// an unobserved primary or an unproven partitioned truth owes the
+// partitioned fact itself, and a proven-partitioned primary whose member
+// directory stayed unobserved or incomplete owes the member-set fact.
+// Proven-absent and proven-non-partitioned tables are finding paths owned
+// by the family, not gap paths here. The ALL form consumes no member name
+// and owes nothing at any state.
 func (r partitionTargetRule) EvidenceGaps(statement spec.Statement) []rule.EvidenceGap {
 	if !r.AppliesTo(statement) {
-		return nil
-	}
-	snapshot, ok := targetTableSnapshot(statement)
-	if !ok || snapshot == nil || !snapshot.Exists ||
-		snapshot.Partitioned == nil || !*snapshot.Partitioned {
 		return nil
 	}
 	namesConsumed := false
@@ -311,8 +311,25 @@ func (r partitionTargetRule) EvidenceGaps(statement spec.Statement) []rule.Evide
 		}
 	}
 	if !namesConsumed {
-		// The ALL form names no member — the member set is never
-		// consulted, so no fact is owed.
+		return nil
+	}
+	snapshot, ok := targetTableSnapshot(statement)
+	if !ok || snapshot == nil {
+		return []rule.EvidenceGap{{
+			ReasonCode:    gapReasonPartitionFacts,
+			RequiredFacts: []string{"target_table.partitioned"},
+		}}
+	}
+	if !snapshot.Exists {
+		return nil
+	}
+	if snapshot.Partitioned == nil {
+		return []rule.EvidenceGap{{
+			ReasonCode:    gapReasonPartitionFacts,
+			RequiredFacts: []string{"target_table.partitioned"},
+		}}
+	}
+	if !*snapshot.Partitioned {
 		return nil
 	}
 	if snapshot.PartitionNames == nil {
@@ -382,10 +399,17 @@ func (r exchangeCounterpartRule) Evaluate(ctx context.Context, statement spec.St
 		if primary == nil || !primary.Exists {
 			continue
 		}
-		if mismatch, comparable := exchangeDefinitionMismatch(primary, counterpart); comparable && mismatch {
+		comparison := exchangeComparisonFacts(primary, counterpart, statement.Dialect)
+		if comparison.definitionMismatch {
 			findings = append(findings, r.counterpartFinding(statement, alter,
 				partitionReasonDefinitionMismatch, "1736",
 				fmt.Sprintf("ALTER TABLE exchange partition counterpart %q has a different definition (native 1736)", exchangeTableName(alter)), "true"))
+			continue
+		}
+		if comparison.engineMismatch {
+			findings = append(findings, r.counterpartFinding(statement, alter,
+				partitionReasonEngineMismatch, "1497",
+				fmt.Sprintf("ALTER TABLE exchange partition counterpart %q runs a different storage engine (native 1497)", exchangeTableName(alter)), "true"))
 		}
 	}
 	return findings, nil
@@ -413,9 +437,11 @@ func (r exchangeCounterpartRule) counterpartFinding(statement spec.Statement, al
 }
 
 // EvidenceGaps reports the counterpart and compare facts the rule needed
-// but the projection never answered. Each missing premise names its own
-// fact — an unresolved counterpart identity reports existence; a resolved
-// one reports partitioned state, then the bounded compare inputs.
+// but the projection never answered, sharing Evaluate's premise exactly:
+// an unresolved counterpart identity reports existence; a resolved one
+// reports partitioned state; then the bounded compare owes whichever
+// per-side facts were needed — columns, PK identity, and (MySQL only) the
+// engine label. Nothing is owed for premises the rule never consumes.
 func (r exchangeCounterpartRule) EvidenceGaps(statement spec.Statement) []rule.EvidenceGap {
 	if !r.AppliesTo(statement) || !hasExchangeCounterpart(statement) {
 		return nil
@@ -440,19 +466,7 @@ func (r exchangeCounterpartRule) EvidenceGaps(statement spec.Statement) []rule.E
 		return nil
 	}
 	primary, _ := targetTableSnapshot(statement)
-	var missing []string
-	if primary == nil || !primary.Exists || primary.Columns == nil {
-		missing = append(missing, "target_table.columns")
-	}
-	if counterpart.Columns == nil {
-		missing = append(missing, "exchange_table.columns")
-	}
-	if primary == nil || !primary.Exists || primary.PrimaryKeyUnknown {
-		missing = append(missing, "target_table.primary_key")
-	}
-	if counterpart.PrimaryKeyUnknown {
-		missing = append(missing, "exchange_table.primary_key")
-	}
+	missing := exchangeComparisonFacts(primary, counterpart, statement.Dialect).missing
 	if len(missing) == 0 {
 		return nil
 	}
@@ -483,61 +497,206 @@ func hasExchangeCounterpart(statement spec.Statement) bool {
 	return false
 }
 
-// exchangeDefinitionMismatch compares the bounded structural facts the
-// exchange requires to match: column name/type sequence and primary-key
-// identity. comparable=false means at least one side could not vouch the
-// compare inputs — never read as matching.
-func exchangeDefinitionMismatch(primary, counterpart *spec.TableSnapshot) (mismatch, comparable bool) {
-	if primary == nil || counterpart == nil ||
-		primary.Columns == nil || counterpart.Columns == nil ||
-		primary.PrimaryKeyUnknown || counterpart.PrimaryKeyUnknown {
-		return false, false
-	}
-	if len(primary.Columns) != len(counterpart.Columns) {
-		return true, true
-	}
-	for i := range primary.Columns {
-		if !exchangeColumnEqual(primary.Columns[i], counterpart.Columns[i]) {
-			return true, true
-		}
-	}
-	pkPresent, pkMembers, pkOK := primaryKeyIdentityFacts(primary)
-	cpPresent, cpMembers, cpOK := primaryKeyIdentityFacts(counterpart)
-	if !pkOK || !cpOK {
-		return false, false
-	}
-	if pkPresent != cpPresent {
-		return true, true
-	}
-	if pkPresent && !equalFoldedNames(pkMembers, cpMembers) {
-		return true, true
-	}
-	return false, true
+// exchangeComparison is one shared comparison premise for the counterpart
+// rule: Evaluate reads the proven-mismatch flags, EvidenceGaps reads the
+// missing-fact list, and both are computed by the same walk so a reported
+// refusal and an owed fact can never disagree about what was compared.
+type exchangeComparison struct {
+	definitionMismatch bool
+	engineMismatch     bool
+	missing            []string
 }
 
-// exchangeColumnEqual compares the bounded column-definition facts the
-// exchange validates: name, normalized type family, declared length, and
-// signedness.
-func exchangeColumnEqual(a, b spec.Column) bool {
-	return strings.EqualFold(a.Name, b.Name) &&
-		baseType(a) == baseType(b) &&
-		a.Length == b.Length &&
-		a.Unsigned == b.Unsigned
+// exchangeComparisonFacts runs the bounded EXCHANGE comparison:
+//   - columns: name order + effective type + signedness. A column pair the
+//     bounded model cannot equate keeps the comparison unproven and owes
+//     that side's columns fact (the fact exists but could not be
+//     adjudicated — the gap asks for a decidable answer).
+//   - primary key: presence and member identity under the established
+//     PK-absence contract — PrimaryKeyUnknown blocks, a vouched absent PK
+//     is never reopened by unrelated constraint-set unknowns.
+//   - engine (MySQL only): the observed engine labels must match — MySQL
+//     refuses the mix natively (1497). TiDB normalizes the ENGINE label in
+//     the catalog, so the premise is never consumed there.
+//
+// A dimension that proves a mismatch reports it independently of the other
+// dimensions' knownness; an undecidable dimension owes its own fact.
+func exchangeComparisonFacts(primary, counterpart *spec.TableSnapshot, dialect spec.Dialect) exchangeComparison {
+	var out exchangeComparison
+	primaryObserved := primary != nil
+	primaryKnown := primaryObserved && primary.Exists
+	if primary == nil {
+		// An unvouched primary carries none of its compare facts. A
+		// proven-absent one owes nothing here — the existence family owns
+		// that refusal path.
+		out.missing = append(out.missing,
+			"target_table.columns", "target_table.primary_key")
+		if dialect == spec.DialectMySQL {
+			out.missing = append(out.missing, "target_table.engine")
+		}
+	}
+	if primaryKnown && primary.Columns == nil {
+		out.missing = append(out.missing, "target_table.columns")
+	}
+	if counterpart.Columns == nil {
+		out.missing = append(out.missing, "exchange_table.columns")
+	}
+	if primaryKnown && primary.Columns != nil && counterpart.Columns != nil {
+		switch {
+		case len(primary.Columns) != len(counterpart.Columns):
+			out.definitionMismatch = true
+		default:
+			for i := range primary.Columns {
+				equal, comparable := exchangeColumnComparison(primary.Columns[i], counterpart.Columns[i])
+				if !comparable {
+					out.missing = append(out.missing, "target_table.columns", "exchange_table.columns")
+					break
+				}
+				if !equal {
+					out.definitionMismatch = true
+					break
+				}
+			}
+		}
+	}
+	var pkMembers, cpMembers []string
+	var pkPresent, cpPresent, pkOK bool
+	if primaryKnown {
+		pkPresent, pkMembers, pkOK = primaryKeyIdentityFacts(primary)
+	}
+	cpPresent, cpMembers, cpOK := primaryKeyIdentityFacts(counterpart)
+	if primaryKnown && !pkOK {
+		out.missing = append(out.missing, "target_table.primary_key")
+	}
+	if !cpOK {
+		out.missing = append(out.missing, "exchange_table.primary_key")
+	}
+	if pkOK && cpOK {
+		if pkPresent != cpPresent || (pkPresent && !equalFoldedNames(pkMembers, cpMembers)) {
+			out.definitionMismatch = true
+		}
+	}
+	if dialect == spec.DialectMySQL {
+		var primaryEngine string
+		primaryOK := false
+		if primaryKnown {
+			primaryEngine, primaryOK = observedEngine(primary)
+			if !primaryOK {
+				out.missing = append(out.missing, "target_table.engine")
+			}
+		}
+		counterpartEngine, counterpartOK := observedEngine(counterpart)
+		if !counterpartOK {
+			out.missing = append(out.missing, "exchange_table.engine")
+		}
+		if primaryOK && counterpartOK && !strings.EqualFold(primaryEngine, counterpartEngine) {
+			out.engineMismatch = true
+		}
+	}
+	return out
+}
+
+// observedEngine reads the vouched engine label — an absent Options entry
+// means the fact was never observed, never "no engine".
+func observedEngine(snapshot *spec.TableSnapshot) (string, bool) {
+	if snapshot.Options == nil {
+		return "", false
+	}
+	engine, ok := snapshot.Options["engine"]
+	if !ok || strings.TrimSpace(engine) == "" {
+		return "", false
+	}
+	return engine, true
+}
+
+// exchangeIntegerBases are the type families whose declared length is
+// display width, not storage identity — natively `INT(10)` exchanges
+// against `INT(11)` (probed 5.7), and MySQL ≥8.0.19 drops the width from
+// the catalog entirely.
+var exchangeIntegerBases = map[string]bool{
+	"tinyint": true, "smallint": true, "mediumint": true,
+	"int": true, "integer": true, "bigint": true, "year": true,
+}
+
+// exchangeDefaultLengths are the type families whose unspecified declared
+// length folds to a native default: CHAR/BINARY default to 1, DECIMAL to
+// 10, BIT to 1.
+var exchangeDefaultLengths = map[string]int{
+	"char": 1, "binary": 1, "decimal": 10, "numeric": 10, "bit": 1,
+}
+
+// exchangeFaithfulBases are the bases whose parameter text lives inside
+// the normalized Type string on both channels (the T06-A17 contract) —
+// DECIMAL scale, FLOAT/DOUBLE precision, ENUM/SET member literals.
+var exchangeFaithfulBases = map[string]bool{
+	"decimal": true, "numeric": true, "float": true, "double": true, "enum": true, "set": true,
+}
+
+// exchangeColumnComparison compares one column pair on the bounded
+// exchange contract: name, effective type, and signedness. comparable=false
+// marks a dimension the observed facts cannot decide — never read as equal.
+func exchangeColumnComparison(a, b spec.Column) (equal, comparable bool) {
+	if !strings.EqualFold(a.Name, b.Name) || a.Unsigned != b.Unsigned {
+		return false, true
+	}
+	baseA, baseB := baseType(a), baseType(b)
+	if baseA != baseB {
+		return false, true
+	}
+	if exchangeFaithfulBases[baseA] {
+		// The full parameter text is the effective type: bare `decimal`
+		// folds to `decimal(10,0)`, the rest compare verbatim.
+		return normalizeFaithfulColumnType(a.Type, baseA) == normalizeFaithfulColumnType(b.Type, baseA), true
+	}
+	if exchangeIntegerBases[baseA] {
+		return true, true
+	}
+	lengthA, lengthB := a.Length, b.Length
+	if def, ok := exchangeDefaultLengths[baseA]; ok {
+		if lengthA < 0 {
+			lengthA = def
+		}
+		if lengthB < 0 {
+			lengthB = def
+		}
+	}
+	if lengthA < 0 && lengthB < 0 {
+		// Both channels declared the same bare form — equal effective type.
+		return true, true
+	}
+	if lengthA < 0 || lengthB < 0 {
+		return false, false
+	}
+	return lengthA == lengthB, true
+}
+
+// normalizeFaithfulColumnType folds a bare faithful-base type to its
+// catalog-default spelling so the declared and catalog channels align.
+func normalizeFaithfulColumnType(typeText, base string) string {
+	trimmed := strings.ToLower(strings.TrimSpace(typeText))
+	if trimmed == base && base == "decimal" {
+		return "decimal(10,0)"
+	}
+	return trimmed
 }
 
 // primaryKeyIdentityFacts resolves PK presence and member columns from the
 // vouched member facts. ok=false means the fact could not be vouched —
-// never read as "no PK".
+// never read as "no PK". The dedicated PrimaryKey channel decides first: a
+// proven-absent PK is not reopened by an unvouched CHECK/FK constraint set
+// (ConstraintsUnknown covers the constraint collection, not PK presence).
 func primaryKeyIdentityFacts(snapshot *spec.TableSnapshot) (present bool, members []string, ok bool) {
 	if snapshot.PrimaryKey != nil {
 		return true, snapshot.PrimaryKey.Columns, true
 	}
-	if snapshot.ConstraintsUnknown {
+	if snapshot.PrimaryKeyUnknown {
 		return false, nil, false
 	}
-	for _, constraint := range snapshot.Constraints {
-		if constraint.Type == "primary_key" {
-			return true, constraint.Columns, true
+	if !snapshot.ConstraintsUnknown {
+		for _, constraint := range snapshot.Constraints {
+			if constraint.Type == "primary_key" {
+				return true, constraint.Columns, true
+			}
 		}
 	}
 	return false, nil, true

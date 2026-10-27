@@ -1,0 +1,352 @@
+############ ANCHOR mysql57 A2 subpartition ############
+=== [mysql57] cleanup
+--- SQL: DROP TABLE IF EXISTS golden.t13s; DROP TABLE IF EXISTS golden.t13x
+--- rc=0
+--- out: 
+=== [mysql57] create-sub
+--- SQL: CREATE TABLE golden.t13s (id INT) PARTITION BY RANGE(id) SUBPARTITION BY HASH(id) SUBPARTITIONS 2 (PARTITION p0 VALUES LESS THAN (10), PARTITION p1 VALUES LESS THAN (20))
+--- rc=0
+--- out: 
+=== [mysql57] create-x
+--- SQL: CREATE TABLE golden.t13x (id INT)
+--- rc=0
+--- out: 
+=== [mysql57] catalog
+--- SQL: SELECT PARTITION_NAME, SUBPARTITION_NAME FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t13s' AND PARTITION_NAME IS NOT NULL ORDER BY PARTITION_NAME, SUBPARTITION_NAME
+--- rc=0
+--- out: PARTITION_NAME	SUBPARTITION_NAME
+p0	p0sp0
+p0	p0sp1
+p1	p1sp0
+p1	p1sp1
+=== [mysql57] xchg-leaf
+--- SQL: ALTER TABLE golden.t13s EXCHANGE PARTITION p0sp0 WITH TABLE golden.t13x
+--- rc=0
+--- out: 
+=== [mysql57] xchg-top
+--- SQL: ALTER TABLE golden.t13s EXCHANGE PARTITION p0 WITH TABLE golden.t13x
+--- rc=1
+--- out: ERROR 1734 (HY000) at line 1: Subpartitioned table, use subpartition instead of partition
+=== [mysql57] cleanup2
+--- SQL: DROP TABLE IF EXISTS golden.t13s; DROP TABLE IF EXISTS golden.t13x
+--- rc=0
+--- out: 
+############ ANCHOR mysql80 A2 subpartition ############
+=== [mysql80] cleanup
+--- SQL: DROP TABLE IF EXISTS golden.t13s; DROP TABLE IF EXISTS golden.t13x
+--- rc=0
+--- out: 
+=== [mysql80] create-sub
+--- SQL: CREATE TABLE golden.t13s (id INT) PARTITION BY RANGE(id) SUBPARTITION BY HASH(id) SUBPARTITIONS 2 (PARTITION p0 VALUES LESS THAN (10), PARTITION p1 VALUES LESS THAN (20))
+--- rc=0
+--- out: 
+=== [mysql80] create-x
+--- SQL: CREATE TABLE golden.t13x (id INT)
+--- rc=0
+--- out: 
+=== [mysql80] catalog
+--- SQL: SELECT PARTITION_NAME, SUBPARTITION_NAME FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t13s' AND PARTITION_NAME IS NOT NULL ORDER BY PARTITION_NAME, SUBPARTITION_NAME
+--- rc=0
+--- out: PARTITION_NAME	SUBPARTITION_NAME
+p0	p0sp0
+p0	p0sp1
+p1	p1sp0
+p1	p1sp1
+=== [mysql80] xchg-leaf
+--- SQL: ALTER TABLE golden.t13s EXCHANGE PARTITION p0sp0 WITH TABLE golden.t13x
+--- rc=0
+--- out: 
+=== [mysql80] xchg-top
+--- SQL: ALTER TABLE golden.t13s EXCHANGE PARTITION p0 WITH TABLE golden.t13x
+--- rc=1
+--- out: ERROR 1734 (HY000) at line 1: Subpartitioned table, use subpartition instead of partition
+=== [mysql80] cleanup2
+--- SQL: DROP TABLE IF EXISTS golden.t13s; DROP TABLE IF EXISTS golden.t13x
+--- rc=0
+--- out: 
+############ ANCHOR mysql84 A2 subpartition ############
+=== [mysql84] cleanup
+--- SQL: DROP TABLE IF EXISTS golden.t13s; DROP TABLE IF EXISTS golden.t13x
+--- rc=0
+--- out: 
+=== [mysql84] create-sub
+--- SQL: CREATE TABLE golden.t13s (id INT) PARTITION BY RANGE(id) SUBPARTITION BY HASH(id) SUBPARTITIONS 2 (PARTITION p0 VALUES LESS THAN (10), PARTITION p1 VALUES LESS THAN (20))
+--- rc=0
+--- out: 
+=== [mysql84] create-x
+--- SQL: CREATE TABLE golden.t13x (id INT)
+--- rc=0
+--- out: 
+=== [mysql84] catalog
+--- SQL: SELECT PARTITION_NAME, SUBPARTITION_NAME FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t13s' AND PARTITION_NAME IS NOT NULL ORDER BY PARTITION_NAME, SUBPARTITION_NAME
+--- rc=0
+--- out: PARTITION_NAME	SUBPARTITION_NAME
+p0	p0sp0
+p0	p0sp1
+p1	p1sp0
+p1	p1sp1
+=== [mysql84] xchg-leaf
+--- SQL: ALTER TABLE golden.t13s EXCHANGE PARTITION p0sp0 WITH TABLE golden.t13x
+--- rc=0
+--- out: 
+=== [mysql84] xchg-top
+--- SQL: ALTER TABLE golden.t13s EXCHANGE PARTITION p0 WITH TABLE golden.t13x
+--- rc=1
+--- out: ERROR 1734 (HY000) at line 1: Subpartitioned table, use subpartition instead of partition
+=== [mysql84] cleanup2
+--- SQL: DROP TABLE IF EXISTS golden.t13s; DROP TABLE IF EXISTS golden.t13x
+--- rc=0
+--- out: 
+############ ANCHOR tidb85 A2 subpartition ############
+=== [tidb85] ensure-db
+--- SQL: CREATE DATABASE IF NOT EXISTS golden
+--- rc=0
+--- out: 
+=== [tidb85] cleanup
+--- SQL: DROP TABLE IF EXISTS golden.t13s; DROP TABLE IF EXISTS golden.t13x
+--- rc=0
+--- out: 
+=== [tidb85] create-sub
+--- SQL: CREATE TABLE golden.t13s (id INT) PARTITION BY RANGE(id) SUBPARTITION BY HASH(id) SUBPARTITIONS 2 (PARTITION p0 VALUES LESS THAN (10), PARTITION p1 VALUES LESS THAN (20))
+--- rc=0
+--- out: 
+=== [tidb85] create-x
+--- SQL: CREATE TABLE golden.t13x (id INT)
+--- rc=0
+--- out: 
+=== [tidb85] catalog
+--- SQL: SELECT PARTITION_NAME, SUBPARTITION_NAME FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t13s' AND PARTITION_NAME IS NOT NULL ORDER BY PARTITION_NAME, SUBPARTITION_NAME
+--- rc=0
+--- out: PARTITION_NAME	SUBPARTITION_NAME
+p0	NULL
+p1	NULL
+=== [tidb85] xchg-leaf
+--- SQL: ALTER TABLE golden.t13s EXCHANGE PARTITION p0sp0 WITH TABLE golden.t13x
+--- rc=1
+--- out: ERROR 1735 (HY000) at line 1: Unknown partition 'p0sp0' in table 't13s'
+=== [tidb85] xchg-top
+--- SQL: ALTER TABLE golden.t13s EXCHANGE PARTITION p0 WITH TABLE golden.t13x
+--- rc=0
+--- out: 
+=== [tidb85] cleanup2
+--- SQL: DROP TABLE IF EXISTS golden.t13s; DROP TABLE IF EXISTS golden.t13x
+--- rc=0
+--- out: 
+############ ANCHOR tidb85 A2 RANGE INTERVAL ############
+=== [tidb85] ivl-cleanup
+--- SQL: DROP TABLE IF EXISTS golden.t13i
+--- rc=0
+--- out: 
+=== [tidb85] ivl-create
+--- SQL: CREATE TABLE golden.t13i (id INT) PARTITION BY RANGE(id) INTERVAL(10) FIRST PARTITION LESS THAN(10) LAST PARTITION LESS THAN(30)
+--- rc=0
+--- out: 
+=== [tidb85] ivl-catalog
+--- SQL: SELECT PARTITION_NAME FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t13i' AND PARTITION_NAME IS NOT NULL ORDER BY PARTITION_NAME
+--- rc=0
+--- out: PARTITION_NAME
+P_LT_10
+P_LT_20
+P_LT_30
+=== [tidb85] ivl-truncate
+--- SQL: ALTER TABLE golden.t13i TRUNCATE PARTITION p_lt_10
+--- rc=0
+--- out: 
+=== [tidb85] ivl-cleanup2
+--- SQL: DROP TABLE IF EXISTS golden.t13i
+--- rc=0
+--- out: 
+############ ANCHOR mysql80 A3 unbounded PARTITIONS ############
+=== [mysql80] big-cleanup
+--- SQL: DROP TABLE IF EXISTS golden.t13b
+--- rc=0
+--- out: 
+=== [mysql80] big-create
+--- SQL: CREATE TABLE golden.t13b (id INT) PARTITION BY HASH(id) PARTITIONS 18446744073709551615
+--- rc=1
+--- out: ERROR 1499 (HY000) at line 1: Too many partitions (including subpartitions) were defined
+=== [mysql80] big-parts-max
+--- SQL: SELECT @@max_partitions
+--- rc=1
+--- out: ERROR 1193 (HY000) at line 1: Unknown system variable 'max_partitions'
+=== [mysql80] big-create2
+--- SQL: CREATE TABLE golden.t13b (id INT) PARTITION BY HASH(id) PARTITIONS 8193
+--- rc=1
+--- out: ERROR 1499 (HY000) at line 1: Too many partitions (including subpartitions) were defined
+=== [mysql80] big-catalog-count
+--- SQL: SELECT COUNT(*) AS n FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t13b' AND PARTITION_NAME IS NOT NULL
+--- rc=0
+--- out: n
+0
+=== [mysql80] big-cleanup2
+--- SQL: DROP TABLE IF EXISTS golden.t13b
+--- rc=0
+--- out: 
+############ ANCHOR mysql57 D2 INPLACE+TRUNCATE/EXCHANGE ############
+=== [mysql57] d2-cleanup
+--- SQL: DROP TABLE IF EXISTS golden.t13d; DROP TABLE IF EXISTS golden.t13y
+--- rc=0
+--- out: 
+=== [mysql57] d2-create
+--- SQL: CREATE TABLE golden.t13d (id INT, c INT) PARTITION BY RANGE(id) (PARTITION p0 VALUES LESS THAN (100), PARTITION p1 VALUES LESS THAN (200)); INSERT INTO golden.t13d VALUES (1,1),(150,1)
+--- rc=0
+--- out: 
+=== [mysql57] d2-inplace-trunc
+--- SQL: ALTER TABLE golden.t13d ALGORITHM=INPLACE, TRUNCATE PARTITION p0
+--- rc=0
+--- out: 
+=== [mysql57] d2-trunc-post
+--- SQL: SELECT PARTITION_NAME FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t13d' AND PARTITION_NAME IS NOT NULL ORDER BY PARTITION_NAME
+--- rc=0
+--- out: PARTITION_NAME
+p0
+p1
+=== [mysql57] d2-create-y
+--- SQL: CREATE TABLE golden.t13y (id INT, c INT); INSERT INTO golden.t13y VALUES (5,5)
+--- rc=0
+--- out: 
+=== [mysql57] d2-inplace-xchg
+--- SQL: ALTER TABLE golden.t13d ALGORITHM=INPLACE, EXCHANGE PARTITION p0 WITH TABLE golden.t13y
+--- rc=0
+--- out: 
+=== [mysql57] d2-xchg-post-t
+--- SQL: SELECT * FROM golden.t13d ORDER BY id
+--- rc=0
+--- out: id	c
+5	5
+150	1
+=== [mysql57] d2-xchg-post-y
+--- SQL: SELECT * FROM golden.t13y ORDER BY id
+--- rc=0
+--- out: 
+=== [mysql57] d2-cleanup2
+--- SQL: DROP TABLE IF EXISTS golden.t13d; DROP TABLE IF EXISTS golden.t13y
+--- rc=0
+--- out: 
+############ ANCHOR mysql80 D2 INPLACE+TRUNCATE/EXCHANGE ############
+=== [mysql80] d2-cleanup
+--- SQL: DROP TABLE IF EXISTS golden.t13d; DROP TABLE IF EXISTS golden.t13y
+--- rc=0
+--- out: 
+=== [mysql80] d2-create
+--- SQL: CREATE TABLE golden.t13d (id INT, c INT) PARTITION BY RANGE(id) (PARTITION p0 VALUES LESS THAN (100), PARTITION p1 VALUES LESS THAN (200)); INSERT INTO golden.t13d VALUES (1,1),(150,1)
+--- rc=0
+--- out: 
+=== [mysql80] d2-inplace-trunc
+--- SQL: ALTER TABLE golden.t13d ALGORITHM=INPLACE, TRUNCATE PARTITION p0
+--- rc=0
+--- out: 
+=== [mysql80] d2-trunc-post
+--- SQL: SELECT PARTITION_NAME FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t13d' AND PARTITION_NAME IS NOT NULL ORDER BY PARTITION_NAME
+--- rc=0
+--- out: PARTITION_NAME
+p0
+p1
+=== [mysql80] d2-create-y
+--- SQL: CREATE TABLE golden.t13y (id INT, c INT); INSERT INTO golden.t13y VALUES (5,5)
+--- rc=0
+--- out: 
+=== [mysql80] d2-inplace-xchg
+--- SQL: ALTER TABLE golden.t13d ALGORITHM=INPLACE, EXCHANGE PARTITION p0 WITH TABLE golden.t13y
+--- rc=0
+--- out: 
+=== [mysql80] d2-xchg-post-t
+--- SQL: SELECT * FROM golden.t13d ORDER BY id
+--- rc=0
+--- out: id	c
+5	5
+150	1
+=== [mysql80] d2-xchg-post-y
+--- SQL: SELECT * FROM golden.t13y ORDER BY id
+--- rc=0
+--- out: 
+=== [mysql80] d2-cleanup2
+--- SQL: DROP TABLE IF EXISTS golden.t13d; DROP TABLE IF EXISTS golden.t13y
+--- rc=0
+--- out: 
+############ ANCHOR mysql84 D2 INPLACE+TRUNCATE/EXCHANGE ############
+=== [mysql84] d2-cleanup
+--- SQL: DROP TABLE IF EXISTS golden.t13d; DROP TABLE IF EXISTS golden.t13y
+--- rc=0
+--- out: 
+=== [mysql84] d2-create
+--- SQL: CREATE TABLE golden.t13d (id INT, c INT) PARTITION BY RANGE(id) (PARTITION p0 VALUES LESS THAN (100), PARTITION p1 VALUES LESS THAN (200)); INSERT INTO golden.t13d VALUES (1,1),(150,1)
+--- rc=0
+--- out: 
+=== [mysql84] d2-inplace-trunc
+--- SQL: ALTER TABLE golden.t13d ALGORITHM=INPLACE, TRUNCATE PARTITION p0
+--- rc=0
+--- out: 
+=== [mysql84] d2-trunc-post
+--- SQL: SELECT PARTITION_NAME FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t13d' AND PARTITION_NAME IS NOT NULL ORDER BY PARTITION_NAME
+--- rc=0
+--- out: PARTITION_NAME
+p0
+p1
+=== [mysql84] d2-create-y
+--- SQL: CREATE TABLE golden.t13y (id INT, c INT); INSERT INTO golden.t13y VALUES (5,5)
+--- rc=0
+--- out: 
+=== [mysql84] d2-inplace-xchg
+--- SQL: ALTER TABLE golden.t13d ALGORITHM=INPLACE, EXCHANGE PARTITION p0 WITH TABLE golden.t13y
+--- rc=0
+--- out: 
+=== [mysql84] d2-xchg-post-t
+--- SQL: SELECT * FROM golden.t13d ORDER BY id
+--- rc=0
+--- out: id	c
+5	5
+150	1
+=== [mysql84] d2-xchg-post-y
+--- SQL: SELECT * FROM golden.t13y ORDER BY id
+--- rc=0
+--- out: 
+=== [mysql84] d2-cleanup2
+--- SQL: DROP TABLE IF EXISTS golden.t13d; DROP TABLE IF EXISTS golden.t13y
+--- rc=0
+--- out: 
+############ ANCHOR tidb85 D2 INPLACE+TRUNCATE/EXCHANGE ############
+=== [tidb85] ensure-db2
+--- SQL: CREATE DATABASE IF NOT EXISTS golden
+--- rc=0
+--- out: 
+=== [tidb85] d2-cleanup
+--- SQL: DROP TABLE IF EXISTS golden.t13d; DROP TABLE IF EXISTS golden.t13y
+--- rc=0
+--- out: 
+=== [tidb85] d2-create
+--- SQL: CREATE TABLE golden.t13d (id INT, c INT) PARTITION BY RANGE(id) (PARTITION p0 VALUES LESS THAN (100), PARTITION p1 VALUES LESS THAN (200)); INSERT INTO golden.t13d VALUES (1,1),(150,1)
+--- rc=0
+--- out: 
+=== [tidb85] d2-inplace-trunc
+--- SQL: ALTER TABLE golden.t13d ALGORITHM=INPLACE, TRUNCATE PARTITION p0
+--- rc=0
+--- out: 
+=== [tidb85] d2-trunc-post
+--- SQL: SELECT PARTITION_NAME FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t13d' AND PARTITION_NAME IS NOT NULL ORDER BY PARTITION_NAME
+--- rc=0
+--- out: PARTITION_NAME
+p0
+p1
+=== [tidb85] d2-create-y
+--- SQL: CREATE TABLE golden.t13y (id INT, c INT); INSERT INTO golden.t13y VALUES (5,5)
+--- rc=0
+--- out: 
+=== [tidb85] d2-inplace-xchg
+--- SQL: ALTER TABLE golden.t13d ALGORITHM=INPLACE, EXCHANGE PARTITION p0 WITH TABLE golden.t13y
+--- rc=0
+--- out: 
+=== [tidb85] d2-xchg-post-t
+--- SQL: SELECT * FROM golden.t13d ORDER BY id
+--- rc=0
+--- out: id	c
+5	5
+150	1
+=== [tidb85] d2-xchg-post-y
+--- SQL: SELECT * FROM golden.t13y ORDER BY id
+--- rc=0
+--- out: 
+=== [tidb85] d2-cleanup2
+--- SQL: DROP TABLE IF EXISTS golden.t13d; DROP TABLE IF EXISTS golden.t13y
+--- rc=0
+--- out: 

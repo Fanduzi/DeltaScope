@@ -245,7 +245,11 @@ func (state *batchState) enrichStatements(ctx context.Context, request *Metadata
 			metadata.ExchangeTable = snapshot
 		}
 
-		if metadata.Schema != "" || metadata.Instance != nil || metadata.TargetTable != nil || metadata.Version != nil {
+		// ExchangeTable participates in the mount: a statement carrying only
+		// a counterpart fact (no schema, no version, no provider target)
+		// still keeps its metadata so the counterpart rule sees it.
+		if metadata.Schema != "" || metadata.Instance != nil || metadata.TargetTable != nil ||
+			metadata.ExchangeTable != nil || metadata.Version != nil {
 			enriched[i].Metadata = metadata
 		}
 

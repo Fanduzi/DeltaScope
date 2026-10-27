@@ -20,7 +20,8 @@ func t13r1Config() policy.RulePolicy {
 func t13r1Bool(v bool) *bool { return &v }
 
 // t13r1Snapshot is a partitioned primary table whose member facts are all
-// vouched: RANGE type, two named partitions, ordinary member structure.
+// vouched: RANGE type, two named partitions, ordinary member structure, and
+// an observed engine label — the MySQL exchange compare needs it.
 func t13r1Snapshot(name string) *spec.TableSnapshot {
 	return &spec.TableSnapshot{
 		Exists:         true,
@@ -30,6 +31,7 @@ func t13r1Snapshot(name string) *spec.TableSnapshot {
 		Partitioned:    t13r1Bool(true),
 		PartitionType:  t13r1Str("range"),
 		PartitionNames: []string{"p0", "p1"},
+		Options:        map[string]string{"engine": "innodb"},
 	}
 }
 
@@ -421,6 +423,7 @@ func TestT13R1CounterpartShapeChecks(t *testing.T) {
 			Columns:     []spec.Column{{Name: "id", Type: "int"}, {Name: "c", Type: "int"}},
 			PrimaryKey:  &spec.Index{Name: "primary", Kind: spec.IndexKindPrimary, Columns: []string{"id"}},
 			Partitioned: t13r1Bool(false),
+			Options:     map[string]string{"engine": "innodb"},
 		}
 		stmt := t13r1StatementExchange(spec.Alter{
 			Action: "exchange_partition", Partitions: []string{"p0"},
