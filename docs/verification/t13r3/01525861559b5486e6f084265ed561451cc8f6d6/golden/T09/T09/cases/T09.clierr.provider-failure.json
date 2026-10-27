@@ -1,0 +1,60 @@
+{
+  "case_id": "T09.clierr.provider-failure",
+  "kind": "cli_error",
+  "cli_case": "provider-failure",
+  "dialect": "mysql",
+  "input_sql": "ALTER TABLE t9i DROP INDEX gone;",
+  "policy_profile": "all-rules-disabled",
+  "policy_path": "/Users/fan/GolangProjects/DeltaScope/docs/verification/t13r3/01525861559b5486e6f084265ed561451cc8f6d6/golden/T09/T09/golden-policy-all-off.yaml",
+  "command": [
+    "/Users/fan/GolangProjects/DeltaScope/docs/verification/t13r3/01525861559b5486e6f084265ed561451cc8f6d6/golden/T09/T09/bin/deltascope",
+    "audit",
+    "--dialect",
+    "mysql",
+    "--sql",
+    "ALTER TABLE t9i DROP INDEX gone;",
+    "--config",
+    "/Users/fan/GolangProjects/DeltaScope/docs/verification/t13r3/01525861559b5486e6f084265ed561451cc8f6d6/golden/T09/T09/golden-policy-all-off.yaml",
+    "--format",
+    "json",
+    "--host",
+    "127.0.0.1",
+    "--port",
+    "1",
+    "--user",
+    "root",
+    "--schema",
+    "golden"
+  ],
+  "expected": {
+    "exit": 3,
+    "stderr_contains": [
+      "connection refused"
+    ]
+  },
+  "actual": {
+    "exit": 3,
+    "stdout": "",
+    "stderr": "connection refused\n",
+    "version_evidence": {
+      "target_raw": null,
+      "target_canonical": null,
+      "observed_raw": null,
+      "observed_canonical": null,
+      "resolved": null
+    }
+  },
+  "assertions": [
+    {
+      "name": "exit code",
+      "ok": true,
+      "detail": "rc=3 expected=3"
+    },
+    {
+      "name": "stderr contains 'connection refused'",
+      "ok": true,
+      "detail": "stderr='connection refused' marker='connection refused'"
+    }
+  ],
+  "status": "pass"
+}

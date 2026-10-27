@@ -1,0 +1,286 @@
+{
+  "case_id": "T11.meta.t11-mysql80-composite-actions",
+  "kind": "cli_metadata",
+  "cli_case": "t11-mysql80-composite-actions",
+  "anchor": "mysql80",
+  "dialect": "mysql",
+  "input_sql": "ALTER TABLE t11c ADD CONSTRAINT fk_bx FOREIGN KEY (b, x) REFERENCES t11r (y, z) ON DELETE SET NULL ON UPDATE CASCADE;",
+  "policy_profile": "t11-fk-forbid",
+  "policy_path": "/Users/fan/GolangProjects/DeltaScope/docs/verification/t13r3/01525861559b5486e6f084265ed561451cc8f6d6/golden/T11/T11/golden-policy-t11-fk-forbid.yaml",
+  "connect": {
+    "host": "127.0.0.1",
+    "port": 23380,
+    "user": "root",
+    "schema": "golden",
+    "password_env": "DS_T11_GOLDEN_PW"
+  },
+  "expected": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "evidence_gaps": 0,
+    "finding_metadata": [
+      {
+        "index": 0,
+        "rule_id": "ddl.table.foreign_key.forbid",
+        "metadata": {
+          "table": "t11c",
+          "constraint": "fk_bx",
+          "columns": [
+            "b",
+            "x"
+          ],
+          "referenced_table": "t11r",
+          "referenced_columns": [
+            "y",
+            "z"
+          ],
+          "on_delete": "set_null",
+          "on_update": "cascade"
+        }
+      }
+    ]
+  },
+  "actual": {
+    "database": {
+      "product": "mysql",
+      "image": "mysql:8.0.46",
+      "image_digest": "mysql@sha256:7dcddc01f13bab2f15cde676d44d01f61fc9f99fe7785e86196dfc07d358ae2b",
+      "container": "deltascope-ddl-golden-mysql80",
+      "reachable": true,
+      "version": "8.0.46"
+    },
+    "setup": [
+      {
+        "name": "create-fixture-t11r",
+        "sql": "CREATE TABLE t11r (y INT, z INT, PRIMARY KEY (y, z));",
+        "rc": 0,
+        "stdout": "",
+        "stderr": ""
+      },
+      {
+        "name": "create-fixture-t11c",
+        "sql": "CREATE TABLE t11c (b INT, x INT);",
+        "rc": 0,
+        "stdout": "",
+        "stderr": ""
+      }
+    ],
+    "post_verify": [],
+    "execute": [],
+    "structure": [],
+    "teardown": [
+      {
+        "name": "drop-t11c",
+        "sql": "DROP TABLE IF EXISTS t11c;",
+        "rc": 0,
+        "stderr": ""
+      },
+      {
+        "name": "drop-t11r",
+        "sql": "DROP TABLE IF EXISTS t11r;",
+        "rc": 0,
+        "stderr": ""
+      }
+    ],
+    "exit": 1,
+    "stdout": "{\"verdict\":\"reject\",\"coverage\":{\"status\":\"complete\"},\"summary\":{\"statements\":1,\"blockers\":1,\"warnings\":0,\"notices\":0},\"statements\":[{\"index\":0,\"kind\":\"ddl\",\"raw_sql\":\"ALTER TABLE t11c ADD CONSTRAINT fk_bx FOREIGN KEY (b, x) REFERENCES t11r (y, z) ON DELETE SET NULL ON UPDATE CASCADE;\",\"normalized_sql\":\"ALTER TABLE t11c ADD CONSTRAINT fk_bx FOREIGN KEY (b, x) REFERENCES t11r (y, z) ON DELETE SET NULL ON UPDATE CASCADE\",\"findings\":[{\"rule_id\":\"ddl.table.foreign_key.forbid\",\"level\":\"blocker\",\"message\":\"foreign key constraint \\\"fk_bx\\\" is forbidden\",\"statement_kind\":\"ddl\",\"location\":{\"line\":1,\"column\":1},\"suggestion\":\"remove the foreign key constraint or disable the policy intentionally\",\"metadata\":{\"columns\":[\"b\",\"x\"],\"constraint\":\"fk_bx\",\"on_delete\":\"set_null\",\"on_update\":\"cascade\",\"referenced_columns\":[\"y\",\"z\"],\"referenced_table\":\"t11r\",\"table\":\"t11c\"},\"explanation\":{\"summary\":\"Forbid DDL table foreign key forbid\",\"why\":\"The statement uses a construct that the shipped policy explicitly forbids.\",\"risk\":\"Ignoring this rule can weaken schema-governance guarantees and make changes harder to review safely.\",\"suggestion\":\"remove the foreign key constraint or disable the policy intentionally\"}}],\"coverage\":{\"status\":\"complete\"}}],\"version\":{\"product\":\"mysql\",\"version\":\"8.0.46\",\"major\":8,\"minor\":0,\"patch\":46,\"source\":\"observed\",\"validated_range\":true},\"fail_on_triggered\":true,\"rule_summary\":{\"loaded\":1,\"applicable\":1,\"skipped\":[]},\"context\":{\"mode\":\"metadata-aware\",\"dialect\":\"mysql\",\"dialect_source\":\"detected\",\"schema\":\"golden\",\"schema_source\":\"flag\"}}\n",
+    "stderr": "",
+    "parsed": {
+      "verdict": "reject",
+      "coverage": {
+        "status": "complete"
+      },
+      "summary": {
+        "statements": 1,
+        "blockers": 1,
+        "warnings": 0,
+        "notices": 0
+      },
+      "statements": [
+        {
+          "index": 0,
+          "kind": "ddl",
+          "raw_sql": "ALTER TABLE t11c ADD CONSTRAINT fk_bx FOREIGN KEY (b, x) REFERENCES t11r (y, z) ON DELETE SET NULL ON UPDATE CASCADE;",
+          "normalized_sql": "ALTER TABLE t11c ADD CONSTRAINT fk_bx FOREIGN KEY (b, x) REFERENCES t11r (y, z) ON DELETE SET NULL ON UPDATE CASCADE",
+          "findings": [
+            {
+              "rule_id": "ddl.table.foreign_key.forbid",
+              "level": "blocker",
+              "message": "foreign key constraint \"fk_bx\" is forbidden",
+              "statement_kind": "ddl",
+              "location": {
+                "line": 1,
+                "column": 1
+              },
+              "suggestion": "remove the foreign key constraint or disable the policy intentionally",
+              "metadata": {
+                "columns": [
+                  "b",
+                  "x"
+                ],
+                "constraint": "fk_bx",
+                "on_delete": "set_null",
+                "on_update": "cascade",
+                "referenced_columns": [
+                  "y",
+                  "z"
+                ],
+                "referenced_table": "t11r",
+                "table": "t11c"
+              },
+              "explanation": {
+                "summary": "Forbid DDL table foreign key forbid",
+                "why": "The statement uses a construct that the shipped policy explicitly forbids.",
+                "risk": "Ignoring this rule can weaken schema-governance guarantees and make changes harder to review safely.",
+                "suggestion": "remove the foreign key constraint or disable the policy intentionally"
+              }
+            }
+          ],
+          "coverage": {
+            "status": "complete"
+          }
+        }
+      ],
+      "version": {
+        "product": "mysql",
+        "version": "8.0.46",
+        "major": 8,
+        "minor": 0,
+        "patch": 46,
+        "source": "observed",
+        "validated_range": true
+      },
+      "fail_on_triggered": true,
+      "rule_summary": {
+        "loaded": 1,
+        "applicable": 1,
+        "skipped": []
+      },
+      "context": {
+        "mode": "metadata-aware",
+        "dialect": "mysql",
+        "dialect_source": "detected",
+        "schema": "golden",
+        "schema_source": "flag"
+      }
+    },
+    "version_evidence": {
+      "target_raw": null,
+      "target_canonical": null,
+      "observed_raw": "8.0.46",
+      "observed_canonical": {
+        "product": "mysql",
+        "version": "8.0.46"
+      },
+      "resolved": {
+        "product": "mysql",
+        "version": "8.0.46",
+        "major": 8,
+        "minor": 0,
+        "patch": 46,
+        "source": "observed",
+        "validated_range": true
+      }
+    }
+  },
+  "assertions": [
+    {
+      "name": "database reachable with expected version",
+      "ok": true,
+      "detail": "SELECT VERSION() rc=0 version='8.0.46' expected_contains='8.0.46'"
+    },
+    {
+      "name": "setup create-fixture-t11r return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "setup create-fixture-t11c return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "exit code",
+      "ok": true,
+      "detail": "rc=1 expected=1"
+    },
+    {
+      "name": "verdict",
+      "ok": true,
+      "detail": "verdict='reject'"
+    },
+    {
+      "name": "top-level statements",
+      "ok": true,
+      "detail": "statements=1 expected=1"
+    },
+    {
+      "name": "zero findings",
+      "ok": true,
+      "detail": "findings=1"
+    },
+    {
+      "name": "no diagnostics",
+      "ok": true,
+      "detail": "diagnostics=[]"
+    },
+    {
+      "name": "no unsupported",
+      "ok": true,
+      "detail": "unsupported=[]"
+    },
+    {
+      "name": "aggregate coverage",
+      "ok": true,
+      "detail": "coverage='complete'"
+    },
+    {
+      "name": "evidence gap count",
+      "ok": true,
+      "detail": "gaps=0"
+    },
+    {
+      "name": "finding metadata (0, 'ddl.table.foreign_key.forbid')",
+      "ok": true,
+      "detail": "findings=[{'columns': ['b', 'x'], 'constraint': 'fk_bx', 'on_delete': 'set_null', 'on_update': 'cascade', 'referenced_columns': ['y', 'z'], 'referenced_table': 't11r', 'table': 't11c'}] expected_subset={'table': 't11c', 'constraint': 'fk_bx', 'columns': ['b', 'x'], 'referenced_table': 't11r', 'referenced_columns': ['y', 'z'], 'on_delete': 'set_null', 'on_update': 'cascade'}"
+    },
+    {
+      "name": "teardown drop-t11c return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "teardown drop-t11r return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    }
+  ],
+  "status": "pass",
+  "command": [
+    "/Users/fan/GolangProjects/DeltaScope/docs/verification/t13r3/01525861559b5486e6f084265ed561451cc8f6d6/golden/T11/T11/bin/deltascope",
+    "audit",
+    "--dialect",
+    "mysql",
+    "--sql",
+    "ALTER TABLE t11c ADD CONSTRAINT fk_bx FOREIGN KEY (b, x) REFERENCES t11r (y, z) ON DELETE SET NULL ON UPDATE CASCADE;",
+    "--config",
+    "/Users/fan/GolangProjects/DeltaScope/docs/verification/t13r3/01525861559b5486e6f084265ed561451cc8f6d6/golden/T11/T11/golden-policy-t11-fk-forbid.yaml",
+    "--format",
+    "json",
+    "--host",
+    "127.0.0.1",
+    "--port",
+    "23380",
+    "--user",
+    "root",
+    "--password-env",
+    "DS_T11_GOLDEN_PW",
+    "--schema",
+    "golden"
+  ]
+}

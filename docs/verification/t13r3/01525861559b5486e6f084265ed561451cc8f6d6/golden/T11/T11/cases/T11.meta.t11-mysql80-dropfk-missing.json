@@ -1,0 +1,260 @@
+{
+  "case_id": "T11.meta.t11-mysql80-dropfk-missing",
+  "kind": "cli_metadata",
+  "cli_case": "t11-mysql80-dropfk-missing",
+  "anchor": "mysql80",
+  "dialect": "mysql",
+  "input_sql": "ALTER TABLE t11c DROP FOREIGN KEY fk_absent;",
+  "policy_profile": "t11-fk-exists",
+  "policy_path": "/Users/fan/GolangProjects/DeltaScope/docs/verification/t13r3/01525861559b5486e6f084265ed561451cc8f6d6/golden/T11/T11/golden-policy-t11-fk-exists.yaml",
+  "connect": {
+    "host": "127.0.0.1",
+    "port": 23380,
+    "user": "root",
+    "schema": "golden",
+    "password_env": "DS_T11_GOLDEN_PW"
+  },
+  "expected": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "evidence_gaps": 0,
+    "finding_entries": [
+      {
+        "index": 0,
+        "rule_id": "ddl.alter.drop_foreign_key.exists.require",
+        "level": "blocker"
+      }
+    ],
+    "finding_metadata": [
+      {
+        "index": 0,
+        "rule_id": "ddl.alter.drop_foreign_key.exists.require",
+        "metadata": {
+          "table": "t11c",
+          "name": "fk_absent",
+          "exists": false
+        }
+      }
+    ]
+  },
+  "actual": {
+    "database": {
+      "product": "mysql",
+      "image": "mysql:8.0.46",
+      "image_digest": "mysql@sha256:7dcddc01f13bab2f15cde676d44d01f61fc9f99fe7785e86196dfc07d358ae2b",
+      "container": "deltascope-ddl-golden-mysql80",
+      "reachable": true,
+      "version": "8.0.46"
+    },
+    "setup": [
+      {
+        "name": "create-fixture-t11c",
+        "sql": "CREATE TABLE t11c (c INT);",
+        "rc": 0,
+        "stdout": "",
+        "stderr": ""
+      }
+    ],
+    "post_verify": [],
+    "execute": [],
+    "structure": [],
+    "teardown": [
+      {
+        "name": "drop-t11c",
+        "sql": "DROP TABLE IF EXISTS t11c;",
+        "rc": 0,
+        "stderr": ""
+      }
+    ],
+    "exit": 1,
+    "stdout": "{\"verdict\":\"reject\",\"coverage\":{\"status\":\"complete\"},\"summary\":{\"statements\":1,\"blockers\":1,\"warnings\":0,\"notices\":0},\"statements\":[{\"index\":0,\"kind\":\"ddl\",\"raw_sql\":\"ALTER TABLE t11c DROP FOREIGN KEY fk_absent;\",\"normalized_sql\":\"ALTER TABLE t11c DROP FOREIGN KEY fk_absent\",\"findings\":[{\"rule_id\":\"ddl.alter.drop_foreign_key.exists.require\",\"level\":\"blocker\",\"message\":\"foreign_key \\\"fk_absent\\\" does not exist on table \\\"t11c\\\"\",\"statement_kind\":\"ddl\",\"location\":{\"line\":1,\"column\":1},\"suggestion\":\"fix the foreign_key name or refresh metadata before auditing this change\",\"metadata\":{\"action\":\"drop_foreign_key\",\"exists\":false,\"name\":\"fk_absent\",\"table\":\"t11c\"},\"explanation\":{\"summary\":\"Require DDL alter drop foreign key exists require\",\"why\":\"The statement is missing a clause, option, or object that the shipped policy requires.\",\"risk\":\"Ignoring this rule can hide live-schema or instance-state risks that only metadata reveals.\",\"suggestion\":\"fix the foreign_key name or refresh metadata before auditing this change\",\"metadata\":{\"status\":\"available\",\"note\":\"Live metadata is available, so this explanation can use schema or instance facts for a more accurate judgment.\"}}}],\"coverage\":{\"status\":\"complete\"}}],\"version\":{\"product\":\"mysql\",\"version\":\"8.0.46\",\"major\":8,\"minor\":0,\"patch\":46,\"source\":\"observed\",\"validated_range\":true},\"fail_on_triggered\":true,\"rule_summary\":{\"loaded\":1,\"applicable\":1,\"skipped\":[]},\"context\":{\"mode\":\"metadata-aware\",\"dialect\":\"mysql\",\"dialect_source\":\"detected\",\"schema\":\"golden\",\"schema_source\":\"flag\"}}\n",
+    "stderr": "",
+    "parsed": {
+      "verdict": "reject",
+      "coverage": {
+        "status": "complete"
+      },
+      "summary": {
+        "statements": 1,
+        "blockers": 1,
+        "warnings": 0,
+        "notices": 0
+      },
+      "statements": [
+        {
+          "index": 0,
+          "kind": "ddl",
+          "raw_sql": "ALTER TABLE t11c DROP FOREIGN KEY fk_absent;",
+          "normalized_sql": "ALTER TABLE t11c DROP FOREIGN KEY fk_absent",
+          "findings": [
+            {
+              "rule_id": "ddl.alter.drop_foreign_key.exists.require",
+              "level": "blocker",
+              "message": "foreign_key \"fk_absent\" does not exist on table \"t11c\"",
+              "statement_kind": "ddl",
+              "location": {
+                "line": 1,
+                "column": 1
+              },
+              "suggestion": "fix the foreign_key name or refresh metadata before auditing this change",
+              "metadata": {
+                "action": "drop_foreign_key",
+                "exists": false,
+                "name": "fk_absent",
+                "table": "t11c"
+              },
+              "explanation": {
+                "summary": "Require DDL alter drop foreign key exists require",
+                "why": "The statement is missing a clause, option, or object that the shipped policy requires.",
+                "risk": "Ignoring this rule can hide live-schema or instance-state risks that only metadata reveals.",
+                "suggestion": "fix the foreign_key name or refresh metadata before auditing this change",
+                "metadata": {
+                  "status": "available",
+                  "note": "Live metadata is available, so this explanation can use schema or instance facts for a more accurate judgment."
+                }
+              }
+            }
+          ],
+          "coverage": {
+            "status": "complete"
+          }
+        }
+      ],
+      "version": {
+        "product": "mysql",
+        "version": "8.0.46",
+        "major": 8,
+        "minor": 0,
+        "patch": 46,
+        "source": "observed",
+        "validated_range": true
+      },
+      "fail_on_triggered": true,
+      "rule_summary": {
+        "loaded": 1,
+        "applicable": 1,
+        "skipped": []
+      },
+      "context": {
+        "mode": "metadata-aware",
+        "dialect": "mysql",
+        "dialect_source": "detected",
+        "schema": "golden",
+        "schema_source": "flag"
+      }
+    },
+    "version_evidence": {
+      "target_raw": null,
+      "target_canonical": null,
+      "observed_raw": "8.0.46",
+      "observed_canonical": {
+        "product": "mysql",
+        "version": "8.0.46"
+      },
+      "resolved": {
+        "product": "mysql",
+        "version": "8.0.46",
+        "major": 8,
+        "minor": 0,
+        "patch": 46,
+        "source": "observed",
+        "validated_range": true
+      }
+    }
+  },
+  "assertions": [
+    {
+      "name": "database reachable with expected version",
+      "ok": true,
+      "detail": "SELECT VERSION() rc=0 version='8.0.46' expected_contains='8.0.46'"
+    },
+    {
+      "name": "setup create-fixture-t11c return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "exit code",
+      "ok": true,
+      "detail": "rc=1 expected=1"
+    },
+    {
+      "name": "verdict",
+      "ok": true,
+      "detail": "verdict='reject'"
+    },
+    {
+      "name": "top-level statements",
+      "ok": true,
+      "detail": "statements=1 expected=1"
+    },
+    {
+      "name": "zero findings",
+      "ok": true,
+      "detail": "findings=1"
+    },
+    {
+      "name": "no diagnostics",
+      "ok": true,
+      "detail": "diagnostics=[]"
+    },
+    {
+      "name": "no unsupported",
+      "ok": true,
+      "detail": "unsupported=[]"
+    },
+    {
+      "name": "aggregate coverage",
+      "ok": true,
+      "detail": "coverage='complete'"
+    },
+    {
+      "name": "evidence gap count",
+      "ok": true,
+      "detail": "gaps=0"
+    },
+    {
+      "name": "finding entries",
+      "ok": true,
+      "detail": "findings=[(0, 'ddl.alter.drop_foreign_key.exists.require', 'blocker')] expected=[(0, 'ddl.alter.drop_foreign_key.exists.require', 'blocker')]"
+    },
+    {
+      "name": "finding metadata (0, 'ddl.alter.drop_foreign_key.exists.require')",
+      "ok": true,
+      "detail": "findings=[{'action': 'drop_foreign_key', 'exists': False, 'name': 'fk_absent', 'table': 't11c'}] expected_subset={'table': 't11c', 'name': 'fk_absent', 'exists': False}"
+    },
+    {
+      "name": "teardown drop-t11c return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    }
+  ],
+  "status": "pass",
+  "command": [
+    "/Users/fan/GolangProjects/DeltaScope/docs/verification/t13r3/01525861559b5486e6f084265ed561451cc8f6d6/golden/T11/T11/bin/deltascope",
+    "audit",
+    "--dialect",
+    "mysql",
+    "--sql",
+    "ALTER TABLE t11c DROP FOREIGN KEY fk_absent;",
+    "--config",
+    "/Users/fan/GolangProjects/DeltaScope/docs/verification/t13r3/01525861559b5486e6f084265ed561451cc8f6d6/golden/T11/T11/golden-policy-t11-fk-exists.yaml",
+    "--format",
+    "json",
+    "--host",
+    "127.0.0.1",
+    "--port",
+    "23380",
+    "--user",
+    "root",
+    "--password-env",
+    "DS_T11_GOLDEN_PW",
+    "--schema",
+    "golden"
+  ]
+}

@@ -1,0 +1,183 @@
+{
+  "case_id": "T12.db.mysql57.ddl",
+  "kind": "db_ddl",
+  "anchor": "mysql57",
+  "input_sql": [
+    "CREATE TABLE t12g (id INT, v INT, CONSTRAINT chk_id CHECK (id > 0), CONSTRAINT chk_v CHECK (v > 0))",
+    "ALTER TABLE t12g ADD COLUMN w INT",
+    "INSERT INTO t12g VALUES (1, 1, 1)",
+    "DROP TABLE t12g"
+  ],
+  "expected": {
+    "steps": [
+      {
+        "name": "create-check-table",
+        "rc": 0,
+        "verify": [
+          {
+            "assert": "fixture table lands on every anchor arm",
+            "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t12g'",
+            "expect": "1"
+          }
+        ]
+      },
+      {
+        "name": "add-plain-column",
+        "rc": 0,
+        "verify": [
+          {
+            "assert": "column lands",
+            "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t12g'",
+            "expect": "3"
+          }
+        ]
+      },
+      {
+        "name": "insert-clean-row",
+        "rc": 0,
+        "verify": [
+          {
+            "assert": "clean row lands under every arm",
+            "sql": "SELECT COUNT(*) FROM golden.t12g",
+            "expect": "1"
+          }
+        ]
+      },
+      {
+        "name": "drop-fixture",
+        "rc": 0,
+        "verify": [
+          {
+            "assert": "fixture dropped",
+            "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t12g'",
+            "expect": "0"
+          }
+        ]
+      }
+    ]
+  },
+  "actual": {
+    "steps": [
+      {
+        "name": "create-check-table",
+        "sql": "CREATE TABLE t12g (id INT, v INT, CONSTRAINT chk_id CHECK (id > 0), CONSTRAINT chk_v CHECK (v > 0))",
+        "verify": [
+          {
+            "assert": "fixture table lands on every anchor arm",
+            "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t12g'",
+            "rc": 0,
+            "output": "1",
+            "stderr": ""
+          }
+        ],
+        "rc": 0,
+        "stdout": "",
+        "stderr": ""
+      },
+      {
+        "name": "add-plain-column",
+        "sql": "ALTER TABLE t12g ADD COLUMN w INT",
+        "verify": [
+          {
+            "assert": "column lands",
+            "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t12g'",
+            "rc": 0,
+            "output": "3",
+            "stderr": ""
+          }
+        ],
+        "rc": 0,
+        "stdout": "",
+        "stderr": ""
+      },
+      {
+        "name": "insert-clean-row",
+        "sql": "INSERT INTO t12g VALUES (1, 1, 1)",
+        "verify": [
+          {
+            "assert": "clean row lands under every arm",
+            "sql": "SELECT COUNT(*) FROM golden.t12g",
+            "rc": 0,
+            "output": "1",
+            "stderr": ""
+          }
+        ],
+        "rc": 0,
+        "stdout": "",
+        "stderr": ""
+      },
+      {
+        "name": "drop-fixture",
+        "sql": "DROP TABLE t12g",
+        "verify": [
+          {
+            "assert": "fixture dropped",
+            "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t12g'",
+            "rc": 0,
+            "output": "0",
+            "stderr": ""
+          }
+        ],
+        "rc": 0,
+        "stdout": "",
+        "stderr": ""
+      }
+    ],
+    "database": {
+      "product": "mysql",
+      "image": "mysql:5.7.44",
+      "image_digest": "mysql@sha256:4bc6bc963e6d8443453676cae56536f4b8156d78bae03c0145cbe47c2aad73bb",
+      "container": "deltascope-ddl-golden-mysql57",
+      "reachable": true,
+      "version": "5.7.44"
+    }
+  },
+  "assertions": [
+    {
+      "name": "database reachable with expected version",
+      "ok": true,
+      "detail": "SELECT VERSION() rc=0 version='5.7.44' expected_contains='5.7.44'"
+    },
+    {
+      "name": "create-check-table return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "create-check-table: fixture table lands on every anchor arm",
+      "ok": true,
+      "detail": "rc=0 output='1' expected='1'"
+    },
+    {
+      "name": "add-plain-column return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "add-plain-column: column lands",
+      "ok": true,
+      "detail": "rc=0 output='3' expected='3'"
+    },
+    {
+      "name": "insert-clean-row return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "insert-clean-row: clean row lands under every arm",
+      "ok": true,
+      "detail": "rc=0 output='1' expected='1'"
+    },
+    {
+      "name": "drop-fixture return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "drop-fixture: fixture dropped",
+      "ok": true,
+      "detail": "rc=0 output='0' expected='0'"
+    }
+  ],
+  "status": "pass"
+}

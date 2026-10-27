@@ -1,0 +1,572 @@
+{
+  "case_id": "T11.db.mysql84.ddl",
+  "kind": "db_ddl",
+  "anchor": "mysql84",
+  "input_sql": [
+    "CREATE TABLE golden_p (id INT PRIMARY KEY)",
+    "CREATE TABLE golden_c (a INT, b INT, x INT)",
+    "ALTER TABLE golden_c ADD CONSTRAINT fk_a FOREIGN KEY (a) REFERENCES golden_p(id)",
+    "CREATE TABLE golden_r (y INT, z INT, PRIMARY KEY (y, z))",
+    "ALTER TABLE golden_c ADD CONSTRAINT fk_bx FOREIGN KEY (b, x) REFERENCES golden_r (y, z) ON DELETE SET NULL ON UPDATE CASCADE",
+    "CREATE TABLE golden_c2 (q INT)",
+    "ALTER TABLE golden_c2 ADD FOREIGN KEY (q) REFERENCES golden_p(id)",
+    "ALTER TABLE golden_c ADD CONSTRAINT fk_a FOREIGN KEY (x) REFERENCES golden_p(id)",
+    "ALTER TABLE golden_c ADD CONSTRAINT fk_missing FOREIGN KEY (no_such_col) REFERENCES golden_p(id)",
+    "ALTER TABLE golden_c DROP FOREIGN KEY fk_a",
+    "ALTER TABLE golden_c DROP INDEX fk_bx",
+    "DROP TABLE golden_c, golden_c2, golden_r, golden_p"
+  ],
+  "expected": {
+    "steps": [
+      {
+        "name": "create-parent",
+        "rc": 0,
+        "verify": [
+          {
+            "assert": "parent table exists",
+            "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='golden_p'",
+            "expect": "1"
+          }
+        ]
+      },
+      {
+        "name": "create-child",
+        "rc": 0,
+        "verify": [
+          {
+            "assert": "child table exists",
+            "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='golden_c'",
+            "expect": "1"
+          }
+        ]
+      },
+      {
+        "name": "add-named-fk",
+        "rc": 0,
+        "verify": [
+          {
+            "assert": "fk constraint row exists",
+            "sql": "SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='golden_c' AND CONSTRAINT_TYPE='FOREIGN KEY' AND CONSTRAINT_NAME='fk_a'",
+            "expect": "1"
+          },
+          {
+            "assert": "implicit supporting index named after constraint",
+            "sql": "SELECT COUNT(DISTINCT INDEX_NAME) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='golden_c' AND INDEX_NAME='fk_a'",
+            "expect": "1"
+          },
+          {
+            "assert": "ordered local and referenced columns",
+            "sql": "SELECT COUNT(*) FROM information_schema.KEY_COLUMN_USAGE WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='golden_c' AND CONSTRAINT_NAME='fk_a' AND COLUMN_NAME='a' AND REFERENCED_TABLE_NAME='golden_p' AND REFERENCED_COLUMN_NAME='id'",
+            "expect": "1"
+          }
+        ]
+      },
+      {
+        "name": "create-ref-composite",
+        "rc": 0,
+        "verify": [
+          {
+            "assert": "composite ref table exists",
+            "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='golden_r'",
+            "expect": "1"
+          }
+        ]
+      },
+      {
+        "name": "add-composite-fk-actions",
+        "rc": 0,
+        "verify": [
+          {
+            "assert": "composite key parts keep ordinal order",
+            "sql": "SELECT GROUP_CONCAT(CONCAT(COLUMN_NAME, '->', REFERENCED_COLUMN_NAME) ORDER BY ORDINAL_POSITION) FROM information_schema.KEY_COLUMN_USAGE WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='golden_c' AND CONSTRAINT_NAME='fk_bx'",
+            "expect": "b->y,x->z"
+          },
+          {
+            "assert": "referential actions recorded in catalog",
+            "sql": "SELECT CONCAT(DELETE_RULE, '/', UPDATE_RULE) FROM information_schema.REFERENTIAL_CONSTRAINTS WHERE CONSTRAINT_SCHEMA='golden' AND TABLE_NAME='golden_c' AND CONSTRAINT_NAME='fk_bx'",
+            "expect": "SET NULL/CASCADE"
+          }
+        ]
+      },
+      {
+        "name": "create-child-bare",
+        "rc": 0,
+        "verify": [
+          {
+            "assert": "bare-fk child exists",
+            "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='golden_c2'",
+            "expect": "1"
+          }
+        ]
+      },
+      {
+        "name": "add-bare-fk-derived-name",
+        "rc": 0,
+        "verify": [
+          {
+            "assert": "exactly one fk constraint lands",
+            "sql": "SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='golden_c2' AND CONSTRAINT_TYPE='FOREIGN KEY'",
+            "expect": "1"
+          },
+          {
+            "assert": "one supporting index exists",
+            "sql": "SELECT COUNT(DISTINCT INDEX_NAME) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='golden_c2'",
+            "expect": "1"
+          }
+        ]
+      },
+      {
+        "name": "dup-fk-name-refused",
+        "rc": 1,
+        "verify": [
+          {
+            "assert": "constraint count unchanged by refused duplicate",
+            "sql": "SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='golden_c' AND CONSTRAINT_TYPE='FOREIGN KEY'",
+            "expect": "2"
+          }
+        ]
+      },
+      {
+        "name": "add-fk-missing-column-refused",
+        "rc": 1,
+        "verify": [
+          {
+            "assert": "no fk added on missing column",
+            "sql": "SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='golden_c' AND CONSTRAINT_NAME='fk_missing'",
+            "expect": "0"
+          }
+        ]
+      },
+      {
+        "name": "drop-fk-keeps-index",
+        "rc": 0,
+        "verify": [
+          {
+            "assert": "constraint removed",
+            "sql": "SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='golden_c' AND CONSTRAINT_NAME='fk_a'",
+            "expect": "0"
+          },
+          {
+            "assert": "supporting index survives constraint drop",
+            "sql": "SELECT COUNT(DISTINCT INDEX_NAME) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='golden_c' AND INDEX_NAME='fk_a'",
+            "expect": "1"
+          }
+        ]
+      },
+      {
+        "name": "drop-needed-index-refused",
+        "rc": 1,
+        "verify": [
+          {
+            "assert": "needed index survives refused drop",
+            "sql": "SELECT COUNT(DISTINCT INDEX_NAME) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='golden_c' AND INDEX_NAME='fk_bx'",
+            "expect": "1"
+          }
+        ]
+      },
+      {
+        "name": "drop-fixtures",
+        "rc": 0,
+        "verify": [
+          {
+            "assert": "fixtures dropped",
+            "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME IN ('golden_c','golden_c2','golden_r','golden_p')",
+            "expect": "0"
+          }
+        ]
+      }
+    ]
+  },
+  "actual": {
+    "steps": [
+      {
+        "name": "create-parent",
+        "sql": "CREATE TABLE golden_p (id INT PRIMARY KEY)",
+        "verify": [
+          {
+            "assert": "parent table exists",
+            "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='golden_p'",
+            "rc": 0,
+            "output": "1",
+            "stderr": ""
+          }
+        ],
+        "rc": 0,
+        "stdout": "",
+        "stderr": ""
+      },
+      {
+        "name": "create-child",
+        "sql": "CREATE TABLE golden_c (a INT, b INT, x INT)",
+        "verify": [
+          {
+            "assert": "child table exists",
+            "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='golden_c'",
+            "rc": 0,
+            "output": "1",
+            "stderr": ""
+          }
+        ],
+        "rc": 0,
+        "stdout": "",
+        "stderr": ""
+      },
+      {
+        "name": "add-named-fk",
+        "sql": "ALTER TABLE golden_c ADD CONSTRAINT fk_a FOREIGN KEY (a) REFERENCES golden_p(id)",
+        "verify": [
+          {
+            "assert": "fk constraint row exists",
+            "sql": "SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='golden_c' AND CONSTRAINT_TYPE='FOREIGN KEY' AND CONSTRAINT_NAME='fk_a'",
+            "rc": 0,
+            "output": "1",
+            "stderr": ""
+          },
+          {
+            "assert": "implicit supporting index named after constraint",
+            "sql": "SELECT COUNT(DISTINCT INDEX_NAME) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='golden_c' AND INDEX_NAME='fk_a'",
+            "rc": 0,
+            "output": "1",
+            "stderr": ""
+          },
+          {
+            "assert": "ordered local and referenced columns",
+            "sql": "SELECT COUNT(*) FROM information_schema.KEY_COLUMN_USAGE WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='golden_c' AND CONSTRAINT_NAME='fk_a' AND COLUMN_NAME='a' AND REFERENCED_TABLE_NAME='golden_p' AND REFERENCED_COLUMN_NAME='id'",
+            "rc": 0,
+            "output": "1",
+            "stderr": ""
+          }
+        ],
+        "rc": 0,
+        "stdout": "",
+        "stderr": ""
+      },
+      {
+        "name": "create-ref-composite",
+        "sql": "CREATE TABLE golden_r (y INT, z INT, PRIMARY KEY (y, z))",
+        "verify": [
+          {
+            "assert": "composite ref table exists",
+            "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='golden_r'",
+            "rc": 0,
+            "output": "1",
+            "stderr": ""
+          }
+        ],
+        "rc": 0,
+        "stdout": "",
+        "stderr": ""
+      },
+      {
+        "name": "add-composite-fk-actions",
+        "sql": "ALTER TABLE golden_c ADD CONSTRAINT fk_bx FOREIGN KEY (b, x) REFERENCES golden_r (y, z) ON DELETE SET NULL ON UPDATE CASCADE",
+        "verify": [
+          {
+            "assert": "composite key parts keep ordinal order",
+            "sql": "SELECT GROUP_CONCAT(CONCAT(COLUMN_NAME, '->', REFERENCED_COLUMN_NAME) ORDER BY ORDINAL_POSITION) FROM information_schema.KEY_COLUMN_USAGE WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='golden_c' AND CONSTRAINT_NAME='fk_bx'",
+            "rc": 0,
+            "output": "b->y,x->z",
+            "stderr": ""
+          },
+          {
+            "assert": "referential actions recorded in catalog",
+            "sql": "SELECT CONCAT(DELETE_RULE, '/', UPDATE_RULE) FROM information_schema.REFERENTIAL_CONSTRAINTS WHERE CONSTRAINT_SCHEMA='golden' AND TABLE_NAME='golden_c' AND CONSTRAINT_NAME='fk_bx'",
+            "rc": 0,
+            "output": "SET NULL/CASCADE",
+            "stderr": ""
+          }
+        ],
+        "rc": 0,
+        "stdout": "",
+        "stderr": ""
+      },
+      {
+        "name": "create-child-bare",
+        "sql": "CREATE TABLE golden_c2 (q INT)",
+        "verify": [
+          {
+            "assert": "bare-fk child exists",
+            "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='golden_c2'",
+            "rc": 0,
+            "output": "1",
+            "stderr": ""
+          }
+        ],
+        "rc": 0,
+        "stdout": "",
+        "stderr": ""
+      },
+      {
+        "name": "add-bare-fk-derived-name",
+        "sql": "ALTER TABLE golden_c2 ADD FOREIGN KEY (q) REFERENCES golden_p(id)",
+        "verify": [
+          {
+            "assert": "exactly one fk constraint lands",
+            "sql": "SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='golden_c2' AND CONSTRAINT_TYPE='FOREIGN KEY'",
+            "rc": 0,
+            "output": "1",
+            "stderr": ""
+          },
+          {
+            "assert": "one supporting index exists",
+            "sql": "SELECT COUNT(DISTINCT INDEX_NAME) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='golden_c2'",
+            "rc": 0,
+            "output": "1",
+            "stderr": ""
+          }
+        ],
+        "rc": 0,
+        "stdout": "",
+        "stderr": ""
+      },
+      {
+        "name": "dup-fk-name-refused",
+        "sql": "ALTER TABLE golden_c ADD CONSTRAINT fk_a FOREIGN KEY (x) REFERENCES golden_p(id)",
+        "verify": [
+          {
+            "assert": "constraint count unchanged by refused duplicate",
+            "sql": "SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='golden_c' AND CONSTRAINT_TYPE='FOREIGN KEY'",
+            "rc": 0,
+            "output": "2",
+            "stderr": ""
+          }
+        ],
+        "rc": 1,
+        "stdout": "",
+        "stderr": "ERROR 1061 (42000) at line 1: Duplicate key name 'fk_a'"
+      },
+      {
+        "name": "add-fk-missing-column-refused",
+        "sql": "ALTER TABLE golden_c ADD CONSTRAINT fk_missing FOREIGN KEY (no_such_col) REFERENCES golden_p(id)",
+        "verify": [
+          {
+            "assert": "no fk added on missing column",
+            "sql": "SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='golden_c' AND CONSTRAINT_NAME='fk_missing'",
+            "rc": 0,
+            "output": "0",
+            "stderr": ""
+          }
+        ],
+        "rc": 1,
+        "stdout": "",
+        "stderr": "ERROR 1072 (42000) at line 1: Key column 'no_such_col' doesn't exist in table"
+      },
+      {
+        "name": "drop-fk-keeps-index",
+        "sql": "ALTER TABLE golden_c DROP FOREIGN KEY fk_a",
+        "verify": [
+          {
+            "assert": "constraint removed",
+            "sql": "SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='golden_c' AND CONSTRAINT_NAME='fk_a'",
+            "rc": 0,
+            "output": "0",
+            "stderr": ""
+          },
+          {
+            "assert": "supporting index survives constraint drop",
+            "sql": "SELECT COUNT(DISTINCT INDEX_NAME) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='golden_c' AND INDEX_NAME='fk_a'",
+            "rc": 0,
+            "output": "1",
+            "stderr": ""
+          }
+        ],
+        "rc": 0,
+        "stdout": "",
+        "stderr": ""
+      },
+      {
+        "name": "drop-needed-index-refused",
+        "sql": "ALTER TABLE golden_c DROP INDEX fk_bx",
+        "verify": [
+          {
+            "assert": "needed index survives refused drop",
+            "sql": "SELECT COUNT(DISTINCT INDEX_NAME) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='golden_c' AND INDEX_NAME='fk_bx'",
+            "rc": 0,
+            "output": "1",
+            "stderr": ""
+          }
+        ],
+        "rc": 1,
+        "stdout": "",
+        "stderr": "ERROR 1553 (HY000) at line 1: Cannot drop index 'fk_bx': needed in a foreign key constraint"
+      },
+      {
+        "name": "drop-fixtures",
+        "sql": "DROP TABLE golden_c, golden_c2, golden_r, golden_p",
+        "verify": [
+          {
+            "assert": "fixtures dropped",
+            "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME IN ('golden_c','golden_c2','golden_r','golden_p')",
+            "rc": 0,
+            "output": "0",
+            "stderr": ""
+          }
+        ],
+        "rc": 0,
+        "stdout": "",
+        "stderr": ""
+      }
+    ],
+    "database": {
+      "product": "mysql",
+      "image": "mysql:8.4.10",
+      "image_digest": "mysql@sha256:c592c15aaf4a1961e15d82eb31ea5987dda862d1c4b1e93424438c0e91dc1f8d",
+      "container": "deltascope-ddl-golden-mysql84",
+      "reachable": true,
+      "version": "8.4.10"
+    }
+  },
+  "assertions": [
+    {
+      "name": "database reachable with expected version",
+      "ok": true,
+      "detail": "SELECT VERSION() rc=0 version='8.4.10' expected_contains='8.4.10'"
+    },
+    {
+      "name": "create-parent return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "create-parent: parent table exists",
+      "ok": true,
+      "detail": "rc=0 output='1' expected='1'"
+    },
+    {
+      "name": "create-child return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "create-child: child table exists",
+      "ok": true,
+      "detail": "rc=0 output='1' expected='1'"
+    },
+    {
+      "name": "add-named-fk return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "add-named-fk: fk constraint row exists",
+      "ok": true,
+      "detail": "rc=0 output='1' expected='1'"
+    },
+    {
+      "name": "add-named-fk: implicit supporting index named after constraint",
+      "ok": true,
+      "detail": "rc=0 output='1' expected='1'"
+    },
+    {
+      "name": "add-named-fk: ordered local and referenced columns",
+      "ok": true,
+      "detail": "rc=0 output='1' expected='1'"
+    },
+    {
+      "name": "create-ref-composite return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "create-ref-composite: composite ref table exists",
+      "ok": true,
+      "detail": "rc=0 output='1' expected='1'"
+    },
+    {
+      "name": "add-composite-fk-actions return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "add-composite-fk-actions: composite key parts keep ordinal order",
+      "ok": true,
+      "detail": "rc=0 output='b->y,x->z' expected='b->y,x->z'"
+    },
+    {
+      "name": "add-composite-fk-actions: referential actions recorded in catalog",
+      "ok": true,
+      "detail": "rc=0 output='SET NULL/CASCADE' expected='SET NULL/CASCADE'"
+    },
+    {
+      "name": "create-child-bare return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "create-child-bare: bare-fk child exists",
+      "ok": true,
+      "detail": "rc=0 output='1' expected='1'"
+    },
+    {
+      "name": "add-bare-fk-derived-name return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "add-bare-fk-derived-name: exactly one fk constraint lands",
+      "ok": true,
+      "detail": "rc=0 output='1' expected='1'"
+    },
+    {
+      "name": "add-bare-fk-derived-name: one supporting index exists",
+      "ok": true,
+      "detail": "rc=0 output='1' expected='1'"
+    },
+    {
+      "name": "dup-fk-name-refused return code",
+      "ok": true,
+      "detail": "rc=1 expected=1 stderr=\"ERROR 1061 (42000) at line 1: Duplicate key name 'fk_a'\""
+    },
+    {
+      "name": "dup-fk-name-refused: constraint count unchanged by refused duplicate",
+      "ok": true,
+      "detail": "rc=0 output='2' expected='2'"
+    },
+    {
+      "name": "add-fk-missing-column-refused return code",
+      "ok": true,
+      "detail": "rc=1 expected=1 stderr=\"ERROR 1072 (42000) at line 1: Key column 'no_such_col' doesn't exist in table\""
+    },
+    {
+      "name": "add-fk-missing-column-refused: no fk added on missing column",
+      "ok": true,
+      "detail": "rc=0 output='0' expected='0'"
+    },
+    {
+      "name": "drop-fk-keeps-index return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "drop-fk-keeps-index: constraint removed",
+      "ok": true,
+      "detail": "rc=0 output='0' expected='0'"
+    },
+    {
+      "name": "drop-fk-keeps-index: supporting index survives constraint drop",
+      "ok": true,
+      "detail": "rc=0 output='1' expected='1'"
+    },
+    {
+      "name": "drop-needed-index-refused return code",
+      "ok": true,
+      "detail": "rc=1 expected=1 stderr=\"ERROR 1553 (HY000) at line 1: Cannot drop index 'fk_bx': needed in a foreign key constraint\""
+    },
+    {
+      "name": "drop-needed-index-refused: needed index survives refused drop",
+      "ok": true,
+      "detail": "rc=0 output='1' expected='1'"
+    },
+    {
+      "name": "drop-fixtures return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "drop-fixtures: fixtures dropped",
+      "ok": true,
+      "detail": "rc=0 output='0' expected='0'"
+    }
+  ],
+  "status": "pass"
+}

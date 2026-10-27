@@ -1,0 +1,54 @@
+{
+  "case_id": "T09.clierr.policy-invalid",
+  "kind": "cli_error",
+  "cli_case": "policy-invalid",
+  "dialect": "mysql",
+  "input_sql": "CREATE INDEX i1 ON t9(a);",
+  "policy_profile": "all-rules-disabled",
+  "policy_path": "/Users/fan/GolangProjects/DeltaScope/docs/verification/t13r3/01525861559b5486e6f084265ed561451cc8f6d6/golden/T09/T09/golden-policy-all-off.yaml",
+  "command": [
+    "/Users/fan/GolangProjects/DeltaScope/docs/verification/t13r3/01525861559b5486e6f084265ed561451cc8f6d6/golden/T09/T09/bin/deltascope",
+    "audit",
+    "--dialect",
+    "mysql",
+    "--sql",
+    "CREATE INDEX i1 ON t9(a);",
+    "--config",
+    "/Users/fan/GolangProjects/DeltaScope/docs/verification/t13r3/01525861559b5486e6f084265ed561451cc8f6d6/golden/T09/T09/golden-policy-all-off.yaml",
+    "--format",
+    "json",
+    "--config",
+    "/nonexistent-t09-policy.yaml"
+  ],
+  "expected": {
+    "exit": 2,
+    "stderr_contains": [
+      "load policy"
+    ]
+  },
+  "actual": {
+    "exit": 2,
+    "stdout": "",
+    "stderr": "load policy: read policy config \"/nonexistent-t09-policy.yaml\": open /nonexistent-t09-policy.yaml: no such file or directory\n",
+    "version_evidence": {
+      "target_raw": null,
+      "target_canonical": null,
+      "observed_raw": null,
+      "observed_canonical": null,
+      "resolved": null
+    }
+  },
+  "assertions": [
+    {
+      "name": "exit code",
+      "ok": true,
+      "detail": "rc=2 expected=2"
+    },
+    {
+      "name": "stderr contains 'load policy'",
+      "ok": true,
+      "detail": "stderr='load policy: read policy config \"/nonexistent-t09-policy.yaml\": open /nonexistent-t09-policy.yaml: no such file or directory' marker='load policy'"
+    }
+  ],
+  "status": "pass"
+}

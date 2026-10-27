@@ -1,0 +1,18 @@
+go-build:            go build ./...
+go-test:             go test ./... -count=1
+go-race:             go test -race ./internal/application/audit/ ./internal/domain/rule/ddl/ -count=1
+go-vet:              go vet ./...
+gofmt:               gofmt -l ./cmd ./internal ./pkg (expect the two T07 baseline files only)
+lint:                golangci-lint run ./...
+ddl-coverage-catalog-test: go test ./internal/application/audit -run TestDDLCoverageCatalog -count=1
+ddl-golden-validator-test: make ddl-golden-validator-test
+ddl-inventory-gate:  make ddl-inventory-gate
+decision-record-gate: make decision-record-gate
+docs-example-gates:  make docs-example-gates
+parser-unsupported-contract-test: make parser-error-unsupported-contract-test
+unsupported-diagnostics-evidence-test: make unsupported-diagnostics-evidence-test
+pg-unit-test-gates:  make pg-unit-test-gates
+pg-confidence-gates: make pg-confidence-gates
+query-access-corpus-gates: make query-access-corpus-gates
+sql-corpus-gates:    make sql-corpus-gates
+release-dialect-hygiene-gates: make release-dialect-hygiene-gates

@@ -1,0 +1,294 @@
+{
+  "case_id": "T12.meta.t12-mysql57-ignored",
+  "kind": "cli_metadata",
+  "cli_case": "t12-mysql57-ignored",
+  "anchor": "mysql57",
+  "dialect": "mysql",
+  "input_sql": "CREATE TABLE t57 (id INT, CONSTRAINT chk_ign CHECK (id > 0));",
+  "policy_profile": "t12-all",
+  "policy_path": "/Users/fan/GolangProjects/DeltaScope/docs/verification/t13r3/01525861559b5486e6f084265ed561451cc8f6d6/golden/T12/T12/golden-policy-t12-all.yaml",
+  "connect": {
+    "host": "127.0.0.1",
+    "port": 23357,
+    "user": "root",
+    "schema": "golden",
+    "password_env": "DS_T12_GOLDEN_PW"
+  },
+  "expected": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "evidence_gaps": 0,
+    "finding_entries": [
+      {
+        "index": 0,
+        "rule_id": "ddl.constraint.check.ignored.notice",
+        "level": "warning"
+      }
+    ],
+    "finding_metadata": [
+      {
+        "index": 0,
+        "rule_id": "ddl.constraint.check.ignored.notice",
+        "metadata": {
+          "table": "t57",
+          "constraint": "chk_ign",
+          "enforced": "ignored"
+        }
+      }
+    ],
+    "version": {
+      "product": "mysql",
+      "version": "5.7.44"
+    }
+  },
+  "actual": {
+    "database": {
+      "product": "mysql",
+      "image": "mysql:5.7.44",
+      "image_digest": "mysql@sha256:4bc6bc963e6d8443453676cae56536f4b8156d78bae03c0145cbe47c2aad73bb",
+      "container": "deltascope-ddl-golden-mysql57",
+      "reachable": true,
+      "version": "5.7.44"
+    },
+    "setup": [],
+    "post_verify": [],
+    "execute": [
+      {
+        "name": "native-accepts-but-stores-nothing",
+        "sql": "CREATE TABLE t57 (id INT, CONSTRAINT chk_ign CHECK (id > 0));",
+        "rc": 0,
+        "stdout": "",
+        "stderr": "",
+        "verify": [
+          {
+            "assert": "5.7 silently drops the declaration",
+            "sql": "SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA='golden' AND CONSTRAINT_TYPE='CHECK'",
+            "rc": 0,
+            "output": "0",
+            "stderr": ""
+          }
+        ]
+      },
+      {
+        "name": "violating-row-lands",
+        "sql": "INSERT INTO t57 VALUES (-1);",
+        "rc": 0,
+        "stdout": "",
+        "stderr": ""
+      }
+    ],
+    "structure": [],
+    "teardown": [
+      {
+        "name": "drop-t57",
+        "sql": "DROP TABLE IF EXISTS t57;",
+        "rc": 0,
+        "stderr": ""
+      }
+    ],
+    "exit": 0,
+    "stdout": "{\"verdict\":\"review\",\"coverage\":{\"status\":\"complete\"},\"summary\":{\"statements\":1,\"blockers\":0,\"warnings\":1,\"notices\":0},\"statements\":[{\"index\":0,\"kind\":\"ddl\",\"raw_sql\":\"CREATE TABLE t57 (id INT, CONSTRAINT chk_ign CHECK (id \\u003e 0));\",\"normalized_sql\":\"CREATE TABLE t57 (id INT, CONSTRAINT chk_ign CHECK (id \\u003e 0))\",\"findings\":[{\"rule_id\":\"ddl.constraint.check.ignored.notice\",\"level\":\"warning\",\"message\":\"check constraint \\\"chk_ign\\\" on table \\\"t57\\\" is parsed but ignored on this product\",\"statement_kind\":\"ddl\",\"location\":{\"line\":1,\"column\":1},\"suggestion\":\"verify the target product actually enforces check constraints before relying on this declaration\",\"metadata\":{\"constraint\":\"chk_ign\",\"enforced\":\"ignored\",\"table\":\"t57\"},\"explanation\":{\"summary\":\"Check DDL constraint check ignored notice\",\"why\":\"The statement matched the shipped governance rule for this pattern.\",\"risk\":\"Ignoring this rule can hide live-schema or instance-state risks that only metadata reveals.\",\"suggestion\":\"verify the target product actually enforces check constraints before relying on this declaration\",\"metadata\":{\"status\":\"available\",\"note\":\"Live metadata is available, so this explanation can use schema or instance facts for a more accurate judgment.\"}}}],\"coverage\":{\"status\":\"complete\"}}],\"version\":{\"product\":\"mysql\",\"version\":\"5.7.44\",\"major\":5,\"minor\":7,\"patch\":44,\"source\":\"observed\",\"validated_range\":true},\"fail_on_triggered\":false,\"rule_summary\":{\"loaded\":5,\"applicable\":1,\"skipped\":[]},\"context\":{\"mode\":\"metadata-aware\",\"dialect\":\"mysql\",\"dialect_source\":\"detected\",\"schema\":\"golden\",\"schema_source\":\"flag\"}}\n",
+    "stderr": "",
+    "parsed": {
+      "verdict": "review",
+      "coverage": {
+        "status": "complete"
+      },
+      "summary": {
+        "statements": 1,
+        "blockers": 0,
+        "warnings": 1,
+        "notices": 0
+      },
+      "statements": [
+        {
+          "index": 0,
+          "kind": "ddl",
+          "raw_sql": "CREATE TABLE t57 (id INT, CONSTRAINT chk_ign CHECK (id > 0));",
+          "normalized_sql": "CREATE TABLE t57 (id INT, CONSTRAINT chk_ign CHECK (id > 0))",
+          "findings": [
+            {
+              "rule_id": "ddl.constraint.check.ignored.notice",
+              "level": "warning",
+              "message": "check constraint \"chk_ign\" on table \"t57\" is parsed but ignored on this product",
+              "statement_kind": "ddl",
+              "location": {
+                "line": 1,
+                "column": 1
+              },
+              "suggestion": "verify the target product actually enforces check constraints before relying on this declaration",
+              "metadata": {
+                "constraint": "chk_ign",
+                "enforced": "ignored",
+                "table": "t57"
+              },
+              "explanation": {
+                "summary": "Check DDL constraint check ignored notice",
+                "why": "The statement matched the shipped governance rule for this pattern.",
+                "risk": "Ignoring this rule can hide live-schema or instance-state risks that only metadata reveals.",
+                "suggestion": "verify the target product actually enforces check constraints before relying on this declaration",
+                "metadata": {
+                  "status": "available",
+                  "note": "Live metadata is available, so this explanation can use schema or instance facts for a more accurate judgment."
+                }
+              }
+            }
+          ],
+          "coverage": {
+            "status": "complete"
+          }
+        }
+      ],
+      "version": {
+        "product": "mysql",
+        "version": "5.7.44",
+        "major": 5,
+        "minor": 7,
+        "patch": 44,
+        "source": "observed",
+        "validated_range": true
+      },
+      "fail_on_triggered": false,
+      "rule_summary": {
+        "loaded": 5,
+        "applicable": 1,
+        "skipped": []
+      },
+      "context": {
+        "mode": "metadata-aware",
+        "dialect": "mysql",
+        "dialect_source": "detected",
+        "schema": "golden",
+        "schema_source": "flag"
+      }
+    },
+    "version_evidence": {
+      "target_raw": null,
+      "target_canonical": null,
+      "observed_raw": "5.7.44",
+      "observed_canonical": {
+        "product": "mysql",
+        "version": "5.7.44"
+      },
+      "resolved": {
+        "product": "mysql",
+        "version": "5.7.44",
+        "major": 5,
+        "minor": 7,
+        "patch": 44,
+        "source": "observed",
+        "validated_range": true
+      }
+    }
+  },
+  "assertions": [
+    {
+      "name": "database reachable with expected version",
+      "ok": true,
+      "detail": "SELECT VERSION() rc=0 version='5.7.44' expected_contains='5.7.44'"
+    },
+    {
+      "name": "exit code",
+      "ok": true,
+      "detail": "rc=0 expected=0"
+    },
+    {
+      "name": "verdict",
+      "ok": true,
+      "detail": "verdict='review'"
+    },
+    {
+      "name": "top-level statements",
+      "ok": true,
+      "detail": "statements=1 expected=1"
+    },
+    {
+      "name": "zero findings",
+      "ok": true,
+      "detail": "findings=1"
+    },
+    {
+      "name": "no diagnostics",
+      "ok": true,
+      "detail": "diagnostics=[]"
+    },
+    {
+      "name": "no unsupported",
+      "ok": true,
+      "detail": "unsupported=[]"
+    },
+    {
+      "name": "aggregate coverage",
+      "ok": true,
+      "detail": "coverage='complete'"
+    },
+    {
+      "name": "evidence gap count",
+      "ok": true,
+      "detail": "gaps=0"
+    },
+    {
+      "name": "finding entries",
+      "ok": true,
+      "detail": "findings=[(0, 'ddl.constraint.check.ignored.notice', 'warning')] expected=[(0, 'ddl.constraint.check.ignored.notice', 'warning')]"
+    },
+    {
+      "name": "finding metadata (0, 'ddl.constraint.check.ignored.notice')",
+      "ok": true,
+      "detail": "findings=[{'constraint': 'chk_ign', 'enforced': 'ignored', 'table': 't57'}] expected_subset={'table': 't57', 'constraint': 'chk_ign', 'enforced': 'ignored'}"
+    },
+    {
+      "name": "version identity",
+      "ok": true,
+      "detail": "version={'product': 'mysql', 'version': '5.7.44', 'major': 5, 'minor': 7, 'patch': 44, 'source': 'observed', 'validated_range': True} expected={'product': 'mysql', 'version': '5.7.44'}"
+    },
+    {
+      "name": "execute native-accepts-but-stores-nothing return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "execute native-accepts-but-stores-nothing: 5.7 silently drops the declaration",
+      "ok": true,
+      "detail": "rc=0 output='0' expected='0'"
+    },
+    {
+      "name": "execute violating-row-lands return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "teardown drop-t57 return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    }
+  ],
+  "status": "pass",
+  "command": [
+    "/Users/fan/GolangProjects/DeltaScope/docs/verification/t13r3/01525861559b5486e6f084265ed561451cc8f6d6/golden/T12/T12/bin/deltascope",
+    "audit",
+    "--dialect",
+    "mysql",
+    "--sql",
+    "CREATE TABLE t57 (id INT, CONSTRAINT chk_ign CHECK (id > 0));",
+    "--config",
+    "/Users/fan/GolangProjects/DeltaScope/docs/verification/t13r3/01525861559b5486e6f084265ed561451cc8f6d6/golden/T12/T12/golden-policy-t12-all.yaml",
+    "--format",
+    "json",
+    "--host",
+    "127.0.0.1",
+    "--port",
+    "23357",
+    "--user",
+    "root",
+    "--password-env",
+    "DS_T12_GOLDEN_PW",
+    "--schema",
+    "golden"
+  ]
+}
