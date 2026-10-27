@@ -42,6 +42,11 @@ var auditedAlterActionsMySQL = map[string]struct{}{
 	"set_column_default":    {},
 	"drop_column_default":   {},
 	"set_column_visibility": {},
+	// T13: destructive/data-moving partition actions are governed by the
+	// partition rules and modeled in ordered state on both dialects.
+	"drop_partition":     {},
+	"truncate_partition": {},
+	"exchange_partition": {},
 }
 
 // auditedAlterActionsTiDB extends the shared audited set with the TiDB

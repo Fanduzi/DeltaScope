@@ -493,6 +493,12 @@ func extractAlterTable(stmt *ast.AlterTableStmt, rawSQL string) *spec.DDL {
 			// the altered table's schema.
 			ddl.Targets = append(ddl.Targets, spec.Table{Schema: s.NewTable.Schema.L, Name: s.NewTable.Name.L})
 		}
+		if s.Tp == ast.AlterTableExchangePartition && s.NewTable != nil {
+			// The exchanged counterpart is an existing table identity, not a
+			// new name — EXCHANGE moves rows between it and the partition, so
+			// both sides must be governed and metadata-visible.
+			ddl.Targets = append(ddl.Targets, spec.Table{Schema: s.NewTable.Schema.L, Name: s.NewTable.Name.L})
+		}
 	}
 	if len(ddl.Targets) > 0 {
 		ddl.Targets = append([]spec.Table{*ddl.Table}, ddl.Targets...)
@@ -666,6 +672,29 @@ func extractAlterSpec(specification *ast.AlterTableSpec, clause string) spec.Alt
 	}
 	if index := extractAlterIndex(specification); index != nil {
 		alter.Index = index
+	}
+	if len(specification.PartitionNames) > 0 {
+		partitions := make([]string, 0, len(specification.PartitionNames))
+		for _, name := range specification.PartitionNames {
+			partitions = append(partitions, name.L)
+		}
+		alter.Partitions = partitions
+	}
+	if specification.OnAllPartitions {
+		alter.AllPartitions = true
+	}
+	if specification.Tp == ast.AlterTableExchangePartition {
+		if specification.NewTable != nil {
+			alter.ExchangeTable = &spec.Table{Schema: specification.NewTable.Schema.L, Name: specification.NewTable.Name.L}
+		}
+		// The AST collapses authored WITH VALIDATION and the absent clause
+		// into WithValidation=true, so "with" is the effective clause, not
+		// proof the keyword was written.
+		if specification.WithValidation {
+			alter.ExchangeValidation = "with"
+		} else {
+			alter.ExchangeValidation = "without"
+		}
 	}
 	options, unextracted := extractTableOptions(specification.Options)
 	if len(options) > 0 {
@@ -2306,6 +2335,8 @@ func extractAlterName(specification *ast.AlterTableSpec) string {
 		return specification.ToKey.L
 	case specification.IndexName.L != "":
 		return specification.IndexName.L
+	case len(specification.PartitionNames) > 0:
+		return specification.PartitionNames[0].L
 	case specification.Name != "":
 		return strings.ToLower(specification.Name)
 	default:

@@ -691,6 +691,14 @@ func (s *batchState) tidbAlterPrimaryKey() *bool {
 func (s *batchState) applyAlterTable(ctx context.Context, statement spec.Statement) error {
 	ddl := statement.DDL
 	targets := ddl.TableTargets()
+	// A partition action sharing a multi-spec ALTER is a proven refusal on
+	// every anchor: MySQL rejects partition ops inside the alter list at the
+	// grammar level (1064) and TiDB refuses the multi-schema change (8200).
+	// The statement can never execute, so the exact pre-state stands — no
+	// sibling action applies and no statistic moves.
+	if len(ddl.Alter) > 1 && hasPartitionAlterAction(ddl) {
+		return nil
+	}
 	// A multi-action ALTER is one statement: its net successor is the bounded
 	// dialect-parametrized model, or one tombstone — never a prefix of
 	// applied actions and never an action-by-action dispatch.
@@ -793,6 +801,10 @@ func (s *batchState) applyAlterTable(ctx context.Context, statement spec.Stateme
 	}
 	if alter.Action == "drop_primary_key" {
 		s.applyDropPrimaryKey(statement, targets)
+		return nil
+	}
+	if isPartitionAlterAction(alter.Action) {
+		s.applyPartitionOperation(targets)
 		return nil
 	}
 	if alter.Action != "add_columns" || alter.Column == nil || alter.Column.Definition == nil {
@@ -1189,6 +1201,49 @@ func (s *batchState) applyDMLMutation(statement spec.Statement) {
 		}
 		shape := cloneTableSnapshot(entry.shape)
 		clearMutationStats(shape)
+		s.entries[key] = &batchTableEntry{state: tablePresent, shape: shape, displaySchema: entry.displaySchema, displayTable: entry.displayTable}
+	}
+}
+
+// isPartitionAlterAction reports the T13 destructive/data-moving partition
+// actions. Other partition ops (ADD/REORGANIZE/COALESCE/maintenance) are T14
+// scope and stay unaudited aspects that invalidate via the fallback.
+func isPartitionAlterAction(action string) bool {
+	switch action {
+	case "drop_partition", "truncate_partition", "exchange_partition":
+		return true
+	default:
+		return false
+	}
+}
+
+func hasPartitionAlterAction(ddl *spec.DDL) bool {
+	for i := range ddl.Alter {
+		if isPartitionAlterAction(ddl.Alter[i].Action) {
+			return true
+		}
+	}
+	return false
+}
+
+// applyPartitionOperation publishes the shared successor for a single-action
+// partition ALTER. Member-level schema facts are invariant under every
+// outcome — partitions never add/remove/rename columns, indexes, or
+// constraints, and the engine refuses to remove the last partition, so
+// Partitioned cannot flip — while every data-derived statistic the action
+// could have moved or destroyed is dropped. EXCHANGE applies to both named
+// identities. Unknown or absent entries are left untouched: an unvouched
+// table is never upgraded by an unproven outcome.
+func (s *batchState) applyPartitionOperation(targets []spec.Table) {
+	for _, target := range targets {
+		key := s.keyFor(s.schema, target)
+		entry, ok := s.entries[key]
+		if !ok || entry.state != tablePresent || entry.shape == nil {
+			continue
+		}
+		shape := cloneTableSnapshot(entry.shape)
+		clearMutationStats(shape)
+		clearModifyAffectedStats(shape)
 		s.entries[key] = &batchTableEntry{state: tablePresent, shape: shape, displaySchema: entry.displaySchema, displayTable: entry.displayTable}
 	}
 }

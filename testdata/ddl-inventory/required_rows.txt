@@ -81,6 +81,7 @@ tidb.flashback-recover
 tidb.alter-table.columns
 tidb.alter-table.index-ops
 tidb.alter-table.fk-check
+tidb.alter-table.partition-destructive
 tidb.alter-table.partition-ops
 tidb.alter-table.ttl
 tidb.alter-table.placement-binding

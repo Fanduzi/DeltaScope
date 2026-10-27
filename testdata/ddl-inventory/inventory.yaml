@@ -164,6 +164,7 @@ required_row_ids:
   - tidb.alter-table.columns
   - tidb.alter-table.index-ops
   - tidb.alter-table.fk-check
+  - tidb.alter-table.partition-destructive
   - tidb.alter-table.partition-ops
   - tidb.alter-table.ttl
   - tidb.alter-table.placement-binding
@@ -639,12 +640,12 @@ rows:
     subactions: ["DROP PARTITION", "TRUNCATE PARTITION", "EXCHANGE PARTITION p WITH TABLE s"]
     sql_shape: "ALTER TABLE t DROP PARTITION p0"
     prerequisites: "InnoDB partitioned table with named partitions"
-    status: parse_only
-    status_evidence: "2026-09-22 CLI probe: all three forms parse and return zero findings (the spec's named silent-pass defect)"
+    status: semantically_checked
+    status_evidence: "2026-10-27 T13 (#92): DROP/TRUNCATE/EXCHANGE promoted from parse-only to audited. Frozen rules ddl.alter.drop_partition.forbid / ddl.alter.truncate_partition.forbid (blocker, one finding per named partition, ALL form carries all_partitions) and ddl.alter.exchange_partition.warn (warning carrying both object identities + effective validation clause). EXCHANGE counterpart enters TableTargets so the denylist protects both directions; ordered state keeps member facts, drops data-derived statistics, and models the proven multi-spec refusal (native 1064). Golden T13.json: 24/24 cases across mysql 5.7.44/8.0.46/8.4.10 + tidb v8.5.0 with live partition-effect verification. Partition member catalog/type unmodeled by contract."
     targets: "table, partition identities, data deletion/exchange scope, both EXCHANGE objects"
     acceptance:
       dimensions: "drop/truncate blocker, EXCHANGE two-object visibility"
-      refs: ["missing: owner adds destructive-partition policy and DB fixture evidence"]
+      refs: ["file:testdata/ddl-golden/T13.json", "file:internal/application/audit/batch_state_t13_test.go", "file:internal/domain/rule/ddl/partition_rules.go", "file:testdata/sql-corpus/mysql/ddl/findings/alter_table_partition_destructive.sql"]
     owner: T13
 
   - id: mysql.alter-table.partition-topology
@@ -1536,21 +1537,37 @@ rows:
       refs: ["file:testdata/ddl-golden/T11.json", "file:testdata/ddl-golden/T12.json", "file:testdata/sql-corpus/tidb/ddl/metadata/check_lifecycle.sql", "file:testdata/sql-corpus/tidb/ddl/metadata/check_ignored_off.sql"]
     owner: T11
 
+  - id: tidb.alter-table.partition-destructive
+    product: tidb
+    versions: ["8.5"]
+    sources: [tidb85]
+    family: partition
+    subactions: ["DROP PARTITION", "TRUNCATE PARTITION", "EXCHANGE PARTITION p WITH TABLE s"]
+    sql_shape: "ALTER TABLE t DROP PARTITION p0"
+    prerequisites: "TiDB partition semantics differ (TiDB refuses multi-spec partition ALTERs with 8200)"
+    status: semantically_checked
+    status_evidence: "2026-10-27 T13 (#92): DROP/TRUNCATE/EXCHANGE promoted from parse-only to audited — same frozen rules, finding shapes, and two-sided exchange targets as mysql.alter-table.partition-destructive. TiDB multi-spec refusal is 8200 (vs MySQL 1064), modeled as proven pre-state preservation. Golden T13.json tidb cases all pass incl. live partition-effect verification on v8.5.0."
+    targets: "partition identities, deletion/exchange scope, both EXCHANGE objects"
+    acceptance:
+      dimensions: "drop/truncate blocker, EXCHANGE two-object visibility"
+      refs: ["file:testdata/ddl-golden/T13.json", "file:internal/application/audit/batch_state_t13_test.go", "file:internal/domain/rule/ddl/partition_rules.go", "file:testdata/sql-corpus/tidb/ddl/findings/alter_table_partition_destructive.sql"]
+    owner: T13
+
   - id: tidb.alter-table.partition-ops
     product: tidb
     versions: ["8.5"]
     sources: [tidb85]
     family: partition
-    subactions: ["DROP/TRUNCATE PARTITION", "EXCHANGE PARTITION", "REORGANIZE", "COALESCE", "REMOVE PARTITIONING (copies data, rebuilds indexes)"]
-    sql_shape: "ALTER TABLE t DROP PARTITION p0"
+    subactions: ["REORGANIZE", "COALESCE", "REMOVE PARTITIONING (copies data, rebuilds indexes)"]
+    sql_shape: "ALTER TABLE t REORGANIZE PARTITION p0 INTO (PARTITION pa VALUES LESS THAN (50))"
     prerequisites: "TiDB partition semantics differ (REMOVE copies data)"
     status: parse_only
-    status_evidence: "2026-09-22 CLI probe: DROP/TRUNCATE/EXCHANGE/REORGANIZE/COALESCE all parse silently with zero findings. 2026-09-23 T03 (#82): unaudited partition sub-actions now surface per-action unsupported evidence (alter_table.drop_partition et al.) and coverage=incomplete until T13/T14 model them"
-    targets: "partition identities, deletion/exchange/rebuild scope, TiDB-specific effects"
+    status_evidence: "2026-09-22 CLI probe: REORGANIZE/COALESCE/REMOVE all parse silently with zero findings. 2026-09-23 T03 (#82): unaudited partition sub-actions now surface per-action unsupported evidence (alter_table.reorganize_partition et al.) and coverage=incomplete until T14 models them. 2026-10-27 T13 (#92): DROP/TRUNCATE/EXCHANGE split out to tidb.alter-table.partition-destructive (semantically_checked); this row keeps only the T14 topology remainder."
+    targets: "rebuild/redistribution scope, boundary values, TiDB-specific REMOVE effects"
     acceptance:
-      dimensions: "deletion-risk findings, exchange two-object evidence, TiDB rebuild facts"
-      refs: ["missing: owner adds TiDB partition fixtures"]
-    owner: T13
+      dimensions: "TiDB rebuild facts, topology fidelity, REMOVE data-copy evidence"
+      refs: ["missing: owner adds TiDB partition topology fixtures"]
+    owner: T14
 
   - id: tidb.alter-table.ttl
     product: tidb

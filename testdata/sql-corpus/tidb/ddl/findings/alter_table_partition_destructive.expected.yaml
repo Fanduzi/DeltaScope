@@ -1,0 +1,14 @@
+name: alter_table_partition_destructive
+dialect: tidb
+category: ddl
+expect:
+  parse_ok: true
+  statements:
+    count: 6
+  unsupported:
+    count: 0
+  findings:
+    include:
+      - ddl.alter.drop_partition.forbid
+      - ddl.alter.truncate_partition.forbid
+      - ddl.alter.exchange_partition.warn

@@ -193,6 +193,15 @@ func Register(registry *rule.Registry, cfg policy.Policy) error {
 		{ruleID: ruleIDAlterRenameIndexForbid, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
 			return newForbiddenAlterRenameRule(ruleIDAlterRenameIndexForbid, "rename_index", "rename index", rule.LevelBlocker, cfg)
 		}},
+		{ruleID: ruleIDAlterDropPartitionForbid, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newDropPartitionForbidRule(cfg)
+		}},
+		{ruleID: ruleIDAlterTruncatePartitionForbid, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newTruncatePartitionForbidRule(cfg)
+		}},
+		{ruleID: ruleIDAlterExchangePartitionWarn, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newExchangePartitionWarnRule(cfg)
+		}},
 		{ruleID: ruleIDAlterAddIndexColumnsMaxCount, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
 			return newAlterAddedIndexColumnsMaxCountRule(8, rule.LevelWarning, cfg)
 		}},

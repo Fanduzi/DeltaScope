@@ -660,6 +660,24 @@ type Alter struct {
 	// HasColumnPosition is true).
 	HasColumnPosition bool           `json:"has_column_position,omitempty"`
 	Position          *AlterPosition `json:"position,omitempty"`
+	// Partitions carries the named partition targets of a partition alter
+	// action (DROP/TRUNCATE/EXCHANGE PARTITION), lower-cased as written and
+	// in clause order. It is empty for the TRUNCATE PARTITION ALL form —
+	// an empty name is never fabricated.
+	Partitions []string `json:"partitions,omitempty"`
+	// AllPartitions marks the `TRUNCATE PARTITION ALL` form — a distinct
+	// modeled fact from an empty Partitions list on the named forms.
+	AllPartitions bool `json:"all_partitions,omitempty"`
+	// ExchangeTable carries the exchanged counterpart table of
+	// EXCHANGE PARTITION ... WITH TABLE x as written; Schema is empty when
+	// the clause names an unqualified table.
+	ExchangeTable *Table `json:"exchange_table,omitempty"`
+	// ExchangeValidation is the effective validation clause of EXCHANGE
+	// PARTITION: "without" only when WITHOUT VALIDATION is authored;
+	// "with" covers both authored WITH VALIDATION and the absent clause —
+	// the AST collapses the two, so "with" never proves the keyword was
+	// explicit. The clause is never product-verified compatibility.
+	ExchangeValidation string `json:"exchange_validation,omitempty"`
 	// UnextractedOptions names parsed table-option clauses that were dropped
 	// during extraction; see DDL.UnextractedOptions.
 	UnextractedOptions []string `json:"unextracted_options,omitempty"`

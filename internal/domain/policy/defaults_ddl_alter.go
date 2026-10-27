@@ -26,6 +26,24 @@ func ddlAlterRules() map[string]RulePolicy {
 				"forbid": false,
 			},
 		},
+		"ddl.alter.drop_partition.forbid": {
+			Enabled: true,
+			Level:   rule.LevelBlocker,
+			Params: map[string]any{
+				"forbid": true,
+			},
+		},
+		"ddl.alter.truncate_partition.forbid": {
+			Enabled: true,
+			Level:   rule.LevelBlocker,
+			Params: map[string]any{
+				"forbid": true,
+			},
+		},
+		"ddl.alter.exchange_partition.warn": {
+			Enabled: true,
+			Level:   rule.LevelWarning,
+		},
 		"ddl.alter.rename_table.forbid": {
 			Enabled: true,
 			Level:   rule.LevelBlocker,

@@ -158,7 +158,9 @@ func TestAuditSQLT03IncompletePreservesReject(t *testing.T) {
 
 // TestAuditSQLT03TiDBUnauditedBoundaries covers the named TiDB contrast cases:
 // valid resource-group statements and unaudited partition sub-actions must be
-// marked incomplete (not silently passed) ahead of #92/#101.
+// marked incomplete (not silently passed) ahead of #101. DROP/TRUNCATE/
+// EXCHANGE PARTITION left this boundary under T13 (#92); the T14 partition
+// remainder stays here.
 func TestAuditSQLT03TiDBUnauditedBoundaries(t *testing.T) {
 	t.Parallel()
 	configPath := writeAllRulesDisabledPolicy(t)
@@ -170,7 +172,6 @@ func TestAuditSQLT03TiDBUnauditedBoundaries(t *testing.T) {
 	}{
 		{name: "resource group create", sql: "CREATE RESOURCE GROUP rg1 RU_PER_SEC=100;", wantFeature: "create_resource_group"},
 		{name: "resource group alter", sql: "ALTER RESOURCE GROUP rg1 RU_PER_SEC=200;", wantFeature: "alter_resource_group"},
-		{name: "partition drop", sql: "ALTER TABLE t DROP PARTITION p0;", wantFeature: "alter_table.drop_partition"},
 		{name: "partition reorganize", sql: "ALTER TABLE t REORGANIZE PARTITION p0 INTO (PARTITION p0 VALUES LESS THAN (10));", wantFeature: "alter_table.reorganize_partition"},
 		{name: "tidb ttl table option", sql: "ALTER TABLE t TTL_ENABLE = 'OFF';", wantFeature: "alter_table.option.ttl_enable"},
 	}

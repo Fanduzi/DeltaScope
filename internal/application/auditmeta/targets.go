@@ -65,12 +65,15 @@ func statementTargets(statement spec.Statement) []schemaTarget {
 		}
 		requiresExisting := statement.DDL.Operation != spec.DDLOperationCreateTable
 		tables := statement.DDL.TableTargets()
-		if statement.DDL.Operation == spec.DDLOperationAlterTable && len(tables) > 1 {
+		if statement.DDL.Operation == spec.DDLOperationAlterTable && len(tables) > 1 &&
+			!ddlContainsExchangePartition(statement.DDL) {
 			// ALTER targets after the first are rename destinations. They are
 			// new names, not existing objects: an unqualified destination
 			// resolves to the session schema being inferred (no independent
 			// signal) and a qualified one points at the future location, so
 			// only the altered table participates in session-schema inference.
+			// An EXCHANGE PARTITION counterpart is the exception — it names
+			// an existing table whose rows move, so it must stay resolved.
 			tables = tables[:1]
 		}
 		targets := make([]schemaTarget, 0, len(tables))
@@ -103,4 +106,16 @@ func statementTargets(statement spec.Statement) []schemaTarget {
 		}}
 	}
 	return nil
+}
+
+// ddlContainsExchangePartition reports whether an ALTER's extra targets
+// include an EXCHANGE PARTITION counterpart — an existing table, unlike a
+// RENAME destination.
+func ddlContainsExchangePartition(ddl *spec.DDL) bool {
+	for i := range ddl.Alter {
+		if ddl.Alter[i].Action == "exchange_partition" {
+			return true
+		}
+	}
+	return false
 }

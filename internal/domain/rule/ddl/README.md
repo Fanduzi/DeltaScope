@@ -18,6 +18,8 @@ Expanded DDL rule catalog for create-table governance, table options/object shap
 | index_rules.go | Implements index column-count, prefix, suffix, contains, exact-duplicate, left-prefix redundancy, and unique-overlap rules over the T09 unified declared-index set — create-table `DDL.Indexes` and standalone `CREATE INDEX` actions share one vocabulary, lifecycle candidate sets combine provider-snapshot members with statement-declared additions, the three pair comparisons share the `indexPlainComparable` premise so a non-plain or insufficiently-known member on either side suppresses the pair, and unprovable existing sets — a vouched set whose non-plain member could have paired with a declared index, or an applicable declaration-vs-declaration pair inside CREATE TABLE carrying a non-plain member — emit `unknown_table_state` evidence gaps instead of fabricated clean results |
 | type_family_rules.go | Implements create-table type-family, char-length, and charset/collation rules |
 | alter_rules.go | Implements action-level ALTER TABLE restriction rules plus approved standalone DDL action reuse for PostgreSQL DROP INDEX, with T09 standalone detection driven by the operation rather than table-nil shape so `ddl.alter.drop_index.forbid`/`ddl.alter.rename_index.forbid` reach standalone `DROP INDEX`/`ALTER`-less index actions with names resolved through `Definition`/`OldName` fallback |
+| partition_rules.go | Implements the T13 destructive-partition rules for MySQL/TiDB: `ddl.alter.drop_partition.forbid` and `ddl.alter.truncate_partition.forbid` are default blockers firing on the authored action (one finding per named partition, `TRUNCATE PARTITION ALL` carries `all_partitions` and no `partition` key; a `forbid:false` param disarms), and `ddl.alter.exchange_partition.warn` is a default warning carrying `exchange_table`/`exchange_schema`/`validation` — rules are independent of metadata availability and native executability, partition-member existence is never statically proven (issue #92 T13) |
+| partition_rules_test.go | Verifies the T13 partition rules: per-partition and ALL-finding shapes, both-sided exchange metadata with effective validation, dialect binding (MySQL+TiDB, silent on PostgreSQL), forbid disarm, registration, and defaults (issue #92 T13) |
 | database_lifecycle_rules.go | Implements MySQL/TiDB database lifecycle rules: create-database notice, drop-database warning |
 | database_lifecycle_rules_test.go | Verifies MySQL/TiDB database lifecycle rules with positive, negative, cross-dialect, registration, and defaults coverage |
 | mysql_tidb_lifecycle_rules.go | Implements MySQL/TiDB standalone lifecycle notices plus create-index notice reuse for normalized ALTER add-index actions, with normalized object-identifier messages |
@@ -187,6 +189,9 @@ Expanded DDL rule catalog for create-table governance, table options/object shap
 - `ddl.alter.change_column.forbid`
 - `ddl.alter.modify_column.forbid`
 - `ddl.alter.rename_index.forbid`
+- `ddl.alter.drop_partition.forbid`
+- `ddl.alter.truncate_partition.forbid`
+- `ddl.alter.exchange_partition.warn`
 - `ddl.alter.modify_column.target_type_family.allowlist`
 - `ddl.alter.change_column.target_type_family.allowlist`
 - `ddl.alter.modify_column.compatibility.require`
