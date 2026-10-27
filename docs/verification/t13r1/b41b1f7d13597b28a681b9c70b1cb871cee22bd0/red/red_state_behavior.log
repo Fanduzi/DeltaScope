@@ -1,0 +1,77 @@
+=== RUN   TestT13R1ExchangeFirstTouchCounterpartClearsStats
+=== PAUSE TestT13R1ExchangeFirstTouchCounterpartClearsStats
+=== RUN   TestT13R1ExchangeQualifiedCounterpart
+=== PAUSE TestT13R1ExchangeQualifiedCounterpart
+=== RUN   TestT13R1AlgorithmDropPartitionExecutes
+=== PAUSE TestT13R1AlgorithmDropPartitionExecutes
+=== RUN   TestT13R1AlgorithmDropPartitionVersionGate
+=== PAUSE TestT13R1AlgorithmDropPartitionVersionGate
+=== RUN   TestT13R1StructuralSiblingStillRefused
+=== PAUSE TestT13R1StructuralSiblingStillRefused
+=== CONT  TestT13R1ExchangeFirstTouchCounterpartClearsStats
+=== CONT  TestT13R1AlgorithmDropPartitionVersionGate
+=== RUN   TestT13R1ExchangeFirstTouchCounterpartClearsStats/mysql
+=== RUN   TestT13R1AlgorithmDropPartitionVersionGate/mysql57_refused_keeps_pre-state
+=== PAUSE TestT13R1ExchangeFirstTouchCounterpartClearsStats/mysql
+=== RUN   TestT13R1ExchangeFirstTouchCounterpartClearsStats/tidb
+=== PAUSE TestT13R1ExchangeFirstTouchCounterpartClearsStats/tidb
+=== CONT  TestT13R1ExchangeFirstTouchCounterpartClearsStats/mysql
+=== PAUSE TestT13R1AlgorithmDropPartitionVersionGate/mysql57_refused_keeps_pre-state
+=== CONT  TestT13R1AlgorithmDropPartitionExecutes
+=== CONT  TestT13R1StructuralSiblingStillRefused
+=== CONT  TestT13R1ExchangeQualifiedCounterpart
+=== RUN   TestT13R1AlgorithmDropPartitionExecutes/mysql
+=== PAUSE TestT13R1AlgorithmDropPartitionExecutes/mysql
+=== RUN   TestT13R1AlgorithmDropPartitionExecutes/tidb
+=== PAUSE TestT13R1AlgorithmDropPartitionExecutes/tidb
+=== CONT  TestT13R1AlgorithmDropPartitionExecutes/mysql
+=== RUN   TestT13R1AlgorithmDropPartitionVersionGate/unobserved_version_stays_unproven
+=== PAUSE TestT13R1AlgorithmDropPartitionVersionGate/unobserved_version_stays_unproven
+=== CONT  TestT13R1AlgorithmDropPartitionExecutes/tidb
+=== CONT  TestT13R1AlgorithmDropPartitionVersionGate/unobserved_version_stays_unproven
+=== CONT  TestT13R1AlgorithmDropPartitionVersionGate/mysql57_refused_keeps_pre-state
+=== CONT  TestT13R1ExchangeFirstTouchCounterpartClearsStats/tidb
+=== RUN   TestT13R1StructuralSiblingStillRefused/mysql/structural_leads
+=== PAUSE TestT13R1StructuralSiblingStillRefused/mysql/structural_leads
+=== RUN   TestT13R1StructuralSiblingStillRefused/mysql/partition_leads_unparseable
+=== PAUSE TestT13R1StructuralSiblingStillRefused/mysql/partition_leads_unparseable
+=== RUN   TestT13R1StructuralSiblingStillRefused/tidb/structural_leads
+=== PAUSE TestT13R1StructuralSiblingStillRefused/tidb/structural_leads
+=== RUN   TestT13R1StructuralSiblingStillRefused/tidb/partition_leads_unparseable
+=== PAUSE TestT13R1StructuralSiblingStillRefused/tidb/partition_leads_unparseable
+=== CONT  TestT13R1StructuralSiblingStillRefused/mysql/structural_leads
+=== CONT  TestT13R1StructuralSiblingStillRefused/mysql/partition_leads_unparseable
+=== CONT  TestT13R1StructuralSiblingStillRefused/tidb/partition_leads_unparseable
+=== CONT  TestT13R1StructuralSiblingStillRefused/tidb/structural_leads
+=== NAME  TestT13R1AlgorithmDropPartitionVersionGate/unobserved_version_stays_unproven
+    batch_state_t13r1_test.go:238: audit: audit includes unsupported statements: 1 item(s)
+=== NAME  TestT13R1ExchangeFirstTouchCounterpartClearsStats/mysql
+    batch_state_t13r1_test.go:107: stale batch-prior statistics must not answer the truncate, got []rule.Finding{rule.Finding{RuleID:"ddl.table.truncate.rows.max_count", Level:"blocker", Message:"truncate table on \"t2\" exceeds the configured table-row risk threshold", StatementIndex:1, StatementKind:"ddl", Location:(*rule.Location)(0xa16840ced20), Suggestion:"split cleanup work first or only proceed after manual review when row count is above 1", Metadata:map[string]interface {}{"limit":1, "operation":"truncate_table", "table":"t2", "table_rows":42}, Explanation:(*rule.FindingExplanation)(0xa1684228140)}}
+=== NAME  TestT13R1AlgorithmDropPartitionExecutes/tidb
+    batch_state_t13r1_test.go:178: audit: audit includes unsupported statements: 1 item(s)
+=== NAME  TestT13R1ExchangeFirstTouchCounterpartClearsStats/tidb
+    batch_state_t13r1_test.go:107: stale batch-prior statistics must not answer the truncate, got []rule.Finding{rule.Finding{RuleID:"ddl.table.truncate.rows.max_count", Level:"blocker", Message:"truncate table on \"t2\" exceeds the configured table-row risk threshold", StatementIndex:1, StatementKind:"ddl", Location:(*rule.Location)(0xa1684788b60), Suggestion:"split cleanup work first or only proceed after manual review when row count is above 1", Metadata:map[string]interface {}{"limit":1, "operation":"truncate_table", "table":"t2", "table_rows":42}, Explanation:(*rule.FindingExplanation)(0xa1685068140)}}
+=== NAME  TestT13R1ExchangeQualifiedCounterpart
+    batch_state_t13r1_test.go:151: stale statistics must not answer the qualified truncate, got []rule.Finding{rule.Finding{RuleID:"ddl.table.truncate.rows.max_count", Level:"blocker", Message:"truncate table on \"t2\" exceeds the configured table-row risk threshold", StatementIndex:1, StatementKind:"ddl", Location:(*rule.Location)(0xa16840ce0d0), Suggestion:"split cleanup work first or only proceed after manual review when row count is above 1", Metadata:map[string]interface {}{"limit":1, "operation":"truncate_table", "table":"t2", "table_rows":42}, Explanation:(*rule.FindingExplanation)(0xa16840d6190)}}
+=== NAME  TestT13R1AlgorithmDropPartitionVersionGate/mysql57_refused_keeps_pre-state
+    batch_state_t13r1_test.go:214: audit: audit includes unsupported statements: 1 item(s)
+--- FAIL: TestT13R1ExchangeFirstTouchCounterpartClearsStats (0.00s)
+    --- FAIL: TestT13R1ExchangeFirstTouchCounterpartClearsStats/mysql (0.01s)
+    --- FAIL: TestT13R1ExchangeFirstTouchCounterpartClearsStats/tidb (0.01s)
+=== NAME  TestT13R1AlgorithmDropPartitionExecutes/mysql
+    batch_state_t13r1_test.go:178: audit: audit includes unsupported statements: 1 item(s)
+--- FAIL: TestT13R1ExchangeQualifiedCounterpart (0.02s)
+--- FAIL: TestT13R1AlgorithmDropPartitionVersionGate (0.00s)
+    --- FAIL: TestT13R1AlgorithmDropPartitionVersionGate/unobserved_version_stays_unproven (0.01s)
+    --- FAIL: TestT13R1AlgorithmDropPartitionVersionGate/mysql57_refused_keeps_pre-state (0.01s)
+--- FAIL: TestT13R1AlgorithmDropPartitionExecutes (0.00s)
+    --- FAIL: TestT13R1AlgorithmDropPartitionExecutes/tidb (0.01s)
+    --- FAIL: TestT13R1AlgorithmDropPartitionExecutes/mysql (0.02s)
+--- PASS: TestT13R1StructuralSiblingStillRefused (0.00s)
+    --- PASS: TestT13R1StructuralSiblingStillRefused/mysql/partition_leads_unparseable (0.01s)
+    --- PASS: TestT13R1StructuralSiblingStillRefused/mysql/structural_leads (0.01s)
+    --- PASS: TestT13R1StructuralSiblingStillRefused/tidb/structural_leads (0.01s)
+    --- PASS: TestT13R1StructuralSiblingStillRefused/tidb/partition_leads_unparseable (0.01s)
+FAIL
+FAIL	github.com/Fanduzi/DeltaScope/internal/application/audit	0.552s
+FAIL

@@ -1,0 +1,11 @@
+=== [tidb85] withval: ALTER TABLE t13v EXCHANGE PARTITION p0 WITH TABLE t13vx WITH VALIDATION
+ERROR 1737 (HY000) at line 1: Found a row that does not match the partition
+rc=1
+post: t13vx=[] t13v=[]
+=== [tidb85] noval: ALTER TABLE t13v EXCHANGE PARTITION p0 WITH TABLE t13vx WITHOUT VALIDATION
+rc=0
+post: t13vx=[] t13v=[]
+=== [tidb85] absent: ALTER TABLE t13v EXCHANGE PARTITION p0 WITH TABLE t13vx
+ERROR 1737 (HY000) at line 1: Found a row that does not match the partition
+rc=1
+post: t13vx=[] t13v=[]

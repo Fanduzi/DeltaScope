@@ -1,0 +1,9 @@
+# github.com/Fanduzi/DeltaScope/internal/application/audit [github.com/Fanduzi/DeltaScope/internal/application/audit.test]
+internal/application/audit/extract_partition_facts_test.go:37:14: stmt.DDL.PartitionType undefined (type *spec.DDL has no field or method PartitionType)
+internal/application/audit/extract_partition_facts_test.go:38:76: stmt.DDL.PartitionType undefined (type *spec.DDL has no field or method PartitionType)
+internal/application/audit/extract_partition_facts_test.go:40:18: stmt.DDL.PartitionNames undefined (type *spec.DDL has no field or method PartitionNames)
+internal/application/audit/extract_partition_facts_test.go:41:78: stmt.DDL.PartitionNames undefined (type *spec.DDL has no field or method PartitionNames)
+internal/application/audit/extract_partition_facts_test.go:51:14: stmt.DDL.PartitionType undefined (type *spec.DDL has no field or method PartitionType)
+internal/application/audit/extract_partition_facts_test.go:52:68: stmt.DDL.PartitionType undefined (type *spec.DDL has no field or method PartitionType)
+internal/application/audit/extract_partition_facts_test.go:56:18: stmt.DDL.PartitionNames undefined (type *spec.DDL has no field or method PartitionNames)
+internal/application/audit/extract_partition_facts_test.go:57:66: stmt.DDL.PartitionNames undefined (type *spec.DDL has no field or method PartitionNames)

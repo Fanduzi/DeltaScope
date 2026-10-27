@@ -1,0 +1,262 @@
+{
+  "case_id": "T12.meta.t12-mysql57-version-refusal",
+  "kind": "cli_metadata",
+  "cli_case": "t12-mysql57-version-refusal",
+  "anchor": "mysql57",
+  "dialect": "mysql",
+  "input_sql": "ALTER TABLE t57 ALTER CHECK x NOT ENFORCED;",
+  "policy_profile": "t12-all",
+  "policy_path": "/private/tmp/ddl-golden-t13r1/T12/T12/golden-policy-t12-all.yaml",
+  "connect": {
+    "host": "127.0.0.1",
+    "port": 23357,
+    "user": "root",
+    "schema": "golden",
+    "password_env": "DS_T12_GOLDEN_PW"
+  },
+  "expected": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "evidence_gaps": 0,
+    "finding_entries": [
+      {
+        "index": 0,
+        "rule_id": "ddl.alter.alter_check.version.require",
+        "level": "blocker"
+      }
+    ]
+  },
+  "actual": {
+    "database": {
+      "product": "mysql",
+      "image": "mysql:5.7.44",
+      "image_digest": "mysql@sha256:4bc6bc963e6d8443453676cae56536f4b8156d78bae03c0145cbe47c2aad73bb",
+      "container": "deltascope-ddl-golden-mysql57",
+      "reachable": true,
+      "version": "5.7.44"
+    },
+    "setup": [
+      {
+        "name": "create-fixture",
+        "sql": "CREATE TABLE t57 (id INT);",
+        "rc": 0,
+        "stdout": "",
+        "stderr": ""
+      }
+    ],
+    "post_verify": [],
+    "execute": [
+      {
+        "name": "native-syntax-refusal",
+        "sql": "ALTER TABLE t57 ALTER CHECK x NOT ENFORCED;",
+        "rc": 1,
+        "stdout": "",
+        "stderr": "ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'CHECK x NOT ENFORCED' at line 1"
+      }
+    ],
+    "structure": [],
+    "teardown": [
+      {
+        "name": "drop-t57",
+        "sql": "DROP TABLE IF EXISTS t57;",
+        "rc": 0,
+        "stderr": ""
+      }
+    ],
+    "exit": 1,
+    "stdout": "{\"verdict\":\"reject\",\"coverage\":{\"status\":\"complete\"},\"summary\":{\"statements\":1,\"blockers\":1,\"warnings\":0,\"notices\":0},\"statements\":[{\"index\":0,\"kind\":\"ddl\",\"raw_sql\":\"ALTER TABLE t57 ALTER CHECK x NOT ENFORCED;\",\"normalized_sql\":\"ALTER TABLE t57 ALTER CHECK x NOT ENFORCED\",\"findings\":[{\"rule_id\":\"ddl.alter.alter_check.version.require\",\"level\":\"blocker\",\"message\":\"alter_check on table \\\"t57\\\" requires MySQL \\u003e= 8.0.16 (check constraint alter/drop syntax)\",\"statement_kind\":\"ddl\",\"location\":{\"line\":1,\"column\":1},\"suggestion\":\"run this change on a MySQL version that supports check-constraint alter/drop syntax\",\"metadata\":{\"action\":\"alter_check\",\"required_version\":\"8.0.16\",\"table\":\"t57\",\"version\":\"5.7.44\"},\"explanation\":{\"summary\":\"Require DDL alter alter check version require\",\"why\":\"The statement is missing a clause, option, or object that the shipped policy requires.\",\"risk\":\"Ignoring this rule can hide live-schema or instance-state risks that only metadata reveals.\",\"suggestion\":\"run this change on a MySQL version that supports check-constraint alter/drop syntax\",\"metadata\":{\"status\":\"available\",\"note\":\"Live metadata is available, so this explanation can use schema or instance facts for a more accurate judgment.\"}}}],\"coverage\":{\"status\":\"complete\"}}],\"version\":{\"product\":\"mysql\",\"version\":\"5.7.44\",\"major\":5,\"minor\":7,\"patch\":44,\"source\":\"observed\",\"validated_range\":true},\"fail_on_triggered\":true,\"rule_summary\":{\"loaded\":5,\"applicable\":3,\"skipped\":[]},\"context\":{\"mode\":\"metadata-aware\",\"dialect\":\"mysql\",\"dialect_source\":\"detected\",\"schema\":\"golden\",\"schema_source\":\"flag\"}}\n",
+    "stderr": "",
+    "parsed": {
+      "verdict": "reject",
+      "coverage": {
+        "status": "complete"
+      },
+      "summary": {
+        "statements": 1,
+        "blockers": 1,
+        "warnings": 0,
+        "notices": 0
+      },
+      "statements": [
+        {
+          "index": 0,
+          "kind": "ddl",
+          "raw_sql": "ALTER TABLE t57 ALTER CHECK x NOT ENFORCED;",
+          "normalized_sql": "ALTER TABLE t57 ALTER CHECK x NOT ENFORCED",
+          "findings": [
+            {
+              "rule_id": "ddl.alter.alter_check.version.require",
+              "level": "blocker",
+              "message": "alter_check on table \"t57\" requires MySQL >= 8.0.16 (check constraint alter/drop syntax)",
+              "statement_kind": "ddl",
+              "location": {
+                "line": 1,
+                "column": 1
+              },
+              "suggestion": "run this change on a MySQL version that supports check-constraint alter/drop syntax",
+              "metadata": {
+                "action": "alter_check",
+                "required_version": "8.0.16",
+                "table": "t57",
+                "version": "5.7.44"
+              },
+              "explanation": {
+                "summary": "Require DDL alter alter check version require",
+                "why": "The statement is missing a clause, option, or object that the shipped policy requires.",
+                "risk": "Ignoring this rule can hide live-schema or instance-state risks that only metadata reveals.",
+                "suggestion": "run this change on a MySQL version that supports check-constraint alter/drop syntax",
+                "metadata": {
+                  "status": "available",
+                  "note": "Live metadata is available, so this explanation can use schema or instance facts for a more accurate judgment."
+                }
+              }
+            }
+          ],
+          "coverage": {
+            "status": "complete"
+          }
+        }
+      ],
+      "version": {
+        "product": "mysql",
+        "version": "5.7.44",
+        "major": 5,
+        "minor": 7,
+        "patch": 44,
+        "source": "observed",
+        "validated_range": true
+      },
+      "fail_on_triggered": true,
+      "rule_summary": {
+        "loaded": 5,
+        "applicable": 3,
+        "skipped": []
+      },
+      "context": {
+        "mode": "metadata-aware",
+        "dialect": "mysql",
+        "dialect_source": "detected",
+        "schema": "golden",
+        "schema_source": "flag"
+      }
+    },
+    "version_evidence": {
+      "target_raw": null,
+      "target_canonical": null,
+      "observed_raw": "5.7.44",
+      "observed_canonical": {
+        "product": "mysql",
+        "version": "5.7.44"
+      },
+      "resolved": {
+        "product": "mysql",
+        "version": "5.7.44",
+        "major": 5,
+        "minor": 7,
+        "patch": 44,
+        "source": "observed",
+        "validated_range": true
+      }
+    }
+  },
+  "assertions": [
+    {
+      "name": "database reachable with expected version",
+      "ok": true,
+      "detail": "SELECT VERSION() rc=0 version='5.7.44' expected_contains='5.7.44'"
+    },
+    {
+      "name": "setup create-fixture return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "exit code",
+      "ok": true,
+      "detail": "rc=1 expected=1"
+    },
+    {
+      "name": "verdict",
+      "ok": true,
+      "detail": "verdict='reject'"
+    },
+    {
+      "name": "top-level statements",
+      "ok": true,
+      "detail": "statements=1 expected=1"
+    },
+    {
+      "name": "zero findings",
+      "ok": true,
+      "detail": "findings=1"
+    },
+    {
+      "name": "no diagnostics",
+      "ok": true,
+      "detail": "diagnostics=[]"
+    },
+    {
+      "name": "no unsupported",
+      "ok": true,
+      "detail": "unsupported=[]"
+    },
+    {
+      "name": "aggregate coverage",
+      "ok": true,
+      "detail": "coverage='complete'"
+    },
+    {
+      "name": "evidence gap count",
+      "ok": true,
+      "detail": "gaps=0"
+    },
+    {
+      "name": "finding entries",
+      "ok": true,
+      "detail": "findings=[(0, 'ddl.alter.alter_check.version.require', 'blocker')] expected=[(0, 'ddl.alter.alter_check.version.require', 'blocker')]"
+    },
+    {
+      "name": "execute native-syntax-refusal return code",
+      "ok": true,
+      "detail": "rc=1 expected=1 stderr=\"ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'CHECK x NOT ENFORCED' at line 1\""
+    },
+    {
+      "name": "execute native-syntax-refusal stderr marker",
+      "ok": true,
+      "detail": "1064"
+    },
+    {
+      "name": "teardown drop-t57 return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    }
+  ],
+  "status": "pass",
+  "command": [
+    "/private/tmp/ddl-golden-t13r1/T12/T12/bin/deltascope",
+    "audit",
+    "--dialect",
+    "mysql",
+    "--sql",
+    "ALTER TABLE t57 ALTER CHECK x NOT ENFORCED;",
+    "--config",
+    "/private/tmp/ddl-golden-t13r1/T12/T12/golden-policy-t12-all.yaml",
+    "--format",
+    "json",
+    "--host",
+    "127.0.0.1",
+    "--port",
+    "23357",
+    "--user",
+    "root",
+    "--password-env",
+    "DS_T12_GOLDEN_PW",
+    "--schema",
+    "golden"
+  ]
+}

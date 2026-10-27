@@ -1,0 +1,5 @@
+# github.com/Fanduzi/DeltaScope/internal/application/audit [github.com/Fanduzi/DeltaScope/internal/application/audit.test]
+internal/application/audit/batch_state_t13r1_applicability_test.go:33:3: unknown field PartitionType in struct literal of type spec.TableSnapshot
+internal/application/audit/batch_state_t13r1_applicability_test.go:34:3: unknown field PartitionNames in struct literal of type spec.TableSnapshot
+internal/application/audit/batch_state_t13r1_applicability_test.go:108:8: shape.PartitionType undefined (type *spec.TableSnapshot has no field or method PartitionType)
+---

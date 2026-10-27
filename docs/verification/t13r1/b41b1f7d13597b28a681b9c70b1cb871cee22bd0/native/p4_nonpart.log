@@ -1,0 +1,34 @@
+=== deltascope-ddl-golden-mysql57 ===
+--- TRUNCATE PARTITION on non-partitioned
+mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1505 (HY000) at line 1: Partition management on a not partitioned table is not possible
+rc=1
+--- EXCHANGE PARTITION on non-partitioned
+mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1505 (HY000) at line 1: Partition management on a not partitioned table is not possible
+rc=1
+=== deltascope-ddl-golden-mysql80 ===
+--- TRUNCATE PARTITION on non-partitioned
+mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1505 (HY000) at line 1: Partition management on a not partitioned table is not possible
+rc=1
+--- EXCHANGE PARTITION on non-partitioned
+mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1505 (HY000) at line 1: Partition management on a not partitioned table is not possible
+rc=1
+=== deltascope-ddl-golden-mysql84 ===
+--- TRUNCATE PARTITION on non-partitioned
+mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1505 (HY000) at line 1: Partition management on a not partitioned table is not possible
+rc=1
+--- EXCHANGE PARTITION on non-partitioned
+mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1505 (HY000) at line 1: Partition management on a not partitioned table is not possible
+rc=1
+=== tidb85 ===
+--- TRUNCATE PARTITION on non-partitioned
+ERROR 1505 (HY000) at line 1: Partition management on a not partitioned table is not possible
+rc=1
+--- EXCHANGE PARTITION on non-partitioned
+ERROR 1505 (HY000) at line 1: Partition management on a not partitioned table is not possible
+rc=1

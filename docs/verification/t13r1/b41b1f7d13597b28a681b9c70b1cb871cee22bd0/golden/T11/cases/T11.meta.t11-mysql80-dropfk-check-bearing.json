@@ -1,0 +1,281 @@
+{
+  "case_id": "T11.meta.t11-mysql80-dropfk-check-bearing",
+  "kind": "cli_metadata",
+  "cli_case": "t11-mysql80-dropfk-check-bearing",
+  "anchor": "mysql80",
+  "dialect": "mysql",
+  "input_sql": "ALTER TABLE t11ck DROP FOREIGN KEY ghost_fk;",
+  "policy_profile": "t11-fk-exists",
+  "policy_path": "/private/tmp/ddl-golden-t13r1/T11/T11/golden-policy-t11-fk-exists.yaml",
+  "connect": {
+    "host": "127.0.0.1",
+    "port": 23380,
+    "user": "root",
+    "schema": "golden",
+    "password_env": "DS_T11_GOLDEN_PW"
+  },
+  "expected": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+      "complete"
+    ],
+    "evidence_gaps": 0,
+    "finding_entries": [
+      {
+        "index": 0,
+        "rule_id": "ddl.alter.drop_foreign_key.exists.require",
+        "level": "blocker"
+      }
+    ],
+    "finding_metadata": [
+      {
+        "index": 0,
+        "rule_id": "ddl.alter.drop_foreign_key.exists.require",
+        "metadata": {
+          "action": "drop_foreign_key",
+          "exists": false,
+          "name": "ghost_fk",
+          "table": "t11ck"
+        }
+      }
+    ],
+    "rule_summary_loaded": 1,
+    "rule_summary_applicable": 1
+  },
+  "actual": {
+    "database": {
+      "product": "mysql",
+      "image": "mysql:8.0.46",
+      "image_digest": "mysql@sha256:7dcddc01f13bab2f15cde676d44d01f61fc9f99fe7785e86196dfc07d358ae2b",
+      "container": "deltascope-ddl-golden-mysql80",
+      "reachable": true,
+      "version": "8.0.46"
+    },
+    "setup": [
+      {
+        "name": "create-check-fixture",
+        "sql": "CREATE TABLE t11ck (id INT PRIMARY KEY, v INT, CONSTRAINT ck_v CHECK (v > 0));",
+        "rc": 0,
+        "stdout": "",
+        "stderr": ""
+      }
+    ],
+    "post_verify": [],
+    "execute": [],
+    "structure": [],
+    "teardown": [
+      {
+        "name": "drop-t11ck",
+        "sql": "DROP TABLE IF EXISTS t11ck;",
+        "rc": 0,
+        "stderr": ""
+      }
+    ],
+    "exit": 1,
+    "stdout": "{\"verdict\":\"reject\",\"coverage\":{\"status\":\"complete\"},\"summary\":{\"statements\":1,\"blockers\":1,\"warnings\":0,\"notices\":0},\"statements\":[{\"index\":0,\"kind\":\"ddl\",\"raw_sql\":\"ALTER TABLE t11ck DROP FOREIGN KEY ghost_fk;\",\"normalized_sql\":\"ALTER TABLE t11ck DROP FOREIGN KEY ghost_fk\",\"findings\":[{\"rule_id\":\"ddl.alter.drop_foreign_key.exists.require\",\"level\":\"blocker\",\"message\":\"foreign_key \\\"ghost_fk\\\" does not exist on table \\\"t11ck\\\"\",\"statement_kind\":\"ddl\",\"location\":{\"line\":1,\"column\":1},\"suggestion\":\"fix the foreign_key name or refresh metadata before auditing this change\",\"metadata\":{\"action\":\"drop_foreign_key\",\"exists\":false,\"name\":\"ghost_fk\",\"table\":\"t11ck\"},\"explanation\":{\"summary\":\"Require DDL alter drop foreign key exists require\",\"why\":\"The statement is missing a clause, option, or object that the shipped policy requires.\",\"risk\":\"Ignoring this rule can hide live-schema or instance-state risks that only metadata reveals.\",\"suggestion\":\"fix the foreign_key name or refresh metadata before auditing this change\",\"metadata\":{\"status\":\"available\",\"note\":\"Live metadata is available, so this explanation can use schema or instance facts for a more accurate judgment.\"}}}],\"coverage\":{\"status\":\"complete\"}}],\"version\":{\"product\":\"mysql\",\"version\":\"8.0.46\",\"major\":8,\"minor\":0,\"patch\":46,\"source\":\"observed\",\"validated_range\":true},\"fail_on_triggered\":true,\"rule_summary\":{\"loaded\":1,\"applicable\":1,\"skipped\":[]},\"context\":{\"mode\":\"metadata-aware\",\"dialect\":\"mysql\",\"dialect_source\":\"detected\",\"schema\":\"golden\",\"schema_source\":\"flag\"}}\n",
+    "stderr": "",
+    "parsed": {
+      "verdict": "reject",
+      "coverage": {
+        "status": "complete"
+      },
+      "summary": {
+        "statements": 1,
+        "blockers": 1,
+        "warnings": 0,
+        "notices": 0
+      },
+      "statements": [
+        {
+          "index": 0,
+          "kind": "ddl",
+          "raw_sql": "ALTER TABLE t11ck DROP FOREIGN KEY ghost_fk;",
+          "normalized_sql": "ALTER TABLE t11ck DROP FOREIGN KEY ghost_fk",
+          "findings": [
+            {
+              "rule_id": "ddl.alter.drop_foreign_key.exists.require",
+              "level": "blocker",
+              "message": "foreign_key \"ghost_fk\" does not exist on table \"t11ck\"",
+              "statement_kind": "ddl",
+              "location": {
+                "line": 1,
+                "column": 1
+              },
+              "suggestion": "fix the foreign_key name or refresh metadata before auditing this change",
+              "metadata": {
+                "action": "drop_foreign_key",
+                "exists": false,
+                "name": "ghost_fk",
+                "table": "t11ck"
+              },
+              "explanation": {
+                "summary": "Require DDL alter drop foreign key exists require",
+                "why": "The statement is missing a clause, option, or object that the shipped policy requires.",
+                "risk": "Ignoring this rule can hide live-schema or instance-state risks that only metadata reveals.",
+                "suggestion": "fix the foreign_key name or refresh metadata before auditing this change",
+                "metadata": {
+                  "status": "available",
+                  "note": "Live metadata is available, so this explanation can use schema or instance facts for a more accurate judgment."
+                }
+              }
+            }
+          ],
+          "coverage": {
+            "status": "complete"
+          }
+        }
+      ],
+      "version": {
+        "product": "mysql",
+        "version": "8.0.46",
+        "major": 8,
+        "minor": 0,
+        "patch": 46,
+        "source": "observed",
+        "validated_range": true
+      },
+      "fail_on_triggered": true,
+      "rule_summary": {
+        "loaded": 1,
+        "applicable": 1,
+        "skipped": []
+      },
+      "context": {
+        "mode": "metadata-aware",
+        "dialect": "mysql",
+        "dialect_source": "detected",
+        "schema": "golden",
+        "schema_source": "flag"
+      }
+    },
+    "version_evidence": {
+      "target_raw": null,
+      "target_canonical": null,
+      "observed_raw": "8.0.46",
+      "observed_canonical": {
+        "product": "mysql",
+        "version": "8.0.46"
+      },
+      "resolved": {
+        "product": "mysql",
+        "version": "8.0.46",
+        "major": 8,
+        "minor": 0,
+        "patch": 46,
+        "source": "observed",
+        "validated_range": true
+      }
+    }
+  },
+  "assertions": [
+    {
+      "name": "database reachable with expected version",
+      "ok": true,
+      "detail": "SELECT VERSION() rc=0 version='8.0.46' expected_contains='8.0.46'"
+    },
+    {
+      "name": "setup create-check-fixture return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "exit code",
+      "ok": true,
+      "detail": "rc=1 expected=1"
+    },
+    {
+      "name": "verdict",
+      "ok": true,
+      "detail": "verdict='reject'"
+    },
+    {
+      "name": "top-level statements",
+      "ok": true,
+      "detail": "statements=1 expected=1"
+    },
+    {
+      "name": "zero findings",
+      "ok": true,
+      "detail": "findings=1"
+    },
+    {
+      "name": "no diagnostics",
+      "ok": true,
+      "detail": "diagnostics=[]"
+    },
+    {
+      "name": "no unsupported",
+      "ok": true,
+      "detail": "unsupported=[]"
+    },
+    {
+      "name": "loaded rule count",
+      "ok": true,
+      "detail": "loaded=1"
+    },
+    {
+      "name": "applicable rule count",
+      "ok": true,
+      "detail": "applicable=1"
+    },
+    {
+      "name": "aggregate coverage",
+      "ok": true,
+      "detail": "coverage='complete'"
+    },
+    {
+      "name": "per-statement coverage",
+      "ok": true,
+      "detail": "statement_coverage=['complete']"
+    },
+    {
+      "name": "evidence gap count",
+      "ok": true,
+      "detail": "gaps=0"
+    },
+    {
+      "name": "finding entries",
+      "ok": true,
+      "detail": "findings=[(0, 'ddl.alter.drop_foreign_key.exists.require', 'blocker')] expected=[(0, 'ddl.alter.drop_foreign_key.exists.require', 'blocker')]"
+    },
+    {
+      "name": "finding metadata (0, 'ddl.alter.drop_foreign_key.exists.require')",
+      "ok": true,
+      "detail": "findings=[{'action': 'drop_foreign_key', 'exists': False, 'name': 'ghost_fk', 'table': 't11ck'}] expected_subset={'action': 'drop_foreign_key', 'exists': False, 'name': 'ghost_fk', 'table': 't11ck'}"
+    },
+    {
+      "name": "teardown drop-t11ck return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    }
+  ],
+  "status": "pass",
+  "command": [
+    "/private/tmp/ddl-golden-t13r1/T11/T11/bin/deltascope",
+    "audit",
+    "--dialect",
+    "mysql",
+    "--sql",
+    "ALTER TABLE t11ck DROP FOREIGN KEY ghost_fk;",
+    "--config",
+    "/private/tmp/ddl-golden-t13r1/T11/T11/golden-policy-t11-fk-exists.yaml",
+    "--format",
+    "json",
+    "--host",
+    "127.0.0.1",
+    "--port",
+    "23380",
+    "--user",
+    "root",
+    "--password-env",
+    "DS_T11_GOLDEN_PW",
+    "--schema",
+    "golden"
+  ]
+}

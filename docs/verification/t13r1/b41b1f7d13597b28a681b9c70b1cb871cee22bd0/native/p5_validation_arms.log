@@ -1,0 +1,400 @@
+############ ANCHOR mysql57 ############
+=== [mysql57] version
+--- SQL: SELECT VERSION()
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+VERSION()
+5.7.44
+=== [mysql57] cleanup
+--- SQL: DROP TABLE IF EXISTS t13v; DROP TABLE IF EXISTS t13vx
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+===== ARM withval =====
+=== [mysql57] withval-reset
+--- SQL: DROP TABLE IF EXISTS t13v; DROP TABLE IF EXISTS t13vx
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql57] withval-create
+--- SQL: CREATE TABLE t13v (id INT, c INT) PARTITION BY RANGE(id) (PARTITION p0 VALUES LESS THAN (100), PARTITION p1 VALUES LESS THAN (200))
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql57] withval-xcreate
+--- SQL: CREATE TABLE t13vx (id INT, c INT)
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql57] withval-xseed
+--- SQL: INSERT INTO t13vx VALUES (999,1)
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql57] withval-pseed
+--- SQL: INSERT INTO t13v VALUES (50,1),(150,1)
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+--- pre: t13vx=[999,1] t13v=[50,1;150,1;]
+=== [mysql57] withval-exchange
+--- SQL: ALTER TABLE t13v EXCHANGE PARTITION p0 WITH TABLE t13vx WITH VALIDATION
+--- rc=1
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1526 (HY000) at line 1: Table has no partition for value 999
+--- post: t13vx=[999,1] t13v=[50,1;150,1;]
+--- post parts: [p0,1;p1,1;]
+===== ARM noval =====
+=== [mysql57] noval-reset
+--- SQL: DROP TABLE IF EXISTS t13v; DROP TABLE IF EXISTS t13vx
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql57] noval-create
+--- SQL: CREATE TABLE t13v (id INT, c INT) PARTITION BY RANGE(id) (PARTITION p0 VALUES LESS THAN (100), PARTITION p1 VALUES LESS THAN (200))
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql57] noval-xcreate
+--- SQL: CREATE TABLE t13vx (id INT, c INT)
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql57] noval-xseed
+--- SQL: INSERT INTO t13vx VALUES (999,1)
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql57] noval-pseed
+--- SQL: INSERT INTO t13v VALUES (50,1),(150,1)
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+--- pre: t13vx=[999,1] t13v=[50,1;150,1;]
+=== [mysql57] noval-exchange
+--- SQL: ALTER TABLE t13v EXCHANGE PARTITION p0 WITH TABLE t13vx WITHOUT VALIDATION
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+--- post: t13vx=[50,1] t13v=[150,1;999,1;]
+--- post parts: [p0,0;p1,0;]
+===== ARM absent =====
+=== [mysql57] absent-reset
+--- SQL: DROP TABLE IF EXISTS t13v; DROP TABLE IF EXISTS t13vx
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql57] absent-create
+--- SQL: CREATE TABLE t13v (id INT, c INT) PARTITION BY RANGE(id) (PARTITION p0 VALUES LESS THAN (100), PARTITION p1 VALUES LESS THAN (200))
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql57] absent-xcreate
+--- SQL: CREATE TABLE t13vx (id INT, c INT)
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql57] absent-xseed
+--- SQL: INSERT INTO t13vx VALUES (999,1)
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql57] absent-pseed
+--- SQL: INSERT INTO t13v VALUES (50,1),(150,1)
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+--- pre: t13vx=[999,1] t13v=[50,1;150,1;]
+=== [mysql57] absent-exchange
+--- SQL: ALTER TABLE t13v EXCHANGE PARTITION p0 WITH TABLE t13vx
+--- rc=1
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1526 (HY000) at line 1: Table has no partition for value 999
+--- post: t13vx=[999,1] t13v=[50,1;150,1;]
+--- post parts: [p0,1;p1,1;]
+=== [mysql57] final-cleanup
+--- SQL: DROP TABLE IF EXISTS t13v; DROP TABLE IF EXISTS t13vx
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+############ ANCHOR mysql80 ############
+=== [mysql80] version
+--- SQL: SELECT VERSION()
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+VERSION()
+8.0.46
+=== [mysql80] cleanup
+--- SQL: DROP TABLE IF EXISTS t13v; DROP TABLE IF EXISTS t13vx
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+===== ARM withval =====
+=== [mysql80] withval-reset
+--- SQL: DROP TABLE IF EXISTS t13v; DROP TABLE IF EXISTS t13vx
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql80] withval-create
+--- SQL: CREATE TABLE t13v (id INT, c INT) PARTITION BY RANGE(id) (PARTITION p0 VALUES LESS THAN (100), PARTITION p1 VALUES LESS THAN (200))
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql80] withval-xcreate
+--- SQL: CREATE TABLE t13vx (id INT, c INT)
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql80] withval-xseed
+--- SQL: INSERT INTO t13vx VALUES (999,1)
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql80] withval-pseed
+--- SQL: INSERT INTO t13v VALUES (50,1),(150,1)
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+--- pre: t13vx=[999,1] t13v=[50,1;150,1;]
+=== [mysql80] withval-exchange
+--- SQL: ALTER TABLE t13v EXCHANGE PARTITION p0 WITH TABLE t13vx WITH VALIDATION
+--- rc=1
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1526 (HY000) at line 1: Table has no partition for value 999
+--- post: t13vx=[999,1] t13v=[50,1;150,1;]
+--- post parts: [p0,1;p1,1;]
+===== ARM noval =====
+=== [mysql80] noval-reset
+--- SQL: DROP TABLE IF EXISTS t13v; DROP TABLE IF EXISTS t13vx
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql80] noval-create
+--- SQL: CREATE TABLE t13v (id INT, c INT) PARTITION BY RANGE(id) (PARTITION p0 VALUES LESS THAN (100), PARTITION p1 VALUES LESS THAN (200))
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql80] noval-xcreate
+--- SQL: CREATE TABLE t13vx (id INT, c INT)
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql80] noval-xseed
+--- SQL: INSERT INTO t13vx VALUES (999,1)
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql80] noval-pseed
+--- SQL: INSERT INTO t13v VALUES (50,1),(150,1)
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+--- pre: t13vx=[999,1] t13v=[50,1;150,1;]
+=== [mysql80] noval-exchange
+--- SQL: ALTER TABLE t13v EXCHANGE PARTITION p0 WITH TABLE t13vx WITHOUT VALIDATION
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+--- post: t13vx=[50,1] t13v=[150,1;999,1;]
+--- post parts: [p0,0;p1,0;]
+===== ARM absent =====
+=== [mysql80] absent-reset
+--- SQL: DROP TABLE IF EXISTS t13v; DROP TABLE IF EXISTS t13vx
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql80] absent-create
+--- SQL: CREATE TABLE t13v (id INT, c INT) PARTITION BY RANGE(id) (PARTITION p0 VALUES LESS THAN (100), PARTITION p1 VALUES LESS THAN (200))
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql80] absent-xcreate
+--- SQL: CREATE TABLE t13vx (id INT, c INT)
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql80] absent-xseed
+--- SQL: INSERT INTO t13vx VALUES (999,1)
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql80] absent-pseed
+--- SQL: INSERT INTO t13v VALUES (50,1),(150,1)
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+--- pre: t13vx=[999,1] t13v=[50,1;150,1;]
+=== [mysql80] absent-exchange
+--- SQL: ALTER TABLE t13v EXCHANGE PARTITION p0 WITH TABLE t13vx
+--- rc=1
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1526 (HY000) at line 1: Table has no partition for value 999
+--- post: t13vx=[999,1] t13v=[50,1;150,1;]
+--- post parts: [p0,1;p1,1;]
+=== [mysql80] final-cleanup
+--- SQL: DROP TABLE IF EXISTS t13v; DROP TABLE IF EXISTS t13vx
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+############ ANCHOR mysql84 ############
+=== [mysql84] version
+--- SQL: SELECT VERSION()
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+VERSION()
+8.4.10
+=== [mysql84] cleanup
+--- SQL: DROP TABLE IF EXISTS t13v; DROP TABLE IF EXISTS t13vx
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+===== ARM withval =====
+=== [mysql84] withval-reset
+--- SQL: DROP TABLE IF EXISTS t13v; DROP TABLE IF EXISTS t13vx
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql84] withval-create
+--- SQL: CREATE TABLE t13v (id INT, c INT) PARTITION BY RANGE(id) (PARTITION p0 VALUES LESS THAN (100), PARTITION p1 VALUES LESS THAN (200))
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql84] withval-xcreate
+--- SQL: CREATE TABLE t13vx (id INT, c INT)
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql84] withval-xseed
+--- SQL: INSERT INTO t13vx VALUES (999,1)
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql84] withval-pseed
+--- SQL: INSERT INTO t13v VALUES (50,1),(150,1)
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+--- pre: t13vx=[999,1] t13v=[50,1;150,1;]
+=== [mysql84] withval-exchange
+--- SQL: ALTER TABLE t13v EXCHANGE PARTITION p0 WITH TABLE t13vx WITH VALIDATION
+--- rc=1
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1526 (HY000) at line 1: Table has no partition for value 999
+--- post: t13vx=[999,1] t13v=[50,1;150,1;]
+--- post parts: [p0,1;p1,1;]
+===== ARM noval =====
+=== [mysql84] noval-reset
+--- SQL: DROP TABLE IF EXISTS t13v; DROP TABLE IF EXISTS t13vx
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql84] noval-create
+--- SQL: CREATE TABLE t13v (id INT, c INT) PARTITION BY RANGE(id) (PARTITION p0 VALUES LESS THAN (100), PARTITION p1 VALUES LESS THAN (200))
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql84] noval-xcreate
+--- SQL: CREATE TABLE t13vx (id INT, c INT)
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql84] noval-xseed
+--- SQL: INSERT INTO t13vx VALUES (999,1)
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql84] noval-pseed
+--- SQL: INSERT INTO t13v VALUES (50,1),(150,1)
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+--- pre: t13vx=[999,1] t13v=[50,1;150,1;]
+=== [mysql84] noval-exchange
+--- SQL: ALTER TABLE t13v EXCHANGE PARTITION p0 WITH TABLE t13vx WITHOUT VALIDATION
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+--- post: t13vx=[50,1] t13v=[150,1;999,1;]
+--- post parts: [p0,0;p1,0;]
+===== ARM absent =====
+=== [mysql84] absent-reset
+--- SQL: DROP TABLE IF EXISTS t13v; DROP TABLE IF EXISTS t13vx
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql84] absent-create
+--- SQL: CREATE TABLE t13v (id INT, c INT) PARTITION BY RANGE(id) (PARTITION p0 VALUES LESS THAN (100), PARTITION p1 VALUES LESS THAN (200))
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql84] absent-xcreate
+--- SQL: CREATE TABLE t13vx (id INT, c INT)
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql84] absent-xseed
+--- SQL: INSERT INTO t13vx VALUES (999,1)
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql84] absent-pseed
+--- SQL: INSERT INTO t13v VALUES (50,1),(150,1)
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+--- pre: t13vx=[999,1] t13v=[50,1;150,1;]
+=== [mysql84] absent-exchange
+--- SQL: ALTER TABLE t13v EXCHANGE PARTITION p0 WITH TABLE t13vx
+--- rc=1
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1526 (HY000) at line 1: Table has no partition for value 999
+--- post: t13vx=[999,1] t13v=[50,1;150,1;]
+--- post parts: [p0,1;p1,1;]
+=== [mysql84] final-cleanup
+--- SQL: DROP TABLE IF EXISTS t13v; DROP TABLE IF EXISTS t13vx
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+############ ANCHOR tidb85 ############
+=== [tidb85] version
+--- SQL: SELECT VERSION()
+--- rc=1
+--- out: ERROR 1049 (42000): Unknown database 'golden'
+=== [tidb85] cleanup
+--- SQL: DROP TABLE IF EXISTS t13v; DROP TABLE IF EXISTS t13vx
+--- rc=1
+--- out: ERROR 1049 (42000): Unknown database 'golden'
+===== ARM withval =====
+=== [tidb85] withval-reset
+--- SQL: DROP TABLE IF EXISTS t13v; DROP TABLE IF EXISTS t13vx
+--- rc=1
+--- out: ERROR 1049 (42000): Unknown database 'golden'
+=== [tidb85] withval-create
+--- SQL: CREATE TABLE t13v (id INT, c INT) PARTITION BY RANGE(id) (PARTITION p0 VALUES LESS THAN (100), PARTITION p1 VALUES LESS THAN (200))
+--- rc=1
+--- out: ERROR 1049 (42000): Unknown database 'golden'
+=== [tidb85] withval-xcreate
+--- SQL: CREATE TABLE t13vx (id INT, c INT)
+--- rc=1
+--- out: ERROR 1049 (42000): Unknown database 'golden'
+=== [tidb85] withval-xseed
+--- SQL: INSERT INTO t13vx VALUES (999,1)
+--- rc=1
+--- out: ERROR 1049 (42000): Unknown database 'golden'
+=== [tidb85] withval-pseed
+--- SQL: INSERT INTO t13v VALUES (50,1),(150,1)
+--- rc=1
+--- out: ERROR 1049 (42000): Unknown database 'golden'
+--- pre: t13vx=[] t13v=[]
+=== [tidb85] withval-exchange
+--- SQL: ALTER TABLE t13v EXCHANGE PARTITION p0 WITH TABLE t13vx WITH VALIDATION
+--- rc=1
+--- out: ERROR 1049 (42000): Unknown database 'golden'
+--- post: t13vx=[] t13v=[]
+--- post parts: []
+===== ARM noval =====
+=== [tidb85] noval-reset
+--- SQL: DROP TABLE IF EXISTS t13v; DROP TABLE IF EXISTS t13vx
+--- rc=1
+--- out: ERROR 1049 (42000): Unknown database 'golden'
+=== [tidb85] noval-create
+--- SQL: CREATE TABLE t13v (id INT, c INT) PARTITION BY RANGE(id) (PARTITION p0 VALUES LESS THAN (100), PARTITION p1 VALUES LESS THAN (200))
+--- rc=1
+--- out: ERROR 1049 (42000): Unknown database 'golden'
+=== [tidb85] noval-xcreate
+--- SQL: CREATE TABLE t13vx (id INT, c INT)
+--- rc=1
+--- out: ERROR 1049 (42000): Unknown database 'golden'
+=== [tidb85] noval-xseed
+--- SQL: INSERT INTO t13vx VALUES (999,1)
+--- rc=1
+--- out: ERROR 1049 (42000): Unknown database 'golden'
+=== [tidb85] noval-pseed
+--- SQL: INSERT INTO t13v VALUES (50,1),(150,1)
+--- rc=1
+--- out: ERROR 1049 (42000): Unknown database 'golden'
+--- pre: t13vx=[] t13v=[]
+=== [tidb85] noval-exchange
+--- SQL: ALTER TABLE t13v EXCHANGE PARTITION p0 WITH TABLE t13vx WITHOUT VALIDATION
+--- rc=1
+--- out: ERROR 1049 (42000): Unknown database 'golden'
+--- post: t13vx=[] t13v=[]
+--- post parts: []
+===== ARM absent =====
+=== [tidb85] absent-reset
+--- SQL: DROP TABLE IF EXISTS t13v; DROP TABLE IF EXISTS t13vx
+--- rc=1
+--- out: ERROR 1049 (42000): Unknown database 'golden'
+=== [tidb85] absent-create
+--- SQL: CREATE TABLE t13v (id INT, c INT) PARTITION BY RANGE(id) (PARTITION p0 VALUES LESS THAN (100), PARTITION p1 VALUES LESS THAN (200))
+--- rc=1
+--- out: ERROR 1049 (42000): Unknown database 'golden'
+=== [tidb85] absent-xcreate
+--- SQL: CREATE TABLE t13vx (id INT, c INT)
+--- rc=1
+--- out: ERROR 1049 (42000): Unknown database 'golden'
+=== [tidb85] absent-xseed
+--- SQL: INSERT INTO t13vx VALUES (999,1)
+--- rc=1
+--- out: ERROR 1049 (42000): Unknown database 'golden'
+=== [tidb85] absent-pseed
+--- SQL: INSERT INTO t13v VALUES (50,1),(150,1)
+--- rc=1
+--- out: ERROR 1049 (42000): Unknown database 'golden'
+--- pre: t13vx=[] t13v=[]
+=== [tidb85] absent-exchange
+--- SQL: ALTER TABLE t13v EXCHANGE PARTITION p0 WITH TABLE t13vx
+--- rc=1
+--- out: ERROR 1049 (42000): Unknown database 'golden'
+--- post: t13vx=[] t13v=[]
+--- post parts: []
+=== [tidb85] final-cleanup
+--- SQL: DROP TABLE IF EXISTS t13v; DROP TABLE IF EXISTS t13vx
+--- rc=1
+--- out: ERROR 1049 (42000): Unknown database 'golden'

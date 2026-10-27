@@ -1,0 +1,186 @@
+{
+  "case_id": "T13.cli.t13-cli-truncate-partition-all",
+  "kind": "cli_audit",
+  "cli_case": "t13-cli-truncate-partition-all",
+  "dialect": "tidb",
+  "input_sql": "ALTER TABLE t TRUNCATE PARTITION ALL;",
+  "policy_profile": "t13-truncate",
+  "policy_path": "/private/tmp/ddl-golden-t13r1/T13/T13/golden-policy-t13-truncate.yaml",
+  "command": [
+    "/private/tmp/ddl-golden-t13r1/T13/T13/bin/deltascope",
+    "audit",
+    "--dialect",
+    "tidb",
+    "--sql",
+    "ALTER TABLE t TRUNCATE PARTITION ALL;",
+    "--config",
+    "/private/tmp/ddl-golden-t13r1/T13/T13/golden-policy-t13-truncate.yaml",
+    "--format",
+    "json",
+    "--fail-on",
+    "blocker"
+  ],
+  "expected": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+      "complete"
+    ],
+    "finding_entries": [
+      {
+        "index": 0,
+        "rule_id": "ddl.alter.truncate_partition.forbid",
+        "level": "blocker"
+      }
+    ],
+    "finding_metadata": [
+      {
+        "index": 0,
+        "rule_id": "ddl.alter.truncate_partition.forbid",
+        "metadata": {
+          "table": "t",
+          "all_partitions": "true"
+        }
+      }
+    ],
+    "rule_summary_applicable": 1
+  },
+  "actual": {
+    "exit": 1,
+    "stdout": "{\"verdict\":\"reject\",\"coverage\":{\"status\":\"complete\"},\"summary\":{\"statements\":1,\"blockers\":1,\"warnings\":0,\"notices\":0},\"statements\":[{\"index\":0,\"kind\":\"ddl\",\"raw_sql\":\"ALTER TABLE t TRUNCATE PARTITION ALL;\",\"normalized_sql\":\"ALTER TABLE t TRUNCATE PARTITION ALL\",\"findings\":[{\"rule_id\":\"ddl.alter.truncate_partition.forbid\",\"level\":\"blocker\",\"message\":\"ALTER TABLE truncate partition is forbidden for ALL partitions\",\"statement_kind\":\"ddl\",\"location\":{\"line\":1,\"column\":1},\"suggestion\":\"avoid truncate partition in this change or relax the policy intentionally\",\"metadata\":{\"action\":\"truncate_partition\",\"all_partitions\":\"true\",\"table\":\"t\"},\"explanation\":{\"summary\":\"Forbid DDL alter truncate partition forbid\",\"why\":\"The statement uses a construct that the shipped policy explicitly forbids.\",\"risk\":\"Ignoring this rule can weaken schema-governance guarantees and make changes harder to review safely.\",\"suggestion\":\"avoid truncate partition in this change or relax the policy intentionally\"}}],\"coverage\":{\"status\":\"complete\"}}],\"fail_on_triggered\":true,\"rule_summary\":{\"loaded\":1,\"applicable\":1,\"skipped\":[]},\"context\":{\"mode\":\"offline\",\"dialect\":\"tidb\",\"dialect_source\":\"flag\",\"note\":\"existence not checked (no database connection)\",\"unproven\":[\"column_exists\",\"table_exists\"]}}\n",
+    "stderr": "",
+    "parsed": {
+      "verdict": "reject",
+      "coverage": {
+        "status": "complete"
+      },
+      "summary": {
+        "statements": 1,
+        "blockers": 1,
+        "warnings": 0,
+        "notices": 0
+      },
+      "statements": [
+        {
+          "index": 0,
+          "kind": "ddl",
+          "raw_sql": "ALTER TABLE t TRUNCATE PARTITION ALL;",
+          "normalized_sql": "ALTER TABLE t TRUNCATE PARTITION ALL",
+          "findings": [
+            {
+              "rule_id": "ddl.alter.truncate_partition.forbid",
+              "level": "blocker",
+              "message": "ALTER TABLE truncate partition is forbidden for ALL partitions",
+              "statement_kind": "ddl",
+              "location": {
+                "line": 1,
+                "column": 1
+              },
+              "suggestion": "avoid truncate partition in this change or relax the policy intentionally",
+              "metadata": {
+                "action": "truncate_partition",
+                "all_partitions": "true",
+                "table": "t"
+              },
+              "explanation": {
+                "summary": "Forbid DDL alter truncate partition forbid",
+                "why": "The statement uses a construct that the shipped policy explicitly forbids.",
+                "risk": "Ignoring this rule can weaken schema-governance guarantees and make changes harder to review safely.",
+                "suggestion": "avoid truncate partition in this change or relax the policy intentionally"
+              }
+            }
+          ],
+          "coverage": {
+            "status": "complete"
+          }
+        }
+      ],
+      "fail_on_triggered": true,
+      "rule_summary": {
+        "loaded": 1,
+        "applicable": 1,
+        "skipped": []
+      },
+      "context": {
+        "mode": "offline",
+        "dialect": "tidb",
+        "dialect_source": "flag",
+        "note": "existence not checked (no database connection)",
+        "unproven": [
+          "column_exists",
+          "table_exists"
+        ]
+      }
+    },
+    "version_evidence": {
+      "target_raw": null,
+      "target_canonical": null,
+      "observed_raw": null,
+      "observed_canonical": null,
+      "resolved": null
+    }
+  },
+  "assertions": [
+    {
+      "name": "exit code",
+      "ok": true,
+      "detail": "rc=1 expected=1"
+    },
+    {
+      "name": "verdict",
+      "ok": true,
+      "detail": "verdict='reject'"
+    },
+    {
+      "name": "top-level statements",
+      "ok": true,
+      "detail": "statements=1 expected=1"
+    },
+    {
+      "name": "zero findings",
+      "ok": true,
+      "detail": "findings=1"
+    },
+    {
+      "name": "no diagnostics",
+      "ok": true,
+      "detail": "diagnostics=[]"
+    },
+    {
+      "name": "no unsupported",
+      "ok": true,
+      "detail": "unsupported=[]"
+    },
+    {
+      "name": "applicable rule count",
+      "ok": true,
+      "detail": "applicable=1"
+    },
+    {
+      "name": "aggregate coverage",
+      "ok": true,
+      "detail": "coverage='complete'"
+    },
+    {
+      "name": "per-statement coverage",
+      "ok": true,
+      "detail": "statement_coverage=['complete']"
+    },
+    {
+      "name": "finding entries",
+      "ok": true,
+      "detail": "findings=[(0, 'ddl.alter.truncate_partition.forbid', 'blocker')] expected=[(0, 'ddl.alter.truncate_partition.forbid', 'blocker')]"
+    },
+    {
+      "name": "finding metadata (0, 'ddl.alter.truncate_partition.forbid')",
+      "ok": true,
+      "detail": "findings=[{'action': 'truncate_partition', 'all_partitions': 'true', 'table': 't'}] expected_subset={'table': 't', 'all_partitions': 'true'}"
+    }
+  ],
+  "status": "pass"
+}

@@ -1,0 +1,75 @@
+configs/deltascope.example.yaml
+docs/decisions/2026-11-04-ddl-partition-applicability-and-ordered-state-remediation.md
+docs/verification/t13/890ae5312738cdc49912507e36d3cf2dd36d15ac/README.md
+docs/work-plans/t13-partition-risk/CONTRACT.md
+docs/work-plans/t13-partition-risk/probes/README.md
+docs/work-plans/t13-partition-risk/probes/p4_nonpart.log
+docs/work-plans/t13-partition-risk/probes/p5_validation_arms.log
+docs/work-plans/t13-partition-risk/probes/p5_validation_tidb_post.log
+docs/work-plans/t13-partition-risk/probes/p6_mixed_matrix.log
+docs/work-plans/t13-partition-risk/probes/p7_modifiers.log
+docs/work-plans/t13-partition-risk/probes/p8_tableoption.log
+docs/work-plans/t13-partition-risk/probes/probe4_nonpart.sh
+docs/work-plans/t13-partition-risk/probes/probe5_validation_arms.sh
+docs/work-plans/t13-partition-risk/probes/probe6_mixed_matrix.sh
+docs/work-plans/t13-partition-risk/probes/probe7_modifiers.sh
+docs/work-plans/t13-partition-risk/probes/probe8_tableoption.sh
+internal/application/audit/README.md
+internal/application/audit/batch_state.go
+internal/application/audit/batch_state_t13r1_applicability_test.go
+internal/application/audit/batch_state_t13r1_test.go
+internal/application/audit/corpus_coverage_test.go
+internal/application/audit/corpus_helpers_test.go
+internal/application/audit/corpus_testdata_test.go
+internal/application/audit/coverage.go
+internal/application/audit/extract_partition_facts_test.go
+internal/application/audit/metadata.go
+internal/domain/policy/README.md
+internal/domain/policy/defaults_ddl_alter.go
+internal/domain/rule/ddl/README.md
+internal/domain/rule/ddl/common.go
+internal/domain/rule/ddl/partition_applicability_rules.go
+internal/domain/rule/ddl/partition_applicability_rules_test.go
+internal/domain/rule/ddl/register.go
+internal/domain/spec/README.md
+internal/domain/spec/ddl.go
+internal/domain/spec/metadata.go
+internal/infrastructure/metadata/mysql/README.md
+internal/infrastructure/metadata/mysql/provider.go
+internal/infrastructure/metadata/mysql/provider_t10r2_test.go
+internal/infrastructure/metadata/mysql/provider_t10r4_test.go
+internal/infrastructure/metadata/mysql/provider_t10r5_test.go
+internal/infrastructure/parser/tidb/README.md
+internal/infrastructure/parser/tidb/extractor.go
+pkg/deltascope/audit.go
+pkg/deltascope/audit_t13r1_test.go
+scripts/t06a17proof/README.md
+scripts/t06a17proof/main_test.go
+testdata/ddl-golden/T13.json
+testdata/ddl-inventory/inventory.yaml
+testdata/sql-corpus/mysql/ddl/findings/alter_table_partition_applicability.expected.yaml
+testdata/sql-corpus/mysql/ddl/findings/alter_table_partition_applicability.sql
+testdata/sql-corpus/tidb/ddl/findings/alter_table_partition_applicability.expected.yaml
+testdata/sql-corpus/tidb/ddl/findings/alter_table_partition_applicability.sql
+internal/application/audit/batch_state.go: SYNCED
+internal/application/audit/batch_state_t13r1_applicability_test.go: SYNCED
+internal/application/audit/batch_state_t13r1_test.go: SYNCED
+internal/application/audit/corpus_coverage_test.go: SYNCED
+internal/application/audit/corpus_helpers_test.go: SYNCED
+internal/application/audit/corpus_testdata_test.go: SYNCED
+internal/application/audit/coverage.go: SYNCED
+internal/application/audit/extract_partition_facts_test.go: SYNCED
+internal/application/audit/metadata.go: SYNCED
+internal/domain/policy/defaults_ddl_alter.go: SYNCED
+internal/domain/rule/ddl/common.go: SYNCED
+internal/domain/rule/ddl/partition_applicability_rules.go: SYNCED
+internal/domain/rule/ddl/partition_applicability_rules_test.go: SYNCED
+internal/domain/rule/ddl/register.go: SYNCED
+internal/domain/spec/ddl.go: SYNCED
+internal/domain/spec/metadata.go: SYNCED
+internal/infrastructure/metadata/mysql/provider.go: SYNCED
+internal/infrastructure/metadata/mysql/provider_t10r2_test.go: SYNCED
+internal/infrastructure/metadata/mysql/provider_t10r4_test.go: SYNCED
+internal/infrastructure/metadata/mysql/provider_t10r5_test.go: SYNCED
+internal/infrastructure/parser/tidb/extractor.go: SYNCED
+RESULT: PASS

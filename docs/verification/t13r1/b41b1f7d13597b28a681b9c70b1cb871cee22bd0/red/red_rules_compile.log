@@ -1,0 +1,4 @@
+# github.com/Fanduzi/DeltaScope/internal/domain/rule/ddl
+# [github.com/Fanduzi/DeltaScope/internal/domain/rule/ddl]
+vet: internal/domain/rule/ddl/partition_applicability_rules_test.go:31:3: unknown field PartitionType in struct literal of type spec.TableSnapshot
+rules_compile_rc=0

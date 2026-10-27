@@ -1,0 +1,212 @@
+############ ANCHOR mysql57 ############
+=== [mysql57] cleanup
+--- SQL: DROP TABLE IF EXISTS t13v; DROP TABLE IF EXISTS t13vx; DROP TABLE IF EXISTS t13m
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql57] create-range
+--- SQL: CREATE TABLE t13v (id INT, c INT) PARTITION BY RANGE(id) (PARTITION p0 VALUES LESS THAN (100), PARTITION p1 VALUES LESS THAN (200))
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql57] x-create
+--- SQL: CREATE TABLE t13vx (id INT, c INT)
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql57] x-violate
+--- SQL: INSERT INTO t13vx VALUES (999,1)
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql57] exchange-violate-withval
+--- SQL: ALTER TABLE t13v EXCHANGE PARTITION p0 WITH TABLE t13vx WITH VALIDATION
+--- rc=1
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1526 (HY000) at line 1: Table has no partition for value 999
+=== [mysql57] exchange-violate-noval
+--- SQL: ALTER TABLE t13v EXCHANGE PARTITION p0 WITH TABLE t13vx WITHOUT VALIDATION
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql57] exchange-violate-absent
+--- SQL: ALTER TABLE t13v EXCHANGE PARTITION p0 WITH TABLE t13vx
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql57] create-mixed
+--- SQL: CREATE TABLE t13m (id INT, c INT) PARTITION BY RANGE(id) (PARTITION p0 VALUES LESS THAN (100), PARTITION p1 VALUES LESS THAN (200))
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql57] mixed-drop-part-plus-col
+--- SQL: ALTER TABLE t13m DROP PARTITION p0, DROP COLUMN c
+--- rc=1
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'DROP COLUMN c' at line 1
+=== [mysql57] mixed-part-only
+--- SQL: ALTER TABLE t13m DROP PARTITION p0, DROP PARTITION p1
+--- rc=1
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'DROP PARTITION p1' at line 1
+=== [mysql57] mixed-trunc-plus-col
+--- SQL: ALTER TABLE t13m TRUNCATE PARTITION p1, DROP COLUMN c
+--- rc=1
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'DROP COLUMN c' at line 1
+--- t13m parts: 
+=== [mysql57] final-cleanup
+--- SQL: DROP TABLE IF EXISTS t13v; DROP TABLE IF EXISTS t13vx; DROP TABLE IF EXISTS t13m
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+############ ANCHOR mysql80 ############
+=== [mysql80] cleanup
+--- SQL: DROP TABLE IF EXISTS t13v; DROP TABLE IF EXISTS t13vx; DROP TABLE IF EXISTS t13m
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql80] create-range
+--- SQL: CREATE TABLE t13v (id INT, c INT) PARTITION BY RANGE(id) (PARTITION p0 VALUES LESS THAN (100), PARTITION p1 VALUES LESS THAN (200))
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql80] x-create
+--- SQL: CREATE TABLE t13vx (id INT, c INT)
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql80] x-violate
+--- SQL: INSERT INTO t13vx VALUES (999,1)
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql80] exchange-violate-withval
+--- SQL: ALTER TABLE t13v EXCHANGE PARTITION p0 WITH TABLE t13vx WITH VALIDATION
+--- rc=1
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1526 (HY000) at line 1: Table has no partition for value 999
+=== [mysql80] exchange-violate-noval
+--- SQL: ALTER TABLE t13v EXCHANGE PARTITION p0 WITH TABLE t13vx WITHOUT VALIDATION
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql80] exchange-violate-absent
+--- SQL: ALTER TABLE t13v EXCHANGE PARTITION p0 WITH TABLE t13vx
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql80] create-mixed
+--- SQL: CREATE TABLE t13m (id INT, c INT) PARTITION BY RANGE(id) (PARTITION p0 VALUES LESS THAN (100), PARTITION p1 VALUES LESS THAN (200))
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql80] mixed-drop-part-plus-col
+--- SQL: ALTER TABLE t13m DROP PARTITION p0, DROP COLUMN c
+--- rc=1
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'DROP COLUMN c' at line 1
+=== [mysql80] mixed-part-only
+--- SQL: ALTER TABLE t13m DROP PARTITION p0, DROP PARTITION p1
+--- rc=1
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'DROP PARTITION p1' at line 1
+=== [mysql80] mixed-trunc-plus-col
+--- SQL: ALTER TABLE t13m TRUNCATE PARTITION p1, DROP COLUMN c
+--- rc=1
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'DROP COLUMN c' at line 1
+--- t13m parts: 
+=== [mysql80] final-cleanup
+--- SQL: DROP TABLE IF EXISTS t13v; DROP TABLE IF EXISTS t13vx; DROP TABLE IF EXISTS t13m
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+############ ANCHOR mysql84 ############
+=== [mysql84] cleanup
+--- SQL: DROP TABLE IF EXISTS t13v; DROP TABLE IF EXISTS t13vx; DROP TABLE IF EXISTS t13m
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql84] create-range
+--- SQL: CREATE TABLE t13v (id INT, c INT) PARTITION BY RANGE(id) (PARTITION p0 VALUES LESS THAN (100), PARTITION p1 VALUES LESS THAN (200))
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql84] x-create
+--- SQL: CREATE TABLE t13vx (id INT, c INT)
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql84] x-violate
+--- SQL: INSERT INTO t13vx VALUES (999,1)
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql84] exchange-violate-withval
+--- SQL: ALTER TABLE t13v EXCHANGE PARTITION p0 WITH TABLE t13vx WITH VALIDATION
+--- rc=1
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1526 (HY000) at line 1: Table has no partition for value 999
+=== [mysql84] exchange-violate-noval
+--- SQL: ALTER TABLE t13v EXCHANGE PARTITION p0 WITH TABLE t13vx WITHOUT VALIDATION
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql84] exchange-violate-absent
+--- SQL: ALTER TABLE t13v EXCHANGE PARTITION p0 WITH TABLE t13vx
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql84] create-mixed
+--- SQL: CREATE TABLE t13m (id INT, c INT) PARTITION BY RANGE(id) (PARTITION p0 VALUES LESS THAN (100), PARTITION p1 VALUES LESS THAN (200))
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql84] mixed-drop-part-plus-col
+--- SQL: ALTER TABLE t13m DROP PARTITION p0, DROP COLUMN c
+--- rc=1
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'DROP COLUMN c' at line 1
+=== [mysql84] mixed-part-only
+--- SQL: ALTER TABLE t13m DROP PARTITION p0, DROP PARTITION p1
+--- rc=1
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'DROP PARTITION p1' at line 1
+=== [mysql84] mixed-trunc-plus-col
+--- SQL: ALTER TABLE t13m TRUNCATE PARTITION p1, DROP COLUMN c
+--- rc=1
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'DROP COLUMN c' at line 1
+--- t13m parts: 
+=== [mysql84] final-cleanup
+--- SQL: DROP TABLE IF EXISTS t13v; DROP TABLE IF EXISTS t13vx; DROP TABLE IF EXISTS t13m
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+############ ANCHOR tidb85 ############
+=== [tidb85] cleanup
+--- SQL: DROP TABLE IF EXISTS t13v; DROP TABLE IF EXISTS t13vx; DROP TABLE IF EXISTS t13m
+--- rc=0
+--- out: 
+=== [tidb85] create-range
+--- SQL: CREATE TABLE t13v (id INT, c INT) PARTITION BY RANGE(id) (PARTITION p0 VALUES LESS THAN (100), PARTITION p1 VALUES LESS THAN (200))
+--- rc=0
+--- out: 
+=== [tidb85] x-create
+--- SQL: CREATE TABLE t13vx (id INT, c INT)
+--- rc=0
+--- out: 
+=== [tidb85] x-violate
+--- SQL: INSERT INTO t13vx VALUES (999,1)
+--- rc=0
+--- out: 
+=== [tidb85] exchange-violate-withval
+--- SQL: ALTER TABLE t13v EXCHANGE PARTITION p0 WITH TABLE t13vx WITH VALIDATION
+--- rc=1
+--- out: ERROR 1737 (HY000) at line 1: Found a row that does not match the partition
+=== [tidb85] exchange-violate-noval
+--- SQL: ALTER TABLE t13v EXCHANGE PARTITION p0 WITH TABLE t13vx WITHOUT VALIDATION
+--- rc=0
+--- out: 
+=== [tidb85] exchange-violate-absent
+--- SQL: ALTER TABLE t13v EXCHANGE PARTITION p0 WITH TABLE t13vx
+--- rc=0
+--- out: 
+=== [tidb85] create-mixed
+--- SQL: CREATE TABLE t13m (id INT, c INT) PARTITION BY RANGE(id) (PARTITION p0 VALUES LESS THAN (100), PARTITION p1 VALUES LESS THAN (200))
+--- rc=0
+--- out: 
+=== [tidb85] mixed-drop-part-plus-col
+--- SQL: ALTER TABLE t13m DROP PARTITION p0, DROP COLUMN c
+--- rc=1
+--- out: ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your TiDB version for the right syntax to use line 1 column 40 near "DROP COLUMN c" 
+=== [tidb85] mixed-part-only
+--- SQL: ALTER TABLE t13m DROP PARTITION p0, DROP PARTITION p1
+--- rc=1
+--- out: ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your TiDB version for the right syntax to use line 1 column 40 near "DROP PARTITION p1" 
+=== [tidb85] mixed-trunc-plus-col
+--- SQL: ALTER TABLE t13m TRUNCATE PARTITION p1, DROP COLUMN c
+--- rc=1
+--- out: ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your TiDB version for the right syntax to use line 1 column 44 near "DROP COLUMN c" 
+--- t13m parts: 
+=== [tidb85] final-cleanup
+--- SQL: DROP TABLE IF EXISTS t13v; DROP TABLE IF EXISTS t13vx; DROP TABLE IF EXISTS t13m
+--- rc=0
+--- out: 

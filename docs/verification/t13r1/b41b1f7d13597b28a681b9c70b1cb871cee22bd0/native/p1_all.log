@@ -1,0 +1,404 @@
+############ ANCHOR mysql57 ############
+version: 5.7.44
+=== [mysql57] cleanup
+--- SQL: DROP TABLE IF EXISTS t13; DROP TABLE IF EXISTS t13x; DROP TABLE IF EXISTS t13np; DROP TABLE IF EXISTS t13l
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql57] create-range
+--- SQL: CREATE TABLE t13 (id INT, c INT) PARTITION BY RANGE(id) (PARTITION p0 VALUES LESS THAN (100), PARTITION p1 VALUES LESS THAN (200))
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql57] insert
+--- SQL: INSERT INTO t13 VALUES (1,10),(50,20),(150,30)
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+--- parts before: p0	2;p1	1;
+--- rows before: 3
+=== [mysql57] drop-p0
+--- SQL: ALTER TABLE t13 DROP PARTITION p0
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+--- parts after drop: p1	0;
+--- rows after drop: 1
+=== [mysql57] drop-missing
+--- SQL: ALTER TABLE t13 DROP PARTITION p99
+--- rc=1
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1508 (HY000) at line 1: Cannot remove all partitions, use DROP TABLE instead
+=== [mysql57] drop-last
+--- SQL: ALTER TABLE t13 DROP PARTITION p1
+--- rc=1
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1508 (HY000) at line 1: Cannot remove all partitions, use DROP TABLE instead
+--- parts after drop-last attempt: p1;
+=== [mysql57] create-nonpart
+--- SQL: CREATE TABLE t13np (id INT, c INT)
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql57] drop-on-nonpart
+--- SQL: ALTER TABLE t13np DROP PARTITION p0
+--- rc=1
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1505 (HY000) at line 1: Partition management on a not partitioned table is not possible
+=== [mysql57] truncate-p1
+--- SQL: ALTER TABLE t13 TRUNCATE PARTITION p1
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+--- rows after truncate: 0 ; parts: p1;
+=== [mysql57] insert2
+--- SQL: INSERT INTO t13 VALUES (110,1),(120,2)
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql57] truncate-all
+--- SQL: ALTER TABLE t13 TRUNCATE PARTITION ALL
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+--- rows after truncate-all: 0 ; parts: p1;
+=== [mysql57] create-exchange
+--- SQL: CREATE TABLE t13x (id INT, c INT)
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql57] x-insert
+--- SQL: INSERT INTO t13x VALUES (5,99)
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql57] p-insert
+--- SQL: INSERT INTO t13 VALUES (10,1)
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+--- t13 rows: 10	1; | t13x rows: 5	99;
+=== [mysql57] exchange
+--- SQL: ALTER TABLE t13 EXCHANGE PARTITION p0 WITH TABLE t13x
+--- rc=1
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1735 (HY000) at line 1: Unknown partition 'p0' in table 't13'
+--- t13 rows after: 10	1; | t13x rows after: 5	99;
+=== [mysql57] exchange-noval
+--- SQL: ALTER TABLE t13 EXCHANGE PARTITION p0 WITH TABLE t13x WITHOUT VALIDATION
+--- rc=1
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1735 (HY000) at line 1: Unknown partition 'p0' in table 't13'
+=== [mysql57] exchange-withval
+--- SQL: ALTER TABLE t13 EXCHANGE PARTITION p0 WITH TABLE t13x WITH VALIDATION
+--- rc=1
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1735 (HY000) at line 1: Unknown partition 'p0' in table 't13'
+=== [mysql57] create-list
+--- SQL: CREATE TABLE t13l (id INT, c INT) PARTITION BY LIST(id) (PARTITION pA VALUES IN (1,2), PARTITION pB VALUES IN (3,4))
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql57] drop-list
+--- SQL: ALTER TABLE t13l DROP PARTITION pA
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql57] mixed
+--- SQL: ALTER TABLE t13 DROP PARTITION p1, DROP COLUMN c
+--- rc=1
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'DROP COLUMN c' at line 1
+--- cols after mixed: 2 ; parts: p1;
+=== [mysql57] final-cleanup
+--- SQL: DROP TABLE IF EXISTS t13; DROP TABLE IF EXISTS t13x; DROP TABLE IF EXISTS t13np; DROP TABLE IF EXISTS t13l
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+############ ANCHOR mysql80 ############
+version: 8.0.46
+=== [mysql80] cleanup
+--- SQL: DROP TABLE IF EXISTS t13; DROP TABLE IF EXISTS t13x; DROP TABLE IF EXISTS t13np; DROP TABLE IF EXISTS t13l
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql80] create-range
+--- SQL: CREATE TABLE t13 (id INT, c INT) PARTITION BY RANGE(id) (PARTITION p0 VALUES LESS THAN (100), PARTITION p1 VALUES LESS THAN (200))
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql80] insert
+--- SQL: INSERT INTO t13 VALUES (1,10),(50,20),(150,30)
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+--- parts before: p0	2;p1	1;
+--- rows before: 3
+=== [mysql80] drop-p0
+--- SQL: ALTER TABLE t13 DROP PARTITION p0
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+--- parts after drop: p1	0;
+--- rows after drop: 1
+=== [mysql80] drop-missing
+--- SQL: ALTER TABLE t13 DROP PARTITION p99
+--- rc=1
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1508 (HY000) at line 1: Cannot remove all partitions, use DROP TABLE instead
+=== [mysql80] drop-last
+--- SQL: ALTER TABLE t13 DROP PARTITION p1
+--- rc=1
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1508 (HY000) at line 1: Cannot remove all partitions, use DROP TABLE instead
+--- parts after drop-last attempt: p1;
+=== [mysql80] create-nonpart
+--- SQL: CREATE TABLE t13np (id INT, c INT)
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql80] drop-on-nonpart
+--- SQL: ALTER TABLE t13np DROP PARTITION p0
+--- rc=1
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1505 (HY000) at line 1: Partition management on a not partitioned table is not possible
+=== [mysql80] truncate-p1
+--- SQL: ALTER TABLE t13 TRUNCATE PARTITION p1
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+--- rows after truncate: 0 ; parts: p1;
+=== [mysql80] insert2
+--- SQL: INSERT INTO t13 VALUES (110,1),(120,2)
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql80] truncate-all
+--- SQL: ALTER TABLE t13 TRUNCATE PARTITION ALL
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+--- rows after truncate-all: 0 ; parts: p1;
+=== [mysql80] create-exchange
+--- SQL: CREATE TABLE t13x (id INT, c INT)
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql80] x-insert
+--- SQL: INSERT INTO t13x VALUES (5,99)
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql80] p-insert
+--- SQL: INSERT INTO t13 VALUES (10,1)
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+--- t13 rows: 10	1; | t13x rows: 5	99;
+=== [mysql80] exchange
+--- SQL: ALTER TABLE t13 EXCHANGE PARTITION p0 WITH TABLE t13x
+--- rc=1
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1735 (HY000) at line 1: Unknown partition 'p0' in table 't13'
+--- t13 rows after: 10	1; | t13x rows after: 5	99;
+=== [mysql80] exchange-noval
+--- SQL: ALTER TABLE t13 EXCHANGE PARTITION p0 WITH TABLE t13x WITHOUT VALIDATION
+--- rc=1
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1735 (HY000) at line 1: Unknown partition 'p0' in table 't13'
+=== [mysql80] exchange-withval
+--- SQL: ALTER TABLE t13 EXCHANGE PARTITION p0 WITH TABLE t13x WITH VALIDATION
+--- rc=1
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1735 (HY000) at line 1: Unknown partition 'p0' in table 't13'
+=== [mysql80] create-list
+--- SQL: CREATE TABLE t13l (id INT, c INT) PARTITION BY LIST(id) (PARTITION pA VALUES IN (1,2), PARTITION pB VALUES IN (3,4))
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql80] drop-list
+--- SQL: ALTER TABLE t13l DROP PARTITION pA
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql80] mixed
+--- SQL: ALTER TABLE t13 DROP PARTITION p1, DROP COLUMN c
+--- rc=1
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'DROP COLUMN c' at line 1
+--- cols after mixed: 2 ; parts: p1;
+=== [mysql80] final-cleanup
+--- SQL: DROP TABLE IF EXISTS t13; DROP TABLE IF EXISTS t13x; DROP TABLE IF EXISTS t13np; DROP TABLE IF EXISTS t13l
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+############ ANCHOR mysql84 ############
+version: 8.4.10
+=== [mysql84] cleanup
+--- SQL: DROP TABLE IF EXISTS t13; DROP TABLE IF EXISTS t13x; DROP TABLE IF EXISTS t13np; DROP TABLE IF EXISTS t13l
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql84] create-range
+--- SQL: CREATE TABLE t13 (id INT, c INT) PARTITION BY RANGE(id) (PARTITION p0 VALUES LESS THAN (100), PARTITION p1 VALUES LESS THAN (200))
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql84] insert
+--- SQL: INSERT INTO t13 VALUES (1,10),(50,20),(150,30)
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+--- parts before: p0	2;p1	1;
+--- rows before: 3
+=== [mysql84] drop-p0
+--- SQL: ALTER TABLE t13 DROP PARTITION p0
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+--- parts after drop: p1	0;
+--- rows after drop: 1
+=== [mysql84] drop-missing
+--- SQL: ALTER TABLE t13 DROP PARTITION p99
+--- rc=1
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1508 (HY000) at line 1: Cannot remove all partitions, use DROP TABLE instead
+=== [mysql84] drop-last
+--- SQL: ALTER TABLE t13 DROP PARTITION p1
+--- rc=1
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1508 (HY000) at line 1: Cannot remove all partitions, use DROP TABLE instead
+--- parts after drop-last attempt: p1;
+=== [mysql84] create-nonpart
+--- SQL: CREATE TABLE t13np (id INT, c INT)
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql84] drop-on-nonpart
+--- SQL: ALTER TABLE t13np DROP PARTITION p0
+--- rc=1
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1505 (HY000) at line 1: Partition management on a not partitioned table is not possible
+=== [mysql84] truncate-p1
+--- SQL: ALTER TABLE t13 TRUNCATE PARTITION p1
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+--- rows after truncate: 0 ; parts: p1;
+=== [mysql84] insert2
+--- SQL: INSERT INTO t13 VALUES (110,1),(120,2)
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql84] truncate-all
+--- SQL: ALTER TABLE t13 TRUNCATE PARTITION ALL
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+--- rows after truncate-all: 0 ; parts: p1;
+=== [mysql84] create-exchange
+--- SQL: CREATE TABLE t13x (id INT, c INT)
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql84] x-insert
+--- SQL: INSERT INTO t13x VALUES (5,99)
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql84] p-insert
+--- SQL: INSERT INTO t13 VALUES (10,1)
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+--- t13 rows: 10	1; | t13x rows: 5	99;
+=== [mysql84] exchange
+--- SQL: ALTER TABLE t13 EXCHANGE PARTITION p0 WITH TABLE t13x
+--- rc=1
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1735 (HY000) at line 1: Unknown partition 'p0' in table 't13'
+--- t13 rows after: 10	1; | t13x rows after: 5	99;
+=== [mysql84] exchange-noval
+--- SQL: ALTER TABLE t13 EXCHANGE PARTITION p0 WITH TABLE t13x WITHOUT VALIDATION
+--- rc=1
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1735 (HY000) at line 1: Unknown partition 'p0' in table 't13'
+=== [mysql84] exchange-withval
+--- SQL: ALTER TABLE t13 EXCHANGE PARTITION p0 WITH TABLE t13x WITH VALIDATION
+--- rc=1
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1735 (HY000) at line 1: Unknown partition 'p0' in table 't13'
+=== [mysql84] create-list
+--- SQL: CREATE TABLE t13l (id INT, c INT) PARTITION BY LIST(id) (PARTITION pA VALUES IN (1,2), PARTITION pB VALUES IN (3,4))
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql84] drop-list
+--- SQL: ALTER TABLE t13l DROP PARTITION pA
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql84] mixed
+--- SQL: ALTER TABLE t13 DROP PARTITION p1, DROP COLUMN c
+--- rc=1
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'DROP COLUMN c' at line 1
+--- cols after mixed: 2 ; parts: p1;
+=== [mysql84] final-cleanup
+--- SQL: DROP TABLE IF EXISTS t13; DROP TABLE IF EXISTS t13x; DROP TABLE IF EXISTS t13np; DROP TABLE IF EXISTS t13l
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+############ ANCHOR tidb85 ############
+=== [tidb85] cleanup
+--- SQL: DROP TABLE IF EXISTS t13; DROP TABLE IF EXISTS t13x; DROP TABLE IF EXISTS t13np; DROP TABLE IF EXISTS t13l
+--- rc=1
+--- out: ERROR 1049 (42000): Unknown database 'golden'
+=== [tidb85] create-range
+--- SQL: CREATE TABLE t13 (id INT, c INT) PARTITION BY RANGE(id) (PARTITION p0 VALUES LESS THAN (100), PARTITION p1 VALUES LESS THAN (200))
+--- rc=1
+--- out: ERROR 1049 (42000): Unknown database 'golden'
+=== [tidb85] insert
+--- SQL: INSERT INTO t13 VALUES (1,10),(50,20),(150,30)
+--- rc=1
+--- out: ERROR 1049 (42000): Unknown database 'golden'
+--- parts before: 
+--- rows before: 
+=== [tidb85] drop-p0
+--- SQL: ALTER TABLE t13 DROP PARTITION p0
+--- rc=1
+--- out: ERROR 1049 (42000): Unknown database 'golden'
+--- parts after drop: 
+--- rows after drop: 
+=== [tidb85] drop-missing
+--- SQL: ALTER TABLE t13 DROP PARTITION p99
+--- rc=1
+--- out: ERROR 1049 (42000): Unknown database 'golden'
+=== [tidb85] drop-last
+--- SQL: ALTER TABLE t13 DROP PARTITION p1
+--- rc=1
+--- out: ERROR 1049 (42000): Unknown database 'golden'
+--- parts after drop-last attempt: 
+=== [tidb85] create-nonpart
+--- SQL: CREATE TABLE t13np (id INT, c INT)
+--- rc=1
+--- out: ERROR 1049 (42000): Unknown database 'golden'
+=== [tidb85] drop-on-nonpart
+--- SQL: ALTER TABLE t13np DROP PARTITION p0
+--- rc=1
+--- out: ERROR 1049 (42000): Unknown database 'golden'
+=== [tidb85] truncate-p1
+--- SQL: ALTER TABLE t13 TRUNCATE PARTITION p1
+--- rc=1
+--- out: ERROR 1049 (42000): Unknown database 'golden'
+--- rows after truncate:  ; parts: 
+=== [tidb85] insert2
+--- SQL: INSERT INTO t13 VALUES (110,1),(120,2)
+--- rc=1
+--- out: ERROR 1049 (42000): Unknown database 'golden'
+=== [tidb85] truncate-all
+--- SQL: ALTER TABLE t13 TRUNCATE PARTITION ALL
+--- rc=1
+--- out: ERROR 1049 (42000): Unknown database 'golden'
+--- rows after truncate-all:  ; parts: 
+=== [tidb85] create-exchange
+--- SQL: CREATE TABLE t13x (id INT, c INT)
+--- rc=1
+--- out: ERROR 1049 (42000): Unknown database 'golden'
+=== [tidb85] x-insert
+--- SQL: INSERT INTO t13x VALUES (5,99)
+--- rc=1
+--- out: ERROR 1049 (42000): Unknown database 'golden'
+=== [tidb85] p-insert
+--- SQL: INSERT INTO t13 VALUES (10,1)
+--- rc=1
+--- out: ERROR 1049 (42000): Unknown database 'golden'
+--- t13 rows:  | t13x rows: 
+=== [tidb85] exchange
+--- SQL: ALTER TABLE t13 EXCHANGE PARTITION p0 WITH TABLE t13x
+--- rc=1
+--- out: ERROR 1049 (42000): Unknown database 'golden'
+--- t13 rows after:  | t13x rows after: 
+=== [tidb85] exchange-noval
+--- SQL: ALTER TABLE t13 EXCHANGE PARTITION p0 WITH TABLE t13x WITHOUT VALIDATION
+--- rc=1
+--- out: ERROR 1049 (42000): Unknown database 'golden'
+=== [tidb85] exchange-withval
+--- SQL: ALTER TABLE t13 EXCHANGE PARTITION p0 WITH TABLE t13x WITH VALIDATION
+--- rc=1
+--- out: ERROR 1049 (42000): Unknown database 'golden'
+=== [tidb85] create-list
+--- SQL: CREATE TABLE t13l (id INT, c INT) PARTITION BY LIST(id) (PARTITION pA VALUES IN (1,2), PARTITION pB VALUES IN (3,4))
+--- rc=1
+--- out: ERROR 1049 (42000): Unknown database 'golden'
+=== [tidb85] drop-list
+--- SQL: ALTER TABLE t13l DROP PARTITION pA
+--- rc=1
+--- out: ERROR 1049 (42000): Unknown database 'golden'
+=== [tidb85] mixed
+--- SQL: ALTER TABLE t13 DROP PARTITION p1, DROP COLUMN c
+--- rc=1
+--- out: ERROR 1049 (42000): Unknown database 'golden'
+--- cols after mixed:  ; parts: 
+=== [tidb85] final-cleanup
+--- SQL: DROP TABLE IF EXISTS t13; DROP TABLE IF EXISTS t13x; DROP TABLE IF EXISTS t13np; DROP TABLE IF EXISTS t13l
+--- rc=1
+--- out: ERROR 1049 (42000): Unknown database 'golden'

@@ -1,0 +1,429 @@
+############ ANCHOR mysql57 ############
+=== [mysql57] cleanup
+--- SQL: DROP TABLE IF EXISTS t13; DROP TABLE IF EXISTS t13x; DROP TABLE IF EXISTS t13x2; DROP TABLE IF EXISTS t13np
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql57] create-range
+--- SQL: CREATE TABLE t13 (id INT, c INT) PARTITION BY RANGE(id) (PARTITION p0 VALUES LESS THAN (100), PARTITION p1 VALUES LESS THAN (200))
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql57] insert
+--- SQL: INSERT INTO t13 VALUES (1,10),(50,20),(150,30)
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql57] create-exchange
+--- SQL: CREATE TABLE t13x (id INT, c INT)
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql57] x-insert
+--- SQL: INSERT INTO t13x VALUES (5,99)
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+--- t13 rows: 1,10;50,20;150,30; | t13x: 5,99;
+=== [mysql57] exchange-p0
+--- SQL: ALTER TABLE t13 EXCHANGE PARTITION p0 WITH TABLE t13x
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+--- t13 rows: 5,99;150,30; | t13x: 1,10;50,20;
+=== [mysql57] exchange-back-noval
+--- SQL: ALTER TABLE t13 EXCHANGE PARTITION p0 WITH TABLE t13x WITHOUT VALIDATION
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql57] exchange-withval
+--- SQL: ALTER TABLE t13 EXCHANGE PARTITION p0 WITH TABLE t13x WITH VALIDATION
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql57] x2-create
+--- SQL: CREATE TABLE t13x2 (id INT, c INT)
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql57] x2-violate
+--- SQL: INSERT INTO t13x2 VALUES (999,1)
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql57] exchange-violate-noval
+--- SQL: ALTER TABLE t13 EXCHANGE PARTITION p0 WITH TABLE t13x2 WITHOUT VALIDATION
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+--- violating exchange noval: t13=150,30;999,1; t13x2=5,99;
+=== [mysql57] exchange-violate-withval
+--- SQL: ALTER TABLE t13 EXCHANGE PARTITION p0 WITH TABLE t13x2 WITH VALIDATION
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql57] x3-create
+--- SQL: CREATE TABLE t13x3 (id INT, c INT, extra INT)
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql57] exchange-incompat
+--- SQL: ALTER TABLE t13 EXCHANGE PARTITION p0 WITH TABLE t13x3
+--- rc=1
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1736 (HY000) at line 1: Tables have different definitions
+=== [mysql57] x4-create
+--- SQL: CREATE TABLE t13x4 (id INT, c INT) PARTITION BY RANGE(id) (PARTITION q0 VALUES LESS THAN (300))
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql57] exchange-partitioned-target
+--- SQL: ALTER TABLE t13 EXCHANGE PARTITION p0 WITH TABLE t13x4
+--- rc=1
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1732 (HY000) at line 1: Table to exchange with partition is partitioned: 't13x4'
+=== [mysql57] exchange-missing-table
+--- SQL: ALTER TABLE t13 EXCHANGE PARTITION p0 WITH TABLE t13xmissing
+--- rc=1
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1146 (42S02) at line 1: Table 'golden.t13xmissing' doesn't exist
+=== [mysql57] exchange-missing-part
+--- SQL: ALTER TABLE t13 EXCHANGE PARTITION p99 WITH TABLE t13x
+--- rc=1
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1735 (HY000) at line 1: Unknown partition 'p99' in table 't13'
+=== [mysql57] exchange-qualified
+--- SQL: ALTER TABLE t13 EXCHANGE PARTITION p0 WITH TABLE golden.t13x
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql57] drop-multi
+--- SQL: ALTER TABLE t13 DROP PARTITION p0, p1
+--- rc=1
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1508 (HY000) at line 1: Cannot remove all partitions, use DROP TABLE instead
+--- parts after drop-multi: p0;p1;
+=== [mysql57] create-2p
+--- SQL: CREATE TABLE t13np (id INT) PARTITION BY RANGE(id) (PARTITION p0 VALUES LESS THAN (100), PARTITION p1 VALUES LESS THAN (200))
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql57] drop-missing-2p
+--- SQL: ALTER TABLE t13np DROP PARTITION p99
+--- rc=1
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1507 (HY000) at line 1: Error in list of partitions to DROP
+=== [mysql57] drop-multi-missing
+--- SQL: ALTER TABLE t13np DROP PARTITION p0, p99
+--- rc=1
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1508 (HY000) at line 1: Cannot remove all partitions, use DROP TABLE instead
+--- parts after drop-missing-2p: p0;p1;
+=== [mysql57] final-cleanup
+--- SQL: DROP TABLE IF EXISTS t13; DROP TABLE IF EXISTS t13x; DROP TABLE IF EXISTS t13x2; DROP TABLE IF EXISTS t13x3; DROP TABLE IF EXISTS t13x4; DROP TABLE IF EXISTS t13np
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+############ ANCHOR mysql80 ############
+=== [mysql80] cleanup
+--- SQL: DROP TABLE IF EXISTS t13; DROP TABLE IF EXISTS t13x; DROP TABLE IF EXISTS t13x2; DROP TABLE IF EXISTS t13np
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql80] create-range
+--- SQL: CREATE TABLE t13 (id INT, c INT) PARTITION BY RANGE(id) (PARTITION p0 VALUES LESS THAN (100), PARTITION p1 VALUES LESS THAN (200))
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql80] insert
+--- SQL: INSERT INTO t13 VALUES (1,10),(50,20),(150,30)
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql80] create-exchange
+--- SQL: CREATE TABLE t13x (id INT, c INT)
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql80] x-insert
+--- SQL: INSERT INTO t13x VALUES (5,99)
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+--- t13 rows: 1,10;50,20;150,30; | t13x: 5,99;
+=== [mysql80] exchange-p0
+--- SQL: ALTER TABLE t13 EXCHANGE PARTITION p0 WITH TABLE t13x
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+--- t13 rows: 5,99;150,30; | t13x: 1,10;50,20;
+=== [mysql80] exchange-back-noval
+--- SQL: ALTER TABLE t13 EXCHANGE PARTITION p0 WITH TABLE t13x WITHOUT VALIDATION
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql80] exchange-withval
+--- SQL: ALTER TABLE t13 EXCHANGE PARTITION p0 WITH TABLE t13x WITH VALIDATION
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql80] x2-create
+--- SQL: CREATE TABLE t13x2 (id INT, c INT)
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql80] x2-violate
+--- SQL: INSERT INTO t13x2 VALUES (999,1)
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql80] exchange-violate-noval
+--- SQL: ALTER TABLE t13 EXCHANGE PARTITION p0 WITH TABLE t13x2 WITHOUT VALIDATION
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+--- violating exchange noval: t13=150,30;999,1; t13x2=5,99;
+=== [mysql80] exchange-violate-withval
+--- SQL: ALTER TABLE t13 EXCHANGE PARTITION p0 WITH TABLE t13x2 WITH VALIDATION
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql80] x3-create
+--- SQL: CREATE TABLE t13x3 (id INT, c INT, extra INT)
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql80] exchange-incompat
+--- SQL: ALTER TABLE t13 EXCHANGE PARTITION p0 WITH TABLE t13x3
+--- rc=1
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1736 (HY000) at line 1: Tables have different definitions
+=== [mysql80] x4-create
+--- SQL: CREATE TABLE t13x4 (id INT, c INT) PARTITION BY RANGE(id) (PARTITION q0 VALUES LESS THAN (300))
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql80] exchange-partitioned-target
+--- SQL: ALTER TABLE t13 EXCHANGE PARTITION p0 WITH TABLE t13x4
+--- rc=1
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1732 (HY000) at line 1: Table to exchange with partition is partitioned: 't13x4'
+=== [mysql80] exchange-missing-table
+--- SQL: ALTER TABLE t13 EXCHANGE PARTITION p0 WITH TABLE t13xmissing
+--- rc=1
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1146 (42S02) at line 1: Table 'golden.t13xmissing' doesn't exist
+=== [mysql80] exchange-missing-part
+--- SQL: ALTER TABLE t13 EXCHANGE PARTITION p99 WITH TABLE t13x
+--- rc=1
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1735 (HY000) at line 1: Unknown partition 'p99' in table 't13'
+=== [mysql80] exchange-qualified
+--- SQL: ALTER TABLE t13 EXCHANGE PARTITION p0 WITH TABLE golden.t13x
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql80] drop-multi
+--- SQL: ALTER TABLE t13 DROP PARTITION p0, p1
+--- rc=1
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1508 (HY000) at line 1: Cannot remove all partitions, use DROP TABLE instead
+--- parts after drop-multi: p0;p1;
+=== [mysql80] create-2p
+--- SQL: CREATE TABLE t13np (id INT) PARTITION BY RANGE(id) (PARTITION p0 VALUES LESS THAN (100), PARTITION p1 VALUES LESS THAN (200))
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql80] drop-missing-2p
+--- SQL: ALTER TABLE t13np DROP PARTITION p99
+--- rc=1
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1507 (HY000) at line 1: Error in list of partitions to DROP
+=== [mysql80] drop-multi-missing
+--- SQL: ALTER TABLE t13np DROP PARTITION p0, p99
+--- rc=1
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1508 (HY000) at line 1: Cannot remove all partitions, use DROP TABLE instead
+--- parts after drop-missing-2p: p0;p1;
+=== [mysql80] final-cleanup
+--- SQL: DROP TABLE IF EXISTS t13; DROP TABLE IF EXISTS t13x; DROP TABLE IF EXISTS t13x2; DROP TABLE IF EXISTS t13x3; DROP TABLE IF EXISTS t13x4; DROP TABLE IF EXISTS t13np
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+############ ANCHOR mysql84 ############
+=== [mysql84] cleanup
+--- SQL: DROP TABLE IF EXISTS t13; DROP TABLE IF EXISTS t13x; DROP TABLE IF EXISTS t13x2; DROP TABLE IF EXISTS t13np
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql84] create-range
+--- SQL: CREATE TABLE t13 (id INT, c INT) PARTITION BY RANGE(id) (PARTITION p0 VALUES LESS THAN (100), PARTITION p1 VALUES LESS THAN (200))
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql84] insert
+--- SQL: INSERT INTO t13 VALUES (1,10),(50,20),(150,30)
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql84] create-exchange
+--- SQL: CREATE TABLE t13x (id INT, c INT)
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql84] x-insert
+--- SQL: INSERT INTO t13x VALUES (5,99)
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+--- t13 rows: 1,10;50,20;150,30; | t13x: 5,99;
+=== [mysql84] exchange-p0
+--- SQL: ALTER TABLE t13 EXCHANGE PARTITION p0 WITH TABLE t13x
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+--- t13 rows: 5,99;150,30; | t13x: 1,10;50,20;
+=== [mysql84] exchange-back-noval
+--- SQL: ALTER TABLE t13 EXCHANGE PARTITION p0 WITH TABLE t13x WITHOUT VALIDATION
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql84] exchange-withval
+--- SQL: ALTER TABLE t13 EXCHANGE PARTITION p0 WITH TABLE t13x WITH VALIDATION
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql84] x2-create
+--- SQL: CREATE TABLE t13x2 (id INT, c INT)
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql84] x2-violate
+--- SQL: INSERT INTO t13x2 VALUES (999,1)
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql84] exchange-violate-noval
+--- SQL: ALTER TABLE t13 EXCHANGE PARTITION p0 WITH TABLE t13x2 WITHOUT VALIDATION
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+--- violating exchange noval: t13=150,30;999,1; t13x2=5,99;
+=== [mysql84] exchange-violate-withval
+--- SQL: ALTER TABLE t13 EXCHANGE PARTITION p0 WITH TABLE t13x2 WITH VALIDATION
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql84] x3-create
+--- SQL: CREATE TABLE t13x3 (id INT, c INT, extra INT)
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql84] exchange-incompat
+--- SQL: ALTER TABLE t13 EXCHANGE PARTITION p0 WITH TABLE t13x3
+--- rc=1
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1736 (HY000) at line 1: Tables have different definitions
+=== [mysql84] x4-create
+--- SQL: CREATE TABLE t13x4 (id INT, c INT) PARTITION BY RANGE(id) (PARTITION q0 VALUES LESS THAN (300))
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql84] exchange-partitioned-target
+--- SQL: ALTER TABLE t13 EXCHANGE PARTITION p0 WITH TABLE t13x4
+--- rc=1
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1732 (HY000) at line 1: Table to exchange with partition is partitioned: 't13x4'
+=== [mysql84] exchange-missing-table
+--- SQL: ALTER TABLE t13 EXCHANGE PARTITION p0 WITH TABLE t13xmissing
+--- rc=1
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1146 (42S02) at line 1: Table 'golden.t13xmissing' doesn't exist
+=== [mysql84] exchange-missing-part
+--- SQL: ALTER TABLE t13 EXCHANGE PARTITION p99 WITH TABLE t13x
+--- rc=1
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1735 (HY000) at line 1: Unknown partition 'p99' in table 't13'
+=== [mysql84] exchange-qualified
+--- SQL: ALTER TABLE t13 EXCHANGE PARTITION p0 WITH TABLE golden.t13x
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql84] drop-multi
+--- SQL: ALTER TABLE t13 DROP PARTITION p0, p1
+--- rc=1
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1508 (HY000) at line 1: Cannot remove all partitions, use DROP TABLE instead
+--- parts after drop-multi: p0;p1;
+=== [mysql84] create-2p
+--- SQL: CREATE TABLE t13np (id INT) PARTITION BY RANGE(id) (PARTITION p0 VALUES LESS THAN (100), PARTITION p1 VALUES LESS THAN (200))
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql84] drop-missing-2p
+--- SQL: ALTER TABLE t13np DROP PARTITION p99
+--- rc=1
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1507 (HY000) at line 1: Error in list of partitions to DROP
+=== [mysql84] drop-multi-missing
+--- SQL: ALTER TABLE t13np DROP PARTITION p0, p99
+--- rc=1
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1508 (HY000) at line 1: Cannot remove all partitions, use DROP TABLE instead
+--- parts after drop-missing-2p: p0;p1;
+=== [mysql84] final-cleanup
+--- SQL: DROP TABLE IF EXISTS t13; DROP TABLE IF EXISTS t13x; DROP TABLE IF EXISTS t13x2; DROP TABLE IF EXISTS t13x3; DROP TABLE IF EXISTS t13x4; DROP TABLE IF EXISTS t13np
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+############ ANCHOR tidb85 ############
+=== [tidb85] cleanup
+--- SQL: DROP TABLE IF EXISTS t13; DROP TABLE IF EXISTS t13x; DROP TABLE IF EXISTS t13x2; DROP TABLE IF EXISTS t13np
+--- rc=0
+--- out: 
+=== [tidb85] create-range
+--- SQL: CREATE TABLE t13 (id INT, c INT) PARTITION BY RANGE(id) (PARTITION p0 VALUES LESS THAN (100), PARTITION p1 VALUES LESS THAN (200))
+--- rc=0
+--- out: 
+=== [tidb85] insert
+--- SQL: INSERT INTO t13 VALUES (1,10),(50,20),(150,30)
+--- rc=0
+--- out: 
+=== [tidb85] create-exchange
+--- SQL: CREATE TABLE t13x (id INT, c INT)
+--- rc=0
+--- out: 
+=== [tidb85] x-insert
+--- SQL: INSERT INTO t13x VALUES (5,99)
+--- rc=0
+--- out: 
+--- t13 rows: 1,10;50,20;150,30; | t13x: 5,99;
+=== [tidb85] exchange-p0
+--- SQL: ALTER TABLE t13 EXCHANGE PARTITION p0 WITH TABLE t13x
+--- rc=0
+--- out: 
+--- t13 rows: 5,99;150,30; | t13x: 1,10;50,20;
+=== [tidb85] exchange-back-noval
+--- SQL: ALTER TABLE t13 EXCHANGE PARTITION p0 WITH TABLE t13x WITHOUT VALIDATION
+--- rc=0
+--- out: 
+=== [tidb85] exchange-withval
+--- SQL: ALTER TABLE t13 EXCHANGE PARTITION p0 WITH TABLE t13x WITH VALIDATION
+--- rc=0
+--- out: 
+=== [tidb85] x2-create
+--- SQL: CREATE TABLE t13x2 (id INT, c INT)
+--- rc=0
+--- out: 
+=== [tidb85] x2-violate
+--- SQL: INSERT INTO t13x2 VALUES (999,1)
+--- rc=0
+--- out: 
+=== [tidb85] exchange-violate-noval
+--- SQL: ALTER TABLE t13 EXCHANGE PARTITION p0 WITH TABLE t13x2 WITHOUT VALIDATION
+--- rc=0
+--- out: 
+--- violating exchange noval: t13=150,30;999,1; t13x2=5,99;
+=== [tidb85] exchange-violate-withval
+--- SQL: ALTER TABLE t13 EXCHANGE PARTITION p0 WITH TABLE t13x2 WITH VALIDATION
+--- rc=0
+--- out: 
+=== [tidb85] x3-create
+--- SQL: CREATE TABLE t13x3 (id INT, c INT, extra INT)
+--- rc=0
+--- out: 
+=== [tidb85] exchange-incompat
+--- SQL: ALTER TABLE t13 EXCHANGE PARTITION p0 WITH TABLE t13x3
+--- rc=1
+--- out: ERROR 1736 (HY000) at line 1: Tables have different definitions
+=== [tidb85] x4-create
+--- SQL: CREATE TABLE t13x4 (id INT, c INT) PARTITION BY RANGE(id) (PARTITION q0 VALUES LESS THAN (300))
+--- rc=0
+--- out: 
+=== [tidb85] exchange-partitioned-target
+--- SQL: ALTER TABLE t13 EXCHANGE PARTITION p0 WITH TABLE t13x4
+--- rc=1
+--- out: ERROR 1732 (HY000) at line 1: Table to exchange with partition is partitioned: 't13x4'
+=== [tidb85] exchange-missing-table
+--- SQL: ALTER TABLE t13 EXCHANGE PARTITION p0 WITH TABLE t13xmissing
+--- rc=1
+--- out: ERROR 1146 (42S02) at line 1: Table 'golden.t13xmissing' doesn't exist
+=== [tidb85] exchange-missing-part
+--- SQL: ALTER TABLE t13 EXCHANGE PARTITION p99 WITH TABLE t13x
+--- rc=1
+--- out: ERROR 1735 (HY000) at line 1: Unknown partition 'p99' in table 't13'
+=== [tidb85] exchange-qualified
+--- SQL: ALTER TABLE t13 EXCHANGE PARTITION p0 WITH TABLE golden.t13x
+--- rc=0
+--- out: 
+=== [tidb85] drop-multi
+--- SQL: ALTER TABLE t13 DROP PARTITION p0, p1
+--- rc=1
+--- out: ERROR 1508 (HY000) at line 1: Cannot remove all partitions, use DROP TABLE instead
+--- parts after drop-multi: p0;p1;
+=== [tidb85] create-2p
+--- SQL: CREATE TABLE t13np (id INT) PARTITION BY RANGE(id) (PARTITION p0 VALUES LESS THAN (100), PARTITION p1 VALUES LESS THAN (200))
+--- rc=0
+--- out: 
+=== [tidb85] drop-missing-2p
+--- SQL: ALTER TABLE t13np DROP PARTITION p99
+--- rc=1
+--- out: ERROR 1507 (HY000) at line 1: Error in list of partitions to DROP
+=== [tidb85] drop-multi-missing
+--- SQL: ALTER TABLE t13np DROP PARTITION p0, p99
+--- rc=1
+--- out: ERROR 1508 (HY000) at line 1: Cannot remove all partitions, use DROP TABLE instead
+--- parts after drop-missing-2p: p0;p1;
+=== [tidb85] final-cleanup
+--- SQL: DROP TABLE IF EXISTS t13; DROP TABLE IF EXISTS t13x; DROP TABLE IF EXISTS t13x2; DROP TABLE IF EXISTS t13x3; DROP TABLE IF EXISTS t13x4; DROP TABLE IF EXISTS t13np
+--- rc=0
+--- out: 

@@ -1,0 +1,395 @@
+############ ANCHOR mysql57 ############
+=== [mysql57] version
+--- SQL: SELECT VERSION()
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+VERSION()
+5.7.44
+=== [mysql57] cleanup
+--- SQL: DROP TABLE IF EXISTS t13c; DROP TABLE IF EXISTS t13cx; DROP TABLE IF EXISTS t13h; DROP TABLE IF EXISTS t13hx
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql57] c-create
+--- SQL: CREATE TABLE t13c (id INT, c INT) PARTITION BY RANGE(id) (PARTITION p0 VALUES LESS THAN (100), PARTITION p1 VALUES LESS THAN (200))
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql57] c-seed
+--- SQL: INSERT INTO t13c VALUES (1,1),(150,1)
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql57] c-algorithm-then-drop
+--- SQL: ALTER TABLE t13c ALGORITHM=INPLACE, DROP PARTITION p0
+--- rc=1
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1846 (0A000) at line 1: ALGORITHM=COPY/INPLACE is not supported. Reason: Partition specific operations do not yet support LOCK/ALGORITHM. Try ALGORITHM=DEFAULT.
+--- after algorithm-then-drop parts: [p0;p1;] rows: [1;150;]
+=== [mysql57] c-reset
+--- SQL: DROP TABLE IF EXISTS t13c; CREATE TABLE t13c (id INT, c INT) PARTITION BY RANGE(id) (PARTITION p0 VALUES LESS THAN (100), PARTITION p1 VALUES LESS THAN (200)); INSERT INTO t13c VALUES (1,1),(150,1)
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql57] c-drop-then-algorithm
+--- SQL: ALTER TABLE t13c DROP PARTITION p0, ALGORITHM=INPLACE
+--- rc=1
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '=INPLACE' at line 1
+--- after drop-then-algorithm parts: [p0;p1;] rows: [1;150;]
+=== [mysql57] h-create
+--- SQL: CREATE TABLE t13h (id INT, c INT) PARTITION BY HASH(id) PARTITIONS 2
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql57] h-seed
+--- SQL: INSERT INTO t13h VALUES (1,1),(2,2),(3,3)
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql57] h-drop
+--- SQL: ALTER TABLE t13h DROP PARTITION p0
+--- rc=1
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1512 (HY000) at line 1: DROP PARTITION can only be used on RANGE/LIST partitions
+=== [mysql57] h-truncate
+--- SQL: ALTER TABLE t13h TRUNCATE PARTITION p0
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+--- after hash-truncate parts: [p0;p1;] rows left: [2]
+=== [mysql57] hx-create
+--- SQL: CREATE TABLE t13hx (id INT, c INT)
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql57] h-exchange
+--- SQL: ALTER TABLE t13h EXCHANGE PARTITION p0 WITH TABLE t13hx
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql57] a-create
+--- SQL: CREATE TABLE t13a (id INT, c INT) PARTITION BY RANGE(id) (PARTITION p0 VALUES LESS THAN (100), PARTITION p1 VALUES LESS THAN (200))
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql57] drop-table-a
+--- SQL: DROP TABLE IF EXISTS t13a
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql57] a-create
+--- SQL: CREATE TABLE t13a (id INT, c INT) PARTITION BY RANGE(id) (PARTITION p0 VALUES LESS THAN (100), PARTITION p1 VALUES LESS THAN (200))
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql57] a-addcol-then-drop
+--- SQL: ALTER TABLE t13a ADD COLUMN x INT, DROP PARTITION p0
+--- rc=1
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'PARTITION p0' at line 1
+--- after addcol-then-drop parts: [p0;p1;] cols: [2]
+=== [mysql57] m-create
+--- SQL: CREATE TABLE t13m2 (id INT, c INT) PARTITION BY RANGE(id) (PARTITION p0 VALUES LESS THAN (100), PARTITION p1 VALUES LESS THAN (200))
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql57] mx-create
+--- SQL: CREATE TABLE t13mx (id INT, c INT)
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql57] m-exchange-then-dropcol
+--- SQL: ALTER TABLE t13m2 EXCHANGE PARTITION p0 WITH TABLE t13mx, DROP COLUMN c
+--- rc=1
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near ' DROP COLUMN c' at line 1
+=== [mysql57] m-dropcol-then-exchange
+--- SQL: ALTER TABLE t13m2 DROP COLUMN c, EXCHANGE PARTITION p0 WITH TABLE t13mx
+--- rc=1
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'EXCHANGE PARTITION p0 WITH TABLE t13mx' at line 1
+=== [mysql57] final-cleanup
+--- SQL: DROP TABLE IF EXISTS t13c; DROP TABLE IF EXISTS t13cx; DROP TABLE IF EXISTS t13h; DROP TABLE IF EXISTS t13hx; DROP TABLE IF EXISTS t13a; DROP TABLE IF EXISTS t13m2; DROP TABLE IF EXISTS t13mx
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+############ ANCHOR mysql80 ############
+=== [mysql80] version
+--- SQL: SELECT VERSION()
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+VERSION()
+8.0.46
+=== [mysql80] cleanup
+--- SQL: DROP TABLE IF EXISTS t13c; DROP TABLE IF EXISTS t13cx; DROP TABLE IF EXISTS t13h; DROP TABLE IF EXISTS t13hx
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql80] c-create
+--- SQL: CREATE TABLE t13c (id INT, c INT) PARTITION BY RANGE(id) (PARTITION p0 VALUES LESS THAN (100), PARTITION p1 VALUES LESS THAN (200))
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql80] c-seed
+--- SQL: INSERT INTO t13c VALUES (1,1),(150,1)
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql80] c-algorithm-then-drop
+--- SQL: ALTER TABLE t13c ALGORITHM=INPLACE, DROP PARTITION p0
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+--- after algorithm-then-drop parts: [p1;] rows: [150;]
+=== [mysql80] c-reset
+--- SQL: DROP TABLE IF EXISTS t13c; CREATE TABLE t13c (id INT, c INT) PARTITION BY RANGE(id) (PARTITION p0 VALUES LESS THAN (100), PARTITION p1 VALUES LESS THAN (200)); INSERT INTO t13c VALUES (1,1),(150,1)
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql80] c-drop-then-algorithm
+--- SQL: ALTER TABLE t13c DROP PARTITION p0, ALGORITHM=INPLACE
+--- rc=1
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '=INPLACE' at line 1
+--- after drop-then-algorithm parts: [p1;p0;] rows: [1;150;]
+=== [mysql80] h-create
+--- SQL: CREATE TABLE t13h (id INT, c INT) PARTITION BY HASH(id) PARTITIONS 2
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql80] h-seed
+--- SQL: INSERT INTO t13h VALUES (1,1),(2,2),(3,3)
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql80] h-drop
+--- SQL: ALTER TABLE t13h DROP PARTITION p0
+--- rc=1
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1512 (HY000) at line 1: DROP PARTITION can only be used on RANGE/LIST partitions
+=== [mysql80] h-truncate
+--- SQL: ALTER TABLE t13h TRUNCATE PARTITION p0
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+--- after hash-truncate parts: [p1;p0;] rows left: [2]
+=== [mysql80] hx-create
+--- SQL: CREATE TABLE t13hx (id INT, c INT)
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql80] h-exchange
+--- SQL: ALTER TABLE t13h EXCHANGE PARTITION p0 WITH TABLE t13hx
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql80] a-create
+--- SQL: CREATE TABLE t13a (id INT, c INT) PARTITION BY RANGE(id) (PARTITION p0 VALUES LESS THAN (100), PARTITION p1 VALUES LESS THAN (200))
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql80] drop-table-a
+--- SQL: DROP TABLE IF EXISTS t13a
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql80] a-create
+--- SQL: CREATE TABLE t13a (id INT, c INT) PARTITION BY RANGE(id) (PARTITION p0 VALUES LESS THAN (100), PARTITION p1 VALUES LESS THAN (200))
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql80] a-addcol-then-drop
+--- SQL: ALTER TABLE t13a ADD COLUMN x INT, DROP PARTITION p0
+--- rc=1
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'PARTITION p0' at line 1
+--- after addcol-then-drop parts: [p0;p1;] cols: [2]
+=== [mysql80] m-create
+--- SQL: CREATE TABLE t13m2 (id INT, c INT) PARTITION BY RANGE(id) (PARTITION p0 VALUES LESS THAN (100), PARTITION p1 VALUES LESS THAN (200))
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql80] mx-create
+--- SQL: CREATE TABLE t13mx (id INT, c INT)
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql80] m-exchange-then-dropcol
+--- SQL: ALTER TABLE t13m2 EXCHANGE PARTITION p0 WITH TABLE t13mx, DROP COLUMN c
+--- rc=1
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near ', DROP COLUMN c' at line 1
+=== [mysql80] m-dropcol-then-exchange
+--- SQL: ALTER TABLE t13m2 DROP COLUMN c, EXCHANGE PARTITION p0 WITH TABLE t13mx
+--- rc=1
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'EXCHANGE PARTITION p0 WITH TABLE t13mx' at line 1
+=== [mysql80] final-cleanup
+--- SQL: DROP TABLE IF EXISTS t13c; DROP TABLE IF EXISTS t13cx; DROP TABLE IF EXISTS t13h; DROP TABLE IF EXISTS t13hx; DROP TABLE IF EXISTS t13a; DROP TABLE IF EXISTS t13m2; DROP TABLE IF EXISTS t13mx
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+############ ANCHOR mysql84 ############
+=== [mysql84] version
+--- SQL: SELECT VERSION()
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+VERSION()
+8.4.10
+=== [mysql84] cleanup
+--- SQL: DROP TABLE IF EXISTS t13c; DROP TABLE IF EXISTS t13cx; DROP TABLE IF EXISTS t13h; DROP TABLE IF EXISTS t13hx
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql84] c-create
+--- SQL: CREATE TABLE t13c (id INT, c INT) PARTITION BY RANGE(id) (PARTITION p0 VALUES LESS THAN (100), PARTITION p1 VALUES LESS THAN (200))
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql84] c-seed
+--- SQL: INSERT INTO t13c VALUES (1,1),(150,1)
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql84] c-algorithm-then-drop
+--- SQL: ALTER TABLE t13c ALGORITHM=INPLACE, DROP PARTITION p0
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+--- after algorithm-then-drop parts: [p1;] rows: [150;]
+=== [mysql84] c-reset
+--- SQL: DROP TABLE IF EXISTS t13c; CREATE TABLE t13c (id INT, c INT) PARTITION BY RANGE(id) (PARTITION p0 VALUES LESS THAN (100), PARTITION p1 VALUES LESS THAN (200)); INSERT INTO t13c VALUES (1,1),(150,1)
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql84] c-drop-then-algorithm
+--- SQL: ALTER TABLE t13c DROP PARTITION p0, ALGORITHM=INPLACE
+--- rc=1
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '=INPLACE' at line 1
+--- after drop-then-algorithm parts: [p1;p0;] rows: [1;150;]
+=== [mysql84] h-create
+--- SQL: CREATE TABLE t13h (id INT, c INT) PARTITION BY HASH(id) PARTITIONS 2
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql84] h-seed
+--- SQL: INSERT INTO t13h VALUES (1,1),(2,2),(3,3)
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql84] h-drop
+--- SQL: ALTER TABLE t13h DROP PARTITION p0
+--- rc=1
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1512 (HY000) at line 1: DROP PARTITION can only be used on RANGE/LIST partitions
+=== [mysql84] h-truncate
+--- SQL: ALTER TABLE t13h TRUNCATE PARTITION p0
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+--- after hash-truncate parts: [p1;p0;] rows left: [2]
+=== [mysql84] hx-create
+--- SQL: CREATE TABLE t13hx (id INT, c INT)
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql84] h-exchange
+--- SQL: ALTER TABLE t13h EXCHANGE PARTITION p0 WITH TABLE t13hx
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql84] a-create
+--- SQL: CREATE TABLE t13a (id INT, c INT) PARTITION BY RANGE(id) (PARTITION p0 VALUES LESS THAN (100), PARTITION p1 VALUES LESS THAN (200))
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql84] drop-table-a
+--- SQL: DROP TABLE IF EXISTS t13a
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql84] a-create
+--- SQL: CREATE TABLE t13a (id INT, c INT) PARTITION BY RANGE(id) (PARTITION p0 VALUES LESS THAN (100), PARTITION p1 VALUES LESS THAN (200))
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql84] a-addcol-then-drop
+--- SQL: ALTER TABLE t13a ADD COLUMN x INT, DROP PARTITION p0
+--- rc=1
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'PARTITION p0' at line 1
+--- after addcol-then-drop parts: [p0;p1;] cols: [2]
+=== [mysql84] m-create
+--- SQL: CREATE TABLE t13m2 (id INT, c INT) PARTITION BY RANGE(id) (PARTITION p0 VALUES LESS THAN (100), PARTITION p1 VALUES LESS THAN (200))
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql84] mx-create
+--- SQL: CREATE TABLE t13mx (id INT, c INT)
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql84] m-exchange-then-dropcol
+--- SQL: ALTER TABLE t13m2 EXCHANGE PARTITION p0 WITH TABLE t13mx, DROP COLUMN c
+--- rc=1
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near ', DROP COLUMN c' at line 1
+=== [mysql84] m-dropcol-then-exchange
+--- SQL: ALTER TABLE t13m2 DROP COLUMN c, EXCHANGE PARTITION p0 WITH TABLE t13mx
+--- rc=1
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'EXCHANGE PARTITION p0 WITH TABLE t13mx' at line 1
+=== [mysql84] final-cleanup
+--- SQL: DROP TABLE IF EXISTS t13c; DROP TABLE IF EXISTS t13cx; DROP TABLE IF EXISTS t13h; DROP TABLE IF EXISTS t13hx; DROP TABLE IF EXISTS t13a; DROP TABLE IF EXISTS t13m2; DROP TABLE IF EXISTS t13mx
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+############ ANCHOR tidb85 ############
+=== [tidb85] version
+--- SQL: SELECT VERSION()
+--- rc=0
+--- out: VERSION()
+8.0.11-TiDB-v8.5.0
+=== [tidb85] cleanup
+--- SQL: DROP TABLE IF EXISTS t13c; DROP TABLE IF EXISTS t13cx; DROP TABLE IF EXISTS t13h; DROP TABLE IF EXISTS t13hx
+--- rc=0
+--- out: 
+=== [tidb85] c-create
+--- SQL: CREATE TABLE t13c (id INT, c INT) PARTITION BY RANGE(id) (PARTITION p0 VALUES LESS THAN (100), PARTITION p1 VALUES LESS THAN (200))
+--- rc=0
+--- out: 
+=== [tidb85] c-seed
+--- SQL: INSERT INTO t13c VALUES (1,1),(150,1)
+--- rc=0
+--- out: 
+=== [tidb85] c-algorithm-then-drop
+--- SQL: ALTER TABLE t13c ALGORITHM=INPLACE, DROP PARTITION p0
+--- rc=0
+--- out: 
+--- after algorithm-then-drop parts: [p1;] rows: [150;]
+=== [tidb85] c-reset
+--- SQL: DROP TABLE IF EXISTS t13c; CREATE TABLE t13c (id INT, c INT) PARTITION BY RANGE(id) (PARTITION p0 VALUES LESS THAN (100), PARTITION p1 VALUES LESS THAN (200)); INSERT INTO t13c VALUES (1,1),(150,1)
+--- rc=0
+--- out: 
+=== [tidb85] c-drop-then-algorithm
+--- SQL: ALTER TABLE t13c DROP PARTITION p0, ALGORITHM=INPLACE
+--- rc=1
+--- out: ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your TiDB version for the right syntax to use line 1 column 46 near "=INPLACE" 
+--- after drop-then-algorithm parts: [p0;p1;] rows: [1;150;]
+=== [tidb85] h-create
+--- SQL: CREATE TABLE t13h (id INT, c INT) PARTITION BY HASH(id) PARTITIONS 2
+--- rc=0
+--- out: 
+=== [tidb85] h-seed
+--- SQL: INSERT INTO t13h VALUES (1,1),(2,2),(3,3)
+--- rc=0
+--- out: 
+=== [tidb85] h-drop
+--- SQL: ALTER TABLE t13h DROP PARTITION p0
+--- rc=1
+--- out: ERROR 1512 (HY000) at line 1: DROP PARTITION can only be used on RANGE/LIST partitions
+=== [tidb85] h-truncate
+--- SQL: ALTER TABLE t13h TRUNCATE PARTITION p0
+--- rc=0
+--- out: 
+--- after hash-truncate parts: [p0;p1;] rows left: [2]
+=== [tidb85] hx-create
+--- SQL: CREATE TABLE t13hx (id INT, c INT)
+--- rc=0
+--- out: 
+=== [tidb85] h-exchange
+--- SQL: ALTER TABLE t13h EXCHANGE PARTITION p0 WITH TABLE t13hx
+--- rc=0
+--- out: 
+=== [tidb85] a-create
+--- SQL: CREATE TABLE t13a (id INT, c INT) PARTITION BY RANGE(id) (PARTITION p0 VALUES LESS THAN (100), PARTITION p1 VALUES LESS THAN (200))
+--- rc=0
+--- out: 
+=== [tidb85] drop-table-a
+--- SQL: DROP TABLE IF EXISTS t13a
+--- rc=0
+--- out: 
+=== [tidb85] a-create
+--- SQL: CREATE TABLE t13a (id INT, c INT) PARTITION BY RANGE(id) (PARTITION p0 VALUES LESS THAN (100), PARTITION p1 VALUES LESS THAN (200))
+--- rc=0
+--- out: 
+=== [tidb85] a-addcol-then-drop
+--- SQL: ALTER TABLE t13a ADD COLUMN x INT, DROP PARTITION p0
+--- rc=1
+--- out: ERROR 8200 (HY000) at line 1: Unsupported multi schema change for drop partition
+--- after addcol-then-drop parts: [p0;p1;] cols: [2]
+=== [tidb85] m-create
+--- SQL: CREATE TABLE t13m2 (id INT, c INT) PARTITION BY RANGE(id) (PARTITION p0 VALUES LESS THAN (100), PARTITION p1 VALUES LESS THAN (200))
+--- rc=0
+--- out: 
+=== [tidb85] mx-create
+--- SQL: CREATE TABLE t13mx (id INT, c INT)
+--- rc=0
+--- out: 
+=== [tidb85] m-exchange-then-dropcol
+--- SQL: ALTER TABLE t13m2 EXCHANGE PARTITION p0 WITH TABLE t13mx, DROP COLUMN c
+--- rc=1
+--- out: ERROR 8200 (HY000) at line 1: Unsupported multi schema change for exchange partition
+=== [tidb85] m-dropcol-then-exchange
+--- SQL: ALTER TABLE t13m2 DROP COLUMN c, EXCHANGE PARTITION p0 WITH TABLE t13mx
+--- rc=1
+--- out: ERROR 8200 (HY000) at line 1: Unsupported multi schema change for exchange partition
+=== [tidb85] final-cleanup
+--- SQL: DROP TABLE IF EXISTS t13c; DROP TABLE IF EXISTS t13cx; DROP TABLE IF EXISTS t13h; DROP TABLE IF EXISTS t13hx; DROP TABLE IF EXISTS t13a; DROP TABLE IF EXISTS t13m2; DROP TABLE IF EXISTS t13mx
+--- rc=0
+--- out: 

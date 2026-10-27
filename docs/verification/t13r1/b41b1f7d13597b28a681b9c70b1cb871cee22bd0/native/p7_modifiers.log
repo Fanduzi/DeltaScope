@@ -1,0 +1,186 @@
+############ ANCHOR mysql57 ############
+=== [mysql57] version
+--- SQL: SELECT VERSION()
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+VERSION()
+5.7.44
+=== [mysql57] cleanup
+--- SQL: DROP TABLE IF EXISTS t13c
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql57] c-create
+--- SQL: CREATE TABLE t13c (id INT, c INT) PARTITION BY RANGE(id) (PARTITION p0 VALUES LESS THAN (100), PARTITION p1 VALUES LESS THAN (200))
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql57] c-seed
+--- SQL: INSERT INTO t13c VALUES (1,1),(150,1)
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql57] lock-then-drop
+--- SQL: ALTER TABLE t13c LOCK=DEFAULT, DROP PARTITION p0
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+--- after lock-then-drop parts: [p1;]
+=== [mysql57] reset1
+--- SQL: DROP TABLE t13c; CREATE TABLE t13c (id INT, c INT) PARTITION BY RANGE(id) (PARTITION p0 VALUES LESS THAN (100), PARTITION p1 VALUES LESS THAN (200)); INSERT INTO t13c VALUES (1,1),(150,1)
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql57] engine-then-drop
+--- SQL: ALTER TABLE t13c ENGINE=InnoDB, DROP PARTITION p0
+--- rc=1
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'PARTITION p0' at line 1
+--- after engine-then-drop parts: [p0;p1;]
+=== [mysql57] reset2
+--- SQL: DROP TABLE t13c; CREATE TABLE t13c (id INT, c INT) PARTITION BY RANGE(id) (PARTITION p0 VALUES LESS THAN (100), PARTITION p1 VALUES LESS THAN (200)); INSERT INTO t13c VALUES (1,1),(150,1)
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql57] algdefault-then-drop
+--- SQL: ALTER TABLE t13c ALGORITHM=DEFAULT, DROP PARTITION p0
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+--- after algdefault-then-drop parts: [p1;]
+=== [mysql57] final-cleanup
+--- SQL: DROP TABLE IF EXISTS t13c
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+############ ANCHOR mysql80 ############
+=== [mysql80] version
+--- SQL: SELECT VERSION()
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+VERSION()
+8.0.46
+=== [mysql80] cleanup
+--- SQL: DROP TABLE IF EXISTS t13c
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql80] c-create
+--- SQL: CREATE TABLE t13c (id INT, c INT) PARTITION BY RANGE(id) (PARTITION p0 VALUES LESS THAN (100), PARTITION p1 VALUES LESS THAN (200))
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql80] c-seed
+--- SQL: INSERT INTO t13c VALUES (1,1),(150,1)
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql80] lock-then-drop
+--- SQL: ALTER TABLE t13c LOCK=DEFAULT, DROP PARTITION p0
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+--- after lock-then-drop parts: [p1;]
+=== [mysql80] reset1
+--- SQL: DROP TABLE t13c; CREATE TABLE t13c (id INT, c INT) PARTITION BY RANGE(id) (PARTITION p0 VALUES LESS THAN (100), PARTITION p1 VALUES LESS THAN (200)); INSERT INTO t13c VALUES (1,1),(150,1)
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql80] engine-then-drop
+--- SQL: ALTER TABLE t13c ENGINE=InnoDB, DROP PARTITION p0
+--- rc=1
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'PARTITION p0' at line 1
+--- after engine-then-drop parts: [p0;p1;]
+=== [mysql80] reset2
+--- SQL: DROP TABLE t13c; CREATE TABLE t13c (id INT, c INT) PARTITION BY RANGE(id) (PARTITION p0 VALUES LESS THAN (100), PARTITION p1 VALUES LESS THAN (200)); INSERT INTO t13c VALUES (1,1),(150,1)
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql80] algdefault-then-drop
+--- SQL: ALTER TABLE t13c ALGORITHM=DEFAULT, DROP PARTITION p0
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+--- after algdefault-then-drop parts: [p1;]
+=== [mysql80] final-cleanup
+--- SQL: DROP TABLE IF EXISTS t13c
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+############ ANCHOR mysql84 ############
+=== [mysql84] version
+--- SQL: SELECT VERSION()
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+VERSION()
+8.4.10
+=== [mysql84] cleanup
+--- SQL: DROP TABLE IF EXISTS t13c
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql84] c-create
+--- SQL: CREATE TABLE t13c (id INT, c INT) PARTITION BY RANGE(id) (PARTITION p0 VALUES LESS THAN (100), PARTITION p1 VALUES LESS THAN (200))
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql84] c-seed
+--- SQL: INSERT INTO t13c VALUES (1,1),(150,1)
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql84] lock-then-drop
+--- SQL: ALTER TABLE t13c LOCK=DEFAULT, DROP PARTITION p0
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+--- after lock-then-drop parts: [p1;]
+=== [mysql84] reset1
+--- SQL: DROP TABLE t13c; CREATE TABLE t13c (id INT, c INT) PARTITION BY RANGE(id) (PARTITION p0 VALUES LESS THAN (100), PARTITION p1 VALUES LESS THAN (200)); INSERT INTO t13c VALUES (1,1),(150,1)
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql84] engine-then-drop
+--- SQL: ALTER TABLE t13c ENGINE=InnoDB, DROP PARTITION p0
+--- rc=1
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'PARTITION p0' at line 1
+--- after engine-then-drop parts: [p0;p1;]
+=== [mysql84] reset2
+--- SQL: DROP TABLE t13c; CREATE TABLE t13c (id INT, c INT) PARTITION BY RANGE(id) (PARTITION p0 VALUES LESS THAN (100), PARTITION p1 VALUES LESS THAN (200)); INSERT INTO t13c VALUES (1,1),(150,1)
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql84] algdefault-then-drop
+--- SQL: ALTER TABLE t13c ALGORITHM=DEFAULT, DROP PARTITION p0
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+--- after algdefault-then-drop parts: [p1;]
+=== [mysql84] final-cleanup
+--- SQL: DROP TABLE IF EXISTS t13c
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+############ ANCHOR tidb85 ############
+=== [tidb85] version
+--- SQL: SELECT VERSION()
+--- rc=0
+--- out: VERSION()
+8.0.11-TiDB-v8.5.0
+=== [tidb85] cleanup
+--- SQL: DROP TABLE IF EXISTS t13c
+--- rc=0
+--- out: 
+=== [tidb85] c-create
+--- SQL: CREATE TABLE t13c (id INT, c INT) PARTITION BY RANGE(id) (PARTITION p0 VALUES LESS THAN (100), PARTITION p1 VALUES LESS THAN (200))
+--- rc=0
+--- out: 
+=== [tidb85] c-seed
+--- SQL: INSERT INTO t13c VALUES (1,1),(150,1)
+--- rc=0
+--- out: 
+=== [tidb85] lock-then-drop
+--- SQL: ALTER TABLE t13c LOCK=DEFAULT, DROP PARTITION p0
+--- rc=0
+--- out: 
+--- after lock-then-drop parts: [p1;]
+=== [tidb85] reset1
+--- SQL: DROP TABLE t13c; CREATE TABLE t13c (id INT, c INT) PARTITION BY RANGE(id) (PARTITION p0 VALUES LESS THAN (100), PARTITION p1 VALUES LESS THAN (200)); INSERT INTO t13c VALUES (1,1),(150,1)
+--- rc=0
+--- out: 
+=== [tidb85] engine-then-drop
+--- SQL: ALTER TABLE t13c ENGINE=InnoDB, DROP PARTITION p0
+--- rc=1
+--- out: ERROR 8200 (HY000) at line 1: Unsupported multi schema change for drop partition
+--- after engine-then-drop parts: [p0;p1;]
+=== [tidb85] reset2
+--- SQL: DROP TABLE t13c; CREATE TABLE t13c (id INT, c INT) PARTITION BY RANGE(id) (PARTITION p0 VALUES LESS THAN (100), PARTITION p1 VALUES LESS THAN (200)); INSERT INTO t13c VALUES (1,1),(150,1)
+--- rc=0
+--- out: 
+=== [tidb85] algdefault-then-drop
+--- SQL: ALTER TABLE t13c ALGORITHM=DEFAULT, DROP PARTITION p0
+--- rc=0
+--- out: 
+--- after algdefault-then-drop parts: [p1;]
+=== [tidb85] final-cleanup
+--- SQL: DROP TABLE IF EXISTS t13c
+--- rc=0
+--- out: 
