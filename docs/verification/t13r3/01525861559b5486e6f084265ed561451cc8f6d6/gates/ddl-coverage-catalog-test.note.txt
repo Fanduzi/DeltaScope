@@ -1,0 +1,14 @@
+MISCALLED — superseded by ddl-coverage-catalog-test-verbose + the
+make-rerun stdout kept in this file's same-named siblings? NO — see below.
+
+This tuple (ddl-coverage-catalog-test.{command,stdout,stderr,rc}.txt)
+records the ORIGINAL R3 run, which invoked
+`go test ./internal/application/audit -run TestDDLCoverageCatalog -count=1`
+WITHOUT `-tags postgresql`. The test is postgresql-tagged, so stdout shows
+`[no tests to run]` — a zero-test pass, not evidence. The valid records
+are `ddl-coverage-catalog-test-rerun.*` (the official `make
+ddl-coverage-catalog-test` entry, which carries the tag) and
+`ddl-coverage-catalog-test-verbose.*` (explicit `-tags postgresql -v`
+run showing `--- PASS: TestDDLCoverageCatalog`). The same test was
+already covered inside `pg-unit-test-gates`, so this is a record-scope
+correction, not a new product defect.

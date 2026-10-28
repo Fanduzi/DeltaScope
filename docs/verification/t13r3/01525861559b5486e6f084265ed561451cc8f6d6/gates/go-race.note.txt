@@ -1,0 +1,5 @@
+PARTIAL SCOPE — the original R3 `go-race.*` tuple ran
+`go test -race ./internal/application/audit/ ./internal/domain/rule/ddl/ -count=1`
+(two packages, no CGO_ENABLED) — a useful focused diagnostic, kept as-is.
+The required-scope record is `go_race.*`:
+`env CGO_ENABLED=1 go test -race -count=1 ./internal/...`

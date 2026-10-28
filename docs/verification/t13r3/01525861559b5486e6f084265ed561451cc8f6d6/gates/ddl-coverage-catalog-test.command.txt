@@ -1,0 +1,1 @@
+go test ./internal/application/audit -run TestDDLCoverageCatalog -count=1   [MISCALLED: missing -tags postgresql → 0 tests ran]

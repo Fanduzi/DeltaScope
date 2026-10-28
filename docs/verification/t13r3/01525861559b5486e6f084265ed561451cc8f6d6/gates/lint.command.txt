@@ -1,0 +1,1 @@
+golangci-lint run ./...   [FULL-REPO DIAGNOSTIC: 37 issues across all surfaces — broader than the accepted four-package gate scope]

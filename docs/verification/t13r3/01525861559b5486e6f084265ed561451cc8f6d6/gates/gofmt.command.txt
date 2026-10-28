@@ -1,0 +1,1 @@
+bash -c 'gofmt -l ./cmd ./internal ./pkg | tee /dev/stderr; test $(gofmt -l ./cmd ./internal ./pkg | wc -l) -eq 2'   [stricter variant: asserts exactly the two accepted T07 baseline files]

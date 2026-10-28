@@ -1,0 +1,8 @@
+FULL-REPO DIAGNOSTIC — the original R3 `lint.*` tuple ran
+`golangci-lint run ./...` over the WHOLE repository and reported
+37 issues across all surfaces. That is a broader diagnostic than the
+accepted gate scope, not the baseline itself. The accepted-scope record
+is `lint-scoped.*` (the same four-package range as the R1/R2 bundles),
+which reports exactly the same 13 issues as the R2 baseline —
+byte-identical per `lint-scoped-vs-r2.diff` (empty). No unrelated
+historical lint was cleaned for this correction.

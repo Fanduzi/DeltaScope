@@ -61,8 +61,9 @@ implementation); ADR:
 
 `red/` — captured on the unfixed product (this round's tests against
 `1f10ea99` source); all failures are behavioral, none compile-driven.
-Controls whose expectations the old code already met stayed green and
-are recorded as such:
+The logs were not run with `-v`, so only the FAIL lines are archived
+verbatim — the controls named below stayed green on the base and are
+listed from the test source, not from per-leaf PASS lines:
 
 - `audit.log` — `TestT13R3HashDropKeepsProvenDirectory`
   (hash + key): successor TRUNCATE fabricated `partition_absent`/1735
@@ -78,8 +79,11 @@ are recorded as such:
   base.
 - `rules.log` — `…CounterpartDecimalEffectiveParams`: three
   equivalence arms fabricated 1736 (declared M vs M,0;
-  declared-vs-catalog spelling; unsigned default params) while all
-  real-difference and bare controls stayed green.
+  declared-vs-catalog spelling; unsigned default params). The
+  `bare DECIMAL` vs `DECIMAL(10,0)` and `bare` vs `bare` arms are
+  pre-existing passing controls — the R2 normalizer already folded
+  the bare spelling — and every real-difference control (scale,
+  precision, non-default bare, signedness) also stayed green.
   `…CounterpartUnnormalizableTypeOwesGap`: a `zerofill` faithful
   spelling chose a refusal instead of unproven.
   `…PKUnknownOutranksResidualPointer`: target-side unvouch fabricated
@@ -90,13 +94,30 @@ are recorded as such:
 
 ## Gates
 
-`gates/` — 18 command tuples (`.rc.txt`/`.stdout.txt`/`.stderr.txt`,
-commands listed in `commands.txt`): 17 × rc=0; `lint` rc=1 carries the
-same 13-issue baseline as the R1/R2 bundles (unchecked assertion in
-`metadata_rules.go`, gocritic/staticcheck in T07 tests and older
-domain files incl. `ddl.go:476 typeDefFirst` — zero new issues in
-this diff). `gofmt` lists only the two accepted T07 files. All tuples
-were produced on the final product SHA `01525861`.
+`gates/` — see `gates/INDEX.md` for the authoritative index. The
+18-name required set (mapped from the R2 bundle) is green or on its
+accepted baseline:
+
+- `lint-scoped` (the accepted four-package scope) reports the same
+  13 issues as the R2 baseline — byte-identical, `lint-scoped-vs-r2.diff`
+  empty; `ddl.go:476 typeDefFirst` unchanged. `lint` (the full-repo
+  `./...` diagnostic) reports 37 issues and is recorded separately —
+  it is not the gate scope and is not the baseline.
+- `ddl-coverage-catalog-test` was first recorded under a
+  `-tags postgresql`-less miscall (`[no tests to run]`); the make entry
+  rerun and a `-v` record show `--- PASS: TestDDLCoverageCatalog`.
+  The same test already ran inside `pg-unit-test-gates` — record-scope
+  correction, not a new defect.
+- `go_race` (CGO_ENABLED=1, full `./internal/...`) passes; the earlier
+  two-package run is kept as a named partial-scope diagnostic.
+- `three-level-doc` (working-tree L2 check — clean tree) and
+  `three-level-doc-diff` (every `internal/**.go` changed in
+  `1f10ea99..01525861` has its package README.md changed — all 4
+  SYNCED) both pass.
+- Extra diagnostics beyond the required set (`go-build`,
+  `pg-unit-test-gates`, partial-scope race, full-repo lint) are
+  listed separately and never counted toward the required gates.
+- `gofmt` lists only the two accepted T07 files.
 
 ## Golden
 
@@ -131,7 +152,12 @@ adds 2 T13-R3 cells:
 - `t13r3-mysql80-exchange-decimal-effective` — partitioned
   `DECIMAL(12)` vs counterpart `DECIMAL(12,0)`: the audit reports
   pass/complete with zero findings and the native EXCHANGE executes
-  (the same effective type, per p12's archived pairs).
+  (the same effective type, per p12's archived pairs). Both column
+  spellings in this cell come from the live provider catalog
+  (provider/provider); the declared-vs-provider counter-channel
+  (batch-declared `DECIMAL(12)` vs catalog `decimal(12,0)`) is covered
+  by the public `AuditSQL` regression
+  `TestT13R3ExchangeDecimalEffectiveTypePublic`.
 
 ## Native archives
 
