@@ -1,0 +1,1 @@
+go test ./internal/application/audit -run 'TestT14R2Tail2' -count=1 -v  # worktree @ 85b6d01a (unremediated, tail2 baseline replay)

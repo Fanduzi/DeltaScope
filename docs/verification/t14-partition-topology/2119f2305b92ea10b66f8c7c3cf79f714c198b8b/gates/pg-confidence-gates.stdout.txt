@@ -1,0 +1,71 @@
+/Library/Developer/CommandLineTools/usr/bin/make pg-unit-test-gates
+CGO_ENABLED=1 go test -tags postgresql -count=1 ./internal/infrastructure/parser/postgresql ./internal/application/audit ./internal/application/auditmeta ./internal/interfaces/cli ./internal/interfaces/http ./internal/interfaces/mcp ./pkg/deltascope
+ok  	github.com/Fanduzi/DeltaScope/internal/infrastructure/parser/postgresql	0.471s
+ok  	github.com/Fanduzi/DeltaScope/internal/application/audit	3.346s
+ok  	github.com/Fanduzi/DeltaScope/internal/application/auditmeta	1.358s
+ok  	github.com/Fanduzi/DeltaScope/internal/interfaces/cli	1.960s
+ok  	github.com/Fanduzi/DeltaScope/internal/interfaces/http	2.518s
+ok  	github.com/Fanduzi/DeltaScope/internal/interfaces/mcp	3.665s
+ok  	github.com/Fanduzi/DeltaScope/pkg/deltascope	2.904s
+/Library/Developer/CommandLineTools/usr/bin/make pg-e2e-gates
+/Library/Developer/CommandLineTools/usr/bin/make test-e2e-cli-postgresql
+mkdir -p bin
+CGO_ENABLED=1 go build -tags postgresql  -o bin/deltascope ./cmd/deltascope
+./scripts/test_cli_metadata_e2e_postgresql.sh
+[pg-cli-metadata-e2e] starting PostgreSQL fixtures
+[pg-cli-metadata-e2e] running PostgreSQL metadata-aware CLI cases
+[pg-cli-metadata-e2e] all PostgreSQL CLI metadata-aware e2e cases passed
+/Library/Developer/CommandLineTools/usr/bin/make test-e2e-http-postgresql
+./scripts/test_http_metadata_e2e_postgresql.sh
+[http-metadata-e2e-pg] starting PostgreSQL fixtures
+[http-metadata-e2e-pg] running HTTP metadata-aware PostgreSQL e2e tests
+=== RUN   TestRunServesMetadataAwareAuditOverRealPostgreSQL
+=== RUN   TestRunServesMetadataAwareAuditOverRealPostgreSQL/qualified_schema
+=== RUN   TestRunServesMetadataAwareAuditOverRealPostgreSQL/explicit_schema
+=== RUN   TestRunServesMetadataAwareAuditOverRealPostgreSQL/table_exists
+=== RUN   TestRunServesMetadataAwareAuditOverRealPostgreSQL/plan_delete
+=== RUN   TestRunServesMetadataAwareAuditOverRealPostgreSQL/plan_update
+=== RUN   TestRunServesMetadataAwareAuditOverRealPostgreSQL/drop_pk
+=== RUN   TestRunServesMetadataAwareAuditOverRealPostgreSQL/rename_col_missing
+=== RUN   TestRunServesMetadataAwareAuditOverRealPostgreSQL/rename_idx_notice
+=== RUN   TestRunServesMetadataAwareAuditOverRealPostgreSQL/drop_col_missing
+--- PASS: TestRunServesMetadataAwareAuditOverRealPostgreSQL (4.74s)
+    --- PASS: TestRunServesMetadataAwareAuditOverRealPostgreSQL/qualified_schema (0.04s)
+    --- PASS: TestRunServesMetadataAwareAuditOverRealPostgreSQL/explicit_schema (0.02s)
+    --- PASS: TestRunServesMetadataAwareAuditOverRealPostgreSQL/table_exists (0.01s)
+    --- PASS: TestRunServesMetadataAwareAuditOverRealPostgreSQL/plan_delete (0.01s)
+    --- PASS: TestRunServesMetadataAwareAuditOverRealPostgreSQL/plan_update (0.01s)
+    --- PASS: TestRunServesMetadataAwareAuditOverRealPostgreSQL/drop_pk (0.01s)
+    --- PASS: TestRunServesMetadataAwareAuditOverRealPostgreSQL/rename_col_missing (0.01s)
+    --- PASS: TestRunServesMetadataAwareAuditOverRealPostgreSQL/rename_idx_notice (0.01s)
+    --- PASS: TestRunServesMetadataAwareAuditOverRealPostgreSQL/drop_col_missing (0.01s)
+PASS
+ok  	github.com/Fanduzi/DeltaScope/cmd/deltascope-server	5.325s
+/Library/Developer/CommandLineTools/usr/bin/make test-e2e-mcp-postgresql
+./scripts/test_mcp_metadata_e2e_postgresql.sh
+[mcp-metadata-e2e-pg] starting PostgreSQL fixtures
+[mcp-metadata-e2e-pg] running MCP metadata-aware PostgreSQL e2e tests
+=== RUN   TestRunServesMetadataAwareAuditOverRealPostgreSQL
+=== RUN   TestRunServesMetadataAwareAuditOverRealPostgreSQL/qualified_schema
+=== RUN   TestRunServesMetadataAwareAuditOverRealPostgreSQL/explicit_schema
+=== RUN   TestRunServesMetadataAwareAuditOverRealPostgreSQL/database_selection
+=== RUN   TestRunServesMetadataAwareAuditOverRealPostgreSQL/table_exists
+=== RUN   TestRunServesMetadataAwareAuditOverRealPostgreSQL/plan_delete
+=== RUN   TestRunServesMetadataAwareAuditOverRealPostgreSQL/plan_update
+=== RUN   TestRunServesMetadataAwareAuditOverRealPostgreSQL/drop_pk
+=== RUN   TestRunServesMetadataAwareAuditOverRealPostgreSQL/rename_col_missing
+=== RUN   TestRunServesMetadataAwareAuditOverRealPostgreSQL/rename_idx_forbid
+=== RUN   TestRunServesMetadataAwareAuditOverRealPostgreSQL/drop_col_missing
+--- PASS: TestRunServesMetadataAwareAuditOverRealPostgreSQL (32.16s)
+    --- PASS: TestRunServesMetadataAwareAuditOverRealPostgreSQL/qualified_schema (3.48s)
+    --- PASS: TestRunServesMetadataAwareAuditOverRealPostgreSQL/explicit_schema (3.16s)
+    --- PASS: TestRunServesMetadataAwareAuditOverRealPostgreSQL/database_selection (3.15s)
+    --- PASS: TestRunServesMetadataAwareAuditOverRealPostgreSQL/table_exists (3.18s)
+    --- PASS: TestRunServesMetadataAwareAuditOverRealPostgreSQL/plan_delete (3.17s)
+    --- PASS: TestRunServesMetadataAwareAuditOverRealPostgreSQL/plan_update (3.14s)
+    --- PASS: TestRunServesMetadataAwareAuditOverRealPostgreSQL/drop_pk (3.16s)
+    --- PASS: TestRunServesMetadataAwareAuditOverRealPostgreSQL/rename_col_missing (3.15s)
+    --- PASS: TestRunServesMetadataAwareAuditOverRealPostgreSQL/rename_idx_forbid (3.39s)
+    --- PASS: TestRunServesMetadataAwareAuditOverRealPostgreSQL/drop_col_missing (3.17s)
+PASS
+ok  	github.com/Fanduzi/DeltaScope/cmd/deltascope-mcp	32.807s

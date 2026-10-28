@@ -1,0 +1,306 @@
+{
+  "case_id": "T13.meta.t13r1-mysql80-truncate-rows-control",
+  "kind": "cli_metadata",
+  "cli_case": "t13r1-mysql80-truncate-rows-control",
+  "anchor": "mysql80",
+  "dialect": "mysql",
+  "input_sql": "TRUNCATE TABLE t13c;",
+  "policy_profile": "t13r1-truncate-rows",
+  "policy_path": "/Users/fan/GolangProjects/DeltaScope/docs/verification/t14-partition-topology/2119f2305b92ea10b66f8c7c3cf79f714c198b8b/golden/T13/golden-policy-t13r1-truncate-rows.yaml",
+  "connect": {
+    "host": "127.0.0.1",
+    "port": 23380,
+    "user": "root",
+    "schema": "golden",
+    "password_env": "DS_T13_GOLDEN_PW"
+  },
+  "expected": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+      "complete"
+    ],
+    "evidence_gaps": 0,
+    "finding_entries": [
+      {
+        "index": 0,
+        "rule_id": "ddl.table.truncate.rows.max_count",
+        "level": "blocker"
+      }
+    ],
+    "finding_metadata": [
+      {
+        "index": 0,
+        "rule_id": "ddl.table.truncate.rows.max_count",
+        "metadata": {
+          "table": "t13c",
+          "operation": "truncate_table"
+        }
+      }
+    ],
+    "rule_summary_applicable": 1,
+    "version": {
+      "product": "mysql",
+      "version": "8.0.46"
+    }
+  },
+  "actual": {
+    "database": {
+      "product": "mysql",
+      "image": "mysql:8.0.46",
+      "image_digest": "mysql@sha256:7dcddc01f13bab2f15cde676d44d01f61fc9f99fe7785e86196dfc07d358ae2b",
+      "container": "deltascope-ddl-golden-mysql80",
+      "reachable": true,
+      "version": "8.0.46"
+    },
+    "setup": [
+      {
+        "name": "create-counterpart",
+        "sql": "CREATE TABLE t13c (id INT, c INT)",
+        "rc": 0,
+        "stdout": "",
+        "stderr": ""
+      },
+      {
+        "name": "seed-counterpart",
+        "sql": "INSERT INTO t13c VALUES (1,1),(2,2),(3,3),(4,4),(5,5),(6,6),(7,7),(8,8)",
+        "rc": 0,
+        "stdout": "",
+        "stderr": ""
+      },
+      {
+        "name": "analyze-counterpart",
+        "sql": "ANALYZE TABLE t13c",
+        "rc": 0,
+        "stdout": "Table\tOp\tMsg_type\tMsg_text\ngolden.t13c\tanalyze\tstatus\tOK",
+        "stderr": ""
+      }
+    ],
+    "post_verify": [],
+    "execute": [],
+    "structure": [],
+    "teardown": [
+      {
+        "name": "drop-fixture",
+        "sql": "DROP TABLE IF EXISTS t13c",
+        "rc": 0,
+        "stderr": ""
+      }
+    ],
+    "exit": 1,
+    "stdout": "{\"verdict\":\"reject\",\"coverage\":{\"status\":\"complete\"},\"summary\":{\"statements\":1,\"blockers\":1,\"warnings\":0,\"notices\":0},\"statements\":[{\"index\":0,\"kind\":\"ddl\",\"raw_sql\":\"TRUNCATE TABLE t13c;\",\"normalized_sql\":\"TRUNCATE TABLE t13c\",\"findings\":[{\"rule_id\":\"ddl.table.truncate.rows.max_count\",\"level\":\"blocker\",\"message\":\"truncate table on \\\"t13c\\\" exceeds the configured table-row risk threshold\",\"statement_kind\":\"ddl\",\"location\":{\"line\":1,\"column\":1},\"suggestion\":\"split cleanup work first or only proceed after manual review when row count is above 1\",\"metadata\":{\"limit\":1,\"operation\":\"truncate_table\",\"table\":\"t13c\",\"table_rows\":8},\"explanation\":{\"summary\":\"Limit DDL table truncate rows max count\",\"why\":\"The statement exceeds a shipped size or count threshold for this rule.\",\"risk\":\"Ignoring this rule can hide live-schema or instance-state risks that only metadata reveals.\",\"suggestion\":\"split cleanup work first or only proceed after manual review when row count is above 1\",\"metadata\":{\"status\":\"available\",\"note\":\"Live metadata is available, so this explanation can use schema or instance facts for a more accurate judgment.\"}}}],\"coverage\":{\"status\":\"complete\"}}],\"version\":{\"product\":\"mysql\",\"version\":\"8.0.46\",\"major\":8,\"minor\":0,\"patch\":46,\"source\":\"observed\",\"validated_range\":true},\"fail_on_triggered\":true,\"rule_summary\":{\"loaded\":1,\"applicable\":1,\"skipped\":[]},\"context\":{\"mode\":\"metadata-aware\",\"dialect\":\"mysql\",\"dialect_source\":\"detected\",\"schema\":\"golden\",\"schema_source\":\"flag\"}}\n",
+    "stderr": "",
+    "parsed": {
+      "verdict": "reject",
+      "coverage": {
+        "status": "complete"
+      },
+      "summary": {
+        "statements": 1,
+        "blockers": 1,
+        "warnings": 0,
+        "notices": 0
+      },
+      "statements": [
+        {
+          "index": 0,
+          "kind": "ddl",
+          "raw_sql": "TRUNCATE TABLE t13c;",
+          "normalized_sql": "TRUNCATE TABLE t13c",
+          "findings": [
+            {
+              "rule_id": "ddl.table.truncate.rows.max_count",
+              "level": "blocker",
+              "message": "truncate table on \"t13c\" exceeds the configured table-row risk threshold",
+              "statement_kind": "ddl",
+              "location": {
+                "line": 1,
+                "column": 1
+              },
+              "suggestion": "split cleanup work first or only proceed after manual review when row count is above 1",
+              "metadata": {
+                "limit": 1,
+                "operation": "truncate_table",
+                "table": "t13c",
+                "table_rows": 8
+              },
+              "explanation": {
+                "summary": "Limit DDL table truncate rows max count",
+                "why": "The statement exceeds a shipped size or count threshold for this rule.",
+                "risk": "Ignoring this rule can hide live-schema or instance-state risks that only metadata reveals.",
+                "suggestion": "split cleanup work first or only proceed after manual review when row count is above 1",
+                "metadata": {
+                  "status": "available",
+                  "note": "Live metadata is available, so this explanation can use schema or instance facts for a more accurate judgment."
+                }
+              }
+            }
+          ],
+          "coverage": {
+            "status": "complete"
+          }
+        }
+      ],
+      "version": {
+        "product": "mysql",
+        "version": "8.0.46",
+        "major": 8,
+        "minor": 0,
+        "patch": 46,
+        "source": "observed",
+        "validated_range": true
+      },
+      "fail_on_triggered": true,
+      "rule_summary": {
+        "loaded": 1,
+        "applicable": 1,
+        "skipped": []
+      },
+      "context": {
+        "mode": "metadata-aware",
+        "dialect": "mysql",
+        "dialect_source": "detected",
+        "schema": "golden",
+        "schema_source": "flag"
+      }
+    },
+    "version_evidence": {
+      "target_raw": null,
+      "target_canonical": null,
+      "observed_raw": "8.0.46",
+      "observed_canonical": {
+        "product": "mysql",
+        "version": "8.0.46"
+      },
+      "resolved": {
+        "product": "mysql",
+        "version": "8.0.46",
+        "major": 8,
+        "minor": 0,
+        "patch": 46,
+        "source": "observed",
+        "validated_range": true
+      }
+    }
+  },
+  "assertions": [
+    {
+      "name": "database reachable with expected version",
+      "ok": true,
+      "detail": "SELECT VERSION() rc=0 version='8.0.46' expected_contains='8.0.46'"
+    },
+    {
+      "name": "setup create-counterpart return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "setup seed-counterpart return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "setup analyze-counterpart return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "exit code",
+      "ok": true,
+      "detail": "rc=1 expected=1"
+    },
+    {
+      "name": "verdict",
+      "ok": true,
+      "detail": "verdict='reject'"
+    },
+    {
+      "name": "top-level statements",
+      "ok": true,
+      "detail": "statements=1 expected=1"
+    },
+    {
+      "name": "zero findings",
+      "ok": true,
+      "detail": "findings=1"
+    },
+    {
+      "name": "no diagnostics",
+      "ok": true,
+      "detail": "diagnostics=[]"
+    },
+    {
+      "name": "no unsupported",
+      "ok": true,
+      "detail": "unsupported=[]"
+    },
+    {
+      "name": "applicable rule count",
+      "ok": true,
+      "detail": "applicable=1"
+    },
+    {
+      "name": "aggregate coverage",
+      "ok": true,
+      "detail": "coverage='complete'"
+    },
+    {
+      "name": "per-statement coverage",
+      "ok": true,
+      "detail": "statement_coverage=['complete']"
+    },
+    {
+      "name": "evidence gap count",
+      "ok": true,
+      "detail": "gaps=0"
+    },
+    {
+      "name": "finding entries",
+      "ok": true,
+      "detail": "findings=[(0, 'ddl.table.truncate.rows.max_count', 'blocker')] expected=[(0, 'ddl.table.truncate.rows.max_count', 'blocker')]"
+    },
+    {
+      "name": "finding metadata (0, 'ddl.table.truncate.rows.max_count')",
+      "ok": true,
+      "detail": "findings=[{'limit': 1, 'operation': 'truncate_table', 'table': 't13c', 'table_rows': 8}] expected_subset={'table': 't13c', 'operation': 'truncate_table'}"
+    },
+    {
+      "name": "version identity",
+      "ok": true,
+      "detail": "version={'product': 'mysql', 'version': '8.0.46', 'major': 8, 'minor': 0, 'patch': 46, 'source': 'observed', 'validated_range': True} expected={'product': 'mysql', 'version': '8.0.46'}"
+    },
+    {
+      "name": "teardown drop-fixture return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    }
+  ],
+  "status": "pass",
+  "command": [
+    "/Users/fan/GolangProjects/DeltaScope/docs/verification/t14-partition-topology/2119f2305b92ea10b66f8c7c3cf79f714c198b8b/golden/T13/bin/deltascope",
+    "audit",
+    "--dialect",
+    "mysql",
+    "--sql",
+    "TRUNCATE TABLE t13c;",
+    "--config",
+    "/Users/fan/GolangProjects/DeltaScope/docs/verification/t14-partition-topology/2119f2305b92ea10b66f8c7c3cf79f714c198b8b/golden/T13/golden-policy-t13r1-truncate-rows.yaml",
+    "--format",
+    "json",
+    "--host",
+    "127.0.0.1",
+    "--port",
+    "23380",
+    "--user",
+    "root",
+    "--password-env",
+    "DS_T13_GOLDEN_PW",
+    "--schema",
+    "golden"
+  ]
+}

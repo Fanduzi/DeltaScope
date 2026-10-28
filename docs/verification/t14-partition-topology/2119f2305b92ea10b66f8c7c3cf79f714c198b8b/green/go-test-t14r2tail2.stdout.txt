@@ -1,0 +1,42 @@
+=== RUN   TestT14R2Tail2MaxvalueThenExprRefusesAlter
+=== PAUSE TestT14R2Tail2MaxvalueThenExprRefusesAlter
+=== RUN   TestT14R2Tail2MaxvalueThenExprRefusesCreate
+=== PAUSE TestT14R2Tail2MaxvalueThenExprRefusesCreate
+=== RUN   TestT14R2Tail2RuleOffKeepsRefusal
+=== PAUSE TestT14R2Tail2RuleOffKeepsRefusal
+=== RUN   TestT14R2Tail2DeclaredSchemeOutcomePairs
+=== PAUSE TestT14R2Tail2DeclaredSchemeOutcomePairs
+=== CONT  TestT14R2Tail2MaxvalueThenExprRefusesAlter
+=== CONT  TestT14R2Tail2RuleOffKeepsRefusal
+=== CONT  TestT14R2Tail2DeclaredSchemeOutcomePairs
+=== CONT  TestT14R2Tail2MaxvalueThenExprRefusesCreate
+=== RUN   TestT14R2Tail2DeclaredSchemeOutcomePairs/maxvalue_then_expr
+=== PAUSE TestT14R2Tail2DeclaredSchemeOutcomePairs/maxvalue_then_expr
+=== RUN   TestT14R2Tail2DeclaredSchemeOutcomePairs/maxvalue_then_nil
+=== PAUSE TestT14R2Tail2DeclaredSchemeOutcomePairs/maxvalue_then_nil
+=== RUN   TestT14R2Tail2DeclaredSchemeOutcomePairs/maxvalue_then_shell
+=== PAUSE TestT14R2Tail2DeclaredSchemeOutcomePairs/maxvalue_then_shell
+=== RUN   TestT14R2Tail2DeclaredSchemeOutcomePairs/expr_then_decreasing
+=== PAUSE TestT14R2Tail2DeclaredSchemeOutcomePairs/expr_then_decreasing
+=== RUN   TestT14R2Tail2DeclaredSchemeOutcomePairs/single_expr
+=== PAUSE TestT14R2Tail2DeclaredSchemeOutcomePairs/single_expr
+=== RUN   TestT14R2Tail2DeclaredSchemeOutcomePairs/legal_sequence
+=== PAUSE TestT14R2Tail2DeclaredSchemeOutcomePairs/legal_sequence
+=== CONT  TestT14R2Tail2DeclaredSchemeOutcomePairs/maxvalue_then_expr
+=== CONT  TestT14R2Tail2DeclaredSchemeOutcomePairs/maxvalue_then_shell
+=== CONT  TestT14R2Tail2DeclaredSchemeOutcomePairs/maxvalue_then_nil
+=== CONT  TestT14R2Tail2DeclaredSchemeOutcomePairs/legal_sequence
+=== CONT  TestT14R2Tail2DeclaredSchemeOutcomePairs/single_expr
+=== CONT  TestT14R2Tail2DeclaredSchemeOutcomePairs/expr_then_decreasing
+--- PASS: TestT14R2Tail2DeclaredSchemeOutcomePairs (0.00s)
+    --- PASS: TestT14R2Tail2DeclaredSchemeOutcomePairs/maxvalue_then_expr (0.00s)
+    --- PASS: TestT14R2Tail2DeclaredSchemeOutcomePairs/maxvalue_then_shell (0.00s)
+    --- PASS: TestT14R2Tail2DeclaredSchemeOutcomePairs/maxvalue_then_nil (0.00s)
+    --- PASS: TestT14R2Tail2DeclaredSchemeOutcomePairs/single_expr (0.00s)
+    --- PASS: TestT14R2Tail2DeclaredSchemeOutcomePairs/legal_sequence (0.00s)
+    --- PASS: TestT14R2Tail2DeclaredSchemeOutcomePairs/expr_then_decreasing (0.00s)
+--- PASS: TestT14R2Tail2MaxvalueThenExprRefusesAlter (0.01s)
+--- PASS: TestT14R2Tail2RuleOffKeepsRefusal (0.01s)
+--- PASS: TestT14R2Tail2MaxvalueThenExprRefusesCreate (0.01s)
+PASS
+ok  	github.com/Fanduzi/DeltaScope/internal/application/audit	0.349s

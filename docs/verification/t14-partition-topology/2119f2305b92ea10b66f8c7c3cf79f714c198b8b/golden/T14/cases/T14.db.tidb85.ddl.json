@@ -1,0 +1,524 @@
+{
+  "case_id": "T14.db.tidb85.ddl",
+  "kind": "db_ddl",
+  "anchor": "tidb85",
+  "input_sql": [
+    "DROP TABLE IF EXISTS t14d, t14a, t14h, t14n",
+    "CREATE TABLE t14d (id INT) ENGINE=InnoDB PARTITION BY RANGE(id) (PARTITION p0 VALUES LESS THAN (200), PARTITION pmax VALUES LESS THAN MAXVALUE)",
+    "INSERT INTO t14d VALUES (100),(150)",
+    "ALTER TABLE t14d REORGANIZE PARTITION p0 INTO (PARTITION p1 VALUES LESS THAN (120), PARTITION p2 VALUES LESS THAN (200))",
+    "CREATE TABLE t14a (id INT) ENGINE=InnoDB PARTITION BY RANGE(id) (PARTITION p0 VALUES LESS THAN (200), PARTITION p1 VALUES LESS THAN (400))",
+    "ALTER TABLE t14a ADD PARTITION (PARTITION p2 VALUES LESS THAN (600))",
+    "CREATE TABLE t14h (id INT) ENGINE=InnoDB PARTITION BY HASH(id) PARTITIONS 4",
+    "INSERT INTO t14h VALUES (1),(2),(3),(4),(5)",
+    "ALTER TABLE t14h ADD PARTITION PARTITIONS 2",
+    "ALTER TABLE t14h COALESCE PARTITION 1",
+    "CREATE TABLE t14n (id INT) ENGINE=InnoDB",
+    "ALTER TABLE t14n PARTITION BY HASH(id) PARTITIONS 2",
+    "ALTER TABLE t14n REMOVE PARTITIONING",
+    "ALTER TABLE t14d REMOVE PARTITIONING",
+    "DROP TABLE IF EXISTS t14d, t14a, t14h, t14n"
+  ],
+  "expected": {
+    "steps": [
+      {
+        "name": "drop-stale-fixtures",
+        "rc": 0,
+        "verify": []
+      },
+      {
+        "name": "create-range-fixture",
+        "rc": 0,
+        "verify": [
+          {
+            "assert": "range fixture lands with two named partitions",
+            "sql": "SELECT COUNT(*) FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t14d' AND PARTITION_NAME IS NOT NULL",
+            "expect": "2"
+          }
+        ]
+      },
+      {
+        "name": "seed-range-rows",
+        "rc": 0,
+        "verify": []
+      },
+      {
+        "name": "reorganize-p0",
+        "rc": 0,
+        "verify": [
+          {
+            "assert": "reorg publishes p1/p2/pmax in ordinal order",
+            "sql": "SELECT COUNT(*) FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t14d' AND PARTITION_NAME IN ('p1','p2','pmax')",
+            "expect": "3"
+          },
+          {
+            "assert": "rows survive the reorganization",
+            "sql": "SELECT COUNT(*) FROM golden.t14d",
+            "expect": "2"
+          }
+        ]
+      },
+      {
+        "name": "create-range-addable",
+        "rc": 0,
+        "verify": []
+      },
+      {
+        "name": "add-partition-defs",
+        "rc": 0,
+        "verify": [
+          {
+            "assert": "add appends p2",
+            "sql": "SELECT COUNT(*) FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t14a' AND PARTITION_NAME IS NOT NULL",
+            "expect": "3"
+          }
+        ]
+      },
+      {
+        "name": "create-hash-fixture",
+        "rc": 0,
+        "verify": []
+      },
+      {
+        "name": "seed-hash-rows",
+        "rc": 0,
+        "verify": []
+      },
+      {
+        "name": "add-partitions-n",
+        "rc": 0,
+        "verify": [
+          {
+            "assert": "hash add grows the directory to six",
+            "sql": "SELECT COUNT(*) FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t14h' AND PARTITION_NAME IS NOT NULL",
+            "expect": "6"
+          }
+        ]
+      },
+      {
+        "name": "coalesce-one",
+        "rc": 0,
+        "verify": [
+          {
+            "assert": "coalesce shrinks the directory to five",
+            "sql": "SELECT COUNT(*) FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t14h' AND PARTITION_NAME IS NOT NULL",
+            "expect": "5"
+          },
+          {
+            "assert": "hash rows survive coalesce",
+            "sql": "SELECT COUNT(*) FROM golden.t14h",
+            "expect": "5"
+          }
+        ]
+      },
+      {
+        "name": "create-plain-table",
+        "rc": 0,
+        "verify": []
+      },
+      {
+        "name": "partition-by-hash",
+        "rc": 0,
+        "verify": [
+          {
+            "assert": "partition-by materializes two hash members",
+            "sql": "SELECT COUNT(*) FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t14n' AND PARTITION_NAME IS NOT NULL",
+            "expect": "2"
+          }
+        ]
+      },
+      {
+        "name": "remove-partitioning",
+        "rc": 0,
+        "verify": [
+          {
+            "assert": "remove-partitioning returns the table to a non-partitioned state",
+            "sql": "SELECT COUNT(*) FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t14n' AND PARTITION_NAME IS NOT NULL",
+            "expect": "0"
+          }
+        ]
+      },
+      {
+        "name": "remove-partitioning-range",
+        "rc": 0,
+        "verify": [
+          {
+            "assert": "range directory cleared and rows preserved",
+            "sql": "SELECT COUNT(*) FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t14d' AND PARTITION_NAME IS NOT NULL",
+            "expect": "0"
+          },
+          {
+            "assert": "rows survive remove-partitioning",
+            "sql": "SELECT COUNT(*) FROM golden.t14d",
+            "expect": "2"
+          }
+        ]
+      },
+      {
+        "name": "cleanup-fixtures",
+        "rc": 0,
+        "verify": []
+      }
+    ]
+  },
+  "actual": {
+    "steps": [
+      {
+        "name": "drop-stale-fixtures",
+        "sql": "DROP TABLE IF EXISTS t14d, t14a, t14h, t14n",
+        "verify": [],
+        "rc": 0,
+        "stdout": "",
+        "stderr": ""
+      },
+      {
+        "name": "create-range-fixture",
+        "sql": "CREATE TABLE t14d (id INT) ENGINE=InnoDB PARTITION BY RANGE(id) (PARTITION p0 VALUES LESS THAN (200), PARTITION pmax VALUES LESS THAN MAXVALUE)",
+        "verify": [
+          {
+            "assert": "range fixture lands with two named partitions",
+            "sql": "SELECT COUNT(*) FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t14d' AND PARTITION_NAME IS NOT NULL",
+            "rc": 0,
+            "output": "2",
+            "stderr": ""
+          }
+        ],
+        "rc": 0,
+        "stdout": "",
+        "stderr": ""
+      },
+      {
+        "name": "seed-range-rows",
+        "sql": "INSERT INTO t14d VALUES (100),(150)",
+        "verify": [],
+        "rc": 0,
+        "stdout": "",
+        "stderr": ""
+      },
+      {
+        "name": "reorganize-p0",
+        "sql": "ALTER TABLE t14d REORGANIZE PARTITION p0 INTO (PARTITION p1 VALUES LESS THAN (120), PARTITION p2 VALUES LESS THAN (200))",
+        "verify": [
+          {
+            "assert": "reorg publishes p1/p2/pmax in ordinal order",
+            "sql": "SELECT COUNT(*) FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t14d' AND PARTITION_NAME IN ('p1','p2','pmax')",
+            "rc": 0,
+            "output": "3",
+            "stderr": ""
+          },
+          {
+            "assert": "rows survive the reorganization",
+            "sql": "SELECT COUNT(*) FROM golden.t14d",
+            "rc": 0,
+            "output": "2",
+            "stderr": ""
+          }
+        ],
+        "rc": 0,
+        "stdout": "",
+        "stderr": ""
+      },
+      {
+        "name": "create-range-addable",
+        "sql": "CREATE TABLE t14a (id INT) ENGINE=InnoDB PARTITION BY RANGE(id) (PARTITION p0 VALUES LESS THAN (200), PARTITION p1 VALUES LESS THAN (400))",
+        "verify": [],
+        "rc": 0,
+        "stdout": "",
+        "stderr": ""
+      },
+      {
+        "name": "add-partition-defs",
+        "sql": "ALTER TABLE t14a ADD PARTITION (PARTITION p2 VALUES LESS THAN (600))",
+        "verify": [
+          {
+            "assert": "add appends p2",
+            "sql": "SELECT COUNT(*) FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t14a' AND PARTITION_NAME IS NOT NULL",
+            "rc": 0,
+            "output": "3",
+            "stderr": ""
+          }
+        ],
+        "rc": 0,
+        "stdout": "",
+        "stderr": ""
+      },
+      {
+        "name": "create-hash-fixture",
+        "sql": "CREATE TABLE t14h (id INT) ENGINE=InnoDB PARTITION BY HASH(id) PARTITIONS 4",
+        "verify": [],
+        "rc": 0,
+        "stdout": "",
+        "stderr": ""
+      },
+      {
+        "name": "seed-hash-rows",
+        "sql": "INSERT INTO t14h VALUES (1),(2),(3),(4),(5)",
+        "verify": [],
+        "rc": 0,
+        "stdout": "",
+        "stderr": ""
+      },
+      {
+        "name": "add-partitions-n",
+        "sql": "ALTER TABLE t14h ADD PARTITION PARTITIONS 2",
+        "verify": [
+          {
+            "assert": "hash add grows the directory to six",
+            "sql": "SELECT COUNT(*) FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t14h' AND PARTITION_NAME IS NOT NULL",
+            "rc": 0,
+            "output": "6",
+            "stderr": ""
+          }
+        ],
+        "rc": 0,
+        "stdout": "",
+        "stderr": ""
+      },
+      {
+        "name": "coalesce-one",
+        "sql": "ALTER TABLE t14h COALESCE PARTITION 1",
+        "verify": [
+          {
+            "assert": "coalesce shrinks the directory to five",
+            "sql": "SELECT COUNT(*) FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t14h' AND PARTITION_NAME IS NOT NULL",
+            "rc": 0,
+            "output": "5",
+            "stderr": ""
+          },
+          {
+            "assert": "hash rows survive coalesce",
+            "sql": "SELECT COUNT(*) FROM golden.t14h",
+            "rc": 0,
+            "output": "5",
+            "stderr": ""
+          }
+        ],
+        "rc": 0,
+        "stdout": "",
+        "stderr": ""
+      },
+      {
+        "name": "create-plain-table",
+        "sql": "CREATE TABLE t14n (id INT) ENGINE=InnoDB",
+        "verify": [],
+        "rc": 0,
+        "stdout": "",
+        "stderr": ""
+      },
+      {
+        "name": "partition-by-hash",
+        "sql": "ALTER TABLE t14n PARTITION BY HASH(id) PARTITIONS 2",
+        "verify": [
+          {
+            "assert": "partition-by materializes two hash members",
+            "sql": "SELECT COUNT(*) FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t14n' AND PARTITION_NAME IS NOT NULL",
+            "rc": 0,
+            "output": "2",
+            "stderr": ""
+          }
+        ],
+        "rc": 0,
+        "stdout": "",
+        "stderr": ""
+      },
+      {
+        "name": "remove-partitioning",
+        "sql": "ALTER TABLE t14n REMOVE PARTITIONING",
+        "verify": [
+          {
+            "assert": "remove-partitioning returns the table to a non-partitioned state",
+            "sql": "SELECT COUNT(*) FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t14n' AND PARTITION_NAME IS NOT NULL",
+            "rc": 0,
+            "output": "0",
+            "stderr": ""
+          }
+        ],
+        "rc": 0,
+        "stdout": "",
+        "stderr": ""
+      },
+      {
+        "name": "remove-partitioning-range",
+        "sql": "ALTER TABLE t14d REMOVE PARTITIONING",
+        "verify": [
+          {
+            "assert": "range directory cleared and rows preserved",
+            "sql": "SELECT COUNT(*) FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t14d' AND PARTITION_NAME IS NOT NULL",
+            "rc": 0,
+            "output": "0",
+            "stderr": ""
+          },
+          {
+            "assert": "rows survive remove-partitioning",
+            "sql": "SELECT COUNT(*) FROM golden.t14d",
+            "rc": 0,
+            "output": "2",
+            "stderr": ""
+          }
+        ],
+        "rc": 0,
+        "stdout": "",
+        "stderr": ""
+      },
+      {
+        "name": "cleanup-fixtures",
+        "sql": "DROP TABLE IF EXISTS t14d, t14a, t14h, t14n",
+        "verify": [],
+        "rc": 0,
+        "stdout": "",
+        "stderr": ""
+      }
+    ],
+    "database": {
+      "product": "tidb",
+      "image": "pingcap/tidb:v8.5.0",
+      "image_digest": "pingcap/tidb@sha256:490861bd4a2fa643dbe76b77ffecafcad66e6a42774e580b82f4ec2429a80e57",
+      "container": "deltascope-ddl-golden-tidb85",
+      "reachable": true,
+      "version": "8.0.11-TiDB-v8.5.0"
+    }
+  },
+  "assertions": [
+    {
+      "name": "database reachable with expected version",
+      "ok": true,
+      "detail": "SELECT VERSION() rc=0 version='8.0.11-TiDB-v8.5.0' expected_contains='v8.5.0'"
+    },
+    {
+      "name": "fixture database created",
+      "ok": true,
+      "detail": "CREATE DATABASE rc=0 stderr=''"
+    },
+    {
+      "name": "drop-stale-fixtures return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "create-range-fixture return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "create-range-fixture: range fixture lands with two named partitions",
+      "ok": true,
+      "detail": "rc=0 output='2' expected='2'"
+    },
+    {
+      "name": "seed-range-rows return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "reorganize-p0 return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "reorganize-p0: reorg publishes p1/p2/pmax in ordinal order",
+      "ok": true,
+      "detail": "rc=0 output='3' expected='3'"
+    },
+    {
+      "name": "reorganize-p0: rows survive the reorganization",
+      "ok": true,
+      "detail": "rc=0 output='2' expected='2'"
+    },
+    {
+      "name": "create-range-addable return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "add-partition-defs return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "add-partition-defs: add appends p2",
+      "ok": true,
+      "detail": "rc=0 output='3' expected='3'"
+    },
+    {
+      "name": "create-hash-fixture return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "seed-hash-rows return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "add-partitions-n return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "add-partitions-n: hash add grows the directory to six",
+      "ok": true,
+      "detail": "rc=0 output='6' expected='6'"
+    },
+    {
+      "name": "coalesce-one return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "coalesce-one: coalesce shrinks the directory to five",
+      "ok": true,
+      "detail": "rc=0 output='5' expected='5'"
+    },
+    {
+      "name": "coalesce-one: hash rows survive coalesce",
+      "ok": true,
+      "detail": "rc=0 output='5' expected='5'"
+    },
+    {
+      "name": "create-plain-table return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "partition-by-hash return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "partition-by-hash: partition-by materializes two hash members",
+      "ok": true,
+      "detail": "rc=0 output='2' expected='2'"
+    },
+    {
+      "name": "remove-partitioning return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "remove-partitioning: remove-partitioning returns the table to a non-partitioned state",
+      "ok": true,
+      "detail": "rc=0 output='0' expected='0'"
+    },
+    {
+      "name": "remove-partitioning-range return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "remove-partitioning-range: range directory cleared and rows preserved",
+      "ok": true,
+      "detail": "rc=0 output='0' expected='0'"
+    },
+    {
+      "name": "remove-partitioning-range: rows survive remove-partitioning",
+      "ok": true,
+      "detail": "rc=0 output='2' expected='2'"
+    },
+    {
+      "name": "cleanup-fixtures return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    }
+  ],
+  "status": "pass"
+}

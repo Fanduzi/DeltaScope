@@ -1,0 +1,173 @@
+{
+  "case_id": "T11.cli.t11-cli-dropfk-exists-offline",
+  "kind": "cli_audit",
+  "cli_case": "t11-cli-dropfk-exists-offline",
+  "dialect": "mysql",
+  "input_sql": "ALTER TABLE child DROP FOREIGN KEY fk_c;",
+  "policy_profile": "t11-fk-exists",
+  "policy_path": "/Users/fan/GolangProjects/DeltaScope/docs/verification/t14-partition-topology/2119f2305b92ea10b66f8c7c3cf79f714c198b8b/golden/T11/golden-policy-t11-fk-exists.yaml",
+  "command": [
+    "/Users/fan/GolangProjects/DeltaScope/docs/verification/t14-partition-topology/2119f2305b92ea10b66f8c7c3cf79f714c198b8b/golden/T11/bin/deltascope",
+    "audit",
+    "--dialect",
+    "mysql",
+    "--sql",
+    "ALTER TABLE child DROP FOREIGN KEY fk_c;",
+    "--config",
+    "/Users/fan/GolangProjects/DeltaScope/docs/verification/t14-partition-topology/2119f2305b92ea10b66f8c7c3cf79f714c198b8b/golden/T11/golden-policy-t11-fk-exists.yaml",
+    "--format",
+    "json"
+  ],
+  "expected": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "evidence_gaps": 1,
+    "evidence_gap_entries": [
+      {
+        "index": 0,
+        "rule_id": "ddl.alter.drop_foreign_key.exists.require",
+        "reason_code": "unknown_table_state",
+        "required_facts": [
+          "target_table.constraints",
+          "target_table.existence"
+        ]
+      }
+    ],
+    "rule_summary_loaded": 1,
+    "rule_summary_applicable": 1
+  },
+  "actual": {
+    "exit": 0,
+    "stdout": "{\"verdict\":\"review\",\"coverage\":{\"status\":\"unverified\"},\"summary\":{\"statements\":1,\"blockers\":0,\"warnings\":0,\"notices\":0},\"statements\":[{\"index\":0,\"kind\":\"ddl\",\"raw_sql\":\"ALTER TABLE child DROP FOREIGN KEY fk_c;\",\"normalized_sql\":\"ALTER TABLE child DROP FOREIGN KEY fk_c\",\"evidence_gaps\":[{\"rule_id\":\"ddl.alter.drop_foreign_key.exists.require\",\"reason_code\":\"unknown_table_state\",\"required_facts\":[\"target_table.constraints\",\"target_table.existence\"]}],\"coverage\":{\"status\":\"unverified\"}}],\"fail_on_triggered\":false,\"rule_summary\":{\"loaded\":1,\"applicable\":1,\"skipped\":[]},\"context\":{\"mode\":\"offline\",\"dialect\":\"mysql\",\"dialect_source\":\"flag\",\"note\":\"existence not checked (no database connection)\",\"unproven\":[\"column_exists\",\"table_exists\"]}}\n",
+    "stderr": "",
+    "parsed": {
+      "verdict": "review",
+      "coverage": {
+        "status": "unverified"
+      },
+      "summary": {
+        "statements": 1,
+        "blockers": 0,
+        "warnings": 0,
+        "notices": 0
+      },
+      "statements": [
+        {
+          "index": 0,
+          "kind": "ddl",
+          "raw_sql": "ALTER TABLE child DROP FOREIGN KEY fk_c;",
+          "normalized_sql": "ALTER TABLE child DROP FOREIGN KEY fk_c",
+          "evidence_gaps": [
+            {
+              "rule_id": "ddl.alter.drop_foreign_key.exists.require",
+              "reason_code": "unknown_table_state",
+              "required_facts": [
+                "target_table.constraints",
+                "target_table.existence"
+              ]
+            }
+          ],
+          "coverage": {
+            "status": "unverified"
+          }
+        }
+      ],
+      "fail_on_triggered": false,
+      "rule_summary": {
+        "loaded": 1,
+        "applicable": 1,
+        "skipped": []
+      },
+      "context": {
+        "mode": "offline",
+        "dialect": "mysql",
+        "dialect_source": "flag",
+        "note": "existence not checked (no database connection)",
+        "unproven": [
+          "column_exists",
+          "table_exists"
+        ]
+      }
+    },
+    "version_evidence": {
+      "target_raw": null,
+      "target_canonical": null,
+      "observed_raw": null,
+      "observed_canonical": null,
+      "resolved": null
+    }
+  },
+  "assertions": [
+    {
+      "name": "exit code",
+      "ok": true,
+      "detail": "rc=0 expected=0"
+    },
+    {
+      "name": "verdict",
+      "ok": true,
+      "detail": "verdict='review'"
+    },
+    {
+      "name": "top-level statements",
+      "ok": true,
+      "detail": "statements=1 expected=1"
+    },
+    {
+      "name": "zero findings",
+      "ok": true,
+      "detail": "findings=0"
+    },
+    {
+      "name": "no diagnostics",
+      "ok": true,
+      "detail": "diagnostics=[]"
+    },
+    {
+      "name": "no unsupported",
+      "ok": true,
+      "detail": "unsupported=[]"
+    },
+    {
+      "name": "loaded rule count",
+      "ok": true,
+      "detail": "loaded=1"
+    },
+    {
+      "name": "applicable rule count",
+      "ok": true,
+      "detail": "applicable=1"
+    },
+    {
+      "name": "aggregate coverage",
+      "ok": true,
+      "detail": "coverage='unverified'"
+    },
+    {
+      "name": "evidence gap count",
+      "ok": true,
+      "detail": "gaps=1"
+    },
+    {
+      "name": "evidence gap entries",
+      "ok": true,
+      "detail": "gaps=[(0, 'ddl.alter.drop_foreign_key.exists.require', 'unknown_table_state')] expected=[(0, 'ddl.alter.drop_foreign_key.exists.require', 'unknown_table_state')]"
+    },
+    {
+      "name": "evidence gap required_facts (0, 'ddl.alter.drop_foreign_key.exists.require', 'unknown_table_state')",
+      "ok": true,
+      "detail": "gaps=[{'rule_id': 'ddl.alter.drop_foreign_key.exists.require', 'reason_code': 'unknown_table_state', 'required_facts': ['target_table.constraints', 'target_table.existence']}] expected_facts=['target_table.constraints', 'target_table.existence']"
+    },
+    {
+      "name": "no gap encoded as finding",
+      "ok": true,
+      "detail": "findings carrying gap shape=[]"
+    }
+  ],
+  "status": "pass"
+}

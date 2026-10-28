@@ -1,0 +1,53 @@
+=== RUN   TestT14R2Tail2MaxvalueThenExprRefusesAlter
+=== PAUSE TestT14R2Tail2MaxvalueThenExprRefusesAlter
+=== RUN   TestT14R2Tail2MaxvalueThenExprRefusesCreate
+=== PAUSE TestT14R2Tail2MaxvalueThenExprRefusesCreate
+=== RUN   TestT14R2Tail2RuleOffKeepsRefusal
+=== PAUSE TestT14R2Tail2RuleOffKeepsRefusal
+=== RUN   TestT14R2Tail2DeclaredSchemeOutcomePairs
+=== PAUSE TestT14R2Tail2DeclaredSchemeOutcomePairs
+=== CONT  TestT14R2Tail2MaxvalueThenExprRefusesAlter
+=== CONT  TestT14R2Tail2RuleOffKeepsRefusal
+=== CONT  TestT14R2Tail2MaxvalueThenExprRefusesCreate
+=== CONT  TestT14R2Tail2DeclaredSchemeOutcomePairs
+=== RUN   TestT14R2Tail2DeclaredSchemeOutcomePairs/maxvalue_then_expr
+=== PAUSE TestT14R2Tail2DeclaredSchemeOutcomePairs/maxvalue_then_expr
+=== RUN   TestT14R2Tail2DeclaredSchemeOutcomePairs/maxvalue_then_nil
+=== PAUSE TestT14R2Tail2DeclaredSchemeOutcomePairs/maxvalue_then_nil
+=== RUN   TestT14R2Tail2DeclaredSchemeOutcomePairs/maxvalue_then_shell
+=== PAUSE TestT14R2Tail2DeclaredSchemeOutcomePairs/maxvalue_then_shell
+=== RUN   TestT14R2Tail2DeclaredSchemeOutcomePairs/expr_then_decreasing
+=== PAUSE TestT14R2Tail2DeclaredSchemeOutcomePairs/expr_then_decreasing
+=== RUN   TestT14R2Tail2DeclaredSchemeOutcomePairs/single_expr
+=== PAUSE TestT14R2Tail2DeclaredSchemeOutcomePairs/single_expr
+=== RUN   TestT14R2Tail2DeclaredSchemeOutcomePairs/legal_sequence
+=== PAUSE TestT14R2Tail2DeclaredSchemeOutcomePairs/legal_sequence
+=== CONT  TestT14R2Tail2DeclaredSchemeOutcomePairs/maxvalue_then_expr
+=== CONT  TestT14R2Tail2DeclaredSchemeOutcomePairs/expr_then_decreasing
+=== CONT  TestT14R2Tail2DeclaredSchemeOutcomePairs/legal_sequence
+=== CONT  TestT14R2Tail2DeclaredSchemeOutcomePairs/single_expr
+=== NAME  TestT14R2Tail2DeclaredSchemeOutcomePairs/maxvalue_then_expr
+    batch_state_t14r2tail2_test.go:160: declaredSchemeOutcome(range) = 2, want 0
+=== CONT  TestT14R2Tail2DeclaredSchemeOutcomePairs/maxvalue_then_nil
+    batch_state_t14r2tail2_test.go:160: declaredSchemeOutcome(range) = 2, want 0
+=== CONT  TestT14R2Tail2DeclaredSchemeOutcomePairs/maxvalue_then_shell
+    batch_state_t14r2tail2_test.go:160: declaredSchemeOutcome(range) = 2, want 0
+--- FAIL: TestT14R2Tail2DeclaredSchemeOutcomePairs (0.00s)
+    --- PASS: TestT14R2Tail2DeclaredSchemeOutcomePairs/single_expr (0.00s)
+    --- FAIL: TestT14R2Tail2DeclaredSchemeOutcomePairs/maxvalue_then_expr (0.00s)
+    --- FAIL: TestT14R2Tail2DeclaredSchemeOutcomePairs/maxvalue_then_nil (0.00s)
+    --- PASS: TestT14R2Tail2DeclaredSchemeOutcomePairs/legal_sequence (0.00s)
+    --- PASS: TestT14R2Tail2DeclaredSchemeOutcomePairs/expr_then_decreasing (0.00s)
+    --- FAIL: TestT14R2Tail2DeclaredSchemeOutcomePairs/maxvalue_then_shell (0.00s)
+=== NAME  TestT14R2Tail2RuleOffKeepsRefusal
+    batch_state_t14r2tail2_test.go:117: the refusal keeps the original directory regardless of rules, got &{Schema: Exists:true Table:0x4a1f1ff443c0 Columns:[{Name:id Type:int Length:0 Charset: Collation: Comment: Unsigned:false NotNull:true AutoIncrement:false HasDefault:false DefaultValue: DefaultKind: DefaultIsNull:false DefaultIsCurrentTimestamp:false OnUpdateCurrentTimestamp:false GeneratedWhen: IsIdentity:false IdentityOptions:map[] AutoRandom:false UnextractedOptions:[] Generated:<nil> DefaultExpression:<nil> Visibility: VisibilityExplicit:false DefaultParenthesized:false DefaultLiteral:<nil>}] PrimaryKey:<nil> Indexes:[] Constraints:[] Options:map[comment:kept] PrimaryKeyIsHandle:false PrimaryKeyHandleUnknown:false PrimaryKeyClustered:false PrimaryKeyClusteredUnknown:false PrimaryKeyUnknown:false IndexesUnknown:false ConstraintsUnknown:false IndexOrderCatalog:false IndexNamesUnknown:false Partitioned:<nil> PartitionType:<nil> PartitionNames:[] PartitionDescriptions:[] PartitionDefs:[] Subpartitioned:false}
+--- FAIL: TestT14R2Tail2RuleOffKeepsRefusal (0.00s)
+=== NAME  TestT14R2Tail2MaxvalueThenExprRefusesAlter
+    batch_state_t14r2tail2_test.go:48: a proven refusal must not degrade into successor gaps, got [{RuleID:ddl.alter.truncate_partition.target ReasonCode:unknown_table_state RequiredFacts:[target_table.partitioned]}]
+=== NAME  TestT14R2Tail2MaxvalueThenExprRefusesCreate
+    batch_state_t14r2tail2_test.go:90: a kept-absent entry owes no partition premise, got [{RuleID:ddl.alter.truncate_partition.target ReasonCode:unknown_table_state RequiredFacts:[target_table.partitioned]}]
+--- FAIL: TestT14R2Tail2MaxvalueThenExprRefusesAlter (0.01s)
+--- FAIL: TestT14R2Tail2MaxvalueThenExprRefusesCreate (0.01s)
+FAIL
+FAIL	github.com/Fanduzi/DeltaScope/internal/application/audit	0.674s
+FAIL

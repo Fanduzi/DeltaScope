@@ -1,0 +1,409 @@
+{
+  "case_id": "T09.meta.t09-mysql57-add-ine",
+  "kind": "cli_metadata",
+  "cli_case": "t09-mysql57-add-ine",
+  "anchor": "mysql57",
+  "dialect": "mysql",
+  "input_sql": "ALTER TABLE t9i ADD INDEX IF NOT EXISTS i1(a);",
+  "policy_profile": "t09-exists",
+  "policy_path": "/Users/fan/GolangProjects/DeltaScope/docs/verification/t14-partition-topology/2119f2305b92ea10b66f8c7c3cf79f714c198b8b/golden/T09/golden-policy-t09-exists.yaml",
+  "connect": {
+    "host": "127.0.0.1",
+    "port": 23357,
+    "user": "root",
+    "schema": "golden",
+    "password_env": "T09_MYSQL_PASSWORD"
+  },
+  "expected": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+      "complete"
+    ],
+    "statement_sql": [
+      "ALTER TABLE t9i ADD INDEX IF NOT EXISTS i1(a);"
+    ],
+    "statement_indices": [
+      0
+    ],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "finding_entries": [],
+    "finding_metadata": [],
+    "unsupported_entries": [],
+    "rule_summary_loaded": 6,
+    "rule_summary_applicable": 2
+  },
+  "actual": {
+    "database": {
+      "product": "mysql",
+      "image": "mysql:5.7.44",
+      "image_digest": "mysql@sha256:4bc6bc963e6d8443453676cae56536f4b8156d78bae03c0145cbe47c2aad73bb",
+      "container": "deltascope-ddl-golden-mysql57",
+      "reachable": true,
+      "version": "5.7.44"
+    },
+    "setup": [
+      {
+        "name": "prove-prior-absence-t9i",
+        "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t9i'",
+        "rc": 0,
+        "stdout": "COUNT(*)\n0",
+        "stderr": "",
+        "verify": [
+          {
+            "assert": "t9i bound table count",
+            "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t9i'",
+            "rc": 0,
+            "output": "0",
+            "stderr": ""
+          }
+        ]
+      },
+      {
+        "name": "create-fixture-t9i",
+        "sql": "CREATE TABLE t9i (a INT, b INT, c INT, d INT, KEY i_ab(a,b), UNIQUE KEY uq_cd(c,d), KEY i_abc(a,b,c));",
+        "rc": 0,
+        "stdout": "",
+        "stderr": "",
+        "verify": [
+          {
+            "assert": "t9i bound table count",
+            "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t9i'",
+            "rc": 0,
+            "output": "1",
+            "stderr": ""
+          },
+          {
+            "assert": "t9i ordered column set",
+            "sql": "SELECT COALESCE(GROUP_CONCAT(CONCAT(column_name,':',ordinal_position,':',is_nullable,':',IFNULL(HEX(column_default),'x00'),':',LOWER(extra)) ORDER BY ordinal_position SEPARATOR '|'),'') FROM information_schema.columns WHERE table_schema='golden' AND table_name='t9i'",
+            "rc": 0,
+            "output": "a:1:YES:x00:|b:2:YES:x00:|c:3:YES:x00:|d:4:YES:x00:",
+            "stderr": ""
+          },
+          {
+            "assert": "t9i index identity",
+            "sql": "SELECT COALESCE(GROUP_CONCAT(CONCAT(index_name,':',non_unique,':',seq_in_index,':',column_name,':',index_type) ORDER BY CAST(index_name AS BINARY),seq_in_index SEPARATOR ','),'') FROM information_schema.statistics WHERE table_schema='golden' AND table_name='t9i'",
+            "rc": 0,
+            "output": "i_ab:1:1:a:BTREE,i_ab:1:2:b:BTREE,i_abc:1:1:a:BTREE,i_abc:1:2:b:BTREE,i_abc:1:3:c:BTREE,uq_cd:0:1:c:BTREE,uq_cd:0:2:d:BTREE",
+            "stderr": ""
+          }
+        ]
+      }
+    ],
+    "post_verify": [
+      {
+        "assert": "t9i ordered column set",
+        "sql": "SELECT COALESCE(GROUP_CONCAT(CONCAT(column_name,':',ordinal_position,':',is_nullable,':',IFNULL(HEX(column_default),'x00'),':',LOWER(extra)) ORDER BY ordinal_position SEPARATOR '|'),'') FROM information_schema.columns WHERE table_schema='golden' AND table_name='t9i'",
+        "rc": 0,
+        "output": "a:1:YES:x00:|b:2:YES:x00:|c:3:YES:x00:|d:4:YES:x00:",
+        "stderr": ""
+      },
+      {
+        "assert": "t9i index identity",
+        "sql": "SELECT COALESCE(GROUP_CONCAT(CONCAT(index_name,':',non_unique,':',seq_in_index,':',column_name,':',index_type) ORDER BY CAST(index_name AS BINARY),seq_in_index SEPARATOR ','),'') FROM information_schema.statistics WHERE table_schema='golden' AND table_name='t9i'",
+        "rc": 0,
+        "output": "i_ab:1:1:a:BTREE,i_ab:1:2:b:BTREE,i_abc:1:1:a:BTREE,i_abc:1:2:b:BTREE,i_abc:1:3:c:BTREE,uq_cd:0:1:c:BTREE,uq_cd:0:2:d:BTREE",
+        "stderr": ""
+      }
+    ],
+    "execute": [
+      {
+        "name": "apply",
+        "sql": "ALTER TABLE t9i ADD INDEX IF NOT EXISTS i1(a);",
+        "rc": 1,
+        "stdout": "",
+        "stderr": "ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'IF NOT EXISTS i1(a)' at line 1"
+      }
+    ],
+    "structure": [
+      {
+        "assert": "t9i index identity",
+        "sql": "SELECT COALESCE(GROUP_CONCAT(CONCAT(index_name,':',non_unique,':',seq_in_index,':',column_name,':',index_type) ORDER BY CAST(index_name AS BINARY),seq_in_index SEPARATOR ','),'') FROM information_schema.statistics WHERE table_schema='golden' AND table_name='t9i'",
+        "rc": 0,
+        "output": "i_ab:1:1:a:BTREE,i_ab:1:2:b:BTREE,i_abc:1:1:a:BTREE,i_abc:1:2:b:BTREE,i_abc:1:3:c:BTREE,uq_cd:0:1:c:BTREE,uq_cd:0:2:d:BTREE",
+        "stderr": ""
+      },
+      {
+        "assert": "t9i ordered column set",
+        "sql": "SELECT COALESCE(GROUP_CONCAT(CONCAT(column_name,':',ordinal_position,':',is_nullable,':',IFNULL(HEX(column_default),'x00'),':',LOWER(extra)) ORDER BY ordinal_position SEPARATOR '|'),'') FROM information_schema.columns WHERE table_schema='golden' AND table_name='t9i'",
+        "rc": 0,
+        "output": "a:1:YES:x00:|b:2:YES:x00:|c:3:YES:x00:|d:4:YES:x00:",
+        "stderr": ""
+      }
+    ],
+    "teardown": [
+      {
+        "name": "drop-t9i",
+        "sql": "DROP TABLE t9i;",
+        "rc": 0,
+        "stderr": "",
+        "verify": [
+          {
+            "assert": "t9i bound table count",
+            "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t9i'",
+            "rc": 0,
+            "output": "0",
+            "stderr": ""
+          }
+        ]
+      }
+    ],
+    "exit": 0,
+    "stdout": "{\"verdict\":\"pass\",\"coverage\":{\"status\":\"complete\"},\"summary\":{\"statements\":1,\"blockers\":0,\"warnings\":0,\"notices\":0},\"statements\":[{\"index\":0,\"kind\":\"ddl\",\"raw_sql\":\"ALTER TABLE t9i ADD INDEX IF NOT EXISTS i1(a);\",\"normalized_sql\":\"ALTER TABLE t9i ADD INDEX IF NOT EXISTS i1(a)\",\"coverage\":{\"status\":\"complete\"}}],\"version\":{\"product\":\"mysql\",\"version\":\"5.7.44\",\"major\":5,\"minor\":7,\"patch\":44,\"source\":\"observed\",\"validated_range\":true},\"fail_on_triggered\":false,\"rule_summary\":{\"loaded\":6,\"applicable\":2,\"skipped\":[]},\"context\":{\"mode\":\"metadata-aware\",\"dialect\":\"mysql\",\"dialect_source\":\"detected\",\"schema\":\"golden\",\"schema_source\":\"flag\"}}\n",
+    "stderr": "",
+    "parsed": {
+      "verdict": "pass",
+      "coverage": {
+        "status": "complete"
+      },
+      "summary": {
+        "statements": 1,
+        "blockers": 0,
+        "warnings": 0,
+        "notices": 0
+      },
+      "statements": [
+        {
+          "index": 0,
+          "kind": "ddl",
+          "raw_sql": "ALTER TABLE t9i ADD INDEX IF NOT EXISTS i1(a);",
+          "normalized_sql": "ALTER TABLE t9i ADD INDEX IF NOT EXISTS i1(a)",
+          "coverage": {
+            "status": "complete"
+          }
+        }
+      ],
+      "version": {
+        "product": "mysql",
+        "version": "5.7.44",
+        "major": 5,
+        "minor": 7,
+        "patch": 44,
+        "source": "observed",
+        "validated_range": true
+      },
+      "fail_on_triggered": false,
+      "rule_summary": {
+        "loaded": 6,
+        "applicable": 2,
+        "skipped": []
+      },
+      "context": {
+        "mode": "metadata-aware",
+        "dialect": "mysql",
+        "dialect_source": "detected",
+        "schema": "golden",
+        "schema_source": "flag"
+      }
+    },
+    "version_evidence": {
+      "target_raw": null,
+      "target_canonical": null,
+      "observed_raw": "5.7.44",
+      "observed_canonical": {
+        "product": "mysql",
+        "version": "5.7.44"
+      },
+      "resolved": {
+        "product": "mysql",
+        "version": "5.7.44",
+        "major": 5,
+        "minor": 7,
+        "patch": 44,
+        "source": "observed",
+        "validated_range": true
+      }
+    }
+  },
+  "assertions": [
+    {
+      "name": "database reachable with expected version",
+      "ok": true,
+      "detail": "SELECT VERSION() rc=0 version='5.7.44' expected_contains='5.7.44'"
+    },
+    {
+      "name": "setup prove-prior-absence-t9i return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "setup prove-prior-absence-t9i: t9i bound table count",
+      "ok": true,
+      "detail": "rc=0 output='0' expected='0'"
+    },
+    {
+      "name": "setup create-fixture-t9i return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "setup create-fixture-t9i: t9i bound table count",
+      "ok": true,
+      "detail": "rc=0 output='1' expected='1'"
+    },
+    {
+      "name": "setup create-fixture-t9i: t9i ordered column set",
+      "ok": true,
+      "detail": "rc=0 output='a:1:YES:x00:|b:2:YES:x00:|c:3:YES:x00:|d:4:YES:x00:' expected='a:1:YES:x00:|b:2:YES:x00:|c:3:YES:x00:|d:4:YES:x00:'"
+    },
+    {
+      "name": "setup create-fixture-t9i: t9i index identity",
+      "ok": true,
+      "detail": "rc=0 output='i_ab:1:1:a:BTREE,i_ab:1:2:b:BTREE,i_abc:1:1:a:BTREE,i_abc:1:2:b:BTREE,i_abc:1:3:c:BTREE,uq_cd:0:1:c:BTREE,uq_cd:0:2:d:BTREE' expected='i_ab:1:1:a:BTREE,i_ab:1:2:b:BTREE,i_abc:1:1:a:BTREE,i_abc:1:2:b:BTREE,i_abc:1:3:c:BTREE,uq_cd:0:1:c:BTREE,uq_cd:0:2:d:BTREE'"
+    },
+    {
+      "name": "exit code",
+      "ok": true,
+      "detail": "rc=0 expected=0"
+    },
+    {
+      "name": "verdict",
+      "ok": true,
+      "detail": "verdict='pass'"
+    },
+    {
+      "name": "top-level statements",
+      "ok": true,
+      "detail": "statements=1 expected=1"
+    },
+    {
+      "name": "zero findings",
+      "ok": true,
+      "detail": "findings=0"
+    },
+    {
+      "name": "no diagnostics",
+      "ok": true,
+      "detail": "diagnostics=[]"
+    },
+    {
+      "name": "no unsupported",
+      "ok": true,
+      "detail": "unsupported=[]"
+    },
+    {
+      "name": "loaded rule count",
+      "ok": true,
+      "detail": "loaded=6"
+    },
+    {
+      "name": "applicable rule count",
+      "ok": true,
+      "detail": "applicable=2"
+    },
+    {
+      "name": "statement indices",
+      "ok": true,
+      "detail": "indices=[0]"
+    },
+    {
+      "name": "finding statement ownership",
+      "ok": true,
+      "detail": "findings must belong to their enclosing statement"
+    },
+    {
+      "name": "aggregate coverage",
+      "ok": true,
+      "detail": "coverage='complete'"
+    },
+    {
+      "name": "per-statement coverage",
+      "ok": true,
+      "detail": "statement_coverage=['complete']"
+    },
+    {
+      "name": "unsupported entries",
+      "ok": true,
+      "detail": "entries=[] expected=[]"
+    },
+    {
+      "name": "statement raw SQL identity",
+      "ok": true,
+      "detail": "raw_sql=['ALTER TABLE t9i ADD INDEX IF NOT EXISTS i1(a);'] expected=['ALTER TABLE t9i ADD INDEX IF NOT EXISTS i1(a);']"
+    },
+    {
+      "name": "evidence gap count",
+      "ok": true,
+      "detail": "gaps=0"
+    },
+    {
+      "name": "evidence gap entries",
+      "ok": true,
+      "detail": "gaps=[] expected=[]"
+    },
+    {
+      "name": "finding entries",
+      "ok": true,
+      "detail": "findings=[] expected=[]"
+    },
+    {
+      "name": "post-verify t9i ordered column set",
+      "ok": true,
+      "detail": "rc=0 output='a:1:YES:x00:|b:2:YES:x00:|c:3:YES:x00:|d:4:YES:x00:' expected='a:1:YES:x00:|b:2:YES:x00:|c:3:YES:x00:|d:4:YES:x00:'"
+    },
+    {
+      "name": "post-verify t9i index identity",
+      "ok": true,
+      "detail": "rc=0 output='i_ab:1:1:a:BTREE,i_ab:1:2:b:BTREE,i_abc:1:1:a:BTREE,i_abc:1:2:b:BTREE,i_abc:1:3:c:BTREE,uq_cd:0:1:c:BTREE,uq_cd:0:2:d:BTREE' expected='i_ab:1:1:a:BTREE,i_ab:1:2:b:BTREE,i_abc:1:1:a:BTREE,i_abc:1:2:b:BTREE,i_abc:1:3:c:BTREE,uq_cd:0:1:c:BTREE,uq_cd:0:2:d:BTREE'"
+    },
+    {
+      "name": "execute apply return code",
+      "ok": true,
+      "detail": "rc=1 expected=1 stderr=\"ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'IF NOT EXISTS i1(a)' at line 1\""
+    },
+    {
+      "name": "execute apply stderr marker",
+      "ok": true,
+      "detail": "ERROR 1064"
+    },
+    {
+      "name": "structure t9i index identity",
+      "ok": true,
+      "detail": "rc=0 output='i_ab:1:1:a:BTREE,i_ab:1:2:b:BTREE,i_abc:1:1:a:BTREE,i_abc:1:2:b:BTREE,i_abc:1:3:c:BTREE,uq_cd:0:1:c:BTREE,uq_cd:0:2:d:BTREE' expected='i_ab:1:1:a:BTREE,i_ab:1:2:b:BTREE,i_abc:1:1:a:BTREE,i_abc:1:2:b:BTREE,i_abc:1:3:c:BTREE,uq_cd:0:1:c:BTREE,uq_cd:0:2:d:BTREE'"
+    },
+    {
+      "name": "structure t9i ordered column set",
+      "ok": true,
+      "detail": "rc=0 output='a:1:YES:x00:|b:2:YES:x00:|c:3:YES:x00:|d:4:YES:x00:' expected='a:1:YES:x00:|b:2:YES:x00:|c:3:YES:x00:|d:4:YES:x00:'"
+    },
+    {
+      "name": "teardown drop-t9i return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "teardown drop-t9i: t9i bound table count",
+      "ok": true,
+      "detail": "rc=0 output='0' expected='0'"
+    }
+  ],
+  "status": "pass",
+  "command": [
+    "/Users/fan/GolangProjects/DeltaScope/docs/verification/t14-partition-topology/2119f2305b92ea10b66f8c7c3cf79f714c198b8b/golden/T09/bin/deltascope",
+    "audit",
+    "--dialect",
+    "mysql",
+    "--sql",
+    "ALTER TABLE t9i ADD INDEX IF NOT EXISTS i1(a);",
+    "--config",
+    "/Users/fan/GolangProjects/DeltaScope/docs/verification/t14-partition-topology/2119f2305b92ea10b66f8c7c3cf79f714c198b8b/golden/T09/golden-policy-t09-exists.yaml",
+    "--format",
+    "json",
+    "--host",
+    "127.0.0.1",
+    "--port",
+    "23357",
+    "--user",
+    "root",
+    "--password-env",
+    "T09_MYSQL_PASSWORD",
+    "--schema",
+    "golden"
+  ]
+}
