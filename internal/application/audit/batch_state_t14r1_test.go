@@ -609,8 +609,8 @@ ALTER TABLE t TRUNCATE PARTITION p1;`
 ALTER TABLE t TRUNCATE PARTITION p1;`
 		result := t14Audit(t, spec.DialectMySQL, sql,
 			t14ProviderFor(spec.DialectMySQL, map[string]*spec.TableSnapshot{"t": t14r1RangeColsShape("t", "10,MAXVALUE")}),
-			map[string]t05RuleConfig{t14r1RuleAddApplies: {level: "blocker"}, t14r1RuleTruncateTarget: {level: "blocker"}})
-		findings := t05FindingsByRule(result, 0, t14r1RuleAddApplies)
+			map[string]t05RuleConfig{t14r1RuleAddTarget: {level: "blocker"}, t14r1RuleTruncateTarget: {level: "blocker"}})
+		findings := t05FindingsByRule(result, 0, t14r1RuleAddTarget)
 		if len(findings) != 1 || findings[0].Metadata["native_error"] != "1493" {
 			t.Fatalf("ADD (5,MAXVALUE) under (10,MAXVALUE) must refuse 1493, got %#v", result.Statements[0].Findings)
 		}
@@ -623,10 +623,10 @@ ALTER TABLE t TRUNCATE PARTITION p1;`
 	t.Run("all_maxvalue_row_is_tail", func(t *testing.T) {
 		t.Parallel()
 		result := t14Audit(t, spec.DialectMySQL,
-			"ALTER TABLE t ADD PARTITION (PARTITION p1 VALUES LESS THAN (20,MAXVALUE));",
+			"ALTER TABLE t ADD PARTITION (PARTITION p2 VALUES LESS THAN (20,MAXVALUE));",
 			t14ProviderFor(spec.DialectMySQL, map[string]*spec.TableSnapshot{"t": t14r1RangeColsShape("t", "10,MAXVALUE", "MAXVALUE,MAXVALUE")}),
-			map[string]t05RuleConfig{t14r1RuleAddApplies: {level: "blocker"}})
-		findings := t05FindingsByRule(result, 0, t14r1RuleAddApplies)
+			map[string]t05RuleConfig{t14r1RuleAddTarget: {level: "blocker"}})
+		findings := t05FindingsByRule(result, 0, t14r1RuleAddTarget)
 		if len(findings) != 1 || findings[0].Metadata["native_error"] != "1481" {
 			t.Fatalf("ADD under an all-MAXVALUE tail must refuse 1481, got %#v", result.Statements[0].Findings)
 		}
@@ -702,8 +702,8 @@ ALTER TABLE t TRUNCATE PARTITION p0;`
 ALTER TABLE t TRUNCATE PARTITION p0;`
 		result := t14Audit(t, spec.DialectMySQL, sql,
 			t14ProviderFor(spec.DialectMySQL, map[string]*spec.TableSnapshot{"t": t14r1RangeColsShape("t", "'a'")}),
-			map[string]t05RuleConfig{t14r1RuleAddApplies: {level: "blocker"}, t14r1RuleTruncateTarget: {level: "blocker"}})
-		findings := t05FindingsByRule(result, 0, t14r1RuleAddApplies)
+			map[string]t05RuleConfig{t14r1RuleAddTarget: {level: "blocker"}, t14r1RuleTruncateTarget: {level: "blocker"}})
+		findings := t05FindingsByRule(result, 0, t14r1RuleAddTarget)
 		if len(findings) != 1 || findings[0].Metadata["native_error"] != "1493" {
 			t.Fatalf("equal string bound provably fails increasing order — expect 1493, got %#v", result.Statements[0].Findings)
 		}
@@ -739,8 +739,8 @@ ALTER TABLE t TRUNCATE PARTITION p0;`
 ALTER TABLE t TRUNCATE PARTITION p0;`
 		result := t14Audit(t, spec.DialectMySQL, sql,
 			t14ProviderFor(spec.DialectMySQL, map[string]*spec.TableSnapshot{"t": t14r1ListColsShape("t", "'a'")}),
-			map[string]t05RuleConfig{t14r1RuleAddApplies: {level: "blocker"}, t14r1RuleTruncateTarget: {level: "blocker"}})
-		findings := t05FindingsByRule(result, 0, t14r1RuleAddApplies)
+			map[string]t05RuleConfig{t14r1RuleAddTarget: {level: "blocker"}, t14r1RuleTruncateTarget: {level: "blocker"}})
+		findings := t05FindingsByRule(result, 0, t14r1RuleAddTarget)
 		if len(findings) != 1 || findings[0].Metadata["native_error"] != "1495" {
 			t.Fatalf("byte-equal LIST value provably overlaps — expect 1495, got %#v", result.Statements[0].Findings)
 		}
@@ -785,8 +785,8 @@ ALTER TABLE t TRUNCATE PARTITION p2;`
 ALTER TABLE t TRUNCATE PARTITION p0;`
 		result := t14Audit(t, spec.DialectMySQL, sql,
 			t14ProviderFor(spec.DialectMySQL, map[string]*spec.TableSnapshot{"t": t14r1ListShape("t")}),
-			map[string]t05RuleConfig{t14r1RuleAddApplies: {level: "blocker"}, t14r1RuleTruncateTarget: {level: "blocker"}})
-		findings := t05FindingsByRule(result, 0, t14r1RuleAddApplies)
+			map[string]t05RuleConfig{t14r1RuleAddTarget: {level: "blocker"}, t14r1RuleTruncateTarget: {level: "blocker"}})
+		findings := t05FindingsByRule(result, 0, t14r1RuleAddTarget)
 		if len(findings) != 1 || findings[0].Metadata["native_error"] != "1495" {
 			t.Fatalf("proven LIST overlap must refuse 1495, got %#v", result.Statements[0].Findings)
 		}
@@ -820,7 +820,7 @@ ALTER TABLE t TRUNCATE PARTITION p2;`
 ALTER TABLE t TRUNCATE PARTITION p0;`
 		result := t14Audit(t, spec.DialectMySQL, sql,
 			t14ProviderFor(spec.DialectMySQL, map[string]*spec.TableSnapshot{"t": shape}),
-			map[string]t05RuleConfig{t14r1RuleAddApplies: {level: "blocker"}, t14r1RuleTruncateTarget: {level: "blocker"}})
+			map[string]t05RuleConfig{t14r1RuleAddTarget: {level: "blocker"}, t14r1RuleTruncateTarget: {level: "blocker"}})
 		if got := result.Statements[0].Findings; len(got) != 0 {
 			t.Fatalf("unproven catalog shell must emit no verdict, got %#v", got)
 		}
@@ -847,8 +847,8 @@ func TestT14R1AddBoundNativeCode(t *testing.T) {
 			result := t14Audit(t, dialect,
 				"ALTER TABLE t ADD PARTITION (PARTITION p2 VALUES LESS THAN (300));",
 				t14ProviderFor(dialect, map[string]*spec.TableSnapshot{"t": t14r1RangeTailShape("t")}),
-				map[string]t05RuleConfig{t14r1RuleAddApplies: {level: "blocker"}})
-			findings := t05FindingsByRule(result, 0, t14r1RuleAddApplies)
+				map[string]t05RuleConfig{t14r1RuleAddTarget: {level: "blocker"}})
+			findings := t05FindingsByRule(result, 0, t14r1RuleAddTarget)
 			if len(findings) != 1 || findings[0].Metadata["native_error"] != "1493" {
 				t.Fatalf("ADD below tail must refuse 1493 on %s, got %#v", dialect, result.Statements[0].Findings)
 			}

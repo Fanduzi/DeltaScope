@@ -360,6 +360,36 @@ func LessThanBoundUpper(bound *PartitionBound) (row []BoundLiteral, maxValue, ok
 	return bound.Rows[0], false, true
 }
 
+// LessThanPairOutcome adjudicates one consecutive member pair under the
+// RANGE contract — the left bound's upper edge must provably sit below
+// the right bound's. (true,true) is a provable violation: a non-increasing
+// pair, or a member declared after a MAXVALUE edge. (false,true) is a
+// proven pass — including a MAXVALUE right edge, which is always the
+// legal tail. (_,false) is an undecidable pair: an unprojectable bound
+// or a fully-projected comparison the literal domain cannot decide
+// (distinct strings without an observed collation ordering).
+func LessThanPairOutcome(prev, next *PartitionBound) (violates, ok bool) {
+	prevRow, prevMax, okPrev := LessThanBoundUpper(prev)
+	if !okPrev {
+		return false, false
+	}
+	if prevMax {
+		return true, true
+	}
+	nextRow, nextMax, okNext := LessThanBoundUpper(next)
+	if !okNext {
+		return false, false
+	}
+	if nextMax {
+		return false, true
+	}
+	less, lessOK := BoundRowLessThan(prevRow, nextRow)
+	if !lessOK {
+		return false, false
+	}
+	return !less, true
+}
+
 // BoundComparable reports whether every item in a member bound is a
 // projected literal the bounded comparators can adjudicate: nil bound,
 // unshaped clause kind, empty rows, and expression items are all

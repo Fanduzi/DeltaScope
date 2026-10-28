@@ -391,6 +391,34 @@ func fullyAuditedStatement(dialect spec.Dialect, statement spec.Statement) bool 
 	return true
 }
 
+// partitionStateAdmissible reports whether a single partition-action
+// statement's unmodelled aspects stay inside the bounded set its ordered
+// transition adjudicates itself: probed vendor-refusal action aspects
+// (which prove refusal outright) and partition-bound aspects (which the
+// bound outcome evaluates per member, refusing the whole statement on a
+// provable violation and degrading only the partition facts when a
+// comparison stays undecidable). Unsupported markers and every other
+// aspect keep the statement fail-closed.
+func partitionStateAdmissible(dialect spec.Dialect, statement spec.Statement) bool {
+	if statement.Unsupported != nil {
+		return false
+	}
+	for _, aspect := range statementCoverageAspects(dialect, statement) {
+		if aspect.Reason == spec.UnsupportedVendorBoundaryReason &&
+			aspect.Metadata["aspect"] == "action" {
+			if _, refused := tidbVendorRefusedPartitionActions[fmt.Sprint(aspect.Metadata["action"])]; refused {
+				continue
+			}
+			return false
+		}
+		if aspect.Metadata["aspect"] == "partition_bound" {
+			continue
+		}
+		return false
+	}
+	return true
+}
+
 func (s *batchState) invalidateAll(targets []spec.Table) {
 	for _, target := range targets {
 		s.entries[s.keyFor(s.schema, target)] = &batchTableEntry{state: tableUnknown}
@@ -445,8 +473,16 @@ func (s *batchState) applyCreateTable(ctx context.Context, statement spec.Statem
 	}
 	key := s.keyFor(s.schema, targets[0])
 	if !fullyAuditedCreateTable(s.dialect, statement) {
-		s.invalidateKey(key)
-		return nil
+		// A CREATE whose only unmodelled premise is partition-bound
+		// comparability still resolves existence and conditional no-ops:
+		// the declared-scheme gate inside this flow adjudicates the
+		// scheme itself — an expression member stays unproven while a
+		// proven-present IF NOT EXISTS target never executes the body
+		// at all — so the bound aspect must not tombstone the entry.
+		if !createPartitionBoundBounded(s.dialect, statement) {
+			s.invalidateKey(key)
+			return nil
+		}
 	}
 	entry := s.entries[key]
 	ifNotExists := ddl.Options["if_not_exists"] == "true"
@@ -601,6 +637,24 @@ func fullyAuditedCreateTable(dialect spec.Dialect, statement spec.Statement) boo
 		return false
 	}
 	return !ddl.HasReferTable && !ddl.HasSelect && ddl.TemporaryScope == "" && ddl.OmittedTargets == 0
+}
+
+// createPartitionBoundBounded reports whether a CREATE's only unmodelled
+// premise is partition-bound comparability — no unsupported marker, no
+// structural flags, and every coverage aspect is a partition-bound item
+// the declared-scheme gate inside applyCreateTable already adjudicates.
+func createPartitionBoundBounded(dialect spec.Dialect, statement spec.Statement) bool {
+	ddl := statement.DDL
+	if statement.Unsupported != nil || ddl.HasReferTable || ddl.HasSelect ||
+		ddl.TemporaryScope != "" || ddl.OmittedTargets != 0 {
+		return false
+	}
+	for _, aspect := range statementCoverageAspects(dialect, statement) {
+		if aspect.Metadata["aspect"] != "partition_bound" {
+			return false
+		}
+	}
+	return true
 }
 
 func derivedCreateShape(dialect spec.Dialect, schema, table string, ddl *spec.DDL, tidbClusteredDefault *string, tidbAlterPK *bool) *spec.TableSnapshot {
@@ -810,6 +864,16 @@ func (s *batchState) applyAlterTable(ctx context.Context, statement spec.Stateme
 	// far as the data-conditional refusal allows — never a tombstone.
 	if alterCheck := firstAlterCheckAlter(ddl); alterCheck != nil && len(targets) > 0 {
 		s.applyAlterCheck(statement, alterCheck, targets)
+		return nil
+	}
+	// A single partition action runs its own bounded transition before the
+	// blanket audit gate: vendor-refusal aspects prove refusal and
+	// partition-bound aspects are adjudicated member-by-member inside the
+	// transition itself, so neither may tombstone facts the outcome keeps.
+	// Every other aspect keeps the statement fail-closed.
+	if len(ddl.Alter) == 1 && len(targets) > 0 && isPartitionAlterAction(ddl.Alter[0].Action) &&
+		partitionStateAdmissible(s.dialect, statement) {
+		s.applyPartitionOperation(targets, &ddl.Alter[0])
 		return nil
 	}
 	if !fullyAuditedStatement(s.dialect, statement) || len(ddl.Alter) != 1 || len(targets) == 0 {

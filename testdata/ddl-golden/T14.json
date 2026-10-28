@@ -2,7 +2,7 @@
  "task_id": "T14",
  "issue": "https://github.com/Fanduzi/DeltaScope/issues/93",
  "policy_profile": "all-rules-disabled",
- "description": "Frozen partition topology & maintenance contract (#93): REORGANIZE/ADD/COALESCE/PARTITION BY/REMOVE PARTITIONING plus CHECK/REBUILD/REPAIR/OPTIMIZE/IMPORT/DISCARD PARTITION as audited actions on the MySQL anchors, TiDB executing the five topology actions while the six maintenance ops stay 8200 vendor boundaries. Ordered state publishes proven member directories (names + bounds), refused operations keep exact pre-state, unproven outcomes unvouch only the affected member facts. Frozen rule IDs: warn-level governance for redistribution/rebuild ops, notice for CHECK, blocker for DISCARD; applicability/target rules carry dialect-correct native errors (1492/1493/1495/1505/1507/1508/1509/1517/1519/1520/1567/1735/1812/8200) and explicit evidence gaps never fabricate refusals \u2014 independent T14 acceptance contract",
+ "description": "Frozen partition topology & maintenance contract (#93): REORGANIZE/ADD/COALESCE/PARTITION BY/REMOVE PARTITIONING plus CHECK/REBUILD/REPAIR/OPTIMIZE/IMPORT/DISCARD PARTITION as audited actions on the MySQL anchors, TiDB executing the five topology actions while the six maintenance ops stay 8200 vendor boundaries. Ordered state publishes proven member directories (names + bounds), refused operations keep exact pre-state, unproven outcomes unvouch only the affected member facts. Frozen rule IDs: warn-level governance for redistribution/rebuild ops, notice for CHECK, blocker for DISCARD; applicability/target rules carry dialect-correct native errors (1492/1493/1495/1505/1507/1508/1509/1517/1519/1520/1567/1735/1812/8200) and explicit evidence gaps never fabricate refusals — independent T14 acceptance contract",
  "anchors": {
   "mysql57": {
    "service": "mysql57",
@@ -636,6 +636,16 @@
    "t14r1-partitionby-truncate": {
     "enable": {
      "ddl.alter.partition_by.applicability": {
+      "level": "blocker"
+     },
+     "ddl.alter.truncate_partition.target": {
+      "level": "blocker"
+     }
+    }
+   },
+   "t14r2-add-truncate-target": {
+    "enable": {
+     "ddl.alter.add_partition.target": {
       "level": "blocker"
      },
      "ddl.alter.truncate_partition.target": {
@@ -4450,7 +4460,7 @@
     "password_env": "DS_T14_GOLDEN_PW",
     "password": "root"
    },
-   "policy": "t14-add-applicability",
+   "policy": "t14-add-target",
    "expect": {
     "exit": 1,
     "verdict": "reject",
@@ -4466,14 +4476,14 @@
     "finding_entries": [
      {
       "index": 0,
-      "rule_id": "ddl.alter.add_partition.applicability",
+      "rule_id": "ddl.alter.add_partition.target",
       "level": "blocker"
      }
     ],
     "finding_metadata": [
      {
       "index": 0,
-      "rule_id": "ddl.alter.add_partition.applicability",
+      "rule_id": "ddl.alter.add_partition.target",
       "metadata": {
        "partition": "p1",
        "reason_code": "partition_bound_violation",
@@ -4513,7 +4523,8 @@
    "args": [
     "--fail-on",
     "warning"
-   ]
+   ],
+   "notes": "T14-R2 ownership correction: the bound contract finding is owned by ddl.alter.add_partition.target (frozen responsibility restored); the R1 expectation attributed it to the applicability rule. Case ID, fixture, and native semantics are unchanged."
   },
   {
    "id": "t14r1-mysql80-string-domain-unproven",
@@ -4528,7 +4539,7 @@
     "password_env": "DS_T14_GOLDEN_PW",
     "password": "root"
    },
-   "policy": "t14r1-add-truncate",
+   "policy": "t14r2-add-truncate-target",
    "expect": {
     "exit": 1,
     "verdict": "review",
@@ -4542,11 +4553,19 @@
     },
     "coverage": "unverified",
     "statement_coverage": [
-     "complete",
+     "unverified",
      "unverified"
     ],
-    "evidence_gaps": 1,
+    "evidence_gaps": 2,
     "evidence_gap_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.alter.add_partition.target",
+      "reason_code": "unknown_table_state",
+      "required_facts": [
+       "target_table.partition_defs"
+      ]
+     },
      {
       "index": 1,
       "rule_id": "ddl.alter.truncate_partition.target",
@@ -4584,7 +4603,8 @@
    "args": [
     "--fail-on",
     "warning"
-   ]
+   ],
+   "notes": "T14-R2 oracle correction: the undecidable string bound comparison is owned by ddl.alter.add_partition.target (frozen responsibility restored). The R1 expectation that left the first statement complete was wrong; the ADD now owes target_table.partition_defs itself rather than surfacing only through the successor's gap. Old artifacts are kept untouched."
   }
  ],
  "required_case_ids": [

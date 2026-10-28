@@ -535,43 +535,30 @@ func (s *batchState) applyAddPartitionDefs(shape *spec.TableSnapshot, alter *spe
 		}
 	}
 	if isRangeFamily(method) {
-		// The last existing member must not close at MAXVALUE (1481);
-		// every new bound must provably exceed the previous member's
-		// (1493).
-		if len(shape.PartitionDefs) > 0 {
-			if _, tailMax, ok := spec.LessThanBoundUpper(shape.PartitionDefs[len(shape.PartitionDefs)-1].Bound); !ok {
-				return s.partitionTopologyUnproven(shape, false)
-			} else if tailMax {
-				return nil
-			}
-		}
-		var prevRow []spec.BoundLiteral
-		prevMax := false
+		// Pairwise adjudication under the shared contract: a provable
+		// non-increase — including a member after a MAXVALUE edge —
+		// refuses the whole statement; pairs the literal domain cannot
+		// decide only degrade the outcome to unproven, so a later
+		// provable violation still refuses rather than being swallowed
+		// by the earlier unprojectable member.
+		undecidable := false
+		var prev *spec.PartitionBound
 		if n := len(shape.PartitionDefs); n > 0 {
-			row, maxValue, ok := spec.LessThanBoundUpper(shape.PartitionDefs[n-1].Bound)
-			if !ok {
-				return s.partitionTopologyUnproven(shape, false)
-			}
-			prevRow, prevMax = row, maxValue
+			prev = shape.PartitionDefs[n-1].Bound
 		}
 		for _, def := range alter.PartitionDefs {
-			row, maxValue, ok := spec.LessThanBoundUpper(def.Bound)
-			if !ok {
-				return s.partitionTopologyUnproven(shape, false)
-			}
-			if prevMax {
-				return nil
-			}
-			if !maxValue && prevRow != nil {
-				less, ok := spec.BoundRowLessThan(prevRow, row)
+			if prev != nil {
+				violates, ok := spec.LessThanPairOutcome(prev, def.Bound)
 				if !ok {
-					return s.partitionTopologyUnproven(shape, false)
-				}
-				if !less {
+					undecidable = true
+				} else if violates {
 					return nil
 				}
 			}
-			prevRow, prevMax = row, maxValue
+			prev = def.Bound
+		}
+		if undecidable {
+			return s.partitionTopologyUnproven(shape, false)
 		}
 	}
 	if isListFamily(method) {
@@ -822,31 +809,25 @@ func partitionSchemeOutcome(method string, defs []spec.PartitionDef, count *uint
 func declaredSchemeOutcome(method string, defs []spec.PartitionDef) partitionOutcome {
 	switch method {
 	case "range", "range columns":
-		var prevRow []spec.BoundLiteral
-		prevMax := false
-		for i, def := range defs {
-			row, maxValue, ok := spec.LessThanBoundUpper(def.Bound)
-			if !ok {
-				return partitionOutcomeUnproven
-			}
-			if prevMax {
-				// A member after a MAXVALUE member can never be reached —
-				// refused on both anchors.
-				return partitionOutcomeRefused
-			}
-			if maxValue && i != len(defs)-1 {
-				return partitionOutcomeRefused
-			}
-			if !maxValue && prevRow != nil {
-				less, lessOK := spec.BoundRowLessThan(prevRow, row)
-				if !lessOK {
-					return partitionOutcomeUnproven
-				}
-				if !less {
+		// Pairwise adjudication: a provable non-increase — including a
+		// member after a MAXVALUE edge — refuses the scheme; undecidable
+		// pairs degrade the outcome without swallowing a later provable
+		// violation.
+		undecidable := false
+		var prev *spec.PartitionBound
+		for _, def := range defs {
+			if prev != nil {
+				violates, ok := spec.LessThanPairOutcome(prev, def.Bound)
+				if !ok {
+					undecidable = true
+				} else if violates {
 					return partitionOutcomeRefused
 				}
 			}
-			prevRow, prevMax = row, maxValue
+			prev = def.Bound
+		}
+		if undecidable {
+			return partitionOutcomeUnproven
 		}
 	case "list", "list columns":
 		unproven := false

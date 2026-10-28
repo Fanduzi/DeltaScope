@@ -278,3 +278,77 @@ R1 closes the independent-review defect groups A–D and records the evidence co
 - `T14.json`: 68 required cases (59 frozen cells + 9 R1 cells). T09–T13 inputs/expectations/denominators are frozen: 125/3442, 126/3175, 40/506, 25/282, 47/697.
 - Correction of the 62→59 history: the first 62-cell run failed 12 cells for **three distinct reasons** — expectation corrections (notice-vs-verdict wording, metadata key sets) and three genuine parser-boundary cells. The earlier "all twelve are parser boundaries" summary was wrong. The three removed cells targeted `ALTER TABLE … ALGORITHM=INPLACE, REORGANIZE PARTITION …`, `… ALGORITHM=COPY, REORGANIZE …`, `… LOCK=NONE, REORGANIZE …` on mysql80 — natively-valid or natively-refused syntax the locked parser cannot express (§8); they are recorded as a parser boundary, never counted as implemented semantics. The pre-edit 62-cell manifest file was not archived — that artifact is honestly missing; the surviving record is this note plus the §8 boundary entry.
 - Correction of the "unified 1512" phrasing: T14 actions never shared one code — p13 shows ADD defs on hash|key **executes** on all four anchors and REORGANIZE on hash|key executes on MySQL while TiDB refuses 8200; 1512 belongs to DROP PARTITION on hash|key (T13 evidence). The archived p13 log is not rewritten.
+
+## 10. T14-R2 remediation contract (2026-10-28)
+
+R2 restores the frozen rule-ownership split for ADD bound checks, makes
+undecidable comparisons explicit evidence gaps on the current statement, lets
+bounded partition adjudication reach the public entry without weakening the
+fail-closed default, and conditions OPTIMIZE's scope claim on proven engine
+facts.
+
+### 10.1 ADD ownership restoration (A)
+
+- `ddl.alter.add_partition.target` owns the observed-directory bound contract
+  again: non-increasing RANGE boundary (1493), adding after a MAXVALUE tail
+  (1481), and provable LIST value duplication against existing members (1495).
+- `ddl.alter.add_partition.applicability` keeps the declared-form duties added
+  in R1: `ADD PARTITIONS n`/`ADD PARTITION (...)` form validity (1492), member
+  count overflow (1499), and same-batch duplicate member names (1517). It no
+  longer emits the bound-contract findings.
+- `Evaluate` and `EvidenceGaps` consume the same shared adjudication
+  (`spec.LessThanPairOutcome`, `spec.InBoundsOverlap`, `firstDuplicateDefName`);
+  enabling both rules does not duplicate findings, and disabling a rule removes
+  its own gap without erasing the other rule's gap.
+
+### 10.2 Undecidable comparisons are current-statement gaps (B)
+
+- `BoundComparable` certifies shape, not decidability. An undecidable
+  comparison now produces an `EvidenceGap` on the owning rule with
+  `reason_code=unknown_table_state` and the missing premise fact
+  (`target_table.partition_defs` or `partition_statement.defs`), instead of a
+  false complete/pass.
+- A provable violation later in the same def list is not swallowed by an
+  earlier undecidable member: `applyAddPartitionDefs` and
+  `declaredSchemeOutcome` adjudicate pairwise and keep the provable finding.
+- Approved oracle correction: `t14r1-mysql80-string-domain-unproven` now runs
+  under `t14r2-add-truncate-target` and expects one
+  `unknown_table_state` gap on `add_partition.target` for the current
+  statement (was wrongly `coverage=complete` under the applicability profile).
+- Approved oracle correction: `t14r1-mysql80-rcol-decreasing-tuple` now runs
+  under `t14-add-target` and expects the 1493 finding owned by
+  `add_partition.target` (was wrongly attributed to applicability). Case IDs,
+  fixtures, and native semantics are unchanged; prior artifacts are not
+  rewritten.
+
+### 10.3 Bounded partition adjudication reaches the public entry (C)
+
+- `fullyAuditedStatement`/`fullyAuditedCreateTable` route single partition
+  actions through `partitionStateAdmissible`: the only coverable unknown is a
+  partition-bound/vendor aspect; every other unmodeled aspect stays
+  fail-closed.
+- A proven same-batch duplicate name (1517) refuses the whole ALTER and
+  preserves the exact pre-state — catalog, columns, indexes, PK, checks, and
+  statistics — even when an unmodeled expression aspect is also present.
+- `CREATE TABLE IF NOT EXISTS` on a known-present table stays a no-op before
+  partition-body aspects are adjudicated; existing table facts are preserved.
+- An undecidable ADD degrades only the partition directory/definition facts
+  and partition-dependent statistics; table existence, columns, indexes, PK,
+  checks, `Partitioned`, and the known partition scheme survive. Successors
+  then owe directory facts, not table existence.
+
+### 10.4 OPTIMIZE scope wording (D)
+
+- Proven InnoDB keeps the full-table rebuild/reanalysis wording.
+- Any other proven engine keeps named-member scope.
+- Unproven engine metadata emits the conditional wording ("depends on the
+  storage engine") instead of asserting a scope, consistent with the
+  `target_table.engine` gap contract.
+
+### 10.5 Golden and evidence corrections (E)
+
+- `T14.json`: 68 required cases — 59 frozen cells + 9 R1 cells, two of which
+  carry the approved R2 ownership corrections above (IDs retained).
+- Red baseline `t14r2/red/go-test-t14r2.stdout.txt` is archived verbatim;
+  failure counts are reported per-dimension (FAIL markers, unique leaf paths,
+  unique parent tests) and never summed.
