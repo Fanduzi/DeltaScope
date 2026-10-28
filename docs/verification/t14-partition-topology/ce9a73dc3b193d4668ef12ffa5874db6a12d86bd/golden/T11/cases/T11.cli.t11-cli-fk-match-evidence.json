@@ -1,0 +1,166 @@
+{
+  "case_id": "T11.cli.t11-cli-fk-match-evidence",
+  "kind": "cli_audit",
+  "cli_case": "t11-cli-fk-match-evidence",
+  "dialect": "mysql",
+  "input_sql": "CREATE TABLE c (a INT, CONSTRAINT fk_a FOREIGN KEY (a) REFERENCES p(id) MATCH FULL);",
+  "policy_profile": "t11-off",
+  "policy_path": "/Users/fan/GolangProjects/DeltaScope/docs/verification/t14-partition-topology/ce9a73dc3b193d4668ef12ffa5874db6a12d86bd/golden/T11/golden-policy-t11-off.yaml",
+  "command": [
+    "/Users/fan/GolangProjects/DeltaScope/docs/verification/t14-partition-topology/ce9a73dc3b193d4668ef12ffa5874db6a12d86bd/golden/T11/bin/deltascope",
+    "audit",
+    "--dialect",
+    "mysql",
+    "--sql",
+    "CREATE TABLE c (a INT, CONSTRAINT fk_a FOREIGN KEY (a) REFERENCES p(id) MATCH FULL);",
+    "--config",
+    "/Users/fan/GolangProjects/DeltaScope/docs/verification/t14-partition-topology/ce9a73dc3b193d4668ef12ffa5874db6a12d86bd/golden/T11/golden-policy-t11-off.yaml",
+    "--format",
+    "json"
+  ],
+  "expected": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "unsupported_entries": [
+      {
+        "index": 0,
+        "feature": "create_table.constraint.foreign_key.parts",
+        "reason": "parsed by the shared parser but not covered by audited semantics",
+        "metadata": {
+          "aspect": "constraint_parts",
+          "constraint_type": "foreign_key",
+          "local_parts": 0,
+          "referenced_parts": 0,
+          "refer_actions": 1
+        }
+      }
+    ]
+  },
+  "actual": {
+    "exit": 1,
+    "stdout": "{\"verdict\":\"review\",\"coverage\":{\"status\":\"incomplete\"},\"summary\":{\"statements\":1,\"blockers\":0,\"warnings\":0,\"notices\":0},\"statements\":[{\"index\":0,\"kind\":\"ddl\",\"raw_sql\":\"CREATE TABLE c (a INT, CONSTRAINT fk_a FOREIGN KEY (a) REFERENCES p(id) MATCH FULL);\",\"normalized_sql\":\"CREATE TABLE c (a INT, CONSTRAINT fk_a FOREIGN KEY (a) REFERENCES p(id) MATCH FULL)\",\"coverage\":{\"status\":\"incomplete\"}}],\"unsupported\":[{\"feature\":\"create_table.constraint.foreign_key.parts\",\"sql\":\"CREATE TABLE c (a INT, CONSTRAINT fk_a FOREIGN KEY (a) REFERENCES p(id) MATCH FULL);\",\"reason\":\"parsed by the shared parser but not covered by audited semantics\",\"metadata\":{\"aspect\":\"constraint_parts\",\"constraint_type\":\"foreign_key\",\"local_parts\":0,\"refer_actions\":1,\"referenced_parts\":0}}],\"diagnostics\":[{\"classification\":\"unsupported_statement\",\"reason\":\"DeltaScope recognized this statement or feature but does not audit it yet\",\"action_hint\":\"treat this statement as not covered by DeltaScope policy checks; review it manually or track support in a future DeltaScope release\",\"audited\":false,\"dialect\":\"mysql\"}],\"fail_on_triggered\":false,\"context\":{\"mode\":\"offline\",\"dialect\":\"mysql\",\"dialect_source\":\"flag\",\"note\":\"existence not checked (no database connection)\",\"unproven\":[\"column_exists\",\"table_exists\"]}}\n",
+    "stderr": "",
+    "parsed": {
+      "verdict": "review",
+      "coverage": {
+        "status": "incomplete"
+      },
+      "summary": {
+        "statements": 1,
+        "blockers": 0,
+        "warnings": 0,
+        "notices": 0
+      },
+      "statements": [
+        {
+          "index": 0,
+          "kind": "ddl",
+          "raw_sql": "CREATE TABLE c (a INT, CONSTRAINT fk_a FOREIGN KEY (a) REFERENCES p(id) MATCH FULL);",
+          "normalized_sql": "CREATE TABLE c (a INT, CONSTRAINT fk_a FOREIGN KEY (a) REFERENCES p(id) MATCH FULL)",
+          "coverage": {
+            "status": "incomplete"
+          }
+        }
+      ],
+      "unsupported": [
+        {
+          "feature": "create_table.constraint.foreign_key.parts",
+          "sql": "CREATE TABLE c (a INT, CONSTRAINT fk_a FOREIGN KEY (a) REFERENCES p(id) MATCH FULL);",
+          "reason": "parsed by the shared parser but not covered by audited semantics",
+          "metadata": {
+            "aspect": "constraint_parts",
+            "constraint_type": "foreign_key",
+            "local_parts": 0,
+            "refer_actions": 1,
+            "referenced_parts": 0
+          }
+        }
+      ],
+      "diagnostics": [
+        {
+          "classification": "unsupported_statement",
+          "reason": "DeltaScope recognized this statement or feature but does not audit it yet",
+          "action_hint": "treat this statement as not covered by DeltaScope policy checks; review it manually or track support in a future DeltaScope release",
+          "audited": false,
+          "dialect": "mysql"
+        }
+      ],
+      "fail_on_triggered": false,
+      "context": {
+        "mode": "offline",
+        "dialect": "mysql",
+        "dialect_source": "flag",
+        "note": "existence not checked (no database connection)",
+        "unproven": [
+          "column_exists",
+          "table_exists"
+        ]
+      }
+    },
+    "version_evidence": {
+      "target_raw": null,
+      "target_canonical": null,
+      "observed_raw": null,
+      "observed_canonical": null,
+      "resolved": null
+    }
+  },
+  "assertions": [
+    {
+      "name": "exit code",
+      "ok": true,
+      "detail": "rc=1 expected=1"
+    },
+    {
+      "name": "verdict",
+      "ok": true,
+      "detail": "verdict='review'"
+    },
+    {
+      "name": "top-level statements",
+      "ok": true,
+      "detail": "statements=1 expected=1"
+    },
+    {
+      "name": "zero findings",
+      "ok": true,
+      "detail": "findings=0"
+    },
+    {
+      "name": "no diagnostics",
+      "ok": true,
+      "detail": "diagnostics=[{'classification': 'unsupported_statement', 'reason': 'DeltaScope recognized this statement or feature but does not audit it yet', 'action_hint': 'treat this statement as not covered by DeltaScope policy checks; review it manually or track support in a future DeltaScope release', 'audited': False, 'dialect': 'mysql'}]"
+    },
+    {
+      "name": "no unsupported",
+      "ok": true,
+      "detail": "unsupported=[{'feature': 'create_table.constraint.foreign_key.parts', 'sql': 'CREATE TABLE c (a INT, CONSTRAINT fk_a FOREIGN KEY (a) REFERENCES p(id) MATCH FULL);', 'reason': 'parsed by the shared parser but not covered by audited semantics', 'metadata': {'aspect': 'constraint_parts', 'constraint_type': 'foreign_key', 'local_parts': 0, 'refer_actions': 1, 'referenced_parts': 0}}]"
+    },
+    {
+      "name": "aggregate coverage",
+      "ok": true,
+      "detail": "coverage='incomplete'"
+    },
+    {
+      "name": "unsupported entries",
+      "ok": true,
+      "detail": "entries=[(0, 'create_table.constraint.foreign_key.parts', 'parsed by the shared parser but not covered by audited semantics')] expected=[(0, 'create_table.constraint.foreign_key.parts', 'parsed by the shared parser but not covered by audited semantics')]"
+    },
+    {
+      "name": "unsupported metadata (0, 'create_table.constraint.foreign_key.parts', 'parsed by the shared parser but not covered by audited semantics')",
+      "ok": true,
+      "detail": "entries=[{'feature': 'create_table.constraint.foreign_key.parts', 'sql': 'CREATE TABLE c (a INT, CONSTRAINT fk_a FOREIGN KEY (a) REFERENCES p(id) MATCH FULL);', 'reason': 'parsed by the shared parser but not covered by audited semantics', 'metadata': {'aspect': 'constraint_parts', 'constraint_type': 'foreign_key', 'local_parts': 0, 'refer_actions': 1, 'referenced_parts': 0}}] expected_metadata={'aspect': 'constraint_parts', 'constraint_type': 'foreign_key', 'local_parts': 0, 'referenced_parts': 0, 'refer_actions': 1}"
+    },
+    {
+      "name": "unsupported sql identity index=0",
+      "ok": true,
+      "detail": "sql='CREATE TABLE c (a INT, CONSTRAINT fk_a FOREIGN KEY (a) REFERENCES p(id) MATCH FULL);' expected='CREATE TABLE c (a INT, CONSTRAINT fk_a FOREIGN KEY (a) REFERENCES p(id) MATCH FULL);'"
+    }
+  ],
+  "status": "pass"
+}

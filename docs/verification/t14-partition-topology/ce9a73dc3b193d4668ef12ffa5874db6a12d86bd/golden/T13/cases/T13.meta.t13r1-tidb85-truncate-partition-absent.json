@@ -1,0 +1,313 @@
+{
+  "case_id": "T13.meta.t13r1-tidb85-truncate-partition-absent",
+  "kind": "cli_metadata",
+  "cli_case": "t13r1-tidb85-truncate-partition-absent",
+  "anchor": "tidb85",
+  "dialect": "tidb",
+  "input_sql": "ALTER TABLE t13r TRUNCATE PARTITION p99;",
+  "policy_profile": "t13r1-truncate-target",
+  "policy_path": "/Users/fan/GolangProjects/DeltaScope/docs/verification/t14-partition-topology/ce9a73dc3b193d4668ef12ffa5874db6a12d86bd/golden/T13/golden-policy-t13r1-truncate-target.yaml",
+  "connect": {
+    "host": "127.0.0.1",
+    "port": 24000,
+    "user": "root",
+    "schema": "golden"
+  },
+  "expected": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+      "complete"
+    ],
+    "evidence_gaps": 0,
+    "finding_entries": [
+      {
+        "index": 0,
+        "rule_id": "ddl.alter.truncate_partition.target",
+        "level": "blocker"
+      }
+    ],
+    "finding_metadata": [
+      {
+        "index": 0,
+        "rule_id": "ddl.alter.truncate_partition.target",
+        "metadata": {
+          "table": "t13r",
+          "partition": "p99",
+          "action": "truncate_partition",
+          "reason_code": "partition_absent",
+          "native_error": "1735",
+          "exists": "false"
+        }
+      }
+    ],
+    "rule_summary_applicable": 1,
+    "version": {
+      "product": "tidb",
+      "version": "8.5.0"
+    }
+  },
+  "actual": {
+    "database": {
+      "product": "tidb",
+      "image": "pingcap/tidb:v8.5.0",
+      "image_digest": "pingcap/tidb@sha256:490861bd4a2fa643dbe76b77ffecafcad66e6a42774e580b82f4ec2429a80e57",
+      "container": "deltascope-ddl-golden-tidb85",
+      "reachable": true,
+      "version": "8.0.11-TiDB-v8.5.0"
+    },
+    "setup": [
+      {
+        "name": "create-range-fixture",
+        "sql": "CREATE TABLE t13r (id INT, c INT) PARTITION BY RANGE (id) (PARTITION p0 VALUES LESS THAN (100), PARTITION p1 VALUES LESS THAN (200))",
+        "rc": 0,
+        "stdout": "",
+        "stderr": ""
+      }
+    ],
+    "post_verify": [],
+    "execute": [
+      {
+        "name": "apply-audited-truncate",
+        "sql": "ALTER TABLE t13r TRUNCATE PARTITION p99",
+        "rc": 1,
+        "stdout": "",
+        "stderr": "ERROR 1735 (HY000) at line 1: Unknown partition 'p99' in table 't13r'",
+        "verify": [
+          {
+            "assert": "member set intact after refused truncate",
+            "sql": "SELECT COUNT(*) FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t13r' AND PARTITION_NAME IS NOT NULL",
+            "rc": 0,
+            "output": "2",
+            "stderr": ""
+          }
+        ]
+      }
+    ],
+    "structure": [],
+    "teardown": [
+      {
+        "name": "drop-fixture",
+        "sql": "DROP TABLE IF EXISTS t13r",
+        "rc": 0,
+        "stderr": ""
+      }
+    ],
+    "exit": 1,
+    "stdout": "{\"verdict\":\"reject\",\"coverage\":{\"status\":\"complete\"},\"summary\":{\"statements\":1,\"blockers\":1,\"warnings\":0,\"notices\":0},\"statements\":[{\"index\":0,\"kind\":\"ddl\",\"raw_sql\":\"ALTER TABLE t13r TRUNCATE PARTITION p99;\",\"normalized_sql\":\"ALTER TABLE t13r TRUNCATE PARTITION p99\",\"findings\":[{\"rule_id\":\"ddl.alter.truncate_partition.target\",\"level\":\"blocker\",\"message\":\"ALTER TABLE truncate partition names partition \\\"p99\\\", which is not a member of the table (native 1735)\",\"statement_kind\":\"ddl\",\"location\":{\"line\":1,\"column\":1},\"suggestion\":\"verify the partition name against the observed member set\",\"metadata\":{\"action\":\"truncate_partition\",\"exists\":\"false\",\"native_error\":\"1735\",\"partition\":\"p99\",\"reason_code\":\"partition_absent\",\"table\":\"t13r\"},\"explanation\":{\"summary\":\"Check DDL alter truncate partition target\",\"why\":\"The statement matched the shipped governance rule for this pattern.\",\"risk\":\"Ignoring this rule can weaken schema-governance guarantees and make changes harder to review safely.\",\"suggestion\":\"verify the partition name against the observed member set\"}}],\"coverage\":{\"status\":\"complete\"}}],\"version\":{\"product\":\"tidb\",\"version\":\"8.5.0\",\"major\":8,\"minor\":5,\"patch\":0,\"source\":\"observed\",\"validated_range\":true},\"fail_on_triggered\":true,\"rule_summary\":{\"loaded\":1,\"applicable\":1,\"skipped\":[]},\"context\":{\"mode\":\"metadata-aware\",\"dialect\":\"tidb\",\"dialect_source\":\"detected\",\"schema\":\"golden\",\"schema_source\":\"flag\"}}\n",
+    "stderr": "",
+    "parsed": {
+      "verdict": "reject",
+      "coverage": {
+        "status": "complete"
+      },
+      "summary": {
+        "statements": 1,
+        "blockers": 1,
+        "warnings": 0,
+        "notices": 0
+      },
+      "statements": [
+        {
+          "index": 0,
+          "kind": "ddl",
+          "raw_sql": "ALTER TABLE t13r TRUNCATE PARTITION p99;",
+          "normalized_sql": "ALTER TABLE t13r TRUNCATE PARTITION p99",
+          "findings": [
+            {
+              "rule_id": "ddl.alter.truncate_partition.target",
+              "level": "blocker",
+              "message": "ALTER TABLE truncate partition names partition \"p99\", which is not a member of the table (native 1735)",
+              "statement_kind": "ddl",
+              "location": {
+                "line": 1,
+                "column": 1
+              },
+              "suggestion": "verify the partition name against the observed member set",
+              "metadata": {
+                "action": "truncate_partition",
+                "exists": "false",
+                "native_error": "1735",
+                "partition": "p99",
+                "reason_code": "partition_absent",
+                "table": "t13r"
+              },
+              "explanation": {
+                "summary": "Check DDL alter truncate partition target",
+                "why": "The statement matched the shipped governance rule for this pattern.",
+                "risk": "Ignoring this rule can weaken schema-governance guarantees and make changes harder to review safely.",
+                "suggestion": "verify the partition name against the observed member set"
+              }
+            }
+          ],
+          "coverage": {
+            "status": "complete"
+          }
+        }
+      ],
+      "version": {
+        "product": "tidb",
+        "version": "8.5.0",
+        "major": 8,
+        "minor": 5,
+        "patch": 0,
+        "source": "observed",
+        "validated_range": true
+      },
+      "fail_on_triggered": true,
+      "rule_summary": {
+        "loaded": 1,
+        "applicable": 1,
+        "skipped": []
+      },
+      "context": {
+        "mode": "metadata-aware",
+        "dialect": "tidb",
+        "dialect_source": "detected",
+        "schema": "golden",
+        "schema_source": "flag"
+      }
+    },
+    "version_evidence": {
+      "target_raw": null,
+      "target_canonical": null,
+      "observed_raw": "8.0.11-TiDB-v8.5.0",
+      "observed_canonical": {
+        "product": "tidb",
+        "version": "8.5.0"
+      },
+      "resolved": {
+        "product": "tidb",
+        "version": "8.5.0",
+        "major": 8,
+        "minor": 5,
+        "patch": 0,
+        "source": "observed",
+        "validated_range": true
+      }
+    }
+  },
+  "assertions": [
+    {
+      "name": "database reachable with expected version",
+      "ok": true,
+      "detail": "SELECT VERSION() rc=0 version='8.0.11-TiDB-v8.5.0' expected_contains='v8.5.0'"
+    },
+    {
+      "name": "setup create-range-fixture return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "exit code",
+      "ok": true,
+      "detail": "rc=1 expected=1"
+    },
+    {
+      "name": "verdict",
+      "ok": true,
+      "detail": "verdict='reject'"
+    },
+    {
+      "name": "top-level statements",
+      "ok": true,
+      "detail": "statements=1 expected=1"
+    },
+    {
+      "name": "zero findings",
+      "ok": true,
+      "detail": "findings=1"
+    },
+    {
+      "name": "no diagnostics",
+      "ok": true,
+      "detail": "diagnostics=[]"
+    },
+    {
+      "name": "no unsupported",
+      "ok": true,
+      "detail": "unsupported=[]"
+    },
+    {
+      "name": "applicable rule count",
+      "ok": true,
+      "detail": "applicable=1"
+    },
+    {
+      "name": "aggregate coverage",
+      "ok": true,
+      "detail": "coverage='complete'"
+    },
+    {
+      "name": "per-statement coverage",
+      "ok": true,
+      "detail": "statement_coverage=['complete']"
+    },
+    {
+      "name": "evidence gap count",
+      "ok": true,
+      "detail": "gaps=0"
+    },
+    {
+      "name": "finding entries",
+      "ok": true,
+      "detail": "findings=[(0, 'ddl.alter.truncate_partition.target', 'blocker')] expected=[(0, 'ddl.alter.truncate_partition.target', 'blocker')]"
+    },
+    {
+      "name": "finding metadata (0, 'ddl.alter.truncate_partition.target')",
+      "ok": true,
+      "detail": "findings=[{'action': 'truncate_partition', 'exists': 'false', 'native_error': '1735', 'partition': 'p99', 'reason_code': 'partition_absent', 'table': 't13r'}] expected_subset={'table': 't13r', 'partition': 'p99', 'action': 'truncate_partition', 'reason_code': 'partition_absent', 'native_error': '1735', 'exists': 'false'}"
+    },
+    {
+      "name": "version identity",
+      "ok": true,
+      "detail": "version={'product': 'tidb', 'version': '8.5.0', 'major': 8, 'minor': 5, 'patch': 0, 'source': 'observed', 'validated_range': True} expected={'product': 'tidb', 'version': '8.5.0'}"
+    },
+    {
+      "name": "execute apply-audited-truncate return code",
+      "ok": true,
+      "detail": "rc=1 expected=1 stderr=\"ERROR 1735 (HY000) at line 1: Unknown partition 'p99' in table 't13r'\""
+    },
+    {
+      "name": "execute apply-audited-truncate stderr marker",
+      "ok": true,
+      "detail": "ERROR 1735"
+    },
+    {
+      "name": "execute apply-audited-truncate: member set intact after refused truncate",
+      "ok": true,
+      "detail": "rc=0 output='2' expected='2'"
+    },
+    {
+      "name": "teardown drop-fixture return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    }
+  ],
+  "status": "pass",
+  "command": [
+    "/Users/fan/GolangProjects/DeltaScope/docs/verification/t14-partition-topology/ce9a73dc3b193d4668ef12ffa5874db6a12d86bd/golden/T13/bin/deltascope",
+    "audit",
+    "--dialect",
+    "tidb",
+    "--sql",
+    "ALTER TABLE t13r TRUNCATE PARTITION p99;",
+    "--config",
+    "/Users/fan/GolangProjects/DeltaScope/docs/verification/t14-partition-topology/ce9a73dc3b193d4668ef12ffa5874db6a12d86bd/golden/T13/golden-policy-t13r1-truncate-target.yaml",
+    "--format",
+    "json",
+    "--host",
+    "127.0.0.1",
+    "--port",
+    "24000",
+    "--user",
+    "root",
+    "--schema",
+    "golden"
+  ]
+}
