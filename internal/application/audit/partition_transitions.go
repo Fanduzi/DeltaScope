@@ -822,7 +822,12 @@ func declaredSchemeOutcome(method string, defs []spec.PartitionDef) partitionOut
 		for _, def := range defs {
 			if !spec.BoundComparable(def.Bound) {
 				undecidable = true
-			} else if prev != nil {
+			}
+			if prev != nil {
+				// The pair check runs independently of the current
+				// member's own comparability: a proven MAXVALUE
+				// predecessor refuses whatever follows, even an
+				// unprojectable bound.
 				violates, ok := spec.LessThanPairOutcome(prev, def.Bound)
 				if !ok {
 					undecidable = true

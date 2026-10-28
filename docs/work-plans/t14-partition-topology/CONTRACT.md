@@ -369,8 +369,13 @@ facts.
   pre-state. HASH/KEY members without bounds keep their original
   combinable outcome.
 - Consequences reach the public ordered state: ALTER `PARTITION BY`
-  keeps table existence and unrelated structural facts while unvouching
-  the partition facts; CREATE on a known-absent target stays unproven —
+  degrades at scheme level — table existence and unrelated structural
+  facts (columns, indexes, PK, constraints) survive while `Partitioned`,
+  `PartitionType`, the member directory/definitions, and
+  partition-dependent statistics unvouch. This is distinct from an
+  undecidable ADD's directory-level degradation, where `Partitioned`
+  and the known scheme survive (§10.3). CREATE on a known-absent
+  target stays unproven —
   no proven directory and no proven-absent guess. Successors owe the
   actually-unknown facts (e.g. `target_table.partitioned`), never
   complete/pass on a fabricated directory. Rule enable/disable does not
@@ -378,3 +383,19 @@ facts.
 - Golden: `t14r2tail-mysql80-pby-single-expr-member` pins the
   single-member → successor regression on a live anchor (manifest now
   69 required cases).
+
+### 10.7 The pair check is independent of member comparability (T14-R2-tail2)
+
+- Inside the RANGE branch of `declaredSchemeOutcome` the per-member
+  comparability check and the pairwise adjudication must not share an
+  `else if`: `LessThanPairOutcome` proves a refusal from the predecessor
+  alone — a member after a proven MAXVALUE edge refuses whatever
+  follows, including an expression, nil, or empty-shell bound.
+- The two premises stay independent accumulations: an uncomparable
+  member records undecidable, a predecessor still adjudicates the pair,
+  a proven refusal wins over recorded undecidable, and a later provable
+  violation still survives an earlier undecidable member.
+- `LessThanPairOutcome`'s MAXVALUE semantics are unchanged; no rule
+  finding was adapted to the state error. ALTER preserves the exact
+  pre-state (directory, scheme, statistics); CREATE on a proven-absent
+  target keeps the absence rather than unvouching it.

@@ -131,8 +131,26 @@ member directory to the public ordered state.
 accumulation (A) from the pairwise ordering/non-overlap adjudication
 (B); (A) runs even with no pair present, and undecidable members keep
 accumulating so a later provable violation still refuses. No expression
-evaluation or collation inference was added. Verified by the
+evaluation or collation inference was added. ALTER `PARTITION BY`
+degrades at scheme level — table existence and unrelated structural
+facts survive while `Partitioned`, `PartitionType`, the member
+directory/definitions, and partition-dependent statistics unvouch —
+distinct from an undecidable ADD's directory-level degradation where
+`Partitioned` and the known scheme survive. Verified by the
 four-cell public `AuditSQL` matrix (ALTER RANGE/LIST, CREATE RANGE/LIST
 each followed by a member-touching successor), internal
 `declaredSchemeOutcome` helper cells, and the new golden cell
 `t14r2tail-mysql80-pby-single-expr-member` (69 required cases).
+
+## T14-R2-tail2: pair check independent of member comparability
+
+Post-tail review confirmed one residual control-flow regression: the
+RANGE branch joined the per-member comparability check and the pairwise
+adjudication with `else if`, so a member after a proven MAXVALUE edge
+skipped the pair check — even though `LessThanPairOutcome` proves that
+refusal without the successor's own comparability. The pair check now
+runs independently: an uncomparable member records undecidable, a
+predecessor still adjudicates the pair, and a proven refusal wins.
+`LessThanPairOutcome`'s MAXVALUE semantics are unchanged. Verified by
+the ALTER/CREATE public `AuditSQL` arms (exact pre-state / kept-absent)
+and the finite-combination helper matrix.

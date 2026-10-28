@@ -150,7 +150,14 @@ func TestT14R2TailSingleMemberProvable(t *testing.T) {
 		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			provider := t14ProviderFor(spec.DialectMySQL, map[string]*spec.TableSnapshot{"t": t14r2RangeTailShape("t")})
+			shape := t14r2RangeTailShape("t")
+			if tc.name == "range_columns_string" {
+				// The RANGE COLUMNS(c) declaration binds a real VARCHAR
+				// member — the fixture must actually carry column c.
+				shape = cloneTableSnapshot(shape)
+				shape.Columns = append(shape.Columns, t10r2Col("c", "varchar", true, 20))
+			}
+			provider := t14ProviderFor(spec.DialectMySQL, map[string]*spec.TableSnapshot{"t": shape})
 			enriched := t14r1Enrich(t, spec.DialectMySQL, tc.sql+`
 ALTER TABLE t TRUNCATE PARTITION fresh;`, provider)
 			snapshot := t14r1TargetSnapshot(enriched, 1)

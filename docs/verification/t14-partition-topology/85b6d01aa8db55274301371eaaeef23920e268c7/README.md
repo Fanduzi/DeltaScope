@@ -20,10 +20,13 @@ Contract: CONTRACT.md §10.6; ADR:
   members accumulate without early return; a later provable pairwise
   violation still refuses and preserves the exact pre-state. Boundless
   HASH/KEY members keep their combinable outcome.
-- **ALTER vs CREATE unproven post-states.** ALTER `PARTITION BY` keeps
-  table existence, columns, indexes, PK, constraints and the proven
-  partitioning facts while unvouching the partition facts it cannot
-  prove; CREATE on a provider-proven-absent target publishes neither a
+- **ALTER vs CREATE unproven post-states.** ALTER `PARTITION BY`
+  degrades at scheme level — table existence and unrelated structural
+  facts (columns, indexes, PK, constraints) survive while `Partitioned`,
+  `PartitionType`, the member directory/definitions, and
+  partition-dependent statistics unvouch; an undecidable ADD degrades
+  only at directory level, where `Partitioned` and the known scheme
+  survive. CREATE on a provider-proven-absent target publishes neither a
   proven directory nor a proven-absent guess. Member-touching
   successors owe the actually-unknown facts (e.g.
   `target_table.partitioned`) instead of passing on a pseudo-directory.
@@ -48,9 +51,10 @@ Contract: CONTRACT.md §10.6; ADR:
 `red/` — captured on the unremediated product `ce9a73dc` (detached
 worktree + the tail test file). `go-test-t14r2tail.stdout.txt` records
 the real verbose failure run: **4 failing top-level tests**, with the
-fabricated `PartitionNames:[fresh]` directory printed verbatim in the
-`DeclaredSchemeOutcomeSingleMember` failure — a bound-undecidable
-single member publishing as proven. `go-test-t14r2tail.command.txt`
+fabricated `PartitionNames:[fresh]` directory printed verbatim under
+`TestT14R2TailRuleOffKeepsStateConclusion` — a bound-undecidable
+single member publishing as proven even with every rule off.
+`go-test-t14r2tail.command.txt`
 records the exact argv and worktree SHA; rc=1 is archived.
 
 ## Green run
