@@ -1,0 +1,155 @@
+{
+  "case_id": "T11.cli.t11-cli-pk-max-create-pair",
+  "kind": "cli_audit",
+  "cli_case": "t11-cli-pk-max-create-pair",
+  "dialect": "mysql",
+  "input_sql": "CREATE TABLE t (a INT, b INT, PRIMARY KEY (a, b));",
+  "policy_profile": "t11-pk-max",
+  "policy_path": "/Users/fan/GolangProjects/DeltaScope/docs/verification/t14-partition-topology/85b6d01aa8db55274301371eaaeef23920e268c7/golden/T11/golden-policy-t11-pk-max.yaml",
+  "command": [
+    "/Users/fan/GolangProjects/DeltaScope/docs/verification/t14-partition-topology/85b6d01aa8db55274301371eaaeef23920e268c7/golden/T11/bin/deltascope",
+    "audit",
+    "--dialect",
+    "mysql",
+    "--sql",
+    "CREATE TABLE t (a INT, b INT, PRIMARY KEY (a, b));",
+    "--config",
+    "/Users/fan/GolangProjects/DeltaScope/docs/verification/t14-partition-topology/85b6d01aa8db55274301371eaaeef23920e268c7/golden/T11/golden-policy-t11-pk-max.yaml",
+    "--format",
+    "json"
+  ],
+  "expected": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "finding_entries": [
+      {
+        "index": 0,
+        "rule_id": "ddl.table.primary_key.columns.max_count",
+        "level": "blocker"
+      }
+    ]
+  },
+  "actual": {
+    "exit": 1,
+    "stdout": "{\"verdict\":\"reject\",\"coverage\":{\"status\":\"complete\"},\"summary\":{\"statements\":1,\"blockers\":1,\"warnings\":0,\"notices\":0},\"statements\":[{\"index\":0,\"kind\":\"ddl\",\"raw_sql\":\"CREATE TABLE t (a INT, b INT, PRIMARY KEY (a, b));\",\"normalized_sql\":\"CREATE TABLE t (a INT, b INT, PRIMARY KEY (a, b))\",\"findings\":[{\"rule_id\":\"ddl.table.primary_key.columns.max_count\",\"level\":\"blocker\",\"message\":\"primary key must not contain more than 1 columns\",\"statement_kind\":\"ddl\",\"location\":{\"line\":1,\"column\":1},\"suggestion\":\"reduce the PRIMARY KEY to 1 column(s) or fewer\",\"metadata\":{\"actual\":2,\"limit\":1,\"table\":\"t\"},\"explanation\":{\"summary\":\"Limit DDL table primary key columns max count\",\"why\":\"The statement exceeds a shipped size or count threshold for this rule.\",\"risk\":\"Ignoring this rule can weaken schema-governance guarantees and make changes harder to review safely.\",\"suggestion\":\"reduce the PRIMARY KEY to 1 column(s) or fewer\"}}],\"coverage\":{\"status\":\"complete\"}}],\"fail_on_triggered\":true,\"rule_summary\":{\"loaded\":1,\"applicable\":1,\"skipped\":[]},\"context\":{\"mode\":\"offline\",\"dialect\":\"mysql\",\"dialect_source\":\"flag\",\"note\":\"existence not checked (no database connection)\",\"unproven\":[\"column_exists\",\"table_exists\"]}}\n",
+    "stderr": "",
+    "parsed": {
+      "verdict": "reject",
+      "coverage": {
+        "status": "complete"
+      },
+      "summary": {
+        "statements": 1,
+        "blockers": 1,
+        "warnings": 0,
+        "notices": 0
+      },
+      "statements": [
+        {
+          "index": 0,
+          "kind": "ddl",
+          "raw_sql": "CREATE TABLE t (a INT, b INT, PRIMARY KEY (a, b));",
+          "normalized_sql": "CREATE TABLE t (a INT, b INT, PRIMARY KEY (a, b))",
+          "findings": [
+            {
+              "rule_id": "ddl.table.primary_key.columns.max_count",
+              "level": "blocker",
+              "message": "primary key must not contain more than 1 columns",
+              "statement_kind": "ddl",
+              "location": {
+                "line": 1,
+                "column": 1
+              },
+              "suggestion": "reduce the PRIMARY KEY to 1 column(s) or fewer",
+              "metadata": {
+                "actual": 2,
+                "limit": 1,
+                "table": "t"
+              },
+              "explanation": {
+                "summary": "Limit DDL table primary key columns max count",
+                "why": "The statement exceeds a shipped size or count threshold for this rule.",
+                "risk": "Ignoring this rule can weaken schema-governance guarantees and make changes harder to review safely.",
+                "suggestion": "reduce the PRIMARY KEY to 1 column(s) or fewer"
+              }
+            }
+          ],
+          "coverage": {
+            "status": "complete"
+          }
+        }
+      ],
+      "fail_on_triggered": true,
+      "rule_summary": {
+        "loaded": 1,
+        "applicable": 1,
+        "skipped": []
+      },
+      "context": {
+        "mode": "offline",
+        "dialect": "mysql",
+        "dialect_source": "flag",
+        "note": "existence not checked (no database connection)",
+        "unproven": [
+          "column_exists",
+          "table_exists"
+        ]
+      }
+    },
+    "version_evidence": {
+      "target_raw": null,
+      "target_canonical": null,
+      "observed_raw": null,
+      "observed_canonical": null,
+      "resolved": null
+    }
+  },
+  "assertions": [
+    {
+      "name": "exit code",
+      "ok": true,
+      "detail": "rc=1 expected=1"
+    },
+    {
+      "name": "verdict",
+      "ok": true,
+      "detail": "verdict='reject'"
+    },
+    {
+      "name": "top-level statements",
+      "ok": true,
+      "detail": "statements=1 expected=1"
+    },
+    {
+      "name": "zero findings",
+      "ok": true,
+      "detail": "findings=1"
+    },
+    {
+      "name": "no diagnostics",
+      "ok": true,
+      "detail": "diagnostics=[]"
+    },
+    {
+      "name": "no unsupported",
+      "ok": true,
+      "detail": "unsupported=[]"
+    },
+    {
+      "name": "aggregate coverage",
+      "ok": true,
+      "detail": "coverage='complete'"
+    },
+    {
+      "name": "finding entries",
+      "ok": true,
+      "detail": "findings=[(0, 'ddl.table.primary_key.columns.max_count', 'blocker')] expected=[(0, 'ddl.table.primary_key.columns.max_count', 'blocker')]"
+    }
+  ],
+  "status": "pass"
+}

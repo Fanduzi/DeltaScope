@@ -1,0 +1,368 @@
+{
+  "case_id": "T10.meta.t10-mysql84-absent",
+  "kind": "cli_metadata",
+  "cli_case": "t10-mysql84-absent",
+  "anchor": "mysql84",
+  "dialect": "mysql",
+  "input_sql": "ALTER TABLE absent_t10 ALTER INDEX idx_c INVISIBLE;",
+  "policy_profile": "t10-visibility",
+  "policy_path": "/Users/fan/GolangProjects/DeltaScope/docs/verification/t14-partition-topology/85b6d01aa8db55274301371eaaeef23920e268c7/golden/T10/golden-policy-t10-visibility.yaml",
+  "connect": {
+    "host": "127.0.0.1",
+    "port": 23384,
+    "user": "root",
+    "schema": "golden",
+    "password_env": "DS_T10_GOLDEN_PW"
+  },
+  "expected": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 2,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+      "complete"
+    ],
+    "statement_sql": [
+      "ALTER TABLE absent_t10 ALTER INDEX idx_c INVISIBLE;"
+    ],
+    "statement_indices": [
+      0
+    ],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "finding_entries": [
+      {
+        "index": 0,
+        "rule_id": "ddl.table.exists.alter.require",
+        "level": "blocker"
+      },
+      {
+        "index": 0,
+        "rule_id": "ddl.index.invisible.forbid",
+        "level": "warning"
+      }
+    ],
+    "unsupported_entries": [],
+    "rule_summary_loaded": 4,
+    "rule_summary_applicable": 4
+  },
+  "actual": {
+    "database": {
+      "product": "mysql",
+      "image": "mysql:8.4.10",
+      "image_digest": "mysql@sha256:c592c15aaf4a1961e15d82eb31ea5987dda862d1c4b1e93424438c0e91dc1f8d",
+      "container": "deltascope-ddl-golden-mysql84",
+      "reachable": true,
+      "version": "8.4.10"
+    },
+    "setup": [
+      {
+        "name": "prove-absent",
+        "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='absent_t10'",
+        "rc": 0,
+        "stdout": "COUNT(*)\n0",
+        "stderr": "",
+        "verify": [
+          {
+            "assert": "absent_t10 stays absent",
+            "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='absent_t10'",
+            "rc": 0,
+            "output": "0",
+            "stderr": ""
+          }
+        ]
+      }
+    ],
+    "post_verify": [
+      {
+        "assert": "audit did not create absent_t10",
+        "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='absent_t10'",
+        "rc": 0,
+        "output": "0",
+        "stderr": ""
+      }
+    ],
+    "execute": [
+      {
+        "name": "apply-absent",
+        "sql": "ALTER TABLE absent_t10 ALTER INDEX idx_c INVISIBLE;",
+        "rc": 1,
+        "stdout": "",
+        "stderr": "ERROR 1146 (42S02) at line 1: Table 'golden.absent_t10' doesn't exist"
+      }
+    ],
+    "structure": [
+      {
+        "assert": "absent_t10 stays absent",
+        "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='absent_t10'",
+        "rc": 0,
+        "output": "0",
+        "stderr": ""
+      }
+    ],
+    "teardown": [],
+    "exit": 1,
+    "stdout": "{\"verdict\":\"reject\",\"coverage\":{\"status\":\"complete\"},\"summary\":{\"statements\":1,\"blockers\":1,\"warnings\":1,\"notices\":0},\"statements\":[{\"index\":0,\"kind\":\"ddl\",\"raw_sql\":\"ALTER TABLE absent_t10 ALTER INDEX idx_c INVISIBLE;\",\"normalized_sql\":\"ALTER TABLE absent_t10 ALTER INDEX idx_c INVISIBLE\",\"findings\":[{\"rule_id\":\"ddl.table.exists.alter.require\",\"level\":\"blocker\",\"message\":\"table \\\"absent_t10\\\" does not exist in the target schema\",\"statement_kind\":\"ddl\",\"location\":{\"line\":1,\"column\":1},\"suggestion\":\"create the table first or run the audit without metadata mode if live schema checks are unavailable\",\"metadata\":{\"exists\":false,\"table\":\"absent_t10\"},\"explanation\":{\"summary\":\"Require DDL table exists alter require\",\"why\":\"The statement is missing a clause, option, or object that the shipped policy requires.\",\"risk\":\"Ignoring this rule can hide live-schema or instance-state risks that only metadata reveals.\",\"suggestion\":\"create the table first or run the audit without metadata mode if live schema checks are unavailable\",\"metadata\":{\"status\":\"available\",\"note\":\"Live metadata is available, so this explanation can use schema or instance facts for a more accurate judgment.\"}}},{\"rule_id\":\"ddl.index.invisible.forbid\",\"level\":\"warning\",\"message\":\"index \\\"idx_c\\\" is declared or transitioned invisible on table \\\"absent_t10\\\"\",\"statement_kind\":\"ddl\",\"location\":{\"line\":1,\"column\":1},\"metadata\":{\"action\":\"alter_index\",\"index\":\"idx_c\",\"table\":\"absent_t10\",\"visibility\":\"invisible\"},\"explanation\":{\"summary\":\"Forbid DDL index invisible forbid\",\"why\":\"The statement uses a construct that the shipped policy explicitly forbids.\",\"risk\":\"Ignoring this rule can weaken schema-governance guarantees and make changes harder to review safely.\",\"suggestion\":\"Rewrite the statement to avoid the forbidden construct, or relax the policy if the team accepts the risk.\"}}],\"coverage\":{\"status\":\"complete\"}}],\"version\":{\"product\":\"mysql\",\"version\":\"8.4.10\",\"major\":8,\"minor\":4,\"patch\":10,\"source\":\"observed\",\"validated_range\":true},\"fail_on_triggered\":true,\"rule_summary\":{\"loaded\":4,\"applicable\":4,\"skipped\":[]},\"context\":{\"mode\":\"metadata-aware\",\"dialect\":\"mysql\",\"dialect_source\":\"detected\",\"schema\":\"golden\",\"schema_source\":\"flag\"}}\n",
+    "stderr": "",
+    "parsed": {
+      "verdict": "reject",
+      "coverage": {
+        "status": "complete"
+      },
+      "summary": {
+        "statements": 1,
+        "blockers": 1,
+        "warnings": 1,
+        "notices": 0
+      },
+      "statements": [
+        {
+          "index": 0,
+          "kind": "ddl",
+          "raw_sql": "ALTER TABLE absent_t10 ALTER INDEX idx_c INVISIBLE;",
+          "normalized_sql": "ALTER TABLE absent_t10 ALTER INDEX idx_c INVISIBLE",
+          "findings": [
+            {
+              "rule_id": "ddl.table.exists.alter.require",
+              "level": "blocker",
+              "message": "table \"absent_t10\" does not exist in the target schema",
+              "statement_kind": "ddl",
+              "location": {
+                "line": 1,
+                "column": 1
+              },
+              "suggestion": "create the table first or run the audit without metadata mode if live schema checks are unavailable",
+              "metadata": {
+                "exists": false,
+                "table": "absent_t10"
+              },
+              "explanation": {
+                "summary": "Require DDL table exists alter require",
+                "why": "The statement is missing a clause, option, or object that the shipped policy requires.",
+                "risk": "Ignoring this rule can hide live-schema or instance-state risks that only metadata reveals.",
+                "suggestion": "create the table first or run the audit without metadata mode if live schema checks are unavailable",
+                "metadata": {
+                  "status": "available",
+                  "note": "Live metadata is available, so this explanation can use schema or instance facts for a more accurate judgment."
+                }
+              }
+            },
+            {
+              "rule_id": "ddl.index.invisible.forbid",
+              "level": "warning",
+              "message": "index \"idx_c\" is declared or transitioned invisible on table \"absent_t10\"",
+              "statement_kind": "ddl",
+              "location": {
+                "line": 1,
+                "column": 1
+              },
+              "metadata": {
+                "action": "alter_index",
+                "index": "idx_c",
+                "table": "absent_t10",
+                "visibility": "invisible"
+              },
+              "explanation": {
+                "summary": "Forbid DDL index invisible forbid",
+                "why": "The statement uses a construct that the shipped policy explicitly forbids.",
+                "risk": "Ignoring this rule can weaken schema-governance guarantees and make changes harder to review safely.",
+                "suggestion": "Rewrite the statement to avoid the forbidden construct, or relax the policy if the team accepts the risk."
+              }
+            }
+          ],
+          "coverage": {
+            "status": "complete"
+          }
+        }
+      ],
+      "version": {
+        "product": "mysql",
+        "version": "8.4.10",
+        "major": 8,
+        "minor": 4,
+        "patch": 10,
+        "source": "observed",
+        "validated_range": true
+      },
+      "fail_on_triggered": true,
+      "rule_summary": {
+        "loaded": 4,
+        "applicable": 4,
+        "skipped": []
+      },
+      "context": {
+        "mode": "metadata-aware",
+        "dialect": "mysql",
+        "dialect_source": "detected",
+        "schema": "golden",
+        "schema_source": "flag"
+      }
+    },
+    "version_evidence": {
+      "target_raw": null,
+      "target_canonical": null,
+      "observed_raw": "8.4.10",
+      "observed_canonical": {
+        "product": "mysql",
+        "version": "8.4.10"
+      },
+      "resolved": {
+        "product": "mysql",
+        "version": "8.4.10",
+        "major": 8,
+        "minor": 4,
+        "patch": 10,
+        "source": "observed",
+        "validated_range": true
+      }
+    }
+  },
+  "assertions": [
+    {
+      "name": "database reachable with expected version",
+      "ok": true,
+      "detail": "SELECT VERSION() rc=0 version='8.4.10' expected_contains='8.4.10'"
+    },
+    {
+      "name": "setup prove-absent return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "setup prove-absent: absent_t10 stays absent",
+      "ok": true,
+      "detail": "rc=0 output='0' expected='0'"
+    },
+    {
+      "name": "exit code",
+      "ok": true,
+      "detail": "rc=1 expected=1"
+    },
+    {
+      "name": "verdict",
+      "ok": true,
+      "detail": "verdict='reject'"
+    },
+    {
+      "name": "top-level statements",
+      "ok": true,
+      "detail": "statements=1 expected=1"
+    },
+    {
+      "name": "zero findings",
+      "ok": true,
+      "detail": "findings=2"
+    },
+    {
+      "name": "no diagnostics",
+      "ok": true,
+      "detail": "diagnostics=[]"
+    },
+    {
+      "name": "no unsupported",
+      "ok": true,
+      "detail": "unsupported=[]"
+    },
+    {
+      "name": "loaded rule count",
+      "ok": true,
+      "detail": "loaded=4"
+    },
+    {
+      "name": "applicable rule count",
+      "ok": true,
+      "detail": "applicable=4"
+    },
+    {
+      "name": "statement indices",
+      "ok": true,
+      "detail": "indices=[0]"
+    },
+    {
+      "name": "finding statement ownership",
+      "ok": true,
+      "detail": "findings must belong to their enclosing statement"
+    },
+    {
+      "name": "aggregate coverage",
+      "ok": true,
+      "detail": "coverage='complete'"
+    },
+    {
+      "name": "per-statement coverage",
+      "ok": true,
+      "detail": "statement_coverage=['complete']"
+    },
+    {
+      "name": "unsupported entries",
+      "ok": true,
+      "detail": "entries=[] expected=[]"
+    },
+    {
+      "name": "statement raw SQL identity",
+      "ok": true,
+      "detail": "raw_sql=['ALTER TABLE absent_t10 ALTER INDEX idx_c INVISIBLE;'] expected=['ALTER TABLE absent_t10 ALTER INDEX idx_c INVISIBLE;']"
+    },
+    {
+      "name": "evidence gap count",
+      "ok": true,
+      "detail": "gaps=0"
+    },
+    {
+      "name": "evidence gap entries",
+      "ok": true,
+      "detail": "gaps=[] expected=[]"
+    },
+    {
+      "name": "finding entries",
+      "ok": true,
+      "detail": "findings=[(0, 'ddl.index.invisible.forbid', 'warning'), (0, 'ddl.table.exists.alter.require', 'blocker')] expected=[(0, 'ddl.index.invisible.forbid', 'warning'), (0, 'ddl.table.exists.alter.require', 'blocker')]"
+    },
+    {
+      "name": "post-verify audit did not create absent_t10",
+      "ok": true,
+      "detail": "rc=0 output='0' expected='0'"
+    },
+    {
+      "name": "execute apply-absent return code",
+      "ok": true,
+      "detail": "rc=1 expected=1 stderr=\"ERROR 1146 (42S02) at line 1: Table 'golden.absent_t10' doesn't exist\""
+    },
+    {
+      "name": "execute apply-absent stderr marker",
+      "ok": true,
+      "detail": "1146"
+    },
+    {
+      "name": "structure absent_t10 stays absent",
+      "ok": true,
+      "detail": "rc=0 output='0' expected='0'"
+    }
+  ],
+  "status": "pass",
+  "command": [
+    "/Users/fan/GolangProjects/DeltaScope/docs/verification/t14-partition-topology/85b6d01aa8db55274301371eaaeef23920e268c7/golden/T10/bin/deltascope",
+    "audit",
+    "--dialect",
+    "mysql",
+    "--sql",
+    "ALTER TABLE absent_t10 ALTER INDEX idx_c INVISIBLE;",
+    "--config",
+    "/Users/fan/GolangProjects/DeltaScope/docs/verification/t14-partition-topology/85b6d01aa8db55274301371eaaeef23920e268c7/golden/T10/golden-policy-t10-visibility.yaml",
+    "--format",
+    "json",
+    "--host",
+    "127.0.0.1",
+    "--port",
+    "23384",
+    "--user",
+    "root",
+    "--password-env",
+    "DS_T10_GOLDEN_PW",
+    "--schema",
+    "golden"
+  ]
+}

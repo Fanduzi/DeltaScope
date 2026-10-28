@@ -1,0 +1,192 @@
+{
+  "case_id": "T13.cli.t13-cli-exchange-warn",
+  "kind": "cli_audit",
+  "cli_case": "t13-cli-exchange-warn",
+  "dialect": "mysql",
+  "input_sql": "ALTER TABLE t EXCHANGE PARTITION p0 WITH TABLE t2;",
+  "policy_profile": "t13-exchange",
+  "policy_path": "/Users/fan/GolangProjects/DeltaScope/docs/verification/t14-partition-topology/85b6d01aa8db55274301371eaaeef23920e268c7/golden/T13/golden-policy-t13-exchange.yaml",
+  "command": [
+    "/Users/fan/GolangProjects/DeltaScope/docs/verification/t14-partition-topology/85b6d01aa8db55274301371eaaeef23920e268c7/golden/T13/bin/deltascope",
+    "audit",
+    "--dialect",
+    "mysql",
+    "--sql",
+    "ALTER TABLE t EXCHANGE PARTITION p0 WITH TABLE t2;",
+    "--config",
+    "/Users/fan/GolangProjects/DeltaScope/docs/verification/t14-partition-topology/85b6d01aa8db55274301371eaaeef23920e268c7/golden/T13/golden-policy-t13-exchange.yaml",
+    "--format",
+    "json",
+    "--fail-on",
+    "blocker"
+  ],
+  "expected": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+      "complete"
+    ],
+    "finding_entries": [
+      {
+        "index": 0,
+        "rule_id": "ddl.alter.exchange_partition.warn",
+        "level": "warning"
+      }
+    ],
+    "finding_metadata": [
+      {
+        "index": 0,
+        "rule_id": "ddl.alter.exchange_partition.warn",
+        "metadata": {
+          "table": "t",
+          "partition": "p0",
+          "exchange_table": "t2",
+          "exchange_schema": "",
+          "validation": "with"
+        }
+      }
+    ],
+    "rule_summary_applicable": 1
+  },
+  "actual": {
+    "exit": 0,
+    "stdout": "{\"verdict\":\"review\",\"coverage\":{\"status\":\"complete\"},\"summary\":{\"statements\":1,\"blockers\":0,\"warnings\":1,\"notices\":0},\"statements\":[{\"index\":0,\"kind\":\"ddl\",\"raw_sql\":\"ALTER TABLE t EXCHANGE PARTITION p0 WITH TABLE t2;\",\"normalized_sql\":\"ALTER TABLE t EXCHANGE PARTITION p0 WITH TABLE t2\",\"findings\":[{\"rule_id\":\"ddl.alter.exchange_partition.warn\",\"level\":\"warning\",\"message\":\"ALTER TABLE exchange partition swaps rows between partition \\\"p0\\\" and table \\\"t2\\\"\",\"statement_kind\":\"ddl\",\"location\":{\"line\":1,\"column\":1},\"suggestion\":\"verify the exchange table is not partitioned, its rows satisfy the partition bounds, and WITH/WITHOUT VALIDATION matches your intent\",\"metadata\":{\"action\":\"exchange_partition\",\"exchange_schema\":\"\",\"exchange_table\":\"t2\",\"partition\":\"p0\",\"table\":\"t\",\"validation\":\"with\"},\"explanation\":{\"summary\":\"Warn on DDL alter exchange partition warn\",\"why\":\"The statement reached a caution rule that highlights an operational trade-off.\",\"risk\":\"Ignoring this rule can weaken schema-governance guarantees and make changes harder to review safely.\",\"suggestion\":\"verify the exchange table is not partitioned, its rows satisfy the partition bounds, and WITH/WITHOUT VALIDATION matches your intent\"}}],\"coverage\":{\"status\":\"complete\"}}],\"fail_on_triggered\":false,\"rule_summary\":{\"loaded\":1,\"applicable\":1,\"skipped\":[]},\"context\":{\"mode\":\"offline\",\"dialect\":\"mysql\",\"dialect_source\":\"flag\",\"note\":\"existence not checked (no database connection)\",\"unproven\":[\"column_exists\",\"table_exists\"]}}\n",
+    "stderr": "",
+    "parsed": {
+      "verdict": "review",
+      "coverage": {
+        "status": "complete"
+      },
+      "summary": {
+        "statements": 1,
+        "blockers": 0,
+        "warnings": 1,
+        "notices": 0
+      },
+      "statements": [
+        {
+          "index": 0,
+          "kind": "ddl",
+          "raw_sql": "ALTER TABLE t EXCHANGE PARTITION p0 WITH TABLE t2;",
+          "normalized_sql": "ALTER TABLE t EXCHANGE PARTITION p0 WITH TABLE t2",
+          "findings": [
+            {
+              "rule_id": "ddl.alter.exchange_partition.warn",
+              "level": "warning",
+              "message": "ALTER TABLE exchange partition swaps rows between partition \"p0\" and table \"t2\"",
+              "statement_kind": "ddl",
+              "location": {
+                "line": 1,
+                "column": 1
+              },
+              "suggestion": "verify the exchange table is not partitioned, its rows satisfy the partition bounds, and WITH/WITHOUT VALIDATION matches your intent",
+              "metadata": {
+                "action": "exchange_partition",
+                "exchange_schema": "",
+                "exchange_table": "t2",
+                "partition": "p0",
+                "table": "t",
+                "validation": "with"
+              },
+              "explanation": {
+                "summary": "Warn on DDL alter exchange partition warn",
+                "why": "The statement reached a caution rule that highlights an operational trade-off.",
+                "risk": "Ignoring this rule can weaken schema-governance guarantees and make changes harder to review safely.",
+                "suggestion": "verify the exchange table is not partitioned, its rows satisfy the partition bounds, and WITH/WITHOUT VALIDATION matches your intent"
+              }
+            }
+          ],
+          "coverage": {
+            "status": "complete"
+          }
+        }
+      ],
+      "fail_on_triggered": false,
+      "rule_summary": {
+        "loaded": 1,
+        "applicable": 1,
+        "skipped": []
+      },
+      "context": {
+        "mode": "offline",
+        "dialect": "mysql",
+        "dialect_source": "flag",
+        "note": "existence not checked (no database connection)",
+        "unproven": [
+          "column_exists",
+          "table_exists"
+        ]
+      }
+    },
+    "version_evidence": {
+      "target_raw": null,
+      "target_canonical": null,
+      "observed_raw": null,
+      "observed_canonical": null,
+      "resolved": null
+    }
+  },
+  "assertions": [
+    {
+      "name": "exit code",
+      "ok": true,
+      "detail": "rc=0 expected=0"
+    },
+    {
+      "name": "verdict",
+      "ok": true,
+      "detail": "verdict='review'"
+    },
+    {
+      "name": "top-level statements",
+      "ok": true,
+      "detail": "statements=1 expected=1"
+    },
+    {
+      "name": "zero findings",
+      "ok": true,
+      "detail": "findings=1"
+    },
+    {
+      "name": "no diagnostics",
+      "ok": true,
+      "detail": "diagnostics=[]"
+    },
+    {
+      "name": "no unsupported",
+      "ok": true,
+      "detail": "unsupported=[]"
+    },
+    {
+      "name": "applicable rule count",
+      "ok": true,
+      "detail": "applicable=1"
+    },
+    {
+      "name": "aggregate coverage",
+      "ok": true,
+      "detail": "coverage='complete'"
+    },
+    {
+      "name": "per-statement coverage",
+      "ok": true,
+      "detail": "statement_coverage=['complete']"
+    },
+    {
+      "name": "finding entries",
+      "ok": true,
+      "detail": "findings=[(0, 'ddl.alter.exchange_partition.warn', 'warning')] expected=[(0, 'ddl.alter.exchange_partition.warn', 'warning')]"
+    },
+    {
+      "name": "finding metadata (0, 'ddl.alter.exchange_partition.warn')",
+      "ok": true,
+      "detail": "findings=[{'action': 'exchange_partition', 'exchange_schema': '', 'exchange_table': 't2', 'partition': 'p0', 'table': 't', 'validation': 'with'}] expected_subset={'table': 't', 'partition': 'p0', 'exchange_table': 't2', 'exchange_schema': '', 'validation': 'with'}"
+    }
+  ],
+  "status": "pass"
+}

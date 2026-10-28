@@ -1,0 +1,456 @@
+{
+  "case_id": "T10.meta.t10-tidb85-unknown-set",
+  "kind": "cli_metadata",
+  "cli_case": "t10-tidb85-unknown-set",
+  "anchor": "tidb85",
+  "dialect": "tidb",
+  "input_sql": "ALTER TABLE t10x ADD COLUMN x INT, ALTER INDEX i INVISIBLE; ALTER TABLE t10x ALTER INDEX i INVISIBLE;",
+  "policy_profile": "t10-exists",
+  "policy_path": "/Users/fan/GolangProjects/DeltaScope/docs/verification/t14-partition-topology/85b6d01aa8db55274301371eaaeef23920e268c7/golden/T10/golden-policy-t10-exists.yaml",
+  "connect": {
+    "host": "127.0.0.1",
+    "port": 24000,
+    "user": "root",
+    "schema": "golden"
+  },
+  "expected": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 2,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": [
+      "complete",
+      "unverified"
+    ],
+    "statement_sql": [
+      "ALTER TABLE t10x ADD COLUMN x INT, ALTER INDEX i INVISIBLE;",
+      "ALTER TABLE t10x ALTER INDEX i INVISIBLE;"
+    ],
+    "statement_indices": [
+      0,
+      1
+    ],
+    "evidence_gaps": 1,
+    "evidence_gap_entries": [
+      {
+        "index": 1,
+        "rule_id": "ddl.alter.alter_index.exists.require",
+        "reason_code": "unknown_table_state",
+        "required_facts": [
+          "target_table.existence",
+          "target_table.indexes"
+        ]
+      }
+    ],
+    "finding_entries": [],
+    "unsupported_entries": [],
+    "rule_summary_loaded": 1,
+    "rule_summary_applicable": 1
+  },
+  "actual": {
+    "database": {
+      "product": "tidb",
+      "image": "pingcap/tidb:v8.5.0",
+      "image_digest": "pingcap/tidb@sha256:490861bd4a2fa643dbe76b77ffecafcad66e6a42774e580b82f4ec2429a80e57",
+      "container": "deltascope-ddl-golden-tidb85",
+      "reachable": true,
+      "version": "8.0.11-TiDB-v8.5.0"
+    },
+    "setup": [
+      {
+        "name": "prove-prior-state-t10x",
+        "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10x'",
+        "rc": 0,
+        "stdout": "COUNT(*)\n0",
+        "stderr": "",
+        "verify": [
+          {
+            "assert": "t10x bound table count",
+            "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10x'",
+            "rc": 0,
+            "output": "0",
+            "stderr": ""
+          }
+        ]
+      },
+      {
+        "name": "create-fixture-t10x",
+        "sql": "CREATE TABLE t10x (a INT, KEY i(a));",
+        "rc": 0,
+        "stdout": "",
+        "stderr": "",
+        "verify": [
+          {
+            "assert": "t10x bound table count",
+            "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10x'",
+            "rc": 0,
+            "output": "1",
+            "stderr": ""
+          },
+          {
+            "assert": "i initially visible",
+            "sql": "SELECT is_visible FROM information_schema.statistics WHERE table_schema='golden' AND table_name='t10x' AND index_name='i' AND seq_in_index=1 LIMIT 1",
+            "rc": 0,
+            "output": "YES",
+            "stderr": ""
+          }
+        ]
+      }
+    ],
+    "post_verify": [
+      {
+        "assert": "audit did not hide i",
+        "sql": "SELECT is_visible FROM information_schema.statistics WHERE table_schema='golden' AND table_name='t10x' AND index_name='i' AND seq_in_index=1 LIMIT 1",
+        "rc": 0,
+        "output": "YES",
+        "stderr": ""
+      },
+      {
+        "assert": "audit did not add x",
+        "sql": "SELECT COUNT(*) FROM information_schema.columns WHERE table_schema='golden' AND table_name='t10x' AND column_name='x'",
+        "rc": 0,
+        "output": "0",
+        "stderr": ""
+      }
+    ],
+    "execute": [
+      {
+        "name": "apply-multi-then-alter",
+        "sql": "ALTER TABLE t10x ADD COLUMN x INT, ALTER INDEX i INVISIBLE;",
+        "rc": 0,
+        "stdout": "",
+        "stderr": ""
+      },
+      {
+        "name": "apply-alter-after-tombstone",
+        "sql": "ALTER TABLE t10x ALTER INDEX i INVISIBLE;",
+        "rc": 0,
+        "stdout": "",
+        "stderr": "",
+        "verify": [
+          {
+            "assert": "i invisible after chain",
+            "sql": "SELECT is_visible FROM information_schema.statistics WHERE table_schema='golden' AND table_name='t10x' AND index_name='i' AND seq_in_index=1 LIMIT 1",
+            "rc": 0,
+            "output": "NO",
+            "stderr": ""
+          }
+        ]
+      }
+    ],
+    "structure": [
+      {
+        "assert": "i invisible persisted",
+        "sql": "SELECT is_visible FROM information_schema.statistics WHERE table_schema='golden' AND table_name='t10x' AND index_name='i' AND seq_in_index=1 LIMIT 1",
+        "rc": 0,
+        "output": "NO",
+        "stderr": ""
+      },
+      {
+        "assert": "x column added",
+        "sql": "SELECT COUNT(*) FROM information_schema.columns WHERE table_schema='golden' AND table_name='t10x' AND column_name='x'",
+        "rc": 0,
+        "output": "1",
+        "stderr": ""
+      }
+    ],
+    "teardown": [
+      {
+        "name": "drop-t10x",
+        "sql": "DROP TABLE IF EXISTS t10x;",
+        "rc": 0,
+        "stderr": "",
+        "verify": [
+          {
+            "assert": "t10x bound table count",
+            "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10x'",
+            "rc": 0,
+            "output": "0",
+            "stderr": ""
+          }
+        ]
+      }
+    ],
+    "exit": 0,
+    "stdout": "{\"verdict\":\"review\",\"coverage\":{\"status\":\"unverified\"},\"summary\":{\"statements\":2,\"blockers\":0,\"warnings\":0,\"notices\":0},\"statements\":[{\"index\":0,\"kind\":\"ddl\",\"raw_sql\":\"ALTER TABLE t10x ADD COLUMN x INT, ALTER INDEX i INVISIBLE;\",\"normalized_sql\":\"ALTER TABLE t10x ADD COLUMN x INT, ALTER INDEX i INVISIBLE\",\"coverage\":{\"status\":\"complete\"}},{\"index\":1,\"kind\":\"ddl\",\"raw_sql\":\"ALTER TABLE t10x ALTER INDEX i INVISIBLE;\",\"normalized_sql\":\"ALTER TABLE t10x ALTER INDEX i INVISIBLE\",\"evidence_gaps\":[{\"rule_id\":\"ddl.alter.alter_index.exists.require\",\"reason_code\":\"unknown_table_state\",\"required_facts\":[\"target_table.existence\",\"target_table.indexes\"]}],\"coverage\":{\"status\":\"unverified\"}}],\"version\":{\"product\":\"tidb\",\"version\":\"8.5.0\",\"major\":8,\"minor\":5,\"patch\":0,\"source\":\"observed\",\"validated_range\":true},\"fail_on_triggered\":false,\"rule_summary\":{\"loaded\":1,\"applicable\":1,\"skipped\":[]},\"context\":{\"mode\":\"metadata-aware\",\"dialect\":\"tidb\",\"dialect_source\":\"detected\",\"schema\":\"golden\",\"schema_source\":\"flag\"}}\n",
+    "stderr": "",
+    "parsed": {
+      "verdict": "review",
+      "coverage": {
+        "status": "unverified"
+      },
+      "summary": {
+        "statements": 2,
+        "blockers": 0,
+        "warnings": 0,
+        "notices": 0
+      },
+      "statements": [
+        {
+          "index": 0,
+          "kind": "ddl",
+          "raw_sql": "ALTER TABLE t10x ADD COLUMN x INT, ALTER INDEX i INVISIBLE;",
+          "normalized_sql": "ALTER TABLE t10x ADD COLUMN x INT, ALTER INDEX i INVISIBLE",
+          "coverage": {
+            "status": "complete"
+          }
+        },
+        {
+          "index": 1,
+          "kind": "ddl",
+          "raw_sql": "ALTER TABLE t10x ALTER INDEX i INVISIBLE;",
+          "normalized_sql": "ALTER TABLE t10x ALTER INDEX i INVISIBLE",
+          "evidence_gaps": [
+            {
+              "rule_id": "ddl.alter.alter_index.exists.require",
+              "reason_code": "unknown_table_state",
+              "required_facts": [
+                "target_table.existence",
+                "target_table.indexes"
+              ]
+            }
+          ],
+          "coverage": {
+            "status": "unverified"
+          }
+        }
+      ],
+      "version": {
+        "product": "tidb",
+        "version": "8.5.0",
+        "major": 8,
+        "minor": 5,
+        "patch": 0,
+        "source": "observed",
+        "validated_range": true
+      },
+      "fail_on_triggered": false,
+      "rule_summary": {
+        "loaded": 1,
+        "applicable": 1,
+        "skipped": []
+      },
+      "context": {
+        "mode": "metadata-aware",
+        "dialect": "tidb",
+        "dialect_source": "detected",
+        "schema": "golden",
+        "schema_source": "flag"
+      }
+    },
+    "version_evidence": {
+      "target_raw": null,
+      "target_canonical": null,
+      "observed_raw": "8.0.11-TiDB-v8.5.0",
+      "observed_canonical": {
+        "product": "tidb",
+        "version": "8.5.0"
+      },
+      "resolved": {
+        "product": "tidb",
+        "version": "8.5.0",
+        "major": 8,
+        "minor": 5,
+        "patch": 0,
+        "source": "observed",
+        "validated_range": true
+      }
+    }
+  },
+  "assertions": [
+    {
+      "name": "database reachable with expected version",
+      "ok": true,
+      "detail": "SELECT VERSION() rc=0 version='8.0.11-TiDB-v8.5.0' expected_contains='v8.5.0'"
+    },
+    {
+      "name": "setup prove-prior-state-t10x return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "setup prove-prior-state-t10x: t10x bound table count",
+      "ok": true,
+      "detail": "rc=0 output='0' expected='0'"
+    },
+    {
+      "name": "setup create-fixture-t10x return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "setup create-fixture-t10x: t10x bound table count",
+      "ok": true,
+      "detail": "rc=0 output='1' expected='1'"
+    },
+    {
+      "name": "setup create-fixture-t10x: i initially visible",
+      "ok": true,
+      "detail": "rc=0 output='YES' expected='YES'"
+    },
+    {
+      "name": "exit code",
+      "ok": true,
+      "detail": "rc=0 expected=0"
+    },
+    {
+      "name": "verdict",
+      "ok": true,
+      "detail": "verdict='review'"
+    },
+    {
+      "name": "top-level statements",
+      "ok": true,
+      "detail": "statements=2 expected=2"
+    },
+    {
+      "name": "zero findings",
+      "ok": true,
+      "detail": "findings=0"
+    },
+    {
+      "name": "no diagnostics",
+      "ok": true,
+      "detail": "diagnostics=[]"
+    },
+    {
+      "name": "no unsupported",
+      "ok": true,
+      "detail": "unsupported=[]"
+    },
+    {
+      "name": "loaded rule count",
+      "ok": true,
+      "detail": "loaded=1"
+    },
+    {
+      "name": "applicable rule count",
+      "ok": true,
+      "detail": "applicable=1"
+    },
+    {
+      "name": "statement indices",
+      "ok": true,
+      "detail": "indices=[0, 1]"
+    },
+    {
+      "name": "finding statement ownership",
+      "ok": true,
+      "detail": "findings must belong to their enclosing statement"
+    },
+    {
+      "name": "aggregate coverage",
+      "ok": true,
+      "detail": "coverage='unverified'"
+    },
+    {
+      "name": "per-statement coverage",
+      "ok": true,
+      "detail": "statement_coverage=['complete', 'unverified']"
+    },
+    {
+      "name": "unsupported entries",
+      "ok": true,
+      "detail": "entries=[] expected=[]"
+    },
+    {
+      "name": "statement raw SQL identity",
+      "ok": true,
+      "detail": "raw_sql=['ALTER TABLE t10x ADD COLUMN x INT, ALTER INDEX i INVISIBLE;', 'ALTER TABLE t10x ALTER INDEX i INVISIBLE;'] expected=['ALTER TABLE t10x ADD COLUMN x INT, ALTER INDEX i INVISIBLE;', 'ALTER TABLE t10x ALTER INDEX i INVISIBLE;']"
+    },
+    {
+      "name": "evidence gap count",
+      "ok": true,
+      "detail": "gaps=1"
+    },
+    {
+      "name": "evidence gap entries",
+      "ok": true,
+      "detail": "gaps=[(1, 'ddl.alter.alter_index.exists.require', 'unknown_table_state')] expected=[(1, 'ddl.alter.alter_index.exists.require', 'unknown_table_state')]"
+    },
+    {
+      "name": "evidence gap required_facts (1, 'ddl.alter.alter_index.exists.require', 'unknown_table_state')",
+      "ok": true,
+      "detail": "gaps=[{'rule_id': 'ddl.alter.alter_index.exists.require', 'reason_code': 'unknown_table_state', 'required_facts': ['target_table.existence', 'target_table.indexes']}] expected_facts=['target_table.existence', 'target_table.indexes']"
+    },
+    {
+      "name": "no gap encoded as finding",
+      "ok": true,
+      "detail": "findings carrying gap shape=[]"
+    },
+    {
+      "name": "finding entries",
+      "ok": true,
+      "detail": "findings=[] expected=[]"
+    },
+    {
+      "name": "post-verify audit did not hide i",
+      "ok": true,
+      "detail": "rc=0 output='YES' expected='YES'"
+    },
+    {
+      "name": "post-verify audit did not add x",
+      "ok": true,
+      "detail": "rc=0 output='0' expected='0'"
+    },
+    {
+      "name": "execute apply-multi-then-alter return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "execute apply-alter-after-tombstone return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "execute apply-alter-after-tombstone: i invisible after chain",
+      "ok": true,
+      "detail": "rc=0 output='NO' expected='NO'"
+    },
+    {
+      "name": "structure i invisible persisted",
+      "ok": true,
+      "detail": "rc=0 output='NO' expected='NO'"
+    },
+    {
+      "name": "structure x column added",
+      "ok": true,
+      "detail": "rc=0 output='1' expected='1'"
+    },
+    {
+      "name": "teardown drop-t10x return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "teardown drop-t10x: t10x bound table count",
+      "ok": true,
+      "detail": "rc=0 output='0' expected='0'"
+    }
+  ],
+  "status": "pass",
+  "command": [
+    "/Users/fan/GolangProjects/DeltaScope/docs/verification/t14-partition-topology/85b6d01aa8db55274301371eaaeef23920e268c7/golden/T10/bin/deltascope",
+    "audit",
+    "--dialect",
+    "tidb",
+    "--sql",
+    "ALTER TABLE t10x ADD COLUMN x INT, ALTER INDEX i INVISIBLE; ALTER TABLE t10x ALTER INDEX i INVISIBLE;",
+    "--config",
+    "/Users/fan/GolangProjects/DeltaScope/docs/verification/t14-partition-topology/85b6d01aa8db55274301371eaaeef23920e268c7/golden/T10/golden-policy-t10-exists.yaml",
+    "--format",
+    "json",
+    "--host",
+    "127.0.0.1",
+    "--port",
+    "24000",
+    "--user",
+    "root",
+    "--schema",
+    "golden"
+  ]
+}

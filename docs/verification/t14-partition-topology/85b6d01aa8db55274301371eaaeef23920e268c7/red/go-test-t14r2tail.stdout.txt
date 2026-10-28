@@ -1,0 +1,107 @@
+=== RUN   TestT14R2TailSingleMemberAlterUndecidable
+=== PAUSE TestT14R2TailSingleMemberAlterUndecidable
+=== RUN   TestT14R2TailSingleMemberCreateUndecidable
+=== PAUSE TestT14R2TailSingleMemberCreateUndecidable
+=== RUN   TestT14R2TailSingleMemberProvable
+=== PAUSE TestT14R2TailSingleMemberProvable
+=== RUN   TestT14R2TailExprThenProvableRefusal
+=== PAUSE TestT14R2TailExprThenProvableRefusal
+=== RUN   TestT14R2TailRuleOffKeepsStateConclusion
+=== PAUSE TestT14R2TailRuleOffKeepsStateConclusion
+=== RUN   TestT14R2TailDeclaredSchemeOutcomeSingleMember
+=== PAUSE TestT14R2TailDeclaredSchemeOutcomeSingleMember
+=== CONT  TestT14R2TailSingleMemberAlterUndecidable
+=== RUN   TestT14R2TailSingleMemberAlterUndecidable/range
+=== PAUSE TestT14R2TailSingleMemberAlterUndecidable/range
+=== CONT  TestT14R2TailExprThenProvableRefusal
+=== RUN   TestT14R2TailSingleMemberAlterUndecidable/list
+=== PAUSE TestT14R2TailSingleMemberAlterUndecidable/list
+=== CONT  TestT14R2TailSingleMemberAlterUndecidable/range
+=== CONT  TestT14R2TailSingleMemberAlterUndecidable/list
+=== CONT  TestT14R2TailSingleMemberProvable
+=== CONT  TestT14R2TailSingleMemberCreateUndecidable
+=== RUN   TestT14R2TailSingleMemberProvable/range_numeric
+=== RUN   TestT14R2TailSingleMemberCreateUndecidable/range
+=== PAUSE TestT14R2TailSingleMemberProvable/range_numeric
+=== RUN   TestT14R2TailSingleMemberProvable/range_maxvalue
+=== PAUSE TestT14R2TailSingleMemberCreateUndecidable/range
+=== CONT  TestT14R2TailDeclaredSchemeOutcomeSingleMember
+=== CONT  TestT14R2TailRuleOffKeepsStateConclusion
+=== RUN   TestT14R2TailDeclaredSchemeOutcomeSingleMember/range_nil_bound
+=== PAUSE TestT14R2TailSingleMemberProvable/range_maxvalue
+=== RUN   TestT14R2TailSingleMemberCreateUndecidable/list
+=== RUN   TestT14R2TailSingleMemberProvable/range_columns_string
+=== PAUSE TestT14R2TailSingleMemberProvable/range_columns_string
+=== RUN   TestT14R2TailSingleMemberProvable/list_numeric
+=== PAUSE TestT14R2TailSingleMemberProvable/list_numeric
+=== PAUSE TestT14R2TailSingleMemberCreateUndecidable/list
+=== CONT  TestT14R2TailSingleMemberCreateUndecidable/range
+=== CONT  TestT14R2TailSingleMemberCreateUndecidable/list
+=== PAUSE TestT14R2TailDeclaredSchemeOutcomeSingleMember/range_nil_bound
+=== CONT  TestT14R2TailSingleMemberProvable/range_maxvalue
+=== CONT  TestT14R2TailSingleMemberProvable/range_numeric
+=== CONT  TestT14R2TailSingleMemberProvable/list_numeric
+=== CONT  TestT14R2TailSingleMemberProvable/range_columns_string
+=== RUN   TestT14R2TailDeclaredSchemeOutcomeSingleMember/range_shell_bound
+=== PAUSE TestT14R2TailDeclaredSchemeOutcomeSingleMember/range_shell_bound
+=== RUN   TestT14R2TailDeclaredSchemeOutcomeSingleMember/range_expr_bound
+=== PAUSE TestT14R2TailDeclaredSchemeOutcomeSingleMember/range_expr_bound
+=== RUN   TestT14R2TailDeclaredSchemeOutcomeSingleMember/range_numeric
+=== PAUSE TestT14R2TailDeclaredSchemeOutcomeSingleMember/range_numeric
+=== RUN   TestT14R2TailDeclaredSchemeOutcomeSingleMember/range_maxvalue
+=== PAUSE TestT14R2TailDeclaredSchemeOutcomeSingleMember/range_maxvalue
+=== RUN   TestT14R2TailDeclaredSchemeOutcomeSingleMember/list_nil_bound
+=== PAUSE TestT14R2TailDeclaredSchemeOutcomeSingleMember/list_nil_bound
+=== RUN   TestT14R2TailDeclaredSchemeOutcomeSingleMember/list_expr_bound
+=== PAUSE TestT14R2TailDeclaredSchemeOutcomeSingleMember/list_expr_bound
+=== RUN   TestT14R2TailDeclaredSchemeOutcomeSingleMember/list_numeric
+=== PAUSE TestT14R2TailDeclaredSchemeOutcomeSingleMember/list_numeric
+=== CONT  TestT14R2TailDeclaredSchemeOutcomeSingleMember/range_nil_bound
+=== CONT  TestT14R2TailDeclaredSchemeOutcomeSingleMember/range_maxvalue
+=== NAME  TestT14R2TailDeclaredSchemeOutcomeSingleMember/range_nil_bound
+    batch_state_t14r2tail_test.go:259: declaredSchemeOutcome(range) = 1, want 2
+=== CONT  TestT14R2TailDeclaredSchemeOutcomeSingleMember/list_expr_bound
+    batch_state_t14r2tail_test.go:259: declaredSchemeOutcome(list) = 1, want 2
+=== CONT  TestT14R2TailDeclaredSchemeOutcomeSingleMember/list_nil_bound
+    batch_state_t14r2tail_test.go:259: declaredSchemeOutcome(list) = 1, want 2
+=== CONT  TestT14R2TailDeclaredSchemeOutcomeSingleMember/range_expr_bound
+    batch_state_t14r2tail_test.go:259: declaredSchemeOutcome(range) = 1, want 2
+=== CONT  TestT14R2TailDeclaredSchemeOutcomeSingleMember/list_numeric
+=== CONT  TestT14R2TailDeclaredSchemeOutcomeSingleMember/range_numeric
+=== CONT  TestT14R2TailDeclaredSchemeOutcomeSingleMember/range_shell_bound
+    batch_state_t14r2tail_test.go:259: declaredSchemeOutcome(range) = 1, want 2
+--- FAIL: TestT14R2TailDeclaredSchemeOutcomeSingleMember (0.00s)
+    --- PASS: TestT14R2TailDeclaredSchemeOutcomeSingleMember/range_maxvalue (0.00s)
+    --- FAIL: TestT14R2TailDeclaredSchemeOutcomeSingleMember/range_nil_bound (0.00s)
+    --- FAIL: TestT14R2TailDeclaredSchemeOutcomeSingleMember/list_expr_bound (0.00s)
+    --- FAIL: TestT14R2TailDeclaredSchemeOutcomeSingleMember/list_nil_bound (0.00s)
+    --- FAIL: TestT14R2TailDeclaredSchemeOutcomeSingleMember/range_expr_bound (0.00s)
+    --- PASS: TestT14R2TailDeclaredSchemeOutcomeSingleMember/range_numeric (0.00s)
+    --- PASS: TestT14R2TailDeclaredSchemeOutcomeSingleMember/list_numeric (0.00s)
+    --- FAIL: TestT14R2TailDeclaredSchemeOutcomeSingleMember/range_shell_bound (0.00s)
+--- PASS: TestT14R2TailSingleMemberProvable (0.00s)
+    --- PASS: TestT14R2TailSingleMemberProvable/range_maxvalue (0.00s)
+    --- PASS: TestT14R2TailSingleMemberProvable/range_numeric (0.00s)
+    --- PASS: TestT14R2TailSingleMemberProvable/list_numeric (0.00s)
+    --- PASS: TestT14R2TailSingleMemberProvable/range_columns_string (0.00s)
+=== NAME  TestT14R2TailRuleOffKeepsStateConclusion
+    batch_state_t14r2tail_test.go:213: the state conclusion is rule-independent, got &{Schema: Exists:true Table:0x69cde1c44ed0 Columns:[{Name:id Type:int Length:0 Charset: Collation: Comment: Unsigned:false NotNull:true AutoIncrement:false HasDefault:false DefaultValue: DefaultKind: DefaultIsNull:false DefaultIsCurrentTimestamp:false OnUpdateCurrentTimestamp:false GeneratedWhen: IsIdentity:false IdentityOptions:map[] AutoRandom:false UnextractedOptions:[] Generated:<nil> DefaultExpression:<nil> Visibility: VisibilityExplicit:false DefaultParenthesized:false DefaultLiteral:<nil>}] PrimaryKey:<nil> Indexes:[] Constraints:[] Options:map[comment:kept] PrimaryKeyIsHandle:false PrimaryKeyHandleUnknown:false PrimaryKeyClustered:false PrimaryKeyClusteredUnknown:false PrimaryKeyUnknown:false IndexesUnknown:false ConstraintsUnknown:false IndexOrderCatalog:false IndexNamesUnknown:false Partitioned:0x69cde1c4607c PartitionType:0x69cde16181e0 PartitionNames:[fresh] PartitionDescriptions:[] PartitionDefs:[{Name:fresh Bound:0x69cde1c44f30 Subpartitioned:false}] Subpartitioned:false}
+--- FAIL: TestT14R2TailRuleOffKeepsStateConclusion (0.00s)
+=== NAME  TestT14R2TailSingleMemberAlterUndecidable/range
+    batch_state_t14r2tail_test.go:53: the successor owes the actual unproven partition premise, got []
+=== NAME  TestT14R2TailSingleMemberAlterUndecidable/list
+    batch_state_t14r2tail_test.go:53: the successor owes the actual unproven partition premise, got []
+=== NAME  TestT14R2TailSingleMemberCreateUndecidable/list
+    batch_state_t14r2tail_test.go:116: the successor owes the unvouched create premise, got []
+=== NAME  TestT14R2TailSingleMemberCreateUndecidable/range
+    batch_state_t14r2tail_test.go:116: the successor owes the unvouched create premise, got []
+--- FAIL: TestT14R2TailSingleMemberAlterUndecidable (0.00s)
+    --- FAIL: TestT14R2TailSingleMemberAlterUndecidable/range (0.01s)
+    --- FAIL: TestT14R2TailSingleMemberAlterUndecidable/list (0.01s)
+--- PASS: TestT14R2TailExprThenProvableRefusal (0.01s)
+--- FAIL: TestT14R2TailSingleMemberCreateUndecidable (0.00s)
+    --- FAIL: TestT14R2TailSingleMemberCreateUndecidable/list (0.01s)
+    --- FAIL: TestT14R2TailSingleMemberCreateUndecidable/range (0.01s)
+FAIL
+FAIL	github.com/Fanduzi/DeltaScope/internal/application/audit	0.597s
+FAIL

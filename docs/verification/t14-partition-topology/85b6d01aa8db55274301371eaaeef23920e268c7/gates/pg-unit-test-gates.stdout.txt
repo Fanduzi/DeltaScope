@@ -1,0 +1,8 @@
+CGO_ENABLED=1 go test -tags postgresql -count=1 ./internal/infrastructure/parser/postgresql ./internal/application/audit ./internal/application/auditmeta ./internal/interfaces/cli ./internal/interfaces/http ./internal/interfaces/mcp ./pkg/deltascope
+ok  	github.com/Fanduzi/DeltaScope/internal/infrastructure/parser/postgresql	1.283s
+ok  	github.com/Fanduzi/DeltaScope/internal/application/audit	4.052s
+ok  	github.com/Fanduzi/DeltaScope/internal/application/auditmeta	2.178s
+ok  	github.com/Fanduzi/DeltaScope/internal/interfaces/cli	2.603s
+ok  	github.com/Fanduzi/DeltaScope/internal/interfaces/http	3.328s
+ok  	github.com/Fanduzi/DeltaScope/internal/interfaces/mcp	3.026s
+ok  	github.com/Fanduzi/DeltaScope/pkg/deltascope	3.499s

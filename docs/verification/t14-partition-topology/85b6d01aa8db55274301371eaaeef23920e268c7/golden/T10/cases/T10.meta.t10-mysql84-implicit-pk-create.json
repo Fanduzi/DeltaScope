@@ -1,0 +1,409 @@
+{
+  "case_id": "T10.meta.t10-mysql84-implicit-pk-create",
+  "kind": "cli_metadata",
+  "cli_case": "t10-mysql84-implicit-pk-create",
+  "anchor": "mysql84",
+  "dialect": "mysql",
+  "input_sql": "CREATE TABLE t10uc (a INT NOT NULL, UNIQUE KEY u_a(a) INVISIBLE);",
+  "policy_profile": "t10-visibility",
+  "policy_path": "/Users/fan/GolangProjects/DeltaScope/docs/verification/t14-partition-topology/85b6d01aa8db55274301371eaaeef23920e268c7/golden/T10/golden-policy-t10-visibility.yaml",
+  "connect": {
+    "host": "127.0.0.1",
+    "port": 23384,
+    "user": "root",
+    "schema": "golden",
+    "password_env": "DS_T10_GOLDEN_PW"
+  },
+  "expected": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 2,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+      "complete"
+    ],
+    "statement_sql": [
+      "CREATE TABLE t10uc (a INT NOT NULL, UNIQUE KEY u_a(a) INVISIBLE);"
+    ],
+    "statement_indices": [
+      0
+    ],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "finding_entries": [
+      {
+        "index": 0,
+        "rule_id": "ddl.index.invisible.forbid",
+        "level": "warning"
+      },
+      {
+        "index": 0,
+        "rule_id": "ddl.index.advanced.compatibility.require",
+        "level": "blocker"
+      }
+    ],
+    "unsupported_entries": [],
+    "rule_summary_loaded": 4,
+    "rule_summary_applicable": 2,
+    "finding_metadata": [
+      {
+        "index": 0,
+        "rule_id": "ddl.index.invisible.forbid",
+        "metadata": {
+          "table": "t10uc",
+          "index": "u_a",
+          "action": "create_table",
+          "visibility": "invisible"
+        }
+      },
+      {
+        "index": 0,
+        "rule_id": "ddl.index.advanced.compatibility.require",
+        "metadata": {
+          "table": "t10uc",
+          "index": "u_a",
+          "feature": "visibility",
+          "action": "create_table",
+          "reason_code": "primary_index_visibility",
+          "product": "mysql",
+          "target_version": "8.4.10",
+          "minimum_version": ""
+        }
+      }
+    ]
+  },
+  "actual": {
+    "database": {
+      "product": "mysql",
+      "image": "mysql:8.4.10",
+      "image_digest": "mysql@sha256:c592c15aaf4a1961e15d82eb31ea5987dda862d1c4b1e93424438c0e91dc1f8d",
+      "container": "deltascope-ddl-golden-mysql84",
+      "reachable": true,
+      "version": "8.4.10"
+    },
+    "setup": [
+      {
+        "name": "prove-absent-t10uc",
+        "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10uc'",
+        "rc": 0,
+        "stdout": "COUNT(*)\n0",
+        "stderr": "",
+        "verify": [
+          {
+            "assert": "t10uc absent",
+            "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10uc'",
+            "rc": 0,
+            "output": "0",
+            "stderr": ""
+          }
+        ]
+      }
+    ],
+    "post_verify": [
+      {
+        "assert": "audit did not create t10uc",
+        "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10uc'",
+        "rc": 0,
+        "output": "0",
+        "stderr": ""
+      }
+    ],
+    "execute": [
+      {
+        "name": "apply-implicit-pk-create",
+        "sql": "CREATE TABLE t10uc (a INT NOT NULL, UNIQUE KEY u_a(a) INVISIBLE);",
+        "rc": 1,
+        "stdout": "",
+        "stderr": "ERROR 3522 (HY000) at line 1: A primary key index cannot be invisible"
+      }
+    ],
+    "structure": [
+      {
+        "assert": "t10uc stays absent",
+        "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10uc'",
+        "rc": 0,
+        "output": "0",
+        "stderr": ""
+      }
+    ],
+    "teardown": [],
+    "exit": 1,
+    "stdout": "{\"verdict\":\"reject\",\"coverage\":{\"status\":\"complete\"},\"summary\":{\"statements\":1,\"blockers\":1,\"warnings\":1,\"notices\":0},\"statements\":[{\"index\":0,\"kind\":\"ddl\",\"raw_sql\":\"CREATE TABLE t10uc (a INT NOT NULL, UNIQUE KEY u_a(a) INVISIBLE);\",\"normalized_sql\":\"CREATE TABLE t10uc (a INT NOT NULL, UNIQUE KEY u_a(a) INVISIBLE)\",\"findings\":[{\"rule_id\":\"ddl.index.invisible.forbid\",\"level\":\"warning\",\"message\":\"index \\\"u_a\\\" is declared or transitioned invisible on table \\\"t10uc\\\"\",\"statement_kind\":\"ddl\",\"location\":{\"line\":1,\"column\":1},\"metadata\":{\"action\":\"create_table\",\"index\":\"u_a\",\"table\":\"t10uc\",\"visibility\":\"invisible\"},\"explanation\":{\"summary\":\"Forbid DDL index invisible forbid\",\"why\":\"The statement uses a construct that the shipped policy explicitly forbids.\",\"risk\":\"Ignoring this rule can weaken schema-governance guarantees and make changes harder to review safely.\",\"suggestion\":\"Rewrite the statement to avoid the forbidden construct, or relax the policy if the team accepts the risk.\"}},{\"rule_id\":\"ddl.index.advanced.compatibility.require\",\"level\":\"blocker\",\"message\":\"index \\\"u_a\\\" advanced form is not supported for the target (primary_index_visibility)\",\"statement_kind\":\"ddl\",\"location\":{\"line\":1,\"column\":1},\"metadata\":{\"action\":\"create_table\",\"feature\":\"visibility\",\"index\":\"u_a\",\"minimum_version\":\"\",\"product\":\"mysql\",\"reason_code\":\"primary_index_visibility\",\"table\":\"t10uc\",\"target_version\":\"8.4.10\"},\"explanation\":{\"summary\":\"Require DDL index advanced compatibility require\",\"why\":\"The statement is missing a clause, option, or object that the shipped policy requires.\",\"risk\":\"Ignoring this rule can hide live-schema or instance-state risks that only metadata reveals.\",\"suggestion\":\"Add the required clause, option, or object explicitly so the rule no longer has to infer intent.\",\"metadata\":{\"status\":\"available\",\"note\":\"Live metadata is available, so this explanation can use schema or instance facts for a more accurate judgment.\"}}}],\"coverage\":{\"status\":\"complete\"}}],\"version\":{\"product\":\"mysql\",\"version\":\"8.4.10\",\"major\":8,\"minor\":4,\"patch\":10,\"source\":\"observed\",\"validated_range\":true},\"fail_on_triggered\":true,\"rule_summary\":{\"loaded\":4,\"applicable\":2,\"skipped\":[]},\"context\":{\"mode\":\"metadata-aware\",\"dialect\":\"mysql\",\"dialect_source\":\"detected\",\"schema\":\"golden\",\"schema_source\":\"flag\"}}\n",
+    "stderr": "",
+    "parsed": {
+      "verdict": "reject",
+      "coverage": {
+        "status": "complete"
+      },
+      "summary": {
+        "statements": 1,
+        "blockers": 1,
+        "warnings": 1,
+        "notices": 0
+      },
+      "statements": [
+        {
+          "index": 0,
+          "kind": "ddl",
+          "raw_sql": "CREATE TABLE t10uc (a INT NOT NULL, UNIQUE KEY u_a(a) INVISIBLE);",
+          "normalized_sql": "CREATE TABLE t10uc (a INT NOT NULL, UNIQUE KEY u_a(a) INVISIBLE)",
+          "findings": [
+            {
+              "rule_id": "ddl.index.invisible.forbid",
+              "level": "warning",
+              "message": "index \"u_a\" is declared or transitioned invisible on table \"t10uc\"",
+              "statement_kind": "ddl",
+              "location": {
+                "line": 1,
+                "column": 1
+              },
+              "metadata": {
+                "action": "create_table",
+                "index": "u_a",
+                "table": "t10uc",
+                "visibility": "invisible"
+              },
+              "explanation": {
+                "summary": "Forbid DDL index invisible forbid",
+                "why": "The statement uses a construct that the shipped policy explicitly forbids.",
+                "risk": "Ignoring this rule can weaken schema-governance guarantees and make changes harder to review safely.",
+                "suggestion": "Rewrite the statement to avoid the forbidden construct, or relax the policy if the team accepts the risk."
+              }
+            },
+            {
+              "rule_id": "ddl.index.advanced.compatibility.require",
+              "level": "blocker",
+              "message": "index \"u_a\" advanced form is not supported for the target (primary_index_visibility)",
+              "statement_kind": "ddl",
+              "location": {
+                "line": 1,
+                "column": 1
+              },
+              "metadata": {
+                "action": "create_table",
+                "feature": "visibility",
+                "index": "u_a",
+                "minimum_version": "",
+                "product": "mysql",
+                "reason_code": "primary_index_visibility",
+                "table": "t10uc",
+                "target_version": "8.4.10"
+              },
+              "explanation": {
+                "summary": "Require DDL index advanced compatibility require",
+                "why": "The statement is missing a clause, option, or object that the shipped policy requires.",
+                "risk": "Ignoring this rule can hide live-schema or instance-state risks that only metadata reveals.",
+                "suggestion": "Add the required clause, option, or object explicitly so the rule no longer has to infer intent.",
+                "metadata": {
+                  "status": "available",
+                  "note": "Live metadata is available, so this explanation can use schema or instance facts for a more accurate judgment."
+                }
+              }
+            }
+          ],
+          "coverage": {
+            "status": "complete"
+          }
+        }
+      ],
+      "version": {
+        "product": "mysql",
+        "version": "8.4.10",
+        "major": 8,
+        "minor": 4,
+        "patch": 10,
+        "source": "observed",
+        "validated_range": true
+      },
+      "fail_on_triggered": true,
+      "rule_summary": {
+        "loaded": 4,
+        "applicable": 2,
+        "skipped": []
+      },
+      "context": {
+        "mode": "metadata-aware",
+        "dialect": "mysql",
+        "dialect_source": "detected",
+        "schema": "golden",
+        "schema_source": "flag"
+      }
+    },
+    "version_evidence": {
+      "target_raw": null,
+      "target_canonical": null,
+      "observed_raw": "8.4.10",
+      "observed_canonical": {
+        "product": "mysql",
+        "version": "8.4.10"
+      },
+      "resolved": {
+        "product": "mysql",
+        "version": "8.4.10",
+        "major": 8,
+        "minor": 4,
+        "patch": 10,
+        "source": "observed",
+        "validated_range": true
+      }
+    }
+  },
+  "assertions": [
+    {
+      "name": "database reachable with expected version",
+      "ok": true,
+      "detail": "SELECT VERSION() rc=0 version='8.4.10' expected_contains='8.4.10'"
+    },
+    {
+      "name": "setup prove-absent-t10uc return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "setup prove-absent-t10uc: t10uc absent",
+      "ok": true,
+      "detail": "rc=0 output='0' expected='0'"
+    },
+    {
+      "name": "exit code",
+      "ok": true,
+      "detail": "rc=1 expected=1"
+    },
+    {
+      "name": "verdict",
+      "ok": true,
+      "detail": "verdict='reject'"
+    },
+    {
+      "name": "top-level statements",
+      "ok": true,
+      "detail": "statements=1 expected=1"
+    },
+    {
+      "name": "zero findings",
+      "ok": true,
+      "detail": "findings=2"
+    },
+    {
+      "name": "no diagnostics",
+      "ok": true,
+      "detail": "diagnostics=[]"
+    },
+    {
+      "name": "no unsupported",
+      "ok": true,
+      "detail": "unsupported=[]"
+    },
+    {
+      "name": "loaded rule count",
+      "ok": true,
+      "detail": "loaded=4"
+    },
+    {
+      "name": "applicable rule count",
+      "ok": true,
+      "detail": "applicable=2"
+    },
+    {
+      "name": "statement indices",
+      "ok": true,
+      "detail": "indices=[0]"
+    },
+    {
+      "name": "finding statement ownership",
+      "ok": true,
+      "detail": "findings must belong to their enclosing statement"
+    },
+    {
+      "name": "aggregate coverage",
+      "ok": true,
+      "detail": "coverage='complete'"
+    },
+    {
+      "name": "per-statement coverage",
+      "ok": true,
+      "detail": "statement_coverage=['complete']"
+    },
+    {
+      "name": "unsupported entries",
+      "ok": true,
+      "detail": "entries=[] expected=[]"
+    },
+    {
+      "name": "statement raw SQL identity",
+      "ok": true,
+      "detail": "raw_sql=['CREATE TABLE t10uc (a INT NOT NULL, UNIQUE KEY u_a(a) INVISIBLE);'] expected=['CREATE TABLE t10uc (a INT NOT NULL, UNIQUE KEY u_a(a) INVISIBLE);']"
+    },
+    {
+      "name": "evidence gap count",
+      "ok": true,
+      "detail": "gaps=0"
+    },
+    {
+      "name": "evidence gap entries",
+      "ok": true,
+      "detail": "gaps=[] expected=[]"
+    },
+    {
+      "name": "finding entries",
+      "ok": true,
+      "detail": "findings=[(0, 'ddl.index.advanced.compatibility.require', 'blocker'), (0, 'ddl.index.invisible.forbid', 'warning')] expected=[(0, 'ddl.index.advanced.compatibility.require', 'blocker'), (0, 'ddl.index.invisible.forbid', 'warning')]"
+    },
+    {
+      "name": "finding metadata (0, 'ddl.index.invisible.forbid')",
+      "ok": true,
+      "detail": "findings=[{'action': 'create_table', 'index': 'u_a', 'table': 't10uc', 'visibility': 'invisible'}, {'action': 'create_table', 'feature': 'visibility', 'index': 'u_a', 'minimum_version': '', 'product': 'mysql', 'reason_code': 'primary_index_visibility', 'table': 't10uc', 'target_version': '8.4.10'}] expected_subset={'table': 't10uc', 'index': 'u_a', 'action': 'create_table', 'visibility': 'invisible'}"
+    },
+    {
+      "name": "finding metadata (0, 'ddl.index.advanced.compatibility.require')",
+      "ok": true,
+      "detail": "findings=[{'action': 'create_table', 'index': 'u_a', 'table': 't10uc', 'visibility': 'invisible'}, {'action': 'create_table', 'feature': 'visibility', 'index': 'u_a', 'minimum_version': '', 'product': 'mysql', 'reason_code': 'primary_index_visibility', 'table': 't10uc', 'target_version': '8.4.10'}] expected_subset={'table': 't10uc', 'index': 'u_a', 'feature': 'visibility', 'action': 'create_table', 'reason_code': 'primary_index_visibility', 'product': 'mysql', 'target_version': '8.4.10', 'minimum_version': ''}"
+    },
+    {
+      "name": "post-verify audit did not create t10uc",
+      "ok": true,
+      "detail": "rc=0 output='0' expected='0'"
+    },
+    {
+      "name": "execute apply-implicit-pk-create return code",
+      "ok": true,
+      "detail": "rc=1 expected=1 stderr='ERROR 3522 (HY000) at line 1: A primary key index cannot be invisible'"
+    },
+    {
+      "name": "execute apply-implicit-pk-create stderr marker",
+      "ok": true,
+      "detail": "3522"
+    },
+    {
+      "name": "structure t10uc stays absent",
+      "ok": true,
+      "detail": "rc=0 output='0' expected='0'"
+    }
+  ],
+  "status": "pass",
+  "command": [
+    "/Users/fan/GolangProjects/DeltaScope/docs/verification/t14-partition-topology/85b6d01aa8db55274301371eaaeef23920e268c7/golden/T10/bin/deltascope",
+    "audit",
+    "--dialect",
+    "mysql",
+    "--sql",
+    "CREATE TABLE t10uc (a INT NOT NULL, UNIQUE KEY u_a(a) INVISIBLE);",
+    "--config",
+    "/Users/fan/GolangProjects/DeltaScope/docs/verification/t14-partition-topology/85b6d01aa8db55274301371eaaeef23920e268c7/golden/T10/golden-policy-t10-visibility.yaml",
+    "--format",
+    "json",
+    "--host",
+    "127.0.0.1",
+    "--port",
+    "23384",
+    "--user",
+    "root",
+    "--password-env",
+    "DS_T10_GOLDEN_PW",
+    "--schema",
+    "golden"
+  ]
+}
