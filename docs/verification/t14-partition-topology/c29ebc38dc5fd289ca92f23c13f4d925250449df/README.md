@@ -4,7 +4,8 @@ Independent-acceptance evidence for T14-R1 (#93 remediation): the
 A/B/C/D defect groups closed under the shared premise contract, plus
 the E-group evidence corrections. Product commit
 `c29ebc38dc5fd289ca92f23c13f4d925250449df` (parent `14850fb2`, the
-accepted T14 evidence-closeout commit). Contract: CONTRACT.md §9;
+T14 evidence-closeout candidate commit — acceptance pending).
+Contract: CONTRACT.md §9;
 ADR: `docs/decisions/2026-10-28-ddl-partition-topology-r1-remediation.md`.
 
 ## Scope delivered
@@ -61,7 +62,11 @@ ADR: `docs/decisions/2026-10-28-ddl-partition-topology-r1-remediation.md`.
 
 `red/` — captured on the unremediated product `b5b2ac70` before the
 R1 fixes landed. `go-test-t14r1.*` records the real failure run of
-`batch_state_t14r1_test.go`: 36 failing cells across all four groups
+`batch_state_t14r1_test.go`: 66 FAIL markers / 65 unique failing
+paths / 18 unique parent tests / 47 unique paths containing "/" /
+50 terminal failing paths across all four groups (the earlier "36
+failing cells" summary is withdrawn — see the R2 bundle's E2
+recount)
 — including missing 1515/1499/1517/1031 findings, the TiDB DISCARD
 forbid minting a governance blocker on a vendor refusal, the
 `check_partitions` plural feature id, and the unvouched-directory
@@ -132,7 +137,9 @@ remain committed alongside and are not rewritten.
 Unproven/unobserved boundaries kept explicit: the product never
 evaluates bound expressions (capability aspect, stricter than the
 native fold); string ordering without a proven collation domain is
-unproven; tablespace artifact generation, row routing, INTERVAL
-evaluation, and subpartition modeling remain deferred; the
+unproven; tablespace artifact generation, INTERVAL evaluation,
+subpartition modeling, and row routing beyond the frozen REORGANIZE
+golden path (already verified there with live member-set and
+row-routing reads) remain deferred; the
 `ALGORITHM|LOCK …, REORGANIZE` parser boundary and the 1504/1492
 parser refusals are recorded diagnostics, not implemented semantics.

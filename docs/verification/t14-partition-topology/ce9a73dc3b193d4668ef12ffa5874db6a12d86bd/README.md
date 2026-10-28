@@ -4,7 +4,8 @@ Independent-acceptance evidence for T14-R2 (#93 remediation): the
 A/B/C/D defect groups closed under the frozen ownership contract,
 plus the E-group evidence corrections. Product commit
 `ce9a73dc3b193d4668ef12ffa5874db6a12d86bd` (parent `17539dbb`, the
-accepted T14-R1 evidence-closeout commit). Contract: CONTRACT.md
+T14-R1 evidence-closeout candidate commit — acceptance pending).
+Contract: CONTRACT.md
 §10; ADR: `docs/decisions/2026-10-28-ddl-partition-topology-r2-remediation.md`.
 
 ## Scope delivered
@@ -22,12 +23,14 @@ accepted T14-R1 evidence-closeout commit). Contract: CONTRACT.md
   target-only / applicability-only / both / all-off policies.
 - **B — undecidable comparisons disclosed on the current statement.**
   `BoundComparable` certifies shape, not decidability. Undecidable
-  comparisons now emit `unknown_table_state` evidence gaps on the
-  owning rule (RANGE/LIST COLUMNS string bounds, `PARTITION BY`
-  string bounds, catalog bound shells missing rows); pure literal
-  undecidable minimums report unverified/review instead of a false
-  complete/pass. Pairwise adjudication keeps a later provable
-  violation even when an earlier member is undecidable.
+  comparisons now emit evidence gaps on the owning rule —
+  `unknown_table_state`/`target_table.partition_defs` for ADD/REORGANIZE
+  against the observed directory (RANGE/LIST COLUMNS string bounds,
+  catalog bound shells missing rows), `unproven_statement_fact`/
+  `statement.partition_defs` for `PARTITION BY` against the declared
+  member set; pure literal undecidable minimums report unverified/review
+  instead of a false complete/pass. Pairwise adjudication keeps a later
+  provable violation even when an earlier member is undecidable.
 - **C — bounded partition adjudication reaches the public entry.**
   `partitionStateAdmissible` admits a statement whose only unmodeled
   coverage aspects are partition-bound or probed vendor-refusal
@@ -50,8 +53,10 @@ R2 fixes landed. `go-test-t14r2.stdout.txt` records the real failure
 run of `batch_state_t14r2_test.go`: **27 FAIL markers / 11 failing
 top-level tests** covering all four groups — zero-finding/zero-gap/
 complete under target-only on a provable 1493, applicability wrongly
-owning bound findings, missing `unknown_table_state` gaps on string
-bounds and catalog shells, an undecidable member swallowing a later
+owning bound findings, missing current-statement gaps on string
+bounds (`unknown_table_state` for ADD/REORGANIZE,
+`unproven_statement_fact` for `PARTITION BY`) and catalog shells,
+an undecidable member swallowing a later
 provable violation, tombstoned pre-states on proven refusals,
 `CREATE IF NOT EXISTS` invalidating known facts, and OPTIMIZE
 asserting named-member scope without engine facts. The pre-fix run's
@@ -107,21 +112,26 @@ no duplicate IDs, `compose_down_rc=0`, `residual_containers=[]`:
   range, the cumulative T14 range, and the final tree — all rc=0.
 - **E2 (red/green statistics & test layers).** Regenerated from the
   archived `red/go-test-t14r1.stdout.txt`: **66 FAIL markers, 65
-  unique failing paths, 18 unique parent tests, 47 unique subtest
-  (leaf) full paths (46 unique leaf names)** — these are separate
-  dimensions and are never summed; the earlier "36 cells" summary is
-  withdrawn, and the previously recorded "50 leaf paths" figure does
-  not reproduce under recounting. The R1 matrix mixed product-
-  behavior failures with later test-side corrections (fixture,
-  assertion, ownership) and nested-helper duplicate prints; the
-  R2 matrix is additionally layer-explicit: the primary cells run
-  the public `AuditSQL` seam, `t14r1` parser-boundary cells run the
-  internal `parseSQL` helper for native-code evidence, and
-  diagnostic-category cells run parser diagnostic assertions — the
-  suite is not a uniform public-`AuditSQL` pass. Green-run counts
-  cite the verbose stdout of `go test -run TestT14R2 -v`
-  (36 `=== RUN` markers, all T14R2) and the full `go test ./...`
-  tuple — nothing is inferred from the non-verbose red log.
+  unique failing paths, 18 unique parent tests, 47 unique failing
+  paths containing "/", and 50 terminal failing paths — the latter
+  includes 3 top-level tests with no failing child
+  (`TestT14R1CoalesceHugeCount`, `TestT14R1CoalesceZeroAuthored`,
+  `TestT14R1RefusalStateIndependentOfRules`)**. Both leaf-level
+  calibers (47 with-"/" paths; 50 terminal paths) reproduce from the
+  log; they are separate dimensions and are never summed, and the
+  earlier "36 cells" summary is withdrawn. The R1 matrix mixed
+  product-behavior failures with later test-side corrections
+  (fixture, assertion, ownership) and nested-helper duplicate
+  prints; the R2 matrix is additionally layer-explicit: the primary
+  cells run the public `AuditSQL` seam, `t14r1` parser-boundary
+  cells run the internal `parseSQL` helper for native-code
+  evidence, and diagnostic-category cells run parser diagnostic
+  assertions — the suite is not a uniform public-`AuditSQL` pass.
+  No verbose green run of the T14R2 matrix was archived; the only
+  green evidence is the archived `go test ./... -count=1` tuple
+  (`gates/go_test.*`), which passes every package. The earlier
+  citation of "36 `=== RUN` markers" as green verbose evidence was
+  wrong — those markers come from the red log — and is withdrawn.
 - **E3 (huge-input evidence).** The regression cell runs inside a
   resource-limited subprocess with a timeout — **no hard memory
   ceiling is enforced**, stated as-is. The 9.4 GB RSS / 175 % CPU
@@ -144,9 +154,10 @@ no duplicate IDs, `compose_down_rc=0`, `residual_containers=[]`:
   behaviors are covered by the frozen 59 and R1 test matrix instead.
 - **E5 (native log scope).** p15's 292 recorded calls include
   fixture-creation and catalog queries — they are not 292
-  independent behavior assertions. mysql80/mysql84 MyISAM CREATE
-  refused 1178 and the following four 1146s are `golden`-database
-  setup misses on those anchors — they are **not** IMPORT/DISCARD
+  independent behavior assertions. On mysql80/mysql84 the MyISAM
+  CREATE was refused 1178, so table `golden.my` does not exist and
+  the following four 1146s are that missing-table consequence —
+  **not** a missing `golden` database and **not** IMPORT/DISCARD
   engine-behavior evidence; the 5.7 1031 observations remain valid.
   `SHOW WARNINGS` output on a new connection is not attributed to a
   prior connection's DDL. The direct OPTIMIZE status rows remain
@@ -161,10 +172,12 @@ no duplicate IDs, `compose_down_rc=0`, `residual_containers=[]`:
 Verified on this SHA: ownership split under four policy
 combinations, current-statement gap disclosure, pairwise
 adjudication, bounded state admission, OPTIMIZE conditional scope,
-19 gates + 3 L2 checks + six golden suites. Unverified/deferred:
+19 gates + 3 L2 checks + six golden suites. Row routing on the
+frozen REORGANIZE golden path stays verified from the T14 golden
+run (live member-set and row-routing reads). Unverified/deferred:
 expression bound items are never evaluated (capability aspect,
 stricter than the native fold); string ordering without a proven
 collation domain stays unproven; multi-action ALTERs and non-
-partition aspects stay fail-closed; tablespace artifacts, row
-routing, INTERVAL evaluation, and subpartition modeling remain
-deferred to T15+.
+partition aspects stay fail-closed; tablespace artifacts, INTERVAL
+evaluation, subpartition modeling, and row routing beyond the
+frozen golden path remain deferred to T15+.

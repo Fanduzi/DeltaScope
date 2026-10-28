@@ -304,10 +304,13 @@ facts.
 ### 10.2 Undecidable comparisons are current-statement gaps (B)
 
 - `BoundComparable` certifies shape, not decidability. An undecidable
-  comparison now produces an `EvidenceGap` on the owning rule with
-  `reason_code=unknown_table_state` and the missing premise fact
-  (`target_table.partition_defs` or `partition_statement.defs`), instead of a
-  false complete/pass.
+  comparison now produces an `EvidenceGap` on the owning rule instead of a
+  false complete/pass. The gap vocabulary follows the premise owner:
+  ADD/REORGANIZE undecidable comparisons against the observed directory
+  report `reason_code=unknown_table_state` with
+  `target_table.partition_defs`; PARTITION BY undecidable comparisons
+  against the declared member set report
+  `reason_code=unproven_statement_fact` with `statement.partition_defs`.
 - A provable violation later in the same def list is not swallowed by an
   earlier undecidable member: `applyAddPartitionDefs` and
   `declaredSchemeOutcome` adjudicate pairwise and keep the provable finding.
@@ -352,3 +355,26 @@ facts.
 - Red baseline `t14r2/red/go-test-t14r2.stdout.txt` is archived verbatim;
   failure counts are reported per-dimension (FAIL markers, unique leaf paths,
   unique parent tests) and never summed.
+
+### 10.6 Single-member undecidable cannot pass on zero comparisons (T14-R2-tail)
+
+- `declaredSchemeOutcome` accumulates two separate premises: (A) each
+  member's own bound projection/completeness satisfies the adjudicable
+  condition for the current method, and (B) the member set satisfies the
+  pairwise ordering/non-overlap condition. A one-member scheme runs (A)
+  even though no pair exists — a nil bound, an empty bound shell, or an
+  expression bound marks the scheme unproven instead of combinable.
+- Undecidable members accumulate without an early return: a later
+  provable pairwise violation still refuses and preserves the exact
+  pre-state. HASH/KEY members without bounds keep their original
+  combinable outcome.
+- Consequences reach the public ordered state: ALTER `PARTITION BY`
+  keeps table existence and unrelated structural facts while unvouching
+  the partition facts; CREATE on a known-absent target stays unproven —
+  no proven directory and no proven-absent guess. Successors owe the
+  actually-unknown facts (e.g. `target_table.partitioned`), never
+  complete/pass on a fabricated directory. Rule enable/disable does not
+  change the state conclusion.
+- Golden: `t14r2tail-mysql80-pby-single-expr-member` pins the
+  single-member → successor regression on a live anchor (manifest now
+  69 required cases).

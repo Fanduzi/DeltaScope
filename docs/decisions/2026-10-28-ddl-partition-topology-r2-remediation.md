@@ -58,8 +58,11 @@ itself introduced or exposed four contract breaks:
    violates/undecidable per adjacent pair; `InBoundsOverlap` returns
    tri-state overlap) drives `Evaluate`, `EvidenceGaps`, coverage
    aspects, and ordered-state degradation from one result. Undecidable
-   comparisons produce an `unknown_table_state` evidence gap on the
-   owning rule with the missing premise fact; provable violations later
+   comparisons produce an evidence gap on the owning rule with the
+   missing premise fact — `unknown_table_state`/`target_table.partition_defs`
+   for ADD/REORGANIZE against the observed directory,
+   `unproven_statement_fact`/`statement.partition_defs` for PARTITION BY
+   against the declared member set; provable violations later
    in the def list still mint findings.
 3. **Partition adjudication is admissible without weakening
    fail-closed.** `partitionStateAdmissible` admits a statement whose
@@ -98,8 +101,11 @@ itself introduced or exposed four contract breaks:
 - `partitionStateAdmissible` is deliberately narrow: any non-partition,
   non-vendor aspect keeps the statement fail-closed, and multi-action
   ALTER statements outside the single partition action are unchanged.
-- Tablespace artifacts, row routing, INTERVAL evaluation, and
-  subpartition modeling remain deferred (T15+).
+- Tablespace artifacts, INTERVAL evaluation, and subpartition
+  modeling remain deferred (T15+). Row routing beyond the frozen
+  REORGANIZE golden path (where live member-set and row-routing
+  reads were already verified) also remains deferred — the verified
+  cell is not re-scoped out.
 
 ## Verification
 
@@ -112,3 +118,21 @@ itself introduced or exposed four contract breaks:
   the remediated SHA; T09–T13 denominators frozen.
 - Gates: `go test ./...` exit 0; the full gate set reruns on the final
   SHA per the closing workflow.
+
+## T14-R2-tail: single-member undecidable premise
+
+Post-R2 review confirmed one residual state regression: a one-member
+RANGE/LIST scheme performed zero pairwise comparisons, so a nil, empty,
+or expression bound never entered the outcome and the scheme returned
+combinable — letting `partitionStateAdmissible` publish a fabricated
+member directory to the public ordered state.
+
+`declaredSchemeOutcome` now separates the per-member bound-premise
+accumulation (A) from the pairwise ordering/non-overlap adjudication
+(B); (A) runs even with no pair present, and undecidable members keep
+accumulating so a later provable violation still refuses. No expression
+evaluation or collation inference was added. Verified by the
+four-cell public `AuditSQL` matrix (ALTER RANGE/LIST, CREATE RANGE/LIST
+each followed by a member-touching successor), internal
+`declaredSchemeOutcome` helper cells, and the new golden cell
+`t14r2tail-mysql80-pby-single-expr-member` (69 required cases).

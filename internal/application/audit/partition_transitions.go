@@ -809,14 +809,20 @@ func partitionSchemeOutcome(method string, defs []spec.PartitionDef, count *uint
 func declaredSchemeOutcome(method string, defs []spec.PartitionDef) partitionOutcome {
 	switch method {
 	case "range", "range columns":
-		// Pairwise adjudication: a provable non-increase — including a
-		// member after a MAXVALUE edge — refuses the scheme; undecidable
-		// pairs degrade the outcome without swallowing a later provable
-		// violation.
+		// Two premises accumulate separately: (A) every member's own
+		// bound must project to comparable literals — a lone member has
+		// no comparison partner yet still owes a decidable bound, so nil
+		// bounds, empty shells, and expression items are undecidable
+		// rather than auto-passing; and (B) pairwise ordering — a
+		// provable non-increase, including a member after a MAXVALUE
+		// edge, refuses the scheme while undecidable pairs degrade the
+		// outcome without swallowing a later provable violation.
 		undecidable := false
 		var prev *spec.PartitionBound
 		for _, def := range defs {
-			if prev != nil {
+			if !spec.BoundComparable(def.Bound) {
+				undecidable = true
+			} else if prev != nil {
 				violates, ok := spec.LessThanPairOutcome(prev, def.Bound)
 				if !ok {
 					undecidable = true
@@ -832,6 +838,9 @@ func declaredSchemeOutcome(method string, defs []spec.PartitionDef) partitionOut
 	case "list", "list columns":
 		unproven := false
 		for i, def := range defs {
+			if !spec.BoundComparable(def.Bound) {
+				unproven = true
+			}
 			for j := 0; j < i; j++ {
 				if overlap, ok := spec.InBoundsOverlap(def.Bound, defs[j].Bound); ok && overlap {
 					return partitionOutcomeRefused

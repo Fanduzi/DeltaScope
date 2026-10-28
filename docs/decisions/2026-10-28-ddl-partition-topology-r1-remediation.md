@@ -116,13 +116,18 @@ no-op (observationally identical fold), `add-8193`/`pby-hash-8193` →
 - The locked-parser boundary for `ALGORITHM|LOCK …, REORGANIZE` and the
   parser refusals 1504/1492 remain parser diagnostics — recorded, not
   promoted to implemented semantics.
-- Tablespace artifact generation, row routing, INTERVAL evaluation,
-  and subpartition modeling remain deferred (T15+).
+- Tablespace artifact generation, INTERVAL evaluation, and
+  subpartition modeling remain deferred (T15+). Row routing beyond
+  the frozen REORGANIZE golden path (already verified there with
+  live member-set and row-routing reads) also remains deferred.
 
 ## Verification
 
 - Red-first: `batch_state_t14r1_test.go` (79 subtests, none skipped)
-  failed 36 cells on the unremediated product — including a
+  failed on the unremediated product — the archived log counts 66
+  FAIL markers / 65 unique failing paths / 18 unique parent tests
+  (the earlier "36 cells" figure is withdrawn; see the R2 evidence
+  bundle's E2 recount) — including a
   resource-limited subprocess that recorded the 9.4 GB unbounded append
   — then went fully green after remediation.
 - Golden: `make ddl-golden TASK=T14` — 68/68 cases, 1065 assertions,

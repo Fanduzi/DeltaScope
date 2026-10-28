@@ -4605,6 +4605,96 @@
     "warning"
    ],
    "notes": "T14-R2 oracle correction: the undecidable string bound comparison is owned by ddl.alter.add_partition.target (frozen responsibility restored). The R1 expectation that left the first statement complete was wrong; the ADD now owes target_table.partition_defs itself rather than surfacing only through the successor's gap. Old artifacts are kept untouched."
+  },
+  {
+   "id": "t14r2tail-mysql80-pby-single-expr-member",
+   "anchor": "mysql80",
+   "dialect": "mysql",
+   "sql": "ALTER TABLE t14sg PARTITION BY RANGE(id) (PARTITION fresh VALUES LESS THAN (1+0));\nALTER TABLE t14sg TRUNCATE PARTITION fresh;",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23380,
+    "user": "root",
+    "schema": "golden",
+    "password_env": "DS_T14_GOLDEN_PW",
+    "password": "root"
+   },
+   "policy": "t14r1-partitionby-truncate",
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 2,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete",
+     "unverified"
+    ],
+    "evidence_gaps": 1,
+    "evidence_gap_entries": [
+     {
+      "index": 1,
+      "rule_id": "ddl.alter.truncate_partition.target",
+      "reason_code": "unknown_table_state",
+      "required_facts": [
+       "target_table.partitioned"
+      ]
+     }
+    ],
+    "unsupported_entries": [
+     {
+      "index": 0,
+      "feature": "alter_table.partition_by.partition_bound",
+      "reason": "parsed by the shared parser but not covered by audited semantics",
+      "metadata": {
+       "aspect": "partition_bound",
+       "action": "partition",
+       "partition": "fresh"
+      }
+     }
+    ],
+    "version": {
+     "product": "mysql",
+     "version": "8.0.46"
+    }
+   },
+   "setup": [
+    {
+     "name": "create-range-fixture",
+     "sql": "CREATE TABLE t14sg (id INT) ENGINE=InnoDB PARTITION BY RANGE(id) (PARTITION p0 VALUES LESS THAN (200))",
+     "expect_rc": 0,
+     "verify": []
+    }
+   ],
+   "execute": [
+    {
+     "name": "apply-single-expr-pby",
+     "sql": "ALTER TABLE t14sg PARTITION BY RANGE(id) (PARTITION fresh VALUES LESS THAN (1+0))",
+     "expect_rc": 0,
+     "verify": []
+    },
+    {
+     "name": "truncate-native-member",
+     "sql": "ALTER TABLE t14sg TRUNCATE PARTITION fresh",
+     "expect_rc": 0,
+     "verify": []
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop-fixture",
+     "sql": "DROP TABLE IF EXISTS t14sg",
+     "expect_rc": 0,
+     "verify": []
+    }
+   ],
+   "args": [
+    "--fail-on",
+    "warning"
+   ],
+   "notes": "T14-R2-tail regression: a lone-member declared scheme has no comparison pairs, but the member's own bound premise is still adjudicated — the expression item keeps its capability aspect while the ordered state unvouches the partition facts rather than publishing 'fresh' as a proven member; the successor TRUNCATE owes target_table.partitioned instead of binding a fabricated directory. Native anchors fold 1+0 and execute (rc=0 recorded); the product deliberately does not evaluate."
   }
  ],
  "required_case_ids": [
@@ -4675,6 +4765,7 @@
   "T14.meta.t14r1-tidb85-vendor-check-preserves",
   "T14.meta.t14r1-mysql57-myisam-discard-1031",
   "T14.meta.t14r1-mysql80-rcol-decreasing-tuple",
-  "T14.meta.t14r1-mysql80-string-domain-unproven"
+  "T14.meta.t14r1-mysql80-string-domain-unproven",
+  "T14.meta.t14r2tail-mysql80-pby-single-expr-member"
  ]
 }
