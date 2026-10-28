@@ -1,0 +1,119 @@
+{
+  "case_id": "T12.cli.t12-cli-addcol-control",
+  "kind": "cli_audit",
+  "cli_case": "t12-cli-addcol-control",
+  "dialect": "mysql",
+  "input_sql": "ALTER TABLE t ADD COLUMN w INT;",
+  "policy_profile": "t12-all",
+  "policy_path": "/private/tmp/t14-final-golden/T12/golden-policy-t12-all.yaml",
+  "command": [
+    "/private/tmp/t14-final-golden/T12/bin/deltascope",
+    "audit",
+    "--dialect",
+    "mysql",
+    "--sql",
+    "ALTER TABLE t ADD COLUMN w INT;",
+    "--config",
+    "/private/tmp/t14-final-golden/T12/golden-policy-t12-all.yaml",
+    "--format",
+    "json"
+  ],
+  "expected": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete"
+  },
+  "actual": {
+    "exit": 0,
+    "stdout": "{\"verdict\":\"pass\",\"coverage\":{\"status\":\"complete\"},\"summary\":{\"statements\":1,\"blockers\":0,\"warnings\":0,\"notices\":0},\"statements\":[{\"index\":0,\"kind\":\"ddl\",\"raw_sql\":\"ALTER TABLE t ADD COLUMN w INT;\",\"normalized_sql\":\"ALTER TABLE t ADD COLUMN w INT\",\"coverage\":{\"status\":\"complete\"}}],\"fail_on_triggered\":false,\"rule_summary\":{\"loaded\":5,\"applicable\":0,\"skipped\":[]},\"context\":{\"mode\":\"offline\",\"dialect\":\"mysql\",\"dialect_source\":\"flag\",\"note\":\"existence not checked (no database connection)\",\"unproven\":[\"column_exists\",\"table_exists\"]}}\n",
+    "stderr": "",
+    "parsed": {
+      "verdict": "pass",
+      "coverage": {
+        "status": "complete"
+      },
+      "summary": {
+        "statements": 1,
+        "blockers": 0,
+        "warnings": 0,
+        "notices": 0
+      },
+      "statements": [
+        {
+          "index": 0,
+          "kind": "ddl",
+          "raw_sql": "ALTER TABLE t ADD COLUMN w INT;",
+          "normalized_sql": "ALTER TABLE t ADD COLUMN w INT",
+          "coverage": {
+            "status": "complete"
+          }
+        }
+      ],
+      "fail_on_triggered": false,
+      "rule_summary": {
+        "loaded": 5,
+        "applicable": 0,
+        "skipped": []
+      },
+      "context": {
+        "mode": "offline",
+        "dialect": "mysql",
+        "dialect_source": "flag",
+        "note": "existence not checked (no database connection)",
+        "unproven": [
+          "column_exists",
+          "table_exists"
+        ]
+      }
+    },
+    "version_evidence": {
+      "target_raw": null,
+      "target_canonical": null,
+      "observed_raw": null,
+      "observed_canonical": null,
+      "resolved": null
+    }
+  },
+  "assertions": [
+    {
+      "name": "exit code",
+      "ok": true,
+      "detail": "rc=0 expected=0"
+    },
+    {
+      "name": "verdict",
+      "ok": true,
+      "detail": "verdict='pass'"
+    },
+    {
+      "name": "top-level statements",
+      "ok": true,
+      "detail": "statements=1 expected=1"
+    },
+    {
+      "name": "zero findings",
+      "ok": true,
+      "detail": "findings=0"
+    },
+    {
+      "name": "no diagnostics",
+      "ok": true,
+      "detail": "diagnostics=[]"
+    },
+    {
+      "name": "no unsupported",
+      "ok": true,
+      "detail": "unsupported=[]"
+    },
+    {
+      "name": "aggregate coverage",
+      "ok": true,
+      "detail": "coverage='complete'"
+    }
+  ],
+  "status": "pass"
+}

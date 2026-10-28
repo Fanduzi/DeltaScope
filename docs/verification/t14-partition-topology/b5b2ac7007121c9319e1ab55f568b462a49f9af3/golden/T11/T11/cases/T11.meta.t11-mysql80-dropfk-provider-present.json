@@ -1,0 +1,252 @@
+{
+  "case_id": "T11.meta.t11-mysql80-dropfk-provider-present",
+  "kind": "cli_metadata",
+  "cli_case": "t11-mysql80-dropfk-provider-present",
+  "anchor": "mysql80",
+  "dialect": "mysql",
+  "input_sql": "ALTER TABLE t11c DROP FOREIGN KEY fk_real;",
+  "policy_profile": "t11-fk-exists",
+  "policy_path": "/private/tmp/t14-final-golden/T11/golden-policy-t11-fk-exists.yaml",
+  "connect": {
+    "host": "127.0.0.1",
+    "port": 23380,
+    "user": "root",
+    "schema": "golden",
+    "password_env": "DS_T11_GOLDEN_PW"
+  },
+  "expected": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "evidence_gaps": 0
+  },
+  "actual": {
+    "database": {
+      "product": "mysql",
+      "image": "mysql:8.0.46",
+      "image_digest": "mysql@sha256:7dcddc01f13bab2f15cde676d44d01f61fc9f99fe7785e86196dfc07d358ae2b",
+      "container": "deltascope-ddl-golden-mysql80",
+      "reachable": true,
+      "version": "8.0.46"
+    },
+    "setup": [
+      {
+        "name": "create-fixture-t11p",
+        "sql": "CREATE TABLE t11p (id INT PRIMARY KEY);",
+        "rc": 0,
+        "stdout": "",
+        "stderr": ""
+      },
+      {
+        "name": "create-fixture-t11c",
+        "sql": "CREATE TABLE t11c (c INT);",
+        "rc": 0,
+        "stdout": "",
+        "stderr": ""
+      },
+      {
+        "name": "native-add-real-fk",
+        "sql": "ALTER TABLE t11c ADD CONSTRAINT fk_real FOREIGN KEY (c) REFERENCES t11p(id);",
+        "rc": 0,
+        "stdout": "",
+        "stderr": "",
+        "verify": [
+          {
+            "assert": "fk_real in catalog",
+            "sql": "SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t11c' AND CONSTRAINT_NAME='fk_real'",
+            "rc": 0,
+            "output": "1",
+            "stderr": ""
+          }
+        ]
+      }
+    ],
+    "post_verify": [],
+    "execute": [],
+    "structure": [],
+    "teardown": [
+      {
+        "name": "drop-t11c",
+        "sql": "DROP TABLE IF EXISTS t11c;",
+        "rc": 0,
+        "stderr": ""
+      },
+      {
+        "name": "drop-t11p",
+        "sql": "DROP TABLE IF EXISTS t11p;",
+        "rc": 0,
+        "stderr": ""
+      }
+    ],
+    "exit": 0,
+    "stdout": "{\"verdict\":\"pass\",\"coverage\":{\"status\":\"complete\"},\"summary\":{\"statements\":1,\"blockers\":0,\"warnings\":0,\"notices\":0},\"statements\":[{\"index\":0,\"kind\":\"ddl\",\"raw_sql\":\"ALTER TABLE t11c DROP FOREIGN KEY fk_real;\",\"normalized_sql\":\"ALTER TABLE t11c DROP FOREIGN KEY fk_real\",\"coverage\":{\"status\":\"complete\"}}],\"version\":{\"product\":\"mysql\",\"version\":\"8.0.46\",\"major\":8,\"minor\":0,\"patch\":46,\"source\":\"observed\",\"validated_range\":true},\"fail_on_triggered\":false,\"rule_summary\":{\"loaded\":1,\"applicable\":1,\"skipped\":[]},\"context\":{\"mode\":\"metadata-aware\",\"dialect\":\"mysql\",\"dialect_source\":\"detected\",\"schema\":\"golden\",\"schema_source\":\"flag\"}}\n",
+    "stderr": "",
+    "parsed": {
+      "verdict": "pass",
+      "coverage": {
+        "status": "complete"
+      },
+      "summary": {
+        "statements": 1,
+        "blockers": 0,
+        "warnings": 0,
+        "notices": 0
+      },
+      "statements": [
+        {
+          "index": 0,
+          "kind": "ddl",
+          "raw_sql": "ALTER TABLE t11c DROP FOREIGN KEY fk_real;",
+          "normalized_sql": "ALTER TABLE t11c DROP FOREIGN KEY fk_real",
+          "coverage": {
+            "status": "complete"
+          }
+        }
+      ],
+      "version": {
+        "product": "mysql",
+        "version": "8.0.46",
+        "major": 8,
+        "minor": 0,
+        "patch": 46,
+        "source": "observed",
+        "validated_range": true
+      },
+      "fail_on_triggered": false,
+      "rule_summary": {
+        "loaded": 1,
+        "applicable": 1,
+        "skipped": []
+      },
+      "context": {
+        "mode": "metadata-aware",
+        "dialect": "mysql",
+        "dialect_source": "detected",
+        "schema": "golden",
+        "schema_source": "flag"
+      }
+    },
+    "version_evidence": {
+      "target_raw": null,
+      "target_canonical": null,
+      "observed_raw": "8.0.46",
+      "observed_canonical": {
+        "product": "mysql",
+        "version": "8.0.46"
+      },
+      "resolved": {
+        "product": "mysql",
+        "version": "8.0.46",
+        "major": 8,
+        "minor": 0,
+        "patch": 46,
+        "source": "observed",
+        "validated_range": true
+      }
+    }
+  },
+  "assertions": [
+    {
+      "name": "database reachable with expected version",
+      "ok": true,
+      "detail": "SELECT VERSION() rc=0 version='8.0.46' expected_contains='8.0.46'"
+    },
+    {
+      "name": "setup create-fixture-t11p return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "setup create-fixture-t11c return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "setup native-add-real-fk return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "setup native-add-real-fk: fk_real in catalog",
+      "ok": true,
+      "detail": "rc=0 output='1' expected='1'"
+    },
+    {
+      "name": "exit code",
+      "ok": true,
+      "detail": "rc=0 expected=0"
+    },
+    {
+      "name": "verdict",
+      "ok": true,
+      "detail": "verdict='pass'"
+    },
+    {
+      "name": "top-level statements",
+      "ok": true,
+      "detail": "statements=1 expected=1"
+    },
+    {
+      "name": "zero findings",
+      "ok": true,
+      "detail": "findings=0"
+    },
+    {
+      "name": "no diagnostics",
+      "ok": true,
+      "detail": "diagnostics=[]"
+    },
+    {
+      "name": "no unsupported",
+      "ok": true,
+      "detail": "unsupported=[]"
+    },
+    {
+      "name": "aggregate coverage",
+      "ok": true,
+      "detail": "coverage='complete'"
+    },
+    {
+      "name": "evidence gap count",
+      "ok": true,
+      "detail": "gaps=0"
+    },
+    {
+      "name": "teardown drop-t11c return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "teardown drop-t11p return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    }
+  ],
+  "status": "pass",
+  "command": [
+    "/private/tmp/t14-final-golden/T11/bin/deltascope",
+    "audit",
+    "--dialect",
+    "mysql",
+    "--sql",
+    "ALTER TABLE t11c DROP FOREIGN KEY fk_real;",
+    "--config",
+    "/private/tmp/t14-final-golden/T11/golden-policy-t11-fk-exists.yaml",
+    "--format",
+    "json",
+    "--host",
+    "127.0.0.1",
+    "--port",
+    "23380",
+    "--user",
+    "root",
+    "--password-env",
+    "DS_T11_GOLDEN_PW",
+    "--schema",
+    "golden"
+  ]
+}

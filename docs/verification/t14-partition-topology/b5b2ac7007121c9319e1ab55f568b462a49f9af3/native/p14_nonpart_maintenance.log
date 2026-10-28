@@ -1,0 +1,135 @@
+=== [mysql57 optimize-nonpart] ALTER TABLE golden.t14np OPTIMIZE PARTITION p0
+mysql: [Warning] Using a password on the command line interface can be insecure.
+Table	Op	Msg_type	Msg_text
+golden.t14np	optimize	Error	Partition management on a not partitioned table is not possible
+golden.t14np	optimize	status	Operation failed
+--- rc=0
+=== [mysql57 repair-nonpart] ALTER TABLE golden.t14np REPAIR PARTITION p0
+mysql: [Warning] Using a password on the command line interface can be insecure.
+Table	Op	Msg_type	Msg_text
+golden.t14np	repair	Error	Partition management on a not partitioned table is not possible
+golden.t14np	repair	status	Operation failed
+--- rc=0
+=== [mysql57 discard-nonpart] ALTER TABLE golden.t14np DISCARD PARTITION p0 TABLESPACE
+mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1505 (HY000) at line 1: Partition management on a not partitioned table is not possible
+--- rc=1
+=== [mysql57 import-nonpart] ALTER TABLE golden.t14np IMPORT PARTITION p0 TABLESPACE
+mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1505 (HY000) at line 1: Partition management on a not partitioned table is not possible
+--- rc=1
+=== [mysql57 check-all-nonpart] ALTER TABLE golden.t14np CHECK PARTITION ALL
+mysql: [Warning] Using a password on the command line interface can be insecure.
+Table	Op	Msg_type	Msg_text
+golden.t14np	check	Error	Partition management on a not partitioned table is not possible
+golden.t14np	check	status	Operation failed
+--- rc=0
+=== [mysql80 optimize-nonpart] ALTER TABLE golden.t14np OPTIMIZE PARTITION p0
+mysql: [Warning] Using a password on the command line interface can be insecure.
+Table	Op	Msg_type	Msg_text
+golden.t14np	optimize	Error	Partition management on a not partitioned table is not possible
+golden.t14np	optimize	status	Operation failed
+--- rc=0
+=== [mysql80 repair-nonpart] ALTER TABLE golden.t14np REPAIR PARTITION p0
+mysql: [Warning] Using a password on the command line interface can be insecure.
+Table	Op	Msg_type	Msg_text
+golden.t14np	repair	Error	Partition management on a not partitioned table is not possible
+golden.t14np	repair	status	Operation failed
+--- rc=0
+=== [mysql80 discard-nonpart] ALTER TABLE golden.t14np DISCARD PARTITION p0 TABLESPACE
+mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1505 (HY000) at line 1: Partition management on a not partitioned table is not possible
+--- rc=1
+=== [mysql80 import-nonpart] ALTER TABLE golden.t14np IMPORT PARTITION p0 TABLESPACE
+mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1505 (HY000) at line 1: Partition management on a not partitioned table is not possible
+--- rc=1
+=== [mysql80 check-all-nonpart] ALTER TABLE golden.t14np CHECK PARTITION ALL
+mysql: [Warning] Using a password on the command line interface can be insecure.
+Table	Op	Msg_type	Msg_text
+golden.t14np	check	Error	Partition management on a not partitioned table is not possible
+golden.t14np	check	status	Operation failed
+--- rc=0
+=== [mysql84 optimize-nonpart] ALTER TABLE golden.t14np OPTIMIZE PARTITION p0
+mysql: [Warning] Using a password on the command line interface can be insecure.
+Table	Op	Msg_type	Msg_text
+golden.t14np	optimize	Error	Partition management on a not partitioned table is not possible
+golden.t14np	optimize	status	Operation failed
+--- rc=0
+=== [mysql84 repair-nonpart] ALTER TABLE golden.t14np REPAIR PARTITION p0
+mysql: [Warning] Using a password on the command line interface can be insecure.
+Table	Op	Msg_type	Msg_text
+golden.t14np	repair	Error	Partition management on a not partitioned table is not possible
+golden.t14np	repair	status	Operation failed
+--- rc=0
+=== [mysql84 discard-nonpart] ALTER TABLE golden.t14np DISCARD PARTITION p0 TABLESPACE
+mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1505 (HY000) at line 1: Partition management on a not partitioned table is not possible
+--- rc=1
+=== [mysql84 import-nonpart] ALTER TABLE golden.t14np IMPORT PARTITION p0 TABLESPACE
+mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1505 (HY000) at line 1: Partition management on a not partitioned table is not possible
+--- rc=1
+=== [mysql84 check-all-nonpart] ALTER TABLE golden.t14np CHECK PARTITION ALL
+mysql: [Warning] Using a password on the command line interface can be insecure.
+Table	Op	Msg_type	Msg_text
+golden.t14np	check	Error	Partition management on a not partitioned table is not possible
+golden.t14np	check	status	Operation failed
+--- rc=0
+=== [tidb85 optimize-nonpart] ALTER TABLE golden.t14np OPTIMIZE PARTITION p0
+mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1045 (28000): Access denied for user 'root'@'172.22.0.1' (using password: YES)
+--- rc=1
+=== [tidb85 repair-nonpart] ALTER TABLE golden.t14np REPAIR PARTITION p0
+mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1045 (28000): Access denied for user 'root'@'172.22.0.1' (using password: YES)
+--- rc=1
+=== [tidb85 discard-nonpart] ALTER TABLE golden.t14np DISCARD PARTITION p0 TABLESPACE
+mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1045 (28000): Access denied for user 'root'@'172.22.0.1' (using password: YES)
+--- rc=1
+=== [tidb85 import-nonpart] ALTER TABLE golden.t14np IMPORT PARTITION p0 TABLESPACE
+mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1045 (28000): Access denied for user 'root'@'172.22.0.1' (using password: YES)
+--- rc=1
+=== [tidb85 check-all-nonpart] ALTER TABLE golden.t14np CHECK PARTITION ALL
+mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1045 (28000): Access denied for user 'root'@'172.22.0.1' (using password: YES)
+--- rc=1
+ERROR 1045 (28000): Access denied for user 'root'@'172.22.0.1' (using password: YES)
+=== [tidb85] optimize-nonpart
+ERROR 1045 (28000): Access denied for user 'root'@'172.22.0.1' (using password: YES)
+--- rc=1
+=== [tidb85] repair-nonpart
+ERROR 1045 (28000): Access denied for user 'root'@'172.22.0.1' (using password: YES)
+--- rc=1
+=== [tidb85] discard-nonpart
+ERROR 1045 (28000): Access denied for user 'root'@'172.22.0.1' (using password: YES)
+--- rc=1
+=== [tidb85] import-nonpart
+ERROR 1045 (28000): Access denied for user 'root'@'172.22.0.1' (using password: YES)
+--- rc=1
+=== [tidb85] check-all-nonpart
+ERROR 1045 (28000): Access denied for user 'root'@'172.22.0.1' (using password: YES)
+--- rc=1
+=== [tidb85] rebuild-nonpart
+ERROR 1045 (28000): Access denied for user 'root'@'172.22.0.1' (using password: YES)
+--- rc=1
+=== [tidb85] OPTIMIZE PARTITION p0
+ERROR 8200 (HY000) at line 1: Unsupported optimize partition
+--- rc=1
+=== [tidb85] REPAIR PARTITION p0
+ERROR 8200 (HY000) at line 1: Unsupported repair partition
+--- rc=1
+=== [tidb85] DISCARD PARTITION p0 TABLESPACE
+ERROR 8200 (HY000) at line 1: Unsupported Unsupported/unknown ALTER TABLE specification
+--- rc=1
+=== [tidb85] IMPORT PARTITION p0 TABLESPACE
+ERROR 8200 (HY000) at line 1: Unsupported Unsupported/unknown ALTER TABLE specification
+--- rc=1
+=== [tidb85] CHECK PARTITION ALL
+ERROR 8200 (HY000) at line 1: Unsupported check partition
+--- rc=1
+=== [tidb85] REBUILD PARTITION p0
+ERROR 8200 (HY000) at line 1: Unsupported rebuild partition
+--- rc=1

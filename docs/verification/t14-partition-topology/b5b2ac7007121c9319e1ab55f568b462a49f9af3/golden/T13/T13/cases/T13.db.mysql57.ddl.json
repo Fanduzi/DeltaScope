@@ -1,0 +1,386 @@
+{
+  "case_id": "T13.db.mysql57.ddl",
+  "kind": "db_ddl",
+  "anchor": "mysql57",
+  "input_sql": [
+    "CREATE TABLE t13g (id INT, c INT) PARTITION BY RANGE (id) (PARTITION p0 VALUES LESS THAN (100), PARTITION p1 VALUES LESS THAN (200))",
+    "INSERT INTO t13g VALUES (10, 1), (150, 2)",
+    "ALTER TABLE t13g DROP PARTITION p0",
+    "ALTER TABLE t13g TRUNCATE PARTITION p1",
+    "CREATE TABLE t13x (id INT, c INT)",
+    "INSERT INTO t13x VALUES (160, 9)",
+    "ALTER TABLE t13g EXCHANGE PARTITION p1 WITH TABLE t13x WITHOUT VALIDATION",
+    "DROP TABLE t13g, t13x"
+  ],
+  "expected": {
+    "steps": [
+      {
+        "name": "create-partitioned-fixture",
+        "rc": 0,
+        "verify": [
+          {
+            "assert": "range fixture lands with two named partitions on every anchor",
+            "sql": "SELECT COUNT(*) FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t13g' AND PARTITION_NAME IS NOT NULL",
+            "expect": "2"
+          }
+        ]
+      },
+      {
+        "name": "seed-partition-rows",
+        "rc": 0,
+        "verify": [
+          {
+            "assert": "the p1-range row lands",
+            "sql": "SELECT COUNT(*) FROM golden.t13g WHERE id >= 100",
+            "expect": "1"
+          }
+        ]
+      },
+      {
+        "name": "drop-partition-p0",
+        "rc": 0,
+        "verify": [
+          {
+            "assert": "p0 definition is gone after DROP PARTITION",
+            "sql": "SELECT COUNT(*) FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t13g' AND PARTITION_NAME='p0'",
+            "expect": "0"
+          },
+          {
+            "assert": "p1's row survives the drop",
+            "sql": "SELECT COUNT(*) FROM golden.t13g WHERE id >= 100",
+            "expect": "1"
+          }
+        ]
+      },
+      {
+        "name": "truncate-partition-p1",
+        "rc": 0,
+        "verify": [
+          {
+            "assert": "p1 definition survives TRUNCATE while its rows are gone",
+            "sql": "SELECT COUNT(*) FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t13g' AND PARTITION_NAME='p1'",
+            "expect": "1"
+          },
+          {
+            "assert": "no rows remain in the table after both partitions emptied",
+            "sql": "SELECT COUNT(*) FROM golden.t13g",
+            "expect": "0"
+          }
+        ]
+      },
+      {
+        "name": "create-exchange-counterpart",
+        "rc": 0,
+        "verify": [
+          {
+            "assert": "exchange counterpart is a plain non-partitioned table",
+            "sql": "SELECT COUNT(*) FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t13x' AND PARTITION_NAME IS NOT NULL",
+            "expect": "0"
+          }
+        ]
+      },
+      {
+        "name": "seed-exchange-row",
+        "rc": 0,
+        "verify": [
+          {
+            "assert": "counterpart row lands inside p1 range (100 <= 160 < 200)",
+            "sql": "SELECT COUNT(*) FROM golden.t13x",
+            "expect": "1"
+          }
+        ]
+      },
+      {
+        "name": "exchange-partition-p1",
+        "rc": 0,
+        "verify": [
+          {
+            "assert": "the counterpart row moved into the partitioned table",
+            "sql": "SELECT COUNT(*) FROM golden.t13g",
+            "expect": "1"
+          },
+          {
+            "assert": "the counterpart is empty after the swap",
+            "sql": "SELECT COUNT(*) FROM golden.t13x",
+            "expect": "0"
+          }
+        ]
+      },
+      {
+        "name": "cleanup",
+        "rc": 0,
+        "verify": [
+          {
+            "assert": "fixtures removed",
+            "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME IN ('t13g','t13x')",
+            "expect": "0"
+          }
+        ]
+      }
+    ]
+  },
+  "actual": {
+    "steps": [
+      {
+        "name": "create-partitioned-fixture",
+        "sql": "CREATE TABLE t13g (id INT, c INT) PARTITION BY RANGE (id) (PARTITION p0 VALUES LESS THAN (100), PARTITION p1 VALUES LESS THAN (200))",
+        "verify": [
+          {
+            "assert": "range fixture lands with two named partitions on every anchor",
+            "sql": "SELECT COUNT(*) FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t13g' AND PARTITION_NAME IS NOT NULL",
+            "rc": 0,
+            "output": "2",
+            "stderr": ""
+          }
+        ],
+        "rc": 0,
+        "stdout": "",
+        "stderr": ""
+      },
+      {
+        "name": "seed-partition-rows",
+        "sql": "INSERT INTO t13g VALUES (10, 1), (150, 2)",
+        "verify": [
+          {
+            "assert": "the p1-range row lands",
+            "sql": "SELECT COUNT(*) FROM golden.t13g WHERE id >= 100",
+            "rc": 0,
+            "output": "1",
+            "stderr": ""
+          }
+        ],
+        "rc": 0,
+        "stdout": "",
+        "stderr": ""
+      },
+      {
+        "name": "drop-partition-p0",
+        "sql": "ALTER TABLE t13g DROP PARTITION p0",
+        "verify": [
+          {
+            "assert": "p0 definition is gone after DROP PARTITION",
+            "sql": "SELECT COUNT(*) FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t13g' AND PARTITION_NAME='p0'",
+            "rc": 0,
+            "output": "0",
+            "stderr": ""
+          },
+          {
+            "assert": "p1's row survives the drop",
+            "sql": "SELECT COUNT(*) FROM golden.t13g WHERE id >= 100",
+            "rc": 0,
+            "output": "1",
+            "stderr": ""
+          }
+        ],
+        "rc": 0,
+        "stdout": "",
+        "stderr": ""
+      },
+      {
+        "name": "truncate-partition-p1",
+        "sql": "ALTER TABLE t13g TRUNCATE PARTITION p1",
+        "verify": [
+          {
+            "assert": "p1 definition survives TRUNCATE while its rows are gone",
+            "sql": "SELECT COUNT(*) FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t13g' AND PARTITION_NAME='p1'",
+            "rc": 0,
+            "output": "1",
+            "stderr": ""
+          },
+          {
+            "assert": "no rows remain in the table after both partitions emptied",
+            "sql": "SELECT COUNT(*) FROM golden.t13g",
+            "rc": 0,
+            "output": "0",
+            "stderr": ""
+          }
+        ],
+        "rc": 0,
+        "stdout": "",
+        "stderr": ""
+      },
+      {
+        "name": "create-exchange-counterpart",
+        "sql": "CREATE TABLE t13x (id INT, c INT)",
+        "verify": [
+          {
+            "assert": "exchange counterpart is a plain non-partitioned table",
+            "sql": "SELECT COUNT(*) FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t13x' AND PARTITION_NAME IS NOT NULL",
+            "rc": 0,
+            "output": "0",
+            "stderr": ""
+          }
+        ],
+        "rc": 0,
+        "stdout": "",
+        "stderr": ""
+      },
+      {
+        "name": "seed-exchange-row",
+        "sql": "INSERT INTO t13x VALUES (160, 9)",
+        "verify": [
+          {
+            "assert": "counterpart row lands inside p1 range (100 <= 160 < 200)",
+            "sql": "SELECT COUNT(*) FROM golden.t13x",
+            "rc": 0,
+            "output": "1",
+            "stderr": ""
+          }
+        ],
+        "rc": 0,
+        "stdout": "",
+        "stderr": ""
+      },
+      {
+        "name": "exchange-partition-p1",
+        "sql": "ALTER TABLE t13g EXCHANGE PARTITION p1 WITH TABLE t13x WITHOUT VALIDATION",
+        "verify": [
+          {
+            "assert": "the counterpart row moved into the partitioned table",
+            "sql": "SELECT COUNT(*) FROM golden.t13g",
+            "rc": 0,
+            "output": "1",
+            "stderr": ""
+          },
+          {
+            "assert": "the counterpart is empty after the swap",
+            "sql": "SELECT COUNT(*) FROM golden.t13x",
+            "rc": 0,
+            "output": "0",
+            "stderr": ""
+          }
+        ],
+        "rc": 0,
+        "stdout": "",
+        "stderr": ""
+      },
+      {
+        "name": "cleanup",
+        "sql": "DROP TABLE t13g, t13x",
+        "verify": [
+          {
+            "assert": "fixtures removed",
+            "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME IN ('t13g','t13x')",
+            "rc": 0,
+            "output": "0",
+            "stderr": ""
+          }
+        ],
+        "rc": 0,
+        "stdout": "",
+        "stderr": ""
+      }
+    ],
+    "database": {
+      "product": "mysql",
+      "image": "mysql:5.7.44",
+      "image_digest": "mysql@sha256:4bc6bc963e6d8443453676cae56536f4b8156d78bae03c0145cbe47c2aad73bb",
+      "container": "deltascope-ddl-golden-mysql57",
+      "reachable": true,
+      "version": "5.7.44"
+    }
+  },
+  "assertions": [
+    {
+      "name": "database reachable with expected version",
+      "ok": true,
+      "detail": "SELECT VERSION() rc=0 version='5.7.44' expected_contains='5.7.44'"
+    },
+    {
+      "name": "create-partitioned-fixture return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "create-partitioned-fixture: range fixture lands with two named partitions on every anchor",
+      "ok": true,
+      "detail": "rc=0 output='2' expected='2'"
+    },
+    {
+      "name": "seed-partition-rows return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "seed-partition-rows: the p1-range row lands",
+      "ok": true,
+      "detail": "rc=0 output='1' expected='1'"
+    },
+    {
+      "name": "drop-partition-p0 return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "drop-partition-p0: p0 definition is gone after DROP PARTITION",
+      "ok": true,
+      "detail": "rc=0 output='0' expected='0'"
+    },
+    {
+      "name": "drop-partition-p0: p1's row survives the drop",
+      "ok": true,
+      "detail": "rc=0 output='1' expected='1'"
+    },
+    {
+      "name": "truncate-partition-p1 return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "truncate-partition-p1: p1 definition survives TRUNCATE while its rows are gone",
+      "ok": true,
+      "detail": "rc=0 output='1' expected='1'"
+    },
+    {
+      "name": "truncate-partition-p1: no rows remain in the table after both partitions emptied",
+      "ok": true,
+      "detail": "rc=0 output='0' expected='0'"
+    },
+    {
+      "name": "create-exchange-counterpart return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "create-exchange-counterpart: exchange counterpart is a plain non-partitioned table",
+      "ok": true,
+      "detail": "rc=0 output='0' expected='0'"
+    },
+    {
+      "name": "seed-exchange-row return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "seed-exchange-row: counterpart row lands inside p1 range (100 <= 160 < 200)",
+      "ok": true,
+      "detail": "rc=0 output='1' expected='1'"
+    },
+    {
+      "name": "exchange-partition-p1 return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "exchange-partition-p1: the counterpart row moved into the partitioned table",
+      "ok": true,
+      "detail": "rc=0 output='1' expected='1'"
+    },
+    {
+      "name": "exchange-partition-p1: the counterpart is empty after the swap",
+      "ok": true,
+      "detail": "rc=0 output='0' expected='0'"
+    },
+    {
+      "name": "cleanup return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "cleanup: fixtures removed",
+      "ok": true,
+      "detail": "rc=0 output='0' expected='0'"
+    }
+  ],
+  "status": "pass"
+}

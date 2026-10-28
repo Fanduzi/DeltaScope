@@ -1,0 +1,355 @@
+{
+  "case_id": "T14.meta.t14-mysql57-golden",
+  "kind": "cli_metadata",
+  "cli_case": "t14-mysql57-golden",
+  "anchor": "mysql57",
+  "dialect": "mysql",
+  "input_sql": "ALTER TABLE t14r REORGANIZE PARTITION p0 INTO (PARTITION p1 VALUES LESS THAN (120), PARTITION p2 VALUES LESS THAN (200));",
+  "policy_profile": "t14-reorganize",
+  "policy_path": "/private/tmp/t14-final-golden/T14/golden-policy-t14-reorganize.yaml",
+  "connect": {
+    "host": "127.0.0.1",
+    "port": 23357,
+    "user": "root",
+    "schema": "golden",
+    "password_env": "DS_T14_GOLDEN_PW"
+  },
+  "expected": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+      "complete"
+    ],
+    "evidence_gaps": 0,
+    "rule_summary_applicable": 3,
+    "finding_entries": [
+      {
+        "index": 0,
+        "rule_id": "ddl.alter.reorganize_partition.warn",
+        "level": "warning"
+      }
+    ],
+    "finding_metadata": [
+      {
+        "index": 0,
+        "rule_id": "ddl.alter.reorganize_partition.warn",
+        "metadata": {
+          "table": "t14r",
+          "action": "reorganize_partition"
+        }
+      }
+    ],
+    "version": {
+      "product": "mysql",
+      "version": "5.7.44"
+    }
+  },
+  "actual": {
+    "database": {
+      "product": "mysql",
+      "image": "mysql:5.7.44",
+      "image_digest": "mysql@sha256:4bc6bc963e6d8443453676cae56536f4b8156d78bae03c0145cbe47c2aad73bb",
+      "container": "deltascope-ddl-golden-mysql57",
+      "reachable": true,
+      "version": "5.7.44"
+    },
+    "setup": [
+      {
+        "name": "create-range-fixture",
+        "sql": "CREATE TABLE t14r (id INT) ENGINE=InnoDB PARTITION BY RANGE(id) (PARTITION p0 VALUES LESS THAN (200), PARTITION pmax VALUES LESS THAN MAXVALUE)",
+        "rc": 0,
+        "stdout": "",
+        "stderr": ""
+      },
+      {
+        "name": "seed-rows",
+        "sql": "INSERT INTO t14r VALUES (100),(150)",
+        "rc": 0,
+        "stdout": "",
+        "stderr": ""
+      }
+    ],
+    "post_verify": [],
+    "execute": [
+      {
+        "name": "apply-audited-reorganize",
+        "sql": "ALTER TABLE t14r REORGANIZE PARTITION p0 INTO (PARTITION p1 VALUES LESS THAN (120), PARTITION p2 VALUES LESS THAN (200))",
+        "rc": 0,
+        "stdout": "",
+        "stderr": "",
+        "verify": [
+          {
+            "assert": "post-state directory is p1/p2/pmax in ordinal order",
+            "sql": "SELECT GROUP_CONCAT(CONCAT(PARTITION_NAME,':',PARTITION_DESCRIPTION) ORDER BY PARTITION_ORDINAL_POSITION) FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t14r' AND PARTITION_NAME IS NOT NULL",
+            "rc": 0,
+            "output": "p1:120,p2:200,pmax:MAXVALUE",
+            "stderr": ""
+          },
+          {
+            "assert": "rows survive the reorganization",
+            "sql": "SELECT COUNT(*) FROM golden.t14r",
+            "rc": 0,
+            "output": "2",
+            "stderr": ""
+          },
+          {
+            "assert": "id=100 routes to p1",
+            "sql": "SELECT COUNT(*) FROM golden.t14r PARTITION (p1)",
+            "rc": 0,
+            "output": "1",
+            "stderr": ""
+          },
+          {
+            "assert": "id=150 routes to p2",
+            "sql": "SELECT COUNT(*) FROM golden.t14r PARTITION (p2)",
+            "rc": 0,
+            "output": "1",
+            "stderr": ""
+          }
+        ]
+      }
+    ],
+    "structure": [],
+    "teardown": [
+      {
+        "name": "drop-fixture",
+        "sql": "DROP TABLE IF EXISTS t14r",
+        "rc": 0,
+        "stderr": ""
+      }
+    ],
+    "exit": 1,
+    "stdout": "{\"verdict\":\"review\",\"coverage\":{\"status\":\"complete\"},\"summary\":{\"statements\":1,\"blockers\":0,\"warnings\":1,\"notices\":0},\"statements\":[{\"index\":0,\"kind\":\"ddl\",\"raw_sql\":\"ALTER TABLE t14r REORGANIZE PARTITION p0 INTO (PARTITION p1 VALUES LESS THAN (120), PARTITION p2 VALUES LESS THAN (200));\",\"normalized_sql\":\"ALTER TABLE t14r REORGANIZE PARTITION p0 INTO (PARTITION p1 VALUES LESS THAN (120), PARTITION p2 VALUES LESS THAN (200))\",\"findings\":[{\"rule_id\":\"ddl.alter.reorganize_partition.warn\",\"level\":\"warning\",\"message\":\"ALTER TABLE reorganize partition redistributes rows between the source members and the declared targets; a dropped LIST value's rows have nowhere to go\",\"statement_kind\":\"ddl\",\"location\":{\"line\":1,\"column\":1},\"suggestion\":\"verify the target definitions preserve every source boundary/value and take the redistribution window intentionally\",\"metadata\":{\"action\":\"reorganize_partition\",\"partition\":\"p0\",\"partition_defs\":\"p1,p2\",\"table\":\"t14r\"},\"explanation\":{\"summary\":\"Warn on DDL alter reorganize partition warn\",\"why\":\"The statement reached a caution rule that highlights an operational trade-off.\",\"risk\":\"Ignoring this rule can weaken schema-governance guarantees and make changes harder to review safely.\",\"suggestion\":\"verify the target definitions preserve every source boundary/value and take the redistribution window intentionally\"}}],\"coverage\":{\"status\":\"complete\"}}],\"version\":{\"product\":\"mysql\",\"version\":\"5.7.44\",\"major\":5,\"minor\":7,\"patch\":44,\"source\":\"observed\",\"validated_range\":true},\"fail_on_triggered\":true,\"rule_summary\":{\"loaded\":3,\"applicable\":3,\"skipped\":[]},\"context\":{\"mode\":\"metadata-aware\",\"dialect\":\"mysql\",\"dialect_source\":\"detected\",\"schema\":\"golden\",\"schema_source\":\"flag\"}}\n",
+    "stderr": "",
+    "parsed": {
+      "verdict": "review",
+      "coverage": {
+        "status": "complete"
+      },
+      "summary": {
+        "statements": 1,
+        "blockers": 0,
+        "warnings": 1,
+        "notices": 0
+      },
+      "statements": [
+        {
+          "index": 0,
+          "kind": "ddl",
+          "raw_sql": "ALTER TABLE t14r REORGANIZE PARTITION p0 INTO (PARTITION p1 VALUES LESS THAN (120), PARTITION p2 VALUES LESS THAN (200));",
+          "normalized_sql": "ALTER TABLE t14r REORGANIZE PARTITION p0 INTO (PARTITION p1 VALUES LESS THAN (120), PARTITION p2 VALUES LESS THAN (200))",
+          "findings": [
+            {
+              "rule_id": "ddl.alter.reorganize_partition.warn",
+              "level": "warning",
+              "message": "ALTER TABLE reorganize partition redistributes rows between the source members and the declared targets; a dropped LIST value's rows have nowhere to go",
+              "statement_kind": "ddl",
+              "location": {
+                "line": 1,
+                "column": 1
+              },
+              "suggestion": "verify the target definitions preserve every source boundary/value and take the redistribution window intentionally",
+              "metadata": {
+                "action": "reorganize_partition",
+                "partition": "p0",
+                "partition_defs": "p1,p2",
+                "table": "t14r"
+              },
+              "explanation": {
+                "summary": "Warn on DDL alter reorganize partition warn",
+                "why": "The statement reached a caution rule that highlights an operational trade-off.",
+                "risk": "Ignoring this rule can weaken schema-governance guarantees and make changes harder to review safely.",
+                "suggestion": "verify the target definitions preserve every source boundary/value and take the redistribution window intentionally"
+              }
+            }
+          ],
+          "coverage": {
+            "status": "complete"
+          }
+        }
+      ],
+      "version": {
+        "product": "mysql",
+        "version": "5.7.44",
+        "major": 5,
+        "minor": 7,
+        "patch": 44,
+        "source": "observed",
+        "validated_range": true
+      },
+      "fail_on_triggered": true,
+      "rule_summary": {
+        "loaded": 3,
+        "applicable": 3,
+        "skipped": []
+      },
+      "context": {
+        "mode": "metadata-aware",
+        "dialect": "mysql",
+        "dialect_source": "detected",
+        "schema": "golden",
+        "schema_source": "flag"
+      }
+    },
+    "version_evidence": {
+      "target_raw": null,
+      "target_canonical": null,
+      "observed_raw": "5.7.44",
+      "observed_canonical": {
+        "product": "mysql",
+        "version": "5.7.44"
+      },
+      "resolved": {
+        "product": "mysql",
+        "version": "5.7.44",
+        "major": 5,
+        "minor": 7,
+        "patch": 44,
+        "source": "observed",
+        "validated_range": true
+      }
+    }
+  },
+  "assertions": [
+    {
+      "name": "database reachable with expected version",
+      "ok": true,
+      "detail": "SELECT VERSION() rc=0 version='5.7.44' expected_contains='5.7.44'"
+    },
+    {
+      "name": "setup create-range-fixture return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "setup seed-rows return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "exit code",
+      "ok": true,
+      "detail": "rc=1 expected=1"
+    },
+    {
+      "name": "verdict",
+      "ok": true,
+      "detail": "verdict='review'"
+    },
+    {
+      "name": "top-level statements",
+      "ok": true,
+      "detail": "statements=1 expected=1"
+    },
+    {
+      "name": "zero findings",
+      "ok": true,
+      "detail": "findings=1"
+    },
+    {
+      "name": "no diagnostics",
+      "ok": true,
+      "detail": "diagnostics=[]"
+    },
+    {
+      "name": "no unsupported",
+      "ok": true,
+      "detail": "unsupported=[]"
+    },
+    {
+      "name": "applicable rule count",
+      "ok": true,
+      "detail": "applicable=3"
+    },
+    {
+      "name": "aggregate coverage",
+      "ok": true,
+      "detail": "coverage='complete'"
+    },
+    {
+      "name": "per-statement coverage",
+      "ok": true,
+      "detail": "statement_coverage=['complete']"
+    },
+    {
+      "name": "evidence gap count",
+      "ok": true,
+      "detail": "gaps=0"
+    },
+    {
+      "name": "finding entries",
+      "ok": true,
+      "detail": "findings=[(0, 'ddl.alter.reorganize_partition.warn', 'warning')] expected=[(0, 'ddl.alter.reorganize_partition.warn', 'warning')]"
+    },
+    {
+      "name": "finding metadata (0, 'ddl.alter.reorganize_partition.warn')",
+      "ok": true,
+      "detail": "findings=[{'action': 'reorganize_partition', 'partition': 'p0', 'partition_defs': 'p1,p2', 'table': 't14r'}] expected_subset={'table': 't14r', 'action': 'reorganize_partition'}"
+    },
+    {
+      "name": "version identity",
+      "ok": true,
+      "detail": "version={'product': 'mysql', 'version': '5.7.44', 'major': 5, 'minor': 7, 'patch': 44, 'source': 'observed', 'validated_range': True} expected={'product': 'mysql', 'version': '5.7.44'}"
+    },
+    {
+      "name": "execute apply-audited-reorganize return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "execute apply-audited-reorganize: post-state directory is p1/p2/pmax in ordinal order",
+      "ok": true,
+      "detail": "rc=0 output='p1:120,p2:200,pmax:MAXVALUE' expected='p1:120,p2:200,pmax:MAXVALUE'"
+    },
+    {
+      "name": "execute apply-audited-reorganize: rows survive the reorganization",
+      "ok": true,
+      "detail": "rc=0 output='2' expected='2'"
+    },
+    {
+      "name": "execute apply-audited-reorganize: id=100 routes to p1",
+      "ok": true,
+      "detail": "rc=0 output='1' expected='1'"
+    },
+    {
+      "name": "execute apply-audited-reorganize: id=150 routes to p2",
+      "ok": true,
+      "detail": "rc=0 output='1' expected='1'"
+    },
+    {
+      "name": "teardown drop-fixture return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    }
+  ],
+  "status": "pass",
+  "command": [
+    "/private/tmp/t14-final-golden/T14/bin/deltascope",
+    "audit",
+    "--dialect",
+    "mysql",
+    "--sql",
+    "ALTER TABLE t14r REORGANIZE PARTITION p0 INTO (PARTITION p1 VALUES LESS THAN (120), PARTITION p2 VALUES LESS THAN (200));",
+    "--config",
+    "/private/tmp/t14-final-golden/T14/golden-policy-t14-reorganize.yaml",
+    "--format",
+    "json",
+    "--host",
+    "127.0.0.1",
+    "--port",
+    "23357",
+    "--user",
+    "root",
+    "--password-env",
+    "DS_T14_GOLDEN_PW",
+    "--schema",
+    "golden",
+    "--fail-on",
+    "warning"
+  ]
+}
