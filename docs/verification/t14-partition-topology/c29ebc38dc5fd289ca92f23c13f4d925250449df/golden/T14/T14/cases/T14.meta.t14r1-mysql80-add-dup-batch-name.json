@@ -1,0 +1,358 @@
+{
+  "case_id": "T14.meta.t14r1-mysql80-add-dup-batch-name",
+  "kind": "cli_metadata",
+  "cli_case": "t14r1-mysql80-add-dup-batch-name",
+  "anchor": "mysql80",
+  "dialect": "mysql",
+  "input_sql": "ALTER TABLE t14a ADD PARTITION (PARTITION p2 VALUES LESS THAN (600), PARTITION p2 VALUES LESS THAN (800));\nALTER TABLE t14a TRUNCATE PARTITION p2;",
+  "policy_profile": "t14r1-add-truncate",
+  "policy_path": "/Users/fan/GolangProjects/DeltaScope/docs/verification/t14-partition-topology/c29ebc38dc5fd289ca92f23c13f4d925250449df/golden/T14/T14/golden-policy-t14r1-add-truncate.yaml",
+  "connect": {
+    "host": "127.0.0.1",
+    "port": 23380,
+    "user": "root",
+    "schema": "golden",
+    "password_env": "DS_T14_GOLDEN_PW"
+  },
+  "expected": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 2,
+    "findings": 2,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+      "complete",
+      "complete"
+    ],
+    "evidence_gaps": 0,
+    "finding_entries": [
+      {
+        "index": 0,
+        "rule_id": "ddl.alter.add_partition.applicability",
+        "level": "blocker"
+      },
+      {
+        "index": 1,
+        "rule_id": "ddl.alter.truncate_partition.target",
+        "level": "blocker"
+      }
+    ],
+    "finding_metadata": [
+      {
+        "index": 0,
+        "rule_id": "ddl.alter.add_partition.applicability",
+        "metadata": {
+          "partition": "p2",
+          "reason_code": "partition_name_duplicate",
+          "native_error": "1517"
+        }
+      },
+      {
+        "index": 1,
+        "rule_id": "ddl.alter.truncate_partition.target",
+        "metadata": {
+          "partition": "p2",
+          "reason_code": "partition_absent",
+          "native_error": "1735"
+        }
+      }
+    ],
+    "version": {
+      "product": "mysql",
+      "version": "8.0.46"
+    }
+  },
+  "actual": {
+    "database": {
+      "product": "mysql",
+      "image": "mysql:8.0.46",
+      "image_digest": "mysql@sha256:7dcddc01f13bab2f15cde676d44d01f61fc9f99fe7785e86196dfc07d358ae2b",
+      "container": "deltascope-ddl-golden-mysql80",
+      "reachable": true,
+      "version": "8.0.46"
+    },
+    "setup": [
+      {
+        "name": "create-range-fixture",
+        "sql": "CREATE TABLE t14a (id INT) ENGINE=InnoDB PARTITION BY RANGE(id) (PARTITION p0 VALUES LESS THAN (200), PARTITION p1 VALUES LESS THAN (400))",
+        "rc": 0,
+        "stdout": "",
+        "stderr": ""
+      }
+    ],
+    "post_verify": [],
+    "execute": [
+      {
+        "name": "apply-dup-add",
+        "sql": "ALTER TABLE t14a ADD PARTITION (PARTITION p2 VALUES LESS THAN (600), PARTITION p2 VALUES LESS THAN (800))",
+        "rc": 1,
+        "stdout": "",
+        "stderr": "ERROR 1517 (HY000) at line 1: Duplicate partition name p2"
+      },
+      {
+        "name": "dir-after-refusal",
+        "sql": "SELECT COUNT(*) AS p2_members FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t14a' AND PARTITION_NAME='p2'",
+        "rc": 0,
+        "stdout": "p2_members\n0",
+        "stderr": ""
+      }
+    ],
+    "structure": [],
+    "teardown": [
+      {
+        "name": "drop-fixture",
+        "sql": "DROP TABLE IF EXISTS t14a",
+        "rc": 0,
+        "stderr": ""
+      }
+    ],
+    "exit": 1,
+    "stdout": "{\"verdict\":\"reject\",\"coverage\":{\"status\":\"complete\"},\"summary\":{\"statements\":2,\"blockers\":2,\"warnings\":0,\"notices\":0},\"statements\":[{\"index\":0,\"kind\":\"ddl\",\"raw_sql\":\"ALTER TABLE t14a ADD PARTITION (PARTITION p2 VALUES LESS THAN (600), PARTITION p2 VALUES LESS THAN (800));\",\"normalized_sql\":\"ALTER TABLE t14a ADD PARTITION (PARTITION p2 VALUES LESS THAN (600), PARTITION p2 VALUES LESS THAN (800))\",\"findings\":[{\"rule_id\":\"ddl.alter.add_partition.applicability\",\"level\":\"blocker\",\"message\":\"ALTER TABLE add partition declares partition \\\"p2\\\" twice (native 1517)\",\"statement_kind\":\"ddl\",\"location\":{\"line\":1,\"column\":1},\"suggestion\":\"verify the declared member form against the native partition contract\",\"metadata\":{\"action\":\"add_partitions\",\"native_error\":\"1517\",\"partition\":\"p2\",\"reason_code\":\"partition_name_duplicate\",\"table\":\"t14a\"},\"explanation\":{\"summary\":\"Check DDL alter add partition applicability\",\"why\":\"The statement matched the shipped governance rule for this pattern.\",\"risk\":\"Ignoring this rule can weaken schema-governance guarantees and make changes harder to review safely.\",\"suggestion\":\"verify the declared member form against the native partition contract\"}}],\"coverage\":{\"status\":\"complete\"}},{\"index\":1,\"kind\":\"ddl\",\"raw_sql\":\"ALTER TABLE t14a TRUNCATE PARTITION p2;\",\"normalized_sql\":\"ALTER TABLE t14a TRUNCATE PARTITION p2\",\"findings\":[{\"rule_id\":\"ddl.alter.truncate_partition.target\",\"level\":\"blocker\",\"message\":\"ALTER TABLE truncate partition names partition \\\"p2\\\", which is not a member of the table (native 1735)\",\"statement_index\":1,\"statement_kind\":\"ddl\",\"location\":{\"line\":2,\"column\":1},\"suggestion\":\"verify the partition name against the observed member set\",\"metadata\":{\"action\":\"truncate_partition\",\"exists\":\"false\",\"native_error\":\"1735\",\"partition\":\"p2\",\"reason_code\":\"partition_absent\",\"table\":\"t14a\"},\"explanation\":{\"summary\":\"Check DDL alter truncate partition target\",\"why\":\"The statement matched the shipped governance rule for this pattern.\",\"risk\":\"Ignoring this rule can weaken schema-governance guarantees and make changes harder to review safely.\",\"suggestion\":\"verify the partition name against the observed member set\"}}],\"coverage\":{\"status\":\"complete\"}}],\"version\":{\"product\":\"mysql\",\"version\":\"8.0.46\",\"major\":8,\"minor\":0,\"patch\":46,\"source\":\"observed\",\"validated_range\":true},\"fail_on_triggered\":true,\"rule_summary\":{\"loaded\":2,\"applicable\":2,\"skipped\":[]},\"context\":{\"mode\":\"metadata-aware\",\"dialect\":\"mysql\",\"dialect_source\":\"detected\",\"schema\":\"golden\",\"schema_source\":\"flag\"}}\n",
+    "stderr": "",
+    "parsed": {
+      "verdict": "reject",
+      "coverage": {
+        "status": "complete"
+      },
+      "summary": {
+        "statements": 2,
+        "blockers": 2,
+        "warnings": 0,
+        "notices": 0
+      },
+      "statements": [
+        {
+          "index": 0,
+          "kind": "ddl",
+          "raw_sql": "ALTER TABLE t14a ADD PARTITION (PARTITION p2 VALUES LESS THAN (600), PARTITION p2 VALUES LESS THAN (800));",
+          "normalized_sql": "ALTER TABLE t14a ADD PARTITION (PARTITION p2 VALUES LESS THAN (600), PARTITION p2 VALUES LESS THAN (800))",
+          "findings": [
+            {
+              "rule_id": "ddl.alter.add_partition.applicability",
+              "level": "blocker",
+              "message": "ALTER TABLE add partition declares partition \"p2\" twice (native 1517)",
+              "statement_kind": "ddl",
+              "location": {
+                "line": 1,
+                "column": 1
+              },
+              "suggestion": "verify the declared member form against the native partition contract",
+              "metadata": {
+                "action": "add_partitions",
+                "native_error": "1517",
+                "partition": "p2",
+                "reason_code": "partition_name_duplicate",
+                "table": "t14a"
+              },
+              "explanation": {
+                "summary": "Check DDL alter add partition applicability",
+                "why": "The statement matched the shipped governance rule for this pattern.",
+                "risk": "Ignoring this rule can weaken schema-governance guarantees and make changes harder to review safely.",
+                "suggestion": "verify the declared member form against the native partition contract"
+              }
+            }
+          ],
+          "coverage": {
+            "status": "complete"
+          }
+        },
+        {
+          "index": 1,
+          "kind": "ddl",
+          "raw_sql": "ALTER TABLE t14a TRUNCATE PARTITION p2;",
+          "normalized_sql": "ALTER TABLE t14a TRUNCATE PARTITION p2",
+          "findings": [
+            {
+              "rule_id": "ddl.alter.truncate_partition.target",
+              "level": "blocker",
+              "message": "ALTER TABLE truncate partition names partition \"p2\", which is not a member of the table (native 1735)",
+              "statement_index": 1,
+              "statement_kind": "ddl",
+              "location": {
+                "line": 2,
+                "column": 1
+              },
+              "suggestion": "verify the partition name against the observed member set",
+              "metadata": {
+                "action": "truncate_partition",
+                "exists": "false",
+                "native_error": "1735",
+                "partition": "p2",
+                "reason_code": "partition_absent",
+                "table": "t14a"
+              },
+              "explanation": {
+                "summary": "Check DDL alter truncate partition target",
+                "why": "The statement matched the shipped governance rule for this pattern.",
+                "risk": "Ignoring this rule can weaken schema-governance guarantees and make changes harder to review safely.",
+                "suggestion": "verify the partition name against the observed member set"
+              }
+            }
+          ],
+          "coverage": {
+            "status": "complete"
+          }
+        }
+      ],
+      "version": {
+        "product": "mysql",
+        "version": "8.0.46",
+        "major": 8,
+        "minor": 0,
+        "patch": 46,
+        "source": "observed",
+        "validated_range": true
+      },
+      "fail_on_triggered": true,
+      "rule_summary": {
+        "loaded": 2,
+        "applicable": 2,
+        "skipped": []
+      },
+      "context": {
+        "mode": "metadata-aware",
+        "dialect": "mysql",
+        "dialect_source": "detected",
+        "schema": "golden",
+        "schema_source": "flag"
+      }
+    },
+    "version_evidence": {
+      "target_raw": null,
+      "target_canonical": null,
+      "observed_raw": "8.0.46",
+      "observed_canonical": {
+        "product": "mysql",
+        "version": "8.0.46"
+      },
+      "resolved": {
+        "product": "mysql",
+        "version": "8.0.46",
+        "major": 8,
+        "minor": 0,
+        "patch": 46,
+        "source": "observed",
+        "validated_range": true
+      }
+    }
+  },
+  "assertions": [
+    {
+      "name": "database reachable with expected version",
+      "ok": true,
+      "detail": "SELECT VERSION() rc=0 version='8.0.46' expected_contains='8.0.46'"
+    },
+    {
+      "name": "setup create-range-fixture return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "exit code",
+      "ok": true,
+      "detail": "rc=1 expected=1"
+    },
+    {
+      "name": "verdict",
+      "ok": true,
+      "detail": "verdict='reject'"
+    },
+    {
+      "name": "top-level statements",
+      "ok": true,
+      "detail": "statements=2 expected=2"
+    },
+    {
+      "name": "zero findings",
+      "ok": true,
+      "detail": "findings=2"
+    },
+    {
+      "name": "no diagnostics",
+      "ok": true,
+      "detail": "diagnostics=[]"
+    },
+    {
+      "name": "no unsupported",
+      "ok": true,
+      "detail": "unsupported=[]"
+    },
+    {
+      "name": "aggregate coverage",
+      "ok": true,
+      "detail": "coverage='complete'"
+    },
+    {
+      "name": "per-statement coverage",
+      "ok": true,
+      "detail": "statement_coverage=['complete', 'complete']"
+    },
+    {
+      "name": "evidence gap count",
+      "ok": true,
+      "detail": "gaps=0"
+    },
+    {
+      "name": "finding entries",
+      "ok": true,
+      "detail": "findings=[(0, 'ddl.alter.add_partition.applicability', 'blocker'), (1, 'ddl.alter.truncate_partition.target', 'blocker')] expected=[(0, 'ddl.alter.add_partition.applicability', 'blocker'), (1, 'ddl.alter.truncate_partition.target', 'blocker')]"
+    },
+    {
+      "name": "finding metadata (0, 'ddl.alter.add_partition.applicability')",
+      "ok": true,
+      "detail": "findings=[{'action': 'add_partitions', 'native_error': '1517', 'partition': 'p2', 'reason_code': 'partition_name_duplicate', 'table': 't14a'}, {'action': 'truncate_partition', 'exists': 'false', 'native_error': '1735', 'partition': 'p2', 'reason_code': 'partition_absent', 'table': 't14a'}] expected_subset={'partition': 'p2', 'reason_code': 'partition_name_duplicate', 'native_error': '1517'}"
+    },
+    {
+      "name": "finding metadata (1, 'ddl.alter.truncate_partition.target')",
+      "ok": true,
+      "detail": "findings=[{'action': 'add_partitions', 'native_error': '1517', 'partition': 'p2', 'reason_code': 'partition_name_duplicate', 'table': 't14a'}, {'action': 'truncate_partition', 'exists': 'false', 'native_error': '1735', 'partition': 'p2', 'reason_code': 'partition_absent', 'table': 't14a'}] expected_subset={'partition': 'p2', 'reason_code': 'partition_absent', 'native_error': '1735'}"
+    },
+    {
+      "name": "version identity",
+      "ok": true,
+      "detail": "version={'product': 'mysql', 'version': '8.0.46', 'major': 8, 'minor': 0, 'patch': 46, 'source': 'observed', 'validated_range': True} expected={'product': 'mysql', 'version': '8.0.46'}"
+    },
+    {
+      "name": "execute apply-dup-add return code",
+      "ok": true,
+      "detail": "rc=1 expected=1 stderr='ERROR 1517 (HY000) at line 1: Duplicate partition name p2'"
+    },
+    {
+      "name": "execute dir-after-refusal return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "teardown drop-fixture return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    }
+  ],
+  "status": "pass",
+  "command": [
+    "/Users/fan/GolangProjects/DeltaScope/docs/verification/t14-partition-topology/c29ebc38dc5fd289ca92f23c13f4d925250449df/golden/T14/T14/bin/deltascope",
+    "audit",
+    "--dialect",
+    "mysql",
+    "--sql",
+    "ALTER TABLE t14a ADD PARTITION (PARTITION p2 VALUES LESS THAN (600), PARTITION p2 VALUES LESS THAN (800));\nALTER TABLE t14a TRUNCATE PARTITION p2;",
+    "--config",
+    "/Users/fan/GolangProjects/DeltaScope/docs/verification/t14-partition-topology/c29ebc38dc5fd289ca92f23c13f4d925250449df/golden/T14/T14/golden-policy-t14r1-add-truncate.yaml",
+    "--format",
+    "json",
+    "--host",
+    "127.0.0.1",
+    "--port",
+    "23380",
+    "--user",
+    "root",
+    "--password-env",
+    "DS_T14_GOLDEN_PW",
+    "--schema",
+    "golden",
+    "--fail-on",
+    "warning"
+  ]
+}

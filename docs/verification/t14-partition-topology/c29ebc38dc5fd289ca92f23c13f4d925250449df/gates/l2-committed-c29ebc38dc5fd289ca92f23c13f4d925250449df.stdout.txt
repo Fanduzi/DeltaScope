@@ -1,0 +1,9 @@
+range: 14850fb23eb525d489099b27bb8b033efe3e2a9e..c29ebc38dc5fd289ca92f23c13f4d925250449df
+changed files: 20
+
+MISSING README: docs/work-plans/t14-partition-topology/probes/README.md
+
+finding (R1 product range): docs/work-plans/t14-partition-topology/probes/
+README.md missing — added in the T14-R1 evidence commit alongside this
+gate bundle (probe dirs are committed work-plan sources; t13's probes
+dir carries the same README convention).

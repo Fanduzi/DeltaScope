@@ -1,0 +1,12 @@
+range: b54a0544a17ad2eb25bb58e51a0c371e57f68978..b5b2ac7007121c9319e1ab55f568b462a49f9af3
+changed files: 38
+
+MISSING README: docs/work-plans/t14-partition-topology/probes/README.md
+README NOT SYNCED: internal/interfaces/mcp/README.md
+
+findings (original T14 product range — recorded, not rewritten):
+- docs/work-plans/t14-partition-topology/probes/README.md missing —
+  gap confirmed; README added in the T14-R1 evidence commit.
+- internal/interfaces/mcp/README.md not synced with rule_tools.go in
+  b5b2ac70 — gap confirmed; README synced in R1 product c29ebc38
+  (compact-table padding note for the 30-rule T14 catalog).

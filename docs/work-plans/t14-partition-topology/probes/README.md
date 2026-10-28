@@ -1,0 +1,13 @@
+# T14 native probe archive
+
+Each archive records the exact SQL, rc, error output, catalog reads,
+and post-state checks its steps produced on the four frozen anchors
+(mysql 5.7.44 / 8.0.46 / 8.4.10, tidb v8.5.0). Scope notes record
+what each log actually proves — read the log text, not this file, for
+evidence.
+
+| Archive | Scope |
+|---|---|
+| `p13_topology_maintenance.log` (`probe13_t14.sh`) | T14 baseline matrix: ADD/REORGANIZE/COALESCE/PARTITION BY/REMOVE PARTITIONING plus CHECK/REBUILD/REPAIR/OPTIMIZE/IMPORT/DISCARD on RANGE and HASH fixtures — native rc + error code per action per anchor, member-directory reads after each step, MySQL soft-fail status-table output (`Table`/`Op`/`Msg_type`/`Msg_text` rows incl. "All partitions will be rebuilt and analyzed"), TiDB 8200 vendor refusals, modifier cells (`ALGORITHM=INPLACE` executes on 8.x/TiDB, refused 1846 on 5.7; `ALGORITHM=COPY`/`LOCK=NONE`+REORGANIZE → 1507), `SHOW WARNINGS`, and row-routing reads for the frozen REORGANIZE golden path. |
+| `p14_nonpart_maintenance.log` | Non-partitioned-table maintenance arms: CHECK/OPTIMIZE/REPAIR return rc=0 status rows (soft fail) while REBUILD/DISCARD/IMPORT refuse 1505-class on every anchor — the evidence that splits MySQL soft-fail findings from hard refusals. Captured during T14 implementation; its generating script was not archived — the log is the primary record. |
+| `p15_t14r1_matrix.log` (`probe14_t14r1.sh`) | T14-R1 oracle matrix (292 bounded cells): same-batch duplicate member names → 1517 on all four anchors (add/reorg/pby/create arms, case-variant `P2`/`p2` included); `COALESCE PARTITION 0` → 1515; `ADD PARTITION PARTITIONS 0` and bare `ADD PARTITION` → MySQL 1514 / TiDB silent no-op; `ADD PARTITIONS 8193` and `PARTITION BY HASH … PARTITIONS 8193` → 1499 before any data work; `PARTITIONS 0` and range|list `PARTITIONS n` without definitions → parser refusals 1504/1492; RANGE COLUMNS `(10,MAXVALUE)` stores `10,MAXVALUE` per-item in `PARTITION_DESCRIPTION`; utf8mb4_general_ci string bounds `'a'`/`'B'` accepted natively where byte order disagrees (collation domain); `VALUES IN (1+0)` folds to 1495 and `LESS THAN (100+100)` to 1493 natively (expression folding the product deliberately does not emulate); MyISAM DISCARD/IMPORT PARTITION TABLESPACE → 1031 on 5.7 (MySQL 8.x refuses MyISAM partitioning at CREATE with 1178 — recorded version asymmetry); `optimize-misam` prints the InnoDB whole-table rebuild warning; TiDB arms create `golden` inside the loop so every cell reached the table (no 1049 contamination). |
