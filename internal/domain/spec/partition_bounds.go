@@ -159,9 +159,10 @@ func splitTopLevel(text string) []string {
 }
 
 // catalogLiteral projects one catalog literal token into a comparable
-// BoundLiteral: NULL, a quoted string (with ” unescaping), or a numeric
-// token. Anything else — functions, placeholders, unbalanced quoting —
-// is unprojectable (ok=false), never a fabricated literal.
+// BoundLiteral: NULL, MAXVALUE (a +∞ item inside a COLUMNS tuple), a
+// quoted string (with ” unescaping), or a numeric token. Anything else —
+// functions, placeholders, unbalanced quoting — is unprojectable
+// (ok=false), never a fabricated literal.
 func catalogLiteral(text string) (BoundLiteral, bool) {
 	t := strings.TrimSpace(text)
 	if t == "" {
@@ -169,6 +170,9 @@ func catalogLiteral(text string) (BoundLiteral, bool) {
 	}
 	if strings.EqualFold(t, "null") {
 		return BoundLiteral{Kind: PartitionBoundNull}, true
+	}
+	if strings.EqualFold(t, "maxvalue") {
+		return BoundLiteral{Kind: PartitionBoundMaxValue}, true
 	}
 	if len(t) >= 2 && t[0] == '\'' && t[len(t)-1] == '\'' {
 		return BoundLiteral{Kind: PartitionBoundString, Value: strings.ReplaceAll(t[1:len(t)-1], "''", "'")}, true
@@ -200,9 +204,12 @@ func isNumericBoundText(t string) bool {
 
 // BoundLiteralEqual compares two bound items across the literal domains:
 // numerics compare by value (big.Rat, float fallback for exponent forms),
-// strings by decoded bytes, NULLs by kind. Any expression-shaped or
-// unprojectable side answers ok=false — equality is never claimed for
-// non-literal content.
+// NULLs and MAXVALUE sentinels compare by kind, strings by decoded bytes
+// when identical — byte-different strings stay unproven (ok=false), not
+// proven-unequal, because the collation domain is unmodeled (a
+// case-insensitive collation equates 'a' and 'A'; no product collation
+// fact answers it here). Any expression-shaped or unprojectable side
+// answers ok=false — equality is never claimed for non-literal content.
 func BoundLiteralEqual(a, b BoundLiteral) (equal, ok bool) {
 	if a.Kind == PartitionBoundExpression || b.Kind == PartitionBoundExpression ||
 		a.Kind == "" || b.Kind == "" {
@@ -212,10 +219,13 @@ func BoundLiteralEqual(a, b BoundLiteral) (equal, ok bool) {
 		return false, true
 	}
 	switch a.Kind {
-	case PartitionBoundNull:
+	case PartitionBoundNull, PartitionBoundMaxValue:
 		return true, true
 	case PartitionBoundString:
-		return a.Value == b.Value, true
+		if a.Value == b.Value {
+			return true, true
+		}
+		return false, false
 	case PartitionBoundNumeric:
 		return numericBoundEqual(a.Value, b.Value)
 	}
@@ -258,14 +268,27 @@ func BoundRowEqual(a, b []BoundLiteral) (equal, ok bool) {
 }
 
 // BoundRowCompare orders two bound rows: -1 a<b, 0 equal, +1 a>b.
-// Item-wise numeric or string comparison with the first non-zero pair
-// deciding; any incomparable pair answers ok=false. NULL items are
-// incomparable (RANGE bounds never carry them).
+// Item-wise numeric comparison with the first non-zero pair deciding;
+// a MAXVALUE item is +∞ (bigger than every non-MAXVALUE item, equal to
+// another MAXVALUE at the same position). String items prove only
+// byte-equality — any byte difference answers ok=false because the
+// collation domain is unmodeled, never a byte-order verdict. NULL items
+// are incomparable (RANGE bounds never carry them), and any
+// expression/unprojected pair answers ok=false.
 func BoundRowCompare(a, b []BoundLiteral) (cmp int, ok bool) {
 	if len(a) != len(b) {
 		return 0, false
 	}
 	for i := range a {
+		if a[i].Kind == PartitionBoundMaxValue || b[i].Kind == PartitionBoundMaxValue {
+			if a[i].Kind == b[i].Kind {
+				continue
+			}
+			if a[i].Kind == PartitionBoundMaxValue {
+				return 1, true
+			}
+			return -1, true
+		}
 		if a[i].Kind == PartitionBoundExpression || b[i].Kind == PartitionBoundExpression ||
 			a[i].Kind == "" || b[i].Kind == "" {
 			return 0, false
@@ -277,9 +300,8 @@ func BoundRowCompare(a, b []BoundLiteral) (cmp int, ok bool) {
 		case PartitionBoundNull:
 			return 0, false
 		case PartitionBoundString:
-			c := strings.Compare(a[i].Value, b[i].Value)
-			if c != 0 {
-				return c, true
+			if a[i].Value != b[i].Value {
+				return 0, false
 			}
 		case PartitionBoundNumeric:
 			ra, oka := new(big.Rat).SetString(a[i].Value)
@@ -290,6 +312,8 @@ func BoundRowCompare(a, b []BoundLiteral) (cmp int, ok bool) {
 			if c := ra.Cmp(rb); c != 0 {
 				return c, true
 			}
+		default:
+			return 0, false
 		}
 	}
 	return 0, true
@@ -308,7 +332,9 @@ func BoundRowLessThan(a, b []BoundLiteral) (less, ok bool) {
 
 // LessThanBoundUpper returns the member's upper edge: its single less_than
 // bound row, MaxValue as a distinct sentinel state, and ok=false when the
-// bound is absent/unproven for ordering.
+// bound is absent/unproven for ordering. A row composed entirely of
+// MAXVALUE items normalizes to the scalar sentinel — the same +∞ tail a
+// scalar `VALUES LESS THAN MAXVALUE` declares.
 func LessThanBoundUpper(bound *PartitionBound) (row []BoundLiteral, maxValue, ok bool) {
 	if bound == nil || bound.Kind != "less_than" {
 		return nil, false, false
@@ -316,13 +342,77 @@ func LessThanBoundUpper(bound *PartitionBound) (row []BoundLiteral, maxValue, ok
 	if bound.MaxValue {
 		return nil, true, true
 	}
-	if len(bound.Rows) != 1 {
+	if len(bound.Rows) != 1 || len(bound.Rows[0]) == 0 {
 		return nil, false, false
 	}
+	allMax := true
 	for _, item := range bound.Rows[0] {
 		if item.Kind == PartitionBoundExpression || item.Kind == "" {
 			return nil, false, false
 		}
+		if item.Kind != PartitionBoundMaxValue {
+			allMax = false
+		}
+	}
+	if allMax {
+		return nil, true, true
 	}
 	return bound.Rows[0], false, true
+}
+
+// BoundComparable reports whether every item in a member bound is a
+// projected literal the bounded comparators can adjudicate: nil bound,
+// unshaped clause kind, empty rows, and expression items are all
+// uncomparable. MAXVALUE sentinels, NULLs, strings, and numerics are
+// projected literals — comparability answers "the comparison may run",
+// not that it always decides (string ordering still answers unproven).
+func BoundComparable(bound *PartitionBound) bool {
+	if bound == nil || bound.Kind == "" {
+		return false
+	}
+	if bound.MaxValue || bound.Default {
+		return true
+	}
+	if len(bound.Rows) == 0 {
+		return false
+	}
+	for _, row := range bound.Rows {
+		if len(row) == 0 {
+			return false
+		}
+		for _, item := range row {
+			switch item.Kind {
+			case PartitionBoundNumeric, PartitionBoundString, PartitionBoundNull, PartitionBoundMaxValue:
+			default:
+				return false
+			}
+		}
+	}
+	return true
+}
+
+// InBoundsOverlap reports whether two IN bounds provably share a value
+// row: (true,true) proven overlap, (false,true) proven disjoint,
+// (false,false) unproven — an expression/unprojectable item pair, a
+// missing clause, or an empty shell leaves the overlap undecidable.
+func InBoundsOverlap(a, b *PartitionBound) (overlap, ok bool) {
+	if a == nil || b == nil || a.Kind != "in" || b.Kind != "in" {
+		return false, false
+	}
+	if a.Default || b.Default || len(a.Rows) == 0 || len(b.Rows) == 0 {
+		return false, false
+	}
+	unproven := false
+	for _, rowA := range a.Rows {
+		for _, rowB := range b.Rows {
+			equal, eqOK := BoundRowEqual(rowA, rowB)
+			if eqOK && equal {
+				return true, true
+			}
+			if !eqOK {
+				unproven = true
+			}
+		}
+	}
+	return false, !unproven
 }

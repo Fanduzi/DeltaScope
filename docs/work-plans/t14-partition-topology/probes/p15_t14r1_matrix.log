@@ -1,0 +1,1544 @@
+########## mysql57 ##########
+=== [mysql57] schema
+--- SQL: CREATE DATABASE IF NOT EXISTS golden
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql57] reset-r2
+--- SQL: DROP TABLE IF EXISTS golden.r2; CREATE TABLE golden.r2 (id INT) ENGINE=InnoDB PARTITION BY RANGE(id) (PARTITION p0 VALUES LESS THAN (200), PARTITION p1 VALUES LESS THAN (400))
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql57] add-dup-newname
+--- SQL: ALTER TABLE golden.r2 ADD PARTITION (PARTITION p2 VALUES LESS THAN (600), PARTITION p2 VALUES LESS THAN (800))
+--- rc=1
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1517 (HY000) at line 1: Duplicate partition name p2
+=== [mysql57] dir-r2
+--- SQL: SELECT PARTITION_NAME, PARTITION_ORDINAL_POSITION, PARTITION_METHOD, PARTITION_DESCRIPTION FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='r2' AND PARTITION_NAME IS NOT NULL ORDER BY PARTITION_ORDINAL_POSITION
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+PARTITION_NAME	PARTITION_ORDINAL_POSITION	PARTITION_METHOD	PARTITION_DESCRIPTION
+p0	1	RANGE	200
+p1	2	RANGE	400
+=== [mysql57] reset-rm
+--- SQL: DROP TABLE IF EXISTS golden.rm; CREATE TABLE golden.rm (id INT) ENGINE=InnoDB PARTITION BY RANGE(id) (PARTITION p0 VALUES LESS THAN (200), PARTITION pmax VALUES LESS THAN MAXVALUE)
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql57] reorg-dup-newname
+--- SQL: ALTER TABLE golden.rm REORGANIZE PARTITION p0 INTO (PARTITION p1 VALUES LESS THAN (120), PARTITION p1 VALUES LESS THAN (200))
+--- rc=1
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1517 (HY000) at line 1: Duplicate partition name p1
+=== [mysql57] dir-rm
+--- SQL: SELECT PARTITION_NAME, PARTITION_ORDINAL_POSITION, PARTITION_METHOD, PARTITION_DESCRIPTION FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='rm' AND PARTITION_NAME IS NOT NULL ORDER BY PARTITION_ORDINAL_POSITION
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+PARTITION_NAME	PARTITION_ORDINAL_POSITION	PARTITION_METHOD	PARTITION_DESCRIPTION
+p0	1	RANGE	200
+pmax	2	RANGE	MAXVALUE
+=== [mysql57] pby-dup-newname
+--- SQL: ALTER TABLE golden.r2 PARTITION BY RANGE(id) (PARTITION q0 VALUES LESS THAN (200), PARTITION q0 VALUES LESS THAN MAXVALUE)
+--- rc=1
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1517 (HY000) at line 1: Duplicate partition name q0
+=== [mysql57] dir-r2
+--- SQL: SELECT PARTITION_NAME, PARTITION_ORDINAL_POSITION, PARTITION_METHOD, PARTITION_DESCRIPTION FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='r2' AND PARTITION_NAME IS NOT NULL ORDER BY PARTITION_ORDINAL_POSITION
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+PARTITION_NAME	PARTITION_ORDINAL_POSITION	PARTITION_METHOD	PARTITION_DESCRIPTION
+p0	1	RANGE	200
+p1	2	RANGE	400
+=== [mysql57] create-dup-name
+--- SQL: DROP TABLE IF EXISTS golden.dn; CREATE TABLE golden.dn (id INT) ENGINE=InnoDB PARTITION BY RANGE(id) (PARTITION p0 VALUES LESS THAN (200), PARTITION p0 VALUES LESS THAN (400))
+--- rc=1
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1517 (HY000) at line 1: Duplicate partition name p0
+=== [mysql57] create-dup-name-exists
+--- SQL: SELECT COUNT(*) AS present FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='dn'
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+present
+0
+=== [mysql57] reset-h4
+--- SQL: DROP TABLE IF EXISTS golden.h4; CREATE TABLE golden.h4 (id INT) ENGINE=InnoDB PARTITION BY HASH(id) PARTITIONS 4
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql57] add-partitions-0
+--- SQL: ALTER TABLE golden.h4 ADD PARTITION PARTITIONS 0
+--- rc=1
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1514 (HY000) at line 1: At least one partition must be added
+=== [mysql57] dir-h4
+--- SQL: SELECT PARTITION_NAME, PARTITION_ORDINAL_POSITION, PARTITION_METHOD, PARTITION_DESCRIPTION FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='h4' AND PARTITION_NAME IS NOT NULL ORDER BY PARTITION_ORDINAL_POSITION
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+PARTITION_NAME	PARTITION_ORDINAL_POSITION	PARTITION_METHOD	PARTITION_DESCRIPTION
+p0	1	HASH	NULL
+p1	2	HASH	NULL
+p2	3	HASH	NULL
+p3	4	HASH	NULL
+=== [mysql57] add-partitions-8193
+--- SQL: ALTER TABLE golden.h4 ADD PARTITION PARTITIONS 8193
+--- rc=1
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1499 (HY000) at line 1: Too many partitions (including subpartitions) were defined
+=== [mysql57] dir-h4
+--- SQL: SELECT PARTITION_NAME, PARTITION_ORDINAL_POSITION, PARTITION_METHOD, PARTITION_DESCRIPTION FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='h4' AND PARTITION_NAME IS NOT NULL ORDER BY PARTITION_ORDINAL_POSITION
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+PARTITION_NAME	PARTITION_ORDINAL_POSITION	PARTITION_METHOD	PARTITION_DESCRIPTION
+p0	1	HASH	NULL
+p1	2	HASH	NULL
+p2	3	HASH	NULL
+p3	4	HASH	NULL
+=== [mysql57] coalesce-0
+--- SQL: ALTER TABLE golden.h4 COALESCE PARTITION 0
+--- rc=1
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1515 (HY000) at line 1: At least one partition must be coalesced
+=== [mysql57] dir-h4
+--- SQL: SELECT PARTITION_NAME, PARTITION_ORDINAL_POSITION, PARTITION_METHOD, PARTITION_DESCRIPTION FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='h4' AND PARTITION_NAME IS NOT NULL ORDER BY PARTITION_ORDINAL_POSITION
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+PARTITION_NAME	PARTITION_ORDINAL_POSITION	PARTITION_METHOD	PARTITION_DESCRIPTION
+p0	1	HASH	NULL
+p1	2	HASH	NULL
+p2	3	HASH	NULL
+p3	4	HASH	NULL
+=== [mysql57] pby-hash-0
+--- SQL: ALTER TABLE golden.h4 PARTITION BY HASH(id) PARTITIONS 0
+--- rc=1
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1504 (HY000) at line 1: Number of partitions = 0 is not an allowed value
+=== [mysql57] dir-h4
+--- SQL: SELECT PARTITION_NAME, PARTITION_ORDINAL_POSITION, PARTITION_METHOD, PARTITION_DESCRIPTION FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='h4' AND PARTITION_NAME IS NOT NULL ORDER BY PARTITION_ORDINAL_POSITION
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+PARTITION_NAME	PARTITION_ORDINAL_POSITION	PARTITION_METHOD	PARTITION_DESCRIPTION
+p0	1	HASH	NULL
+p1	2	HASH	NULL
+p2	3	HASH	NULL
+p3	4	HASH	NULL
+=== [mysql57] pby-hash-8193
+--- SQL: ALTER TABLE golden.h4 PARTITION BY HASH(id) PARTITIONS 8193
+--- rc=1
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1499 (HY000) at line 1: Too many partitions (including subpartitions) were defined
+=== [mysql57] dir-h4
+--- SQL: SELECT PARTITION_NAME, PARTITION_ORDINAL_POSITION, PARTITION_METHOD, PARTITION_DESCRIPTION FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='h4' AND PARTITION_NAME IS NOT NULL ORDER BY PARTITION_ORDINAL_POSITION
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+PARTITION_NAME	PARTITION_ORDINAL_POSITION	PARTITION_METHOD	PARTITION_DESCRIPTION
+p0	1	HASH	NULL
+p1	2	HASH	NULL
+p2	3	HASH	NULL
+p3	4	HASH	NULL
+=== [mysql57] reset-r2
+--- SQL: DROP TABLE IF EXISTS golden.r2; CREATE TABLE golden.r2 (id INT) ENGINE=InnoDB PARTITION BY RANGE(id) (PARTITION p0 VALUES LESS THAN (200), PARTITION p1 VALUES LESS THAN (400))
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql57] pby-range-count4
+--- SQL: ALTER TABLE golden.r2 PARTITION BY RANGE(id) PARTITIONS 4
+--- rc=1
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1492 (HY000) at line 1: For RANGE partitions each partition must be defined
+=== [mysql57] dir-r2
+--- SQL: SELECT PARTITION_NAME, PARTITION_ORDINAL_POSITION, PARTITION_METHOD, PARTITION_DESCRIPTION FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='r2' AND PARTITION_NAME IS NOT NULL ORDER BY PARTITION_ORDINAL_POSITION
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+PARTITION_NAME	PARTITION_ORDINAL_POSITION	PARTITION_METHOD	PARTITION_DESCRIPTION
+p0	1	RANGE	200
+p1	2	RANGE	400
+=== [mysql57] create-hash-0
+--- SQL: DROP TABLE IF EXISTS golden.c0; CREATE TABLE golden.c0 (id INT) ENGINE=InnoDB PARTITION BY HASH(id) PARTITIONS 0
+--- rc=1
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1504 (HY000) at line 1: Number of partitions = 0 is not an allowed value
+=== [mysql57] create-hash-8193
+--- SQL: DROP TABLE IF EXISTS golden.c8; CREATE TABLE golden.c8 (id INT) ENGINE=InnoDB PARTITION BY HASH(id) PARTITIONS 8193
+--- rc=1
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1499 (HY000) at line 1: Too many partitions (including subpartitions) were defined
+=== [mysql57] create-range-count4
+--- SQL: DROP TABLE IF EXISTS golden.c4; CREATE TABLE golden.c4 (id INT) ENGINE=InnoDB PARTITION BY RANGE(id) PARTITIONS 4
+--- rc=1
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1492 (HY000) at line 1: For RANGE partitions each partition must be defined
+=== [mysql57] dir-c4
+--- SQL: SELECT PARTITION_NAME, PARTITION_ORDINAL_POSITION, PARTITION_METHOD, PARTITION_DESCRIPTION FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='c4' AND PARTITION_NAME IS NOT NULL ORDER BY PARTITION_ORDINAL_POSITION
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql57] create-range-decreasing
+--- SQL: DROP TABLE IF EXISTS golden.cd; CREATE TABLE golden.cd (id INT) ENGINE=InnoDB PARTITION BY RANGE(id) (PARTITION p0 VALUES LESS THAN (200), PARTITION p1 VALUES LESS THAN (100))
+--- rc=1
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1493 (HY000) at line 1: VALUES LESS THAN value must be strictly increasing for each partition
+=== [mysql57] create-range-decreasing-exists
+--- SQL: SELECT COUNT(*) AS present FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='cd'
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+present
+0
+=== [mysql57] create-list-dupvalue
+--- SQL: DROP TABLE IF EXISTS golden.cl; CREATE TABLE golden.cl (id INT) ENGINE=InnoDB PARTITION BY LIST(id) (PARTITION p0 VALUES IN (1), PARTITION p1 VALUES IN (1))
+--- rc=1
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1495 (HY000) at line 1: Multiple definition of same constant in list partitioning
+=== [mysql57] create-maxvalue-mid
+--- SQL: DROP TABLE IF EXISTS golden.cm; CREATE TABLE golden.cm (id INT) ENGINE=InnoDB PARTITION BY RANGE(id) (PARTITION p0 VALUES LESS THAN MAXVALUE, PARTITION p1 VALUES LESS THAN (400))
+--- rc=1
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1481 (HY000) at line 1: MAXVALUE can only be used in last partition definition
+=== [mysql57] reset-rc
+--- SQL: DROP TABLE IF EXISTS golden.rc; CREATE TABLE golden.rc (a INT, b INT) ENGINE=InnoDB PARTITION BY RANGE COLUMNS(a,b) (PARTITION p0 VALUES LESS THAN (10,MAXVALUE))
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql57] dir-rc
+--- SQL: SELECT PARTITION_NAME, PARTITION_ORDINAL_POSITION, PARTITION_METHOD, PARTITION_DESCRIPTION FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='rc' AND PARTITION_NAME IS NOT NULL ORDER BY PARTITION_ORDINAL_POSITION
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+PARTITION_NAME	PARTITION_ORDINAL_POSITION	PARTITION_METHOD	PARTITION_DESCRIPTION
+p0	1	RANGE COLUMNS	10,MAXVALUE
+=== [mysql57] rcol-add-maxvalue2
+--- SQL: ALTER TABLE golden.rc ADD PARTITION (PARTITION p1 VALUES LESS THAN (20,MAXVALUE))
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql57] dir-rc
+--- SQL: SELECT PARTITION_NAME, PARTITION_ORDINAL_POSITION, PARTITION_METHOD, PARTITION_DESCRIPTION FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='rc' AND PARTITION_NAME IS NOT NULL ORDER BY PARTITION_ORDINAL_POSITION
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+PARTITION_NAME	PARTITION_ORDINAL_POSITION	PARTITION_METHOD	PARTITION_DESCRIPTION
+p0	1	RANGE COLUMNS	10,MAXVALUE
+p1	2	RANGE COLUMNS	20,MAXVALUE
+=== [mysql57] rcol-add-scalar-tail
+--- SQL: ALTER TABLE golden.rc ADD PARTITION (PARTITION p2 VALUES LESS THAN (MAXVALUE,MAXVALUE))
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql57] dir-rc
+--- SQL: SELECT PARTITION_NAME, PARTITION_ORDINAL_POSITION, PARTITION_METHOD, PARTITION_DESCRIPTION FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='rc' AND PARTITION_NAME IS NOT NULL ORDER BY PARTITION_ORDINAL_POSITION
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+PARTITION_NAME	PARTITION_ORDINAL_POSITION	PARTITION_METHOD	PARTITION_DESCRIPTION
+p0	1	RANGE COLUMNS	10,MAXVALUE
+p1	2	RANGE COLUMNS	20,MAXVALUE
+p2	3	RANGE COLUMNS	MAXVALUE,MAXVALUE
+=== [mysql57] rcol-pby
+--- SQL: ALTER TABLE golden.rc PARTITION BY RANGE COLUMNS(a,b) (PARTITION q0 VALUES LESS THAN (15,MAXVALUE), PARTITION q1 VALUES LESS THAN (30,MAXVALUE))
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql57] dir-rc
+--- SQL: SELECT PARTITION_NAME, PARTITION_ORDINAL_POSITION, PARTITION_METHOD, PARTITION_DESCRIPTION FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='rc' AND PARTITION_NAME IS NOT NULL ORDER BY PARTITION_ORDINAL_POSITION
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+PARTITION_NAME	PARTITION_ORDINAL_POSITION	PARTITION_METHOD	PARTITION_DESCRIPTION
+q0	1	RANGE COLUMNS	15,MAXVALUE
+q1	2	RANGE COLUMNS	30,MAXVALUE
+=== [mysql57] reset-sc
+--- SQL: DROP TABLE IF EXISTS golden.sc; CREATE TABLE golden.sc (a VARCHAR(10)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci PARTITION BY RANGE COLUMNS(a) (PARTITION p0 VALUES LESS THAN ('B'))
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql57] scol-add-ci-equal
+--- SQL: ALTER TABLE golden.sc ADD PARTITION (PARTITION p1 VALUES LESS THAN ('a'))
+--- rc=1
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1493 (HY000) at line 1: VALUES LESS THAN value must be strictly increasing for each partition
+=== [mysql57] dir-sc
+--- SQL: SELECT PARTITION_NAME, PARTITION_ORDINAL_POSITION, PARTITION_METHOD, PARTITION_DESCRIPTION FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='sc' AND PARTITION_NAME IS NOT NULL ORDER BY PARTITION_ORDINAL_POSITION
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+PARTITION_NAME	PARTITION_ORDINAL_POSITION	PARTITION_METHOD	PARTITION_DESCRIPTION
+p0	1	RANGE COLUMNS	'B'
+=== [mysql57] scol-reorg-ci-equal
+--- SQL: ALTER TABLE golden.sc REORGANIZE PARTITION p0 INTO (PARTITION p1 VALUES LESS THAN ('a'))
+--- rc=1
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1520 (HY000) at line 1: Reorganize of range partitions cannot change total ranges except for last partition where it can extend the range
+=== [mysql57] dir-sc
+--- SQL: SELECT PARTITION_NAME, PARTITION_ORDINAL_POSITION, PARTITION_METHOD, PARTITION_DESCRIPTION FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='sc' AND PARTITION_NAME IS NOT NULL ORDER BY PARTITION_ORDINAL_POSITION
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+PARTITION_NAME	PARTITION_ORDINAL_POSITION	PARTITION_METHOD	PARTITION_DESCRIPTION
+p0	1	RANGE COLUMNS	'B'
+=== [mysql57] reset-sc
+--- SQL: DROP TABLE IF EXISTS golden.sc; CREATE TABLE golden.sc (a VARCHAR(10)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci PARTITION BY RANGE COLUMNS(a) (PARTITION p0 VALUES LESS THAN ('B'))
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql57] scol-add-higher
+--- SQL: ALTER TABLE golden.sc ADD PARTITION (PARTITION p1 VALUES LESS THAN ('c'))
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql57] dir-sc
+--- SQL: SELECT PARTITION_NAME, PARTITION_ORDINAL_POSITION, PARTITION_METHOD, PARTITION_DESCRIPTION FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='sc' AND PARTITION_NAME IS NOT NULL ORDER BY PARTITION_ORDINAL_POSITION
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+PARTITION_NAME	PARTITION_ORDINAL_POSITION	PARTITION_METHOD	PARTITION_DESCRIPTION
+p0	1	RANGE COLUMNS	'B'
+p1	2	RANGE COLUMNS	'c'
+=== [mysql57] reset-lc
+--- SQL: DROP TABLE IF EXISTS golden.lc; CREATE TABLE golden.lc (a VARCHAR(10)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci PARTITION BY LIST COLUMNS(a) (PARTITION p0 VALUES IN ('a'))
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql57] lcol-add-ci-dup
+--- SQL: ALTER TABLE golden.lc ADD PARTITION (PARTITION p1 VALUES IN ('B'))
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql57] dir-lc
+--- SQL: SELECT PARTITION_NAME, PARTITION_ORDINAL_POSITION, PARTITION_METHOD, PARTITION_DESCRIPTION FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='lc' AND PARTITION_NAME IS NOT NULL ORDER BY PARTITION_ORDINAL_POSITION
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+PARTITION_NAME	PARTITION_ORDINAL_POSITION	PARTITION_METHOD	PARTITION_DESCRIPTION
+p0	1	LIST COLUMNS	'a'
+p1	2	LIST COLUMNS	'B'
+=== [mysql57] reset-l2
+--- SQL: DROP TABLE IF EXISTS golden.l2; CREATE TABLE golden.l2 (id INT) ENGINE=InnoDB PARTITION BY LIST(id) (PARTITION p0 VALUES IN (1), PARTITION p1 VALUES IN (2))
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql57] list-add-expr
+--- SQL: ALTER TABLE golden.l2 ADD PARTITION (PARTITION p2 VALUES IN (1+0))
+--- rc=1
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1495 (HY000) at line 1: Multiple definition of same constant in list partitioning
+=== [mysql57] dir-l2
+--- SQL: SELECT PARTITION_NAME, PARTITION_ORDINAL_POSITION, PARTITION_METHOD, PARTITION_DESCRIPTION FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='l2' AND PARTITION_NAME IS NOT NULL ORDER BY PARTITION_ORDINAL_POSITION
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+PARTITION_NAME	PARTITION_ORDINAL_POSITION	PARTITION_METHOD	PARTITION_DESCRIPTION
+p0	1	LIST	1
+p1	2	LIST	2
+=== [mysql57] create-range-expr-bound
+--- SQL: DROP TABLE IF EXISTS golden.ce; CREATE TABLE golden.ce (id INT) ENGINE=InnoDB PARTITION BY RANGE(id) (PARTITION p0 VALUES LESS THAN (100+100), PARTITION p1 VALUES LESS THAN (150))
+--- rc=1
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1493 (HY000) at line 1: VALUES LESS THAN value must be strictly increasing for each partition
+=== [mysql57] dir-ce
+--- SQL: SELECT PARTITION_NAME, PARTITION_ORDINAL_POSITION, PARTITION_METHOD, PARTITION_DESCRIPTION FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='ce' AND PARTITION_NAME IS NOT NULL ORDER BY PARTITION_ORDINAL_POSITION
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql57] pby-expr-bound
+--- SQL: ALTER TABLE golden.r2 PARTITION BY RANGE(id) (PARTITION p0 VALUES LESS THAN (100+100), PARTITION p1 VALUES LESS THAN (150))
+--- rc=1
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1493 (HY000) at line 1: VALUES LESS THAN value must be strictly increasing for each partition
+=== [mysql57] dir-r2
+--- SQL: SELECT PARTITION_NAME, PARTITION_ORDINAL_POSITION, PARTITION_METHOD, PARTITION_DESCRIPTION FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='r2' AND PARTITION_NAME IS NOT NULL ORDER BY PARTITION_ORDINAL_POSITION
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+PARTITION_NAME	PARTITION_ORDINAL_POSITION	PARTITION_METHOD	PARTITION_DESCRIPTION
+p0	1	RANGE	200
+p1	2	RANGE	400
+=== [mysql57] reset-r2
+--- SQL: DROP TABLE IF EXISTS golden.r2; CREATE TABLE golden.r2 (id INT) ENGINE=InnoDB PARTITION BY RANGE(id) (PARTITION p0 VALUES LESS THAN (200), PARTITION p1 VALUES LESS THAN (400))
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql57] add-low-bound
+--- SQL: ALTER TABLE golden.r2 ADD PARTITION (PARTITION p2 VALUES LESS THAN (300))
+--- rc=1
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1493 (HY000) at line 1: VALUES LESS THAN value must be strictly increasing for each partition
+=== [mysql57] dir-r2
+--- SQL: SELECT PARTITION_NAME, PARTITION_ORDINAL_POSITION, PARTITION_METHOD, PARTITION_DESCRIPTION FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='r2' AND PARTITION_NAME IS NOT NULL ORDER BY PARTITION_ORDINAL_POSITION
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+PARTITION_NAME	PARTITION_ORDINAL_POSITION	PARTITION_METHOD	PARTITION_DESCRIPTION
+p0	1	RANGE	200
+p1	2	RANGE	400
+=== [mysql57] reset-my
+--- SQL: DROP TABLE IF EXISTS golden.my; CREATE TABLE golden.my (id INT) ENGINE=MyISAM PARTITION BY HASH(id) PARTITIONS 2
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql57] myisam-discard
+--- SQL: ALTER TABLE golden.my DISCARD PARTITION p0 TABLESPACE
+--- rc=1
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1031 (HY000) at line 1: Table storage engine for 'my' doesn't have this option
+=== [mysql57] dir-my
+--- SQL: SELECT PARTITION_NAME, PARTITION_ORDINAL_POSITION, PARTITION_METHOD, PARTITION_DESCRIPTION FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='my' AND PARTITION_NAME IS NOT NULL ORDER BY PARTITION_ORDINAL_POSITION
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+PARTITION_NAME	PARTITION_ORDINAL_POSITION	PARTITION_METHOD	PARTITION_DESCRIPTION
+p0	1	HASH	NULL
+p1	2	HASH	NULL
+=== [mysql57] myisam-import
+--- SQL: ALTER TABLE golden.my IMPORT PARTITION p0 TABLESPACE
+--- rc=1
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1031 (HY000) at line 1: Table storage engine for 'my' doesn't have this option
+=== [mysql57] reset-in
+--- SQL: DROP TABLE IF EXISTS golden.inn; CREATE TABLE golden.inn (id INT) ENGINE=InnoDB PARTITION BY HASH(id) PARTITIONS 2
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql57] innodb-discard
+--- SQL: ALTER TABLE golden.inn DISCARD PARTITION p0 TABLESPACE
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql57] dir-inn
+--- SQL: SELECT PARTITION_NAME, PARTITION_ORDINAL_POSITION, PARTITION_METHOD, PARTITION_DESCRIPTION FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='inn' AND PARTITION_NAME IS NOT NULL ORDER BY PARTITION_ORDINAL_POSITION
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+PARTITION_NAME	PARTITION_ORDINAL_POSITION	PARTITION_METHOD	PARTITION_DESCRIPTION
+p0	1	HASH	NULL
+p1	2	HASH	NULL
+=== [mysql57] innodb-import
+--- SQL: ALTER TABLE golden.inn IMPORT PARTITION p0 TABLESPACE
+--- rc=1
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1812 (HY000) at line 1: Tablespace is missing for table `golden`.`inn`.
+=== [mysql57] reset-rm
+--- SQL: DROP TABLE IF EXISTS golden.rm; CREATE TABLE golden.rm (id INT) ENGINE=InnoDB PARTITION BY RANGE(id) (PARTITION p0 VALUES LESS THAN (200), PARTITION pmax VALUES LESS THAN MAXVALUE)
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql57] optimize-named
+--- SQL: ALTER TABLE golden.rm OPTIMIZE PARTITION p0
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+Table	Op	Msg_type	Msg_text
+golden.rm	optimize	note	Table does not support optimize on partitions. All partitions will be rebuilt and analyzed.
+golden.rm	optimize	status	OK
+=== [mysql57] optimize-warnings
+--- SQL: SHOW WARNINGS
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+########## mysql80 ##########
+=== [mysql80] schema
+--- SQL: CREATE DATABASE IF NOT EXISTS golden
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql80] reset-r2
+--- SQL: DROP TABLE IF EXISTS golden.r2; CREATE TABLE golden.r2 (id INT) ENGINE=InnoDB PARTITION BY RANGE(id) (PARTITION p0 VALUES LESS THAN (200), PARTITION p1 VALUES LESS THAN (400))
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql80] add-dup-newname
+--- SQL: ALTER TABLE golden.r2 ADD PARTITION (PARTITION p2 VALUES LESS THAN (600), PARTITION p2 VALUES LESS THAN (800))
+--- rc=1
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1517 (HY000) at line 1: Duplicate partition name p2
+=== [mysql80] dir-r2
+--- SQL: SELECT PARTITION_NAME, PARTITION_ORDINAL_POSITION, PARTITION_METHOD, PARTITION_DESCRIPTION FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='r2' AND PARTITION_NAME IS NOT NULL ORDER BY PARTITION_ORDINAL_POSITION
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+PARTITION_NAME	PARTITION_ORDINAL_POSITION	PARTITION_METHOD	PARTITION_DESCRIPTION
+p0	1	RANGE	200
+p1	2	RANGE	400
+=== [mysql80] reset-rm
+--- SQL: DROP TABLE IF EXISTS golden.rm; CREATE TABLE golden.rm (id INT) ENGINE=InnoDB PARTITION BY RANGE(id) (PARTITION p0 VALUES LESS THAN (200), PARTITION pmax VALUES LESS THAN MAXVALUE)
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql80] reorg-dup-newname
+--- SQL: ALTER TABLE golden.rm REORGANIZE PARTITION p0 INTO (PARTITION p1 VALUES LESS THAN (120), PARTITION p1 VALUES LESS THAN (200))
+--- rc=1
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1517 (HY000) at line 1: Duplicate partition name p1
+=== [mysql80] dir-rm
+--- SQL: SELECT PARTITION_NAME, PARTITION_ORDINAL_POSITION, PARTITION_METHOD, PARTITION_DESCRIPTION FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='rm' AND PARTITION_NAME IS NOT NULL ORDER BY PARTITION_ORDINAL_POSITION
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+PARTITION_NAME	PARTITION_ORDINAL_POSITION	PARTITION_METHOD	PARTITION_DESCRIPTION
+p0	1	RANGE	200
+pmax	2	RANGE	MAXVALUE
+=== [mysql80] pby-dup-newname
+--- SQL: ALTER TABLE golden.r2 PARTITION BY RANGE(id) (PARTITION q0 VALUES LESS THAN (200), PARTITION q0 VALUES LESS THAN MAXVALUE)
+--- rc=1
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1517 (HY000) at line 1: Duplicate partition name q0
+=== [mysql80] dir-r2
+--- SQL: SELECT PARTITION_NAME, PARTITION_ORDINAL_POSITION, PARTITION_METHOD, PARTITION_DESCRIPTION FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='r2' AND PARTITION_NAME IS NOT NULL ORDER BY PARTITION_ORDINAL_POSITION
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+PARTITION_NAME	PARTITION_ORDINAL_POSITION	PARTITION_METHOD	PARTITION_DESCRIPTION
+p0	1	RANGE	200
+p1	2	RANGE	400
+=== [mysql80] create-dup-name
+--- SQL: DROP TABLE IF EXISTS golden.dn; CREATE TABLE golden.dn (id INT) ENGINE=InnoDB PARTITION BY RANGE(id) (PARTITION p0 VALUES LESS THAN (200), PARTITION p0 VALUES LESS THAN (400))
+--- rc=1
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1517 (HY000) at line 1: Duplicate partition name p0
+=== [mysql80] create-dup-name-exists
+--- SQL: SELECT COUNT(*) AS present FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='dn'
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+present
+0
+=== [mysql80] reset-h4
+--- SQL: DROP TABLE IF EXISTS golden.h4; CREATE TABLE golden.h4 (id INT) ENGINE=InnoDB PARTITION BY HASH(id) PARTITIONS 4
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql80] add-partitions-0
+--- SQL: ALTER TABLE golden.h4 ADD PARTITION PARTITIONS 0
+--- rc=1
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1514 (HY000) at line 1: At least one partition must be added
+=== [mysql80] dir-h4
+--- SQL: SELECT PARTITION_NAME, PARTITION_ORDINAL_POSITION, PARTITION_METHOD, PARTITION_DESCRIPTION FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='h4' AND PARTITION_NAME IS NOT NULL ORDER BY PARTITION_ORDINAL_POSITION
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+PARTITION_NAME	PARTITION_ORDINAL_POSITION	PARTITION_METHOD	PARTITION_DESCRIPTION
+p0	1	HASH	NULL
+p1	2	HASH	NULL
+p2	3	HASH	NULL
+p3	4	HASH	NULL
+=== [mysql80] add-partitions-8193
+--- SQL: ALTER TABLE golden.h4 ADD PARTITION PARTITIONS 8193
+--- rc=1
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1499 (HY000) at line 1: Too many partitions (including subpartitions) were defined
+=== [mysql80] dir-h4
+--- SQL: SELECT PARTITION_NAME, PARTITION_ORDINAL_POSITION, PARTITION_METHOD, PARTITION_DESCRIPTION FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='h4' AND PARTITION_NAME IS NOT NULL ORDER BY PARTITION_ORDINAL_POSITION
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+PARTITION_NAME	PARTITION_ORDINAL_POSITION	PARTITION_METHOD	PARTITION_DESCRIPTION
+p0	1	HASH	NULL
+p1	2	HASH	NULL
+p2	3	HASH	NULL
+p3	4	HASH	NULL
+=== [mysql80] coalesce-0
+--- SQL: ALTER TABLE golden.h4 COALESCE PARTITION 0
+--- rc=1
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1515 (HY000) at line 1: At least one partition must be coalesced
+=== [mysql80] dir-h4
+--- SQL: SELECT PARTITION_NAME, PARTITION_ORDINAL_POSITION, PARTITION_METHOD, PARTITION_DESCRIPTION FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='h4' AND PARTITION_NAME IS NOT NULL ORDER BY PARTITION_ORDINAL_POSITION
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+PARTITION_NAME	PARTITION_ORDINAL_POSITION	PARTITION_METHOD	PARTITION_DESCRIPTION
+p0	1	HASH	NULL
+p1	2	HASH	NULL
+p2	3	HASH	NULL
+p3	4	HASH	NULL
+=== [mysql80] pby-hash-0
+--- SQL: ALTER TABLE golden.h4 PARTITION BY HASH(id) PARTITIONS 0
+--- rc=1
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1504 (HY000) at line 1: Number of partitions = 0 is not an allowed value
+=== [mysql80] dir-h4
+--- SQL: SELECT PARTITION_NAME, PARTITION_ORDINAL_POSITION, PARTITION_METHOD, PARTITION_DESCRIPTION FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='h4' AND PARTITION_NAME IS NOT NULL ORDER BY PARTITION_ORDINAL_POSITION
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+PARTITION_NAME	PARTITION_ORDINAL_POSITION	PARTITION_METHOD	PARTITION_DESCRIPTION
+p0	1	HASH	NULL
+p1	2	HASH	NULL
+p2	3	HASH	NULL
+p3	4	HASH	NULL
+=== [mysql80] pby-hash-8193
+--- SQL: ALTER TABLE golden.h4 PARTITION BY HASH(id) PARTITIONS 8193
+--- rc=1
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1499 (HY000) at line 1: Too many partitions (including subpartitions) were defined
+=== [mysql80] dir-h4
+--- SQL: SELECT PARTITION_NAME, PARTITION_ORDINAL_POSITION, PARTITION_METHOD, PARTITION_DESCRIPTION FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='h4' AND PARTITION_NAME IS NOT NULL ORDER BY PARTITION_ORDINAL_POSITION
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+PARTITION_NAME	PARTITION_ORDINAL_POSITION	PARTITION_METHOD	PARTITION_DESCRIPTION
+p0	1	HASH	NULL
+p1	2	HASH	NULL
+p2	3	HASH	NULL
+p3	4	HASH	NULL
+=== [mysql80] reset-r2
+--- SQL: DROP TABLE IF EXISTS golden.r2; CREATE TABLE golden.r2 (id INT) ENGINE=InnoDB PARTITION BY RANGE(id) (PARTITION p0 VALUES LESS THAN (200), PARTITION p1 VALUES LESS THAN (400))
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql80] pby-range-count4
+--- SQL: ALTER TABLE golden.r2 PARTITION BY RANGE(id) PARTITIONS 4
+--- rc=1
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1492 (HY000) at line 1: For RANGE partitions each partition must be defined
+=== [mysql80] dir-r2
+--- SQL: SELECT PARTITION_NAME, PARTITION_ORDINAL_POSITION, PARTITION_METHOD, PARTITION_DESCRIPTION FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='r2' AND PARTITION_NAME IS NOT NULL ORDER BY PARTITION_ORDINAL_POSITION
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+PARTITION_NAME	PARTITION_ORDINAL_POSITION	PARTITION_METHOD	PARTITION_DESCRIPTION
+p0	1	RANGE	200
+p1	2	RANGE	400
+=== [mysql80] create-hash-0
+--- SQL: DROP TABLE IF EXISTS golden.c0; CREATE TABLE golden.c0 (id INT) ENGINE=InnoDB PARTITION BY HASH(id) PARTITIONS 0
+--- rc=1
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1504 (HY000) at line 1: Number of partitions = 0 is not an allowed value
+=== [mysql80] create-hash-8193
+--- SQL: DROP TABLE IF EXISTS golden.c8; CREATE TABLE golden.c8 (id INT) ENGINE=InnoDB PARTITION BY HASH(id) PARTITIONS 8193
+--- rc=1
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1499 (HY000) at line 1: Too many partitions (including subpartitions) were defined
+=== [mysql80] create-range-count4
+--- SQL: DROP TABLE IF EXISTS golden.c4; CREATE TABLE golden.c4 (id INT) ENGINE=InnoDB PARTITION BY RANGE(id) PARTITIONS 4
+--- rc=1
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1492 (HY000) at line 1: For RANGE partitions each partition must be defined
+=== [mysql80] dir-c4
+--- SQL: SELECT PARTITION_NAME, PARTITION_ORDINAL_POSITION, PARTITION_METHOD, PARTITION_DESCRIPTION FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='c4' AND PARTITION_NAME IS NOT NULL ORDER BY PARTITION_ORDINAL_POSITION
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql80] create-range-decreasing
+--- SQL: DROP TABLE IF EXISTS golden.cd; CREATE TABLE golden.cd (id INT) ENGINE=InnoDB PARTITION BY RANGE(id) (PARTITION p0 VALUES LESS THAN (200), PARTITION p1 VALUES LESS THAN (100))
+--- rc=1
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1493 (HY000) at line 1: VALUES LESS THAN value must be strictly increasing for each partition
+=== [mysql80] create-range-decreasing-exists
+--- SQL: SELECT COUNT(*) AS present FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='cd'
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+present
+0
+=== [mysql80] create-list-dupvalue
+--- SQL: DROP TABLE IF EXISTS golden.cl; CREATE TABLE golden.cl (id INT) ENGINE=InnoDB PARTITION BY LIST(id) (PARTITION p0 VALUES IN (1), PARTITION p1 VALUES IN (1))
+--- rc=1
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1495 (HY000) at line 1: Multiple definition of same constant in list partitioning
+=== [mysql80] create-maxvalue-mid
+--- SQL: DROP TABLE IF EXISTS golden.cm; CREATE TABLE golden.cm (id INT) ENGINE=InnoDB PARTITION BY RANGE(id) (PARTITION p0 VALUES LESS THAN MAXVALUE, PARTITION p1 VALUES LESS THAN (400))
+--- rc=1
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1481 (HY000) at line 1: MAXVALUE can only be used in last partition definition
+=== [mysql80] reset-rc
+--- SQL: DROP TABLE IF EXISTS golden.rc; CREATE TABLE golden.rc (a INT, b INT) ENGINE=InnoDB PARTITION BY RANGE COLUMNS(a,b) (PARTITION p0 VALUES LESS THAN (10,MAXVALUE))
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql80] dir-rc
+--- SQL: SELECT PARTITION_NAME, PARTITION_ORDINAL_POSITION, PARTITION_METHOD, PARTITION_DESCRIPTION FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='rc' AND PARTITION_NAME IS NOT NULL ORDER BY PARTITION_ORDINAL_POSITION
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+PARTITION_NAME	PARTITION_ORDINAL_POSITION	PARTITION_METHOD	PARTITION_DESCRIPTION
+p0	1	RANGE COLUMNS	10,MAXVALUE
+=== [mysql80] rcol-add-maxvalue2
+--- SQL: ALTER TABLE golden.rc ADD PARTITION (PARTITION p1 VALUES LESS THAN (20,MAXVALUE))
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql80] dir-rc
+--- SQL: SELECT PARTITION_NAME, PARTITION_ORDINAL_POSITION, PARTITION_METHOD, PARTITION_DESCRIPTION FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='rc' AND PARTITION_NAME IS NOT NULL ORDER BY PARTITION_ORDINAL_POSITION
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+PARTITION_NAME	PARTITION_ORDINAL_POSITION	PARTITION_METHOD	PARTITION_DESCRIPTION
+p0	1	RANGE COLUMNS	10,MAXVALUE
+p1	2	RANGE COLUMNS	20,MAXVALUE
+=== [mysql80] rcol-add-scalar-tail
+--- SQL: ALTER TABLE golden.rc ADD PARTITION (PARTITION p2 VALUES LESS THAN (MAXVALUE,MAXVALUE))
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql80] dir-rc
+--- SQL: SELECT PARTITION_NAME, PARTITION_ORDINAL_POSITION, PARTITION_METHOD, PARTITION_DESCRIPTION FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='rc' AND PARTITION_NAME IS NOT NULL ORDER BY PARTITION_ORDINAL_POSITION
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+PARTITION_NAME	PARTITION_ORDINAL_POSITION	PARTITION_METHOD	PARTITION_DESCRIPTION
+p0	1	RANGE COLUMNS	10,MAXVALUE
+p1	2	RANGE COLUMNS	20,MAXVALUE
+p2	3	RANGE COLUMNS	MAXVALUE,MAXVALUE
+=== [mysql80] rcol-pby
+--- SQL: ALTER TABLE golden.rc PARTITION BY RANGE COLUMNS(a,b) (PARTITION q0 VALUES LESS THAN (15,MAXVALUE), PARTITION q1 VALUES LESS THAN (30,MAXVALUE))
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql80] dir-rc
+--- SQL: SELECT PARTITION_NAME, PARTITION_ORDINAL_POSITION, PARTITION_METHOD, PARTITION_DESCRIPTION FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='rc' AND PARTITION_NAME IS NOT NULL ORDER BY PARTITION_ORDINAL_POSITION
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+PARTITION_NAME	PARTITION_ORDINAL_POSITION	PARTITION_METHOD	PARTITION_DESCRIPTION
+q0	1	RANGE COLUMNS	15,MAXVALUE
+q1	2	RANGE COLUMNS	30,MAXVALUE
+=== [mysql80] reset-sc
+--- SQL: DROP TABLE IF EXISTS golden.sc; CREATE TABLE golden.sc (a VARCHAR(10)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci PARTITION BY RANGE COLUMNS(a) (PARTITION p0 VALUES LESS THAN ('B'))
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql80] scol-add-ci-equal
+--- SQL: ALTER TABLE golden.sc ADD PARTITION (PARTITION p1 VALUES LESS THAN ('a'))
+--- rc=1
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1493 (HY000) at line 1: VALUES LESS THAN value must be strictly increasing for each partition
+=== [mysql80] dir-sc
+--- SQL: SELECT PARTITION_NAME, PARTITION_ORDINAL_POSITION, PARTITION_METHOD, PARTITION_DESCRIPTION FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='sc' AND PARTITION_NAME IS NOT NULL ORDER BY PARTITION_ORDINAL_POSITION
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+PARTITION_NAME	PARTITION_ORDINAL_POSITION	PARTITION_METHOD	PARTITION_DESCRIPTION
+p0	1	RANGE COLUMNS	'B'
+=== [mysql80] scol-reorg-ci-equal
+--- SQL: ALTER TABLE golden.sc REORGANIZE PARTITION p0 INTO (PARTITION p1 VALUES LESS THAN ('a'))
+--- rc=1
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1520 (HY000) at line 1: Reorganize of range partitions cannot change total ranges except for last partition where it can extend the range
+=== [mysql80] dir-sc
+--- SQL: SELECT PARTITION_NAME, PARTITION_ORDINAL_POSITION, PARTITION_METHOD, PARTITION_DESCRIPTION FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='sc' AND PARTITION_NAME IS NOT NULL ORDER BY PARTITION_ORDINAL_POSITION
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+PARTITION_NAME	PARTITION_ORDINAL_POSITION	PARTITION_METHOD	PARTITION_DESCRIPTION
+p0	1	RANGE COLUMNS	'B'
+=== [mysql80] reset-sc
+--- SQL: DROP TABLE IF EXISTS golden.sc; CREATE TABLE golden.sc (a VARCHAR(10)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci PARTITION BY RANGE COLUMNS(a) (PARTITION p0 VALUES LESS THAN ('B'))
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql80] scol-add-higher
+--- SQL: ALTER TABLE golden.sc ADD PARTITION (PARTITION p1 VALUES LESS THAN ('c'))
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql80] dir-sc
+--- SQL: SELECT PARTITION_NAME, PARTITION_ORDINAL_POSITION, PARTITION_METHOD, PARTITION_DESCRIPTION FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='sc' AND PARTITION_NAME IS NOT NULL ORDER BY PARTITION_ORDINAL_POSITION
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+PARTITION_NAME	PARTITION_ORDINAL_POSITION	PARTITION_METHOD	PARTITION_DESCRIPTION
+p0	1	RANGE COLUMNS	'B'
+p1	2	RANGE COLUMNS	'c'
+=== [mysql80] reset-lc
+--- SQL: DROP TABLE IF EXISTS golden.lc; CREATE TABLE golden.lc (a VARCHAR(10)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci PARTITION BY LIST COLUMNS(a) (PARTITION p0 VALUES IN ('a'))
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql80] lcol-add-ci-dup
+--- SQL: ALTER TABLE golden.lc ADD PARTITION (PARTITION p1 VALUES IN ('B'))
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql80] dir-lc
+--- SQL: SELECT PARTITION_NAME, PARTITION_ORDINAL_POSITION, PARTITION_METHOD, PARTITION_DESCRIPTION FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='lc' AND PARTITION_NAME IS NOT NULL ORDER BY PARTITION_ORDINAL_POSITION
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+PARTITION_NAME	PARTITION_ORDINAL_POSITION	PARTITION_METHOD	PARTITION_DESCRIPTION
+p0	1	LIST COLUMNS	'a'
+p1	2	LIST COLUMNS	'B'
+=== [mysql80] reset-l2
+--- SQL: DROP TABLE IF EXISTS golden.l2; CREATE TABLE golden.l2 (id INT) ENGINE=InnoDB PARTITION BY LIST(id) (PARTITION p0 VALUES IN (1), PARTITION p1 VALUES IN (2))
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql80] list-add-expr
+--- SQL: ALTER TABLE golden.l2 ADD PARTITION (PARTITION p2 VALUES IN (1+0))
+--- rc=1
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1495 (HY000) at line 1: Multiple definition of same constant in list partitioning
+=== [mysql80] dir-l2
+--- SQL: SELECT PARTITION_NAME, PARTITION_ORDINAL_POSITION, PARTITION_METHOD, PARTITION_DESCRIPTION FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='l2' AND PARTITION_NAME IS NOT NULL ORDER BY PARTITION_ORDINAL_POSITION
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+PARTITION_NAME	PARTITION_ORDINAL_POSITION	PARTITION_METHOD	PARTITION_DESCRIPTION
+p0	1	LIST	1
+p1	2	LIST	2
+=== [mysql80] create-range-expr-bound
+--- SQL: DROP TABLE IF EXISTS golden.ce; CREATE TABLE golden.ce (id INT) ENGINE=InnoDB PARTITION BY RANGE(id) (PARTITION p0 VALUES LESS THAN (100+100), PARTITION p1 VALUES LESS THAN (150))
+--- rc=1
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1493 (HY000) at line 1: VALUES LESS THAN value must be strictly increasing for each partition
+=== [mysql80] dir-ce
+--- SQL: SELECT PARTITION_NAME, PARTITION_ORDINAL_POSITION, PARTITION_METHOD, PARTITION_DESCRIPTION FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='ce' AND PARTITION_NAME IS NOT NULL ORDER BY PARTITION_ORDINAL_POSITION
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql80] pby-expr-bound
+--- SQL: ALTER TABLE golden.r2 PARTITION BY RANGE(id) (PARTITION p0 VALUES LESS THAN (100+100), PARTITION p1 VALUES LESS THAN (150))
+--- rc=1
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1493 (HY000) at line 1: VALUES LESS THAN value must be strictly increasing for each partition
+=== [mysql80] dir-r2
+--- SQL: SELECT PARTITION_NAME, PARTITION_ORDINAL_POSITION, PARTITION_METHOD, PARTITION_DESCRIPTION FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='r2' AND PARTITION_NAME IS NOT NULL ORDER BY PARTITION_ORDINAL_POSITION
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+PARTITION_NAME	PARTITION_ORDINAL_POSITION	PARTITION_METHOD	PARTITION_DESCRIPTION
+p0	1	RANGE	200
+p1	2	RANGE	400
+=== [mysql80] reset-r2
+--- SQL: DROP TABLE IF EXISTS golden.r2; CREATE TABLE golden.r2 (id INT) ENGINE=InnoDB PARTITION BY RANGE(id) (PARTITION p0 VALUES LESS THAN (200), PARTITION p1 VALUES LESS THAN (400))
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql80] add-low-bound
+--- SQL: ALTER TABLE golden.r2 ADD PARTITION (PARTITION p2 VALUES LESS THAN (300))
+--- rc=1
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1493 (HY000) at line 1: VALUES LESS THAN value must be strictly increasing for each partition
+=== [mysql80] dir-r2
+--- SQL: SELECT PARTITION_NAME, PARTITION_ORDINAL_POSITION, PARTITION_METHOD, PARTITION_DESCRIPTION FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='r2' AND PARTITION_NAME IS NOT NULL ORDER BY PARTITION_ORDINAL_POSITION
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+PARTITION_NAME	PARTITION_ORDINAL_POSITION	PARTITION_METHOD	PARTITION_DESCRIPTION
+p0	1	RANGE	200
+p1	2	RANGE	400
+=== [mysql80] reset-my
+--- SQL: DROP TABLE IF EXISTS golden.my; CREATE TABLE golden.my (id INT) ENGINE=MyISAM PARTITION BY HASH(id) PARTITIONS 2
+--- rc=1
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1178 (42000) at line 1: The storage engine for the table doesn't support native partitioning
+=== [mysql80] myisam-discard
+--- SQL: ALTER TABLE golden.my DISCARD PARTITION p0 TABLESPACE
+--- rc=1
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1146 (42S02) at line 1: Table 'golden.my' doesn't exist
+=== [mysql80] dir-my
+--- SQL: SELECT PARTITION_NAME, PARTITION_ORDINAL_POSITION, PARTITION_METHOD, PARTITION_DESCRIPTION FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='my' AND PARTITION_NAME IS NOT NULL ORDER BY PARTITION_ORDINAL_POSITION
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql80] myisam-import
+--- SQL: ALTER TABLE golden.my IMPORT PARTITION p0 TABLESPACE
+--- rc=1
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1146 (42S02) at line 1: Table 'golden.my' doesn't exist
+=== [mysql80] reset-in
+--- SQL: DROP TABLE IF EXISTS golden.inn; CREATE TABLE golden.inn (id INT) ENGINE=InnoDB PARTITION BY HASH(id) PARTITIONS 2
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql80] innodb-discard
+--- SQL: ALTER TABLE golden.inn DISCARD PARTITION p0 TABLESPACE
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql80] dir-inn
+--- SQL: SELECT PARTITION_NAME, PARTITION_ORDINAL_POSITION, PARTITION_METHOD, PARTITION_DESCRIPTION FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='inn' AND PARTITION_NAME IS NOT NULL ORDER BY PARTITION_ORDINAL_POSITION
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+PARTITION_NAME	PARTITION_ORDINAL_POSITION	PARTITION_METHOD	PARTITION_DESCRIPTION
+p0	1	HASH	NULL
+p1	2	HASH	NULL
+=== [mysql80] innodb-import
+--- SQL: ALTER TABLE golden.inn IMPORT PARTITION p0 TABLESPACE
+--- rc=1
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1812 (HY000) at line 1: Tablespace is missing for table `golden`.`inn`.
+=== [mysql80] reset-rm
+--- SQL: DROP TABLE IF EXISTS golden.rm; CREATE TABLE golden.rm (id INT) ENGINE=InnoDB PARTITION BY RANGE(id) (PARTITION p0 VALUES LESS THAN (200), PARTITION pmax VALUES LESS THAN MAXVALUE)
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql80] optimize-named
+--- SQL: ALTER TABLE golden.rm OPTIMIZE PARTITION p0
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+Table	Op	Msg_type	Msg_text
+golden.rm	optimize	note	Table does not support optimize on partitions. All partitions will be rebuilt and analyzed.
+golden.rm	optimize	status	OK
+=== [mysql80] optimize-warnings
+--- SQL: SHOW WARNINGS
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+########## mysql84 ##########
+=== [mysql84] schema
+--- SQL: CREATE DATABASE IF NOT EXISTS golden
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql84] reset-r2
+--- SQL: DROP TABLE IF EXISTS golden.r2; CREATE TABLE golden.r2 (id INT) ENGINE=InnoDB PARTITION BY RANGE(id) (PARTITION p0 VALUES LESS THAN (200), PARTITION p1 VALUES LESS THAN (400))
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql84] add-dup-newname
+--- SQL: ALTER TABLE golden.r2 ADD PARTITION (PARTITION p2 VALUES LESS THAN (600), PARTITION p2 VALUES LESS THAN (800))
+--- rc=1
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1517 (HY000) at line 1: Duplicate partition name p2
+=== [mysql84] dir-r2
+--- SQL: SELECT PARTITION_NAME, PARTITION_ORDINAL_POSITION, PARTITION_METHOD, PARTITION_DESCRIPTION FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='r2' AND PARTITION_NAME IS NOT NULL ORDER BY PARTITION_ORDINAL_POSITION
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+PARTITION_NAME	PARTITION_ORDINAL_POSITION	PARTITION_METHOD	PARTITION_DESCRIPTION
+p0	1	RANGE	200
+p1	2	RANGE	400
+=== [mysql84] reset-rm
+--- SQL: DROP TABLE IF EXISTS golden.rm; CREATE TABLE golden.rm (id INT) ENGINE=InnoDB PARTITION BY RANGE(id) (PARTITION p0 VALUES LESS THAN (200), PARTITION pmax VALUES LESS THAN MAXVALUE)
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql84] reorg-dup-newname
+--- SQL: ALTER TABLE golden.rm REORGANIZE PARTITION p0 INTO (PARTITION p1 VALUES LESS THAN (120), PARTITION p1 VALUES LESS THAN (200))
+--- rc=1
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1517 (HY000) at line 1: Duplicate partition name p1
+=== [mysql84] dir-rm
+--- SQL: SELECT PARTITION_NAME, PARTITION_ORDINAL_POSITION, PARTITION_METHOD, PARTITION_DESCRIPTION FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='rm' AND PARTITION_NAME IS NOT NULL ORDER BY PARTITION_ORDINAL_POSITION
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+PARTITION_NAME	PARTITION_ORDINAL_POSITION	PARTITION_METHOD	PARTITION_DESCRIPTION
+p0	1	RANGE	200
+pmax	2	RANGE	MAXVALUE
+=== [mysql84] pby-dup-newname
+--- SQL: ALTER TABLE golden.r2 PARTITION BY RANGE(id) (PARTITION q0 VALUES LESS THAN (200), PARTITION q0 VALUES LESS THAN MAXVALUE)
+--- rc=1
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1517 (HY000) at line 1: Duplicate partition name q0
+=== [mysql84] dir-r2
+--- SQL: SELECT PARTITION_NAME, PARTITION_ORDINAL_POSITION, PARTITION_METHOD, PARTITION_DESCRIPTION FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='r2' AND PARTITION_NAME IS NOT NULL ORDER BY PARTITION_ORDINAL_POSITION
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+PARTITION_NAME	PARTITION_ORDINAL_POSITION	PARTITION_METHOD	PARTITION_DESCRIPTION
+p0	1	RANGE	200
+p1	2	RANGE	400
+=== [mysql84] create-dup-name
+--- SQL: DROP TABLE IF EXISTS golden.dn; CREATE TABLE golden.dn (id INT) ENGINE=InnoDB PARTITION BY RANGE(id) (PARTITION p0 VALUES LESS THAN (200), PARTITION p0 VALUES LESS THAN (400))
+--- rc=1
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1517 (HY000) at line 1: Duplicate partition name p0
+=== [mysql84] create-dup-name-exists
+--- SQL: SELECT COUNT(*) AS present FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='dn'
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+present
+0
+=== [mysql84] reset-h4
+--- SQL: DROP TABLE IF EXISTS golden.h4; CREATE TABLE golden.h4 (id INT) ENGINE=InnoDB PARTITION BY HASH(id) PARTITIONS 4
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql84] add-partitions-0
+--- SQL: ALTER TABLE golden.h4 ADD PARTITION PARTITIONS 0
+--- rc=1
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1514 (HY000) at line 1: At least one partition must be added
+=== [mysql84] dir-h4
+--- SQL: SELECT PARTITION_NAME, PARTITION_ORDINAL_POSITION, PARTITION_METHOD, PARTITION_DESCRIPTION FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='h4' AND PARTITION_NAME IS NOT NULL ORDER BY PARTITION_ORDINAL_POSITION
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+PARTITION_NAME	PARTITION_ORDINAL_POSITION	PARTITION_METHOD	PARTITION_DESCRIPTION
+p0	1	HASH	NULL
+p1	2	HASH	NULL
+p2	3	HASH	NULL
+p3	4	HASH	NULL
+=== [mysql84] add-partitions-8193
+--- SQL: ALTER TABLE golden.h4 ADD PARTITION PARTITIONS 8193
+--- rc=1
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1499 (HY000) at line 1: Too many partitions (including subpartitions) were defined
+=== [mysql84] dir-h4
+--- SQL: SELECT PARTITION_NAME, PARTITION_ORDINAL_POSITION, PARTITION_METHOD, PARTITION_DESCRIPTION FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='h4' AND PARTITION_NAME IS NOT NULL ORDER BY PARTITION_ORDINAL_POSITION
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+PARTITION_NAME	PARTITION_ORDINAL_POSITION	PARTITION_METHOD	PARTITION_DESCRIPTION
+p0	1	HASH	NULL
+p1	2	HASH	NULL
+p2	3	HASH	NULL
+p3	4	HASH	NULL
+=== [mysql84] coalesce-0
+--- SQL: ALTER TABLE golden.h4 COALESCE PARTITION 0
+--- rc=1
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1515 (HY000) at line 1: At least one partition must be coalesced
+=== [mysql84] dir-h4
+--- SQL: SELECT PARTITION_NAME, PARTITION_ORDINAL_POSITION, PARTITION_METHOD, PARTITION_DESCRIPTION FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='h4' AND PARTITION_NAME IS NOT NULL ORDER BY PARTITION_ORDINAL_POSITION
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+PARTITION_NAME	PARTITION_ORDINAL_POSITION	PARTITION_METHOD	PARTITION_DESCRIPTION
+p0	1	HASH	NULL
+p1	2	HASH	NULL
+p2	3	HASH	NULL
+p3	4	HASH	NULL
+=== [mysql84] pby-hash-0
+--- SQL: ALTER TABLE golden.h4 PARTITION BY HASH(id) PARTITIONS 0
+--- rc=1
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1504 (HY000) at line 1: Number of partitions = 0 is not an allowed value
+=== [mysql84] dir-h4
+--- SQL: SELECT PARTITION_NAME, PARTITION_ORDINAL_POSITION, PARTITION_METHOD, PARTITION_DESCRIPTION FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='h4' AND PARTITION_NAME IS NOT NULL ORDER BY PARTITION_ORDINAL_POSITION
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+PARTITION_NAME	PARTITION_ORDINAL_POSITION	PARTITION_METHOD	PARTITION_DESCRIPTION
+p0	1	HASH	NULL
+p1	2	HASH	NULL
+p2	3	HASH	NULL
+p3	4	HASH	NULL
+=== [mysql84] pby-hash-8193
+--- SQL: ALTER TABLE golden.h4 PARTITION BY HASH(id) PARTITIONS 8193
+--- rc=1
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1499 (HY000) at line 1: Too many partitions (including subpartitions) were defined
+=== [mysql84] dir-h4
+--- SQL: SELECT PARTITION_NAME, PARTITION_ORDINAL_POSITION, PARTITION_METHOD, PARTITION_DESCRIPTION FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='h4' AND PARTITION_NAME IS NOT NULL ORDER BY PARTITION_ORDINAL_POSITION
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+PARTITION_NAME	PARTITION_ORDINAL_POSITION	PARTITION_METHOD	PARTITION_DESCRIPTION
+p0	1	HASH	NULL
+p1	2	HASH	NULL
+p2	3	HASH	NULL
+p3	4	HASH	NULL
+=== [mysql84] reset-r2
+--- SQL: DROP TABLE IF EXISTS golden.r2; CREATE TABLE golden.r2 (id INT) ENGINE=InnoDB PARTITION BY RANGE(id) (PARTITION p0 VALUES LESS THAN (200), PARTITION p1 VALUES LESS THAN (400))
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql84] pby-range-count4
+--- SQL: ALTER TABLE golden.r2 PARTITION BY RANGE(id) PARTITIONS 4
+--- rc=1
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1492 (HY000) at line 1: For RANGE partitions each partition must be defined
+=== [mysql84] dir-r2
+--- SQL: SELECT PARTITION_NAME, PARTITION_ORDINAL_POSITION, PARTITION_METHOD, PARTITION_DESCRIPTION FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='r2' AND PARTITION_NAME IS NOT NULL ORDER BY PARTITION_ORDINAL_POSITION
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+PARTITION_NAME	PARTITION_ORDINAL_POSITION	PARTITION_METHOD	PARTITION_DESCRIPTION
+p0	1	RANGE	200
+p1	2	RANGE	400
+=== [mysql84] create-hash-0
+--- SQL: DROP TABLE IF EXISTS golden.c0; CREATE TABLE golden.c0 (id INT) ENGINE=InnoDB PARTITION BY HASH(id) PARTITIONS 0
+--- rc=1
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1504 (HY000) at line 1: Number of partitions = 0 is not an allowed value
+=== [mysql84] create-hash-8193
+--- SQL: DROP TABLE IF EXISTS golden.c8; CREATE TABLE golden.c8 (id INT) ENGINE=InnoDB PARTITION BY HASH(id) PARTITIONS 8193
+--- rc=1
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1499 (HY000) at line 1: Too many partitions (including subpartitions) were defined
+=== [mysql84] create-range-count4
+--- SQL: DROP TABLE IF EXISTS golden.c4; CREATE TABLE golden.c4 (id INT) ENGINE=InnoDB PARTITION BY RANGE(id) PARTITIONS 4
+--- rc=1
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1492 (HY000) at line 1: For RANGE partitions each partition must be defined
+=== [mysql84] dir-c4
+--- SQL: SELECT PARTITION_NAME, PARTITION_ORDINAL_POSITION, PARTITION_METHOD, PARTITION_DESCRIPTION FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='c4' AND PARTITION_NAME IS NOT NULL ORDER BY PARTITION_ORDINAL_POSITION
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql84] create-range-decreasing
+--- SQL: DROP TABLE IF EXISTS golden.cd; CREATE TABLE golden.cd (id INT) ENGINE=InnoDB PARTITION BY RANGE(id) (PARTITION p0 VALUES LESS THAN (200), PARTITION p1 VALUES LESS THAN (100))
+--- rc=1
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1493 (HY000) at line 1: VALUES LESS THAN value must be strictly increasing for each partition
+=== [mysql84] create-range-decreasing-exists
+--- SQL: SELECT COUNT(*) AS present FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='cd'
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+present
+0
+=== [mysql84] create-list-dupvalue
+--- SQL: DROP TABLE IF EXISTS golden.cl; CREATE TABLE golden.cl (id INT) ENGINE=InnoDB PARTITION BY LIST(id) (PARTITION p0 VALUES IN (1), PARTITION p1 VALUES IN (1))
+--- rc=1
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1495 (HY000) at line 1: Multiple definition of same constant in list partitioning
+=== [mysql84] create-maxvalue-mid
+--- SQL: DROP TABLE IF EXISTS golden.cm; CREATE TABLE golden.cm (id INT) ENGINE=InnoDB PARTITION BY RANGE(id) (PARTITION p0 VALUES LESS THAN MAXVALUE, PARTITION p1 VALUES LESS THAN (400))
+--- rc=1
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1481 (HY000) at line 1: MAXVALUE can only be used in last partition definition
+=== [mysql84] reset-rc
+--- SQL: DROP TABLE IF EXISTS golden.rc; CREATE TABLE golden.rc (a INT, b INT) ENGINE=InnoDB PARTITION BY RANGE COLUMNS(a,b) (PARTITION p0 VALUES LESS THAN (10,MAXVALUE))
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql84] dir-rc
+--- SQL: SELECT PARTITION_NAME, PARTITION_ORDINAL_POSITION, PARTITION_METHOD, PARTITION_DESCRIPTION FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='rc' AND PARTITION_NAME IS NOT NULL ORDER BY PARTITION_ORDINAL_POSITION
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+PARTITION_NAME	PARTITION_ORDINAL_POSITION	PARTITION_METHOD	PARTITION_DESCRIPTION
+p0	1	RANGE COLUMNS	10,MAXVALUE
+=== [mysql84] rcol-add-maxvalue2
+--- SQL: ALTER TABLE golden.rc ADD PARTITION (PARTITION p1 VALUES LESS THAN (20,MAXVALUE))
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql84] dir-rc
+--- SQL: SELECT PARTITION_NAME, PARTITION_ORDINAL_POSITION, PARTITION_METHOD, PARTITION_DESCRIPTION FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='rc' AND PARTITION_NAME IS NOT NULL ORDER BY PARTITION_ORDINAL_POSITION
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+PARTITION_NAME	PARTITION_ORDINAL_POSITION	PARTITION_METHOD	PARTITION_DESCRIPTION
+p0	1	RANGE COLUMNS	10,MAXVALUE
+p1	2	RANGE COLUMNS	20,MAXVALUE
+=== [mysql84] rcol-add-scalar-tail
+--- SQL: ALTER TABLE golden.rc ADD PARTITION (PARTITION p2 VALUES LESS THAN (MAXVALUE,MAXVALUE))
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql84] dir-rc
+--- SQL: SELECT PARTITION_NAME, PARTITION_ORDINAL_POSITION, PARTITION_METHOD, PARTITION_DESCRIPTION FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='rc' AND PARTITION_NAME IS NOT NULL ORDER BY PARTITION_ORDINAL_POSITION
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+PARTITION_NAME	PARTITION_ORDINAL_POSITION	PARTITION_METHOD	PARTITION_DESCRIPTION
+p0	1	RANGE COLUMNS	10,MAXVALUE
+p1	2	RANGE COLUMNS	20,MAXVALUE
+p2	3	RANGE COLUMNS	MAXVALUE,MAXVALUE
+=== [mysql84] rcol-pby
+--- SQL: ALTER TABLE golden.rc PARTITION BY RANGE COLUMNS(a,b) (PARTITION q0 VALUES LESS THAN (15,MAXVALUE), PARTITION q1 VALUES LESS THAN (30,MAXVALUE))
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql84] dir-rc
+--- SQL: SELECT PARTITION_NAME, PARTITION_ORDINAL_POSITION, PARTITION_METHOD, PARTITION_DESCRIPTION FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='rc' AND PARTITION_NAME IS NOT NULL ORDER BY PARTITION_ORDINAL_POSITION
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+PARTITION_NAME	PARTITION_ORDINAL_POSITION	PARTITION_METHOD	PARTITION_DESCRIPTION
+q0	1	RANGE COLUMNS	15,MAXVALUE
+q1	2	RANGE COLUMNS	30,MAXVALUE
+=== [mysql84] reset-sc
+--- SQL: DROP TABLE IF EXISTS golden.sc; CREATE TABLE golden.sc (a VARCHAR(10)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci PARTITION BY RANGE COLUMNS(a) (PARTITION p0 VALUES LESS THAN ('B'))
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql84] scol-add-ci-equal
+--- SQL: ALTER TABLE golden.sc ADD PARTITION (PARTITION p1 VALUES LESS THAN ('a'))
+--- rc=1
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1493 (HY000) at line 1: VALUES LESS THAN value must be strictly increasing for each partition
+=== [mysql84] dir-sc
+--- SQL: SELECT PARTITION_NAME, PARTITION_ORDINAL_POSITION, PARTITION_METHOD, PARTITION_DESCRIPTION FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='sc' AND PARTITION_NAME IS NOT NULL ORDER BY PARTITION_ORDINAL_POSITION
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+PARTITION_NAME	PARTITION_ORDINAL_POSITION	PARTITION_METHOD	PARTITION_DESCRIPTION
+p0	1	RANGE COLUMNS	'B'
+=== [mysql84] scol-reorg-ci-equal
+--- SQL: ALTER TABLE golden.sc REORGANIZE PARTITION p0 INTO (PARTITION p1 VALUES LESS THAN ('a'))
+--- rc=1
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1520 (HY000) at line 1: Reorganize of range partitions cannot change total ranges except for last partition where it can extend the range
+=== [mysql84] dir-sc
+--- SQL: SELECT PARTITION_NAME, PARTITION_ORDINAL_POSITION, PARTITION_METHOD, PARTITION_DESCRIPTION FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='sc' AND PARTITION_NAME IS NOT NULL ORDER BY PARTITION_ORDINAL_POSITION
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+PARTITION_NAME	PARTITION_ORDINAL_POSITION	PARTITION_METHOD	PARTITION_DESCRIPTION
+p0	1	RANGE COLUMNS	'B'
+=== [mysql84] reset-sc
+--- SQL: DROP TABLE IF EXISTS golden.sc; CREATE TABLE golden.sc (a VARCHAR(10)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci PARTITION BY RANGE COLUMNS(a) (PARTITION p0 VALUES LESS THAN ('B'))
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql84] scol-add-higher
+--- SQL: ALTER TABLE golden.sc ADD PARTITION (PARTITION p1 VALUES LESS THAN ('c'))
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql84] dir-sc
+--- SQL: SELECT PARTITION_NAME, PARTITION_ORDINAL_POSITION, PARTITION_METHOD, PARTITION_DESCRIPTION FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='sc' AND PARTITION_NAME IS NOT NULL ORDER BY PARTITION_ORDINAL_POSITION
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+PARTITION_NAME	PARTITION_ORDINAL_POSITION	PARTITION_METHOD	PARTITION_DESCRIPTION
+p0	1	RANGE COLUMNS	'B'
+p1	2	RANGE COLUMNS	'c'
+=== [mysql84] reset-lc
+--- SQL: DROP TABLE IF EXISTS golden.lc; CREATE TABLE golden.lc (a VARCHAR(10)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci PARTITION BY LIST COLUMNS(a) (PARTITION p0 VALUES IN ('a'))
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql84] lcol-add-ci-dup
+--- SQL: ALTER TABLE golden.lc ADD PARTITION (PARTITION p1 VALUES IN ('B'))
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql84] dir-lc
+--- SQL: SELECT PARTITION_NAME, PARTITION_ORDINAL_POSITION, PARTITION_METHOD, PARTITION_DESCRIPTION FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='lc' AND PARTITION_NAME IS NOT NULL ORDER BY PARTITION_ORDINAL_POSITION
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+PARTITION_NAME	PARTITION_ORDINAL_POSITION	PARTITION_METHOD	PARTITION_DESCRIPTION
+p0	1	LIST COLUMNS	'a'
+p1	2	LIST COLUMNS	'B'
+=== [mysql84] reset-l2
+--- SQL: DROP TABLE IF EXISTS golden.l2; CREATE TABLE golden.l2 (id INT) ENGINE=InnoDB PARTITION BY LIST(id) (PARTITION p0 VALUES IN (1), PARTITION p1 VALUES IN (2))
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql84] list-add-expr
+--- SQL: ALTER TABLE golden.l2 ADD PARTITION (PARTITION p2 VALUES IN (1+0))
+--- rc=1
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1495 (HY000) at line 1: Multiple definition of same constant in list partitioning
+=== [mysql84] dir-l2
+--- SQL: SELECT PARTITION_NAME, PARTITION_ORDINAL_POSITION, PARTITION_METHOD, PARTITION_DESCRIPTION FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='l2' AND PARTITION_NAME IS NOT NULL ORDER BY PARTITION_ORDINAL_POSITION
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+PARTITION_NAME	PARTITION_ORDINAL_POSITION	PARTITION_METHOD	PARTITION_DESCRIPTION
+p0	1	LIST	1
+p1	2	LIST	2
+=== [mysql84] create-range-expr-bound
+--- SQL: DROP TABLE IF EXISTS golden.ce; CREATE TABLE golden.ce (id INT) ENGINE=InnoDB PARTITION BY RANGE(id) (PARTITION p0 VALUES LESS THAN (100+100), PARTITION p1 VALUES LESS THAN (150))
+--- rc=1
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1493 (HY000) at line 1: VALUES LESS THAN value must be strictly increasing for each partition
+=== [mysql84] dir-ce
+--- SQL: SELECT PARTITION_NAME, PARTITION_ORDINAL_POSITION, PARTITION_METHOD, PARTITION_DESCRIPTION FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='ce' AND PARTITION_NAME IS NOT NULL ORDER BY PARTITION_ORDINAL_POSITION
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql84] pby-expr-bound
+--- SQL: ALTER TABLE golden.r2 PARTITION BY RANGE(id) (PARTITION p0 VALUES LESS THAN (100+100), PARTITION p1 VALUES LESS THAN (150))
+--- rc=1
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1493 (HY000) at line 1: VALUES LESS THAN value must be strictly increasing for each partition
+=== [mysql84] dir-r2
+--- SQL: SELECT PARTITION_NAME, PARTITION_ORDINAL_POSITION, PARTITION_METHOD, PARTITION_DESCRIPTION FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='r2' AND PARTITION_NAME IS NOT NULL ORDER BY PARTITION_ORDINAL_POSITION
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+PARTITION_NAME	PARTITION_ORDINAL_POSITION	PARTITION_METHOD	PARTITION_DESCRIPTION
+p0	1	RANGE	200
+p1	2	RANGE	400
+=== [mysql84] reset-r2
+--- SQL: DROP TABLE IF EXISTS golden.r2; CREATE TABLE golden.r2 (id INT) ENGINE=InnoDB PARTITION BY RANGE(id) (PARTITION p0 VALUES LESS THAN (200), PARTITION p1 VALUES LESS THAN (400))
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql84] add-low-bound
+--- SQL: ALTER TABLE golden.r2 ADD PARTITION (PARTITION p2 VALUES LESS THAN (300))
+--- rc=1
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1493 (HY000) at line 1: VALUES LESS THAN value must be strictly increasing for each partition
+=== [mysql84] dir-r2
+--- SQL: SELECT PARTITION_NAME, PARTITION_ORDINAL_POSITION, PARTITION_METHOD, PARTITION_DESCRIPTION FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='r2' AND PARTITION_NAME IS NOT NULL ORDER BY PARTITION_ORDINAL_POSITION
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+PARTITION_NAME	PARTITION_ORDINAL_POSITION	PARTITION_METHOD	PARTITION_DESCRIPTION
+p0	1	RANGE	200
+p1	2	RANGE	400
+=== [mysql84] reset-my
+--- SQL: DROP TABLE IF EXISTS golden.my; CREATE TABLE golden.my (id INT) ENGINE=MyISAM PARTITION BY HASH(id) PARTITIONS 2
+--- rc=1
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1178 (42000) at line 1: The storage engine for the table doesn't support native partitioning
+=== [mysql84] myisam-discard
+--- SQL: ALTER TABLE golden.my DISCARD PARTITION p0 TABLESPACE
+--- rc=1
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1146 (42S02) at line 1: Table 'golden.my' doesn't exist
+=== [mysql84] dir-my
+--- SQL: SELECT PARTITION_NAME, PARTITION_ORDINAL_POSITION, PARTITION_METHOD, PARTITION_DESCRIPTION FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='my' AND PARTITION_NAME IS NOT NULL ORDER BY PARTITION_ORDINAL_POSITION
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql84] myisam-import
+--- SQL: ALTER TABLE golden.my IMPORT PARTITION p0 TABLESPACE
+--- rc=1
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1146 (42S02) at line 1: Table 'golden.my' doesn't exist
+=== [mysql84] reset-in
+--- SQL: DROP TABLE IF EXISTS golden.inn; CREATE TABLE golden.inn (id INT) ENGINE=InnoDB PARTITION BY HASH(id) PARTITIONS 2
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql84] innodb-discard
+--- SQL: ALTER TABLE golden.inn DISCARD PARTITION p0 TABLESPACE
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql84] dir-inn
+--- SQL: SELECT PARTITION_NAME, PARTITION_ORDINAL_POSITION, PARTITION_METHOD, PARTITION_DESCRIPTION FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='inn' AND PARTITION_NAME IS NOT NULL ORDER BY PARTITION_ORDINAL_POSITION
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+PARTITION_NAME	PARTITION_ORDINAL_POSITION	PARTITION_METHOD	PARTITION_DESCRIPTION
+p0	1	HASH	NULL
+p1	2	HASH	NULL
+=== [mysql84] innodb-import
+--- SQL: ALTER TABLE golden.inn IMPORT PARTITION p0 TABLESPACE
+--- rc=1
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1812 (HY000) at line 1: Tablespace is missing for table `golden`.`inn`.
+=== [mysql84] reset-rm
+--- SQL: DROP TABLE IF EXISTS golden.rm; CREATE TABLE golden.rm (id INT) ENGINE=InnoDB PARTITION BY RANGE(id) (PARTITION p0 VALUES LESS THAN (200), PARTITION pmax VALUES LESS THAN MAXVALUE)
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+=== [mysql84] optimize-named
+--- SQL: ALTER TABLE golden.rm OPTIMIZE PARTITION p0
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+Table	Op	Msg_type	Msg_text
+golden.rm	optimize	note	Table does not support optimize on partitions. All partitions will be rebuilt and analyzed.
+golden.rm	optimize	status	OK
+=== [mysql84] optimize-warnings
+--- SQL: SHOW WARNINGS
+--- rc=0
+--- out: mysql: [Warning] Using a password on the command line interface can be insecure.
+Level	Code	Message
+Error	1064	You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '$$' at line 1
+########## tidb85 ##########
+=== [tidb85] schema
+--- SQL: CREATE DATABASE IF NOT EXISTS golden
+--- rc=0
+--- out: 
+=== [tidb85] reset-r2
+--- SQL: DROP TABLE IF EXISTS golden.r2; CREATE TABLE golden.r2 (id INT) ENGINE=InnoDB PARTITION BY RANGE(id) (PARTITION p0 VALUES LESS THAN (200), PARTITION p1 VALUES LESS THAN (400))
+--- rc=0
+--- out: 
+=== [tidb85] add-dup-newname
+--- SQL: ALTER TABLE golden.r2 ADD PARTITION (PARTITION p2 VALUES LESS THAN (600), PARTITION p2 VALUES LESS THAN (800))
+--- rc=1
+--- out: ERROR 1517 (HY000) at line 1: Duplicate partition name p2
+=== [tidb85] dir-r2
+--- SQL: SELECT PARTITION_NAME, PARTITION_ORDINAL_POSITION, PARTITION_METHOD, PARTITION_DESCRIPTION FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='r2' AND PARTITION_NAME IS NOT NULL ORDER BY PARTITION_ORDINAL_POSITION
+--- rc=0
+--- out: PARTITION_NAME	PARTITION_ORDINAL_POSITION	PARTITION_METHOD	PARTITION_DESCRIPTION
+p0	1	RANGE	200
+p1	2	RANGE	400
+=== [tidb85] reset-rm
+--- SQL: DROP TABLE IF EXISTS golden.rm; CREATE TABLE golden.rm (id INT) ENGINE=InnoDB PARTITION BY RANGE(id) (PARTITION p0 VALUES LESS THAN (200), PARTITION pmax VALUES LESS THAN MAXVALUE)
+--- rc=0
+--- out: 
+=== [tidb85] reorg-dup-newname
+--- SQL: ALTER TABLE golden.rm REORGANIZE PARTITION p0 INTO (PARTITION p1 VALUES LESS THAN (120), PARTITION p1 VALUES LESS THAN (200))
+--- rc=1
+--- out: ERROR 1517 (HY000) at line 1: Duplicate partition name p1
+=== [tidb85] dir-rm
+--- SQL: SELECT PARTITION_NAME, PARTITION_ORDINAL_POSITION, PARTITION_METHOD, PARTITION_DESCRIPTION FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='rm' AND PARTITION_NAME IS NOT NULL ORDER BY PARTITION_ORDINAL_POSITION
+--- rc=0
+--- out: PARTITION_NAME	PARTITION_ORDINAL_POSITION	PARTITION_METHOD	PARTITION_DESCRIPTION
+p0	1	RANGE	200
+pmax	2	RANGE	MAXVALUE
+=== [tidb85] pby-dup-newname
+--- SQL: ALTER TABLE golden.r2 PARTITION BY RANGE(id) (PARTITION q0 VALUES LESS THAN (200), PARTITION q0 VALUES LESS THAN MAXVALUE)
+--- rc=1
+--- out: ERROR 1517 (HY000) at line 1: Duplicate partition name q0
+=== [tidb85] dir-r2
+--- SQL: SELECT PARTITION_NAME, PARTITION_ORDINAL_POSITION, PARTITION_METHOD, PARTITION_DESCRIPTION FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='r2' AND PARTITION_NAME IS NOT NULL ORDER BY PARTITION_ORDINAL_POSITION
+--- rc=0
+--- out: PARTITION_NAME	PARTITION_ORDINAL_POSITION	PARTITION_METHOD	PARTITION_DESCRIPTION
+p0	1	RANGE	200
+p1	2	RANGE	400
+=== [tidb85] create-dup-name
+--- SQL: DROP TABLE IF EXISTS golden.dn; CREATE TABLE golden.dn (id INT) ENGINE=InnoDB PARTITION BY RANGE(id) (PARTITION p0 VALUES LESS THAN (200), PARTITION p0 VALUES LESS THAN (400))
+--- rc=1
+--- out: ERROR 1517 (HY000) at line 1: Duplicate partition name p0
+=== [tidb85] create-dup-name-exists
+--- SQL: SELECT COUNT(*) AS present FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='dn'
+--- rc=0
+--- out: present
+0
+=== [tidb85] reset-h4
+--- SQL: DROP TABLE IF EXISTS golden.h4; CREATE TABLE golden.h4 (id INT) ENGINE=InnoDB PARTITION BY HASH(id) PARTITIONS 4
+--- rc=0
+--- out: 
+=== [tidb85] add-partitions-0
+--- SQL: ALTER TABLE golden.h4 ADD PARTITION PARTITIONS 0
+--- rc=0
+--- out: 
+=== [tidb85] dir-h4
+--- SQL: SELECT PARTITION_NAME, PARTITION_ORDINAL_POSITION, PARTITION_METHOD, PARTITION_DESCRIPTION FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='h4' AND PARTITION_NAME IS NOT NULL ORDER BY PARTITION_ORDINAL_POSITION
+--- rc=0
+--- out: PARTITION_NAME	PARTITION_ORDINAL_POSITION	PARTITION_METHOD	PARTITION_DESCRIPTION
+p0	1	HASH	
+p1	2	HASH	
+p2	3	HASH	
+p3	4	HASH	
+=== [tidb85] add-partitions-8193
+--- SQL: ALTER TABLE golden.h4 ADD PARTITION PARTITIONS 8193
+--- rc=1
+--- out: ERROR 1499 (HY000) at line 1: Too many partitions (including subpartitions) were defined
+=== [tidb85] dir-h4
+--- SQL: SELECT PARTITION_NAME, PARTITION_ORDINAL_POSITION, PARTITION_METHOD, PARTITION_DESCRIPTION FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='h4' AND PARTITION_NAME IS NOT NULL ORDER BY PARTITION_ORDINAL_POSITION
+--- rc=0
+--- out: PARTITION_NAME	PARTITION_ORDINAL_POSITION	PARTITION_METHOD	PARTITION_DESCRIPTION
+p0	1	HASH	
+p1	2	HASH	
+p2	3	HASH	
+p3	4	HASH	
+=== [tidb85] coalesce-0
+--- SQL: ALTER TABLE golden.h4 COALESCE PARTITION 0
+--- rc=1
+--- out: ERROR 1515 (HY000) at line 1: At least one partition must be coalesced
+=== [tidb85] dir-h4
+--- SQL: SELECT PARTITION_NAME, PARTITION_ORDINAL_POSITION, PARTITION_METHOD, PARTITION_DESCRIPTION FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='h4' AND PARTITION_NAME IS NOT NULL ORDER BY PARTITION_ORDINAL_POSITION
+--- rc=0
+--- out: PARTITION_NAME	PARTITION_ORDINAL_POSITION	PARTITION_METHOD	PARTITION_DESCRIPTION
+p0	1	HASH	
+p1	2	HASH	
+p2	3	HASH	
+p3	4	HASH	
+=== [tidb85] pby-hash-0
+--- SQL: ALTER TABLE golden.h4 PARTITION BY HASH(id) PARTITIONS 0
+--- rc=1
+--- out: ERROR 1504 (HY000) at line 1: Number of partitions = 0 is not an allowed value
+=== [tidb85] dir-h4
+--- SQL: SELECT PARTITION_NAME, PARTITION_ORDINAL_POSITION, PARTITION_METHOD, PARTITION_DESCRIPTION FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='h4' AND PARTITION_NAME IS NOT NULL ORDER BY PARTITION_ORDINAL_POSITION
+--- rc=0
+--- out: PARTITION_NAME	PARTITION_ORDINAL_POSITION	PARTITION_METHOD	PARTITION_DESCRIPTION
+p0	1	HASH	
+p1	2	HASH	
+p2	3	HASH	
+p3	4	HASH	
+=== [tidb85] pby-hash-8193
+--- SQL: ALTER TABLE golden.h4 PARTITION BY HASH(id) PARTITIONS 8193
+--- rc=1
+--- out: ERROR 1499 (HY000) at line 1: Too many partitions (including subpartitions) were defined
+=== [tidb85] dir-h4
+--- SQL: SELECT PARTITION_NAME, PARTITION_ORDINAL_POSITION, PARTITION_METHOD, PARTITION_DESCRIPTION FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='h4' AND PARTITION_NAME IS NOT NULL ORDER BY PARTITION_ORDINAL_POSITION
+--- rc=0
+--- out: PARTITION_NAME	PARTITION_ORDINAL_POSITION	PARTITION_METHOD	PARTITION_DESCRIPTION
+p0	1	HASH	
+p1	2	HASH	
+p2	3	HASH	
+p3	4	HASH	
+=== [tidb85] reset-r2
+--- SQL: DROP TABLE IF EXISTS golden.r2; CREATE TABLE golden.r2 (id INT) ENGINE=InnoDB PARTITION BY RANGE(id) (PARTITION p0 VALUES LESS THAN (200), PARTITION p1 VALUES LESS THAN (400))
+--- rc=0
+--- out: 
+=== [tidb85] pby-range-count4
+--- SQL: ALTER TABLE golden.r2 PARTITION BY RANGE(id) PARTITIONS 4
+--- rc=1
+--- out: ERROR 1492 (HY000) at line 1: For RANGE partitions each partition must be defined
+=== [tidb85] dir-r2
+--- SQL: SELECT PARTITION_NAME, PARTITION_ORDINAL_POSITION, PARTITION_METHOD, PARTITION_DESCRIPTION FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='r2' AND PARTITION_NAME IS NOT NULL ORDER BY PARTITION_ORDINAL_POSITION
+--- rc=0
+--- out: PARTITION_NAME	PARTITION_ORDINAL_POSITION	PARTITION_METHOD	PARTITION_DESCRIPTION
+p0	1	RANGE	200
+p1	2	RANGE	400
+=== [tidb85] create-hash-0
+--- SQL: DROP TABLE IF EXISTS golden.c0; CREATE TABLE golden.c0 (id INT) ENGINE=InnoDB PARTITION BY HASH(id) PARTITIONS 0
+--- rc=1
+--- out: ERROR 1504 (HY000) at line 1: Number of partitions = 0 is not an allowed value
+=== [tidb85] create-hash-8193
+--- SQL: DROP TABLE IF EXISTS golden.c8; CREATE TABLE golden.c8 (id INT) ENGINE=InnoDB PARTITION BY HASH(id) PARTITIONS 8193
+--- rc=1
+--- out: ERROR 1499 (HY000) at line 1: Too many partitions (including subpartitions) were defined
+=== [tidb85] create-range-count4
+--- SQL: DROP TABLE IF EXISTS golden.c4; CREATE TABLE golden.c4 (id INT) ENGINE=InnoDB PARTITION BY RANGE(id) PARTITIONS 4
+--- rc=1
+--- out: ERROR 1492 (HY000) at line 1: For RANGE partitions each partition must be defined
+=== [tidb85] dir-c4
+--- SQL: SELECT PARTITION_NAME, PARTITION_ORDINAL_POSITION, PARTITION_METHOD, PARTITION_DESCRIPTION FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='c4' AND PARTITION_NAME IS NOT NULL ORDER BY PARTITION_ORDINAL_POSITION
+--- rc=0
+--- out: 
+=== [tidb85] create-range-decreasing
+--- SQL: DROP TABLE IF EXISTS golden.cd; CREATE TABLE golden.cd (id INT) ENGINE=InnoDB PARTITION BY RANGE(id) (PARTITION p0 VALUES LESS THAN (200), PARTITION p1 VALUES LESS THAN (100))
+--- rc=1
+--- out: ERROR 1493 (HY000) at line 1: VALUES LESS THAN value must be strictly increasing for each partition
+=== [tidb85] create-range-decreasing-exists
+--- SQL: SELECT COUNT(*) AS present FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='cd'
+--- rc=0
+--- out: present
+0
+=== [tidb85] create-list-dupvalue
+--- SQL: DROP TABLE IF EXISTS golden.cl; CREATE TABLE golden.cl (id INT) ENGINE=InnoDB PARTITION BY LIST(id) (PARTITION p0 VALUES IN (1), PARTITION p1 VALUES IN (1))
+--- rc=1
+--- out: ERROR 1495 (HY000) at line 1: Multiple definition of same constant in list partitioning
+=== [tidb85] create-maxvalue-mid
+--- SQL: DROP TABLE IF EXISTS golden.cm; CREATE TABLE golden.cm (id INT) ENGINE=InnoDB PARTITION BY RANGE(id) (PARTITION p0 VALUES LESS THAN MAXVALUE, PARTITION p1 VALUES LESS THAN (400))
+--- rc=1
+--- out: ERROR 1481 (HY000) at line 1: MAXVALUE can only be used in last partition definition
+=== [tidb85] reset-rc
+--- SQL: DROP TABLE IF EXISTS golden.rc; CREATE TABLE golden.rc (a INT, b INT) ENGINE=InnoDB PARTITION BY RANGE COLUMNS(a,b) (PARTITION p0 VALUES LESS THAN (10,MAXVALUE))
+--- rc=0
+--- out: 
+=== [tidb85] dir-rc
+--- SQL: SELECT PARTITION_NAME, PARTITION_ORDINAL_POSITION, PARTITION_METHOD, PARTITION_DESCRIPTION FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='rc' AND PARTITION_NAME IS NOT NULL ORDER BY PARTITION_ORDINAL_POSITION
+--- rc=0
+--- out: PARTITION_NAME	PARTITION_ORDINAL_POSITION	PARTITION_METHOD	PARTITION_DESCRIPTION
+p0	1	RANGE COLUMNS	10,MAXVALUE
+=== [tidb85] rcol-add-maxvalue2
+--- SQL: ALTER TABLE golden.rc ADD PARTITION (PARTITION p1 VALUES LESS THAN (20,MAXVALUE))
+--- rc=0
+--- out: 
+=== [tidb85] dir-rc
+--- SQL: SELECT PARTITION_NAME, PARTITION_ORDINAL_POSITION, PARTITION_METHOD, PARTITION_DESCRIPTION FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='rc' AND PARTITION_NAME IS NOT NULL ORDER BY PARTITION_ORDINAL_POSITION
+--- rc=0
+--- out: PARTITION_NAME	PARTITION_ORDINAL_POSITION	PARTITION_METHOD	PARTITION_DESCRIPTION
+p0	1	RANGE COLUMNS	10,MAXVALUE
+p1	2	RANGE COLUMNS	20,MAXVALUE
+=== [tidb85] rcol-add-scalar-tail
+--- SQL: ALTER TABLE golden.rc ADD PARTITION (PARTITION p2 VALUES LESS THAN (MAXVALUE,MAXVALUE))
+--- rc=0
+--- out: 
+=== [tidb85] dir-rc
+--- SQL: SELECT PARTITION_NAME, PARTITION_ORDINAL_POSITION, PARTITION_METHOD, PARTITION_DESCRIPTION FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='rc' AND PARTITION_NAME IS NOT NULL ORDER BY PARTITION_ORDINAL_POSITION
+--- rc=0
+--- out: PARTITION_NAME	PARTITION_ORDINAL_POSITION	PARTITION_METHOD	PARTITION_DESCRIPTION
+p0	1	RANGE COLUMNS	10,MAXVALUE
+p1	2	RANGE COLUMNS	20,MAXVALUE
+p2	3	RANGE COLUMNS	MAXVALUE,MAXVALUE
+=== [tidb85] rcol-pby
+--- SQL: ALTER TABLE golden.rc PARTITION BY RANGE COLUMNS(a,b) (PARTITION q0 VALUES LESS THAN (15,MAXVALUE), PARTITION q1 VALUES LESS THAN (30,MAXVALUE))
+--- rc=0
+--- out: 
+=== [tidb85] dir-rc
+--- SQL: SELECT PARTITION_NAME, PARTITION_ORDINAL_POSITION, PARTITION_METHOD, PARTITION_DESCRIPTION FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='rc' AND PARTITION_NAME IS NOT NULL ORDER BY PARTITION_ORDINAL_POSITION
+--- rc=0
+--- out: PARTITION_NAME	PARTITION_ORDINAL_POSITION	PARTITION_METHOD	PARTITION_DESCRIPTION
+q0	1	RANGE COLUMNS	15,MAXVALUE
+q1	2	RANGE COLUMNS	30,MAXVALUE
+=== [tidb85] reset-sc
+--- SQL: DROP TABLE IF EXISTS golden.sc; CREATE TABLE golden.sc (a VARCHAR(10)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci PARTITION BY RANGE COLUMNS(a) (PARTITION p0 VALUES LESS THAN ('B'))
+--- rc=0
+--- out: 
+=== [tidb85] scol-add-ci-equal
+--- SQL: ALTER TABLE golden.sc ADD PARTITION (PARTITION p1 VALUES LESS THAN ('a'))
+--- rc=1
+--- out: ERROR 1493 (HY000) at line 1: VALUES LESS THAN value must be strictly increasing for each partition
+=== [tidb85] dir-sc
+--- SQL: SELECT PARTITION_NAME, PARTITION_ORDINAL_POSITION, PARTITION_METHOD, PARTITION_DESCRIPTION FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='sc' AND PARTITION_NAME IS NOT NULL ORDER BY PARTITION_ORDINAL_POSITION
+--- rc=0
+--- out: PARTITION_NAME	PARTITION_ORDINAL_POSITION	PARTITION_METHOD	PARTITION_DESCRIPTION
+p0	1	RANGE COLUMNS	'B'
+=== [tidb85] scol-reorg-ci-equal
+--- SQL: ALTER TABLE golden.sc REORGANIZE PARTITION p0 INTO (PARTITION p1 VALUES LESS THAN ('a'))
+--- rc=0
+--- out: 
+=== [tidb85] dir-sc
+--- SQL: SELECT PARTITION_NAME, PARTITION_ORDINAL_POSITION, PARTITION_METHOD, PARTITION_DESCRIPTION FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='sc' AND PARTITION_NAME IS NOT NULL ORDER BY PARTITION_ORDINAL_POSITION
+--- rc=0
+--- out: PARTITION_NAME	PARTITION_ORDINAL_POSITION	PARTITION_METHOD	PARTITION_DESCRIPTION
+p1	1	RANGE COLUMNS	'a'
+=== [tidb85] reset-sc
+--- SQL: DROP TABLE IF EXISTS golden.sc; CREATE TABLE golden.sc (a VARCHAR(10)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci PARTITION BY RANGE COLUMNS(a) (PARTITION p0 VALUES LESS THAN ('B'))
+--- rc=0
+--- out: 
+=== [tidb85] scol-add-higher
+--- SQL: ALTER TABLE golden.sc ADD PARTITION (PARTITION p1 VALUES LESS THAN ('c'))
+--- rc=0
+--- out: 
+=== [tidb85] dir-sc
+--- SQL: SELECT PARTITION_NAME, PARTITION_ORDINAL_POSITION, PARTITION_METHOD, PARTITION_DESCRIPTION FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='sc' AND PARTITION_NAME IS NOT NULL ORDER BY PARTITION_ORDINAL_POSITION
+--- rc=0
+--- out: PARTITION_NAME	PARTITION_ORDINAL_POSITION	PARTITION_METHOD	PARTITION_DESCRIPTION
+p0	1	RANGE COLUMNS	'B'
+p1	2	RANGE COLUMNS	'c'
+=== [tidb85] reset-lc
+--- SQL: DROP TABLE IF EXISTS golden.lc; CREATE TABLE golden.lc (a VARCHAR(10)) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci PARTITION BY LIST COLUMNS(a) (PARTITION p0 VALUES IN ('a'))
+--- rc=0
+--- out: 
+=== [tidb85] lcol-add-ci-dup
+--- SQL: ALTER TABLE golden.lc ADD PARTITION (PARTITION p1 VALUES IN ('B'))
+--- rc=0
+--- out: 
+=== [tidb85] dir-lc
+--- SQL: SELECT PARTITION_NAME, PARTITION_ORDINAL_POSITION, PARTITION_METHOD, PARTITION_DESCRIPTION FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='lc' AND PARTITION_NAME IS NOT NULL ORDER BY PARTITION_ORDINAL_POSITION
+--- rc=0
+--- out: PARTITION_NAME	PARTITION_ORDINAL_POSITION	PARTITION_METHOD	PARTITION_DESCRIPTION
+p0	1	LIST COLUMNS	'a'
+p1	2	LIST COLUMNS	'B'
+=== [tidb85] reset-l2
+--- SQL: DROP TABLE IF EXISTS golden.l2; CREATE TABLE golden.l2 (id INT) ENGINE=InnoDB PARTITION BY LIST(id) (PARTITION p0 VALUES IN (1), PARTITION p1 VALUES IN (2))
+--- rc=0
+--- out: 
+=== [tidb85] list-add-expr
+--- SQL: ALTER TABLE golden.l2 ADD PARTITION (PARTITION p2 VALUES IN (1+0))
+--- rc=1
+--- out: ERROR 1495 (HY000) at line 1: Multiple definition of same constant in list partitioning
+=== [tidb85] dir-l2
+--- SQL: SELECT PARTITION_NAME, PARTITION_ORDINAL_POSITION, PARTITION_METHOD, PARTITION_DESCRIPTION FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='l2' AND PARTITION_NAME IS NOT NULL ORDER BY PARTITION_ORDINAL_POSITION
+--- rc=0
+--- out: PARTITION_NAME	PARTITION_ORDINAL_POSITION	PARTITION_METHOD	PARTITION_DESCRIPTION
+p0	1	LIST	1
+p1	2	LIST	2
+=== [tidb85] create-range-expr-bound
+--- SQL: DROP TABLE IF EXISTS golden.ce; CREATE TABLE golden.ce (id INT) ENGINE=InnoDB PARTITION BY RANGE(id) (PARTITION p0 VALUES LESS THAN (100+100), PARTITION p1 VALUES LESS THAN (150))
+--- rc=1
+--- out: ERROR 1493 (HY000) at line 1: VALUES LESS THAN value must be strictly increasing for each partition
+=== [tidb85] dir-ce
+--- SQL: SELECT PARTITION_NAME, PARTITION_ORDINAL_POSITION, PARTITION_METHOD, PARTITION_DESCRIPTION FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='ce' AND PARTITION_NAME IS NOT NULL ORDER BY PARTITION_ORDINAL_POSITION
+--- rc=0
+--- out: 
+=== [tidb85] pby-expr-bound
+--- SQL: ALTER TABLE golden.r2 PARTITION BY RANGE(id) (PARTITION p0 VALUES LESS THAN (100+100), PARTITION p1 VALUES LESS THAN (150))
+--- rc=1
+--- out: ERROR 1493 (HY000) at line 1: VALUES LESS THAN value must be strictly increasing for each partition
+=== [tidb85] dir-r2
+--- SQL: SELECT PARTITION_NAME, PARTITION_ORDINAL_POSITION, PARTITION_METHOD, PARTITION_DESCRIPTION FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='r2' AND PARTITION_NAME IS NOT NULL ORDER BY PARTITION_ORDINAL_POSITION
+--- rc=0
+--- out: PARTITION_NAME	PARTITION_ORDINAL_POSITION	PARTITION_METHOD	PARTITION_DESCRIPTION
+p0	1	RANGE	200
+p1	2	RANGE	400
+=== [tidb85] reset-r2
+--- SQL: DROP TABLE IF EXISTS golden.r2; CREATE TABLE golden.r2 (id INT) ENGINE=InnoDB PARTITION BY RANGE(id) (PARTITION p0 VALUES LESS THAN (200), PARTITION p1 VALUES LESS THAN (400))
+--- rc=0
+--- out: 
+=== [tidb85] add-low-bound
+--- SQL: ALTER TABLE golden.r2 ADD PARTITION (PARTITION p2 VALUES LESS THAN (300))
+--- rc=1
+--- out: ERROR 1493 (HY000) at line 1: VALUES LESS THAN value must be strictly increasing for each partition
+=== [tidb85] dir-r2
+--- SQL: SELECT PARTITION_NAME, PARTITION_ORDINAL_POSITION, PARTITION_METHOD, PARTITION_DESCRIPTION FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='r2' AND PARTITION_NAME IS NOT NULL ORDER BY PARTITION_ORDINAL_POSITION
+--- rc=0
+--- out: PARTITION_NAME	PARTITION_ORDINAL_POSITION	PARTITION_METHOD	PARTITION_DESCRIPTION
+p0	1	RANGE	200
+p1	2	RANGE	400
+=== [tidb85] reset-my
+--- SQL: DROP TABLE IF EXISTS golden.my; CREATE TABLE golden.my (id INT) ENGINE=MyISAM PARTITION BY HASH(id) PARTITIONS 2
+--- rc=0
+--- out: 
+=== [tidb85] myisam-discard
+--- SQL: ALTER TABLE golden.my DISCARD PARTITION p0 TABLESPACE
+--- rc=1
+--- out: ERROR 8200 (HY000) at line 1: Unsupported Unsupported/unknown ALTER TABLE specification
+=== [tidb85] dir-my
+--- SQL: SELECT PARTITION_NAME, PARTITION_ORDINAL_POSITION, PARTITION_METHOD, PARTITION_DESCRIPTION FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='my' AND PARTITION_NAME IS NOT NULL ORDER BY PARTITION_ORDINAL_POSITION
+--- rc=0
+--- out: PARTITION_NAME	PARTITION_ORDINAL_POSITION	PARTITION_METHOD	PARTITION_DESCRIPTION
+p0	1	HASH	
+p1	2	HASH	
+=== [tidb85] myisam-import
+--- SQL: ALTER TABLE golden.my IMPORT PARTITION p0 TABLESPACE
+--- rc=1
+--- out: ERROR 8200 (HY000) at line 1: Unsupported Unsupported/unknown ALTER TABLE specification
+=== [tidb85] reset-in
+--- SQL: DROP TABLE IF EXISTS golden.inn; CREATE TABLE golden.inn (id INT) ENGINE=InnoDB PARTITION BY HASH(id) PARTITIONS 2
+--- rc=0
+--- out: 
+=== [tidb85] innodb-discard
+--- SQL: ALTER TABLE golden.inn DISCARD PARTITION p0 TABLESPACE
+--- rc=1
+--- out: ERROR 8200 (HY000) at line 1: Unsupported Unsupported/unknown ALTER TABLE specification
+=== [tidb85] dir-inn
+--- SQL: SELECT PARTITION_NAME, PARTITION_ORDINAL_POSITION, PARTITION_METHOD, PARTITION_DESCRIPTION FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='inn' AND PARTITION_NAME IS NOT NULL ORDER BY PARTITION_ORDINAL_POSITION
+--- rc=0
+--- out: PARTITION_NAME	PARTITION_ORDINAL_POSITION	PARTITION_METHOD	PARTITION_DESCRIPTION
+p0	1	HASH	
+p1	2	HASH	
+=== [tidb85] innodb-import
+--- SQL: ALTER TABLE golden.inn IMPORT PARTITION p0 TABLESPACE
+--- rc=1
+--- out: ERROR 8200 (HY000) at line 1: Unsupported Unsupported/unknown ALTER TABLE specification
+=== [tidb85] reset-rm
+--- SQL: DROP TABLE IF EXISTS golden.rm; CREATE TABLE golden.rm (id INT) ENGINE=InnoDB PARTITION BY RANGE(id) (PARTITION p0 VALUES LESS THAN (200), PARTITION pmax VALUES LESS THAN MAXVALUE)
+--- rc=0
+--- out: 
+=== [tidb85] optimize-named
+--- SQL: ALTER TABLE golden.rm OPTIMIZE PARTITION p0
+--- rc=1
+--- out: ERROR 8200 (HY000) at line 1: Unsupported optimize partition
+=== [tidb85] optimize-warnings
+--- SQL: SHOW WARNINGS
+--- rc=0
+--- out: Level	Code	Message
+Error	1054	Unknown column '$$' in 'field list'
+DONE

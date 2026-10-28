@@ -74,15 +74,21 @@ func partitionBoundFromClause(clause ast.PartitionDefinitionClause) *spec.Partit
 	case *ast.PartitionDefinitionClauseLessThan:
 		bound := &spec.PartitionBound{Kind: "less_than"}
 		row := make([]spec.BoundLiteral, 0, len(c.Exprs))
+		allMax := len(c.Exprs) > 0
 		for _, expr := range c.Exprs {
 			if _, isMax := expr.(*ast.MaxValueExpr); isMax {
-				bound.MaxValue = true
+				// Keep the item in position — a COLUMNS tuple like
+				// (10,MAXVALUE) is not the scalar +∞ tail; only a row
+				// composed entirely of MAXVALUE items is.
+				row = append(row, spec.BoundLiteral{Kind: spec.PartitionBoundMaxValue})
 				continue
 			}
+			allMax = false
 			row = append(row, boundLiteralFromExpr(expr))
 		}
 		if len(row) > 0 {
 			bound.Rows = [][]spec.BoundLiteral{row}
+			bound.MaxValue = allMax
 		}
 		return bound
 	case *ast.PartitionDefinitionClauseIn:

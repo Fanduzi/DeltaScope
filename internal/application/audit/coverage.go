@@ -503,7 +503,7 @@ func statementCoverageAspects(dialect spec.Dialect, statement spec.Statement) []
 			// — vendor aspects in both directions, never plain unaudited.
 			vendor := unauditedActionVendor(dialect, alter.Action)
 			gaps = append(gaps, aspectGap(
-				fmt.Sprintf("%s.%s", ddl.Operation, alter.Action), vendor,
+				fmt.Sprintf("%s.%s", ddl.Operation, partitionActionFeatureName(alter.Action)), vendor,
 				map[string]any{"aspect": "action", "action": alter.Action},
 			))
 			continue
@@ -556,13 +556,25 @@ func statementCoverageAspects(dialect spec.Dialect, statement spec.Statement) []
 		// Partition bound items the fact model could not project (a
 		// truncated or subquery-shaped bound expression) are a coverage
 		// boundary — comparable-literal bounds the rules could not
-		// adjudicate stay evidence gaps on the owning rule instead.
+		// adjudicate stay evidence gaps on the owning rule instead. The
+		// PARTITION BY scheme definitions carry the same boundary through
+		// PartitionScheme.Defs rather than PartitionDefs.
 		for _, def := range alter.PartitionDefs {
 			if partitionBoundUnproven(def.Bound) {
 				gaps = append(gaps, aspectGap(
-					fmt.Sprintf("%s.%s.partition_bound", ddl.Operation, alter.Action), false,
+					fmt.Sprintf("%s.%s.partition_bound", ddl.Operation, partitionActionFeatureName(alter.Action)), false,
 					map[string]any{"aspect": "partition_bound", "action": alter.Action, "partition": def.Name},
 				))
+			}
+		}
+		if alter.PartitionScheme != nil {
+			for _, def := range alter.PartitionScheme.Defs {
+				if partitionBoundUnproven(def.Bound) {
+					gaps = append(gaps, aspectGap(
+						fmt.Sprintf("%s.%s.partition_bound", ddl.Operation, partitionActionFeatureName(alter.Action)), false,
+						map[string]any{"aspect": "partition_bound", "action": alter.Action, "partition": def.Name},
+					))
+				}
 			}
 		}
 		if alter.PartitionScheme != nil && alter.PartitionScheme.Expr != nil &&
@@ -577,6 +589,19 @@ func statementCoverageAspects(dialect spec.Dialect, statement spec.Statement) []
 				fmt.Sprintf("%s.option.%s", ddl.Operation, option), tidbOnlyTableOption(option, dialect),
 				map[string]any{"aspect": "option", "action": alter.Action},
 			))
+		}
+	}
+	// A CREATE-side partitioning clause declares its member definitions on
+	// the statement body rather than an alter action; expression-shaped
+	// bound items carry the same capability boundary as the alter path.
+	if ddl.HasPartition {
+		for _, def := range ddl.PartitionDefs {
+			if partitionBoundUnproven(def.Bound) {
+				gaps = append(gaps, aspectGap(
+					fmt.Sprintf("%s.partition_bound", ddl.Operation), false,
+					map[string]any{"aspect": "partition_bound", "partition": def.Name},
+				))
+			}
 		}
 	}
 	return gaps
@@ -604,17 +629,40 @@ func unauditedActionVendor(dialect spec.Dialect, action string) bool {
 	return false
 }
 
-// partitionBoundUnproven reports whether a member bound carries a literal
-// item the fact model could not project — an expression item whose
-// structured facts never completed.
+// partitionActionFeatureName maps a partition alter action to the stable
+// feature vocabulary the rule IDs and inventory rows share — the
+// extractor's plural/shorthand action spellings (`add_partitions`,
+// `check_partitions`, `coalesce_partitions`, `partition`) name the same
+// actions the public `*_partition` features document.
+func partitionActionFeatureName(action string) string {
+	switch action {
+	case "add_partitions":
+		return "add_partition"
+	case "check_partitions":
+		return "check_partition"
+	case "coalesce_partitions":
+		return "coalesce_partition"
+	case "partition":
+		return "partition_by"
+	default:
+		return action
+	}
+}
+
+// partitionBoundUnproven reports whether a member bound carries an item
+// outside the comparable literal domain — any expression-shaped item,
+// evaluated or not. The comparators never adjudicate expression items,
+// so a fully-known expression is still an unimplemented capability here,
+// not a metadata gap: the aspect carries the capability boundary while a
+// provider-side unprojectable bound stays an evidence gap on the owning
+// rule.
 func partitionBoundUnproven(bound *spec.PartitionBound) bool {
 	if bound == nil {
 		return false
 	}
 	for _, row := range bound.Rows {
 		for _, item := range row {
-			if item.Kind == spec.PartitionBoundExpression &&
-				(item.Expression == nil || !item.Expression.Known) {
+			if item.Kind == spec.PartitionBoundExpression {
 				return true
 			}
 		}

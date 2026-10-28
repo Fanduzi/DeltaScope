@@ -258,6 +258,11 @@ func (s *batchState) transitionReorganizePartition(shape *spec.TableSnapshot, al
 	for _, idx := range indexes {
 		delete(surviving, strings.ToLower(shape.PartitionNames[idx]))
 	}
+	// A name declared twice inside the INTO list refuses before any
+	// surviving-member check — probed 1517 on both anchors.
+	if firstDuplicateDefName(alter.PartitionDefs) != "" {
+		return nil
+	}
 	for _, def := range alter.PartitionDefs {
 		if surviving[strings.ToLower(def.Name)] {
 			// 1517: target name collides with a member that survives.
@@ -275,8 +280,11 @@ func (s *batchState) transitionReorganizePartition(shape *spec.TableSnapshot, al
 		}
 	}
 	if isListFamily(method) {
-		if !reorganizeListOutcome(shape, alter, indexes) {
+		switch reorganizeListOutcome(shape, alter, indexes) {
+		case partitionOutcomeRefused:
 			return nil
+		case partitionOutcomeUnproven:
+			return s.partitionTopologyUnproven(shape, false)
 		}
 		return publishReorganizedSpan(shape, indexes[0], indexes[len(indexes)-1], alter.PartitionDefs)
 	}
@@ -407,50 +415,41 @@ func reorganizeRangeOutcome(shape *spec.TableSnapshot, alter *spec.Alter, indexe
 	return partitionOutcomeCombinable, targets
 }
 
-// reorganizeListOutcome applies the LIST-family bound contract: any value
-// a target claims that provably belongs to a surviving member is a proven
-// refusal (overlapping LIST value). Unproven row comparisons leave the
-// outcome undecidable only when they involve surviving members; target
-// internal duplication is provably refused.
-func reorganizeListOutcome(shape *spec.TableSnapshot, alter *spec.Alter, indexes []int) bool {
+// reorganizeListOutcome applies the LIST-family bound contract tri-state:
+// a value provably shared with a surviving member (or inside the target
+// list) is a proven refusal; every pair provably disjoint executes; any
+// undecidable comparison leaves the outcome unproven — never folded into
+// "no overlap".
+func reorganizeListOutcome(shape *spec.TableSnapshot, alter *spec.Alter, indexes []int) partitionOutcome {
 	removed := make(map[int]bool, len(indexes))
 	for _, i := range indexes {
 		removed[i] = true
 	}
+	unproven := false
 	for i, def := range alter.PartitionDefs {
 		// Duplicate values inside the new members refuse natively.
 		for j := 0; j < i; j++ {
-			if listBoundOverlaps(def.Bound, alter.PartitionDefs[j].Bound) {
-				return false
+			if overlap, ok := spec.InBoundsOverlap(def.Bound, alter.PartitionDefs[j].Bound); ok && overlap {
+				return partitionOutcomeRefused
+			} else if !ok {
+				unproven = true
 			}
 		}
 		for m, existing := range shape.PartitionDefs {
 			if removed[m] {
 				continue
 			}
-			if listBoundOverlaps(def.Bound, existing.Bound) {
-				return false
+			if overlap, ok := spec.InBoundsOverlap(def.Bound, existing.Bound); ok && overlap {
+				return partitionOutcomeRefused
+			} else if !ok {
+				unproven = true
 			}
 		}
 	}
-	return true
-}
-
-// listBoundOverlaps reports whether two IN bounds provably share a value
-// row — only literal-row equality decides; expression items never count
-// as proven overlap.
-func listBoundOverlaps(a, b *spec.PartitionBound) bool {
-	if a == nil || b == nil {
-		return false
+	if unproven {
+		return partitionOutcomeUnproven
 	}
-	for _, rowA := range a.Rows {
-		for _, rowB := range b.Rows {
-			if equal, ok := spec.BoundRowEqual(rowA, rowB); ok && equal {
-				return true
-			}
-		}
-	}
-	return false
+	return partitionOutcomeCombinable
 }
 
 // publishReorganizedSpan publishes the member directory after a proven
@@ -523,6 +522,11 @@ func (s *batchState) applyAddPartitionDefs(shape *spec.TableSnapshot, alter *spe
 	if shape.PartitionNames == nil || shape.PartitionDefs == nil {
 		return s.partitionTopologyUnproven(shape, false)
 	}
+	// A name declared twice inside the ADD list refuses natively (1517)
+	// before any existing-member check runs.
+	if firstDuplicateDefName(alter.PartitionDefs) != "" {
+		return nil
+	}
 	existing := nameSet(shape.PartitionNames)
 	for _, def := range alter.PartitionDefs {
 		if existing[strings.ToLower(def.Name)] {
@@ -571,17 +575,25 @@ func (s *batchState) applyAddPartitionDefs(shape *spec.TableSnapshot, alter *spe
 		}
 	}
 	if isListFamily(method) {
+		unproven := false
 		for i, def := range alter.PartitionDefs {
 			for j := 0; j < i; j++ {
-				if listBoundOverlaps(def.Bound, alter.PartitionDefs[j].Bound) {
+				if overlap, ok := spec.InBoundsOverlap(def.Bound, alter.PartitionDefs[j].Bound); ok && overlap {
 					return nil
+				} else if !ok {
+					unproven = true
 				}
 			}
 			for _, existing := range shape.PartitionDefs {
-				if listBoundOverlaps(def.Bound, existing.Bound) {
+				if overlap, ok := spec.InBoundsOverlap(def.Bound, existing.Bound); ok && overlap {
 					return nil
+				} else if !ok {
+					unproven = true
 				}
 			}
+		}
+		if unproven {
+			return s.partitionTopologyUnproven(shape, false)
 		}
 	}
 	out := cloneTableSnapshot(shape)
@@ -601,6 +613,23 @@ func partitionDefNames(defs []spec.PartitionDef) []string {
 	return names
 }
 
+// firstDuplicateDefName reports the first member name declared twice in
+// one definition list — case-insensitive, matching the native 1517
+// same-batch duplicate refusal. "" means the authored names are unique.
+// The audit package keeps its own copy because the rules layer cannot
+// import application internals; both sides must stay in lockstep.
+func firstDuplicateDefName(defs []spec.PartitionDef) string {
+	seen := make(map[string]bool, len(defs))
+	for _, def := range defs {
+		key := strings.ToLower(def.Name)
+		if seen[key] {
+			return def.Name
+		}
+		seen[key] = true
+	}
+	return ""
+}
+
 // applyAddPartitionCount publishes the `PARTITIONS n` (or TiDB bare-ADD)
 // successor on the hash|key families: the engine appends implicit
 // members p{next}.., which is provable only when the observed member set
@@ -616,8 +645,16 @@ func (s *batchState) applyAddPartitionCount(shape *spec.TableSnapshot, count uin
 		return s.partitionTopologyUnproven(shape, false)
 	}
 	base := len(shape.PartitionNames)
-	if base == 0 || base+int(count) > maxPartitionMembers {
+	if base == 0 || base > maxPartitionMembers {
 		return s.partitionTopologyUnproven(shape, false)
+	}
+	// The overflow judgment stays in the unsigned domain — int(count)
+	// would wrap past MaxInt64 and smuggle a refusal through as a
+	// successful (or silently truncated) append. `count == 0` folds into
+	// the bare form at the extractor, so any zero reaching here is an
+	// anomaly the refusal also covers.
+	if count == 0 || count > uint64(maxPartitionMembers-base) {
+		return nil
 	}
 	for i, name := range shape.PartitionNames {
 		if name != implicitPartitionName(i) {
@@ -656,12 +693,17 @@ func (s *batchState) transitionCoalescePartitions(shape *spec.TableSnapshot, alt
 	if alter.PartitionCount == nil || shape.PartitionNames == nil {
 		return s.partitionTopologyUnproven(shape, false)
 	}
-	count := int(*alter.PartitionCount)
-	if count >= len(shape.PartitionNames) || count <= 0 {
+	count := *alter.PartitionCount
+	if count == 0 {
+		// The authored zero survives extraction — a probed 1515 refusal,
+		// never an unknown count.
+		return nil
+	}
+	if count >= uint64(len(shape.PartitionNames)) {
 		return nil // 1508: cannot remove all partitions.
 	}
 	out := cloneTableSnapshot(shape)
-	keep := len(shape.PartitionNames) - count
+	keep := len(shape.PartitionNames) - int(count)
 	out.PartitionNames = out.PartitionNames[:keep]
 	if out.PartitionDefs != nil {
 		if len(out.PartitionDefs) > keep {
@@ -683,12 +725,14 @@ func (s *batchState) transitionPartitionBy(shape *spec.TableSnapshot, alter *spe
 	if scheme == nil {
 		return s.partitionTopologyUnproven(shape, true)
 	}
-	// Provably-invalid declared member bounds refuse on both anchors
-	// (1493-class); uncomparable bounds leave the whole scheme outcome
-	// unproven.
-	if outcome := declaredSchemeOutcome(scheme); outcome == partitionOutcomeRefused {
+	// The shared scheme-validity judgment — duplicate member names,
+	// over-bound/method-mismatched counts, and provably-invalid declared
+	// bounds all refuse natively; uncomparable bounds leave the whole
+	// scheme outcome unproven.
+	switch partitionSchemeOutcome(scheme.Type, scheme.Defs, scheme.Count) {
+	case partitionOutcomeRefused:
 		return nil
-	} else if outcome == partitionOutcomeUnproven {
+	case partitionOutcomeUnproven:
 		return s.partitionTopologyUnproven(shape, true)
 	}
 	out := cloneTableSnapshot(shape)
@@ -709,7 +753,9 @@ func (s *batchState) transitionPartitionBy(shape *spec.TableSnapshot, alter *spe
 	case len(scheme.Defs) > 0:
 		out.PartitionDefs = spec.ClonePartitionDefs(scheme.Defs)
 		out.PartitionNames = partitionDefNames(scheme.Defs)
-	case scheme.Count != nil && *scheme.Count > 0 && *scheme.Count <= maxPartitionMembers:
+	case scheme.Count != nil && isHashKeyMethodName(scheme.Type):
+		// The count is provably in-range here — the shared outcome
+		// already refused >8192 and every non-hash|key method.
 		count := int(*scheme.Count)
 		out.PartitionNames = make([]string, 0, count)
 		out.PartitionDefs = make([]spec.PartitionDef, 0, count)
@@ -739,21 +785,46 @@ func isHashKeyMethodName(method string) bool {
 		method == "linear hash" || method == "linear key"
 }
 
+// partitionSchemeOutcome is the shared declared-scheme validity judgment
+// ALTER PARTITION BY and CREATE TABLE both consume: same-batch duplicate
+// member names refuse (1517), a `PARTITIONS n` past the native bound or
+// declared on a bound-carrying method refuses (1499 / 1492-class), and
+// provably-invalid declared bounds refuse (1493/1495-class). Uncomparable
+// content leaves the scheme unproven — never a guessed verdict.
+func partitionSchemeOutcome(method string, defs []spec.PartitionDef, count *uint64) partitionOutcome {
+	if firstDuplicateDefName(defs) != "" {
+		return partitionOutcomeRefused
+	}
+	if len(defs) > 0 {
+		return declaredSchemeOutcome(method, defs)
+	}
+	if count != nil {
+		if *count > maxPartitionMembers {
+			return partitionOutcomeRefused
+		}
+		if method == "range" || method == "range columns" ||
+			method == "list" || method == "list columns" {
+			// A count on a bound-carrying method is the parser-refused
+			// 1492-class shape; the guard stays honest even where the
+			// grammar never produces it.
+			return partitionOutcomeRefused
+		}
+	}
+	return partitionOutcomeCombinable
+}
+
 // declaredSchemeOutcome proves the declared member bounds of a fresh
 // partitioning scheme: the RANGE family requires strictly increasing
 // comparable bounds with MAXVALUE only on the last member (1493-class);
 // the LIST family refuses provably-duplicate literal values. Uncomparable
 // items keep the outcome unproven; hash|key members carry no bounds and
 // always pass.
-func declaredSchemeOutcome(scheme *spec.PartitionScheme) partitionOutcome {
-	if len(scheme.Defs) == 0 {
-		return partitionOutcomeCombinable
-	}
-	switch scheme.Type {
+func declaredSchemeOutcome(method string, defs []spec.PartitionDef) partitionOutcome {
+	switch method {
 	case "range", "range columns":
 		var prevRow []spec.BoundLiteral
 		prevMax := false
-		for i, def := range scheme.Defs {
+		for i, def := range defs {
 			row, maxValue, ok := spec.LessThanBoundUpper(def.Bound)
 			if !ok {
 				return partitionOutcomeUnproven
@@ -763,7 +834,7 @@ func declaredSchemeOutcome(scheme *spec.PartitionScheme) partitionOutcome {
 				// refused on both anchors.
 				return partitionOutcomeRefused
 			}
-			if maxValue && i != len(scheme.Defs)-1 {
+			if maxValue && i != len(defs)-1 {
 				return partitionOutcomeRefused
 			}
 			if !maxValue && prevRow != nil {
@@ -778,12 +849,18 @@ func declaredSchemeOutcome(scheme *spec.PartitionScheme) partitionOutcome {
 			prevRow, prevMax = row, maxValue
 		}
 	case "list", "list columns":
-		for i, def := range scheme.Defs {
+		unproven := false
+		for i, def := range defs {
 			for j := 0; j < i; j++ {
-				if listBoundOverlaps(def.Bound, scheme.Defs[j].Bound) {
+				if overlap, ok := spec.InBoundsOverlap(def.Bound, defs[j].Bound); ok && overlap {
 					return partitionOutcomeRefused
+				} else if !ok {
+					unproven = true
 				}
 			}
+		}
+		if unproven {
+			return partitionOutcomeUnproven
 		}
 	}
 	return partitionOutcomeCombinable
@@ -833,6 +910,15 @@ func (s *batchState) transitionPartitionMaintenance(shape *spec.TableSnapshot, a
 		// Refused (rebuild/discard/import) or operation-failed
 		// (check/optimize/repair) — neither changes the shape.
 		return nil
+	}
+	if (alter.Action == "discard_partition_tablespace" || alter.Action == "import_partition_tablespace") &&
+		shape.Options != nil {
+		// A proven MyISAM table refuses the partition tablespace ops —
+		// the storage engine does not have the option (probed 1031 on
+		// MySQL 5.7; the refusal is engine-level, not version-level).
+		if engine, ok := shape.Options["engine"]; ok && strings.EqualFold(engine, "myisam") {
+			return nil
+		}
 	}
 	memberDirProven := shape.PartitionNames != nil
 	if !alter.AllPartitions && len(alter.Partitions) > 0 && memberDirProven {

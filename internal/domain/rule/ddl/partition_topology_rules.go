@@ -34,8 +34,10 @@ const (
 	partitionReasonMaxValueTail        = "partition_maxvalue_tail"
 	partitionReasonDuplicateListValue  = "partition_list_value_duplicate"
 	partitionReasonCoalesceExhausts    = "partition_remove_all"
+	partitionReasonCoalesceZero        = "partition_coalesce_zero"
 	partitionReasonAddFormInapplicable = "partition_add_form_inapplicable"
 	partitionReasonMemberBoundOverflow = "partition_member_bound"
+	partitionReasonEngineInapplicable  = "partition_engine_inapplicable"
 	partitionReasonOperationFailed     = "partition_operation_failed"
 	partitionReasonActionUnsupported   = "partition_action_unsupported"
 )
@@ -136,14 +138,42 @@ func (r partitionTopologyWarnRule) Evaluate(ctx context.Context, statement spec.
 		if len(defNames) > 0 {
 			metadata["partition_defs"] = strings.Join(defNames, ",")
 		}
+		risk, suggestion := r.risk, r.suggestion
+		if r.action == "optimize_partition" {
+			// OPTIMIZE PARTITION's real scope is engine-dependent: InnoDB
+			// reports "All partitions will be rebuilt and analyzed" (the
+			// engine recreates the whole partitioned table), while engines
+			// with native partition-level optimize touch the named members
+			// only. The proven engine lands in metadata; an unobserved
+			// engine keeps the named-member wording — never a fabricated
+			// scope either way.
+			if engine, ok := provenEngineOption(statement); ok {
+				metadata["engine"] = engine
+				if strings.EqualFold(engine, "innodb") {
+					risk = "rebuilds and re-analyzes every partition — InnoDB recreates the whole partitioned table, not just the named members"
+					suggestion = "verify the full-table rebuild window and the statistics refresh before shipping"
+				}
+			}
+		}
 		findings = append(findings, rule.Finding{
 			Level:      r.level,
-			Message:    fmt.Sprintf("ALTER TABLE %s %s", r.label, r.risk),
-			Suggestion: r.suggestion,
+			Message:    fmt.Sprintf("ALTER TABLE %s %s", r.label, risk),
+			Suggestion: suggestion,
 			Metadata:   metadata,
 		})
 	}
 	return findings, nil
+}
+
+// provenEngineOption reports the target's observed storage engine — the
+// fact the engine-conditional maintenance cells consume.
+func provenEngineOption(statement spec.Statement) (string, bool) {
+	snapshot, ok := targetTableSnapshot(statement)
+	if !ok || snapshot == nil || !snapshot.Exists || snapshot.Options == nil {
+		return "", false
+	}
+	engine := strings.TrimSpace(snapshot.Options["engine"])
+	return engine, engine != ""
 }
 
 func newReorganizePartitionWarnRule(cfg policy.RulePolicy) (rule.StatementRule, error) {
@@ -217,8 +247,36 @@ func newImportPartitionTablespaceWarnRule(cfg policy.RulePolicy) (rule.Statement
 }
 
 func newDiscardPartitionTablespaceForbidRule(cfg policy.RulePolicy) (rule.StatementRule, error) {
-	return newPartitionForbidRule(ruleIDAlterDiscardPartitionTablespaceForbid,
+	inner, err := newPartitionForbidRule(ruleIDAlterDiscardPartitionTablespaceForbid,
 		"discard_partition_tablespace", "discard partition tablespace", cfg)
+	if err != nil {
+		return nil, err
+	}
+	return tidbVendorGatedRule{StatementRule: inner, action: "discard_partition_tablespace"}, nil
+}
+
+// tidbVendorGatedRule wraps a policy rule whose action TiDB refuses
+// natively (the probed 8200 set): the vendor aspect in coverage already
+// answers the statement, so the governance layer emits nothing there.
+// The rule's own policy switch is untouched — `forbid=false` still
+// silences the wrapped finding under MySQL.
+type tidbVendorGatedRule struct {
+	rule.StatementRule
+	action string
+}
+
+func (r tidbVendorGatedRule) AppliesTo(statement spec.Statement) bool {
+	if statement.Dialect == spec.DialectTiDB && tidbRefusedPartitionActions[r.action] {
+		return false
+	}
+	return r.StatementRule.AppliesTo(statement)
+}
+
+func (r tidbVendorGatedRule) Evaluate(ctx context.Context, statement spec.Statement) ([]rule.Finding, error) {
+	if !r.AppliesTo(statement) {
+		return nil, nil
+	}
+	return r.StatementRule.Evaluate(ctx, statement)
 }
 
 // partitionTopologyApplicabilityRule binds one T14 action to the proven
@@ -306,6 +364,13 @@ func (r partitionTopologyApplicabilityRule) Evaluate(ctx context.Context, statem
 				partitionReasonTypeInapplicable, "8200",
 				fmt.Sprintf("ALTER TABLE %s is not supported on %s-partitioned tables under TiDB (native 8200)", r.label, *snapshot.PartitionType)), nil
 		}
+		for _, alter := range matchingAlterActions(statement, r.action) {
+			if dup := firstDuplicateDefName(alter.PartitionDefs); dup != "" {
+				return []rule.Finding{r.declaredFormFinding(statement, alter, dup,
+					partitionReasonDuplicateName, "1517",
+					fmt.Sprintf("ALTER TABLE %s declares partition %q twice in the INTO list (native 1517)", r.label, dup))}, nil
+			}
+		}
 	case "coalesce_partitions":
 		if snapshot.PartitionType != nil &&
 			(partitionRangeFamily(*snapshot.PartitionType) || partitionListFamily(*snapshot.PartitionType)) {
@@ -313,10 +378,17 @@ func (r partitionTopologyApplicabilityRule) Evaluate(ctx context.Context, statem
 				partitionReasonTypeInapplicable, "1509",
 				fmt.Sprintf("ALTER TABLE %s is not allowed on %s-partitioned tables (native 1509)", r.label, *snapshot.PartitionType)), nil
 		}
+		for _, alter := range matchingAlterActions(statement, r.action) {
+			if alter.PartitionCount != nil && *alter.PartitionCount == 0 {
+				return r.refusalFindings(statement, snapshot,
+					partitionReasonCoalesceZero, "1515",
+					fmt.Sprintf("ALTER TABLE %s cannot coalesce zero partitions (native 1515)", r.label)), nil
+			}
+		}
 		if snapshot.PartitionNames != nil {
 			for _, alter := range matchingAlterActions(statement, r.action) {
 				if alter.PartitionCount != nil && len(snapshot.PartitionNames) > 0 &&
-					int(*alter.PartitionCount) >= len(snapshot.PartitionNames) {
+					*alter.PartitionCount >= uint64(len(snapshot.PartitionNames)) {
 					return r.refusalFindings(statement, snapshot,
 						partitionReasonCoalesceExhausts, "1508",
 						fmt.Sprintf("ALTER TABLE %s cannot remove all partitions (native 1508)", r.label)), nil
@@ -325,15 +397,61 @@ func (r partitionTopologyApplicabilityRule) Evaluate(ctx context.Context, statem
 		}
 	case "add_partitions":
 		return r.evaluateAddPartitions(statement, snapshot)
+	case "discard_partition_tablespace", "import_partition_tablespace":
+		// The probed engine gate: MyISAM lacks the partition tablespace
+		// option (1031, MySQL 5.7 anchor). An unobserved engine owes the
+		// fact through EvidenceGaps — never a fabricated verdict.
+		if engine, ok := provenEngineOption(statement); ok && strings.EqualFold(engine, "myisam") {
+			return r.refusalFindings(statement, snapshot,
+				partitionReasonEngineInapplicable, "1031",
+				fmt.Sprintf("ALTER TABLE %s is not supported on the MyISAM storage engine (native 1031)", r.label)), nil
+		}
 	}
 	return nil, ctx.Err()
 }
 
-// evaluateAddPartitions proves the ADD form gates: the `PARTITIONS n` and
-// bare forms are refused on the range|list methods (1492), the bare form
-// on MySQL hash|key (1514), and a member count that would overflow the
-// native bound (1499). The defs form passes these gates — its bound
-// contract lives on the target rule.
+// declaredFormFinding reports a refusal proven from the authored form
+// alone — duplicate member names, counts outside the native bound, or
+// declared bounds the method cannot accept.
+func (r partitionTopologyApplicabilityRule) declaredFormFinding(statement spec.Statement, alter spec.Alter, partition, reasonCode, nativeError, message string) rule.Finding {
+	metadata := partitionMetadata(statement, alter, map[string]any{
+		"reason_code":  reasonCode,
+		"native_error": nativeError,
+	})
+	if partition != "" {
+		metadata["partition"] = partition
+	}
+	return rule.Finding{
+		Level:      r.level,
+		Message:    message,
+		Suggestion: "verify the declared member form against the native partition contract",
+		Metadata:   metadata,
+	}
+}
+
+// firstDuplicateDefName reports the first member name declared twice in
+// one definition list — case-insensitive, matching the native 1517
+// same-batch duplicate refusal (the audit-package twin stays in lockstep).
+func firstDuplicateDefName(defs []spec.PartitionDef) string {
+	seen := make(map[string]bool, len(defs))
+	for _, def := range defs {
+		key := strings.ToLower(def.Name)
+		if seen[key] {
+			return def.Name
+		}
+		seen[key] = true
+	}
+	return ""
+}
+
+// evaluateAddPartitions proves the ADD form and declared-definition
+// contract: the `PARTITIONS n` and bare forms are refused on the
+// range|list methods (1492), the bare form on MySQL hash|key (1514), a
+// member count that would overflow the native bound (1499), same-batch
+// duplicate member names (1517), and the RANGE/LIST bound contract —
+// add under a MAXVALUE tail (1481), non-increasing bounds (1493), and
+// provably-overlapping LIST values (1495). Uncomparable bound items emit
+// nothing: the coverage aspect owns that capability boundary.
 func (r partitionTopologyApplicabilityRule) evaluateAddPartitions(statement spec.Statement, snapshot *spec.TableSnapshot) ([]rule.Finding, error) {
 	method := ""
 	if snapshot.PartitionType != nil {
@@ -341,6 +459,23 @@ func (r partitionTopologyApplicabilityRule) evaluateAddPartitions(statement spec
 	}
 	for _, alter := range matchingAlterActions(statement, r.action) {
 		if len(alter.PartitionDefs) > 0 {
+			// A name declared twice inside the ADD list refuses natively
+			// (1517) before any bound is compared.
+			if dup := firstDuplicateDefName(alter.PartitionDefs); dup != "" {
+				return []rule.Finding{r.declaredFormFinding(statement, alter, dup,
+					partitionReasonDuplicateName, "1517",
+					fmt.Sprintf("ALTER TABLE %s declares partition %q twice (native 1517)", r.label, dup))}, nil
+			}
+			switch {
+			case partitionRangeFamily(method):
+				if finding, ok := r.addRangeBoundFinding(statement, alter, snapshot); ok {
+					return []rule.Finding{finding}, nil
+				}
+			case partitionListFamily(method):
+				if finding, ok := r.addListBoundFinding(statement, alter, snapshot); ok {
+					return []rule.Finding{finding}, nil
+				}
+			}
 			continue
 		}
 		if alter.PartitionCount != nil {
@@ -349,11 +484,18 @@ func (r partitionTopologyApplicabilityRule) evaluateAddPartitions(statement spec
 					partitionReasonAddFormInapplicable, "1492",
 					"ALTER TABLE add partition PARTITIONS n requires explicit definitions on range/list methods (native 1492)"), nil
 			}
-			if partitionHashKeyFamily(method) && snapshot.PartitionNames != nil &&
-				int(*alter.PartitionCount)+len(snapshot.PartitionNames) > maxPartitionMembers {
-				return r.refusalFindings(statement, snapshot,
-					partitionReasonMemberBoundOverflow, "1499",
-					"ALTER TABLE add partition would exceed the 8192 member bound (native 1499)"), nil
+			if partitionHashKeyFamily(method) {
+				if *alter.PartitionCount == 0 && statementProduct(statement) == spec.VersionProductMySQL {
+					return r.refusalFindings(statement, snapshot,
+						partitionReasonAddFormInapplicable, "1514",
+						"ALTER TABLE add partition PARTITIONS 0 must add at least one member (native 1514)"), nil
+				}
+				if snapshot.PartitionNames != nil &&
+					*alter.PartitionCount > uint64(maxPartitionMembers-len(snapshot.PartitionNames)) {
+					return r.refusalFindings(statement, snapshot,
+						partitionReasonMemberBoundOverflow, "1499",
+						"ALTER TABLE add partition would exceed the 8192 member bound (native 1499)"), nil
+				}
 			}
 			continue
 		}
@@ -373,13 +515,110 @@ func (r partitionTopologyApplicabilityRule) evaluateAddPartitions(statement spec
 	return nil, nil
 }
 
-// evaluatePartitionBy proves the declared-scheme bound contract: strictly
-// increasing comparable RANGE bounds with MAXVALUE only on the tail
-// (1493-class), and no provably-duplicate LIST values.
+// addRangeBoundFinding proves the RANGE-family bound contract for one
+// defs-form ADD: no member may be appended under a MAXVALUE tail (1481)
+// and every declared bound must provably exceed the previous member's
+// (1493). An uncomparable catalog or declared bound emits no verdict —
+// the fact gap or capability aspect owns that boundary.
+func (r partitionTopologyApplicabilityRule) addRangeBoundFinding(statement spec.Statement, alter spec.Alter, snapshot *spec.TableSnapshot) (rule.Finding, bool) {
+	defs := snapshot.PartitionDefs
+	var prevRow []spec.BoundLiteral
+	if n := len(defs); n > 0 {
+		row, tailMax, ok := spec.LessThanBoundUpper(defs[n-1].Bound)
+		if !ok {
+			return rule.Finding{}, false
+		}
+		if tailMax {
+			return r.declaredFormFinding(statement, alter, "",
+				partitionReasonMaxValueTail, "1481",
+				fmt.Sprintf("ALTER TABLE %s cannot add members after a MAXVALUE tail (native 1481)", r.label)), true
+		}
+		prevRow = row
+	}
+	prevMax := false
+	for _, def := range alter.PartitionDefs {
+		row, maxValue, ok := spec.LessThanBoundUpper(def.Bound)
+		if !ok {
+			return rule.Finding{}, false
+		}
+		if prevMax {
+			return r.declaredFormFinding(statement, alter, def.Name,
+				partitionReasonBoundViolation, "1493",
+				fmt.Sprintf("ALTER TABLE %s declares partition %q after a MAXVALUE member (native 1493)", r.label, def.Name)), true
+		}
+		if !maxValue && prevRow != nil {
+			less, lessOK := spec.BoundRowLessThan(prevRow, row)
+			if !lessOK {
+				return rule.Finding{}, false
+			}
+			if !less {
+				return r.declaredFormFinding(statement, alter, def.Name,
+					partitionReasonBoundViolation, "1493",
+					fmt.Sprintf("ALTER TABLE %s declares partition %q with a bound that is not strictly increasing (native 1493)", r.label, def.Name)), true
+			}
+		}
+		prevRow, prevMax = row, maxValue
+	}
+	return rule.Finding{}, false
+}
+
+// addListBoundFinding proves the LIST-family bound contract for one
+// defs-form ADD: any value provably shared inside the new list or with an
+// existing member refuses (1495); undecidable comparisons emit nothing.
+func (r partitionTopologyApplicabilityRule) addListBoundFinding(statement spec.Statement, alter spec.Alter, snapshot *spec.TableSnapshot) (rule.Finding, bool) {
+	for i, def := range alter.PartitionDefs {
+		for j := 0; j < i; j++ {
+			if overlap, ok := spec.InBoundsOverlap(def.Bound, alter.PartitionDefs[j].Bound); ok && overlap {
+				return r.addListOverlapFinding(statement, alter, def), true
+			}
+		}
+		for _, existing := range snapshot.PartitionDefs {
+			if overlap, ok := spec.InBoundsOverlap(def.Bound, existing.Bound); ok && overlap {
+				return r.addListOverlapFinding(statement, alter, def), true
+			}
+		}
+	}
+	return rule.Finding{}, false
+}
+
+func (r partitionTopologyApplicabilityRule) addListOverlapFinding(statement spec.Statement, alter spec.Alter, def spec.PartitionDef) rule.Finding {
+	return r.declaredFormFinding(statement, alter, def.Name,
+		partitionReasonDuplicateListValue, "1495",
+		fmt.Sprintf("ALTER TABLE %s declares partition %q with values that overlap another member (native 1495)", r.label, def.Name))
+}
+
+// evaluatePartitionBy proves the declared-scheme contract PARTITION BY
+// shares with CREATE: same-batch duplicate member names (1517), a count
+// past the native bound or on a bound-carrying method (1499/1504/1492),
+// strictly increasing comparable RANGE bounds with MAXVALUE only on the
+// tail (1493-class), and no provably-duplicate LIST values (1495).
 func (r partitionTopologyApplicabilityRule) evaluatePartitionBy(statement spec.Statement) ([]rule.Finding, error) {
 	for _, alter := range matchingAlterActions(statement, r.action) {
 		scheme := alter.PartitionScheme
-		if scheme == nil || len(scheme.Defs) == 0 {
+		if scheme == nil {
+			continue
+		}
+		if dup := firstDuplicateDefName(scheme.Defs); dup != "" {
+			return []rule.Finding{r.declaredFormFinding(statement, alter, dup,
+				partitionReasonDuplicateName, "1517",
+				fmt.Sprintf("ALTER TABLE %s declares partition %q twice (native 1517)", r.label, dup))}, nil
+		}
+		if len(scheme.Defs) == 0 && scheme.Count != nil {
+			if partitionRangeFamily(scheme.Type) || partitionListFamily(scheme.Type) {
+				return []rule.Finding{r.declaredFormFinding(statement, alter, "",
+					partitionReasonAddFormInapplicable, "1492",
+					fmt.Sprintf("ALTER TABLE %s with PARTITIONS n requires explicit definitions on range/list methods (native 1492)", r.label))}, nil
+			}
+			if *scheme.Count == 0 {
+				return []rule.Finding{r.declaredFormFinding(statement, alter, "",
+					partitionReasonMemberBoundOverflow, "1504",
+					fmt.Sprintf("ALTER TABLE %s declares zero partitions (native 1504)", r.label))}, nil
+			}
+			if *scheme.Count > maxPartitionMembers {
+				return []rule.Finding{r.declaredFormFinding(statement, alter, "",
+					partitionReasonMemberBoundOverflow, "1499",
+					fmt.Sprintf("ALTER TABLE %s would exceed the 8192 member bound (native 1499)", r.label))}, nil
+			}
 			continue
 		}
 		if partitionRangeFamily(scheme.Type) {
@@ -408,7 +647,7 @@ func (r partitionTopologyApplicabilityRule) evaluatePartitionBy(statement spec.S
 		if partitionListFamily(scheme.Type) {
 			for i, def := range scheme.Defs {
 				for j := 0; j < i; j++ {
-					if listBoundsShareValue(def.Bound, scheme.Defs[j].Bound) {
+					if overlap, ok := spec.InBoundsOverlap(def.Bound, scheme.Defs[j].Bound); ok && overlap {
 						return r.schemeBoundFinding(statement, alter, def), nil
 					}
 				}
@@ -501,6 +740,7 @@ func (r partitionTopologyApplicabilityRule) EvidenceGaps(statement spec.Statemen
 	needType := false
 	needMembers := false
 	needProduct := false
+	needEngine := false
 	switch r.action {
 	case "reorganize_partition":
 		// The hash|key-on-TiDB refusal consumes method + product.
@@ -514,18 +754,32 @@ func (r partitionTopologyApplicabilityRule) EvidenceGaps(statement spec.Statemen
 		}
 	case "add_partitions":
 		// The form gates consume the method; the overflow check consumes
-		// the member count; the bare-form hash|key gate consumes product.
+		// the member count; the bare-form hash|key gate consumes product;
+		// the defs-form bound contract consumes the projected member
+		// bounds on the range|list families.
 		needType, needProduct = true, true
-		if snapshot.PartitionType != nil && partitionHashKeyFamily(*snapshot.PartitionType) {
-			for _, alter := range matchingAlterActions(statement, r.action) {
-				if len(alter.PartitionDefs) == 0 && alter.PartitionCount != nil {
-					needMembers = true
+		if snapshot.PartitionType != nil {
+			switch {
+			case partitionHashKeyFamily(*snapshot.PartitionType):
+				for _, alter := range matchingAlterActions(statement, r.action) {
+					if len(alter.PartitionDefs) == 0 && alter.PartitionCount != nil {
+						needMembers = true
+					}
+				}
+			case partitionRangeFamily(*snapshot.PartitionType) || partitionListFamily(*snapshot.PartitionType):
+				for _, alter := range matchingAlterActions(statement, r.action) {
+					if len(alter.PartitionDefs) > 0 && !catalogPartitionDefsComparable(snapshot.PartitionDefs) {
+						needed = append(needed, "target_table.partition_defs")
+						break
+					}
 				}
 			}
 		}
+	case "discard_partition_tablespace", "import_partition_tablespace":
+		// The engine gate consumes the proven storage engine.
+		needEngine = true
 	case "rebuild_partition", "check_partitions", "optimize_partition",
-		"repair_partition", "import_partition_tablespace", "discard_partition_tablespace",
-		"remove_partitioning":
+		"repair_partition", "remove_partitioning":
 		// Member-state gates only — partitioned fact already proven.
 	}
 	if needType && snapshot.PartitionType == nil {
@@ -537,10 +791,29 @@ func (r partitionTopologyApplicabilityRule) EvidenceGaps(statement spec.Statemen
 	if needProduct && statementProduct(statement) == "" {
 		needed = append(needed, "instance.product")
 	}
+	if needEngine && snapshot.Options["engine"] == "" {
+		needed = append(needed, "target_table.engine")
+	}
 	if len(needed) > 0 {
 		return partitionStateGap(needed...)
 	}
 	return nil
+}
+
+// catalogPartitionDefsComparable reports whether every projected member
+// bound sits inside the comparable literal domain — a nil directory, a
+// clause shell with no rows, or an expression-shaped item means the bound
+// contract never adjudicated this catalog (the rule owes the defs fact).
+func catalogPartitionDefsComparable(defs []spec.PartitionDef) bool {
+	if len(defs) == 0 {
+		return false
+	}
+	for _, def := range defs {
+		if !spec.BoundComparable(def.Bound) {
+			return false
+		}
+	}
+	return true
 }
 
 func partitionStateGap(facts ...string) []rule.EvidenceGap {
@@ -891,9 +1164,10 @@ func (r partitionTopologyTargetRule) listDuplicateFinding(statement spec.Stateme
 	}
 }
 
-// addFindings proves the ADD defs contract: no surviving-name collision
-// (1517), and on the range/list methods the declared bounds must satisfy
-// the ordering tail contract (1493/1481/1495).
+// addFindings proves the ADD defs member-binding contract: no declared
+// name may collide with the observed directory (1517). The declared-form
+// checks — same-batch duplicates and the RANGE/LIST bound contract —
+// live on the applicability rule.
 func (r partitionTopologyTargetRule) addFindings(statement spec.Statement, snapshot *spec.TableSnapshot, alter spec.Alter) []rule.Finding {
 	if len(alter.PartitionDefs) == 0 {
 		return nil
@@ -914,68 +1188,6 @@ func (r partitionTopologyTargetRule) addFindings(statement spec.Statement, snaps
 					"native_error": "1517",
 				}),
 			}}
-		}
-	}
-	if snapshot.PartitionDefs == nil {
-		return nil
-	}
-	method := ""
-	if snapshot.PartitionType != nil {
-		method = *snapshot.PartitionType
-	}
-	switch {
-	case partitionRangeFamily(method):
-		if n := len(snapshot.PartitionDefs); n > 0 {
-			if _, tailMax, ok := spec.LessThanBoundUpper(snapshot.PartitionDefs[n-1].Bound); !ok {
-				return nil
-			} else if tailMax {
-				return []rule.Finding{{
-					Level:      r.level,
-					Message:    fmt.Sprintf("ALTER TABLE %s cannot add members after a MAXVALUE tail (native 1481)", r.label),
-					Suggestion: "reorganize the MAXVALUE member instead of adding past it",
-					Metadata: partitionMetadata(statement, alter, map[string]any{
-						"reason_code":  partitionReasonMaxValueTail,
-						"native_error": "1481",
-					}),
-				}}
-			}
-		}
-		var prevRow []spec.BoundLiteral
-		if n := len(snapshot.PartitionDefs); n > 0 {
-			row, _, ok := spec.LessThanBoundUpper(snapshot.PartitionDefs[n-1].Bound)
-			if !ok {
-				return nil
-			}
-			prevRow = row
-		}
-		for _, def := range alter.PartitionDefs {
-			row, maxValue, ok := spec.LessThanBoundUpper(def.Bound)
-			if !ok {
-				return nil
-			}
-			if !maxValue && prevRow != nil {
-				less, lessOK := spec.BoundRowLessThan(prevRow, row)
-				if !lessOK {
-					return nil
-				}
-				if !less {
-					return []rule.Finding{r.rangeBoundFinding(statement, alter, def.Name)}
-				}
-			}
-			prevRow = row
-		}
-	case partitionListFamily(method):
-		for i, def := range alter.PartitionDefs {
-			for j := 0; j < i; j++ {
-				if listBoundsShareValue(def.Bound, alter.PartitionDefs[j].Bound) {
-					return []rule.Finding{r.listDuplicateFinding(statement, alter, def)}
-				}
-			}
-			for _, existing := range snapshot.PartitionDefs {
-				if listBoundsShareValue(def.Bound, existing.Bound) {
-					return []rule.Finding{r.listDuplicateFinding(statement, alter, def)}
-				}
-			}
 		}
 	}
 	return nil
@@ -999,6 +1211,9 @@ func (r partitionTopologyTargetRule) EvidenceGaps(statement spec.Statement) []ru
 			}
 		case "add_partitions":
 			if len(alter.PartitionDefs) > 0 {
+				// The name-collision check consumes the member directory;
+				// the bound contract consumes the projected member bounds.
+				consumes = true
 				consumesDefs = true
 			}
 		default:

@@ -372,7 +372,23 @@ func schemaScopeName(ddl *spec.DDL) string {
 // is consumed by the audit model. Unsupported markers and coverage aspect gaps
 // both mean the statement's effect is not bounded enough to model.
 func fullyAuditedStatement(dialect spec.Dialect, statement spec.Statement) bool {
-	return statement.Unsupported == nil && len(statementCoverageAspects(dialect, statement)) == 0
+	if statement.Unsupported != nil {
+		return false
+	}
+	for _, aspect := range statementCoverageAspects(dialect, statement) {
+		// A probed vendor refusal is the audit's answer, not missing
+		// analysis — the six TiDB-refused maintenance actions execute
+		// nothing, so the ordered pre-state stands unchanged. Every
+		// other aspect keeps the statement unproven for state purposes.
+		if aspect.Reason == spec.UnsupportedVendorBoundaryReason &&
+			aspect.Metadata["aspect"] == "action" {
+			if _, refused := tidbVendorRefusedPartitionActions[fmt.Sprint(aspect.Metadata["action"])]; refused {
+				continue
+			}
+		}
+		return false
+	}
+	return true
 }
 
 func (s *batchState) invalidateAll(targets []spec.Table) {
@@ -473,6 +489,26 @@ func (s *batchState) applyCreateTable(ctx context.Context, statement spec.Statem
 				// statement may have refused 1064 or landed the table —
 				// existence is undecidable, so the entry is unvouched
 				// rather than published.
+				s.invalidateKey(key)
+				return nil
+			}
+		}
+	}
+	// A provably-invalid declared partition scheme refuses the whole
+	// statement natively — duplicate member names (1517), an over-bound
+	// or method-mismatched PARTITIONS n (1499/1492-class), or bounds the
+	// method cannot accept (1493/1495-class). The same judgment ALTER
+	// PARTITION BY consumes gates the publish here, so a refused CREATE
+	// never lands the table or a fabricated member directory; an
+	// unproven scheme unvouches the target instead. A present target
+	// under IF NOT EXISTS never executes the clause, so the premise
+	// cannot engage there.
+	if entry == nil || entry.state == tableUnknown || entry.state == tableAbsent {
+		if ddl.HasPartition {
+			switch partitionSchemeOutcome(ddl.PartitionType, ddl.PartitionDefs, ddl.PartitionCount) {
+			case partitionOutcomeRefused:
+				return nil
+			case partitionOutcomeUnproven:
 				s.invalidateKey(key)
 				return nil
 			}

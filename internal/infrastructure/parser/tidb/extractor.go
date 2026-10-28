@@ -273,6 +273,14 @@ func extractCreateTable(stmt *ast.CreateTableStmt, rawSQL string) *spec.DDL {
 		ddl.PartitionNames = partitionMemberNames(stmt.Partition)
 		ddl.PartitionDefs = partitionDefsFromAST(stmt.Partition.Definitions)
 		ddl.PartitionColumns = partitionColumnNames(stmt.Partition)
+		if stmt.Partition.Num > 0 {
+			// Keep the raw authored count — the name projection drops
+			// counts past the 8192 bound, but the scheme-validity gate
+			// still needs the number itself to refuse (1499), not a
+			// silently-absent member directory.
+			count := stmt.Partition.Num
+			ddl.PartitionCount = &count
+		}
 		if stmt.Partition.Expr != nil {
 			facts := expressionFacts(stmt.Partition.Expr)
 			ddl.PartitionExpr = &facts
@@ -699,7 +707,13 @@ func extractAlterSpec(specification *ast.AlterTableSpec, clause string) spec.Alt
 	if len(specification.PartDefinitions) > 0 {
 		alter.PartitionDefs = partitionDefsFromAST(specification.PartDefinitions)
 	}
-	if specification.Num > 0 {
+	// COALESCE keeps its authored zero — the grammar requires n, and
+	// `COALESCE PARTITION 0` is a probed native refusal (1515) that must
+	// reach the rules, not fold into "no count observed". Every other
+	// action keeps nil for Num==0: `ADD PARTITION PARTITIONS 0` folds into
+	// the bare form (probed 1514/no-op-equivalent), and `PARTITIONS 0` on
+	// PARTITION BY is a parser refusal (1504) that never reaches here.
+	if specification.Num > 0 || specification.Tp == ast.AlterTableCoalescePartitions {
 		count := specification.Num
 		alter.PartitionCount = &count
 	}

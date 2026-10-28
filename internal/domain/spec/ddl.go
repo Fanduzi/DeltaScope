@@ -53,6 +53,13 @@ type DDL struct {
 	// PartitionColumns carries the declared COLUMNS member names for
 	// `RANGE COLUMNS`/`LIST COLUMNS`/`KEY` methods in authored order.
 	PartitionColumns []string `json:"partition_columns,omitempty"`
+	// PartitionCount carries the authored `PARTITIONS n` member count —
+	// non-nil whenever the parser supplied a number (the parser normalizes
+	// an absent clause to 1, so nil never survives on a partitioned DDL).
+	// The raw value is preserved so the scheme-validity gate can judge
+	// over-bound counts instead of the member-name projection silently
+	// dropping them.
+	PartitionCount *uint64 `json:"partition_count,omitempty"`
 	// PartitionExpr carries the partitioning expression's structured
 	// identity for the expr-keyed methods (RANGE/LIST/HASH with an
 	// expression argument). nil for column-keyed methods and unparseable
@@ -379,6 +386,12 @@ const (
 	PartitionBoundString     = "string"
 	PartitionBoundNull       = "null"
 	PartitionBoundExpression = "expression"
+	// PartitionBoundMaxValue marks a MAXVALUE item inside a COLUMNS bound
+	// tuple — position-preserving, so `(10,MAXVALUE)` stays a two-item row
+	// whose second element is +∞ rather than collapsing the whole bound to
+	// a scalar tail. A row composed entirely of MAXVALUE items normalizes
+	// back to the scalar PartitionBound.MaxValue sentinel.
+	PartitionBoundMaxValue = "maxvalue"
 )
 
 // BoundLiteral is one comparable datum inside a partition boundary clause:

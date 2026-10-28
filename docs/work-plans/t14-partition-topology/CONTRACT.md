@@ -234,3 +234,47 @@ Frozen expectations:
 - IMPORT/EXPORT tablespace precondition artifacts (`.cfg`/`.ibd`) are not generated; the supported-form classification stands on the 1812 precondition error + member-presence refusals.
 - Soft-fail maintenance semantics (status-table rows, rc=0) are findings/notice facts, never hard refusals.
 - T15 modifier governance, T16 temporary tables, out of scope.
+
+## 9. T14-R1 remediation contract (2026-10-28)
+
+R1 closes the independent-review defect groups A–D and records the evidence corrections E. Every judgment below is consumed identically by rules, `EvidenceGaps`, coverage aspects, and the ordered state; rule enable/disable never changes state-machine facts. Native oracle: `probes/probe14_t14r1.sh` → `probes/p15_t14r1_matrix.log` (292 bounded cells across mysql 5.7.44/8.0.46/8.4.10 + tidb v8.5.0).
+
+### 9.1 Count safety (A1)
+
+- Authored counts are `*uint64` end to end (`Alter.PartitionCount`, `DDL.PartitionCount`): explicit zero is preserved (`COALESCE PARTITION 0` reaches the semantic layer → 1515), nil = omitted, any count past 8192 refuses 1499 **before** conversion/append. `MaxInt64`/`MaxUint64` inputs can no longer wrap past the guard into an unbounded member loop; the giant-count cell runs only inside a resource-limited subprocess.
+- `ADD PARTITION PARTITIONS 0` folds into the bare form — MySQL answers 1514 and TiDB a silent no-op for both spellings (probed), so the fold is observationally exact.
+- `PARTITIONS 0` on CREATE/PARTITION BY and `PARTITIONS n` on range|list without definitions are **parser refusals** (1504/1492, `[ddl:1504]`/`[ddl:1492]`): they surface as parser diagnostics, never semantic findings, and are not claimed as implemented semantics.
+
+### 9.2 Same-batch duplicate member names (A2)
+
+- `firstDuplicateDefName` (case-insensitive) refuses 1517 on ADD defs, REORGANIZE INTO, PARTITION BY defs, and CREATE schemes; the statement keeps the exact pre-state — no partial directory, no retired members, stats untouched. p15 cells `add-dup-newname`/`reorg-dup-newname`/`pby-dup-newname`/`create-dup-name` → 1517 on all four anchors, directory unchanged. The older p13 "new name collides with an existing member" cells prove a different refusal and are not used as evidence here.
+
+### 9.3 CREATE consumes the declared-scheme gate (A3)
+
+- `applyCreateTable` runs the shared `partitionSchemeOutcome` before `derivedCreateShape`: refused → the table never publishes; unproven → the key unvouches; valid → the projected member directory publishes. `IF NOT EXISTS` on an existing table keeps the probed no-op. Golden `t14r1-mysql80-create-decreasing-stays-absent` pins the absent post-state; native `create-range-decreasing`/`create-list-dupvalue`/`create-dup-name`/`create-maxvalue-mid` cells prove the refusal classes (1493/1495/1517) keep the table absent.
+
+### 9.4 Bound fidelity and comparison domains (B1–B4)
+
+- `PartitionBoundMaxValue` keeps MAXVALUE at its authored tuple position — `(10,MAXVALUE)` projects `[numeric,maxvalue]`, matching `PARTITION_DESCRIPTION` (`10,MAXVALUE`, probed). An all-MAXVALUE row normalizes to the scalar +∞ tail; a per-item MAXVALUE inside a tuple never does.
+- String bounds compare only byte-equal. Ordering across differing bytes under an unobserved collation is unproven — no Go byte-order substitute; the member directory unvouches instead of publishing or refusing on guessed order.
+- `InBoundsOverlap` is tri-state: proven overlap (1495), proven disjoint, unproven (expression items, unprojectable catalog shells, nil-vs-empty-row mismatches). "Unknown" never folds into "disjoint".
+- ADD carries its own bound-refusal code 1493 (p13 `add-low-bound`); REORGANIZE span-shrink keeps 1520 on MySQL / 1493 on TiDB.
+
+### 9.5 Current-statement gaps and coverage (C1–C2)
+
+- `add_partition.target` owes `target_table.partitions` / `target_table.partition_defs` whenever the directory is unvouched — defs-form on HASH/KEY and RANGE/LIST alike; a known-empty directory stays gap-free. Zero-finding + zero-gap + complete on an unvouched directory is impossible.
+- Expression bound items — evaluated or not — are capability aspects on every declaration channel: `alter_table.<action>.partition_bound` for ADD/REORGANIZE defs and `PartitionScheme.Defs`, `create_table.partition_bound` for CREATE defs. Provider-side unprojectable bound shells stay evidence gaps on the owning rule. Feature IDs normalize to the rule vocabulary (`add_partition`, `check_partition`, `coalesce_partition`, `partition_by`), not the extractor's plural spellings.
+- Native anchors fold constant bound expressions (`VALUES IN (1+0)` → 1495, `LESS THAN (100+100)` → 1493 on all four anchors — p15). The product deliberately does not evaluate expressions and reports the capability aspect instead — a documented stricter-than-native boundary, not a fabricated verdict.
+
+### 9.6 Vendor / engine / scope consistency (D1–D4)
+
+- The six TiDB vendor-refused maintenance actions share one gate — including DISCARD's dedicated forbid rule; governance rules mint no finding on a vendor-refused statement, whether the rule is on or off. T13 DROP/TRUNCATE/EXCHANGE rule behavior is unchanged.
+- A vendor-refused statement is fully adjudicated, not a coverage gap: `fullyAuditedStatement` admits the probed vendor aspects, so the refused statement preserves the exact pre-state — directory, columns, indexes, PK, constraints, statistics — and successors still bind proven members (golden `t14r1-tidb85-vendor-check-preserves`). Coverage aspects are not removed to fix state; they stop being treated as unaudited.
+- DISCARD/IMPORT consume the engine fact: proven MyISAM → 1031 (MySQL 5.7 anchor); unobserved engine owes `target_table.engine`; InnoDB is the positive control. MySQL 8.x refuses MyISAM native partitioning at CREATE itself (1178 — recorded boundary, the 5.7 anchor owns the 1031 oracle).
+- OPTIMIZE PARTITION metadata records the InnoDB-observed whole-table scope ("All partitions will be rebuilt and analyzed", p13 `optimize-warnings`), replacing the named-member phrasing; the data-derived-statistics clearing mechanism is unchanged.
+
+### 9.7 Golden and evidence corrections (E)
+
+- `T14.json`: 68 required cases (59 frozen cells + 9 R1 cells). T09–T13 inputs/expectations/denominators are frozen: 125/3442, 126/3175, 40/506, 25/282, 47/697.
+- Correction of the 62→59 history: the first 62-cell run failed 12 cells for **three distinct reasons** — expectation corrections (notice-vs-verdict wording, metadata key sets) and three genuine parser-boundary cells. The earlier "all twelve are parser boundaries" summary was wrong. The three removed cells targeted `ALTER TABLE … ALGORITHM=INPLACE, REORGANIZE PARTITION …`, `… ALGORITHM=COPY, REORGANIZE …`, `… LOCK=NONE, REORGANIZE …` on mysql80 — natively-valid or natively-refused syntax the locked parser cannot express (§8); they are recorded as a parser boundary, never counted as implemented semantics. The pre-edit 62-cell manifest file was not archived — that artifact is honestly missing; the surviving record is this note plus the §8 boundary entry.
+- Correction of the "unified 1512" phrasing: T14 actions never shared one code — p13 shows ADD defs on hash|key **executes** on all four anchors and REORGANIZE on hash|key executes on MySQL while TiDB refuses 8200; 1512 belongs to DROP PARTITION on hash|key (T13 evidence). The archived p13 log is not rewritten.
