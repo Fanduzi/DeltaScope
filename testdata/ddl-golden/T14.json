@@ -1,0 +1,3930 @@
+{
+ "task_id": "T14",
+ "issue": "https://github.com/Fanduzi/DeltaScope/issues/93",
+ "policy_profile": "all-rules-disabled",
+ "description": "Frozen partition topology & maintenance contract (#93): REORGANIZE/ADD/COALESCE/PARTITION BY/REMOVE PARTITIONING plus CHECK/REBUILD/REPAIR/OPTIMIZE/IMPORT/DISCARD PARTITION as audited actions on the MySQL anchors, TiDB executing the five topology actions while the six maintenance ops stay 8200 vendor boundaries. Ordered state publishes proven member directories (names + bounds), refused operations keep exact pre-state, unproven outcomes unvouch only the affected member facts. Frozen rule IDs: warn-level governance for redistribution/rebuild ops, notice for CHECK, blocker for DISCARD; applicability/target rules carry dialect-correct native errors (1492/1493/1495/1505/1507/1508/1509/1517/1519/1520/1567/1735/1812/8200) and explicit evidence gaps never fabricate refusals \u2014 independent T14 acceptance contract",
+ "anchors": {
+  "mysql57": {
+   "service": "mysql57",
+   "container": "deltascope-ddl-golden-mysql57",
+   "image": "mysql:5.7.44",
+   "product": "mysql",
+   "version_contains": "5.7.44",
+   "database": "golden",
+   "exec_client": [
+    "mysql",
+    "-uroot",
+    "--default-character-set=utf8mb4"
+   ],
+   "needs_database_create": false,
+   "exec_password_env": "T14_MYSQL_PASSWORD"
+  },
+  "mysql80": {
+   "service": "mysql80",
+   "container": "deltascope-ddl-golden-mysql80",
+   "image": "mysql:8.0.46",
+   "product": "mysql",
+   "version_contains": "8.0.46",
+   "database": "golden",
+   "exec_client": [
+    "mysql",
+    "-uroot",
+    "--default-character-set=utf8mb4"
+   ],
+   "needs_database_create": false,
+   "exec_password_env": "T14_MYSQL_PASSWORD"
+  },
+  "mysql84": {
+   "service": "mysql84",
+   "container": "deltascope-ddl-golden-mysql84",
+   "image": "mysql:8.4.10",
+   "product": "mysql",
+   "version_contains": "8.4.10",
+   "database": "golden",
+   "exec_client": [
+    "mysql",
+    "-uroot",
+    "--default-character-set=utf8mb4"
+   ],
+   "needs_database_create": false,
+   "exec_password_env": "T14_MYSQL_PASSWORD"
+  },
+  "tidb85": {
+   "service": "tidb85",
+   "container": "deltascope-ddl-golden-tidb85",
+   "client_container": "deltascope-ddl-golden-tidb85-client",
+   "client_service": "tidb85-client",
+   "image": "pingcap/tidb:v8.5.0",
+   "product": "tidb",
+   "version_contains": "v8.5.0",
+   "database": "golden",
+   "exec_client": [
+    "mysql",
+    "--protocol=tcp",
+    "-h",
+    "tidb85",
+    "-P",
+    "4000",
+    "-uroot",
+    "--default-character-set=utf8mb4"
+   ],
+   "needs_database_create": true
+  }
+ },
+ "ddl_steps": [
+  {
+   "name": "drop-stale-fixtures",
+   "sql": "DROP TABLE IF EXISTS t14d, t14a, t14h, t14n",
+   "expect_rc": 0,
+   "verify": []
+  },
+  {
+   "name": "create-range-fixture",
+   "sql": "CREATE TABLE t14d (id INT) ENGINE=InnoDB PARTITION BY RANGE(id) (PARTITION p0 VALUES LESS THAN (200), PARTITION pmax VALUES LESS THAN MAXVALUE)",
+   "expect_rc": 0,
+   "verify": [
+    {
+     "assert": "range fixture lands with two named partitions",
+     "sql": "SELECT COUNT(*) FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t14d' AND PARTITION_NAME IS NOT NULL",
+     "expect": "2"
+    }
+   ]
+  },
+  {
+   "name": "seed-range-rows",
+   "sql": "INSERT INTO t14d VALUES (100),(150)",
+   "expect_rc": 0,
+   "verify": []
+  },
+  {
+   "name": "reorganize-p0",
+   "sql": "ALTER TABLE t14d REORGANIZE PARTITION p0 INTO (PARTITION p1 VALUES LESS THAN (120), PARTITION p2 VALUES LESS THAN (200))",
+   "expect_rc": 0,
+   "verify": [
+    {
+     "assert": "reorg publishes p1/p2/pmax in ordinal order",
+     "sql": "SELECT COUNT(*) FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t14d' AND PARTITION_NAME IN ('p1','p2','pmax')",
+     "expect": "3"
+    },
+    {
+     "assert": "rows survive the reorganization",
+     "sql": "SELECT COUNT(*) FROM golden.t14d",
+     "expect": "2"
+    }
+   ]
+  },
+  {
+   "name": "create-range-addable",
+   "sql": "CREATE TABLE t14a (id INT) ENGINE=InnoDB PARTITION BY RANGE(id) (PARTITION p0 VALUES LESS THAN (200), PARTITION p1 VALUES LESS THAN (400))",
+   "expect_rc": 0,
+   "verify": []
+  },
+  {
+   "name": "add-partition-defs",
+   "sql": "ALTER TABLE t14a ADD PARTITION (PARTITION p2 VALUES LESS THAN (600))",
+   "expect_rc": 0,
+   "verify": [
+    {
+     "assert": "add appends p2",
+     "sql": "SELECT COUNT(*) FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t14a' AND PARTITION_NAME IS NOT NULL",
+     "expect": "3"
+    }
+   ]
+  },
+  {
+   "name": "create-hash-fixture",
+   "sql": "CREATE TABLE t14h (id INT) ENGINE=InnoDB PARTITION BY HASH(id) PARTITIONS 4",
+   "expect_rc": 0,
+   "verify": []
+  },
+  {
+   "name": "seed-hash-rows",
+   "sql": "INSERT INTO t14h VALUES (1),(2),(3),(4),(5)",
+   "expect_rc": 0,
+   "verify": []
+  },
+  {
+   "name": "add-partitions-n",
+   "sql": "ALTER TABLE t14h ADD PARTITION PARTITIONS 2",
+   "expect_rc": 0,
+   "verify": [
+    {
+     "assert": "hash add grows the directory to six",
+     "sql": "SELECT COUNT(*) FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t14h' AND PARTITION_NAME IS NOT NULL",
+     "expect": "6"
+    }
+   ]
+  },
+  {
+   "name": "coalesce-one",
+   "sql": "ALTER TABLE t14h COALESCE PARTITION 1",
+   "expect_rc": 0,
+   "verify": [
+    {
+     "assert": "coalesce shrinks the directory to five",
+     "sql": "SELECT COUNT(*) FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t14h' AND PARTITION_NAME IS NOT NULL",
+     "expect": "5"
+    },
+    {
+     "assert": "hash rows survive coalesce",
+     "sql": "SELECT COUNT(*) FROM golden.t14h",
+     "expect": "5"
+    }
+   ]
+  },
+  {
+   "name": "create-plain-table",
+   "sql": "CREATE TABLE t14n (id INT) ENGINE=InnoDB",
+   "expect_rc": 0,
+   "verify": []
+  },
+  {
+   "name": "partition-by-hash",
+   "sql": "ALTER TABLE t14n PARTITION BY HASH(id) PARTITIONS 2",
+   "expect_rc": 0,
+   "verify": [
+    {
+     "assert": "partition-by materializes two hash members",
+     "sql": "SELECT COUNT(*) FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t14n' AND PARTITION_NAME IS NOT NULL",
+     "expect": "2"
+    }
+   ]
+  },
+  {
+   "name": "remove-partitioning",
+   "sql": "ALTER TABLE t14n REMOVE PARTITIONING",
+   "expect_rc": 0,
+   "verify": [
+    {
+     "assert": "remove-partitioning returns the table to a non-partitioned state",
+     "sql": "SELECT COUNT(*) FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t14n' AND PARTITION_NAME IS NOT NULL",
+     "expect": "0"
+    }
+   ]
+  },
+  {
+   "name": "remove-partitioning-range",
+   "sql": "ALTER TABLE t14d REMOVE PARTITIONING",
+   "expect_rc": 0,
+   "verify": [
+    {
+     "assert": "range directory cleared and rows preserved",
+     "sql": "SELECT COUNT(*) FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t14d' AND PARTITION_NAME IS NOT NULL",
+     "expect": "0"
+    },
+    {
+     "assert": "rows survive remove-partitioning",
+     "sql": "SELECT COUNT(*) FROM golden.t14d",
+     "expect": "2"
+    }
+   ]
+  },
+  {
+   "name": "cleanup-fixtures",
+   "sql": "DROP TABLE IF EXISTS t14d, t14a, t14h, t14n",
+   "expect_rc": 0,
+   "verify": []
+  }
+ ],
+ "syntax_negative": {
+  "sql": "ALTER TABLE t14d REORGANIZE PARTITION p0 INTO (",
+  "expect": {
+   "rc_nonzero": true,
+   "error_class": "1064",
+   "forbidden_markers": [
+    "ERROR 1045",
+    "ERROR 1044",
+    "ERROR 1049",
+    "ERROR 1142",
+    "ERROR 1143",
+    "ERROR 2002",
+    "ERROR 2003",
+    "ERROR 2005",
+    "Access denied",
+    "Unknown database",
+    "Can't connect",
+    "Connection refused",
+    "already exists"
+   ]
+  }
+ },
+ "cli_audit": {
+  "dialects": [
+   "mysql",
+   "tidb"
+  ],
+  "sql": "ALTER TABLE t REORGANIZE PARTITION p0 INTO (PARTITION p1 VALUES LESS THAN (120), PARTITION p2 VALUES LESS THAN (200));",
+  "expect": {
+   "exit": 0,
+   "verdict": "pass",
+   "statements": 1,
+   "findings": 0,
+   "diagnostics": 0,
+   "unsupported": 0,
+   "coverage": "complete"
+  }
+ },
+ "policy": {
+  "profiles": {
+   "t14-reorganize": {
+    "enable": {
+     "ddl.alter.reorganize_partition.warn": {
+      "level": "warning"
+     },
+     "ddl.alter.reorganize_partition.applicability": {
+      "level": "blocker"
+     },
+     "ddl.alter.reorganize_partition.target": {
+      "level": "blocker"
+     }
+    }
+   },
+   "t14-reorganize-applicability": {
+    "enable": {
+     "ddl.alter.reorganize_partition.applicability": {
+      "level": "blocker"
+     }
+    }
+   },
+   "t14-reorganize-target": {
+    "enable": {
+     "ddl.alter.reorganize_partition.target": {
+      "level": "blocker"
+     }
+    }
+   },
+   "t14-add": {
+    "enable": {
+     "ddl.alter.add_partition.warn": {
+      "level": "warning"
+     },
+     "ddl.alter.add_partition.applicability": {
+      "level": "blocker"
+     },
+     "ddl.alter.add_partition.target": {
+      "level": "blocker"
+     }
+    }
+   },
+   "t14-add-applicability": {
+    "enable": {
+     "ddl.alter.add_partition.applicability": {
+      "level": "blocker"
+     }
+    }
+   },
+   "t14-add-target": {
+    "enable": {
+     "ddl.alter.add_partition.target": {
+      "level": "blocker"
+     }
+    }
+   },
+   "t14-coalesce": {
+    "enable": {
+     "ddl.alter.coalesce_partition.warn": {
+      "level": "warning"
+     },
+     "ddl.alter.coalesce_partition.applicability": {
+      "level": "blocker"
+     }
+    }
+   },
+   "t14-coalesce-applicability": {
+    "enable": {
+     "ddl.alter.coalesce_partition.applicability": {
+      "level": "blocker"
+     }
+    }
+   },
+   "t14-partition-by": {
+    "enable": {
+     "ddl.alter.partition_by.warn": {
+      "level": "warning"
+     },
+     "ddl.alter.partition_by.applicability": {
+      "level": "blocker"
+     }
+    }
+   },
+   "t14-partition-by-applicability": {
+    "enable": {
+     "ddl.alter.partition_by.applicability": {
+      "level": "blocker"
+     }
+    }
+   },
+   "t14-remove": {
+    "enable": {
+     "ddl.alter.remove_partitioning.warn": {
+      "level": "warning"
+     },
+     "ddl.alter.remove_partitioning.applicability": {
+      "level": "blocker"
+     }
+    }
+   },
+   "t14-remove-applicability": {
+    "enable": {
+     "ddl.alter.remove_partitioning.applicability": {
+      "level": "blocker"
+     }
+    }
+   },
+   "t14-rebuild": {
+    "enable": {
+     "ddl.alter.rebuild_partition.warn": {
+      "level": "warning"
+     },
+     "ddl.alter.rebuild_partition.applicability": {
+      "level": "blocker"
+     },
+     "ddl.alter.rebuild_partition.target": {
+      "level": "blocker"
+     }
+    }
+   },
+   "t14-rebuild-target": {
+    "enable": {
+     "ddl.alter.rebuild_partition.target": {
+      "level": "blocker"
+     }
+    }
+   },
+   "t14-rebuild-applicability": {
+    "enable": {
+     "ddl.alter.rebuild_partition.applicability": {
+      "level": "blocker"
+     }
+    }
+   },
+   "t14-check": {
+    "enable": {
+     "ddl.alter.check_partition.warn": {
+      "level": "notice"
+     },
+     "ddl.alter.check_partition.applicability": {
+      "level": "warning"
+     },
+     "ddl.alter.check_partition.target": {
+      "level": "warning"
+     }
+    }
+   },
+   "t14-check-target": {
+    "enable": {
+     "ddl.alter.check_partition.target": {
+      "level": "warning"
+     }
+    }
+   },
+   "t14-check-applicability": {
+    "enable": {
+     "ddl.alter.check_partition.applicability": {
+      "level": "warning"
+     }
+    }
+   },
+   "t14-optimize": {
+    "enable": {
+     "ddl.alter.optimize_partition.warn": {
+      "level": "warning"
+     },
+     "ddl.alter.optimize_partition.applicability": {
+      "level": "warning"
+     },
+     "ddl.alter.optimize_partition.target": {
+      "level": "warning"
+     }
+    }
+   },
+   "t14-optimize-target": {
+    "enable": {
+     "ddl.alter.optimize_partition.target": {
+      "level": "warning"
+     }
+    }
+   },
+   "t14-repair": {
+    "enable": {
+     "ddl.alter.repair_partition.warn": {
+      "level": "warning"
+     },
+     "ddl.alter.repair_partition.applicability": {
+      "level": "warning"
+     },
+     "ddl.alter.repair_partition.target": {
+      "level": "warning"
+     }
+    }
+   },
+   "t14-repair-applicability": {
+    "enable": {
+     "ddl.alter.repair_partition.applicability": {
+      "level": "warning"
+     }
+    }
+   },
+   "t14-discard": {
+    "enable": {
+     "ddl.alter.discard_partition_tablespace.forbid": {
+      "level": "blocker"
+     },
+     "ddl.alter.discard_partition_tablespace.applicability": {
+      "level": "blocker"
+     },
+     "ddl.alter.discard_partition_tablespace.target": {
+      "level": "blocker"
+     }
+    }
+   },
+   "t14-discard-target": {
+    "enable": {
+     "ddl.alter.discard_partition_tablespace.target": {
+      "level": "blocker"
+     }
+    }
+   },
+   "t14-import": {
+    "enable": {
+     "ddl.alter.import_partition_tablespace.warn": {
+      "level": "warning"
+     },
+     "ddl.alter.import_partition_tablespace.applicability": {
+      "level": "blocker"
+     },
+     "ddl.alter.import_partition_tablespace.target": {
+      "level": "blocker"
+     }
+    }
+   },
+   "t14-import-target": {
+    "enable": {
+     "ddl.alter.import_partition_tablespace.target": {
+      "level": "blocker"
+     }
+    }
+   },
+   "t14-reorg-truncate-target": {
+    "enable": {
+     "ddl.alter.reorganize_partition.warn": {
+      "level": "warning"
+     },
+     "ddl.alter.truncate_partition.target": {
+      "level": "blocker"
+     }
+    }
+   },
+   "t14-add-drop-target": {
+    "enable": {
+     "ddl.alter.add_partition.warn": {
+      "level": "warning"
+     },
+     "ddl.alter.drop_partition.target": {
+      "level": "blocker"
+     }
+    }
+   },
+   "t14-reorg-warn-only": {
+    "enable": {
+     "ddl.alter.reorganize_partition.warn": {
+      "level": "warning"
+     }
+    }
+   },
+   "t14-add-warn-only": {
+    "enable": {
+     "ddl.alter.add_partition.warn": {
+      "level": "warning"
+     }
+    }
+   },
+   "t14-coalesce-warn-only": {
+    "enable": {
+     "ddl.alter.coalesce_partition.warn": {
+      "level": "warning"
+     }
+    }
+   },
+   "t14-partition-by-warn-only": {
+    "enable": {
+     "ddl.alter.partition_by.warn": {
+      "level": "warning"
+     }
+    }
+   },
+   "t14-remove-warn-only": {
+    "enable": {
+     "ddl.alter.remove_partitioning.warn": {
+      "level": "warning"
+     }
+    }
+   },
+   "t14-rebuild-warn-only": {
+    "enable": {
+     "ddl.alter.rebuild_partition.warn": {
+      "level": "warning"
+     }
+    }
+   },
+   "t14-check-notice-only": {
+    "enable": {
+     "ddl.alter.check_partition.warn": {
+      "level": "notice"
+     }
+    }
+   },
+   "t14-optimize-warn-only": {
+    "enable": {
+     "ddl.alter.optimize_partition.warn": {
+      "level": "warning"
+     }
+    }
+   },
+   "t14-repair-warn-only": {
+    "enable": {
+     "ddl.alter.repair_partition.warn": {
+      "level": "warning"
+     }
+    }
+   },
+   "t14-discard-blocker-only": {
+    "enable": {
+     "ddl.alter.discard_partition_tablespace.forbid": {
+      "level": "blocker"
+     }
+    }
+   },
+   "t14-import-warn-only": {
+    "enable": {
+     "ddl.alter.import_partition_tablespace.warn": {
+      "level": "warning"
+     }
+    }
+   },
+   "t14-reorganize-applicability-only": {
+    "enable": {
+     "ddl.alter.reorganize_partition.applicability": {
+      "level": "blocker"
+     }
+    }
+   }
+  }
+ },
+ "cli_cases": [
+  {
+   "id": "t14-cli-reorganize-warn",
+   "dialect": "mysql",
+   "sql": "ALTER TABLE t14r REORGANIZE PARTITION p0 INTO (PARTITION p1 VALUES LESS THAN (120), PARTITION p2 VALUES LESS THAN (200));",
+   "policy": "t14-reorg-warn-only",
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "rule_summary_applicable": 1,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.alter.reorganize_partition.warn",
+      "level": "warning"
+     }
+    ]
+   },
+   "args": [
+    "--fail-on",
+    "warning"
+   ]
+  },
+  {
+   "id": "t14-cli-reorganize-off",
+   "dialect": "mysql",
+   "sql": "ALTER TABLE t14r REORGANIZE PARTITION p0 INTO (PARTITION p1 VALUES LESS THAN (120), PARTITION p2 VALUES LESS THAN (200));",
+   "policy": "all-rules-disabled",
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0
+   }
+  },
+  {
+   "id": "t14-cli-add-warn",
+   "dialect": "mysql",
+   "sql": "ALTER TABLE t ADD PARTITION (PARTITION p2 VALUES LESS THAN (400));",
+   "policy": "t14-add-warn-only",
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "rule_summary_applicable": 1,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.alter.add_partition.warn",
+      "level": "warning"
+     }
+    ]
+   },
+   "args": [
+    "--fail-on",
+    "warning"
+   ]
+  },
+  {
+   "id": "t14-cli-coalesce-warn",
+   "dialect": "mysql",
+   "sql": "ALTER TABLE t COALESCE PARTITION 2;",
+   "policy": "t14-coalesce-warn-only",
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "rule_summary_applicable": 1,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.alter.coalesce_partition.warn",
+      "level": "warning"
+     }
+    ]
+   },
+   "args": [
+    "--fail-on",
+    "warning"
+   ]
+  },
+  {
+   "id": "t14-cli-partition-by-warn",
+   "dialect": "mysql",
+   "sql": "ALTER TABLE t PARTITION BY HASH(id) PARTITIONS 4;",
+   "policy": "t14-partition-by-warn-only",
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "rule_summary_applicable": 1,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.alter.partition_by.warn",
+      "level": "warning"
+     }
+    ]
+   },
+   "args": [
+    "--fail-on",
+    "warning"
+   ]
+  },
+  {
+   "id": "t14-cli-remove-partitioning-warn",
+   "dialect": "mysql",
+   "sql": "ALTER TABLE t REMOVE PARTITIONING;",
+   "policy": "t14-remove-warn-only",
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "rule_summary_applicable": 1,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.alter.remove_partitioning.warn",
+      "level": "warning"
+     }
+    ]
+   },
+   "args": [
+    "--fail-on",
+    "warning"
+   ]
+  },
+  {
+   "id": "t14-cli-rebuild-warn",
+   "dialect": "mysql",
+   "sql": "ALTER TABLE t REBUILD PARTITION p0;",
+   "policy": "t14-rebuild-warn-only",
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "rule_summary_applicable": 1,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.alter.rebuild_partition.warn",
+      "level": "warning"
+     }
+    ]
+   },
+   "args": [
+    "--fail-on",
+    "warning"
+   ]
+  },
+  {
+   "id": "t14-cli-check-notice",
+   "dialect": "mysql",
+   "sql": "ALTER TABLE t CHECK PARTITION p0;",
+   "policy": "t14-check-notice-only",
+   "expect": {
+    "exit": 1,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "rule_summary_applicable": 1,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.alter.check_partition.warn",
+      "level": "notice"
+     }
+    ]
+   },
+   "args": [
+    "--fail-on",
+    "notice"
+   ]
+  },
+  {
+   "id": "t14-cli-optimize-warn",
+   "dialect": "mysql",
+   "sql": "ALTER TABLE t OPTIMIZE PARTITION p0;",
+   "policy": "t14-optimize-warn-only",
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "rule_summary_applicable": 1,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.alter.optimize_partition.warn",
+      "level": "warning"
+     }
+    ]
+   },
+   "args": [
+    "--fail-on",
+    "warning"
+   ]
+  },
+  {
+   "id": "t14-cli-repair-warn",
+   "dialect": "mysql",
+   "sql": "ALTER TABLE t REPAIR PARTITION p0;",
+   "policy": "t14-repair-warn-only",
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "rule_summary_applicable": 1,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.alter.repair_partition.warn",
+      "level": "warning"
+     }
+    ]
+   },
+   "args": [
+    "--fail-on",
+    "warning"
+   ]
+  },
+  {
+   "id": "t14-cli-discard-blocker",
+   "dialect": "mysql",
+   "sql": "ALTER TABLE t DISCARD PARTITION p0 TABLESPACE;",
+   "policy": "t14-discard-blocker-only",
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "rule_summary_applicable": 1,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.alter.discard_partition_tablespace.forbid",
+      "level": "blocker"
+     }
+    ]
+   },
+   "args": [
+    "--fail-on",
+    "blocker"
+   ]
+  },
+  {
+   "id": "t14-cli-import-warn",
+   "dialect": "mysql",
+   "sql": "ALTER TABLE t IMPORT PARTITION p0 TABLESPACE;",
+   "policy": "t14-import-warn-only",
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "rule_summary_applicable": 1,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.alter.import_partition_tablespace.warn",
+      "level": "warning"
+     }
+    ]
+   },
+   "args": [
+    "--fail-on",
+    "warning"
+   ]
+  },
+  {
+   "id": "t14-cli-addcol-control",
+   "dialect": "mysql",
+   "sql": "ALTER TABLE t ADD COLUMN c INT;",
+   "policy": "all-rules-disabled",
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0
+   }
+  },
+  {
+   "id": "t14-cli-reorganize-applicability-gap",
+   "dialect": "mysql",
+   "sql": "ALTER TABLE t14r REORGANIZE PARTITION p0 INTO (PARTITION p1 VALUES LESS THAN (120), PARTITION p2 VALUES LESS THAN (200));",
+   "policy": "t14-reorganize-applicability-only",
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": [
+     "unverified"
+    ],
+    "evidence_gaps": 1,
+    "rule_summary_applicable": 1,
+    "evidence_gap_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.alter.reorganize_partition.applicability",
+      "reason_code": "unknown_table_state",
+      "required_facts": [
+       "target_table.partitioned"
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "id": "t14-cli-tidb-rebuild-vendor",
+   "dialect": "tidb",
+   "sql": "ALTER TABLE t REBUILD PARTITION p0;",
+   "policy": "all-rules-disabled",
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "evidence_gaps": 0,
+    "unsupported_entries": [
+     {
+      "index": 0,
+      "feature": "alter_table.rebuild_partition",
+      "reason": "parsed by the shared parser but outside the supported statement surface for this dialect",
+      "metadata": {
+       "action": "rebuild_partition",
+       "aspect": "action"
+      }
+     }
+    ]
+   }
+  }
+ ],
+ "metadata_cases": [
+  {
+   "id": "t14-mysql80-golden",
+   "anchor": "mysql80",
+   "dialect": "mysql",
+   "sql": "ALTER TABLE t14r REORGANIZE PARTITION p0 INTO (PARTITION p1 VALUES LESS THAN (120), PARTITION p2 VALUES LESS THAN (200));",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23380,
+    "user": "root",
+    "schema": "golden",
+    "password_env": "DS_T14_GOLDEN_PW",
+    "password": "root"
+   },
+   "policy": "t14-reorganize",
+   "args": [
+    "--fail-on",
+    "warning"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "rule_summary_applicable": 3,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.alter.reorganize_partition.warn",
+      "level": "warning"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.alter.reorganize_partition.warn",
+      "metadata": {
+       "table": "t14r",
+       "action": "reorganize_partition"
+      }
+     }
+    ],
+    "version": {
+     "product": "mysql",
+     "version": "8.0.46"
+    }
+   },
+   "setup": [
+    {
+     "name": "create-range-fixture",
+     "sql": "CREATE TABLE t14r (id INT) ENGINE=InnoDB PARTITION BY RANGE(id) (PARTITION p0 VALUES LESS THAN (200), PARTITION pmax VALUES LESS THAN MAXVALUE)",
+     "expect_rc": 0,
+     "verify": []
+    },
+    {
+     "name": "seed-rows",
+     "sql": "INSERT INTO t14r VALUES (100),(150)",
+     "expect_rc": 0,
+     "verify": []
+    }
+   ],
+   "execute": [
+    {
+     "name": "apply-audited-reorganize",
+     "sql": "ALTER TABLE t14r REORGANIZE PARTITION p0 INTO (PARTITION p1 VALUES LESS THAN (120), PARTITION p2 VALUES LESS THAN (200))",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "post-state directory is p1/p2/pmax in ordinal order",
+       "sql": "SELECT GROUP_CONCAT(CONCAT(PARTITION_NAME,':',PARTITION_DESCRIPTION) ORDER BY PARTITION_ORDINAL_POSITION) FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t14r' AND PARTITION_NAME IS NOT NULL",
+       "expect": "p1:120,p2:200,pmax:MAXVALUE"
+      },
+      {
+       "assert": "rows survive the reorganization",
+       "sql": "SELECT COUNT(*) FROM golden.t14r",
+       "expect": "2"
+      },
+      {
+       "assert": "id=100 routes to p1",
+       "sql": "SELECT COUNT(*) FROM golden.t14r PARTITION (p1)",
+       "expect": "1"
+      },
+      {
+       "assert": "id=150 routes to p2",
+       "sql": "SELECT COUNT(*) FROM golden.t14r PARTITION (p2)",
+       "expect": "1"
+      }
+     ]
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop-fixture",
+     "sql": "DROP TABLE IF EXISTS t14r",
+     "expect_rc": 0,
+     "verify": []
+    }
+   ]
+  },
+  {
+   "id": "t14-mysql57-golden",
+   "anchor": "mysql57",
+   "dialect": "mysql",
+   "sql": "ALTER TABLE t14r REORGANIZE PARTITION p0 INTO (PARTITION p1 VALUES LESS THAN (120), PARTITION p2 VALUES LESS THAN (200));",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23357,
+    "user": "root",
+    "schema": "golden",
+    "password_env": "DS_T14_GOLDEN_PW",
+    "password": "root"
+   },
+   "policy": "t14-reorganize",
+   "args": [
+    "--fail-on",
+    "warning"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "rule_summary_applicable": 3,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.alter.reorganize_partition.warn",
+      "level": "warning"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.alter.reorganize_partition.warn",
+      "metadata": {
+       "table": "t14r",
+       "action": "reorganize_partition"
+      }
+     }
+    ],
+    "version": {
+     "product": "mysql",
+     "version": "5.7.44"
+    }
+   },
+   "setup": [
+    {
+     "name": "create-range-fixture",
+     "sql": "CREATE TABLE t14r (id INT) ENGINE=InnoDB PARTITION BY RANGE(id) (PARTITION p0 VALUES LESS THAN (200), PARTITION pmax VALUES LESS THAN MAXVALUE)",
+     "expect_rc": 0,
+     "verify": []
+    },
+    {
+     "name": "seed-rows",
+     "sql": "INSERT INTO t14r VALUES (100),(150)",
+     "expect_rc": 0,
+     "verify": []
+    }
+   ],
+   "execute": [
+    {
+     "name": "apply-audited-reorganize",
+     "sql": "ALTER TABLE t14r REORGANIZE PARTITION p0 INTO (PARTITION p1 VALUES LESS THAN (120), PARTITION p2 VALUES LESS THAN (200))",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "post-state directory is p1/p2/pmax in ordinal order",
+       "sql": "SELECT GROUP_CONCAT(CONCAT(PARTITION_NAME,':',PARTITION_DESCRIPTION) ORDER BY PARTITION_ORDINAL_POSITION) FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t14r' AND PARTITION_NAME IS NOT NULL",
+       "expect": "p1:120,p2:200,pmax:MAXVALUE"
+      },
+      {
+       "assert": "rows survive the reorganization",
+       "sql": "SELECT COUNT(*) FROM golden.t14r",
+       "expect": "2"
+      },
+      {
+       "assert": "id=100 routes to p1",
+       "sql": "SELECT COUNT(*) FROM golden.t14r PARTITION (p1)",
+       "expect": "1"
+      },
+      {
+       "assert": "id=150 routes to p2",
+       "sql": "SELECT COUNT(*) FROM golden.t14r PARTITION (p2)",
+       "expect": "1"
+      }
+     ]
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop-fixture",
+     "sql": "DROP TABLE IF EXISTS t14r",
+     "expect_rc": 0,
+     "verify": []
+    }
+   ]
+  },
+  {
+   "id": "t14-mysql84-golden",
+   "anchor": "mysql84",
+   "dialect": "mysql",
+   "sql": "ALTER TABLE t14r REORGANIZE PARTITION p0 INTO (PARTITION p1 VALUES LESS THAN (120), PARTITION p2 VALUES LESS THAN (200));",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23384,
+    "user": "root",
+    "schema": "golden",
+    "password_env": "DS_T14_GOLDEN_PW",
+    "password": "root"
+   },
+   "policy": "t14-reorganize",
+   "args": [
+    "--fail-on",
+    "warning"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "rule_summary_applicable": 3,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.alter.reorganize_partition.warn",
+      "level": "warning"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.alter.reorganize_partition.warn",
+      "metadata": {
+       "table": "t14r",
+       "action": "reorganize_partition"
+      }
+     }
+    ],
+    "version": {
+     "product": "mysql",
+     "version": "8.4.10"
+    }
+   },
+   "setup": [
+    {
+     "name": "create-range-fixture",
+     "sql": "CREATE TABLE t14r (id INT) ENGINE=InnoDB PARTITION BY RANGE(id) (PARTITION p0 VALUES LESS THAN (200), PARTITION pmax VALUES LESS THAN MAXVALUE)",
+     "expect_rc": 0,
+     "verify": []
+    },
+    {
+     "name": "seed-rows",
+     "sql": "INSERT INTO t14r VALUES (100),(150)",
+     "expect_rc": 0,
+     "verify": []
+    }
+   ],
+   "execute": [
+    {
+     "name": "apply-audited-reorganize",
+     "sql": "ALTER TABLE t14r REORGANIZE PARTITION p0 INTO (PARTITION p1 VALUES LESS THAN (120), PARTITION p2 VALUES LESS THAN (200))",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "post-state directory is p1/p2/pmax in ordinal order",
+       "sql": "SELECT GROUP_CONCAT(CONCAT(PARTITION_NAME,':',PARTITION_DESCRIPTION) ORDER BY PARTITION_ORDINAL_POSITION) FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t14r' AND PARTITION_NAME IS NOT NULL",
+       "expect": "p1:120,p2:200,pmax:MAXVALUE"
+      },
+      {
+       "assert": "rows survive the reorganization",
+       "sql": "SELECT COUNT(*) FROM golden.t14r",
+       "expect": "2"
+      },
+      {
+       "assert": "id=100 routes to p1",
+       "sql": "SELECT COUNT(*) FROM golden.t14r PARTITION (p1)",
+       "expect": "1"
+      },
+      {
+       "assert": "id=150 routes to p2",
+       "sql": "SELECT COUNT(*) FROM golden.t14r PARTITION (p2)",
+       "expect": "1"
+      }
+     ]
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop-fixture",
+     "sql": "DROP TABLE IF EXISTS t14r",
+     "expect_rc": 0,
+     "verify": []
+    }
+   ]
+  },
+  {
+   "id": "t14-tidb85-golden",
+   "anchor": "tidb85",
+   "dialect": "tidb",
+   "sql": "ALTER TABLE t14r REORGANIZE PARTITION p0 INTO (PARTITION p1 VALUES LESS THAN (120), PARTITION p2 VALUES LESS THAN (200));",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 24000,
+    "user": "root",
+    "schema": "golden"
+   },
+   "policy": "t14-reorganize",
+   "args": [
+    "--fail-on",
+    "warning"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "rule_summary_applicable": 3,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.alter.reorganize_partition.warn",
+      "level": "warning"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.alter.reorganize_partition.warn",
+      "metadata": {
+       "table": "t14r",
+       "action": "reorganize_partition"
+      }
+     }
+    ],
+    "version": {
+     "product": "tidb",
+     "version": "8.5.0"
+    }
+   },
+   "setup": [
+    {
+     "name": "create-range-fixture",
+     "sql": "CREATE TABLE t14r (id INT) ENGINE=InnoDB PARTITION BY RANGE(id) (PARTITION p0 VALUES LESS THAN (200), PARTITION pmax VALUES LESS THAN MAXVALUE)",
+     "expect_rc": 0,
+     "verify": []
+    },
+    {
+     "name": "seed-rows",
+     "sql": "INSERT INTO t14r VALUES (100),(150)",
+     "expect_rc": 0,
+     "verify": []
+    }
+   ],
+   "execute": [
+    {
+     "name": "apply-audited-reorganize",
+     "sql": "ALTER TABLE t14r REORGANIZE PARTITION p0 INTO (PARTITION p1 VALUES LESS THAN (120), PARTITION p2 VALUES LESS THAN (200))",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "post-state directory is p1/p2/pmax in ordinal order",
+       "sql": "SELECT GROUP_CONCAT(CONCAT(PARTITION_NAME,':',PARTITION_DESCRIPTION) ORDER BY PARTITION_ORDINAL_POSITION) FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t14r' AND PARTITION_NAME IS NOT NULL",
+       "expect": "p1:120,p2:200,pmax:MAXVALUE"
+      },
+      {
+       "assert": "rows survive the reorganization",
+       "sql": "SELECT COUNT(*) FROM golden.t14r",
+       "expect": "2"
+      },
+      {
+       "assert": "id=100 routes to p1",
+       "sql": "SELECT COUNT(*) FROM golden.t14r PARTITION (p1)",
+       "expect": "1"
+      },
+      {
+       "assert": "id=150 routes to p2",
+       "sql": "SELECT COUNT(*) FROM golden.t14r PARTITION (p2)",
+       "expect": "1"
+      }
+     ]
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop-fixture",
+     "sql": "DROP TABLE IF EXISTS t14r",
+     "expect_rc": 0,
+     "verify": []
+    }
+   ]
+  },
+  {
+   "id": "t14-mysql80-reorg-missing-source",
+   "anchor": "mysql80",
+   "dialect": "mysql",
+   "sql": "ALTER TABLE t14r REORGANIZE PARTITION pmissing INTO (PARTITION q0 VALUES LESS THAN (150), PARTITION q1 VALUES LESS THAN (200));",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23380,
+    "user": "root",
+    "schema": "golden",
+    "password_env": "DS_T14_GOLDEN_PW",
+    "password": "root"
+   },
+   "policy": "t14-reorganize-target",
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "rule_summary_applicable": 1,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.alter.reorganize_partition.target",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.alter.reorganize_partition.target",
+      "metadata": {
+       "table": "t14r",
+       "partition": "pmissing",
+       "reason_code": "partition_absent",
+       "native_error": "1507",
+       "exists": "false"
+      }
+     }
+    ],
+    "version": {
+     "product": "mysql",
+     "version": "8.0.46"
+    }
+   },
+   "setup": [
+    {
+     "name": "create-range-fixture",
+     "sql": "CREATE TABLE t14r (id INT) ENGINE=InnoDB PARTITION BY RANGE(id) (PARTITION p0 VALUES LESS THAN (200), PARTITION pmax VALUES LESS THAN MAXVALUE)",
+     "expect_rc": 0,
+     "verify": []
+    }
+   ],
+   "execute": [
+    {
+     "name": "apply-missing-source",
+     "sql": "ALTER TABLE t14r REORGANIZE PARTITION pmissing INTO (PARTITION q0 VALUES LESS THAN (150), PARTITION q1 VALUES LESS THAN (200))",
+     "expect_rc": 1,
+     "verify": []
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop-fixture",
+     "sql": "DROP TABLE IF EXISTS t14r",
+     "expect_rc": 0,
+     "verify": []
+    }
+   ]
+  },
+  {
+   "id": "t14-mysql80-reorg-collision",
+   "anchor": "mysql80",
+   "dialect": "mysql",
+   "sql": "ALTER TABLE t14r3 REORGANIZE PARTITION p0 INTO (PARTITION p1 VALUES LESS THAN (60), PARTITION q0 VALUES LESS THAN (100));",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23380,
+    "user": "root",
+    "schema": "golden",
+    "password_env": "DS_T14_GOLDEN_PW",
+    "password": "root"
+   },
+   "policy": "t14-reorganize-target",
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "rule_summary_applicable": 1,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.alter.reorganize_partition.target",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.alter.reorganize_partition.target",
+      "metadata": {
+       "table": "t14r3",
+       "partition": "p1",
+       "reason_code": "partition_name_duplicate",
+       "native_error": "1517"
+      }
+     }
+    ],
+    "version": {
+     "product": "mysql",
+     "version": "8.0.46"
+    }
+   },
+   "setup": [
+    {
+     "name": "create-three-member-fixture",
+     "sql": "CREATE TABLE t14r3 (id INT) ENGINE=InnoDB PARTITION BY RANGE(id) (PARTITION p0 VALUES LESS THAN (100), PARTITION p1 VALUES LESS THAN (200), PARTITION pmax VALUES LESS THAN MAXVALUE)",
+     "expect_rc": 0,
+     "verify": []
+    }
+   ],
+   "execute": [
+    {
+     "name": "apply-colliding-reorg",
+     "sql": "ALTER TABLE t14r3 REORGANIZE PARTITION p0 INTO (PARTITION p1 VALUES LESS THAN (60), PARTITION q0 VALUES LESS THAN (100))",
+     "expect_rc": 1,
+     "verify": []
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop-fixture",
+     "sql": "DROP TABLE IF EXISTS t14r3",
+     "expect_rc": 0,
+     "verify": []
+    }
+   ]
+  },
+  {
+   "id": "t14-mysql80-reorg-nonconsecutive",
+   "anchor": "mysql80",
+   "dialect": "mysql",
+   "sql": "ALTER TABLE t14r3 REORGANIZE PARTITION p0, pmax INTO (PARTITION q0 VALUES LESS THAN (150), PARTITION q1 VALUES LESS THAN MAXVALUE);",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23380,
+    "user": "root",
+    "schema": "golden",
+    "password_env": "DS_T14_GOLDEN_PW",
+    "password": "root"
+   },
+   "policy": "t14-reorganize-target",
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "rule_summary_applicable": 1,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.alter.reorganize_partition.target",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.alter.reorganize_partition.target",
+      "metadata": {
+       "table": "t14r3",
+       "reason_code": "partition_sources_non_adjacent",
+       "native_error": "1519"
+      }
+     }
+    ],
+    "version": {
+     "product": "mysql",
+     "version": "8.0.46"
+    }
+   },
+   "setup": [
+    {
+     "name": "create-three-member-fixture",
+     "sql": "CREATE TABLE t14r3 (id INT) ENGINE=InnoDB PARTITION BY RANGE(id) (PARTITION p0 VALUES LESS THAN (100), PARTITION p1 VALUES LESS THAN (200), PARTITION pmax VALUES LESS THAN MAXVALUE)",
+     "expect_rc": 0,
+     "verify": []
+    }
+   ],
+   "execute": [
+    {
+     "name": "apply-nonconsecutive-reorg",
+     "sql": "ALTER TABLE t14r3 REORGANIZE PARTITION p0, pmax INTO (PARTITION q0 VALUES LESS THAN (150), PARTITION q1 VALUES LESS THAN MAXVALUE)",
+     "expect_rc": 1,
+     "verify": []
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop-fixture",
+     "sql": "DROP TABLE IF EXISTS t14r3",
+     "expect_rc": 0,
+     "verify": []
+    }
+   ]
+  },
+  {
+   "id": "t14-mysql80-reorg-shrink",
+   "anchor": "mysql80",
+   "dialect": "mysql",
+   "sql": "ALTER TABLE t14r REORGANIZE PARTITION p0 INTO (PARTITION p1 VALUES LESS THAN (150));",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23380,
+    "user": "root",
+    "schema": "golden",
+    "password_env": "DS_T14_GOLDEN_PW",
+    "password": "root"
+   },
+   "policy": "t14-reorganize-target",
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "rule_summary_applicable": 1,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.alter.reorganize_partition.target",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.alter.reorganize_partition.target",
+      "metadata": {
+       "table": "t14r",
+       "reason_code": "partition_bound_violation",
+       "native_error": "1520"
+      }
+     }
+    ],
+    "version": {
+     "product": "mysql",
+     "version": "8.0.46"
+    }
+   },
+   "setup": [
+    {
+     "name": "create-range-fixture",
+     "sql": "CREATE TABLE t14r (id INT) ENGINE=InnoDB PARTITION BY RANGE(id) (PARTITION p0 VALUES LESS THAN (200), PARTITION pmax VALUES LESS THAN MAXVALUE)",
+     "expect_rc": 0,
+     "verify": []
+    }
+   ],
+   "execute": [
+    {
+     "name": "apply-shrinking-reorg",
+     "sql": "ALTER TABLE t14r REORGANIZE PARTITION p0 INTO (PARTITION p1 VALUES LESS THAN (150))",
+     "expect_rc": 1,
+     "verify": []
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop-fixture",
+     "sql": "DROP TABLE IF EXISTS t14r",
+     "expect_rc": 0,
+     "verify": []
+    }
+   ]
+  },
+  {
+   "id": "t14-tidb85-reorg-hash",
+   "anchor": "tidb85",
+   "dialect": "tidb",
+   "sql": "ALTER TABLE t14h REORGANIZE PARTITION p0 INTO (PARTITION q0);",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 24000,
+    "user": "root",
+    "schema": "golden"
+   },
+   "policy": "t14-reorganize-applicability",
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "rule_summary_applicable": 1,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.alter.reorganize_partition.applicability",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.alter.reorganize_partition.applicability",
+      "metadata": {
+       "table": "t14h",
+       "reason_code": "partition_type_inapplicable",
+       "native_error": "8200",
+       "partition_type": "hash"
+      }
+     }
+    ],
+    "version": {
+     "product": "tidb",
+     "version": "8.5.0"
+    }
+   },
+   "setup": [
+    {
+     "name": "create-hash-fixture",
+     "sql": "CREATE TABLE t14h (id INT) ENGINE=InnoDB PARTITION BY HASH(id) PARTITIONS 4",
+     "expect_rc": 0,
+     "verify": []
+    }
+   ],
+   "execute": [
+    {
+     "name": "apply-hash-reorg",
+     "sql": "ALTER TABLE t14h REORGANIZE PARTITION p0 INTO (PARTITION q0)",
+     "expect_rc": 1,
+     "verify": []
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop-fixture",
+     "sql": "DROP TABLE IF EXISTS t14h",
+     "expect_rc": 0,
+     "verify": []
+    }
+   ]
+  },
+  {
+   "id": "t14-tidb85-reorg-missing-source",
+   "anchor": "tidb85",
+   "dialect": "tidb",
+   "sql": "ALTER TABLE t14r REORGANIZE PARTITION pmissing INTO (PARTITION q0 VALUES LESS THAN (150), PARTITION q1 VALUES LESS THAN (200));",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 24000,
+    "user": "root",
+    "schema": "golden"
+   },
+   "policy": "t14-reorganize-target",
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "rule_summary_applicable": 1,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.alter.reorganize_partition.target",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.alter.reorganize_partition.target",
+      "metadata": {
+       "table": "t14r",
+       "partition": "pmissing",
+       "reason_code": "partition_absent",
+       "native_error": "1567",
+       "exists": "false"
+      }
+     }
+    ],
+    "version": {
+     "product": "tidb",
+     "version": "8.5.0"
+    }
+   },
+   "setup": [
+    {
+     "name": "create-range-fixture",
+     "sql": "CREATE TABLE t14r (id INT) ENGINE=InnoDB PARTITION BY RANGE(id) (PARTITION p0 VALUES LESS THAN (200), PARTITION pmax VALUES LESS THAN MAXVALUE)",
+     "expect_rc": 0,
+     "verify": []
+    }
+   ],
+   "execute": [
+    {
+     "name": "apply-missing-source",
+     "sql": "ALTER TABLE t14r REORGANIZE PARTITION pmissing INTO (PARTITION q0 VALUES LESS THAN (150), PARTITION q1 VALUES LESS THAN (200))",
+     "expect_rc": 1,
+     "verify": []
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop-fixture",
+     "sql": "DROP TABLE IF EXISTS t14r",
+     "expect_rc": 0,
+     "verify": []
+    }
+   ]
+  },
+  {
+   "id": "t14-mysql80-reorg-then-truncate-present",
+   "anchor": "mysql80",
+   "dialect": "mysql",
+   "sql": "ALTER TABLE t14r REORGANIZE PARTITION p0 INTO (PARTITION p1 VALUES LESS THAN (120), PARTITION p2 VALUES LESS THAN (200));\nALTER TABLE t14r TRUNCATE PARTITION p1;",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23380,
+    "user": "root",
+    "schema": "golden",
+    "password_env": "DS_T14_GOLDEN_PW",
+    "password": "root"
+   },
+   "policy": "t14-reorg-truncate-target",
+   "args": [
+    "--fail-on",
+    "warning"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 2,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete",
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "rule_summary_applicable": 2,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.alter.reorganize_partition.warn",
+      "level": "warning"
+     }
+    ],
+    "version": {
+     "product": "mysql",
+     "version": "8.0.46"
+    }
+   },
+   "setup": [
+    {
+     "name": "create-range-fixture",
+     "sql": "CREATE TABLE t14r (id INT) ENGINE=InnoDB PARTITION BY RANGE(id) (PARTITION p0 VALUES LESS THAN (200), PARTITION pmax VALUES LESS THAN MAXVALUE)",
+     "expect_rc": 0,
+     "verify": []
+    },
+    {
+     "name": "seed-rows",
+     "sql": "INSERT INTO t14r VALUES (100),(150)",
+     "expect_rc": 0,
+     "verify": []
+    }
+   ],
+   "execute": [
+    {
+     "name": "apply-audited-reorganize",
+     "sql": "ALTER TABLE t14r REORGANIZE PARTITION p0 INTO (PARTITION p1 VALUES LESS THAN (120), PARTITION p2 VALUES LESS THAN (200))",
+     "expect_rc": 0,
+     "verify": []
+    },
+    {
+     "name": "apply-successor-truncate",
+     "sql": "ALTER TABLE t14r TRUNCATE PARTITION p1",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "p1 truncation removes exactly its member rows",
+       "sql": "SELECT COUNT(*) FROM golden.t14r",
+       "expect": "1"
+      }
+     ]
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop-fixture",
+     "sql": "DROP TABLE IF EXISTS t14r",
+     "expect_rc": 0,
+     "verify": []
+    }
+   ]
+  },
+  {
+   "id": "t14-mysql80-reorg-then-truncate-absent",
+   "anchor": "mysql80",
+   "dialect": "mysql",
+   "sql": "ALTER TABLE t14r REORGANIZE PARTITION p0 INTO (PARTITION p1 VALUES LESS THAN (120), PARTITION p2 VALUES LESS THAN (200));\nALTER TABLE t14r TRUNCATE PARTITION p0;",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23380,
+    "user": "root",
+    "schema": "golden",
+    "password_env": "DS_T14_GOLDEN_PW",
+    "password": "root"
+   },
+   "policy": "t14-reorg-truncate-target",
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 2,
+    "findings": 2,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete",
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "rule_summary_applicable": 2,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.alter.reorganize_partition.warn",
+      "level": "warning"
+     },
+     {
+      "index": 1,
+      "rule_id": "ddl.alter.truncate_partition.target",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 1,
+      "rule_id": "ddl.alter.truncate_partition.target",
+      "metadata": {
+       "table": "t14r",
+       "partition": "p0",
+       "reason_code": "partition_absent",
+       "native_error": "1735",
+       "exists": "false"
+      }
+     }
+    ],
+    "version": {
+     "product": "mysql",
+     "version": "8.0.46"
+    }
+   },
+   "setup": [
+    {
+     "name": "create-range-fixture",
+     "sql": "CREATE TABLE t14r (id INT) ENGINE=InnoDB PARTITION BY RANGE(id) (PARTITION p0 VALUES LESS THAN (200), PARTITION pmax VALUES LESS THAN MAXVALUE)",
+     "expect_rc": 0,
+     "verify": []
+    },
+    {
+     "name": "seed-rows",
+     "sql": "INSERT INTO t14r VALUES (100),(150)",
+     "expect_rc": 0,
+     "verify": []
+    }
+   ],
+   "execute": [
+    {
+     "name": "apply-audited-reorganize",
+     "sql": "ALTER TABLE t14r REORGANIZE PARTITION p0 INTO (PARTITION p1 VALUES LESS THAN (120), PARTITION p2 VALUES LESS THAN (200))",
+     "expect_rc": 0,
+     "verify": []
+    },
+    {
+     "name": "apply-successor-truncate",
+     "sql": "ALTER TABLE t14r TRUNCATE PARTITION p0",
+     "expect_rc": 1,
+     "verify": []
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop-fixture",
+     "sql": "DROP TABLE IF EXISTS t14r",
+     "expect_rc": 0,
+     "verify": []
+    }
+   ]
+  },
+  {
+   "id": "t14-mysql80-add-then-drop",
+   "anchor": "mysql80",
+   "dialect": "mysql",
+   "sql": "ALTER TABLE t14a ADD PARTITION (PARTITION p2 VALUES LESS THAN (600));\nALTER TABLE t14a DROP PARTITION p2;",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23380,
+    "user": "root",
+    "schema": "golden",
+    "password_env": "DS_T14_GOLDEN_PW",
+    "password": "root"
+   },
+   "policy": "t14-add-drop-target",
+   "args": [
+    "--fail-on",
+    "warning"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 2,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete",
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "rule_summary_applicable": 2,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.alter.add_partition.warn",
+      "level": "warning"
+     }
+    ],
+    "version": {
+     "product": "mysql",
+     "version": "8.0.46"
+    }
+   },
+   "setup": [
+    {
+     "name": "create-range-fixture",
+     "sql": "CREATE TABLE t14a (id INT) ENGINE=InnoDB PARTITION BY RANGE(id) (PARTITION p0 VALUES LESS THAN (200), PARTITION p1 VALUES LESS THAN (400))",
+     "expect_rc": 0,
+     "verify": []
+    }
+   ],
+   "execute": [
+    {
+     "name": "apply-audited-add",
+     "sql": "ALTER TABLE t14a ADD PARTITION (PARTITION p2 VALUES LESS THAN (600))",
+     "expect_rc": 0,
+     "verify": []
+    },
+    {
+     "name": "apply-successor-drop",
+     "sql": "ALTER TABLE t14a DROP PARTITION p2",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "the added member is gone after the drop",
+       "sql": "SELECT COUNT(*) FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t14a' AND PARTITION_NAME='p2'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop-fixture",
+     "sql": "DROP TABLE IF EXISTS t14a",
+     "expect_rc": 0,
+     "verify": []
+    }
+   ]
+  },
+  {
+   "id": "t14-mysql80-add-defs",
+   "anchor": "mysql80",
+   "dialect": "mysql",
+   "sql": "ALTER TABLE t14a ADD PARTITION (PARTITION p2 VALUES LESS THAN (600));",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23380,
+    "user": "root",
+    "schema": "golden",
+    "password_env": "DS_T14_GOLDEN_PW",
+    "password": "root"
+   },
+   "policy": "t14-add",
+   "args": [
+    "--fail-on",
+    "warning"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "rule_summary_applicable": 3,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.alter.add_partition.warn",
+      "level": "warning"
+     }
+    ],
+    "version": {
+     "product": "mysql",
+     "version": "8.0.46"
+    }
+   },
+   "setup": [
+    {
+     "name": "create-range-fixture",
+     "sql": "CREATE TABLE t14a (id INT) ENGINE=InnoDB PARTITION BY RANGE(id) (PARTITION p0 VALUES LESS THAN (200), PARTITION p1 VALUES LESS THAN (400))",
+     "expect_rc": 0,
+     "verify": []
+    }
+   ],
+   "execute": [
+    {
+     "name": "apply-audited-add",
+     "sql": "ALTER TABLE t14a ADD PARTITION (PARTITION p2 VALUES LESS THAN (600))",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "p2 lands at the tail",
+       "sql": "SELECT COUNT(*) FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t14a' AND PARTITION_NAME='p2'",
+       "expect": "1"
+      }
+     ]
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop-fixture",
+     "sql": "DROP TABLE IF EXISTS t14a",
+     "expect_rc": 0,
+     "verify": []
+    }
+   ]
+  },
+  {
+   "id": "t14-mysql80-add-collision",
+   "anchor": "mysql80",
+   "dialect": "mysql",
+   "sql": "ALTER TABLE t14a ADD PARTITION (PARTITION p1 VALUES LESS THAN (700));",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23380,
+    "user": "root",
+    "schema": "golden",
+    "password_env": "DS_T14_GOLDEN_PW",
+    "password": "root"
+   },
+   "policy": "t14-add-target",
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "rule_summary_applicable": 1,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.alter.add_partition.target",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.alter.add_partition.target",
+      "metadata": {
+       "table": "t14a",
+       "partition": "p1",
+       "reason_code": "partition_name_duplicate",
+       "native_error": "1517"
+      }
+     }
+    ],
+    "version": {
+     "product": "mysql",
+     "version": "8.0.46"
+    }
+   },
+   "setup": [
+    {
+     "name": "create-range-fixture",
+     "sql": "CREATE TABLE t14a (id INT) ENGINE=InnoDB PARTITION BY RANGE(id) (PARTITION p0 VALUES LESS THAN (200), PARTITION p1 VALUES LESS THAN (400))",
+     "expect_rc": 0,
+     "verify": []
+    }
+   ],
+   "execute": [
+    {
+     "name": "apply-colliding-add",
+     "sql": "ALTER TABLE t14a ADD PARTITION (PARTITION p1 VALUES LESS THAN (700))",
+     "expect_rc": 1,
+     "verify": []
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop-fixture",
+     "sql": "DROP TABLE IF EXISTS t14a",
+     "expect_rc": 0,
+     "verify": []
+    }
+   ]
+  },
+  {
+   "id": "t14-mysql80-add-partitions-n-range",
+   "anchor": "mysql80",
+   "dialect": "mysql",
+   "sql": "ALTER TABLE t14a ADD PARTITION PARTITIONS 2;",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23380,
+    "user": "root",
+    "schema": "golden",
+    "password_env": "DS_T14_GOLDEN_PW",
+    "password": "root"
+   },
+   "policy": "t14-add-applicability",
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "rule_summary_applicable": 1,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.alter.add_partition.applicability",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.alter.add_partition.applicability",
+      "metadata": {
+       "table": "t14a",
+       "reason_code": "partition_add_form_inapplicable",
+       "native_error": "1492",
+       "partition_type": "range"
+      }
+     }
+    ],
+    "version": {
+     "product": "mysql",
+     "version": "8.0.46"
+    }
+   },
+   "setup": [
+    {
+     "name": "create-range-fixture",
+     "sql": "CREATE TABLE t14a (id INT) ENGINE=InnoDB PARTITION BY RANGE(id) (PARTITION p0 VALUES LESS THAN (200), PARTITION p1 VALUES LESS THAN (400))",
+     "expect_rc": 0,
+     "verify": []
+    }
+   ],
+   "execute": [
+    {
+     "name": "apply-partitions-n",
+     "sql": "ALTER TABLE t14a ADD PARTITION PARTITIONS 2",
+     "expect_rc": 1,
+     "verify": []
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop-fixture",
+     "sql": "DROP TABLE IF EXISTS t14a",
+     "expect_rc": 0,
+     "verify": []
+    }
+   ]
+  },
+  {
+   "id": "t14-mysql80-add-hash-defs",
+   "anchor": "mysql80",
+   "dialect": "mysql",
+   "sql": "ALTER TABLE t14h ADD PARTITION (PARTITION p9);",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23380,
+    "user": "root",
+    "schema": "golden",
+    "password_env": "DS_T14_GOLDEN_PW",
+    "password": "root"
+   },
+   "policy": "t14-add",
+   "args": [
+    "--fail-on",
+    "warning"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "rule_summary_applicable": 3,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.alter.add_partition.warn",
+      "level": "warning"
+     }
+    ],
+    "version": {
+     "product": "mysql",
+     "version": "8.0.46"
+    }
+   },
+   "setup": [
+    {
+     "name": "create-hash-fixture",
+     "sql": "CREATE TABLE t14h (id INT) ENGINE=InnoDB PARTITION BY HASH(id) PARTITIONS 4",
+     "expect_rc": 0,
+     "verify": []
+    }
+   ],
+   "execute": [
+    {
+     "name": "apply-audited-add",
+     "sql": "ALTER TABLE t14h ADD PARTITION (PARTITION p9)",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "the declared member lands at ordinal 5",
+       "sql": "SELECT COUNT(*) FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t14h' AND PARTITION_NAME IS NOT NULL",
+       "expect": "5"
+      }
+     ]
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop-fixture",
+     "sql": "DROP TABLE IF EXISTS t14h",
+     "expect_rc": 0,
+     "verify": []
+    }
+   ]
+  },
+  {
+   "id": "t14-tidb85-add-defs",
+   "anchor": "tidb85",
+   "dialect": "tidb",
+   "sql": "ALTER TABLE t14a ADD PARTITION (PARTITION p2 VALUES LESS THAN (600));",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 24000,
+    "user": "root",
+    "schema": "golden"
+   },
+   "policy": "t14-add",
+   "args": [
+    "--fail-on",
+    "warning"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "rule_summary_applicable": 3,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.alter.add_partition.warn",
+      "level": "warning"
+     }
+    ],
+    "version": {
+     "product": "tidb",
+     "version": "8.5.0"
+    }
+   },
+   "setup": [
+    {
+     "name": "create-range-fixture",
+     "sql": "CREATE TABLE t14a (id INT) ENGINE=InnoDB PARTITION BY RANGE(id) (PARTITION p0 VALUES LESS THAN (200), PARTITION p1 VALUES LESS THAN (400))",
+     "expect_rc": 0,
+     "verify": []
+    }
+   ],
+   "execute": [
+    {
+     "name": "apply-audited-add",
+     "sql": "ALTER TABLE t14a ADD PARTITION (PARTITION p2 VALUES LESS THAN (600))",
+     "expect_rc": 0,
+     "verify": []
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop-fixture",
+     "sql": "DROP TABLE IF EXISTS t14a",
+     "expect_rc": 0,
+     "verify": []
+    }
+   ]
+  },
+  {
+   "id": "t14-mysql80-coalesce-hash",
+   "anchor": "mysql80",
+   "dialect": "mysql",
+   "sql": "ALTER TABLE t14h COALESCE PARTITION 1;",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23380,
+    "user": "root",
+    "schema": "golden",
+    "password_env": "DS_T14_GOLDEN_PW",
+    "password": "root"
+   },
+   "policy": "t14-coalesce",
+   "args": [
+    "--fail-on",
+    "warning"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "rule_summary_applicable": 2,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.alter.coalesce_partition.warn",
+      "level": "warning"
+     }
+    ],
+    "version": {
+     "product": "mysql",
+     "version": "8.0.46"
+    }
+   },
+   "setup": [
+    {
+     "name": "create-hash-fixture",
+     "sql": "CREATE TABLE t14h (id INT) ENGINE=InnoDB PARTITION BY HASH(id) PARTITIONS 4",
+     "expect_rc": 0,
+     "verify": []
+    }
+   ],
+   "execute": [
+    {
+     "name": "apply-audited-coalesce",
+     "sql": "ALTER TABLE t14h COALESCE PARTITION 1",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "directory shrinks to three members",
+       "sql": "SELECT COUNT(*) FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t14h' AND PARTITION_NAME IS NOT NULL",
+       "expect": "3"
+      }
+     ]
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop-fixture",
+     "sql": "DROP TABLE IF EXISTS t14h",
+     "expect_rc": 0,
+     "verify": []
+    }
+   ]
+  },
+  {
+   "id": "t14-mysql80-coalesce-range",
+   "anchor": "mysql80",
+   "dialect": "mysql",
+   "sql": "ALTER TABLE t14a COALESCE PARTITION 1;",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23380,
+    "user": "root",
+    "schema": "golden",
+    "password_env": "DS_T14_GOLDEN_PW",
+    "password": "root"
+   },
+   "policy": "t14-coalesce-applicability",
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "rule_summary_applicable": 1,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.alter.coalesce_partition.applicability",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.alter.coalesce_partition.applicability",
+      "metadata": {
+       "table": "t14a",
+       "reason_code": "partition_type_inapplicable",
+       "native_error": "1509",
+       "partition_type": "range"
+      }
+     }
+    ],
+    "version": {
+     "product": "mysql",
+     "version": "8.0.46"
+    }
+   },
+   "setup": [
+    {
+     "name": "create-range-fixture",
+     "sql": "CREATE TABLE t14a (id INT) ENGINE=InnoDB PARTITION BY RANGE(id) (PARTITION p0 VALUES LESS THAN (200), PARTITION p1 VALUES LESS THAN (400))",
+     "expect_rc": 0,
+     "verify": []
+    }
+   ],
+   "execute": [
+    {
+     "name": "apply-range-coalesce",
+     "sql": "ALTER TABLE t14a COALESCE PARTITION 1",
+     "expect_rc": 1,
+     "verify": []
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop-fixture",
+     "sql": "DROP TABLE IF EXISTS t14a",
+     "expect_rc": 0,
+     "verify": []
+    }
+   ]
+  },
+  {
+   "id": "t14-mysql80-coalesce-all",
+   "anchor": "mysql80",
+   "dialect": "mysql",
+   "sql": "ALTER TABLE t14h COALESCE PARTITION 4;",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23380,
+    "user": "root",
+    "schema": "golden",
+    "password_env": "DS_T14_GOLDEN_PW",
+    "password": "root"
+   },
+   "policy": "t14-coalesce-applicability",
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "rule_summary_applicable": 1,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.alter.coalesce_partition.applicability",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.alter.coalesce_partition.applicability",
+      "metadata": {
+       "table": "t14h",
+       "reason_code": "partition_remove_all",
+       "native_error": "1508",
+       "partition_type": "hash"
+      }
+     }
+    ],
+    "version": {
+     "product": "mysql",
+     "version": "8.0.46"
+    }
+   },
+   "setup": [
+    {
+     "name": "create-hash-fixture",
+     "sql": "CREATE TABLE t14h (id INT) ENGINE=InnoDB PARTITION BY HASH(id) PARTITIONS 4",
+     "expect_rc": 0,
+     "verify": []
+    }
+   ],
+   "execute": [
+    {
+     "name": "apply-exhausting-coalesce",
+     "sql": "ALTER TABLE t14h COALESCE PARTITION 4",
+     "expect_rc": 1,
+     "verify": []
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop-fixture",
+     "sql": "DROP TABLE IF EXISTS t14h",
+     "expect_rc": 0,
+     "verify": []
+    }
+   ]
+  },
+  {
+   "id": "t14-mysql80-partition-by-hash",
+   "anchor": "mysql80",
+   "dialect": "mysql",
+   "sql": "ALTER TABLE t14n PARTITION BY HASH(id) PARTITIONS 2;",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23380,
+    "user": "root",
+    "schema": "golden",
+    "password_env": "DS_T14_GOLDEN_PW",
+    "password": "root"
+   },
+   "policy": "t14-partition-by",
+   "args": [
+    "--fail-on",
+    "warning"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "rule_summary_applicable": 2,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.alter.partition_by.warn",
+      "level": "warning"
+     }
+    ],
+    "version": {
+     "product": "mysql",
+     "version": "8.0.46"
+    }
+   },
+   "setup": [
+    {
+     "name": "create-plain-table",
+     "sql": "CREATE TABLE t14n (id INT) ENGINE=InnoDB",
+     "expect_rc": 0,
+     "verify": []
+    }
+   ],
+   "execute": [
+    {
+     "name": "apply-audited-partition-by",
+     "sql": "ALTER TABLE t14n PARTITION BY HASH(id) PARTITIONS 2",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "two hash members materialize",
+       "sql": "SELECT COUNT(*) FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t14n' AND PARTITION_NAME IS NOT NULL",
+       "expect": "2"
+      }
+     ]
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop-fixture",
+     "sql": "DROP TABLE IF EXISTS t14n",
+     "expect_rc": 0,
+     "verify": []
+    }
+   ]
+  },
+  {
+   "id": "t14-mysql80-partition-by-bad-defs",
+   "anchor": "mysql80",
+   "dialect": "mysql",
+   "sql": "ALTER TABLE t14n PARTITION BY RANGE(id) (PARTITION a VALUES LESS THAN (50), PARTITION b VALUES LESS THAN (40));",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23380,
+    "user": "root",
+    "schema": "golden",
+    "password_env": "DS_T14_GOLDEN_PW",
+    "password": "root"
+   },
+   "policy": "t14-partition-by-applicability",
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "rule_summary_applicable": 1,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.alter.partition_by.applicability",
+      "level": "blocker"
+     }
+    ],
+    "version": {
+     "product": "mysql",
+     "version": "8.0.46"
+    }
+   },
+   "setup": [
+    {
+     "name": "create-plain-table",
+     "sql": "CREATE TABLE t14n (id INT) ENGINE=InnoDB",
+     "expect_rc": 0,
+     "verify": []
+    }
+   ],
+   "execute": [
+    {
+     "name": "apply-bad-scheme",
+     "sql": "ALTER TABLE t14n PARTITION BY RANGE(id) (PARTITION a VALUES LESS THAN (50), PARTITION b VALUES LESS THAN (40))",
+     "expect_rc": 1,
+     "verify": []
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop-fixture",
+     "sql": "DROP TABLE IF EXISTS t14n",
+     "expect_rc": 0,
+     "verify": []
+    }
+   ]
+  },
+  {
+   "id": "t14-mysql80-remove-partitioning",
+   "anchor": "mysql80",
+   "dialect": "mysql",
+   "sql": "ALTER TABLE t14a REMOVE PARTITIONING;",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23380,
+    "user": "root",
+    "schema": "golden",
+    "password_env": "DS_T14_GOLDEN_PW",
+    "password": "root"
+   },
+   "policy": "t14-remove",
+   "args": [
+    "--fail-on",
+    "warning"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "rule_summary_applicable": 2,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.alter.remove_partitioning.warn",
+      "level": "warning"
+     }
+    ],
+    "version": {
+     "product": "mysql",
+     "version": "8.0.46"
+    }
+   },
+   "setup": [
+    {
+     "name": "create-range-fixture",
+     "sql": "CREATE TABLE t14a (id INT) ENGINE=InnoDB PARTITION BY RANGE(id) (PARTITION p0 VALUES LESS THAN (200), PARTITION p1 VALUES LESS THAN (400))",
+     "expect_rc": 0,
+     "verify": []
+    }
+   ],
+   "execute": [
+    {
+     "name": "apply-audited-remove",
+     "sql": "ALTER TABLE t14a REMOVE PARTITIONING",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "no member rows remain after remove-partitioning",
+       "sql": "SELECT COUNT(*) FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t14a' AND PARTITION_NAME IS NOT NULL",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop-fixture",
+     "sql": "DROP TABLE IF EXISTS t14a",
+     "expect_rc": 0,
+     "verify": []
+    }
+   ]
+  },
+  {
+   "id": "t14-mysql80-remove-nonpartitioned",
+   "anchor": "mysql80",
+   "dialect": "mysql",
+   "sql": "ALTER TABLE t14n REMOVE PARTITIONING;",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23380,
+    "user": "root",
+    "schema": "golden",
+    "password_env": "DS_T14_GOLDEN_PW",
+    "password": "root"
+   },
+   "policy": "t14-remove-applicability",
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "rule_summary_applicable": 1,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.alter.remove_partitioning.applicability",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.alter.remove_partitioning.applicability",
+      "metadata": {
+       "table": "t14n",
+       "reason_code": "not_partitioned",
+       "native_error": "1505"
+      }
+     }
+    ],
+    "version": {
+     "product": "mysql",
+     "version": "8.0.46"
+    }
+   },
+   "setup": [
+    {
+     "name": "create-plain-table",
+     "sql": "CREATE TABLE t14n (id INT) ENGINE=InnoDB",
+     "expect_rc": 0,
+     "verify": []
+    }
+   ],
+   "execute": [
+    {
+     "name": "apply-nonpartitioned-remove",
+     "sql": "ALTER TABLE t14n REMOVE PARTITIONING",
+     "expect_rc": 1,
+     "verify": []
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop-fixture",
+     "sql": "DROP TABLE IF EXISTS t14n",
+     "expect_rc": 0,
+     "verify": []
+    }
+   ]
+  },
+  {
+   "id": "t14-mysql80-rebuild-missing",
+   "anchor": "mysql80",
+   "dialect": "mysql",
+   "sql": "ALTER TABLE t14r REBUILD PARTITION pmissing;",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23380,
+    "user": "root",
+    "schema": "golden",
+    "password_env": "DS_T14_GOLDEN_PW",
+    "password": "root"
+   },
+   "policy": "t14-rebuild-target",
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "rule_summary_applicable": 1,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.alter.rebuild_partition.target",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.alter.rebuild_partition.target",
+      "metadata": {
+       "table": "t14r",
+       "partition": "pmissing",
+       "reason_code": "partition_absent",
+       "native_error": "1507",
+       "exists": "false"
+      }
+     }
+    ],
+    "version": {
+     "product": "mysql",
+     "version": "8.0.46"
+    }
+   },
+   "setup": [
+    {
+     "name": "create-range-fixture",
+     "sql": "CREATE TABLE t14r (id INT) ENGINE=InnoDB PARTITION BY RANGE(id) (PARTITION p0 VALUES LESS THAN (200), PARTITION pmax VALUES LESS THAN MAXVALUE)",
+     "expect_rc": 0,
+     "verify": []
+    }
+   ],
+   "execute": [
+    {
+     "name": "apply-missing-rebuild",
+     "sql": "ALTER TABLE t14r REBUILD PARTITION pmissing",
+     "expect_rc": 1,
+     "verify": []
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop-fixture",
+     "sql": "DROP TABLE IF EXISTS t14r",
+     "expect_rc": 0,
+     "verify": []
+    }
+   ]
+  },
+  {
+   "id": "t14-mysql80-rebuild-nonpartitioned",
+   "anchor": "mysql80",
+   "dialect": "mysql",
+   "sql": "ALTER TABLE t14n REBUILD PARTITION p0;",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23380,
+    "user": "root",
+    "schema": "golden",
+    "password_env": "DS_T14_GOLDEN_PW",
+    "password": "root"
+   },
+   "policy": "t14-rebuild-applicability",
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "rule_summary_applicable": 1,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.alter.rebuild_partition.applicability",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.alter.rebuild_partition.applicability",
+      "metadata": {
+       "table": "t14n",
+       "reason_code": "not_partitioned",
+       "native_error": "1505"
+      }
+     }
+    ],
+    "version": {
+     "product": "mysql",
+     "version": "8.0.46"
+    }
+   },
+   "setup": [
+    {
+     "name": "create-plain-table",
+     "sql": "CREATE TABLE t14n (id INT) ENGINE=InnoDB",
+     "expect_rc": 0,
+     "verify": []
+    }
+   ],
+   "execute": [
+    {
+     "name": "apply-nonpartitioned-rebuild",
+     "sql": "ALTER TABLE t14n REBUILD PARTITION p0",
+     "expect_rc": 1,
+     "verify": []
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop-fixture",
+     "sql": "DROP TABLE IF EXISTS t14n",
+     "expect_rc": 0,
+     "verify": []
+    }
+   ]
+  },
+  {
+   "id": "t14-mysql80-check-missing-softfail",
+   "anchor": "mysql80",
+   "dialect": "mysql",
+   "sql": "ALTER TABLE t14r CHECK PARTITION pmissing;",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23380,
+    "user": "root",
+    "schema": "golden",
+    "password_env": "DS_T14_GOLDEN_PW",
+    "password": "root"
+   },
+   "policy": "t14-check-target",
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "rule_summary_applicable": 1,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.alter.check_partition.target",
+      "level": "warning"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.alter.check_partition.target",
+      "metadata": {
+       "table": "t14r",
+       "partition": "pmissing",
+       "reason_code": "partition_absent",
+       "soft_fail": "true",
+       "exists": "false"
+      }
+     }
+    ],
+    "version": {
+     "product": "mysql",
+     "version": "8.0.46"
+    }
+   },
+   "setup": [
+    {
+     "name": "create-range-fixture",
+     "sql": "CREATE TABLE t14r (id INT) ENGINE=InnoDB PARTITION BY RANGE(id) (PARTITION p0 VALUES LESS THAN (200), PARTITION pmax VALUES LESS THAN MAXVALUE)",
+     "expect_rc": 0,
+     "verify": []
+    }
+   ],
+   "execute": [
+    {
+     "name": "apply-missing-check",
+     "sql": "ALTER TABLE t14r CHECK PARTITION pmissing",
+     "expect_rc": 0,
+     "verify": []
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop-fixture",
+     "sql": "DROP TABLE IF EXISTS t14r",
+     "expect_rc": 0,
+     "verify": []
+    }
+   ]
+  },
+  {
+   "id": "t14-mysql80-check-nonpartitioned-softfail",
+   "anchor": "mysql80",
+   "dialect": "mysql",
+   "sql": "ALTER TABLE t14n CHECK PARTITION p0;",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23380,
+    "user": "root",
+    "schema": "golden",
+    "password_env": "DS_T14_GOLDEN_PW",
+    "password": "root"
+   },
+   "policy": "t14-check-applicability",
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "rule_summary_applicable": 1,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.alter.check_partition.applicability",
+      "level": "warning"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.alter.check_partition.applicability",
+      "metadata": {
+       "table": "t14n",
+       "reason_code": "not_partitioned",
+       "soft_fail": "true"
+      }
+     }
+    ],
+    "version": {
+     "product": "mysql",
+     "version": "8.0.46"
+    }
+   },
+   "setup": [
+    {
+     "name": "create-plain-table",
+     "sql": "CREATE TABLE t14n (id INT) ENGINE=InnoDB",
+     "expect_rc": 0,
+     "verify": []
+    }
+   ],
+   "execute": [
+    {
+     "name": "apply-nonpartitioned-check",
+     "sql": "ALTER TABLE t14n CHECK PARTITION p0",
+     "expect_rc": 0,
+     "verify": []
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop-fixture",
+     "sql": "DROP TABLE IF EXISTS t14n",
+     "expect_rc": 0,
+     "verify": []
+    }
+   ]
+  },
+  {
+   "id": "t14-mysql80-optimize-warn",
+   "anchor": "mysql80",
+   "dialect": "mysql",
+   "sql": "ALTER TABLE t14r OPTIMIZE PARTITION p0;",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23380,
+    "user": "root",
+    "schema": "golden",
+    "password_env": "DS_T14_GOLDEN_PW",
+    "password": "root"
+   },
+   "policy": "t14-optimize",
+   "args": [
+    "--fail-on",
+    "warning"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "rule_summary_applicable": 3,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.alter.optimize_partition.warn",
+      "level": "warning"
+     }
+    ],
+    "version": {
+     "product": "mysql",
+     "version": "8.0.46"
+    }
+   },
+   "setup": [
+    {
+     "name": "create-range-fixture",
+     "sql": "CREATE TABLE t14r (id INT) ENGINE=InnoDB PARTITION BY RANGE(id) (PARTITION p0 VALUES LESS THAN (200), PARTITION pmax VALUES LESS THAN MAXVALUE)",
+     "expect_rc": 0,
+     "verify": []
+    }
+   ],
+   "execute": [
+    {
+     "name": "apply-audited-optimize",
+     "sql": "ALTER TABLE t14r OPTIMIZE PARTITION p0",
+     "expect_rc": 0,
+     "verify": []
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop-fixture",
+     "sql": "DROP TABLE IF EXISTS t14r",
+     "expect_rc": 0,
+     "verify": []
+    }
+   ]
+  },
+  {
+   "id": "t14-mysql80-repair-nonpartitioned-softfail",
+   "anchor": "mysql80",
+   "dialect": "mysql",
+   "sql": "ALTER TABLE t14n REPAIR PARTITION p0;",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23380,
+    "user": "root",
+    "schema": "golden",
+    "password_env": "DS_T14_GOLDEN_PW",
+    "password": "root"
+   },
+   "policy": "t14-repair-applicability",
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "rule_summary_applicable": 1,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.alter.repair_partition.applicability",
+      "level": "warning"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.alter.repair_partition.applicability",
+      "metadata": {
+       "table": "t14n",
+       "reason_code": "not_partitioned",
+       "soft_fail": "true"
+      }
+     }
+    ],
+    "version": {
+     "product": "mysql",
+     "version": "8.0.46"
+    }
+   },
+   "setup": [
+    {
+     "name": "create-plain-table",
+     "sql": "CREATE TABLE t14n (id INT) ENGINE=InnoDB",
+     "expect_rc": 0,
+     "verify": []
+    }
+   ],
+   "execute": [
+    {
+     "name": "apply-nonpartitioned-repair",
+     "sql": "ALTER TABLE t14n REPAIR PARTITION p0",
+     "expect_rc": 0,
+     "verify": []
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop-fixture",
+     "sql": "DROP TABLE IF EXISTS t14n",
+     "expect_rc": 0,
+     "verify": []
+    }
+   ]
+  },
+  {
+   "id": "t14-mysql80-discard-blocker",
+   "anchor": "mysql80",
+   "dialect": "mysql",
+   "sql": "ALTER TABLE t14r DISCARD PARTITION p0 TABLESPACE;",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23380,
+    "user": "root",
+    "schema": "golden",
+    "password_env": "DS_T14_GOLDEN_PW",
+    "password": "root"
+   },
+   "policy": "t14-discard",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "rule_summary_applicable": 3,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.alter.discard_partition_tablespace.forbid",
+      "level": "blocker"
+     }
+    ],
+    "version": {
+     "product": "mysql",
+     "version": "8.0.46"
+    }
+   },
+   "setup": [
+    {
+     "name": "create-range-fixture",
+     "sql": "CREATE TABLE t14r (id INT) ENGINE=InnoDB PARTITION BY RANGE(id) (PARTITION p0 VALUES LESS THAN (200), PARTITION pmax VALUES LESS THAN MAXVALUE)",
+     "expect_rc": 0,
+     "verify": []
+    }
+   ],
+   "execute": [
+    {
+     "name": "apply-audited-discard",
+     "sql": "ALTER TABLE t14r DISCARD PARTITION p0 TABLESPACE",
+     "expect_rc": 0,
+     "verify": []
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop-fixture",
+     "sql": "DROP TABLE IF EXISTS t14r",
+     "expect_rc": 0,
+     "verify": []
+    }
+   ]
+  },
+  {
+   "id": "t14-mysql80-discard-missing",
+   "anchor": "mysql80",
+   "dialect": "mysql",
+   "sql": "ALTER TABLE t14r DISCARD PARTITION pmissing TABLESPACE;",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23380,
+    "user": "root",
+    "schema": "golden",
+    "password_env": "DS_T14_GOLDEN_PW",
+    "password": "root"
+   },
+   "policy": "t14-discard-target",
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "rule_summary_applicable": 1,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.alter.discard_partition_tablespace.target",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.alter.discard_partition_tablespace.target",
+      "metadata": {
+       "table": "t14r",
+       "partition": "pmissing",
+       "reason_code": "partition_absent",
+       "native_error": "1735",
+       "exists": "false"
+      }
+     }
+    ],
+    "version": {
+     "product": "mysql",
+     "version": "8.0.46"
+    }
+   },
+   "setup": [
+    {
+     "name": "create-range-fixture",
+     "sql": "CREATE TABLE t14r (id INT) ENGINE=InnoDB PARTITION BY RANGE(id) (PARTITION p0 VALUES LESS THAN (200), PARTITION pmax VALUES LESS THAN MAXVALUE)",
+     "expect_rc": 0,
+     "verify": []
+    }
+   ],
+   "execute": [
+    {
+     "name": "apply-missing-discard",
+     "sql": "ALTER TABLE t14r DISCARD PARTITION pmissing TABLESPACE",
+     "expect_rc": 1,
+     "verify": []
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop-fixture",
+     "sql": "DROP TABLE IF EXISTS t14r",
+     "expect_rc": 0,
+     "verify": []
+    }
+   ]
+  },
+  {
+   "id": "t14-mysql80-import-missing",
+   "anchor": "mysql80",
+   "dialect": "mysql",
+   "sql": "ALTER TABLE t14r IMPORT PARTITION pmissing TABLESPACE;",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23380,
+    "user": "root",
+    "schema": "golden",
+    "password_env": "DS_T14_GOLDEN_PW",
+    "password": "root"
+   },
+   "policy": "t14-import-target",
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "rule_summary_applicable": 1,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.alter.import_partition_tablespace.target",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.alter.import_partition_tablespace.target",
+      "metadata": {
+       "table": "t14r",
+       "partition": "pmissing",
+       "reason_code": "partition_absent",
+       "native_error": "1735",
+       "exists": "false"
+      }
+     }
+    ],
+    "version": {
+     "product": "mysql",
+     "version": "8.0.46"
+    }
+   },
+   "setup": [
+    {
+     "name": "create-range-fixture",
+     "sql": "CREATE TABLE t14r (id INT) ENGINE=InnoDB PARTITION BY RANGE(id) (PARTITION p0 VALUES LESS THAN (200), PARTITION pmax VALUES LESS THAN MAXVALUE)",
+     "expect_rc": 0,
+     "verify": []
+    }
+   ],
+   "execute": [
+    {
+     "name": "apply-missing-import",
+     "sql": "ALTER TABLE t14r IMPORT PARTITION pmissing TABLESPACE",
+     "expect_rc": 1,
+     "verify": []
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop-fixture",
+     "sql": "DROP TABLE IF EXISTS t14r",
+     "expect_rc": 0,
+     "verify": []
+    }
+   ]
+  },
+  {
+   "id": "t14-tidb85-rebuild-vendor",
+   "anchor": "tidb85",
+   "dialect": "tidb",
+   "sql": "ALTER TABLE t14h REBUILD PARTITION p0;",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 24000,
+    "user": "root",
+    "schema": "golden"
+   },
+   "policy": "all-rules-disabled",
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "evidence_gaps": 0,
+    "unsupported_entries": [
+     {
+      "index": 0,
+      "feature": "alter_table.rebuild_partition",
+      "reason": "parsed by the shared parser but outside the supported statement surface for this dialect",
+      "metadata": {
+       "action": "rebuild_partition",
+       "aspect": "action"
+      }
+     }
+    ],
+    "version": {
+     "product": "tidb",
+     "version": "8.5.0"
+    }
+   },
+   "setup": [
+    {
+     "name": "create-hash-fixture",
+     "sql": "CREATE TABLE t14h (id INT) ENGINE=InnoDB PARTITION BY HASH(id) PARTITIONS 4",
+     "expect_rc": 0,
+     "verify": []
+    }
+   ],
+   "execute": [
+    {
+     "name": "apply-vendor-refused-rebuild",
+     "sql": "ALTER TABLE t14h REBUILD PARTITION p0",
+     "expect_rc": 1,
+     "verify": []
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop-fixture",
+     "sql": "DROP TABLE IF EXISTS t14h",
+     "expect_rc": 0,
+     "verify": []
+    }
+   ]
+  },
+  {
+   "id": "t14-tidb85-inplace-coalesce",
+   "anchor": "tidb85",
+   "dialect": "tidb",
+   "sql": "ALTER TABLE t14h ALGORITHM=INPLACE, COALESCE PARTITION 1;",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 24000,
+    "user": "root",
+    "schema": "golden"
+   },
+   "policy": "t14-coalesce",
+   "args": [
+    "--fail-on",
+    "warning"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "rule_summary_applicable": 2,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.alter.coalesce_partition.warn",
+      "level": "warning"
+     }
+    ],
+    "version": {
+     "product": "tidb",
+     "version": "8.5.0"
+    }
+   },
+   "setup": [
+    {
+     "name": "create-hash-fixture",
+     "sql": "CREATE TABLE t14h (id INT) ENGINE=InnoDB PARTITION BY HASH(id) PARTITIONS 4",
+     "expect_rc": 0,
+     "verify": []
+    }
+   ],
+   "execute": [
+    {
+     "name": "apply-inplace-coalesce",
+     "sql": "ALTER TABLE t14h ALGORITHM=INPLACE, COALESCE PARTITION 1",
+     "expect_rc": 0,
+     "verify": []
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop-fixture",
+     "sql": "DROP TABLE IF EXISTS t14h",
+     "expect_rc": 0,
+     "verify": []
+    }
+   ]
+  }
+ ],
+ "required_case_ids": [
+  "T14.db.mysql57.ddl",
+  "T14.db.mysql57.syntax_negative",
+  "T14.db.mysql80.ddl",
+  "T14.db.mysql80.syntax_negative",
+  "T14.db.mysql84.ddl",
+  "T14.db.mysql84.syntax_negative",
+  "T14.db.tidb85.ddl",
+  "T14.db.tidb85.syntax_negative",
+  "T14.cli.t14-cli-reorganize-warn",
+  "T14.cli.t14-cli-reorganize-off",
+  "T14.cli.t14-cli-add-warn",
+  "T14.cli.t14-cli-coalesce-warn",
+  "T14.cli.t14-cli-partition-by-warn",
+  "T14.cli.t14-cli-remove-partitioning-warn",
+  "T14.cli.t14-cli-rebuild-warn",
+  "T14.cli.t14-cli-check-notice",
+  "T14.cli.t14-cli-optimize-warn",
+  "T14.cli.t14-cli-repair-warn",
+  "T14.cli.t14-cli-discard-blocker",
+  "T14.cli.t14-cli-import-warn",
+  "T14.cli.t14-cli-addcol-control",
+  "T14.cli.t14-cli-reorganize-applicability-gap",
+  "T14.cli.t14-cli-tidb-rebuild-vendor",
+  "T14.meta.t14-mysql80-golden",
+  "T14.meta.t14-mysql57-golden",
+  "T14.meta.t14-mysql84-golden",
+  "T14.meta.t14-tidb85-golden",
+  "T14.meta.t14-mysql80-reorg-missing-source",
+  "T14.meta.t14-mysql80-reorg-collision",
+  "T14.meta.t14-mysql80-reorg-nonconsecutive",
+  "T14.meta.t14-mysql80-reorg-shrink",
+  "T14.meta.t14-tidb85-reorg-hash",
+  "T14.meta.t14-tidb85-reorg-missing-source",
+  "T14.meta.t14-mysql80-reorg-then-truncate-present",
+  "T14.meta.t14-mysql80-reorg-then-truncate-absent",
+  "T14.meta.t14-mysql80-add-then-drop",
+  "T14.meta.t14-mysql80-add-defs",
+  "T14.meta.t14-mysql80-add-collision",
+  "T14.meta.t14-mysql80-add-partitions-n-range",
+  "T14.meta.t14-mysql80-add-hash-defs",
+  "T14.meta.t14-tidb85-add-defs",
+  "T14.meta.t14-mysql80-coalesce-hash",
+  "T14.meta.t14-mysql80-coalesce-range",
+  "T14.meta.t14-mysql80-coalesce-all",
+  "T14.meta.t14-mysql80-partition-by-hash",
+  "T14.meta.t14-mysql80-partition-by-bad-defs",
+  "T14.meta.t14-mysql80-remove-partitioning",
+  "T14.meta.t14-mysql80-remove-nonpartitioned",
+  "T14.meta.t14-mysql80-rebuild-missing",
+  "T14.meta.t14-mysql80-rebuild-nonpartitioned",
+  "T14.meta.t14-mysql80-check-missing-softfail",
+  "T14.meta.t14-mysql80-check-nonpartitioned-softfail",
+  "T14.meta.t14-mysql80-optimize-warn",
+  "T14.meta.t14-mysql80-repair-nonpartitioned-softfail",
+  "T14.meta.t14-mysql80-discard-blocker",
+  "T14.meta.t14-mysql80-discard-missing",
+  "T14.meta.t14-mysql80-import-missing",
+  "T14.meta.t14-tidb85-rebuild-vendor",
+  "T14.meta.t14-tidb85-inplace-coalesce"
+ ]
+}

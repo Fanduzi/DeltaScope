@@ -223,6 +223,100 @@ func Register(registry *rule.Registry, cfg policy.Policy) error {
 		{ruleID: ruleIDAlterExchangePartitionCounterpart, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
 			return newExchangeCounterpartCompatibilityRule(cfg)
 		}},
+		// T14: partition topology + maintenance — policy findings,
+		// applicability gates, and member-target rules (frozen IDs per
+		// CONTRACT §6; check_partition.target added by R1 amendment for
+		// the missing-member soft-fail cell).
+		{ruleID: ruleIDAlterReorganizePartitionWarn, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newReorganizePartitionWarnRule(cfg)
+		}},
+		{ruleID: ruleIDAlterAddPartitionWarn, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newAddPartitionWarnRule(cfg)
+		}},
+		{ruleID: ruleIDAlterCoalescePartitionWarn, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newCoalescePartitionWarnRule(cfg)
+		}},
+		{ruleID: ruleIDAlterPartitionByWarn, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newPartitionByWarnRule(cfg)
+		}},
+		{ruleID: ruleIDAlterRemovePartitioningWarn, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newRemovePartitioningWarnRule(cfg)
+		}},
+		{ruleID: ruleIDAlterRebuildPartitionWarn, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newRebuildPartitionWarnRule(cfg)
+		}},
+		{ruleID: ruleIDAlterOptimizePartitionWarn, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newOptimizePartitionWarnRule(cfg)
+		}},
+		{ruleID: ruleIDAlterRepairPartitionWarn, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newRepairPartitionWarnRule(cfg)
+		}},
+		{ruleID: ruleIDAlterCheckPartitionWarn, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newCheckPartitionWarnRule(cfg)
+		}},
+		{ruleID: ruleIDAlterImportPartitionTablespaceWarn, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newImportPartitionTablespaceWarnRule(cfg)
+		}},
+		{ruleID: ruleIDAlterDiscardPartitionTablespaceForbid, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newDiscardPartitionTablespaceForbidRule(cfg)
+		}},
+		{ruleID: ruleIDAlterReorganizePartitionApplicability, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newReorganizePartitionApplicabilityRule(cfg)
+		}},
+		{ruleID: ruleIDAlterAddPartitionApplicability, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newAddPartitionApplicabilityRule(cfg)
+		}},
+		{ruleID: ruleIDAlterCoalescePartitionApplicability, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newCoalescePartitionApplicabilityRule(cfg)
+		}},
+		{ruleID: ruleIDAlterPartitionByApplicability, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newPartitionByApplicabilityRule(cfg)
+		}},
+		{ruleID: ruleIDAlterRemovePartitioningApplicability, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newRemovePartitioningApplicabilityRule(cfg)
+		}},
+		{ruleID: ruleIDAlterRebuildPartitionApplicability, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newRebuildPartitionApplicabilityRule(cfg)
+		}},
+		{ruleID: ruleIDAlterOptimizePartitionApplicability, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newOptimizePartitionApplicabilityRule(cfg)
+		}},
+		{ruleID: ruleIDAlterRepairPartitionApplicability, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newRepairPartitionApplicabilityRule(cfg)
+		}},
+		{ruleID: ruleIDAlterCheckPartitionApplicability, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newCheckPartitionApplicabilityRule(cfg)
+		}},
+		{ruleID: ruleIDAlterImportPartitionTablespaceApplicability, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newImportPartitionTablespaceApplicabilityRule(cfg)
+		}},
+		{ruleID: ruleIDAlterDiscardPartitionTablespaceApplicability, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newDiscardPartitionTablespaceApplicabilityRule(cfg)
+		}},
+		{ruleID: ruleIDAlterReorganizePartitionTarget, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newReorganizePartitionTargetRule(cfg)
+		}},
+		{ruleID: ruleIDAlterAddPartitionTarget, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newAddPartitionTargetRule(cfg)
+		}},
+		{ruleID: ruleIDAlterRebuildPartitionTarget, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newRebuildPartitionTargetRule(cfg)
+		}},
+		{ruleID: ruleIDAlterOptimizePartitionTarget, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newOptimizePartitionTargetRule(cfg)
+		}},
+		{ruleID: ruleIDAlterRepairPartitionTarget, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newRepairPartitionTargetRule(cfg)
+		}},
+		{ruleID: ruleIDAlterCheckPartitionTarget, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newCheckPartitionTargetRule(cfg)
+		}},
+		{ruleID: ruleIDAlterImportPartitionTablespaceTarget, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newImportPartitionTablespaceTargetRule(cfg)
+		}},
+		{ruleID: ruleIDAlterDiscardPartitionTablespaceTarget, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newDiscardPartitionTablespaceTargetRule(cfg)
+		}},
 		{ruleID: ruleIDAlterAddIndexColumnsMaxCount, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
 			return newAlterAddedIndexColumnsMaxCountRule(8, rule.LevelWarning, cfg)
 		}},

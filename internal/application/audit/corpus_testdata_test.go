@@ -137,6 +137,11 @@ type corpusTableSnapshot struct {
 	Partitioned        *bool              `yaml:"partitioned,omitempty"`
 	PartitionType      string             `yaml:"partition_type,omitempty"`
 	PartitionNames     []string           `yaml:"partition_names,omitempty"`
+	// PartitionDescriptions carries the catalog PARTITION_DESCRIPTION
+	// text per member — the fixture describes exactly what
+	// information_schema would show; the converter projects it through
+	// spec.CatalogPartitionDefs so fixtures never hand-author the model.
+	PartitionDescriptions []string `yaml:"partition_descriptions,omitempty"`
 }
 
 type corpusTable struct {

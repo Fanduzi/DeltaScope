@@ -457,7 +457,7 @@ func (p *Provider) LoadTableSnapshot(ctx context.Context, dialect spec.Dialect, 
 // nil PartitionType under partitioned=true is itself an unobserved fact.
 func (p *Provider) loadPartitionFacts(ctx context.Context, snapshot *spec.TableSnapshot) error {
 	rows, err := p.db.QueryContext(ctx, `
-		select partition_method, partition_name, subpartition_name
+		select partition_method, partition_name, subpartition_name, partition_description
 		from information_schema.partitions
 		where table_schema = ? and table_name = ?
 			and partition_name is not null
@@ -474,12 +474,13 @@ func (p *Provider) loadPartitionFacts(ctx context.Context, snapshot *spec.TableS
 	defer rows.Close()
 
 	names := make([]string, 0)
+	descriptions := make([]string, 0)
 	seen := make(map[string]bool)
 	var method string
 	subpartitioned := false
 	for rows.Next() {
-		var rawMethod, name, subName sql.NullString
-		if err := rows.Scan(&rawMethod, &name, &subName); err != nil {
+		var rawMethod, name, subName, description sql.NullString
+		if err := rows.Scan(&rawMethod, &name, &subName, &description); err != nil {
 			return fmt.Errorf("scan partition for table %s.%s: %w", snapshot.Schema, snapshot.Table.Name, err)
 		}
 		if method == "" && rawMethod.Valid {
@@ -494,6 +495,15 @@ func (p *Provider) loadPartitionFacts(ctx context.Context, snapshot *spec.TableS
 		if name.Valid && !seen[name.String] {
 			seen[name.String] = true
 			names = append(names, name.String)
+			// PARTITION_DESCRIPTION is NULL on HASH/KEY members and on
+			// unanswerable cells; the recorded text keeps alignment with
+			// the name list ("" marks the member whose bound text the
+			// catalog never stored).
+			text := ""
+			if description.Valid {
+				text = description.String
+			}
+			descriptions = append(descriptions, text)
 		}
 	}
 	if err := rows.Err(); err != nil {
@@ -502,12 +512,15 @@ func (p *Provider) loadPartitionFacts(ctx context.Context, snapshot *spec.TableS
 
 	partitioned := len(names) > 0
 	snapshot.Partitioned = &partitioned
+	snapshot.Subpartitioned = subpartitioned
 	if partitioned {
 		if method != "" {
 			snapshot.PartitionType = &method
 		}
 		if !subpartitioned {
 			snapshot.PartitionNames = names
+			snapshot.PartitionDescriptions = descriptions
+			snapshot.PartitionDefs = spec.CatalogPartitionDefs(names, descriptions, method)
 		}
 		// A subpartitioned catalog is an incomplete projection: the
 		// member directory stays unobserved (nil) so no rule can claim

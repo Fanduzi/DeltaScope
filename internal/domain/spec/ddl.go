@@ -44,6 +44,25 @@ type DDL struct {
 	// `p0..p(n-1)` set the engine assigns under `PARTITIONS n` on both
 	// products. Empty when no members are declared.
 	PartitionNames []string `json:"partition_names,omitempty"`
+	// PartitionDefs carries the declared member definitions with their
+	// boundary clauses — the fidelity layer PartitionNames alone cannot
+	// keep (member identity + bound). nil when no explicit members are
+	// declared (PARTITIONS n implicit, HASH/KEY bare, or the declaration
+	// could not project a complete member space).
+	PartitionDefs []PartitionDef `json:"partition_defs,omitempty"`
+	// PartitionColumns carries the declared COLUMNS member names for
+	// `RANGE COLUMNS`/`LIST COLUMNS`/`KEY` methods in authored order.
+	PartitionColumns []string `json:"partition_columns,omitempty"`
+	// PartitionExpr carries the partitioning expression's structured
+	// identity for the expr-keyed methods (RANGE/LIST/HASH with an
+	// expression argument). nil for column-keyed methods and unparseable
+	// or unmodeled expressions.
+	PartitionExpr *ExpressionFacts `json:"-"`
+	// Subpartitioned marks a declaration carrying a subpartitioning axis —
+	// a method-level SUBPARTITION BY clause or per-member SUBPARTITION
+	// definitions. The top-level member list is not the leaf member space
+	// on such tables; name-keyed checks stay unproven.
+	Subpartitioned bool `json:"subpartitioned,omitempty"`
 	// TemporaryScope records a parsed temporary-table keyword on
 	// CREATE/DROP TABLE. The scope changes object identity and lifetime, so a
 	// non-empty value is a recognized-but-unaudited fact until temporary-table
@@ -348,6 +367,120 @@ func CloneLiteralDefaultFacts(in *LiteralDefaultFacts) *LiteralDefaultFacts {
 		return nil
 	}
 	out := *in
+	return &out
+}
+
+// Partition boundary literal kinds. Only value domains that compare across
+// the declaration/catalog boundary without coercion are named; anything
+// else stays "expression" with its structured facts — never compared equal
+// by identity text.
+const (
+	PartitionBoundNumeric    = "numeric"
+	PartitionBoundString     = "string"
+	PartitionBoundNull       = "null"
+	PartitionBoundExpression = "expression"
+)
+
+// BoundLiteral is one comparable datum inside a partition boundary clause:
+// a literal kind plus its canonical value text (numeric digits or decoded
+// string bytes — never the authored quoting), or the structured identity
+// facts of a non-literal bound item. A Kind outside the comparable set
+// proves nothing about equality: two expressions are never equated by this
+// model.
+type BoundLiteral struct {
+	Kind       string           `json:"kind,omitempty"`
+	Value      string           `json:"value,omitempty"`
+	Expression *ExpressionFacts `json:"expression,omitempty"`
+}
+
+// PartitionBound is one member's declared VALUES clause. Kind is
+// "less_than" for RANGE(-family) members and "in" for LIST(-family)
+// members; MaxValue marks the LESS THAN MAXVALUE sentinel. Rows keeps the
+// authored tuple grouping — one row per IN-tuple, one row for LESS THAN —
+// with the literal items inside each row in authored order. A nil Bound on
+// PartitionDef means the member declared no VALUES clause (HASH/KEY
+// members carry none) — never confused with an unparseable clause, which
+// leaves the row items unproven instead.
+type PartitionBound struct {
+	Kind     string `json:"kind,omitempty"`
+	MaxValue bool   `json:"max_value,omitempty"`
+	// Default marks the MariaDB-compatible `VALUES IN (DEFAULT)` clause —
+	// an empty Rows with Kind "in" is this form, never an unprojected
+	// tuple list.
+	Default bool             `json:"default,omitempty"`
+	Rows    [][]BoundLiteral `json:"rows,omitempty"`
+}
+
+// PartitionDef is one declared partition member: its name, its declared
+// boundary clause when the method carries one, and the subpartition mark
+// that keeps member-level operations unproven on that member. The model
+// never fabricates a boundary — a member whose clause exists but whose
+// items cannot be projected keeps Bound with unproven rows.
+type PartitionDef struct {
+	Name           string          `json:"name,omitempty"`
+	Bound          *PartitionBound `json:"bound,omitempty"`
+	Subpartitioned bool            `json:"subpartitioned,omitempty"`
+}
+
+// PartitionScheme is a partitioning declaration in normalized form — the
+// payload of an ALTER ... PARTITION BY action: the method (same lowercase
+// vocabulary as DDL.PartitionType), the COLUMNS member names, the
+// partitioning expression's structured identity for expr methods, the
+// authored PARTITIONS n count, the explicit member definitions, and the
+// subpartition/interval marks that keep the member space unproven.
+type PartitionScheme struct {
+	Type           string           `json:"type,omitempty"`
+	Columns        []string         `json:"columns,omitempty"`
+	Expr           *ExpressionFacts `json:"expression,omitempty"`
+	Count          *uint64          `json:"count,omitempty"`
+	Defs           []PartitionDef   `json:"defs,omitempty"`
+	Subpartitioned bool             `json:"subpartitioned,omitempty"`
+	SubType        string           `json:"sub_type,omitempty"`
+	Interval       bool             `json:"interval,omitempty"`
+}
+
+// ClonePartitionDefs deep-copies a member-definition list; bound rows and
+// expression facts are value/reference copies per item.
+func ClonePartitionDefs(in []PartitionDef) []PartitionDef {
+	if in == nil {
+		return nil
+	}
+	out := make([]PartitionDef, len(in))
+	for i, def := range in {
+		out[i] = def
+		if def.Bound != nil {
+			bound := *def.Bound
+			if def.Bound.Rows != nil {
+				bound.Rows = make([][]BoundLiteral, len(def.Bound.Rows))
+				for j, row := range def.Bound.Rows {
+					bound.Rows[j] = make([]BoundLiteral, len(row))
+					for k, item := range row {
+						bound.Rows[j][k] = item
+						if item.Expression != nil {
+							bound.Rows[j][k].Expression = CloneExpressionFacts(item.Expression)
+						}
+					}
+				}
+			}
+			out[i].Bound = &bound
+		}
+	}
+	return out
+}
+
+// ClonePartitionScheme deep-copies a partitioning declaration.
+func ClonePartitionScheme(in *PartitionScheme) *PartitionScheme {
+	if in == nil {
+		return nil
+	}
+	out := *in
+	out.Columns = append([]string(nil), in.Columns...)
+	out.Expr = CloneExpressionFacts(in.Expr)
+	out.Defs = ClonePartitionDefs(in.Defs)
+	if in.Count != nil {
+		count := *in.Count
+		out.Count = &count
+	}
 	return &out
 }
 
@@ -688,6 +821,20 @@ type Alter struct {
 	// the AST collapses the two, so "with" never proves the keyword was
 	// explicit. The clause is never product-verified compatibility.
 	ExchangeValidation string `json:"exchange_validation,omitempty"`
+	// PartitionDefs carries the member definitions an ADD PARTITION or
+	// REORGANIZE PARTITION ... INTO clause declares, with names and
+	// boundary clauses in authored order. nil when the action declares no
+	// member definitions (PARTITIONS n / bare forms).
+	PartitionDefs []PartitionDef `json:"partition_defs,omitempty"`
+	// PartitionCount carries the authored count of `ADD PARTITION
+	// PARTITIONS n` and `COALESCE PARTITION n`; nil when the clause names
+	// no count. Zero is never authored successfully — a written 0 stays
+	// nil here because the AST stores the absent marker the same way.
+	PartitionCount *uint64 `json:"partition_count,omitempty"`
+	// PartitionScheme carries the new partitioning declaration of the
+	// `partition` action (ALTER TABLE ... PARTITION BY ...). nil on every
+	// other action.
+	PartitionScheme *PartitionScheme `json:"partition_scheme,omitempty"`
 	// UnextractedOptions names parsed table-option clauses that were dropped
 	// during extraction; see DDL.UnextractedOptions.
 	UnextractedOptions []string `json:"unextracted_options,omitempty"`

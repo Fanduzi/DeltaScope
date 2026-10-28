@@ -134,6 +134,12 @@ func renderListRulesText(resp listRulesResponse) string {
 			if i > 0 {
 				b.WriteString("  ")
 			}
+			if i == len(cols)-1 {
+				// The trailing column carries no alignment duty — writing it
+				// unpadded keeps the catalog compact as the rule set grows.
+				b.WriteString(col)
+				continue
+			}
 			fmt.Fprintf(&b, "%-*s", widths[i], col)
 		}
 		b.WriteByte('\n')

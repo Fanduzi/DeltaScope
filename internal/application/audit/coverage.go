@@ -47,6 +47,34 @@ var auditedAlterActionsMySQL = map[string]struct{}{
 	"drop_partition":     {},
 	"truncate_partition": {},
 	"exchange_partition": {},
+	// T14: partition topology and maintenance actions — each audited by
+	// its applicability/target/policy rules and modeled in ordered state.
+	// TiDB audits only the five actions that execute there; the six
+	// maintenance ops are vendor refusals (8200) on TiDB and stay
+	// non-audited aspects with vendor=true.
+	"add_partitions":               {},
+	"reorganize_partition":         {},
+	"coalesce_partitions":          {},
+	"partition":                    {},
+	"remove_partitioning":          {},
+	"rebuild_partition":            {},
+	"check_partitions":             {},
+	"optimize_partition":           {},
+	"repair_partition":             {},
+	"import_partition_tablespace":  {},
+	"discard_partition_tablespace": {},
+}
+
+// tidbVendorRefusedPartitionActions is the probed TiDB 8200 refusal set:
+// every named maintenance partition op is a vendor boundary on TiDB v8.5,
+// so the actions are not audited there — they emit vendor aspects.
+var tidbVendorRefusedPartitionActions = map[string]struct{}{
+	"rebuild_partition":            {},
+	"check_partitions":             {},
+	"optimize_partition":           {},
+	"repair_partition":             {},
+	"import_partition_tablespace":  {},
+	"discard_partition_tablespace": {},
 }
 
 // auditedAlterActionsTiDB extends the shared audited set with the TiDB
@@ -58,6 +86,9 @@ var auditedAlterActionsMySQL = map[string]struct{}{
 var auditedAlterActionsTiDB = func() map[string]struct{} {
 	set := make(map[string]struct{}, len(auditedAlterActionsMySQL)+1)
 	for action := range auditedAlterActionsMySQL {
+		if _, refused := tidbVendorRefusedPartitionActions[action]; refused {
+			continue
+		}
 		set[action] = struct{}{}
 	}
 	set["placement_policy"] = struct{}{}
@@ -466,9 +497,11 @@ func statementCoverageAspects(dialect spec.Dialect, statement spec.Statement) []
 				partitionCombinationProven(ddl, statement) {
 				continue
 			}
-			// PLACEMENT POLICY is TiDB-only: under MySQL the action is a vendor
-			// boundary, not merely unaudited analysis.
-			vendor := dialect == spec.DialectMySQL && alter.Action == "placement_policy"
+			// PLACEMENT POLICY and the TiDB-only partition attribute/option
+			// forms are vendor boundaries under MySQL; under TiDB the six
+			// maintenance partition ops are proven vendor refusals (8200)
+			// — vendor aspects in both directions, never plain unaudited.
+			vendor := unauditedActionVendor(dialect, alter.Action)
 			gaps = append(gaps, aspectGap(
 				fmt.Sprintf("%s.%s", ddl.Operation, alter.Action), vendor,
 				map[string]any{"aspect": "action", "action": alter.Action},
@@ -520,6 +553,25 @@ func statementCoverageAspects(dialect spec.Dialect, statement spec.Statement) []
 				map[string]any{"aspect": "column_position", "action": alter.Action},
 			))
 		}
+		// Partition bound items the fact model could not project (a
+		// truncated or subquery-shaped bound expression) are a coverage
+		// boundary — comparable-literal bounds the rules could not
+		// adjudicate stay evidence gaps on the owning rule instead.
+		for _, def := range alter.PartitionDefs {
+			if partitionBoundUnproven(def.Bound) {
+				gaps = append(gaps, aspectGap(
+					fmt.Sprintf("%s.%s.partition_bound", ddl.Operation, alter.Action), false,
+					map[string]any{"aspect": "partition_bound", "action": alter.Action, "partition": def.Name},
+				))
+			}
+		}
+		if alter.PartitionScheme != nil && alter.PartitionScheme.Expr != nil &&
+			!alter.PartitionScheme.Expr.Known {
+			gaps = append(gaps, aspectGap(
+				fmt.Sprintf("%s.%s.partition_expression", ddl.Operation, alter.Action), false,
+				map[string]any{"aspect": "partition_expression", "action": alter.Action},
+			))
+		}
 		for _, option := range alter.UnextractedOptions {
 			gaps = append(gaps, aspectGap(
 				fmt.Sprintf("%s.option.%s", ddl.Operation, option), tidbOnlyTableOption(option, dialect),
@@ -528,6 +580,46 @@ func statementCoverageAspects(dialect spec.Dialect, statement spec.Statement) []
 		}
 	}
 	return gaps
+}
+
+// unauditedActionVendor reports whether a non-audited alter action is a
+// vendor boundary rather than merely unaudited analysis:
+//   - under MySQL: placement_policy and the TiDB-only partition
+//     attribute/option forms (grammar belongs to the other product — the
+//     statement refuses natively);
+//   - under TiDB: the six maintenance partition ops (proven 8200
+//     refusals). TiDB's own attribute/option forms stay plain unaudited —
+//     they execute there.
+func unauditedActionVendor(dialect spec.Dialect, action string) bool {
+	switch dialect {
+	case spec.DialectMySQL:
+		switch action {
+		case "placement_policy", "partition_attributes", "partition_options":
+			return true
+		}
+	case spec.DialectTiDB:
+		_, refused := tidbVendorRefusedPartitionActions[action]
+		return refused
+	}
+	return false
+}
+
+// partitionBoundUnproven reports whether a member bound carries a literal
+// item the fact model could not project — an expression item whose
+// structured facts never completed.
+func partitionBoundUnproven(bound *spec.PartitionBound) bool {
+	if bound == nil {
+		return false
+	}
+	for _, row := range bound.Rows {
+		for _, item := range row {
+			if item.Kind == spec.PartitionBoundExpression &&
+				(item.Expression == nil || !item.Expression.Known) {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 // partitionCombinationProven reports whether the ordered-state classifier

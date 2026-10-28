@@ -142,6 +142,10 @@ func corpusTableSnapshotToSpec(tableName, defaultSchema string, snapshot corpusT
 	if snapshot.PartitionNames != nil {
 		out.PartitionNames = append([]string{}, snapshot.PartitionNames...)
 	}
+	if snapshot.PartitionDescriptions != nil {
+		out.PartitionDescriptions = append([]string{}, snapshot.PartitionDescriptions...)
+		out.PartitionDefs = spec.CatalogPartitionDefs(out.PartitionNames, out.PartitionDescriptions, snapshot.PartitionType)
+	}
 	return out
 }
 

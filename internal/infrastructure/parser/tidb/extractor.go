@@ -271,6 +271,18 @@ func extractCreateTable(stmt *ast.CreateTableStmt, rawSQL string) *spec.DDL {
 	if stmt.Partition != nil {
 		ddl.PartitionType = partitionMethodName(stmt.Partition)
 		ddl.PartitionNames = partitionMemberNames(stmt.Partition)
+		ddl.PartitionDefs = partitionDefsFromAST(stmt.Partition.Definitions)
+		ddl.PartitionColumns = partitionColumnNames(stmt.Partition)
+		if stmt.Partition.Expr != nil {
+			facts := expressionFacts(stmt.Partition.Expr)
+			ddl.PartitionExpr = &facts
+		}
+		ddl.Subpartitioned = stmt.Partition.Sub != nil
+		for _, def := range stmt.Partition.Definitions {
+			if def != nil && len(def.Sub) > 0 {
+				ddl.Subpartitioned = true
+			}
+		}
 	}
 	if stmt.IfNotExists {
 		ddl.Options["if_not_exists"] = "true"
@@ -683,6 +695,16 @@ func extractAlterSpec(specification *ast.AlterTableSpec, clause string) spec.Alt
 			partitions = append(partitions, name.L)
 		}
 		alter.Partitions = partitions
+	}
+	if len(specification.PartDefinitions) > 0 {
+		alter.PartitionDefs = partitionDefsFromAST(specification.PartDefinitions)
+	}
+	if specification.Num > 0 {
+		count := specification.Num
+		alter.PartitionCount = &count
+	}
+	if specification.Tp == ast.AlterTablePartition && specification.Partition != nil {
+		alter.PartitionScheme = partitionSchemeFromAST(specification.Partition)
 	}
 	if specification.OnAllPartitions {
 		alter.AllPartitions = true
@@ -2195,19 +2217,10 @@ func partitionOptionNames(partition *ast.PartitionOptions) []string {
 // `range`, `list`, `hash`, `key`, `linear hash`, `linear key`,
 // `range columns`, `list columns` (the columns form is expressed by
 // ColumnNames on the RANGE/LIST types; LINEAR applies to HASH/KEY).
+// The classification lives in partitionMethodKind so subpartition method
+// nodes share it.
 func partitionMethodName(partition *ast.PartitionOptions) string {
-	base := strings.ToLower(partition.Tp.String())
-	switch partition.Tp {
-	case ast.PartitionTypeRange, ast.PartitionTypeList:
-		if len(partition.ColumnNames) > 0 {
-			return base + " columns"
-		}
-	case ast.PartitionTypeHash, ast.PartitionTypeKey:
-		if partition.Linear {
-			return "linear " + base
-		}
-	}
-	return base
+	return partitionMethodKind(&partition.PartitionMethod)
 }
 
 // maxPartitionMembers is the native member bound (MySQL refuses more than

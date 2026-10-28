@@ -616,6 +616,8 @@ func derivedCreateShape(dialect spec.Dialect, schema, table string, ddl *spec.DD
 		if ddl.PartitionNames != nil {
 			snapshot.PartitionNames = append([]string{}, ddl.PartitionNames...)
 		}
+		snapshot.PartitionDefs = spec.ClonePartitionDefs(ddl.PartitionDefs)
+		snapshot.Subpartitioned = ddl.Subpartitioned
 	} else {
 		// A declared-plain CREATE observes an empty member set, never an
 		// unobserved one.
@@ -1239,12 +1241,16 @@ func (s *batchState) applyDMLMutation(statement spec.Statement) {
 	}
 }
 
-// isPartitionAlterAction reports the T13 destructive/data-moving partition
-// actions. Other partition ops (ADD/REORGANIZE/COALESCE/maintenance) are T14
-// scope and stay unaudited aspects that invalidate via the fallback.
+// isPartitionAlterAction reports the partition ALTER actions whose ordered
+// post-state the batch state models — T13 destructive/data-moving actions
+// and the T14 topology/maintenance set.
 func isPartitionAlterAction(action string) bool {
 	switch action {
-	case "drop_partition", "truncate_partition", "exchange_partition":
+	case "drop_partition", "truncate_partition", "exchange_partition",
+		"add_partitions", "reorganize_partition", "coalesce_partitions",
+		"partition", "remove_partitioning",
+		"rebuild_partition", "check_partitions", "optimize_partition",
+		"repair_partition", "import_partition_tablespace", "discard_partition_tablespace":
 		return true
 	default:
 		return false
@@ -1340,110 +1346,121 @@ func partitionMixedOutcome(ddl *spec.DDL, version *spec.VersionIdentity) partiti
 }
 
 // partitionModifierOutcome applies the probed modifier matrix:
-//   - LOCK=DEFAULT combines on all anchors; other LOCK values are
-//     unprobed.
-//   - ALGORITHM=DEFAULT combines on all anchors; ALGORITHM=INPLACE
-//     combines with TRUNCATE/EXCHANGE on all anchors, combines with DROP
-//     on MySQL >=8 and TiDB, refuses on MySQL 5.x (1846), and stays
-//     unproven when no version fact resolved. Other algorithms are
-//     unprobed.
+//   - LOCK=DEFAULT / ALGORITHM=DEFAULT combine on all anchors.
+//   - PARTITION BY and REMOVE PARTITIONING refuse any authored modifier at
+//     the grammar layer (1064 on every probed anchor).
+//   - ALGORITHM=INPLACE combines with TRUNCATE/EXCHANGE on all anchors,
+//     combines with DROP on MySQL >=8 and TiDB, refuses on MySQL 5.x
+//     (1846), and stays unproven when no version fact resolved. Other
+//     algorithms are unprobed for the T13 actions.
+//   - T14 actions: MySQL 5.x refuses non-default modifiers on the probed
+//     ops (1846, or 1064 for scheme-changing actions); MySQL >=8 accepts
+//     INPLACE+{REORGANIZE/ADD/COALESCE/REBUILD} and LOCK=NONE+ADD and
+//     refuses COPY/LOCK=NONE+REORGANIZE; TiDB accepts INPLACE+{ADD,
+//     COALESCE} and LOCK=NONE+ADD, while modifiers before REORGANIZE/
+//     maintenance actions are grammar-level or vendor refusals. Unprobed
+//     cells stay unproven.
 func partitionModifierOutcome(action, value, partitionAction string, version *spec.VersionIdentity) partitionOutcome {
-	switch action {
-	case "lock":
-		if value == "default" {
-			return partitionOutcomeCombinable
-		}
+	if action != "algorithm" && action != "lock" {
 		return partitionOutcomeUnproven
-	case "algorithm":
-		switch value {
-		case "default":
-			return partitionOutcomeCombinable
-		case "inplace":
-			if partitionAction != "drop_partition" {
+	}
+	if value == "default" {
+		return partitionOutcomeCombinable
+	}
+	// Scheme-changing actions refuse any authored modifier at the grammar
+	// layer on every anchor (1064 — probed p13 mix-inplace-remove/-pby).
+	if partitionAction == "partition" || partitionAction == "remove_partitioning" {
+		return partitionOutcomeRefused
+	}
+	if version == nil {
+		return partitionOutcomeUnproven
+	}
+	switch version.Product {
+	case spec.VersionProductTiDB:
+		switch partitionAction {
+		case "add_partitions", "coalesce_partitions":
+			if (action == "algorithm" && value == "inplace") ||
+				(action == "lock" && value == "none") {
 				return partitionOutcomeCombinable
 			}
-			if version == nil {
-				return partitionOutcomeUnproven
-			}
-			switch version.Product {
-			case spec.VersionProductTiDB:
+			return partitionOutcomeUnproven
+		case "drop_partition", "truncate_partition", "exchange_partition":
+			if action == "algorithm" && value == "inplace" {
 				return partitionOutcomeCombinable
-			case spec.VersionProductMySQL:
-				if version.Major >= 8 {
-					return partitionOutcomeCombinable
-				}
-				return partitionOutcomeRefused
 			}
 			return partitionOutcomeUnproven
 		default:
+			// REORGANIZE under a modifier is a grammar refusal (1064);
+			// the maintenance actions are vendor refusals (8200).
+			return partitionOutcomeRefused
+		}
+	case spec.VersionProductMySQL:
+		if version.Major < 8 {
+			switch partitionAction {
+			case "truncate_partition", "exchange_partition":
+				if action == "algorithm" && value == "inplace" {
+					return partitionOutcomeCombinable
+				}
+				return partitionOutcomeUnproven
+			case "check_partitions", "optimize_partition", "repair_partition",
+				"import_partition_tablespace", "discard_partition_tablespace":
+				// Only REORGANIZE/ADD/COALESCE/REBUILD/DROP modifier
+				// refusals were probed on 5.x.
+				return partitionOutcomeUnproven
+			case "drop_partition":
+				if action == "lock" {
+					// Non-default LOCK values stayed unprobed under T13.
+					return partitionOutcomeUnproven
+				}
+				return partitionOutcomeRefused
+			default:
+				// REORGANIZE/ADD/COALESCE/REBUILD + non-default modifier
+				// refuse with 1846 (probed p13).
+				return partitionOutcomeRefused
+			}
+		}
+		// MySQL >= 8 probed matrix.
+		switch partitionAction {
+		case "add_partitions":
+			if (action == "algorithm" && value == "inplace") ||
+				(action == "lock" && value == "none") {
+				return partitionOutcomeCombinable
+			}
+			return partitionOutcomeUnproven
+		case "reorganize_partition":
+			switch {
+			case action == "algorithm" && value == "inplace":
+				return partitionOutcomeCombinable
+			case action == "algorithm" && value == "copy":
+				return partitionOutcomeRefused
+			case action == "lock" && value == "none":
+				return partitionOutcomeRefused
+			}
+			return partitionOutcomeUnproven
+		case "coalesce_partitions", "rebuild_partition":
+			if action == "algorithm" && value == "inplace" {
+				return partitionOutcomeCombinable
+			}
+			return partitionOutcomeUnproven
+		case "drop_partition", "truncate_partition", "exchange_partition":
+			if action == "algorithm" && value == "inplace" {
+				return partitionOutcomeCombinable
+			}
+			return partitionOutcomeUnproven
+		default:
+			// check/optimize/repair/import/discard under a modifier —
+			// unprobed on MySQL >=8.
 			return partitionOutcomeUnproven
 		}
 	}
 	return partitionOutcomeUnproven
 }
 
-// applyPartitionOperation publishes the shared successor for a single-action
-// partition ALTER. Member-level schema facts are invariant under every
-// outcome — partitions never add/remove/rename columns, indexes, or
-// constraints — while every data-derived statistic the action could have
-// moved or destroyed is dropped. The member directory carries its own
-// post-state rule:
-//   - DROP removes exactly the named members when the action is proven
-//     applicable, every named member is proven present, and a member
-//     survives — the directory minus the named set. A name the directory
-//     never carried, a drop consuming the whole member set, or a proven
-//     hash|key method is a proven native refusal (1507 / last-partition /
-//     1512), so the exact pre-state stands untouched. A method the
-//     snapshot never observed (or one outside the modeled vocabulary)
-//     leaves the outcome undecidable: the directory unvouches rather than
-//     publishing a removal it cannot prove or a retention it cannot
-//     vouch — every unrelated structural fact stays. TRUNCATE and
-//     EXCHANGE keep every member name.
-//   - An unobserved or incomplete directory (nil) never gains a member
-//     proof from the operation.
-//
-// EXCHANGE applies to both named identities. Unknown or absent entries are
-// left untouched: an unvouched table is never upgraded by an unproven
-// outcome.
-func (s *batchState) applyPartitionOperation(targets []spec.Table, alter *spec.Alter) {
-	for _, target := range targets {
-		key := s.keyFor(s.schema, target)
-		entry, ok := s.entries[key]
-		if !ok || entry.state != tablePresent || entry.shape == nil {
-			continue
-		}
-		if alter != nil && alter.Action == "drop_partition" && entry.shape.PartitionNames != nil {
-			// The drop is atomic: any named member absent from the proven
-			// directory — or a drop consuming the whole member set — is a
-			// proven native refusal under every method state (1507 /
-			// last-partition 1508-class), and a proven inapplicable
-			// method refuses outright (1512). Both keep the exact
-			// pre-state: no stats cleared, no directory changed.
-			members, provable := dropPartitionMembers(entry.shape.PartitionNames, alter)
-			outcome := partitionDropApplicability(entry.shape.PartitionType)
-			if !provable || outcome == partitionOutcomeRefused {
-				continue
-			}
-			shape := cloneTableSnapshot(entry.shape)
-			if outcome == partitionOutcomeUnproven {
-				// The method never answered — the drop may have executed
-				// or refused, so the member directory unvouches while
-				// the unaffected structural facts stay attached.
-				shape.PartitionNames = nil
-			} else {
-				shape.PartitionNames = members
-			}
-			clearMutationStats(shape)
-			clearModifyAffectedStats(shape)
-			s.entries[key] = &batchTableEntry{state: tablePresent, shape: shape, displaySchema: entry.displaySchema, displayTable: entry.displayTable}
-			continue
-		}
-		shape := cloneTableSnapshot(entry.shape)
-		clearMutationStats(shape)
-		clearModifyAffectedStats(shape)
-		s.entries[key] = &batchTableEntry{state: tablePresent, shape: shape, displaySchema: entry.displaySchema, displayTable: entry.displayTable}
-	}
-}
+// applyPartitionOperation's dispatch and per-action transitions live in
+// partition_transitions.go. The directory contract: proven refusals keep
+// the exact pre-state, proven executions publish the modeled member set,
+// and unproven outcomes unvouch the affected facts — never a guessed
+// member list, never a blanket tombstone.
 
 // partitionDropApplicability resolves DROP PARTITION against the observed
 // partition method — the action gate the directory publication consumes.
@@ -1570,6 +1587,12 @@ func cloneTableSnapshot(in *spec.TableSnapshot) *spec.TableSnapshot {
 		// append(nil, ...) would collapse an observed-empty set back to
 		// unobserved — keep the non-nil shape through the clone.
 		out.PartitionNames = append([]string{}, in.PartitionNames...)
+	}
+	if in.PartitionDescriptions != nil {
+		out.PartitionDescriptions = append([]string{}, in.PartitionDescriptions...)
+	}
+	if in.PartitionDefs != nil {
+		out.PartitionDefs = spec.ClonePartitionDefs(in.PartitionDefs)
 	}
 	return &out
 }

@@ -656,12 +656,12 @@ rows:
     subactions: ["ADD PARTITION", "REORGANIZE PARTITION ... INTO", "REMOVE PARTITIONING", "COALESCE PARTITION", "PARTITION BY (redefine)"]
     sql_shape: "ALTER TABLE t REORGANIZE PARTITION p0 INTO (PARTITION pa VALUES LESS THAN (50), PARTITION pb VALUES LESS THAN (100))"
     prerequisites: "existing scheme and boundary values"
-    status: parse_only
-    status_evidence: "2026-09-22 CLI probe: all forms parse silently with zero findings; boundary/redistribution semantics unchecked"
+    status: semantically_checked
+    status_evidence: "2026-09-22 CLI probe: all forms parse silently with zero findings; boundary/redistribution semantics unchecked. 2026-11-07 T14 (#93): ADD/REORGANIZE/COALESCE/PARTITION BY/REMOVE PARTITIONING promoted to audited — extraction carries partition method, member bounds (VALUES LESS THAN literal/MAXVALUE, LIST VALUES IN literals), source/target member identities, and declared partition definitions; ordered state publishes proven topology transitions per the p13 native matrix (1492/1493/1481/1495/1499/1505/1507/1508/1509/1514/1517/1519/1520 refusal classes; bound checks only on comparable numeric/MAXVALUE facts, uncomparable bounds owe evidence gaps not refusals). Eleven governance rules (warn/notice/forbid per frozen defaults incl. discard blocker) plus nine applicability + eight target rules bind the facts with per-consumed-fact gaps. Golden T14.json: 59/59 cases across mysql 5.7.44/8.0.46/8.4.10 + tidb v8.5.0 with live member-set/routing verification."
     targets: "source/target partitions, boundary values, rebuild-vs-metadata distinction"
     acceptance:
       dimensions: "boundary fidelity, data-preservation evidence, engine applicability"
-      refs: ["missing: owner adds topology fixtures and DB verification"]
+      refs: ["file:testdata/ddl-golden/T14.json", "file:internal/application/audit/partition_transitions.go", "file:internal/domain/rule/ddl/partition_topology_rules.go", "file:testdata/sql-corpus/mysql/ddl/findings/alter_table_partition_topology.sql", "file:docs/work-plans/t14-partition-topology/CONTRACT.md"]
     owner: T14
 
   - id: mysql.alter-table.partition-maintenance
@@ -672,12 +672,12 @@ rows:
     subactions: ["REBUILD/OPTIMIZE/ANALYZE/CHECK/REPAIR PARTITION"]
     sql_shape: "ALTER TABLE t OPTIMIZE PARTITION p0"
     prerequisites: "engine applicability varies by operation"
-    status: parse_only
-    status_evidence: "2026-09-22 CLI probe: all maintenance forms parse silently with zero findings"
+    status: semantically_checked
+    status_evidence: "2026-09-22 CLI probe: all maintenance forms parse silently with zero findings. 2026-11-07 T14 (#93): CHECK/REBUILD/REPAIR/OPTIMIZE/DISCARD/IMPORT PARTITION promoted to audited — hard-refusal classes (non-partitioned target 1505 on rebuild/discard/import; missing member 1507/1735) bind blocker applicability/target rules, while the natively probed soft-fail classes (non-partitioned or missing member under check/repair/optimize → rc=0 status-table rows) model as warning/notice findings, never fabricated refusals; DISCARD PARTITION TABLESPACE owns its own blocker rule. Maintenance actions preserve member directory but clear data-derived statistics. ANALYZE PARTITION stays outside the alter action space (parses as AnalyzeTableStmt). Golden T14.json covers all six operations incl. soft-fail evidence on mysql 8.0.46."
     targets: "table, partition list, operation kind, engine applicability"
     acceptance:
       dimensions: "per-operation classification, engine-boundary rows (not silent)"
-      refs: ["missing: owner adds per-operation fixtures"]
+      refs: ["file:testdata/ddl-golden/T14.json", "file:internal/application/audit/partition_transitions.go", "file:internal/domain/rule/ddl/partition_topology_rules.go", "file:docs/work-plans/t14-partition-topology/CONTRACT.md"]
     owner: T14
 
   - id: mysql.alter-table.tablespace-ops
@@ -1561,12 +1561,12 @@ rows:
     subactions: ["REORGANIZE", "COALESCE", "REMOVE PARTITIONING (copies data, rebuilds indexes)"]
     sql_shape: "ALTER TABLE t REORGANIZE PARTITION p0 INTO (PARTITION pa VALUES LESS THAN (50))"
     prerequisites: "TiDB partition semantics differ (REMOVE copies data)"
-    status: parse_only
-    status_evidence: "2026-09-22 CLI probe: REORGANIZE/COALESCE/REMOVE all parse silently with zero findings. 2026-09-23 T03 (#82): unaudited partition sub-actions now surface per-action unsupported evidence (alter_table.reorganize_partition et al.) and coverage=incomplete until T14 models them. 2026-10-27 T13 (#92): DROP/TRUNCATE/EXCHANGE split out to tidb.alter-table.partition-destructive (semantically_checked); this row keeps only the T14 topology remainder."
+    status: semantically_checked
+    status_evidence: "2026-09-22 CLI probe: REORGANIZE/COALESCE/REMOVE all parse silently with zero findings. 2026-09-23 T03 (#82): unaudited partition sub-actions now surface per-action unsupported evidence (alter_table.reorganize_partition et al.) and coverage=incomplete until T14 models them. 2026-10-27 T13 (#92): DROP/TRUNCATE/EXCHANGE split out to tidb.alter-table.partition-destructive (semantically_checked); this row keeps only the T14 topology remainder. 2026-11-07 T14 (#93): REORGANIZE/ADD/COALESCE/PARTITION BY/REMOVE PARTITIONING promoted to audited on v8.5.0 with TiDB-native refusal classes (hash/key-method reorg 8200, missing source 1567, non-consecutive sources 8200, bound violation 1493, bare ADD on hash no-op vs MySQL implicit member); the TiDB-refused maintenance set (REBUILD/OPTIMIZE/REPAIR/CHECK/DISCARD/IMPORT PARTITION, native 8200) keeps per-action vendor-boundary aspects — supported topology semantics never copy MySQL error codes onto TiDB. Golden T14.json tidb85 cases verify live member sets post-REORGANIZE/REMOVE."
     targets: "rebuild/redistribution scope, boundary values, TiDB-specific REMOVE effects"
     acceptance:
       dimensions: "TiDB rebuild facts, topology fidelity, REMOVE data-copy evidence"
-      refs: ["missing: owner adds TiDB partition topology fixtures"]
+      refs: ["file:testdata/ddl-golden/T14.json", "file:internal/application/audit/partition_transitions.go", "file:testdata/sql-corpus/tidb/ddl/findings/alter_table_partition_topology.sql", "file:docs/work-plans/t14-partition-topology/CONTRACT.md"]
     owner: T14
 
   - id: tidb.alter-table.ttl

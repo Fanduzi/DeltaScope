@@ -464,6 +464,157 @@ rules:
     params:
       forbid: true
 
+  ddl.alter.add_partition.applicability:
+    enabled: true
+    level: blocker
+    params:
+
+  ddl.alter.add_partition.target:
+    enabled: true
+    level: blocker
+    params:
+
+  ddl.alter.add_partition.warn:
+    enabled: true
+    level: warning
+    params:
+
+  ddl.alter.check_partition.applicability:
+    enabled: true
+    level: warning
+    params:
+
+  ddl.alter.check_partition.target:
+    enabled: true
+    level: warning
+    params:
+
+  ddl.alter.check_partition.warn:
+    enabled: true
+    level: notice
+    params:
+
+  ddl.alter.coalesce_partition.applicability:
+    enabled: true
+    level: blocker
+    params:
+
+  ddl.alter.coalesce_partition.warn:
+    enabled: true
+    level: warning
+    params:
+
+  ddl.alter.discard_partition_tablespace.applicability:
+    enabled: true
+    level: blocker
+    params:
+
+  ddl.alter.discard_partition_tablespace.target:
+    enabled: true
+    level: blocker
+    params:
+
+  ddl.alter.discard_partition_tablespace.forbid:
+    enabled: true
+    level: blocker
+    params:
+      forbid: true
+
+  ddl.alter.import_partition_tablespace.applicability:
+    enabled: true
+    level: blocker
+    params:
+
+  ddl.alter.import_partition_tablespace.target:
+    enabled: true
+    level: blocker
+    params:
+
+  ddl.alter.import_partition_tablespace.warn:
+    enabled: true
+    level: warning
+    params:
+
+  ddl.alter.optimize_partition.applicability:
+    enabled: true
+    level: warning
+    params:
+
+  ddl.alter.optimize_partition.target:
+    enabled: true
+    level: warning
+    params:
+
+  ddl.alter.optimize_partition.warn:
+    enabled: true
+    level: warning
+    params:
+
+  ddl.alter.partition_by.applicability:
+    enabled: true
+    level: blocker
+    params:
+
+  ddl.alter.partition_by.warn:
+    enabled: true
+    level: warning
+    params:
+
+  ddl.alter.rebuild_partition.applicability:
+    enabled: true
+    level: blocker
+    params:
+
+  ddl.alter.rebuild_partition.target:
+    enabled: true
+    level: blocker
+    params:
+
+  ddl.alter.rebuild_partition.warn:
+    enabled: true
+    level: warning
+    params:
+
+  ddl.alter.remove_partitioning.applicability:
+    enabled: true
+    level: blocker
+    params:
+
+  ddl.alter.remove_partitioning.warn:
+    enabled: true
+    level: warning
+    params:
+
+  ddl.alter.reorganize_partition.applicability:
+    enabled: true
+    level: blocker
+    params:
+
+  ddl.alter.reorganize_partition.target:
+    enabled: true
+    level: blocker
+    params:
+
+  ddl.alter.reorganize_partition.warn:
+    enabled: true
+    level: warning
+    params:
+
+  ddl.alter.repair_partition.applicability:
+    enabled: true
+    level: warning
+    params:
+
+  ddl.alter.repair_partition.target:
+    enabled: true
+    level: warning
+    params:
+
+  ddl.alter.repair_partition.warn:
+    enabled: true
+    level: warning
+    params:
+
   ddl.alter.table_option.compatibility.require:
     enabled: true
     level: warning

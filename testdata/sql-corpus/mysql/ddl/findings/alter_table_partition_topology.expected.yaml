@@ -1,0 +1,90 @@
+name: alter_table_partition_topology
+dialect: mysql
+category: ddl
+expect:
+  parse_ok: true
+  statements:
+    count: 32
+  unsupported:
+    count: 0
+  findings:
+    include:
+      - ddl.alter.reorganize_partition.warn
+      - ddl.alter.reorganize_partition.applicability
+      - ddl.alter.reorganize_partition.target
+      - ddl.alter.add_partition.warn
+      - ddl.alter.add_partition.applicability
+      - ddl.alter.add_partition.target
+      - ddl.alter.coalesce_partition.warn
+      - ddl.alter.coalesce_partition.applicability
+      - ddl.alter.partition_by.warn
+      - ddl.alter.partition_by.applicability
+      - ddl.alter.remove_partitioning.warn
+      - ddl.alter.remove_partitioning.applicability
+      - ddl.alter.rebuild_partition.warn
+      - ddl.alter.rebuild_partition.applicability
+      - ddl.alter.rebuild_partition.target
+      - ddl.alter.check_partition.warn
+      - ddl.alter.check_partition.applicability
+      - ddl.alter.check_partition.target
+      - ddl.alter.optimize_partition.warn
+      - ddl.alter.optimize_partition.applicability
+      - ddl.alter.optimize_partition.target
+      - ddl.alter.repair_partition.warn
+      - ddl.alter.repair_partition.applicability
+      - ddl.alter.repair_partition.target
+      - ddl.alter.discard_partition_tablespace.forbid
+      - ddl.alter.discard_partition_tablespace.applicability
+      - ddl.alter.discard_partition_tablespace.target
+      - ddl.alter.import_partition_tablespace.warn
+      - ddl.alter.import_partition_tablespace.applicability
+      - ddl.alter.import_partition_tablespace.target
+metadata:
+  schema: golden
+  instance:
+    version: 8.0.46
+  tables:
+    rp:
+      exists: true
+      options:
+        engine: InnoDB
+      partitioned: true
+      partition_type: range
+      partition_names: [p0, p1]
+      partition_descriptions: ['200', '400']
+      columns:
+        - name: id
+          type: int
+          not_null: true
+    lp:
+      exists: true
+      options:
+        engine: InnoDB
+      partitioned: true
+      partition_type: list
+      partition_names: [p0, p1]
+      partition_descriptions: ['(1,2)', '(3)']
+      columns:
+        - name: id
+          type: int
+          not_null: true
+    hp:
+      exists: true
+      options:
+        engine: InnoDB
+      partitioned: true
+      partition_type: hash
+      partition_names: [p0, p1, p2, p3]
+      columns:
+        - name: id
+          type: int
+          not_null: true
+    np:
+      exists: true
+      options:
+        engine: InnoDB
+      partitioned: false
+      columns:
+        - name: id
+          type: int
+          not_null: true

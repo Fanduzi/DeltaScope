@@ -167,6 +167,29 @@ type TableSnapshot struct {
 	// order. nil means unobserved; a non-nil empty slice is an
 	// observed-empty set (a known-non-partitioned table).
 	PartitionNames []string `json:"-"`
+
+	// PartitionDescriptions carries the catalog PARTITION_DESCRIPTION
+	// text per member, aligned 1:1 with PartitionNames (RANGE keeps the
+	// authored bound text like `120`/`'abc'`/`MAXVALUE`, LIST the value
+	// list `2,5`, HASH/KEY members carry empty text). nil means
+	// unobserved — the fact lives only where names were observed.
+	PartitionDescriptions []string `json:"-"`
+
+	// PartitionDefs carries the member directory with boundary clauses in
+	// comparable literal form — projected from declared definitions on
+	// batch-derived shapes and from the catalog description text on
+	// provider shapes, so bound comparisons read one field on either
+	// side. nil when the member space was never observed; a member whose
+	// bound could not project keeps a clause without rows (unproven —
+	// never a claimed-empty boundary).
+	PartitionDefs []PartitionDef `json:"-"`
+
+	// Subpartitioned reports that the catalog showed leaf-level member
+	// rows (SUBPARTITION_NAME non-NULL). On such tables the top-level
+	// member list is not the member space, so PartitionNames stays
+	// unobserved; the flag distinguishes that incomplete projection from
+	// a simply-unanswered catalog probe.
+	Subpartitioned bool `json:"-"`
 }
 
 // HasColumn reports whether the snapshot contains a column by name, case-insensitively.

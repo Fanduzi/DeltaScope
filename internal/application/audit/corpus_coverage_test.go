@@ -55,6 +55,28 @@ func corpusRuleDialectTargets(ruleID string) []string {
 		// TiDB accepts every ALTER CHECK|CONSTRAINT enforcement form, so the
 		// incompatible finding is a MySQL-only applicability result.
 		return []string{"mysql"}
+	// T14: the six maintenance partition ops are vendor refusals on TiDB
+	// (8200) — every rule bound to them can only fire under MySQL.
+	case
+		"ddl.alter.rebuild_partition.warn",
+		"ddl.alter.rebuild_partition.applicability",
+		"ddl.alter.rebuild_partition.target",
+		"ddl.alter.check_partition.warn",
+		"ddl.alter.check_partition.applicability",
+		"ddl.alter.check_partition.target",
+		"ddl.alter.optimize_partition.warn",
+		"ddl.alter.optimize_partition.applicability",
+		"ddl.alter.optimize_partition.target",
+		"ddl.alter.repair_partition.warn",
+		"ddl.alter.repair_partition.applicability",
+		"ddl.alter.repair_partition.target",
+		"ddl.alter.import_partition_tablespace.warn",
+		"ddl.alter.import_partition_tablespace.applicability",
+		"ddl.alter.import_partition_tablespace.target",
+		"ddl.alter.discard_partition_tablespace.forbid",
+		"ddl.alter.discard_partition_tablespace.applicability",
+		"ddl.alter.discard_partition_tablespace.target":
+		return []string{"mysql"}
 	}
 	if strings.HasPrefix(ruleID, "ddl.pg.") || isPostgreSQLOnlyRule(ruleID) {
 		return []string{"postgresql"}
@@ -165,6 +187,38 @@ func isMySQLFamilyOnlyRule(ruleID string) bool {
 		"ddl.alter.truncate_partition.target",
 		"ddl.alter.exchange_partition.target",
 		"ddl.alter.exchange_partition.counterpart",
+		// T14 partition topology/maintenance family — MySQL-family
+		// partition facts only; PostgreSQL never binds these actions.
+		"ddl.alter.reorganize_partition.warn",
+		"ddl.alter.add_partition.warn",
+		"ddl.alter.coalesce_partition.warn",
+		"ddl.alter.partition_by.warn",
+		"ddl.alter.remove_partitioning.warn",
+		"ddl.alter.rebuild_partition.warn",
+		"ddl.alter.optimize_partition.warn",
+		"ddl.alter.repair_partition.warn",
+		"ddl.alter.check_partition.warn",
+		"ddl.alter.import_partition_tablespace.warn",
+		"ddl.alter.discard_partition_tablespace.forbid",
+		"ddl.alter.reorganize_partition.applicability",
+		"ddl.alter.add_partition.applicability",
+		"ddl.alter.coalesce_partition.applicability",
+		"ddl.alter.partition_by.applicability",
+		"ddl.alter.remove_partitioning.applicability",
+		"ddl.alter.rebuild_partition.applicability",
+		"ddl.alter.optimize_partition.applicability",
+		"ddl.alter.repair_partition.applicability",
+		"ddl.alter.check_partition.applicability",
+		"ddl.alter.import_partition_tablespace.applicability",
+		"ddl.alter.discard_partition_tablespace.applicability",
+		"ddl.alter.reorganize_partition.target",
+		"ddl.alter.add_partition.target",
+		"ddl.alter.rebuild_partition.target",
+		"ddl.alter.optimize_partition.target",
+		"ddl.alter.repair_partition.target",
+		"ddl.alter.check_partition.target",
+		"ddl.alter.import_partition_tablespace.target",
+		"ddl.alter.discard_partition_tablespace.target",
 		"ddl.alter.alter_index.exists.require",
 		"ddl.index.invisible.forbid",
 		"ddl.index.advanced.compatibility.require",

@@ -74,6 +74,135 @@ func ddlAlterRules() map[string]RulePolicy {
 			Enabled: true,
 			Level:   rule.LevelBlocker,
 		},
+		// T14 partition topology + maintenance (frozen per CONTRACT §6):
+		// policy findings warn on redistribution/rewrite risk; DISCARD
+		// forbids directly as data destruction; CHECK is read-only notice.
+		"ddl.alter.reorganize_partition.warn": {
+			Enabled: true,
+			Level:   rule.LevelWarning,
+		},
+		"ddl.alter.add_partition.warn": {
+			Enabled: true,
+			Level:   rule.LevelWarning,
+		},
+		"ddl.alter.coalesce_partition.warn": {
+			Enabled: true,
+			Level:   rule.LevelWarning,
+		},
+		"ddl.alter.partition_by.warn": {
+			Enabled: true,
+			Level:   rule.LevelWarning,
+		},
+		"ddl.alter.remove_partitioning.warn": {
+			Enabled: true,
+			Level:   rule.LevelWarning,
+		},
+		"ddl.alter.rebuild_partition.warn": {
+			Enabled: true,
+			Level:   rule.LevelWarning,
+		},
+		"ddl.alter.optimize_partition.warn": {
+			Enabled: true,
+			Level:   rule.LevelWarning,
+		},
+		"ddl.alter.repair_partition.warn": {
+			Enabled: true,
+			Level:   rule.LevelWarning,
+		},
+		"ddl.alter.check_partition.warn": {
+			Enabled: true,
+			Level:   rule.LevelNotice,
+		},
+		"ddl.alter.import_partition_tablespace.warn": {
+			Enabled: true,
+			Level:   rule.LevelWarning,
+		},
+		"ddl.alter.discard_partition_tablespace.forbid": {
+			Enabled: true,
+			Level:   rule.LevelBlocker,
+			Params: map[string]any{
+				"forbid": true,
+			},
+		},
+		// T14 applicability + member-target semantic checks: proven refusal
+		// cells block; soft-fail cells (check/optimize/repair targets and
+		// non-partitioned soft ops) report at warning level.
+		"ddl.alter.reorganize_partition.applicability": {
+			Enabled: true,
+			Level:   rule.LevelBlocker,
+		},
+		"ddl.alter.add_partition.applicability": {
+			Enabled: true,
+			Level:   rule.LevelBlocker,
+		},
+		"ddl.alter.coalesce_partition.applicability": {
+			Enabled: true,
+			Level:   rule.LevelBlocker,
+		},
+		"ddl.alter.partition_by.applicability": {
+			Enabled: true,
+			Level:   rule.LevelBlocker,
+		},
+		"ddl.alter.remove_partitioning.applicability": {
+			Enabled: true,
+			Level:   rule.LevelBlocker,
+		},
+		"ddl.alter.rebuild_partition.applicability": {
+			Enabled: true,
+			Level:   rule.LevelBlocker,
+		},
+		"ddl.alter.optimize_partition.applicability": {
+			Enabled: true,
+			Level:   rule.LevelWarning,
+		},
+		"ddl.alter.repair_partition.applicability": {
+			Enabled: true,
+			Level:   rule.LevelWarning,
+		},
+		"ddl.alter.check_partition.applicability": {
+			Enabled: true,
+			Level:   rule.LevelWarning,
+		},
+		"ddl.alter.import_partition_tablespace.applicability": {
+			Enabled: true,
+			Level:   rule.LevelBlocker,
+		},
+		"ddl.alter.discard_partition_tablespace.applicability": {
+			Enabled: true,
+			Level:   rule.LevelBlocker,
+		},
+		"ddl.alter.reorganize_partition.target": {
+			Enabled: true,
+			Level:   rule.LevelBlocker,
+		},
+		"ddl.alter.add_partition.target": {
+			Enabled: true,
+			Level:   rule.LevelBlocker,
+		},
+		"ddl.alter.rebuild_partition.target": {
+			Enabled: true,
+			Level:   rule.LevelBlocker,
+		},
+		"ddl.alter.optimize_partition.target": {
+			Enabled: true,
+			Level:   rule.LevelWarning,
+		},
+		"ddl.alter.repair_partition.target": {
+			Enabled: true,
+			Level:   rule.LevelWarning,
+		},
+		"ddl.alter.check_partition.target": {
+			Enabled: true,
+			Level:   rule.LevelWarning,
+		},
+		"ddl.alter.import_partition_tablespace.target": {
+			Enabled: true,
+			Level:   rule.LevelBlocker,
+		},
+		"ddl.alter.discard_partition_tablespace.target": {
+			Enabled: true,
+			Level:   rule.LevelBlocker,
+		},
 		"ddl.alter.rename_table.forbid": {
 			Enabled: true,
 			Level:   rule.LevelBlocker,

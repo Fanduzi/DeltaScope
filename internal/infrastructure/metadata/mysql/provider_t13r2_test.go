@@ -33,10 +33,10 @@ func TestT13R2SubpartitionedCatalogKeepsNamesUnobserved(t *testing.T) {
 			columns: []string{"index_name", "non_unique", "index_type", "column_name", "cardinality", "sub_part", "collation", "is_visible", "expression"},
 		},
 		"information_schema.partitions": {
-			columns: []string{"partition_method", "partition_name", "subpartition_name"},
+			columns: []string{"partition_method", "partition_name", "subpartition_name", "partition_description"},
 			rows: [][]driver.Value{
-				{"RANGE", "p0", "p0sp0"}, {"RANGE", "p0", "p0sp1"},
-				{"RANGE", "p1", "p1sp0"}, {"RANGE", "p1", "p1sp1"},
+				{"RANGE", "p0", "p0sp0", "100"}, {"RANGE", "p0", "p0sp1", "100"},
+				{"RANGE", "p1", "p1sp0", "200"}, {"RANGE", "p1", "p1sp1", "200"},
 			},
 		},
 		"table_constraints": {columns: []string{"count"}, rows: [][]driver.Value{{1}}},
@@ -74,8 +74,8 @@ func TestT13R2PlainCatalogStillComplete(t *testing.T) {
 			columns: []string{"index_name", "non_unique", "index_type", "column_name", "cardinality", "sub_part", "collation", "is_visible", "expression"},
 		},
 		"information_schema.partitions": {
-			columns: []string{"partition_method", "partition_name", "subpartition_name"},
-			rows:    [][]driver.Value{{"RANGE", "p0", nil}, {"RANGE", "p1", nil}},
+			columns: []string{"partition_method", "partition_name", "subpartition_name", "partition_description"},
+			rows:    [][]driver.Value{{"RANGE", "p0", nil, "100"}, {"RANGE", "p1", nil, "200"}},
 		},
 		"table_constraints": {columns: []string{"count"}, rows: [][]driver.Value{{1}}},
 	})

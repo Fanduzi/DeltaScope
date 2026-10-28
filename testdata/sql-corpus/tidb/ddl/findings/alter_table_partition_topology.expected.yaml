@@ -1,0 +1,60 @@
+name: alter_table_partition_topology
+dialect: tidb
+category: ddl
+expect:
+  parse_ok: true
+  statements:
+    count: 12
+  unsupported:
+    count: 0
+  findings:
+    include:
+      - ddl.alter.reorganize_partition.warn
+      - ddl.alter.reorganize_partition.applicability
+      - ddl.alter.reorganize_partition.target
+      - ddl.alter.add_partition.warn
+      - ddl.alter.add_partition.applicability
+      - ddl.alter.add_partition.target
+      - ddl.alter.coalesce_partition.warn
+      - ddl.alter.coalesce_partition.applicability
+      - ddl.alter.partition_by.warn
+      - ddl.alter.partition_by.applicability
+      - ddl.alter.remove_partitioning.warn
+      - ddl.alter.remove_partitioning.applicability
+metadata:
+  schema: golden
+  instance:
+    version: "8.0.11-TiDB-v8.5.0"
+  tables:
+    rp:
+      exists: true
+      options:
+        engine: InnoDB
+      partitioned: true
+      partition_type: range
+      partition_names: [p0, p1]
+      partition_descriptions: ['200', '400']
+      columns:
+        - name: id
+          type: int
+          not_null: true
+    hp:
+      exists: true
+      options:
+        engine: InnoDB
+      partitioned: true
+      partition_type: hash
+      partition_names: [p0, p1, p2, p3]
+      columns:
+        - name: id
+          type: int
+          not_null: true
+    np:
+      exists: true
+      options:
+        engine: InnoDB
+      partitioned: false
+      columns:
+        - name: id
+          type: int
+          not_null: true
