@@ -1,0 +1,273 @@
+{
+  "case_id": "T14.meta.t14-tidb85-inplace-coalesce",
+  "kind": "cli_metadata",
+  "cli_case": "t14-tidb85-inplace-coalesce",
+  "anchor": "tidb85",
+  "dialect": "tidb",
+  "input_sql": "ALTER TABLE t14h ALGORITHM=INPLACE, COALESCE PARTITION 1;",
+  "policy_profile": "t14-coalesce",
+  "policy_path": "/private/tmp/ddl-golden-final/T14/T14/golden-policy-t14-coalesce.yaml",
+  "connect": {
+    "host": "127.0.0.1",
+    "port": 24000,
+    "user": "root",
+    "schema": "golden"
+  },
+  "expected": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+      "complete"
+    ],
+    "evidence_gaps": 0,
+    "rule_summary_applicable": 2,
+    "finding_entries": [
+      {
+        "index": 0,
+        "rule_id": "ddl.alter.coalesce_partition.warn",
+        "level": "warning"
+      }
+    ],
+    "version": {
+      "product": "tidb",
+      "version": "8.5.0"
+    }
+  },
+  "actual": {
+    "database": {
+      "product": "tidb",
+      "image": "pingcap/tidb:v8.5.0",
+      "image_digest": "pingcap/tidb@sha256:490861bd4a2fa643dbe76b77ffecafcad66e6a42774e580b82f4ec2429a80e57",
+      "container": "deltascope-ddl-golden-tidb85",
+      "reachable": true,
+      "version": "8.0.11-TiDB-v8.5.0"
+    },
+    "setup": [
+      {
+        "name": "create-hash-fixture",
+        "sql": "CREATE TABLE t14h (id INT) ENGINE=InnoDB PARTITION BY HASH(id) PARTITIONS 4",
+        "rc": 0,
+        "stdout": "",
+        "stderr": ""
+      }
+    ],
+    "post_verify": [],
+    "execute": [
+      {
+        "name": "apply-inplace-coalesce",
+        "sql": "ALTER TABLE t14h ALGORITHM=INPLACE, COALESCE PARTITION 1",
+        "rc": 0,
+        "stdout": "",
+        "stderr": ""
+      }
+    ],
+    "structure": [],
+    "teardown": [
+      {
+        "name": "drop-fixture",
+        "sql": "DROP TABLE IF EXISTS t14h",
+        "rc": 0,
+        "stderr": ""
+      }
+    ],
+    "exit": 1,
+    "stdout": "{\"verdict\":\"review\",\"coverage\":{\"status\":\"complete\"},\"summary\":{\"statements\":1,\"blockers\":0,\"warnings\":1,\"notices\":0},\"statements\":[{\"index\":0,\"kind\":\"ddl\",\"raw_sql\":\"ALTER TABLE t14h ALGORITHM=INPLACE, COALESCE PARTITION 1;\",\"normalized_sql\":\"ALTER TABLE t14h ALGORITHM=INPLACE, COALESCE PARTITION 1\",\"findings\":[{\"rule_id\":\"ddl.alter.coalesce_partition.warn\",\"level\":\"warning\",\"message\":\"ALTER TABLE coalesce partition removes members and redistributes their rows across the survivors\",\"statement_kind\":\"ddl\",\"location\":{\"line\":1,\"column\":1},\"suggestion\":\"verify the retained member count and the redistribution window before shipping\",\"metadata\":{\"action\":\"coalesce_partitions\",\"table\":\"t14h\"},\"explanation\":{\"summary\":\"Warn on DDL alter coalesce partition warn\",\"why\":\"The statement reached a caution rule that highlights an operational trade-off.\",\"risk\":\"Ignoring this rule can weaken schema-governance guarantees and make changes harder to review safely.\",\"suggestion\":\"verify the retained member count and the redistribution window before shipping\"}}],\"coverage\":{\"status\":\"complete\"}}],\"version\":{\"product\":\"tidb\",\"version\":\"8.5.0\",\"major\":8,\"minor\":5,\"patch\":0,\"source\":\"observed\",\"validated_range\":true},\"fail_on_triggered\":true,\"rule_summary\":{\"loaded\":2,\"applicable\":2,\"skipped\":[]},\"context\":{\"mode\":\"metadata-aware\",\"dialect\":\"tidb\",\"dialect_source\":\"detected\",\"schema\":\"golden\",\"schema_source\":\"flag\"}}\n",
+    "stderr": "",
+    "parsed": {
+      "verdict": "review",
+      "coverage": {
+        "status": "complete"
+      },
+      "summary": {
+        "statements": 1,
+        "blockers": 0,
+        "warnings": 1,
+        "notices": 0
+      },
+      "statements": [
+        {
+          "index": 0,
+          "kind": "ddl",
+          "raw_sql": "ALTER TABLE t14h ALGORITHM=INPLACE, COALESCE PARTITION 1;",
+          "normalized_sql": "ALTER TABLE t14h ALGORITHM=INPLACE, COALESCE PARTITION 1",
+          "findings": [
+            {
+              "rule_id": "ddl.alter.coalesce_partition.warn",
+              "level": "warning",
+              "message": "ALTER TABLE coalesce partition removes members and redistributes their rows across the survivors",
+              "statement_kind": "ddl",
+              "location": {
+                "line": 1,
+                "column": 1
+              },
+              "suggestion": "verify the retained member count and the redistribution window before shipping",
+              "metadata": {
+                "action": "coalesce_partitions",
+                "table": "t14h"
+              },
+              "explanation": {
+                "summary": "Warn on DDL alter coalesce partition warn",
+                "why": "The statement reached a caution rule that highlights an operational trade-off.",
+                "risk": "Ignoring this rule can weaken schema-governance guarantees and make changes harder to review safely.",
+                "suggestion": "verify the retained member count and the redistribution window before shipping"
+              }
+            }
+          ],
+          "coverage": {
+            "status": "complete"
+          }
+        }
+      ],
+      "version": {
+        "product": "tidb",
+        "version": "8.5.0",
+        "major": 8,
+        "minor": 5,
+        "patch": 0,
+        "source": "observed",
+        "validated_range": true
+      },
+      "fail_on_triggered": true,
+      "rule_summary": {
+        "loaded": 2,
+        "applicable": 2,
+        "skipped": []
+      },
+      "context": {
+        "mode": "metadata-aware",
+        "dialect": "tidb",
+        "dialect_source": "detected",
+        "schema": "golden",
+        "schema_source": "flag"
+      }
+    },
+    "version_evidence": {
+      "target_raw": null,
+      "target_canonical": null,
+      "observed_raw": "8.0.11-TiDB-v8.5.0",
+      "observed_canonical": {
+        "product": "tidb",
+        "version": "8.5.0"
+      },
+      "resolved": {
+        "product": "tidb",
+        "version": "8.5.0",
+        "major": 8,
+        "minor": 5,
+        "patch": 0,
+        "source": "observed",
+        "validated_range": true
+      }
+    }
+  },
+  "assertions": [
+    {
+      "name": "database reachable with expected version",
+      "ok": true,
+      "detail": "SELECT VERSION() rc=0 version='8.0.11-TiDB-v8.5.0' expected_contains='v8.5.0'"
+    },
+    {
+      "name": "setup create-hash-fixture return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "exit code",
+      "ok": true,
+      "detail": "rc=1 expected=1"
+    },
+    {
+      "name": "verdict",
+      "ok": true,
+      "detail": "verdict='review'"
+    },
+    {
+      "name": "top-level statements",
+      "ok": true,
+      "detail": "statements=1 expected=1"
+    },
+    {
+      "name": "zero findings",
+      "ok": true,
+      "detail": "findings=1"
+    },
+    {
+      "name": "no diagnostics",
+      "ok": true,
+      "detail": "diagnostics=[]"
+    },
+    {
+      "name": "no unsupported",
+      "ok": true,
+      "detail": "unsupported=[]"
+    },
+    {
+      "name": "applicable rule count",
+      "ok": true,
+      "detail": "applicable=2"
+    },
+    {
+      "name": "aggregate coverage",
+      "ok": true,
+      "detail": "coverage='complete'"
+    },
+    {
+      "name": "per-statement coverage",
+      "ok": true,
+      "detail": "statement_coverage=['complete']"
+    },
+    {
+      "name": "evidence gap count",
+      "ok": true,
+      "detail": "gaps=0"
+    },
+    {
+      "name": "finding entries",
+      "ok": true,
+      "detail": "findings=[(0, 'ddl.alter.coalesce_partition.warn', 'warning')] expected=[(0, 'ddl.alter.coalesce_partition.warn', 'warning')]"
+    },
+    {
+      "name": "version identity",
+      "ok": true,
+      "detail": "version={'product': 'tidb', 'version': '8.5.0', 'major': 8, 'minor': 5, 'patch': 0, 'source': 'observed', 'validated_range': True} expected={'product': 'tidb', 'version': '8.5.0'}"
+    },
+    {
+      "name": "execute apply-inplace-coalesce return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "teardown drop-fixture return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    }
+  ],
+  "status": "pass",
+  "command": [
+    "/private/tmp/ddl-golden-final/T14/T14/bin/deltascope",
+    "audit",
+    "--dialect",
+    "tidb",
+    "--sql",
+    "ALTER TABLE t14h ALGORITHM=INPLACE, COALESCE PARTITION 1;",
+    "--config",
+    "/private/tmp/ddl-golden-final/T14/T14/golden-policy-t14-coalesce.yaml",
+    "--format",
+    "json",
+    "--host",
+    "127.0.0.1",
+    "--port",
+    "24000",
+    "--user",
+    "root",
+    "--schema",
+    "golden",
+    "--fail-on",
+    "warning"
+  ]
+}

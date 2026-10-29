@@ -1,0 +1,158 @@
+=== RUN   TestT15SeedCopyExclusiveGoldenPath
+=== PAUSE TestT15SeedCopyExclusiveGoldenPath
+=== RUN   TestT15CopyLockNoneRefused
+=== PAUSE TestT15CopyLockNoneRefused
+=== RUN   TestT15InstantVersionAndLockGates
+=== PAUSE TestT15InstantVersionAndLockGates
+=== RUN   TestT15WarnMatrix
+=== PAUSE TestT15WarnMatrix
+=== RUN   TestT15TiDBOnlineOptions
+=== PAUSE TestT15TiDBOnlineOptions
+=== RUN   TestT15MissingPrerequisiteGaps
+=== PAUSE TestT15MissingPrerequisiteGaps
+=== RUN   TestT15RuleOffKeepsStateConclusion
+=== PAUSE TestT15RuleOffKeepsStateConclusion
+=== RUN   TestT15TableOptionPublishesEngine
+=== PAUSE TestT15TableOptionPublishesEngine
+=== RUN   TestT15DefaultCharsetUnvouchesCollation
+=== PAUSE TestT15DefaultCharsetUnvouchesCollation
+=== RUN   TestT15AutoIncrementClamps
+=== PAUSE TestT15AutoIncrementClamps
+=== RUN   TestT15CommentPublishes
+=== PAUSE TestT15CommentPublishes
+=== RUN   TestT15ConvertRewritesStringColumns
+=== PAUSE TestT15ConvertRewritesStringColumns
+=== RUN   TestT15TiDBForceKeepsPreState
+=== PAUSE TestT15TiDBForceKeepsPreState
+=== RUN   TestT15TiDBVendorOptionKeepsPreState
+=== PAUSE TestT15TiDBVendorOptionKeepsPreState
+=== RUN   TestT15MySQLLongTailOptionUnaudited
+=== PAUSE TestT15MySQLLongTailOptionUnaudited
+=== RUN   TestT15MultiActionOptionAfterStructural
+=== PAUSE TestT15MultiActionOptionAfterStructural
+=== RUN   TestT15MySQLForceWithStructuralSibling
+=== PAUSE TestT15MySQLForceWithStructuralSibling
+=== RUN   TestT15KeysToggleEngineArms
+=== PAUSE TestT15KeysToggleEngineArms
+=== RUN   TestT15KeyBlockSizeApplicability
+=== PAUSE TestT15KeyBlockSizeApplicability
+=== CONT  TestT15SeedCopyExclusiveGoldenPath
+=== CONT  TestT15CommentPublishes
+=== CONT  TestT15MissingPrerequisiteGaps
+=== CONT  TestT15AutoIncrementClamps
+=== CONT  TestT15DefaultCharsetUnvouchesCollation
+=== CONT  TestT15TableOptionPublishesEngine
+=== CONT  TestT15RuleOffKeepsStateConclusion
+=== CONT  TestT15MultiActionOptionAfterStructural
+=== CONT  TestT15KeyBlockSizeApplicability
+=== RUN   TestT15KeyBlockSizeApplicability/dynamic_innodb_refused
+=== CONT  TestT15KeysToggleEngineArms
+=== PAUSE TestT15KeyBlockSizeApplicability/dynamic_innodb_refused
+=== CONT  TestT15MySQLForceWithStructuralSibling
+=== CONT  TestT15TiDBVendorOptionKeepsPreState
+=== RUN   TestT15MissingPrerequisiteGaps/no_version
+=== RUN   TestT15KeysToggleEngineArms/myisam_real_effect
+=== RUN   TestT15KeyBlockSizeApplicability/compressed_innodb_clean
+=== PAUSE TestT15KeyBlockSizeApplicability/compressed_innodb_clean
+=== PAUSE TestT15MissingPrerequisiteGaps/no_version
+=== PAUSE TestT15KeysToggleEngineArms/myisam_real_effect
+=== RUN   TestT15KeyBlockSizeApplicability/missing_row_format_gap
+=== PAUSE TestT15KeyBlockSizeApplicability/missing_row_format_gap
+=== CONT  TestT15MySQLLongTailOptionUnaudited
+=== RUN   TestT15MissingPrerequisiteGaps/unknown_engine_lock_none
+=== PAUSE TestT15MissingPrerequisiteGaps/unknown_engine_lock_none
+=== CONT  TestT15TiDBForceKeepsPreState
+=== RUN   TestT15KeysToggleEngineArms/missing_engine_gap
+=== PAUSE TestT15KeysToggleEngineArms/missing_engine_gap
+=== CONT  TestT15ConvertRewritesStringColumns
+--- PASS: TestT15RuleOffKeepsStateConclusion (0.01s)
+=== CONT  TestT15WarnMatrix
+=== RUN   TestT15WarnMatrix/copy_alone
+=== PAUSE TestT15WarnMatrix/copy_alone
+=== RUN   TestT15WarnMatrix/inplace_not_a_guarantee
+=== PAUSE TestT15WarnMatrix/inplace_not_a_guarantee
+=== RUN   TestT15WarnMatrix/exclusive_alone
+=== PAUSE TestT15WarnMatrix/exclusive_alone
+=== RUN   TestT15WarnMatrix/shared_alone
+=== PAUSE TestT15WarnMatrix/shared_alone
+=== RUN   TestT15WarnMatrix/lock_none_silent
+=== PAUSE TestT15WarnMatrix/lock_none_silent
+=== RUN   TestT15WarnMatrix/instant_silent
+=== PAUSE TestT15WarnMatrix/instant_silent
+=== RUN   TestT15WarnMatrix/default_silent
+=== PAUSE TestT15WarnMatrix/default_silent
+=== RUN   TestT15WarnMatrix/modifiers_only_copy
+=== PAUSE TestT15WarnMatrix/modifiers_only_copy
+=== CONT  TestT15TiDBOnlineOptions
+--- PASS: TestT15SeedCopyExclusiveGoldenPath (0.01s)
+=== CONT  TestT15InstantVersionAndLockGates
+=== RUN   TestT15InstantVersionAndLockGates/instant_explicit_lock_refused_80
+=== PAUSE TestT15InstantVersionAndLockGates/instant_explicit_lock_refused_80
+=== RUN   TestT15InstantVersionAndLockGates/instant_refused_57
+=== PAUSE TestT15InstantVersionAndLockGates/instant_refused_57
+=== RUN   TestT15InstantVersionAndLockGates/instant_add_column_ok_80
+=== PAUSE TestT15InstantVersionAndLockGates/instant_add_column_ok_80
+=== RUN   TestT15InstantVersionAndLockGates/instant_add_index_refused_80
+=== PAUSE TestT15InstantVersionAndLockGates/instant_add_index_refused_80
+=== RUN   TestT15InstantVersionAndLockGates/instant_modify_refused_80
+=== PAUSE TestT15InstantVersionAndLockGates/instant_modify_refused_80
+=== CONT  TestT15CopyLockNoneRefused
+--- PASS: TestT15TiDBForceKeepsPreState (0.01s)
+=== CONT  TestT15KeyBlockSizeApplicability/dynamic_innodb_refused
+--- PASS: TestT15CommentPublishes (0.01s)
+=== CONT  TestT15KeyBlockSizeApplicability/missing_row_format_gap
+--- PASS: TestT15AutoIncrementClamps (0.01s)
+=== CONT  TestT15KeyBlockSizeApplicability/compressed_innodb_clean
+--- PASS: TestT15DefaultCharsetUnvouchesCollation (0.02s)
+=== CONT  TestT15MissingPrerequisiteGaps/no_version
+--- PASS: TestT15MySQLLongTailOptionUnaudited (0.01s)
+=== CONT  TestT15MissingPrerequisiteGaps/unknown_engine_lock_none
+--- PASS: TestT15TableOptionPublishesEngine (0.01s)
+=== CONT  TestT15KeysToggleEngineArms/myisam_real_effect
+--- PASS: TestT15MultiActionOptionAfterStructural (0.02s)
+=== CONT  TestT15KeysToggleEngineArms/missing_engine_gap
+--- PASS: TestT15ConvertRewritesStringColumns (0.01s)
+=== CONT  TestT15WarnMatrix/copy_alone
+--- PASS: TestT15TiDBVendorOptionKeepsPreState (0.02s)
+=== CONT  TestT15WarnMatrix/lock_none_silent
+--- PASS: TestT15MySQLForceWithStructuralSibling (0.02s)
+=== CONT  TestT15WarnMatrix/modifiers_only_copy
+--- PASS: TestT15TiDBOnlineOptions (0.01s)
+=== CONT  TestT15WarnMatrix/default_silent
+=== CONT  TestT15WarnMatrix/instant_silent
+=== CONT  TestT15WarnMatrix/shared_alone
+--- PASS: TestT15CopyLockNoneRefused (0.01s)
+=== CONT  TestT15WarnMatrix/inplace_not_a_guarantee
+=== CONT  TestT15WarnMatrix/exclusive_alone
+=== CONT  TestT15InstantVersionAndLockGates/instant_explicit_lock_refused_80
+=== CONT  TestT15InstantVersionAndLockGates/instant_add_index_refused_80
+--- PASS: TestT15KeysToggleEngineArms (0.00s)
+    --- PASS: TestT15KeysToggleEngineArms/myisam_real_effect (0.01s)
+    --- PASS: TestT15KeysToggleEngineArms/missing_engine_gap (0.01s)
+=== CONT  TestT15InstantVersionAndLockGates/instant_modify_refused_80
+=== CONT  TestT15InstantVersionAndLockGates/instant_add_column_ok_80
+--- PASS: TestT15KeyBlockSizeApplicability (0.00s)
+    --- PASS: TestT15KeyBlockSizeApplicability/dynamic_innodb_refused (0.01s)
+    --- PASS: TestT15KeyBlockSizeApplicability/compressed_innodb_clean (0.01s)
+    --- PASS: TestT15KeyBlockSizeApplicability/missing_row_format_gap (0.02s)
+=== CONT  TestT15InstantVersionAndLockGates/instant_refused_57
+--- PASS: TestT15MissingPrerequisiteGaps (0.00s)
+    --- PASS: TestT15MissingPrerequisiteGaps/unknown_engine_lock_none (0.01s)
+    --- PASS: TestT15MissingPrerequisiteGaps/no_version (0.01s)
+--- PASS: TestT15WarnMatrix (0.00s)
+    --- PASS: TestT15WarnMatrix/copy_alone (0.01s)
+    --- PASS: TestT15WarnMatrix/lock_none_silent (0.01s)
+    --- PASS: TestT15WarnMatrix/modifiers_only_copy (0.01s)
+    --- PASS: TestT15WarnMatrix/instant_silent (0.01s)
+    --- PASS: TestT15WarnMatrix/default_silent (0.01s)
+    --- PASS: TestT15WarnMatrix/inplace_not_a_guarantee (0.01s)
+    --- PASS: TestT15WarnMatrix/exclusive_alone (0.01s)
+    --- PASS: TestT15WarnMatrix/shared_alone (0.01s)
+--- PASS: TestT15InstantVersionAndLockGates (0.00s)
+    --- PASS: TestT15InstantVersionAndLockGates/instant_modify_refused_80 (0.01s)
+    --- PASS: TestT15InstantVersionAndLockGates/instant_add_index_refused_80 (0.01s)
+    --- PASS: TestT15InstantVersionAndLockGates/instant_explicit_lock_refused_80 (0.01s)
+    --- PASS: TestT15InstantVersionAndLockGates/instant_refused_57 (0.01s)
+    --- PASS: TestT15InstantVersionAndLockGates/instant_add_column_ok_80 (0.01s)
+PASS
+ok  	github.com/Fanduzi/DeltaScope/internal/application/audit	0.513s

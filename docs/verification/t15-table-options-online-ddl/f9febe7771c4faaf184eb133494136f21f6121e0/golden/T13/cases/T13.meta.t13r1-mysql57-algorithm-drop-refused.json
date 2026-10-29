@@ -1,0 +1,349 @@
+{
+  "case_id": "T13.meta.t13r1-mysql57-algorithm-drop-refused",
+  "kind": "cli_metadata",
+  "cli_case": "t13r1-mysql57-algorithm-drop-refused",
+  "anchor": "mysql57",
+  "dialect": "mysql",
+  "input_sql": "ALTER TABLE t13a ALGORITHM=INPLACE, DROP PARTITION p0; TRUNCATE TABLE t13a;",
+  "policy_profile": "t13r1-truncate-rows",
+  "policy_path": "/private/tmp/ddl-golden-final/T13/T13/golden-policy-t13r1-truncate-rows.yaml",
+  "connect": {
+    "host": "127.0.0.1",
+    "port": 23357,
+    "user": "root",
+    "schema": "golden",
+    "password_env": "DS_T13_GOLDEN_PW"
+  },
+  "expected": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 2,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+      "complete",
+      "complete"
+    ],
+    "evidence_gaps": 0,
+    "finding_entries": [
+      {
+        "index": 1,
+        "rule_id": "ddl.table.truncate.rows.max_count",
+        "level": "blocker"
+      }
+    ],
+    "finding_metadata": [
+      {
+        "index": 1,
+        "rule_id": "ddl.table.truncate.rows.max_count",
+        "metadata": {
+          "table": "t13a",
+          "operation": "truncate_table"
+        }
+      }
+    ],
+    "rule_summary_applicable": 1,
+    "version": {
+      "product": "mysql",
+      "version": "5.7.44"
+    }
+  },
+  "actual": {
+    "database": {
+      "product": "mysql",
+      "image": "mysql:5.7.44",
+      "image_digest": "mysql@sha256:4bc6bc963e6d8443453676cae56536f4b8156d78bae03c0145cbe47c2aad73bb",
+      "container": "deltascope-ddl-golden-mysql57",
+      "reachable": true,
+      "version": "5.7.44"
+    },
+    "setup": [
+      {
+        "name": "create-range-fixture",
+        "sql": "CREATE TABLE t13a (id INT, c INT) PARTITION BY RANGE (id) (PARTITION p0 VALUES LESS THAN (100), PARTITION p1 VALUES LESS THAN (200))",
+        "rc": 0,
+        "stdout": "",
+        "stderr": ""
+      },
+      {
+        "name": "seed-rows",
+        "sql": "INSERT INTO t13a VALUES (1,1),(2,2),(3,3),(4,4),(5,5),(6,6),(7,7),(8,8)",
+        "rc": 0,
+        "stdout": "",
+        "stderr": ""
+      },
+      {
+        "name": "analyze-fixture",
+        "sql": "ANALYZE TABLE t13a",
+        "rc": 0,
+        "stdout": "Table\tOp\tMsg_type\tMsg_text\ngolden.t13a\tanalyze\tstatus\tOK",
+        "stderr": ""
+      }
+    ],
+    "post_verify": [],
+    "execute": [
+      {
+        "name": "apply-audited-mixed",
+        "sql": "ALTER TABLE t13a ALGORITHM=INPLACE, DROP PARTITION p0",
+        "rc": 1,
+        "stdout": "",
+        "stderr": "ERROR 1846 (0A000) at line 1: ALGORITHM=COPY/INPLACE is not supported. Reason: Partition specific operations do not yet support LOCK/ALGORITHM. Try ALGORITHM=DEFAULT.",
+        "verify": [
+          {
+            "assert": "member set intact after refused mixed drop",
+            "sql": "SELECT COUNT(*) FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t13a' AND PARTITION_NAME IS NOT NULL",
+            "rc": 0,
+            "output": "2",
+            "stderr": ""
+          }
+        ]
+      }
+    ],
+    "structure": [],
+    "teardown": [
+      {
+        "name": "drop-fixture",
+        "sql": "DROP TABLE IF EXISTS t13a",
+        "rc": 0,
+        "stderr": ""
+      }
+    ],
+    "exit": 1,
+    "stdout": "{\"verdict\":\"reject\",\"coverage\":{\"status\":\"complete\"},\"summary\":{\"statements\":2,\"blockers\":1,\"warnings\":0,\"notices\":0},\"statements\":[{\"index\":0,\"kind\":\"ddl\",\"raw_sql\":\"ALTER TABLE t13a ALGORITHM=INPLACE, DROP PARTITION p0;\",\"normalized_sql\":\"ALTER TABLE t13a ALGORITHM=INPLACE, DROP PARTITION p0\",\"coverage\":{\"status\":\"complete\"}},{\"index\":1,\"kind\":\"ddl\",\"raw_sql\":\"TRUNCATE TABLE t13a;\",\"normalized_sql\":\"TRUNCATE TABLE t13a\",\"findings\":[{\"rule_id\":\"ddl.table.truncate.rows.max_count\",\"level\":\"blocker\",\"message\":\"truncate table on \\\"t13a\\\" exceeds the configured table-row risk threshold\",\"statement_index\":1,\"statement_kind\":\"ddl\",\"location\":{\"line\":1,\"column\":56},\"suggestion\":\"split cleanup work first or only proceed after manual review when row count is above 1\",\"metadata\":{\"limit\":1,\"operation\":\"truncate_table\",\"table\":\"t13a\",\"table_rows\":8},\"explanation\":{\"summary\":\"Limit DDL table truncate rows max count\",\"why\":\"The statement exceeds a shipped size or count threshold for this rule.\",\"risk\":\"Ignoring this rule can hide live-schema or instance-state risks that only metadata reveals.\",\"suggestion\":\"split cleanup work first or only proceed after manual review when row count is above 1\",\"metadata\":{\"status\":\"available\",\"note\":\"Live metadata is available, so this explanation can use schema or instance facts for a more accurate judgment.\"}}}],\"coverage\":{\"status\":\"complete\"}}],\"version\":{\"product\":\"mysql\",\"version\":\"5.7.44\",\"major\":5,\"minor\":7,\"patch\":44,\"source\":\"observed\",\"validated_range\":true},\"fail_on_triggered\":true,\"rule_summary\":{\"loaded\":1,\"applicable\":1,\"skipped\":[]},\"context\":{\"mode\":\"metadata-aware\",\"dialect\":\"mysql\",\"dialect_source\":\"detected\",\"schema\":\"golden\",\"schema_source\":\"flag\"}}\n",
+    "stderr": "",
+    "parsed": {
+      "verdict": "reject",
+      "coverage": {
+        "status": "complete"
+      },
+      "summary": {
+        "statements": 2,
+        "blockers": 1,
+        "warnings": 0,
+        "notices": 0
+      },
+      "statements": [
+        {
+          "index": 0,
+          "kind": "ddl",
+          "raw_sql": "ALTER TABLE t13a ALGORITHM=INPLACE, DROP PARTITION p0;",
+          "normalized_sql": "ALTER TABLE t13a ALGORITHM=INPLACE, DROP PARTITION p0",
+          "coverage": {
+            "status": "complete"
+          }
+        },
+        {
+          "index": 1,
+          "kind": "ddl",
+          "raw_sql": "TRUNCATE TABLE t13a;",
+          "normalized_sql": "TRUNCATE TABLE t13a",
+          "findings": [
+            {
+              "rule_id": "ddl.table.truncate.rows.max_count",
+              "level": "blocker",
+              "message": "truncate table on \"t13a\" exceeds the configured table-row risk threshold",
+              "statement_index": 1,
+              "statement_kind": "ddl",
+              "location": {
+                "line": 1,
+                "column": 56
+              },
+              "suggestion": "split cleanup work first or only proceed after manual review when row count is above 1",
+              "metadata": {
+                "limit": 1,
+                "operation": "truncate_table",
+                "table": "t13a",
+                "table_rows": 8
+              },
+              "explanation": {
+                "summary": "Limit DDL table truncate rows max count",
+                "why": "The statement exceeds a shipped size or count threshold for this rule.",
+                "risk": "Ignoring this rule can hide live-schema or instance-state risks that only metadata reveals.",
+                "suggestion": "split cleanup work first or only proceed after manual review when row count is above 1",
+                "metadata": {
+                  "status": "available",
+                  "note": "Live metadata is available, so this explanation can use schema or instance facts for a more accurate judgment."
+                }
+              }
+            }
+          ],
+          "coverage": {
+            "status": "complete"
+          }
+        }
+      ],
+      "version": {
+        "product": "mysql",
+        "version": "5.7.44",
+        "major": 5,
+        "minor": 7,
+        "patch": 44,
+        "source": "observed",
+        "validated_range": true
+      },
+      "fail_on_triggered": true,
+      "rule_summary": {
+        "loaded": 1,
+        "applicable": 1,
+        "skipped": []
+      },
+      "context": {
+        "mode": "metadata-aware",
+        "dialect": "mysql",
+        "dialect_source": "detected",
+        "schema": "golden",
+        "schema_source": "flag"
+      }
+    },
+    "version_evidence": {
+      "target_raw": null,
+      "target_canonical": null,
+      "observed_raw": "5.7.44",
+      "observed_canonical": {
+        "product": "mysql",
+        "version": "5.7.44"
+      },
+      "resolved": {
+        "product": "mysql",
+        "version": "5.7.44",
+        "major": 5,
+        "minor": 7,
+        "patch": 44,
+        "source": "observed",
+        "validated_range": true
+      }
+    }
+  },
+  "assertions": [
+    {
+      "name": "database reachable with expected version",
+      "ok": true,
+      "detail": "SELECT VERSION() rc=0 version='5.7.44' expected_contains='5.7.44'"
+    },
+    {
+      "name": "setup create-range-fixture return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "setup seed-rows return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "setup analyze-fixture return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "exit code",
+      "ok": true,
+      "detail": "rc=1 expected=1"
+    },
+    {
+      "name": "verdict",
+      "ok": true,
+      "detail": "verdict='reject'"
+    },
+    {
+      "name": "top-level statements",
+      "ok": true,
+      "detail": "statements=2 expected=2"
+    },
+    {
+      "name": "zero findings",
+      "ok": true,
+      "detail": "findings=1"
+    },
+    {
+      "name": "no diagnostics",
+      "ok": true,
+      "detail": "diagnostics=[]"
+    },
+    {
+      "name": "no unsupported",
+      "ok": true,
+      "detail": "unsupported=[]"
+    },
+    {
+      "name": "applicable rule count",
+      "ok": true,
+      "detail": "applicable=1"
+    },
+    {
+      "name": "aggregate coverage",
+      "ok": true,
+      "detail": "coverage='complete'"
+    },
+    {
+      "name": "per-statement coverage",
+      "ok": true,
+      "detail": "statement_coverage=['complete', 'complete']"
+    },
+    {
+      "name": "evidence gap count",
+      "ok": true,
+      "detail": "gaps=0"
+    },
+    {
+      "name": "finding entries",
+      "ok": true,
+      "detail": "findings=[(1, 'ddl.table.truncate.rows.max_count', 'blocker')] expected=[(1, 'ddl.table.truncate.rows.max_count', 'blocker')]"
+    },
+    {
+      "name": "finding metadata (1, 'ddl.table.truncate.rows.max_count')",
+      "ok": true,
+      "detail": "findings=[{'limit': 1, 'operation': 'truncate_table', 'table': 't13a', 'table_rows': 8}] expected_subset={'table': 't13a', 'operation': 'truncate_table'}"
+    },
+    {
+      "name": "version identity",
+      "ok": true,
+      "detail": "version={'product': 'mysql', 'version': '5.7.44', 'major': 5, 'minor': 7, 'patch': 44, 'source': 'observed', 'validated_range': True} expected={'product': 'mysql', 'version': '5.7.44'}"
+    },
+    {
+      "name": "execute apply-audited-mixed return code",
+      "ok": true,
+      "detail": "rc=1 expected=1 stderr='ERROR 1846 (0A000) at line 1: ALGORITHM=COPY/INPLACE is not supported. Reason: Partition specific operations do not yet support LOCK/ALGORITHM. Try ALGORITHM=DEFAULT.'"
+    },
+    {
+      "name": "execute apply-audited-mixed stderr marker",
+      "ok": true,
+      "detail": "ERROR 1846"
+    },
+    {
+      "name": "execute apply-audited-mixed: member set intact after refused mixed drop",
+      "ok": true,
+      "detail": "rc=0 output='2' expected='2'"
+    },
+    {
+      "name": "teardown drop-fixture return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    }
+  ],
+  "status": "pass",
+  "command": [
+    "/private/tmp/ddl-golden-final/T13/T13/bin/deltascope",
+    "audit",
+    "--dialect",
+    "mysql",
+    "--sql",
+    "ALTER TABLE t13a ALGORITHM=INPLACE, DROP PARTITION p0; TRUNCATE TABLE t13a;",
+    "--config",
+    "/private/tmp/ddl-golden-final/T13/T13/golden-policy-t13r1-truncate-rows.yaml",
+    "--format",
+    "json",
+    "--host",
+    "127.0.0.1",
+    "--port",
+    "23357",
+    "--user",
+    "root",
+    "--password-env",
+    "DS_T13_GOLDEN_PW",
+    "--schema",
+    "golden"
+  ]
+}

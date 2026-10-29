@@ -1,0 +1,26 @@
+=== RUN   TestExtractorT15AlgorithmLockValues
+=== PAUSE TestExtractorT15AlgorithmLockValues
+=== RUN   TestExtractorT15OrderByMembers
+=== PAUSE TestExtractorT15OrderByMembers
+=== RUN   TestExtractorT15DefaultVsConvertCharset
+=== PAUSE TestExtractorT15DefaultVsConvertCharset
+=== RUN   TestExtractorT15LongTailOptions
+=== PAUSE TestExtractorT15LongTailOptions
+=== RUN   TestExtractorT15UnionMembers
+=== PAUSE TestExtractorT15UnionMembers
+=== RUN   TestExtractorT15MyISAMVocabulary
+=== PAUSE TestExtractorT15MyISAMVocabulary
+=== CONT  TestExtractorT15AlgorithmLockValues
+=== CONT  TestExtractorT15LongTailOptions
+=== CONT  TestExtractorT15DefaultVsConvertCharset
+=== CONT  TestExtractorT15OrderByMembers
+=== CONT  TestExtractorT15MyISAMVocabulary
+=== CONT  TestExtractorT15UnionMembers
+--- PASS: TestExtractorT15UnionMembers (0.00s)
+--- PASS: TestExtractorT15AlgorithmLockValues (0.00s)
+--- PASS: TestExtractorT15OrderByMembers (0.00s)
+--- PASS: TestExtractorT15LongTailOptions (0.00s)
+--- PASS: TestExtractorT15MyISAMVocabulary (0.00s)
+--- PASS: TestExtractorT15DefaultVsConvertCharset (0.00s)
+PASS
+ok  	github.com/Fanduzi/DeltaScope/internal/infrastructure/parser/tidb	0.296s

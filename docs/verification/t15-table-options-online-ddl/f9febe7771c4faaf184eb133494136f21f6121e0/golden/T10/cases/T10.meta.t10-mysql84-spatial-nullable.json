@@ -1,0 +1,419 @@
+{
+  "case_id": "T10.meta.t10-mysql84-spatial-nullable",
+  "kind": "cli_metadata",
+  "cli_case": "t10-mysql84-spatial-nullable",
+  "anchor": "mysql84",
+  "dialect": "mysql",
+  "input_sql": "CREATE SPATIAL INDEX sp ON t10gn(gn);",
+  "policy_profile": "t10-members",
+  "policy_path": "/private/tmp/ddl-golden-final/T10/T10/golden-policy-t10-members.yaml",
+  "connect": {
+    "host": "127.0.0.1",
+    "port": 23384,
+    "user": "root",
+    "schema": "golden",
+    "password_env": "DS_T10_GOLDEN_PW"
+  },
+  "expected": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+      "complete"
+    ],
+    "statement_sql": [
+      "CREATE SPATIAL INDEX sp ON t10gn(gn);"
+    ],
+    "statement_indices": [
+      0
+    ],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "finding_entries": [
+      {
+        "index": 0,
+        "rule_id": "ddl.index.advanced.compatibility.require",
+        "level": "blocker"
+      }
+    ],
+    "unsupported_entries": [],
+    "rule_summary_loaded": 1,
+    "rule_summary_applicable": 1,
+    "finding_metadata": [
+      {
+        "index": 0,
+        "rule_id": "ddl.index.advanced.compatibility.require",
+        "metadata": {
+          "table": "t10gn",
+          "index": "sp",
+          "feature": "spatial",
+          "action": "create_index",
+          "reason_code": "spatial_nullable",
+          "product": "mysql",
+          "target_version": "8.4.10",
+          "minimum_version": ""
+        }
+      }
+    ]
+  },
+  "actual": {
+    "database": {
+      "product": "mysql",
+      "image": "mysql:8.4.10",
+      "image_digest": "mysql@sha256:c592c15aaf4a1961e15d82eb31ea5987dda862d1c4b1e93424438c0e91dc1f8d",
+      "container": "deltascope-ddl-golden-mysql84",
+      "reachable": true,
+      "version": "8.4.10"
+    },
+    "setup": [
+      {
+        "name": "prove-prior-state-t10gn",
+        "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10gn'",
+        "rc": 0,
+        "stdout": "COUNT(*)\n0",
+        "stderr": "",
+        "verify": [
+          {
+            "assert": "t10gn bound table count",
+            "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10gn'",
+            "rc": 0,
+            "output": "0",
+            "stderr": ""
+          }
+        ]
+      },
+      {
+        "name": "create-fixture-t10gn",
+        "sql": "CREATE TABLE t10gn (gn GEOMETRY);",
+        "rc": 0,
+        "stdout": "",
+        "stderr": "",
+        "verify": [
+          {
+            "assert": "t10gn bound table count",
+            "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10gn'",
+            "rc": 0,
+            "output": "1",
+            "stderr": ""
+          }
+        ]
+      }
+    ],
+    "post_verify": [
+      {
+        "assert": "audit did not create sp",
+        "sql": "SELECT COUNT(DISTINCT index_name) FROM information_schema.statistics WHERE table_schema='golden' AND table_name='t10gn' AND index_name='sp'",
+        "rc": 0,
+        "output": "0",
+        "stderr": ""
+      }
+    ],
+    "execute": [
+      {
+        "name": "apply-spatial-nullable",
+        "sql": "CREATE SPATIAL INDEX sp ON t10gn(gn);",
+        "rc": 1,
+        "stdout": "",
+        "stderr": "ERROR 1252 (42000) at line 1: All parts of a SPATIAL index must be NOT NULL"
+      }
+    ],
+    "structure": [
+      {
+        "assert": "t10gn present",
+        "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10gn'",
+        "rc": 0,
+        "output": "1",
+        "stderr": ""
+      }
+    ],
+    "teardown": [
+      {
+        "name": "drop-t10gn",
+        "sql": "DROP TABLE IF EXISTS t10gn;",
+        "rc": 0,
+        "stderr": "",
+        "verify": [
+          {
+            "assert": "t10gn bound table count",
+            "sql": "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t10gn'",
+            "rc": 0,
+            "output": "0",
+            "stderr": ""
+          }
+        ]
+      }
+    ],
+    "exit": 1,
+    "stdout": "{\"verdict\":\"reject\",\"coverage\":{\"status\":\"complete\"},\"summary\":{\"statements\":1,\"blockers\":1,\"warnings\":0,\"notices\":0},\"statements\":[{\"index\":0,\"kind\":\"ddl\",\"raw_sql\":\"CREATE SPATIAL INDEX sp ON t10gn(gn);\",\"normalized_sql\":\"CREATE SPATIAL INDEX sp ON t10gn(gn)\",\"findings\":[{\"rule_id\":\"ddl.index.advanced.compatibility.require\",\"level\":\"blocker\",\"message\":\"index \\\"sp\\\" advanced form is not supported for the target (spatial_nullable)\",\"statement_kind\":\"ddl\",\"location\":{\"line\":1,\"column\":1},\"metadata\":{\"action\":\"create_index\",\"feature\":\"spatial\",\"index\":\"sp\",\"minimum_version\":\"\",\"product\":\"mysql\",\"reason_code\":\"spatial_nullable\",\"table\":\"t10gn\",\"target_version\":\"8.4.10\"},\"explanation\":{\"summary\":\"Require DDL index advanced compatibility require\",\"why\":\"The statement is missing a clause, option, or object that the shipped policy requires.\",\"risk\":\"Ignoring this rule can hide live-schema or instance-state risks that only metadata reveals.\",\"suggestion\":\"Add the required clause, option, or object explicitly so the rule no longer has to infer intent.\",\"metadata\":{\"status\":\"available\",\"note\":\"Live metadata is available, so this explanation can use schema or instance facts for a more accurate judgment.\"}}}],\"coverage\":{\"status\":\"complete\"}}],\"version\":{\"product\":\"mysql\",\"version\":\"8.4.10\",\"major\":8,\"minor\":4,\"patch\":10,\"source\":\"observed\",\"validated_range\":true},\"fail_on_triggered\":true,\"rule_summary\":{\"loaded\":1,\"applicable\":1,\"skipped\":[]},\"context\":{\"mode\":\"metadata-aware\",\"dialect\":\"mysql\",\"dialect_source\":\"detected\",\"schema\":\"golden\",\"schema_source\":\"flag\"}}\n",
+    "stderr": "",
+    "parsed": {
+      "verdict": "reject",
+      "coverage": {
+        "status": "complete"
+      },
+      "summary": {
+        "statements": 1,
+        "blockers": 1,
+        "warnings": 0,
+        "notices": 0
+      },
+      "statements": [
+        {
+          "index": 0,
+          "kind": "ddl",
+          "raw_sql": "CREATE SPATIAL INDEX sp ON t10gn(gn);",
+          "normalized_sql": "CREATE SPATIAL INDEX sp ON t10gn(gn)",
+          "findings": [
+            {
+              "rule_id": "ddl.index.advanced.compatibility.require",
+              "level": "blocker",
+              "message": "index \"sp\" advanced form is not supported for the target (spatial_nullable)",
+              "statement_kind": "ddl",
+              "location": {
+                "line": 1,
+                "column": 1
+              },
+              "metadata": {
+                "action": "create_index",
+                "feature": "spatial",
+                "index": "sp",
+                "minimum_version": "",
+                "product": "mysql",
+                "reason_code": "spatial_nullable",
+                "table": "t10gn",
+                "target_version": "8.4.10"
+              },
+              "explanation": {
+                "summary": "Require DDL index advanced compatibility require",
+                "why": "The statement is missing a clause, option, or object that the shipped policy requires.",
+                "risk": "Ignoring this rule can hide live-schema or instance-state risks that only metadata reveals.",
+                "suggestion": "Add the required clause, option, or object explicitly so the rule no longer has to infer intent.",
+                "metadata": {
+                  "status": "available",
+                  "note": "Live metadata is available, so this explanation can use schema or instance facts for a more accurate judgment."
+                }
+              }
+            }
+          ],
+          "coverage": {
+            "status": "complete"
+          }
+        }
+      ],
+      "version": {
+        "product": "mysql",
+        "version": "8.4.10",
+        "major": 8,
+        "minor": 4,
+        "patch": 10,
+        "source": "observed",
+        "validated_range": true
+      },
+      "fail_on_triggered": true,
+      "rule_summary": {
+        "loaded": 1,
+        "applicable": 1,
+        "skipped": []
+      },
+      "context": {
+        "mode": "metadata-aware",
+        "dialect": "mysql",
+        "dialect_source": "detected",
+        "schema": "golden",
+        "schema_source": "flag"
+      }
+    },
+    "version_evidence": {
+      "target_raw": null,
+      "target_canonical": null,
+      "observed_raw": "8.4.10",
+      "observed_canonical": {
+        "product": "mysql",
+        "version": "8.4.10"
+      },
+      "resolved": {
+        "product": "mysql",
+        "version": "8.4.10",
+        "major": 8,
+        "minor": 4,
+        "patch": 10,
+        "source": "observed",
+        "validated_range": true
+      }
+    }
+  },
+  "assertions": [
+    {
+      "name": "database reachable with expected version",
+      "ok": true,
+      "detail": "SELECT VERSION() rc=0 version='8.4.10' expected_contains='8.4.10'"
+    },
+    {
+      "name": "setup prove-prior-state-t10gn return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "setup prove-prior-state-t10gn: t10gn bound table count",
+      "ok": true,
+      "detail": "rc=0 output='0' expected='0'"
+    },
+    {
+      "name": "setup create-fixture-t10gn return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "setup create-fixture-t10gn: t10gn bound table count",
+      "ok": true,
+      "detail": "rc=0 output='1' expected='1'"
+    },
+    {
+      "name": "exit code",
+      "ok": true,
+      "detail": "rc=1 expected=1"
+    },
+    {
+      "name": "verdict",
+      "ok": true,
+      "detail": "verdict='reject'"
+    },
+    {
+      "name": "top-level statements",
+      "ok": true,
+      "detail": "statements=1 expected=1"
+    },
+    {
+      "name": "zero findings",
+      "ok": true,
+      "detail": "findings=1"
+    },
+    {
+      "name": "no diagnostics",
+      "ok": true,
+      "detail": "diagnostics=[]"
+    },
+    {
+      "name": "no unsupported",
+      "ok": true,
+      "detail": "unsupported=[]"
+    },
+    {
+      "name": "loaded rule count",
+      "ok": true,
+      "detail": "loaded=1"
+    },
+    {
+      "name": "applicable rule count",
+      "ok": true,
+      "detail": "applicable=1"
+    },
+    {
+      "name": "statement indices",
+      "ok": true,
+      "detail": "indices=[0]"
+    },
+    {
+      "name": "finding statement ownership",
+      "ok": true,
+      "detail": "findings must belong to their enclosing statement"
+    },
+    {
+      "name": "aggregate coverage",
+      "ok": true,
+      "detail": "coverage='complete'"
+    },
+    {
+      "name": "per-statement coverage",
+      "ok": true,
+      "detail": "statement_coverage=['complete']"
+    },
+    {
+      "name": "unsupported entries",
+      "ok": true,
+      "detail": "entries=[] expected=[]"
+    },
+    {
+      "name": "statement raw SQL identity",
+      "ok": true,
+      "detail": "raw_sql=['CREATE SPATIAL INDEX sp ON t10gn(gn);'] expected=['CREATE SPATIAL INDEX sp ON t10gn(gn);']"
+    },
+    {
+      "name": "evidence gap count",
+      "ok": true,
+      "detail": "gaps=0"
+    },
+    {
+      "name": "evidence gap entries",
+      "ok": true,
+      "detail": "gaps=[] expected=[]"
+    },
+    {
+      "name": "finding entries",
+      "ok": true,
+      "detail": "findings=[(0, 'ddl.index.advanced.compatibility.require', 'blocker')] expected=[(0, 'ddl.index.advanced.compatibility.require', 'blocker')]"
+    },
+    {
+      "name": "finding metadata (0, 'ddl.index.advanced.compatibility.require')",
+      "ok": true,
+      "detail": "findings=[{'action': 'create_index', 'feature': 'spatial', 'index': 'sp', 'minimum_version': '', 'product': 'mysql', 'reason_code': 'spatial_nullable', 'table': 't10gn', 'target_version': '8.4.10'}] expected_subset={'table': 't10gn', 'index': 'sp', 'feature': 'spatial', 'action': 'create_index', 'reason_code': 'spatial_nullable', 'product': 'mysql', 'target_version': '8.4.10', 'minimum_version': ''}"
+    },
+    {
+      "name": "post-verify audit did not create sp",
+      "ok": true,
+      "detail": "rc=0 output='0' expected='0'"
+    },
+    {
+      "name": "execute apply-spatial-nullable return code",
+      "ok": true,
+      "detail": "rc=1 expected=1 stderr='ERROR 1252 (42000) at line 1: All parts of a SPATIAL index must be NOT NULL'"
+    },
+    {
+      "name": "execute apply-spatial-nullable stderr marker",
+      "ok": true,
+      "detail": "1252"
+    },
+    {
+      "name": "structure t10gn present",
+      "ok": true,
+      "detail": "rc=0 output='1' expected='1'"
+    },
+    {
+      "name": "teardown drop-t10gn return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "teardown drop-t10gn: t10gn bound table count",
+      "ok": true,
+      "detail": "rc=0 output='0' expected='0'"
+    }
+  ],
+  "status": "pass",
+  "command": [
+    "/private/tmp/ddl-golden-final/T10/T10/bin/deltascope",
+    "audit",
+    "--dialect",
+    "mysql",
+    "--sql",
+    "CREATE SPATIAL INDEX sp ON t10gn(gn);",
+    "--config",
+    "/private/tmp/ddl-golden-final/T10/T10/golden-policy-t10-members.yaml",
+    "--format",
+    "json",
+    "--host",
+    "127.0.0.1",
+    "--port",
+    "23384",
+    "--user",
+    "root",
+    "--password-env",
+    "DS_T10_GOLDEN_PW",
+    "--schema",
+    "golden"
+  ]
+}

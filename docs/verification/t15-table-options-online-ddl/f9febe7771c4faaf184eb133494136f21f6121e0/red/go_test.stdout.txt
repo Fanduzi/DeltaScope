@@ -1,0 +1,121 @@
+=== RUN   TestT15SeedCopyExclusiveGoldenPath
+=== PAUSE TestT15SeedCopyExclusiveGoldenPath
+=== RUN   TestT15CopyLockNoneRefused
+=== PAUSE TestT15CopyLockNoneRefused
+=== RUN   TestT15InstantVersionAndLockGates
+=== PAUSE TestT15InstantVersionAndLockGates
+=== RUN   TestT15WarnMatrix
+=== PAUSE TestT15WarnMatrix
+=== RUN   TestT15TiDBOnlineOptions
+=== PAUSE TestT15TiDBOnlineOptions
+=== RUN   TestT15MissingPrerequisiteGaps
+=== PAUSE TestT15MissingPrerequisiteGaps
+=== RUN   TestT15RuleOffKeepsStateConclusion
+=== PAUSE TestT15RuleOffKeepsStateConclusion
+=== CONT  TestT15SeedCopyExclusiveGoldenPath
+=== CONT  TestT15TiDBOnlineOptions
+=== CONT  TestT15RuleOffKeepsStateConclusion
+=== CONT  TestT15InstantVersionAndLockGates
+=== CONT  TestT15MissingPrerequisiteGaps
+=== CONT  TestT15WarnMatrix
+=== CONT  TestT15CopyLockNoneRefused
+=== RUN   TestT15MissingPrerequisiteGaps/no_version
+=== RUN   TestT15InstantVersionAndLockGates/instant_explicit_lock_refused_80
+=== RUN   TestT15WarnMatrix/copy_alone
+=== PAUSE TestT15MissingPrerequisiteGaps/no_version
+=== PAUSE TestT15InstantVersionAndLockGates/instant_explicit_lock_refused_80
+=== PAUSE TestT15WarnMatrix/copy_alone
+=== RUN   TestT15MissingPrerequisiteGaps/unknown_engine_lock_none
+=== PAUSE TestT15MissingPrerequisiteGaps/unknown_engine_lock_none
+=== CONT  TestT15MissingPrerequisiteGaps/no_version
+=== RUN   TestT15InstantVersionAndLockGates/instant_refused_57
+=== RUN   TestT15WarnMatrix/inplace_not_a_guarantee
+=== PAUSE TestT15InstantVersionAndLockGates/instant_refused_57
+=== RUN   TestT15InstantVersionAndLockGates/instant_add_column_ok_80
+=== PAUSE TestT15InstantVersionAndLockGates/instant_add_column_ok_80
+=== RUN   TestT15InstantVersionAndLockGates/instant_add_index_refused_80
+=== PAUSE TestT15InstantVersionAndLockGates/instant_add_index_refused_80
+=== RUN   TestT15InstantVersionAndLockGates/instant_modify_refused_80
+=== PAUSE TestT15WarnMatrix/inplace_not_a_guarantee
+=== PAUSE TestT15InstantVersionAndLockGates/instant_modify_refused_80
+=== CONT  TestT15InstantVersionAndLockGates/instant_explicit_lock_refused_80
+=== RUN   TestT15WarnMatrix/exclusive_alone
+=== PAUSE TestT15WarnMatrix/exclusive_alone
+=== RUN   TestT15WarnMatrix/shared_alone
+=== PAUSE TestT15WarnMatrix/shared_alone
+=== CONT  TestT15InstantVersionAndLockGates/instant_add_index_refused_80
+=== CONT  TestT15MissingPrerequisiteGaps/unknown_engine_lock_none
+=== CONT  TestT15InstantVersionAndLockGates/instant_add_column_ok_80
+=== CONT  TestT15InstantVersionAndLockGates/instant_modify_refused_80
+=== CONT  TestT15InstantVersionAndLockGates/instant_refused_57
+=== RUN   TestT15WarnMatrix/lock_none_silent
+=== PAUSE TestT15WarnMatrix/lock_none_silent
+=== RUN   TestT15WarnMatrix/instant_silent
+=== PAUSE TestT15WarnMatrix/instant_silent
+=== RUN   TestT15WarnMatrix/default_silent
+=== PAUSE TestT15WarnMatrix/default_silent
+=== RUN   TestT15WarnMatrix/modifiers_only_copy
+=== PAUSE TestT15WarnMatrix/modifiers_only_copy
+=== CONT  TestT15WarnMatrix/copy_alone
+=== NAME  TestT15InstantVersionAndLockGates/instant_refused_57
+    batch_state_t15_test.go:159: expected one 1800-class refusal, got []rule.Finding(nil)
+=== CONT  TestT15WarnMatrix/lock_none_silent
+=== NAME  TestT15TiDBOnlineOptions
+    batch_state_t15_test.go:265: expected one TiDB online-options notice, got []rule.Finding(nil)
+=== NAME  TestT15InstantVersionAndLockGates/instant_modify_refused_80
+    batch_state_t15_test.go:200: expected one 1845-class refusal, got []rule.Finding(nil)
+=== NAME  TestT15CopyLockNoneRefused
+    batch_state_t15_test.go:121: expected one blocker refusal, got []rule.Finding(nil)
+=== NAME  TestT15InstantVersionAndLockGates/instant_explicit_lock_refused_80
+    batch_state_t15_test.go:147: expected one 1221-class refusal, got []rule.Finding(nil)
+=== NAME  TestT15MissingPrerequisiteGaps/unknown_engine_lock_none
+    batch_state_t15_test.go:304: expected an engine gap, got []rule.EvidenceGap(nil)
+=== CONT  TestT15WarnMatrix/modifiers_only_copy
+=== CONT  TestT15WarnMatrix/default_silent
+--- FAIL: TestT15CopyLockNoneRefused (0.01s)
+=== CONT  TestT15WarnMatrix/instant_silent
+--- FAIL: TestT15TiDBOnlineOptions (0.01s)
+=== CONT  TestT15WarnMatrix/exclusive_alone
+=== NAME  TestT15InstantVersionAndLockGates/instant_add_index_refused_80
+    batch_state_t15_test.go:188: expected one 1845-class refusal, got []rule.Finding(nil)
+=== CONT  TestT15WarnMatrix/inplace_not_a_guarantee
+=== NAME  TestT15InstantVersionAndLockGates/instant_add_column_ok_80
+    batch_state_t15_test.go:176: coverage = {Status:incomplete}, want complete
+=== CONT  TestT15WarnMatrix/shared_alone
+--- FAIL: TestT15InstantVersionAndLockGates (0.00s)
+    --- FAIL: TestT15InstantVersionAndLockGates/instant_refused_57 (0.01s)
+    --- FAIL: TestT15InstantVersionAndLockGates/instant_modify_refused_80 (0.01s)
+    --- FAIL: TestT15InstantVersionAndLockGates/instant_explicit_lock_refused_80 (0.01s)
+    --- FAIL: TestT15InstantVersionAndLockGates/instant_add_index_refused_80 (0.01s)
+    --- FAIL: TestT15InstantVersionAndLockGates/instant_add_column_ok_80 (0.01s)
+=== NAME  TestT15MissingPrerequisiteGaps/no_version
+    batch_state_t15_test.go:289: expected a version gap, got []rule.EvidenceGap(nil)
+--- PASS: TestT15RuleOffKeepsStateConclusion (0.02s)
+=== NAME  TestT15SeedCopyExclusiveGoldenPath
+    batch_state_t15_test.go:75: seed coverage = {Status:incomplete}, want complete
+--- FAIL: TestT15MissingPrerequisiteGaps (0.00s)
+    --- FAIL: TestT15MissingPrerequisiteGaps/unknown_engine_lock_none (0.01s)
+    --- FAIL: TestT15MissingPrerequisiteGaps/no_version (0.02s)
+--- FAIL: TestT15SeedCopyExclusiveGoldenPath (0.02s)
+=== NAME  TestT15WarnMatrix/copy_alone
+    batch_state_t15_test.go:236: copy_alone: warnings = []rule.Finding(nil), want 1
+=== NAME  TestT15WarnMatrix/inplace_not_a_guarantee
+    batch_state_t15_test.go:236: inplace_not_a_guarantee: warnings = []rule.Finding(nil), want 1
+=== NAME  TestT15WarnMatrix/exclusive_alone
+    batch_state_t15_test.go:236: exclusive_alone: warnings = []rule.Finding(nil), want 1
+=== NAME  TestT15WarnMatrix/modifiers_only_copy
+    batch_state_t15_test.go:236: modifiers_only_copy: warnings = []rule.Finding(nil), want 1
+=== NAME  TestT15WarnMatrix/shared_alone
+    batch_state_t15_test.go:236: shared_alone: warnings = []rule.Finding(nil), want 1
+--- FAIL: TestT15WarnMatrix (0.00s)
+    --- FAIL: TestT15WarnMatrix/copy_alone (0.02s)
+    --- PASS: TestT15WarnMatrix/lock_none_silent (0.01s)
+    --- FAIL: TestT15WarnMatrix/inplace_not_a_guarantee (0.01s)
+    --- PASS: TestT15WarnMatrix/instant_silent (0.01s)
+    --- FAIL: TestT15WarnMatrix/exclusive_alone (0.01s)
+    --- FAIL: TestT15WarnMatrix/modifiers_only_copy (0.01s)
+    --- PASS: TestT15WarnMatrix/default_silent (0.01s)
+    --- FAIL: TestT15WarnMatrix/shared_alone (0.01s)
+FAIL
+FAIL	github.com/Fanduzi/DeltaScope/internal/application/audit	0.642s
+FAIL

@@ -1,0 +1,121 @@
+internal/domain/rule/ddl/metadata_rules.go:512:46: Error return value is not checked (errcheck)
+	return alterColumnPositionExistsRule{inner: inner.(alterObjectExistenceRule)}, nil
+	                                            ^
+internal/application/audit/batch_state_t07_default_test.go:327:9: stringConcatSimplify: suggestion: "CREATE TABLE t (\n  a INT,\n  b INT DEFAULT (a + 1)\n)" + ";\n" + "ALTER TABLE t DROP COLUMN a" (gocritic)
+	sql := strings.Join([]string{
+	       ^
+internal/application/audit/batch_state_t07_matrix_test.go:172:1: tooManyResultsChecker: function has more than 5 results, consider to simplify the function (gocritic)
+func t07ActualEntries(result report.Result) (findings, metadata, locations, gaps, unsupported []any, exact []any) {
+^
+internal/application/audit/batch_state_t07_visibility_test.go:126:30: stringConcatSimplify: suggestion: "CREATE TABLE t (id INT PRIMARY KEY, hidden_c INT INVISIBLE, visible_c INT)" + ";\n" + "ALTER TABLE t MODIFY COLUMN hidden_c BIGINT" (gocritic)
+	statements := t07Columns(t, strings.Join([]string{
+	                            ^
+internal/domain/rule/ddl/alter_compatibility_rules.go:361:5: emptyStringTest: replace `len(digits) == 0` with `digits == ""` (gocritic)
+	if len(digits) == 0 || digits[0] == '0' {
+	   ^
+internal/domain/spec/ddl.go:622:1: typeDefFirst: definition of type 'Index' should appear before its methods (gocritic)
+type Index struct {
+^
+internal/application/audit/batch_state_t07_matrix_test.go:23:1: File is not properly formatted (gofmt)
+	ID       string          `json:"id"`
+^
+internal/application/audit/batch_state_t07_test.go:182:1: File is not properly formatted (gofmt)
+					t07RuleDependency:                      "      required: true\n",
+^
+internal/interfaces/http/audit_char_length_t06a5_test.go:13:1: File is not properly formatted (goimports)
+	"github.com/Fanduzi/DeltaScope/internal/domain/rule/catalog"
+^
+pkg/deltascope/audit_char_length_t06a5_test.go:13:1: File is not properly formatted (goimports)
+	"github.com/Fanduzi/DeltaScope/internal/domain/rule/catalog"
+^
+scripts/t06a17proof/main.go:304:12: G301: Expect directory permissions to be 0750 or less (gosec)
+	if err := os.MkdirAll(args[0], 0o755); err != nil {
+	          ^
+scripts/t06a17proof/main.go:308:12: G301: Expect directory permissions to be 0750 or less (gosec)
+	if err := os.Mkdir(directory, 0o755); err != nil {
+	          ^
+scripts/t06a17proof/main.go:312:10: G306: Expect WriteFile permissions to be 0600 or less (gosec)
+		return os.WriteFile(filepath.Join(directory, name), data, 0o644)
+		       ^
+scripts/t07proof/main.go:166:15: G302: Expect file permissions to be 0600 or less (gosec)
+	file, err := os.OpenFile(filepath.Join(dir, name), os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0644)
+	             ^
+scripts/t07proof/main.go:427:12: G301: Expect directory permissions to be 0750 or less (gosec)
+	if err := os.MkdirAll(os.Args[1], 0755); err != nil {
+	          ^
+scripts/t07proof/main.go:431:12: G301: Expect directory permissions to be 0750 or less (gosec)
+	if err := os.Mkdir(dir, 0755); err != nil {
+	          ^
+internal/infrastructure/parser/tidb/field_census_test.go:659:18: inline: Constant reflect.Ptr should be inlined (govet)
+	for t.Kind() == reflect.Ptr || t.Kind() == reflect.Slice || t.Kind() == reflect.Array {
+	                ^
+internal/domain/rule/ddl/metadata_rules.go:567:37: QF1001: could apply De Morgan's law (staticcheck)
+			!producedName(produced, name) && !(snapshotHasColumn(statement, snapshot, name) && !removedName(removed, name)) {
+			                                 ^
+internal/domain/spec/advanced_columns.go:911:4: QF1001: could apply De Morgan's law (staticcheck)
+			!(version.Version == AdvancedTiDBStoredToOrdinaryVersion && prior.Generated.Storage == GeneratedStorageStored):
+			^
+internal/infrastructure/parser/tidb/supplement.go:191:25: QF1001: could apply De Morgan's law (staticcheck)
+		for hi < len(toks) && !(toks[hi].kind == tokPunct && toks[hi].text(sqlText) == ";") {
+		                      ^
+internal/infrastructure/parser/tidb/supplement.go:313:18: QF1001: could apply De Morgan's law (staticcheck)
+	if i+1 != hi || !(toks[i].wordIs(sqlText, "visible") || toks[i].wordIs(sqlText, "invisible")) {
+	                ^
+scripts/t06a17proof/main.go:84:58: SA1019: c.conn.Begin has been deprecated since Go 1.8: Drivers should implement ConnBeginTx instead (or additionally). (staticcheck)
+func (c *ledgerConn) Begin() (driver.Tx, error) { return c.conn.Begin() }
+                                                         ^
+scripts/t06a17proof/main.go:119:9: SA1019: s.stmt.Exec has been deprecated since Go 1.8: Drivers should implement StmtExecContext instead (or additionally). (staticcheck)
+	return s.stmt.Exec(args)
+	       ^
+scripts/t06a17proof/main.go:123:9: SA1019: s.stmt.Query has been deprecated since Go 1.8: Drivers should implement StmtQueryContext instead (or additionally). (staticcheck)
+	return s.stmt.Query(args)
+	       ^
+scripts/t07proof/ledger.go:62:58: SA1019: c.conn.Begin has been deprecated since Go 1.8: Drivers should implement ConnBeginTx instead (or additionally). (staticcheck)
+func (c *ledgerConn) Begin() (driver.Tx, error) { return c.conn.Begin() }
+                                                         ^
+scripts/t07proof/ledger.go:98:9: SA1019: s.stmt.Exec has been deprecated since Go 1.8: Drivers should implement StmtExecContext instead (or additionally). (staticcheck)
+	return s.stmt.Exec(args)
+	       ^
+scripts/t07proof/ledger.go:102:9: SA1019: s.stmt.Query has been deprecated since Go 1.8: Drivers should implement StmtQueryContext instead (or additionally). (staticcheck)
+	return s.stmt.Query(args)
+	       ^
+scripts/t07proof/main.go:66:2: QF1003: could use tagged switch on anchor (staticcheck)
+	if anchor == "mysql80" || anchor == "mysql84" {
+	^
+internal/application/audit/batch_state_t07_matrix_test.go:277:60: unnecessary conversion (unconvert)
+				t07ExpectEqual(t, tc.ID, "statement_coverage", v, []any(statementCoverage))
+				                                                       ^
+internal/application/audit/batch_state_t07_matrix_test.go:280:55: unnecessary conversion (unconvert)
+				t07ExpectEqual(t, tc.ID, "statement_sql", v, []any(statementSQL))
+				                                                  ^
+internal/application/audit/batch_state_t07_matrix_test.go:283:59: unnecessary conversion (unconvert)
+				t07ExpectEqual(t, tc.ID, "statement_indices", v, []any(indices))
+				                                                      ^
+internal/infrastructure/parser/tidb/expression_facts_t07_test.go:145:22: unnecessary conversion (unconvert)
+	node := ast.StmtNode(stmt)
+	                    ^
+internal/infrastructure/parser/tidb/extractor_t06a14_test.go:43:20: unnecessary conversion (unconvert)
+		uintValue: uint64(ast.RowFormatDynamic), options: map[string]string{"row_format": "DYNAMIC"}},
+		                 ^
+internal/infrastructure/parser/tidb/extractor_t06a14_test.go:45:20: unnecessary conversion (unconvert)
+		uintValue: uint64(ast.RowFormatCompact), options: map[string]string{"row_format": "COMPACT"}},
+		                 ^
+internal/application/queryaccess/identity_resolver.go:570:6: func classifyCandidateResolutionMode is unused (unused)
+func classifyCandidateResolutionMode(c EffectCandidate, rc EffectIdentityResolutionContext) EffectIdentityResolutionMode {
+     ^
+internal/infrastructure/parser/tidb/extractor.go:2278:6: func countIndexPartKinds is unused (unused)
+func countIndexPartKinds(parts []*ast.IndexPartSpecification) (expr, prefix, desc, multiValued int) {
+     ^
+internal/interfaces/cli/audit.go:318:6: func hasConfiguredPasswordSource is unused (unused)
+func hasConfiguredPasswordSource(options auditConnectionOptions) bool {
+     ^
+37 issues:
+* errcheck: 1
+* gocritic: 5
+* gofmt: 2
+* goimports: 2
+* gosec: 6
+* govet: 1
+* staticcheck: 11
+* unconvert: 6
+* unused: 3

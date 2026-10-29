@@ -1,0 +1,179 @@
+{
+  "case_id": "T15.cli.t15-cli-tidb-compat-notice",
+  "kind": "cli_audit",
+  "cli_case": "t15-cli-tidb-compat-notice",
+  "dialect": "tidb",
+  "input_sql": "ALTER TABLE t ADD COLUMN c INT, ALGORITHM=COPY, LOCK=EXCLUSIVE;",
+  "policy_profile": "t15-tidb-online",
+  "policy_path": "/private/tmp/ddl-golden-final/T15/T15/golden-policy-t15-tidb-online.yaml",
+  "command": [
+    "/private/tmp/ddl-golden-final/T15/T15/bin/deltascope",
+    "audit",
+    "--dialect",
+    "tidb",
+    "--sql",
+    "ALTER TABLE t ADD COLUMN c INT, ALGORITHM=COPY, LOCK=EXCLUSIVE;",
+    "--config",
+    "/private/tmp/ddl-golden-final/T15/T15/golden-policy-t15-tidb-online.yaml",
+    "--format",
+    "json",
+    "--fail-on",
+    "notice"
+  ],
+  "expected": {
+    "exit": 1,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+      "complete"
+    ],
+    "evidence_gaps": 0,
+    "rule_summary_applicable": 2,
+    "finding_entries": [
+      {
+        "index": 0,
+        "rule_id": "ddl.tidb.alter.compat_options.notice",
+        "level": "notice"
+      }
+    ]
+  },
+  "actual": {
+    "exit": 1,
+    "stdout": "{\"verdict\":\"pass\",\"coverage\":{\"status\":\"complete\"},\"summary\":{\"statements\":1,\"blockers\":0,\"warnings\":0,\"notices\":1},\"statements\":[{\"index\":0,\"kind\":\"ddl\",\"raw_sql\":\"ALTER TABLE t ADD COLUMN c INT, ALGORITHM=COPY, LOCK=EXCLUSIVE;\",\"normalized_sql\":\"ALTER TABLE t ADD COLUMN c INT, ALGORITHM=COPY, LOCK=EXCLUSIVE\",\"findings\":[{\"rule_id\":\"ddl.tidb.alter.compat_options.notice\",\"level\":\"notice\",\"message\":\"alter table declares TiDB compatibility clauses: algorithm=\\\"copy\\\", lock=\\\"exclusive\\\"\",\"statement_kind\":\"ddl\",\"location\":{\"line\":1,\"column\":1},\"suggestion\":\"the clauses are accepted for syntax compatibility; TiDB applies its own online semantics\",\"metadata\":{\"declarations\":[\"algorithm=\\\"copy\\\"\",\"lock=\\\"exclusive\\\"\"],\"table\":\"t\"},\"explanation\":{\"summary\":\"Check DDL tidb alter compat options notice\",\"why\":\"The statement matched the shipped governance rule for this pattern.\",\"risk\":\"Ignoring this rule can weaken schema-governance guarantees and make changes harder to review safely.\",\"suggestion\":\"the clauses are accepted for syntax compatibility; TiDB applies its own online semantics\"}}],\"coverage\":{\"status\":\"complete\"}}],\"fail_on_triggered\":true,\"rule_summary\":{\"loaded\":2,\"applicable\":2,\"skipped\":[]},\"context\":{\"mode\":\"offline\",\"dialect\":\"tidb\",\"dialect_source\":\"flag\",\"note\":\"existence not checked (no database connection)\",\"unproven\":[\"column_exists\",\"table_exists\"]}}\n",
+    "stderr": "",
+    "parsed": {
+      "verdict": "pass",
+      "coverage": {
+        "status": "complete"
+      },
+      "summary": {
+        "statements": 1,
+        "blockers": 0,
+        "warnings": 0,
+        "notices": 1
+      },
+      "statements": [
+        {
+          "index": 0,
+          "kind": "ddl",
+          "raw_sql": "ALTER TABLE t ADD COLUMN c INT, ALGORITHM=COPY, LOCK=EXCLUSIVE;",
+          "normalized_sql": "ALTER TABLE t ADD COLUMN c INT, ALGORITHM=COPY, LOCK=EXCLUSIVE",
+          "findings": [
+            {
+              "rule_id": "ddl.tidb.alter.compat_options.notice",
+              "level": "notice",
+              "message": "alter table declares TiDB compatibility clauses: algorithm=\"copy\", lock=\"exclusive\"",
+              "statement_kind": "ddl",
+              "location": {
+                "line": 1,
+                "column": 1
+              },
+              "suggestion": "the clauses are accepted for syntax compatibility; TiDB applies its own online semantics",
+              "metadata": {
+                "declarations": [
+                  "algorithm=\"copy\"",
+                  "lock=\"exclusive\""
+                ],
+                "table": "t"
+              },
+              "explanation": {
+                "summary": "Check DDL tidb alter compat options notice",
+                "why": "The statement matched the shipped governance rule for this pattern.",
+                "risk": "Ignoring this rule can weaken schema-governance guarantees and make changes harder to review safely.",
+                "suggestion": "the clauses are accepted for syntax compatibility; TiDB applies its own online semantics"
+              }
+            }
+          ],
+          "coverage": {
+            "status": "complete"
+          }
+        }
+      ],
+      "fail_on_triggered": true,
+      "rule_summary": {
+        "loaded": 2,
+        "applicable": 2,
+        "skipped": []
+      },
+      "context": {
+        "mode": "offline",
+        "dialect": "tidb",
+        "dialect_source": "flag",
+        "note": "existence not checked (no database connection)",
+        "unproven": [
+          "column_exists",
+          "table_exists"
+        ]
+      }
+    },
+    "version_evidence": {
+      "target_raw": null,
+      "target_canonical": null,
+      "observed_raw": null,
+      "observed_canonical": null,
+      "resolved": null
+    }
+  },
+  "assertions": [
+    {
+      "name": "exit code",
+      "ok": true,
+      "detail": "rc=1 expected=1"
+    },
+    {
+      "name": "verdict",
+      "ok": true,
+      "detail": "verdict='pass'"
+    },
+    {
+      "name": "top-level statements",
+      "ok": true,
+      "detail": "statements=1 expected=1"
+    },
+    {
+      "name": "zero findings",
+      "ok": true,
+      "detail": "findings=1"
+    },
+    {
+      "name": "no diagnostics",
+      "ok": true,
+      "detail": "diagnostics=[]"
+    },
+    {
+      "name": "no unsupported",
+      "ok": true,
+      "detail": "unsupported=[]"
+    },
+    {
+      "name": "applicable rule count",
+      "ok": true,
+      "detail": "applicable=2"
+    },
+    {
+      "name": "aggregate coverage",
+      "ok": true,
+      "detail": "coverage='complete'"
+    },
+    {
+      "name": "per-statement coverage",
+      "ok": true,
+      "detail": "statement_coverage=['complete']"
+    },
+    {
+      "name": "evidence gap count",
+      "ok": true,
+      "detail": "gaps=0"
+    },
+    {
+      "name": "finding entries",
+      "ok": true,
+      "detail": "findings=[(0, 'ddl.tidb.alter.compat_options.notice', 'notice')] expected=[(0, 'ddl.tidb.alter.compat_options.notice', 'notice')]"
+    }
+  ],
+  "status": "pass"
+}
