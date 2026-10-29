@@ -1,0 +1,174 @@
+{
+  "case_id": "T15.cli.t15-cli-tidb-force-vendor",
+  "kind": "cli_audit",
+  "cli_case": "t15-cli-tidb-force-vendor",
+  "dialect": "tidb",
+  "input_sql": "ALTER TABLE t FORCE;",
+  "policy_profile": "all-rules-disabled",
+  "policy_path": "/private/tmp/ddl-golden-final3/T15/T15/golden-policy-all-off.yaml",
+  "command": [
+    "/private/tmp/ddl-golden-final3/T15/T15/bin/deltascope",
+    "audit",
+    "--dialect",
+    "tidb",
+    "--sql",
+    "ALTER TABLE t FORCE;",
+    "--config",
+    "/private/tmp/ddl-golden-final3/T15/T15/golden-policy-all-off.yaml",
+    "--format",
+    "json"
+  ],
+  "expected": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+      "incomplete"
+    ],
+    "evidence_gaps": 0,
+    "unsupported_entries": [
+      {
+        "index": 0,
+        "feature": "alter_table.force",
+        "reason": "parsed by the shared parser but outside the supported statement surface for this dialect",
+        "metadata": {
+          "action": "force",
+          "aspect": "action"
+        }
+      }
+    ]
+  },
+  "actual": {
+    "exit": 1,
+    "stdout": "{\"verdict\":\"review\",\"coverage\":{\"status\":\"incomplete\"},\"summary\":{\"statements\":1,\"blockers\":0,\"warnings\":0,\"notices\":0},\"statements\":[{\"index\":0,\"kind\":\"ddl\",\"raw_sql\":\"ALTER TABLE t FORCE;\",\"normalized_sql\":\"ALTER TABLE t FORCE\",\"coverage\":{\"status\":\"incomplete\"}}],\"unsupported\":[{\"feature\":\"alter_table.force\",\"sql\":\"ALTER TABLE t FORCE;\",\"reason\":\"parsed by the shared parser but outside the supported statement surface for this dialect\",\"metadata\":{\"action\":\"force\",\"aspect\":\"action\"}}],\"diagnostics\":[{\"classification\":\"unsupported_statement\",\"reason\":\"DeltaScope recognized this statement or feature but does not audit it yet\",\"action_hint\":\"treat this statement as not covered by DeltaScope policy checks; review it manually or track support in a future DeltaScope release\",\"audited\":false,\"dialect\":\"tidb\"}],\"fail_on_triggered\":false,\"context\":{\"mode\":\"offline\",\"dialect\":\"tidb\",\"dialect_source\":\"flag\",\"note\":\"existence not checked (no database connection)\",\"unproven\":[\"column_exists\",\"table_exists\"]}}\n",
+    "stderr": "",
+    "parsed": {
+      "verdict": "review",
+      "coverage": {
+        "status": "incomplete"
+      },
+      "summary": {
+        "statements": 1,
+        "blockers": 0,
+        "warnings": 0,
+        "notices": 0
+      },
+      "statements": [
+        {
+          "index": 0,
+          "kind": "ddl",
+          "raw_sql": "ALTER TABLE t FORCE;",
+          "normalized_sql": "ALTER TABLE t FORCE",
+          "coverage": {
+            "status": "incomplete"
+          }
+        }
+      ],
+      "unsupported": [
+        {
+          "feature": "alter_table.force",
+          "sql": "ALTER TABLE t FORCE;",
+          "reason": "parsed by the shared parser but outside the supported statement surface for this dialect",
+          "metadata": {
+            "action": "force",
+            "aspect": "action"
+          }
+        }
+      ],
+      "diagnostics": [
+        {
+          "classification": "unsupported_statement",
+          "reason": "DeltaScope recognized this statement or feature but does not audit it yet",
+          "action_hint": "treat this statement as not covered by DeltaScope policy checks; review it manually or track support in a future DeltaScope release",
+          "audited": false,
+          "dialect": "tidb"
+        }
+      ],
+      "fail_on_triggered": false,
+      "context": {
+        "mode": "offline",
+        "dialect": "tidb",
+        "dialect_source": "flag",
+        "note": "existence not checked (no database connection)",
+        "unproven": [
+          "column_exists",
+          "table_exists"
+        ]
+      }
+    },
+    "version_evidence": {
+      "target_raw": null,
+      "target_canonical": null,
+      "observed_raw": null,
+      "observed_canonical": null,
+      "resolved": null
+    }
+  },
+  "assertions": [
+    {
+      "name": "exit code",
+      "ok": true,
+      "detail": "rc=1 expected=1"
+    },
+    {
+      "name": "verdict",
+      "ok": true,
+      "detail": "verdict='review'"
+    },
+    {
+      "name": "top-level statements",
+      "ok": true,
+      "detail": "statements=1 expected=1"
+    },
+    {
+      "name": "zero findings",
+      "ok": true,
+      "detail": "findings=0"
+    },
+    {
+      "name": "no diagnostics",
+      "ok": true,
+      "detail": "diagnostics=[{'classification': 'unsupported_statement', 'reason': 'DeltaScope recognized this statement or feature but does not audit it yet', 'action_hint': 'treat this statement as not covered by DeltaScope policy checks; review it manually or track support in a future DeltaScope release', 'audited': False, 'dialect': 'tidb'}]"
+    },
+    {
+      "name": "no unsupported",
+      "ok": true,
+      "detail": "unsupported=[{'feature': 'alter_table.force', 'sql': 'ALTER TABLE t FORCE;', 'reason': 'parsed by the shared parser but outside the supported statement surface for this dialect', 'metadata': {'action': 'force', 'aspect': 'action'}}]"
+    },
+    {
+      "name": "aggregate coverage",
+      "ok": true,
+      "detail": "coverage='incomplete'"
+    },
+    {
+      "name": "per-statement coverage",
+      "ok": true,
+      "detail": "statement_coverage=['incomplete']"
+    },
+    {
+      "name": "unsupported entries",
+      "ok": true,
+      "detail": "entries=[(0, 'alter_table.force', 'parsed by the shared parser but outside the supported statement surface for this dialect')] expected=[(0, 'alter_table.force', 'parsed by the shared parser but outside the supported statement surface for this dialect')]"
+    },
+    {
+      "name": "unsupported metadata (0, 'alter_table.force', 'parsed by the shared parser but outside the supported statement surface for this dialect')",
+      "ok": true,
+      "detail": "entries=[{'feature': 'alter_table.force', 'sql': 'ALTER TABLE t FORCE;', 'reason': 'parsed by the shared parser but outside the supported statement surface for this dialect', 'metadata': {'action': 'force', 'aspect': 'action'}}] expected_metadata={'action': 'force', 'aspect': 'action'}"
+    },
+    {
+      "name": "unsupported sql identity index=0",
+      "ok": true,
+      "detail": "sql='ALTER TABLE t FORCE;' expected='ALTER TABLE t FORCE;'"
+    },
+    {
+      "name": "evidence gap count",
+      "ok": true,
+      "detail": "gaps=0"
+    }
+  ],
+  "status": "pass"
+}

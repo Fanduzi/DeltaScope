@@ -1,0 +1,296 @@
+{
+  "case_id": "T14.meta.t14-mysql80-reorg-missing-source",
+  "kind": "cli_metadata",
+  "cli_case": "t14-mysql80-reorg-missing-source",
+  "anchor": "mysql80",
+  "dialect": "mysql",
+  "input_sql": "ALTER TABLE t14r REORGANIZE PARTITION pmissing INTO (PARTITION q0 VALUES LESS THAN (150), PARTITION q1 VALUES LESS THAN (200));",
+  "policy_profile": "t14-reorganize-target",
+  "policy_path": "/private/tmp/ddl-golden-final3/T14/T14/golden-policy-t14-reorganize-target.yaml",
+  "connect": {
+    "host": "127.0.0.1",
+    "port": 23380,
+    "user": "root",
+    "schema": "golden",
+    "password_env": "DS_T14_GOLDEN_PW"
+  },
+  "expected": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+      "complete"
+    ],
+    "evidence_gaps": 0,
+    "rule_summary_applicable": 1,
+    "finding_entries": [
+      {
+        "index": 0,
+        "rule_id": "ddl.alter.reorganize_partition.target",
+        "level": "blocker"
+      }
+    ],
+    "finding_metadata": [
+      {
+        "index": 0,
+        "rule_id": "ddl.alter.reorganize_partition.target",
+        "metadata": {
+          "table": "t14r",
+          "partition": "pmissing",
+          "reason_code": "partition_absent",
+          "native_error": "1507",
+          "exists": "false"
+        }
+      }
+    ],
+    "version": {
+      "product": "mysql",
+      "version": "8.0.46"
+    }
+  },
+  "actual": {
+    "database": {
+      "product": "mysql",
+      "image": "mysql:8.0.46",
+      "image_digest": "mysql@sha256:7dcddc01f13bab2f15cde676d44d01f61fc9f99fe7785e86196dfc07d358ae2b",
+      "container": "deltascope-ddl-golden-mysql80",
+      "reachable": true,
+      "version": "8.0.46"
+    },
+    "setup": [
+      {
+        "name": "create-range-fixture",
+        "sql": "CREATE TABLE t14r (id INT) ENGINE=InnoDB PARTITION BY RANGE(id) (PARTITION p0 VALUES LESS THAN (200), PARTITION pmax VALUES LESS THAN MAXVALUE)",
+        "rc": 0,
+        "stdout": "",
+        "stderr": ""
+      }
+    ],
+    "post_verify": [],
+    "execute": [
+      {
+        "name": "apply-missing-source",
+        "sql": "ALTER TABLE t14r REORGANIZE PARTITION pmissing INTO (PARTITION q0 VALUES LESS THAN (150), PARTITION q1 VALUES LESS THAN (200))",
+        "rc": 1,
+        "stdout": "",
+        "stderr": "ERROR 1507 (HY000) at line 1: Error in list of partitions to REORGANIZE"
+      }
+    ],
+    "structure": [],
+    "teardown": [
+      {
+        "name": "drop-fixture",
+        "sql": "DROP TABLE IF EXISTS t14r",
+        "rc": 0,
+        "stderr": ""
+      }
+    ],
+    "exit": 1,
+    "stdout": "{\"verdict\":\"reject\",\"coverage\":{\"status\":\"complete\"},\"summary\":{\"statements\":1,\"blockers\":1,\"warnings\":0,\"notices\":0},\"statements\":[{\"index\":0,\"kind\":\"ddl\",\"raw_sql\":\"ALTER TABLE t14r REORGANIZE PARTITION pmissing INTO (PARTITION q0 VALUES LESS THAN (150), PARTITION q1 VALUES LESS THAN (200));\",\"normalized_sql\":\"ALTER TABLE t14r REORGANIZE PARTITION pmissing INTO (PARTITION q0 VALUES LESS THAN (150), PARTITION q1 VALUES LESS THAN (200))\",\"findings\":[{\"rule_id\":\"ddl.alter.reorganize_partition.target\",\"level\":\"blocker\",\"message\":\"ALTER TABLE reorganize partition names source partition \\\"pmissing\\\", which is not a member of the table (native 1507)\",\"statement_kind\":\"ddl\",\"location\":{\"line\":1,\"column\":1},\"suggestion\":\"verify the source partition names against the observed member set\",\"metadata\":{\"action\":\"reorganize_partition\",\"exists\":\"false\",\"native_error\":\"1507\",\"partition\":\"pmissing\",\"reason_code\":\"partition_absent\",\"table\":\"t14r\"},\"explanation\":{\"summary\":\"Check DDL alter reorganize partition target\",\"why\":\"The statement matched the shipped governance rule for this pattern.\",\"risk\":\"Ignoring this rule can weaken schema-governance guarantees and make changes harder to review safely.\",\"suggestion\":\"verify the source partition names against the observed member set\"}}],\"coverage\":{\"status\":\"complete\"}}],\"version\":{\"product\":\"mysql\",\"version\":\"8.0.46\",\"major\":8,\"minor\":0,\"patch\":46,\"source\":\"observed\",\"validated_range\":true},\"fail_on_triggered\":true,\"rule_summary\":{\"loaded\":1,\"applicable\":1,\"skipped\":[]},\"context\":{\"mode\":\"metadata-aware\",\"dialect\":\"mysql\",\"dialect_source\":\"detected\",\"schema\":\"golden\",\"schema_source\":\"flag\"}}\n",
+    "stderr": "",
+    "parsed": {
+      "verdict": "reject",
+      "coverage": {
+        "status": "complete"
+      },
+      "summary": {
+        "statements": 1,
+        "blockers": 1,
+        "warnings": 0,
+        "notices": 0
+      },
+      "statements": [
+        {
+          "index": 0,
+          "kind": "ddl",
+          "raw_sql": "ALTER TABLE t14r REORGANIZE PARTITION pmissing INTO (PARTITION q0 VALUES LESS THAN (150), PARTITION q1 VALUES LESS THAN (200));",
+          "normalized_sql": "ALTER TABLE t14r REORGANIZE PARTITION pmissing INTO (PARTITION q0 VALUES LESS THAN (150), PARTITION q1 VALUES LESS THAN (200))",
+          "findings": [
+            {
+              "rule_id": "ddl.alter.reorganize_partition.target",
+              "level": "blocker",
+              "message": "ALTER TABLE reorganize partition names source partition \"pmissing\", which is not a member of the table (native 1507)",
+              "statement_kind": "ddl",
+              "location": {
+                "line": 1,
+                "column": 1
+              },
+              "suggestion": "verify the source partition names against the observed member set",
+              "metadata": {
+                "action": "reorganize_partition",
+                "exists": "false",
+                "native_error": "1507",
+                "partition": "pmissing",
+                "reason_code": "partition_absent",
+                "table": "t14r"
+              },
+              "explanation": {
+                "summary": "Check DDL alter reorganize partition target",
+                "why": "The statement matched the shipped governance rule for this pattern.",
+                "risk": "Ignoring this rule can weaken schema-governance guarantees and make changes harder to review safely.",
+                "suggestion": "verify the source partition names against the observed member set"
+              }
+            }
+          ],
+          "coverage": {
+            "status": "complete"
+          }
+        }
+      ],
+      "version": {
+        "product": "mysql",
+        "version": "8.0.46",
+        "major": 8,
+        "minor": 0,
+        "patch": 46,
+        "source": "observed",
+        "validated_range": true
+      },
+      "fail_on_triggered": true,
+      "rule_summary": {
+        "loaded": 1,
+        "applicable": 1,
+        "skipped": []
+      },
+      "context": {
+        "mode": "metadata-aware",
+        "dialect": "mysql",
+        "dialect_source": "detected",
+        "schema": "golden",
+        "schema_source": "flag"
+      }
+    },
+    "version_evidence": {
+      "target_raw": null,
+      "target_canonical": null,
+      "observed_raw": "8.0.46",
+      "observed_canonical": {
+        "product": "mysql",
+        "version": "8.0.46"
+      },
+      "resolved": {
+        "product": "mysql",
+        "version": "8.0.46",
+        "major": 8,
+        "minor": 0,
+        "patch": 46,
+        "source": "observed",
+        "validated_range": true
+      }
+    }
+  },
+  "assertions": [
+    {
+      "name": "database reachable with expected version",
+      "ok": true,
+      "detail": "SELECT VERSION() rc=0 version='8.0.46' expected_contains='8.0.46'"
+    },
+    {
+      "name": "setup create-range-fixture return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "exit code",
+      "ok": true,
+      "detail": "rc=1 expected=1"
+    },
+    {
+      "name": "verdict",
+      "ok": true,
+      "detail": "verdict='reject'"
+    },
+    {
+      "name": "top-level statements",
+      "ok": true,
+      "detail": "statements=1 expected=1"
+    },
+    {
+      "name": "zero findings",
+      "ok": true,
+      "detail": "findings=1"
+    },
+    {
+      "name": "no diagnostics",
+      "ok": true,
+      "detail": "diagnostics=[]"
+    },
+    {
+      "name": "no unsupported",
+      "ok": true,
+      "detail": "unsupported=[]"
+    },
+    {
+      "name": "applicable rule count",
+      "ok": true,
+      "detail": "applicable=1"
+    },
+    {
+      "name": "aggregate coverage",
+      "ok": true,
+      "detail": "coverage='complete'"
+    },
+    {
+      "name": "per-statement coverage",
+      "ok": true,
+      "detail": "statement_coverage=['complete']"
+    },
+    {
+      "name": "evidence gap count",
+      "ok": true,
+      "detail": "gaps=0"
+    },
+    {
+      "name": "finding entries",
+      "ok": true,
+      "detail": "findings=[(0, 'ddl.alter.reorganize_partition.target', 'blocker')] expected=[(0, 'ddl.alter.reorganize_partition.target', 'blocker')]"
+    },
+    {
+      "name": "finding metadata (0, 'ddl.alter.reorganize_partition.target')",
+      "ok": true,
+      "detail": "findings=[{'action': 'reorganize_partition', 'exists': 'false', 'native_error': '1507', 'partition': 'pmissing', 'reason_code': 'partition_absent', 'table': 't14r'}] expected_subset={'table': 't14r', 'partition': 'pmissing', 'reason_code': 'partition_absent', 'native_error': '1507', 'exists': 'false'}"
+    },
+    {
+      "name": "version identity",
+      "ok": true,
+      "detail": "version={'product': 'mysql', 'version': '8.0.46', 'major': 8, 'minor': 0, 'patch': 46, 'source': 'observed', 'validated_range': True} expected={'product': 'mysql', 'version': '8.0.46'}"
+    },
+    {
+      "name": "execute apply-missing-source return code",
+      "ok": true,
+      "detail": "rc=1 expected=1 stderr='ERROR 1507 (HY000) at line 1: Error in list of partitions to REORGANIZE'"
+    },
+    {
+      "name": "teardown drop-fixture return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    }
+  ],
+  "status": "pass",
+  "command": [
+    "/private/tmp/ddl-golden-final3/T14/T14/bin/deltascope",
+    "audit",
+    "--dialect",
+    "mysql",
+    "--sql",
+    "ALTER TABLE t14r REORGANIZE PARTITION pmissing INTO (PARTITION q0 VALUES LESS THAN (150), PARTITION q1 VALUES LESS THAN (200));",
+    "--config",
+    "/private/tmp/ddl-golden-final3/T14/T14/golden-policy-t14-reorganize-target.yaml",
+    "--format",
+    "json",
+    "--host",
+    "127.0.0.1",
+    "--port",
+    "23380",
+    "--user",
+    "root",
+    "--password-env",
+    "DS_T14_GOLDEN_PW",
+    "--schema",
+    "golden"
+  ]
+}

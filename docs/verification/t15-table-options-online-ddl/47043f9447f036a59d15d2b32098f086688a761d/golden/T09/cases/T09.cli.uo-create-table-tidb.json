@@ -1,0 +1,242 @@
+{
+  "case_id": "T09.cli.uo-create-table-tidb",
+  "kind": "cli_audit",
+  "cli_case": "uo-create-table-tidb",
+  "dialect": "tidb",
+  "input_sql": "CREATE TABLE t9x(a INT, b INT, UNIQUE KEY u_ab(a,b), KEY s_ab(a,b));",
+  "policy_profile": "t09-overlap",
+  "policy_path": "/private/tmp/ddl-golden-final3/T09/T09/golden-policy-t09-overlap.yaml",
+  "command": [
+    "/private/tmp/ddl-golden-final3/T09/T09/bin/deltascope",
+    "audit",
+    "--dialect",
+    "tidb",
+    "--sql",
+    "CREATE TABLE t9x(a INT, b INT, UNIQUE KEY u_ab(a,b), KEY s_ab(a,b));",
+    "--config",
+    "/private/tmp/ddl-golden-final3/T09/T09/golden-policy-t09-overlap.yaml",
+    "--format",
+    "json"
+  ],
+  "expected": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+      "complete"
+    ],
+    "statement_sql": [
+      "CREATE TABLE t9x(a INT, b INT, UNIQUE KEY u_ab(a,b), KEY s_ab(a,b));"
+    ],
+    "statement_indices": [
+      0
+    ],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "finding_entries": [
+      {
+        "index": 0,
+        "rule_id": "ddl.index.redundant_unique_overlap.forbid",
+        "level": "warning"
+      }
+    ],
+    "finding_metadata": [
+      {
+        "index": 0,
+        "rule_id": "ddl.index.redundant_unique_overlap.forbid",
+        "metadata": {
+          "columns": [
+            "a",
+            "b"
+          ],
+          "heuristic": "unique_overlap",
+          "index": "s_ab",
+          "index_kind": "secondary",
+          "redundant": "u_ab",
+          "table": "t9x"
+        }
+      }
+    ],
+    "unsupported_entries": [],
+    "rule_summary_loaded": 2,
+    "rule_summary_applicable": 1
+  },
+  "actual": {
+    "exit": 0,
+    "stdout": "{\"verdict\":\"review\",\"coverage\":{\"status\":\"complete\"},\"summary\":{\"statements\":1,\"blockers\":0,\"warnings\":1,\"notices\":0},\"statements\":[{\"index\":0,\"kind\":\"ddl\",\"raw_sql\":\"CREATE TABLE t9x(a INT, b INT, UNIQUE KEY u_ab(a,b), KEY s_ab(a,b));\",\"normalized_sql\":\"CREATE TABLE t9x(a INT, b INT, UNIQUE KEY u_ab(a,b), KEY s_ab(a,b))\",\"findings\":[{\"rule_id\":\"ddl.index.redundant_unique_overlap.forbid\",\"level\":\"warning\",\"message\":\"secondary index \\\"s_ab\\\" is redundant because unique index \\\"u_ab\\\" uses the same columns\",\"statement_kind\":\"ddl\",\"location\":{\"line\":1,\"column\":1},\"suggestion\":\"drop the secondary index or keep it only with a documented justification\",\"metadata\":{\"columns\":[\"a\",\"b\"],\"heuristic\":\"unique_overlap\",\"index\":\"s_ab\",\"index_kind\":\"secondary\",\"redundant\":\"u_ab\",\"table\":\"t9x\"},\"explanation\":{\"summary\":\"Forbid DDL index redundant unique overlap forbid\",\"why\":\"The statement uses a construct that the shipped policy explicitly forbids.\",\"risk\":\"Ignoring this rule can weaken schema-governance guarantees and make changes harder to review safely.\",\"suggestion\":\"drop the secondary index or keep it only with a documented justification\"}}],\"coverage\":{\"status\":\"complete\"}}],\"fail_on_triggered\":false,\"rule_summary\":{\"loaded\":2,\"applicable\":1,\"skipped\":[]},\"context\":{\"mode\":\"offline\",\"dialect\":\"tidb\",\"dialect_source\":\"flag\",\"note\":\"existence not checked (no database connection)\",\"unproven\":[\"column_exists\",\"table_exists\"]}}\n",
+    "stderr": "",
+    "parsed": {
+      "verdict": "review",
+      "coverage": {
+        "status": "complete"
+      },
+      "summary": {
+        "statements": 1,
+        "blockers": 0,
+        "warnings": 1,
+        "notices": 0
+      },
+      "statements": [
+        {
+          "index": 0,
+          "kind": "ddl",
+          "raw_sql": "CREATE TABLE t9x(a INT, b INT, UNIQUE KEY u_ab(a,b), KEY s_ab(a,b));",
+          "normalized_sql": "CREATE TABLE t9x(a INT, b INT, UNIQUE KEY u_ab(a,b), KEY s_ab(a,b))",
+          "findings": [
+            {
+              "rule_id": "ddl.index.redundant_unique_overlap.forbid",
+              "level": "warning",
+              "message": "secondary index \"s_ab\" is redundant because unique index \"u_ab\" uses the same columns",
+              "statement_kind": "ddl",
+              "location": {
+                "line": 1,
+                "column": 1
+              },
+              "suggestion": "drop the secondary index or keep it only with a documented justification",
+              "metadata": {
+                "columns": [
+                  "a",
+                  "b"
+                ],
+                "heuristic": "unique_overlap",
+                "index": "s_ab",
+                "index_kind": "secondary",
+                "redundant": "u_ab",
+                "table": "t9x"
+              },
+              "explanation": {
+                "summary": "Forbid DDL index redundant unique overlap forbid",
+                "why": "The statement uses a construct that the shipped policy explicitly forbids.",
+                "risk": "Ignoring this rule can weaken schema-governance guarantees and make changes harder to review safely.",
+                "suggestion": "drop the secondary index or keep it only with a documented justification"
+              }
+            }
+          ],
+          "coverage": {
+            "status": "complete"
+          }
+        }
+      ],
+      "fail_on_triggered": false,
+      "rule_summary": {
+        "loaded": 2,
+        "applicable": 1,
+        "skipped": []
+      },
+      "context": {
+        "mode": "offline",
+        "dialect": "tidb",
+        "dialect_source": "flag",
+        "note": "existence not checked (no database connection)",
+        "unproven": [
+          "column_exists",
+          "table_exists"
+        ]
+      }
+    },
+    "version_evidence": {
+      "target_raw": null,
+      "target_canonical": null,
+      "observed_raw": null,
+      "observed_canonical": null,
+      "resolved": null
+    }
+  },
+  "assertions": [
+    {
+      "name": "exit code",
+      "ok": true,
+      "detail": "rc=0 expected=0"
+    },
+    {
+      "name": "verdict",
+      "ok": true,
+      "detail": "verdict='review'"
+    },
+    {
+      "name": "top-level statements",
+      "ok": true,
+      "detail": "statements=1 expected=1"
+    },
+    {
+      "name": "zero findings",
+      "ok": true,
+      "detail": "findings=1"
+    },
+    {
+      "name": "no diagnostics",
+      "ok": true,
+      "detail": "diagnostics=[]"
+    },
+    {
+      "name": "no unsupported",
+      "ok": true,
+      "detail": "unsupported=[]"
+    },
+    {
+      "name": "loaded rule count",
+      "ok": true,
+      "detail": "loaded=2"
+    },
+    {
+      "name": "applicable rule count",
+      "ok": true,
+      "detail": "applicable=1"
+    },
+    {
+      "name": "statement indices",
+      "ok": true,
+      "detail": "indices=[0]"
+    },
+    {
+      "name": "finding statement ownership",
+      "ok": true,
+      "detail": "findings must belong to their enclosing statement"
+    },
+    {
+      "name": "aggregate coverage",
+      "ok": true,
+      "detail": "coverage='complete'"
+    },
+    {
+      "name": "per-statement coverage",
+      "ok": true,
+      "detail": "statement_coverage=['complete']"
+    },
+    {
+      "name": "unsupported entries",
+      "ok": true,
+      "detail": "entries=[] expected=[]"
+    },
+    {
+      "name": "statement raw SQL identity",
+      "ok": true,
+      "detail": "raw_sql=['CREATE TABLE t9x(a INT, b INT, UNIQUE KEY u_ab(a,b), KEY s_ab(a,b));'] expected=['CREATE TABLE t9x(a INT, b INT, UNIQUE KEY u_ab(a,b), KEY s_ab(a,b));']"
+    },
+    {
+      "name": "evidence gap count",
+      "ok": true,
+      "detail": "gaps=0"
+    },
+    {
+      "name": "evidence gap entries",
+      "ok": true,
+      "detail": "gaps=[] expected=[]"
+    },
+    {
+      "name": "finding entries",
+      "ok": true,
+      "detail": "findings=[(0, 'ddl.index.redundant_unique_overlap.forbid', 'warning')] expected=[(0, 'ddl.index.redundant_unique_overlap.forbid', 'warning')]"
+    },
+    {
+      "name": "finding metadata (0, 'ddl.index.redundant_unique_overlap.forbid')",
+      "ok": true,
+      "detail": "findings=[{'columns': ['a', 'b'], 'heuristic': 'unique_overlap', 'index': 's_ab', 'index_kind': 'secondary', 'redundant': 'u_ab', 'table': 't9x'}] expected_subset={'columns': ['a', 'b'], 'heuristic': 'unique_overlap', 'index': 's_ab', 'index_kind': 'secondary', 'redundant': 'u_ab', 'table': 't9x'}"
+    }
+  ],
+  "status": "pass"
+}

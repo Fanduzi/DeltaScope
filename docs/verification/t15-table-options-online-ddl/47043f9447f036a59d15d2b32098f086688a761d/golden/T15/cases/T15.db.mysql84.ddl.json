@@ -1,0 +1,126 @@
+{
+  "case_id": "T15.db.mysql84.ddl",
+  "kind": "db_ddl",
+  "anchor": "mysql84",
+  "input_sql": [
+    "DROP TABLE IF EXISTS t15, t15m, t15c",
+    "CREATE TABLE t15 (id INT PRIMARY KEY, s VARCHAR(20)) ENGINE=InnoDB",
+    "INSERT INTO t15 VALUES (1,'a'),(2,'b')",
+    "DROP TABLE IF EXISTS t15, t15m, t15c"
+  ],
+  "expected": {
+    "steps": [
+      {
+        "name": "drop-stale-fixtures",
+        "rc": 0,
+        "verify": []
+      },
+      {
+        "name": "create-seed-fixture",
+        "rc": 0,
+        "verify": [
+          {
+            "assert": "seed fixture lands InnoDB",
+            "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t15' AND ENGINE='InnoDB'",
+            "expect": "1"
+          }
+        ]
+      },
+      {
+        "name": "seed-rows",
+        "rc": 0,
+        "verify": []
+      },
+      {
+        "name": "cleanup-fixtures",
+        "rc": 0,
+        "verify": []
+      }
+    ]
+  },
+  "actual": {
+    "steps": [
+      {
+        "name": "drop-stale-fixtures",
+        "sql": "DROP TABLE IF EXISTS t15, t15m, t15c",
+        "verify": [],
+        "rc": 0,
+        "stdout": "",
+        "stderr": ""
+      },
+      {
+        "name": "create-seed-fixture",
+        "sql": "CREATE TABLE t15 (id INT PRIMARY KEY, s VARCHAR(20)) ENGINE=InnoDB",
+        "verify": [
+          {
+            "assert": "seed fixture lands InnoDB",
+            "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t15' AND ENGINE='InnoDB'",
+            "rc": 0,
+            "output": "1",
+            "stderr": ""
+          }
+        ],
+        "rc": 0,
+        "stdout": "",
+        "stderr": ""
+      },
+      {
+        "name": "seed-rows",
+        "sql": "INSERT INTO t15 VALUES (1,'a'),(2,'b')",
+        "verify": [],
+        "rc": 0,
+        "stdout": "",
+        "stderr": ""
+      },
+      {
+        "name": "cleanup-fixtures",
+        "sql": "DROP TABLE IF EXISTS t15, t15m, t15c",
+        "verify": [],
+        "rc": 0,
+        "stdout": "",
+        "stderr": ""
+      }
+    ],
+    "database": {
+      "product": "mysql",
+      "image": "mysql:8.4.10",
+      "image_digest": "mysql@sha256:c592c15aaf4a1961e15d82eb31ea5987dda862d1c4b1e93424438c0e91dc1f8d",
+      "container": "deltascope-ddl-golden-mysql84",
+      "reachable": true,
+      "version": "8.4.10"
+    }
+  },
+  "assertions": [
+    {
+      "name": "database reachable with expected version",
+      "ok": true,
+      "detail": "SELECT VERSION() rc=0 version='8.4.10' expected_contains='8.4.10'"
+    },
+    {
+      "name": "drop-stale-fixtures return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "create-seed-fixture return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "create-seed-fixture: seed fixture lands InnoDB",
+      "ok": true,
+      "detail": "rc=0 output='1' expected='1'"
+    },
+    {
+      "name": "seed-rows return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "cleanup-fixtures return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    }
+  ],
+  "status": "pass"
+}
