@@ -22,7 +22,7 @@ Explicitly out of scope:
 - Lock-duration promises, execution timing, or requiring all DDL to be online. The audit answers applicability and risk, never "this statement will take lock L for T seconds".
 - Executing user SQL, adding a new execution engine.
 - T14 leftovers: INTERVAL partitioning, subpartition member modeling, arbitrary row routing.
-- Option names outside the extracted set below stay `UnextractedOptions` with the existing bounded `<op>.option.<name>` gaps: `password`, `union`, `nodegroup`, `secondary_engine*`, `engine_attribute`, `autoextend_size`, `page_*`, `transactional`, `ietf_quotes`, `sequence`, `affinity`, `connection`, `data_directory`, `index_directory`, `insert_method` (extracted but see §6.4 for its bounded consumption), and all TiDB-only options (`auto_random_base`, `auto_id_cache`, `shard_row_id_bits`, `pre_split_regions`, `ttl*`, `stats_buckets`, `stats_top_n`, `stats_cols_choice`, `stats_col_list`, `stats_sample_rate`).
+- Option names outside the extracted set stay `UnextractedOptions` with the existing bounded `<op>.option.<name>` gaps — the truly unextracted remainder: `nodegroup`, `engine_attribute`, `secondary_engine_attribute`, `autoextend_size`, `page_*`, `transactional`, `ietf_quotes`, `sequence`, `affinity`, and all TiDB-only options (`auto_random_base`, `auto_id_cache`, `shard_row_id_bits`, `pre_split_regions`, `ttl*`, `stats_buckets`, `stats_top_n`, `stats_cols_choice`, `stats_col_list`, `stats_sample_rate`). The long tail that IS extracted (`password`, `union`, `secondary_engine`/`SECONDARY_ENGINE=NULL`, `connection`, `data_directory`, `index_directory`, `stats_*`, `pack_keys`, `delay_key_write`, `avg_row_length`, `checksum`, `table_checksum`, `max_rows`, `min_rows`, `storage_media`) is NOT in this bucket — §6.4/§6.5 classify it per dialect as extracted-but-unaudited bounded gaps (MySQL, TiDB create) or probed vendor refusals (TiDB alter). `insert_method` is likewise extracted but is warn-consumed on MySQL, so it sits in §6.4's consumed column rather than the bounded cut.
 
 ## 2. Probed native matrix (all observations in `p15_online_matrix.log` + probe3 supplements)
 
@@ -341,19 +341,23 @@ Oracle:
   `id`, `s`, PK intact; `table_rows` invalidated per rebuild convention.
 - CLI: exit 0 with the warning finding in output (warning ≠ reject).
 
-## 9. Golden manifest sketch (~20 cases)
+## 9. Golden manifest (frozen — 42 cases, 470 assertions)
 
-Seed + refusal arm (1846, 1221, 1800-on-5.7, 1845-on-index), risk arm
-(copy alone, exclusive alone, inplace-not-guarantee), combinable
-(instant add on 8.0, lock=none InnoDB), unproven-boundary (instant on
-unprobed op → aspect), missing-prerequisite (no version → gap), TiDB
-arms (copy-ignored notice, all-modifiers-accepted), table-option arms
-(engine change warning+state, convert warn+state, TiDB convert refuse
-blocker, KBS-on-compact-InnoDB 1478 blocker, TiDB-8200 vendor aspect,
-AUTO_INCREMENT clamp state, ORDER BY warn, FORCE warn, keys engine-gated
-notice, multi-spec option+action integrity, stats_* declaration), rule-off
-representatives, successor-state arms (sibling reads updated facts).
-Final denominator comes from the frozen manifest — not pre-filled.
+The frozen manifest `testdata/ddl-golden/T15.json` carries **42 required
+cases / 470 assertions** across all four anchors: seed + refusal arm
+(1846, 1221, 1800-on-5.7, 1845-on-index), risk arm (copy alone,
+exclusive alone, inplace-not-guarantee), combinable (instant add on 8.0,
+lock=none InnoDB), unproven-boundary (instant on unprobed op → aspect),
+missing-prerequisite (no version → gap), TiDB arms (copy-ignored notice,
+accepted compat declarations, instant+index 1846 refusal, force/option
+vendor boundaries, latin1/utf8 conversion refusal), table-option arms
+(engine change warning+state, convert warn+state, KBS-on-compact-InnoDB
+1478 blocker, AUTO_INCREMENT clamp state, ORDER BY warn, FORCE warn,
+keys engine-gated notice, multi-spec option+action integrity, stats_*
+declaration), rule-off representatives, successor-state arms (sibling
+reads updated facts), syntax negatives, and CLI/db/meta coverage per
+anchor. All 42 executed green on the acceptance SHA — see
+`docs/verification/t15-table-options-online-ddl/`.
 
 ## 10. Deferred boundaries (explicit)
 

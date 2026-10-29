@@ -1,6 +1,9 @@
 # Decision: Table options, charset conversion, and online-DDL modifier governance (MySQL/TiDB ALTER)
 
-Date: 2026-11-08
+Date: 2026-11-08 — milestone decision-record convention: decision dates
+are assigned per task slot and run ahead of commit dates (this record
+committed 2026-10-29); neighboring records follow the same convention
+(e.g. 2026-11-07 committed 2026-10-28).
 Status: Accepted
 Related milestone/version: mysql-tidb-ddl-completion (issue #79, task T15 under #94)
 Related commits: this task's commits on the workfree line after `1813f062`
