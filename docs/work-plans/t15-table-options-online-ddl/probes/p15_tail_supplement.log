@@ -1,0 +1,117 @@
+=== tail-option supplement probe 2026-10-29T05:40:40Z ===
+###### anchor mysql57
+mysql: [Warning] Using a password on the command line interface can be insecure.
+--- mysql57 :: AVG_ROW_LENGTH=100
+rc=0 mysql: [Warning] Using a password on the command line interface can be insecure.
+--- mysql57 :: CHECKSUM=1
+rc=0 mysql: [Warning] Using a password on the command line interface can be insecure.
+--- mysql57 :: MAX_ROWS=1000
+rc=0 mysql: [Warning] Using a password on the command line interface can be insecure.
+--- mysql57 :: MIN_ROWS=10
+rc=0 mysql: [Warning] Using a password on the command line interface can be insecure.
+--- mysql57 :: INSERT_METHOD=FIRST
+rc=0 mysql: [Warning] Using a password on the command line interface can be insecure.
+--- mysql57 :: TABLE_CHECKSUM=1
+rc=0 mysql: [Warning] Using a password on the command line interface can be insecure.
+--- mysql57 :: DATA DIRECTORY='/tmp/x'
+rc=0 mysql: [Warning] Using a password on the command line interface can be insecure.
+--- mysql57 :: INDEX DIRECTORY='/tmp/y'
+rc=0 mysql: [Warning] Using a password on the command line interface can be insecure.
+--- mysql57 :: CONNECTION='x'
+rc=0 mysql: [Warning] Using a password on the command line interface can be insecure.
+--- mysql57 :: PASSWORD='p'
+rc=0 mysql: [Warning] Using a password on the command line interface can be insecure.
+--- mysql57 :: STORAGE MEDIA
+rc=1 mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the m
+mysql: [Warning] Using a password on the command line interface can be insecure.
+###### anchor mysql80
+mysql: [Warning] Using a password on the command line interface can be insecure.
+--- mysql80 :: AVG_ROW_LENGTH=100
+rc=0 mysql: [Warning] Using a password on the command line interface can be insecure.
+--- mysql80 :: CHECKSUM=1
+rc=0 mysql: [Warning] Using a password on the command line interface can be insecure.
+--- mysql80 :: MAX_ROWS=1000
+rc=0 mysql: [Warning] Using a password on the command line interface can be insecure.
+--- mysql80 :: MIN_ROWS=10
+rc=0 mysql: [Warning] Using a password on the command line interface can be insecure.
+--- mysql80 :: INSERT_METHOD=FIRST
+rc=0 mysql: [Warning] Using a password on the command line interface can be insecure.
+--- mysql80 :: TABLE_CHECKSUM=1
+rc=0 mysql: [Warning] Using a password on the command line interface can be insecure.
+--- mysql80 :: DATA DIRECTORY='/tmp/x'
+rc=0 mysql: [Warning] Using a password on the command line interface can be insecure.
+--- mysql80 :: INDEX DIRECTORY='/tmp/y'
+rc=0 mysql: [Warning] Using a password on the command line interface can be insecure.
+--- mysql80 :: CONNECTION='x'
+rc=0 mysql: [Warning] Using a password on the command line interface can be insecure.
+--- mysql80 :: PASSWORD='p'
+rc=0 mysql: [Warning] Using a password on the command line interface can be insecure.
+--- mysql80 :: STORAGE MEDIA
+rc=1 mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the m
+mysql: [Warning] Using a password on the command line interface can be insecure.
+###### anchor mysql84
+mysql: [Warning] Using a password on the command line interface can be insecure.
+--- mysql84 :: AVG_ROW_LENGTH=100
+rc=0 mysql: [Warning] Using a password on the command line interface can be insecure.
+--- mysql84 :: CHECKSUM=1
+rc=0 mysql: [Warning] Using a password on the command line interface can be insecure.
+--- mysql84 :: MAX_ROWS=1000
+rc=0 mysql: [Warning] Using a password on the command line interface can be insecure.
+--- mysql84 :: MIN_ROWS=10
+rc=0 mysql: [Warning] Using a password on the command line interface can be insecure.
+--- mysql84 :: INSERT_METHOD=FIRST
+rc=0 mysql: [Warning] Using a password on the command line interface can be insecure.
+--- mysql84 :: TABLE_CHECKSUM=1
+rc=0 mysql: [Warning] Using a password on the command line interface can be insecure.
+--- mysql84 :: DATA DIRECTORY='/tmp/x'
+rc=0 mysql: [Warning] Using a password on the command line interface can be insecure.
+--- mysql84 :: INDEX DIRECTORY='/tmp/y'
+rc=0 mysql: [Warning] Using a password on the command line interface can be insecure.
+--- mysql84 :: CONNECTION='x'
+rc=0 mysql: [Warning] Using a password on the command line interface can be insecure.
+--- mysql84 :: PASSWORD='p'
+rc=0 mysql: [Warning] Using a password on the command line interface can be insecure.
+--- mysql84 :: STORAGE MEDIA
+rc=1 mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the m
+mysql: [Warning] Using a password on the command line interface can be insecure.
+###### anchor tidb85
+--- tidb85 :: AVG_ROW_LENGTH=100
+rc=1 ERROR 8200 (HY000) at line 1: This type of ALTER TABLE is currently unsupported
+--- tidb85 :: CHECKSUM=1
+rc=1 ERROR 8200 (HY000) at line 1: This type of ALTER TABLE is currently unsupported
+--- tidb85 :: MAX_ROWS=1000
+rc=1 ERROR 8200 (HY000) at line 1: This type of ALTER TABLE is currently unsupported
+--- tidb85 :: MIN_ROWS=10
+rc=1 ERROR 8200 (HY000) at line 1: This type of ALTER TABLE is currently unsupported
+--- tidb85 :: INSERT_METHOD=FIRST
+rc=1 ERROR 8233 (HY000) at line 1: CREATE/ALTER table with insert method option is not supported
+--- tidb85 :: TABLE_CHECKSUM=1
+rc=1 ERROR 8200 (HY000) at line 1: This type of ALTER TABLE is currently unsupported
+--- tidb85 :: DATA DIRECTORY='/tmp/x'
+rc=1 ERROR 8200 (HY000) at line 1: This type of ALTER TABLE is currently unsupported
+--- tidb85 :: INDEX DIRECTORY='/tmp/y'
+rc=1 ERROR 8200 (HY000) at line 1: This type of ALTER TABLE is currently unsupported
+--- tidb85 :: CONNECTION='x'
+rc=1 ERROR 8200 (HY000) at line 1: This type of ALTER TABLE is currently unsupported
+--- tidb85 :: PASSWORD='p'
+rc=1 ERROR 8200 (HY000) at line 1: This type of ALTER TABLE is currently unsupported
+--- tidb85 :: STORAGE MEDIA
+rc=1 ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your TiDB version for the right syntax to use line 1 co
+=== tail supplement round2 ===
+###### anchor mysql80
+--- mysql80 :: STORAGE DISK
+rc=0 mysql: [Warning] Using a password on the command line interface can be insecure.
+--- mysql80 :: SECONDARY_ENGINE=rapid
+rc=0 mysql: [Warning] Using a password on the command line interface can be insecure.
+--- mysql80 :: UNION=(t15tail)
+rc=0 mysql: [Warning] Using a password on the command line interface can be insecure.
+###### anchor tidb85
+--- tidb85 :: STORAGE DISK
+rc=1 ERROR 8200 (HY000) at line 1: This type of ALTER TABLE is currently unsupported
+--- tidb85 :: SECONDARY_ENGINE=rapid
+rc=1 ERROR 8200 (HY000) at line 1: This type of ALTER TABLE is currently unsupported
+--- tidb85 :: UNION=(t15tail)
+rc=1 ERROR 8232 (HY000) at line 1: CREATE/ALTER table with union option is not supported

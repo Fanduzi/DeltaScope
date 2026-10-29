@@ -1,0 +1,2499 @@
+###### anchor mysql57
+=== mysql57 :: version
+SQL> select version()
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+version()
+5.7.44
+=== mysql57 :: ensure-db
+SQL> create database if not exists golden
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+###### anchor mysql80
+=== mysql80 :: version
+SQL> select version()
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+version()
+8.0.46
+=== mysql80 :: ensure-db
+SQL> create database if not exists golden
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+###### anchor mysql84
+=== mysql84 :: version
+SQL> select version()
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+version()
+8.4.10
+=== mysql84 :: ensure-db
+SQL> create database if not exists golden
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+###### anchor tidb85
+=== tidb85 :: version
+SQL> select version()
+rc=1
+stderr/stdout> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+=== tidb85 :: ensure-db
+SQL> create database if not exists golden
+rc=1
+stderr/stdout> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+########## mysql57 — online-DDL modifier matrix
+=== mysql57 :: fixture
+SQL> drop table if exists t15ol; create table t15ol (id int primary key, s varchar(20)) engine=InnoDB
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+=== mysql57 :: seed-rows
+SQL> insert into t15ol values (1,'a'),(2,'b')
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+catalog[t15ol]> mysql: [Warning] Using a password on the command line interface can be insecure.
+InnoDB	Dynamic	latin1_swedish_ci		NULL	2	
+=== mysql57 :: add-default
+SQL> ALTER TABLE t15ol ADD COLUMN d0 INT
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+=== mysql57 :: add-instant
+SQL> ALTER TABLE t15ol ADD COLUMN d1 INT, ALGORITHM=INSTANT
+rc=1
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1800 (HY000) at line 1: Unknown ALGORITHM 'INSTANT'
+mysql: [Warning] Using a password on the command line interface can be insecure.
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+=== mysql57 :: add-inplace
+SQL> ALTER TABLE t15ol ADD COLUMN d2 INT, ALGORITHM=INPLACE
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+=== mysql57 :: add-copy
+SQL> ALTER TABLE t15ol ADD COLUMN d3 INT, ALGORITHM=COPY
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+=== mysql57 :: add-algdefault
+SQL> ALTER TABLE t15ol ADD COLUMN d4 INT, ALGORITHM=DEFAULT
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+=== mysql57 :: add-locknone
+SQL> ALTER TABLE t15ol ADD COLUMN d5 INT, LOCK=NONE
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+=== mysql57 :: add-lockshared
+SQL> ALTER TABLE t15ol ADD COLUMN d6 INT, LOCK=SHARED
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+=== mysql57 :: add-lockexclusive
+SQL> ALTER TABLE t15ol ADD COLUMN d7 INT, LOCK=EXCLUSIVE
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+=== mysql57 :: add-lockdefault
+SQL> ALTER TABLE t15ol ADD COLUMN d8 INT, LOCK=DEFAULT
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+=== mysql57 :: seed-copy-excl
+SQL> ALTER TABLE t15ol ADD COLUMN d9 INT, ALGORITHM=COPY, LOCK=EXCLUSIVE
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+=== mysql57 :: copy-locknone
+SQL> ALTER TABLE t15ol ADD COLUMN d10 INT, ALGORITHM=COPY, LOCK=NONE
+rc=1
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1846 (0A000) at line 1: LOCK=NONE is not supported. Reason: COPY algorithm requires a lock. Try LOCK=SHARED.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+=== mysql57 :: copy-lockshared
+SQL> ALTER TABLE t15ol ADD COLUMN d11 INT, ALGORITHM=COPY, LOCK=SHARED
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+=== mysql57 :: inplace-locknone
+SQL> ALTER TABLE t15ol ADD COLUMN d12 INT, ALGORITHM=INPLACE, LOCK=NONE
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+=== mysql57 :: instant-locknone
+SQL> ALTER TABLE t15ol ADD COLUMN d13 INT, ALGORITHM=INSTANT, LOCK=NONE
+rc=1
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1800 (HY000) at line 1: Unknown ALGORITHM 'INSTANT'
+mysql: [Warning] Using a password on the command line interface can be insecure.
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+=== mysql57 :: instant-lockexclusive
+SQL> ALTER TABLE t15ol ADD COLUMN d14 INT, ALGORITHM=INSTANT, LOCK=EXCLUSIVE
+rc=1
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1800 (HY000) at line 1: Unknown ALGORITHM 'INSTANT'
+mysql: [Warning] Using a password on the command line interface can be insecure.
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+=== mysql57 :: alg-alone
+SQL> ALTER TABLE t15ol ALGORITHM=COPY
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+=== mysql57 :: lock-alone
+SQL> ALTER TABLE t15ol LOCK=EXCLUSIVE
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+=== mysql57 :: alg-dup
+SQL> ALTER TABLE t15ol ADD COLUMN d15 INT, ALGORITHM=COPY, ALGORITHM=INSTANT
+rc=1
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1800 (HY000) at line 1: Unknown ALGORITHM 'INSTANT'
+mysql: [Warning] Using a password on the command line interface can be insecure.
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+=== mysql57 :: lock-dup
+SQL> ALTER TABLE t15ol ADD COLUMN d16 INT, LOCK=NONE, LOCK=EXCLUSIVE
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+=== mysql57 :: idx-instant
+SQL> ALTER TABLE t15ol ADD INDEX ix1(id), ALGORITHM=INSTANT
+rc=1
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1800 (HY000) at line 1: Unknown ALGORITHM 'INSTANT'
+mysql: [Warning] Using a password on the command line interface can be insecure.
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+=== mysql57 :: idx-inplace-locknone
+SQL> ALTER TABLE t15ol ADD INDEX ix2(s), ALGORITHM=INPLACE, LOCK=NONE
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+=== mysql57 :: idx-copy
+SQL> ALTER TABLE t15ol ADD INDEX ix3(id), ALGORITHM=COPY
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+=== mysql57 :: modify-inplace
+SQL> ALTER TABLE t15ol MODIFY COLUMN s VARCHAR(30), ALGORITHM=INPLACE
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+=== mysql57 :: modify-instant
+SQL> ALTER TABLE t15ol MODIFY COLUMN s VARCHAR(40), ALGORITHM=INSTANT
+rc=1
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1800 (HY000) at line 1: Unknown ALGORITHM 'INSTANT'
+mysql: [Warning] Using a password on the command line interface can be insecure.
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+=== mysql57 :: rename-instant
+SQL> ALTER TABLE t15ol RENAME COLUMN s TO s2, ALGORITHM=INSTANT
+rc=1
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'COLUMN s TO s2, ALGORITHM=INSTANT' at line 1
+mysql: [Warning] Using a password on the command line interface can be insecure.
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+=== mysql57 :: dropcol-instant
+SQL> ALTER TABLE t15ol DROP COLUMN d4, ALGORITHM=INSTANT
+rc=1
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1800 (HY000) at line 1: Unknown ALGORITHM 'INSTANT'
+mysql: [Warning] Using a password on the command line interface can be insecure.
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+=== mysql57 :: dropcol-copy
+SQL> ALTER TABLE t15ol DROP COLUMN d5, ALGORITHM=COPY
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+=== mysql57 :: multi-alg
+SQL> ALTER TABLE t15ol ADD COLUMN d17 INT, DROP COLUMN d0, ALGORITHM=INPLACE
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+=== mysql57 :: engine-inplace
+SQL> ALTER TABLE t15ol ENGINE=InnoDB, ALGORITHM=INPLACE
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+=== mysql57 :: engine-copy
+SQL> ALTER TABLE t15ol ENGINE=InnoDB, ALGORITHM=COPY
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+columns[t15ol]> mysql: [Warning] Using a password on the command line interface can be insecure.|id	int(11)	NULL	NULL|s	varchar(30)	latin1	latin1_swedish_ci|d2	int(11)	NULL	NULL|d3	int(11)	NULL	NULL|d4	int(11)	NULL	NULL|d6	int(11)	NULL	NULL|d7	int(11)	NULL	NULL|d8	int(11)	NULL	NULL|d9	int(11)	NULL	NULL|d11	int(11)	NULL	NULL|d12	int(11)	NULL	NULL|d16	int(11)	NULL	NULL|d17	int(11)	NULL	NULL
+catalog[t15ol]> mysql: [Warning] Using a password on the command line interface can be insecure.
+InnoDB	Dynamic	latin1_swedish_ci		NULL	2	
+=== mysql57 :: cleanup
+SQL> drop table if exists t15ol
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+########## mysql80 — online-DDL modifier matrix
+=== mysql80 :: fixture
+SQL> drop table if exists t15ol; create table t15ol (id int primary key, s varchar(20)) engine=InnoDB
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+=== mysql80 :: seed-rows
+SQL> insert into t15ol values (1,'a'),(2,'b')
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+catalog[t15ol]> mysql: [Warning] Using a password on the command line interface can be insecure.
+InnoDB	Dynamic	utf8mb4_0900_ai_ci		NULL	2	
+=== mysql80 :: add-default
+SQL> ALTER TABLE t15ol ADD COLUMN d0 INT
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+=== mysql80 :: add-instant
+SQL> ALTER TABLE t15ol ADD COLUMN d1 INT, ALGORITHM=INSTANT
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+=== mysql80 :: add-inplace
+SQL> ALTER TABLE t15ol ADD COLUMN d2 INT, ALGORITHM=INPLACE
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+=== mysql80 :: add-copy
+SQL> ALTER TABLE t15ol ADD COLUMN d3 INT, ALGORITHM=COPY
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+=== mysql80 :: add-algdefault
+SQL> ALTER TABLE t15ol ADD COLUMN d4 INT, ALGORITHM=DEFAULT
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+=== mysql80 :: add-locknone
+SQL> ALTER TABLE t15ol ADD COLUMN d5 INT, LOCK=NONE
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+=== mysql80 :: add-lockshared
+SQL> ALTER TABLE t15ol ADD COLUMN d6 INT, LOCK=SHARED
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+=== mysql80 :: add-lockexclusive
+SQL> ALTER TABLE t15ol ADD COLUMN d7 INT, LOCK=EXCLUSIVE
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+=== mysql80 :: add-lockdefault
+SQL> ALTER TABLE t15ol ADD COLUMN d8 INT, LOCK=DEFAULT
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+=== mysql80 :: seed-copy-excl
+SQL> ALTER TABLE t15ol ADD COLUMN d9 INT, ALGORITHM=COPY, LOCK=EXCLUSIVE
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+=== mysql80 :: copy-locknone
+SQL> ALTER TABLE t15ol ADD COLUMN d10 INT, ALGORITHM=COPY, LOCK=NONE
+rc=1
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1846 (0A000) at line 1: LOCK=NONE is not supported. Reason: COPY algorithm requires a lock. Try LOCK=SHARED.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+=== mysql80 :: copy-lockshared
+SQL> ALTER TABLE t15ol ADD COLUMN d11 INT, ALGORITHM=COPY, LOCK=SHARED
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+=== mysql80 :: inplace-locknone
+SQL> ALTER TABLE t15ol ADD COLUMN d12 INT, ALGORITHM=INPLACE, LOCK=NONE
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+=== mysql80 :: instant-locknone
+SQL> ALTER TABLE t15ol ADD COLUMN d13 INT, ALGORITHM=INSTANT, LOCK=NONE
+rc=1
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1221 (HY000) at line 1: Incorrect usage of ALGORITHM=INSTANT and LOCK=NONE/SHARED/EXCLUSIVE
+mysql: [Warning] Using a password on the command line interface can be insecure.
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+=== mysql80 :: instant-lockexclusive
+SQL> ALTER TABLE t15ol ADD COLUMN d14 INT, ALGORITHM=INSTANT, LOCK=EXCLUSIVE
+rc=1
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1221 (HY000) at line 1: Incorrect usage of ALGORITHM=INSTANT and LOCK=NONE/SHARED/EXCLUSIVE
+mysql: [Warning] Using a password on the command line interface can be insecure.
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+=== mysql80 :: alg-alone
+SQL> ALTER TABLE t15ol ALGORITHM=COPY
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+=== mysql80 :: lock-alone
+SQL> ALTER TABLE t15ol LOCK=EXCLUSIVE
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+=== mysql80 :: alg-dup
+SQL> ALTER TABLE t15ol ADD COLUMN d15 INT, ALGORITHM=COPY, ALGORITHM=INSTANT
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+=== mysql80 :: lock-dup
+SQL> ALTER TABLE t15ol ADD COLUMN d16 INT, LOCK=NONE, LOCK=EXCLUSIVE
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+=== mysql80 :: idx-instant
+SQL> ALTER TABLE t15ol ADD INDEX ix1(id), ALGORITHM=INSTANT
+rc=1
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1845 (0A000) at line 1: ALGORITHM=INSTANT is not supported for this operation. Try ALGORITHM=COPY/INPLACE.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+=== mysql80 :: idx-inplace-locknone
+SQL> ALTER TABLE t15ol ADD INDEX ix2(s), ALGORITHM=INPLACE, LOCK=NONE
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+=== mysql80 :: idx-copy
+SQL> ALTER TABLE t15ol ADD INDEX ix3(id), ALGORITHM=COPY
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+=== mysql80 :: modify-inplace
+SQL> ALTER TABLE t15ol MODIFY COLUMN s VARCHAR(30), ALGORITHM=INPLACE
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+=== mysql80 :: modify-instant
+SQL> ALTER TABLE t15ol MODIFY COLUMN s VARCHAR(40), ALGORITHM=INSTANT
+rc=1
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1845 (0A000) at line 1: ALGORITHM=INSTANT is not supported for this operation. Try ALGORITHM=COPY/INPLACE.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+=== mysql80 :: rename-instant
+SQL> ALTER TABLE t15ol RENAME COLUMN s TO s2, ALGORITHM=INSTANT
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+=== mysql80 :: dropcol-instant
+SQL> ALTER TABLE t15ol DROP COLUMN d4, ALGORITHM=INSTANT
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+=== mysql80 :: dropcol-copy
+SQL> ALTER TABLE t15ol DROP COLUMN d5, ALGORITHM=COPY
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+=== mysql80 :: multi-alg
+SQL> ALTER TABLE t15ol ADD COLUMN d17 INT, DROP COLUMN d0, ALGORITHM=INPLACE
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+=== mysql80 :: engine-inplace
+SQL> ALTER TABLE t15ol ENGINE=InnoDB, ALGORITHM=INPLACE
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+=== mysql80 :: engine-copy
+SQL> ALTER TABLE t15ol ENGINE=InnoDB, ALGORITHM=COPY
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+columns[t15ol]> mysql: [Warning] Using a password on the command line interface can be insecure.|id	int	NULL	NULL|s2	varchar(30)	utf8mb4	utf8mb4_0900_ai_ci|d1	int	NULL	NULL|d2	int	NULL	NULL|d3	int	NULL	NULL|d6	int	NULL	NULL|d7	int	NULL	NULL|d8	int	NULL	NULL|d9	int	NULL	NULL|d11	int	NULL	NULL|d12	int	NULL	NULL|d15	int	NULL	NULL|d16	int	NULL	NULL|d17	int	NULL	NULL
+catalog[t15ol]> mysql: [Warning] Using a password on the command line interface can be insecure.
+InnoDB	Dynamic	utf8mb4_0900_ai_ci		NULL	2	
+=== mysql80 :: cleanup
+SQL> drop table if exists t15ol
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+########## mysql84 — online-DDL modifier matrix
+=== mysql84 :: fixture
+SQL> drop table if exists t15ol; create table t15ol (id int primary key, s varchar(20)) engine=InnoDB
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+=== mysql84 :: seed-rows
+SQL> insert into t15ol values (1,'a'),(2,'b')
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+catalog[t15ol]> mysql: [Warning] Using a password on the command line interface can be insecure.
+InnoDB	Dynamic	utf8mb4_0900_ai_ci		NULL	2	
+=== mysql84 :: add-default
+SQL> ALTER TABLE t15ol ADD COLUMN d0 INT
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+Level	Code	Message
+Error	1064	You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '$$' at line 1
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+Error	1064	You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '$$' at line 1
+=== mysql84 :: add-instant
+SQL> ALTER TABLE t15ol ADD COLUMN d1 INT, ALGORITHM=INSTANT
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+Level	Code	Message
+Error	1064	You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '$$' at line 1
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+Error	1064	You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '$$' at line 1
+=== mysql84 :: add-inplace
+SQL> ALTER TABLE t15ol ADD COLUMN d2 INT, ALGORITHM=INPLACE
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+Level	Code	Message
+Error	1064	You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '$$' at line 1
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+Error	1064	You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '$$' at line 1
+=== mysql84 :: add-copy
+SQL> ALTER TABLE t15ol ADD COLUMN d3 INT, ALGORITHM=COPY
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+Level	Code	Message
+Error	1064	You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '$$' at line 1
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+Error	1064	You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '$$' at line 1
+=== mysql84 :: add-algdefault
+SQL> ALTER TABLE t15ol ADD COLUMN d4 INT, ALGORITHM=DEFAULT
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+Level	Code	Message
+Error	1064	You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '$$' at line 1
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+Error	1064	You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '$$' at line 1
+=== mysql84 :: add-locknone
+SQL> ALTER TABLE t15ol ADD COLUMN d5 INT, LOCK=NONE
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+Level	Code	Message
+Error	1064	You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '$$' at line 1
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+Error	1064	You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '$$' at line 1
+=== mysql84 :: add-lockshared
+SQL> ALTER TABLE t15ol ADD COLUMN d6 INT, LOCK=SHARED
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+Level	Code	Message
+Error	1064	You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '$$' at line 1
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+Error	1064	You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '$$' at line 1
+=== mysql84 :: add-lockexclusive
+SQL> ALTER TABLE t15ol ADD COLUMN d7 INT, LOCK=EXCLUSIVE
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+Level	Code	Message
+Error	1064	You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '$$' at line 1
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+Error	1064	You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '$$' at line 1
+=== mysql84 :: add-lockdefault
+SQL> ALTER TABLE t15ol ADD COLUMN d8 INT, LOCK=DEFAULT
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+Level	Code	Message
+Error	1064	You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '$$' at line 1
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+Error	1064	You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '$$' at line 1
+=== mysql84 :: seed-copy-excl
+SQL> ALTER TABLE t15ol ADD COLUMN d9 INT, ALGORITHM=COPY, LOCK=EXCLUSIVE
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+Level	Code	Message
+Error	1064	You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '$$' at line 1
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+Error	1064	You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '$$' at line 1
+=== mysql84 :: copy-locknone
+SQL> ALTER TABLE t15ol ADD COLUMN d10 INT, ALGORITHM=COPY, LOCK=NONE
+rc=1
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1846 (0A000) at line 1: LOCK=NONE is not supported. Reason: COPY algorithm requires a lock. Try LOCK=SHARED.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+Level	Code	Message
+Error	1064	You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '$$' at line 1
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+Error	1064	You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '$$' at line 1
+=== mysql84 :: copy-lockshared
+SQL> ALTER TABLE t15ol ADD COLUMN d11 INT, ALGORITHM=COPY, LOCK=SHARED
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+Level	Code	Message
+Error	1064	You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '$$' at line 1
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+Error	1064	You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '$$' at line 1
+=== mysql84 :: inplace-locknone
+SQL> ALTER TABLE t15ol ADD COLUMN d12 INT, ALGORITHM=INPLACE, LOCK=NONE
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+Level	Code	Message
+Error	1064	You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '$$' at line 1
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+Error	1064	You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '$$' at line 1
+=== mysql84 :: instant-locknone
+SQL> ALTER TABLE t15ol ADD COLUMN d13 INT, ALGORITHM=INSTANT, LOCK=NONE
+rc=1
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1221 (HY000) at line 1: Incorrect usage of ALGORITHM=INSTANT and LOCK=NONE/SHARED/EXCLUSIVE
+mysql: [Warning] Using a password on the command line interface can be insecure.
+Level	Code	Message
+Error	1064	You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '$$' at line 1
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+Error	1064	You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '$$' at line 1
+=== mysql84 :: instant-lockexclusive
+SQL> ALTER TABLE t15ol ADD COLUMN d14 INT, ALGORITHM=INSTANT, LOCK=EXCLUSIVE
+rc=1
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1221 (HY000) at line 1: Incorrect usage of ALGORITHM=INSTANT and LOCK=NONE/SHARED/EXCLUSIVE
+mysql: [Warning] Using a password on the command line interface can be insecure.
+Level	Code	Message
+Error	1064	You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '$$' at line 1
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+Error	1064	You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '$$' at line 1
+=== mysql84 :: alg-alone
+SQL> ALTER TABLE t15ol ALGORITHM=COPY
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+Level	Code	Message
+Error	1064	You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '$$' at line 1
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+Error	1064	You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '$$' at line 1
+=== mysql84 :: lock-alone
+SQL> ALTER TABLE t15ol LOCK=EXCLUSIVE
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+Level	Code	Message
+Error	1064	You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '$$' at line 1
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+Error	1064	You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '$$' at line 1
+=== mysql84 :: alg-dup
+SQL> ALTER TABLE t15ol ADD COLUMN d15 INT, ALGORITHM=COPY, ALGORITHM=INSTANT
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+Level	Code	Message
+Error	1064	You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '$$' at line 1
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+Error	1064	You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '$$' at line 1
+=== mysql84 :: lock-dup
+SQL> ALTER TABLE t15ol ADD COLUMN d16 INT, LOCK=NONE, LOCK=EXCLUSIVE
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+Level	Code	Message
+Error	1064	You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '$$' at line 1
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+Error	1064	You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '$$' at line 1
+=== mysql84 :: idx-instant
+SQL> ALTER TABLE t15ol ADD INDEX ix1(id), ALGORITHM=INSTANT
+rc=1
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1845 (0A000) at line 1: ALGORITHM=INSTANT is not supported for this operation. Try ALGORITHM=COPY/INPLACE.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+Level	Code	Message
+Error	1064	You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '$$' at line 1
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+Error	1064	You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '$$' at line 1
+=== mysql84 :: idx-inplace-locknone
+SQL> ALTER TABLE t15ol ADD INDEX ix2(s), ALGORITHM=INPLACE, LOCK=NONE
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+Level	Code	Message
+Error	1064	You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '$$' at line 1
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+Error	1064	You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '$$' at line 1
+=== mysql84 :: idx-copy
+SQL> ALTER TABLE t15ol ADD INDEX ix3(id), ALGORITHM=COPY
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+Level	Code	Message
+Error	1064	You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '$$' at line 1
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+Error	1064	You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '$$' at line 1
+=== mysql84 :: modify-inplace
+SQL> ALTER TABLE t15ol MODIFY COLUMN s VARCHAR(30), ALGORITHM=INPLACE
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+Level	Code	Message
+Error	1064	You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '$$' at line 1
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+Error	1064	You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '$$' at line 1
+=== mysql84 :: modify-instant
+SQL> ALTER TABLE t15ol MODIFY COLUMN s VARCHAR(40), ALGORITHM=INSTANT
+rc=1
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1845 (0A000) at line 1: ALGORITHM=INSTANT is not supported for this operation. Try ALGORITHM=COPY/INPLACE.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+Level	Code	Message
+Error	1064	You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '$$' at line 1
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+Error	1064	You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '$$' at line 1
+=== mysql84 :: rename-instant
+SQL> ALTER TABLE t15ol RENAME COLUMN s TO s2, ALGORITHM=INSTANT
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+Level	Code	Message
+Error	1064	You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '$$' at line 1
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+Error	1064	You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '$$' at line 1
+=== mysql84 :: dropcol-instant
+SQL> ALTER TABLE t15ol DROP COLUMN d4, ALGORITHM=INSTANT
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+Level	Code	Message
+Error	1064	You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '$$' at line 1
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+Error	1064	You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '$$' at line 1
+=== mysql84 :: dropcol-copy
+SQL> ALTER TABLE t15ol DROP COLUMN d5, ALGORITHM=COPY
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+Level	Code	Message
+Error	1064	You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '$$' at line 1
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+Error	1064	You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '$$' at line 1
+=== mysql84 :: multi-alg
+SQL> ALTER TABLE t15ol ADD COLUMN d17 INT, DROP COLUMN d0, ALGORITHM=INPLACE
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+Level	Code	Message
+Error	1064	You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '$$' at line 1
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+Error	1064	You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '$$' at line 1
+=== mysql84 :: engine-inplace
+SQL> ALTER TABLE t15ol ENGINE=InnoDB, ALGORITHM=INPLACE
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+Level	Code	Message
+Error	1064	You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '$$' at line 1
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+Error	1064	You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '$$' at line 1
+=== mysql84 :: engine-copy
+SQL> ALTER TABLE t15ol ENGINE=InnoDB, ALGORITHM=COPY
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+Level	Code	Message
+Error	1064	You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '$$' at line 1
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+Error	1064	You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '$$' at line 1
+columns[t15ol]> mysql: [Warning] Using a password on the command line interface can be insecure.|id	int	NULL	NULL|s2	varchar(30)	utf8mb4	utf8mb4_0900_ai_ci|d1	int	NULL	NULL|d2	int	NULL	NULL|d3	int	NULL	NULL|d6	int	NULL	NULL|d7	int	NULL	NULL|d8	int	NULL	NULL|d9	int	NULL	NULL|d11	int	NULL	NULL|d12	int	NULL	NULL|d15	int	NULL	NULL|d16	int	NULL	NULL|d17	int	NULL	NULL
+catalog[t15ol]> mysql: [Warning] Using a password on the command line interface can be insecure.
+InnoDB	Dynamic	utf8mb4_0900_ai_ci		NULL	2	
+=== mysql84 :: cleanup
+SQL> drop table if exists t15ol
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+########## tidb85 — online-DDL modifier matrix
+=== tidb85 :: fixture
+SQL> drop table if exists t15ol; create table t15ol (id int primary key, s varchar(20)) engine=InnoDB
+rc=1
+stderr/stdout> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+=== tidb85 :: seed-rows
+SQL> insert into t15ol values (1,'a'),(2,'b')
+rc=1
+stderr/stdout> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+catalog[t15ol]> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+=== tidb85 :: add-default
+SQL> ALTER TABLE t15ol ADD COLUMN d0 INT
+rc=1
+stderr/stdout> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+warn> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+=== tidb85 :: add-instant
+SQL> ALTER TABLE t15ol ADD COLUMN d1 INT, ALGORITHM=INSTANT
+rc=1
+stderr/stdout> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+warn> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+=== tidb85 :: add-inplace
+SQL> ALTER TABLE t15ol ADD COLUMN d2 INT, ALGORITHM=INPLACE
+rc=1
+stderr/stdout> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+warn> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+=== tidb85 :: add-copy
+SQL> ALTER TABLE t15ol ADD COLUMN d3 INT, ALGORITHM=COPY
+rc=1
+stderr/stdout> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+warn> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+=== tidb85 :: add-algdefault
+SQL> ALTER TABLE t15ol ADD COLUMN d4 INT, ALGORITHM=DEFAULT
+rc=1
+stderr/stdout> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+warn> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+=== tidb85 :: add-locknone
+SQL> ALTER TABLE t15ol ADD COLUMN d5 INT, LOCK=NONE
+rc=1
+stderr/stdout> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+warn> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+=== tidb85 :: add-lockshared
+SQL> ALTER TABLE t15ol ADD COLUMN d6 INT, LOCK=SHARED
+rc=1
+stderr/stdout> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+warn> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+=== tidb85 :: add-lockexclusive
+SQL> ALTER TABLE t15ol ADD COLUMN d7 INT, LOCK=EXCLUSIVE
+rc=1
+stderr/stdout> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+warn> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+=== tidb85 :: add-lockdefault
+SQL> ALTER TABLE t15ol ADD COLUMN d8 INT, LOCK=DEFAULT
+rc=1
+stderr/stdout> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+warn> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+=== tidb85 :: seed-copy-excl
+SQL> ALTER TABLE t15ol ADD COLUMN d9 INT, ALGORITHM=COPY, LOCK=EXCLUSIVE
+rc=1
+stderr/stdout> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+warn> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+=== tidb85 :: copy-locknone
+SQL> ALTER TABLE t15ol ADD COLUMN d10 INT, ALGORITHM=COPY, LOCK=NONE
+rc=1
+stderr/stdout> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+warn> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+=== tidb85 :: copy-lockshared
+SQL> ALTER TABLE t15ol ADD COLUMN d11 INT, ALGORITHM=COPY, LOCK=SHARED
+rc=1
+stderr/stdout> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+warn> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+=== tidb85 :: inplace-locknone
+SQL> ALTER TABLE t15ol ADD COLUMN d12 INT, ALGORITHM=INPLACE, LOCK=NONE
+rc=1
+stderr/stdout> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+warn> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+=== tidb85 :: instant-locknone
+SQL> ALTER TABLE t15ol ADD COLUMN d13 INT, ALGORITHM=INSTANT, LOCK=NONE
+rc=1
+stderr/stdout> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+warn> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+=== tidb85 :: instant-lockexclusive
+SQL> ALTER TABLE t15ol ADD COLUMN d14 INT, ALGORITHM=INSTANT, LOCK=EXCLUSIVE
+rc=1
+stderr/stdout> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+warn> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+=== tidb85 :: alg-alone
+SQL> ALTER TABLE t15ol ALGORITHM=COPY
+rc=1
+stderr/stdout> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+warn> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+=== tidb85 :: lock-alone
+SQL> ALTER TABLE t15ol LOCK=EXCLUSIVE
+rc=1
+stderr/stdout> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+warn> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+=== tidb85 :: alg-dup
+SQL> ALTER TABLE t15ol ADD COLUMN d15 INT, ALGORITHM=COPY, ALGORITHM=INSTANT
+rc=1
+stderr/stdout> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+warn> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+=== tidb85 :: lock-dup
+SQL> ALTER TABLE t15ol ADD COLUMN d16 INT, LOCK=NONE, LOCK=EXCLUSIVE
+rc=1
+stderr/stdout> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+warn> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+=== tidb85 :: idx-instant
+SQL> ALTER TABLE t15ol ADD INDEX ix1(id), ALGORITHM=INSTANT
+rc=1
+stderr/stdout> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+warn> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+=== tidb85 :: idx-inplace-locknone
+SQL> ALTER TABLE t15ol ADD INDEX ix2(s), ALGORITHM=INPLACE, LOCK=NONE
+rc=1
+stderr/stdout> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+warn> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+=== tidb85 :: idx-copy
+SQL> ALTER TABLE t15ol ADD INDEX ix3(id), ALGORITHM=COPY
+rc=1
+stderr/stdout> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+warn> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+=== tidb85 :: modify-inplace
+SQL> ALTER TABLE t15ol MODIFY COLUMN s VARCHAR(30), ALGORITHM=INPLACE
+rc=1
+stderr/stdout> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+warn> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+=== tidb85 :: modify-instant
+SQL> ALTER TABLE t15ol MODIFY COLUMN s VARCHAR(40), ALGORITHM=INSTANT
+rc=1
+stderr/stdout> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+warn> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+=== tidb85 :: rename-instant
+SQL> ALTER TABLE t15ol RENAME COLUMN s TO s2, ALGORITHM=INSTANT
+rc=1
+stderr/stdout> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+warn> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+=== tidb85 :: dropcol-instant
+SQL> ALTER TABLE t15ol DROP COLUMN d4, ALGORITHM=INSTANT
+rc=1
+stderr/stdout> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+warn> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+=== tidb85 :: dropcol-copy
+SQL> ALTER TABLE t15ol DROP COLUMN d5, ALGORITHM=COPY
+rc=1
+stderr/stdout> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+warn> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+=== tidb85 :: multi-alg
+SQL> ALTER TABLE t15ol ADD COLUMN d17 INT, DROP COLUMN d0, ALGORITHM=INPLACE
+rc=1
+stderr/stdout> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+warn> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+=== tidb85 :: engine-inplace
+SQL> ALTER TABLE t15ol ENGINE=InnoDB, ALGORITHM=INPLACE
+rc=1
+stderr/stdout> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+warn> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+=== tidb85 :: engine-copy
+SQL> ALTER TABLE t15ol ENGINE=InnoDB, ALGORITHM=COPY
+rc=1
+stderr/stdout> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+warn> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+columns[t15ol]> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+catalog[t15ol]> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+=== tidb85 :: cleanup
+SQL> drop table if exists t15ol
+rc=1
+stderr/stdout> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+########## mysql57 — alter-table-option matrix
+=== mysql57 :: opt-fixture
+SQL> drop table if exists t15opt; create table t15opt (id int primary key, s varchar(20) charset utf8mb4, n int) engine=InnoDB
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+=== mysql57 :: opt-rows
+SQL> insert into t15opt values (2,'b',1),(1,'a',2)
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+catalog[t15opt]> mysql: [Warning] Using a password on the command line interface can be insecure.
+InnoDB	Dynamic	latin1_swedish_ci		NULL	2	
+columns[t15opt]> mysql: [Warning] Using a password on the command line interface can be insecure.|id	int(11)	NULL	NULL|s	varchar(20)	utf8mb4	utf8mb4_general_ci|n	int(11)	NULL	NULL
+=== mysql57 :: orderby
+SQL> ALTER TABLE t15opt ORDER BY id
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+catalog[t15opt]> mysql: [Warning] Using a password on the command line interface can be insecure.
+InnoDB	Dynamic	latin1_swedish_ci		NULL	2	
+=== mysql57 :: orderby-cols
+SQL> ALTER TABLE t15opt ORDER BY id DESC, s
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+catalog[t15opt]> mysql: [Warning] Using a password on the command line interface can be insecure.
+InnoDB	Dynamic	latin1_swedish_ci		NULL	2	
+=== mysql57 :: force
+SQL> ALTER TABLE t15opt FORCE
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+catalog[t15opt]> mysql: [Warning] Using a password on the command line interface can be insecure.
+InnoDB	Dynamic	latin1_swedish_ci		NULL	2	
+=== mysql57 :: disable-keys
+SQL> ALTER TABLE t15opt DISABLE KEYS
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+catalog[t15opt]> mysql: [Warning] Using a password on the command line interface can be insecure.
+InnoDB	Dynamic	latin1_swedish_ci		NULL	2	
+=== mysql57 :: enable-keys
+SQL> ALTER TABLE t15opt ENABLE KEYS
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+catalog[t15opt]> mysql: [Warning] Using a password on the command line interface can be insecure.
+InnoDB	Dynamic	latin1_swedish_ci		NULL	2	
+=== mysql57 :: engine-myisam
+SQL> ALTER TABLE t15opt ENGINE=MyISAM
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+catalog[t15opt]> mysql: [Warning] Using a password on the command line interface can be insecure.
+MyISAM	Dynamic	latin1_swedish_ci		NULL	2	
+=== mysql57 :: engine-back
+SQL> ALTER TABLE t15opt ENGINE=InnoDB
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+catalog[t15opt]> mysql: [Warning] Using a password on the command line interface can be insecure.
+InnoDB	Dynamic	latin1_swedish_ci		NULL	2	
+=== mysql57 :: rowformat
+SQL> ALTER TABLE t15opt ROW_FORMAT=DYNAMIC
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+catalog[t15opt]> mysql: [Warning] Using a password on the command line interface can be insecure.
+InnoDB	Dynamic	latin1_swedish_ci		NULL	2	row_format=DYNAMIC
+=== mysql57 :: rowformat-compact
+SQL> ALTER TABLE t15opt ROW_FORMAT=COMPACT
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+catalog[t15opt]> mysql: [Warning] Using a password on the command line interface can be insecure.
+InnoDB	Compact	latin1_swedish_ci		NULL	2	row_format=COMPACT
+=== mysql57 :: autoinc
+SQL> ALTER TABLE t15opt AUTO_INCREMENT=100
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+catalog[t15opt]> mysql: [Warning] Using a password on the command line interface can be insecure.
+InnoDB	Compact	latin1_swedish_ci		NULL	2	row_format=COMPACT
+=== mysql57 :: comment
+SQL> ALTER TABLE t15opt COMMENT='hello'
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+catalog[t15opt]> mysql: [Warning] Using a password on the command line interface can be insecure.
+InnoDB	Compact	latin1_swedish_ci	hello	NULL	2	row_format=COMPACT
+=== mysql57 :: default-charset
+SQL> ALTER TABLE t15opt DEFAULT CHARACTER SET utf8mb4
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+catalog[t15opt]> mysql: [Warning] Using a password on the command line interface can be insecure.
+InnoDB	Compact	utf8mb4_general_ci	hello	NULL	2	row_format=COMPACT
+=== mysql57 :: default-charset-collate
+SQL> ALTER TABLE t15opt DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_bin
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+catalog[t15opt]> mysql: [Warning] Using a password on the command line interface can be insecure.
+InnoDB	Compact	utf8mb4_bin	hello	NULL	2	row_format=COMPACT
+=== mysql57 :: convert-utf8mb4
+SQL> ALTER TABLE t15opt CONVERT TO CHARACTER SET utf8mb4
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+catalog[t15opt]> mysql: [Warning] Using a password on the command line interface can be insecure.
+InnoDB	Compact	utf8mb4_general_ci	hello	NULL	2	row_format=COMPACT
+=== mysql57 :: convert-latin1
+SQL> ALTER TABLE t15opt CONVERT TO CHARACTER SET latin1
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+catalog[t15opt]> mysql: [Warning] Using a password on the command line interface can be insecure.
+InnoDB	Compact	latin1_swedish_ci	hello	NULL	2	row_format=COMPACT
+=== mysql57 :: convert-collate
+SQL> ALTER TABLE t15opt CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_bin
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+catalog[t15opt]> mysql: [Warning] Using a password on the command line interface can be insecure.
+InnoDB	Compact	utf8mb4_bin	hello	NULL	2	row_format=COMPACT
+=== mysql57 :: kbs
+SQL> ALTER TABLE t15opt KEY_BLOCK_SIZE=8
+rc=1
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1478 (HY000) at line 1: Table storage engine 'InnoDB' does not support the create option 'KEY_BLOCK_SIZE'
+mysql: [Warning] Using a password on the command line interface can be insecure.
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+catalog[t15opt]> mysql: [Warning] Using a password on the command line interface can be insecure.
+InnoDB	Compact	utf8mb4_bin	hello	NULL	2	row_format=COMPACT
+=== mysql57 :: compression
+SQL> ALTER TABLE t15opt COMPRESSION='zlib'
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+catalog[t15opt]> mysql: [Warning] Using a password on the command line interface can be insecure.
+InnoDB	Compact	utf8mb4_bin	hello	NULL	2	row_format=COMPACT COMPRESSION="zlib"
+=== mysql57 :: encryption
+SQL> ALTER TABLE t15opt ENCRYPTION='Y'
+rc=1
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 3185 (HY000) at line 1: Can't find master key from keyring, please check in the server log if a keyring plugin is loaded and initialized successfully.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+catalog[t15opt]> mysql: [Warning] Using a password on the command line interface can be insecure.
+InnoDB	Compact	utf8mb4_bin	hello	NULL	2	row_format=COMPACT COMPRESSION="zlib"
+=== mysql57 :: stats-persistent
+SQL> ALTER TABLE t15opt STATS_PERSISTENT=1
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+catalog[t15opt]> mysql: [Warning] Using a password on the command line interface can be insecure.
+InnoDB	Compact	utf8mb4_bin	hello	NULL	2	stats_persistent=1 row_format=COMPACT COMPRESSION="zlib"
+=== mysql57 :: stats-auto-recalc
+SQL> ALTER TABLE t15opt STATS_AUTO_RECALC=0
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+catalog[t15opt]> mysql: [Warning] Using a password on the command line interface can be insecure.
+InnoDB	Compact	utf8mb4_bin	hello	NULL	2	stats_persistent=1 stats_auto_recalc=0 row_format=COMPACT COMPRESSION="zlib"
+=== mysql57 :: stats-sample-pages
+SQL> ALTER TABLE t15opt STATS_SAMPLE_PAGES=25
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+catalog[t15opt]> mysql: [Warning] Using a password on the command line interface can be insecure.
+InnoDB	Compact	utf8mb4_bin	hello	NULL	2	stats_persistent=1 stats_auto_recalc=0 stats_sample_pages=25 row_format=COMPACT COMPRESSION="zlib"
+=== mysql57 :: tablespace
+SQL> ALTER TABLE t15opt TABLESPACE=innodb_file_per_table
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+catalog[t15opt]> mysql: [Warning] Using a password on the command line interface can be insecure.
+InnoDB	Compact	utf8mb4_bin	hello	NULL	2	stats_persistent=1 stats_auto_recalc=0 stats_sample_pages=25 row_format=COMPACT COMPRESSION="zlib"
+=== mysql57 :: pack-multi
+SQL> ALTER TABLE t15opt ENGINE=InnoDB, COMMENT='two', AUTO_INCREMENT=200
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+catalog[t15opt]> mysql: [Warning] Using a password on the command line interface can be insecure.
+InnoDB	Compact	utf8mb4_bin	two	NULL	2	stats_persistent=1 stats_auto_recalc=0 stats_sample_pages=25 row_format=COMPACT COMPRESSION="zlib"
+columns[t15opt]> mysql: [Warning] Using a password on the command line interface can be insecure.|id	int(11)	NULL	NULL|s	varchar(20)	utf8mb4	utf8mb4_bin|n	int(11)	NULL	NULL
+=== mysql57 :: cleanup
+SQL> drop table if exists t15opt
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+########## mysql80 — alter-table-option matrix
+=== mysql80 :: opt-fixture
+SQL> drop table if exists t15opt; create table t15opt (id int primary key, s varchar(20) charset utf8mb4, n int) engine=InnoDB
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+=== mysql80 :: opt-rows
+SQL> insert into t15opt values (2,'b',1),(1,'a',2)
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+catalog[t15opt]> mysql: [Warning] Using a password on the command line interface can be insecure.
+InnoDB	Dynamic	utf8mb4_0900_ai_ci		NULL	2	
+columns[t15opt]> mysql: [Warning] Using a password on the command line interface can be insecure.|id	int	NULL	NULL|s	varchar(20)	utf8mb4	utf8mb4_0900_ai_ci|n	int	NULL	NULL
+=== mysql80 :: orderby
+SQL> ALTER TABLE t15opt ORDER BY id
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+catalog[t15opt]> mysql: [Warning] Using a password on the command line interface can be insecure.
+InnoDB	Dynamic	utf8mb4_0900_ai_ci		NULL	2	
+=== mysql80 :: orderby-cols
+SQL> ALTER TABLE t15opt ORDER BY id DESC, s
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+catalog[t15opt]> mysql: [Warning] Using a password on the command line interface can be insecure.
+InnoDB	Dynamic	utf8mb4_0900_ai_ci		NULL	2	
+=== mysql80 :: force
+SQL> ALTER TABLE t15opt FORCE
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+catalog[t15opt]> mysql: [Warning] Using a password on the command line interface can be insecure.
+InnoDB	Dynamic	utf8mb4_0900_ai_ci		NULL	2	
+=== mysql80 :: disable-keys
+SQL> ALTER TABLE t15opt DISABLE KEYS
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+catalog[t15opt]> mysql: [Warning] Using a password on the command line interface can be insecure.
+InnoDB	Dynamic	utf8mb4_0900_ai_ci		NULL	2	
+=== mysql80 :: enable-keys
+SQL> ALTER TABLE t15opt ENABLE KEYS
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+catalog[t15opt]> mysql: [Warning] Using a password on the command line interface can be insecure.
+InnoDB	Dynamic	utf8mb4_0900_ai_ci		NULL	2	
+=== mysql80 :: engine-myisam
+SQL> ALTER TABLE t15opt ENGINE=MyISAM
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+catalog[t15opt]> mysql: [Warning] Using a password on the command line interface can be insecure.
+MyISAM	Dynamic	utf8mb4_0900_ai_ci		NULL	2	
+=== mysql80 :: engine-back
+SQL> ALTER TABLE t15opt ENGINE=InnoDB
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+catalog[t15opt]> mysql: [Warning] Using a password on the command line interface can be insecure.
+InnoDB	Dynamic	utf8mb4_0900_ai_ci		NULL	2	
+=== mysql80 :: rowformat
+SQL> ALTER TABLE t15opt ROW_FORMAT=DYNAMIC
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+catalog[t15opt]> mysql: [Warning] Using a password on the command line interface can be insecure.
+InnoDB	Dynamic	utf8mb4_0900_ai_ci		NULL	2	row_format=DYNAMIC
+=== mysql80 :: rowformat-compact
+SQL> ALTER TABLE t15opt ROW_FORMAT=COMPACT
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+catalog[t15opt]> mysql: [Warning] Using a password on the command line interface can be insecure.
+InnoDB	Compact	utf8mb4_0900_ai_ci		NULL	2	row_format=COMPACT
+=== mysql80 :: autoinc
+SQL> ALTER TABLE t15opt AUTO_INCREMENT=100
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+catalog[t15opt]> mysql: [Warning] Using a password on the command line interface can be insecure.
+InnoDB	Compact	utf8mb4_0900_ai_ci		NULL	2	row_format=COMPACT
+=== mysql80 :: comment
+SQL> ALTER TABLE t15opt COMMENT='hello'
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+catalog[t15opt]> mysql: [Warning] Using a password on the command line interface can be insecure.
+InnoDB	Compact	utf8mb4_0900_ai_ci	hello	NULL	2	row_format=COMPACT
+=== mysql80 :: default-charset
+SQL> ALTER TABLE t15opt DEFAULT CHARACTER SET utf8mb4
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+catalog[t15opt]> mysql: [Warning] Using a password on the command line interface can be insecure.
+InnoDB	Compact	utf8mb4_0900_ai_ci	hello	NULL	2	row_format=COMPACT
+=== mysql80 :: default-charset-collate
+SQL> ALTER TABLE t15opt DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_bin
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+catalog[t15opt]> mysql: [Warning] Using a password on the command line interface can be insecure.
+InnoDB	Compact	utf8mb4_bin	hello	NULL	2	row_format=COMPACT
+=== mysql80 :: convert-utf8mb4
+SQL> ALTER TABLE t15opt CONVERT TO CHARACTER SET utf8mb4
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+catalog[t15opt]> mysql: [Warning] Using a password on the command line interface can be insecure.
+InnoDB	Compact	utf8mb4_0900_ai_ci	hello	NULL	2	row_format=COMPACT
+=== mysql80 :: convert-latin1
+SQL> ALTER TABLE t15opt CONVERT TO CHARACTER SET latin1
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+catalog[t15opt]> mysql: [Warning] Using a password on the command line interface can be insecure.
+InnoDB	Compact	latin1_swedish_ci	hello	NULL	2	row_format=COMPACT
+=== mysql80 :: convert-collate
+SQL> ALTER TABLE t15opt CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_bin
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+catalog[t15opt]> mysql: [Warning] Using a password on the command line interface can be insecure.
+InnoDB	Compact	utf8mb4_bin	hello	NULL	2	row_format=COMPACT
+=== mysql80 :: kbs
+SQL> ALTER TABLE t15opt KEY_BLOCK_SIZE=8
+rc=1
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1478 (HY000) at line 1: Table storage engine 'InnoDB' does not support the create option 'KEY_BLOCK_SIZE'
+mysql: [Warning] Using a password on the command line interface can be insecure.
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+catalog[t15opt]> mysql: [Warning] Using a password on the command line interface can be insecure.
+InnoDB	Compact	utf8mb4_bin	hello	NULL	2	row_format=COMPACT
+=== mysql80 :: compression
+SQL> ALTER TABLE t15opt COMPRESSION='zlib'
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+catalog[t15opt]> mysql: [Warning] Using a password on the command line interface can be insecure.
+InnoDB	Compact	utf8mb4_bin	hello	NULL	2	row_format=COMPACT COMPRESSION="zlib"
+=== mysql80 :: encryption
+SQL> ALTER TABLE t15opt ENCRYPTION='Y'
+rc=1
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 3185 (HY000) at line 1: Can't find master key from keyring, please check in the server log if a keyring is loaded and initialized successfully.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+catalog[t15opt]> mysql: [Warning] Using a password on the command line interface can be insecure.
+InnoDB	Compact	utf8mb4_bin	hello	NULL	2	row_format=COMPACT COMPRESSION="zlib"
+=== mysql80 :: stats-persistent
+SQL> ALTER TABLE t15opt STATS_PERSISTENT=1
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+catalog[t15opt]> mysql: [Warning] Using a password on the command line interface can be insecure.
+InnoDB	Compact	utf8mb4_bin	hello	NULL	2	row_format=COMPACT COMPRESSION="zlib" stats_persistent=1
+=== mysql80 :: stats-auto-recalc
+SQL> ALTER TABLE t15opt STATS_AUTO_RECALC=0
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+catalog[t15opt]> mysql: [Warning] Using a password on the command line interface can be insecure.
+InnoDB	Compact	utf8mb4_bin	hello	NULL	2	row_format=COMPACT stats_auto_recalc=0 COMPRESSION="zlib" stats_persistent=1
+=== mysql80 :: stats-sample-pages
+SQL> ALTER TABLE t15opt STATS_SAMPLE_PAGES=25
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+catalog[t15opt]> mysql: [Warning] Using a password on the command line interface can be insecure.
+InnoDB	Compact	utf8mb4_bin	hello	NULL	2	row_format=COMPACT stats_sample_pages=25 stats_auto_recalc=0 COMPRESSION="zlib" stats_persistent=1
+=== mysql80 :: tablespace
+SQL> ALTER TABLE t15opt TABLESPACE=innodb_file_per_table
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+catalog[t15opt]> mysql: [Warning] Using a password on the command line interface can be insecure.
+InnoDB	Compact	utf8mb4_bin	hello	NULL	2	row_format=COMPACT stats_sample_pages=25 stats_auto_recalc=0 COMPRESSION="zlib" stats_persistent=1
+=== mysql80 :: pack-multi
+SQL> ALTER TABLE t15opt ENGINE=InnoDB, COMMENT='two', AUTO_INCREMENT=200
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+catalog[t15opt]> mysql: [Warning] Using a password on the command line interface can be insecure.
+InnoDB	Compact	utf8mb4_bin	two	NULL	2	row_format=COMPACT stats_sample_pages=25 stats_auto_recalc=0 COMPRESSION="zlib" stats_persistent=1
+columns[t15opt]> mysql: [Warning] Using a password on the command line interface can be insecure.|id	int	NULL	NULL|s	varchar(20)	utf8mb4	utf8mb4_bin|n	int	NULL	NULL
+=== mysql80 :: cleanup
+SQL> drop table if exists t15opt
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+########## mysql84 — alter-table-option matrix
+=== mysql84 :: opt-fixture
+SQL> drop table if exists t15opt; create table t15opt (id int primary key, s varchar(20) charset utf8mb4, n int) engine=InnoDB
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+=== mysql84 :: opt-rows
+SQL> insert into t15opt values (2,'b',1),(1,'a',2)
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+catalog[t15opt]> mysql: [Warning] Using a password on the command line interface can be insecure.
+InnoDB	Dynamic	utf8mb4_0900_ai_ci		NULL	2	
+columns[t15opt]> mysql: [Warning] Using a password on the command line interface can be insecure.|id	int	NULL	NULL|s	varchar(20)	utf8mb4	utf8mb4_0900_ai_ci|n	int	NULL	NULL
+=== mysql84 :: orderby
+SQL> ALTER TABLE t15opt ORDER BY id
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+Level	Code	Message
+Error	1064	You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '$$' at line 1
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+Error	1064	You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '$$' at line 1
+catalog[t15opt]> mysql: [Warning] Using a password on the command line interface can be insecure.
+InnoDB	Dynamic	utf8mb4_0900_ai_ci		NULL	2	
+=== mysql84 :: orderby-cols
+SQL> ALTER TABLE t15opt ORDER BY id DESC, s
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+Level	Code	Message
+Error	1064	You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '$$' at line 1
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+Error	1064	You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '$$' at line 1
+catalog[t15opt]> mysql: [Warning] Using a password on the command line interface can be insecure.
+InnoDB	Dynamic	utf8mb4_0900_ai_ci		NULL	2	
+=== mysql84 :: force
+SQL> ALTER TABLE t15opt FORCE
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+Level	Code	Message
+Error	1064	You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '$$' at line 1
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+Error	1064	You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '$$' at line 1
+catalog[t15opt]> mysql: [Warning] Using a password on the command line interface can be insecure.
+InnoDB	Dynamic	utf8mb4_0900_ai_ci		NULL	2	
+=== mysql84 :: disable-keys
+SQL> ALTER TABLE t15opt DISABLE KEYS
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+Level	Code	Message
+Error	1064	You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '$$' at line 1
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+Error	1064	You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '$$' at line 1
+catalog[t15opt]> mysql: [Warning] Using a password on the command line interface can be insecure.
+InnoDB	Dynamic	utf8mb4_0900_ai_ci		NULL	2	
+=== mysql84 :: enable-keys
+SQL> ALTER TABLE t15opt ENABLE KEYS
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+Level	Code	Message
+Error	1064	You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '$$' at line 1
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+Error	1064	You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '$$' at line 1
+catalog[t15opt]> mysql: [Warning] Using a password on the command line interface can be insecure.
+InnoDB	Dynamic	utf8mb4_0900_ai_ci		NULL	2	
+=== mysql84 :: engine-myisam
+SQL> ALTER TABLE t15opt ENGINE=MyISAM
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+Level	Code	Message
+Error	1064	You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '$$' at line 1
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+Error	1064	You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '$$' at line 1
+catalog[t15opt]> mysql: [Warning] Using a password on the command line interface can be insecure.
+MyISAM	Dynamic	utf8mb4_0900_ai_ci		NULL	2	
+=== mysql84 :: engine-back
+SQL> ALTER TABLE t15opt ENGINE=InnoDB
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+Level	Code	Message
+Error	1064	You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '$$' at line 1
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+Error	1064	You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '$$' at line 1
+catalog[t15opt]> mysql: [Warning] Using a password on the command line interface can be insecure.
+InnoDB	Dynamic	utf8mb4_0900_ai_ci		NULL	2	
+=== mysql84 :: rowformat
+SQL> ALTER TABLE t15opt ROW_FORMAT=DYNAMIC
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+Level	Code	Message
+Error	1064	You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '$$' at line 1
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+Error	1064	You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '$$' at line 1
+catalog[t15opt]> mysql: [Warning] Using a password on the command line interface can be insecure.
+InnoDB	Dynamic	utf8mb4_0900_ai_ci		NULL	2	row_format=DYNAMIC
+=== mysql84 :: rowformat-compact
+SQL> ALTER TABLE t15opt ROW_FORMAT=COMPACT
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+Level	Code	Message
+Error	1064	You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '$$' at line 1
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+Error	1064	You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '$$' at line 1
+catalog[t15opt]> mysql: [Warning] Using a password on the command line interface can be insecure.
+InnoDB	Compact	utf8mb4_0900_ai_ci		NULL	2	row_format=COMPACT
+=== mysql84 :: autoinc
+SQL> ALTER TABLE t15opt AUTO_INCREMENT=100
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+Level	Code	Message
+Error	1064	You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '$$' at line 1
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+Error	1064	You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '$$' at line 1
+catalog[t15opt]> mysql: [Warning] Using a password on the command line interface can be insecure.
+InnoDB	Compact	utf8mb4_0900_ai_ci		NULL	2	row_format=COMPACT
+=== mysql84 :: comment
+SQL> ALTER TABLE t15opt COMMENT='hello'
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+Level	Code	Message
+Error	1064	You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '$$' at line 1
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+Error	1064	You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '$$' at line 1
+catalog[t15opt]> mysql: [Warning] Using a password on the command line interface can be insecure.
+InnoDB	Compact	utf8mb4_0900_ai_ci	hello	NULL	2	row_format=COMPACT
+=== mysql84 :: default-charset
+SQL> ALTER TABLE t15opt DEFAULT CHARACTER SET utf8mb4
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+Level	Code	Message
+Error	1064	You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '$$' at line 1
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+Error	1064	You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '$$' at line 1
+catalog[t15opt]> mysql: [Warning] Using a password on the command line interface can be insecure.
+InnoDB	Compact	utf8mb4_0900_ai_ci	hello	NULL	2	row_format=COMPACT
+=== mysql84 :: default-charset-collate
+SQL> ALTER TABLE t15opt DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_bin
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+Level	Code	Message
+Error	1064	You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '$$' at line 1
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+Error	1064	You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '$$' at line 1
+catalog[t15opt]> mysql: [Warning] Using a password on the command line interface can be insecure.
+InnoDB	Compact	utf8mb4_bin	hello	NULL	2	row_format=COMPACT
+=== mysql84 :: convert-utf8mb4
+SQL> ALTER TABLE t15opt CONVERT TO CHARACTER SET utf8mb4
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+Level	Code	Message
+Error	1064	You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '$$' at line 1
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+Error	1064	You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '$$' at line 1
+catalog[t15opt]> mysql: [Warning] Using a password on the command line interface can be insecure.
+InnoDB	Compact	utf8mb4_0900_ai_ci	hello	NULL	2	row_format=COMPACT
+=== mysql84 :: convert-latin1
+SQL> ALTER TABLE t15opt CONVERT TO CHARACTER SET latin1
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+Level	Code	Message
+Error	1064	You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '$$' at line 1
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+Error	1064	You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '$$' at line 1
+catalog[t15opt]> mysql: [Warning] Using a password on the command line interface can be insecure.
+InnoDB	Compact	latin1_swedish_ci	hello	NULL	2	row_format=COMPACT
+=== mysql84 :: convert-collate
+SQL> ALTER TABLE t15opt CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_bin
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+Level	Code	Message
+Error	1064	You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '$$' at line 1
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+Error	1064	You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '$$' at line 1
+catalog[t15opt]> mysql: [Warning] Using a password on the command line interface can be insecure.
+InnoDB	Compact	utf8mb4_bin	hello	NULL	2	row_format=COMPACT
+=== mysql84 :: kbs
+SQL> ALTER TABLE t15opt KEY_BLOCK_SIZE=8
+rc=1
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1478 (HY000) at line 1: Table storage engine 'InnoDB' does not support the create option 'KEY_BLOCK_SIZE'
+mysql: [Warning] Using a password on the command line interface can be insecure.
+Level	Code	Message
+Error	1064	You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '$$' at line 1
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+Error	1064	You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '$$' at line 1
+catalog[t15opt]> mysql: [Warning] Using a password on the command line interface can be insecure.
+InnoDB	Compact	utf8mb4_bin	hello	NULL	2	row_format=COMPACT
+=== mysql84 :: compression
+SQL> ALTER TABLE t15opt COMPRESSION='zlib'
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+Level	Code	Message
+Error	1064	You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '$$' at line 1
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+Error	1064	You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '$$' at line 1
+catalog[t15opt]> mysql: [Warning] Using a password on the command line interface can be insecure.
+InnoDB	Compact	utf8mb4_bin	hello	NULL	2	row_format=COMPACT COMPRESSION="zlib"
+=== mysql84 :: encryption
+SQL> ALTER TABLE t15opt ENCRYPTION='Y'
+rc=1
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 3185 (HY000) at line 1: Can't find master key from keyring, please check in the server log if a keyring is loaded and initialized successfully.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+Level	Code	Message
+Error	1064	You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '$$' at line 1
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+Error	1064	You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '$$' at line 1
+catalog[t15opt]> mysql: [Warning] Using a password on the command line interface can be insecure.
+InnoDB	Compact	utf8mb4_bin	hello	NULL	2	row_format=COMPACT COMPRESSION="zlib"
+=== mysql84 :: stats-persistent
+SQL> ALTER TABLE t15opt STATS_PERSISTENT=1
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+Level	Code	Message
+Error	1064	You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '$$' at line 1
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+Error	1064	You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '$$' at line 1
+catalog[t15opt]> mysql: [Warning] Using a password on the command line interface can be insecure.
+InnoDB	Compact	utf8mb4_bin	hello	NULL	2	row_format=COMPACT COMPRESSION="zlib" stats_persistent=1
+=== mysql84 :: stats-auto-recalc
+SQL> ALTER TABLE t15opt STATS_AUTO_RECALC=0
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+Level	Code	Message
+Error	1064	You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '$$' at line 1
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+Error	1064	You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '$$' at line 1
+catalog[t15opt]> mysql: [Warning] Using a password on the command line interface can be insecure.
+InnoDB	Compact	utf8mb4_bin	hello	NULL	2	row_format=COMPACT stats_auto_recalc=0 COMPRESSION="zlib" stats_persistent=1
+=== mysql84 :: stats-sample-pages
+SQL> ALTER TABLE t15opt STATS_SAMPLE_PAGES=25
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+Level	Code	Message
+Error	1064	You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '$$' at line 1
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+Error	1064	You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '$$' at line 1
+catalog[t15opt]> mysql: [Warning] Using a password on the command line interface can be insecure.
+InnoDB	Compact	utf8mb4_bin	hello	NULL	2	row_format=COMPACT stats_sample_pages=25 stats_auto_recalc=0 COMPRESSION="zlib" stats_persistent=1
+=== mysql84 :: tablespace
+SQL> ALTER TABLE t15opt TABLESPACE=innodb_file_per_table
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+Level	Code	Message
+Error	1064	You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '$$' at line 1
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+Error	1064	You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '$$' at line 1
+catalog[t15opt]> mysql: [Warning] Using a password on the command line interface can be insecure.
+InnoDB	Compact	utf8mb4_bin	hello	NULL	2	row_format=COMPACT stats_sample_pages=25 stats_auto_recalc=0 COMPRESSION="zlib" stats_persistent=1
+=== mysql84 :: pack-multi
+SQL> ALTER TABLE t15opt ENGINE=InnoDB, COMMENT='two', AUTO_INCREMENT=200
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+Level	Code	Message
+Error	1064	You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '$$' at line 1
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+Error	1064	You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '$$' at line 1
+catalog[t15opt]> mysql: [Warning] Using a password on the command line interface can be insecure.
+InnoDB	Compact	utf8mb4_bin	two	NULL	2	row_format=COMPACT stats_sample_pages=25 stats_auto_recalc=0 COMPRESSION="zlib" stats_persistent=1
+columns[t15opt]> mysql: [Warning] Using a password on the command line interface can be insecure.|id	int	NULL	NULL|s	varchar(20)	utf8mb4	utf8mb4_bin|n	int	NULL	NULL
+=== mysql84 :: cleanup
+SQL> drop table if exists t15opt
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+########## tidb85 — alter-table-option matrix
+=== tidb85 :: opt-fixture
+SQL> drop table if exists t15opt; create table t15opt (id int primary key, s varchar(20) charset utf8mb4, n int) engine=InnoDB
+rc=1
+stderr/stdout> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+=== tidb85 :: opt-rows
+SQL> insert into t15opt values (2,'b',1),(1,'a',2)
+rc=1
+stderr/stdout> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+catalog[t15opt]> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+columns[t15opt]> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+=== tidb85 :: orderby
+SQL> ALTER TABLE t15opt ORDER BY id
+rc=1
+stderr/stdout> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+warn> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+catalog[t15opt]> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+=== tidb85 :: orderby-cols
+SQL> ALTER TABLE t15opt ORDER BY id DESC, s
+rc=1
+stderr/stdout> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+warn> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+catalog[t15opt]> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+=== tidb85 :: force
+SQL> ALTER TABLE t15opt FORCE
+rc=1
+stderr/stdout> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+warn> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+catalog[t15opt]> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+=== tidb85 :: disable-keys
+SQL> ALTER TABLE t15opt DISABLE KEYS
+rc=1
+stderr/stdout> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+warn> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+catalog[t15opt]> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+=== tidb85 :: enable-keys
+SQL> ALTER TABLE t15opt ENABLE KEYS
+rc=1
+stderr/stdout> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+warn> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+catalog[t15opt]> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+=== tidb85 :: engine-myisam
+SQL> ALTER TABLE t15opt ENGINE=MyISAM
+rc=1
+stderr/stdout> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+warn> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+catalog[t15opt]> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+=== tidb85 :: engine-back
+SQL> ALTER TABLE t15opt ENGINE=InnoDB
+rc=1
+stderr/stdout> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+warn> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+catalog[t15opt]> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+=== tidb85 :: rowformat
+SQL> ALTER TABLE t15opt ROW_FORMAT=DYNAMIC
+rc=1
+stderr/stdout> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+warn> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+catalog[t15opt]> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+=== tidb85 :: rowformat-compact
+SQL> ALTER TABLE t15opt ROW_FORMAT=COMPACT
+rc=1
+stderr/stdout> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+warn> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+catalog[t15opt]> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+=== tidb85 :: autoinc
+SQL> ALTER TABLE t15opt AUTO_INCREMENT=100
+rc=1
+stderr/stdout> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+warn> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+catalog[t15opt]> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+=== tidb85 :: comment
+SQL> ALTER TABLE t15opt COMMENT='hello'
+rc=1
+stderr/stdout> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+warn> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+catalog[t15opt]> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+=== tidb85 :: default-charset
+SQL> ALTER TABLE t15opt DEFAULT CHARACTER SET utf8mb4
+rc=1
+stderr/stdout> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+warn> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+catalog[t15opt]> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+=== tidb85 :: default-charset-collate
+SQL> ALTER TABLE t15opt DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_bin
+rc=1
+stderr/stdout> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+warn> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+catalog[t15opt]> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+=== tidb85 :: convert-utf8mb4
+SQL> ALTER TABLE t15opt CONVERT TO CHARACTER SET utf8mb4
+rc=1
+stderr/stdout> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+warn> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+catalog[t15opt]> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+=== tidb85 :: convert-latin1
+SQL> ALTER TABLE t15opt CONVERT TO CHARACTER SET latin1
+rc=1
+stderr/stdout> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+warn> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+catalog[t15opt]> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+=== tidb85 :: convert-collate
+SQL> ALTER TABLE t15opt CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_bin
+rc=1
+stderr/stdout> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+warn> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+catalog[t15opt]> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+=== tidb85 :: kbs
+SQL> ALTER TABLE t15opt KEY_BLOCK_SIZE=8
+rc=1
+stderr/stdout> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+warn> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+catalog[t15opt]> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+=== tidb85 :: compression
+SQL> ALTER TABLE t15opt COMPRESSION='zlib'
+rc=1
+stderr/stdout> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+warn> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+catalog[t15opt]> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+=== tidb85 :: encryption
+SQL> ALTER TABLE t15opt ENCRYPTION='Y'
+rc=1
+stderr/stdout> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+warn> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+catalog[t15opt]> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+=== tidb85 :: stats-persistent
+SQL> ALTER TABLE t15opt STATS_PERSISTENT=1
+rc=1
+stderr/stdout> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+warn> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+catalog[t15opt]> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+=== tidb85 :: stats-auto-recalc
+SQL> ALTER TABLE t15opt STATS_AUTO_RECALC=0
+rc=1
+stderr/stdout> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+warn> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+catalog[t15opt]> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+=== tidb85 :: stats-sample-pages
+SQL> ALTER TABLE t15opt STATS_SAMPLE_PAGES=25
+rc=1
+stderr/stdout> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+warn> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+catalog[t15opt]> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+=== tidb85 :: tablespace
+SQL> ALTER TABLE t15opt TABLESPACE=innodb_file_per_table
+rc=1
+stderr/stdout> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+warn> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+catalog[t15opt]> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+=== tidb85 :: pack-multi
+SQL> ALTER TABLE t15opt ENGINE=InnoDB, COMMENT='two', AUTO_INCREMENT=200
+rc=1
+stderr/stdout> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+warn> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+catalog[t15opt]> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+columns[t15opt]> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+=== tidb85 :: cleanup
+SQL> drop table if exists t15opt
+rc=1
+stderr/stdout> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+########## mysql57 — myisam option matrix
+=== mysql57 :: my-fixture
+SQL> drop table if exists t15my; create table t15my (id int primary key, s varchar(20)) engine=MyISAM
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+=== mysql57 :: myisam-disable
+SQL> ALTER TABLE t15my DISABLE KEYS
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+catalog[t15my]> mysql: [Warning] Using a password on the command line interface can be insecure.
+MyISAM	Dynamic	latin1_swedish_ci		NULL	0	
+=== mysql57 :: myisam-enable
+SQL> ALTER TABLE t15my ENABLE KEYS
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+catalog[t15my]> mysql: [Warning] Using a password on the command line interface can be insecure.
+MyISAM	Dynamic	latin1_swedish_ci		NULL	0	
+=== mysql57 :: myisam-orderby
+SQL> ALTER TABLE t15my ORDER BY id
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+catalog[t15my]> mysql: [Warning] Using a password on the command line interface can be insecure.
+MyISAM	Dynamic	latin1_swedish_ci		NULL	0	
+=== mysql57 :: myisam-rowformat
+SQL> ALTER TABLE t15my ROW_FORMAT=FIXED
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+catalog[t15my]> mysql: [Warning] Using a password on the command line interface can be insecure.
+MyISAM	Fixed	latin1_swedish_ci		NULL	0	row_format=FIXED
+=== mysql57 :: myisam-kbs
+SQL> ALTER TABLE t15my KEY_BLOCK_SIZE=8
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+catalog[t15my]> mysql: [Warning] Using a password on the command line interface can be insecure.
+MyISAM	Fixed	latin1_swedish_ci		NULL	0	row_format=FIXED KEY_BLOCK_SIZE=8
+=== mysql57 :: myisam-delay
+SQL> ALTER TABLE t15my DELAY_KEY_WRITE=1
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+catalog[t15my]> mysql: [Warning] Using a password on the command line interface can be insecure.
+MyISAM	Fixed	latin1_swedish_ci		NULL	0	delay_key_write=1 row_format=FIXED KEY_BLOCK_SIZE=8
+=== mysql57 :: myisam-pack
+SQL> ALTER TABLE t15my PACK_KEYS=1
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+catalog[t15my]> mysql: [Warning] Using a password on the command line interface can be insecure.
+MyISAM	Fixed	latin1_swedish_ci		NULL	0	pack_keys=1 delay_key_write=1 row_format=FIXED KEY_BLOCK_SIZE=8
+=== mysql57 :: cleanup
+SQL> drop table if exists t15my
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+########## mysql80 — myisam option matrix
+=== mysql80 :: my-fixture
+SQL> drop table if exists t15my; create table t15my (id int primary key, s varchar(20)) engine=MyISAM
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+=== mysql80 :: myisam-disable
+SQL> ALTER TABLE t15my DISABLE KEYS
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+catalog[t15my]> mysql: [Warning] Using a password on the command line interface can be insecure.
+MyISAM	Dynamic	utf8mb4_0900_ai_ci		1	0	
+=== mysql80 :: myisam-enable
+SQL> ALTER TABLE t15my ENABLE KEYS
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+catalog[t15my]> mysql: [Warning] Using a password on the command line interface can be insecure.
+MyISAM	Dynamic	utf8mb4_0900_ai_ci		1	0	
+=== mysql80 :: myisam-orderby
+SQL> ALTER TABLE t15my ORDER BY id
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+catalog[t15my]> mysql: [Warning] Using a password on the command line interface can be insecure.
+MyISAM	Dynamic	utf8mb4_0900_ai_ci		1	0	
+=== mysql80 :: myisam-rowformat
+SQL> ALTER TABLE t15my ROW_FORMAT=FIXED
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+catalog[t15my]> mysql: [Warning] Using a password on the command line interface can be insecure.
+MyISAM	Fixed	utf8mb4_0900_ai_ci		1	0	row_format=FIXED
+=== mysql80 :: myisam-kbs
+SQL> ALTER TABLE t15my KEY_BLOCK_SIZE=8
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+catalog[t15my]> mysql: [Warning] Using a password on the command line interface can be insecure.
+MyISAM	Fixed	utf8mb4_0900_ai_ci		1	0	row_format=FIXED KEY_BLOCK_SIZE=8
+=== mysql80 :: myisam-delay
+SQL> ALTER TABLE t15my DELAY_KEY_WRITE=1
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+catalog[t15my]> mysql: [Warning] Using a password on the command line interface can be insecure.
+MyISAM	Fixed	utf8mb4_0900_ai_ci		1	0	row_format=FIXED KEY_BLOCK_SIZE=8 delay_key_write=1
+=== mysql80 :: myisam-pack
+SQL> ALTER TABLE t15my PACK_KEYS=1
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+catalog[t15my]> mysql: [Warning] Using a password on the command line interface can be insecure.
+MyISAM	Fixed	utf8mb4_0900_ai_ci		1	0	row_format=FIXED KEY_BLOCK_SIZE=8 pack_keys=1 delay_key_write=1
+=== mysql80 :: cleanup
+SQL> drop table if exists t15my
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+########## mysql84 — myisam option matrix
+=== mysql84 :: my-fixture
+SQL> drop table if exists t15my; create table t15my (id int primary key, s varchar(20)) engine=MyISAM
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+=== mysql84 :: myisam-disable
+SQL> ALTER TABLE t15my DISABLE KEYS
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+Level	Code	Message
+Error	1064	You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '$$' at line 1
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+Error	1064	You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '$$' at line 1
+catalog[t15my]> mysql: [Warning] Using a password on the command line interface can be insecure.
+MyISAM	Dynamic	utf8mb4_0900_ai_ci		1	0	
+=== mysql84 :: myisam-enable
+SQL> ALTER TABLE t15my ENABLE KEYS
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+Level	Code	Message
+Error	1064	You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '$$' at line 1
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+Error	1064	You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '$$' at line 1
+catalog[t15my]> mysql: [Warning] Using a password on the command line interface can be insecure.
+MyISAM	Dynamic	utf8mb4_0900_ai_ci		1	0	
+=== mysql84 :: myisam-orderby
+SQL> ALTER TABLE t15my ORDER BY id
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+Level	Code	Message
+Error	1064	You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '$$' at line 1
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+Error	1064	You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '$$' at line 1
+catalog[t15my]> mysql: [Warning] Using a password on the command line interface can be insecure.
+MyISAM	Dynamic	utf8mb4_0900_ai_ci		1	0	
+=== mysql84 :: myisam-rowformat
+SQL> ALTER TABLE t15my ROW_FORMAT=FIXED
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+Level	Code	Message
+Error	1064	You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '$$' at line 1
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+Error	1064	You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '$$' at line 1
+catalog[t15my]> mysql: [Warning] Using a password on the command line interface can be insecure.
+MyISAM	Fixed	utf8mb4_0900_ai_ci		1	0	row_format=FIXED
+=== mysql84 :: myisam-kbs
+SQL> ALTER TABLE t15my KEY_BLOCK_SIZE=8
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+Level	Code	Message
+Error	1064	You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '$$' at line 1
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+Error	1064	You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '$$' at line 1
+catalog[t15my]> mysql: [Warning] Using a password on the command line interface can be insecure.
+MyISAM	Fixed	utf8mb4_0900_ai_ci		1	0	row_format=FIXED KEY_BLOCK_SIZE=8
+=== mysql84 :: myisam-delay
+SQL> ALTER TABLE t15my DELAY_KEY_WRITE=1
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+Level	Code	Message
+Error	1064	You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '$$' at line 1
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+Error	1064	You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '$$' at line 1
+catalog[t15my]> mysql: [Warning] Using a password on the command line interface can be insecure.
+MyISAM	Fixed	utf8mb4_0900_ai_ci		1	0	row_format=FIXED KEY_BLOCK_SIZE=8 delay_key_write=1
+=== mysql84 :: myisam-pack
+SQL> ALTER TABLE t15my PACK_KEYS=1
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+Level	Code	Message
+Error	1064	You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '$$' at line 1
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+Error	1064	You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '$$' at line 1
+catalog[t15my]> mysql: [Warning] Using a password on the command line interface can be insecure.
+MyISAM	Fixed	utf8mb4_0900_ai_ci		1	0	row_format=FIXED KEY_BLOCK_SIZE=8 pack_keys=1 delay_key_write=1
+=== mysql84 :: cleanup
+SQL> drop table if exists t15my
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+########## tidb85 — myisam option matrix
+=== tidb85 :: my-fixture
+SQL> drop table if exists t15my; create table t15my (id int primary key, s varchar(20)) engine=MyISAM
+rc=1
+stderr/stdout> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+=== tidb85 :: myisam-disable
+SQL> ALTER TABLE t15my DISABLE KEYS
+rc=1
+stderr/stdout> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+warn> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+catalog[t15my]> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+=== tidb85 :: myisam-enable
+SQL> ALTER TABLE t15my ENABLE KEYS
+rc=1
+stderr/stdout> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+warn> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+catalog[t15my]> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+=== tidb85 :: myisam-orderby
+SQL> ALTER TABLE t15my ORDER BY id
+rc=1
+stderr/stdout> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+warn> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+catalog[t15my]> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+=== tidb85 :: myisam-rowformat
+SQL> ALTER TABLE t15my ROW_FORMAT=FIXED
+rc=1
+stderr/stdout> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+warn> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+catalog[t15my]> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+=== tidb85 :: myisam-kbs
+SQL> ALTER TABLE t15my KEY_BLOCK_SIZE=8
+rc=1
+stderr/stdout> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+warn> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+catalog[t15my]> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+=== tidb85 :: myisam-delay
+SQL> ALTER TABLE t15my DELAY_KEY_WRITE=1
+rc=1
+stderr/stdout> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+warn> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+catalog[t15my]> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+=== tidb85 :: myisam-pack
+SQL> ALTER TABLE t15my PACK_KEYS=1
+rc=1
+stderr/stdout> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+warn> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+catalog[t15my]> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+=== tidb85 :: cleanup
+SQL> drop table if exists t15my
+rc=1
+stderr/stdout> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+########## mysql57 — create-table-option matrix
+=== mysql57 :: ct-base
+SQL> drop table if exists t15c; create table t15c (id int) engine=InnoDB
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+=== mysql57 :: ct-kbs
+SQL> drop table if exists t15k; create table t15k (id int) engine=InnoDB key_block_size=8
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+=== mysql57 :: ct-compression
+SQL> drop table if exists t15z; create table t15z (id int) engine=InnoDB compression='zlib'
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+=== mysql57 :: ct-encryption
+SQL> drop table if exists t15e; create table t15e (id int) engine=InnoDB encryption='Y'
+rc=1
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 3185 (HY000) at line 1: Can't find master key from keyring, please check in the server log if a keyring plugin is loaded and initialized successfully.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+=== mysql57 :: ct-stats-persist
+SQL> drop table if exists t15sp; create table t15sp (id int) engine=InnoDB stats_persistent=1
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+=== mysql57 :: ct-stats-recalc
+SQL> drop table if exists t15sa; create table t15sa (id int) engine=InnoDB stats_auto_recalc=0
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+=== mysql57 :: ct-stats-pages
+SQL> drop table if exists t15sg; create table t15sg (id int) engine=InnoDB stats_sample_pages=25
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+=== mysql57 :: ct-tablespace
+SQL> drop table if exists t15ts; create table t15ts (id int) engine=InnoDB tablespace=innodb_file_per_table
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+=== mysql57 :: ct-myisam-kbs
+SQL> drop table if exists t15mk; create table t15mk (id int) engine=MyISAM key_block_size=8
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+=== mysql57 :: ct-myisam-compression
+SQL> drop table if exists t15mz; create table t15mz (id int) engine=MyISAM compression='zlib'
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+=== mysql57 :: ct-myisam-stats
+SQL> drop table if exists t15ms; create table t15ms (id int) engine=MyISAM stats_persistent=1
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+catalog[t15c]> mysql: [Warning] Using a password on the command line interface can be insecure.
+InnoDB	Dynamic	latin1_swedish_ci		NULL	0	
+catalog[t15k]> mysql: [Warning] Using a password on the command line interface can be insecure.
+InnoDB	Compressed	latin1_swedish_ci		NULL	0	KEY_BLOCK_SIZE=8
+catalog[t15z]> mysql: [Warning] Using a password on the command line interface can be insecure.
+InnoDB	Dynamic	latin1_swedish_ci		NULL	0	COMPRESSION="zlib"
+catalog[t15e]> mysql: [Warning] Using a password on the command line interface can be insecure.
+catalog[t15sp]> mysql: [Warning] Using a password on the command line interface can be insecure.
+InnoDB	Dynamic	latin1_swedish_ci		NULL	0	stats_persistent=1
+catalog[t15sa]> mysql: [Warning] Using a password on the command line interface can be insecure.
+InnoDB	Dynamic	latin1_swedish_ci		NULL	0	stats_auto_recalc=0
+catalog[t15sg]> mysql: [Warning] Using a password on the command line interface can be insecure.
+InnoDB	Dynamic	latin1_swedish_ci		NULL	0	stats_sample_pages=25
+catalog[t15ts]> mysql: [Warning] Using a password on the command line interface can be insecure.
+InnoDB	Dynamic	latin1_swedish_ci		NULL	0	
+catalog[t15mk]> mysql: [Warning] Using a password on the command line interface can be insecure.
+MyISAM	Fixed	latin1_swedish_ci		NULL	0	KEY_BLOCK_SIZE=8
+catalog[t15mz]> mysql: [Warning] Using a password on the command line interface can be insecure.
+MyISAM	Fixed	latin1_swedish_ci		NULL	0	COMPRESSION="zlib"
+catalog[t15ms]> mysql: [Warning] Using a password on the command line interface can be insecure.
+MyISAM	Fixed	latin1_swedish_ci		NULL	0	stats_persistent=1
+=== mysql57 :: cleanup
+SQL> drop table if exists t15c,t15k,t15z,t15e,t15sp,t15sa,t15sg,t15ts,t15mk,t15mz,t15ms
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+########## mysql80 — create-table-option matrix
+=== mysql80 :: ct-base
+SQL> drop table if exists t15c; create table t15c (id int) engine=InnoDB
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+=== mysql80 :: ct-kbs
+SQL> drop table if exists t15k; create table t15k (id int) engine=InnoDB key_block_size=8
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+=== mysql80 :: ct-compression
+SQL> drop table if exists t15z; create table t15z (id int) engine=InnoDB compression='zlib'
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+=== mysql80 :: ct-encryption
+SQL> drop table if exists t15e; create table t15e (id int) engine=InnoDB encryption='Y'
+rc=1
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 3185 (HY000) at line 1: Can't find master key from keyring, please check in the server log if a keyring is loaded and initialized successfully.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+=== mysql80 :: ct-stats-persist
+SQL> drop table if exists t15sp; create table t15sp (id int) engine=InnoDB stats_persistent=1
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+=== mysql80 :: ct-stats-recalc
+SQL> drop table if exists t15sa; create table t15sa (id int) engine=InnoDB stats_auto_recalc=0
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+=== mysql80 :: ct-stats-pages
+SQL> drop table if exists t15sg; create table t15sg (id int) engine=InnoDB stats_sample_pages=25
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+=== mysql80 :: ct-tablespace
+SQL> drop table if exists t15ts; create table t15ts (id int) engine=InnoDB tablespace=innodb_file_per_table
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+=== mysql80 :: ct-myisam-kbs
+SQL> drop table if exists t15mk; create table t15mk (id int) engine=MyISAM key_block_size=8
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+=== mysql80 :: ct-myisam-compression
+SQL> drop table if exists t15mz; create table t15mz (id int) engine=MyISAM compression='zlib'
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+=== mysql80 :: ct-myisam-stats
+SQL> drop table if exists t15ms; create table t15ms (id int) engine=MyISAM stats_persistent=1
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+catalog[t15c]> mysql: [Warning] Using a password on the command line interface can be insecure.
+InnoDB	Dynamic	utf8mb4_0900_ai_ci		NULL	0	
+catalog[t15k]> mysql: [Warning] Using a password on the command line interface can be insecure.
+InnoDB	Compressed	utf8mb4_0900_ai_ci		NULL	0	KEY_BLOCK_SIZE=8
+catalog[t15z]> mysql: [Warning] Using a password on the command line interface can be insecure.
+InnoDB	Dynamic	utf8mb4_0900_ai_ci		NULL	0	COMPRESSION="zlib"
+catalog[t15e]> mysql: [Warning] Using a password on the command line interface can be insecure.
+catalog[t15sp]> mysql: [Warning] Using a password on the command line interface can be insecure.
+InnoDB	Dynamic	utf8mb4_0900_ai_ci		NULL	0	stats_persistent=1
+catalog[t15sa]> mysql: [Warning] Using a password on the command line interface can be insecure.
+InnoDB	Dynamic	utf8mb4_0900_ai_ci		NULL	0	stats_auto_recalc=0
+catalog[t15sg]> mysql: [Warning] Using a password on the command line interface can be insecure.
+InnoDB	Dynamic	utf8mb4_0900_ai_ci		NULL	0	stats_sample_pages=25
+catalog[t15ts]> mysql: [Warning] Using a password on the command line interface can be insecure.
+InnoDB	Dynamic	utf8mb4_0900_ai_ci		NULL	0	
+catalog[t15mk]> mysql: [Warning] Using a password on the command line interface can be insecure.
+MyISAM	Fixed	utf8mb4_0900_ai_ci		1	0	KEY_BLOCK_SIZE=8
+catalog[t15mz]> mysql: [Warning] Using a password on the command line interface can be insecure.
+MyISAM	Fixed	utf8mb4_0900_ai_ci		1	0	COMPRESSION="zlib"
+catalog[t15ms]> mysql: [Warning] Using a password on the command line interface can be insecure.
+MyISAM	Fixed	utf8mb4_0900_ai_ci		1	0	stats_persistent=1
+=== mysql80 :: cleanup
+SQL> drop table if exists t15c,t15k,t15z,t15e,t15sp,t15sa,t15sg,t15ts,t15mk,t15mz,t15ms
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+########## mysql84 — create-table-option matrix
+=== mysql84 :: ct-base
+SQL> drop table if exists t15c; create table t15c (id int) engine=InnoDB
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+Level	Code	Message
+Error	1064	You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '$$' at line 1
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+Error	1064	You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '$$' at line 1
+=== mysql84 :: ct-kbs
+SQL> drop table if exists t15k; create table t15k (id int) engine=InnoDB key_block_size=8
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+Level	Code	Message
+Error	1064	You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '$$' at line 1
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+Error	1064	You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '$$' at line 1
+=== mysql84 :: ct-compression
+SQL> drop table if exists t15z; create table t15z (id int) engine=InnoDB compression='zlib'
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+Level	Code	Message
+Error	1064	You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '$$' at line 1
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+Error	1064	You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '$$' at line 1
+=== mysql84 :: ct-encryption
+SQL> drop table if exists t15e; create table t15e (id int) engine=InnoDB encryption='Y'
+rc=1
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 3185 (HY000) at line 1: Can't find master key from keyring, please check in the server log if a keyring is loaded and initialized successfully.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+Level	Code	Message
+Error	1064	You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '$$' at line 1
+warn> Error	1064	You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '$$' at line 1
+mysql: [Warning] Using a password on the command line interface can be insecure.
+=== mysql84 :: ct-stats-persist
+SQL> drop table if exists t15sp; create table t15sp (id int) engine=InnoDB stats_persistent=1
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+Level	Code	Message
+Error	1064	You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '$$' at line 1
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+Error	1064	You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '$$' at line 1
+=== mysql84 :: ct-stats-recalc
+SQL> drop table if exists t15sa; create table t15sa (id int) engine=InnoDB stats_auto_recalc=0
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+Level	Code	Message
+Error	1064	You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '$$' at line 1
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+Error	1064	You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '$$' at line 1
+=== mysql84 :: ct-stats-pages
+SQL> drop table if exists t15sg; create table t15sg (id int) engine=InnoDB stats_sample_pages=25
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+Level	Code	Message
+Error	1064	You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '$$' at line 1
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+Error	1064	You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '$$' at line 1
+=== mysql84 :: ct-tablespace
+SQL> drop table if exists t15ts; create table t15ts (id int) engine=InnoDB tablespace=innodb_file_per_table
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+Level	Code	Message
+Error	1064	You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '$$' at line 1
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+Error	1064	You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '$$' at line 1
+=== mysql84 :: ct-myisam-kbs
+SQL> drop table if exists t15mk; create table t15mk (id int) engine=MyISAM key_block_size=8
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+Level	Code	Message
+Error	1064	You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '$$' at line 1
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+Error	1064	You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '$$' at line 1
+=== mysql84 :: ct-myisam-compression
+SQL> drop table if exists t15mz; create table t15mz (id int) engine=MyISAM compression='zlib'
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+Level	Code	Message
+Error	1064	You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '$$' at line 1
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+Error	1064	You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '$$' at line 1
+=== mysql84 :: ct-myisam-stats
+SQL> drop table if exists t15ms; create table t15ms (id int) engine=MyISAM stats_persistent=1
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+Level	Code	Message
+Error	1064	You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '$$' at line 1
+warn> mysql: [Warning] Using a password on the command line interface can be insecure.
+Error	1064	You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '$$' at line 1
+catalog[t15c]> mysql: [Warning] Using a password on the command line interface can be insecure.
+InnoDB	Dynamic	utf8mb4_0900_ai_ci		NULL	0	
+catalog[t15k]> mysql: [Warning] Using a password on the command line interface can be insecure.
+InnoDB	Compressed	utf8mb4_0900_ai_ci		NULL	0	KEY_BLOCK_SIZE=8
+catalog[t15z]> mysql: [Warning] Using a password on the command line interface can be insecure.
+InnoDB	Dynamic	utf8mb4_0900_ai_ci		NULL	0	COMPRESSION="zlib"
+catalog[t15e]> mysql: [Warning] Using a password on the command line interface can be insecure.
+catalog[t15sp]> mysql: [Warning] Using a password on the command line interface can be insecure.
+InnoDB	Dynamic	utf8mb4_0900_ai_ci		NULL	0	stats_persistent=1
+catalog[t15sa]> mysql: [Warning] Using a password on the command line interface can be insecure.
+InnoDB	Dynamic	utf8mb4_0900_ai_ci		NULL	0	stats_auto_recalc=0
+catalog[t15sg]> mysql: [Warning] Using a password on the command line interface can be insecure.
+InnoDB	Dynamic	utf8mb4_0900_ai_ci		NULL	0	stats_sample_pages=25
+catalog[t15ts]> mysql: [Warning] Using a password on the command line interface can be insecure.
+InnoDB	Dynamic	utf8mb4_0900_ai_ci		NULL	0	
+catalog[t15mk]> mysql: [Warning] Using a password on the command line interface can be insecure.
+MyISAM	Fixed	utf8mb4_0900_ai_ci		1	0	KEY_BLOCK_SIZE=8
+catalog[t15mz]> mysql: [Warning] Using a password on the command line interface can be insecure.
+MyISAM	Fixed	utf8mb4_0900_ai_ci		1	0	COMPRESSION="zlib"
+catalog[t15ms]> mysql: [Warning] Using a password on the command line interface can be insecure.
+MyISAM	Fixed	utf8mb4_0900_ai_ci		1	0	stats_persistent=1
+=== mysql84 :: cleanup
+SQL> drop table if exists t15c,t15k,t15z,t15e,t15sp,t15sa,t15sg,t15ts,t15mk,t15mz,t15ms
+rc=0
+stderr/stdout> mysql: [Warning] Using a password on the command line interface can be insecure.
+########## tidb85 — create-table-option matrix
+=== tidb85 :: ct-base
+SQL> drop table if exists t15c; create table t15c (id int) engine=InnoDB
+rc=1
+stderr/stdout> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+warn> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+=== tidb85 :: ct-kbs
+SQL> drop table if exists t15k; create table t15k (id int) engine=InnoDB key_block_size=8
+rc=1
+stderr/stdout> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+warn> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+=== tidb85 :: ct-compression
+SQL> drop table if exists t15z; create table t15z (id int) engine=InnoDB compression='zlib'
+rc=1
+stderr/stdout> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+warn> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+=== tidb85 :: ct-encryption
+SQL> drop table if exists t15e; create table t15e (id int) engine=InnoDB encryption='Y'
+rc=1
+stderr/stdout> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+warn> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+=== tidb85 :: ct-stats-persist
+SQL> drop table if exists t15sp; create table t15sp (id int) engine=InnoDB stats_persistent=1
+rc=1
+stderr/stdout> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+warn> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+=== tidb85 :: ct-stats-recalc
+SQL> drop table if exists t15sa; create table t15sa (id int) engine=InnoDB stats_auto_recalc=0
+rc=1
+stderr/stdout> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+warn> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+=== tidb85 :: ct-stats-pages
+SQL> drop table if exists t15sg; create table t15sg (id int) engine=InnoDB stats_sample_pages=25
+rc=1
+stderr/stdout> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+warn> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+=== tidb85 :: ct-tablespace
+SQL> drop table if exists t15ts; create table t15ts (id int) engine=InnoDB tablespace=innodb_file_per_table
+rc=1
+stderr/stdout> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+warn> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+=== tidb85 :: ct-myisam-kbs
+SQL> drop table if exists t15mk; create table t15mk (id int) engine=MyISAM key_block_size=8
+rc=1
+stderr/stdout> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+warn> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+=== tidb85 :: ct-myisam-compression
+SQL> drop table if exists t15mz; create table t15mz (id int) engine=MyISAM compression='zlib'
+rc=1
+stderr/stdout> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+warn> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+=== tidb85 :: ct-myisam-stats
+SQL> drop table if exists t15ms; create table t15ms (id int) engine=MyISAM stats_persistent=1
+rc=1
+stderr/stdout> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+warn> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+catalog[t15c]> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+catalog[t15k]> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+catalog[t15z]> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+catalog[t15e]> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+catalog[t15sp]> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+catalog[t15sa]> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+catalog[t15sg]> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+catalog[t15ts]> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+catalog[t15mk]> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+catalog[t15mz]> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+catalog[t15ms]> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+=== tidb85 :: cleanup
+SQL> drop table if exists t15c,t15k,t15z,t15e,t15sp,t15sa,t15sg,t15ts,t15mk,t15mz,t15ms
+rc=1
+stderr/stdout> Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+###### probe complete

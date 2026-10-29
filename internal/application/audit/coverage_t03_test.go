@@ -332,8 +332,10 @@ func TestAuditSQLT03RecognizedUnauditedAspectsIncomplete(t *testing.T) {
 	}{
 		// alter_index VISIBLE|INVISIBLE is audited since T10 — see
 		// TestT10AlterIndex* — so the action no longer lands here.
-		{name: "mysql alter algorithm", sql: "ALTER TABLE t ALGORITHM=INPLACE;", dialect: spec.DialectMySQL, wantFeature: "alter_table.algorithm", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
-		{name: "mysql alter lock", sql: "ALTER TABLE t LOCK=NONE;", dialect: spec.DialectMySQL, wantFeature: "alter_table.lock", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
+		// ALGORITHM/LOCK modifiers graduated to audited semantics in T15 —
+		// the online-DDL classifier consumes them (accepted, refused, or a
+		// bounded alter_table.online_ddl aspect on unprobed cells) — see
+		// TestT15*.
 		// ALTER|DROP CHECK graduated to audited semantics in T12 — see
 		// TestT12* — so the action no longer lands here.
 		{name: "mysql nested placement policy", sql: "CREATE TABLE t (id INT) PLACEMENT POLICY=p;", dialect: spec.DialectMySQL, wantFeature: "create_table.option.placement_policy", wantReason: spec.UnsupportedVendorBoundaryReason, wantKind: "ddl"},

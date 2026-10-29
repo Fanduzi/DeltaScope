@@ -63,18 +63,31 @@ var auditedAlterActionsMySQL = map[string]struct{}{
 	"repair_partition":             {},
 	"import_partition_tablespace":  {},
 	"discard_partition_tablespace": {},
+	// T15: online-DDL modifiers and the MyISAM/maintenance actions —
+	// adjudicated by the shared OnlineDDLOutcome matrix and the
+	// keys/rebuild rules on MySQL. On TiDB, algorithm/lock/order_by/keys
+	// are accepted compat declarations; force is a proven 8200 refusal
+	// and joins the vendor set below.
+	"algorithm":        {},
+	"lock":             {},
+	"order_by_columns": {},
+	"force":            {},
+	"enable_keys":      {},
+	"disable_keys":     {},
 }
 
-// tidbVendorRefusedPartitionActions is the probed TiDB 8200 refusal set:
-// every named maintenance partition op is a vendor boundary on TiDB v8.5,
-// so the actions are not audited there — they emit vendor aspects.
-var tidbVendorRefusedPartitionActions = map[string]struct{}{
+// tidbVendorRefusedAlterActions is the probed TiDB 8200 refusal set:
+// every named maintenance action is a vendor boundary on TiDB v8.5 —
+// the six maintenance partition ops plus FORCE — so the actions are not
+// audited there and emit vendor aspects instead.
+var tidbVendorRefusedAlterActions = map[string]struct{}{
 	"rebuild_partition":            {},
 	"check_partitions":             {},
 	"optimize_partition":           {},
 	"repair_partition":             {},
 	"import_partition_tablespace":  {},
 	"discard_partition_tablespace": {},
+	"force":                        {},
 }
 
 // auditedAlterActionsTiDB extends the shared audited set with the TiDB
@@ -86,7 +99,7 @@ var tidbVendorRefusedPartitionActions = map[string]struct{}{
 var auditedAlterActionsTiDB = func() map[string]struct{} {
 	set := make(map[string]struct{}, len(auditedAlterActionsMySQL)+1)
 	for action := range auditedAlterActionsMySQL {
-		if _, refused := tidbVendorRefusedPartitionActions[action]; refused {
+		if _, refused := tidbVendorRefusedAlterActions[action]; refused {
 			continue
 		}
 		set[action] = struct{}{}
@@ -213,7 +226,30 @@ func extractedOptionGap(dialect spec.Dialect, op spec.DDLOperation, name string)
 		// vendor boundary, so this aspect only ever fires under MySQL.
 		return op == spec.DDLOperationCreateProcedure, false
 	}
+	if t15ExtractedTableOption(name) {
+		// T15 extracts the shared MySQL/TiDB table-option vocabulary on
+		// CREATE — declarations carry values now, but per-option CREATE
+		// semantics stay unaudited, so the bounded option gap remains.
+		return op == spec.DDLOperationCreateTable, false
+	}
 	return false, false
+}
+
+// t15ExtractedTableOption lists the option names T15 moved from the
+// unextracted bag into ddl.Options — extraction upgraded the evidence
+// (authored values are now captured), not the verdict.
+func t15ExtractedTableOption(name string) bool {
+	switch name {
+	case "key_block_size", "compression", "encryption", "tablespace",
+		"insert_method", "stats_persistent", "stats_auto_recalc",
+		"stats_sample_pages", "pack_keys", "delay_key_write",
+		"avg_row_length", "checksum", "table_checksum", "max_rows",
+		"min_rows", "data_directory", "index_directory", "connection",
+		"password", "storage_media", "secondary_engine", "union":
+		return true
+	default:
+		return false
+	}
 }
 
 // tidbOnlyTableOption reports whether an unextracted table-option name is a
@@ -483,20 +519,48 @@ func statementCoverageAspects(dialect spec.Dialect, statement spec.Statement) []
 			))
 		}
 	}
-	for _, alter := range ddl.Alter {
-		if ddl.Operation == spec.DDLOperationAlterTable && !auditedAlterAction(dialect, alter.Action) {
-			// An ALGORITHM/LOCK modifier accompanying a partition action is
-			// consumed by the ordered-state combination classifier — but only
-			// when the classifier reached a proven verdict for the whole
-			// combination. An unproven shape (COPY, a non-DEFAULT lock,
-			// multiple modifiers, a version-gated form without the version
-			// fact) keeps its aspect on the current statement — the boundary
-			// is never laundered through a successor tombstone. Standalone
-			// modifiers stay unaudited (owner T15).
-			if (alter.Action == "algorithm" || alter.Action == "lock") &&
-				partitionCombinationProven(ddl, statement) {
-				continue
+	// A non-partition modifier combination is adjudicated once per
+	// statement: a proven verdict (combinable or refused) consumes every
+	// algorithm/lock spec; a fact-missing unproven outcome leaves the gap
+	// to the owning rule's EvidenceGaps; an unprobed-combination unproven
+	// keeps one bounded aspect — the capability boundary is never
+	// laundered into pass.
+	if ddl.Operation == spec.DDLOperationAlterTable && !hasPartitionAlterAction(ddl) {
+		if _, _, actions, _ := spec.OnlineDDLModifierValues(ddl.Alter); len(actions) != len(ddl.Alter) {
+			var version *spec.VersionIdentity
+			var engine string
+			if statement.Metadata != nil {
+				version = statement.Metadata.Version
+				if statement.Metadata.TargetTable != nil {
+					engine = statement.Metadata.TargetTable.Options["engine"]
+				}
 			}
+			outcome := spec.OnlineDDLOutcomeFor(dialect, version, engine, ddl.Alter)
+			if outcome.Verdict == spec.OnlineDDLUnproven && len(outcome.GapFacts) == 0 {
+				gaps = append(gaps, aspectGap(
+					fmt.Sprintf("%s.online_ddl", ddl.Operation), false,
+					map[string]any{"aspect": "action", "action": "online_ddl"},
+				))
+			}
+		}
+	}
+	for _, alter := range ddl.Alter {
+		// An ALGORITHM/LOCK modifier accompanying a partition action is
+		// consumed by the ordered-state combination classifier — but only
+		// when the classifier reached a proven verdict for the whole
+		// combination. An unproven shape keeps its aspect on the current
+		// statement — the boundary is never laundered through a
+		// successor tombstone.
+		if (alter.Action == "algorithm" || alter.Action == "lock") && hasPartitionAlterAction(ddl) {
+			if !partitionCombinationProven(ddl, statement) {
+				gaps = append(gaps, aspectGap(
+					fmt.Sprintf("%s.%s", ddl.Operation, alter.Action), false,
+					map[string]any{"aspect": "action", "action": alter.Action},
+				))
+			}
+			continue
+		}
+		if ddl.Operation == spec.DDLOperationAlterTable && !auditedAlterAction(dialect, alter.Action) {
 			// PLACEMENT POLICY and the TiDB-only partition attribute/option
 			// forms are vendor boundaries under MySQL; under TiDB the six
 			// maintenance partition ops are proven vendor refusals (8200)
@@ -507,6 +571,26 @@ func statementCoverageAspects(dialect spec.Dialect, statement spec.Statement) []
 				map[string]any{"aspect": "action", "action": alter.Action},
 			))
 			continue
+		}
+		// An extracted table-option name is classified per dialect: a
+		// consumed name passes silently, a proven TiDB refusal is a
+		// vendor aspect, and an extracted-but-unaudited name keeps a
+		// bounded gap — the declaration is never silently accepted.
+		if ddl.Operation == spec.DDLOperationAlterTable && alter.Action == "table_option" {
+			for _, name := range sortedOptionNames(alter.Options) {
+				switch spec.AlterTableOptionOutcome(dialect, name) {
+				case spec.TableOptionVendorRefused:
+					gaps = append(gaps, aspectGap(
+						fmt.Sprintf("%s.option.%s", ddl.Operation, name), true,
+						map[string]any{"aspect": "option", "action": alter.Action, "option": name},
+					))
+				case spec.TableOptionUnaudited:
+					gaps = append(gaps, aspectGap(
+						fmt.Sprintf("%s.option.%s", ddl.Operation, name), false,
+						map[string]any{"aspect": "option", "action": alter.Action, "option": name},
+					))
+				}
+			}
 		}
 		if alter.Constraint != nil {
 			if gap, vendor := alterConstraintGap(dialect, alter.Constraint.Type); gap {
@@ -623,7 +707,7 @@ func unauditedActionVendor(dialect spec.Dialect, action string) bool {
 			return true
 		}
 	case spec.DialectTiDB:
-		_, refused := tidbVendorRefusedPartitionActions[action]
+		_, refused := tidbVendorRefusedAlterActions[action]
 		return refused
 	}
 	return false

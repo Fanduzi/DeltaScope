@@ -848,7 +848,38 @@ type Alter struct {
 	// `partition` action (ALTER TABLE ... PARTITION BY ...). nil on every
 	// other action.
 	PartitionScheme *PartitionScheme `json:"partition_scheme,omitempty"`
+	// OrderBy carries the authored ORDER BY column list of the
+	// `order_by_columns` action in authored order — structure is captured
+	// even though the server does not validate the names (probed:
+	// ORDER BY <nonexistent> executes).
+	OrderBy []OrderByItem `json:"order_by,omitempty"`
 	// UnextractedOptions names parsed table-option clauses that were dropped
 	// during extraction; see DDL.UnextractedOptions.
 	UnextractedOptions []string `json:"unextracted_options,omitempty"`
+}
+
+// OrderByItem is one member of an ALTER TABLE ... ORDER BY declaration —
+// the normalized column identity plus its authored direction.
+type OrderByItem struct {
+	Column string `json:"column"`
+	Desc   bool   `json:"desc,omitempty"`
+}
+
+// IsPartitionAlterAction reports whether an alter-table action is a
+// partition-scoped operation. The online-DDL classifier, coverage, and
+// ordered state exclude these from the general modifier matrix because
+// partition combinations carry their own adjudication (T14); the set is
+// the one canonical vocabulary shared by rules, audit state, and
+// coverage.
+func IsPartitionAlterAction(action string) bool {
+	switch action {
+	case "drop_partition", "truncate_partition", "exchange_partition",
+		"add_partitions", "reorganize_partition", "coalesce_partitions",
+		"partition", "remove_partitioning",
+		"rebuild_partition", "check_partitions", "optimize_partition",
+		"repair_partition", "import_partition_tablespace", "discard_partition_tablespace":
+		return true
+	default:
+		return false
+	}
 }

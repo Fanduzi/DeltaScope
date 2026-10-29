@@ -426,6 +426,46 @@ func ddlAlterRules() map[string]RulePolicy {
 				"required": true,
 			},
 		},
+		"ddl.alter.online_ddl.applicability": {
+			Enabled: true,
+			Level:   rule.LevelBlocker,
+			Params:  map[string]any{},
+		},
+		"ddl.alter.online_ddl.warn": {
+			Enabled: true,
+			Level:   rule.LevelWarning,
+			Params:  map[string]any{},
+		},
+		"ddl.alter.rebuild.warn": {
+			Enabled: true,
+			Level:   rule.LevelWarning,
+			Params:  map[string]any{},
+		},
+		"ddl.alter.keys_toggle.notice": {
+			Enabled: true,
+			Level:   rule.LevelNotice,
+			Params:  map[string]any{},
+		},
+		"ddl.alter.charset_conversion.applicability": {
+			Enabled: true,
+			Level:   rule.LevelBlocker,
+			Params:  map[string]any{},
+		},
+		"ddl.alter.charset_conversion.warn": {
+			Enabled: true,
+			Level:   rule.LevelWarning,
+			Params:  map[string]any{},
+		},
+		"ddl.alter.table_option.applicability": {
+			Enabled: true,
+			Level:   rule.LevelBlocker,
+			Params:  map[string]any{},
+		},
+		"ddl.alter.table_option.warn": {
+			Enabled: true,
+			Level:   rule.LevelWarning,
+			Params:  map[string]any{},
+		},
 		"ddl.alter.modify_column.explicit_nullability_change.forbid": {
 			Enabled: true,
 			Level:   rule.LevelBlocker,

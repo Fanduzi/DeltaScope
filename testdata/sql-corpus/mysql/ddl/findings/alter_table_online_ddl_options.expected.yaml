@@ -1,0 +1,35 @@
+name: alter_table_online_ddl_options
+dialect: mysql
+category: ddl
+expect:
+  parse_ok: true
+  statements:
+    count: 8
+  unsupported:
+    count: 0
+  findings:
+    include:
+      - ddl.alter.online_ddl.applicability
+      - ddl.alter.online_ddl.warn
+      - ddl.alter.rebuild.warn
+      - ddl.alter.keys_toggle.notice
+      - ddl.alter.charset_conversion.warn
+      - ddl.alter.table_option.applicability
+      - ddl.alter.table_option.warn
+metadata:
+  schema: golden
+  tables:
+    t15a:
+      exists: true
+      options:
+        engine: InnoDB
+        row_format: DYNAMIC
+      columns:
+        - {name: id, type: int}
+    t15b:
+      exists: true
+      options:
+        engine: InnoDB
+        row_format: DYNAMIC
+      columns:
+        - {name: id, type: int}

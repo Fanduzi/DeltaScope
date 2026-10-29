@@ -1,0 +1,534 @@
+###### anchor tidb85
+=== tidb85 :: version
+SQL> select version()
+rc=0
+stderr/stdout> version()
+8.0.11-TiDB-v8.5.0
+=== tidb85 :: ensure-db
+SQL> create database if not exists golden
+rc=0
+########## tidb85 — online-DDL modifier matrix
+=== tidb85 :: fixture
+SQL> drop table if exists t15ol; create table t15ol (id int primary key, s varchar(20)) engine=InnoDB
+rc=0
+=== tidb85 :: seed-rows
+SQL> insert into t15ol values (1,'a'),(2,'b')
+rc=0
+catalog[t15ol]> InnoDB	Compact	utf8mb4_bin		NULL	0	
+=== tidb85 :: add-default
+SQL> ALTER TABLE t15ol ADD COLUMN d0 INT
+rc=0
+Level	Code	Message
+Error	1054	Unknown column '$$' in 'field list'
+warn> Error	1054	Unknown column '$$' in 'field list'
+=== tidb85 :: add-instant
+SQL> ALTER TABLE t15ol ADD COLUMN d1 INT, ALGORITHM=INSTANT
+rc=0
+Level	Code	Message
+Error	1054	Unknown column '$$' in 'field list'
+warn> Error	1054	Unknown column '$$' in 'field list'
+=== tidb85 :: add-inplace
+SQL> ALTER TABLE t15ol ADD COLUMN d2 INT, ALGORITHM=INPLACE
+rc=0
+Level	Code	Message
+Error	1054	Unknown column '$$' in 'field list'
+warn> Error	1054	Unknown column '$$' in 'field list'
+=== tidb85 :: add-copy
+SQL> ALTER TABLE t15ol ADD COLUMN d3 INT, ALGORITHM=COPY
+rc=0
+Level	Code	Message
+Error	1054	Unknown column '$$' in 'field list'
+warn> Error	1054	Unknown column '$$' in 'field list'
+=== tidb85 :: add-algdefault
+SQL> ALTER TABLE t15ol ADD COLUMN d4 INT, ALGORITHM=DEFAULT
+rc=0
+Level	Code	Message
+Error	1054	Unknown column '$$' in 'field list'
+warn> Error	1054	Unknown column '$$' in 'field list'
+=== tidb85 :: add-locknone
+SQL> ALTER TABLE t15ol ADD COLUMN d5 INT, LOCK=NONE
+rc=0
+Level	Code	Message
+Error	1054	Unknown column '$$' in 'field list'
+warn> Error	1054	Unknown column '$$' in 'field list'
+=== tidb85 :: add-lockshared
+SQL> ALTER TABLE t15ol ADD COLUMN d6 INT, LOCK=SHARED
+rc=0
+Level	Code	Message
+Error	1054	Unknown column '$$' in 'field list'
+warn> Error	1054	Unknown column '$$' in 'field list'
+=== tidb85 :: add-lockexclusive
+SQL> ALTER TABLE t15ol ADD COLUMN d7 INT, LOCK=EXCLUSIVE
+rc=0
+Level	Code	Message
+Error	1054	Unknown column '$$' in 'field list'
+warn> Error	1054	Unknown column '$$' in 'field list'
+=== tidb85 :: add-lockdefault
+SQL> ALTER TABLE t15ol ADD COLUMN d8 INT, LOCK=DEFAULT
+rc=0
+Level	Code	Message
+Error	1054	Unknown column '$$' in 'field list'
+warn> Error	1054	Unknown column '$$' in 'field list'
+=== tidb85 :: seed-copy-excl
+SQL> ALTER TABLE t15ol ADD COLUMN d9 INT, ALGORITHM=COPY, LOCK=EXCLUSIVE
+rc=0
+Level	Code	Message
+Error	1054	Unknown column '$$' in 'field list'
+warn> Error	1054	Unknown column '$$' in 'field list'
+=== tidb85 :: copy-locknone
+SQL> ALTER TABLE t15ol ADD COLUMN d10 INT, ALGORITHM=COPY, LOCK=NONE
+rc=0
+Level	Code	Message
+Error	1054	Unknown column '$$' in 'field list'
+warn> Error	1054	Unknown column '$$' in 'field list'
+=== tidb85 :: copy-lockshared
+SQL> ALTER TABLE t15ol ADD COLUMN d11 INT, ALGORITHM=COPY, LOCK=SHARED
+rc=0
+Level	Code	Message
+Error	1054	Unknown column '$$' in 'field list'
+warn> Error	1054	Unknown column '$$' in 'field list'
+=== tidb85 :: inplace-locknone
+SQL> ALTER TABLE t15ol ADD COLUMN d12 INT, ALGORITHM=INPLACE, LOCK=NONE
+rc=0
+Level	Code	Message
+Error	1054	Unknown column '$$' in 'field list'
+warn> Error	1054	Unknown column '$$' in 'field list'
+=== tidb85 :: instant-locknone
+SQL> ALTER TABLE t15ol ADD COLUMN d13 INT, ALGORITHM=INSTANT, LOCK=NONE
+rc=0
+Level	Code	Message
+Error	1054	Unknown column '$$' in 'field list'
+warn> Error	1054	Unknown column '$$' in 'field list'
+=== tidb85 :: instant-lockexclusive
+SQL> ALTER TABLE t15ol ADD COLUMN d14 INT, ALGORITHM=INSTANT, LOCK=EXCLUSIVE
+rc=0
+Level	Code	Message
+Error	1054	Unknown column '$$' in 'field list'
+warn> Error	1054	Unknown column '$$' in 'field list'
+=== tidb85 :: alg-alone
+SQL> ALTER TABLE t15ol ALGORITHM=COPY
+rc=0
+Level	Code	Message
+Error	1054	Unknown column '$$' in 'field list'
+warn> Error	1054	Unknown column '$$' in 'field list'
+=== tidb85 :: lock-alone
+SQL> ALTER TABLE t15ol LOCK=EXCLUSIVE
+rc=0
+Level	Code	Message
+Error	1054	Unknown column '$$' in 'field list'
+warn> Error	1054	Unknown column '$$' in 'field list'
+=== tidb85 :: alg-dup
+SQL> ALTER TABLE t15ol ADD COLUMN d15 INT, ALGORITHM=COPY, ALGORITHM=INSTANT
+rc=0
+Level	Code	Message
+Error	1054	Unknown column '$$' in 'field list'
+warn> Error	1054	Unknown column '$$' in 'field list'
+=== tidb85 :: lock-dup
+SQL> ALTER TABLE t15ol ADD COLUMN d16 INT, LOCK=NONE, LOCK=EXCLUSIVE
+rc=0
+Level	Code	Message
+Error	1054	Unknown column '$$' in 'field list'
+warn> Error	1054	Unknown column '$$' in 'field list'
+=== tidb85 :: idx-instant
+SQL> ALTER TABLE t15ol ADD INDEX ix1(id), ALGORITHM=INSTANT
+rc=1
+stderr/stdout> ERROR 1846 (0A000) at line 1: ALGORITHM=INSTANT is not supported. Reason: Cannot alter table by INSTANT. Try ALGORITHM=INPLACE.
+Level	Code	Message
+Error	1054	Unknown column '$$' in 'field list'
+warn> Error	1054	Unknown column '$$' in 'field list'
+=== tidb85 :: idx-inplace-locknone
+SQL> ALTER TABLE t15ol ADD INDEX ix2(s), ALGORITHM=INPLACE, LOCK=NONE
+rc=0
+Level	Code	Message
+Error	1054	Unknown column '$$' in 'field list'
+warn> Error	1054	Unknown column '$$' in 'field list'
+=== tidb85 :: idx-copy
+SQL> ALTER TABLE t15ol ADD INDEX ix3(id), ALGORITHM=COPY
+rc=0
+Level	Code	Message
+Error	1054	Unknown column '$$' in 'field list'
+warn> Error	1054	Unknown column '$$' in 'field list'
+=== tidb85 :: modify-inplace
+SQL> ALTER TABLE t15ol MODIFY COLUMN s VARCHAR(30), ALGORITHM=INPLACE
+rc=0
+Level	Code	Message
+Error	1054	Unknown column '$$' in 'field list'
+warn> Error	1054	Unknown column '$$' in 'field list'
+=== tidb85 :: modify-instant
+SQL> ALTER TABLE t15ol MODIFY COLUMN s VARCHAR(40), ALGORITHM=INSTANT
+rc=0
+Level	Code	Message
+Error	1054	Unknown column '$$' in 'field list'
+warn> Error	1054	Unknown column '$$' in 'field list'
+=== tidb85 :: rename-instant
+SQL> ALTER TABLE t15ol RENAME COLUMN s TO s2, ALGORITHM=INSTANT
+rc=0
+Level	Code	Message
+Error	1054	Unknown column '$$' in 'field list'
+warn> Error	1054	Unknown column '$$' in 'field list'
+=== tidb85 :: dropcol-instant
+SQL> ALTER TABLE t15ol DROP COLUMN d4, ALGORITHM=INSTANT
+rc=0
+Level	Code	Message
+Error	1054	Unknown column '$$' in 'field list'
+warn> Error	1054	Unknown column '$$' in 'field list'
+=== tidb85 :: dropcol-copy
+SQL> ALTER TABLE t15ol DROP COLUMN d5, ALGORITHM=COPY
+rc=0
+Level	Code	Message
+Error	1054	Unknown column '$$' in 'field list'
+warn> Error	1054	Unknown column '$$' in 'field list'
+=== tidb85 :: multi-alg
+SQL> ALTER TABLE t15ol ADD COLUMN d17 INT, DROP COLUMN d0, ALGORITHM=INPLACE
+rc=0
+Level	Code	Message
+Error	1054	Unknown column '$$' in 'field list'
+warn> Error	1054	Unknown column '$$' in 'field list'
+=== tidb85 :: engine-inplace
+SQL> ALTER TABLE t15ol ENGINE=InnoDB, ALGORITHM=INPLACE
+rc=0
+Level	Code	Message
+Error	1054	Unknown column '$$' in 'field list'
+warn> Error	1054	Unknown column '$$' in 'field list'
+=== tidb85 :: engine-copy
+SQL> ALTER TABLE t15ol ENGINE=InnoDB, ALGORITHM=COPY
+rc=0
+Level	Code	Message
+Error	1054	Unknown column '$$' in 'field list'
+warn> Error	1054	Unknown column '$$' in 'field list'
+columns[t15ol]> id	int	NULL	NULL|s2	varchar(40)	utf8mb4	utf8mb4_bin|d1	int	NULL	NULL|d2	int	NULL	NULL|d3	int	NULL	NULL|d6	int	NULL	NULL|d7	int	NULL	NULL|d8	int	NULL	NULL|d9	int	NULL	NULL|d10	int	NULL	NULL|d11	int	NULL	NULL|d12	int	NULL	NULL|d13	int	NULL	NULL|d14	int	NULL	NULL|d15	int	NULL	NULL|d16	int	NULL	NULL|d17	int	NULL	NULL
+catalog[t15ol]> InnoDB	Compact	utf8mb4_bin		NULL	0	
+=== tidb85 :: cleanup
+SQL> drop table if exists t15ol
+rc=0
+########## tidb85 — alter-table-option matrix
+=== tidb85 :: opt-fixture
+SQL> drop table if exists t15opt; create table t15opt (id int primary key, s varchar(20) charset utf8mb4, n int) engine=InnoDB
+rc=0
+=== tidb85 :: opt-rows
+SQL> insert into t15opt values (2,'b',1),(1,'a',2)
+rc=0
+catalog[t15opt]> InnoDB	Compact	utf8mb4_bin		NULL	0	
+columns[t15opt]> id	int	NULL	NULL|s	varchar(20)	utf8mb4	utf8mb4_bin|n	int	NULL	NULL
+=== tidb85 :: orderby
+SQL> ALTER TABLE t15opt ORDER BY id
+rc=0
+Level	Code	Message
+Error	1054	Unknown column '$$' in 'field list'
+warn> Error	1054	Unknown column '$$' in 'field list'
+catalog[t15opt]> InnoDB	Compact	utf8mb4_bin		NULL	0	
+=== tidb85 :: orderby-cols
+SQL> ALTER TABLE t15opt ORDER BY id DESC, s
+rc=0
+Level	Code	Message
+Error	1054	Unknown column '$$' in 'field list'
+warn> Error	1054	Unknown column '$$' in 'field list'
+catalog[t15opt]> InnoDB	Compact	utf8mb4_bin		NULL	0	
+=== tidb85 :: force
+SQL> ALTER TABLE t15opt FORCE
+rc=1
+stderr/stdout> ERROR 8200 (HY000) at line 1: Unsupported Unsupported/unknown ALTER TABLE specification
+Level	Code	Message
+Error	1054	Unknown column '$$' in 'field list'
+warn> Error	1054	Unknown column '$$' in 'field list'
+catalog[t15opt]> InnoDB	Compact	utf8mb4_bin		NULL	0	
+=== tidb85 :: disable-keys
+SQL> ALTER TABLE t15opt DISABLE KEYS
+rc=0
+Level	Code	Message
+Error	1054	Unknown column '$$' in 'field list'
+warn> Error	1054	Unknown column '$$' in 'field list'
+catalog[t15opt]> InnoDB	Compact	utf8mb4_bin		NULL	0	
+=== tidb85 :: enable-keys
+SQL> ALTER TABLE t15opt ENABLE KEYS
+rc=0
+Level	Code	Message
+Error	1054	Unknown column '$$' in 'field list'
+warn> Error	1054	Unknown column '$$' in 'field list'
+catalog[t15opt]> InnoDB	Compact	utf8mb4_bin		NULL	0	
+=== tidb85 :: engine-myisam
+SQL> ALTER TABLE t15opt ENGINE=MyISAM
+rc=0
+Level	Code	Message
+Error	1054	Unknown column '$$' in 'field list'
+warn> Error	1054	Unknown column '$$' in 'field list'
+catalog[t15opt]> InnoDB	Compact	utf8mb4_bin		NULL	0	
+=== tidb85 :: engine-back
+SQL> ALTER TABLE t15opt ENGINE=InnoDB
+rc=0
+Level	Code	Message
+Error	1054	Unknown column '$$' in 'field list'
+warn> Error	1054	Unknown column '$$' in 'field list'
+catalog[t15opt]> InnoDB	Compact	utf8mb4_bin		NULL	0	
+=== tidb85 :: rowformat
+SQL> ALTER TABLE t15opt ROW_FORMAT=DYNAMIC
+rc=0
+Level	Code	Message
+Error	1054	Unknown column '$$' in 'field list'
+warn> Error	1054	Unknown column '$$' in 'field list'
+catalog[t15opt]> InnoDB	Compact	utf8mb4_bin		NULL	0	
+=== tidb85 :: rowformat-compact
+SQL> ALTER TABLE t15opt ROW_FORMAT=COMPACT
+rc=0
+Level	Code	Message
+Error	1054	Unknown column '$$' in 'field list'
+warn> Error	1054	Unknown column '$$' in 'field list'
+catalog[t15opt]> InnoDB	Compact	utf8mb4_bin		NULL	0	
+=== tidb85 :: autoinc
+SQL> ALTER TABLE t15opt AUTO_INCREMENT=100
+rc=0
+Level	Code	Message
+Error	1054	Unknown column '$$' in 'field list'
+warn> Error	1054	Unknown column '$$' in 'field list'
+catalog[t15opt]> InnoDB	Compact	utf8mb4_bin		NULL	0	
+=== tidb85 :: comment
+SQL> ALTER TABLE t15opt COMMENT='hello'
+rc=0
+Level	Code	Message
+Error	1054	Unknown column '$$' in 'field list'
+warn> Error	1054	Unknown column '$$' in 'field list'
+catalog[t15opt]> InnoDB	Compact	utf8mb4_bin	hello	NULL	0	
+=== tidb85 :: default-charset
+SQL> ALTER TABLE t15opt DEFAULT CHARACTER SET utf8mb4
+rc=0
+Level	Code	Message
+Error	1054	Unknown column '$$' in 'field list'
+warn> Error	1054	Unknown column '$$' in 'field list'
+catalog[t15opt]> InnoDB	Compact	utf8mb4_bin	hello	NULL	0	
+=== tidb85 :: default-charset-collate
+SQL> ALTER TABLE t15opt DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_bin
+rc=0
+Level	Code	Message
+Error	1054	Unknown column '$$' in 'field list'
+warn> Error	1054	Unknown column '$$' in 'field list'
+catalog[t15opt]> InnoDB	Compact	utf8mb4_bin	hello	NULL	0	
+=== tidb85 :: convert-utf8mb4
+SQL> ALTER TABLE t15opt CONVERT TO CHARACTER SET utf8mb4
+rc=0
+Level	Code	Message
+Error	1054	Unknown column '$$' in 'field list'
+warn> Error	1054	Unknown column '$$' in 'field list'
+catalog[t15opt]> InnoDB	Compact	utf8mb4_bin	hello	NULL	0	
+=== tidb85 :: convert-latin1
+SQL> ALTER TABLE t15opt CONVERT TO CHARACTER SET latin1
+rc=1
+stderr/stdout> ERROR 8200 (HY000) at line 1: Unsupported modify charset from utf8mb4 to latin1
+Level	Code	Message
+Error	1054	Unknown column '$$' in 'field list'
+warn> Error	1054	Unknown column '$$' in 'field list'
+catalog[t15opt]> InnoDB	Compact	utf8mb4_bin	hello	NULL	0	
+=== tidb85 :: convert-collate
+SQL> ALTER TABLE t15opt CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_bin
+rc=0
+Level	Code	Message
+Error	1054	Unknown column '$$' in 'field list'
+warn> Error	1054	Unknown column '$$' in 'field list'
+catalog[t15opt]> InnoDB	Compact	utf8mb4_bin	hello	NULL	0	
+=== tidb85 :: kbs
+SQL> ALTER TABLE t15opt KEY_BLOCK_SIZE=8
+rc=1
+stderr/stdout> ERROR 8200 (HY000) at line 1: This type of ALTER TABLE is currently unsupported
+Level	Code	Message
+Error	1054	Unknown column '$$' in 'field list'
+warn> Error	1054	Unknown column '$$' in 'field list'
+catalog[t15opt]> InnoDB	Compact	utf8mb4_bin	hello	NULL	0	
+=== tidb85 :: compression
+SQL> ALTER TABLE t15opt COMPRESSION='zlib'
+rc=1
+stderr/stdout> ERROR 8200 (HY000) at line 1: This type of ALTER TABLE is currently unsupported
+Level	Code	Message
+Error	1054	Unknown column '$$' in 'field list'
+warn> Error	1054	Unknown column '$$' in 'field list'
+catalog[t15opt]> InnoDB	Compact	utf8mb4_bin	hello	NULL	0	
+=== tidb85 :: encryption
+SQL> ALTER TABLE t15opt ENCRYPTION='Y'
+rc=1
+stderr/stdout> ERROR 8200 (HY000) at line 1: This type of ALTER TABLE is currently unsupported
+Level	Code	Message
+Error	1054	Unknown column '$$' in 'field list'
+warn> Error	1054	Unknown column '$$' in 'field list'
+catalog[t15opt]> InnoDB	Compact	utf8mb4_bin	hello	NULL	0	
+=== tidb85 :: stats-persistent
+SQL> ALTER TABLE t15opt STATS_PERSISTENT=1
+rc=1
+stderr/stdout> ERROR 8200 (HY000) at line 1: This type of ALTER TABLE is currently unsupported
+Level	Code	Message
+Error	1054	Unknown column '$$' in 'field list'
+warn> Error	1054	Unknown column '$$' in 'field list'
+catalog[t15opt]> InnoDB	Compact	utf8mb4_bin	hello	NULL	0	
+=== tidb85 :: stats-auto-recalc
+SQL> ALTER TABLE t15opt STATS_AUTO_RECALC=0
+rc=1
+stderr/stdout> ERROR 8200 (HY000) at line 1: This type of ALTER TABLE is currently unsupported
+Level	Code	Message
+Error	1054	Unknown column '$$' in 'field list'
+warn> Error	1054	Unknown column '$$' in 'field list'
+catalog[t15opt]> InnoDB	Compact	utf8mb4_bin	hello	NULL	0	
+=== tidb85 :: stats-sample-pages
+SQL> ALTER TABLE t15opt STATS_SAMPLE_PAGES=25
+rc=1
+stderr/stdout> ERROR 8200 (HY000) at line 1: This type of ALTER TABLE is currently unsupported
+Level	Code	Message
+Error	1054	Unknown column '$$' in 'field list'
+warn> Error	1054	Unknown column '$$' in 'field list'
+catalog[t15opt]> InnoDB	Compact	utf8mb4_bin	hello	NULL	0	
+=== tidb85 :: tablespace
+SQL> ALTER TABLE t15opt TABLESPACE=innodb_file_per_table
+rc=1
+stderr/stdout> ERROR 8200 (HY000) at line 1: This type of ALTER TABLE is currently unsupported
+Level	Code	Message
+Error	1054	Unknown column '$$' in 'field list'
+warn> Error	1054	Unknown column '$$' in 'field list'
+catalog[t15opt]> InnoDB	Compact	utf8mb4_bin	hello	NULL	0	
+=== tidb85 :: pack-multi
+SQL> ALTER TABLE t15opt ENGINE=InnoDB, COMMENT='two', AUTO_INCREMENT=200
+rc=0
+Level	Code	Message
+Error	1054	Unknown column '$$' in 'field list'
+warn> Error	1054	Unknown column '$$' in 'field list'
+catalog[t15opt]> InnoDB	Compact	utf8mb4_bin	two	NULL	0	
+columns[t15opt]> id	int	NULL	NULL|s	varchar(20)	utf8mb4	utf8mb4_bin|n	int	NULL	NULL
+=== tidb85 :: cleanup
+SQL> drop table if exists t15opt
+rc=0
+########## tidb85 — myisam option matrix
+=== tidb85 :: my-fixture
+SQL> drop table if exists t15my; create table t15my (id int primary key, s varchar(20)) engine=MyISAM
+rc=0
+=== tidb85 :: myisam-disable
+SQL> ALTER TABLE t15my DISABLE KEYS
+rc=0
+Level	Code	Message
+Error	1054	Unknown column '$$' in 'field list'
+warn> Error	1054	Unknown column '$$' in 'field list'
+catalog[t15my]> InnoDB	Compact	utf8mb4_bin		NULL	0	
+=== tidb85 :: myisam-enable
+SQL> ALTER TABLE t15my ENABLE KEYS
+rc=0
+Level	Code	Message
+Error	1054	Unknown column '$$' in 'field list'
+warn> Error	1054	Unknown column '$$' in 'field list'
+catalog[t15my]> InnoDB	Compact	utf8mb4_bin		NULL	0	
+=== tidb85 :: myisam-orderby
+SQL> ALTER TABLE t15my ORDER BY id
+rc=0
+Level	Code	Message
+Error	1054	Unknown column '$$' in 'field list'
+warn> Error	1054	Unknown column '$$' in 'field list'
+catalog[t15my]> InnoDB	Compact	utf8mb4_bin		NULL	0	
+=== tidb85 :: myisam-rowformat
+SQL> ALTER TABLE t15my ROW_FORMAT=FIXED
+rc=0
+Level	Code	Message
+Error	1054	Unknown column '$$' in 'field list'
+warn> Error	1054	Unknown column '$$' in 'field list'
+catalog[t15my]> InnoDB	Compact	utf8mb4_bin		NULL	0	
+=== tidb85 :: myisam-kbs
+SQL> ALTER TABLE t15my KEY_BLOCK_SIZE=8
+rc=1
+stderr/stdout> ERROR 8200 (HY000) at line 1: This type of ALTER TABLE is currently unsupported
+Level	Code	Message
+Error	1054	Unknown column '$$' in 'field list'
+warn> Error	1054	Unknown column '$$' in 'field list'
+catalog[t15my]> InnoDB	Compact	utf8mb4_bin		NULL	0	
+=== tidb85 :: myisam-delay
+SQL> ALTER TABLE t15my DELAY_KEY_WRITE=1
+rc=1
+stderr/stdout> ERROR 8200 (HY000) at line 1: This type of ALTER TABLE is currently unsupported
+Level	Code	Message
+Error	1054	Unknown column '$$' in 'field list'
+warn> Error	1054	Unknown column '$$' in 'field list'
+catalog[t15my]> InnoDB	Compact	utf8mb4_bin		NULL	0	
+=== tidb85 :: myisam-pack
+SQL> ALTER TABLE t15my PACK_KEYS=1
+rc=1
+stderr/stdout> ERROR 8200 (HY000) at line 1: This type of ALTER TABLE is currently unsupported
+Level	Code	Message
+Error	1054	Unknown column '$$' in 'field list'
+warn> Error	1054	Unknown column '$$' in 'field list'
+catalog[t15my]> InnoDB	Compact	utf8mb4_bin		NULL	0	
+=== tidb85 :: cleanup
+SQL> drop table if exists t15my
+rc=0
+########## tidb85 — create-table-option matrix
+=== tidb85 :: ct-base
+SQL> drop table if exists t15c; create table t15c (id int) engine=InnoDB
+rc=0
+Level	Code	Message
+Error	1054	Unknown column '$$' in 'field list'
+warn> Error	1054	Unknown column '$$' in 'field list'
+=== tidb85 :: ct-kbs
+SQL> drop table if exists t15k; create table t15k (id int) engine=InnoDB key_block_size=8
+rc=0
+Level	Code	Message
+Error	1054	Unknown column '$$' in 'field list'
+warn> Error	1054	Unknown column '$$' in 'field list'
+=== tidb85 :: ct-compression
+SQL> drop table if exists t15z; create table t15z (id int) engine=InnoDB compression='zlib'
+rc=0
+Level	Code	Message
+Error	1054	Unknown column '$$' in 'field list'
+warn> Error	1054	Unknown column '$$' in 'field list'
+=== tidb85 :: ct-encryption
+SQL> drop table if exists t15e; create table t15e (id int) engine=InnoDB encryption='Y'
+rc=0
+Level	Code	Message
+Error	1054	Unknown column '$$' in 'field list'
+warn> Error	1054	Unknown column '$$' in 'field list'
+=== tidb85 :: ct-stats-persist
+SQL> drop table if exists t15sp; create table t15sp (id int) engine=InnoDB stats_persistent=1
+rc=0
+Level	Code	Message
+Error	1054	Unknown column '$$' in 'field list'
+warn> Error	1054	Unknown column '$$' in 'field list'
+=== tidb85 :: ct-stats-recalc
+SQL> drop table if exists t15sa; create table t15sa (id int) engine=InnoDB stats_auto_recalc=0
+rc=0
+Level	Code	Message
+Error	1054	Unknown column '$$' in 'field list'
+warn> Error	1054	Unknown column '$$' in 'field list'
+=== tidb85 :: ct-stats-pages
+SQL> drop table if exists t15sg; create table t15sg (id int) engine=InnoDB stats_sample_pages=25
+rc=0
+Level	Code	Message
+Error	1054	Unknown column '$$' in 'field list'
+warn> Error	1054	Unknown column '$$' in 'field list'
+=== tidb85 :: ct-tablespace
+SQL> drop table if exists t15ts; create table t15ts (id int) engine=InnoDB tablespace=innodb_file_per_table
+rc=0
+Level	Code	Message
+Error	1054	Unknown column '$$' in 'field list'
+warn> Error	1054	Unknown column '$$' in 'field list'
+=== tidb85 :: ct-myisam-kbs
+SQL> drop table if exists t15mk; create table t15mk (id int) engine=MyISAM key_block_size=8
+rc=0
+Level	Code	Message
+Error	1054	Unknown column '$$' in 'field list'
+warn> Error	1054	Unknown column '$$' in 'field list'
+=== tidb85 :: ct-myisam-compression
+SQL> drop table if exists t15mz; create table t15mz (id int) engine=MyISAM compression='zlib'
+rc=0
+Level	Code	Message
+Error	1054	Unknown column '$$' in 'field list'
+warn> Error	1054	Unknown column '$$' in 'field list'
+=== tidb85 :: ct-myisam-stats
+SQL> drop table if exists t15ms; create table t15ms (id int) engine=MyISAM stats_persistent=1
+rc=0
+Level	Code	Message
+Error	1054	Unknown column '$$' in 'field list'
+warn> Error	1054	Unknown column '$$' in 'field list'
+catalog[t15c]> InnoDB	Compact	utf8mb4_bin		NULL	0	
+catalog[t15k]> InnoDB	Compact	utf8mb4_bin		NULL	0	
+catalog[t15z]> InnoDB	Compact	utf8mb4_bin		NULL	0	
+catalog[t15e]> InnoDB	Compact	utf8mb4_bin		NULL	0	
+catalog[t15sp]> InnoDB	Compact	utf8mb4_bin		NULL	0	
+catalog[t15sa]> InnoDB	Compact	utf8mb4_bin		NULL	0	
+catalog[t15sg]> InnoDB	Compact	utf8mb4_bin		NULL	0	
+catalog[t15ts]> InnoDB	Compact	utf8mb4_bin		NULL	0	
+catalog[t15mk]> InnoDB	Compact	utf8mb4_bin		NULL	0	
+catalog[t15mz]> InnoDB	Compact	utf8mb4_bin		NULL	0	
+catalog[t15ms]> InnoDB	Compact	utf8mb4_bin		NULL	0	
+=== tidb85 :: cleanup
+SQL> drop table if exists t15c,t15k,t15z,t15e,t15sp,t15sa,t15sg,t15ts,t15mk,t15mz,t15ms
+rc=0
+###### probe complete

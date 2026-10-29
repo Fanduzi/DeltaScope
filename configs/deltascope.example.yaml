@@ -621,6 +621,46 @@ rules:
     params:
       required: true
 
+  ddl.alter.online_ddl.applicability:
+    enabled: true
+    level: blocker
+    params:
+
+  ddl.alter.online_ddl.warn:
+    enabled: true
+    level: warning
+    params:
+
+  ddl.alter.rebuild.warn:
+    enabled: true
+    level: warning
+    params:
+
+  ddl.alter.keys_toggle.notice:
+    enabled: true
+    level: notice
+    params:
+
+  ddl.alter.charset_conversion.applicability:
+    enabled: true
+    level: blocker
+    params:
+
+  ddl.alter.charset_conversion.warn:
+    enabled: true
+    level: warning
+    params:
+
+  ddl.alter.table_option.applicability:
+    enabled: true
+    level: blocker
+    params:
+
+  ddl.alter.table_option.warn:
+    enabled: true
+    level: warning
+    params:
+
   ddl.column.bit.forbid:
     enabled: true
     level: warning
@@ -960,6 +1000,11 @@ rules:
   ddl.alter.drop_foreign_key.exists.require:
     enabled: true
     level: blocker
+    params:
+
+  ddl.tidb.alter.compat_options.notice:
+    enabled: true
+    level: notice
     params:
 
   ddl.tidb.alter_table.placement_policy.notice:

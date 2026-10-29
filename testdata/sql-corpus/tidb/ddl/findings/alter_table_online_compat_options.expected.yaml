@@ -1,0 +1,42 @@
+name: alter_table_online_compat_options
+dialect: tidb
+category: ddl
+expect:
+  parse_ok: true
+  statements:
+    count: 6
+  unsupported:
+    count: 0
+  findings:
+    include:
+      - ddl.alter.online_ddl.applicability
+      - ddl.tidb.alter.compat_options.notice
+      - ddl.alter.charset_conversion.warn
+      - ddl.alter.charset_conversion.applicability
+metadata:
+  schema: golden
+  tables:
+    t15a:
+      exists: true
+      options:
+        engine: InnoDB
+      columns:
+        - {name: id, type: int}
+    t15b:
+      exists: true
+      options:
+        engine: InnoDB
+      columns:
+        - {name: id, type: int}
+    t15c:
+      exists: true
+      options:
+        engine: InnoDB
+      columns:
+        - {name: id, type: varchar(32)}
+    t15d:
+      exists: true
+      options:
+        engine: InnoDB
+      columns:
+        - {name: id, type: varchar(32)}

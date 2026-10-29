@@ -8,10 +8,7 @@ expect:
   statements:
     count: 1
   unsupported:
-    count: 2
-    include:
-      - alter_table.algorithm
-      - alter_table.lock
+    count: 0
   findings:
     include:
       - ddl.alter.add_column.notice

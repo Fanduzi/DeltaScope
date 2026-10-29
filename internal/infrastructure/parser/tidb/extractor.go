@@ -759,6 +759,20 @@ func extractAlterSpec(specification *ast.AlterTableSpec, clause string) spec.Alt
 		}
 		alter.Options["lock"] = strings.ToLower(specification.LockType.String())
 	}
+	if specification.Tp == ast.AlterTableOrderByColumns && len(specification.OrderByList) > 0 {
+		// The authored ORDER BY member list is kept verbatim — the server
+		// never validates the names (probed: ORDER BY <missing> executes),
+		// so the fact is a declaration, not a member binding.
+		for _, item := range specification.OrderByList {
+			if item == nil || item.Column == nil {
+				continue
+			}
+			alter.OrderBy = append(alter.OrderBy, spec.OrderByItem{
+				Column: strings.ToLower(item.Column.Name.String()),
+				Desc:   item.Desc,
+			})
+		}
+	}
 	if len(unextracted) > 0 {
 		alter.UnextractedOptions = unextracted
 	}
@@ -1813,6 +1827,17 @@ func extractTableOptions(options []*ast.TableOption) (map[string]string, []strin
 	if len(options) == 0 {
 		return nil, nil
 	}
+	// A CONVERT TO CHARACTER SET option rebinds the sibling COLLATE to the
+	// conversion target — the AST marks the charset option, and only the
+	// flag separates `DEFAULT CHARACTER SET` from `CONVERT TO`.
+	convertTo := false
+	for _, option := range options {
+		if option != nil && option.Tp == ast.TableOptionCharset &&
+			option.UintValue == ast.TableOptionCharsetWithConvertTo {
+			convertTo = true
+			break
+		}
+	}
 	extracted := make(map[string]string)
 	var unextracted []string
 	for _, option := range options {
@@ -1825,9 +1850,21 @@ func extractTableOptions(options []*ast.TableOption) (map[string]string, []strin
 		case ast.TableOptionEngine:
 			extracted["engine"] = option.StrValue
 		case ast.TableOptionCharset:
-			extracted["charset"] = option.StrValue
+			key := "charset"
+			if convertTo {
+				key = "convert_to_charset"
+			}
+			if option.Default {
+				extracted[key] = "default"
+			} else {
+				extracted[key] = option.StrValue
+			}
 		case ast.TableOptionCollate:
-			extracted["collate"] = option.StrValue
+			if convertTo {
+				extracted["convert_to_collate"] = option.StrValue
+			} else {
+				extracted["collate"] = option.StrValue
+			}
 		case ast.TableOptionRowFormat:
 			if value := rowFormatName(option.UintValue); value != "" {
 				extracted["row_format"] = value
@@ -1842,6 +1879,54 @@ func extractTableOptions(options []*ast.TableOption) (map[string]string, []strin
 			} else {
 				unextracted = append(unextracted, tableOptionName(option.Tp))
 			}
+		case ast.TableOptionKeyBlockSize:
+			extracted["key_block_size"] = tableOptionUintText(option)
+		case ast.TableOptionCompression:
+			extracted["compression"] = option.StrValue
+		case ast.TableOptionEncryption:
+			extracted["encryption"] = tableOptionStringOrDefault(option)
+		case ast.TableOptionTablespace:
+			extracted["tablespace"] = option.StrValue
+		case ast.TableOptionInsertMethod:
+			extracted["insert_method"] = strings.ToLower(option.StrValue)
+		case ast.TableOptionStatsPersistent:
+			// The grammar discards the authored 0/1/DEFAULT value — record
+			// presence only, never a fabricated number.
+			extracted["stats_persistent"] = "declared"
+		case ast.TableOptionStatsAutoRecalc:
+			extracted["stats_auto_recalc"] = tableOptionUintText(option)
+		case ast.TableOptionStatsSamplePages:
+			extracted["stats_sample_pages"] = tableOptionUintText(option)
+		case ast.TableOptionPackKeys:
+			extracted["pack_keys"] = "declared"
+		case ast.TableOptionDelayKeyWrite:
+			extracted["delay_key_write"] = tableOptionUintText(option)
+		case ast.TableOptionAvgRowLength:
+			extracted["avg_row_length"] = tableOptionUintText(option)
+		case ast.TableOptionCheckSum:
+			extracted["checksum"] = tableOptionUintText(option)
+		case ast.TableOptionTableCheckSum:
+			extracted["table_checksum"] = tableOptionUintText(option)
+		case ast.TableOptionMaxRows:
+			extracted["max_rows"] = tableOptionUintText(option)
+		case ast.TableOptionMinRows:
+			extracted["min_rows"] = tableOptionUintText(option)
+		case ast.TableOptionDataDirectory:
+			extracted["data_directory"] = option.StrValue
+		case ast.TableOptionIndexDirectory:
+			extracted["index_directory"] = option.StrValue
+		case ast.TableOptionConnection:
+			extracted["connection"] = option.StrValue
+		case ast.TableOptionPassword:
+			extracted["password"] = tableOptionStringOrDefault(option)
+		case ast.TableOptionStorageMedia:
+			extracted["storage_media"] = strings.ToLower(option.StrValue)
+		case ast.TableOptionSecondaryEngine:
+			extracted["secondary_engine"] = option.StrValue
+		case ast.TableOptionSecondaryEngineNull:
+			extracted["secondary_engine"] = "null"
+		case ast.TableOptionUnion:
+			extracted["union"] = unionTableNames(option)
 		default:
 			unextracted = append(unextracted, tableOptionName(option.Tp))
 		}
@@ -1850,6 +1935,38 @@ func extractTableOptions(options []*ast.TableOption) (map[string]string, []strin
 		extracted = nil
 	}
 	return extracted, unextracted
+}
+
+// tableOptionUintText records a numeric option's authored value — an
+// authored =DEFAULT collapses to the marker word instead of a fabricated
+// zero, matching the declaration-faithful contract.
+func tableOptionUintText(option *ast.TableOption) string {
+	if option.Default {
+		return "default"
+	}
+	return strconv.FormatUint(option.UintValue, 10)
+}
+
+// tableOptionStringOrDefault records a string option whose authored form
+// may be the bare =DEFAULT marker.
+func tableOptionStringOrDefault(option *ast.TableOption) string {
+	if option.Default {
+		return "default"
+	}
+	return option.StrValue
+}
+
+// unionTableNames records the UNION=(t,...) member list as a
+// comma-joined declaration fact.
+func unionTableNames(option *ast.TableOption) string {
+	names := make([]string, 0, len(option.TableNames))
+	for _, name := range option.TableNames {
+		if name == nil {
+			continue
+		}
+		names = append(names, name.Name.String())
+	}
+	return strings.Join(names, ",")
 }
 
 // tableOptionName maps a parsed TableOption type to a stable bounded feature

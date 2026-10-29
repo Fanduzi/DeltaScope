@@ -4,6 +4,7 @@ package audit
 import (
 	"context"
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
@@ -382,9 +383,16 @@ func fullyAuditedStatement(dialect spec.Dialect, statement spec.Statement) bool 
 		// other aspect keeps the statement unproven for state purposes.
 		if aspect.Reason == spec.UnsupportedVendorBoundaryReason &&
 			aspect.Metadata["aspect"] == "action" {
-			if _, refused := tidbVendorRefusedPartitionActions[fmt.Sprint(aspect.Metadata["action"])]; refused {
+			if _, refused := tidbVendorRefusedAlterActions[fmt.Sprint(aspect.Metadata["action"])]; refused {
 				continue
 			}
+		}
+		// A proven vendor-refused table option (TiDB 8200/8233/8232,
+		// probed) is the statement's answer — the option transition keeps
+		// the pre-state rather than tombstoning it.
+		if aspect.Reason == spec.UnsupportedVendorBoundaryReason &&
+			aspect.Metadata["aspect"] == "option" {
+			continue
 		}
 		return false
 	}
@@ -406,7 +414,7 @@ func partitionStateAdmissible(dialect spec.Dialect, statement spec.Statement) bo
 	for _, aspect := range statementCoverageAspects(dialect, statement) {
 		if aspect.Reason == spec.UnsupportedVendorBoundaryReason &&
 			aspect.Metadata["aspect"] == "action" {
-			if _, refused := tidbVendorRefusedPartitionActions[fmt.Sprint(aspect.Metadata["action"])]; refused {
+			if _, refused := tidbVendorRefusedAlterActions[fmt.Sprint(aspect.Metadata["action"])]; refused {
 				continue
 			}
 			return false
@@ -939,6 +947,19 @@ func (s *batchState) applyAlterTable(ctx context.Context, statement spec.Stateme
 		s.applyDropPrimaryKey(statement, targets)
 		return nil
 	}
+	if alter.Action == "algorithm" || alter.Action == "lock" {
+		s.applyModifierOnlyAlter(statement, targets)
+		return nil
+	}
+	if alter.Action == "table_option" {
+		s.applyTableOptionAlter(alter, targets)
+		return nil
+	}
+	switch alter.Action {
+	case "order_by_columns", "force", "enable_keys", "disable_keys":
+		s.applyMaintenanceAlter(alter, targets)
+		return nil
+	}
 	if isPartitionAlterAction(alter.Action) {
 		s.applyPartitionOperation(targets, alter)
 		return nil
@@ -1008,6 +1029,216 @@ func (s *batchState) applyAlterTable(ctx context.Context, statement spec.Stateme
 	// present-incomplete stays incomplete: the conditional add proves the
 	// column exists, but the shape model cannot express a partial column set.
 	return nil
+}
+
+// statementVersion returns the ordered state's already-resolved version
+// fact — the same identity rules read through statement.Metadata.
+func (s *batchState) statementVersion() *spec.VersionIdentity {
+	return s.resolvedVersion
+}
+
+// applyModifierOnlyAlter publishes the successor of a single
+// ALGORITHM=/LOCK= spec: the modifier owns no state transition. A proven
+// refusal keeps the exact pre-state; a combinable declaration only proves
+// the table exists; an unproven cell (fact-missing or unprobed) carries
+// the bounded tombstone.
+func (s *batchState) applyModifierOnlyAlter(statement spec.Statement, targets []spec.Table) {
+	key := s.keyFor(s.schema, targets[0])
+	entry := s.entries[key]
+	var engine string
+	if entry != nil && entry.state == tablePresent && entry.shape != nil {
+		engine = entry.shape.Options["engine"]
+	} else if statement.Metadata != nil && statement.Metadata.TargetTable != nil {
+		engine = statement.Metadata.TargetTable.Options["engine"]
+	}
+	outcome := spec.OnlineDDLOutcomeFor(s.dialect, s.statementVersion(), engine, statement.DDL.Alter)
+	switch outcome.Verdict {
+	case spec.OnlineDDLRefused:
+		return
+	case spec.OnlineDDLUnproven:
+		s.invalidateAll(targets)
+		return
+	}
+	s.publishExecutedAlter(key, entry, targets)
+}
+
+// applyMaintenanceAlter publishes the successor of ORDER BY, FORCE, or
+// ENABLE/DISABLE KEYS — accepted forms keep the modeled table shape; the
+// TiDB FORCE refusal keeps the exact pre-state.
+func (s *batchState) applyMaintenanceAlter(alter *spec.Alter, targets []spec.Table) {
+	if s.dialect == spec.DialectTiDB && alter.Action == "force" {
+		// Probed 8200 — the statement refuses atomically.
+		return
+	}
+	key := s.keyFor(s.schema, targets[0])
+	s.publishExecutedAlter(key, s.entries[key], targets)
+}
+
+// publishExecutedAlter publishes the existence-only successor every
+// accepted no-op-on-model action shares: a proven-present table keeps its
+// shape, an unknown table becomes present-incomplete, and a known-absent
+// table tombstones — its premise is already broken.
+func (s *batchState) publishExecutedAlter(key batchTableKey, entry *batchTableEntry, targets []spec.Table) {
+	switch {
+	case entry == nil || entry.state == tableUnknown:
+		s.entries[key] = presentIncompleteEntry(s.effectiveSchema(s.schema, targets[0]), targets[0].Name)
+	case entry.state == tableAbsent:
+		s.invalidateKey(key)
+	}
+	// tablePresent keeps the shape untouched — the action changed nothing
+	// the model tracks.
+}
+
+// applyTableOptionAlter publishes the successor of a table-option spec:
+// proven vendor refusals keep the exact pre-state, catalog-mapped options
+// publish their declared effect, and runtime-dependent options leave the
+// modeled facts unchanged (they never touch what the model vouches).
+func (s *batchState) applyTableOptionAlter(alter *spec.Alter, targets []spec.Table) {
+	key := s.keyFor(s.schema, targets[0])
+	entry := s.entries[key]
+	for name := range alter.Options {
+		if spec.AlterTableOptionOutcome(s.dialect, name) == spec.TableOptionVendorRefused {
+			return
+		}
+	}
+	if s.dialect == spec.DialectTiDB {
+		if charset := alter.Options["convert_to_charset"]; charset != "" {
+			// TiDB's own conversion arm: a refused target keeps the exact
+			// pre-state (8200); an unprobed target tombstones — the option
+			// name is consumed but this target pair is not.
+			switch spec.TiDBCharsetConversionOutcome(charset) {
+			case spec.OnlineDDLRefused:
+				return
+			case spec.OnlineDDLUnproven:
+				s.invalidateAll(targets)
+				return
+			}
+		}
+	}
+	switch {
+	case entry == nil || entry.state == tableUnknown:
+		s.entries[key] = presentIncompleteEntry(s.effectiveSchema(s.schema, targets[0]), targets[0].Name)
+	case entry.state == tableAbsent:
+		s.invalidateKey(key)
+	case entry.state == tablePresent && entry.shape != nil:
+		shape := cloneTableSnapshot(entry.shape)
+		applyTableOptionEffects(s.dialect, alter, shape)
+		s.entries[key] = &batchTableEntry{state: tablePresent, shape: shape, displaySchema: entry.displaySchema, displayTable: entry.displayTable}
+	}
+}
+
+// applyTableOptionEffects applies the catalog-mapped option effects of a
+// table-option spec onto a working shape — the same function the
+// multi-action successor calls after structural actions. Only options
+// with a probed catalog effect write; the rest are declared-but-inert.
+func applyTableOptionEffects(dialect spec.Dialect, alter *spec.Alter, shape *spec.TableSnapshot) {
+	if shape.Options == nil {
+		shape.Options = map[string]string{}
+	}
+	if dialect == spec.DialectMySQL {
+		if value, ok := alter.Options["engine"]; ok && value != "" {
+			shape.Options["engine"] = value
+		}
+		if value, ok := alter.Options["row_format"]; ok && value != "" {
+			shape.Options["row_format"] = value
+		}
+		if value, ok := alter.Options["charset"]; ok && value != "" {
+			// A bare DEFAULT CHARACTER SET re-derives the collation from
+			// the version-dependent charset default — the catalog value is
+			// never the declared text, so the collation fact is unvouched.
+			shape.Options["charset"] = value
+			delete(shape.Options, "collation")
+		}
+		if value, ok := alter.Options["collate"]; ok && value != "" {
+			shape.Options["collation"] = value
+			if charset := charsetOfCollation(value); charset != "" {
+				shape.Options["charset"] = charset
+			}
+		}
+		if value, ok := alter.Options["auto_increment"]; ok && value != "" {
+			applyAutoIncrementSeed(shape, value)
+		}
+	}
+	// CONVERT TO lands on both dialects: MySQL rewrites every string
+	// column; TiDB accepts only the utf8mb4 family, which is the same
+	// publication (refused targets never reach here — the vendor-refusal
+	// gate keeps the pre-state).
+	if charset, ok := alter.Options["convert_to_charset"]; ok && charset != "" {
+		collate := alter.Options["convert_to_collate"]
+		shape.Options["charset"] = charset
+		if collate != "" {
+			shape.Options["collation"] = collate
+		} else {
+			delete(shape.Options, "collation")
+		}
+		for i := range shape.Columns {
+			if columnTypeFamilyLocal(shape.Columns[i]) != "string" {
+				continue
+			}
+			shape.Columns[i].Charset = charset
+			shape.Columns[i].Collation = collate
+		}
+	}
+	// COMMENT lands on both dialects (probed TiDB accepts and applies).
+	if value, ok := alter.Options["comment"]; ok {
+		if shape.Table == nil {
+			shape.Table = &spec.Table{}
+		}
+		shape.Table.Comment = value
+	}
+}
+
+// charsetOfCollation derives the charset a collation name binds — the
+// catalog naming convention is <charset>_<rest>, deterministic by
+// construction.
+func charsetOfCollation(collation string) string {
+	idx := strings.IndexByte(collation, '_')
+	if idx <= 0 {
+		return ""
+	}
+	return collation[:idx]
+}
+
+// applyAutoIncrementSeed publishes a declared AUTO_INCREMENT only when it
+// raises the observed seed — the server clamps a lower declaration to the
+// current seed, never decreasing it. A missing seed fact publishes the
+// declared value only when the table actually carries an auto-increment
+// column; otherwise the declaration is a no-op.
+func applyAutoIncrementSeed(shape *spec.TableSnapshot, declared string) {
+	hasAutoColumn := false
+	for _, column := range shape.Columns {
+		if column.AutoIncrement {
+			hasAutoColumn = true
+			break
+		}
+	}
+	if !hasAutoColumn {
+		return
+	}
+	declaredValue, err := strconv.ParseInt(strings.TrimSpace(declared), 10, 64)
+	if err != nil {
+		return
+	}
+	current, err := strconv.ParseInt(strings.TrimSpace(shape.Options["auto_increment"]), 10, 64)
+	if err == nil && declaredValue <= current {
+		return
+	}
+	shape.Options["auto_increment"] = strconv.FormatInt(declaredValue, 10)
+}
+
+// columnTypeFamilyLocal maps a column's declared type onto the charset-
+// carrying family CONVERT TO rewrites.
+func columnTypeFamilyLocal(column spec.Column) string {
+	t := strings.ToLower(strings.TrimSpace(column.Type))
+	switch {
+	case strings.HasPrefix(t, "char"), strings.HasPrefix(t, "varchar"),
+		strings.HasPrefix(t, "text"), strings.HasPrefix(t, "tinytext"),
+		strings.HasPrefix(t, "mediumtext"), strings.HasPrefix(t, "longtext"),
+		strings.HasPrefix(t, "enum"), strings.HasPrefix(t, "set"):
+		return "string"
+	default:
+		return t
+	}
 }
 
 // applyRenameTable dispatches a standalone RENAME TABLE. Only a single
@@ -1345,16 +1576,7 @@ func (s *batchState) applyDMLMutation(statement spec.Statement) {
 // post-state the batch state models — T13 destructive/data-moving actions
 // and the T14 topology/maintenance set.
 func isPartitionAlterAction(action string) bool {
-	switch action {
-	case "drop_partition", "truncate_partition", "exchange_partition",
-		"add_partitions", "reorganize_partition", "coalesce_partitions",
-		"partition", "remove_partitioning",
-		"rebuild_partition", "check_partitions", "optimize_partition",
-		"repair_partition", "import_partition_tablespace", "discard_partition_tablespace":
-		return true
-	default:
-		return false
-	}
+	return spec.IsPartitionAlterAction(action)
 }
 
 func hasPartitionAlterAction(ddl *spec.DDL) bool {

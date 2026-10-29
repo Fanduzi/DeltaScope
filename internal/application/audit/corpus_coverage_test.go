@@ -55,6 +55,22 @@ func corpusRuleDialectTargets(ruleID string) []string {
 		// TiDB accepts every ALTER CHECK|CONSTRAINT enforcement form, so the
 		// incompatible finding is a MySQL-only applicability result.
 		return []string{"mysql"}
+	// T15: online-DDL warns, rebuild declarations, key toggles, and the
+	// option warn/applicability pair only evaluate under MySQL; TiDB routes
+	// those declarations through compat notices or vendor-boundary aspects.
+	case
+		"ddl.alter.online_ddl.warn",
+		"ddl.alter.rebuild.warn",
+		"ddl.alter.keys_toggle.notice",
+		"ddl.alter.table_option.applicability",
+		"ddl.alter.table_option.warn":
+		return []string{"mysql"}
+	// T15: the TiDB compat-declaration notice and the proven TiDB
+	// charset-conversion refusal only evaluate under TiDB.
+	case
+		"ddl.tidb.alter.compat_options.notice",
+		"ddl.alter.charset_conversion.applicability":
+		return []string{"tidb"}
 	// T14: the six maintenance partition ops are vendor refusals on TiDB
 	// (8200) — every rule bound to them can only fire under MySQL.
 	case
@@ -304,7 +320,13 @@ func isMySQLFamilyOnlyRule(ruleID string) bool {
 		// The advanced-column assessment only applies to MySQL/TiDB
 		// statements; PostgreSQL never binds these facts.
 		"ddl.alter.column.dependency.require",
-		"ddl.column.advanced.compatibility.require":
+		"ddl.column.advanced.compatibility.require",
+		// T15: the online-DDL applicability blocker fires on proven MySQL
+		// refusals and the TiDB ALGORITHM=INSTANT refusal alike; the
+		// charset-conversion warn fires on both dialects for combinable
+		// conversions.
+		"ddl.alter.online_ddl.applicability",
+		"ddl.alter.charset_conversion.warn":
 		return true
 	default:
 		return false

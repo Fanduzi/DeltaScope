@@ -399,6 +399,15 @@ func Register(registry *rule.Registry, cfg policy.Policy) error {
 			return newAlterColumnCompatibilityRule(ruleIDAlterChangeColumnCompatibilityRequire, "change_column", "change column", rule.LevelBlocker, cfg)
 		}},
 		{ruleID: ruleIDAlterTableOptionCompatibilityRequire, construct: newAlterTableOptionCompatibilityRule},
+		{ruleID: ruleIDAlterOnlineDDLApplicability, construct: newOnlineDDLApplicabilityRule},
+		{ruleID: ruleIDAlterOnlineDDLWarn, construct: newOnlineDDLWarnRule},
+		{ruleID: ruleIDTiDBAlterCompatOptionsNotice, construct: newTiDBAlterCompatOptionsNoticeRule},
+		{ruleID: ruleIDAlterRebuildWarn, construct: newAlterRebuildWarnRule},
+		{ruleID: ruleIDAlterKeysToggleNotice, construct: newAlterKeysToggleNoticeRule},
+		{ruleID: ruleIDAlterCharsetConversionWarn, construct: newAlterCharsetConversionWarnRule},
+		{ruleID: ruleIDAlterCharsetConversionApplicability, construct: newAlterCharsetConversionApplicabilityRule},
+		{ruleID: ruleIDAlterTableOptionApplicability, construct: newAlterTableOptionApplicabilityRule},
+		{ruleID: ruleIDAlterTableOptionWarn, construct: newAlterTableOptionWarnRule},
 		{ruleID: ruleIDAlterColumnDependencyRequire, construct: newColumnDependencyRule},
 		{ruleID: ruleIDColumnAdvancedCompatibilityRequire, construct: newAdvancedCompatibilityRule},
 		{ruleID: ruleIDAlterModifyColumnExplicitNullabilityChangeForbid, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {

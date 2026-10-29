@@ -74,6 +74,16 @@ func (s *batchState) prepareMultiAction(statement spec.Statement, targets []spec
 			return invalidate(primary)
 		}
 	}
+	// T15 statement-level outcome gate: online-DDL modifiers and
+	// vendor-refused options decide the whole statement's fate before any
+	// structural action publishes — a proven refusal keeps the exact
+	// pre-state, an unproven cell withholds the successor.
+	switch s.multiActionStatementOutcome(ddl, entry.shape) {
+	case statementOutcomeRefused:
+		return modifyPublication{replaceKey: primary, replace: entry}
+	case statementOutcomeUnproven:
+		return invalidate(primary)
+	}
 	// Primary-object ledger: two actions operating on the same column
 	// identity are a known failure on both dialect families (MySQL 1054,
 	// TiDB 8200) and are never modeled.
@@ -81,6 +91,13 @@ func (s *batchState) prepareMultiAction(statement spec.Statement, targets []spec
 	working := cloneTableSnapshot(entry.shape)
 	for i := range ddl.Alter {
 		alter := &ddl.Alter[i]
+		if multiActionNonPrimaryAction(alter) {
+			// Modifiers, maintenance declarations, and table options are
+			// excluded from the primary-object ledger — the outcome gate
+			// already adjudicated their statement-level fate, and option
+			// effects publish after the structural actions below.
+			continue
+		}
 		object, ok := multiActionPrimaryObject(alter)
 		if !ok || touched[object] {
 			return invalidate(primary)
@@ -100,6 +117,14 @@ func (s *batchState) prepareMultiAction(statement spec.Statement, targets []spec
 			return invalidate(primary)
 		}
 		touched[object] = true
+	}
+	// Table-option updates apply after the structural actions (probed
+	// MySQL catalog order): each spec publishes its catalog-mapped effect
+	// onto the working shape.
+	for i := range ddl.Alter {
+		if ddl.Alter[i].Action == "table_option" {
+			applyTableOptionEffects(s.dialect, &ddl.Alter[i], working)
+		}
 	}
 	clearModifyAffectedStats(working)
 	return modifyPublication{
@@ -544,4 +569,82 @@ func multiActionVisibility(alter *spec.Alter, working *spec.TableSnapshot) bool 
 	next.VisibilityExplicit = false
 	working.Columns[index] = next
 	return true
+}
+
+// statementOutcome is the T15 statement-level verdict for a multi-action
+// ALTER — adjudicated before the primary-object ledger runs.
+type statementOutcome int
+
+const (
+	statementOutcomeClean statementOutcome = iota
+	statementOutcomeRefused
+	statementOutcomeUnproven
+)
+
+// multiActionNonPrimaryAction reports whether an alter spec is excluded
+// from the primary-object ledger: online-DDL modifiers (no own
+// transition), maintenance declarations, and table-option specs (applied
+// post-ledger). ORDER BY never reaches here — the grammar refuses it
+// with siblings.
+func multiActionNonPrimaryAction(alter *spec.Alter) bool {
+	switch alter.Action {
+	case "algorithm", "lock", "table_option",
+		"order_by_columns", "force", "enable_keys", "disable_keys":
+		return true
+	default:
+		return false
+	}
+}
+
+// multiActionStatementOutcome adjudicates the whole statement's
+// executable fate against the probed matrices: online-DDL modifiers fold
+// last-wins through the shared classifier, a TiDB FORCE anywhere refuses,
+// a TiDB charset conversion outside the utf8mb4 family refuses or stays
+// unproven, and any vendor-refused option name refuses. shape is the
+// pre-state the engine premise reads.
+func (s *batchState) multiActionStatementOutcome(ddl *spec.DDL, shape *spec.TableSnapshot) statementOutcome {
+	_, _, actions, _ := spec.OnlineDDLModifierValues(ddl.Alter)
+	if len(actions) != len(ddl.Alter) {
+		engine := ""
+		if shape != nil {
+			engine = shape.Options["engine"]
+		}
+		switch spec.OnlineDDLOutcomeFor(s.dialect, s.resolvedVersion, engine, ddl.Alter).Verdict {
+		case spec.OnlineDDLRefused:
+			return statementOutcomeRefused
+		case spec.OnlineDDLUnproven:
+			return statementOutcomeUnproven
+		}
+	}
+	for i := range ddl.Alter {
+		alter := &ddl.Alter[i]
+		if s.dialect == spec.DialectTiDB && alter.Action == "force" {
+			// Probed 8200 — TiDB refuses FORCE wherever it appears.
+			return statementOutcomeRefused
+		}
+		if alter.Action == "order_by_columns" {
+			// The grammar refuses ORDER BY with siblings; reaching here
+			// means an unmodeled shape — never launder it.
+			return statementOutcomeUnproven
+		}
+		if alter.Action != "table_option" {
+			continue
+		}
+		for name := range alter.Options {
+			if spec.AlterTableOptionOutcome(s.dialect, name) == spec.TableOptionVendorRefused {
+				return statementOutcomeRefused
+			}
+		}
+		if s.dialect == spec.DialectTiDB {
+			if charset := alter.Options["convert_to_charset"]; charset != "" {
+				switch spec.TiDBCharsetConversionOutcome(charset) {
+				case spec.OnlineDDLRefused:
+					return statementOutcomeRefused
+				case spec.OnlineDDLUnproven:
+					return statementOutcomeUnproven
+				}
+			}
+		}
+	}
+	return statementOutcomeClean
 }

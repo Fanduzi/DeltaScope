@@ -1,0 +1,1796 @@
+{
+ "task_id": "T15",
+ "issue": "https://github.com/Fanduzi/DeltaScope/issues/94",
+ "policy_profile": "all-rules-disabled",
+ "description": "Frozen table-option / charset-conversion / online-DDL contract (#94): ALGORITHM=/LOCK= modifiers are audited actions adjudicated by the probed per-dialect matrix (MySQL 1800/1845/1846/1221 refusal classes, TiDB per-operation acceptance plus the probed add_index INSTANT refusal). Table options publish catalog-mapped effects, TiDB vendor refusals stay bounded aspects, CONVERT TO rewrites string columns, and long-tail option names extract into bounded evidence — never silently accepted.",
+ "anchors": {
+  "mysql57": {
+   "service": "mysql57",
+   "container": "deltascope-ddl-golden-mysql57",
+   "image": "mysql:5.7.44",
+   "product": "mysql",
+   "version_contains": "5.7.44",
+   "database": "golden",
+   "exec_client": [
+    "mysql",
+    "-uroot",
+    "--default-character-set=utf8mb4"
+   ],
+   "needs_database_create": false,
+   "exec_password_env": "T15_MYSQL_PASSWORD"
+  },
+  "mysql80": {
+   "service": "mysql80",
+   "container": "deltascope-ddl-golden-mysql80",
+   "image": "mysql:8.0.46",
+   "product": "mysql",
+   "version_contains": "8.0.46",
+   "database": "golden",
+   "exec_client": [
+    "mysql",
+    "-uroot",
+    "--default-character-set=utf8mb4"
+   ],
+   "needs_database_create": false,
+   "exec_password_env": "T15_MYSQL_PASSWORD"
+  },
+  "mysql84": {
+   "service": "mysql84",
+   "container": "deltascope-ddl-golden-mysql84",
+   "image": "mysql:8.4.10",
+   "product": "mysql",
+   "version_contains": "8.4.10",
+   "database": "golden",
+   "exec_client": [
+    "mysql",
+    "-uroot",
+    "--default-character-set=utf8mb4"
+   ],
+   "needs_database_create": false,
+   "exec_password_env": "T15_MYSQL_PASSWORD"
+  },
+  "tidb85": {
+   "service": "tidb85",
+   "container": "deltascope-ddl-golden-tidb85",
+   "client_container": "deltascope-ddl-golden-tidb85-client",
+   "client_service": "tidb85-client",
+   "image": "pingcap/tidb:v8.5.0",
+   "product": "tidb",
+   "version_contains": "v8.5.0",
+   "database": "golden",
+   "exec_client": [
+    "mysql",
+    "--protocol=tcp",
+    "-h",
+    "tidb85",
+    "-P",
+    "4000",
+    "-uroot",
+    "--default-character-set=utf8mb4"
+   ],
+   "needs_database_create": true
+  }
+ },
+ "ddl_steps": [
+  {
+   "name": "drop-stale-fixtures",
+   "sql": "DROP TABLE IF EXISTS t15, t15m, t15c",
+   "expect_rc": 0,
+   "verify": []
+  },
+  {
+   "name": "create-seed-fixture",
+   "sql": "CREATE TABLE t15 (id INT PRIMARY KEY, s VARCHAR(20)) ENGINE=InnoDB",
+   "expect_rc": 0,
+   "verify": [
+    {
+     "assert": "seed fixture lands InnoDB",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t15' AND ENGINE='InnoDB'",
+     "expect": "1"
+    }
+   ]
+  },
+  {
+   "name": "seed-rows",
+   "sql": "INSERT INTO t15 VALUES (1,'a'),(2,'b')",
+   "expect_rc": 0,
+   "verify": []
+  },
+  {
+   "name": "cleanup-fixtures",
+   "sql": "DROP TABLE IF EXISTS t15, t15m, t15c",
+   "expect_rc": 0,
+   "verify": []
+  }
+ ],
+ "syntax_negative": {
+  "sql": "ALTER TABLE t15 ADD COLUMN c INT, ALGORITHM=",
+  "expect": {
+   "rc_nonzero": true,
+   "error_class": "1064",
+   "forbidden_markers": [
+    "ERROR 1045",
+    "ERROR 1044",
+    "ERROR 1049",
+    "ERROR 1142",
+    "ERROR 1143",
+    "ERROR 2002",
+    "ERROR 2003",
+    "ERROR 2005",
+    "Access denied",
+    "Unknown database",
+    "Can't connect",
+    "Connection refused",
+    "already exists"
+   ]
+  }
+ },
+ "cli_audit": {
+  "dialects": [
+   "mysql",
+   "tidb"
+  ],
+  "sql": "ALTER TABLE t ADD COLUMN c INT, ALGORITHM=COPY, LOCK=EXCLUSIVE;",
+  "expect": {
+   "exit": 0,
+   "verdict": "pass",
+   "statements": 1,
+   "findings": 0,
+   "diagnostics": 0,
+   "unsupported": 0,
+   "coverage": "complete",
+   "statement_coverage": [
+    "complete"
+   ],
+   "evidence_gaps": 0
+  }
+ },
+ "policy": {
+  "profiles": {
+   "t15-online": {
+    "enable": {
+     "ddl.alter.online_ddl.applicability": {
+      "level": "blocker"
+     },
+     "ddl.alter.online_ddl.warn": {
+      "level": "warning"
+     }
+    }
+   },
+   "t15-online-applicability": {
+    "enable": {
+     "ddl.alter.online_ddl.applicability": {
+      "level": "blocker"
+     }
+    }
+   },
+   "t15-online-warn": {
+    "enable": {
+     "ddl.alter.online_ddl.warn": {
+      "level": "warning"
+     }
+    }
+   },
+   "t15-rebuild": {
+    "enable": {
+     "ddl.alter.rebuild.warn": {
+      "level": "warning"
+     },
+     "ddl.alter.keys_toggle.notice": {
+      "level": "notice"
+     }
+    }
+   },
+   "t15-charset": {
+    "enable": {
+     "ddl.alter.charset_conversion.warn": {
+      "level": "warning"
+     },
+     "ddl.alter.charset_conversion.applicability": {
+      "level": "blocker"
+     }
+    }
+   },
+   "t15-table-option": {
+    "enable": {
+     "ddl.alter.table_option.compatibility.require": {
+      "level": "warning",
+      "params": {
+       "required": true
+      }
+     },
+     "ddl.alter.table_option.applicability": {
+      "level": "blocker"
+     },
+     "ddl.alter.table_option.warn": {
+      "level": "warning"
+     }
+    }
+   },
+   "t15-tidb-online": {
+    "enable": {
+     "ddl.tidb.alter.compat_options.notice": {
+      "level": "notice"
+     },
+     "ddl.alter.online_ddl.applicability": {
+      "level": "blocker"
+     }
+    }
+   }
+  }
+ },
+ "cli_cases": [
+  {
+   "id": "t15-cli-seed-copy-exclusive",
+   "dialect": "mysql",
+   "sql": "ALTER TABLE t ADD COLUMN c INT, ALGORITHM=COPY, LOCK=EXCLUSIVE;",
+   "policy": "t15-online",
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "rule_summary_applicable": 2,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.alter.online_ddl.warn",
+      "level": "warning"
+     }
+    ]
+   },
+   "args": [
+    "--fail-on",
+    "warning"
+   ]
+  },
+  {
+   "id": "t15-cli-copy-lock-none",
+   "dialect": "mysql",
+   "sql": "ALTER TABLE t ADD COLUMN c INT, ALGORITHM=COPY, LOCK=NONE;",
+   "policy": "t15-online",
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "rule_summary_applicable": 2,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.alter.online_ddl.applicability",
+      "level": "blocker"
+     }
+    ]
+   },
+   "args": [
+    "--fail-on",
+    "blocker"
+   ]
+  },
+  {
+   "id": "t15-cli-inplace-warn",
+   "dialect": "mysql",
+   "sql": "ALTER TABLE t ADD COLUMN c INT, ALGORITHM=INPLACE;",
+   "policy": "t15-online-warn",
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "rule_summary_applicable": 1,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.alter.online_ddl.warn",
+      "level": "warning"
+     }
+    ]
+   },
+   "args": [
+    "--fail-on",
+    "warning"
+   ]
+  },
+  {
+   "id": "t15-cli-lock-none-engine-gap",
+   "dialect": "mysql",
+   "sql": "ALTER TABLE t ADD COLUMN c INT, LOCK=NONE;",
+   "policy": "t15-online-applicability",
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": [
+     "unverified"
+    ],
+    "evidence_gaps": 1,
+    "rule_summary_applicable": 1,
+    "evidence_gap_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.alter.online_ddl.applicability",
+      "reason_code": "incomplete_table_fact",
+      "required_facts": [
+       "target_table.engine"
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "id": "t15-cli-instant-version-gap",
+   "dialect": "mysql",
+   "sql": "ALTER TABLE t ADD COLUMN c INT, ALGORITHM=INSTANT;",
+   "policy": "t15-online-applicability",
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": [
+     "unverified"
+    ],
+    "evidence_gaps": 1,
+    "rule_summary_applicable": 1,
+    "evidence_gap_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.alter.online_ddl.applicability",
+      "reason_code": "missing_target_version",
+      "required_facts": [
+       "target.version"
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "id": "t15-cli-order-by-warn",
+   "dialect": "mysql",
+   "sql": "ALTER TABLE t ORDER BY id;",
+   "policy": "t15-rebuild",
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "rule_summary_applicable": 1,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.alter.rebuild.warn",
+      "level": "warning"
+     }
+    ]
+   },
+   "args": [
+    "--fail-on",
+    "warning"
+   ]
+  },
+  {
+   "id": "t15-cli-force-warn",
+   "dialect": "mysql",
+   "sql": "ALTER TABLE t FORCE;",
+   "policy": "t15-rebuild",
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "rule_summary_applicable": 1,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.alter.rebuild.warn",
+      "level": "warning"
+     }
+    ]
+   },
+   "args": [
+    "--fail-on",
+    "warning"
+   ]
+  },
+  {
+   "id": "t15-cli-enable-keys-notice",
+   "dialect": "mysql",
+   "sql": "ALTER TABLE t ENABLE KEYS;",
+   "policy": "t15-rebuild",
+   "expect": {
+    "exit": 1,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "rule_summary_applicable": 1,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.alter.keys_toggle.notice",
+      "level": "notice"
+     }
+    ]
+   },
+   "args": [
+    "--fail-on",
+    "notice"
+   ]
+  },
+  {
+   "id": "t15-cli-convert-warn",
+   "dialect": "mysql",
+   "sql": "ALTER TABLE t CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_bin;",
+   "policy": "t15-charset",
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "rule_summary_applicable": 1,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.alter.charset_conversion.warn",
+      "level": "warning"
+     }
+    ]
+   },
+   "args": [
+    "--fail-on",
+    "warning"
+   ]
+  },
+  {
+   "id": "t15-cli-option-warn",
+   "dialect": "mysql",
+   "sql": "ALTER TABLE t COMPRESSION='zlib';",
+   "policy": "t15-table-option",
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.alter.table_option.warn",
+      "level": "warning"
+     }
+    ]
+   },
+   "args": [
+    "--fail-on",
+    "warning"
+   ]
+  },
+  {
+   "id": "t15-cli-stats-persistent-gap",
+   "dialect": "mysql",
+   "sql": "ALTER TABLE t STATS_PERSISTENT=1;",
+   "policy": "t15-table-option",
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "evidence_gaps": 0,
+    "unsupported_entries": [
+     {
+      "index": 0,
+      "feature": "alter_table.option.stats_persistent",
+      "reason": "parsed by the shared parser but not covered by audited semantics",
+      "metadata": {
+       "action": "table_option",
+       "aspect": "option",
+       "option": "stats_persistent"
+      }
+     }
+    ]
+   }
+  },
+  {
+   "id": "t15-cli-tidb-compat-notice",
+   "dialect": "tidb",
+   "sql": "ALTER TABLE t ADD COLUMN c INT, ALGORITHM=COPY, LOCK=EXCLUSIVE;",
+   "policy": "t15-tidb-online",
+   "expect": {
+    "exit": 1,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "rule_summary_applicable": 2,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.tidb.alter.compat_options.notice",
+      "level": "notice"
+     }
+    ]
+   },
+   "args": [
+    "--fail-on",
+    "notice"
+   ]
+  },
+  {
+   "id": "t15-cli-tidb-instant-index-refused",
+   "dialect": "tidb",
+   "sql": "ALTER TABLE t ADD INDEX ix (s), ALGORITHM=INSTANT;",
+   "policy": "t15-tidb-online",
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.alter.online_ddl.applicability",
+      "level": "blocker"
+     }
+    ]
+   },
+   "args": [
+    "--fail-on",
+    "blocker"
+   ]
+  },
+  {
+   "id": "t15-cli-tidb-force-vendor",
+   "dialect": "tidb",
+   "sql": "ALTER TABLE t FORCE;",
+   "policy": "all-rules-disabled",
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "evidence_gaps": 0,
+    "unsupported_entries": [
+     {
+      "index": 0,
+      "feature": "alter_table.force",
+      "reason": "parsed by the shared parser but outside the supported statement surface for this dialect",
+      "metadata": {
+       "action": "force",
+       "aspect": "action"
+      }
+     }
+    ]
+   }
+  },
+  {
+   "id": "t15-cli-tidb-convert-latin1",
+   "dialect": "tidb",
+   "sql": "ALTER TABLE t CONVERT TO CHARACTER SET latin1;",
+   "policy": "t15-charset",
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.alter.charset_conversion.applicability",
+      "level": "blocker"
+     }
+    ]
+   },
+   "args": [
+    "--fail-on",
+    "blocker"
+   ]
+  },
+  {
+   "id": "t15-cli-tidb-kbs-vendor",
+   "dialect": "tidb",
+   "sql": "ALTER TABLE t KEY_BLOCK_SIZE=8;",
+   "policy": "all-rules-disabled",
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "evidence_gaps": 0,
+    "unsupported_entries": [
+     {
+      "index": 0,
+      "feature": "alter_table.option.key_block_size",
+      "reason": "parsed by the shared parser but outside the supported statement surface for this dialect",
+      "metadata": {
+       "action": "table_option",
+       "aspect": "option",
+       "option": "key_block_size"
+      }
+     }
+    ]
+   }
+  },
+  {
+   "id": "t15-cli-off-control",
+   "dialect": "mysql",
+   "sql": "ALTER TABLE t ADD COLUMN c INT, ALGORITHM=COPY, LOCK=EXCLUSIVE;",
+   "policy": "all-rules-disabled",
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0
+   }
+  }
+ ],
+ "metadata_cases": [
+  {
+   "id": "t15-mysql80-seed-golden",
+   "anchor": "mysql80",
+   "dialect": "mysql",
+   "sql": "ALTER TABLE t15 ADD COLUMN c INT, ALGORITHM=COPY, LOCK=EXCLUSIVE;",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23380,
+    "user": "root",
+    "schema": "golden",
+    "password_env": "DS_T15_GOLDEN_PW",
+    "password": "root"
+   },
+   "policy": "t15-online",
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "rule_summary_applicable": 2,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.alter.online_ddl.warn",
+      "level": "warning"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.alter.online_ddl.warn",
+      "metadata": {
+       "algorithm": "copy",
+       "lock": "exclusive"
+      }
+     }
+    ],
+    "version": {
+     "product": "mysql",
+     "version": "8.0.46"
+    }
+   },
+   "args": [
+    "--fail-on",
+    "warning"
+   ],
+   "setup": [
+    {
+     "name": "create-seed",
+     "sql": "CREATE TABLE t15 (id INT PRIMARY KEY, s VARCHAR(20)) ENGINE=InnoDB",
+     "expect_rc": 0,
+     "verify": []
+    }
+   ],
+   "execute": [
+    {
+     "name": "apply-seed-alter",
+     "sql": "ALTER TABLE t15 ADD COLUMN c INT, ALGORITHM=COPY, LOCK=EXCLUSIVE",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "added column lands",
+       "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t15' AND COLUMN_NAME='c'",
+       "expect": "1"
+      }
+     ]
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop-seed",
+     "sql": "DROP TABLE IF EXISTS t15",
+     "expect_rc": 0,
+     "verify": []
+    }
+   ]
+  },
+  {
+   "id": "t15-mysql80-copy-lock-none-refused",
+   "anchor": "mysql80",
+   "dialect": "mysql",
+   "sql": "ALTER TABLE t15 ADD COLUMN c INT, ALGORITHM=COPY, LOCK=NONE;",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23380,
+    "user": "root",
+    "schema": "golden",
+    "password_env": "DS_T15_GOLDEN_PW",
+    "password": "root"
+   },
+   "policy": "t15-online",
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.alter.online_ddl.applicability",
+      "level": "blocker"
+     }
+    ],
+    "version": {
+     "product": "mysql",
+     "version": "8.0.46"
+    }
+   },
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "setup": [
+    {
+     "name": "create-seed",
+     "sql": "CREATE TABLE t15 (id INT PRIMARY KEY, s VARCHAR(20)) ENGINE=InnoDB",
+     "expect_rc": 0,
+     "verify": []
+    }
+   ],
+   "execute": [
+    {
+     "name": "refused-alter-fails",
+     "sql": "ALTER TABLE t15 ADD COLUMN c INT, ALGORITHM=COPY, LOCK=NONE",
+     "expect_rc": 1,
+     "verify": [
+      {
+       "assert": "column never lands",
+       "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t15' AND COLUMN_NAME='c'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop-seed",
+     "sql": "DROP TABLE IF EXISTS t15",
+     "expect_rc": 0,
+     "verify": []
+    }
+   ]
+  },
+  {
+   "id": "t15-mysql80-instant-add",
+   "anchor": "mysql80",
+   "dialect": "mysql",
+   "sql": "ALTER TABLE t15 ADD COLUMN c INT, ALGORITHM=INSTANT;",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23380,
+    "user": "root",
+    "schema": "golden",
+    "password_env": "DS_T15_GOLDEN_PW",
+    "password": "root"
+   },
+   "policy": "t15-online",
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "version": {
+     "product": "mysql",
+     "version": "8.0.46"
+    }
+   },
+   "setup": [
+    {
+     "name": "create-seed",
+     "sql": "CREATE TABLE t15 (id INT PRIMARY KEY, s VARCHAR(20)) ENGINE=InnoDB",
+     "expect_rc": 0,
+     "verify": []
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop-seed",
+     "sql": "DROP TABLE IF EXISTS t15",
+     "expect_rc": 0,
+     "verify": []
+    }
+   ]
+  },
+  {
+   "id": "t15-mysql80-instant-index-refused",
+   "anchor": "mysql80",
+   "dialect": "mysql",
+   "sql": "ALTER TABLE t15 ADD INDEX ix (s), ALGORITHM=INSTANT;",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23380,
+    "user": "root",
+    "schema": "golden",
+    "password_env": "DS_T15_GOLDEN_PW",
+    "password": "root"
+   },
+   "policy": "t15-online-applicability",
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.alter.online_ddl.applicability",
+      "level": "blocker"
+     }
+    ],
+    "version": {
+     "product": "mysql",
+     "version": "8.0.46"
+    }
+   },
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "setup": [
+    {
+     "name": "create-seed",
+     "sql": "CREATE TABLE t15 (id INT PRIMARY KEY, s VARCHAR(20)) ENGINE=InnoDB",
+     "expect_rc": 0,
+     "verify": []
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop-seed",
+     "sql": "DROP TABLE IF EXISTS t15",
+     "expect_rc": 0,
+     "verify": []
+    }
+   ]
+  },
+  {
+   "id": "t15-mysql80-instant-lock-refused",
+   "anchor": "mysql80",
+   "dialect": "mysql",
+   "sql": "ALTER TABLE t15 ADD COLUMN c INT, ALGORITHM=INSTANT, LOCK=NONE;",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23380,
+    "user": "root",
+    "schema": "golden",
+    "password_env": "DS_T15_GOLDEN_PW",
+    "password": "root"
+   },
+   "policy": "t15-online-applicability",
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.alter.online_ddl.applicability",
+      "level": "blocker"
+     }
+    ],
+    "version": {
+     "product": "mysql",
+     "version": "8.0.46"
+    }
+   },
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "setup": [
+    {
+     "name": "create-seed",
+     "sql": "CREATE TABLE t15 (id INT PRIMARY KEY, s VARCHAR(20)) ENGINE=InnoDB",
+     "expect_rc": 0,
+     "verify": []
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop-seed",
+     "sql": "DROP TABLE IF EXISTS t15",
+     "expect_rc": 0,
+     "verify": []
+    }
+   ]
+  },
+  {
+   "id": "t15-mysql57-instant-refused",
+   "anchor": "mysql57",
+   "dialect": "mysql",
+   "sql": "ALTER TABLE t15 ADD COLUMN c INT, ALGORITHM=INSTANT;",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23357,
+    "user": "root",
+    "schema": "golden",
+    "password_env": "DS_T15_GOLDEN_PW",
+    "password": "root"
+   },
+   "policy": "t15-online-applicability",
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.alter.online_ddl.applicability",
+      "level": "blocker"
+     }
+    ],
+    "version": {
+     "product": "mysql",
+     "version": "5.7.44"
+    }
+   },
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "setup": [
+    {
+     "name": "create-seed",
+     "sql": "CREATE TABLE t15 (id INT PRIMARY KEY, s VARCHAR(20)) ENGINE=InnoDB",
+     "expect_rc": 0,
+     "verify": []
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop-seed",
+     "sql": "DROP TABLE IF EXISTS t15",
+     "expect_rc": 0,
+     "verify": []
+    }
+   ]
+  },
+  {
+   "id": "t15-mysql84-instant-add",
+   "anchor": "mysql84",
+   "dialect": "mysql",
+   "sql": "ALTER TABLE t15 ADD COLUMN c INT, ALGORITHM=INSTANT;",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23384,
+    "user": "root",
+    "schema": "golden",
+    "password_env": "DS_T15_GOLDEN_PW",
+    "password": "root"
+   },
+   "policy": "t15-online",
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "version": {
+     "product": "mysql",
+     "version": "8.4.10"
+    }
+   },
+   "setup": [
+    {
+     "name": "create-seed",
+     "sql": "CREATE TABLE t15 (id INT PRIMARY KEY, s VARCHAR(20)) ENGINE=InnoDB",
+     "expect_rc": 0,
+     "verify": []
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop-seed",
+     "sql": "DROP TABLE IF EXISTS t15",
+     "expect_rc": 0,
+     "verify": []
+    }
+   ]
+  },
+  {
+   "id": "t15-mysql80-order-by-warn",
+   "anchor": "mysql80",
+   "dialect": "mysql",
+   "sql": "ALTER TABLE t15 ORDER BY id;",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23380,
+    "user": "root",
+    "schema": "golden",
+    "password_env": "DS_T15_GOLDEN_PW",
+    "password": "root"
+   },
+   "policy": "t15-rebuild",
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.alter.rebuild.warn",
+      "level": "warning"
+     }
+    ],
+    "version": {
+     "product": "mysql",
+     "version": "8.0.46"
+    }
+   },
+   "args": [
+    "--fail-on",
+    "warning"
+   ],
+   "setup": [
+    {
+     "name": "create-seed",
+     "sql": "CREATE TABLE t15 (id INT PRIMARY KEY, s VARCHAR(20)) ENGINE=InnoDB",
+     "expect_rc": 0,
+     "verify": []
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop-seed",
+     "sql": "DROP TABLE IF EXISTS t15",
+     "expect_rc": 0,
+     "verify": []
+    }
+   ]
+  },
+  {
+   "id": "t15-mysql80-force-warn",
+   "anchor": "mysql80",
+   "dialect": "mysql",
+   "sql": "ALTER TABLE t15 FORCE;",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23380,
+    "user": "root",
+    "schema": "golden",
+    "password_env": "DS_T15_GOLDEN_PW",
+    "password": "root"
+   },
+   "policy": "t15-rebuild",
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.alter.rebuild.warn",
+      "level": "warning"
+     }
+    ],
+    "version": {
+     "product": "mysql",
+     "version": "8.0.46"
+    }
+   },
+   "args": [
+    "--fail-on",
+    "warning"
+   ],
+   "setup": [
+    {
+     "name": "create-seed",
+     "sql": "CREATE TABLE t15 (id INT PRIMARY KEY, s VARCHAR(20)) ENGINE=InnoDB",
+     "expect_rc": 0,
+     "verify": []
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop-seed",
+     "sql": "DROP TABLE IF EXISTS t15",
+     "expect_rc": 0,
+     "verify": []
+    }
+   ]
+  },
+  {
+   "id": "t15-mysql80-enable-keys-notice",
+   "anchor": "mysql80",
+   "dialect": "mysql",
+   "sql": "ALTER TABLE t15 ENABLE KEYS;",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23380,
+    "user": "root",
+    "schema": "golden",
+    "password_env": "DS_T15_GOLDEN_PW",
+    "password": "root"
+   },
+   "policy": "t15-rebuild",
+   "expect": {
+    "exit": 1,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.alter.keys_toggle.notice",
+      "level": "notice"
+     }
+    ],
+    "version": {
+     "product": "mysql",
+     "version": "8.0.46"
+    }
+   },
+   "args": [
+    "--fail-on",
+    "notice"
+   ],
+   "setup": [
+    {
+     "name": "create-seed",
+     "sql": "CREATE TABLE t15 (id INT PRIMARY KEY, s VARCHAR(20)) ENGINE=InnoDB",
+     "expect_rc": 0,
+     "verify": []
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop-seed",
+     "sql": "DROP TABLE IF EXISTS t15",
+     "expect_rc": 0,
+     "verify": []
+    }
+   ]
+  },
+  {
+   "id": "t15-mysql80-convert-warn",
+   "anchor": "mysql80",
+   "dialect": "mysql",
+   "sql": "ALTER TABLE t15 CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_bin;",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23380,
+    "user": "root",
+    "schema": "golden",
+    "password_env": "DS_T15_GOLDEN_PW",
+    "password": "root"
+   },
+   "policy": "t15-charset",
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.alter.charset_conversion.warn",
+      "level": "warning"
+     }
+    ],
+    "version": {
+     "product": "mysql",
+     "version": "8.0.46"
+    }
+   },
+   "args": [
+    "--fail-on",
+    "warning"
+   ],
+   "setup": [
+    {
+     "name": "create-charset-fixture",
+     "sql": "CREATE TABLE t15 (id INT PRIMARY KEY, s VARCHAR(20)) ENGINE=InnoDB DEFAULT CHARSET=latin1",
+     "expect_rc": 0,
+     "verify": []
+    }
+   ],
+   "execute": [
+    {
+     "name": "apply-convert",
+     "sql": "ALTER TABLE t15 CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_bin",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "column charset converted",
+       "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t15' AND COLUMN_NAME='s' AND CHARACTER_SET_NAME='utf8mb4'",
+       "expect": "1"
+      }
+     ]
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop-seed",
+     "sql": "DROP TABLE IF EXISTS t15",
+     "expect_rc": 0,
+     "verify": []
+    }
+   ]
+  },
+  {
+   "id": "t15-mysql80-kbs-refused",
+   "anchor": "mysql80",
+   "dialect": "mysql",
+   "sql": "ALTER TABLE t15 KEY_BLOCK_SIZE=8;",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23380,
+    "user": "root",
+    "schema": "golden",
+    "password_env": "DS_T15_GOLDEN_PW",
+    "password": "root"
+   },
+   "policy": "t15-table-option",
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 2,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.alter.table_option.applicability",
+      "level": "blocker"
+     },
+     {
+      "index": 0,
+      "rule_id": "ddl.alter.table_option.warn",
+      "level": "warning"
+     }
+    ],
+    "version": {
+     "product": "mysql",
+     "version": "8.0.46"
+    }
+   },
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "setup": [
+    {
+     "name": "create-seed",
+     "sql": "CREATE TABLE t15 (id INT PRIMARY KEY, s VARCHAR(20)) ENGINE=InnoDB",
+     "expect_rc": 0,
+     "verify": []
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop-seed",
+     "sql": "DROP TABLE IF EXISTS t15",
+     "expect_rc": 0,
+     "verify": []
+    }
+   ]
+  },
+  {
+   "id": "t15-mysql80-engine-compat",
+   "anchor": "mysql80",
+   "dialect": "mysql",
+   "sql": "ALTER TABLE t15 ENGINE=MyISAM;",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23380,
+    "user": "root",
+    "schema": "golden",
+    "password_env": "DS_T15_GOLDEN_PW",
+    "password": "root"
+   },
+   "policy": "t15-table-option",
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.alter.table_option.compatibility.require",
+      "level": "warning"
+     }
+    ],
+    "version": {
+     "product": "mysql",
+     "version": "8.0.46"
+    }
+   },
+   "args": [
+    "--fail-on",
+    "warning"
+   ],
+   "setup": [
+    {
+     "name": "create-seed",
+     "sql": "CREATE TABLE t15 (id INT PRIMARY KEY, s VARCHAR(20)) ENGINE=InnoDB",
+     "expect_rc": 0,
+     "verify": []
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop-seed",
+     "sql": "DROP TABLE IF EXISTS t15",
+     "expect_rc": 0,
+     "verify": []
+    }
+   ]
+  },
+  {
+   "id": "t15-tidb85-seed-notice",
+   "anchor": "tidb85",
+   "dialect": "tidb",
+   "sql": "ALTER TABLE t15 ADD COLUMN c INT, ALGORITHM=COPY, LOCK=EXCLUSIVE;",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 24000,
+    "user": "root",
+    "schema": "golden",
+    "password_env": "",
+    "password": ""
+   },
+   "policy": "t15-tidb-online",
+   "expect": {
+    "exit": 1,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.tidb.alter.compat_options.notice",
+      "level": "notice"
+     }
+    ],
+    "version": {
+     "product": "tidb",
+     "version": "8.5.0"
+    }
+   },
+   "args": [
+    "--fail-on",
+    "notice"
+   ],
+   "setup": [
+    {
+     "name": "create-seed",
+     "sql": "CREATE TABLE t15 (id INT PRIMARY KEY, s VARCHAR(20)) ENGINE=InnoDB",
+     "expect_rc": 0,
+     "verify": []
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop-seed",
+     "sql": "DROP TABLE IF EXISTS t15",
+     "expect_rc": 0,
+     "verify": []
+    }
+   ]
+  },
+  {
+   "id": "t15-tidb85-force-vendor",
+   "anchor": "tidb85",
+   "dialect": "tidb",
+   "sql": "ALTER TABLE t15 FORCE;",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 24000,
+    "user": "root",
+    "schema": "golden",
+    "password_env": "",
+    "password": ""
+   },
+   "policy": "all-rules-disabled",
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "evidence_gaps": 0,
+    "version": {
+     "product": "tidb",
+     "version": "8.5.0"
+    }
+   },
+   "setup": [
+    {
+     "name": "create-seed",
+     "sql": "CREATE TABLE t15 (id INT PRIMARY KEY, s VARCHAR(20)) ENGINE=InnoDB",
+     "expect_rc": 0,
+     "verify": []
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop-seed",
+     "sql": "DROP TABLE IF EXISTS t15",
+     "expect_rc": 0,
+     "verify": []
+    }
+   ]
+  },
+  {
+   "id": "t15-tidb85-convert-latin1",
+   "anchor": "tidb85",
+   "dialect": "tidb",
+   "sql": "ALTER TABLE t15 CONVERT TO CHARACTER SET latin1;",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 24000,
+    "user": "root",
+    "schema": "golden",
+    "password_env": "",
+    "password": ""
+   },
+   "policy": "t15-charset",
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.alter.charset_conversion.applicability",
+      "level": "blocker"
+     }
+    ],
+    "version": {
+     "product": "tidb",
+     "version": "8.5.0"
+    }
+   },
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "setup": [
+    {
+     "name": "create-seed",
+     "sql": "CREATE TABLE t15 (id INT PRIMARY KEY, s VARCHAR(20)) ENGINE=InnoDB",
+     "expect_rc": 0,
+     "verify": []
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop-seed",
+     "sql": "DROP TABLE IF EXISTS t15",
+     "expect_rc": 0,
+     "verify": []
+    }
+   ]
+  },
+  {
+   "id": "t15-tidb85-kbs-vendor",
+   "anchor": "tidb85",
+   "dialect": "tidb",
+   "sql": "ALTER TABLE t15 KEY_BLOCK_SIZE=8;",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 24000,
+    "user": "root",
+    "schema": "golden",
+    "password_env": "",
+    "password": ""
+   },
+   "policy": "all-rules-disabled",
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "evidence_gaps": 0,
+    "version": {
+     "product": "tidb",
+     "version": "8.5.0"
+    }
+   },
+   "setup": [
+    {
+     "name": "create-seed",
+     "sql": "CREATE TABLE t15 (id INT PRIMARY KEY, s VARCHAR(20)) ENGINE=InnoDB",
+     "expect_rc": 0,
+     "verify": []
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop-seed",
+     "sql": "DROP TABLE IF EXISTS t15",
+     "expect_rc": 0,
+     "verify": []
+    }
+   ]
+  }
+ ],
+ "required_case_ids": [
+  "T15.db.mysql57.ddl",
+  "T15.db.mysql57.syntax_negative",
+  "T15.db.mysql80.ddl",
+  "T15.db.mysql80.syntax_negative",
+  "T15.db.mysql84.ddl",
+  "T15.db.mysql84.syntax_negative",
+  "T15.db.tidb85.ddl",
+  "T15.db.tidb85.syntax_negative",
+  "T15.cli.t15-cli-seed-copy-exclusive",
+  "T15.cli.t15-cli-copy-lock-none",
+  "T15.cli.t15-cli-inplace-warn",
+  "T15.cli.t15-cli-lock-none-engine-gap",
+  "T15.cli.t15-cli-instant-version-gap",
+  "T15.cli.t15-cli-order-by-warn",
+  "T15.cli.t15-cli-force-warn",
+  "T15.cli.t15-cli-enable-keys-notice",
+  "T15.cli.t15-cli-convert-warn",
+  "T15.cli.t15-cli-option-warn",
+  "T15.cli.t15-cli-stats-persistent-gap",
+  "T15.cli.t15-cli-tidb-compat-notice",
+  "T15.cli.t15-cli-tidb-instant-index-refused",
+  "T15.cli.t15-cli-tidb-force-vendor",
+  "T15.cli.t15-cli-tidb-convert-latin1",
+  "T15.cli.t15-cli-tidb-kbs-vendor",
+  "T15.cli.t15-cli-off-control",
+  "T15.meta.t15-mysql80-seed-golden",
+  "T15.meta.t15-mysql80-copy-lock-none-refused",
+  "T15.meta.t15-mysql80-instant-add",
+  "T15.meta.t15-mysql80-instant-index-refused",
+  "T15.meta.t15-mysql80-instant-lock-refused",
+  "T15.meta.t15-mysql57-instant-refused",
+  "T15.meta.t15-mysql84-instant-add",
+  "T15.meta.t15-mysql80-order-by-warn",
+  "T15.meta.t15-mysql80-force-warn",
+  "T15.meta.t15-mysql80-enable-keys-notice",
+  "T15.meta.t15-mysql80-convert-warn",
+  "T15.meta.t15-mysql80-kbs-refused",
+  "T15.meta.t15-mysql80-engine-compat",
+  "T15.meta.t15-tidb85-seed-notice",
+  "T15.meta.t15-tidb85-force-vendor",
+  "T15.meta.t15-tidb85-convert-latin1",
+  "T15.meta.t15-tidb85-kbs-vendor"
+ ]
+}

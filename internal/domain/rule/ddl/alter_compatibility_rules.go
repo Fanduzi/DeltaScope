@@ -505,18 +505,38 @@ func newCompatibilityFinding(ruleID string, level rule.Level, tableName string, 
 	}
 }
 
+// alterTableOptionComparePairs maps a declared option key to the
+// snapshot fact it is compared against. The declared vocabulary writes
+// `collate`; the catalog vocabulary stores `collation` — the pair keeps
+// the comparison on the same fact.
+var alterTableOptionComparePairs = []struct {
+	declared string
+	snapshot string
+}{
+	{"engine", "engine"},
+	{"charset", "charset"},
+	{"collate", "collation"},
+	{"row_format", "row_format"},
+	{"auto_increment", "auto_increment"},
+}
+
 func optionCompatibilityFindings(level rule.Level, tableName string, snapshot *spec.TableSnapshot, alter spec.Alter) []rule.Finding {
 	findings := make([]rule.Finding, 0)
-	for _, optionKey := range []string{"engine", "charset", "collation", "row_format", "auto_increment"} {
-		target, ok := alter.Options[optionKey]
+	for _, pair := range alterTableOptionComparePairs {
+		// A bare DEFAULT CHARACTER SET declaration re-derives the collation
+		// from the version-dependent charset default — the declared charset
+		// alone carries the compare; an absent explicit COLLATE never reads
+		// as "collation removed" and convert_to_* keys are excluded by the
+		// pair vocabulary itself.
+		target, ok := alter.Options[pair.declared]
 		if !ok || strings.TrimSpace(target) == "" {
 			continue
 		}
-		source := strings.TrimSpace(snapshot.Options[optionKey])
+		source := strings.TrimSpace(snapshot.Options[pair.snapshot])
 		if source == "" {
 			continue
 		}
-		if optionKey == "auto_increment" {
+		if pair.declared == "auto_increment" {
 			if finding, ok := autoIncrementCompatibilityFinding(level, tableName, alter, source, target); ok {
 				findings = append(findings, finding)
 			}
@@ -528,16 +548,35 @@ func optionCompatibilityFindings(level rule.Level, tableName string, snapshot *s
 		findings = append(findings, rule.Finding{
 			RuleID:     ruleIDAlterTableOptionCompatibilityRequire,
 			Level:      level,
-			Message:    fmt.Sprintf("table option %q changes from %q to %q", optionKey, source, target),
-			Suggestion: fmt.Sprintf("keep %s aligned with the current table setting or review the compatibility impact explicitly", optionKey),
+			Message:    fmt.Sprintf("table option %q changes from %q to %q", pair.snapshot, source, target),
+			Suggestion: fmt.Sprintf("keep %s aligned with the current table setting or review the compatibility impact explicitly", pair.snapshot),
 			Metadata: map[string]any{
 				"table":        tableName,
 				"action":       alter.Action,
-				"option":       optionKey,
+				"option":       pair.snapshot,
 				"source_value": source,
 				"target_value": target,
 			},
 		})
+	}
+	// COMMENT compares against the table's own comment fact — never a
+	// convert_to_* key (those carry conversion semantics, not defaults).
+	if target, ok := alter.Options["comment"]; ok && snapshot.Table != nil {
+		if source := snapshot.Table.Comment; source != target {
+			findings = append(findings, rule.Finding{
+				RuleID:     ruleIDAlterTableOptionCompatibilityRequire,
+				Level:      level,
+				Message:    fmt.Sprintf("table option %q changes from %q to %q", "comment", source, target),
+				Suggestion: "keep the table comment aligned with the current text or review the change explicitly",
+				Metadata: map[string]any{
+					"table":        tableName,
+					"action":       alter.Action,
+					"option":       "comment",
+					"source_value": source,
+					"target_value": target,
+				},
+			})
+		}
 	}
 	return findings
 }
