@@ -757,11 +757,22 @@ var metadataAwareRuleIDs = map[string]bool{
 	"ddl.table.row_size.max_bytes.require":     true,
 	"ddl.table.truncate.adaptive_hash.warn":    true,
 	"ddl.table.truncate.exists.require":        true,
+	"ddl.table.truncate.inbound_fk":            true,
 	"ddl.table.truncate.rows.max_count":        true,
-	"dml.table.denylist.forbid":                true,
-	"dml.table.exists.require":                 true,
-	"ddl.table.denylist.forbid":                true,
-	"ddl.alter.add_column.exists.forbid":       true,
-	"ddl.alter.add_index.exists.forbid":        true,
-	"ddl.index.key_length.max_bytes.require":   true,
+	// T16 lifecycle rules consume the namespace-aware ordered bindings:
+	// rename endpoint pairs, LIKE/CTAS sources, and TiDB's local-temp
+	// refusal surface all read bound snapshot state.
+	"ddl.table.rename.dest.exists.forbid":       true,
+	"ddl.table.rename.source.exists.require":    true,
+	"ddl.table.like.source.exists.require":      true,
+	"ddl.table.create_as.source.exists.require": true,
+	"ddl.tidb.local_temporary.alter":            true,
+	"ddl.tidb.local_temporary.rename":           true,
+	"ddl.tidb.local_temporary.like":             true,
+	"dml.table.denylist.forbid":                 true,
+	"dml.table.exists.require":                  true,
+	"ddl.table.denylist.forbid":                 true,
+	"ddl.alter.add_column.exists.forbid":        true,
+	"ddl.alter.add_index.exists.forbid":         true,
+	"ddl.index.key_length.max_bytes.require":    true,
 }

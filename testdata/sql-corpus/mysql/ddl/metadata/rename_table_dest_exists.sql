@@ -1,0 +1,1 @@
+RENAME TABLE src TO dst;

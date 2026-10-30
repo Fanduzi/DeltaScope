@@ -1012,6 +1012,21 @@ rules:
     level: notice
     params:
 
+  ddl.tidb.local_temporary.alter:
+    enabled: true
+    level: blocker
+    params:
+
+  ddl.tidb.local_temporary.like:
+    enabled: true
+    level: blocker
+    params:
+
+  ddl.tidb.local_temporary.rename:
+    enabled: true
+    level: blocker
+    params:
+
   ddl.index.columns.max_count:
     enabled: true
     level: warning
@@ -2128,11 +2143,21 @@ rules:
     params:
       forbid: true
 
+  ddl.table.create_as.source.exists.require:
+    enabled: true
+    level: blocker
+    params:
+
   ddl.table.create_like.forbid:
     enabled: true
     level: blocker
     params:
       forbid: true
+
+  ddl.table.like.source.exists.require:
+    enabled: true
+    level: blocker
+    params:
 
   ddl.table.denylist.forbid:
     enabled: true
@@ -2265,6 +2290,16 @@ rules:
     params:
       required: true
 
+  ddl.table.rename.dest.exists.forbid:
+    enabled: true
+    level: blocker
+    params:
+
+  ddl.table.rename.source.exists.require:
+    enabled: true
+    level: blocker
+    params:
+
   ddl.table.row_format.allowlist:
     enabled: true
     level: blocker
@@ -2284,6 +2319,11 @@ rules:
     params:
 
   ddl.table.truncate.exists.require:
+    enabled: true
+    level: blocker
+    params:
+
+  ddl.table.truncate.inbound_fk:
     enabled: true
     level: blocker
     params:

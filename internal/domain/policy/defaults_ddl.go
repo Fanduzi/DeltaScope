@@ -632,6 +632,49 @@ func ddlCoreRules() map[string]RulePolicy {
 				"required": true,
 			},
 		},
+		// T16 lifecycle rules: multi-target DROP members, RENAME endpoints,
+		// LIKE/CTAS sources, truncate inbound-FK, and TiDB local-temporary
+		// refusals. All consume ordered-state bound metadata.
+		"ddl.table.like.source.exists.require": {
+			Enabled: true,
+			Level:   rule.LevelBlocker,
+			Params:  map[string]any{},
+		},
+		"ddl.table.create_as.source.exists.require": {
+			Enabled: true,
+			Level:   rule.LevelBlocker,
+			Params:  map[string]any{},
+		},
+		"ddl.table.rename.source.exists.require": {
+			Enabled: true,
+			Level:   rule.LevelBlocker,
+			Params:  map[string]any{},
+		},
+		"ddl.table.rename.dest.exists.forbid": {
+			Enabled: true,
+			Level:   rule.LevelBlocker,
+			Params:  map[string]any{},
+		},
+		"ddl.table.truncate.inbound_fk": {
+			Enabled: true,
+			Level:   rule.LevelBlocker,
+			Params:  map[string]any{},
+		},
+		"ddl.tidb.local_temporary.alter": {
+			Enabled: true,
+			Level:   rule.LevelBlocker,
+			Params:  map[string]any{},
+		},
+		"ddl.tidb.local_temporary.rename": {
+			Enabled: true,
+			Level:   rule.LevelBlocker,
+			Params:  map[string]any{},
+		},
+		"ddl.tidb.local_temporary.like": {
+			Enabled: true,
+			Level:   rule.LevelBlocker,
+			Params:  map[string]any{},
+		},
 		// MySQL/TiDB database lifecycle rules.
 		"ddl.database.create.notice": {
 			Enabled: true,

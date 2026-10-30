@@ -33,7 +33,18 @@ type DDL struct {
 	OmittedTargets int  `json:"omitted_targets,omitempty"`
 	HasReferTable  bool `json:"has_refer_table,omitempty"`
 	HasSelect      bool `json:"has_select,omitempty"`
-	HasPartition   bool `json:"has_partition,omitempty"`
+	// ReferTable is the CREATE TABLE ... LIKE source identity exactly as
+	// authored — schema qualifier preserved when written, empty when the
+	// source resolves under the effective schema downstream. nil when the
+	// statement is not a LIKE create.
+	ReferTable *Table `json:"refer_table,omitempty"`
+	// SelectSources names every base-table identity the CTAS select reads —
+	// joins, subqueries, and set operands flattened in discovery order with
+	// duplicates removed, CTE names excluded. Bounded evidence for the
+	// source-existence premise; the select is never executed or result-
+	// inferred. nil/empty means no readable base table (literal select).
+	SelectSources []Table `json:"select_sources,omitempty"`
+	HasPartition  bool    `json:"has_partition,omitempty"`
 	// PartitionType is the CREATE TABLE partition method normalized
 	// lowercase (`range`, `list`, `hash`, `key`, `linear hash`,
 	// `linear key`, `range columns`, `list columns`); empty when the
@@ -111,6 +122,21 @@ func (d *DDL) TableTargets() []Table {
 		return []Table{*d.Table}
 	}
 	return nil
+}
+
+// RenameStatementForm reports whether the statement carries rename
+// semantics in the flattened endpoint layout: a standalone RENAME TABLE
+// or an ALTER TABLE whose first action renames the table. Consumers that
+// bind or evaluate rename endpoints must share this one predicate — the
+// targets list pairs (source, destination) in order under it.
+func (d *DDL) RenameStatementForm() bool {
+	if d == nil {
+		return false
+	}
+	if d.Operation == DDLOperationRenameTable {
+		return true
+	}
+	return d.Operation == DDLOperationAlterTable && len(d.Alter) > 0 && d.Alter[0].Action == "rename_table"
 }
 
 // DDLOperation identifies the normalized DDL operation represented by a statement.

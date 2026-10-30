@@ -268,6 +268,15 @@ func extractCreateTable(stmt *ast.CreateTableStmt, rawSQL string) *spec.DDL {
 		HasSelect:     stmt.Select != nil,
 		HasPartition:  stmt.Partition != nil,
 	}
+	if stmt.ReferTable != nil {
+		// The LIKE source keeps its as-written qualifier — an unqualified
+		// reference resolves under the effective schema (and temp-first
+		// binding) downstream.
+		ddl.ReferTable = &spec.Table{Schema: stmt.ReferTable.Schema.L, Name: stmt.ReferTable.Name.L}
+	}
+	if stmt.Select != nil {
+		ddl.SelectSources = selectSourceTables(stmt.Select)
+	}
 	if stmt.Partition != nil {
 		ddl.PartitionType = partitionMethodName(stmt.Partition)
 		ddl.PartitionNames = partitionMemberNames(stmt.Partition)
@@ -443,6 +452,33 @@ func normalizeCreatePrimaryKeyNullability(ddl *spec.DDL, cols []*ast.ColumnDef) 
 		}
 		column.NotNull = true
 	}
+}
+
+// selectSourceTables collects the base-table identities a CTAS select
+// reads through the shared query-access analyzer — joins, subqueries and
+// set operands flattened in discovery order, CTE/derived entries
+// excluded, duplicates removed. Schema qualifiers stay as written; the
+// effective-schema and temp-first binding happen downstream. The select
+// is never executed and its result shape is never inferred.
+func selectSourceTables(node ast.ResultSetNode) []spec.Table {
+	if node == nil {
+		return nil
+	}
+	facts := analyzeQueryNode(node, newScopeStack(""))
+	seen := make(map[spec.Table]struct{}, len(facts.relations))
+	sources := make([]spec.Table, 0, len(facts.relations))
+	for _, rel := range facts.relations {
+		if rel.Kind != "table" {
+			continue
+		}
+		table := spec.Table{Schema: rel.Schema, Name: rel.Name}
+		if _, dup := seen[table]; dup {
+			continue
+		}
+		seen[table] = struct{}{}
+		sources = append(sources, table)
+	}
+	return sources
 }
 
 func extractCreateView(stmt *ast.CreateViewStmt) *spec.DDL {

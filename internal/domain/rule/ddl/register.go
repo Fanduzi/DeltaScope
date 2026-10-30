@@ -495,6 +495,30 @@ func Register(registry *rule.Registry, cfg policy.Policy) error {
 		{ruleID: ruleIDTableTruncateExistsRequire, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
 			return newTableOperationExistenceRule(ruleIDTableTruncateExistsRequire, spec.DDLOperationTruncateTable, "truncate table", rule.LevelBlocker, cfg)
 		}},
+		{ruleID: ruleIDTableTruncateInboundFK, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newTruncateInboundFKRule(ruleIDTableTruncateInboundFK, rule.LevelBlocker, cfg)
+		}},
+		{ruleID: ruleIDTableRenameSourceExistsRequire, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newRenameSourceExistsRequireRule(ruleIDTableRenameSourceExistsRequire, rule.LevelBlocker, cfg)
+		}},
+		{ruleID: ruleIDTableRenameDestExistsForbid, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newRenameDestExistsForbidRule(ruleIDTableRenameDestExistsForbid, rule.LevelBlocker, cfg)
+		}},
+		{ruleID: ruleIDTableLikeSourceExistsRequire, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newLikeSourceExistsRequireRule(ruleIDTableLikeSourceExistsRequire, rule.LevelBlocker, cfg)
+		}},
+		{ruleID: ruleIDTableCreateAsSourceExistsRequire, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newCreateAsSourceExistsRequireRule(ruleIDTableCreateAsSourceExistsRequire, rule.LevelBlocker, cfg)
+		}},
+		{ruleID: ruleIDTiDBLocalTemporaryAlter, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newTiDBLocalTemporaryRule(ruleIDTiDBLocalTemporaryAlter, "alter", "alter table", rule.LevelBlocker, cfg)
+		}},
+		{ruleID: ruleIDTiDBLocalTemporaryRename, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newTiDBLocalTemporaryRule(ruleIDTiDBLocalTemporaryRename, "rename", "rename table", rule.LevelBlocker, cfg)
+		}},
+		{ruleID: ruleIDTiDBLocalTemporaryLike, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newTiDBLocalTemporaryRule(ruleIDTiDBLocalTemporaryLike, "like", "create table like", rule.LevelBlocker, cfg)
+		}},
 		{ruleID: ruleIDTableTruncateAdaptiveHashWarn, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
 			return newAdaptiveHashLifecycleRule(ruleIDTableTruncateAdaptiveHashWarn, spec.DDLOperationTruncateTable, "truncate table", rule.LevelWarning, cfg)
 		}},

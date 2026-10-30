@@ -1,0 +1,3025 @@
+{
+  "task_id": "T16",
+  "issue": 95,
+  "policy_profile": "all-rules-disabled",
+  "description": "Table lifecycle, temporary-table identity, conditional clauses, LIKE/CTAS boundaries, and TiDB global-temporary/flashback scope (issue #95). Anchors: MySQL 5.7.44 / 8.0.46 / 8.4.10, TiDB v8.5.0.",
+  "anchors": {
+    "mysql57": {
+      "service": "mysql57",
+      "container": "deltascope-ddl-golden-mysql57",
+      "image": "mysql:5.7.44",
+      "product": "mysql",
+      "version_contains": "5.7.44",
+      "database": "golden",
+      "exec_client": [
+        "mysql",
+        "-uroot",
+        "--default-character-set=utf8mb4"
+      ],
+      "needs_database_create": false,
+      "exec_password_env": "T16_MYSQL_PASSWORD"
+    },
+    "mysql80": {
+      "service": "mysql80",
+      "container": "deltascope-ddl-golden-mysql80",
+      "image": "mysql:8.0.46",
+      "product": "mysql",
+      "version_contains": "8.0.46",
+      "database": "golden",
+      "exec_client": [
+        "mysql",
+        "-uroot",
+        "--default-character-set=utf8mb4"
+      ],
+      "needs_database_create": false,
+      "exec_password_env": "T16_MYSQL_PASSWORD"
+    },
+    "mysql84": {
+      "service": "mysql84",
+      "container": "deltascope-ddl-golden-mysql84",
+      "image": "mysql:8.4.10",
+      "product": "mysql",
+      "version_contains": "8.4.10",
+      "database": "golden",
+      "exec_client": [
+        "mysql",
+        "-uroot",
+        "--default-character-set=utf8mb4"
+      ],
+      "needs_database_create": false,
+      "exec_password_env": "T16_MYSQL_PASSWORD"
+    },
+    "tidb85": {
+      "service": "tidb85",
+      "container": "deltascope-ddl-golden-tidb85",
+      "client_container": "deltascope-ddl-golden-tidb85-client",
+      "client_service": "tidb85-client",
+      "image": "pingcap/tidb:v8.5.0",
+      "product": "tidb",
+      "version_contains": "v8.5.0",
+      "database": "golden",
+      "exec_client": [
+        "mysql",
+        "--protocol=tcp",
+        "-h",
+        "tidb85",
+        "-P",
+        "4000",
+        "-uroot",
+        "--default-character-set=utf8mb4"
+      ],
+      "needs_database_create": true
+    }
+  },
+  "ddl_steps": [
+    {
+      "name": "drop-stale-fixtures",
+      "sql": "DROP TABLE IF EXISTS t16, t16a, t16b",
+      "expect_rc": 0,
+      "verify": []
+    },
+    {
+      "name": "create-seed-fixture",
+      "sql": "CREATE TABLE t16 (id INT PRIMARY KEY, s VARCHAR(20)) ENGINE=InnoDB",
+      "expect_rc": 0,
+      "verify": [
+        {
+          "assert": "seed fixture lands",
+          "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t16'",
+          "expect": "1"
+        }
+      ]
+    },
+    {
+      "name": "cleanup-fixtures",
+      "sql": "DROP TABLE IF EXISTS t16, t16a, t16b",
+      "expect_rc": 0,
+      "verify": []
+    }
+  ],
+  "syntax_negative": {
+    "sql": "TRUNCATE TABLE IF EXISTS t16sx",
+    "expect": {
+      "rc_nonzero": true,
+      "error_class": "1064",
+      "forbidden_markers": [
+        "ERROR 1045",
+        "ERROR 1044",
+        "ERROR 1049",
+        "ERROR 1142",
+        "ERROR 1143",
+        "ERROR 2002",
+        "ERROR 2003",
+        "ERROR 2005",
+        "Access denied",
+        "Unknown database",
+        "Can't connect",
+        "Connection refused",
+        "already exists"
+      ]
+    }
+  },
+  "cli_audit": {
+    "dialects": [
+      "mysql",
+      "tidb"
+    ],
+    "sql": "CREATE TABLE t16_audit (id INT);",
+    "expect": {
+      "exit": 0,
+      "verdict": "pass",
+      "statements": 1,
+      "findings": 0,
+      "diagnostics": 0,
+      "unsupported": 0,
+      "coverage": "complete",
+      "statement_coverage": [
+        "complete"
+      ],
+      "evidence_gaps": 0
+    }
+  },
+  "policy": {
+    "profiles": {
+      "t16-lifecycle": {
+        "enable": {
+          "ddl.table.exists.create.forbid": {
+            "level": "blocker"
+          },
+          "ddl.table.exists.alter.require": {
+            "level": "blocker"
+          },
+          "ddl.table.drop.exists.require": {
+            "level": "blocker"
+          },
+          "ddl.table.truncate.exists.require": {
+            "level": "blocker"
+          },
+          "ddl.table.like.source.exists.require": {
+            "level": "blocker"
+          },
+          "ddl.table.create_as.source.exists.require": {
+            "level": "blocker"
+          },
+          "ddl.table.rename.source.exists.require": {
+            "level": "blocker"
+          },
+          "ddl.table.rename.dest.exists.forbid": {
+            "level": "blocker"
+          },
+          "ddl.table.truncate.inbound_fk": {
+            "level": "blocker"
+          },
+          "ddl.tidb.local_temporary.alter": {
+            "level": "blocker"
+          },
+          "ddl.tidb.local_temporary.rename": {
+            "level": "blocker"
+          },
+          "ddl.tidb.local_temporary.like": {
+            "level": "blocker"
+          }
+        }
+      },
+      "t16-denylist": {
+        "enable": {
+          "ddl.table.exists.create.forbid": {
+            "level": "blocker"
+          },
+          "ddl.table.exists.alter.require": {
+            "level": "blocker"
+          },
+          "ddl.table.drop.exists.require": {
+            "level": "blocker"
+          },
+          "ddl.table.truncate.exists.require": {
+            "level": "blocker"
+          },
+          "ddl.table.like.source.exists.require": {
+            "level": "blocker"
+          },
+          "ddl.table.create_as.source.exists.require": {
+            "level": "blocker"
+          },
+          "ddl.table.rename.source.exists.require": {
+            "level": "blocker"
+          },
+          "ddl.table.rename.dest.exists.forbid": {
+            "level": "blocker"
+          },
+          "ddl.table.truncate.inbound_fk": {
+            "level": "blocker"
+          },
+          "ddl.tidb.local_temporary.alter": {
+            "level": "blocker"
+          },
+          "ddl.tidb.local_temporary.rename": {
+            "level": "blocker"
+          },
+          "ddl.tidb.local_temporary.like": {
+            "level": "blocker"
+          },
+          "ddl.table.denylist.forbid": {
+            "level": "blocker",
+            "params": {
+              "tables": [
+                "t16_prot"
+              ]
+            }
+          }
+        }
+      }
+    }
+  },
+  "cli_cases": [
+    {
+      "id": "t16-cli-seed-offline",
+      "dialect": "mysql",
+      "policy": "t16-lifecycle",
+      "sql": "CREATE TABLE IF NOT EXISTS t16_x (id INT); DROP TABLE IF EXISTS t16_x; CREATE TABLE t16_x (id INT);",
+      "expect": {
+        "exit": 0,
+        "verdict": "review",
+        "statements": 3,
+        "findings": 0,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "unverified",
+        "statement_coverage": [
+          "unverified",
+          "complete",
+          "complete"
+        ],
+        "evidence_gaps": 1,
+        "statement_indices": [
+          0,
+          1,
+          2
+        ],
+        "evidence_gap_entries": [
+          {
+            "index": 0,
+            "rule_id": "ddl.table.exists.create.forbid",
+            "reason_code": "unknown_table_state",
+            "required_facts": [
+              "target_table.existence"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "t16-cli-drop-temp-chain",
+      "dialect": "mysql",
+      "policy": "t16-lifecycle",
+      "sql": "CREATE TEMPORARY TABLE tp16_x (id INT); DROP TEMPORARY TABLE tp16_x; CREATE TEMPORARY TABLE tp16_x (id INT);",
+      "expect": {
+        "exit": 0,
+        "verdict": "pass",
+        "statements": 3,
+        "findings": 0,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "complete",
+        "statement_coverage": [
+          "complete",
+          "complete",
+          "complete"
+        ],
+        "evidence_gaps": 0
+      }
+    },
+    {
+      "id": "t16-cli-drop-multi-refused",
+      "dialect": "mysql",
+      "policy": "t16-lifecycle",
+      "sql": "CREATE TABLE t16_a (id INT); CREATE TABLE t16_b (id INT); DROP TABLE t16_a, t16_missing, t16_b;",
+      "expect": {
+        "exit": 0,
+        "verdict": "review",
+        "statements": 3,
+        "findings": 0,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "evidence_gaps": 3,
+        "evidence_gap_entries": [
+          {
+            "index": 0,
+            "rule_id": "ddl.table.exists.create.forbid",
+            "reason_code": "unknown_table_state",
+            "required_facts": [
+              "target_table.existence"
+            ]
+          },
+          {
+            "index": 1,
+            "rule_id": "ddl.table.exists.create.forbid",
+            "reason_code": "unknown_table_state",
+            "required_facts": [
+              "target_table.existence"
+            ]
+          },
+          {
+            "index": 2,
+            "rule_id": "ddl.table.drop.exists.require",
+            "reason_code": "unknown_table_state",
+            "required_facts": [
+              "target_table.existence"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "t16-cli-rename-dest-unknown",
+      "dialect": "mysql",
+      "policy": "t16-lifecycle",
+      "sql": "CREATE TABLE t16_r (id INT); RENAME TABLE t16_r TO t16_rx;",
+      "expect": {
+        "exit": 0,
+        "verdict": "review",
+        "statements": 2,
+        "findings": 0,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "evidence_gaps": 2,
+        "evidence_gap_entries": [
+          {
+            "index": 0,
+            "rule_id": "ddl.table.exists.create.forbid",
+            "reason_code": "unknown_table_state",
+            "required_facts": [
+              "target_table.existence"
+            ]
+          },
+          {
+            "index": 1,
+            "rule_id": "ddl.table.rename.dest.exists.forbid",
+            "reason_code": "unknown_table_state",
+            "required_facts": [
+              "target_table.existence"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "t16-cli-like-source-unknown",
+      "dialect": "mysql",
+      "policy": "t16-lifecycle",
+      "sql": "CREATE TABLE t16_l LIKE t16_src;",
+      "expect": {
+        "exit": 0,
+        "verdict": "review",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "evidence_gaps": 2,
+        "evidence_gap_entries": [
+          {
+            "index": 0,
+            "rule_id": "ddl.table.exists.create.forbid",
+            "reason_code": "unknown_table_state",
+            "required_facts": [
+              "target_table.existence"
+            ]
+          },
+          {
+            "index": 0,
+            "rule_id": "ddl.table.like.source.exists.require",
+            "reason_code": "unknown_table_state",
+            "required_facts": [
+              "source_table.existence"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "t16-cli-ctas-tidb-vendor",
+      "dialect": "tidb",
+      "policy": "t16-lifecycle",
+      "sql": "CREATE TABLE t16_c AS SELECT * FROM t16_src;",
+      "expect": {
+        "exit": 1,
+        "verdict": "review",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 1,
+        "unsupported": 1,
+        "unsupported_entries": [
+          {
+            "index": 0,
+            "feature": "create_table_select",
+            "reason": "parsed by the shared parser but outside the supported statement surface for this dialect",
+            "metadata": {
+              "boundary": "vendor"
+            }
+          }
+        ],
+        "coverage": "incomplete",
+        "statement_coverage": [
+          "incomplete"
+        ],
+        "evidence_gaps": 0
+      }
+    },
+    {
+      "id": "t16-cli-global-temp-mysql-vendor",
+      "dialect": "mysql",
+      "policy": "t16-lifecycle",
+      "sql": "CREATE GLOBAL TEMPORARY TABLE gt16_x (id INT) ON COMMIT DELETE ROWS;",
+      "expect": {
+        "exit": 1,
+        "verdict": "review",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 1,
+        "unsupported": 1,
+        "unsupported_entries": [
+          {
+            "index": 0,
+            "feature": "create_table.temporary.global",
+            "reason": "parsed by the shared parser but outside the supported statement surface for this dialect",
+            "metadata": {
+              "aspect": "temporary",
+              "temporary_scope": "global"
+            }
+          }
+        ],
+        "evidence_gaps": 1,
+        "coverage": "incomplete",
+        "statement_coverage": [
+          "incomplete"
+        ],
+        "evidence_gap_entries": [
+          {
+            "index": 0,
+            "rule_id": "ddl.table.exists.create.forbid",
+            "reason_code": "unknown_table_state",
+            "required_facts": [
+              "target_table.existence"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "t16-cli-rules-off",
+      "dialect": "mysql",
+      "policy": "all-rules-disabled",
+      "sql": "CREATE TABLE t16_a (id INT); DROP TABLE t16_a, t16_missing;",
+      "expect": {
+        "exit": 0,
+        "verdict": "pass",
+        "statements": 2,
+        "findings": 0,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "complete",
+        "statement_coverage": [
+          "complete",
+          "complete"
+        ],
+        "evidence_gaps": 0
+      }
+    }
+  ],
+  "metadata_cases": [
+    {
+      "id": "t16-mysql80-seed-golden",
+      "anchor": "mysql80",
+      "dialect": "mysql",
+      "sql": "CREATE TABLE IF NOT EXISTS t16_x (id INT); DROP TABLE IF EXISTS t16_x; CREATE TABLE t16_x (id INT);",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 23380,
+        "user": "root",
+        "schema": "golden",
+        "password_env": "DS_T16_GOLDEN_PW",
+        "password": "root"
+      },
+      "policy": "t16-lifecycle",
+      "expect": {
+        "exit": 0,
+        "verdict": "pass",
+        "statements": 3,
+        "findings": 0,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "complete",
+        "statement_coverage": [
+          "complete",
+          "complete",
+          "complete"
+        ],
+        "evidence_gaps": 0,
+        "statement_indices": [
+          0,
+          1,
+          2
+        ],
+        "statement_sql": [
+          "CREATE TABLE IF NOT EXISTS t16_x (id INT);",
+          "DROP TABLE IF EXISTS t16_x;",
+          "CREATE TABLE t16_x (id INT);"
+        ],
+        "version": {
+          "product": "mysql",
+          "version": "8.0.46"
+        }
+      },
+      "setup": [
+        {
+          "name": "drop-stale",
+          "sql": "DROP TABLE IF EXISTS t16_x",
+          "expect_rc": 0
+        }
+      ],
+      "execute": [
+        {
+          "name": "apply-batch",
+          "sql": "CREATE TABLE IF NOT EXISTS t16_x (id INT); DROP TABLE IF EXISTS t16_x; CREATE TABLE t16_x (id INT);",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "t16_x recreated",
+              "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t16_x'",
+              "expect": "1"
+            },
+            {
+              "assert": "id column present",
+              "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t16_x' AND COLUMN_NAME='id'",
+              "expect": "1"
+            }
+          ]
+        }
+      ],
+      "teardown": [
+        {
+          "name": "drop-seed",
+          "sql": "DROP TABLE IF EXISTS t16_x",
+          "expect_rc": 0
+        }
+      ]
+    },
+    {
+      "id": "t16-mysql80-drop-multi-atomic",
+      "anchor": "mysql80",
+      "dialect": "mysql",
+      "sql": "DROP TABLE t16_a, t16_missing, t16_b;",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 23380,
+        "user": "root",
+        "schema": "golden",
+        "password_env": "DS_T16_GOLDEN_PW",
+        "password": "root"
+      },
+      "policy": "t16-lifecycle",
+      "expect": {
+        "exit": 1,
+        "verdict": "reject",
+        "statements": 1,
+        "findings": 1,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "complete",
+        "statement_coverage": [
+          "complete"
+        ],
+        "evidence_gaps": 0,
+        "finding_entries": [
+          {
+            "index": 0,
+            "rule_id": "ddl.table.drop.exists.require",
+            "level": "blocker"
+          }
+        ],
+        "finding_metadata": [
+          {
+            "index": 0,
+            "rule_id": "ddl.table.drop.exists.require",
+            "metadata": {
+              "table": "t16_missing",
+              "exists": false
+            }
+          }
+        ],
+        "version": {
+          "product": "mysql",
+          "version": "8.0.46"
+        }
+      },
+      "setup": [
+        {
+          "name": "create-targets",
+          "sql": "CREATE TABLE t16_a (id INT); CREATE TABLE t16_b (id INT)",
+          "expect_rc": 0
+        }
+      ],
+      "execute": [
+        {
+          "name": "apply-atomic-drop",
+          "sql": "DROP TABLE t16_a, t16_missing, t16_b",
+          "expect_rc": 1,
+          "stderr_contains": [
+            "1051"
+          ],
+          "verify": [
+            {
+              "assert": "atomic refusal keeps t16_a",
+              "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t16_a'",
+              "expect": "1"
+            },
+            {
+              "assert": "atomic refusal keeps t16_b",
+              "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t16_b'",
+              "expect": "1"
+            }
+          ]
+        }
+      ],
+      "teardown": [
+        {
+          "name": "drop-targets",
+          "sql": "DROP TABLE IF EXISTS t16_a, t16_b",
+          "expect_rc": 0
+        }
+      ]
+    },
+    {
+      "id": "t16-mysql80-drop-ifexists-mixed",
+      "anchor": "mysql80",
+      "dialect": "mysql",
+      "sql": "DROP TABLE IF EXISTS t16_a, t16_missing, t16_b;",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 23380,
+        "user": "root",
+        "schema": "golden",
+        "password_env": "DS_T16_GOLDEN_PW",
+        "password": "root"
+      },
+      "policy": "t16-lifecycle",
+      "expect": {
+        "exit": 0,
+        "verdict": "pass",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "complete",
+        "statement_coverage": [
+          "complete"
+        ],
+        "evidence_gaps": 0,
+        "version": {
+          "product": "mysql",
+          "version": "8.0.46"
+        }
+      },
+      "setup": [
+        {
+          "name": "create-targets",
+          "sql": "CREATE TABLE t16_a (id INT); CREATE TABLE t16_b (id INT)",
+          "expect_rc": 0
+        }
+      ],
+      "execute": [
+        {
+          "name": "apply-conditional-drop",
+          "sql": "DROP TABLE IF EXISTS t16_a, t16_missing, t16_b",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "t16_a dropped",
+              "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t16_a'",
+              "expect": "0"
+            },
+            {
+              "assert": "t16_b dropped",
+              "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t16_b'",
+              "expect": "0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "t16-mysql80-drop-duplicate",
+      "anchor": "mysql80",
+      "dialect": "mysql",
+      "sql": "DROP TABLE t16_a, t16_a; TRUNCATE TABLE t16_a;",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 23380,
+        "user": "root",
+        "schema": "golden",
+        "password_env": "DS_T16_GOLDEN_PW",
+        "password": "root"
+      },
+      "policy": "t16-lifecycle",
+      "expect": {
+        "exit": 0,
+        "verdict": "pass",
+        "statements": 2,
+        "findings": 0,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "complete",
+        "statement_coverage": [
+          "complete",
+          "complete"
+        ],
+        "evidence_gaps": 0,
+        "version": {
+          "product": "mysql",
+          "version": "8.0.46"
+        }
+      },
+      "setup": [
+        {
+          "name": "create-target",
+          "sql": "CREATE TABLE t16_a (id INT)",
+          "expect_rc": 0
+        }
+      ],
+      "execute": [
+        {
+          "name": "apply-duplicate-drop",
+          "sql": "DROP TABLE t16_a, t16_a",
+          "expect_rc": 1,
+          "stderr_contains": [
+            "1066"
+          ]
+        },
+        {
+          "name": "apply-truncate",
+          "sql": "TRUNCATE TABLE t16_a",
+          "expect_rc": 0
+        }
+      ],
+      "post_verify": [
+        {
+          "assert": "refused drop keeps t16_a",
+          "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t16_a'",
+          "expect": "1"
+        }
+      ],
+      "teardown": [
+        {
+          "name": "drop-target",
+          "sql": "DROP TABLE IF EXISTS t16_a",
+          "expect_rc": 0
+        }
+      ]
+    },
+    {
+      "id": "t16-mysql80-drop-temp-keyword-miss",
+      "anchor": "mysql80",
+      "dialect": "mysql",
+      "sql": "DROP TEMPORARY TABLE t16_a;",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 23380,
+        "user": "root",
+        "schema": "golden",
+        "password_env": "DS_T16_GOLDEN_PW",
+        "password": "root"
+      },
+      "policy": "t16-lifecycle",
+      "expect": {
+        "exit": 1,
+        "verdict": "reject",
+        "statements": 1,
+        "findings": 1,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "complete",
+        "statement_coverage": [
+          "complete"
+        ],
+        "evidence_gaps": 0,
+        "finding_entries": [
+          {
+            "index": 0,
+            "rule_id": "ddl.table.drop.exists.require",
+            "level": "blocker"
+          }
+        ],
+        "version": {
+          "product": "mysql",
+          "version": "8.0.46"
+        }
+      },
+      "setup": [
+        {
+          "name": "create-target",
+          "sql": "CREATE TABLE t16_a (id INT)",
+          "expect_rc": 0
+        }
+      ],
+      "execute": [
+        {
+          "name": "apply-temp-scoped-drop",
+          "sql": "DROP TEMPORARY TABLE t16_a",
+          "expect_rc": 1,
+          "stderr_contains": [
+            "1051"
+          ],
+          "verify": [
+            {
+              "assert": "persistent survives temp-scoped drop",
+              "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t16_a'",
+              "expect": "1"
+            }
+          ]
+        }
+      ],
+      "teardown": [
+        {
+          "name": "drop-target",
+          "sql": "DROP TABLE IF EXISTS t16_a",
+          "expect_rc": 0
+        }
+      ]
+    },
+    {
+      "id": "t16-mysql80-temp-shadow-drop",
+      "anchor": "mysql80",
+      "dialect": "mysql",
+      "sql": "CREATE TEMPORARY TABLE t16_s (id INT); DROP TABLE t16_s;",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 23380,
+        "user": "root",
+        "schema": "golden",
+        "password_env": "DS_T16_GOLDEN_PW",
+        "password": "root"
+      },
+      "policy": "t16-lifecycle",
+      "expect": {
+        "exit": 0,
+        "verdict": "pass",
+        "statements": 2,
+        "findings": 0,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "complete",
+        "statement_coverage": [
+          "complete",
+          "complete"
+        ],
+        "evidence_gaps": 0,
+        "version": {
+          "product": "mysql",
+          "version": "8.0.46"
+        }
+      },
+      "setup": [
+        {
+          "name": "create-persistent",
+          "sql": "CREATE TABLE t16_s (id INT, marker INT)",
+          "expect_rc": 0
+        }
+      ],
+      "execute": [
+        {
+          "name": "apply-shadow-drop",
+          "sql": "CREATE TEMPORARY TABLE t16_s (id INT); DROP TABLE t16_s",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "persistent shadow survives temp drop",
+              "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t16_s'",
+              "expect": "1"
+            },
+            {
+              "assert": "persistent shape untouched",
+              "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t16_s' AND COLUMN_NAME='marker'",
+              "expect": "1"
+            }
+          ]
+        }
+      ],
+      "teardown": [
+        {
+          "name": "drop-persistent",
+          "sql": "DROP TABLE IF EXISTS t16_s",
+          "expect_rc": 0
+        }
+      ]
+    },
+    {
+      "id": "t16-mysql80-temp-create-dup",
+      "anchor": "mysql80",
+      "dialect": "mysql",
+      "sql": "CREATE TEMPORARY TABLE tp16 (id INT); CREATE TEMPORARY TABLE tp16 (id INT);",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 23380,
+        "user": "root",
+        "schema": "golden",
+        "password_env": "DS_T16_GOLDEN_PW",
+        "password": "root"
+      },
+      "policy": "t16-lifecycle",
+      "expect": {
+        "exit": 1,
+        "verdict": "reject",
+        "statements": 2,
+        "findings": 1,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "evidence_gaps": 0,
+        "finding_entries": [
+          {
+            "index": 1,
+            "rule_id": "ddl.table.exists.create.forbid",
+            "level": "blocker"
+          }
+        ],
+        "version": {
+          "product": "mysql",
+          "version": "8.0.46"
+        }
+      },
+      "execute": [
+        {
+          "name": "apply-dup-temp",
+          "sql": "CREATE TEMPORARY TABLE tp16 (id INT); CREATE TEMPORARY TABLE tp16 (id INT)",
+          "expect_rc": 1,
+          "stderr_contains": [
+            "1050"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "t16-mysql80-alter-on-temp",
+      "anchor": "mysql80",
+      "dialect": "mysql",
+      "sql": "CREATE TEMPORARY TABLE tp16 (id INT); ALTER TABLE tp16 ADD COLUMN c INT;",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 23380,
+        "user": "root",
+        "schema": "golden",
+        "password_env": "DS_T16_GOLDEN_PW",
+        "password": "root"
+      },
+      "policy": "t16-lifecycle",
+      "expect": {
+        "exit": 0,
+        "verdict": "pass",
+        "statements": 2,
+        "findings": 0,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "evidence_gaps": 0,
+        "version": {
+          "product": "mysql",
+          "version": "8.0.46"
+        }
+      },
+      "setup": [
+        {
+          "name": "create-persistent",
+          "sql": "CREATE TABLE tp16 (id INT)",
+          "expect_rc": 0
+        }
+      ],
+      "execute": [
+        {
+          "name": "apply-temp-alter",
+          "sql": "CREATE TEMPORARY TABLE tp16 (id INT); ALTER TABLE tp16 ADD COLUMN c INT",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "alter bound temp: persistent unchanged",
+              "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='tp16' AND COLUMN_NAME='c'",
+              "expect": "0"
+            }
+          ]
+        }
+      ],
+      "teardown": [
+        {
+          "name": "drop-persistent",
+          "sql": "DROP TABLE IF EXISTS tp16",
+          "expect_rc": 0
+        }
+      ]
+    },
+    {
+      "id": "t16-mysql80-rename-temp-invisible",
+      "anchor": "mysql80",
+      "dialect": "mysql",
+      "sql": "CREATE TEMPORARY TABLE tp16 (id INT); RENAME TABLE tp16 TO tp16x;",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 23380,
+        "user": "root",
+        "schema": "golden",
+        "password_env": "DS_T16_GOLDEN_PW",
+        "password": "root"
+      },
+      "policy": "t16-lifecycle",
+      "expect": {
+        "exit": 1,
+        "verdict": "reject",
+        "statements": 2,
+        "findings": 1,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "evidence_gaps": 0,
+        "finding_entries": [
+          {
+            "index": 1,
+            "rule_id": "ddl.table.rename.source.exists.require",
+            "level": "blocker"
+          }
+        ],
+        "version": {
+          "product": "mysql",
+          "version": "8.0.46"
+        }
+      },
+      "execute": [
+        {
+          "name": "create-temp",
+          "sql": "CREATE TEMPORARY TABLE tp16 (id INT); SELECT 1",
+          "expect_rc": 0
+        },
+        {
+          "name": "apply-rename",
+          "sql": "RENAME TABLE tp16 TO tp16x",
+          "expect_rc": 1,
+          "verify": [
+            {
+              "assert": "refused rename lands nothing",
+              "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='tp16x'",
+              "expect": "0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "t16-mysql80-alter-rename-temp",
+      "anchor": "mysql80",
+      "dialect": "mysql",
+      "sql": "CREATE TEMPORARY TABLE tp16 (id INT); ALTER TABLE tp16 RENAME TO tp16x; DROP TEMPORARY TABLE tp16x;",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 23380,
+        "user": "root",
+        "schema": "golden",
+        "password_env": "DS_T16_GOLDEN_PW",
+        "password": "root"
+      },
+      "policy": "t16-lifecycle",
+      "expect": {
+        "exit": 0,
+        "verdict": "pass",
+        "statements": 3,
+        "findings": 0,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "evidence_gaps": 0,
+        "version": {
+          "product": "mysql",
+          "version": "8.0.46"
+        }
+      },
+      "execute": [
+        {
+          "name": "apply-alter-rename",
+          "sql": "CREATE TEMPORARY TABLE tp16 (id INT); ALTER TABLE tp16 RENAME TO tp16x; DROP TEMPORARY TABLE tp16x",
+          "expect_rc": 0
+        }
+      ]
+    },
+    {
+      "id": "t16-mysql80-rename-multi-atomic",
+      "anchor": "mysql80",
+      "dialect": "mysql",
+      "sql": "RENAME TABLE t16_r1 TO t16_r1x, t16_missing TO t16_z;",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 23380,
+        "user": "root",
+        "schema": "golden",
+        "password_env": "DS_T16_GOLDEN_PW",
+        "password": "root"
+      },
+      "policy": "t16-lifecycle",
+      "expect": {
+        "exit": 1,
+        "verdict": "reject",
+        "statements": 1,
+        "findings": 1,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "complete",
+        "statement_coverage": [
+          "complete"
+        ],
+        "evidence_gaps": 0,
+        "finding_entries": [
+          {
+            "index": 0,
+            "rule_id": "ddl.table.rename.source.exists.require",
+            "level": "blocker"
+          }
+        ],
+        "version": {
+          "product": "mysql",
+          "version": "8.0.46"
+        }
+      },
+      "setup": [
+        {
+          "name": "create-source",
+          "sql": "CREATE TABLE t16_r1 (id INT); CREATE TABLE t16_r2 (id INT)",
+          "expect_rc": 0
+        }
+      ],
+      "execute": [
+        {
+          "name": "apply-atomic-rename",
+          "sql": "RENAME TABLE t16_r1 TO t16_r1x, t16_missing TO t16_z",
+          "expect_rc": 1,
+          "stderr_contains": [
+            "1146"
+          ],
+          "verify": [
+            {
+              "assert": "atomic refusal keeps t16_r1",
+              "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t16_r1'",
+              "expect": "1"
+            },
+            {
+              "assert": "no partial rename",
+              "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t16_r1x'",
+              "expect": "0"
+            }
+          ]
+        }
+      ],
+      "teardown": [
+        {
+          "name": "drop-targets",
+          "sql": "DROP TABLE IF EXISTS t16_r1, t16_r2, t16_r1x, t16_z",
+          "expect_rc": 0
+        }
+      ]
+    },
+    {
+      "id": "t16-mysql80-rename-dest-exists",
+      "anchor": "mysql80",
+      "dialect": "mysql",
+      "sql": "RENAME TABLE t16_r1 TO t16_r2;",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 23380,
+        "user": "root",
+        "schema": "golden",
+        "password_env": "DS_T16_GOLDEN_PW",
+        "password": "root"
+      },
+      "policy": "t16-lifecycle",
+      "expect": {
+        "exit": 1,
+        "verdict": "reject",
+        "statements": 1,
+        "findings": 1,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "complete",
+        "statement_coverage": [
+          "complete"
+        ],
+        "evidence_gaps": 0,
+        "finding_entries": [
+          {
+            "index": 0,
+            "rule_id": "ddl.table.rename.dest.exists.forbid",
+            "level": "blocker"
+          }
+        ],
+        "version": {
+          "product": "mysql",
+          "version": "8.0.46"
+        }
+      },
+      "setup": [
+        {
+          "name": "create-pair",
+          "sql": "CREATE TABLE t16_r1 (id INT); CREATE TABLE t16_r2 (id INT)",
+          "expect_rc": 0
+        }
+      ],
+      "execute": [
+        {
+          "name": "apply-colliding-rename",
+          "sql": "RENAME TABLE t16_r1 TO t16_r2",
+          "expect_rc": 1,
+          "stderr_contains": [
+            "1050"
+          ],
+          "verify": [
+            {
+              "assert": "source kept",
+              "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t16_r1'",
+              "expect": "1"
+            },
+            {
+              "assert": "dest kept",
+              "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t16_r2'",
+              "expect": "1"
+            }
+          ]
+        }
+      ],
+      "teardown": [
+        {
+          "name": "drop-pair",
+          "sql": "DROP TABLE IF EXISTS t16_r1, t16_r2",
+          "expect_rc": 0
+        }
+      ]
+    },
+    {
+      "id": "t16-mysql80-rename-swap",
+      "anchor": "mysql80",
+      "dialect": "mysql",
+      "sql": "RENAME TABLE t16_r1 TO t16_tmp, t16_r2 TO t16_r1, t16_tmp TO t16_r2;",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 23380,
+        "user": "root",
+        "schema": "golden",
+        "password_env": "DS_T16_GOLDEN_PW",
+        "password": "root"
+      },
+      "policy": "t16-lifecycle",
+      "expect": {
+        "exit": 0,
+        "verdict": "pass",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "complete",
+        "statement_coverage": [
+          "complete"
+        ],
+        "evidence_gaps": 0,
+        "version": {
+          "product": "mysql",
+          "version": "8.0.46"
+        }
+      },
+      "setup": [
+        {
+          "name": "create-pair",
+          "sql": "CREATE TABLE t16_r1 (id INT, a INT); CREATE TABLE t16_r2 (id INT, b INT)",
+          "expect_rc": 0
+        }
+      ],
+      "execute": [
+        {
+          "name": "apply-swap",
+          "sql": "RENAME TABLE t16_r1 TO t16_tmp, t16_r2 TO t16_r1, t16_tmp TO t16_r2",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "r1 carries r2 shape",
+              "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t16_r1' AND COLUMN_NAME='b'",
+              "expect": "1"
+            },
+            {
+              "assert": "r2 carries original r1 shape",
+              "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t16_r2' AND COLUMN_NAME='a'",
+              "expect": "1"
+            },
+            {
+              "assert": "scratch pivot gone",
+              "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t16_tmp'",
+              "expect": "0"
+            }
+          ]
+        }
+      ],
+      "teardown": [
+        {
+          "name": "drop-pair",
+          "sql": "DROP TABLE IF EXISTS t16_r1, t16_r2",
+          "expect_rc": 0
+        }
+      ]
+    },
+    {
+      "id": "t16-mysql80-rename-cross-schema",
+      "anchor": "mysql80",
+      "dialect": "mysql",
+      "sql": "ALTER TABLE t16_r1 RENAME TO t16_secondary.t16_rx;",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 23380,
+        "user": "root",
+        "schema": "golden",
+        "password_env": "DS_T16_GOLDEN_PW",
+        "password": "root"
+      },
+      "policy": "t16-lifecycle",
+      "expect": {
+        "exit": 0,
+        "verdict": "pass",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "complete",
+        "statement_coverage": [
+          "complete"
+        ],
+        "evidence_gaps": 0,
+        "version": {
+          "product": "mysql",
+          "version": "8.0.46"
+        }
+      },
+      "setup": [
+        {
+          "name": "create-secondary-schema",
+          "sql": "CREATE DATABASE IF NOT EXISTS t16_secondary; CREATE TABLE golden.t16_r1 (id INT)",
+          "expect_rc": 0
+        }
+      ],
+      "execute": [
+        {
+          "name": "apply-cross-schema-rename",
+          "sql": "ALTER TABLE golden.t16_r1 RENAME TO t16_secondary.t16_rx",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "table landed in secondary schema",
+              "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='t16_secondary' AND TABLE_NAME='t16_rx'",
+              "expect": "1"
+            },
+            {
+              "assert": "origin identity vacated",
+              "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t16_r1'",
+              "expect": "0"
+            }
+          ]
+        }
+      ],
+      "teardown": [
+        {
+          "name": "drop-secondary",
+          "sql": "DROP TABLE IF EXISTS t16_secondary.t16_rx; DROP DATABASE IF EXISTS t16_secondary",
+          "expect_rc": 0
+        }
+      ]
+    },
+    {
+      "id": "t16-mysql80-like-members",
+      "anchor": "mysql80",
+      "dialect": "mysql",
+      "sql": "CREATE TABLE t16_l LIKE t16_src;",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 23380,
+        "user": "root",
+        "schema": "golden",
+        "password_env": "DS_T16_GOLDEN_PW",
+        "password": "root"
+      },
+      "policy": "t16-lifecycle",
+      "expect": {
+        "exit": 0,
+        "verdict": "pass",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "complete",
+        "statement_coverage": [
+          "complete"
+        ],
+        "evidence_gaps": 0,
+        "version": {
+          "product": "mysql",
+          "version": "8.0.46"
+        }
+      },
+      "setup": [
+        {
+          "name": "create-source",
+          "sql": "CREATE TABLE t16_ref (id INT PRIMARY KEY); CREATE TABLE t16_src (id INT AUTO_INCREMENT PRIMARY KEY, n VARCHAR(20) NOT NULL, u INT, k INT, UNIQUE KEY t16_u (u), KEY t16_k (k), CONSTRAINT t16_f FOREIGN KEY (k) REFERENCES t16_ref (id), CONSTRAINT t16_ck CHECK (n <> ''), KEY t16_g ((u+k))) ENGINE=InnoDB AUTO_INCREMENT=100 COMMENT='t16 source'",
+          "expect_rc": 0
+        }
+      ],
+      "execute": [
+        {
+          "name": "apply-like",
+          "sql": "CREATE TABLE t16_l LIKE t16_src",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "primary key copied",
+              "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t16_l' AND INDEX_NAME='PRIMARY'",
+              "expect": "1"
+            },
+            {
+              "assert": "unique index copied",
+              "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t16_l' AND INDEX_NAME='t16_u'",
+              "expect": "1"
+            },
+            {
+              "assert": "secondary index copied",
+              "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t16_l' AND INDEX_NAME='t16_k'",
+              "expect": "1"
+            },
+            {
+              "assert": "foreign key not copied",
+              "sql": "SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t16_l' AND CONSTRAINT_TYPE='FOREIGN KEY'",
+              "expect": "0"
+            },
+            {
+              "assert": "auto_increment counter reset",
+              "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t16_l' AND (AUTO_INCREMENT IS NULL OR AUTO_INCREMENT < 100)",
+              "expect": "1"
+            },
+            {
+              "assert": "comment copied",
+              "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t16_l' AND TABLE_COMMENT='t16 source'",
+              "expect": "1"
+            }
+          ]
+        }
+      ],
+      "teardown": [
+        {
+          "name": "drop-fixtures",
+          "sql": "DROP TABLE IF EXISTS t16_l, t16_src, t16_ref",
+          "expect_rc": 0
+        }
+      ]
+    },
+    {
+      "id": "t16-mysql80-like-missing-source",
+      "anchor": "mysql80",
+      "dialect": "mysql",
+      "sql": "CREATE TABLE t16_l LIKE t16_missing;",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 23380,
+        "user": "root",
+        "schema": "golden",
+        "password_env": "DS_T16_GOLDEN_PW",
+        "password": "root"
+      },
+      "policy": "t16-lifecycle",
+      "expect": {
+        "exit": 1,
+        "verdict": "reject",
+        "statements": 1,
+        "findings": 1,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "complete",
+        "statement_coverage": [
+          "complete"
+        ],
+        "evidence_gaps": 0,
+        "finding_entries": [
+          {
+            "index": 0,
+            "rule_id": "ddl.table.like.source.exists.require",
+            "level": "blocker"
+          }
+        ],
+        "version": {
+          "product": "mysql",
+          "version": "8.0.46"
+        }
+      },
+      "execute": [
+        {
+          "name": "apply-like-missing",
+          "sql": "CREATE TABLE t16_l LIKE t16_missing",
+          "expect_rc": 1,
+          "stderr_contains": [
+            "1146"
+          ],
+          "verify": [
+            {
+              "assert": "refused create lands nothing",
+              "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t16_l'",
+              "expect": "0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "t16-mysql80-like-dest-exists",
+      "anchor": "mysql80",
+      "dialect": "mysql",
+      "sql": "CREATE TABLE t16_l LIKE t16_src;",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 23380,
+        "user": "root",
+        "schema": "golden",
+        "password_env": "DS_T16_GOLDEN_PW",
+        "password": "root"
+      },
+      "policy": "t16-lifecycle",
+      "expect": {
+        "exit": 1,
+        "verdict": "reject",
+        "statements": 1,
+        "findings": 1,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "complete",
+        "statement_coverage": [
+          "complete"
+        ],
+        "evidence_gaps": 0,
+        "finding_entries": [
+          {
+            "index": 0,
+            "rule_id": "ddl.table.exists.create.forbid",
+            "level": "blocker"
+          }
+        ],
+        "version": {
+          "product": "mysql",
+          "version": "8.0.46"
+        }
+      },
+      "setup": [
+        {
+          "name": "create-fixtures",
+          "sql": "CREATE TABLE t16_src (id INT PRIMARY KEY, n INT); CREATE TABLE t16_l (id INT)",
+          "expect_rc": 0
+        }
+      ],
+      "execute": [
+        {
+          "name": "apply-like-collision",
+          "sql": "CREATE TABLE t16_l LIKE t16_src",
+          "expect_rc": 1,
+          "stderr_contains": [
+            "1050"
+          ],
+          "verify": [
+            {
+              "assert": "existing dest keeps own shape",
+              "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t16_l'",
+              "expect": "1"
+            }
+          ]
+        }
+      ],
+      "teardown": [
+        {
+          "name": "drop-fixtures",
+          "sql": "DROP TABLE IF EXISTS t16_l, t16_src",
+          "expect_rc": 0
+        }
+      ]
+    },
+    {
+      "id": "t16-mysql80-like-temp-source",
+      "anchor": "mysql80",
+      "dialect": "mysql",
+      "sql": "CREATE TEMPORARY TABLE tp16 (id INT PRIMARY KEY, s VARCHAR(9)); CREATE TABLE t16_l LIKE tp16;",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 23380,
+        "user": "root",
+        "schema": "golden",
+        "password_env": "DS_T16_GOLDEN_PW",
+        "password": "root"
+      },
+      "policy": "t16-lifecycle",
+      "expect": {
+        "exit": 0,
+        "verdict": "pass",
+        "statements": 2,
+        "findings": 0,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "evidence_gaps": 0,
+        "version": {
+          "product": "mysql",
+          "version": "8.0.46"
+        }
+      },
+      "execute": [
+        {
+          "name": "apply-like-temp-source",
+          "sql": "CREATE TEMPORARY TABLE tp16 (id INT PRIMARY KEY, s VARCHAR(9)); CREATE TABLE t16_l LIKE tp16",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "copied column s lands",
+              "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t16_l' AND COLUMN_NAME='s'",
+              "expect": "1"
+            },
+            {
+              "assert": "copied primary key lands",
+              "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t16_l' AND INDEX_NAME='PRIMARY'",
+              "expect": "1"
+            }
+          ]
+        }
+      ],
+      "teardown": [
+        {
+          "name": "drop-fixture",
+          "sql": "DROP TABLE IF EXISTS t16_l",
+          "expect_rc": 0
+        }
+      ]
+    },
+    {
+      "id": "t16-mysql80-ctas-forms",
+      "anchor": "mysql80",
+      "dialect": "mysql",
+      "sql": "CREATE TABLE t16_c1 AS SELECT 1 AS x; ALTER TABLE t16_c1 ADD COLUMN y INT; CREATE TABLE t16_c2 SELECT x FROM t16_c1;",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 23380,
+        "user": "root",
+        "schema": "golden",
+        "password_env": "DS_T16_GOLDEN_PW",
+        "password": "root"
+      },
+      "policy": "t16-lifecycle",
+      "expect": {
+        "exit": 0,
+        "verdict": "pass",
+        "statements": 3,
+        "findings": 0,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "evidence_gaps": 0,
+        "version": {
+          "product": "mysql",
+          "version": "8.0.46"
+        }
+      },
+      "execute": [
+        {
+          "name": "apply-ctas-chain",
+          "sql": "CREATE TABLE t16_c1 AS SELECT 1 AS x; ALTER TABLE t16_c1 ADD COLUMN y INT; CREATE TABLE t16_c2 SELECT x FROM t16_c1",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "ctas columns x+y land",
+              "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t16_c1' AND COLUMN_NAME IN ('x','y')",
+              "expect": "2"
+            },
+            {
+              "assert": "derived ctas dest exists",
+              "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t16_c2' AND COLUMN_NAME='x'",
+              "expect": "1"
+            }
+          ]
+        }
+      ],
+      "teardown": [
+        {
+          "name": "drop-fixtures",
+          "sql": "DROP TABLE IF EXISTS t16_c1, t16_c2",
+          "expect_rc": 0
+        }
+      ]
+    },
+    {
+      "id": "t16-mysql80-ctas-missing-source",
+      "anchor": "mysql80",
+      "dialect": "mysql",
+      "sql": "CREATE TABLE t16_c AS SELECT * FROM t16_missing;",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 23380,
+        "user": "root",
+        "schema": "golden",
+        "password_env": "DS_T16_GOLDEN_PW",
+        "password": "root"
+      },
+      "policy": "t16-lifecycle",
+      "expect": {
+        "exit": 1,
+        "verdict": "reject",
+        "statements": 1,
+        "findings": 1,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "complete",
+        "statement_coverage": [
+          "complete"
+        ],
+        "evidence_gaps": 0,
+        "finding_entries": [
+          {
+            "index": 0,
+            "rule_id": "ddl.table.create_as.source.exists.require",
+            "level": "blocker"
+          }
+        ],
+        "version": {
+          "product": "mysql",
+          "version": "8.0.46"
+        }
+      },
+      "execute": [
+        {
+          "name": "apply-ctas-missing",
+          "sql": "CREATE TABLE t16_c AS SELECT * FROM t16_missing",
+          "expect_rc": 1,
+          "stderr_contains": [
+            "1146"
+          ],
+          "verify": [
+            {
+              "assert": "refused ctas lands nothing",
+              "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t16_c'",
+              "expect": "0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "t16-mysql80-ctas-defs",
+      "anchor": "mysql80",
+      "dialect": "mysql",
+      "sql": "CREATE TABLE t16_c (a INT PRIMARY KEY DEFAULT 7) SELECT 2 AS b;",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 23380,
+        "user": "root",
+        "schema": "golden",
+        "password_env": "DS_T16_GOLDEN_PW",
+        "password": "root"
+      },
+      "policy": "t16-lifecycle",
+      "expect": {
+        "exit": 0,
+        "verdict": "pass",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "evidence_gaps": 0,
+        "version": {
+          "product": "mysql",
+          "version": "8.0.46"
+        }
+      },
+      "execute": [
+        {
+          "name": "apply-ctas-defs",
+          "sql": "CREATE TABLE t16_c (a INT PRIMARY KEY DEFAULT 7) SELECT 2 AS b",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "declared column lands",
+              "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t16_c' AND COLUMN_NAME='a'",
+              "expect": "1"
+            },
+            {
+              "assert": "select-appended column lands",
+              "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t16_c' AND COLUMN_NAME='b'",
+              "expect": "1"
+            },
+            {
+              "assert": "declared primary key lands",
+              "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t16_c' AND INDEX_NAME='PRIMARY'",
+              "expect": "1"
+            }
+          ]
+        }
+      ],
+      "teardown": [
+        {
+          "name": "drop-fixture",
+          "sql": "DROP TABLE IF EXISTS t16_c",
+          "expect_rc": 0
+        }
+      ]
+    },
+    {
+      "id": "t16-mysql80-truncate-suite",
+      "anchor": "mysql80",
+      "dialect": "mysql",
+      "sql": "CREATE TEMPORARY TABLE tp16 (id INT); TRUNCATE TABLE tp16; TRUNCATE TABLE t16_t; TRUNCATE TABLE t16_missing;",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 23380,
+        "user": "root",
+        "schema": "golden",
+        "password_env": "DS_T16_GOLDEN_PW",
+        "password": "root"
+      },
+      "policy": "t16-lifecycle",
+      "expect": {
+        "exit": 1,
+        "verdict": "reject",
+        "statements": 4,
+        "findings": 1,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "evidence_gaps": 0,
+        "finding_entries": [
+          {
+            "index": 3,
+            "rule_id": "ddl.table.truncate.exists.require",
+            "level": "blocker"
+          }
+        ],
+        "version": {
+          "product": "mysql",
+          "version": "8.0.46"
+        }
+      },
+      "setup": [
+        {
+          "name": "create-target",
+          "sql": "CREATE TABLE t16_t (id INT AUTO_INCREMENT PRIMARY KEY) AUTO_INCREMENT=50",
+          "expect_rc": 0
+        }
+      ],
+      "execute": [
+        {
+          "name": "apply-temp-truncate",
+          "sql": "CREATE TEMPORARY TABLE tp16 (id INT); TRUNCATE TABLE tp16",
+          "expect_rc": 0
+        },
+        {
+          "name": "apply-persistent-truncate",
+          "sql": "TRUNCATE TABLE t16_t; INSERT INTO t16_t () VALUES ()",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "truncate resets auto_increment counter",
+              "sql": "SELECT COUNT(*) FROM golden.t16_t WHERE id=1",
+              "expect": "1"
+            }
+          ]
+        },
+        {
+          "name": "apply-missing-truncate",
+          "sql": "TRUNCATE TABLE t16_missing",
+          "expect_rc": 1,
+          "stderr_contains": [
+            "1146"
+          ]
+        }
+      ],
+      "teardown": [
+        {
+          "name": "drop-target",
+          "sql": "DROP TABLE IF EXISTS t16_t",
+          "expect_rc": 0
+        }
+      ]
+    },
+    {
+      "id": "t16-mysql80-truncate-inbound-fk",
+      "anchor": "mysql80",
+      "dialect": "mysql",
+      "sql": "CREATE TABLE t16_p (id INT PRIMARY KEY); CREATE TABLE t16_ch (id INT, p INT, FOREIGN KEY (p) REFERENCES t16_p (id)); TRUNCATE TABLE t16_p;",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 23380,
+        "user": "root",
+        "schema": "golden",
+        "password_env": "DS_T16_GOLDEN_PW",
+        "password": "root"
+      },
+      "policy": "t16-lifecycle",
+      "expect": {
+        "exit": 1,
+        "verdict": "reject",
+        "statements": 3,
+        "findings": 1,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "complete",
+        "statement_coverage": [
+          "complete",
+          "complete",
+          "complete"
+        ],
+        "evidence_gaps": 0,
+        "finding_entries": [
+          {
+            "index": 2,
+            "rule_id": "ddl.table.truncate.inbound_fk",
+            "level": "blocker"
+          }
+        ],
+        "version": {
+          "product": "mysql",
+          "version": "8.0.46"
+        }
+      },
+      "execute": [
+        {
+          "name": "apply-parent",
+          "sql": "CREATE TABLE t16_p (id INT PRIMARY KEY)",
+          "expect_rc": 0
+        },
+        {
+          "name": "apply-child",
+          "sql": "CREATE TABLE t16_ch (id INT, p INT, FOREIGN KEY (p) REFERENCES t16_p (id))",
+          "expect_rc": 0
+        },
+        {
+          "name": "apply-parent-truncate",
+          "sql": "TRUNCATE TABLE t16_p",
+          "expect_rc": 1,
+          "stderr_contains": [
+            "1701"
+          ],
+          "verify": [
+            {
+              "assert": "refused truncate keeps parent",
+              "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t16_p'",
+              "expect": "1"
+            }
+          ]
+        }
+      ],
+      "teardown": [
+        {
+          "name": "drop-fixtures",
+          "sql": "DROP TABLE IF EXISTS t16_ch, t16_p",
+          "expect_rc": 0
+        }
+      ]
+    },
+    {
+      "id": "t16-mysql80-ifexists-absent-noop",
+      "anchor": "mysql80",
+      "dialect": "mysql",
+      "sql": "DROP TABLE IF EXISTS t16_missing;",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 23380,
+        "user": "root",
+        "schema": "golden",
+        "password_env": "DS_T16_GOLDEN_PW",
+        "password": "root"
+      },
+      "policy": "t16-lifecycle",
+      "expect": {
+        "exit": 0,
+        "verdict": "pass",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "complete",
+        "statement_coverage": [
+          "complete"
+        ],
+        "evidence_gaps": 0,
+        "version": {
+          "product": "mysql",
+          "version": "8.0.46"
+        }
+      },
+      "execute": [
+        {
+          "name": "apply-conditional-noop",
+          "sql": "DROP TABLE IF EXISTS t16_missing",
+          "expect_rc": 0
+        }
+      ]
+    },
+    {
+      "id": "t16-mysql80-denylist-multidrop",
+      "anchor": "mysql80",
+      "dialect": "mysql",
+      "sql": "CREATE TABLE t16_a (id INT); CREATE TABLE t16_prot (id INT); DROP TABLE t16_a, t16_prot; CREATE TABLE t16_a (id INT, c INT);",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 23380,
+        "user": "root",
+        "schema": "golden",
+        "password_env": "DS_T16_GOLDEN_PW",
+        "password": "root"
+      },
+      "policy": "t16-denylist",
+      "expect": {
+        "exit": 1,
+        "verdict": "reject",
+        "statements": 4,
+        "findings": 2,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "evidence_gaps": 0,
+        "finding_entries": [
+          {
+            "index": 1,
+            "rule_id": "ddl.table.denylist.forbid",
+            "level": "blocker"
+          },
+          {
+            "index": 2,
+            "rule_id": "ddl.table.denylist.forbid",
+            "level": "blocker"
+          }
+        ],
+        "version": {
+          "product": "mysql",
+          "version": "8.0.46"
+        }
+      },
+      "execute": [
+        {
+          "name": "apply-create-pair",
+          "sql": "CREATE TABLE t16_a (id INT); CREATE TABLE t16_prot (id INT)",
+          "expect_rc": 0
+        },
+        {
+          "name": "apply-multi-drop",
+          "sql": "DROP TABLE t16_a, t16_prot",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "native drop drops both despite policy finding",
+              "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME IN ('t16_a','t16_prot')",
+              "expect": "0"
+            }
+          ]
+        },
+        {
+          "name": "apply-recreate",
+          "sql": "CREATE TABLE t16_a (id INT, c INT)",
+          "expect_rc": 0
+        }
+      ],
+      "teardown": [
+        {
+          "name": "drop-fixtures",
+          "sql": "DROP TABLE IF EXISTS t16_a, t16_prot",
+          "expect_rc": 0
+        }
+      ]
+    },
+    {
+      "id": "t16-mysql80-global-temp-vendor",
+      "anchor": "mysql80",
+      "dialect": "mysql",
+      "sql": "CREATE GLOBAL TEMPORARY TABLE gt16 (id INT) ON COMMIT DELETE ROWS;",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 23380,
+        "user": "root",
+        "schema": "golden",
+        "password_env": "DS_T16_GOLDEN_PW",
+        "password": "root"
+      },
+      "policy": "t16-lifecycle",
+      "expect": {
+        "exit": 1,
+        "verdict": "review",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 1,
+        "unsupported": 1,
+        "unsupported_entries": [
+          {
+            "index": 0,
+            "feature": "create_table.temporary.global",
+            "reason": "parsed by the shared parser but outside the supported statement surface for this dialect",
+            "metadata": {
+              "aspect": "temporary",
+              "temporary_scope": "global"
+            }
+          }
+        ],
+        "evidence_gaps": 0,
+        "version": {
+          "product": "mysql",
+          "version": "8.0.46"
+        },
+        "coverage": "incomplete",
+        "statement_coverage": [
+          "incomplete"
+        ]
+      },
+      "execute": [
+        {
+          "name": "apply-global-temp",
+          "sql": "CREATE GLOBAL TEMPORARY TABLE gt16 (id INT) ON COMMIT DELETE ROWS",
+          "expect_rc": 1,
+          "stderr_contains": [
+            "1064"
+          ]
+        }
+      ],
+      "post_verify": [
+        {
+          "assert": "vendor boundary lands nothing",
+          "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='gt16'",
+          "expect": "0"
+        }
+      ]
+    },
+    {
+      "id": "t16-mysql57-drop-multi-partial",
+      "anchor": "mysql57",
+      "dialect": "mysql",
+      "sql": "DROP TABLE t16_a, t16_missing; CREATE TABLE t16_a (id INT, after INT);",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 23357,
+        "user": "root",
+        "schema": "golden",
+        "password_env": "DS_T16_GOLDEN_PW",
+        "password": "root"
+      },
+      "policy": "t16-lifecycle",
+      "expect": {
+        "exit": 1,
+        "verdict": "reject",
+        "statements": 2,
+        "findings": 1,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "evidence_gaps": 0,
+        "finding_entries": [
+          {
+            "index": 0,
+            "rule_id": "ddl.table.drop.exists.require",
+            "level": "blocker"
+          }
+        ],
+        "version": {
+          "product": "mysql",
+          "version": "5.7.44"
+        }
+      },
+      "setup": [
+        {
+          "name": "create-target",
+          "sql": "CREATE TABLE t16_a (id INT)",
+          "expect_rc": 0
+        }
+      ],
+      "execute": [
+        {
+          "name": "apply-partial-drop",
+          "sql": "DROP TABLE t16_a, t16_missing",
+          "expect_rc": 1,
+          "stderr_contains": [
+            "1051"
+          ],
+          "verify": [
+            {
+              "assert": "5.7 non-atomic drop removes present target anyway",
+              "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t16_a'",
+              "expect": "0"
+            }
+          ]
+        },
+        {
+          "name": "apply-recreate",
+          "sql": "CREATE TABLE t16_a (id INT, after INT)",
+          "expect_rc": 0
+        }
+      ],
+      "teardown": [
+        {
+          "name": "drop-target",
+          "sql": "DROP TABLE IF EXISTS t16_a",
+          "expect_rc": 0
+        }
+      ]
+    },
+    {
+      "id": "t16-mysql57-temp-shadow",
+      "anchor": "mysql57",
+      "dialect": "mysql",
+      "sql": "CREATE TEMPORARY TABLE t16_s (id INT); DROP TABLE t16_s;",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 23357,
+        "user": "root",
+        "schema": "golden",
+        "password_env": "DS_T16_GOLDEN_PW",
+        "password": "root"
+      },
+      "policy": "t16-lifecycle",
+      "expect": {
+        "exit": 0,
+        "verdict": "pass",
+        "statements": 2,
+        "findings": 0,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "evidence_gaps": 0,
+        "version": {
+          "product": "mysql",
+          "version": "5.7.44"
+        }
+      },
+      "setup": [
+        {
+          "name": "create-persistent",
+          "sql": "CREATE TABLE t16_s (id INT, marker INT)",
+          "expect_rc": 0
+        }
+      ],
+      "execute": [
+        {
+          "name": "apply-shadow-drop",
+          "sql": "CREATE TEMPORARY TABLE t16_s (id INT); DROP TABLE t16_s",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "persistent shadow survives temp drop",
+              "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t16_s'",
+              "expect": "1"
+            }
+          ]
+        }
+      ],
+      "teardown": [
+        {
+          "name": "drop-persistent",
+          "sql": "DROP TABLE IF EXISTS t16_s",
+          "expect_rc": 0
+        }
+      ]
+    },
+    {
+      "id": "t16-mysql57-like",
+      "anchor": "mysql57",
+      "dialect": "mysql",
+      "sql": "CREATE TABLE t16_l LIKE t16_src;",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 23357,
+        "user": "root",
+        "schema": "golden",
+        "password_env": "DS_T16_GOLDEN_PW",
+        "password": "root"
+      },
+      "policy": "t16-lifecycle",
+      "expect": {
+        "exit": 0,
+        "verdict": "pass",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "complete",
+        "statement_coverage": [
+          "complete"
+        ],
+        "evidence_gaps": 0,
+        "version": {
+          "product": "mysql",
+          "version": "5.7.44"
+        }
+      },
+      "setup": [
+        {
+          "name": "create-source",
+          "sql": "CREATE TABLE t16_src (id INT PRIMARY KEY, n VARCHAR(20), UNIQUE KEY t16_u (n))",
+          "expect_rc": 0
+        }
+      ],
+      "execute": [
+        {
+          "name": "apply-like",
+          "sql": "CREATE TABLE t16_l LIKE t16_src",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "columns copied",
+              "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t16_l'",
+              "expect": "2"
+            },
+            {
+              "assert": "unique index copied",
+              "sql": "SELECT COUNT(*) FROM information_schema.STATISTICS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t16_l' AND INDEX_NAME='t16_u'",
+              "expect": "1"
+            }
+          ]
+        }
+      ],
+      "teardown": [
+        {
+          "name": "drop-fixtures",
+          "sql": "DROP TABLE IF EXISTS t16_l, t16_src",
+          "expect_rc": 0
+        }
+      ]
+    },
+    {
+      "id": "t16-mysql84-drop-multi-atomic",
+      "anchor": "mysql84",
+      "dialect": "mysql",
+      "sql": "DROP TABLE t16_a, t16_missing, t16_b;",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 23384,
+        "user": "root",
+        "schema": "golden",
+        "password_env": "DS_T16_GOLDEN_PW",
+        "password": "root"
+      },
+      "policy": "t16-lifecycle",
+      "expect": {
+        "exit": 1,
+        "verdict": "reject",
+        "statements": 1,
+        "findings": 1,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "complete",
+        "statement_coverage": [
+          "complete"
+        ],
+        "evidence_gaps": 0,
+        "finding_entries": [
+          {
+            "index": 0,
+            "rule_id": "ddl.table.drop.exists.require",
+            "level": "blocker"
+          }
+        ],
+        "version": {
+          "product": "mysql",
+          "version": "8.4.10"
+        }
+      },
+      "setup": [
+        {
+          "name": "create-targets",
+          "sql": "CREATE TABLE t16_a (id INT); CREATE TABLE t16_b (id INT)",
+          "expect_rc": 0
+        }
+      ],
+      "execute": [
+        {
+          "name": "apply-atomic-drop",
+          "sql": "DROP TABLE t16_a, t16_missing, t16_b",
+          "expect_rc": 1,
+          "stderr_contains": [
+            "1051"
+          ],
+          "verify": [
+            {
+              "assert": "atomic refusal keeps t16_a",
+              "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t16_a'",
+              "expect": "1"
+            }
+          ]
+        }
+      ],
+      "teardown": [
+        {
+          "name": "drop-targets",
+          "sql": "DROP TABLE IF EXISTS t16_a, t16_b",
+          "expect_rc": 0
+        }
+      ]
+    },
+    {
+      "id": "t16-tidb85-drop-multi-partial",
+      "anchor": "tidb85",
+      "dialect": "tidb",
+      "sql": "DROP TABLE t16_a, t16_missing, t16_b;",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 24000,
+        "user": "root",
+        "schema": "golden",
+        "password_env": "",
+        "password": ""
+      },
+      "policy": "t16-lifecycle",
+      "expect": {
+        "exit": 1,
+        "verdict": "reject",
+        "statements": 1,
+        "findings": 1,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "complete",
+        "statement_coverage": [
+          "complete"
+        ],
+        "evidence_gaps": 0,
+        "finding_entries": [
+          {
+            "index": 0,
+            "rule_id": "ddl.table.drop.exists.require",
+            "level": "blocker"
+          }
+        ],
+        "version": {
+          "product": "tidb",
+          "version": "8.5.0"
+        }
+      },
+      "setup": [
+        {
+          "name": "create-targets",
+          "sql": "CREATE TABLE t16_a (id INT); CREATE TABLE t16_b (id INT)",
+          "expect_rc": 0
+        }
+      ],
+      "execute": [
+        {
+          "name": "apply-partial-drop",
+          "sql": "DROP TABLE t16_a, t16_missing, t16_b",
+          "expect_rc": 1,
+          "stderr_contains": [
+            "1051"
+          ],
+          "verify": [
+            {
+              "assert": "sequential drop removes t16_a anyway",
+              "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t16_a'",
+              "expect": "0"
+            },
+            {
+              "assert": "sequential drop removes t16_b anyway",
+              "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t16_b'",
+              "expect": "0"
+            }
+          ]
+        }
+      ],
+      "teardown": [
+        {
+          "name": "drop-targets",
+          "sql": "DROP TABLE IF EXISTS t16_a, t16_b",
+          "expect_rc": 0
+        }
+      ]
+    },
+    {
+      "id": "t16-tidb85-drop-dup-partial",
+      "anchor": "tidb85",
+      "dialect": "tidb",
+      "sql": "DROP TABLE t16_a, t16_a;",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 24000,
+        "user": "root",
+        "schema": "golden",
+        "password_env": "",
+        "password": ""
+      },
+      "policy": "t16-lifecycle",
+      "expect": {
+        "exit": 0,
+        "verdict": "pass",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "complete",
+        "statement_coverage": [
+          "complete"
+        ],
+        "evidence_gaps": 0,
+        "version": {
+          "product": "tidb",
+          "version": "8.5.0"
+        }
+      },
+      "setup": [
+        {
+          "name": "create-target",
+          "sql": "CREATE TABLE t16_a (id INT)",
+          "expect_rc": 0
+        }
+      ],
+      "execute": [
+        {
+          "name": "apply-dup-drop",
+          "sql": "DROP TABLE t16_a, t16_a",
+          "expect_rc": 1,
+          "stderr_contains": [
+            "1051"
+          ],
+          "verify": [
+            {
+              "assert": "TiDB first-occurrence drops",
+              "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t16_a'",
+              "expect": "0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "t16-tidb85-alter-localtemp",
+      "anchor": "tidb85",
+      "dialect": "tidb",
+      "sql": "CREATE TEMPORARY TABLE tp16 (id INT); ALTER TABLE tp16 ADD COLUMN c INT;",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 24000,
+        "user": "root",
+        "schema": "golden",
+        "password_env": "",
+        "password": ""
+      },
+      "policy": "t16-lifecycle",
+      "expect": {
+        "exit": 1,
+        "verdict": "reject",
+        "statements": 2,
+        "findings": 1,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "complete",
+        "statement_coverage": [
+          "complete",
+          "complete"
+        ],
+        "evidence_gaps": 0,
+        "finding_entries": [
+          {
+            "index": 1,
+            "rule_id": "ddl.tidb.local_temporary.alter",
+            "level": "blocker"
+          }
+        ],
+        "version": {
+          "product": "tidb",
+          "version": "8.5.0"
+        }
+      },
+      "execute": [
+        {
+          "name": "temp-create-and-alter",
+          "sql": "CREATE TEMPORARY TABLE tp16 (id INT); ALTER TABLE tp16 ADD COLUMN c INT",
+          "expect_rc": 1,
+          "stderr_contains": [
+            "8200"
+          ],
+          "verify": [
+            {
+              "assert": "no persistent tp16 column c lands",
+              "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='tp16' AND COLUMN_NAME='c'",
+              "expect": "0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "t16-tidb85-rename-localtemp",
+      "anchor": "tidb85",
+      "dialect": "tidb",
+      "sql": "CREATE TEMPORARY TABLE tp16 (id INT); RENAME TABLE tp16 TO tp16x;",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 24000,
+        "user": "root",
+        "schema": "golden",
+        "password_env": "",
+        "password": ""
+      },
+      "policy": "t16-lifecycle",
+      "expect": {
+        "exit": 1,
+        "verdict": "reject",
+        "statements": 2,
+        "findings": 1,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "complete",
+        "statement_coverage": [
+          "complete",
+          "complete"
+        ],
+        "evidence_gaps": 0,
+        "finding_entries": [
+          {
+            "index": 1,
+            "rule_id": "ddl.tidb.local_temporary.rename",
+            "level": "blocker"
+          }
+        ],
+        "version": {
+          "product": "tidb",
+          "version": "8.5.0"
+        }
+      },
+      "execute": [
+        {
+          "name": "temp-create-and-rename",
+          "sql": "CREATE TEMPORARY TABLE tp16 (id INT); RENAME TABLE tp16 TO tp16x",
+          "expect_rc": 1,
+          "stderr_contains": [
+            "8200"
+          ],
+          "verify": [
+            {
+              "assert": "persistent tp16x never lands",
+              "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='tp16x'",
+              "expect": "0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "t16-tidb85-like-tempsrc",
+      "anchor": "tidb85",
+      "dialect": "tidb",
+      "sql": "CREATE TEMPORARY TABLE tp16 (id INT); CREATE TABLE t16_l LIKE tp16;",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 24000,
+        "user": "root",
+        "schema": "golden",
+        "password_env": "",
+        "password": ""
+      },
+      "policy": "t16-lifecycle",
+      "expect": {
+        "exit": 1,
+        "verdict": "reject",
+        "statements": 2,
+        "findings": 1,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "complete",
+        "statement_coverage": [
+          "complete",
+          "complete"
+        ],
+        "evidence_gaps": 0,
+        "finding_entries": [
+          {
+            "index": 1,
+            "rule_id": "ddl.tidb.local_temporary.like",
+            "level": "blocker"
+          }
+        ],
+        "version": {
+          "product": "tidb",
+          "version": "8.5.0"
+        }
+      },
+      "execute": [
+        {
+          "name": "temp-create-and-like",
+          "sql": "CREATE TEMPORARY TABLE tp16 (id INT); CREATE TABLE t16_l LIKE tp16",
+          "expect_rc": 1,
+          "stderr_contains": [
+            "8006"
+          ],
+          "verify": [
+            {
+              "assert": "LIKE destination never lands",
+              "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t16_l'",
+              "expect": "0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "t16-tidb85-global-temp",
+      "anchor": "tidb85",
+      "dialect": "tidb",
+      "sql": "CREATE GLOBAL TEMPORARY TABLE gt16 (id INT) ON COMMIT DELETE ROWS; ALTER TABLE gt16 ADD COLUMN c INT; TRUNCATE TABLE gt16; DROP TABLE gt16;",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 24000,
+        "user": "root",
+        "schema": "golden",
+        "password_env": "",
+        "password": ""
+      },
+      "policy": "t16-lifecycle",
+      "expect": {
+        "exit": 0,
+        "verdict": "pass",
+        "statements": 4,
+        "findings": 0,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "complete",
+        "statement_coverage": [
+          "complete",
+          "complete",
+          "complete",
+          "complete"
+        ],
+        "evidence_gaps": 0,
+        "version": {
+          "product": "tidb",
+          "version": "8.5.0"
+        }
+      },
+      "execute": [
+        {
+          "name": "apply-global-temp-lifecycle",
+          "sql": "CREATE GLOBAL TEMPORARY TABLE gt16 (id INT) ON COMMIT DELETE ROWS; ALTER TABLE gt16 ADD COLUMN c INT; TRUNCATE TABLE gt16; DROP TABLE gt16",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "global temp dropped",
+              "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='gt16'",
+              "expect": "0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "t16-tidb85-global-preserve",
+      "anchor": "tidb85",
+      "dialect": "tidb",
+      "sql": "CREATE GLOBAL TEMPORARY TABLE gt16 (id INT) ON COMMIT PRESERVE ROWS;",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 24000,
+        "user": "root",
+        "schema": "golden",
+        "password_env": "",
+        "password": ""
+      },
+      "policy": "t16-lifecycle",
+      "expect": {
+        "exit": 1,
+        "verdict": "review",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 1,
+        "unsupported": 1,
+        "unsupported_entries": [
+          {
+            "index": 0,
+            "feature": "create_table.temporary.global.preserve",
+            "reason": "parsed by the shared parser but outside the supported statement surface for this dialect",
+            "metadata": {
+              "aspect": "temporary",
+              "temporary_scope": "global"
+            }
+          }
+        ],
+        "evidence_gaps": 0,
+        "version": {
+          "product": "tidb",
+          "version": "8.5.0"
+        },
+        "coverage": "incomplete",
+        "statement_coverage": [
+          "incomplete"
+        ]
+      },
+      "execute": [
+        {
+          "name": "apply-preserve",
+          "sql": "CREATE GLOBAL TEMPORARY TABLE gt16 (id INT) ON COMMIT PRESERVE ROWS",
+          "expect_rc": 1,
+          "stderr_contains": [
+            "8200"
+          ],
+          "verify": [
+            {
+              "assert": "refused create lands nothing",
+              "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='gt16'",
+              "expect": "0"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "t16-tidb85-ctas-vendor",
+      "anchor": "tidb85",
+      "dialect": "tidb",
+      "sql": "CREATE TABLE t16_c AS SELECT * FROM t16_src;",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 24000,
+        "user": "root",
+        "schema": "golden",
+        "password_env": "",
+        "password": ""
+      },
+      "policy": "t16-lifecycle",
+      "expect": {
+        "exit": 1,
+        "verdict": "review",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 1,
+        "unsupported": 1,
+        "unsupported_entries": [
+          {
+            "index": 0,
+            "feature": "create_table_select",
+            "reason": "parsed by the shared parser but outside the supported statement surface for this dialect",
+            "metadata": {
+              "boundary": "vendor"
+            }
+          }
+        ],
+        "evidence_gaps": 0,
+        "version": {
+          "product": "tidb",
+          "version": "8.5.0"
+        },
+        "coverage": "incomplete",
+        "statement_coverage": [
+          "incomplete"
+        ]
+      },
+      "setup": [
+        {
+          "name": "create-source",
+          "sql": "CREATE TABLE t16_src (id INT)",
+          "expect_rc": 0
+        }
+      ],
+      "execute": [
+        {
+          "name": "apply-ctas",
+          "sql": "CREATE TABLE t16_c AS SELECT * FROM t16_src",
+          "expect_rc": 1,
+          "stderr_contains": [
+            "1105"
+          ],
+          "verify": [
+            {
+              "assert": "vendor boundary lands nothing",
+              "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t16_c'",
+              "expect": "0"
+            }
+          ]
+        }
+      ],
+      "teardown": [
+        {
+          "name": "drop-source",
+          "sql": "DROP TABLE IF EXISTS t16_src, t16_c",
+          "expect_rc": 0
+        }
+      ]
+    },
+    {
+      "id": "t16-tidb85-drop-global-vs-temp",
+      "anchor": "tidb85",
+      "dialect": "tidb",
+      "sql": "DROP TEMPORARY TABLE gt16; DROP GLOBAL TEMPORARY TABLE gt16;",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 24000,
+        "user": "root",
+        "schema": "golden",
+        "password_env": "",
+        "password": ""
+      },
+      "policy": "t16-lifecycle",
+      "expect": {
+        "exit": 1,
+        "verdict": "reject",
+        "statements": 2,
+        "findings": 1,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "complete",
+        "statement_coverage": [
+          "complete",
+          "complete"
+        ],
+        "evidence_gaps": 0,
+        "finding_entries": [
+          {
+            "index": 0,
+            "rule_id": "ddl.table.drop.exists.require",
+            "level": "blocker"
+          }
+        ],
+        "version": {
+          "product": "tidb",
+          "version": "8.5.0"
+        }
+      },
+      "setup": [
+        {
+          "name": "create-global",
+          "sql": "CREATE GLOBAL TEMPORARY TABLE gt16 (id INT) ON COMMIT DELETE ROWS",
+          "expect_rc": 0
+        }
+      ],
+      "execute": [
+        {
+          "name": "apply-temp-scoped",
+          "sql": "DROP TEMPORARY TABLE gt16",
+          "expect_rc": 1,
+          "stderr_contains": [
+            "1051"
+          ]
+        },
+        {
+          "name": "apply-global-scoped",
+          "sql": "DROP GLOBAL TEMPORARY TABLE gt16",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "global temp dropped",
+              "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='gt16'",
+              "expect": "0"
+            }
+          ]
+        }
+      ],
+      "teardown": [
+        {
+          "name": "drop-global",
+          "sql": "DROP TABLE IF EXISTS gt16",
+          "expect_rc": 0
+        }
+      ]
+    }
+  ],
+  "required_case_ids": [
+    "T16.db.mysql57.ddl",
+    "T16.db.mysql57.syntax_negative",
+    "T16.db.mysql80.ddl",
+    "T16.db.mysql80.syntax_negative",
+    "T16.db.mysql84.ddl",
+    "T16.db.mysql84.syntax_negative",
+    "T16.db.tidb85.ddl",
+    "T16.db.tidb85.syntax_negative",
+    "T16.cli.t16-cli-seed-offline",
+    "T16.cli.t16-cli-drop-temp-chain",
+    "T16.cli.t16-cli-drop-multi-refused",
+    "T16.cli.t16-cli-rename-dest-unknown",
+    "T16.cli.t16-cli-like-source-unknown",
+    "T16.cli.t16-cli-ctas-tidb-vendor",
+    "T16.cli.t16-cli-global-temp-mysql-vendor",
+    "T16.cli.t16-cli-rules-off",
+    "T16.meta.t16-mysql80-seed-golden",
+    "T16.meta.t16-mysql80-drop-multi-atomic",
+    "T16.meta.t16-mysql80-drop-ifexists-mixed",
+    "T16.meta.t16-mysql80-drop-duplicate",
+    "T16.meta.t16-mysql80-drop-temp-keyword-miss",
+    "T16.meta.t16-mysql80-temp-shadow-drop",
+    "T16.meta.t16-mysql80-temp-create-dup",
+    "T16.meta.t16-mysql80-alter-on-temp",
+    "T16.meta.t16-mysql80-rename-temp-invisible",
+    "T16.meta.t16-mysql80-alter-rename-temp",
+    "T16.meta.t16-mysql80-rename-multi-atomic",
+    "T16.meta.t16-mysql80-rename-dest-exists",
+    "T16.meta.t16-mysql80-rename-swap",
+    "T16.meta.t16-mysql80-rename-cross-schema",
+    "T16.meta.t16-mysql80-like-members",
+    "T16.meta.t16-mysql80-like-missing-source",
+    "T16.meta.t16-mysql80-like-dest-exists",
+    "T16.meta.t16-mysql80-like-temp-source",
+    "T16.meta.t16-mysql80-ctas-forms",
+    "T16.meta.t16-mysql80-ctas-missing-source",
+    "T16.meta.t16-mysql80-ctas-defs",
+    "T16.meta.t16-mysql80-truncate-suite",
+    "T16.meta.t16-mysql80-truncate-inbound-fk",
+    "T16.meta.t16-mysql80-ifexists-absent-noop",
+    "T16.meta.t16-mysql80-denylist-multidrop",
+    "T16.meta.t16-mysql80-global-temp-vendor",
+    "T16.meta.t16-mysql57-drop-multi-partial",
+    "T16.meta.t16-mysql57-temp-shadow",
+    "T16.meta.t16-mysql57-like",
+    "T16.meta.t16-mysql84-drop-multi-atomic",
+    "T16.meta.t16-tidb85-drop-multi-partial",
+    "T16.meta.t16-tidb85-drop-dup-partial",
+    "T16.meta.t16-tidb85-alter-localtemp",
+    "T16.meta.t16-tidb85-rename-localtemp",
+    "T16.meta.t16-tidb85-like-tempsrc",
+    "T16.meta.t16-tidb85-global-temp",
+    "T16.meta.t16-tidb85-global-preserve",
+    "T16.meta.t16-tidb85-ctas-vendor",
+    "T16.meta.t16-tidb85-drop-global-vs-temp"
+  ]
+}

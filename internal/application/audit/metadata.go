@@ -218,16 +218,34 @@ func (state *batchState) enrichStatements(ctx context.Context, request *Metadata
 		metadataSchema := metadataTargetSchema(request, statement)
 		metadata := &spec.Metadata{Schema: metadataSchema, Instance: instanceFacts, Version: resolvedVersion}
 
-		target, err := orderedTargetTable(ctx, dialect, request, statement, metadataSchema)
-		if err != nil {
-			return nil, fmt.Errorf("resolve index owner: %w", err)
-		}
-		if tableName := strings.TrimSpace(target.Name); tableName != "" {
-			snapshot, err := state.preState(ctx, metadataSchema, target)
+		if statement.DDL != nil && len(statement.DDL.TableTargets()) > 0 {
+			// Namespace-aware binding projects every authored identity —
+			// a temp-scoped DROP reads the session slot, a plain DROP reads
+			// temp-first, a CREATE destination reads its own namespace —
+			// through the same once-per-key seam. TargetTable stays the
+			// primary binding's snapshot for single-target consumers.
+			bindings, source, sources, err := state.boundTargetsForStatement(ctx, statement)
 			if err != nil {
-				return nil, fmt.Errorf("load table snapshot for %s: %w", tableName, err)
+				return nil, fmt.Errorf("load table snapshot: %w", err)
 			}
-			metadata.TargetTable = snapshot
+			metadata.TargetTables = bindings
+			metadata.SourceTable = source
+			metadata.SourceTables = sources
+			if len(bindings) > 0 {
+				metadata.TargetTable = bindings[0].Snapshot
+			}
+		} else {
+			target, err := orderedTargetTable(ctx, dialect, request, statement, metadataSchema)
+			if err != nil {
+				return nil, fmt.Errorf("resolve index owner: %w", err)
+			}
+			if tableName := strings.TrimSpace(target.Name); tableName != "" {
+				snapshot, err := state.preState(ctx, metadataSchema, target)
+				if err != nil {
+					return nil, fmt.Errorf("load table snapshot for %s: %w", tableName, err)
+				}
+				metadata.TargetTable = snapshot
+			}
 		}
 
 		// An EXCHANGE counterpart is a second named identity the action

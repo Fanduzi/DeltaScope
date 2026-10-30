@@ -323,10 +323,11 @@ func TestBatchStateA5UnsafeAndNonPrecise(t *testing.T) {
 		if enriched[2].Metadata.TargetTable != nil {
 			t.Fatalf("multi-action published a destination: %+v", enriched[2].Metadata.TargetTable)
 		}
-		for _, call := range provider.calls {
-			if call == "golden.u" {
-				t.Fatalf("new name reread the provider: %#v", provider.calls)
-			}
+		// The bound projection resolves every declared endpoint once for
+		// the rename-destination rules — the mixed form still tombstones
+		// by key and never reads the same name twice.
+		if strings.Join(provider.calls, ",") != "golden.t,golden.u" {
+			t.Fatalf("bound endpoints must resolve exactly once each, got %#v", provider.calls)
 		}
 	})
 	t.Run("positional change publishes moved column", func(t *testing.T) {

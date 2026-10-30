@@ -369,8 +369,11 @@ func TestAuditSQLT05A6MultiActionTombstonesTheWholeStatement(t *testing.T) {
 		result := t05A4Audit(t, sql, spec.DialectMySQL, provider, t05A4R1Policy(t))
 		t05A4R2WantNoAbsence(t, result, 1)
 		t05A4R2WantNoAbsence(t, result, 2)
-		if len(provider.calls) != 1 || provider.calls[0] != "golden.t" {
-			t.Fatalf("provider ledger = %#v, want one source read", provider.calls)
+		// The bound projection resolves both declared endpoints once — the
+		// destination read feeds the rename-destination rules while the
+		// tombstoned write still lands by key without a second read.
+		if len(provider.calls) != 2 || provider.calls[0] != "golden.t" || provider.calls[1] != "dst.u" {
+			t.Fatalf("provider ledger = %#v, want the two bound endpoint reads", provider.calls)
 		}
 		observed := t05A6Provider(t05A6Base())
 		observed.snapshots["dst.u"] = absentTable("dst", "u")

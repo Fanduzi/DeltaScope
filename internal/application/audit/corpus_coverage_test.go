@@ -71,6 +71,17 @@ func corpusRuleDialectTargets(ruleID string) []string {
 		"ddl.tidb.alter.compat_options.notice",
 		"ddl.alter.charset_conversion.applicability":
 		return []string{"tidb"}
+	// T16: the TiDB local-temporary refusals are TiDB-only semantics —
+	// MySQL ALTER/RENAME/LIKE reach temporary tables normally.
+	case
+		"ddl.tidb.local_temporary.alter",
+		"ddl.tidb.local_temporary.rename",
+		"ddl.tidb.local_temporary.like":
+		return []string{"tidb"}
+	// T16: TiDB routes CREATE TABLE ... SELECT through a vendor boundary
+	// (1105), so the CTAS source-existence rule can only fire under MySQL.
+	case "ddl.table.create_as.source.exists.require":
+		return []string{"mysql"}
 	// T14: the six maintenance partition ops are vendor refusals on TiDB
 	// (8200) — every rule bound to them can only fire under MySQL.
 	case
@@ -326,7 +337,13 @@ func isMySQLFamilyOnlyRule(ruleID string) bool {
 		// charset-conversion warn fires on both dialects for combinable
 		// conversions.
 		"ddl.alter.online_ddl.applicability",
-		"ddl.alter.charset_conversion.warn":
+		"ddl.alter.charset_conversion.warn",
+		// T16 lifecycle existence/identity rules bind MySQL-family table
+		// facts only; PostgreSQL never binds these normalized facts.
+		"ddl.table.like.source.exists.require",
+		"ddl.table.rename.source.exists.require",
+		"ddl.table.rename.dest.exists.forbid",
+		"ddl.table.truncate.inbound_fk":
 		return true
 	default:
 		return false

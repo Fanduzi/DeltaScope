@@ -1,0 +1,11 @@
+name: create_temporary_table_alter
+dialect: tidb
+category: ddl
+expect:
+  parse_ok: true
+  statement_kind: ddl
+  findings:
+    include:
+      - ddl.tidb.local_temporary.alter
+metadata:
+  schema: app

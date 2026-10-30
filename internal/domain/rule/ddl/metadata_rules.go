@@ -75,7 +75,11 @@ func (r tableExistenceRule) Evaluate(ctx context.Context, statement spec.Stateme
 				"exists": false,
 			},
 		}}, nil
-	case !r.requireExist && snapshot.Exists:
+	case !r.requireExist && snapshot.Exists && statement.DDL.Options["if_not_exists"] != "true":
+		// CREATE TABLE IF NOT EXISTS arms the conditional form: a
+		// proven-present destination is a native no-op, not a violation.
+		// The gap on an unvouched destination still fires — the statement
+		// could not be decided either way.
 		return []rule.Finding{{
 			Level:      r.level,
 			Message:    fmt.Sprintf("table %q already exists in the target schema", statement.DDL.Table.Name),

@@ -60,10 +60,16 @@ type batchTableEntry struct {
 // request-local facts can never leak between audits and provider reads can
 // never overwrite derived state once an entry exists.
 type batchState struct {
-	provider     MetadataProvider
-	dialect      spec.Dialect
-	schema       string
-	entries      map[batchTableKey]*batchTableEntry
+	provider MetadataProvider
+	dialect  spec.Dialect
+	schema   string
+	entries  map[batchTableKey]*batchTableEntry
+	// tempEntries holds the session-local temporary-table namespace. A
+	// batch models one session: temp objects exist only when a statement
+	// created them, so a never-touched slot is provably empty and a
+	// same-named persistent entry is never shadowed into unreachability —
+	// both slots coexist and bindings pick the right one per reference.
+	tempEntries  map[batchTableKey]*batchTableEntry
 	contaminated bool
 	// invalidatedSchemas holds schema scopes already dropped or altered by an
 	// in-batch statement — a later provider read under them would return
@@ -89,6 +95,7 @@ func newBatchState(dialect spec.Dialect, schema string, provider MetadataProvide
 		dialect:            dialect,
 		schema:             strings.TrimSpace(schema),
 		entries:            make(map[batchTableKey]*batchTableEntry),
+		tempEntries:        make(map[batchTableKey]*batchTableEntry),
 		invalidatedSchemas: make(map[string]struct{}),
 	}
 }
@@ -169,6 +176,11 @@ func (s *batchState) resolve(ctx context.Context, key batchTableKey, providerSch
 	entry.displaySchema = providerSchema
 	entry.displayTable = providerTable
 	entry.shape = cloneTableSnapshot(snapshot)
+	// The provider's inbound-FK catalog is outside the T16 provider
+	// contract: a clean provider load publishes no ReferencedByUnknown
+	// flag, so TRUNCATE's 1701 premise reads only batch-recorded edges.
+	// The unvouched-inbound gap is reserved for states the batch itself
+	// cannot vouch (present-incomplete entries).
 	if snapshot.Exists {
 		entry.state = tablePresent
 	} else {
@@ -205,12 +217,13 @@ func projectEntry(key batchTableKey, entry *batchTableEntry) *spec.TableSnapshot
 			return cloneTableSnapshot(entry.shape)
 		}
 		return &spec.TableSnapshot{
-			Schema:             displaySchema,
-			Table:              &spec.Table{Schema: displaySchema, Name: displayTable},
-			Exists:             true,
-			PrimaryKeyUnknown:  true,
-			IndexesUnknown:     true,
-			ConstraintsUnknown: true,
+			Schema:              displaySchema,
+			Table:               &spec.Table{Schema: displaySchema, Name: displayTable},
+			Exists:              true,
+			PrimaryKeyUnknown:   true,
+			IndexesUnknown:      true,
+			ConstraintsUnknown:  true,
+			ReferencedByUnknown: true,
 		}
 	}
 	return nil
@@ -250,6 +263,19 @@ func (s *batchState) apply(ctx context.Context, statement spec.Statement) error 
 		return s.applyDropTable(ctx, statement)
 	}
 	if statement.Unsupported != nil {
+		// A vendor-boundary statement never executes on this dialect (the
+		// product lacks the feature — TiDB CTAS 1105, TiDB procedures,
+		// MySQL-side TiDB extensions). Its pre-state is provably unchanged
+		// and must not tombstone facts a refusal kept.
+		if statement.Unsupported.Reason == spec.UnsupportedVendorBoundaryReason &&
+			statement.Unsupported.Feature == "create_table_select" {
+			// TiDB CREATE TABLE ... SELECT is a probe-proven engine refusal
+			// (1105): the statement never runs, so its pre-state stands. Other
+			// vendor-boundary surfaces are not whitelisted — fulltext/spatial
+			// indexes can land degraded objects, procedures/bindings/admin
+			// forms may execute, and none were probed for refusal here.
+			return nil
+		}
 		// A recognized-but-unsupported statement has no bounded effect. Bound
 		// table targets invalidate; a bound schema scope invalidates the
 		// scope; an unresolvable scope contaminates the batch — it must not
@@ -260,7 +286,11 @@ func (s *batchState) apply(ctx context.Context, statement spec.Statement) error 
 			return s.applyDropColumn(ctx, statement, firstDropColumnAlter(statement.DDL), statement.DDL.TableTargets())
 		}
 		if targets := boundTargets(statement); len(targets) > 0 {
-			s.invalidateAll(targets)
+			if statement.DDL != nil {
+				s.invalidateDropIdentities(statement.DDL)
+			} else {
+				s.invalidateAll(targets)
+			}
 			return nil
 		}
 		if scope := schemaScopeName(statement.DDL); scope != "" {
@@ -314,7 +344,7 @@ func (s *batchState) apply(ctx context.Context, statement spec.Statement) error 
 	case spec.DDLOperationDropIndex:
 		s.applyStandaloneDropIndex(statement)
 	case spec.DDLOperationTruncateTable:
-		s.applyTruncateTable(statement)
+		return s.applyTruncateTable(ctx, statement)
 	case spec.DDLOperationRenameTable:
 		return s.applyRenameTable(ctx, statement)
 	default:
@@ -394,6 +424,13 @@ func fullyAuditedStatement(dialect spec.Dialect, statement spec.Statement) bool 
 			aspect.Metadata["aspect"] == "option" {
 			continue
 		}
+		// A vendor-refused temporary clause — GLOBAL TEMPORARY syntax on
+		// MySQL, ON COMMIT PRESERVE ROWS on TiDB (8200) — is likewise the
+		// statement's answer: it never executes, the pre-state stands.
+		if aspect.Reason == spec.UnsupportedVendorBoundaryReason &&
+			aspect.Metadata["aspect"] == "temporary" {
+			continue
+		}
 		return false
 	}
 	return true
@@ -429,7 +466,11 @@ func partitionStateAdmissible(dialect spec.Dialect, statement spec.Statement) bo
 
 func (s *batchState) invalidateAll(targets []spec.Table) {
 	for _, target := range targets {
-		s.entries[s.keyFor(s.schema, target)] = &batchTableEntry{state: tableUnknown}
+		key := s.keyFor(s.schema, target)
+		s.entries[key] = &batchTableEntry{state: tableUnknown}
+		// An unmodeled effect cannot be proven to have missed the session
+		// slot either — the temp identity tombstones with the catalog one.
+		s.tempEntries[key] = &batchTableEntry{state: tableUnknown}
 	}
 }
 
@@ -446,6 +487,11 @@ func (s *batchState) invalidateSchema(schema string) {
 	for key := range s.entries {
 		if key.schema == lower {
 			s.entries[key] = &batchTableEntry{state: tableUnknown}
+		}
+	}
+	for key := range s.tempEntries {
+		if key.schema == lower {
+			s.tempEntries[key] = &batchTableEntry{state: tableUnknown}
 		}
 	}
 }
@@ -465,45 +511,109 @@ func presentIncompleteEntry(schema, table string) *batchTableEntry {
 	}
 }
 
-// applyCreateTable derives a known-present shape from a fully audited CREATE
-// TABLE. Conditional success semantics: a plain create on an unknown target
-// derives the declared shape; on a known-absent target it deterministically
-// creates it. CREATE TABLE IF NOT EXISTS on an unknown target cannot prove
-// the declared columns landed, so it yields present-incomplete; on a
-// known-present target it is a no-op that keeps the real fact. A plain create
-// on a known-present target can never have succeeded — the premise is broken
-// and the entry invalidates instead of inventing which shape survived.
+// applyCreateTable publishes the namespace-aware create outcome. The
+// destination binds by scope: LOCAL TEMPORARY lands in the session
+// namespace (where a same-named catalog object is left untouched), plain
+// and GLOBAL TEMPORARY creates land in the persistent catalog (a temp
+// shadow does not occupy the catalog name — the persistent create
+// succeeds under it, probed on all four anchors). The outcome matrix:
+//
+//   - vendor refusal — GLOBAL TEMPORARY on MySQL, ON COMMIT PRESERVE ROWS
+//     on TiDB: the statement never executes, pre-state stands.
+//   - proven refusal — bound destination proven-present without
+//     IF NOT EXISTS (1050): pre-state stands, never an invalidate.
+//   - conditional no-op — bound destination proven-present under
+//     IF NOT EXISTS: the fact stands exactly as bound.
+//   - proven/conditional create — absent or unvouched destination: LIKE
+//     copies the source's member shape (a proven-absent source refuses
+//     the whole statement, 1146, and the destination stands; an
+//     unvouched source keeps the destination conditional-incomplete);
+//     CTAS publishes the declared column prefix plus ColumnsTailUnknown
+//     (select-derived members are never inferred); a plain/conditional
+//     create derives the declared shape — IF NOT EXISTS on an unvouched
+//     destination can only prove existence, so it lands
+//     present-incomplete.
+//
+// LIKE/CTAS source bindings are temp-first: a TiDB local-temp LIKE
+// source is a proven 8006 refusal that keeps the destination's
+// pre-state.
 func (s *batchState) applyCreateTable(ctx context.Context, statement spec.Statement) error {
 	ddl := statement.DDL
 	targets := ddl.TableTargets()
 	if len(targets) == 0 || ddl.Table == nil {
 		return nil
 	}
-	key := s.keyFor(s.schema, targets[0])
-	if !fullyAuditedCreateTable(s.dialect, statement) {
-		// A CREATE whose only unmodelled premise is partition-bound
-		// comparability still resolves existence and conditional no-ops:
-		// the declared-scheme gate inside this flow adjudicates the
-		// scheme itself — an expression member stays unproven while a
-		// proven-present IF NOT EXISTS target never executes the body
-		// at all — so the bound aspect must not tombstone the entry.
-		if !createPartitionBoundBounded(s.dialect, statement) {
-			s.invalidateKey(key)
-			return nil
+	if temporaryClauseVendorRefused(s.dialect, ddl) {
+		return nil
+	}
+	dest := targets[0]
+	key := s.keyFor(s.schema, dest)
+	displaySchema, displayTable := s.effectiveSchema(s.schema, dest), dest.Name
+	ifNotExists := ddl.Options["if_not_exists"] == "true"
+	tempDest := ddl.TemporaryScope == spec.TemporaryScopeLocal
+	dstMap := s.entries
+	if tempDest {
+		dstMap = s.tempEntries
+	}
+	if !createAspectAdmissible(s.dialect, statement) {
+		s.invalidateBoundKey(key, destNamespace(tempDest))
+		return nil
+	}
+	var entry *batchTableEntry
+	if tempDest {
+		// The temp slot is session-local: never-touched is provably empty.
+		entry = s.tempEntries[key]
+	} else {
+		var err error
+		entry, err = s.resolve(ctx, key, displaySchema, displayTable)
+		if err != nil {
+			return err
 		}
 	}
-	entry := s.entries[key]
-	ifNotExists := ddl.Options["if_not_exists"] == "true"
-	displaySchema, displayTable := s.effectiveSchema(s.schema, targets[0]), targets[0].Name
+	entryState := boundEntryState(destNamespace(tempDest), entry)
+	// A proven-present destination settles the statement before any
+	// premise engages: IF NOT EXISTS no-ops, a bare create refuses 1050 —
+	// either way the bound fact stands. An unvouched temp slot stays
+	// tombstoned (the session slot cannot be recovered conservatively).
+	if entryState == tablePresent {
+		return nil
+	}
+	if tempDest {
+		if entryState == tableUnknown {
+			return nil
+		}
+		// Temp destinations cannot carry foreign keys or partitions
+		// natively — declaring either makes the create's landing
+		// undecidable, so the slot stays unvouched rather than publishing
+		// a shape the engine may have refused.
+		if hasDeclaredForeignKey(ddl) || ddl.HasPartition {
+			s.invalidateTempKey(key)
+			return nil
+		}
+		shape, outcome, err := s.createDestShape(ctx, statement, displaySchema, displayTable)
+		if err != nil {
+			return err
+		}
+		switch outcome {
+		case createShapeRefused:
+			return nil
+		case createShapeUnproven:
+			s.invalidateTempKey(key)
+			return nil
+		}
+		dstMap[key] = &batchTableEntry{state: tablePresent, shape: shape, displaySchema: displaySchema, displayTable: displayTable}
+		return nil
+	}
+	// Persistent destination: an unvouched pre-state stays conditional —
+	// the outcome matrix below decides per source premise, mirroring the
+	// plain-create doctrine (unknown + plain create derives the shape;
+	// unknown + IF NOT EXISTS proves existence only).
 	// Declared foreign keys carry the same landing premise an ALTER-side
-	// add does — local member/refer-action facts plus the referenced
-	// parent's usable key — decided against the pre-state. A proven
-	// refusal fails the statement before the table lands (the entry is
-	// provably unchanged); an unprovable premise cannot publish the
-	// declared shape because the statement may never have landed. A
-	// present target under IF NOT EXISTS skips creation entirely, so the
-	// premise never engages there.
-	if entry == nil || entry.state == tableUnknown || entry.state == tableAbsent {
+	// add does, decided against the pre-state. A proven refusal fails the
+	// statement before the table lands (the entry is provably unchanged);
+	// an unprovable premise cannot publish the declared shape because the
+	// statement may never have landed.
+	if entryState == tableAbsent || entryState == tableUnknown {
 		refused, decided, err := s.createTableForeignKeyPremise(ctx, key, displaySchema, displayTable, ddl)
 		if err != nil {
 			return err
@@ -519,35 +629,25 @@ func (s *batchState) applyCreateTable(ctx context.Context, statement spec.Statem
 	// A declared CHECK carrying an authored enforcement clause is a proven
 	// syntax refusal on MySQL's parse-and-ignore arm (5.7 answers 1064, not
 	// silent drop) — the statement fails atomically and the entry keeps its
-	// pre-state. A present target under IF NOT EXISTS never executes the
-	// body, so the clause cannot refuse there.
+	// pre-state.
 	arm := s.checkArmFor()
-	if entry == nil || entry.state != tablePresent || !ifNotExists {
-		for _, member := range ddl.Constraints {
-			if spec.CheckExplicitClauseRefused(s.dialect, arm, member) {
-				return nil
-			}
-			if member.Type == "check" && member.EnforcedUnproven &&
-				s.dialect == spec.DialectMySQL && arm == spec.CheckArmIgnored {
-				// The authored clause could not be attributed: the
-				// statement may have refused 1064 or landed the table —
-				// existence is undecidable, so the entry is unvouched
-				// rather than published.
-				s.invalidateKey(key)
-				return nil
-			}
+	for _, member := range ddl.Constraints {
+		if spec.CheckExplicitClauseRefused(s.dialect, arm, member) {
+			return nil
+		}
+		if member.Type == "check" && member.EnforcedUnproven &&
+			s.dialect == spec.DialectMySQL && arm == spec.CheckArmIgnored {
+			// The authored clause could not be attributed: the statement may
+			// have refused 1064 or landed the table — existence is
+			// undecidable, so the entry is unvouched rather than published.
+			s.invalidateKey(key)
+			return nil
 		}
 	}
 	// A provably-invalid declared partition scheme refuses the whole
-	// statement natively — duplicate member names (1517), an over-bound
-	// or method-mismatched PARTITIONS n (1499/1492-class), or bounds the
-	// method cannot accept (1493/1495-class). The same judgment ALTER
-	// PARTITION BY consumes gates the publish here, so a refused CREATE
-	// never lands the table or a fabricated member directory; an
-	// unproven scheme unvouches the target instead. A present target
-	// under IF NOT EXISTS never executes the clause, so the premise
-	// cannot engage there.
-	if entry == nil || entry.state == tableUnknown || entry.state == tableAbsent {
+	// statement natively — the same judgment ALTER PARTITION BY consumes
+	// gates the publish here; an unproven scheme unvouches the target.
+	if entryState == tableAbsent || entryState == tableUnknown {
 		if ddl.HasPartition {
 			switch partitionSchemeOutcome(ddl.PartitionType, ddl.PartitionDefs, ddl.PartitionCount) {
 			case partitionOutcomeRefused:
@@ -558,33 +658,264 @@ func (s *batchState) applyCreateTable(ctx context.Context, statement spec.Statem
 			}
 		}
 	}
-	switch {
-	case entry == nil || entry.state == tableUnknown:
-		if ifNotExists {
-			// Conditional create on an unknown target cannot prove the
-			// declared shape landed — existence is proven, members are not.
+	shape, outcome, err := s.createDestShape(ctx, statement, displaySchema, displayTable)
+	if err != nil {
+		return err
+	}
+	switch outcome {
+	case createShapeRefused:
+		return nil
+	case createShapeUnproven:
+		// A withheld member set can still carry conditional existence:
+		// IF NOT EXISTS on an unvouched destination proves presence only;
+		// a LIKE/CTAS whose source premise stayed unproven leaves the
+		// destination tombstoned — the create may never have run.
+		if ifNotExists && !ddl.HasReferTable && !ddl.HasSelect {
 			s.entries[key] = presentIncompleteEntry(displaySchema, displayTable)
 			return nil
 		}
-		s.entries[key] = &batchTableEntry{
-			state:         tablePresent,
-			shape:         s.derivedCreateShape(displaySchema, displayTable, ddl),
-			displaySchema: displaySchema,
-			displayTable:  displayTable,
+		s.invalidateKey(key)
+		return nil
+	}
+	if ifNotExists && entryState == tableUnknown {
+		// IF NOT EXISTS on an unvouched destination can only prove
+		// existence — either the pre-existing table stood or the create
+		// landed; the member set differs between those outcomes.
+		s.entries[key] = presentIncompleteEntry(displaySchema, displayTable)
+		return nil
+	}
+	s.entries[key] = &batchTableEntry{
+		state:         tablePresent,
+		shape:         shape,
+		displaySchema: displaySchema,
+		displayTable:  displayTable,
+	}
+	for i := range ddl.Constraints {
+		member := &ddl.Constraints[i]
+		if member.Type != "foreign_key" {
+			continue
 		}
-	case entry.state == tableAbsent:
-		s.entries[key] = &batchTableEntry{
-			state:         tablePresent,
-			shape:         s.derivedCreateShape(displaySchema, displayTable, ddl),
-			displaySchema: displaySchema,
-			displayTable:  displayTable,
-		}
-	case entry.state == tablePresent:
-		if !ifNotExists {
-			s.invalidateKey(key)
+		if err := s.recordInboundEdge(ctx, key, dest, *member); err != nil {
+			return err
 		}
 	}
 	return nil
+}
+
+// firstRenameTableAlter returns the ALTER-side rename_table action when
+// the statement carries one, or nil.
+func firstRenameTableAlter(ddl *spec.DDL) *spec.Alter {
+	for i := range ddl.Alter {
+		if ddl.Alter[i].Action == "rename_table" {
+			return &ddl.Alter[i]
+		}
+	}
+	return nil
+}
+
+// hasDeclaredForeignKeyAction reports whether any ALTER action declares a
+// foreign-key constraint (add_constraint carrying a foreign_key member or
+// the add_foreign_key action form).
+func hasDeclaredForeignKeyAction(ddl *spec.DDL) bool {
+	for i := range ddl.Alter {
+		alter := &ddl.Alter[i]
+		if alter.Action == "add_foreign_key" {
+			return true
+		}
+		if alter.Action == "add_constraint" && alter.Constraint != nil && alter.Constraint.Type == "foreign_key" {
+			return true
+		}
+	}
+	return false
+}
+
+func destNamespace(tempDest bool) boundNamespace {
+	if tempDest {
+		return namespaceTemporary
+	}
+	return namespacePersistent
+}
+
+type createShapeOutcome int
+
+const (
+	createShapeDerived  createShapeOutcome = iota // publish the returned shape
+	createShapeRefused                            // proven refusal — keep pre-state
+	createShapeUnproven                           // undecidable — caller decides
+)
+
+// temporaryClauseVendorRefused reports the temporary-clause forms the
+// target product provably refuses: GLOBAL TEMPORARY syntax on MySQL and
+// ON COMMIT PRESERVE ROWS on TiDB (8200). The statement never executes —
+// callers keep every pre-state. ON COMMIT is a create-time clause, so the
+// TiDB preserve check only fires for CREATE — a DROP GLOBAL TEMPORARY
+// has no attribute to refuse and is modeled.
+func temporaryClauseVendorRefused(dialect spec.Dialect, ddl *spec.DDL) bool {
+	if ddl.TemporaryScope != spec.TemporaryScopeGlobal {
+		return false
+	}
+	if dialect == spec.DialectMySQL {
+		return true
+	}
+	return dialect == spec.DialectTiDB && ddl.Operation == spec.DDLOperationCreateTable && !ddl.OnCommitDelete
+}
+
+// createAspectAdmissible reports whether every coverage aspect on the
+// statement is either modeled or a proven vendor refusal this flow
+// adjudicates itself (temporary-clause refusals keep pre-state; partition
+// bound aspects are judged inside; the CTAS duplicate-key clause is a
+// data-only modifier with no member-shape effect). Everything else is
+// fail-closed.
+func createAspectAdmissible(dialect spec.Dialect, statement spec.Statement) bool {
+	ddl := statement.DDL
+	if statement.Unsupported != nil || ddl.OmittedTargets != 0 {
+		return false
+	}
+	for _, aspect := range statementCoverageAspects(dialect, statement) {
+		if aspect.Reason == spec.UnsupportedVendorBoundaryReason && aspect.Metadata["aspect"] == "temporary" {
+			continue
+		}
+		if aspect.Metadata["aspect"] == "partition_bound" {
+			continue
+		}
+		if aspect.Metadata["aspect"] == "option" && strings.HasSuffix(aspect.Feature, ".on_duplicate") {
+			continue
+		}
+		return false
+	}
+	return true
+}
+
+// createDestShape derives the destination's post-shape. LIKE clones the
+// bound source's member set; CTAS publishes the declared column prefix
+// with ColumnsTailUnknown; a plain create derives the declared shape; a
+// global temporary lands the same shape plus the GlobalTemporary marker.
+// A proven-absent or refused source is createShapeRefused (keep
+// pre-state); an unvouched source is createShapeUnproven.
+func (s *batchState) createDestShape(ctx context.Context, statement spec.Statement, displaySchema, displayTable string) (*spec.TableSnapshot, createShapeOutcome, error) {
+	ddl := statement.DDL
+	if ddl.HasReferTable && ddl.ReferTable != nil {
+		ns, entry, _, err := s.bindSource(ctx, *ddl.ReferTable)
+		if err != nil {
+			return nil, createShapeRefused, fmt.Errorf("load table snapshot for %s: %w", ddl.ReferTable.Name, err)
+		}
+		if ns == namespaceTemporary && s.dialect == spec.DialectTiDB {
+			// TiDB refuses LIKE on a local-temporary source (8006) —
+			// proven refusal, destination keeps pre-state.
+			return nil, createShapeRefused, nil
+		}
+		if ns == namespaceAmbiguous {
+			return nil, createShapeUnproven, nil
+		}
+		state := boundEntryState(ns, entry)
+		switch state {
+		case tableAbsent:
+			// Missing LIKE source refuses the statement (1146).
+			return nil, createShapeRefused, nil
+		case tablePresent:
+			return likeCopiedShape(entry.shape, displaySchema, displayTable), createShapeDerived, nil
+		default:
+			return nil, createShapeUnproven, nil
+		}
+	}
+	if ddl.HasSelect {
+		for _, source := range ddl.SelectSources {
+			ns, entry, _, err := s.bindSource(ctx, source)
+			if err != nil {
+				return nil, createShapeRefused, fmt.Errorf("load table snapshot for %s: %w", source.Name, err)
+			}
+			switch boundEntryState(ns, entry) {
+			case tableAbsent:
+				// A proven-missing select source refuses the statement
+				// (1146) — the destination's pre-state stands.
+				return nil, createShapeRefused, nil
+			case tablePresent:
+			default:
+				return nil, createShapeUnproven, nil
+			}
+		}
+		return ctasDeclaredShape(displaySchema, displayTable, ddl), createShapeDerived, nil
+	}
+	shape := s.derivedCreateShape(displaySchema, displayTable, ddl)
+	if ddl.TemporaryScope == spec.TemporaryScopeGlobal {
+		shape.GlobalTemporary = true
+		if shape.Options == nil {
+			shape.Options = map[string]string{}
+		}
+		shape.Options["on_commit"] = "delete"
+	}
+	return shape, createShapeDerived, nil
+}
+
+// likeCopiedShape projects the member set CREATE TABLE ... LIKE provably
+// copies, per the mysql80 probe: columns (with generated definitions),
+// indexes, primary key, check constraints (server-renamed → NameUnknown),
+// partitioning and options — minus the auto_increment counter and any
+// foreign_key constraint (an FK's implicit supporting index lands as a
+// plain index; the constraint object does not copy). A nil source shape
+// (present-incomplete) yields a present-incomplete destination.
+func likeCopiedShape(source *spec.TableSnapshot, displaySchema, displayTable string) *spec.TableSnapshot {
+	if source == nil {
+		return nil
+	}
+	shape := cloneTableSnapshot(source)
+	shape.Schema = displaySchema
+	shape.Table = &spec.Table{Schema: displaySchema, Name: displayTable}
+	kept := shape.Constraints[:0]
+	for _, member := range shape.Constraints {
+		switch member.Type {
+		case "foreign_key":
+			// Foreign keys do not copy; their implicit supporting index
+			// members land as plain indexes in the clone's Indexes.
+			continue
+		case "check":
+			// The engine renames CHECK objects to <dest>_chk_N — the
+			// member lands but its stored name is unproven.
+			member.NameUnknown = true
+		}
+		kept = append(kept, member)
+	}
+	shape.Constraints = kept
+	if shape.Options != nil {
+		delete(shape.Options, "auto_increment")
+	}
+	shape.ReferencedBy = []spec.Table{}
+	shape.ReferencedByUnknown = false
+	return shape
+}
+
+// ctasDeclaredShape publishes the only provable member facts of a CTAS
+// destination: the authored column definitions land as the column prefix
+// and every select-appended member stays unproven — the select is never
+// executed or result-inferred.
+func ctasDeclaredShape(displaySchema, displayTable string, ddl *spec.DDL) *spec.TableSnapshot {
+	shape := &spec.TableSnapshot{
+		Schema:             displaySchema,
+		Table:              &spec.Table{Schema: displaySchema, Name: displayTable, Comment: ddl.Table.Comment},
+		Exists:             true,
+		Columns:            make([]spec.Column, 0, len(ddl.Columns)),
+		ColumnsTailUnknown: true,
+		Indexes:            []spec.Index{},
+		Constraints:        []spec.Constraint{},
+		ReferencedBy:       []spec.Table{},
+	}
+	for _, column := range ddl.Columns {
+		shape.Columns = append(shape.Columns, cloneColumn(column))
+	}
+	// Declared PK/index members on a CTAS are column-level attributes the
+	// engine honors or ignores per the select's landing; the member truth
+	// beyond the declared column prefix is unproven.
+	shape.PrimaryKeyUnknown = len(ddl.Columns) > 0
+	return shape
+}
+
+func hasDeclaredForeignKey(ddl *spec.DDL) bool {
+	for _, member := range ddl.Constraints {
+		if member.Type == "foreign_key" {
+			return true
+		}
+	}
+	return false
 }
 
 // derivedCreateShape derives the declared post-state and folds in each
@@ -633,36 +964,6 @@ func (s *batchState) derivedCreateShape(displaySchema, displayTable string, ddl 
 		s.publishForeignKeySupportingIndex(shape, *member, authored)
 	}
 	return shape
-}
-
-// fullyAuditedCreateTable reports whether a CREATE TABLE's post-state shape is
-// the extracted column list: no unsupported marker, no aspect gaps, no
-// copy-source or select-driven shape, no temporary scope (a session-scoped
-// object is not schema state), and no collapsed extra targets.
-func fullyAuditedCreateTable(dialect spec.Dialect, statement spec.Statement) bool {
-	ddl := statement.DDL
-	if statement.Unsupported != nil || len(statementCoverageAspects(dialect, statement)) > 0 {
-		return false
-	}
-	return !ddl.HasReferTable && !ddl.HasSelect && ddl.TemporaryScope == "" && ddl.OmittedTargets == 0
-}
-
-// createPartitionBoundBounded reports whether a CREATE's only unmodelled
-// premise is partition-bound comparability — no unsupported marker, no
-// structural flags, and every coverage aspect is a partition-bound item
-// the declared-scheme gate inside applyCreateTable already adjudicates.
-func createPartitionBoundBounded(dialect spec.Dialect, statement spec.Statement) bool {
-	ddl := statement.DDL
-	if statement.Unsupported != nil || ddl.HasReferTable || ddl.HasSelect ||
-		ddl.TemporaryScope != "" || ddl.OmittedTargets != 0 {
-		return false
-	}
-	for _, aspect := range statementCoverageAspects(dialect, statement) {
-		if aspect.Metadata["aspect"] != "partition_bound" {
-			return false
-		}
-	}
-	return true
 }
 
 func derivedCreateShape(dialect spec.Dialect, schema, table string, ddl *spec.DDL, tidbClusteredDefault *string, tidbAlterPK *bool) *spec.TableSnapshot {
@@ -806,6 +1107,54 @@ func (s *batchState) tidbAlterPrimaryKey() *bool {
 func (s *batchState) applyAlterTable(ctx context.Context, statement spec.Statement) error {
 	ddl := statement.DDL
 	targets := ddl.TableTargets()
+	// TiDB refuses every ALTER TABLE form on a local temporary table
+	// (8200) — a proven refusal that keeps the session object's exact
+	// pre-state. The check binds the primary target temp-first, matching
+	// the reference semantics; a tombstoned temp slot is ambiguous and
+	// falls through to the ordinary gates.
+	if s.dialect == spec.DialectTiDB && len(targets) > 0 {
+		if temp := s.tempEntry(s.keyFor(s.schema, targets[0])); temp != nil && temp.state == tablePresent {
+			return nil
+		}
+	}
+	// MySQL supports ALTER TABLE on a local temporary table — the actions
+	// bind the session object (probed: ALTER tp ADD COLUMN works on 5.7/
+	// 8.0/8.4). The transition helpers all operate on the bound slot map,
+	// so a temp-bound primary target swaps the maps for the duration of
+	// the dispatch and every helper keeps its shared semantics verbatim.
+	// A tombstoned temp slot makes the read ambiguous — tombstone both
+	// slots rather than pick an object.
+	if len(targets) > 0 {
+		primaryKey := s.keyFor(s.schema, targets[0])
+		temp := s.tempEntry(primaryKey)
+		if temp != nil && temp.state == tableUnknown {
+			s.invalidateTempKey(primaryKey)
+			s.invalidateKey(primaryKey)
+			return nil
+		}
+		if temp != nil && temp.state == tablePresent {
+			if alter := firstRenameTableAlter(ddl); alter != nil {
+				// ALTER TABLE temp RENAME TO ... migrates inside the
+				// session namespace — applyRenamePair binds endpoints
+				// itself and must see the real maps.
+				if len(ddl.Alter) != 1 || len(targets) != 2 || !fullyAuditedStatement(s.dialect, statement) {
+					s.invalidateTempKey(primaryKey)
+					return nil
+				}
+				return s.applyRenamePair(ctx, statement, targets[0], targets[1])
+			}
+			// A local temp object cannot carry foreign keys or a
+			// partition scheme — declaring either leaves the outcome
+			// undecidable rather than publishing into a slot the engine
+			// refused or silently rewrote.
+			if hasDeclaredForeignKeyAction(ddl) || hasPartitionAlterAction(ddl) {
+				s.invalidateTempKey(primaryKey)
+				return nil
+			}
+			s.entries, s.tempEntries = s.tempEntries, s.entries
+			defer func() { s.entries, s.tempEntries = s.tempEntries, s.entries }()
+		}
+	}
 	// A partition action sharing a multi-spec ALTER is settled by the
 	// probed combination matrix, not by a blanket refusal: structural
 	// siblings, table-option siblings, and multiple partition actions are
@@ -896,7 +1245,7 @@ func (s *batchState) applyAlterTable(ctx context.Context, statement spec.Stateme
 			s.invalidateAll(targets)
 			return nil
 		}
-		return s.applyRenamePair(ctx, targets[0], targets[1])
+		return s.applyRenamePair(ctx, statement, targets[0], targets[1])
 	}
 	if alter.Action == "modify_column" {
 		return s.applyModifyColumn(ctx, statement, alter, targets)
@@ -1241,99 +1590,431 @@ func columnTypeFamilyLocal(column spec.Column) string {
 	}
 }
 
-// applyRenameTable dispatches a standalone RENAME TABLE. Only a single
-// bounded pair enters migration; multi-pair forms invalidate every endpoint
-// because partial success is not modeled.
+// applyRenameTable applies RENAME TABLE's per-pair sequential outcome.
+// Every alter payload carries one pair's old/new identities; pairs execute
+// in authored order, so a swap (`a→b, b→c`) reads the post-pair state of
+// the previous pair — the same sequential binding the engine uses. On
+// MySQL the statement reads the persistent catalog only (a temp-only name
+// answers 1146); TiDB resolves temp-first and refuses any local-temp
+// endpoint with 8200 — a proven refusal that keeps the pair's pre-state.
+// Each pair's endpoint table: source proven-present + destination
+// proven-absent + movable members migrates; a proven refusal (missing
+// source, occupied destination) keeps the pair's exact pre-state; every
+// undecidable cell tombstones only that pair's endpoints.
 func (s *batchState) applyRenameTable(ctx context.Context, statement spec.Statement) error {
 	ddl := statement.DDL
 	targets := ddl.TableTargets()
-	if !fullyAuditedStatement(s.dialect, statement) || len(ddl.Alter) != 1 || len(targets) != 2 {
-		s.invalidateAll(targets)
+	if !fullyAuditedStatement(s.dialect, statement) || len(ddl.Alter) == 0 || len(targets) != 2*len(ddl.Alter) {
+		s.invalidateBound(ctx, statement, targets)
 		return nil
 	}
-	// Cross-check the positional pair against the alter payload's own
-	// old/new identity options so the two normalized views cannot diverge.
-	alter := ddl.Alter[0]
-	source, destination := targets[0], targets[1]
-	if alter.Action != "rename_table" ||
-		alter.Options["old_table"] != source.Name || alter.Options["old_schema"] != source.Schema ||
-		alter.Options["new_table"] != destination.Name || alter.Options["new_schema"] != destination.Schema {
-		s.invalidateAll(targets)
-		return nil
+	for i := range ddl.Alter {
+		alter := ddl.Alter[i]
+		source, destination := targets[2*i], targets[2*i+1]
+		if alter.Action != "rename_table" ||
+			alter.Options["old_table"] != source.Name || alter.Options["old_schema"] != source.Schema ||
+			alter.Options["new_table"] != destination.Name || alter.Options["new_schema"] != destination.Schema {
+			s.invalidateBound(ctx, statement, targets)
+			return nil
+		}
 	}
-	return s.applyRenamePair(ctx, source, destination)
-}
-
-// applyRenamePair applies the frozen endpoint-existence table for one
-// bounded rename pair. The destination resolves through the shared once-per-
-// key seam — a cached answer (including an earlier tombstone) is reused, an
-// invalidated schema answers unknown without a provider call, and a provider
-// error propagates before either endpoint's post-state is published.
-// Migration runs only on the one proven cell — known-present source onto a
-// known-absent destination carrying a movable member set: the destination
-// receives a fresh deep-copied shape under its own identity and the source
-// becomes a settled known-absent entry. Every other cell tombstones both
-// ends; unknown inputs never fabricate absent or present facts.
-func (s *batchState) applyRenamePair(ctx context.Context, source, destination spec.Table) error {
-	if err := ctx.Err(); err != nil {
-		return err
+	// Multi-pair RENAME TABLE is atomic on both products but adjudicates
+	// pairs left-to-right against an evolving working set: each consumed
+	// source frees its slot, each produced destination occupies it — the
+	// scratch triple (a→tmp, b→a, tmp→b) is the canonical proof. A proven
+	// refusal anywhere rolls the whole statement back (probed: a first
+	// migrated pair is restored when a later pair fails), and an
+	// undecidable cell tombstones every declared endpoint because pairs
+	// after it may never have been reached natively.
+	type boundPair struct {
+		source, destination spec.Table
+		srcNS, dstNS        boundNamespace
+		srcEntry, dstEntry  *batchTableEntry
+		srcKey, dstKey      batchTableKey
 	}
-	sourceKey := s.keyFor(s.schema, source)
-	destinationKey := s.keyFor(s.schema, destination)
-	if sourceKey == destinationKey {
-		// The endpoints are not distinguishable identities (same key under
-		// the effective schema) — conservatively invalidate rather than run
-		// a write-delete-write migration.
-		dependentKeys := s.renameDependentKeys(sourceKey, destinationKey)
+	pairs := make([]boundPair, 0, len(ddl.Alter))
+	for i := range ddl.Alter {
+		source, destination := targets[2*i], targets[2*i+1]
+		srcNS, srcEntry, srcKey, err := s.bindRenameEndpoint(ctx, statement, source, true, namespacePersistent)
+		if err != nil {
+			return fmt.Errorf("load table snapshot for %s: %w", source.Name, err)
+		}
+		dstNS, dstEntry, dstKey, err := s.bindRenameEndpoint(ctx, statement, destination, false, srcNS)
+		if err != nil {
+			return fmt.Errorf("load table snapshot for %s: %w", destination.Name, err)
+		}
+		pairs = append(pairs, boundPair{source: source, destination: destination, srcNS: srcNS, dstNS: dstNS, srcEntry: srcEntry, dstEntry: dstEntry, srcKey: srcKey, dstKey: dstKey})
+	}
+	fate := renamePairMigrate
+	claimedDst := make(map[batchTableKey]map[boundNamespace]bool, len(pairs))
+	claimedSrc := make(map[batchTableKey]map[boundNamespace]bool, len(pairs))
+	producedShape := make(map[batchTableKey]map[boundNamespace]*spec.TableSnapshot, len(pairs))
+	for i := range pairs {
 		if err := ctx.Err(); err != nil {
 			return err
 		}
-		for _, key := range dependentKeys {
-			s.invalidateKey(key)
+		pair := &pairs[i]
+		pairFate := s.atomicRenamePairFate(pair.srcNS, pair.srcEntry, pair.srcKey, pair.dstNS, pair.dstEntry, pair.dstKey, claimedSrc, claimedDst)
+		// The first refused or undecidable cell ends adjudication — later
+		// pairs may never have been reached natively.
+		if pairFate != renamePairMigrate {
+			fate = pairFate
+			break
 		}
-		s.invalidateKey(sourceKey)
+		if claimedDst[pair.dstKey] == nil {
+			claimedDst[pair.dstKey] = map[boundNamespace]bool{}
+		}
+		claimedDst[pair.dstKey][pair.dstNS] = true
+		if claimedSrc[pair.srcKey] == nil {
+			claimedSrc[pair.srcKey] = map[boundNamespace]bool{}
+		}
+		claimedSrc[pair.srcKey][pair.srcNS] = true
+		// The produced slot carries the pair's effective source shape —
+		// chained moves (a→x, x→b) forward it so b lands a's body.
+		effective := pair.srcEntry.shape
+		if claimedDst[pair.srcKey] != nil && claimedDst[pair.srcKey][pair.srcNS] {
+			effective = producedShape[pair.srcKey][pair.srcNS]
+		}
+		if producedShape[pair.dstKey] == nil {
+			producedShape[pair.dstKey] = map[boundNamespace]*spec.TableSnapshot{}
+		}
+		producedShape[pair.dstKey][pair.dstNS] = effective
+	}
+	if fate == renamePairMigrate {
+		for _, pair := range pairs {
+			dstMap := s.entries
+			if pair.dstNS == namespaceTemporary {
+				dstMap = s.tempEntries
+			}
+			srcShape := pair.srcEntry.shape
+			if claimedDst[pair.srcKey] != nil && claimedDst[pair.srcKey][pair.srcNS] {
+				srcShape = producedShape[pair.srcKey][pair.srcNS]
+			}
+			dstMap[pair.dstKey] = &batchTableEntry{
+				state:         tablePresent,
+				shape:         renamedShape(srcShape, s.effectiveSchema(s.schema, pair.destination), pair.destination.Name),
+				displaySchema: s.effectiveSchema(s.schema, pair.destination),
+				displayTable:  pair.destination.Name,
+			}
+		}
+		for i := range pairs {
+			pair := &pairs[i]
+			// The consumed slot stays vacated only when no later pair
+			// re-occupies the identity — chained moves must clear a
+			// produced-then-consumed slot, while a real rotation keeps
+			// the re-occupied landing.
+			reoccupied := false
+			for j := i + 1; j < len(pairs); j++ {
+				if pairs[j].dstKey == pair.srcKey && pairs[j].dstNS == pair.srcNS {
+					reoccupied = true
+					break
+				}
+			}
+			if reoccupied {
+				continue
+			}
+			srcMap := s.entries
+			if pair.srcNS == namespaceTemporary {
+				srcMap = s.tempEntries
+			}
+			srcMap[pair.srcKey] = &batchTableEntry{
+				state:         tableAbsent,
+				displaySchema: s.effectiveSchema(s.schema, pair.source),
+				displayTable:  pair.source.Name,
+			}
+		}
+		endpointKeys := make(map[batchTableKey]struct{}, len(pairs)*2)
+		for _, pair := range pairs {
+			endpointKeys[pair.srcKey] = struct{}{}
+			endpointKeys[pair.dstKey] = struct{}{}
+		}
+		for _, dependent := range s.referencingEntryKeys(endpointKeys) {
+			s.invalidateKey(dependent)
+		}
 		return nil
 	}
-	sourceEntry, err := s.resolve(ctx, sourceKey, s.effectiveSchema(s.schema, source), source.Name)
-	if err != nil {
-		return fmt.Errorf("load table snapshot for %s: %w", source.Name, err)
+	if fate == renamePairUnproven {
+		// An atomic statement's undecidable fate belongs to every declared
+		// endpoint — pairs after the failing one may never have been
+		// reached, and the failing pair may have executed — so every named
+		// identity tombstones in both slots, plus their loaded dependents.
+		keys := make(map[batchTableKey]struct{}, len(targets))
+		for _, target := range targets {
+			if strings.TrimSpace(target.Name) != "" {
+				keys[s.keyFor(s.schema, target)] = struct{}{}
+			}
+		}
+		for _, dependent := range s.referencingEntryKeys(keys) {
+			s.invalidateKey(dependent)
+		}
+		for key := range keys {
+			s.invalidateKey(key)
+			s.invalidateTempKey(key)
+		}
 	}
-	destinationEntry, err := s.resolve(ctx, destinationKey, s.effectiveSchema(s.schema, destination), destination.Name)
-	if err != nil {
-		return fmt.Errorf("load table snapshot for %s: %w", destination.Name, err)
+	return nil
+}
+
+// atomicRenamePairFate adjudicates one pair at its position inside the
+// atomic RENAME TABLE. Earlier pairs mutate the working set first:
+// claimedSrc slots are consumed (now free/absent) and claimedDst slots are
+// produced (now occupied/present). A destination occupied at pair time is
+// a proven 1050; a source absent at pair time is a proven 1146 — either
+// ends the statement and rolls earlier moves back. Anything undecidable
+// tombstones the statement's declared endpoints.
+func (s *batchState) atomicRenamePairFate(srcNS boundNamespace, srcEntry *batchTableEntry, srcKey batchTableKey, dstNS boundNamespace, dstEntry *batchTableEntry, dstKey batchTableKey, claimedSrc, claimedDst map[batchTableKey]map[boundNamespace]bool) renamePairOutcome {
+	if srcKey == dstKey && srcNS == dstNS {
+		return renamePairKept
 	}
-	dependentKeys := s.renameDependentKeys(sourceKey, destinationKey)
-	movable := sourceEntry.state == tablePresent && destinationEntry.state == tableAbsent && renameShapeMovable(sourceEntry.shape)
-	destinationSchema := s.effectiveSchema(s.schema, destination)
-	var migrated *spec.TableSnapshot
-	if movable && sourceEntry.shape != nil {
-		migrated = cloneTableSnapshot(sourceEntry.shape)
-		migrated.Schema = destinationSchema
-		migrated.Table = &spec.Table{Schema: destinationSchema, Name: destination.Name}
+	if s.dialect == spec.DialectTiDB && (srcNS == namespaceTemporary || dstNS == namespaceTemporary) {
+		return renamePairKept
 	}
+	if srcNS == namespaceAmbiguous || dstNS == namespaceAmbiguous {
+		return renamePairUnproven
+	}
+	srcState := boundEntryState(srcNS, srcEntry)
+	dstState := boundEntryState(dstNS, dstEntry)
+	srcConsumed := claimedSrc[srcKey] != nil && claimedSrc[srcKey][srcNS]
+	srcProduced := claimedDst[srcKey] != nil && claimedDst[srcKey][srcNS]
+	dstConsumed := claimedSrc[dstKey] != nil && claimedSrc[dstKey][dstNS]
+	dstProduced := claimedDst[dstKey] != nil && claimedDst[dstKey][dstNS]
+	// The destination is checked at pair time: produced-earlier or
+	// still-present-and-unvacated both occupy it — a proven 1050 refusal.
+	if dstProduced || (!dstConsumed && dstState == tablePresent) {
+		return renamePairKept
+	}
+	// A source absent at pair time — never present, or already consumed —
+	// is a proven 1146 refusal.
+	if !srcProduced && (srcConsumed || srcState == tableAbsent) {
+		return renamePairKept
+	}
+	if !srcProduced && srcState != tablePresent {
+		return renamePairUnproven
+	}
+	if !dstConsumed && dstState != tableAbsent {
+		return renamePairUnproven
+	}
+	// A produced source inherits movability from the producing pair's
+	// already-adjudicated shape — its pre-state entry is empty by design.
+	if srcProduced {
+		return renamePairMigrate
+	}
+	if srcEntry == nil || !renameShapeMovable(srcEntry.shape) {
+		return renamePairUnproven
+	}
+	return renamePairMigrate
+}
+
+// backupSlot records a slot's pre-mutation entry once so an atomic veto
+// can restore it exactly — entries are shared pointers, so a slot that
+// was never written keeps its original record.
+func backupSlot(originals map[batchTableKey]map[boundNamespace]*batchTableEntry, entries, tempEntries map[batchTableKey]*batchTableEntry, key batchTableKey, ns boundNamespace) {
+	if originals[key] == nil {
+		originals[key] = map[boundNamespace]*batchTableEntry{}
+	}
+	if _, done := originals[key][ns]; done {
+		return
+	}
+	if ns == namespaceTemporary {
+		originals[key][ns] = tempEntries[key]
+		return
+	}
+	originals[key][ns] = entries[key]
+}
+
+func renamedShape(source *spec.TableSnapshot, schema, table string) *spec.TableSnapshot {
+	if source == nil {
+		return nil
+	}
+	shape := cloneTableSnapshot(source)
+	shape.Schema = schema
+	shape.Table = &spec.Table{Schema: schema, Name: table}
+	return shape
+}
+
+// bindRenameEndpoint resolves one endpoint of a rename pair. The source
+// endpoint binds by form: ALTER TABLE ... RENAME reads temp-first on both
+// products (MySQL migrates the session object, TiDB then refuses 8200);
+// standalone RENAME TABLE reads the persistent catalog only on MySQL (a
+// temp-only name answers 1146) while TiDB resolves temp-first to refuse.
+// The destination always binds the namespace the source resolved into —
+// a temp object renames inside the session namespace, and a catalog
+// rename writes the catalog without consulting a same-named temp shadow
+// (probed: RENAME x TO temp-name lands under the shadow on both
+// products).
+func (s *batchState) bindRenameEndpoint(ctx context.Context, statement spec.Statement, table spec.Table, source bool, sourceNS boundNamespace) (boundNamespace, *batchTableEntry, batchTableKey, error) {
+	key := s.keyFor(s.schema, table)
+	if !source {
+		if sourceNS == namespaceTemporary {
+			return namespaceTemporary, s.tempEntry(key), key, nil
+		}
+		entry, err := s.resolve(ctx, key, s.effectiveSchema(s.schema, table), table.Name)
+		return namespacePersistent, entry, key, err
+	}
+	if statement.DDL != nil && statement.DDL.Operation == spec.DDLOperationRenameTable && s.dialect == spec.DialectMySQL {
+		entry, err := s.resolve(ctx, key, s.effectiveSchema(s.schema, table), table.Name)
+		return namespacePersistent, entry, key, err
+	}
+	if temp := s.tempEntry(key); temp != nil {
+		switch temp.state {
+		case tablePresent:
+			return namespaceTemporary, temp, key, nil
+		case tableUnknown:
+			return namespaceAmbiguous, nil, key, nil
+		}
+	}
+	entry, err := s.resolve(ctx, key, s.effectiveSchema(s.schema, table), table.Name)
+	return namespacePersistent, entry, key, err
+}
+
+// applyRenamePair adjudicates one bound rename pair (the ALTER TABLE ...
+// RENAME form, which is a single atomic pair) through the shared
+// transition. A kept fate leaves every slot untouched; an unproven fate
+// tombstones the bound endpoints plus dependents; a migrate fate moves
+// the deep-copied shape under the destination identity.
+func (s *batchState) applyRenamePair(ctx context.Context, statement spec.Statement, source, destination spec.Table) error {
 	if err := ctx.Err(); err != nil {
 		return err
 	}
-	for _, key := range dependentKeys {
-		s.invalidateKey(key)
+	srcNS, srcEntry, srcKey, err := s.bindRenameEndpoint(ctx, statement, source, true, namespacePersistent)
+	if err != nil {
+		return fmt.Errorf("load table snapshot for %s: %w", source.Name, err)
 	}
-	if movable {
-		s.entries[destinationKey] = &batchTableEntry{
+	dstNS, dstEntry, dstKey, err := s.bindRenameEndpoint(ctx, statement, destination, false, srcNS)
+	if err != nil {
+		return fmt.Errorf("load table snapshot for %s: %w", destination.Name, err)
+	}
+	originals := make(map[batchTableKey]map[boundNamespace]*batchTableEntry)
+	fate, err := s.renamePairTransition(ctx, srcNS, srcEntry, srcKey, dstNS, dstEntry, dstKey, source, destination, originals)
+	if err != nil {
+		return err
+	}
+	switch fate {
+	case renamePairMigrate:
+		if err := ctx.Err(); err != nil {
+			return err
+		}
+		dstMap := s.entries
+		if dstNS == namespaceTemporary {
+			dstMap = s.tempEntries
+		}
+		dstMap[dstKey] = &batchTableEntry{
 			state:         tablePresent,
-			shape:         migrated,
-			displaySchema: destinationSchema,
+			shape:         renamedShape(srcEntry.shape, s.effectiveSchema(s.schema, destination), destination.Name),
+			displaySchema: s.effectiveSchema(s.schema, destination),
 			displayTable:  destination.Name,
 		}
-		s.entries[sourceKey] = &batchTableEntry{
+		srcMap := s.entries
+		if srcNS == namespaceTemporary {
+			srcMap = s.tempEntries
+		}
+		srcMap[srcKey] = &batchTableEntry{
 			state:         tableAbsent,
 			displaySchema: s.effectiveSchema(s.schema, source),
 			displayTable:  source.Name,
 		}
-		return nil
+	case renamePairUnproven:
+		// The undecidable pair tombstones its bound endpoints and every
+		// loaded dependent of those identities — an endpoint whose state
+		// cannot be vouched cannot keep a foreign-key premise alive.
+		for _, dependent := range s.referencingEntryKeys(map[batchTableKey]struct{}{srcKey: {}, dstKey: {}}) {
+			s.invalidateKey(dependent)
+		}
+		s.invalidateBoundKey(srcKey, srcNS)
+		s.invalidateBoundKey(dstKey, dstNS)
 	}
-	s.invalidateKey(sourceKey)
-	s.invalidateKey(destinationKey)
 	return nil
+}
+
+// renamePairTransition adjudicates the endpoint-existence cell of one
+// bound pair — the single seam both the ALTER single-pair path and the
+// atomic multi-pair simulation consume. Proven refusals (self-pair,
+// TiDB's 8200 local-temp refusal, absent source 1146, occupied
+// destination 1050) answer renamePairKept; a provable cell with movable
+// members answers renamePairMigrate and invalidates dependent entries
+// (backing them up when originals is non-nil); every undecidable cell —
+// ambiguous binding, unvouched endpoint, or immovable members — answers
+// renamePairUnproven and leaves endpoint tombstoning to the caller.
+func (s *batchState) renamePairTransition(ctx context.Context, srcNS boundNamespace, srcEntry *batchTableEntry, srcKey batchTableKey, dstNS boundNamespace, dstEntry *batchTableEntry, dstKey batchTableKey, source, destination spec.Table, originals map[batchTableKey]map[boundNamespace]*batchTableEntry) (renamePairOutcome, error) {
+	if srcKey == dstKey && srcNS == dstNS {
+		// RENAME t TO t is a proven no-op natively — the identity and
+		// shape stand exactly as bound.
+		return renamePairKept, nil
+	}
+	// TiDB refuses a rename touching a local-temporary endpoint (8200) —
+	// a proven refusal, so both endpoints keep their pre-state.
+	if s.dialect == spec.DialectTiDB && (srcNS == namespaceTemporary || dstNS == namespaceTemporary) {
+		return renamePairKept, nil
+	}
+	if srcNS == namespaceAmbiguous || dstNS == namespaceAmbiguous {
+		return renamePairUnproven, nil
+	}
+	fate := renamePairFate(boundEntryState(srcNS, srcEntry), boundEntryState(dstNS, dstEntry))
+	if fate == renamePairMigrate && (srcEntry == nil || !renameShapeMovable(srcEntry.shape)) {
+		// The existence cell proved but the member set cannot move — a
+		// provable migration never ran, and a guessed shape is worse than
+		// none.
+		return renamePairUnproven, nil
+	}
+	if fate != renamePairMigrate {
+		return fate, nil
+	}
+	dependentKeys := s.renameDependentKeys(srcKey, dstKey)
+	if err := ctx.Err(); err != nil {
+		return renamePairUnproven, err
+	}
+	for _, key := range dependentKeys {
+		if originals != nil {
+			backupSlot(originals, s.entries, s.tempEntries, key, namespacePersistent)
+		}
+		s.invalidateKey(key)
+	}
+	return renamePairMigrate, nil
+}
+
+type renamePairOutcome int
+
+const (
+	renamePairKept     renamePairOutcome = iota // proven refusal → pre-state stands
+	renamePairMigrate                           // proven cell → move the shape
+	renamePairUnproven                          // undecidable → tombstone endpoints
+)
+
+// boundEntryState resolves an entry's knowledge for fate adjudication. A
+// nil entry in the session namespace is a proven-empty temp slot — the
+// batch is the session — so it answers absent, never unknown.
+func boundEntryState(ns boundNamespace, entry *batchTableEntry) tableKnowledge {
+	if entry == nil {
+		if ns == namespaceTemporary {
+			return tableAbsent
+		}
+		return tableUnknown
+	}
+	return entry.state
+}
+
+// renamePairFate adjudicates the endpoint-existence cell of one pair.
+// Source proven-absent or destination proven-present is a proven refusal.
+// Source present + destination absent is the single migratable cell —
+// the caller still gates migration on a movable member set. Every other
+// cell is undecidable.
+func renamePairFate(srcState, dstState tableKnowledge) renamePairOutcome {
+	if srcState == tableAbsent || dstState == tablePresent {
+		return renamePairKept
+	}
+	if srcState == tablePresent && dstState == tableAbsent {
+		return renamePairMigrate
+	}
+	return renamePairUnproven
+}
+
+func (s *batchState) invalidateBoundKey(key batchTableKey, ns boundNamespace) {
+	switch ns {
+	case namespaceTemporary:
+		s.invalidateTempKey(key)
+	default:
+		s.invalidateKey(key)
+	}
 }
 
 func (s *batchState) renameDependentKeys(sourceKey, destinationKey batchTableKey) []batchTableKey {
@@ -1364,53 +2045,290 @@ func (s *batchState) referencingEntryKeys(targets map[batchTableKey]struct{}) []
 	return dependents
 }
 
+// applyDropTable publishes the namespace-aware multi-target drop outcome.
+// Binding decides which slot each name hits — explicit TEMPORARY reads the
+// session namespace only, explicit GLOBAL and every other statement read
+// temp-first so a shadowing temp object is the bound target. The outcome
+// matrix is probed per anchor:
+//
+//   - MySQL 8.0/8.4 veto on missing names: any bound-absent target aborts
+//     the whole statement (1051) before anything drops — every slot keeps
+//     its exact pre-state. With all targets resolved, persistent names
+//     drop while a temp-bound name inside a multi-target list fails 1146
+//     mid-execution and survives; a single temp target drops cleanly.
+//   - MySQL 5.7 executes left to right: every bound-present target drops
+//     — temp-bound included — and missing names error without veto.
+//   - TiDB drops every resolvable persistent target (missing names error
+//     without veto); a temp-bound name inside a multi-target list
+//     survives, while a single temp target drops.
+//   - An undecidable MySQL version cannot choose between vetoed and
+//     sequential outcomes — divergent cells tombstone instead of picking.
+//
+// IF EXISTS turns proven-absent names into no-ops; duplicate names in one
+// list are a proven 1066 refusal that keeps every pre-state. Ambiguous
+// bindings and unknown entries tombstone their slots — never a guessed
+// absence, never a fabricated survival.
+// invalidateDropIdentities tombstones every identity a drop statement names
+// — the positional targets, the primary table, and every loaded dependent —
+// across both namespaces, without resolving anything. It is the guard path
+// for statements whose target set is malformed, unaudited, or partially
+// extracted: the effect is unbounded, so no fact may survive it.
+func (s *batchState) invalidateDropIdentities(ddl *spec.DDL) {
+	keys := make(map[batchTableKey]struct{})
+	for _, target := range ddl.TableTargets() {
+		if strings.TrimSpace(target.Name) != "" {
+			keys[s.keyFor(s.schema, target)] = struct{}{}
+		}
+	}
+	if ddl.Table != nil && strings.TrimSpace(ddl.Table.Name) != "" {
+		keys[s.keyFor(s.schema, *ddl.Table)] = struct{}{}
+	}
+	for _, dependent := range s.referencingEntryKeys(keys) {
+		s.invalidateKey(dependent)
+	}
+	for key := range keys {
+		s.invalidateKey(key)
+		s.invalidateTempKey(key)
+	}
+}
+
 func (s *batchState) applyDropTable(ctx context.Context, statement spec.Statement) error {
 	if err := ctx.Err(); err != nil {
 		return err
 	}
 	ddl := statement.DDL
 	targets := ddl.TableTargets()
-	keys := make(map[batchTableKey]struct{}, len(targets)+1)
-	unbound := len(targets) == 0
+	if len(targets) == 0 {
+		s.contaminated = true
+		return nil
+	}
+	if !fullyAuditedStatement(s.dialect, statement) || ddl.OmittedTargets != 0 ||
+		ddl.Table == nil || s.keyFor(s.schema, targets[0]) != s.keyFor(s.schema, *ddl.Table) {
+		s.invalidateDropIdentities(ddl)
+		return nil
+	}
+	// Bind every target first — an ambiguous or undecidable binding never
+	// publishes a partial fate.
+	type boundDrop struct {
+		target spec.Table
+		ns     boundNamespace
+		entry  *batchTableEntry
+		key    batchTableKey
+	}
+	bound := make([]boundDrop, 0, len(targets))
+	seen := make(map[batchTableKey]boundNamespace, len(targets))
+	duplicate := false
 	for _, target := range targets {
 		if strings.TrimSpace(target.Name) == "" {
-			unbound = true
-			continue
+			s.contaminated = true
+			return nil
 		}
-		keys[s.keyFor(s.schema, target)] = struct{}{}
-	}
-	if ddl.Table != nil && strings.TrimSpace(ddl.Table.Name) != "" {
-		keys[s.keyFor(s.schema, *ddl.Table)] = struct{}{}
-	}
-	dependentKeys := s.referencingEntryKeys(keys)
-	precise := orderedStateDialect(s.dialect) && statement.Kind == spec.KindDDL && !unbound && len(targets) == 1 && ddl.Table != nil && strings.TrimSpace(ddl.Table.Name) != "" && ddl.TemporaryScope == "" && ddl.OmittedTargets == 0 && fullyAuditedStatement(s.dialect, statement)
-	var absent *batchTableEntry
-	var targetKey batchTableKey
-	if precise {
-		targetKey = s.keyFor(s.schema, targets[0])
-		precise = targetKey == s.keyFor(s.schema, *ddl.Table)
-		entry := s.entries[targetKey]
-		if precise && entry != nil && (entry.state == tablePresent || (entry.state == tableAbsent && ddl.Options["if_exists"] == "true")) {
-			absent = &batchTableEntry{state: tableAbsent, displaySchema: s.effectiveSchema(s.schema, targets[0]), displayTable: targets[0].Name}
+		ns, entry, key, err := s.bindTarget(ctx, statement, target)
+		if err != nil {
+			return fmt.Errorf("load table snapshot for %s: %w", target.Name, err)
 		}
+		if prior, ok := seen[key]; ok && prior == ns && s.dialect == spec.DialectMySQL {
+			// DROP TABLE t, t is a proven parse-time refusal (1066) on
+			// MySQL — the statement executes nothing and every pre-state
+			// stands. TiDB instead executes sequentially: the first
+			// occurrence drops and the second errors 1051 after it is
+			// already gone, so it falls through to the per-target fates.
+			duplicate = true
+		}
+		seen[key] = ns
+		bound = append(bound, boundDrop{target: target, ns: ns, entry: entry, key: key})
+	}
+	if duplicate {
+		return nil
 	}
 	if err := ctx.Err(); err != nil {
 		return err
 	}
-	if unbound {
-		s.contaminated = true
-		return nil
+	ifExists := ddl.Options["if_exists"] == "true"
+	multi := len(targets) > 1
+	anyMissing := false
+	anyUnvouched := false
+	for _, ref := range bound {
+		switch ref.ns {
+		case namespacePersistent:
+			switch {
+			case ref.entry != nil && ref.entry.state == tableAbsent:
+				anyMissing = true
+			case ref.entry == nil || ref.entry.state == tableUnknown:
+				// A member whose existence is unvouched could be the
+				// missing name an 8.x veto keys on — its presence makes
+				// every sibling's fate undecidable under the veto arm.
+				anyUnvouched = true
+			}
+		case namespaceTemporary:
+			if ref.entry == nil || ref.entry.state == tableAbsent || ref.entry.state == tableNeverTouched {
+				// An explicit TEMPORARY drop binds the session slot; an
+				// empty slot is a missing name for existence purposes.
+				anyMissing = true
+			} else if ref.entry.state == tableUnknown {
+				anyUnvouched = true
+			}
+		}
 	}
-	for _, key := range dependentKeys {
-		s.invalidateKey(key)
+	multiDropAtomic := s.multiDropVetoes()
+	dropped := make(map[batchTableKey]struct{})
+	unproven := make(map[batchTableKey]struct{})
+	for _, ref := range bound {
+		fate := dropTargetFate(multiDropAtomic, multi, ifExists, anyMissing, anyUnvouched, ref.ns, ref.entry, s.dialect, s.resolvedVersion)
+		switch fate {
+		case dropFateDropped:
+			switch ref.ns {
+			case namespaceTemporary:
+				s.tempEntries[ref.key] = &batchTableEntry{state: tableAbsent, displaySchema: s.effectiveSchema(s.schema, ref.target), displayTable: ref.target.Name}
+			default:
+				dropped[ref.key] = struct{}{}
+				if ref.entry != nil && ref.entry.shape != nil {
+					// The child's own outbound edges die with it — remove
+					// the inbound facts its parents recorded.
+					if err := s.dropInboundEdges(ctx, ref.key, ref.target, ref.entry.shape); err != nil {
+						return err
+					}
+				}
+				s.entries[ref.key] = &batchTableEntry{state: tableAbsent, displaySchema: s.effectiveSchema(s.schema, ref.target), displayTable: ref.target.Name}
+			}
+		case dropFateUnproven:
+			unproven[ref.key] = struct{}{}
+			switch ref.ns {
+			case namespaceAmbiguous:
+				s.invalidateKey(ref.key)
+				s.invalidateTempKey(ref.key)
+			case namespaceTemporary:
+				s.invalidateTempKey(ref.key)
+			default:
+				s.invalidateKey(ref.key)
+			}
+		}
 	}
-	for key := range keys {
-		s.invalidateKey(key)
-	}
-	if absent != nil {
-		s.entries[targetKey] = absent
+	// A parent drop is not probed for the 3730 refusal class — the
+	// statement may have executed, so children whose declared FK premise
+	// named a dropped or undecidable table cannot be trusted and tombstone
+	// with it. A child that was itself a drop target keeps its own fate.
+	for _, dependents := range []map[batchTableKey]struct{}{dropped, unproven} {
+		for _, dependent := range s.referencingEntryKeys(dependents) {
+			if _, isTarget := dropped[dependent]; isTarget {
+				continue
+			}
+			s.invalidateKey(dependent)
+		}
 	}
 	return nil
+}
+
+type dropFate int
+
+const (
+	dropFateKept     dropFate = iota // provably unchanged
+	dropFateDropped                  // provably dropped → settle absent
+	dropFateUnproven                 // divergent or unvouched → tombstone
+)
+
+// multiDropVetoes reports whether the target product vetoes a multi-target
+// DROP on any missing name before execution — the atomic arm observed on
+// MySQL 8.0.46 and 8.4.10 (and TiDB's persistent targets are NOT vetoed:
+// TiDB drops resolvable members and reports missing ones, per probe).
+// Unknown version answers undecidable: the 5.7 sequential arm and the 8.x
+// veto arm diverge, so callers treat it as unproven rather than guessing.
+func (s *batchState) multiDropVetoes() *bool {
+	if s.dialect == spec.DialectTiDB {
+		veto := false
+		return &veto
+	}
+	if s.dialect != spec.DialectMySQL {
+		return nil
+	}
+	if s.resolvedVersion == nil || s.resolvedVersion.Major == 0 {
+		return nil
+	}
+	veto := s.resolvedVersion.Major >= 8
+	return &veto
+}
+
+// dropTargetFate adjudicates one bound target through the probed outcome
+// matrix. missing names under IF EXISTS are proven no-ops; under the atomic
+// veto the whole statement refuses; under sequential execution present
+// targets drop and missing ones keep their (absent) pre-state. Temp-bound
+// names in a multi-target list drop on 5.7, survive on 8.x/TiDB — divergent
+// under an unknown version.
+func dropTargetFate(atomic *bool, multi, ifExists, anyMissing, anyUnvouched bool, ns boundNamespace, entry *batchTableEntry, dialect spec.Dialect, version *spec.VersionIdentity) dropFate {
+	state := tableNeverTouched
+	if entry != nil {
+		state = entry.state
+	}
+	// IF EXISTS turns missing names into proven no-ops on every anchor —
+	// the veto and sequential arms below only engage for a bare DROP.
+	vetoPossible := !ifExists && (anyMissing || anyUnvouched)
+	switch ns {
+	case namespaceAmbiguous:
+		return dropFateUnproven
+	case namespaceTemporary:
+		switch state {
+		case tableUnknown:
+			return dropFateUnproven
+		case tableAbsent, tableNeverTouched:
+			// Missing temp name: no-op under IF EXISTS, refused otherwise —
+			// either way the slot is provably unchanged.
+			return dropFateKept
+		}
+		// Present temp object: explicit TEMPORARY drops it outright, a
+		// single plain DROP drops it, and a multi-target list's fate is
+		// version-bound.
+		if !multi {
+			return dropFateDropped
+		}
+		if atomic != nil && *atomic {
+			// 8.x veto — the temp name survives a multi list regardless of
+			// whether a sibling was missing.
+			return dropFateKept
+		}
+		if dialect == spec.DialectTiDB {
+			// TiDB's temp slot is veto-shaped, not sequential: a resolvable
+			// list drops the temp object outright (probe: tp16+p16_a both
+			// gone), while a missing sibling keeps it (probe: tp16x
+			// survives p16_a+missing).
+			if !vetoPossible {
+				return dropFateDropped
+			}
+			if anyUnvouched {
+				return dropFateUnproven
+			}
+			return dropFateKept
+		}
+		if atomic != nil {
+			// 5.7 sequential — temp names drop in a multi list too.
+			return dropFateDropped
+		}
+		return dropFateUnproven
+	default:
+		switch state {
+		case tableUnknown:
+			return dropFateUnproven
+		case tableAbsent:
+			return dropFateKept
+		}
+		if !vetoPossible {
+			return dropFateDropped
+		}
+		switch {
+		case atomic == nil:
+			// Version unvouched: the 5.7 sequential arm drops resolvable
+			// members while the 8.x veto keeps everything — divergent.
+			return dropFateUnproven
+		case *atomic && anyMissing:
+			// A proven-missing sibling vetoes the whole statement on 8.x.
+			return dropFateKept
+		case *atomic:
+			// The veto keys on a missing name this batch cannot vouch for.
+			return dropFateUnproven
+		default:
+			// Sequential execution (5.7, TiDB): resolvable members drop.
+			return dropFateDropped
+		}
+	}
 }
 
 // renameShapeMovable reports whether a known-present shape carries only
@@ -1529,28 +2447,68 @@ func (s *batchState) applyCreateIndex(statement spec.Statement) {
 
 // applyTruncateTable keeps a present table's structure but clears row and
 // index statistics — TRUNCATE empties the table, so provider-reported
-// table_rows and cardinality must not carry into the post-state. Any other
-// prior state invalidates: a truncate that cannot have succeeded must not
-// fabricate existence, and an absent premise is already broken.
-func (s *batchState) applyTruncateTable(statement spec.Statement) {
+// table_rows and cardinality must not carry into the post-state. The bound
+// namespace is temp-first (a shadowing temp object truncates natively on
+// both dialects). A proven-absent target is a proven refusal (1146-class):
+// the pre-state stands rather than fabricating existence or downgrading to
+// unknown. An unvouched or ambiguous binding tombstones — never a guessed
+// success.
+func (s *batchState) applyTruncateTable(ctx context.Context, statement spec.Statement) error {
 	ddl := statement.DDL
 	targets := ddl.TableTargets()
 	if !fullyAuditedStatement(s.dialect, statement) || len(targets) == 0 {
-		s.invalidateAll(targets)
-		return
+		s.invalidateBound(ctx, statement, targets)
+		return nil
 	}
-	key := s.keyFor(s.schema, targets[0])
-	entry := s.entries[key]
-	if entry == nil || entry.state != tablePresent {
+	ns, entry, key, err := s.bindTarget(ctx, statement, targets[0])
+	if err != nil {
+		return fmt.Errorf("load table snapshot for %s: %w", targets[0].Name, err)
+	}
+	switch ns {
+	case namespaceAmbiguous:
 		s.invalidateKey(key)
-		return
+		s.invalidateTempKey(key)
+		return nil
+	case namespaceTemporary:
+		if entry == nil || entry.state != tablePresent {
+			// Missing/unknown temp slot: proven refusal keeps the empty
+			// fact; unknown stays unvouched.
+			if entry != nil && entry.state == tableUnknown {
+				s.invalidateTempKey(key)
+			}
+			return nil
+		}
+		if entry.shape == nil {
+			return nil
+		}
+		shape := cloneTableSnapshot(entry.shape)
+		clearMutationStats(shape)
+		s.tempEntries[key] = &batchTableEntry{state: tablePresent, shape: shape, displaySchema: entry.displaySchema, displayTable: entry.displayTable}
+		return nil
+	default:
+		if entry == nil || entry.state == tableUnknown {
+			s.invalidateKey(key)
+			return nil
+		}
+		if entry.state != tablePresent {
+			// Proven refusal — the absent fact is the statement's answer.
+			return nil
+		}
+		if entry.shape == nil {
+			return nil
+		}
+		// A proven inbound foreign-key edge refuses TRUNCATE natively
+		// (1701): the child's existence is the edge's own proof, so the
+		// parent keeps its exact pre-state. An unvouched edge remainder
+		// cannot refuse — it only gates what the inbound_fk rule claims.
+		if len(entry.shape.ReferencedBy) > 0 {
+			return nil
+		}
+		shape := cloneTableSnapshot(entry.shape)
+		clearMutationStats(shape)
+		s.entries[key] = &batchTableEntry{state: tablePresent, shape: shape, displaySchema: entry.displaySchema, displayTable: entry.displayTable}
+		return nil
 	}
-	if entry.shape == nil {
-		return
-	}
-	shape := cloneTableSnapshot(entry.shape)
-	clearMutationStats(shape)
-	s.entries[key] = &batchTableEntry{state: tablePresent, shape: shape, displaySchema: entry.displaySchema, displayTable: entry.displayTable}
 }
 
 // applyDMLMutation clears row and index statistics on mutation targets —
@@ -1915,6 +2873,9 @@ func cloneTableSnapshot(in *spec.TableSnapshot) *spec.TableSnapshot {
 	}
 	if in.PartitionDefs != nil {
 		out.PartitionDefs = spec.ClonePartitionDefs(in.PartitionDefs)
+	}
+	if in.ReferencedBy != nil {
+		out.ReferencedBy = append([]spec.Table{}, in.ReferencedBy...)
 	}
 	return &out
 }

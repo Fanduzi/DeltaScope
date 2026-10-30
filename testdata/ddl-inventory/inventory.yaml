@@ -271,12 +271,12 @@ rows:
     subactions: ["CREATE TEMPORARY TABLE"]
     sql_shape: "CREATE TEMPORARY TABLE tt (id INT)"
     prerequisites: "none"
-    status: generic_notice
-    status_evidence: "2026-09-22 evidence: parses and generic table hygiene rules fire, but spec/extractor carry no temporary identity (grep 'temporary' in internal/domain/spec and parser/tidb extractor is empty) — session scope and same-name shadowing are not audited 2026-09-24 T03 rework (#82): extractor now projects TemporaryScope; CREATE TEMPORARY TABLE records unsupported feature create_table.temporary with coverage=incomplete (owner T16 still owns real semantics)"
+    status: semantically_checked
+    status_evidence: "2026-09-22 evidence: parses and generic table hygiene rules fire, but spec/extractor carry no temporary identity (grep 'temporary' in internal/domain/spec and parser/tidb extractor is empty) — session scope and same-name shadowing are not audited 2026-09-24 T03 rework (#82): extractor now projects TemporaryScope; CREATE TEMPORARY TABLE records unsupported feature create_table.temporary with coverage=incomplete (owner T16 still owns real semantics); T16 (#95): TemporaryScope=local binds the session namespace — plain CREATE lands persistent under a temp shadow (probed), temp-first reads shadow same-named persistent state, create/drop/recreate chains stay ordered 2026-10 T16 closeout (#95): ordered-state now binds session-local temp vs persistent namespaces per statement role; T16.json golden suite passes 55/55 cases on mysql57/80/84+tidb85 (probes in docs/work-plans/t16-lifecycle-temporary-conditional/)"
     targets: "temporary vs persistent identity, same-name shadowing, session scope"
     acceptance:
       dimensions: "temporary identity extraction, shadowing, drop counterpoint"
-      refs: ["file:internal/application/audit/cross_dialect_ddl_coverage_census_test.go", "missing: temporary-identity extraction and fixtures"]
+      refs: ["file:internal/application/audit/batch_state_namespace.go", "file:testdata/ddl-golden/T16.json", "file:testdata/sql-corpus/mysql/ddl/metadata"]
     owner: T16
 
   - id: mysql.create-table-like
@@ -288,11 +288,11 @@ rows:
     sql_shape: "CREATE TABLE t2 LIKE t1"
     prerequisites: "source table identity known for completeness"
     status: semantically_checked
-    status_evidence: "2026-09-22 CLI probe: ddl.table.create_like.forbid plus hygiene rules fire"
+    status_evidence: "2026-09-22 CLI probe: ddl.table.create_like.forbid plus hygiene rules fire; T16 (#95): LIKE source binds temp-first and proven-absent sources fire ddl.table.like.source.exists.require; copied member set is probed (columns+PK+indexes+checks, no FK constraint, no auto_increment counter) 2026-10 T16 closeout (#95): ordered-state now binds session-local temp vs persistent namespaces per statement role; T16.json golden suite passes 55/55 cases on mysql57/80/84+tidb85 (probes in docs/work-plans/t16-lifecycle-temporary-conditional/)"
     targets: "new table identity, source table reference, copied definition scope"
     acceptance:
       dimensions: "source/target identity, policy on LIKE copies"
-      refs: ["file:testdata/sql-corpus/mysql/ddl/findings", "file:internal/application/audit/cross_dialect_ddl_coverage_census_test.go"]
+      refs: ["file:testdata/sql-corpus/mysql/ddl/metadata", "file:testdata/ddl-golden/T16.json", "file:internal/domain/rule/ddl/lifecycle_t16_rules.go"]
     owner: T16
 
   - id: mysql.create-table-select
@@ -304,11 +304,11 @@ rows:
     sql_shape: "CREATE TABLE t3 AS SELECT * FROM t1"
     prerequisites: "none"
     status: semantically_checked
-    status_evidence: "2026-09-22 CLI probe: ddl.table.create_as.forbid plus hygiene rules fire. 2026-09-26 T03 rework (#82): parsed IGNORE|REPLACE duplicate-key handling on CTAS records create_table.option.on_duplicate unaudited evidence"
+    status_evidence: "2026-09-22 CLI probe: ddl.table.create_as.forbid plus hygiene rules fire. 2026-09-26 T03 rework (#82): parsed IGNORE|REPLACE duplicate-key handling on CTAS records create_table.option.on_duplicate unaudited evidence; T16 (#95): CTAS select sources bind temp-first with per-source existence findings (ddl.table.create_as.source.exists.require) and the destination publishes declared-prefix + ColumnsTailUnknown 2026-10 T16 closeout (#95): ordered-state now binds session-local temp vs persistent namespaces per statement role; T16.json golden suite passes 55/55 cases on mysql57/80/84+tidb85 (probes in docs/work-plans/t16-lifecycle-temporary-conditional/)"
     targets: "new table identity, SELECT source scope (not executed)"
     acceptance:
       dimensions: "CTAS policy, source scope boundary"
-      refs: ["file:testdata/sql-corpus/mysql/ddl/findings"]
+      refs: ["file:testdata/sql-corpus/mysql/ddl/metadata", "file:testdata/ddl-golden/T16.json", "file:internal/application/audit/batch_state.go"]
     owner: T16
 
   - id: mysql.create-table-generated-column
@@ -384,11 +384,11 @@ rows:
     sql_shape: "DROP TABLE t1, t2"
     prerequisites: "none"
     status: semantically_checked
-    status_evidence: "2026-09-22 CLI probe: ddl.table.drop.forbid fires; T01 proved every list target reaches the denylist (16/16 oracle); golden DROP verified on 4 anchors 2026-09-24 T03 rework (#82): DROP TEMPORARY TABLE records drop_table.temporary incomplete evidence; plain DROP TABLE stays complete (owner T16)"
+    status_evidence: "2026-09-22 CLI probe: ddl.table.drop.forbid fires; T01 proved every list target reaches the denylist (16/16 oracle); golden DROP verified on 4 anchors 2026-09-24 T03 rework (#82): DROP TEMPORARY TABLE records drop_table.temporary incomplete evidence; plain DROP TABLE stays complete (owner T16); T16 (#95): multi-target fate is version-gated — 8.x atomic veto keeps every target on any missing name, 5.7 drops resolvable targets anyway; TEMPORARY keyword binds the session slot, duplicate names are parse-time 1066, IF EXISTS on proven-absent is a no-op 2026-10 T16 closeout (#95): ordered-state now binds session-local temp vs persistent namespaces per statement role; T16.json golden suite passes 55/55 cases on mysql57/80/84+tidb85 (probes in docs/work-plans/t16-lifecycle-temporary-conditional/)"
     targets: "every target identity in source order, existence conditionals, temporary identity"
     acceptance:
       dimensions: "all-target policy evaluation, tuple dedup, deterministic order"
-      refs: ["file:docs/research/2026-09-22-ddl-multi-target-denylist-probes.json", "file:testdata/ddl-golden/T02.json", "file:pkg/deltascope/audit_test.go"]
+      refs: ["file:testdata/ddl-golden/T16.json", "file:internal/application/audit/batch_state.go", "file:docs/research/2026-09-22-ddl-multi-target-denylist-probes.json"]
     owner: T16
 
   - id: mysql.rename-table
@@ -416,11 +416,11 @@ rows:
     sql_shape: "TRUNCATE TABLE t1"
     prerequisites: "none"
     status: semantically_checked
-    status_evidence: "2026-09-22 CLI probe: ddl.table.truncate.forbid fires (data-deletion risk)"
+    status_evidence: "2026-09-22 CLI probe: ddl.table.truncate.forbid fires (data-deletion risk); T16 (#95): TRUNCATE binds temp-first (session temp truncates, never the persistent shadow); a proven inbound FK edge refuses natively (1701) via ddl.table.truncate.inbound_fk 2026-10 T16 closeout (#95): ordered-state now binds session-local temp vs persistent namespaces per statement role; T16.json golden suite passes 55/55 cases on mysql57/80/84+tidb85 (probes in docs/work-plans/t16-lifecycle-temporary-conditional/)"
     targets: "table identity, data deletion semantics"
     acceptance:
       dimensions: "deletion-risk finding, denylist application"
-      refs: ["file:testdata/sql-corpus/mysql/ddl/findings"]
+      refs: ["file:testdata/sql-corpus/mysql/ddl/metadata", "file:testdata/ddl-golden/T16.json"]
     owner: T16
 
   # ================= MySQL: ALTER TABLE subactions =================
@@ -529,11 +529,11 @@ rows:
     sql_shape: "ALTER TABLE t RENAME TO t2"
     prerequisites: "unqualified destination resolves to current database"
     status: semantically_checked
-    status_evidence: "2026-09-22 CLI probe: ddl.alter.rename_table.forbid fires; destination schema resolution corrected at HEAD 1768f05"
+    status_evidence: "2026-09-22 CLI probe: ddl.alter.rename_table.forbid fires; destination schema resolution corrected at HEAD 1768f05; T16 (#95): rename pairs evaluate left-to-right on an evolving working set — a vacated identity frees its slot, a produced source is movable, any refusal rolls the whole statement back (atomic); src absent→1146, dst occupied→1050 2026-10 T16 closeout (#95): ordered-state now binds session-local temp vs persistent namespaces per statement role; T16.json golden suite passes 55/55 cases on mysql57/80/84+tidb85 (probes in docs/work-plans/t16-lifecycle-temporary-conditional/)"
     targets: "table, new identity, destination schema resolution"
     acceptance:
       dimensions: "rename policy, schema-resolution matrix, multi-action preservation"
-      refs: ["file:pkg/deltascope/audit_test.go", "file:internal/application/audit/service_test.go"]
+      refs: ["file:testdata/sql-corpus/mysql/ddl/metadata", "file:testdata/ddl-golden/T16.json", "file:internal/domain/rule/ddl/lifecycle_t16_rules.go"]
     owner: T16
 
   - id: mysql.alter-table.multi-action
@@ -1289,11 +1289,11 @@ rows:
     sql_shape: "CREATE TABLE t2 LIKE t1"
     prerequisites: "none"
     status: semantically_checked
-    status_evidence: "2026-09-22 CLI probe: ddl.table.create_like.forbid plus hygiene rules fire"
+    status_evidence: "2026-09-22 CLI probe: ddl.table.create_like.forbid plus hygiene rules fire; T16 (#95): LIKE from a local-temp source is the probed 8006 refusal (ddl.tidb.local_temporary.like); persistent sources bind temp-first like MySQL 2026-10 T16 closeout (#95): ordered-state now binds session-local temp vs persistent namespaces per statement role; T16.json golden suite passes 55/55 cases on mysql57/80/84+tidb85 (probes in docs/work-plans/t16-lifecycle-temporary-conditional/)"
     targets: "new/source identity"
     acceptance:
       dimensions: "source/target identity"
-      refs: ["file:testdata/sql-corpus/tidb/ddl/findings"]
+      refs: ["file:testdata/sql-corpus/tidb/ddl/metadata", "file:testdata/ddl-golden/T16.json"]
     owner: T16
 
   - id: tidb.create-table-select
@@ -1305,11 +1305,11 @@ rows:
     sql_shape: "CREATE TABLE t3 AS SELECT * FROM t1"
     prerequisites: "vendor boundary: TiDB does not document CTAS as supported"
     status: vendor_not_supported
-    status_evidence: "2026-09-22 CLI probe: TiDB parser accepts the form and generic rules fire, but research baseline marks CTAS a TiDB vendor boundary. 2026-09-23 T03 (#82): boundary now enforced — statement retained with unsupported feature create_table_select and coverage=incomplete"
+    status_evidence: "2026-09-22 CLI probe: TiDB parser accepts the form and generic rules fire, but research baseline marks CTAS a TiDB vendor boundary. 2026-09-23 T03 (#82): boundary now enforced — statement retained with unsupported feature create_table_select and coverage=incomplete; T16 (#95): probe-proven engine refusal (1105) — statement never executes, pre-state stands; modeled as a vendor boundary, not an audit gap 2026-10 T16 closeout (#95): ordered-state now binds session-local temp vs persistent namespaces per statement role; T16.json golden suite passes 55/55 cases on mysql57/80/84+tidb85 (probes in docs/work-plans/t16-lifecycle-temporary-conditional/)"
     targets: "explicit vendor boundary, never a positive support claim"
     acceptance:
       dimensions: "boundary classification vs silent acceptance"
-      refs: ["file:docs/research/2026-09-21-mysql-tidb-ddl-official-baseline.md"]
+      refs: ["file:testdata/ddl-golden/T16.json", "file:docs/research/2026-09-21-mysql-tidb-ddl-official-baseline.md"]
     owner: T16
 
   - id: tidb.create-table-partitioning
@@ -1352,12 +1352,12 @@ rows:
     subactions: ["CREATE TEMPORARY TABLE (local, session-scoped, may shadow an ordinary table)"]
     sql_shape: "CREATE TEMPORARY TABLE tt (id INT PRIMARY KEY)"
     prerequisites: "TiDB >= v5.3.0 for real temporary semantics; local temp tables do not support ALTER TABLE"
-    status: generic_notice
-    status_evidence: "2026-09-22 CLI probe: parses; generic table hygiene rules fire but TEMPORARY identity/scope is not extracted (no 'temporary' handling in spec/extractor); session-scope shadowing unaudited 2026-09-24 T03 rework (#82): TemporaryScope now extracted; records create_table.temporary incomplete evidence; DROP TEMPORARY TABLE records drop_table.temporary (owner T16)"
+    status: semantically_checked
+    status_evidence: "2026-09-22 CLI probe: parses; generic table hygiene rules fire but TEMPORARY identity/scope is not extracted (no 'temporary' handling in spec/extractor); session-scope shadowing unaudited 2026-09-24 T03 rework (#82): TemporaryScope now extracted; records create_table.temporary incomplete evidence; DROP TEMPORARY TABLE records drop_table.temporary (owner T16); T16 (#95): local temp identity/session namespace modeled; ALTER on local temp is the probed 8200 refusal (ddl.tidb.local_temporary.alter) 2026-10 T16 closeout (#95): ordered-state now binds session-local temp vs persistent namespaces per statement role; T16.json golden suite passes 55/55 cases on mysql57/80/84+tidb85 (probes in docs/work-plans/t16-lifecycle-temporary-conditional/)"
     targets: "temporary vs persistent identity, session scope, same-name shadowing of ordinary tables"
     acceptance:
       dimensions: "temporary identity extraction, shadowing rules, ALTER-on-temp boundary, drop counterpoint (DROP [TEMPORARY] TABLE)"
-      refs: ["missing: owner adds temporary-identity extraction and fixtures"]
+      refs: ["file:internal/application/audit/batch_state_namespace.go", "file:testdata/ddl-golden/T16.json", "file:testdata/sql-corpus/tidb/ddl/metadata"]
     owner: T16
 
   - id: tidb.create-global-temporary-table
@@ -1368,12 +1368,12 @@ rows:
     subactions: ["CREATE GLOBAL TEMPORARY TABLE ... ON COMMIT DELETE ROWS"]
     sql_shape: "CREATE GLOBAL TEMPORARY TABLE gt (id INT) ON COMMIT DELETE ROWS"
     prerequisites: "TiDB >= v5.3.0; persistent definition, transaction-scoped data; cannot shadow an ordinary table"
-    status: generic_notice
-    status_evidence: "2026-09-22 CLI probe: parses; generic table hygiene rules fire but GLOBAL/ON COMMIT DELETE ROWS scope is not extracted or checked 2026-09-24 T03 rework (#82): global scope plus OnCommitDelete extracted; records create_table.temporary.global incomplete evidence; under MySQL the same form is classified as a vendor boundary (owner T16)"
+    status: semantically_checked
+    status_evidence: "2026-09-22 CLI probe: parses; generic table hygiene rules fire but GLOBAL/ON COMMIT DELETE ROWS scope is not extracted or checked 2026-09-24 T03 rework (#82): global scope plus OnCommitDelete extracted; records create_table.temporary.global incomplete evidence; under MySQL the same form is classified as a vendor boundary (owner T16); T16 (#95): GLOBAL TEMPORARY is a persistent catalog object — ON COMMIT DELETE ROWS modeled (shape + marker); ON COMMIT PRESERVE ROWS stays a vendor boundary; MySQL GLOBAL TEMPORARY is a parse-level refusal 2026-10 T16 closeout (#95): ordered-state now binds session-local temp vs persistent namespaces per statement role; T16.json golden suite passes 55/55 cases on mysql57/80/84+tidb85 (probes in docs/work-plans/t16-lifecycle-temporary-conditional/)"
     targets: "global temporary identity, transaction-scope semantics, distinctness from local temporary and ordinary tables"
     acceptance:
       dimensions: "global-vs-local identity capture, transaction-scope boundary, drop counterpoint (DROP [GLOBAL] TEMPORARY TABLE)"
-      refs: ["missing: owner adds global temporary fixtures"]
+      refs: ["file:testdata/ddl-golden/T16.json", "file:internal/application/audit/coverage.go"]
     owner: T16
 
   - id: tidb.create-table-ttl
@@ -1433,11 +1433,11 @@ rows:
     sql_shape: "DROP TABLE t1, t2"
     prerequisites: "none"
     status: semantically_checked
-    status_evidence: "2026-09-22 CLI probe: ddl.table.drop.forbid fires; T01 multi-target contract holds on TiDB 2026-09-24 T03 rework (#82): DROP [GLOBAL] TEMPORARY TABLE records drop_table.temporary[.global] incomplete evidence; plain DROP TABLE stays complete (owner T16)"
+    status_evidence: "2026-09-22 CLI probe: ddl.table.drop.forbid fires; T01 multi-target contract holds on TiDB 2026-09-24 T03 rework (#82): DROP [GLOBAL] TEMPORARY TABLE records drop_table.temporary[.global] incomplete evidence; plain DROP TABLE stays complete (owner T16); T16 (#95): TiDB multi-DROP is sequential (non-atomic) — resolvable persistent targets drop regardless of missing names, duplicate names drop the first occurrence then 1051; the temp slot is veto-shaped (drops only on resolvable lists); DROP GLOBAL TEMPORARY binds the catalog 2026-10 T16 closeout (#95): ordered-state now binds session-local temp vs persistent namespaces per statement role; T16.json golden suite passes 55/55 cases on mysql57/80/84+tidb85 (probes in docs/work-plans/t16-lifecycle-temporary-conditional/)"
     targets: "every target identity in order"
     acceptance:
       dimensions: "all-target evaluation"
-      refs: ["file:docs/research/2026-09-22-ddl-multi-target-denylist-probes.json", "file:testdata/ddl-golden/T02.json"]
+      refs: ["file:testdata/ddl-golden/T16.json", "file:internal/application/audit/batch_state.go"]
     owner: T16
 
   - id: tidb.rename-table
@@ -1465,11 +1465,11 @@ rows:
     sql_shape: "TRUNCATE TABLE t1"
     prerequisites: "none"
     status: semantically_checked
-    status_evidence: "2026-09-22 CLI probe: ddl.table.truncate.forbid fires"
+    status_evidence: "2026-09-22 CLI probe: ddl.table.truncate.forbid fires; T16 (#95): same temp-first binding as MySQL; probed inbound-FK refusal 1701 on TiDB too 2026-10 T16 closeout (#95): ordered-state now binds session-local temp vs persistent namespaces per statement role; T16.json golden suite passes 55/55 cases on mysql57/80/84+tidb85 (probes in docs/work-plans/t16-lifecycle-temporary-conditional/)"
     targets: "table identity, deletion semantics"
     acceptance:
       dimensions: "deletion-risk finding"
-      refs: ["file:testdata/sql-corpus/tidb/ddl/findings"]
+      refs: ["file:testdata/sql-corpus/tidb/ddl/metadata", "file:testdata/ddl-golden/T16.json"]
     owner: T16
 
   - id: tidb.flashback-recover
@@ -1480,12 +1480,12 @@ rows:
     subactions: ["FLASHBACK TABLE", "FLASHBACK DATABASE", "FLASHBACK CLUSTER", "RECOVER TABLE"]
     sql_shape: "FLASHBACK TABLE t1 TO t2"
     prerequisites: "GC window and snapshot availability — dynamic, never simulated"
-    status: parse_only
-    status_evidence: "2026-09-22 CLI probe: FLASHBACK TABLE/DATABASE/CLUSTER and RECOVER TABLE parse silently with zero findings. 2026-09-23 T03 (#82): parsed-but-unmodeled flashback/recover statements now carry unsupported evidence (flashback_table/flashback_database/flashback_cluster/recover_table) and coverage=incomplete"
+    status: generic_notice
+    status_evidence: "2026-09-22 CLI probe: FLASHBACK TABLE/DATABASE/CLUSTER and RECOVER TABLE parse silently with zero findings. 2026-09-23 T03 (#82): parsed-but-unmodeled flashback/recover statements now carry unsupported evidence (flashback_table/flashback_database/flashback_cluster/recover_table) and coverage=incomplete; T16 (#95): contract keeps flashback/recover as unaudited boundaries — structured unsupported entries (flashback_table/flashback_database/flashback_cluster/recover_table) plus state contamination, never simulated (dynamic GC/snapshot facts) 2026-10 T16 closeout (#95): ordered-state now binds session-local temp vs persistent namespaces per statement role; T16.json golden suite passes 55/55 cases on mysql57/80/84+tidb85 (probes in docs/work-plans/t16-lifecycle-temporary-conditional/)"
     targets: "restored object identity, source-of-restore semantics, recoverability limits"
     acceptance:
       dimensions: "object identity and boundary facts, no success guarantee claims"
-      refs: ["missing: owner adds lifecycle-restore fixtures"]
+      refs: ["file:internal/application/audit/coverage.go", "file:testdata/ddl-golden/T16.json", "missing: dynamic GC/snapshot availability stays unaudited by contract — no success guarantee claims"]
     owner: T16
 
   # ================= TiDB: ALTER TABLE subactions =================

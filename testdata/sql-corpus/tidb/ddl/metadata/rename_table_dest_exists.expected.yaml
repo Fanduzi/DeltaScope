@@ -1,0 +1,17 @@
+name: rename_table_dest_exists
+dialect: tidb
+category: ddl
+expect:
+  parse_ok: true
+  statement_kind: ddl
+  operation: rename_table
+  findings:
+    include:
+      - ddl.table.rename.dest.exists.forbid
+metadata:
+  schema: app
+  tables:
+    src:
+      exists: true
+    dst:
+      exists: true

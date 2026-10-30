@@ -314,8 +314,9 @@ func TestT05A8DefinitionsAndIdentity(t *testing.T) {
 					earlierU.Options["table_rows"] != "789" {
 					t.Fatalf("other.u projection = %+v, want literal seeded members", earlierU)
 				}
-				if !reflect.DeepEqual(earlierT, provider.snapshots["golden.t"]) ||
-					!reflect.DeepEqual(earlierU, provider.snapshots["other.u"]) {
+				wantT := cloneTableSnapshot(provider.snapshots["golden.t"])
+				wantU := cloneTableSnapshot(provider.snapshots["other.u"])
+				if !reflect.DeepEqual(earlierT, wantT) || !reflect.DeepEqual(earlierU, wantU) {
 					t.Fatal("projections diverge from provider originals")
 				}
 				state.invalidatedSchemas["retired"] = struct{}{}
@@ -385,7 +386,7 @@ func TestT05A8DefinitionsAndIdentity(t *testing.T) {
 				if !reflect.DeepEqual(provider.snapshots, expectedSnapshots) {
 					t.Error("provider-owned snapshots mutated")
 				}
-				if !reflect.DeepEqual(earlierT, expectedSnapshots["golden.t"]) || !reflect.DeepEqual(earlierU, expectedSnapshots["other.u"]) {
+				if !reflect.DeepEqual(earlierT, wantT) || !reflect.DeepEqual(earlierU, wantU) {
 					t.Error("earlier pre-state projections diverged from expected literals")
 				}
 				if earlierT.Options["table_rows"] != "123" || earlierT.Options["auto_increment"] != "456" ||

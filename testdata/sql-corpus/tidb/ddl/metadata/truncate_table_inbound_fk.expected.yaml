@@ -1,0 +1,11 @@
+name: truncate_table_inbound_fk
+dialect: tidb
+category: ddl
+expect:
+  parse_ok: true
+  statement_kind: ddl
+  findings:
+    include:
+      - ddl.table.truncate.inbound_fk
+metadata:
+  schema: app

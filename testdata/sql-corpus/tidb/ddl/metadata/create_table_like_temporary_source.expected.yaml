@@ -1,0 +1,11 @@
+name: create_table_like_temporary_source
+dialect: tidb
+category: ddl
+expect:
+  parse_ok: true
+  statement_kind: ddl
+  findings:
+    include:
+      - ddl.tidb.local_temporary.like
+metadata:
+  schema: app

@@ -145,7 +145,9 @@ func TestBatchStateA3DropPreStateMatrix(t *testing.T) {
 	}{
 		{name: "present_complete", snapshot: presentTable("golden", "t", "id"), plain: "absent", ifExists: "absent"},
 		{name: "present_partial", snapshot: t05A3PartialTable("golden", "t"), plain: "absent", ifExists: "absent"},
-		{name: "absent", snapshot: absentTable("golden", "t"), plain: "unknown", ifExists: "absent"},
+		// A proven-absent target under a bare DROP is a proven 1051 refusal —
+		// the pre-state stands, so the later statement still reads absent.
+		{name: "absent", snapshot: absentTable("golden", "t"), plain: "absent", ifExists: "absent"},
 		{name: "unknown", snapshot: nil, plain: "unknown", ifExists: "unknown"},
 	}
 	for _, dialect := range []spec.Dialect{spec.DialectMySQL, spec.DialectTiDB} {
@@ -358,16 +360,22 @@ func TestBatchStateA3DropStateTable(t *testing.T) {
 		provider := &t05AbsentProvider{}
 		result := t05A3Audit(t, "DROP TABLE t; CREATE TABLE t (id INT PRIMARY KEY);", spec.DialectMySQL, provider, t05A3FiveRulePolicy(t))
 		t05A3DropBlocker(t, result, 0)
-		t05A2R1AssertUnknownGap(t, t05GapsByRule(result, 1, t05RuleCreateForbid), []string{"target_table.existence"})
-		if result.Statements[1].Coverage.Status != report.CoverageUnverified {
-			t.Fatalf("recreate after absent plain drop coverage = %+v, want unverified", result.Statements[1].Coverage)
+		// The bare drop on a proven-absent target is a proven 1051 refusal —
+		// the absent fact stands, so the recreate publishes a full shape.
+		if len(result.Statements[1].Findings) != 0 || len(result.Statements[1].EvidenceGaps) != 0 || result.Statements[1].Coverage.Status != report.CoverageComplete {
+			t.Fatalf("recreate after refused absent drop must be clean, got findings=%+v gaps=%+v coverage=%+v", result.Statements[1].Findings, result.Statements[1].EvidenceGaps, result.Statements[1].Coverage)
 		}
 	})
 	t.Run("absent_if_exists_then_recreate", func(t *testing.T) {
 		t.Parallel()
 		provider := &t05AbsentProvider{}
 		result := t05A3Audit(t, "DROP TABLE IF EXISTS t; CREATE TABLE t (id INT PRIMARY KEY);", spec.DialectMySQL, provider, t05A3FiveRulePolicy(t))
-		t05A3DropBlocker(t, result, 0)
+		// T16 conditional semantics: IF EXISTS on a proven-absent target is
+		// a proven no-op — no existence blocker fires, and the recreate
+		// still publishes a full shape from the standing absent fact.
+		if len(result.Statements[0].Findings) != 0 || len(result.Statements[0].EvidenceGaps) != 0 {
+			t.Fatalf("conditional drop on absent must be a clean no-op, got findings=%+v gaps=%+v", result.Statements[0].Findings, result.Statements[0].EvidenceGaps)
+		}
 		if len(result.Statements[1].Findings) != 0 || len(result.Statements[1].EvidenceGaps) != 0 || result.Statements[1].Coverage.Status != report.CoverageComplete {
 			t.Fatalf("recreate after absent if-exists drop must be clean, got findings=%+v gaps=%+v coverage=%+v", result.Statements[1].Findings, result.Statements[1].EvidenceGaps, result.Statements[1].Coverage)
 		}
@@ -605,12 +613,16 @@ func TestBatchStateA3LoadedDependentInvalidates(t *testing.T) {
 			}
 		})
 	}
-	t.Run("conservative branch still tombstones", func(t *testing.T) {
+	t.Run("refused absent drop keeps the dependent", func(t *testing.T) {
 		t.Parallel()
 		provider := t05A3DependentProviders(t, "aux", "golden", "t", absentTable("golden", "t"))
 		result := t05A3Audit(t, "CREATE INDEX ix_child ON aux.child(id); DROP TABLE t; ALTER TABLE aux.child ADD COLUMN c INT;", spec.DialectMySQL, provider, t05A3FiveRulePolicy(t))
 		t05A3DropBlocker(t, result, 1)
-		t05A3ChildAlterGap(t, result, 2)
+		// The bare drop on a proven-absent target is a proven 1051 refusal —
+		// nothing moved, so the child's foreign-key premise stays loaded.
+		if len(result.Statements[2].Findings) != 0 || len(result.Statements[2].EvidenceGaps) != 0 || result.Statements[2].Coverage.Status != report.CoverageComplete {
+			t.Fatalf("dependent after a refused drop must stay known, got findings=%+v gaps=%+v coverage=%+v", result.Statements[2].Findings, result.Statements[2].EvidenceGaps, result.Statements[2].Coverage)
+		}
 	})
 	t.Run("recreate does not restore", func(t *testing.T) {
 		t.Parallel()
@@ -658,7 +670,9 @@ func TestBatchStateA3LoadedDependentInvalidates(t *testing.T) {
 		if !reflect.DeepEqual(child1, child1Frozen) {
 			t.Fatalf("provider child1 snapshot must stay verbatim, got %+v", child1)
 		}
-		wantCalls := []string{"aux.child1", "aux.child2", "golden.t", "other.v"}
+		// Multi-target DROP binds every declared member once, so other.u
+		// joins the read set alongside the seeded dependents and other.v.
+		wantCalls := []string{"aux.child1", "aux.child2", "golden.t", "other.u", "other.v"}
 		gotCalls := append([]string(nil), provider.calls...)
 		sort.Strings(gotCalls)
 		sort.Strings(wantCalls)
@@ -670,32 +684,48 @@ func TestBatchStateA3LoadedDependentInvalidates(t *testing.T) {
 		t.Parallel()
 		provider := t05A3DependentProviders(t, "aux", "golden", "t", presentTable("golden", "t", "id"))
 		result := t05A3Audit(t, "CREATE INDEX ix_child ON aux.child(id); DROP TABLE t, aux.child; ALTER TABLE aux.child ADD COLUMN c INT;", spec.DialectMySQL, provider, t05A3FiveRulePolicy(t))
-		t05A3ChildAlterGap(t, result, 2)
+		// Both members are named targets — the child drops with the batch
+		// and its fate is the proven absent entry, not a dependent
+		// tombstone, so the alter read sees a settled absence.
+		if len(result.Statements[2].EvidenceGaps) != 0 {
+			t.Fatalf("dropped dependent target must not emit gaps, got %+v", result.Statements[2].EvidenceGaps)
+		}
+		if len(result.Statements[2].Findings) == 0 {
+			t.Fatalf("alter on a provably dropped target must emit existence findings, got %+v", result.Statements[2].Findings)
+		}
 	})
 }
 
 func TestBatchStateA3NonPreciseForms(t *testing.T) {
 	t.Parallel()
-	t.Run("multi target invalidates every key", func(t *testing.T) {
+	t.Run("multi target drops every bound key", func(t *testing.T) {
 		t.Parallel()
 		provider := &t05PresentProvider{snapshots: map[string]*spec.TableSnapshot{
 			"golden.t": presentTable("golden", "t", "id"),
 			"golden.u": presentTable("golden", "u", "id"),
 		}}
 		result := t05A3Audit(t, "DROP TABLE t, u; CREATE INDEX ix_t ON t(id); CREATE INDEX ix_u ON u(id);", spec.DialectMySQL, provider, t05A3FiveRulePolicy(t))
-		t05A2R1AssertUnknownGap(t, t05GapsByRule(result, 1, t05RuleCreateIndexColumns), []string{"target_table.columns", "target_table.existence"})
-		t05A2R1AssertUnknownGap(t, t05GapsByRule(result, 2, t05RuleCreateIndexColumns), []string{"target_table.columns", "target_table.existence"})
+		// Every member provably exists and no name is missing — the
+		// multi-target drop drops both and each index read sees the
+		// settled absent fact.
+		t05A3AbsentProbe(t, result, 1)
+		t05A3AbsentProbe(t, result, 2)
 		if len(provider.calls) > 2 {
 			t.Fatalf("multi-target drop must not reread, got %#v", provider.calls)
 		}
 	})
-	t.Run("duplicate raw target is not precise", func(t *testing.T) {
+	t.Run("duplicate raw target is a proven refusal", func(t *testing.T) {
 		t.Parallel()
 		provider := &t05PresentProvider{snapshots: map[string]*spec.TableSnapshot{"golden.t": presentTable("golden", "t", "id")}}
 		result := t05A3Audit(t, "DROP TABLE t, t; CREATE INDEX ix ON t(id);", spec.DialectMySQL, provider, t05A3FiveRulePolicy(t))
-		t05A2R1AssertUnknownGap(t, t05GapsByRule(result, 1, t05RuleCreateIndexColumns), []string{"target_table.columns", "target_table.existence"})
+		// DROP TABLE t, t is a proven 1066 refusal on MySQL — the statement
+		// executes nothing, so the present fact stands and the index read
+		// stays clean.
+		if len(result.Statements[1].Findings) != 0 || len(result.Statements[1].EvidenceGaps) != 0 {
+			t.Fatalf("index on a refusal-kept table must stay clean, got findings=%+v gaps=%+v", result.Statements[1].Findings, result.Statements[1].EvidenceGaps)
+		}
 	})
-	t.Run("temporary drop invalidates without absence", func(t *testing.T) {
+	t.Run("temporary drop binds the session slot only", func(t *testing.T) {
 		t.Parallel()
 		state := newBatchState(spec.DialectMySQL, "golden", &t05PresentProvider{snapshots: map[string]*spec.TableSnapshot{"golden.t": presentTable("golden", "t", "id")}})
 		key := state.keyFor("golden", spec.Table{Name: "t"})
@@ -712,8 +742,14 @@ func TestBatchStateA3NonPreciseForms(t *testing.T) {
 		if state.contaminated {
 			t.Fatal("temporary drop must invalidate its bound target, not contaminate")
 		}
-		if state.entries[key].state != tableUnknown {
-			t.Fatalf("temporary drop must not publish a known-absent entry, got %+v", state.entries[key])
+		// DROP TEMPORARY binds only the session slot — it is empty, so the
+		// statement is a proven 1051-class refusal and the persistent
+		// object of the same name stands untouched.
+		if state.entries[key].state != tablePresent {
+			t.Fatalf("temporary drop must leave the persistent fact standing, got %+v", state.entries[key])
+		}
+		if state.tempEntries[key] != nil {
+			t.Fatalf("a refused temp drop must not fabricate a session slot, got %+v", state.tempEntries[key])
 		}
 	})
 	t.Run("execute contamination suppresses derivation", func(t *testing.T) {

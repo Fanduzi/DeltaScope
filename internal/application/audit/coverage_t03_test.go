@@ -356,12 +356,11 @@ func TestAuditSQLT03RecognizedUnauditedAspectsIncomplete(t *testing.T) {
 		{name: "mysql alter schema charset", sql: "ALTER DATABASE d1 CHARACTER SET utf8mb4;", dialect: spec.DialectMySQL, wantFeature: "alter_schema.option.charset", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
 		{name: "tidb alter schema placement", sql: "ALTER DATABASE d1 PLACEMENT POLICY=p1;", dialect: spec.DialectTiDB, wantFeature: "alter_schema.option.placement_policy", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
 		{name: "mysql alter schema placement vendor", sql: "ALTER DATABASE d1 PLACEMENT POLICY=p1;", dialect: spec.DialectMySQL, wantFeature: "alter_schema.option.placement_policy", wantReason: spec.UnsupportedVendorBoundaryReason, wantKind: "ddl"},
-		{name: "tidb create temporary table", sql: "CREATE TEMPORARY TABLE t (id INT PRIMARY KEY);", dialect: spec.DialectTiDB, wantFeature: "create_table.temporary", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
-		{name: "mysql create temporary table", sql: "CREATE TEMPORARY TABLE t (id INT PRIMARY KEY);", dialect: spec.DialectMySQL, wantFeature: "create_table.temporary", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
-		{name: "tidb create global temporary table", sql: "CREATE GLOBAL TEMPORARY TABLE t (id INT PRIMARY KEY) ON COMMIT DELETE ROWS;", dialect: spec.DialectTiDB, wantFeature: "create_table.temporary.global", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
+		// Local temporary tables graduated to fully modeled semantics in T16
+		// (session namespace, shadowing, lifecycle transitions) — plain
+		// CREATE TEMPORARY and DROP TEMPORARY no longer land here.
+		{name: "tidb create global temporary preserve rows", sql: "CREATE GLOBAL TEMPORARY TABLE t (id INT PRIMARY KEY) ON COMMIT PRESERVE ROWS;", dialect: spec.DialectTiDB, wantFeature: "create_table.temporary.global.preserve", wantReason: spec.UnsupportedVendorBoundaryReason, wantKind: "ddl"},
 		{name: "mysql create global temporary table", sql: "CREATE GLOBAL TEMPORARY TABLE t (id INT PRIMARY KEY) ON COMMIT DELETE ROWS;", dialect: spec.DialectMySQL, wantFeature: "create_table.temporary.global", wantReason: spec.UnsupportedVendorBoundaryReason, wantKind: "ddl"},
-		{name: "tidb drop temporary table", sql: "DROP TEMPORARY TABLE t;", dialect: spec.DialectTiDB, wantFeature: "drop_table.temporary", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
-		{name: "mysql drop temporary table", sql: "DROP TEMPORARY TABLE t;", dialect: spec.DialectMySQL, wantFeature: "drop_table.temporary", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
 		{name: "tidb create table auto_random", sql: "CREATE TABLE t (id BIGINT PRIMARY KEY AUTO_RANDOM);", dialect: spec.DialectTiDB, wantFeature: "create_table.column.auto_random", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
 		{name: "mysql create table auto_random", sql: "CREATE TABLE t (id BIGINT PRIMARY KEY AUTO_RANDOM);", dialect: spec.DialectMySQL, wantFeature: "create_table.column.auto_random", wantReason: spec.UnsupportedVendorBoundaryReason, wantKind: "ddl"},
 		{name: "tidb alter add column auto_random", sql: "ALTER TABLE t ADD COLUMN id BIGINT AUTO_RANDOM;", dialect: spec.DialectTiDB, wantFeature: "alter_table.add_columns.column.auto_random", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
@@ -558,8 +557,8 @@ func TestAuditSQLT03UnsupportedFeatureReasonPairs(t *testing.T) {
 			// index modifier remains a vendor boundary.
 			{"alter_table.add_index.index.global", spec.UnsupportedVendorBoundaryReason},
 		}},
-		{name: "mysql unsupported second statement", sql: "ALTER TABLE t ADD COLUMN c INT; CREATE TEMPORARY TABLE x (id INT);", dialect: spec.DialectMySQL, wantIndex: 1, want: [][2]string{
-			{"create_table.temporary", spec.UnsupportedUnauditedReason},
+		{name: "mysql unsupported second statement", sql: "ALTER TABLE t ADD COLUMN c INT; CREATE SEQUENCE s;", dialect: spec.DialectMySQL, wantIndex: 1, want: [][2]string{
+			{"create_sequence", spec.UnsupportedVendorBoundaryReason},
 		}},
 		// Index member forms (prefix, expression, descending, multi-valued)
 		// and TiDB GLOBAL graduated to member-level audited facts in T10-R2 —

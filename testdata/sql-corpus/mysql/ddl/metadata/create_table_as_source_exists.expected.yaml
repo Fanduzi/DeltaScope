@@ -1,0 +1,17 @@
+name: create_table_as_source_exists
+dialect: mysql
+category: ddl
+expect:
+  parse_ok: true
+  statement_kind: ddl
+  operation: create_table
+  findings:
+    include:
+      - ddl.table.create_as.source.exists.require
+metadata:
+  schema: app
+  tables:
+    missing_src:
+      exists: false
+    dst:
+      exists: false

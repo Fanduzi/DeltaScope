@@ -1,0 +1,2225 @@
+################################################ mysql57
+version> mysql: [Warning] Using a password on the command line interface can be insecure.
+5.7.44
+=== mysql57 :: drop-multi-all-present
+SQL> create table p16_a(id int);create table p16_b(id int);drop table p16_a,p16_b
+rc=0
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+exists[mysql57::p16_a]> mysql: [Warning] Using a password on the command line interface can be insecure.
+0
+exists[mysql57::p16_b]> mysql: [Warning] Using a password on the command line interface can be insecure.
+0
+=== mysql57 :: drop-multi-second-missing
+SQL> create table p16_a(id int);drop table p16_a,p16_missing;show warnings
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1051 (42S02) at line 1: Unknown table 'golden.p16_missing'
+exists[mysql57::p16_a]> mysql: [Warning] Using a password on the command line interface can be insecure.
+0
+exists[mysql57::p16_missing]> mysql: [Warning] Using a password on the command line interface can be insecure.
+0
+=== mysql57 :: drop-multi-first-missing
+SQL> create table p16_b(id int);drop table p16_missing,p16_b;show warnings
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1051 (42S02) at line 1: Unknown table 'golden.p16_missing'
+exists[mysql57::p16_b]> mysql: [Warning] Using a password on the command line interface can be insecure.
+0
+=== mysql57 :: drop-multi-two-missing
+SQL> create table p16_a(id int);drop table p16_a,p16_missing,p16_z;show warnings
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1051 (42S02) at line 1: Unknown table 'golden.p16_missing,golden.p16_z'
+exists[mysql57::p16_a]> mysql: [Warning] Using a password on the command line interface can be insecure.
+0
+=== mysql57 :: drop-multi-ifexists-mixed
+SQL> create table p16_a(id int);create table p16_b(id int);drop table if exists p16_a,p16_missing,p16_b;show warnings
+rc=0
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+Level	Code	Message
+Note	1051	Unknown table 'golden.p16_missing'
+exists[mysql57::p16_a]> mysql: [Warning] Using a password on the command line interface can be insecure.
+0
+exists[mysql57::p16_b]> mysql: [Warning] Using a password on the command line interface can be insecure.
+0
+=== mysql57 :: drop-ifexists-one-missing
+SQL> drop table if exists p16_missing;show warnings
+rc=0
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+Level	Code	Message
+Note	1051	Unknown table 'golden.p16_missing'
+=== mysql57 :: drop-duplicate-name
+SQL> create table p16_a(id int);drop table p16_a,p16_a;show warnings
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1066 (42000) at line 1: Not unique table/alias: 'p16_a'
+exists[mysql57::p16_a]> mysql: [Warning] Using a password on the command line interface can be insecure.
+1
+=== mysql57 :: drop-restrict
+SQL> create table p16_a(id int);drop table p16_a restrict;show warnings
+rc=0
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+exists[mysql57::p16_a]> mysql: [Warning] Using a password on the command line interface can be insecure.
+0
+=== mysql57 :: drop-cascade
+SQL> create table p16_a(id int);drop table p16_a cascade;show warnings
+rc=0
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+exists[mysql57::p16_a]> mysql: [Warning] Using a password on the command line interface can be insecure.
+0
+=== mysql57 :: drop-restrict-missing
+SQL> drop table p16_missing restrict;show warnings
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1051 (42S02) at line 1: Unknown table 'golden.p16_missing'
+=== mysql57 :: drop-table-absent-nocond
+SQL> drop table p16_missing
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1051 (42S02) at line 1: Unknown table 'golden.p16_missing'
+=== mysql57 :: drop-temp-keyword-persistent
+SQL> create table p16_t(id int);drop temporary table p16_t;show warnings
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1051 (42S02) at line 1: Unknown table 'golden.p16_t'
+exists[mysql57::p16_t]> mysql: [Warning] Using a password on the command line interface can be insecure.
+1
+=== mysql57 :: temp-create-select-drop
+SQL> create temporary table tp16(id int);insert into tp16 values(1);select count(*) c from tp16;drop temporary table tp16;show tables like 'tp16'
+rc=0
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+c
+1
+=== mysql57 :: drop-temp-missing
+SQL> drop temporary table tp16;show warnings
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1051 (42S02) at line 1: Unknown table 'golden.tp16'
+=== mysql57 :: drop-temp-ifexists-missing
+SQL> drop temporary table if exists tp16;show warnings
+rc=0
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+Level	Code	Message
+Note	1051	Unknown table 'golden.tp16'
+=== mysql57 :: drop-plain-on-temp
+SQL> create temporary table tp16(id int);insert into tp16 values(1);drop table tp16;select count(*) c from tp16
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1146 (42S02) at line 1: Table 'golden.tp16' doesn't exist
+=== mysql57 :: temp-shadows-persistent
+SQL> create table p16_t(id int,x int);insert into p16_t values(1,1);create temporary table p16_t(id int);insert into p16_t values(2);select * from p16_t;drop table p16_t;select * from p16_t
+rc=0
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+id
+2
+id	x
+1	1
+=== mysql57 :: temp-drop-keyword-shadowed
+SQL> create table p16_t(id int,x int);insert into p16_t values(1,1);create temporary table p16_t(id int);insert into p16_t values(2);drop temporary table p16_t;select * from p16_t
+rc=0
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+id	x
+1	1
+=== mysql57 :: create-persistent-over-temp
+SQL> create temporary table p16_t(id int);create table p16_t(id int,x int);insert into p16_t values(1,1);select * from p16_t;drop temporary table p16_t;select * from p16_t
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1136 (21S01) at line 1: Column count doesn't match value count at row 1
+=== mysql57 :: create-temp-over-persistent
+SQL> create table p16_t(id int,x int);create temporary table p16_t(id int);insert into p16_t values(2);select * from p16_t
+rc=0
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+id
+2
+=== mysql57 :: create-temp-ifnotexists-over-persistent
+SQL> create table p16_t(id int,x int);create temporary table if not exists p16_t(id int);show warnings;insert into p16_t values(2);select * from p16_t
+rc=0
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+id
+2
+=== mysql57 :: create-temp-duplicate
+SQL> create temporary table tp16(id int);create temporary table tp16(id int)
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1050 (42S01) at line 1: Table 'tp16' already exists
+=== mysql57 :: create-temp-ifnotexists
+SQL> create temporary table tp16(id int);create temporary table if not exists tp16(a int);show warnings;insert into tp16 values(9);select count(*) c from tp16
+rc=0
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+Level	Code	Message
+Note	1050	Table 'tp16' already exists
+c
+1
+=== mysql57 :: alter-on-temp
+SQL> create temporary table tp16(id int);alter table tp16 add column x int;describe tp16
+rc=0
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+Field	Type	Null	Key	Default	Extra
+id	int(11)	YES		NULL	
+x	int(11)	YES		NULL	
+=== mysql57 :: truncate-temp
+SQL> create temporary table tp16(id int);insert into tp16 values(1);truncate table tp16;select count(*) c from tp16
+rc=0
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+c
+0
+=== mysql57 :: rename-table-on-temp
+SQL> create temporary table tp16(id int);rename table tp16 to tp16t;select count(*) c from tp16t
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1017 (HY000) at line 1: Can't find file: './golden/tp16.frm' (errno: 2 - No such file or directory)
+=== mysql57 :: alter-rename-on-temp
+SQL> create temporary table tp16(id int);alter table tp16 rename to tp16t;select count(*) c from tp16t
+rc=0
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+c
+0
+=== mysql57 :: rename-table-shadowed
+SQL> create table p16_t(id int,x int);insert into p16_t values(1,1);create temporary table p16_t(id int);insert into p16_t values(2);rename table p16_t to p16_t2;select * from p16_t;select * from p16_t2
+rc=0
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+id
+2
+id	x
+1	1
+=== mysql57 :: alter-rename-shadowed
+SQL> create table p16_t(id int,x int);insert into p16_t values(1,1);create temporary table p16_t(id int);insert into p16_t values(2);alter table p16_t rename to p16_t2;select * from p16_t;select * from p16_t2
+rc=0
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+id	x
+1	1
+id
+2
+=== mysql57 :: temp-like
+SQL> create table p16_src(id int primary key,u int unique,k int,key(k));create temporary table tp16l like p16_src;describe tp16l
+rc=0
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+Field	Type	Null	Key	Default	Extra
+id	int(11)	NO	PRI	NULL	
+u	int(11)	YES	UNI	NULL	
+k	int(11)	YES	MUL	NULL	
+=== mysql57 :: like-from-temp
+SQL> create temporary table tp16(id int);create table p16_l7 like tp16
+rc=0
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+=== mysql57 :: ctas-from-temp
+SQL> create temporary table tp16(id int);insert into tp16 values(7);create table p16_c7 as select * from tp16;select * from p16_c7
+rc=0
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+id
+7
+=== mysql57 :: temp-ctas
+SQL> create temporary table tp16t select 1 a;select * from tp16t
+rc=0
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+a
+1
+=== mysql57 :: drop-multi-temp-and-persistent
+SQL> create temporary table tp16(id int);create table p16_a(id int);drop table tp16,p16_a;select count(*) c from tp16
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1146 (42S02) at line 1: Table 'golden.tp16' doesn't exist
+exists[mysql57::p16_a]> mysql: [Warning] Using a password on the command line interface can be insecure.
+0
+=== mysql57 :: drop-multi-temp-missing
+SQL> create temporary table tp16(id int);create table p16_a(id int);drop table tp16,p16_missing;select count(*) c from tp16
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1051 (42S02) at line 1: Unknown table 'golden.p16_missing'
+exists[mysql57::p16_a]> mysql: [Warning] Using a password on the command line interface can be insecure.
+1
+=== mysql57 :: mk-src
+SQL> create table p16_ref(id int primary key);create table p16_src(id int auto_increment primary key,n varchar(20) not null default 'x',g int generated always as (id*2) stored,u int unique,k int,key(k),fk int,foreign key(fk) references p16_ref(id),constraint ck check(n<>'')) engine=innodb row_format=dynamic comment='src' auto_increment=100
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 3109 (HY000) at line 1: Generated column 'g' cannot refer to auto-increment column.
+indexes[mysql57::p16_src]> mysql: [Warning] Using a password on the command line interface can be insecure.|
+fks[mysql57::p16_src]> mysql: [Warning] Using a password on the command line interface can be insecure.|
+=== mysql57 :: mk-src-clean
+SQL> create table p16_ref(id int primary key);drop table if exists p16_src;create table p16_src(id int auto_increment primary key,n varchar(20) not null default 'x',g int generated always as (id*2) stored,u int unique,k int,key(k),fk int,foreign key(fk) references p16_ref(id),constraint ck check(n<>'')) engine=innodb row_format=dynamic comment='src' auto_increment=100
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 3109 (HY000) at line 1: Generated column 'g' cannot refer to auto-increment column.
+=== mysql57 :: create-like
+SQL> drop table if exists p16_l1;create table p16_l1 like p16_src;show create table p16_l1
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1146 (42S02) at line 1: Table 'golden.p16_src' doesn't exist
+columns[mysql57::p16_l1]> mysql: [Warning] Using a password on the command line interface can be insecure.|
+indexes[mysql57::p16_l1]> mysql: [Warning] Using a password on the command line interface can be insecure.|
+fks[mysql57::p16_l1]> mysql: [Warning] Using a password on the command line interface can be insecure.|
+catalog[mysql57::p16_l1]> mysql: [Warning] Using a password on the command line interface can be insecure.|
+=== mysql57 :: like-missing-src
+SQL> create table p16_l2 like p16_missing;show warnings
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1146 (42S02) at line 1: Table 'golden.p16_missing' doesn't exist
+exists[mysql57::p16_l2]> mysql: [Warning] Using a password on the command line interface can be insecure.
+0
+=== mysql57 :: like-ifnotexists-dest
+SQL> create table p16_l3(a int);create table if not exists p16_l3 like p16_src;show warnings;describe p16_l3
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1146 (42S02) at line 1: Table 'golden.p16_src' doesn't exist
+=== mysql57 :: like-existing-dest
+SQL> create table p16_l4(a int);create table p16_l4 like p16_src
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1146 (42S02) at line 1: Table 'golden.p16_src' doesn't exist
+=== mysql57 :: like-cross-schema
+SQL> create table golden2.p16_a like golden.p16_src;describe golden2.p16_a
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1146 (42S02) at line 1: Table 'golden.p16_src' doesn't exist
+=== mysql57 :: like-partitioned
+SQL> create table p16_src2(id int) partition by range(id)(partition p0 values less than(10),partition p1 values less than(20));create table p16_l5 like p16_src2;show create table p16_l5
+rc=0
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+Table	Create Table
+p16_l5	CREATE TABLE `p16_l5` (\n  `id` int(11) DEFAULT NULL\n) ENGINE=InnoDB DEFAULT CHARSET=latin1\n/*!50100 PARTITION BY RANGE (id)\n(PARTITION p0 VALUES LESS THAN (10) ENGINE = InnoDB,\n PARTITION p1 VALUES LESS THAN (20) ENGINE = InnoDB) */
+parts[mysql57::p16_l5]> mysql: [Warning] Using a password on the command line interface can be insecure.|p0	10|p1	20|
+=== mysql57 :: like-of-like
+SQL> create table p16_l1 like p16_src;create table p16_l6 like p16_l1;describe p16_l6
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1146 (42S02) at line 1: Table 'golden.p16_src' doesn't exist
+=== mysql57 :: like-autoinc-counter
+SQL> create table p16_src(id int auto_increment primary key) auto_increment=100;create table p16_l1 like p16_src;insert into p16_l1 values(null);select * from p16_l1;show table status like 'p16_l1'
+rc=0
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+id
+1
+Name	Engine	Version	Row_format	Rows	Avg_row_length	Data_length	Max_data_length	Index_length	Data_free	Auto_increment	Create_time	Update_time	Check_time	Collation	Checksum	Create_options	Comment
+p16_l1	InnoDB	10	Dynamic	1	16384	16384	0	0	0	2	2026-10-30 01:39:04	2026-10-30 01:39:04	NULL	latin1_swedish_ci	NULL		
+=== mysql57 :: ctas-as
+SQL> create table p16_c1 as select 1 a,'x' b;show create table p16_c1;select * from p16_c1
+rc=0
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+Table	Create Table
+p16_c1	CREATE TABLE `p16_c1` (\n  `a` int(1) NOT NULL DEFAULT '0',\n  `b` varchar(1) CHARACTER SET utf8mb4 NOT NULL DEFAULT ''\n) ENGINE=InnoDB DEFAULT CHARSET=latin1
+a	b
+1	x
+columns[mysql57::p16_c1]> mysql: [Warning] Using a password on the command line interface can be insecure.|a	int(1)	|b	varchar(1)	|
+=== mysql57 :: ctas-no-as
+SQL> create table p16_c2 select 1 a;describe p16_c2
+rc=0
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+Field	Type	Null	Key	Default	Extra
+a	int(1)	NO		0	
+=== mysql57 :: ctas-ignore
+SQL> create table p16_src3(a int primary key);insert into p16_src3 values(1),(2);create table p16_c3 ignore select * from p16_src3;select * from p16_c3
+rc=0
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+a
+1
+2
+=== mysql57 :: ctas-ignore-dupkey
+SQL> create table p16_src3(a int primary key);insert into p16_src3 values(1),(2);create table p16_c4(a int primary key) ignore select 1 a union all select 1 union all select 3;select * from p16_c4
+rc=0
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+a
+1
+3
+=== mysql57 :: ctas-replace-fresh
+SQL> create table p16_c4(a int primary key) replace select 1 a union all select 1 union all select 3;select * from p16_c4
+rc=0
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+a
+1
+3
+=== mysql57 :: ctas-nokey-dup
+SQL> create table p16_c4(a int) select 1 a union all select 1;select * from p16_c4
+rc=0
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+a
+1
+1
+=== mysql57 :: ctas-defs-plus-select
+SQL> create table p16_src3(a int primary key);insert into p16_src3 values(1),(2);create table p16_c5(id int primary key,extra int) select a+100,a*10 from p16_src3;show create table p16_c5;select * from p16_c5
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1364 (HY000) at line 1: Field 'id' doesn't have a default value
+columns[mysql57::p16_c5]> mysql: [Warning] Using a password on the command line interface can be insecure.|
+=== mysql57 :: ctas-ifnotexists-existing
+SQL> create table p16_c6(a int);create table if not exists p16_c6 as select 1 b;show warnings;describe p16_c6
+rc=0
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+Level	Code	Message
+Note	1050	Table 'p16_c6' already exists
+Field	Type	Null	Key	Default	Extra
+a	int(11)	YES		NULL	
+=== mysql57 :: ctas-existing-nocond
+SQL> create table p16_a(a int);create table p16_a as select 1 b
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1050 (42S01) at line 1: Table 'p16_a' already exists
+=== mysql57 :: ctas-missing-src
+SQL> create table p16_c1 as select * from p16_missing
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1146 (42S02) at line 1: Table 'golden.p16_missing' doesn't exist
+exists[mysql57::p16_c1]> mysql: [Warning] Using a password on the command line interface can be insecure.
+0
+=== mysql57 :: ctas-onto-temp-name
+SQL> create temporary table p16_c1(id int);insert into p16_c1 values(5);create table p16_c1 as select 9 a;select * from p16_c1
+rc=0
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+id
+5
+=== mysql57 :: rename-multi-ok
+SQL> create table p16_r1(id int);create table p16_r2(id int);rename table p16_r1 to p16_r1x,p16_r2 to p16_r2x
+rc=0
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+exists[mysql57::p16_r1]> mysql: [Warning] Using a password on the command line interface can be insecure.
+0
+exists[mysql57::p16_r1x]> mysql: [Warning] Using a password on the command line interface can be insecure.
+1
+exists[mysql57::p16_r2]> mysql: [Warning] Using a password on the command line interface can be insecure.
+0
+exists[mysql57::p16_r2x]> mysql: [Warning] Using a password on the command line interface can be insecure.
+1
+=== mysql57 :: rename-multi-second-missing
+SQL> create table p16_r1(id int);rename table p16_r1 to p16_r1x,p16_missing to p16_z;show warnings
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1017 (HY000) at line 1: Can't find file: './golden/p16_missing.frm' (errno: 2 - No such file or directory)
+exists[mysql57::p16_r1]> mysql: [Warning] Using a password on the command line interface can be insecure.
+1
+exists[mysql57::p16_r1x]> mysql: [Warning] Using a password on the command line interface can be insecure.
+0
+exists[mysql57::p16_z]> mysql: [Warning] Using a password on the command line interface can be insecure.
+0
+=== mysql57 :: rename-multi-first-missing
+SQL> create table p16_r2(id int);rename table p16_missing to p16_z,p16_r2 to p16_r2x;show warnings
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1017 (HY000) at line 1: Can't find file: './golden/p16_missing.frm' (errno: 2 - No such file or directory)
+exists[mysql57::p16_r2]> mysql: [Warning] Using a password on the command line interface can be insecure.
+1
+exists[mysql57::p16_r2x]> mysql: [Warning] Using a password on the command line interface can be insecure.
+0
+exists[mysql57::p16_z]> mysql: [Warning] Using a password on the command line interface can be insecure.
+0
+=== mysql57 :: rename-dest-exists
+SQL> create table p16_r1(id int);create table p16_r2(id int);rename table p16_r1 to p16_r2;show warnings
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1050 (42S01) at line 1: Table 'p16_r2' already exists
+exists[mysql57::p16_r1]> mysql: [Warning] Using a password on the command line interface can be insecure.
+1
+exists[mysql57::p16_r2]> mysql: [Warning] Using a password on the command line interface can be insecure.
+1
+=== mysql57 :: alter-rename-dest-exists
+SQL> create table p16_r1(id int);create table p16_r2(id int);alter table p16_r1 rename to p16_r2;show warnings
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1050 (42S01) at line 1: Table 'p16_r2' already exists
+exists[mysql57::p16_r1]> mysql: [Warning] Using a password on the command line interface can be insecure.
+1
+exists[mysql57::p16_r2]> mysql: [Warning] Using a password on the command line interface can be insecure.
+1
+=== mysql57 :: rename-cross-schema
+SQL> create table p16_r1(id int);alter table golden.p16_r1 rename to golden2.p16_r1x
+rc=0
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+schemas[p16_r1x]> mysql: [Warning] Using a password on the command line interface can be insecure.
+golden2.p16_r1x
+exists[mysql57::p16_r1]> mysql: [Warning] Using a password on the command line interface can be insecure.
+0
+=== mysql57 :: rename-to-missing-schema
+SQL> create table p16_r1(id int);rename table p16_r1 to noschema.p16_r1x;show warnings
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1025 (HY000) at line 1: Error on rename of './golden/p16_r1' to './noschema/p16_r1x' (errno: 168 - Unknown (generic) error from engine)
+exists[mysql57::p16_r1]> mysql: [Warning] Using a password on the command line interface can be insecure.
+1
+=== mysql57 :: rename-swap
+SQL> create table p16_r1(id int);create table p16_r2(id int);rename table p16_r1 to p16_keep,p16_r2 to p16_r1,p16_keep to p16_r2;select count(*) a from p16_r1;select count(*) b from p16_r2
+rc=0
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+a
+0
+b
+0
+exists[mysql57::p16_keep]> mysql: [Warning] Using a password on the command line interface can be insecure.
+0
+=== mysql57 :: rename-onto-temp-name
+SQL> create temporary table tp16(id int);create table p16_r1(id int);rename table p16_r1 to tp16;select count(*) c from tp16;drop table tp16
+rc=0
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+c
+0
+=== mysql57 :: alter-rename-to-same
+SQL> create table p16_r1(id int);alter table p16_r1 rename to p16_r1;show warnings
+rc=0
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+exists[mysql57::p16_r1]> mysql: [Warning] Using a password on the command line interface can be insecure.
+1
+=== mysql57 :: truncate-ifexists
+SQL> truncate table if exists p16_missing
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'if exists p16_missing' at line 1
+=== mysql57 :: truncate-missing
+SQL> truncate table p16_missing
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1146 (42S02) at line 1: Table 'golden.p16_missing' doesn't exist
+=== mysql57 :: truncate-multi
+SQL> create table p16_a(id int);create table p16_b(id int);truncate table p16_a,p16_b
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'p16_b' at line 1
+=== mysql57 :: truncate-resets-autoinc
+SQL> create table p16_a(id int auto_increment primary key);insert into p16_a values(null),(null);truncate table p16_a;insert into p16_a values(null);select * from p16_a
+rc=0
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+id
+1
+catalog[mysql57::p16_a]> mysql: [Warning] Using a password on the command line interface can be insecure.|InnoDB	BASE TABLE	latin1_swedish_ci	2	|
+=== mysql57 :: truncate-fk-parent
+SQL> create table p16_ref(id int primary key);create table p16_a(id int,foreign key(id) references p16_ref(id));truncate table p16_a;show warnings
+rc=0
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+exists[mysql57::p16_a]> mysql: [Warning] Using a password on the command line interface can be insecure.
+1
+=== mysql57 :: truncate-temp-persistent
+SQL> create table p16_a(id int auto_increment primary key);insert into p16_a values(null);create temporary table tp16(id int auto_increment primary key);insert into tp16 values(null);truncate table tp16;insert into tp16 values(null);select * from tp16
+rc=0
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+id
+1
+=== mysql57 :: global-temp
+SQL> create global temporary table gp16(id int) on commit delete rows;insert into gp16 values(1);select count(*) before_commit from gp16;commit;select count(*) after_commit from gp16;show create table gp16
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'global temporary table gp16(id int) on commit delete rows' at line 1
+exists[mysql57::gp16]> mysql: [Warning] Using a password on the command line interface can be insecure.
+0
+=== mysql57 :: global-temp-preserve
+SQL> create global temporary table gp16(id int) on commit preserve rows
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'global temporary table gp16(id int) on commit preserve rows' at line 1
+=== mysql57 :: global-temp-no-oncommit
+SQL> create global temporary table gp16(id int)
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'global temporary table gp16(id int)' at line 1
+=== mysql57 :: global-temp-persists
+SQL> create global temporary table gp16(id int) on commit delete rows;show tables like 'gp16'
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'global temporary table gp16(id int) on commit delete rows' at line 1
+exists[mysql57::gp16]> mysql: [Warning] Using a password on the command line interface can be insecure.
+0
+=== mysql57 :: drop-global-temp-keyword
+SQL> create global temporary table gp16(id int) on commit delete rows;drop global temporary table gp16;show tables like 'gp16'
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'global temporary table gp16(id int) on commit delete rows' at line 1
+=== mysql57 :: drop-temp-on-globaltemp
+SQL> create global temporary table gp16(id int) on commit delete rows;drop temporary table gp16;show tables like 'gp16'
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'global temporary table gp16(id int) on commit delete rows' at line 1
+=== mysql57 :: drop-plain-on-globaltemp
+SQL> create global temporary table gp16(id int) on commit delete rows;drop table gp16;show tables like 'gp16'
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'global temporary table gp16(id int) on commit delete rows' at line 1
+=== mysql57 :: alter-on-globaltemp
+SQL> create global temporary table gp16(id int) on commit delete rows;alter table gp16 add column x int;describe gp16
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'global temporary table gp16(id int) on commit delete rows' at line 1
+=== mysql57 :: truncate-globaltemp
+SQL> create global temporary table gp16(id int) on commit delete rows;insert into gp16 values(1);truncate table gp16;select count(*) c from gp16
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'global temporary table gp16(id int) on commit delete rows' at line 1
+=== mysql57 :: flashback-recover
+SQL> create table p16_a(id int);drop table p16_a;flashback table p16_a to p16_b;show warnings
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'flashback table p16_a to p16_b' at line 1
+=== mysql57 :: tidb-ctas
+SQL> create table p16_c1 select 1 a
+rc=0
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+=== mysql57 :: tidb-ctas-as
+SQL> create table p16_c1 as select 1 a
+rc=0
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+=== mysql57 :: tidb-ctas-ignore
+SQL> create table p16_c1 ignore select 1 a
+rc=0
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+=== mysql57 :: tidb-ctas-defs
+SQL> create table p16_c1(id int) select 1 a
+rc=0
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+=== mysql57 :: mysql-global-temp
+SQL> create global temporary table gp16(id int) on commit delete rows
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'global temporary table gp16(id int) on commit delete rows' at line 1
+exists[mysql57::gp16]> mysql: [Warning] Using a password on the command line interface can be insecure.
+0
+=== mysql57 :: like-on-localtemp
+SQL> create temporary table tp16(id int);create table p16_l7 like tp16
+rc=0
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+=== mysql57 :: temp-like-from-temp
+SQL> create temporary table tp16(id int);create temporary table tp16l like tp16;describe tp16l
+rc=0
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+Field	Type	Null	Key	Default	Extra
+id	int(11)	YES		NULL	
+=== mysql57 :: alter-localtemp-tidb
+SQL> create temporary table tp16(id int);alter table tp16 add column x int
+rc=0
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+=== mysql57 :: rename-localtemp
+SQL> create temporary table tp16(id int);rename table tp16 to tp16t
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1017 (HY000) at line 1: Can't find file: './golden/tp16.frm' (errno: 2 - No such file or directory)
+=== mysql57 :: alter-rename-localtemp
+SQL> create temporary table tp16(id int);alter table tp16 rename to tp16t;select count(*) c from tp16t
+rc=0
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+c
+0
+################################################ mysql80
+version> mysql: [Warning] Using a password on the command line interface can be insecure.
+8.0.46
+=== mysql80 :: drop-multi-all-present
+SQL> create table p16_a(id int);create table p16_b(id int);drop table p16_a,p16_b
+rc=0
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+exists[mysql80::p16_a]> mysql: [Warning] Using a password on the command line interface can be insecure.
+0
+exists[mysql80::p16_b]> mysql: [Warning] Using a password on the command line interface can be insecure.
+0
+=== mysql80 :: drop-multi-second-missing
+SQL> create table p16_a(id int);drop table p16_a,p16_missing;show warnings
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1051 (42S02) at line 1: Unknown table 'golden.p16_missing'
+exists[mysql80::p16_a]> mysql: [Warning] Using a password on the command line interface can be insecure.
+1
+exists[mysql80::p16_missing]> mysql: [Warning] Using a password on the command line interface can be insecure.
+0
+=== mysql80 :: drop-multi-first-missing
+SQL> create table p16_b(id int);drop table p16_missing,p16_b;show warnings
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1051 (42S02) at line 1: Unknown table 'golden.p16_missing'
+exists[mysql80::p16_b]> mysql: [Warning] Using a password on the command line interface can be insecure.
+1
+=== mysql80 :: drop-multi-two-missing
+SQL> create table p16_a(id int);drop table p16_a,p16_missing,p16_z;show warnings
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1051 (42S02) at line 1: Unknown table 'golden.p16_missing,golden.p16_z'
+exists[mysql80::p16_a]> mysql: [Warning] Using a password on the command line interface can be insecure.
+1
+=== mysql80 :: drop-multi-ifexists-mixed
+SQL> create table p16_a(id int);create table p16_b(id int);drop table if exists p16_a,p16_missing,p16_b;show warnings
+rc=0
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+Level	Code	Message
+Note	1051	Unknown table 'golden.p16_missing'
+exists[mysql80::p16_a]> mysql: [Warning] Using a password on the command line interface can be insecure.
+0
+exists[mysql80::p16_b]> mysql: [Warning] Using a password on the command line interface can be insecure.
+0
+=== mysql80 :: drop-ifexists-one-missing
+SQL> drop table if exists p16_missing;show warnings
+rc=0
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+Level	Code	Message
+Note	1051	Unknown table 'golden.p16_missing'
+=== mysql80 :: drop-duplicate-name
+SQL> create table p16_a(id int);drop table p16_a,p16_a;show warnings
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1066 (42000) at line 1: Not unique table/alias: 'p16_a'
+exists[mysql80::p16_a]> mysql: [Warning] Using a password on the command line interface can be insecure.
+1
+=== mysql80 :: drop-restrict
+SQL> create table p16_a(id int);drop table p16_a restrict;show warnings
+rc=0
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+exists[mysql80::p16_a]> mysql: [Warning] Using a password on the command line interface can be insecure.
+0
+=== mysql80 :: drop-cascade
+SQL> create table p16_a(id int);drop table p16_a cascade;show warnings
+rc=0
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+exists[mysql80::p16_a]> mysql: [Warning] Using a password on the command line interface can be insecure.
+0
+=== mysql80 :: drop-restrict-missing
+SQL> drop table p16_missing restrict;show warnings
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1051 (42S02) at line 1: Unknown table 'golden.p16_missing'
+=== mysql80 :: drop-table-absent-nocond
+SQL> drop table p16_missing
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1051 (42S02) at line 1: Unknown table 'golden.p16_missing'
+=== mysql80 :: drop-temp-keyword-persistent
+SQL> create table p16_t(id int);drop temporary table p16_t;show warnings
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1051 (42S02) at line 1: Unknown table 'golden.p16_t'
+exists[mysql80::p16_t]> mysql: [Warning] Using a password on the command line interface can be insecure.
+1
+=== mysql80 :: temp-create-select-drop
+SQL> create temporary table tp16(id int);insert into tp16 values(1);select count(*) c from tp16;drop temporary table tp16;show tables like 'tp16'
+rc=0
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+c
+1
+=== mysql80 :: drop-temp-missing
+SQL> drop temporary table tp16;show warnings
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1051 (42S02) at line 1: Unknown table 'golden.tp16'
+=== mysql80 :: drop-temp-ifexists-missing
+SQL> drop temporary table if exists tp16;show warnings
+rc=0
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+Level	Code	Message
+Note	1051	Unknown table 'golden.tp16'
+=== mysql80 :: drop-plain-on-temp
+SQL> create temporary table tp16(id int);insert into tp16 values(1);drop table tp16;select count(*) c from tp16
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1146 (42S02) at line 1: Table 'golden.tp16' doesn't exist
+=== mysql80 :: temp-shadows-persistent
+SQL> create table p16_t(id int,x int);insert into p16_t values(1,1);create temporary table p16_t(id int);insert into p16_t values(2);select * from p16_t;drop table p16_t;select * from p16_t
+rc=0
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+id
+2
+id	x
+1	1
+=== mysql80 :: temp-drop-keyword-shadowed
+SQL> create table p16_t(id int,x int);insert into p16_t values(1,1);create temporary table p16_t(id int);insert into p16_t values(2);drop temporary table p16_t;select * from p16_t
+rc=0
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+id	x
+1	1
+=== mysql80 :: create-persistent-over-temp
+SQL> create temporary table p16_t(id int);create table p16_t(id int,x int);insert into p16_t values(1,1);select * from p16_t;drop temporary table p16_t;select * from p16_t
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1136 (21S01) at line 1: Column count doesn't match value count at row 1
+=== mysql80 :: create-temp-over-persistent
+SQL> create table p16_t(id int,x int);create temporary table p16_t(id int);insert into p16_t values(2);select * from p16_t
+rc=0
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+id
+2
+=== mysql80 :: create-temp-ifnotexists-over-persistent
+SQL> create table p16_t(id int,x int);create temporary table if not exists p16_t(id int);show warnings;insert into p16_t values(2);select * from p16_t
+rc=0
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+id
+2
+=== mysql80 :: create-temp-duplicate
+SQL> create temporary table tp16(id int);create temporary table tp16(id int)
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1050 (42S01) at line 1: Table 'tp16' already exists
+=== mysql80 :: create-temp-ifnotexists
+SQL> create temporary table tp16(id int);create temporary table if not exists tp16(a int);show warnings;insert into tp16 values(9);select count(*) c from tp16
+rc=0
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+Level	Code	Message
+Note	1050	Table 'tp16' already exists
+c
+1
+=== mysql80 :: alter-on-temp
+SQL> create temporary table tp16(id int);alter table tp16 add column x int;describe tp16
+rc=0
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+Field	Type	Null	Key	Default	Extra
+id	int	YES		NULL	NULL
+x	int	YES		NULL	NULL
+=== mysql80 :: truncate-temp
+SQL> create temporary table tp16(id int);insert into tp16 values(1);truncate table tp16;select count(*) c from tp16
+rc=0
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+c
+0
+=== mysql80 :: rename-table-on-temp
+SQL> create temporary table tp16(id int);rename table tp16 to tp16t;select count(*) c from tp16t
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1146 (42S02) at line 1: Table 'golden.tp16' doesn't exist
+=== mysql80 :: alter-rename-on-temp
+SQL> create temporary table tp16(id int);alter table tp16 rename to tp16t;select count(*) c from tp16t
+rc=0
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+c
+0
+=== mysql80 :: rename-table-shadowed
+SQL> create table p16_t(id int,x int);insert into p16_t values(1,1);create temporary table p16_t(id int);insert into p16_t values(2);rename table p16_t to p16_t2;select * from p16_t;select * from p16_t2
+rc=0
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+id
+2
+id	x
+1	1
+=== mysql80 :: alter-rename-shadowed
+SQL> create table p16_t(id int,x int);insert into p16_t values(1,1);create temporary table p16_t(id int);insert into p16_t values(2);alter table p16_t rename to p16_t2;select * from p16_t;select * from p16_t2
+rc=0
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+id	x
+1	1
+id
+2
+=== mysql80 :: temp-like
+SQL> create table p16_src(id int primary key,u int unique,k int,key(k));create temporary table tp16l like p16_src;describe tp16l
+rc=0
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+Field	Type	Null	Key	Default	Extra
+id	int	NO	PRI	NULL	NULL
+u	int	YES	UNI	NULL	NULL
+k	int	YES	MUL	NULL	NULL
+=== mysql80 :: like-from-temp
+SQL> create temporary table tp16(id int);create table p16_l7 like tp16
+rc=0
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+=== mysql80 :: ctas-from-temp
+SQL> create temporary table tp16(id int);insert into tp16 values(7);create table p16_c7 as select * from tp16;select * from p16_c7
+rc=0
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+id
+7
+=== mysql80 :: temp-ctas
+SQL> create temporary table tp16t select 1 a;select * from tp16t
+rc=0
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+a
+1
+=== mysql80 :: drop-multi-temp-and-persistent
+SQL> create temporary table tp16(id int);create table p16_a(id int);drop table tp16,p16_a;select count(*) c from tp16
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1146 (42S02) at line 1: Table 'golden.tp16' doesn't exist
+exists[mysql80::p16_a]> mysql: [Warning] Using a password on the command line interface can be insecure.
+0
+=== mysql80 :: drop-multi-temp-missing
+SQL> create temporary table tp16(id int);create table p16_a(id int);drop table tp16,p16_missing;select count(*) c from tp16
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1051 (42S02) at line 1: Unknown table 'golden.p16_missing'
+exists[mysql80::p16_a]> mysql: [Warning] Using a password on the command line interface can be insecure.
+1
+=== mysql80 :: mk-src
+SQL> create table p16_ref(id int primary key);create table p16_src(id int auto_increment primary key,n varchar(20) not null default 'x',g int generated always as (id*2) stored,u int unique,k int,key(k),fk int,foreign key(fk) references p16_ref(id),constraint ck check(n<>'')) engine=innodb row_format=dynamic comment='src' auto_increment=100
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 3109 (HY000) at line 1: Generated column 'g' cannot refer to auto-increment column.
+indexes[mysql80::p16_src]> mysql: [Warning] Using a password on the command line interface can be insecure.|
+fks[mysql80::p16_src]> mysql: [Warning] Using a password on the command line interface can be insecure.|
+=== mysql80 :: mk-src-clean
+SQL> create table p16_ref(id int primary key);drop table if exists p16_src;create table p16_src(id int auto_increment primary key,n varchar(20) not null default 'x',g int generated always as (id*2) stored,u int unique,k int,key(k),fk int,foreign key(fk) references p16_ref(id),constraint ck check(n<>'')) engine=innodb row_format=dynamic comment='src' auto_increment=100
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 3109 (HY000) at line 1: Generated column 'g' cannot refer to auto-increment column.
+=== mysql80 :: create-like
+SQL> drop table if exists p16_l1;create table p16_l1 like p16_src;show create table p16_l1
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1146 (42S02) at line 1: Table 'golden.p16_src' doesn't exist
+columns[mysql80::p16_l1]> mysql: [Warning] Using a password on the command line interface can be insecure.|
+indexes[mysql80::p16_l1]> mysql: [Warning] Using a password on the command line interface can be insecure.|
+fks[mysql80::p16_l1]> mysql: [Warning] Using a password on the command line interface can be insecure.|
+catalog[mysql80::p16_l1]> mysql: [Warning] Using a password on the command line interface can be insecure.|
+=== mysql80 :: like-missing-src
+SQL> create table p16_l2 like p16_missing;show warnings
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1146 (42S02) at line 1: Table 'golden.p16_missing' doesn't exist
+exists[mysql80::p16_l2]> mysql: [Warning] Using a password on the command line interface can be insecure.
+0
+=== mysql80 :: like-ifnotexists-dest
+SQL> create table p16_l3(a int);create table if not exists p16_l3 like p16_src;show warnings;describe p16_l3
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1146 (42S02) at line 1: Table 'golden.p16_src' doesn't exist
+=== mysql80 :: like-existing-dest
+SQL> create table p16_l4(a int);create table p16_l4 like p16_src
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1146 (42S02) at line 1: Table 'golden.p16_src' doesn't exist
+=== mysql80 :: like-cross-schema
+SQL> create table golden2.p16_a like golden.p16_src;describe golden2.p16_a
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1146 (42S02) at line 1: Table 'golden.p16_src' doesn't exist
+=== mysql80 :: like-partitioned
+SQL> create table p16_src2(id int) partition by range(id)(partition p0 values less than(10),partition p1 values less than(20));create table p16_l5 like p16_src2;show create table p16_l5
+rc=0
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+Table	Create Table
+p16_l5	CREATE TABLE `p16_l5` (\n  `id` int DEFAULT NULL\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci\n/*!50100 PARTITION BY RANGE (`id`)\n(PARTITION p0 VALUES LESS THAN (10) ENGINE = InnoDB,\n PARTITION p1 VALUES LESS THAN (20) ENGINE = InnoDB) */
+parts[mysql80::p16_l5]> mysql: [Warning] Using a password on the command line interface can be insecure.|p0	10|p1	20|
+=== mysql80 :: like-of-like
+SQL> create table p16_l1 like p16_src;create table p16_l6 like p16_l1;describe p16_l6
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1146 (42S02) at line 1: Table 'golden.p16_src' doesn't exist
+=== mysql80 :: like-autoinc-counter
+SQL> create table p16_src(id int auto_increment primary key) auto_increment=100;create table p16_l1 like p16_src;insert into p16_l1 values(null);select * from p16_l1;show table status like 'p16_l1'
+rc=0
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+id
+1
+Name	Engine	Version	Row_format	Rows	Avg_row_length	Data_length	Max_data_length	Index_length	Data_free	Auto_increment	Create_time	Update_time	Check_time	Collation	Checksum	Create_options	Comment
+p16_l1	InnoDB	10	Dynamic	1	16384	16384	0	0	0	2	2026-10-30 01:39:17	2026-10-30 01:39:17	NULL	utf8mb4_0900_ai_ci	NULL		
+=== mysql80 :: ctas-as
+SQL> create table p16_c1 as select 1 a,'x' b;show create table p16_c1;select * from p16_c1
+rc=0
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+Table	Create Table
+p16_c1	CREATE TABLE `p16_c1` (\n  `a` int NOT NULL DEFAULT '0',\n  `b` varchar(1) NOT NULL DEFAULT ''\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+a	b
+1	x
+columns[mysql80::p16_c1]> mysql: [Warning] Using a password on the command line interface can be insecure.|a	int	|b	varchar(1)	|
+=== mysql80 :: ctas-no-as
+SQL> create table p16_c2 select 1 a;describe p16_c2
+rc=0
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+Field	Type	Null	Key	Default	Extra
+a	int	NO		0	
+=== mysql80 :: ctas-ignore
+SQL> create table p16_src3(a int primary key);insert into p16_src3 values(1),(2);create table p16_c3 ignore select * from p16_src3;select * from p16_c3
+rc=0
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+a
+1
+2
+=== mysql80 :: ctas-ignore-dupkey
+SQL> create table p16_src3(a int primary key);insert into p16_src3 values(1),(2);create table p16_c4(a int primary key) ignore select 1 a union all select 1 union all select 3;select * from p16_c4
+rc=0
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+a
+1
+3
+=== mysql80 :: ctas-replace-fresh
+SQL> create table p16_c4(a int primary key) replace select 1 a union all select 1 union all select 3;select * from p16_c4
+rc=0
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+a
+1
+3
+=== mysql80 :: ctas-nokey-dup
+SQL> create table p16_c4(a int) select 1 a union all select 1;select * from p16_c4
+rc=0
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+a
+1
+1
+=== mysql80 :: ctas-defs-plus-select
+SQL> create table p16_src3(a int primary key);insert into p16_src3 values(1),(2);create table p16_c5(id int primary key,extra int) select a+100,a*10 from p16_src3;show create table p16_c5;select * from p16_c5
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1364 (HY000) at line 1: Field 'id' doesn't have a default value
+columns[mysql80::p16_c5]> mysql: [Warning] Using a password on the command line interface can be insecure.|
+=== mysql80 :: ctas-ifnotexists-existing
+SQL> create table p16_c6(a int);create table if not exists p16_c6 as select 1 b;show warnings;describe p16_c6
+rc=0
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+Level	Code	Message
+Note	1050	Table 'p16_c6' already exists
+Field	Type	Null	Key	Default	Extra
+a	int	YES		NULL	
+=== mysql80 :: ctas-existing-nocond
+SQL> create table p16_a(a int);create table p16_a as select 1 b
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1050 (42S01) at line 1: Table 'p16_a' already exists
+=== mysql80 :: ctas-missing-src
+SQL> create table p16_c1 as select * from p16_missing
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1146 (42S02) at line 1: Table 'golden.p16_missing' doesn't exist
+exists[mysql80::p16_c1]> mysql: [Warning] Using a password on the command line interface can be insecure.
+0
+=== mysql80 :: ctas-onto-temp-name
+SQL> create temporary table p16_c1(id int);insert into p16_c1 values(5);create table p16_c1 as select 9 a;select * from p16_c1
+rc=0
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+id
+5
+=== mysql80 :: rename-multi-ok
+SQL> create table p16_r1(id int);create table p16_r2(id int);rename table p16_r1 to p16_r1x,p16_r2 to p16_r2x
+rc=0
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+exists[mysql80::p16_r1]> mysql: [Warning] Using a password on the command line interface can be insecure.
+0
+exists[mysql80::p16_r1x]> mysql: [Warning] Using a password on the command line interface can be insecure.
+1
+exists[mysql80::p16_r2]> mysql: [Warning] Using a password on the command line interface can be insecure.
+0
+exists[mysql80::p16_r2x]> mysql: [Warning] Using a password on the command line interface can be insecure.
+1
+=== mysql80 :: rename-multi-second-missing
+SQL> create table p16_r1(id int);rename table p16_r1 to p16_r1x,p16_missing to p16_z;show warnings
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1146 (42S02) at line 1: Table 'golden.p16_missing' doesn't exist
+exists[mysql80::p16_r1]> mysql: [Warning] Using a password on the command line interface can be insecure.
+1
+exists[mysql80::p16_r1x]> mysql: [Warning] Using a password on the command line interface can be insecure.
+0
+exists[mysql80::p16_z]> mysql: [Warning] Using a password on the command line interface can be insecure.
+0
+=== mysql80 :: rename-multi-first-missing
+SQL> create table p16_r2(id int);rename table p16_missing to p16_z,p16_r2 to p16_r2x;show warnings
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1146 (42S02) at line 1: Table 'golden.p16_missing' doesn't exist
+exists[mysql80::p16_r2]> mysql: [Warning] Using a password on the command line interface can be insecure.
+1
+exists[mysql80::p16_r2x]> mysql: [Warning] Using a password on the command line interface can be insecure.
+0
+exists[mysql80::p16_z]> mysql: [Warning] Using a password on the command line interface can be insecure.
+0
+=== mysql80 :: rename-dest-exists
+SQL> create table p16_r1(id int);create table p16_r2(id int);rename table p16_r1 to p16_r2;show warnings
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1050 (42S01) at line 1: Table 'p16_r2' already exists
+exists[mysql80::p16_r1]> mysql: [Warning] Using a password on the command line interface can be insecure.
+1
+exists[mysql80::p16_r2]> mysql: [Warning] Using a password on the command line interface can be insecure.
+1
+=== mysql80 :: alter-rename-dest-exists
+SQL> create table p16_r1(id int);create table p16_r2(id int);alter table p16_r1 rename to p16_r2;show warnings
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1050 (42S01) at line 1: Table 'p16_r2' already exists
+exists[mysql80::p16_r1]> mysql: [Warning] Using a password on the command line interface can be insecure.
+1
+exists[mysql80::p16_r2]> mysql: [Warning] Using a password on the command line interface can be insecure.
+1
+=== mysql80 :: rename-cross-schema
+SQL> create table p16_r1(id int);alter table golden.p16_r1 rename to golden2.p16_r1x
+rc=0
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+schemas[p16_r1x]> mysql: [Warning] Using a password on the command line interface can be insecure.
+golden2.p16_r1x
+exists[mysql80::p16_r1]> mysql: [Warning] Using a password on the command line interface can be insecure.
+0
+=== mysql80 :: rename-to-missing-schema
+SQL> create table p16_r1(id int);rename table p16_r1 to noschema.p16_r1x;show warnings
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1049 (42000) at line 1: Unknown database 'noschema'
+exists[mysql80::p16_r1]> mysql: [Warning] Using a password on the command line interface can be insecure.
+1
+=== mysql80 :: rename-swap
+SQL> create table p16_r1(id int);create table p16_r2(id int);rename table p16_r1 to p16_keep,p16_r2 to p16_r1,p16_keep to p16_r2;select count(*) a from p16_r1;select count(*) b from p16_r2
+rc=0
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+a
+0
+b
+0
+exists[mysql80::p16_keep]> mysql: [Warning] Using a password on the command line interface can be insecure.
+0
+=== mysql80 :: rename-onto-temp-name
+SQL> create temporary table tp16(id int);create table p16_r1(id int);rename table p16_r1 to tp16;select count(*) c from tp16;drop table tp16
+rc=0
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+c
+0
+=== mysql80 :: alter-rename-to-same
+SQL> create table p16_r1(id int);alter table p16_r1 rename to p16_r1;show warnings
+rc=0
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+exists[mysql80::p16_r1]> mysql: [Warning] Using a password on the command line interface can be insecure.
+1
+=== mysql80 :: truncate-ifexists
+SQL> truncate table if exists p16_missing
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'if exists p16_missing' at line 1
+=== mysql80 :: truncate-missing
+SQL> truncate table p16_missing
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1146 (42S02) at line 1: Table 'golden.p16_missing' doesn't exist
+=== mysql80 :: truncate-multi
+SQL> create table p16_a(id int);create table p16_b(id int);truncate table p16_a,p16_b
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near ',p16_b' at line 1
+=== mysql80 :: truncate-resets-autoinc
+SQL> create table p16_a(id int auto_increment primary key);insert into p16_a values(null),(null);truncate table p16_a;insert into p16_a values(null);select * from p16_a
+rc=0
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+id
+1
+catalog[mysql80::p16_a]> mysql: [Warning] Using a password on the command line interface can be insecure.|InnoDB	BASE TABLE	utf8mb4_0900_ai_ci	2	|
+=== mysql80 :: truncate-fk-parent
+SQL> create table p16_ref(id int primary key);create table p16_a(id int,foreign key(id) references p16_ref(id));truncate table p16_a;show warnings
+rc=0
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+exists[mysql80::p16_a]> mysql: [Warning] Using a password on the command line interface can be insecure.
+1
+=== mysql80 :: truncate-temp-persistent
+SQL> create table p16_a(id int auto_increment primary key);insert into p16_a values(null);create temporary table tp16(id int auto_increment primary key);insert into tp16 values(null);truncate table tp16;insert into tp16 values(null);select * from tp16
+rc=0
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+id
+1
+=== mysql80 :: global-temp
+SQL> create global temporary table gp16(id int) on commit delete rows;insert into gp16 values(1);select count(*) before_commit from gp16;commit;select count(*) after_commit from gp16;show create table gp16
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'global temporary table gp16(id int) on commit delete rows' at line 1
+exists[mysql80::gp16]> mysql: [Warning] Using a password on the command line interface can be insecure.
+0
+=== mysql80 :: global-temp-preserve
+SQL> create global temporary table gp16(id int) on commit preserve rows
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'global temporary table gp16(id int) on commit preserve rows' at line 1
+=== mysql80 :: global-temp-no-oncommit
+SQL> create global temporary table gp16(id int)
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'global temporary table gp16(id int)' at line 1
+=== mysql80 :: global-temp-persists
+SQL> create global temporary table gp16(id int) on commit delete rows;show tables like 'gp16'
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'global temporary table gp16(id int) on commit delete rows' at line 1
+exists[mysql80::gp16]> mysql: [Warning] Using a password on the command line interface can be insecure.
+0
+=== mysql80 :: drop-global-temp-keyword
+SQL> create global temporary table gp16(id int) on commit delete rows;drop global temporary table gp16;show tables like 'gp16'
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'global temporary table gp16(id int) on commit delete rows' at line 1
+=== mysql80 :: drop-temp-on-globaltemp
+SQL> create global temporary table gp16(id int) on commit delete rows;drop temporary table gp16;show tables like 'gp16'
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'global temporary table gp16(id int) on commit delete rows' at line 1
+=== mysql80 :: drop-plain-on-globaltemp
+SQL> create global temporary table gp16(id int) on commit delete rows;drop table gp16;show tables like 'gp16'
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'global temporary table gp16(id int) on commit delete rows' at line 1
+=== mysql80 :: alter-on-globaltemp
+SQL> create global temporary table gp16(id int) on commit delete rows;alter table gp16 add column x int;describe gp16
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'global temporary table gp16(id int) on commit delete rows' at line 1
+=== mysql80 :: truncate-globaltemp
+SQL> create global temporary table gp16(id int) on commit delete rows;insert into gp16 values(1);truncate table gp16;select count(*) c from gp16
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'global temporary table gp16(id int) on commit delete rows' at line 1
+=== mysql80 :: flashback-recover
+SQL> create table p16_a(id int);drop table p16_a;flashback table p16_a to p16_b;show warnings
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'flashback table p16_a to p16_b' at line 1
+=== mysql80 :: tidb-ctas
+SQL> create table p16_c1 select 1 a
+rc=0
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+=== mysql80 :: tidb-ctas-as
+SQL> create table p16_c1 as select 1 a
+rc=0
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+=== mysql80 :: tidb-ctas-ignore
+SQL> create table p16_c1 ignore select 1 a
+rc=0
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+=== mysql80 :: tidb-ctas-defs
+SQL> create table p16_c1(id int) select 1 a
+rc=0
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+=== mysql80 :: mysql-global-temp
+SQL> create global temporary table gp16(id int) on commit delete rows
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'global temporary table gp16(id int) on commit delete rows' at line 1
+exists[mysql80::gp16]> mysql: [Warning] Using a password on the command line interface can be insecure.
+0
+=== mysql80 :: like-on-localtemp
+SQL> create temporary table tp16(id int);create table p16_l7 like tp16
+rc=0
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+=== mysql80 :: temp-like-from-temp
+SQL> create temporary table tp16(id int);create temporary table tp16l like tp16;describe tp16l
+rc=0
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+Field	Type	Null	Key	Default	Extra
+id	int	YES		NULL	NULL
+=== mysql80 :: alter-localtemp-tidb
+SQL> create temporary table tp16(id int);alter table tp16 add column x int
+rc=0
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+=== mysql80 :: rename-localtemp
+SQL> create temporary table tp16(id int);rename table tp16 to tp16t
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1146 (42S02) at line 1: Table 'golden.tp16' doesn't exist
+=== mysql80 :: alter-rename-localtemp
+SQL> create temporary table tp16(id int);alter table tp16 rename to tp16t;select count(*) c from tp16t
+rc=0
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+c
+0
+################################################ mysql84
+version> mysql: [Warning] Using a password on the command line interface can be insecure.
+8.4.10
+=== mysql84 :: drop-multi-all-present
+SQL> create table p16_a(id int);create table p16_b(id int);drop table p16_a,p16_b
+rc=0
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+exists[mysql84::p16_a]> mysql: [Warning] Using a password on the command line interface can be insecure.
+0
+exists[mysql84::p16_b]> mysql: [Warning] Using a password on the command line interface can be insecure.
+0
+=== mysql84 :: drop-multi-second-missing
+SQL> create table p16_a(id int);drop table p16_a,p16_missing;show warnings
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1051 (42S02) at line 1: Unknown table 'golden.p16_missing'
+exists[mysql84::p16_a]> mysql: [Warning] Using a password on the command line interface can be insecure.
+1
+exists[mysql84::p16_missing]> mysql: [Warning] Using a password on the command line interface can be insecure.
+0
+=== mysql84 :: drop-multi-first-missing
+SQL> create table p16_b(id int);drop table p16_missing,p16_b;show warnings
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1051 (42S02) at line 1: Unknown table 'golden.p16_missing'
+exists[mysql84::p16_b]> mysql: [Warning] Using a password on the command line interface can be insecure.
+1
+=== mysql84 :: drop-multi-two-missing
+SQL> create table p16_a(id int);drop table p16_a,p16_missing,p16_z;show warnings
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1051 (42S02) at line 1: Unknown table 'golden.p16_missing,golden.p16_z'
+exists[mysql84::p16_a]> mysql: [Warning] Using a password on the command line interface can be insecure.
+1
+=== mysql84 :: drop-multi-ifexists-mixed
+SQL> create table p16_a(id int);create table p16_b(id int);drop table if exists p16_a,p16_missing,p16_b;show warnings
+rc=0
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+Level	Code	Message
+Note	1051	Unknown table 'golden.p16_missing'
+exists[mysql84::p16_a]> mysql: [Warning] Using a password on the command line interface can be insecure.
+0
+exists[mysql84::p16_b]> mysql: [Warning] Using a password on the command line interface can be insecure.
+0
+=== mysql84 :: drop-ifexists-one-missing
+SQL> drop table if exists p16_missing;show warnings
+rc=0
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+Level	Code	Message
+Note	1051	Unknown table 'golden.p16_missing'
+=== mysql84 :: drop-duplicate-name
+SQL> create table p16_a(id int);drop table p16_a,p16_a;show warnings
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1066 (42000) at line 1: Not unique table/alias: 'p16_a'
+exists[mysql84::p16_a]> mysql: [Warning] Using a password on the command line interface can be insecure.
+1
+=== mysql84 :: drop-restrict
+SQL> create table p16_a(id int);drop table p16_a restrict;show warnings
+rc=0
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+exists[mysql84::p16_a]> mysql: [Warning] Using a password on the command line interface can be insecure.
+0
+=== mysql84 :: drop-cascade
+SQL> create table p16_a(id int);drop table p16_a cascade;show warnings
+rc=0
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+exists[mysql84::p16_a]> mysql: [Warning] Using a password on the command line interface can be insecure.
+0
+=== mysql84 :: drop-restrict-missing
+SQL> drop table p16_missing restrict;show warnings
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1051 (42S02) at line 1: Unknown table 'golden.p16_missing'
+=== mysql84 :: drop-table-absent-nocond
+SQL> drop table p16_missing
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1051 (42S02) at line 1: Unknown table 'golden.p16_missing'
+=== mysql84 :: drop-temp-keyword-persistent
+SQL> create table p16_t(id int);drop temporary table p16_t;show warnings
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1051 (42S02) at line 1: Unknown table 'golden.p16_t'
+exists[mysql84::p16_t]> mysql: [Warning] Using a password on the command line interface can be insecure.
+1
+=== mysql84 :: temp-create-select-drop
+SQL> create temporary table tp16(id int);insert into tp16 values(1);select count(*) c from tp16;drop temporary table tp16;show tables like 'tp16'
+rc=0
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+c
+1
+=== mysql84 :: drop-temp-missing
+SQL> drop temporary table tp16;show warnings
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1051 (42S02) at line 1: Unknown table 'golden.tp16'
+=== mysql84 :: drop-temp-ifexists-missing
+SQL> drop temporary table if exists tp16;show warnings
+rc=0
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+Level	Code	Message
+Note	1051	Unknown table 'golden.tp16'
+=== mysql84 :: drop-plain-on-temp
+SQL> create temporary table tp16(id int);insert into tp16 values(1);drop table tp16;select count(*) c from tp16
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1146 (42S02) at line 1: Table 'golden.tp16' doesn't exist
+=== mysql84 :: temp-shadows-persistent
+SQL> create table p16_t(id int,x int);insert into p16_t values(1,1);create temporary table p16_t(id int);insert into p16_t values(2);select * from p16_t;drop table p16_t;select * from p16_t
+rc=0
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+id
+2
+id	x
+1	1
+=== mysql84 :: temp-drop-keyword-shadowed
+SQL> create table p16_t(id int,x int);insert into p16_t values(1,1);create temporary table p16_t(id int);insert into p16_t values(2);drop temporary table p16_t;select * from p16_t
+rc=0
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+id	x
+1	1
+=== mysql84 :: create-persistent-over-temp
+SQL> create temporary table p16_t(id int);create table p16_t(id int,x int);insert into p16_t values(1,1);select * from p16_t;drop temporary table p16_t;select * from p16_t
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1136 (21S01) at line 1: Column count doesn't match value count at row 1
+=== mysql84 :: create-temp-over-persistent
+SQL> create table p16_t(id int,x int);create temporary table p16_t(id int);insert into p16_t values(2);select * from p16_t
+rc=0
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+id
+2
+=== mysql84 :: create-temp-ifnotexists-over-persistent
+SQL> create table p16_t(id int,x int);create temporary table if not exists p16_t(id int);show warnings;insert into p16_t values(2);select * from p16_t
+rc=0
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+id
+2
+=== mysql84 :: create-temp-duplicate
+SQL> create temporary table tp16(id int);create temporary table tp16(id int)
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1050 (42S01) at line 1: Table 'tp16' already exists
+=== mysql84 :: create-temp-ifnotexists
+SQL> create temporary table tp16(id int);create temporary table if not exists tp16(a int);show warnings;insert into tp16 values(9);select count(*) c from tp16
+rc=0
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+Level	Code	Message
+Note	1050	Table 'tp16' already exists
+c
+1
+=== mysql84 :: alter-on-temp
+SQL> create temporary table tp16(id int);alter table tp16 add column x int;describe tp16
+rc=0
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+Field	Type	Null	Key	Default	Extra
+id	int	YES		NULL	NULL
+x	int	YES		NULL	NULL
+=== mysql84 :: truncate-temp
+SQL> create temporary table tp16(id int);insert into tp16 values(1);truncate table tp16;select count(*) c from tp16
+rc=0
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+c
+0
+=== mysql84 :: rename-table-on-temp
+SQL> create temporary table tp16(id int);rename table tp16 to tp16t;select count(*) c from tp16t
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1146 (42S02) at line 1: Table 'golden.tp16' doesn't exist
+=== mysql84 :: alter-rename-on-temp
+SQL> create temporary table tp16(id int);alter table tp16 rename to tp16t;select count(*) c from tp16t
+rc=0
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+c
+0
+=== mysql84 :: rename-table-shadowed
+SQL> create table p16_t(id int,x int);insert into p16_t values(1,1);create temporary table p16_t(id int);insert into p16_t values(2);rename table p16_t to p16_t2;select * from p16_t;select * from p16_t2
+rc=0
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+id
+2
+id	x
+1	1
+=== mysql84 :: alter-rename-shadowed
+SQL> create table p16_t(id int,x int);insert into p16_t values(1,1);create temporary table p16_t(id int);insert into p16_t values(2);alter table p16_t rename to p16_t2;select * from p16_t;select * from p16_t2
+rc=0
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+id	x
+1	1
+id
+2
+=== mysql84 :: temp-like
+SQL> create table p16_src(id int primary key,u int unique,k int,key(k));create temporary table tp16l like p16_src;describe tp16l
+rc=0
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+Field	Type	Null	Key	Default	Extra
+id	int	NO	PRI	NULL	NULL
+u	int	YES	UNI	NULL	NULL
+k	int	YES	MUL	NULL	NULL
+=== mysql84 :: like-from-temp
+SQL> create temporary table tp16(id int);create table p16_l7 like tp16
+rc=0
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+=== mysql84 :: ctas-from-temp
+SQL> create temporary table tp16(id int);insert into tp16 values(7);create table p16_c7 as select * from tp16;select * from p16_c7
+rc=0
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+id
+7
+=== mysql84 :: temp-ctas
+SQL> create temporary table tp16t select 1 a;select * from tp16t
+rc=0
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+a
+1
+=== mysql84 :: drop-multi-temp-and-persistent
+SQL> create temporary table tp16(id int);create table p16_a(id int);drop table tp16,p16_a;select count(*) c from tp16
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1146 (42S02) at line 1: Table 'golden.tp16' doesn't exist
+exists[mysql84::p16_a]> mysql: [Warning] Using a password on the command line interface can be insecure.
+0
+=== mysql84 :: drop-multi-temp-missing
+SQL> create temporary table tp16(id int);create table p16_a(id int);drop table tp16,p16_missing;select count(*) c from tp16
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1051 (42S02) at line 1: Unknown table 'golden.p16_missing'
+exists[mysql84::p16_a]> mysql: [Warning] Using a password on the command line interface can be insecure.
+1
+=== mysql84 :: mk-src
+SQL> create table p16_ref(id int primary key);create table p16_src(id int auto_increment primary key,n varchar(20) not null default 'x',g int generated always as (id*2) stored,u int unique,k int,key(k),fk int,foreign key(fk) references p16_ref(id),constraint ck check(n<>'')) engine=innodb row_format=dynamic comment='src' auto_increment=100
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 3109 (HY000) at line 1: Generated column 'g' cannot refer to auto-increment column.
+indexes[mysql84::p16_src]> mysql: [Warning] Using a password on the command line interface can be insecure.|
+fks[mysql84::p16_src]> mysql: [Warning] Using a password on the command line interface can be insecure.|
+=== mysql84 :: mk-src-clean
+SQL> create table p16_ref(id int primary key);drop table if exists p16_src;create table p16_src(id int auto_increment primary key,n varchar(20) not null default 'x',g int generated always as (id*2) stored,u int unique,k int,key(k),fk int,foreign key(fk) references p16_ref(id),constraint ck check(n<>'')) engine=innodb row_format=dynamic comment='src' auto_increment=100
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 3109 (HY000) at line 1: Generated column 'g' cannot refer to auto-increment column.
+=== mysql84 :: create-like
+SQL> drop table if exists p16_l1;create table p16_l1 like p16_src;show create table p16_l1
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1146 (42S02) at line 1: Table 'golden.p16_src' doesn't exist
+columns[mysql84::p16_l1]> mysql: [Warning] Using a password on the command line interface can be insecure.|
+indexes[mysql84::p16_l1]> mysql: [Warning] Using a password on the command line interface can be insecure.|
+fks[mysql84::p16_l1]> mysql: [Warning] Using a password on the command line interface can be insecure.|
+catalog[mysql84::p16_l1]> mysql: [Warning] Using a password on the command line interface can be insecure.|
+=== mysql84 :: like-missing-src
+SQL> create table p16_l2 like p16_missing;show warnings
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1146 (42S02) at line 1: Table 'golden.p16_missing' doesn't exist
+exists[mysql84::p16_l2]> mysql: [Warning] Using a password on the command line interface can be insecure.
+0
+=== mysql84 :: like-ifnotexists-dest
+SQL> create table p16_l3(a int);create table if not exists p16_l3 like p16_src;show warnings;describe p16_l3
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1146 (42S02) at line 1: Table 'golden.p16_src' doesn't exist
+=== mysql84 :: like-existing-dest
+SQL> create table p16_l4(a int);create table p16_l4 like p16_src
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1146 (42S02) at line 1: Table 'golden.p16_src' doesn't exist
+=== mysql84 :: like-cross-schema
+SQL> create table golden2.p16_a like golden.p16_src;describe golden2.p16_a
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1146 (42S02) at line 1: Table 'golden.p16_src' doesn't exist
+=== mysql84 :: like-partitioned
+SQL> create table p16_src2(id int) partition by range(id)(partition p0 values less than(10),partition p1 values less than(20));create table p16_l5 like p16_src2;show create table p16_l5
+rc=0
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+Table	Create Table
+p16_l5	CREATE TABLE `p16_l5` (\n  `id` int DEFAULT NULL\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci\n/*!50100 PARTITION BY RANGE (`id`)\n(PARTITION p0 VALUES LESS THAN (10) ENGINE = InnoDB,\n PARTITION p1 VALUES LESS THAN (20) ENGINE = InnoDB) */
+parts[mysql84::p16_l5]> mysql: [Warning] Using a password on the command line interface can be insecure.|p0	10|p1	20|
+=== mysql84 :: like-of-like
+SQL> create table p16_l1 like p16_src;create table p16_l6 like p16_l1;describe p16_l6
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1146 (42S02) at line 1: Table 'golden.p16_src' doesn't exist
+=== mysql84 :: like-autoinc-counter
+SQL> create table p16_src(id int auto_increment primary key) auto_increment=100;create table p16_l1 like p16_src;insert into p16_l1 values(null);select * from p16_l1;show table status like 'p16_l1'
+rc=0
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+id
+1
+Name	Engine	Version	Row_format	Rows	Avg_row_length	Data_length	Max_data_length	Index_length	Data_free	Auto_increment	Create_time	Update_time	Check_time	Collation	Checksum	Create_options	Comment
+p16_l1	InnoDB	10	Dynamic	1	16384	16384	0	0	0	2	2026-10-30 01:39:26	2026-10-30 01:39:26	NULL	utf8mb4_0900_ai_ci	NULL		
+=== mysql84 :: ctas-as
+SQL> create table p16_c1 as select 1 a,'x' b;show create table p16_c1;select * from p16_c1
+rc=0
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+Table	Create Table
+p16_c1	CREATE TABLE `p16_c1` (\n  `a` int NOT NULL DEFAULT '0',\n  `b` varchar(1) NOT NULL DEFAULT ''\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+a	b
+1	x
+columns[mysql84::p16_c1]> mysql: [Warning] Using a password on the command line interface can be insecure.|a	int	|b	varchar(1)	|
+=== mysql84 :: ctas-no-as
+SQL> create table p16_c2 select 1 a;describe p16_c2
+rc=0
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+Field	Type	Null	Key	Default	Extra
+a	int	NO		0	
+=== mysql84 :: ctas-ignore
+SQL> create table p16_src3(a int primary key);insert into p16_src3 values(1),(2);create table p16_c3 ignore select * from p16_src3;select * from p16_c3
+rc=0
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+a
+1
+2
+=== mysql84 :: ctas-ignore-dupkey
+SQL> create table p16_src3(a int primary key);insert into p16_src3 values(1),(2);create table p16_c4(a int primary key) ignore select 1 a union all select 1 union all select 3;select * from p16_c4
+rc=0
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+a
+1
+3
+=== mysql84 :: ctas-replace-fresh
+SQL> create table p16_c4(a int primary key) replace select 1 a union all select 1 union all select 3;select * from p16_c4
+rc=0
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+a
+1
+3
+=== mysql84 :: ctas-nokey-dup
+SQL> create table p16_c4(a int) select 1 a union all select 1;select * from p16_c4
+rc=0
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+a
+1
+1
+=== mysql84 :: ctas-defs-plus-select
+SQL> create table p16_src3(a int primary key);insert into p16_src3 values(1),(2);create table p16_c5(id int primary key,extra int) select a+100,a*10 from p16_src3;show create table p16_c5;select * from p16_c5
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1364 (HY000) at line 1: Field 'id' doesn't have a default value
+columns[mysql84::p16_c5]> mysql: [Warning] Using a password on the command line interface can be insecure.|
+=== mysql84 :: ctas-ifnotexists-existing
+SQL> create table p16_c6(a int);create table if not exists p16_c6 as select 1 b;show warnings;describe p16_c6
+rc=0
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+Level	Code	Message
+Note	1050	Table 'p16_c6' already exists
+Field	Type	Null	Key	Default	Extra
+a	int	YES		NULL	
+=== mysql84 :: ctas-existing-nocond
+SQL> create table p16_a(a int);create table p16_a as select 1 b
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1050 (42S01) at line 1: Table 'p16_a' already exists
+=== mysql84 :: ctas-missing-src
+SQL> create table p16_c1 as select * from p16_missing
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1146 (42S02) at line 1: Table 'golden.p16_missing' doesn't exist
+exists[mysql84::p16_c1]> mysql: [Warning] Using a password on the command line interface can be insecure.
+0
+=== mysql84 :: ctas-onto-temp-name
+SQL> create temporary table p16_c1(id int);insert into p16_c1 values(5);create table p16_c1 as select 9 a;select * from p16_c1
+rc=0
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+id
+5
+=== mysql84 :: rename-multi-ok
+SQL> create table p16_r1(id int);create table p16_r2(id int);rename table p16_r1 to p16_r1x,p16_r2 to p16_r2x
+rc=0
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+exists[mysql84::p16_r1]> mysql: [Warning] Using a password on the command line interface can be insecure.
+0
+exists[mysql84::p16_r1x]> mysql: [Warning] Using a password on the command line interface can be insecure.
+1
+exists[mysql84::p16_r2]> mysql: [Warning] Using a password on the command line interface can be insecure.
+0
+exists[mysql84::p16_r2x]> mysql: [Warning] Using a password on the command line interface can be insecure.
+1
+=== mysql84 :: rename-multi-second-missing
+SQL> create table p16_r1(id int);rename table p16_r1 to p16_r1x,p16_missing to p16_z;show warnings
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1146 (42S02) at line 1: Table 'golden.p16_missing' doesn't exist
+exists[mysql84::p16_r1]> mysql: [Warning] Using a password on the command line interface can be insecure.
+1
+exists[mysql84::p16_r1x]> mysql: [Warning] Using a password on the command line interface can be insecure.
+0
+exists[mysql84::p16_z]> mysql: [Warning] Using a password on the command line interface can be insecure.
+0
+=== mysql84 :: rename-multi-first-missing
+SQL> create table p16_r2(id int);rename table p16_missing to p16_z,p16_r2 to p16_r2x;show warnings
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1146 (42S02) at line 1: Table 'golden.p16_missing' doesn't exist
+exists[mysql84::p16_r2]> mysql: [Warning] Using a password on the command line interface can be insecure.
+1
+exists[mysql84::p16_r2x]> mysql: [Warning] Using a password on the command line interface can be insecure.
+0
+exists[mysql84::p16_z]> mysql: [Warning] Using a password on the command line interface can be insecure.
+0
+=== mysql84 :: rename-dest-exists
+SQL> create table p16_r1(id int);create table p16_r2(id int);rename table p16_r1 to p16_r2;show warnings
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1050 (42S01) at line 1: Table 'p16_r2' already exists
+exists[mysql84::p16_r1]> mysql: [Warning] Using a password on the command line interface can be insecure.
+1
+exists[mysql84::p16_r2]> mysql: [Warning] Using a password on the command line interface can be insecure.
+1
+=== mysql84 :: alter-rename-dest-exists
+SQL> create table p16_r1(id int);create table p16_r2(id int);alter table p16_r1 rename to p16_r2;show warnings
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1050 (42S01) at line 1: Table 'p16_r2' already exists
+exists[mysql84::p16_r1]> mysql: [Warning] Using a password on the command line interface can be insecure.
+1
+exists[mysql84::p16_r2]> mysql: [Warning] Using a password on the command line interface can be insecure.
+1
+=== mysql84 :: rename-cross-schema
+SQL> create table p16_r1(id int);alter table golden.p16_r1 rename to golden2.p16_r1x
+rc=0
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+schemas[p16_r1x]> mysql: [Warning] Using a password on the command line interface can be insecure.
+golden2.p16_r1x
+exists[mysql84::p16_r1]> mysql: [Warning] Using a password on the command line interface can be insecure.
+0
+=== mysql84 :: rename-to-missing-schema
+SQL> create table p16_r1(id int);rename table p16_r1 to noschema.p16_r1x;show warnings
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1049 (42000) at line 1: Unknown database 'noschema'
+exists[mysql84::p16_r1]> mysql: [Warning] Using a password on the command line interface can be insecure.
+1
+=== mysql84 :: rename-swap
+SQL> create table p16_r1(id int);create table p16_r2(id int);rename table p16_r1 to p16_keep,p16_r2 to p16_r1,p16_keep to p16_r2;select count(*) a from p16_r1;select count(*) b from p16_r2
+rc=0
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+a
+0
+b
+0
+exists[mysql84::p16_keep]> mysql: [Warning] Using a password on the command line interface can be insecure.
+0
+=== mysql84 :: rename-onto-temp-name
+SQL> create temporary table tp16(id int);create table p16_r1(id int);rename table p16_r1 to tp16;select count(*) c from tp16;drop table tp16
+rc=0
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+c
+0
+=== mysql84 :: alter-rename-to-same
+SQL> create table p16_r1(id int);alter table p16_r1 rename to p16_r1;show warnings
+rc=0
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+exists[mysql84::p16_r1]> mysql: [Warning] Using a password on the command line interface can be insecure.
+1
+=== mysql84 :: truncate-ifexists
+SQL> truncate table if exists p16_missing
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'if exists p16_missing' at line 1
+=== mysql84 :: truncate-missing
+SQL> truncate table p16_missing
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1146 (42S02) at line 1: Table 'golden.p16_missing' doesn't exist
+=== mysql84 :: truncate-multi
+SQL> create table p16_a(id int);create table p16_b(id int);truncate table p16_a,p16_b
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near ',p16_b' at line 1
+=== mysql84 :: truncate-resets-autoinc
+SQL> create table p16_a(id int auto_increment primary key);insert into p16_a values(null),(null);truncate table p16_a;insert into p16_a values(null);select * from p16_a
+rc=0
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+id
+1
+catalog[mysql84::p16_a]> mysql: [Warning] Using a password on the command line interface can be insecure.|InnoDB	BASE TABLE	utf8mb4_0900_ai_ci	2	|
+=== mysql84 :: truncate-fk-parent
+SQL> create table p16_ref(id int primary key);create table p16_a(id int,foreign key(id) references p16_ref(id));truncate table p16_a;show warnings
+rc=0
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+exists[mysql84::p16_a]> mysql: [Warning] Using a password on the command line interface can be insecure.
+1
+=== mysql84 :: truncate-temp-persistent
+SQL> create table p16_a(id int auto_increment primary key);insert into p16_a values(null);create temporary table tp16(id int auto_increment primary key);insert into tp16 values(null);truncate table tp16;insert into tp16 values(null);select * from tp16
+rc=0
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+id
+1
+=== mysql84 :: global-temp
+SQL> create global temporary table gp16(id int) on commit delete rows;insert into gp16 values(1);select count(*) before_commit from gp16;commit;select count(*) after_commit from gp16;show create table gp16
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'global temporary table gp16(id int) on commit delete rows' at line 1
+exists[mysql84::gp16]> mysql: [Warning] Using a password on the command line interface can be insecure.
+0
+=== mysql84 :: global-temp-preserve
+SQL> create global temporary table gp16(id int) on commit preserve rows
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'global temporary table gp16(id int) on commit preserve rows' at line 1
+=== mysql84 :: global-temp-no-oncommit
+SQL> create global temporary table gp16(id int)
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'global temporary table gp16(id int)' at line 1
+=== mysql84 :: global-temp-persists
+SQL> create global temporary table gp16(id int) on commit delete rows;show tables like 'gp16'
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'global temporary table gp16(id int) on commit delete rows' at line 1
+exists[mysql84::gp16]> mysql: [Warning] Using a password on the command line interface can be insecure.
+0
+=== mysql84 :: drop-global-temp-keyword
+SQL> create global temporary table gp16(id int) on commit delete rows;drop global temporary table gp16;show tables like 'gp16'
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'global temporary table gp16(id int) on commit delete rows' at line 1
+=== mysql84 :: drop-temp-on-globaltemp
+SQL> create global temporary table gp16(id int) on commit delete rows;drop temporary table gp16;show tables like 'gp16'
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'global temporary table gp16(id int) on commit delete rows' at line 1
+=== mysql84 :: drop-plain-on-globaltemp
+SQL> create global temporary table gp16(id int) on commit delete rows;drop table gp16;show tables like 'gp16'
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'global temporary table gp16(id int) on commit delete rows' at line 1
+=== mysql84 :: alter-on-globaltemp
+SQL> create global temporary table gp16(id int) on commit delete rows;alter table gp16 add column x int;describe gp16
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'global temporary table gp16(id int) on commit delete rows' at line 1
+=== mysql84 :: truncate-globaltemp
+SQL> create global temporary table gp16(id int) on commit delete rows;insert into gp16 values(1);truncate table gp16;select count(*) c from gp16
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'global temporary table gp16(id int) on commit delete rows' at line 1
+=== mysql84 :: flashback-recover
+SQL> create table p16_a(id int);drop table p16_a;flashback table p16_a to p16_b;show warnings
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'flashback table p16_a to p16_b' at line 1
+=== mysql84 :: tidb-ctas
+SQL> create table p16_c1 select 1 a
+rc=0
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+=== mysql84 :: tidb-ctas-as
+SQL> create table p16_c1 as select 1 a
+rc=0
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+=== mysql84 :: tidb-ctas-ignore
+SQL> create table p16_c1 ignore select 1 a
+rc=0
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+=== mysql84 :: tidb-ctas-defs
+SQL> create table p16_c1(id int) select 1 a
+rc=0
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+=== mysql84 :: mysql-global-temp
+SQL> create global temporary table gp16(id int) on commit delete rows
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'global temporary table gp16(id int) on commit delete rows' at line 1
+exists[mysql84::gp16]> mysql: [Warning] Using a password on the command line interface can be insecure.
+0
+=== mysql84 :: like-on-localtemp
+SQL> create temporary table tp16(id int);create table p16_l7 like tp16
+rc=0
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+=== mysql84 :: temp-like-from-temp
+SQL> create temporary table tp16(id int);create temporary table tp16l like tp16;describe tp16l
+rc=0
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+Field	Type	Null	Key	Default	Extra
+id	int	YES		NULL	NULL
+=== mysql84 :: alter-localtemp-tidb
+SQL> create temporary table tp16(id int);alter table tp16 add column x int
+rc=0
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+=== mysql84 :: rename-localtemp
+SQL> create temporary table tp16(id int);rename table tp16 to tp16t
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1146 (42S02) at line 1: Table 'golden.tp16' doesn't exist
+=== mysql84 :: alter-rename-localtemp
+SQL> create temporary table tp16(id int);alter table tp16 rename to tp16t;select count(*) c from tp16t
+rc=0
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+c
+0
+################################################ tidb85
+version> 8.0.11-TiDB-v8.5.0
+=== tidb85 :: drop-multi-all-present
+SQL> create table p16_a(id int);create table p16_b(id int);drop table p16_a,p16_b
+rc=0
+exists[tidb85::p16_a]> 0
+exists[tidb85::p16_b]> 0
+=== tidb85 :: drop-multi-second-missing
+SQL> create table p16_a(id int);drop table p16_a,p16_missing;show warnings
+rc=1
+out> ERROR 1051 (42S02) at line 1: Unknown table 'golden.p16_missing'
+exists[tidb85::p16_a]> 0
+exists[tidb85::p16_missing]> 0
+=== tidb85 :: drop-multi-first-missing
+SQL> create table p16_b(id int);drop table p16_missing,p16_b;show warnings
+rc=1
+out> ERROR 1051 (42S02) at line 1: Unknown table 'golden.p16_missing'
+exists[tidb85::p16_b]> 0
+=== tidb85 :: drop-multi-two-missing
+SQL> create table p16_a(id int);drop table p16_a,p16_missing,p16_z;show warnings
+rc=1
+out> ERROR 1051 (42S02) at line 1: Unknown table 'golden.p16_missing,golden.p16_z'
+exists[tidb85::p16_a]> 0
+=== tidb85 :: drop-multi-ifexists-mixed
+SQL> create table p16_a(id int);create table p16_b(id int);drop table if exists p16_a,p16_missing,p16_b;show warnings
+rc=0
+out> Level	Code	Message
+Note	1051	Unknown table 'golden.p16_missing'
+exists[tidb85::p16_a]> 0
+exists[tidb85::p16_b]> 0
+=== tidb85 :: drop-ifexists-one-missing
+SQL> drop table if exists p16_missing;show warnings
+rc=0
+out> Level	Code	Message
+Note	1051	Unknown table 'golden.p16_missing'
+=== tidb85 :: drop-duplicate-name
+SQL> create table p16_a(id int);drop table p16_a,p16_a;show warnings
+rc=1
+out> ERROR 1051 (42S02) at line 1: Unknown table 'golden.p16_a'
+exists[tidb85::p16_a]> 0
+=== tidb85 :: drop-restrict
+SQL> create table p16_a(id int);drop table p16_a restrict;show warnings
+rc=0
+exists[tidb85::p16_a]> 0
+=== tidb85 :: drop-cascade
+SQL> create table p16_a(id int);drop table p16_a cascade;show warnings
+rc=0
+exists[tidb85::p16_a]> 0
+=== tidb85 :: drop-restrict-missing
+SQL> drop table p16_missing restrict;show warnings
+rc=1
+out> ERROR 1051 (42S02) at line 1: Unknown table 'golden.p16_missing'
+=== tidb85 :: drop-table-absent-nocond
+SQL> drop table p16_missing
+rc=1
+out> ERROR 1051 (42S02) at line 1: Unknown table 'golden.p16_missing'
+=== tidb85 :: drop-temp-keyword-persistent
+SQL> create table p16_t(id int);drop temporary table p16_t;show warnings
+rc=1
+out> ERROR 1051 (42S02) at line 1: Unknown table 'golden.p16_t'
+exists[tidb85::p16_t]> 1
+=== tidb85 :: temp-create-select-drop
+SQL> create temporary table tp16(id int);insert into tp16 values(1);select count(*) c from tp16;drop temporary table tp16;show tables like 'tp16'
+rc=0
+out> c
+1
+=== tidb85 :: drop-temp-missing
+SQL> drop temporary table tp16;show warnings
+rc=1
+out> ERROR 1051 (42S02) at line 1: Unknown table 'golden.tp16'
+=== tidb85 :: drop-temp-ifexists-missing
+SQL> drop temporary table if exists tp16;show warnings
+rc=0
+out> Level	Code	Message
+Note	1051	Unknown table 'golden.tp16'
+=== tidb85 :: drop-plain-on-temp
+SQL> create temporary table tp16(id int);insert into tp16 values(1);drop table tp16;select count(*) c from tp16
+rc=1
+out> ERROR 1146 (42S02) at line 1: Table 'golden.tp16' doesn't exist
+=== tidb85 :: temp-shadows-persistent
+SQL> create table p16_t(id int,x int);insert into p16_t values(1,1);create temporary table p16_t(id int);insert into p16_t values(2);select * from p16_t;drop table p16_t;select * from p16_t
+rc=0
+out> id
+2
+id	x
+1	1
+=== tidb85 :: temp-drop-keyword-shadowed
+SQL> create table p16_t(id int,x int);insert into p16_t values(1,1);create temporary table p16_t(id int);insert into p16_t values(2);drop temporary table p16_t;select * from p16_t
+rc=0
+out> id	x
+1	1
+=== tidb85 :: create-persistent-over-temp
+SQL> create temporary table p16_t(id int);create table p16_t(id int,x int);insert into p16_t values(1,1);select * from p16_t;drop temporary table p16_t;select * from p16_t
+rc=1
+out> ERROR 1136 (21S01) at line 1: Column count doesn't match value count at row 1
+=== tidb85 :: create-temp-over-persistent
+SQL> create table p16_t(id int,x int);create temporary table p16_t(id int);insert into p16_t values(2);select * from p16_t
+rc=0
+out> id
+2
+=== tidb85 :: create-temp-ifnotexists-over-persistent
+SQL> create table p16_t(id int,x int);create temporary table if not exists p16_t(id int);show warnings;insert into p16_t values(2);select * from p16_t
+rc=0
+out> id
+2
+=== tidb85 :: create-temp-duplicate
+SQL> create temporary table tp16(id int);create temporary table tp16(id int)
+rc=1
+out> ERROR 1050 (42S01) at line 1: Table 'golden.tp16' already exists
+=== tidb85 :: create-temp-ifnotexists
+SQL> create temporary table tp16(id int);create temporary table if not exists tp16(a int);show warnings;insert into tp16 values(9);select count(*) c from tp16
+rc=0
+out> Level	Code	Message
+Note	1050	Table 'golden.tp16' already exists
+c
+1
+=== tidb85 :: alter-on-temp
+SQL> create temporary table tp16(id int);alter table tp16 add column x int;describe tp16
+rc=1
+out> ERROR 8200 (HY000) at line 1: TiDB doesn't support ALTER TABLE for local temporary table
+=== tidb85 :: truncate-temp
+SQL> create temporary table tp16(id int);insert into tp16 values(1);truncate table tp16;select count(*) c from tp16
+rc=0
+out> c
+0
+=== tidb85 :: rename-table-on-temp
+SQL> create temporary table tp16(id int);rename table tp16 to tp16t;select count(*) c from tp16t
+rc=1
+out> ERROR 8200 (HY000) at line 1: TiDB doesn't support RENAME TABLE for local temporary table
+=== tidb85 :: alter-rename-on-temp
+SQL> create temporary table tp16(id int);alter table tp16 rename to tp16t;select count(*) c from tp16t
+rc=1
+out> ERROR 8200 (HY000) at line 1: TiDB doesn't support ALTER TABLE for local temporary table
+=== tidb85 :: rename-table-shadowed
+SQL> create table p16_t(id int,x int);insert into p16_t values(1,1);create temporary table p16_t(id int);insert into p16_t values(2);rename table p16_t to p16_t2;select * from p16_t;select * from p16_t2
+rc=1
+out> ERROR 8200 (HY000) at line 1: TiDB doesn't support RENAME TABLE for local temporary table
+=== tidb85 :: alter-rename-shadowed
+SQL> create table p16_t(id int,x int);insert into p16_t values(1,1);create temporary table p16_t(id int);insert into p16_t values(2);alter table p16_t rename to p16_t2;select * from p16_t;select * from p16_t2
+rc=1
+out> ERROR 8200 (HY000) at line 1: TiDB doesn't support ALTER TABLE for local temporary table
+=== tidb85 :: temp-like
+SQL> create table p16_src(id int primary key,u int unique,k int,key(k));create temporary table tp16l like p16_src;describe tp16l
+rc=0
+out> Field	Type	Null	Key	Default	Extra
+id	int	NO	PRI	NULL	
+u	int	YES	UNI	NULL	
+k	int	YES	MUL	NULL	
+=== tidb85 :: like-from-temp
+SQL> create temporary table tp16(id int);create table p16_l7 like tp16
+rc=1
+out> ERROR 8006 (HY000) at line 1: `create table like` is unsupported on temporary tables.
+=== tidb85 :: ctas-from-temp
+SQL> create temporary table tp16(id int);insert into tp16 values(7);create table p16_c7 as select * from tp16;select * from p16_c7
+rc=1
+out> ERROR 1105 (HY000) at line 1: 'CREATE TABLE ... SELECT' is not implemented yet
+=== tidb85 :: temp-ctas
+SQL> create temporary table tp16t select 1 a;select * from tp16t
+rc=1
+out> ERROR 1105 (HY000) at line 1: 'CREATE TABLE ... SELECT' is not implemented yet
+=== tidb85 :: drop-multi-temp-and-persistent
+SQL> create temporary table tp16(id int);create table p16_a(id int);drop table tp16,p16_a;select count(*) c from tp16
+rc=1
+out> ERROR 1146 (42S02) at line 1: Table 'golden.tp16' doesn't exist
+exists[tidb85::p16_a]> 0
+=== tidb85 :: drop-multi-temp-missing
+SQL> create temporary table tp16(id int);create table p16_a(id int);drop table tp16,p16_missing;select count(*) c from tp16
+rc=1
+out> ERROR 1051 (42S02) at line 1: Unknown table 'golden.p16_missing'
+exists[tidb85::p16_a]> 1
+=== tidb85 :: mk-src
+SQL> create table p16_ref(id int primary key);create table p16_src(id int auto_increment primary key,n varchar(20) not null default 'x',g int generated always as (id*2) stored,u int unique,k int,key(k),fk int,foreign key(fk) references p16_ref(id),constraint ck check(n<>'')) engine=innodb row_format=dynamic comment='src' auto_increment=100
+rc=1
+out> ERROR 3109 (HY000) at line 1: Generated column 'g' cannot refer to auto-increment column.
+indexes[tidb85::p16_src]> 
+fks[tidb85::p16_src]> 
+=== tidb85 :: mk-src-clean
+SQL> create table p16_ref(id int primary key);drop table if exists p16_src;create table p16_src(id int auto_increment primary key,n varchar(20) not null default 'x',g int generated always as (id*2) stored,u int unique,k int,key(k),fk int,foreign key(fk) references p16_ref(id),constraint ck check(n<>'')) engine=innodb row_format=dynamic comment='src' auto_increment=100
+rc=1
+out> ERROR 3109 (HY000) at line 1: Generated column 'g' cannot refer to auto-increment column.
+=== tidb85 :: create-like
+SQL> drop table if exists p16_l1;create table p16_l1 like p16_src;show create table p16_l1
+rc=1
+out> ERROR 1146 (42S02) at line 1: Table 'golden.p16_src' doesn't exist
+columns[tidb85::p16_l1]> 
+indexes[tidb85::p16_l1]> 
+fks[tidb85::p16_l1]> 
+catalog[tidb85::p16_l1]> 
+=== tidb85 :: like-missing-src
+SQL> create table p16_l2 like p16_missing;show warnings
+rc=1
+out> ERROR 1146 (42S02) at line 1: Table 'golden.p16_missing' doesn't exist
+exists[tidb85::p16_l2]> 0
+=== tidb85 :: like-ifnotexists-dest
+SQL> create table p16_l3(a int);create table if not exists p16_l3 like p16_src;show warnings;describe p16_l3
+rc=1
+out> ERROR 1146 (42S02) at line 1: Table 'golden.p16_src' doesn't exist
+=== tidb85 :: like-existing-dest
+SQL> create table p16_l4(a int);create table p16_l4 like p16_src
+rc=1
+out> ERROR 1146 (42S02) at line 1: Table 'golden.p16_src' doesn't exist
+=== tidb85 :: like-cross-schema
+SQL> create table golden2.p16_a like golden.p16_src;describe golden2.p16_a
+rc=1
+out> ERROR 1146 (42S02) at line 1: Table 'golden.p16_src' doesn't exist
+=== tidb85 :: like-partitioned
+SQL> create table p16_src2(id int) partition by range(id)(partition p0 values less than(10),partition p1 values less than(20));create table p16_l5 like p16_src2;show create table p16_l5
+rc=0
+out> Table	Create Table
+p16_l5	CREATE TABLE `p16_l5` (\n  `id` int DEFAULT NULL\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin\nPARTITION BY RANGE (`id`)\n(PARTITION `p0` VALUES LESS THAN (10),\n PARTITION `p1` VALUES LESS THAN (20))
+parts[tidb85::p16_l5]> p0	10|p1	20|
+=== tidb85 :: like-of-like
+SQL> create table p16_l1 like p16_src;create table p16_l6 like p16_l1;describe p16_l6
+rc=1
+out> ERROR 1146 (42S02) at line 1: Table 'golden.p16_src' doesn't exist
+=== tidb85 :: like-autoinc-counter
+SQL> create table p16_src(id int auto_increment primary key) auto_increment=100;create table p16_l1 like p16_src;insert into p16_l1 values(null);select * from p16_l1;show table status like 'p16_l1'
+rc=0
+out> id
+1
+Name	Engine	Version	Row_format	Rows	Avg_row_length	Data_length	Max_data_length	Index_length	Data_free	Auto_increment	Create_time	Update_time	Check_time	Collation	Checksum	Create_options	Comment
+p16_l1	InnoDB	10	Compact	0	0	0	0	0	0	2	2026-10-30 01:39:35	NULL	NULL	utf8mb4_bin			
+=== tidb85 :: ctas-as
+SQL> create table p16_c1 as select 1 a,'x' b;show create table p16_c1;select * from p16_c1
+rc=1
+out> ERROR 1105 (HY000) at line 1: 'CREATE TABLE ... SELECT' is not implemented yet
+columns[tidb85::p16_c1]> 
+=== tidb85 :: ctas-no-as
+SQL> create table p16_c2 select 1 a;describe p16_c2
+rc=1
+out> ERROR 1105 (HY000) at line 1: 'CREATE TABLE ... SELECT' is not implemented yet
+=== tidb85 :: ctas-ignore
+SQL> create table p16_src3(a int primary key);insert into p16_src3 values(1),(2);create table p16_c3 ignore select * from p16_src3;select * from p16_c3
+rc=1
+out> ERROR 1105 (HY000) at line 1: 'CREATE TABLE ... SELECT' is not implemented yet
+=== tidb85 :: ctas-ignore-dupkey
+SQL> create table p16_src3(a int primary key);insert into p16_src3 values(1),(2);create table p16_c4(a int primary key) ignore select 1 a union all select 1 union all select 3;select * from p16_c4
+rc=1
+out> ERROR 1105 (HY000) at line 1: 'CREATE TABLE ... SELECT' is not implemented yet
+=== tidb85 :: ctas-replace-fresh
+SQL> create table p16_c4(a int primary key) replace select 1 a union all select 1 union all select 3;select * from p16_c4
+rc=1
+out> ERROR 1105 (HY000) at line 1: 'CREATE TABLE ... SELECT' is not implemented yet
+=== tidb85 :: ctas-nokey-dup
+SQL> create table p16_c4(a int) select 1 a union all select 1;select * from p16_c4
+rc=1
+out> ERROR 1105 (HY000) at line 1: 'CREATE TABLE ... SELECT' is not implemented yet
+=== tidb85 :: ctas-defs-plus-select
+SQL> create table p16_src3(a int primary key);insert into p16_src3 values(1),(2);create table p16_c5(id int primary key,extra int) select a+100,a*10 from p16_src3;show create table p16_c5;select * from p16_c5
+rc=1
+out> ERROR 1105 (HY000) at line 1: 'CREATE TABLE ... SELECT' is not implemented yet
+columns[tidb85::p16_c5]> 
+=== tidb85 :: ctas-ifnotexists-existing
+SQL> create table p16_c6(a int);create table if not exists p16_c6 as select 1 b;show warnings;describe p16_c6
+rc=1
+out> ERROR 1105 (HY000) at line 1: 'CREATE TABLE ... SELECT' is not implemented yet
+=== tidb85 :: ctas-existing-nocond
+SQL> create table p16_a(a int);create table p16_a as select 1 b
+rc=1
+out> ERROR 1105 (HY000) at line 1: 'CREATE TABLE ... SELECT' is not implemented yet
+=== tidb85 :: ctas-missing-src
+SQL> create table p16_c1 as select * from p16_missing
+rc=1
+out> ERROR 1105 (HY000) at line 1: 'CREATE TABLE ... SELECT' is not implemented yet
+exists[tidb85::p16_c1]> 0
+=== tidb85 :: ctas-onto-temp-name
+SQL> create temporary table p16_c1(id int);insert into p16_c1 values(5);create table p16_c1 as select 9 a;select * from p16_c1
+rc=1
+out> ERROR 1105 (HY000) at line 1: 'CREATE TABLE ... SELECT' is not implemented yet
+=== tidb85 :: rename-multi-ok
+SQL> create table p16_r1(id int);create table p16_r2(id int);rename table p16_r1 to p16_r1x,p16_r2 to p16_r2x
+rc=0
+exists[tidb85::p16_r1]> 0
+exists[tidb85::p16_r1x]> 1
+exists[tidb85::p16_r2]> 0
+exists[tidb85::p16_r2x]> 1
+=== tidb85 :: rename-multi-second-missing
+SQL> create table p16_r1(id int);rename table p16_r1 to p16_r1x,p16_missing to p16_z;show warnings
+rc=1
+out> ERROR 1146 (42S02) at line 1: Table 'golden.p16_missing' doesn't exist
+exists[tidb85::p16_r1]> 1
+exists[tidb85::p16_r1x]> 0
+exists[tidb85::p16_z]> 0
+=== tidb85 :: rename-multi-first-missing
+SQL> create table p16_r2(id int);rename table p16_missing to p16_z,p16_r2 to p16_r2x;show warnings
+rc=1
+out> ERROR 1146 (42S02) at line 1: Table 'golden.p16_missing' doesn't exist
+exists[tidb85::p16_r2]> 1
+exists[tidb85::p16_r2x]> 0
+exists[tidb85::p16_z]> 0
+=== tidb85 :: rename-dest-exists
+SQL> create table p16_r1(id int);create table p16_r2(id int);rename table p16_r1 to p16_r2;show warnings
+rc=1
+out> ERROR 1050 (42S01) at line 1: Table 'golden.p16_r2' already exists
+exists[tidb85::p16_r1]> 1
+exists[tidb85::p16_r2]> 1
+=== tidb85 :: alter-rename-dest-exists
+SQL> create table p16_r1(id int);create table p16_r2(id int);alter table p16_r1 rename to p16_r2;show warnings
+rc=1
+out> ERROR 1050 (42S01) at line 1: Table 'golden.p16_r2' already exists
+exists[tidb85::p16_r1]> 1
+exists[tidb85::p16_r2]> 1
+=== tidb85 :: rename-cross-schema
+SQL> create table p16_r1(id int);alter table golden.p16_r1 rename to golden2.p16_r1x
+rc=0
+schemas[p16_r1x]> golden2.p16_r1x
+exists[tidb85::p16_r1]> 0
+=== tidb85 :: rename-to-missing-schema
+SQL> create table p16_r1(id int);rename table p16_r1 to noschema.p16_r1x;show warnings
+rc=1
+out> ERROR 1025 (HY000) at line 1: Error on rename of 'golden.p16_r1' to 'noschema.p16_r1x' (errno: 168 - Database `noschema` doesn't exist)
+exists[tidb85::p16_r1]> 1
+=== tidb85 :: rename-swap
+SQL> create table p16_r1(id int);create table p16_r2(id int);rename table p16_r1 to p16_keep,p16_r2 to p16_r1,p16_keep to p16_r2;select count(*) a from p16_r1;select count(*) b from p16_r2
+rc=0
+out> a
+0
+b
+0
+exists[tidb85::p16_keep]> 0
+=== tidb85 :: rename-onto-temp-name
+SQL> create temporary table tp16(id int);create table p16_r1(id int);rename table p16_r1 to tp16;select count(*) c from tp16;drop table tp16
+rc=0
+out> c
+0
+=== tidb85 :: alter-rename-to-same
+SQL> create table p16_r1(id int);alter table p16_r1 rename to p16_r1;show warnings
+rc=0
+exists[tidb85::p16_r1]> 1
+=== tidb85 :: truncate-ifexists
+SQL> truncate table if exists p16_missing
+rc=1
+out> ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your TiDB version for the right syntax to use line 1 column 17 near "if exists p16_missing" 
+=== tidb85 :: truncate-missing
+SQL> truncate table p16_missing
+rc=1
+out> ERROR 1146 (42S02) at line 1: Table 'golden.p16_missing' doesn't exist
+=== tidb85 :: truncate-multi
+SQL> create table p16_a(id int);create table p16_b(id int);truncate table p16_a,p16_b
+rc=1
+out> ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your TiDB version for the right syntax to use line 1 column 21 near ",p16_b" 
+=== tidb85 :: truncate-resets-autoinc
+SQL> create table p16_a(id int auto_increment primary key);insert into p16_a values(null),(null);truncate table p16_a;insert into p16_a values(null);select * from p16_a
+rc=0
+out> id
+1
+catalog[tidb85::p16_a]> InnoDB	BASE TABLE	utf8mb4_bin	2	|
+=== tidb85 :: truncate-fk-parent
+SQL> create table p16_ref(id int primary key);create table p16_a(id int,foreign key(id) references p16_ref(id));truncate table p16_a;show warnings
+rc=0
+exists[tidb85::p16_a]> 1
+=== tidb85 :: truncate-temp-persistent
+SQL> create table p16_a(id int auto_increment primary key);insert into p16_a values(null);create temporary table tp16(id int auto_increment primary key);insert into tp16 values(null);truncate table tp16;insert into tp16 values(null);select * from tp16
+rc=0
+out> id
+1
+=== tidb85 :: global-temp
+SQL> create global temporary table gp16(id int) on commit delete rows;insert into gp16 values(1);select count(*) before_commit from gp16;commit;select count(*) after_commit from gp16;show create table gp16
+rc=0
+out> before_commit
+0
+after_commit
+0
+Table	Create Table
+gp16	CREATE GLOBAL TEMPORARY TABLE `gp16` (\n  `id` int DEFAULT NULL\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin ON COMMIT DELETE ROWS
+exists[tidb85::gp16]> 1
+=== tidb85 :: global-temp-preserve
+SQL> create global temporary table gp16(id int) on commit preserve rows
+rc=1
+out> ERROR 8200 (HY000) at line 1: TiDB doesn't support ON COMMIT PRESERVE ROWS for now
+=== tidb85 :: global-temp-no-oncommit
+SQL> create global temporary table gp16(id int)
+rc=1
+out> ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your TiDB version for the right syntax to use line 1 column 42 near ""GLOBAL TEMPORARY and ON COMMIT DELETE ROWS must appear together 
+=== tidb85 :: global-temp-persists
+SQL> create global temporary table gp16(id int) on commit delete rows;show tables like 'gp16'
+rc=0
+out> Tables_in_golden (gp16)
+gp16
+exists[tidb85::gp16]> 1
+=== tidb85 :: drop-global-temp-keyword
+SQL> create global temporary table gp16(id int) on commit delete rows;drop global temporary table gp16;show tables like 'gp16'
+rc=0
+=== tidb85 :: drop-temp-on-globaltemp
+SQL> create global temporary table gp16(id int) on commit delete rows;drop temporary table gp16;show tables like 'gp16'
+rc=1
+out> ERROR 1051 (42S02) at line 1: Unknown table 'golden.gp16'
+=== tidb85 :: drop-plain-on-globaltemp
+SQL> create global temporary table gp16(id int) on commit delete rows;drop table gp16;show tables like 'gp16'
+rc=0
+=== tidb85 :: alter-on-globaltemp
+SQL> create global temporary table gp16(id int) on commit delete rows;alter table gp16 add column x int;describe gp16
+rc=0
+out> Field	Type	Null	Key	Default	Extra
+id	int	YES		NULL	
+x	int	YES		NULL	
+=== tidb85 :: truncate-globaltemp
+SQL> create global temporary table gp16(id int) on commit delete rows;insert into gp16 values(1);truncate table gp16;select count(*) c from gp16
+rc=0
+out> c
+0
+=== tidb85 :: flashback-recover
+SQL> create table p16_a(id int);drop table p16_a;flashback table p16_a to p16_b;show warnings
+rc=1
+out> ERROR 1105 (HY000) at line 1: can not get 'tikv_gc_safe_point'
+=== tidb85 :: tidb-ctas
+SQL> create table p16_c1 select 1 a
+rc=1
+out> ERROR 1105 (HY000) at line 1: 'CREATE TABLE ... SELECT' is not implemented yet
+=== tidb85 :: tidb-ctas-as
+SQL> create table p16_c1 as select 1 a
+rc=1
+out> ERROR 1105 (HY000) at line 1: 'CREATE TABLE ... SELECT' is not implemented yet
+=== tidb85 :: tidb-ctas-ignore
+SQL> create table p16_c1 ignore select 1 a
+rc=1
+out> ERROR 1105 (HY000) at line 1: 'CREATE TABLE ... SELECT' is not implemented yet
+=== tidb85 :: tidb-ctas-defs
+SQL> create table p16_c1(id int) select 1 a
+rc=1
+out> ERROR 1105 (HY000) at line 1: 'CREATE TABLE ... SELECT' is not implemented yet
+=== tidb85 :: mysql-global-temp
+SQL> create global temporary table gp16(id int) on commit delete rows
+rc=0
+exists[tidb85::gp16]> 1
+=== tidb85 :: like-on-localtemp
+SQL> create temporary table tp16(id int);create table p16_l7 like tp16
+rc=1
+out> ERROR 8006 (HY000) at line 1: `create table like` is unsupported on temporary tables.
+=== tidb85 :: temp-like-from-temp
+SQL> create temporary table tp16(id int);create temporary table tp16l like tp16;describe tp16l
+rc=1
+out> ERROR 8006 (HY000) at line 1: `create table like` is unsupported on temporary tables.
+=== tidb85 :: alter-localtemp-tidb
+SQL> create temporary table tp16(id int);alter table tp16 add column x int
+rc=1
+out> ERROR 8200 (HY000) at line 1: TiDB doesn't support ALTER TABLE for local temporary table
+=== tidb85 :: rename-localtemp
+SQL> create temporary table tp16(id int);rename table tp16 to tp16t
+rc=1
+out> ERROR 8200 (HY000) at line 1: TiDB doesn't support RENAME TABLE for local temporary table
+=== tidb85 :: alter-rename-localtemp
+SQL> create temporary table tp16(id int);alter table tp16 rename to tp16t;select count(*) c from tp16t
+rc=1
+out> ERROR 8200 (HY000) at line 1: TiDB doesn't support ALTER TABLE for local temporary table
+DONE

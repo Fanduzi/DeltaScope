@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"strconv"
+	"strings"
 
 	"github.com/Fanduzi/DeltaScope/internal/domain/policy"
 	"github.com/Fanduzi/DeltaScope/internal/domain/rule"
@@ -88,34 +89,69 @@ func (r tableOperationExistenceRule) Evaluate(ctx context.Context, statement spe
 	if !r.AppliesTo(statement) {
 		return nil, nil
 	}
-	snapshot, ok := targetTableSnapshot(statement)
-	if !ok || snapshot.Exists {
+	// DROP ... IF EXISTS arms the conditional form: a proven-absent member
+	// becomes a native no-op note, never an existence violation. Members
+	// the batch cannot vouch stay a gap, not a fabricated refusal.
+	ifExistsArmed := statement.DDL.Options["if_exists"] == "true"
+	bindings := boundTargetBindings(statement)
+	if len(bindings) == 0 {
 		return nil, nil
 	}
-	return []rule.Finding{{
-		RuleID:     r.ruleID,
-		Level:      r.level,
-		Message:    fmt.Sprintf("%s target %q does not exist in the target schema", r.label, statement.DDL.Table.Name),
-		Suggestion: "refresh metadata, create the object first, or disable metadata mode for offline-only auditing",
-		Metadata: map[string]any{
-			"table":     statement.DDL.Table.Name,
-			"operation": string(statement.DDL.Operation),
-			"exists":    false,
-		},
-	}}, nil
+	var findings []rule.Finding
+	seen := make(map[string]struct{})
+	for _, binding := range bindings {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
+		if binding.Ambiguous || binding.Snapshot == nil || binding.Snapshot.Exists || ifExistsArmed {
+			continue
+		}
+		identity := boundIdentityKey(statement, binding)
+		if _, duplicate := seen[identity]; duplicate {
+			continue
+		}
+		seen[identity] = struct{}{}
+		findings = append(findings, rule.Finding{
+			RuleID:     r.ruleID,
+			Level:      r.level,
+			Message:    fmt.Sprintf("%s target %q does not exist in the target schema", r.label, binding.Table.Name),
+			Suggestion: "refresh metadata, create the object first, or disable metadata mode for offline-only auditing",
+			Metadata: map[string]any{
+				"table":     binding.Table.Name,
+				"operation": string(statement.DDL.Operation),
+				"exists":    false,
+			},
+		})
+	}
+	return findings, nil
 }
 
 func (r tableOperationExistenceRule) EvidenceGaps(statement spec.Statement) []rule.EvidenceGap {
 	if r.ruleID != ruleIDTableDropExistsRequire || r.operation != spec.DDLOperationDropTable || !orderedGapDialect(statement.Dialect) || !r.AppliesTo(statement) {
 		return nil
 	}
-	if snapshot, ok := targetTableSnapshot(statement); ok && snapshot != nil {
+	bindings := boundTargetBindings(statement)
+	if len(bindings) == 0 {
+		// No bound answer at all — no metadata seam ran — keeps the legacy
+		// single-target unknown-state gap the frozen contract expects.
+		if target := primaryTarget(statement); strings.TrimSpace(target.Name) != "" {
+			return []rule.EvidenceGap{{
+				ReasonCode:    gapReasonUnknownTableState,
+				RequiredFacts: []string{"target_table.existence"},
+			}}
+		}
 		return nil
 	}
-	return []rule.EvidenceGap{{
-		ReasonCode:    gapReasonUnknownTableState,
-		RequiredFacts: []string{"target_table.existence"},
-	}}
+	var gaps []rule.EvidenceGap
+	for _, binding := range bindings {
+		if binding.Ambiguous || binding.Snapshot == nil {
+			gaps = append(gaps, rule.EvidenceGap{
+				ReasonCode:    gapReasonUnknownTableState,
+				RequiredFacts: []string{"target_table.existence"},
+			})
+		}
+	}
+	return gaps
 }
 
 type adaptiveHashLifecycleRule struct {

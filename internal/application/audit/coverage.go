@@ -401,19 +401,25 @@ func statementCoverageAspects(dialect spec.Dialect, statement spec.Statement) []
 			gaps = append(gaps, aspectGap(feature, vendor, map[string]any{"aspect": "option"}))
 		}
 	}
-	if ddl.TemporaryScope != "" {
-		// A parsed temporary scope changes object identity and lifetime; no
-		// rule audits it yet (owner T16). GLOBAL TEMPORARY is TiDB-only, so it
-		// is a vendor boundary under MySQL; the local form exists in both
-		// products and stays unaudited analysis.
-		feature := fmt.Sprintf("%s.temporary", ddl.Operation)
-		vendor := false
-		if ddl.TemporaryScope == spec.TemporaryScopeGlobal {
-			feature += ".global"
-			vendor = dialect == spec.DialectMySQL
+	if ddl.TemporaryScope == spec.TemporaryScopeGlobal {
+		// LOCAL temporary objects are fully modeled (T16): session
+		// namespace binding, shadowing, and lifecycle transitions all
+		// publish. GLOBAL TEMPORARY is TiDB-only — a vendor boundary
+		// under MySQL — while TiDB's own global-temporary catalog object
+		// with ON COMMIT DELETE ROWS is modeled and carries no aspect.
+		// The ON COMMIT PRESERVE ROWS form is the one global clause TiDB
+		// refuses (8200): it stays a vendor boundary under TiDB.
+		switch {
+		case dialect == spec.DialectMySQL:
+			gaps = append(gaps, aspectGap(fmt.Sprintf("%s.temporary.global", ddl.Operation), true,
+				map[string]any{"aspect": "temporary", "temporary_scope": ddl.TemporaryScope}))
+		case ddl.Operation == spec.DDLOperationCreateTable && !ddl.OnCommitDelete:
+			// ON COMMIT is a create-time clause only — DROP GLOBAL carries
+			// no attribute and is fully modeled. Only the PRESERVE ROWS
+			// create form is the TiDB-refused (8200) vendor boundary.
+			gaps = append(gaps, aspectGap(fmt.Sprintf("%s.temporary.global.preserve", ddl.Operation), true,
+				map[string]any{"aspect": "temporary", "temporary_scope": ddl.TemporaryScope}))
 		}
-		gaps = append(gaps, aspectGap(feature, vendor,
-			map[string]any{"aspect": "temporary", "temporary_scope": ddl.TemporaryScope}))
 	}
 	for _, column := range ddl.Columns {
 		gaps = append(gaps, columnAspectGaps(dialect, ddl.Operation, "", column)...)

@@ -16,6 +16,35 @@ type Metadata struct {
 	// (no exchange action on the statement, or the identity is unknown).
 	ExchangeTable *TableSnapshot   `json:"exchange_table,omitempty"`
 	Objects       []ObjectSnapshot `json:"objects,omitempty"`
+
+	// TargetTables binds every identity in DDL.TableTargets() to its
+	// ordered pre-state projection in source order — the namespace-aware
+	// answer for multi-target statements (multi-table DROP, RENAME pairs).
+	// A binding's Snapshot is nil when the target's state is unvouched;
+	// Ambiguous marks a binding the model could not even decide (a name
+	// that could hit either namespace).
+	TargetTables []TargetBinding `json:"target_tables,omitempty"`
+	// SourceTable is the CREATE TABLE ... LIKE source's ordered pre-state —
+	// bound through the same temp-first namespace rule every unqualified
+	// read uses. nil when the LIKE source is unvouched (or the statement
+	// is not a LIKE create).
+	SourceTable *TableSnapshot `json:"source_table,omitempty"`
+	// SourceTables binds each CTAS SelectSources entry to its ordered
+	// pre-state, aligned 1:1 in source order. A nil element marks an
+	// unvouched source; an empty slice means the select named no base
+	// table (literal select — no source premise at all).
+	SourceTables []*TableSnapshot `json:"source_tables,omitempty"`
+}
+
+// TargetBinding is the namespace-aware pre-state answer for one named
+// identity: which object the statement's reference binds and what was
+// provable about it. Snapshot.Temporary marks the session-local temp
+// namespace; Snapshot nil means unvouched; Ambiguous means the binding
+// itself could not be decided (never conflated with a proven absence).
+type TargetBinding struct {
+	Table     Table          `json:"table"`
+	Snapshot  *TableSnapshot `json:"snapshot,omitempty"`
+	Ambiguous bool           `json:"ambiguous,omitempty"`
 }
 
 // InstanceFacts are normalized server-level facts that influence audit behavior.
@@ -190,6 +219,38 @@ type TableSnapshot struct {
 	// unobserved; the flag distinguishes that incomplete projection from
 	// a simply-unanswered catalog probe.
 	Subpartitioned bool `json:"-"`
+
+	// Temporary marks a bound session-local temporary table — an object
+	// in the per-session namespace that can shadow a same-named
+	// persistent table. Provider snapshots never carry it; only
+	// batch-derived bindings produce it.
+	Temporary bool `json:"temporary,omitempty"`
+
+	// GlobalTemporary marks a TiDB global-temporary catalog object — a
+	// persistent-namespace definition whose rows are transaction-scoped.
+	// It lives in the ordinary catalog namespace (plain DROP/ALTER/
+	// TRUNCATE/RENAME apply), unlike Temporary's session object.
+	GlobalTemporary bool `json:"global_temporary,omitempty"`
+
+	// ColumnsTailUnknown marks that the Columns list is provable only up
+	// to its declared prefix — a CTAS destination keeps the declared
+	// column definitions but cannot vouch for select-appended members
+	// beyond the tail. Consumers must not treat Columns as the complete
+	// member set under this flag.
+	ColumnsTailUnknown bool `json:"-"`
+
+	// ReferencedBy carries inbound foreign-key edges the batch can prove:
+	// child tables created in-batch declaring REFERENCES <this table>.
+	// Only derived edges land here — a non-nil empty slice means "no
+	// proven inbound edge", nil means none recorded yet.
+	ReferencedBy []Table `json:"-"`
+
+	// ReferencedByUnknown marks that the snapshot cannot vouch for
+	// inbound references at all — provider snapshots do not load reverse
+	// edges, so "no recorded child" on a provider path is unknown, never
+	// proven-empty. Consumers (TRUNCATE's 1701 premise) must gap instead
+	// of reading an empty ReferencedBy as safe.
+	ReferencedByUnknown bool `json:"-"`
 }
 
 // HasColumn reports whether the snapshot contains a column by name, case-insensitively.

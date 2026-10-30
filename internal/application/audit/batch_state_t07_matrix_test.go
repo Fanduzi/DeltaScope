@@ -20,13 +20,13 @@ import (
 )
 
 type t07GoldenCase struct {
-	ID       string          `json:"id"`
-	Dialect  string          `json:"dialect"`
-	Anchor   string          `json:"anchor"`
-	Policy   string          `json:"policy"`
-	SQL      string          `json:"sql"`
-	Args     []string        `json:"args"`
-	Expected map[string]any  `json:"expect"`
+	ID       string         `json:"id"`
+	Dialect  string         `json:"dialect"`
+	Anchor   string         `json:"anchor"`
+	Policy   string         `json:"policy"`
+	SQL      string         `json:"sql"`
+	Args     []string       `json:"args"`
+	Expected map[string]any `json:"expect"`
 }
 
 type t07Golden struct {

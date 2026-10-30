@@ -179,7 +179,7 @@ func TestT07C03OppositeControl(t *testing.T) {
 				Schema:        "golden",
 				TargetVersion: variant.version,
 				ConfigPath: t07PolicyPath(t, map[string]string{
-					t07RuleDependency:                      "      required: true\n",
+					t07RuleDependency:                         "      required: true\n",
 					"ddl.create_index.columns.exists.require": "      required: true\n",
 				}),
 				MetadataProvider: provider,

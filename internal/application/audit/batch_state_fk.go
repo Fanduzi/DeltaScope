@@ -105,6 +105,94 @@ func (s *batchState) applyAddForeignKey(ctx context.Context, _ spec.Statement, a
 	}
 	s.publishForeignKeySupportingIndex(shape, member, authored)
 	s.entries[key] = &batchTableEntry{state: tablePresent, shape: shape, displaySchema: entry.displaySchema, displayTable: entry.displayTable}
+	return s.recordInboundEdge(ctx, key, targets[0], member)
+}
+
+// recordInboundEdge publishes the inbound foreign-key edge a landed child
+// constraint creates on its parent: the parent's ReferencedBy set gains
+// the child's effective identity. The edge is the only provider-blind
+// reverse-FK fact the batch can prove — batch-derived shapes carry exact
+// edges while present-incomplete projections keep ReferencedByUnknown.
+// Recording is best-effort inside the same once-per-key seam: the parent
+// was already resolved by the referenced-premise check, and a parent that
+// is merely unvouched keeps its own state — only a present parent's shape
+// receives the edge.
+func (s *batchState) recordInboundEdge(ctx context.Context, childKey batchTableKey, child spec.Table, member spec.Constraint) error {
+	parent := spec.Table{Schema: member.ReferencedSchema, Name: strings.TrimSpace(member.ReferencedTable)}
+	if parent.Name == "" {
+		return nil
+	}
+	parentKey := s.keyFor(childKey.schema, parent)
+	var parentEntry *batchTableEntry
+	if parentKey == childKey {
+		parentEntry = s.entries[parentKey]
+	} else {
+		var err error
+		parentEntry, err = s.resolve(ctx, parentKey, s.effectiveSchema(childKey.schema, parent), parent.Name)
+		if err != nil {
+			return err
+		}
+	}
+	if parentEntry == nil || parentEntry.state != tablePresent || parentEntry.shape == nil {
+		return nil
+	}
+	childIdentity := spec.Table{Schema: s.effectiveSchema(childKey.schema, child), Name: child.Name}
+	for _, existing := range parentEntry.shape.ReferencedBy {
+		if strings.EqualFold(existing.Schema, childIdentity.Schema) && strings.EqualFold(existing.Name, childIdentity.Name) {
+			return nil
+		}
+	}
+	shape := cloneTableSnapshot(parentEntry.shape)
+	shape.ReferencedBy = append(shape.ReferencedBy, childIdentity)
+	s.entries[parentKey] = &batchTableEntry{state: parentEntry.state, shape: shape, displaySchema: parentEntry.displaySchema, displayTable: parentEntry.displayTable}
+	return nil
+}
+
+// dropInboundEdges removes the inbound edges a dropped child's outbound
+// constraints recorded on their parents — the edge dies with the child.
+// The child's own shape carries the referenced identities; only edges the
+// batch provably recorded are removed.
+func (s *batchState) dropInboundEdges(ctx context.Context, childKey batchTableKey, child spec.Table, shape *spec.TableSnapshot) error {
+	if shape == nil {
+		return nil
+	}
+	for _, member := range shape.Constraints {
+		if member.Type != "foreign_key" {
+			continue
+		}
+		parent := spec.Table{Schema: member.ReferencedSchema, Name: strings.TrimSpace(member.ReferencedTable)}
+		if parent.Name == "" {
+			continue
+		}
+		parentKey := s.keyFor(childKey.schema, parent)
+		if parentKey == childKey {
+			continue
+		}
+		// Only an already-loaded parent can hold a batch-recorded inbound
+		// edge — a parent the batch never resolved has no recorded edge to
+		// remove, so this must not pay a provider read for it.
+		parentEntry, loaded := s.entries[parentKey]
+		if !loaded {
+			continue
+		}
+		if parentEntry == nil || parentEntry.state != tablePresent || parentEntry.shape == nil {
+			continue
+		}
+		childSchema := s.effectiveSchema(childKey.schema, child)
+		kept := parentEntry.shape.ReferencedBy[:0]
+		for _, existing := range parentEntry.shape.ReferencedBy {
+			if strings.EqualFold(existing.Schema, childSchema) && strings.EqualFold(existing.Name, child.Name) {
+				continue
+			}
+			kept = append(kept, existing)
+		}
+		if len(kept) == len(parentEntry.shape.ReferencedBy) {
+			continue
+		}
+		newShape := cloneTableSnapshot(parentEntry.shape)
+		newShape.ReferencedBy = append([]spec.Table{}, kept...)
+		s.entries[parentKey] = &batchTableEntry{state: parentEntry.state, shape: newShape, displaySchema: parentEntry.displaySchema, displayTable: parentEntry.displayTable}
+	}
 	return nil
 }
 

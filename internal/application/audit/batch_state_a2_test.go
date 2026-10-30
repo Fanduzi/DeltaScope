@@ -249,13 +249,14 @@ func TestBatchStateA2OldNameStaysAbsent(t *testing.T) {
 	}
 }
 
-// C: outside the single success cell both ends tombstone — a known-absent
-// source or a known-present destination invalidates the pair, and the ALTER
-// form keeps its own source-existence finding on the rename statement itself.
+// C: a proven refusal keeps both endpoint pre-states — a known-absent
+// source (1146) or a known-present destination (1050) never moves a fact,
+// and the ALTER form keeps its own source-existence finding on the rename
+// statement itself.
 func TestBatchStateA2RenamePremiseCellsInvalidate(t *testing.T) {
 	t.Parallel()
 
-	t.Run("source absent invalidates both ends", func(t *testing.T) {
+	t.Run("source absent refusal keeps both ends", func(t *testing.T) {
 		t.Parallel()
 		provider := &t05AbsentProvider{}
 		result, err := AuditSQL(context.Background(), Request{
@@ -268,11 +269,13 @@ func TestBatchStateA2RenamePremiseCellsInvalidate(t *testing.T) {
 		if err != nil {
 			t.Fatalf("audit: %v", err)
 		}
-		t05ProbeCreateIndex(t, result, 1, "unknown")
-		t05ProbeCreateIndex(t, result, 2, "unknown")
+		// A proven-absent source is a proven 1146 refusal — both endpoint
+		// facts stand, so the index reads report the settled absence.
+		t05ProbeCreateIndex(t, result, 1, "absent")
+		t05ProbeCreateIndex(t, result, 2, "absent")
 	})
 
-	t.Run("destination present invalidates both ends", func(t *testing.T) {
+	t.Run("destination present refusal keeps both ends", func(t *testing.T) {
 		t.Parallel()
 		provider := &t05PresentProvider{snapshots: map[string]*spec.TableSnapshot{
 			"dst.t2": presentTable("dst", "t2", "id"),
@@ -287,8 +290,10 @@ func TestBatchStateA2RenamePremiseCellsInvalidate(t *testing.T) {
 		if err != nil {
 			t.Fatalf("audit: %v", err)
 		}
-		t05ProbeCreateIndex(t, result, 2, "unknown")
-		t05ProbeCreateIndex(t, result, 3, "unknown")
+		// A proven-present destination is a proven 1050 refusal — both
+		// endpoint shapes stand and both index reads stay clean.
+		t05ProbeCreateIndex(t, result, 2, "present")
+		t05ProbeCreateIndex(t, result, 3, "present")
 	})
 
 	t.Run("alter rename keeps source existence finding", func(t *testing.T) {
@@ -308,12 +313,16 @@ func TestBatchStateA2RenamePremiseCellsInvalidate(t *testing.T) {
 		if len(findings) != 1 {
 			t.Fatalf("alter rename on an absent source keeps the existing existence finding, got %+v", result.Statements[0].Findings)
 		}
-		t05ProbeCreateIndex(t, result, 1, "unknown")
+		// The refusal keeps the destination's proven-absent fact — the
+		// index read reports the settled absence, not a gap.
+		t05ProbeCreateIndex(t, result, 1, "absent")
 	})
 }
 
-// D: the frozen existence grid — every non-success cell tombstones both ends;
-// nothing fabricates new absent/present facts out of unknown inputs.
+// D: the frozen existence grid — a proven refusal (absent source 1146,
+// present destination 1050) keeps the exact pre-state; only undecidable
+// cells tombstone the endpoints; nothing fabricates new absent/present
+// facts out of unknown inputs.
 func TestBatchStateA2ExistenceGrid(t *testing.T) {
 	t.Parallel()
 
@@ -335,13 +344,13 @@ func TestBatchStateA2ExistenceGrid(t *testing.T) {
 		dstProbe string
 	}{
 		{name: "present+absent migrates", src: present, dst: absentTable("dst", "t2"), srcProbe: "absent", dstProbe: "present"},
-		{name: "present+present", src: present, dst: presentTable("dst", "t2", "id"), srcProbe: "unknown", dstProbe: "unknown"},
+		{name: "present+present refused keeps both", src: present, dst: presentTable("dst", "t2", "id"), srcProbe: "present", dstProbe: "present"},
 		{name: "present+unknown", src: present, dst: nil, srcProbe: "unknown", dstProbe: "unknown"},
-		{name: "absent+absent", src: absentTable("src", "t"), dst: absentTable("dst", "t2"), srcProbe: "unknown", dstProbe: "unknown"},
-		{name: "absent+present", src: absentTable("src", "t"), dst: presentTable("dst", "t2", "id"), srcProbe: "unknown", dstProbe: "unknown"},
-		{name: "absent+unknown", src: absentTable("src", "t"), dst: nil, srcProbe: "unknown", dstProbe: "unknown"},
+		{name: "absent+absent refused keeps both", src: absentTable("src", "t"), dst: absentTable("dst", "t2"), srcProbe: "absent", dstProbe: "absent"},
+		{name: "absent+present refused keeps both", src: absentTable("src", "t"), dst: presentTable("dst", "t2", "id"), srcProbe: "absent", dstProbe: "present"},
+		{name: "absent+unknown refused keeps both", src: absentTable("src", "t"), dst: nil, srcProbe: "absent", dstProbe: "unknown"},
 		{name: "unknown+absent cannot derive source absent", src: nil, dst: absentTable("dst", "t2"), srcProbe: "unknown", dstProbe: "unknown"},
-		{name: "unknown+present", src: nil, dst: presentTable("dst", "t2", "id"), srcProbe: "unknown", dstProbe: "unknown"},
+		{name: "unknown+present refused keeps both", src: nil, dst: presentTable("dst", "t2", "id"), srcProbe: "unknown", dstProbe: "present"},
 		{name: "unknown+unknown", src: nil, dst: nil, srcProbe: "unknown", dstProbe: "unknown"},
 		{name: "present-incomplete+absent migrates incompletely", src: incomplete, dst: absentTable("dst", "t2"), srcProbe: "absent", dstProbe: "present-incomplete"},
 	}
@@ -415,7 +424,7 @@ func TestBatchStateA2ContaminationAndForms(t *testing.T) {
 		}
 	})
 
-	t.Run("multi-pair rename invalidates every endpoint", func(t *testing.T) {
+	t.Run("multi-pair rename migrates every provable endpoint", func(t *testing.T) {
 		t.Parallel()
 		provider := &t05AbsentProvider{}
 		result, err := AuditSQL(context.Background(), Request{
@@ -431,9 +440,13 @@ func TestBatchStateA2ContaminationAndForms(t *testing.T) {
 		if err != nil {
 			t.Fatalf("audit: %v", err)
 		}
-		for i := 3; i <= 6; i++ {
-			t05ProbeCreateIndex(t, result, i, "unknown")
-		}
+		// Every pair is provable (sources derived-present, destinations
+		// absent) — the atomic rename migrates both pairs: freed sources
+		// read absent, destinations present with the moved shapes.
+		t05ProbeCreateIndex(t, result, 3, "absent")
+		t05ProbeCreateIndex(t, result, 4, "present")
+		t05ProbeCreateIndex(t, result, 5, "absent")
+		t05ProbeCreateIndex(t, result, 6, "present")
 	})
 
 	t.Run("mixed alter invalidates both ends", func(t *testing.T) {
@@ -560,13 +573,13 @@ func TestBatchStateA2ReadLedger(t *testing.T) {
 		if err != nil {
 			t.Fatalf("audit: %v", err)
 		}
-		// dst.t2 was read once at its own CREATE, then invalidated in-batch;
-		// the rename must reuse the cached tombstone — never a second read —
-		// and invalidate both ends.
+		// dst.t2 was read once at its own CREATE; the rename binds the
+		// cached entry — never a second read — and its proven 1050
+		// refusal keeps both endpoint shapes standing.
 		if strings.Join(provider.calls, ",") != "src.t,dst.t2" {
 			t.Fatalf("provider must never re-read an invalidated destination, got %#v", provider.calls)
 		}
-		t05ProbeCreateIndex(t, result, 4, "unknown")
+		t05ProbeCreateIndex(t, result, 4, "present")
 	})
 
 	t.Run("destination provider error aborts without half post-state", func(t *testing.T) {
@@ -638,7 +651,7 @@ func TestBatchStateA2MemberTransportBoundary(t *testing.T) {
 		t05ProbeCreateIndex(t, result, 2, "unknown")
 	})
 
-	t.Run("same effective key invalidates instead of self-migration", func(t *testing.T) {
+	t.Run("same effective key is a proven refusal", func(t *testing.T) {
 		t.Parallel()
 		provider := &t05AbsentProvider{}
 		result, err := AuditSQL(context.Background(), Request{
@@ -651,9 +664,11 @@ func TestBatchStateA2MemberTransportBoundary(t *testing.T) {
 		if err != nil {
 			t.Fatalf("audit: %v", err)
 		}
-		gaps := t05GapsByRule(result, 2, t05RuleAlterRequire)
-		if len(gaps) != 1 || gaps[0].ReasonCode != "unknown_table_state" {
-			t.Fatalf("same-key rename must conservatively invalidate, got %+v", result.Statements[2].EvidenceGaps)
+		// RENAME TABLE t TO t is a proven 1050 refusal on all four anchors —
+		// the identity and shape stand exactly as bound, so the alter read
+		// stays clean.
+		if len(result.Statements[2].Findings) != 0 || len(result.Statements[2].EvidenceGaps) != 0 {
+			t.Fatalf("same-key rename keeps the pre-state, got findings=%+v gaps=%+v", result.Statements[2].Findings, result.Statements[2].EvidenceGaps)
 		}
 	})
 
@@ -819,7 +834,9 @@ func TestBatchStateA2R1LoadedDependentInvalidates(t *testing.T) {
 		{name: "unqualified reference with check source", owner: "src", refSchema: "", refTable: "t", check: true, wantChild: "unknown"},
 		{name: "unqualified reference under aux owner stays local", owner: "aux", refSchema: "", refTable: "t", wantChild: "known"},
 		{name: "explicit other-schema same-name reference stays known", owner: "aux", refSchema: "other", refTable: "t", wantChild: "known"},
-		{name: "destination reference invalidates on non-move cell", owner: "aux", refSchema: "dst", refTable: "t2", dstPresent: true, wantChild: "unknown"},
+		// A proven-present destination is a proven 1050 refusal — the pair
+		// never moved, so the child's reference to the destination stays.
+		{name: "destination reference survives a refused cell", owner: "aux", refSchema: "dst", refTable: "t2", dstPresent: true, wantChild: "known"},
 	}
 	for _, tc := range cases {
 		tc := tc
