@@ -1,0 +1,3 @@
+[ddl-golden] task=T16 head=7985c774f8c8 cases=55 passed=55 assertions=739
+[ddl-golden] artifact=/Users/fan/GolangProjects/DeltaScope/artifacts/t16/T16/artifact.json
+[ddl-golden] PASS

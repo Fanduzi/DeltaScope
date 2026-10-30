@@ -1,0 +1,28 @@
+=== T09 ===
+[ddl-golden] task=T09 head=eb919d19060f cases=125 passed=125 assertions=3442
+[ddl-golden] artifact=/Users/fan/GolangProjects/DeltaScope/artifacts/regress/T09/artifact.json
+[ddl-golden] PASS
+=== T10 ===
+[ddl-golden] task=T10 head=eb919d19060f cases=126 passed=126 assertions=3175
+[ddl-golden] artifact=/Users/fan/GolangProjects/DeltaScope/artifacts/regress/T10/artifact.json
+[ddl-golden] PASS
+=== T11 ===
+[ddl-golden] task=T11 head=eb919d19060f cases=40 passed=40 assertions=506
+[ddl-golden] artifact=/Users/fan/GolangProjects/DeltaScope/artifacts/regress/T11/artifact.json
+[ddl-golden] PASS
+=== T12 ===
+[ddl-golden] task=T12 head=eb919d19060f cases=25 passed=25 assertions=282
+[ddl-golden] artifact=/Users/fan/GolangProjects/DeltaScope/artifacts/regress/T12/artifact.json
+[ddl-golden] PASS
+=== T13 ===
+[ddl-golden] task=T13 head=eb919d19060f cases=47 passed=47 assertions=697
+[ddl-golden] artifact=/Users/fan/GolangProjects/DeltaScope/artifacts/regress/T13/artifact.json
+[ddl-golden] PASS
+=== T14 ===
+[ddl-golden] task=T14 head=eb919d19060f cases=69 passed=69 assertions=1087
+[ddl-golden] artifact=/Users/fan/GolangProjects/DeltaScope/artifacts/regress/T14/artifact.json
+[ddl-golden] PASS
+=== T15 ===
+[ddl-golden] task=T15 head=eb919d19060f cases=42 passed=42 assertions=470
+[ddl-golden] artifact=/Users/fan/GolangProjects/DeltaScope/artifacts/regress/T15/artifact.json
+[ddl-golden] PASS
