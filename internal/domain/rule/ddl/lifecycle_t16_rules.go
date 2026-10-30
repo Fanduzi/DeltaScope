@@ -86,47 +86,38 @@ const (
 	renameEndpointAbsentNow                         // source missing at pair time — proven 1146
 	renameEndpointFreeNow                           // destination free at pair time
 	renameEndpointOccupiedNow                       // destination occupied at pair time — proven 1050
+	renameEndpointSelfPair                          // ALTER self-pair — the destination IS the source; a no-op premise, never an occupancy
 )
 
 // renamePairVerdicts answers each pair's endpoint premises against the
-// sequential working set — the same adjudication applyRenameTable uses.
-// A pair after a proven-failing or undecidable pair is unreachable
-// natively, so verdicts stop at the first pair that cannot migrate.
+// sequential working set — the same spec.RenamePairClasses adjudication
+// applyRenameTable consumes. A pair after a proven-failing or undecidable
+// pair is unreachable natively, so verdicts stop at the first pair that
+// cannot migrate. An ALTER-side self-pair (RENAME TO the same identity)
+// is a proven no-op: its destination premise is the source itself, not
+// an occupancy — while a standalone RENAME TABLE self-pair keeps the
+// ordinary 1050/1146 endpoint judgments.
 func renamePairVerdicts(statement spec.Statement) (srcVerdicts, dstVerdicts []renameEndpointVerdict, ok bool) {
 	sources, destinations, ok := renameEndpointRoles(statement)
 	if !ok {
 		return nil, nil, false
 	}
-	produced := make(map[string]bool, len(sources))
-	consumed := make(map[string]bool, len(sources))
+	srcKeys := make([]string, len(sources))
+	dstKeys := make([]string, len(sources))
+	srcBase := make([]spec.RenameEndpointClass, len(sources))
+	dstBase := make([]spec.RenameEndpointClass, len(sources))
 	for i := range sources {
-		src, dst := sources[i], destinations[i]
-		srcKey := boundIdentityKey(statement, src)
-		dstKey := boundIdentityKey(statement, dst)
-		var srcV, dstV renameEndpointVerdict
-		switch {
-		case produced[srcKey]:
-			srcV = renameEndpointPresentNow
-		case consumed[srcKey]:
-			srcV = renameEndpointAbsentNow
-		case src.Ambiguous || src.Snapshot == nil:
-			srcV = renameEndpointUndecidable
-		case src.Snapshot.Exists:
-			srcV = renameEndpointPresentNow
-		default:
-			srcV = renameEndpointAbsentNow
-		}
-		switch {
-		case produced[dstKey]:
-			dstV = renameEndpointOccupiedNow
-		case consumed[dstKey]:
-			dstV = renameEndpointFreeNow
-		case dst.Ambiguous || dst.Snapshot == nil:
-			dstV = renameEndpointUndecidable
-		case dst.Snapshot.Exists:
-			dstV = renameEndpointOccupiedNow
-		default:
-			dstV = renameEndpointFreeNow
+		srcKeys[i] = boundIdentityKey(statement, sources[i])
+		dstKeys[i] = boundIdentityKey(statement, destinations[i])
+		srcBase[i] = boundEndpointClass(sources[i])
+		dstBase[i] = boundEndpointClass(destinations[i])
+	}
+	alterForm := statement.DDL.Operation == spec.DDLOperationAlterTable
+	for i, verdict := range spec.RenamePairClasses(srcKeys, dstKeys, srcBase, dstBase) {
+		srcV := renameSrcVerdict(verdict.Src)
+		dstV := renameDstVerdict(verdict.Dst)
+		if alterForm && srcKeys[i] == dstKeys[i] {
+			dstV = renameEndpointSelfPair
 		}
 		srcVerdicts = append(srcVerdicts, srcV)
 		dstVerdicts = append(dstVerdicts, dstV)
@@ -136,10 +127,44 @@ func renamePairVerdicts(statement spec.Statement) (srcVerdicts, dstVerdicts []re
 			// unreachable, so no further verdicts are claimed.
 			break
 		}
-		produced[dstKey] = true
-		consumed[srcKey] = true
 	}
 	return srcVerdicts, dstVerdicts, true
+}
+
+// boundEndpointClass folds a target binding into the shared
+// rename-adjudication class: ambiguous and unvouched bindings are
+// unknown, never a guessed absence.
+func boundEndpointClass(binding spec.TargetBinding) spec.RenameEndpointClass {
+	switch {
+	case binding.Ambiguous || binding.Snapshot == nil:
+		return spec.RenameEndpointUnknown
+	case binding.Snapshot.Exists:
+		return spec.RenameEndpointPresent
+	default:
+		return spec.RenameEndpointAbsent
+	}
+}
+
+func renameSrcVerdict(class spec.RenameEndpointClass) renameEndpointVerdict {
+	switch class {
+	case spec.RenameEndpointPresent:
+		return renameEndpointPresentNow
+	case spec.RenameEndpointAbsent:
+		return renameEndpointAbsentNow
+	default:
+		return renameEndpointUndecidable
+	}
+}
+
+func renameDstVerdict(class spec.RenameEndpointClass) renameEndpointVerdict {
+	switch class {
+	case spec.RenameEndpointPresent:
+		return renameEndpointOccupiedNow
+	case spec.RenameEndpointAbsent:
+		return renameEndpointFreeNow
+	default:
+		return renameEndpointUndecidable
+	}
 }
 
 // boundIdentityKey normalizes a bound identity for cross-endpoint
@@ -484,7 +509,10 @@ func (r truncateInboundFKRule) EvidenceGaps(statement spec.Statement) []rule.Evi
 		return nil
 	}
 	snapshot, ok := targetTableSnapshot(statement)
-	if !ok || snapshot == nil || !snapshot.Exists || !snapshot.ReferencedByUnknown {
+	// The gap fills the hole that decides the outcome: a proven inbound
+	// edge already answers the 1701 premise (the blocker speaks), so the
+	// unvouched tail only gaps when no proven edge exists.
+	if !ok || snapshot == nil || !snapshot.Exists || !snapshot.ReferencedByUnknown || len(snapshot.ReferencedBy) > 0 {
 		return nil
 	}
 	return []rule.EvidenceGap{{

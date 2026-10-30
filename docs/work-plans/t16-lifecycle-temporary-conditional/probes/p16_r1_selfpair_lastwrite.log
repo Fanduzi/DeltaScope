@@ -1,0 +1,71 @@
+# T16-R1 native probe supplement — self-pair rename + last-write rename
+#
+# Purpose: close the two native facts the original p16 matrix never probed:
+#   1. standalone `RENAME TABLE a TO a` error class (contract assumed 1050,
+#      review flagged it unverified);
+#   2. last-write ordering of produced-then-consumed rename identities,
+#      including the exact refusal error of a consumed source.
+# The ALTER-form self-pair no-op was already probe-proven in
+# p16_lifecycle_matrix.log (alter-rename-self); re-verified here for a clean
+# single-version record.
+#
+# Fixture: disposable container `ds-t16r1-rename-probe` from local image
+# `mysql:8.0` (reports 8.0.46, identical to the golden mysql80 anchor
+# image mysql:8.0.46). Database `probe`, root/root. Removed after capture
+# (`docker rm -f`; `docker ps -a` shows no residual).
+#
+# Commands executed via `docker exec ds-t16r1-rename-probe mysql -uroot
+# -proot -e '<sql>'` (stderr shown verbatim; MYSQL_PWD warning filtered).
+
+== version ==
+SELECT VERSION();
+VERSION()
+8.0.46
+
+== standalone self-repair rename ==
+CREATE TABLE probe.rself (id INT);
+RENAME TABLE probe.rself TO probe.rself;
+rc=1
+ERROR 1050 (42S01) at line 1: Table 'rself' already exists
+-> standalone self-pair is a 1050 destination-occupied refusal. The
+   destination binding really does observe the still-present source, so
+   the rules-layer destination blocker is the faithful model.
+
+== alter-form self-pair rename ==
+ALTER TABLE probe.rself RENAME TO probe.rself;
+rc=0
+SELECT 'alter-self-rename-ok' AS outcome;
+outcome
+alter-self-rename-ok
+SELECT COUNT(*) AS still_there FROM information_schema.TABLES
+  WHERE TABLE_SCHEMA='probe' AND TABLE_NAME='rself';
+still_there
+1
+-> ALTER-form self-pair is a proven no-op; no 1050, no rename, object
+   stays. Syntax-form distinction is native, not modeled.
+
+== last-write: produced-then-vacated destination ==
+CREATE TABLE probe.a (id INT);
+CREATE TABLE probe.d (id INT, dk INT);
+RENAME TABLE probe.a TO probe.b, probe.b TO probe.c, probe.d TO probe.b;
+rc=0
+TABLE_NAME
+b
+c
+rself
+b_has_dk = 1      (b received d's shape after pair two vacated it)
+c_has_dk = 0      (c carries a's original shape; d's shape NOT smeared)
+-> all three pairs migrate; the destination freed by pair two is legal
+   for pair three, and each destination receives the shape of the source
+   as bound at its own pair.
+
+== last-write: produced-then-consumed source ==
+(state above reset: DROP TABLE probe.b, probe.c; CREATE TABLE probe.a (id INT);)
+RENAME TABLE probe.a TO probe.b, probe.b TO probe.c, probe.b TO probe.a;
+rc=1
+ERROR 1146 (42S02) at line 1: Table 'probe.b' doesn't exist
+SELECT GROUP_CONCAT(TABLE_NAME) FROM information_schema.TABLES WHERE TABLE_SCHEMA='probe';
+a,rself
+-> pair three's source `b` no longer exists (consumed by pair two):
+   1146 source-missing refusal, whole statement rolls back, `a` survives,
+   no phantom `b`/`c` is published.

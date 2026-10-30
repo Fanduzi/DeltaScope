@@ -13,7 +13,8 @@ under `testdata/sql-corpus/{mysql,tidb}/ddl/metadata/`, and
 `make ddl-golden TASK=T16 ARTIFACT_DIR=...` against `testdata/ddl-golden/T16.json`
 Related docs: `docs/work-plans/t16-lifecycle-temporary-conditional/CONTRACT.md`,
 native probe logs `docs/work-plans/t16-lifecycle-temporary-conditional/probes/`
-(`p16_lifecycle_matrix.log`, `p16_tail_supplement.log`),
+(`p16_lifecycle_matrix.log`, `p16_tail_supplement.log`,
+`p16_r1_selfpair_lastwrite.log`),
 `testdata/ddl-inventory/inventory.yaml` (thirteen T16 rows), module README
 updates in the same change
 
@@ -75,16 +76,29 @@ was outright wrong rather than merely conservative:
    probes did not decide (e.g. DROP on an FK-referenced parent)
    keep the prior conservative invalidation.
 4. **Sequential rename work-set, atomic publication.** `applyRenameTable`
-   evaluates pairs left-to-right against produced/consumed identities,
-   short-circuits on the first refused pair, and applies survivors at
-   once — the rollback shape MySQL and TiDB both proved. The rule layer
-   (`renamePairVerdicts`) consumes the same verdict contract so
-   findings, gaps, and state conclusions never diverge.
+   evaluates pairs left-to-right against an evolving work set where the
+   LAST write to an identity decides its state at each pair's evaluation
+   moment — a destination an earlier pair produced and a middle pair then
+   consumed is absent again, and a destination an earlier pair vacated is
+   free for a later pair (`RENAME a→b, b→c, d→b` migrates; `RENAME a→b,
+   b→c, b→a` refuses 1146 on the consumed source and rolls back). One
+   shared adjudicator (`spec.RenamePairClasses`) feeds both the state
+   transition and the rule layer (`renamePairVerdicts`), so findings,
+   gaps, and state conclusions never diverge; a refused or unproven pair
+   rolls the whole statement back atomically. ALTER-form self-pairs
+   (`ALTER TABLE a RENAME TO a`) are a probed no-op exempted at the
+   endpoint-class level, while standalone `RENAME TABLE a TO a` keeps its
+   probed 1050 destination refusal — the exemption is scoped to the
+   ALTER syntax only.
 5. **Version-gated multi-DROP fates.** `dropTargetFate` resolves each
    member against the version fact: MySQL ≥8.0 atomic veto, 5.7
    sequential, TiDB sequential-persistent + veto-shaped-temp, duplicate
-   lists parse-refused on MySQL vs sequential on TiDB. An unvouched
-   version leaves the fate undecidable rather than guessing atomicity.
+   lists parse-refused on MySQL vs sequential on TiDB. The temporary arm
+   mirrors the persistent arm's three states — veto capability alone
+   never freezes a resolvable temp object (a fully resolvable list still
+   drops it; a proven-missing sibling vetoes; an unvouched sibling
+   leaves the fate unproven). An unvouched version leaves the fate
+   undecidable rather than guessing atomicity.
 6. **Conditional clauses arm existence premises.** `IF NOT EXISTS`
    suppresses the create-collision finding only when the target is
    proven present (the no-op is probed); `IF EXISTS` on DROP/TRUNCATE
@@ -133,10 +147,17 @@ was outright wrong rather than merely conservative:
   updated ordered-state suites and the T16 rule/corpus tests.
 - `make ddl-golden TASK=T16 ARTIFACT_DIR=artifacts/t16` — 55/55 cases,
   739 assertions, `[ddl-golden] PASS` on all four anchors; artifact at
-  `artifacts/t16/T16/artifact.json`.
+  `artifacts/t16/T16/artifact.json`. The R1 remediation adds five cases
+  (multi-DROP temp+persistent resolvable on 8.x, offline temp+unvouched
+  sibling, both last-write rename counter-examples, ALTER self-pair
+  no-op) — post-R1 denominator 60 cases; the original 55/739 artifact is
+  preserved untouched.
 - Native evidence: `docs/work-plans/t16-lifecycle-temporary-conditional/
   probes/p16_lifecycle_matrix.log` +
-  `p16_tail_supplement.log` (368 labels + continuation probes).
+  `p16_tail_supplement.log` (368 labels + continuation probes) +
+  `p16_r1_selfpair_lastwrite.log` (standalone self-pair = 1050, ALTER
+  self-pair = no-op, produced-then-consumed source = 1146 with atomic
+  rollback, produced-then-vacated destination = free).
 - `make ddl-inventory-gate` — thirteen T16 rows carry concrete
   `file:` evidence refs and updated status.
 
@@ -146,6 +167,15 @@ was outright wrong rather than merely conservative:
   implementation): contradicted by the native rotation probes
   (`t→u, u→v` blocks; `u→v, t→u` succeeds) — replaced with the
   sequential work-set model.
+- **Boolean produced/consumed identity sets** (the shipped T16
+  model): cannot express "last write wins" — a produced-then-consumed
+  identity read as still produced (fabricating a phantom destination's
+  shape and refusing a legal successor pair), fixed by the shared
+  left-to-right `RenamePairClasses` adjudicator.
+- **Freezing the temp arm on veto capability alone** (the shipped
+  T16 model): kept a resolvable temp object on every atomic-mode
+  multi-DROP even when no sibling could veto — replaced with the same
+  three-state fate the persistent arm computes.
 - **Treating TiDB multi-DROP as atomic**: contradicted by the
   continuation probes (resolvable members drop past missing siblings;
   the temp slot alone is veto-shaped).

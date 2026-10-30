@@ -329,6 +329,150 @@ func TestT16RenameExistence(t *testing.T) {
 	})
 }
 
+// TestT16R1RenameLastWriteAndSelfPair pins the reviewer-reduction cells:
+// the pair work set adjudicates by last write (a produced-then-vacated
+// destination is free; a produced-then-consumed source is missing), and the
+// ALTER-form self-pair is a no-op while the standalone form keeps 1050.
+func TestT16R1RenameLastWriteAndSelfPair(t *testing.T) {
+	t.Parallel()
+	srcRule, err := newRenameSourceExistsRequireRule(ruleIDTableRenameSourceExistsRequire, rule.LevelBlocker, t16Policy())
+	if err != nil {
+		t.Fatalf("construct rename source rule: %v", err)
+	}
+	dstRule, err := newRenameDestExistsForbidRule(ruleIDTableRenameDestExistsForbid, rule.LevelBlocker, t16Policy())
+	if err != nil {
+		t.Fatalf("construct rename dest rule: %v", err)
+	}
+	t16 := func(schema, name string) spec.Table { return spec.Table{Schema: schema, Name: name} }
+	alter := func(statement spec.Statement) spec.Statement {
+		statement.DDL.Alter = []spec.Alter{{Action: "rename_table"}}
+		return statement
+	}
+
+	t.Run("produced_then_vacated_dest_is_free", func(t *testing.T) {
+		// RENAME a→b, b→c, d→b: pair two vacates b, so pair three's
+		// destination b is free at its turn — the whole statement migrates.
+		statement := t16Statement(spec.DialectMySQL, spec.DDLOperationRenameTable,
+			[]spec.Table{t16("golden", "a"), t16("golden", "b"), t16("golden", "b"), t16("golden", "c"), t16("golden", "d"), t16("golden", "b")},
+			t16PresentTable("golden", "a"), t16AbsentTable("golden", "b"),
+			t16PresentTable("golden", "b"), t16AbsentTable("golden", "c"),
+			t16PresentTable("golden", "d"), t16AbsentTable("golden", "b"))
+		if findings := t16MustEval(t, dstRule, statement); len(findings) != 0 {
+			t.Fatalf("a destination vacated by an earlier pair must stay clean, got %+v", findings)
+		}
+		if findings := t16MustEval(t, srcRule, statement); len(findings) != 0 {
+			t.Fatalf("every source is present at its pair's turn, got %+v", findings)
+		}
+	})
+	t.Run("produced_then_consumed_src_is_missing", func(t *testing.T) {
+		// RENAME a→b, b→c, b→a: pair three's source b was consumed by
+		// pair two — the proven 1146, and the statement cannot migrate.
+		statement := t16Statement(spec.DialectMySQL, spec.DDLOperationRenameTable,
+			[]spec.Table{t16("golden", "a"), t16("golden", "b"), t16("golden", "b"), t16("golden", "c"), t16("golden", "b"), t16("golden", "a")},
+			t16PresentTable("golden", "a"), t16AbsentTable("golden", "b"),
+			t16PresentTable("golden", "b"), t16AbsentTable("golden", "c"),
+			t16PresentTable("golden", "b"), t16AbsentTable("golden", "a"))
+		findings := t16MustEval(t, srcRule, statement)
+		if len(findings) != 1 || findings[0].Metadata["table"] != "b" {
+			t.Fatalf("the consumed-at-pair-time source must fire the 1146 naming b, got %+v", findings)
+		}
+		if findings := t16MustEval(t, dstRule, statement); len(findings) != 0 {
+			t.Fatalf("destination a vacated by pair one is free, got %+v", findings)
+		}
+	})
+	t.Run("alter_self_pair_is_noop", func(t *testing.T) {
+		// ALTER TABLE a RENAME TO a: the destination IS the source — a
+		// proven no-op, never an occupancy.
+		statement := alter(t16Statement(spec.DialectMySQL, spec.DDLOperationAlterTable,
+			[]spec.Table{t16("golden", "a"), t16("golden", "a")},
+			t16PresentTable("golden", "a"), t16PresentTable("golden", "a")))
+		if findings := t16MustEval(t, dstRule, statement); len(findings) != 0 {
+			t.Fatalf("ALTER self-rename must not fabricate a destination blocker, got %+v", findings)
+		}
+		if findings := t16MustEval(t, srcRule, statement); len(findings) != 0 {
+			t.Fatalf("present self-rename source must stay clean, got %+v", findings)
+		}
+		if gaps := t16Gaps(t, dstRule, statement); len(gaps) != 0 {
+			t.Fatalf("the self-pair destination is no unvouched premise, got %+v", gaps)
+		}
+	})
+	t.Run("alter_self_pair_absent_source_blocks", func(t *testing.T) {
+		// ALTER on a missing table refuses 1146 — the no-op exemption does
+		// not extend to the source premise.
+		statement := alter(t16Statement(spec.DialectMySQL, spec.DDLOperationAlterTable,
+			[]spec.Table{t16("golden", "a"), t16("golden", "a")},
+			t16AbsentTable("golden", "a"), t16AbsentTable("golden", "a")))
+		if findings := t16MustEval(t, srcRule, statement); len(findings) != 1 {
+			t.Fatalf("absent self-rename source must fire the 1146, got %+v", findings)
+		}
+		if findings := t16MustEval(t, dstRule, statement); len(findings) != 0 {
+			t.Fatalf("absent self-pair destination stays clean, got %+v", findings)
+		}
+	})
+	t.Run("alter_self_pair_unknown_gaps_source_only", func(t *testing.T) {
+		// An unvouched identity leaves the no-op-vs-1146 question on the
+		// source — one gap, and no separate destination premise.
+		statement := alter(t16Statement(spec.DialectMySQL, spec.DDLOperationAlterTable,
+			[]spec.Table{t16("golden", "a"), t16("golden", "a")}, nil, nil))
+		if gaps := t16Gaps(t, srcRule, statement); len(gaps) != 1 {
+			t.Fatalf("unvouched self-rename source must emit one gap, got %+v", gaps)
+		}
+		if gaps := t16Gaps(t, dstRule, statement); len(gaps) != 0 {
+			t.Fatalf("the self-pair destination adds no second gap, got %+v", gaps)
+		}
+	})
+	t.Run("alter_self_pair_temp_identity", func(t *testing.T) {
+		// A temp self-pair binds the same :tmp identity — the same no-op.
+		statement := alter(t16Statement(spec.DialectMySQL, spec.DDLOperationAlterTable,
+			[]spec.Table{t16("golden", "tp"), t16("golden", "tp")},
+			t16TempTable("golden", "tp"), t16TempTable("golden", "tp")))
+		if findings := t16MustEval(t, dstRule, statement); len(findings) != 0 {
+			t.Fatalf("temp ALTER self-rename must not fabricate a blocker, got %+v", findings)
+		}
+	})
+	t.Run("standalone_self_pair_keeps_1050", func(t *testing.T) {
+		// RENAME TABLE a TO a is a different syntax form — the proven
+		// 1050 refusal stays.
+		statement := t16Statement(spec.DialectMySQL, spec.DDLOperationRenameTable,
+			[]spec.Table{t16("golden", "a"), t16("golden", "a")},
+			t16PresentTable("golden", "a"), t16PresentTable("golden", "a"))
+		if findings := t16MustEval(t, dstRule, statement); len(findings) != 1 {
+			t.Fatalf("standalone self-rename must keep the 1050 blocker, got %+v", findings)
+		}
+	})
+	t.Run("standalone_self_pair_absent_src_blocks", func(t *testing.T) {
+		statement := t16Statement(spec.DialectMySQL, spec.DDLOperationRenameTable,
+			[]spec.Table{t16("golden", "a"), t16("golden", "a")},
+			t16AbsentTable("golden", "a"), t16AbsentTable("golden", "a"))
+		if findings := t16MustEval(t, srcRule, statement); len(findings) != 1 {
+			t.Fatalf("standalone self-rename on a missing name is the 1146, got %+v", findings)
+		}
+	})
+	t.Run("same_name_cross_schema_not_exempted", func(t *testing.T) {
+		// ALTER s1.a RENAME TO s2.a: different bound identities — the
+		// destination occupancy premise applies normally.
+		statement := alter(t16Statement(spec.DialectMySQL, spec.DDLOperationAlterTable,
+			[]spec.Table{t16("s1", "a"), t16("s2", "a")},
+			t16PresentTable("s1", "a"), t16PresentTable("s2", "a")))
+		if findings := t16MustEval(t, dstRule, statement); len(findings) != 1 {
+			t.Fatalf("an occupied cross-schema destination must keep the blocker, got %+v", findings)
+		}
+	})
+	t.Run("unknown_source_occupied_dest_reports_both", func(t *testing.T) {
+		// One pair, two independent premises: the unvouched source gaps
+		// while the proven-occupied destination blocks.
+		statement := t16Statement(spec.DialectMySQL, spec.DDLOperationRenameTable,
+			[]spec.Table{t16("golden", "a"), t16("golden", "b")},
+			nil, t16PresentTable("golden", "b"))
+		if gaps := t16Gaps(t, srcRule, statement); len(gaps) != 1 {
+			t.Fatalf("unvouched source must gap, got %+v", gaps)
+		}
+		if findings := t16MustEval(t, dstRule, statement); len(findings) != 1 {
+			t.Fatalf("proven-occupied destination must still block, got %+v", findings)
+		}
+	})
+}
+
 func TestT16TruncateInboundFK(t *testing.T) {
 	t.Parallel()
 	ruleOut, err := newTruncateInboundFKRule(ruleIDTableTruncateInboundFK, rule.LevelBlocker, t16Policy())
@@ -362,6 +506,20 @@ func TestT16TruncateInboundFK(t *testing.T) {
 		gaps := t16Gaps(t, ruleOut, statement)
 		if len(gaps) != 1 || gaps[0].ReasonCode != gapReasonUnknownTableState {
 			t.Fatalf("unknown inbound FK must emit one gap, got %+v", gaps)
+		}
+	})
+	t.Run("proven_edge_unknown_tail_blocks_no_gap", func(t *testing.T) {
+		// A proven inbound edge already answers the 1701 premise — the
+		// blocker speaks and the unvouched catalog tail adds no gap.
+		snapshot := t16PresentTable("golden", "t")
+		snapshot.ReferencedBy = []spec.Table{{Schema: "golden", Name: "child"}}
+		snapshot.ReferencedByUnknown = true
+		statement := build(snapshot)
+		if findings := t16MustEval(t, ruleOut, statement); len(findings) != 1 {
+			t.Fatalf("proven inbound edge must block regardless of the tail, got %+v", findings)
+		}
+		if gaps := t16Gaps(t, ruleOut, statement); len(gaps) != 0 {
+			t.Fatalf("the proven edge answers the premise — no redundant gap, got %+v", gaps)
 		}
 	})
 	t.Run("absent_target_clean", func(t *testing.T) {

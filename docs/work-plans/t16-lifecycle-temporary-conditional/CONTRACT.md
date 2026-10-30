@@ -240,12 +240,17 @@ it once per named identity.
 | proven refusal | exact pre-state preserved (atomic ops: all pairs/targets; non-atomic 5.7: already-proven-dropped targets publish absent — that IS the proven result) |
 | proven no-op | original facts kept (conditional no-ops, `RENAME a TO a`) |
 | unproven | minimal tombstone: the affected namespace entry/entries only; ambiguous binding degrades both namespaces of that name; a whole-statement unproven outcome (atomic op with an unvouched premise) invalidates every affected identity — never fabricates success |
-| facts | TRUNCATE never mutates existence or members; it resets a stored `auto_increment` option to the engine default (clears the declared counter fact) and emits the exists/inbound-FK verdicts — a truncate on unknown existence changes nothing provable so the state keeps the entry's tombstone instead of inventing absence |
+| facts | TRUNCATE never mutates existence or members; it resets a stored `auto_increment` option to the engine default (clears the declared counter fact) and emits the exists/inbound-FK verdicts — a truncate on unknown existence changes nothing provable so the state keeps the entry's tombstone instead of inventing absence. Under an unvouched inbound set (`ReferencedByUnknown`, no proven edge) the 1701-vs-success outcome is undecidable: existence and members stay published (TRUNCATE never mutates them either way) while every volatile counter claim (`table_rows`, `auto_increment`, cardinalities) is withheld — neither "cleared" nor "kept" may be claimed |
 
 Batch-derived inbound-FK edges: a batch `CREATE TABLE` declaring
 `FOREIGN KEY … REFERENCES p` records `p.ReferencedBy += child` on the parent
 entry (dropped/recreated children update the edge). Provider snapshots carry
-`ReferencedByUnknown`.
+`ReferencedByUnknown` — the provider's catalog load covers outbound keys
+only, so a provider-loaded present shape can never vouch the inbound set.
+A batch-created shape owns its complete edge set (proven-empty until a
+child lands); a provider shape's proven batch edges coexist with an
+unvouched catalog tail (`len>0` + `Unknown` — blocker answers, gap
+suppressed).
 
 ## 6. Rule inventory (frozen IDs, defaults, levels)
 
@@ -266,7 +271,7 @@ New rules (frozen):
 | `ddl.table.like.source.exists.require` | blocker | LIKE source binding is proven-absent (MySQL&TiDB → native 1146) |
 | `ddl.table.create_as.source.exists.require` | blocker | a CTAS `SelectSources` binding is proven-absent (MySQL 1146; TiDB unreachable — vendor boundary wins) |
 | `ddl.table.rename.dest.exists.forbid` | blocker | a rename/alter-rename destination is proven-present in its binding namespace (native 1050) |
-| `ddl.table.truncate.inbound_fk` | blocker | `ReferencedBy` non-empty (native 1701); `ReferencedByUnknown` → `EvidenceGaps{target_table.inbound_fk}` |
+| `ddl.table.truncate.inbound_fk` | blocker | `ReferencedBy` non-empty (native 1701); `ReferencedByUnknown` with NO proven edge → `EvidenceGaps{target_table.inbound_fk}` — a proven edge already answers the premise, so its unvouched tail adds no redundant gap |
 | `ddl.tidb.local_temporary.alter` | blocker | ALTER TABLE bound to a TiDB local temp (native 8200, any action) |
 | `ddl.tidb.local_temporary.rename` | blocker | RENAME TABLE or ALTER RENAME bound to a TiDB local temp (native 8200) |
 | `ddl.tidb.local_temporary.like` | blocker | CREATE LIKE source bound to a TiDB local temp (native 8006) |

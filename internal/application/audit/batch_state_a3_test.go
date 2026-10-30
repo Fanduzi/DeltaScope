@@ -480,12 +480,18 @@ func TestBatchStateA3OldShapeNotInherited(t *testing.T) {
 	t.Parallel()
 	old := t05A3OldTable()
 	oldFrozen := cloneTableSnapshot(old)
+	// Provider loads never query reverse FK edges: the bound projection
+	// marks the inbound set unvouched while keeping every provider member
+	// — and the flag lives on the projection's clone, never the provider's
+	// own object.
+	oldBound := cloneTableSnapshot(old)
+	oldBound.ReferencedByUnknown = true
 	provider := &t05PresentProvider{snapshots: map[string]*spec.TableSnapshot{"golden.t": old}}
 	enriched := enrichA3(t, "DROP TABLE t; CREATE TABLE t (id INT PRIMARY KEY) COMMENT='fresh'; ALTER TABLE t ADD COLUMN c INT; CREATE INDEX idx_c ON t(c); CREATE INDEX ix2 ON t(id);", spec.DialectMySQL, provider)
 
 	dropPre := enriched[0].Metadata.TargetTable
-	if dropPre == nil || !reflect.DeepEqual(dropPre, oldFrozen) {
-		t.Fatalf("drop pre-state must retain the old provider shape verbatim, got %+v", dropPre)
+	if dropPre == nil || !reflect.DeepEqual(dropPre, oldBound) {
+		t.Fatalf("drop pre-state must retain the old provider shape verbatim plus the unvouched-inbound flag, got %+v", dropPre)
 	}
 	recreatePre := enriched[1].Metadata.TargetTable
 	if recreatePre == nil || recreatePre.Exists {

@@ -176,13 +176,15 @@ func (s *batchState) resolve(ctx context.Context, key batchTableKey, providerSch
 	entry.displaySchema = providerSchema
 	entry.displayTable = providerTable
 	entry.shape = cloneTableSnapshot(snapshot)
-	// The provider's inbound-FK catalog is outside the T16 provider
-	// contract: a clean provider load publishes no ReferencedByUnknown
-	// flag, so TRUNCATE's 1701 premise reads only batch-recorded edges.
-	// The unvouched-inbound gap is reserved for states the batch itself
-	// cannot vouch (present-incomplete entries).
+	// The provider's catalog load covers outbound foreign keys only — no
+	// reverse-edge query exists — so a provider-loaded present snapshot
+	// cannot vouch the inbound set: mark it unproven. TRUNCATE's 1701
+	// premise then reads batch-proven edges and gaps on the unvouched
+	// tail instead of fabricating a proven-empty set. The flag lives on
+	// the cloned shape; the provider's own snapshot stays untouched.
 	if snapshot.Exists {
 		entry.state = tablePresent
+		entry.shape.ReferencedByUnknown = true
 	} else {
 		entry.state = tableAbsent
 	}
@@ -1645,51 +1647,84 @@ func (s *batchState) applyRenameTable(ctx context.Context, statement spec.Statem
 		}
 		pairs = append(pairs, boundPair{source: source, destination: destination, srcNS: srcNS, dstNS: dstNS, srcEntry: srcEntry, dstEntry: dstEntry, srcKey: srcKey, dstKey: dstKey})
 	}
+	// The shared work-set adjudication answers each endpoint's class at
+	// its own pair position — produced and consumed dispositions are
+	// last-write-wins, so a name produced then consumed is absent at
+	// later pairs and a name consumed then produced is present again.
+	classKey := func(key batchTableKey, ns boundNamespace) string {
+		return key.schema + "\x00" + key.table + "\x00" + strconv.Itoa(int(ns))
+	}
+	srcKeys := make([]string, len(pairs))
+	dstKeys := make([]string, len(pairs))
+	srcBase := make([]spec.RenameEndpointClass, len(pairs))
+	dstBase := make([]spec.RenameEndpointClass, len(pairs))
+	for i, pair := range pairs {
+		srcKeys[i] = classKey(pair.srcKey, pair.srcNS)
+		dstKeys[i] = classKey(pair.dstKey, pair.dstNS)
+		srcBase[i] = renameEndpointClass(boundEntryState(pair.srcNS, pair.srcEntry))
+		dstBase[i] = renameEndpointClass(boundEntryState(pair.dstNS, pair.dstEntry))
+	}
+	pairVerdicts := spec.RenamePairClasses(srcKeys, dstKeys, srcBase, dstBase)
 	fate := renamePairMigrate
-	claimedDst := make(map[batchTableKey]map[boundNamespace]bool, len(pairs))
-	claimedSrc := make(map[batchTableKey]map[boundNamespace]bool, len(pairs))
 	producedShape := make(map[batchTableKey]map[boundNamespace]*spec.TableSnapshot, len(pairs))
-	for i := range pairs {
+	pairShapes := make([]*spec.TableSnapshot, len(pairs))
+	for i, verdict := range pairVerdicts {
 		if err := ctx.Err(); err != nil {
 			return err
 		}
 		pair := &pairs[i]
-		pairFate := s.atomicRenamePairFate(pair.srcNS, pair.srcEntry, pair.srcKey, pair.dstNS, pair.dstEntry, pair.dstKey, claimedSrc, claimedDst)
 		// The first refused or undecidable cell ends adjudication — later
-		// pairs may never have been reached natively.
-		if pairFate != renamePairMigrate {
-			fate = pairFate
+		// pairs may never have been reached natively. The layered checks
+		// precede the existence matrix: a self-pair is a proven refusal
+		// that keeps, TiDB refuses local-temp endpoints outright (8200),
+		// and an ambiguous binding leaves the pair undecidable.
+		switch {
+		case pair.srcKey == pair.dstKey && pair.srcNS == pair.dstNS:
+			fate = renamePairKept
+		case s.dialect == spec.DialectTiDB && (pair.srcNS == namespaceTemporary || pair.dstNS == namespaceTemporary):
+			fate = renamePairKept
+		case pair.srcNS == namespaceAmbiguous || pair.dstNS == namespaceAmbiguous:
+			fate = renamePairUnproven
+		case verdict.Dst == spec.RenameEndpointPresent:
+			fate = renamePairKept
+		case verdict.Src == spec.RenameEndpointAbsent:
+			fate = renamePairKept
+		case verdict.Src != spec.RenameEndpointPresent || verdict.Dst != spec.RenameEndpointAbsent:
+			fate = renamePairUnproven
+		case !verdict.SrcProduced && (pair.srcEntry == nil || !renameShapeMovable(pair.srcEntry.shape)):
+			// The existence cell proved but the member set cannot move —
+			// a provable migration never ran, and a guessed shape is
+			// worse than none. A produced source inherits movability
+			// from its producing pair's already-adjudicated shape.
+			fate = renamePairUnproven
+		}
+		if fate != renamePairMigrate {
 			break
 		}
-		if claimedDst[pair.dstKey] == nil {
-			claimedDst[pair.dstKey] = map[boundNamespace]bool{}
-		}
-		claimedDst[pair.dstKey][pair.dstNS] = true
-		if claimedSrc[pair.srcKey] == nil {
-			claimedSrc[pair.srcKey] = map[boundNamespace]bool{}
-		}
-		claimedSrc[pair.srcKey][pair.srcNS] = true
 		// The produced slot carries the pair's effective source shape —
-		// chained moves (a→x, x→b) forward it so b lands a's body.
-		effective := pair.srcEntry.shape
-		if claimedDst[pair.srcKey] != nil && claimedDst[pair.srcKey][pair.srcNS] {
+		// chained moves (a→x, x→b) forward it so b lands a's body. The
+		// pair's own shape is captured per-position: a later pair may
+		// overwrite the same produced slot (d→b after a→b), and the apply
+		// phase must see the shape this pair actually carried.
+		var effective *spec.TableSnapshot
+		if verdict.SrcProduced {
 			effective = producedShape[pair.srcKey][pair.srcNS]
+		} else {
+			effective = pair.srcEntry.shape
 		}
+		pairShapes[i] = effective
 		if producedShape[pair.dstKey] == nil {
 			producedShape[pair.dstKey] = map[boundNamespace]*spec.TableSnapshot{}
 		}
 		producedShape[pair.dstKey][pair.dstNS] = effective
 	}
 	if fate == renamePairMigrate {
-		for _, pair := range pairs {
+		for i, pair := range pairs {
 			dstMap := s.entries
 			if pair.dstNS == namespaceTemporary {
 				dstMap = s.tempEntries
 			}
-			srcShape := pair.srcEntry.shape
-			if claimedDst[pair.srcKey] != nil && claimedDst[pair.srcKey][pair.srcNS] {
-				srcShape = producedShape[pair.srcKey][pair.srcNS]
-			}
+			srcShape := pairShapes[i]
 			dstMap[pair.dstKey] = &batchTableEntry{
 				state:         tablePresent,
 				shape:         renamedShape(srcShape, s.effectiveSchema(s.schema, pair.destination), pair.destination.Name),
@@ -1755,54 +1790,18 @@ func (s *batchState) applyRenameTable(ctx context.Context, statement spec.Statem
 	return nil
 }
 
-// atomicRenamePairFate adjudicates one pair at its position inside the
-// atomic RENAME TABLE. Earlier pairs mutate the working set first:
-// claimedSrc slots are consumed (now free/absent) and claimedDst slots are
-// produced (now occupied/present). A destination occupied at pair time is
-// a proven 1050; a source absent at pair time is a proven 1146 — either
-// ends the statement and rolls earlier moves back. Anything undecidable
-// tombstones the statement's declared endpoints.
-func (s *batchState) atomicRenamePairFate(srcNS boundNamespace, srcEntry *batchTableEntry, srcKey batchTableKey, dstNS boundNamespace, dstEntry *batchTableEntry, dstKey batchTableKey, claimedSrc, claimedDst map[batchTableKey]map[boundNamespace]bool) renamePairOutcome {
-	if srcKey == dstKey && srcNS == dstNS {
-		return renamePairKept
+// renameEndpointClass maps a bound entry's knowledge to the shared
+// rename-adjudication class — never-touched and unknown both count as
+// unvouched for pair purposes.
+func renameEndpointClass(state tableKnowledge) spec.RenameEndpointClass {
+	switch state {
+	case tablePresent:
+		return spec.RenameEndpointPresent
+	case tableAbsent:
+		return spec.RenameEndpointAbsent
+	default:
+		return spec.RenameEndpointUnknown
 	}
-	if s.dialect == spec.DialectTiDB && (srcNS == namespaceTemporary || dstNS == namespaceTemporary) {
-		return renamePairKept
-	}
-	if srcNS == namespaceAmbiguous || dstNS == namespaceAmbiguous {
-		return renamePairUnproven
-	}
-	srcState := boundEntryState(srcNS, srcEntry)
-	dstState := boundEntryState(dstNS, dstEntry)
-	srcConsumed := claimedSrc[srcKey] != nil && claimedSrc[srcKey][srcNS]
-	srcProduced := claimedDst[srcKey] != nil && claimedDst[srcKey][srcNS]
-	dstConsumed := claimedSrc[dstKey] != nil && claimedSrc[dstKey][dstNS]
-	dstProduced := claimedDst[dstKey] != nil && claimedDst[dstKey][dstNS]
-	// The destination is checked at pair time: produced-earlier or
-	// still-present-and-unvacated both occupy it — a proven 1050 refusal.
-	if dstProduced || (!dstConsumed && dstState == tablePresent) {
-		return renamePairKept
-	}
-	// A source absent at pair time — never present, or already consumed —
-	// is a proven 1146 refusal.
-	if !srcProduced && (srcConsumed || srcState == tableAbsent) {
-		return renamePairKept
-	}
-	if !srcProduced && srcState != tablePresent {
-		return renamePairUnproven
-	}
-	if !dstConsumed && dstState != tableAbsent {
-		return renamePairUnproven
-	}
-	// A produced source inherits movability from the producing pair's
-	// already-adjudicated shape — its pre-state entry is empty by design.
-	if srcProduced {
-		return renamePairMigrate
-	}
-	if srcEntry == nil || !renameShapeMovable(srcEntry.shape) {
-		return renamePairUnproven
-	}
-	return renamePairMigrate
 }
 
 // backupSlot records a slot's pre-mutation entry once so an atomic veto
@@ -2280,29 +2279,36 @@ func dropTargetFate(atomic *bool, multi, ifExists, anyMissing, anyUnvouched bool
 		if !multi {
 			return dropFateDropped
 		}
-		if atomic != nil && *atomic {
-			// 8.x veto — the temp name survives a multi list regardless of
-			// whether a sibling was missing.
-			return dropFateKept
+		// No name in the list can trigger a veto — every resolvable member
+		// drops on every anchor (probed: 8.x `DROP tp16,p16_a` removes both,
+		// 5.7 drops unconditionally, TiDB's resolvable list drops the temp).
+		if !vetoPossible {
+			return dropFateDropped
 		}
 		if dialect == spec.DialectTiDB {
-			// TiDB's temp slot is veto-shaped, not sequential: a resolvable
-			// list drops the temp object outright (probe: tp16+p16_a both
-			// gone), while a missing sibling keeps it (probe: tp16x
-			// survives p16_a+missing).
-			if !vetoPossible {
-				return dropFateDropped
+			// TiDB's temp slot is veto-shaped, not sequential: a proven-
+			// missing sibling keeps it (probe: tp16x survives
+			// p16_a+missing), while an unvouched sibling leaves the
+			// veto undecidable — the name may have existed.
+			if anyMissing {
+				return dropFateKept
 			}
-			if anyUnvouched {
-				return dropFateUnproven
-			}
-			return dropFateKept
+			return dropFateUnproven
 		}
-		if atomic != nil {
+		// MySQL: the 8.x veto arm survives a proven-missing sibling, may
+		// or may not have fired against an unvouched one, and never fires
+		// on 5.7's sequential arm; an unvouched version splits both arms.
+		switch {
+		case atomic == nil:
+			return dropFateUnproven
+		case *atomic && anyMissing:
+			return dropFateKept
+		case *atomic:
+			return dropFateUnproven
+		default:
 			// 5.7 sequential — temp names drop in a multi list too.
 			return dropFateDropped
 		}
-		return dropFateUnproven
 	default:
 		switch state {
 		case tableUnknown:

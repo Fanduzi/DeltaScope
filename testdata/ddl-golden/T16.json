@@ -331,6 +331,50 @@
       }
     },
     {
+      "id": "t16-cli-drop-multi-temp-unvouched",
+      "dialect": "mysql",
+      "policy": "t16-lifecycle",
+      "sql": "CREATE TEMPORARY TABLE t16_tp (id INT); DROP TABLE t16_tp, t16_u; DROP TABLE t16_tp;",
+      "expect": {
+        "exit": 0,
+        "verdict": "review",
+        "statements": 3,
+        "findings": 0,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "unverified",
+        "statement_coverage": [
+          "complete",
+          "unverified",
+          "unverified"
+        ],
+        "evidence_gaps": 2,
+        "statement_indices": [
+          0,
+          1,
+          2
+        ],
+        "evidence_gap_entries": [
+          {
+            "index": 1,
+            "rule_id": "ddl.table.drop.exists.require",
+            "reason_code": "unknown_table_state",
+            "required_facts": [
+              "target_table.existence"
+            ]
+          },
+          {
+            "index": 2,
+            "rule_id": "ddl.table.drop.exists.require",
+            "reason_code": "unknown_table_state",
+            "required_facts": [
+              "target_table.existence"
+            ]
+          }
+        ]
+      }
+    },
+    {
       "id": "t16-cli-rename-dest-unknown",
       "dialect": "mysql",
       "policy": "t16-lifecycle",
@@ -723,21 +767,31 @@
       "policy": "t16-lifecycle",
       "expect": {
         "exit": 0,
-        "verdict": "pass",
+        "verdict": "review",
         "statements": 2,
         "findings": 0,
         "diagnostics": 0,
         "unsupported": 0,
-        "coverage": "complete",
+        "coverage": "unverified",
         "statement_coverage": [
           "complete",
-          "complete"
+          "unverified"
         ],
-        "evidence_gaps": 0,
+        "evidence_gaps": 1,
         "version": {
           "product": "mysql",
           "version": "8.0.46"
-        }
+        },
+        "evidence_gap_entries": [
+          {
+            "index": 1,
+            "rule_id": "ddl.table.truncate.inbound_fk",
+            "reason_code": "unknown_table_state",
+            "required_facts": [
+              "target_table.inbound_fk"
+            ]
+          }
+        ]
       },
       "setup": [
         {
@@ -842,6 +896,78 @@
         {
           "name": "drop-target",
           "sql": "DROP TABLE IF EXISTS t16_a",
+          "expect_rc": 0
+        }
+      ]
+    },
+    {
+      "id": "t16-mysql80-drop-multi-temp-resolvable",
+      "anchor": "mysql80",
+      "dialect": "mysql",
+      "sql": "CREATE TEMPORARY TABLE t16_tp (id INT); DROP TABLE t16_tp, t16_a; DROP TABLE t16_tp;",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 23380,
+        "user": "root",
+        "schema": "golden",
+        "password_env": "DS_T16_GOLDEN_PW",
+        "password": "root"
+      },
+      "policy": "t16-lifecycle",
+      "expect": {
+        "exit": 1,
+        "verdict": "reject",
+        "statements": 3,
+        "findings": 1,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "complete",
+        "statement_coverage": [
+          "complete",
+          "complete",
+          "complete"
+        ],
+        "evidence_gaps": 0,
+        "finding_entries": [
+          {
+            "index": 2,
+            "rule_id": "ddl.table.drop.exists.require",
+            "level": "blocker"
+          }
+        ],
+        "version": {
+          "product": "mysql",
+          "version": "8.0.46"
+        }
+      },
+      "setup": [
+        {
+          "name": "create-target",
+          "sql": "CREATE TABLE t16_a (id INT)",
+          "expect_rc": 0
+        }
+      ],
+      "execute": [
+        {
+          "name": "apply-multi-temp-drop",
+          "sql": "CREATE TEMPORARY TABLE t16_tp (id INT); DROP TABLE t16_tp, t16_a; SELECT 'temp-survived' FROM t16_tp",
+          "expect_rc": 1,
+          "stderr_contains": [
+            "1146"
+          ],
+          "verify": [
+            {
+              "assert": "fully-resolvable atomic multi-drop removes persistent member",
+              "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t16_a'",
+              "expect": "0"
+            }
+          ]
+        }
+      ],
+      "teardown": [
+        {
+          "name": "drop-targets",
+          "sql": "DROP TABLE IF EXISTS t16_a, t16_tp",
           "expect_rc": 0
         }
       ]
@@ -1323,6 +1449,166 @@
       ]
     },
     {
+      "id": "t16-mysql80-rename-lastwrite-free",
+      "anchor": "mysql80",
+      "dialect": "mysql",
+      "sql": "RENAME TABLE t16_a TO t16_b, t16_b TO t16_c, t16_d TO t16_b;",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 23380,
+        "user": "root",
+        "schema": "golden",
+        "password_env": "DS_T16_GOLDEN_PW",
+        "password": "root"
+      },
+      "policy": "t16-lifecycle",
+      "expect": {
+        "exit": 0,
+        "verdict": "pass",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "complete",
+        "statement_coverage": [
+          "complete"
+        ],
+        "evidence_gaps": 0,
+        "version": {
+          "product": "mysql",
+          "version": "8.0.46"
+        }
+      },
+      "setup": [
+        {
+          "name": "create-sources",
+          "sql": "CREATE TABLE t16_a (id INT); CREATE TABLE t16_d (id INT, dk INT)",
+          "expect_rc": 0
+        }
+      ],
+      "execute": [
+        {
+          "name": "apply-lastwrite-rename",
+          "sql": "RENAME TABLE t16_a TO t16_b, t16_b TO t16_c, t16_d TO t16_b",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "b receives d shape after pair two vacates it",
+              "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t16_b' AND COLUMN_NAME='dk'",
+              "expect": "1"
+            },
+            {
+              "assert": "c carries original a shape",
+              "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t16_c' AND COLUMN_NAME='id'",
+              "expect": "1"
+            },
+            {
+              "assert": "c does not receive d shape",
+              "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t16_c' AND COLUMN_NAME='dk'",
+              "expect": "0"
+            },
+            {
+              "assert": "a consumed",
+              "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t16_a'",
+              "expect": "0"
+            },
+            {
+              "assert": "d consumed",
+              "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t16_d'",
+              "expect": "0"
+            }
+          ]
+        }
+      ],
+      "teardown": [
+        {
+          "name": "drop-renamed",
+          "sql": "DROP TABLE IF EXISTS t16_b, t16_c",
+          "expect_rc": 0
+        }
+      ]
+    },
+    {
+      "id": "t16-mysql80-rename-lastwrite-rollback",
+      "anchor": "mysql80",
+      "dialect": "mysql",
+      "sql": "RENAME TABLE t16_a TO t16_b, t16_b TO t16_c, t16_b TO t16_a;",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 23380,
+        "user": "root",
+        "schema": "golden",
+        "password_env": "DS_T16_GOLDEN_PW",
+        "password": "root"
+      },
+      "policy": "t16-lifecycle",
+      "expect": {
+        "exit": 1,
+        "verdict": "reject",
+        "statements": 1,
+        "findings": 1,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "complete",
+        "statement_coverage": [
+          "complete"
+        ],
+        "evidence_gaps": 0,
+        "finding_entries": [
+          {
+            "index": 0,
+            "rule_id": "ddl.table.rename.source.exists.require",
+            "level": "blocker"
+          }
+        ],
+        "version": {
+          "product": "mysql",
+          "version": "8.0.46"
+        }
+      },
+      "setup": [
+        {
+          "name": "create-source",
+          "sql": "CREATE TABLE t16_a (id INT)",
+          "expect_rc": 0
+        }
+      ],
+      "execute": [
+        {
+          "name": "apply-consumed-source-rename",
+          "sql": "RENAME TABLE t16_a TO t16_b, t16_b TO t16_c, t16_b TO t16_a",
+          "expect_rc": 1,
+          "stderr_contains": [
+            "1146"
+          ],
+          "verify": [
+            {
+              "assert": "rollback keeps a",
+              "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t16_a'",
+              "expect": "1"
+            },
+            {
+              "assert": "rollback fabricates no b",
+              "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t16_b'",
+              "expect": "0"
+            },
+            {
+              "assert": "rollback fabricates no c",
+              "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t16_c'",
+              "expect": "0"
+            }
+          ]
+        }
+      ],
+      "teardown": [
+        {
+          "name": "drop-source",
+          "sql": "DROP TABLE IF EXISTS t16_a, t16_b, t16_c",
+          "expect_rc": 0
+        }
+      ]
+    },
+    {
       "id": "t16-mysql80-rename-cross-schema",
       "anchor": "mysql80",
       "dialect": "mysql",
@@ -1383,6 +1669,67 @@
         {
           "name": "drop-secondary",
           "sql": "DROP TABLE IF EXISTS t16_secondary.t16_rx; DROP DATABASE IF EXISTS t16_secondary",
+          "expect_rc": 0
+        }
+      ]
+    },
+    {
+      "id": "t16-mysql80-alter-rename-self-noop",
+      "anchor": "mysql80",
+      "dialect": "mysql",
+      "sql": "ALTER TABLE t16_a RENAME TO t16_a; DROP TABLE t16_a;",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 23380,
+        "user": "root",
+        "schema": "golden",
+        "password_env": "DS_T16_GOLDEN_PW",
+        "password": "root"
+      },
+      "policy": "t16-lifecycle",
+      "expect": {
+        "exit": 0,
+        "verdict": "pass",
+        "statements": 2,
+        "findings": 0,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "complete",
+        "statement_coverage": [
+          "complete",
+          "complete"
+        ],
+        "evidence_gaps": 0,
+        "version": {
+          "product": "mysql",
+          "version": "8.0.46"
+        }
+      },
+      "setup": [
+        {
+          "name": "create-target",
+          "sql": "CREATE TABLE t16_a (id INT)",
+          "expect_rc": 0
+        }
+      ],
+      "execute": [
+        {
+          "name": "apply-self-rename-and-drop",
+          "sql": "ALTER TABLE t16_a RENAME TO t16_a; DROP TABLE t16_a",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "no-op rename leaves a droppable",
+              "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden' AND TABLE_NAME='t16_a'",
+              "expect": "0"
+            }
+          ]
+        }
+      ],
+      "teardown": [
+        {
+          "name": "drop-target",
+          "sql": "DROP TABLE IF EXISTS t16_a",
           "expect_rc": 0
         }
       ]
@@ -1842,7 +2189,7 @@
         "findings": 1,
         "diagnostics": 0,
         "unsupported": 0,
-        "evidence_gaps": 0,
+        "evidence_gaps": 1,
         "finding_entries": [
           {
             "index": 3,
@@ -1853,7 +2200,24 @@
         "version": {
           "product": "mysql",
           "version": "8.0.46"
-        }
+        },
+        "evidence_gap_entries": [
+          {
+            "index": 2,
+            "rule_id": "ddl.table.truncate.inbound_fk",
+            "reason_code": "unknown_table_state",
+            "required_facts": [
+              "target_table.inbound_fk"
+            ]
+          }
+        ],
+        "coverage": "unverified",
+        "statement_coverage": [
+          "complete",
+          "complete",
+          "unverified",
+          "complete"
+        ]
       },
       "setup": [
         {
@@ -2977,6 +3341,7 @@
     "T16.cli.t16-cli-seed-offline",
     "T16.cli.t16-cli-drop-temp-chain",
     "T16.cli.t16-cli-drop-multi-refused",
+    "T16.cli.t16-cli-drop-multi-temp-unvouched",
     "T16.cli.t16-cli-rename-dest-unknown",
     "T16.cli.t16-cli-like-source-unknown",
     "T16.cli.t16-cli-ctas-tidb-vendor",
@@ -2987,6 +3352,7 @@
     "T16.meta.t16-mysql80-drop-ifexists-mixed",
     "T16.meta.t16-mysql80-drop-duplicate",
     "T16.meta.t16-mysql80-drop-temp-keyword-miss",
+    "T16.meta.t16-mysql80-drop-multi-temp-resolvable",
     "T16.meta.t16-mysql80-temp-shadow-drop",
     "T16.meta.t16-mysql80-temp-create-dup",
     "T16.meta.t16-mysql80-alter-on-temp",
@@ -2995,7 +3361,10 @@
     "T16.meta.t16-mysql80-rename-multi-atomic",
     "T16.meta.t16-mysql80-rename-dest-exists",
     "T16.meta.t16-mysql80-rename-swap",
+    "T16.meta.t16-mysql80-rename-lastwrite-free",
+    "T16.meta.t16-mysql80-rename-lastwrite-rollback",
     "T16.meta.t16-mysql80-rename-cross-schema",
+    "T16.meta.t16-mysql80-alter-rename-self-noop",
     "T16.meta.t16-mysql80-like-members",
     "T16.meta.t16-mysql80-like-missing-source",
     "T16.meta.t16-mysql80-like-dest-exists",

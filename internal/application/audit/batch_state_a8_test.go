@@ -316,6 +316,11 @@ func TestT05A8DefinitionsAndIdentity(t *testing.T) {
 				}
 				wantT := cloneTableSnapshot(provider.snapshots["golden.t"])
 				wantU := cloneTableSnapshot(provider.snapshots["other.u"])
+				// Provider loads never query reverse FK edges, so the
+				// projection marks the inbound set unvouched — the one
+				// documented flag that differs from the provider original.
+				wantT.ReferencedByUnknown = true
+				wantU.ReferencedByUnknown = true
 				if !reflect.DeepEqual(earlierT, wantT) || !reflect.DeepEqual(earlierU, wantU) {
 					t.Fatal("projections diverge from provider originals")
 				}
