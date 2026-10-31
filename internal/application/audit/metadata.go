@@ -73,7 +73,10 @@ func enrichStatementsWithMetadataLimits(ctx context.Context, dialect spec.Dialec
 				}
 
 				if lookup := planObjectLookup(request.Schema, statement); lookup != nil {
-					objSnapshot := resolveObjectSnapshot(ctx, request, dialect, lookup)
+					objSnapshot, oerr := resolveObjectSnapshot(ctx, request, dialect, lookup)
+					if oerr != nil {
+						return nil, oerr
+					}
 					if objSnapshot != nil {
 						enriched[i].Metadata.Objects = append(enriched[i].Metadata.Objects, *objSnapshot)
 					}
@@ -141,7 +144,10 @@ func enrichStatementsWithMetadataLimits(ctx context.Context, dialect spec.Dialec
 
 		// Object-level enrichment for non-table DDL objects.
 		if lookup := planObjectLookup(request.Schema, statement); lookup != nil {
-			objSnapshot := resolveObjectSnapshot(ctx, request, dialect, lookup)
+			objSnapshot, oerr := resolveObjectSnapshot(ctx, request, dialect, lookup)
+			if oerr != nil {
+				return nil, oerr
+			}
 			if objSnapshot != nil {
 				if enriched[i].Metadata == nil {
 					enriched[i].Metadata = &spec.Metadata{Schema: request.Schema, Instance: instanceFacts, Version: resolvedVersion}
@@ -189,7 +195,12 @@ func (state *batchState) enrichStatements(ctx context.Context, request *Metadata
 			if snapshot, ok := objectCache[cacheKey]; ok {
 				return snapshot, nil
 			}
-			snapshot := resolveObjectSnapshot(ctx, request, dialect, lookup)
+			snapshot, err := resolveObjectSnapshot(ctx, request, dialect, lookup)
+			if err != nil {
+				// Propagate resolver failures — never cache a failed read
+				// as an unavailable answer.
+				return nil, err
+			}
 			objectCache[cacheKey] = snapshot
 			return snapshot, nil
 		}
@@ -300,7 +311,11 @@ func (state *batchState) enrichStatements(ctx context.Context, request *Metadata
 				cacheKey := newObjectLookupKey(lookup)
 				objSnapshot, cached := objectCache[cacheKey]
 				if !cached {
-					objSnapshot = resolveObjectSnapshot(ctx, request, dialect, lookup)
+					var oerr error
+					objSnapshot, oerr = resolveObjectSnapshot(ctx, request, dialect, lookup)
+					if oerr != nil {
+						return nil, oerr
+					}
 					objectCache[cacheKey] = objSnapshot
 				}
 				if objSnapshot != nil {
@@ -598,15 +613,17 @@ func newObjectLookupKey(lookup *spec.ObjectLookupRequest) objectLookupKey {
 }
 
 // resolveObjectSnapshot calls the ObjectResolver if available, or returns
-// an unavailable snapshot as fallback. Never returns nil.
-func resolveObjectSnapshot(ctx context.Context, request *MetadataRequest, dialect spec.Dialect, lookup *spec.ObjectLookupRequest) *spec.ObjectSnapshot {
+// an unavailable snapshot as fallback when no resolver exists. Resolver
+// failures propagate — a live read error is never downgraded to Unavailable:
+// that status means "no resolver could answer", not "the answer failed".
+func resolveObjectSnapshot(ctx context.Context, request *MetadataRequest, dialect spec.Dialect, lookup *spec.ObjectLookupRequest) (*spec.ObjectSnapshot, error) {
 	if request == nil || request.Provider == nil {
 		return &spec.ObjectSnapshot{
 			Schema: lookup.Schema,
 			Type:   lookup.Type,
 			Name:   lookup.Name,
 			Status: spec.MetadataStatusUnavailable,
-		}
+		}, nil
 	}
 	resolver, ok := request.Provider.(ObjectResolver)
 	if !ok {
@@ -615,16 +632,7 @@ func resolveObjectSnapshot(ctx context.Context, request *MetadataRequest, dialec
 			Type:   lookup.Type,
 			Name:   lookup.Name,
 			Status: spec.MetadataStatusUnavailable,
-		}
+		}, nil
 	}
-	snapshot, err := resolver.ResolveObject(ctx, dialect, *lookup)
-	if err != nil {
-		return &spec.ObjectSnapshot{
-			Schema: lookup.Schema,
-			Type:   lookup.Type,
-			Name:   lookup.Name,
-			Status: spec.MetadataStatusUnavailable,
-		}
-	}
-	return snapshot
+	return resolver.ResolveObject(ctx, dialect, *lookup)
 }

@@ -5,7 +5,7 @@ package audit
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"strings"
 	"testing"
 
@@ -204,21 +204,46 @@ func TestObjectEnrichmentUnavailableWhenNoResolver(t *testing.T) {
 	}
 }
 
-func TestObjectEnrichmentResolverErrorFallsBackToUnavailable(t *testing.T) {
+func TestObjectEnrichmentResolverErrorPropagates(t *testing.T) {
 	t.Parallel()
-	resolver := newFakeObjectResolver()
-	resolver.err = fmt.Errorf("connection refused")
+	for _, tc := range []struct {
+		name string
+		err  error
+	}{
+		{"sentinel", errors.New("object resolver failure")},
+		{"canceled", context.Canceled},
+		{"deadline", context.DeadlineExceeded},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			ctx := context.Background()
+			const sql = "DROP FOREIGN TABLE ft_users"
+			parsed, err := Parse(ctx, sql, spec.DialectPostgreSQL)
+			if err != nil {
+				t.Fatalf("parse: %v", err)
+			}
+			statements, err := Extract(ctx, parsed)
+			if err != nil {
+				t.Fatalf("extract: %v", err)
+			}
+			resolver := newFakeObjectResolver()
+			resolver.err = tc.err
+			enriched, err := enrichStatementsWithMetadata(ctx, spec.DialectPostgreSQL, &MetadataRequest{
+				Schema: "public", Provider: resolver,
+			}, statements, nil)
+			if !errors.Is(err, tc.err) || enriched != nil || len(resolver.calls) != 1 {
+				t.Fatalf("enrich = %#v, error = %v, calls = %d; want %v, no projection, one call", enriched, err, len(resolver.calls), tc.err)
+			}
 
-	parsed, _ := Parse(context.Background(), "DROP FOREIGN TABLE ft_users", spec.DialectPostgreSQL)
-	statements, _ := Extract(context.Background(), parsed)
-	enriched, _ := enrichStatementsWithMetadata(context.Background(), spec.DialectPostgreSQL, &MetadataRequest{
-		Schema:   "public",
-		Provider: resolver,
-	}, statements, nil)
-
-	obj := enriched[0].Metadata.Objects[0]
-	if obj.Status != spec.MetadataStatusUnavailable {
-		t.Fatalf("expected unavailable on resolver error, got %q", obj.Status)
+			publicResolver := newFakeObjectResolver()
+			publicResolver.err = tc.err
+			result, err := AuditSQL(ctx, Request{
+				SQL: sql, Dialect: spec.DialectPostgreSQL,
+				Schema: "public", MetadataProvider: publicResolver,
+			})
+			if !errors.Is(err, tc.err) || len(result.Statements) != 0 || len(publicResolver.calls) != 1 {
+				t.Fatalf("audit = %#v, error = %v, calls = %d; want %v, no statements, one call", result, err, len(publicResolver.calls), tc.err)
+			}
+		})
 	}
 }
 

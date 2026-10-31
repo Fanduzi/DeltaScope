@@ -54,6 +54,14 @@ These four corpus representatives do not enlarge T07's 207 Golden identities;
 full statement/column/dependent/gap/coverage/native oracles live in the
 [T07 contract](../../docs/work-plans/t07-advanced-columns/CONTRACT.md).
 
+## T17 schema-lifecycle representatives
+
+MySQL and TiDB each have a `ddl/findings/database_lifecycle_rules.sql` and
+expected YAML pair with 14 offline statements. The T17-R1 additions cover
+conditional-create refusal or withholding and the unextracted tiflash
+boundary with a following table target. Native receipts and ordered
+projection proofs are separate from these corpus expectations.
+
 ## PostgreSQL Representative Pack
 
 The PostgreSQL corpus keeps production-shaped coverage bounded and separate:

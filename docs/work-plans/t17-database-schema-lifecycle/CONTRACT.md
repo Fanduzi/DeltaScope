@@ -63,9 +63,11 @@ Derivations (probed, engine-fixed):
 |---|---|---|
 | present | — | proven refusal 1007, exact pre-state kept |
 | present | IF NOT EXISTS | proven no-op (engine note 1007), pre-state kept |
-| absent/neverTouched-resolved-absent | — | publish present + declared/derived attributes |
+| absent/neverTouched-resolved-absent | — | Apply publishes present + declared/derived attributes; Refused keeps the exact pre-state; Withhold leaves the creation outcome unknown |
 | unknown | — | outcome unvouched → schema entry unknown |
-| unknown | IF NOT EXISTS | both execution arms converge on *present* → entry becomes `present` with **no authored attributes** (they ran only on the create arm) and `batchCreated=false` (the pre-existing arm means the batch did not create it — contained tables stay unvouched) |
+| unknown | IF NOT EXISTS | **convergent present is conditional (T17-R1)**: only when every create-arm option adjudicates Apply and both arms converge on the same target identity and provable attributes does the entry become `present`, with no authored attributes and `batchCreated=false`. Refused or Withhold leaves the entry unknown. |
+
+只有 CREATE 执行臂的全部选项裁决为 Apply，且两执行臂的目标身份与可证明属性确实收敛时，才允许发布 present。
 
 Option applicability:
 
@@ -81,12 +83,22 @@ Option applicability:
   unvouchable today (no provider policy lookup) ⇒ the statement outcome
   is undecidable → schema entry unknown (never a fabricated success).
   MySQL ⇒ vendor boundary (engine 1064) → pre-state kept.
-- `TIFLASH REPLICA`/`SET TIFLASH REPLICA`: TiDB-only, un-audited
-  aspect → statement stays unproven for state purposes (boundary, not
-  modeled).
+- `TIFLASH REPLICA`/`SET TIFLASH REPLICA` on MySQL is a proven
+  vendor refusal; TiDB's create outcome is unproven. Other
+  `UnextractedOptions` are not automatically vendor refusals: absent
+  an independent proven refusal they Withhold. Any proven refusal
+  dominates even a mixture containing unmodeled options, keeping the
+  exact pre-state. Otherwise creation from absent becomes unknown with
+  no attributes and `batchCreated=false`; unknown `IF NOT EXISTS`
+  cannot converge. A known-present pre-state is unchanged.
+
 - `READ ONLY`: parse-unsupported on our parser surface (and on
   5.7/TiDB natively); MySQL 8.0.22+ accepts it on ALTER only — stays an
   unsupported entry, never silently modeled.
+
+Resolver errors propagate through the shared object cache and ordered
+enrichment to `AuditSQL`; failed lookups are never cached or projected.
+An explicit Unavailable answer is not an error and remains unvouched.
 
 ### ALTER DATABASE [name|∅]
 
@@ -128,9 +140,12 @@ Option applicability:
 
 - `CREATE TABLE s.t` (and other table-scoped ops) under
   `schemaEntries[s]==absent` → proven refusal 1049 → the table's
-  pre-state (absent) kept. Under `unknown` schema the declared-success
-  model stands unchanged (T05 optimism class: the batch does not prove
-  schema existence for table ops it never touched).
+  pre-state (absent) kept. Under a touched `unknown` schema, CREATE
+  TABLE on an unproven target and ADD COLUMN on an unknown table
+  cannot prove a successful outcome, so their target stays unknown.
+  A proven-present CREATE destination keeps its exact state on refusal
+  or conditional no-op; an untouched schema retains the existing
+  conditional-success model.
 - Under a batch-created (`present`) schema a never-touched table is
   proven-absent (the batch is the only writer).
 - `invalidatedSchemas` semantics are subsumed: DROP keeps the
@@ -197,25 +212,44 @@ is a TiDB-only aspect, vendor boundary on MySQL; `READ ONLY` and
 
 ## 8. Golden denominator
 
-Manifest `testdata/ddl-golden/T17.json` — **47 required cases**:
+Manifest `testdata/ddl-golden/T17.json` — **52 required cases** (47
+original + 5 T17-R1):
 
 - 8 `db.*` cases: per-anchor `ddl_steps` lifecycle fixtures (synonym
   round-trips, IF no-op arms, duplicate/missing refusals, cascade) +
   `syntax_negative` pinned to error class 1064 with auth/connectivity
   markers forbidden.
-- 28 `meta.*` cases across all four anchors: named + `SCHEMA`-synonym
+- 30 `meta.*` cases across all four anchors: named + `SCHEMA`-synonym
   lifecycles, name-less ALTER binding, IF arms, duplicate/missing
   refusals, drop-cascade with successor table ops, drop+recreate
   attribute freshness, encryption version arms (5.7 refusal / 8.0+8.4
   success / TiDB parsed-but-ignored notice), TiDB placement missing
   policy (incomplete coverage, 8239), system-schema protection
   (uniform policy answer over divergent native leniency), denylist,
-  cross-namespace identity, and all-rules-disabled / custom-level
-  policy contrasts.
-- 11 `cli.*` offline cases: unknown-state gaps (`schema.existence`,
+  cross-namespace identity, all-rules-disabled / custom-level
+  policy contrasts, and **T17-R1**: `t17-mysql80-tiflash-refused`
+  (proven-absent + `SET TIFLASH REPLICA` vendor refusal keeps the
+  absent pre-state; the first CREATE has no false already-exists
+  finding, the following ALTER reports the absent schema, and both
+  subsequent CREATE TABLE targets are absent; native 1064 receipt)
+  and `t17-tidb85-tiflash-unproven` (the first CREATE sees a
+  proven-absent schema without a schema gap; the unextracted tiflash
+  option then withholds creation, so successors carry unknown-state gaps
+  rather than a fabricated `batchCreated` absence).
+- 14 `cli.*` offline cases: unknown-state gaps (`schema.existence`,
   `target_table.existence`, `target.version`), IF-arm convergent
   proofs offline, placement aspect boundaries on both dialects,
-  name-less ALTER with no request schema, and policy-level contrast.
+  name-less ALTER with no request schema, policy-level contrast, and
+  **T17-R1** arm-divergence cells:
+  `t17-cli-ine-encryption-57-mysql` (unvouched + INE + encryption on
+  `--target-version 5.7.44` — refused arm keeps the schema unvouched,
+  the successor bare CREATE gets `unknown_schema_state` instead of a
+  fabricated `already exists` finding),
+  `t17-cli-ine-encryption-nilver-mysql` (same SQL with unproven
+  version — withheld arm, same unvouched successor plus the
+  `target.version` gap), and `t17-cli-ine-placement-tidb` (unvouched +
+  INE + placement — withheld arm, successor CREATE and `CREATE TABLE`
+  stay unvouched).
 
 Native `execute`/`verify` steps assert SCHEMATA rows, contained-table
 fates, stderr error classes, and warning text on the live anchors;

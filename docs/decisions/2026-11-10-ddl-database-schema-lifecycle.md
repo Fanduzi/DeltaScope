@@ -51,10 +51,9 @@ exposed cells where naive modeling would be outright wrong:
   on 5.7 and TiDB (rc0) but refused 3552 on 8.0/8.4; `DROP mysql`
   refuses 3552 (8.0/8.4) / 1105 (TiDB) while 5.7 has *no* protection —
   it drops the schema at rc0.
-- `IF NOT EXISTS`/`IF EXISTS` over an *unvouched* premise still have
-  provable post-state: both execution arms converge (INE ⇒ present,
-  IE ⇒ absent), which is exactly the offline path's most valuable
-  answer.
+- `IF EXISTS` over an unvouched premise converges on absent.
+  `IF NOT EXISTS` converges on present only when its create arm applies
+  and the two arms agree on identity and provable attributes.
 
 ## Decision
 
@@ -68,8 +67,9 @@ exposed cells where naive modeling would be outright wrong:
    Anything unproven stays withheld; a snapshot never fabricates an
    undeclared collation or a guessed server default.
 2. **Conditional clauses publish convergent post-state over unknown.**
-   `CREATE ... IF NOT EXISTS` over `unknown` proves `present` (both
-   arms converge) but publishes *no* authored attributes and sets
+   `CREATE ... IF NOT EXISTS` over `unknown` proves `present` only when
+   every create-arm option is Apply and both arms converge; it publishes
+   *no* authored attributes and sets
    `batchCreated=false` — the pre-existing arm means the batch did not
    create the schema, so contained tables stay unvouched. `DROP ...
    IF EXISTS` over `unknown` proves `absent` and tombstones every
@@ -101,7 +101,7 @@ exposed cells where naive modeling would be outright wrong:
    TiDB ENCRYPTION is accepted-and-ignored (no attribute published);
    TiDB placement stays withheld because policy existence is not
    resolved; MySQL placement is a proven vendor refusal.
-7. **New T17 rules (all metadata-aware, default `blocker`).**
+7. **New T17 rules (four metadata-aware and two name-keyed, default `blocker`).**
    `ddl.database.create.exists.forbid`,
    `ddl.database.alter.exists.require`,
    `ddl.database.drop.exists.require`,
@@ -143,3 +143,58 @@ exposed cells where naive modeling would be outright wrong:
 - No public output-shape change beyond the additive
   `Metadata.SchemaTarget` projection; the same answer shape lands on
   CLI, HTTP, MCP, and SDK.
+
+## Amendment — T17-R1 (independent-review remediation)
+
+The independent review of the original T17 delivery found three defects
+in the ordered-state seam; this amendment explains the corrected
+clauses above.
+
+1. **INE convergence is conditional, not unconditional** (supersedes the
+   INE half of Decision 2 and its Context bullet). `CREATE ... IF NOT
+   EXISTS` over an unvouched schema publishes `present` only when the
+   create arm adjudicates `Apply` for every declared option *and* the
+   statement carries no `UnextractedOptions`. A `Refused` create arm
+   (ENCRYPTION below MySQL 8.0.16, vendor-boundary clauses) or a
+   `Withheld` one (unproven version, unvouchable TiDB placement
+   premise) lands absent-or-undecidable — the arms diverge and the
+   entry stays `unknown`. The original implementation published
+   `present` unconditionally, which let a refused create fabricate a
+   writable namespace for successor table statements. A CREATE TABLE
+   on an unproven target under a touched unknown schema and ADD COLUMN
+   on an unknown table also withhold the target post-state; a proven
+   present CREATE target keeps its exact shape, and never-touched schema
+   identities retain the earlier conditional model.
+2. **`UnextractedOptions` gate schema CREATE transitions** (extends
+   Decisions 6 and 8). Recognized-but-unmodeled schema options —
+   `SET TIFLASH REPLICA` is the only one the extractor emits today —
+   are adjudicated before any state change on `absent`/unvouched
+   pre-states: MySQL `tiflash_replica` is a proven vendor refusal,
+   while TiDB and other unextracted options are unproven. Any proven
+   refusal dominates mixed options and keeps the exact pre-state;
+   otherwise an unproven create leaves the entry `unknown`.
+   `batchCreated` is never minted for an unproven create — matching
+   the table-level `createAspectAdmissible` fail-closed precedent.
+   `schemaPresent` pre-states are untouched (duplicate-create refusal
+   semantics dominate option evaluation). ALTER unextracted-option
+   state behavior is outside this amendment.
+3. **Provider `ResolveObject` errors propagate** (extends Decision 4).
+   `resolveObjectSnapshot` returns `(snapshot, error)`; the
+   `schemaResolver` closure and every `objectCache` call site forward
+   the error to `enrichOrderedStatements`, which surfaces it through
+   `Service.Audit`/`AuditSQL`. `MetadataStatusUnavailable` now means
+   strictly "no resolver could answer" (nil provider, non-resolver
+   provider, or an Unavailable snapshot answer) — a live read failure
+   is never downgraded into it, is never cached, and never mints a
+   schema entry or `SchemaTarget` projection. This matches the
+   table-level `LoadTableSnapshot` propagation contract. The shared
+   contract applies to every dialect: PostgreSQL's non-ordered object
+   enrichment previously swallowed resolver errors as Unavailable and
+   now propagates them through `AuditSQL` instead; an explicit
+   Unavailable answer remains a normal no-error result.
+
+Also corrected in the same change: `tiflash_replica` joins the MySQL
+vendor-boundary aspect list in coverage (it previously reported as
+generic unaudited), and the corpus/golden denominators grow to cover
+the refused/withheld/convergent arm matrix — `database_lifecycle_rules`
+corpus +4 statements per dialect, T17.json 47 → 52 required cases.

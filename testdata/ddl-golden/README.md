@@ -3,6 +3,16 @@
 Per-task manifests for the milestone DDL golden-path runner
 (`make ddl-golden TASK=<id> ARTIFACT_DIR=<dir>`, `scripts/ddl_golden.py`).
 
+## T17 schema-lifecycle contract
+
+[T17.json](T17.json) retains the original 47 required cases and adds five
+T17-R1 cases (52 total): three offline conditional-create cases and two
+metadata cases for the MySQL/TiDB tiflash boundary. For `TASK=T17`,
+`make ddl-golden` first runs the independent ordered-projection and provider
+error Go proofs, then runs the real CLI/database cases and artifact validator.
+Neither the supplemental projections nor offline CLI behavior substitute
+for native receipts.
+
 ## T07 advanced-column contract
 
 [T07.json](T07.json) materializes the independent

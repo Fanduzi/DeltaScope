@@ -274,10 +274,26 @@ func defaultCollationForCharset(dialect spec.Dialect, charset string) string {
 	return ""
 }
 
-// applyCreateSchema models CREATE DATABASE/SCHEMA: refusal on a proven
-// duplicate (1007, pre-state kept), no-op on IF NOT EXISTS over present,
-// withheld outcome over unvouched existence, otherwise publish present with
-// declared/derived attributes.
+func schemaCreateAttrs(dialect spec.Dialect, version *spec.VersionIdentity, ddl *spec.DDL) (map[string]string, schemaAttrOutcome) {
+	attrs, outcome := schemaPostAttrs(dialect, version, nil, schemaDeclaredOptions(ddl), true)
+	// A proven refusal dominates any unmodeled option.
+	if outcome == schemaAttrsRefused {
+		return nil, schemaAttrsRefused
+	}
+	if dialect == spec.DialectMySQL {
+		for _, name := range ddl.UnextractedOptions {
+			if name == "tiflash_replica" {
+				return nil, schemaAttrsRefused
+			}
+		}
+	}
+	if len(ddl.UnextractedOptions) > 0 {
+		return nil, schemaAttrsWithhold
+	}
+	return attrs, outcome
+}
+
+// applyCreateSchema publishes only proven create-arm outcomes.
 func (s *batchState) applyCreateSchema(ctx context.Context, statement spec.Statement) error {
 	name := schemaTargetName(statement.DDL, s.schema)
 	if name == "" {
@@ -295,19 +311,16 @@ func (s *batchState) applyCreateSchema(ctx context.Context, statement spec.State
 	}
 	switch entry.state {
 	case schemaPresent:
-		// IF NOT EXISTS over present is a proven no-op (note 1007); a bare
-		// create over present is a proven refusal. Both keep the pre-state.
 		return nil
 	case schemaAbsent:
-		attrs, outcome := schemaPostAttrs(s.dialect, s.resolvedVersion, nil, declared, true)
+		attrs, outcome := schemaCreateAttrs(s.dialect, s.resolvedVersion, statement.DDL)
 		switch outcome {
 		case schemaAttrsRefused:
-			// Proven option refusal: the statement never executes, so the
-			// absent pre-state stands — no tombstone, no withheld shape.
 			return nil
 		case schemaAttrsWithhold:
 			entry.state = schemaUnknown
 			entry.attrs = nil
+			entry.batchCreated = false
 			return nil
 		}
 		entry.state = schemaPresent
@@ -315,15 +328,12 @@ func (s *batchState) applyCreateSchema(ctx context.Context, statement spec.State
 		entry.batchCreated = true
 		return nil
 	default:
-		// CREATE ... IF NOT EXISTS over an unvouched schema proves presence
-		// either way: the no-op arm keeps a pre-existing schema, the create
-		// arm publishes a new one. Declared attributes stay withheld — on
-		// the no-op arm the engine ignored them, and which arm ran is
-		// undecidable. batchCreated stays false: a pre-existing schema may
-		// hold tables the batch never saw.
 		if statement.DDL.Options["if_not_exists"] == "true" {
-			entry.state = schemaPresent
-			entry.attrs = nil
+			if _, outcome := schemaCreateAttrs(s.dialect, s.resolvedVersion, statement.DDL); outcome == schemaAttrsApply {
+				entry.state = schemaPresent
+				entry.attrs = nil
+				entry.batchCreated = false
+			}
 		}
 		return nil
 	}

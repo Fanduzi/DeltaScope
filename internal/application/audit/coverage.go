@@ -385,7 +385,7 @@ func statementCoverageAspects(dialect spec.Dialect, statement spec.Statement) []
 		// parser accepts but MySQL does not ship. The mirror image holds for
 		// routine_object: GRANT/REVOKE ON FUNCTION|PROCEDURE binds privileges
 		// to routines, which TiDB does not have — a vendor boundary there.
-		vendor := dialect == spec.DialectMySQL && (option == "placement_policy" || option == "partition_update_indexes" || option == "split_index" || option == "resource_group_name" || option == "hypo_index" || tidbOnlyTableOption(option, dialect))
+		vendor := dialect == spec.DialectMySQL && (option == "placement_policy" || option == "partition_update_indexes" || option == "split_index" || option == "resource_group_name" || option == "hypo_index" || option == "tiflash_replica" || tidbOnlyTableOption(option, dialect))
 		vendor = vendor || (dialect == spec.DialectTiDB && option == "routine_object")
 		gaps = append(gaps, aspectGap(
 			fmt.Sprintf("%s.option.%s", ddl.Operation, option), vendor,

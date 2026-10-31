@@ -627,6 +627,10 @@ func (s *batchState) applyCreateTable(ctx context.Context, statement spec.Statem
 	if entryState == tablePresent {
 		return nil
 	}
+	if s.schemaStateForTarget(key.schema) == schemaUnknown {
+		s.invalidateBoundKey(key, destNamespace(tempDest))
+		return nil
+	}
 	if tempDest {
 		if entryState == tableUnknown {
 			return nil
@@ -1370,6 +1374,10 @@ func (s *batchState) applyAlterTable(ctx context.Context, statement spec.Stateme
 	entry := s.entries[key]
 	switch {
 	case entry == nil || entry.state == tableUnknown:
+		if s.schemaStateForTarget(key.schema) == schemaUnknown {
+			s.invalidateKey(key)
+			return nil
+		}
 		// A successful ADD COLUMN proves the table exists; the pre-existing
 		// shape is unknown, so only existence is definite afterwards.
 		s.entries[key] = presentIncompleteEntry(s.effectiveSchema(s.schema, targets[0]), targets[0].Name)

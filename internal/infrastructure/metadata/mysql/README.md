@@ -29,6 +29,8 @@ MySQL-protocol metadata provider used for optional metadata-aware DeltaScope aud
 | builtin_semantic_live_probes_test.go | Runs independent aggregate and ranking-window evidence probes for MySQL 5.7, 8.0, 8.4, and TiDB 8.5 (build tag `integration`) |
 | builtin_semantic_boundary_live_probes_test.go | Runs independent collision, qualification, quoting, spacing, comment, and SQL-mode boundary probes for each semantic profile (build tag `integration`) |
 
+T17-R1: schema `ResolveObject` answers carry confirmed/not-found/unavailable status; provider errors propagate through the shared audit client and ordered enrichment instead of being cached as unavailable.
+
 ## Exports
 
 - `DefaultConnectTimeout`

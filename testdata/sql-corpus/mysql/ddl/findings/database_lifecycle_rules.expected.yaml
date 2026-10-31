@@ -4,9 +4,9 @@ category: ddl
 expect:
   parse_ok: true
   statements:
-    count: 10
+    count: 14
   unsupported:
-    count: 0
+    count: 1
   findings:
     include:
       - ddl.database.create.exists.forbid
