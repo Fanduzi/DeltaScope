@@ -1,0 +1,1 @@
+T17_MYSQL_PASSWORD=root python3 ./scripts/ddl_golden.py run --task T17 --artifact-dir /tmp/ddl-golden-t17-final
