@@ -34,6 +34,23 @@ type Metadata struct {
 	// unvouched source; an empty slice means the select named no base
 	// table (literal select — no source premise at all).
 	SourceTables []*TableSnapshot `json:"source_tables,omitempty"`
+	// SchemaTarget binds a schema-scoped statement (CREATE/ALTER/DROP
+	// DATABASE|SCHEMA) to its ordered pre-state projection: confirmed
+	// schema attributes when the identity is provably present, an empty
+	// snapshot when provably absent, and nil when the schema's state is
+	// unvouched (or the statement is not schema-scoped). A name-less
+	// ALTER DATABASE binds the request's trusted schema — never a
+	// connection guess.
+	SchemaTarget *ObjectSnapshot `json:"schema_target,omitempty"`
+}
+
+// MetadataSchemaTarget is the ordered schema binding accessor rules use —
+// nil-safe over a missing metadata block or a non-schema statement.
+func (s Statement) MetadataSchemaTarget() *ObjectSnapshot {
+	if s.Metadata == nil {
+		return nil
+	}
+	return s.Metadata.SchemaTarget
 }
 
 // TargetBinding is the namespace-aware pre-state answer for one named

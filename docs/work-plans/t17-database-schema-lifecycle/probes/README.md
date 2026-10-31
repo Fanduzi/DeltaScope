@@ -1,0 +1,13 @@
+# T17 native probe archive
+
+This archive records the exact SQL, rc, stderr, `SHOW WARNINGS`, and
+`information_schema.SCHEMATA`/`TABLES` reads its steps produced on the four
+frozen anchors (mysql 5.7.44 / 8.0.46 / 8.4.10, tidb v8.5.0). Statements whose
+truth depends on one session (name-less `ALTER DATABASE`, `SHOW WARNINGS`) run
+inside a single mysql invocation per label. Read the log text, not this file,
+for evidence.
+
+| Archive | Scope |
+|---|---|
+| `p17_schema_matrix.log` (`probe17_schema_lifecycle.sh`) | Schema/database lifecycle matrix: `CREATE|ALTER|DROP DATABASE` plus the `SCHEMA` synonym forms (both normalize identically), name-less `ALTER DATABASE` binding the session default schema (ERROR 1046 when none is selected) while never touching the request schema of another statement, `IF [NOT] EXISTS` no-op arms with `SHOW WARNINGS`, missing-target refusals (ALTER on missing: 5.7 `ERROR 1` db.opt file vs 8.0/8.4 `3503` vs TiDB `1049`; DROP on missing: `1008`), duplicate CREATE `1007`, and identifier quoting. Default-attribute semantics: `CHARACTER SET latin1` derives `latin1_swedish_ci` on MySQL but `latin1_bin` on TiDB; collate-only ALTER derives the charset; create-table inherits the schema default (`gbk_chinese_ci`); DROP+CREATE recreates without stale attributes. Versioned options: `DEFAULT ENCRYPTION` is a 5.7 syntax refusal (1064, and `SCHEMATA.DEFAULT_ENCRYPTION` does not exist on 5.7/TiDB), lands `YES`/`NO` on 8.0.46/8.4.10, and is rc0-but-ignored on TiDB with warning 1064 "parsed but ignored by all storage engines". `READ ONLY` is ALTER-only on 8.0/8.4 (rc0), a syntax refusal on 5.7/TiDB; `UPGRADE DATA DIRECTORY NAME` is a syntax refusal everywhere probed. TiDB `PLACEMENT POLICY` is recognized syntax: missing policy refuses `8239` and leaves `TIDB_PLACEMENT_POLICY_NAME` NULL; MySQL refuses the clause at parse (1064). System schemas: `ALTER mysql` is lenient on 5.7 and TiDB (rc0 — the policy rule must answer where the engine does not) but refused `3552` on 8.0/8.4; `DROP mysql` refuses `3552` on 8.0/8.4 and `1105` on TiDB, while 5.7 has no protection (the destructive cell is skipped by the script — it was proven live at rc=0 and the fixture container needed a rebuild). Cascade: DROP DATABASE kills contained tables; orphan `DROP TABLE` under a missing schema refuses `1051`, orphan `CREATE TABLE` refuses `1049`. |
+| `probe17_schema_lifecycle.sh` | The generating script: per-label cleanup under disposable `p17*` fixtures, single-session labels where session state matters, SCHEMATA/placement/table-collation reads after each mutation, and an explicit skip marker for the one destructive cell (5.7 `DROP mysql`). Re-runnable against the compose anchors only — it executes real DDL and is not part of any test suite. |

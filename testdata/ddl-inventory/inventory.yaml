@@ -206,12 +206,12 @@ rows:
     subactions: ["CREATE DATABASE/SCHEMA", "IF NOT EXISTS", "CHARACTER SET", "COLLATE", "DEFAULT ENCRYPTION (8.0.16+)"]
     sql_shape: "CREATE DATABASE app CHARACTER SET utf8mb4"
     prerequisites: "none"
-    status: generic_notice
-    status_evidence: "2026-09-24 T03 rework (#82): extracted-but-unchecked option facts now carry bounded unsupported evidence (create_schema.option.charset/collate) and coverage=incomplete; option semantics still owned by T17. 2026-09-22 CLI probe: parses; only ddl.database.create.notice fires; charset/collation options unchecked"
+    status: semantically_checked
+    status_evidence: "2026-10 T17 closeout (#96): schema ordered-state models present/absent/unknown with proven default attributes; CREATE SCHEMA synonym normalizes identically; IF NOT EXISTS publishes convergent present over unvouched (attributes withheld, batchCreated=false); ddl.database.create.exists.forbid fires on proven-present (1007 probed) with schema.existence gap when unvouched; DEFAULT ENCRYPTION modeled — lands on 8.0/8.4 (SCHEMATA DEFAULT_ENCRYPTION YES/NO), proven 1064 refusal below 8.0.16 via ddl.database.option.encryption.applicability with target.version gap when unresolved; charset/collate now consumed modeled aspects (coverage complete). T17.json golden suite 47/47 on mysql57/80/84+tidb85 (probes in docs/work-plans/t17-database-schema-lifecycle/). Earlier evidence: 2026-09-24 T03 rework (#82) bounded unsupported create_schema.option.charset/collate; 2026-09-22 CLI probe generic notice only"
     targets: "database identity, default charset/collation, encryption attribute"
     acceptance:
       dimensions: "charset/collation capture, existence conditional, drop counterpoint"
-      refs: ["missing: owner adds fixture and policy evidence"]
+      refs: ["file:internal/application/audit/batch_state_schema.go", "file:internal/domain/rule/ddl/lifecycle_t17_rules.go", "file:testdata/ddl-golden/T17.json", "file:testdata/sql-corpus/mysql/ddl/findings/database_lifecycle_rules.sql"]
     owner: T17
 
   - id: mysql.alter-database
@@ -222,12 +222,12 @@ rows:
     subactions: ["ALTER DATABASE/SCHEMA", "CHARACTER SET", "COLLATE", "READ ONLY (8.0.22+)"]
     sql_shape: "ALTER DATABASE app CHARACTER SET utf8mb4"
     prerequisites: "none"
-    status: generic_notice
-    status_evidence: "2026-09-24 T03 rework (#82): extracted-but-unchecked option facts now carry bounded unsupported evidence (alter_schema.option.charset/collate (unextracted attrs such as placement_policy also surface as alter_schema.option.<name>)) and coverage=incomplete; option semantics still owned by T17. 2026-09-22 CLI probe: parses; only ddl.alter_database.notice fires; attribute changes unchecked"
+    status: semantically_checked
+    status_evidence: "2026-10 T17 closeout (#96): ALTER SCHEMA synonym and name-less ALTER bind the trusted request schema (native 1046 when no default db); declared attributes transition with derived companions (CHARSET latin1 ⇒ latin1_swedish_ci on MySQL, latin1_bin on TiDB — probed), undeclared attributes keep proven values; ddl.database.alter.exists.require fires on proven-absent (3503 8.0/8.4, ERROR 1 db.opt 5.7 — probed) with schema.existence gap when unvouched; system.modify/denylist name-keyed; READ ONLY stays an explicit unsupported boundary (ALTER-only on 8.0/8.4 natively, 1064 elsewhere — probed). T17.json golden suite 47/47. Earlier evidence: 2026-09-24 T03 rework (#82) bounded unsupported alter_schema.option.*; 2026-09-22 CLI probe generic notice only"
     targets: "database identity, default attribute transitions"
     acceptance:
       dimensions: "attribute transition capture, IF EXISTS known/unknown handling"
-      refs: ["missing: owner adds fixture and policy evidence"]
+      refs: ["file:internal/application/audit/batch_state_schema.go", "file:internal/domain/rule/ddl/lifecycle_t17_rules.go", "file:testdata/ddl-golden/T17.json", "file:testdata/sql-corpus/mysql/ddl/findings/database_lifecycle_rules.sql"]
     owner: T17
 
   - id: mysql.drop-database
@@ -239,11 +239,11 @@ rows:
     sql_shape: "DROP DATABASE app"
     prerequisites: "none"
     status: semantically_checked
-    status_evidence: "2026-09-22 CLI probe: ddl.database.drop.warn fires (specific deletion-scope risk rule)"
+    status_evidence: "2026-10 T17 closeout (#96): DROP SCHEMA synonym normalizes identically; proven drop tombstones the schema absent AND every tracked persistent/temporary table identity under it (namespace invalidation — contained names/counts never enumerated or leaked); successor ops under the dropped schema answer proven-absent without provider reloads (orphan DROP TABLE 1051 / CREATE TABLE 1049 probed); IF EXISTS over unvouched publishes convergent absent + tombstones; ddl.database.drop.exists.require fires on proven-absent (1008 probed) with schema.existence gap when unvouched; drop+recreate publishes fresh attributes (no resurrection). Earlier evidence: 2026-09-22 CLI probe ddl.database.drop.warn fires (deletion-scope risk rule, unchanged)"
     targets: "database identity, contained-object deletion scope, IF EXISTS"
     acceptance:
       dimensions: "deletion-scope finding, conditional forms"
-      refs: ["file:testdata/sql-corpus/mysql/ddl/supported", "file:internal/application/audit/cross_dialect_ddl_coverage_census_test.go"]
+      refs: ["file:testdata/sql-corpus/mysql/ddl/supported", "file:internal/application/audit/cross_dialect_ddl_coverage_census_test.go", "file:internal/application/audit/batch_state_schema.go", "file:internal/domain/rule/ddl/lifecycle_t17_rules.go", "file:testdata/ddl-golden/T17.json"]
     owner: T17
 
   # ================= MySQL: table lifecycle =================
@@ -1223,12 +1223,12 @@ rows:
     subactions: ["CREATE DATABASE/SCHEMA", "IF NOT EXISTS", "CHARACTER SET/COLLATE"]
     sql_shape: "CREATE DATABASE app"
     prerequisites: "none"
-    status: generic_notice
-    status_evidence: "2026-09-24 T03 rework (#82): extracted-but-unchecked option facts now carry bounded unsupported evidence (create_schema.option.charset/collate) and coverage=incomplete; option semantics still owned by T17. 2026-09-22 CLI probe: only ddl.database.create.notice fires"
+    status: semantically_checked
+    status_evidence: "2026-10 T17 closeout (#96): same ordered-state as MySQL with TiDB derivations (utf8mb4 ⇒ utf8mb4_bin; latin1 ⇒ latin1_bin — probed); CREATE SCHEMA synonym normalized; IF NOT EXISTS convergent present over unvouched; create.exists.forbid + schema.existence gap; DEFAULT ENCRYPTION accepted-but-ignored on TiDB (rc0 + warning 1064 'parsed but ignored by all storage engines' — probed) → version-independent notice via ddl.database.option.encryption.applicability; PLACEMENT POLICY is recognized syntax but the policy-existence premise is unvouchable (missing policy ⇒ 8239 probed) so the aspect stays extracted-but-unaudited and the attribute withheld. T17.json golden suite 47/47 incl. tidb85 anchor"
     targets: "database identity, default charset/collation"
     acceptance:
       dimensions: "attribute capture, conditionals"
-      refs: ["missing: owner adds fixtures"]
+      refs: ["file:internal/application/audit/batch_state_schema.go", "file:internal/domain/rule/ddl/lifecycle_t17_rules.go", "file:testdata/ddl-golden/T17.json", "file:testdata/sql-corpus/tidb/ddl/findings/database_lifecycle_rules.sql"]
     owner: T17
 
   - id: tidb.alter-database
@@ -1239,12 +1239,12 @@ rows:
     subactions: ["ALTER DATABASE ... CHARACTER SET/COLLATE", "PLACEMENT POLICY binding is a placement row"]
     sql_shape: "ALTER DATABASE app CHARACTER SET utf8mb4"
     prerequisites: "none"
-    status: generic_notice
-    status_evidence: "2026-09-24 T03 rework (#82): extracted-but-unchecked option facts now carry bounded unsupported evidence (alter_schema.option.charset/collate and unextracted alter_schema.option.<name> (e.g. placement_policy)) and coverage=incomplete; option semantics still owned by T17. 2026-09-22 CLI probe: only ddl.alter_database.notice fires"
+    status: semantically_checked
+    status_evidence: "2026-10 T17 closeout (#96): ALTER SCHEMA synonym + name-less ALTER bound to trusted request schema; charset/collate transitions modeled with TiDB derivations (latin1 ⇒ latin1_bin); alter.exists.require on proven-absent (1049 probed) with schema.existence gap; PLACEMENT POLICY binding stays an extracted-but-unaudited aspect — policy existence unvouchable (missing ⇒ 8239 probed) so coverage stays incomplete rather than fabricating success; system.modify covers TiDB where the engine is lenient (ALTER mysql rc0, ALTER information_schema 1044 — probed). T17.json golden suite 47/47 incl. tidb85"
     targets: "database identity, attribute transitions"
     acceptance:
       dimensions: "attribute transitions, placement binding handled in T20 rows"
-      refs: ["missing: owner adds fixtures"]
+      refs: ["file:internal/application/audit/batch_state_schema.go", "file:internal/domain/rule/ddl/lifecycle_t17_rules.go", "file:testdata/ddl-golden/T17.json", "file:testdata/sql-corpus/tidb/ddl/findings/database_lifecycle_rules.sql"]
     owner: T17
 
   - id: tidb.drop-database
@@ -1256,11 +1256,11 @@ rows:
     sql_shape: "DROP DATABASE app"
     prerequisites: "none"
     status: semantically_checked
-    status_evidence: "2026-09-22 CLI probe: ddl.database.drop.warn fires"
+    status_evidence: "2026-10 T17 closeout (#96): DROP SCHEMA synonym normalized; proven drop tombstones schema + tracked tables (namespace invalidation, no enumeration leak); IF EXISTS convergent absent over unvouched; drop.exists.require on proven-absent (1008 probed) with schema.existence gap; TiDB DROP mysql natively refused 1105 — policy system.modify gives the same answer uniformly. Earlier evidence: 2026-09-22 CLI probe ddl.database.drop.warn fires (unchanged)"
     targets: "database identity, deletion scope"
     acceptance:
       dimensions: "deletion-scope finding"
-      refs: ["file:testdata/sql-corpus/tidb/ddl/supported"]
+      refs: ["file:testdata/sql-corpus/tidb/ddl/supported", "file:internal/application/audit/batch_state_schema.go", "file:internal/domain/rule/ddl/lifecycle_t17_rules.go", "file:testdata/ddl-golden/T17.json", "file:testdata/sql-corpus/tidb/ddl/findings/database_lifecycle_rules.sql"]
     owner: T17
 
   # ================= TiDB: table lifecycle =================

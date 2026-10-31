@@ -330,6 +330,13 @@ const (
 	// MySQL/TiDB database lifecycle rules.
 	ruleIDDatabaseCreateNotice = "ddl.database.create.notice"
 	ruleIDDatabaseDropWarn     = "ddl.database.drop.warn"
+
+	ruleIDDatabaseCreateExistsForbid      = "ddl.database.create.exists.forbid"
+	ruleIDDatabaseAlterExistsRequire      = "ddl.database.alter.exists.require"
+	ruleIDDatabaseDropExistsRequire       = "ddl.database.drop.exists.require"
+	ruleIDDatabaseDenylistForbid          = "ddl.database.denylist.forbid"
+	ruleIDDatabaseSystemModifyForbid      = "ddl.database.system.modify.forbid"
+	ruleIDDatabaseEncryptionApplicability = "ddl.database.option.encryption.applicability"
 	// PostgreSQL create schema rule.
 	ruleIDPGCreateSchemaNotice = "ddl.pg.create_schema.notice"
 	// PostgreSQL policy lifecycle rules (PG-only).

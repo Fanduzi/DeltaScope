@@ -854,6 +854,41 @@ rules:
     level: notice
     params:
 
+  # T17 database/schema lifecycle: ordered schema-existence premises
+  # (metadata-aware — unvouched targets owe schema.existence gaps),
+  # business-schema denylist, uniform system-schema protection, and the
+  # versioned ENCRYPTION applicability answer.
+  ddl.database.create.exists.forbid:
+    enabled: true
+    level: blocker
+    params:
+
+  ddl.database.alter.exists.require:
+    enabled: true
+    level: blocker
+    params:
+
+  ddl.database.drop.exists.require:
+    enabled: true
+    level: blocker
+    params:
+
+  ddl.database.denylist.forbid:
+    enabled: true
+    level: blocker
+    params:
+      schemas: []
+
+  ddl.database.system.modify.forbid:
+    enabled: true
+    level: blocker
+    params:
+
+  ddl.database.option.encryption.applicability:
+    enabled: true
+    level: blocker
+    params:
+
   ddl.database.drop.warn:
     enabled: true
     level: warning

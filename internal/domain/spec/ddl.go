@@ -91,6 +91,12 @@ type DDL struct {
 	OnCommitDelete bool   `json:"on_commit_delete,omitempty"`
 	ObjectName     string `json:"object_name,omitempty"`
 	ObjectType     string `json:"object_type,omitempty"`
+	// AlterDefaultSchema marks an ALTER DATABASE/SCHEMA written without a
+	// target name (`ALTER DATABASE CHARACTER SET ...` — the AST's
+	// AlterDefaultDatabase form): the statement binds the session's current
+	// database, not a named object. ObjectName stays empty; the ordered
+	// state binds the request's trusted schema downstream.
+	AlterDefaultSchema bool `json:"alter_default_schema,omitempty"`
 }
 
 // TemporaryScope identifies the parsed temporary-table scope on CREATE and

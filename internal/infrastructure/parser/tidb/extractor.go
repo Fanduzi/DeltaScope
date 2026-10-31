@@ -620,6 +620,10 @@ func extractCreateDatabase(stmt *ast.CreateDatabaseStmt) *spec.DDL {
 			options["charset"] = opt.Value
 		case ast.DatabaseOptionCollate:
 			options["collate"] = opt.Value
+		case ast.DatabaseOptionEncryption:
+			options["encryption"] = opt.Value
+		case ast.DatabaseOptionPlacementPolicy:
+			options["placement_policy"] = opt.Value
 		default:
 			unextracted = append(unextracted, databaseOptionName(opt.Tp))
 		}
@@ -1374,6 +1378,10 @@ func extractAlterDatabase(stmt *ast.AlterDatabaseStmt) *spec.DDL {
 			options["charset"] = opt.Value
 		case ast.DatabaseOptionCollate:
 			options["collate"] = opt.Value
+		case ast.DatabaseOptionEncryption:
+			options["encryption"] = opt.Value
+		case ast.DatabaseOptionPlacementPolicy:
+			options["placement_policy"] = opt.Value
 		default:
 			unextracted = append(unextracted, databaseOptionName(opt.Tp))
 		}
@@ -1384,6 +1392,7 @@ func extractAlterDatabase(stmt *ast.AlterDatabaseStmt) *spec.DDL {
 		ObjectType:         "database",
 		Options:            options,
 		UnextractedOptions: unextracted,
+		AlterDefaultSchema: stmt.AlterDefaultDatabase,
 	}
 }
 
@@ -1399,6 +1408,8 @@ func databaseOptionName(tp ast.DatabaseOptionType) string {
 		return "encryption"
 	case ast.DatabaseOptionPlacementPolicy:
 		return "placement_policy"
+	case ast.DatabaseSetTiFlashReplica:
+		return "tiflash_replica"
 	default:
 		return "unknown"
 	}

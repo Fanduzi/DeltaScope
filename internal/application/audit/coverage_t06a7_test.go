@@ -321,9 +321,12 @@ func TestT06A7TableCollationVsColumnRules(t *testing.T) {
 	}
 }
 
-// TestT06A7SchemaBoundariesPreserved is group 3a: the CREATE/ALTER DATABASE
-// collation boundary is unchanged — only create-table left the gap branch.
-func TestT06A7SchemaBoundariesPreserved(t *testing.T) {
+// TestT06A7SchemaBoundariesPromoted is group 3a: T17 promoted the
+// CREATE/ALTER DATABASE collation/charset aspects into the ordered schema
+// model — the statements are fully bounded now, so the former
+// unsupported-boundary answer becomes a clean audit with complete coverage
+// (the placement-policy aspect stays bounded elsewhere).
+func TestT06A7SchemaBoundariesPromoted(t *testing.T) {
 	offPolicy := t05PolicyPath(t, map[string]string{})
 	for _, dialect := range []spec.Dialect{spec.DialectMySQL, spec.DialectTiDB} {
 		for _, tc := range []struct {
@@ -337,17 +340,14 @@ func TestT06A7SchemaBoundariesPreserved(t *testing.T) {
 				result, err := AuditSQL(context.Background(), Request{
 					SQL: tc.sql, Dialect: dialect, ConfigPath: offPolicy,
 				})
-				if err == nil {
-					t.Fatalf("expected unsupported error, got result %#v", result)
+				if err != nil {
+					t.Fatalf("schema option must be modeled now, got %v", err)
 				}
-				found := false
-				for _, u := range result.Unsupported {
-					if u.Feature == "create_schema.option.collate" || u.Feature == "alter_schema.option.collate" {
-						found = true
-					}
+				if result.Coverage.Status != report.CoverageComplete {
+					t.Fatalf("expected complete coverage, got %#v", result.Coverage)
 				}
-				if !found {
-					t.Fatalf("unsupported = %#v, want schema collate boundary", result.Unsupported)
+				if len(result.Unsupported) != 0 {
+					t.Fatalf("unsupported = %#v, want none on a modeled schema option", result.Unsupported)
 				}
 			})
 		}

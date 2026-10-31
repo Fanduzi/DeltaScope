@@ -686,6 +686,40 @@ func ddlCoreRules() map[string]RulePolicy {
 			Level:   rule.LevelWarning,
 			Params:  map[string]any{},
 		},
+		// T17 schema-lifecycle rules: ordered schema-existence premises,
+		// business-schema denylist, and uniform system-schema protection.
+		"ddl.database.create.exists.forbid": {
+			Enabled: true,
+			Level:   rule.LevelBlocker,
+			Params:  map[string]any{},
+		},
+		"ddl.database.alter.exists.require": {
+			Enabled: true,
+			Level:   rule.LevelBlocker,
+			Params:  map[string]any{},
+		},
+		"ddl.database.drop.exists.require": {
+			Enabled: true,
+			Level:   rule.LevelBlocker,
+			Params:  map[string]any{},
+		},
+		"ddl.database.denylist.forbid": {
+			Enabled: true,
+			Level:   rule.LevelBlocker,
+			Params: map[string]any{
+				"schemas": []string{},
+			},
+		},
+		"ddl.database.system.modify.forbid": {
+			Enabled: true,
+			Level:   rule.LevelBlocker,
+			Params:  map[string]any{},
+		},
+		"ddl.database.option.encryption.applicability": {
+			Enabled: true,
+			Level:   rule.LevelBlocker,
+			Params:  map[string]any{},
+		},
 		// MySQL/TiDB lifecycle notice rules.
 		"ddl.rename_table.notice":            {Enabled: true, Level: rule.LevelNotice, Params: map[string]any{}},
 		"ddl.create_index.notice":            {Enabled: true, Level: rule.LevelNotice, Params: map[string]any{}},

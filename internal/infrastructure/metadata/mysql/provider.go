@@ -1540,6 +1540,107 @@ func referActionName(rule string) string {
 	}
 }
 
+// ResolveObject implements the ObjectResolver seam for non-table catalog
+// objects. T17 resolves schema identities through
+// information_schema.SCHEMATA: existence, default charset/collation, the
+// DEFAULT_ENCRYPTION column (MySQL 8.0.16+, capability-probed), and TiDB's
+// TIDB_PLACEMENT_POLICY_NAME binding. Every other object type reports
+// unavailable — the resolver never fabricates coverage it does not query.
+func (p *Provider) ResolveObject(ctx context.Context, dialect spec.Dialect, request spec.ObjectLookupRequest) (*spec.ObjectSnapshot, error) {
+	snapshot := &spec.ObjectSnapshot{
+		Schema: request.Schema,
+		Type:   request.Type,
+		Name:   request.Name,
+		Status: spec.MetadataStatusUnavailable,
+	}
+	if request.Type != "schema" || strings.TrimSpace(request.Name) == "" {
+		return snapshot, nil
+	}
+	return p.loadSchemaObject(ctx, dialect, request.Name, snapshot)
+}
+
+func (p *Provider) loadSchemaObject(ctx context.Context, dialect spec.Dialect, name string, snapshot *spec.ObjectSnapshot) (*spec.ObjectSnapshot, error) {
+	row := p.db.QueryRowContext(ctx, `
+		select schema_name, default_character_set_name, default_collation_name
+		from information_schema.schemata
+		where schema_name = ?
+	`, name)
+	var schemaName, charset, collation sql.NullString
+	if err := row.Scan(&schemaName, &charset, &collation); err != nil {
+		if err == sql.ErrNoRows {
+			snapshot.Status = spec.MetadataStatusNotFound
+			return snapshot, nil
+		}
+		return nil, fmt.Errorf("query schema snapshot %s: %w", name, err)
+	}
+	snapshot.Status = spec.MetadataStatusConfirmed
+	snapshot.Exists = true
+	snapshot.Schema = schemaName.String
+	snapshot.Attributes = map[string]string{}
+	if charset.Valid && charset.String != "" {
+		snapshot.Attributes["charset"] = charset.String
+	}
+	if collation.Valid && collation.String != "" {
+		snapshot.Attributes["collation"] = collation.String
+	}
+	if has, err := p.schemataHasColumn(ctx, "DEFAULT_ENCRYPTION"); err != nil {
+		return nil, err
+	} else if has {
+		var encryption sql.NullString
+		err = p.db.QueryRowContext(ctx, `
+			select default_encryption
+			from information_schema.schemata
+			where schema_name = ?
+		`, name).Scan(&encryption)
+		if err != nil {
+			return nil, fmt.Errorf("query schema encryption %s: %w", name, err)
+		}
+		if encryption.Valid && encryption.String != "" {
+			snapshot.Attributes["encryption"] = strings.ToLower(encryption.String)
+		}
+	}
+	if dialect == spec.DialectTiDB {
+		if has, err := p.schemataHasColumn(ctx, "TIDB_PLACEMENT_POLICY_NAME"); err != nil {
+			return nil, err
+		} else if has {
+			var policy sql.NullString
+			err = p.db.QueryRowContext(ctx, `
+				select tidb_placement_policy_name
+				from information_schema.schemata
+				where schema_name = ?
+			`, name).Scan(&policy)
+			if err != nil {
+				return nil, fmt.Errorf("query schema placement policy %s: %w", name, err)
+			}
+			if policy.Valid && policy.String != "" {
+				snapshot.Attributes["placement_policy"] = policy.String
+			}
+		}
+	}
+	return snapshot, nil
+}
+
+// schemataHasColumn reports whether this server's information_schema.SCHEMATA
+// exposes the named column (DEFAULT_ENCRYPTION on MySQL 8.0.16+,
+// TIDB_PLACEMENT_POLICY_NAME on TiDB; neither on MySQL 5.7). The answer comes
+// from the catalog itself, not a version guess.
+func (p *Provider) schemataHasColumn(ctx context.Context, column string) (bool, error) {
+	var n int
+	err := p.db.QueryRowContext(ctx, `
+		select count(*) from information_schema.`+"`columns`"+`
+		where table_schema = 'information_schema'
+			and table_name = 'SCHEMATA'
+			and column_name = ?
+	`, column).Scan(&n)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return false, nil
+		}
+		return false, fmt.Errorf("probe schemata column %s: %w", column, err)
+	}
+	return n > 0, nil
+}
+
 // statisticsHasIsVisible reports whether this server's
 // information_schema.STATISTICS exposes the IS_VISIBLE column (MySQL 8.0+,
 // TiDB; absent on MySQL 5.7). The probe queries the catalog itself so the

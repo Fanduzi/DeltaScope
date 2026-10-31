@@ -35,6 +35,10 @@ func (c mysqlClient) FindSchemasForTable(ctx context.Context, table string) ([]s
 	return c.provider.FindSchemasForTable(ctx, table)
 }
 
+func (c mysqlClient) ResolveObject(ctx context.Context, dialect spec.Dialect, request spec.ObjectLookupRequest) (*spec.ObjectSnapshot, error) {
+	return c.provider.ResolveObject(ctx, dialect, request)
+}
+
 func (c mysqlClient) Close() error {
 	return c.db.Close()
 }

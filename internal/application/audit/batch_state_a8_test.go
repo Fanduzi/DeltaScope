@@ -748,13 +748,13 @@ func TestT05A8ContaminationAndBudget(t *testing.T) {
 			if state.contaminated {
 				t.Fatal("schema invalidation must not contaminate")
 			}
-			if _, ok := state.invalidatedSchemas["golden"]; !ok {
-				t.Fatal("DROP DATABASE must record invalidated schema golden")
+			if entry := state.schemaEntries["golden"]; entry == nil || entry.state != schemaAbsent {
+				t.Fatalf("DROP DATABASE over a provider-confirmed schema must prove golden absent, got %v", state.schemaEntries["golden"])
 			}
 			beforeEntries := t05A8SnapshotEntries(state)
-			beforeSchemas := map[string]struct{}{}
-			for scope := range state.invalidatedSchemas {
-				beforeSchemas[scope] = struct{}{}
+			beforeSchemas := map[string]schemaKnowledge{}
+			for scope, entry := range state.schemaEntries {
+				beforeSchemas[scope] = entry.state
 			}
 			beforeEvents := append([]string(nil), provider.events...)
 			if _, enrichErr := state.enrichStatements(ctx, &MetadataRequest{Schema: "golden", Provider: provider},
@@ -762,17 +762,21 @@ func TestT05A8ContaminationAndBudget(t *testing.T) {
 				t.Fatal(enrichErr)
 			}
 			t05A8AssertEntriesEqual(t, beforeEntries, state)
-			if !reflect.DeepEqual(state.invalidatedSchemas, beforeSchemas) {
-				t.Errorf("invalidatedSchemas = %v, want unchanged %v", state.invalidatedSchemas, beforeSchemas)
+			gotSchemas := map[string]schemaKnowledge{}
+			for scope, entry := range state.schemaEntries {
+				gotSchemas[scope] = entry.state
+			}
+			if !reflect.DeepEqual(gotSchemas, beforeSchemas) {
+				t.Errorf("schemaEntries = %v, want unchanged %v", gotSchemas, beforeSchemas)
 			}
 			if !reflect.DeepEqual(provider.events, beforeEvents) {
 				t.Errorf("provider events = %v, want unchanged %v", provider.events, beforeEvents)
 			}
-			if snapshot, err := state.preState(ctx, "golden", spec.Table{Name: "t"}); err != nil || snapshot != nil {
-				t.Errorf("tombstoned t pre-state = %+v err %v, want nil", snapshot, err)
+			if snapshot, err := state.preState(ctx, "golden", spec.Table{Name: "t"}); err != nil || snapshot == nil || snapshot.Exists {
+				t.Errorf("t under dropped schema pre-state = %+v err %v, want confirmed-absent", snapshot, err)
 			}
-			if snapshot, err := state.preState(ctx, "golden", spec.Table{Name: "u"}); err != nil || snapshot != nil {
-				t.Errorf("unrelated u under dropped schema = %+v err %v, want nil", snapshot, err)
+			if snapshot, err := state.preState(ctx, "golden", spec.Table{Name: "u"}); err != nil || snapshot == nil || snapshot.Exists {
+				t.Errorf("untracked u under dropped schema = %+v err %v, want confirmed-absent", snapshot, err)
 			}
 			if !reflect.DeepEqual(provider.events, beforeEvents) {
 				t.Errorf("provider events after reads = %v, want no reload %v", provider.events, beforeEvents)

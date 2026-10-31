@@ -199,19 +199,22 @@ func extractedOptionGap(dialect spec.Dialect, op spec.DDLOperation, name string)
 	switch name {
 	case "placement_policy":
 		// Placement policies are a TiDB feature: vendor boundary under MySQL,
-		// extracted-but-unaudited binding under TiDB.
+		// extracted-but-unaudited binding under TiDB — the binding premise
+		// (the named policy's existence) stays unvouchable (T17).
 		return true, dialect == spec.DialectMySQL
+	case "encryption":
+		// Schema-level ENCRYPTION is modeled on schema ops (version-gated
+		// transitions, T17); on CREATE TABLE it stays the T15 extracted-but-
+		// unaudited table option.
+		return op == spec.DDLOperationCreateTable, false
 	case "charset":
-		// Database charset is extracted but unchecked on schema ops; the
-		// create-table charset allowlist consumes it there.
-		return op == spec.DDLOperationCreateSchema || op == spec.DDLOperationAlterSchema, false
+		// Schema-level charset is modeled on schema ops (T17 ordered
+		// transitions); the create-table charset allowlist consumes it there.
+		return false, false
 	case "collate":
-		// Collation is extracted but unchecked on schema ops; the create-table
-		// collation allowlist consumes it there.
-		switch op {
-		case spec.DDLOperationCreateSchema, spec.DDLOperationAlterSchema:
-			return true, false
-		}
+		// Schema-level collation is modeled on schema ops (T17); table
+		// ops consume it through the existing allowlist.
+		return false, false
 	case "has_options":
 		// Sequence and placement-policy option lists are observed but not
 		// modeled (inventory: option/constraint semantics unchecked).

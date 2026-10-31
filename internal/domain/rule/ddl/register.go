@@ -674,6 +674,24 @@ func Register(registry *rule.Registry, cfg policy.Policy) error {
 		// MySQL/TiDB database lifecycle rules.
 		{ruleID: ruleIDDatabaseCreateNotice, construct: newDatabaseCreateNoticeRule},
 		{ruleID: ruleIDDatabaseDropWarn, construct: newDatabaseDropWarnRule},
+		{ruleID: ruleIDDatabaseCreateExistsForbid, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newSchemaExistenceRule(ruleIDDatabaseCreateExistsForbid, spec.DDLOperationCreateSchema, false, "if_not_exists", "create database", rule.LevelBlocker, cfg)
+		}},
+		{ruleID: ruleIDDatabaseAlterExistsRequire, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newSchemaExistenceRule(ruleIDDatabaseAlterExistsRequire, spec.DDLOperationAlterSchema, true, "", "alter database", rule.LevelBlocker, cfg)
+		}},
+		{ruleID: ruleIDDatabaseDropExistsRequire, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newSchemaExistenceRule(ruleIDDatabaseDropExistsRequire, spec.DDLOperationDropSchema, true, "if_exists", "drop database", rule.LevelBlocker, cfg)
+		}},
+		{ruleID: ruleIDDatabaseDenylistForbid, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newDatabaseDenylistRule(ruleIDDatabaseDenylistForbid, rule.LevelBlocker, cfg)
+		}},
+		{ruleID: ruleIDDatabaseSystemModifyForbid, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newDatabaseSystemModifyRule(ruleIDDatabaseSystemModifyForbid, rule.LevelBlocker, cfg)
+		}},
+		{ruleID: ruleIDDatabaseEncryptionApplicability, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newSchemaEncryptionApplicabilityRule(ruleIDDatabaseEncryptionApplicability, rule.LevelBlocker, cfg)
+		}},
 		// PostgreSQL create schema rule.
 		{ruleID: ruleIDPGCreateSchemaNotice, construct: newCreateSchemaNoticeRule},
 		// PostgreSQL policy lifecycle rules (PG-only).

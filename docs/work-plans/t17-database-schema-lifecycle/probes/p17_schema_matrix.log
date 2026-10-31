@@ -1,0 +1,599 @@
+################################################ mysql57
+version> mysql: [Warning] Using a password on the command line interface can be insecure.
+5.7.44
+=== mysql57 :: charset-lifecycle
+SQL> create database p17a character set utf8mb4; alter database p17a character set latin1; drop database p17a
+rc=0
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+=== mysql57 :: charset-lifecycle-steps
+SQL> create database p17a character set utf8mb4
+rc=0
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+schemata[mysql57::p17a]> mysql: [Warning] Using a password on the command line interface can be insecure.|p17a	utf8mb4	utf8mb4_general_ci|
+=== mysql57 :: charset-alter-only
+SQL> create database p17a character set utf8mb4; alter database p17a character set latin1
+rc=0
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+schemata[mysql57::p17a]> mysql: [Warning] Using a password on the command line interface can be insecure.|p17a	latin1	latin1_swedish_ci|
+=== mysql57 :: collate-only-derives-charset
+SQL> create database p17a; alter database p17a collate latin1_bin
+rc=0
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+schemata[mysql57::p17a]> mysql: [Warning] Using a password on the command line interface can be insecure.|p17a	latin1	latin1_bin|
+=== mysql57 :: synonym-schema-lifecycle
+SQL> create schema p17a character set utf8mb4; alter schema p17a collate utf8mb4_bin; drop schema p17a
+rc=0
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+=== mysql57 :: nameless-alter-no-default-db
+SQL> create database p17a; alter database character set gbk
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1046 (3D000) at line 1: No database selected
+=== mysql57 :: nameless-alter-binds-default-db
+SQL> alter database character set gbk   [default-db=golden]
+rc=0
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+schemata[mysql57::golden]> mysql: [Warning] Using a password on the command line interface can be insecure.|golden	gbk	gbk_chinese_ci|
+=== mysql57 :: nameless-alter-restore
+SQL> alter database character set utf8mb4   [default-db=golden]
+rc=0
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+=== mysql57 :: missing-alter-refusal
+SQL> alter database p17gone character set utf8mb4
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1 (HY000) at line 1: Can't create/write to file './p17gone/db.opt' (Errcode: 2 - No such file or directory)
+=== mysql57 :: missing-drop-refusal
+SQL> drop database p17gone
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1008 (HY000) at line 1: Can't drop database 'p17gone'; database doesn't exist
+=== mysql57 :: ifexists-noop-missing
+SQL> drop database if exists p17gone; show warnings
+rc=0
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+=== mysql57 :: duplicate-create-refusal
+SQL> create database p17a; create database p17a
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1007 (HY000) at line 1: Can't create database 'p17a'; database exists
+=== mysql57 :: ifnotexists-noop
+SQL> create database p17a character set latin1; create database if not exists p17a character set utf8mb4; show warnings
+rc=0
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+Level	Code	Message
+Note	1007	Can't create database 'p17a'; database exists
+schemata[mysql57::p17a]> mysql: [Warning] Using a password on the command line interface can be insecure.|p17a	latin1	latin1_swedish_ci|
+=== mysql57 :: recreate-drops-stale-attrs
+SQL> create database p17rc character set latin1; drop database p17rc; create database p17rc character set gbk
+rc=0
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+schemata[mysql57::p17rc]> mysql: [Warning] Using a password on the command line interface can be insecure.|p17rc	gbk	gbk_chinese_ci|
+=== mysql57 :: table-inherits-schema-default
+SQL> create database p17a character set gbk; create table p17a.t (id int)
+rc=0
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+tablecoll[mysql57]> mysql: [Warning] Using a password on the command line interface can be insecure.
+gbk_chinese_ci
+=== mysql57 :: cascade-drop-kills-tables
+SQL> create database p17casc; create table p17casc.t (id int); drop database p17casc
+rc=0
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+tables-after[mysql57]> mysql: [Warning] Using a password on the command line interface can be insecure.
+0
+=== mysql57 :: orphan-table-ops-on-missing-schema
+SQL> drop table p17casc.t
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1051 (42S02) at line 1: Unknown table 'p17casc.t'
+=== mysql57 :: orphan-create-on-missing-schema
+SQL> create table p17casc.t (id int)
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1049 (42000) at line 1: Unknown database 'p17casc'
+=== mysql57 :: encryption-create
+SQL> create database p17enc default encryption='Y'; show warnings
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'encryption='Y'' at line 1
+enc[mysql57::p17enc]> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1054 (42S22) at line 1: Unknown column 'default_encryption' in 'field list'
+=== mysql57 :: encryption-alter
+SQL> create database p17enc; alter database p17enc default encryption='N'; show warnings
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'encryption='N'' at line 1
+enc[mysql57::p17enc]> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1054 (42S22) at line 1: Unknown column 'default_encryption' in 'field list'
+=== mysql57 :: read-only-alter
+SQL> create database p17a; alter database p17a read only=1
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'read only=1' at line 1
+=== mysql57 :: read-only-create-refusal
+SQL> create database p17b read only=1
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'read only=1' at line 1
+=== mysql57 :: upgrade-data-directory-name
+SQL> alter database p17a upgrade data directory name
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1221 (HY000) at line 1: Incorrect usage of ALTER DATABASE UPGRADE DATA DIRECTORY NAME and name
+=== mysql57 :: placement-create
+SQL> create database p17p placement policy=p1
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'placement policy=p1' at line 1
+placement[mysql57::p17p]> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1054 (42S22) at line 1: Unknown column 'tidb_placement_policy_name' in 'field list'
+=== mysql57 :: placement-alter-missing-policy
+SQL> create database p17p; alter database p17p placement policy=p1
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'placement policy=p1' at line 1
+placement[mysql57::p17p]> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1054 (42S22) at line 1: Unknown column 'tidb_placement_policy_name' in 'field list'
+=== mysql57 :: sys-mysql-alter
+SQL> alter database mysql character set utf8mb4
+rc=0
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+schemata[mysql57::mysql]> mysql: [Warning] Using a password on the command line interface can be insecure.|mysql	utf8mb4	utf8mb4_general_ci|
+=== mysql57 :: sys-information-schema-alter
+SQL> alter database information_schema character set utf8mb4
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1044 (42000) at line 1: Access denied for user 'root'@'localhost' to database 'information_schema'
+=== mysql57 :: sys-mysql-drop
+SKIPPED (destructive on 5.7: no native protection — earlier live probe dropped mysql at rc=0 and the fixture container had to be rebuilt; fact already proven interactively 2026)
+=== mysql57 :: quoted-identifier
+SQL> create database `Weird-Name`; drop database `Weird-Name`
+rc=0
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+################################################ mysql80
+version> mysql: [Warning] Using a password on the command line interface can be insecure.
+8.0.46
+=== mysql80 :: charset-lifecycle
+SQL> create database p17a character set utf8mb4; alter database p17a character set latin1; drop database p17a
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1007 (HY000) at line 1: Can't create database 'p17a'; database exists
+=== mysql80 :: charset-lifecycle-steps
+SQL> create database p17a character set utf8mb4
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1007 (HY000) at line 1: Can't create database 'p17a'; database exists
+schemata[mysql80::p17a]> mysql: [Warning] Using a password on the command line interface can be insecure.|p17a	utf8mb4	utf8mb4_0900_ai_ci|
+=== mysql80 :: charset-alter-only
+SQL> create database p17a character set utf8mb4; alter database p17a character set latin1
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1007 (HY000) at line 1: Can't create database 'p17a'; database exists
+schemata[mysql80::p17a]> mysql: [Warning] Using a password on the command line interface can be insecure.|p17a	utf8mb4	utf8mb4_0900_ai_ci|
+=== mysql80 :: collate-only-derives-charset
+SQL> create database p17a; alter database p17a collate latin1_bin
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1007 (HY000) at line 1: Can't create database 'p17a'; database exists
+schemata[mysql80::p17a]> mysql: [Warning] Using a password on the command line interface can be insecure.|p17a	utf8mb4	utf8mb4_0900_ai_ci|
+=== mysql80 :: synonym-schema-lifecycle
+SQL> create schema p17a character set utf8mb4; alter schema p17a collate utf8mb4_bin; drop schema p17a
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1007 (HY000) at line 1: Can't create database 'p17a'; database exists
+=== mysql80 :: nameless-alter-no-default-db
+SQL> create database p17a; alter database character set gbk
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1007 (HY000) at line 1: Can't create database 'p17a'; database exists
+=== mysql80 :: nameless-alter-binds-default-db
+SQL> alter database character set gbk   [default-db=golden]
+rc=0
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+schemata[mysql80::golden]> mysql: [Warning] Using a password on the command line interface can be insecure.|golden	gbk	gbk_chinese_ci|
+=== mysql80 :: nameless-alter-restore
+SQL> alter database character set utf8mb4   [default-db=golden]
+rc=0
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+=== mysql80 :: missing-alter-refusal
+SQL> alter database p17gone character set utf8mb4
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 3503 (42Y07) at line 1: Database 'p17gone' doesn't exist
+=== mysql80 :: missing-drop-refusal
+SQL> drop database p17gone
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1008 (HY000) at line 1: Can't drop database 'p17gone'; database doesn't exist
+=== mysql80 :: ifexists-noop-missing
+SQL> drop database if exists p17gone; show warnings
+rc=0
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+=== mysql80 :: duplicate-create-refusal
+SQL> create database p17a; create database p17a
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1007 (HY000) at line 1: Can't create database 'p17a'; database exists
+=== mysql80 :: ifnotexists-noop
+SQL> create database p17a character set latin1; create database if not exists p17a character set utf8mb4; show warnings
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1007 (HY000) at line 1: Can't create database 'p17a'; database exists
+schemata[mysql80::p17a]> mysql: [Warning] Using a password on the command line interface can be insecure.|p17a	utf8mb4	utf8mb4_0900_ai_ci|
+=== mysql80 :: recreate-drops-stale-attrs
+SQL> create database p17rc character set latin1; drop database p17rc; create database p17rc character set gbk
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1007 (HY000) at line 1: Can't create database 'p17rc'; database exists
+schemata[mysql80::p17rc]> mysql: [Warning] Using a password on the command line interface can be insecure.|p17rc	gbk	gbk_chinese_ci|
+=== mysql80 :: table-inherits-schema-default
+SQL> create database p17a character set gbk; create table p17a.t (id int)
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1007 (HY000) at line 1: Can't create database 'p17a'; database exists
+tablecoll[mysql80]> mysql: [Warning] Using a password on the command line interface can be insecure.
+=== mysql80 :: cascade-drop-kills-tables
+SQL> create database p17casc; create table p17casc.t (id int); drop database p17casc
+rc=0
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+tables-after[mysql80]> mysql: [Warning] Using a password on the command line interface can be insecure.
+0
+=== mysql80 :: orphan-table-ops-on-missing-schema
+SQL> drop table p17casc.t
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1051 (42S02) at line 1: Unknown table 'p17casc.t'
+=== mysql80 :: orphan-create-on-missing-schema
+SQL> create table p17casc.t (id int)
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1049 (42000) at line 1: Unknown database 'p17casc'
+=== mysql80 :: encryption-create
+SQL> create database p17enc default encryption='Y'; show warnings
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1007 (HY000) at line 1: Can't create database 'p17enc'; database exists
+enc[mysql80::p17enc]> mysql: [Warning] Using a password on the command line interface can be insecure.
+YES
+=== mysql80 :: encryption-alter
+SQL> create database p17enc; alter database p17enc default encryption='N'; show warnings
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1007 (HY000) at line 1: Can't create database 'p17enc'; database exists
+enc[mysql80::p17enc]> mysql: [Warning] Using a password on the command line interface can be insecure.
+YES
+=== mysql80 :: read-only-alter
+SQL> create database p17a; alter database p17a read only=1
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1007 (HY000) at line 1: Can't create database 'p17a'; database exists
+=== mysql80 :: read-only-create-refusal
+SQL> create database p17b read only=1
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'read only=1' at line 1
+=== mysql80 :: upgrade-data-directory-name
+SQL> alter database p17a upgrade data directory name
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'upgrade data directory name' at line 1
+=== mysql80 :: placement-create
+SQL> create database p17p placement policy=p1
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'placement policy=p1' at line 1
+placement[mysql80::p17p]> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1054 (42S22) at line 1: Unknown column 'tidb_placement_policy_name' in 'field list'
+=== mysql80 :: placement-alter-missing-policy
+SQL> create database p17p; alter database p17p placement policy=p1
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1007 (HY000) at line 1: Can't create database 'p17p'; database exists
+placement[mysql80::p17p]> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1054 (42S22) at line 1: Unknown column 'tidb_placement_policy_name' in 'field list'
+=== mysql80 :: sys-mysql-alter
+SQL> alter database mysql character set utf8mb4
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 3552 (HY000) at line 1: Access to system schema 'mysql' is rejected.
+schemata[mysql80::mysql]> mysql: [Warning] Using a password on the command line interface can be insecure.|mysql	utf8mb4	utf8mb4_0900_ai_ci|
+=== mysql80 :: sys-information-schema-alter
+SQL> alter database information_schema character set utf8mb4
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1044 (42000) at line 1: Access denied for user 'root'@'localhost' to database 'information_schema'
+=== mysql80 :: sys-mysql-drop
+SQL> drop database mysql
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 3552 (HY000) at line 1: Access to system schema 'mysql' is rejected.
+mysql-after[mysql80]> mysql: [Warning] Using a password on the command line interface can be insecure.
+1
+=== mysql80 :: quoted-identifier
+SQL> create database `Weird-Name`; drop database `Weird-Name`
+rc=0
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+################################################ mysql84
+version> mysql: [Warning] Using a password on the command line interface can be insecure.
+8.4.10
+=== mysql84 :: charset-lifecycle
+SQL> create database p17a character set utf8mb4; alter database p17a character set latin1; drop database p17a
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1007 (HY000) at line 1: Can't create database 'p17a'; database exists
+=== mysql84 :: charset-lifecycle-steps
+SQL> create database p17a character set utf8mb4
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1007 (HY000) at line 1: Can't create database 'p17a'; database exists
+schemata[mysql84::p17a]> mysql: [Warning] Using a password on the command line interface can be insecure.|p17a	utf8mb4	utf8mb4_0900_ai_ci|
+=== mysql84 :: charset-alter-only
+SQL> create database p17a character set utf8mb4; alter database p17a character set latin1
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1007 (HY000) at line 1: Can't create database 'p17a'; database exists
+schemata[mysql84::p17a]> mysql: [Warning] Using a password on the command line interface can be insecure.|p17a	utf8mb4	utf8mb4_0900_ai_ci|
+=== mysql84 :: collate-only-derives-charset
+SQL> create database p17a; alter database p17a collate latin1_bin
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1007 (HY000) at line 1: Can't create database 'p17a'; database exists
+schemata[mysql84::p17a]> mysql: [Warning] Using a password on the command line interface can be insecure.|p17a	utf8mb4	utf8mb4_0900_ai_ci|
+=== mysql84 :: synonym-schema-lifecycle
+SQL> create schema p17a character set utf8mb4; alter schema p17a collate utf8mb4_bin; drop schema p17a
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1007 (HY000) at line 1: Can't create database 'p17a'; database exists
+=== mysql84 :: nameless-alter-no-default-db
+SQL> create database p17a; alter database character set gbk
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1007 (HY000) at line 1: Can't create database 'p17a'; database exists
+=== mysql84 :: nameless-alter-binds-default-db
+SQL> alter database character set gbk   [default-db=golden]
+rc=0
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+schemata[mysql84::golden]> mysql: [Warning] Using a password on the command line interface can be insecure.|golden	gbk	gbk_chinese_ci|
+=== mysql84 :: nameless-alter-restore
+SQL> alter database character set utf8mb4   [default-db=golden]
+rc=0
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+=== mysql84 :: missing-alter-refusal
+SQL> alter database p17gone character set utf8mb4
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 3503 (42Y07) at line 1: Database 'p17gone' doesn't exist
+=== mysql84 :: missing-drop-refusal
+SQL> drop database p17gone
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1008 (HY000) at line 1: Can't drop database 'p17gone'; database doesn't exist
+=== mysql84 :: ifexists-noop-missing
+SQL> drop database if exists p17gone; show warnings
+rc=0
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+=== mysql84 :: duplicate-create-refusal
+SQL> create database p17a; create database p17a
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1007 (HY000) at line 1: Can't create database 'p17a'; database exists
+=== mysql84 :: ifnotexists-noop
+SQL> create database p17a character set latin1; create database if not exists p17a character set utf8mb4; show warnings
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1007 (HY000) at line 1: Can't create database 'p17a'; database exists
+schemata[mysql84::p17a]> mysql: [Warning] Using a password on the command line interface can be insecure.|p17a	utf8mb4	utf8mb4_0900_ai_ci|
+=== mysql84 :: recreate-drops-stale-attrs
+SQL> create database p17rc character set latin1; drop database p17rc; create database p17rc character set gbk
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1007 (HY000) at line 1: Can't create database 'p17rc'; database exists
+schemata[mysql84::p17rc]> mysql: [Warning] Using a password on the command line interface can be insecure.|p17rc	gbk	gbk_chinese_ci|
+=== mysql84 :: table-inherits-schema-default
+SQL> create database p17a character set gbk; create table p17a.t (id int)
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1007 (HY000) at line 1: Can't create database 'p17a'; database exists
+tablecoll[mysql84]> mysql: [Warning] Using a password on the command line interface can be insecure.
+=== mysql84 :: cascade-drop-kills-tables
+SQL> create database p17casc; create table p17casc.t (id int); drop database p17casc
+rc=0
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+tables-after[mysql84]> mysql: [Warning] Using a password on the command line interface can be insecure.
+0
+=== mysql84 :: orphan-table-ops-on-missing-schema
+SQL> drop table p17casc.t
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1051 (42S02) at line 1: Unknown table 'p17casc.t'
+=== mysql84 :: orphan-create-on-missing-schema
+SQL> create table p17casc.t (id int)
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1049 (42000) at line 1: Unknown database 'p17casc'
+=== mysql84 :: encryption-create
+SQL> create database p17enc default encryption='Y'; show warnings
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1007 (HY000) at line 1: Can't create database 'p17enc'; database exists
+enc[mysql84::p17enc]> mysql: [Warning] Using a password on the command line interface can be insecure.
+YES
+=== mysql84 :: encryption-alter
+SQL> create database p17enc; alter database p17enc default encryption='N'; show warnings
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1007 (HY000) at line 1: Can't create database 'p17enc'; database exists
+enc[mysql84::p17enc]> mysql: [Warning] Using a password on the command line interface can be insecure.
+YES
+=== mysql84 :: read-only-alter
+SQL> create database p17a; alter database p17a read only=1
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1007 (HY000) at line 1: Can't create database 'p17a'; database exists
+=== mysql84 :: read-only-create-refusal
+SQL> create database p17b read only=1
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'read only=1' at line 1
+=== mysql84 :: upgrade-data-directory-name
+SQL> alter database p17a upgrade data directory name
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'upgrade data directory name' at line 1
+=== mysql84 :: placement-create
+SQL> create database p17p placement policy=p1
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'placement policy=p1' at line 1
+placement[mysql84::p17p]> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1054 (42S22) at line 1: Unknown column 'tidb_placement_policy_name' in 'field list'
+=== mysql84 :: placement-alter-missing-policy
+SQL> create database p17p; alter database p17p placement policy=p1
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1007 (HY000) at line 1: Can't create database 'p17p'; database exists
+placement[mysql84::p17p]> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1054 (42S22) at line 1: Unknown column 'tidb_placement_policy_name' in 'field list'
+=== mysql84 :: sys-mysql-alter
+SQL> alter database mysql character set utf8mb4
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 3552 (HY000) at line 1: Access to system schema 'mysql' is rejected.
+schemata[mysql84::mysql]> mysql: [Warning] Using a password on the command line interface can be insecure.|mysql	utf8mb4	utf8mb4_0900_ai_ci|
+=== mysql84 :: sys-information-schema-alter
+SQL> alter database information_schema character set utf8mb4
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1044 (42000) at line 1: Access denied for user 'root'@'localhost' to database 'information_schema'
+=== mysql84 :: sys-mysql-drop
+SQL> drop database mysql
+rc=1
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 3552 (HY000) at line 1: Access to system schema 'mysql' is rejected.
+mysql-after[mysql84]> mysql: [Warning] Using a password on the command line interface can be insecure.
+1
+=== mysql84 :: quoted-identifier
+SQL> create database `Weird-Name`; drop database `Weird-Name`
+rc=0
+out> mysql: [Warning] Using a password on the command line interface can be insecure.
+################################################ tidb85
+version> 8.0.11-TiDB-v8.5.0
+=== tidb85 :: charset-lifecycle
+SQL> create database p17a character set utf8mb4; alter database p17a character set latin1; drop database p17a
+rc=0
+=== tidb85 :: charset-lifecycle-steps
+SQL> create database p17a character set utf8mb4
+rc=0
+schemata[tidb85::p17a]> p17a	utf8mb4	utf8mb4_bin|
+=== tidb85 :: charset-alter-only
+SQL> create database p17a character set utf8mb4; alter database p17a character set latin1
+rc=0
+schemata[tidb85::p17a]> p17a	latin1	latin1_bin|
+=== tidb85 :: collate-only-derives-charset
+SQL> create database p17a; alter database p17a collate latin1_bin
+rc=0
+schemata[tidb85::p17a]> p17a	latin1	latin1_bin|
+=== tidb85 :: synonym-schema-lifecycle
+SQL> create schema p17a character set utf8mb4; alter schema p17a collate utf8mb4_bin; drop schema p17a
+rc=0
+=== tidb85 :: nameless-alter-no-default-db
+SQL> create database p17a; alter database character set gbk
+rc=1
+out> ERROR 1046 (3D000) at line 1: No database selected
+=== tidb85 :: nameless-alter-binds-default-db
+SQL> alter database character set gbk   [default-db=golden]
+rc=0
+schemata[tidb85::golden]> golden	gbk	gbk_chinese_ci|
+=== tidb85 :: nameless-alter-restore
+SQL> alter database character set utf8mb4   [default-db=golden]
+rc=0
+=== tidb85 :: missing-alter-refusal
+SQL> alter database p17gone character set utf8mb4
+rc=1
+out> ERROR 1049 (42000) at line 1: Unknown database 'p17gone'
+=== tidb85 :: missing-drop-refusal
+SQL> drop database p17gone
+rc=1
+out> ERROR 1008 (HY000) at line 1: Can't drop database 'p17gone'; database doesn't exist
+=== tidb85 :: ifexists-noop-missing
+SQL> drop database if exists p17gone; show warnings
+rc=0
+=== tidb85 :: duplicate-create-refusal
+SQL> create database p17a; create database p17a
+rc=1
+out> ERROR 1007 (HY000) at line 1: Can't create database 'p17a'; database exists
+=== tidb85 :: ifnotexists-noop
+SQL> create database p17a character set latin1; create database if not exists p17a character set utf8mb4; show warnings
+rc=0
+out> Level	Code	Message
+Note	1007	Can't create database 'p17a'; database exists
+schemata[tidb85::p17a]> p17a	latin1	latin1_bin|
+=== tidb85 :: recreate-drops-stale-attrs
+SQL> create database p17rc character set latin1; drop database p17rc; create database p17rc character set gbk
+rc=0
+schemata[tidb85::p17rc]> p17rc	gbk	gbk_chinese_ci|
+=== tidb85 :: table-inherits-schema-default
+SQL> create database p17a character set gbk; create table p17a.t (id int)
+rc=0
+tablecoll[tidb85]> gbk_chinese_ci
+=== tidb85 :: cascade-drop-kills-tables
+SQL> create database p17casc; create table p17casc.t (id int); drop database p17casc
+rc=0
+tables-after[tidb85]> 0
+=== tidb85 :: orphan-table-ops-on-missing-schema
+SQL> drop table p17casc.t
+rc=1
+out> ERROR 1051 (42S02) at line 1: Unknown table 'p17casc.t'
+=== tidb85 :: orphan-create-on-missing-schema
+SQL> create table p17casc.t (id int)
+rc=1
+out> ERROR 1049 (42000) at line 1: Unknown database 'p17casc'
+=== tidb85 :: encryption-create
+SQL> create database p17enc default encryption='Y'; show warnings
+rc=0
+out> Level	Code	Message
+Warning	1064	You have an error in your SQL syntax; check the manual that corresponds to your TiDB version for the right syntax to use line 1 column 45 near ""The ENCRYPTION clause is parsed but ignored by all storage engines. 
+enc[tidb85::p17enc]> ERROR 1054 (42S22) at line 1: Unknown column 'default_encryption' in 'field list'
+=== tidb85 :: encryption-alter
+SQL> create database p17enc; alter database p17enc default encryption='N'; show warnings
+rc=0
+enc[tidb85::p17enc]> ERROR 1054 (42S22) at line 1: Unknown column 'default_encryption' in 'field list'
+=== tidb85 :: read-only-alter
+SQL> create database p17a; alter database p17a read only=1
+rc=1
+out> ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your TiDB version for the right syntax to use line 1 column 24 near "read only=1" 
+=== tidb85 :: read-only-create-refusal
+SQL> create database p17b read only=1
+rc=1
+out> ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your TiDB version for the right syntax to use line 1 column 25 near "read only=1" 
+=== tidb85 :: upgrade-data-directory-name
+SQL> alter database p17a upgrade data directory name
+rc=1
+out> ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your TiDB version for the right syntax to use line 1 column 27 near "upgrade data directory name" 
+=== tidb85 :: placement-create
+SQL> create database p17p placement policy=p1
+rc=1
+out> ERROR 8239 (HY000) at line 1: Unknown placement policy 'p1'
+placement[tidb85::p17p]> 
+=== tidb85 :: placement-alter-missing-policy
+SQL> create database p17p; alter database p17p placement policy=p1
+rc=1
+out> ERROR 8239 (HY000) at line 1: Unknown placement policy 'p1'
+placement[tidb85::p17p]> NULL
+=== tidb85 :: sys-mysql-alter
+SQL> alter database mysql character set utf8mb4
+rc=0
+schemata[tidb85::mysql]> mysql	utf8mb4	utf8mb4_bin|
+=== tidb85 :: sys-information-schema-alter
+SQL> alter database information_schema character set utf8mb4
+rc=1
+out> ERROR 1044 (42000) at line 1: Access denied for user 'root'@'%' to database 'information_schema'
+=== tidb85 :: sys-mysql-drop
+SQL> drop database mysql
+rc=1
+out> ERROR 1105 (HY000) at line 1: Drop 'mysql' database is forbidden
+mysql-after[tidb85]> 1
+=== tidb85 :: quoted-identifier
+SQL> create database `Weird-Name`; drop database `Weird-Name`
+rc=0
+ALL DONE

@@ -1,0 +1,27 @@
+name: database_lifecycle_rules
+dialect: tidb
+category: ddl
+expect:
+  parse_ok: true
+  statements:
+    count: 10
+  unsupported:
+    count: 0
+  findings:
+    include:
+      - ddl.database.create.exists.forbid
+      - ddl.database.alter.exists.require
+      - ddl.database.drop.exists.require
+      - ddl.database.denylist.forbid
+      - ddl.database.system.modify.forbid
+      - ddl.database.option.encryption.applicability
+config:
+  rules:
+    ddl.database.denylist.forbid:
+      enabled: true
+      params:
+        schemas: [blocked]
+metadata:
+  schema: app
+  instance:
+    version: "8.0.11-TiDB-v8.5.0"

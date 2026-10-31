@@ -314,8 +314,14 @@ declarations.
 |---------|-------------------|:-------:|:--------:|---------------|
 | `ddl.database.create.notice` | `CREATE DATABASE` / `CREATE SCHEMA` creates a new logical namespace — informational notice | ✓ | ✗ | notice |
 | `ddl.database.drop.warn` | `DROP DATABASE` / `DROP SCHEMA` removes a database and all contained objects — should be reviewed | ✓ | ✗ | warning |
+| `ddl.database.create.exists.forbid` | `CREATE DATABASE` / `CREATE SCHEMA` targets a schema that is proven present (or `IF NOT EXISTS` over a proven present schema is a no-op) | ✗ | ✓ | blocker |
+| `ddl.database.alter.exists.require` | `ALTER DATABASE` / `ALTER SCHEMA` targets a schema that is proven absent | ✗ | ✓ | blocker |
+| `ddl.database.drop.exists.require` | `DROP DATABASE` / `DROP SCHEMA` targets a schema that is proven absent | ✗ | ✓ | blocker |
+| `ddl.database.denylist.forbid` | Database lifecycle operation touches a configured business schema (`params.schemas`) | ✓ | ✗ | blocker |
+| `ddl.database.system.modify.forbid` | Database lifecycle operation touches a system schema (`mysql`, `information_schema`, `performance_schema`, `sys`, `metrics_schema`) | ✓ | ✗ | blocker |
+| `ddl.database.option.encryption.applicability` | `DEFAULT ENCRYPTION` applicability: lands on MySQL ≥ 8.0.16, proven refusal below it, parsed-but-ignored on TiDB | ✗ | ✓ | blocker |
 
-> **Note:** These rules are MySQL/TiDB-specific and are automatically skipped when auditing PostgreSQL SQL. They are offline rules and do not require a database connection. DeltaScope does not perform live database existence validation. `CREATE DATABASE ... CHARACTER SET` / `COLLATE` options are preserved as parser facts but no policy rule governs them. This is not full DDL support — trigger, routine, event, and database privilege lifecycle remain deferred.
+> **Note:** These rules are MySQL/TiDB-specific and are automatically skipped when auditing PostgreSQL SQL. `ALTER DATABASE` / `ALTER SCHEMA` (including the name-less `ALTER DATABASE CHARACTER SET ...` form, which binds the trusted request schema) and `IF [NOT] EXISTS` conditionals are normalized; the three `exists.*` rules and the ENCRYPTION applicability rule are metadata-aware — when the target schema's existence cannot be proven they owe a bounded `schema.existence` evidence gap rather than fabricating an answer, and when the instance version is unproven the ENCRYPTION rule owes `target.version`. Proven `CHARACTER SET`/`COLLATE` defaults now model the schema's default attributes in ordered prospective state (inheritable by later `CREATE TABLE`), `DEFAULT ENCRYPTION` lands as a MySQL ≥ 8.0.16 attribute, and TiDB placement binding (`PLACEMENT POLICY`) stays an extracted-but-unaudited aspect because policy existence is unvouchable. `ALTER DATABASE ... READ ONLY` and `UPGRADE DATA DIRECTORY NAME` remain explicit unsupported boundaries. This is not full DDL support — trigger, routine, event, and database privilege lifecycle remain deferred.
 
 ---
 

@@ -398,6 +398,16 @@ func metadataKindsForRule(ruleID string) ([]MetadataKind, bool) {
 	switch ruleID {
 	case "dml.table.denylist.forbid", "ddl.table.denylist.forbid":
 		return []MetadataKind{MetadataKindSchema}, true
+	case "ddl.database.create.exists.forbid", "ddl.database.alter.exists.require",
+		"ddl.database.drop.exists.require":
+		// T17 schema-existence premises consume the ordered schema binding
+		// (SCHEMATA snapshot), not a target-table one.
+		return []MetadataKind{MetadataKindSchema}, true
+	case "ddl.database.option.encryption.applicability":
+		// The applicability answer depends on the resolved instance version
+		// (8.0.16+ lands, below refuses, TiDB ignores) — an instance-fact
+		// dependency, not a schema snapshot one.
+		return []MetadataKind{MetadataKindInstance}, true
 	case "ddl.table.drop.adaptive_hash.warn", "ddl.table.truncate.adaptive_hash.warn",
 		"ddl.table.row_size.max_bytes.require":
 		// The row-size estimate consults optional instance defaults for
@@ -758,7 +768,17 @@ var metadataAwareRuleIDs = map[string]bool{
 	"ddl.table.truncate.adaptive_hash.warn":    true,
 	"ddl.table.truncate.exists.require":        true,
 	"ddl.table.truncate.inbound_fk":            true,
-	"ddl.table.truncate.rows.max_count":        true,
+	// T17 schema-lifecycle rules read the ordered schema binding
+	// (Metadata.SchemaTarget). The name-keyed protection rules
+	// (denylist, system.modify) evaluate identically offline, so they
+	// stay out of this surface.
+	"ddl.database.create.exists.forbid": true,
+	"ddl.database.alter.exists.require": true,
+	"ddl.database.drop.exists.require":  true,
+	// The ENCRYPTION applicability answer reads the resolved instance
+	// version (Metadata.Version), not the ordered schema binding.
+	"ddl.database.option.encryption.applicability": true,
+	"ddl.table.truncate.rows.max_count":            true,
 	// T16 lifecycle rules consume the namespace-aware ordered bindings:
 	// rename endpoint pairs, LIKE/CTAS sources, and TiDB's local-temp
 	// refusal surface all read bound snapshot state.

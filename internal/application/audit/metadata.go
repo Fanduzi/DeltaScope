@@ -182,6 +182,18 @@ func (state *batchState) enrichStatements(ctx context.Context, request *Metadata
 	// Object lookups resolve at most once per distinct (schema, type, name,
 	// qualifiers) identity per request — the same object is never re-asked.
 	objectCache := make(map[objectLookupKey]*spec.ObjectSnapshot)
+	if request != nil {
+		state.schemaResolver = func(ctx context.Context, name string) (*spec.ObjectSnapshot, error) {
+			lookup := &spec.ObjectLookupRequest{Schema: requestSchema, Type: "schema", Name: name}
+			cacheKey := newObjectLookupKey(lookup)
+			if snapshot, ok := objectCache[cacheKey]; ok {
+				return snapshot, nil
+			}
+			snapshot := resolveObjectSnapshot(ctx, request, dialect, lookup)
+			objectCache[cacheKey] = snapshot
+			return snapshot, nil
+		}
+	}
 
 	consumed := 0
 	for i, statement := range statements {
@@ -269,6 +281,18 @@ func (state *batchState) enrichStatements(ctx context.Context, request *Metadata
 		if metadata.Schema != "" || metadata.Instance != nil || metadata.TargetTable != nil ||
 			metadata.ExchangeTable != nil || metadata.Version != nil {
 			enriched[i].Metadata = metadata
+		}
+
+		// A schema-scoped statement binds its ordered schema pre-state —
+		// present with proven attributes, absent, or nil when unvouched —
+		// through the same once-per-schema seam its apply transition uses.
+		if schemaSnapshot, serr := state.projectSchemaTarget(ctx, statement); serr != nil {
+			return nil, serr
+		} else if schemaSnapshot != nil {
+			if enriched[i].Metadata == nil {
+				enriched[i].Metadata = &spec.Metadata{Schema: metadataSchema, Instance: instanceFacts, Version: resolvedVersion}
+			}
+			enriched[i].Metadata.SchemaTarget = schemaSnapshot
 		}
 
 		if request != nil {
@@ -475,6 +499,11 @@ func planObjectLookup(schema string, statement spec.Statement) *spec.ObjectLooku
 		return nil
 	}
 	name := strings.TrimSpace(ddl.ObjectName)
+	if name == "" && ddl.Operation == spec.DDLOperationAlterSchema && ddl.AlterDefaultSchema {
+		// A name-less ALTER DATABASE binds the request's trusted schema —
+		// the same identity the ordered state binds, never a guess.
+		name = strings.TrimSpace(schema)
+	}
 	if name == "" {
 		return nil
 	}

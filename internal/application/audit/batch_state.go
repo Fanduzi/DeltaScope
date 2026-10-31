@@ -75,6 +75,18 @@ type batchState struct {
 	// in-batch statement — a later provider read under them would return
 	// stale pre-batch facts, so resolve must answer unknown instead.
 	invalidatedSchemas map[string]struct{}
+	// schemaEntries holds the batch's ordered knowledge of each schema
+	// identity a schema-scoped statement named or a lazy resolve answered —
+	// present/absent/unknown plus proven default attributes. It is the
+	// namespace gate every later table identity resolves through
+	// (T17/#96).
+	schemaEntries map[string]*batchSchemaEntry
+	// schemaResolver, when set, is the enrich-loop's objectCache-backed
+	// schema lookup: every schema name resolves through the same
+	// once-per-request cache Metadata.Objects uses, so a schema op and its
+	// ordered binding never ask the provider twice. Nil falls back to the
+	// provider's ObjectResolver directly.
+	schemaResolver func(ctx context.Context, name string) (*spec.ObjectSnapshot, error)
 	// resolvedVersion is the request's already-parsed version fact. Rules read
 	// the same fact from statement metadata. apply still receives the original
 	// statement, so RENAME COLUMN applicability reads this copy. Nil means the
@@ -97,6 +109,7 @@ func newBatchState(dialect spec.Dialect, schema string, provider MetadataProvide
 		entries:            make(map[batchTableKey]*batchTableEntry),
 		tempEntries:        make(map[batchTableKey]*batchTableEntry),
 		invalidatedSchemas: make(map[string]struct{}),
+		schemaEntries:      make(map[string]*batchSchemaEntry),
 	}
 }
 
@@ -161,6 +174,24 @@ func (s *batchState) resolve(ctx context.Context, key batchTableKey, providerSch
 		return entry, nil
 	}
 	entry := &batchTableEntry{state: tableUnknown}
+	// The schema namespace gates every table identity: a batch-dropped or
+	// provider-confirmed-absent schema proves its tables absent without a
+	// stale catalog read, a batch-created schema proves untouched tables
+	// absent (the batch is the only writer), and an unvouched schema
+	// tombstones every identity under it — never trusted silently.
+	switch schemaEntry, bound := s.schemaEntries[key.schema]; {
+	case bound && schemaEntry.state == schemaAbsent:
+		entry.state = tableAbsent
+		s.entries[key] = entry
+		return entry, nil
+	case bound && schemaEntry.state == schemaUnknown:
+		s.entries[key] = entry
+		return entry, nil
+	case bound && schemaEntry.state == schemaPresent && schemaEntry.batchCreated:
+		entry.state = tableAbsent
+		s.entries[key] = entry
+		return entry, nil
+	}
 	if _, dropped := s.invalidatedSchemas[key.schema]; s.contaminated || s.provider == nil || dropped {
 		s.entries[key] = entry
 		return entry, nil
@@ -349,6 +380,12 @@ func (s *batchState) apply(ctx context.Context, statement spec.Statement) error 
 		return s.applyTruncateTable(ctx, statement)
 	case spec.DDLOperationRenameTable:
 		return s.applyRenameTable(ctx, statement)
+	case spec.DDLOperationCreateSchema:
+		return s.applyCreateSchema(ctx, statement)
+	case spec.DDLOperationAlterSchema:
+		return s.applyAlterSchema(ctx, statement)
+	case spec.DDLOperationDropSchema:
+		return s.applyDropSchema(ctx, statement)
 	default:
 		// No modeled transition: schema-scoped operations invalidate their
 		// scope, table-bound operations invalidate their targets.
@@ -486,6 +523,10 @@ func (s *batchState) invalidateSchema(schema string) {
 		return
 	}
 	s.invalidatedSchemas[lower] = struct{}{}
+	// An unmodeled effect inside a schema scope also revokes the schema's
+	// own ordered answer — whatever identity fact the batch held for it is
+	// stale now.
+	s.schemaEntries[lower] = &batchSchemaEntry{state: schemaUnknown}
 	for key := range s.entries {
 		if key.schema == lower {
 			s.entries[key] = &batchTableEntry{state: tableUnknown}
@@ -559,6 +600,12 @@ func (s *batchState) applyCreateTable(ctx context.Context, statement spec.Statem
 	}
 	if !createAspectAdmissible(s.dialect, statement) {
 		s.invalidateBoundKey(key, destNamespace(tempDest))
+		return nil
+	}
+	// A provably-absent schema refuses every create under it (1049): the
+	// destination keeps its proven pre-state instead of publishing a shape
+	// the engine never built.
+	if s.schemaStateForTarget(key.schema) == schemaAbsent {
 		return nil
 	}
 	var entry *batchTableEntry

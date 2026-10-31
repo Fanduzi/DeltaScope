@@ -301,6 +301,14 @@ func isMySQLFamilyOnlyRule(ruleID string) bool {
 		"dml.table.exists.require",
 		"ddl.database.create.notice",
 		"ddl.database.drop.warn",
+		// T17 schema lifecycle rules bind only MySQL-family schema facts;
+		// PostgreSQL never produces these normalized operations.
+		"ddl.database.create.exists.forbid",
+		"ddl.database.alter.exists.require",
+		"ddl.database.drop.exists.require",
+		"ddl.database.denylist.forbid",
+		"ddl.database.system.modify.forbid",
+		"ddl.database.option.encryption.applicability",
 		"ddl.rename_table.notice",
 		"ddl.create_index.notice",
 		"ddl.drop_index.notice",
