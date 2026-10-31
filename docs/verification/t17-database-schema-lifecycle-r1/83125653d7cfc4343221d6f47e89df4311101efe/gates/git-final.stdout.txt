@@ -1,0 +1,53 @@
+milestone/mysql-tidb-ddl-completion
+175ab0e15db942d7b74f252d2359c766783b606e
+shallow=false
+175ab0e15db942d7b74f252d2359c766783b606e adc1f7322e1c70524435ed687fe27b67b931abb5
+adc1f7322e1c70524435ed687fe27b67b931abb5 8784346d4ca31fb235f23cd3881c4e771a7f24e0
+8784346d4ca31fb235f23cd3881c4e771a7f24e0 034e98592bd1367ae0dc48bc492be2202e0691d1
+worktree /Users/fan/GolangProjects/DeltaScope
+HEAD 175ab0e15db942d7b74f252d2359c766783b606e
+branch refs/heads/milestone/mysql-tidb-ddl-completion
+
+worktree /Users/fan/GolangProjects/DeltaScope-agent-guidance
+HEAD 0fa922d062361add8a3cb9f01ee2dfb4292fdef6
+branch refs/heads/docs/agent-guidance
+
+worktree /Users/fan/GolangProjects/DeltaScope-wt-t17r1-red
+HEAD adc1f7322e1c70524435ed687fe27b67b931abb5
+detached
+
+ M Makefile
+ M docs/decisions/2026-11-10-ddl-database-schema-lifecycle.md
+ M docs/work-plans/t17-database-schema-lifecycle/CONTRACT.md
+ M docs/work-plans/t17-database-schema-lifecycle/probes/README.md
+ M internal/application/audit/README.md
+ M internal/application/audit/batch_state.go
+ M internal/application/audit/batch_state_schema.go
+ M internal/application/audit/coverage.go
+ M internal/application/audit/metadata.go
+ M internal/application/audit/metadata_object_validation_postgresql_tag_test.go
+ M internal/application/auditmeta/README.md
+ M internal/domain/spec/README.md
+ M internal/infrastructure/metadata/mysql/README.md
+ M testdata/ddl-golden/README.md
+ M testdata/ddl-golden/T17.json
+ M testdata/ddl-inventory/inventory.yaml
+ M testdata/sql-corpus/README.md
+ M testdata/sql-corpus/mysql/ddl/findings/database_lifecycle_rules.expected.yaml
+ M testdata/sql-corpus/mysql/ddl/findings/database_lifecycle_rules.sql
+ M testdata/sql-corpus/tidb/ddl/findings/database_lifecycle_rules.expected.yaml
+ M testdata/sql-corpus/tidb/ddl/findings/database_lifecycle_rules.sql
+?? .agents/
+?? .codex/
+?? .cursor/
+?? .debug-journal.md
+?? .devin/
+?? .grok/
+?? .opencode/
+?? .pi-subagents/
+?? .qoder/
+?? artifacts/
+?? docs/quality/architecture-review-2026-08-11.html
+?? docs/verification/t06-a12/1a5dd90de898a59590ef8a19aa068c4b5e8ce7f8/T06/
+?? internal/application/audit/batch_state_t17r1_proof_test.go
+?? internal/application/audit/batch_state_t17r1_test.go

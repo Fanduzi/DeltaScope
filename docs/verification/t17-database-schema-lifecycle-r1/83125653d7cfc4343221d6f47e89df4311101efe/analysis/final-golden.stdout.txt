@@ -1,0 +1,64 @@
+{
+  "head_sha": "83125653d7cfc4343221d6f47e89df4311101efe",
+  "original_cases_preserved": 47,
+  "required_cases": 52,
+  "executed_cases": 52,
+  "assertions": 834,
+  "case_mix": {
+    "cli_audit": 14,
+    "cli_metadata": 30,
+    "db_ddl": 4,
+    "db_syntax_negative": 4
+  },
+  "new_cases": {
+    "T17.cli.t17-cli-ine-encryption-57-mysql": {
+      "exit": 1,
+      "verdict": "reject",
+      "coverage": "unverified",
+      "statements": 4,
+      "findings": 1,
+      "gaps": 4,
+      "assertions": 20
+    },
+    "T17.cli.t17-cli-ine-encryption-nilver-mysql": {
+      "exit": 0,
+      "verdict": "review",
+      "coverage": "unverified",
+      "statements": 4,
+      "findings": 0,
+      "gaps": 5,
+      "assertions": 19
+    },
+    "T17.cli.t17-cli-ine-placement-tidb": {
+      "exit": 1,
+      "verdict": "review",
+      "coverage": "incomplete",
+      "statements": 4,
+      "findings": 0,
+      "gaps": 4,
+      "assertions": 21
+    },
+    "T17.meta.t17-mysql80-tiflash-refused": {
+      "exit": 1,
+      "verdict": "reject",
+      "coverage": "incomplete",
+      "statements": 4,
+      "findings": 1,
+      "gaps": 0,
+      "assertions": 28
+    },
+    "T17.meta.t17-tidb85-tiflash-unproven": {
+      "exit": 1,
+      "verdict": "review",
+      "coverage": "incomplete",
+      "statements": 4,
+      "findings": 0,
+      "gaps": 3,
+      "assertions": 25
+    }
+  },
+  "cleanup": {
+    "rc": 0,
+    "residual_containers": []
+  }
+}

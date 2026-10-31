@@ -1,0 +1,1 @@
+cmp lead-authored index and precommit artifact with bundle copies; verify README is substituted lead text plus the one authorized sentence

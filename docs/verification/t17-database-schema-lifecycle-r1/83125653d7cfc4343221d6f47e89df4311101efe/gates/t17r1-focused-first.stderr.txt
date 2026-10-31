@@ -1,0 +1,2 @@
+# github.com/Fanduzi/DeltaScope/internal/application/audit [github.com/Fanduzi/DeltaScope/internal/application/audit.test]
+internal/application/audit/batch_state_t17r1_test.go:266:65: cannot use spec.Table{…} (value of struct type spec.Table) as *spec.Table value in struct literal

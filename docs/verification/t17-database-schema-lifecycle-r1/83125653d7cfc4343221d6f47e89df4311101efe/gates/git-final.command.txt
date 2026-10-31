@@ -1,0 +1,1 @@
+git branch --show-current; git rev-parse HEAD; git rev-parse --is-shallow-repository; git rev-list --parents -n 3 HEAD; git worktree list --porcelain; git status --porcelain=v1 --untracked-files=normal

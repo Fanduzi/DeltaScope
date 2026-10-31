@@ -1,0 +1,310 @@
+{
+  "case_id": "T17.cli.t17-cli-ine-encryption-nilver-mysql",
+  "kind": "cli_audit",
+  "cli_case": "t17-cli-ine-encryption-nilver-mysql",
+  "dialect": "mysql",
+  "input_sql": "CREATE DATABASE IF NOT EXISTS encg DEFAULT ENCRYPTION='Y'; CREATE DATABASE encg; CREATE TABLE encg.t (id INT); CREATE TABLE encg.t (id INT);",
+  "policy_profile": "t17-cascade",
+  "policy_path": "/private/tmp/ddl-golden/T17/golden-policy-t17-cascade.yaml",
+  "command": [
+    "/private/tmp/ddl-golden/T17/bin/deltascope",
+    "audit",
+    "--dialect",
+    "mysql",
+    "--sql",
+    "CREATE DATABASE IF NOT EXISTS encg DEFAULT ENCRYPTION='Y'; CREATE DATABASE encg; CREATE TABLE encg.t (id INT); CREATE TABLE encg.t (id INT);",
+    "--config",
+    "/private/tmp/ddl-golden/T17/golden-policy-t17-cascade.yaml",
+    "--format",
+    "json"
+  ],
+  "expected": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 4,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": [
+      "unverified",
+      "unverified",
+      "unverified",
+      "unverified"
+    ],
+    "evidence_gaps": 5,
+    "statement_indices": [
+      0,
+      1,
+      2,
+      3
+    ],
+    "evidence_gap_entries": [
+      {
+        "index": 0,
+        "rule_id": "ddl.database.create.exists.forbid",
+        "reason_code": "unknown_schema_state",
+        "required_facts": [
+          "schema.existence"
+        ]
+      },
+      {
+        "index": 0,
+        "rule_id": "ddl.database.option.encryption.applicability",
+        "reason_code": "missing_target_version",
+        "required_facts": [
+          "target.version"
+        ]
+      },
+      {
+        "index": 1,
+        "rule_id": "ddl.database.create.exists.forbid",
+        "reason_code": "unknown_schema_state",
+        "required_facts": [
+          "schema.existence"
+        ]
+      },
+      {
+        "index": 2,
+        "rule_id": "ddl.table.exists.create.forbid",
+        "reason_code": "unknown_table_state",
+        "required_facts": [
+          "target_table.existence"
+        ]
+      },
+      {
+        "index": 3,
+        "rule_id": "ddl.table.exists.create.forbid",
+        "reason_code": "unknown_table_state",
+        "required_facts": [
+          "target_table.existence"
+        ]
+      }
+    ],
+    "statement_sql": [
+      "CREATE DATABASE IF NOT EXISTS encg DEFAULT ENCRYPTION='Y';",
+      "CREATE DATABASE encg;",
+      "CREATE TABLE encg.t (id INT);",
+      "CREATE TABLE encg.t (id INT);"
+    ]
+  },
+  "actual": {
+    "exit": 0,
+    "stdout": "{\"verdict\":\"review\",\"coverage\":{\"status\":\"unverified\"},\"summary\":{\"statements\":4,\"blockers\":0,\"warnings\":0,\"notices\":0},\"statements\":[{\"index\":0,\"kind\":\"ddl\",\"raw_sql\":\"CREATE DATABASE IF NOT EXISTS encg DEFAULT ENCRYPTION='Y';\",\"normalized_sql\":\"CREATE DATABASE IF NOT EXISTS encg DEFAULT ENCRYPTION='Y'\",\"evidence_gaps\":[{\"rule_id\":\"ddl.database.create.exists.forbid\",\"reason_code\":\"unknown_schema_state\",\"required_facts\":[\"schema.existence\"]},{\"rule_id\":\"ddl.database.option.encryption.applicability\",\"reason_code\":\"missing_target_version\",\"required_facts\":[\"target.version\"]}],\"coverage\":{\"status\":\"unverified\"}},{\"index\":1,\"kind\":\"ddl\",\"raw_sql\":\"CREATE DATABASE encg;\",\"normalized_sql\":\"CREATE DATABASE encg\",\"evidence_gaps\":[{\"rule_id\":\"ddl.database.create.exists.forbid\",\"reason_code\":\"unknown_schema_state\",\"required_facts\":[\"schema.existence\"]}],\"coverage\":{\"status\":\"unverified\"}},{\"index\":2,\"kind\":\"ddl\",\"raw_sql\":\"CREATE TABLE encg.t (id INT);\",\"normalized_sql\":\"CREATE TABLE encg.t (id INT)\",\"evidence_gaps\":[{\"rule_id\":\"ddl.table.exists.create.forbid\",\"reason_code\":\"unknown_table_state\",\"required_facts\":[\"target_table.existence\"]}],\"coverage\":{\"status\":\"unverified\"}},{\"index\":3,\"kind\":\"ddl\",\"raw_sql\":\"CREATE TABLE encg.t (id INT);\",\"normalized_sql\":\"CREATE TABLE encg.t (id INT)\",\"evidence_gaps\":[{\"rule_id\":\"ddl.table.exists.create.forbid\",\"reason_code\":\"unknown_table_state\",\"required_facts\":[\"target_table.existence\"]}],\"coverage\":{\"status\":\"unverified\"}}],\"fail_on_triggered\":false,\"rule_summary\":{\"loaded\":8,\"applicable\":4,\"skipped\":[]},\"context\":{\"mode\":\"offline\",\"dialect\":\"mysql\",\"dialect_source\":\"flag\",\"note\":\"existence not checked (no database connection)\",\"unproven\":[\"column_exists\",\"table_exists\"]}}\n",
+    "stderr": "",
+    "parsed": {
+      "verdict": "review",
+      "coverage": {
+        "status": "unverified"
+      },
+      "summary": {
+        "statements": 4,
+        "blockers": 0,
+        "warnings": 0,
+        "notices": 0
+      },
+      "statements": [
+        {
+          "index": 0,
+          "kind": "ddl",
+          "raw_sql": "CREATE DATABASE IF NOT EXISTS encg DEFAULT ENCRYPTION='Y';",
+          "normalized_sql": "CREATE DATABASE IF NOT EXISTS encg DEFAULT ENCRYPTION='Y'",
+          "evidence_gaps": [
+            {
+              "rule_id": "ddl.database.create.exists.forbid",
+              "reason_code": "unknown_schema_state",
+              "required_facts": [
+                "schema.existence"
+              ]
+            },
+            {
+              "rule_id": "ddl.database.option.encryption.applicability",
+              "reason_code": "missing_target_version",
+              "required_facts": [
+                "target.version"
+              ]
+            }
+          ],
+          "coverage": {
+            "status": "unverified"
+          }
+        },
+        {
+          "index": 1,
+          "kind": "ddl",
+          "raw_sql": "CREATE DATABASE encg;",
+          "normalized_sql": "CREATE DATABASE encg",
+          "evidence_gaps": [
+            {
+              "rule_id": "ddl.database.create.exists.forbid",
+              "reason_code": "unknown_schema_state",
+              "required_facts": [
+                "schema.existence"
+              ]
+            }
+          ],
+          "coverage": {
+            "status": "unverified"
+          }
+        },
+        {
+          "index": 2,
+          "kind": "ddl",
+          "raw_sql": "CREATE TABLE encg.t (id INT);",
+          "normalized_sql": "CREATE TABLE encg.t (id INT)",
+          "evidence_gaps": [
+            {
+              "rule_id": "ddl.table.exists.create.forbid",
+              "reason_code": "unknown_table_state",
+              "required_facts": [
+                "target_table.existence"
+              ]
+            }
+          ],
+          "coverage": {
+            "status": "unverified"
+          }
+        },
+        {
+          "index": 3,
+          "kind": "ddl",
+          "raw_sql": "CREATE TABLE encg.t (id INT);",
+          "normalized_sql": "CREATE TABLE encg.t (id INT)",
+          "evidence_gaps": [
+            {
+              "rule_id": "ddl.table.exists.create.forbid",
+              "reason_code": "unknown_table_state",
+              "required_facts": [
+                "target_table.existence"
+              ]
+            }
+          ],
+          "coverage": {
+            "status": "unverified"
+          }
+        }
+      ],
+      "fail_on_triggered": false,
+      "rule_summary": {
+        "loaded": 8,
+        "applicable": 4,
+        "skipped": []
+      },
+      "context": {
+        "mode": "offline",
+        "dialect": "mysql",
+        "dialect_source": "flag",
+        "note": "existence not checked (no database connection)",
+        "unproven": [
+          "column_exists",
+          "table_exists"
+        ]
+      }
+    },
+    "version_evidence": {
+      "target_raw": null,
+      "target_canonical": null,
+      "observed_raw": null,
+      "observed_canonical": null,
+      "resolved": null
+    }
+  },
+  "assertions": [
+    {
+      "name": "exit code",
+      "ok": true,
+      "detail": "rc=0 expected=0"
+    },
+    {
+      "name": "verdict",
+      "ok": true,
+      "detail": "verdict='review'"
+    },
+    {
+      "name": "top-level statements",
+      "ok": true,
+      "detail": "statements=4 expected=4"
+    },
+    {
+      "name": "zero findings",
+      "ok": true,
+      "detail": "findings=0"
+    },
+    {
+      "name": "no diagnostics",
+      "ok": true,
+      "detail": "diagnostics=[]"
+    },
+    {
+      "name": "no unsupported",
+      "ok": true,
+      "detail": "unsupported=[]"
+    },
+    {
+      "name": "statement indices",
+      "ok": true,
+      "detail": "indices=[0, 1, 2, 3]"
+    },
+    {
+      "name": "finding statement ownership",
+      "ok": true,
+      "detail": "findings must belong to their enclosing statement"
+    },
+    {
+      "name": "aggregate coverage",
+      "ok": true,
+      "detail": "coverage='unverified'"
+    },
+    {
+      "name": "per-statement coverage",
+      "ok": true,
+      "detail": "statement_coverage=['unverified', 'unverified', 'unverified', 'unverified']"
+    },
+    {
+      "name": "statement raw SQL identity",
+      "ok": true,
+      "detail": "raw_sql=[\"CREATE DATABASE IF NOT EXISTS encg DEFAULT ENCRYPTION='Y';\", 'CREATE DATABASE encg;', 'CREATE TABLE encg.t (id INT);', 'CREATE TABLE encg.t (id INT);'] expected=[\"CREATE DATABASE IF NOT EXISTS encg DEFAULT ENCRYPTION='Y';\", 'CREATE DATABASE encg;', 'CREATE TABLE encg.t (id INT);', 'CREATE TABLE encg.t (id INT);']"
+    },
+    {
+      "name": "evidence gap count",
+      "ok": true,
+      "detail": "gaps=5"
+    },
+    {
+      "name": "evidence gap entries",
+      "ok": true,
+      "detail": "gaps=[(0, 'ddl.database.create.exists.forbid', 'unknown_schema_state'), (0, 'ddl.database.option.encryption.applicability', 'missing_target_version'), (1, 'ddl.database.create.exists.forbid', 'unknown_schema_state'), (2, 'ddl.table.exists.create.forbid', 'unknown_table_state'), (3, 'ddl.table.exists.create.forbid', 'unknown_table_state')] expected=[(0, 'ddl.database.create.exists.forbid', 'unknown_schema_state'), (0, 'ddl.database.option.encryption.applicability', 'missing_target_version'), (1, 'ddl.database.create.exists.forbid', 'unknown_schema_state'), (2, 'ddl.table.exists.create.forbid', 'unknown_table_state'), (3, 'ddl.table.exists.create.forbid', 'unknown_table_state')]"
+    },
+    {
+      "name": "evidence gap required_facts (0, 'ddl.database.create.exists.forbid', 'unknown_schema_state')",
+      "ok": true,
+      "detail": "gaps=[{'rule_id': 'ddl.database.create.exists.forbid', 'reason_code': 'unknown_schema_state', 'required_facts': ['schema.existence']}, {'rule_id': 'ddl.database.option.encryption.applicability', 'reason_code': 'missing_target_version', 'required_facts': ['target.version']}, {'rule_id': 'ddl.database.create.exists.forbid', 'reason_code': 'unknown_schema_state', 'required_facts': ['schema.existence']}, {'rule_id': 'ddl.table.exists.create.forbid', 'reason_code': 'unknown_table_state', 'required_facts': ['target_table.existence']}, {'rule_id': 'ddl.table.exists.create.forbid', 'reason_code': 'unknown_table_state', 'required_facts': ['target_table.existence']}] expected_facts=['schema.existence']"
+    },
+    {
+      "name": "evidence gap required_facts (0, 'ddl.database.option.encryption.applicability', 'missing_target_version')",
+      "ok": true,
+      "detail": "gaps=[{'rule_id': 'ddl.database.create.exists.forbid', 'reason_code': 'unknown_schema_state', 'required_facts': ['schema.existence']}, {'rule_id': 'ddl.database.option.encryption.applicability', 'reason_code': 'missing_target_version', 'required_facts': ['target.version']}, {'rule_id': 'ddl.database.create.exists.forbid', 'reason_code': 'unknown_schema_state', 'required_facts': ['schema.existence']}, {'rule_id': 'ddl.table.exists.create.forbid', 'reason_code': 'unknown_table_state', 'required_facts': ['target_table.existence']}, {'rule_id': 'ddl.table.exists.create.forbid', 'reason_code': 'unknown_table_state', 'required_facts': ['target_table.existence']}] expected_facts=['target.version']"
+    },
+    {
+      "name": "evidence gap required_facts (1, 'ddl.database.create.exists.forbid', 'unknown_schema_state')",
+      "ok": true,
+      "detail": "gaps=[{'rule_id': 'ddl.database.create.exists.forbid', 'reason_code': 'unknown_schema_state', 'required_facts': ['schema.existence']}, {'rule_id': 'ddl.database.option.encryption.applicability', 'reason_code': 'missing_target_version', 'required_facts': ['target.version']}, {'rule_id': 'ddl.database.create.exists.forbid', 'reason_code': 'unknown_schema_state', 'required_facts': ['schema.existence']}, {'rule_id': 'ddl.table.exists.create.forbid', 'reason_code': 'unknown_table_state', 'required_facts': ['target_table.existence']}, {'rule_id': 'ddl.table.exists.create.forbid', 'reason_code': 'unknown_table_state', 'required_facts': ['target_table.existence']}] expected_facts=['schema.existence']"
+    },
+    {
+      "name": "evidence gap required_facts (2, 'ddl.table.exists.create.forbid', 'unknown_table_state')",
+      "ok": true,
+      "detail": "gaps=[{'rule_id': 'ddl.database.create.exists.forbid', 'reason_code': 'unknown_schema_state', 'required_facts': ['schema.existence']}, {'rule_id': 'ddl.database.option.encryption.applicability', 'reason_code': 'missing_target_version', 'required_facts': ['target.version']}, {'rule_id': 'ddl.database.create.exists.forbid', 'reason_code': 'unknown_schema_state', 'required_facts': ['schema.existence']}, {'rule_id': 'ddl.table.exists.create.forbid', 'reason_code': 'unknown_table_state', 'required_facts': ['target_table.existence']}, {'rule_id': 'ddl.table.exists.create.forbid', 'reason_code': 'unknown_table_state', 'required_facts': ['target_table.existence']}] expected_facts=['target_table.existence']"
+    },
+    {
+      "name": "evidence gap required_facts (3, 'ddl.table.exists.create.forbid', 'unknown_table_state')",
+      "ok": true,
+      "detail": "gaps=[{'rule_id': 'ddl.database.create.exists.forbid', 'reason_code': 'unknown_schema_state', 'required_facts': ['schema.existence']}, {'rule_id': 'ddl.database.option.encryption.applicability', 'reason_code': 'missing_target_version', 'required_facts': ['target.version']}, {'rule_id': 'ddl.database.create.exists.forbid', 'reason_code': 'unknown_schema_state', 'required_facts': ['schema.existence']}, {'rule_id': 'ddl.table.exists.create.forbid', 'reason_code': 'unknown_table_state', 'required_facts': ['target_table.existence']}, {'rule_id': 'ddl.table.exists.create.forbid', 'reason_code': 'unknown_table_state', 'required_facts': ['target_table.existence']}] expected_facts=['target_table.existence']"
+    },
+    {
+      "name": "no gap encoded as finding",
+      "ok": true,
+      "detail": "findings carrying gap shape=[]"
+    }
+  ],
+  "status": "pass"
+}

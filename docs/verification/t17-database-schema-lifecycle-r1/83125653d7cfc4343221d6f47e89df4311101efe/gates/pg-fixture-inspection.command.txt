@@ -1,0 +1,1 @@
+docker image inspect postgres:17 --format platform; docker ps/volume/network --filter label=com.docker.compose.project=docker

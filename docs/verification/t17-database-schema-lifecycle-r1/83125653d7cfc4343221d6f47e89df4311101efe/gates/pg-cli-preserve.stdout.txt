@@ -1,0 +1,2 @@
+9f780e9341b06ad5e287f9b85bdd6ddb97accb01d0c8f2cb73f62abaaa46dbf7  bin/deltascope
+9f780e9341b06ad5e287f9b85bdd6ddb97accb01d0c8f2cb73f62abaaa46dbf7  /tmp/t17r1-cli-preserved-BY0qo07Q/deltascope

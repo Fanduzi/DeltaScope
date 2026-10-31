@@ -1,0 +1,26 @@
+{
+  "scoped": {
+    "baseline_sha": "adc1f7322e1c70524435ed687fe27b67b931abb5",
+    "baseline_count": 22,
+    "current_count": 22,
+    "comparison_key": [
+      "file",
+      "message including linter identity"
+    ],
+    "added": [],
+    "removed": [],
+    "unchanged_count": 22
+  },
+  "fullrepo": {
+    "baseline_sha": "adc1f7322e1c70524435ed687fe27b67b931abb5",
+    "baseline_count": 39,
+    "current_count": 39,
+    "comparison_key": [
+      "file",
+      "message including linter identity"
+    ],
+    "added": [],
+    "removed": [],
+    "unchanged_count": 39
+  }
+}

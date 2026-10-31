@@ -1,0 +1,247 @@
+{
+  "case_id": "T17.meta.t17-mysql84-encryption",
+  "kind": "cli_metadata",
+  "cli_case": "t17-mysql84-encryption",
+  "anchor": "mysql84",
+  "dialect": "mysql",
+  "input_sql": "CREATE DATABASE t17enc DEFAULT ENCRYPTION='Y';",
+  "policy_profile": "t17-schema-lifecycle",
+  "policy_path": "/private/tmp/ddl-golden/T17/golden-policy-t17-schema-lifecycle.yaml",
+  "connect": {
+    "host": "127.0.0.1",
+    "port": 23384,
+    "user": "root",
+    "schema": "golden",
+    "password_env": "DS_T17_GOLDEN_PW"
+  },
+  "expected": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+      "complete"
+    ],
+    "evidence_gaps": 0,
+    "version": {
+      "product": "mysql",
+      "version": "8.4.10"
+    }
+  },
+  "actual": {
+    "database": {
+      "product": "mysql",
+      "image": "mysql:8.4.10",
+      "image_digest": "mysql@sha256:8dbcf531a03aade657e181b9cf2f1d1803ce621a1d55610cb44cb531ab7d7db6",
+      "container": "deltascope-ddl-golden-mysql84",
+      "reachable": true,
+      "version": "8.4.10"
+    },
+    "setup": [
+      {
+        "name": "drop-stale",
+        "sql": "DROP DATABASE IF EXISTS t17enc",
+        "rc": 0,
+        "stdout": "",
+        "stderr": ""
+      }
+    ],
+    "post_verify": [],
+    "execute": [
+      {
+        "name": "native-encryption-84",
+        "sql": "CREATE DATABASE t17enc DEFAULT ENCRYPTION='Y'",
+        "rc": 0,
+        "stdout": "",
+        "stderr": "",
+        "verify": [
+          {
+            "assert": "encryption attribute lands",
+            "sql": "SELECT CONCAT(DEFAULT_CHARACTER_SET_NAME,'/',DEFAULT_ENCRYPTION) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='t17enc'",
+            "rc": 0,
+            "output": "utf8mb4/YES",
+            "stderr": ""
+          }
+        ]
+      }
+    ],
+    "structure": [],
+    "teardown": [
+      {
+        "name": "drop-stale",
+        "sql": "DROP DATABASE IF EXISTS t17enc",
+        "rc": 0,
+        "stderr": ""
+      }
+    ],
+    "exit": 0,
+    "stdout": "{\"verdict\":\"pass\",\"coverage\":{\"status\":\"complete\"},\"summary\":{\"statements\":1,\"blockers\":0,\"warnings\":0,\"notices\":0},\"statements\":[{\"index\":0,\"kind\":\"ddl\",\"raw_sql\":\"CREATE DATABASE t17enc DEFAULT ENCRYPTION='Y';\",\"normalized_sql\":\"CREATE DATABASE t17enc DEFAULT ENCRYPTION='Y'\",\"coverage\":{\"status\":\"complete\"}}],\"version\":{\"product\":\"mysql\",\"version\":\"8.4.10\",\"major\":8,\"minor\":4,\"patch\":10,\"source\":\"observed\",\"validated_range\":true},\"fail_on_triggered\":false,\"rule_summary\":{\"loaded\":6,\"applicable\":3,\"skipped\":[]},\"context\":{\"mode\":\"metadata-aware\",\"dialect\":\"mysql\",\"dialect_source\":\"detected\",\"schema\":\"golden\",\"schema_source\":\"flag\"}}\n",
+    "stderr": "",
+    "parsed": {
+      "verdict": "pass",
+      "coverage": {
+        "status": "complete"
+      },
+      "summary": {
+        "statements": 1,
+        "blockers": 0,
+        "warnings": 0,
+        "notices": 0
+      },
+      "statements": [
+        {
+          "index": 0,
+          "kind": "ddl",
+          "raw_sql": "CREATE DATABASE t17enc DEFAULT ENCRYPTION='Y';",
+          "normalized_sql": "CREATE DATABASE t17enc DEFAULT ENCRYPTION='Y'",
+          "coverage": {
+            "status": "complete"
+          }
+        }
+      ],
+      "version": {
+        "product": "mysql",
+        "version": "8.4.10",
+        "major": 8,
+        "minor": 4,
+        "patch": 10,
+        "source": "observed",
+        "validated_range": true
+      },
+      "fail_on_triggered": false,
+      "rule_summary": {
+        "loaded": 6,
+        "applicable": 3,
+        "skipped": []
+      },
+      "context": {
+        "mode": "metadata-aware",
+        "dialect": "mysql",
+        "dialect_source": "detected",
+        "schema": "golden",
+        "schema_source": "flag"
+      }
+    },
+    "version_evidence": {
+      "target_raw": null,
+      "target_canonical": null,
+      "observed_raw": "8.4.10",
+      "observed_canonical": {
+        "product": "mysql",
+        "version": "8.4.10"
+      },
+      "resolved": {
+        "product": "mysql",
+        "version": "8.4.10",
+        "major": 8,
+        "minor": 4,
+        "patch": 10,
+        "source": "observed",
+        "validated_range": true
+      }
+    }
+  },
+  "assertions": [
+    {
+      "name": "database reachable with expected version",
+      "ok": true,
+      "detail": "SELECT VERSION() rc=0 version='8.4.10' expected_contains='8.4.10'"
+    },
+    {
+      "name": "setup drop-stale return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "exit code",
+      "ok": true,
+      "detail": "rc=0 expected=0"
+    },
+    {
+      "name": "verdict",
+      "ok": true,
+      "detail": "verdict='pass'"
+    },
+    {
+      "name": "top-level statements",
+      "ok": true,
+      "detail": "statements=1 expected=1"
+    },
+    {
+      "name": "zero findings",
+      "ok": true,
+      "detail": "findings=0"
+    },
+    {
+      "name": "no diagnostics",
+      "ok": true,
+      "detail": "diagnostics=[]"
+    },
+    {
+      "name": "no unsupported",
+      "ok": true,
+      "detail": "unsupported=[]"
+    },
+    {
+      "name": "aggregate coverage",
+      "ok": true,
+      "detail": "coverage='complete'"
+    },
+    {
+      "name": "per-statement coverage",
+      "ok": true,
+      "detail": "statement_coverage=['complete']"
+    },
+    {
+      "name": "evidence gap count",
+      "ok": true,
+      "detail": "gaps=0"
+    },
+    {
+      "name": "version identity",
+      "ok": true,
+      "detail": "version={'product': 'mysql', 'version': '8.4.10', 'major': 8, 'minor': 4, 'patch': 10, 'source': 'observed', 'validated_range': True} expected={'product': 'mysql', 'version': '8.4.10'}"
+    },
+    {
+      "name": "execute native-encryption-84 return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "execute native-encryption-84: encryption attribute lands",
+      "ok": true,
+      "detail": "rc=0 output='utf8mb4/YES' expected='utf8mb4/YES'"
+    },
+    {
+      "name": "teardown drop-stale return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    }
+  ],
+  "status": "pass",
+  "command": [
+    "/private/tmp/ddl-golden/T17/bin/deltascope",
+    "audit",
+    "--dialect",
+    "mysql",
+    "--sql",
+    "CREATE DATABASE t17enc DEFAULT ENCRYPTION='Y';",
+    "--config",
+    "/private/tmp/ddl-golden/T17/golden-policy-t17-schema-lifecycle.yaml",
+    "--format",
+    "json",
+    "--host",
+    "127.0.0.1",
+    "--port",
+    "23384",
+    "--user",
+    "root",
+    "--password-env",
+    "DS_T17_GOLDEN_PW",
+    "--schema",
+    "golden"
+  ]
+}

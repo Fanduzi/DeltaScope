@@ -1,0 +1,246 @@
+{
+  "case_id": "T17.cli.t17-cli-seed-mysql",
+  "kind": "cli_audit",
+  "cli_case": "t17-cli-seed-mysql",
+  "dialect": "mysql",
+  "input_sql": "CREATE DATABASE golden_db CHARACTER SET utf8mb4; ALTER DATABASE golden_db CHARACTER SET latin1; DROP DATABASE golden_db;",
+  "policy_profile": "t17-schema-lifecycle",
+  "policy_path": "/private/tmp/ddl-golden/T17/golden-policy-t17-schema-lifecycle.yaml",
+  "command": [
+    "/private/tmp/ddl-golden/T17/bin/deltascope",
+    "audit",
+    "--dialect",
+    "mysql",
+    "--sql",
+    "CREATE DATABASE golden_db CHARACTER SET utf8mb4; ALTER DATABASE golden_db CHARACTER SET latin1; DROP DATABASE golden_db;",
+    "--config",
+    "/private/tmp/ddl-golden/T17/golden-policy-t17-schema-lifecycle.yaml",
+    "--format",
+    "json"
+  ],
+  "expected": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 3,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": [
+      "unverified",
+      "unverified",
+      "unverified"
+    ],
+    "evidence_gaps": 3,
+    "statement_indices": [
+      0,
+      1,
+      2
+    ],
+    "evidence_gap_entries": [
+      {
+        "index": 0,
+        "rule_id": "ddl.database.create.exists.forbid",
+        "reason_code": "unknown_schema_state",
+        "required_facts": [
+          "schema.existence"
+        ]
+      },
+      {
+        "index": 1,
+        "rule_id": "ddl.database.alter.exists.require",
+        "reason_code": "unknown_schema_state",
+        "required_facts": [
+          "schema.existence"
+        ]
+      },
+      {
+        "index": 2,
+        "rule_id": "ddl.database.drop.exists.require",
+        "reason_code": "unknown_schema_state",
+        "required_facts": [
+          "schema.existence"
+        ]
+      }
+    ]
+  },
+  "actual": {
+    "exit": 0,
+    "stdout": "{\"verdict\":\"review\",\"coverage\":{\"status\":\"unverified\"},\"summary\":{\"statements\":3,\"blockers\":0,\"warnings\":0,\"notices\":0},\"statements\":[{\"index\":0,\"kind\":\"ddl\",\"raw_sql\":\"CREATE DATABASE golden_db CHARACTER SET utf8mb4;\",\"normalized_sql\":\"CREATE DATABASE golden_db CHARACTER SET utf8mb4\",\"evidence_gaps\":[{\"rule_id\":\"ddl.database.create.exists.forbid\",\"reason_code\":\"unknown_schema_state\",\"required_facts\":[\"schema.existence\"]}],\"coverage\":{\"status\":\"unverified\"}},{\"index\":1,\"kind\":\"ddl\",\"raw_sql\":\"ALTER DATABASE golden_db CHARACTER SET latin1;\",\"normalized_sql\":\"ALTER DATABASE golden_db CHARACTER SET latin1\",\"evidence_gaps\":[{\"rule_id\":\"ddl.database.alter.exists.require\",\"reason_code\":\"unknown_schema_state\",\"required_facts\":[\"schema.existence\"]}],\"coverage\":{\"status\":\"unverified\"}},{\"index\":2,\"kind\":\"ddl\",\"raw_sql\":\"DROP DATABASE golden_db;\",\"normalized_sql\":\"DROP DATABASE golden_db\",\"evidence_gaps\":[{\"rule_id\":\"ddl.database.drop.exists.require\",\"reason_code\":\"unknown_schema_state\",\"required_facts\":[\"schema.existence\"]}],\"coverage\":{\"status\":\"unverified\"}}],\"fail_on_triggered\":false,\"rule_summary\":{\"loaded\":6,\"applicable\":5,\"skipped\":[]},\"context\":{\"mode\":\"offline\",\"dialect\":\"mysql\",\"dialect_source\":\"flag\",\"note\":\"existence not checked (no database connection)\",\"unproven\":[\"column_exists\",\"table_exists\"]}}\n",
+    "stderr": "",
+    "parsed": {
+      "verdict": "review",
+      "coverage": {
+        "status": "unverified"
+      },
+      "summary": {
+        "statements": 3,
+        "blockers": 0,
+        "warnings": 0,
+        "notices": 0
+      },
+      "statements": [
+        {
+          "index": 0,
+          "kind": "ddl",
+          "raw_sql": "CREATE DATABASE golden_db CHARACTER SET utf8mb4;",
+          "normalized_sql": "CREATE DATABASE golden_db CHARACTER SET utf8mb4",
+          "evidence_gaps": [
+            {
+              "rule_id": "ddl.database.create.exists.forbid",
+              "reason_code": "unknown_schema_state",
+              "required_facts": [
+                "schema.existence"
+              ]
+            }
+          ],
+          "coverage": {
+            "status": "unverified"
+          }
+        },
+        {
+          "index": 1,
+          "kind": "ddl",
+          "raw_sql": "ALTER DATABASE golden_db CHARACTER SET latin1;",
+          "normalized_sql": "ALTER DATABASE golden_db CHARACTER SET latin1",
+          "evidence_gaps": [
+            {
+              "rule_id": "ddl.database.alter.exists.require",
+              "reason_code": "unknown_schema_state",
+              "required_facts": [
+                "schema.existence"
+              ]
+            }
+          ],
+          "coverage": {
+            "status": "unverified"
+          }
+        },
+        {
+          "index": 2,
+          "kind": "ddl",
+          "raw_sql": "DROP DATABASE golden_db;",
+          "normalized_sql": "DROP DATABASE golden_db",
+          "evidence_gaps": [
+            {
+              "rule_id": "ddl.database.drop.exists.require",
+              "reason_code": "unknown_schema_state",
+              "required_facts": [
+                "schema.existence"
+              ]
+            }
+          ],
+          "coverage": {
+            "status": "unverified"
+          }
+        }
+      ],
+      "fail_on_triggered": false,
+      "rule_summary": {
+        "loaded": 6,
+        "applicable": 5,
+        "skipped": []
+      },
+      "context": {
+        "mode": "offline",
+        "dialect": "mysql",
+        "dialect_source": "flag",
+        "note": "existence not checked (no database connection)",
+        "unproven": [
+          "column_exists",
+          "table_exists"
+        ]
+      }
+    },
+    "version_evidence": {
+      "target_raw": null,
+      "target_canonical": null,
+      "observed_raw": null,
+      "observed_canonical": null,
+      "resolved": null
+    }
+  },
+  "assertions": [
+    {
+      "name": "exit code",
+      "ok": true,
+      "detail": "rc=0 expected=0"
+    },
+    {
+      "name": "verdict",
+      "ok": true,
+      "detail": "verdict='review'"
+    },
+    {
+      "name": "top-level statements",
+      "ok": true,
+      "detail": "statements=3 expected=3"
+    },
+    {
+      "name": "zero findings",
+      "ok": true,
+      "detail": "findings=0"
+    },
+    {
+      "name": "no diagnostics",
+      "ok": true,
+      "detail": "diagnostics=[]"
+    },
+    {
+      "name": "no unsupported",
+      "ok": true,
+      "detail": "unsupported=[]"
+    },
+    {
+      "name": "statement indices",
+      "ok": true,
+      "detail": "indices=[0, 1, 2]"
+    },
+    {
+      "name": "finding statement ownership",
+      "ok": true,
+      "detail": "findings must belong to their enclosing statement"
+    },
+    {
+      "name": "aggregate coverage",
+      "ok": true,
+      "detail": "coverage='unverified'"
+    },
+    {
+      "name": "per-statement coverage",
+      "ok": true,
+      "detail": "statement_coverage=['unverified', 'unverified', 'unverified']"
+    },
+    {
+      "name": "evidence gap count",
+      "ok": true,
+      "detail": "gaps=3"
+    },
+    {
+      "name": "evidence gap entries",
+      "ok": true,
+      "detail": "gaps=[(0, 'ddl.database.create.exists.forbid', 'unknown_schema_state'), (1, 'ddl.database.alter.exists.require', 'unknown_schema_state'), (2, 'ddl.database.drop.exists.require', 'unknown_schema_state')] expected=[(0, 'ddl.database.create.exists.forbid', 'unknown_schema_state'), (1, 'ddl.database.alter.exists.require', 'unknown_schema_state'), (2, 'ddl.database.drop.exists.require', 'unknown_schema_state')]"
+    },
+    {
+      "name": "evidence gap required_facts (0, 'ddl.database.create.exists.forbid', 'unknown_schema_state')",
+      "ok": true,
+      "detail": "gaps=[{'rule_id': 'ddl.database.create.exists.forbid', 'reason_code': 'unknown_schema_state', 'required_facts': ['schema.existence']}, {'rule_id': 'ddl.database.alter.exists.require', 'reason_code': 'unknown_schema_state', 'required_facts': ['schema.existence']}, {'rule_id': 'ddl.database.drop.exists.require', 'reason_code': 'unknown_schema_state', 'required_facts': ['schema.existence']}] expected_facts=['schema.existence']"
+    },
+    {
+      "name": "evidence gap required_facts (1, 'ddl.database.alter.exists.require', 'unknown_schema_state')",
+      "ok": true,
+      "detail": "gaps=[{'rule_id': 'ddl.database.create.exists.forbid', 'reason_code': 'unknown_schema_state', 'required_facts': ['schema.existence']}, {'rule_id': 'ddl.database.alter.exists.require', 'reason_code': 'unknown_schema_state', 'required_facts': ['schema.existence']}, {'rule_id': 'ddl.database.drop.exists.require', 'reason_code': 'unknown_schema_state', 'required_facts': ['schema.existence']}] expected_facts=['schema.existence']"
+    },
+    {
+      "name": "evidence gap required_facts (2, 'ddl.database.drop.exists.require', 'unknown_schema_state')",
+      "ok": true,
+      "detail": "gaps=[{'rule_id': 'ddl.database.create.exists.forbid', 'reason_code': 'unknown_schema_state', 'required_facts': ['schema.existence']}, {'rule_id': 'ddl.database.alter.exists.require', 'reason_code': 'unknown_schema_state', 'required_facts': ['schema.existence']}, {'rule_id': 'ddl.database.drop.exists.require', 'reason_code': 'unknown_schema_state', 'required_facts': ['schema.existence']}] expected_facts=['schema.existence']"
+    },
+    {
+      "name": "no gap encoded as finding",
+      "ok": true,
+      "detail": "findings carrying gap shape=[]"
+    }
+  ],
+  "status": "pass"
+}

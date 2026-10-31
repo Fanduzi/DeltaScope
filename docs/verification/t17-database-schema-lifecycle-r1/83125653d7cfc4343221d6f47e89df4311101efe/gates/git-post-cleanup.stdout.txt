@@ -1,0 +1,28 @@
+milestone/mysql-tidb-ddl-completion
+83125653d7cfc4343221d6f47e89df4311101efe
+175ab0e15db942d7b74f252d2359c766783b606e
+0fa922d062361add8a3cb9f01ee2dfb4292fdef6 refs/heads/docs/agent-guidance
+9a28cc99c38770e6e40738515994f864166419f9 refs/heads/main
+83125653d7cfc4343221d6f47e89df4311101efe refs/heads/milestone/mysql-tidb-ddl-completion
+c38536e9b5d65e4792ea6cd29bb93428e41687b3 refs/heads/workfree
+worktree /Users/fan/GolangProjects/DeltaScope
+HEAD 83125653d7cfc4343221d6f47e89df4311101efe
+branch refs/heads/milestone/mysql-tidb-ddl-completion
+
+worktree /Users/fan/GolangProjects/DeltaScope-agent-guidance
+HEAD 0fa922d062361add8a3cb9f01ee2dfb4292fdef6
+branch refs/heads/docs/agent-guidance
+
+?? .agents/
+?? .codex/
+?? .cursor/
+?? .debug-journal.md
+?? .devin/
+?? .grok/
+?? .opencode/
+?? .pi-subagents/
+?? .qoder/
+?? artifacts/
+?? docs/quality/architecture-review-2026-08-11.html
+?? docs/verification/t06-a12/1a5dd90de898a59590ef8a19aa068c4b5e8ce7f8/T06/
+?? docs/verification/t17-database-schema-lifecycle-r1/

@@ -1,0 +1,1 @@
+go version; python3 --version; make --version; docker --version; golangci-lint version; bash --version

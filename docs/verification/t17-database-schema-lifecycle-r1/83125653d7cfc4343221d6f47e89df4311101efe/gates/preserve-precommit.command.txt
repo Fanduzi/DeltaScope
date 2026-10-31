@@ -1,0 +1,1 @@
+Hash every file under /tmp/ddl-golden/T17; move it into a unique non-overwriting /tmp sibling; hash and compare every moved file.

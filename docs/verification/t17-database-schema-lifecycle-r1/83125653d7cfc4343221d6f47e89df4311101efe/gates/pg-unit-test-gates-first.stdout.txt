@@ -1,0 +1,25 @@
+CGO_ENABLED=1 go test -tags postgresql -count=1 ./internal/infrastructure/parser/postgresql ./internal/application/audit ./internal/application/auditmeta ./internal/interfaces/cli ./internal/interfaces/http ./internal/interfaces/mcp ./pkg/deltascope
+ok  	github.com/Fanduzi/DeltaScope/internal/infrastructure/parser/postgresql	0.531s
+--- FAIL: TestObjectEnrichmentResolverErrorFallsBackToUnavailable (0.00s)
+panic: runtime error: index out of range [0] with length 0 [recovered, repanicked]
+
+goroutine 1495 [running]:
+testing.tRunner.func1.2({0x10280d840, 0x711fc85aa288})
+	/Users/fan/.asdf/installs/golang/1.26.1/go/src/testing/testing.go:1974 +0x1a0
+testing.tRunner.func1()
+	/Users/fan/.asdf/installs/golang/1.26.1/go/src/testing/testing.go:1977 +0x318
+panic({0x10280d840?, 0x711fc85aa288?})
+	/Users/fan/.asdf/installs/golang/1.26.1/go/src/runtime/panic.go:860 +0x12c
+github.com/Fanduzi/DeltaScope/internal/application/audit.TestObjectEnrichmentResolverErrorFallsBackToUnavailable(0x711fc7fa58c8)
+	/Users/fan/GolangProjects/DeltaScope/internal/application/audit/metadata_object_validation_postgresql_tag_test.go:219 +0x2d0
+testing.tRunner(0x711fc7fa58c8, 0x102885598)
+	/Users/fan/.asdf/installs/golang/1.26.1/go/src/testing/testing.go:2036 +0xc4
+created by testing.(*T).Run in goroutine 1
+	/Users/fan/.asdf/installs/golang/1.26.1/go/src/testing/testing.go:2101 +0x3a8
+FAIL	github.com/Fanduzi/DeltaScope/internal/application/audit	2.743s
+ok  	github.com/Fanduzi/DeltaScope/internal/application/auditmeta	1.520s
+ok  	github.com/Fanduzi/DeltaScope/internal/interfaces/cli	1.921s
+ok  	github.com/Fanduzi/DeltaScope/internal/interfaces/http	2.385s
+ok  	github.com/Fanduzi/DeltaScope/internal/interfaces/mcp	3.948s
+ok  	github.com/Fanduzi/DeltaScope/pkg/deltascope	3.044s
+FAIL

@@ -1,0 +1,1 @@
+Assert go list succeeded and output has no docs/verification/t17-database-schema-lifecycle-r1 package path

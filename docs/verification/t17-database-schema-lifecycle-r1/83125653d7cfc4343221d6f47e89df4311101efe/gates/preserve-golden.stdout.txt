@@ -1,0 +1,4 @@
+All file hashes identical
+06044f134ceebc6e8f8dc2a65ffed150d33febdcf242acd368615bed2c6c6737  /tmp/t17r1-evidence/gates/golden-original-before.sha256
+06044f134ceebc6e8f8dc2a65ffed150d33febdcf242acd368615bed2c6c6737  /tmp/t17r1-evidence/gates/golden-original-after.sha256
+/tmp/ddl-golden-T17-preserved-r37UMbPB/T17

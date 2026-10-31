@@ -1,0 +1,17 @@
+red=/Users/fan/GolangProjects/DeltaScope-wt-t17r1-red
+bundle=/Users/fan/GolangProjects/DeltaScope/docs/verification/t17-database-schema-lifecycle-r1/83125653d7cfc4343221d6f47e89df4311101efe
+sha=$(git -C "$red" rev-parse HEAD)
+printf 'red HEAD=%s\n' "$sha"
+test "$sha" = adc1f7322e1c70524435ed687fe27b67b931abb5
+if git -C "$red" symbolic-ref -q HEAD >/dev/null; then echo 'red worktree is not detached' >&2; exit 1; fi
+status=$(git -C "$red" status --porcelain=v1 --untracked-files=all)
+printf '%s\n' "$status"
+expected=$(printf '%s\n' '?? internal/application/audit/batch_state_t17r1_proof_test.go' '?? internal/application/audit/batch_state_t17r1_test.go')
+test "$status" = "$expected"
+for f in batch_state_t17r1_test.go batch_state_t17r1_proof_test.go; do cmp "$red/internal/application/audit/$f" "$bundle/sources/red/$f"; done
+test "$(cat "$bundle/gates/ddl-golden-final.rc.txt")" = 0
+test "$(cat "$bundle/gates/decision-record-final.rc.txt")" = 0
+test "$(cat "$bundle/gates/l2-committed-final.rc.txt")" = 0
+rm "$red/internal/application/audit/batch_state_t17r1_test.go" "$red/internal/application/audit/batch_state_t17r1_proof_test.go"
+git worktree remove "$red"
+echo 'red worktree removed without force'

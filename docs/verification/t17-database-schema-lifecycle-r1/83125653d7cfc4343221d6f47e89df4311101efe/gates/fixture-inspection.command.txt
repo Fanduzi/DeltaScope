@@ -1,0 +1,1 @@
+docker ps -a --filter label=com.docker.compose.project=deltascope-ddl-golden --format names; docker volume ls --filter label=com.docker.compose.project=deltascope-ddl-golden --format names; docker network ls --filter label=com.docker.compose.project=deltascope-ddl-golden --format names; docker image inspect pinned anchors --format platform

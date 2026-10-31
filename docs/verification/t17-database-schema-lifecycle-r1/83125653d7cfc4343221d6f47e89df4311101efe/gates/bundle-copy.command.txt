@@ -1,0 +1,1 @@
+cmp copied red/current test sources, manifest, Golden artifact and lead-authored scripts; diff -qr copied red and phase1 evidence directories

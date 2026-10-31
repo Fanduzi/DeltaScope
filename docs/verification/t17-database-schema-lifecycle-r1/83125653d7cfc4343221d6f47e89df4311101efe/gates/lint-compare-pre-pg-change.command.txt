@@ -1,0 +1,1 @@
+python3 /tmp/t17r1-compare-lint.py /tmp/t17r1-evidence/gates

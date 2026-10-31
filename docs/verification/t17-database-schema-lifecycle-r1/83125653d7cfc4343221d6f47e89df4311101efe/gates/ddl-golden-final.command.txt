@@ -1,0 +1,1 @@
+T17_MYSQL_PASSWORD=<disposable-fixture-value> DS_T17_GOLDEN_PW=<disposable-fixture-value> make ddl-golden TASK=T17 ARTIFACT_DIR=/tmp/ddl-golden

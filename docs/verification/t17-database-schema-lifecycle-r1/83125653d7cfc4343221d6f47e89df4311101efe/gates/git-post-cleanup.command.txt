@@ -1,0 +1,1 @@
+git branch --show-current; git rev-parse HEAD HEAD^; git show-ref --heads; git worktree list --porcelain; git status --porcelain=v1 --untracked-files=normal

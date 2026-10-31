@@ -1,0 +1,15 @@
+b=docs/verification/t17-database-schema-lifecycle-r1/83125653d7cfc4343221d6f47e89df4311101efe
+set -- "$b"/sources/red/*.go "$b"/sources/current/*.go
+test "$#" = 5
+for f in "$@"; do test -f "$f"; test ! -e "$f.txt"; done
+test ! -e "$b/gates/INDEX.md"
+test ! -e "$b/golden/T17-precommit.artifact.json"
+for f in "$@"; do
+  before=$(shasum -a 256 "$f" | awk '{print $1}')
+  mv "$f" "$f.txt"
+  after=$(shasum -a 256 "$f.txt" | awk '{print $1}')
+  printf 'before %s  %s\nafter  %s  %s\n' "$before" "$f" "$after" "$f.txt"
+  test "$before" = "$after"
+done
+cp -p /tmp/t17r1-gates-INDEX.md "$b/gates/INDEX.md"
+cp -p /tmp/ddl-golden-T17-precommit-XMcllUSQ/T17/artifact.json "$b/golden/T17-precommit.artifact.json"

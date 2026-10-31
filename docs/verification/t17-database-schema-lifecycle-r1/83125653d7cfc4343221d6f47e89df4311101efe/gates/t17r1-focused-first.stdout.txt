@@ -1,0 +1,2 @@
+FAIL	github.com/Fanduzi/DeltaScope/internal/application/audit [build failed]
+FAIL

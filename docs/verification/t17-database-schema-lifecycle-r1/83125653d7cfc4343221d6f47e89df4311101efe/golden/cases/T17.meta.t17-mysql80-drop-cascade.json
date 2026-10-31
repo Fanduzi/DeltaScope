@@ -1,0 +1,339 @@
+{
+  "case_id": "T17.meta.t17-mysql80-drop-cascade",
+  "kind": "cli_metadata",
+  "cli_case": "t17-mysql80-drop-cascade",
+  "anchor": "mysql80",
+  "dialect": "mysql",
+  "input_sql": "DROP DATABASE t17casc; DROP TABLE t17casc.t;",
+  "policy_profile": "t17-cascade",
+  "policy_path": "/private/tmp/ddl-golden/T17/golden-policy-t17-cascade.yaml",
+  "connect": {
+    "host": "127.0.0.1",
+    "port": 23380,
+    "user": "root",
+    "schema": "golden",
+    "password_env": "DS_T17_GOLDEN_PW"
+  },
+  "expected": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 2,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+      "complete",
+      "complete"
+    ],
+    "evidence_gaps": 0,
+    "finding_entries": [
+      {
+        "index": 1,
+        "rule_id": "ddl.table.drop.exists.require",
+        "level": "blocker"
+      }
+    ],
+    "version": {
+      "product": "mysql",
+      "version": "8.0.46"
+    }
+  },
+  "actual": {
+    "database": {
+      "product": "mysql",
+      "image": "mysql:8.0.46",
+      "image_digest": "mysql@sha256:7dcddc01f13bab2f15cde676d44d01f61fc9f99fe7785e86196dfc07d358ae2b",
+      "container": "deltascope-ddl-golden-mysql80",
+      "reachable": true,
+      "version": "8.0.46"
+    },
+    "setup": [
+      {
+        "name": "drop-stale",
+        "sql": "DROP DATABASE IF EXISTS t17casc",
+        "rc": 0,
+        "stdout": "",
+        "stderr": ""
+      },
+      {
+        "name": "create-cascade",
+        "sql": "CREATE DATABASE t17casc; CREATE TABLE t17casc.t (id INT)",
+        "rc": 0,
+        "stdout": "",
+        "stderr": ""
+      }
+    ],
+    "post_verify": [],
+    "execute": [
+      {
+        "name": "native-drop-cascades",
+        "sql": "DROP DATABASE t17casc",
+        "rc": 0,
+        "stdout": "",
+        "stderr": "",
+        "verify": [
+          {
+            "assert": "schema gone",
+            "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='t17casc'",
+            "rc": 0,
+            "output": "0",
+            "stderr": ""
+          },
+          {
+            "assert": "contained table died with schema",
+            "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='t17casc'",
+            "rc": 0,
+            "output": "0",
+            "stderr": ""
+          }
+        ]
+      },
+      {
+        "name": "native-drop-table-orphan",
+        "sql": "DROP TABLE t17casc.t",
+        "rc": 1,
+        "stdout": "",
+        "stderr": "ERROR 1051 (42S02) at line 1: Unknown table 't17casc.t'"
+      }
+    ],
+    "structure": [],
+    "teardown": [
+      {
+        "name": "drop-stale",
+        "sql": "DROP DATABASE IF EXISTS t17casc",
+        "rc": 0,
+        "stderr": ""
+      }
+    ],
+    "exit": 1,
+    "stdout": "{\"verdict\":\"reject\",\"coverage\":{\"status\":\"complete\"},\"summary\":{\"statements\":2,\"blockers\":1,\"warnings\":0,\"notices\":0},\"statements\":[{\"index\":0,\"kind\":\"ddl\",\"raw_sql\":\"DROP DATABASE t17casc;\",\"normalized_sql\":\"DROP DATABASE t17casc\",\"coverage\":{\"status\":\"complete\"}},{\"index\":1,\"kind\":\"ddl\",\"raw_sql\":\"DROP TABLE t17casc.t;\",\"normalized_sql\":\"DROP TABLE t17casc.t\",\"findings\":[{\"rule_id\":\"ddl.table.drop.exists.require\",\"level\":\"blocker\",\"message\":\"drop table target \\\"t\\\" does not exist in the target schema\",\"statement_index\":1,\"statement_kind\":\"ddl\",\"location\":{\"line\":1,\"column\":24},\"suggestion\":\"refresh metadata, create the object first, or disable metadata mode for offline-only auditing\",\"metadata\":{\"exists\":false,\"operation\":\"drop_table\",\"table\":\"t\"},\"explanation\":{\"summary\":\"Require DDL table drop exists require\",\"why\":\"The statement is missing a clause, option, or object that the shipped policy requires.\",\"risk\":\"Ignoring this rule can hide live-schema or instance-state risks that only metadata reveals.\",\"suggestion\":\"refresh metadata, create the object first, or disable metadata mode for offline-only auditing\",\"metadata\":{\"status\":\"available\",\"note\":\"Live metadata is available, so this explanation can use schema or instance facts for a more accurate judgment.\"}}}],\"coverage\":{\"status\":\"complete\"}}],\"version\":{\"product\":\"mysql\",\"version\":\"8.0.46\",\"major\":8,\"minor\":0,\"patch\":46,\"source\":\"observed\",\"validated_range\":true},\"fail_on_triggered\":true,\"rule_summary\":{\"loaded\":8,\"applicable\":4,\"skipped\":[]},\"context\":{\"mode\":\"metadata-aware\",\"dialect\":\"mysql\",\"dialect_source\":\"detected\",\"schema\":\"golden\",\"schema_source\":\"flag\"}}\n",
+    "stderr": "",
+    "parsed": {
+      "verdict": "reject",
+      "coverage": {
+        "status": "complete"
+      },
+      "summary": {
+        "statements": 2,
+        "blockers": 1,
+        "warnings": 0,
+        "notices": 0
+      },
+      "statements": [
+        {
+          "index": 0,
+          "kind": "ddl",
+          "raw_sql": "DROP DATABASE t17casc;",
+          "normalized_sql": "DROP DATABASE t17casc",
+          "coverage": {
+            "status": "complete"
+          }
+        },
+        {
+          "index": 1,
+          "kind": "ddl",
+          "raw_sql": "DROP TABLE t17casc.t;",
+          "normalized_sql": "DROP TABLE t17casc.t",
+          "findings": [
+            {
+              "rule_id": "ddl.table.drop.exists.require",
+              "level": "blocker",
+              "message": "drop table target \"t\" does not exist in the target schema",
+              "statement_index": 1,
+              "statement_kind": "ddl",
+              "location": {
+                "line": 1,
+                "column": 24
+              },
+              "suggestion": "refresh metadata, create the object first, or disable metadata mode for offline-only auditing",
+              "metadata": {
+                "exists": false,
+                "operation": "drop_table",
+                "table": "t"
+              },
+              "explanation": {
+                "summary": "Require DDL table drop exists require",
+                "why": "The statement is missing a clause, option, or object that the shipped policy requires.",
+                "risk": "Ignoring this rule can hide live-schema or instance-state risks that only metadata reveals.",
+                "suggestion": "refresh metadata, create the object first, or disable metadata mode for offline-only auditing",
+                "metadata": {
+                  "status": "available",
+                  "note": "Live metadata is available, so this explanation can use schema or instance facts for a more accurate judgment."
+                }
+              }
+            }
+          ],
+          "coverage": {
+            "status": "complete"
+          }
+        }
+      ],
+      "version": {
+        "product": "mysql",
+        "version": "8.0.46",
+        "major": 8,
+        "minor": 0,
+        "patch": 46,
+        "source": "observed",
+        "validated_range": true
+      },
+      "fail_on_triggered": true,
+      "rule_summary": {
+        "loaded": 8,
+        "applicable": 4,
+        "skipped": []
+      },
+      "context": {
+        "mode": "metadata-aware",
+        "dialect": "mysql",
+        "dialect_source": "detected",
+        "schema": "golden",
+        "schema_source": "flag"
+      }
+    },
+    "version_evidence": {
+      "target_raw": null,
+      "target_canonical": null,
+      "observed_raw": "8.0.46",
+      "observed_canonical": {
+        "product": "mysql",
+        "version": "8.0.46"
+      },
+      "resolved": {
+        "product": "mysql",
+        "version": "8.0.46",
+        "major": 8,
+        "minor": 0,
+        "patch": 46,
+        "source": "observed",
+        "validated_range": true
+      }
+    }
+  },
+  "assertions": [
+    {
+      "name": "database reachable with expected version",
+      "ok": true,
+      "detail": "SELECT VERSION() rc=0 version='8.0.46' expected_contains='8.0.46'"
+    },
+    {
+      "name": "setup drop-stale return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "setup create-cascade return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "exit code",
+      "ok": true,
+      "detail": "rc=1 expected=1"
+    },
+    {
+      "name": "verdict",
+      "ok": true,
+      "detail": "verdict='reject'"
+    },
+    {
+      "name": "top-level statements",
+      "ok": true,
+      "detail": "statements=2 expected=2"
+    },
+    {
+      "name": "zero findings",
+      "ok": true,
+      "detail": "findings=1"
+    },
+    {
+      "name": "no diagnostics",
+      "ok": true,
+      "detail": "diagnostics=[]"
+    },
+    {
+      "name": "no unsupported",
+      "ok": true,
+      "detail": "unsupported=[]"
+    },
+    {
+      "name": "aggregate coverage",
+      "ok": true,
+      "detail": "coverage='complete'"
+    },
+    {
+      "name": "per-statement coverage",
+      "ok": true,
+      "detail": "statement_coverage=['complete', 'complete']"
+    },
+    {
+      "name": "evidence gap count",
+      "ok": true,
+      "detail": "gaps=0"
+    },
+    {
+      "name": "finding entries",
+      "ok": true,
+      "detail": "findings=[(1, 'ddl.table.drop.exists.require', 'blocker')] expected=[(1, 'ddl.table.drop.exists.require', 'blocker')]"
+    },
+    {
+      "name": "version identity",
+      "ok": true,
+      "detail": "version={'product': 'mysql', 'version': '8.0.46', 'major': 8, 'minor': 0, 'patch': 46, 'source': 'observed', 'validated_range': True} expected={'product': 'mysql', 'version': '8.0.46'}"
+    },
+    {
+      "name": "execute native-drop-cascades return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "execute native-drop-cascades: schema gone",
+      "ok": true,
+      "detail": "rc=0 output='0' expected='0'"
+    },
+    {
+      "name": "execute native-drop-cascades: contained table died with schema",
+      "ok": true,
+      "detail": "rc=0 output='0' expected='0'"
+    },
+    {
+      "name": "execute native-drop-table-orphan return code",
+      "ok": true,
+      "detail": "rc=1 expected=1 stderr=\"ERROR 1051 (42S02) at line 1: Unknown table 't17casc.t'\""
+    },
+    {
+      "name": "execute native-drop-table-orphan stderr marker",
+      "ok": true,
+      "detail": "1051"
+    },
+    {
+      "name": "teardown drop-stale return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    }
+  ],
+  "status": "pass",
+  "command": [
+    "/private/tmp/ddl-golden/T17/bin/deltascope",
+    "audit",
+    "--dialect",
+    "mysql",
+    "--sql",
+    "DROP DATABASE t17casc; DROP TABLE t17casc.t;",
+    "--config",
+    "/private/tmp/ddl-golden/T17/golden-policy-t17-cascade.yaml",
+    "--format",
+    "json",
+    "--host",
+    "127.0.0.1",
+    "--port",
+    "23380",
+    "--user",
+    "root",
+    "--password-env",
+    "DS_T17_GOLDEN_PW",
+    "--schema",
+    "golden"
+  ]
+}

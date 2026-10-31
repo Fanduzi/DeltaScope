@@ -1,0 +1,1 @@
+gofmt -l internal/application/audit/batch_state_t07*.go; git hash-object internal/application/audit/batch_state_t07*.go

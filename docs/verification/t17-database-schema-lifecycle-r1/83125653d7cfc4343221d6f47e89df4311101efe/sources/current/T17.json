@@ -1,0 +1,3323 @@
+{
+ "task_id": "T17",
+ "issue": 96,
+ "policy_profile": "all-rules-disabled",
+ "description": "Database/schema lifecycle: CREATE|ALTER|DROP DATABASE|SCHEMA synonyms, conditional clauses, default attributes (charset/collation/encryption), TiDB placement binding, system/business protection and ordered-state namespace facts (issue #96). Anchors: MySQL 5.7.44 / 8.0.46 / 8.4.10, TiDB v8.5.0. T17-R1: INE arm-convergence (5.7-refused encryption, unproven version, TiDB placement), vendor-refused and unproven unextracted schema options, downstream table binding.",
+ "anchors": {
+  "mysql57": {
+   "service": "mysql57",
+   "container": "deltascope-ddl-golden-mysql57",
+   "image": "mysql:5.7.44",
+   "product": "mysql",
+   "version_contains": "5.7.44",
+   "database": "golden",
+   "exec_client": [
+    "mysql",
+    "-uroot",
+    "--default-character-set=utf8mb4"
+   ],
+   "needs_database_create": false,
+   "exec_password_env": "T17_MYSQL_PASSWORD"
+  },
+  "mysql80": {
+   "service": "mysql80",
+   "container": "deltascope-ddl-golden-mysql80",
+   "image": "mysql:8.0.46",
+   "product": "mysql",
+   "version_contains": "8.0.46",
+   "database": "golden",
+   "exec_client": [
+    "mysql",
+    "-uroot",
+    "--default-character-set=utf8mb4"
+   ],
+   "needs_database_create": false,
+   "exec_password_env": "T17_MYSQL_PASSWORD"
+  },
+  "mysql84": {
+   "service": "mysql84",
+   "container": "deltascope-ddl-golden-mysql84",
+   "image": "mysql:8.4.10",
+   "product": "mysql",
+   "version_contains": "8.4.10",
+   "database": "golden",
+   "exec_client": [
+    "mysql",
+    "-uroot",
+    "--default-character-set=utf8mb4"
+   ],
+   "needs_database_create": false,
+   "exec_password_env": "T17_MYSQL_PASSWORD"
+  },
+  "tidb85": {
+   "service": "tidb85",
+   "container": "deltascope-ddl-golden-tidb85",
+   "client_container": "deltascope-ddl-golden-tidb85-client",
+   "client_service": "tidb85-client",
+   "image": "pingcap/tidb:v8.5.0",
+   "product": "tidb",
+   "version_contains": "v8.5.0",
+   "database": "golden",
+   "exec_client": [
+    "mysql",
+    "--protocol=tcp",
+    "-h",
+    "tidb85",
+    "-P",
+    "4000",
+    "-uroot",
+    "--default-character-set=utf8mb4"
+   ],
+   "needs_database_create": true
+  }
+ },
+ "ddl_steps": [
+  {
+   "name": "drop-stale-fixture",
+   "sql": "DROP DATABASE IF EXISTS t17fx",
+   "expect_rc": 0,
+   "verify": []
+  },
+  {
+   "name": "create-fixture-schema",
+   "sql": "CREATE DATABASE t17fx CHARACTER SET utf8mb4",
+   "expect_rc": 0,
+   "verify": [
+    {
+     "assert": "t17fx present",
+     "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='t17fx'",
+     "expect": "1"
+    }
+   ]
+  },
+  {
+   "name": "create-fixture-table",
+   "sql": "CREATE TABLE t17fx.t (id INT)",
+   "expect_rc": 0,
+   "verify": [
+    {
+     "assert": "contained table present",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='t17fx' AND TABLE_NAME='t'",
+     "expect": "1"
+    }
+   ]
+  },
+  {
+   "name": "drop-fixture-cascades",
+   "sql": "DROP DATABASE t17fx",
+   "expect_rc": 0,
+   "verify": [
+    {
+     "assert": "t17fx gone",
+     "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='t17fx'",
+     "expect": "0"
+    },
+    {
+     "assert": "contained table gone with schema",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='t17fx'",
+     "expect": "0"
+    }
+   ]
+  },
+  {
+   "name": "synonym-create",
+   "sql": "CREATE SCHEMA t17sx",
+   "expect_rc": 0,
+   "verify": [
+    {
+     "assert": "t17sx present via SCHEMA synonym",
+     "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='t17sx'",
+     "expect": "1"
+    }
+   ]
+  },
+  {
+   "name": "synonym-drop",
+   "sql": "DROP SCHEMA t17sx",
+   "expect_rc": 0,
+   "verify": [
+    {
+     "assert": "t17sx gone via SCHEMA synonym",
+     "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='t17sx'",
+     "expect": "0"
+    }
+   ]
+  },
+  {
+   "name": "ifexists-noop",
+   "sql": "DROP DATABASE IF EXISTS t17never",
+   "expect_rc": 0,
+   "verify": [
+    {
+     "assert": "t17never still absent",
+     "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='t17never'",
+     "expect": "0"
+    }
+   ]
+  },
+  {
+   "name": "missing-drop-refusal",
+   "sql": "DROP DATABASE t17never",
+   "expect_rc": 1,
+   "verify": [
+    {
+     "assert": "refused drop created nothing",
+     "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='t17never'",
+     "expect": "0"
+    }
+   ]
+  },
+  {
+   "name": "ifnotexists-create",
+   "sql": "CREATE DATABASE IF NOT EXISTS t17ix",
+   "expect_rc": 0,
+   "verify": [
+    {
+     "assert": "t17ix present",
+     "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='t17ix'",
+     "expect": "1"
+    }
+   ]
+  },
+  {
+   "name": "ifnotexists-noop",
+   "sql": "CREATE DATABASE IF NOT EXISTS t17ix",
+   "expect_rc": 0,
+   "verify": [
+    {
+     "assert": "t17ix still present",
+     "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='t17ix'",
+     "expect": "1"
+    }
+   ]
+  },
+  {
+   "name": "duplicate-create-refusal",
+   "sql": "CREATE DATABASE t17ix",
+   "expect_rc": 1,
+   "verify": [
+    {
+     "assert": "refused duplicate kept original",
+     "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='t17ix'",
+     "expect": "1"
+    }
+   ]
+  },
+  {
+   "name": "cleanup-fixture",
+   "sql": "DROP DATABASE t17ix",
+   "expect_rc": 0,
+   "verify": [
+    {
+     "assert": "t17ix gone",
+     "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='t17ix'",
+     "expect": "0"
+    }
+   ]
+  }
+ ],
+ "syntax_negative": {
+  "sql": "DROP DATABASE",
+  "expect": {
+   "rc_nonzero": true,
+   "error_class": "1064",
+   "forbidden_markers": [
+    "ERROR 1045",
+    "ERROR 1044",
+    "ERROR 1049",
+    "ERROR 1142",
+    "ERROR 1143",
+    "ERROR 2002",
+    "ERROR 2003",
+    "ERROR 2005",
+    "Access denied",
+    "Unknown database",
+    "Can't connect",
+    "Connection refused",
+    "already exists"
+   ]
+  }
+ },
+ "policy": {
+  "profiles": {
+   "t17-schema-lifecycle": {
+    "enable": {
+     "ddl.database.create.exists.forbid": {
+      "level": "blocker"
+     },
+     "ddl.database.alter.exists.require": {
+      "level": "blocker"
+     },
+     "ddl.database.drop.exists.require": {
+      "level": "blocker"
+     },
+     "ddl.database.denylist.forbid": {
+      "level": "blocker"
+     },
+     "ddl.database.system.modify.forbid": {
+      "level": "blocker"
+     },
+     "ddl.database.option.encryption.applicability": {
+      "level": "blocker"
+     }
+    }
+   },
+   "t17-notices": {
+    "enable": {
+     "ddl.database.create.notice": {
+      "level": "notice"
+     },
+     "ddl.alter_database.notice": {
+      "level": "notice"
+     },
+     "ddl.database.drop.warn": {
+      "level": "warning"
+     },
+     "ddl.database.create.exists.forbid": {
+      "level": "blocker"
+     },
+     "ddl.database.alter.exists.require": {
+      "level": "blocker"
+     },
+     "ddl.database.drop.exists.require": {
+      "level": "blocker"
+     },
+     "ddl.database.denylist.forbid": {
+      "level": "blocker"
+     },
+     "ddl.database.system.modify.forbid": {
+      "level": "blocker"
+     },
+     "ddl.database.option.encryption.applicability": {
+      "level": "blocker"
+     }
+    }
+   },
+   "t17-cascade": {
+    "enable": {
+     "ddl.database.create.exists.forbid": {
+      "level": "blocker"
+     },
+     "ddl.database.alter.exists.require": {
+      "level": "blocker"
+     },
+     "ddl.database.drop.exists.require": {
+      "level": "blocker"
+     },
+     "ddl.database.denylist.forbid": {
+      "level": "blocker"
+     },
+     "ddl.database.system.modify.forbid": {
+      "level": "blocker"
+     },
+     "ddl.database.option.encryption.applicability": {
+      "level": "blocker"
+     },
+     "ddl.table.drop.exists.require": {
+      "level": "blocker"
+     },
+     "ddl.table.exists.create.forbid": {
+      "level": "blocker"
+     }
+    }
+   },
+   "t17-denylist": {
+    "enable": {
+     "ddl.database.create.exists.forbid": {
+      "level": "blocker"
+     },
+     "ddl.database.alter.exists.require": {
+      "level": "blocker"
+     },
+     "ddl.database.drop.exists.require": {
+      "level": "blocker"
+     },
+     "ddl.database.denylist.forbid": {
+      "level": "blocker",
+      "params": {
+       "schemas": [
+        "payments"
+       ]
+      }
+     },
+     "ddl.database.system.modify.forbid": {
+      "level": "blocker"
+     },
+     "ddl.database.option.encryption.applicability": {
+      "level": "blocker"
+     }
+    }
+   },
+   "t17-custom-levels": {
+    "enable": {
+     "ddl.database.create.exists.forbid": {
+      "level": "notice"
+     },
+     "ddl.database.alter.exists.require": {
+      "level": "warning"
+     },
+     "ddl.database.drop.exists.require": {
+      "level": "warning"
+     },
+     "ddl.database.denylist.forbid": {
+      "level": "warning",
+      "params": {
+       "schemas": [
+        "payments"
+       ]
+      }
+     },
+     "ddl.database.system.modify.forbid": {
+      "level": "notice"
+     },
+     "ddl.database.option.encryption.applicability": {
+      "level": "warning"
+     }
+    }
+   }
+  }
+ },
+ "metadata_cases": [
+  {
+   "id": "t17-mysql80-charset-lifecycle",
+   "anchor": "mysql80",
+   "dialect": "mysql",
+   "sql": "CREATE DATABASE golden_db CHARACTER SET utf8mb4; ALTER DATABASE golden_db CHARACTER SET latin1; DROP DATABASE golden_db;",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23380,
+    "user": "root",
+    "schema": "golden",
+    "password_env": "DS_T17_GOLDEN_PW",
+    "password": "root"
+   },
+   "policy": "t17-schema-lifecycle",
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 3,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete",
+     "complete",
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "statement_indices": [
+     0,
+     1,
+     2
+    ],
+    "statement_sql": [
+     "CREATE DATABASE golden_db CHARACTER SET utf8mb4;",
+     "ALTER DATABASE golden_db CHARACTER SET latin1;",
+     "DROP DATABASE golden_db;"
+    ],
+    "version": {
+     "product": "mysql",
+     "version": "8.0.46"
+    }
+   },
+   "setup": [
+    {
+     "name": "drop-stale",
+     "sql": "DROP DATABASE IF EXISTS golden_db",
+     "expect_rc": 0
+    }
+   ],
+   "execute": [
+    {
+     "name": "native-create",
+     "sql": "CREATE DATABASE golden_db CHARACTER SET utf8mb4",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "created with utf8mb4 defaults",
+       "sql": "SELECT CONCAT(DEFAULT_CHARACTER_SET_NAME,'/',DEFAULT_COLLATION_NAME) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='golden_db'",
+       "expect": "utf8mb4/utf8mb4_0900_ai_ci"
+      }
+     ]
+    },
+    {
+     "name": "native-alter",
+     "sql": "ALTER DATABASE golden_db CHARACTER SET latin1",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "charset latin1, collation reset to latin1 default",
+       "sql": "SELECT CONCAT(DEFAULT_CHARACTER_SET_NAME,'/',DEFAULT_COLLATION_NAME) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='golden_db'",
+       "expect": "latin1/latin1_swedish_ci"
+      }
+     ]
+    },
+    {
+     "name": "native-inherit",
+     "sql": "CREATE TABLE golden_db.t_inherit (id INT)",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "new table inherits altered schema default",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden_db' AND TABLE_NAME='t_inherit' AND TABLE_COLLATION='latin1_swedish_ci'",
+       "expect": "1"
+      }
+     ]
+    },
+    {
+     "name": "native-drop",
+     "sql": "DROP DATABASE golden_db",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "golden_db gone",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='golden_db'",
+       "expect": "0"
+      },
+      {
+       "assert": "contained table gone with schema",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='golden_db'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop-stale",
+     "sql": "DROP DATABASE IF EXISTS golden_db",
+     "expect_rc": 0
+    }
+   ]
+  },
+  {
+   "id": "t17-mysql80-synonym-lifecycle",
+   "anchor": "mysql80",
+   "dialect": "mysql",
+   "sql": "CREATE SCHEMA golden_sx CHARACTER SET utf8mb4; ALTER SCHEMA golden_sx COLLATE latin1_bin; DROP SCHEMA golden_sx;",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23380,
+    "user": "root",
+    "schema": "golden",
+    "password_env": "DS_T17_GOLDEN_PW",
+    "password": "root"
+   },
+   "policy": "t17-schema-lifecycle",
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 3,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete",
+     "complete",
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "statement_indices": [
+     0,
+     1,
+     2
+    ],
+    "version": {
+     "product": "mysql",
+     "version": "8.0.46"
+    }
+   },
+   "setup": [
+    {
+     "name": "drop-stale",
+     "sql": "DROP DATABASE IF EXISTS golden_sx",
+     "expect_rc": 0
+    }
+   ],
+   "execute": [
+    {
+     "name": "native-create-schema",
+     "sql": "CREATE SCHEMA golden_sx CHARACTER SET utf8mb4",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "synonym create lands",
+       "sql": "SELECT CONCAT(DEFAULT_CHARACTER_SET_NAME,'/',DEFAULT_COLLATION_NAME) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='golden_sx'",
+       "expect": "utf8mb4/utf8mb4_0900_ai_ci"
+      }
+     ]
+    },
+    {
+     "name": "native-alter-schema-collate",
+     "sql": "ALTER SCHEMA golden_sx COLLATE latin1_bin",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "collate-only change derives latin1 charset",
+       "sql": "SELECT CONCAT(DEFAULT_CHARACTER_SET_NAME,'/',DEFAULT_COLLATION_NAME) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='golden_sx'",
+       "expect": "latin1/latin1_bin"
+      }
+     ]
+    },
+    {
+     "name": "native-drop-schema",
+     "sql": "DROP SCHEMA golden_sx",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "synonym drop lands",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='golden_sx'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop-stale",
+     "sql": "DROP DATABASE IF EXISTS golden_sx",
+     "expect_rc": 0
+    }
+   ]
+  },
+  {
+   "id": "t17-mysql80-nameless-alter",
+   "anchor": "mysql80",
+   "dialect": "mysql",
+   "sql": "ALTER DATABASE CHARACTER SET gbk;",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23380,
+    "user": "root",
+    "schema": "golden",
+    "password_env": "DS_T17_GOLDEN_PW",
+    "password": "root"
+   },
+   "policy": "t17-schema-lifecycle",
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "statement_indices": [
+     0
+    ],
+    "version": {
+     "product": "mysql",
+     "version": "8.0.46"
+    }
+   },
+   "execute": [
+    {
+     "name": "native-nameless-alter",
+     "sql": "ALTER DATABASE CHARACTER SET gbk",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "name-less alter binds the connection schema",
+       "sql": "SELECT CONCAT(DEFAULT_CHARACTER_SET_NAME,'/',DEFAULT_COLLATION_NAME) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='golden'",
+       "expect": "gbk/gbk_chinese_ci",
+       "use_database": true
+      }
+     ]
+    }
+   ],
+   "teardown": [
+    {
+     "name": "restore-charset",
+     "sql": "ALTER DATABASE golden CHARACTER SET utf8mb4",
+     "expect_rc": 0
+    }
+   ]
+  },
+  {
+   "id": "t17-mysql80-create-duplicate",
+   "anchor": "mysql80",
+   "dialect": "mysql",
+   "sql": "CREATE DATABASE golden_db;",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23380,
+    "user": "root",
+    "schema": "golden",
+    "password_env": "DS_T17_GOLDEN_PW",
+    "password": "root"
+   },
+   "policy": "t17-schema-lifecycle",
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.database.create.exists.forbid",
+      "level": "blocker"
+     }
+    ],
+    "version": {
+     "product": "mysql",
+     "version": "8.0.46"
+    }
+   },
+   "setup": [
+    {
+     "name": "drop-stale",
+     "sql": "DROP DATABASE IF EXISTS golden_db",
+     "expect_rc": 0
+    },
+    {
+     "name": "create-target",
+     "sql": "CREATE DATABASE golden_db",
+     "expect_rc": 0
+    }
+   ],
+   "execute": [
+    {
+     "name": "native-duplicate",
+     "sql": "CREATE DATABASE golden_db",
+     "expect_rc": 1,
+     "stderr_contains": [
+      "1007"
+     ],
+     "verify": [
+      {
+       "assert": "duplicate kept, not recreated",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='golden_db'",
+       "expect": "1"
+      }
+     ]
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop-stale",
+     "sql": "DROP DATABASE IF EXISTS golden_db",
+     "expect_rc": 0
+    }
+   ]
+  },
+  {
+   "id": "t17-mysql80-create-if-noop",
+   "anchor": "mysql80",
+   "dialect": "mysql",
+   "sql": "CREATE DATABASE IF NOT EXISTS golden_db;",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23380,
+    "user": "root",
+    "schema": "golden",
+    "password_env": "DS_T17_GOLDEN_PW",
+    "password": "root"
+   },
+   "policy": "t17-schema-lifecycle",
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "version": {
+     "product": "mysql",
+     "version": "8.0.46"
+    }
+   },
+   "setup": [
+    {
+     "name": "drop-stale",
+     "sql": "DROP DATABASE IF EXISTS golden_db",
+     "expect_rc": 0
+    },
+    {
+     "name": "create-target",
+     "sql": "CREATE DATABASE golden_db CHARACTER SET latin1",
+     "expect_rc": 0
+    }
+   ],
+   "execute": [
+    {
+     "name": "native-if-noop",
+     "sql": "CREATE DATABASE IF NOT EXISTS golden_db CHARACTER SET utf8mb4",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "no-op keeps original attributes",
+       "sql": "SELECT DEFAULT_CHARACTER_SET_NAME FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='golden_db'",
+       "expect": "latin1"
+      }
+     ]
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop-stale",
+     "sql": "DROP DATABASE IF EXISTS golden_db",
+     "expect_rc": 0
+    }
+   ]
+  },
+  {
+   "id": "t17-mysql80-drop-absent",
+   "anchor": "mysql80",
+   "dialect": "mysql",
+   "sql": "DROP DATABASE golden_gone;",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23380,
+    "user": "root",
+    "schema": "golden",
+    "password_env": "DS_T17_GOLDEN_PW",
+    "password": "root"
+   },
+   "policy": "t17-schema-lifecycle",
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.database.drop.exists.require",
+      "level": "blocker"
+     }
+    ],
+    "version": {
+     "product": "mysql",
+     "version": "8.0.46"
+    }
+   },
+   "setup": [
+    {
+     "name": "ensure-absent",
+     "sql": "DROP DATABASE IF EXISTS golden_gone",
+     "expect_rc": 0
+    }
+   ],
+   "execute": [
+    {
+     "name": "native-drop-missing",
+     "sql": "DROP DATABASE golden_gone",
+     "expect_rc": 1,
+     "stderr_contains": [
+      "1008"
+     ],
+     "verify": [
+      {
+       "assert": "still absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='golden_gone'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "teardown": [
+    {
+     "name": "ensure-absent",
+     "sql": "DROP DATABASE IF EXISTS golden_gone",
+     "expect_rc": 0
+    }
+   ]
+  },
+  {
+   "id": "t17-mysql80-drop-if-noop",
+   "anchor": "mysql80",
+   "dialect": "mysql",
+   "sql": "DROP DATABASE IF EXISTS golden_gone;",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23380,
+    "user": "root",
+    "schema": "golden",
+    "password_env": "DS_T17_GOLDEN_PW",
+    "password": "root"
+   },
+   "policy": "t17-schema-lifecycle",
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "version": {
+     "product": "mysql",
+     "version": "8.0.46"
+    }
+   },
+   "setup": [
+    {
+     "name": "ensure-absent",
+     "sql": "DROP DATABASE IF EXISTS golden_gone",
+     "expect_rc": 0
+    }
+   ],
+   "execute": [
+    {
+     "name": "native-if-noop",
+     "sql": "DROP DATABASE IF EXISTS golden_gone",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "no-op kept absence",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='golden_gone'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "teardown": []
+  },
+  {
+   "id": "t17-mysql80-alter-absent",
+   "anchor": "mysql80",
+   "dialect": "mysql",
+   "sql": "ALTER DATABASE golden_gone CHARACTER SET utf8mb4;",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23380,
+    "user": "root",
+    "schema": "golden",
+    "password_env": "DS_T17_GOLDEN_PW",
+    "password": "root"
+   },
+   "policy": "t17-schema-lifecycle",
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.database.alter.exists.require",
+      "level": "blocker"
+     }
+    ],
+    "version": {
+     "product": "mysql",
+     "version": "8.0.46"
+    }
+   },
+   "setup": [
+    {
+     "name": "ensure-absent",
+     "sql": "DROP DATABASE IF EXISTS golden_gone",
+     "expect_rc": 0
+    }
+   ],
+   "execute": [
+    {
+     "name": "native-alter-missing",
+     "sql": "ALTER DATABASE golden_gone CHARACTER SET utf8mb4",
+     "expect_rc": 1,
+     "stderr_contains": [
+      "3503"
+     ],
+     "verify": [
+      {
+       "assert": "still absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='golden_gone'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "teardown": []
+  },
+  {
+   "id": "t17-mysql80-drop-cascade",
+   "anchor": "mysql80",
+   "dialect": "mysql",
+   "sql": "DROP DATABASE t17casc; DROP TABLE t17casc.t;",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23380,
+    "user": "root",
+    "schema": "golden",
+    "password_env": "DS_T17_GOLDEN_PW",
+    "password": "root"
+   },
+   "policy": "t17-cascade",
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 2,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete",
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "finding_entries": [
+     {
+      "index": 1,
+      "rule_id": "ddl.table.drop.exists.require",
+      "level": "blocker"
+     }
+    ],
+    "version": {
+     "product": "mysql",
+     "version": "8.0.46"
+    }
+   },
+   "setup": [
+    {
+     "name": "drop-stale",
+     "sql": "DROP DATABASE IF EXISTS t17casc",
+     "expect_rc": 0
+    },
+    {
+     "name": "create-cascade",
+     "sql": "CREATE DATABASE t17casc; CREATE TABLE t17casc.t (id INT)",
+     "expect_rc": 0
+    }
+   ],
+   "execute": [
+    {
+     "name": "native-drop-cascades",
+     "sql": "DROP DATABASE t17casc",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "schema gone",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='t17casc'",
+       "expect": "0"
+      },
+      {
+       "assert": "contained table died with schema",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='t17casc'",
+       "expect": "0"
+      }
+     ]
+    },
+    {
+     "name": "native-drop-table-orphan",
+     "sql": "DROP TABLE t17casc.t",
+     "expect_rc": 1,
+     "stderr_contains": [
+      "1051"
+     ]
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop-stale",
+     "sql": "DROP DATABASE IF EXISTS t17casc",
+     "expect_rc": 0
+    }
+   ]
+  },
+  {
+   "id": "t17-mysql80-recreate",
+   "anchor": "mysql80",
+   "dialect": "mysql",
+   "sql": "DROP DATABASE t17rc; CREATE DATABASE t17rc CHARACTER SET gbk;",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23380,
+    "user": "root",
+    "schema": "golden",
+    "password_env": "DS_T17_GOLDEN_PW",
+    "password": "root"
+   },
+   "policy": "t17-schema-lifecycle",
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 2,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete",
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "version": {
+     "product": "mysql",
+     "version": "8.0.46"
+    }
+   },
+   "setup": [
+    {
+     "name": "drop-stale",
+     "sql": "DROP DATABASE IF EXISTS t17rc",
+     "expect_rc": 0
+    },
+    {
+     "name": "create-old",
+     "sql": "CREATE DATABASE t17rc CHARACTER SET latin1",
+     "expect_rc": 0
+    }
+   ],
+   "execute": [
+    {
+     "name": "native-recreate",
+     "sql": "DROP DATABASE t17rc; CREATE DATABASE t17rc CHARACTER SET gbk",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "recreated schema carries new defaults, not stale latin1",
+       "sql": "SELECT CONCAT(DEFAULT_CHARACTER_SET_NAME,'/',DEFAULT_COLLATION_NAME) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='t17rc'",
+       "expect": "gbk/gbk_chinese_ci"
+      }
+     ]
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop-stale",
+     "sql": "DROP DATABASE IF EXISTS t17rc",
+     "expect_rc": 0
+    }
+   ]
+  },
+  {
+   "id": "t17-mysql80-encryption",
+   "anchor": "mysql80",
+   "dialect": "mysql",
+   "sql": "CREATE DATABASE t17enc DEFAULT ENCRYPTION='Y';",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23380,
+    "user": "root",
+    "schema": "golden",
+    "password_env": "DS_T17_GOLDEN_PW",
+    "password": "root"
+   },
+   "policy": "t17-schema-lifecycle",
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "version": {
+     "product": "mysql",
+     "version": "8.0.46"
+    }
+   },
+   "setup": [
+    {
+     "name": "drop-stale",
+     "sql": "DROP DATABASE IF EXISTS t17enc",
+     "expect_rc": 0
+    }
+   ],
+   "execute": [
+    {
+     "name": "native-encryption",
+     "sql": "CREATE DATABASE t17enc DEFAULT ENCRYPTION='Y'",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "encryption attribute lands",
+       "sql": "SELECT CONCAT(DEFAULT_CHARACTER_SET_NAME,'/',DEFAULT_ENCRYPTION) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='t17enc'",
+       "expect": "utf8mb4/YES"
+      }
+     ]
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop-stale",
+     "sql": "DROP DATABASE IF EXISTS t17enc",
+     "expect_rc": 0
+    }
+   ]
+  },
+  {
+   "id": "t17-mysql80-system-mysql",
+   "anchor": "mysql80",
+   "dialect": "mysql",
+   "sql": "ALTER DATABASE mysql CHARACTER SET utf8mb4; DROP DATABASE mysql;",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23380,
+    "user": "root",
+    "schema": "golden",
+    "password_env": "DS_T17_GOLDEN_PW",
+    "password": "root"
+   },
+   "policy": "t17-schema-lifecycle",
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 2,
+    "findings": 2,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete",
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.database.system.modify.forbid",
+      "level": "blocker"
+     },
+     {
+      "index": 1,
+      "rule_id": "ddl.database.system.modify.forbid",
+      "level": "blocker"
+     }
+    ],
+    "version": {
+     "product": "mysql",
+     "version": "8.0.46"
+    }
+   },
+   "execute": [
+    {
+     "name": "native-alter-mysql-refused",
+     "sql": "ALTER DATABASE mysql CHARACTER SET utf8mb4",
+     "expect_rc": 1,
+     "stderr_contains": [
+      "3552"
+     ],
+     "verify": [
+      {
+       "assert": "system schema untouched",
+       "sql": "SELECT DEFAULT_CHARACTER_SET_NAME FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='mysql'",
+       "expect": "utf8mb4"
+      }
+     ]
+    },
+    {
+     "name": "native-drop-mysql-refused",
+     "sql": "DROP DATABASE mysql",
+     "expect_rc": 1,
+     "stderr_contains": [
+      "3552"
+     ],
+     "verify": [
+      {
+       "assert": "system schema still present",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='mysql'",
+       "expect": "1"
+      }
+     ]
+    }
+   ],
+   "teardown": []
+  },
+  {
+   "id": "t17-mysql80-denylist",
+   "anchor": "mysql80",
+   "dialect": "mysql",
+   "sql": "DROP DATABASE payments; ALTER DATABASE payments CHARACTER SET utf8mb4;",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23380,
+    "user": "root",
+    "schema": "golden",
+    "password_env": "DS_T17_GOLDEN_PW",
+    "password": "root"
+   },
+   "policy": "t17-denylist",
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 2,
+    "findings": 3,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete",
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.database.denylist.forbid",
+      "level": "blocker"
+     },
+     {
+      "index": 1,
+      "rule_id": "ddl.database.alter.exists.require",
+      "level": "blocker"
+     },
+     {
+      "index": 1,
+      "rule_id": "ddl.database.denylist.forbid",
+      "level": "blocker"
+     }
+    ],
+    "version": {
+     "product": "mysql",
+     "version": "8.0.46"
+    }
+   },
+   "setup": [
+    {
+     "name": "drop-stale",
+     "sql": "DROP DATABASE IF EXISTS payments",
+     "expect_rc": 0
+    },
+    {
+     "name": "create-business-db",
+     "sql": "CREATE DATABASE payments",
+     "expect_rc": 0
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop-business-db",
+     "sql": "DROP DATABASE IF EXISTS payments",
+     "expect_rc": 0
+    }
+   ]
+  },
+  {
+   "id": "t17-mysql80-all-disabled",
+   "anchor": "mysql80",
+   "dialect": "mysql",
+   "sql": "CREATE DATABASE golden_db CHARACTER SET utf8mb4; ALTER DATABASE golden_db CHARACTER SET latin1; DROP DATABASE golden_db; DROP DATABASE mysql;",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23380,
+    "user": "root",
+    "schema": "golden",
+    "password_env": "DS_T17_GOLDEN_PW",
+    "password": "root"
+   },
+   "policy": "all-rules-disabled",
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 4,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete",
+     "complete",
+     "complete",
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "version": {
+     "product": "mysql",
+     "version": "8.0.46"
+    }
+   },
+   "setup": [
+    {
+     "name": "drop-stale",
+     "sql": "DROP DATABASE IF EXISTS golden_db",
+     "expect_rc": 0
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop-stale",
+     "sql": "DROP DATABASE IF EXISTS golden_db",
+     "expect_rc": 0
+    }
+   ]
+  },
+  {
+   "id": "t17-mysql80-custom-levels",
+   "anchor": "mysql80",
+   "dialect": "mysql",
+   "sql": "CREATE DATABASE payments; DROP DATABASE mysql; DROP DATABASE golden_gone;",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23380,
+    "user": "root",
+    "schema": "golden",
+    "password_env": "DS_T17_GOLDEN_PW",
+    "password": "root"
+   },
+   "policy": "t17-custom-levels",
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 3,
+    "findings": 4,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete",
+     "complete",
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.database.create.exists.forbid",
+      "level": "notice"
+     },
+     {
+      "index": 0,
+      "rule_id": "ddl.database.denylist.forbid",
+      "level": "warning"
+     },
+     {
+      "index": 1,
+      "rule_id": "ddl.database.system.modify.forbid",
+      "level": "notice"
+     },
+     {
+      "index": 2,
+      "rule_id": "ddl.database.drop.exists.require",
+      "level": "warning"
+     }
+    ],
+    "version": {
+     "product": "mysql",
+     "version": "8.0.46"
+    }
+   },
+   "setup": [
+    {
+     "name": "drop-stale",
+     "sql": "DROP DATABASE IF EXISTS payments; DROP DATABASE IF EXISTS golden_gone",
+     "expect_rc": 0
+    },
+    {
+     "name": "create-business-db",
+     "sql": "CREATE DATABASE payments",
+     "expect_rc": 0
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop-business-db",
+     "sql": "DROP DATABASE IF EXISTS payments",
+     "expect_rc": 0
+    }
+   ]
+  },
+  {
+   "id": "t17-mysql80-cross-namespace",
+   "anchor": "mysql80",
+   "dialect": "mysql",
+   "sql": "CREATE DATABASE t17a CHARACTER SET utf8mb4; CREATE DATABASE t17b CHARACTER SET gbk; CREATE TABLE t17a.t1 (id INT); CREATE TABLE t17b.t1 (id INT); CREATE TABLE t17c.t2 (id INT);",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23380,
+    "user": "root",
+    "schema": "golden",
+    "password_env": "DS_T17_GOLDEN_PW",
+    "password": "root"
+   },
+   "policy": "t17-cascade",
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 5,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete",
+     "complete",
+     "complete",
+     "complete",
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "version": {
+     "product": "mysql",
+     "version": "8.0.46"
+    }
+   },
+   "setup": [
+    {
+     "name": "drop-stale",
+     "sql": "DROP DATABASE IF EXISTS t17a; DROP DATABASE IF EXISTS t17b; DROP DATABASE IF EXISTS t17c",
+     "expect_rc": 0
+    }
+   ],
+   "execute": [
+    {
+     "name": "native-cross-namespace",
+     "sql": "CREATE DATABASE t17a CHARACTER SET utf8mb4; CREATE DATABASE t17b CHARACTER SET gbk; CREATE TABLE t17a.t1 (id INT); CREATE TABLE t17b.t1 (id INT)",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "same-name tables coexist under different schemas",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_NAME='t1' AND TABLE_SCHEMA IN ('t17a','t17b')",
+       "expect": "2"
+      },
+      {
+       "assert": "t17a.t1 inherits utf8mb4",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='t17a' AND TABLE_COLLATION='utf8mb4_0900_ai_ci'",
+       "expect": "1"
+      },
+      {
+       "assert": "t17b.t1 inherits gbk",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='t17b' AND TABLE_COLLATION='gbk_chinese_ci'",
+       "expect": "1"
+      }
+     ]
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop-both",
+     "sql": "DROP DATABASE IF EXISTS t17a; DROP DATABASE IF EXISTS t17b; DROP DATABASE IF EXISTS t17c",
+     "expect_rc": 0
+    }
+   ]
+  },
+  {
+   "id": "t17-mysql57-encryption-refused",
+   "anchor": "mysql57",
+   "dialect": "mysql",
+   "sql": "CREATE DATABASE t17enc DEFAULT ENCRYPTION='Y';",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23357,
+    "user": "root",
+    "schema": "golden",
+    "password_env": "DS_T17_GOLDEN_PW",
+    "password": "root"
+   },
+   "policy": "t17-schema-lifecycle",
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.database.option.encryption.applicability",
+      "level": "blocker"
+     }
+    ],
+    "version": {
+     "product": "mysql",
+     "version": "5.7.44"
+    }
+   },
+   "setup": [
+    {
+     "name": "drop-stale",
+     "sql": "DROP DATABASE IF EXISTS t17enc",
+     "expect_rc": 0
+    }
+   ],
+   "execute": [
+    {
+     "name": "native-encryption-57",
+     "sql": "CREATE DATABASE t17enc DEFAULT ENCRYPTION='Y'",
+     "expect_rc": 1,
+     "stderr_contains": [
+      "1064"
+     ],
+     "verify": [
+      {
+       "assert": "refused create left nothing",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='t17enc'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop-stale",
+     "sql": "DROP DATABASE IF EXISTS t17enc",
+     "expect_rc": 0
+    }
+   ]
+  },
+  {
+   "id": "t17-mysql57-system-lenient",
+   "anchor": "mysql57",
+   "dialect": "mysql",
+   "sql": "ALTER DATABASE mysql CHARACTER SET utf8mb4; DROP DATABASE mysql;",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23357,
+    "user": "root",
+    "schema": "golden",
+    "password_env": "DS_T17_GOLDEN_PW",
+    "password": "root"
+   },
+   "policy": "t17-schema-lifecycle",
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 2,
+    "findings": 2,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete",
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.database.system.modify.forbid",
+      "level": "blocker"
+     },
+     {
+      "index": 1,
+      "rule_id": "ddl.database.system.modify.forbid",
+      "level": "blocker"
+     }
+    ],
+    "version": {
+     "product": "mysql",
+     "version": "5.7.44"
+    }
+   },
+   "execute": [
+    {
+     "name": "native-alter-mysql-57-lenient",
+     "sql": "ALTER DATABASE mysql CHARACTER SET utf8mb4",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "5.7 accepts alter on system schema \u2014 policy must answer where the engine does not",
+       "sql": "SELECT DEFAULT_CHARACTER_SET_NAME FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='mysql'",
+       "expect": "utf8mb4"
+      }
+     ]
+    }
+   ],
+   "teardown": []
+  },
+  {
+   "id": "t17-mysql57-alter-absent",
+   "anchor": "mysql57",
+   "dialect": "mysql",
+   "sql": "ALTER DATABASE golden_gone CHARACTER SET utf8mb4;",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23357,
+    "user": "root",
+    "schema": "golden",
+    "password_env": "DS_T17_GOLDEN_PW",
+    "password": "root"
+   },
+   "policy": "t17-schema-lifecycle",
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.database.alter.exists.require",
+      "level": "blocker"
+     }
+    ],
+    "version": {
+     "product": "mysql",
+     "version": "5.7.44"
+    }
+   },
+   "setup": [
+    {
+     "name": "ensure-absent",
+     "sql": "DROP DATABASE IF EXISTS golden_gone",
+     "expect_rc": 0
+    }
+   ],
+   "execute": [
+    {
+     "name": "native-alter-missing-57",
+     "sql": "ALTER DATABASE golden_gone CHARACTER SET utf8mb4",
+     "expect_rc": 1,
+     "stderr_contains": [
+      "ERROR 1"
+     ],
+     "verify": [
+      {
+       "assert": "still absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='golden_gone'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "teardown": []
+  },
+  {
+   "id": "t17-mysql84-encryption",
+   "anchor": "mysql84",
+   "dialect": "mysql",
+   "sql": "CREATE DATABASE t17enc DEFAULT ENCRYPTION='Y';",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23384,
+    "user": "root",
+    "schema": "golden",
+    "password_env": "DS_T17_GOLDEN_PW",
+    "password": "root"
+   },
+   "policy": "t17-schema-lifecycle",
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "version": {
+     "product": "mysql",
+     "version": "8.4.10"
+    }
+   },
+   "setup": [
+    {
+     "name": "drop-stale",
+     "sql": "DROP DATABASE IF EXISTS t17enc",
+     "expect_rc": 0
+    }
+   ],
+   "execute": [
+    {
+     "name": "native-encryption-84",
+     "sql": "CREATE DATABASE t17enc DEFAULT ENCRYPTION='Y'",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "encryption attribute lands",
+       "sql": "SELECT CONCAT(DEFAULT_CHARACTER_SET_NAME,'/',DEFAULT_ENCRYPTION) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='t17enc'",
+       "expect": "utf8mb4/YES"
+      }
+     ]
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop-stale",
+     "sql": "DROP DATABASE IF EXISTS t17enc",
+     "expect_rc": 0
+    }
+   ]
+  },
+  {
+   "id": "t17-mysql84-system-mysql",
+   "anchor": "mysql84",
+   "dialect": "mysql",
+   "sql": "DROP DATABASE mysql;",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23384,
+    "user": "root",
+    "schema": "golden",
+    "password_env": "DS_T17_GOLDEN_PW",
+    "password": "root"
+   },
+   "policy": "t17-schema-lifecycle",
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.database.system.modify.forbid",
+      "level": "blocker"
+     }
+    ],
+    "version": {
+     "product": "mysql",
+     "version": "8.4.10"
+    }
+   },
+   "execute": [
+    {
+     "name": "native-drop-mysql-84",
+     "sql": "DROP DATABASE mysql",
+     "expect_rc": 1,
+     "stderr_contains": [
+      "3552"
+     ],
+     "verify": [
+      {
+       "assert": "system schema still present",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='mysql'",
+       "expect": "1"
+      }
+     ]
+    }
+   ],
+   "teardown": []
+  },
+  {
+   "id": "t17-tidb85-charset-lifecycle",
+   "anchor": "tidb85",
+   "dialect": "tidb",
+   "sql": "CREATE SCHEMA golden_ts CHARACTER SET utf8mb4; ALTER SCHEMA golden_ts CHARACTER SET latin1; DROP SCHEMA golden_ts;",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 24000,
+    "user": "root",
+    "schema": "golden",
+    "password_env": "",
+    "password": ""
+   },
+   "policy": "t17-schema-lifecycle",
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 3,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete",
+     "complete",
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "statement_indices": [
+     0,
+     1,
+     2
+    ]
+   },
+   "setup": [
+    {
+     "name": "drop-stale",
+     "sql": "DROP DATABASE IF EXISTS golden_ts",
+     "expect_rc": 0
+    }
+   ],
+   "execute": [
+    {
+     "name": "native-create-schema-tidb",
+     "sql": "CREATE SCHEMA golden_ts CHARACTER SET utf8mb4",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "tidb utf8mb4 defaults differ from mysql",
+       "sql": "SELECT CONCAT(DEFAULT_CHARACTER_SET_NAME,'/',DEFAULT_COLLATION_NAME) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='golden_ts'",
+       "expect": "utf8mb4/utf8mb4_bin"
+      }
+     ]
+    },
+    {
+     "name": "native-alter-schema-tidb",
+     "sql": "ALTER SCHEMA golden_ts CHARACTER SET latin1",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "tidb latin1 default collation differs from mysql",
+       "sql": "SELECT CONCAT(DEFAULT_CHARACTER_SET_NAME,'/',DEFAULT_COLLATION_NAME) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='golden_ts'",
+       "expect": "latin1/latin1_bin"
+      }
+     ]
+    },
+    {
+     "name": "native-drop-schema-tidb",
+     "sql": "DROP SCHEMA golden_ts",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "synonym drop lands",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='golden_ts'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop-stale",
+     "sql": "DROP DATABASE IF EXISTS golden_ts",
+     "expect_rc": 0
+    }
+   ]
+  },
+  {
+   "id": "t17-tidb85-encryption-ignored",
+   "anchor": "tidb85",
+   "dialect": "tidb",
+   "sql": "CREATE DATABASE t17enc DEFAULT ENCRYPTION='Y';",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 24000,
+    "user": "root",
+    "schema": "golden",
+    "password_env": "",
+    "password": ""
+   },
+   "policy": "t17-schema-lifecycle",
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.database.option.encryption.applicability",
+      "level": "notice"
+     }
+    ]
+   },
+   "setup": [
+    {
+     "name": "drop-stale",
+     "sql": "DROP DATABASE IF EXISTS t17enc",
+     "expect_rc": 0
+    }
+   ],
+   "execute": [
+    {
+     "name": "native-encryption-tidb",
+     "sql": "CREATE DATABASE t17enc DEFAULT ENCRYPTION='Y'",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "schema created, no encryption attribute exists on tidb",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='t17enc' AND DEFAULT_CHARACTER_SET_NAME='utf8mb4'",
+       "expect": "1"
+      }
+     ]
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop-stale",
+     "sql": "DROP DATABASE IF EXISTS t17enc",
+     "expect_rc": 0
+    }
+   ]
+  },
+  {
+   "id": "t17-tidb85-placement-missing",
+   "anchor": "tidb85",
+   "dialect": "tidb",
+   "sql": "ALTER DATABASE t17p PLACEMENT POLICY=p1;",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 24000,
+    "user": "root",
+    "schema": "golden",
+    "password_env": "",
+    "password": ""
+   },
+   "policy": "t17-schema-lifecycle",
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "evidence_gaps": 0,
+    "unsupported_entries": [
+     {
+      "index": 0,
+      "feature": "alter_schema.option.placement_policy",
+      "reason": "parsed by the shared parser but not covered by audited semantics"
+     }
+    ]
+   },
+   "setup": [
+    {
+     "name": "drop-stale",
+     "sql": "DROP DATABASE IF EXISTS t17p",
+     "expect_rc": 0
+    },
+    {
+     "name": "create-target",
+     "sql": "CREATE DATABASE t17p",
+     "expect_rc": 0
+    }
+   ],
+   "execute": [
+    {
+     "name": "native-placement-missing",
+     "sql": "ALTER DATABASE t17p PLACEMENT POLICY=p1",
+     "expect_rc": 1,
+     "stderr_contains": [
+      "8239"
+     ],
+     "verify": [
+      {
+       "assert": "missing-policy refusal left placement unbound",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='t17p' AND TIDB_PLACEMENT_POLICY_NAME IS NULL",
+       "expect": "1"
+      }
+     ]
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop-stale",
+     "sql": "DROP DATABASE IF EXISTS t17p",
+     "expect_rc": 0
+    }
+   ]
+  },
+  {
+   "id": "t17-tidb85-system-mysql-drop",
+   "anchor": "tidb85",
+   "dialect": "tidb",
+   "sql": "DROP DATABASE mysql;",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 24000,
+    "user": "root",
+    "schema": "golden",
+    "password_env": "",
+    "password": ""
+   },
+   "policy": "t17-schema-lifecycle",
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.database.system.modify.forbid",
+      "level": "blocker"
+     }
+    ]
+   },
+   "execute": [
+    {
+     "name": "native-drop-mysql-tidb",
+     "sql": "DROP DATABASE mysql",
+     "expect_rc": 1,
+     "stderr_contains": [
+      "1105"
+     ],
+     "verify": [
+      {
+       "assert": "tidb refuses system drop natively too",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='mysql'",
+       "expect": "1"
+      }
+     ]
+    }
+   ],
+   "teardown": []
+  },
+  {
+   "id": "t17-tidb85-nameless-alter",
+   "anchor": "tidb85",
+   "dialect": "tidb",
+   "sql": "ALTER DATABASE CHARACTER SET gbk;",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 24000,
+    "user": "root",
+    "schema": "golden",
+    "password_env": "",
+    "password": ""
+   },
+   "policy": "t17-schema-lifecycle",
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0
+   },
+   "execute": [
+    {
+     "name": "native-nameless-alter-tidb",
+     "sql": "ALTER DATABASE CHARACTER SET gbk",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "name-less alter binds the connection schema",
+       "sql": "SELECT CONCAT(DEFAULT_CHARACTER_SET_NAME,'/',DEFAULT_COLLATION_NAME) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='golden'",
+       "expect": "gbk/gbk_chinese_ci",
+       "use_database": true
+      }
+     ]
+    }
+   ],
+   "teardown": [
+    {
+     "name": "restore-charset",
+     "sql": "ALTER DATABASE golden CHARACTER SET utf8mb4",
+     "expect_rc": 0
+    }
+   ]
+  },
+  {
+   "id": "t17-tidb85-create-duplicate",
+   "anchor": "tidb85",
+   "dialect": "tidb",
+   "sql": "CREATE DATABASE golden_db;",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 24000,
+    "user": "root",
+    "schema": "golden",
+    "password_env": "",
+    "password": ""
+   },
+   "policy": "t17-schema-lifecycle",
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.database.create.exists.forbid",
+      "level": "blocker"
+     }
+    ]
+   },
+   "setup": [
+    {
+     "name": "drop-stale",
+     "sql": "DROP DATABASE IF EXISTS golden_db",
+     "expect_rc": 0
+    },
+    {
+     "name": "create-target",
+     "sql": "CREATE DATABASE golden_db",
+     "expect_rc": 0
+    }
+   ],
+   "execute": [
+    {
+     "name": "native-duplicate-tidb",
+     "sql": "CREATE DATABASE golden_db",
+     "expect_rc": 1,
+     "stderr_contains": [
+      "1007"
+     ],
+     "verify": [
+      {
+       "assert": "duplicate kept, not recreated",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='golden_db'",
+       "expect": "1"
+      }
+     ]
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop-stale",
+     "sql": "DROP DATABASE IF EXISTS golden_db",
+     "expect_rc": 0
+    }
+   ]
+  },
+  {
+   "id": "t17-tidb85-notices",
+   "anchor": "tidb85",
+   "dialect": "tidb",
+   "sql": "CREATE DATABASE IF NOT EXISTS golden_db; ALTER DATABASE golden_db CHARACTER SET utf8mb4; DROP DATABASE golden_db;",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 24000,
+    "user": "root",
+    "schema": "golden",
+    "password_env": "",
+    "password": ""
+   },
+   "policy": "t17-notices",
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 3,
+    "findings": 3,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete",
+     "complete",
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.database.create.notice",
+      "level": "notice"
+     },
+     {
+      "index": 1,
+      "rule_id": "ddl.alter_database.notice",
+      "level": "notice"
+     },
+     {
+      "index": 2,
+      "rule_id": "ddl.database.drop.warn",
+      "level": "warning"
+     }
+    ]
+   },
+   "setup": [
+    {
+     "name": "drop-stale",
+     "sql": "DROP DATABASE IF EXISTS golden_db",
+     "expect_rc": 0
+    },
+    {
+     "name": "create-target",
+     "sql": "CREATE DATABASE golden_db",
+     "expect_rc": 0
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop-stale",
+     "sql": "DROP DATABASE IF EXISTS golden_db",
+     "expect_rc": 0
+    }
+   ]
+  },
+  {
+   "id": "t17-mysql80-tiflash-refused",
+   "anchor": "mysql80",
+   "dialect": "mysql",
+   "sql": "CREATE DATABASE t17tf SET TIFLASH REPLICA 1; ALTER DATABASE t17tf CHARACTER SET latin1; CREATE TABLE t17tf.t (id INT); CREATE TABLE t17tf.t (id INT);",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23380,
+    "user": "root",
+    "schema": "golden",
+    "password_env": "DS_T17_GOLDEN_PW",
+    "password": "root"
+   },
+   "policy": "t17-cascade",
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 4,
+    "findings": 1,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete",
+     "complete",
+     "complete",
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "statement_indices": [
+     0,
+     1,
+     2,
+     3
+    ],
+    "unsupported_entries": [
+     {
+      "index": 0,
+      "feature": "create_schema.option.tiflash_replica",
+      "reason": "parsed by the shared parser but outside the supported statement surface for this dialect"
+     }
+    ],
+    "version": {
+     "product": "mysql",
+     "version": "8.0.46"
+    },
+    "statement_sql": [
+     "CREATE DATABASE t17tf SET TIFLASH REPLICA 1;",
+     "ALTER DATABASE t17tf CHARACTER SET latin1;",
+     "CREATE TABLE t17tf.t (id INT);",
+     "CREATE TABLE t17tf.t (id INT);"
+    ],
+    "finding_entries": [
+     {
+      "index": 1,
+      "rule_id": "ddl.database.alter.exists.require",
+      "level": "blocker"
+     }
+    ],
+    "finding_metadata": [
+     {
+      "index": 1,
+      "rule_id": "ddl.database.alter.exists.require",
+      "metadata": {
+       "schema": "t17tf",
+       "operation": "alter_schema",
+       "exists": false
+      }
+     }
+    ],
+    "evidence_gap_entries": []
+   },
+   "setup": [
+    {
+     "name": "drop-stale",
+     "sql": "DROP DATABASE IF EXISTS t17tf",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "known absent before metadata audit",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='t17tf'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "execute": [
+    {
+     "name": "native-tiflash-refused",
+     "sql": "CREATE DATABASE t17tf SET TIFLASH REPLICA 1",
+     "expect_rc": 1,
+     "stderr_contains": [
+      "1064"
+     ],
+     "verify": [
+      {
+       "assert": "vendor-refused create left nothing",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='t17tf'",
+       "expect": "0"
+      }
+     ]
+    },
+    {
+     "name": "native-table-1049-after-refusal",
+     "sql": "CREATE TABLE t17tf.t (id INT)",
+     "expect_rc": 1,
+     "stderr_contains": [
+      "ERROR 1049"
+     ],
+     "verify": [
+      {
+       "assert": "no child table fabricated by refusal",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='t17tf' AND TABLE_NAME='t'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop-stale",
+     "sql": "DROP DATABASE IF EXISTS t17tf",
+     "expect_rc": 0
+    }
+   ]
+  },
+  {
+   "id": "t17-tidb85-tiflash-unproven",
+   "anchor": "tidb85",
+   "dialect": "tidb",
+   "sql": "CREATE DATABASE t17tf SET TIFLASH REPLICA 1; CREATE DATABASE t17tf; CREATE TABLE t17tf.t (id INT); CREATE TABLE t17tf.t (id INT);",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 24000,
+    "user": "root",
+    "schema": "golden",
+    "password_env": "",
+    "password": ""
+   },
+   "policy": "t17-cascade",
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 4,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete",
+     "unverified",
+     "unverified",
+     "unverified"
+    ],
+    "evidence_gaps": 3,
+    "statement_indices": [
+     0,
+     1,
+     2,
+     3
+    ],
+    "unsupported_entries": [
+     {
+      "index": 0,
+      "feature": "create_schema.option.tiflash_replica",
+      "reason": "parsed by the shared parser but not covered by audited semantics"
+     }
+    ],
+    "evidence_gap_entries": [
+     {
+      "index": 1,
+      "rule_id": "ddl.database.create.exists.forbid",
+      "reason_code": "unknown_schema_state",
+      "required_facts": [
+       "schema.existence"
+      ]
+     },
+     {
+      "index": 2,
+      "rule_id": "ddl.table.exists.create.forbid",
+      "reason_code": "unknown_table_state",
+      "required_facts": [
+       "target_table.existence"
+      ]
+     },
+     {
+      "index": 3,
+      "rule_id": "ddl.table.exists.create.forbid",
+      "reason_code": "unknown_table_state",
+      "required_facts": [
+       "target_table.existence"
+      ]
+     }
+    ],
+    "version": {
+     "product": "tidb",
+     "version": "8.5.0"
+    },
+    "statement_sql": [
+     "CREATE DATABASE t17tf SET TIFLASH REPLICA 1;",
+     "CREATE DATABASE t17tf;",
+     "CREATE TABLE t17tf.t (id INT);",
+     "CREATE TABLE t17tf.t (id INT);"
+    ],
+    "finding_entries": []
+   },
+   "setup": [
+    {
+     "name": "drop-stale",
+     "sql": "DROP DATABASE IF EXISTS t17tf",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "known absent before metadata audit",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='t17tf'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop-stale",
+     "sql": "DROP DATABASE IF EXISTS t17tf",
+     "expect_rc": 0
+    }
+   ]
+  }
+ ],
+ "cli_cases": [
+  {
+   "id": "t17-cli-seed-mysql",
+   "dialect": "mysql",
+   "policy": "t17-schema-lifecycle",
+   "sql": "CREATE DATABASE golden_db CHARACTER SET utf8mb4; ALTER DATABASE golden_db CHARACTER SET latin1; DROP DATABASE golden_db;",
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 3,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": [
+     "unverified",
+     "unverified",
+     "unverified"
+    ],
+    "evidence_gaps": 3,
+    "statement_indices": [
+     0,
+     1,
+     2
+    ],
+    "evidence_gap_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.database.create.exists.forbid",
+      "reason_code": "unknown_schema_state",
+      "required_facts": [
+       "schema.existence"
+      ]
+     },
+     {
+      "index": 1,
+      "rule_id": "ddl.database.alter.exists.require",
+      "reason_code": "unknown_schema_state",
+      "required_facts": [
+       "schema.existence"
+      ]
+     },
+     {
+      "index": 2,
+      "rule_id": "ddl.database.drop.exists.require",
+      "reason_code": "unknown_schema_state",
+      "required_facts": [
+       "schema.existence"
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "id": "t17-cli-seed-tidb",
+   "dialect": "tidb",
+   "policy": "t17-schema-lifecycle",
+   "sql": "CREATE SCHEMA golden_db CHARACTER SET utf8mb4; ALTER SCHEMA golden_db CHARACTER SET latin1; DROP SCHEMA golden_db;",
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 3,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": [
+     "unverified",
+     "unverified",
+     "unverified"
+    ],
+    "evidence_gaps": 3,
+    "statement_indices": [
+     0,
+     1,
+     2
+    ],
+    "evidence_gap_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.database.create.exists.forbid",
+      "reason_code": "unknown_schema_state",
+      "required_facts": [
+       "schema.existence"
+      ]
+     },
+     {
+      "index": 1,
+      "rule_id": "ddl.database.alter.exists.require",
+      "reason_code": "unknown_schema_state",
+      "required_facts": [
+       "schema.existence"
+      ]
+     },
+     {
+      "index": 2,
+      "rule_id": "ddl.database.drop.exists.require",
+      "reason_code": "unknown_schema_state",
+      "required_facts": [
+       "schema.existence"
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "id": "t17-cli-if-arms-mysql",
+   "dialect": "mysql",
+   "policy": "t17-schema-lifecycle",
+   "sql": "CREATE DATABASE IF NOT EXISTS app; CREATE DATABASE app; DROP DATABASE IF EXISTS gone; DROP DATABASE gone; ALTER DATABASE gone CHARACTER SET utf8mb4;",
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 5,
+    "findings": 3,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": [
+     "unverified",
+     "complete",
+     "unverified",
+     "complete",
+     "complete"
+    ],
+    "evidence_gaps": 2,
+    "finding_entries": [
+     {
+      "index": 1,
+      "rule_id": "ddl.database.create.exists.forbid",
+      "level": "blocker"
+     },
+     {
+      "index": 3,
+      "rule_id": "ddl.database.drop.exists.require",
+      "level": "blocker"
+     },
+     {
+      "index": 4,
+      "rule_id": "ddl.database.alter.exists.require",
+      "level": "blocker"
+     }
+    ],
+    "evidence_gap_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.database.create.exists.forbid",
+      "reason_code": "unknown_schema_state",
+      "required_facts": [
+       "schema.existence"
+      ]
+     },
+     {
+      "index": 2,
+      "rule_id": "ddl.database.drop.exists.require",
+      "reason_code": "unknown_schema_state",
+      "required_facts": [
+       "schema.existence"
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "id": "t17-cli-if-arms-tidb",
+   "dialect": "tidb",
+   "policy": "t17-schema-lifecycle",
+   "sql": "CREATE SCHEMA IF NOT EXISTS app; CREATE SCHEMA app; DROP SCHEMA IF EXISTS gone; DROP SCHEMA gone; ALTER SCHEMA gone CHARACTER SET utf8mb4;",
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 5,
+    "findings": 3,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": [
+     "unverified",
+     "complete",
+     "unverified",
+     "complete",
+     "complete"
+    ],
+    "evidence_gaps": 2,
+    "finding_entries": [
+     {
+      "index": 1,
+      "rule_id": "ddl.database.create.exists.forbid",
+      "level": "blocker"
+     },
+     {
+      "index": 3,
+      "rule_id": "ddl.database.drop.exists.require",
+      "level": "blocker"
+     },
+     {
+      "index": 4,
+      "rule_id": "ddl.database.alter.exists.require",
+      "level": "blocker"
+     }
+    ],
+    "evidence_gap_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.database.create.exists.forbid",
+      "reason_code": "unknown_schema_state",
+      "required_facts": [
+       "schema.existence"
+      ]
+     },
+     {
+      "index": 2,
+      "rule_id": "ddl.database.drop.exists.require",
+      "reason_code": "unknown_schema_state",
+      "required_facts": [
+       "schema.existence"
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "id": "t17-cli-unknown-state-mysql",
+   "dialect": "mysql",
+   "policy": "t17-cascade",
+   "sql": "DROP DATABASE x; CREATE TABLE x.t (id INT);",
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 2,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": [
+     "unverified",
+     "unverified"
+    ],
+    "evidence_gaps": 2,
+    "evidence_gap_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.database.drop.exists.require",
+      "reason_code": "unknown_schema_state",
+      "required_facts": [
+       "schema.existence"
+      ]
+     },
+     {
+      "index": 1,
+      "rule_id": "ddl.table.exists.create.forbid",
+      "reason_code": "unknown_table_state",
+      "required_facts": [
+       "target_table.existence"
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "id": "t17-cli-disabled-mysql",
+   "dialect": "mysql",
+   "policy": "all-rules-disabled",
+   "sql": "CREATE DATABASE IF NOT EXISTS app; CREATE DATABASE app; DROP DATABASE IF EXISTS gone; DROP DATABASE gone; DROP DATABASE mysql;",
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 5,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete",
+     "complete",
+     "complete",
+     "complete",
+     "complete"
+    ],
+    "evidence_gaps": 0
+   }
+  },
+  {
+   "id": "t17-cli-custom-levels-mysql",
+   "dialect": "mysql",
+   "policy": "t17-custom-levels",
+   "sql": "CREATE DATABASE IF NOT EXISTS app; CREATE DATABASE app; DROP DATABASE IF EXISTS gone; DROP DATABASE gone; ALTER DATABASE gone CHARACTER SET utf8mb4; DROP DATABASE mysql; ALTER DATABASE payments CHARACTER SET utf8mb4;",
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 7,
+    "findings": 5,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": [
+     "unverified",
+     "complete",
+     "unverified",
+     "complete",
+     "complete",
+     "unverified",
+     "unverified"
+    ],
+    "evidence_gaps": 4,
+    "finding_entries": [
+     {
+      "index": 1,
+      "rule_id": "ddl.database.create.exists.forbid",
+      "level": "notice"
+     },
+     {
+      "index": 3,
+      "rule_id": "ddl.database.drop.exists.require",
+      "level": "warning"
+     },
+     {
+      "index": 4,
+      "rule_id": "ddl.database.alter.exists.require",
+      "level": "warning"
+     },
+     {
+      "index": 5,
+      "rule_id": "ddl.database.system.modify.forbid",
+      "level": "notice"
+     },
+     {
+      "index": 6,
+      "rule_id": "ddl.database.denylist.forbid",
+      "level": "warning"
+     }
+    ]
+   }
+  },
+  {
+   "id": "t17-cli-nameless-no-schema-mysql",
+   "dialect": "mysql",
+   "policy": "t17-cascade",
+   "sql": "ALTER DATABASE CHARACTER SET gbk; CREATE TABLE t (id INT);",
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 2,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": [
+     "unverified",
+     "unverified"
+    ],
+    "evidence_gaps": 2,
+    "evidence_gap_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.database.alter.exists.require",
+      "reason_code": "unknown_schema_state",
+      "required_facts": [
+       "schema.existence"
+      ]
+     },
+     {
+      "index": 1,
+      "rule_id": "ddl.table.exists.create.forbid",
+      "reason_code": "unknown_table_state",
+      "required_facts": [
+       "target_table.existence"
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "id": "t17-cli-tidb-placement-aspect",
+   "dialect": "tidb",
+   "policy": "t17-schema-lifecycle",
+   "sql": "ALTER DATABASE d1 PLACEMENT POLICY=p1;",
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "evidence_gaps": 1,
+    "unsupported_entries": [
+     {
+      "index": 0,
+      "feature": "alter_schema.option.placement_policy",
+      "reason": "parsed by the shared parser but not covered by audited semantics"
+     }
+    ],
+    "evidence_gap_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.database.alter.exists.require",
+      "reason_code": "unknown_schema_state",
+      "required_facts": [
+       "schema.existence"
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "id": "t17-cli-mysql-placement-vendor",
+   "dialect": "mysql",
+   "policy": "t17-schema-lifecycle",
+   "sql": "ALTER DATABASE d1 PLACEMENT POLICY=p1;",
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "evidence_gaps": 1,
+    "unsupported_entries": [
+     {
+      "index": 0,
+      "feature": "alter_schema.option.placement_policy",
+      "reason": "parsed by the shared parser but outside the supported statement surface for this dialect"
+     }
+    ],
+    "evidence_gap_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.database.alter.exists.require",
+      "reason_code": "unknown_schema_state",
+      "required_facts": [
+       "schema.existence"
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "id": "t17-cli-encryption-offline-mysql",
+   "dialect": "mysql",
+   "policy": "t17-schema-lifecycle",
+   "sql": "CREATE DATABASE t17enc DEFAULT ENCRYPTION='Y'; ALTER DATABASE t17enc DEFAULT ENCRYPTION='N';",
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 2,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": [
+     "unverified",
+     "unverified"
+    ],
+    "evidence_gaps": 4,
+    "evidence_gap_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.database.create.exists.forbid",
+      "reason_code": "unknown_schema_state",
+      "required_facts": [
+       "schema.existence"
+      ]
+     },
+     {
+      "index": 0,
+      "rule_id": "ddl.database.option.encryption.applicability",
+      "reason_code": "missing_target_version",
+      "required_facts": [
+       "target.version"
+      ]
+     },
+     {
+      "index": 1,
+      "rule_id": "ddl.database.alter.exists.require",
+      "reason_code": "unknown_schema_state",
+      "required_facts": [
+       "schema.existence"
+      ]
+     },
+     {
+      "index": 1,
+      "rule_id": "ddl.database.option.encryption.applicability",
+      "reason_code": "missing_target_version",
+      "required_facts": [
+       "target.version"
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "id": "t17-cli-ine-encryption-57-mysql",
+   "dialect": "mysql",
+   "policy": "t17-cascade",
+   "sql": "CREATE DATABASE IF NOT EXISTS encg DEFAULT ENCRYPTION='Y'; CREATE DATABASE encg; CREATE TABLE encg.t (id INT); CREATE TABLE encg.t (id INT);",
+   "args": [
+    "--target-version",
+    "5.7.44"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 4,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": [
+     "unverified",
+     "unverified",
+     "unverified",
+     "unverified"
+    ],
+    "evidence_gaps": 4,
+    "statement_indices": [
+     0,
+     1,
+     2,
+     3
+    ],
+    "statement_sql": [
+     "CREATE DATABASE IF NOT EXISTS encg DEFAULT ENCRYPTION='Y';",
+     "CREATE DATABASE encg;",
+     "CREATE TABLE encg.t (id INT);",
+     "CREATE TABLE encg.t (id INT);"
+    ],
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.database.option.encryption.applicability",
+      "level": "blocker"
+     }
+    ],
+    "evidence_gap_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.database.create.exists.forbid",
+      "reason_code": "unknown_schema_state",
+      "required_facts": [
+       "schema.existence"
+      ]
+     },
+     {
+      "index": 1,
+      "rule_id": "ddl.database.create.exists.forbid",
+      "reason_code": "unknown_schema_state",
+      "required_facts": [
+       "schema.existence"
+      ]
+     },
+     {
+      "index": 2,
+      "rule_id": "ddl.table.exists.create.forbid",
+      "reason_code": "unknown_table_state",
+      "required_facts": [
+       "target_table.existence"
+      ]
+     },
+     {
+      "index": 3,
+      "rule_id": "ddl.table.exists.create.forbid",
+      "reason_code": "unknown_table_state",
+      "required_facts": [
+       "target_table.existence"
+      ]
+     }
+    ],
+    "version": {
+     "product": "mysql",
+     "version": "5.7.44"
+    }
+   }
+  },
+  {
+   "id": "t17-cli-ine-encryption-nilver-mysql",
+   "dialect": "mysql",
+   "policy": "t17-cascade",
+   "sql": "CREATE DATABASE IF NOT EXISTS encg DEFAULT ENCRYPTION='Y'; CREATE DATABASE encg; CREATE TABLE encg.t (id INT); CREATE TABLE encg.t (id INT);",
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 4,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": [
+     "unverified",
+     "unverified",
+     "unverified",
+     "unverified"
+    ],
+    "evidence_gaps": 5,
+    "statement_indices": [
+     0,
+     1,
+     2,
+     3
+    ],
+    "evidence_gap_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.database.create.exists.forbid",
+      "reason_code": "unknown_schema_state",
+      "required_facts": [
+       "schema.existence"
+      ]
+     },
+     {
+      "index": 0,
+      "rule_id": "ddl.database.option.encryption.applicability",
+      "reason_code": "missing_target_version",
+      "required_facts": [
+       "target.version"
+      ]
+     },
+     {
+      "index": 1,
+      "rule_id": "ddl.database.create.exists.forbid",
+      "reason_code": "unknown_schema_state",
+      "required_facts": [
+       "schema.existence"
+      ]
+     },
+     {
+      "index": 2,
+      "rule_id": "ddl.table.exists.create.forbid",
+      "reason_code": "unknown_table_state",
+      "required_facts": [
+       "target_table.existence"
+      ]
+     },
+     {
+      "index": 3,
+      "rule_id": "ddl.table.exists.create.forbid",
+      "reason_code": "unknown_table_state",
+      "required_facts": [
+       "target_table.existence"
+      ]
+     }
+    ],
+    "statement_sql": [
+     "CREATE DATABASE IF NOT EXISTS encg DEFAULT ENCRYPTION='Y';",
+     "CREATE DATABASE encg;",
+     "CREATE TABLE encg.t (id INT);",
+     "CREATE TABLE encg.t (id INT);"
+    ]
+   }
+  },
+  {
+   "id": "t17-cli-ine-placement-tidb",
+   "dialect": "tidb",
+   "policy": "t17-cascade",
+   "sql": "CREATE DATABASE IF NOT EXISTS pg PLACEMENT POLICY=p1; CREATE DATABASE pg; CREATE TABLE pg.t (id INT); CREATE TABLE pg.t (id INT);",
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 4,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete",
+     "unverified",
+     "unverified",
+     "unverified"
+    ],
+    "evidence_gaps": 4,
+    "statement_indices": [
+     0,
+     1,
+     2,
+     3
+    ],
+    "unsupported_entries": [
+     {
+      "index": 0,
+      "feature": "create_schema.option.placement_policy",
+      "reason": "parsed by the shared parser but not covered by audited semantics"
+     }
+    ],
+    "evidence_gap_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.database.create.exists.forbid",
+      "reason_code": "unknown_schema_state",
+      "required_facts": [
+       "schema.existence"
+      ]
+     },
+     {
+      "index": 1,
+      "rule_id": "ddl.database.create.exists.forbid",
+      "reason_code": "unknown_schema_state",
+      "required_facts": [
+       "schema.existence"
+      ]
+     },
+     {
+      "index": 2,
+      "rule_id": "ddl.table.exists.create.forbid",
+      "reason_code": "unknown_table_state",
+      "required_facts": [
+       "target_table.existence"
+      ]
+     },
+     {
+      "index": 3,
+      "rule_id": "ddl.table.exists.create.forbid",
+      "reason_code": "unknown_table_state",
+      "required_facts": [
+       "target_table.existence"
+      ]
+     }
+    ],
+    "statement_sql": [
+     "CREATE DATABASE IF NOT EXISTS pg PLACEMENT POLICY=p1;",
+     "CREATE DATABASE pg;",
+     "CREATE TABLE pg.t (id INT);",
+     "CREATE TABLE pg.t (id INT);"
+    ],
+    "version": {
+     "product": "tidb",
+     "version": "8.5.0"
+    }
+   },
+   "args": [
+    "--target-version",
+    "8.5.0"
+   ]
+  }
+ ],
+ "required_case_ids": [
+  "T17.db.mysql57.ddl",
+  "T17.db.mysql57.syntax_negative",
+  "T17.db.mysql80.ddl",
+  "T17.db.mysql80.syntax_negative",
+  "T17.db.mysql84.ddl",
+  "T17.db.mysql84.syntax_negative",
+  "T17.db.tidb85.ddl",
+  "T17.db.tidb85.syntax_negative",
+  "T17.cli.t17-cli-seed-mysql",
+  "T17.cli.t17-cli-seed-tidb",
+  "T17.cli.t17-cli-if-arms-mysql",
+  "T17.cli.t17-cli-if-arms-tidb",
+  "T17.cli.t17-cli-unknown-state-mysql",
+  "T17.cli.t17-cli-disabled-mysql",
+  "T17.cli.t17-cli-custom-levels-mysql",
+  "T17.cli.t17-cli-nameless-no-schema-mysql",
+  "T17.cli.t17-cli-tidb-placement-aspect",
+  "T17.cli.t17-cli-mysql-placement-vendor",
+  "T17.cli.t17-cli-encryption-offline-mysql",
+  "T17.meta.t17-mysql80-charset-lifecycle",
+  "T17.meta.t17-mysql80-synonym-lifecycle",
+  "T17.meta.t17-mysql80-nameless-alter",
+  "T17.meta.t17-mysql80-create-duplicate",
+  "T17.meta.t17-mysql80-create-if-noop",
+  "T17.meta.t17-mysql80-drop-absent",
+  "T17.meta.t17-mysql80-drop-if-noop",
+  "T17.meta.t17-mysql80-alter-absent",
+  "T17.meta.t17-mysql80-drop-cascade",
+  "T17.meta.t17-mysql80-recreate",
+  "T17.meta.t17-mysql80-encryption",
+  "T17.meta.t17-mysql80-system-mysql",
+  "T17.meta.t17-mysql80-denylist",
+  "T17.meta.t17-mysql80-all-disabled",
+  "T17.meta.t17-mysql80-custom-levels",
+  "T17.meta.t17-mysql80-cross-namespace",
+  "T17.meta.t17-mysql57-encryption-refused",
+  "T17.meta.t17-mysql57-system-lenient",
+  "T17.meta.t17-mysql57-alter-absent",
+  "T17.meta.t17-mysql84-encryption",
+  "T17.meta.t17-mysql84-system-mysql",
+  "T17.meta.t17-tidb85-charset-lifecycle",
+  "T17.meta.t17-tidb85-encryption-ignored",
+  "T17.meta.t17-tidb85-placement-missing",
+  "T17.meta.t17-tidb85-system-mysql-drop",
+  "T17.meta.t17-tidb85-nameless-alter",
+  "T17.meta.t17-tidb85-create-duplicate",
+  "T17.meta.t17-tidb85-notices",
+  "T17.cli.t17-cli-ine-encryption-57-mysql",
+  "T17.cli.t17-cli-ine-encryption-nilver-mysql",
+  "T17.cli.t17-cli-ine-placement-tidb",
+  "T17.meta.t17-mysql80-tiflash-refused",
+  "T17.meta.t17-tidb85-tiflash-unproven"
+ ]
+}

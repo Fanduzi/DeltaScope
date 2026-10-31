@@ -1,0 +1,1 @@
+git -C RED rev-parse HEAD; git -C RED status --short --untracked-files=all; git -C RED diff --quiet; git -C RED diff --cached --quiet

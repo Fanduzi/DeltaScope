@@ -1,0 +1,1 @@
+Retain generated CLI separately and restore the preserved original, then compare byte-for-byte.

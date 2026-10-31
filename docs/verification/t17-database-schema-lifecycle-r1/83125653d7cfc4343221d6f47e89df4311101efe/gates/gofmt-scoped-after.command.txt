@@ -1,0 +1,1 @@
+gofmt -l internal/application/audit/batch_state.go internal/application/audit/batch_state_schema.go internal/application/audit/metadata.go internal/application/audit/coverage.go internal/application/audit/batch_state_t17r1_test.go internal/application/audit/batch_state_t17r1_proof_test.go

@@ -1,0 +1,1 @@
+gofmt -l internal/application/audit/metadata_object_validation_postgresql_tag_test.go

@@ -1,0 +1,311 @@
+{
+  "case_id": "T17.meta.t17-mysql80-cross-namespace",
+  "kind": "cli_metadata",
+  "cli_case": "t17-mysql80-cross-namespace",
+  "anchor": "mysql80",
+  "dialect": "mysql",
+  "input_sql": "CREATE DATABASE t17a CHARACTER SET utf8mb4; CREATE DATABASE t17b CHARACTER SET gbk; CREATE TABLE t17a.t1 (id INT); CREATE TABLE t17b.t1 (id INT); CREATE TABLE t17c.t2 (id INT);",
+  "policy_profile": "t17-cascade",
+  "policy_path": "/private/tmp/ddl-golden/T17/golden-policy-t17-cascade.yaml",
+  "connect": {
+    "host": "127.0.0.1",
+    "port": 23380,
+    "user": "root",
+    "schema": "golden",
+    "password_env": "DS_T17_GOLDEN_PW"
+  },
+  "expected": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 5,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+      "complete",
+      "complete",
+      "complete",
+      "complete",
+      "complete"
+    ],
+    "evidence_gaps": 0,
+    "version": {
+      "product": "mysql",
+      "version": "8.0.46"
+    }
+  },
+  "actual": {
+    "database": {
+      "product": "mysql",
+      "image": "mysql:8.0.46",
+      "image_digest": "mysql@sha256:7dcddc01f13bab2f15cde676d44d01f61fc9f99fe7785e86196dfc07d358ae2b",
+      "container": "deltascope-ddl-golden-mysql80",
+      "reachable": true,
+      "version": "8.0.46"
+    },
+    "setup": [
+      {
+        "name": "drop-stale",
+        "sql": "DROP DATABASE IF EXISTS t17a; DROP DATABASE IF EXISTS t17b; DROP DATABASE IF EXISTS t17c",
+        "rc": 0,
+        "stdout": "",
+        "stderr": ""
+      }
+    ],
+    "post_verify": [],
+    "execute": [
+      {
+        "name": "native-cross-namespace",
+        "sql": "CREATE DATABASE t17a CHARACTER SET utf8mb4; CREATE DATABASE t17b CHARACTER SET gbk; CREATE TABLE t17a.t1 (id INT); CREATE TABLE t17b.t1 (id INT)",
+        "rc": 0,
+        "stdout": "",
+        "stderr": "",
+        "verify": [
+          {
+            "assert": "same-name tables coexist under different schemas",
+            "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_NAME='t1' AND TABLE_SCHEMA IN ('t17a','t17b')",
+            "rc": 0,
+            "output": "2",
+            "stderr": ""
+          },
+          {
+            "assert": "t17a.t1 inherits utf8mb4",
+            "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='t17a' AND TABLE_COLLATION='utf8mb4_0900_ai_ci'",
+            "rc": 0,
+            "output": "1",
+            "stderr": ""
+          },
+          {
+            "assert": "t17b.t1 inherits gbk",
+            "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='t17b' AND TABLE_COLLATION='gbk_chinese_ci'",
+            "rc": 0,
+            "output": "1",
+            "stderr": ""
+          }
+        ]
+      }
+    ],
+    "structure": [],
+    "teardown": [
+      {
+        "name": "drop-both",
+        "sql": "DROP DATABASE IF EXISTS t17a; DROP DATABASE IF EXISTS t17b; DROP DATABASE IF EXISTS t17c",
+        "rc": 0,
+        "stderr": ""
+      }
+    ],
+    "exit": 0,
+    "stdout": "{\"verdict\":\"pass\",\"coverage\":{\"status\":\"complete\"},\"summary\":{\"statements\":5,\"blockers\":0,\"warnings\":0,\"notices\":0},\"statements\":[{\"index\":0,\"kind\":\"ddl\",\"raw_sql\":\"CREATE DATABASE t17a CHARACTER SET utf8mb4;\",\"normalized_sql\":\"CREATE DATABASE t17a CHARACTER SET utf8mb4\",\"coverage\":{\"status\":\"complete\"}},{\"index\":1,\"kind\":\"ddl\",\"raw_sql\":\"CREATE DATABASE t17b CHARACTER SET gbk;\",\"normalized_sql\":\"CREATE DATABASE t17b CHARACTER SET gbk\",\"coverage\":{\"status\":\"complete\"}},{\"index\":2,\"kind\":\"ddl\",\"raw_sql\":\"CREATE TABLE t17a.t1 (id INT);\",\"normalized_sql\":\"CREATE TABLE t17a.t1 (id INT)\",\"coverage\":{\"status\":\"complete\"}},{\"index\":3,\"kind\":\"ddl\",\"raw_sql\":\"CREATE TABLE t17b.t1 (id INT);\",\"normalized_sql\":\"CREATE TABLE t17b.t1 (id INT)\",\"coverage\":{\"status\":\"complete\"}},{\"index\":4,\"kind\":\"ddl\",\"raw_sql\":\"CREATE TABLE t17c.t2 (id INT);\",\"normalized_sql\":\"CREATE TABLE t17c.t2 (id INT)\",\"coverage\":{\"status\":\"complete\"}}],\"version\":{\"product\":\"mysql\",\"version\":\"8.0.46\",\"major\":8,\"minor\":0,\"patch\":46,\"source\":\"observed\",\"validated_range\":true},\"fail_on_triggered\":false,\"rule_summary\":{\"loaded\":8,\"applicable\":3,\"skipped\":[]},\"context\":{\"mode\":\"metadata-aware\",\"dialect\":\"mysql\",\"dialect_source\":\"detected\",\"schema\":\"golden\",\"schema_source\":\"flag\"}}\n",
+    "stderr": "",
+    "parsed": {
+      "verdict": "pass",
+      "coverage": {
+        "status": "complete"
+      },
+      "summary": {
+        "statements": 5,
+        "blockers": 0,
+        "warnings": 0,
+        "notices": 0
+      },
+      "statements": [
+        {
+          "index": 0,
+          "kind": "ddl",
+          "raw_sql": "CREATE DATABASE t17a CHARACTER SET utf8mb4;",
+          "normalized_sql": "CREATE DATABASE t17a CHARACTER SET utf8mb4",
+          "coverage": {
+            "status": "complete"
+          }
+        },
+        {
+          "index": 1,
+          "kind": "ddl",
+          "raw_sql": "CREATE DATABASE t17b CHARACTER SET gbk;",
+          "normalized_sql": "CREATE DATABASE t17b CHARACTER SET gbk",
+          "coverage": {
+            "status": "complete"
+          }
+        },
+        {
+          "index": 2,
+          "kind": "ddl",
+          "raw_sql": "CREATE TABLE t17a.t1 (id INT);",
+          "normalized_sql": "CREATE TABLE t17a.t1 (id INT)",
+          "coverage": {
+            "status": "complete"
+          }
+        },
+        {
+          "index": 3,
+          "kind": "ddl",
+          "raw_sql": "CREATE TABLE t17b.t1 (id INT);",
+          "normalized_sql": "CREATE TABLE t17b.t1 (id INT)",
+          "coverage": {
+            "status": "complete"
+          }
+        },
+        {
+          "index": 4,
+          "kind": "ddl",
+          "raw_sql": "CREATE TABLE t17c.t2 (id INT);",
+          "normalized_sql": "CREATE TABLE t17c.t2 (id INT)",
+          "coverage": {
+            "status": "complete"
+          }
+        }
+      ],
+      "version": {
+        "product": "mysql",
+        "version": "8.0.46",
+        "major": 8,
+        "minor": 0,
+        "patch": 46,
+        "source": "observed",
+        "validated_range": true
+      },
+      "fail_on_triggered": false,
+      "rule_summary": {
+        "loaded": 8,
+        "applicable": 3,
+        "skipped": []
+      },
+      "context": {
+        "mode": "metadata-aware",
+        "dialect": "mysql",
+        "dialect_source": "detected",
+        "schema": "golden",
+        "schema_source": "flag"
+      }
+    },
+    "version_evidence": {
+      "target_raw": null,
+      "target_canonical": null,
+      "observed_raw": "8.0.46",
+      "observed_canonical": {
+        "product": "mysql",
+        "version": "8.0.46"
+      },
+      "resolved": {
+        "product": "mysql",
+        "version": "8.0.46",
+        "major": 8,
+        "minor": 0,
+        "patch": 46,
+        "source": "observed",
+        "validated_range": true
+      }
+    }
+  },
+  "assertions": [
+    {
+      "name": "database reachable with expected version",
+      "ok": true,
+      "detail": "SELECT VERSION() rc=0 version='8.0.46' expected_contains='8.0.46'"
+    },
+    {
+      "name": "setup drop-stale return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "exit code",
+      "ok": true,
+      "detail": "rc=0 expected=0"
+    },
+    {
+      "name": "verdict",
+      "ok": true,
+      "detail": "verdict='pass'"
+    },
+    {
+      "name": "top-level statements",
+      "ok": true,
+      "detail": "statements=5 expected=5"
+    },
+    {
+      "name": "zero findings",
+      "ok": true,
+      "detail": "findings=0"
+    },
+    {
+      "name": "no diagnostics",
+      "ok": true,
+      "detail": "diagnostics=[]"
+    },
+    {
+      "name": "no unsupported",
+      "ok": true,
+      "detail": "unsupported=[]"
+    },
+    {
+      "name": "aggregate coverage",
+      "ok": true,
+      "detail": "coverage='complete'"
+    },
+    {
+      "name": "per-statement coverage",
+      "ok": true,
+      "detail": "statement_coverage=['complete', 'complete', 'complete', 'complete', 'complete']"
+    },
+    {
+      "name": "evidence gap count",
+      "ok": true,
+      "detail": "gaps=0"
+    },
+    {
+      "name": "version identity",
+      "ok": true,
+      "detail": "version={'product': 'mysql', 'version': '8.0.46', 'major': 8, 'minor': 0, 'patch': 46, 'source': 'observed', 'validated_range': True} expected={'product': 'mysql', 'version': '8.0.46'}"
+    },
+    {
+      "name": "execute native-cross-namespace return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "execute native-cross-namespace: same-name tables coexist under different schemas",
+      "ok": true,
+      "detail": "rc=0 output='2' expected='2'"
+    },
+    {
+      "name": "execute native-cross-namespace: t17a.t1 inherits utf8mb4",
+      "ok": true,
+      "detail": "rc=0 output='1' expected='1'"
+    },
+    {
+      "name": "execute native-cross-namespace: t17b.t1 inherits gbk",
+      "ok": true,
+      "detail": "rc=0 output='1' expected='1'"
+    },
+    {
+      "name": "teardown drop-both return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    }
+  ],
+  "status": "pass",
+  "command": [
+    "/private/tmp/ddl-golden/T17/bin/deltascope",
+    "audit",
+    "--dialect",
+    "mysql",
+    "--sql",
+    "CREATE DATABASE t17a CHARACTER SET utf8mb4; CREATE DATABASE t17b CHARACTER SET gbk; CREATE TABLE t17a.t1 (id INT); CREATE TABLE t17b.t1 (id INT); CREATE TABLE t17c.t2 (id INT);",
+    "--config",
+    "/private/tmp/ddl-golden/T17/golden-policy-t17-cascade.yaml",
+    "--format",
+    "json",
+    "--host",
+    "127.0.0.1",
+    "--port",
+    "23380",
+    "--user",
+    "root",
+    "--password-env",
+    "DS_T17_GOLDEN_PW",
+    "--schema",
+    "golden"
+  ]
+}

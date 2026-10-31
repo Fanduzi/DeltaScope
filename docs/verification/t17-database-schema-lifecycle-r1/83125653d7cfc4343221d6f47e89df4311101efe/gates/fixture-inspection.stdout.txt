@@ -1,0 +1,8 @@
+containers:
+volumes:
+networks:
+images:
+mysql:5.7.44 linux/amd64
+mysql:8.0.46 linux/arm64
+mysql:8.4.10 linux/arm64
+pingcap/tidb:v8.5.0 linux/arm64

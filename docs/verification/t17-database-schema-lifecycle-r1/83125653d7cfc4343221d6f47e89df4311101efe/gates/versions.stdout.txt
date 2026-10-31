@@ -1,0 +1,6 @@
+go version go1.26.1 darwin/arm64
+Python 3.12.12
+GNU Make 3.81
+Docker version 29.7.2, build a7dcaa6
+golangci-lint has version 2.12.2 built with go1.26.2 from c0d3ddc on 2026-05-06T11:01:25Z
+GNU bash，版本 5.3.9(1)-release (aarch64-apple-darwin25.1.0)

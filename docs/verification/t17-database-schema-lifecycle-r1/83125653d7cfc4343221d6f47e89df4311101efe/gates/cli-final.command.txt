@@ -1,0 +1,1 @@
+cmp bin/deltascope with previously saved original; shasum -a 256 both paths

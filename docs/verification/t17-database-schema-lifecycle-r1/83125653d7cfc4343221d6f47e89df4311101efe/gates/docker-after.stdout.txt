@@ -1,0 +1,17 @@
+soak-w1 binlog-soak-w1 Up 2 hours (healthy) 0.0.0.0:18081->8081/tcp, [::]:18081->8081/tcp
+soak-w2 binlog-soak-w2 Up 3 hours (healthy) 0.0.0.0:18082->8081/tcp, [::]:18082->8081/tcp
+soak-cp binlog-soak-cp Up 3 hours (healthy) 0.0.0.0:18080->8080/tcp, [::]:18080->8080/tcp
+soak-s3mock adobe/s3mock:latest Up About an hour (healthy) 0.0.0.0:29001->9090/tcp, [::]:29001->9090/tcp
+soak-http503 python:3.12-slim Up 3 hours 
+soak-meta mysql:8.0 Up 16 minutes (healthy) 3306/tcp, 33060/tcp
+soak-src-b mysql:8.0 Up 3 hours (healthy) 0.0.0.0:33307->3306/tcp, [::]:33307->3306/tcp
+soak-src-a mysql:8.0 Up 3 hours (healthy) 0.0.0.0:33306->3306/tcp, [::]:33306->3306/tcp
+soak-restore mysql:8.0 Up 3 hours (healthy) 3306/tcp, 33060/tcp
+soak-proxy binlog-soak-proxy Up 3 hours (healthy) 0.0.0.0:29999->9999/tcp, [::]:29999->9999/tcp, 0.0.0.0:33316->23306/tcp, [::]:33316->23306/tcp
+tmp-restore mysql:8.0 Up 21 hours 3306/tcp, 33060/tcp
+controlhub-query-e2e-mysql mysql:8.0 Up 3 days 0.0.0.0:13306->3306/tcp, [::]:13306->3306/tcp
+controlhub-demo-mysql mysql:8.0 Up 6 days 127.0.0.1:13307->3306/tcp
+controlhub-demo-pg 0af65001d052 Up 6 days 127.0.0.1:55433->5432/tcp
+chub-mysql-lab mysql:8.0 Exited (255) 3 weeks ago 33060/tcp, 0.0.0.0:33306->3306/tcp
+chub-pg-lab postgres:17 Exited (0) 8 days ago 
+mac-connector wenjunxiao/mac-docker-connector Up 3 weeks 

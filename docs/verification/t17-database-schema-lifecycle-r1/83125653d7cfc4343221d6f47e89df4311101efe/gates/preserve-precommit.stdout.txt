@@ -1,0 +1,4 @@
+All file hashes identical
+bbe8c6c423805eba495e77991334fda0a68f35475c8ccb45643668d934b33b10  /tmp/t17r1-evidence/gates/golden-precommit-before.sha256
+bbe8c6c423805eba495e77991334fda0a68f35475c8ccb45643668d934b33b10  /tmp/t17r1-evidence/gates/golden-precommit-after.sha256
+/tmp/ddl-golden-T17-precommit-XMcllUSQ/T17

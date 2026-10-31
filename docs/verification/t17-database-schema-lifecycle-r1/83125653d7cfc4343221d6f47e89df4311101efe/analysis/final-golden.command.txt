@@ -1,0 +1,1 @@
+python3 /Users/fan/GolangProjects/DeltaScope/docs/verification/t17-database-schema-lifecycle-r1/83125653d7cfc4343221d6f47e89df4311101efe/analysis/t17r1-verify-delivery.py /Users/fan/GolangProjects/DeltaScope/docs/verification/t17-database-schema-lifecycle-r1/83125653d7cfc4343221d6f47e89df4311101efe/golden/T17.artifact.json 83125653d7cfc4343221d6f47e89df4311101efe

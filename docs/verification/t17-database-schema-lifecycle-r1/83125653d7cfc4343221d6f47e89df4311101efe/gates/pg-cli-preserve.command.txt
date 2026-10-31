@@ -1,0 +1,1 @@
+Preserve bin/deltascope to a unique /tmp directory and hash it before the PG confidence gate.

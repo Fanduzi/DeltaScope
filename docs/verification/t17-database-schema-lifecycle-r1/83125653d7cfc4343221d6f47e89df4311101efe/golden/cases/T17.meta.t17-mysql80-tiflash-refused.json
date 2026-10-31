@@ -1,0 +1,453 @@
+{
+  "case_id": "T17.meta.t17-mysql80-tiflash-refused",
+  "kind": "cli_metadata",
+  "cli_case": "t17-mysql80-tiflash-refused",
+  "anchor": "mysql80",
+  "dialect": "mysql",
+  "input_sql": "CREATE DATABASE t17tf SET TIFLASH REPLICA 1; ALTER DATABASE t17tf CHARACTER SET latin1; CREATE TABLE t17tf.t (id INT); CREATE TABLE t17tf.t (id INT);",
+  "policy_profile": "t17-cascade",
+  "policy_path": "/private/tmp/ddl-golden/T17/golden-policy-t17-cascade.yaml",
+  "connect": {
+    "host": "127.0.0.1",
+    "port": 23380,
+    "user": "root",
+    "schema": "golden",
+    "password_env": "DS_T17_GOLDEN_PW"
+  },
+  "expected": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 4,
+    "findings": 1,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+      "incomplete",
+      "complete",
+      "complete",
+      "complete"
+    ],
+    "evidence_gaps": 0,
+    "statement_indices": [
+      0,
+      1,
+      2,
+      3
+    ],
+    "unsupported_entries": [
+      {
+        "index": 0,
+        "feature": "create_schema.option.tiflash_replica",
+        "reason": "parsed by the shared parser but outside the supported statement surface for this dialect"
+      }
+    ],
+    "version": {
+      "product": "mysql",
+      "version": "8.0.46"
+    },
+    "statement_sql": [
+      "CREATE DATABASE t17tf SET TIFLASH REPLICA 1;",
+      "ALTER DATABASE t17tf CHARACTER SET latin1;",
+      "CREATE TABLE t17tf.t (id INT);",
+      "CREATE TABLE t17tf.t (id INT);"
+    ],
+    "finding_entries": [
+      {
+        "index": 1,
+        "rule_id": "ddl.database.alter.exists.require",
+        "level": "blocker"
+      }
+    ],
+    "finding_metadata": [
+      {
+        "index": 1,
+        "rule_id": "ddl.database.alter.exists.require",
+        "metadata": {
+          "schema": "t17tf",
+          "operation": "alter_schema",
+          "exists": false
+        }
+      }
+    ],
+    "evidence_gap_entries": []
+  },
+  "actual": {
+    "database": {
+      "product": "mysql",
+      "image": "mysql:8.0.46",
+      "image_digest": "mysql@sha256:7dcddc01f13bab2f15cde676d44d01f61fc9f99fe7785e86196dfc07d358ae2b",
+      "container": "deltascope-ddl-golden-mysql80",
+      "reachable": true,
+      "version": "8.0.46"
+    },
+    "setup": [
+      {
+        "name": "drop-stale",
+        "sql": "DROP DATABASE IF EXISTS t17tf",
+        "rc": 0,
+        "stdout": "",
+        "stderr": "",
+        "verify": [
+          {
+            "assert": "known absent before metadata audit",
+            "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='t17tf'",
+            "rc": 0,
+            "output": "0",
+            "stderr": ""
+          }
+        ]
+      }
+    ],
+    "post_verify": [],
+    "execute": [
+      {
+        "name": "native-tiflash-refused",
+        "sql": "CREATE DATABASE t17tf SET TIFLASH REPLICA 1",
+        "rc": 1,
+        "stdout": "",
+        "stderr": "ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'SET TIFLASH REPLICA 1' at line 1",
+        "verify": [
+          {
+            "assert": "vendor-refused create left nothing",
+            "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='t17tf'",
+            "rc": 0,
+            "output": "0",
+            "stderr": ""
+          }
+        ]
+      },
+      {
+        "name": "native-table-1049-after-refusal",
+        "sql": "CREATE TABLE t17tf.t (id INT)",
+        "rc": 1,
+        "stdout": "",
+        "stderr": "ERROR 1049 (42000) at line 1: Unknown database 't17tf'",
+        "verify": [
+          {
+            "assert": "no child table fabricated by refusal",
+            "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='t17tf' AND TABLE_NAME='t'",
+            "rc": 0,
+            "output": "0",
+            "stderr": ""
+          }
+        ]
+      }
+    ],
+    "structure": [],
+    "teardown": [
+      {
+        "name": "drop-stale",
+        "sql": "DROP DATABASE IF EXISTS t17tf",
+        "rc": 0,
+        "stderr": ""
+      }
+    ],
+    "exit": 1,
+    "stdout": "{\"verdict\":\"reject\",\"coverage\":{\"status\":\"incomplete\"},\"summary\":{\"statements\":4,\"blockers\":1,\"warnings\":0,\"notices\":0},\"statements\":[{\"index\":0,\"kind\":\"ddl\",\"raw_sql\":\"CREATE DATABASE t17tf SET TIFLASH REPLICA 1;\",\"normalized_sql\":\"CREATE DATABASE t17tf SET TIFLASH REPLICA 1\",\"coverage\":{\"status\":\"incomplete\"}},{\"index\":1,\"kind\":\"ddl\",\"raw_sql\":\"ALTER DATABASE t17tf CHARACTER SET latin1;\",\"normalized_sql\":\"ALTER DATABASE t17tf CHARACTER SET latin1\",\"findings\":[{\"rule_id\":\"ddl.database.alter.exists.require\",\"level\":\"blocker\",\"message\":\"alter database target schema \\\"t17tf\\\" does not exist\",\"statement_index\":1,\"statement_kind\":\"ddl\",\"location\":{\"line\":1,\"column\":46},\"suggestion\":\"verify the schema name, create it first, or arm the IF EXISTS clause intentionally\",\"metadata\":{\"exists\":false,\"operation\":\"alter_schema\",\"schema\":\"t17tf\"},\"explanation\":{\"summary\":\"Require DDL database alter exists require\",\"why\":\"The statement is missing a clause, option, or object that the shipped policy requires.\",\"risk\":\"Ignoring this rule can hide live-schema or instance-state risks that only metadata reveals.\",\"suggestion\":\"verify the schema name, create it first, or arm the IF EXISTS clause intentionally\",\"metadata\":{\"status\":\"available\",\"note\":\"Live metadata is available, so this explanation can use schema or instance facts for a more accurate judgment.\"}}}],\"coverage\":{\"status\":\"complete\"}},{\"index\":2,\"kind\":\"ddl\",\"raw_sql\":\"CREATE TABLE t17tf.t (id INT);\",\"normalized_sql\":\"CREATE TABLE t17tf.t (id INT)\",\"coverage\":{\"status\":\"complete\"}},{\"index\":3,\"kind\":\"ddl\",\"raw_sql\":\"CREATE TABLE t17tf.t (id INT);\",\"normalized_sql\":\"CREATE TABLE t17tf.t (id INT)\",\"coverage\":{\"status\":\"complete\"}}],\"unsupported\":[{\"feature\":\"create_schema.option.tiflash_replica\",\"sql\":\"CREATE DATABASE t17tf SET TIFLASH REPLICA 1;\",\"reason\":\"parsed by the shared parser but outside the supported statement surface for this dialect\",\"metadata\":{\"aspect\":\"option\"}}],\"diagnostics\":[{\"classification\":\"unsupported_statement\",\"reason\":\"DeltaScope recognized this statement or feature but does not audit it yet\",\"action_hint\":\"treat this statement as not covered by DeltaScope policy checks; review it manually or track support in a future DeltaScope release\",\"audited\":false,\"dialect\":\"mysql\"}],\"version\":{\"product\":\"mysql\",\"version\":\"8.0.46\",\"major\":8,\"minor\":0,\"patch\":46,\"source\":\"observed\",\"validated_range\":true},\"fail_on_triggered\":true,\"rule_summary\":{\"loaded\":8,\"applicable\":5,\"skipped\":[]},\"context\":{\"mode\":\"metadata-aware\",\"dialect\":\"mysql\",\"dialect_source\":\"detected\",\"schema\":\"golden\",\"schema_source\":\"flag\"}}\n",
+    "stderr": "",
+    "parsed": {
+      "verdict": "reject",
+      "coverage": {
+        "status": "incomplete"
+      },
+      "summary": {
+        "statements": 4,
+        "blockers": 1,
+        "warnings": 0,
+        "notices": 0
+      },
+      "statements": [
+        {
+          "index": 0,
+          "kind": "ddl",
+          "raw_sql": "CREATE DATABASE t17tf SET TIFLASH REPLICA 1;",
+          "normalized_sql": "CREATE DATABASE t17tf SET TIFLASH REPLICA 1",
+          "coverage": {
+            "status": "incomplete"
+          }
+        },
+        {
+          "index": 1,
+          "kind": "ddl",
+          "raw_sql": "ALTER DATABASE t17tf CHARACTER SET latin1;",
+          "normalized_sql": "ALTER DATABASE t17tf CHARACTER SET latin1",
+          "findings": [
+            {
+              "rule_id": "ddl.database.alter.exists.require",
+              "level": "blocker",
+              "message": "alter database target schema \"t17tf\" does not exist",
+              "statement_index": 1,
+              "statement_kind": "ddl",
+              "location": {
+                "line": 1,
+                "column": 46
+              },
+              "suggestion": "verify the schema name, create it first, or arm the IF EXISTS clause intentionally",
+              "metadata": {
+                "exists": false,
+                "operation": "alter_schema",
+                "schema": "t17tf"
+              },
+              "explanation": {
+                "summary": "Require DDL database alter exists require",
+                "why": "The statement is missing a clause, option, or object that the shipped policy requires.",
+                "risk": "Ignoring this rule can hide live-schema or instance-state risks that only metadata reveals.",
+                "suggestion": "verify the schema name, create it first, or arm the IF EXISTS clause intentionally",
+                "metadata": {
+                  "status": "available",
+                  "note": "Live metadata is available, so this explanation can use schema or instance facts for a more accurate judgment."
+                }
+              }
+            }
+          ],
+          "coverage": {
+            "status": "complete"
+          }
+        },
+        {
+          "index": 2,
+          "kind": "ddl",
+          "raw_sql": "CREATE TABLE t17tf.t (id INT);",
+          "normalized_sql": "CREATE TABLE t17tf.t (id INT)",
+          "coverage": {
+            "status": "complete"
+          }
+        },
+        {
+          "index": 3,
+          "kind": "ddl",
+          "raw_sql": "CREATE TABLE t17tf.t (id INT);",
+          "normalized_sql": "CREATE TABLE t17tf.t (id INT)",
+          "coverage": {
+            "status": "complete"
+          }
+        }
+      ],
+      "unsupported": [
+        {
+          "feature": "create_schema.option.tiflash_replica",
+          "sql": "CREATE DATABASE t17tf SET TIFLASH REPLICA 1;",
+          "reason": "parsed by the shared parser but outside the supported statement surface for this dialect",
+          "metadata": {
+            "aspect": "option"
+          }
+        }
+      ],
+      "diagnostics": [
+        {
+          "classification": "unsupported_statement",
+          "reason": "DeltaScope recognized this statement or feature but does not audit it yet",
+          "action_hint": "treat this statement as not covered by DeltaScope policy checks; review it manually or track support in a future DeltaScope release",
+          "audited": false,
+          "dialect": "mysql"
+        }
+      ],
+      "version": {
+        "product": "mysql",
+        "version": "8.0.46",
+        "major": 8,
+        "minor": 0,
+        "patch": 46,
+        "source": "observed",
+        "validated_range": true
+      },
+      "fail_on_triggered": true,
+      "rule_summary": {
+        "loaded": 8,
+        "applicable": 5,
+        "skipped": []
+      },
+      "context": {
+        "mode": "metadata-aware",
+        "dialect": "mysql",
+        "dialect_source": "detected",
+        "schema": "golden",
+        "schema_source": "flag"
+      }
+    },
+    "version_evidence": {
+      "target_raw": null,
+      "target_canonical": null,
+      "observed_raw": "8.0.46",
+      "observed_canonical": {
+        "product": "mysql",
+        "version": "8.0.46"
+      },
+      "resolved": {
+        "product": "mysql",
+        "version": "8.0.46",
+        "major": 8,
+        "minor": 0,
+        "patch": 46,
+        "source": "observed",
+        "validated_range": true
+      }
+    }
+  },
+  "assertions": [
+    {
+      "name": "database reachable with expected version",
+      "ok": true,
+      "detail": "SELECT VERSION() rc=0 version='8.0.46' expected_contains='8.0.46'"
+    },
+    {
+      "name": "setup drop-stale return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "setup drop-stale: known absent before metadata audit",
+      "ok": true,
+      "detail": "rc=0 output='0' expected='0'"
+    },
+    {
+      "name": "exit code",
+      "ok": true,
+      "detail": "rc=1 expected=1"
+    },
+    {
+      "name": "verdict",
+      "ok": true,
+      "detail": "verdict='reject'"
+    },
+    {
+      "name": "top-level statements",
+      "ok": true,
+      "detail": "statements=4 expected=4"
+    },
+    {
+      "name": "zero findings",
+      "ok": true,
+      "detail": "findings=1"
+    },
+    {
+      "name": "no diagnostics",
+      "ok": true,
+      "detail": "diagnostics=[{'classification': 'unsupported_statement', 'reason': 'DeltaScope recognized this statement or feature but does not audit it yet', 'action_hint': 'treat this statement as not covered by DeltaScope policy checks; review it manually or track support in a future DeltaScope release', 'audited': False, 'dialect': 'mysql'}]"
+    },
+    {
+      "name": "no unsupported",
+      "ok": true,
+      "detail": "unsupported=[{'feature': 'create_schema.option.tiflash_replica', 'sql': 'CREATE DATABASE t17tf SET TIFLASH REPLICA 1;', 'reason': 'parsed by the shared parser but outside the supported statement surface for this dialect', 'metadata': {'aspect': 'option'}}]"
+    },
+    {
+      "name": "statement indices",
+      "ok": true,
+      "detail": "indices=[0, 1, 2, 3]"
+    },
+    {
+      "name": "finding statement ownership",
+      "ok": true,
+      "detail": "findings must belong to their enclosing statement"
+    },
+    {
+      "name": "aggregate coverage",
+      "ok": true,
+      "detail": "coverage='incomplete'"
+    },
+    {
+      "name": "per-statement coverage",
+      "ok": true,
+      "detail": "statement_coverage=['incomplete', 'complete', 'complete', 'complete']"
+    },
+    {
+      "name": "unsupported entries",
+      "ok": true,
+      "detail": "entries=[(0, 'create_schema.option.tiflash_replica', 'parsed by the shared parser but outside the supported statement surface for this dialect')] expected=[(0, 'create_schema.option.tiflash_replica', 'parsed by the shared parser but outside the supported statement surface for this dialect')]"
+    },
+    {
+      "name": "statement raw SQL identity",
+      "ok": true,
+      "detail": "raw_sql=['CREATE DATABASE t17tf SET TIFLASH REPLICA 1;', 'ALTER DATABASE t17tf CHARACTER SET latin1;', 'CREATE TABLE t17tf.t (id INT);', 'CREATE TABLE t17tf.t (id INT);'] expected=['CREATE DATABASE t17tf SET TIFLASH REPLICA 1;', 'ALTER DATABASE t17tf CHARACTER SET latin1;', 'CREATE TABLE t17tf.t (id INT);', 'CREATE TABLE t17tf.t (id INT);']"
+    },
+    {
+      "name": "unsupported sql identity index=0",
+      "ok": true,
+      "detail": "sql='CREATE DATABASE t17tf SET TIFLASH REPLICA 1;' expected='CREATE DATABASE t17tf SET TIFLASH REPLICA 1;'"
+    },
+    {
+      "name": "evidence gap count",
+      "ok": true,
+      "detail": "gaps=0"
+    },
+    {
+      "name": "evidence gap entries",
+      "ok": true,
+      "detail": "gaps=[] expected=[]"
+    },
+    {
+      "name": "finding entries",
+      "ok": true,
+      "detail": "findings=[(1, 'ddl.database.alter.exists.require', 'blocker')] expected=[(1, 'ddl.database.alter.exists.require', 'blocker')]"
+    },
+    {
+      "name": "finding metadata (1, 'ddl.database.alter.exists.require')",
+      "ok": true,
+      "detail": "findings=[{'exists': False, 'operation': 'alter_schema', 'schema': 't17tf'}] expected_subset={'schema': 't17tf', 'operation': 'alter_schema', 'exists': False}"
+    },
+    {
+      "name": "version identity",
+      "ok": true,
+      "detail": "version={'product': 'mysql', 'version': '8.0.46', 'major': 8, 'minor': 0, 'patch': 46, 'source': 'observed', 'validated_range': True} expected={'product': 'mysql', 'version': '8.0.46'}"
+    },
+    {
+      "name": "execute native-tiflash-refused return code",
+      "ok": true,
+      "detail": "rc=1 expected=1 stderr=\"ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'SET TIFLASH REPLICA 1' at line 1\""
+    },
+    {
+      "name": "execute native-tiflash-refused stderr marker",
+      "ok": true,
+      "detail": "1064"
+    },
+    {
+      "name": "execute native-tiflash-refused: vendor-refused create left nothing",
+      "ok": true,
+      "detail": "rc=0 output='0' expected='0'"
+    },
+    {
+      "name": "execute native-table-1049-after-refusal return code",
+      "ok": true,
+      "detail": "rc=1 expected=1 stderr=\"ERROR 1049 (42000) at line 1: Unknown database 't17tf'\""
+    },
+    {
+      "name": "execute native-table-1049-after-refusal stderr marker",
+      "ok": true,
+      "detail": "ERROR 1049"
+    },
+    {
+      "name": "execute native-table-1049-after-refusal: no child table fabricated by refusal",
+      "ok": true,
+      "detail": "rc=0 output='0' expected='0'"
+    },
+    {
+      "name": "teardown drop-stale return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    }
+  ],
+  "status": "pass",
+  "command": [
+    "/private/tmp/ddl-golden/T17/bin/deltascope",
+    "audit",
+    "--dialect",
+    "mysql",
+    "--sql",
+    "CREATE DATABASE t17tf SET TIFLASH REPLICA 1; ALTER DATABASE t17tf CHARACTER SET latin1; CREATE TABLE t17tf.t (id INT); CREATE TABLE t17tf.t (id INT);",
+    "--config",
+    "/private/tmp/ddl-golden/T17/golden-policy-t17-cascade.yaml",
+    "--format",
+    "json",
+    "--host",
+    "127.0.0.1",
+    "--port",
+    "23380",
+    "--user",
+    "root",
+    "--password-env",
+    "DS_T17_GOLDEN_PW",
+    "--schema",
+    "golden"
+  ]
+}
