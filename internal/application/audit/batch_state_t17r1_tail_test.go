@@ -1,6 +1,7 @@
 package audit
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"reflect"
@@ -355,7 +356,7 @@ func TestT17R1TailPolicyIndependence(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			if string(beforeMetadata) != string(afterMetadata) || *facts != beforeFacts ||
+			if !bytes.Equal(beforeMetadata, afterMetadata) || *facts != beforeFacts ||
 				!reflect.DeepEqual(p.answer, t17TailFixture(false)) || p.calls != 1 {
 				t.Errorf("evaluation mutated metadata or fixture: before=%s after=%s facts=%#v answer=%#v calls=%d", beforeMetadata, afterMetadata, facts, p.answer, p.calls)
 			}
