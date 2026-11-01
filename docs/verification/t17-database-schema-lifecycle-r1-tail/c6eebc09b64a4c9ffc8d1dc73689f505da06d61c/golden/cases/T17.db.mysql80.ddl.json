@@ -1,0 +1,485 @@
+{
+  "case_id": "T17.db.mysql80.ddl",
+  "kind": "db_ddl",
+  "anchor": "mysql80",
+  "input_sql": [
+    "DROP DATABASE IF EXISTS t17fx",
+    "CREATE DATABASE t17fx CHARACTER SET utf8mb4",
+    "CREATE TABLE t17fx.t (id INT)",
+    "DROP DATABASE t17fx",
+    "CREATE SCHEMA t17sx",
+    "DROP SCHEMA t17sx",
+    "DROP DATABASE IF EXISTS t17never",
+    "DROP DATABASE t17never",
+    "CREATE DATABASE IF NOT EXISTS t17ix",
+    "CREATE DATABASE IF NOT EXISTS t17ix",
+    "CREATE DATABASE t17ix",
+    "DROP DATABASE t17ix"
+  ],
+  "expected": {
+    "steps": [
+      {
+        "name": "drop-stale-fixture",
+        "rc": 0,
+        "verify": []
+      },
+      {
+        "name": "create-fixture-schema",
+        "rc": 0,
+        "verify": [
+          {
+            "assert": "t17fx present",
+            "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='t17fx'",
+            "expect": "1"
+          }
+        ]
+      },
+      {
+        "name": "create-fixture-table",
+        "rc": 0,
+        "verify": [
+          {
+            "assert": "contained table present",
+            "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='t17fx' AND TABLE_NAME='t'",
+            "expect": "1"
+          }
+        ]
+      },
+      {
+        "name": "drop-fixture-cascades",
+        "rc": 0,
+        "verify": [
+          {
+            "assert": "t17fx gone",
+            "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='t17fx'",
+            "expect": "0"
+          },
+          {
+            "assert": "contained table gone with schema",
+            "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='t17fx'",
+            "expect": "0"
+          }
+        ]
+      },
+      {
+        "name": "synonym-create",
+        "rc": 0,
+        "verify": [
+          {
+            "assert": "t17sx present via SCHEMA synonym",
+            "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='t17sx'",
+            "expect": "1"
+          }
+        ]
+      },
+      {
+        "name": "synonym-drop",
+        "rc": 0,
+        "verify": [
+          {
+            "assert": "t17sx gone via SCHEMA synonym",
+            "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='t17sx'",
+            "expect": "0"
+          }
+        ]
+      },
+      {
+        "name": "ifexists-noop",
+        "rc": 0,
+        "verify": [
+          {
+            "assert": "t17never still absent",
+            "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='t17never'",
+            "expect": "0"
+          }
+        ]
+      },
+      {
+        "name": "missing-drop-refusal",
+        "rc": 1,
+        "verify": [
+          {
+            "assert": "refused drop created nothing",
+            "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='t17never'",
+            "expect": "0"
+          }
+        ]
+      },
+      {
+        "name": "ifnotexists-create",
+        "rc": 0,
+        "verify": [
+          {
+            "assert": "t17ix present",
+            "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='t17ix'",
+            "expect": "1"
+          }
+        ]
+      },
+      {
+        "name": "ifnotexists-noop",
+        "rc": 0,
+        "verify": [
+          {
+            "assert": "t17ix still present",
+            "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='t17ix'",
+            "expect": "1"
+          }
+        ]
+      },
+      {
+        "name": "duplicate-create-refusal",
+        "rc": 1,
+        "verify": [
+          {
+            "assert": "refused duplicate kept original",
+            "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='t17ix'",
+            "expect": "1"
+          }
+        ]
+      },
+      {
+        "name": "cleanup-fixture",
+        "rc": 0,
+        "verify": [
+          {
+            "assert": "t17ix gone",
+            "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='t17ix'",
+            "expect": "0"
+          }
+        ]
+      }
+    ]
+  },
+  "actual": {
+    "steps": [
+      {
+        "name": "drop-stale-fixture",
+        "sql": "DROP DATABASE IF EXISTS t17fx",
+        "verify": [],
+        "rc": 0,
+        "stdout": "",
+        "stderr": ""
+      },
+      {
+        "name": "create-fixture-schema",
+        "sql": "CREATE DATABASE t17fx CHARACTER SET utf8mb4",
+        "verify": [
+          {
+            "assert": "t17fx present",
+            "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='t17fx'",
+            "rc": 0,
+            "output": "1",
+            "stderr": ""
+          }
+        ],
+        "rc": 0,
+        "stdout": "",
+        "stderr": ""
+      },
+      {
+        "name": "create-fixture-table",
+        "sql": "CREATE TABLE t17fx.t (id INT)",
+        "verify": [
+          {
+            "assert": "contained table present",
+            "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='t17fx' AND TABLE_NAME='t'",
+            "rc": 0,
+            "output": "1",
+            "stderr": ""
+          }
+        ],
+        "rc": 0,
+        "stdout": "",
+        "stderr": ""
+      },
+      {
+        "name": "drop-fixture-cascades",
+        "sql": "DROP DATABASE t17fx",
+        "verify": [
+          {
+            "assert": "t17fx gone",
+            "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='t17fx'",
+            "rc": 0,
+            "output": "0",
+            "stderr": ""
+          },
+          {
+            "assert": "contained table gone with schema",
+            "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='t17fx'",
+            "rc": 0,
+            "output": "0",
+            "stderr": ""
+          }
+        ],
+        "rc": 0,
+        "stdout": "",
+        "stderr": ""
+      },
+      {
+        "name": "synonym-create",
+        "sql": "CREATE SCHEMA t17sx",
+        "verify": [
+          {
+            "assert": "t17sx present via SCHEMA synonym",
+            "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='t17sx'",
+            "rc": 0,
+            "output": "1",
+            "stderr": ""
+          }
+        ],
+        "rc": 0,
+        "stdout": "",
+        "stderr": ""
+      },
+      {
+        "name": "synonym-drop",
+        "sql": "DROP SCHEMA t17sx",
+        "verify": [
+          {
+            "assert": "t17sx gone via SCHEMA synonym",
+            "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='t17sx'",
+            "rc": 0,
+            "output": "0",
+            "stderr": ""
+          }
+        ],
+        "rc": 0,
+        "stdout": "",
+        "stderr": ""
+      },
+      {
+        "name": "ifexists-noop",
+        "sql": "DROP DATABASE IF EXISTS t17never",
+        "verify": [
+          {
+            "assert": "t17never still absent",
+            "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='t17never'",
+            "rc": 0,
+            "output": "0",
+            "stderr": ""
+          }
+        ],
+        "rc": 0,
+        "stdout": "",
+        "stderr": ""
+      },
+      {
+        "name": "missing-drop-refusal",
+        "sql": "DROP DATABASE t17never",
+        "verify": [
+          {
+            "assert": "refused drop created nothing",
+            "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='t17never'",
+            "rc": 0,
+            "output": "0",
+            "stderr": ""
+          }
+        ],
+        "rc": 1,
+        "stdout": "",
+        "stderr": "ERROR 1008 (HY000) at line 1: Can't drop database 't17never'; database doesn't exist"
+      },
+      {
+        "name": "ifnotexists-create",
+        "sql": "CREATE DATABASE IF NOT EXISTS t17ix",
+        "verify": [
+          {
+            "assert": "t17ix present",
+            "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='t17ix'",
+            "rc": 0,
+            "output": "1",
+            "stderr": ""
+          }
+        ],
+        "rc": 0,
+        "stdout": "",
+        "stderr": ""
+      },
+      {
+        "name": "ifnotexists-noop",
+        "sql": "CREATE DATABASE IF NOT EXISTS t17ix",
+        "verify": [
+          {
+            "assert": "t17ix still present",
+            "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='t17ix'",
+            "rc": 0,
+            "output": "1",
+            "stderr": ""
+          }
+        ],
+        "rc": 0,
+        "stdout": "",
+        "stderr": ""
+      },
+      {
+        "name": "duplicate-create-refusal",
+        "sql": "CREATE DATABASE t17ix",
+        "verify": [
+          {
+            "assert": "refused duplicate kept original",
+            "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='t17ix'",
+            "rc": 0,
+            "output": "1",
+            "stderr": ""
+          }
+        ],
+        "rc": 1,
+        "stdout": "",
+        "stderr": "ERROR 1007 (HY000) at line 1: Can't create database 't17ix'; database exists"
+      },
+      {
+        "name": "cleanup-fixture",
+        "sql": "DROP DATABASE t17ix",
+        "verify": [
+          {
+            "assert": "t17ix gone",
+            "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='t17ix'",
+            "rc": 0,
+            "output": "0",
+            "stderr": ""
+          }
+        ],
+        "rc": 0,
+        "stdout": "",
+        "stderr": ""
+      }
+    ],
+    "database": {
+      "product": "mysql",
+      "image": "mysql:8.0.46",
+      "image_digest": "mysql@sha256:7dcddc01f13bab2f15cde676d44d01f61fc9f99fe7785e86196dfc07d358ae2b",
+      "container": "deltascope-ddl-golden-mysql80",
+      "reachable": true,
+      "version": "8.0.46"
+    }
+  },
+  "assertions": [
+    {
+      "name": "database reachable with expected version",
+      "ok": true,
+      "detail": "SELECT VERSION() rc=0 version='8.0.46' expected_contains='8.0.46'"
+    },
+    {
+      "name": "drop-stale-fixture return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "create-fixture-schema return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "create-fixture-schema: t17fx present",
+      "ok": true,
+      "detail": "rc=0 output='1' expected='1'"
+    },
+    {
+      "name": "create-fixture-table return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "create-fixture-table: contained table present",
+      "ok": true,
+      "detail": "rc=0 output='1' expected='1'"
+    },
+    {
+      "name": "drop-fixture-cascades return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "drop-fixture-cascades: t17fx gone",
+      "ok": true,
+      "detail": "rc=0 output='0' expected='0'"
+    },
+    {
+      "name": "drop-fixture-cascades: contained table gone with schema",
+      "ok": true,
+      "detail": "rc=0 output='0' expected='0'"
+    },
+    {
+      "name": "synonym-create return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "synonym-create: t17sx present via SCHEMA synonym",
+      "ok": true,
+      "detail": "rc=0 output='1' expected='1'"
+    },
+    {
+      "name": "synonym-drop return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "synonym-drop: t17sx gone via SCHEMA synonym",
+      "ok": true,
+      "detail": "rc=0 output='0' expected='0'"
+    },
+    {
+      "name": "ifexists-noop return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "ifexists-noop: t17never still absent",
+      "ok": true,
+      "detail": "rc=0 output='0' expected='0'"
+    },
+    {
+      "name": "missing-drop-refusal return code",
+      "ok": true,
+      "detail": "rc=1 expected=1 stderr=\"ERROR 1008 (HY000) at line 1: Can't drop database 't17never'; database doesn't exist\""
+    },
+    {
+      "name": "missing-drop-refusal: refused drop created nothing",
+      "ok": true,
+      "detail": "rc=0 output='0' expected='0'"
+    },
+    {
+      "name": "ifnotexists-create return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "ifnotexists-create: t17ix present",
+      "ok": true,
+      "detail": "rc=0 output='1' expected='1'"
+    },
+    {
+      "name": "ifnotexists-noop return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "ifnotexists-noop: t17ix still present",
+      "ok": true,
+      "detail": "rc=0 output='1' expected='1'"
+    },
+    {
+      "name": "duplicate-create-refusal return code",
+      "ok": true,
+      "detail": "rc=1 expected=1 stderr=\"ERROR 1007 (HY000) at line 1: Can't create database 't17ix'; database exists\""
+    },
+    {
+      "name": "duplicate-create-refusal: refused duplicate kept original",
+      "ok": true,
+      "detail": "rc=0 output='1' expected='1'"
+    },
+    {
+      "name": "cleanup-fixture return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "cleanup-fixture: t17ix gone",
+      "ok": true,
+      "detail": "rc=0 output='0' expected='0'"
+    }
+  ],
+  "status": "pass"
+}

@@ -1,0 +1,22 @@
+cwd:
+/Users/fan/GolangProjects/DeltaScope
+HEAD:
+84762d9d6c9085dbe91307516e14a984efa76375
+branch:
+milestone/mysql-tidb-ddl-completion
+status:
+ M internal/application/audit/batch_state_t17r1_tail_test.go
+?? .agents/
+?? .codex/
+?? .cursor/
+?? .debug-journal.md
+?? .devin/
+?? .grok/
+?? .opencode/
+?? .pi-subagents/
+?? .qoder/
+?? artifacts/
+?? docs/quality/architecture-review-2026-08-11.html
+?? docs/verification/t06-a12/1a5dd90de898a59590ef8a19aa068c4b5e8ce7f8/T06/
+source SHA256:
+3c7859469a4c7f612885d9cb55319c9bf2a01d62e297e2936948eaf36849e169  internal/application/audit/batch_state_t17r1_tail_test.go

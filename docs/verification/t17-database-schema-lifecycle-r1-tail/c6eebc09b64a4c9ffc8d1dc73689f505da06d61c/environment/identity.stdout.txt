@@ -1,0 +1,1 @@
+{"id":"652292e0731c1eeecd0f567231b3242b9fa2a27808bdf0a1576323f2e827bd87","name":"/deltascope-t17-tail-mysql80","image":"mysql:8.0.46","image_id":"sha256:7dcddc01f13bab2f15cde676d44d01f61fc9f99fe7785e86196dfc07d358ae2b","state":"running","port_bindings":{},"publish_all":false,"ports":{"3306/tcp":null,"33060/tcp":null}}

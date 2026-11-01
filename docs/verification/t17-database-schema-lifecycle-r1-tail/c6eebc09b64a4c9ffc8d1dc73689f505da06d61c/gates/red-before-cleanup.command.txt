@@ -1,0 +1,4 @@
+git -C /Users/fan/GolangProjects/DeltaScope-wt-t17r1-tail-red rev-parse HEAD
+git -C /Users/fan/GolangProjects/DeltaScope-wt-t17r1-tail-red status --porcelain=v1 --untracked-files=all
+git -C /Users/fan/GolangProjects/DeltaScope-wt-t17r1-tail-red diff --quiet
+git -C /Users/fan/GolangProjects/DeltaScope-wt-t17r1-tail-red diff --cached --quiet

@@ -1,0 +1,2 @@
+-rw-r--r--@ 1 fan  wheel    589702 11月  1 14:52 /tmp/ddl-golden/T17/artifact.json
+-rwxr-xr-x@ 1 fan  staff  35509074 11月  1 14:52 /tmp/ddl-golden/T17/bin/deltascope

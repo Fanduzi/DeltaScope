@@ -1,0 +1,36 @@
+cwd:
+/Users/fan/GolangProjects/DeltaScope
+branch:
+milestone/mysql-tidb-ddl-completion
+HEAD:
+84762d9d6c9085dbe91307516e14a984efa76375
+status:
+?? .agents/
+?? .codex/
+?? .cursor/
+?? .debug-journal.md
+?? .devin/
+?? .grok/
+?? .opencode/
+?? .pi-subagents/
+?? .qoder/
+?? artifacts/
+?? docs/quality/architecture-review-2026-08-11.html
+?? docs/verification/t06-a12/1a5dd90de898a59590ef8a19aa068c4b5e8ce7f8/T06/
+tools:
+go version go1.26.1 darwin/arm64
+darwin
+arm64
+auto
+Python 3.12.12
+GNU bash，版本 5.3.9(1)-release (aarch64-apple-darwin25.1.0)
+GNU Make 3.81
+golangci-lint has version 2.12.2 built with go1.26.2 from c0d3ddc on 2026-05-06T11:01:25Z
+changed source blobs:
+d6d347d3eaa1841ce1b21740f0f89c793a0a0315  internal/application/audit/batch_state_schema.go
+a22c24d597a8456263f32cd0a050db05f2e99db3  internal/application/audit/batch_state_t17r1_tail_test.go
+a27a20f5f5592a9084813533b63d96b4aa85491d  internal/application/audit/batch_state_t17r1_test.go
+1fea51d7eea6456cf22cf03feeddd61448132d19  internal/domain/spec/metadata.go
+f23a43b7bc065e5b5d62fd6c952177407a2f6a6b  internal/infrastructure/metadata/mysql/provider.go
+398e75c42423200bb2b710970e40268d7935c696  internal/infrastructure/metadata/mysql/provider_test.go
+c8eab3b5bace85bb379e00499a4e418f488f18bc  pkg/deltascope/audit_test.go

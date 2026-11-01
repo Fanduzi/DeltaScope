@@ -1,0 +1,349 @@
+diff --git a/internal/application/audit/batch_state_t17r1_tail_test.go b/internal/application/audit/batch_state_t17r1_tail_test.go
+new file mode 100644
+index 00000000..60cc9c7c
+--- /dev/null
++++ b/internal/application/audit/batch_state_t17r1_tail_test.go
+@@ -0,0 +1,343 @@
++package audit
++
++import (
++	"context"
++	"encoding/json"
++	"reflect"
++	"testing"
++
++	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
++)
++
++const (
++	t17TailCreateSQL = "CREATE DATABASE g CHARACTER SET utf8mb4; ALTER DATABASE g COLLATE utf8mb4_bin;"
++	t17TailAlterSQL  = "ALTER DATABASE g CHARACTER SET utf8mb4; ALTER DATABASE g COLLATE utf8mb4_bin;"
++)
++
++func t17TailFixture(present bool) *spec.ObjectSnapshot {
++	if !present {
++		return &spec.ObjectSnapshot{Status: spec.MetadataStatusNotFound}
++	}
++	return &spec.ObjectSnapshot{
++		Status: spec.MetadataStatusConfirmed,
++		Exists: true,
++		Attributes: map[string]string{
++			"charset": "latin1", "collation": "latin1_swedish_ci",
++		},
++	}
++}
++
++func t17TailProjection(t *testing.T, sql string, present bool) {
++	t.Helper()
++	ctx := context.Background()
++	version, err := parseAuditTargetVersion(spec.DialectMySQL, "5.7.44")
++	if err != nil || version == nil {
++		t.Fatalf("parse target version: %#v, %v", version, err)
++	}
++	p := &t17ObjectResolver{answer: t17TailFixture(present), version: "5.7.44"}
++	original := t17TailFixture(present)
++	parsed, err := Parse(ctx, sql, spec.DialectMySQL)
++	if err != nil {
++		t.Fatalf("parse: %v", err)
++	}
++	statements, err := Extract(ctx, parsed)
++	if err != nil {
++		t.Fatalf("extract: %v", err)
++	}
++	if len(statements) != 2 {
++		t.Fatalf("extracted %d statements, want 2", len(statements))
++	}
++	facts, err := p.LoadInstanceFacts(ctx, spec.DialectMySQL, "req")
++	if err != nil {
++		t.Fatalf("load instance facts: %v", err)
++	}
++	state := newBatchState(spec.DialectMySQL, "req", p)
++	state.resolvedVersion = version
++	state.instanceFacts = facts
++	enriched, err := state.enrichStatements(ctx,
++		&MetadataRequest{Schema: "req", Provider: p, TargetVersion: version},
++		statements, parsed.failures, facts, auditLimits{orderedStatements: len(statements)})
++	if err != nil || len(enriched) != 2 {
++		t.Fatalf("enrich: %d statements, %v", len(enriched), err)
++	}
++	entry := state.schemaEntries["g"]
++	var post any
++	if entry != nil {
++		post = map[string]any{"state": entry.state, "attrs": entry.attrs, "batch_created": entry.batchCreated}
++	}
++	proof, err := json.Marshal(map[string]any{
++		"scope": "internal_projection", "test": t.Name(), "sql": sql, "dialect": spec.DialectMySQL,
++		"parsed_version": version, "provider_original_fixture": original, "provider_after": p.answer,
++		"instance_facts": facts, "first_metadata": enriched[0].Metadata, "second_metadata": enriched[1].Metadata,
++		"final_schema_entry": post, "object_calls": p.calls, "object_lookup_ledger": p.lookups,
++	})
++	if err != nil {
++		t.Fatalf("marshal proof: %v", err)
++	}
++	t.Logf("T17TAIL_PROOF %s", proof)
++
++	first := t17TailFixture(present)
++	first.Schema, first.Type, first.Name = "g", "schema", "g"
++	if got := enriched[0].MetadataSchemaTarget(); !reflect.DeepEqual(got, first) {
++		t.Errorf("first SchemaTarget = %#v, want unchanged %#v", got, first)
++	}
++	if !reflect.DeepEqual(p.answer, original) {
++		t.Errorf("provider fixture changed: got %#v, want %#v", p.answer, original)
++	}
++	second := &spec.ObjectSnapshot{
++		Schema: "g", Type: "schema", Name: "g", Status: spec.MetadataStatusConfirmed, Exists: true,
++		Attributes: map[string]string{"charset": "utf8mb4", "collation": "utf8mb4_general_ci"},
++	}
++	if got := enriched[1].MetadataSchemaTarget(); !reflect.DeepEqual(got, second) {
++		t.Errorf("second SchemaTarget = %#v, want %#v", got, second)
++	}
++	if entry == nil || entry.state != schemaPresent || entry.batchCreated != !present ||
++		!reflect.DeepEqual(entry.attrs, map[string]string{"charset": "utf8mb4", "collation": "utf8mb4_bin"}) {
++		t.Errorf("final schema entry = %#v", entry)
++	}
++	wantLookups := []spec.ObjectLookupRequest{{Schema: "req", Type: "schema", Name: "g"}}
++	if p.calls != 1 || !reflect.DeepEqual(p.lookups, wantLookups) {
++		t.Errorf("object calls = %d, ledger = %#v", p.calls, p.lookups)
++	}
++}
++
++func TestT17R1TailCreateProjection(t *testing.T) {
++	t17TailProjection(t, t17TailCreateSQL, false)
++}
++
++func TestT17R1TailAlterProjection(t *testing.T) {
++	t17TailProjection(t, t17TailAlterSQL, true)
++}
++
++func TestT17R1TailPublicAuditControl(t *testing.T) {
++	for _, tc := range []struct {
++		name    string
++		sql     string
++		present bool
++	}{
++		{"create", t17TailCreateSQL, false},
++		{"alter", t17TailAlterSQL, true},
++	} {
++		t.Run(tc.name, func(t *testing.T) {
++			p := &t17ObjectResolver{answer: t17TailFixture(tc.present), version: "5.7.44"}
++			result, err := AuditSQL(context.Background(), Request{
++				SQL: tc.sql, Dialect: spec.DialectMySQL, TargetVersion: "5.7.44",
++				Metadata: &MetadataRequest{Schema: "req", Provider: p},
++			})
++			if err != nil || len(result.Statements) != 2 {
++				t.Fatalf("audit: result=%#v err=%v", result, err)
++			}
++			// Public audit output omits metadata and does not assert internal collation.
++			proof, err := json.Marshal(result)
++			if err != nil {
++				t.Fatalf("marshal public result: %v", err)
++			}
++			t.Logf("T17TAIL_PUBLIC_CONTROL %s", proof)
++			if result.Version == nil || result.Version.Product != spec.VersionProductMySQL ||
++				result.Version.Version != "5.7.44" || result.Version.Source != spec.VersionSourceObserved {
++				t.Errorf("observed version = %#v", result.Version)
++			}
++			for _, statement := range result.Statements {
++				for _, finding := range statement.Findings {
++					if finding.RuleID == "ddl.database.create.exists.forbid" || finding.RuleID == "ddl.database.alter.exists.require" {
++						t.Errorf("unexpected schema existence finding: %#v", finding)
++					}
++				}
++				for _, gap := range statement.EvidenceGaps {
++					if gap.RuleID == "ddl.database.create.exists.forbid" || gap.RuleID == "ddl.database.alter.exists.require" {
++						t.Errorf("unexpected schema existence gap: %#v", gap)
++					}
++				}
++			}
++			for _, finding := range result.GlobalFindings {
++				if finding.RuleID == "ddl.database.create.exists.forbid" || finding.RuleID == "ddl.database.alter.exists.require" {
++					t.Errorf("unexpected global schema existence finding: %#v", finding)
++				}
++			}
++			if p.calls != 1 {
++				t.Errorf("object calls = %d, want 1", p.calls)
++			}
++		})
++	}
++}
++
++func TestT17R1TailCharsetMatrix(t *testing.T) {
++	cases := []struct {
++		name, version, observed, want string
++		dialect, versionDialect       spec.Dialect
++	}{
++		{"mysql57", "5.7.44", "", "utf8mb4_general_ci", spec.DialectMySQL, spec.DialectMySQL},
++		{"mysql80-observed", "8.0.46", "utf8mb4_0900_ai_ci", "utf8mb4_0900_ai_ci", spec.DialectMySQL, spec.DialectMySQL},
++		{"mysql84-observed", "8.4.10", "utf8mb4_0900_ai_ci", "utf8mb4_0900_ai_ci", spec.DialectMySQL, spec.DialectMySQL},
++		{"mysql80-configured-general", "8.0.46", " UTF8MB4_GENERAL_CI ", "utf8mb4_general_ci", spec.DialectMySQL, spec.DialectMySQL},
++		{"mysql80-unobserved", "8.0.46", "", "", spec.DialectMySQL, spec.DialectMySQL},
++		{"mysql-unversioned", "", "", "", spec.DialectMySQL, spec.DialectMySQL},
++		{"mysql-future", "9.0.0", "", "", spec.DialectMySQL, spec.DialectMySQL},
++		{"mysql-unversioned-observed", "", "utf8mb4_general_ci", "utf8mb4_general_ci", spec.DialectMySQL, spec.DialectMySQL},
++		{"mysql-invalid-observation", "8.0.46", "latin1_bin", "", spec.DialectMySQL, spec.DialectMySQL},
++		{"mysql-foreign-product", "5.7.44", "", "", spec.DialectMySQL, spec.DialectTiDB},
++		{"tidb85", "8.5.0", "", "utf8mb4_bin", spec.DialectTiDB, spec.DialectTiDB},
++		{"tidb-unversioned", "", "", "", spec.DialectTiDB, spec.DialectTiDB},
++		{"tidb-future", "9.0.0", "", "", spec.DialectTiDB, spec.DialectTiDB},
++	}
++	for _, tc := range cases {
++		for _, present := range []bool{false, true} {
++			operation := "create"
++			sql := t17TailCreateSQL
++			if present {
++				operation, sql = "alter", t17TailAlterSQL
++			}
++			t.Run(tc.name+"/"+operation, func(t *testing.T) {
++				version, err := parseAuditTargetVersion(tc.versionDialect, tc.version)
++				if err != nil {
++					t.Fatal(err)
++				}
++				original := t17TailFixture(present)
++				if present {
++					original.Attributes["encryption"] = "yes"
++					original.Attributes["placement_policy"] = "old"
++				}
++				answer := t17TailFixture(present)
++				if present {
++					answer.Attributes["encryption"] = "yes"
++					answer.Attributes["placement_policy"] = "old"
++				}
++				facts := &spec.InstanceFacts{DefaultCollationForUTF8MB4: tc.observed}
++				if tc.name == "mysql80-configured-general" {
++					facts.ServerCollation = "utf8mb4_0900_ai_ci"
++				}
++				beforeFacts := *facts
++				p := &t17ObjectResolver{answer: answer, facts: facts}
++				state, statements := t17Enrich(t, tc.dialect, sql, "req", version, p)
++				first := t17TailFixture(present)
++				first.Schema, first.Type, first.Name = "g", "schema", "g"
++				if present {
++					first.Attributes["encryption"] = "yes"
++					first.Attributes["placement_policy"] = "old"
++				}
++				if got := statements[0].MetadataSchemaTarget(); !reflect.DeepEqual(got, first) {
++					t.Errorf("first projection=%#v want=%#v", got, first)
++				}
++				wantAttrs := map[string]string{"charset": "utf8mb4"}
++				if tc.want != "" {
++					wantAttrs["collation"] = tc.want
++				}
++				if present {
++					wantAttrs["encryption"] = "yes"
++					wantAttrs["placement_policy"] = "old"
++				}
++				want := &spec.ObjectSnapshot{Schema: "g", Type: "schema", Name: "g", Status: spec.MetadataStatusConfirmed, Exists: true, Attributes: wantAttrs}
++				if got := statements[1].MetadataSchemaTarget(); !reflect.DeepEqual(got, want) {
++					t.Errorf("second projection=%#v want=%#v", got, want)
++				}
++				finalAttrs := map[string]string{"charset": "utf8mb4", "collation": "utf8mb4_bin"}
++				if present {
++					finalAttrs["encryption"], finalAttrs["placement_policy"] = "yes", "old"
++				}
++				if entry := state.schemaEntries["g"]; entry == nil || entry.state != schemaPresent || entry.batchCreated != !present || !reflect.DeepEqual(entry.attrs, finalAttrs) {
++					t.Errorf("final entry=%#v", entry)
++				}
++				if !reflect.DeepEqual(answer, original) || *facts != beforeFacts || p.calls != 1 {
++					t.Errorf("fixture mutation or lookup count: answer=%#v facts=%#v calls=%d", answer, facts, p.calls)
++				}
++			})
++		}
++	}
++}
++
++func TestT17R1TailBareCreateDefaults(t *testing.T) {
++	for _, tc := range []struct {
++		name, version string
++		dialect       spec.Dialect
++		facts         *spec.InstanceFacts
++		want          map[string]string
++	}{
++		{"observed", "8.0.46", spec.DialectMySQL, &spec.InstanceFacts{ServerCharset: " LATIN1 ", ServerCollation: " LATIN1_BIN "}, map[string]string{"charset": "latin1", "collation": "latin1_bin"}},
++		{"mysql57-none", "5.7.44", spec.DialectMySQL, nil, map[string]string{}},
++		{"mysql80-none", "8.0.46", spec.DialectMySQL, nil, map[string]string{}},
++		{"mysql84-none", "8.4.10", spec.DialectMySQL, nil, map[string]string{}},
++		{"tidb85-none", "8.5.0", spec.DialectTiDB, nil, map[string]string{}},
++		{"database-charset-only", "8.0.46", spec.DialectMySQL, &spec.InstanceFacts{DefaultCharset: "utf8mb4"}, map[string]string{}},
++		{"server-charset-only", "8.0.46", spec.DialectMySQL, &spec.InstanceFacts{ServerCharset: "latin1"}, map[string]string{"charset": "latin1"}},
++		{"server-collation-only", "8.0.46", spec.DialectMySQL, &spec.InstanceFacts{ServerCollation: "latin1_bin"}, map[string]string{"collation": "latin1_bin"}},
++	} {
++		t.Run(tc.name, func(t *testing.T) {
++			version, err := parseAuditTargetVersion(tc.dialect, tc.version)
++			if err != nil {
++				t.Fatal(err)
++			}
++			p := &t17ObjectResolver{answer: t17TailFixture(false), facts: tc.facts}
++			state, statements := t17Enrich(t, tc.dialect, "CREATE DATABASE g; ALTER DATABASE g CHARACTER SET latin1;", "req", version, p)
++			target := statements[1].MetadataSchemaTarget()
++			want := &spec.ObjectSnapshot{Schema: "g", Type: "schema", Name: "g", Status: spec.MetadataStatusConfirmed, Exists: true, Attributes: tc.want}
++			if !reflect.DeepEqual(target, want) {
++				t.Errorf("projection=%#v want=%#v", target, want)
++			}
++			if entry := state.schemaEntries["g"]; entry == nil || entry.state != schemaPresent || !entry.batchCreated {
++				t.Errorf("entry=%#v", entry)
++			}
++			if p.calls != 1 {
++				t.Errorf("object calls=%d", p.calls)
++			}
++		})
++	}
++}
++
++func TestT17R1TailExplicitCollationAndNoop(t *testing.T) {
++	version, err := parseAuditTargetVersion(spec.DialectMySQL, "8.0.46")
++	if err != nil {
++		t.Fatal(err)
++	}
++	facts := &spec.InstanceFacts{DefaultCollationForUTF8MB4: "utf8mb4_general_ci"}
++	p := &t17ObjectResolver{answer: t17TailFixture(false), facts: facts}
++	_, statements := t17Enrich(t, spec.DialectMySQL, "CREATE DATABASE g COLLATE utf8mb4_bin; ALTER DATABASE g CHARACTER SET latin1;", "req", version, p)
++	want := map[string]string{"charset": "utf8mb4", "collation": "utf8mb4_bin"}
++	if target := statements[1].MetadataSchemaTarget(); target == nil || !reflect.DeepEqual(target.Attributes, want) {
++		t.Fatalf("explicit collation projection=%#v", target)
++	}
++	original := &spec.ObjectSnapshot{Status: spec.MetadataStatusConfirmed, Exists: true, Attributes: map[string]string{"charset": "latin1", "collation": "latin1_swedish_ci", "encryption": "yes", "placement_policy": "old"}}
++	p = &t17ObjectResolver{answer: original, facts: facts}
++	state, statements := t17Enrich(t, spec.DialectMySQL, "CREATE DATABASE IF NOT EXISTS g CHARACTER SET utf8mb4; ALTER DATABASE g COLLATE utf8mb4_bin;", "req", version, p)
++	wantOriginal := map[string]string{"charset": "latin1", "collation": "latin1_swedish_ci", "encryption": "yes", "placement_policy": "old"}
++	if target := statements[1].MetadataSchemaTarget(); target == nil || !reflect.DeepEqual(target.Attributes, wantOriginal) {
++		t.Errorf("noop projection=%#v", target)
++	}
++	if !reflect.DeepEqual(original.Attributes, wantOriginal) || state.schemaEntries["g"].batchCreated {
++		t.Errorf("provider=%#v entry=%#v", original, state.schemaEntries["g"])
++	}
++}
++
++func TestT17R1TailPolicyIndependence(t *testing.T) {
++	sql := t17TailCreateSQL
++	facts := &spec.InstanceFacts{Version: "8.0.46", DefaultCollationForUTF8MB4: "utf8mb4_general_ci"}
++	version, err := parseAuditTargetVersion(spec.DialectMySQL, "8.0.46")
++	if err != nil {
++		t.Fatal(err)
++	}
++	for _, tc := range []struct{ name, path string }{{"enabled", ""}, {"disabled", t05PolicyPath(t, map[string]string{})}} {
++		t.Run(tc.name, func(t *testing.T) {
++			p := &t17ObjectResolver{answer: t17TailFixture(false), facts: facts}
++			_, statements := t17Enrich(t, spec.DialectMySQL, sql, "req", version, p)
++			if target := statements[1].MetadataSchemaTarget(); target == nil || !reflect.DeepEqual(target.Attributes, map[string]string{"charset": "utf8mb4", "collation": "utf8mb4_general_ci"}) {
++				t.Errorf("internal projection=%#v", target)
++			}
++			p = &t17ObjectResolver{answer: t17TailFixture(false), facts: facts}
++			result, err := AuditSQL(context.Background(), Request{SQL: sql, Dialect: spec.DialectMySQL, TargetVersion: "8.0.46", ConfigPath: tc.path, Metadata: &MetadataRequest{Schema: "req", Provider: p}})
++			if err != nil || len(result.Statements) != 2 || p.calls != 1 {
++				t.Fatalf("public audit=%#v err=%v calls=%d", result, err, p.calls)
++			}
++			for _, statement := range result.Statements {
++				for _, finding := range statement.Findings {
++					if finding.RuleID == "ddl.database.create.exists.forbid" || finding.RuleID == "ddl.database.alter.exists.require" {
++						t.Errorf("unexpected finding=%#v", finding)
++					}
++				}
++				for _, gap := range statement.EvidenceGaps {
++					if gap.RuleID == "ddl.database.create.exists.forbid" || gap.RuleID == "ddl.database.alter.exists.require" {
++						t.Errorf("unexpected gap=%#v", gap)
++					}
++				}
++			}
++		})
++	}
++}

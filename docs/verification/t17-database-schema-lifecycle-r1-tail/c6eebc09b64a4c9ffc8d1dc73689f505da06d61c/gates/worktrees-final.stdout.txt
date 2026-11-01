@@ -1,0 +1,8 @@
+worktree /Users/fan/GolangProjects/DeltaScope
+HEAD c6eebc09b64a4c9ffc8d1dc73689f505da06d61c
+branch refs/heads/milestone/mysql-tidb-ddl-completion
+
+worktree /Users/fan/GolangProjects/DeltaScope-agent-guidance
+HEAD 0fa922d062361add8a3cb9f01ee2dfb4292fdef6
+branch refs/heads/docs/agent-guidance
+

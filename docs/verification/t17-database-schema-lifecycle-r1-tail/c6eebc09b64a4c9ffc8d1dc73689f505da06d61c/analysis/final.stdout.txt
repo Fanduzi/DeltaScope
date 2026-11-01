@@ -1,0 +1,23 @@
+{
+  "product": "c6eebc09b64a4c9ffc8d1dc73689f505da06d61c",
+  "manifest_byte_identical_to": "9da9f8e02221b1e51bf275cf012ffc2ac88b594a",
+  "required": 52,
+  "executed": 52,
+  "passing_cli_db_assertions": 834,
+  "tail_cli_case_increase": 0,
+  "tail_projection_proofs_separate_from_cli_assertions": {
+    "TestT17R1TailAlterProjection": {
+      "baseline": "utf8mb4_0900_ai_ci",
+      "fixed": "utf8mb4_general_ci",
+      "version": "mysql/5.7.44"
+    },
+    "TestT17R1TailCreateProjection": {
+      "baseline": "utf8mb4_0900_ai_ci",
+      "fixed": "utf8mb4_general_ci",
+      "version": "mysql/5.7.44"
+    }
+  },
+  "business_probe": "MySQL 8.0.46 configurable CREATE/ALTER and server defaults confirmed",
+  "cleanup_rc": 0,
+  "residual_task_containers": []
+}

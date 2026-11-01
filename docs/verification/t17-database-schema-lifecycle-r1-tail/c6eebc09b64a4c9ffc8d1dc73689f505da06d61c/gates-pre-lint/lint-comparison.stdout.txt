@@ -1,0 +1,38 @@
+{
+  "scoped": {
+    "baseline_sha": "9da9f8e02221b1e51bf275cf012ffc2ac88b594a",
+    "baseline_count": 22,
+    "current_count": 23,
+    "comparison_key": [
+      "file",
+      "complete message including linter"
+    ],
+    "added": [
+      {
+        "file": "internal/application/audit/batch_state_t17r1_tail_test.go",
+        "message": "stringXbytes: suggestion: !bytes.Equal(beforeMetadata, afterMetadata) (gocritic)",
+        "count": 1
+      }
+    ],
+    "removed": [],
+    "unchanged_count": 22
+  },
+  "fullrepo": {
+    "baseline_sha": "9da9f8e02221b1e51bf275cf012ffc2ac88b594a",
+    "baseline_count": 39,
+    "current_count": 40,
+    "comparison_key": [
+      "file",
+      "complete message including linter"
+    ],
+    "added": [
+      {
+        "file": "internal/application/audit/batch_state_t17r1_tail_test.go",
+        "message": "stringXbytes: suggestion: !bytes.Equal(beforeMetadata, afterMetadata) (gocritic)",
+        "count": 1
+      }
+    ],
+    "removed": [],
+    "unchanged_count": 39
+  }
+}

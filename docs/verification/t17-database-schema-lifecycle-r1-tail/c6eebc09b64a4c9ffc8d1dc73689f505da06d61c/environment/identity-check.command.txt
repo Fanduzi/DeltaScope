@@ -1,0 +1,1 @@
+Verify created container ID, local image ID, running state, and absence of published ports

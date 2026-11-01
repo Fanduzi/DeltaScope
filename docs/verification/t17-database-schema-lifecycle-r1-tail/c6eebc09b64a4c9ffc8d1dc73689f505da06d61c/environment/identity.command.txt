@@ -1,0 +1,1 @@
+docker inspect --format '{"id":{{json .Id}},"name":{{json .Name}},"image":{{json .Config.Image}},"image_id":{{json .Image}},"state":{{json .State.Status}},"port_bindings":{{json .HostConfig.PortBindings}},"publish_all":{{json .HostConfig.PublishAllPorts}},"ports":{{json .NetworkSettings.Ports}}}' deltascope-t17-tail-mysql80

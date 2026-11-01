@@ -1,0 +1,42 @@
+cwd:
+/Users/fan/GolangProjects/DeltaScope
+head:
+9da9f8e02221b1e51bf275cf012ffc2ac88b594a
+status:
+ M Makefile
+ M docs/decisions/2026-11-10-ddl-database-schema-lifecycle.md
+ M docs/work-plans/t17-database-schema-lifecycle/CONTRACT.md
+ M internal/application/audit/README.md
+ M internal/application/audit/batch_state_schema.go
+ M internal/application/audit/batch_state_t17r1_test.go
+ M internal/domain/spec/README.md
+ M internal/domain/spec/metadata.go
+ M internal/infrastructure/metadata/mysql/README.md
+ M internal/infrastructure/metadata/mysql/provider.go
+ M internal/infrastructure/metadata/mysql/provider_test.go
+ M pkg/deltascope/README.md
+ M pkg/deltascope/audit_test.go
+ M testdata/ddl-golden/README.md
+?? .agents/
+?? .codex/
+?? .cursor/
+?? .debug-journal.md
+?? .devin/
+?? .grok/
+?? .opencode/
+?? .pi-subagents/
+?? .qoder/
+?? artifacts/
+?? docs/quality/architecture-review-2026-08-11.html
+?? docs/verification/t06-a12/1a5dd90de898a59590ef8a19aa068c4b5e8ce7f8/T06/
+?? internal/application/audit/batch_state_t17r1_tail_test.go
+go version:
+go version go1.26.1 darwin/arm64
+dirty source SHA256:
+4a019b7d63e4c7a6707e8c7debafa191b321ed4461a51e0f65d30eaaf4c661fa  internal/domain/spec/metadata.go
+57c9ed863214365c56307c858828a6b47ca2aff378906a2d08927e166121e998  internal/infrastructure/metadata/mysql/provider.go
+333fed70df6ad048303bc4544c65d16305b5c41368af2eb89092763a26b49f78  internal/infrastructure/metadata/mysql/provider_test.go
+c6540e914a6adb57ddebe5d32138e1dc715787e96a14bbf0daa2e017d72378d9  internal/application/audit/batch_state_schema.go
+277dad645c1ef5637370c05b9c8d903f9545c2a78f43f507c3aad2033b4d57be  internal/application/audit/batch_state_t17r1_test.go
+1d4cc70acb31f99f51aeda7c6bdb052ba4315e6d978e2b1d7e8d43a161fbca53  internal/application/audit/batch_state_t17r1_tail_test.go
+18ad70baae6ae954c973f6323d9bbd2a6366a56a172e21a3a86156bb2c0abc9c  pkg/deltascope/audit_test.go

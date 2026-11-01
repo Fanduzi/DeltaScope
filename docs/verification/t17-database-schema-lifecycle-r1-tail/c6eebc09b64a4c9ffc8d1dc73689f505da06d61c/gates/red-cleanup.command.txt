@@ -1,0 +1,3 @@
+set -euo pipefail
+rm /Users/fan/GolangProjects/DeltaScope-wt-t17r1-tail-red/internal/application/audit/batch_state_t17r1_tail_test.go
+git worktree remove /Users/fan/GolangProjects/DeltaScope-wt-t17r1-tail-red

@@ -1,0 +1,1 @@
+git for-each-ref --format=%(refname) %(objectname) refs/heads/milestone/mysql-tidb-ddl-completion refs/remotes/origin/workfree refs/remotes/origin/milestone/mysql-tidb-ddl-completion

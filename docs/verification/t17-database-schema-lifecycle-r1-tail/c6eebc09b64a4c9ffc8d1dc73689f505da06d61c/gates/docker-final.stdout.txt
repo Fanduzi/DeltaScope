@@ -1,0 +1,36 @@
+isolated2-w1 28b15afe51f8 binlog-isolated-app:local-1793501447-92702 Created
+isolated2-w2 457eee7bc628 binlog-isolated-app:local-1793501447-92702 Created
+isolated2-keeper-w1 ce27014cffc9 alpine:3.20 Up 11 minutes
+isolated2-keeper-w2 c4de72ce6ab9 alpine:3.20 Up 11 minutes
+isolated2-cp 348b0a439d0a binlog-isolated-app:local-1793501447-92702 Created
+isolated2-s3mock 2c11609d3720 adobe/s3mock:latest Exited (143) 10 minutes ago
+isolated2-http503 dd4126d0cdc5 python:3.12-slim Exited (137) 10 minutes ago
+isolated2-meta 3760bbd5d200 mysql:8.0 Exited (0) 10 minutes ago
+isolated2-src-a 3a5a048e4915 mysql:8.0 Exited (137) 10 minutes ago
+isolated2-restore 2b3ce3018c13 mysql:8.0 Exited (0) 10 minutes ago
+isolated2-src-b 1bdf5934beb0 mysql:8.0 Exited (0) 10 minutes ago
+isolated2-proxy c7d00845cfd8 binlog-isolated-proxy:local-1793501447-92702 Exited (137) 10 minutes ago
+isolated-s3mock 671f3b702ffe adobe/s3mock:latest Exited (143) 21 minutes ago
+isolated-http503 e0dfff626c29 python:3.12-slim Exited (137) 21 minutes ago
+isolated-restore bd32cfbd9c5e mysql:8.0 Exited (0) 21 minutes ago
+isolated-src-b 2085ef2b12f3 mysql:8.0 Exited (0) 21 minutes ago
+isolated-meta e2604b175917 mysql:8.0 Exited (0) 21 minutes ago
+isolated-src-a b65eeef3b26f mysql:8.0 Exited (0) 21 minutes ago
+isolated-proxy 09215db9289b binlog-isolated-proxy:local-1793501447-92702 Exited (137) 21 minutes ago
+soak-w1 f6543da395ce binlog-soak-w1 Up 18 hours (healthy)
+soak-w2 c9c96f1abeca binlog-soak-w2 Up 18 hours (healthy)
+soak-cp ab2a60e07352 binlog-soak-cp Up 18 hours (healthy)
+soak-s3mock b7275f4d15f5 adobe/s3mock:latest Up 17 hours (healthy)
+soak-http503 4d0e560d0ff2 python:3.12-slim Up 18 hours
+soak-meta 40d43ddea7f1 mysql:8.0 Up 15 hours (healthy)
+soak-src-b fded54390207 mysql:8.0 Up 18 hours (healthy)
+soak-src-a 32f7e0495de9 mysql:8.0 Up 18 hours (healthy)
+soak-restore ede9800d299e mysql:8.0 Up 18 hours (healthy)
+soak-proxy 0fb99b3142be binlog-soak-proxy Up 18 hours (healthy)
+tmp-restore 438a91a8d3b9 mysql:8.0 Up 37 hours
+controlhub-query-e2e-mysql 29a7a9858426 mysql:8.0 Up 4 days
+controlhub-demo-mysql 23691c738356 mysql:8.0 Up 7 days
+controlhub-demo-pg 6c3f6e9d3c9c 0af65001d052 Up 7 days
+chub-mysql-lab 4de3ed6bb178 mysql:8.0 Exited (255) 3 weeks ago
+chub-pg-lab 0e61fad1c0ea postgres:17 Exited (0) 9 days ago
+mac-connector 474b6ea23bef wenjunxiao/mac-docker-connector Up 3 weeks

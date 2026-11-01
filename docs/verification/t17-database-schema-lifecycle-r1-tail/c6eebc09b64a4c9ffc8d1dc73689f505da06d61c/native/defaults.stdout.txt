@@ -1,0 +1,93 @@
+--------------
+SELECT VERSION()
+--------------
+
+VERSION()
+8.0.46
+--------------
+SHOW SESSION VARIABLES WHERE Variable_name IN
+  ('character_set_server', 'collation_server', 'character_set_database', 'default_collation_for_utf8mb4')
+--------------
+
+Variable_name	Value
+character_set_database	utf8mb4
+character_set_server	utf8mb4
+collation_server	utf8mb4_0900_ai_ci
+default_collation_for_utf8mb4	utf8mb4_0900_ai_ci
+--------------
+CREATE DATABASE ds17tail_create CHARACTER SET utf8mb4
+--------------
+
+--------------
+CREATE DATABASE ds17tail_alter CHARACTER SET latin1
+--------------
+
+--------------
+ALTER DATABASE ds17tail_alter CHARACTER SET utf8mb4
+--------------
+
+--------------
+SELECT SCHEMA_NAME, DEFAULT_CHARACTER_SET_NAME, DEFAULT_COLLATION_NAME
+FROM information_schema.SCHEMATA
+WHERE SCHEMA_NAME IN ('ds17tail_create', 'ds17tail_alter')
+ORDER BY SCHEMA_NAME
+--------------
+
+SCHEMA_NAME	DEFAULT_CHARACTER_SET_NAME	DEFAULT_COLLATION_NAME
+ds17tail_alter	utf8mb4	utf8mb4_0900_ai_ci
+ds17tail_create	utf8mb4	utf8mb4_0900_ai_ci
+--------------
+SET SESSION default_collation_for_utf8mb4 = 'utf8mb4_general_ci'
+--------------
+
+--------------
+SHOW SESSION VARIABLES WHERE Variable_name = 'default_collation_for_utf8mb4'
+--------------
+
+Variable_name	Value
+default_collation_for_utf8mb4	utf8mb4_general_ci
+--------------
+CREATE DATABASE ds17tail_general CHARACTER SET utf8mb4
+--------------
+
+--------------
+ALTER DATABASE ds17tail_alter CHARACTER SET utf8mb4
+--------------
+
+--------------
+SELECT SCHEMA_NAME, DEFAULT_CHARACTER_SET_NAME, DEFAULT_COLLATION_NAME
+FROM information_schema.SCHEMATA
+WHERE SCHEMA_NAME IN ('ds17tail_general', 'ds17tail_alter')
+ORDER BY SCHEMA_NAME
+--------------
+
+SCHEMA_NAME	DEFAULT_CHARACTER_SET_NAME	DEFAULT_COLLATION_NAME
+ds17tail_alter	utf8mb4	utf8mb4_general_ci
+ds17tail_general	utf8mb4	utf8mb4_general_ci
+--------------
+SET SESSION character_set_server = 'latin1'
+--------------
+
+--------------
+SET SESSION collation_server = 'latin1_bin'
+--------------
+
+--------------
+SHOW SESSION VARIABLES WHERE Variable_name IN ('character_set_server', 'collation_server')
+--------------
+
+Variable_name	Value
+character_set_server	latin1
+collation_server	latin1_bin
+--------------
+CREATE DATABASE ds17tail_server
+--------------
+
+--------------
+SELECT SCHEMA_NAME, DEFAULT_CHARACTER_SET_NAME, DEFAULT_COLLATION_NAME
+FROM information_schema.SCHEMATA
+WHERE SCHEMA_NAME = 'ds17tail_server'
+--------------
+
+SCHEMA_NAME	DEFAULT_CHARACTER_SET_NAME	DEFAULT_COLLATION_NAME
+ds17tail_server	latin1	latin1_bin

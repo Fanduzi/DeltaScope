@@ -1,0 +1,1 @@
+docker inspect --format {"id":{{json .Id}},"name":{{json .Name}},"image":{{json .Config.Image}},"state":{{json .State.Status}},"binds":{{json .HostConfig.Binds}},"mounts":{{json .Mounts}}} 652292e0731c1eeecd0f567231b3242b9fa2a27808bdf0a1576323f2e827bd87

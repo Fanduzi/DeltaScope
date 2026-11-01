@@ -1,0 +1,162 @@
+package audit
+
+import (
+	"context"
+	"encoding/json"
+	"reflect"
+	"testing"
+
+	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
+)
+
+const (
+	t17TailCreateSQL = "CREATE DATABASE g CHARACTER SET utf8mb4; ALTER DATABASE g COLLATE utf8mb4_bin;"
+	t17TailAlterSQL  = "ALTER DATABASE g CHARACTER SET utf8mb4; ALTER DATABASE g COLLATE utf8mb4_bin;"
+)
+
+func t17TailFixture(present bool) *spec.ObjectSnapshot {
+	if !present {
+		return &spec.ObjectSnapshot{Status: spec.MetadataStatusNotFound}
+	}
+	return &spec.ObjectSnapshot{
+		Status: spec.MetadataStatusConfirmed,
+		Exists: true,
+		Attributes: map[string]string{
+			"charset": "latin1", "collation": "latin1_swedish_ci",
+		},
+	}
+}
+
+func t17TailProjection(t *testing.T, sql string, present bool) {
+	t.Helper()
+	ctx := context.Background()
+	version, err := parseAuditTargetVersion(spec.DialectMySQL, "5.7.44")
+	if err != nil || version == nil {
+		t.Fatalf("parse target version: %#v, %v", version, err)
+	}
+	p := &t17ObjectResolver{answer: t17TailFixture(present), version: "5.7.44"}
+	original := t17TailFixture(present)
+	parsed, err := Parse(ctx, sql, spec.DialectMySQL)
+	if err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	statements, err := Extract(ctx, parsed)
+	if err != nil {
+		t.Fatalf("extract: %v", err)
+	}
+	if len(statements) != 2 {
+		t.Fatalf("extracted %d statements, want 2", len(statements))
+	}
+	facts, err := p.LoadInstanceFacts(ctx, spec.DialectMySQL, "req")
+	if err != nil {
+		t.Fatalf("load instance facts: %v", err)
+	}
+	state := newBatchState(spec.DialectMySQL, "req", p)
+	state.resolvedVersion = version
+	state.instanceFacts = facts
+	enriched, err := state.enrichStatements(ctx,
+		&MetadataRequest{Schema: "req", Provider: p, TargetVersion: version},
+		statements, parsed.failures, facts, auditLimits{orderedStatements: len(statements)})
+	if err != nil || len(enriched) != 2 {
+		t.Fatalf("enrich: %d statements, %v", len(enriched), err)
+	}
+	entry := state.schemaEntries["g"]
+	var post any
+	if entry != nil {
+		post = map[string]any{"state": entry.state, "attrs": entry.attrs, "batch_created": entry.batchCreated}
+	}
+	proof, err := json.Marshal(map[string]any{
+		"scope": "internal_projection", "test": t.Name(), "sql": sql, "dialect": spec.DialectMySQL,
+		"parsed_version": version, "provider_original_fixture": original, "provider_after": p.answer,
+		"instance_facts": facts, "first_metadata": enriched[0].Metadata, "second_metadata": enriched[1].Metadata,
+		"final_schema_entry": post, "object_calls": p.calls, "object_lookup_ledger": p.lookups,
+	})
+	if err != nil {
+		t.Fatalf("marshal proof: %v", err)
+	}
+	t.Logf("T17TAIL_PROOF %s", proof)
+
+	first := t17TailFixture(present)
+	first.Schema, first.Type, first.Name = "g", "schema", "g"
+	if got := enriched[0].MetadataSchemaTarget(); !reflect.DeepEqual(got, first) {
+		t.Errorf("first SchemaTarget = %#v, want unchanged %#v", got, first)
+	}
+	if !reflect.DeepEqual(p.answer, original) {
+		t.Errorf("provider fixture changed: got %#v, want %#v", p.answer, original)
+	}
+	second := &spec.ObjectSnapshot{
+		Schema: "g", Type: "schema", Name: "g", Status: spec.MetadataStatusConfirmed, Exists: true,
+		Attributes: map[string]string{"charset": "utf8mb4", "collation": "utf8mb4_general_ci"},
+	}
+	if got := enriched[1].MetadataSchemaTarget(); !reflect.DeepEqual(got, second) {
+		t.Errorf("second SchemaTarget = %#v, want %#v", got, second)
+	}
+	if entry == nil || entry.state != schemaPresent || entry.batchCreated != !present ||
+		!reflect.DeepEqual(entry.attrs, map[string]string{"charset": "utf8mb4", "collation": "utf8mb4_bin"}) {
+		t.Errorf("final schema entry = %#v", entry)
+	}
+	wantLookups := []spec.ObjectLookupRequest{{Schema: "req", Type: "schema", Name: "g"}}
+	if p.calls != 1 || !reflect.DeepEqual(p.lookups, wantLookups) {
+		t.Errorf("object calls = %d, ledger = %#v", p.calls, p.lookups)
+	}
+}
+
+func TestT17R1TailCreateProjection(t *testing.T) {
+	t17TailProjection(t, t17TailCreateSQL, false)
+}
+
+func TestT17R1TailAlterProjection(t *testing.T) {
+	t17TailProjection(t, t17TailAlterSQL, true)
+}
+
+func TestT17R1TailPublicAuditControl(t *testing.T) {
+	for _, tc := range []struct {
+		name    string
+		sql     string
+		present bool
+	}{
+		{"create", t17TailCreateSQL, false},
+		{"alter", t17TailAlterSQL, true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			p := &t17ObjectResolver{answer: t17TailFixture(tc.present), version: "5.7.44"}
+			result, err := AuditSQL(context.Background(), Request{
+				SQL: tc.sql, Dialect: spec.DialectMySQL, TargetVersion: "5.7.44",
+				Metadata: &MetadataRequest{Schema: "req", Provider: p},
+			})
+			if err != nil || len(result.Statements) != 2 {
+				t.Fatalf("audit: result=%#v err=%v", result, err)
+			}
+			// Public audit output omits metadata and does not assert internal collation.
+			proof, err := json.Marshal(result)
+			if err != nil {
+				t.Fatalf("marshal public result: %v", err)
+			}
+			t.Logf("T17TAIL_PUBLIC_CONTROL %s", proof)
+			if result.Version == nil || result.Version.Product != spec.VersionProductMySQL ||
+				result.Version.Version != "5.7.44" || result.Version.Source != spec.VersionSourceObserved {
+				t.Errorf("observed version = %#v", result.Version)
+			}
+			for _, statement := range result.Statements {
+				for _, finding := range statement.Findings {
+					if finding.RuleID == "ddl.database.create.exists.forbid" || finding.RuleID == "ddl.database.alter.exists.require" {
+						t.Errorf("unexpected schema existence finding: %#v", finding)
+					}
+				}
+				for _, gap := range statement.EvidenceGaps {
+					if gap.RuleID == "ddl.database.create.exists.forbid" || gap.RuleID == "ddl.database.alter.exists.require" {
+						t.Errorf("unexpected schema existence gap: %#v", gap)
+					}
+				}
+			}
+			for _, finding := range result.GlobalFindings {
+				if finding.RuleID == "ddl.database.create.exists.forbid" || finding.RuleID == "ddl.database.alter.exists.require" {
+					t.Errorf("unexpected global schema existence finding: %#v", finding)
+				}
+			}
+			if p.calls != 1 {
+				t.Errorf("object calls = %d, want 1", p.calls)
+			}
+		})
+	}
+}

@@ -1,0 +1,1 @@
+mysqladmin ping ready on attempt 1

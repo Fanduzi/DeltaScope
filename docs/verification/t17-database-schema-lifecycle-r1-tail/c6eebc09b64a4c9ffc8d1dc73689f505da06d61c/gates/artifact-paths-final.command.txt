@@ -1,0 +1,1 @@
+ls -l /tmp/ddl-golden/T17/artifact.json /tmp/ddl-golden/T17/bin/deltascope

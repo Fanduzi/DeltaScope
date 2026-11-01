@@ -1,0 +1,1 @@
+gofmt -l internal/domain/spec/metadata.go internal/infrastructure/metadata/mysql/provider.go internal/infrastructure/metadata/mysql/provider_test.go internal/application/audit/batch_state_schema.go internal/application/audit/batch_state_t17r1_test.go internal/application/audit/batch_state_t17r1_tail_test.go pkg/deltascope/audit_test.go

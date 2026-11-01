@@ -1,0 +1,24 @@
+cwd:
+/Users/fan/GolangProjects/DeltaScope-wt-t17r1-tail-red
+head:
+83125653d7cfc4343221d6f47e89df4311101efe
+status:
+?? internal/application/audit/batch_state_t17r1_tail_test.go
+tracked unstaged:
+clean
+tracked staged:
+clean
+go version:
+go version go1.26.1 darwin/arm64
+go environment (selected):
+darwin
+arm64
+/Users/fan/.asdf/installs/golang/1.26.1/go
+/Users/fan/.asdf/installs/golang/1.26.1/packages
+auto
+
+1
+go1.26.1
+source snapshot hashes:
+44357248aa4a0e95faa5034bbe33d49236e73fcb88b53025f8cdc60a86e4cb39  internal/application/audit/batch_state_t17r1_tail_test.go
+44357248aa4a0e95faa5034bbe33d49236e73fcb88b53025f8cdc60a86e4cb39  /tmp/t17r1-tail-evidence/red/batch_state_t17r1_tail_test.go.txt

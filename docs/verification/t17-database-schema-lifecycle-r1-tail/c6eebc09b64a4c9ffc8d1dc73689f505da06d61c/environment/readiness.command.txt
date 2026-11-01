@@ -1,0 +1,9 @@
+for attempt in $(seq 1 60); do
+  if docker exec -e MYSQL_PWD=t17-tail-local deltascope-t17-tail-mysql80 mysqladmin --protocol=tcp --host=127.0.0.1 --user=root ping --silent >/dev/null 2>&1; then
+    printf 'mysqladmin ping ready on attempt %s\n' "$attempt"
+    exit 0
+  fi
+  sleep 2
+done
+printf 'mysqladmin ping did not become ready within 60 attempts\n' >&2
+exit 1

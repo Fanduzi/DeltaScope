@@ -1,0 +1,30 @@
+source and diff SHA256:
+44357248aa4a0e95faa5034bbe33d49236e73fcb88b53025f8cdc60a86e4cb39  internal/application/audit/batch_state_t17r1_tail_test.go
+3e3f3ec0ec176ba17002da73bbc534100741979389eef2cdf35a6c2120f66d60  /tmp/t17r1-tail-evidence/red/new-test.diff
+
+gofmt output:
+
+main working status:
+?? .agents/
+?? .codex/
+?? .cursor/
+?? .debug-journal.md
+?? .devin/
+?? .grok/
+?? .opencode/
+?? .pi-subagents/
+?? .qoder/
+?? artifacts/
+?? docs/quality/architecture-review-2026-08-11.html
+?? docs/verification/t06-a12/1a5dd90de898a59590ef8a19aa068c4b5e8ce7f8/T06/
+?? internal/application/audit/batch_state_t17r1_tail_test.go
+
+proof outcome:
+--- FAIL: TestT17R1TailCreateProjection (0.00s)
+--- FAIL: TestT17R1TailAlterProjection (0.00s)
+--- PASS: TestT17R1TailPublicAuditControl (0.00s)
+    --- PASS: TestT17R1TailPublicAuditControl/create (0.00s)
+    --- PASS: TestT17R1TailPublicAuditControl/alter (0.00s)
+FAIL
+FAIL	github.com/Fanduzi/DeltaScope/internal/application/audit	0.578s
+FAIL

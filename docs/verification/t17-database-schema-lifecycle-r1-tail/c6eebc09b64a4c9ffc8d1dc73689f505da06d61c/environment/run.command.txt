@@ -1,0 +1,1 @@
+docker run -d --pull=never --name deltascope-t17-tail-mysql80 -e MYSQL_ROOT_PASSWORD=t17-tail-local mysql:8.0.46

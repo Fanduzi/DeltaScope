@@ -1,0 +1,1 @@
+docker exec -i -e MYSQL_PWD=t17-tail-local deltascope-t17-tail-mysql80 mysql --protocol=tcp -h127.0.0.1 -uroot --batch --raw --verbose < /tmp/t17r1-tail-defaults-probe.sql

@@ -1,0 +1,1 @@
+docker image inspect mysql:8.0.46 --format '{{.Id}} {{.Os}}/{{.Architecture}} {{json .RepoTags}}'

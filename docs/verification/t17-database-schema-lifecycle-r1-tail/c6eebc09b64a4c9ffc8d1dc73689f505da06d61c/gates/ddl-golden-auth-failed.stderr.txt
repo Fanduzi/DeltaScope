@@ -1,0 +1,219 @@
+[ddl-golden][FAIL] case T17.db.mysql57.ddl: status='fail'
+[ddl-golden][FAIL] case T17.db.mysql57.ddl: failed assertion 'database reachable with expected version': "SELECT VERSION() rc=1 version='' expected_contains='5.7.44'"
+[ddl-golden][FAIL] case T17.db.mysql57.ddl: database not reachable
+[ddl-golden][FAIL] case T17.db.mysql57.ddl: version mismatch '' expected contains '5.7.44'
+[ddl-golden][FAIL] case T17.db.mysql57.ddl: step count 0 != manifest steps 12
+[ddl-golden][FAIL] case T17.db.mysql57.syntax_negative: status='fail'
+[ddl-golden][FAIL] case T17.db.mysql57.syntax_negative: failed assertion 'expected error class': "error_class='1045' expected='1064'"
+[ddl-golden][FAIL] case T17.db.mysql57.syntax_negative: failed assertion 'no permission/connection/object-conflict markers': "forbidden markers found: ['ERROR 1045', 'Access denied']"
+[ddl-golden][FAIL] case T17.db.mysql57.syntax_negative: error class '1045' != expected '1064'
+[ddl-golden][FAIL] case T17.db.mysql57.syntax_negative: forbidden marker present: 'ERROR 1045'
+[ddl-golden][FAIL] case T17.db.mysql57.syntax_negative: forbidden marker present: 'Access denied'
+[ddl-golden][FAIL] case T17.db.mysql80.ddl: status='fail'
+[ddl-golden][FAIL] case T17.db.mysql80.ddl: failed assertion 'database reachable with expected version': "SELECT VERSION() rc=1 version='' expected_contains='8.0.46'"
+[ddl-golden][FAIL] case T17.db.mysql80.ddl: database not reachable
+[ddl-golden][FAIL] case T17.db.mysql80.ddl: version mismatch '' expected contains '8.0.46'
+[ddl-golden][FAIL] case T17.db.mysql80.ddl: step count 0 != manifest steps 12
+[ddl-golden][FAIL] case T17.db.mysql80.syntax_negative: status='fail'
+[ddl-golden][FAIL] case T17.db.mysql80.syntax_negative: failed assertion 'expected error class': "error_class='1045' expected='1064'"
+[ddl-golden][FAIL] case T17.db.mysql80.syntax_negative: failed assertion 'no permission/connection/object-conflict markers': "forbidden markers found: ['ERROR 1045', 'Access denied']"
+[ddl-golden][FAIL] case T17.db.mysql80.syntax_negative: error class '1045' != expected '1064'
+[ddl-golden][FAIL] case T17.db.mysql80.syntax_negative: forbidden marker present: 'ERROR 1045'
+[ddl-golden][FAIL] case T17.db.mysql80.syntax_negative: forbidden marker present: 'Access denied'
+[ddl-golden][FAIL] case T17.db.mysql84.ddl: status='fail'
+[ddl-golden][FAIL] case T17.db.mysql84.ddl: failed assertion 'database reachable with expected version': "SELECT VERSION() rc=1 version='' expected_contains='8.4.10'"
+[ddl-golden][FAIL] case T17.db.mysql84.ddl: database not reachable
+[ddl-golden][FAIL] case T17.db.mysql84.ddl: version mismatch '' expected contains '8.4.10'
+[ddl-golden][FAIL] case T17.db.mysql84.ddl: step count 0 != manifest steps 12
+[ddl-golden][FAIL] case T17.db.mysql84.syntax_negative: status='fail'
+[ddl-golden][FAIL] case T17.db.mysql84.syntax_negative: failed assertion 'expected error class': "error_class='1045' expected='1064'"
+[ddl-golden][FAIL] case T17.db.mysql84.syntax_negative: failed assertion 'no permission/connection/object-conflict markers': "forbidden markers found: ['ERROR 1045', 'Access denied']"
+[ddl-golden][FAIL] case T17.db.mysql84.syntax_negative: error class '1045' != expected '1064'
+[ddl-golden][FAIL] case T17.db.mysql84.syntax_negative: forbidden marker present: 'ERROR 1045'
+[ddl-golden][FAIL] case T17.db.mysql84.syntax_negative: forbidden marker present: 'Access denied'
+[ddl-golden][FAIL] case T17.meta.t17-mysql80-charset-lifecycle: status='fail'
+[ddl-golden][FAIL] case T17.meta.t17-mysql80-charset-lifecycle: failed assertion 'database reachable with expected version': "SELECT VERSION() rc=1 version='' expected_contains='8.0.46'"
+[ddl-golden][FAIL] case T17.meta.t17-mysql80-charset-lifecycle: database not reachable
+[ddl-golden][FAIL] case T17.meta.t17-mysql80-charset-lifecycle: version mismatch '' expected contains '8.0.46'
+[ddl-golden][FAIL] case T17.meta.t17-mysql80-charset-lifecycle: no recorded command
+[ddl-golden][FAIL] case T17.meta.t17-mysql80-charset-lifecycle: setup step count 0 != manifest 1
+[ddl-golden][FAIL] case T17.meta.t17-mysql80-charset-lifecycle: CLI stdout is not JSON
+[ddl-golden][FAIL] case T17.meta.t17-mysql80-charset-lifecycle: execute step count 0 != manifest 4
+[ddl-golden][FAIL] case T17.meta.t17-mysql80-charset-lifecycle: teardown count 0 != manifest 1
+[ddl-golden][FAIL] case T17.meta.t17-mysql80-synonym-lifecycle: status='fail'
+[ddl-golden][FAIL] case T17.meta.t17-mysql80-synonym-lifecycle: failed assertion 'database reachable with expected version': "SELECT VERSION() rc=1 version='' expected_contains='8.0.46'"
+[ddl-golden][FAIL] case T17.meta.t17-mysql80-synonym-lifecycle: database not reachable
+[ddl-golden][FAIL] case T17.meta.t17-mysql80-synonym-lifecycle: version mismatch '' expected contains '8.0.46'
+[ddl-golden][FAIL] case T17.meta.t17-mysql80-synonym-lifecycle: no recorded command
+[ddl-golden][FAIL] case T17.meta.t17-mysql80-synonym-lifecycle: setup step count 0 != manifest 1
+[ddl-golden][FAIL] case T17.meta.t17-mysql80-synonym-lifecycle: CLI stdout is not JSON
+[ddl-golden][FAIL] case T17.meta.t17-mysql80-synonym-lifecycle: execute step count 0 != manifest 3
+[ddl-golden][FAIL] case T17.meta.t17-mysql80-synonym-lifecycle: teardown count 0 != manifest 1
+[ddl-golden][FAIL] case T17.meta.t17-mysql80-nameless-alter: status='fail'
+[ddl-golden][FAIL] case T17.meta.t17-mysql80-nameless-alter: failed assertion 'database reachable with expected version': "SELECT VERSION() rc=1 version='' expected_contains='8.0.46'"
+[ddl-golden][FAIL] case T17.meta.t17-mysql80-nameless-alter: database not reachable
+[ddl-golden][FAIL] case T17.meta.t17-mysql80-nameless-alter: version mismatch '' expected contains '8.0.46'
+[ddl-golden][FAIL] case T17.meta.t17-mysql80-nameless-alter: no recorded command
+[ddl-golden][FAIL] case T17.meta.t17-mysql80-nameless-alter: CLI stdout is not JSON
+[ddl-golden][FAIL] case T17.meta.t17-mysql80-nameless-alter: execute step count 0 != manifest 1
+[ddl-golden][FAIL] case T17.meta.t17-mysql80-nameless-alter: teardown count 0 != manifest 1
+[ddl-golden][FAIL] case T17.meta.t17-mysql80-create-duplicate: status='fail'
+[ddl-golden][FAIL] case T17.meta.t17-mysql80-create-duplicate: failed assertion 'database reachable with expected version': "SELECT VERSION() rc=1 version='' expected_contains='8.0.46'"
+[ddl-golden][FAIL] case T17.meta.t17-mysql80-create-duplicate: database not reachable
+[ddl-golden][FAIL] case T17.meta.t17-mysql80-create-duplicate: version mismatch '' expected contains '8.0.46'
+[ddl-golden][FAIL] case T17.meta.t17-mysql80-create-duplicate: no recorded command
+[ddl-golden][FAIL] case T17.meta.t17-mysql80-create-duplicate: setup step count 0 != manifest 2
+[ddl-golden][FAIL] case T17.meta.t17-mysql80-create-duplicate: CLI stdout is not JSON
+[ddl-golden][FAIL] case T17.meta.t17-mysql80-create-duplicate: execute step count 0 != manifest 1
+[ddl-golden][FAIL] case T17.meta.t17-mysql80-create-duplicate: teardown count 0 != manifest 1
+[ddl-golden][FAIL] case T17.meta.t17-mysql80-create-if-noop: status='fail'
+[ddl-golden][FAIL] case T17.meta.t17-mysql80-create-if-noop: failed assertion 'database reachable with expected version': "SELECT VERSION() rc=1 version='' expected_contains='8.0.46'"
+[ddl-golden][FAIL] case T17.meta.t17-mysql80-create-if-noop: database not reachable
+[ddl-golden][FAIL] case T17.meta.t17-mysql80-create-if-noop: version mismatch '' expected contains '8.0.46'
+[ddl-golden][FAIL] case T17.meta.t17-mysql80-create-if-noop: no recorded command
+[ddl-golden][FAIL] case T17.meta.t17-mysql80-create-if-noop: setup step count 0 != manifest 2
+[ddl-golden][FAIL] case T17.meta.t17-mysql80-create-if-noop: CLI stdout is not JSON
+[ddl-golden][FAIL] case T17.meta.t17-mysql80-create-if-noop: execute step count 0 != manifest 1
+[ddl-golden][FAIL] case T17.meta.t17-mysql80-create-if-noop: teardown count 0 != manifest 1
+[ddl-golden][FAIL] case T17.meta.t17-mysql80-drop-absent: status='fail'
+[ddl-golden][FAIL] case T17.meta.t17-mysql80-drop-absent: failed assertion 'database reachable with expected version': "SELECT VERSION() rc=1 version='' expected_contains='8.0.46'"
+[ddl-golden][FAIL] case T17.meta.t17-mysql80-drop-absent: database not reachable
+[ddl-golden][FAIL] case T17.meta.t17-mysql80-drop-absent: version mismatch '' expected contains '8.0.46'
+[ddl-golden][FAIL] case T17.meta.t17-mysql80-drop-absent: no recorded command
+[ddl-golden][FAIL] case T17.meta.t17-mysql80-drop-absent: setup step count 0 != manifest 1
+[ddl-golden][FAIL] case T17.meta.t17-mysql80-drop-absent: CLI stdout is not JSON
+[ddl-golden][FAIL] case T17.meta.t17-mysql80-drop-absent: execute step count 0 != manifest 1
+[ddl-golden][FAIL] case T17.meta.t17-mysql80-drop-absent: teardown count 0 != manifest 1
+[ddl-golden][FAIL] case T17.meta.t17-mysql80-drop-if-noop: status='fail'
+[ddl-golden][FAIL] case T17.meta.t17-mysql80-drop-if-noop: failed assertion 'database reachable with expected version': "SELECT VERSION() rc=1 version='' expected_contains='8.0.46'"
+[ddl-golden][FAIL] case T17.meta.t17-mysql80-drop-if-noop: database not reachable
+[ddl-golden][FAIL] case T17.meta.t17-mysql80-drop-if-noop: version mismatch '' expected contains '8.0.46'
+[ddl-golden][FAIL] case T17.meta.t17-mysql80-drop-if-noop: no recorded command
+[ddl-golden][FAIL] case T17.meta.t17-mysql80-drop-if-noop: setup step count 0 != manifest 1
+[ddl-golden][FAIL] case T17.meta.t17-mysql80-drop-if-noop: CLI stdout is not JSON
+[ddl-golden][FAIL] case T17.meta.t17-mysql80-drop-if-noop: execute step count 0 != manifest 1
+[ddl-golden][FAIL] case T17.meta.t17-mysql80-alter-absent: status='fail'
+[ddl-golden][FAIL] case T17.meta.t17-mysql80-alter-absent: failed assertion 'database reachable with expected version': "SELECT VERSION() rc=1 version='' expected_contains='8.0.46'"
+[ddl-golden][FAIL] case T17.meta.t17-mysql80-alter-absent: database not reachable
+[ddl-golden][FAIL] case T17.meta.t17-mysql80-alter-absent: version mismatch '' expected contains '8.0.46'
+[ddl-golden][FAIL] case T17.meta.t17-mysql80-alter-absent: no recorded command
+[ddl-golden][FAIL] case T17.meta.t17-mysql80-alter-absent: setup step count 0 != manifest 1
+[ddl-golden][FAIL] case T17.meta.t17-mysql80-alter-absent: CLI stdout is not JSON
+[ddl-golden][FAIL] case T17.meta.t17-mysql80-alter-absent: execute step count 0 != manifest 1
+[ddl-golden][FAIL] case T17.meta.t17-mysql80-drop-cascade: status='fail'
+[ddl-golden][FAIL] case T17.meta.t17-mysql80-drop-cascade: failed assertion 'database reachable with expected version': "SELECT VERSION() rc=1 version='' expected_contains='8.0.46'"
+[ddl-golden][FAIL] case T17.meta.t17-mysql80-drop-cascade: database not reachable
+[ddl-golden][FAIL] case T17.meta.t17-mysql80-drop-cascade: version mismatch '' expected contains '8.0.46'
+[ddl-golden][FAIL] case T17.meta.t17-mysql80-drop-cascade: no recorded command
+[ddl-golden][FAIL] case T17.meta.t17-mysql80-drop-cascade: setup step count 0 != manifest 2
+[ddl-golden][FAIL] case T17.meta.t17-mysql80-drop-cascade: CLI stdout is not JSON
+[ddl-golden][FAIL] case T17.meta.t17-mysql80-drop-cascade: execute step count 0 != manifest 2
+[ddl-golden][FAIL] case T17.meta.t17-mysql80-drop-cascade: teardown count 0 != manifest 1
+[ddl-golden][FAIL] case T17.meta.t17-mysql80-recreate: status='fail'
+[ddl-golden][FAIL] case T17.meta.t17-mysql80-recreate: failed assertion 'database reachable with expected version': "SELECT VERSION() rc=1 version='' expected_contains='8.0.46'"
+[ddl-golden][FAIL] case T17.meta.t17-mysql80-recreate: database not reachable
+[ddl-golden][FAIL] case T17.meta.t17-mysql80-recreate: version mismatch '' expected contains '8.0.46'
+[ddl-golden][FAIL] case T17.meta.t17-mysql80-recreate: no recorded command
+[ddl-golden][FAIL] case T17.meta.t17-mysql80-recreate: setup step count 0 != manifest 2
+[ddl-golden][FAIL] case T17.meta.t17-mysql80-recreate: CLI stdout is not JSON
+[ddl-golden][FAIL] case T17.meta.t17-mysql80-recreate: execute step count 0 != manifest 1
+[ddl-golden][FAIL] case T17.meta.t17-mysql80-recreate: teardown count 0 != manifest 1
+[ddl-golden][FAIL] case T17.meta.t17-mysql80-encryption: status='fail'
+[ddl-golden][FAIL] case T17.meta.t17-mysql80-encryption: failed assertion 'database reachable with expected version': "SELECT VERSION() rc=1 version='' expected_contains='8.0.46'"
+[ddl-golden][FAIL] case T17.meta.t17-mysql80-encryption: database not reachable
+[ddl-golden][FAIL] case T17.meta.t17-mysql80-encryption: version mismatch '' expected contains '8.0.46'
+[ddl-golden][FAIL] case T17.meta.t17-mysql80-encryption: no recorded command
+[ddl-golden][FAIL] case T17.meta.t17-mysql80-encryption: setup step count 0 != manifest 1
+[ddl-golden][FAIL] case T17.meta.t17-mysql80-encryption: CLI stdout is not JSON
+[ddl-golden][FAIL] case T17.meta.t17-mysql80-encryption: execute step count 0 != manifest 1
+[ddl-golden][FAIL] case T17.meta.t17-mysql80-encryption: teardown count 0 != manifest 1
+[ddl-golden][FAIL] case T17.meta.t17-mysql80-system-mysql: status='fail'
+[ddl-golden][FAIL] case T17.meta.t17-mysql80-system-mysql: failed assertion 'database reachable with expected version': "SELECT VERSION() rc=1 version='' expected_contains='8.0.46'"
+[ddl-golden][FAIL] case T17.meta.t17-mysql80-system-mysql: database not reachable
+[ddl-golden][FAIL] case T17.meta.t17-mysql80-system-mysql: version mismatch '' expected contains '8.0.46'
+[ddl-golden][FAIL] case T17.meta.t17-mysql80-system-mysql: no recorded command
+[ddl-golden][FAIL] case T17.meta.t17-mysql80-system-mysql: CLI stdout is not JSON
+[ddl-golden][FAIL] case T17.meta.t17-mysql80-system-mysql: execute step count 0 != manifest 2
+[ddl-golden][FAIL] case T17.meta.t17-mysql80-denylist: status='fail'
+[ddl-golden][FAIL] case T17.meta.t17-mysql80-denylist: failed assertion 'database reachable with expected version': "SELECT VERSION() rc=1 version='' expected_contains='8.0.46'"
+[ddl-golden][FAIL] case T17.meta.t17-mysql80-denylist: database not reachable
+[ddl-golden][FAIL] case T17.meta.t17-mysql80-denylist: version mismatch '' expected contains '8.0.46'
+[ddl-golden][FAIL] case T17.meta.t17-mysql80-denylist: no recorded command
+[ddl-golden][FAIL] case T17.meta.t17-mysql80-denylist: setup step count 0 != manifest 2
+[ddl-golden][FAIL] case T17.meta.t17-mysql80-denylist: CLI stdout is not JSON
+[ddl-golden][FAIL] case T17.meta.t17-mysql80-denylist: teardown count 0 != manifest 1
+[ddl-golden][FAIL] case T17.meta.t17-mysql80-all-disabled: status='fail'
+[ddl-golden][FAIL] case T17.meta.t17-mysql80-all-disabled: failed assertion 'database reachable with expected version': "SELECT VERSION() rc=1 version='' expected_contains='8.0.46'"
+[ddl-golden][FAIL] case T17.meta.t17-mysql80-all-disabled: database not reachable
+[ddl-golden][FAIL] case T17.meta.t17-mysql80-all-disabled: version mismatch '' expected contains '8.0.46'
+[ddl-golden][FAIL] case T17.meta.t17-mysql80-all-disabled: no recorded command
+[ddl-golden][FAIL] case T17.meta.t17-mysql80-all-disabled: setup step count 0 != manifest 1
+[ddl-golden][FAIL] case T17.meta.t17-mysql80-all-disabled: CLI stdout is not JSON
+[ddl-golden][FAIL] case T17.meta.t17-mysql80-all-disabled: teardown count 0 != manifest 1
+[ddl-golden][FAIL] case T17.meta.t17-mysql80-custom-levels: status='fail'
+[ddl-golden][FAIL] case T17.meta.t17-mysql80-custom-levels: failed assertion 'database reachable with expected version': "SELECT VERSION() rc=1 version='' expected_contains='8.0.46'"
+[ddl-golden][FAIL] case T17.meta.t17-mysql80-custom-levels: database not reachable
+[ddl-golden][FAIL] case T17.meta.t17-mysql80-custom-levels: version mismatch '' expected contains '8.0.46'
+[ddl-golden][FAIL] case T17.meta.t17-mysql80-custom-levels: no recorded command
+[ddl-golden][FAIL] case T17.meta.t17-mysql80-custom-levels: setup step count 0 != manifest 2
+[ddl-golden][FAIL] case T17.meta.t17-mysql80-custom-levels: CLI stdout is not JSON
+[ddl-golden][FAIL] case T17.meta.t17-mysql80-custom-levels: teardown count 0 != manifest 1
+[ddl-golden][FAIL] case T17.meta.t17-mysql80-cross-namespace: status='fail'
+[ddl-golden][FAIL] case T17.meta.t17-mysql80-cross-namespace: failed assertion 'database reachable with expected version': "SELECT VERSION() rc=1 version='' expected_contains='8.0.46'"
+[ddl-golden][FAIL] case T17.meta.t17-mysql80-cross-namespace: database not reachable
+[ddl-golden][FAIL] case T17.meta.t17-mysql80-cross-namespace: version mismatch '' expected contains '8.0.46'
+[ddl-golden][FAIL] case T17.meta.t17-mysql80-cross-namespace: no recorded command
+[ddl-golden][FAIL] case T17.meta.t17-mysql80-cross-namespace: setup step count 0 != manifest 1
+[ddl-golden][FAIL] case T17.meta.t17-mysql80-cross-namespace: CLI stdout is not JSON
+[ddl-golden][FAIL] case T17.meta.t17-mysql80-cross-namespace: execute step count 0 != manifest 1
+[ddl-golden][FAIL] case T17.meta.t17-mysql80-cross-namespace: teardown count 0 != manifest 1
+[ddl-golden][FAIL] case T17.meta.t17-mysql57-encryption-refused: status='fail'
+[ddl-golden][FAIL] case T17.meta.t17-mysql57-encryption-refused: failed assertion 'database reachable with expected version': "SELECT VERSION() rc=1 version='' expected_contains='5.7.44'"
+[ddl-golden][FAIL] case T17.meta.t17-mysql57-encryption-refused: database not reachable
+[ddl-golden][FAIL] case T17.meta.t17-mysql57-encryption-refused: version mismatch '' expected contains '5.7.44'
+[ddl-golden][FAIL] case T17.meta.t17-mysql57-encryption-refused: no recorded command
+[ddl-golden][FAIL] case T17.meta.t17-mysql57-encryption-refused: setup step count 0 != manifest 1
+[ddl-golden][FAIL] case T17.meta.t17-mysql57-encryption-refused: CLI stdout is not JSON
+[ddl-golden][FAIL] case T17.meta.t17-mysql57-encryption-refused: execute step count 0 != manifest 1
+[ddl-golden][FAIL] case T17.meta.t17-mysql57-encryption-refused: teardown count 0 != manifest 1
+[ddl-golden][FAIL] case T17.meta.t17-mysql57-system-lenient: status='fail'
+[ddl-golden][FAIL] case T17.meta.t17-mysql57-system-lenient: failed assertion 'database reachable with expected version': "SELECT VERSION() rc=1 version='' expected_contains='5.7.44'"
+[ddl-golden][FAIL] case T17.meta.t17-mysql57-system-lenient: database not reachable
+[ddl-golden][FAIL] case T17.meta.t17-mysql57-system-lenient: version mismatch '' expected contains '5.7.44'
+[ddl-golden][FAIL] case T17.meta.t17-mysql57-system-lenient: no recorded command
+[ddl-golden][FAIL] case T17.meta.t17-mysql57-system-lenient: CLI stdout is not JSON
+[ddl-golden][FAIL] case T17.meta.t17-mysql57-system-lenient: execute step count 0 != manifest 1
+[ddl-golden][FAIL] case T17.meta.t17-mysql57-alter-absent: status='fail'
+[ddl-golden][FAIL] case T17.meta.t17-mysql57-alter-absent: failed assertion 'database reachable with expected version': "SELECT VERSION() rc=1 version='' expected_contains='5.7.44'"
+[ddl-golden][FAIL] case T17.meta.t17-mysql57-alter-absent: database not reachable
+[ddl-golden][FAIL] case T17.meta.t17-mysql57-alter-absent: version mismatch '' expected contains '5.7.44'
+[ddl-golden][FAIL] case T17.meta.t17-mysql57-alter-absent: no recorded command
+[ddl-golden][FAIL] case T17.meta.t17-mysql57-alter-absent: setup step count 0 != manifest 1
+[ddl-golden][FAIL] case T17.meta.t17-mysql57-alter-absent: CLI stdout is not JSON
+[ddl-golden][FAIL] case T17.meta.t17-mysql57-alter-absent: execute step count 0 != manifest 1
+[ddl-golden][FAIL] case T17.meta.t17-mysql84-encryption: status='fail'
+[ddl-golden][FAIL] case T17.meta.t17-mysql84-encryption: failed assertion 'database reachable with expected version': "SELECT VERSION() rc=1 version='' expected_contains='8.4.10'"
+[ddl-golden][FAIL] case T17.meta.t17-mysql84-encryption: database not reachable
+[ddl-golden][FAIL] case T17.meta.t17-mysql84-encryption: version mismatch '' expected contains '8.4.10'
+[ddl-golden][FAIL] case T17.meta.t17-mysql84-encryption: no recorded command
+[ddl-golden][FAIL] case T17.meta.t17-mysql84-encryption: setup step count 0 != manifest 1
+[ddl-golden][FAIL] case T17.meta.t17-mysql84-encryption: CLI stdout is not JSON
+[ddl-golden][FAIL] case T17.meta.t17-mysql84-encryption: execute step count 0 != manifest 1
+[ddl-golden][FAIL] case T17.meta.t17-mysql84-encryption: teardown count 0 != manifest 1
+[ddl-golden][FAIL] case T17.meta.t17-mysql84-system-mysql: status='fail'
+[ddl-golden][FAIL] case T17.meta.t17-mysql84-system-mysql: failed assertion 'database reachable with expected version': "SELECT VERSION() rc=1 version='' expected_contains='8.4.10'"
+[ddl-golden][FAIL] case T17.meta.t17-mysql84-system-mysql: database not reachable
+[ddl-golden][FAIL] case T17.meta.t17-mysql84-system-mysql: version mismatch '' expected contains '8.4.10'
+[ddl-golden][FAIL] case T17.meta.t17-mysql84-system-mysql: no recorded command
+[ddl-golden][FAIL] case T17.meta.t17-mysql84-system-mysql: CLI stdout is not JSON
+[ddl-golden][FAIL] case T17.meta.t17-mysql84-system-mysql: execute step count 0 != manifest 1
+[ddl-golden][FAIL] case T17.meta.t17-mysql80-tiflash-refused: status='fail'
+[ddl-golden][FAIL] case T17.meta.t17-mysql80-tiflash-refused: failed assertion 'database reachable with expected version': "SELECT VERSION() rc=1 version='' expected_contains='8.0.46'"
+[ddl-golden][FAIL] case T17.meta.t17-mysql80-tiflash-refused: database not reachable
+[ddl-golden][FAIL] case T17.meta.t17-mysql80-tiflash-refused: version mismatch '' expected contains '8.0.46'
+[ddl-golden][FAIL] case T17.meta.t17-mysql80-tiflash-refused: no recorded command
+[ddl-golden][FAIL] case T17.meta.t17-mysql80-tiflash-refused: setup step count 0 != manifest 1
+[ddl-golden][FAIL] case T17.meta.t17-mysql80-tiflash-refused: CLI stdout is not JSON
+[ddl-golden][FAIL] case T17.meta.t17-mysql80-tiflash-refused: execute step count 0 != manifest 2
+[ddl-golden][FAIL] case T17.meta.t17-mysql80-tiflash-refused: teardown count 0 != manifest 1
+make: *** [ddl-golden] Error 1

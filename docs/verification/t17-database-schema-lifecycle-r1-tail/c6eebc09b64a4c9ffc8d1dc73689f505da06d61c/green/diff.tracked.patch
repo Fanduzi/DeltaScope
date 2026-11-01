@@ -1,0 +1,512 @@
+diff --git a/Makefile b/Makefile
+index f5638a1d..55aa1cfd 100644
+--- a/Makefile
++++ b/Makefile
+@@ -26,7 +26,7 @@ ddl-golden:
+ 	@test -n "$(TASK)" || (echo "TASK is required (e.g. make ddl-golden TASK=T02 ARTIFACT_DIR=/tmp/ddl-golden)" >&2; exit 1)
+ 	@test -n "$(ARTIFACT_DIR)" || (echo "ARTIFACT_DIR is required (e.g. ARTIFACT_DIR=/tmp/ddl-golden)" >&2; exit 1)
+ 	@if [ "$(TASK)" = "T17" ]; then \
+-		go test ./internal/application/audit -run 'TestT17R1GoldenProjections|TestT17R1ProviderErrorProof' -count=1 -v; \
++		go test ./internal/application/audit -run 'TestT17R1GoldenProjections|TestT17R1ProviderErrorProof|TestT17R1Tail' -count=1 -v; \
+ 	fi
+ 	python3 ./scripts/ddl_golden.py run --task "$(TASK)" --artifact-dir "$(ARTIFACT_DIR)"
+ 
+diff --git a/docs/decisions/2026-11-10-ddl-database-schema-lifecycle.md b/docs/decisions/2026-11-10-ddl-database-schema-lifecycle.md
+index 90d9f6d9..58f7e422 100644
+--- a/docs/decisions/2026-11-10-ddl-database-schema-lifecycle.md
++++ b/docs/decisions/2026-11-10-ddl-database-schema-lifecycle.md
+@@ -198,3 +198,15 @@ vendor-boundary aspect list in coverage (it previously reported as
+ generic unaudited), and the corpus/golden denominators grow to cover
+ the refused/withheld/convergent arm matrix — `database_lifecycle_rules`
+ corpus +4 statements per dialect, T17.json 47 → 52 required cases.
++
++## Amendment — T17-R1 tail: observed schema defaults
++
++The original T17 implementation guessed configurable server defaults and
++used the MySQL 8 utf8mb4 collation for 5.7; this defect predates R1.
++Historical MySQL 5.7 evidence fixes utf8mb4 to `utf8mb4_general_ci`;
++MySQL 8's configurable utf8mb4 default requires an observation.
++Bare CREATE publishes server charset and collation only when observed;
++the database charset is not a server default. Unknown attributes are
++withheld independently of schema existence or batch ownership.
++The R1 refusal, withholding, resolver-error, and known-present no-op
++decisions remain unchanged.
+diff --git a/docs/work-plans/t17-database-schema-lifecycle/CONTRACT.md b/docs/work-plans/t17-database-schema-lifecycle/CONTRACT.md
+index 1e3f288e..532476ff 100644
+--- a/docs/work-plans/t17-database-schema-lifecycle/CONTRACT.md
++++ b/docs/work-plans/t17-database-schema-lifecycle/CONTRACT.md
+@@ -45,15 +45,19 @@ derivations land as *derived* values (below); anything else stays
+ withheld — a schema snapshot never fabricates an undeclared collation or
+ a guessed engine default.
+ 
+-Derivations (probed, engine-fixed):
++Derivations (bounded by observed version and configuration):
+ 
+ - `CHARACTER SET c` alone ⇒ `collation = c`'s dialect default
+   (`latin1` ⇒ `latin1_swedish_ci` on MySQL, `latin1_bin` on TiDB).
++  For utf8mb4, validated MySQL 5.7 derives `utf8mb4_general_ci`;
++  other MySQL versions need an observed `default_collation_for_utf8mb4`.
++  Validated TiDB 8.5 derives `utf8mb4_bin`; unproven versions withhold it.
++  Other charset mappings retain the existing bounded table.
+ - `COLLATE k` alone ⇒ `charset = charsetFromCollation(k)`
+   (`utf8mb4_bin` ⇒ `utf8mb4`).
+-- Neither ⇒ the version's server defaults, marked derived
+-  (5.7 `latin1/latin1_swedish_ci`, 8.0/8.4 `utf8mb4/utf8mb4_0900_ai_ci`,
+-  TiDB `utf8mb4/utf8mb4_bin`). Version unknown ⇒ both withheld.
++- Neither ⇒ individually observed `character_set_server` and
++  `collation_server`; missing facts stay withheld regardless of version.
++  `character_set_database` is not a server default.
+ 
+ ## 3. Transitions
+ 
+diff --git a/internal/application/audit/README.md b/internal/application/audit/README.md
+index 9f126fc0..57bf13c5 100644
+--- a/internal/application/audit/README.md
++++ b/internal/application/audit/README.md
+@@ -53,6 +53,7 @@ Application orchestration for parsing and, later, evaluating SQL audit requests.
+ | batch_state_schema.go | Publishes the T17 schema-level ordered state (issue #96): `batchState.schemaEntries` tracks one `neverTouched`/`present`/`absent`/`unknown` entry per schema identity the batch named, carrying proven default attributes (`charset`, `collation`, `encryption` on MySQL ≥8.0.16, `placement_policy` on TiDB — authored declarations verbatim, engine-fixed derivations derived, anything else withheld); `applyCreateSchema`/`applyAlterSchema`/`applyDropSchema` run the probed transition matrix — duplicate CREATE (1007), missing ALTER (3503/ERROR 1/1049), missing DROP (1008) keep the exact pre-state; `IF NOT EXISTS` over an unvouched schema publishes `present` with no authored attributes and `batchCreated=false` only when all create options Apply and the arms converge; proven refusals keep pre-state, other unextracted options withhold, `IF EXISTS` over unvouched publishes convergent `absent` plus tombstones on every tracked table under the schema; a proven drop tombstones the schema AND its tracked tables (namespace invalidation — contained names/counts never enumerated); `schemaPostAttrs` returns the three-way apply/withhold/refused outcome (MySQL <8.0.16 ENCRYPTION = proven refusal keeping pre-state; TiDB ENCRYPTION = accepted-and-ignored publishing no attribute; TiDB placement = withheld while policy existence is unvouched; MySQL placement = proven vendor refusal); and schema state gates successor table resolution — a dropped/absent schema proves its tables absent without provider reloads, a batch-created schema proves untouched tables absent, a touched unknown schema blocks stale provider reuse and withholds unproven CREATE TABLE and unknown-table ADD COLUMN post-states while retaining proven-present CREATE destinations (issue #96 T17-R1) |
+ | batch_state_t17r1_test.go | Tests conditional schema convergence, refusal dominance, provider error propagation and non-schema object cache mounting through real parsing and enrichment. |
+ | batch_state_t17r1_proof_test.go | Exercises frozen T17-R1 manifest projections and resolver failures through ordered enrichment and AuditSQL. |
++| batch_state_t17r1_tail_test.go | Tests version- and observation-backed schema default attributes, their absence, ordered projections, and policy independence. |
+ | batch_state_index.go | Publishes the T09 index-lifecycle post-state on single-action ALTERs and standalone index statements: `add_index` appends the declared index shape to a known index set (a present-incomplete/unknown member set withholds; an authored name provably held by an existing member keeps the shape verbatim — the add natively refuses 1061 or `IF NOT EXISTS` no-ops — while a member whose stored name is unproven may hide the collision and unvouches the member set instead of appending a maybe-absent member; all member names proven lets the authored member merge while `IndexNamesUnknown` keeps name-keyed readers honest, and name-keyed drop/rename/alter transitions answer per target under the member premise — a matched authored name updates truthfully even while the name space is unproven, while an unmatched name unvouches the member set (`markIndexesUnknown`) instead of retaining members that may no longer exist), index-producing `add_constraint` (UNIQUE/PRIMARY KEY) publishes the corresponding index/constraint state — the primary branch proves its member premise before publishing (withheld column set, non-plain key parts, or an absent named member tombstone; members reconcile `NotNull` with a proven SQL-NULL default cleared via `DefaultIsNull` — provider string defaults like `'null'` survive, matching the native catalog conversion), `drop_index` removes a proven-named member (name-keyed targets bind only members whose stored names are provable — `Index.NameUnknown` marks members the create-table naming rule could not resolve while authored ADD/CREATE members stay provable; a zero proven match under an unproven name space unvouches the member set, a duplicated proven name unvouches it too; `primary` resolves through the shared `spec.ResolvePrimaryNameBinding` tri-state — member-first, then MySQL routes to the drop-primary-key outcome outright while TiDB answers the PK identity only after a member `primary` is ruled out, and an ambiguous binding unvouches the member set plus the PK facts when a droppable object cannot be ruled out — unknown presence stays present-incomplete rather than fabricated success), `rename_index` migrates the full definition onto the freed/new names under a provable premise (MySQL refuses `primary` in either position outright — the shape keeps; TiDB resolves a `primary` old name member-first then to the PRIMARY index object, and a `primary` new name only while no real object occupies it; an ambiguous `primary` binding unvouches the name space while an unprovable `primary`-destination freedom unvouches the matched member's stored name (`markIndexMemberNameUnknown`) so the old name can never stay falsely proven — membership can never change on a rename — and a refused collision keeps the shape), an authored `primary` member name is natively refused on add/create so the shape keeps, and `drop_primary_key` clears primary-key plus matching constraint state (an ALTER-added primary is always a real index object on both dialects — TiDB stores it NONCLUSTERED under on/int_only alike — while a drop on proven TiDB clustered storage — PKIsHandle or common-handle alike — keeps the entry as natively refused 8200 and an unproven clustered/handle answer invalidates) — every transition keeps dependent foreign keys loaded and leaves multi-action ALTERs on the shared tombstone path. The T10 `alter_index` transition flips a named member's effective `Visibility` under the member premise (PRIMARY resolves through primary-key facts — MySQL PRIMARY always invalidates, TiDB PRIMARY invalidates on PKIsHandle tables where no index object exists, is a published no-op on real PRIMARY objects for VISIBLE, and invalidates for INVISIBLE — the implicit-primary UNIQUE holder likewise invalidates; an ordinary name matched under a proven name space updates verbatim while an unmatched name under an unproven name space unvouches the member set; unknown target yields present-incomplete, missing index tombstones, unknown member set withholds) while every other member fact is carried verbatim, and a determined-negative `AssessAdvancedIndexes` result (InvalidTransition) or a feature-bearing unresolved answer (UnresolvedTransition — e.g. an unprovable implicit-primary role or missing version on a version-gated form) tombstones the target instead of publishing a post-state the product refuses or could not prove. T10-R5 routes every name-keyed index transition through `spec.ResolveIndexNameBinding` — the PK object claims only its actual stored catalog name (a renamed `pk2` object binds `pk2` for alter/drop/rename successors and frees `primary`; a handle identity claims `primary` logically without an operable object; a proven member name always wins member-first; an unvouched name space binds ambiguous), `DROP PRIMARY KEY` on TiDB is member-first so a member literally named `primary` drops while a handle PK survives (a bound PK/ambiguous binding falls back to the droppability answer, and a member-owned `primary` with no proven PK drops the member alone), authored names colliding with the PK object's actual stored name refuse 1061 keeping the shape, and a drop on a unique-capable fold under an attribution-withheld PK placeholder unvouches PK presence and constraint truth together. T10-R6 routes the shared `spec.ResolveIndexNameBinding` ahead of every member-side gate on the drop/rename/alter transitions — a proven PK object name binds the object even while member facts stay unvouched (an unvouched member name space can never coexist with the object's name natively — 1061), and an ambiguous binding unvouches only the side that could have owned the target: the member name space (`markIndexNamesUnknown`/`markIndexesUnknown`) and/or the PK side (`markPrimaryKeyNameUnknown` on rename, `markPrimaryUnknown` on drop, refuse-or-noop outcomes kept provably unchanged on visibility flips — a vouched member space narrowing the target to PK-object-or-nothing invalidates INVISIBLE since every outcome refuses), and a proven-absent PK stays absent regardless of the dropped object's stale handle/clustered unknowns — `primaryNameMayOwnTarget` consults storage unknowns only while a PK may still exist (issue #89 T10-R6). T11 adds the foreign-key dependency gate on every removal entry — `foreignKeyIndexDependency` on member drops, `foreignKeyPKObjectDependency` on the PK-object paths (`drop_primary_key`, a `primary` spelling bound to the object, TiDB member-first `primary`), and `referencedDropDependency` on an already-loaded referenced parent — refusing the drop as the native 1553 when the target is the sole leftmost-covering key of a proven foreign key (a covered or uninvolved member drops normally, and an alternate eligible coverer frees it), while an unvouched constraint name space, unmodeled key parts, or unanswerable coverage tombstones the target rather than guessing the dependency; `supportingIndexCandidate` keeps specialized kinds (fulltext/spatial/vector/columnar) provably out of the coverage answer and unproven kinds unanswerable (issue #90 T11-R1) |
+ | batch_state_fk.go | Publishes the T11 foreign-key ordered-state transitions on single-action ALTERs: `applyAddForeignKey` proves the local-column premise like `add_index`, then gates the landing on the refer-action structure (SET NULL on a proven NOT NULL member refuses 1830 on every anchor; SET DEFAULT refuses 1215 on pre-8.0 MySQL and lands on 8.x/TiDB v8.5 — an unproven version leaves it undecidable) and the referenced-side premise across the table edge resolved under the child's effective schema — a proven-absent parent or proven-missing referenced column is a provable native refusal that keeps the child shape, a proven parent must additionally carry a usable referenced key — a member or primary object whose kind passes the product eligibility class (primary/unique/plain-secondary qualify on pre-8.4 MySQL and TiDB v8.5 — TiDB accepts partial references too, probed v8.5.0 — while MySQL 8.4 refuses non-unique referenced keys 6125 under observed `restrict_fk_on_non_standard_key=ON`, the variable's absence on other products stays unknown, never defaulted, and specialized kinds never qualify) and which covers the referenced columns leftmost in order, with the strict anchor adding a complete-key test for NEW references on MySQL — under observed restrict ON the columns must equal the member's entire key so a partial unique or partial primary reference refuses 6125 like a non-unique one, while an exact match needs no flag fact and an unobserved flag on a possible-8.4+ version leaves a prefix-only match undecidable; an unknown parent, withheld column/index set, or unmodeled referenced parts leaves the landing unprovable and unvouches the constraint set while `propagateForeignKeyIndexUncertainty` unvouches the index set too when the member columns are not provably covered — a self-reference answers against the child's own pre-transition shape), a proven duplicate authored name keeps the shape as the native 1826 refusal, an unvouched member-name space unvouches rather than appending a maybe-refused member, and a landing add appends the normalized member (a bare `ADD FOREIGN KEY` keeps `NameUnknown` — the server-derived catalog name is never fabricated) plus the implicit supporting index named after the authored constraint or first local column only when no member or primary object already covers the local columns leftmost (CREATE TABLE derives the same member-plus-index state through `createTableForeignKeyPremise`, including a self-reference against the derived shape); `applyDropForeignKey` removes only the proven-named member — the supporting index survives on every anchor — while a proven-missing name is the 1091 refusal no-op and an unvouched space unvouches the set; `applyDropCheck` publishes the DROP CHECK\|CONSTRAINT post-state through `spec.CheckDropTarget` with the recovered authored keyword (T12-R1): TiDB never removes a foreign key this way — warned no-op/3940 — MySQL 5.7 rejects the syntax and the generic alias needs ≥8.0.19 while the CHECK spelling executes from 8.0.16 (probed 8.0.17), and on MySQL 8.x the CHECK spelling binds only a real CHECK member (a secondary/unique/PK/FK name is the proven 3821/3940/3941-class refusal — unchanged) while the generic CONSTRAINT spelling resolves exactly one uniquely-bound check/unique/PK/FK member — a successful binding proves which member the name points at, then a PK-object or unique binding still runs the shared FK sole-coverer dependency premise before landing (probed 1553 on `DROP CONSTRAINT \`primary\`` and a sole-covering unique alike; a replacement coverer drops clean — R2: binding success never implies landing) (a cross-type same-name pair is the proven 3939 refusal, a proven secondary index name is the proven missing-target refusal, and a name whose only index member carries `IndexKindUnknown`/empty kind may conceal a unique so binding stays unproven AND the same-named check member's existence is unvouched — either world is native, secondary drops the check while unique refuses 3939 — `unvouchCheckMember`/`unvouchForeignKeyMember`/`unvouchIndexMember`/`unvouchPrimaryKeyObject`/`markConstraintsUnknown` unvouch the consulted collections while every untargeted fact stays put — and a name that could bind the PK object unvouches the PK projection even when the consulted collections were already unvouched, so an undecidable generic `primary` drop never leaves a falsely proven PK for the successor (a proven-absent PK and unrelated names stay untouched; R2-tail)); `markConstraintsUnknown` unvouches the whole constraint collection while keeping recorded members, and `foreignKeyIndexDependency`/`foreignKeyPKObjectDependency`/`referencedDropDependency` gate every index/PK removal entry: a member or primary object that is the sole covering key of a proven foreign key refuses natively (1553, provable no-op) on the child side and on an already-loaded referenced parent alike — the referenced arm scans every loaded table including the drop target itself so a self-reference's referenced-side sole coverer binds, and it asks the binding question (`supportingIndexCandidate` kinds plus physical prefix coverage) rather than the creatability one, so a relationship the provider already proves keeps binding a non-standard member even under observed restrict ON — while unprovable constraint or member facts tombstone the drop (issue #90 T11-R1/R2) |
+ | batch_state_check.go | Publishes the T12 CHECK ordered-state transitions over the `spec.ResolveCheckArm` arm answer plus the R1 shared classifier and atomic premises: `applyAddCheck` lands declared members (authored name or `NameUnknown` auto-name, declared `Enforced`, expression-derived `Columns`) on enforced arms only after the referenced-column premise proves (a provably-missing referenced column refuses 1054 — nothing lands — and an unvouched column/reference set unvouches the collection) — MySQL <8.0.16 and TiDB flag-OFF store nothing while an authored explicit enforcement clause refuses the whole statement 1064 on MySQL's ignored arm (`spec.CheckExplicitClauseRefused` — TiDB accepts and ignores), unobserved arms undecidable, duplicate names keep the 3822-refused shape; `applyAlterCheck` gates on the authored `check_spelling` through `spec.CheckAlterSyntaxOutcome` (CHECK executes from 8.0.16, the generic alias from 8.0.19 — probed 8.0.17), binds through `spec.CheckAlterTarget` (CHECK spelling binds check members only — a secondary/unique/PK/FK name is the proven refusal; the generic keyword needs a lone check member — a cross-type same-name pair is the proven 3939 ambiguity while TiDB binds the check member first), then flips a proven member deterministically to `not_enforced` (data-independent, idempotent) while `ENFORCED` unvouches the member's `Enforced` (data-conditional 3819), refused/missing/wrong-kind/ambiguous targets keep exact state, TiDB flag-OFF no-ops, unobserved arms unvouch the member or collection; `applyDropCheck` (in `batch_state_fk.go`) resolves through `spec.CheckDropTarget` the same way — CHECK spelling removes only a proven check member, the generic keyword removes a uniquely-bound check/unique/PK/FK member deterministically, and unknown-kind index members keep binding unproven; `applyCreateTable`/`inColumnChecksOutcome` treat a MySQL ignored-arm member carrying an authored enforcement clause as a proven 1064 refusal (no table/column lands) and publish inline members atomically with their column (MySQL duplicate 3822 refuses the column too; TiDB flag-ON silently ignores the colliding member while the column lands); R2 narrowed both column-scoped arms to probed storage: TiDB never stores an in-column CHECK member — `applyInColumnChecks` publishes the column and skips every member (fresh name or duplicate alike, so a follow-up `DROP CHECK` reads the proven 3940 absence) — while MySQL refuses the whole statement when an in-column member references any column but its own (probed 3813, `NOT ENFORCED` does not relax it; self-column references land normally); `dropColumnCascadedChecks` removes only members whose proven reference set is exactly the dropped column (multi-column references are the proven 3959 refusal upstream; unvouched reference sets stay unsafe); and `checkColumnIdentityOutcome` gates RENAME/CHANGE on check-referenced columns — MySQL ≥8 and TiDB flag-ON refuse 3959 (exact pre-state, never a tombstone) except TiDB flag-ON `CHANGE COLUMN` which lands the rename while silently dropping every provably-referencing member (`checkIdentityCascade` via `dropIdentityCascadedChecks` — multi-column cascades are probed, not extrapolated), same-name retype proceeds, and unvouched members or undecidable arms withhold publication (issue #91 T12 + R1 + R2) |
+@@ -152,6 +153,13 @@ Application orchestration for parsing and, later, evaluating SQL audit requests.
+ | ddl_coverage_catalog_query.go | Defines CatalogEntry, CatalogQuery, CatalogResult, LoadEmbeddedCatalog, LoadCatalogFile, LoadCatalog, QueryCatalog, and Validate for reading the generated (embedded) DDL coverage catalog and filtering it without invoking the audit engine |
+ | catalogdata/ddl-coverage-catalog.json | Generated catalog copy compiled into release binaries; kept byte-identical to docs/reference/ddl-coverage-catalog.json |
+ 
++Schema default attributes use observed server charset/collation for bare
++CREATE. For charset-only utf8mb4, validated MySQL 5.7 and TiDB 8.5 use their
++bounded historical derivations; other MySQL versions require the observed
++`default_collation_for_utf8mb4`. Missing facts withhold only the affected
++attribute, not schema existence or ownership. Other charset mappings retain
++their existing bounded table.
++
+ ## Exports
+ 
+ - `Parse(sql string, dialect spec.Dialect)`
+diff --git a/internal/application/audit/batch_state_schema.go b/internal/application/audit/batch_state_schema.go
+index 71164cd9..6b1f5277 100644
+--- a/internal/application/audit/batch_state_schema.go
++++ b/internal/application/audit/batch_state_schema.go
+@@ -128,7 +128,7 @@ const (
+ // proven parse refusal (5.7 answers 1064), an unproven version withholds,
+ // TiDB's accepted-ignored form publishes nothing, and a TiDB placement
+ // clause's binding premise is unvouchable today.
+-func schemaPostAttrs(dialect spec.Dialect, version *spec.VersionIdentity, prior *batchSchemaEntry, declared map[string]string, creating bool) (map[string]string, schemaAttrOutcome) {
++func schemaPostAttrs(dialect spec.Dialect, version *spec.VersionIdentity, facts *spec.InstanceFacts, prior *batchSchemaEntry, declared map[string]string, creating bool) (map[string]string, schemaAttrOutcome) {
+ 	attrs := map[string]string{}
+ 	if prior != nil {
+ 		for k, v := range prior.attrs {
+@@ -143,7 +143,7 @@ func schemaPostAttrs(dialect spec.Dialect, version *spec.VersionIdentity, prior
+ 		attrs["collation"] = collate
+ 	case hasCharset:
+ 		attrs["charset"] = charset
+-		if derived := defaultCollationForCharset(dialect, charset); derived != "" {
++		if derived := defaultCollationForCharset(dialect, version, facts, charset); derived != "" {
+ 			attrs["collation"] = derived
+ 		} else {
+ 			delete(attrs, "collation")
+@@ -156,8 +156,11 @@ func schemaPostAttrs(dialect spec.Dialect, version *spec.VersionIdentity, prior
+ 			delete(attrs, "charset")
+ 		}
+ 	case creating:
+-		if defCharset, defCollate := schemaServerDefaults(dialect, version); defCharset != "" {
++		defCharset, defCollate := schemaServerDefaults(facts)
++		if defCharset != "" {
+ 			attrs["charset"] = defCharset
++		}
++		if defCollate != "" {
+ 			attrs["collation"] = defCollate
+ 		}
+ 	}
+@@ -209,36 +212,36 @@ func schemaEncryptionValue(declared string) string {
+ 	return strings.ToLower(strings.TrimSpace(declared))
+ }
+ 
+-// schemaServerDefaults is the frozen per-anchor derivation of a CREATE
+-// DATABASE that declares neither charset nor collation — the server's own
+-// defaults, version-known (probed):
+-// MySQL 5.7 latin1/latin1_swedish_ci, MySQL 8.x utf8mb4/utf8mb4_0900_ai_ci,
+-// TiDB utf8mb4/utf8mb4_bin. An unproven version withholds both facts rather
+-// than guessing the newest defaults.
+-func schemaServerDefaults(dialect spec.Dialect, version *spec.VersionIdentity) (string, string) {
+-	if dialect == spec.DialectTiDB {
+-		return "utf8mb4", "utf8mb4_bin"
+-	}
+-	if dialect != spec.DialectMySQL || version == nil {
++func schemaServerDefaults(facts *spec.InstanceFacts) (string, string) {
++	if facts == nil {
+ 		return "", ""
+ 	}
+-	if version.Major < 8 {
+-		return "latin1", "latin1_swedish_ci"
+-	}
+-	return "utf8mb4", "utf8mb4_0900_ai_ci"
++	return strings.ToLower(strings.TrimSpace(facts.ServerCharset)), strings.ToLower(strings.TrimSpace(facts.ServerCollation))
+ }
+ 
+ // defaultCollationForCharset is the frozen per-anchor derivation of the
+-// collation an engine assigns when only CHARACTER SET is declared (probed:
+-// latin1→latin1_swedish_ci on MySQL, latin1→latin1_bin on TiDB; utf8mb4
+-// follows the server default). Unknown charsets withhold rather than guess.
+-func defaultCollationForCharset(dialect spec.Dialect, charset string) string {
++// collation an engine assigns when only CHARACTER SET is declared. utf8mb4
++// additionally depends on the validated series or observed configuration.
++func defaultCollationForCharset(dialect spec.Dialect, version *spec.VersionIdentity, facts *spec.InstanceFacts, charset string) string {
+ 	switch strings.ToLower(charset) {
+ 	case "utf8mb4":
+-		if dialect == spec.DialectTiDB {
+-			return "utf8mb4_bin"
++		switch dialect {
++		case spec.DialectMySQL:
++			if version != nil && version.ValidatedRange && version.Product == spec.VersionProductMySQL && version.Major == 5 && version.Minor == 7 {
++				return "utf8mb4_general_ci"
++			}
++			if facts != nil {
++				observed := strings.ToLower(strings.TrimSpace(facts.DefaultCollationForUTF8MB4))
++				if strings.HasPrefix(observed, "utf8mb4_") {
++					return observed
++				}
++			}
++		case spec.DialectTiDB:
++			if version != nil && version.ValidatedRange && version.Product == spec.VersionProductTiDB && version.Major == 8 && version.Minor == 5 {
++				return "utf8mb4_bin"
++			}
+ 		}
+-		return "utf8mb4_0900_ai_ci"
++		return ""
+ 	case "utf8":
+ 		if dialect == spec.DialectTiDB {
+ 			return "utf8_bin"
+@@ -274,8 +277,8 @@ func defaultCollationForCharset(dialect spec.Dialect, charset string) string {
+ 	return ""
+ }
+ 
+-func schemaCreateAttrs(dialect spec.Dialect, version *spec.VersionIdentity, ddl *spec.DDL) (map[string]string, schemaAttrOutcome) {
+-	attrs, outcome := schemaPostAttrs(dialect, version, nil, schemaDeclaredOptions(ddl), true)
++func schemaCreateAttrs(dialect spec.Dialect, version *spec.VersionIdentity, facts *spec.InstanceFacts, ddl *spec.DDL) (map[string]string, schemaAttrOutcome) {
++	attrs, outcome := schemaPostAttrs(dialect, version, facts, nil, schemaDeclaredOptions(ddl), true)
+ 	// A proven refusal dominates any unmodeled option.
+ 	if outcome == schemaAttrsRefused {
+ 		return nil, schemaAttrsRefused
+@@ -313,7 +316,7 @@ func (s *batchState) applyCreateSchema(ctx context.Context, statement spec.State
+ 	case schemaPresent:
+ 		return nil
+ 	case schemaAbsent:
+-		attrs, outcome := schemaCreateAttrs(s.dialect, s.resolvedVersion, statement.DDL)
++		attrs, outcome := schemaCreateAttrs(s.dialect, s.resolvedVersion, s.instanceFacts, statement.DDL)
+ 		switch outcome {
+ 		case schemaAttrsRefused:
+ 			return nil
+@@ -329,7 +332,7 @@ func (s *batchState) applyCreateSchema(ctx context.Context, statement spec.State
+ 		return nil
+ 	default:
+ 		if statement.DDL.Options["if_not_exists"] == "true" {
+-			if _, outcome := schemaCreateAttrs(s.dialect, s.resolvedVersion, statement.DDL); outcome == schemaAttrsApply {
++			if _, outcome := schemaCreateAttrs(s.dialect, s.resolvedVersion, s.instanceFacts, statement.DDL); outcome == schemaAttrsApply {
+ 				entry.state = schemaPresent
+ 				entry.attrs = nil
+ 				entry.batchCreated = false
+@@ -365,7 +368,7 @@ func (s *batchState) applyAlterSchema(ctx context.Context, statement spec.Statem
+ 	case schemaAbsent:
+ 		return nil
+ 	case schemaPresent:
+-		attrs, outcome := schemaPostAttrs(s.dialect, s.resolvedVersion, entry, declared, false)
++		attrs, outcome := schemaPostAttrs(s.dialect, s.resolvedVersion, s.instanceFacts, entry, declared, false)
+ 		switch outcome {
+ 		case schemaAttrsRefused:
+ 			// Proven option refusal keeps the whole pre-state verbatim.
+diff --git a/internal/application/audit/batch_state_t17r1_test.go b/internal/application/audit/batch_state_t17r1_test.go
+index beef65e0..a27a20f5 100644
+--- a/internal/application/audit/batch_state_t17r1_test.go
++++ b/internal/application/audit/batch_state_t17r1_test.go
+@@ -25,6 +25,7 @@ type t17ObjectResolver struct {
+ 	err     error
+ 	calls   int
+ 	version string
++	facts   *spec.InstanceFacts
+ 	cancel  context.CancelFunc
+ 	lookups []spec.ObjectLookupRequest
+ }
+@@ -49,6 +50,10 @@ func (p *t17ObjectResolver) ResolveObject(_ context.Context, _ spec.Dialect, req
+ }
+ 
+ func (p *t17ObjectResolver) LoadInstanceFacts(context.Context, spec.Dialect, string) (*spec.InstanceFacts, error) {
++	if p.facts != nil {
++		facts := *p.facts
++		return &facts, nil
++	}
+ 	return &spec.InstanceFacts{Version: p.version}, nil
+ }
+ 
+@@ -69,6 +74,7 @@ func t17Enrich(t *testing.T, dialect spec.Dialect, sql, schema string, version *
+ 	if err != nil {
+ 		t.Fatalf("load instance facts: %v", err)
+ 	}
++	state.instanceFacts = facts
+ 	enriched, err := state.enrichStatements(ctx, &MetadataRequest{Schema: schema, Provider: provider},
+ 		extracted, parsed.failures, facts, auditLimits{orderedStatements: len(extracted)})
+ 	if err != nil {
+@@ -147,6 +153,10 @@ func TestT17R1BareCreateOverUnvouchedStaysUnknown(t *testing.T) {
+ // statement carries an option the model cannot adjudicate — MySQL refuses
+ // vendor clauses outright (pre-state kept), TiDB's outcome is unproven.
+ func TestT17R1AbsentCreateUnextractedOptions(t *testing.T) {
++	tidb85, err := parseAuditTargetVersion(spec.DialectTiDB, "8.5.0")
++	if err != nil {
++		t.Fatal(err)
++	}
+ 	cases := []struct {
+ 		name        string
+ 		dialect     spec.Dialect
+@@ -157,7 +167,7 @@ func TestT17R1AbsentCreateUnextractedOptions(t *testing.T) {
+ 		wantCharset string
+ 	}{
+ 		{"mysql-charset-publishes", spec.DialectMySQL, "CREATE DATABASE g CHARACTER SET utf8mb4;", t17v8046, schemaPresent, true, "utf8mb4"},
+-		{"tidb-charset-publishes", spec.DialectTiDB, "CREATE DATABASE g CHARACTER SET utf8mb4;", nil, schemaPresent, true, "utf8mb4"},
++		{"tidb-charset-publishes", spec.DialectTiDB, "CREATE DATABASE g CHARACTER SET utf8mb4;", tidb85, schemaPresent, true, "utf8mb4"},
+ 		{"mysql-tiflash-vendor-refused", spec.DialectMySQL, "CREATE DATABASE g SET TIFLASH REPLICA 1;", t17v8046, schemaAbsent, false, ""},
+ 		{"tidb-tiflash-unproven", spec.DialectTiDB, "CREATE DATABASE g SET TIFLASH REPLICA 1;", nil, schemaUnknown, false, ""},
+ 		{"mysql-ine-tiflash-vendor-refused", spec.DialectMySQL, "CREATE DATABASE IF NOT EXISTS g SET TIFLASH REPLICA 1;", t17v8046, schemaAbsent, false, ""},
+@@ -170,6 +180,9 @@ func TestT17R1AbsentCreateUnextractedOptions(t *testing.T) {
+ 	for _, tc := range cases {
+ 		t.Run(tc.name, func(t *testing.T) {
+ 			p := &t17ObjectResolver{answer: t17Absent}
++			if tc.name == "mysql-charset-publishes" {
++				p.facts = &spec.InstanceFacts{DefaultCollationForUTF8MB4: "utf8mb4_0900_ai_ci"}
++			}
+ 			state, _ := t17Enrich(t, tc.dialect, tc.sql, "req", tc.version, p)
+ 			entry := state.schemaEntries["g"]
+ 			if entry == nil {
+@@ -387,6 +400,9 @@ func TestT17R1CreateCharsetPrestates(t *testing.T) {
+ 	} {
+ 		t.Run(tc.name, func(t *testing.T) {
+ 			p := &t17ObjectResolver{answer: tc.answer}
++			if tc.name == "absent" {
++				p.facts = &spec.InstanceFacts{DefaultCollationForUTF8MB4: "utf8mb4_0900_ai_ci"}
++			}
+ 			state, statements := t17Enrich(t, spec.DialectMySQL, "CREATE DATABASE IF NOT EXISTS g CHARACTER SET utf8mb4; CREATE DATABASE IF NOT EXISTS g CHARACTER SET utf8mb4;", "req", t17v8046, p)
+ 			if got := state.schemaEntries["g"]; got == nil || !reflect.DeepEqual(*got, tc.want) {
+ 				t.Fatalf("entry = %#v, want %#v", got, tc.want)
+diff --git a/internal/domain/spec/README.md b/internal/domain/spec/README.md
+index 4484767f..0e5d9b7f 100644
+--- a/internal/domain/spec/README.md
++++ b/internal/domain/spec/README.md
+@@ -48,6 +48,7 @@ Normalized statement specifications used as the stable input for rule evaluation
+ - `ParseTargetVersion`, `ParseObservedVersion`, `ValidateTargetVersion`, `ErrInvalidTargetVersion`
+ - `RenameColumnVersionSupport`, `RenameColumnVersionSupportFor`, `RenameColumnMinimumSupportedVersion`
+ - `InstanceFacts` (explicit known-bit pairs: `InnoDBPageSizeKnown`/`InnoDBPageSizeBytes`, `InnoDBLargePrefixKnown`/`InnoDBLargePrefixOn`, `TiDBMaxIndexLengthKnown`/`TiDBMaxIndexLengthBytes`, `TiDBAlterPrimaryKeyKnown`/`TiDBAlterPrimaryKey` — a zero or absent value stays unknown rather than defaulting — plus `TiDBEnableClusteredIndex`, the session-observed on/off/int_only mode an unstated TiDB PRIMARY KEY resolves through; empty means unprobed, so the handle answer stays unknown rather than inheriting a guessed default — never populated on MySQL — and `RestrictNonStandardKeyKnown`/`RestrictNonStandardKey`, the MySQL 8.4 `restrict_fk_on_non_standard_key` observation a non-unique referenced-key eligibility answer resolves through — the variable does not exist on pre-8.4 MySQL or TiDB, so an unprobed read stays unknown and eligibility falls back to dialect/version instead of a guessed default (issue #90 T11-R1), and `TiDBEnableCheckConstraintKnown`/`TiDBEnableCheckConstraint`, the TiDB CHECK storage/enforcement switch `ResolveCheckArm` consumes — unobserved stays unknown (issue #91 T12))
++- `InstanceFacts.ServerCharset`, `ServerCollation`, and `DefaultCollationForUTF8MB4` are normalized observations; empty means unknown. `DefaultCharset` is the request database's charset, not the server default.
+ - `TableSnapshot`
+ - `ObjectSnapshot`
+ - `MetadataStatus`
+diff --git a/internal/domain/spec/metadata.go b/internal/domain/spec/metadata.go
+index a1bc2a55..f6ebb638 100644
+--- a/internal/domain/spec/metadata.go
++++ b/internal/domain/spec/metadata.go
+@@ -69,16 +69,21 @@ type TargetBinding struct {
+ // treated as evidence — unknown facts stay unknown so rules can emit bounded
+ // evidence gaps instead of fabricating a configuration.
+ type InstanceFacts struct {
+-	Version                   string `json:"version,omitempty"`
+-	DefaultCharset            string `json:"default_charset,omitempty"`
+-	InnoDBLargePrefixEnabled  bool   `json:"innodb_large_prefix_enabled,omitempty"`
+-	InnoDBLargePrefixKnown    bool   `json:"innodb_large_prefix_known,omitempty"`
+-	InnoDBDefaultRowFormat    string `json:"innodb_default_row_format,omitempty"`
+-	InnoDBAdaptiveHashEnabled bool   `json:"innodb_adaptive_hash_enabled,omitempty"`
+-	InnoDBPageSizeBytes       int    `json:"innodb_page_size,omitempty"`
+-	InnoDBPageSizeKnown       bool   `json:"innodb_page_size_known,omitempty"`
+-	TiDBMaxIndexLengthBytes   int    `json:"tidb_max_index_length,omitempty"`
+-	TiDBMaxIndexLengthKnown   bool   `json:"tidb_max_index_length_known,omitempty"`
++	Version string `json:"version,omitempty"`
++	// DefaultCharset is character_set_database, not the server default.
++	DefaultCharset string `json:"default_charset,omitempty"`
++	// Empty server default fields mean unobserved.
++	ServerCharset              string `json:"server_charset,omitempty"`
++	ServerCollation            string `json:"server_collation,omitempty"`
++	DefaultCollationForUTF8MB4 string `json:"default_collation_for_utf8mb4,omitempty"`
++	InnoDBLargePrefixEnabled   bool   `json:"innodb_large_prefix_enabled,omitempty"`
++	InnoDBLargePrefixKnown     bool   `json:"innodb_large_prefix_known,omitempty"`
++	InnoDBDefaultRowFormat     string `json:"innodb_default_row_format,omitempty"`
++	InnoDBAdaptiveHashEnabled  bool   `json:"innodb_adaptive_hash_enabled,omitempty"`
++	InnoDBPageSizeBytes        int    `json:"innodb_page_size,omitempty"`
++	InnoDBPageSizeKnown        bool   `json:"innodb_page_size_known,omitempty"`
++	TiDBMaxIndexLengthBytes    int    `json:"tidb_max_index_length,omitempty"`
++	TiDBMaxIndexLengthKnown    bool   `json:"tidb_max_index_length_known,omitempty"`
+ 
+ 	// TiDBEnableClusteredIndex is the session-observed
+ 	// tidb_enable_clustered_index value (on/off/int_only). A declared
+diff --git a/internal/infrastructure/metadata/mysql/README.md b/internal/infrastructure/metadata/mysql/README.md
+index c08ef7cc..f6b5895e 100644
+--- a/internal/infrastructure/metadata/mysql/README.md
++++ b/internal/infrastructure/metadata/mysql/README.md
+@@ -31,6 +31,11 @@ MySQL-protocol metadata provider used for optional metadata-aware DeltaScope aud
+ 
+ T17-R1: schema `ResolveObject` answers carry confirmed/not-found/unavailable status; provider errors propagate through the shared audit client and ordered enrichment instead of being cached as unavailable.
+ 
++`LoadInstanceFacts` reads `character_set_server`, `collation_server`, and
++`default_collation_for_utf8mb4` in its existing variable query. Values are
++normalized; missing rows stay unknown and query errors propagate.
++`character_set_database` remains the request database's charset.
++
+ ## Exports
+ 
+ - `DefaultConnectTimeout`
+diff --git a/internal/infrastructure/metadata/mysql/provider.go b/internal/infrastructure/metadata/mysql/provider.go
+index 3f3eb12c..f23a43b7 100644
+--- a/internal/infrastructure/metadata/mysql/provider.go
++++ b/internal/infrastructure/metadata/mysql/provider.go
+@@ -198,7 +198,7 @@ var _ appaudit.MetadataProvider = (*Provider)(nil)
+ func (p *Provider) LoadInstanceFacts(ctx context.Context, _ spec.Dialect, _ string) (*spec.InstanceFacts, error) {
+ 	rows, err := p.db.QueryContext(ctx, `
+ 		show variables where Variable_name in
+-		('version','character_set_database','innodb_large_prefix','innodb_default_row_format','innodb_adaptive_hash_index','innodb_page_size','tidb_enable_clustered_index','restrict_fk_on_non_standard_key','tidb_enable_check_constraint')
++		('version','character_set_database','character_set_server','collation_server','default_collation_for_utf8mb4','innodb_large_prefix','innodb_default_row_format','innodb_adaptive_hash_index','innodb_page_size','tidb_enable_clustered_index','restrict_fk_on_non_standard_key','tidb_enable_check_constraint')
+ 	`)
+ 	if err != nil {
+ 		return nil, fmt.Errorf("query instance facts: %w", err)
+@@ -217,6 +217,12 @@ func (p *Provider) LoadInstanceFacts(ctx context.Context, _ spec.Dialect, _ stri
+ 			facts.Version = value
+ 		case "character_set_database":
+ 			facts.DefaultCharset = value
++		case "character_set_server":
++			facts.ServerCharset = strings.ToLower(strings.TrimSpace(value))
++		case "collation_server":
++			facts.ServerCollation = strings.ToLower(strings.TrimSpace(value))
++		case "default_collation_for_utf8mb4":
++			facts.DefaultCollationForUTF8MB4 = strings.ToLower(strings.TrimSpace(value))
+ 		case "innodb_large_prefix":
+ 			facts.InnoDBLargePrefixEnabled = normalizeOnOff(value)
+ 			facts.InnoDBLargePrefixKnown = true
+diff --git a/internal/infrastructure/metadata/mysql/provider_test.go b/internal/infrastructure/metadata/mysql/provider_test.go
+index a37c0d6c..398e75c4 100644
+--- a/internal/infrastructure/metadata/mysql/provider_test.go
++++ b/internal/infrastructure/metadata/mysql/provider_test.go
+@@ -546,6 +546,39 @@ func TestLoadInstanceFactsWithMockDB(t *testing.T) {
+ 	}
+ }
+ 
++func TestLoadInstanceFactsSchemaDefaults(t *testing.T) {
++	for _, tc := range []struct {
++		name string
++		rows [][]driver.Value
++		want spec.InstanceFacts
++	}{
++		{"observed", [][]driver.Value{{"version", "8.0.46"}, {"character_set_database", "utf8mb4"}, {"character_set_server", " LATIN1 "}, {"collation_server", " LATIN1_BIN "}, {"default_collation_for_utf8mb4", " UTF8MB4_GENERAL_CI "}},
++			spec.InstanceFacts{Version: "8.0.46", DefaultCharset: "utf8mb4", ServerCharset: "latin1", ServerCollation: "latin1_bin", DefaultCollationForUTF8MB4: "utf8mb4_general_ci"}},
++		{"missing", [][]driver.Value{{"version", "8.0.46"}, {"character_set_database", "utf8mb4"}},
++			spec.InstanceFacts{Version: "8.0.46", DefaultCharset: "utf8mb4"}},
++	} {
++		t.Run(tc.name, func(t *testing.T) {
++			db := openTestDB(t, map[string]testQueryResult{
++				"character_set_server','collation_server','default_collation_for_utf8mb4": {columns: []string{"Variable_name", "Value"}, rows: tc.rows},
++			})
++			defer db.Close()
++			facts, err := NewProvider(db).LoadInstanceFacts(context.Background(), spec.DialectMySQL, "app")
++			if err != nil || facts == nil || *facts != tc.want {
++				t.Fatalf("facts=%#v err=%v, want %#v", facts, err, tc.want)
++			}
++		})
++	}
++	t.Run("query-error", func(t *testing.T) {
++		sentinel := errors.New("instance query failed")
++		db := openTestDB(t, map[string]testQueryResult{"show variables": {queryErr: sentinel}})
++		defer db.Close()
++		facts, err := NewProvider(db).LoadInstanceFacts(context.Background(), spec.DialectMySQL, "app")
++		if facts != nil || !errors.Is(err, sentinel) {
++			t.Fatalf("facts=%#v err=%v", facts, err)
++		}
++	})
++}
++
+ // innodb_page_size becomes a known numeric fact only when the server reports
+ // a positive integer; a missing or unparsable row must stay unknown so rules
+ // downgrade to a bounded evidence gap instead of assuming a page size.
+diff --git a/pkg/deltascope/README.md b/pkg/deltascope/README.md
+index cd99345b..8cd5d8b0 100644
+--- a/pkg/deltascope/README.md
++++ b/pkg/deltascope/README.md
+@@ -64,6 +64,9 @@ Stable public package surface for library consumers.
+ - `MetadataProvider`
+ - `Metadata`
+ - `InstanceFacts`
++  aliases the shared instance facts, including observed server charset,
++  server collation, and configurable utf8mb4 default collation; empty means
++  unobserved and `DefaultCharset` is the request database charset.
+ - `TableSnapshot`
+ - `Table`
+ - `Column`
+diff --git a/pkg/deltascope/audit_test.go b/pkg/deltascope/audit_test.go
+index 5de6b902..c8eab3b5 100644
+--- a/pkg/deltascope/audit_test.go
++++ b/pkg/deltascope/audit_test.go
+@@ -831,9 +831,12 @@ func TestPublicMetadataProviderClonesProviderResults(t *testing.T) {
+ 	primaryCardinality := ptrInt64(1000)
+ 	secondaryCardinality := ptrInt64(250)
+ 	instance := &InstanceFacts{
+-		Version:                "8.0.36",
+-		DefaultCharset:         "utf8mb4",
+-		InnoDBDefaultRowFormat: "dynamic",
++		Version:                    "8.0.36",
++		DefaultCharset:             "utf8mb4",
++		InnoDBDefaultRowFormat:     "dynamic",
++		ServerCharset:              "latin1",
++		ServerCollation:            "latin1_bin",
++		DefaultCollationForUTF8MB4: "utf8mb4_general_ci",
+ 	}
+ 	snapshot := &TableSnapshot{
+ 		Schema:     "app",
+@@ -853,12 +856,26 @@ func TestPublicMetadataProviderClonesProviderResults(t *testing.T) {
+ 	if err != nil {
+ 		t.Fatalf("load instance facts: %v", err)
+ 	}
++	if mappedInstance.ServerCharset != "latin1" || mappedInstance.ServerCollation != "latin1_bin" || mappedInstance.DefaultCollationForUTF8MB4 != "utf8mb4_general_ci" {
++		t.Fatalf("server defaults not forwarded: %#v", mappedInstance)
++	}
++	encoded, err := json.Marshal(mappedInstance)
++	if err != nil {
++		t.Fatal(err)
++	}
++	var roundTrip InstanceFacts
++	if err := json.Unmarshal(encoded, &roundTrip); err != nil || !reflect.DeepEqual(&roundTrip, mappedInstance) {
++		t.Fatalf("instance facts round trip=%#v err=%v", roundTrip, err)
++	}
+ 	mappedSnapshot, err := provider.LoadTableSnapshot(context.Background(), spec.DialectMySQL, "app", "users")
+ 	if err != nil {
+ 		t.Fatalf("load table snapshot: %v", err)
+ 	}
+ 
+ 	mappedInstance.DefaultCharset = "latin1"
++	mappedInstance.ServerCharset = "utf8mb4"
++	mappedInstance.ServerCollation = "utf8mb4_bin"
++	mappedInstance.DefaultCollationForUTF8MB4 = "utf8mb4_0900_ai_ci"
+ 	mappedSnapshot.Table.Name = "mutated_users"
+ 	mappedSnapshot.Columns[0].Name = "mutated_id"
+ 	mappedSnapshot.PrimaryKey.Columns[0] = "mutated_pk"
+@@ -869,7 +886,8 @@ func TestPublicMetadataProviderClonesProviderResults(t *testing.T) {
+ 	*snapshot.PrimaryKey.Cardinality = 2000
+ 	*snapshot.Indexes[0].Cardinality = 500
+ 
+-	if instance.DefaultCharset != "utf8mb4" {
++	if instance.DefaultCharset != "utf8mb4" || instance.ServerCharset != "latin1" ||
++		instance.ServerCollation != "latin1_bin" || instance.DefaultCollationForUTF8MB4 != "utf8mb4_general_ci" {
+ 		t.Fatalf("expected cloned instance facts, got %#v", instance)
+ 	}
+ 	if snapshot.Table == nil || snapshot.Table.Name != "users" {
+diff --git a/testdata/ddl-golden/README.md b/testdata/ddl-golden/README.md
+index 3cae858c..a7ba1e67 100644
+--- a/testdata/ddl-golden/README.md
++++ b/testdata/ddl-golden/README.md
+@@ -9,9 +9,10 @@ Per-task manifests for the milestone DDL golden-path runner
+ T17-R1 cases (52 total): three offline conditional-create cases and two
+ metadata cases for the MySQL/TiDB tiflash boundary. For `TASK=T17`,
+ `make ddl-golden` first runs the independent ordered-projection and provider
+-error Go proofs, then runs the real CLI/database cases and artifact validator.
++error and T17-R1-tail attribute Go proofs, then runs the real CLI/database cases
++and artifact validator.
+ Neither the supplemental projections nor offline CLI behavior substitute
+-for native receipts.
++for native receipts; they do not change the 52 CLI/database case count.
+ 
+ ## T07 advanced-column contract
+ 

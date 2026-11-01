@@ -1,0 +1,1 @@
+Environment source: docker/ddl-golden-compose.yaml public disposable MySQL root configuration; T17_MYSQL_PASSWORD and DS_T17_GOLDEN_PW were both set to that fixture value.

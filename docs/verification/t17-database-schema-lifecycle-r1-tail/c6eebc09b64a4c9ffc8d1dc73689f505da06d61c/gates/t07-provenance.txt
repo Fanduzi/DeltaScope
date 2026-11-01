@@ -1,0 +1,1 @@
+T07 formatting/blob baseline inherited from gates-pre-lint; the follow-up commit only changes batch_state_t17r1_tail_test.go.

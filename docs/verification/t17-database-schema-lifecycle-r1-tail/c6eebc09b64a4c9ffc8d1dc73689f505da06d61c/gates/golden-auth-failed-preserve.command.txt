@@ -1,0 +1,10 @@
+set -euo pipefail
+e=/tmp/t17r1-tail-evidence/gates
+src=/tmp/ddl-golden/T17
+backup=$(mktemp -d /tmp/ddl-golden-T17-tail-auth-failed-XXXXXXXX)
+printf '%s\n' "$backup/T17" > "$e/golden-auth-failed-path.txt"
+find "$src" -type f -print0 | xargs -0 shasum -a 256 | sed 's#  /tmp/ddl-golden/T17/#  #' | LC_ALL=C sort > "$e/golden-auth-failed-before.sha256"
+mv "$src" "$backup/T17"
+find "$backup/T17" -type f -print0 | xargs -0 shasum -a 256 | sed "s#  $backup/T17/#  #" | LC_ALL=C sort > "$e/golden-auth-failed-after.sha256"
+cmp "$e/golden-auth-failed-before.sha256" "$e/golden-auth-failed-after.sha256"
+printf 'preserved failed tree %s with matching before/after file hashes\n' "$backup/T17"

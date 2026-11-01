@@ -1,0 +1,252 @@
+{
+  "case_id": "T17.meta.t17-tidb85-system-mysql-drop",
+  "kind": "cli_metadata",
+  "cli_case": "t17-tidb85-system-mysql-drop",
+  "anchor": "tidb85",
+  "dialect": "tidb",
+  "input_sql": "DROP DATABASE mysql;",
+  "policy_profile": "t17-schema-lifecycle",
+  "policy_path": "/private/tmp/ddl-golden/T17/golden-policy-t17-schema-lifecycle.yaml",
+  "connect": {
+    "host": "127.0.0.1",
+    "port": 24000,
+    "user": "root",
+    "schema": "golden",
+    "password_env": ""
+  },
+  "expected": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+      "complete"
+    ],
+    "evidence_gaps": 0,
+    "finding_entries": [
+      {
+        "index": 0,
+        "rule_id": "ddl.database.system.modify.forbid",
+        "level": "blocker"
+      }
+    ]
+  },
+  "actual": {
+    "database": {
+      "product": "tidb",
+      "image": "pingcap/tidb:v8.5.0",
+      "image_digest": "pingcap/tidb@sha256:490861bd4a2fa643dbe76b77ffecafcad66e6a42774e580b82f4ec2429a80e57",
+      "container": "deltascope-ddl-golden-tidb85",
+      "reachable": true,
+      "version": "8.0.11-TiDB-v8.5.0"
+    },
+    "setup": [],
+    "post_verify": [],
+    "execute": [
+      {
+        "name": "native-drop-mysql-tidb",
+        "sql": "DROP DATABASE mysql",
+        "rc": 1,
+        "stdout": "",
+        "stderr": "ERROR 1105 (HY000) at line 1: Drop 'mysql' database is forbidden",
+        "verify": [
+          {
+            "assert": "tidb refuses system drop natively too",
+            "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='mysql'",
+            "rc": 0,
+            "output": "1",
+            "stderr": ""
+          }
+        ]
+      }
+    ],
+    "structure": [],
+    "teardown": [],
+    "exit": 1,
+    "stdout": "{\"verdict\":\"reject\",\"coverage\":{\"status\":\"complete\"},\"summary\":{\"statements\":1,\"blockers\":1,\"warnings\":0,\"notices\":0},\"statements\":[{\"index\":0,\"kind\":\"ddl\",\"raw_sql\":\"DROP DATABASE mysql;\",\"normalized_sql\":\"DROP DATABASE mysql\",\"findings\":[{\"rule_id\":\"ddl.database.system.modify.forbid\",\"level\":\"blocker\",\"message\":\"schema \\\"mysql\\\" is a reserved system schema; drop_schema on it is refused by policy\",\"statement_kind\":\"ddl\",\"location\":{\"line\":1,\"column\":1},\"suggestion\":\"do not alter or drop engine-managed system schemas; scope the change to a business schema\",\"metadata\":{\"operation\":\"drop_schema\",\"schema\":\"mysql\",\"system\":true},\"explanation\":{\"summary\":\"Forbid DDL database system modify forbid\",\"why\":\"The statement uses a construct that the shipped policy explicitly forbids.\",\"risk\":\"Ignoring this rule can weaken schema-governance guarantees and make changes harder to review safely.\",\"suggestion\":\"do not alter or drop engine-managed system schemas; scope the change to a business schema\"}}],\"coverage\":{\"status\":\"complete\"}}],\"version\":{\"product\":\"tidb\",\"version\":\"8.5.0\",\"major\":8,\"minor\":5,\"patch\":0,\"source\":\"observed\",\"validated_range\":true},\"fail_on_triggered\":true,\"rule_summary\":{\"loaded\":6,\"applicable\":3,\"skipped\":[]},\"context\":{\"mode\":\"metadata-aware\",\"dialect\":\"tidb\",\"dialect_source\":\"detected\",\"schema\":\"golden\",\"schema_source\":\"flag\"}}\n",
+    "stderr": "",
+    "parsed": {
+      "verdict": "reject",
+      "coverage": {
+        "status": "complete"
+      },
+      "summary": {
+        "statements": 1,
+        "blockers": 1,
+        "warnings": 0,
+        "notices": 0
+      },
+      "statements": [
+        {
+          "index": 0,
+          "kind": "ddl",
+          "raw_sql": "DROP DATABASE mysql;",
+          "normalized_sql": "DROP DATABASE mysql",
+          "findings": [
+            {
+              "rule_id": "ddl.database.system.modify.forbid",
+              "level": "blocker",
+              "message": "schema \"mysql\" is a reserved system schema; drop_schema on it is refused by policy",
+              "statement_kind": "ddl",
+              "location": {
+                "line": 1,
+                "column": 1
+              },
+              "suggestion": "do not alter or drop engine-managed system schemas; scope the change to a business schema",
+              "metadata": {
+                "operation": "drop_schema",
+                "schema": "mysql",
+                "system": true
+              },
+              "explanation": {
+                "summary": "Forbid DDL database system modify forbid",
+                "why": "The statement uses a construct that the shipped policy explicitly forbids.",
+                "risk": "Ignoring this rule can weaken schema-governance guarantees and make changes harder to review safely.",
+                "suggestion": "do not alter or drop engine-managed system schemas; scope the change to a business schema"
+              }
+            }
+          ],
+          "coverage": {
+            "status": "complete"
+          }
+        }
+      ],
+      "version": {
+        "product": "tidb",
+        "version": "8.5.0",
+        "major": 8,
+        "minor": 5,
+        "patch": 0,
+        "source": "observed",
+        "validated_range": true
+      },
+      "fail_on_triggered": true,
+      "rule_summary": {
+        "loaded": 6,
+        "applicable": 3,
+        "skipped": []
+      },
+      "context": {
+        "mode": "metadata-aware",
+        "dialect": "tidb",
+        "dialect_source": "detected",
+        "schema": "golden",
+        "schema_source": "flag"
+      }
+    },
+    "version_evidence": {
+      "target_raw": null,
+      "target_canonical": null,
+      "observed_raw": "8.0.11-TiDB-v8.5.0",
+      "observed_canonical": {
+        "product": "tidb",
+        "version": "8.5.0"
+      },
+      "resolved": {
+        "product": "tidb",
+        "version": "8.5.0",
+        "major": 8,
+        "minor": 5,
+        "patch": 0,
+        "source": "observed",
+        "validated_range": true
+      }
+    }
+  },
+  "assertions": [
+    {
+      "name": "database reachable with expected version",
+      "ok": true,
+      "detail": "SELECT VERSION() rc=0 version='8.0.11-TiDB-v8.5.0' expected_contains='v8.5.0'"
+    },
+    {
+      "name": "exit code",
+      "ok": true,
+      "detail": "rc=1 expected=1"
+    },
+    {
+      "name": "verdict",
+      "ok": true,
+      "detail": "verdict='reject'"
+    },
+    {
+      "name": "top-level statements",
+      "ok": true,
+      "detail": "statements=1 expected=1"
+    },
+    {
+      "name": "zero findings",
+      "ok": true,
+      "detail": "findings=1"
+    },
+    {
+      "name": "no diagnostics",
+      "ok": true,
+      "detail": "diagnostics=[]"
+    },
+    {
+      "name": "no unsupported",
+      "ok": true,
+      "detail": "unsupported=[]"
+    },
+    {
+      "name": "aggregate coverage",
+      "ok": true,
+      "detail": "coverage='complete'"
+    },
+    {
+      "name": "per-statement coverage",
+      "ok": true,
+      "detail": "statement_coverage=['complete']"
+    },
+    {
+      "name": "evidence gap count",
+      "ok": true,
+      "detail": "gaps=0"
+    },
+    {
+      "name": "finding entries",
+      "ok": true,
+      "detail": "findings=[(0, 'ddl.database.system.modify.forbid', 'blocker')] expected=[(0, 'ddl.database.system.modify.forbid', 'blocker')]"
+    },
+    {
+      "name": "execute native-drop-mysql-tidb return code",
+      "ok": true,
+      "detail": "rc=1 expected=1 stderr=\"ERROR 1105 (HY000) at line 1: Drop 'mysql' database is forbidden\""
+    },
+    {
+      "name": "execute native-drop-mysql-tidb stderr marker",
+      "ok": true,
+      "detail": "1105"
+    },
+    {
+      "name": "execute native-drop-mysql-tidb: tidb refuses system drop natively too",
+      "ok": true,
+      "detail": "rc=0 output='1' expected='1'"
+    }
+  ],
+  "status": "pass",
+  "command": [
+    "/private/tmp/ddl-golden/T17/bin/deltascope",
+    "audit",
+    "--dialect",
+    "tidb",
+    "--sql",
+    "DROP DATABASE mysql;",
+    "--config",
+    "/private/tmp/ddl-golden/T17/golden-policy-t17-schema-lifecycle.yaml",
+    "--format",
+    "json",
+    "--host",
+    "127.0.0.1",
+    "--port",
+    "24000",
+    "--user",
+    "root",
+    "--schema",
+    "golden"
+  ]
+}
