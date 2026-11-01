@@ -64,6 +64,9 @@ Stable public package surface for library consumers.
 - `MetadataProvider`
 - `Metadata`
 - `InstanceFacts`
+  aliases the shared instance facts, including observed server charset,
+  server collation, and configurable utf8mb4 default collation; empty means
+  unobserved and `DefaultCharset` is the request database charset.
 - `TableSnapshot`
 - `Table`
 - `Column`

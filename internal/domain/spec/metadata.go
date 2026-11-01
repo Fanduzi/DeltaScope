@@ -69,16 +69,21 @@ type TargetBinding struct {
 // treated as evidence — unknown facts stay unknown so rules can emit bounded
 // evidence gaps instead of fabricating a configuration.
 type InstanceFacts struct {
-	Version                   string `json:"version,omitempty"`
-	DefaultCharset            string `json:"default_charset,omitempty"`
-	InnoDBLargePrefixEnabled  bool   `json:"innodb_large_prefix_enabled,omitempty"`
-	InnoDBLargePrefixKnown    bool   `json:"innodb_large_prefix_known,omitempty"`
-	InnoDBDefaultRowFormat    string `json:"innodb_default_row_format,omitempty"`
-	InnoDBAdaptiveHashEnabled bool   `json:"innodb_adaptive_hash_enabled,omitempty"`
-	InnoDBPageSizeBytes       int    `json:"innodb_page_size,omitempty"`
-	InnoDBPageSizeKnown       bool   `json:"innodb_page_size_known,omitempty"`
-	TiDBMaxIndexLengthBytes   int    `json:"tidb_max_index_length,omitempty"`
-	TiDBMaxIndexLengthKnown   bool   `json:"tidb_max_index_length_known,omitempty"`
+	Version string `json:"version,omitempty"`
+	// On MySQL, DefaultCharset is character_set_database, not the server default.
+	DefaultCharset string `json:"default_charset,omitempty"`
+	// Empty server default fields mean unobserved.
+	ServerCharset              string `json:"server_charset,omitempty"`
+	ServerCollation            string `json:"server_collation,omitempty"`
+	DefaultCollationForUTF8MB4 string `json:"default_collation_for_utf8mb4,omitempty"`
+	InnoDBLargePrefixEnabled   bool   `json:"innodb_large_prefix_enabled,omitempty"`
+	InnoDBLargePrefixKnown     bool   `json:"innodb_large_prefix_known,omitempty"`
+	InnoDBDefaultRowFormat     string `json:"innodb_default_row_format,omitempty"`
+	InnoDBAdaptiveHashEnabled  bool   `json:"innodb_adaptive_hash_enabled,omitempty"`
+	InnoDBPageSizeBytes        int    `json:"innodb_page_size,omitempty"`
+	InnoDBPageSizeKnown        bool   `json:"innodb_page_size_known,omitempty"`
+	TiDBMaxIndexLengthBytes    int    `json:"tidb_max_index_length,omitempty"`
+	TiDBMaxIndexLengthKnown    bool   `json:"tidb_max_index_length_known,omitempty"`
 
 	// TiDBEnableClusteredIndex is the session-observed
 	// tidb_enable_clustered_index value (on/off/int_only). A declared

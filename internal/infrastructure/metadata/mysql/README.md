@@ -31,6 +31,11 @@ MySQL-protocol metadata provider used for optional metadata-aware DeltaScope aud
 
 T17-R1: schema `ResolveObject` answers carry confirmed/not-found/unavailable status; provider errors propagate through the shared audit client and ordered enrichment instead of being cached as unavailable.
 
+`LoadInstanceFacts` reads `character_set_server`, `collation_server`, and
+`default_collation_for_utf8mb4` in its existing variable query. Values are
+normalized; missing rows stay unknown and query errors propagate.
+`character_set_database` remains the request database's charset.
+
 ## Exports
 
 - `DefaultConnectTimeout`

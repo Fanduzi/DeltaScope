@@ -128,7 +128,7 @@ const (
 // proven parse refusal (5.7 answers 1064), an unproven version withholds,
 // TiDB's accepted-ignored form publishes nothing, and a TiDB placement
 // clause's binding premise is unvouchable today.
-func schemaPostAttrs(dialect spec.Dialect, version *spec.VersionIdentity, prior *batchSchemaEntry, declared map[string]string, creating bool) (map[string]string, schemaAttrOutcome) {
+func schemaPostAttrs(dialect spec.Dialect, version *spec.VersionIdentity, facts *spec.InstanceFacts, prior *batchSchemaEntry, declared map[string]string, creating bool) (map[string]string, schemaAttrOutcome) {
 	attrs := map[string]string{}
 	if prior != nil {
 		for k, v := range prior.attrs {
@@ -143,7 +143,7 @@ func schemaPostAttrs(dialect spec.Dialect, version *spec.VersionIdentity, prior 
 		attrs["collation"] = collate
 	case hasCharset:
 		attrs["charset"] = charset
-		if derived := defaultCollationForCharset(dialect, charset); derived != "" {
+		if derived := defaultCollationForCharset(dialect, version, facts, charset); derived != "" {
 			attrs["collation"] = derived
 		} else {
 			delete(attrs, "collation")
@@ -156,8 +156,11 @@ func schemaPostAttrs(dialect spec.Dialect, version *spec.VersionIdentity, prior 
 			delete(attrs, "charset")
 		}
 	case creating:
-		if defCharset, defCollate := schemaServerDefaults(dialect, version); defCharset != "" {
+		defCharset, defCollate := schemaServerDefaults(facts)
+		if defCharset != "" {
 			attrs["charset"] = defCharset
+		}
+		if defCollate != "" {
 			attrs["collation"] = defCollate
 		}
 	}
@@ -209,36 +212,37 @@ func schemaEncryptionValue(declared string) string {
 	return strings.ToLower(strings.TrimSpace(declared))
 }
 
-// schemaServerDefaults is the frozen per-anchor derivation of a CREATE
-// DATABASE that declares neither charset nor collation — the server's own
-// defaults, version-known (probed):
-// MySQL 5.7 latin1/latin1_swedish_ci, MySQL 8.x utf8mb4/utf8mb4_0900_ai_ci,
-// TiDB utf8mb4/utf8mb4_bin. An unproven version withholds both facts rather
-// than guessing the newest defaults.
-func schemaServerDefaults(dialect spec.Dialect, version *spec.VersionIdentity) (string, string) {
-	if dialect == spec.DialectTiDB {
-		return "utf8mb4", "utf8mb4_bin"
-	}
-	if dialect != spec.DialectMySQL || version == nil {
+// schemaServerDefaults uses observed values, not version defaults.
+func schemaServerDefaults(facts *spec.InstanceFacts) (string, string) {
+	if facts == nil {
 		return "", ""
 	}
-	if version.Major < 8 {
-		return "latin1", "latin1_swedish_ci"
-	}
-	return "utf8mb4", "utf8mb4_0900_ai_ci"
+	return strings.ToLower(strings.TrimSpace(facts.ServerCharset)), strings.ToLower(strings.TrimSpace(facts.ServerCollation))
 }
 
 // defaultCollationForCharset is the frozen per-anchor derivation of the
-// collation an engine assigns when only CHARACTER SET is declared (probed:
-// latin1→latin1_swedish_ci on MySQL, latin1→latin1_bin on TiDB; utf8mb4
-// follows the server default). Unknown charsets withhold rather than guess.
-func defaultCollationForCharset(dialect spec.Dialect, charset string) string {
+// collation an engine assigns when only CHARACTER SET is declared. utf8mb4
+// additionally depends on the validated series or observed configuration.
+func defaultCollationForCharset(dialect spec.Dialect, version *spec.VersionIdentity, facts *spec.InstanceFacts, charset string) string {
 	switch strings.ToLower(charset) {
 	case "utf8mb4":
-		if dialect == spec.DialectTiDB {
-			return "utf8mb4_bin"
+		switch dialect {
+		case spec.DialectMySQL:
+			if version != nil && version.ValidatedRange && version.Product == spec.VersionProductMySQL && version.Major == 5 && version.Minor == 7 {
+				return "utf8mb4_general_ci"
+			}
+			if facts != nil {
+				observed := strings.ToLower(strings.TrimSpace(facts.DefaultCollationForUTF8MB4))
+				if strings.HasPrefix(observed, "utf8mb4_") {
+					return observed
+				}
+			}
+		case spec.DialectTiDB:
+			if version != nil && version.ValidatedRange && version.Product == spec.VersionProductTiDB && version.Major == 8 && version.Minor == 5 {
+				return "utf8mb4_bin"
+			}
 		}
-		return "utf8mb4_0900_ai_ci"
+		return ""
 	case "utf8":
 		if dialect == spec.DialectTiDB {
 			return "utf8_bin"
@@ -274,8 +278,8 @@ func defaultCollationForCharset(dialect spec.Dialect, charset string) string {
 	return ""
 }
 
-func schemaCreateAttrs(dialect spec.Dialect, version *spec.VersionIdentity, ddl *spec.DDL) (map[string]string, schemaAttrOutcome) {
-	attrs, outcome := schemaPostAttrs(dialect, version, nil, schemaDeclaredOptions(ddl), true)
+func schemaCreateAttrs(dialect spec.Dialect, version *spec.VersionIdentity, facts *spec.InstanceFacts, ddl *spec.DDL) (map[string]string, schemaAttrOutcome) {
+	attrs, outcome := schemaPostAttrs(dialect, version, facts, nil, schemaDeclaredOptions(ddl), true)
 	// A proven refusal dominates any unmodeled option.
 	if outcome == schemaAttrsRefused {
 		return nil, schemaAttrsRefused
@@ -313,7 +317,7 @@ func (s *batchState) applyCreateSchema(ctx context.Context, statement spec.State
 	case schemaPresent:
 		return nil
 	case schemaAbsent:
-		attrs, outcome := schemaCreateAttrs(s.dialect, s.resolvedVersion, statement.DDL)
+		attrs, outcome := schemaCreateAttrs(s.dialect, s.resolvedVersion, s.instanceFacts, statement.DDL)
 		switch outcome {
 		case schemaAttrsRefused:
 			return nil
@@ -329,7 +333,7 @@ func (s *batchState) applyCreateSchema(ctx context.Context, statement spec.State
 		return nil
 	default:
 		if statement.DDL.Options["if_not_exists"] == "true" {
-			if _, outcome := schemaCreateAttrs(s.dialect, s.resolvedVersion, statement.DDL); outcome == schemaAttrsApply {
+			if _, outcome := schemaCreateAttrs(s.dialect, s.resolvedVersion, s.instanceFacts, statement.DDL); outcome == schemaAttrsApply {
 				entry.state = schemaPresent
 				entry.attrs = nil
 				entry.batchCreated = false
@@ -365,7 +369,7 @@ func (s *batchState) applyAlterSchema(ctx context.Context, statement spec.Statem
 	case schemaAbsent:
 		return nil
 	case schemaPresent:
-		attrs, outcome := schemaPostAttrs(s.dialect, s.resolvedVersion, entry, declared, false)
+		attrs, outcome := schemaPostAttrs(s.dialect, s.resolvedVersion, s.instanceFacts, entry, declared, false)
 		switch outcome {
 		case schemaAttrsRefused:
 			// Proven option refusal keeps the whole pre-state verbatim.

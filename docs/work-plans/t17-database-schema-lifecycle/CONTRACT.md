@@ -45,15 +45,19 @@ derivations land as *derived* values (below); anything else stays
 withheld — a schema snapshot never fabricates an undeclared collation or
 a guessed engine default.
 
-Derivations (probed, engine-fixed):
+Derivations (bounded by observed version and configuration):
 
 - `CHARACTER SET c` alone ⇒ `collation = c`'s dialect default
   (`latin1` ⇒ `latin1_swedish_ci` on MySQL, `latin1_bin` on TiDB).
+  For utf8mb4, validated MySQL 5.7 derives `utf8mb4_general_ci`;
+  other MySQL versions need an observed `default_collation_for_utf8mb4`.
+  Validated TiDB 8.5 derives `utf8mb4_bin`; unproven versions withhold it.
+  Other charset mappings retain the existing bounded table.
 - `COLLATE k` alone ⇒ `charset = charsetFromCollation(k)`
   (`utf8mb4_bin` ⇒ `utf8mb4`).
-- Neither ⇒ the version's server defaults, marked derived
-  (5.7 `latin1/latin1_swedish_ci`, 8.0/8.4 `utf8mb4/utf8mb4_0900_ai_ci`,
-  TiDB `utf8mb4/utf8mb4_bin`). Version unknown ⇒ both withheld.
+- Neither ⇒ individually observed `character_set_server` and
+  `collation_server`; missing facts stay withheld regardless of version.
+  `character_set_database` is not a server default.
 
 ## 3. Transitions
 

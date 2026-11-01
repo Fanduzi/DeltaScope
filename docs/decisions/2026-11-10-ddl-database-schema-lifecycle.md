@@ -198,3 +198,15 @@ vendor-boundary aspect list in coverage (it previously reported as
 generic unaudited), and the corpus/golden denominators grow to cover
 the refused/withheld/convergent arm matrix — `database_lifecycle_rules`
 corpus +4 statements per dialect, T17.json 47 → 52 required cases.
+
+## Amendment — T17-R1 tail: observed schema defaults
+
+The original T17 implementation guessed configurable server defaults and
+used the MySQL 8 utf8mb4 collation for 5.7; this defect predates R1.
+Historical MySQL 5.7 evidence fixes utf8mb4 to `utf8mb4_general_ci`;
+MySQL 8's configurable utf8mb4 default requires an observation.
+Bare CREATE publishes server charset and collation only when observed;
+the database charset is not a server default. Unknown attributes are
+withheld independently of schema existence or batch ownership.
+The R1 refusal, withholding, resolver-error, and known-present no-op
+decisions remain unchanged.

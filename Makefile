@@ -26,7 +26,7 @@ ddl-golden:
 	@test -n "$(TASK)" || (echo "TASK is required (e.g. make ddl-golden TASK=T02 ARTIFACT_DIR=/tmp/ddl-golden)" >&2; exit 1)
 	@test -n "$(ARTIFACT_DIR)" || (echo "ARTIFACT_DIR is required (e.g. ARTIFACT_DIR=/tmp/ddl-golden)" >&2; exit 1)
 	@if [ "$(TASK)" = "T17" ]; then \
-		go test ./internal/application/audit -run 'TestT17R1GoldenProjections|TestT17R1ProviderErrorProof' -count=1 -v; \
+		go test ./internal/application/audit -run 'TestT17R1GoldenProjections|TestT17R1ProviderErrorProof|TestT17R1Tail' -count=1 -v; \
 	fi
 	python3 ./scripts/ddl_golden.py run --task "$(TASK)" --artifact-dir "$(ARTIFACT_DIR)"
 

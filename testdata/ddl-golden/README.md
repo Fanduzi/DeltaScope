@@ -9,9 +9,10 @@ Per-task manifests for the milestone DDL golden-path runner
 T17-R1 cases (52 total): three offline conditional-create cases and two
 metadata cases for the MySQL/TiDB tiflash boundary. For `TASK=T17`,
 `make ddl-golden` first runs the independent ordered-projection and provider
-error Go proofs, then runs the real CLI/database cases and artifact validator.
+error and T17-R1-tail attribute Go proofs, then runs the real CLI/database cases
+and artifact validator.
 Neither the supplemental projections nor offline CLI behavior substitute
-for native receipts.
+for native receipts; they do not change the 52 CLI/database case count.
 
 ## T07 advanced-column contract
 

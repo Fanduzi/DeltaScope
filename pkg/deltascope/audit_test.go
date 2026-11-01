@@ -831,9 +831,12 @@ func TestPublicMetadataProviderClonesProviderResults(t *testing.T) {
 	primaryCardinality := ptrInt64(1000)
 	secondaryCardinality := ptrInt64(250)
 	instance := &InstanceFacts{
-		Version:                "8.0.36",
-		DefaultCharset:         "utf8mb4",
-		InnoDBDefaultRowFormat: "dynamic",
+		Version:                    "8.0.36",
+		DefaultCharset:             "utf8mb4",
+		InnoDBDefaultRowFormat:     "dynamic",
+		ServerCharset:              "latin1",
+		ServerCollation:            "latin1_bin",
+		DefaultCollationForUTF8MB4: "utf8mb4_general_ci",
 	}
 	snapshot := &TableSnapshot{
 		Schema:     "app",
@@ -853,12 +856,26 @@ func TestPublicMetadataProviderClonesProviderResults(t *testing.T) {
 	if err != nil {
 		t.Fatalf("load instance facts: %v", err)
 	}
+	if mappedInstance.ServerCharset != "latin1" || mappedInstance.ServerCollation != "latin1_bin" || mappedInstance.DefaultCollationForUTF8MB4 != "utf8mb4_general_ci" {
+		t.Fatalf("server defaults not forwarded: %#v", mappedInstance)
+	}
+	encoded, err := json.Marshal(mappedInstance)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var roundTrip InstanceFacts
+	if err := json.Unmarshal(encoded, &roundTrip); err != nil || !reflect.DeepEqual(&roundTrip, mappedInstance) {
+		t.Fatalf("instance facts round trip=%#v err=%v", roundTrip, err)
+	}
 	mappedSnapshot, err := provider.LoadTableSnapshot(context.Background(), spec.DialectMySQL, "app", "users")
 	if err != nil {
 		t.Fatalf("load table snapshot: %v", err)
 	}
 
 	mappedInstance.DefaultCharset = "latin1"
+	mappedInstance.ServerCharset = "utf8mb4"
+	mappedInstance.ServerCollation = "utf8mb4_bin"
+	mappedInstance.DefaultCollationForUTF8MB4 = "utf8mb4_0900_ai_ci"
 	mappedSnapshot.Table.Name = "mutated_users"
 	mappedSnapshot.Columns[0].Name = "mutated_id"
 	mappedSnapshot.PrimaryKey.Columns[0] = "mutated_pk"
@@ -869,7 +886,8 @@ func TestPublicMetadataProviderClonesProviderResults(t *testing.T) {
 	*snapshot.PrimaryKey.Cardinality = 2000
 	*snapshot.Indexes[0].Cardinality = 500
 
-	if instance.DefaultCharset != "utf8mb4" {
+	if instance.DefaultCharset != "utf8mb4" || instance.ServerCharset != "latin1" ||
+		instance.ServerCollation != "latin1_bin" || instance.DefaultCollationForUTF8MB4 != "utf8mb4_general_ci" {
 		t.Fatalf("expected cloned instance facts, got %#v", instance)
 	}
 	if snapshot.Table == nil || snapshot.Table.Name != "users" {

@@ -198,7 +198,7 @@ var _ appaudit.MetadataProvider = (*Provider)(nil)
 func (p *Provider) LoadInstanceFacts(ctx context.Context, _ spec.Dialect, _ string) (*spec.InstanceFacts, error) {
 	rows, err := p.db.QueryContext(ctx, `
 		show variables where Variable_name in
-		('version','character_set_database','innodb_large_prefix','innodb_default_row_format','innodb_adaptive_hash_index','innodb_page_size','tidb_enable_clustered_index','restrict_fk_on_non_standard_key','tidb_enable_check_constraint')
+		('version','character_set_database','character_set_server','collation_server','default_collation_for_utf8mb4','innodb_large_prefix','innodb_default_row_format','innodb_adaptive_hash_index','innodb_page_size','tidb_enable_clustered_index','restrict_fk_on_non_standard_key','tidb_enable_check_constraint')
 	`)
 	if err != nil {
 		return nil, fmt.Errorf("query instance facts: %w", err)
@@ -217,6 +217,12 @@ func (p *Provider) LoadInstanceFacts(ctx context.Context, _ spec.Dialect, _ stri
 			facts.Version = value
 		case "character_set_database":
 			facts.DefaultCharset = value
+		case "character_set_server":
+			facts.ServerCharset = strings.ToLower(strings.TrimSpace(value))
+		case "collation_server":
+			facts.ServerCollation = strings.ToLower(strings.TrimSpace(value))
+		case "default_collation_for_utf8mb4":
+			facts.DefaultCollationForUTF8MB4 = strings.ToLower(strings.TrimSpace(value))
 		case "innodb_large_prefix":
 			facts.InnoDBLargePrefixEnabled = normalizeOnOff(value)
 			facts.InnoDBLargePrefixKnown = true

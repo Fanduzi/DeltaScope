@@ -25,6 +25,7 @@ type t17ObjectResolver struct {
 	err     error
 	calls   int
 	version string
+	facts   *spec.InstanceFacts
 	cancel  context.CancelFunc
 	lookups []spec.ObjectLookupRequest
 }
@@ -49,6 +50,10 @@ func (p *t17ObjectResolver) ResolveObject(_ context.Context, _ spec.Dialect, req
 }
 
 func (p *t17ObjectResolver) LoadInstanceFacts(context.Context, spec.Dialect, string) (*spec.InstanceFacts, error) {
+	if p.facts != nil {
+		facts := *p.facts
+		return &facts, nil
+	}
 	return &spec.InstanceFacts{Version: p.version}, nil
 }
 
@@ -69,6 +74,7 @@ func t17Enrich(t *testing.T, dialect spec.Dialect, sql, schema string, version *
 	if err != nil {
 		t.Fatalf("load instance facts: %v", err)
 	}
+	state.instanceFacts = facts
 	enriched, err := state.enrichStatements(ctx, &MetadataRequest{Schema: schema, Provider: provider},
 		extracted, parsed.failures, facts, auditLimits{orderedStatements: len(extracted)})
 	if err != nil {
@@ -147,6 +153,10 @@ func TestT17R1BareCreateOverUnvouchedStaysUnknown(t *testing.T) {
 // statement carries an option the model cannot adjudicate — MySQL refuses
 // vendor clauses outright (pre-state kept), TiDB's outcome is unproven.
 func TestT17R1AbsentCreateUnextractedOptions(t *testing.T) {
+	tidb85, err := parseAuditTargetVersion(spec.DialectTiDB, "8.5.0")
+	if err != nil {
+		t.Fatal(err)
+	}
 	cases := []struct {
 		name        string
 		dialect     spec.Dialect
@@ -157,7 +167,7 @@ func TestT17R1AbsentCreateUnextractedOptions(t *testing.T) {
 		wantCharset string
 	}{
 		{"mysql-charset-publishes", spec.DialectMySQL, "CREATE DATABASE g CHARACTER SET utf8mb4;", t17v8046, schemaPresent, true, "utf8mb4"},
-		{"tidb-charset-publishes", spec.DialectTiDB, "CREATE DATABASE g CHARACTER SET utf8mb4;", nil, schemaPresent, true, "utf8mb4"},
+		{"tidb-charset-publishes", spec.DialectTiDB, "CREATE DATABASE g CHARACTER SET utf8mb4;", tidb85, schemaPresent, true, "utf8mb4"},
 		{"mysql-tiflash-vendor-refused", spec.DialectMySQL, "CREATE DATABASE g SET TIFLASH REPLICA 1;", t17v8046, schemaAbsent, false, ""},
 		{"tidb-tiflash-unproven", spec.DialectTiDB, "CREATE DATABASE g SET TIFLASH REPLICA 1;", nil, schemaUnknown, false, ""},
 		{"mysql-ine-tiflash-vendor-refused", spec.DialectMySQL, "CREATE DATABASE IF NOT EXISTS g SET TIFLASH REPLICA 1;", t17v8046, schemaAbsent, false, ""},
@@ -170,6 +180,9 @@ func TestT17R1AbsentCreateUnextractedOptions(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			p := &t17ObjectResolver{answer: t17Absent}
+			if tc.name == "mysql-charset-publishes" {
+				p.facts = &spec.InstanceFacts{DefaultCollationForUTF8MB4: "utf8mb4_0900_ai_ci"}
+			}
 			state, _ := t17Enrich(t, tc.dialect, tc.sql, "req", tc.version, p)
 			entry := state.schemaEntries["g"]
 			if entry == nil {
@@ -387,6 +400,9 @@ func TestT17R1CreateCharsetPrestates(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			p := &t17ObjectResolver{answer: tc.answer}
+			if tc.name == "absent" {
+				p.facts = &spec.InstanceFacts{DefaultCollationForUTF8MB4: "utf8mb4_0900_ai_ci"}
+			}
 			state, statements := t17Enrich(t, spec.DialectMySQL, "CREATE DATABASE IF NOT EXISTS g CHARACTER SET utf8mb4; CREATE DATABASE IF NOT EXISTS g CHARACTER SET utf8mb4;", "req", t17v8046, p)
 			if got := state.schemaEntries["g"]; got == nil || !reflect.DeepEqual(*got, tc.want) {
 				t.Fatalf("entry = %#v, want %#v", got, tc.want)

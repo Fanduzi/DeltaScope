@@ -546,6 +546,39 @@ func TestLoadInstanceFactsWithMockDB(t *testing.T) {
 	}
 }
 
+func TestLoadInstanceFactsSchemaDefaults(t *testing.T) {
+	for _, tc := range []struct {
+		name string
+		rows [][]driver.Value
+		want spec.InstanceFacts
+	}{
+		{"observed", [][]driver.Value{{"version", "8.0.46"}, {"character_set_database", "utf8mb4"}, {"character_set_server", " LATIN1 "}, {"collation_server", " LATIN1_BIN "}, {"default_collation_for_utf8mb4", " UTF8MB4_GENERAL_CI "}},
+			spec.InstanceFacts{Version: "8.0.46", DefaultCharset: "utf8mb4", ServerCharset: "latin1", ServerCollation: "latin1_bin", DefaultCollationForUTF8MB4: "utf8mb4_general_ci"}},
+		{"missing", [][]driver.Value{{"version", "8.0.46"}, {"character_set_database", "utf8mb4"}},
+			spec.InstanceFacts{Version: "8.0.46", DefaultCharset: "utf8mb4"}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			db := openTestDB(t, map[string]testQueryResult{
+				"character_set_server','collation_server','default_collation_for_utf8mb4": {columns: []string{"Variable_name", "Value"}, rows: tc.rows},
+			})
+			defer db.Close()
+			facts, err := NewProvider(db).LoadInstanceFacts(context.Background(), spec.DialectMySQL, "app")
+			if err != nil || facts == nil || *facts != tc.want {
+				t.Fatalf("facts=%#v err=%v, want %#v", facts, err, tc.want)
+			}
+		})
+	}
+	t.Run("query-error", func(t *testing.T) {
+		sentinel := errors.New("instance query failed")
+		db := openTestDB(t, map[string]testQueryResult{"show variables": {queryErr: sentinel}})
+		defer db.Close()
+		facts, err := NewProvider(db).LoadInstanceFacts(context.Background(), spec.DialectMySQL, "app")
+		if facts != nil || !errors.Is(err, sentinel) {
+			t.Fatalf("facts=%#v err=%v", facts, err)
+		}
+	})
+}
+
 // innodb_page_size becomes a known numeric fact only when the server reports
 // a positive integer; a missing or unparsable row must stay unknown so rules
 // downgrade to a bounded evidence gap instead of assuming a page size.
