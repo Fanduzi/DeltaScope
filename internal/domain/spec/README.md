@@ -6,7 +6,7 @@ Normalized statement specifications used as the stable input for rule evaluation
 
 | File | Responsibility |
 |------|---------------|
-| view.go | Defines private view declarations, lexical `ViewQuery`/`ViewQuerySource` facts, source and output bindings, snapshots and dependency projections; exposes cloning, `SelectViewDefinition`, `BindViewDefinitionSources` and shared lifecycle/drop assessment including ordered duplicate-target fate, ordered target-schema absence, static CHECK OPTION applicability, and authored/effective/final algorithm accounting |
+| view.go | Defines private view declarations, lexical `ViewQuery`/`ViewQuerySource` facts, source and output bindings, snapshots and dependency projections; exposes cloning, `SelectViewDefinition`, `BindViewDefinitionSources`, `ViewSnapshotNonUpdatable` and shared lifecycle/drop assessment including ordered duplicate-target fate, ordered target-schema absence, static/proof-aware CHECK OPTION applicability, and authored/effective/final algorithm accounting |
 | view_query.go | Assesses private lexical view query bindings and statically derived outputs against ordered relation projections; `FreezeViewDefinition` freezes star expansions; root attribution is cycle-safe across shared query graphs; correlated references resolve through nearest lexical scope frames while same-frame ambiguity stays invalid |
 | view_query_test.go | Verifies deterministic physical-root attribution across shared and cyclic query graphs |
 | statement.go | Defines the top-level normalized statement model and parser-neutral extraction interface, including the nonserialized `ResourceLimit` execution marker and its feature/reason constants |

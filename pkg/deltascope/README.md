@@ -8,6 +8,7 @@ Stable public package surface for library consumers.
 |------|---------------|
 | audit_t18_view_first_test.go | Exercises public ALTER VIEW behavior, independent evidence, source bindings, parser controls and privacy |
 | audit_t18r1_test.go | Exercises public T18-R1 corrections: absent-schema CREATE refusal, CHECK OPTION static applicability, valid controls, and nearest-outer correlated resolution |
+| audit_t18r1tail_test.go | Exercises public T18-R1-tail corrections: TEMPTABLE state feeding a later CHECK OPTION refusal, disabled-policy state honesty, and controlled unknown-source evidence |
 | doc.go | Declares the public package placeholder |
 | audit.go | Exposes the stable public audit API, optional metadata-provider hooks, and public result/request types |
 | query_access.go | Exposes the stable public query access analysis API, schema resolver interface, and public result/request types |

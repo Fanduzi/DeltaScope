@@ -293,7 +293,7 @@ func TestT18ReviewUncertainAlterAttributes(t *testing.T) {
 		name, sql, algorithm, security, principal string
 	}{
 		{"inherited", "ALTER ALGORITHM=UNDEFINED VIEW v AS SELECT id FROM t;", "merge", "definer", "prior"},
-		{"changed", "ALTER ALGORITHM=MERGE DEFINER='new' SQL SECURITY INVOKER VIEW v AS SELECT id FROM t;", "", "", ""},
+		{"changed", "ALTER ALGORITHM=MERGE DEFINER='new' SQL SECURITY INVOKER VIEW v AS SELECT id FROM t;", "merge", "", ""},
 		{"agreeing_security", "ALTER SQL SECURITY DEFINER VIEW v AS SELECT id FROM t;", "merge", "definer", "prior"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {

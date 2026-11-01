@@ -161,6 +161,23 @@ func sameViewIdentity(a, b Table) bool {
 	return strings.EqualFold(a.Schema, b.Schema) && strings.EqualFold(a.Name, b.Name)
 }
 
+func ViewSnapshotNonUpdatable(view *ViewSnapshot) bool {
+	if view == nil {
+		return false
+	}
+	if view.Updatable != nil && !*view.Updatable {
+		return true
+	}
+	if view.Algorithm == "temptable" {
+		return true
+	}
+	if view.Definition == nil {
+		return false
+	}
+	return view.Definition.NonUpdatable ||
+		(view.Algorithm == "merge" || view.Algorithm == "undefined") && view.Definition.NonMergeable
+}
+
 func AssessViewLifecycle(statement Statement) ViewLifecycleAssessment {
 	assessment := ViewLifecycleAssessment{SourceRootIndex: -1, SourceBindingIndex: -1, SourceOffset: -1}
 	if statement.DDL == nil || statement.DDL.View == nil {
@@ -237,11 +254,12 @@ func AssessViewLifecycle(statement Statement) ViewLifecycleAssessment {
 				source := metadata.Sources[0].Snapshot
 				if source == nil || source.Exists && source.RelationKind == "" {
 					assessment.CheckRequired = appendViewFact(assessment.CheckRequired, "view.updatable")
-				} else if source.Exists && source.RelationKind == "view" &&
-					(source.View == nil || source.View.Updatable == nil) {
-					assessment.CheckRequired = appendViewFact(assessment.CheckRequired, "view.updatable")
-				} else if source.View != nil && source.View.Updatable != nil && !*source.View.Updatable {
-					assessment.CheckInvalid = true
+				} else if source.Exists && source.RelationKind == "view" {
+					if ViewSnapshotNonUpdatable(source.View) {
+						assessment.CheckInvalid = true
+					} else if source.View == nil || source.View.Updatable == nil {
+						assessment.CheckRequired = appendViewFact(assessment.CheckRequired, "view.updatable")
+					}
 				}
 			}
 			if ddl.Operation == DDLOperationAlterView && !assessment.TargetInvalid &&

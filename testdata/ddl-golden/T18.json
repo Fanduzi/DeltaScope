@@ -11820,6 +11820,113 @@
    ]
   },
   {
+   "id": "mysql80-check-temptable-state",
+   "anchor": "mysql80",
+   "dialect": "mysql",
+   "sql": "CREATE ALGORITHM=TEMPTABLE VIEW source_v AS SELECT id FROM t;\nCREATE VIEW checked_v AS SELECT id FROM source_v WITH CHECK OPTION;",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23380,
+    "user": "root",
+    "schema": "t18m_check_temptable_state",
+    "password_env": "DS_T18_GOLDEN_PW"
+   },
+   "policy": "t18-full",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "setup": [
+    {
+     "name": "create-owned-source-fixture",
+     "sql": "CREATE DATABASE t18m_check_temptable_state;CREATE TABLE t18m_check_temptable_state.t(id INT)",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "fixture source is a base table",
+       "sql": "SELECT TABLE_TYPE FROM information_schema.TABLES WHERE TABLE_SCHEMA='t18m_check_temptable_state' AND TABLE_NAME='t'",
+       "expect": "BASE TABLE"
+      }
+     ]
+    }
+   ],
+   "structure": [
+    {
+     "assert": "audit did not create either prospective view",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='t18m_check_temptable_state' AND TABLE_NAME IN ('source_v','checked_v')",
+     "expect": "0"
+    }
+   ],
+   "post_verify": [
+    {
+     "assert": "audit did not create either prospective view",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='t18m_check_temptable_state' AND TABLE_NAME IN ('source_v','checked_v')",
+     "expect": "0"
+    }
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 2,
+    "findings": 4,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete",
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "statement_indices": [
+     0,
+     1
+    ],
+    "statement_sql": [
+     "CREATE ALGORITHM=TEMPTABLE VIEW source_v AS SELECT id FROM t;",
+     "CREATE VIEW checked_v AS SELECT id FROM source_v WITH CHECK OPTION;"
+    ],
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.view.algorithm.warn",
+      "level": "warning"
+     },
+     {
+      "index": 0,
+      "rule_id": "ddl.view.security.definer.warn",
+      "level": "warning"
+     },
+     {
+      "index": 1,
+      "rule_id": "ddl.view.check_option.valid",
+      "level": "blocker"
+     },
+     {
+      "index": 1,
+      "rule_id": "ddl.view.security.definer.warn",
+      "level": "warning"
+     }
+    ],
+    "unsupported_entries": [],
+    "fail_on_triggered": true
+   },
+   "teardown": [
+    {
+     "name": "drop-owned-schema",
+     "sql": "DROP DATABASE t18m_check_temptable_state",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "schema cleaned",
+       "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='t18m_check_temptable_state'",
+       "expect": "0"
+      }
+     ]
+    }
+   ]
+  },
+  {
    "id": "mysql80-notice-policy-refusal-state",
    "anchor": "mysql80",
    "dialect": "mysql",
@@ -16044,6 +16151,7 @@
   "T18.meta.mysql80-check-cascaded",
   "T18.meta.mysql80-check-aggregate-refusal",
   "T18.meta.mysql80-check-temporary-refusal",
+  "T18.meta.mysql80-check-temptable-state",
   "T18.meta.mysql80-notice-policy-refusal-state",
   "T18.meta.mysql80-off-policy-refusal-state",
   "T18.meta.mysql80-nonfirst-protected-target",

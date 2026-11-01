@@ -66,6 +66,18 @@ MERGE fallback publishes UNDEFINED instead of stale MERGE. Correlated query
 analysis keeps lexical scope frames: nearest-scope binding wins, same-scope
 multiplicity stays ambiguous, and unknown facts stay required evidence.
 
+The R1-tail review narrows two publications without introducing a second
+view-state model. `ViewSnapshot.Updatable` is tri-state proof, not merely the
+absence of a static `NonUpdatable` marker: a statically non-updatable shape,
+effective/final TEMPTABLE, non-mergeable UNDEFINED result, or proven
+non-updatable view source publishes false; MERGE or merge-capable UNDEFINED
+with all view-source updatability proven publishes true; any required unknown
+premise leaves it unpublished. A proven false is not upgraded by unrelated
+unknowns. An unresolved ALTER merges option attributes branch-by-branch: the
+proven-failure value and the possible-success value survive only when they
+agree, so a MERGE prior with an UNDEFINED success branch becomes unknown
+rather than stale MERGE or unproven UNDEFINED.
+
 Keep the locked parser dependency. Extend only the documented view productions
 with a bounded typed grammar adapter, delegating the unchanged SELECT production
 to the existing parser. Preserve statement operation and original source spans;
@@ -115,9 +127,12 @@ The contract requires a real baseline public/CLI behavior red, first-path
 Golden, then the complete seven-row dimension matrix. Native probes run only
 fixed synthetic business DDL in disposable four-anchor fixtures. Internal
 companion projection proofs are counted separately from CLI/database assertions.
-Final gates include Query Access/privacy/transport, T16/T17 and PostgreSQL
-regression coverage as well as the T18 Golden at the frozen product SHA.
-Independent T18 acceptance is a later reviewer decision, not this ADR status.
+Evidence replay source snapshots are archived with a non-compiled suffix such
+as `.go.txt`; the archive records old-to-new paths and identical hashes so
+package discovery cannot mistake receipts for product source. Final gates
+include Query Access/privacy/transport, T16/T17 and PostgreSQL regression
+coverage as well as the T18 Golden at the frozen product SHA. Independent
+T18 acceptance is a later reviewer decision, not this ADR status.
 
 ## Boundaries
 

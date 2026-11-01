@@ -42,7 +42,10 @@ Set-result ORDER BY, including named output ordering, is not modeled in T18.
 LIMIT, inline window functions and unmodeled positional ordering also retain a
 narrow `view_query_shape` capability boundary. They must not become complete
 merely because their AST parses, or become caller-resolvable metadata gaps.
-An uncertain ALTER withholds its mutable definition and output columns.
+An uncertain ALTER withholds its mutable definition and output columns. For
+each inherited option attribute, retain only the value shared by the
+proven-failure and possible-success branches; differing values are unknown
+rather than a stale prior or unproven replacement.
 
 Lexical CTE references can share query identities. Attribution, evaluation and
 freezing must all remain bounded over that graph; an attribution helper cannot
@@ -84,9 +87,11 @@ Verified native distinctions:
 - TiDB accepts ALGORITHM declarations and records them, but the documented
   execution capability is MERGE-only. Recorded text is not proof of execution
   algorithm or updatability.
-- MySQL rejects CHECK OPTION on TEMPTABLE/aggregate non-updatable views
-  (1368); MERGE with an aggregate succeeds with a warning and records
-  UNDEFINED. Never publish the requested MERGE as the observed algorithm.
+- MySQL records a proven TEMPTABLE view as non-updatable and rejects CHECK
+  OPTION over it (1368), including when the check follows in a later statement.
+  MERGE with an aggregate succeeds with a warning and records UNDEFINED. Never
+  publish the requested MERGE as the observed algorithm, and never turn an
+  unknown algorithm/updatable premise into proof that a view is updatable.
 - MySQL ALTER inherits omitted DEFINER and SQL SECURITY, and inherits the
   old algorithm for omitted or explicitly UNDEFINED ALGORITHM. Omitted CHECK
   OPTION becomes NONE. OR REPLACE instead resets omitted clauses to creation
@@ -131,12 +136,22 @@ Verified native distinctions:
   direct source column is proven non-updatable and is refused by
   `check_option.valid`; direct, mixed direct/computed, and inner-join
   controls remain valid. Missing updatability premises stay gaps.
+- T18-R1-tail updatable publication consumes the same effective/final
+  algorithm as CHECK. Statically non-updatable shapes, TEMPTABLE, a
+  non-mergeable UNDEFINED result, or a proven non-updatable view source prove
+  `Updatable=false`; MERGE/merge-capable UNDEFINED plus every view source
+  proven updatable proves `Updatable=true`. Unknown algorithm or source
+  updatability leaves the fact unpublished, and a proven false is not erased
+  by unrelated unknown premises.
 - T18-R1 algorithm accounting separates authored, inherited/effective, and
   final algorithm. ALTER inherits the prior algorithm for omitted or explicit
   UNDEFINED, applies the native MERGE fallback to UNDEFINED for a
   non-mergeable replacement, and publishes only that final fact. CREATE and
   OR REPLACE keep creation-default semantics; an unknown prior algorithm is
-  never guessed.
+  never guessed. In an unresolved ALTER, the attribute survives only when the
+  proven-failure and possible-success values agree; different values become
+  unknown rather than preserving a stale MERGE or publishing an unproven
+  UNDEFINED.
 - T18-R1 correlated queries retain lexical scope frames. An unqualified or
   relation-qualified column resolves in the nearest outer scope before any
   farther frame, same-frame multiple matches remain ambiguous, qualified

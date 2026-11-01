@@ -26,9 +26,17 @@ These are required public/companion regressions, not completed-run claims:
   absent, and source facts outside that schema survive.
 - T18-R1 CHECK OPTION statics: computed-only projections and outer joins are
   proven non-updatable; direct, mixed, and inner-join controls remain valid.
+- T18-R1-tail updatable proof: TEMPTABLE, static non-updatable shape, a
+  non-mergeable UNDEFINED result, or a proven non-updatable source proves
+  `Updatable=false`; unknown algorithm/source updatability never publishes
+  `true`; a proven false dominates unrelated unknown premises.
 - T18-R1 ALTER algorithm: omitted or explicit UNDEFINED inherits a proven
   prior MERGE, non-mergeable replacement falls back to final UNDEFINED, and
   the warning/state use one verdict.
+- T18-R1-tail unresolved ALTER: an option attribute survives only when the
+  proven-failure and possible-success values agree; differing values become
+  unknown. A proven refusal still preserves the exact prior value, and a
+  proven success publishes the final value.
 - T18-R1 correlated scopes: nearest outer match wins, outer fallback works,
   true same-scope ambiguity still refuses, and unknown columns stay gaps.
 
@@ -150,7 +158,7 @@ The DROP matrix in CONTRACT is normative. In particular:
 | Explicitly named principal, including INVOKER | at most one security/ownership warning; never principal details |
 | Effective INVOKER with no named declaration | no DEFINER-context warning |
 | Omitted ALTER security, prior field unavailable | `view.security` gap, not default-to-DEFINER |
-| MySQL TEMPTABLE | algorithm warning; no claim of view update capability |
+| MySQL TEMPTABLE | algorithm warning; published `Updatable=false`; a later CHECK OPTION refuses |
 | MySQL MERGE plus aggregate | warning and fallback setting, not invented MERGE |
 | MySQL CHECK plus known non-updatable definition | check_option.valid blocker; precise refusal state |
 | MySQL CHECK plus missing applicability premises | narrow current check gap |
@@ -170,4 +178,7 @@ identity. SDK tests cover policy/default/custom-level/error results. Companion
 tests cover the same SQL's internal ordered projections and immutability.
 Native receipt matrices validate dialect/version distinctions, not product
 projections. Existing historical artifacts remain at their original SHAs.
-Append actual final case/assertion totals only after a valid final-SHA run.
+Archived replay source snapshots use a non-compiled suffix such as `.go.txt`;
+the manifest records old-to-new paths and identical hashes so `go list ./...`
+never discovers evidence as product packages. Append actual final
+case/assertion totals only after a valid final-SHA run.
