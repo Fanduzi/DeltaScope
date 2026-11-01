@@ -55,6 +55,17 @@ Independent native refusal dominates missing facts. Policy levels or blanket
 forbids do not choose the modeled database effect. DROP VIEW uses its own
 version/product transition table and preserves partial effects where observed.
 
+T18-R1 keeps those shared judgments honest for reviewer counterexamples. The
+view target consumes the already-ordered schema premise: proven absence is a
+native create refusal, while never-touched or unvouched schema state remains
+unknown rather than becoming absent. CHECK OPTION consumes static structural
+updatability facts — a direct output column exists and no outer join is
+proven — without evaluating predicates or claiming update execution. ALTER
+separates authored, inherited/effective, and final algorithm so a proven
+MERGE fallback publishes UNDEFINED instead of stale MERGE. Correlated query
+analysis keeps lexical scope frames: nearest-scope binding wins, same-scope
+multiplicity stays ambiguous, and unknown facts stay required evidence.
+
 Keep the locked parser dependency. Extend only the documented view productions
 with a bounded typed grammar adapter, delegating the unchanged SELECT production
 to the existing parser. Preserve statement operation and original source spans;

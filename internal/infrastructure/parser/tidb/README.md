@@ -11,8 +11,8 @@ query shapes remain incomplete.
 
 | File | Responsibility |
 |------|---------------|
-| view.go | Parses structured view headers and untouched SELECT definitions, validates definer account boundaries, and preserves private dependencies and clause-aware column locations |
-| view_query.go | Builds private lexical query scopes for joins, CTEs, derived tables, nested queries, set operands and SELECT ORDER BY; marks unmodeled LIMIT, window, positional-order and set-order shapes |
+| view.go | Parses structured view headers and untouched SELECT definitions, validates definer account boundaries, preserves private dependencies and clause-aware column locations, and marks static no-direct-column projections non-updatable |
+| view_query.go | Builds private lexical query scopes for joins, CTEs, derived tables, nested queries, set operands and SELECT ORDER BY; records outer-join and no-direct-column non-updatability and marks unmodeled LIMIT, window, positional-order and set-order shapes |
 | view_t18_first_test.go | Exercises ALTER identity, strict identifier and definer grammar, bare CHECK boundaries and external definition sources |
 | parser.go | Parses SQL text and preserves raw statement nodes plus parser warnings; on a base-grammar failure it runs the bounded `supplementDefaultExpressions` retry |
 | supplement.go | Bounded grammar supplement: `DEFAULT (<expr>)` sites are located by structural tokenization (strings, quoted identifiers, and comments skipped) with their column identity, rewritten in place with a same-width literal placeholder, reparsed, and rebound to the real `SELECT`-parsed expression AST by site-span position — CREATE `ColumnOptionDefaultValue` and ALTER `SET/DROP DEFAULT` setter options (carried as `ColumnOptionNoOption`) both bind, while options outside every planned site (bare literal defaults) stay untouched; original statement text/offsets are restored verbatim and any mismatch fails closed to the original parse error — the placeholder literal never escapes into facts |

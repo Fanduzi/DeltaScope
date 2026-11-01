@@ -33,6 +33,7 @@ func (s *batchState) projectViewMetadata(ctx context.Context, statement spec.Sta
 	metadata := &spec.ViewMetadata{
 		TargetIdentity:      spec.Table{Schema: key.schema, Name: key.table},
 		Target:              target,
+		TargetSchemaAbsent:  s.schemaStateForTarget(key.schema) == schemaAbsent,
 		DependencyCycleRoot: -1,
 	}
 	for _, target := range targets {
@@ -199,11 +200,10 @@ func (s *batchState) applyView(statement spec.Statement) error {
 		shape.View.DefinerKind = "current_user"
 		shape.View.DefinerPrincipal = ""
 	}
-	if ddl.View.AlgorithmExplicit && (ddl.Operation == spec.DDLOperationCreateView || ddl.View.Algorithm != "undefined") {
+	if statement.Dialect == spec.DialectMySQL {
+		shape.View.Algorithm = assessment.AlgorithmFinal
+	} else if ddl.View.AlgorithmExplicit && (ddl.Operation == spec.DDLOperationCreateView || ddl.View.Algorithm != "undefined") {
 		shape.View.Algorithm = ddl.View.Algorithm
-		if ddl.View.Algorithm == "merge" && definition.NonMergeable && statement.Dialect == spec.DialectMySQL {
-			shape.View.Algorithm = "undefined"
-		}
 	}
 	if ddl.View.DefinerKind != "" {
 		shape.View.DefinerKind = ddl.View.DefinerKind
@@ -217,6 +217,24 @@ func (s *batchState) applyView(statement spec.Statement) error {
 		shape.View.CheckOption = ddl.View.CheckOption
 	}
 	shape.View.Updatable = nil
+	if statement.Dialect == spec.DialectMySQL && definition.ShapeKnown {
+		updatable := !definition.NonUpdatable
+		proven := true
+		for _, source := range statement.Metadata.View.Sources {
+			snapshot := source.Snapshot
+			if snapshot == nil || !snapshot.Exists || snapshot.RelationKind != "view" {
+				continue
+			}
+			if snapshot.View == nil || snapshot.View.Updatable == nil {
+				proven = false
+				continue
+			}
+			updatable = updatable && *snapshot.View.Updatable
+		}
+		if proven {
+			shape.View.Updatable = &updatable
+		}
+	}
 	shape.Columns = nil
 	if definition.ShapeKnown {
 		if definition.Query != nil {

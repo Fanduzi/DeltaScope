@@ -121,6 +121,27 @@ Verified native distinctions:
   them from stored definitions; TiDB validates them, rejecting missing sources
   or columns even when unused. Required dependencies and metadata reads follow
   that proven vendor distinction, not a global CTE-name filter.
+- T18-R1 schema premise: CREATE VIEW consumes the ordered target-schema state.
+  A proven `DROP DATABASE`/schema absence refuses the create as the native
+  1049 class and must not publish a present view or a fabricated duplicate
+  target. Never-touched or unvouched schema state remains unknown rather than
+  absent; the view path does not introduce a second schema resolver.
+- T18-R1 CHECK OPTION premise: MySQL CHECK OPTION reuses the structured
+  query's static updatability facts. An outer join or a projection with no
+  direct source column is proven non-updatable and is refused by
+  `check_option.valid`; direct, mixed direct/computed, and inner-join
+  controls remain valid. Missing updatability premises stay gaps.
+- T18-R1 algorithm accounting separates authored, inherited/effective, and
+  final algorithm. ALTER inherits the prior algorithm for omitted or explicit
+  UNDEFINED, applies the native MERGE fallback to UNDEFINED for a
+  non-mergeable replacement, and publishes only that final fact. CREATE and
+  OR REPLACE keep creation-default semantics; an unknown prior algorithm is
+  never guessed.
+- T18-R1 correlated queries retain lexical scope frames. An unqualified or
+  relation-qualified column resolves in the nearest outer scope before any
+  farther frame, same-frame multiple matches remain ambiguous, qualified
+  misses stay invalid, and unproven columns remain evidence gaps rather than
+  first-match guesses.
 
 ### Ordered DROP VIEW
 

@@ -21,6 +21,16 @@ These are required public/companion regressions, not completed-run claims:
 - A valid named definer spelled VIEW remains an account identity rather than
   a header delimiter; quoted and CURRENT_USER controls preserve their distinct
   declaration semantics.
+- T18-R1 schema premise: a proven dropped schema refuses CREATE VIEW and never
+  publishes the target; a never-touched schema remains unknown rather than
+  absent, and source facts outside that schema survive.
+- T18-R1 CHECK OPTION statics: computed-only projections and outer joins are
+  proven non-updatable; direct, mixed, and inner-join controls remain valid.
+- T18-R1 ALTER algorithm: omitted or explicit UNDEFINED inherits a proven
+  prior MERGE, non-mergeable replacement falls back to final UNDEFINED, and
+  the warning/state use one verdict.
+- T18-R1 correlated scopes: nearest outer match wins, outer fallback works,
+  true same-scope ambiguity still refuses, and unknown columns stay gaps.
 
 ## Profiles And Fixtures
 

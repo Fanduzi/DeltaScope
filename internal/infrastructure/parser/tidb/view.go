@@ -468,6 +468,9 @@ func viewDefinition(node ast.StmtNode, sql string, selectStart, offsetBase int, 
 			Output: field.AsName.L, Offset: offset, Expression: true,
 		})
 	}
+	if len(definition.Sources) > 0 && !viewDefinitionHasUpdatableColumn(definition.Bindings) {
+		definition.NonUpdatable = true
+	}
 	if definition.ShapeKnown && selectNode.Where != nil {
 		collector := &viewReferenceCollector{sql: sql, start: selectStart, locations: locations}
 		selectNode.Where.Accept(collector)
@@ -478,6 +481,15 @@ func viewDefinition(node ast.StmtNode, sql string, selectStart, offsetBase int, 
 		}
 	}
 	return definition
+}
+
+func viewDefinitionHasUpdatableColumn(bindings []spec.ViewColumnBinding) bool {
+	for _, binding := range bindings {
+		if binding.Star || !binding.Expression {
+			return true
+		}
+	}
+	return false
 }
 
 type viewReferenceCollector struct {

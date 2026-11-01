@@ -92,6 +92,7 @@ type ViewSnapshot struct {
 type ViewMetadata struct {
 	TargetIdentity      Table
 	Target              *TableSnapshot
+	TargetSchemaAbsent  bool
 	Targets             []TargetBinding `json:"-"`
 	Sources             []TargetBinding
 	Dependencies        []TargetBinding
@@ -118,6 +119,8 @@ type ViewLifecycleAssessment struct {
 	SecurityUnknown    bool
 	ReviewPrincipal    bool
 	DependencyLimit    bool
+	AlgorithmEffective string
+	AlgorithmFinal     string
 	AlgorithmWarn      bool
 	CheckInvalid       bool
 	CheckRequired      []string
@@ -179,6 +182,8 @@ func AssessViewLifecycle(statement Statement) ViewLifecycleAssessment {
 		return assessDropView(statement, metadata)
 	}
 	switch {
+	case ddl.Operation == DDLOperationCreateView && metadata.TargetSchemaAbsent:
+		assessment.TargetInvalid = true
 	case len(metadata.Targets) > 0 && metadata.Targets[0].NotView && ddl.Operation == DDLOperationAlterView:
 		assessment.TargetInvalid = true
 	case metadata.Target == nil:
@@ -206,14 +211,26 @@ func AssessViewLifecycle(statement Statement) ViewLifecycleAssessment {
 		(ddl.Operation != DDLOperationAlterView || !assessment.TargetInvalid || ddl.View.SecurityExplicit)
 	definition := ddl.View.Definition
 	if statement.Dialect == DialectMySQL {
-		assessment.AlgorithmWarn = ddl.View.AlgorithmExplicit &&
-			(ddl.View.Algorithm == "temptable" || ddl.View.Algorithm == "merge" && definition != nil && definition.NonMergeable)
-		if ddl.View.CheckExplicit {
-			effectiveAlgorithm := ddl.View.Algorithm
-			if ddl.Operation == DDLOperationAlterView && (!ddl.View.AlgorithmExplicit || effectiveAlgorithm == "undefined") &&
-				metadata.Target != nil && metadata.Target.View != nil {
+		effectiveAlgorithm := ""
+		if ddl.View.AlgorithmExplicit && (ddl.Operation == DDLOperationCreateView || ddl.View.Algorithm != "undefined") {
+			effectiveAlgorithm = ddl.View.Algorithm
+		}
+		if effectiveAlgorithm == "" {
+			if ddl.Operation == DDLOperationCreateView {
+				effectiveAlgorithm = "undefined"
+			} else if metadata.Target != nil && metadata.Target.View != nil {
 				effectiveAlgorithm = metadata.Target.View.Algorithm
 			}
+		}
+		finalAlgorithm := effectiveAlgorithm
+		mergeFallback := effectiveAlgorithm == "merge" && definition != nil && definition.NonMergeable
+		if mergeFallback {
+			finalAlgorithm = "undefined"
+		}
+		assessment.AlgorithmEffective = effectiveAlgorithm
+		assessment.AlgorithmFinal = finalAlgorithm
+		assessment.AlgorithmWarn = ddl.View.AlgorithmExplicit && ddl.View.Algorithm == "temptable" || mergeFallback
+		if ddl.View.CheckExplicit {
 			if effectiveAlgorithm == "temptable" || definition != nil && definition.NonUpdatable {
 				assessment.CheckInvalid = true
 			} else if definition != nil && definition.ShapeKnown && len(metadata.Sources) == 1 {

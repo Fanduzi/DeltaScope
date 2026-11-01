@@ -6,8 +6,9 @@ Application orchestration for parsing and, later, evaluating SQL audit requests.
 
 | File | Responsibility |
 |------|---------------|
-| batch_state_view.go | Projects view target/source facts and dependency checks from ordered entries, freezes visible star outputs as names, applies view options and ordered view drops, bounds traversal, and conservatively joins uncertain view attributes |
+| batch_state_view.go | Projects view target/source facts, ordered target-schema absence, dependency checks, static updatability and effective algorithm facts from ordered entries; freezes visible star outputs as names, applies view options and ordered view drops, bounds traversal, and conservatively joins uncertain view attributes |
 | batch_state_t18_first_test.go | Verifies first-path view projections, refusal preservation and policy-independent state |
+| batch_state_t18r1_test.go | Verifies T18-R1 view lifecycle corrections: dropped-schema CREATE refusal, static CHECK OPTION refusal, inherited MERGE fallback, and nearest-outer correlated scope resolution |
 | parse.go | Normalizes one leading UTF-8 BOM, parses bounded top-level statement slices independently by dialect, and translates successful locations from each slice so failed text cannot capture a valid sibling's source match |
 | statement_boundary.go | Splits top-level SQL only at semicolons outside supported dialect strings, quoted identifiers, comments, and PostgreSQL dollar-quoted bodies (including Unicode identifier tags) while distinguishing dollar signs inside unquoted identifiers; it does not infer statement semantics |
 | parse_pg.go | Implements PostgreSQL parsing when built with the `postgresql` tag |

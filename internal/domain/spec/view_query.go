@@ -67,7 +67,7 @@ func (e *viewQueryEvaluator) require(fact string) {
 	e.result.required = appendViewFact(e.result.required, fact)
 }
 
-func (e *viewQueryEvaluator) evaluate(query *ViewQuery, outer []viewQueryRelation, depth int) viewQueryResult {
+func (e *viewQueryEvaluator) evaluate(query *ViewQuery, outer [][]viewQueryRelation, depth int) viewQueryResult {
 	if query == nil {
 		return viewQueryResult{}
 	}
@@ -165,7 +165,7 @@ func (e *viewQueryEvaluator) evaluate(query *ViewQuery, outer []viewQueryRelatio
 	if e.freeze {
 		query.Bindings = frozen
 	}
-	correlated := append(append([]viewQueryRelation(nil), relations...), outer...)
+	correlated := append([][]viewQueryRelation{relations}, outer...)
 	for _, subquery := range query.Subqueries {
 		e.evaluate(subquery, correlated, depth+1)
 	}
@@ -223,58 +223,79 @@ func viewQueryMatches(binding ViewColumnBinding, relation viewQueryRelation) boo
 	return true
 }
 
-func (e *viewQueryEvaluator) resolveColumn(binding ViewColumnBinding, local, outer []viewQueryRelation, outputs []ViewColumnBinding) {
+type viewScopeResolution int
+
+const (
+	viewScopeContinue viewScopeResolution = iota
+	viewScopeResolved
+	viewScopeInvalid
+)
+
+func (e *viewQueryEvaluator) resolveColumn(binding ViewColumnBinding, local []viewQueryRelation, outer [][]viewQueryRelation, outputs []ViewColumnBinding) {
 	if binding.Expression || binding.Star {
 		return
 	}
-	matched := 0
-	firstRoot := -1
-	unknown, unknownColumns, missing, qualified := false, false, false, false
-	for _, relation := range local {
-		if !viewQueryMatches(binding, relation) {
-			continue
-		}
-		qualified = true
-		if firstRoot < 0 {
-			firstRoot = relation.root
-		}
-		switch {
-		case relation.missing:
-			missing = true
-		case !relation.columnsKnown:
-			unknown = true
-			unknownColumns = unknownColumns || relation.columnsUnknown
-		default:
-			for _, column := range relation.columns {
-				if strings.EqualFold(column.Name, binding.Column) {
-					matched++
-					break
+	resolve := func(relations []viewQueryRelation, allowOutput bool) viewScopeResolution {
+		matched := 0
+		firstRoot := -1
+		qualified := binding.Table != "" || binding.Schema != ""
+		candidates, unknown, unknownColumns, missing := false, false, false, false
+		for _, relation := range relations {
+			if !viewQueryMatches(binding, relation) {
+				continue
+			}
+			candidates = true
+			if firstRoot < 0 {
+				firstRoot = relation.root
+			}
+			switch {
+			case relation.missing:
+				missing = true
+			case !relation.columnsKnown:
+				unknown = true
+				unknownColumns = unknownColumns || relation.columnsUnknown
+			default:
+				for _, column := range relation.columns {
+					if strings.EqualFold(column.Name, binding.Column) {
+						matched++
+						break
+					}
 				}
 			}
 		}
-	}
-	if matched > 1 {
-		e.invalid(firstRoot, binding.Offset)
-		return
-	}
-	if unknownColumns {
-		e.require("view.columns")
-	}
-	if matched == 1 || unknown || missing {
-		return
-	}
-	if binding.OutputReference && binding.Table == "" && binding.Schema == "" {
-		for _, output := range outputs {
-			if output.Output != "" && strings.EqualFold(output.Output, binding.Column) {
-				return
+		if matched > 1 {
+			e.invalid(firstRoot, binding.Offset)
+			return viewScopeInvalid
+		}
+		if unknownColumns {
+			e.require("view.columns")
+		}
+		if matched == 1 || unknown || missing {
+			return viewScopeResolved
+		}
+		if allowOutput && binding.OutputReference && !qualified {
+			for _, output := range outputs {
+				if output.Output != "" && strings.EqualFold(output.Output, binding.Column) {
+					return viewScopeResolved
+				}
 			}
 		}
+		if candidates && qualified {
+			e.invalid(firstRoot, binding.Offset)
+			return viewScopeInvalid
+		}
+		return viewScopeContinue
 	}
-	if (!qualified || binding.Table == "" && binding.Schema == "") && len(outer) > 0 {
-		e.resolveColumn(binding, outer, nil, outputs)
+	if status := resolve(local, true); status != viewScopeContinue {
 		return
 	}
-	if firstRoot < 0 && len(local) > 0 {
+	for _, frame := range outer {
+		if status := resolve(frame, false); status != viewScopeContinue {
+			return
+		}
+	}
+	firstRoot := -1
+	if len(local) > 0 {
 		firstRoot = local[0].root
 	}
 	e.invalid(firstRoot, binding.Offset)

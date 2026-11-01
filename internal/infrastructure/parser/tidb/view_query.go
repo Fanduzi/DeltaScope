@@ -172,6 +172,9 @@ func (b *viewQueryBuilder) selectQuery(query *spec.ViewQuery, node *ast.SelectSt
 		}
 		query.Bindings = append(query.Bindings, spec.ViewColumnBinding{Output: field.AsName.L, Expression: true, Offset: offset})
 	}
+	if len(query.Sources) > 0 && !viewDefinitionHasUpdatableColumn(query.Bindings) {
+		query.NonUpdatable = true
+	}
 	if node.Where != nil {
 		b.addExpression(query, node.Where, scope, depth, -1, false, "WHERE")
 	}
@@ -197,6 +200,9 @@ func (b *viewQueryBuilder) selectQuery(query *spec.ViewQuery, node *ast.SelectSt
 func (b *viewQueryBuilder) addSource(query *spec.ViewQuery, source ast.ResultSetNode, scope map[string]*spec.ViewQuery, depth int) {
 	switch n := source.(type) {
 	case *ast.Join:
+		if n.Right != nil && (n.Tp == ast.LeftJoin || n.Tp == ast.RightJoin) {
+			query.NonUpdatable = true
+		}
 		if n.Left != nil {
 			b.addSource(query, n.Left, scope, depth)
 		}
