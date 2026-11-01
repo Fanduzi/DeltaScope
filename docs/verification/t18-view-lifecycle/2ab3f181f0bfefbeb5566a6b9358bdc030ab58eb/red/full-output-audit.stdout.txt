@@ -1,0 +1,6 @@
+=== RUN   TestT18FullOutputProjectionAndRefusal
+    batch_state_t18_first_test.go:210: explicit output was not projected: &spec.TableSnapshot{Schema:"g", Exists:true, Table:(*spec.Table)(0x45623381c3c0), RelationKind:"view", View:(*spec.ViewSnapshot)(0x456233822120), Columns:[]spec.Column(nil), PrimaryKey:(*spec.Index)(nil), Indexes:[]spec.Index(nil), Constraints:[]spec.Constraint(nil), Options:map[string]string(nil), PrimaryKeyIsHandle:false, PrimaryKeyHandleUnknown:false, PrimaryKeyClustered:false, PrimaryKeyClusteredUnknown:false, PrimaryKeyUnknown:false, IndexesUnknown:false, ConstraintsUnknown:false, IndexOrderCatalog:false, IndexNamesUnknown:false, Partitioned:(*bool)(nil), PartitionType:(*string)(nil), PartitionNames:[]string(nil), PartitionDescriptions:[]string(nil), PartitionDefs:[]spec.PartitionDef(nil), Subpartitioned:false, Temporary:false, GlobalTemporary:false, ColumnsTailUnknown:false, ReferencedBy:[]spec.Table(nil), ReferencedByUnknown:true}
+--- FAIL: TestT18FullOutputProjectionAndRefusal (0.00s)
+FAIL
+FAIL	github.com/Fanduzi/DeltaScope/internal/application/audit	0.569s
+FAIL

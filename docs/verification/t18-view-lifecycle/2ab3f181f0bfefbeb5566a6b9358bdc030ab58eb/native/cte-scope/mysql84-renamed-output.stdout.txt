@@ -1,0 +1,8 @@
+--------------
+CREATE VIEW renamed_v AS WITH c(x) AS (SELECT id FROM t) SELECT x FROM c
+--------------
+
+--------------
+SHOW WARNINGS
+--------------
+

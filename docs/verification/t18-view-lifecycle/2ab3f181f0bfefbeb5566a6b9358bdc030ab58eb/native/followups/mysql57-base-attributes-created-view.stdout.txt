@@ -1,0 +1,6 @@
+--------------
+SHOW CREATE VIEW t18f2_7.new_v
+--------------
+
+View	Create View	character_set_client	collation_connection
+new_v	CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `t18f2_7`.`new_v` AS select `t18f2_7`.`attrs`.`id` AS `id`,`t18f2_7`.`attrs`.`payload` AS `payload` from `t18f2_7`.`attrs`	latin1	latin1_swedish_ci

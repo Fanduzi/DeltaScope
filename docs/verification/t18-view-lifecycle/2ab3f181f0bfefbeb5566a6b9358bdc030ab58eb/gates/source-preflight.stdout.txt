@@ -1,0 +1,6 @@
+product path hashes checked: 96
+T16 sha256 4a0950500bcc6a4287e598e583f822cf91a8f8954bca7d3c793515628bc8c7fb base byte-equal True
+T17 sha256 d308b28f791527a9ca853d669cfae9edcbc1db0b951ed999732eeba61578714c base byte-equal True
+T18 sha256 fef55d43bff8f0aa90e06fc55655afedbd6bf448a06e5ecfb2edee5d423ad3ac
+foreign untracked paths match prestage: True
+HEAD and tracked/index clean; preflight passed

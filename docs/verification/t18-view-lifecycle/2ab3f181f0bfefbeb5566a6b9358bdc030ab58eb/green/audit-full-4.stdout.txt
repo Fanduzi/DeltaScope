@@ -1,0 +1,51 @@
+SQL Corpus Supported-Rule Coverage Inventory
+policy_rule_ids=461
+supported_rule_dialect_targets=736
+covered_rule_dialect_targets=718
+coverage_percent=97.6
+expected_yaml_files_total=324
+expected_yaml_files_by_dialect=mysql:50 tidb:44 postgresql:230
+deferred_rule_ids=1
+deferred=ddl.pg.alter.add_column.non_null_default.rewrite.warn
+missing_rule_dialect_targets=18
+missing=ddl.view.algorithm.warn@mysql
+missing=ddl.view.algorithm.warn@tidb
+missing=ddl.view.algorithm.warn@postgresql
+missing=ddl.view.check_option.valid@mysql
+missing=ddl.view.check_option.valid@tidb
+missing=ddl.view.check_option.valid@postgresql
+missing=ddl.view.options.ignored.warn@mysql
+missing=ddl.view.options.ignored.warn@tidb
+missing=ddl.view.options.ignored.warn@postgresql
+missing=ddl.view.security.definer.warn@mysql
+missing=ddl.view.security.definer.warn@tidb
+missing=ddl.view.security.definer.warn@postgresql
+missing=ddl.view.source.valid@mysql
+missing=ddl.view.source.valid@tidb
+missing=ddl.view.source.valid@postgresql
+missing=ddl.view.target.valid@mysql
+missing=ddl.view.target.valid@tidb
+missing=ddl.view.target.valid@postgresql
+--- FAIL: TestSQLCorpusCoversSupportedRuleDialects (0.08s)
+    corpus_coverage_test.go:33: sql corpus missing supported rule coverage (18):
+        ddl.view.algorithm.warn@mysql
+        ddl.view.algorithm.warn@tidb
+        ddl.view.algorithm.warn@postgresql
+        ddl.view.check_option.valid@mysql
+        ddl.view.check_option.valid@tidb
+        ddl.view.check_option.valid@postgresql
+        ddl.view.options.ignored.warn@mysql
+        ddl.view.options.ignored.warn@tidb
+        ddl.view.options.ignored.warn@postgresql
+        ddl.view.security.definer.warn@mysql
+        ddl.view.security.definer.warn@tidb
+        ddl.view.security.definer.warn@postgresql
+        ddl.view.source.valid@mysql
+        ddl.view.source.valid@tidb
+        ddl.view.source.valid@postgresql
+        ddl.view.target.valid@mysql
+        ddl.view.target.valid@tidb
+        ddl.view.target.valid@postgresql
+FAIL
+FAIL	github.com/Fanduzi/DeltaScope/internal/application/audit	4.327s
+FAIL

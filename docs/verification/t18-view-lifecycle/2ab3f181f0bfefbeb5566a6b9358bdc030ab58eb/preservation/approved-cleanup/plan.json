@@ -1,0 +1,775 @@
+{
+  "snapshot_utc": "2026-11-01T10:38:22.008852+00:00",
+  "anonymous_unreferenced": [
+    "0a5f52bc0e2db67b6e7750b7e8b3a25c3f13a7e9043425ac3ad176553e0ef2cb",
+    "0a8609dd8a231194e8bf9dd8b983aeee132f77365d0e90c36e1c99f1b3acf0a0",
+    "0c4576cf4021a1d75cd6e10422b2f9352fb3e1f22a5e5ec0e32058d18918c72a",
+    "0eadf32ddd8bc5559d744f7a6f198d814cc1244f6de5cb3b905ee995c8eec1ad",
+    "0f619d540f3df4d7c9abb7a5fef13364a4eacac50079a7a52187272bc7323933",
+    "1b6ec4e28f5ae943bf9a3f8b2a5889679664a0f57729637b281986557e65dfe4",
+    "1cc1c94af06e4fbb78bb54fe315ae42bc6cff88b4c8b7dda89e03e0c43baac39",
+    "1d0cc43519550d9a84f74f85c2d3f9d319ed7d37ac20e738ce0dd0c24e796dd1",
+    "1dbf55e02e839288296d6607fabd2f269901d37144e7a983181b47ce6d5aab5f",
+    "2bd7607867e93b3588add772b6f9e0be8738ce1b606fbb5095b46c9101e9474b",
+    "2fa6af51fd3a65a26b2b29d2fd0e4bb689733040df0353680647f7aa2da9124b",
+    "3b78b1ab12fcf21d5a8bc3307bdba64d7a34edc21dcdfa35632270826a0f6102",
+    "3db24080a1a2d3a436af0fc5e7117f637eca96926414f50751a07013389343cd",
+    "03e738db82925fd7dfeee4bab9b253c914c2b2b13c9214e09fc872eadef456ae",
+    "4edf1da039b6fe0aaed8a5c0592f9ee25adda902c1421b6ab18fb9d9b97527a8",
+    "5b8576a470d6815a27852758d22373b7eb5c6c0b21f67f7c67f16fbb2add4c85",
+    "6cf749c963ec347195200dfbb6e03f1e474dd8d76fc6bd781bf19a37ec6c8349",
+    "6e07781e57d0302584c929b910861b40b43798df82e867ada4f7fc7f43d83792",
+    "6ebc5eb6706df6a296f0e10673bb1e98c2799dc108581efa9ed22d8e2fe0cc4e",
+    "6fc2dd1e409460b1928751a6cb1e69b5b471b5e5e8c761bf5ef46a693bd90d47",
+    "6fcbaa2cd3524e44f90f3a24d96580f5a8941499deb7ed31630191417202d0e2",
+    "06c3229bab018ded17f96b4d17ab54779c0422baa68b2796689ff1a4a038093c",
+    "06e43608b97dedcf3aa34f1d83b8798edcb018ea98e6a96d1d295a643cd652b5",
+    "7c4499b759079a8f6e5a643c218eada6ae3c219f146ab116a870dee3c890aa8d",
+    "7d4a4b67af29b58afc9baed015be2ffaa5d7c8bebd0892062685d999a008a2f7",
+    "7f286af22565352033ce4e01cef1f668c2b14471973a7a6aef4fb556593cefc4",
+    "7fe96a6b7d96b789e04fd03e83120003e859d7fbfeb12a13b0ff6dcc66844130",
+    "8cef219aa3cde7344e2babe3adac0fa9e2f5edd311ef841bf8da3824e84a058c",
+    "8eb676d2fd38e865b685cc912118c1c1ccba038695afe8a1ac9a88c8fefc704a",
+    "08ae7c0b1efe8f871622b2f089c891d2ed9f57554dfda102e5a2f41ab76cde05",
+    "9b7c48154e5d499cd7fd462f6b3bd5311699fa48fe124b8ef9d96ec8cbc8fd96",
+    "9d2c3db730f3ce61aa55c00a9f8aebc48649bc8b24b65ec0e5f2d37973deb267",
+    "9df5f961beeba3bc3cf2999325c4e499d66d8b9fb8f93340906587bcb3b9db0d",
+    "9f2c1eefe5cd801c1f3db3a0834614c9874112271c772d43a575fac7eb6161b4",
+    "12bd8541d430973e38cbb0d38ffd69d163aa367f0bf37d763f25764198a8cf50",
+    "14fbba7c4f086b34e5c4167bbce6dd10404c132937c7a9a4e2a9c68630f263c4",
+    "23a775c604fdaa3c48e4ca2bf674a14a38d217434d277036db7cc4d8d6b17ef8",
+    "39c4e988f0cf5369efe6f66117d98b95b9d7e060eebb398640a908a893f9da35",
+    "47b69b485aecea4f703c09f62de50a8f94a8ebb73357489e438ce36c48e29273",
+    "54aadbb8447a709409cbe7d676739ffa89e1cd9e77d19c7d8e6cdba6e2930f59",
+    "56b326cf9cc9cc6306dee81b8bd407f09d7da692840901e11306fb232a173cdb",
+    "57c6470f2d6dd12a38bb2f70907d8195de9d94ea0f3bbbd4f33df7e7ee2c004b",
+    "58b2919eef76b7e253d11bd1ddb8940d0fd2dd72f62caaab56728083db4b6230",
+    "74bb1aed26cb905cc73e76b392d2543edbce7bef095ad4dc2baf549223098d90",
+    "97d846c86202726d3ba7a6d97c462e31e8b07a4198957c51c55a637e25563e5e",
+    "99eb370b8151019c0d694d515f4785fb480dff1f6210a891dd5c7fce93ffa108",
+    "150c07ba55e62cadc9fd04abace47d4b7cbe6d3ce744e8a1b2e88d3aed1d76fe",
+    "229e3fddc9e9395fbd83002130a827d206126dec789191cd356fb6d3e256779c",
+    "258b2c8568f3a85128b64e879f0fef75c3e144e190b4e81665d9dd6d592ee34c",
+    "282d4712f51dcb708057b9d41805c416c0e25b5c266d654b03b0ea1431c33be9",
+    "368ef9d14d8da5d4bf7f0ff039656ebe3112c720c76c0756e633a02446a9d35d",
+    "440df949baaac55d96333164d7218b854020aa08a182d963396bb7430ccc6cb8",
+    "583ff4be7cbf8e7969582d694f2c442788e1835eddaa2e7f15609a762725818d",
+    "733c0725174353888c2357e18b2247dad5df245ddf334b0bf7824e4410f4d6f5",
+    "802b60d09897aadcb4ce1733e30b4825bff9b954e544776522b8f16ed43b9d57",
+    "810ac6fdefd54b6da269529418d01a6141cde5f29148c7abde23a872a12b7939",
+    "841aa2886decb15deef347523f2a08944e005abf85cd91e9f65f51e69da8db8f",
+    "885e3cd7b7a9076ba1e174f2d1538f25a5569e24ea814ea049e0ac875016d567",
+    "893b4b63ef81d13c4eefda3c525e0ae7e5e29b8708e0fc2c417ed4aaa2ac59e5",
+    "903fb5722f89253145f2a23e5598ed0a00f63d9eedbfdaf6331100162e66870e",
+    "0926d71f4a16d0f1a6f94627d8a968cd964ee660c7ebfd43793f07f1e99387f6",
+    "929de9d644d6546f5754fc11e1f69e79175a85dd5ed3945e289aee02471cc163",
+    "995cb1445725c79383e442c2564e3ce9b6a88c5475e2609833c06b13b386d010",
+    "2934d36ccf9e1a4fd1065cf260b3a9424a074bc3a241ff6cd20dcc68197a0f1a",
+    "3261f914fb6946951c0c5eabd03413bb0dd0aed9e734681892b52e69545c915f",
+    "4022a414b5d757809f384dcdf9031ad84e60400e0e8939c87ebb5750e4a193e8",
+    "4742ffdebebfc7cc530bd1661e3573bdae777fd17d250267861546e8af068c45",
+    "5572db81c5a6e7bf0a51ffe016c3b9f8fe4a3f26f71cd77f54aeb1797d62455e",
+    "6533db57968762f753e528d99de36f6c251c0534972c27578ece0f7b15c471e0",
+    "9893c18a5e52677dceb3cd57a2bc9611a9250bf1dc02d2cfd3d31f6cdf23af66",
+    "11702b22e535903612fe59e419140b58ed16246f925611da6afe7f1640e9bdb9",
+    "59668dc3af2ded4fd2ff03f49171326307e7685d8d472e4293980bb142c7d2c6",
+    "73602c593dab2ba02156095529489edea638d4eaf108ff304ffaba88f020c75b",
+    "428955f2dd089f15d76a03f20f9871de375b643a0a3af653dd0aa79e09b88d57",
+    "822797e0dfb9cc8ab58e896c8cd612d2f19c4a360de91d7b7a151e471c28b674",
+    "19701808d3c7cbed6cdc4d08c27397296ff14a907768feb4f260fde6cad9122f",
+    "92122211d0a114ae2dde83b570a350d7527c40c6da69d01caf27295b538bcfae",
+    "1006561779c851506a881a38d71f46c3fba768bf4b13a9b8b1534bdfc7ad4cab",
+    "afc1cdf9f0fd17c17733d0e7e14050288e678cfce8c9e49c2d4385ac5ecc056f",
+    "afe09a85dbdd337e8c2b7b716930099bb446e76311f77e4fe6680d27c1638cdc",
+    "b9c12f6c4a773f3c9a710d178ee18aa465ba935fa4e622abc07c252beddb7e80",
+    "b9fb47e8cd6fcac8d5479164b5dc926c31738a732a2a3e153b7d03346e035931",
+    "b439e86d83844592eb1f98965b62185b0b8f046018bfcda5cf5f9f6dd92dd226",
+    "b895e33dd6994539cad3215f8ed1ad3e48ce7e50599c9c46df2235f7e1505242",
+    "b321228df8b1dccfc706ad448bb41c113581affa2ee0274031f5ed2f6217bee6",
+    "ba2bfc4561c6692bec18418bffdfd2ce46bb3dc4172083fa1b369f177815187a",
+    "bb6957fcc84cc4e147eeed734fe7fc4c10e8353006deb8af70a09eb8eb4e702d",
+    "c4b8bac28d7050bda8224ff215b90418f75895687c88bbdff582ddf8e7e6e56f",
+    "c7d5fb468716ebc215f0270bf57ffb6755f34f9ff73f5b105611635d14bb6824",
+    "c27a4f03333b87df634cfc9989e9cf19eff185d78df2bb814db925c05b473e2d",
+    "c68ab3bbbda4f76dba4556f5d2b8bff7b3171dda75e3183e747fb892b4179c03",
+    "c115501d58b1e2acea5520e61201c9a8adba786df38708eadd93341a5b4955fd",
+    "c359036a214d503a44980915802c3219eb680f5f319f5c47a843fc5ba0713b0f",
+    "c9280558382e7e5ac4f6ccf2c57079a00b317794aa8bc6ee352551f423f3d8af",
+    "cbbb08a500fba5331650377923b3ed162f12d760a9731df9a1e56653a8586c0b",
+    "cce48f7efb4c5809e4d6dcb9995cc130f0a4c75de6c952fc161f920559842e16",
+    "cd9273860b2dee32b9f1b275972f532db0effc81753b94e8af1e043149f3f69e",
+    "d5e56470ab7abc098cc13ee31a6b24a24cbb2390b4050f17801c06097bf7b6a3",
+    "d33b53db06f2f421927d8f2d24fe055aad994f06789d6b06ced534c7427e0c5c",
+    "d27236bd697b3ae5871b8c2d6ecf2ac0df4e995e89489f10e4071c3750592086",
+    "daf4b96406d999ec745f4abf0a7580e21e1d642673322dadae3ed12db53b564f",
+    "dccbea0d32d0b9dde5f64691056c858f285d93fdc1af0047da6c2ac38a826ccd",
+    "de71ce71d0ab13294e05948315df1a6dc7c6066a1125dccaeca43bfd1c08fb62",
+    "dee1e0317a11b0c35ca72f847a89346b2fe5216be25e5e30deb64088c98bd296",
+    "e1b7b69c0aa5f7076bc526668b1d342ac6a3b3235c3951b5d6f3810c42f6d86a",
+    "e6b36c56b424e6bfad5a717858d14e8d53cdc4d13a05f7dc65aa4817428c8c02",
+    "e7f0d883d0627c5c8b00fa488ed243f5a43cb8f45eb2ddac3f32f9ceb9994d66",
+    "e9a5f9690b5f38273571cee0c19efd9842d9838fdaf7217de7302460c0ba6afc",
+    "e14e898997576d2e2c6c7be3a3f104d1f2d1a722d7c9b5ea27858b4553dfdbea",
+    "e68b95bda53324212358362cabac0c766d3682147eb1f5ff810386ab45fe3590",
+    "eac5783834acd39f3a2428f726454f61bd30896dfa7aed2f47ad177a1a33fdaf",
+    "ec442e9dfb0fa98fb416b56d96cd885bb3f0e2302d5f3c278938ec6e77f52b0b",
+    "ee30c451420c9230d21f594133dd52396320752fb2a99200281278ad9a770026",
+    "f0e2f5eca4918b1aa5629bc29b0d8dc2c165cb272c2237b19434f34d113755f8",
+    "f4e4280694a1ac3186b3f8717b9f9e478cdaa6baee73c9d04b9efb2cee8adbf7",
+    "f6afd5de6f0fd8d46a2485e8dbedde4ed129276108497c322a023361d3355972",
+    "f8d982745c3cffc658a94d7f434447f8ec7dccfd9f3ef7f48929e93e0db29672",
+    "f149612d5e0f8671d29ba1722b4a15330f2dcb3e98922db092da30355db40dbb",
+    "f268836b5cb0b446dde5cdf68511d75b6ef5765d143b8500b6e20824d8b7eec4",
+    "fa6ebad27bf859e5a82d6bc5fa87c7c54c51b311c5bd0bdbd37ff2dde7de509f",
+    "fa7dfcc9652e05a70f9814e5a5386d4e056cd27150756cdd93c870174bf13e4d",
+    "fb3858da745928db56220582455cddd483dfa84af1da01f54c82a160291237a3"
+  ],
+  "stopped_or_created_containers": [
+    {
+      "id": "1b14d51a56fe375924d3d06345fe0f4803840f1bfc573434da51568dd37f5c28",
+      "name": "isolated3-s3mock",
+      "status": "exited",
+      "created": "2026-11-01T08:14:25.609533839Z",
+      "image": "adobe/s3mock:latest",
+      "project": "binlog-isolated3",
+      "workdir": "/tmp/binlog-soak-isolated3.6swhou",
+      "volumes": [
+        "binlog-isolated3_s3mock-data"
+      ]
+    },
+    {
+      "id": "a2e40d618a5f47f8508d113672dba50548c83428a5726b0c884e294d08f9d10d",
+      "name": "isolated3-http503",
+      "status": "exited",
+      "created": "2026-11-01T08:14:25.606302839Z",
+      "image": "python:3.12-slim",
+      "project": "binlog-isolated3",
+      "workdir": "/tmp/binlog-soak-isolated3.6swhou",
+      "volumes": []
+    },
+    {
+      "id": "7d04d1afcf6d55ada796668ff08133584122873b738e79aeafe6de0e5f3e4f17",
+      "name": "isolated3-src-a",
+      "status": "exited",
+      "created": "2026-11-01T08:14:25.604439464Z",
+      "image": "mysql:8.0",
+      "project": "binlog-isolated3",
+      "workdir": "/tmp/binlog-soak-isolated3.6swhou",
+      "volumes": [
+        "binlog-isolated3_src-a-data"
+      ]
+    },
+    {
+      "id": "09ec0b80588409b5da8d8c384de4dde3104d18b0cfbfef050f2f9a9c5266cb98",
+      "name": "isolated3-restore",
+      "status": "exited",
+      "created": "2026-11-01T08:14:25.604128755Z",
+      "image": "mysql:8.0",
+      "project": "binlog-isolated3",
+      "workdir": "/tmp/binlog-soak-isolated3.6swhou",
+      "volumes": [
+        "40e52ba7a97589d4f2bf91fa53c5b5cbcfe6adfe5701be2d94395130737d188f"
+      ]
+    },
+    {
+      "id": "89e2df2a141895e697890ef56143243e9f52887ad4e8292e9652c177d3bed685",
+      "name": "isolated3-src-b",
+      "status": "exited",
+      "created": "2026-11-01T08:14:25.603571047Z",
+      "image": "mysql:8.0",
+      "project": "binlog-isolated3",
+      "workdir": "/tmp/binlog-soak-isolated3.6swhou",
+      "volumes": [
+        "binlog-isolated3_src-b-data"
+      ]
+    },
+    {
+      "id": "709c320dc9d0f38cff0677c3c31db1ba1d7053b5537c63bc5a4d3f8d8bd0f82d",
+      "name": "isolated3-meta",
+      "status": "exited",
+      "created": "2026-11-01T08:14:25.603549547Z",
+      "image": "mysql:8.0",
+      "project": "binlog-isolated3",
+      "workdir": "/tmp/binlog-soak-isolated3.6swhou",
+      "volumes": [
+        "binlog-isolated3_meta-data"
+      ]
+    },
+    {
+      "id": "8ee0b838bc00cee7bc0a9ea796a37f47db2718fcda9517456af7c2f81497252f",
+      "name": "isolated3-proxy",
+      "status": "exited",
+      "created": "2026-11-01T08:14:25.595330214Z",
+      "image": "binlog-isolated-proxy:local-1793501447-92702",
+      "project": "binlog-isolated3",
+      "workdir": "/tmp/binlog-soak-isolated3.6swhou",
+      "volumes": []
+    },
+    {
+      "id": "28b15afe51f88e8e2305980b84bb964fdd6120dfad993777bf39b35532d84516",
+      "name": "isolated2-w1",
+      "status": "created",
+      "created": "2026-11-01T06:43:17.915957669Z",
+      "image": "binlog-isolated-app:local-1793501447-92702",
+      "project": "binlog-isolated2",
+      "workdir": "/tmp/binlog-soak-isolated2.sCxoee",
+      "volumes": [
+        "binlog-isolated2_w1-data"
+      ]
+    },
+    {
+      "id": "457eee7bc6283672c381bdfe8ee3ef14a005b0b112ee196140d01e060043eed6",
+      "name": "isolated2-w2",
+      "status": "created",
+      "created": "2026-11-01T06:43:17.910262044Z",
+      "image": "binlog-isolated-app:local-1793501447-92702",
+      "project": "binlog-isolated2",
+      "workdir": "/tmp/binlog-soak-isolated2.sCxoee",
+      "volumes": [
+        "binlog-isolated2_w2-data"
+      ]
+    },
+    {
+      "id": "348b0a439d0a352c3e68a95632581ee06e67ab6c813af3273aeb661dc3013a81",
+      "name": "isolated2-cp",
+      "status": "created",
+      "created": "2026-11-01T06:43:17.859580835Z",
+      "image": "binlog-isolated-app:local-1793501447-92702",
+      "project": "binlog-isolated2",
+      "workdir": "/tmp/binlog-soak-isolated2.sCxoee",
+      "volumes": [
+        "binlog-isolated2_cp-data"
+      ]
+    },
+    {
+      "id": "2c11609d37203a388f1d8eab62e1dcc1b8c8ab8b6d5863de4c3102b7ec4dcda2",
+      "name": "isolated2-s3mock",
+      "status": "exited",
+      "created": "2026-11-01T06:37:35.050425469Z",
+      "image": "adobe/s3mock:latest",
+      "project": "binlog-isolated2",
+      "workdir": "/tmp/binlog-soak-isolated2.sCxoee",
+      "volumes": [
+        "binlog-isolated2_s3mock-data"
+      ]
+    },
+    {
+      "id": "dd4126d0cdc545b03808e85172347bee8c0c986b5dda0540ba2e4b6bb5647f32",
+      "name": "isolated2-http503",
+      "status": "exited",
+      "created": "2026-11-01T06:37:35.048490469Z",
+      "image": "python:3.12-slim",
+      "project": "binlog-isolated2",
+      "workdir": "/tmp/binlog-soak-isolated2.sCxoee",
+      "volumes": []
+    },
+    {
+      "id": "3760bbd5d2001944370c58e3d5d3d85f7dc743c16f90f60a589654754d8a922b",
+      "name": "isolated2-meta",
+      "status": "exited",
+      "created": "2026-11-01T06:37:35.046988302Z",
+      "image": "mysql:8.0",
+      "project": "binlog-isolated2",
+      "workdir": "/tmp/binlog-soak-isolated2.sCxoee",
+      "volumes": [
+        "binlog-isolated2_meta-data"
+      ]
+    },
+    {
+      "id": "3a5a048e4915d4d06184b6e09fd1bbc22d0720fbdeb4723792e63b77966979df",
+      "name": "isolated2-src-a",
+      "status": "exited",
+      "created": "2026-11-01T06:37:35.046859219Z",
+      "image": "mysql:8.0",
+      "project": "binlog-isolated2",
+      "workdir": "/tmp/binlog-soak-isolated2.sCxoee",
+      "volumes": [
+        "binlog-isolated2_src-a-data"
+      ]
+    },
+    {
+      "id": "2b3ce3018c1344694de00b080e4faf8a49fc3632dad3d267ad800a2a972b192a",
+      "name": "isolated2-restore",
+      "status": "exited",
+      "created": "2026-11-01T06:37:35.04622901Z",
+      "image": "mysql:8.0",
+      "project": "binlog-isolated2",
+      "workdir": "/tmp/binlog-soak-isolated2.sCxoee",
+      "volumes": [
+        "22d07f71cfe319a54fd11564b8ae379128131a297c0e6ee90c1572343396a52c"
+      ]
+    },
+    {
+      "id": "1bdf5934beb0a5db2a436a41dd782630c6ae048cf86bdc51104fb24b816166ee",
+      "name": "isolated2-src-b",
+      "status": "exited",
+      "created": "2026-11-01T06:37:35.046191969Z",
+      "image": "mysql:8.0",
+      "project": "binlog-isolated2",
+      "workdir": "/tmp/binlog-soak-isolated2.sCxoee",
+      "volumes": [
+        "binlog-isolated2_src-b-data"
+      ]
+    },
+    {
+      "id": "c7d00845cfd8cd779e2f87ef2ce01a45562c3f9e41f7712f6c20568e8d679397",
+      "name": "isolated2-proxy",
+      "status": "exited",
+      "created": "2026-11-01T06:37:35.032476802Z",
+      "image": "binlog-isolated-proxy:local-1793501447-92702",
+      "project": "binlog-isolated2",
+      "workdir": "/tmp/binlog-soak-isolated2.sCxoee",
+      "volumes": []
+    },
+    {
+      "id": "671f3b702ffe9a2e8cd5b02f86dd90f24897362f9888d972af7100c2e244d798",
+      "name": "isolated-s3mock",
+      "status": "exited",
+      "created": "2026-11-01T06:31:20.933032379Z",
+      "image": "adobe/s3mock:latest",
+      "project": "binlog-isolated",
+      "workdir": "/tmp/binlog-soak-offline-build.QFIeFL",
+      "volumes": [
+        "binlog-isolated_s3mock-data"
+      ]
+    },
+    {
+      "id": "e0dfff626c2949c35d9e2998c4e208855c75be2f8f1a96e909aaf1141b69a78e",
+      "name": "isolated-http503",
+      "status": "exited",
+      "created": "2026-11-01T06:31:20.930044629Z",
+      "image": "python:3.12-slim",
+      "project": "binlog-isolated",
+      "workdir": "/tmp/binlog-soak-offline-build.QFIeFL",
+      "volumes": []
+    },
+    {
+      "id": "bd32cfbd9c5eaba5f80bfeb9b9aae84048ce4932e521ca600b0621be009a0d23",
+      "name": "isolated-restore",
+      "status": "exited",
+      "created": "2026-11-01T06:31:20.928302129Z",
+      "image": "mysql:8.0",
+      "project": "binlog-isolated",
+      "workdir": "/tmp/binlog-soak-offline-build.QFIeFL",
+      "volumes": [
+        "4ca7f63aa7719ebe8857bd1906a6168d10180fd026d8f504c0578484bf75709c"
+      ]
+    },
+    {
+      "id": "2085ef2b12f3f3cd4119ac176707ca8f2b2975a203ad3a562b75a752f3aa3bca",
+      "name": "isolated-src-b",
+      "status": "exited",
+      "created": "2026-11-01T06:31:20.927976545Z",
+      "image": "mysql:8.0",
+      "project": "binlog-isolated",
+      "workdir": "/tmp/binlog-soak-offline-build.QFIeFL",
+      "volumes": [
+        "binlog-isolated_src-b-data"
+      ]
+    },
+    {
+      "id": "e2604b17591706d108ef7b5f6ea59b8fc4ab45d421a81a1be908c044584fb571",
+      "name": "isolated-meta",
+      "status": "exited",
+      "created": "2026-11-01T06:31:20.927649045Z",
+      "image": "mysql:8.0",
+      "project": "binlog-isolated",
+      "workdir": "/tmp/binlog-soak-offline-build.QFIeFL",
+      "volumes": [
+        "binlog-isolated_meta-data"
+      ]
+    },
+    {
+      "id": "b65eeef3b26f8129fa1fe8b659dc9b338f4cdc14f515d94a11529970eeb5c1d8",
+      "name": "isolated-src-a",
+      "status": "exited",
+      "created": "2026-11-01T06:31:20.927216545Z",
+      "image": "mysql:8.0",
+      "project": "binlog-isolated",
+      "workdir": "/tmp/binlog-soak-offline-build.QFIeFL",
+      "volumes": [
+        "binlog-isolated_src-a-data"
+      ]
+    },
+    {
+      "id": "09215db9289b5cda5564aeb5eaf173741d652a2dcb7ebe364dde3717bc903b03",
+      "name": "isolated-proxy",
+      "status": "exited",
+      "created": "2026-11-01T06:31:20.920520254Z",
+      "image": "binlog-isolated-proxy:local-1793501447-92702",
+      "project": "binlog-isolated",
+      "workdir": "/tmp/binlog-soak-offline-build.QFIeFL",
+      "volumes": []
+    },
+    {
+      "id": "4de3ed6bb1788a26bcc2b518e13b6205e968ca55bcf67016ae27afe58a493fc2",
+      "name": "chub-mysql-lab",
+      "status": "exited",
+      "created": "2026-09-28T15:15:45.651557797Z",
+      "image": "mysql:8.0",
+      "project": "",
+      "workdir": "",
+      "volumes": [
+        "52e5830a4ae4f273a2182e3f0211aa90c5949d5f2e6be724a90dbc670b4698f1"
+      ]
+    },
+    {
+      "id": "0e61fad1c0eaea6c3a3a3745480ca41ba437c0906294df4fd137b8a925285d5a",
+      "name": "chub-pg-lab",
+      "status": "exited",
+      "created": "2026-09-28T15:15:44.231989963Z",
+      "image": "postgres:17",
+      "project": "",
+      "workdir": "",
+      "volumes": [
+        "8421fef8e9028cac4ddec6f5468235c93dade0c998ef800ffcc61613bc278fef"
+      ]
+    }
+  ],
+  "their_exclusive_volumes": [
+    {
+      "name": "4ca7f63aa7719ebe8857bd1906a6168d10180fd026d8f504c0578484bf75709c",
+      "anonymous": true,
+      "project": "",
+      "refs": [
+        "isolated-restore"
+      ]
+    },
+    {
+      "name": "22d07f71cfe319a54fd11564b8ae379128131a297c0e6ee90c1572343396a52c",
+      "anonymous": true,
+      "project": "",
+      "refs": [
+        "isolated2-restore"
+      ]
+    },
+    {
+      "name": "40e52ba7a97589d4f2bf91fa53c5b5cbcfe6adfe5701be2d94395130737d188f",
+      "anonymous": true,
+      "project": "",
+      "refs": [
+        "isolated3-restore"
+      ]
+    },
+    {
+      "name": "52e5830a4ae4f273a2182e3f0211aa90c5949d5f2e6be724a90dbc670b4698f1",
+      "anonymous": true,
+      "project": "",
+      "refs": [
+        "chub-mysql-lab"
+      ]
+    },
+    {
+      "name": "8421fef8e9028cac4ddec6f5468235c93dade0c998ef800ffcc61613bc278fef",
+      "anonymous": true,
+      "project": "",
+      "refs": [
+        "chub-pg-lab"
+      ]
+    },
+    {
+      "name": "binlog-isolated2_cp-data",
+      "anonymous": false,
+      "project": "binlog-isolated2",
+      "refs": [
+        "isolated2-cp"
+      ]
+    },
+    {
+      "name": "binlog-isolated2_meta-data",
+      "anonymous": false,
+      "project": "binlog-isolated2",
+      "refs": [
+        "isolated2-meta"
+      ]
+    },
+    {
+      "name": "binlog-isolated2_s3mock-data",
+      "anonymous": false,
+      "project": "binlog-isolated2",
+      "refs": [
+        "isolated2-s3mock"
+      ]
+    },
+    {
+      "name": "binlog-isolated2_src-a-data",
+      "anonymous": false,
+      "project": "binlog-isolated2",
+      "refs": [
+        "isolated2-src-a"
+      ]
+    },
+    {
+      "name": "binlog-isolated2_src-b-data",
+      "anonymous": false,
+      "project": "binlog-isolated2",
+      "refs": [
+        "isolated2-src-b"
+      ]
+    },
+    {
+      "name": "binlog-isolated3_meta-data",
+      "anonymous": false,
+      "project": "binlog-isolated3",
+      "refs": [
+        "isolated3-meta"
+      ]
+    },
+    {
+      "name": "binlog-isolated3_s3mock-data",
+      "anonymous": false,
+      "project": "binlog-isolated3",
+      "refs": [
+        "isolated3-s3mock"
+      ]
+    },
+    {
+      "name": "binlog-isolated3_src-a-data",
+      "anonymous": false,
+      "project": "binlog-isolated3",
+      "refs": [
+        "isolated3-src-a"
+      ]
+    },
+    {
+      "name": "binlog-isolated3_src-b-data",
+      "anonymous": false,
+      "project": "binlog-isolated3",
+      "refs": [
+        "isolated3-src-b"
+      ]
+    },
+    {
+      "name": "binlog-isolated_meta-data",
+      "anonymous": false,
+      "project": "binlog-isolated",
+      "refs": [
+        "isolated-meta"
+      ]
+    },
+    {
+      "name": "binlog-isolated_s3mock-data",
+      "anonymous": false,
+      "project": "binlog-isolated",
+      "refs": [
+        "isolated-s3mock"
+      ]
+    },
+    {
+      "name": "binlog-isolated_src-a-data",
+      "anonymous": false,
+      "project": "binlog-isolated",
+      "refs": [
+        "isolated-src-a"
+      ]
+    },
+    {
+      "name": "binlog-isolated_src-b-data",
+      "anonymous": false,
+      "project": "binlog-isolated",
+      "refs": [
+        "isolated-src-b"
+      ]
+    }
+  ],
+  "preserve_containers": [
+    {
+      "id": "ce27014cffc9fa99c8495d43610f3c358362b2d6ab98527010ef22edad93a993",
+      "name": "isolated2-keeper-w1",
+      "status": "running",
+      "created": "2026-11-01T06:43:17.874194335Z",
+      "image": "alpine:3.20",
+      "project": "binlog-isolated2",
+      "workdir": "/tmp/binlog-soak-isolated2.sCxoee",
+      "volumes": [
+        "binlog-isolated2_w1-data"
+      ]
+    },
+    {
+      "id": "c4de72ce6ab99d9a61b7b64c7ea7d107c7c2e13e8283979b96b32b0d9df02f62",
+      "name": "isolated2-keeper-w2",
+      "status": "running",
+      "created": "2026-11-01T06:43:17.873706794Z",
+      "image": "alpine:3.20",
+      "project": "binlog-isolated2",
+      "workdir": "/tmp/binlog-soak-isolated2.sCxoee",
+      "volumes": [
+        "binlog-isolated2_w2-data"
+      ]
+    },
+    {
+      "id": "f6543da395ceaa492781d733621f65bac82b2671e9221086140e22486c2f4233",
+      "name": "soak-w1",
+      "status": "running",
+      "created": "2026-10-31T13:07:36.853635084Z",
+      "image": "binlog-soak-w1",
+      "project": "binlog-soak",
+      "workdir": "/Users/fan/GolangProjects/BinlogServer/.worktrees/h1/deploy/soak",
+      "volumes": [
+        "binlog-soak_w1-data"
+      ]
+    },
+    {
+      "id": "c9c96f1abeca9a834976a156b4fff8dc151a5890b6c80467e25e6006463c65a0",
+      "name": "soak-w2",
+      "status": "running",
+      "created": "2026-10-31T13:07:36.853328709Z",
+      "image": "binlog-soak-w2",
+      "project": "binlog-soak",
+      "workdir": "/Users/fan/GolangProjects/BinlogServer/.worktrees/h1/deploy/soak",
+      "volumes": [
+        "binlog-soak_w2-data"
+      ]
+    },
+    {
+      "id": "ab2a60e0735220b08dac6e59864b1b076857c68fc69e7bfadbf17a5c0e15f1bb",
+      "name": "soak-cp",
+      "status": "running",
+      "created": "2026-10-31T13:07:36.821104918Z",
+      "image": "binlog-soak-cp",
+      "project": "binlog-soak",
+      "workdir": "/Users/fan/GolangProjects/BinlogServer/.worktrees/h1/deploy/soak",
+      "volumes": [
+        "binlog-soak_cp-data"
+      ]
+    },
+    {
+      "id": "b7275f4d15f5bd4e94d540682acb87dd7d5ae2a202f44db296c6236a7013d33f",
+      "name": "soak-s3mock",
+      "status": "running",
+      "created": "2026-10-31T13:05:21.263815883Z",
+      "image": "adobe/s3mock:latest",
+      "project": "binlog-soak",
+      "workdir": "/Users/fan/GolangProjects/BinlogServer/.worktrees/h1/deploy/soak",
+      "volumes": [
+        "binlog-soak_s3mock-data"
+      ]
+    },
+    {
+      "id": "4d0e560d0ff2464267882d57e680606e49b9068d5bd3179f910d019669646ecf",
+      "name": "soak-http503",
+      "status": "running",
+      "created": "2026-10-31T13:05:21.26154005Z",
+      "image": "python:3.12-slim",
+      "project": "binlog-soak",
+      "workdir": "/Users/fan/GolangProjects/BinlogServer/.worktrees/h1/deploy/soak",
+      "volumes": []
+    },
+    {
+      "id": "40d43ddea7f1afd7dfc201a722bf5fdc6510882970e227494c6ad93424724e53",
+      "name": "soak-meta",
+      "status": "running",
+      "created": "2026-10-31T13:05:21.260174258Z",
+      "image": "mysql:8.0",
+      "project": "binlog-soak",
+      "workdir": "/Users/fan/GolangProjects/BinlogServer/.worktrees/h1/deploy/soak",
+      "volumes": [
+        "binlog-soak_meta-data"
+      ]
+    },
+    {
+      "id": "fded5439020739eb52de5d320ae916f319e8900ca67f73a2298bd4cbfe121209",
+      "name": "soak-src-b",
+      "status": "running",
+      "created": "2026-10-31T13:05:21.259510633Z",
+      "image": "mysql:8.0",
+      "project": "binlog-soak",
+      "workdir": "/Users/fan/GolangProjects/BinlogServer/.worktrees/h1/deploy/soak",
+      "volumes": [
+        "binlog-soak_src-b-data"
+      ]
+    },
+    {
+      "id": "32f7e0495de9a7d6625ee0c7d4b806f598d166573f119b325517280bba776d90",
+      "name": "soak-src-a",
+      "status": "running",
+      "created": "2026-10-31T13:05:21.25932105Z",
+      "image": "mysql:8.0",
+      "project": "binlog-soak",
+      "workdir": "/Users/fan/GolangProjects/BinlogServer/.worktrees/h1/deploy/soak",
+      "volumes": [
+        "binlog-soak_src-a-data"
+      ]
+    },
+    {
+      "id": "ede9800d299e2e334a63c287426b8d20a767e6a812755ef1ebe9cdc40dc2d78c",
+      "name": "soak-restore",
+      "status": "running",
+      "created": "2026-10-31T13:05:21.259242091Z",
+      "image": "mysql:8.0",
+      "project": "binlog-soak",
+      "workdir": "/Users/fan/GolangProjects/BinlogServer/.worktrees/h1/deploy/soak",
+      "volumes": [
+        "15138c052dfab4ad6fb965bc38a7a689bf1a6c82331ed198f9ed0d3ecf4c8336"
+      ]
+    },
+    {
+      "id": "0fb99b3142be39f8e0dae6ea777e959202a5d1f83243c1d8c831794a4fe41829",
+      "name": "soak-proxy",
+      "status": "running",
+      "created": "2026-10-31T13:05:21.256336175Z",
+      "image": "binlog-soak-proxy",
+      "project": "binlog-soak",
+      "workdir": "/Users/fan/GolangProjects/BinlogServer/.worktrees/h1/deploy/soak",
+      "volumes": []
+    },
+    {
+      "id": "438a91a8d3b9d33a2353a45d6c495923949874cbe8d6893697c2906407b92f4e",
+      "name": "tmp-restore",
+      "status": "running",
+      "created": "2026-10-30T18:19:23.652329585Z",
+      "image": "mysql:8.0",
+      "project": "",
+      "workdir": "",
+      "volumes": [
+        "267ee2cae88378cf07749466422c95f346e08eb0b16f4758c42b79d95980d4f2"
+      ]
+    },
+    {
+      "id": "29a7a9858426c6cf682b1d74d4cee408f81c63c7221a6a223516cdf0bd528c11",
+      "name": "controlhub-query-e2e-mysql",
+      "status": "running",
+      "created": "2026-10-28T00:31:24.210444798Z",
+      "image": "mysql:8.0",
+      "project": "",
+      "workdir": "",
+      "volumes": [
+        "0b2f7fa431970b610eb2a3c989928d9bbd46d28ee4be39b65d9257ec41995929"
+      ]
+    },
+    {
+      "id": "23691c7383567ede4d3d397a9aa7d7cb416d44c0e3fd446e5e3b222fb466fbb9",
+      "name": "controlhub-demo-mysql",
+      "status": "running",
+      "created": "2026-10-25T04:10:24.404905303Z",
+      "image": "mysql:8.0",
+      "project": "",
+      "workdir": "",
+      "volumes": [
+        "controlhub-demo-mysql-data"
+      ]
+    },
+    {
+      "id": "6c3f6e9d3c9c9bef48e3bb2cbb2e2cdff5e6b3dd9ef580024cfddbf49c5087b9",
+      "name": "controlhub-demo-pg",
+      "status": "running",
+      "created": "2026-10-25T04:10:24.108493887Z",
+      "image": "postgres:17.10",
+      "project": "",
+      "workdir": "",
+      "volumes": [
+        "controlhub-demo-pg-data"
+      ]
+    },
+    {
+      "id": "474b6ea23bef8341f94bb89662639bbbdd55ab7a5fdcc6d712e2c0ca9087799d",
+      "name": "mac-connector",
+      "status": "running",
+      "created": "2026-05-17T04:47:32.650931917Z",
+      "image": "wenjunxiao/mac-docker-connector",
+      "project": "",
+      "workdir": "",
+      "volumes": []
+    }
+  ]
+}

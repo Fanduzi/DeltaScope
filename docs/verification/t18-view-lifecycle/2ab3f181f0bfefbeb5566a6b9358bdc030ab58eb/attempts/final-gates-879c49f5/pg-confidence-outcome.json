@@ -1,0 +1,9 @@
+{
+  "gate_rc": 2,
+  "unit_gate_failed": true,
+  "e2e_gate_invoked": false,
+  "e2e_zero_failed_or_skipped_proven": false,
+  "reason": "make stopped after pg-unit-test-gates failed; the e2e stage was not executed",
+  "stdout": "/tmp/t18-evidence/final-gates/04-pg-confidence.stdout.txt",
+  "stderr": "/tmp/t18-evidence/final-gates/04-pg-confidence.stderr.txt"
+}

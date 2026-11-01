@@ -1,0 +1,42 @@
+=== RUN   TestT18FullReviewQueryClauseLocations
+=== RUN   TestT18FullReviewQueryClauseLocations/on
+    audit_t18_view_first_test.go:1073: finding=deltascope.Finding{RuleID:"ddl.view.source.valid", Level:"blocker", Message:"view definition has an invalid source", StatementIndex:0, StatementKind:"ddl", Location:(*deltascope.Location)(0x5f25f04c84c0), Suggestion:"check the authored source relations and columns", Metadata:map[string]interface {}{"role":"source", "schema":"g", "table":"u", "view":"v", "view_schema":"g"}, Explanation:(*deltascope.FindingExplanation)(0x5f25f05bca00)}
+=== RUN   TestT18FullReviewQueryClauseLocations/where
+=== RUN   TestT18FullReviewQueryClauseLocations/group
+=== RUN   TestT18FullReviewQueryClauseLocations/having
+=== RUN   TestT18FullReviewQueryClauseLocations/order
+--- FAIL: TestT18FullReviewQueryClauseLocations (0.02s)
+    --- FAIL: TestT18FullReviewQueryClauseLocations/on (0.01s)
+    --- PASS: TestT18FullReviewQueryClauseLocations/where (0.00s)
+    --- PASS: TestT18FullReviewQueryClauseLocations/group (0.00s)
+    --- PASS: TestT18FullReviewQueryClauseLocations/having (0.00s)
+    --- PASS: TestT18FullReviewQueryClauseLocations/order (0.00s)
+=== RUN   TestT18FullReviewDefinerKeyword
+=== RUN   TestT18FullReviewDefinerKeyword/view
+=== RUN   TestT18FullReviewDefinerKeyword/quoted_view
+=== RUN   TestT18FullReviewDefinerKeyword/view_host
+=== RUN   TestT18FullReviewDefinerKeyword/current_user
+=== RUN   TestT18FullReviewDefinerKeyword/current_user_call
+--- PASS: TestT18FullReviewDefinerKeyword (0.03s)
+    --- PASS: TestT18FullReviewDefinerKeyword/view (0.00s)
+    --- PASS: TestT18FullReviewDefinerKeyword/quoted_view (0.00s)
+    --- PASS: TestT18FullReviewDefinerKeyword/view_host (0.00s)
+    --- PASS: TestT18FullReviewDefinerKeyword/current_user (0.00s)
+    --- PASS: TestT18FullReviewDefinerKeyword/current_user_call (0.00s)
+FAIL
+FAIL	github.com/Fanduzi/DeltaScope/pkg/deltascope	0.780s
+=== RUN   TestT18FullReviewDefinerKeyword
+=== RUN   TestT18FullReviewDefinerKeyword/view
+=== RUN   TestT18FullReviewDefinerKeyword/'view'
+=== RUN   TestT18FullReviewDefinerKeyword/'u'@view
+=== RUN   TestT18FullReviewDefinerKeyword/CURRENT_USER
+=== RUN   TestT18FullReviewDefinerKeyword/CURRENT_USER()
+--- PASS: TestT18FullReviewDefinerKeyword (0.00s)
+    --- PASS: TestT18FullReviewDefinerKeyword/view (0.00s)
+    --- PASS: TestT18FullReviewDefinerKeyword/'view' (0.00s)
+    --- PASS: TestT18FullReviewDefinerKeyword/'u'@view (0.00s)
+    --- PASS: TestT18FullReviewDefinerKeyword/CURRENT_USER (0.00s)
+    --- PASS: TestT18FullReviewDefinerKeyword/CURRENT_USER() (0.00s)
+PASS
+ok  	github.com/Fanduzi/DeltaScope/internal/infrastructure/parser/tidb	1.717s
+FAIL

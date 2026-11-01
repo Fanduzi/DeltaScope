@@ -1,0 +1,10 @@
+=== RUN   TestT18ReviewUncertainAlterAttributes
+=== RUN   TestT18ReviewUncertainAlterAttributes/inherited
+=== RUN   TestT18ReviewUncertainAlterAttributes/changed
+=== RUN   TestT18ReviewUncertainAlterAttributes/agreeing_security
+--- PASS: TestT18ReviewUncertainAlterAttributes (0.00s)
+    --- PASS: TestT18ReviewUncertainAlterAttributes/inherited (0.00s)
+    --- PASS: TestT18ReviewUncertainAlterAttributes/changed (0.00s)
+    --- PASS: TestT18ReviewUncertainAlterAttributes/agreeing_security (0.00s)
+PASS
+ok  	github.com/Fanduzi/DeltaScope/internal/application/audit	1.016s

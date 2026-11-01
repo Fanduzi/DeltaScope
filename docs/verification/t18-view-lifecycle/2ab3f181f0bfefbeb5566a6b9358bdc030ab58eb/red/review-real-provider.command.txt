@@ -1,0 +1,1 @@
+cd /tmp/t18-review-red-snapshot-bVUMStQi && go test ./pkg/deltascope -run 'TestT18ReviewRealProviderMissingAttributesPublic' -count=1 -v

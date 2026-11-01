@@ -1,0 +1,8 @@
+--------------
+CREATE DEFINER='t18_named_host'@127.0.0.1 VIEW host_v AS SELECT id FROM t
+--------------
+
+--------------
+SHOW WARNINGS
+--------------
+

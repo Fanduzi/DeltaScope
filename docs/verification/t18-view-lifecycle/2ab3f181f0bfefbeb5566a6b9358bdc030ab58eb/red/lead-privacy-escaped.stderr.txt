@@ -1,0 +1,42 @@
+test_escaped_private_value_fails (__main__.PublicJSONPrivacyTests.test_escaped_private_value_fails) ... 
+  test_escaped_private_value_fails (__main__.PublicJSONPrivacyTests.test_escaped_private_value_fails) (marker='PRIVATE"VALUE') ... FAIL
+  test_escaped_private_value_fails (__main__.PublicJSONPrivacyTests.test_escaped_private_value_fails) (marker='PRIVATE\nVALUE') ... FAIL
+  test_escaped_private_value_fails (__main__.PublicJSONPrivacyTests.test_escaped_private_value_fails) (marker='PRIVATE\\VALUE') ... FAIL
+  test_escaped_private_value_fails (__main__.PublicJSONPrivacyTests.test_escaped_private_value_fails) (marker='秘密') ... FAIL
+
+======================================================================
+FAIL: test_escaped_private_value_fails (__main__.PublicJSONPrivacyTests.test_escaped_private_value_fails) (marker='PRIVATE"VALUE')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/fan/GolangProjects/DeltaScope/scripts/test_ddl_golden_privacy.py", line 50, in test_escaped_private_value_fails
+    self.assertFalse(all(row[1] for row in checks), checks)
+AssertionError: True is not false : [('public JSON privacy oracle', True, 'requires nonempty unique string markers'), ('public JSON privacy marker 0', True, 'fixture-private marker must not occur in public JSON')]
+
+======================================================================
+FAIL: test_escaped_private_value_fails (__main__.PublicJSONPrivacyTests.test_escaped_private_value_fails) (marker='PRIVATE\nVALUE')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/fan/GolangProjects/DeltaScope/scripts/test_ddl_golden_privacy.py", line 50, in test_escaped_private_value_fails
+    self.assertFalse(all(row[1] for row in checks), checks)
+AssertionError: True is not false : [('public JSON privacy oracle', True, 'requires nonempty unique string markers'), ('public JSON privacy marker 0', True, 'fixture-private marker must not occur in public JSON')]
+
+======================================================================
+FAIL: test_escaped_private_value_fails (__main__.PublicJSONPrivacyTests.test_escaped_private_value_fails) (marker='PRIVATE\\VALUE')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/fan/GolangProjects/DeltaScope/scripts/test_ddl_golden_privacy.py", line 50, in test_escaped_private_value_fails
+    self.assertFalse(all(row[1] for row in checks), checks)
+AssertionError: True is not false : [('public JSON privacy oracle', True, 'requires nonempty unique string markers'), ('public JSON privacy marker 0', True, 'fixture-private marker must not occur in public JSON')]
+
+======================================================================
+FAIL: test_escaped_private_value_fails (__main__.PublicJSONPrivacyTests.test_escaped_private_value_fails) (marker='秘密')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/fan/GolangProjects/DeltaScope/scripts/test_ddl_golden_privacy.py", line 50, in test_escaped_private_value_fails
+    self.assertFalse(all(row[1] for row in checks), checks)
+AssertionError: True is not false : [('public JSON privacy oracle', True, 'requires nonempty unique string markers'), ('public JSON privacy marker 0', True, 'fixture-private marker must not occur in public JSON')]
+
+----------------------------------------------------------------------
+Ran 1 test in 0.001s
+
+FAILED (failures=4)

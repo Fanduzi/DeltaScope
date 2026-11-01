@@ -1,0 +1,3 @@
+ok  	github.com/Fanduzi/DeltaScope/internal/domain/rule/ddl	0.486s
+ok  	github.com/Fanduzi/DeltaScope/internal/domain/policy	1.235s
+ok  	github.com/Fanduzi/DeltaScope/internal/domain/rule/catalog	0.850s

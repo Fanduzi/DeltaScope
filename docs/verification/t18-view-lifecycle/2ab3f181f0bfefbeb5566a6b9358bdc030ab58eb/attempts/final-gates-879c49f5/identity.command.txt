@@ -1,0 +1,1 @@
+pwd; git rev-parse HEAD/branch/shallow/parent; git worktree list --porcelain; git status --short; go version; python3 --version; golangci-lint version; docker version

@@ -1,0 +1,1 @@
+ok  	github.com/Fanduzi/DeltaScope/internal/domain/rule/catalog	0.443s

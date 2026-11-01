@@ -1,0 +1,1 @@
+gofmt -l pkg/deltascope/audit_t18_view_first_test.go

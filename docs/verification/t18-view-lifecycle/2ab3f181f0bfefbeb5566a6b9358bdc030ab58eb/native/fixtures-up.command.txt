@@ -1,0 +1,1 @@
+docker compose -p deltascope-ddl-golden -f docker/ddl-golden-compose.yaml up -d --no-build --pull never --wait --wait-timeout 300 mysql57 mysql80 mysql84 tidb85 tidb85-client

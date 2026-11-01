@@ -1,0 +1,17 @@
+=== RUN   TestSQLCorpusMySQLAndTiDB
+=== PAUSE TestSQLCorpusMySQLAndTiDB
+=== CONT  TestSQLCorpusMySQLAndTiDB
+=== RUN   TestSQLCorpusMySQLAndTiDB/mysql/ddl/findings/view_lifecycle_rules.expected.yaml
+=== PAUSE TestSQLCorpusMySQLAndTiDB/mysql/ddl/findings/view_lifecycle_rules.expected.yaml
+=== RUN   TestSQLCorpusMySQLAndTiDB/tidb/ddl/findings/view_lifecycle_rules.expected.yaml
+=== PAUSE TestSQLCorpusMySQLAndTiDB/tidb/ddl/findings/view_lifecycle_rules.expected.yaml
+=== CONT  TestSQLCorpusMySQLAndTiDB/mysql/ddl/findings/view_lifecycle_rules.expected.yaml
+=== CONT  TestSQLCorpusMySQLAndTiDB/tidb/ddl/findings/view_lifecycle_rules.expected.yaml
+    corpus_test.go:191: OK: view_lifecycle_rules (tidb/ddl) verdict=reject findings=[ddl.column.comment.require ddl.column.default.require ddl.column.not_null.require ddl.table.audit_columns.require ddl.table.charset.allowlist ddl.table.comment.require ddl.table.engine.allowlist ddl.table.primary_key.require ddl.view.create.forbid ddl.view.drop.forbid ddl.view.options.ignored.warn ddl.view.security.definer.warn ddl.view.source.valid ddl.view.target.valid] unsupported=0
+=== NAME  TestSQLCorpusMySQLAndTiDB/mysql/ddl/findings/view_lifecycle_rules.expected.yaml
+    corpus_test.go:191: OK: view_lifecycle_rules (mysql/ddl) verdict=reject findings=[ddl.column.comment.require ddl.column.default.require ddl.column.not_null.require ddl.table.audit_columns.require ddl.table.charset.allowlist ddl.table.comment.require ddl.table.engine.allowlist ddl.table.primary_key.require ddl.view.algorithm.warn ddl.view.check_option.valid ddl.view.create.forbid ddl.view.drop.forbid ddl.view.security.definer.warn ddl.view.source.valid ddl.view.target.valid] unsupported=0
+--- PASS: TestSQLCorpusMySQLAndTiDB (0.00s)
+    --- PASS: TestSQLCorpusMySQLAndTiDB/tidb/ddl/findings/view_lifecycle_rules.expected.yaml (0.00s)
+    --- PASS: TestSQLCorpusMySQLAndTiDB/mysql/ddl/findings/view_lifecycle_rules.expected.yaml (0.00s)
+PASS
+ok  	github.com/Fanduzi/DeltaScope/internal/application/audit	0.853s

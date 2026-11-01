@@ -1,0 +1,9 @@
+=== RUN   TestDDLCoverage_EmbeddedCatalogMySQLParserUpgradeCandidate
+    ddl_coverage_test.go:31: output should contain ALTER VIEW
+--- FAIL: TestDDLCoverage_EmbeddedCatalogMySQLParserUpgradeCandidate (0.00s)
+=== RUN   TestDDLCoverage_MySQLParserUpgradeCandidate
+    ddl_coverage_test.go:56: output should contain ALTER VIEW
+--- FAIL: TestDDLCoverage_MySQLParserUpgradeCandidate (0.00s)
+FAIL
+FAIL	github.com/Fanduzi/DeltaScope/internal/interfaces/cli	1.440s
+FAIL

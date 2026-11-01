@@ -1,0 +1,8 @@
+--------------
+CREATE OR REPLACE VIEW v AS SELECT id FROM t
+--------------
+
+--------------
+SHOW WARNINGS
+--------------
+

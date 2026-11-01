@@ -1,0 +1,1 @@
+ok  	github.com/Fanduzi/DeltaScope/internal/infrastructure/parser/tidb	1.213s

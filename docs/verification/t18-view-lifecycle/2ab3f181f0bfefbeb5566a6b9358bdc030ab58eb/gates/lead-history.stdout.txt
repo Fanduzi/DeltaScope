@@ -1,0 +1,32 @@
+[
+  {
+    "task": "T16",
+    "head_sha": "2ab3f181f0bfefbeb5566a6b9358bdc030ab58eb",
+    "manifest_sha256": "4a0950500bcc6a4287e598e583f822cf91a8f8954bca7d3c793515628bc8c7fb",
+    "manifest_byte_identical_to_accepted_base": true,
+    "artifact": "/tmp/ddl-golden-t18-final-T16-2ab3f181/T16/artifact.json",
+    "artifact_sha256": "af672ef880217412b05ae04410da180b67e2a74cff9c50dfb03f9fdadc47a43c",
+    "executed": 60,
+    "assertions": 832,
+    "required_executed_sets_equal": true,
+    "duplicates": [],
+    "cli_sha256": "419abd2721401ddc64d1003ddb5ed0fda71eb23c347c53447fa79b5bd7841820",
+    "cleanup_rc": 0,
+    "residual_containers": []
+  },
+  {
+    "task": "T17",
+    "head_sha": "2ab3f181f0bfefbeb5566a6b9358bdc030ab58eb",
+    "manifest_sha256": "d308b28f791527a9ca853d669cfae9edcbc1db0b951ed999732eeba61578714c",
+    "manifest_byte_identical_to_accepted_base": true,
+    "artifact": "/tmp/ddl-golden-t18-final-T17-2ab3f181/T17/artifact.json",
+    "artifact_sha256": "f102a0c821734b14099caf9e0ec87a6a03795a9b98dbd8072242f7fe3d1603e5",
+    "executed": 52,
+    "assertions": 834,
+    "required_executed_sets_equal": true,
+    "duplicates": [],
+    "cli_sha256": "419abd2721401ddc64d1003ddb5ed0fda71eb23c347c53447fa79b5bd7841820",
+    "cleanup_rc": 0,
+    "residual_containers": []
+  }
+]

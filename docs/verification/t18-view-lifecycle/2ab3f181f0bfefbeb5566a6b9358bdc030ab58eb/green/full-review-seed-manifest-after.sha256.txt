@@ -1,0 +1,1 @@
+62535a74a6b66313042af23084c718bb3ad0be8efa698d1f1d5841f8a8cfda61  testdata/ddl-golden/T18.json

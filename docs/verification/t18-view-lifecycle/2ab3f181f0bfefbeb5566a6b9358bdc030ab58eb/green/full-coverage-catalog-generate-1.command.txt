@@ -1,0 +1,1 @@
+UPDATE_DDL_COVERAGE_CATALOG=1 go test ./internal/application/audit -tags postgresql -run '^TestDDLCoverageCatalog$' -count=1

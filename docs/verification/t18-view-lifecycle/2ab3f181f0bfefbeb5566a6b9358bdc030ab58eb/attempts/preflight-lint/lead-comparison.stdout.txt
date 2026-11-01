@@ -1,0 +1,74 @@
+{
+  "scoped": {
+    "baseline_sha": "7f67c5de42fb6096d9c80f51e2d0f217eb34e528",
+    "baseline_prefix": "docs/verification/t17-database-schema-lifecycle-r1-tail/c6eebc09b64a4c9ffc8d1dc73689f505da06d61c/gates/",
+    "baseline_count": 22,
+    "current_count": 27,
+    "actual_lint_rc": 1,
+    "invalid_lint_rc": false,
+    "comparison_key": [
+      "file",
+      "complete message including linter",
+      "multiplicity"
+    ],
+    "ignored_coordinates_only": [
+      "line",
+      "column"
+    ],
+    "added": [
+      {
+        "file": "internal/domain/spec/view.go",
+        "message": "QF1001: could apply De Morgan's law (staticcheck)",
+        "count": 2
+      },
+      {
+        "file": "internal/domain/spec/view.go",
+        "message": "QF1003: could use tagged switch on kind (staticcheck)",
+        "count": 2
+      },
+      {
+        "file": "internal/domain/spec/view.go",
+        "message": "nilness: tautological condition: non-nil != nil (govet)",
+        "count": 1
+      }
+    ],
+    "removed": [],
+    "unchanged_count": 22
+  },
+  "fullrepo": {
+    "baseline_sha": "7f67c5de42fb6096d9c80f51e2d0f217eb34e528",
+    "baseline_prefix": "docs/verification/t17-database-schema-lifecycle-r1-tail/c6eebc09b64a4c9ffc8d1dc73689f505da06d61c/gates/",
+    "baseline_count": 39,
+    "current_count": 44,
+    "actual_lint_rc": 1,
+    "invalid_lint_rc": false,
+    "comparison_key": [
+      "file",
+      "complete message including linter",
+      "multiplicity"
+    ],
+    "ignored_coordinates_only": [
+      "line",
+      "column"
+    ],
+    "added": [
+      {
+        "file": "internal/domain/spec/view.go",
+        "message": "QF1001: could apply De Morgan's law (staticcheck)",
+        "count": 2
+      },
+      {
+        "file": "internal/domain/spec/view.go",
+        "message": "QF1003: could use tagged switch on kind (staticcheck)",
+        "count": 2
+      },
+      {
+        "file": "internal/domain/spec/view.go",
+        "message": "nilness: tautological condition: non-nil != nil (govet)",
+        "count": 1
+      }
+    ],
+    "removed": [],
+    "unchanged_count": 39
+  }
+}

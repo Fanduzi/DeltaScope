@@ -1,0 +1,26 @@
+=== RUN   TestT18FullDropViewOrderedOutcomes
+=== RUN   TestT18FullDropViewOrderedOutcomes/mysql80_atomic
+    audit_t18_view_first_test.go:636: target findings=[]deltascope.Finding{}
+=== RUN   TestT18FullDropViewOrderedOutcomes/mysql57_partial
+    audit_t18_view_first_test.go:636: target findings=[]deltascope.Finding{}
+=== RUN   TestT18FullDropViewOrderedOutcomes/mysql_unknown
+    audit_t18_view_first_test.go:636: target findings=[]deltascope.Finding{}
+=== RUN   TestT18FullDropViewOrderedOutcomes/mysql_duplicate
+    audit_t18_view_first_test.go:636: target findings=[]deltascope.Finding{}
+=== RUN   TestT18FullDropViewOrderedOutcomes/mysql_if_exists
+    audit_t18_view_first_test.go:653: statement 1 findings=[]deltascope.Finding{deltascope.Finding{RuleID:"ddl.view.security.definer.warn", Level:"warning", Message:"view security or named definer requires review", StatementIndex:1, StatementKind:"ddl", Location:(*deltascope.Location)(0x77d592fde80), Suggestion:"review the view's privilege context", Metadata:map[string]interface {}{"role":"view", "view":"next_v", "view_schema":"g"}, Explanation:(*deltascope.FindingExplanation)(0x77d592b4af0)}}
+=== RUN   TestT18FullDropViewOrderedOutcomes/tidb_wrong_kind
+    audit_t18_view_first_test.go:636: target findings=[]deltascope.Finding{}
+=== RUN   TestT18FullDropViewOrderedOutcomes/tidb_duplicate
+    audit_t18_view_first_test.go:636: target findings=[]deltascope.Finding{}
+--- FAIL: TestT18FullDropViewOrderedOutcomes (0.03s)
+    --- FAIL: TestT18FullDropViewOrderedOutcomes/mysql80_atomic (0.01s)
+    --- FAIL: TestT18FullDropViewOrderedOutcomes/mysql57_partial (0.00s)
+    --- FAIL: TestT18FullDropViewOrderedOutcomes/mysql_unknown (0.00s)
+    --- FAIL: TestT18FullDropViewOrderedOutcomes/mysql_duplicate (0.00s)
+    --- FAIL: TestT18FullDropViewOrderedOutcomes/mysql_if_exists (0.00s)
+    --- FAIL: TestT18FullDropViewOrderedOutcomes/tidb_wrong_kind (0.00s)
+    --- FAIL: TestT18FullDropViewOrderedOutcomes/tidb_duplicate (0.01s)
+FAIL
+FAIL	github.com/Fanduzi/DeltaScope/pkg/deltascope	0.994s
+FAIL

@@ -1,0 +1,1 @@
+First failed run stopped at Go companion tests; no new T18 artifact directory was created. Prior successful tree is at the path in full-options-prior-golden-path.txt.

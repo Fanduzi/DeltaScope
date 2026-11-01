@@ -1,0 +1,1242 @@
+[
+  {
+    "anchor": "mysql57",
+    "case": "create",
+    "schema": "t18p_0",
+    "target_rc": 0,
+    "stderr": "",
+    "target_receipt": "mysql57/00-create-target",
+    "before_receipt": "mysql57/00-create-before",
+    "after_receipt": "mysql57/00-create-after"
+  },
+  {
+    "anchor": "mysql57",
+    "case": "replace-present",
+    "schema": "t18p_1",
+    "target_rc": 0,
+    "stderr": "",
+    "target_receipt": "mysql57/01-replace-present-target",
+    "before_receipt": "mysql57/01-replace-present-before",
+    "after_receipt": "mysql57/01-replace-present-after"
+  },
+  {
+    "anchor": "mysql57",
+    "case": "replace-absent",
+    "schema": "t18p_2",
+    "target_rc": 0,
+    "stderr": "",
+    "target_receipt": "mysql57/02-replace-absent-target",
+    "before_receipt": "mysql57/02-replace-absent-before",
+    "after_receipt": "mysql57/02-replace-absent-after"
+  },
+  {
+    "anchor": "mysql57",
+    "case": "replace-table",
+    "schema": "t18p_3",
+    "target_rc": 1,
+    "stderr": "ERROR 1347 (HY000) at line 1: 't18p_3.t' is not VIEW",
+    "target_receipt": "mysql57/03-replace-table-target",
+    "before_receipt": "mysql57/03-replace-table-before",
+    "after_receipt": "mysql57/03-replace-table-after"
+  },
+  {
+    "anchor": "mysql57",
+    "case": "alter",
+    "schema": "t18p_4",
+    "target_rc": 0,
+    "stderr": "",
+    "target_receipt": "mysql57/04-alter-target",
+    "before_receipt": "mysql57/04-alter-before",
+    "after_receipt": "mysql57/04-alter-after"
+  },
+  {
+    "anchor": "mysql57",
+    "case": "alter-absent",
+    "schema": "t18p_5",
+    "target_rc": 1,
+    "stderr": "ERROR 1146 (42S02) at line 1: Table 't18p_5.absent_v' doesn't exist",
+    "target_receipt": "mysql57/05-alter-absent-target",
+    "before_receipt": "mysql57/05-alter-absent-before",
+    "after_receipt": "mysql57/05-alter-absent-after"
+  },
+  {
+    "anchor": "mysql57",
+    "case": "alter-table",
+    "schema": "t18p_6",
+    "target_rc": 1,
+    "stderr": "ERROR 1347 (HY000) at line 1: 't18p_6.t' is not VIEW",
+    "target_receipt": "mysql57/06-alter-table-target",
+    "before_receipt": "mysql57/06-alter-table-before",
+    "after_receipt": "mysql57/06-alter-table-after"
+  },
+  {
+    "anchor": "mysql57",
+    "case": "bare-check",
+    "schema": "t18p_7",
+    "target_rc": 0,
+    "stderr": "",
+    "target_receipt": "mysql57/07-bare-check-target",
+    "before_receipt": "mysql57/07-bare-check-before",
+    "after_receipt": "mysql57/07-bare-check-after"
+  },
+  {
+    "anchor": "mysql57",
+    "case": "local-check",
+    "schema": "t18p_8",
+    "target_rc": 0,
+    "stderr": "",
+    "target_receipt": "mysql57/08-local-check-target",
+    "before_receipt": "mysql57/08-local-check-before",
+    "after_receipt": "mysql57/08-local-check-after"
+  },
+  {
+    "anchor": "mysql57",
+    "case": "cascaded-check",
+    "schema": "t18p_9",
+    "target_rc": 0,
+    "stderr": "",
+    "target_receipt": "mysql57/09-cascaded-check-target",
+    "before_receipt": "mysql57/09-cascaded-check-before",
+    "after_receipt": "mysql57/09-cascaded-check-after"
+  },
+  {
+    "anchor": "mysql57",
+    "case": "security-columns",
+    "schema": "t18p_10",
+    "target_rc": 0,
+    "stderr": "",
+    "target_receipt": "mysql57/10-security-columns-target",
+    "before_receipt": "mysql57/10-security-columns-before",
+    "after_receipt": "mysql57/10-security-columns-after"
+  },
+  {
+    "anchor": "mysql57",
+    "case": "merge-aggregate",
+    "schema": "t18p_11",
+    "target_rc": 0,
+    "stderr": "",
+    "target_receipt": "mysql57/11-merge-aggregate-target",
+    "before_receipt": "mysql57/11-merge-aggregate-before",
+    "after_receipt": "mysql57/11-merge-aggregate-after"
+  },
+  {
+    "anchor": "mysql57",
+    "case": "temptable",
+    "schema": "t18p_12",
+    "target_rc": 0,
+    "stderr": "",
+    "target_receipt": "mysql57/12-temptable-target",
+    "before_receipt": "mysql57/12-temptable-before",
+    "after_receipt": "mysql57/12-temptable-after"
+  },
+  {
+    "anchor": "mysql57",
+    "case": "temptable-check",
+    "schema": "t18p_13",
+    "target_rc": 1,
+    "stderr": "ERROR 1368 (HY000) at line 1: CHECK OPTION on non-updatable view 't18p_13.new_v'",
+    "target_receipt": "mysql57/13-temptable-check-target",
+    "before_receipt": "mysql57/13-temptable-check-before",
+    "after_receipt": "mysql57/13-temptable-check-after"
+  },
+  {
+    "anchor": "mysql57",
+    "case": "aggregate-check",
+    "schema": "t18p_14",
+    "target_rc": 1,
+    "stderr": "ERROR 1368 (HY000) at line 1: CHECK OPTION on non-updatable view 't18p_14.new_v'",
+    "target_receipt": "mysql57/14-aggregate-check-target",
+    "before_receipt": "mysql57/14-aggregate-check-before",
+    "after_receipt": "mysql57/14-aggregate-check-after"
+  },
+  {
+    "anchor": "mysql57",
+    "case": "named-definer",
+    "schema": "t18p_15",
+    "target_rc": 0,
+    "stderr": "",
+    "target_receipt": "mysql57/15-named-definer-target",
+    "before_receipt": "mysql57/15-named-definer-before",
+    "after_receipt": "mysql57/15-named-definer-after"
+  },
+  {
+    "anchor": "mysql57",
+    "case": "source-absent",
+    "schema": "t18p_16",
+    "target_rc": 1,
+    "stderr": "ERROR 1146 (42S02) at line 1: Table 't18p_16.missing_t' doesn't exist",
+    "target_receipt": "mysql57/16-source-absent-target",
+    "before_receipt": "mysql57/16-source-absent-before",
+    "after_receipt": "mysql57/16-source-absent-after"
+  },
+  {
+    "anchor": "mysql57",
+    "case": "column-absent",
+    "schema": "t18p_17",
+    "target_rc": 1,
+    "stderr": "ERROR 1054 (42S22) at line 1: Unknown column 'missing_column' in 'field list'",
+    "target_receipt": "mysql57/17-column-absent-target",
+    "before_receipt": "mysql57/17-column-absent-before",
+    "after_receipt": "mysql57/17-column-absent-after"
+  },
+  {
+    "anchor": "mysql57",
+    "case": "invalid-select",
+    "schema": "t18p_18",
+    "target_rc": 1,
+    "stderr": "ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'FROM t' at line 1",
+    "target_receipt": "mysql57/18-invalid-select-target",
+    "before_receipt": "mysql57/18-invalid-select-before",
+    "after_receipt": "mysql57/18-invalid-select-after"
+  },
+  {
+    "anchor": "mysql57",
+    "case": "invalid-source-view",
+    "schema": "t18p_19",
+    "target_rc": 1,
+    "stderr": "ERROR 1356 (HY000) at line 1: View 't18p_19.w' references invalid table(s) or column(s) or function(s) or definer/invoker of view lack rights to use them",
+    "target_receipt": "mysql57/19-invalid-source-view-target",
+    "before_receipt": "mysql57/19-invalid-source-view-before",
+    "after_receipt": "mysql57/19-invalid-source-view-after"
+  },
+  {
+    "anchor": "mysql57",
+    "case": "drop-missing",
+    "schema": "t18p_20",
+    "target_rc": 1,
+    "stderr": "ERROR 1051 (42S02) at line 1: Unknown table 't18p_20.missing_v'",
+    "target_receipt": "mysql57/20-drop-missing-target",
+    "before_receipt": "mysql57/20-drop-missing-before",
+    "after_receipt": "mysql57/20-drop-missing-after"
+  },
+  {
+    "anchor": "mysql57",
+    "case": "drop-table",
+    "schema": "t18p_21",
+    "target_rc": 1,
+    "stderr": "ERROR 1347 (HY000) at line 1: 't18p_21.t' is not VIEW",
+    "target_receipt": "mysql57/21-drop-table-target",
+    "before_receipt": "mysql57/21-drop-table-before",
+    "after_receipt": "mysql57/21-drop-table-after"
+  },
+  {
+    "anchor": "mysql57",
+    "case": "drop-if-missing",
+    "schema": "t18p_22",
+    "target_rc": 0,
+    "stderr": "",
+    "target_receipt": "mysql57/22-drop-if-missing-target",
+    "before_receipt": "mysql57/22-drop-if-missing-before",
+    "after_receipt": "mysql57/22-drop-if-missing-after"
+  },
+  {
+    "anchor": "mysql57",
+    "case": "drop-if-table",
+    "schema": "t18p_23",
+    "target_rc": 0,
+    "stderr": "",
+    "target_receipt": "mysql57/23-drop-if-table-target",
+    "before_receipt": "mysql57/23-drop-if-table-before",
+    "after_receipt": "mysql57/23-drop-if-table-after"
+  },
+  {
+    "anchor": "mysql57",
+    "case": "drop-duplicate",
+    "schema": "t18p_24",
+    "target_rc": 1,
+    "stderr": "ERROR 1066 (42000) at line 1: Not unique table/alias: 'v'",
+    "target_receipt": "mysql57/24-drop-duplicate-target",
+    "before_receipt": "mysql57/24-drop-duplicate-before",
+    "after_receipt": "mysql57/24-drop-duplicate-after"
+  },
+  {
+    "anchor": "mysql57",
+    "case": "alter-inheritance",
+    "schema": "t18p_25",
+    "target_rc": 0,
+    "stderr": "",
+    "target_receipt": "mysql57/25-alter-inheritance-target",
+    "before_receipt": "mysql57/25-alter-inheritance-before",
+    "after_receipt": "mysql57/25-alter-inheritance-after"
+  },
+  {
+    "anchor": "mysql57",
+    "case": "replace-reset",
+    "schema": "t18p_26",
+    "target_rc": 0,
+    "stderr": "",
+    "target_receipt": "mysql57/26-replace-reset-target",
+    "before_receipt": "mysql57/26-replace-reset-before",
+    "after_receipt": "mysql57/26-replace-reset-after"
+  },
+  {
+    "anchor": "mysql57",
+    "case": "rename-source",
+    "schema": "t18p_27",
+    "target_rc": 1,
+    "stderr": "ERROR 1356 (HY000) at line 1: View 't18p_27.w' references invalid table(s) or column(s) or function(s) or definer/invoker of view lack rights to use them",
+    "target_receipt": "mysql57/27-rename-source-target",
+    "before_receipt": "mysql57/27-rename-source-before",
+    "after_receipt": "mysql57/27-rename-source-after"
+  },
+  {
+    "anchor": "mysql57",
+    "case": "table-drop-view",
+    "schema": "t18p_28",
+    "target_rc": 1,
+    "stderr": "ERROR 1051 (42S02) at line 1: Unknown table 't18p_28.v'",
+    "target_receipt": "mysql57/28-table-drop-view-target",
+    "before_receipt": "mysql57/28-table-drop-view-before",
+    "after_receipt": "mysql57/28-table-drop-view-after"
+  },
+  {
+    "anchor": "mysql57",
+    "case": "table-drop-if-view",
+    "schema": "t18p_29",
+    "target_rc": 0,
+    "stderr": "",
+    "target_receipt": "mysql57/29-table-drop-if-view-target",
+    "before_receipt": "mysql57/29-table-drop-if-view-before",
+    "after_receipt": "mysql57/29-table-drop-if-view-after"
+  },
+  {
+    "anchor": "mysql57",
+    "case": "table-alter-view",
+    "schema": "t18p_30",
+    "target_rc": 1,
+    "stderr": "ERROR 1347 (HY000) at line 1: 't18p_30.v' is not BASE TABLE",
+    "target_receipt": "mysql57/30-table-alter-view-target",
+    "before_receipt": "mysql57/30-table-alter-view-before",
+    "after_receipt": "mysql57/30-table-alter-view-after"
+  },
+  {
+    "anchor": "mysql80",
+    "case": "create",
+    "schema": "t18p_0",
+    "target_rc": 0,
+    "stderr": "",
+    "target_receipt": "mysql80/00-create-target",
+    "before_receipt": "mysql80/00-create-before",
+    "after_receipt": "mysql80/00-create-after"
+  },
+  {
+    "anchor": "mysql80",
+    "case": "replace-present",
+    "schema": "t18p_1",
+    "target_rc": 0,
+    "stderr": "",
+    "target_receipt": "mysql80/01-replace-present-target",
+    "before_receipt": "mysql80/01-replace-present-before",
+    "after_receipt": "mysql80/01-replace-present-after"
+  },
+  {
+    "anchor": "mysql80",
+    "case": "replace-absent",
+    "schema": "t18p_2",
+    "target_rc": 0,
+    "stderr": "",
+    "target_receipt": "mysql80/02-replace-absent-target",
+    "before_receipt": "mysql80/02-replace-absent-before",
+    "after_receipt": "mysql80/02-replace-absent-after"
+  },
+  {
+    "anchor": "mysql80",
+    "case": "replace-table",
+    "schema": "t18p_3",
+    "target_rc": 1,
+    "stderr": "ERROR 1347 (HY000) at line 1: 't18p_3.t' is not VIEW",
+    "target_receipt": "mysql80/03-replace-table-target",
+    "before_receipt": "mysql80/03-replace-table-before",
+    "after_receipt": "mysql80/03-replace-table-after"
+  },
+  {
+    "anchor": "mysql80",
+    "case": "alter",
+    "schema": "t18p_4",
+    "target_rc": 0,
+    "stderr": "",
+    "target_receipt": "mysql80/04-alter-target",
+    "before_receipt": "mysql80/04-alter-before",
+    "after_receipt": "mysql80/04-alter-after"
+  },
+  {
+    "anchor": "mysql80",
+    "case": "alter-absent",
+    "schema": "t18p_5",
+    "target_rc": 1,
+    "stderr": "ERROR 1146 (42S02) at line 1: Table 't18p_5.absent_v' doesn't exist",
+    "target_receipt": "mysql80/05-alter-absent-target",
+    "before_receipt": "mysql80/05-alter-absent-before",
+    "after_receipt": "mysql80/05-alter-absent-after"
+  },
+  {
+    "anchor": "mysql80",
+    "case": "alter-table",
+    "schema": "t18p_6",
+    "target_rc": 1,
+    "stderr": "ERROR 1347 (HY000) at line 1: 't18p_6.t' is not VIEW",
+    "target_receipt": "mysql80/06-alter-table-target",
+    "before_receipt": "mysql80/06-alter-table-before",
+    "after_receipt": "mysql80/06-alter-table-after"
+  },
+  {
+    "anchor": "mysql80",
+    "case": "bare-check",
+    "schema": "t18p_7",
+    "target_rc": 0,
+    "stderr": "",
+    "target_receipt": "mysql80/07-bare-check-target",
+    "before_receipt": "mysql80/07-bare-check-before",
+    "after_receipt": "mysql80/07-bare-check-after"
+  },
+  {
+    "anchor": "mysql80",
+    "case": "local-check",
+    "schema": "t18p_8",
+    "target_rc": 0,
+    "stderr": "",
+    "target_receipt": "mysql80/08-local-check-target",
+    "before_receipt": "mysql80/08-local-check-before",
+    "after_receipt": "mysql80/08-local-check-after"
+  },
+  {
+    "anchor": "mysql80",
+    "case": "cascaded-check",
+    "schema": "t18p_9",
+    "target_rc": 0,
+    "stderr": "",
+    "target_receipt": "mysql80/09-cascaded-check-target",
+    "before_receipt": "mysql80/09-cascaded-check-before",
+    "after_receipt": "mysql80/09-cascaded-check-after"
+  },
+  {
+    "anchor": "mysql80",
+    "case": "security-columns",
+    "schema": "t18p_10",
+    "target_rc": 0,
+    "stderr": "",
+    "target_receipt": "mysql80/10-security-columns-target",
+    "before_receipt": "mysql80/10-security-columns-before",
+    "after_receipt": "mysql80/10-security-columns-after"
+  },
+  {
+    "anchor": "mysql80",
+    "case": "merge-aggregate",
+    "schema": "t18p_11",
+    "target_rc": 0,
+    "stderr": "",
+    "target_receipt": "mysql80/11-merge-aggregate-target",
+    "before_receipt": "mysql80/11-merge-aggregate-before",
+    "after_receipt": "mysql80/11-merge-aggregate-after"
+  },
+  {
+    "anchor": "mysql80",
+    "case": "temptable",
+    "schema": "t18p_12",
+    "target_rc": 0,
+    "stderr": "",
+    "target_receipt": "mysql80/12-temptable-target",
+    "before_receipt": "mysql80/12-temptable-before",
+    "after_receipt": "mysql80/12-temptable-after"
+  },
+  {
+    "anchor": "mysql80",
+    "case": "temptable-check",
+    "schema": "t18p_13",
+    "target_rc": 1,
+    "stderr": "ERROR 1368 (HY000) at line 1: CHECK OPTION on non-updatable view 't18p_13.new_v'",
+    "target_receipt": "mysql80/13-temptable-check-target",
+    "before_receipt": "mysql80/13-temptable-check-before",
+    "after_receipt": "mysql80/13-temptable-check-after"
+  },
+  {
+    "anchor": "mysql80",
+    "case": "aggregate-check",
+    "schema": "t18p_14",
+    "target_rc": 1,
+    "stderr": "ERROR 1368 (HY000) at line 1: CHECK OPTION on non-updatable view 't18p_14.new_v'",
+    "target_receipt": "mysql80/14-aggregate-check-target",
+    "before_receipt": "mysql80/14-aggregate-check-before",
+    "after_receipt": "mysql80/14-aggregate-check-after"
+  },
+  {
+    "anchor": "mysql80",
+    "case": "named-definer",
+    "schema": "t18p_15",
+    "target_rc": 0,
+    "stderr": "",
+    "target_receipt": "mysql80/15-named-definer-target",
+    "before_receipt": "mysql80/15-named-definer-before",
+    "after_receipt": "mysql80/15-named-definer-after"
+  },
+  {
+    "anchor": "mysql80",
+    "case": "source-absent",
+    "schema": "t18p_16",
+    "target_rc": 1,
+    "stderr": "ERROR 1146 (42S02) at line 1: Table 't18p_16.missing_t' doesn't exist",
+    "target_receipt": "mysql80/16-source-absent-target",
+    "before_receipt": "mysql80/16-source-absent-before",
+    "after_receipt": "mysql80/16-source-absent-after"
+  },
+  {
+    "anchor": "mysql80",
+    "case": "column-absent",
+    "schema": "t18p_17",
+    "target_rc": 1,
+    "stderr": "ERROR 1054 (42S22) at line 1: Unknown column 'missing_column' in 'field list'",
+    "target_receipt": "mysql80/17-column-absent-target",
+    "before_receipt": "mysql80/17-column-absent-before",
+    "after_receipt": "mysql80/17-column-absent-after"
+  },
+  {
+    "anchor": "mysql80",
+    "case": "invalid-select",
+    "schema": "t18p_18",
+    "target_rc": 1,
+    "stderr": "ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'FROM t' at line 1",
+    "target_receipt": "mysql80/18-invalid-select-target",
+    "before_receipt": "mysql80/18-invalid-select-before",
+    "after_receipt": "mysql80/18-invalid-select-after"
+  },
+  {
+    "anchor": "mysql80",
+    "case": "invalid-source-view",
+    "schema": "t18p_19",
+    "target_rc": 1,
+    "stderr": "ERROR 1356 (HY000) at line 1: View 't18p_19.w' references invalid table(s) or column(s) or function(s) or definer/invoker of view lack rights to use them",
+    "target_receipt": "mysql80/19-invalid-source-view-target",
+    "before_receipt": "mysql80/19-invalid-source-view-before",
+    "after_receipt": "mysql80/19-invalid-source-view-after"
+  },
+  {
+    "anchor": "mysql80",
+    "case": "drop-missing",
+    "schema": "t18p_20",
+    "target_rc": 1,
+    "stderr": "ERROR 1051 (42S02) at line 1: Unknown table 't18p_20.missing_v'",
+    "target_receipt": "mysql80/20-drop-missing-target",
+    "before_receipt": "mysql80/20-drop-missing-before",
+    "after_receipt": "mysql80/20-drop-missing-after"
+  },
+  {
+    "anchor": "mysql80",
+    "case": "drop-table",
+    "schema": "t18p_21",
+    "target_rc": 1,
+    "stderr": "ERROR 1347 (HY000) at line 1: 't18p_21.t' is not VIEW",
+    "target_receipt": "mysql80/21-drop-table-target",
+    "before_receipt": "mysql80/21-drop-table-before",
+    "after_receipt": "mysql80/21-drop-table-after"
+  },
+  {
+    "anchor": "mysql80",
+    "case": "drop-if-missing",
+    "schema": "t18p_22",
+    "target_rc": 0,
+    "stderr": "",
+    "target_receipt": "mysql80/22-drop-if-missing-target",
+    "before_receipt": "mysql80/22-drop-if-missing-before",
+    "after_receipt": "mysql80/22-drop-if-missing-after"
+  },
+  {
+    "anchor": "mysql80",
+    "case": "drop-if-table",
+    "schema": "t18p_23",
+    "target_rc": 0,
+    "stderr": "",
+    "target_receipt": "mysql80/23-drop-if-table-target",
+    "before_receipt": "mysql80/23-drop-if-table-before",
+    "after_receipt": "mysql80/23-drop-if-table-after"
+  },
+  {
+    "anchor": "mysql80",
+    "case": "drop-duplicate",
+    "schema": "t18p_24",
+    "target_rc": 1,
+    "stderr": "ERROR 1066 (42000) at line 1: Not unique table/alias: 'v'",
+    "target_receipt": "mysql80/24-drop-duplicate-target",
+    "before_receipt": "mysql80/24-drop-duplicate-before",
+    "after_receipt": "mysql80/24-drop-duplicate-after"
+  },
+  {
+    "anchor": "mysql80",
+    "case": "alter-inheritance",
+    "schema": "t18p_25",
+    "target_rc": 0,
+    "stderr": "",
+    "target_receipt": "mysql80/25-alter-inheritance-target",
+    "before_receipt": "mysql80/25-alter-inheritance-before",
+    "after_receipt": "mysql80/25-alter-inheritance-after"
+  },
+  {
+    "anchor": "mysql80",
+    "case": "replace-reset",
+    "schema": "t18p_26",
+    "target_rc": 0,
+    "stderr": "",
+    "target_receipt": "mysql80/26-replace-reset-target",
+    "before_receipt": "mysql80/26-replace-reset-before",
+    "after_receipt": "mysql80/26-replace-reset-after"
+  },
+  {
+    "anchor": "mysql80",
+    "case": "rename-source",
+    "schema": "t18p_27",
+    "target_rc": 1,
+    "stderr": "ERROR 1356 (HY000) at line 1: View 't18p_27.w' references invalid table(s) or column(s) or function(s) or definer/invoker of view lack rights to use them",
+    "target_receipt": "mysql80/27-rename-source-target",
+    "before_receipt": "mysql80/27-rename-source-before",
+    "after_receipt": "mysql80/27-rename-source-after"
+  },
+  {
+    "anchor": "mysql80",
+    "case": "table-drop-view",
+    "schema": "t18p_28",
+    "target_rc": 1,
+    "stderr": "ERROR 1051 (42S02) at line 1: Unknown table 't18p_28.v'",
+    "target_receipt": "mysql80/28-table-drop-view-target",
+    "before_receipt": "mysql80/28-table-drop-view-before",
+    "after_receipt": "mysql80/28-table-drop-view-after"
+  },
+  {
+    "anchor": "mysql80",
+    "case": "table-drop-if-view",
+    "schema": "t18p_29",
+    "target_rc": 0,
+    "stderr": "",
+    "target_receipt": "mysql80/29-table-drop-if-view-target",
+    "before_receipt": "mysql80/29-table-drop-if-view-before",
+    "after_receipt": "mysql80/29-table-drop-if-view-after"
+  },
+  {
+    "anchor": "mysql80",
+    "case": "table-alter-view",
+    "schema": "t18p_30",
+    "target_rc": 1,
+    "stderr": "ERROR 1347 (HY000) at line 1: 't18p_30.v' is not BASE TABLE",
+    "target_receipt": "mysql80/30-table-alter-view-target",
+    "before_receipt": "mysql80/30-table-alter-view-before",
+    "after_receipt": "mysql80/30-table-alter-view-after"
+  },
+  {
+    "anchor": "mysql84",
+    "case": "create",
+    "schema": "t18p_0",
+    "target_rc": 0,
+    "stderr": "",
+    "target_receipt": "mysql84/00-create-target",
+    "before_receipt": "mysql84/00-create-before",
+    "after_receipt": "mysql84/00-create-after"
+  },
+  {
+    "anchor": "mysql84",
+    "case": "replace-present",
+    "schema": "t18p_1",
+    "target_rc": 0,
+    "stderr": "",
+    "target_receipt": "mysql84/01-replace-present-target",
+    "before_receipt": "mysql84/01-replace-present-before",
+    "after_receipt": "mysql84/01-replace-present-after"
+  },
+  {
+    "anchor": "mysql84",
+    "case": "replace-absent",
+    "schema": "t18p_2",
+    "target_rc": 0,
+    "stderr": "",
+    "target_receipt": "mysql84/02-replace-absent-target",
+    "before_receipt": "mysql84/02-replace-absent-before",
+    "after_receipt": "mysql84/02-replace-absent-after"
+  },
+  {
+    "anchor": "mysql84",
+    "case": "replace-table",
+    "schema": "t18p_3",
+    "target_rc": 1,
+    "stderr": "ERROR 1347 (HY000) at line 1: 't18p_3.t' is not VIEW",
+    "target_receipt": "mysql84/03-replace-table-target",
+    "before_receipt": "mysql84/03-replace-table-before",
+    "after_receipt": "mysql84/03-replace-table-after"
+  },
+  {
+    "anchor": "mysql84",
+    "case": "alter",
+    "schema": "t18p_4",
+    "target_rc": 0,
+    "stderr": "",
+    "target_receipt": "mysql84/04-alter-target",
+    "before_receipt": "mysql84/04-alter-before",
+    "after_receipt": "mysql84/04-alter-after"
+  },
+  {
+    "anchor": "mysql84",
+    "case": "alter-absent",
+    "schema": "t18p_5",
+    "target_rc": 1,
+    "stderr": "ERROR 1146 (42S02) at line 1: Table 't18p_5.absent_v' doesn't exist",
+    "target_receipt": "mysql84/05-alter-absent-target",
+    "before_receipt": "mysql84/05-alter-absent-before",
+    "after_receipt": "mysql84/05-alter-absent-after"
+  },
+  {
+    "anchor": "mysql84",
+    "case": "alter-table",
+    "schema": "t18p_6",
+    "target_rc": 1,
+    "stderr": "ERROR 1347 (HY000) at line 1: 't18p_6.t' is not VIEW",
+    "target_receipt": "mysql84/06-alter-table-target",
+    "before_receipt": "mysql84/06-alter-table-before",
+    "after_receipt": "mysql84/06-alter-table-after"
+  },
+  {
+    "anchor": "mysql84",
+    "case": "bare-check",
+    "schema": "t18p_7",
+    "target_rc": 0,
+    "stderr": "",
+    "target_receipt": "mysql84/07-bare-check-target",
+    "before_receipt": "mysql84/07-bare-check-before",
+    "after_receipt": "mysql84/07-bare-check-after"
+  },
+  {
+    "anchor": "mysql84",
+    "case": "local-check",
+    "schema": "t18p_8",
+    "target_rc": 0,
+    "stderr": "",
+    "target_receipt": "mysql84/08-local-check-target",
+    "before_receipt": "mysql84/08-local-check-before",
+    "after_receipt": "mysql84/08-local-check-after"
+  },
+  {
+    "anchor": "mysql84",
+    "case": "cascaded-check",
+    "schema": "t18p_9",
+    "target_rc": 0,
+    "stderr": "",
+    "target_receipt": "mysql84/09-cascaded-check-target",
+    "before_receipt": "mysql84/09-cascaded-check-before",
+    "after_receipt": "mysql84/09-cascaded-check-after"
+  },
+  {
+    "anchor": "mysql84",
+    "case": "security-columns",
+    "schema": "t18p_10",
+    "target_rc": 0,
+    "stderr": "",
+    "target_receipt": "mysql84/10-security-columns-target",
+    "before_receipt": "mysql84/10-security-columns-before",
+    "after_receipt": "mysql84/10-security-columns-after"
+  },
+  {
+    "anchor": "mysql84",
+    "case": "merge-aggregate",
+    "schema": "t18p_11",
+    "target_rc": 0,
+    "stderr": "",
+    "target_receipt": "mysql84/11-merge-aggregate-target",
+    "before_receipt": "mysql84/11-merge-aggregate-before",
+    "after_receipt": "mysql84/11-merge-aggregate-after"
+  },
+  {
+    "anchor": "mysql84",
+    "case": "temptable",
+    "schema": "t18p_12",
+    "target_rc": 0,
+    "stderr": "",
+    "target_receipt": "mysql84/12-temptable-target",
+    "before_receipt": "mysql84/12-temptable-before",
+    "after_receipt": "mysql84/12-temptable-after"
+  },
+  {
+    "anchor": "mysql84",
+    "case": "temptable-check",
+    "schema": "t18p_13",
+    "target_rc": 1,
+    "stderr": "ERROR 1368 (HY000) at line 1: CHECK OPTION on non-updatable view 't18p_13.new_v'",
+    "target_receipt": "mysql84/13-temptable-check-target",
+    "before_receipt": "mysql84/13-temptable-check-before",
+    "after_receipt": "mysql84/13-temptable-check-after"
+  },
+  {
+    "anchor": "mysql84",
+    "case": "aggregate-check",
+    "schema": "t18p_14",
+    "target_rc": 1,
+    "stderr": "ERROR 1368 (HY000) at line 1: CHECK OPTION on non-updatable view 't18p_14.new_v'",
+    "target_receipt": "mysql84/14-aggregate-check-target",
+    "before_receipt": "mysql84/14-aggregate-check-before",
+    "after_receipt": "mysql84/14-aggregate-check-after"
+  },
+  {
+    "anchor": "mysql84",
+    "case": "named-definer",
+    "schema": "t18p_15",
+    "target_rc": 0,
+    "stderr": "",
+    "target_receipt": "mysql84/15-named-definer-target",
+    "before_receipt": "mysql84/15-named-definer-before",
+    "after_receipt": "mysql84/15-named-definer-after"
+  },
+  {
+    "anchor": "mysql84",
+    "case": "source-absent",
+    "schema": "t18p_16",
+    "target_rc": 1,
+    "stderr": "ERROR 1146 (42S02) at line 1: Table 't18p_16.missing_t' doesn't exist",
+    "target_receipt": "mysql84/16-source-absent-target",
+    "before_receipt": "mysql84/16-source-absent-before",
+    "after_receipt": "mysql84/16-source-absent-after"
+  },
+  {
+    "anchor": "mysql84",
+    "case": "column-absent",
+    "schema": "t18p_17",
+    "target_rc": 1,
+    "stderr": "ERROR 1054 (42S22) at line 1: Unknown column 'missing_column' in 'field list'",
+    "target_receipt": "mysql84/17-column-absent-target",
+    "before_receipt": "mysql84/17-column-absent-before",
+    "after_receipt": "mysql84/17-column-absent-after"
+  },
+  {
+    "anchor": "mysql84",
+    "case": "invalid-select",
+    "schema": "t18p_18",
+    "target_rc": 1,
+    "stderr": "ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'FROM t' at line 1",
+    "target_receipt": "mysql84/18-invalid-select-target",
+    "before_receipt": "mysql84/18-invalid-select-before",
+    "after_receipt": "mysql84/18-invalid-select-after"
+  },
+  {
+    "anchor": "mysql84",
+    "case": "invalid-source-view",
+    "schema": "t18p_19",
+    "target_rc": 1,
+    "stderr": "ERROR 1356 (HY000) at line 1: View 't18p_19.w' references invalid table(s) or column(s) or function(s) or definer/invoker of view lack rights to use them",
+    "target_receipt": "mysql84/19-invalid-source-view-target",
+    "before_receipt": "mysql84/19-invalid-source-view-before",
+    "after_receipt": "mysql84/19-invalid-source-view-after"
+  },
+  {
+    "anchor": "mysql84",
+    "case": "drop-missing",
+    "schema": "t18p_20",
+    "target_rc": 1,
+    "stderr": "ERROR 1051 (42S02) at line 1: Unknown table 't18p_20.missing_v'",
+    "target_receipt": "mysql84/20-drop-missing-target",
+    "before_receipt": "mysql84/20-drop-missing-before",
+    "after_receipt": "mysql84/20-drop-missing-after"
+  },
+  {
+    "anchor": "mysql84",
+    "case": "drop-table",
+    "schema": "t18p_21",
+    "target_rc": 1,
+    "stderr": "ERROR 1347 (HY000) at line 1: 't18p_21.t' is not VIEW",
+    "target_receipt": "mysql84/21-drop-table-target",
+    "before_receipt": "mysql84/21-drop-table-before",
+    "after_receipt": "mysql84/21-drop-table-after"
+  },
+  {
+    "anchor": "mysql84",
+    "case": "drop-if-missing",
+    "schema": "t18p_22",
+    "target_rc": 0,
+    "stderr": "",
+    "target_receipt": "mysql84/22-drop-if-missing-target",
+    "before_receipt": "mysql84/22-drop-if-missing-before",
+    "after_receipt": "mysql84/22-drop-if-missing-after"
+  },
+  {
+    "anchor": "mysql84",
+    "case": "drop-if-table",
+    "schema": "t18p_23",
+    "target_rc": 0,
+    "stderr": "",
+    "target_receipt": "mysql84/23-drop-if-table-target",
+    "before_receipt": "mysql84/23-drop-if-table-before",
+    "after_receipt": "mysql84/23-drop-if-table-after"
+  },
+  {
+    "anchor": "mysql84",
+    "case": "drop-duplicate",
+    "schema": "t18p_24",
+    "target_rc": 1,
+    "stderr": "ERROR 1066 (42000) at line 1: Not unique table/alias: 'v'",
+    "target_receipt": "mysql84/24-drop-duplicate-target",
+    "before_receipt": "mysql84/24-drop-duplicate-before",
+    "after_receipt": "mysql84/24-drop-duplicate-after"
+  },
+  {
+    "anchor": "mysql84",
+    "case": "alter-inheritance",
+    "schema": "t18p_25",
+    "target_rc": 0,
+    "stderr": "",
+    "target_receipt": "mysql84/25-alter-inheritance-target",
+    "before_receipt": "mysql84/25-alter-inheritance-before",
+    "after_receipt": "mysql84/25-alter-inheritance-after"
+  },
+  {
+    "anchor": "mysql84",
+    "case": "replace-reset",
+    "schema": "t18p_26",
+    "target_rc": 0,
+    "stderr": "",
+    "target_receipt": "mysql84/26-replace-reset-target",
+    "before_receipt": "mysql84/26-replace-reset-before",
+    "after_receipt": "mysql84/26-replace-reset-after"
+  },
+  {
+    "anchor": "mysql84",
+    "case": "rename-source",
+    "schema": "t18p_27",
+    "target_rc": 1,
+    "stderr": "ERROR 1356 (HY000) at line 1: View 't18p_27.w' references invalid table(s) or column(s) or function(s) or definer/invoker of view lack rights to use them",
+    "target_receipt": "mysql84/27-rename-source-target",
+    "before_receipt": "mysql84/27-rename-source-before",
+    "after_receipt": "mysql84/27-rename-source-after"
+  },
+  {
+    "anchor": "mysql84",
+    "case": "table-drop-view",
+    "schema": "t18p_28",
+    "target_rc": 1,
+    "stderr": "ERROR 1051 (42S02) at line 1: Unknown table 't18p_28.v'",
+    "target_receipt": "mysql84/28-table-drop-view-target",
+    "before_receipt": "mysql84/28-table-drop-view-before",
+    "after_receipt": "mysql84/28-table-drop-view-after"
+  },
+  {
+    "anchor": "mysql84",
+    "case": "table-drop-if-view",
+    "schema": "t18p_29",
+    "target_rc": 0,
+    "stderr": "",
+    "target_receipt": "mysql84/29-table-drop-if-view-target",
+    "before_receipt": "mysql84/29-table-drop-if-view-before",
+    "after_receipt": "mysql84/29-table-drop-if-view-after"
+  },
+  {
+    "anchor": "mysql84",
+    "case": "table-alter-view",
+    "schema": "t18p_30",
+    "target_rc": 1,
+    "stderr": "ERROR 1347 (HY000) at line 1: 't18p_30.v' is not BASE TABLE",
+    "target_receipt": "mysql84/30-table-alter-view-target",
+    "before_receipt": "mysql84/30-table-alter-view-before",
+    "after_receipt": "mysql84/30-table-alter-view-after"
+  },
+  {
+    "anchor": "tidb85",
+    "case": "create",
+    "schema": "t18p_0",
+    "target_rc": 0,
+    "stderr": "",
+    "target_receipt": "tidb85/00-create-target",
+    "before_receipt": "tidb85/00-create-before",
+    "after_receipt": "tidb85/00-create-after"
+  },
+  {
+    "anchor": "tidb85",
+    "case": "replace-present",
+    "schema": "t18p_1",
+    "target_rc": 0,
+    "stderr": "",
+    "target_receipt": "tidb85/01-replace-present-target",
+    "before_receipt": "tidb85/01-replace-present-before",
+    "after_receipt": "tidb85/01-replace-present-after"
+  },
+  {
+    "anchor": "tidb85",
+    "case": "replace-absent",
+    "schema": "t18p_2",
+    "target_rc": 0,
+    "stderr": "",
+    "target_receipt": "tidb85/02-replace-absent-target",
+    "before_receipt": "tidb85/02-replace-absent-before",
+    "after_receipt": "tidb85/02-replace-absent-after"
+  },
+  {
+    "anchor": "tidb85",
+    "case": "replace-table",
+    "schema": "t18p_3",
+    "target_rc": 1,
+    "stderr": "ERROR 1347 (HY000) at line 1: 't18p_3.t' is not VIEW",
+    "target_receipt": "tidb85/03-replace-table-target",
+    "before_receipt": "tidb85/03-replace-table-before",
+    "after_receipt": "tidb85/03-replace-table-after"
+  },
+  {
+    "anchor": "tidb85",
+    "case": "alter",
+    "schema": "t18p_4",
+    "target_rc": 1,
+    "stderr": "ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your TiDB version for the right syntax to use line 1 column 10 near \"VIEW v AS SELECT id FROM t\"",
+    "target_receipt": "tidb85/04-alter-target",
+    "before_receipt": "tidb85/04-alter-before",
+    "after_receipt": "tidb85/04-alter-after"
+  },
+  {
+    "anchor": "tidb85",
+    "case": "alter-absent",
+    "schema": "t18p_5",
+    "target_rc": 1,
+    "stderr": "ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your TiDB version for the right syntax to use line 1 column 10 near \"VIEW absent_v AS SELECT id FROM t\"",
+    "target_receipt": "tidb85/05-alter-absent-target",
+    "before_receipt": "tidb85/05-alter-absent-before",
+    "after_receipt": "tidb85/05-alter-absent-after"
+  },
+  {
+    "anchor": "tidb85",
+    "case": "alter-table",
+    "schema": "t18p_6",
+    "target_rc": 1,
+    "stderr": "ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your TiDB version for the right syntax to use line 1 column 10 near \"VIEW t AS SELECT id FROM u\"",
+    "target_receipt": "tidb85/06-alter-table-target",
+    "before_receipt": "tidb85/06-alter-table-before",
+    "after_receipt": "tidb85/06-alter-table-after"
+  },
+  {
+    "anchor": "tidb85",
+    "case": "bare-check",
+    "schema": "t18p_7",
+    "target_rc": 1,
+    "stderr": "ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your TiDB version for the right syntax to use line 1 column 61 near \"CHECK OPTION\"",
+    "target_receipt": "tidb85/07-bare-check-target",
+    "before_receipt": "tidb85/07-bare-check-before",
+    "after_receipt": "tidb85/07-bare-check-after"
+  },
+  {
+    "anchor": "tidb85",
+    "case": "local-check",
+    "schema": "t18p_8",
+    "target_rc": 0,
+    "stderr": "",
+    "target_receipt": "tidb85/08-local-check-target",
+    "before_receipt": "tidb85/08-local-check-before",
+    "after_receipt": "tidb85/08-local-check-after"
+  },
+  {
+    "anchor": "tidb85",
+    "case": "cascaded-check",
+    "schema": "t18p_9",
+    "target_rc": 0,
+    "stderr": "",
+    "target_receipt": "tidb85/09-cascaded-check-target",
+    "before_receipt": "tidb85/09-cascaded-check-before",
+    "after_receipt": "tidb85/09-cascaded-check-after"
+  },
+  {
+    "anchor": "tidb85",
+    "case": "security-columns",
+    "schema": "t18p_10",
+    "target_rc": 0,
+    "stderr": "",
+    "target_receipt": "tidb85/10-security-columns-target",
+    "before_receipt": "tidb85/10-security-columns-before",
+    "after_receipt": "tidb85/10-security-columns-after"
+  },
+  {
+    "anchor": "tidb85",
+    "case": "merge-aggregate",
+    "schema": "t18p_11",
+    "target_rc": 0,
+    "stderr": "",
+    "target_receipt": "tidb85/11-merge-aggregate-target",
+    "before_receipt": "tidb85/11-merge-aggregate-before",
+    "after_receipt": "tidb85/11-merge-aggregate-after"
+  },
+  {
+    "anchor": "tidb85",
+    "case": "temptable",
+    "schema": "t18p_12",
+    "target_rc": 0,
+    "stderr": "",
+    "target_receipt": "tidb85/12-temptable-target",
+    "before_receipt": "tidb85/12-temptable-before",
+    "after_receipt": "tidb85/12-temptable-after"
+  },
+  {
+    "anchor": "tidb85",
+    "case": "temptable-check",
+    "schema": "t18p_13",
+    "target_rc": 0,
+    "stderr": "",
+    "target_receipt": "tidb85/13-temptable-check-target",
+    "before_receipt": "tidb85/13-temptable-check-before",
+    "after_receipt": "tidb85/13-temptable-check-after"
+  },
+  {
+    "anchor": "tidb85",
+    "case": "aggregate-check",
+    "schema": "t18p_14",
+    "target_rc": 0,
+    "stderr": "",
+    "target_receipt": "tidb85/14-aggregate-check-target",
+    "before_receipt": "tidb85/14-aggregate-check-before",
+    "after_receipt": "tidb85/14-aggregate-check-after"
+  },
+  {
+    "anchor": "tidb85",
+    "case": "named-definer",
+    "schema": "t18p_15",
+    "target_rc": 0,
+    "stderr": "",
+    "target_receipt": "tidb85/15-named-definer-target",
+    "before_receipt": "tidb85/15-named-definer-before",
+    "after_receipt": "tidb85/15-named-definer-after"
+  },
+  {
+    "anchor": "tidb85",
+    "case": "source-absent",
+    "schema": "t18p_16",
+    "target_rc": 1,
+    "stderr": "ERROR 1146 (42S02) at line 1: Table 't18p_16.missing_t' doesn't exist",
+    "target_receipt": "tidb85/16-source-absent-target",
+    "before_receipt": "tidb85/16-source-absent-before",
+    "after_receipt": "tidb85/16-source-absent-after"
+  },
+  {
+    "anchor": "tidb85",
+    "case": "column-absent",
+    "schema": "t18p_17",
+    "target_rc": 1,
+    "stderr": "ERROR 1054 (42S22) at line 1: Unknown column 'missing_column' in 'field list'",
+    "target_receipt": "tidb85/17-column-absent-target",
+    "before_receipt": "tidb85/17-column-absent-before",
+    "after_receipt": "tidb85/17-column-absent-after"
+  },
+  {
+    "anchor": "tidb85",
+    "case": "invalid-select",
+    "schema": "t18p_18",
+    "target_rc": 1,
+    "stderr": "ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your TiDB version for the right syntax to use line 1 column 32 near \"FROM t\"",
+    "target_receipt": "tidb85/18-invalid-select-target",
+    "before_receipt": "tidb85/18-invalid-select-before",
+    "after_receipt": "tidb85/18-invalid-select-after"
+  },
+  {
+    "anchor": "tidb85",
+    "case": "invalid-source-view",
+    "schema": "t18p_19",
+    "target_rc": 1,
+    "stderr": "ERROR 1356 (HY000) at line 1: View 't18p_19.w' references invalid table(s) or column(s) or function(s) or definer/invoker of view lack rights to use them",
+    "target_receipt": "tidb85/19-invalid-source-view-target",
+    "before_receipt": "tidb85/19-invalid-source-view-before",
+    "after_receipt": "tidb85/19-invalid-source-view-after"
+  },
+  {
+    "anchor": "tidb85",
+    "case": "drop-missing",
+    "schema": "t18p_20",
+    "target_rc": 1,
+    "stderr": "ERROR 1051 (42S02) at line 1: Unknown table 't18p_20.missing_v'",
+    "target_receipt": "tidb85/20-drop-missing-target",
+    "before_receipt": "tidb85/20-drop-missing-before",
+    "after_receipt": "tidb85/20-drop-missing-after"
+  },
+  {
+    "anchor": "tidb85",
+    "case": "drop-table",
+    "schema": "t18p_21",
+    "target_rc": 1,
+    "stderr": "ERROR 1347 (HY000) at line 1: 't18p_21.t' is not VIEW",
+    "target_receipt": "tidb85/21-drop-table-target",
+    "before_receipt": "tidb85/21-drop-table-before",
+    "after_receipt": "tidb85/21-drop-table-after"
+  },
+  {
+    "anchor": "tidb85",
+    "case": "drop-if-missing",
+    "schema": "t18p_22",
+    "target_rc": 0,
+    "stderr": "",
+    "target_receipt": "tidb85/22-drop-if-missing-target",
+    "before_receipt": "tidb85/22-drop-if-missing-before",
+    "after_receipt": "tidb85/22-drop-if-missing-after"
+  },
+  {
+    "anchor": "tidb85",
+    "case": "drop-if-table",
+    "schema": "t18p_23",
+    "target_rc": 1,
+    "stderr": "ERROR 1347 (HY000) at line 1: 't18p_23.t' is not VIEW",
+    "target_receipt": "tidb85/23-drop-if-table-target",
+    "before_receipt": "tidb85/23-drop-if-table-before",
+    "after_receipt": "tidb85/23-drop-if-table-after"
+  },
+  {
+    "anchor": "tidb85",
+    "case": "drop-duplicate",
+    "schema": "t18p_24",
+    "target_rc": 1,
+    "stderr": "ERROR 1051 (42S02) at line 1: Unknown table 't18p_24.v'",
+    "target_receipt": "tidb85/24-drop-duplicate-target",
+    "before_receipt": "tidb85/24-drop-duplicate-before",
+    "after_receipt": "tidb85/24-drop-duplicate-after"
+  },
+  {
+    "anchor": "tidb85",
+    "case": "alter-inheritance",
+    "schema": "t18p_25",
+    "target_rc": 1,
+    "stderr": "ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your TiDB version for the right syntax to use line 1 column 10 near \"VIEW v AS SELECT id FROM t\"",
+    "target_receipt": "tidb85/25-alter-inheritance-target",
+    "before_receipt": "tidb85/25-alter-inheritance-before",
+    "after_receipt": "tidb85/25-alter-inheritance-after"
+  },
+  {
+    "anchor": "tidb85",
+    "case": "replace-reset",
+    "schema": "t18p_26",
+    "target_rc": 0,
+    "stderr": "",
+    "target_receipt": "tidb85/26-replace-reset-target",
+    "before_receipt": "tidb85/26-replace-reset-before",
+    "after_receipt": "tidb85/26-replace-reset-after"
+  },
+  {
+    "anchor": "tidb85",
+    "case": "rename-source",
+    "schema": "t18p_27",
+    "target_rc": 1,
+    "stderr": "ERROR 1356 (HY000) at line 1: View 't18p_27.w' references invalid table(s) or column(s) or function(s) or definer/invoker of view lack rights to use them",
+    "target_receipt": "tidb85/27-rename-source-target",
+    "before_receipt": "tidb85/27-rename-source-before",
+    "after_receipt": "tidb85/27-rename-source-after"
+  },
+  {
+    "anchor": "tidb85",
+    "case": "table-drop-view",
+    "schema": "t18p_28",
+    "target_rc": 1,
+    "stderr": "ERROR 1051 (42S02) at line 1: Unknown table 't18p_28.v'",
+    "target_receipt": "tidb85/28-table-drop-view-target",
+    "before_receipt": "tidb85/28-table-drop-view-before",
+    "after_receipt": "tidb85/28-table-drop-view-after"
+  },
+  {
+    "anchor": "tidb85",
+    "case": "table-drop-if-view",
+    "schema": "t18p_29",
+    "target_rc": 0,
+    "stderr": "",
+    "target_receipt": "tidb85/29-table-drop-if-view-target",
+    "before_receipt": "tidb85/29-table-drop-if-view-before",
+    "after_receipt": "tidb85/29-table-drop-if-view-after"
+  },
+  {
+    "anchor": "tidb85",
+    "case": "table-alter-view",
+    "schema": "t18p_30",
+    "target_rc": 1,
+    "stderr": "ERROR 1347 (HY000) at line 1: 't18p_30.v' is not BASE TABLE",
+    "target_receipt": "tidb85/30-table-alter-view-target",
+    "before_receipt": "tidb85/30-table-alter-view-before",
+    "after_receipt": "tidb85/30-table-alter-view-after"
+  }
+]

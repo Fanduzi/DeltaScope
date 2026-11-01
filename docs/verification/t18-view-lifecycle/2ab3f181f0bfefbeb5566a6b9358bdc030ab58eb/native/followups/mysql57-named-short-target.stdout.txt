@@ -1,0 +1,10 @@
+--------------
+CREATE DEFINER='t18_named_short' VIEW new_v AS SELECT id FROM t
+--------------
+
+--------------
+SHOW WARNINGS
+--------------
+
+Level	Code	Message
+Note	1449	The user specified as a definer ('t18_named_short'@'%') does not exist

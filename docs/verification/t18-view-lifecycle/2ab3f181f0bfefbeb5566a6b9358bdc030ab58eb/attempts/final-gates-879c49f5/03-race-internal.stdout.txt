@@ -1,0 +1,78 @@
+?   	github.com/Fanduzi/DeltaScope/internal/application	[no test files]
+ok  	github.com/Fanduzi/DeltaScope/internal/application/audit	19.361s
+ok  	github.com/Fanduzi/DeltaScope/internal/application/auditmeta	6.118s
+ok  	github.com/Fanduzi/DeltaScope/internal/application/configlint	2.379s
+ok  	github.com/Fanduzi/DeltaScope/internal/application/configstatus	2.001s
+ok  	github.com/Fanduzi/DeltaScope/internal/application/connresolve	3.291s
+ok  	github.com/Fanduzi/DeltaScope/internal/application/online	5.264s
+ok  	github.com/Fanduzi/DeltaScope/internal/application/policy	4.262s
+ok  	github.com/Fanduzi/DeltaScope/internal/application/queryaccess	4.980s
+ok  	github.com/Fanduzi/DeltaScope/internal/application/rulepresence	1.507s
+?   	github.com/Fanduzi/DeltaScope/internal/domain	[no test files]
+ok  	github.com/Fanduzi/DeltaScope/internal/domain/policy	6.492s
+ok  	github.com/Fanduzi/DeltaScope/internal/domain/queryaccess	5.628s
+ok  	github.com/Fanduzi/DeltaScope/internal/domain/report	6.118s
+ok  	github.com/Fanduzi/DeltaScope/internal/domain/rule	5.359s
+ok  	github.com/Fanduzi/DeltaScope/internal/domain/rule/catalog	5.288s
+ok  	github.com/Fanduzi/DeltaScope/internal/domain/rule/ddl	5.435s
+ok  	github.com/Fanduzi/DeltaScope/internal/domain/rule/dml	4.826s
+ok  	github.com/Fanduzi/DeltaScope/internal/domain/spec	4.257s
+?   	github.com/Fanduzi/DeltaScope/internal/infrastructure	[no test files]
+ok  	github.com/Fanduzi/DeltaScope/internal/infrastructure/config/viper	3.946s
+ok  	github.com/Fanduzi/DeltaScope/internal/infrastructure/logger	4.055s
+ok  	github.com/Fanduzi/DeltaScope/internal/infrastructure/metadata/mysql	4.225s
+ok  	github.com/Fanduzi/DeltaScope/internal/infrastructure/metadata/postgresql	4.184s
+?   	github.com/Fanduzi/DeltaScope/internal/infrastructure/output	[no test files]
+ok  	github.com/Fanduzi/DeltaScope/internal/infrastructure/output/githubactions	4.567s
+ok  	github.com/Fanduzi/DeltaScope/internal/infrastructure/output/githubsummary	4.580s
+ok  	github.com/Fanduzi/DeltaScope/internal/infrastructure/output/gitlabcodequality	4.591s
+ok  	github.com/Fanduzi/DeltaScope/internal/infrastructure/output/json	4.564s
+ok  	github.com/Fanduzi/DeltaScope/internal/infrastructure/output/markdown	4.419s
+ok  	github.com/Fanduzi/DeltaScope/internal/infrastructure/output/sarif	4.504s
+ok  	github.com/Fanduzi/DeltaScope/internal/infrastructure/parser/postgresql	4.471s
+ok  	github.com/Fanduzi/DeltaScope/internal/infrastructure/parser/tidb	4.805s
+ok  	github.com/Fanduzi/DeltaScope/internal/infrastructure/runtimeconfig	4.643s
+Error: write failed
+Error: config lint requires --file
+Usage:
+  lint [flags]
+
+Flags:
+      --file string   path to the YAML config file to lint
+  -h, --help          help for lint
+      --strict        fail when lint warnings are present
+
+Error: write failed
+Error: write failed
+Error: rule "made.up.rule" not found
+Usage:
+  explain <rule-id> [flags]
+
+Flags:
+      --format string   output format: text or json (default "text")
+  -h, --help            help for explain
+
+Error: invalid kind "bad": must be one of ddl, dml
+Usage:
+  list [flags]
+
+Flags:
+      --category string   filter by category (case-insensitive substring)
+      --dialect string    filter by dialect: mysql, tidb, postgresql, common
+      --format string     output format: text or json (default "text")
+  -h, --help              help for list
+      --kind string       filter by kind: ddl, dml
+      --level string      filter by level: blocker, warning, notice
+      --limit int         limit result count; 0 means no limit
+      --search string     search across rule fields (case-insensitive substring)
+
+--- FAIL: TestDDLCoverage_EmbeddedCatalogMySQLParserUpgradeCandidate (0.01s)
+    ddl_coverage_test.go:31: output should contain ALTER VIEW
+--- FAIL: TestDDLCoverage_MySQLParserUpgradeCandidate (0.01s)
+    ddl_coverage_test.go:56: output should contain ALTER VIEW
+FAIL
+FAIL	github.com/Fanduzi/DeltaScope/internal/interfaces/cli	7.281s
+ok  	github.com/Fanduzi/DeltaScope/internal/interfaces/http	8.708s
+ok  	github.com/Fanduzi/DeltaScope/internal/interfaces/mcp	7.080s
+ok  	github.com/Fanduzi/DeltaScope/internal/interfaces/metadata	5.238s
+FAIL

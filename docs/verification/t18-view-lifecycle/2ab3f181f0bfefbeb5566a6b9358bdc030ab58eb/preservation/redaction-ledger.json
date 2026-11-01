@@ -1,0 +1,159 @@
+{
+  "marker": "<redacted>",
+  "scope": "Disposable fixture credentials in archived source or command receipts; originals remain private.",
+  "files": [
+    {
+      "source": "/tmp/t18-evidence/green/cli-setup.command.txt",
+      "destination": "green/cli-setup.command.txt",
+      "category": "fixture-password-assignment",
+      "occurrences": 1,
+      "original_sha256": "be44fd67685af714084640495cb382e163de1a329d488029f3007cc75bd8498b",
+      "sanitized_sha256": "2dd9ba765f696d52e0a19b44e5c51ec57a3d30826cd591470f3622921cabda73",
+      "original_remains_private": true
+    },
+    {
+      "source": "/tmp/t18-evidence/green/full-drop-golden-1.command.txt",
+      "destination": "green/full-drop-golden-1.command.txt",
+      "category": "fixture-password-assignment",
+      "occurrences": 2,
+      "original_sha256": "41c18156525c4ae4dc4b7382bc179c0a850b5c06742dfa81e6a43c257ab65081",
+      "sanitized_sha256": "b32b8e7bab716c030e02d70a015aa5e17b1b9ef288911526c710265e198d1838",
+      "original_remains_private": true
+    },
+    {
+      "source": "/tmp/t18-evidence/green/full-options-golden-1.command.txt",
+      "destination": "green/full-options-golden-1.command.txt",
+      "category": "fixture-password-assignment",
+      "occurrences": 2,
+      "original_sha256": "41c18156525c4ae4dc4b7382bc179c0a850b5c06742dfa81e6a43c257ab65081",
+      "sanitized_sha256": "b32b8e7bab716c030e02d70a015aa5e17b1b9ef288911526c710265e198d1838",
+      "original_remains_private": true
+    },
+    {
+      "source": "/tmp/t18-evidence/green/full-options-golden-2.command.txt",
+      "destination": "green/full-options-golden-2.command.txt",
+      "category": "fixture-password-assignment",
+      "occurrences": 2,
+      "original_sha256": "41c18156525c4ae4dc4b7382bc179c0a850b5c06742dfa81e6a43c257ab65081",
+      "sanitized_sha256": "b32b8e7bab716c030e02d70a015aa5e17b1b9ef288911526c710265e198d1838",
+      "original_remains_private": true
+    },
+    {
+      "source": "/tmp/t18-evidence/green/full-output-golden-1.command.txt",
+      "destination": "green/full-output-golden-1.command.txt",
+      "category": "fixture-password-assignment",
+      "occurrences": 2,
+      "original_sha256": "41c18156525c4ae4dc4b7382bc179c0a850b5c06742dfa81e6a43c257ab65081",
+      "sanitized_sha256": "b32b8e7bab716c030e02d70a015aa5e17b1b9ef288911526c710265e198d1838",
+      "original_remains_private": true
+    },
+    {
+      "source": "/tmp/t18-evidence/green/full-query-golden-1.command.txt",
+      "destination": "green/full-query-golden-1.command.txt",
+      "category": "fixture-password-assignment",
+      "occurrences": 2,
+      "original_sha256": "41c18156525c4ae4dc4b7382bc179c0a850b5c06742dfa81e6a43c257ab65081",
+      "sanitized_sha256": "b32b8e7bab716c030e02d70a015aa5e17b1b9ef288911526c710265e198d1838",
+      "original_remains_private": true
+    },
+    {
+      "source": "/tmp/t18-evidence/green/full-star-golden-1.command.txt",
+      "destination": "green/full-star-golden-1.command.txt",
+      "category": "fixture-password-assignment",
+      "occurrences": 2,
+      "original_sha256": "41c18156525c4ae4dc4b7382bc179c0a850b5c06742dfa81e6a43c257ab65081",
+      "sanitized_sha256": "b32b8e7bab716c030e02d70a015aa5e17b1b9ef288911526c710265e198d1838",
+      "original_remains_private": true
+    },
+    {
+      "source": "/tmp/t18-evidence/green/full-structured-golden-1.command.txt",
+      "destination": "green/full-structured-golden-1.command.txt",
+      "category": "fixture-password-assignment",
+      "occurrences": 2,
+      "original_sha256": "41c18156525c4ae4dc4b7382bc179c0a850b5c06742dfa81e6a43c257ab65081",
+      "sanitized_sha256": "b32b8e7bab716c030e02d70a015aa5e17b1b9ef288911526c710265e198d1838",
+      "original_remains_private": true
+    },
+    {
+      "source": "/tmp/t18-evidence/green/full-structured-golden-2.command.txt",
+      "destination": "green/full-structured-golden-2.command.txt",
+      "category": "fixture-password-assignment",
+      "occurrences": 2,
+      "original_sha256": "41c18156525c4ae4dc4b7382bc179c0a850b5c06742dfa81e6a43c257ab65081",
+      "sanitized_sha256": "b32b8e7bab716c030e02d70a015aa5e17b1b9ef288911526c710265e198d1838",
+      "original_remains_private": true
+    },
+    {
+      "source": "/tmp/t18-evidence/green/full-table-view-golden-1.command.txt",
+      "destination": "green/full-table-view-golden-1.command.txt",
+      "category": "fixture-password-assignment",
+      "occurrences": 2,
+      "original_sha256": "41c18156525c4ae4dc4b7382bc179c0a850b5c06742dfa81e6a43c257ab65081",
+      "sanitized_sha256": "b32b8e7bab716c030e02d70a015aa5e17b1b9ef288911526c710265e198d1838",
+      "original_remains_private": true
+    },
+    {
+      "source": "/tmp/t18-evidence/green/golden-1.command.txt",
+      "destination": "green/golden-1.command.txt",
+      "category": "fixture-password-assignment",
+      "occurrences": 2,
+      "original_sha256": "41c18156525c4ae4dc4b7382bc179c0a850b5c06742dfa81e6a43c257ab65081",
+      "sanitized_sha256": "b32b8e7bab716c030e02d70a015aa5e17b1b9ef288911526c710265e198d1838",
+      "original_remains_private": true
+    },
+    {
+      "source": "/tmp/t18-evidence/green/golden-2.command.txt",
+      "destination": "green/golden-2.command.txt",
+      "category": "fixture-password-assignment",
+      "occurrences": 2,
+      "original_sha256": "41c18156525c4ae4dc4b7382bc179c0a850b5c06742dfa81e6a43c257ab65081",
+      "sanitized_sha256": "b32b8e7bab716c030e02d70a015aa5e17b1b9ef288911526c710265e198d1838",
+      "original_remains_private": true
+    },
+    {
+      "source": "/tmp/t18-evidence/green/golden-3.command.txt",
+      "destination": "green/golden-3.command.txt",
+      "category": "fixture-password-assignment",
+      "occurrences": 2,
+      "original_sha256": "41c18156525c4ae4dc4b7382bc179c0a850b5c06742dfa81e6a43c257ab65081",
+      "sanitized_sha256": "b32b8e7bab716c030e02d70a015aa5e17b1b9ef288911526c710265e198d1838",
+      "original_remains_private": true
+    },
+    {
+      "source": "/tmp/t18-evidence/green/review-golden-1.command.txt",
+      "destination": "green/review-golden-1.command.txt",
+      "category": "fixture-password-assignment",
+      "occurrences": 2,
+      "original_sha256": "41c18156525c4ae4dc4b7382bc179c0a850b5c06742dfa81e6a43c257ab65081",
+      "sanitized_sha256": "b32b8e7bab716c030e02d70a015aa5e17b1b9ef288911526c710265e198d1838",
+      "original_remains_private": true
+    },
+    {
+      "source": "/tmp/t18-evidence/native/t18_native_extra.py",
+      "destination": "native/t18_native_extra.py",
+      "category": "fixture-password-assignment",
+      "occurrences": 1,
+      "original_sha256": "1c682fef9626c5759bf774b4288b049d69932722c64d6ede6318bd49bc37adba",
+      "sanitized_sha256": "dbc7a414508c5c5da9c2d7214b90cb6f30467af5b65dc6a9d9c2ee48b4488334",
+      "original_remains_private": true
+    },
+    {
+      "source": "/tmp/t18-evidence/native/t18_native_namespace.py",
+      "destination": "native/t18_native_namespace.py",
+      "category": "fixture-password-assignment",
+      "occurrences": 1,
+      "original_sha256": "12a67630bbb74f11bb146f06798b569703a236d15a877d6bf5027e5a2f65edda",
+      "sanitized_sha256": "b6397d16b0f18c031b236db7bb779d388036bef580b4f09483607e8d15a588e9",
+      "original_remains_private": true
+    },
+    {
+      "source": "/tmp/t18-evidence/native/t18_native_probe.py",
+      "destination": "native/t18_native_probe.py",
+      "category": "fixture-password-assignment",
+      "occurrences": 1,
+      "original_sha256": "0b66426d112d443032e2b07057869dacde59c492c73b596add3264e018a6d22a",
+      "sanitized_sha256": "6efa7bd986ab32b19d6317a4fec61bf85496d84715c30feef584cac1c2c6c6bc",
+      "original_remains_private": true
+    }
+  ]
+}

@@ -1,0 +1,36 @@
+{
+  "landing_reconstructed": "/tmp/t18-reviewed-landing-k6xqc57p/landing",
+  "landing_paths_verified": 91,
+  "changes": [
+    {
+      "path": "docs/decisions/2026-11-01-ddl-view-lifecycle.md",
+      "landing_sha256": "d279d343b5217eb199922cc85a4b8288978571031008f77506bb8fb56404f622",
+      "current_sha256": "6da67dbf49cdccb1e1b5a863994c14baacd59cb9d702ab4e2613e2662b333bc6"
+    },
+    {
+      "path": "docs/work-plans/t18-view-lifecycle/CONTRACT.md",
+      "landing_sha256": "b7de0a682ae65867d2e6c1d8f6432232711c83581d69dfb974875986ca68794d",
+      "current_sha256": "29595136f10cc466bc880c7198a4fbef9cac1c3404b5bef0e022a2e12f7edd8b"
+    },
+    {
+      "path": "docs/work-plans/t18-view-lifecycle/MATRIX.md",
+      "landing_sha256": "7d996099d7d078a7bd7188ab320357fbe302a1812349f47f4693549eb88718f4",
+      "current_sha256": "653b43a252025e9d92e679fab7f3f8e31f3dad57ffa15b31e446a21d304ba204"
+    },
+    {
+      "path": "internal/interfaces/http/audit_t18_view_privacy_test.go",
+      "landing_sha256": "956be5aa1b70db35e6d44c3d4354c43e621dd60f149b92c3412977283e99a8a4",
+      "current_sha256": "b31ef6c33400f537e78cca2a2b902d179b85217ac81f3b6395a8c52f2b51cdfa"
+    },
+    {
+      "path": "internal/interfaces/mcp/audit_t18_view_privacy_test.go",
+      "landing_sha256": "9215a309522e8b1119b20ba46082ae47434d3e6677fb56581bd6c6c451f2fdea",
+      "current_sha256": "63d29d067d5b5ecc94f690a0fe2632e3a2311770ae6ba2aa0fbbd90e75ed1ba4"
+    },
+    {
+      "path": "pkg/deltascope/audit_t18_view_first_test.go",
+      "landing_sha256": "48affb44a2137b09095044702ceb4b1e738dd91b624626f59653002598bb5ca8",
+      "current_sha256": "17dc60f9abb012e0d013d01398cd5d032e395db2d0c47b727bcb6f20e4eddcb9"
+    }
+  ]
+}

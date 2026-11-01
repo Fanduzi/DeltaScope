@@ -1,0 +1,21 @@
+{
+  "argv": [
+    "docker",
+    "exec",
+    "deltascope-ddl-golden-tidb85-client",
+    "mysql",
+    "-h",
+    "tidb85",
+    "-P",
+    "4000",
+    "-uroot",
+    "--batch",
+    "--raw",
+    "--verbose",
+    "-e",
+    "SELECT TABLE_NAME,VIEW_DEFINITION,SECURITY_TYPE,CHECK_OPTION,DEFINER FROM information_schema.VIEWS WHERE TABLE_SCHEMA='t18qg' ORDER BY TABLE_NAME;"
+  ],
+  "sql": "SELECT TABLE_NAME,VIEW_DEFINITION,SECURITY_TYPE,CHECK_OPTION,DEFINER FROM information_schema.VIEWS WHERE TABLE_SCHEMA='t18qg' ORDER BY TABLE_NAME;",
+  "utc": "2026-11-01T09:58:38.392714+00:00",
+  "layer": "native grammar, not product proof"
+}

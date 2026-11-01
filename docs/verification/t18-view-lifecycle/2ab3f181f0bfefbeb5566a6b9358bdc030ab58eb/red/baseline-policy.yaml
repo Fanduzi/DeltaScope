@@ -1,0 +1,5 @@
+rules:
+  ddl.view.create.forbid:
+    enabled: false
+  ddl.view.drop.forbid:
+    enabled: false

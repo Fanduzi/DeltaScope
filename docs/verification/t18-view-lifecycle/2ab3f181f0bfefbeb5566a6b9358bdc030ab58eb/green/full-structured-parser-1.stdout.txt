@@ -1,0 +1,5 @@
+--- FAIL: TestT18FirstExternalDefinitionSources (0.00s)
+    view_t18_first_test.go:69: definition=&spec.ViewDefinition{SQL:"WITH `c` AS (SELECT `id` FROM `g`.`t`) SELECT `id` FROM `c`", Sources:[]spec.Table{spec.Table{Schema:"g", Name:"t", Comment:""}}, SourceAliases:[]string{""}, SourceOffsets:[]int{-1}, SourcesKnown:true, Bindings:[]spec.ViewColumnBinding{spec.ViewColumnBinding{Schema:"", Table:"", Column:"id", Output:"id", Offset:-1, Star:false, Expression:false, OutputReference:false}}, References:[]spec.ViewColumnBinding(nil), ShapeKnown:true, UnlabeledComplex:false, NonMergeable:false, NonUpdatable:false, HasCTE:true, Query:(*spec.ViewQuery)(0x769ecf1e7760), QueryLimit:false} err=<nil>
+FAIL
+FAIL	github.com/Fanduzi/DeltaScope/internal/infrastructure/parser/tidb	0.785s
+FAIL

@@ -1,0 +1,16 @@
+=== RUN   TestT18FullReviewDefinerKeyword
+=== RUN   TestT18FullReviewDefinerKeyword/view
+    view_t18_first_test.go:85: parse=tidbparser.Result{Statements:[]ast.StmtNode(nil), Warnings:[]string(nil)} err=parse sql: line 1 column 13 near "DEFINER=view SQL SECURITY INVOKER VIEW v AS SELECT id FROM t;" 
+=== RUN   TestT18FullReviewDefinerKeyword/'view'
+=== RUN   TestT18FullReviewDefinerKeyword/CURRENT_USER
+=== RUN   TestT18FullReviewDefinerKeyword/CURRENT_USER()
+=== NAME  TestT18FullReviewDefinerKeyword
+    view_t18_first_test.go:101: invalid definer accepted: "'u'@"
+--- FAIL: TestT18FullReviewDefinerKeyword (0.00s)
+    --- FAIL: TestT18FullReviewDefinerKeyword/view (0.00s)
+    --- PASS: TestT18FullReviewDefinerKeyword/'view' (0.00s)
+    --- PASS: TestT18FullReviewDefinerKeyword/CURRENT_USER (0.00s)
+    --- PASS: TestT18FullReviewDefinerKeyword/CURRENT_USER() (0.00s)
+FAIL
+FAIL	github.com/Fanduzi/DeltaScope/internal/infrastructure/parser/tidb	0.674s
+FAIL

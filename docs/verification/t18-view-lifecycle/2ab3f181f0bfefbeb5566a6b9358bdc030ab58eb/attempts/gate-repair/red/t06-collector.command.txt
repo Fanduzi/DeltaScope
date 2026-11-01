@@ -1,0 +1,1 @@
+go test ./scripts/t06a17proof -run '^TestT06A17R1Collector' -count=1 -v

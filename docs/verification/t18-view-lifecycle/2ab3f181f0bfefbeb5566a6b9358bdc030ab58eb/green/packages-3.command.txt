@@ -1,0 +1,1 @@
+go test ./internal/domain/spec ./internal/domain/rule/ddl ./internal/infrastructure/metadata/mysql ./pkg/deltascope -count=1

@@ -1,0 +1,1 @@
+256d80492678ef7a1c67146ea7f508c6bc70fc3878fb06131565c7469b40503e  internal/domain/spec/view.go

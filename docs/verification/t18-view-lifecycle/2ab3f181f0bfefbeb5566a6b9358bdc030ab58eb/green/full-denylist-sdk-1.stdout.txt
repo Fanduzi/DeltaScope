@@ -1,0 +1,8 @@
+=== RUN   TestT18FullDenylistHiddenDependencyEvidence
+=== RUN   TestT18FullDenylistHiddenDependencyEvidence/viewunknown
+=== RUN   TestT18FullDenylistHiddenDependencyEvidence/viewbroken
+--- PASS: TestT18FullDenylistHiddenDependencyEvidence (0.01s)
+    --- PASS: TestT18FullDenylistHiddenDependencyEvidence/viewunknown (0.01s)
+    --- PASS: TestT18FullDenylistHiddenDependencyEvidence/viewbroken (0.00s)
+PASS
+ok  	github.com/Fanduzi/DeltaScope/pkg/deltascope	0.605s

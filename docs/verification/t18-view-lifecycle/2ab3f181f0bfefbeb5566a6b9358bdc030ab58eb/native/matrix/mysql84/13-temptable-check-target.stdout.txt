@@ -1,0 +1,4 @@
+--------------
+CREATE ALGORITHM=TEMPTABLE VIEW new_v AS SELECT id FROM t WITH LOCAL CHECK OPTION
+--------------
+

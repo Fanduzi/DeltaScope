@@ -1,0 +1,1 @@
+First structured run stopped at SDK companion tests; no T18 artifact created. Prior tree is in full-structured-prior-golden-path.txt.

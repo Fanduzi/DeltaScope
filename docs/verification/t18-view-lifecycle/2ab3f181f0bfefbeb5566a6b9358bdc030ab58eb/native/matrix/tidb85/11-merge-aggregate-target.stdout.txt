@@ -1,0 +1,8 @@
+--------------
+CREATE ALGORITHM=MERGE VIEW new_v AS SELECT COUNT(*) AS n FROM t
+--------------
+
+--------------
+SHOW WARNINGS
+--------------
+

@@ -1,0 +1,4 @@
+--------------
+ALTER ALGORITHM=UNDEFINED VIEW v AS SELECT id FROM t
+--------------
+

@@ -1,0 +1,14 @@
+{
+  "status": "PLANNED_NOT_EXECUTED",
+  "planned_cases": 147,
+  "previous_planned_cases": 133,
+  "net_additions": 14,
+  "old_oracles_unchanged": true,
+  "dag_levels": 30,
+  "dag_input_refinement_reason": "Stay below separate parser depth32 bound to exercise evaluation/work-attribution budget. Depth36 draft was never executed.",
+  "files_sha256": {
+    "/tmp/t18_full_golden_author.py": "559050ad751a02fd8774289dca7c2604d3f28d0a343dbfda431c185da4b86d65",
+    "/tmp/t18-evidence/golden-full-draft.json": "c96c2c806240605266af89824f7e1d6d47672041094c4abfbb0ab53e7a0f5a5e",
+    "/tmp/t18-evidence/T18-seed.json": "62535a74a6b66313042af23084c718bb3ad0be8efa698d1f1d5841f8a8cfda61"
+  }
+}

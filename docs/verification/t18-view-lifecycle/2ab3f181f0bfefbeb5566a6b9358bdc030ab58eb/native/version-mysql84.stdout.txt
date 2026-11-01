@@ -1,0 +1,1 @@
+/usr/sbin/mysqld  Ver 8.4.10 for Linux on aarch64 (MySQL Community Server - GPL)

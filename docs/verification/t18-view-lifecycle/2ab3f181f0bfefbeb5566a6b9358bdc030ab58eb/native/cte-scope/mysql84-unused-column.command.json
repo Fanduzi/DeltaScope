@@ -1,0 +1,19 @@
+{
+  "argv": [
+    "docker",
+    "exec",
+    "--env",
+    "MYSQL_PWD",
+    "deltascope-ddl-golden-mysql84",
+    "mysql",
+    "-uroot",
+    "--batch",
+    "--raw",
+    "--verbose",
+    "-e",
+    "USE t18cs;CREATE VIEW unused_column_v AS WITH unused AS (SELECT missing_col FROM t) SELECT id FROM t;SHOW WARNINGS;"
+  ],
+  "sql": "USE t18cs;CREATE VIEW unused_column_v AS WITH unused AS (SELECT missing_col FROM t) SELECT id FROM t;SHOW WARNINGS;",
+  "utc": "2026-11-01T10:11:46.376296+00:00",
+  "layer": "native grammar, not product proof"
+}

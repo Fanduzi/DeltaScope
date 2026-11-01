@@ -1,0 +1,2 @@
+0a9792a5e8e3bd39a1cdf7feaf5d0bcceceb566e6801dfc96fa4bf99be826672  internal/domain/spec/view_query.go
+b24f54b5f3c3bd15db283c93f0e40b7540e79acb468bf03bc6f81b774605c68f  pkg/deltascope/audit_t18_view_first_test.go

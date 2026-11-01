@@ -1,0 +1,241 @@
+=== RUN   TestT18FirstOrderedProjection
+--- PASS: TestT18FirstOrderedProjection (0.00s)
+=== RUN   TestT18FirstRefusalPreservesPriorView
+--- PASS: TestT18FirstRefusalPreservesPriorView (0.00s)
+=== RUN   TestT18ReviewInvalidBindingPreservesPriorView
+--- PASS: TestT18ReviewInvalidBindingPreservesPriorView (0.00s)
+=== RUN   TestT18ReviewAliasProjectionCloned
+--- PASS: TestT18ReviewAliasProjectionCloned (0.00s)
+=== RUN   TestT18ReviewIndependentSourceFacts
+--- PASS: TestT18ReviewIndependentSourceFacts (0.00s)
+=== RUN   TestT18FullDerivedColumnsDoNotCloneBaseAttributes
+--- PASS: TestT18FullDerivedColumnsDoNotCloneBaseAttributes (0.00s)
+=== RUN   TestT18FullStarProjectionFrozen
+--- PASS: TestT18FullStarProjectionFrozen (0.00s)
+=== RUN   TestT18FullOutputProjectionAndRefusal
+--- PASS: TestT18FullOutputProjectionAndRefusal (0.00s)
+=== RUN   TestT18FullOptionTransitions
+=== RUN   TestT18FullOptionTransitions/replace_resets_defaults
+=== RUN   TestT18FullOptionTransitions/merge_fallback
+=== RUN   TestT18FullOptionTransitions/check_refusal_preserves_prior
+--- PASS: TestT18FullOptionTransitions (0.00s)
+    --- PASS: TestT18FullOptionTransitions/replace_resets_defaults (0.00s)
+    --- PASS: TestT18FullOptionTransitions/merge_fallback (0.00s)
+    --- PASS: TestT18FullOptionTransitions/check_refusal_preserves_prior (0.00s)
+=== RUN   TestT18FullDropViewLeavesTemporaryShadow
+--- PASS: TestT18FullDropViewLeavesTemporaryShadow (0.00s)
+=== RUN   TestT18FullAlterTableCannotMutateView
+--- PASS: TestT18FullAlterTableCannotMutateView (0.00s)
+=== RUN   TestT18ReviewUncertainAlterAttributes
+=== RUN   TestT18ReviewUncertainAlterAttributes/inherited
+=== RUN   TestT18ReviewUncertainAlterAttributes/changed
+=== RUN   TestT18ReviewUncertainAlterAttributes/agreeing_security
+--- PASS: TestT18ReviewUncertainAlterAttributes (0.00s)
+    --- PASS: TestT18ReviewUncertainAlterAttributes/inherited (0.00s)
+    --- PASS: TestT18ReviewUncertainAlterAttributes/changed (0.00s)
+    --- PASS: TestT18ReviewUncertainAlterAttributes/agreeing_security (0.00s)
+=== RUN   TestT18FirstPolicyIndependent
+--- PASS: TestT18FirstPolicyIndependent (0.01s)
+=== RUN   TestT18FirstReadFailureNotCached
+--- PASS: TestT18FirstReadFailureNotCached (0.00s)
+=== RUN   TestT18FirstCrossSchemaSourcesBindRequestSchema
+--- PASS: TestT18FirstCrossSchemaSourcesBindRequestSchema (0.00s)
+=== RUN   TestT18FirstDependencyLimitIsIntrinsic
+--- PASS: TestT18FirstDependencyLimitIsIntrinsic (0.00s)
+PASS
+ok  	github.com/Fanduzi/DeltaScope/internal/application/audit	1.324s
+=== RUN   TestT18ReviewIndependentEvidence
+=== RUN   TestT18ReviewIndependentEvidence/unknown_target_missing_source
+=== RUN   TestT18ReviewIndependentEvidence/wrong_target_unknown_source
+--- PASS: TestT18ReviewIndependentEvidence (0.01s)
+    --- PASS: TestT18ReviewIndependentEvidence/unknown_target_missing_source (0.01s)
+    --- PASS: TestT18ReviewIndependentEvidence/wrong_target_unknown_source (0.00s)
+=== RUN   TestT18ReviewInvalidViewIdentifiers
+=== RUN   TestT18ReviewInvalidViewIdentifiers/ALTER_VIEW_123_AS_SELECT_id_FROM_t;
+=== RUN   TestT18ReviewInvalidViewIdentifiers/ALTER_VIEW_1e3_AS_SELECT_id_FROM_t;
+=== RUN   TestT18ReviewInvalidViewIdentifiers/ALTER_VIEW_SELECT_AS_SELECT_id_FROM_t;
+=== RUN   TestT18ReviewInvalidViewIdentifiers/ALTER_VIEW_v_(123)_AS_SELECT_id_FROM_t;
+=== RUN   TestT18ReviewInvalidViewIdentifiers/ALTER_VIEW_v_(1e3)_AS_SELECT_id_FROM_t;
+=== RUN   TestT18ReviewInvalidViewIdentifiers/ALTER_VIEW_v_(SELECT)_AS_SELECT_id_FROM_t;
+--- PASS: TestT18ReviewInvalidViewIdentifiers (0.02s)
+    --- PASS: TestT18ReviewInvalidViewIdentifiers/ALTER_VIEW_123_AS_SELECT_id_FROM_t; (0.00s)
+    --- PASS: TestT18ReviewInvalidViewIdentifiers/ALTER_VIEW_1e3_AS_SELECT_id_FROM_t; (0.00s)
+    --- PASS: TestT18ReviewInvalidViewIdentifiers/ALTER_VIEW_SELECT_AS_SELECT_id_FROM_t; (0.00s)
+    --- PASS: TestT18ReviewInvalidViewIdentifiers/ALTER_VIEW_v_(123)_AS_SELECT_id_FROM_t; (0.00s)
+    --- PASS: TestT18ReviewInvalidViewIdentifiers/ALTER_VIEW_v_(1e3)_AS_SELECT_id_FROM_t; (0.00s)
+    --- PASS: TestT18ReviewInvalidViewIdentifiers/ALTER_VIEW_v_(SELECT)_AS_SELECT_id_FROM_t; (0.00s)
+=== RUN   TestT18ReviewNamedDefinerWithoutHost
+--- PASS: TestT18ReviewNamedDefinerWithoutHost (0.00s)
+=== RUN   TestT18ReviewColumnBindings
+=== RUN   TestT18ReviewColumnBindings/other.t.id
+=== RUN   TestT18ReviewColumnBindings/t.id
+--- PASS: TestT18ReviewColumnBindings (0.01s)
+    --- PASS: TestT18ReviewColumnBindings/other.t.id (0.00s)
+    --- PASS: TestT18ReviewColumnBindings/t.id (0.00s)
+=== RUN   TestT18ReviewTransitiveFindingUsesAuthoredRoot
+--- PASS: TestT18ReviewTransitiveFindingUsesAuthoredRoot (0.00s)
+=== RUN   TestT18ReviewMissingDefinitionAndInterfaceError
+--- PASS: TestT18ReviewMissingDefinitionAndInterfaceError (0.01s)
+=== RUN   TestT18ReviewRealProviderMissingAttributesPublic
+=== RUN   TestT18ReviewRealProviderMissingAttributesPublic/empty
+=== RUN   TestT18ReviewRealProviderMissingAttributesPublic/error
+--- PASS: TestT18ReviewRealProviderMissingAttributesPublic (0.01s)
+    --- PASS: TestT18ReviewRealProviderMissingAttributesPublic/empty (0.01s)
+    --- PASS: TestT18ReviewRealProviderMissingAttributesPublic/error (0.00s)
+=== RUN   TestT18FullWhereAndColumnValidation
+=== RUN   TestT18FullWhereAndColumnValidation/where
+=== RUN   TestT18FullWhereAndColumnValidation/missing_where_column
+=== RUN   TestT18FullWhereAndColumnValidation/replace
+--- PASS: TestT18FullWhereAndColumnValidation (0.01s)
+    --- PASS: TestT18FullWhereAndColumnValidation/where (0.00s)
+    --- PASS: TestT18FullWhereAndColumnValidation/missing_where_column (0.00s)
+    --- PASS: TestT18FullWhereAndColumnValidation/replace (0.00s)
+=== RUN   TestT18FullStarFreezesAndRevalidates
+=== RUN   TestT18FullStarFreezesAndRevalidates/later_add
+=== RUN   TestT18FullStarFreezesAndRevalidates/invisible
+=== RUN   TestT18FullStarFreezesAndRevalidates/later_drop
+--- PASS: TestT18FullStarFreezesAndRevalidates (0.01s)
+    --- PASS: TestT18FullStarFreezesAndRevalidates/later_add (0.01s)
+    --- PASS: TestT18FullStarFreezesAndRevalidates/invisible (0.01s)
+    --- PASS: TestT18FullStarFreezesAndRevalidates/later_drop (0.00s)
+=== RUN   TestT18FullDirectSourceLimitBeforeLookup
+--- PASS: TestT18FullDirectSourceLimitBeforeLookup (0.01s)
+=== RUN   TestT18FullOutputNamesAndColumnLists
+=== RUN   TestT18FullOutputNamesAndColumnLists/named_constant
+=== RUN   TestT18FullOutputNamesAndColumnLists/unnamed_literal
+=== RUN   TestT18FullOutputNamesAndColumnLists/named_expression
+=== RUN   TestT18FullOutputNamesAndColumnLists/missing_expression_column
+=== RUN   TestT18FullOutputNamesAndColumnLists/explicit_list
+=== RUN   TestT18FullOutputNamesAndColumnLists/count_mismatch
+=== RUN   TestT18FullOutputNamesAndColumnLists/duplicate_names
+=== RUN   TestT18FullOutputNamesAndColumnLists/duplicate_explicit_names
+--- PASS: TestT18FullOutputNamesAndColumnLists (0.03s)
+    --- PASS: TestT18FullOutputNamesAndColumnLists/named_constant (0.00s)
+    --- PASS: TestT18FullOutputNamesAndColumnLists/unnamed_literal (0.00s)
+    --- PASS: TestT18FullOutputNamesAndColumnLists/named_expression (0.01s)
+    --- PASS: TestT18FullOutputNamesAndColumnLists/missing_expression_column (0.00s)
+    --- PASS: TestT18FullOutputNamesAndColumnLists/explicit_list (0.00s)
+    --- PASS: TestT18FullOutputNamesAndColumnLists/count_mismatch (0.00s)
+    --- PASS: TestT18FullOutputNamesAndColumnLists/duplicate_names (0.00s)
+    --- PASS: TestT18FullOutputNamesAndColumnLists/duplicate_explicit_names (0.00s)
+=== RUN   TestT18FullOptionsSemanticOutcomes
+=== RUN   TestT18FullOptionsSemanticOutcomes/named_invoker
+=== RUN   TestT18FullOptionsSemanticOutcomes/temptable
+=== RUN   TestT18FullOptionsSemanticOutcomes/merge_aggregate
+=== RUN   TestT18FullOptionsSemanticOutcomes/aggregate_check
+=== RUN   TestT18FullOptionsSemanticOutcomes/temptable_check
+--- PASS: TestT18FullOptionsSemanticOutcomes (0.02s)
+    --- PASS: TestT18FullOptionsSemanticOutcomes/named_invoker (0.00s)
+    --- PASS: TestT18FullOptionsSemanticOutcomes/temptable (0.00s)
+    --- PASS: TestT18FullOptionsSemanticOutcomes/merge_aggregate (0.00s)
+    --- PASS: TestT18FullOptionsSemanticOutcomes/aggregate_check (0.00s)
+    --- PASS: TestT18FullOptionsSemanticOutcomes/temptable_check (0.00s)
+=== RUN   TestT18FullInvalidDefinerGrammar
+--- PASS: TestT18FullInvalidDefinerGrammar (0.01s)
+=== RUN   TestT18FullTiDBIgnoredOptions
+--- PASS: TestT18FullTiDBIgnoredOptions (0.00s)
+=== RUN   TestT18FullDropViewOrderedOutcomes
+=== RUN   TestT18FullDropViewOrderedOutcomes/mysql80_atomic
+=== RUN   TestT18FullDropViewOrderedOutcomes/mysql57_partial
+=== RUN   TestT18FullDropViewOrderedOutcomes/mysql_unknown
+=== RUN   TestT18FullDropViewOrderedOutcomes/mysql_duplicate
+=== RUN   TestT18FullDropViewOrderedOutcomes/mysql_if_exists
+=== RUN   TestT18FullDropViewOrderedOutcomes/tidb_wrong_kind
+=== RUN   TestT18FullDropViewOrderedOutcomes/tidb_duplicate
+--- PASS: TestT18FullDropViewOrderedOutcomes (0.02s)
+    --- PASS: TestT18FullDropViewOrderedOutcomes/mysql80_atomic (0.00s)
+    --- PASS: TestT18FullDropViewOrderedOutcomes/mysql57_partial (0.00s)
+    --- PASS: TestT18FullDropViewOrderedOutcomes/mysql_unknown (0.00s)
+    --- PASS: TestT18FullDropViewOrderedOutcomes/mysql_duplicate (0.00s)
+    --- PASS: TestT18FullDropViewOrderedOutcomes/mysql_if_exists (0.00s)
+    --- PASS: TestT18FullDropViewOrderedOutcomes/tidb_wrong_kind (0.00s)
+    --- PASS: TestT18FullDropViewOrderedOutcomes/tidb_duplicate (0.00s)
+=== RUN   TestT18FullDropIfExistsProvesNotViewNotAbsence
+--- PASS: TestT18FullDropIfExistsProvesNotViewNotAbsence (0.00s)
+=== RUN   TestT18FullDropTablePreservesViews
+=== RUN   TestT18FullDropTablePreservesViews/single_view
+=== RUN   TestT18FullDropTablePreservesViews/mysql57_mixed
+=== RUN   TestT18FullDropTablePreservesViews/mysql80_mixed
+=== RUN   TestT18FullDropTablePreservesViews/mysql80_if
+=== RUN   TestT18FullDropTablePreservesViews/tidb_mixed
+--- PASS: TestT18FullDropTablePreservesViews (0.02s)
+    --- PASS: TestT18FullDropTablePreservesViews/single_view (0.00s)
+    --- PASS: TestT18FullDropTablePreservesViews/mysql57_mixed (0.00s)
+    --- PASS: TestT18FullDropTablePreservesViews/mysql80_mixed (0.00s)
+    --- PASS: TestT18FullDropTablePreservesViews/mysql80_if (0.00s)
+    --- PASS: TestT18FullDropTablePreservesViews/tidb_mixed (0.00s)
+=== RUN   TestT18FullStructuredQueries
+=== RUN   TestT18FullStructuredQueries/join
+=== RUN   TestT18FullStructuredQueries/group
+=== RUN   TestT18FullStructuredQueries/join_missing_on
+=== RUN   TestT18FullStructuredQueries/join_ambiguous
+=== RUN   TestT18FullStructuredQueries/derived
+    audit_t18_view_first_test.go:755: err=deltascope audit includes unsupported statements: audit includes unsupported statements: 1 item(s) result=deltascope.Result{Verdict:"review", Coverage:deltascope.Coverage{Status:"incomplete"}, Summary:deltascope.Summary{Statements:1, Blockers:0, Warnings:1, Notices:0}, Statements:[]deltascope.StatementResult{deltascope.StatementResult{Index:0, Kind:"ddl", RawSQL:"CREATE VIEW next_v AS SELECT d.id FROM (SELECT id FROM t) AS d;", NormalizedSQL:"CREATE VIEW next_v AS SELECT d.id FROM (SELECT id FROM t) AS d", Findings:[]deltascope.Finding{deltascope.Finding{RuleID:"ddl.view.security.definer.warn", Level:"warning", Message:"view security or named definer requires review", StatementIndex:0, StatementKind:"ddl", Location:(*deltascope.Location)(0x4edd9e9e4530), Suggestion:"review the view's privilege context", Metadata:map[string]interface {}{"role":"view", "view":"next_v", "view_schema":"g"}, Explanation:(*deltascope.FindingExplanation)(0x4edd9f19c690)}}, EvidenceGaps:[]deltascope.EvidenceGap{deltascope.EvidenceGap{RuleID:"ddl.view.source.valid", ReasonCode:"unknown_table_state", RequiredFacts:[]string{"view.columns"}}}, Impact:(*deltascope.Impact)(nil), Coverage:deltascope.Coverage{Status:"incomplete"}, Explanation:(*deltascope.Explanation)(0x4edd9ef65440)}}, GlobalFindings:[]deltascope.Finding{}, Unsupported:[]spec.UnsupportedDetail{spec.UnsupportedDetail{Index:0, Feature:"create_view.option.view_query_shape", SQL:"CREATE VIEW next_v AS SELECT d.id FROM (SELECT id FROM t) AS d;", Reason:"parsed by the shared parser but not covered by audited semantics", Metadata:map[string]interface {}{"aspect":"option"}}}, Explanation:(*deltascope.Explanation)(0x4edd9ef653e0), Diagnostics:[]spec.Diagnostic{spec.Diagnostic{Classification:"unsupported_statement", Reason:"DeltaScope recognized this statement or feature but does not audit it yet", ActionHint:"treat this statement as not covered by DeltaScope policy checks; review it manually or track support in a future DeltaScope release", Audited:false, Dialect:"mysql", GuidanceCode:"", EvidenceRef:"", Line:0, Column:0}}, Version:(*spec.VersionIdentity)(0x4edd9f19c640)}
+=== RUN   TestT18FullStructuredQueries/union
+=== RUN   TestT18FullStructuredQueries/mysql_cte
+=== RUN   TestT18FullStructuredQueries/tidb_cte_rename
+=== RUN   TestT18FullStructuredQueries/mysql_cte_self_base
+=== RUN   TestT18FullStructuredQueries/tidb_cte_self_base
+=== RUN   TestT18FullStructuredQueries/mysql_cte_forward
+=== RUN   TestT18FullStructuredQueries/tidb_cte_forward
+--- FAIL: TestT18FullStructuredQueries (0.04s)
+    --- PASS: TestT18FullStructuredQueries/join (0.00s)
+    --- PASS: TestT18FullStructuredQueries/group (0.00s)
+    --- PASS: TestT18FullStructuredQueries/join_missing_on (0.00s)
+    --- PASS: TestT18FullStructuredQueries/join_ambiguous (0.00s)
+    --- FAIL: TestT18FullStructuredQueries/derived (0.00s)
+    --- PASS: TestT18FullStructuredQueries/union (0.00s)
+    --- PASS: TestT18FullStructuredQueries/mysql_cte (0.00s)
+    --- PASS: TestT18FullStructuredQueries/tidb_cte_rename (0.00s)
+    --- PASS: TestT18FullStructuredQueries/mysql_cte_self_base (0.00s)
+    --- PASS: TestT18FullStructuredQueries/tidb_cte_self_base (0.00s)
+    --- PASS: TestT18FullStructuredQueries/mysql_cte_forward (0.00s)
+    --- PASS: TestT18FullStructuredQueries/tidb_cte_forward (0.00s)
+=== RUN   TestT18FullJoinStarFreezesAndRevalidates
+=== RUN   TestT18FullJoinStarFreezesAndRevalidates/added_column
+=== RUN   TestT18FullJoinStarFreezesAndRevalidates/dropped_dependency
+--- PASS: TestT18FullJoinStarFreezesAndRevalidates (0.01s)
+    --- PASS: TestT18FullJoinStarFreezesAndRevalidates/added_column (0.00s)
+    --- PASS: TestT18FullJoinStarFreezesAndRevalidates/dropped_dependency (0.00s)
+=== RUN   TestT18FullUnusedCTEVendorScope
+=== RUN   TestT18FullUnusedCTEVendorScope/mysql_missing
+=== RUN   TestT18FullUnusedCTEVendorScope/mysql_missing_column
+=== RUN   TestT18FullUnusedCTEVendorScope/tidb_missing
+=== RUN   TestT18FullUnusedCTEVendorScope/tidb_missing_column
+--- PASS: TestT18FullUnusedCTEVendorScope (0.01s)
+    --- PASS: TestT18FullUnusedCTEVendorScope/mysql_missing (0.00s)
+    --- PASS: TestT18FullUnusedCTEVendorScope/mysql_missing_column (0.00s)
+    --- PASS: TestT18FullUnusedCTEVendorScope/tidb_missing (0.00s)
+    --- PASS: TestT18FullUnusedCTEVendorScope/tidb_missing_column (0.00s)
+=== RUN   TestT18FullCTEVersionBoundary
+--- PASS: TestT18FullCTEVersionBoundary (0.00s)
+=== RUN   TestT18ReviewUncertainAlterLeavesSourceGap
+--- PASS: TestT18ReviewUncertainAlterLeavesSourceGap (0.00s)
+=== RUN   TestT18ReviewUncertainSecurityConvergence
+--- PASS: TestT18ReviewUncertainSecurityConvergence (0.00s)
+=== RUN   TestT18PublicAlterViewFirstPath
+    audit_t18_view_first_test.go:882: T18_PUBLIC_PROOF {"verdict":"review","coverage":{"status":"complete"},"summary":{"statements":1,"blockers":0,"warnings":1,"notices":0},"statements":[{"index":0,"kind":"ddl","raw_sql":"ALTER VIEW v AS SELECT id FROM t;","normalized_sql":"ALTER VIEW v AS SELECT id FROM t","findings":[{"rule_id":"ddl.view.security.definer.warn","level":"warning","message":"view security or named definer requires review","statement_kind":"ddl","location":{"line":1,"column":1},"suggestion":"review the view's privilege context","metadata":{"role":"view","view":"v","view_schema":"g"},"explanation":{"summary":"Warn on DDL view security definer warn","why":"The statement reached a caution rule that highlights an operational trade-off.","risk":"Ignoring this rule can hide live-schema or instance-state risks that only metadata reveals.","suggestion":"review the view's privilege context","metadata":{"status":"available","note":"Live metadata is available, so this explanation can use schema or instance facts for a more accurate judgment."}}}],"coverage":{"status":"complete"},"explanation":{"summary":"Statement 1 has 1 finding(s)","reasons":["view security or named definer requires review"]}}],"explanation":{"summary":"Audit produced 1 finding(s) across 1 statement(s)","reasons":["view security or named definer requires review"]},"version":{"product":"mysql","version":"8.0.46","major":8,"minor":0,"patch":46,"source":"observed","validated_range":true}}
+--- PASS: TestT18PublicAlterViewFirstPath (0.00s)
+=== RUN   TestT18PublicInvalidViewSelect
+--- PASS: TestT18PublicInvalidViewSelect (0.00s)
+=== RUN   TestT18PublicCreateViewDefaultForbid
+--- PASS: TestT18PublicCreateViewDefaultForbid (0.00s)
+=== RUN   TestT18PublicAlterViewDefaultForbid
+--- PASS: TestT18PublicAlterViewDefaultForbid (0.00s)
+=== RUN   TestT18PublicSourceEvidence
+=== RUN   TestT18PublicSourceEvidence/missing
+=== RUN   TestT18PublicSourceEvidence/unknown
+=== RUN   TestT18PublicSourceEvidence/kind
+--- PASS: TestT18PublicSourceEvidence (0.00s)
+    --- PASS: TestT18PublicSourceEvidence/missing (0.00s)
+    --- PASS: TestT18PublicSourceEvidence/unknown (0.00s)
+    --- PASS: TestT18PublicSourceEvidence/kind (0.00s)
+=== RUN   TestT18PublicViewPrivacyAndError
+--- PASS: TestT18PublicViewPrivacyAndError (0.00s)
+=== RUN   TestT18PublicUnmodeledViewShapeRemainsIncomplete
+--- PASS: TestT18PublicUnmodeledViewShapeRemainsIncomplete (0.00s)
+=== RUN   TestT18PublicInvalidSelectRetainsSiblings
+--- PASS: TestT18PublicInvalidSelectRetainsSiblings (0.00s)
+FAIL
+FAIL	github.com/Fanduzi/DeltaScope/pkg/deltascope	1.069s
+FAIL

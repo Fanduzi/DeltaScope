@@ -1,0 +1,12 @@
+--------------
+CREATE DATABASE t18cs
+--------------
+
+--------------
+CREATE TABLE t18cs.t(id INT)
+--------------
+
+--------------
+CREATE TABLE t18cs.c(id INT)
+--------------
+

@@ -1,0 +1,20 @@
+mysql57 unused-missing 1 ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'unused AS (SELE
+mysql57 unused-column 1 ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'unused AS (SELE
+mysql57 self-base 1 ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'c AS (SELECT id
+mysql57 forward 1 ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'first_c AS (SEL
+mysql57 renamed-output 1 ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'c(x) AS (SELECT
+mysql80 unused-missing 0 
+mysql80 unused-column 0 
+mysql80 self-base 0 
+mysql80 forward 1 ERROR 1146 (42S02) at line 1: Table 't18cs.later_c' doesn't exist
+mysql80 renamed-output 0 
+mysql84 unused-missing 0 
+mysql84 unused-column 0 
+mysql84 self-base 0 
+mysql84 forward 1 ERROR 1146 (42S02) at line 1: Table 't18cs.later_c' doesn't exist
+mysql84 renamed-output 0 
+tidb85 unused-missing 1 ERROR 1146 (42S02) at line 1: Table 't18cs.missing_t' doesn't exist
+tidb85 unused-column 1 ERROR 1054 (42S22) at line 1: Unknown column 'missing_col' in 'field list'
+tidb85 self-base 0 
+tidb85 forward 1 ERROR 1146 (42S02) at line 1: Table 't18cs.later_c' doesn't exist
+tidb85 renamed-output 0 

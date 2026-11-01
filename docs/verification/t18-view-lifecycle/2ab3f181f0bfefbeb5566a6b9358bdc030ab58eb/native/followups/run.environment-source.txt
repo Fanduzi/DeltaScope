@@ -1,0 +1,1 @@
+DS_T18_GOLDEN_PW sourced from docker/ddl-golden-compose.yaml fixture password

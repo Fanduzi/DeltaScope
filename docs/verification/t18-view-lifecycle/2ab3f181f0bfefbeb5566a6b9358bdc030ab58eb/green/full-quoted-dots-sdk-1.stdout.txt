@@ -1,0 +1,4 @@
+=== RUN   TestT18FullQuotedDotIdentities
+--- PASS: TestT18FullQuotedDotIdentities (0.01s)
+PASS
+ok  	github.com/Fanduzi/DeltaScope/pkg/deltascope	0.768s

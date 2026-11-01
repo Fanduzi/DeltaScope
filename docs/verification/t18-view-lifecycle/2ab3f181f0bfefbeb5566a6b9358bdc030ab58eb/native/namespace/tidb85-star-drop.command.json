@@ -1,0 +1,21 @@
+{
+  "argv": [
+    "docker",
+    "exec",
+    "deltascope-ddl-golden-tidb85-client",
+    "mysql",
+    "-h",
+    "tidb85",
+    "-P",
+    "4000",
+    "-uroot",
+    "--batch",
+    "--raw",
+    "--verbose",
+    "-e",
+    "ALTER TABLE t18n_star.t DROP COLUMN id;SELECT VIEW_DEFINITION FROM information_schema.VIEWS WHERE TABLE_SCHEMA='t18n_star' AND TABLE_NAME='v';"
+  ],
+  "sql": "ALTER TABLE t18n_star.t DROP COLUMN id;SELECT VIEW_DEFINITION FROM information_schema.VIEWS WHERE TABLE_SCHEMA='t18n_star' AND TABLE_NAME='v';",
+  "head": "7f67c5de42fb6096d9c80f51e2d0f217eb34e528",
+  "utc": "2026-11-01T09:00:45.752278+00:00"
+}

@@ -1,0 +1,18 @@
+--------------
+CREATE TEMPORARY TABLE v(id INT)
+--------------
+
+--------------
+ALTER VIEW v AS SELECT id FROM t
+--------------
+
+--------------
+SHOW WARNINGS
+--------------
+
+--------------
+SELECT VIEW_DEFINITION FROM information_schema.VIEWS WHERE TABLE_SCHEMA='t18n_shadow' AND TABLE_NAME='v'
+--------------
+
+VIEW_DEFINITION
+select `t18n_shadow`.`t`.`id` AS `id` from `t18n_shadow`.`t`

@@ -1,0 +1,1 @@
+go test ./pkg/deltascope ./internal/infrastructure/parser/tidb -run '^TestT18FullReview(QueryClauseLocations|DefinerKeyword)$' -count=1 -v

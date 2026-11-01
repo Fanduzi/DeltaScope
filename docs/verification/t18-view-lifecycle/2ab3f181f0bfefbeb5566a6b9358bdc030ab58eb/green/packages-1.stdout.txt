@@ -1,0 +1,348 @@
+--- FAIL: TestExtractedTypesReachExtractor (0.00s)
+    stmt_disposition_test.go:367: extractor case viewStatement has no type in stmtNodeTypes — register it or remove the case
+FAIL
+FAIL	github.com/Fanduzi/DeltaScope/internal/infrastructure/parser/tidb	0.335s
+ok  	github.com/Fanduzi/DeltaScope/internal/domain/spec	0.896s
+--- FAIL: TestParserUpgradeCandidateGuidanceCodeMySQL (0.00s)
+    unsupported_diagnostics_evidence_test.go:62: expected parser-error diagnostic for ALTER VIEW
+--- FAIL: TestDDLParserErrorFeasibilityCensus (0.00s)
+    ddl_parser_error_feasibility_census_test.go:204: mysql view/ALTER VIEW: case no longer produces parser_error — supported DDL found; revisit feasibility decision
+SQL Corpus Supported-Rule Coverage Inventory
+policy_rule_ids=461
+supported_rule_dialect_targets=736
+covered_rule_dialect_targets=718
+coverage_percent=97.6
+expected_yaml_files_total=324
+expected_yaml_files_by_dialect=mysql:50 tidb:44 postgresql:230
+deferred_rule_ids=1
+deferred=ddl.pg.alter.add_column.non_null_default.rewrite.warn
+missing_rule_dialect_targets=18
+missing=ddl.view.algorithm.warn@mysql
+missing=ddl.view.algorithm.warn@tidb
+missing=ddl.view.algorithm.warn@postgresql
+missing=ddl.view.check_option.valid@mysql
+missing=ddl.view.check_option.valid@tidb
+missing=ddl.view.check_option.valid@postgresql
+missing=ddl.view.options.ignored.warn@mysql
+missing=ddl.view.options.ignored.warn@tidb
+missing=ddl.view.options.ignored.warn@postgresql
+missing=ddl.view.security.definer.warn@mysql
+missing=ddl.view.security.definer.warn@tidb
+missing=ddl.view.security.definer.warn@postgresql
+missing=ddl.view.source.valid@mysql
+missing=ddl.view.source.valid@tidb
+--- FAIL: TestSQLCorpusCoversSupportedRuleDialects (0.07s)
+    corpus_coverage_test.go:33: sql corpus missing supported rule coverage (18):
+        ddl.view.algorithm.warn@mysql
+        ddl.view.algorithm.warn@tidb
+        ddl.view.algorithm.warn@postgresql
+        ddl.view.check_option.valid@mysql
+        ddl.view.check_option.valid@tidb
+        ddl.view.check_option.valid@postgresql
+        ddl.view.options.ignored.warn@mysql
+        ddl.view.options.ignored.warn@tidb
+        ddl.view.options.ignored.warn@postgresql
+        ddl.view.security.definer.warn@mysql
+        ddl.view.security.definer.warn@tidb
+        ddl.view.security.definer.warn@postgresql
+        ddl.view.source.valid@mysql
+        ddl.view.source.valid@tidb
+        ddl.view.source.valid@postgresql
+        ddl.view.target.valid@mysql
+        ddl.view.target.valid@tidb
+        ddl.view.target.valid@postgresql
+missing=ddl.view.source.valid@postgresql
+missing=ddl.view.target.valid@mysql
+missing=ddl.view.target.valid@tidb
+missing=ddl.view.target.valid@postgresql
+--- FAIL: TestParserUpgradeCandidateGuidanceCoverage (0.00s)
+    --- FAIL: TestParserUpgradeCandidateGuidanceCoverage/MySQL_ALTER_VIEW (0.00s)
+        parser_upgrade_guidance_coverage_test.go:65: expected parser-error diagnostic
+--- FAIL: TestCrossDialectDDLCoverageCensus (0.00s)
+    --- FAIL: TestCrossDialectDDLCoverageCensus/TiDB (0.06s)
+        cross_dialect_ddl_coverage_census_test.go:266: ddl-census: TiDB CREATE TABLE                             -> finding_covered | op=create_table findings=[ddl.column.comment.require ddl.column.default.require ddl.table.audit_columns.require ddl.table.charset.allowlist ddl.table.comment.require ddl.table.engine.allowlist ddl.table.primary_key.auto_increment.require ddl.table.primary_key.unsigned.require]
+        cross_dialect_ddl_coverage_census_test.go:266: ddl-census: TiDB CREATE TABLE LIKE                        -> finding_covered | op=create_table findings=[ddl.table.audit_columns.require ddl.table.charset.allowlist ddl.table.columns.min_count ddl.table.comment.require ddl.table.create_like.forbid ddl.table.engine.allowlist ddl.table.primary_key.require]
+        cross_dialect_ddl_coverage_census_test.go:266: ddl-census: TiDB CREATE TABLE AS SELECT                   -> unsupported(create_table_select)
+        cross_dialect_ddl_coverage_census_test.go:266: ddl-census: TiDB RENAME TABLE                             -> finding_covered | op=rename_table findings=[ddl.rename_table.notice]
+        cross_dialect_ddl_coverage_census_test.go:266: ddl-census: TiDB DROP TABLE                               -> finding_covered | op=drop_table findings=[ddl.table.drop.forbid]
+        cross_dialect_ddl_coverage_census_test.go:266: ddl-census: TiDB TRUNCATE TABLE                           -> finding_covered | op=truncate_table findings=[ddl.table.truncate.forbid]
+        cross_dialect_ddl_coverage_census_test.go:266: ddl-census: TiDB ALTER TABLE ADD COLUMN                   -> finding_covered | op=alter_table findings=[ddl.alter.add_column.notice]
+        cross_dialect_ddl_coverage_census_test.go:266: ddl-census: TiDB ALTER TABLE DROP COLUMN                  -> finding_covered | op=alter_table findings=[ddl.alter.drop_column.notice]
+        cross_dialect_ddl_coverage_census_test.go:266: ddl-census: TiDB ALTER TABLE MODIFY COLUMN                -> finding_covered | op=alter_table findings=[ddl.alter.modify_column.notice]
+        cross_dialect_ddl_coverage_census_test.go:266: ddl-census: TiDB ALTER TABLE MODIFY COLUMN EXPLICIT NULLABILITY -> finding_covered | op=alter_table findings=[ddl.alter.modify_column.explicit_nullability_change.unknown_prior_state.advisory ddl.alter.modify_column.notice]
+        cross_dialect_ddl_coverage_census_test.go:266: ddl-census: TiDB ALTER TABLE CHANGE COLUMN                -> finding_covered | op=alter_table findings=[ddl.alter.change_column.forbid]
+        cross_dialect_ddl_coverage_census_test.go:266: ddl-census: TiDB ALTER TABLE RENAME COLUMN                -> finding_covered | op=alter_table findings=[ddl.alter.rename_column.forbid]
+        cross_dialect_ddl_coverage_census_test.go:266: ddl-census: TiDB ALTER TABLE ADD PRIMARY KEY              -> finding_covered | op=alter_table findings=[ddl.alter.add_constraint.notice]
+        cross_dialect_ddl_coverage_census_test.go:266: ddl-census: TiDB ALTER TABLE DROP PRIMARY KEY             -> finding_covered | op=alter_table findings=[ddl.alter.drop_primary_key.forbid]
+        cross_dialect_ddl_coverage_census_test.go:266: ddl-census: TiDB ALTER TABLE ADD INDEX                    -> finding_covered | op=alter_table findings=[ddl.create_index.notice]
+        cross_dialect_ddl_coverage_census_test.go:266: ddl-census: TiDB ALTER TABLE DROP INDEX                   -> finding_covered | op=alter_table findings=[ddl.alter.drop_index.notice]
+        cross_dialect_ddl_coverage_census_test.go:266: ddl-census: TiDB ALTER TABLE ADD UNIQUE                   -> finding_covered | op=alter_table findings=[ddl.alter.add_index.unique.prefix.require ddl.create_index.notice]
+        cross_dialect_ddl_coverage_census_test.go:266: ddl-census: TiDB ALTER TABLE ADD FOREIGN KEY              -> finding_covered | op=alter_table findings=[ddl.alter.add_constraint.notice ddl.table.foreign_key.forbid]
+        cross_dialect_ddl_coverage_census_test.go:266: ddl-census: TiDB ALTER TABLE DROP FOREIGN KEY             -> finding_covered | op=alter_table findings=[ddl.alter.drop_foreign_key.notice]
+        cross_dialect_ddl_coverage_census_test.go:266: ddl-census: TiDB CREATE INDEX                             -> finding_covered | op=create_index findings=[ddl.create_index.notice]
+        cross_dialect_ddl_coverage_census_test.go:266: ddl-census: TiDB CREATE UNIQUE INDEX                      -> finding_covered | op=create_index findings=[ddl.create_index.notice ddl.index.unique.prefix.require]
+        cross_dialect_ddl_coverage_census_test.go:266: ddl-census: TiDB DROP INDEX                               -> finding_covered | op=drop_index findings=[ddl.drop_index.notice]
+        cross_dialect_ddl_coverage_census_test.go:266: ddl-census: TiDB CREATE DATABASE                          -> finding_covered | op=create_schema findings=[ddl.database.create.notice]
+        cross_dialect_ddl_coverage_census_test.go:266: ddl-census: TiDB CREATE DATABASE IF NOT EXISTS            -> finding_covered | op=create_schema findings=[ddl.database.create.notice]
+        cross_dialect_ddl_coverage_census_test.go:266: ddl-census: TiDB CREATE SCHEMA                            -> finding_covered | op=create_schema findings=[ddl.database.create.notice]
+        cross_dialect_ddl_coverage_census_test.go:266: ddl-census: TiDB ALTER DATABASE                           -> finding_covered | op=alter_schema findings=[ddl.alter_database.notice]
+        cross_dialect_ddl_coverage_census_test.go:266: ddl-census: TiDB DROP DATABASE                            -> finding_covered | op=drop_schema findings=[ddl.database.drop.warn]
+        cross_dialect_ddl_coverage_census_test.go:266: ddl-census: TiDB DROP DATABASE IF EXISTS                  -> finding_covered | op=drop_schema findings=[ddl.database.drop.warn]
+        cross_dialect_ddl_coverage_census_test.go:266: ddl-census: TiDB DROP SCHEMA                              -> finding_covered | op=drop_schema findings=[ddl.database.drop.warn]
+        cross_dialect_ddl_coverage_census_test.go:266: ddl-census: TiDB CREATE VIEW                              -> finding_covered | op=create_view findings=[ddl.view.create.forbid ddl.view.security.definer.warn]
+        cross_dialect_ddl_coverage_census_test.go:266: ddl-census: TiDB CREATE OR REPLACE VIEW                   -> audit_error: audit includes unsupported statements: 1 item(s)
+        cross_dialect_ddl_coverage_census_test.go:266: ddl-census: TiDB CREATE OR REPLACE VIEW                   -> finding_covered | op=create_view findings=[ddl.view.create.forbid ddl.view.security.definer.warn]
+        cross_dialect_ddl_coverage_census_test.go:266: ddl-census: TiDB ALTER VIEW                               -> unsupported(view.syntax)
+        cross_dialect_ddl_coverage_census_test.go:266: TiDB ALTER VIEW: expected parser_error, got unsupported_boundary
+        cross_dialect_ddl_coverage_census_test.go:266: ddl-census: TiDB DROP VIEW                                -> finding_covered | op=drop_view findings=[ddl.view.drop.forbid]
+        cross_dialect_ddl_coverage_census_test.go:266: ddl-census: TiDB CREATE PLACEMENT POLICY                  -> audit_error: audit includes unsupported statements: 1 item(s)
+        cross_dialect_ddl_coverage_census_test.go:266: ddl-census: TiDB CREATE PLACEMENT POLICY                  -> finding_covered | op=create_placement_policy findings=[ddl.create_placement_policy.notice]
+        cross_dialect_ddl_coverage_census_test.go:266: ddl-census: TiDB ALTER PLACEMENT POLICY                   -> audit_error: audit includes unsupported statements: 1 item(s)
+        cross_dialect_ddl_coverage_census_test.go:266: ddl-census: TiDB ALTER PLACEMENT POLICY                   -> finding_covered | op=alter_placement_policy findings=[ddl.alter_placement_policy.notice]
+        cross_dialect_ddl_coverage_census_test.go:266: ddl-census: TiDB DROP PLACEMENT POLICY                    -> finding_covered | op=drop_placement_policy findings=[ddl.drop_placement_policy.notice]
+        cross_dialect_ddl_coverage_census_test.go:266: ddl-census: TiDB CREATE SEQUENCE                          -> audit_error: audit includes unsupported statements: 1 item(s)
+        cross_dialect_ddl_coverage_census_test.go:266: ddl-census: TiDB CREATE SEQUENCE                          -> finding_covered | op=create_sequence findings=[ddl.create_sequence.notice]
+        cross_dialect_ddl_coverage_census_test.go:266: ddl-census: TiDB ALTER SEQUENCE                           -> audit_error: audit includes unsupported statements: 1 item(s)
+        cross_dialect_ddl_coverage_census_test.go:266: ddl-census: TiDB ALTER SEQUENCE                           -> finding_covered | op=alter_sequence findings=[ddl.alter_sequence.notice]
+        cross_dialect_ddl_coverage_census_test.go:266: ddl-census: TiDB DROP SEQUENCE                            -> finding_covered | op=drop_sequence findings=[ddl.drop_sequence.notice]
+        cross_dialect_ddl_coverage_census_test.go:266: ddl-census: TiDB ALTER TABLE TTL                          -> parser_error: parse sql: 1 statement(s) could not be parsed: parse sql: parse sql: line 1 column 54 near "'created_at + INTERVAL 30 DAY'" 
+        cross_dialect_ddl_coverage_census_test.go:266: ddl-census: TiDB ALTER TABLE PLACEMENT POLICY             -> finding_covered | op=alter_table findings=[ddl.tidb.alter_table.placement_policy.notice]
+        cross_dialect_ddl_coverage_census_test.go:266: ddl-census: TiDB ALTER TABLE LOCALITY                     -> parser_error: parse sql: 1 statement(s) could not be parsed: parse sql: parse sql: line 1 column 26 near "LOCALITY = 'us-east-1'" 
+        cross_dialect_ddl_coverage_census_test.go:266: ddl-census: TiDB CREATE TRIGGER                           -> parser_error: parse sql: 1 statement(s) could not be parsed: parse sql: parse sql: line 1 column 14 near "TRIGGER trg_users_bi BEFORE INSERT ON users FOR EACH ROW SET NEW.created_at = NOW()" 
+        cross_dialect_ddl_coverage_census_test.go:266: ddl-census: TiDB DROP TRIGGER                             -> parser_error: parse sql: 1 statement(s) could not be parsed: parse sql: parse sql: line 1 column 12 near "TRIGGER trg_users_bi" 
+        cross_dialect_ddl_coverage_census_test.go:266: ddl-census: TiDB CREATE PROCEDURE                         -> unsupported(create_procedure)
+        cross_dialect_ddl_coverage_census_test.go:266: ddl-census: TiDB DROP PROCEDURE                           -> unsupported(drop_procedure)
+        cross_dialect_ddl_coverage_census_test.go:266: ddl-census: TiDB CREATE FUNCTION                          -> parser_error: parse sql: 1 statement(s) could not be parsed: parse sql: parse sql: line 1 column 15 near "FUNCTION hello() RETURNS VARCHAR(20) RETURN 'hello'" 
+        cross_dialect_ddl_coverage_census_test.go:266: ddl-census: TiDB DROP FUNCTION                            -> parser_error: parse sql: 1 statement(s) could not be parsed: parse sql: parse sql: line 1 column 13 near "FUNCTION hello" 
+        cross_dialect_ddl_coverage_census_test.go:266: ddl-census: TiDB CREATE EVENT                             -> parser_error: parse sql: 1 statement(s) could not be parsed: parse sql: parse sql: line 1 column 12 near "EVENT e_cleanup ON SCHEDULE EVERY 1 DAY DO CALL p_cleanup()" 
+        cross_dialect_ddl_coverage_census_test.go:266: ddl-census: TiDB DROP EVENT                               -> parser_error: parse sql: 1 statement(s) could not be parsed: parse sql: parse sql: line 1 column 10 near "EVENT e_cleanup" 
+        cross_dialect_ddl_coverage_census_test.go:266: ddl-census: TiDB CREATE USER                              -> audit_error: audit includes unsupported statements: 1 item(s)
+        cross_dialect_ddl_coverage_census_test.go:266: ddl-census: TiDB CREATE USER                              -> finding_covered | op=create_user findings=[ddl.create_user.notice]
+        cross_dialect_ddl_coverage_census_test.go:266: ddl-census: TiDB ALTER USER                               -> audit_error: audit includes unsupported statements: 1 item(s)
+        cross_dialect_ddl_coverage_census_test.go:266: ddl-census: TiDB ALTER USER                               -> finding_covered | op=alter_user findings=[ddl.alter_user.notice]
+        cross_dialect_ddl_coverage_census_test.go:266: ddl-census: TiDB DROP USER                                -> finding_covered | op=drop_user findings=[ddl.drop_user.notice]
+        cross_dialect_ddl_coverage_census_test.go:266: ddl-census: TiDB GRANT SELECT                             -> audit_error: audit includes unsupported statements: 1 item(s)
+        cross_dialect_ddl_coverage_census_test.go:266: ddl-census: TiDB GRANT SELECT                             -> finding_covered | op=grant findings=[ddl.grant.notice]
+        cross_dialect_ddl_coverage_census_test.go:266: ddl-census: TiDB REVOKE SELECT                            -> audit_error: audit includes unsupported statements: 1 item(s)
+        cross_dialect_ddl_coverage_census_test.go:266: ddl-census: TiDB REVOKE SELECT                            -> finding_covered | op=revoke findings=[ddl.revoke.notice]
+        cross_dialect_ddl_coverage_census_test.go:266: 
+        cross_dialect_ddl_coverage_census_test.go:266: === TiDB DDL Coverage Census ===
+        cross_dialect_ddl_coverage_census_test.go:266: 
+        cross_dialect_ddl_coverage_census_test.go:266: Form                                     | OK?  | Classification         | DDL Op               | Detail
+        cross_dialect_ddl_coverage_census_test.go:266: --------------------------------------------------------------------------------------------------------------------------------------------
+        cross_dialect_ddl_coverage_census_test.go:266: ALTER DATABASE                           | yes  | finding_covered        | alter_schema         | ddl.alter_database.notice
+        cross_dialect_ddl_coverage_census_test.go:266: ALTER PLACEMENT POLICY                   | yes  | finding_covered        | alter_placement_policy | ddl.alter_placement_policy.notice
+        cross_dialect_ddl_coverage_census_test.go:266: ALTER SEQUENCE                           | yes  | finding_covered        | alter_sequence       | ddl.alter_sequence.notice
+        cross_dialect_ddl_coverage_census_test.go:266: ALTER TABLE ADD COLUMN                   | yes  | finding_covered        | alter_table          | ddl.alter.add_column.notice
+        cross_dialect_ddl_coverage_census_test.go:266: ALTER TABLE ADD FOREIGN KEY              | yes  | finding_covered        | alter_table          | ddl.alter.add_constraint.notice, ddl.table.foreign_key.forbid
+        cross_dialect_ddl_coverage_census_test.go:266: ALTER TABLE ADD INDEX                    | yes  | finding_covered        | alter_table          | ddl.create_index.notice
+        cross_dialect_ddl_coverage_census_test.go:266: ALTER TABLE ADD PRIMARY KEY              | yes  | finding_covered        | alter_table          | ddl.alter.add_constraint.notice
+        cross_dialect_ddl_coverage_census_test.go:266: ALTER TABLE ADD UNIQUE                   | yes  | finding_covered        | alter_table          | ddl.alter.add_index.unique.prefix.require, ddl.create_index.notice
+        cross_dialect_ddl_coverage_census_test.go:266: ALTER TABLE CHANGE COLUMN                | yes  | finding_covered        | alter_table          | ddl.alter.change_column.forbid
+        cross_dialect_ddl_coverage_census_test.go:266: ALTER TABLE DROP COLUMN                  | yes  | finding_covered        | alter_table          | ddl.alter.drop_column.notice
+        cross_dialect_ddl_coverage_census_test.go:266: ALTER TABLE DROP FOREIGN KEY             | yes  | finding_covered        | alter_table          | ddl.alter.drop_foreign_key.notice
+        cross_dialect_ddl_coverage_census_test.go:266: ALTER TABLE DROP INDEX                   | yes  | finding_covered        | alter_table          | ddl.alter.drop_index.notice
+        cross_dialect_ddl_coverage_census_test.go:266: ALTER TABLE DROP PRIMARY KEY             | yes  | finding_covered        | alter_table          | ddl.alter.drop_primary_key.forbid
+        cross_dialect_ddl_coverage_census_test.go:266: ALTER TABLE LOCALITY                     | no   | parser_error           |                      | (none)
+        cross_dialect_ddl_coverage_census_test.go:266: ALTER TABLE MODIFY COLUMN                | yes  | finding_covered        | alter_table          | ddl.alter.modify_column.notice
+        cross_dialect_ddl_coverage_census_test.go:266: ALTER TABLE MODIFY COLUMN EXPLICIT NULLABILITY | yes  | finding_covered        | alter_table          | ddl.alter.modify_column.explicit_nullability_change.unknown_prior_state.advisory, ddl.alter.modify_column.notice
+        cross_dialect_ddl_coverage_census_test.go:266: ALTER TABLE PLACEMENT POLICY             | yes  | finding_covered        | alter_table          | ddl.tidb.alter_table.placement_policy.notice
+        cross_dialect_ddl_coverage_census_test.go:266: ALTER TABLE RENAME COLUMN                | yes  | finding_covered        | alter_table          | ddl.alter.rename_column.forbid
+        cross_dialect_ddl_coverage_census_test.go:266: ALTER TABLE TTL                          | no   | parser_error           |                      | (none)
+        cross_dialect_ddl_coverage_census_test.go:266: ALTER USER                               | yes  | finding_covered        | alter_user           | ddl.alter_user.notice
+        cross_dialect_ddl_coverage_census_test.go:266: ALTER VIEW                               | yes  | unsupported_boundary   |                      | unsupported: view.syntax
+        cross_dialect_ddl_coverage_census_test.go:266: CREATE DATABASE                          | yes  | finding_covered        | create_schema        | ddl.database.create.notice
+        cross_dialect_ddl_coverage_census_test.go:266: CREATE DATABASE IF NOT EXISTS            | yes  | finding_covered        | create_schema        | ddl.database.create.notice
+        cross_dialect_ddl_coverage_census_test.go:266: CREATE EVENT                             | no   | parser_error           |                      | (none)
+        cross_dialect_ddl_coverage_census_test.go:266: CREATE FUNCTION                          | no   | parser_error           |                      | (none)
+        cross_dialect_ddl_coverage_census_test.go:266: CREATE INDEX                             | yes  | finding_covered        | create_index         | ddl.create_index.notice
+        cross_dialect_ddl_coverage_census_test.go:266: CREATE OR REPLACE VIEW                   | yes  | finding_covered        | create_view          | ddl.view.create.forbid, ddl.view.security.definer.warn
+        cross_dialect_ddl_coverage_census_test.go:266: CREATE PLACEMENT POLICY                  | yes  | finding_covered        | create_placement_policy | ddl.create_placement_policy.notice
+        cross_dialect_ddl_coverage_census_test.go:266: CREATE PROCEDURE                         | yes  | unsupported_boundary   |                      | unsupported: create_procedure
+        cross_dialect_ddl_coverage_census_test.go:266: CREATE SCHEMA                            | yes  | finding_covered        | create_schema        | ddl.database.create.notice
+        cross_dialect_ddl_coverage_census_test.go:266: CREATE SEQUENCE                          | yes  | finding_covered        | create_sequence      | ddl.create_sequence.notice
+        cross_dialect_ddl_coverage_census_test.go:266: CREATE TABLE                             | yes  | finding_covered        | create_table         | ddl.column.comment.require, ddl.column.default.require, ddl.table.audit_columns.require, ddl.table.charset.allowlist, ddl.table.comment.require, ddl.table.engine.allowlist, ddl.table.primary_key.auto_increment.require, ddl.table.primary_key.unsigned.require
+        cross_dialect_ddl_coverage_census_test.go:266: CREATE TABLE AS SELECT                   | yes  | unsupported_boundary   |                      | unsupported: create_table_select
+        cross_dialect_ddl_coverage_census_test.go:266: CREATE TABLE LIKE                        | yes  | finding_covered        | create_table         | ddl.table.audit_columns.require, ddl.table.charset.allowlist, ddl.table.columns.min_count, ddl.table.comment.require, ddl.table.create_like.forbid, ddl.table.engine.allowlist, ddl.table.primary_key.require
+        cross_dialect_ddl_coverage_census_test.go:266: CREATE TRIGGER                           | no   | parser_error           |                      | (none)
+        cross_dialect_ddl_coverage_census_test.go:266: CREATE UNIQUE INDEX                      | yes  | finding_covered        | create_index         | ddl.create_index.notice, ddl.index.unique.prefix.require
+        cross_dialect_ddl_coverage_census_test.go:266: CREATE USER                              | yes  | finding_covered        | create_user          | ddl.create_user.notice
+        cross_dialect_ddl_coverage_census_test.go:266: CREATE VIEW                              | yes  | finding_covered        | create_view          | ddl.view.create.forbid, ddl.view.security.definer.warn
+        cross_dialect_ddl_coverage_census_test.go:266: DROP DATABASE                            | yes  | finding_covered        | drop_schema          | ddl.database.drop.warn
+        cross_dialect_ddl_coverage_census_test.go:266: DROP DATABASE IF EXISTS                  | yes  | finding_covered        | drop_schema          | ddl.database.drop.warn
+        cross_dialect_ddl_coverage_census_test.go:266: DROP EVENT                               | no   | parser_error           |                      | (none)
+        cross_dialect_ddl_coverage_census_test.go:266: DROP FUNCTION                            | no   | parser_error           |                      | (none)
+        cross_dialect_ddl_coverage_census_test.go:266: DROP INDEX                               | yes  | finding_covered        | drop_index           | ddl.drop_index.notice
+        cross_dialect_ddl_coverage_census_test.go:266: DROP PLACEMENT POLICY                    | yes  | finding_covered        | drop_placement_policy | ddl.drop_placement_policy.notice
+        cross_dialect_ddl_coverage_census_test.go:266: DROP PROCEDURE                           | yes  | unsupported_boundary   |                      | unsupported: drop_procedure
+        cross_dialect_ddl_coverage_census_test.go:266: DROP SCHEMA                              | yes  | finding_covered        | drop_schema          | ddl.database.drop.warn
+        cross_dialect_ddl_coverage_census_test.go:266: DROP SEQUENCE                            | yes  | finding_covered        | drop_sequence        | ddl.drop_sequence.notice
+        cross_dialect_ddl_coverage_census_test.go:266: DROP TABLE                               | yes  | finding_covered        | drop_table           | ddl.table.drop.forbid
+        cross_dialect_ddl_coverage_census_test.go:266: DROP TRIGGER                             | no   | parser_error           |                      | (none)
+        cross_dialect_ddl_coverage_census_test.go:266: DROP USER                                | yes  | finding_covered        | drop_user            | ddl.drop_user.notice
+        cross_dialect_ddl_coverage_census_test.go:266: DROP VIEW                                | yes  | finding_covered        | drop_view            | ddl.view.drop.forbid
+        cross_dialect_ddl_coverage_census_test.go:266: GRANT SELECT                             | yes  | finding_covered        | grant                | ddl.grant.notice
+        cross_dialect_ddl_coverage_census_test.go:266: RENAME TABLE                             | yes  | finding_covered        | rename_table         | ddl.rename_table.notice
+        cross_dialect_ddl_coverage_census_test.go:266: REVOKE SELECT                            | yes  | finding_covered        | revoke               | ddl.revoke.notice
+        cross_dialect_ddl_coverage_census_test.go:266: TRUNCATE TABLE                           | yes  | finding_covered        | truncate_table       | ddl.table.truncate.forbid
+        cross_dialect_ddl_coverage_census_test.go:266: 
+        cross_dialect_ddl_coverage_census_test.go:266: === TiDB DDL Census Summary ===
+        cross_dialect_ddl_coverage_census_test.go:266: Total:                55
+        cross_dialect_ddl_coverage_census_test.go:266: Finding covered:      43
+        cross_dialect_ddl_coverage_census_test.go:266: Normalized silent:    0
+        cross_dialect_ddl_coverage_census_test.go:266: Unsupported boundary: 4
+        cross_dialect_ddl_coverage_census_test.go:266: Parser error:         8
+        cross_dialect_ddl_coverage_census_test.go:266: Classification mismatches: 1
+    --- FAIL: TestCrossDialectDDLCoverageCensus/MySQL (0.06s)
+        cross_dialect_ddl_coverage_census_test.go:266: ddl-census: MySQL CREATE TABLE                             -> finding_covered | op=create_table findings=[ddl.column.comment.require ddl.column.default.require ddl.table.audit_columns.require ddl.table.charset.allowlist ddl.table.comment.require ddl.table.engine.allowlist ddl.table.primary_key.auto_increment.require ddl.table.primary_key.unsigned.require]
+        cross_dialect_ddl_coverage_census_test.go:266: ddl-census: MySQL CREATE TEMPORARY TABLE                   -> finding_covered | op=create_table findings=[ddl.column.comment.require ddl.column.default.require ddl.table.audit_columns.require ddl.table.charset.allowlist ddl.table.comment.require ddl.table.engine.allowlist ddl.table.primary_key.auto_increment.require ddl.table.primary_key.unsigned.require]
+        cross_dialect_ddl_coverage_census_test.go:266: ddl-census: MySQL CREATE TABLE LIKE                        -> finding_covered | op=create_table findings=[ddl.table.audit_columns.require ddl.table.charset.allowlist ddl.table.columns.min_count ddl.table.comment.require ddl.table.create_like.forbid ddl.table.engine.allowlist ddl.table.primary_key.require]
+        cross_dialect_ddl_coverage_census_test.go:266: ddl-census: MySQL CREATE TABLE AS SELECT                   -> finding_covered | op=create_table findings=[ddl.table.audit_columns.require ddl.table.charset.allowlist ddl.table.columns.min_count ddl.table.comment.require ddl.table.create_as.forbid ddl.table.engine.allowlist ddl.table.primary_key.require]
+        cross_dialect_ddl_coverage_census_test.go:266: ddl-census: MySQL RENAME TABLE                             -> finding_covered | op=rename_table findings=[ddl.rename_table.notice]
+        cross_dialect_ddl_coverage_census_test.go:266: ddl-census: MySQL DROP TABLE                               -> finding_covered | op=drop_table findings=[ddl.table.drop.forbid]
+        cross_dialect_ddl_coverage_census_test.go:266: ddl-census: MySQL TRUNCATE TABLE                           -> finding_covered | op=truncate_table findings=[ddl.table.truncate.forbid]
+        cross_dialect_ddl_coverage_census_test.go:266: ddl-census: MySQL ALTER TABLE ADD COLUMN                   -> finding_covered | op=alter_table findings=[ddl.alter.add_column.notice]
+        cross_dialect_ddl_coverage_census_test.go:266: ddl-census: MySQL ALTER TABLE DROP COLUMN                  -> finding_covered | op=alter_table findings=[ddl.alter.drop_column.notice]
+        cross_dialect_ddl_coverage_census_test.go:266: ddl-census: MySQL ALTER TABLE MODIFY COLUMN                -> finding_covered | op=alter_table findings=[ddl.alter.modify_column.notice]
+        cross_dialect_ddl_coverage_census_test.go:266: ddl-census: MySQL ALTER TABLE MODIFY COLUMN EXPLICIT NULLABILITY -> finding_covered | op=alter_table findings=[ddl.alter.modify_column.explicit_nullability_change.unknown_prior_state.advisory ddl.alter.modify_column.notice]
+        cross_dialect_ddl_coverage_census_test.go:266: ddl-census: MySQL ALTER TABLE CHANGE COLUMN                -> finding_covered | op=alter_table findings=[ddl.alter.change_column.forbid]
+        cross_dialect_ddl_coverage_census_test.go:266: ddl-census: MySQL ALTER TABLE RENAME COLUMN                -> finding_covered | op=alter_table findings=[ddl.alter.rename_column.forbid]
+        cross_dialect_ddl_coverage_census_test.go:266: ddl-census: MySQL ALTER TABLE RENAME TO                    -> finding_covered | op=alter_table findings=[ddl.alter.rename_table.forbid]
+        cross_dialect_ddl_coverage_census_test.go:266: ddl-census: MySQL ALTER TABLE ADD PRIMARY KEY              -> finding_covered | op=alter_table findings=[ddl.alter.add_constraint.notice]
+        cross_dialect_ddl_coverage_census_test.go:266: ddl-census: MySQL ALTER TABLE DROP PRIMARY KEY             -> finding_covered | op=alter_table findings=[ddl.alter.drop_primary_key.forbid]
+        cross_dialect_ddl_coverage_census_test.go:266: ddl-census: MySQL ALTER TABLE ADD INDEX                    -> finding_covered | op=alter_table findings=[ddl.create_index.notice]
+        cross_dialect_ddl_coverage_census_test.go:266: ddl-census: MySQL ALTER TABLE DROP INDEX                   -> finding_covered | op=alter_table findings=[ddl.alter.drop_index.notice]
+        cross_dialect_ddl_coverage_census_test.go:266: ddl-census: MySQL ALTER TABLE ADD UNIQUE                   -> finding_covered | op=alter_table findings=[ddl.alter.add_index.unique.prefix.require ddl.create_index.notice]
+        cross_dialect_ddl_coverage_census_test.go:266: ddl-census: MySQL ALTER TABLE ADD FOREIGN KEY              -> finding_covered | op=alter_table findings=[ddl.alter.add_constraint.notice ddl.table.foreign_key.forbid]
+        cross_dialect_ddl_coverage_census_test.go:266: ddl-census: MySQL ALTER TABLE DROP FOREIGN KEY             -> finding_covered | op=alter_table findings=[ddl.alter.drop_foreign_key.notice]
+        cross_dialect_ddl_coverage_census_test.go:266: ddl-census: MySQL CREATE INDEX                             -> finding_covered | op=create_index findings=[ddl.create_index.notice]
+        cross_dialect_ddl_coverage_census_test.go:266: ddl-census: MySQL CREATE UNIQUE INDEX                      -> finding_covered | op=create_index findings=[ddl.create_index.notice ddl.index.unique.prefix.require]
+        cross_dialect_ddl_coverage_census_test.go:266: ddl-census: MySQL CREATE FULLTEXT INDEX                    -> finding_covered | op=create_index findings=[ddl.create_index.notice ddl.index.fulltext.prefix.require]
+        cross_dialect_ddl_coverage_census_test.go:266: ddl-census: MySQL CREATE SPATIAL INDEX                     -> finding_covered | op=create_index findings=[ddl.create_index.notice]
+        cross_dialect_ddl_coverage_census_test.go:266: ddl-census: MySQL DROP INDEX                               -> finding_covered | op=drop_index findings=[ddl.drop_index.notice]
+        cross_dialect_ddl_coverage_census_test.go:266: ddl-census: MySQL ALTER TABLE RENAME INDEX                 -> finding_covered | op=alter_table findings=[ddl.alter.rename_index.forbid]
+        cross_dialect_ddl_coverage_census_test.go:266: ddl-census: MySQL CREATE DATABASE                          -> finding_covered | op=create_schema findings=[ddl.database.create.notice]
+        cross_dialect_ddl_coverage_census_test.go:266: ddl-census: MySQL CREATE DATABASE IF NOT EXISTS            -> finding_covered | op=create_schema findings=[ddl.database.create.notice]
+        cross_dialect_ddl_coverage_census_test.go:266: ddl-census: MySQL CREATE SCHEMA                            -> finding_covered | op=create_schema findings=[ddl.database.create.notice]
+        cross_dialect_ddl_coverage_census_test.go:266: ddl-census: MySQL ALTER DATABASE                           -> finding_covered | op=alter_schema findings=[ddl.alter_database.notice]
+        cross_dialect_ddl_coverage_census_test.go:266: ddl-census: MySQL DROP DATABASE                            -> finding_covered | op=drop_schema findings=[ddl.database.drop.warn]
+        cross_dialect_ddl_coverage_census_test.go:266: ddl-census: MySQL DROP DATABASE IF EXISTS                  -> finding_covered | op=drop_schema findings=[ddl.database.drop.warn]
+        cross_dialect_ddl_coverage_census_test.go:266: ddl-census: MySQL DROP SCHEMA                              -> finding_covered | op=drop_schema findings=[ddl.database.drop.warn]
+        cross_dialect_ddl_coverage_census_test.go:266: ddl-census: MySQL CREATE VIEW                              -> finding_covered | op=create_view findings=[ddl.view.create.forbid ddl.view.security.definer.warn]
+        cross_dialect_ddl_coverage_census_test.go:266: ddl-census: MySQL CREATE OR REPLACE VIEW                   -> audit_error: audit includes unsupported statements: 1 item(s)
+        cross_dialect_ddl_coverage_census_test.go:266: ddl-census: MySQL CREATE OR REPLACE VIEW                   -> finding_covered | op=create_view findings=[ddl.view.create.forbid ddl.view.security.definer.warn]
+        cross_dialect_ddl_coverage_census_test.go:266: ddl-census: MySQL ALTER VIEW                               -> finding_covered | op=alter_view findings=[ddl.view.create.forbid]
+        cross_dialect_ddl_coverage_census_test.go:266: MySQL ALTER VIEW: expected parser_error, got finding_covered
+        cross_dialect_ddl_coverage_census_test.go:266: ddl-census: MySQL DROP VIEW                                -> finding_covered | op=drop_view findings=[ddl.view.drop.forbid]
+        cross_dialect_ddl_coverage_census_test.go:266: ddl-census: MySQL CREATE PROCEDURE                         -> audit_error: audit includes unsupported statements: 1 item(s)
+        cross_dialect_ddl_coverage_census_test.go:266: ddl-census: MySQL CREATE PROCEDURE                         -> finding_covered | op=create_procedure findings=[ddl.create_procedure.notice]
+        cross_dialect_ddl_coverage_census_test.go:266: ddl-census: MySQL ALTER PROCEDURE                          -> parser_error: parse sql: 1 statement(s) could not be parsed: parse sql: parse sql: line 1 column 15 near "PROCEDURE p_cleanup SQL SECURITY INVOKER" 
+        cross_dialect_ddl_coverage_census_test.go:266: ddl-census: MySQL DROP PROCEDURE                           -> finding_covered | op=drop_procedure findings=[ddl.drop_procedure.notice]
+        cross_dialect_ddl_coverage_census_test.go:266: ddl-census: MySQL CREATE FUNCTION                          -> parser_error: parse sql: 1 statement(s) could not be parsed: parse sql: parse sql: line 1 column 15 near "FUNCTION hello() RETURNS VARCHAR(20) RETURN 'hello'" 
+        cross_dialect_ddl_coverage_census_test.go:266: ddl-census: MySQL ALTER FUNCTION                           -> parser_error: parse sql: 1 statement(s) could not be parsed: parse sql: parse sql: line 1 column 14 near "FUNCTION hello SQL SECURITY INVOKER" 
+        cross_dialect_ddl_coverage_census_test.go:266: ddl-census: MySQL DROP FUNCTION                            -> parser_error: parse sql: 1 statement(s) could not be parsed: parse sql: parse sql: line 1 column 13 near "FUNCTION hello" 
+        cross_dialect_ddl_coverage_census_test.go:266: ddl-census: MySQL CREATE TRIGGER                           -> parser_error: parse sql: 1 statement(s) could not be parsed: parse sql: parse sql: line 1 column 14 near "TRIGGER trg_users_bi BEFORE INSERT ON users FOR EACH ROW SET NEW.created_at = NOW()" 
+        cross_dialect_ddl_coverage_census_test.go:266: ddl-census: MySQL DROP TRIGGER                             -> parser_error: parse sql: 1 statement(s) could not be parsed: parse sql: parse sql: line 1 column 12 near "TRIGGER trg_users_bi" 
+        cross_dialect_ddl_coverage_census_test.go:266: ddl-census: MySQL CREATE EVENT                             -> parser_error: parse sql: 1 statement(s) could not be parsed: parse sql: parse sql: line 1 column 12 near "EVENT e_cleanup ON SCHEDULE EVERY 1 DAY DO CALL p_cleanup()" 
+        cross_dialect_ddl_coverage_census_test.go:266: ddl-census: MySQL ALTER EVENT                              -> parser_error: parse sql: 1 statement(s) could not be parsed: parse sql: parse sql: line 1 column 11 near "EVENT e_cleanup ON SCHEDULE EVERY 2 DAY" 
+        cross_dialect_ddl_coverage_census_test.go:266: ddl-census: MySQL DROP EVENT                               -> parser_error: parse sql: 1 statement(s) could not be parsed: parse sql: parse sql: line 1 column 10 near "EVENT e_cleanup" 
+        cross_dialect_ddl_coverage_census_test.go:266: ddl-census: MySQL CREATE USER                              -> audit_error: audit includes unsupported statements: 1 item(s)
+        cross_dialect_ddl_coverage_census_test.go:266: ddl-census: MySQL CREATE USER                              -> finding_covered | op=create_user findings=[ddl.create_user.notice]
+        cross_dialect_ddl_coverage_census_test.go:266: ddl-census: MySQL ALTER USER                               -> audit_error: audit includes unsupported statements: 1 item(s)
+        cross_dialect_ddl_coverage_census_test.go:266: ddl-census: MySQL ALTER USER                               -> finding_covered | op=alter_user findings=[ddl.alter_user.notice]
+        cross_dialect_ddl_coverage_census_test.go:266: ddl-census: MySQL DROP USER                                -> finding_covered | op=drop_user findings=[ddl.drop_user.notice]
+        cross_dialect_ddl_coverage_census_test.go:266: ddl-census: MySQL CREATE ROLE                              -> finding_covered | op=create_role findings=[ddl.create_role.notice]
+        cross_dialect_ddl_coverage_census_test.go:266: ddl-census: MySQL DROP ROLE                                -> finding_covered | op=drop_role findings=[ddl.drop_role.notice]
+        cross_dialect_ddl_coverage_census_test.go:266: ddl-census: MySQL GRANT SELECT                             -> audit_error: audit includes unsupported statements: 1 item(s)
+        cross_dialect_ddl_coverage_census_test.go:266: ddl-census: MySQL GRANT SELECT                             -> finding_covered | op=grant findings=[ddl.grant.notice]
+        cross_dialect_ddl_coverage_census_test.go:266: ddl-census: MySQL REVOKE SELECT                            -> audit_error: audit includes unsupported statements: 1 item(s)
+        cross_dialect_ddl_coverage_census_test.go:266: ddl-census: MySQL REVOKE SELECT                            -> finding_covered | op=revoke findings=[ddl.revoke.notice]
+        cross_dialect_ddl_coverage_census_test.go:266: ddl-census: MySQL CREATE TABLESPACE                        -> parser_error: parse sql: 1 statement(s) could not be parsed: parse sql: parse sql: line 1 column 17 near "TABLESPACE ts1 ADD DATAFILE 'ts1.ibd'" 
+        cross_dialect_ddl_coverage_census_test.go:266: ddl-census: MySQL ALTER TABLESPACE                         -> parser_error: parse sql: 1 statement(s) could not be parsed: parse sql: parse sql: line 1 column 16 near "TABLESPACE ts1 ADD DATAFILE 'ts2.ibd'" 
+        cross_dialect_ddl_coverage_census_test.go:266: ddl-census: MySQL DROP TABLESPACE                          -> parser_error: parse sql: 1 statement(s) could not be parsed: parse sql: parse sql: line 1 column 15 near "TABLESPACE ts1" 
+        cross_dialect_ddl_coverage_census_test.go:266: ddl-census: MySQL CREATE RESOURCE GROUP                    -> parser_error: parse sql: 1 statement(s) could not be parsed: parse sql: parse sql: line 1 column 30 near "TYPE = USER VCPU = 0-3" 
+        cross_dialect_ddl_coverage_census_test.go:266: ddl-census: MySQL ALTER RESOURCE GROUP                     -> parser_error: parse sql: 1 statement(s) could not be parsed: parse sql: parse sql: line 1 column 29 near "VCPU = 0-7" 
+        cross_dialect_ddl_coverage_census_test.go:266: ddl-census: MySQL DROP RESOURCE GROUP                      -> finding_covered | op=drop_resource_group findings=[ddl.drop_resource_group.notice]
+        cross_dialect_ddl_coverage_census_test.go:266: 
+        cross_dialect_ddl_coverage_census_test.go:266: === MySQL DDL Coverage Census ===
+        cross_dialect_ddl_coverage_census_test.go:266: 
+        cross_dialect_ddl_coverage_census_test.go:266: Form                                     | OK?  | Classification         | DDL Op               | Detail
+        cross_dialect_ddl_coverage_census_test.go:266: --------------------------------------------------------------------------------------------------------------------------------------------
+        cross_dialect_ddl_coverage_census_test.go:266: ALTER DATABASE                           | yes  | finding_covered        | alter_schema         | ddl.alter_database.notice
+        cross_dialect_ddl_coverage_census_test.go:266: ALTER EVENT                              | no   | parser_error           |                      | (none)
+        cross_dialect_ddl_coverage_census_test.go:266: ALTER FUNCTION                           | no   | parser_error           |                      | (none)
+        cross_dialect_ddl_coverage_census_test.go:266: ALTER PROCEDURE                          | no   | parser_error           |                      | (none)
+        cross_dialect_ddl_coverage_census_test.go:266: ALTER RESOURCE GROUP                     | no   | parser_error           |                      | (none)
+        cross_dialect_ddl_coverage_census_test.go:266: ALTER TABLE ADD COLUMN                   | yes  | finding_covered        | alter_table          | ddl.alter.add_column.notice
+        cross_dialect_ddl_coverage_census_test.go:266: ALTER TABLE ADD FOREIGN KEY              | yes  | finding_covered        | alter_table          | ddl.alter.add_constraint.notice, ddl.table.foreign_key.forbid
+        cross_dialect_ddl_coverage_census_test.go:266: ALTER TABLE ADD INDEX                    | yes  | finding_covered        | alter_table          | ddl.create_index.notice
+        cross_dialect_ddl_coverage_census_test.go:266: ALTER TABLE ADD PRIMARY KEY              | yes  | finding_covered        | alter_table          | ddl.alter.add_constraint.notice
+        cross_dialect_ddl_coverage_census_test.go:266: ALTER TABLE ADD UNIQUE                   | yes  | finding_covered        | alter_table          | ddl.alter.add_index.unique.prefix.require, ddl.create_index.notice
+        cross_dialect_ddl_coverage_census_test.go:266: ALTER TABLE CHANGE COLUMN                | yes  | finding_covered        | alter_table          | ddl.alter.change_column.forbid
+        cross_dialect_ddl_coverage_census_test.go:266: ALTER TABLE DROP COLUMN                  | yes  | finding_covered        | alter_table          | ddl.alter.drop_column.notice
+        cross_dialect_ddl_coverage_census_test.go:266: ALTER TABLE DROP FOREIGN KEY             | yes  | finding_covered        | alter_table          | ddl.alter.drop_foreign_key.notice
+        cross_dialect_ddl_coverage_census_test.go:266: ALTER TABLE DROP INDEX                   | yes  | finding_covered        | alter_table          | ddl.alter.drop_index.notice
+        cross_dialect_ddl_coverage_census_test.go:266: ALTER TABLE DROP PRIMARY KEY             | yes  | finding_covered        | alter_table          | ddl.alter.drop_primary_key.forbid
+        cross_dialect_ddl_coverage_census_test.go:266: ALTER TABLE MODIFY COLUMN                | yes  | finding_covered        | alter_table          | ddl.alter.modify_column.notice
+        cross_dialect_ddl_coverage_census_test.go:266: ALTER TABLE MODIFY COLUMN EXPLICIT NULLABILITY | yes  | finding_covered        | alter_table          | ddl.alter.modify_column.explicit_nullability_change.unknown_prior_state.advisory, ddl.alter.modify_column.notice
+        cross_dialect_ddl_coverage_census_test.go:266: ALTER TABLE RENAME COLUMN                | yes  | finding_covered        | alter_table          | ddl.alter.rename_column.forbid
+        cross_dialect_ddl_coverage_census_test.go:266: ALTER TABLE RENAME INDEX                 | yes  | finding_covered        | alter_table          | ddl.alter.rename_index.forbid
+        cross_dialect_ddl_coverage_census_test.go:266: ALTER TABLE RENAME TO                    | yes  | finding_covered        | alter_table          | ddl.alter.rename_table.forbid
+        cross_dialect_ddl_coverage_census_test.go:266: ALTER TABLESPACE                         | no   | parser_error           |                      | (none)
+        cross_dialect_ddl_coverage_census_test.go:266: ALTER USER                               | yes  | finding_covered        | alter_user           | ddl.alter_user.notice
+        cross_dialect_ddl_coverage_census_test.go:266: ALTER VIEW                               | yes  | finding_covered        | alter_view           | ddl.view.create.forbid
+        cross_dialect_ddl_coverage_census_test.go:266: CREATE DATABASE                          | yes  | finding_covered        | create_schema        | ddl.database.create.notice
+        cross_dialect_ddl_coverage_census_test.go:266: CREATE DATABASE IF NOT EXISTS            | yes  | finding_covered        | create_schema        | ddl.database.create.notice
+        cross_dialect_ddl_coverage_census_test.go:266: CREATE EVENT                             | no   | parser_error           |                      | (none)
+        cross_dialect_ddl_coverage_census_test.go:266: CREATE FULLTEXT INDEX                    | yes  | finding_covered        | create_index         | ddl.create_index.notice, ddl.index.fulltext.prefix.require
+        cross_dialect_ddl_coverage_census_test.go:266: CREATE FUNCTION                          | no   | parser_error           |                      | (none)
+        cross_dialect_ddl_coverage_census_test.go:266: CREATE INDEX                             | yes  | finding_covered        | create_index         | ddl.create_index.notice
+        cross_dialect_ddl_coverage_census_test.go:266: CREATE OR REPLACE VIEW                   | yes  | finding_covered        | create_view          | ddl.view.create.forbid, ddl.view.security.definer.warn
+        cross_dialect_ddl_coverage_census_test.go:266: CREATE PROCEDURE                         | yes  | finding_covered        | create_procedure     | ddl.create_procedure.notice
+        cross_dialect_ddl_coverage_census_test.go:266: CREATE RESOURCE GROUP                    | no   | parser_error           |                      | (none)
+        cross_dialect_ddl_coverage_census_test.go:266: CREATE ROLE                              | yes  | finding_covered        | create_role          | ddl.create_role.notice
+        cross_dialect_ddl_coverage_census_test.go:266: CREATE SCHEMA                            | yes  | finding_covered        | create_schema        | ddl.database.create.notice
+        cross_dialect_ddl_coverage_census_test.go:266: CREATE SPATIAL INDEX                     | yes  | finding_covered        | create_index         | ddl.create_index.notice
+        cross_dialect_ddl_coverage_census_test.go:266: CREATE TABLE                             | yes  | finding_covered        | create_table         | ddl.column.comment.require, ddl.column.default.require, ddl.table.audit_columns.require, ddl.table.charset.allowlist, ddl.table.comment.require, ddl.table.engine.allowlist, ddl.table.primary_key.auto_increment.require, ddl.table.primary_key.unsigned.require
+        cross_dialect_ddl_coverage_census_test.go:266: CREATE TABLE AS SELECT                   | yes  | finding_covered        | create_table         | ddl.table.audit_columns.require, ddl.table.charset.allowlist, ddl.table.columns.min_count, ddl.table.comment.require, ddl.table.create_as.forbid, ddl.table.engine.allowlist, ddl.table.primary_key.require
+        cross_dialect_ddl_coverage_census_test.go:266: CREATE TABLE LIKE                        | yes  | finding_covered        | create_table         | ddl.table.audit_columns.require, ddl.table.charset.allowlist, ddl.table.columns.min_count, ddl.table.comment.require, ddl.table.create_like.forbid, ddl.table.engine.allowlist, ddl.table.primary_key.require
+        cross_dialect_ddl_coverage_census_test.go:266: CREATE TABLESPACE                        | no   | parser_error           |                      | (none)
+        cross_dialect_ddl_coverage_census_test.go:266: CREATE TEMPORARY TABLE                   | yes  | finding_covered        | create_table         | ddl.column.comment.require, ddl.column.default.require, ddl.table.audit_columns.require, ddl.table.charset.allowlist, ddl.table.comment.require, ddl.table.engine.allowlist, ddl.table.primary_key.auto_increment.require, ddl.table.primary_key.unsigned.require
+        cross_dialect_ddl_coverage_census_test.go:266: CREATE TRIGGER                           | no   | parser_error           |                      | (none)
+        cross_dialect_ddl_coverage_census_test.go:266: CREATE UNIQUE INDEX                      | yes  | finding_covered        | create_index         | ddl.create_index.notice, ddl.index.unique.prefix.require
+        cross_dialect_ddl_coverage_census_test.go:266: CREATE USER                              | yes  | finding_covered        | create_user          | ddl.create_user.notice
+        cross_dialect_ddl_coverage_census_test.go:266: CREATE VIEW                              | yes  | finding_covered        | create_view          | ddl.view.create.forbid, ddl.view.security.definer.warn
+        cross_dialect_ddl_coverage_census_test.go:266: DROP DATABASE                            | yes  | finding_covered        | drop_schema          | ddl.database.drop.warn
+        cross_dialect_ddl_coverage_census_test.go:266: DROP DATABASE IF EXISTS                  | yes  | finding_covered        | drop_schema          | ddl.database.drop.warn
+        cross_dialect_ddl_coverage_census_test.go:266: DROP EVENT                               | no   | parser_error           |                      | (none)
+        cross_dialect_ddl_coverage_census_test.go:266: DROP FUNCTION                            | no   | parser_error           |                      | (none)
+        cross_dialect_ddl_coverage_census_test.go:266: DROP INDEX                               | yes  | finding_covered        | drop_index           | ddl.drop_index.notice
+        cross_dialect_ddl_coverage_census_test.go:266: DROP PROCEDURE                           | yes  | finding_covered        | drop_procedure       | ddl.drop_procedure.notice
+        cross_dialect_ddl_coverage_census_test.go:266: DROP RESOURCE GROUP                      | yes  | finding_covered        | drop_resource_group  | ddl.drop_resource_group.notice
+        cross_dialect_ddl_coverage_census_test.go:266: DROP ROLE                                | yes  | finding_covered        | drop_role            | ddl.drop_role.notice
+        cross_dialect_ddl_coverage_census_test.go:266: DROP SCHEMA                              | yes  | finding_covered        | drop_schema          | ddl.database.drop.warn
+        cross_dialect_ddl_coverage_census_test.go:266: DROP TABLE                               | yes  | finding_covered        | drop_table           | ddl.table.drop.forbid
+        cross_dialect_ddl_coverage_census_test.go:266: DROP TABLESPACE                          | no   | parser_error           |                      | (none)
+        cross_dialect_ddl_coverage_census_test.go:266: DROP TRIGGER                             | no   | parser_error           |                      | (none)
+        cross_dialect_ddl_coverage_census_test.go:266: DROP USER                                | yes  | finding_covered        | drop_user            | ddl.drop_user.notice
+        cross_dialect_ddl_coverage_census_test.go:266: DROP VIEW                                | yes  | finding_covered        | drop_view            | ddl.view.drop.forbid
+        cross_dialect_ddl_coverage_census_test.go:266: GRANT SELECT                             | yes  | finding_covered        | grant                | ddl.grant.notice
+        cross_dialect_ddl_coverage_census_test.go:266: RENAME TABLE                             | yes  | finding_covered        | rename_table         | ddl.rename_table.notice
+        cross_dialect_ddl_coverage_census_test.go:266: REVOKE SELECT                            | yes  | finding_covered        | revoke               | ddl.revoke.notice
+        cross_dialect_ddl_coverage_census_test.go:266: TRUNCATE TABLE                           | yes  | finding_covered        | truncate_table       | ddl.table.truncate.forbid
+        cross_dialect_ddl_coverage_census_test.go:266: 
+        cross_dialect_ddl_coverage_census_test.go:266: === MySQL DDL Census Summary ===
+        cross_dialect_ddl_coverage_census_test.go:266: Total:                62
+        cross_dialect_ddl_coverage_census_test.go:266: Finding covered:      48
+        cross_dialect_ddl_coverage_census_test.go:266: Normalized silent:    0
+        cross_dialect_ddl_coverage_census_test.go:266: Unsupported boundary: 0
+        cross_dialect_ddl_coverage_census_test.go:266: Parser error:         14
+        cross_dialect_ddl_coverage_census_test.go:266: Classification mismatches: 1
+FAIL
+FAIL	github.com/Fanduzi/DeltaScope/internal/application/audit	3.134s
+ok  	github.com/Fanduzi/DeltaScope/internal/infrastructure/metadata/mysql	1.159s
+--- FAIL: TestUnsupportedDiagnosticsGuidanceCodeSDKMySQL (0.00s)
+    audit_unsupported_diagnostics_evidence_test.go:121: expected parser-error diagnostic, got nil error and result=deltascope.Result{Verdict:"reject", Coverage:deltascope.Coverage{Status:"unverified"}, Summary:deltascope.Summary{Statements:1, Blockers:1, Warnings:0, Notices:0}, Statements:[]deltascope.StatementResult{deltascope.StatementResult{Index:0, Kind:"ddl", RawSQL:"ALTER VIEW v_users AS SELECT id, name FROM users", NormalizedSQL:"ALTER VIEW v_users AS SELECT id, name FROM users", Findings:[]deltascope.Finding{deltascope.Finding{RuleID:"ddl.view.create.forbid", Level:"blocker", Message:"create view is forbidden for \"v_users\"", StatementIndex:0, StatementKind:"ddl", Location:(*deltascope.Location)(0x4056aba92050), Suggestion:"avoid create view in this change or relax the policy intentionally", Metadata:map[string]interface {}{"operation":"alter_view", "table":"v_users"}, Explanation:(*deltascope.FindingExplanation)(0x4056aacc6be0)}}, EvidenceGaps:[]deltascope.EvidenceGap{deltascope.EvidenceGap{RuleID:"ddl.view.target.valid", ReasonCode:"unknown_table_state", RequiredFacts:[]string{"table.exists"}}, deltascope.EvidenceGap{RuleID:"ddl.view.source.valid", ReasonCode:"unknown_table_state", RequiredFacts:[]string{"table.exists"}}, deltascope.EvidenceGap{RuleID:"ddl.view.security.definer.warn", ReasonCode:"unknown_table_state", RequiredFacts:[]string{"view.security"}}}, Impact:(*deltascope.Impact)(nil), Coverage:deltascope.Coverage{Status:"unverified"}, Explanation:(*deltascope.Explanation)(0x4056ab0dd3b0)}}, GlobalFindings:[]deltascope.Finding{}, Unsupported:[]spec.UnsupportedDetail(nil), Explanation:(*deltascope.Explanation)(0x4056ab0dd350), Diagnostics:[]spec.Diagnostic(nil), Version:(*spec.VersionIdentity)(nil)}
+FAIL
+FAIL	github.com/Fanduzi/DeltaScope/pkg/deltascope	1.674s
+FAIL

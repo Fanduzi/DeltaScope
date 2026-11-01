@@ -1,0 +1,8 @@
+--------------
+ALTER TABLE t MODIFY id BIGINT
+--------------
+
+--------------
+SHOW WARNINGS
+--------------
+

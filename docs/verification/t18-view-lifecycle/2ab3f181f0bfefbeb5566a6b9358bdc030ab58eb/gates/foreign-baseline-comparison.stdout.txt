@@ -1,0 +1,3 @@
+original baseline and final untracked root listings identical: True
+root count 12
+historical foreign content hashes were not captured in original baseline; no byte-level claim

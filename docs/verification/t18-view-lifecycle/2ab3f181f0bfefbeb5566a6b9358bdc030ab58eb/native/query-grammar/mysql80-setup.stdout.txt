@@ -1,0 +1,8 @@
+--------------
+CREATE DATABASE t18qg
+--------------
+
+--------------
+CREATE TABLE t18qg.t(id INT)
+--------------
+

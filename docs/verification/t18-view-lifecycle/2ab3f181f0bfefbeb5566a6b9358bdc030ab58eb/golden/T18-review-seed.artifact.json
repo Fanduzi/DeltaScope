@@ -1,0 +1,2772 @@
+{
+  "task_id": "T18",
+  "issue": 97,
+  "head_sha": "7f67c5de42fb6096d9c80f51e2d0f217eb34e528",
+  "generated_at": "2026-11-01T11:31:13.948798+00:00",
+  "cli": {
+    "path": "/private/tmp/ddl-golden-t18-full-review-1-seed/T18/bin/deltascope",
+    "sha256": "81bd1f892e95e480f7473b855fcb17533b56a9c0b13f5329c8fa6a2787ccc660",
+    "build": {
+      "command": "CGO_ENABLED=0 go build -o <artifact>/deltascope ./cmd/deltascope",
+      "cgo_enabled": "0",
+      "go_version": "go1.26.1",
+      "built_at": "2026-11-01T11:30:56.443799+00:00",
+      "head_sha": "7f67c5de42fb6096d9c80f51e2d0f217eb34e528"
+    }
+  },
+  "policy_profile": {
+    "profile": "all-rules-disabled",
+    "path": "/private/tmp/ddl-golden-t18-full-review-1-seed/T18/golden-policy-all-off.yaml",
+    "sha256": "fdba26f83481546e14fda27854803d81bb82504250c78669c0b2eb40076ed940",
+    "catalog_rules": 464,
+    "enabled_rules": {},
+    "disabled_rules": 464
+  },
+  "policies": [
+    {
+      "profile": "all-rules-disabled",
+      "path": "/private/tmp/ddl-golden-t18-full-review-1-seed/T18/golden-policy-all-off.yaml",
+      "sha256": "fdba26f83481546e14fda27854803d81bb82504250c78669c0b2eb40076ed940",
+      "catalog_rules": 464,
+      "enabled_rules": {},
+      "disabled_rules": 464
+    },
+    {
+      "profile": "t18-blanket",
+      "path": "/private/tmp/ddl-golden-t18-full-review-1-seed/T18/golden-policy-t18-blanket.yaml",
+      "sha256": "72abd14c4d1ef0a1586ee94df4e92f1d79a8b0b8e4c0a2afae7ebb41b05c11c2",
+      "catalog_rules": 464,
+      "enabled_rules": {
+        "ddl.view.target.valid": {
+          "level": "blocker"
+        },
+        "ddl.view.source.valid": {
+          "level": "blocker"
+        },
+        "ddl.view.security.definer.warn": {
+          "level": "warning"
+        },
+        "ddl.view.create.forbid": {
+          "level": "blocker"
+        },
+        "ddl.view.drop.forbid": {
+          "level": "blocker"
+        }
+      },
+      "disabled_rules": 459
+    },
+    {
+      "profile": "t18-first",
+      "path": "/private/tmp/ddl-golden-t18-full-review-1-seed/T18/golden-policy-t18-first.yaml",
+      "sha256": "96b59b63b3d9b1c3123e325a6393ccb84faba63ec147299ee6cf25a9c3772e77",
+      "catalog_rules": 464,
+      "enabled_rules": {
+        "ddl.view.target.valid": {
+          "level": "blocker"
+        },
+        "ddl.view.source.valid": {
+          "level": "blocker"
+        },
+        "ddl.view.security.definer.warn": {
+          "level": "warning"
+        }
+      },
+      "disabled_rules": 461
+    }
+  ],
+  "required_case_ids": [
+    "T18.db.mysql57.ddl",
+    "T18.db.mysql57.syntax_negative",
+    "T18.db.mysql80.ddl",
+    "T18.db.mysql80.syntax_negative",
+    "T18.db.mysql84.ddl",
+    "T18.db.mysql84.syntax_negative",
+    "T18.db.tidb85.ddl",
+    "T18.db.tidb85.syntax_negative",
+    "T18.meta.mysql80-alter-first",
+    "T18.meta.mysql80-alter-dependencies",
+    "T18.meta.mysql80-alter-source-absent",
+    "T18.meta.mysql80-alter-blanket",
+    "T18.cli.mysql-plain-all-off",
+    "T18.cli.mysql-invalid-select",
+    "T18.cli.tidb-plain-all-off",
+    "T18.cli.tidb-invalid-select"
+  ],
+  "cases": [
+    {
+      "case_id": "T18.db.mysql57.ddl",
+      "kind": "db_ddl",
+      "anchor": "mysql57",
+      "input_sql": [
+        "DROP DATABASE IF EXISTS t18fx",
+        "CREATE DATABASE t18fx",
+        "CREATE TABLE t18fx.t(id INT)",
+        "CREATE TABLE t18fx.u(id INT)",
+        "CREATE VIEW t18fx.v AS SELECT id FROM t18fx.u"
+      ],
+      "expected": {
+        "steps": [
+          {
+            "name": "clear-task-fixture",
+            "rc": 0,
+            "verify": []
+          },
+          {
+            "name": "create-task-schema",
+            "rc": 0,
+            "verify": []
+          },
+          {
+            "name": "create-first-source",
+            "rc": 0,
+            "verify": []
+          },
+          {
+            "name": "create-retired-source",
+            "rc": 0,
+            "verify": []
+          },
+          {
+            "name": "create-original-view",
+            "rc": 0,
+            "verify": [
+              {
+                "assert": "fixture target has VIEW identity",
+                "sql": "SELECT TABLE_TYPE FROM information_schema.TABLES WHERE TABLE_SCHEMA='t18fx' AND TABLE_NAME='v'",
+                "expect": "VIEW"
+              }
+            ]
+          }
+        ]
+      },
+      "actual": {
+        "steps": [
+          {
+            "name": "clear-task-fixture",
+            "sql": "DROP DATABASE IF EXISTS t18fx",
+            "verify": [],
+            "rc": 0,
+            "stdout": "",
+            "stderr": ""
+          },
+          {
+            "name": "create-task-schema",
+            "sql": "CREATE DATABASE t18fx",
+            "verify": [],
+            "rc": 0,
+            "stdout": "",
+            "stderr": ""
+          },
+          {
+            "name": "create-first-source",
+            "sql": "CREATE TABLE t18fx.t(id INT)",
+            "verify": [],
+            "rc": 0,
+            "stdout": "",
+            "stderr": ""
+          },
+          {
+            "name": "create-retired-source",
+            "sql": "CREATE TABLE t18fx.u(id INT)",
+            "verify": [],
+            "rc": 0,
+            "stdout": "",
+            "stderr": ""
+          },
+          {
+            "name": "create-original-view",
+            "sql": "CREATE VIEW t18fx.v AS SELECT id FROM t18fx.u",
+            "verify": [
+              {
+                "assert": "fixture target has VIEW identity",
+                "sql": "SELECT TABLE_TYPE FROM information_schema.TABLES WHERE TABLE_SCHEMA='t18fx' AND TABLE_NAME='v'",
+                "rc": 0,
+                "output": "VIEW",
+                "stderr": ""
+              }
+            ],
+            "rc": 0,
+            "stdout": "",
+            "stderr": ""
+          }
+        ],
+        "database": {
+          "product": "mysql",
+          "image": "mysql:5.7.44",
+          "image_digest": "mysql@sha256:4bc6bc963e6d8443453676cae56536f4b8156d78bae03c0145cbe47c2aad73bb",
+          "container": "deltascope-ddl-golden-mysql57",
+          "reachable": true,
+          "version": "5.7.44"
+        }
+      },
+      "assertions": [
+        {
+          "name": "database reachable with expected version",
+          "ok": true,
+          "detail": "SELECT VERSION() rc=0 version='5.7.44' expected_contains='5.7.44'"
+        },
+        {
+          "name": "clear-task-fixture return code",
+          "ok": true,
+          "detail": "rc=0 expected=0 stderr=''"
+        },
+        {
+          "name": "create-task-schema return code",
+          "ok": true,
+          "detail": "rc=0 expected=0 stderr=''"
+        },
+        {
+          "name": "create-first-source return code",
+          "ok": true,
+          "detail": "rc=0 expected=0 stderr=''"
+        },
+        {
+          "name": "create-retired-source return code",
+          "ok": true,
+          "detail": "rc=0 expected=0 stderr=''"
+        },
+        {
+          "name": "create-original-view return code",
+          "ok": true,
+          "detail": "rc=0 expected=0 stderr=''"
+        },
+        {
+          "name": "create-original-view: fixture target has VIEW identity",
+          "ok": true,
+          "detail": "rc=0 output='VIEW' expected='VIEW'"
+        }
+      ],
+      "status": "pass"
+    },
+    {
+      "case_id": "T18.db.mysql57.syntax_negative",
+      "kind": "db_syntax_negative",
+      "anchor": "mysql57",
+      "input_sql": "CREATE VIEW t18fx.invalid_v AS SELECT FROM t18fx.t",
+      "expected": {
+        "error_class": "1064",
+        "forbidden_markers": [
+          "Access denied",
+          "Connection refused",
+          "doesn't exist",
+          "already exists"
+        ]
+      },
+      "actual": {
+        "rc": 1,
+        "stdout": "",
+        "stderr": "ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'FROM t18fx.t' at line 1",
+        "error_class": "1064"
+      },
+      "assertions": [
+        {
+          "name": "nonzero syntax failure",
+          "ok": true,
+          "detail": "rc=1"
+        },
+        {
+          "name": "expected error class",
+          "ok": true,
+          "detail": "error_class='1064' expected='1064'"
+        },
+        {
+          "name": "no permission/connection/object-conflict markers",
+          "ok": true,
+          "detail": "forbidden markers found: []"
+        }
+      ],
+      "status": "pass"
+    },
+    {
+      "case_id": "T18.db.mysql80.ddl",
+      "kind": "db_ddl",
+      "anchor": "mysql80",
+      "input_sql": [
+        "DROP DATABASE IF EXISTS t18fx",
+        "CREATE DATABASE t18fx",
+        "CREATE TABLE t18fx.t(id INT)",
+        "CREATE TABLE t18fx.u(id INT)",
+        "CREATE VIEW t18fx.v AS SELECT id FROM t18fx.u"
+      ],
+      "expected": {
+        "steps": [
+          {
+            "name": "clear-task-fixture",
+            "rc": 0,
+            "verify": []
+          },
+          {
+            "name": "create-task-schema",
+            "rc": 0,
+            "verify": []
+          },
+          {
+            "name": "create-first-source",
+            "rc": 0,
+            "verify": []
+          },
+          {
+            "name": "create-retired-source",
+            "rc": 0,
+            "verify": []
+          },
+          {
+            "name": "create-original-view",
+            "rc": 0,
+            "verify": [
+              {
+                "assert": "fixture target has VIEW identity",
+                "sql": "SELECT TABLE_TYPE FROM information_schema.TABLES WHERE TABLE_SCHEMA='t18fx' AND TABLE_NAME='v'",
+                "expect": "VIEW"
+              }
+            ]
+          }
+        ]
+      },
+      "actual": {
+        "steps": [
+          {
+            "name": "clear-task-fixture",
+            "sql": "DROP DATABASE IF EXISTS t18fx",
+            "verify": [],
+            "rc": 0,
+            "stdout": "",
+            "stderr": ""
+          },
+          {
+            "name": "create-task-schema",
+            "sql": "CREATE DATABASE t18fx",
+            "verify": [],
+            "rc": 0,
+            "stdout": "",
+            "stderr": ""
+          },
+          {
+            "name": "create-first-source",
+            "sql": "CREATE TABLE t18fx.t(id INT)",
+            "verify": [],
+            "rc": 0,
+            "stdout": "",
+            "stderr": ""
+          },
+          {
+            "name": "create-retired-source",
+            "sql": "CREATE TABLE t18fx.u(id INT)",
+            "verify": [],
+            "rc": 0,
+            "stdout": "",
+            "stderr": ""
+          },
+          {
+            "name": "create-original-view",
+            "sql": "CREATE VIEW t18fx.v AS SELECT id FROM t18fx.u",
+            "verify": [
+              {
+                "assert": "fixture target has VIEW identity",
+                "sql": "SELECT TABLE_TYPE FROM information_schema.TABLES WHERE TABLE_SCHEMA='t18fx' AND TABLE_NAME='v'",
+                "rc": 0,
+                "output": "VIEW",
+                "stderr": ""
+              }
+            ],
+            "rc": 0,
+            "stdout": "",
+            "stderr": ""
+          }
+        ],
+        "database": {
+          "product": "mysql",
+          "image": "mysql:8.0.46",
+          "image_digest": "mysql@sha256:7dcddc01f13bab2f15cde676d44d01f61fc9f99fe7785e86196dfc07d358ae2b",
+          "container": "deltascope-ddl-golden-mysql80",
+          "reachable": true,
+          "version": "8.0.46"
+        }
+      },
+      "assertions": [
+        {
+          "name": "database reachable with expected version",
+          "ok": true,
+          "detail": "SELECT VERSION() rc=0 version='8.0.46' expected_contains='8.0.46'"
+        },
+        {
+          "name": "clear-task-fixture return code",
+          "ok": true,
+          "detail": "rc=0 expected=0 stderr=''"
+        },
+        {
+          "name": "create-task-schema return code",
+          "ok": true,
+          "detail": "rc=0 expected=0 stderr=''"
+        },
+        {
+          "name": "create-first-source return code",
+          "ok": true,
+          "detail": "rc=0 expected=0 stderr=''"
+        },
+        {
+          "name": "create-retired-source return code",
+          "ok": true,
+          "detail": "rc=0 expected=0 stderr=''"
+        },
+        {
+          "name": "create-original-view return code",
+          "ok": true,
+          "detail": "rc=0 expected=0 stderr=''"
+        },
+        {
+          "name": "create-original-view: fixture target has VIEW identity",
+          "ok": true,
+          "detail": "rc=0 output='VIEW' expected='VIEW'"
+        }
+      ],
+      "status": "pass"
+    },
+    {
+      "case_id": "T18.db.mysql80.syntax_negative",
+      "kind": "db_syntax_negative",
+      "anchor": "mysql80",
+      "input_sql": "CREATE VIEW t18fx.invalid_v AS SELECT FROM t18fx.t",
+      "expected": {
+        "error_class": "1064",
+        "forbidden_markers": [
+          "Access denied",
+          "Connection refused",
+          "doesn't exist",
+          "already exists"
+        ]
+      },
+      "actual": {
+        "rc": 1,
+        "stdout": "",
+        "stderr": "ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'FROM t18fx.t' at line 1",
+        "error_class": "1064"
+      },
+      "assertions": [
+        {
+          "name": "nonzero syntax failure",
+          "ok": true,
+          "detail": "rc=1"
+        },
+        {
+          "name": "expected error class",
+          "ok": true,
+          "detail": "error_class='1064' expected='1064'"
+        },
+        {
+          "name": "no permission/connection/object-conflict markers",
+          "ok": true,
+          "detail": "forbidden markers found: []"
+        }
+      ],
+      "status": "pass"
+    },
+    {
+      "case_id": "T18.db.mysql84.ddl",
+      "kind": "db_ddl",
+      "anchor": "mysql84",
+      "input_sql": [
+        "DROP DATABASE IF EXISTS t18fx",
+        "CREATE DATABASE t18fx",
+        "CREATE TABLE t18fx.t(id INT)",
+        "CREATE TABLE t18fx.u(id INT)",
+        "CREATE VIEW t18fx.v AS SELECT id FROM t18fx.u"
+      ],
+      "expected": {
+        "steps": [
+          {
+            "name": "clear-task-fixture",
+            "rc": 0,
+            "verify": []
+          },
+          {
+            "name": "create-task-schema",
+            "rc": 0,
+            "verify": []
+          },
+          {
+            "name": "create-first-source",
+            "rc": 0,
+            "verify": []
+          },
+          {
+            "name": "create-retired-source",
+            "rc": 0,
+            "verify": []
+          },
+          {
+            "name": "create-original-view",
+            "rc": 0,
+            "verify": [
+              {
+                "assert": "fixture target has VIEW identity",
+                "sql": "SELECT TABLE_TYPE FROM information_schema.TABLES WHERE TABLE_SCHEMA='t18fx' AND TABLE_NAME='v'",
+                "expect": "VIEW"
+              }
+            ]
+          }
+        ]
+      },
+      "actual": {
+        "steps": [
+          {
+            "name": "clear-task-fixture",
+            "sql": "DROP DATABASE IF EXISTS t18fx",
+            "verify": [],
+            "rc": 0,
+            "stdout": "",
+            "stderr": ""
+          },
+          {
+            "name": "create-task-schema",
+            "sql": "CREATE DATABASE t18fx",
+            "verify": [],
+            "rc": 0,
+            "stdout": "",
+            "stderr": ""
+          },
+          {
+            "name": "create-first-source",
+            "sql": "CREATE TABLE t18fx.t(id INT)",
+            "verify": [],
+            "rc": 0,
+            "stdout": "",
+            "stderr": ""
+          },
+          {
+            "name": "create-retired-source",
+            "sql": "CREATE TABLE t18fx.u(id INT)",
+            "verify": [],
+            "rc": 0,
+            "stdout": "",
+            "stderr": ""
+          },
+          {
+            "name": "create-original-view",
+            "sql": "CREATE VIEW t18fx.v AS SELECT id FROM t18fx.u",
+            "verify": [
+              {
+                "assert": "fixture target has VIEW identity",
+                "sql": "SELECT TABLE_TYPE FROM information_schema.TABLES WHERE TABLE_SCHEMA='t18fx' AND TABLE_NAME='v'",
+                "rc": 0,
+                "output": "VIEW",
+                "stderr": ""
+              }
+            ],
+            "rc": 0,
+            "stdout": "",
+            "stderr": ""
+          }
+        ],
+        "database": {
+          "product": "mysql",
+          "image": "mysql:8.4.10",
+          "image_digest": "mysql@sha256:8dbcf531a03aade657e181b9cf2f1d1803ce621a1d55610cb44cb531ab7d7db6",
+          "container": "deltascope-ddl-golden-mysql84",
+          "reachable": true,
+          "version": "8.4.10"
+        }
+      },
+      "assertions": [
+        {
+          "name": "database reachable with expected version",
+          "ok": true,
+          "detail": "SELECT VERSION() rc=0 version='8.4.10' expected_contains='8.4.10'"
+        },
+        {
+          "name": "clear-task-fixture return code",
+          "ok": true,
+          "detail": "rc=0 expected=0 stderr=''"
+        },
+        {
+          "name": "create-task-schema return code",
+          "ok": true,
+          "detail": "rc=0 expected=0 stderr=''"
+        },
+        {
+          "name": "create-first-source return code",
+          "ok": true,
+          "detail": "rc=0 expected=0 stderr=''"
+        },
+        {
+          "name": "create-retired-source return code",
+          "ok": true,
+          "detail": "rc=0 expected=0 stderr=''"
+        },
+        {
+          "name": "create-original-view return code",
+          "ok": true,
+          "detail": "rc=0 expected=0 stderr=''"
+        },
+        {
+          "name": "create-original-view: fixture target has VIEW identity",
+          "ok": true,
+          "detail": "rc=0 output='VIEW' expected='VIEW'"
+        }
+      ],
+      "status": "pass"
+    },
+    {
+      "case_id": "T18.db.mysql84.syntax_negative",
+      "kind": "db_syntax_negative",
+      "anchor": "mysql84",
+      "input_sql": "CREATE VIEW t18fx.invalid_v AS SELECT FROM t18fx.t",
+      "expected": {
+        "error_class": "1064",
+        "forbidden_markers": [
+          "Access denied",
+          "Connection refused",
+          "doesn't exist",
+          "already exists"
+        ]
+      },
+      "actual": {
+        "rc": 1,
+        "stdout": "",
+        "stderr": "ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'FROM t18fx.t' at line 1",
+        "error_class": "1064"
+      },
+      "assertions": [
+        {
+          "name": "nonzero syntax failure",
+          "ok": true,
+          "detail": "rc=1"
+        },
+        {
+          "name": "expected error class",
+          "ok": true,
+          "detail": "error_class='1064' expected='1064'"
+        },
+        {
+          "name": "no permission/connection/object-conflict markers",
+          "ok": true,
+          "detail": "forbidden markers found: []"
+        }
+      ],
+      "status": "pass"
+    },
+    {
+      "case_id": "T18.db.tidb85.ddl",
+      "kind": "db_ddl",
+      "anchor": "tidb85",
+      "input_sql": [
+        "DROP DATABASE IF EXISTS t18fx",
+        "CREATE DATABASE t18fx",
+        "CREATE TABLE t18fx.t(id INT)",
+        "CREATE TABLE t18fx.u(id INT)",
+        "CREATE VIEW t18fx.v AS SELECT id FROM t18fx.u"
+      ],
+      "expected": {
+        "steps": [
+          {
+            "name": "clear-task-fixture",
+            "rc": 0,
+            "verify": []
+          },
+          {
+            "name": "create-task-schema",
+            "rc": 0,
+            "verify": []
+          },
+          {
+            "name": "create-first-source",
+            "rc": 0,
+            "verify": []
+          },
+          {
+            "name": "create-retired-source",
+            "rc": 0,
+            "verify": []
+          },
+          {
+            "name": "create-original-view",
+            "rc": 0,
+            "verify": [
+              {
+                "assert": "fixture target has VIEW identity",
+                "sql": "SELECT TABLE_TYPE FROM information_schema.TABLES WHERE TABLE_SCHEMA='t18fx' AND TABLE_NAME='v'",
+                "expect": "VIEW"
+              }
+            ]
+          }
+        ]
+      },
+      "actual": {
+        "steps": [
+          {
+            "name": "clear-task-fixture",
+            "sql": "DROP DATABASE IF EXISTS t18fx",
+            "verify": [],
+            "rc": 0,
+            "stdout": "",
+            "stderr": ""
+          },
+          {
+            "name": "create-task-schema",
+            "sql": "CREATE DATABASE t18fx",
+            "verify": [],
+            "rc": 0,
+            "stdout": "",
+            "stderr": ""
+          },
+          {
+            "name": "create-first-source",
+            "sql": "CREATE TABLE t18fx.t(id INT)",
+            "verify": [],
+            "rc": 0,
+            "stdout": "",
+            "stderr": ""
+          },
+          {
+            "name": "create-retired-source",
+            "sql": "CREATE TABLE t18fx.u(id INT)",
+            "verify": [],
+            "rc": 0,
+            "stdout": "",
+            "stderr": ""
+          },
+          {
+            "name": "create-original-view",
+            "sql": "CREATE VIEW t18fx.v AS SELECT id FROM t18fx.u",
+            "verify": [
+              {
+                "assert": "fixture target has VIEW identity",
+                "sql": "SELECT TABLE_TYPE FROM information_schema.TABLES WHERE TABLE_SCHEMA='t18fx' AND TABLE_NAME='v'",
+                "rc": 0,
+                "output": "VIEW",
+                "stderr": ""
+              }
+            ],
+            "rc": 0,
+            "stdout": "",
+            "stderr": ""
+          }
+        ],
+        "database": {
+          "product": "tidb",
+          "image": "pingcap/tidb:v8.5.0",
+          "image_digest": "pingcap/tidb@sha256:490861bd4a2fa643dbe76b77ffecafcad66e6a42774e580b82f4ec2429a80e57",
+          "container": "deltascope-ddl-golden-tidb85",
+          "reachable": true,
+          "version": "8.0.11-TiDB-v8.5.0"
+        }
+      },
+      "assertions": [
+        {
+          "name": "database reachable with expected version",
+          "ok": true,
+          "detail": "SELECT VERSION() rc=0 version='8.0.11-TiDB-v8.5.0' expected_contains='v8.5.0'"
+        },
+        {
+          "name": "fixture database created",
+          "ok": true,
+          "detail": "CREATE DATABASE rc=0 stderr=''"
+        },
+        {
+          "name": "clear-task-fixture return code",
+          "ok": true,
+          "detail": "rc=0 expected=0 stderr=''"
+        },
+        {
+          "name": "create-task-schema return code",
+          "ok": true,
+          "detail": "rc=0 expected=0 stderr=''"
+        },
+        {
+          "name": "create-first-source return code",
+          "ok": true,
+          "detail": "rc=0 expected=0 stderr=''"
+        },
+        {
+          "name": "create-retired-source return code",
+          "ok": true,
+          "detail": "rc=0 expected=0 stderr=''"
+        },
+        {
+          "name": "create-original-view return code",
+          "ok": true,
+          "detail": "rc=0 expected=0 stderr=''"
+        },
+        {
+          "name": "create-original-view: fixture target has VIEW identity",
+          "ok": true,
+          "detail": "rc=0 output='VIEW' expected='VIEW'"
+        }
+      ],
+      "status": "pass"
+    },
+    {
+      "case_id": "T18.db.tidb85.syntax_negative",
+      "kind": "db_syntax_negative",
+      "anchor": "tidb85",
+      "input_sql": "CREATE VIEW t18fx.invalid_v AS SELECT FROM t18fx.t",
+      "expected": {
+        "error_class": "1064",
+        "forbidden_markers": [
+          "Access denied",
+          "Connection refused",
+          "doesn't exist",
+          "already exists"
+        ]
+      },
+      "actual": {
+        "rc": 1,
+        "stdout": "",
+        "stderr": "ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your TiDB version for the right syntax to use line 1 column 42 near \"FROM t18fx.t\"",
+        "error_class": "1064"
+      },
+      "assertions": [
+        {
+          "name": "nonzero syntax failure",
+          "ok": true,
+          "detail": "rc=1"
+        },
+        {
+          "name": "expected error class",
+          "ok": true,
+          "detail": "error_class='1064' expected='1064'"
+        },
+        {
+          "name": "no permission/connection/object-conflict markers",
+          "ok": true,
+          "detail": "forbidden markers found: []"
+        }
+      ],
+      "status": "pass"
+    },
+    {
+      "case_id": "T18.cli.mysql-plain-all-off",
+      "kind": "cli_audit",
+      "cli_case": "mysql-plain-all-off",
+      "dialect": "mysql",
+      "input_sql": "CREATE VIEW g.v AS SELECT id FROM g.t;",
+      "policy_profile": "all-rules-disabled",
+      "policy_path": "/private/tmp/ddl-golden-t18-full-review-1-seed/T18/golden-policy-all-off.yaml",
+      "command": [
+        "/private/tmp/ddl-golden-t18-full-review-1-seed/T18/bin/deltascope",
+        "audit",
+        "--dialect",
+        "mysql",
+        "--sql",
+        "CREATE VIEW g.v AS SELECT id FROM g.t;",
+        "--config",
+        "/private/tmp/ddl-golden-t18-full-review-1-seed/T18/golden-policy-all-off.yaml",
+        "--format",
+        "json",
+        "--fail-on",
+        "blocker"
+      ],
+      "expected": {
+        "exit": 0,
+        "verdict": "pass",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "complete",
+        "statement_coverage": [
+          "complete"
+        ],
+        "evidence_gaps": 0,
+        "statement_indices": [
+          0
+        ],
+        "statement_sql": [
+          "CREATE VIEW g.v AS SELECT id FROM g.t;"
+        ],
+        "finding_entries": [],
+        "fail_on_triggered": false
+      },
+      "actual": {
+        "exit": 0,
+        "stdout": "{\"verdict\":\"pass\",\"coverage\":{\"status\":\"complete\"},\"summary\":{\"statements\":1,\"blockers\":0,\"warnings\":0,\"notices\":0},\"statements\":[{\"index\":0,\"kind\":\"ddl\",\"raw_sql\":\"CREATE VIEW g.v AS SELECT id FROM g.t;\",\"normalized_sql\":\"CREATE VIEW g.v AS SELECT id FROM g.t\",\"coverage\":{\"status\":\"complete\"}}],\"fail_on_triggered\":false,\"context\":{\"mode\":\"offline\",\"dialect\":\"mysql\",\"dialect_source\":\"flag\",\"note\":\"existence not checked (no database connection)\",\"unproven\":[\"column_exists\",\"table_exists\"]}}\n",
+        "stderr": "",
+        "parsed": {
+          "verdict": "pass",
+          "coverage": {
+            "status": "complete"
+          },
+          "summary": {
+            "statements": 1,
+            "blockers": 0,
+            "warnings": 0,
+            "notices": 0
+          },
+          "statements": [
+            {
+              "index": 0,
+              "kind": "ddl",
+              "raw_sql": "CREATE VIEW g.v AS SELECT id FROM g.t;",
+              "normalized_sql": "CREATE VIEW g.v AS SELECT id FROM g.t",
+              "coverage": {
+                "status": "complete"
+              }
+            }
+          ],
+          "fail_on_triggered": false,
+          "context": {
+            "mode": "offline",
+            "dialect": "mysql",
+            "dialect_source": "flag",
+            "note": "existence not checked (no database connection)",
+            "unproven": [
+              "column_exists",
+              "table_exists"
+            ]
+          }
+        },
+        "version_evidence": {
+          "target_raw": null,
+          "target_canonical": null,
+          "observed_raw": null,
+          "observed_canonical": null,
+          "resolved": null
+        }
+      },
+      "assertions": [
+        {
+          "name": "exit code",
+          "ok": true,
+          "detail": "rc=0 expected=0"
+        },
+        {
+          "name": "verdict",
+          "ok": true,
+          "detail": "verdict='pass'"
+        },
+        {
+          "name": "top-level statements",
+          "ok": true,
+          "detail": "statements=1 expected=1"
+        },
+        {
+          "name": "zero findings",
+          "ok": true,
+          "detail": "findings=0"
+        },
+        {
+          "name": "no diagnostics",
+          "ok": true,
+          "detail": "diagnostics=[]"
+        },
+        {
+          "name": "no unsupported",
+          "ok": true,
+          "detail": "unsupported=[]"
+        },
+        {
+          "name": "statement indices",
+          "ok": true,
+          "detail": "indices=[0]"
+        },
+        {
+          "name": "finding statement ownership",
+          "ok": true,
+          "detail": "findings must belong to their enclosing statement"
+        },
+        {
+          "name": "aggregate coverage",
+          "ok": true,
+          "detail": "coverage='complete'"
+        },
+        {
+          "name": "per-statement coverage",
+          "ok": true,
+          "detail": "statement_coverage=['complete']"
+        },
+        {
+          "name": "statement raw SQL identity",
+          "ok": true,
+          "detail": "raw_sql=['CREATE VIEW g.v AS SELECT id FROM g.t;'] expected=['CREATE VIEW g.v AS SELECT id FROM g.t;']"
+        },
+        {
+          "name": "evidence gap count",
+          "ok": true,
+          "detail": "gaps=0"
+        },
+        {
+          "name": "finding entries",
+          "ok": true,
+          "detail": "findings=[] expected=[]"
+        },
+        {
+          "name": "fail_on_triggered",
+          "ok": true,
+          "detail": "fail_on_triggered=False"
+        }
+      ],
+      "status": "pass"
+    },
+    {
+      "case_id": "T18.cli.mysql-invalid-select",
+      "kind": "cli_audit",
+      "cli_case": "mysql-invalid-select",
+      "dialect": "mysql",
+      "input_sql": "CREATE VIEW g.v AS SELECT FROM g.t;",
+      "policy_profile": "all-rules-disabled",
+      "policy_path": "/private/tmp/ddl-golden-t18-full-review-1-seed/T18/golden-policy-all-off.yaml",
+      "command": [
+        "/private/tmp/ddl-golden-t18-full-review-1-seed/T18/bin/deltascope",
+        "audit",
+        "--dialect",
+        "mysql",
+        "--sql",
+        "CREATE VIEW g.v AS SELECT FROM g.t;",
+        "--config",
+        "/private/tmp/ddl-golden-t18-full-review-1-seed/T18/golden-policy-all-off.yaml",
+        "--format",
+        "json",
+        "--fail-on",
+        "none"
+      ],
+      "expected": {
+        "exit": 2,
+        "verdict": "",
+        "statements": 0,
+        "findings": 0,
+        "diagnostics": 1,
+        "unsupported": 0,
+        "coverage": "incomplete",
+        "evidence_gaps": 0
+      },
+      "actual": {
+        "exit": 2,
+        "stdout": "{\"verdict\":\"\",\"coverage\":{\"status\":\"incomplete\"},\"summary\":{\"statements\":0,\"blockers\":0,\"warnings\":0,\"notices\":0},\"diagnostics\":[{\"classification\":\"parser_error\",\"reason\":\"statement was not audited because the selected dialect parser could not parse it; no audit findings were inferred\",\"action_hint\":\"verify the selected dialect and syntax, split multi-statement input if needed, or upgrade DeltaScope when parser support becomes available\",\"audited\":false,\"dialect\":\"mysql\",\"line\":1,\"column\":1}],\"fail_on_triggered\":false,\"context\":{\"mode\":\"offline\",\"dialect\":\"mysql\",\"dialect_source\":\"flag\",\"note\":\"existence not checked (no database connection)\",\"unproven\":[\"column_exists\",\"table_exists\"]}}\n",
+        "stderr": "statement was not audited because the selected dialect parser could not parse it; no audit findings were inferred\n",
+        "parsed": {
+          "verdict": "",
+          "coverage": {
+            "status": "incomplete"
+          },
+          "summary": {
+            "statements": 0,
+            "blockers": 0,
+            "warnings": 0,
+            "notices": 0
+          },
+          "diagnostics": [
+            {
+              "classification": "parser_error",
+              "reason": "statement was not audited because the selected dialect parser could not parse it; no audit findings were inferred",
+              "action_hint": "verify the selected dialect and syntax, split multi-statement input if needed, or upgrade DeltaScope when parser support becomes available",
+              "audited": false,
+              "dialect": "mysql",
+              "line": 1,
+              "column": 1
+            }
+          ],
+          "fail_on_triggered": false,
+          "context": {
+            "mode": "offline",
+            "dialect": "mysql",
+            "dialect_source": "flag",
+            "note": "existence not checked (no database connection)",
+            "unproven": [
+              "column_exists",
+              "table_exists"
+            ]
+          }
+        },
+        "version_evidence": {
+          "target_raw": null,
+          "target_canonical": null,
+          "observed_raw": null,
+          "observed_canonical": null,
+          "resolved": null
+        }
+      },
+      "assertions": [
+        {
+          "name": "exit code",
+          "ok": true,
+          "detail": "rc=2 expected=2"
+        },
+        {
+          "name": "verdict",
+          "ok": true,
+          "detail": "verdict=''"
+        },
+        {
+          "name": "top-level statements",
+          "ok": true,
+          "detail": "statements=0 expected=0"
+        },
+        {
+          "name": "zero findings",
+          "ok": true,
+          "detail": "findings=0"
+        },
+        {
+          "name": "no diagnostics",
+          "ok": true,
+          "detail": "diagnostics=[{'classification': 'parser_error', 'reason': 'statement was not audited because the selected dialect parser could not parse it; no audit findings were inferred', 'action_hint': 'verify the selected dialect and syntax, split multi-statement input if needed, or upgrade DeltaScope when parser support becomes available', 'audited': False, 'dialect': 'mysql', 'line': 1, 'column': 1}]"
+        },
+        {
+          "name": "no unsupported",
+          "ok": true,
+          "detail": "unsupported=[]"
+        },
+        {
+          "name": "aggregate coverage",
+          "ok": true,
+          "detail": "coverage='incomplete'"
+        },
+        {
+          "name": "evidence gap count",
+          "ok": true,
+          "detail": "gaps=0"
+        }
+      ],
+      "status": "pass"
+    },
+    {
+      "case_id": "T18.cli.tidb-plain-all-off",
+      "kind": "cli_audit",
+      "cli_case": "tidb-plain-all-off",
+      "dialect": "tidb",
+      "input_sql": "CREATE VIEW g.v AS SELECT id FROM g.t;",
+      "policy_profile": "all-rules-disabled",
+      "policy_path": "/private/tmp/ddl-golden-t18-full-review-1-seed/T18/golden-policy-all-off.yaml",
+      "command": [
+        "/private/tmp/ddl-golden-t18-full-review-1-seed/T18/bin/deltascope",
+        "audit",
+        "--dialect",
+        "tidb",
+        "--sql",
+        "CREATE VIEW g.v AS SELECT id FROM g.t;",
+        "--config",
+        "/private/tmp/ddl-golden-t18-full-review-1-seed/T18/golden-policy-all-off.yaml",
+        "--format",
+        "json",
+        "--fail-on",
+        "blocker"
+      ],
+      "expected": {
+        "exit": 0,
+        "verdict": "pass",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "complete",
+        "statement_coverage": [
+          "complete"
+        ],
+        "evidence_gaps": 0,
+        "statement_indices": [
+          0
+        ],
+        "statement_sql": [
+          "CREATE VIEW g.v AS SELECT id FROM g.t;"
+        ],
+        "finding_entries": [],
+        "fail_on_triggered": false
+      },
+      "actual": {
+        "exit": 0,
+        "stdout": "{\"verdict\":\"pass\",\"coverage\":{\"status\":\"complete\"},\"summary\":{\"statements\":1,\"blockers\":0,\"warnings\":0,\"notices\":0},\"statements\":[{\"index\":0,\"kind\":\"ddl\",\"raw_sql\":\"CREATE VIEW g.v AS SELECT id FROM g.t;\",\"normalized_sql\":\"CREATE VIEW g.v AS SELECT id FROM g.t\",\"coverage\":{\"status\":\"complete\"}}],\"fail_on_triggered\":false,\"context\":{\"mode\":\"offline\",\"dialect\":\"tidb\",\"dialect_source\":\"flag\",\"note\":\"existence not checked (no database connection)\",\"unproven\":[\"column_exists\",\"table_exists\"]}}\n",
+        "stderr": "",
+        "parsed": {
+          "verdict": "pass",
+          "coverage": {
+            "status": "complete"
+          },
+          "summary": {
+            "statements": 1,
+            "blockers": 0,
+            "warnings": 0,
+            "notices": 0
+          },
+          "statements": [
+            {
+              "index": 0,
+              "kind": "ddl",
+              "raw_sql": "CREATE VIEW g.v AS SELECT id FROM g.t;",
+              "normalized_sql": "CREATE VIEW g.v AS SELECT id FROM g.t",
+              "coverage": {
+                "status": "complete"
+              }
+            }
+          ],
+          "fail_on_triggered": false,
+          "context": {
+            "mode": "offline",
+            "dialect": "tidb",
+            "dialect_source": "flag",
+            "note": "existence not checked (no database connection)",
+            "unproven": [
+              "column_exists",
+              "table_exists"
+            ]
+          }
+        },
+        "version_evidence": {
+          "target_raw": null,
+          "target_canonical": null,
+          "observed_raw": null,
+          "observed_canonical": null,
+          "resolved": null
+        }
+      },
+      "assertions": [
+        {
+          "name": "exit code",
+          "ok": true,
+          "detail": "rc=0 expected=0"
+        },
+        {
+          "name": "verdict",
+          "ok": true,
+          "detail": "verdict='pass'"
+        },
+        {
+          "name": "top-level statements",
+          "ok": true,
+          "detail": "statements=1 expected=1"
+        },
+        {
+          "name": "zero findings",
+          "ok": true,
+          "detail": "findings=0"
+        },
+        {
+          "name": "no diagnostics",
+          "ok": true,
+          "detail": "diagnostics=[]"
+        },
+        {
+          "name": "no unsupported",
+          "ok": true,
+          "detail": "unsupported=[]"
+        },
+        {
+          "name": "statement indices",
+          "ok": true,
+          "detail": "indices=[0]"
+        },
+        {
+          "name": "finding statement ownership",
+          "ok": true,
+          "detail": "findings must belong to their enclosing statement"
+        },
+        {
+          "name": "aggregate coverage",
+          "ok": true,
+          "detail": "coverage='complete'"
+        },
+        {
+          "name": "per-statement coverage",
+          "ok": true,
+          "detail": "statement_coverage=['complete']"
+        },
+        {
+          "name": "statement raw SQL identity",
+          "ok": true,
+          "detail": "raw_sql=['CREATE VIEW g.v AS SELECT id FROM g.t;'] expected=['CREATE VIEW g.v AS SELECT id FROM g.t;']"
+        },
+        {
+          "name": "evidence gap count",
+          "ok": true,
+          "detail": "gaps=0"
+        },
+        {
+          "name": "finding entries",
+          "ok": true,
+          "detail": "findings=[] expected=[]"
+        },
+        {
+          "name": "fail_on_triggered",
+          "ok": true,
+          "detail": "fail_on_triggered=False"
+        }
+      ],
+      "status": "pass"
+    },
+    {
+      "case_id": "T18.cli.tidb-invalid-select",
+      "kind": "cli_audit",
+      "cli_case": "tidb-invalid-select",
+      "dialect": "tidb",
+      "input_sql": "CREATE VIEW g.v AS SELECT FROM g.t;",
+      "policy_profile": "all-rules-disabled",
+      "policy_path": "/private/tmp/ddl-golden-t18-full-review-1-seed/T18/golden-policy-all-off.yaml",
+      "command": [
+        "/private/tmp/ddl-golden-t18-full-review-1-seed/T18/bin/deltascope",
+        "audit",
+        "--dialect",
+        "tidb",
+        "--sql",
+        "CREATE VIEW g.v AS SELECT FROM g.t;",
+        "--config",
+        "/private/tmp/ddl-golden-t18-full-review-1-seed/T18/golden-policy-all-off.yaml",
+        "--format",
+        "json",
+        "--fail-on",
+        "none"
+      ],
+      "expected": {
+        "exit": 2,
+        "verdict": "",
+        "statements": 0,
+        "findings": 0,
+        "diagnostics": 1,
+        "unsupported": 0,
+        "coverage": "incomplete",
+        "evidence_gaps": 0
+      },
+      "actual": {
+        "exit": 2,
+        "stdout": "{\"verdict\":\"\",\"coverage\":{\"status\":\"incomplete\"},\"summary\":{\"statements\":0,\"blockers\":0,\"warnings\":0,\"notices\":0},\"diagnostics\":[{\"classification\":\"parser_error\",\"reason\":\"statement was not audited because the selected dialect parser could not parse it; no audit findings were inferred\",\"action_hint\":\"verify the selected dialect and syntax, split multi-statement input if needed, or upgrade DeltaScope when parser support becomes available\",\"audited\":false,\"dialect\":\"tidb\",\"line\":1,\"column\":1}],\"fail_on_triggered\":false,\"context\":{\"mode\":\"offline\",\"dialect\":\"tidb\",\"dialect_source\":\"flag\",\"note\":\"existence not checked (no database connection)\",\"unproven\":[\"column_exists\",\"table_exists\"]}}\n",
+        "stderr": "statement was not audited because the selected dialect parser could not parse it; no audit findings were inferred\n",
+        "parsed": {
+          "verdict": "",
+          "coverage": {
+            "status": "incomplete"
+          },
+          "summary": {
+            "statements": 0,
+            "blockers": 0,
+            "warnings": 0,
+            "notices": 0
+          },
+          "diagnostics": [
+            {
+              "classification": "parser_error",
+              "reason": "statement was not audited because the selected dialect parser could not parse it; no audit findings were inferred",
+              "action_hint": "verify the selected dialect and syntax, split multi-statement input if needed, or upgrade DeltaScope when parser support becomes available",
+              "audited": false,
+              "dialect": "tidb",
+              "line": 1,
+              "column": 1
+            }
+          ],
+          "fail_on_triggered": false,
+          "context": {
+            "mode": "offline",
+            "dialect": "tidb",
+            "dialect_source": "flag",
+            "note": "existence not checked (no database connection)",
+            "unproven": [
+              "column_exists",
+              "table_exists"
+            ]
+          }
+        },
+        "version_evidence": {
+          "target_raw": null,
+          "target_canonical": null,
+          "observed_raw": null,
+          "observed_canonical": null,
+          "resolved": null
+        }
+      },
+      "assertions": [
+        {
+          "name": "exit code",
+          "ok": true,
+          "detail": "rc=2 expected=2"
+        },
+        {
+          "name": "verdict",
+          "ok": true,
+          "detail": "verdict=''"
+        },
+        {
+          "name": "top-level statements",
+          "ok": true,
+          "detail": "statements=0 expected=0"
+        },
+        {
+          "name": "zero findings",
+          "ok": true,
+          "detail": "findings=0"
+        },
+        {
+          "name": "no diagnostics",
+          "ok": true,
+          "detail": "diagnostics=[{'classification': 'parser_error', 'reason': 'statement was not audited because the selected dialect parser could not parse it; no audit findings were inferred', 'action_hint': 'verify the selected dialect and syntax, split multi-statement input if needed, or upgrade DeltaScope when parser support becomes available', 'audited': False, 'dialect': 'tidb', 'line': 1, 'column': 1}]"
+        },
+        {
+          "name": "no unsupported",
+          "ok": true,
+          "detail": "unsupported=[]"
+        },
+        {
+          "name": "aggregate coverage",
+          "ok": true,
+          "detail": "coverage='incomplete'"
+        },
+        {
+          "name": "evidence gap count",
+          "ok": true,
+          "detail": "gaps=0"
+        }
+      ],
+      "status": "pass"
+    },
+    {
+      "case_id": "T18.meta.mysql80-alter-first",
+      "kind": "cli_metadata",
+      "cli_case": "mysql80-alter-first",
+      "anchor": "mysql80",
+      "dialect": "mysql",
+      "input_sql": "ALTER VIEW v AS SELECT id FROM t;",
+      "policy_profile": "t18-first",
+      "policy_path": "/private/tmp/ddl-golden-t18-full-review-1-seed/T18/golden-policy-t18-first.yaml",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 23380,
+        "user": "root",
+        "schema": "t18fx",
+        "password_env": "DS_T18_GOLDEN_PW"
+      },
+      "expected": {
+        "exit": 0,
+        "verdict": "review",
+        "statements": 1,
+        "findings": 1,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "complete",
+        "statement_coverage": [
+          "complete"
+        ],
+        "evidence_gaps": 0,
+        "statement_indices": [
+          0
+        ],
+        "statement_sql": [
+          "ALTER VIEW v AS SELECT id FROM t;"
+        ],
+        "finding_entries": [
+          {
+            "index": 0,
+            "rule_id": "ddl.view.security.definer.warn",
+            "level": "warning"
+          }
+        ],
+        "fail_on_triggered": false,
+        "finding_locations": [
+          {
+            "index": 0,
+            "line": 1,
+            "column": 1
+          }
+        ],
+        "version": {
+          "product": "mysql",
+          "version": "8.0.46"
+        }
+      },
+      "actual": {
+        "database": {
+          "product": "mysql",
+          "image": "mysql:8.0.46",
+          "image_digest": "mysql@sha256:7dcddc01f13bab2f15cde676d44d01f61fc9f99fe7785e86196dfc07d358ae2b",
+          "container": "deltascope-ddl-golden-mysql80",
+          "reachable": true,
+          "version": "8.0.46"
+        },
+        "setup": [
+          {
+            "name": "remove-prior-companion",
+            "sql": "DROP VIEW IF EXISTS t18fx.next_v",
+            "rc": 0,
+            "stdout": "",
+            "stderr": ""
+          },
+          {
+            "name": "reset-original-view",
+            "sql": "CREATE OR REPLACE VIEW t18fx.v AS SELECT id FROM t18fx.u",
+            "rc": 0,
+            "stdout": "",
+            "stderr": "",
+            "verify": [
+              {
+                "assert": "target is a view before ALTER",
+                "sql": "SELECT TABLE_TYPE FROM information_schema.TABLES WHERE TABLE_SCHEMA='t18fx' AND TABLE_NAME='v'",
+                "rc": 0,
+                "output": "VIEW",
+                "stderr": ""
+              }
+            ]
+          }
+        ],
+        "post_verify": [],
+        "execute": [
+          {
+            "name": "native-alter-first",
+            "sql": "ALTER VIEW t18fx.v AS SELECT id FROM t18fx.t",
+            "rc": 0,
+            "stdout": "",
+            "stderr": "",
+            "verify": [
+              {
+                "assert": "native replacement definition uses t and not retired u",
+                "sql": "SELECT LOCATE('`t18fx`.`t`', VIEW_DEFINITION)>0 AND LOCATE('`t18fx`.`u`', VIEW_DEFINITION)=0 FROM information_schema.VIEWS WHERE TABLE_SCHEMA='t18fx' AND TABLE_NAME='v'",
+                "rc": 0,
+                "output": "1",
+                "stderr": ""
+              }
+            ]
+          }
+        ],
+        "structure": [],
+        "teardown": [],
+        "exit": 0,
+        "stdout": "{\"verdict\":\"review\",\"coverage\":{\"status\":\"complete\"},\"summary\":{\"statements\":1,\"blockers\":0,\"warnings\":1,\"notices\":0},\"statements\":[{\"index\":0,\"kind\":\"ddl\",\"raw_sql\":\"ALTER VIEW v AS SELECT id FROM t;\",\"normalized_sql\":\"ALTER VIEW v AS SELECT id FROM t\",\"findings\":[{\"rule_id\":\"ddl.view.security.definer.warn\",\"level\":\"warning\",\"message\":\"view security or named definer requires review\",\"statement_kind\":\"ddl\",\"location\":{\"line\":1,\"column\":1},\"suggestion\":\"review the view's privilege context\",\"metadata\":{\"role\":\"view\",\"view\":\"v\",\"view_schema\":\"t18fx\"},\"explanation\":{\"summary\":\"Warn on DDL view security definer warn\",\"why\":\"The statement reached a caution rule that highlights an operational trade-off.\",\"risk\":\"Ignoring this rule can hide live-schema or instance-state risks that only metadata reveals.\",\"suggestion\":\"review the view's privilege context\",\"metadata\":{\"status\":\"available\",\"note\":\"Ordered relation and view facts support checks of target, source and inherited attributes where applicable.\"}}}],\"coverage\":{\"status\":\"complete\"}}],\"version\":{\"product\":\"mysql\",\"version\":\"8.0.46\",\"major\":8,\"minor\":0,\"patch\":46,\"source\":\"observed\",\"validated_range\":true},\"fail_on_triggered\":false,\"rule_summary\":{\"loaded\":3,\"applicable\":3,\"skipped\":[]},\"context\":{\"mode\":\"metadata-aware\",\"dialect\":\"mysql\",\"dialect_source\":\"detected\",\"schema\":\"t18fx\",\"schema_source\":\"flag\"}}\n",
+        "stderr": "",
+        "parsed": {
+          "verdict": "review",
+          "coverage": {
+            "status": "complete"
+          },
+          "summary": {
+            "statements": 1,
+            "blockers": 0,
+            "warnings": 1,
+            "notices": 0
+          },
+          "statements": [
+            {
+              "index": 0,
+              "kind": "ddl",
+              "raw_sql": "ALTER VIEW v AS SELECT id FROM t;",
+              "normalized_sql": "ALTER VIEW v AS SELECT id FROM t",
+              "findings": [
+                {
+                  "rule_id": "ddl.view.security.definer.warn",
+                  "level": "warning",
+                  "message": "view security or named definer requires review",
+                  "statement_kind": "ddl",
+                  "location": {
+                    "line": 1,
+                    "column": 1
+                  },
+                  "suggestion": "review the view's privilege context",
+                  "metadata": {
+                    "role": "view",
+                    "view": "v",
+                    "view_schema": "t18fx"
+                  },
+                  "explanation": {
+                    "summary": "Warn on DDL view security definer warn",
+                    "why": "The statement reached a caution rule that highlights an operational trade-off.",
+                    "risk": "Ignoring this rule can hide live-schema or instance-state risks that only metadata reveals.",
+                    "suggestion": "review the view's privilege context",
+                    "metadata": {
+                      "status": "available",
+                      "note": "Ordered relation and view facts support checks of target, source and inherited attributes where applicable."
+                    }
+                  }
+                }
+              ],
+              "coverage": {
+                "status": "complete"
+              }
+            }
+          ],
+          "version": {
+            "product": "mysql",
+            "version": "8.0.46",
+            "major": 8,
+            "minor": 0,
+            "patch": 46,
+            "source": "observed",
+            "validated_range": true
+          },
+          "fail_on_triggered": false,
+          "rule_summary": {
+            "loaded": 3,
+            "applicable": 3,
+            "skipped": []
+          },
+          "context": {
+            "mode": "metadata-aware",
+            "dialect": "mysql",
+            "dialect_source": "detected",
+            "schema": "t18fx",
+            "schema_source": "flag"
+          }
+        },
+        "version_evidence": {
+          "target_raw": null,
+          "target_canonical": null,
+          "observed_raw": "8.0.46",
+          "observed_canonical": {
+            "product": "mysql",
+            "version": "8.0.46"
+          },
+          "resolved": {
+            "product": "mysql",
+            "version": "8.0.46",
+            "major": 8,
+            "minor": 0,
+            "patch": 46,
+            "source": "observed",
+            "validated_range": true
+          }
+        }
+      },
+      "assertions": [
+        {
+          "name": "database reachable with expected version",
+          "ok": true,
+          "detail": "SELECT VERSION() rc=0 version='8.0.46' expected_contains='8.0.46'"
+        },
+        {
+          "name": "setup remove-prior-companion return code",
+          "ok": true,
+          "detail": "rc=0 expected=0 stderr=''"
+        },
+        {
+          "name": "setup reset-original-view return code",
+          "ok": true,
+          "detail": "rc=0 expected=0 stderr=''"
+        },
+        {
+          "name": "setup reset-original-view: target is a view before ALTER",
+          "ok": true,
+          "detail": "rc=0 output='VIEW' expected='VIEW'"
+        },
+        {
+          "name": "exit code",
+          "ok": true,
+          "detail": "rc=0 expected=0"
+        },
+        {
+          "name": "verdict",
+          "ok": true,
+          "detail": "verdict='review'"
+        },
+        {
+          "name": "top-level statements",
+          "ok": true,
+          "detail": "statements=1 expected=1"
+        },
+        {
+          "name": "zero findings",
+          "ok": true,
+          "detail": "findings=1"
+        },
+        {
+          "name": "no diagnostics",
+          "ok": true,
+          "detail": "diagnostics=[]"
+        },
+        {
+          "name": "no unsupported",
+          "ok": true,
+          "detail": "unsupported=[]"
+        },
+        {
+          "name": "statement indices",
+          "ok": true,
+          "detail": "indices=[0]"
+        },
+        {
+          "name": "finding statement ownership",
+          "ok": true,
+          "detail": "findings must belong to their enclosing statement"
+        },
+        {
+          "name": "aggregate coverage",
+          "ok": true,
+          "detail": "coverage='complete'"
+        },
+        {
+          "name": "per-statement coverage",
+          "ok": true,
+          "detail": "statement_coverage=['complete']"
+        },
+        {
+          "name": "statement raw SQL identity",
+          "ok": true,
+          "detail": "raw_sql=['ALTER VIEW v AS SELECT id FROM t;'] expected=['ALTER VIEW v AS SELECT id FROM t;']"
+        },
+        {
+          "name": "evidence gap count",
+          "ok": true,
+          "detail": "gaps=0"
+        },
+        {
+          "name": "finding entries",
+          "ok": true,
+          "detail": "findings=[(0, 'ddl.view.security.definer.warn', 'warning')] expected=[(0, 'ddl.view.security.definer.warn', 'warning')]"
+        },
+        {
+          "name": "finding location index=0",
+          "ok": true,
+          "detail": "locations=[{'line': 1, 'column': 1}] expected={'index': 0, 'line': 1, 'column': 1}"
+        },
+        {
+          "name": "fail_on_triggered",
+          "ok": true,
+          "detail": "fail_on_triggered=False"
+        },
+        {
+          "name": "version identity",
+          "ok": true,
+          "detail": "version={'product': 'mysql', 'version': '8.0.46', 'major': 8, 'minor': 0, 'patch': 46, 'source': 'observed', 'validated_range': True} expected={'product': 'mysql', 'version': '8.0.46'}"
+        },
+        {
+          "name": "execute native-alter-first return code",
+          "ok": true,
+          "detail": "rc=0 expected=0 stderr=''"
+        },
+        {
+          "name": "execute native-alter-first: native replacement definition uses t and not retired u",
+          "ok": true,
+          "detail": "rc=0 output='1' expected='1'"
+        }
+      ],
+      "status": "pass",
+      "command": [
+        "/private/tmp/ddl-golden-t18-full-review-1-seed/T18/bin/deltascope",
+        "audit",
+        "--dialect",
+        "mysql",
+        "--sql",
+        "ALTER VIEW v AS SELECT id FROM t;",
+        "--config",
+        "/private/tmp/ddl-golden-t18-full-review-1-seed/T18/golden-policy-t18-first.yaml",
+        "--format",
+        "json",
+        "--host",
+        "127.0.0.1",
+        "--port",
+        "23380",
+        "--user",
+        "root",
+        "--password-env",
+        "DS_T18_GOLDEN_PW",
+        "--schema",
+        "t18fx",
+        "--fail-on",
+        "blocker"
+      ]
+    },
+    {
+      "case_id": "T18.meta.mysql80-alter-dependencies",
+      "kind": "cli_metadata",
+      "cli_case": "mysql80-alter-dependencies",
+      "anchor": "mysql80",
+      "dialect": "mysql",
+      "input_sql": "ALTER VIEW v AS SELECT id FROM t;\nCREATE VIEW next_v AS SELECT id FROM v;",
+      "policy_profile": "t18-first",
+      "policy_path": "/private/tmp/ddl-golden-t18-full-review-1-seed/T18/golden-policy-t18-first.yaml",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 23380,
+        "user": "root",
+        "schema": "t18fx",
+        "password_env": "DS_T18_GOLDEN_PW"
+      },
+      "expected": {
+        "exit": 0,
+        "verdict": "review",
+        "statements": 2,
+        "findings": 2,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "complete",
+        "statement_coverage": [
+          "complete",
+          "complete"
+        ],
+        "evidence_gaps": 0,
+        "statement_indices": [
+          0,
+          1
+        ],
+        "statement_sql": [
+          "ALTER VIEW v AS SELECT id FROM t;",
+          "CREATE VIEW next_v AS SELECT id FROM v;"
+        ],
+        "finding_entries": [
+          {
+            "index": 0,
+            "rule_id": "ddl.view.security.definer.warn",
+            "level": "warning"
+          },
+          {
+            "index": 1,
+            "rule_id": "ddl.view.security.definer.warn",
+            "level": "warning"
+          }
+        ],
+        "fail_on_triggered": false,
+        "finding_locations": [
+          {
+            "index": 0,
+            "line": 1,
+            "column": 1
+          },
+          {
+            "index": 1,
+            "line": 2,
+            "column": 1
+          }
+        ]
+      },
+      "actual": {
+        "database": {
+          "product": "mysql",
+          "image": "mysql:8.0.46",
+          "image_digest": "mysql@sha256:7dcddc01f13bab2f15cde676d44d01f61fc9f99fe7785e86196dfc07d358ae2b",
+          "container": "deltascope-ddl-golden-mysql80",
+          "reachable": true,
+          "version": "8.0.46"
+        },
+        "setup": [
+          {
+            "name": "remove-prior-companion",
+            "sql": "DROP VIEW IF EXISTS t18fx.next_v",
+            "rc": 0,
+            "stdout": "",
+            "stderr": ""
+          },
+          {
+            "name": "reset-original-view",
+            "sql": "CREATE OR REPLACE VIEW t18fx.v AS SELECT id FROM t18fx.u",
+            "rc": 0,
+            "stdout": "",
+            "stderr": "",
+            "verify": [
+              {
+                "assert": "target is a view before ALTER",
+                "sql": "SELECT TABLE_TYPE FROM information_schema.TABLES WHERE TABLE_SCHEMA='t18fx' AND TABLE_NAME='v'",
+                "rc": 0,
+                "output": "VIEW",
+                "stderr": ""
+              }
+            ]
+          }
+        ],
+        "post_verify": [],
+        "execute": [],
+        "structure": [],
+        "teardown": [],
+        "exit": 0,
+        "stdout": "{\"verdict\":\"review\",\"coverage\":{\"status\":\"complete\"},\"summary\":{\"statements\":2,\"blockers\":0,\"warnings\":2,\"notices\":0},\"statements\":[{\"index\":0,\"kind\":\"ddl\",\"raw_sql\":\"ALTER VIEW v AS SELECT id FROM t;\",\"normalized_sql\":\"ALTER VIEW v AS SELECT id FROM t\",\"findings\":[{\"rule_id\":\"ddl.view.security.definer.warn\",\"level\":\"warning\",\"message\":\"view security or named definer requires review\",\"statement_kind\":\"ddl\",\"location\":{\"line\":1,\"column\":1},\"suggestion\":\"review the view's privilege context\",\"metadata\":{\"role\":\"view\",\"view\":\"v\",\"view_schema\":\"t18fx\"},\"explanation\":{\"summary\":\"Warn on DDL view security definer warn\",\"why\":\"The statement reached a caution rule that highlights an operational trade-off.\",\"risk\":\"Ignoring this rule can hide live-schema or instance-state risks that only metadata reveals.\",\"suggestion\":\"review the view's privilege context\",\"metadata\":{\"status\":\"available\",\"note\":\"Ordered relation and view facts support checks of target, source and inherited attributes where applicable.\"}}}],\"coverage\":{\"status\":\"complete\"}},{\"index\":1,\"kind\":\"ddl\",\"raw_sql\":\"CREATE VIEW next_v AS SELECT id FROM v;\",\"normalized_sql\":\"CREATE VIEW next_v AS SELECT id FROM v\",\"findings\":[{\"rule_id\":\"ddl.view.security.definer.warn\",\"level\":\"warning\",\"message\":\"view security or named definer requires review\",\"statement_index\":1,\"statement_kind\":\"ddl\",\"location\":{\"line\":2,\"column\":1},\"suggestion\":\"review the view's privilege context\",\"metadata\":{\"role\":\"view\",\"view\":\"next_v\",\"view_schema\":\"t18fx\"},\"explanation\":{\"summary\":\"Warn on DDL view security definer warn\",\"why\":\"The statement reached a caution rule that highlights an operational trade-off.\",\"risk\":\"Ignoring this rule can hide live-schema or instance-state risks that only metadata reveals.\",\"suggestion\":\"review the view's privilege context\",\"metadata\":{\"status\":\"available\",\"note\":\"Ordered relation and view facts support checks of target, source and inherited attributes where applicable.\"}}}],\"coverage\":{\"status\":\"complete\"}}],\"version\":{\"product\":\"mysql\",\"version\":\"8.0.46\",\"major\":8,\"minor\":0,\"patch\":46,\"source\":\"observed\",\"validated_range\":true},\"fail_on_triggered\":false,\"rule_summary\":{\"loaded\":3,\"applicable\":3,\"skipped\":[]},\"context\":{\"mode\":\"metadata-aware\",\"dialect\":\"mysql\",\"dialect_source\":\"detected\",\"schema\":\"t18fx\",\"schema_source\":\"flag\"}}\n",
+        "stderr": "",
+        "parsed": {
+          "verdict": "review",
+          "coverage": {
+            "status": "complete"
+          },
+          "summary": {
+            "statements": 2,
+            "blockers": 0,
+            "warnings": 2,
+            "notices": 0
+          },
+          "statements": [
+            {
+              "index": 0,
+              "kind": "ddl",
+              "raw_sql": "ALTER VIEW v AS SELECT id FROM t;",
+              "normalized_sql": "ALTER VIEW v AS SELECT id FROM t",
+              "findings": [
+                {
+                  "rule_id": "ddl.view.security.definer.warn",
+                  "level": "warning",
+                  "message": "view security or named definer requires review",
+                  "statement_kind": "ddl",
+                  "location": {
+                    "line": 1,
+                    "column": 1
+                  },
+                  "suggestion": "review the view's privilege context",
+                  "metadata": {
+                    "role": "view",
+                    "view": "v",
+                    "view_schema": "t18fx"
+                  },
+                  "explanation": {
+                    "summary": "Warn on DDL view security definer warn",
+                    "why": "The statement reached a caution rule that highlights an operational trade-off.",
+                    "risk": "Ignoring this rule can hide live-schema or instance-state risks that only metadata reveals.",
+                    "suggestion": "review the view's privilege context",
+                    "metadata": {
+                      "status": "available",
+                      "note": "Ordered relation and view facts support checks of target, source and inherited attributes where applicable."
+                    }
+                  }
+                }
+              ],
+              "coverage": {
+                "status": "complete"
+              }
+            },
+            {
+              "index": 1,
+              "kind": "ddl",
+              "raw_sql": "CREATE VIEW next_v AS SELECT id FROM v;",
+              "normalized_sql": "CREATE VIEW next_v AS SELECT id FROM v",
+              "findings": [
+                {
+                  "rule_id": "ddl.view.security.definer.warn",
+                  "level": "warning",
+                  "message": "view security or named definer requires review",
+                  "statement_index": 1,
+                  "statement_kind": "ddl",
+                  "location": {
+                    "line": 2,
+                    "column": 1
+                  },
+                  "suggestion": "review the view's privilege context",
+                  "metadata": {
+                    "role": "view",
+                    "view": "next_v",
+                    "view_schema": "t18fx"
+                  },
+                  "explanation": {
+                    "summary": "Warn on DDL view security definer warn",
+                    "why": "The statement reached a caution rule that highlights an operational trade-off.",
+                    "risk": "Ignoring this rule can hide live-schema or instance-state risks that only metadata reveals.",
+                    "suggestion": "review the view's privilege context",
+                    "metadata": {
+                      "status": "available",
+                      "note": "Ordered relation and view facts support checks of target, source and inherited attributes where applicable."
+                    }
+                  }
+                }
+              ],
+              "coverage": {
+                "status": "complete"
+              }
+            }
+          ],
+          "version": {
+            "product": "mysql",
+            "version": "8.0.46",
+            "major": 8,
+            "minor": 0,
+            "patch": 46,
+            "source": "observed",
+            "validated_range": true
+          },
+          "fail_on_triggered": false,
+          "rule_summary": {
+            "loaded": 3,
+            "applicable": 3,
+            "skipped": []
+          },
+          "context": {
+            "mode": "metadata-aware",
+            "dialect": "mysql",
+            "dialect_source": "detected",
+            "schema": "t18fx",
+            "schema_source": "flag"
+          }
+        },
+        "version_evidence": {
+          "target_raw": null,
+          "target_canonical": null,
+          "observed_raw": "8.0.46",
+          "observed_canonical": {
+            "product": "mysql",
+            "version": "8.0.46"
+          },
+          "resolved": {
+            "product": "mysql",
+            "version": "8.0.46",
+            "major": 8,
+            "minor": 0,
+            "patch": 46,
+            "source": "observed",
+            "validated_range": true
+          }
+        }
+      },
+      "assertions": [
+        {
+          "name": "database reachable with expected version",
+          "ok": true,
+          "detail": "SELECT VERSION() rc=0 version='8.0.46' expected_contains='8.0.46'"
+        },
+        {
+          "name": "setup remove-prior-companion return code",
+          "ok": true,
+          "detail": "rc=0 expected=0 stderr=''"
+        },
+        {
+          "name": "setup reset-original-view return code",
+          "ok": true,
+          "detail": "rc=0 expected=0 stderr=''"
+        },
+        {
+          "name": "setup reset-original-view: target is a view before ALTER",
+          "ok": true,
+          "detail": "rc=0 output='VIEW' expected='VIEW'"
+        },
+        {
+          "name": "exit code",
+          "ok": true,
+          "detail": "rc=0 expected=0"
+        },
+        {
+          "name": "verdict",
+          "ok": true,
+          "detail": "verdict='review'"
+        },
+        {
+          "name": "top-level statements",
+          "ok": true,
+          "detail": "statements=2 expected=2"
+        },
+        {
+          "name": "zero findings",
+          "ok": true,
+          "detail": "findings=2"
+        },
+        {
+          "name": "no diagnostics",
+          "ok": true,
+          "detail": "diagnostics=[]"
+        },
+        {
+          "name": "no unsupported",
+          "ok": true,
+          "detail": "unsupported=[]"
+        },
+        {
+          "name": "statement indices",
+          "ok": true,
+          "detail": "indices=[0, 1]"
+        },
+        {
+          "name": "finding statement ownership",
+          "ok": true,
+          "detail": "findings must belong to their enclosing statement"
+        },
+        {
+          "name": "aggregate coverage",
+          "ok": true,
+          "detail": "coverage='complete'"
+        },
+        {
+          "name": "per-statement coverage",
+          "ok": true,
+          "detail": "statement_coverage=['complete', 'complete']"
+        },
+        {
+          "name": "statement raw SQL identity",
+          "ok": true,
+          "detail": "raw_sql=['ALTER VIEW v AS SELECT id FROM t;', 'CREATE VIEW next_v AS SELECT id FROM v;'] expected=['ALTER VIEW v AS SELECT id FROM t;', 'CREATE VIEW next_v AS SELECT id FROM v;']"
+        },
+        {
+          "name": "evidence gap count",
+          "ok": true,
+          "detail": "gaps=0"
+        },
+        {
+          "name": "finding entries",
+          "ok": true,
+          "detail": "findings=[(0, 'ddl.view.security.definer.warn', 'warning'), (1, 'ddl.view.security.definer.warn', 'warning')] expected=[(0, 'ddl.view.security.definer.warn', 'warning'), (1, 'ddl.view.security.definer.warn', 'warning')]"
+        },
+        {
+          "name": "finding location index=0",
+          "ok": true,
+          "detail": "locations=[{'line': 1, 'column': 1}, {'line': 2, 'column': 1}] expected={'index': 0, 'line': 1, 'column': 1}"
+        },
+        {
+          "name": "finding location index=1",
+          "ok": true,
+          "detail": "locations=[{'line': 1, 'column': 1}, {'line': 2, 'column': 1}] expected={'index': 1, 'line': 2, 'column': 1}"
+        },
+        {
+          "name": "fail_on_triggered",
+          "ok": true,
+          "detail": "fail_on_triggered=False"
+        }
+      ],
+      "status": "pass",
+      "command": [
+        "/private/tmp/ddl-golden-t18-full-review-1-seed/T18/bin/deltascope",
+        "audit",
+        "--dialect",
+        "mysql",
+        "--sql",
+        "ALTER VIEW v AS SELECT id FROM t;\nCREATE VIEW next_v AS SELECT id FROM v;",
+        "--config",
+        "/private/tmp/ddl-golden-t18-full-review-1-seed/T18/golden-policy-t18-first.yaml",
+        "--format",
+        "json",
+        "--host",
+        "127.0.0.1",
+        "--port",
+        "23380",
+        "--user",
+        "root",
+        "--password-env",
+        "DS_T18_GOLDEN_PW",
+        "--schema",
+        "t18fx",
+        "--fail-on",
+        "blocker"
+      ]
+    },
+    {
+      "case_id": "T18.meta.mysql80-alter-source-absent",
+      "kind": "cli_metadata",
+      "cli_case": "mysql80-alter-source-absent",
+      "anchor": "mysql80",
+      "dialect": "mysql",
+      "input_sql": "ALTER VIEW v AS SELECT id FROM missing_t;",
+      "policy_profile": "t18-first",
+      "policy_path": "/private/tmp/ddl-golden-t18-full-review-1-seed/T18/golden-policy-t18-first.yaml",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 23380,
+        "user": "root",
+        "schema": "t18fx",
+        "password_env": "DS_T18_GOLDEN_PW"
+      },
+      "expected": {
+        "exit": 1,
+        "verdict": "reject",
+        "statements": 1,
+        "findings": 2,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "complete",
+        "statement_coverage": [
+          "complete"
+        ],
+        "evidence_gaps": 0,
+        "statement_indices": [
+          0
+        ],
+        "statement_sql": [
+          "ALTER VIEW v AS SELECT id FROM missing_t;"
+        ],
+        "finding_entries": [
+          {
+            "index": 0,
+            "rule_id": "ddl.view.source.valid",
+            "level": "blocker"
+          },
+          {
+            "index": 0,
+            "rule_id": "ddl.view.security.definer.warn",
+            "level": "warning"
+          }
+        ],
+        "fail_on_triggered": true
+      },
+      "actual": {
+        "database": {
+          "product": "mysql",
+          "image": "mysql:8.0.46",
+          "image_digest": "mysql@sha256:7dcddc01f13bab2f15cde676d44d01f61fc9f99fe7785e86196dfc07d358ae2b",
+          "container": "deltascope-ddl-golden-mysql80",
+          "reachable": true,
+          "version": "8.0.46"
+        },
+        "setup": [
+          {
+            "name": "remove-prior-companion",
+            "sql": "DROP VIEW IF EXISTS t18fx.next_v",
+            "rc": 0,
+            "stdout": "",
+            "stderr": ""
+          },
+          {
+            "name": "reset-original-view",
+            "sql": "CREATE OR REPLACE VIEW t18fx.v AS SELECT id FROM t18fx.u",
+            "rc": 0,
+            "stdout": "",
+            "stderr": "",
+            "verify": [
+              {
+                "assert": "target is a view before ALTER",
+                "sql": "SELECT TABLE_TYPE FROM information_schema.TABLES WHERE TABLE_SCHEMA='t18fx' AND TABLE_NAME='v'",
+                "rc": 0,
+                "output": "VIEW",
+                "stderr": ""
+              }
+            ]
+          }
+        ],
+        "post_verify": [],
+        "execute": [],
+        "structure": [],
+        "teardown": [],
+        "exit": 1,
+        "stdout": "{\"verdict\":\"reject\",\"coverage\":{\"status\":\"complete\"},\"summary\":{\"statements\":1,\"blockers\":1,\"warnings\":1,\"notices\":0},\"statements\":[{\"index\":0,\"kind\":\"ddl\",\"raw_sql\":\"ALTER VIEW v AS SELECT id FROM missing_t;\",\"normalized_sql\":\"ALTER VIEW v AS SELECT id FROM missing_t\",\"findings\":[{\"rule_id\":\"ddl.view.source.valid\",\"level\":\"blocker\",\"message\":\"view definition has an invalid source\",\"statement_kind\":\"ddl\",\"location\":{\"line\":1,\"column\":32},\"suggestion\":\"check the authored source relations and columns\",\"metadata\":{\"role\":\"source\",\"schema\":\"t18fx\",\"table\":\"missing_t\",\"view\":\"v\",\"view_schema\":\"t18fx\"},\"explanation\":{\"summary\":\"Check DDL view source valid\",\"why\":\"The statement matched the shipped governance rule for this pattern.\",\"risk\":\"Ignoring this rule can hide live-schema or instance-state risks that only metadata reveals.\",\"suggestion\":\"check the authored source relations and columns\",\"metadata\":{\"status\":\"available\",\"note\":\"Ordered relation and view facts support checks of target, source and inherited attributes where applicable.\"}}},{\"rule_id\":\"ddl.view.security.definer.warn\",\"level\":\"warning\",\"message\":\"view security or named definer requires review\",\"statement_kind\":\"ddl\",\"location\":{\"line\":1,\"column\":1},\"suggestion\":\"review the view's privilege context\",\"metadata\":{\"role\":\"view\",\"view\":\"v\",\"view_schema\":\"t18fx\"},\"explanation\":{\"summary\":\"Warn on DDL view security definer warn\",\"why\":\"The statement reached a caution rule that highlights an operational trade-off.\",\"risk\":\"Ignoring this rule can hide live-schema or instance-state risks that only metadata reveals.\",\"suggestion\":\"review the view's privilege context\",\"metadata\":{\"status\":\"available\",\"note\":\"Ordered relation and view facts support checks of target, source and inherited attributes where applicable.\"}}}],\"coverage\":{\"status\":\"complete\"}}],\"version\":{\"product\":\"mysql\",\"version\":\"8.0.46\",\"major\":8,\"minor\":0,\"patch\":46,\"source\":\"observed\",\"validated_range\":true},\"fail_on_triggered\":true,\"rule_summary\":{\"loaded\":3,\"applicable\":3,\"skipped\":[]},\"context\":{\"mode\":\"metadata-aware\",\"dialect\":\"mysql\",\"dialect_source\":\"detected\",\"schema\":\"t18fx\",\"schema_source\":\"flag\"}}\n",
+        "stderr": "",
+        "parsed": {
+          "verdict": "reject",
+          "coverage": {
+            "status": "complete"
+          },
+          "summary": {
+            "statements": 1,
+            "blockers": 1,
+            "warnings": 1,
+            "notices": 0
+          },
+          "statements": [
+            {
+              "index": 0,
+              "kind": "ddl",
+              "raw_sql": "ALTER VIEW v AS SELECT id FROM missing_t;",
+              "normalized_sql": "ALTER VIEW v AS SELECT id FROM missing_t",
+              "findings": [
+                {
+                  "rule_id": "ddl.view.source.valid",
+                  "level": "blocker",
+                  "message": "view definition has an invalid source",
+                  "statement_kind": "ddl",
+                  "location": {
+                    "line": 1,
+                    "column": 32
+                  },
+                  "suggestion": "check the authored source relations and columns",
+                  "metadata": {
+                    "role": "source",
+                    "schema": "t18fx",
+                    "table": "missing_t",
+                    "view": "v",
+                    "view_schema": "t18fx"
+                  },
+                  "explanation": {
+                    "summary": "Check DDL view source valid",
+                    "why": "The statement matched the shipped governance rule for this pattern.",
+                    "risk": "Ignoring this rule can hide live-schema or instance-state risks that only metadata reveals.",
+                    "suggestion": "check the authored source relations and columns",
+                    "metadata": {
+                      "status": "available",
+                      "note": "Ordered relation and view facts support checks of target, source and inherited attributes where applicable."
+                    }
+                  }
+                },
+                {
+                  "rule_id": "ddl.view.security.definer.warn",
+                  "level": "warning",
+                  "message": "view security or named definer requires review",
+                  "statement_kind": "ddl",
+                  "location": {
+                    "line": 1,
+                    "column": 1
+                  },
+                  "suggestion": "review the view's privilege context",
+                  "metadata": {
+                    "role": "view",
+                    "view": "v",
+                    "view_schema": "t18fx"
+                  },
+                  "explanation": {
+                    "summary": "Warn on DDL view security definer warn",
+                    "why": "The statement reached a caution rule that highlights an operational trade-off.",
+                    "risk": "Ignoring this rule can hide live-schema or instance-state risks that only metadata reveals.",
+                    "suggestion": "review the view's privilege context",
+                    "metadata": {
+                      "status": "available",
+                      "note": "Ordered relation and view facts support checks of target, source and inherited attributes where applicable."
+                    }
+                  }
+                }
+              ],
+              "coverage": {
+                "status": "complete"
+              }
+            }
+          ],
+          "version": {
+            "product": "mysql",
+            "version": "8.0.46",
+            "major": 8,
+            "minor": 0,
+            "patch": 46,
+            "source": "observed",
+            "validated_range": true
+          },
+          "fail_on_triggered": true,
+          "rule_summary": {
+            "loaded": 3,
+            "applicable": 3,
+            "skipped": []
+          },
+          "context": {
+            "mode": "metadata-aware",
+            "dialect": "mysql",
+            "dialect_source": "detected",
+            "schema": "t18fx",
+            "schema_source": "flag"
+          }
+        },
+        "version_evidence": {
+          "target_raw": null,
+          "target_canonical": null,
+          "observed_raw": "8.0.46",
+          "observed_canonical": {
+            "product": "mysql",
+            "version": "8.0.46"
+          },
+          "resolved": {
+            "product": "mysql",
+            "version": "8.0.46",
+            "major": 8,
+            "minor": 0,
+            "patch": 46,
+            "source": "observed",
+            "validated_range": true
+          }
+        }
+      },
+      "assertions": [
+        {
+          "name": "database reachable with expected version",
+          "ok": true,
+          "detail": "SELECT VERSION() rc=0 version='8.0.46' expected_contains='8.0.46'"
+        },
+        {
+          "name": "setup remove-prior-companion return code",
+          "ok": true,
+          "detail": "rc=0 expected=0 stderr=''"
+        },
+        {
+          "name": "setup reset-original-view return code",
+          "ok": true,
+          "detail": "rc=0 expected=0 stderr=''"
+        },
+        {
+          "name": "setup reset-original-view: target is a view before ALTER",
+          "ok": true,
+          "detail": "rc=0 output='VIEW' expected='VIEW'"
+        },
+        {
+          "name": "exit code",
+          "ok": true,
+          "detail": "rc=1 expected=1"
+        },
+        {
+          "name": "verdict",
+          "ok": true,
+          "detail": "verdict='reject'"
+        },
+        {
+          "name": "top-level statements",
+          "ok": true,
+          "detail": "statements=1 expected=1"
+        },
+        {
+          "name": "zero findings",
+          "ok": true,
+          "detail": "findings=2"
+        },
+        {
+          "name": "no diagnostics",
+          "ok": true,
+          "detail": "diagnostics=[]"
+        },
+        {
+          "name": "no unsupported",
+          "ok": true,
+          "detail": "unsupported=[]"
+        },
+        {
+          "name": "statement indices",
+          "ok": true,
+          "detail": "indices=[0]"
+        },
+        {
+          "name": "finding statement ownership",
+          "ok": true,
+          "detail": "findings must belong to their enclosing statement"
+        },
+        {
+          "name": "aggregate coverage",
+          "ok": true,
+          "detail": "coverage='complete'"
+        },
+        {
+          "name": "per-statement coverage",
+          "ok": true,
+          "detail": "statement_coverage=['complete']"
+        },
+        {
+          "name": "statement raw SQL identity",
+          "ok": true,
+          "detail": "raw_sql=['ALTER VIEW v AS SELECT id FROM missing_t;'] expected=['ALTER VIEW v AS SELECT id FROM missing_t;']"
+        },
+        {
+          "name": "evidence gap count",
+          "ok": true,
+          "detail": "gaps=0"
+        },
+        {
+          "name": "finding entries",
+          "ok": true,
+          "detail": "findings=[(0, 'ddl.view.security.definer.warn', 'warning'), (0, 'ddl.view.source.valid', 'blocker')] expected=[(0, 'ddl.view.security.definer.warn', 'warning'), (0, 'ddl.view.source.valid', 'blocker')]"
+        },
+        {
+          "name": "fail_on_triggered",
+          "ok": true,
+          "detail": "fail_on_triggered=True"
+        }
+      ],
+      "status": "pass",
+      "command": [
+        "/private/tmp/ddl-golden-t18-full-review-1-seed/T18/bin/deltascope",
+        "audit",
+        "--dialect",
+        "mysql",
+        "--sql",
+        "ALTER VIEW v AS SELECT id FROM missing_t;",
+        "--config",
+        "/private/tmp/ddl-golden-t18-full-review-1-seed/T18/golden-policy-t18-first.yaml",
+        "--format",
+        "json",
+        "--host",
+        "127.0.0.1",
+        "--port",
+        "23380",
+        "--user",
+        "root",
+        "--password-env",
+        "DS_T18_GOLDEN_PW",
+        "--schema",
+        "t18fx",
+        "--fail-on",
+        "blocker"
+      ]
+    },
+    {
+      "case_id": "T18.meta.mysql80-alter-blanket",
+      "kind": "cli_metadata",
+      "cli_case": "mysql80-alter-blanket",
+      "anchor": "mysql80",
+      "dialect": "mysql",
+      "input_sql": "ALTER VIEW v AS SELECT id FROM t;",
+      "policy_profile": "t18-blanket",
+      "policy_path": "/private/tmp/ddl-golden-t18-full-review-1-seed/T18/golden-policy-t18-blanket.yaml",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 23380,
+        "user": "root",
+        "schema": "t18fx",
+        "password_env": "DS_T18_GOLDEN_PW"
+      },
+      "expected": {
+        "exit": 1,
+        "verdict": "reject",
+        "statements": 1,
+        "findings": 2,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "complete",
+        "statement_coverage": [
+          "complete"
+        ],
+        "evidence_gaps": 0,
+        "statement_indices": [
+          0
+        ],
+        "statement_sql": [
+          "ALTER VIEW v AS SELECT id FROM t;"
+        ],
+        "finding_entries": [
+          {
+            "index": 0,
+            "rule_id": "ddl.view.create.forbid",
+            "level": "blocker"
+          },
+          {
+            "index": 0,
+            "rule_id": "ddl.view.security.definer.warn",
+            "level": "warning"
+          }
+        ],
+        "fail_on_triggered": true
+      },
+      "actual": {
+        "database": {
+          "product": "mysql",
+          "image": "mysql:8.0.46",
+          "image_digest": "mysql@sha256:7dcddc01f13bab2f15cde676d44d01f61fc9f99fe7785e86196dfc07d358ae2b",
+          "container": "deltascope-ddl-golden-mysql80",
+          "reachable": true,
+          "version": "8.0.46"
+        },
+        "setup": [
+          {
+            "name": "remove-prior-companion",
+            "sql": "DROP VIEW IF EXISTS t18fx.next_v",
+            "rc": 0,
+            "stdout": "",
+            "stderr": ""
+          },
+          {
+            "name": "reset-original-view",
+            "sql": "CREATE OR REPLACE VIEW t18fx.v AS SELECT id FROM t18fx.u",
+            "rc": 0,
+            "stdout": "",
+            "stderr": "",
+            "verify": [
+              {
+                "assert": "target is a view before ALTER",
+                "sql": "SELECT TABLE_TYPE FROM information_schema.TABLES WHERE TABLE_SCHEMA='t18fx' AND TABLE_NAME='v'",
+                "rc": 0,
+                "output": "VIEW",
+                "stderr": ""
+              }
+            ]
+          }
+        ],
+        "post_verify": [],
+        "execute": [],
+        "structure": [],
+        "teardown": [],
+        "exit": 1,
+        "stdout": "{\"verdict\":\"reject\",\"coverage\":{\"status\":\"complete\"},\"summary\":{\"statements\":1,\"blockers\":1,\"warnings\":1,\"notices\":0},\"statements\":[{\"index\":0,\"kind\":\"ddl\",\"raw_sql\":\"ALTER VIEW v AS SELECT id FROM t;\",\"normalized_sql\":\"ALTER VIEW v AS SELECT id FROM t\",\"findings\":[{\"rule_id\":\"ddl.view.create.forbid\",\"level\":\"blocker\",\"message\":\"create view is forbidden for \\\"v\\\"\",\"statement_kind\":\"ddl\",\"location\":{\"line\":1,\"column\":1},\"suggestion\":\"avoid create view in this change or relax the policy intentionally\",\"metadata\":{\"operation\":\"alter_view\",\"table\":\"v\"},\"explanation\":{\"summary\":\"Forbid DDL view create forbid\",\"why\":\"The statement uses a construct that the shipped policy explicitly forbids.\",\"risk\":\"Ignoring this rule can weaken schema-governance guarantees and make changes harder to review safely.\",\"suggestion\":\"avoid create view in this change or relax the policy intentionally\"}},{\"rule_id\":\"ddl.view.security.definer.warn\",\"level\":\"warning\",\"message\":\"view security or named definer requires review\",\"statement_kind\":\"ddl\",\"location\":{\"line\":1,\"column\":1},\"suggestion\":\"review the view's privilege context\",\"metadata\":{\"role\":\"view\",\"view\":\"v\",\"view_schema\":\"t18fx\"},\"explanation\":{\"summary\":\"Warn on DDL view security definer warn\",\"why\":\"The statement reached a caution rule that highlights an operational trade-off.\",\"risk\":\"Ignoring this rule can hide live-schema or instance-state risks that only metadata reveals.\",\"suggestion\":\"review the view's privilege context\",\"metadata\":{\"status\":\"available\",\"note\":\"Ordered relation and view facts support checks of target, source and inherited attributes where applicable.\"}}}],\"coverage\":{\"status\":\"complete\"}}],\"version\":{\"product\":\"mysql\",\"version\":\"8.0.46\",\"major\":8,\"minor\":0,\"patch\":46,\"source\":\"observed\",\"validated_range\":true},\"fail_on_triggered\":true,\"rule_summary\":{\"loaded\":5,\"applicable\":4,\"skipped\":[]},\"context\":{\"mode\":\"metadata-aware\",\"dialect\":\"mysql\",\"dialect_source\":\"detected\",\"schema\":\"t18fx\",\"schema_source\":\"flag\"}}\n",
+        "stderr": "",
+        "parsed": {
+          "verdict": "reject",
+          "coverage": {
+            "status": "complete"
+          },
+          "summary": {
+            "statements": 1,
+            "blockers": 1,
+            "warnings": 1,
+            "notices": 0
+          },
+          "statements": [
+            {
+              "index": 0,
+              "kind": "ddl",
+              "raw_sql": "ALTER VIEW v AS SELECT id FROM t;",
+              "normalized_sql": "ALTER VIEW v AS SELECT id FROM t",
+              "findings": [
+                {
+                  "rule_id": "ddl.view.create.forbid",
+                  "level": "blocker",
+                  "message": "create view is forbidden for \"v\"",
+                  "statement_kind": "ddl",
+                  "location": {
+                    "line": 1,
+                    "column": 1
+                  },
+                  "suggestion": "avoid create view in this change or relax the policy intentionally",
+                  "metadata": {
+                    "operation": "alter_view",
+                    "table": "v"
+                  },
+                  "explanation": {
+                    "summary": "Forbid DDL view create forbid",
+                    "why": "The statement uses a construct that the shipped policy explicitly forbids.",
+                    "risk": "Ignoring this rule can weaken schema-governance guarantees and make changes harder to review safely.",
+                    "suggestion": "avoid create view in this change or relax the policy intentionally"
+                  }
+                },
+                {
+                  "rule_id": "ddl.view.security.definer.warn",
+                  "level": "warning",
+                  "message": "view security or named definer requires review",
+                  "statement_kind": "ddl",
+                  "location": {
+                    "line": 1,
+                    "column": 1
+                  },
+                  "suggestion": "review the view's privilege context",
+                  "metadata": {
+                    "role": "view",
+                    "view": "v",
+                    "view_schema": "t18fx"
+                  },
+                  "explanation": {
+                    "summary": "Warn on DDL view security definer warn",
+                    "why": "The statement reached a caution rule that highlights an operational trade-off.",
+                    "risk": "Ignoring this rule can hide live-schema or instance-state risks that only metadata reveals.",
+                    "suggestion": "review the view's privilege context",
+                    "metadata": {
+                      "status": "available",
+                      "note": "Ordered relation and view facts support checks of target, source and inherited attributes where applicable."
+                    }
+                  }
+                }
+              ],
+              "coverage": {
+                "status": "complete"
+              }
+            }
+          ],
+          "version": {
+            "product": "mysql",
+            "version": "8.0.46",
+            "major": 8,
+            "minor": 0,
+            "patch": 46,
+            "source": "observed",
+            "validated_range": true
+          },
+          "fail_on_triggered": true,
+          "rule_summary": {
+            "loaded": 5,
+            "applicable": 4,
+            "skipped": []
+          },
+          "context": {
+            "mode": "metadata-aware",
+            "dialect": "mysql",
+            "dialect_source": "detected",
+            "schema": "t18fx",
+            "schema_source": "flag"
+          }
+        },
+        "version_evidence": {
+          "target_raw": null,
+          "target_canonical": null,
+          "observed_raw": "8.0.46",
+          "observed_canonical": {
+            "product": "mysql",
+            "version": "8.0.46"
+          },
+          "resolved": {
+            "product": "mysql",
+            "version": "8.0.46",
+            "major": 8,
+            "minor": 0,
+            "patch": 46,
+            "source": "observed",
+            "validated_range": true
+          }
+        }
+      },
+      "assertions": [
+        {
+          "name": "database reachable with expected version",
+          "ok": true,
+          "detail": "SELECT VERSION() rc=0 version='8.0.46' expected_contains='8.0.46'"
+        },
+        {
+          "name": "setup remove-prior-companion return code",
+          "ok": true,
+          "detail": "rc=0 expected=0 stderr=''"
+        },
+        {
+          "name": "setup reset-original-view return code",
+          "ok": true,
+          "detail": "rc=0 expected=0 stderr=''"
+        },
+        {
+          "name": "setup reset-original-view: target is a view before ALTER",
+          "ok": true,
+          "detail": "rc=0 output='VIEW' expected='VIEW'"
+        },
+        {
+          "name": "exit code",
+          "ok": true,
+          "detail": "rc=1 expected=1"
+        },
+        {
+          "name": "verdict",
+          "ok": true,
+          "detail": "verdict='reject'"
+        },
+        {
+          "name": "top-level statements",
+          "ok": true,
+          "detail": "statements=1 expected=1"
+        },
+        {
+          "name": "zero findings",
+          "ok": true,
+          "detail": "findings=2"
+        },
+        {
+          "name": "no diagnostics",
+          "ok": true,
+          "detail": "diagnostics=[]"
+        },
+        {
+          "name": "no unsupported",
+          "ok": true,
+          "detail": "unsupported=[]"
+        },
+        {
+          "name": "statement indices",
+          "ok": true,
+          "detail": "indices=[0]"
+        },
+        {
+          "name": "finding statement ownership",
+          "ok": true,
+          "detail": "findings must belong to their enclosing statement"
+        },
+        {
+          "name": "aggregate coverage",
+          "ok": true,
+          "detail": "coverage='complete'"
+        },
+        {
+          "name": "per-statement coverage",
+          "ok": true,
+          "detail": "statement_coverage=['complete']"
+        },
+        {
+          "name": "statement raw SQL identity",
+          "ok": true,
+          "detail": "raw_sql=['ALTER VIEW v AS SELECT id FROM t;'] expected=['ALTER VIEW v AS SELECT id FROM t;']"
+        },
+        {
+          "name": "evidence gap count",
+          "ok": true,
+          "detail": "gaps=0"
+        },
+        {
+          "name": "finding entries",
+          "ok": true,
+          "detail": "findings=[(0, 'ddl.view.create.forbid', 'blocker'), (0, 'ddl.view.security.definer.warn', 'warning')] expected=[(0, 'ddl.view.create.forbid', 'blocker'), (0, 'ddl.view.security.definer.warn', 'warning')]"
+        },
+        {
+          "name": "fail_on_triggered",
+          "ok": true,
+          "detail": "fail_on_triggered=True"
+        }
+      ],
+      "status": "pass",
+      "command": [
+        "/private/tmp/ddl-golden-t18-full-review-1-seed/T18/bin/deltascope",
+        "audit",
+        "--dialect",
+        "mysql",
+        "--sql",
+        "ALTER VIEW v AS SELECT id FROM t;",
+        "--config",
+        "/private/tmp/ddl-golden-t18-full-review-1-seed/T18/golden-policy-t18-blanket.yaml",
+        "--format",
+        "json",
+        "--host",
+        "127.0.0.1",
+        "--port",
+        "23380",
+        "--user",
+        "root",
+        "--password-env",
+        "DS_T18_GOLDEN_PW",
+        "--schema",
+        "t18fx",
+        "--fail-on",
+        "blocker"
+      ]
+    }
+  ],
+  "executed_count": 16,
+  "cleanup": {
+    "compose_down_rc": 0,
+    "compose_down_stderr": "Container deltascope-ddl-golden-mysql57 Stopping \n Container deltascope-ddl-golden-mysql80 Stopping \n Container deltascope-ddl-golden-tidb85-client Stopping \n Container deltascope-ddl-golden-mysql84 Stopping \n Container deltascope-ddl-golden-mysql84 Stopped \n Container deltascope-ddl-golden-mysql84 Removing \n Container deltascope-ddl-golden-mysql84 Removed \n Container deltascope-ddl-golden-mysql80 Stopped \n Container deltascope-ddl-golden-mysql80 Removing \n Container deltascope-ddl-golden-mysql80 Removed \n Container deltascope-ddl-golden-mysql57 Stopped \n Container deltascope-ddl-golden-mysql57 Removing \n Container deltascope-ddl-golden-mysql57 Removed \n Container deltascope-ddl-golden-tidb85-client Stopped \n Container deltascope-ddl-golden-tidb85-client Removing \n Container deltascope-ddl-golden-tidb85-client Removed \n Container deltascope-ddl-golden-tidb85 Stopping \n Container deltascope-ddl-golden-tidb85 Stopped \n Container deltascope-ddl-golden-tidb85 Removing \n Container deltascope-ddl-golden-tidb85 Removed \n Network deltascope-ddl-golden_default Removing \n Network deltascope-ddl-golden_default Removed",
+    "residual_containers": []
+  },
+  "container_health": {
+    "deltascope-ddl-golden-mysql57": "healthy",
+    "deltascope-ddl-golden-mysql80": "healthy",
+    "deltascope-ddl-golden-mysql84": "healthy",
+    "deltascope-ddl-golden-tidb85": "healthy",
+    "deltascope-ddl-golden-tidb85-client": "healthy"
+  }
+}

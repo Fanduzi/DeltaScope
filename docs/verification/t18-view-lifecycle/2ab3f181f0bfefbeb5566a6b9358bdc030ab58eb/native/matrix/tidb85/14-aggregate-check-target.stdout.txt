@@ -1,0 +1,8 @@
+--------------
+CREATE VIEW new_v AS SELECT COUNT(*) AS n FROM t WITH LOCAL CHECK OPTION
+--------------
+
+--------------
+SHOW WARNINGS
+--------------
+

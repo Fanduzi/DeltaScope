@@ -1,0 +1,3 @@
+92383c535f80eced1f3e143d3669745e108514005fd63346ca4655dbf70c5ec8  /tmp/t18-evidence/green/final-followup-delta.patch
+d3ba4d4bb0b8f6295e4f5435999e8c83bfdca519539520019e379a2e6c1c8029  /tmp/t18-evidence/green/final-followup-delta.json
+f6718b7fc2da0e844640344f6821ee5079d64bac619799ab62471ddc61c324f2  /tmp/t18-evidence/preflight-lint/source.sha256.txt

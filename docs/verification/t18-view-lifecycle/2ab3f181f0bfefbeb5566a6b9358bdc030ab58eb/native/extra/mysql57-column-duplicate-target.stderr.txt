@@ -1,0 +1,1 @@
+ERROR 1060 (42S21) at line 1: Duplicate column name 'a'

@@ -1,0 +1,20 @@
+review-golden-1: rc=0
+review-packages-1: rc=1
+review-audit-1: rc=1
+review-sdk-2: rc=0
+review-parser-2: rc=0
+review-attributes-2: rc=0
+review-sdk-full-3: rc=0
+review-provider-2: rc=0
+review-security: rc=0
+review-audit-t18-final: rc=0
+review-diff-check: rc=0
+review-gofmt: rc=0
+review-packages-1: PASS github.com/Fanduzi/DeltaScope/internal/infrastructure/parser/tidb
+review-packages-1: PASS github.com/Fanduzi/DeltaScope/internal/domain/spec
+review-packages-1: PASS github.com/Fanduzi/DeltaScope/internal/infrastructure/metadata/mysql
+review-packages-1: PASS github.com/Fanduzi/DeltaScope/internal/domain/rule/ddl
+Golden: 16/16 cases, 163 assertions; cleanup rc=0, no residual containers
+review-real-provider: rc=0 (public real-adapter control; red rc=1)
+review-gofmt-final: rc=0
+native/followups/run: rc=0 (executed once)

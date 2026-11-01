@@ -1,0 +1,2 @@
+ok  	github.com/Fanduzi/DeltaScope/internal/application/audit	0.718s
+ok  	github.com/Fanduzi/DeltaScope/pkg/deltascope	1.302s

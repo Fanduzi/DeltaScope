@@ -1,0 +1,4 @@
+be2f7f0d93267fa3f522bd7217ac77caec78e55712b2a1e1d076eddf0e751bb6  /tmp/t18-evidence/final-gates-2/gate-index.json
+30ca00997ec20e0ddfb6444bf4948cafd2efa5e3accef3577ad91098d796104d  /tmp/t18-evidence/final-gates-2/golden-artifact-summary.json
+25817bcde462dc0c88e283e06028a935d9b7f40459b777bff3ff4a487bf8c89d  /tmp/t18-evidence/final-gates-2/pg-e2e-summary.json
+fd986400a8f6867e08dcd8917eaa3c1e5c10fa1e575a7ba17b0d4d12ca10cabe  /tmp/t18-evidence/final-gates-2/source.sha256.txt

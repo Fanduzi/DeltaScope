@@ -1,0 +1,235 @@
+879c49f5 feat(audit): complete T18 view lifecycle and security
+7f67c5de docs(verification): append T17-R1-tail collation evidence (#96)
+c6eebc09 test(ddl): compare projection snapshots without conversion (#96)
+84762d9d fix(ddl): derive schema collations from proven version and defaults (#96)
+9da9f8e0 docs(verification): append T17-R1 red-green and 52-case evidence (#96)
+83125653 fix(ddl): constrain schema create convergence and propagate resolver errors (#96)
+175ab0e1 docs(verification): T17 evidence bundle — gates + 47-case golden @adc1f732 (#96)
+adc1f732 feat(ddl): T17 database/schema lifecycle — ordered schema state and six rules (#96)
+8784346d docs(verification): T16-R1 evidence bundle — gates + 60-case golden @034e9859 (#95)
+034e9859 fix(ddl): T16-R1 — multi-DROP temp veto, rename last-write, self-pair, inbound-FK truth (#95)
+882f5171 docs(verification): T16 evidence bundle — gates, eight golden suites, T16@7985c774 (#95)
+eb919d19 docs(t16): probes README — archive index for the T16 native evidence (#95)
+7985c774 feat(ddl): T16 table lifecycle, temporary namespaces, and rename ordering (#95)
+74a344dc docs(verification): T15 evidence addendum — seven golden suites and doc-gate tuples @47043f94 (#94)
+47043f94 docs(verification): gates README for the T15 f9febe77 bundle — L2 module doc (#94)
+ba56922c docs(t15): CONTRACT option-bucket reconciliation, frozen manifest size, ADR dating-convention note (#94)
+0e20ff2d docs(verification): T15 evidence bundle — gates, red/green, seven golden suites (#94)
+f9febe77 docs(t15): probes README — archive index for the T15 native evidence (#94)
+c761fa38 feat(ddl): T15 table options, charset conversion, and online-DDL modifier governance (#94)
+1813f062 docs(verification): T14-R2-tail2 evidence bundle — gates, red/green, six golden suites (#93)
+2119f230 fix(audit): MAXVALUE-then-undecidable pair refusal in declaredSchemeOutcome — T14-R2-tail2 (#93)
+50393d40 docs(verification): T14-R2-tail evidence bundle — gates, red/green, six golden suites (#93)
+85b6d01a fix(audit): single-member undecidable bound premise in declaredSchemeOutcome — T14-R2-tail (#93)
+f95dc949 docs(verification): T14-R2 evidence bundle — gates, six-suite golden, red baseline, native-log scope corrections (T14-R2/#93)
+ce9a73dc fix(audit): partition R2 remediation — ADD bound ownership, undecidable disclosure, bounded state admission (T14-R2/#93)
+17539dbb docs(verification): T14-R1 evidence bundle — gates, six-suite golden, red baseline, native matrix (T14-R1/#93)
+c29ebc38 feat(audit): partition R1 remediation — count fidelity, declaration validity, bound domains (T14-R1/#93)
+14850fb2 docs(t14): T14 evidence bundle — red baseline, 20-gate tuples, six golden artifacts, native probe archive (issue #93)
+b5b2ac70 feat(audit): partition topology and maintenance semantics (T14/#93)
+b54a0544 docs(t13): T13-R3 evidence closeout — corrected gate tuples, scoped lint baseline, L2 doc checks, accurate gate index (issue #92)
+0f764cee docs(t13): T13-R3 evidence bundle — behavioral red logs, 18-gate tuples, five golden artifacts, p12 native archive (issue #92)
+01525861 fix: close T13-R3 partition remediation — drop applicability gating, effective DECIMAL compare, PK proof separation (issue #92)
+1f10ea99 docs(t13): T13-R2 evidence bundle — behavioral red logs, 18-gate tuples, five golden artifacts, native probe archives (issue #92)
+0cfa42a5 fix: close T13-R2 partition remediation — catalog post-state, comparison validity, coverage boundary
+c8f8948c docs(t13): T13-R1 evidence bundle — red/green logs, 18-gate tuples, five golden artifacts, native probe archives (issue #92)
+b41b1f7d fix(t13): partition applicability checks + ordered-state remediation (issue #92)
+d65ac868 docs(t13): T13 evidence bundle — red/green logs, 18-gate tuples, five golden artifacts (issue #92)
+890ae531 feat(t13): destructive partition actions — DROP/TRUNCATE/EXCHANGE PARTITION governance (issue #92)
+dcf250ea docs(t12): T12 evidence closure — supplemental diff-gate stderr tuple, README wording corrections (issue #91)
+89725eaf docs(t12): T12-R2-tail2 evidence — 18 gates, T09-T12 golden artifacts, archive wording corrections (issue #91)
+a55fe2b8 fix(t12): T12-R2-tail2 — unproven sibling drops cannot prop up identity refusals (issue #91)
+c70be195 docs(t12): T12-R2-tail evidence — 18 gates, T09-T12 golden artifacts, native probes, R2 archive wording corrections (issue #91)
+f843b2c9 fix(t12): T12-R2-tail — dash-dash lexing, undecidable-drop PK vouching, same-statement identity premise (issue #91)
+0c7ee19f docs(t12r2): T12-R2 verification archive bound to a4ce0e2d + R1 bundle accuracy corrections (issue #91)
+a4ce0e2d fix(t12): T12-R2 acceptance remediation — clause attribution, generic-drop dependency premises, column-scoped CHECK storage, multi-action identity (issue #91)
+ebc9fbf0 docs(t12r1): T12-R1 verification archive bound to 72610833 + T12 bundle accuracy corrections (issue #91)
+72610833 fix(t12): T12-R1 acceptance remediation — spelling-aware CHECK gates, shared target binding, atomic premises (issue #91)
+2f16db0a docs(t12): T12 verification archive bound to 1f8e5a0b + T11-tail doc corrections (issue #91)
+1f8e5a0b feat(t12): CHECK constraint lifecycle & enforcement-state semantics (issue #91)
+186710db docs(t11): T11-R2-tail verification archive bound to 27edfea2 + evidence-precision corrections (issue #90)
+27edfea2 fix(audit): T11-R2-tail unvouch unknown-kind drop targets and bind rename findings to the new name (issue #90)
+efc004c7 docs(t11): T11-R2 verification archive bound to 988560c2 + evidence-precision corrections (issue #90)
+988560c2 fix(audit): T11-R2 close same-statement PK facts, strict referenced-key anchor, self/existing binding dependencies, DROP CONSTRAINT kind coverage
+d0c7cf33 chore: remove L3 file-header convention
+ec9629d8 docs(t11): T11-R1 verification archive bound to 216e187c (issue #90)
+216e187c test(t11): R1-A downstream oracles — name-only members never fabricate (issue #90)
+20649919 fix(t11): R1 landing premises, collection contract, dependency gates (issue #90)
+661e5756 docs(t11): T11 verification archive bound to 11d64391 (issue #90)
+11d64391 feat(t11): unified PK/UNIQUE/FK CREATE/ALTER constraint checks (issue #90)
+8b6f3098 docs(t10): T10-R6-tail verification archive bound to fd849db5 (issue #89)
+fd849db5 fix(t10): R6-tail fact precedence, member-bound gaps, folded tri-state merge (issue #89)
+248f8c05 docs(t10): T10-R6 verification archive bound to 6cec4e6c
+6cec4e6c fix(t10): T10-R6 attribution ordering, ambiguous-consumer and batch-state closure (issue #89)
+b24655fa docs(t10): T10-R5 verification archive bound to 2f37fbd4
+2f37fbd4 fix(ddl): T10-R5 actual PK object names, provider error propagation, MySQL suffix bounds
+1d60d578 docs(t10): T10-R4 verification archive bound to 16915291
+16915291 fix(ddl): T10-R4 per-member name provability, primary binding, post-state truth
+daad03bb docs(t10): T10-R3 verification archive bound to ffa7d2b2
+ffa7d2b2 fix(ddl): T10-R3 consumer correctness — declared-pair gaps, PK identity, member fidelity
+ff5a759b docs(t10): T10-R2 verification archive bound to d4d6d5a8
+d4d6d5a8 style(ddl): drop dead params and lint nits from T10 member work
+1135e3f5 test(ddl-golden): T03-T05 oracle sync — graduate expr/prefix/desc/TiDB GLOBAL cases
+8cba6c1c test(ddl-golden): T10-R2 oracle graduation — contract, docs, ADR sync
+5a918ac2 fix(ddl): T10-R2 — four-state primary role, kind-aware member legality, coverage graduation
+c7224241 docs(t10): T10-R1 verification archive and corrected frozen-ID SHA
+3a92a02a fix(ddl-golden): correct the post_verify phase expectation on the TiDB expr-unique pin
+2e7b63fb fix(metadata): classify TiDB literal-NULL index member names as expression parts
+4c725708 test(ddl-golden): pin the MySQL/TiDB expression-unique role split — 126 cases
+64e750dc fix(ddl): MySQL functional-unique primary role is unprovable, not disqualified
+52925171 test(ddl-golden): T10-R1 frozen contract — 123 cases and member-legality oracle
+e70881d0 feat(ddl): member-level index facts and primary-role identity (T10-R1)
+8d75e6b2 docs(t10): archive verification evidence bound to 5445a481
+5c47f434 fix(ddl-golden): retire the option.(in)visible unaudited aspects in T04/T05 oracles
+5445a481 test(spec): T10 advanced-index assessment decision table
+94deda7f test(ddl-golden): T10 frozen advanced-index contract oracle
+7bb6658f feat(ddl): govern index visibility and advanced index forms (T10)
+57e8b1f9 docs(t10): freeze advanced-index and visibility contract for issue #89
+fbd41130 docs(t09): archive R3 verification evidence bound to 1a3dd01f
+1a3dd01f fix(ddl): treat expression-bearing index Columns as a truncated projection in left-prefix pairing
+8e68b44c docs(t09): amend contract for R3 truncated-projection pairing and discriminated default evidence
+b074aee0 docs(t09): archive R2 verification evidence bound to d31714ac
+d31714ac fix(ddl): report member-comparability gaps and honor provider string defaults on PK conversion
+b8215e60 docs(t09): amend contract for R2 member-comparability gap and PK default boundary
+4c62b47a docs(t09): archive R1 verification evidence bound to a986eaba
+a986eaba fix(ddl): gate index comparisons and ADD PRIMARY KEY on proven facts
+7ac054e5 docs(t09): amend index-governance contract for R1 fact sufficiency
+dc54ecac docs(t09): closeout index + SHA-bound verification evidence (issue #88)
+51c8eec3 fix(ddl): regenerate coverage catalog for T09 standalone index-rule coverage
+a11b448b test(ddl-golden): T09 frozen index-governance contract oracle
+f2ea7b43 feat(ddl): unify standalone and nested index governance with ordered index state (T09)
+016ed8d8 docs(t09): freeze index-governance contract for issue #88
+1ce23297 docs(t08): closeout index + bounded-review evidence (R2 review logs, R3 YEAR probe)
+7e251a67 fix(ddl): keep type-normalized numeric literals out of the comparable domain (T08-R3)
+27a4355b test(ddl): T08-R2 comparable-domain review — scale-0 canonical cell, declared-decimal bound, type-finding division
+ff2364ec docs(verification): T08-R2 evidence at fb16cf6d — red capture, 3-manifest golden, 8-cell native probe
+fb16cf6d fix(ddl): T08-R2 comparable domain — numeric literals require canonical-integer text
+23364f09 docs(verification): T08-R1 evidence at 1d2c2fa4 — red capture, 5-manifest golden, 16-cell native probe
+1d2c2fa4 fix(ddl): T08-R1 comparable default identity — three-state literal/expression comparison
+922771cd docs(verification): T08 oracle-closure evidence at 3b35fe30 — T03/T04/T05 green, race + reuse revalidation
+3b35fe30 test(ddl-golden): migrate 11 pre-T08 oracle cells to the frozen T08 contract
+c8bd6da4 docs(verification): T08 delivery closeout — old-task regressions at c983fc9d
+18f34abb docs(verification): re-archive T08 evidence at c983fc9d — 172/172, 4240 assertions
+c983fc9d fix(ddl): T08 round-2 review — duplicate-apply guard, produced-set correctness
+4762fb44 docs(verification): archive T08 evidence at 9c4fe175 — 172/172, 4240 assertions
+9c4fe175 fix(ddl): T08 review pass — TiDB AI-removal tombstone, accumulated AFTER set
+493f8d47 docs(verification): T08 column-governance evidence at 6fb8e438
+6fb8e438 test(ddl-golden): T08 frozen manifest, independent contract oracle, validator
+9a18e143 feat(ddl): T08 column governance — position, multi-action state, effective defaults
+65b88f98 docs(t07): acceptance closeout index mapping #86 to shipped evidence
+45463ffb docs(verification): T07-R2 fold-boundary evidence at 9538c059
+9538c059 fix(ddl): T07-R2 TiDB SET DEFAULT fold boundary is value-dependent
+c5761f5c docs(verification): T07-R1 semantic-closure evidence at aba44783
+aba44783 feat(ddl): T07-R1 generated-reference premises and TiDB expression defaults
+994bd8eb docs(verification): T07 advanced-column evidence at adf4652e
+adf4652e fix(ddl-golden): pin T07 exec client charset for expression evidence
+c5986c4c docs(ddl): T07 post-freeze contract ledger and upgrade documentation
+0a2efd79 test(ddl-golden): T07 contract validator, fixture ownership, proof harness
+d2bbbfa6 feat(ddl): T07 advanced-column generated/default/visibility semantics
+30150546 docs(ddl): freeze T07 advanced-column facts and independent acceptance oracle
+1997dac1 docs(ddl): close out accepted T06 semantics with traceable evidence
+7a65fe16 docs(verification): T06-A17-R1 complete SHA-bound evidence at ee06c8e4
+ee06c8e4 test(ddl): T06-A17-R1 bind complete fidelity proofs to their tested source
+8d1253e2 docs(verification): T06-A17 type-parameter fidelity evidence at 4f58ac54
+4f58ac54 fix(ddl): T06-A17 declared column type-parameter fidelity
+a0819096 docs(verification): T06-A15-R1 declared-COMPRESSED identity evidence at 700e90e4
+700e90e4 fix(ddl): T06-A15-R1 keep declared ROW_FORMAT=COMPRESSED identity over instance defaults
+0a4c19d6 docs(verification): T06-A15 row-size fact-resolution evidence at 32a325c3
+32a325c3 fix(ddl): T06-A15 row-size field-level fact resolution (missing_instance_fact gaps)
+73717598 docs(verification): T06-A14 table-option allowlist proof evidence at ded0ed51
+ded0ed51 test(ddl): T06-A14 table-option allowlist proof (require_explicit matrix, per-product catalog oracle)
+a2ea0b6c docs(verification): T06-A13 type-family forbid proof evidence at 2eed4a98
+2eed4a98 test(ddl): T06-A13 type-family forbid proof (isolation, attribution, switches, four-anchor structure)
+84e37e32 docs(verification): T06-A12-R1 rule_summary shape evidence at f015fb47
+f015fb47 test(ddl): strict rule_summary shape in T06-A12 checks (T06-A12-R1)
+2a7b2ddf docs(verification): T06-A12 ordinary-column NOT NULL proof evidence at 1a5dd90d
+1a5dd90d test(ddl): prove ordinary-column NOT NULL policy and attribution (T06-A12)
+907ce213 docs(verification): T06-A11-R1 hex-field evidence at 30baf74d
+30baf74d test(ddl): bound T06-A11 COLUMN_TYPE hex field shape (T06-A11-R1)
+451f54ca docs(verification): T06-A11 BIGINT/UNSIGNED proof evidence at 4dc51cbd
+4dc51cbd test(ddl): prove single-member primary-key BIGINT/UNSIGNED policies (T06-A11)
+5330912f docs(verification): publish T06-A10-R2 observation boundary evidence (#85)
+42b16022 test(ddl): bound T06-A10 observation typing and SHOW CREATE head (#85)
+1fd97e9d docs(verification): publish T06-A10-R1 observation validation evidence (#85)
+0693a3df test(ddl): bind T06-A10 observations to exact record-set shape (#85)
+d481948f docs(verification): publish T06-A10 AUTO_INCREMENT contract evidence (#85)
+bffcc261 test(ddl): prove T06-A10 AUTO_INCREMENT declaration and init-value contracts (#85)
+1e75b360 test(ddl): publish T06-A9-R2 EXTRA byte-exact evidence (#85)
+b585c6a7 test(ddl): make T06-A9 EXTRA whitelist comparison byte-exact (#85)
+edc5bf07 docs(verification): publish T06-A9-R1 oracle tightening evidence (#85)
+ad8f7422 test(ddl): tighten T06-A9 finding identity and EXTRA whitelist oracle (#85)
+2df537f9 docs(verification): publish T06-A9 audit-time-column role evidence (#85)
+b9af1238 test(ddl): pin T06-A9 explicit audit-time-column role proof (#85)
+3c8bac8b docs(verification): publish T06-A8 comment fidelity evidence (#85)
+767a19c9 feat(ddl): decode column comments, count table comment code points, carry Table.Comment (#85)
+25c4eaa2 docs(verification): publish T06-A7 collation policy and isolation evidence (#85)
+2c800311 feat(ddl): add table collation allowlist and prove column charset/collation rules (#85)
+f8326032 docs(verification): publish T06-A5 declared-length policy evidence (#85)
+a43a8a81 test(ddl): pin T06-A5 declared CHAR/VARCHAR length policy contract (#85)
+f2a5bd14 docs(verification): publish T06-A4 provider default-identity evidence (#85)
+527fd48d fix(metadata): stop reading stored 'NULL' literal as SQL NULL default (#85)
+ad1c6106 docs(verification): publish T06-A3-R1 duplicate DEFAULT evidence (#85)
+d3ddf9c1 fix(parser): recompute DefaultIsNull per DEFAULT option (#85)
+577a253b docs(verification): publish T06-A3 DEFAULT NULL fidelity evidence (#85)
+c640b00c fix(parser): recognize SQL DEFAULT NULL as a typed literal (#85)
+d2cba4dd docs(verification): publish T06-A2 primary-key nullability evidence (#85)
+9d12aec8 fix(parser): normalize CREATE TABLE primary-key member nullability
+4332dcbd docs(verification): publish T06-A1-R1 identity-binding evidence (#85)
+4e51cbe0 fix(ddl-golden): bind T06-A1 case ids to frozen proof roles (#85)
+0d083b89 docs(verification): publish T06-A1 golden artifact and gate evidence (#85)
+06de7475 test(ddl): pin T06-A1 CREATE TABLE primary-key golden path (#85)
+42ee414c docs(verification): publish T05-A8 isolation and final-SHA evidence (#84)
+c30be585 fix(audit): preserve outer table state across procedure lifecycle (#84)
+affad1b1 docs(verification): publish T05-A7 budget and final-SHA evidence (#84)
+2dbeb3dd feat(audit): stop ordered work when statement budget is exhausted (#84)
+c9ebc120 docs(verification): publish T05-A6 golden artifact and case records (#84)
+d42562a7 docs(verification): publish T05-A6 gate and golden-run evidence (#84)
+02843c40 feat(audit): publish dependency-free DROP COLUMN post-state (#84)
+903fc01b docs(verification): publish T05-A5-R1 gate and regression evidence (#84)
+bcc8b65b fix(audit): keep known-empty partial column identity (#84)
+ed022b60 docs(verification): publish T05-A5 gate and golden-run evidence (#84)
+557cb4cf feat(audit): migrate CHANGE and RENAME column identity (#84)
+fe073f56 docs(verification): publish T05-A4-R2 gate and golden-run evidence (#84)
+0cb6b7e3 feat(audit): tombstone every MODIFY identity before replacement (#84)
+6a852d4f docs(verification): publish T05-A4-R1 gate and golden-run evidence (#84)
+77624ee7 feat(audit): keep MODIFY invalidation inside the affected set (#84)
+c3358968 docs(verification): publish T05-A4 gate and golden-run evidence (#84)
+ce93dbf8 feat(audit): publish ordinary MODIFY post-state for later statements (#84)
+20016381 docs(verification): bind T05-A3 gates and fixture evidence to c82d237 (#84)
+c82d237e feat(audit): preserve DROP absence and isolate same-name recreation (#84)
+49a0f5bc docs(verification): publish T05-A2-R1 gate and golden-run evidence (#84)
+ee49d86e fix(audit): preserve RENAME reference and cancellation boundaries (#84)
+c38536e9 docs(verification): publish T05-A2 gate and golden-run evidence (#84)
+6e060624 feat(audit): migrate bounded single-pair RENAME identity in ordered state (#84)
+624b1263 docs(verification): publish T05-A1-R2 gate and golden-run evidence (#84)
+fce75c51 fix(audit): close T05-A1-R2 member-gap and PostgreSQL dialect residuals (#84)
+ef8cdade fix(audit): rework T05-A1 ordered schema state per R1 review and complete golden acceptance (#84)
+17ea2969 test(audit): pin T05-A1 spec-frozen gap order, rename invalidation, notice control, and transport contracts (#84)
+eaae95f2 feat(audit): ordered request-local schema state and standalone create-index column existence (T05-A1/#84)
+71aeaca7 feat(audit): target_version and observed-version evidence contract (T04-B/#83)
+9a8ae39d fix(golden): strict state-machine policy parser (#83 T04-A-R3)
+301309fd fix(golden): stdlib-only policy parsing in ddl-golden validator (#83 T04-A-R2)
+49d9205d fix(audit): fact-gated compatibility checks, always-on gaps, evidence binding (#83 T04-A-R1)
+53f03f08 feat(audit): metadata evidence gaps for modify-column compatibility (#83)
+1bf503ea fix(audit): compare extracted dispatch by reflect.Type identity (#82)
+5b8ca3d2 fix(audit): close round-7 residuals — alias embeds, MySQL primary_key_type reason (#82)
+aa755949 test(audit): pin scanner counterexample declaration shapes (#82)
+ed93f95b fix(audit): close round-6 census review findings (#82)
+83cb00eb fix(audit): close census completeness on all three review connections (#82)
+b46a6755 fix(audit): enumerate statement and field coverage census (#82)
+3fe763f9 fix(audit): cover CURRENT_USER, index options, and split collections (#82)
+b3d41ec6 fix(audit): close current-user, zero-prefix, and secondary-collection coverage gaps
+c8ce1a18 fix(audit): project index key-part facts and unaudited targets (#82)
+e137cc4c fix(audit): expand parenthesized ALTER ADD constraints (#82)
+42a5426f fix(audit): classify GLOBAL index modifier as vendor boundary (#82)
+7c6ebf1c fix(audit): mark temporary, AUTO_RANDOM, procedure bodies, and dropped column options incomplete (#82)
+d34475c3 fix(audit): rework recognized-but-unaudited coverage classification (#82)
+6b39dca7 feat(audit): report incomplete coverage for recognized-but-unaudited DDL (#82)
+b2956b38 test(ddl-golden): lock milestone denominators outside editable manifests
+162ba124 fix: harden ddl-golden validator and inventory denominator for #81 review
+91ccb103 feat: establish four-version official DDL inventory and executable baseline
+1768f05b fix: resolve unqualified rename destinations to the current schema
+0035c40f fix: check every multi-target DROP/RENAME table against the denylist
+7a11ac94 docs: constrain Devin tasks with executable golden paths
+7a46ebc1 docs: link DDL completion spec and clarify evidence thresholds
+4d282a2b docs: define MySQL and TiDB DDL completion scope

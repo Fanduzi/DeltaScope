@@ -1,0 +1,4 @@
+=== RUN   TestT18FullCheckRequiresInheritedAlgorithm
+--- PASS: TestT18FullCheckRequiresInheritedAlgorithm (0.01s)
+PASS
+ok  	github.com/Fanduzi/DeltaScope/pkg/deltascope	0.580s

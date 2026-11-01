@@ -1,0 +1,149 @@
+[
+  {
+    "id": "ce27014cffc9fa99c8495d43610f3c358362b2d6ab98527010ef22edad93a993",
+    "name": "isolated2-keeper-w1",
+    "status": "running",
+    "running": true,
+    "volumes": [
+      "binlog-isolated2_w1-data"
+    ]
+  },
+  {
+    "id": "c4de72ce6ab99d9a61b7b64c7ea7d107c7c2e13e8283979b96b32b0d9df02f62",
+    "name": "isolated2-keeper-w2",
+    "status": "running",
+    "running": true,
+    "volumes": [
+      "binlog-isolated2_w2-data"
+    ]
+  },
+  {
+    "id": "f6543da395ceaa492781d733621f65bac82b2671e9221086140e22486c2f4233",
+    "name": "soak-w1",
+    "status": "running",
+    "running": true,
+    "volumes": [
+      "binlog-soak_w1-data"
+    ]
+  },
+  {
+    "id": "c9c96f1abeca9a834976a156b4fff8dc151a5890b6c80467e25e6006463c65a0",
+    "name": "soak-w2",
+    "status": "running",
+    "running": true,
+    "volumes": [
+      "binlog-soak_w2-data"
+    ]
+  },
+  {
+    "id": "ab2a60e0735220b08dac6e59864b1b076857c68fc69e7bfadbf17a5c0e15f1bb",
+    "name": "soak-cp",
+    "status": "running",
+    "running": true,
+    "volumes": [
+      "binlog-soak_cp-data"
+    ]
+  },
+  {
+    "id": "b7275f4d15f5bd4e94d540682acb87dd7d5ae2a202f44db296c6236a7013d33f",
+    "name": "soak-s3mock",
+    "status": "running",
+    "running": true,
+    "volumes": [
+      "binlog-soak_s3mock-data"
+    ]
+  },
+  {
+    "id": "4d0e560d0ff2464267882d57e680606e49b9068d5bd3179f910d019669646ecf",
+    "name": "soak-http503",
+    "status": "running",
+    "running": true,
+    "volumes": []
+  },
+  {
+    "id": "40d43ddea7f1afd7dfc201a722bf5fdc6510882970e227494c6ad93424724e53",
+    "name": "soak-meta",
+    "status": "running",
+    "running": true,
+    "volumes": [
+      "binlog-soak_meta-data"
+    ]
+  },
+  {
+    "id": "fded5439020739eb52de5d320ae916f319e8900ca67f73a2298bd4cbfe121209",
+    "name": "soak-src-b",
+    "status": "running",
+    "running": true,
+    "volumes": [
+      "binlog-soak_src-b-data"
+    ]
+  },
+  {
+    "id": "32f7e0495de9a7d6625ee0c7d4b806f598d166573f119b325517280bba776d90",
+    "name": "soak-src-a",
+    "status": "running",
+    "running": true,
+    "volumes": [
+      "binlog-soak_src-a-data"
+    ]
+  },
+  {
+    "id": "ede9800d299e2e334a63c287426b8d20a767e6a812755ef1ebe9cdc40dc2d78c",
+    "name": "soak-restore",
+    "status": "running",
+    "running": true,
+    "volumes": [
+      "15138c052dfab4ad6fb965bc38a7a689bf1a6c82331ed198f9ed0d3ecf4c8336"
+    ]
+  },
+  {
+    "id": "0fb99b3142be39f8e0dae6ea777e959202a5d1f83243c1d8c831794a4fe41829",
+    "name": "soak-proxy",
+    "status": "running",
+    "running": true,
+    "volumes": []
+  },
+  {
+    "id": "438a91a8d3b9d33a2353a45d6c495923949874cbe8d6893697c2906407b92f4e",
+    "name": "tmp-restore",
+    "status": "running",
+    "running": true,
+    "volumes": [
+      "267ee2cae88378cf07749466422c95f346e08eb0b16f4758c42b79d95980d4f2"
+    ]
+  },
+  {
+    "id": "29a7a9858426c6cf682b1d74d4cee408f81c63c7221a6a223516cdf0bd528c11",
+    "name": "controlhub-query-e2e-mysql",
+    "status": "running",
+    "running": true,
+    "volumes": [
+      "0b2f7fa431970b610eb2a3c989928d9bbd46d28ee4be39b65d9257ec41995929"
+    ]
+  },
+  {
+    "id": "23691c7383567ede4d3d397a9aa7d7cb416d44c0e3fd446e5e3b222fb466fbb9",
+    "name": "controlhub-demo-mysql",
+    "status": "running",
+    "running": true,
+    "volumes": [
+      "controlhub-demo-mysql-data"
+    ]
+  },
+  {
+    "id": "6c3f6e9d3c9c9bef48e3bb2cbb2e2cdff5e6b3dd9ef580024cfddbf49c5087b9",
+    "name": "controlhub-demo-pg",
+    "status": "running",
+    "running": true,
+    "volumes": [
+      "controlhub-demo-pg-data"
+    ]
+  },
+  {
+    "id": "474b6ea23bef8341f94bb89662639bbbdd55ab7a5fdcc6d712e2c0ca9087799d",
+    "name": "mac-connector",
+    "status": "running",
+    "running": true,
+    "volumes": []
+  }
+]

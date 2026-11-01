@@ -1,0 +1,21 @@
+{
+  "argv": [
+    "docker",
+    "exec",
+    "deltascope-ddl-golden-tidb85-client",
+    "mysql",
+    "-h",
+    "tidb85",
+    "-P",
+    "4000",
+    "-uroot",
+    "--batch",
+    "--raw",
+    "--verbose",
+    "-e",
+    "CREATE DATABASE t18cs;CREATE TABLE t18cs.t(id INT);CREATE TABLE t18cs.c(id INT);"
+  ],
+  "sql": "CREATE DATABASE t18cs;CREATE TABLE t18cs.t(id INT);CREATE TABLE t18cs.c(id INT);",
+  "utc": "2026-11-01T10:11:46.669248+00:00",
+  "layer": "native grammar, not product proof"
+}

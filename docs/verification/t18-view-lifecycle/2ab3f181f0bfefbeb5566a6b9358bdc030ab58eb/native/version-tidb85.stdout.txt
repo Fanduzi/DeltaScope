@@ -1,0 +1,9 @@
+Release Version: v8.5.0
+Edition: Community
+Git Commit Hash: d13e52ed6e22cc5789bed7c64c861578cd2ed55b
+Git Branch: HEAD
+UTC Build Time: 2024-12-18 02:26:12
+GoVersion: go1.23.3
+Race Enabled: false
+Check Table Before Drop: false
+Store: unistore

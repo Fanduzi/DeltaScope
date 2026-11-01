@@ -1,0 +1,80 @@
+=== RUN   TestT18FullReviewZeroSourceCTEDAGBudget
+--- PASS: TestT18FullReviewZeroSourceCTEDAGBudget (0.01s)
+=== RUN   TestT18FullReviewZeroSourceCTEDAGDepthControl
+--- PASS: TestT18FullReviewZeroSourceCTEDAGDepthControl (0.01s)
+=== RUN   TestT18FullReviewQueryOrderBinding
+--- PASS: TestT18FullReviewQueryOrderBinding (0.00s)
+=== RUN   TestT18FullReviewQueryOrderAlias
+--- PASS: TestT18FullReviewQueryOrderAlias (0.00s)
+=== RUN   TestT18FullReviewQueryClauseLocations
+=== RUN   TestT18FullReviewQueryClauseLocations/on
+=== RUN   TestT18FullReviewQueryClauseLocations/where
+=== RUN   TestT18FullReviewQueryClauseLocations/group
+=== RUN   TestT18FullReviewQueryClauseLocations/having
+=== RUN   TestT18FullReviewQueryClauseLocations/order
+--- PASS: TestT18FullReviewQueryClauseLocations (0.02s)
+    --- PASS: TestT18FullReviewQueryClauseLocations/on (0.00s)
+    --- PASS: TestT18FullReviewQueryClauseLocations/where (0.00s)
+    --- PASS: TestT18FullReviewQueryClauseLocations/group (0.00s)
+    --- PASS: TestT18FullReviewQueryClauseLocations/having (0.00s)
+    --- PASS: TestT18FullReviewQueryClauseLocations/order (0.00s)
+=== RUN   TestT18FullReviewQuerySetLimitBoundary
+=== RUN   TestT18FullReviewQuerySetLimitBoundary/mysql/SELECT_id_FROM_t_UNION_SELECT_id_FROM_u_LIMIT_1
+=== RUN   TestT18FullReviewQuerySetLimitBoundary/mysql/SELECT_id_FROM_t_UNION_SELECT_id_FROM_u_ORDER_BY_1
+=== RUN   TestT18FullReviewQuerySetLimitBoundary/mysql/SELECT_id_FROM_t_UNION_ALL_SELECT_id_FROM_u_ORDER_BY_id
+=== RUN   TestT18FullReviewQuerySetLimitBoundary/tidb/SELECT_id_FROM_t_UNION_SELECT_id_FROM_u_LIMIT_1
+=== RUN   TestT18FullReviewQuerySetLimitBoundary/tidb/SELECT_id_FROM_t_UNION_SELECT_id_FROM_u_ORDER_BY_1
+=== RUN   TestT18FullReviewQuerySetLimitBoundary/tidb/SELECT_id_FROM_t_UNION_ALL_SELECT_id_FROM_u_ORDER_BY_id
+--- PASS: TestT18FullReviewQuerySetLimitBoundary (0.02s)
+    --- PASS: TestT18FullReviewQuerySetLimitBoundary/mysql/SELECT_id_FROM_t_UNION_SELECT_id_FROM_u_LIMIT_1 (0.00s)
+    --- PASS: TestT18FullReviewQuerySetLimitBoundary/mysql/SELECT_id_FROM_t_UNION_SELECT_id_FROM_u_ORDER_BY_1 (0.00s)
+    --- PASS: TestT18FullReviewQuerySetLimitBoundary/mysql/SELECT_id_FROM_t_UNION_ALL_SELECT_id_FROM_u_ORDER_BY_id (0.00s)
+    --- PASS: TestT18FullReviewQuerySetLimitBoundary/tidb/SELECT_id_FROM_t_UNION_SELECT_id_FROM_u_LIMIT_1 (0.00s)
+    --- PASS: TestT18FullReviewQuerySetLimitBoundary/tidb/SELECT_id_FROM_t_UNION_SELECT_id_FROM_u_ORDER_BY_1 (0.00s)
+    --- PASS: TestT18FullReviewQuerySetLimitBoundary/tidb/SELECT_id_FROM_t_UNION_ALL_SELECT_id_FROM_u_ORDER_BY_id (0.00s)
+=== RUN   TestT18FullReviewQueryUnsupportedExpressions
+=== RUN   TestT18FullReviewQueryUnsupportedExpressions/mysql/window/enabled=false
+=== RUN   TestT18FullReviewQueryUnsupportedExpressions/mysql/window/enabled=true
+=== RUN   TestT18FullReviewQueryUnsupportedExpressions/mysql/limit/enabled=false
+=== RUN   TestT18FullReviewQueryUnsupportedExpressions/mysql/limit/enabled=true
+=== RUN   TestT18FullReviewQueryUnsupportedExpressions/mysql/position/enabled=false
+=== RUN   TestT18FullReviewQueryUnsupportedExpressions/mysql/position/enabled=true
+=== RUN   TestT18FullReviewQueryUnsupportedExpressions/tidb/window/enabled=false
+=== RUN   TestT18FullReviewQueryUnsupportedExpressions/tidb/window/enabled=true
+=== RUN   TestT18FullReviewQueryUnsupportedExpressions/tidb/limit/enabled=false
+=== RUN   TestT18FullReviewQueryUnsupportedExpressions/tidb/limit/enabled=true
+=== RUN   TestT18FullReviewQueryUnsupportedExpressions/tidb/position/enabled=false
+=== RUN   TestT18FullReviewQueryUnsupportedExpressions/tidb/position/enabled=true
+--- PASS: TestT18FullReviewQueryUnsupportedExpressions (0.05s)
+    --- PASS: TestT18FullReviewQueryUnsupportedExpressions/mysql/window/enabled=false (0.00s)
+    --- PASS: TestT18FullReviewQueryUnsupportedExpressions/mysql/window/enabled=true (0.01s)
+    --- PASS: TestT18FullReviewQueryUnsupportedExpressions/mysql/limit/enabled=false (0.00s)
+    --- PASS: TestT18FullReviewQueryUnsupportedExpressions/mysql/limit/enabled=true (0.00s)
+    --- PASS: TestT18FullReviewQueryUnsupportedExpressions/mysql/position/enabled=false (0.00s)
+    --- PASS: TestT18FullReviewQueryUnsupportedExpressions/mysql/position/enabled=true (0.00s)
+    --- PASS: TestT18FullReviewQueryUnsupportedExpressions/tidb/window/enabled=false (0.00s)
+    --- PASS: TestT18FullReviewQueryUnsupportedExpressions/tidb/window/enabled=true (0.00s)
+    --- PASS: TestT18FullReviewQueryUnsupportedExpressions/tidb/limit/enabled=false (0.00s)
+    --- PASS: TestT18FullReviewQueryUnsupportedExpressions/tidb/limit/enabled=true (0.00s)
+    --- PASS: TestT18FullReviewQueryUnsupportedExpressions/tidb/position/enabled=false (0.00s)
+    --- PASS: TestT18FullReviewQueryUnsupportedExpressions/tidb/position/enabled=true (0.00s)
+=== RUN   TestT18FullReviewTiDBUnknownDuplicate
+=== RUN   TestT18FullReviewTiDBUnknownDuplicate/if_exists=false
+=== RUN   TestT18FullReviewTiDBUnknownDuplicate/if_exists=true
+--- PASS: TestT18FullReviewTiDBUnknownDuplicate (0.01s)
+    --- PASS: TestT18FullReviewTiDBUnknownDuplicate/if_exists=false (0.00s)
+    --- PASS: TestT18FullReviewTiDBUnknownDuplicate/if_exists=true (0.00s)
+=== RUN   TestT18FullReviewDefinerKeyword
+=== RUN   TestT18FullReviewDefinerKeyword/view
+=== RUN   TestT18FullReviewDefinerKeyword/quoted_view
+=== RUN   TestT18FullReviewDefinerKeyword/view_host
+=== RUN   TestT18FullReviewDefinerKeyword/current_user
+=== RUN   TestT18FullReviewDefinerKeyword/current_user_call
+--- PASS: TestT18FullReviewDefinerKeyword (0.03s)
+    --- PASS: TestT18FullReviewDefinerKeyword/view (0.00s)
+    --- PASS: TestT18FullReviewDefinerKeyword/quoted_view (0.00s)
+    --- PASS: TestT18FullReviewDefinerKeyword/view_host (0.00s)
+    --- PASS: TestT18FullReviewDefinerKeyword/current_user (0.00s)
+    --- PASS: TestT18FullReviewDefinerKeyword/current_user_call (0.00s)
+PASS
+ok  	github.com/Fanduzi/DeltaScope/pkg/deltascope	1.150s

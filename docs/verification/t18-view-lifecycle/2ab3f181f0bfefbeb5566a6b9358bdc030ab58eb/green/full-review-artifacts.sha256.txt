@@ -1,0 +1,6 @@
+ab964570d282eee6848dd0b26bcffd3c499991dd0849456206e9aad37b282df8  /tmp/ddl-golden-t18-full-review-1-seed/T18/artifact.json
+3ae927883018e7dc042e88f2ee1ad35df91e2f4ef193d2994d6ef764f908b39f  /tmp/t18-evidence/green/full-review-delta.patch
+e402bfe18af088d9505d8a78dcc50d8a3a245a004784276be646ec7f6cc18663  /tmp/t18-evidence/green/full-review-delta.json
+3cea36a508cbbba452efb1e8eb9ea35f8366b2559dec7fc7898efda01063f380  /tmp/t18-evidence/green/full-review-source.sha256.txt
+956be5aa1b70db35e6d44c3d4354c43e621dd60f149b92c3412977283e99a8a4  internal/interfaces/http/audit_t18_view_privacy_test.go
+9215a309522e8b1119b20ba46082ae47434d3e6677fb56581bd6c6c451f2fdea  internal/interfaces/mcp/audit_t18_view_privacy_test.go

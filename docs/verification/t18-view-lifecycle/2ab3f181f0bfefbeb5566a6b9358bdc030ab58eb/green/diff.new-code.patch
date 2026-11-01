@@ -1,0 +1,1471 @@
+diff --git a/internal/application/audit/batch_state_t18_first_test.go b/internal/application/audit/batch_state_t18_first_test.go
+new file mode 100644
+index 00000000..e394e115
+--- /dev/null
++++ b/internal/application/audit/batch_state_t18_first_test.go
+@@ -0,0 +1,237 @@
++package audit
++
++import (
++	"context"
++	"errors"
++	"fmt"
++	"reflect"
++	"strings"
++	"testing"
++
++	apppolicy "github.com/Fanduzi/DeltaScope/internal/application/policy"
++	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
++)
++
++type t18FirstProvider struct {
++	tables map[string]*spec.TableSnapshot
++}
++
++func (p *t18FirstProvider) LoadInstanceFacts(context.Context, spec.Dialect, string) (*spec.InstanceFacts, error) {
++	return &spec.InstanceFacts{Version: "8.0.46"}, nil
++}
++
++func (p *t18FirstProvider) LoadTableSnapshot(_ context.Context, _ spec.Dialect, schema, table string) (*spec.TableSnapshot, error) {
++	return p.tables[schema+"."+table], nil
++}
++
++func t18FirstFixture() *t18FirstProvider {
++	table := func(name string) *spec.TableSnapshot {
++		return &spec.TableSnapshot{Schema: "g", Table: &spec.Table{Schema: "g", Name: name}, Exists: true,
++			RelationKind: "table", Columns: []spec.Column{{Name: "id", Type: "int"}}}
++	}
++	return &t18FirstProvider{tables: map[string]*spec.TableSnapshot{
++		"g.t": table("t"),
++		"g.u": table("u"),
++		"g.v": {Schema: "g", Table: &spec.Table{Schema: "g", Name: "v"}, Exists: true,
++			RelationKind: "view", Columns: []spec.Column{{Name: "id", Type: "int"}},
++			View: &spec.ViewSnapshot{Security: "definer", DefinerPrincipal: "private_test_principal",
++				Definition: &spec.ViewDefinition{SQL: "SELECT id FROM g.u", SourcesKnown: true,
++					Sources: []spec.Table{{Schema: "g", Name: "u"}}, ShapeKnown: true,
++					Bindings: []spec.ViewColumnBinding{{Column: "id", Output: "id"}}}}},
++		"g.next_v": {Schema: "g", Table: &spec.Table{Schema: "g", Name: "next_v"}, Exists: false},
++	}}
++}
++
++func t18FirstEnrich(t *testing.T, provider *t18FirstProvider, sql string) (*batchState, []spec.Statement) {
++	t.Helper()
++	ctx := context.Background()
++	parsed, err := Parse(ctx, sql, spec.DialectMySQL)
++	if err != nil {
++		t.Fatalf("parse: %v", err)
++	}
++	extracted, err := Extract(ctx, parsed)
++	if err != nil {
++		t.Fatalf("extract: %v", err)
++	}
++	state := newBatchState(spec.DialectMySQL, "g", provider)
++	state.resolvedVersion = spec.ParseObservedVersion("8.0.46")
++	facts := &spec.InstanceFacts{Version: "8.0.46"}
++	state.instanceFacts = facts
++	enriched, err := state.enrichStatements(ctx, &MetadataRequest{Schema: "g", Provider: provider},
++		extracted, nil, facts, auditLimits{orderedStatements: len(extracted)})
++	if err != nil {
++		t.Fatalf("enrich: %v", err)
++	}
++	return state, enriched
++}
++
++func TestT18FirstOrderedProjection(t *testing.T) {
++	provider := t18FirstFixture()
++	original := cloneTableSnapshot(provider.tables["g.v"])
++	_, statements := t18FirstEnrich(t, provider, "ALTER VIEW v AS SELECT id FROM t;\nCREATE VIEW next_v AS SELECT id FROM v;")
++	if len(statements) != 2 || statements[0].DDL.Operation != spec.DDLOperationAlterView ||
++		statements[1].DDL.Operation != spec.DDLOperationCreateView {
++		t.Fatalf("statements=%#v", statements)
++	}
++	first := statements[0].Metadata.View
++	second := statements[1].Metadata.View
++	if first == nil || second == nil || first.Target == nil || first.Target.View == nil ||
++		len(first.Sources) != 1 || first.Sources[0].Table != (spec.Table{Schema: "g", Name: "t"}) ||
++		len(second.Sources) != 1 || second.Sources[0].Table != (spec.Table{Schema: "g", Name: "v"}) ||
++		second.Sources[0].Snapshot == nil || second.Sources[0].Snapshot.View == nil {
++		t.Fatalf("first=%#v second=%#v", first, second)
++	}
++	wantOld := []spec.Table{{Schema: "g", Name: "u"}}
++	wantNew := []spec.Table{{Schema: "g", Name: "t"}}
++	if !reflect.DeepEqual(first.Target.View.Definition.Sources, wantOld) ||
++		!reflect.DeepEqual(second.Sources[0].Snapshot.View.Definition.Sources, wantNew) ||
++		!reflect.DeepEqual(provider.tables["g.v"], original) {
++		t.Fatalf("first=%#v second=%#v provider=%#v", first.Target.View, second.Sources[0].Snapshot.View, provider.tables["g.v"])
++	}
++	second.Sources[0].Snapshot.View.Definition.Sources[0].Name = "mutated"
++	if !reflect.DeepEqual(first.Target.View.Definition.Sources, wantOld) || !reflect.DeepEqual(provider.tables["g.v"], original) {
++		t.Fatal("later projection aliased earlier or provider state")
++	}
++}
++
++func TestT18FirstRefusalPreservesPriorView(t *testing.T) {
++	provider := t18FirstFixture()
++	provider.tables["g.t"] = &spec.TableSnapshot{Schema: "g", Exists: false}
++	_, statements := t18FirstEnrich(t, provider, "ALTER VIEW v AS SELECT id FROM t;\nCREATE VIEW next_v AS SELECT id FROM v;")
++	if !spec.AssessViewLifecycle(statements[0]).SourceInvalid {
++		t.Fatal("missing source was not a proven refusal")
++	}
++	got := statements[1].Metadata.View.Sources[0].Snapshot.View.Definition.Sources
++	if !reflect.DeepEqual(got, []spec.Table{{Schema: "g", Name: "u"}}) {
++		t.Fatalf("refused ALTER changed the prior view: %#v", got)
++	}
++}
++
++func TestT18FirstPolicyIndependent(t *testing.T) {
++	sql := "ALTER VIEW v AS SELECT id FROM t;\nCREATE VIEW next_v AS SELECT id FROM v;"
++	enabled := t05PolicyPathConfigured(t, map[string]t05RuleConfig{
++		"ddl.view.target.valid":          {level: "blocker"},
++		"ddl.view.source.valid":          {level: "blocker"},
++		"ddl.view.security.definer.warn": {level: "warning"},
++	})
++	disabled := t05PolicyPathConfigured(t, map[string]t05RuleConfig{})
++	for _, tc := range []struct {
++		path   string
++		loaded int
++	}{{enabled, 3}, {disabled, 0}} {
++		provider := t18FirstFixture()
++		_, statements := t18FirstEnrich(t, provider, sql)
++		prior := cloneTableSnapshot(statements[1].Metadata.View.Sources[0].Snapshot)
++		cfg, err := apppolicy.Load(tc.path)
++		if err != nil {
++			t.Fatal(err)
++		}
++		registry, err := buildRegistry(cfg)
++		if err != nil {
++			t.Fatal(err)
++		}
++		result, err := EvaluateStatements(context.Background(), registry, statements)
++		if err != nil || registry.LoadedStatementRuleCount() != tc.loaded ||
++			!reflect.DeepEqual(statements[1].Metadata.View.Sources[0].Snapshot, prior) {
++			t.Fatalf("result=%#v err=%v", result, err)
++		}
++		public, err := AuditSQL(context.Background(), Request{
++			SQL: sql, Dialect: spec.DialectMySQL, Schema: "g", ConfigPath: tc.path, MetadataProvider: t18FirstFixture(),
++		})
++		if err != nil || len(public.Statements) != 2 {
++			t.Fatalf("audit=%#v err=%v", public, err)
++		}
++		if tc.loaded == 3 && public.Summary.Warnings != 2 || tc.loaded == 0 && public.Summary.Warnings != 0 {
++			t.Fatalf("loaded=%d summary=%#v", tc.loaded, public.Summary)
++		}
++	}
++}
++
++type t18FirstErrorProvider struct {
++	*t18FirstProvider
++	cause error
++	calls int
++}
++
++func (p *t18FirstErrorProvider) LoadTableSnapshot(ctx context.Context, dialect spec.Dialect, schema, table string) (*spec.TableSnapshot, error) {
++	if table == "t" {
++		p.calls++
++		return nil, p.cause
++	}
++	return p.t18FirstProvider.LoadTableSnapshot(ctx, dialect, schema, table)
++}
++
++func TestT18FirstReadFailureNotCached(t *testing.T) {
++	cause := errors.New("t18_private_error")
++	provider := &t18FirstErrorProvider{t18FirstProvider: t18FirstFixture(), cause: cause}
++	parsed, err := Parse(context.Background(), "ALTER VIEW v AS SELECT id FROM t;", spec.DialectMySQL)
++	if err != nil {
++		t.Fatal(err)
++	}
++	statements, err := Extract(context.Background(), parsed)
++	if err != nil {
++		t.Fatal(err)
++	}
++	state := newBatchState(spec.DialectMySQL, "g", provider)
++	for i := 0; i < 2; i++ {
++		_, err := state.enrichStatements(context.Background(), &MetadataRequest{Schema: "g", Provider: provider},
++			statements, nil, &spec.InstanceFacts{Version: "8.0.46"}, auditLimits{orderedStatements: 1})
++		if !errors.Is(err, cause) || strings.Contains(err.Error(), "t18_private_error") {
++			t.Fatalf("err=%v", err)
++		}
++	}
++	if provider.calls != 2 {
++		t.Fatalf("failed reads were cached: calls=%d", provider.calls)
++	}
++}
++
++func TestT18FirstCrossSchemaSourcesBindRequestSchema(t *testing.T) {
++	provider := t18FirstFixture()
++	target := cloneTableSnapshot(provider.tables["g.v"])
++	target.Schema, target.Table.Schema = "other", "other"
++	provider.tables["other.v"] = target
++	_, statements := t18FirstEnrich(t, provider, "ALTER VIEW other.v AS SELECT id FROM t;")
++	source := statements[0].Metadata.View.Sources[0]
++	if source.Table != (spec.Table{Schema: "g", Name: "t"}) || source.Snapshot == nil || !source.Snapshot.Exists {
++		t.Fatalf("source=%#v", source)
++	}
++}
++
++func TestT18FirstDependencyLimitIsIntrinsic(t *testing.T) {
++	provider := t18FirstFixture()
++	for i := 1; i <= 33; i++ {
++		name := fmt.Sprintf("v%d", i)
++		source := "t"
++		if i < 33 {
++			source = fmt.Sprintf("v%d", i+1)
++		}
++		provider.tables["g."+name] = &spec.TableSnapshot{
++			Schema: "g", Table: &spec.Table{Schema: "g", Name: name}, Exists: true,
++			RelationKind: "view", Columns: []spec.Column{{Name: "id", Type: "int"}},
++			View: &spec.ViewSnapshot{Security: "definer", Definition: &spec.ViewDefinition{
++				SourcesKnown: true, Sources: []spec.Table{{Schema: "g", Name: source}},
++			}},
++		}
++	}
++	_, statements := t18FirstEnrich(t, provider, "ALTER VIEW v AS SELECT id FROM v1;")
++	if !statements[0].Metadata.View.DependencyLimit {
++		t.Fatal("depth limit was not recorded")
++	}
++	assessment := spec.AssessViewLifecycle(statements[0])
++	if !assessment.DependencyLimit || len(assessment.SourceRequired) != 0 {
++		t.Fatalf("limit confused with missing metadata: %#v", assessment)
++	}
++	cfg, err := apppolicy.Load(t05PolicyPathConfigured(t, map[string]t05RuleConfig{}))
++	if err != nil {
++		t.Fatal(err)
++	}
++	registry, err := buildRegistry(cfg)
++	if err != nil {
++		t.Fatal(err)
++	}
++	result, err := EvaluateStatements(context.Background(), registry, statements)
++	if err != nil || string(result.Coverage.Status) != "incomplete" || len(result.Unsupported) != 1 ||
++		result.Unsupported[0].Feature != "view.dependencies.limit" || len(result.Statements[0].EvidenceGaps) != 0 {
++		t.Fatalf("result=%#v err=%v", result, err)
++	}
++}
+diff --git a/internal/application/audit/batch_state_view.go b/internal/application/audit/batch_state_view.go
+new file mode 100644
+index 00000000..36901d05
+--- /dev/null
++++ b/internal/application/audit/batch_state_view.go
+@@ -0,0 +1,149 @@
++package audit
++
++import (
++	"context"
++	"strings"
++
++	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
++)
++
++type viewStateReadError struct{ cause error }
++
++func (viewStateReadError) Error() string   { return "view metadata read failed" }
++func (e viewStateReadError) Unwrap() error { return e.cause }
++
++func (s *batchState) projectViewMetadata(ctx context.Context, statement spec.Statement, target *spec.TableSnapshot, sources []*spec.TableSnapshot) (*spec.ViewMetadata, error) {
++	key := s.keyFor(s.schema, *statement.DDL.Table)
++	metadata := &spec.ViewMetadata{
++		TargetIdentity: spec.Table{Schema: key.schema, Name: key.table},
++		Target:         target,
++	}
++	definition := statement.DDL.View.Definition
++	if definition == nil {
++		return metadata, nil
++	}
++	for i, source := range definition.Sources {
++		sourceKey := s.keyFor(s.schema, source)
++		binding := spec.TargetBinding{Table: spec.Table{Schema: sourceKey.schema, Name: sourceKey.table}}
++		if i < len(sources) {
++			binding.Snapshot = sources[i]
++		}
++		metadata.Sources = append(metadata.Sources, binding)
++	}
++	seen := map[batchTableKey]struct{}{}
++	path := map[batchTableKey]bool{key: true}
++	var visit func(spec.TargetBinding, int) error
++	visit = func(binding spec.TargetBinding, depth int) error {
++		current := s.keyFor(s.schema, binding.Table)
++		if path[current] {
++			metadata.DependencyCycle = true
++			return nil
++		}
++		if _, exists := seen[current]; exists {
++			return nil
++		}
++		if depth > 32 || len(seen) >= 256 {
++			metadata.DependencyLimit = true
++			return nil
++		}
++		seen[current] = struct{}{}
++		snapshot := binding.Snapshot
++		if snapshot == nil || !snapshot.Exists || snapshot.RelationKind != "view" ||
++			snapshot.View == nil || snapshot.View.Definition == nil ||
++			!snapshot.View.Definition.SourcesKnown {
++			return nil
++		}
++		path[current] = true
++		defer delete(path, current)
++		for _, source := range snapshot.View.Definition.Sources {
++			if strings.TrimSpace(source.Schema) == "" {
++				metadata.DependencyUnproven = true
++				continue
++			}
++			ns, entry, sourceKey, err := s.bindSource(ctx, source)
++			if err != nil {
++				return err
++			}
++			dependency := s.projectBoundSnapshot(sourceKey, ns, entry)
++			dependency.Table = spec.Table{Schema: sourceKey.schema, Name: sourceKey.table}
++			metadata.Dependencies = append(metadata.Dependencies, dependency)
++			if err := visit(dependency, depth+1); err != nil {
++				return err
++			}
++		}
++		return nil
++	}
++	for _, source := range metadata.Sources {
++		if err := visit(source, 1); err != nil {
++			return nil, err
++		}
++	}
++	return metadata, nil
++}
++
++func (s *batchState) applyView(statement spec.Statement) error {
++	ddl := statement.DDL
++	if ddl == nil || ddl.View == nil || ddl.Table == nil || statement.Metadata == nil || statement.Metadata.View == nil {
++		return nil
++	}
++	assessment := spec.AssessViewLifecycle(statement)
++	if assessment.TargetInvalid || assessment.SourceInvalid {
++		return nil
++	}
++	key := s.keyFor(s.schema, *ddl.Table)
++	if len(assessment.TargetRequired) != 0 || len(assessment.SourceRequired) != 0 ||
++		assessment.DependencyLimit || len(ddl.UnextractedOptions) != 0 {
++		prior := statement.Metadata.View.Target
++		if ddl.Operation == spec.DDLOperationAlterView && prior != nil && prior.Exists && prior.RelationKind == "view" {
++			shape := cloneTableSnapshot(prior)
++			shape.Columns = nil
++			if shape.View != nil {
++				shape.View.Definition = nil
++				if ddl.View.SecurityExplicit {
++					shape.View.Security = ""
++				}
++				shape.View.CheckOption = ""
++			}
++			s.entries[key] = &batchTableEntry{state: tablePresent, shape: shape, displaySchema: prior.Schema, displayTable: ddl.Table.Name}
++		} else {
++			s.invalidateKey(key)
++		}
++		return nil
++	}
++	var shape *spec.TableSnapshot
++	if ddl.Operation == spec.DDLOperationAlterView {
++		shape = cloneTableSnapshot(statement.Metadata.View.Target)
++	} else {
++		shape = &spec.TableSnapshot{
++			Schema: key.schema, Table: &spec.Table{Schema: key.schema, Name: key.table},
++			Exists: true, RelationKind: "view",
++		}
++	}
++	if shape.View == nil {
++		shape.View = &spec.ViewSnapshot{}
++	}
++	definition := spec.CloneViewDefinition(ddl.View.Definition)
++	for i := range definition.Sources {
++		definition.Sources[i] = statement.Metadata.View.Sources[i].Table
++	}
++	shape.View.Definition = definition
++	shape.View.Security = assessment.Security
++	shape.View.CheckOption = "none"
++	shape.Columns = nil
++	if definition.ShapeKnown && len(statement.Metadata.View.Sources) == 1 {
++		source := statement.Metadata.View.Sources[0].Snapshot
++		shape.Columns = make([]spec.Column, 0, len(definition.Bindings))
++		for _, binding := range definition.Bindings {
++			for _, column := range source.Columns {
++				if strings.EqualFold(column.Name, binding.Column) {
++					derived := cloneColumn(column)
++					derived.Name = binding.Output
++					shape.Columns = append(shape.Columns, derived)
++					break
++				}
++			}
++		}
++	}
++	s.entries[key] = &batchTableEntry{state: tablePresent, shape: shape, displaySchema: key.schema, displayTable: key.table}
++	return nil
++}
+diff --git a/internal/domain/rule/ddl/view_lifecycle_rules.go b/internal/domain/rule/ddl/view_lifecycle_rules.go
+new file mode 100644
+index 00000000..56ce7e86
+--- /dev/null
++++ b/internal/domain/rule/ddl/view_lifecycle_rules.go
+@@ -0,0 +1,87 @@
++package ddl
++
++import (
++	"context"
++
++	"github.com/Fanduzi/DeltaScope/internal/domain/policy"
++	"github.com/Fanduzi/DeltaScope/internal/domain/rule"
++	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
++)
++
++type viewLifecycleRule struct {
++	ruleID string
++	level  rule.Level
++}
++
++func newViewLifecycleRule(id string, fallback rule.Level, cfg policy.RulePolicy) rule.StatementRule {
++	return viewLifecycleRule{ruleID: id, level: configuredLevel(cfg, fallback)}
++}
++
++func (r viewLifecycleRule) ID() string { return r.ruleID }
++
++func (r viewLifecycleRule) AppliesTo(statement spec.Statement) bool {
++	if r.ruleID != "ddl.view.target.valid" && r.ruleID != "ddl.view.source.valid" &&
++		r.ruleID != "ddl.view.security.definer.warn" {
++		return false
++	}
++	return orderedGapDialect(statement.Dialect) && statement.Kind == spec.KindDDL &&
++		statement.DDL != nil && statement.DDL.View != nil && statement.Unsupported == nil &&
++		(statement.DDL.Operation == spec.DDLOperationCreateView || statement.DDL.Operation == spec.DDLOperationAlterView)
++}
++
++func (r viewLifecycleRule) Evaluate(ctx context.Context, statement spec.Statement) ([]rule.Finding, error) {
++	if !r.AppliesTo(statement) {
++		return nil, nil
++	}
++	if err := ctx.Err(); err != nil {
++		return nil, err
++	}
++	assessment := spec.AssessViewLifecycle(statement)
++	var message, suggestion string
++	switch r.ruleID {
++	case "ddl.view.target.valid":
++		if assessment.TargetInvalid {
++			message = "view target is invalid for this operation"
++			suggestion = "check the target relation and operation"
++		}
++	case "ddl.view.source.valid":
++		if assessment.SourceInvalid {
++			message = "view definition has an invalid source"
++			suggestion = "check the authored source relations and columns"
++		}
++	case "ddl.view.security.definer.warn":
++		if assessment.Security == "definer" || assessment.ReviewPrincipal {
++			message = "view security or named definer requires review"
++			suggestion = "review the view's privilege context"
++		}
++	}
++	if message == "" {
++		return nil, nil
++	}
++	return []rule.Finding{{RuleID: r.ruleID, Level: r.level, Message: message, Suggestion: suggestion}}, nil
++}
++
++func (r viewLifecycleRule) EvidenceGaps(statement spec.Statement) []rule.EvidenceGap {
++	if !r.AppliesTo(statement) {
++		return nil
++	}
++	assessment := spec.AssessViewLifecycle(statement)
++	if assessment.TargetInvalid || assessment.SourceInvalid {
++		return nil
++	}
++	var facts []string
++	switch r.ruleID {
++	case "ddl.view.target.valid":
++		facts = assessment.TargetRequired
++	case "ddl.view.source.valid":
++		facts = assessment.SourceRequired
++	case "ddl.view.security.definer.warn":
++		if assessment.SecurityUnknown {
++			facts = []string{"view.security"}
++		}
++	}
++	if len(facts) == 0 {
++		return nil
++	}
++	return []rule.EvidenceGap{{ReasonCode: gapReasonUnknownTableState, RequiredFacts: facts}}
++}
+diff --git a/internal/domain/spec/view.go b/internal/domain/spec/view.go
+new file mode 100644
+index 00000000..699b01c8
+--- /dev/null
++++ b/internal/domain/spec/view.go
+@@ -0,0 +1,202 @@
++package spec
++
++import "strings"
++
++type ViewDeclaration struct {
++	OrReplace         bool
++	Columns           []string
++	Algorithm         string
++	AlgorithmExplicit bool
++	Security          string
++	SecurityExplicit  bool
++	CheckOption       string
++	CheckExplicit     bool
++	CheckBare         bool
++	DefinerKind       string
++	DefinerPrincipal  string `json:"-"`
++	Definition        *ViewDefinition
++}
++
++type ViewDefinition struct {
++	SQL          string `json:"-"`
++	Sources      []Table
++	SourcesKnown bool
++	Bindings     []ViewColumnBinding
++	ShapeKnown   bool
++}
++
++type ViewColumnBinding struct {
++	Schema string
++	Table  string
++	Column string
++	Output string
++}
++
++type ViewSnapshot struct {
++	Definition       *ViewDefinition
++	Algorithm        string
++	Security         string
++	CheckOption      string
++	Updatable        *bool
++	DefinerKind      string
++	DefinerPrincipal string `json:"-"`
++}
++
++type ViewMetadata struct {
++	TargetIdentity     Table
++	Target             *TableSnapshot
++	Sources            []TargetBinding
++	Dependencies       []TargetBinding
++	DependencyCycle    bool
++	DependencyUnproven bool
++	DependencyLimit    bool
++}
++
++type ViewLifecycleAssessment struct {
++	TargetInvalid   bool
++	SourceInvalid   bool
++	TargetRequired  []string
++	SourceRequired  []string
++	Security        string
++	SecurityUnknown bool
++	ReviewPrincipal bool
++	DependencyLimit bool
++}
++
++func appendViewFact(facts []string, fact string) []string {
++	for _, existing := range facts {
++		if existing == fact {
++			return facts
++		}
++	}
++	return append(facts, fact)
++}
++
++func sameViewIdentity(a, b Table) bool {
++	return strings.EqualFold(a.Schema, b.Schema) && strings.EqualFold(a.Name, b.Name)
++}
++
++func AssessViewLifecycle(statement Statement) ViewLifecycleAssessment {
++	var assessment ViewLifecycleAssessment
++	if statement.DDL == nil || statement.DDL.View == nil {
++		return assessment
++	}
++	ddl := statement.DDL
++	assessment.ReviewPrincipal = ddl.View.DefinerKind == "named"
++	var metadata *ViewMetadata
++	if statement.Metadata != nil {
++		metadata = statement.Metadata.View
++	}
++	if metadata == nil {
++		assessment.TargetRequired = appendViewFact(assessment.TargetRequired, "table.exists")
++		assessment.SourceRequired = appendViewFact(assessment.SourceRequired, "table.exists")
++		assessment.SecurityUnknown = true
++		return assessment
++	}
++	switch {
++	case metadata.Target == nil:
++		assessment.TargetRequired = appendViewFact(assessment.TargetRequired, "table.exists")
++	case ddl.Operation == DDLOperationAlterView && !metadata.Target.Exists:
++		assessment.TargetInvalid = true
++	case ddl.Operation == DDLOperationCreateView && metadata.Target.Exists && !ddl.View.OrReplace:
++		assessment.TargetInvalid = true
++	case metadata.Target.Exists && metadata.Target.RelationKind == "":
++		assessment.TargetRequired = appendViewFact(assessment.TargetRequired, "relation.kind")
++	case ddl.Operation == DDLOperationAlterView && metadata.Target.RelationKind != "view":
++		assessment.TargetInvalid = true
++	case ddl.Operation == DDLOperationCreateView && metadata.Target.Exists &&
++		(!ddl.View.OrReplace || metadata.Target.RelationKind != "view"):
++		assessment.TargetInvalid = true
++	}
++	if ddl.View.SecurityExplicit {
++		assessment.Security = ddl.View.Security
++	} else if ddl.Operation == DDLOperationCreateView && statement.Dialect == DialectMySQL {
++		assessment.Security = "definer"
++	} else if metadata.Target != nil && metadata.Target.View != nil {
++		assessment.Security = metadata.Target.View.Security
++	}
++	assessment.SecurityUnknown = assessment.Security == ""
++	definition := ddl.View.Definition
++	if definition == nil || !definition.SourcesKnown {
++		assessment.SourceRequired = appendViewFact(assessment.SourceRequired, "view.dependencies")
++	} else if len(metadata.Sources) != len(definition.Sources) {
++		assessment.SourceRequired = appendViewFact(assessment.SourceRequired, "view.dependencies")
++	}
++	if metadata.DependencyCycle {
++		assessment.SourceInvalid = true
++	}
++	if metadata.DependencyUnproven {
++		assessment.SourceRequired = appendViewFact(assessment.SourceRequired, "view.dependencies")
++	}
++	assessment.DependencyLimit = metadata.DependencyLimit
++	all := make([]TargetBinding, 0, len(metadata.Sources)+len(metadata.Dependencies))
++	all = append(all, metadata.Sources...)
++	all = append(all, metadata.Dependencies...)
++	for _, source := range all {
++		if sameViewIdentity(source.Table, metadata.TargetIdentity) {
++			assessment.SourceInvalid = true
++			continue
++		}
++		switch {
++		case source.Snapshot == nil:
++			assessment.SourceRequired = appendViewFact(assessment.SourceRequired, "table.exists")
++		case !source.Snapshot.Exists || source.Snapshot.Temporary:
++			assessment.SourceInvalid = true
++		case source.Snapshot.RelationKind == "":
++			assessment.SourceRequired = appendViewFact(assessment.SourceRequired, "relation.kind")
++		case source.Snapshot.RelationKind == "view" && (source.Snapshot.View == nil || source.Snapshot.View.Definition == nil):
++			assessment.SourceRequired = appendViewFact(assessment.SourceRequired, "view.definition")
++		case source.Snapshot.RelationKind == "view" && !source.Snapshot.View.Definition.SourcesKnown:
++			assessment.SourceRequired = appendViewFact(assessment.SourceRequired, "view.dependencies")
++		}
++	}
++	if definition != nil && !definition.ShapeKnown {
++		assessment.SourceRequired = appendViewFact(assessment.SourceRequired, "view.columns")
++	}
++	if definition != nil && definition.ShapeKnown && len(metadata.Sources) == 1 {
++		source := metadata.Sources[0].Snapshot
++		if source != nil && source.Exists {
++			if source.Columns == nil {
++				assessment.SourceRequired = appendViewFact(assessment.SourceRequired, "view.columns")
++			} else {
++				for _, binding := range definition.Bindings {
++					if !source.HasColumn(binding.Column) {
++						if source.ColumnsTailUnknown {
++							assessment.SourceRequired = appendViewFact(assessment.SourceRequired, "view.columns")
++						} else {
++							assessment.SourceInvalid = true
++						}
++					}
++				}
++			}
++		}
++	}
++	return assessment
++}
++
++func CloneViewDefinition(in *ViewDefinition) *ViewDefinition {
++	if in == nil {
++		return nil
++	}
++	out := *in
++	if in.Sources != nil {
++		out.Sources = append([]Table{}, in.Sources...)
++	}
++	if in.Bindings != nil {
++		out.Bindings = append([]ViewColumnBinding{}, in.Bindings...)
++	}
++	return &out
++}
++
++func CloneViewSnapshot(in *ViewSnapshot) *ViewSnapshot {
++	if in == nil {
++		return nil
++	}
++	out := *in
++	out.Definition = CloneViewDefinition(in.Definition)
++	if in.Updatable != nil {
++		value := *in.Updatable
++		out.Updatable = &value
++	}
++	return &out
++}
+diff --git a/internal/infrastructure/metadata/mysql/provider_t18_first_test.go b/internal/infrastructure/metadata/mysql/provider_t18_first_test.go
+new file mode 100644
+index 00000000..51ce87a3
+--- /dev/null
++++ b/internal/infrastructure/metadata/mysql/provider_t18_first_test.go
+@@ -0,0 +1,68 @@
++package mysqlmeta
++
++import (
++	"context"
++	"database/sql"
++	"database/sql/driver"
++	"encoding/json"
++	"errors"
++	"strings"
++	"testing"
++
++	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
++)
++
++func t18ViewRows(view testQueryResult) map[string]testQueryResult {
++	return map[string]testQueryResult{
++		"from information_schema.tables": {
++			columns: []string{"engine", "table_collation", "table_comment", "auto_increment", "row_format", "table_rows", "table_type"},
++			rows:    [][]driver.Value{{nil, nil, "VIEW", nil, nil, nil, "VIEW"}},
++		},
++		"from information_schema.columns": {
++			columns: []string{"column_name", "column_type", "character_set_name", "collation_name", "column_comment", "column_default", "is_nullable", "extra", "generation_expression"},
++			rows:    [][]driver.Value{{"id", "int", nil, nil, "", nil, "YES", "", ""}},
++		},
++		"from information_schema.views": view,
++	}
++}
++
++func TestT18FirstViewCatalogFacts(t *testing.T) {
++	rows := testQueryResult{
++		columns: []string{"view_definition", "security_type", "check_option", "is_updatable", "definer"},
++		rows:    [][]driver.Value{{"SELECT `g`.`u`.`id` AS `id` FROM `g`.`u`", "DEFINER", "NONE", "YES", "t18_private_principal@host"}},
++	}
++	snapshot, err := NewProvider(openTestDB(t, t18ViewRows(rows))).LoadTableSnapshot(context.Background(), spec.DialectMySQL, "g", "v")
++	if err != nil || snapshot == nil || !snapshot.Exists || snapshot.RelationKind != "view" || snapshot.View == nil ||
++		snapshot.View.Security != "definer" || snapshot.View.CheckOption != "none" ||
++		snapshot.View.Updatable == nil || !*snapshot.View.Updatable || snapshot.View.Definition == nil ||
++		!snapshot.View.Definition.SourcesKnown || len(snapshot.View.Definition.Sources) != 1 ||
++		snapshot.View.Definition.Sources[0] != (spec.Table{Schema: "g", Name: "u"}) {
++		t.Fatalf("snapshot=%#v err=%v", snapshot, err)
++	}
++	encoded, err := json.Marshal(snapshot)
++	if err != nil || strings.Contains(string(encoded), "t18_private_principal") || strings.Contains(string(encoded), "SELECT") {
++		t.Fatalf("snapshot JSON=%s err=%v", encoded, err)
++	}
++}
++
++func TestT18FirstViewCatalogNullAndError(t *testing.T) {
++	row := testQueryResult{
++		columns: []string{"view_definition", "security_type", "check_option", "is_updatable", "definer"},
++		rows:    [][]driver.Value{{nil, "DEFINER", "NONE", nil, nil}},
++	}
++	snapshot, err := NewProvider(openTestDB(t, t18ViewRows(row))).LoadTableSnapshot(context.Background(), spec.DialectMySQL, "g", "v")
++	if err != nil || snapshot == nil || !snapshot.Exists || snapshot.View == nil || snapshot.View.Definition != nil {
++		t.Fatalf("snapshot=%#v err=%v", snapshot, err)
++	}
++	row.rows = nil
++	_, err = NewProvider(openTestDB(t, t18ViewRows(row))).LoadTableSnapshot(context.Background(), spec.DialectMySQL, "g", "v")
++	if !errors.Is(err, sql.ErrNoRows) {
++		t.Fatalf("missing catalog row was not propagated: %v", err)
++	}
++	cause := errors.New("t18_private_driver_error")
++	row = testQueryResult{queryErr: cause}
++	_, err = NewProvider(openTestDB(t, t18ViewRows(row))).LoadTableSnapshot(context.Background(), spec.DialectMySQL, "g", "v")
++	if !errors.Is(err, cause) || strings.Contains(err.Error(), "t18_private_driver_error") {
++		t.Fatalf("unbounded or lost error: %v", err)
++	}
++}
+diff --git a/internal/infrastructure/parser/tidb/view.go b/internal/infrastructure/parser/tidb/view.go
+new file mode 100644
+index 00000000..9d36fc90
+--- /dev/null
++++ b/internal/infrastructure/parser/tidb/view.go
+@@ -0,0 +1,327 @@
++package tidbparser
++
++import (
++	"context"
++	"fmt"
++	"strings"
++
++	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
++	"github.com/pingcap/tidb/pkg/parser"
++	"github.com/pingcap/tidb/pkg/parser/ast"
++	"github.com/pingcap/tidb/pkg/parser/charset"
++	"github.com/pingcap/tidb/pkg/parser/format"
++)
++
++type viewStatement struct {
++	ast.StmtNode
++	operation   spec.DDLOperation
++	target      spec.Table
++	declaration *spec.ViewDeclaration
++}
++
++type viewHeader struct {
++	operation   spec.DDLOperation
++	target      spec.Table
++	declaration *spec.ViewDeclaration
++	selectStart int
++	selectEnd   int
++}
++
++func unmodeledViewOptions(view *spec.ViewDeclaration) []string {
++	var options []string
++	if view.OrReplace {
++		options = append(options, "or_replace")
++	}
++	if len(view.Columns) > 0 {
++		options = append(options, "view_columns")
++	}
++	if view.AlgorithmExplicit {
++		options = append(options, "view_algorithm")
++	}
++	if view.DefinerKind != "" {
++		options = append(options, "definer")
++	}
++	if view.SecurityExplicit {
++		options = append(options, "sql_security")
++	}
++	if view.CheckExplicit {
++		options = append(options, "check_option")
++	}
++	if view.Definition == nil || !view.Definition.ShapeKnown || !view.Definition.SourcesKnown {
++		options = append(options, "view_query_shape")
++	}
++	return options
++}
++
++func parseViewHeader(sql string) (*viewHeader, bool) {
++	tokens := tokenizeSQL(sql)
++	if len(tokens) < 5 {
++		return nil, false
++	}
++	i := 0
++	take := func(word string) bool {
++		if i < len(tokens) && tokens[i].wordIs(sql, word) {
++			i++
++			return true
++		}
++		return false
++	}
++	punct := func(value string) bool {
++		if i < len(tokens) && tokens[i].kind == tokPunct && tokens[i].text(sql) == value {
++			i++
++			return true
++		}
++		return false
++	}
++	identifier := func() (string, bool) {
++		if i >= len(tokens) || (tokens[i].kind != tokWord && tokens[i].kind != tokQIdent) {
++			return "", false
++		}
++		raw := tokens[i].text(sql)
++		if tokens[i].kind == tokQIdent && (len(raw) < 2 || raw[len(raw)-1] != '`') {
++			return "", false
++		}
++		name := tokens[i].identText(sql)
++		i++
++		return name, name != ""
++	}
++	h := &viewHeader{declaration: &spec.ViewDeclaration{}}
++	switch {
++	case take("ALTER"):
++		h.operation = spec.DDLOperationAlterView
++	case take("CREATE"):
++		h.operation = spec.DDLOperationCreateView
++		if take("OR") {
++			if !take("REPLACE") {
++				return nil, false
++			}
++			h.declaration.OrReplace = true
++		}
++	default:
++		return nil, false
++	}
++	if take("ALGORITHM") {
++		if !punct("=") {
++			return nil, false
++		}
++		switch {
++		case take("UNDEFINED"):
++			h.declaration.Algorithm = "undefined"
++		case take("MERGE"):
++			h.declaration.Algorithm = "merge"
++		case take("TEMPTABLE"):
++			h.declaration.Algorithm = "temptable"
++		default:
++			return nil, false
++		}
++		h.declaration.AlgorithmExplicit = true
++	}
++	if take("DEFINER") {
++		if !punct("=") || i >= len(tokens) {
++			return nil, false
++		}
++		if take("CURRENT_USER") {
++			h.declaration.DefinerKind = "current_user"
++			if punct("(") && !punct(")") {
++				return nil, false
++			}
++		} else {
++			start := tokens[i].start
++			if tokens[i].kind != tokWord && tokens[i].kind != tokQIdent && tokens[i].kind != tokStr {
++				return nil, false
++			}
++			i++
++			if !punct("@") || i >= len(tokens) ||
++				(tokens[i].kind != tokWord && tokens[i].kind != tokQIdent && tokens[i].kind != tokStr) {
++				return nil, false
++			}
++			h.declaration.DefinerKind = "named"
++			h.declaration.DefinerPrincipal = sql[start:tokens[i].end]
++			i++
++		}
++	}
++	if take("SQL") {
++		if !take("SECURITY") {
++			return nil, false
++		}
++		switch {
++		case take("DEFINER"):
++			h.declaration.Security = "definer"
++		case take("INVOKER"):
++			h.declaration.Security = "invoker"
++		default:
++			return nil, false
++		}
++		h.declaration.SecurityExplicit = true
++	}
++	if !take("VIEW") {
++		return nil, false
++	}
++	name, valid := identifier()
++	if !valid {
++		return nil, false
++	}
++	h.target.Name = name
++	if punct(".") {
++		h.target.Schema = name
++		if h.target.Name, valid = identifier(); !valid {
++			return nil, false
++		}
++	}
++	if punct("(") {
++		for {
++			name, valid = identifier()
++			if !valid {
++				return nil, false
++			}
++			h.declaration.Columns = append(h.declaration.Columns, name)
++			if punct(")") {
++				break
++			}
++			if !punct(",") {
++				return nil, false
++			}
++		}
++	}
++	if !take("AS") || i >= len(tokens) {
++		return nil, false
++	}
++	h.selectStart = tokens[i].start
++	end := len(tokens)
++	if end > i && tokens[end-1].text(sql) == ";" {
++		end--
++	}
++	for j := i; j < end; j++ {
++		if tokens[j].kind == tokPunct && tokens[j].text(sql) == ";" {
++			return nil, false
++		}
++	}
++	if end <= i {
++		return nil, false
++	}
++	h.selectEnd = tokens[end-1].end
++	checkStart := end - 3
++	if end-i >= 3 && tokens[end-1].wordIs(sql, "OPTION") && tokens[end-2].wordIs(sql, "CHECK") {
++		if checkStart > i && (tokens[checkStart].wordIs(sql, "LOCAL") || tokens[checkStart].wordIs(sql, "CASCADED")) {
++			h.declaration.CheckOption = strings.ToLower(tokens[checkStart].text(sql))
++			checkStart--
++		} else {
++			h.declaration.CheckOption = "cascaded"
++			h.declaration.CheckBare = true
++		}
++		if checkStart <= i || !tokens[checkStart].wordIs(sql, "WITH") {
++			return nil, false
++		}
++		h.declaration.CheckExplicit = true
++		h.selectEnd = tokens[checkStart].start
++	}
++	return h, true
++}
++
++func parseViewQuery(ctx context.Context, sql string) (ast.StmtNode, []error, error) {
++	if err := ctx.Err(); err != nil {
++		return nil, nil, err
++	}
++	nodes, warnings, err := parser.New().Parse(sql, "", "")
++	if err != nil {
++		return nil, nil, err
++	}
++	if len(nodes) != 1 {
++		return nil, nil, fmt.Errorf("view definition must contain one query")
++	}
++	if _, ok := nodes[0].(ast.ResultSetNode); !ok {
++		return nil, nil, fmt.Errorf("view definition is not a query")
++	}
++	if selectNode, ok := nodes[0].(*ast.SelectStmt); ok && selectNode.SelectIntoOpt != nil {
++		return nil, nil, fmt.Errorf("view definition is not a query")
++	}
++	return nodes[0], warnings, nil
++}
++
++func viewDefinition(node ast.StmtNode) *spec.ViewDefinition {
++	query, ok := node.(ast.ResultSetNode)
++	if !ok {
++		return nil
++	}
++	facts := analyzeQueryNode(query, newScopeStack(""))
++	ctes := make(map[string]bool)
++	for _, relation := range facts.relations {
++		if relation.Kind == "cte" {
++			ctes[strings.ToLower(relation.Name)] = true
++		}
++	}
++	definition := &spec.ViewDefinition{SourcesKnown: len(ctes) == 0}
++	for _, source := range selectSourceTables(query) {
++		if source.Schema == "" && ctes[strings.ToLower(source.Name)] {
++			continue
++		}
++		definition.Sources = append(definition.Sources, source)
++	}
++	var restored strings.Builder
++	if err := node.Restore(format.NewRestoreCtx(format.DefaultRestoreFlags, &restored)); err == nil {
++		definition.SQL = restored.String()
++	}
++	selectNode, ok := node.(*ast.SelectStmt)
++	if !ok || selectNode.Fields == nil || selectNode.With != nil || selectNode.From == nil ||
++		selectNode.From.TableRefs == nil || selectNode.From.TableRefs.Right != nil ||
++		selectNode.Where != nil || selectNode.GroupBy != nil || selectNode.Having != nil ||
++		selectNode.LockInfo != nil || selectNode.SelectIntoOpt != nil ||
++		selectNode.Distinct || len(selectNode.WindowSpecs) != 0 {
++		return definition
++	}
++	source, ok := selectNode.From.TableRefs.Left.(*ast.TableSource)
++	if !ok {
++		return definition
++	}
++	sourceTable, ok := source.Source.(*ast.TableName)
++	if !ok {
++		return definition
++	}
++	definition.ShapeKnown = true
++	for _, field := range selectNode.Fields.Fields {
++		column, ok := field.Expr.(*ast.ColumnNameExpr)
++		if !ok || column.Name == nil {
++			definition.ShapeKnown = false
++			definition.Bindings = nil
++			break
++		}
++		qualifier := column.Name.Table.L
++		if qualifier != "" && qualifier != source.AsName.L && qualifier != sourceTable.Name.L {
++			definition.ShapeKnown = false
++			definition.Bindings = nil
++			break
++		}
++		output := field.AsName.L
++		if output == "" {
++			output = column.Name.Name.L
++		}
++		definition.Bindings = append(definition.Bindings, spec.ViewColumnBinding{
++			Schema: column.Name.Schema.L, Table: column.Name.Table.L,
++			Column: column.Name.Name.L, Output: output,
++		})
++	}
++	return definition
++}
++
++func ParseViewDefinition(ctx context.Context, sqlText string) (*spec.ViewDefinition, error) {
++	node, _, err := parseViewQuery(ctx, sqlText)
++	if err != nil {
++		return nil, err
++	}
++	return viewDefinition(node), nil
++}
++
++func parseViewAdapter(ctx context.Context, sql string) (*viewStatement, []error, bool) {
++	header, ok := parseViewHeader(sql)
++	if !ok {
++		return nil, nil, false
++	}
++	query, warnings, err := parseViewQuery(ctx, sql[header.selectStart:header.selectEnd])
++	if err != nil {
++		return nil, nil, false
++	}
++	header.declaration.Definition = viewDefinition(query)
++	query.SetText(charset.FindEncoding(""), strings.TrimSpace(sql))
++	query.SetOriginTextPosition(0)
++	return &viewStatement{StmtNode: query, operation: header.operation, target: header.target, declaration: header.declaration}, warnings, true
++}
+diff --git a/internal/infrastructure/parser/tidb/view_t18_first_test.go b/internal/infrastructure/parser/tidb/view_t18_first_test.go
+new file mode 100644
+index 00000000..2e961bd2
+--- /dev/null
++++ b/internal/infrastructure/parser/tidb/view_t18_first_test.go
+@@ -0,0 +1,74 @@
++package tidbparser
++
++import (
++	"context"
++	"reflect"
++	"strings"
++	"testing"
++
++	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
++)
++
++func TestT18FirstStructuredViewGrammar(t *testing.T) {
++	sql := "ALTER /* comment VIEW */ ALGORITHM=UNDEFINED DEFINER='private_user'@'host' SQL SECURITY INVOKER VIEW `g`.`v` (`x`) AS SELECT id FROM t WITH CHECK OPTION;"
++	parsed, err := New().Parse(context.Background(), sql)
++	if err != nil || len(parsed.Statements) != 1 {
++		t.Fatalf("parse=%#v err=%v", parsed, err)
++	}
++	wrapped := WrapStatements(parsed.Statements, parsed.Warnings)
++	statement, err := wrapped[0].Extractor.Extract(spec.DialectMySQL, wrapped[0].RawSQL)
++	if err != nil || statement.DDL == nil || statement.DDL.View == nil {
++		t.Fatalf("statement=%#v err=%v", statement, err)
++	}
++	view := statement.DDL.View
++	if statement.DDL.Operation != spec.DDLOperationAlterView || *statement.DDL.Table != (spec.Table{Schema: "g", Name: "v"}) ||
++		!reflect.DeepEqual(view.Columns, []string{"x"}) || !view.AlgorithmExplicit || view.Algorithm != "undefined" ||
++		!view.SecurityExplicit || view.Security != "invoker" || view.DefinerKind != "named" ||
++		!view.CheckExplicit || !view.CheckBare || view.CheckOption != "cascaded" ||
++		view.Definition == nil || !reflect.DeepEqual(view.Definition.Sources, []spec.Table{{Name: "t"}}) ||
++		!strings.Contains(statement.RawSQL, "ALTER /* comment VIEW */") {
++		t.Fatalf("statement=%#v view=%#v", statement, view)
++	}
++	tidb, err := wrapped[0].Extractor.Extract(spec.DialectTiDB, wrapped[0].RawSQL)
++	if err != nil || tidb.Unsupported == nil || tidb.Unsupported.Reason != spec.UnsupportedVendorBoundaryReason {
++		t.Fatalf("tidb=%#v err=%v", tidb, err)
++	}
++}
++
++func TestT18FirstBareCheckAndInvalidHeaders(t *testing.T) {
++	for _, sql := range []string{
++		"CREATE VIEW v AS SELECT id FROM t WITH CHECK OPTION;",
++		"ALTER VIEW v AS SELECT id FROM t WITH CHECK OPTION;",
++	} {
++		parsed, err := New().Parse(context.Background(), sql)
++		if err != nil || len(parsed.Statements) != 1 {
++			t.Fatalf("%q parse=%#v err=%v", sql, parsed, err)
++		}
++		wrapped := WrapStatements(parsed.Statements, parsed.Warnings)
++		got, err := wrapped[0].Extractor.Extract(spec.DialectMySQL, wrapped[0].RawSQL)
++		if err != nil || got.DDL == nil || got.DDL.View == nil || !got.DDL.View.CheckBare {
++			t.Fatalf("%q got=%#v err=%v", sql, got, err)
++		}
++	}
++	for _, sql := range []string{
++		"ALTER ALGORITHM=MERGE ALGORITHM=TEMPTABLE VIEW v AS SELECT id FROM t;",
++		"ALTER VIEW v AS SELECT FROM t;",
++		"ALTER VIEW v AS SELECT id INTO OUTFILE '/tmp/private' FROM t;",
++		"ALTER VIEW v AS SELECT id FROM t; DROP TABLE t;",
++	} {
++		if _, err := New().Parse(context.Background(), sql); err == nil {
++			t.Fatalf("expected invalid statement: %q", sql)
++		}
++	}
++}
++
++func TestT18FirstExternalDefinitionSources(t *testing.T) {
++	definition, err := ParseViewDefinition(context.Background(), "WITH c AS (SELECT id FROM g.t) SELECT id FROM c")
++	if err != nil || definition == nil || definition.SourcesKnown ||
++		!reflect.DeepEqual(definition.Sources, []spec.Table{{Schema: "g", Name: "t"}}) {
++		t.Fatalf("definition=%#v err=%v", definition, err)
++	}
++	if _, err := ParseViewDefinition(context.Background(), "SELECT FROM t"); err == nil {
++		t.Fatal("invalid external definition parsed")
++	}
++}
+diff --git a/pkg/deltascope/audit_t18_view_first_test.go b/pkg/deltascope/audit_t18_view_first_test.go
+new file mode 100644
+index 00000000..14d28457
+--- /dev/null
++++ b/pkg/deltascope/audit_t18_view_first_test.go
+@@ -0,0 +1,279 @@
++package deltascope
++
++import (
++	"context"
++	"encoding/json"
++	"errors"
++	"os"
++	"path/filepath"
++	"strings"
++	"testing"
++)
++
++type t18FirstProvider struct {
++	sourceMode string
++	readErr    error
++}
++
++func (t18FirstProvider) LoadInstanceFacts(context.Context, Dialect, string) (*InstanceFacts, error) {
++	return &InstanceFacts{Version: "8.0.46"}, nil
++}
++
++func (p t18FirstProvider) LoadTableSnapshot(_ context.Context, _ Dialect, schema, table string) (*TableSnapshot, error) {
++	if table == "t" {
++		switch p.sourceMode {
++		case "missing":
++			return &TableSnapshot{Schema: schema, Exists: false}, nil
++		case "unknown":
++			return nil, nil
++		case "error":
++			return nil, p.readErr
++		}
++	}
++	if table != "v" && table != "t" && table != "u" {
++		return &TableSnapshot{Schema: schema, Exists: false}, nil
++	}
++	snapshot := &TableSnapshot{
++		Schema:       schema,
++		Exists:       true,
++		Table:        &Table{Schema: schema, Name: table},
++		Columns:      []Column{{Name: "id", Type: "int"}},
++		RelationKind: "table",
++	}
++	if table == "t" && p.sourceMode == "kind" {
++		snapshot.RelationKind = ""
++	}
++	if table == "v" {
++		snapshot.RelationKind = "view"
++		snapshot.View = &ViewSnapshot{
++			Security: "definer", DefinerKind: "named", DefinerPrincipal: "t18_private_principal",
++			Definition: &ViewDefinition{
++				SQL:     "SELECT id FROM g.u /* t18_private_external */",
++				Sources: []Table{{Schema: schema, Name: "u"}}, SourcesKnown: true, ShapeKnown: true,
++				Bindings: []ViewColumnBinding{{Column: "id", Output: "id"}},
++			},
++		}
++	}
++	return snapshot, nil
++}
++
++func t18FirstPolicy(t *testing.T) string {
++	t.Helper()
++	path := filepath.Join(t.TempDir(), "t18-first.yaml")
++	policy := "rules:\n  ddl.view.create.forbid:\n    enabled: false\n  ddl.view.drop.forbid:\n    enabled: false\n"
++	if err := os.WriteFile(path, []byte(policy), 0o600); err != nil {
++		t.Fatal(err)
++	}
++	return path
++}
++
++func TestT18PublicAlterViewFirstPath(t *testing.T) {
++	const sql = "ALTER VIEW v AS SELECT id FROM t;"
++	result, err := Audit(context.Background(), Request{
++		SQL: sql, Dialect: DialectMySQL, Schema: "g", TargetVersion: "8.0.46",
++		ConfigPath: t18FirstPolicy(t), MetadataProvider: t18FirstProvider{},
++	})
++	proof, marshalErr := json.Marshal(result)
++	if marshalErr != nil {
++		t.Fatal(marshalErr)
++	}
++	t.Logf("T18_PUBLIC_PROOF %s", proof)
++	if err != nil || len(result.Diagnostics) != 0 || len(result.Unsupported) != 0 {
++		t.Fatalf("audit error=%v diagnostics=%#v unsupported=%#v", err, result.Diagnostics, result.Unsupported)
++	}
++	if len(result.Statements) != 1 || result.Statements[0].Index != 0 ||
++		result.Statements[0].Kind != "ddl" || strings.TrimSuffix(strings.TrimSpace(result.Statements[0].RawSQL), ";") != strings.TrimSuffix(sql, ";") {
++		t.Fatalf("statements=%#v", result.Statements)
++	}
++	if result.Coverage.Status != CoverageComplete || result.Statements[0].Coverage.Status != CoverageComplete {
++		t.Fatalf("coverage=%#v statement=%#v", result.Coverage, result.Statements[0].Coverage)
++	}
++	if result.Verdict != VerdictReview || len(result.Statements[0].Findings) != 1 ||
++		result.Statements[0].Findings[0].RuleID != "ddl.view.security.definer.warn" ||
++		result.Statements[0].Findings[0].Level != LevelWarning {
++		t.Fatalf("verdict=%q findings=%#v", result.Verdict, result.Statements[0].Findings)
++	}
++}
++
++func TestT18PublicInvalidViewSelect(t *testing.T) {
++	result, err := Audit(context.Background(), Request{
++		SQL: "ALTER VIEW v AS SELECT FROM t;", Dialect: DialectMySQL,
++		ConfigPath: t18FirstPolicy(t),
++	})
++	if err == nil || len(result.Diagnostics) != 1 || result.Diagnostics[0].Classification != "parser_error" {
++		t.Fatalf("err=%v diagnostics=%#v", err, result.Diagnostics)
++	}
++}
++
++func TestT18PublicCreateViewDefaultForbid(t *testing.T) {
++	result, err := Audit(context.Background(), Request{
++		SQL: "CREATE VIEW v AS SELECT id FROM t;", Dialect: DialectMySQL,
++	})
++	if err != nil || len(result.Statements) != 1 {
++		t.Fatalf("err=%v statements=%#v", err, result.Statements)
++	}
++	for _, finding := range result.Statements[0].Findings {
++		if finding.RuleID == "ddl.view.create.forbid" {
++			return
++		}
++	}
++	t.Fatalf("missing create-view forbid: %#v", result.Statements[0].Findings)
++}
++
++func TestT18PublicAlterViewDefaultForbid(t *testing.T) {
++	result, err := Audit(context.Background(), Request{
++		SQL: "ALTER VIEW v AS SELECT id FROM t;", Dialect: DialectMySQL, Schema: "g",
++		MetadataProvider: t18FirstProvider{},
++	})
++	if err != nil || len(result.Statements) != 1 || result.Coverage.Status != CoverageComplete {
++		t.Fatalf("err=%v result=%#v", err, result)
++	}
++	found := map[string]bool{}
++	for _, finding := range result.Statements[0].Findings {
++		found[finding.RuleID] = true
++	}
++	if result.Verdict != VerdictReject || !found["ddl.view.create.forbid"] || !found["ddl.view.security.definer.warn"] {
++		t.Fatalf("verdict=%s findings=%#v", result.Verdict, result.Statements[0].Findings)
++	}
++}
++
++func TestT18PublicSourceEvidence(t *testing.T) {
++	for _, tc := range []struct {
++		mode, wantFact string
++		wantInvalid    bool
++	}{
++		{mode: "missing", wantInvalid: true},
++		{mode: "unknown", wantFact: "table.exists"},
++		{mode: "kind", wantFact: "relation.kind"},
++	} {
++		t.Run(tc.mode, func(t *testing.T) {
++			result, err := Audit(context.Background(), Request{
++				SQL: "ALTER VIEW v AS SELECT id FROM t;", Dialect: DialectMySQL, Schema: "g",
++				ConfigPath: t18FirstPolicy(t), MetadataProvider: t18FirstProvider{sourceMode: tc.mode},
++			})
++			if err != nil || len(result.Statements) != 1 {
++				t.Fatalf("err=%v result=%#v", err, result)
++			}
++			stmt := result.Statements[0]
++			if tc.wantInvalid {
++				found := false
++				for _, finding := range stmt.Findings {
++					found = found || finding.RuleID == "ddl.view.source.valid" && finding.Level == LevelBlocker
++				}
++				if !found || result.Coverage.Status != CoverageComplete {
++					t.Fatalf("result=%#v", result)
++				}
++				return
++			}
++			found := false
++			for _, gap := range stmt.EvidenceGaps {
++				if gap.RuleID == "ddl.view.source.valid" && gap.ReasonCode == "unknown_table_state" {
++					for _, fact := range gap.RequiredFacts {
++						found = found || fact == tc.wantFact
++					}
++				}
++			}
++			if !found || result.Coverage.Status != CoverageUnverified {
++				t.Fatalf("result=%#v", result)
++			}
++		})
++	}
++}
++
++func TestT18PublicViewPrivacyAndError(t *testing.T) {
++	result, err := Audit(context.Background(), Request{
++		SQL:     "ALTER VIEW v AS SELECT id FROM t WHERE id = 't18_private_literal';",
++		Dialect: DialectMySQL, Schema: "g", ConfigPath: t18FirstPolicy(t),
++		MetadataProvider: t18FirstProvider{},
++	})
++	if !errors.Is(err, ErrUnsupportedStatement) || len(result.Statements) != 1 {
++		t.Fatalf("err=%v result=%#v", err, result)
++	}
++	payload, err := json.Marshal(struct {
++		Findings    []Finding
++		Gaps        []EvidenceGap
++		Diagnostics any
++	}{result.Statements[0].Findings, result.Statements[0].EvidenceGaps, result.Diagnostics})
++	if err != nil {
++		t.Fatal(err)
++	}
++	for _, sentinel := range []string{"t18_private_literal", "t18_private_principal", "t18_private_external"} {
++		if strings.Contains(string(payload), sentinel) {
++			t.Fatalf("sensitive value leaked: %s", payload)
++		}
++	}
++	named, namedErr := Audit(context.Background(), Request{
++		SQL:     "ALTER DEFINER='t18_private_named'@'t18_private_host' SQL SECURITY INVOKER VIEW v AS SELECT id FROM t;",
++		Dialect: DialectMySQL, Schema: "g", ConfigPath: t18FirstPolicy(t),
++		MetadataProvider: t18FirstProvider{},
++	})
++	if namedErr == nil || len(named.Statements) != 1 {
++		t.Fatalf("named definer result=%#v err=%v", named, namedErr)
++	}
++	warned := false
++	for _, finding := range named.Statements[0].Findings {
++		warned = warned || finding.RuleID == "ddl.view.security.definer.warn"
++	}
++	if !warned {
++		t.Fatalf("named principal did not trigger review: %#v", named)
++	}
++	namedPayload, err := json.Marshal(struct {
++		Findings    []Finding
++		Gaps        []EvidenceGap
++		Diagnostics any
++		Error       string
++	}{named.Statements[0].Findings, named.Statements[0].EvidenceGaps, named.Diagnostics, namedErr.Error()})
++	if err != nil || strings.Contains(string(namedPayload), "t18_private_named") || strings.Contains(string(namedPayload), "t18_private_host") {
++		t.Fatalf("named definer leaked: %s err=%v", namedPayload, err)
++	}
++	cause := errors.New("t18_private_provider_error")
++	_, err = Audit(context.Background(), Request{
++		SQL: "ALTER VIEW v AS SELECT id FROM t;", Dialect: DialectMySQL, Schema: "g",
++		ConfigPath: t18FirstPolicy(t), MetadataProvider: t18FirstProvider{sourceMode: "error", readErr: cause},
++	})
++	if !errors.Is(err, cause) || strings.Contains(err.Error(), "t18_private_provider_error") {
++		t.Fatalf("unbounded or lost provider error: %v", err)
++	}
++}
++
++func TestT18PublicUnmodeledViewShapeRemainsIncomplete(t *testing.T) {
++	path := filepath.Join(t.TempDir(), "rules-off.yaml")
++	config := "rules:\n" +
++		"  ddl.view.create.forbid:\n    enabled: false\n" +
++		"  ddl.view.target.valid:\n    enabled: false\n" +
++		"  ddl.view.source.valid:\n    enabled: false\n" +
++		"  ddl.view.security.definer.warn:\n    enabled: false\n"
++	if err := os.WriteFile(path, []byte(config), 0o600); err != nil {
++		t.Fatal(err)
++	}
++	for _, sql := range []string{"ALTER VIEW v AS SELECT * FROM t;", "CREATE VIEW a AS SELECT 1;"} {
++		result, err := Audit(context.Background(), Request{
++			SQL: sql, Dialect: DialectMySQL, Schema: "g",
++			ConfigPath: path, MetadataProvider: t18FirstProvider{},
++		})
++		if !errors.Is(err, ErrUnsupportedStatement) || result.Coverage.Status != CoverageIncomplete ||
++			len(result.Statements) != 1 || len(result.Unsupported) == 0 {
++			t.Fatalf("unmodeled shape falsely completed: sql=%q err=%v result=%#v", sql, err, result)
++		}
++	}
++}
++
++func TestT18PublicInvalidSelectRetainsSiblings(t *testing.T) {
++	sql := "CREATE VIEW a AS SELECT id FROM t;\nALTER VIEW v AS SELECT FROM t;\nCREATE VIEW b AS SELECT id FROM t;"
++	result, err := Audit(context.Background(), Request{SQL: sql, Dialect: DialectMySQL, Schema: "g", ConfigPath: t18FirstPolicy(t), MetadataProvider: t18FirstProvider{}})
++	if err == nil || len(result.Diagnostics) != 1 || result.Diagnostics[0].Classification != "parser_error" ||
++		result.Diagnostics[0].Line != 2 || result.Diagnostics[0].Column != 1 || len(result.Statements) != 2 ||
++		result.Statements[0].Index != 0 || result.Statements[1].Index != 1 ||
++		!strings.Contains(result.Statements[0].RawSQL, "VIEW a") || !strings.Contains(result.Statements[1].RawSQL, "VIEW b") {
++		t.Fatalf("err=%v result=%#v", err, result)
++	}
++	foundLineThree := false
++	for _, finding := range result.Statements[1].Findings {
++		if finding.Location != nil && finding.Location.Line == 3 && finding.Location.Column == 1 {
++			foundLineThree = true
++		}
++	}
++	if !foundLineThree {
++		t.Fatalf("trailing sibling lost original source location: %#v", result.Statements[1])
++	}
++}

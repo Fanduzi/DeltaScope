@@ -1,0 +1,3 @@
+acfd5f3818a11941cef6fd7d4b3940bb05ae308e041057d465af912780b14dc6  /tmp/ddl-golden-t18-full-preflight-2/T18/artifact.json
+2b612dde20caa992ed377abb08095a27c731a8713e471cd26ef20ee7e3c8da84  /tmp/t18-evidence/preflight-golden-2/artifact-summary.json
+21d261fefdcf7a130ff59b3259afc4210f8d82369dd9d8d48b991d908b67d000  /tmp/t18-evidence/preflight-golden-2/execution-source.sha256.txt

@@ -1,0 +1,4 @@
+--------------
+ALTER VIEW absent_v AS SELECT id FROM t
+--------------
+

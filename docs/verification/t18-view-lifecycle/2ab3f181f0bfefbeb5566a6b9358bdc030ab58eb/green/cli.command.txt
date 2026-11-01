@@ -1,0 +1,1 @@
+/tmp/t18-evidence/green/deltascope audit --dialect mysql --sql 'ALTER VIEW v AS SELECT id FROM t;' --config /tmp/t18-evidence/green/first-policy.yaml --format json --fail-on blocker --host 127.0.0.1 --port 23380 --user root --password-env DS_T18_FIXTURE_PW --schema t18first_1793524084 --target-version 8.0.46

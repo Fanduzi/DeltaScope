@@ -1,0 +1,4 @@
+--------------
+CREATE VIEW unused_column_v AS WITH unused AS (SELECT missing_col FROM t) SELECT id FROM t
+--------------
+

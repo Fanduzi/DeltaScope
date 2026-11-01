@@ -1,0 +1,11 @@
+=== RUN   TestT18PublicAlterViewFirstPath
+    audit_t18_view_first_test.go:47: T18_PUBLIC_PROOF {"verdict":"","coverage":{"status":"incomplete"},"summary":{"statements":0,"blockers":0,"warnings":0,"notices":0},"diagnostics":[{"classification":"parser_error","reason":"statement was not audited because the selected dialect parser could not parse it; no audit findings were inferred","action_hint":"verify the selected dialect and syntax, split multi-statement input if needed, or upgrade DeltaScope when parser support becomes available","audited":false,"dialect":"mysql","guidance_code":"parser_upgrade_candidate","evidence_ref":"https://github.com/Fanduzi/DeltaScope/blob/main/docs/reference/cli.md#parser-upgrade-candidate-evidence-v02500","line":1,"column":1}]}
+    audit_t18_view_first_test.go:49: audit error=statement was not audited because the selected dialect parser could not parse it; no audit findings were inferred diagnostics=[]spec.Diagnostic{spec.Diagnostic{Classification:"parser_error", Reason:"statement was not audited because the selected dialect parser could not parse it; no audit findings were inferred", ActionHint:"verify the selected dialect and syntax, split multi-statement input if needed, or upgrade DeltaScope when parser support becomes available", Audited:false, Dialect:"mysql", GuidanceCode:"parser_upgrade_candidate", EvidenceRef:"https://github.com/Fanduzi/DeltaScope/blob/main/docs/reference/cli.md#parser-upgrade-candidate-evidence-v02500", Line:1, Column:1}} unsupported=[]spec.UnsupportedDetail(nil)
+--- FAIL: TestT18PublicAlterViewFirstPath (0.00s)
+=== RUN   TestT18PublicInvalidViewSelect
+--- PASS: TestT18PublicInvalidViewSelect (0.00s)
+=== RUN   TestT18PublicCreateViewDefaultForbid
+--- PASS: TestT18PublicCreateViewDefaultForbid (0.00s)
+FAIL
+FAIL	github.com/Fanduzi/DeltaScope/pkg/deltascope	0.788s
+FAIL

@@ -1,0 +1,5 @@
+artifact destination absent: /tmp/ddl-golden-t18-final-T16-879c49f5
+artifact destination absent: /tmp/ddl-golden-t18-final-T17-879c49f5
+artifact destination absent: /tmp/ddl-golden-t18-final-T18-879c49f5
+golden compose project has no containers
+canonical golden fixture ownership and cleanup scope are safe

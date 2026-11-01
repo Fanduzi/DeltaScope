@@ -1,0 +1,4 @@
+--------------
+CREATE VIEW t18n_star.next_v AS SELECT id FROM t18n_star.v
+--------------
+

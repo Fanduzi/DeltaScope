@@ -1,0 +1,1 @@
+Wrote archive-local whitespace attributes for exactly 490 verified byte-identical copies; no authored paths exempted.

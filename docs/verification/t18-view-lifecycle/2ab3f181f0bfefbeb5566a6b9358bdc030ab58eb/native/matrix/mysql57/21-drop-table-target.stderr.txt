@@ -1,0 +1,1 @@
+ERROR 1347 (HY000) at line 1: 't18p_21.t' is not VIEW

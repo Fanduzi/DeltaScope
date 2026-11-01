@@ -1,0 +1,4 @@
+--------------
+CREATE DEFINER=SELECT VIEW bad_keyword_v AS SELECT id FROM t
+--------------
+

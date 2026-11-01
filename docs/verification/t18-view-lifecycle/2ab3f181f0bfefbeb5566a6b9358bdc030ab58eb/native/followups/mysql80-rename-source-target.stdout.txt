@@ -1,0 +1,8 @@
+--------------
+RENAME TABLE t TO renamed_t
+--------------
+
+--------------
+SHOW WARNINGS
+--------------
+

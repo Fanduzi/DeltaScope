@@ -1,0 +1,24 @@
+verified 23 gate receipt quads and before/after HEAD identities
+01 rc=1 01-go-test
+02 rc=0 02-go-vet
+03 rc=1 03-race-internal
+04 rc=2 04-pg-confidence
+05 rc=0 05-sql-corpus
+06 rc=0 06-query-access-corpus
+07 rc=0 07-ddl-inventory
+08 rc=0 08-ddl-catalog
+09 rc=0 09-golden-validator
+10 rc=0 10-parser-error-contract
+11 rc=0 11-unsupported-diagnostics
+12 rc=0 12-http-mcp-t18
+13 rc=0 13-docs-examples
+14 rc=0 14-decision-record
+15 rc=0 15-decision-range
+16 rc=1 16-l2-range
+17 rc=0 17-format-diff
+18 rc=1 lint-scoped
+19 rc=1 lint-fullrepo
+20 rc=0 20-lint-comparison
+21 rc=0 21-golden-t16
+22 rc=0 22-golden-t17
+23 rc=0 23-golden-t18

@@ -1,0 +1,19 @@
+reconstructed and verified 85 pause paths; 18 changed paths
+docs/decisions/2026-11-01-ddl-view-lifecycle.md
+docs/reference/config.md
+docs/reference/config.zh-CN.md
+docs/reference/rules.md
+docs/reference/rules.zh-CN.md
+docs/work-plans/t18-view-lifecycle/CONTRACT.md
+docs/work-plans/t18-view-lifecycle/MATRIX.md
+internal/application/audit/batch_state_t18_first_test.go
+internal/domain/spec/README.md
+internal/domain/spec/view.go
+internal/domain/spec/view_query.go
+internal/domain/spec/view_query_test.go
+internal/infrastructure/parser/tidb/README.md
+internal/infrastructure/parser/tidb/view.go
+internal/infrastructure/parser/tidb/view_query.go
+internal/infrastructure/parser/tidb/view_t18_first_test.go
+pkg/deltascope/audit_t18_view_first_test.go
+testdata/ddl-inventory/inventory.yaml

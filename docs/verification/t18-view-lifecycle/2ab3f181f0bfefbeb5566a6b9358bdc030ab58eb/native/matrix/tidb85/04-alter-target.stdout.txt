@@ -1,0 +1,4 @@
+--------------
+ALTER VIEW v AS SELECT id FROM t
+--------------
+

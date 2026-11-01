@@ -1,0 +1,2 @@
+golden compose project has no containers
+canonical golden fixture ownership and cleanup scope are safe

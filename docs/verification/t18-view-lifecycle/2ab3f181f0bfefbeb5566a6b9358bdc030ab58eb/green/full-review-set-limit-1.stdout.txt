@@ -1,0 +1,8 @@
+=== RUN   TestT18FullReviewQuerySetLimitBoundary
+=== RUN   TestT18FullReviewQuerySetLimitBoundary/SELECT_id_FROM_t_UNION_SELECT_id_FROM_u_LIMIT_1
+=== RUN   TestT18FullReviewQuerySetLimitBoundary/SELECT_id_FROM_t_UNION_SELECT_id_FROM_u_ORDER_BY_1
+--- PASS: TestT18FullReviewQuerySetLimitBoundary (0.01s)
+    --- PASS: TestT18FullReviewQuerySetLimitBoundary/SELECT_id_FROM_t_UNION_SELECT_id_FROM_u_LIMIT_1 (0.01s)
+    --- PASS: TestT18FullReviewQuerySetLimitBoundary/SELECT_id_FROM_t_UNION_SELECT_id_FROM_u_ORDER_BY_1 (0.00s)
+PASS
+ok  	github.com/Fanduzi/DeltaScope/pkg/deltascope	0.611s

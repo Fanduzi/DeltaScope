@@ -1,0 +1,65 @@
+{
+  "T16": {
+    "path": "/tmp/ddl-golden-t18-final-T16-879c49f5/T16/artifact.json",
+    "sha256": "50d5517845d2e71bd0513b6cf4ba3cda7459084ee55439005d24419f6f28b497",
+    "head_sha": "879c49f58d8df02120875fffc901dc2d672210f0",
+    "executed_count": 60,
+    "case_count": 60,
+    "statuses": {
+      "pass": 60
+    },
+    "assertions": 832,
+    "failed_assertions": [],
+    "cleanup_rc": 0,
+    "residual_containers": [],
+    "container_health": {
+      "deltascope-ddl-golden-mysql57": "healthy",
+      "deltascope-ddl-golden-mysql80": "healthy",
+      "deltascope-ddl-golden-mysql84": "healthy",
+      "deltascope-ddl-golden-tidb85": "healthy",
+      "deltascope-ddl-golden-tidb85-client": "healthy"
+    }
+  },
+  "T17": {
+    "path": "/tmp/ddl-golden-t18-final-T17-879c49f5/T17/artifact.json",
+    "sha256": "7fc44f92521dc3dbf03d488c040600ab9754569e9a848ed501f24e78cdcb461d",
+    "head_sha": "879c49f58d8df02120875fffc901dc2d672210f0",
+    "executed_count": 52,
+    "case_count": 52,
+    "statuses": {
+      "pass": 52
+    },
+    "assertions": 834,
+    "failed_assertions": [],
+    "cleanup_rc": 0,
+    "residual_containers": [],
+    "container_health": {
+      "deltascope-ddl-golden-mysql57": "healthy",
+      "deltascope-ddl-golden-mysql80": "healthy",
+      "deltascope-ddl-golden-mysql84": "healthy",
+      "deltascope-ddl-golden-tidb85": "healthy",
+      "deltascope-ddl-golden-tidb85-client": "healthy"
+    }
+  },
+  "T18": {
+    "path": "/tmp/ddl-golden-t18-final-T18-879c49f5/T18/artifact.json",
+    "sha256": "71628c824b479a51bc1fc2775c41f9d9317a23333d90d09f344f92817650b259",
+    "head_sha": "879c49f58d8df02120875fffc901dc2d672210f0",
+    "executed_count": 149,
+    "case_count": 149,
+    "statuses": {
+      "pass": 149
+    },
+    "assertions": 3755,
+    "failed_assertions": [],
+    "cleanup_rc": 0,
+    "residual_containers": [],
+    "container_health": {
+      "deltascope-ddl-golden-mysql57": "healthy",
+      "deltascope-ddl-golden-mysql80": "healthy",
+      "deltascope-ddl-golden-mysql84": "healthy",
+      "deltascope-ddl-golden-tidb85": "healthy",
+      "deltascope-ddl-golden-tidb85-client": "healthy"
+    }
+  }
+}

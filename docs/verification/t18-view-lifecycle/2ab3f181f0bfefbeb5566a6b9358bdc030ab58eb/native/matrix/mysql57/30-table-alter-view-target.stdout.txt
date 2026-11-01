@@ -1,0 +1,4 @@
+--------------
+ALTER TABLE v ADD COLUMN added INT
+--------------
+

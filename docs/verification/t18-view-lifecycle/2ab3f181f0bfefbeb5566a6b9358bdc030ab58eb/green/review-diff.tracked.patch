@@ -1,0 +1,1191 @@
+diff --git a/CONTEXT.md b/CONTEXT.md
+index 0c206322..801bf84e 100644
+--- a/CONTEXT.md
++++ b/CONTEXT.md
+@@ -97,6 +97,23 @@ The schema facts implied by preceding operations in an audited batch, conditiona
+ on their successful execution. Unknown effects leave affected facts unknown.
+ _Avoid_: live database state, executed migration, guaranteed final schema
+ 
++## Views
++
++**View Declaration**:
++The definition and clauses authored in a view statement. A declaration does not
++establish what an existing catalog records or whether execution is authorized.
++_Avoid_: catalog fact, authorization proof
++
++**Observed View Attribute**:
++A property read from an existing view's catalog. It is distinct from an authored
++clause and from a conditional property in Prospective Schema State.
++_Avoid_: requested setting, assumed default, effective privilege
++
++**View Dependency**:
++A static relation reference required by a view definition. A derived or CTE alias
++is not a separate database object, and dependency knowledge is not permission proof.
++_Avoid_: query result, authorization requirement, mentioned identifier
++
+ ## Connection
+ 
+ **Transport Connection Resolution**:
+diff --git a/internal/application/audit/README.md b/internal/application/audit/README.md
+index 57bf13c5..18194537 100644
+--- a/internal/application/audit/README.md
++++ b/internal/application/audit/README.md
+@@ -6,6 +6,8 @@ Application orchestration for parsing and, later, evaluating SQL audit requests.
+ 
+ | File | Responsibility |
+ |------|---------------|
++| batch_state_view.go | Projects view target/source facts from ordered entries, tracks dependency roots and bounded traversal, and conservatively joins uncertain view attributes |
++| batch_state_t18_first_test.go | Verifies first-path view projections, refusal preservation and policy-independent state |
+ | parse.go | Normalizes one leading UTF-8 BOM, parses bounded top-level statement slices independently by dialect, and translates successful locations from each slice so failed text cannot capture a valid sibling's source match |
+ | statement_boundary.go | Splits top-level SQL only at semicolons outside supported dialect strings, quoted identifiers, comments, and PostgreSQL dollar-quoted bodies (including Unicode identifier tags) while distinguishing dollar signs inside unquoted identifiers; it does not infer statement semantics |
+ | parse_pg.go | Implements PostgreSQL parsing when built with the `postgresql` tag |
+diff --git a/internal/application/audit/batch_state.go b/internal/application/audit/batch_state.go
+index 58ce8570..011bf523 100644
+--- a/internal/application/audit/batch_state.go
++++ b/internal/application/audit/batch_state.go
+@@ -296,6 +296,10 @@ func (s *batchState) apply(ctx context.Context, statement spec.Statement) error
+ 		return s.applyDropTable(ctx, statement)
+ 	}
+ 	if statement.Unsupported != nil {
++		if statement.DDL != nil && statement.DDL.View != nil &&
++			statement.Unsupported.Reason == spec.UnsupportedVendorBoundaryReason {
++			return nil
++		}
+ 		// A vendor-boundary statement never executes on this dialect (the
+ 		// product lacks the feature — TiDB CTAS 1105, TiDB procedures,
+ 		// MySQL-side TiDB extensions). Its pre-state is provably unchanged
+@@ -368,6 +372,10 @@ func (s *batchState) apply(ctx context.Context, statement spec.Statement) error
+ 		return nil
+ 	}
+ 	switch ddl.Operation {
++	case spec.DDLOperationCreateView, spec.DDLOperationAlterView:
++		if ddl.View != nil {
++			return s.applyView(statement)
++		}
+ 	case spec.DDLOperationCreateTable:
+ 		return s.applyCreateTable(ctx, statement)
+ 	case spec.DDLOperationAlterTable:
+@@ -946,6 +954,7 @@ func ctasDeclaredShape(displaySchema, displayTable string, ddl *spec.DDL) *spec.
+ 		Schema:             displaySchema,
+ 		Table:              &spec.Table{Schema: displaySchema, Name: displayTable, Comment: ddl.Table.Comment},
+ 		Exists:             true,
++		RelationKind:       "table",
+ 		Columns:            make([]spec.Column, 0, len(ddl.Columns)),
+ 		ColumnsTailUnknown: true,
+ 		Indexes:            []spec.Index{},
+@@ -1021,12 +1030,13 @@ func (s *batchState) derivedCreateShape(displaySchema, displayTable string, ddl
+ 
+ func derivedCreateShape(dialect spec.Dialect, schema, table string, ddl *spec.DDL, tidbClusteredDefault *string, tidbAlterPK *bool) *spec.TableSnapshot {
+ 	snapshot := &spec.TableSnapshot{
+-		Schema:      schema,
+-		Table:       &spec.Table{Schema: schema, Name: table, Comment: ddl.Table.Comment},
+-		Exists:      true,
+-		Columns:     make([]spec.Column, 0, len(ddl.Columns)),
+-		Indexes:     make([]spec.Index, 0, len(ddl.Indexes)),
+-		Constraints: make([]spec.Constraint, 0, len(ddl.Constraints)),
++		Schema:       schema,
++		Table:        &spec.Table{Schema: schema, Name: table, Comment: ddl.Table.Comment},
++		Exists:       true,
++		RelationKind: "table",
++		Columns:      make([]spec.Column, 0, len(ddl.Columns)),
++		Indexes:      make([]spec.Index, 0, len(ddl.Indexes)),
++		Constraints:  make([]spec.Constraint, 0, len(ddl.Constraints)),
+ 	}
+ 	for _, column := range ddl.Columns {
+ 		snapshot.Columns = append(snapshot.Columns, cloneColumn(column))
+@@ -2884,6 +2894,7 @@ func cloneTableSnapshot(in *spec.TableSnapshot) *spec.TableSnapshot {
+ 		return nil
+ 	}
+ 	out := *in
++	out.View = spec.CloneViewSnapshot(in.View)
+ 	if in.Table != nil {
+ 		table := *in.Table
+ 		out.Table = &table
+diff --git a/internal/application/audit/batch_state_namespace.go b/internal/application/audit/batch_state_namespace.go
+index 29bdc2a4..3111ae31 100644
+--- a/internal/application/audit/batch_state_namespace.go
++++ b/internal/application/audit/batch_state_namespace.go
+@@ -78,7 +78,8 @@ func (s *batchState) bindTarget(ctx context.Context, statement spec.Statement, t
+ 		entry, err := s.resolve(ctx, key, s.effectiveSchema(s.schema, table), table.Name)
+ 		return namespacePersistent, entry, key, err
+ 	}
+-	if ddl != nil && ddl.Operation == spec.DDLOperationCreateTable {
++	if ddl != nil && (ddl.Operation == spec.DDLOperationCreateTable ||
++		ddl.Operation == spec.DDLOperationCreateView || ddl.Operation == spec.DDLOperationAlterView) {
+ 		entry, err := s.resolve(ctx, key, s.effectiveSchema(s.schema, table), table.Name)
+ 		return namespacePersistent, entry, key, err
+ 	}
+diff --git a/internal/application/audit/coverage.go b/internal/application/audit/coverage.go
+index e644d831..bd89fd20 100644
+--- a/internal/application/audit/coverage.go
++++ b/internal/application/audit/coverage.go
+@@ -377,6 +377,9 @@ func statementCoverageAspects(dialect spec.Dialect, statement spec.Statement) []
+ 	}
+ 	ddl := statement.DDL
+ 	var gaps []spec.UnsupportedDetail
++	if statement.Metadata != nil && statement.Metadata.View != nil && statement.Metadata.View.DependencyLimit {
++		gaps = append(gaps, aspectGap("view.dependencies.limit", false, map[string]any{"aspect": "dependency_limit"}))
++	}
+ 	for _, option := range ddl.UnextractedOptions {
+ 		// A dropped placement-policy or TiDB-only option is still a vendor
+ 		// boundary under MySQL — MySQL has no such feature regardless of
+diff --git a/internal/application/audit/coverage_t03_test.go b/internal/application/audit/coverage_t03_test.go
+index 13914d35..6d1eb9ff 100644
+--- a/internal/application/audit/coverage_t03_test.go
++++ b/internal/application/audit/coverage_t03_test.go
+@@ -566,6 +566,7 @@ func TestAuditSQLT03UnsupportedFeatureReasonPairs(t *testing.T) {
+ 			{"create_view.option.sql_security", spec.UnsupportedUnauditedReason},
+ 			{"create_view.option.view_algorithm", spec.UnsupportedUnauditedReason},
+ 			{"create_view.option.view_columns", spec.UnsupportedUnauditedReason},
++			{"create_view.option.view_query_shape", spec.UnsupportedUnauditedReason},
+ 		}},
+ 		{name: "mysql grant combined options", sql: "GRANT SELECT(a) ON db.t TO 'u'@'%' WITH GRANT OPTION;", dialect: spec.DialectMySQL, want: [][2]string{
+ 			{"grant.option.column_privileges", spec.UnsupportedUnauditedReason},
+@@ -638,8 +639,8 @@ func TestAuditSQLT03RecognizedOutOfSurfaceStaysComplete(t *testing.T) {
+ 		{name: "mysql create table partitioned plain", sql: "CREATE TABLE t (id INT) PARTITION BY RANGE (id) (PARTITION p0 VALUES LESS THAN (10));", dialect: spec.DialectMySQL},
+ 		{name: "mysql plain select", sql: "SELECT 1;", dialect: spec.DialectMySQL},
+ 		{name: "mysql plain union", sql: "SELECT 1 UNION SELECT 2;", dialect: spec.DialectMySQL},
+-		{name: "mysql plain create view", sql: "CREATE VIEW v AS SELECT 1;", dialect: spec.DialectMySQL},
+-		{name: "tidb plain create view", sql: "CREATE VIEW v AS SELECT 1;", dialect: spec.DialectTiDB},
++		{name: "mysql plain create view", sql: "CREATE VIEW v AS SELECT id FROM t;", dialect: spec.DialectMySQL},
++		{name: "tidb plain create view", sql: "CREATE VIEW v AS SELECT id FROM t;", dialect: spec.DialectTiDB},
+ 	}
+ 	for _, tc := range cases {
+ 		t.Run(tc.name, func(t *testing.T) {
+diff --git a/internal/application/audit/cross_dialect_ddl_coverage_census_test.go b/internal/application/audit/cross_dialect_ddl_coverage_census_test.go
+index d2fb20ab..c871d9fd 100644
+--- a/internal/application/audit/cross_dialect_ddl_coverage_census_test.go
++++ b/internal/application/audit/cross_dialect_ddl_coverage_census_test.go
+@@ -124,7 +124,7 @@ var mysqlDDLCensusCases = []struct {
+ 	// --- 5. View lifecycle ---
+ 	{Name: "CREATE VIEW", SQL: "CREATE VIEW v_users AS SELECT id FROM users", Expected: ddlCoverageFindingCovered},
+ 	{Name: "CREATE OR REPLACE VIEW", SQL: "CREATE OR REPLACE VIEW v_users AS SELECT id FROM users", Expected: ddlCoverageFindingCovered},
+-	{Name: "ALTER VIEW", SQL: "ALTER VIEW v_users AS SELECT id, name FROM users", Expected: ddlCoverageParserError},
++	{Name: "ALTER VIEW", SQL: "ALTER VIEW v_users AS SELECT id, name FROM users", Expected: ddlCoverageFindingCovered},
+ 	{Name: "DROP VIEW", SQL: "DROP VIEW v_users", Expected: ddlCoverageFindingCovered},
+ 
+ 	// --- 6. Routine lifecycle ---
+@@ -207,7 +207,7 @@ var tidbDDLCensusCases = []struct {
+ 	// --- 5. View lifecycle ---
+ 	{Name: "CREATE VIEW", SQL: "CREATE VIEW v_users AS SELECT id FROM users", Expected: ddlCoverageFindingCovered},
+ 	{Name: "CREATE OR REPLACE VIEW", SQL: "CREATE OR REPLACE VIEW v_users AS SELECT id FROM users", Expected: ddlCoverageFindingCovered},
+-	{Name: "ALTER VIEW", SQL: "ALTER VIEW v_users AS SELECT id, name FROM users", Expected: ddlCoverageParserError},
++	{Name: "ALTER VIEW", SQL: "ALTER VIEW v_users AS SELECT id, name FROM users", Expected: ddlCoverageUnsupportedBoundary},
+ 	{Name: "DROP VIEW", SQL: "DROP VIEW v_users", Expected: ddlCoverageFindingCovered},
+ 
+ 	// --- 6. Placement/Policy ---
+diff --git a/internal/application/audit/ddl_parser_error_feasibility_census_test.go b/internal/application/audit/ddl_parser_error_feasibility_census_test.go
+index b59c35d5..0612c943 100644
+--- a/internal/application/audit/ddl_parser_error_feasibility_census_test.go
++++ b/internal/application/audit/ddl_parser_error_feasibility_census_test.go
+@@ -82,13 +82,9 @@ func assertParserErrorFeasibilityCase(t *testing.T, tc ddlParserErrorFeasibility
+ 	}
+ }
+ 
+-// --- MySQL parser-error feasibility cases (15) ---
++// --- MySQL parser-error feasibility cases (14) ---
+ 
+ var mysqlParserErrorFeasibilityCases = []ddlParserErrorFeasibilityCase{
+-	{Dialect: spec.DialectMySQL, Family: "view", Name: "ALTER VIEW",
+-		SQL:      "ALTER VIEW v_users AS SELECT id, name FROM users",
+-		Expected: boundedFallbackCandidate,
+-		Reason:   "View name and ALTER action are bounded; SELECT body not needed for identity extraction"},
+ 	{Dialect: spec.DialectMySQL, Family: "routine", Name: "ALTER PROCEDURE",
+ 		SQL:      "ALTER PROCEDURE p_cleanup SQL SECURITY INVOKER",
+ 		Expected: unsafeFallbackDefer,
+@@ -147,13 +143,9 @@ var mysqlParserErrorFeasibilityCases = []ddlParserErrorFeasibilityCase{
+ 		Reason:   "MySQL 8.0 resource group DDL; bounded key=value structure; TiDB parser may add support"},
+ }
+ 
+-// --- TiDB parser-error feasibility cases (9) ---
++// --- TiDB parser-error feasibility cases (8) ---
+ 
+ var tidbParserErrorFeasibilityCases = []ddlParserErrorFeasibilityCase{
+-	{Dialect: spec.DialectTiDB, Family: "view", Name: "ALTER VIEW",
+-		SQL:      "ALTER VIEW v_users AS SELECT id, name FROM users",
+-		Expected: boundedFallbackCandidate,
+-		Reason:   "View name and ALTER action are bounded; SELECT body not needed for identity extraction"},
+ 	{Dialect: spec.DialectTiDB, Family: "table_option", Name: "ALTER TABLE TTL",
+ 		SQL:      "ALTER TABLE users TTL = 'created_at + INTERVAL 30 DAY'",
+ 		Expected: boundedFallbackCandidate,
+@@ -245,11 +237,11 @@ func TestDDLParserErrorFeasibilityCensus(t *testing.T) {
+ 			tidbCount++
+ 		}
+ 	}
+-	if mysqlCount != 15 {
+-		t.Errorf("expected 15 MySQL parser-error cases, got %d", mysqlCount)
++	if mysqlCount != 14 {
++		t.Errorf("expected 14 MySQL parser-error cases, got %d", mysqlCount)
+ 	}
+-	if tidbCount != 9 {
+-		t.Errorf("expected 9 TiDB parser-error cases, got %d", tidbCount)
++	if tidbCount != 8 {
++		t.Errorf("expected 8 TiDB parser-error cases, got %d", tidbCount)
+ 	}
+ 	t.Logf("MySQL parser-error cases: %d", mysqlCount)
+ 	t.Logf("TiDB parser-error cases:  %d", tidbCount)
+diff --git a/internal/application/audit/diagnostics.go b/internal/application/audit/diagnostics.go
+index 95b0a687..65386eb2 100644
+--- a/internal/application/audit/diagnostics.go
++++ b/internal/application/audit/diagnostics.go
+@@ -34,7 +34,6 @@ const (
+ // for MySQL/TiDB dialects. Only the leading keyword sequence is matched; no object names or body
+ // content are examined.
+ var mysqlParserUpgradePrefixes = []string{
+-	"ALTER VIEW ",
+ 	"ALTER PROCEDURE ",
+ 	"CREATE FUNCTION ",
+ 	"ALTER FUNCTION ",
+diff --git a/internal/application/audit/metadata.go b/internal/application/audit/metadata.go
+index a96a12ed..8fe78261 100644
+--- a/internal/application/audit/metadata.go
++++ b/internal/application/audit/metadata.go
+@@ -249,6 +249,9 @@ func (state *batchState) enrichStatements(ctx context.Context, request *Metadata
+ 			// primary binding's snapshot for single-target consumers.
+ 			bindings, source, sources, err := state.boundTargetsForStatement(ctx, statement)
+ 			if err != nil {
++				if statement.DDL.View != nil {
++					return nil, viewStateReadError{cause: err}
++				}
+ 				return nil, fmt.Errorf("load table snapshot: %w", err)
+ 			}
+ 			metadata.TargetTables = bindings
+@@ -257,6 +260,13 @@ func (state *batchState) enrichStatements(ctx context.Context, request *Metadata
+ 			if len(bindings) > 0 {
+ 				metadata.TargetTable = bindings[0].Snapshot
+ 			}
++			if statement.DDL.View != nil {
++				view, err := state.projectViewMetadata(ctx, statement, metadata.TargetTable, sources)
++				if err != nil {
++					return nil, viewStateReadError{cause: err}
++				}
++				metadata.View = view
++			}
+ 		} else {
+ 			target, err := orderedTargetTable(ctx, dialect, request, statement, metadataSchema)
+ 			if err != nil {
+@@ -289,7 +299,7 @@ func (state *batchState) enrichStatements(ctx context.Context, request *Metadata
+ 		// ExchangeTable participates in the mount: a statement carrying only
+ 		// a counterpart fact (no schema, no version, no provider target)
+ 		// still keeps its metadata so the counterpart rule sees it.
+-		if metadata.Schema != "" || metadata.Instance != nil || metadata.TargetTable != nil ||
++		if metadata.Schema != "" || metadata.Instance != nil || metadata.TargetTable != nil || metadata.View != nil ||
+ 			metadata.ExchangeTable != nil || metadata.Version != nil {
+ 			enriched[i].Metadata = metadata
+ 		}
+diff --git a/internal/application/audit/parser_upgrade_guidance_coverage_test.go b/internal/application/audit/parser_upgrade_guidance_coverage_test.go
+index f2c2dad5..bf69c959 100644
+--- a/internal/application/audit/parser_upgrade_guidance_coverage_test.go
++++ b/internal/application/audit/parser_upgrade_guidance_coverage_test.go
+@@ -19,13 +19,7 @@ func TestParserUpgradeCandidateGuidanceCoverage(t *testing.T) {
+ 		dialect        spec.Dialect
+ 		forbiddenNames []string
+ 	}{
+-		// MySQL candidates (5)
+-		{
+-			name:           "MySQL ALTER VIEW",
+-			sql:            "ALTER VIEW v_users AS SELECT id, name FROM users",
+-			dialect:        spec.DialectMySQL,
+-			forbiddenNames: []string{"v_users"},
+-		},
++		// MySQL candidates (4)
+ 		{
+ 			name:           "MySQL ALTER PROCEDURE",
+ 			sql:            "ALTER PROCEDURE p1 COMMENT 'x'",
+@@ -113,6 +107,17 @@ func TestParserUpgradeCandidateGuidanceCoverage(t *testing.T) {
+ func TestParserUpgradeCandidateNegativeCases(t *testing.T) {
+ 	t.Parallel()
+ 
++	t.Run("invalid ALTER VIEW query is not an upgrade candidate", func(t *testing.T) {
++		result, err := AuditSQL(context.Background(), Request{
++			SQL: "ALTER VIEW v AS SELECT FROM t;", Dialect: spec.DialectMySQL,
++		})
++		if err == nil || len(result.Diagnostics) != 1 ||
++			result.Diagnostics[0].Classification != "parser_error" ||
++			result.Diagnostics[0].GuidanceCode == DiagnosticGuidanceParserUpgradeCandidate {
++			t.Fatalf("result=%#v err=%v", result, err)
++		}
++	})
++
+ 	t.Run("garbage SQL is not parser_upgrade_candidate", func(t *testing.T) {
+ 		t.Parallel()
+ 
+diff --git a/internal/application/audit/unsupported_diagnostics_evidence_test.go b/internal/application/audit/unsupported_diagnostics_evidence_test.go
+index 4c2f428e..4c3de522 100644
+--- a/internal/application/audit/unsupported_diagnostics_evidence_test.go
++++ b/internal/application/audit/unsupported_diagnostics_evidence_test.go
+@@ -55,11 +55,11 @@ func TestParserUpgradeCandidateGuidanceCodeMySQL(t *testing.T) {
+ 	t.Parallel()
+ 
+ 	result, err := AuditSQL(context.Background(), Request{
+-		SQL:     "ALTER VIEW v_users AS SELECT id, name FROM users",
++		SQL:     "ALTER PROCEDURE v_users COMMENT 'x'",
+ 		Dialect: spec.DialectMySQL,
+ 	})
+ 	if err == nil {
+-		t.Fatal("expected parser-error diagnostic for ALTER VIEW")
++		t.Fatal("expected parser-error diagnostic for ALTER PROCEDURE")
+ 	}
+ 
+ 	diagnostics := result.Diagnostics
+diff --git a/internal/application/auditmeta/audit_t06a17_test.go b/internal/application/auditmeta/audit_t06a17_test.go
+index ac220348..ee1d2539 100644
+--- a/internal/application/auditmeta/audit_t06a17_test.go
++++ b/internal/application/auditmeta/audit_t06a17_test.go
+@@ -105,8 +105,8 @@ func (c t06a17Conn) QueryContext(_ context.Context, query string, _ []driver.Nam
+ 		}, nil
+ 	case strings.Contains(query, "information_schema.tables"):
+ 		return &t06a17Rows{
+-			cols: []string{"engine", "table_collation", "table_comment", "auto_increment", "row_format", "table_rows"},
+-			rows: [][]driver.Value{{"InnoDB", "utf8mb4_general_ci", "", nil, "Dynamic", int64(0)}},
++			cols: []string{"engine", "table_collation", "table_comment", "auto_increment", "row_format", "table_rows", "table_type"},
++			rows: [][]driver.Value{{"InnoDB", "utf8mb4_general_ci", "", nil, "Dynamic", int64(0), "BASE TABLE"}},
+ 		}, nil
+ 	}
+ 	return nil, sql.ErrNoRows
+diff --git a/internal/application/auditmeta/audit_t06a4_test.go b/internal/application/auditmeta/audit_t06a4_test.go
+index 211c892a..94f30402 100644
+--- a/internal/application/auditmeta/audit_t06a4_test.go
++++ b/internal/application/auditmeta/audit_t06a4_test.go
+@@ -151,8 +151,8 @@ func (c t06a4Conn) answer(query string) t06a4Result {
+ 		}
+ 	case strings.Contains(query, "information_schema.tables"):
+ 		return t06a4Result{
+-			cols: []string{"engine", "table_collation", "table_comment", "auto_increment", "row_format", "table_rows"},
+-			rows: [][]driver.Value{{"InnoDB", "utf8mb4_general_ci", "", nil, "Dynamic", int64(0)}},
++			cols: []string{"engine", "table_collation", "table_comment", "auto_increment", "row_format", "table_rows", "table_type"},
++			rows: [][]driver.Value{{"InnoDB", "utf8mb4_general_ci", "", nil, "Dynamic", int64(0), "BASE TABLE"}},
+ 		}
+ 	}
+ 	return t06a4Result{err: sql.ErrNoRows}
+diff --git a/internal/application/auditmeta/audit_t08r1_default_comparison_test.go b/internal/application/auditmeta/audit_t08r1_default_comparison_test.go
+index 917f5641..9100465e 100644
+--- a/internal/application/auditmeta/audit_t08r1_default_comparison_test.go
++++ b/internal/application/auditmeta/audit_t08r1_default_comparison_test.go
+@@ -149,8 +149,8 @@ func (c t08r1Conn) QueryContext(_ context.Context, query string, _ []driver.Name
+ 		}, nil
+ 	case strings.Contains(query, "information_schema.tables"):
+ 		return &t08r1Rows{
+-			cols: []string{"engine", "table_collation", "table_comment", "auto_increment", "row_format", "table_rows"},
+-			rows: [][]driver.Value{{"InnoDB", "utf8mb4_general_ci", "", nil, "Dynamic", int64(0)}},
++			cols: []string{"engine", "table_collation", "table_comment", "auto_increment", "row_format", "table_rows", "table_type"},
++			rows: [][]driver.Value{{"InnoDB", "utf8mb4_general_ci", "", nil, "Dynamic", int64(0), "BASE TABLE"}},
+ 		}, nil
+ 	}
+ 	return nil, sql.ErrNoRows
+diff --git a/internal/domain/policy/README.md b/internal/domain/policy/README.md
+index a27a9233..e6a34929 100644
+--- a/internal/domain/policy/README.md
++++ b/internal/domain/policy/README.md
+@@ -24,6 +24,7 @@ Policy model for rule configuration and future audit settings.
+ 
+ ## Notes
+ 
++- The T18 view target/source/security rule identities and their option-specific companions have fixed defaults; option-specific evaluation is deferred in the first slice.
+ - The default alter policy keeps `ddl.alter.change_column.forbid` enabled as the stricter coarse guard.
+ - `ddl.alter.change_column.target_type_family.allowlist` remains enabled as a follow-on semantic guard for teams that intentionally relax the coarse forbid later.
+ - The default metadata-aware alter policy now also enables source-aware compatibility checks for `modify column` and `change column`; those rules only fire when the statement carries a live table snapshot.
+diff --git a/internal/domain/policy/defaults_ddl.go b/internal/domain/policy/defaults_ddl.go
+index a0928793..836f87e5 100644
+--- a/internal/domain/policy/defaults_ddl.go
++++ b/internal/domain/policy/defaults_ddl.go
+@@ -558,6 +558,12 @@ func ddlCoreRules() map[string]RulePolicy {
+ 				"forbid": true,
+ 			},
+ 		},
++		"ddl.view.target.valid":          {Enabled: true, Level: rule.LevelBlocker},
++		"ddl.view.source.valid":          {Enabled: true, Level: rule.LevelBlocker},
++		"ddl.view.security.definer.warn": {Enabled: true, Level: rule.LevelWarning},
++		"ddl.view.algorithm.warn":        {Enabled: true, Level: rule.LevelWarning},
++		"ddl.view.check_option.valid":    {Enabled: true, Level: rule.LevelBlocker},
++		"ddl.view.options.ignored.warn":  {Enabled: true, Level: rule.LevelWarning},
+ 		"ddl.table.drop.forbid": {
+ 			Enabled: true,
+ 			Level:   rule.LevelBlocker,
+diff --git a/internal/domain/rule/catalog/README.md b/internal/domain/rule/catalog/README.md
+index f32c5981..9be1fe90 100644
+--- a/internal/domain/rule/catalog/README.md
++++ b/internal/domain/rule/catalog/README.md
+@@ -2,6 +2,8 @@
+ 
+ Explanation-oriented metadata for shipped DeltaScope rules, with discoverability fields for CLI rule listing and explanation.
+ 
++T18 view target, source and security rules consume ordered relation metadata; option-specific evaluation remains deferred in the first slice.
++
+ ## Files
+ 
+ | File | Responsibility |
+diff --git a/internal/domain/rule/catalog/catalog.go b/internal/domain/rule/catalog/catalog.go
+index 815d44e6..ac34dd2f 100644
+--- a/internal/domain/rule/catalog/catalog.go
++++ b/internal/domain/rule/catalog/catalog.go
+@@ -396,6 +396,8 @@ func metadataNotesForRule(ruleID string) *MetadataNotes {
+ 
+ func metadataKindsForRule(ruleID string) ([]MetadataKind, bool) {
+ 	switch ruleID {
++	case "ddl.view.target.valid", "ddl.view.source.valid", "ddl.view.security.definer.warn":
++		return []MetadataKind{MetadataKindTargetTable}, true
+ 	case "dml.table.denylist.forbid", "ddl.table.denylist.forbid":
+ 		return []MetadataKind{MetadataKindSchema}, true
+ 	case "ddl.database.create.exists.forbid", "ddl.database.alter.exists.require",
+@@ -459,6 +461,10 @@ func FormatYAMLScalar(value any) string {
+ // All other rules (including most DML rules) apply to common dialect scope.
+ func dialectsForRule(ruleID string) []string {
+ 	switch {
++	case ruleID == "ddl.view.target.valid", ruleID == "ddl.view.source.valid",
++		ruleID == "ddl.view.security.definer.warn", ruleID == "ddl.view.algorithm.warn",
++		ruleID == "ddl.view.check_option.valid", ruleID == "ddl.view.options.ignored.warn":
++		return []string{"mysql", "tidb"}
+ 	case ruleID == "dml.table.exists.require":
+ 		return []string{"mysql", "tidb"}
+ 	case strings.HasPrefix(ruleID, "ddl.pg."):
+@@ -736,6 +742,9 @@ func sourceForRule() string {
+ const unknownPriorNullabilityAdvisoryRuleID = "ddl.alter.modify_column.explicit_nullability_change.unknown_prior_state.advisory"
+ 
+ var metadataAwareRuleIDs = map[string]bool{
++	"ddl.view.target.valid":                         true,
++	"ddl.view.source.valid":                         true,
++	"ddl.view.security.definer.warn":                true,
+ 	"ddl.alter.change_column.compatibility.require": true,
+ 	"ddl.alter.change_column.exists.require":        true,
+ 	"ddl.alter.change_column.target.exists.forbid":  true,
+diff --git a/internal/domain/rule/ddl/README.md b/internal/domain/rule/ddl/README.md
+index c74de8fa..2dc8da62 100644
+--- a/internal/domain/rule/ddl/README.md
++++ b/internal/domain/rule/ddl/README.md
+@@ -6,6 +6,7 @@ Expanded DDL rule catalog for create-table governance, table options/object shap
+ 
+ | File | Responsibility |
+ |------|---------------|
++| view_lifecycle_rules.go | Evaluates first-path view target, source and effective DEFINER security with independent evidence and authored-root locations; option-specific rules remain deferred |
+ | common.go | Shared DDL rule IDs plus parser-neutral alter matching (including add-index actions), standalone DDL action matching, explicit-change, rename, standalone rename-name extraction, option, target-type-family, alter-index projection helpers, the T09 unified declared-index accessors (`declaredIndexes` joining `DDL.Indexes` with standalone `create_index` actions, `alterAddedIndexSyntaxByKind` separating index syntax from constraint syntax with a dialect gate, and subject-name selectors resolving index names through `Definition`/`OldName` fallback), the `indexPlainComparable` plain-key premise shared by the three pair-comparison rules (any expression, prefix, descending, direction-unknown, unmodeled, predicate, included-column, GLOBAL, or unmodeled-option member disqualifies — direction-withheld expression members stay non-plain rather than silently comparable), plus the left-prefix pairing truncation guard that reads a member set whose `KeyParts` outnumber its `Columns` projection as partially modeled and attributes the `target_table.indexes.key_parts` gap instead of answering on the truncated prefix, the shared `lifecycleIndexGap` publisher emitting `unknown_table_state` evidence gaps on unprovable existing index sets or on a vouched pairing where *either* side carries a non-plain member — the column-name pairing shape alone cannot answer the plain-key comparison (T10-R2: declared non-plain members count the same way since product normalization can collapse a declared form into a plainer stored shape) — plus `declaredComparisonGap`, the create-table analogue pairing two different declarations inside one CREATE TABLE so an applicable pair carrying a non-plain member reports the same attributable gap instead of a silent pass (`target_table.indexes.key_parts`), and `projectObjectMetadata` for projecting `spec.Metadata.Objects` validation state into finding metadata maps, including pinned Milestone 4 create-table superset IDs and `hasColumnConstraint` helper for column-constraint checks. T10-R6 makes the duplicate and unique-overlap pairings tri-state — an otherwise-applicable pair blocked by a withheld `IndexKindUnknown` candidate reports the bounded `target_table.indexes` gap instead of silently passing (kind truth lives on the member, not its key parts), while fully comparable pairs and proven members answer normally (issue #89 T10-R6). T11-R2 extends the shared ordered-column premise: `statementColumnDecls` folds same-statement column actions in authored order (MySQL evaluates the key action against the effective statement-local declaration — an `ADD` supplies a member the pre-state never had, a `MODIFY` supplies the new definition, a `CHANGE`/`RENAME` carries the prior name's proven facts under the new spelling — the pass-through returns a copy rebound to the new member name so findings attribute the effective column, never the pre-state's old spelling, and the provider object is never mutated; TiDB validates every action against the pre-state so any touched member is undecidable — both probed natively), and `orderedColumnFact` returns a tri-state verdict — resolved / proven-absent (the native refusal, no gap) / undecidable (the bounded `target_table.columns` gap) — shared verbatim by Evaluate and EvidenceGaps (issue #90 T11-R2 group A) |
+ | common_test.go | Verifies richer alter helper boundaries and future alter rule IDs remain stable |
+ | config.go | Parses policy params for DDL rule constructors, including normalized string-list, structured naming requirements, and bounded integer helpers for upcoming alter semantics |
+diff --git a/internal/domain/rule/ddl/denylist_rules.go b/internal/domain/rule/ddl/denylist_rules.go
+index 54e8867f..7da97d6e 100644
+--- a/internal/domain/rule/ddl/denylist_rules.go
++++ b/internal/domain/rule/ddl/denylist_rules.go
+@@ -55,13 +55,23 @@ func (r tableDenylistRule) Evaluate(ctx context.Context, statement spec.Statemen
+ 	metadataSchema := normalizedMetadataSchema(statement)
+ 	seen := make(map[spec.Table]struct{})
+ 	findings := make([]rule.Finding, 0)
+-	for _, table := range statement.DDL.TableTargets() {
++	targets := append([]spec.Table(nil), statement.DDL.TableTargets()...)
++	targetCount := len(targets)
++	if statement.DDL.View != nil && statement.DDL.View.Definition != nil {
++		for i, source := range statement.DDL.View.Definition.Sources {
++			if statement.Metadata != nil && statement.Metadata.View != nil && i < len(statement.Metadata.View.Sources) {
++				source = statement.Metadata.View.Sources[i].Table
++			}
++			targets = append(targets, source)
++		}
++	}
++	for i, table := range targets {
+ 		if err := ctx.Err(); err != nil {
+ 			return nil, err
+ 		}
+ 		tableName := strings.ToLower(strings.TrimSpace(table.Name))
+ 		schemaName := strings.ToLower(strings.TrimSpace(table.Schema))
+-		if schemaName == "" {
++		if schemaName == "" && i < targetCount {
+ 			schemaName = metadataSchema
+ 		}
+ 		if !r.matches(schemaName, tableName) {
+@@ -83,6 +93,17 @@ func (r tableDenylistRule) Evaluate(ctx context.Context, statement spec.Statemen
+ 			},
+ 		})
+ 	}
++	if statement.Metadata != nil && statement.Metadata.View != nil {
++		for _, dependency := range statement.Metadata.View.Dependencies {
++			if r.matches(dependency.Table.Schema, dependency.Table.Name) {
++				findings = append(findings, rule.Finding{
++					Level: r.level, Message: "view depends on a relation blocked by the table denylist policy",
++					Suggestion: "review the view's dependencies or relax the denylist policy intentionally",
++				})
++				break
++			}
++		}
++	}
+ 	return findings, nil
+ }
+ 
+diff --git a/internal/domain/rule/ddl/object_lifecycle_rules.go b/internal/domain/rule/ddl/object_lifecycle_rules.go
+index 988144db..d5926f5b 100644
+--- a/internal/domain/rule/ddl/object_lifecycle_rules.go
++++ b/internal/domain/rule/ddl/object_lifecycle_rules.go
+@@ -37,10 +37,12 @@ func newForbiddenDDLOperationRule(ruleID string, operation spec.DDLOperation, la
+ func (r forbiddenDDLOperationRule) ID() string { return r.ruleID }
+ 
+ func (r forbiddenDDLOperationRule) AppliesTo(statement spec.Statement) bool {
++	operation := statement.DDL != nil && (statement.DDL.Operation == r.operation ||
++		(r.ruleID == ruleIDViewCreateForbid && statement.DDL.Operation == spec.DDLOperationAlterView &&
++			statement.DDL.View != nil && (statement.Dialect == spec.DialectMySQL || statement.Dialect == spec.DialectTiDB)))
+ 	return r.forbid &&
+ 		statement.Kind == spec.KindDDL &&
+-		statement.DDL != nil &&
+-		statement.DDL.Operation == r.operation &&
++		operation &&
+ 		statement.DDL.Table != nil
+ }
+ 
+diff --git a/internal/domain/rule/ddl/register.go b/internal/domain/rule/ddl/register.go
+index 0ad4d43d..f6c9d322 100644
+--- a/internal/domain/rule/ddl/register.go
++++ b/internal/domain/rule/ddl/register.go
+@@ -477,6 +477,24 @@ func Register(registry *rule.Registry, cfg policy.Policy) error {
+ 		{ruleID: ruleIDViewDropForbid, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+ 			return newForbiddenDDLOperationRule(ruleIDViewDropForbid, spec.DDLOperationDropView, "drop view", rule.LevelBlocker, cfg)
+ 		}},
++		{ruleID: "ddl.view.target.valid", construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
++			return newViewLifecycleRule("ddl.view.target.valid", rule.LevelBlocker, cfg), nil
++		}},
++		{ruleID: "ddl.view.source.valid", construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
++			return newViewLifecycleRule("ddl.view.source.valid", rule.LevelBlocker, cfg), nil
++		}},
++		{ruleID: "ddl.view.security.definer.warn", construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
++			return newViewLifecycleRule("ddl.view.security.definer.warn", rule.LevelWarning, cfg), nil
++		}},
++		{ruleID: "ddl.view.algorithm.warn", construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
++			return newViewLifecycleRule("ddl.view.algorithm.warn", rule.LevelWarning, cfg), nil
++		}},
++		{ruleID: "ddl.view.check_option.valid", construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
++			return newViewLifecycleRule("ddl.view.check_option.valid", rule.LevelBlocker, cfg), nil
++		}},
++		{ruleID: "ddl.view.options.ignored.warn", construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
++			return newViewLifecycleRule("ddl.view.options.ignored.warn", rule.LevelWarning, cfg), nil
++		}},
+ 		{ruleID: ruleIDTableDropForbid, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+ 			return newForbiddenDDLOperationRule(ruleIDTableDropForbid, spec.DDLOperationDropTable, "drop table", rule.LevelBlocker, cfg)
+ 		}},
+diff --git a/internal/domain/spec/README.md b/internal/domain/spec/README.md
+index 0e5d9b7f..57bee345 100644
+--- a/internal/domain/spec/README.md
++++ b/internal/domain/spec/README.md
+@@ -6,6 +6,7 @@ Normalized statement specifications used as the stable input for rule evaluation
+ 
+ | File | Responsibility |
+ |------|---------------|
++| view.go | Defines private view declarations, aliased source bindings and authored offsets, snapshots, dependency projections, cloning and shared lifecycle assessment |
+ | statement.go | Defines the top-level normalized statement model and parser-neutral extraction interface, including the nonserialized `ResourceLimit` execution marker and its feature/reason constants |
+ | statement_test.go | Verifies typed statement metadata behavior |
+ | metadata.go | Defines optional schema context, instance facts, target-table snapshots, object-level validation snapshots, and lookup helpers for metadata-aware auditing — including `FindProvenIndex`/`HasUnprovenIndexName`/`IndexNameSpaceUnvouched`, the per-member `Index.NameUnknown` name-provability markers name-keyed consumers resolve `primary` and member targets through, and the T13-R1 partition catalog facts `Partitioned`/`PartitionType`/`PartitionNames` (nil = unobserved, non-nil empty = observed-empty — never read as confirmed absence) plus `Metadata.ExchangeTable` carrying the EXCHANGE counterpart's ordered pre-state projection (issue #92 T13-R1), and the T14 member-directory facts `PartitionDescriptions` (catalog PARTITION_DESCRIPTION text aligned 1:1 with names), `PartitionDefs` (comparable member definitions shared by provider and declared projections), and `Subpartitioned` (leaf-row marker keeping the top-level directory unobserved) (issue #93 T14) T16 adds the bound projection set: `TargetTables` (one `TargetBinding` per bound identity — `Table`, `Snapshot` nil means unvouched, `Ambiguous` never conflated with a proven absence, and `Snapshot.Temporary` marks the session-local temp namespace the binding resolved to), `SourceTable` (LIKE source), and `SourceTables` (CTAS sources — a nil entry means that source could not be vouched, never read as absent); `TableSnapshot` gains the inbound-edge facts `ReferencedBy`/`ReferencedByUnknown` (a provider never loads reverse FK edges — only batch-derived edges are proven, and an unvouched space keeps the marker rather than reading empty as safe) plus the `Temporary`/`GlobalTemporary` markers and `ColumnsTailUnknown` (CTAS declared-prefix tails where `SELECT`-derived columns are not enumerated) (issue #95 T16) T17 adds `Metadata.SchemaTarget` — the ordered pre-state binding a schema-scoped statement resolves (confirmed attributes when provably present, empty snapshot when provably absent, nil when unvouched; conditional CREATE convergence requires an applicable create arm, and resolver errors do not produce projections — a name-less `ALTER DATABASE` binds the request's trusted schema, never a connection guess) plus the nil-safe `MetadataSchemaTarget()` accessor (issue #96 T17) |
+@@ -50,6 +51,8 @@ Normalized statement specifications used as the stable input for rule evaluation
+ - `InstanceFacts` (explicit known-bit pairs: `InnoDBPageSizeKnown`/`InnoDBPageSizeBytes`, `InnoDBLargePrefixKnown`/`InnoDBLargePrefixOn`, `TiDBMaxIndexLengthKnown`/`TiDBMaxIndexLengthBytes`, `TiDBAlterPrimaryKeyKnown`/`TiDBAlterPrimaryKey` — a zero or absent value stays unknown rather than defaulting — plus `TiDBEnableClusteredIndex`, the session-observed on/off/int_only mode an unstated TiDB PRIMARY KEY resolves through; empty means unprobed, so the handle answer stays unknown rather than inheriting a guessed default — never populated on MySQL — and `RestrictNonStandardKeyKnown`/`RestrictNonStandardKey`, the MySQL 8.4 `restrict_fk_on_non_standard_key` observation a non-unique referenced-key eligibility answer resolves through — the variable does not exist on pre-8.4 MySQL or TiDB, so an unprobed read stays unknown and eligibility falls back to dialect/version instead of a guessed default (issue #90 T11-R1), and `TiDBEnableCheckConstraintKnown`/`TiDBEnableCheckConstraint`, the TiDB CHECK storage/enforcement switch `ResolveCheckArm` consumes — unobserved stays unknown (issue #91 T12))
+ - `InstanceFacts.ServerCharset`, `ServerCollation`, and `DefaultCollationForUTF8MB4` are normalized observations; empty means unknown. `DefaultCharset` is the request database's charset, not the server default.
+ - `TableSnapshot`
++- `ViewDeclaration`, `ViewDefinition`, `ViewColumnBinding`, `ViewSnapshot`, `ViewMetadata`
++- `CloneViewDefinition`, `CloneViewSnapshot`, `AssessViewLifecycle`, `ViewLifecycleAssessment`
+ - `ObjectSnapshot`
+ - `MetadataStatus`
+ - `DDL`
+diff --git a/internal/domain/spec/ddl.go b/internal/domain/spec/ddl.go
+index 22ea477f..f5251f37 100644
+--- a/internal/domain/spec/ddl.go
++++ b/internal/domain/spec/ddl.go
+@@ -3,8 +3,9 @@ package spec
+ 
+ // DDL contains the structural metadata extracted from a DDL statement.
+ type DDL struct {
+-	Operation DDLOperation `json:"operation,omitempty"`
+-	Table     *Table       `json:"table,omitempty"`
++	Operation DDLOperation     `json:"operation,omitempty"`
++	Table     *Table           `json:"table,omitempty"`
++	View      *ViewDeclaration `json:"-"`
+ 	// Targets lists every table-level object identity the statement names, in
+ 	// source order: each DROP TABLE/VIEW name, each TRUNCATE relation, each
+ 	// RENAME TABLE source and destination pair-wise, and ALTER TABLE
+diff --git a/internal/domain/spec/metadata.go b/internal/domain/spec/metadata.go
+index 1fea51d7..2f5fec85 100644
+--- a/internal/domain/spec/metadata.go
++++ b/internal/domain/spec/metadata.go
+@@ -9,6 +9,7 @@ type Metadata struct {
+ 	Instance    *InstanceFacts   `json:"instance,omitempty"`
+ 	Version     *VersionIdentity `json:"version,omitempty"`
+ 	TargetTable *TableSnapshot   `json:"target_table,omitempty"`
++	View        *ViewMetadata    `json:"-"`
+ 	// ExchangeTable is the ordered pre-state projection of the
+ 	// EXCHANGE PARTITION counterpart table — the second object identity
+ 	// the action touches, resolved through the same once-per-key seam as
+@@ -130,14 +131,16 @@ type InstanceFacts struct {
+ // nil as "loaded, absent/empty" — the *Unknown flags below override that
+ // convention when a projection cannot vouch for those collections.
+ type TableSnapshot struct {
+-	Schema      string            `json:"schema,omitempty"`
+-	Exists      bool              `json:"exists"`
+-	Table       *Table            `json:"table,omitempty"`
+-	Columns     []Column          `json:"columns,omitempty"`
+-	PrimaryKey  *Index            `json:"primary_key,omitempty"`
+-	Indexes     []Index           `json:"indexes,omitempty"`
+-	Constraints []Constraint      `json:"constraints,omitempty"`
+-	Options     map[string]string `json:"options,omitempty"`
++	Schema       string            `json:"schema,omitempty"`
++	Exists       bool              `json:"exists"`
++	Table        *Table            `json:"table,omitempty"`
++	RelationKind string            `json:"relation_kind,omitempty"`
++	View         *ViewSnapshot     `json:"-"`
++	Columns      []Column          `json:"columns,omitempty"`
++	PrimaryKey   *Index            `json:"primary_key,omitempty"`
++	Indexes      []Index           `json:"indexes,omitempty"`
++	Constraints  []Constraint      `json:"constraints,omitempty"`
++	Options      map[string]string `json:"options,omitempty"`
+ 
+ 	// PrimaryKeyIsHandle marks a TiDB PKIsHandle table: the single-integer
+ 	// clustered primary key is the row handle, so no operable PRIMARY index
+diff --git a/internal/infrastructure/metadata/mysql/README.md b/internal/infrastructure/metadata/mysql/README.md
+index f6b5895e..e0b57894 100644
+--- a/internal/infrastructure/metadata/mysql/README.md
++++ b/internal/infrastructure/metadata/mysql/README.md
+@@ -2,10 +2,16 @@
+ 
+ MySQL-protocol metadata provider used for optional metadata-aware DeltaScope audits against MySQL and TiDB.
+ 
++The table loader observes relation kind from `TABLE_TYPE`; views use nullable
++`information_schema.VIEWS` facts. A successful empty attribute result keeps
++the view present with unknown attributes; read errors remain bounded and
++cause-preserving, and definitions stay private.
++
+ ## Files
+ 
+ | File | Responsibility |
+ |------|---------------|
++| provider_t18_first_test.go | Verifies view catalog facts, invisible definitions and bounded provider failures |
+ | provider.go | Opens MySQL-compatible metadata connections and loads normalized dialect, schema, instance-fact, and target-table snapshot data from information schema, including preserved per-index cardinality facts and per-member plain-key knownness (`SUB_PART`/`COLLATION` plus NULL `COLUMN_NAME` classification into `PrefixParts`/`DescParts`/`UnmodeledKeyParts`/expression marks). Instance facts carry explicit known bits: MySQL reads `innodb_page_size` and `innodb_large_prefix` (5.7), TiDB banners additionally read the `max-index-length` and `alter-primary-key` tidb-server configs via `SHOW CONFIG`, verifying every matching row (one per tidb-server instance): disagreeing, unparsable, non-positive, or absent values stay unknown, while query/scan/iteration failures propagate as provider errors rather than degrading into gaps (issue #83 T04-B/R2, issue #89 T10-R3 — `alter-primary-key` is the config fact `int_only` clustered mode defers to). MySQL banners also read `restrict_fk_on_non_standard_key` — the 8.4-only refusal of foreign keys backed by a non-unique referenced key (6125); the variable does not exist on pre-8.4 MySQL or TiDB, so an absent row stays an unknown fact and the eligibility answer defers to dialect/version instead of a guessed default (issue #90 T11-R1). Expression members read the same `COLLATION` direction fact column members do — `D` lands `Descending`, `A` stays ascending, and an unproven or unrecognized direction keeps the member's expression identity with `DirectionUnknown` marked rather than demoting it to unmodeled or guessing ascending (issue #89 T10-R3/R4). Column rows carry T07 advanced facts from the same COLUMNS select: `GENERATION_EXPRESSION` plus `EXTRA` tokens yield generated storage + expression facts (`VIRTUAL`/`STORED GENERATED`), `DEFAULT_GENERATED` yields parsed expression-default facts with verbatim `DefaultValue` bytes preserved plus `DefaultParenthesized=true` (catalog-stored expression defaults are always parenthesized syntax), and `INVISIBLE` yields effective visibility (absence on a complete row = effective visible; the catalog never proves `VisibilityExplicit`). Undecodable catalog expression text stays an explicit unknown fact via `ParseCatalogExpressionFacts` (issue #86 T07). The T08-R1/R2 `DefaultLiteral` identity fact carries the verbatim decoded `COLUMN_DEFAULT` bytes with a kind domain from the column's own base type (parameters/attributes stripped; numeric bases → `numeric`, else `string` — the recorded encoding is the catalog's own, e.g. scale-normalized `1.00`, and cross-source comparability is the rule's domain check), `DefaultIsCurrentTimestamp` asserts only on temporal base types (`timestamp`/`datetime`, including parameterized forms), and expression/temporal defaults never carry a literal identity (issue #87 T08-R1). T10 adds an `information_schema.STATISTICS.IS_VISIBLE` capability probe (a backticked `information_schema`.`columns` existence check counted in provider call totals): on capable catalogs (MySQL 8.x, TiDB) the index select carries the column and each named member lands effective `Visibility` (`YES`→visible/`NO`→invisible), while uncapable catalogs (MySQL 5.7 or a zero-count probe) omit the column and leave member visibility empty — a real probe failure propagates as a load error rather than degrading into a guessed shape; `INDEX_TYPE` also classifies `SPATIAL`/`FULLTEXT` into `spec.Index.Kind` (issue #89 T10). T10-R1 adds member-level facts: an `EXPRESSION` capability probe selects the catalog's functional key-part text (parsed into `ExpressionFacts` + multi-valued marks via `ParseCatalogExpressionFacts`/`CatalogExpressionIsMultiValued`), members accumulate into `spec.Index.KeyParts` (ordinal, kind, column, prefix length, descending, expression identity), `information_schema.PARTITIONS` loads `Partitioned` (an unanswerable probe keeps the fact unknown rather than guessing false), and TiDB's `information_schema.TIDB_INDEXES.CLUSTERED` resolves `PrimaryKeyClustered` for any member shape (the TiDB DROP PRIMARY KEY 8200 refusal covers PKIsHandle and common-handle clustered primaries alike) while `CLUSTERED` plus the single-integer member shape separately resolves `PrimaryKeyIsHandle` (STATISTICS synthesizes a PRIMARY row even for handle tables, so index presence alone cannot prove an operable PRIMARY object — a missing CLUSTERED row sets both `PrimaryKeyClusteredUnknown` and `PrimaryKeyHandleUnknown`, and an unmatchable member shape sets `PrimaryKeyHandleUnknown`, rather than defaulting the object into existence), and the TiDB instance-fact probe additionally reads the `tidb_enable_clustered_index` session variable so declared-but-unstated primary keys resolve through the observed mode (empty means unprobed → the handle answer stays unknown; never populated on MySQL). R2 fixes member classification for TiDB's literal-`'NULL'` `COLUMN_NAME` on expression members: SQL NULL or literal-with-expression-text stays an expression member, a literal matching a loaded real column name stays a plain column (a backticked `` `NULL` `` column is legal MySQL), and neither-provable stays `UnmodeledKeyParts` (issue #89 T10-R2). R4 adds `resolveTiDBPrimaryName`; R5 rebinds it to the actual stored object name: a `primary`-fold catalog row is not self-evidently the constraint object on TiDB (a secondary can literally own `primary` — `RENAME … TO primary` is legal on PK-less and PKIsHandle tables — and a renamed PK object survives under `pk2`/`pk3`), so constraint presence is proven independently by the `information_schema.table_constraints` `PRIMARY KEY` row (tidb_pk_type cannot answer it — NONCLUSTERED covers both PK-less tables and real nonclustered primaries, verified on the TiDB v8.5.0 anchor) while object attribution is proven separately: a proven constraint with exactly one unique candidate fold promotes it to `snapshot.PrimaryKey` under its stored name, multiple candidates disambiguate through `TIDB_INDEXES.CLUSTERED` (exactly one clustered candidate owns the object) and then the `KEY_COLUMN_USAGE` primary-column list, a proven constraint with no attributable object keeps a name-unknown `PrimaryKey` placeholder with every unique candidate demoted to `IndexKindUnknown` so member comparisons never treat a maybe-PK fold as a proven UNIQUE, and a proven-absent constraint keeps folds as members. `loadTiDBPrimaryKeyHandle` probes `CLUSTERED` on the object's actual stored name rather than the literal `PRIMARY`. Per issue #79 every probe distinguishes clean absence (withheld facts stay unknown) from an actual query/scan/connection failure, which propagates as a load error even under a clean catalog read — context cancellation keeps its own semantics (issue #89 T10-R4/R5). T11 adds `loadForeignKeys`: `information_schema.KEY_COLUMN_USAGE` joined to `REFERENTIAL_CONSTRAINTS` folds ordered local/referenced column pairs into `spec.Constraint` members grouped by constraint name (stored slice indexes, never pointers into a growing slice), DELETE_RULE/UPDATE_RULE normalize to the shared lowercase refer-action vocabulary (`restrict`/`cascade`/`set_null`/`no_action`/`set_default`), a non-`NONE` MATCH option counts as an unmodeled refer action, a clean empty result is a proven empty collection (`Constraints=[]`, not nil-withheld), and query/scan/iteration failures propagate as provider errors — UNIQUE stays index-side per spec convention and is never folded into constraint rows (issue #90 T11). The select is child-side only (`table_schema`/`table_name` bound to the loaded table) — no referenced-side query exists, so a provider snapshot can never vouch the inbound edge set: the ordered-state layer marks provider-loaded present shapes `ReferencedByUnknown` and TRUNCATE's 1701 premise reads batch-derived edges plus that marker instead of reading empty as safe (issue #95 T16-R1). R6 closes the attribution contract: candidate folds match the `KEY_COLUMN_USAGE` primary list by ordered sequence, not set equality (`[a,b]` never binds `[b,a]` — verified on the v8.5.0 anchor where a renamed `pk2(a,b)` coexists with `aa(b,a)`), multiple same-sequence candidates withhold object identity under a name-unknown `PrimaryKey` placeholder rather than promoting the first STATISTICS hit (verified: `aa(id)` and `pk2(id)` coexist with ordered KCU `[id]`), `TIDB_INDEXES.CLUSTERED` reads as a tri-state (YES/NO/unproven — a missing, NULL, or unrecognized row never counts as a proven NO, so NONCLUSTERED publishes only when every candidate proved NO — verified: only the PK object's row reads YES; case-variant names folding to one key merge YES over unproven over NO regardless of read order so a sibling NO never covers an unproven row), and an inconsistent `pkCount > 1` demotes every potentially-PK unique candidate while unvouching all primary facts (issue #89 T10-R6). T12 adds `loadCheckConstraints` over two probed catalog shapes: MySQL reads `TABLE_CONSTRAINTS` (`constraint_type='CHECK'` + `ENFORCED`) joined to `CHECK_CONSTRAINTS` on catalog+schema+name (that table has no `TABLE_NAME`), while TiDB reads `TIDB_CHECK_CONSTRAINTS` (the only catalog with `TABLE_NAME` attribution — TiDB stores no CHECK rows in `TABLE_CONSTRAINTS` and exposes enforcement only through SHOW CREATE, so TiDB members load `Enforced`-unvouched); each shape is gated by its own information_schema capability probe, clauses parse into `ExpressionFacts` (raw text never retained), a clean zero is a proven empty set, and any `constraint_type` the projection cannot represent unvouches the collection rather than posing as complete (issue #91 T12). The T13-R1 partition catalog probe reads `partition_method`/`partition_name` rows from `information_schema.partitions` on BOTH dialects: partition rows publish `Partitioned=true` with the normalized method and ordinal-ordered member names, an empty answer publishes `Partitioned=false` with an observed-empty member set, and only an unanswerable probe keeps every fact nil — never a guessed non-partitioned verdict; T13-R2 additionally reads `subpartition_name` per row — any non-null leaf name marks the top-level directory incomplete (`PartitionNames=nil`), so leaf members are never claimed proven-absent (MySQL catalogs leaf names and exchanges them; TiDB normalizes the clause away and keeps NULL — issue #92 T13-R1/R2). T14 additionally reads `partition_description` per member (aligned `PartitionDescriptions` → `spec.CatalogPartitionDefs` bound projection, NULL/empty on HASH|KEY members kept as empty text rather than unobserved) and exposes the leaf-row marker on `snapshot.Subpartitioned` so consumers distinguish an incomplete projection from an unanswered probe (issue #93 T14) `Provider.ResolveObject` resolves schema identities through `information_schema.SCHEMATA` (existence, default charset/collation, capability-probed `DEFAULT_ENCRYPTION` on MySQL 8.0.16+, TiDB `TIDB_PLACEMENT_POLICY_NAME`); other object types report unavailable rather than fabricating coverage (issue #96 T17) |
+ | provider_test.go | Verifies provider connection, dialect, normalization helpers, information_schema column nullability mapping, index-cardinality accumulation, and known-bit instance-fact loading (16K/4K/missing/zero/unparseable page sizes, TiDB `max-index-length` single/multi-row consistency in both orders, zero/invalid rows, query/scan/mid-iteration error propagation including errors trailing invalid values, MySQL banners never probing TiDB config) without a live database |
+ | provider_t09r1_test.go | Verifies the T09-R1 STATISTICS member-row classification: plain ascending, `SUB_PART` prefix, `D` descending, NULL `COLUMN_NAME` expression, and unclassifiable collation rows land `PrefixParts`/`DescParts`/`UnmodeledKeyParts`/expression marks so provider-loaded indexes carry the same knownness vocabulary declarations do |
+diff --git a/internal/infrastructure/metadata/mysql/provider.go b/internal/infrastructure/metadata/mysql/provider.go
+index f23a43b7..b7da9326 100644
+--- a/internal/infrastructure/metadata/mysql/provider.go
++++ b/internal/infrastructure/metadata/mysql/provider.go
+@@ -386,7 +386,7 @@ func (p *Provider) LoadTableSnapshot(ctx context.Context, dialect spec.Dialect,
+ 	}
+ 
+ 	tableRow := p.db.QueryRowContext(ctx, `
+-		select engine, table_collation, table_comment, auto_increment, row_format, table_rows
++		select engine, table_collation, table_comment, auto_increment, row_format, table_rows, table_type
+ 		from information_schema.tables
+ 		where table_schema = ? and table_name = ?
+ 	`, schema, table)
+@@ -397,7 +397,8 @@ func (p *Provider) LoadTableSnapshot(ctx context.Context, dialect spec.Dialect,
+ 	var autoIncrement sql.NullInt64
+ 	var rowFormat sql.NullString
+ 	var tableRows sql.NullInt64
+-	if err := tableRow.Scan(&engine, &collation, &comment, &autoIncrement, &rowFormat, &tableRows); err != nil {
++	var relationType sql.NullString
++	if err := tableRow.Scan(&engine, &collation, &comment, &autoIncrement, &rowFormat, &tableRows, &relationType); err != nil {
+ 		if err == sql.ErrNoRows {
+ 			return snapshot, nil
+ 		}
+@@ -406,6 +407,12 @@ func (p *Provider) LoadTableSnapshot(ctx context.Context, dialect spec.Dialect,
+ 
+ 	snapshot.Exists = true
+ 	snapshot.Table = &spec.Table{Name: table, Comment: comment.String}
++	switch strings.ToUpper(strings.TrimSpace(relationType.String)) {
++	case "BASE TABLE":
++		snapshot.RelationKind = "table"
++	case "VIEW":
++		snapshot.RelationKind = "view"
++	}
+ 	snapshot.Options = map[string]string{}
+ 	if engine.Valid {
+ 		snapshot.Options["engine"] = engine.String
+@@ -425,8 +432,17 @@ func (p *Provider) LoadTableSnapshot(ctx context.Context, dialect spec.Dialect,
+ 	}
+ 
+ 	if err := p.loadColumns(ctx, snapshot); err != nil {
++		if snapshot.RelationKind == "view" {
++			return nil, safeViewReadError{cause: err}
++		}
+ 		return nil, fmt.Errorf("load table %s.%s columns: %w", snapshot.Schema, snapshot.Table.Name, err)
+ 	}
++	if snapshot.RelationKind == "view" {
++		if err := p.loadView(ctx, snapshot); err != nil {
++			return nil, safeViewReadError{cause: err}
++		}
++		return snapshot, nil
++	}
+ 	if err := p.loadIndexes(ctx, snapshot, dialect); err != nil {
+ 		return nil, fmt.Errorf("load table %s.%s indexes: %w", snapshot.Schema, snapshot.Table.Name, err)
+ 	}
+@@ -454,6 +470,71 @@ func (p *Provider) LoadTableSnapshot(ctx context.Context, dialect spec.Dialect,
+ 	return snapshot, nil
+ }
+ 
++type safeViewReadError struct{ cause error }
++
++func (safeViewReadError) Error() string   { return "view metadata read failed" }
++func (e safeViewReadError) Unwrap() error { return e.cause }
++
++func (p *Provider) loadView(ctx context.Context, snapshot *spec.TableSnapshot) error {
++	var definition, security, check, updatable, definer sql.NullString
++	rows, err := p.db.QueryContext(ctx, `
++		select view_definition, security_type, check_option, is_updatable, definer
++		from information_schema.views
++		where table_schema = ? and table_name = ?
++	`, snapshot.Schema, snapshot.Table.Name)
++	if err != nil {
++		return err
++	}
++	defer rows.Close()
++	if !rows.Next() {
++		if err := rows.Err(); err != nil {
++			return err
++		}
++		snapshot.View = &spec.ViewSnapshot{}
++		return nil
++	}
++	if err := rows.Scan(&definition, &security, &check, &updatable, &definer); err != nil {
++		return err
++	}
++	if rows.Next() {
++		return fmt.Errorf("multiple view metadata rows")
++	}
++	if err := rows.Err(); err != nil {
++		return err
++	}
++	view := &spec.ViewSnapshot{
++		Security:    strings.ToLower(strings.TrimSpace(security.String)),
++		CheckOption: strings.ToLower(strings.TrimSpace(check.String)),
++	}
++	if definer.Valid {
++		view.DefinerKind = "named"
++		view.DefinerPrincipal = definer.String
++	}
++	if updatable.Valid {
++		switch strings.ToUpper(strings.TrimSpace(updatable.String)) {
++		case "YES":
++			v := true
++			view.Updatable = &v
++		case "NO":
++			v := false
++			view.Updatable = &v
++		}
++	}
++	if definition.Valid && strings.TrimSpace(definition.String) != "" {
++		parsed, parseErr := tidbparser.ParseViewDefinition(ctx, definition.String)
++		if err := ctx.Err(); err != nil {
++			return err
++		}
++		if parseErr != nil {
++			view.Definition = &spec.ViewDefinition{SQL: definition.String}
++		} else {
++			view.Definition = parsed
++		}
++	}
++	snapshot.View = view
++	return nil
++}
++
+ // loadPartitionFacts records the observed partition catalog: whether the
+ // table is partitioned, the PARTITION_METHOD normalized lowercase
+ // (`range`, `hash`, `linear key`, `range columns`, ...), and the member
+diff --git a/internal/infrastructure/metadata/mysql/provider_t06a10_test.go b/internal/infrastructure/metadata/mysql/provider_t06a10_test.go
+index 1fafecc9..568b5c6f 100644
+--- a/internal/infrastructure/metadata/mysql/provider_t06a10_test.go
++++ b/internal/infrastructure/metadata/mysql/provider_t06a10_test.go
+@@ -16,8 +16,8 @@ import (
+ func t06A10CatalogRows(allocator driver.Value) map[string]testQueryResult {
+ 	return map[string]testQueryResult{
+ 		"from information_schema.tables": {
+-			columns: []string{"engine", "table_collation", "table_comment", "auto_increment", "row_format", "table_rows"},
+-			rows:    [][]driver.Value{{"InnoDB", "utf8mb4_bin", "", allocator, "Dynamic", int64(0)}},
++			columns: []string{"engine", "table_collation", "table_comment", "auto_increment", "row_format", "table_rows", "table_type"},
++			rows:    [][]driver.Value{{"InnoDB", "utf8mb4_bin", "", allocator, "Dynamic", int64(0), "BASE TABLE"}},
+ 		},
+ 		"from information_schema.columns": {
+ 			columns: []string{"column_name", "column_type", "character_set_name", "collation_name", "column_comment", "column_default", "is_nullable", "extra", "generation_expression"},
+diff --git a/internal/infrastructure/metadata/mysql/provider_t06a17_test.go b/internal/infrastructure/metadata/mysql/provider_t06a17_test.go
+index 71d5cf20..3fe49617 100644
+--- a/internal/infrastructure/metadata/mysql/provider_t06a17_test.go
++++ b/internal/infrastructure/metadata/mysql/provider_t06a17_test.go
+@@ -49,8 +49,8 @@ func t06a17Results() map[string]testQueryResult {
+ 	}
+ 	return map[string]testQueryResult{
+ 		"from information_schema.tables": {
+-			columns: []string{"engine", "table_collation", "table_comment", "auto_increment", "row_format", "table_rows"},
+-			rows:    [][]driver.Value{{"InnoDB", "utf8mb4_general_ci", "", nil, "Dynamic", int64(0)}},
++			columns: []string{"engine", "table_collation", "table_comment", "auto_increment", "row_format", "table_rows", "table_type"},
++			rows:    [][]driver.Value{{"InnoDB", "utf8mb4_general_ci", "", nil, "Dynamic", int64(0), "BASE TABLE"}},
+ 		},
+ 		"from information_schema.columns": {
+ 			columns: []string{"column_name", "column_type", "character_set_name", "collation_name", "column_comment", "column_default", "is_nullable", "extra", "generation_expression"},
+diff --git a/internal/infrastructure/metadata/mysql/provider_t06a4_test.go b/internal/infrastructure/metadata/mysql/provider_t06a4_test.go
+index 08d8b75c..ee3026c0 100644
+--- a/internal/infrastructure/metadata/mysql/provider_t06a4_test.go
++++ b/internal/infrastructure/metadata/mysql/provider_t06a4_test.go
+@@ -35,8 +35,8 @@ func t06a4ColumnRows(defaults []driver.Value) testQueryResult {
+ func t06a4Results(defaults []driver.Value) map[string]testQueryResult {
+ 	return map[string]testQueryResult{
+ 		"from information_schema.tables": {
+-			columns: []string{"engine", "table_collation", "table_comment", "auto_increment", "row_format", "table_rows"},
+-			rows:    [][]driver.Value{{"InnoDB", "utf8mb4_general_ci", "", nil, "Dynamic", int64(0)}},
++			columns: []string{"engine", "table_collation", "table_comment", "auto_increment", "row_format", "table_rows", "table_type"},
++			rows:    [][]driver.Value{{"InnoDB", "utf8mb4_general_ci", "", nil, "Dynamic", int64(0), "BASE TABLE"}},
+ 		},
+ 		"from information_schema.columns": t06a4ColumnRows(defaults),
+ 		"from information_schema.statistics": {
+diff --git a/internal/infrastructure/metadata/mysql/provider_t07_test.go b/internal/infrastructure/metadata/mysql/provider_t07_test.go
+index 8f014e0d..8a63a692 100644
+--- a/internal/infrastructure/metadata/mysql/provider_t07_test.go
++++ b/internal/infrastructure/metadata/mysql/provider_t07_test.go
+@@ -22,8 +22,8 @@ func t07ColumnRows(rows [][]driver.Value) testQueryResult {
+ func t07Results(columnRows [][]driver.Value) map[string]testQueryResult {
+ 	return map[string]testQueryResult{
+ 		"from information_schema.tables": {
+-			columns: []string{"engine", "table_collation", "table_comment", "auto_increment", "row_format", "table_rows"},
+-			rows:    [][]driver.Value{{"InnoDB", "utf8mb4_general_ci", "", nil, "Dynamic", int64(0)}},
++			columns: []string{"engine", "table_collation", "table_comment", "auto_increment", "row_format", "table_rows", "table_type"},
++			rows:    [][]driver.Value{{"InnoDB", "utf8mb4_general_ci", "", nil, "Dynamic", int64(0), "BASE TABLE"}},
+ 		},
+ 		"from information_schema.columns":    t07ColumnRows(columnRows),
+ 		"from information_schema.statistics": {columns: []string{"index_name", "non_unique", "index_type", "column_name", "cardinality", "sub_part", "collation"}},
+diff --git a/internal/infrastructure/metadata/mysql/provider_t08r1_test.go b/internal/infrastructure/metadata/mysql/provider_t08r1_test.go
+index 6e60720b..99d3686b 100644
+--- a/internal/infrastructure/metadata/mysql/provider_t08r1_test.go
++++ b/internal/infrastructure/metadata/mysql/provider_t08r1_test.go
+@@ -29,8 +29,8 @@ func t08r1Results(columns [][3]string) map[string]testQueryResult {
+ 	}
+ 	return map[string]testQueryResult{
+ 		"from information_schema.tables": {
+-			columns: []string{"engine", "table_collation", "table_comment", "auto_increment", "row_format", "table_rows"},
+-			rows:    [][]driver.Value{{"InnoDB", "utf8mb4_general_ci", "", nil, "Dynamic", int64(0)}},
++			columns: []string{"engine", "table_collation", "table_comment", "auto_increment", "row_format", "table_rows", "table_type"},
++			rows:    [][]driver.Value{{"InnoDB", "utf8mb4_general_ci", "", nil, "Dynamic", int64(0), "BASE TABLE"}},
+ 		},
+ 		"from information_schema.columns": {
+ 			columns: []string{"column_name", "column_type", "character_set_name", "collation_name", "column_comment", "column_default", "is_nullable", "extra", "generation_expression"},
+diff --git a/internal/infrastructure/metadata/mysql/provider_t09r1_test.go b/internal/infrastructure/metadata/mysql/provider_t09r1_test.go
+index a20bf990..bcd344b5 100644
+--- a/internal/infrastructure/metadata/mysql/provider_t09r1_test.go
++++ b/internal/infrastructure/metadata/mysql/provider_t09r1_test.go
+@@ -106,8 +106,8 @@ func TestT09R1ProviderLoadIndexesMarksNonPlain(t *testing.T) {
+ 			rows:    [][]driver.Value{{"8.0.46"}},
+ 		},
+ 		"from information_schema.tables": {
+-			columns: []string{"engine", "table_collation", "table_comment", "auto_increment", "row_format", "table_rows"},
+-			rows:    [][]driver.Value{{"InnoDB", "utf8mb4_general_ci", "", nil, "Dynamic", int64(0)}},
++			columns: []string{"engine", "table_collation", "table_comment", "auto_increment", "row_format", "table_rows", "table_type"},
++			rows:    [][]driver.Value{{"InnoDB", "utf8mb4_general_ci", "", nil, "Dynamic", int64(0), "BASE TABLE"}},
+ 		},
+ 		"from information_schema.statistics": {
+ 			columns: []string{"index_name", "non_unique", "index_type", "column_name", "cardinality", "sub_part", "collation"},
+diff --git a/internal/infrastructure/metadata/mysql/provider_t10r2_test.go b/internal/infrastructure/metadata/mysql/provider_t10r2_test.go
+index 881aeadb..41a39e5c 100644
+--- a/internal/infrastructure/metadata/mysql/provider_t10r2_test.go
++++ b/internal/infrastructure/metadata/mysql/provider_t10r2_test.go
+@@ -165,8 +165,8 @@ func TestT10R2TiDBHandleUnknownOnMissingClusteredRow(t *testing.T) {
+ 	t.Parallel()
+ 	base := map[string]testQueryResult{
+ 		"select engine, table_collation": {
+-			columns: []string{"engine", "table_collation", "table_comment", "auto_increment", "row_format", "table_rows"},
+-			rows:    [][]driver.Value{{"InnoDB", "utf8mb4_bin", "", nil, "", nil}},
++			columns: []string{"engine", "table_collation", "table_comment", "auto_increment", "row_format", "table_rows", "table_type"},
++			rows:    [][]driver.Value{{"InnoDB", "utf8mb4_bin", "", nil, "", nil, "BASE TABLE"}},
+ 		},
+ 		"information_schema.columns": {
+ 			columns: []string{"column_name", "column_type", "character_set_name", "collation_name", "column_comment", "column_default", "is_nullable", "extra", "generation_expression"},
+diff --git a/internal/infrastructure/metadata/mysql/provider_t10r4_test.go b/internal/infrastructure/metadata/mysql/provider_t10r4_test.go
+index 595e488d..c019c006 100644
+--- a/internal/infrastructure/metadata/mysql/provider_t10r4_test.go
++++ b/internal/infrastructure/metadata/mysql/provider_t10r4_test.go
+@@ -165,8 +165,8 @@ func TestT10R4TiDBClusteredFactMatrix(t *testing.T) {
+ 	base := func(columnRows, statRows [][]driver.Value) map[string]testQueryResult {
+ 		return map[string]testQueryResult{
+ 			"select engine, table_collation": {
+-				columns: []string{"engine", "table_collation", "table_comment", "auto_increment", "row_format", "table_rows"},
+-				rows:    [][]driver.Value{{"InnoDB", "utf8mb4_bin", "", nil, "", nil}},
++				columns: []string{"engine", "table_collation", "table_comment", "auto_increment", "row_format", "table_rows", "table_type"},
++				rows:    [][]driver.Value{{"InnoDB", "utf8mb4_bin", "", nil, "", nil, "BASE TABLE"}},
+ 			},
+ 			"information_schema.columns": {
+ 				columns: []string{"column_name", "column_type", "character_set_name", "collation_name", "column_comment", "column_default", "is_nullable", "extra", "generation_expression"},
+@@ -302,8 +302,8 @@ func TestT10R4TiDBPrimaryNameBindingMatrix(t *testing.T) {
+ 	base := func(columnRows, statRows [][]driver.Value) map[string]testQueryResult {
+ 		return map[string]testQueryResult{
+ 			"select engine, table_collation": {
+-				columns: []string{"engine", "table_collation", "table_comment", "auto_increment", "row_format", "table_rows"},
+-				rows:    [][]driver.Value{{"InnoDB", "utf8mb4_bin", "", nil, "", nil}},
++				columns: []string{"engine", "table_collation", "table_comment", "auto_increment", "row_format", "table_rows", "table_type"},
++				rows:    [][]driver.Value{{"InnoDB", "utf8mb4_bin", "", nil, "", nil, "BASE TABLE"}},
+ 			},
+ 			"information_schema.columns": {
+ 				columns: []string{"column_name", "column_type", "character_set_name", "collation_name", "column_comment", "column_default", "is_nullable", "extra", "generation_expression"},
+diff --git a/internal/infrastructure/metadata/mysql/provider_t10r5_test.go b/internal/infrastructure/metadata/mysql/provider_t10r5_test.go
+index 46ad013f..7c1391b6 100644
+--- a/internal/infrastructure/metadata/mysql/provider_t10r5_test.go
++++ b/internal/infrastructure/metadata/mysql/provider_t10r5_test.go
+@@ -24,8 +24,8 @@ import (
+ func t10r5Base(columnRows, statRows [][]driver.Value) map[string]testQueryResult {
+ 	return map[string]testQueryResult{
+ 		"select engine, table_collation": {
+-			columns: []string{"engine", "table_collation", "table_comment", "auto_increment", "row_format", "table_rows"},
+-			rows:    [][]driver.Value{{"InnoDB", "utf8mb4_bin", "", nil, "", nil}},
++			columns: []string{"engine", "table_collation", "table_comment", "auto_increment", "row_format", "table_rows", "table_type"},
++			rows:    [][]driver.Value{{"InnoDB", "utf8mb4_bin", "", nil, "", nil, "BASE TABLE"}},
+ 		},
+ 		"information_schema.columns": {
+ 			columns: []string{"column_name", "column_type", "character_set_name", "collation_name", "column_comment", "column_default", "is_nullable", "extra", "generation_expression"},
+diff --git a/internal/infrastructure/metadata/mysql/provider_t13r2_test.go b/internal/infrastructure/metadata/mysql/provider_t13r2_test.go
+index b292ffb8..3fad2612 100644
+--- a/internal/infrastructure/metadata/mysql/provider_t13r2_test.go
++++ b/internal/infrastructure/metadata/mysql/provider_t13r2_test.go
+@@ -20,8 +20,8 @@ func TestT13R2SubpartitionedCatalogKeepsNamesUnobserved(t *testing.T) {
+ 	t.Parallel()
+ 	db := openTestDB(t, map[string]testQueryResult{
+ 		"select engine, table_collation": {
+-			columns: []string{"engine", "table_collation", "table_comment", "auto_increment", "row_format", "table_rows"},
+-			rows:    [][]driver.Value{{"InnoDB", "utf8mb4_bin", "", nil, "", nil}},
++			columns: []string{"engine", "table_collation", "table_comment", "auto_increment", "row_format", "table_rows", "table_type"},
++			rows:    [][]driver.Value{{"InnoDB", "utf8mb4_bin", "", nil, "", nil, "BASE TABLE"}},
+ 		},
+ 		"information_schema.columns": {
+ 			columns: []string{"column_name", "column_type", "character_set_name", "collation_name", "column_comment", "column_default", "is_nullable", "extra", "generation_expression"},
+@@ -61,8 +61,8 @@ func TestT13R2PlainCatalogStillComplete(t *testing.T) {
+ 	t.Parallel()
+ 	db := openTestDB(t, map[string]testQueryResult{
+ 		"select engine, table_collation": {
+-			columns: []string{"engine", "table_collation", "table_comment", "auto_increment", "row_format", "table_rows"},
+-			rows:    [][]driver.Value{{"InnoDB", "utf8mb4_bin", "", nil, "", nil}},
++			columns: []string{"engine", "table_collation", "table_comment", "auto_increment", "row_format", "table_rows", "table_type"},
++			rows:    [][]driver.Value{{"InnoDB", "utf8mb4_bin", "", nil, "", nil, "BASE TABLE"}},
+ 		},
+ 		"information_schema.columns": {
+ 			columns: []string{"column_name", "column_type", "character_set_name", "collation_name", "column_comment", "column_default", "is_nullable", "extra", "generation_expression"},
+diff --git a/internal/infrastructure/metadata/mysql/provider_test.go b/internal/infrastructure/metadata/mysql/provider_test.go
+index 398e75c4..d534e78b 100644
+--- a/internal/infrastructure/metadata/mysql/provider_test.go
++++ b/internal/infrastructure/metadata/mysql/provider_test.go
+@@ -832,7 +832,7 @@ func ptrTestString(value string) *string {
+ func TestLoadTableSnapshotReturnsNotExistsWhenNoTableRow(t *testing.T) {
+ 	db := openTestDB(t, map[string]testQueryResult{
+ 		"from information_schema.tables": {
+-			columns: []string{"engine", "table_collation", "table_comment", "auto_increment", "row_format", "table_rows"},
++			columns: []string{"engine", "table_collation", "table_comment", "auto_increment", "row_format", "table_rows", "table_type"},
+ 			rows:    [][]driver.Value{},
+ 		},
+ 	})
+@@ -876,9 +876,9 @@ func TestFindSchemasForTableWithMockDB(t *testing.T) {
+ func TestLoadTableSnapshotPreservesIndexCardinalityFromStatisticsRows(t *testing.T) {
+ 	db := openTestDB(t, map[string]testQueryResult{
+ 		"from information_schema.tables": {
+-			columns: []string{"engine", "table_collation", "table_comment", "auto_increment", "row_format", "table_rows"},
++			columns: []string{"engine", "table_collation", "table_comment", "auto_increment", "row_format", "table_rows", "table_type"},
+ 			rows: [][]driver.Value{{
+-				"InnoDB", "utf8mb4_general_ci", "users table", nil, "Dynamic", int64(100),
++				"InnoDB", "utf8mb4_general_ci", "users table", nil, "Dynamic", int64(100), "BASE TABLE",
+ 			}},
+ 		},
+ 		"from information_schema.columns": {
+@@ -1117,8 +1117,8 @@ func TestLoadTableSnapshotUnmodeledConstraintTypeUnvouchesCollection(t *testing.
+ 	baseResults := func() map[string]testQueryResult {
+ 		return map[string]testQueryResult{
+ 			"from information_schema.tables": {
+-				columns: []string{"engine", "table_collation", "table_comment", "auto_increment", "row_format", "table_rows"},
+-				rows:    [][]driver.Value{{"InnoDB", "utf8mb4_general_ci", "t", nil, "Dynamic", int64(10)}},
++				columns: []string{"engine", "table_collation", "table_comment", "auto_increment", "row_format", "table_rows", "table_type"},
++				rows:    [][]driver.Value{{"InnoDB", "utf8mb4_general_ci", "t", nil, "Dynamic", int64(10), "BASE TABLE"}},
+ 			},
+ 			"from information_schema.columns": {
+ 				columns: []string{"column_name", "column_type", "character_set_name", "collation_name", "column_comment", "column_default", "is_nullable", "extra", "generation_expression"},
+@@ -1197,8 +1197,8 @@ func TestLoadTableSnapshotCheckConstraintMembers(t *testing.T) {
+ 	baseResults := func() map[string]testQueryResult {
+ 		return map[string]testQueryResult{
+ 			"from information_schema.tables": {
+-				columns: []string{"engine", "table_collation", "table_comment", "auto_increment", "row_format", "table_rows"},
+-				rows:    [][]driver.Value{{"InnoDB", "utf8mb4_general_ci", "t", nil, "Dynamic", int64(10)}},
++				columns: []string{"engine", "table_collation", "table_comment", "auto_increment", "row_format", "table_rows", "table_type"},
++				rows:    [][]driver.Value{{"InnoDB", "utf8mb4_general_ci", "t", nil, "Dynamic", int64(10), "BASE TABLE"}},
+ 			},
+ 			"from information_schema.columns": {
+ 				columns: []string{"column_name", "column_type", "character_set_name", "collation_name", "column_comment", "column_default", "is_nullable", "extra", "generation_expression"},
+diff --git a/internal/infrastructure/parser/tidb/README.md b/internal/infrastructure/parser/tidb/README.md
+index fd479d54..efd81287 100644
+--- a/internal/infrastructure/parser/tidb/README.md
++++ b/internal/infrastructure/parser/tidb/README.md
+@@ -2,10 +2,17 @@
+ 
+ TiDB-backed parser adapter for multi-statement SQL parsing, parser-warning collection, and query access extraction.
+ 
++The first view slice validates ALTER VIEW identifiers against the locked
++parser, retains source aliases and authored offsets, and parses the untouched
++SELECT. Non-plain shapes remain incomplete; CTE dependency completeness is
++withheld until lexical source binding is modeled.
++
+ ## Files
+ 
+ | File | Responsibility |
+ |------|---------------|
++| view.go | Parses structured view headers and untouched SELECT definitions; preserves private definitions, dependencies and bounded column bindings |
++| view_t18_first_test.go | Exercises ALTER identity, strict identifier and definer grammar, bare CHECK boundaries and external definition sources |
+ | parser.go | Parses SQL text and preserves raw statement nodes plus parser warnings; on a base-grammar failure it runs the bounded `supplementDefaultExpressions` retry |
+ | supplement.go | Bounded grammar supplement: `DEFAULT (<expr>)` sites are located by structural tokenization (strings, quoted identifiers, and comments skipped) with their column identity, rewritten in place with a same-width literal placeholder, reparsed, and rebound to the real `SELECT`-parsed expression AST by site-span position — CREATE `ColumnOptionDefaultValue` and ALTER `SET/DROP DEFAULT` setter options (carried as `ColumnOptionNoOption`) both bind, while options outside every planned site (bare literal defaults) stay untouched; original statement text/offsets are restored verbatim and any mismatch fails closed to the original parse error — the placeholder literal never escapes into facts |
+ | expression_facts.go | Collects evaluation-free `spec.ExpressionFacts` from parsed expression ASTs — ordered deduplicated qualified column references, lowercase callee names plus the `CallCount` function-call-node count (so a single bare call is provable where a deduplicated name set cannot prove it), construct features (subquery/aggregate/arithmetic/unknown-function/unknown-shape), the `TopForm` outer-root classification (`call`/`literal`/`column`/`arithmetic`/`unary`/`case`/`subquery`/`aggregate`/`other`) for complete-shape adjudication, `RootParenthesized` for the authored parens wrapper (`parseSelectExpressionAST` strips only the wrapper layer it added itself), and a structural SHA-256 fingerprint — with a bounded node budget; `ParseCatalogExpressionFacts` parses provider `GENERATION_EXPRESSION`/default catalog text, decoding only one layer of valid SQL-string escapes and returning unknown facts for unparseable input; `MultiValuedCastFacts` normalizes a `CAST(… AS <T> ARRAY)` member into the element cast family plus the authored-length bit (FieldType.GetType reports JSON for the array wrapper, so element type/length come from `Tp.ArrayType()`) feeding the T10-R2 member-legality matrix |
+@@ -48,6 +55,7 @@ TiDB-backed parser adapter for multi-statement SQL parsing, parser-warning colle
+ - `Result`
+ - `ExtractedStatement`
+ - `New()`
++- `ParseViewDefinition()`
+ - `WrapStatements()`
+ - `QueryAccessExtractor`
+ - `QueryAccessFacts`
+diff --git a/internal/infrastructure/parser/tidb/extractor.go b/internal/infrastructure/parser/tidb/extractor.go
+index a1def99c..c3143f42 100644
+--- a/internal/infrastructure/parser/tidb/extractor.go
++++ b/internal/infrastructure/parser/tidb/extractor.go
+@@ -74,12 +74,37 @@ func (e tidbExtractor) Extract(dialect spec.Dialect, rawSQL string) (spec.Statem
+ 	if e.kind == spec.KindUnknown {
+ 		statement.Warnings = append([]string(nil), e.warnings...)
+ 	}
++	if node, ok := e.node.(*viewStatement); ok {
++		target := node.target
++		statement.DDL = &spec.DDL{
++			Operation: node.operation, Table: &target, HasSelect: true, View: node.declaration,
++			UnextractedOptions: unmodeledViewOptions(node.declaration),
++		}
++		if node.declaration.Definition != nil {
++			statement.DDL.SelectSources = append([]spec.Table(nil), node.declaration.Definition.Sources...)
++		}
++		applyCoverageBoundary(dialect, &statement, e.node)
++		if dialect == spec.DialectTiDB && (node.operation == spec.DDLOperationAlterView || node.declaration.CheckBare) {
++			statement.Unsupported = &spec.UnsupportedDetail{
++				Feature: "view.syntax", Reason: spec.UnsupportedVendorBoundaryReason,
++			}
++		}
++		return statement, nil
++	}
+ 
+ 	switch node := e.node.(type) {
+ 	case *ast.CreateTableStmt:
+ 		statement.DDL = extractCreateTable(node, rawSQL)
+ 	case *ast.CreateViewStmt:
+ 		statement.DDL = extractCreateView(node)
++		if header, ok := parseViewHeader(rawSQL); ok && header.operation == spec.DDLOperationCreateView {
++			header.declaration.Definition = viewDefinition(node.Select, rawSQL, header.selectStart, 0, true)
++			statement.DDL.View = header.declaration
++			statement.DDL.UnextractedOptions = unmodeledViewOptions(header.declaration)
++			if header.declaration.Definition != nil {
++				statement.DDL.SelectSources = append([]spec.Table(nil), header.declaration.Definition.Sources...)
++			}
++		}
+ 	case *ast.AlterTableStmt:
+ 		statement.DDL = extractAlterTable(node, rawSQL)
+ 	case *ast.DropTableStmt:
+@@ -216,6 +241,7 @@ func classify(stmt ast.StmtNode) spec.Kind {
+ 	switch stmt.(type) {
+ 	case *ast.CreateTableStmt,
+ 		*ast.CreateViewStmt,
++		*viewStatement,
+ 		*ast.CreateIndexStmt,
+ 		*ast.AlterTableStmt,
+ 		*ast.DropTableStmt,
+diff --git a/internal/infrastructure/parser/tidb/parser.go b/internal/infrastructure/parser/tidb/parser.go
+index 90e33da3..deecc412 100644
+--- a/internal/infrastructure/parser/tidb/parser.go
++++ b/internal/infrastructure/parser/tidb/parser.go
+@@ -39,7 +39,15 @@ func (p *Parser) Parse(ctx context.Context, sql string) (Result, error) {
+ 	// base parse so failures keep their original diagnostics.
+ 	var parsed []ast.StmtNode
+ 	var warns []error
+-	if recovered, recoveredWarns, ok := runSupplementedParse(sql); ok {
++	header, viewHeaderOK := parseViewHeader(sql)
++	if viewHeaderOK && (header.operation == spec.DDLOperationAlterView || header.declaration.CheckBare) {
++		if view, viewWarns, ok := parseViewAdapter(ctx, sql); ok {
++			parsed, warns = []ast.StmtNode{view}, viewWarns
++		}
++	}
++	if parsed != nil {
++		// The adapter owns the original statement and its parsed SELECT.
++	} else if recovered, recoveredWarns, ok := runSupplementedParse(sql); ok {
+ 		parsed, warns = recovered, recoveredWarns
+ 	} else {
+ 		var err error
+diff --git a/internal/interfaces/http/audit_provider_defaults_t06a4_test.go b/internal/interfaces/http/audit_provider_defaults_t06a4_test.go
+index 1ebda8ff..aed96b60 100644
+--- a/internal/interfaces/http/audit_provider_defaults_t06a4_test.go
++++ b/internal/interfaces/http/audit_provider_defaults_t06a4_test.go
+@@ -113,8 +113,8 @@ func (c t06a4HTTPConn) QueryContext(_ context.Context, query string, _ []driver.
+ 		}, nil
+ 	case strings.Contains(query, "information_schema.tables"):
+ 		return &t06a4HTTPRows{
+-			cols: []string{"engine", "table_collation", "table_comment", "auto_increment", "row_format", "table_rows"},
+-			rows: [][]driver.Value{{"InnoDB", "utf8mb4_general_ci", "", nil, "Dynamic", int64(0)}},
++			cols: []string{"engine", "table_collation", "table_comment", "auto_increment", "row_format", "table_rows", "table_type"},
++			rows: [][]driver.Value{{"InnoDB", "utf8mb4_general_ci", "", nil, "Dynamic", int64(0), "BASE TABLE"}},
+ 		}, nil
+ 	}
+ 	return nil, sql.ErrNoRows
+diff --git a/pkg/deltascope/README.md b/pkg/deltascope/README.md
+index 8cd5d8b0..23c09d2f 100644
+--- a/pkg/deltascope/README.md
++++ b/pkg/deltascope/README.md
+@@ -6,6 +6,7 @@ Stable public package surface for library consumers.
+ 
+ | File | Responsibility |
+ |------|---------------|
++| audit_t18_view_first_test.go | Exercises public ALTER VIEW behavior, independent evidence, source bindings, parser controls and privacy |
+ | doc.go | Declares the public package placeholder |
+ | audit.go | Exposes the stable public audit API, optional metadata-provider hooks, and public result/request types |
+ | query_access.go | Exposes the stable public query access analysis API, schema resolver interface, and public result/request types |
+@@ -68,6 +69,7 @@ Stable public package surface for library consumers.
+   server collation, and configurable utf8mb4 default collation; empty means
+   unobserved and `DefaultCharset` is the request database charset.
+ - `TableSnapshot`
++- `ViewSnapshot`, `ViewDefinition`, `ViewColumnBinding` for metadata-provider view facts
+ - `Table`
+ - `Column`
+ - `Index`
+diff --git a/pkg/deltascope/audit.go b/pkg/deltascope/audit.go
+index 3f6aa06b..22ece7d1 100644
+--- a/pkg/deltascope/audit.go
++++ b/pkg/deltascope/audit.go
+@@ -65,6 +65,15 @@ type InstanceFacts = spec.InstanceFacts
+ // TableSnapshot mirrors metadata-aware target table snapshots for public providers.
+ type TableSnapshot = spec.TableSnapshot
+ 
++// ViewSnapshot carries private view-definition facts for metadata providers.
++type ViewSnapshot = spec.ViewSnapshot
++
++// ViewDefinition carries a normalized, non-executed view query.
++type ViewDefinition = spec.ViewDefinition
++
++// ViewColumnBinding describes one statically identified view output column.
++type ViewColumnBinding = spec.ViewColumnBinding
++
+ // Table mirrors the domain table shape used inside metadata snapshots.
+ type Table = spec.Table
+ 
+@@ -458,6 +467,7 @@ func cloneTableSnapshot(in *spec.TableSnapshot) *spec.TableSnapshot {
+ 		return nil
+ 	}
+ 	out := *in
++	out.View = spec.CloneViewSnapshot(in.View)
+ 	if in.Table != nil {
+ 		table := *in.Table
+ 		out.Table = &table
+diff --git a/pkg/deltascope/audit_provider_defaults_t06a4_test.go b/pkg/deltascope/audit_provider_defaults_t06a4_test.go
+index 4f31f6de..e72612d5 100644
+--- a/pkg/deltascope/audit_provider_defaults_t06a4_test.go
++++ b/pkg/deltascope/audit_provider_defaults_t06a4_test.go
+@@ -111,8 +111,8 @@ func (c t06a4SDKConn) QueryContext(_ context.Context, query string, _ []driver.N
+ 		}, nil
+ 	case strings.Contains(query, "information_schema.tables"):
+ 		return &t06a4SDKRows{
+-			cols: []string{"engine", "table_collation", "table_comment", "auto_increment", "row_format", "table_rows"},
+-			rows: [][]driver.Value{{"InnoDB", "utf8mb4_general_ci", "", nil, "Dynamic", int64(0)}},
++			cols: []string{"engine", "table_collation", "table_comment", "auto_increment", "row_format", "table_rows", "table_type"},
++			rows: [][]driver.Value{{"InnoDB", "utf8mb4_general_ci", "", nil, "Dynamic", int64(0), "BASE TABLE"}},
+ 		}, nil
+ 	}
+ 	return nil, sql.ErrNoRows
+diff --git a/pkg/deltascope/audit_unsupported_diagnostics_evidence_test.go b/pkg/deltascope/audit_unsupported_diagnostics_evidence_test.go
+index a5135f09..866a654d 100644
+--- a/pkg/deltascope/audit_unsupported_diagnostics_evidence_test.go
++++ b/pkg/deltascope/audit_unsupported_diagnostics_evidence_test.go
+@@ -114,7 +114,7 @@ func TestUnsupportedDiagnosticsGuidanceCodeSDKMySQL(t *testing.T) {
+ 	t.Parallel()
+ 
+ 	result, err := Audit(context.Background(), Request{
+-		SQL:     "ALTER VIEW v_users AS SELECT id, name FROM users",
++		SQL:     "ALTER PROCEDURE v_users COMMENT 'x'",
+ 		Dialect: DialectMySQL,
+ 	})
+ 	if err == nil {

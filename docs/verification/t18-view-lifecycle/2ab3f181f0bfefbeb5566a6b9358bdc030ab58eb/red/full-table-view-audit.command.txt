@@ -1,0 +1,1 @@
+go test ./internal/application/audit -run '^TestT18FullAlterTableCannotMutateView$' -count=1 -v

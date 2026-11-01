@@ -1,0 +1,10 @@
+=== RUN   TestT18FullCheckResolvedAlgorithms
+=== RUN   TestT18FullCheckResolvedAlgorithms/inherited_merge
+=== RUN   TestT18FullCheckResolvedAlgorithms/inherited_temptable
+=== RUN   TestT18FullCheckResolvedAlgorithms/explicit_merge
+--- PASS: TestT18FullCheckResolvedAlgorithms (0.02s)
+    --- PASS: TestT18FullCheckResolvedAlgorithms/inherited_merge (0.01s)
+    --- PASS: TestT18FullCheckResolvedAlgorithms/inherited_temptable (0.00s)
+    --- PASS: TestT18FullCheckResolvedAlgorithms/explicit_merge (0.00s)
+PASS
+ok  	github.com/Fanduzi/DeltaScope/pkg/deltascope	0.614s

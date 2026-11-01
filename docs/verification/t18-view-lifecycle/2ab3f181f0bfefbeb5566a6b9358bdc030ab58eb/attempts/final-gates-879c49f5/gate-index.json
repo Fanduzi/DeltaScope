@@ -1,0 +1,350 @@
+{
+  "expected_head": "879c49f58d8df02120875fffc901dc2d672210f0",
+  "gates": [
+    {
+      "entry": 1,
+      "stem": "01-go-test",
+      "command": "go test ./... -count=1",
+      "rc": 1,
+      "head_before": "879c49f58d8df02120875fffc901dc2d672210f0",
+      "head_after": "879c49f58d8df02120875fffc901dc2d672210f0",
+      "receipts": {
+        "command": "/tmp/t18-evidence/final-gates/01-go-test.command.txt",
+        "stdout": "/tmp/t18-evidence/final-gates/01-go-test.stdout.txt",
+        "stderr": "/tmp/t18-evidence/final-gates/01-go-test.stderr.txt",
+        "rc": "/tmp/t18-evidence/final-gates/01-go-test.rc.txt",
+        "identity": "/tmp/t18-evidence/final-gates/01-go-test.identity.txt"
+      }
+    },
+    {
+      "entry": 2,
+      "stem": "02-go-vet",
+      "command": "go vet ./...",
+      "rc": 0,
+      "head_before": "879c49f58d8df02120875fffc901dc2d672210f0",
+      "head_after": "879c49f58d8df02120875fffc901dc2d672210f0",
+      "receipts": {
+        "command": "/tmp/t18-evidence/final-gates/02-go-vet.command.txt",
+        "stdout": "/tmp/t18-evidence/final-gates/02-go-vet.stdout.txt",
+        "stderr": "/tmp/t18-evidence/final-gates/02-go-vet.stderr.txt",
+        "rc": "/tmp/t18-evidence/final-gates/02-go-vet.rc.txt",
+        "identity": "/tmp/t18-evidence/final-gates/02-go-vet.identity.txt"
+      }
+    },
+    {
+      "entry": 3,
+      "stem": "03-race-internal",
+      "command": "env CGO_ENABLED=1 go test -race ./internal/... -count=1",
+      "rc": 1,
+      "head_before": "879c49f58d8df02120875fffc901dc2d672210f0",
+      "head_after": "879c49f58d8df02120875fffc901dc2d672210f0",
+      "receipts": {
+        "command": "/tmp/t18-evidence/final-gates/03-race-internal.command.txt",
+        "stdout": "/tmp/t18-evidence/final-gates/03-race-internal.stdout.txt",
+        "stderr": "/tmp/t18-evidence/final-gates/03-race-internal.stderr.txt",
+        "rc": "/tmp/t18-evidence/final-gates/03-race-internal.rc.txt",
+        "identity": "/tmp/t18-evidence/final-gates/03-race-internal.identity.txt"
+      }
+    },
+    {
+      "entry": 4,
+      "stem": "04-pg-confidence",
+      "command": "make pg-confidence-gates",
+      "rc": 2,
+      "head_before": "879c49f58d8df02120875fffc901dc2d672210f0",
+      "head_after": "879c49f58d8df02120875fffc901dc2d672210f0",
+      "receipts": {
+        "command": "/tmp/t18-evidence/final-gates/04-pg-confidence.command.txt",
+        "stdout": "/tmp/t18-evidence/final-gates/04-pg-confidence.stdout.txt",
+        "stderr": "/tmp/t18-evidence/final-gates/04-pg-confidence.stderr.txt",
+        "rc": "/tmp/t18-evidence/final-gates/04-pg-confidence.rc.txt",
+        "identity": "/tmp/t18-evidence/final-gates/04-pg-confidence.identity.txt"
+      }
+    },
+    {
+      "entry": 5,
+      "stem": "05-sql-corpus",
+      "command": "make sql-corpus-gates",
+      "rc": 0,
+      "head_before": "879c49f58d8df02120875fffc901dc2d672210f0",
+      "head_after": "879c49f58d8df02120875fffc901dc2d672210f0",
+      "receipts": {
+        "command": "/tmp/t18-evidence/final-gates/05-sql-corpus.command.txt",
+        "stdout": "/tmp/t18-evidence/final-gates/05-sql-corpus.stdout.txt",
+        "stderr": "/tmp/t18-evidence/final-gates/05-sql-corpus.stderr.txt",
+        "rc": "/tmp/t18-evidence/final-gates/05-sql-corpus.rc.txt",
+        "identity": "/tmp/t18-evidence/final-gates/05-sql-corpus.identity.txt"
+      }
+    },
+    {
+      "entry": 6,
+      "stem": "06-query-access-corpus",
+      "command": "make query-access-corpus-gates",
+      "rc": 0,
+      "head_before": "879c49f58d8df02120875fffc901dc2d672210f0",
+      "head_after": "879c49f58d8df02120875fffc901dc2d672210f0",
+      "receipts": {
+        "command": "/tmp/t18-evidence/final-gates/06-query-access-corpus.command.txt",
+        "stdout": "/tmp/t18-evidence/final-gates/06-query-access-corpus.stdout.txt",
+        "stderr": "/tmp/t18-evidence/final-gates/06-query-access-corpus.stderr.txt",
+        "rc": "/tmp/t18-evidence/final-gates/06-query-access-corpus.rc.txt",
+        "identity": "/tmp/t18-evidence/final-gates/06-query-access-corpus.identity.txt"
+      }
+    },
+    {
+      "entry": 7,
+      "stem": "07-ddl-inventory",
+      "command": "make ddl-inventory-gate",
+      "rc": 0,
+      "head_before": "879c49f58d8df02120875fffc901dc2d672210f0",
+      "head_after": "879c49f58d8df02120875fffc901dc2d672210f0",
+      "receipts": {
+        "command": "/tmp/t18-evidence/final-gates/07-ddl-inventory.command.txt",
+        "stdout": "/tmp/t18-evidence/final-gates/07-ddl-inventory.stdout.txt",
+        "stderr": "/tmp/t18-evidence/final-gates/07-ddl-inventory.stderr.txt",
+        "rc": "/tmp/t18-evidence/final-gates/07-ddl-inventory.rc.txt",
+        "identity": "/tmp/t18-evidence/final-gates/07-ddl-inventory.identity.txt"
+      }
+    },
+    {
+      "entry": 8,
+      "stem": "08-ddl-catalog",
+      "command": "make ddl-coverage-catalog-test",
+      "rc": 0,
+      "head_before": "879c49f58d8df02120875fffc901dc2d672210f0",
+      "head_after": "879c49f58d8df02120875fffc901dc2d672210f0",
+      "receipts": {
+        "command": "/tmp/t18-evidence/final-gates/08-ddl-catalog.command.txt",
+        "stdout": "/tmp/t18-evidence/final-gates/08-ddl-catalog.stdout.txt",
+        "stderr": "/tmp/t18-evidence/final-gates/08-ddl-catalog.stderr.txt",
+        "rc": "/tmp/t18-evidence/final-gates/08-ddl-catalog.rc.txt",
+        "identity": "/tmp/t18-evidence/final-gates/08-ddl-catalog.identity.txt"
+      }
+    },
+    {
+      "entry": 9,
+      "stem": "09-golden-validator",
+      "command": "make ddl-golden-validator-test",
+      "rc": 0,
+      "head_before": "879c49f58d8df02120875fffc901dc2d672210f0",
+      "head_after": "879c49f58d8df02120875fffc901dc2d672210f0",
+      "receipts": {
+        "command": "/tmp/t18-evidence/final-gates/09-golden-validator.command.txt",
+        "stdout": "/tmp/t18-evidence/final-gates/09-golden-validator.stdout.txt",
+        "stderr": "/tmp/t18-evidence/final-gates/09-golden-validator.stderr.txt",
+        "rc": "/tmp/t18-evidence/final-gates/09-golden-validator.rc.txt",
+        "identity": "/tmp/t18-evidence/final-gates/09-golden-validator.identity.txt"
+      }
+    },
+    {
+      "entry": 10,
+      "stem": "10-parser-error-contract",
+      "command": "make parser-error-unsupported-contract-test",
+      "rc": 0,
+      "head_before": "879c49f58d8df02120875fffc901dc2d672210f0",
+      "head_after": "879c49f58d8df02120875fffc901dc2d672210f0",
+      "receipts": {
+        "command": "/tmp/t18-evidence/final-gates/10-parser-error-contract.command.txt",
+        "stdout": "/tmp/t18-evidence/final-gates/10-parser-error-contract.stdout.txt",
+        "stderr": "/tmp/t18-evidence/final-gates/10-parser-error-contract.stderr.txt",
+        "rc": "/tmp/t18-evidence/final-gates/10-parser-error-contract.rc.txt",
+        "identity": "/tmp/t18-evidence/final-gates/10-parser-error-contract.identity.txt"
+      }
+    },
+    {
+      "entry": 11,
+      "stem": "11-unsupported-diagnostics",
+      "command": "make unsupported-diagnostics-evidence-test",
+      "rc": 0,
+      "head_before": "879c49f58d8df02120875fffc901dc2d672210f0",
+      "head_after": "879c49f58d8df02120875fffc901dc2d672210f0",
+      "receipts": {
+        "command": "/tmp/t18-evidence/final-gates/11-unsupported-diagnostics.command.txt",
+        "stdout": "/tmp/t18-evidence/final-gates/11-unsupported-diagnostics.stdout.txt",
+        "stderr": "/tmp/t18-evidence/final-gates/11-unsupported-diagnostics.stderr.txt",
+        "rc": "/tmp/t18-evidence/final-gates/11-unsupported-diagnostics.rc.txt",
+        "identity": "/tmp/t18-evidence/final-gates/11-unsupported-diagnostics.identity.txt"
+      }
+    },
+    {
+      "entry": 12,
+      "stem": "12-http-mcp-t18",
+      "command": "go test ./internal/interfaces/http ./internal/interfaces/mcp -run '^TestT18' -count=1 -v",
+      "rc": 0,
+      "head_before": "879c49f58d8df02120875fffc901dc2d672210f0",
+      "head_after": "879c49f58d8df02120875fffc901dc2d672210f0",
+      "receipts": {
+        "command": "/tmp/t18-evidence/final-gates/12-http-mcp-t18.command.txt",
+        "stdout": "/tmp/t18-evidence/final-gates/12-http-mcp-t18.stdout.txt",
+        "stderr": "/tmp/t18-evidence/final-gates/12-http-mcp-t18.stderr.txt",
+        "rc": "/tmp/t18-evidence/final-gates/12-http-mcp-t18.rc.txt",
+        "identity": "/tmp/t18-evidence/final-gates/12-http-mcp-t18.identity.txt"
+      }
+    },
+    {
+      "entry": 13,
+      "stem": "13-docs-examples",
+      "command": "make docs-example-gates",
+      "rc": 0,
+      "head_before": "879c49f58d8df02120875fffc901dc2d672210f0",
+      "head_after": "879c49f58d8df02120875fffc901dc2d672210f0",
+      "receipts": {
+        "command": "/tmp/t18-evidence/final-gates/13-docs-examples.command.txt",
+        "stdout": "/tmp/t18-evidence/final-gates/13-docs-examples.stdout.txt",
+        "stderr": "/tmp/t18-evidence/final-gates/13-docs-examples.stderr.txt",
+        "rc": "/tmp/t18-evidence/final-gates/13-docs-examples.rc.txt",
+        "identity": "/tmp/t18-evidence/final-gates/13-docs-examples.identity.txt"
+      }
+    },
+    {
+      "entry": 14,
+      "stem": "14-decision-record",
+      "command": "make decision-record-gate",
+      "rc": 0,
+      "head_before": "879c49f58d8df02120875fffc901dc2d672210f0",
+      "head_after": "879c49f58d8df02120875fffc901dc2d672210f0",
+      "receipts": {
+        "command": "/tmp/t18-evidence/final-gates/14-decision-record.command.txt",
+        "stdout": "/tmp/t18-evidence/final-gates/14-decision-record.stdout.txt",
+        "stderr": "/tmp/t18-evidence/final-gates/14-decision-record.stderr.txt",
+        "rc": "/tmp/t18-evidence/final-gates/14-decision-record.rc.txt",
+        "identity": "/tmp/t18-evidence/final-gates/14-decision-record.identity.txt"
+      }
+    },
+    {
+      "entry": 15,
+      "stem": "15-decision-range",
+      "command": "./scripts/check_decision_record.sh 7f67c5de42fb6096d9c80f51e2d0f217eb34e528..879c49f58d8df02120875fffc901dc2d672210f0",
+      "rc": 0,
+      "head_before": "879c49f58d8df02120875fffc901dc2d672210f0",
+      "head_after": "879c49f58d8df02120875fffc901dc2d672210f0",
+      "receipts": {
+        "command": "/tmp/t18-evidence/final-gates/15-decision-range.command.txt",
+        "stdout": "/tmp/t18-evidence/final-gates/15-decision-range.stdout.txt",
+        "stderr": "/tmp/t18-evidence/final-gates/15-decision-range.stderr.txt",
+        "rc": "/tmp/t18-evidence/final-gates/15-decision-range.rc.txt",
+        "identity": "/tmp/t18-evidence/final-gates/15-decision-range.identity.txt"
+      }
+    },
+    {
+      "entry": 16,
+      "stem": "16-l2-range",
+      "command": "/opt/homebrew/bin/bash docs/verification/t17-database-schema-lifecycle/adc1f7322e1c70524435ed687fe27b67b931abb5/gates/l2_committed_range_check.sh 7f67c5de42fb6096d9c80f51e2d0f217eb34e528..879c49f58d8df02120875fffc901dc2d672210f0",
+      "rc": 1,
+      "head_before": "879c49f58d8df02120875fffc901dc2d672210f0",
+      "head_after": "879c49f58d8df02120875fffc901dc2d672210f0",
+      "receipts": {
+        "command": "/tmp/t18-evidence/final-gates/16-l2-range.command.txt",
+        "stdout": "/tmp/t18-evidence/final-gates/16-l2-range.stdout.txt",
+        "stderr": "/tmp/t18-evidence/final-gates/16-l2-range.stderr.txt",
+        "rc": "/tmp/t18-evidence/final-gates/16-l2-range.rc.txt",
+        "identity": "/tmp/t18-evidence/final-gates/16-l2-range.identity.txt"
+      }
+    },
+    {
+      "entry": 17,
+      "stem": "17-format-diff",
+      "command": "python3 -c 'import pathlib,sys; p=pathlib.Path(\"/tmp/t18-evidence/product-paths.txt\"); sys.stdout.buffer.write(b\"\".join((x+\"\\0\").encode() for x in p.read_text().splitlines() if x.endswith(\".go\")))' | xargs -0 gofmt -l\ngit diff --check",
+      "rc": 0,
+      "head_before": "879c49f58d8df02120875fffc901dc2d672210f0",
+      "head_after": "879c49f58d8df02120875fffc901dc2d672210f0",
+      "receipts": {
+        "command": "/tmp/t18-evidence/final-gates/17-format-diff.command.txt",
+        "stdout": "/tmp/t18-evidence/final-gates/17-format-diff.stdout.txt",
+        "stderr": "/tmp/t18-evidence/final-gates/17-format-diff.stderr.txt",
+        "rc": "/tmp/t18-evidence/final-gates/17-format-diff.rc.txt",
+        "identity": "/tmp/t18-evidence/final-gates/17-format-diff.identity.txt"
+      }
+    },
+    {
+      "entry": 18,
+      "stem": "lint-scoped",
+      "command": "golangci-lint run ./internal/application/audit/... ./internal/application/auditmeta/... ./internal/domain/spec/... ./internal/domain/rule/ddl/... ./internal/domain/policy/... ./internal/domain/rule/catalog/... ./internal/infrastructure/metadata/mysql/... ./internal/infrastructure/parser/tidb/...",
+      "rc": 1,
+      "head_before": "879c49f58d8df02120875fffc901dc2d672210f0",
+      "head_after": "879c49f58d8df02120875fffc901dc2d672210f0",
+      "receipts": {
+        "command": "/tmp/t18-evidence/final-gates/lint-scoped.command.txt",
+        "stdout": "/tmp/t18-evidence/final-gates/lint-scoped.stdout.txt",
+        "stderr": "/tmp/t18-evidence/final-gates/lint-scoped.stderr.txt",
+        "rc": "/tmp/t18-evidence/final-gates/lint-scoped.rc.txt",
+        "identity": "/tmp/t18-evidence/final-gates/lint-scoped.identity.txt"
+      }
+    },
+    {
+      "entry": 19,
+      "stem": "lint-fullrepo",
+      "command": "golangci-lint run ./...",
+      "rc": 1,
+      "head_before": "879c49f58d8df02120875fffc901dc2d672210f0",
+      "head_after": "879c49f58d8df02120875fffc901dc2d672210f0",
+      "receipts": {
+        "command": "/tmp/t18-evidence/final-gates/lint-fullrepo.command.txt",
+        "stdout": "/tmp/t18-evidence/final-gates/lint-fullrepo.stdout.txt",
+        "stderr": "/tmp/t18-evidence/final-gates/lint-fullrepo.stderr.txt",
+        "rc": "/tmp/t18-evidence/final-gates/lint-fullrepo.rc.txt",
+        "identity": "/tmp/t18-evidence/final-gates/lint-fullrepo.identity.txt"
+      }
+    },
+    {
+      "entry": 20,
+      "stem": "20-lint-comparison",
+      "command": "python3 /tmp/t18-evidence/compare_lint.py /tmp/t18-evidence/final-gates",
+      "rc": 0,
+      "head_before": "879c49f58d8df02120875fffc901dc2d672210f0",
+      "head_after": "879c49f58d8df02120875fffc901dc2d672210f0",
+      "receipts": {
+        "command": "/tmp/t18-evidence/final-gates/20-lint-comparison.command.txt",
+        "stdout": "/tmp/t18-evidence/final-gates/20-lint-comparison.stdout.txt",
+        "stderr": "/tmp/t18-evidence/final-gates/20-lint-comparison.stderr.txt",
+        "rc": "/tmp/t18-evidence/final-gates/20-lint-comparison.rc.txt",
+        "identity": "/tmp/t18-evidence/final-gates/20-lint-comparison.identity.txt"
+      }
+    },
+    {
+      "entry": 21,
+      "stem": "21-golden-t16",
+      "command": "make ddl-golden TASK=T16 ARTIFACT_DIR=/tmp/ddl-golden-t18-final-T16-879c49f5",
+      "rc": 0,
+      "head_before": "879c49f58d8df02120875fffc901dc2d672210f0",
+      "head_after": "879c49f58d8df02120875fffc901dc2d672210f0",
+      "receipts": {
+        "command": "/tmp/t18-evidence/final-gates/21-golden-t16.command.txt",
+        "stdout": "/tmp/t18-evidence/final-gates/21-golden-t16.stdout.txt",
+        "stderr": "/tmp/t18-evidence/final-gates/21-golden-t16.stderr.txt",
+        "rc": "/tmp/t18-evidence/final-gates/21-golden-t16.rc.txt",
+        "identity": "/tmp/t18-evidence/final-gates/21-golden-t16.identity.txt"
+      }
+    },
+    {
+      "entry": 22,
+      "stem": "22-golden-t17",
+      "command": "make ddl-golden TASK=T17 ARTIFACT_DIR=/tmp/ddl-golden-t18-final-T17-879c49f5",
+      "rc": 0,
+      "head_before": "879c49f58d8df02120875fffc901dc2d672210f0",
+      "head_after": "879c49f58d8df02120875fffc901dc2d672210f0",
+      "receipts": {
+        "command": "/tmp/t18-evidence/final-gates/22-golden-t17.command.txt",
+        "stdout": "/tmp/t18-evidence/final-gates/22-golden-t17.stdout.txt",
+        "stderr": "/tmp/t18-evidence/final-gates/22-golden-t17.stderr.txt",
+        "rc": "/tmp/t18-evidence/final-gates/22-golden-t17.rc.txt",
+        "identity": "/tmp/t18-evidence/final-gates/22-golden-t17.identity.txt"
+      }
+    },
+    {
+      "entry": 23,
+      "stem": "23-golden-t18",
+      "command": "make ddl-golden TASK=T18 ARTIFACT_DIR=/tmp/ddl-golden-t18-final-T18-879c49f5",
+      "rc": 0,
+      "head_before": "879c49f58d8df02120875fffc901dc2d672210f0",
+      "head_after": "879c49f58d8df02120875fffc901dc2d672210f0",
+      "receipts": {
+        "command": "/tmp/t18-evidence/final-gates/23-golden-t18.command.txt",
+        "stdout": "/tmp/t18-evidence/final-gates/23-golden-t18.stdout.txt",
+        "stderr": "/tmp/t18-evidence/final-gates/23-golden-t18.stderr.txt",
+        "rc": "/tmp/t18-evidence/final-gates/23-golden-t18.rc.txt",
+        "identity": "/tmp/t18-evidence/final-gates/23-golden-t18.identity.txt"
+      }
+    }
+  ]
+}

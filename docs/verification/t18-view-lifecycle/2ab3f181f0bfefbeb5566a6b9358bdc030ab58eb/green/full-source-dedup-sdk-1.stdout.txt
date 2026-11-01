@@ -1,0 +1,8 @@
+=== RUN   TestT18FullSourceFindingsPerAuthoredRoot
+=== RUN   TestT18FullSourceFindingsPerAuthoredRoot/same_root
+=== RUN   TestT18FullSourceFindingsPerAuthoredRoot/separate_roots
+--- PASS: TestT18FullSourceFindingsPerAuthoredRoot (0.01s)
+    --- PASS: TestT18FullSourceFindingsPerAuthoredRoot/same_root (0.01s)
+    --- PASS: TestT18FullSourceFindingsPerAuthoredRoot/separate_roots (0.00s)
+PASS
+ok  	github.com/Fanduzi/DeltaScope/pkg/deltascope	0.605s

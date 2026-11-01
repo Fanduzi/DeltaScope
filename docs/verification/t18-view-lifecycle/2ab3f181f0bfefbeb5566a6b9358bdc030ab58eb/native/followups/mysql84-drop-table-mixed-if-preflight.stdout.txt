@@ -1,0 +1,6 @@
+--------------
+SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='t18f2_4'
+--------------
+
+COUNT(*)
+0

@@ -1,0 +1,3 @@
+retrieved=2026-11-01T08:37:35.945457+00:00
+url=https://raw.githubusercontent.com/pingcap/docs/release-8.5/sql-statements/sql-statement-create-view.md
+final=https://raw.githubusercontent.com/pingcap/docs/release-8.5/sql-statements/sql-statement-create-view.md

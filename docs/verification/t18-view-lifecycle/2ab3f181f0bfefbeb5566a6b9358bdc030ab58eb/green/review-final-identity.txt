@@ -1,0 +1,95 @@
+cwd
+/Users/fan/GolangProjects/DeltaScope
+utc
+2026-11-01T09:45:47Z
+branch
+milestone/mysql-tidb-ddl-completion
+HEAD
+7f67c5de42fb6096d9c80f51e2d0f217eb34e528
+Go
+go version go1.26.1 darwin/arm64
+status
+ M CONTEXT.md
+ M internal/application/audit/README.md
+ M internal/application/audit/batch_state.go
+ M internal/application/audit/batch_state_namespace.go
+ M internal/application/audit/coverage.go
+ M internal/application/audit/coverage_t03_test.go
+ M internal/application/audit/cross_dialect_ddl_coverage_census_test.go
+ M internal/application/audit/ddl_parser_error_feasibility_census_test.go
+ M internal/application/audit/diagnostics.go
+ M internal/application/audit/metadata.go
+ M internal/application/audit/parser_upgrade_guidance_coverage_test.go
+ M internal/application/audit/unsupported_diagnostics_evidence_test.go
+ M internal/application/auditmeta/audit_t06a17_test.go
+ M internal/application/auditmeta/audit_t06a4_test.go
+ M internal/application/auditmeta/audit_t08r1_default_comparison_test.go
+ M internal/domain/policy/README.md
+ M internal/domain/policy/defaults_ddl.go
+ M internal/domain/rule/catalog/README.md
+ M internal/domain/rule/catalog/catalog.go
+ M internal/domain/rule/ddl/README.md
+ M internal/domain/rule/ddl/denylist_rules.go
+ M internal/domain/rule/ddl/object_lifecycle_rules.go
+ M internal/domain/rule/ddl/register.go
+ M internal/domain/spec/README.md
+ M internal/domain/spec/ddl.go
+ M internal/domain/spec/metadata.go
+ M internal/infrastructure/metadata/mysql/README.md
+ M internal/infrastructure/metadata/mysql/provider.go
+ M internal/infrastructure/metadata/mysql/provider_t06a10_test.go
+ M internal/infrastructure/metadata/mysql/provider_t06a17_test.go
+ M internal/infrastructure/metadata/mysql/provider_t06a4_test.go
+ M internal/infrastructure/metadata/mysql/provider_t07_test.go
+ M internal/infrastructure/metadata/mysql/provider_t08r1_test.go
+ M internal/infrastructure/metadata/mysql/provider_t09r1_test.go
+ M internal/infrastructure/metadata/mysql/provider_t10r2_test.go
+ M internal/infrastructure/metadata/mysql/provider_t10r4_test.go
+ M internal/infrastructure/metadata/mysql/provider_t10r5_test.go
+ M internal/infrastructure/metadata/mysql/provider_t13r2_test.go
+ M internal/infrastructure/metadata/mysql/provider_test.go
+ M internal/infrastructure/parser/tidb/README.md
+ M internal/infrastructure/parser/tidb/extractor.go
+ M internal/infrastructure/parser/tidb/parser.go
+ M internal/interfaces/http/audit_provider_defaults_t06a4_test.go
+ M pkg/deltascope/README.md
+ M pkg/deltascope/audit.go
+ M pkg/deltascope/audit_provider_defaults_t06a4_test.go
+ M pkg/deltascope/audit_unsupported_diagnostics_evidence_test.go
+?? .agents/
+?? .codex/
+?? .cursor/
+?? .debug-journal.md
+?? .devin/
+?? .grok/
+?? .opencode/
+?? .pi-subagents/
+?? .qoder/
+?? artifacts/
+?? docs/decisions/2026-11-01-ddl-view-lifecycle.md
+?? docs/quality/architecture-review-2026-08-11.html
+?? docs/verification/t06-a12/1a5dd90de898a59590ef8a19aa068c4b5e8ce7f8/T06/
+?? docs/work-plans/t18-view-lifecycle/
+?? internal/application/audit/batch_state_t18_first_test.go
+?? internal/application/audit/batch_state_view.go
+?? internal/domain/rule/ddl/view_lifecycle_rules.go
+?? internal/domain/spec/view.go
+?? internal/infrastructure/metadata/mysql/provider_t18_first_test.go
+?? internal/infrastructure/parser/tidb/view.go
+?? internal/infrastructure/parser/tidb/view_t18_first_test.go
+?? pkg/deltascope/audit_t18_view_first_test.go
+?? testdata/ddl-golden/T18.json
+worktrees
+worktree /Users/fan/GolangProjects/DeltaScope
+HEAD 7f67c5de42fb6096d9c80f51e2d0f217eb34e528
+branch refs/heads/milestone/mysql-tidb-ddl-completion
+
+worktree /Users/fan/GolangProjects/DeltaScope-agent-guidance
+HEAD 0fa922d062361add8a3cb9f01ee2dfb4292fdef6
+branch refs/heads/docs/agent-guidance
+
+contract and manifest hashes
+62535a74a6b66313042af23084c718bb3ad0be8efa698d1f1d5841f8a8cfda61  testdata/ddl-golden/T18.json
+39f7620d2fa559f84a5c03896e5eb8b1c939574bde8cb95cc99c641e4b705e5f  docs/work-plans/t18-view-lifecycle/CONTRACT.md
+6890cf5c2b27cc8eeff1466a87becd00f3a96bf6b12b2188ba16a7a2a91e34be  docs/work-plans/t18-view-lifecycle/MATRIX.md
+1e0818df6e1d79209c220d6b7284e5ea746cac7c041e6a0ff82c6f9e932a9ed2  docs/decisions/2026-11-01-ddl-view-lifecycle.md

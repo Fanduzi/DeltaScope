@@ -1,0 +1,1 @@
+gofmt -l <Go files in review-diff.files.txt>

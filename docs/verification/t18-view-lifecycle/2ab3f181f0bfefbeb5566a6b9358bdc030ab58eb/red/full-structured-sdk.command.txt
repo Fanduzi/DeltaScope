@@ -1,0 +1,1 @@
+go test ./pkg/deltascope -run '^TestT18Full(StructuredQueries|UnusedCTEVendorScope|CTEVersionBoundary)$' -count=1 -v

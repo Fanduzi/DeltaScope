@@ -1,0 +1,11 @@
+=== RUN   TestT18FullDenylistHiddenDependencyEvidence
+=== RUN   TestT18FullDenylistHiddenDependencyEvidence/viewunknown
+    audit_t18_view_first_test.go:870: err=<nil> result=deltascope.Result{Verdict:"pass", Coverage:deltascope.Coverage{Status:"complete"}, Summary:deltascope.Summary{Statements:1, Blockers:0, Warnings:0, Notices:0}, Statements:[]deltascope.StatementResult{deltascope.StatementResult{Index:0, Kind:"ddl", RawSQL:"CREATE VIEW next_v AS SELECT id FROM t;", NormalizedSQL:"CREATE VIEW next_v AS SELECT id FROM t", Findings:[]deltascope.Finding{}, EvidenceGaps:[]deltascope.EvidenceGap(nil), Impact:(*deltascope.Impact)(nil), Coverage:deltascope.Coverage{Status:"complete"}, Explanation:(*deltascope.Explanation)(nil)}}, GlobalFindings:[]deltascope.Finding{}, Unsupported:[]spec.UnsupportedDetail(nil), Explanation:(*deltascope.Explanation)(nil), Diagnostics:[]spec.Diagnostic(nil), Version:(*spec.VersionIdentity)(0x5d28734d2550)}
+=== RUN   TestT18FullDenylistHiddenDependencyEvidence/viewbroken
+    audit_t18_view_first_test.go:882: finding=deltascope.Finding{RuleID:"ddl.table.denylist.forbid", Level:"blocker", Message:"view depends on a relation blocked by the table denylist policy", StatementIndex:0, StatementKind:"ddl", Location:(*deltascope.Location)(0x5d287342a4a0), Suggestion:"review the view's dependencies or relax the denylist policy intentionally", Metadata:map[string]interface {}(nil), Explanation:(*deltascope.FindingExplanation)(0x5d28734d2690)}
+--- FAIL: TestT18FullDenylistHiddenDependencyEvidence (0.01s)
+    --- FAIL: TestT18FullDenylistHiddenDependencyEvidence/viewunknown (0.01s)
+    --- FAIL: TestT18FullDenylistHiddenDependencyEvidence/viewbroken (0.00s)
+FAIL
+FAIL	github.com/Fanduzi/DeltaScope/pkg/deltascope	0.727s
+FAIL

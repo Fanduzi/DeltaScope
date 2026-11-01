@@ -1,0 +1,24 @@
+--------------
+CREATE TEMPORARY TABLE v(id INT)
+--------------
+
+--------------
+DROP VIEW v
+--------------
+
+--------------
+SHOW WARNINGS
+--------------
+
+--------------
+SHOW COLUMNS FROM v
+--------------
+
+Field	Type	Null	Key	Default	Extra
+id	int	YES		NULL	
+--------------
+SELECT COUNT(*) FROM information_schema.VIEWS WHERE TABLE_SCHEMA='t18n_shadow' AND TABLE_NAME='v'
+--------------
+
+COUNT(*)
+0

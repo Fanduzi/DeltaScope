@@ -1,0 +1,2 @@
+ok  	github.com/Fanduzi/DeltaScope/internal/application/auditmeta	1.226s
+ok  	github.com/Fanduzi/DeltaScope/internal/interfaces/http	1.333s

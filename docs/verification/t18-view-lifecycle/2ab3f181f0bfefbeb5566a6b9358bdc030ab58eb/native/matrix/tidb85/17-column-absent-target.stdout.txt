@@ -1,0 +1,4 @@
+--------------
+CREATE VIEW new_v AS SELECT missing_column FROM t
+--------------
+

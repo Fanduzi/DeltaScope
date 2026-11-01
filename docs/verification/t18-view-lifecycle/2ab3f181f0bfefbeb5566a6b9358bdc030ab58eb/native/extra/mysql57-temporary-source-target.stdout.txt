@@ -1,0 +1,8 @@
+--------------
+CREATE TEMPORARY TABLE tt(id INT)
+--------------
+
+--------------
+CREATE VIEW new_v AS SELECT id FROM tt
+--------------
+

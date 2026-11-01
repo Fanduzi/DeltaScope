@@ -1,0 +1,595 @@
+{
+ "task_id": "T18",
+ "issue": 97,
+ "policy_profile": "all-rules-disabled",
+ "description": "T18 view lifecycle and security, frozen first vertical slice. This is not the final seven-row completion manifest; append sibling dimensions after the first path is green. Native and internal companion proofs are distinct.",
+ "anchors": {
+  "mysql57": {
+   "service": "mysql57",
+   "container": "deltascope-ddl-golden-mysql57",
+   "image": "mysql:5.7.44",
+   "product": "mysql",
+   "version_contains": "5.7.44",
+   "database": "golden",
+   "exec_client": [
+    "mysql",
+    "-uroot",
+    "--default-character-set=utf8mb4"
+   ],
+   "needs_database_create": false,
+   "exec_password_env": "T18_MYSQL_PASSWORD"
+  },
+  "mysql80": {
+   "service": "mysql80",
+   "container": "deltascope-ddl-golden-mysql80",
+   "image": "mysql:8.0.46",
+   "product": "mysql",
+   "version_contains": "8.0.46",
+   "database": "golden",
+   "exec_client": [
+    "mysql",
+    "-uroot",
+    "--default-character-set=utf8mb4"
+   ],
+   "needs_database_create": false,
+   "exec_password_env": "T18_MYSQL_PASSWORD"
+  },
+  "mysql84": {
+   "service": "mysql84",
+   "container": "deltascope-ddl-golden-mysql84",
+   "image": "mysql:8.4.10",
+   "product": "mysql",
+   "version_contains": "8.4.10",
+   "database": "golden",
+   "exec_client": [
+    "mysql",
+    "-uroot",
+    "--default-character-set=utf8mb4"
+   ],
+   "needs_database_create": false,
+   "exec_password_env": "T18_MYSQL_PASSWORD"
+  },
+  "tidb85": {
+   "service": "tidb85",
+   "container": "deltascope-ddl-golden-tidb85",
+   "client_container": "deltascope-ddl-golden-tidb85-client",
+   "client_service": "tidb85-client",
+   "image": "pingcap/tidb:v8.5.0",
+   "product": "tidb",
+   "version_contains": "v8.5.0",
+   "database": "golden",
+   "exec_client": [
+    "mysql",
+    "--protocol=tcp",
+    "-h",
+    "tidb85",
+    "-P",
+    "4000",
+    "-uroot",
+    "--default-character-set=utf8mb4"
+   ],
+   "needs_database_create": true
+  }
+ },
+ "ddl_steps": [
+  {
+   "name": "clear-task-fixture",
+   "sql": "DROP DATABASE IF EXISTS t18fx",
+   "expect_rc": 0,
+   "verify": []
+  },
+  {
+   "name": "create-task-schema",
+   "sql": "CREATE DATABASE t18fx",
+   "expect_rc": 0,
+   "verify": []
+  },
+  {
+   "name": "create-first-source",
+   "sql": "CREATE TABLE t18fx.t(id INT)",
+   "expect_rc": 0,
+   "verify": []
+  },
+  {
+   "name": "create-retired-source",
+   "sql": "CREATE TABLE t18fx.u(id INT)",
+   "expect_rc": 0,
+   "verify": []
+  },
+  {
+   "name": "create-original-view",
+   "sql": "CREATE VIEW t18fx.v AS SELECT id FROM t18fx.u",
+   "expect_rc": 0,
+   "verify": [
+    {
+     "assert": "fixture target has VIEW identity",
+     "sql": "SELECT TABLE_TYPE FROM information_schema.TABLES WHERE TABLE_SCHEMA='t18fx' AND TABLE_NAME='v'",
+     "expect": "VIEW"
+    }
+   ]
+  }
+ ],
+ "syntax_negative": {
+  "sql": "CREATE VIEW t18fx.invalid_v AS SELECT FROM t18fx.t",
+  "expect": {
+   "error_class": "1064",
+   "forbidden_markers": [
+    "Access denied",
+    "Connection refused",
+    "doesn't exist",
+    "already exists"
+   ]
+  }
+ },
+ "policy": {
+  "profiles": {
+   "t18-first": {
+    "enable": {
+     "ddl.view.target.valid": {
+      "level": "blocker"
+     },
+     "ddl.view.source.valid": {
+      "level": "blocker"
+     },
+     "ddl.view.security.definer.warn": {
+      "level": "warning"
+     }
+    }
+   },
+   "t18-blanket": {
+    "enable": {
+     "ddl.view.target.valid": {
+      "level": "blocker"
+     },
+     "ddl.view.source.valid": {
+      "level": "blocker"
+     },
+     "ddl.view.security.definer.warn": {
+      "level": "warning"
+     },
+     "ddl.view.create.forbid": {
+      "level": "blocker"
+     },
+     "ddl.view.drop.forbid": {
+      "level": "blocker"
+     }
+    }
+   }
+  }
+ },
+ "metadata_cases": [
+  {
+   "id": "mysql80-alter-first",
+   "anchor": "mysql80",
+   "dialect": "mysql",
+   "sql": "ALTER VIEW v AS SELECT id FROM t;",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23380,
+    "user": "root",
+    "schema": "t18fx",
+    "password_env": "DS_T18_GOLDEN_PW"
+   },
+   "policy": "t18-first",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "setup": [
+    {
+     "name": "remove-prior-companion",
+     "sql": "DROP VIEW IF EXISTS t18fx.next_v",
+     "expect_rc": 0
+    },
+    {
+     "name": "reset-original-view",
+     "sql": "CREATE OR REPLACE VIEW t18fx.v AS SELECT id FROM t18fx.u",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "target is a view before ALTER",
+       "sql": "SELECT TABLE_TYPE FROM information_schema.TABLES WHERE TABLE_SCHEMA='t18fx' AND TABLE_NAME='v'",
+       "expect": "VIEW"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "statement_indices": [
+     0
+    ],
+    "statement_sql": [
+     "ALTER VIEW v AS SELECT id FROM t;"
+    ],
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.view.security.definer.warn",
+      "level": "warning"
+     }
+    ],
+    "fail_on_triggered": false,
+    "finding_locations": [
+     {
+      "index": 0,
+      "line": 1,
+      "column": 1
+     }
+    ],
+    "version": {
+     "product": "mysql",
+     "version": "8.0.46"
+    }
+   },
+   "execute": [
+    {
+     "name": "native-alter-first",
+     "sql": "ALTER VIEW t18fx.v AS SELECT id FROM t18fx.t",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "native replacement definition uses t and not retired u",
+       "sql": "SELECT LOCATE('`t18fx`.`t`', VIEW_DEFINITION)>0 AND LOCATE('`t18fx`.`u`', VIEW_DEFINITION)=0 FROM information_schema.VIEWS WHERE TABLE_SCHEMA='t18fx' AND TABLE_NAME='v'",
+       "expect": "1"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "mysql80-alter-dependencies",
+   "anchor": "mysql80",
+   "dialect": "mysql",
+   "sql": "ALTER VIEW v AS SELECT id FROM t;\nCREATE VIEW next_v AS SELECT id FROM v;",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23380,
+    "user": "root",
+    "schema": "t18fx",
+    "password_env": "DS_T18_GOLDEN_PW"
+   },
+   "policy": "t18-first",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "setup": [
+    {
+     "name": "remove-prior-companion",
+     "sql": "DROP VIEW IF EXISTS t18fx.next_v",
+     "expect_rc": 0
+    },
+    {
+     "name": "reset-original-view",
+     "sql": "CREATE OR REPLACE VIEW t18fx.v AS SELECT id FROM t18fx.u",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "target is a view before ALTER",
+       "sql": "SELECT TABLE_TYPE FROM information_schema.TABLES WHERE TABLE_SCHEMA='t18fx' AND TABLE_NAME='v'",
+       "expect": "VIEW"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 2,
+    "findings": 2,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete",
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "statement_indices": [
+     0,
+     1
+    ],
+    "statement_sql": [
+     "ALTER VIEW v AS SELECT id FROM t;",
+     "CREATE VIEW next_v AS SELECT id FROM v;"
+    ],
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.view.security.definer.warn",
+      "level": "warning"
+     },
+     {
+      "index": 1,
+      "rule_id": "ddl.view.security.definer.warn",
+      "level": "warning"
+     }
+    ],
+    "fail_on_triggered": false,
+    "finding_locations": [
+     {
+      "index": 0,
+      "line": 1,
+      "column": 1
+     },
+     {
+      "index": 1,
+      "line": 2,
+      "column": 1
+     }
+    ]
+   }
+  },
+  {
+   "id": "mysql80-alter-source-absent",
+   "anchor": "mysql80",
+   "dialect": "mysql",
+   "sql": "ALTER VIEW v AS SELECT id FROM missing_t;",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23380,
+    "user": "root",
+    "schema": "t18fx",
+    "password_env": "DS_T18_GOLDEN_PW"
+   },
+   "policy": "t18-first",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "setup": [
+    {
+     "name": "remove-prior-companion",
+     "sql": "DROP VIEW IF EXISTS t18fx.next_v",
+     "expect_rc": 0
+    },
+    {
+     "name": "reset-original-view",
+     "sql": "CREATE OR REPLACE VIEW t18fx.v AS SELECT id FROM t18fx.u",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "target is a view before ALTER",
+       "sql": "SELECT TABLE_TYPE FROM information_schema.TABLES WHERE TABLE_SCHEMA='t18fx' AND TABLE_NAME='v'",
+       "expect": "VIEW"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 2,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "statement_indices": [
+     0
+    ],
+    "statement_sql": [
+     "ALTER VIEW v AS SELECT id FROM missing_t;"
+    ],
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.view.source.valid",
+      "level": "blocker"
+     },
+     {
+      "index": 0,
+      "rule_id": "ddl.view.security.definer.warn",
+      "level": "warning"
+     }
+    ],
+    "fail_on_triggered": true
+   }
+  },
+  {
+   "id": "mysql80-alter-blanket",
+   "anchor": "mysql80",
+   "dialect": "mysql",
+   "sql": "ALTER VIEW v AS SELECT id FROM t;",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23380,
+    "user": "root",
+    "schema": "t18fx",
+    "password_env": "DS_T18_GOLDEN_PW"
+   },
+   "policy": "t18-blanket",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "setup": [
+    {
+     "name": "remove-prior-companion",
+     "sql": "DROP VIEW IF EXISTS t18fx.next_v",
+     "expect_rc": 0
+    },
+    {
+     "name": "reset-original-view",
+     "sql": "CREATE OR REPLACE VIEW t18fx.v AS SELECT id FROM t18fx.u",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "target is a view before ALTER",
+       "sql": "SELECT TABLE_TYPE FROM information_schema.TABLES WHERE TABLE_SCHEMA='t18fx' AND TABLE_NAME='v'",
+       "expect": "VIEW"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 2,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "statement_indices": [
+     0
+    ],
+    "statement_sql": [
+     "ALTER VIEW v AS SELECT id FROM t;"
+    ],
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.view.create.forbid",
+      "level": "blocker"
+     },
+     {
+      "index": 0,
+      "rule_id": "ddl.view.security.definer.warn",
+      "level": "warning"
+     }
+    ],
+    "fail_on_triggered": true
+   }
+  }
+ ],
+ "cli_cases": [
+  {
+   "id": "mysql-plain-all-off",
+   "dialect": "mysql",
+   "sql": "CREATE VIEW g.v AS SELECT id FROM g.t;",
+   "policy": "all-rules-disabled",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "statement_indices": [
+     0
+    ],
+    "statement_sql": [
+     "CREATE VIEW g.v AS SELECT id FROM g.t;"
+    ],
+    "finding_entries": [],
+    "fail_on_triggered": false
+   }
+  },
+  {
+   "id": "mysql-invalid-select",
+   "dialect": "mysql",
+   "sql": "CREATE VIEW g.v AS SELECT FROM g.t;",
+   "policy": "all-rules-disabled",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "expect": {
+    "exit": 2,
+    "verdict": "",
+    "statements": 0,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 0,
+    "coverage": "incomplete",
+    "evidence_gaps": 0
+   }
+  },
+  {
+   "id": "tidb-plain-all-off",
+   "dialect": "tidb",
+   "sql": "CREATE VIEW g.v AS SELECT id FROM g.t;",
+   "policy": "all-rules-disabled",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "statement_indices": [
+     0
+    ],
+    "statement_sql": [
+     "CREATE VIEW g.v AS SELECT id FROM g.t;"
+    ],
+    "finding_entries": [],
+    "fail_on_triggered": false
+   }
+  },
+  {
+   "id": "tidb-invalid-select",
+   "dialect": "tidb",
+   "sql": "CREATE VIEW g.v AS SELECT FROM g.t;",
+   "policy": "all-rules-disabled",
+   "args": [
+    "--fail-on",
+    "none"
+   ],
+   "expect": {
+    "exit": 2,
+    "verdict": "",
+    "statements": 0,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 0,
+    "coverage": "incomplete",
+    "evidence_gaps": 0
+   }
+  }
+ ],
+ "required_case_ids": [
+  "T18.db.mysql57.ddl",
+  "T18.db.mysql57.syntax_negative",
+  "T18.db.mysql80.ddl",
+  "T18.db.mysql80.syntax_negative",
+  "T18.db.mysql84.ddl",
+  "T18.db.mysql84.syntax_negative",
+  "T18.db.tidb85.ddl",
+  "T18.db.tidb85.syntax_negative",
+  "T18.meta.mysql80-alter-first",
+  "T18.meta.mysql80-alter-dependencies",
+  "T18.meta.mysql80-alter-source-absent",
+  "T18.meta.mysql80-alter-blanket",
+  "T18.cli.mysql-plain-all-off",
+  "T18.cli.mysql-invalid-select",
+  "T18.cli.tidb-plain-all-off",
+  "T18.cli.tidb-invalid-select"
+ ]
+}

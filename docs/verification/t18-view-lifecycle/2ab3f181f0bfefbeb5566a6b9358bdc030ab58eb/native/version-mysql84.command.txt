@@ -1,0 +1,1 @@
+docker exec deltascope-ddl-golden-mysql84 mysqld --version

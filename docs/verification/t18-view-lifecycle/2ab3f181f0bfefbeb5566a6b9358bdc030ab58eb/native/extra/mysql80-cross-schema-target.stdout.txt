@@ -1,0 +1,8 @@
+--------------
+CREATE VIEW t18e_other.new_v AS SELECT id FROM t
+--------------
+
+--------------
+SHOW WARNINGS
+--------------
+

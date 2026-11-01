@@ -1,0 +1,4 @@
+--------------
+CREATE VIEW new_v(a,b) AS SELECT id FROM t
+--------------
+

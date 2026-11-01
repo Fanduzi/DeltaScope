@@ -1,0 +1,20 @@
+--------------
+CREATE DATABASE t18p_14
+--------------
+
+--------------
+CREATE TABLE t(id INT)
+--------------
+
+--------------
+CREATE TABLE u(id INT)
+--------------
+
+--------------
+CREATE VIEW v AS SELECT id FROM u
+--------------
+
+--------------
+CREATE VIEW w AS SELECT id FROM t
+--------------
+

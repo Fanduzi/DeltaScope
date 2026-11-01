@@ -1,0 +1,27 @@
+cwd /Users/fan/GolangProjects/DeltaScope head 2ab3f181f0bfefbeb5566a6b9358bdc030ab58eb
+status
+?? .agents/
+?? .codex/
+?? .cursor/
+?? .debug-journal.md
+?? .devin/
+?? .grok/
+?? .opencode/
+?? .pi-subagents/
+?? .qoder/
+?? artifacts/
+?? docs/quality/architecture-review-2026-08-11.html
+?? docs/verification/t06-a12/1a5dd90de898a59590ef8a19aa068c4b5e8ce7f8/T06/
+
+worktrees
+worktree /Users/fan/GolangProjects/DeltaScope
+HEAD 2ab3f181f0bfefbeb5566a6b9358bdc030ab58eb
+branch refs/heads/milestone/mysql-tidb-ddl-completion
+
+worktree /Users/fan/GolangProjects/DeltaScope-agent-guidance
+HEAD 0fa922d062361add8a3cb9f01ee2dfb4292fdef6
+branch refs/heads/docs/agent-guidance
+
+
+foreign untracked paths match prestage: True
+frozen 96 source hashes and tracked/index state unchanged

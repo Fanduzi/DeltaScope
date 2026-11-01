@@ -1,0 +1,1 @@
+T18_MYSQL_PASSWORD=<redacted> DS_T18_GOLDEN_PW=<redacted> make ddl-golden TASK=T18 ARTIFACT_DIR=/tmp/ddl-golden-t18-first

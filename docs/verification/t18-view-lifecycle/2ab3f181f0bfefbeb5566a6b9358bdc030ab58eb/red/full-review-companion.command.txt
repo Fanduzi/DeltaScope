@@ -1,0 +1,1 @@
+go test ./internal/application/audit -run '^TestT18FullReview(Query|TiDBUnknownDuplicate)' -count=1 -v

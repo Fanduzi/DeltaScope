@@ -1,0 +1,1 @@
+go test -overlay /tmp/t18-evidence/red/structured-limit-overlay/overlay.json ./pkg/deltascope -run '^TestT18FullStructuredQueryLimitsAreIntrinsic$' -count=1 -v

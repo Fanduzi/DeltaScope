@@ -1,0 +1,131 @@
+diff --git a/internal/application/auditmeta/README.md b/internal/application/auditmeta/README.md
+index 507241f62b36a1b925eaf93f8c0cf4ad55d15a3a..c10c9f034327c24fec10d63a6a4127685730df6c 100644
+--- a/internal/application/auditmeta/README.md
++++ b/internal/application/auditmeta/README.md
+@@ -1,6 +1,7 @@
+ # Application Audit Metadata Preparation Module
+ 
+ Shared preparation helpers for metadata-aware audit requests before they enter the core DeltaScope audit service.
++The shared provider handoff preserves observed relation kind and private view payload; synthetic MySQL row fixtures retain `TABLE_TYPE`.
+ 
+ ## Files
+ 
+diff --git a/internal/interfaces/cli/README.md b/internal/interfaces/cli/README.md
+index c2947bf7e500f76ef7ac7c5072e553ce289faf12..2f7da7e38b380270593dd3b63fc16b1af3d06ac8 100644
+--- a/internal/interfaces/cli/README.md
++++ b/internal/interfaces/cli/README.md
+@@ -45,7 +45,7 @@ CLI adapter layer for the DeltaScope application.
+ | audit_resource_limit_a7_test.go | Verifies the T05-A7 CLI contract: a 1025-statement MySQL audit exits 1 under every `--fail-on` threshold with the retained `review`/`incomplete` JSON result and one `audit.resource_limit` entry, while appending an unparseable tail keeps exit 2 with the parser diagnostic at line 1026 alongside the retained resource-limit projection |
+ | audit_version_t04b_test.go | Verifies issue #83 T04-B transport contract: `--target-version` projects the canonical `version` block in JSON output, malformed input exits 2 as an input error before any audit runs, out-of-range versions keep `validated_range=false` with bounded gaps, and missing versions never default to a supported series |
+ | audit_t06a4_test.go | Verifies the T06-A4 CLI fail-on exit contract on the frozen A result shape (review/unverified, one `unknown_table_state` evidence gap, zero findings): `blocker`/`none` exit 0 with `fail_on_triggered=false`, `warning`/`notice` exit 1 through the warning-equivalent evidence-gap weight; the result shape itself is proven against the real provider in the shared auditmeta tests |
+-| ddl_coverage_test.go | Verifies ddl-coverage command filtering, text/JSON output, empty results, invalid flags, no-leak sanity across all 400 catalog entries, embedded-catalog lookup from an empty working directory, and exit 2 when a `--catalog` override is missing |
++| ddl_coverage_test.go | Verifies ddl-coverage command filtering, text/JSON output, empty results, invalid flags, no-leak sanity across all 400 catalog entries, embedded-catalog lookup from an empty working directory, exit 2 when a `--catalog` override is missing, and MySQL ALTER VIEW promotion to `finding_covered` rather than a parser candidate in embedded and override catalogs |
+ | rules_catalog_test.go | Verifies rules list filtering (dialect, level, kind, category, search, limit), rules explain detail output, text/JSON formats, invalid flags, empty results, no-severity sanity, and default-disabled `dml.impact.*` catalog rows |
+ | audit_metadata_test.go | Verifies metadata-aware CLI wiring for dialect detection, MySQL/TiDB database/schema aliases and conflicts, schema inference, PostgreSQL schema/database usage validation, create-table partial behavior, dialect-aware port defaults, and metadata-connect-timeout flag validation |
+ | audit_dml_table_existence_test.go | Verifies metadata-aware MySQL/TiDB INSERT/UPDATE/DELETE missing-target findings and their stable JSON shape |
+diff --git a/internal/interfaces/cli/ddl_coverage_test.go b/internal/interfaces/cli/ddl_coverage_test.go
+index 297ab25a23a0f513aa80ddbb436b22eb5f5a7229..83cc47123d270156658598f52082645374049a75 100644
+--- a/internal/interfaces/cli/ddl_coverage_test.go
++++ b/internal/interfaces/cli/ddl_coverage_test.go
+@@ -27,8 +27,11 @@ func TestDDLCoverage_EmbeddedCatalogMySQLParserUpgradeCandidate(t *testing.T) {
+ 	}
+ 
+ 	output := stdout.String()
+-	if !strings.Contains(output, "ALTER VIEW") {
+-		t.Error("output should contain ALTER VIEW")
++	if strings.Contains(output, "ALTER VIEW") {
++		t.Error("promoted ALTER VIEW must not remain a parser upgrade candidate")
++	}
++	if !strings.Contains(output, "CREATE TABLESPACE") {
++		t.Error("output should contain CREATE TABLESPACE")
+ 	}
+ 	if !strings.Contains(output, "parser_upgrade_candidate") {
+ 		t.Error("output should contain parser_upgrade_candidate")
+@@ -52,14 +55,54 @@ func TestDDLCoverage_MySQLParserUpgradeCandidate(t *testing.T) {
+ 	}
+ 
+ 	output := stdout.String()
+-	if !strings.Contains(output, "ALTER VIEW") {
+-		t.Error("output should contain ALTER VIEW")
++	if strings.Contains(output, "ALTER VIEW") {
++		t.Error("promoted ALTER VIEW must not remain a parser upgrade candidate")
++	}
++	if !strings.Contains(output, "CREATE TABLESPACE") {
++		t.Error("output should contain CREATE TABLESPACE")
+ 	}
+ 	if !strings.Contains(output, "parser_upgrade_candidate") {
+ 		t.Error("output should contain parser_upgrade_candidate")
+ 	}
+ }
+ 
++func TestDDLCoverageMySQLAlterViewPromotion(t *testing.T) {
++	for _, tc := range []struct {
++		name    string
++		catalog string
++	}{
++		{name: "embedded"},
++		{name: "override", catalog: testDDLCoverageCatalogPath},
++	} {
++		t.Run(tc.name, func(t *testing.T) {
++			stdout := &strings.Builder{}
++			stderr := &strings.Builder{}
++			args := []string{"ddl-coverage"}
++			if tc.catalog != "" {
++				args = append(args, "--catalog", tc.catalog)
++			}
++			args = append(args, "--dialect", "mysql", "--search", "alter view", "--format", "json")
++			code := Execute(context.Background(), args, strings.NewReader(""), stdout, stderr)
++			if code != 0 {
++				t.Fatalf("exit code = %d, want 0; stderr=%s", code, stderr.String())
++			}
++			var result ddlCoverageJSONOutput
++			if err := json.Unmarshal([]byte(stdout.String()), &result); err != nil {
++				t.Fatalf("JSON parse error: %v\noutput=%s", err, stdout.String())
++			}
++			if len(result.Entries) != 1 || result.Summary.Returned != 1 {
++				t.Fatalf("entries=%#v summary=%#v, want exactly one entry", result.Entries, result.Summary)
++			}
++			entry := result.Entries[0]
++			if entry.Dialect != "mysql" || entry.Form != "ALTER VIEW" ||
++				entry.Classification != "finding_covered" || len(entry.FindingRuleIDs) != 1 ||
++				entry.FindingRuleIDs[0] != "ddl.view.create.forbid" || entry.GuidanceCode != "" {
++				t.Fatalf("unexpected ALTER VIEW entry: %#v", entry)
++			}
++		})
++	}
++}
++
+ func TestDDLCoverage_PostgreSQLDropSubscriptionJSON(t *testing.T) {
+ 	stdout := &strings.Builder{}
+ 	stderr := &strings.Builder{}
+diff --git a/scripts/t06a17proof/README.md b/scripts/t06a17proof/README.md
+index b6da826167b021ddf0751904b487fbcef6e985f4..bc4a0e2144cc21276e6fec59896085845dd82cf6 100644
+--- a/scripts/t06a17proof/README.md
++++ b/scripts/t06a17proof/README.md
+@@ -11,7 +11,7 @@ unchanged.
+ |---|---|
+ | `main.go` | Records native session/catalog/provider observations, propagates query/scan/iteration/encoding/write errors, and cleans up only a table this invocation successfully created |
+ | `facts.go` | Keeps the original CREATE bytes, four fixed anchors, exact ordered 24-column identity, independent DECIMAL/member facts, and complete 21-target/3-control pairing |
+-| `main_test.go` | Uses a controlled `database/sql` driver and failing writers to reject COUNT errors, incomplete/duplicate rows, provider omissions, and evidence failures without live fault injection; its `information_schema.columns` fixture mirrors the nine-column provider row shape including `generation_expression`, and its strict query ledger counts eight provider calls per table load since T13-R1 moved the `PARTITIONS` probe to both dialects (T11 added the `KEY_COLUMN_USAGE`+`REFERENTIAL_CONSTRAINTS` foreign-key join and the `TABLE_CONSTRAINTS` unmodeled-type scan beside T10-R1's `STATISTICS.EXPRESSION` capability probe and T10's `STATISTICS.IS_VISIBLE` probe; only `TIDB_INDEXES` stays TiDB-dialect-only, and this fixture loads as MySQL) |
++| `main_test.go` | Uses a controlled `database/sql` driver and failing writers to reject COUNT errors, incomplete/duplicate rows, provider omissions, and evidence failures without live fault injection; its `information_schema.tables` fixture has seven columns including `TABLE_TYPE` as `BASE TABLE`, its `information_schema.columns` fixture mirrors the nine-column provider row shape including `generation_expression`, and its strict query ledger counts eight provider calls per table load since T13-R1 moved the `PARTITIONS` probe to both dialects (T11 added the `KEY_COLUMN_USAGE`+`REFERENTIAL_CONSTRAINTS` foreign-key join and the `TABLE_CONSTRAINTS` unmodeled-type scan beside T10-R1's `STATISTICS.EXPRESSION` capability probe and T10's `STATISTICS.IS_VISIBLE` probe; only `TIDB_INDEXES` stays TiDB-dialect-only, and this fixture loads as MySQL) |
+ | `sensitivity.py` | Runs original and strict assertions with test-file-only Go overlays; missing/empty/duplicate columns and missing/malformed ALTER definitions must pass the old insufficient assertions and fail the new assertions explicitly |
+ 
+ ## Exports and invocation
+diff --git a/scripts/t06a17proof/main_test.go b/scripts/t06a17proof/main_test.go
+index 21833fb406a486874845128c46385b2d9dc0e94d..1311b8df156e0c79fe7a95bc6addc0f9025c91f5 100644
+--- a/scripts/t06a17proof/main_test.go
++++ b/scripts/t06a17proof/main_test.go
+@@ -142,11 +142,11 @@ func (c *faultConn) QueryContext(_ context.Context, query string, _ []driver.Nam
+ 	}
+ 	if strings.Contains(query, "from information_schema.tables") {
+ 		f.providerQueries++
+-		rows := [][]driver.Value{{"InnoDB", "utf8mb4_bin", "", nil, "Dynamic", int64(0)}}
++		rows := [][]driver.Value{{"InnoDB", "utf8mb4_bin", "", nil, "Dynamic", int64(0), "BASE TABLE"}}
+ 		if f.providerAbsent {
+ 			rows = nil
+ 		}
+-		return newFaultRows([]string{"engine", "table_collation", "table_comment", "auto_increment", "row_format", "table_rows"}, rows, -1), nil
++		return newFaultRows([]string{"engine", "table_collation", "table_comment", "auto_increment", "row_format", "table_rows", "table_type"}, rows, -1), nil
+ 	}
+ 	if strings.Contains(query, "from information_schema.columns") {
+ 		f.providerQueries++

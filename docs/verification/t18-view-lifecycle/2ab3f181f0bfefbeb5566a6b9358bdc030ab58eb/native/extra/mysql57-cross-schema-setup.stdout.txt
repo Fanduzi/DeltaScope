@@ -1,0 +1,24 @@
+--------------
+CREATE DATABASE t18e_0
+--------------
+
+--------------
+CREATE TABLE t(id INT)
+--------------
+
+--------------
+CREATE TABLE u(id INT)
+--------------
+
+--------------
+CREATE VIEW v AS SELECT id FROM u
+--------------
+
+--------------
+CREATE DATABASE t18e_other
+--------------
+
+--------------
+CREATE TABLE t18e_other.t(other_col INT)
+--------------
+

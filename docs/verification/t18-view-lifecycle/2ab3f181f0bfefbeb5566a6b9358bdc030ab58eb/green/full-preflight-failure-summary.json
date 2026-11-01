@@ -1,0 +1,55 @@
+{
+  "task_id": "T18",
+  "head_sha": "7f67c5de42fb6096d9c80f51e2d0f217eb34e528",
+  "executed_count": 149,
+  "failures": [
+    {
+      "case_id": "T18.cli.tidb-alter-vendor",
+      "status": "fail",
+      "failed_assertions": [
+        {
+          "name": "unsupported entries",
+          "detail": "entries=[(0, 'view.syntax', 'parsed by the shared parser but outside the supported statement surface for this dialect')] expected=[(0, 'alter_view', 'parsed by the shared parser but outside the supported statement surface for this dialect')]"
+        }
+      ]
+    },
+    {
+      "case_id": "T18.cli.tidb-bare-check-vendor",
+      "status": "fail",
+      "failed_assertions": [
+        {
+          "name": "unsupported entries",
+          "detail": "entries=[(0, 'view.syntax', 'parsed by the shared parser but outside the supported statement surface for this dialect')] expected=[(0, 'create_view', 'parsed by the shared parser but outside the supported statement surface for this dialect')]"
+        }
+      ]
+    },
+    {
+      "case_id": "T18.meta.mysql80-private-leaf",
+      "status": "fail",
+      "failed_assertions": [
+        {
+          "name": "exit code",
+          "detail": "rc=0 expected=1"
+        },
+        {
+          "name": "verdict",
+          "detail": "verdict='review'"
+        },
+        {
+          "name": "zero findings",
+          "detail": "findings=1"
+        },
+        {
+          "name": "finding entries",
+          "detail": "findings=[(0, 'ddl.view.security.definer.warn', 'warning')] expected=[(0, 'ddl.table.denylist.forbid', 'blocker'), (0, 'ddl.view.security.definer.warn', 'warning')]"
+        },
+        {
+          "name": "fail_on_triggered",
+          "detail": "fail_on_triggered=False"
+        }
+      ]
+    }
+  ],
+  "cleanup_rc": 0,
+  "residual_containers": []
+}

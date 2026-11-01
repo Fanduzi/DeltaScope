@@ -1,0 +1,1 @@
+go test ./internal/application/audit -run 'TestT18(First|Review)|TestAuditSQLT03UnsupportedFeatureReasonPairs|TestAuditSQLT03RecognizedOutOfSurfaceStaysComplete|TestCrossDialectDDLCoverageCensus|TestDDLParserErrorFeasibilityCensus' -count=1 -json

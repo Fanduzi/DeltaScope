@@ -1,0 +1,1 @@
+gofmt -l <changed Go files listed in diff.product.files.txt>

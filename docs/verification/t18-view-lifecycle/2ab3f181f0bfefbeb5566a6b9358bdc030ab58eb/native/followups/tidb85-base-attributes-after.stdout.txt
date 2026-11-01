@@ -1,0 +1,23 @@
+--------------
+SELECT TABLE_NAME,TABLE_TYPE FROM information_schema.TABLES WHERE TABLE_SCHEMA='t18f2_7' ORDER BY TABLE_NAME
+--------------
+
+TABLE_NAME	TABLE_TYPE
+attrs	BASE TABLE
+new_v	VIEW
+t	BASE TABLE
+u	BASE TABLE
+v	VIEW
+--------------
+SELECT TABLE_NAME,VIEW_DEFINITION,CHECK_OPTION,SECURITY_TYPE FROM information_schema.VIEWS WHERE TABLE_SCHEMA='t18f2_7' ORDER BY TABLE_NAME
+--------------
+
+TABLE_NAME	VIEW_DEFINITION	CHECK_OPTION	SECURITY_TYPE
+new_v	SELECT `id` AS `id`,`payload` AS `payload` FROM `t18f2_7`.`attrs`	CASCADED	DEFINER
+v	SELECT `id` AS `id` FROM `t18f2_7`.`t`	CASCADED	DEFINER
+--------------
+SHOW CREATE VIEW t18f2_7.v
+--------------
+
+View	Create View	character_set_client	collation_connection
+v	CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`%` SQL SECURITY DEFINER VIEW `v` (`id`) AS SELECT `id` AS `id` FROM `t18f2_7`.`t`	utf8mb4	utf8mb4_bin

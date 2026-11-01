@@ -1,0 +1,1 @@
+go test ./internal/infrastructure/parser/tidb ./internal/application/audit ./internal/infrastructure/metadata/mysql ./pkg/deltascope -run 'TestT18(First|Public)' -count=1 -v

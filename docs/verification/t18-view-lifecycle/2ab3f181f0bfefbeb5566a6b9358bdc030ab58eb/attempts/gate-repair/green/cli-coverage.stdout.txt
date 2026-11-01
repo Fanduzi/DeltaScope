@@ -1,0 +1,36 @@
+=== RUN   TestDDLCoverage_EmbeddedCatalogMySQLParserUpgradeCandidate
+--- PASS: TestDDLCoverage_EmbeddedCatalogMySQLParserUpgradeCandidate (0.00s)
+=== RUN   TestDDLCoverage_MySQLParserUpgradeCandidate
+--- PASS: TestDDLCoverage_MySQLParserUpgradeCandidate (0.00s)
+=== RUN   TestDDLCoverageMySQLAlterViewPromotion
+=== RUN   TestDDLCoverageMySQLAlterViewPromotion/embedded
+=== RUN   TestDDLCoverageMySQLAlterViewPromotion/override
+--- PASS: TestDDLCoverageMySQLAlterViewPromotion (0.00s)
+    --- PASS: TestDDLCoverageMySQLAlterViewPromotion/embedded (0.00s)
+    --- PASS: TestDDLCoverageMySQLAlterViewPromotion/override (0.00s)
+=== RUN   TestDDLCoverage_PostgreSQLDropSubscriptionJSON
+--- PASS: TestDDLCoverage_PostgreSQLDropSubscriptionJSON (0.00s)
+=== RUN   TestDDLCoverage_TiDBAllEntries
+--- PASS: TestDDLCoverage_TiDBAllEntries (0.00s)
+=== RUN   TestDDLCoverage_EmptyResultJSON
+--- PASS: TestDDLCoverage_EmptyResultJSON (0.00s)
+=== RUN   TestDDLCoverage_InvalidDialect
+--- PASS: TestDDLCoverage_InvalidDialect (0.00s)
+=== RUN   TestDDLCoverage_InvalidClassification
+--- PASS: TestDDLCoverage_InvalidClassification (0.00s)
+=== RUN   TestDDLCoverage_InvalidGuidanceCode
+--- PASS: TestDDLCoverage_InvalidGuidanceCode (0.00s)
+=== RUN   TestDDLCoverage_InvalidFormat
+--- PASS: TestDDLCoverage_InvalidFormat (0.00s)
+=== RUN   TestDDLCoverage_NegativeLimit
+--- PASS: TestDDLCoverage_NegativeLimit (0.00s)
+=== RUN   TestDDLCoverage_TextOutput
+--- PASS: TestDDLCoverage_TextOutput (0.00s)
+=== RUN   TestDDLCoverage_EmbeddedCatalogWorksFromEmptyDirectory
+--- PASS: TestDDLCoverage_EmbeddedCatalogWorksFromEmptyDirectory (0.00s)
+=== RUN   TestDDLCoverage_MissingCatalogPathExitsUser
+--- PASS: TestDDLCoverage_MissingCatalogPathExitsUser (0.00s)
+=== RUN   TestDDLCoverage_JSONNoLeakSanity
+--- PASS: TestDDLCoverage_JSONNoLeakSanity (0.00s)
+PASS
+ok  	github.com/Fanduzi/DeltaScope/internal/interfaces/cli	1.215s

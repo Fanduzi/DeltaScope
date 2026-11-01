@@ -1,0 +1,6 @@
+=== RUN   TestT18FirstViewCatalogNullAndError
+    provider_t18_first_test.go:60: missing attributes must remain unknown: snapshot=(*spec.TableSnapshot)(nil) err=view metadata read failed
+--- FAIL: TestT18FirstViewCatalogNullAndError (0.00s)
+FAIL
+FAIL	github.com/Fanduzi/DeltaScope/internal/infrastructure/metadata/mysql	0.623s
+FAIL

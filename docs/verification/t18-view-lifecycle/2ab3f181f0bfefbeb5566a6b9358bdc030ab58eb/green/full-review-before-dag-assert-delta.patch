@@ -1,0 +1,1515 @@
+--- a/docs/decisions/2026-11-01-ddl-view-lifecycle.md
++++ b/docs/decisions/2026-11-01-ddl-view-lifecycle.md
+@@ -40,6 +40,15 @@
+ Missing definitions, missing source objects and provider errors are distinct.
+ No submitted SELECT or arbitrary expression value is evaluated.
+ 
++Lexical CTE references share query identities, so every graph consumer,
++including root attribution after a bounded assessment, must avoid repeated
++expansion. Intrinsic exhaustion remains distinct from a missing catalog fact.
++Named ordering references use the structured binding assessment; LIMIT,
++inline windows and unmodeled positional ordering retain explicit capability
++boundaries rather than silently publishing successful view facts. Repeated
++TiDB targets consume prior same-name effects while keeping not-view separate
++from relation absence.
++
+ Use one policy-independent assessment for rule evidence and publication.
+ Independent native refusal dominates missing facts. Policy levels or blanket
+ forbids do not choose the modeled database effect. DROP VIEW uses its own
+@@ -69,7 +78,7 @@
+ 
+ The shared Audit/SDK seam owns these semantics. CLI/HTTP/MCP retain their
+ existing parser-error, unsupported, coverage and threshold contracts. The
+-existing view-create blanket also governs MySQL/TiDB ALTER definition changes;
++existing view-create blanket also governs MySQL ALTER definition changes;
+ PostgreSQL's existing operation behavior does not change. The new view semantic
+ RuleIDs and configurable default levels are frozen in the T18 contract.
+ 
+--- a/docs/reference/config.md
++++ b/docs/reference/config.md
+@@ -981,8 +981,9 @@
+ 
+ #### ddl.view.create.forbid
+ 
+-Forbids `CREATE VIEW` and `CREATE OR REPLACE VIEW`; on MySQL/TiDB the same
+-policy also covers `ALTER VIEW` definition changes.
++Forbids `CREATE VIEW` and `CREATE OR REPLACE VIEW`; on MySQL the same policy
++also covers `ALTER VIEW` definition changes. TiDB `ALTER VIEW` is a vendor
++boundary, not a supported policy evaluation.
+ 
+ **Default:** `enabled: true`, `level: blocker`
+ 
+--- a/docs/reference/config.zh-CN.md
++++ b/docs/reference/config.zh-CN.md
+@@ -1913,7 +1913,8 @@
+ 
+ ### `ddl.view.create.forbid`
+ 
+-禁止创建或替换视图；在 MySQL/TiDB 上也覆盖 `ALTER VIEW` 定义变更。
++禁止创建或替换视图；在 MySQL 上也覆盖 `ALTER VIEW` 定义变更。TiDB 的
++`ALTER VIEW` 是厂商边界，不作为已支持的策略评估。
+ 
+ - **默认**：已启用，级别 `blocker`
+ 
+--- a/docs/reference/rules.md
++++ b/docs/reference/rules.md
+@@ -361,7 +361,7 @@
+ 
+ | Rule ID | Description | Default Level | Metadata Required |
+ |---------|-------------|:-------------:|:-----------------:|
+-| `ddl.view.create.forbid` | Forbid CREATE/REPLACE and MySQL/TiDB ALTER VIEW definitions | blocker | No |
++| `ddl.view.create.forbid` | Forbid CREATE/REPLACE and MySQL ALTER VIEW definitions | blocker | No |
+ | `ddl.view.drop.forbid` | Forbid DROP VIEW | blocker | No |
+ | `ddl.view.target.valid` | Check view target existence and kind | blocker | Ordered facts |
+ | `ddl.view.source.valid` | Check dependencies, bindings, and output names | blocker | Ordered facts |
+@@ -596,7 +596,7 @@
+ | `ddl.drop_sequence.notice` | `DROP SEQUENCE` removes a sequence | notice | No |
+ | `ddl.tidb.alter_table.placement_policy.notice` | `ALTER TABLE ... PLACEMENT POLICY` attaches a placement policy to a table | notice | No |
+ 
+-> **Note:** These rules are MySQL/TiDB-specific and are automatically skipped when auditing PostgreSQL SQL. They are offline rules and do not require a database connection. These are informational notice rules only — they do not block, warn, or perform live validation. `ddl.drop_resource_group.notice` is MySQL-only and is automatically skipped for TiDB. TiDB placement policy and sequence rules are automatically skipped for MySQL. This is not full MySQL/TiDB DDL support — triggers, events, functions, ALTER VIEW, ALTER PROCEDURE, tablespace, and parser-error forms remain deferred.
++> **Note:** These rules are MySQL/TiDB-specific and are automatically skipped when auditing PostgreSQL SQL. They are offline rules and do not require a database connection. These are informational notice rules only — they do not block, warn, or perform live validation. `ddl.drop_resource_group.notice` is MySQL-only and is automatically skipped for TiDB. TiDB placement policy and sequence rules are automatically skipped for MySQL. This is not full MySQL/TiDB DDL support — triggers, events, functions, TiDB ALTER VIEW, ALTER PROCEDURE, tablespace, and parser-error forms remain deferred.
+ 
+ ---
+ 
+--- a/docs/reference/rules.zh-CN.md
++++ b/docs/reference/rules.zh-CN.md
+@@ -359,7 +359,7 @@
+ 
+ | 规则 ID | 描述 | 默认级别 | 是否需要元数据 |
+ |---------|------|:--------:|:--------------:|
+-| `ddl.view.create.forbid` | 禁止 CREATE/REPLACE 以及 MySQL/TiDB ALTER VIEW 定义 | blocker | 否 |
++| `ddl.view.create.forbid` | 禁止 CREATE/REPLACE 以及 MySQL ALTER VIEW 定义 | blocker | 否 |
+ | `ddl.view.drop.forbid` | 禁止 DROP VIEW | blocker | 否 |
+ | `ddl.view.target.valid` | 检查视图目标的存在性和类型 | blocker | 有序状态 |
+ | `ddl.view.source.valid` | 检查依赖、列绑定和输出名称 | blocker | 有序状态 |
+@@ -578,7 +578,7 @@
+ | `ddl.drop_sequence.notice` | `DROP SEQUENCE` 删除序列 | notice | 否 |
+ | `ddl.tidb.alter_table.placement_policy.notice` | `ALTER TABLE ... PLACEMENT POLICY` 将放置策略关联到表 | notice | 否 |
+ 
+-> **说明：** 这些规则是 MySQL/TiDB 专用的，审计 PostgreSQL SQL 时会自动跳过。它们属于离线规则，不需要数据库连接。这些仅是信息性 notice 规则——不会阻止、警告或执行在线验证。`ddl.drop_resource_group.notice` 仅限 MySQL，TiDB 下自动跳过。TiDB placement policy 和 sequence 规则在 MySQL 下自动跳过。这不是完整的 MySQL/TiDB DDL 支持——triggers、events、functions、ALTER VIEW、ALTER PROCEDURE、tablespace 和 parser-error 形态仍推迟支持。
++> **说明：** 这些规则是 MySQL/TiDB 专用的，审计 PostgreSQL SQL 时会自动跳过。它们属于离线规则，不需要数据库连接。这些仅是信息性 notice 规则——不会阻止、警告或执行在线验证。`ddl.drop_resource_group.notice` 仅限 MySQL，TiDB 下自动跳过。TiDB placement policy 和 sequence 规则在 MySQL 下自动跳过。这不是完整的 MySQL/TiDB DDL 支持——triggers、events、functions、TiDB ALTER VIEW、ALTER PROCEDURE、tablespace 和 parser-error 形态仍推迟支持。
+ 
+ ---
+ 
+--- a/docs/work-plans/t18-view-lifecycle/CONTRACT.md
++++ b/docs/work-plans/t18-view-lifecycle/CONTRACT.md
+@@ -31,6 +31,33 @@
+ Default policy additionally produces the view-definition blanket blocker.
+ Invalid SELECT remains parser_error. Known-absent source is a blocker;
+ unvouched source is a current-statement evidence gap, not an absent finding.
++
++## Query Shape And Graph Budget Qualifications
++
++Named ORDER BY references and output aliases use the same structured source
++binding assessment as projections and filters. A proven invalid reference
++refuses publication; it does not retire an existing view definition.
++LIMIT, inline window functions and unmodeled positional ordering retain a
++narrow `view_query_shape` capability boundary. They must not become complete
++merely because their AST parses, or become caller-resolvable metadata gaps.
++An uncertain ALTER withholds its mutable definition and output columns.
++
++Lexical CTE references can share query identities. Attribution, evaluation and
++freezing must all remain bounded over that graph; an attribution helper cannot
++expand a shared zero-source DAG exponentially after evaluation has stopped.
++Exhaustion remains intrinsic and visible with all policy rules disabled.
++
++TiDB duplicate DROP targets consume prior same-name effects. Without IF EXISTS,
++a repeated target provides a refusal independently of unknown initial existence.
++Retain independent evidence gaps and justified not-view postconditions; do not
++mistake not-view for absent. IF EXISTS does not acquire an unconditional
++duplicate refusal. An earlier uncertain prefix can still leave later effects
++unverified.
++
++A named definer token that spells VIEW is not itself a clause delimiter.
++The account production must validate before selecting the following VIEW/SQL
++boundary. These qualifications freeze required regressions, not executed
++acceptance evidence.
+ 
+ ## Primary Evidence And Vendor Boundaries
+ 
+--- a/docs/work-plans/t18-view-lifecycle/MATRIX.md
++++ b/docs/work-plans/t18-view-lifecycle/MATRIX.md
+@@ -3,6 +3,23 @@
+ Frozen before sibling implementation, 2026-11-01. This is an expectation map,
+ not a claim that its rows have executed. The executable T18 JSON grows by
+ vertical slices; its first 16 required case IDs remain stable when extended.
++
++## Review Hardening Regressions
++
++These are required public/companion regressions, not completed-run claims:
++
++- A shared zero-physical-source CTE DAG exhausts a bounded intrinsic budget,
++  including with all rules off; root attribution cannot evade the budget.
++- Named ORDER BY references and aliases bind correctly. A missing column
++  produces the current source refusal and preserves the prior view for a
++  successor; LIMIT, inline windows and unmodeled positional ordering remain
++  explicit capability boundaries without fabricated metadata gaps.
++- TiDB repeated unknown targets retain certain nonconditional refusal and
++  justified not-view postconditions, separately from IF EXISTS and unknown
++  prefix effects. No TiDB ALTER support is implied.
++- A valid named definer spelled VIEW remains an account identity rather than
++  a header delimiter; quoted and CURRENT_USER controls preserve their distinct
++  declaration semantics.
+ 
+ ## Profiles And Fixtures
+ 
+--- a/internal/application/audit/batch_state_t18_first_test.go
++++ b/internal/application/audit/batch_state_t18_first_test.go
+@@ -340,6 +340,83 @@
+ 	}
+ }
+ 
++func TestT18FullReviewQueryOrderRefusalPreservesPrior(t *testing.T) {
++	provider := t18FirstFixture()
++	prior := cloneTableSnapshot(provider.tables["g.v"])
++	_, statements := t18FirstEnrich(t, provider,
++		"ALTER VIEW v AS SELECT id FROM t ORDER BY missing_col;\nCREATE VIEW next_v AS SELECT id FROM v;")
++	assessment := spec.AssessViewLifecycle(statements[0])
++	projected := statements[1].Metadata.View.Sources[0].Snapshot
++	if !assessment.SourceInvalid || projected == nil || projected.View == nil ||
++		projected.View.Definition == nil ||
++		!reflect.DeepEqual(projected.View.Definition.Sources, []spec.Table{{Schema: "g", Name: "u"}}) ||
++		!reflect.DeepEqual(provider.tables["g.v"], prior) {
++		t.Fatalf("assessment=%#v projected=%#v prior=%#v", assessment, projected, prior)
++	}
++}
++
++func TestT18FullReviewQueryUnmodeledAlterWithholdsChangedFacts(t *testing.T) {
++	for _, query := range []string{
++		"SELECT ROW_NUMBER() OVER(ORDER BY id) AS rn FROM t",
++		"SELECT id FROM t LIMIT 1",
++	} {
++		t.Run(query, func(t *testing.T) {
++			provider := t18FirstFixture()
++			prior := cloneTableSnapshot(provider.tables["g.v"])
++			_, statements := t18FirstEnrich(t, provider,
++				"ALTER VIEW v AS "+query+";\nCREATE VIEW next_v AS SELECT id FROM v;")
++			projected := statements[1].Metadata.View.Sources[0].Snapshot
++			assessment := spec.AssessViewLifecycle(statements[1])
++			owesDefinition := false
++			for _, fact := range assessment.SourceRequired {
++				owesDefinition = owesDefinition || fact == "view.definition"
++			}
++			if projected == nil || !projected.Exists || projected.RelationKind != "view" ||
++				projected.Columns != nil || projected.View == nil || projected.View.Definition != nil ||
++				projected.View.Security != "definer" || !owesDefinition ||
++				!reflect.DeepEqual(provider.tables["g.v"], prior) {
++				t.Fatalf("projected=%#v assessment=%#v prior=%#v", projected, assessment, prior)
++			}
++		})
++	}
++}
++
++func TestT18FullReviewTiDBUnknownDuplicateNotView(t *testing.T) {
++	for _, ifExists := range []bool{false, true} {
++		t.Run(fmt.Sprintf("if_exists=%t", ifExists), func(t *testing.T) {
++			provider := t18FirstFixture()
++			provider.tables["g.v"] = nil
++			sqlText := "DROP VIEW "
++			if ifExists {
++				sqlText += "IF EXISTS "
++			}
++			sqlText += "v, v;\nCREATE OR REPLACE VIEW v AS SELECT id FROM t;"
++			ctx := context.Background()
++			parsed, err := Parse(ctx, sqlText, spec.DialectTiDB)
++			if err != nil {
++				t.Fatal(err)
++			}
++			extracted, err := Extract(ctx, parsed)
++			if err != nil {
++				t.Fatal(err)
++			}
++			facts := &spec.InstanceFacts{Version: "8.0.11-TiDB-v8.5.0"}
++			state := newBatchState(spec.DialectTiDB, "g", provider)
++			state.resolvedVersion = spec.ParseObservedVersion(facts.Version)
++			state.instanceFacts = facts
++			statements, err := state.enrichStatements(ctx, &MetadataRequest{Schema: "g", Provider: provider},
++				extracted, nil, facts, auditLimits{orderedStatements: len(extracted)})
++			if err != nil || len(statements) != 2 {
++				t.Fatalf("err=%v statements=%#v", err, statements)
++			}
++			target := statements[1].Metadata.View.Targets[0]
++			if !target.NotView || target.Snapshot != nil || provider.tables["g.v"] != nil {
++				t.Fatalf("target=%#v provider=%#v", target, provider.tables["g.v"])
++			}
++		})
++	}
++}
++
+ func TestT18FirstPolicyIndependent(t *testing.T) {
+ 	sql := "ALTER VIEW v AS SELECT id FROM t;\nCREATE VIEW next_v AS SELECT id FROM v;"
+ 	enabled := t05PolicyPathConfigured(t, map[string]t05RuleConfig{
+--- a/internal/domain/spec/README.md
++++ b/internal/domain/spec/README.md
+@@ -6,8 +6,9 @@
+ 
+ | File | Responsibility |
+ |------|---------------|
+-| view.go | Defines private view declarations, lexical `ViewQuery`/`ViewQuerySource` facts, source and output bindings, snapshots and dependency projections; exposes cloning, `SelectViewDefinition`, `BindViewDefinitionSources` and shared lifecycle/drop assessment |
+-| view_query.go | Assesses private lexical view query bindings and statically derived outputs against ordered relation projections; `FreezeViewDefinition` freezes star expansions |
++| view.go | Defines private view declarations, lexical `ViewQuery`/`ViewQuerySource` facts, source and output bindings, snapshots and dependency projections; exposes cloning, `SelectViewDefinition`, `BindViewDefinitionSources` and shared lifecycle/drop assessment including ordered duplicate-target fate |
++| view_query.go | Assesses private lexical view query bindings and statically derived outputs against ordered relation projections; `FreezeViewDefinition` freezes star expansions; root attribution is cycle-safe across shared query graphs |
++| view_query_test.go | Verifies deterministic physical-root attribution across shared and cyclic query graphs |
+ | statement.go | Defines the top-level normalized statement model and parser-neutral extraction interface, including the nonserialized `ResourceLimit` execution marker and its feature/reason constants |
+ | statement_test.go | Verifies typed statement metadata behavior |
+ | metadata.go | Defines optional schema context, instance facts, target-table snapshots, object-level validation snapshots, and lookup helpers for metadata-aware auditing — including `FindProvenIndex`/`HasUnprovenIndexName`/`IndexNameSpaceUnvouched`, the per-member `Index.NameUnknown` name-provability markers name-keyed consumers resolve `primary` and member targets through, and the T13-R1 partition catalog facts `Partitioned`/`PartitionType`/`PartitionNames` (nil = unobserved, non-nil empty = observed-empty — never read as confirmed absence) plus `Metadata.ExchangeTable` carrying the EXCHANGE counterpart's ordered pre-state projection (issue #92 T13-R1), and the T14 member-directory facts `PartitionDescriptions` (catalog PARTITION_DESCRIPTION text aligned 1:1 with names), `PartitionDefs` (comparable member definitions shared by provider and declared projections), and `Subpartitioned` (leaf-row marker keeping the top-level directory unobserved) (issue #93 T14) T16 adds the bound projection set: `TargetTables` (one `TargetBinding` per bound identity — `Table`, `Snapshot` nil means unvouched, `Ambiguous` never conflated with a proven absence, and `Snapshot.Temporary` marks the session-local temp namespace the binding resolved to), `SourceTable` (LIKE source), and `SourceTables` (CTAS sources — a nil entry means that source could not be vouched, never read as absent); `TableSnapshot` gains the inbound-edge facts `ReferencedBy`/`ReferencedByUnknown` (a provider never loads reverse FK edges — only batch-derived edges are proven, and an unvouched space keeps the marker rather than reading empty as safe) plus the `Temporary`/`GlobalTemporary` markers and `ColumnsTailUnknown` (CTAS declared-prefix tails where `SELECT`-derived columns are not enumerated) (issue #95 T16) T17 adds `Metadata.SchemaTarget` — the ordered pre-state binding a schema-scoped statement resolves (confirmed attributes when provably present, empty snapshot when provably absent, nil when unvouched; conditional CREATE convergence requires an applicable create arm, and resolver errors do not produce projections — a name-less `ALTER DATABASE` binds the request's trusted schema, never a connection guess) plus the nil-safe `MetadataSchemaTarget()` accessor (issue #96 T17) |
+--- a/internal/domain/spec/view.go
++++ b/internal/domain/spec/view.go
+@@ -550,13 +550,18 @@
+ 	tidbStopped, tidbMayStop := false, false
+ 	for i, binding := range targets {
+ 		kind := kinds[i]
+-		if statement.Dialect == DialectTiDB && duplicates[i] >= 0 &&
+-			assessment.DropTargets[duplicates[i]].Fate == ViewDropRemove {
+-			kind = viewTargetMissing
++		if statement.Dialect == DialectTiDB && duplicates[i] >= 0 {
++			switch assessment.DropTargets[duplicates[i]].Fate {
++			case ViewDropRemove:
++				kind = viewTargetMissing
++			case ViewDropNotView:
++				kind = viewTargetNotView
++			}
+ 		}
+ 		target := ViewDropTarget{Binding: binding, Fate: ViewDropKeep}
+ 		switch {
+-		case statement.Dialect == DialectMySQL && duplicates[i] >= 0:
++		case duplicates[i] >= 0 && (statement.Dialect == DialectMySQL ||
++			statement.Dialect == DialectTiDB && !ifExists):
+ 			target.Invalid = true
+ 		case kind == viewTargetMissing:
+ 			target.Invalid = !ifExists
+--- a/internal/domain/spec/view_query.go
++++ b/internal/domain/spec/view_query.go
+@@ -184,23 +184,29 @@
+ }
+ 
+ func viewQueryFirstRoot(query *ViewQuery) int {
+-	if query == nil {
++	visited := make(map[*ViewQuery]bool)
++	var firstRoot func(*ViewQuery) int
++	firstRoot = func(current *ViewQuery) int {
++		if current == nil || visited[current] {
++			return -1
++		}
++		visited[current] = true
++		for _, source := range current.Sources {
++			if source.Table != nil {
++				return source.Index
++			}
++			if root := firstRoot(source.Query); root >= 0 {
++				return root
++			}
++		}
++		for _, operand := range current.SetOperands {
++			if root := firstRoot(operand); root >= 0 {
++				return root
++			}
++		}
+ 		return -1
+ 	}
+-	for _, source := range query.Sources {
+-		if source.Table != nil {
+-			return source.Index
+-		}
+-		if root := viewQueryFirstRoot(source.Query); root >= 0 {
+-			return root
+-		}
+-	}
+-	for _, operand := range query.SetOperands {
+-		if root := viewQueryFirstRoot(operand); root >= 0 {
+-			return root
+-		}
+-	}
+-	return -1
++	return firstRoot(query)
+ }
+ 
+ func viewQueryMatches(binding ViewColumnBinding, relation viewQueryRelation) bool {
+--- /dev/null
++++ b/internal/domain/spec/view_query_test.go
+@@ -0,0 +1,20 @@
++package spec
++
++import "testing"
++
++func TestT18FullReviewFirstRootSharedAndCyclic(t *testing.T) {
++	empty := &ViewQuery{}
++	empty.Sources = []ViewQuerySource{{Query: empty}}
++	first := &ViewQuery{Sources: []ViewQuerySource{{Table: &Table{Name: "first"}, Index: 7}}}
++	second := &ViewQuery{Sources: []ViewQuerySource{{Table: &Table{Name: "second"}, Index: 9}}}
++	query := &ViewQuery{
++		Sources:     []ViewQuerySource{{Query: empty}, {Query: empty}, {Query: first}},
++		SetOperands: []*ViewQuery{second},
++	}
++	if got := viewQueryFirstRoot(query); got != 7 {
++		t.Fatalf("first root = %d, want 7", got)
++	}
++	if got := viewQueryFirstRoot(empty); got != -1 {
++		t.Fatalf("cycle without a physical root = %d, want -1", got)
++	}
++}
+--- a/internal/infrastructure/parser/tidb/README.md
++++ b/internal/infrastructure/parser/tidb/README.md
+@@ -11,8 +11,8 @@
+ 
+ | File | Responsibility |
+ |------|---------------|
+-| view.go | Parses structured view headers and untouched SELECT definitions; preserves private definitions, dependencies and bounded column bindings |
+-| view_query.go | Builds private lexical query scopes for view joins, CTEs, derived tables, nested queries and set operands |
++| view.go | Parses structured view headers and untouched SELECT definitions, validates definer account boundaries, and preserves private dependencies and clause-aware column locations |
++| view_query.go | Builds private lexical query scopes for joins, CTEs, derived tables, nested queries, set operands and SELECT ORDER BY; marks unmodeled LIMIT, window, positional-order and set-order shapes |
+ | view_t18_first_test.go | Exercises ALTER identity, strict identifier and definer grammar, bare CHECK boundaries and external definition sources |
+ | parser.go | Parses SQL text and preserves raw statement nodes plus parser warnings; on a base-grammar failure it runs the bounded `supplementDefaultExpressions` retry |
+ | supplement.go | Bounded grammar supplement: `DEFAULT (<expr>)` sites are located by structural tokenization (strings, quoted identifiers, and comments skipped) with their column identity, rewritten in place with a same-width literal placeholder, reparsed, and rebound to the real `SELECT`-parsed expression AST by site-span position — CREATE `ColumnOptionDefaultValue` and ALTER `SET/DROP DEFAULT` setter options (carried as `ColumnOptionNoOption`) both bind, while options outside every planned site (bare literal defaults) stay untouched; original statement text/offsets are restored verbatim and any mismatch fails closed to the original parse error — the placeholder literal never escapes into facts |
+--- a/internal/infrastructure/parser/tidb/view.go
++++ b/internal/infrastructure/parser/tidb/view.go
+@@ -69,6 +69,10 @@
+ }
+ 
+ func parseViewDefiner(text string) bool {
++	tokens := tokenizeSQL(text)
++	if len(tokens) == 0 || tokens[len(tokens)-1].text(text) == "@" {
++		return false
++	}
+ 	nodes, _, err := parser.New().Parse("SHOW GRANTS FOR "+text, "", "")
+ 	if err != nil || len(nodes) != 1 {
+ 		return false
+@@ -181,10 +185,16 @@
+ 			}
+ 		} else {
+ 			start := tokens[i].start
+-			for i < len(tokens) && !tokens[i].wordIs(sql, "VIEW") && !tokens[i].wordIs(sql, "SQL") {
++			startIndex := i
++			for i < len(tokens) {
++				clause := tokens[i].wordIs(sql, "VIEW") ||
++					tokens[i].wordIs(sql, "SQL") && i+1 < len(tokens) && tokens[i+1].wordIs(sql, "SECURITY")
++				if clause && i > startIndex && parseViewDefiner(sql[start:tokens[i-1].end]) {
++					break
++				}
+ 				i++
+ 			}
+-			if i == 0 || tokens[i-1].end <= start {
++			if i >= len(tokens) || i == startIndex || tokens[i-1].end <= start {
+ 				return nil, false
+ 			}
+ 			end := tokens[i-1].end
+@@ -400,7 +410,7 @@
+ 	}
+ 	if selectNode.With != nil || selectNode.GroupBy != nil ||
+ 		selectNode.Having != nil || selectNode.LockInfo != nil || selectNode.SelectIntoOpt != nil ||
+-		selectNode.Distinct || len(selectNode.WindowSpecs) != 0 {
++		selectNode.Limit != nil || selectNode.Distinct || len(selectNode.WindowSpecs) != 0 {
+ 		return definition
+ 	}
+ 	definition.ShapeKnown = true
+@@ -483,14 +493,14 @@
+ 	switch node := node.(type) {
+ 	case *ast.AggregateFuncExpr:
+ 		c.aggregate = true
+-	case *ast.SubqueryExpr:
++	case *ast.SubqueryExpr, *ast.WindowFuncExpr, *ast.PositionExpr:
+ 		c.unsupported = true
+ 		return node, true
+ 	case *ast.ColumnNameExpr:
+ 		if node.Name != nil {
+ 			offset := -1
+ 			if c.locations {
+-				offset = viewReferenceOffset(c.sql, c.start, node.Name)
++				offset = viewReferenceOffset(c.sql, c.start, node.Name, "WHERE")
+ 			}
+ 			c.references = append(c.references, spec.ViewColumnBinding{
+ 				Schema: node.Name.Schema.L, Table: node.Name.Table.L, Column: node.Name.Name.L, Offset: offset,
+@@ -503,7 +513,7 @@
+ 
+ func (c *viewReferenceCollector) Leave(node ast.Node) (ast.Node, bool) { return node, true }
+ 
+-func viewReferenceOffset(sql string, start int, name *ast.ColumnName) int {
++func viewReferenceOffset(sql string, start int, name *ast.ColumnName, clause string) int {
+ 	var parts []string
+ 	if name.Schema.L != "" {
+ 		parts = append(parts, name.Schema.L)
+@@ -513,16 +523,28 @@
+ 	}
+ 	parts = append(parts, name.Name.L)
+ 	tokens := tokenizeSQL(sql)
+-	inWhere := false
++	current := ""
++	offset := -1
+ 	for i, token := range tokens {
+ 		if token.start < start {
+ 			continue
+ 		}
+-		if token.wordIs(sql, "WHERE") {
+-			inWhere = true
+-			continue
+-		}
+-		if !inWhere || i > 0 && tokens[i-1].text(sql) == "." {
++		switch {
++		case token.wordIs(sql, "ON"):
++			current = "ON"
++		case token.wordIs(sql, "WHERE"):
++			current = "WHERE"
++		case token.wordIs(sql, "HAVING"):
++			current = "HAVING"
++		case token.wordIs(sql, "GROUP") && i+1 < len(tokens) && tokens[i+1].wordIs(sql, "BY"):
++			current = "GROUP"
++		case token.wordIs(sql, "ORDER") && i+1 < len(tokens) && tokens[i+1].wordIs(sql, "BY"):
++			current = "ORDER"
++		case token.wordIs(sql, "FROM"), token.wordIs(sql, "JOIN"), token.wordIs(sql, "LIMIT"),
++			token.wordIs(sql, "UNION"):
++			current = ""
++		}
++		if current != clause || i > 0 && tokens[i-1].text(sql) == "." {
+ 			continue
+ 		}
+ 		j := i
+@@ -543,10 +565,13 @@
+ 			j++
+ 		}
+ 		if matched {
+-			return token.start
+-		}
+-	}
+-	return -1
++			if offset >= 0 {
++				return -1
++			}
++			offset = token.start
++		}
++	}
++	return offset
+ }
+ 
+ func ParseViewDefinition(ctx context.Context, sqlText string) (*spec.ViewDefinition, error) {
+--- a/internal/infrastructure/parser/tidb/view_query.go
++++ b/internal/infrastructure/parser/tidb/view_query.go
+@@ -15,14 +15,15 @@
+ 	switch n := node.(type) {
+ 	case *ast.Join:
+ 		d.complex = d.complex || n.Right != nil
+-	case *ast.WithClause, *ast.SetOprStmt, *ast.SubqueryExpr:
++	case *ast.WithClause, *ast.SetOprStmt, *ast.SubqueryExpr, *ast.WindowFuncExpr:
+ 		d.complex = true
+ 	case *ast.TableSource:
+ 		if _, physical := n.Source.(*ast.TableName); !physical {
+ 			d.complex = true
+ 		}
+ 	case *ast.SelectStmt:
+-		d.complex = d.complex || n.GroupBy != nil || n.Having != nil || n.Distinct || len(n.WindowSpecs) > 0
++		d.complex = d.complex || n.GroupBy != nil || n.Having != nil || n.OrderBy != nil ||
++			n.Limit != nil || n.Distinct || len(n.WindowSpecs) > 0
+ 	}
+ 	return node, false
+ }
+@@ -100,6 +101,9 @@
+ 			query.Unsupported = true
+ 			return query
+ 		}
++		if n.Limit != nil || n.OrderBy != nil || n.SelectList.Limit != nil || n.SelectList.OrderBy != nil {
++			query.Unsupported = true
++		}
+ 		for _, operand := range n.SelectList.Selects {
+ 			query.SetOperands = append(query.SetOperands, b.build(operand, scope, depth+1))
+ 		}
+@@ -108,6 +112,9 @@
+ 		}
+ 	case *ast.SetOprSelectList:
+ 		query.NonMergeable, query.NonUpdatable = true, true
++		if n.Limit != nil || n.OrderBy != nil {
++			query.Unsupported = true
++		}
+ 		for _, operand := range n.Selects {
+ 			query.SetOperands = append(query.SetOperands, b.build(operand, scope, depth+1))
+ 		}
+@@ -120,6 +127,9 @@
+ 		query.Unsupported = true
+ 		return
+ 	}
++	if node.Limit != nil {
++		query.Unsupported = true
++	}
+ 	if node.From != nil {
+ 		b.addSource(query, node.From.TableRefs, scope, depth)
+ 	} else {
+@@ -154,7 +164,7 @@
+ 			query.Unsupported = true
+ 			continue
+ 		}
+-		b.addExpression(query, field.Expr, scope, depth, offset, false)
++		b.addExpression(query, field.Expr, scope, depth, offset, false, "")
+ 		if field.AsName.L == "" {
+ 			if _, literal := field.Expr.(ast.ValueExpr); !literal {
+ 				query.Unlabeled = true
+@@ -163,22 +173,22 @@
+ 		query.Bindings = append(query.Bindings, spec.ViewColumnBinding{Output: field.AsName.L, Expression: true, Offset: offset})
+ 	}
+ 	if node.Where != nil {
+-		b.addExpression(query, node.Where, scope, depth, -1, false)
++		b.addExpression(query, node.Where, scope, depth, -1, false, "WHERE")
+ 	}
+ 	if node.GroupBy != nil {
+ 		for _, item := range node.GroupBy.Items {
+ 			if item != nil && item.Expr != nil {
+-				b.addExpression(query, item.Expr, scope, depth, -1, true)
++				b.addExpression(query, item.Expr, scope, depth, -1, true, "GROUP")
+ 			}
+ 		}
+ 	}
+ 	if node.Having != nil && node.Having.Expr != nil {
+-		b.addExpression(query, node.Having.Expr, scope, depth, -1, true)
++		b.addExpression(query, node.Having.Expr, scope, depth, -1, true, "HAVING")
+ 	}
+ 	if node.OrderBy != nil {
+ 		for _, item := range node.OrderBy.Items {
+ 			if item != nil && item.Expr != nil {
+-				b.addExpression(query, item.Expr, scope, depth, -1, true)
++				b.addExpression(query, item.Expr, scope, depth, -1, true, "ORDER")
+ 			}
+ 		}
+ 	}
+@@ -194,7 +204,7 @@
+ 			b.addSource(query, n.Right, scope, depth)
+ 		}
+ 		if n.On != nil && n.On.Expr != nil {
+-			b.addExpression(query, n.On.Expr, scope, depth, -1, false)
++			b.addExpression(query, n.On.Expr, scope, depth, -1, false, "ON")
+ 		}
+ 		if n.NaturalJoin || len(n.Using) > 0 {
+ 			query.Unsupported = true
+@@ -243,12 +253,16 @@
+ 	depth           int
+ 	offset          int
+ 	outputReference bool
++	clause          string
+ }
+ 
+ func (v *viewQueryExpression) Enter(node ast.Node) (ast.Node, bool) {
+ 	switch n := node.(type) {
+ 	case *ast.AggregateFuncExpr:
+ 		v.query.NonMergeable, v.query.NonUpdatable = true, true
++	case *ast.WindowFuncExpr, *ast.PositionExpr:
++		v.query.Unsupported = true
++		return node, true
+ 	case *ast.SubqueryExpr:
+ 		if n.Query == nil {
+ 			v.query.Unsupported = true
+@@ -260,7 +274,7 @@
+ 		if n.Name != nil {
+ 			offset := v.offset
+ 			if offset < 0 && v.builder.locations {
+-				offset = viewReferenceOffset(v.builder.sql, v.builder.selectStart, n.Name)
++				offset = viewReferenceOffset(v.builder.sql, v.builder.selectStart, n.Name, v.clause)
+ 			}
+ 			v.query.References = append(v.query.References, spec.ViewColumnBinding{
+ 				Schema: n.Name.Schema.L, Table: n.Name.Table.L, Column: n.Name.Name.L, Offset: offset, OutputReference: v.outputReference,
+@@ -273,8 +287,8 @@
+ 
+ func (v *viewQueryExpression) Leave(node ast.Node) (ast.Node, bool) { return node, true }
+ 
+-func (b *viewQueryBuilder) addExpression(query *spec.ViewQuery, expression ast.ExprNode, scope map[string]*spec.ViewQuery, depth, offset int, outputReference bool) {
+-	expression.Accept(&viewQueryExpression{builder: b, query: query, scope: scope, depth: depth, offset: offset, outputReference: outputReference})
++func (b *viewQueryBuilder) addExpression(query *spec.ViewQuery, expression ast.ExprNode, scope map[string]*spec.ViewQuery, depth, offset int, outputReference bool, clause string) {
++	expression.Accept(&viewQueryExpression{builder: b, query: query, scope: scope, depth: depth, offset: offset, outputReference: outputReference, clause: clause})
+ }
+ 
+ func (b *viewQueryBuilder) sourceOffset(table spec.Table) int {
+--- a/internal/infrastructure/parser/tidb/view_t18_first_test.go
++++ b/internal/infrastructure/parser/tidb/view_t18_first_test.go
+@@ -73,6 +73,36 @@
+ 	}
+ }
+ 
++func TestT18FullReviewDefinerKeyword(t *testing.T) {
++	for _, tc := range []struct{ value, kind string }{
++		{"view", "named"}, {"'view'", "named"}, {"'u'@view", "named"},
++		{"CURRENT_USER", "current_user"}, {"CURRENT_USER()", "current_user"},
++	} {
++		t.Run(tc.value, func(t *testing.T) {
++			sql := "ALTER DEFINER=" + tc.value + " SQL SECURITY INVOKER VIEW v AS SELECT id FROM t;"
++			parsed, err := New().Parse(context.Background(), sql)
++			if err != nil || len(parsed.Statements) != 1 {
++				t.Fatalf("parse=%#v err=%v", parsed, err)
++			}
++			wrapped := WrapStatements(parsed.Statements, parsed.Warnings)
++			statement, err := wrapped[0].Extractor.Extract(spec.DialectMySQL, wrapped[0].RawSQL)
++			if err != nil || statement.DDL == nil || statement.DDL.View == nil ||
++				statement.DDL.Operation != spec.DDLOperationAlterView ||
++				statement.DDL.View.DefinerKind != tc.kind || statement.DDL.View.Security != "invoker" ||
++				(tc.kind == "named" && statement.DDL.View.DefinerPrincipal != tc.value) ||
++				statement.RawSQL != sql {
++				t.Fatalf("statement=%#v err=%v", statement, err)
++			}
++		})
++	}
++	for _, value := range []string{"SELECT", "123", "'u'@"} {
++		if _, err := New().Parse(context.Background(),
++			"ALTER DEFINER="+value+" SQL SECURITY INVOKER VIEW v AS SELECT id FROM t;"); err == nil {
++			t.Fatalf("invalid definer accepted: %q", value)
++		}
++	}
++}
++
+ func TestT18FullExternalDefinitionCTEScope(t *testing.T) {
+ 	definition, err := ParseViewDefinition(context.Background(),
+ 		"WITH unused AS (SELECT id FROM g.hidden), c AS (SELECT id FROM g.c) SELECT id FROM c")
+--- a/internal/interfaces/http/README.md
++++ b/internal/interfaces/http/README.md
+@@ -10,6 +10,7 @@
+ | audit_metadata_test.go | Verifies HTTP metadata-aware execution wiring, additive context, and direct metadata client lifecycle handling |
+ | audit_impact_postgresql_tag_test.go | Verifies PostgreSQL offline primary-key equality impact in HTTP JSON output |
+ | audit_dml_table_existence_test.go | Verifies registry-backed MySQL/TiDB INSERT/UPDATE/DELETE missing-target findings and stable HTTP result shape |
++| audit_t18_view_privacy_test.go | Verifies HTTP private-view dependency findings, unavailable-definition gaps and bounded provider errors without exposing catalog values in JSON or access logs |
+ | audit_offline_existence_test.go | Locks offline ALTER DROP COLUMN HTTP JSON review verdict, `unknown_table_state` evidence gaps, `context.note` / `context.unproven`, capabilities `context_fields`, and the four-rule ordered first-path projection (first-statement gap, derived-complete followers) |
+ | handler.go | Binds Gin HTTP requests to public APIs, emits diagnostic error envelopes that retain the full partial audit result beside the bounded transport error, and maps MCP `connection_ref` to field-level `invalid_request` instead of opaque `invalid_json` |
+ | handler_unsupported_diagnostics_evidence_test.go | Verifies HTTP parser diagnostics preserve the review-floored partial result, valid statements/findings, locations, context, error status, and no-leak boundaries |
+--- /dev/null
++++ b/internal/interfaces/http/audit_t18_view_privacy_test.go
+@@ -0,0 +1,223 @@
++package httpapi
++
++import (
++	"bytes"
++	"context"
++	"encoding/json"
++	"errors"
++	"fmt"
++	"log"
++	"net/http"
++	"net/http/httptest"
++	"os"
++	"path/filepath"
++	"reflect"
++	"sort"
++	"strconv"
++	"strings"
++	"testing"
++
++	"github.com/Fanduzi/DeltaScope/internal/domain/policy"
++	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
++	"github.com/Fanduzi/DeltaScope/pkg/deltascope"
++)
++
++const t18HTTPViewSQL = "CREATE VIEW fresh AS SELECT id FROM visible_v;"
++
++type t18HTTPViewProvider struct {
++	mode  string
++	reads []string
++}
++
++func (*t18HTTPViewProvider) LoadInstanceFacts(context.Context, deltascope.Dialect, string) (*deltascope.InstanceFacts, error) {
++	return &deltascope.InstanceFacts{Version: "8.0.46"}, nil
++}
++
++func (p *t18HTTPViewProvider) LoadTableSnapshot(_ context.Context, _ deltascope.Dialect, schema, table string) (*deltascope.TableSnapshot, error) {
++	p.reads = append(p.reads, schema+"."+table)
++	identity := &spec.Table{Schema: schema, Name: table}
++	switch table {
++	case "fresh":
++		return &spec.TableSnapshot{Schema: schema, Table: identity}, nil
++	case "visible_v":
++		if p.mode == "error" {
++			return nil, errors.New("t18_private_provider_error")
++		}
++		view := &spec.ViewSnapshot{
++			Security: "definer", DefinerKind: "named", DefinerPrincipal: "t18_private_definer",
++		}
++		if p.mode == "known" {
++			view.Definition = &spec.ViewDefinition{
++				SQL:          "SELECT id FROM golden.t18_private_hidden_leaf WHERE 't18_private_literal'='t18_private_literal'",
++				Sources:      []spec.Table{{Schema: "golden", Name: "t18_private_hidden_leaf"}},
++				SourcesKnown: true, ShapeKnown: true,
++				Bindings: []spec.ViewColumnBinding{{Column: "id", Output: "id"}},
++			}
++		}
++		return &spec.TableSnapshot{
++			Schema: schema, Table: identity, Exists: true, RelationKind: "view", View: view,
++			Columns: []spec.Column{{Name: "id", Type: "int"}},
++		}, nil
++	case "t18_private_hidden_leaf":
++		return &spec.TableSnapshot{
++			Schema: schema, Table: identity, Exists: true, RelationKind: "table",
++			Columns: []spec.Column{{Name: "id", Type: "int"}},
++		}, nil
++	default:
++		return nil, nil
++	}
++}
++
++func t18HTTPViewPolicy(t *testing.T) string {
++	t.Helper()
++	ids := make([]string, 0, len(policy.Default().Rules))
++	for id := range policy.Default().Rules {
++		ids = append(ids, id)
++	}
++	sort.Strings(ids)
++	var config strings.Builder
++	config.WriteString("rules:\n")
++	for _, id := range ids {
++		switch id {
++		case "ddl.table.denylist.forbid":
++			fmt.Fprintf(&config, "  %s:\n    enabled: true\n    level: blocker\n    params:\n      tables: [t18_private_hidden_leaf]\n", strconv.Quote(id))
++		case "ddl.view.source.valid":
++			fmt.Fprintf(&config, "  %s:\n    enabled: true\n    level: blocker\n", strconv.Quote(id))
++		case "ddl.view.security.definer.warn":
++			fmt.Fprintf(&config, "  %s:\n    enabled: true\n    level: warning\n", strconv.Quote(id))
++		default:
++			fmt.Fprintf(&config, "  %s:\n    enabled: false\n", strconv.Quote(id))
++		}
++	}
++	path := filepath.Join(t.TempDir(), "policy.yaml")
++	if err := os.WriteFile(path, []byte(config.String()), 0o600); err != nil {
++		t.Fatal(err)
++	}
++	return path
++}
++
++func TestT18HTTPViewPrivacy(t *testing.T) {
++	for _, mode := range []string{"known", "unavailable", "error"} {
++		t.Run(mode, func(t *testing.T) {
++			provider := &t18HTTPViewProvider{mode: mode}
++			var logs bytes.Buffer
++			handler, err := NewHandler(t18HTTPViewPolicy(t), "test-build",
++				WithAuditFunc(func(ctx context.Context, request deltascope.Request) (deltascope.Result, error) {
++					request.MetadataProvider = provider
++					return deltascope.Audit(ctx, request)
++				}),
++				WithMiddlewareConfig(MiddlewareConfig{Logger: log.New(&logs, "", 0)}),
++			)
++			if err != nil {
++				t.Fatalf("new handler: %v", err)
++			}
++			body, err := json.Marshal(map[string]any{"sql": t18HTTPViewSQL, "dialect": "mysql", "schema": "golden"})
++			if err != nil {
++				t.Fatal(err)
++			}
++			req := httptest.NewRequest(http.MethodPost, "/v1/audit", bytes.NewReader(body))
++			req.Header.Set("Content-Type", "application/json")
++			rec := httptest.NewRecorder()
++			handler.ServeHTTP(rec, req)
++			for _, sentinel := range []string{
++				"t18_private_literal", "t18_private_definer", "t18_private_hidden_leaf", "t18_private_provider_error",
++			} {
++				if strings.Contains(rec.Body.String(), sentinel) || strings.Contains(logs.String(), sentinel) {
++					t.Fatal("private catalog or provider value leaked through HTTP response or logs")
++				}
++			}
++			if logs.Len() == 0 {
++				t.Fatal("HTTP access logging was not captured")
++			}
++			if !containsT18HTTPViewRead(provider.reads, "golden.visible_v") {
++				t.Fatal("view provider was not consulted")
++			}
++			if mode == "error" {
++				var envelope struct {
++					Error struct {
++						Code    string `json:"code"`
++						Message string `json:"message"`
++					} `json:"error"`
++					Verdict    *string         `json:"verdict"`
++					Coverage   json.RawMessage `json:"coverage"`
++					Statements json.RawMessage `json:"statements"`
++				}
++				if err := json.Unmarshal(rec.Body.Bytes(), &envelope); err != nil {
++					t.Fatal(err)
++				}
++				if rec.Code != http.StatusBadRequest || envelope.Error.Code != "bad_request" ||
++					envelope.Error.Message != "invalid request" || envelope.Verdict != nil ||
++					envelope.Coverage != nil || envelope.Statements != nil {
++					t.Fatalf("status=%d error=%#v", rec.Code, envelope.Error)
++				}
++				return
++			}
++			if rec.Code != http.StatusOK {
++				t.Fatalf("status=%d, want 200", rec.Code)
++			}
++			var result deltascope.Result
++			if err := json.Unmarshal(rec.Body.Bytes(), &result); err != nil {
++				t.Fatal(err)
++			}
++			t18HTTPAssertViewAudit(t, result, mode)
++			if got := containsT18HTTPViewRead(provider.reads, "golden.t18_private_hidden_leaf"); got != (mode == "known") {
++				t.Fatalf("hidden dependency read=%t, want %t", got, mode == "known")
++			}
++		})
++	}
++}
++
++func containsT18HTTPViewRead(reads []string, value string) bool {
++	for _, read := range reads {
++		if read == value {
++			return true
++		}
++	}
++	return false
++}
++
++func t18HTTPAssertViewAudit(t *testing.T, result deltascope.Result, mode string) {
++	t.Helper()
++	if len(result.Statements) != 1 || len(result.Diagnostics) != 0 || len(result.Unsupported) != 0 ||
++		result.Summary.Statements != 1 || result.Summary.Warnings != 1 || result.Summary.Notices != 0 {
++		t.Fatal("unexpected HTTP audit statement, diagnostics, or summary")
++	}
++	statement := result.Statements[0]
++	if mode == "known" {
++		if result.Verdict != deltascope.VerdictReject || result.Coverage.Status != deltascope.CoverageComplete ||
++			result.Summary.Blockers != 1 || len(statement.Findings) != 2 || len(statement.EvidenceGaps) != 0 {
++			t.Fatal("known definition did not produce complete reject with two findings")
++		}
++		var deny, security bool
++		for _, finding := range statement.Findings {
++			switch finding.RuleID {
++			case "ddl.table.denylist.forbid":
++				deny = finding.Level == deltascope.LevelBlocker && finding.Metadata["table"] == "visible_v" &&
++					finding.Metadata["schema"] == "golden" && finding.Location != nil &&
++					finding.Location.Line == 1 && finding.Location.Column == strings.Index(t18HTTPViewSQL, "visible_v")+1
++			case "ddl.view.security.definer.warn":
++				security = finding.Level == deltascope.LevelWarning
++			}
++		}
++		if !deny || !security {
++			t.Fatal("known definition findings did not identify the authored view and security warning")
++		}
++		return
++	}
++	if result.Verdict != deltascope.VerdictReview || result.Coverage.Status != deltascope.CoverageUnverified ||
++		result.Summary.Blockers != 0 || len(statement.Findings) != 1 ||
++		statement.Findings[0].RuleID != "ddl.view.security.definer.warn" ||
++		statement.Findings[0].Level != deltascope.LevelWarning || len(statement.EvidenceGaps) != 2 {
++		t.Fatal("unavailable definition did not produce unverified review with one warning and two gaps")
++	}
++	gaps := map[string]int{}
++	for _, gap := range statement.EvidenceGaps {
++		if !reflect.DeepEqual(gap.RequiredFacts, []string{"view.definition"}) {
++			t.Fatal("unavailable definition gap has unexpected required facts")
++		}
++		gaps[gap.RuleID]++
++	}
++	if gaps["ddl.table.denylist.forbid"] != 1 || gaps["ddl.view.source.valid"] != 1 {
++		t.Fatal("unavailable definition gaps did not belong to source and denylist rules")
++	}
++}
+--- a/internal/interfaces/mcp/README.md
++++ b/internal/interfaces/mcp/README.md
+@@ -10,6 +10,7 @@
+ | `audit_tool_test.go` | Verifies `audit_sql` compact text, structured result without CLI-only `fail_on_triggered`, empty-SQL `bad_request`, offline `context.note` / `context.unproven` with `unknown_table_state` evidence gaps, the four-rule ordered first-path contract (`isError=false`, first-statement gap, derived-complete followers), and per-target denylist findings for multi-target DROP/RENAME via `config_path` |
+ | `audit_impact_postgresql_tag_test.go` | Verifies PostgreSQL offline primary-key equality impact in MCP structured output |
+ | `audit_dml_table_existence_test.go` | Verifies metadata-aware MySQL/TiDB INSERT/UPDATE/DELETE missing-target findings and stable MCP structured-result shape |
++| `audit_t18_view_privacy_test.go` | Verifies MCP private-view dependency findings, unavailable-definition gaps and bounded provider errors without exposing catalog values in structured JSON, rendered text or logs |
+ | `audit_tool_postgresql_tag_test.go` | Verifies compact review-verdict text on the PostgreSQL-capable build |
+ | `server_metadata_postgresql_tag_test.go` | Verifies PostgreSQL metadata-aware MCP result behavior and separate database/schema propagation |
+ | `connection.go` | Resolves `connection_ref` inputs, delegates direct connection validation/password lookup to `internal/interfaces/metadata`, and assembles MCP connection state while preserving separate database/catalog and schema values |
+--- /dev/null
++++ b/internal/interfaces/mcp/audit_t18_view_privacy_test.go
+@@ -0,0 +1,265 @@
++package mcpapi
++
++import (
++	"bytes"
++	"context"
++	"encoding/json"
++	"errors"
++	"fmt"
++	"log/slog"
++	"os"
++	"path/filepath"
++	"reflect"
++	"sort"
++	"strconv"
++	"strings"
++	"sync"
++	"testing"
++
++	auditmeta "github.com/Fanduzi/DeltaScope/internal/application/auditmeta"
++	"github.com/Fanduzi/DeltaScope/internal/domain/policy"
++	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
++	"github.com/Fanduzi/DeltaScope/pkg/deltascope"
++	sdkmcp "github.com/modelcontextprotocol/go-sdk/mcp"
++)
++
++const t18MCPViewSQL = "CREATE VIEW fresh AS SELECT id FROM visible_v;"
++
++type t18MCPViewClient struct {
++	metadataOnlyClient
++	mode  string
++	mu    sync.Mutex
++	reads []string
++}
++
++func (*t18MCPViewClient) LoadInstanceFacts(context.Context, spec.Dialect, string) (*spec.InstanceFacts, error) {
++	return &spec.InstanceFacts{Version: "8.0.46"}, nil
++}
++
++func (p *t18MCPViewClient) LoadTableSnapshot(_ context.Context, _ spec.Dialect, schema, table string) (*spec.TableSnapshot, error) {
++	p.mu.Lock()
++	p.reads = append(p.reads, schema+"."+table)
++	p.mu.Unlock()
++	identity := &spec.Table{Schema: schema, Name: table}
++	switch table {
++	case "fresh":
++		return &spec.TableSnapshot{Schema: schema, Table: identity}, nil
++	case "visible_v":
++		if p.mode == "error" {
++			return nil, errors.New("t18_private_provider_error")
++		}
++		view := &spec.ViewSnapshot{
++			Security: "definer", DefinerKind: "named", DefinerPrincipal: "t18_private_definer",
++		}
++		if p.mode == "known" {
++			view.Definition = &spec.ViewDefinition{
++				SQL:          "SELECT id FROM golden.t18_private_hidden_leaf WHERE 't18_private_literal'='t18_private_literal'",
++				Sources:      []spec.Table{{Schema: "golden", Name: "t18_private_hidden_leaf"}},
++				SourcesKnown: true, ShapeKnown: true,
++				Bindings: []spec.ViewColumnBinding{{Column: "id", Output: "id"}},
++			}
++		}
++		return &spec.TableSnapshot{
++			Schema: schema, Table: identity, Exists: true, RelationKind: "view", View: view,
++			Columns: []spec.Column{{Name: "id", Type: "int"}},
++		}, nil
++	case "t18_private_hidden_leaf":
++		return &spec.TableSnapshot{
++			Schema: schema, Table: identity, Exists: true, RelationKind: "table",
++			Columns: []spec.Column{{Name: "id", Type: "int"}},
++		}, nil
++	default:
++		return nil, nil
++	}
++}
++
++func (p *t18MCPViewClient) hasRead(value string) bool {
++	p.mu.Lock()
++	defer p.mu.Unlock()
++	for _, read := range p.reads {
++		if read == value {
++			return true
++		}
++	}
++	return false
++}
++
++type t18MCPViewLog struct {
++	mu  sync.Mutex
++	buf bytes.Buffer
++}
++
++func (b *t18MCPViewLog) Write(data []byte) (int, error) {
++	b.mu.Lock()
++	defer b.mu.Unlock()
++	return b.buf.Write(data)
++}
++
++func (b *t18MCPViewLog) String() string {
++	b.mu.Lock()
++	defer b.mu.Unlock()
++	return b.buf.String()
++}
++
++func t18MCPViewPolicy(t *testing.T) string {
++	t.Helper()
++	ids := make([]string, 0, len(policy.Default().Rules))
++	for id := range policy.Default().Rules {
++		ids = append(ids, id)
++	}
++	sort.Strings(ids)
++	var config strings.Builder
++	config.WriteString("rules:\n")
++	for _, id := range ids {
++		switch id {
++		case "ddl.table.denylist.forbid":
++			fmt.Fprintf(&config, "  %s:\n    enabled: true\n    level: blocker\n    params:\n      tables: [t18_private_hidden_leaf]\n", strconv.Quote(id))
++		case "ddl.view.source.valid":
++			fmt.Fprintf(&config, "  %s:\n    enabled: true\n    level: blocker\n", strconv.Quote(id))
++		case "ddl.view.security.definer.warn":
++			fmt.Fprintf(&config, "  %s:\n    enabled: true\n    level: warning\n", strconv.Quote(id))
++		default:
++			fmt.Fprintf(&config, "  %s:\n    enabled: false\n", strconv.Quote(id))
++		}
++	}
++	path := filepath.Join(t.TempDir(), "policy.yaml")
++	if err := os.WriteFile(path, []byte(config.String()), 0o600); err != nil {
++		t.Fatal(err)
++	}
++	return path
++}
++
++func TestT18MCPViewPrivacy(t *testing.T) {
++	for _, mode := range []string{"known", "unavailable", "error"} {
++		t.Run(mode, func(t *testing.T) {
++			client := &t18MCPViewClient{mode: mode}
++			previous := prepareMetadataAudit
++			prepareMetadataAudit = func(_ context.Context, _ auditmeta.Request) (*auditmeta.PreparedAudit, error) {
++				return &auditmeta.PreparedAudit{
++					Client: client, Dialect: spec.DialectMySQL, Schema: "golden",
++					DialectSource: "request", SchemaSource: "request",
++				}, nil
++			}
++			t.Cleanup(func() { prepareMetadataAudit = previous })
++			var logs t18MCPViewLog
++			server := NewServer(Config{Version: "test-build", Logger: slog.New(slog.NewJSONHandler(&logs, nil))})
++			session, err := connectClientSession(context.Background(), server)
++			if err != nil {
++				t.Fatalf("connect session: %v", err)
++			}
++			t.Cleanup(func() { _ = session.Close() })
++			result, err := session.CallTool(context.Background(), &sdkmcp.CallToolParams{
++				Name: "audit_sql",
++				Arguments: map[string]any{
++					"sql": t18MCPViewSQL, "dialect": "mysql", "config_path": t18MCPViewPolicy(t),
++					"connection": map[string]any{"host": "127.0.0.1", "user": "root", "schema": "golden"},
++				},
++			})
++			if err != nil {
++				t.Fatalf("call audit_sql: %v", err)
++			}
++			raw, err := json.Marshal(result)
++			if err != nil {
++				t.Fatal(err)
++			}
++			if len(result.Content) == 0 {
++				t.Fatal("MCP result has no rendered content")
++			}
++			hasText := false
++			for _, content := range result.Content {
++				_, ok := content.(*sdkmcp.TextContent)
++				hasText = hasText || ok
++			}
++			if !hasText {
++				t.Fatal("MCP result has no rendered text")
++			}
++			for _, sentinel := range []string{
++				"t18_private_literal", "t18_private_definer", "t18_private_hidden_leaf", "t18_private_provider_error",
++			} {
++				if strings.Contains(string(raw), sentinel) || strings.Contains(logs.String(), sentinel) {
++					t.Fatal("private catalog or provider value leaked through MCP JSON or logs")
++				}
++				for _, content := range result.Content {
++					if text, ok := content.(*sdkmcp.TextContent); ok && strings.Contains(text.Text, sentinel) {
++						t.Fatal("private catalog or provider value leaked through MCP text")
++					}
++				}
++			}
++			if !client.hasRead("golden.visible_v") {
++				t.Fatal("view provider was not consulted")
++			}
++			body, ok := result.StructuredContent.(map[string]any)
++			if !ok {
++				t.Fatalf("structured content has type %T", result.StructuredContent)
++			}
++			if mode == "error" {
++				if !result.IsError || body["code"] != "bad_request" || body["verdict"] != nil ||
++					body["coverage"] != nil || body["statements"] != nil {
++					t.Fatal("provider error did not remain a bad_request tool error")
++				}
++				return
++			}
++			if result.IsError {
++				t.Fatal("normal audit unexpectedly returned a tool error")
++			}
++			bodyJSON, err := json.Marshal(body)
++			if err != nil {
++				t.Fatal(err)
++			}
++			var audit deltascope.Result
++			if err := json.Unmarshal(bodyJSON, &audit); err != nil {
++				t.Fatal(err)
++			}
++			t18MCPAssertViewAudit(t, audit, mode)
++			if got := client.hasRead("golden.t18_private_hidden_leaf"); got != (mode == "known") {
++				t.Fatalf("hidden dependency read=%t, want %t", got, mode == "known")
++			}
++		})
++	}
++}
++
++func t18MCPAssertViewAudit(t *testing.T, result deltascope.Result, mode string) {
++	t.Helper()
++	if len(result.Statements) != 1 || len(result.Diagnostics) != 0 || len(result.Unsupported) != 0 ||
++		result.Summary.Statements != 1 || result.Summary.Warnings != 1 || result.Summary.Notices != 0 {
++		t.Fatal("unexpected MCP audit statement, diagnostics, or summary")
++	}
++	statement := result.Statements[0]
++	if mode == "known" {
++		if result.Verdict != deltascope.VerdictReject || result.Coverage.Status != deltascope.CoverageComplete ||
++			result.Summary.Blockers != 1 || len(statement.Findings) != 2 || len(statement.EvidenceGaps) != 0 {
++			t.Fatal("known definition did not produce complete reject with two findings")
++		}
++		var deny, security bool
++		for _, finding := range statement.Findings {
++			switch finding.RuleID {
++			case "ddl.table.denylist.forbid":
++				deny = finding.Level == deltascope.LevelBlocker && finding.Metadata["table"] == "visible_v" &&
++					finding.Metadata["schema"] == "golden" && finding.Location != nil &&
++					finding.Location.Line == 1 && finding.Location.Column == strings.Index(t18MCPViewSQL, "visible_v")+1
++			case "ddl.view.security.definer.warn":
++				security = finding.Level == deltascope.LevelWarning
++			}
++		}
++		if !deny || !security {
++			t.Fatal("known definition findings did not identify the authored view and security warning")
++		}
++		return
++	}
++	if result.Verdict != deltascope.VerdictReview || result.Coverage.Status != deltascope.CoverageUnverified ||
++		result.Summary.Blockers != 0 || len(statement.Findings) != 1 ||
++		statement.Findings[0].RuleID != "ddl.view.security.definer.warn" ||
++		statement.Findings[0].Level != deltascope.LevelWarning || len(statement.EvidenceGaps) != 2 {
++		t.Fatal("unavailable definition did not produce unverified review with one warning and two gaps")
++	}
++	gaps := map[string]int{}
++	for _, gap := range statement.EvidenceGaps {
++		if !reflect.DeepEqual(gap.RequiredFacts, []string{"view.definition"}) {
++			t.Fatal("unavailable definition gap has unexpected required facts")
++		}
++		gaps[gap.RuleID]++
++	}
++	if gaps["ddl.table.denylist.forbid"] != 1 || gaps["ddl.view.source.valid"] != 1 {
++		t.Fatal("unavailable definition gaps did not belong to source and denylist rules")
++	}
++}
+--- a/pkg/deltascope/audit_t18_view_first_test.go
++++ b/pkg/deltascope/audit_t18_view_first_test.go
+@@ -976,6 +976,233 @@
+ 	})
+ }
+ 
++func TestT18FullReviewZeroSourceCTEDAGBudget(t *testing.T) {
++	t18ReviewZeroSourceCTEDAG(t, 30)
++}
++
++func TestT18FullReviewZeroSourceCTEDAGDepthControl(t *testing.T) {
++	t18ReviewZeroSourceCTEDAG(t, 36)
++}
++
++func t18ReviewZeroSourceCTEDAG(t *testing.T, depth int) {
++	t.Helper()
++	var sqlText strings.Builder
++	sqlText.WriteString("CREATE VIEW next_v AS WITH c0 AS (SELECT 1 AS id)")
++	for i := 1; i <= depth; i++ {
++		fmt.Fprintf(&sqlText, ", c%d AS (SELECT a.id FROM c%d a JOIN c%d b ON a.id=b.id)", i, i-1, i-1)
++	}
++	fmt.Fprintf(&sqlText, " SELECT id FROM c%d;", depth)
++	result, err := Audit(context.Background(), Request{
++		SQL: sqlText.String(), Dialect: DialectMySQL, Schema: "g",
++		ConfigPath: t18ReviewSelectedPolicy(t, false, false), MetadataProvider: t18FirstProvider{},
++	})
++	if !errors.Is(err, ErrUnsupportedStatement) || result.Coverage.Status != CoverageIncomplete ||
++		len(result.Unsupported) != 1 || result.Unsupported[0].Feature != "view.dependencies.limit" ||
++		len(result.Statements) != 1 || len(result.Statements[0].EvidenceGaps) != 0 {
++		t.Fatalf("err=%v result=%#v", err, result)
++	}
++}
++
++func TestT18FullReviewQueryOrderBinding(t *testing.T) {
++	sqlText := "ALTER VIEW v AS SELECT id FROM t ORDER BY missing_col;\nCREATE VIEW next_v AS SELECT id FROM v;"
++	result, err := Audit(context.Background(), Request{
++		SQL: sqlText, Dialect: DialectMySQL, Schema: "g", ConfigPath: t18FullPolicy(t), MetadataProvider: t18FirstProvider{},
++	})
++	if err != nil || result.Coverage.Status != CoverageComplete || result.Verdict != VerdictReject ||
++		len(result.Statements) != 2 || len(result.Diagnostics) != 0 || len(result.Unsupported) != 0 {
++		t.Fatalf("err=%v result=%#v", err, result)
++	}
++	var source, security *Finding
++	for i := range result.Statements[0].Findings {
++		finding := &result.Statements[0].Findings[i]
++		switch finding.RuleID {
++		case "ddl.view.source.valid":
++			if source != nil {
++				t.Fatalf("multiple source findings: %#v", result.Statements[0].Findings)
++			}
++			source = finding
++		case "ddl.view.security.definer.warn":
++			security = finding
++		}
++	}
++	if source == nil || source.Level != LevelBlocker || source.Location == nil ||
++		source.Location.Line != 1 || source.Location.Column != strings.Index(sqlText, "missing_col")+1 ||
++		source.Metadata["table"] != "t" || source.Metadata["schema"] != "g" ||
++		source.Metadata["view"] != "v" || source.Metadata["view_schema"] != "g" ||
++		security == nil || security.Level != LevelWarning || len(result.Statements[0].Findings) != 2 {
++		t.Fatalf("findings=%#v", result.Statements[0].Findings)
++	}
++}
++
++func TestT18FullReviewQueryOrderAlias(t *testing.T) {
++	result, err := Audit(context.Background(), Request{
++		SQL:     "CREATE VIEW next_v AS SELECT id AS renamed FROM t ORDER BY renamed;",
++		Dialect: DialectMySQL, Schema: "g", ConfigPath: t18FullPolicy(t), MetadataProvider: t18FirstProvider{},
++	})
++	if err != nil || result.Coverage.Status != CoverageComplete || result.Summary.Blockers != 0 ||
++		result.Summary.Warnings != 1 || len(result.Diagnostics) != 0 || len(result.Unsupported) != 0 {
++		t.Fatalf("err=%v result=%#v", err, result)
++	}
++}
++
++func TestT18FullReviewQueryClauseLocations(t *testing.T) {
++	for _, tc := range []struct{ name, query, table, site string }{
++		{"on", "SELECT t.id FROM t JOIN u ON t.id = u.missing_col", "u", "u.missing_col"},
++		{"where", "SELECT id FROM t WHERE missing_col > 0", "t", "missing_col"},
++		{"group", "SELECT id FROM t GROUP BY missing_col", "t", "missing_col"},
++		{"having", "SELECT id FROM t GROUP BY id HAVING missing_col > 0", "t", "missing_col"},
++		{"order", "SELECT id FROM t ORDER BY missing_col", "t", "missing_col"},
++	} {
++		t.Run(tc.name, func(t *testing.T) {
++			sqlText := "ALTER VIEW v AS " + tc.query + ";"
++			result, err := Audit(context.Background(), Request{
++				SQL: sqlText, Dialect: DialectMySQL, Schema: "g", ConfigPath: t18FullPolicy(t),
++				MetadataProvider: t18FirstProvider{},
++			})
++			if err != nil || result.Coverage.Status != CoverageComplete || result.Summary.Blockers != 1 ||
++				result.Summary.Warnings != 1 || len(result.Diagnostics) != 0 || len(result.Unsupported) != 0 {
++				t.Fatalf("err=%v result=%#v", err, result)
++			}
++			for _, finding := range result.Statements[0].Findings {
++				if finding.RuleID != "ddl.view.source.valid" {
++					continue
++				}
++				if finding.Location == nil || finding.Location.Line != 1 ||
++					finding.Location.Column != strings.Index(sqlText, tc.site)+1 ||
++					finding.Metadata["table"] != tc.table || finding.Metadata["schema"] != "g" {
++					t.Fatalf("finding=%#v", finding)
++				}
++				return
++			}
++			t.Fatalf("missing source finding: %#v", result.Statements[0].Findings)
++		})
++	}
++}
++
++func TestT18FullReviewQuerySetLimitBoundary(t *testing.T) {
++	for _, query := range []string{
++		"SELECT id FROM t UNION SELECT id FROM u LIMIT 1",
++		"SELECT id FROM t UNION SELECT id FROM u ORDER BY 1",
++	} {
++		t.Run(query, func(t *testing.T) {
++			result, err := Audit(context.Background(), Request{
++				SQL: "CREATE VIEW next_v AS " + query + ";", Dialect: DialectMySQL, Schema: "g",
++				ConfigPath: t18ReviewSelectedPolicy(t, false, false), MetadataProvider: t18FirstProvider{},
++			})
++			if !errors.Is(err, ErrUnsupportedStatement) || result.Coverage.Status != CoverageIncomplete ||
++				len(result.Unsupported) != 1 || result.Unsupported[0].Feature != "create_view.option.view_query_shape" ||
++				len(result.Statements) != 1 || len(result.Statements[0].EvidenceGaps) != 0 {
++				t.Fatalf("err=%v result=%#v", err, result)
++			}
++		})
++	}
++}
++
++func TestT18FullReviewQueryUnsupportedExpressions(t *testing.T) {
++	for _, dialect := range []Dialect{DialectMySQL, DialectTiDB} {
++		for _, tc := range []struct{ name, query string }{
++			{"window", "SELECT ROW_NUMBER() OVER(ORDER BY id) AS rn FROM t"},
++			{"limit", "SELECT id FROM t LIMIT 1"},
++			{"position", "SELECT id FROM t ORDER BY 1"},
++		} {
++			for _, enabled := range []bool{false, true} {
++				t.Run(fmt.Sprintf("%s/%s/enabled=%t", dialect, tc.name, enabled), func(t *testing.T) {
++					config := t18ReviewSelectedPolicy(t, false, false)
++					if enabled {
++						config = t18FullPolicy(t)
++					}
++					result, err := Audit(context.Background(), Request{
++						SQL: "CREATE VIEW next_v AS " + tc.query + ";", Dialect: dialect, Schema: "g",
++						ConfigPath: config, MetadataProvider: t18FirstProvider{},
++					})
++					wantWarnings := 0
++					if enabled {
++						wantWarnings = 1
++					}
++					if !errors.Is(err, ErrUnsupportedStatement) || result.Coverage.Status != CoverageIncomplete ||
++						len(result.Unsupported) != 1 || result.Unsupported[0].Feature != "create_view.option.view_query_shape" ||
++						len(result.Statements) != 1 || len(result.Statements[0].EvidenceGaps) != 0 ||
++						result.Summary.Blockers != 0 || result.Summary.Warnings != wantWarnings || result.Summary.Notices != 0 {
++						t.Fatalf("err=%v result=%#v", err, result)
++					}
++					for _, diagnostic := range result.Diagnostics {
++						if diagnostic.Classification == "parser_error" {
++							t.Fatalf("unexpected parser diagnostic: %#v", diagnostic)
++						}
++					}
++				})
++			}
++		}
++	}
++}
++
++func TestT18FullReviewTiDBUnknownDuplicate(t *testing.T) {
++	for _, ifExists := range []bool{false, true} {
++		t.Run(fmt.Sprintf("if_exists=%t", ifExists), func(t *testing.T) {
++			sqlText := "DROP VIEW "
++			if ifExists {
++				sqlText += "IF EXISTS "
++			}
++			sqlText += "v, v;"
++			result, err := Audit(context.Background(), Request{
++				SQL: sqlText, Dialect: DialectTiDB, Schema: "g",
++				ConfigPath: t18FullPolicy(t), MetadataProvider: t18FirstProvider{targetMode: "unknown"},
++			})
++			if err != nil || result.Coverage.Status != CoverageUnverified || len(result.Statements) != 1 ||
++				len(result.Diagnostics) != 0 || len(result.Unsupported) != 0 ||
++				len(result.Statements[0].EvidenceGaps) != 1 ||
++				result.Statements[0].EvidenceGaps[0].RuleID != "ddl.view.target.valid" ||
++				!reflect.DeepEqual(result.Statements[0].EvidenceGaps[0].RequiredFacts, []string{"table.exists"}) {
++				t.Fatalf("err=%v result=%#v", err, result)
++			}
++			findings := result.Statements[0].Findings
++			if ifExists {
++				if len(findings) != 0 || result.Verdict != VerdictReview {
++					t.Fatalf("unexpected conditional finding: %#v", result)
++				}
++				return
++			}
++			if len(findings) != 1 || findings[0].RuleID != "ddl.view.target.valid" ||
++				findings[0].Level != LevelBlocker || result.Verdict != VerdictReject ||
++				findings[0].Location == nil || findings[0].Location.Column != strings.LastIndex(sqlText, "v")+1 ||
++				findings[0].Metadata["role"] != "target" || findings[0].Metadata["view"] != "v" ||
++				findings[0].Metadata["view_schema"] != "g" {
++				t.Fatalf("findings=%#v result=%#v", findings, result)
++			}
++		})
++	}
++}
++
++func TestT18FullReviewDefinerKeyword(t *testing.T) {
++	for _, tc := range []struct {
++		name, definer string
++		warnings      int
++	}{
++		{"view", "view", 1}, {"quoted_view", "'view'", 1}, {"view_host", "'u'@view", 1},
++		{"current_user", "CURRENT_USER", 0}, {"current_user_call", "CURRENT_USER()", 0},
++	} {
++		t.Run(tc.name, func(t *testing.T) {
++			result, err := Audit(context.Background(), Request{
++				SQL:     "ALTER DEFINER=" + tc.definer + " SQL SECURITY INVOKER VIEW v AS SELECT id FROM t;",
++				Dialect: DialectMySQL, Schema: "g", ConfigPath: t18FullPolicy(t), MetadataProvider: t18FirstProvider{},
++			})
++			if err != nil || result.Coverage.Status != CoverageComplete || result.Summary.Blockers != 0 ||
++				result.Summary.Warnings != tc.warnings || len(result.Diagnostics) != 0 || len(result.Unsupported) != 0 {
++				t.Fatalf("err=%v result=%#v", err, result)
++			}
++		})
++	}
++	for _, definer := range []string{"SELECT", "123", "'u'@"} {
++		result, err := Audit(context.Background(), Request{
++			SQL:     "ALTER DEFINER=" + definer + " SQL SECURITY INVOKER VIEW v AS SELECT id FROM t;",
++			Dialect: DialectMySQL, ConfigPath: t18ReviewSelectedPolicy(t, false, false),
++		})
++		if err == nil || len(result.Diagnostics) != 1 || result.Diagnostics[0].Classification != "parser_error" {
++			t.Fatalf("definer=%q err=%v result=%#v", definer, err, result)
++		}
++	}
++}
++
+ func TestT18FullDenylistHiddenDependencyEvidence(t *testing.T) {
+ 	path := filepath.Join(t.TempDir(), "denylist.yaml")
+ 	ids := make([]string, 0, len(policy.Default().Rules))
+--- a/testdata/ddl-inventory/inventory.yaml
++++ b/testdata/ddl-inventory/inventory.yaml
+@@ -803,11 +803,11 @@
+     sql_shape: "CREATE SQL SECURITY DEFINER VIEW v AS SELECT id FROM t"
+     prerequisites: "referenced tables known for dependency facts"
+     status: semantically_checked
+-    status_evidence: "2026-09-22 CLI probe: ddl.view.create.forbid fires on plain/OR REPLACE/SQL SECURITY forms. 2026-09-25 T03 rework (#82): parsed-but-unmodeled view clauses now record create_view.option.<name> unaudited evidence — or_replace, view_columns, view_algorithm (non-UNDEFINED), definer (named non-CURRENT_USER identity), sql_security (INVOKER), check_option (LOCAL); parser-defaulted forms stay complete"
++    status_evidence: "2026-09-22 CLI probe: ddl.view.create.forbid fires on plain/OR REPLACE/SQL SECURITY forms. 2026-09-25 T03 rework (#82): parsed-but-unmodeled view clauses now record create_view.option.<name> unaudited evidence — or_replace, view_columns, view_algorithm (non-UNDEFINED), definer (named non-CURRENT_USER identity), sql_security (INVOKER), check_option (LOCAL); parser-defaulted forms stay complete. 2026-11-01 T18 (#97): focused SDK and ordered-state regressions cover target/source, replacement edges, structured query facts, security and algorithm; unmodeled query shapes remain explicit boundaries. Historical initial seed Golden covered only the first slice."
+     targets: "view identity, source tables, security attributes"
+     acceptance:
+-      dimensions: "lifecycle policy, security-attribute capture, source dependency"
+-      refs: ["file:testdata/sql-corpus/mysql/ddl/findings"]
++      dimensions: "target/source validity, replacement edges, query bindings, security/algorithm, privacy, policy-independent state"
++      refs: ["file:pkg/deltascope/audit_t18_view_first_test.go", "file:internal/application/audit/batch_state_t18_first_test.go", "file:testdata/sql-corpus/mysql/ddl/findings/view_lifecycle_rules.sql"]
+     owner: T18
+ 
+   - id: mysql.create-view-check-option
+@@ -818,12 +818,12 @@
+     subactions: ["WITH [CASCADED|LOCAL] CHECK OPTION"]
+     sql_shape: "CREATE VIEW v AS SELECT id FROM t WITH CHECK OPTION"
+     prerequisites: "none"
+-    status: parser_unsupported
+-    status_evidence: "2026-09-22 CLI probe: parser_error on a vendor-valid CHECK OPTION form. 2026-09-25 T03 rework (#82): scoped forms WITH LOCAL/CASCADED CHECK OPTION now parse — LOCAL records create_view.option.check_option unaudited evidence (CASCADED equals the parser default and stays silent); the bare WITH CHECK OPTION form remains a parser error"
++    status: semantically_checked
++    status_evidence: "2026-09-22 CLI probe: parser_error on a vendor-valid CHECK OPTION form. 2026-09-25 T03 rework (#82): scoped forms WITH LOCAL/CASCADED CHECK OPTION now parse — LOCAL records create_view.option.check_option unaudited evidence (CASCADED equals the parser default and stays silent); the bare WITH CHECK OPTION form remains a parser error. 2026-11-01 T18 (#97): bare/LOCAL/CASCADED syntax and known non-updatable refusal are covered by focused semantic regressions; unknown inherited algorithm remains an evidence gap."
+     targets: "check-option semantics on the view"
+     acceptance:
+-      dimensions: "valid-form parser evidence, upgrade decision"
+-      refs: ["missing: owner records parser-upgrade evidence"]
++      dimensions: "bare/local/cascaded declaration, updatability refusal, unknown premises"
++      refs: ["file:pkg/deltascope/audit_t18_view_first_test.go", "file:internal/infrastructure/parser/tidb/view_t18_first_test.go"]
+     owner: T18
+ 
+   - id: mysql.alter-view
+@@ -834,12 +834,12 @@
+     subactions: ["ALTER VIEW v AS SELECT ..."]
+     sql_shape: "ALTER VIEW v AS SELECT id FROM t"
+     prerequisites: "existing view"
+-    status: parser_unsupported
+-    status_evidence: "2026-09-22 CLI probe + census: parser_error on vendor-valid ALTER VIEW (T18 first-path oracle)"
++    status: semantically_checked
++    status_evidence: "2026-09-22 CLI probe + census: parser_error on vendor-valid ALTER VIEW. 2026-11-01 T18 (#97): typed ALTER adapter and shared assessment promote the MySQL form; focused SDK and ordered-state regressions cover inheritance, replacement dependencies, refusal and uncertainty."
+     targets: "view identity, new definition, security attributes"
+     acceptance:
+-      dimensions: "parser support or explicit boundary, source dependency"
+-      refs: ["file:internal/application/audit/cross_dialect_ddl_coverage_census_test.go"]
++      dimensions: "typed ALTER, inherited attributes, source binding, refusal and uncertain state"
++      refs: ["file:internal/application/audit/cross_dialect_ddl_coverage_census_test.go", "file:pkg/deltascope/audit_t18_view_first_test.go", "file:internal/application/audit/batch_state_t18_first_test.go"]
+     owner: T18
+ 
+   - id: mysql.drop-view
+@@ -851,11 +851,11 @@
+     sql_shape: "DROP VIEW v1, v2"
+     prerequisites: "none"
+     status: semantically_checked
+-    status_evidence: "2026-09-22 CLI probe: ddl.view.drop.forbid fires; multi-view list targets share T01 all-target contract"
++    status_evidence: "2026-09-22 CLI probe: ddl.view.drop.forbid fires; multi-view list targets share T01 all-target contract. 2026-11-01 T18 (#97): focused regressions cover all targets, IF EXISTS, duplicates, 5.7 partial and 8.x atomic outcomes, and persistent versus temporary identities."
+     targets: "every view identity, IF EXISTS"
+     acceptance:
+-      dimensions: "all-target evaluation, existence conditionals"
+-      refs: ["file:testdata/sql-corpus/mysql/ddl/findings"]
++      dimensions: "all-target evaluation, IF EXISTS, duplicate and version-dependent ordered effects"
++      refs: ["file:pkg/deltascope/audit_t18_view_first_test.go", "file:internal/application/audit/batch_state_t18_first_test.go", "file:testdata/sql-corpus/mysql/ddl/findings/view_lifecycle_rules.sql"]
+     owner: T18
+ 
+   # ================= MySQL: stored programs =================
+@@ -1676,11 +1676,11 @@
+     sql_shape: "CREATE VIEW v AS SELECT id FROM t"
+     prerequisites: "none"
+     status: semantically_checked
+-    status_evidence: "2026-09-22 CLI probe: ddl.view.create.forbid fires. 2026-09-25 T03 rework (#82): parsed-but-unmodeled view clauses record create_view.option.<name> unaudited evidence (or_replace, view_columns, view_algorithm, definer, sql_security, check_option) — same contract as MySQL"
++    status_evidence: "2026-09-22 CLI probe: ddl.view.create.forbid fires. 2026-09-25 T03 rework (#82): parsed-but-unmodeled view clauses record create_view.option.<name> unaudited evidence (or_replace, view_columns, view_algorithm, definer, sql_security, check_option) — same contract as MySQL. 2026-11-01 T18 (#97): focused regressions cover source/target and security, CTE scope, replacement, and warnings for explicitly declared options without execution guarantees."
+     targets: "view identity, source tables, security attributes"
+     acceptance:
+-      dimensions: "lifecycle policy, attribute capture"
+-      refs: ["file:testdata/sql-corpus/tidb/ddl/findings"]
++      dimensions: "target/source validity, CTE scope, replacement, security and ignored-option warnings"
++      refs: ["file:pkg/deltascope/audit_t18_view_first_test.go", "file:testdata/sql-corpus/tidb/ddl/findings/view_lifecycle_rules.sql"]
+     owner: T18
+ 
+   - id: tidb.alter-view
+@@ -1692,11 +1692,11 @@
+     sql_shape: "ALTER VIEW v AS SELECT ..."
+     prerequisites: "vendor boundary: TiDB overview lists CREATE/DROP VIEW only"
+     status: vendor_not_supported
+-    status_evidence: "TiDB DDL list contains no ALTER VIEW; parser_error observed incidentally — vendor boundary is the governing fact"
++    status_evidence: "2026-09-22: TiDB DDL list contains no ALTER VIEW; parser_error observed incidentally. 2026-11-01 T18 (#97): the typed adapter recognizes this as an explicit unsupported vendor boundary; the vendor boundary remains the governing fact."
+     targets: "explicit vendor boundary (CREATE OR REPLACE is the path)"
+     acceptance:
+-      dimensions: "boundary classification"
+-      refs: ["file:docs/research/2026-09-21-mysql-tidb-ddl-official-baseline.md"]
++      dimensions: "recognized unsupported vendor boundary, not supported policy evaluation"
++      refs: ["file:docs/research/2026-09-21-mysql-tidb-ddl-official-baseline.md", "file:pkg/deltascope/audit_t18_view_first_test.go"]
+     owner: T18
+ 
+   - id: tidb.drop-view
+@@ -1708,11 +1708,11 @@
+     sql_shape: "DROP VIEW v1"
+     prerequisites: "none"
+     status: semantically_checked
+-    status_evidence: "2026-09-22 CLI probe: ddl.view.drop.forbid fires"
++    status_evidence: "2026-09-22 CLI probe: ddl.view.drop.forbid fires. 2026-11-01 T18 (#97): focused regressions cover ordered partial effects, wrong-kind stops, IF EXISTS, duplicates and unknown target postconditions."
+     targets: "view identity"
+     acceptance:
+-      dimensions: "lifecycle finding"
+-      refs: ["file:testdata/sql-corpus/tidb/ddl/findings"]
++      dimensions: "all-target findings, ordered prefix and wrong-kind stop, duplicate and IF EXISTS"
++      refs: ["file:pkg/deltascope/audit_t18_view_first_test.go", "file:internal/application/audit/batch_state_t18_first_test.go", "file:testdata/sql-corpus/tidb/ddl/findings/view_lifecycle_rules.sql"]
+     owner: T18
+ 
+   # ================= TiDB: sequences =================

@@ -1,0 +1,140 @@
+test_clean_public_json_passes (__main__.PublicJSONPrivacyTests.test_clean_public_json_passes) ... FAIL
+test_malformed_marker_sets_fail_closed (__main__.PublicJSONPrivacyTests.test_malformed_marker_sets_fail_closed) ... 
+  test_malformed_marker_sets_fail_closed (__main__.PublicJSONPrivacyTests.test_malformed_marker_sets_fail_closed) (markers=[]) ... FAIL
+  test_malformed_marker_sets_fail_closed (__main__.PublicJSONPrivacyTests.test_malformed_marker_sets_fail_closed) (markers=['']) ... FAIL
+  test_malformed_marker_sets_fail_closed (__main__.PublicJSONPrivacyTests.test_malformed_marker_sets_fail_closed) (markers='PRIVATE') ... FAIL
+  test_malformed_marker_sets_fail_closed (__main__.PublicJSONPrivacyTests.test_malformed_marker_sets_fail_closed) (markers=['PRIVATE', 'PRIVATE']) ... FAIL
+  test_malformed_marker_sets_fail_closed (__main__.PublicJSONPrivacyTests.test_malformed_marker_sets_fail_closed) (markers=[1]) ... FAIL
+test_missing_public_json_is_not_a_clean_result (__main__.PublicJSONPrivacyTests.test_missing_public_json_is_not_a_clean_result) ... FAIL
+test_nested_private_value_fails (__main__.PublicJSONPrivacyTests.test_nested_private_value_fails) ... 
+  test_nested_private_value_fails (__main__.PublicJSONPrivacyTests.test_nested_private_value_fails) (field='definition') ... FAIL
+  test_nested_private_value_fails (__main__.PublicJSONPrivacyTests.test_nested_private_value_fails) (field='principal') ... FAIL
+  test_nested_private_value_fails (__main__.PublicJSONPrivacyTests.test_nested_private_value_fails) (field='hidden_source') ... FAIL
+  test_nested_private_value_fails (__main__.PublicJSONPrivacyTests.test_nested_private_value_fails) (field='driver_detail') ... FAIL
+test_omitted_key_preserves_older_contract (__main__.PublicJSONPrivacyTests.test_omitted_key_preserves_older_contract) ... ok
+
+======================================================================
+FAIL: test_clean_public_json_passes (__main__.PublicJSONPrivacyTests.test_clean_public_json_passes)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/fan/GolangProjects/DeltaScope/scripts/test_ddl_golden_privacy.py", line 29, in test_clean_public_json_passes
+    self.assertEqual(len(self.private_checks(checks)), 3)
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/fan/GolangProjects/DeltaScope/scripts/test_ddl_golden_privacy.py", line 22, in private_checks
+    self.assertTrue(selected, "privacy oracle must not silently produce zero checks")
+AssertionError: [] is not true : privacy oracle must not silently produce zero checks
+
+======================================================================
+FAIL: test_malformed_marker_sets_fail_closed (__main__.PublicJSONPrivacyTests.test_malformed_marker_sets_fail_closed) (markers=[])
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/fan/GolangProjects/DeltaScope/scripts/test_ddl_golden_privacy.py", line 48, in test_malformed_marker_sets_fail_closed
+    checks = self.private_checks(self.checks({"verdict": "pass"}, markers))
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/fan/GolangProjects/DeltaScope/scripts/test_ddl_golden_privacy.py", line 22, in private_checks
+    self.assertTrue(selected, "privacy oracle must not silently produce zero checks")
+AssertionError: [] is not true : privacy oracle must not silently produce zero checks
+
+======================================================================
+FAIL: test_malformed_marker_sets_fail_closed (__main__.PublicJSONPrivacyTests.test_malformed_marker_sets_fail_closed) (markers=[''])
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/fan/GolangProjects/DeltaScope/scripts/test_ddl_golden_privacy.py", line 48, in test_malformed_marker_sets_fail_closed
+    checks = self.private_checks(self.checks({"verdict": "pass"}, markers))
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/fan/GolangProjects/DeltaScope/scripts/test_ddl_golden_privacy.py", line 22, in private_checks
+    self.assertTrue(selected, "privacy oracle must not silently produce zero checks")
+AssertionError: [] is not true : privacy oracle must not silently produce zero checks
+
+======================================================================
+FAIL: test_malformed_marker_sets_fail_closed (__main__.PublicJSONPrivacyTests.test_malformed_marker_sets_fail_closed) (markers='PRIVATE')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/fan/GolangProjects/DeltaScope/scripts/test_ddl_golden_privacy.py", line 48, in test_malformed_marker_sets_fail_closed
+    checks = self.private_checks(self.checks({"verdict": "pass"}, markers))
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/fan/GolangProjects/DeltaScope/scripts/test_ddl_golden_privacy.py", line 22, in private_checks
+    self.assertTrue(selected, "privacy oracle must not silently produce zero checks")
+AssertionError: [] is not true : privacy oracle must not silently produce zero checks
+
+======================================================================
+FAIL: test_malformed_marker_sets_fail_closed (__main__.PublicJSONPrivacyTests.test_malformed_marker_sets_fail_closed) (markers=['PRIVATE', 'PRIVATE'])
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/fan/GolangProjects/DeltaScope/scripts/test_ddl_golden_privacy.py", line 48, in test_malformed_marker_sets_fail_closed
+    checks = self.private_checks(self.checks({"verdict": "pass"}, markers))
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/fan/GolangProjects/DeltaScope/scripts/test_ddl_golden_privacy.py", line 22, in private_checks
+    self.assertTrue(selected, "privacy oracle must not silently produce zero checks")
+AssertionError: [] is not true : privacy oracle must not silently produce zero checks
+
+======================================================================
+FAIL: test_malformed_marker_sets_fail_closed (__main__.PublicJSONPrivacyTests.test_malformed_marker_sets_fail_closed) (markers=[1])
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/fan/GolangProjects/DeltaScope/scripts/test_ddl_golden_privacy.py", line 48, in test_malformed_marker_sets_fail_closed
+    checks = self.private_checks(self.checks({"verdict": "pass"}, markers))
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/fan/GolangProjects/DeltaScope/scripts/test_ddl_golden_privacy.py", line 22, in private_checks
+    self.assertTrue(selected, "privacy oracle must not silently produce zero checks")
+AssertionError: [] is not true : privacy oracle must not silently produce zero checks
+
+======================================================================
+FAIL: test_missing_public_json_is_not_a_clean_result (__main__.PublicJSONPrivacyTests.test_missing_public_json_is_not_a_clean_result)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/fan/GolangProjects/DeltaScope/scripts/test_ddl_golden_privacy.py", line 42, in test_missing_public_json_is_not_a_clean_result
+    checks = self.private_checks(self.checks(None, ["PRIVATE_FIXTURE_VALUE"]))
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/fan/GolangProjects/DeltaScope/scripts/test_ddl_golden_privacy.py", line 22, in private_checks
+    self.assertTrue(selected, "privacy oracle must not silently produce zero checks")
+AssertionError: [] is not true : privacy oracle must not silently produce zero checks
+
+======================================================================
+FAIL: test_nested_private_value_fails (__main__.PublicJSONPrivacyTests.test_nested_private_value_fails) (field='definition')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/fan/GolangProjects/DeltaScope/scripts/test_ddl_golden_privacy.py", line 38, in test_nested_private_value_fails
+    checks = self.private_checks(self.checks(parsed, ["PRIVATE_FIXTURE_VALUE"]))
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/fan/GolangProjects/DeltaScope/scripts/test_ddl_golden_privacy.py", line 22, in private_checks
+    self.assertTrue(selected, "privacy oracle must not silently produce zero checks")
+AssertionError: [] is not true : privacy oracle must not silently produce zero checks
+
+======================================================================
+FAIL: test_nested_private_value_fails (__main__.PublicJSONPrivacyTests.test_nested_private_value_fails) (field='principal')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/fan/GolangProjects/DeltaScope/scripts/test_ddl_golden_privacy.py", line 38, in test_nested_private_value_fails
+    checks = self.private_checks(self.checks(parsed, ["PRIVATE_FIXTURE_VALUE"]))
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/fan/GolangProjects/DeltaScope/scripts/test_ddl_golden_privacy.py", line 22, in private_checks
+    self.assertTrue(selected, "privacy oracle must not silently produce zero checks")
+AssertionError: [] is not true : privacy oracle must not silently produce zero checks
+
+======================================================================
+FAIL: test_nested_private_value_fails (__main__.PublicJSONPrivacyTests.test_nested_private_value_fails) (field='hidden_source')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/fan/GolangProjects/DeltaScope/scripts/test_ddl_golden_privacy.py", line 38, in test_nested_private_value_fails
+    checks = self.private_checks(self.checks(parsed, ["PRIVATE_FIXTURE_VALUE"]))
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/fan/GolangProjects/DeltaScope/scripts/test_ddl_golden_privacy.py", line 22, in private_checks
+    self.assertTrue(selected, "privacy oracle must not silently produce zero checks")
+AssertionError: [] is not true : privacy oracle must not silently produce zero checks
+
+======================================================================
+FAIL: test_nested_private_value_fails (__main__.PublicJSONPrivacyTests.test_nested_private_value_fails) (field='driver_detail')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/Users/fan/GolangProjects/DeltaScope/scripts/test_ddl_golden_privacy.py", line 38, in test_nested_private_value_fails
+    checks = self.private_checks(self.checks(parsed, ["PRIVATE_FIXTURE_VALUE"]))
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/fan/GolangProjects/DeltaScope/scripts/test_ddl_golden_privacy.py", line 22, in private_checks
+    self.assertTrue(selected, "privacy oracle must not silently produce zero checks")
+AssertionError: [] is not true : privacy oracle must not silently produce zero checks
+
+----------------------------------------------------------------------
+Ran 5 tests in 0.001s
+
+FAILED (failures=11)

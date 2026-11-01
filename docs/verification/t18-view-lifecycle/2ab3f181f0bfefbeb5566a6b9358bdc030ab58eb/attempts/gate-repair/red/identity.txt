@@ -1,0 +1,4 @@
+cwd=/Users/fan/GolangProjects/DeltaScope
+head=879c49f58d8df02120875fffc901dc2d672210f0
+branch=milestone/mysql-tidb-ddl-completion
+go version go1.26.1 darwin/arm64

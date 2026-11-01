@@ -1,0 +1,34 @@
+{
+  "verified_at": "2026-11-01T09:29:33.207302+00:00",
+  "layer": "development first slice, workingtree not final frozen product",
+  "head_sha": "7f67c5de42fb6096d9c80f51e2d0f217eb34e528",
+  "manifest_sha256": "62535a74a6b66313042af23084c718bb3ad0be8efa698d1f1d5841f8a8cfda61",
+  "artifact": "/tmp/ddl-golden-t18-first/T18/artifact.json",
+  "artifact_sha256": "6c46d021be0aa7b827b8bf01f369904d158c33350c24f3b6512659850f05416c",
+  "case_ids": [
+    "T18.db.mysql57.ddl",
+    "T18.db.mysql57.syntax_negative",
+    "T18.db.mysql80.ddl",
+    "T18.db.mysql80.syntax_negative",
+    "T18.db.mysql84.ddl",
+    "T18.db.mysql84.syntax_negative",
+    "T18.db.tidb85.ddl",
+    "T18.db.tidb85.syntax_negative",
+    "T18.cli.mysql-plain-all-off",
+    "T18.cli.mysql-invalid-select",
+    "T18.cli.tidb-plain-all-off",
+    "T18.cli.tidb-invalid-select",
+    "T18.meta.mysql80-alter-first",
+    "T18.meta.mysql80-alter-dependencies",
+    "T18.meta.mysql80-alter-source-absent",
+    "T18.meta.mysql80-alter-blanket"
+  ],
+  "executed_count": 16,
+  "assertions": 163,
+  "required_executed_exact": true,
+  "cleanup": {
+    "compose_down_rc": 0,
+    "compose_down_stderr": "Container deltascope-ddl-golden-mysql57 Stopping \n Container deltascope-ddl-golden-mysql80 Stopping \n Container deltascope-ddl-golden-mysql84 Stopping \n Container deltascope-ddl-golden-tidb85-client Stopping \n Container deltascope-ddl-golden-mysql80 Stopped \n Container deltascope-ddl-golden-mysql80 Removing \n Container deltascope-ddl-golden-mysql80 Removed \n Container deltascope-ddl-golden-mysql57 Stopped \n Container deltascope-ddl-golden-mysql57 Removing \n Container deltascope-ddl-golden-mysql57 Removed \n Container deltascope-ddl-golden-mysql84 Stopped \n Container deltascope-ddl-golden-mysql84 Removing \n Container deltascope-ddl-golden-mysql84 Removed \n Container deltascope-ddl-golden-tidb85-client Stopped \n Container deltascope-ddl-golden-tidb85-client Removing \n Container deltascope-ddl-golden-tidb85-client Removed \n Container deltascope-ddl-golden-tidb85 Stopping \n Container deltascope-ddl-golden-tidb85 Stopped \n Container deltascope-ddl-golden-tidb85 Removing \n Container deltascope-ddl-golden-tidb85 Removed \n Network deltascope-ddl-golden_default Removing \n Network deltascope-ddl-golden_default Removed",
+    "residual_containers": []
+  }
+}

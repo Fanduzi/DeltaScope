@@ -1,0 +1,21 @@
+{
+  "argv": [
+    "docker",
+    "exec",
+    "deltascope-ddl-golden-tidb85-client",
+    "mysql",
+    "-h",
+    "tidb85",
+    "-P",
+    "4000",
+    "-uroot",
+    "--batch",
+    "--raw",
+    "--verbose",
+    "-e",
+    "DROP DATABASE t18cs;"
+  ],
+  "sql": "DROP DATABASE t18cs;",
+  "utc": "2026-11-01T10:11:46.934922+00:00",
+  "layer": "native grammar, not product proof"
+}

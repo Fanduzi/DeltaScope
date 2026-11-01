@@ -1,0 +1,116 @@
+{
+  "pause_reconstructed": "/tmp/t18-full-review-pause-ljhrlggp",
+  "pause_paths_verified": 85,
+  "changes": [
+    {
+      "path": "docs/decisions/2026-11-01-ddl-view-lifecycle.md",
+      "pause_sha256": "1e0818df6e1d79209c220d6b7284e5ea746cac7c041e6a0ff82c6f9e932a9ed2",
+      "current_sha256": "d279d343b5217eb199922cc85a4b8288978571031008f77506bb8fb56404f622"
+    },
+    {
+      "path": "docs/reference/config.md",
+      "pause_sha256": "109767d6ae36549bad8663f71c9aaa666235ea75d423d2d9008f328370b47d80",
+      "current_sha256": "bb4e780b8226bacabb7c54e7b0f789b93c82db7663be15defef46199f5bd0e5c"
+    },
+    {
+      "path": "docs/reference/config.zh-CN.md",
+      "pause_sha256": "f07efe58f95d882cce531f06e51b06bfafe2132a700f9b87f6c2e8d1cd30f366",
+      "current_sha256": "dd5a1621d7cd0224aa6dfc0ca8c16227ef54e8a3df23ddcbfc49f4dbd304bf35"
+    },
+    {
+      "path": "docs/reference/rules.md",
+      "pause_sha256": "005ad80e16be7052705f29f584faa3833aa1d195f0093a47e55d286b4ef72c0b",
+      "current_sha256": "4365ee50b5681c9e4b293e4d2bb7f1af411a244b4a423c1f07f386f5ac996a99"
+    },
+    {
+      "path": "docs/reference/rules.zh-CN.md",
+      "pause_sha256": "5e4dbe1e2b1705eb957ec8dbef6d3110bac38177e4215a4ef5c206eccaf537c3",
+      "current_sha256": "b36b47f3086dd35ff9e1597f690d8dbd54b0432b224763cfc0f1536cd26565a3"
+    },
+    {
+      "path": "docs/work-plans/t18-view-lifecycle/CONTRACT.md",
+      "pause_sha256": "cfe307d1d3ca8808d0c947a8037a9b1d606e3744b0b74164ed1d6368b78fd5dd",
+      "current_sha256": "b7de0a682ae65867d2e6c1d8f6432232711c83581d69dfb974875986ca68794d"
+    },
+    {
+      "path": "docs/work-plans/t18-view-lifecycle/MATRIX.md",
+      "pause_sha256": "6890cf5c2b27cc8eeff1466a87becd00f3a96bf6b12b2188ba16a7a2a91e34be",
+      "current_sha256": "7d996099d7d078a7bd7188ab320357fbe302a1812349f47f4693549eb88718f4"
+    },
+    {
+      "path": "internal/application/audit/batch_state_t18_first_test.go",
+      "pause_sha256": "b2e94e1004c341824880b7c605a52ee2195015da044419d8701cbc09e8423428",
+      "current_sha256": "109deb1f14348e4f0b095c20cad64671d3a58251a7f3f92cbbf78436bd62590f"
+    },
+    {
+      "path": "internal/domain/spec/README.md",
+      "pause_sha256": "79b98cbbfa6fcadbfa3dcda5e5a95bcbbaf3e64e2d0b990926e55a3c3a44f1c4",
+      "current_sha256": "282f2985aeda241870c25e204f8dda9481e072d876a8eb4c17d397b27ddb51d6"
+    },
+    {
+      "path": "internal/domain/spec/view.go",
+      "pause_sha256": "98a4541a09e6651424d43785cba054f2e47cbde6986538c74099b5ca85d97063",
+      "current_sha256": "256d80492678ef7a1c67146ea7f508c6bc70fc3878fb06131565c7469b40503e"
+    },
+    {
+      "path": "internal/domain/spec/view_query.go",
+      "pause_sha256": "0a9792a5e8e3bd39a1cdf7feaf5d0bcceceb566e6801dfc96fa4bf99be826672",
+      "current_sha256": "8e04dc75a443da2cd2d97ad19ad3f88a015caf7a85b2d81c1727e2a572f567b7"
+    },
+    {
+      "path": "internal/domain/spec/view_query_test.go",
+      "pause_sha256": null,
+      "current_sha256": "9d9a53f007b2d402ab9ebd5c9ddd2630a00446005458aa4d590c5309faed5948"
+    },
+    {
+      "path": "internal/infrastructure/parser/tidb/README.md",
+      "pause_sha256": "b5fb71c679c770bb9b28c9cb6f8c93cd965b9034bb3d80cb6d3e46cb289feef7",
+      "current_sha256": "5f23be8362da97885d502910fea63ac70a84dc7cb46594e7fa89c7df71ccb75d"
+    },
+    {
+      "path": "internal/infrastructure/parser/tidb/view.go",
+      "pause_sha256": "897fed6dc96583eeb2e789f3d2baea26376a62ca0afc9d9036c2896264f36433",
+      "current_sha256": "1ee61859f0c62cf984f819a507da2c672fc305c161673a0f2edeb8d6b098f2e3"
+    },
+    {
+      "path": "internal/infrastructure/parser/tidb/view_query.go",
+      "pause_sha256": "cda816c2e54c5c4caecde40bfd3afd002575fd6c68fa32f225f6a043c8857744",
+      "current_sha256": "a1a9103fa38417a1f3b0e04e5dde2a3cb2a37ce7ccf07ae85b28d00e5bba5994"
+    },
+    {
+      "path": "internal/infrastructure/parser/tidb/view_t18_first_test.go",
+      "pause_sha256": "b6644aadd6eeb64760f03c0daa81e3f38af073090e8e39e5f95a3af1ade0a81f",
+      "current_sha256": "fbade6f55699e3274d7c7992e886a22d1edc8b4846c13c9456ccee4ca1988d3a"
+    },
+    {
+      "path": "internal/interfaces/http/README.md",
+      "pause_sha256": "daf378662026e517106bb9d81f0f23465be19c05e2d5e26df07f609681b98bb5",
+      "current_sha256": "39204db51be42553aa7f69b12c2d114f513db8e9d6924e3337a143d845fc20e4"
+    },
+    {
+      "path": "internal/interfaces/http/audit_t18_view_privacy_test.go",
+      "pause_sha256": null,
+      "current_sha256": "956be5aa1b70db35e6d44c3d4354c43e621dd60f149b92c3412977283e99a8a4"
+    },
+    {
+      "path": "internal/interfaces/mcp/README.md",
+      "pause_sha256": "4f1db022c3dcb4cd43611114b4b4dbbd22d04c0ebe5bef547d6226c645bc81ea",
+      "current_sha256": "8e0791c424f2db42a1f9205ddb780656d400280678f57063a5d616ccfc285df4"
+    },
+    {
+      "path": "internal/interfaces/mcp/audit_t18_view_privacy_test.go",
+      "pause_sha256": null,
+      "current_sha256": "9215a309522e8b1119b20ba46082ae47434d3e6677fb56581bd6c6c451f2fdea"
+    },
+    {
+      "path": "pkg/deltascope/audit_t18_view_first_test.go",
+      "pause_sha256": "b24f54b5f3c3bd15db283c93f0e40b7540e79acb468bf03bc6f81b774605c68f",
+      "current_sha256": "f38c4dabd13d85e3145f64dd2c0e210416d9733926a813fe22f291fe75c0e53d"
+    },
+    {
+      "path": "testdata/ddl-inventory/inventory.yaml",
+      "pause_sha256": "28bf8d6c45935062264ee02884266534a1faf88fe1f1f35866387a94374e90ad",
+      "current_sha256": "9f0106d8a573e42a5be73eeadee1acedca42c9f07e2f3764a0bc0cc340bb8c3f"
+    }
+  ]
+}

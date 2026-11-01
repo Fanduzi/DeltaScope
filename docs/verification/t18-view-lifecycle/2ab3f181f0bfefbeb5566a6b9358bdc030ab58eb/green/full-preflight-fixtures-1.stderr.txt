@@ -1,0 +1,2 @@
+container inspect error: error: no such object: deltascope-ddl-golden-mysql57
+

@@ -1,0 +1,4 @@
+=== RUN   TestT18FullReviewZeroSourceCTEDAGDepthControl
+--- PASS: TestT18FullReviewZeroSourceCTEDAGDepthControl (0.01s)
+PASS
+ok  	github.com/Fanduzi/DeltaScope/pkg/deltascope	0.708s

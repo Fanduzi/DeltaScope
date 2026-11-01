@@ -1,0 +1,18 @@
+[ddl-golden][FAIL] case T18.cli.tidb-alter-vendor: status='fail'
+[ddl-golden][FAIL] case T18.cli.tidb-alter-vendor: failed assertion 'unsupported entries': "entries=[(0, 'view.syntax', 'parsed by the shared parser but outside the supported statement surface for this dialect')] expected=[(0, 'alter_view', 'parsed by the shared parser but outside the supported statement surface for this dialect')]"
+[ddl-golden][FAIL] case T18.cli.tidb-alter-vendor: unsupported entries: entries=[(0, 'view.syntax', 'parsed by the shared parser but outside the supported statement surface for this dialect')] expected=[(0, 'alter_view', 'parsed by the shared parser but outside the supported statement surface for this dialect')]
+[ddl-golden][FAIL] case T18.cli.tidb-bare-check-vendor: status='fail'
+[ddl-golden][FAIL] case T18.cli.tidb-bare-check-vendor: failed assertion 'unsupported entries': "entries=[(0, 'view.syntax', 'parsed by the shared parser but outside the supported statement surface for this dialect')] expected=[(0, 'create_view', 'parsed by the shared parser but outside the supported statement surface for this dialect')]"
+[ddl-golden][FAIL] case T18.cli.tidb-bare-check-vendor: unsupported entries: entries=[(0, 'view.syntax', 'parsed by the shared parser but outside the supported statement surface for this dialect')] expected=[(0, 'create_view', 'parsed by the shared parser but outside the supported statement surface for this dialect')]
+[ddl-golden][FAIL] case T18.meta.mysql80-private-leaf: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql80-private-leaf: failed assertion 'exit code': 'rc=0 expected=1'
+[ddl-golden][FAIL] case T18.meta.mysql80-private-leaf: failed assertion 'verdict': "verdict='review'"
+[ddl-golden][FAIL] case T18.meta.mysql80-private-leaf: failed assertion 'zero findings': 'findings=1'
+[ddl-golden][FAIL] case T18.meta.mysql80-private-leaf: failed assertion 'finding entries': "findings=[(0, 'ddl.view.security.definer.warn', 'warning')] expected=[(0, 'ddl.table.denylist.forbid', 'blocker'), (0, 'ddl.view.security.definer.warn', 'warning')]"
+[ddl-golden][FAIL] case T18.meta.mysql80-private-leaf: failed assertion 'fail_on_triggered': 'fail_on_triggered=False'
+[ddl-golden][FAIL] case T18.meta.mysql80-private-leaf: exit code: rc=0 expected=1
+[ddl-golden][FAIL] case T18.meta.mysql80-private-leaf: verdict: verdict='review'
+[ddl-golden][FAIL] case T18.meta.mysql80-private-leaf: zero findings: findings=1
+[ddl-golden][FAIL] case T18.meta.mysql80-private-leaf: finding entries: findings=[(0, 'ddl.view.security.definer.warn', 'warning')] expected=[(0, 'ddl.table.denylist.forbid', 'blocker'), (0, 'ddl.view.security.definer.warn', 'warning')]
+[ddl-golden][FAIL] case T18.meta.mysql80-private-leaf: fail_on_triggered: fail_on_triggered=False
+make: *** [ddl-golden] Error 1

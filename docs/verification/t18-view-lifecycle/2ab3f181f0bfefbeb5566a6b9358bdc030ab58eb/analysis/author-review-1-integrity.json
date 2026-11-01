@@ -1,0 +1,27 @@
+{
+  "status": "PLANNED_NOT_EXECUTED",
+  "previous_planned_cases": 133,
+  "current_planned_cases": 147,
+  "net_planned_additions": 14,
+  "all_previous_cases_oracles_unchanged": true,
+  "new_case_ids": [
+    "T18.cli.review-zero-source-cte-dag-budget",
+    "T18.cli.review-mysql-inline-window-boundary",
+    "T18.cli.review-mysql-limit-boundary",
+    "T18.cli.review-mysql-positional-order-boundary",
+    "T18.cli.review-tidb-inline-window-boundary",
+    "T18.cli.review-tidb-limit-boundary",
+    "T18.cli.review-tidb-positional-order-boundary",
+    "T18.meta.mysql57-review-orderby-refusal",
+    "T18.meta.mysql80-review-orderby-refusal",
+    "T18.meta.mysql84-review-orderby-refusal",
+    "T18.meta.tidb85-review-orderby-refusal",
+    "T18.meta.mysql57-review-keyword-definer",
+    "T18.meta.mysql80-review-keyword-definer",
+    "T18.meta.mysql84-review-keyword-definer"
+  ],
+  "sha256": {
+    "/tmp/t18_full_golden_author.py": "09aaff20c2c0ed0642396f1d0fa8fd80aabcd010003f08eaee1b5dcba3e05ef0",
+    "/tmp/t18-evidence/golden-full-draft.json": "d1407b6013f64cb558d4a1d25cad2c6638ccfda45f9ad4eb249ad83703697617"
+  }
+}

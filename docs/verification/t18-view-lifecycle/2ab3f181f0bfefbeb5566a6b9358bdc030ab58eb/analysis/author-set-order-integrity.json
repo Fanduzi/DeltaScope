@@ -1,0 +1,13 @@
+{
+  "status": "PLANNED_NOT_EXECUTED",
+  "previous_planned_cases": 147,
+  "planned_cases": 149,
+  "net_additions": 2,
+  "new_case_ids": [
+    "T18.cli.review-mysql-named-set-order-boundary",
+    "T18.cli.review-tidb-named-set-order-boundary"
+  ],
+  "previous_case_objects_unchanged": true,
+  "source_sha256": "46ed4fddf7c9656b41c53c55ec713828cadc15541876517700a87b16fcf7a843",
+  "manifest_sha256": "22aadc8cbc1c6c19725192bb06019927a4aed6cc34b911b6041639791da34cdc"
+}

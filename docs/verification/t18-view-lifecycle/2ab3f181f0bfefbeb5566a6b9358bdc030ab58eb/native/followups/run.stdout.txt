@@ -1,0 +1,32 @@
+mysql57 named-short target_rc=0 columns_rc=0 
+mysql57 drop-table-view target_rc=1 columns_rc=0 ERROR 1051 (42S02) at line 1: Unknown table 't18f2_1.v'
+mysql57 drop-table-mixed-prefix target_rc=1 columns_rc=0 ERROR 1051 (42S02) at line 1: Unknown table 't18f2_2.v'
+mysql57 drop-table-mixed-suffix target_rc=1 columns_rc=0 ERROR 1051 (42S02) at line 1: Unknown table 't18f2_3.v'
+mysql57 drop-table-mixed-if target_rc=0 columns_rc=0 
+mysql57 rename-source target_rc=0 columns_rc=0 
+mysql57 modify-source-type target_rc=0 columns_rc=0 
+mysql57 base-attributes target_rc=0 columns_rc=0 
+mysql80 named-short target_rc=0 columns_rc=0 
+mysql80 drop-table-view target_rc=1 columns_rc=0 ERROR 1051 (42S02) at line 1: Unknown table 't18f2_1.v'
+mysql80 drop-table-mixed-prefix target_rc=1 columns_rc=0 ERROR 1051 (42S02) at line 1: Unknown table 't18f2_2.v'
+mysql80 drop-table-mixed-suffix target_rc=1 columns_rc=0 ERROR 1051 (42S02) at line 1: Unknown table 't18f2_3.v'
+mysql80 drop-table-mixed-if target_rc=0 columns_rc=0 
+mysql80 rename-source target_rc=0 columns_rc=0 
+mysql80 modify-source-type target_rc=0 columns_rc=0 
+mysql80 base-attributes target_rc=0 columns_rc=0 
+mysql84 named-short target_rc=0 columns_rc=0 
+mysql84 drop-table-view target_rc=1 columns_rc=0 ERROR 1051 (42S02) at line 1: Unknown table 't18f2_1.v'
+mysql84 drop-table-mixed-prefix target_rc=1 columns_rc=0 ERROR 1051 (42S02) at line 1: Unknown table 't18f2_2.v'
+mysql84 drop-table-mixed-suffix target_rc=1 columns_rc=0 ERROR 1051 (42S02) at line 1: Unknown table 't18f2_3.v'
+mysql84 drop-table-mixed-if target_rc=0 columns_rc=0 
+mysql84 rename-source target_rc=0 columns_rc=0 
+mysql84 modify-source-type target_rc=0 columns_rc=0 
+mysql84 base-attributes target_rc=0 columns_rc=0 
+tidb85 named-short target_rc=0 columns_rc=0 
+tidb85 drop-table-view target_rc=1 columns_rc=0 ERROR 1051 (42S02) at line 1: Unknown table 't18f2_1.v'
+tidb85 drop-table-mixed-prefix target_rc=1 columns_rc=0 ERROR 1051 (42S02) at line 1: Unknown table 't18f2_2.v'
+tidb85 drop-table-mixed-suffix target_rc=1 columns_rc=0 ERROR 1051 (42S02) at line 1: Unknown table 't18f2_3.v'
+tidb85 drop-table-mixed-if target_rc=0 columns_rc=0 
+tidb85 rename-source target_rc=0 columns_rc=0 
+tidb85 modify-source-type target_rc=0 columns_rc=0 
+tidb85 base-attributes target_rc=0 columns_rc=0 

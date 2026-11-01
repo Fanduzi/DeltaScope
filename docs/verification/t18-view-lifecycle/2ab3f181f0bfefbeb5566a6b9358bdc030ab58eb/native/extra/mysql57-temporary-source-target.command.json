@@ -1,0 +1,19 @@
+{
+  "argv": [
+    "docker",
+    "exec",
+    "--env",
+    "MYSQL_PWD",
+    "deltascope-ddl-golden-mysql57",
+    "mysql",
+    "-uroot",
+    "--batch",
+    "--raw",
+    "--verbose",
+    "-e",
+    "USE t18e_1;CREATE TEMPORARY TABLE tt(id INT);CREATE VIEW new_v AS SELECT id FROM tt;SHOW WARNINGS;"
+  ],
+  "sql": "USE t18e_1;CREATE TEMPORARY TABLE tt(id INT);CREATE VIEW new_v AS SELECT id FROM tt;SHOW WARNINGS;",
+  "head": "7f67c5de42fb6096d9c80f51e2d0f217eb34e528",
+  "utc": "2026-11-01T08:43:58.513339+00:00"
+}

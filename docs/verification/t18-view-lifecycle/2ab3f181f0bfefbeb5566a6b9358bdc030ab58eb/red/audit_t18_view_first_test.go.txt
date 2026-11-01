@@ -1,0 +1,83 @@
+package deltascope
+
+import (
+	"context"
+	"encoding/json"
+	"os"
+	"path/filepath"
+	"strings"
+	"testing"
+)
+
+type t18FirstProvider struct{}
+
+func (t18FirstProvider) LoadInstanceFacts(context.Context, Dialect, string) (*InstanceFacts, error) {
+	return &InstanceFacts{Version: "8.0.46"}, nil
+}
+
+func (t18FirstProvider) LoadTableSnapshot(_ context.Context, _ Dialect, schema, table string) (*TableSnapshot, error) {
+	return &TableSnapshot{
+		Schema:  schema,
+		Exists:  true,
+		Table:   &Table{Schema: schema, Name: table},
+		Columns: []Column{{Name: "id", Type: "int"}},
+	}, nil
+}
+
+func t18FirstPolicy(t *testing.T) string {
+	t.Helper()
+	path := filepath.Join(t.TempDir(), "t18-first.yaml")
+	policy := "rules:\n  ddl.view.create.forbid:\n    enabled: false\n  ddl.view.drop.forbid:\n    enabled: false\n"
+	if err := os.WriteFile(path, []byte(policy), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	return path
+}
+
+func TestT18PublicAlterViewFirstPath(t *testing.T) {
+	const sql = "ALTER VIEW v AS SELECT id FROM t;"
+	result, err := Audit(context.Background(), Request{
+		SQL: sql, Dialect: DialectMySQL, Schema: "g", TargetVersion: "8.0.46",
+		ConfigPath: t18FirstPolicy(t), MetadataProvider: t18FirstProvider{},
+	})
+	proof, marshalErr := json.Marshal(result)
+	if marshalErr != nil {
+		t.Fatal(marshalErr)
+	}
+	t.Logf("T18_PUBLIC_PROOF %s", proof)
+	if err != nil || len(result.Diagnostics) != 0 || len(result.Unsupported) != 0 {
+		t.Fatalf("audit error=%v diagnostics=%#v unsupported=%#v", err, result.Diagnostics, result.Unsupported)
+	}
+	if len(result.Statements) != 1 || result.Statements[0].Index != 0 ||
+		result.Statements[0].Kind != "ddl" || strings.TrimSuffix(strings.TrimSpace(result.Statements[0].RawSQL), ";") != strings.TrimSuffix(sql, ";") {
+		t.Fatalf("statements=%#v", result.Statements)
+	}
+	if result.Coverage.Status != CoverageComplete || result.Statements[0].Coverage.Status != CoverageComplete {
+		t.Fatalf("coverage=%#v statement=%#v", result.Coverage, result.Statements[0].Coverage)
+	}
+}
+
+func TestT18PublicInvalidViewSelect(t *testing.T) {
+	result, err := Audit(context.Background(), Request{
+		SQL: "ALTER VIEW v AS SELECT FROM t;", Dialect: DialectMySQL,
+		ConfigPath: t18FirstPolicy(t),
+	})
+	if err == nil || len(result.Diagnostics) != 1 || result.Diagnostics[0].Classification != "parser_error" {
+		t.Fatalf("err=%v diagnostics=%#v", err, result.Diagnostics)
+	}
+}
+
+func TestT18PublicCreateViewDefaultForbid(t *testing.T) {
+	result, err := Audit(context.Background(), Request{
+		SQL: "CREATE VIEW v AS SELECT id FROM t;", Dialect: DialectMySQL,
+	})
+	if err != nil || len(result.Statements) != 1 {
+		t.Fatalf("err=%v statements=%#v", err, result.Statements)
+	}
+	for _, finding := range result.Statements[0].Findings {
+		if finding.RuleID == "ddl.view.create.forbid" {
+			return
+		}
+	}
+	t.Fatalf("missing create-view forbid: %#v", result.Statements[0].Findings)
+}

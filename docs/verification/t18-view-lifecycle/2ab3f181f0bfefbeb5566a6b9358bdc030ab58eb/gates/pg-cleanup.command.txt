@@ -1,0 +1,1 @@
+check canonical PG container, compose project containers, volumes and networks after pg-confidence

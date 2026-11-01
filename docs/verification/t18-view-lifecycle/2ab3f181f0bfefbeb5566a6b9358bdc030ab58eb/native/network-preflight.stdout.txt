@@ -1,0 +1,11 @@
+80a348da8d50 binlog-isolated2_default
+76c803ef2880 binlog-isolated3_default
+753aefee3d7e binlog-isolated_default
+9806fe4faf93 binlog-soak_default
+acec1f406191 bridge
+20b628d817e0 ci-test-network
+a1bf4b8ef97e host
+2137780b4419 kodus-backend-services
+4f8e09d6f791 monitoring-network
+dcc73fcc74b3 none
+9d14f074def2 shared-network

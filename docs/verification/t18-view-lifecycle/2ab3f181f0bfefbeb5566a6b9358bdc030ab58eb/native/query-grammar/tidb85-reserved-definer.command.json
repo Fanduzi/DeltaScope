@@ -1,0 +1,21 @@
+{
+  "argv": [
+    "docker",
+    "exec",
+    "deltascope-ddl-golden-tidb85-client",
+    "mysql",
+    "-h",
+    "tidb85",
+    "-P",
+    "4000",
+    "-uroot",
+    "--batch",
+    "--raw",
+    "--verbose",
+    "-e",
+    "USE t18qg;CREATE DEFINER=SELECT VIEW bad_keyword_v AS SELECT id FROM t;SHOW WARNINGS;"
+  ],
+  "sql": "USE t18qg;CREATE DEFINER=SELECT VIEW bad_keyword_v AS SELECT id FROM t;SHOW WARNINGS;",
+  "utc": "2026-11-01T09:58:38.283132+00:00",
+  "layer": "native grammar, not product proof"
+}

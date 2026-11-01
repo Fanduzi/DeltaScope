@@ -1,0 +1,5 @@
+error: no such object: deltascope-ddl-golden-mysql57-1
+error: no such object: deltascope-ddl-golden-mysql80-1
+error: no such object: deltascope-ddl-golden-mysql84-1
+error: no such object: deltascope-ddl-golden-tidb85-1
+error: no such object: deltascope-ddl-golden-tidb85-client-1

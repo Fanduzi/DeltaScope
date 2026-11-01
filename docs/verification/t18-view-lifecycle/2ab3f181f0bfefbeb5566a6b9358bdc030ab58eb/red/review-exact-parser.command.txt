@@ -1,0 +1,1 @@
+cd /tmp/t18-review-red-snapshot-bVUMStQi && go test ./internal/infrastructure/parser/tidb -run 'TestT18Review' -count=1 -v

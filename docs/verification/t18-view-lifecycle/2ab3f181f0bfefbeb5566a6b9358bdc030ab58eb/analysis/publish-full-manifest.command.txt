@@ -1,0 +1,1 @@
+python3 /tmp/t18_full_golden_author.py --seed /tmp/t18-evidence/T18-seed.json --out /Users/fan/GolangProjects/DeltaScope/testdata/ddl-golden/T18.json

@@ -1,0 +1,19 @@
+{
+  "argv": [
+    "docker",
+    "exec",
+    "--env",
+    "MYSQL_PWD",
+    "deltascope-ddl-golden-mysql80",
+    "mysql",
+    "-uroot",
+    "--batch",
+    "--raw",
+    "--verbose",
+    "-e",
+    "CREATE DATABASE t18e_2;USE t18e_2;CREATE TABLE t(id INT);CREATE TABLE u(id INT);CREATE VIEW v AS SELECT id FROM u;CREATE OR REPLACE ALGORITHM=MERGE SQL SECURITY INVOKER VIEW v AS SELECT id FROM u;"
+  ],
+  "sql": "CREATE DATABASE t18e_2;USE t18e_2;CREATE TABLE t(id INT);CREATE TABLE u(id INT);CREATE VIEW v AS SELECT id FROM u;CREATE OR REPLACE ALGORITHM=MERGE SQL SECURITY INVOKER VIEW v AS SELECT id FROM u;",
+  "head": "7f67c5de42fb6096d9c80f51e2d0f217eb34e528",
+  "utc": "2026-11-01T08:43:59.698192+00:00"
+}

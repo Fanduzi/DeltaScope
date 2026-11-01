@@ -1,0 +1,8 @@
+--------------
+CREATE VIEW new_v AS SELECT id FROM t WHERE id > 0 WITH CASCADED CHECK OPTION
+--------------
+
+--------------
+SHOW WARNINGS
+--------------
+

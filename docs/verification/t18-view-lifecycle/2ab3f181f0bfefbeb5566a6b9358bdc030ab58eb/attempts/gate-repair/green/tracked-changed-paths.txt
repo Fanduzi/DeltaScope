@@ -1,0 +1,5 @@
+internal/application/auditmeta/README.md
+internal/interfaces/cli/README.md
+internal/interfaces/cli/ddl_coverage_test.go
+scripts/t06a17proof/README.md
+scripts/t06a17proof/main_test.go

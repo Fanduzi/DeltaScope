@@ -1,0 +1,1 @@
+ERROR 1352 (HY000) at line 1: View's SELECT refers to a temporary table 'tt'

@@ -1,0 +1,1 @@
+go test ./scripts/t06a17proof -count=1 -v

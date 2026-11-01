@@ -1,0 +1,1 @@
+17 protected containers running with unchanged named mounts; 14 preserved volumes present

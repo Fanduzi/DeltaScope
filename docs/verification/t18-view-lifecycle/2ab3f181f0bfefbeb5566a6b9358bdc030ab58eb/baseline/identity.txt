@@ -1,0 +1,28 @@
+CWD: /Users/fan/GolangProjects/DeltaScope
+UTC: 2026-11-01T08:37:21Z
+Branch: milestone/mysql-tidb-ddl-completion
+
+HEAD followed by four parents:
+7f67c5de42fb6096d9c80f51e2d0f217eb34e528
+c6eebc09b64a4c9ffc8d1dc73689f505da06d61c
+84762d9d6c9085dbe91307516e14a984efa76375
+9da9f8e02221b1e51bf275cf012ffc2ac88b594a
+83125653d7cfc4343221d6f47e89df4311101efe
+
+Remote refs:
+d0c7cf3373167db7065d3027088a43c56ed6dbf5	refs/heads/milestone/mysql-tidb-ddl-completion
+7f67c5de42fb6096d9c80f51e2d0f217eb34e528	refs/heads/workfree
+
+Baseline status:
+?? .agents/
+?? .codex/
+?? .cursor/
+?? .debug-journal.md
+?? .devin/
+?? .grok/
+?? .opencode/
+?? .pi-subagents/
+?? .qoder/
+?? artifacts/
+?? docs/quality/architecture-review-2026-08-11.html
+?? docs/verification/t06-a12/1a5dd90de898a59590ef8a19aa068c4b5e8ce7f8/T06/

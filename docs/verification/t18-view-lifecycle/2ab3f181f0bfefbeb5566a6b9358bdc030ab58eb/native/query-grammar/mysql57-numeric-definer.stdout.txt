@@ -1,0 +1,4 @@
+--------------
+CREATE DEFINER=123 VIEW bad_numeric_v AS SELECT id FROM t
+--------------
+

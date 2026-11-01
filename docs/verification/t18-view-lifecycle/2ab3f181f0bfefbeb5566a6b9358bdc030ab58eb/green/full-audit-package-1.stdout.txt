@@ -1,0 +1,24 @@
+--- FAIL: TestQueryCatalog_MySQLAlterView (0.00s)
+    --- FAIL: TestQueryCatalog_MySQLAlterView/dialect=mysql,_classification=parser_error (0.00s)
+        ddl_coverage_catalog_query_test.go:72: ALTER VIEW not found in results
+    --- FAIL: TestQueryCatalog_MySQLAlterView/dialect=mysql,_guidance_code=parser_upgrade_candidate (0.00s)
+        ddl_coverage_catalog_query_test.go:72: ALTER VIEW not found in results
+    --- FAIL: TestQueryCatalog_MySQLAlterView/search=alter_view (0.00s)
+        ddl_coverage_catalog_query_test.go:63: ALTER VIEW classification = "finding_covered", want parser_error
+        ddl_coverage_catalog_query_test.go:66: ALTER VIEW guidance_code = "", want parser_upgrade_candidate
+    --- FAIL: TestQueryCatalog_MySQLAlterView/form=ALTER_VIEW (0.00s)
+        ddl_coverage_catalog_query_test.go:63: ALTER VIEW classification = "finding_covered", want parser_error
+        ddl_coverage_catalog_query_test.go:66: ALTER VIEW guidance_code = "", want parser_upgrade_candidate
+SQL Corpus Supported-Rule Coverage Inventory
+policy_rule_ids=461
+supported_rule_dialect_targets=727
+covered_rule_dialect_targets=727
+coverage_percent=100.0
+expected_yaml_files_total=326
+expected_yaml_files_by_dialect=mysql:51 tidb:45 postgresql:230
+deferred_rule_ids=1
+deferred=ddl.pg.alter.add_column.non_null_default.rewrite.warn
+missing_rule_dialect_targets=0
+FAIL
+FAIL	github.com/Fanduzi/DeltaScope/internal/application/audit	3.396s
+FAIL

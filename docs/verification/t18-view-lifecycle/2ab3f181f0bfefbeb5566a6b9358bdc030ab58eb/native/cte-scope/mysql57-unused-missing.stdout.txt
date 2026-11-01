@@ -1,0 +1,4 @@
+--------------
+CREATE VIEW unused_missing_v AS WITH unused AS (SELECT id FROM missing_t) SELECT id FROM t
+--------------
+

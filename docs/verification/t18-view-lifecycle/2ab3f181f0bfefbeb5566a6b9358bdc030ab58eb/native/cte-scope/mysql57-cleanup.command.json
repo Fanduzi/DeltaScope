@@ -1,0 +1,19 @@
+{
+  "argv": [
+    "docker",
+    "exec",
+    "--env",
+    "MYSQL_PWD",
+    "deltascope-ddl-golden-mysql57",
+    "mysql",
+    "-uroot",
+    "--batch",
+    "--raw",
+    "--verbose",
+    "-e",
+    "DROP DATABASE t18cs;"
+  ],
+  "sql": "DROP DATABASE t18cs;",
+  "utc": "2026-11-01T10:11:45.804877+00:00",
+  "layer": "native grammar, not product proof"
+}

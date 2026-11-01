@@ -1,0 +1,8 @@
+=== RUN   TestT18ReviewRealProviderMissingAttributesPublic
+=== RUN   TestT18ReviewRealProviderMissingAttributesPublic/empty
+=== RUN   TestT18ReviewRealProviderMissingAttributesPublic/error
+--- PASS: TestT18ReviewRealProviderMissingAttributesPublic (0.01s)
+    --- PASS: TestT18ReviewRealProviderMissingAttributesPublic/empty (0.01s)
+    --- PASS: TestT18ReviewRealProviderMissingAttributesPublic/error (0.00s)
+PASS
+ok  	github.com/Fanduzi/DeltaScope/pkg/deltascope	0.609s

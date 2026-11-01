@@ -1,0 +1,22 @@
+{
+  "argv": [
+    "docker",
+    "exec",
+    "--env",
+    "MYSQL_PWD",
+    "deltascope-ddl-golden-mysql57",
+    "mysql",
+    "-uroot",
+    "--batch",
+    "--raw",
+    "--verbose",
+    "-e",
+    "CREATE DATABASE t18p_25; USE t18p_25;CREATE TABLE t(id INT); CREATE TABLE u(id INT);CREATE VIEW v AS SELECT id FROM u; CREATE VIEW w AS SELECT id FROM t;CREATE OR REPLACE ALGORITHM=MERGE SQL SECURITY INVOKER VIEW v AS SELECT id FROM u WHERE id > 0 WITH LOCAL CHECK OPTION;"
+  ],
+  "sql": "CREATE DATABASE t18p_25; USE t18p_25;CREATE TABLE t(id INT); CREATE TABLE u(id INT);CREATE VIEW v AS SELECT id FROM u; CREATE VIEW w AS SELECT id FROM t;CREATE OR REPLACE ALGORITHM=MERGE SQL SECURITY INVOKER VIEW v AS SELECT id FROM u WHERE id > 0 WITH LOCAL CHECK OPTION;",
+  "schema": "t18p_25",
+  "credential_source": "disposable docker/ddl-golden-compose.yaml, never a redaction marker",
+  "cwd": "/Users/fan/GolangProjects/DeltaScope",
+  "head": "7f67c5de42fb6096d9c80f51e2d0f217eb34e528",
+  "time_utc": "2026-11-01T08:42:45.733860+00:00"
+}

@@ -1,0 +1,6 @@
+--------------
+SHOW CREATE VIEW t18p_11.new_v
+--------------
+
+View	Create View	character_set_client	collation_connection
+new_v	CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `t18p_11`.`new_v` AS select count(0) AS `n` from `t18p_11`.`t`	latin1	latin1_swedish_ci

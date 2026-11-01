@@ -1,0 +1,6 @@
+--------------
+SHOW CREATE VIEW t18f2_7.new_v
+--------------
+
+View	Create View	character_set_client	collation_connection
+new_v	CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`%` SQL SECURITY DEFINER VIEW `new_v` (`id`, `payload`) AS SELECT `id` AS `id`,`payload` AS `payload` FROM `t18f2_7`.`attrs`	utf8mb4	utf8mb4_bin

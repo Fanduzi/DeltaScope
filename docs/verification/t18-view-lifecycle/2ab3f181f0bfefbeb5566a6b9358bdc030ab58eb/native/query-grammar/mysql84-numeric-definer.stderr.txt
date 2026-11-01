@@ -1,0 +1,1 @@
+ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near '123 VIEW bad_numeric_v AS SELECT id FROM t' at line 1

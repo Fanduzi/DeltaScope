@@ -1,0 +1,2 @@
+e7e8fda600227453fa35b7ce7004cc4e89d1907178a8338b5d5a71d15b8ec2d0  /tmp/t18-evidence/green/catalog-before-t18-sync/reference.json
+e7e8fda600227453fa35b7ce7004cc4e89d1907178a8338b5d5a71d15b8ec2d0  /tmp/t18-evidence/green/catalog-before-t18-sync/embedded.json

@@ -1,0 +1,21 @@
+{
+  "argv": [
+    "docker",
+    "exec",
+    "deltascope-ddl-golden-tidb85-client",
+    "mysql",
+    "-h",
+    "tidb85",
+    "-P",
+    "4000",
+    "-uroot",
+    "--batch",
+    "--raw",
+    "--verbose",
+    "-e",
+    "CREATE VIEW t18n_star.next_v AS SELECT id FROM t18n_star.v;SHOW WARNINGS;"
+  ],
+  "sql": "CREATE VIEW t18n_star.next_v AS SELECT id FROM t18n_star.v;SHOW WARNINGS;",
+  "head": "7f67c5de42fb6096d9c80f51e2d0f217eb34e528",
+  "utc": "2026-11-01T09:00:45.785503+00:00"
+}

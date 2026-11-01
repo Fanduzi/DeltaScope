@@ -1,0 +1,1 @@
+ERROR 1066 (42000) at line 1: Not unique table/alias: 'v'

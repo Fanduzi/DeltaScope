@@ -1,0 +1,4 @@
+--------------
+CREATE VIEW new_v AS SELECT id FROM t WHERE id > 0 WITH CHECK OPTION
+--------------
+

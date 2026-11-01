@@ -1,0 +1,1 @@
+python3 /tmp/t18-evidence/check_archive_redactions.py

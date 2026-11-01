@@ -1,0 +1,1 @@
+go test ./pkg/deltascope -run 'TestT18(Full|Review|Public)' -count=1 -json

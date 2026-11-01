@@ -1,0 +1,4 @@
+=== RUN   TestT18FullReviewZeroSourceCTEDAGBudget
+--- PASS: TestT18FullReviewZeroSourceCTEDAGBudget (0.01s)
+PASS
+ok  	github.com/Fanduzi/DeltaScope/pkg/deltascope	0.648s

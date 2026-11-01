@@ -1,0 +1,1 @@
+/Users/fan/GolangProjects/DeltaScope/testdata/ddl-golden/T18.json PLANNED cases 149 (not an execution or acceptance result)

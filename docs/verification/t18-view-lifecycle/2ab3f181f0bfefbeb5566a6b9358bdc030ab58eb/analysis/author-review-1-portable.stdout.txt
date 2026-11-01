@@ -1,0 +1,1 @@
+/tmp/t18-evidence/golden-full-draft.json PLANNED cases 147 (not an execution or acceptance result)

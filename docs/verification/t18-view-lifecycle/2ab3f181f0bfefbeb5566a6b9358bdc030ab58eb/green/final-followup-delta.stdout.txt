@@ -1,0 +1,7 @@
+verified 91 landing paths; 6 current changes
+docs/decisions/2026-11-01-ddl-view-lifecycle.md
+docs/work-plans/t18-view-lifecycle/CONTRACT.md
+docs/work-plans/t18-view-lifecycle/MATRIX.md
+internal/interfaces/http/audit_t18_view_privacy_test.go
+internal/interfaces/mcp/audit_t18_view_privacy_test.go
+pkg/deltascope/audit_t18_view_first_test.go

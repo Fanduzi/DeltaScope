@@ -1,0 +1,10 @@
+--------------
+DROP VIEW IF EXISTS v, t, w
+--------------
+
+--------------
+SHOW WARNINGS
+--------------
+
+Level	Code	Message
+Note	1347	't18p_23.t' is not VIEW

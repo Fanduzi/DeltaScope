@@ -1,0 +1,6 @@
+--------------
+SHOW CREATE VIEW t18p_25.v
+--------------
+
+View	Create View	character_set_client	collation_connection
+v	CREATE ALGORITHM=MERGE DEFINER=`root`@`localhost` SQL SECURITY INVOKER VIEW `t18p_25`.`v` AS select `t18p_25`.`t`.`id` AS `id` from `t18p_25`.`t`	latin1	latin1_swedish_ci

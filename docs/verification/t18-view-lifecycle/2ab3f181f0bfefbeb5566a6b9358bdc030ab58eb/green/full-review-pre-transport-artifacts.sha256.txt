@@ -1,0 +1,3 @@
+ab964570d282eee6848dd0b26bcffd3c499991dd0849456206e9aad37b282df8  /tmp/ddl-golden-t18-full-review-1-seed/T18/artifact.json
+a879336391047c38024fb8cfeb3e71e17d900b04810ee154915f45458bf56565  /tmp/t18-evidence/green/full-review-delta.patch
+c81ffa3693c5a7ddf229bab9439e4f05ad891fa797d51eb4abc34bf1964b4baf  /tmp/t18-evidence/green/full-review-source.sha256.txt

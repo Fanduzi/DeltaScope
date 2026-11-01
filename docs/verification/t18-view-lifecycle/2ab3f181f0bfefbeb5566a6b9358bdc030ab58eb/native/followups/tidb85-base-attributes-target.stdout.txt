@@ -1,0 +1,8 @@
+--------------
+CREATE VIEW new_v AS SELECT id,payload FROM attrs
+--------------
+
+--------------
+SHOW WARNINGS
+--------------
+

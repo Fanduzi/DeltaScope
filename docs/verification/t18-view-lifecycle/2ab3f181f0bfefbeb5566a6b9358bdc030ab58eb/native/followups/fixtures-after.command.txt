@@ -1,0 +1,1 @@
+docker inspect --format '{{.Id}} {{.Name}} {{.State.Status}} {{.State.Health.Status}}' deltascope-ddl-golden-{mysql57,mysql80,mysql84,tidb85,tidb85-client}

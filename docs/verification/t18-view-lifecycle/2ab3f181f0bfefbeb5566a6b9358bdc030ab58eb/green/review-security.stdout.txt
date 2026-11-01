@@ -1,0 +1,4 @@
+=== RUN   TestT18ReviewUncertainSecurityConvergence
+--- PASS: TestT18ReviewUncertainSecurityConvergence (0.00s)
+PASS
+ok  	github.com/Fanduzi/DeltaScope/pkg/deltascope	0.733s

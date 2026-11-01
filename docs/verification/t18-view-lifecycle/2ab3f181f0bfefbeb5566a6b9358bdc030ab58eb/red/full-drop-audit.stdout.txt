@@ -1,0 +1,6 @@
+=== RUN   TestT18FullDropViewLeavesTemporaryShadow
+    batch_state_t18_first_test.go:266: temporary source was not retained: (*spec.TableSnapshot)(nil)
+--- FAIL: TestT18FullDropViewLeavesTemporaryShadow (0.00s)
+FAIL
+FAIL	github.com/Fanduzi/DeltaScope/internal/application/audit	0.568s
+FAIL

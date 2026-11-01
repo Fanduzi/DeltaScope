@@ -1,0 +1,1 @@
+DS_T18_FIXTURE_PW is the public disposable root value from docker/ddl-golden-compose.yaml.

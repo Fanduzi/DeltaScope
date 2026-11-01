@@ -1,0 +1,4 @@
+container project docker: (none)
+volume project docker: (none)
+network project docker: (none)
+deltascope-pg-e2e absent

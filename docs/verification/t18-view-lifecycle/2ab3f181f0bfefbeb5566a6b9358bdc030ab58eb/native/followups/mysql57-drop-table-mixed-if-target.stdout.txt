@@ -1,0 +1,10 @@
+--------------
+DROP TABLE IF EXISTS t,v
+--------------
+
+--------------
+SHOW WARNINGS
+--------------
+
+Level	Code	Message
+Note	1051	Unknown table 't18f2_4.v'

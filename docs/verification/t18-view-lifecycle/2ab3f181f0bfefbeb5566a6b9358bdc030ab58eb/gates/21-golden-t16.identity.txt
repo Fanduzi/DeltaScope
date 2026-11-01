@@ -1,0 +1,4 @@
+/Users/fan/GolangProjects/DeltaScope
+2ab3f181f0bfefbeb5566a6b9358bdc030ab58eb
+fixture env: T16_MYSQL_PASSWORD and DS_T16_GOLDEN_PW set from verified compose credential
+2ab3f181f0bfefbeb5566a6b9358bdc030ab58eb

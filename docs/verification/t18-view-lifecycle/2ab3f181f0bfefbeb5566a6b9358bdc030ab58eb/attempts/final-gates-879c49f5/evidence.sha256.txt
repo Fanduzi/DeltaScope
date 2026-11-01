@@ -1,0 +1,4 @@
+fa23e4a3a5b85d29ffc9035d376d9aecc4bb6fbf1c082c36f9bb8d407b9dc8ba  /tmp/t18-evidence/final-gates/gate-index.json
+f58038e470e31cf2e103c96bd700a0744b0d5180a11aa17d8f944f5c974b67eb  /tmp/t18-evidence/final-gates/failures.json
+02a521bd288606ed4ec5fb235846b6fb417c2b2ec3babc4a48591175b8171a63  /tmp/t18-evidence/final-gates/golden-artifact-summary.json
+21d261fefdcf7a130ff59b3259afc4210f8d82369dd9d8d48b991d908b67d000  /tmp/t18-evidence/final-gates/source.sha256.txt

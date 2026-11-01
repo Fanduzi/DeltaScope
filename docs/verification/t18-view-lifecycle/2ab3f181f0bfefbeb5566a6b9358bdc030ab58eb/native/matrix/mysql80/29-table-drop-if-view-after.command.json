@@ -1,0 +1,22 @@
+{
+  "argv": [
+    "docker",
+    "exec",
+    "--env",
+    "MYSQL_PWD",
+    "deltascope-ddl-golden-mysql80",
+    "mysql",
+    "-uroot",
+    "--batch",
+    "--raw",
+    "--verbose",
+    "-e",
+    "SELECT TABLE_SCHEMA,TABLE_NAME,TABLE_TYPE FROM information_schema.TABLES WHERE TABLE_SCHEMA='t18p_29' ORDER BY TABLE_NAME;SELECT TABLE_NAME,VIEW_DEFINITION,CHECK_OPTION,IS_UPDATABLE,SECURITY_TYPE,DEFINER FROM information_schema.VIEWS WHERE TABLE_SCHEMA='t18p_29' ORDER BY TABLE_NAME;"
+  ],
+  "sql": "SELECT TABLE_SCHEMA,TABLE_NAME,TABLE_TYPE FROM information_schema.TABLES WHERE TABLE_SCHEMA='t18p_29' ORDER BY TABLE_NAME;SELECT TABLE_NAME,VIEW_DEFINITION,CHECK_OPTION,IS_UPDATABLE,SECURITY_TYPE,DEFINER FROM information_schema.VIEWS WHERE TABLE_SCHEMA='t18p_29' ORDER BY TABLE_NAME;",
+  "schema": "t18p_29",
+  "credential_source": "disposable docker/ddl-golden-compose.yaml, never a redaction marker",
+  "cwd": "/Users/fan/GolangProjects/DeltaScope",
+  "head": "7f67c5de42fb6096d9c80f51e2d0f217eb34e528",
+  "time_utc": "2026-11-01T08:42:53.328797+00:00"
+}

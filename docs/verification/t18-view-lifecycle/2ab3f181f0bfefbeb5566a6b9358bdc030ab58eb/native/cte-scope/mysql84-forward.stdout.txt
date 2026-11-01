@@ -1,0 +1,4 @@
+--------------
+CREATE VIEW forward_v AS WITH first_c AS (SELECT id FROM later_c),later_c AS (SELECT id FROM t) SELECT id FROM first_c
+--------------
+

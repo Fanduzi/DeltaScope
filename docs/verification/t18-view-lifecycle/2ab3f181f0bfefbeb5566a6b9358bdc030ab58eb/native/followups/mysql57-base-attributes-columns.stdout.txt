@@ -1,0 +1,12 @@
+--------------
+SELECT TABLE_NAME,COLUMN_NAME,COLUMN_TYPE,IS_NULLABLE,EXTRA,COLUMN_DEFAULT FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='t18f2_7' ORDER BY TABLE_NAME,ORDINAL_POSITION
+--------------
+
+TABLE_NAME	COLUMN_NAME	COLUMN_TYPE	IS_NULLABLE	EXTRA	COLUMN_DEFAULT
+attrs	id	int(11)	NO	auto_increment	NULL
+attrs	payload	int(11)	YES		5
+new_v	id	int(11)	NO		0
+new_v	payload	int(11)	YES		5
+t	id	int(11)	YES		NULL
+u	id	int(11)	YES		NULL
+v	id	int(11)	YES		NULL

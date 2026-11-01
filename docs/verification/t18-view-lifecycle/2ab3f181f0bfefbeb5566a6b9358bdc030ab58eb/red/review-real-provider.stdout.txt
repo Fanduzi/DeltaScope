@@ -1,0 +1,10 @@
+=== RUN   TestT18ReviewRealProviderMissingAttributesPublic
+=== RUN   TestT18ReviewRealProviderMissingAttributesPublic/empty
+    audit_t18_view_first_test.go:339: empty attributes: err=view metadata read failed result=deltascope.Result{Verdict:"", Coverage:deltascope.Coverage{Status:""}, Summary:deltascope.Summary{Statements:0, Blockers:0, Warnings:0, Notices:0}, Statements:[]deltascope.StatementResult(nil), GlobalFindings:[]deltascope.Finding(nil), Unsupported:[]spec.UnsupportedDetail(nil), Explanation:(*deltascope.Explanation)(nil), Diagnostics:[]spec.Diagnostic(nil), Version:(*spec.VersionIdentity)(nil)}
+=== RUN   TestT18ReviewRealProviderMissingAttributesPublic/error
+--- FAIL: TestT18ReviewRealProviderMissingAttributesPublic (0.01s)
+    --- FAIL: TestT18ReviewRealProviderMissingAttributesPublic/empty (0.01s)
+    --- PASS: TestT18ReviewRealProviderMissingAttributesPublic/error (0.00s)
+FAIL
+FAIL	github.com/Fanduzi/DeltaScope/pkg/deltascope	1.020s
+FAIL

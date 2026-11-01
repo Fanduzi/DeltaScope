@@ -1,0 +1,1 @@
+gofmt -l changed Go files; git diff --check

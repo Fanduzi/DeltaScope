@@ -1,0 +1,16 @@
+ .../audit/batch_state_t18_first_test.go            | 343 +++++++++++++++++++++
+ 1 file changed, 343 insertions(+)
+ .../application/audit/batch_state_view.go          | 169 +++++++++++++++++++++
+ 1 file changed, 169 insertions(+)
+ .../domain/rule/ddl/view_lifecycle_rules.go        | 140 +++++++++++++++++++++
+ 1 file changed, 140 insertions(+)
+ /dev/null => internal/domain/spec/view.go | 253 ++++++++++++++++++++++++++++++
+ 1 file changed, 253 insertions(+)
+ .../metadata/mysql/provider_t18_first_test.go      | 88 ++++++++++++++++++++++
+ 1 file changed, 88 insertions(+)
+ .../infrastructure/parser/tidb/view.go             | 390 +++++++++++++++++++++
+ 1 file changed, 390 insertions(+)
+ .../parser/tidb/view_t18_first_test.go             | 102 +++++++++++++++++++++
+ 1 file changed, 102 insertions(+)
+ .../deltascope/audit_t18_view_first_test.go        | 599 +++++++++++++++++++++
+ 1 file changed, 599 insertions(+)

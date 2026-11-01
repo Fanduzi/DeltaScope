@@ -1,0 +1,19 @@
+{
+  "argv": [
+    "docker",
+    "exec",
+    "--env",
+    "MYSQL_PWD",
+    "deltascope-ddl-golden-mysql80",
+    "mysql",
+    "-uroot",
+    "--batch",
+    "--raw",
+    "--verbose",
+    "-e",
+    "USE t18qg;CREATE DEFINER='t18_named_host'@127.0.0.1 VIEW host_v AS SELECT id FROM t;SHOW WARNINGS;"
+  ],
+  "sql": "USE t18qg;CREATE DEFINER='t18_named_host'@127.0.0.1 VIEW host_v AS SELECT id FROM t;SHOW WARNINGS;",
+  "utc": "2026-11-01T09:58:37.713418+00:00",
+  "layer": "native grammar, not product proof"
+}

@@ -1,0 +1,1 @@
+MySQL compose credentials match; MySQL anchors use T18_MYSQL_PASSWORD; TiDB no password

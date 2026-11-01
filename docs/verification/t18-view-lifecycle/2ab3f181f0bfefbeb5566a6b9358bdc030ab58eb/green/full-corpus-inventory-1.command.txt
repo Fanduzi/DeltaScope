@@ -1,0 +1,1 @@
+go test ./internal/application/audit -run '^(TestSQLCorpusCoversSupportedRuleDialects|TestAuditSQLT03RecognizedUnauditedAspectsIncomplete|TestAuditSQLT03UnsupportedFeatureReasonPairs|TestAuditSQLT03RecognizedOutOfSurfaceStaysComplete)$' -count=1

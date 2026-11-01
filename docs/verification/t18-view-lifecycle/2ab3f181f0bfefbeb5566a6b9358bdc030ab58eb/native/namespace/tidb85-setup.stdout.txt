@@ -1,0 +1,24 @@
+--------------
+CREATE DATABASE t18n_shadow
+--------------
+
+--------------
+CREATE TABLE t18n_shadow.t(id INT)
+--------------
+
+--------------
+CREATE VIEW t18n_shadow.v AS SELECT id FROM t18n_shadow.t
+--------------
+
+--------------
+CREATE DATABASE t18n_star
+--------------
+
+--------------
+CREATE TABLE t18n_star.t(id INT)
+--------------
+
+--------------
+CREATE VIEW t18n_star.v AS SELECT * FROM t18n_star.t
+--------------
+

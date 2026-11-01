@@ -1,0 +1,1 @@
+make ddl-golden TASK=T18 ARTIFACT_DIR=/tmp/ddl-golden-t18-final-T18-879c49f5

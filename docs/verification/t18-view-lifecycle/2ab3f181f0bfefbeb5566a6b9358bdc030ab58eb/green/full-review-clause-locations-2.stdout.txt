@@ -1,0 +1,14 @@
+=== RUN   TestT18FullReviewQueryClauseLocations
+=== RUN   TestT18FullReviewQueryClauseLocations/on
+=== RUN   TestT18FullReviewQueryClauseLocations/where
+=== RUN   TestT18FullReviewQueryClauseLocations/group
+=== RUN   TestT18FullReviewQueryClauseLocations/having
+=== RUN   TestT18FullReviewQueryClauseLocations/order
+--- PASS: TestT18FullReviewQueryClauseLocations (0.02s)
+    --- PASS: TestT18FullReviewQueryClauseLocations/on (0.01s)
+    --- PASS: TestT18FullReviewQueryClauseLocations/where (0.00s)
+    --- PASS: TestT18FullReviewQueryClauseLocations/group (0.00s)
+    --- PASS: TestT18FullReviewQueryClauseLocations/having (0.00s)
+    --- PASS: TestT18FullReviewQueryClauseLocations/order (0.00s)
+PASS
+ok  	github.com/Fanduzi/DeltaScope/pkg/deltascope	0.836s

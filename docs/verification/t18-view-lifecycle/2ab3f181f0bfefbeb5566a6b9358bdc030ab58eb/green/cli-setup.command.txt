@@ -1,0 +1,1 @@
+docker exec -e MYSQL_PWD=<redacted> 9bd13f6b4ce2 mysql -uroot -e 'CREATE DATABASE t18first_1793524084; CREATE TABLE t18first_1793524084.t (id INT); CREATE TABLE t18first_1793524084.u (id INT); CREATE VIEW t18first_1793524084.v AS SELECT id FROM t18first_1793524084.u;'

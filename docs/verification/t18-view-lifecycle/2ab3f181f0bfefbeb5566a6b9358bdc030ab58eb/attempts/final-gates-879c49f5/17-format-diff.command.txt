@@ -1,0 +1,2 @@
+python3 -c 'import pathlib,sys; p=pathlib.Path("/tmp/t18-evidence/product-paths.txt"); sys.stdout.buffer.write(b"".join((x+"\0").encode() for x in p.read_text().splitlines() if x.endswith(".go")))' | xargs -0 gofmt -l
+git diff --check

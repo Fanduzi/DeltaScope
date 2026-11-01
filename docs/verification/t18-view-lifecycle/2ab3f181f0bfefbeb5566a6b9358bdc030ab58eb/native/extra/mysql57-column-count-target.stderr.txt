@@ -1,0 +1,1 @@
+ERROR 1353 (HY000) at line 1: View's SELECT and view's field list have different column counts

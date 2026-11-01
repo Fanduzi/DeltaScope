@@ -1,0 +1,1 @@
+inspect 23 recorded gate quads and HEAD identities

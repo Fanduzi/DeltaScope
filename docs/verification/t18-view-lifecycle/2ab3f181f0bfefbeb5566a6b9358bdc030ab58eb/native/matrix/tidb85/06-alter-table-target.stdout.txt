@@ -1,0 +1,4 @@
+--------------
+ALTER VIEW t AS SELECT id FROM u
+--------------
+

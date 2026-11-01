@@ -1,0 +1,6 @@
+=== RUN   TestT18FullStarProjectionFrozen
+    batch_state_t18_first_test.go:199: star not frozen at creation: &spec.TableSnapshot{Schema:"g", Exists:true, Table:(*spec.Table)(0xe933669ef30), RelationKind:"view", View:(*spec.ViewSnapshot)(0xe9336278ba0), Columns:[]spec.Column(nil), PrimaryKey:(*spec.Index)(nil), Indexes:[]spec.Index(nil), Constraints:[]spec.Constraint(nil), Options:map[string]string(nil), PrimaryKeyIsHandle:false, PrimaryKeyHandleUnknown:false, PrimaryKeyClustered:false, PrimaryKeyClusteredUnknown:false, PrimaryKeyUnknown:false, IndexesUnknown:false, ConstraintsUnknown:false, IndexOrderCatalog:false, IndexNamesUnknown:false, Partitioned:(*bool)(nil), PartitionType:(*string)(nil), PartitionNames:[]string(nil), PartitionDescriptions:[]string(nil), PartitionDefs:[]spec.PartitionDef(nil), Subpartitioned:false, Temporary:false, GlobalTemporary:false, ColumnsTailUnknown:false, ReferencedBy:[]spec.Table(nil), ReferencedByUnknown:true}
+--- FAIL: TestT18FullStarProjectionFrozen (0.00s)
+FAIL
+FAIL	github.com/Fanduzi/DeltaScope/internal/application/audit	0.565s
+FAIL

@@ -1,0 +1,14 @@
+=== RUN   TestT18ReviewIdentifierAndDefinerProductions
+=== RUN   TestT18ReviewIdentifierAndDefinerProductions/ALTER_VIEW_`g.dot`.`v.dot`_(`c.dot`)_AS_SELECT_id_FROM_t;
+=== RUN   TestT18ReviewIdentifierAndDefinerProductions/ALTER_VIEW_g.action_AS_SELECT_id_FROM_t;
+=== RUN   TestT18ReviewIdentifierAndDefinerProductions/ALTER_DEFINER=CURRENT_USER()_VIEW_v_AS_SELECT_id_FROM_t;
+=== RUN   TestT18ReviewIdentifierAndDefinerProductions/ALTER_DEFINER='private'_VIEW_v_AS_SELECT_id_FROM_t;
+    view_t18_first_test.go:89: parse=tidbparser.Result{Statements:[]ast.StmtNode(nil), Warnings:[]string(nil)} err=parse sql: line 1 column 13 near "DEFINER='private' VIEW v AS SELECT id FROM t;" 
+--- FAIL: TestT18ReviewIdentifierAndDefinerProductions (0.00s)
+    --- PASS: TestT18ReviewIdentifierAndDefinerProductions/ALTER_VIEW_`g.dot`.`v.dot`_(`c.dot`)_AS_SELECT_id_FROM_t; (0.00s)
+    --- PASS: TestT18ReviewIdentifierAndDefinerProductions/ALTER_VIEW_g.action_AS_SELECT_id_FROM_t; (0.00s)
+    --- PASS: TestT18ReviewIdentifierAndDefinerProductions/ALTER_DEFINER=CURRENT_USER()_VIEW_v_AS_SELECT_id_FROM_t; (0.00s)
+    --- FAIL: TestT18ReviewIdentifierAndDefinerProductions/ALTER_DEFINER='private'_VIEW_v_AS_SELECT_id_FROM_t; (0.00s)
+FAIL
+FAIL	github.com/Fanduzi/DeltaScope/internal/infrastructure/parser/tidb	0.531s
+FAIL

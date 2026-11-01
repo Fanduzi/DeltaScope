@@ -1,0 +1,4434 @@
+{
+  "candidates_checked": 490,
+  "warning_files": 490,
+  "warning_copied_files": 490,
+  "warning_authored_or_generated_files": 0,
+  "errors": [],
+  "files": [
+    {
+      "path": "attempts/gate-repair/green/five-file.patch",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "trailing whitespace": 7,
+        "space before tab": 22
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "attempts/preflight-golden-2/execution-tracked.patch",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "trailing whitespace": 128,
+        "space before tab": 465
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "baseline/docker-before.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "trailing whitespace": 29
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "baseline/worktrees.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "gates/04-pg-confidence.stderr.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "trailing whitespace": 24
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "green/diff.tracked.patch",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "trailing whitespace": 43,
+        "space before tab": 345
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "green/final-followup-delta.patch",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "trailing whitespace": 6,
+        "space before tab": 53
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "green/final-identity.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "green/full-preflight-fixtures-1.stderr.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "green/full-preflight-tracked.patch",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "trailing whitespace": 128,
+        "space before tab": 465
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "green/full-review-before-dag-assert-delta.patch",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "trailing whitespace": 45,
+        "space before tab": 139
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "green/full-review-before-dag-assert-tracked.patch",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "trailing whitespace": 128,
+        "space before tab": 465
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "green/full-review-corpus-census.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "trailing whitespace": 28
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "green/full-review-delta.patch",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "trailing whitespace": 45,
+        "space before tab": 139
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "green/full-review-final-tracked.patch",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "trailing whitespace": 128,
+        "space before tab": 465
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "green/full-review-pre-transport-delta.patch",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "trailing whitespace": 45,
+        "space before tab": 139
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "green/full-review-pre-transport-tracked.patch",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "trailing whitespace": 128,
+        "space before tab": 465
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "green/lead-full-review-delta.patch",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "space before tab": 695,
+        "trailing whitespace": 111
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "green/lead-review-delta.patch",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "trailing whitespace": 27,
+        "space before tab": 241
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "green/lint-fix-one-file.patch",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "space before tab": 29
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "green/packages-1.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "trailing whitespace": 28
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "green/pause-review-tracked.patch",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "trailing whitespace": 115,
+        "space before tab": 465
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "green/review-diff.tracked.patch",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "trailing whitespace": 43,
+        "space before tab": 345
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/cte-scope/fixtures-up.stderr.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "trailing whitespace": 36
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/cte-scope/mysql57-after.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/cte-scope/mysql57-cleanup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/cte-scope/mysql57-forward.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/cte-scope/mysql57-renamed-output.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/cte-scope/mysql57-self-base.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/cte-scope/mysql57-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/cte-scope/mysql57-unused-column.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/cte-scope/mysql57-unused-missing.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/cte-scope/mysql80-cleanup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/cte-scope/mysql80-forward.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/cte-scope/mysql80-renamed-output.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/cte-scope/mysql80-self-base.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/cte-scope/mysql80-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/cte-scope/mysql80-unused-column.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/cte-scope/mysql80-unused-missing.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/cte-scope/mysql84-cleanup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/cte-scope/mysql84-forward.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/cte-scope/mysql84-renamed-output.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/cte-scope/mysql84-self-base.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/cte-scope/mysql84-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/cte-scope/mysql84-unused-column.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/cte-scope/mysql84-unused-missing.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/cte-scope/run.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "trailing whitespace": 10
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/cte-scope/tidb85-cleanup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/cte-scope/tidb85-forward.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/cte-scope/tidb85-renamed-output.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/cte-scope/tidb85-self-base.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/cte-scope/tidb85-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/cte-scope/tidb85-unused-column.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/cte-scope/tidb85-unused-missing.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/docker-after.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "trailing whitespace": 29
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/extra/mysql57-column-count-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/extra/mysql57-column-count-target.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/extra/mysql57-column-duplicate-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/extra/mysql57-column-duplicate-target.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/extra/mysql57-cross-schema-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/extra/mysql57-cross-schema-target.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/extra/mysql57-explicit-undefined-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/extra/mysql57-explicit-undefined-target.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/extra/mysql57-replace-cycle-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/extra/mysql57-replace-cycle-target.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/extra/mysql57-temporary-source-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/extra/mysql57-temporary-source-target.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/extra/mysql80-column-count-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/extra/mysql80-column-count-target.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/extra/mysql80-column-duplicate-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/extra/mysql80-column-duplicate-target.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/extra/mysql80-cross-schema-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/extra/mysql80-cross-schema-target.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/extra/mysql80-explicit-undefined-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/extra/mysql80-explicit-undefined-target.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/extra/mysql80-replace-cycle-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/extra/mysql80-replace-cycle-target.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/extra/mysql80-temporary-source-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/extra/mysql80-temporary-source-target.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/extra/mysql84-column-count-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/extra/mysql84-column-count-target.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/extra/mysql84-column-duplicate-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/extra/mysql84-column-duplicate-target.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/extra/mysql84-cross-schema-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/extra/mysql84-cross-schema-target.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/extra/mysql84-explicit-undefined-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/extra/mysql84-explicit-undefined-target.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/extra/mysql84-replace-cycle-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/extra/mysql84-replace-cycle-target.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/extra/mysql84-temporary-source-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/extra/mysql84-temporary-source-target.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/extra/tidb85-column-count-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/extra/tidb85-column-count-target.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/extra/tidb85-column-duplicate-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/extra/tidb85-column-duplicate-target.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/extra/tidb85-cross-schema-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/extra/tidb85-cross-schema-target.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/extra/tidb85-explicit-undefined-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/extra/tidb85-explicit-undefined-target.stderr.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "trailing whitespace": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/extra/tidb85-explicit-undefined-target.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/extra/tidb85-replace-cycle-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/extra/tidb85-replace-cycle-target.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/extra/tidb85-temporary-source-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/extra/tidb85-temporary-source-target.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/extra-run.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "trailing whitespace": 7
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/fixture-preflight.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "trailing whitespace": 29
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/fixtures-up.stderr.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "trailing whitespace": 36
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/followups/fixtures-up.stderr.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "trailing whitespace": 36
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/followups/mysql57-base-attributes-cleanup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/followups/mysql57-base-attributes-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/followups/mysql57-base-attributes-target.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/followups/mysql57-drop-table-mixed-if-cleanup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/followups/mysql57-drop-table-mixed-if-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/followups/mysql57-drop-table-mixed-prefix-cleanup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/followups/mysql57-drop-table-mixed-prefix-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/followups/mysql57-drop-table-mixed-prefix-target.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/followups/mysql57-drop-table-mixed-suffix-cleanup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/followups/mysql57-drop-table-mixed-suffix-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/followups/mysql57-drop-table-mixed-suffix-target.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/followups/mysql57-drop-table-view-cleanup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/followups/mysql57-drop-table-view-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/followups/mysql57-drop-table-view-target.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/followups/mysql57-modify-source-type-cleanup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/followups/mysql57-modify-source-type-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/followups/mysql57-modify-source-type-target.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/followups/mysql57-named-short-cleanup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/followups/mysql57-named-short-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/followups/mysql57-rename-source-cleanup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/followups/mysql57-rename-source-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/followups/mysql57-rename-source-target.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/followups/mysql80-base-attributes-cleanup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/followups/mysql80-base-attributes-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/followups/mysql80-base-attributes-target.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/followups/mysql80-drop-table-mixed-if-cleanup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/followups/mysql80-drop-table-mixed-if-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/followups/mysql80-drop-table-mixed-prefix-cleanup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/followups/mysql80-drop-table-mixed-prefix-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/followups/mysql80-drop-table-mixed-prefix-target.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/followups/mysql80-drop-table-mixed-suffix-cleanup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/followups/mysql80-drop-table-mixed-suffix-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/followups/mysql80-drop-table-mixed-suffix-target.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/followups/mysql80-drop-table-view-cleanup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/followups/mysql80-drop-table-view-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/followups/mysql80-drop-table-view-target.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/followups/mysql80-modify-source-type-cleanup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/followups/mysql80-modify-source-type-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/followups/mysql80-modify-source-type-target.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/followups/mysql80-named-short-cleanup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/followups/mysql80-named-short-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/followups/mysql80-rename-source-cleanup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/followups/mysql80-rename-source-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/followups/mysql80-rename-source-target.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/followups/mysql84-base-attributes-cleanup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/followups/mysql84-base-attributes-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/followups/mysql84-base-attributes-target.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/followups/mysql84-drop-table-mixed-if-cleanup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/followups/mysql84-drop-table-mixed-if-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/followups/mysql84-drop-table-mixed-prefix-cleanup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/followups/mysql84-drop-table-mixed-prefix-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/followups/mysql84-drop-table-mixed-prefix-target.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/followups/mysql84-drop-table-mixed-suffix-cleanup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/followups/mysql84-drop-table-mixed-suffix-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/followups/mysql84-drop-table-mixed-suffix-target.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/followups/mysql84-drop-table-view-cleanup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/followups/mysql84-drop-table-view-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/followups/mysql84-drop-table-view-target.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/followups/mysql84-modify-source-type-cleanup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/followups/mysql84-modify-source-type-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/followups/mysql84-modify-source-type-target.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/followups/mysql84-named-short-cleanup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/followups/mysql84-named-short-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/followups/mysql84-rename-source-cleanup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/followups/mysql84-rename-source-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/followups/mysql84-rename-source-target.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/followups/run.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "trailing whitespace": 20
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/followups/tidb85-base-attributes-cleanup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/followups/tidb85-base-attributes-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/followups/tidb85-base-attributes-target.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/followups/tidb85-drop-table-mixed-if-cleanup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/followups/tidb85-drop-table-mixed-if-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/followups/tidb85-drop-table-mixed-prefix-cleanup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/followups/tidb85-drop-table-mixed-prefix-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/followups/tidb85-drop-table-mixed-prefix-target.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/followups/tidb85-drop-table-mixed-suffix-cleanup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/followups/tidb85-drop-table-mixed-suffix-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/followups/tidb85-drop-table-mixed-suffix-target.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/followups/tidb85-drop-table-view-cleanup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/followups/tidb85-drop-table-view-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/followups/tidb85-drop-table-view-target.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/followups/tidb85-modify-source-type-cleanup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/followups/tidb85-modify-source-type-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/followups/tidb85-modify-source-type-target.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/followups/tidb85-named-short-cleanup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/followups/tidb85-named-short-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/followups/tidb85-named-short-target.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/followups/tidb85-rename-source-cleanup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/followups/tidb85-rename-source-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/followups/tidb85-rename-source-target.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/mysql57/00-create-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/mysql57/00-create-target.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/mysql57/01-replace-present-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/mysql57/01-replace-present-target.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/mysql57/02-replace-absent-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/mysql57/02-replace-absent-target.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/mysql57/03-replace-table-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/mysql57/03-replace-table-target.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/mysql57/04-alter-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/mysql57/04-alter-target.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/mysql57/05-alter-absent-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/mysql57/05-alter-absent-target.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/mysql57/06-alter-table-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/mysql57/06-alter-table-target.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/mysql57/07-bare-check-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/mysql57/07-bare-check-target.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/mysql57/08-local-check-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/mysql57/08-local-check-target.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/mysql57/09-cascaded-check-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/mysql57/09-cascaded-check-target.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/mysql57/10-security-columns-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/mysql57/10-security-columns-target.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/mysql57/11-merge-aggregate-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/mysql57/12-temptable-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/mysql57/12-temptable-target.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/mysql57/13-temptable-check-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/mysql57/13-temptable-check-target.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/mysql57/14-aggregate-check-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/mysql57/14-aggregate-check-target.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/mysql57/15-named-definer-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/mysql57/16-source-absent-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/mysql57/16-source-absent-target.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/mysql57/17-column-absent-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/mysql57/17-column-absent-target.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/mysql57/18-invalid-select-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/mysql57/18-invalid-select-target.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/mysql57/19-invalid-source-view-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/mysql57/19-invalid-source-view-target.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/mysql57/20-drop-missing-after.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/mysql57/20-drop-missing-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/mysql57/20-drop-missing-target.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/mysql57/21-drop-table-after.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/mysql57/21-drop-table-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/mysql57/21-drop-table-target.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/mysql57/22-drop-if-missing-after.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/mysql57/22-drop-if-missing-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/mysql57/23-drop-if-table-after.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/mysql57/23-drop-if-table-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/mysql57/24-drop-duplicate-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/mysql57/24-drop-duplicate-target.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/mysql57/25-alter-inheritance-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/mysql57/25-alter-inheritance-target.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/mysql57/26-replace-reset-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/mysql57/26-replace-reset-target.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/mysql57/27-rename-source-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/mysql57/27-rename-source-target.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/mysql57/28-table-drop-view-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/mysql57/28-table-drop-view-target.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/mysql57/29-table-drop-if-view-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/mysql57/30-table-alter-view-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/mysql57/30-table-alter-view-target.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/mysql80/00-create-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/mysql80/00-create-target.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/mysql80/01-replace-present-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/mysql80/01-replace-present-target.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/mysql80/02-replace-absent-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/mysql80/02-replace-absent-target.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/mysql80/03-replace-table-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/mysql80/03-replace-table-target.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/mysql80/04-alter-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/mysql80/04-alter-target.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/mysql80/05-alter-absent-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/mysql80/05-alter-absent-target.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/mysql80/06-alter-table-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/mysql80/06-alter-table-target.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/mysql80/07-bare-check-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/mysql80/07-bare-check-target.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/mysql80/08-local-check-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/mysql80/08-local-check-target.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/mysql80/09-cascaded-check-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/mysql80/09-cascaded-check-target.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/mysql80/10-security-columns-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/mysql80/10-security-columns-target.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/mysql80/11-merge-aggregate-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/mysql80/12-temptable-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/mysql80/12-temptable-target.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/mysql80/13-temptable-check-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/mysql80/13-temptable-check-target.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/mysql80/14-aggregate-check-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/mysql80/14-aggregate-check-target.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/mysql80/15-named-definer-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/mysql80/16-source-absent-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/mysql80/16-source-absent-target.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/mysql80/17-column-absent-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/mysql80/17-column-absent-target.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/mysql80/18-invalid-select-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/mysql80/18-invalid-select-target.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/mysql80/19-invalid-source-view-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/mysql80/19-invalid-source-view-target.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/mysql80/20-drop-missing-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/mysql80/20-drop-missing-target.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/mysql80/21-drop-table-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/mysql80/21-drop-table-target.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/mysql80/22-drop-if-missing-after.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/mysql80/22-drop-if-missing-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/mysql80/23-drop-if-table-after.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/mysql80/23-drop-if-table-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/mysql80/24-drop-duplicate-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/mysql80/24-drop-duplicate-target.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/mysql80/25-alter-inheritance-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/mysql80/25-alter-inheritance-target.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/mysql80/26-replace-reset-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/mysql80/26-replace-reset-target.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/mysql80/27-rename-source-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/mysql80/27-rename-source-target.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/mysql80/28-table-drop-view-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/mysql80/28-table-drop-view-target.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/mysql80/29-table-drop-if-view-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/mysql80/30-table-alter-view-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/mysql80/30-table-alter-view-target.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/mysql84/00-create-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/mysql84/00-create-target.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/mysql84/01-replace-present-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/mysql84/01-replace-present-target.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/mysql84/02-replace-absent-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/mysql84/02-replace-absent-target.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/mysql84/03-replace-table-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/mysql84/03-replace-table-target.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/mysql84/04-alter-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/mysql84/04-alter-target.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/mysql84/05-alter-absent-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/mysql84/05-alter-absent-target.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/mysql84/06-alter-table-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/mysql84/06-alter-table-target.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/mysql84/07-bare-check-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/mysql84/07-bare-check-target.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/mysql84/08-local-check-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/mysql84/08-local-check-target.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/mysql84/09-cascaded-check-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/mysql84/09-cascaded-check-target.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/mysql84/10-security-columns-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/mysql84/10-security-columns-target.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/mysql84/11-merge-aggregate-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/mysql84/12-temptable-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/mysql84/12-temptable-target.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/mysql84/13-temptable-check-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/mysql84/13-temptable-check-target.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/mysql84/14-aggregate-check-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/mysql84/14-aggregate-check-target.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/mysql84/15-named-definer-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/mysql84/16-source-absent-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/mysql84/16-source-absent-target.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/mysql84/17-column-absent-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/mysql84/17-column-absent-target.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/mysql84/18-invalid-select-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/mysql84/18-invalid-select-target.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/mysql84/19-invalid-source-view-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/mysql84/19-invalid-source-view-target.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/mysql84/20-drop-missing-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/mysql84/20-drop-missing-target.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/mysql84/21-drop-table-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/mysql84/21-drop-table-target.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/mysql84/22-drop-if-missing-after.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/mysql84/22-drop-if-missing-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/mysql84/23-drop-if-table-after.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/mysql84/23-drop-if-table-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/mysql84/24-drop-duplicate-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/mysql84/24-drop-duplicate-target.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/mysql84/25-alter-inheritance-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/mysql84/25-alter-inheritance-target.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/mysql84/26-replace-reset-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/mysql84/26-replace-reset-target.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/mysql84/27-rename-source-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/mysql84/27-rename-source-target.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/mysql84/28-table-drop-view-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/mysql84/28-table-drop-view-target.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/mysql84/29-table-drop-if-view-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/mysql84/30-table-alter-view-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/mysql84/30-table-alter-view-target.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/tidb85/00-create-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/tidb85/00-create-target.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/tidb85/01-replace-present-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/tidb85/01-replace-present-target.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/tidb85/02-replace-absent-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/tidb85/02-replace-absent-target.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/tidb85/03-replace-table-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/tidb85/03-replace-table-target.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/tidb85/04-alter-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/tidb85/04-alter-target.stderr.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "trailing whitespace": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/tidb85/04-alter-target.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/tidb85/05-alter-absent-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/tidb85/05-alter-absent-target.stderr.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "trailing whitespace": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/tidb85/05-alter-absent-target.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/tidb85/06-alter-table-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/tidb85/06-alter-table-target.stderr.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "trailing whitespace": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/tidb85/06-alter-table-target.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/tidb85/07-bare-check-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/tidb85/07-bare-check-target.stderr.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "trailing whitespace": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/tidb85/07-bare-check-target.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/tidb85/08-local-check-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/tidb85/08-local-check-target.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/tidb85/09-cascaded-check-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/tidb85/09-cascaded-check-target.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/tidb85/10-security-columns-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/tidb85/10-security-columns-target.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/tidb85/11-merge-aggregate-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/tidb85/11-merge-aggregate-target.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/tidb85/12-temptable-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/tidb85/12-temptable-target.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/tidb85/13-temptable-check-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/tidb85/13-temptable-check-target.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/tidb85/14-aggregate-check-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/tidb85/14-aggregate-check-target.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/tidb85/15-named-definer-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/tidb85/15-named-definer-target.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/tidb85/16-source-absent-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/tidb85/16-source-absent-target.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/tidb85/17-column-absent-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/tidb85/17-column-absent-target.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/tidb85/18-invalid-select-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/tidb85/18-invalid-select-target.stderr.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "trailing whitespace": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/tidb85/18-invalid-select-target.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/tidb85/19-invalid-source-view-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/tidb85/19-invalid-source-view-target.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/tidb85/20-drop-missing-after.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/tidb85/20-drop-missing-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/tidb85/20-drop-missing-target.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/tidb85/21-drop-table-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/tidb85/21-drop-table-target.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/tidb85/22-drop-if-missing-after.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/tidb85/22-drop-if-missing-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/tidb85/23-drop-if-table-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/tidb85/23-drop-if-table-target.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/tidb85/24-drop-duplicate-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/tidb85/24-drop-duplicate-target.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/tidb85/25-alter-inheritance-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/tidb85/25-alter-inheritance-target.stderr.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "trailing whitespace": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/tidb85/25-alter-inheritance-target.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/tidb85/26-replace-reset-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/tidb85/26-replace-reset-target.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/tidb85/27-rename-source-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/tidb85/27-rename-source-target.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/tidb85/28-table-drop-view-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/tidb85/28-table-drop-view-target.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/tidb85/29-table-drop-if-view-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/tidb85/30-table-alter-view-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/matrix/tidb85/30-table-alter-view-target.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/namespace/mysql57-drop-shadow.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "trailing whitespace": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/namespace/mysql57-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/namespace/mysql57-star-invalid-source.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/namespace/mysql80-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/namespace/mysql80-star-invalid-source.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/namespace/mysql84-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/namespace/mysql84-star-invalid-source.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/namespace/tidb85-alter-shadow.stderr.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "trailing whitespace": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/namespace/tidb85-alter-shadow.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/namespace/tidb85-create-shadow.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/namespace/tidb85-drop-shadow.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "trailing whitespace": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/namespace/tidb85-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/namespace/tidb85-star-invalid-source.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/namespace-run.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "trailing whitespace": 23
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/query-grammar/mysql57-cleanup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/query-grammar/mysql57-cte.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/query-grammar/mysql57-numeric-definer.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/query-grammar/mysql57-reserved-definer.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/query-grammar/mysql57-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/query-grammar/mysql80-cleanup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/query-grammar/mysql80-cte.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/query-grammar/mysql80-numeric-definer.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/query-grammar/mysql80-reserved-definer.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/query-grammar/mysql80-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/query-grammar/mysql84-cleanup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/query-grammar/mysql84-cte.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/query-grammar/mysql84-numeric-definer.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/query-grammar/mysql84-reserved-definer.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/query-grammar/mysql84-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/query-grammar/tidb85-cleanup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/query-grammar/tidb85-cte.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/query-grammar/tidb85-dotted-host.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/query-grammar/tidb85-numeric-definer.stderr.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "trailing whitespace": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/query-grammar/tidb85-numeric-definer.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/query-grammar/tidb85-reserved-definer.stderr.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "trailing whitespace": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/query-grammar/tidb85-reserved-definer.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "native/query-grammar/tidb85-setup.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "preservation/publication-preflight-early/worktrees.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "new blank line at EOF": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "red/full-review-parser.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "trailing whitespace": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "red/lead-privacy-escaped.stderr.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "trailing whitespace": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "red/lead-privacy-harness.stderr.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "trailing whitespace": 2
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "red/review-audit.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "trailing whitespace": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "red/review-exact-audit.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "trailing whitespace": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "red/review-exact-parser.stdout.txt",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "trailing whitespace": 1
+      },
+      "stderr_present": false
+    },
+    {
+      "path": "research/mysql-5.7.44-sql_view.cc",
+      "copied_evidence": true,
+      "rc": 3,
+      "diagnostic_kinds": {
+        "trailing whitespace": 22
+      },
+      "stderr_present": false
+    }
+  ]
+}

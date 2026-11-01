@@ -1,0 +1,6 @@
+ internal/application/auditmeta/README.md     |  1 +
+ internal/interfaces/cli/README.md            |  2 +-
+ internal/interfaces/cli/ddl_coverage_test.go | 51 +++++++++++++++++++++++++---
+ scripts/t06a17proof/README.md                |  2 +-
+ scripts/t06a17proof/main_test.go             |  4 +--
+ 5 files changed, 52 insertions(+), 8 deletions(-)

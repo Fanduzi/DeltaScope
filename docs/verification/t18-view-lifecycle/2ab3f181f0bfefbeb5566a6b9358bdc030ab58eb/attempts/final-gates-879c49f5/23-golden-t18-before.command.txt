@@ -1,0 +1,1 @@
+verify T17 artifact cleanup, then inspect canonical Golden project

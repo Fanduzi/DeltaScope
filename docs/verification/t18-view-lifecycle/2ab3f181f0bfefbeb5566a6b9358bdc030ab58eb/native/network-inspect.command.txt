@@ -1,0 +1,1 @@
+docker network inspect deltascope-ddl-golden_default --format '{{.Id}} {{.Name}} {{json .Containers}}'

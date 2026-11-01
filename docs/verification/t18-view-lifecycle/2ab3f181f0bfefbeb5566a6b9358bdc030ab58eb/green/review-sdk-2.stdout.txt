@@ -1,0 +1,16 @@
+=== RUN   TestT18ReviewInvalidViewIdentifiers
+=== RUN   TestT18ReviewInvalidViewIdentifiers/ALTER_VIEW_123_AS_SELECT_id_FROM_t;
+=== RUN   TestT18ReviewInvalidViewIdentifiers/ALTER_VIEW_1e3_AS_SELECT_id_FROM_t;
+=== RUN   TestT18ReviewInvalidViewIdentifiers/ALTER_VIEW_SELECT_AS_SELECT_id_FROM_t;
+=== RUN   TestT18ReviewInvalidViewIdentifiers/ALTER_VIEW_v_(123)_AS_SELECT_id_FROM_t;
+=== RUN   TestT18ReviewInvalidViewIdentifiers/ALTER_VIEW_v_(SELECT)_AS_SELECT_id_FROM_t;
+--- PASS: TestT18ReviewInvalidViewIdentifiers (0.02s)
+    --- PASS: TestT18ReviewInvalidViewIdentifiers/ALTER_VIEW_123_AS_SELECT_id_FROM_t; (0.00s)
+    --- PASS: TestT18ReviewInvalidViewIdentifiers/ALTER_VIEW_1e3_AS_SELECT_id_FROM_t; (0.00s)
+    --- PASS: TestT18ReviewInvalidViewIdentifiers/ALTER_VIEW_SELECT_AS_SELECT_id_FROM_t; (0.00s)
+    --- PASS: TestT18ReviewInvalidViewIdentifiers/ALTER_VIEW_v_(123)_AS_SELECT_id_FROM_t; (0.00s)
+    --- PASS: TestT18ReviewInvalidViewIdentifiers/ALTER_VIEW_v_(SELECT)_AS_SELECT_id_FROM_t; (0.00s)
+=== RUN   TestT18ReviewNamedDefinerWithoutHost
+--- PASS: TestT18ReviewNamedDefinerWithoutHost (0.00s)
+PASS
+ok  	github.com/Fanduzi/DeltaScope/pkg/deltascope	0.989s

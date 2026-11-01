@@ -1,0 +1,12 @@
+{
+  "baseline_foreign_count": 43,
+  "missing_foreign_ids": [],
+  "task_owned_fixture_ids": [
+    "3f4434622137becc280e5366bf935fe709ff0654939dc9ff467e9242f45e807e",
+    "55ef78e93c3ece6178ff64b421282bec8dfd73f881d3235f42a2923eb4933f82",
+    "6b6238e3ef30f76005f9146bf445f374a5c3944e43620a3dd98e6bc22e202d1c",
+    "7d38cf8758d764edcc61d646884406238418076226b09a406f7410e8342ed22a",
+    "c22aea5fd58aad26712fe8849e52c25b914b2361006a12d8c9745092119bc147"
+  ],
+  "unexpected_additional_ids": []
+}

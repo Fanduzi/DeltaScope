@@ -1,0 +1,35 @@
+cwd=/Users/fan/GolangProjects/DeltaScope
+head=2ab3f181f0bfefbeb5566a6b9358bdc030ab58eb
+branch=milestone/mysql-tidb-ddl-completion
+shallow=false
+parent=879c49f58d8df02120875fffc901dc2d672210f0
+
+worktrees
+worktree /Users/fan/GolangProjects/DeltaScope
+HEAD 2ab3f181f0bfefbeb5566a6b9358bdc030ab58eb
+branch refs/heads/milestone/mysql-tidb-ddl-completion
+
+worktree /Users/fan/GolangProjects/DeltaScope-agent-guidance
+HEAD 0fa922d062361add8a3cb9f01ee2dfb4292fdef6
+branch refs/heads/docs/agent-guidance
+
+
+status
+?? .agents/
+?? .codex/
+?? .cursor/
+?? .debug-journal.md
+?? .devin/
+?? .grok/
+?? .opencode/
+?? .pi-subagents/
+?? .qoder/
+?? artifacts/
+?? docs/quality/architecture-review-2026-08-11.html
+?? docs/verification/t06-a12/1a5dd90de898a59590ef8a19aa068c4b5e8ce7f8/T06/
+
+versions
+go version go1.26.1 darwin/arm64
+Python 3.12.12
+golangci-lint has version 2.12.2 built with go1.26.2 from c0d3ddc on 2026-05-06T11:01:25Z
+29.7.2 29.7.2

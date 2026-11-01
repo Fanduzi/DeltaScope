@@ -1,0 +1,10 @@
+--------------
+CREATE DEFINER='t18_named_host'@127.0.0.1 VIEW host_v AS SELECT id FROM t
+--------------
+
+--------------
+SHOW WARNINGS
+--------------
+
+Level	Code	Message
+Note	1449	The user specified as a definer ('t18_named_host'@'127.0.0.1') does not exist

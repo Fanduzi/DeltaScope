@@ -1,0 +1,1 @@
+inspect canonical Golden project after T18 cleanup

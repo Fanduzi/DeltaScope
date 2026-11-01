@@ -1,0 +1,24 @@
+--------------
+CREATE DATABASE t18p_25
+--------------
+
+--------------
+CREATE TABLE t(id INT)
+--------------
+
+--------------
+CREATE TABLE u(id INT)
+--------------
+
+--------------
+CREATE VIEW v AS SELECT id FROM u
+--------------
+
+--------------
+CREATE VIEW w AS SELECT id FROM t
+--------------
+
+--------------
+CREATE OR REPLACE ALGORITHM=MERGE SQL SECURITY INVOKER VIEW v AS SELECT id FROM u WHERE id > 0 WITH LOCAL CHECK OPTION
+--------------
+

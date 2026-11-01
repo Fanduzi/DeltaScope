@@ -1,0 +1,99 @@
+{
+  "mysql57": {
+    "container_name": "deltascope-ddl-golden-mysql57",
+    "image": "mysql:5.7.44",
+    "platform": "linux/amd64",
+    "ports": [
+      {
+        "mode": "ingress",
+        "host_ip": "127.0.0.1",
+        "target": 3306,
+        "published": "23357",
+        "protocol": "tcp"
+      }
+    ],
+    "depends_on": {},
+    "healthcheck_configured": true,
+    "healthcheck_interval": "5s",
+    "healthcheck_timeout": "5s",
+    "healthcheck_retries": 40,
+    "healthcheck_start_period": "20s"
+  },
+  "mysql80": {
+    "container_name": "deltascope-ddl-golden-mysql80",
+    "image": "mysql:8.0.46",
+    "platform": null,
+    "ports": [
+      {
+        "mode": "ingress",
+        "host_ip": "127.0.0.1",
+        "target": 3306,
+        "published": "23380",
+        "protocol": "tcp"
+      }
+    ],
+    "depends_on": {},
+    "healthcheck_configured": true,
+    "healthcheck_interval": "5s",
+    "healthcheck_timeout": "5s",
+    "healthcheck_retries": 40,
+    "healthcheck_start_period": "20s"
+  },
+  "mysql84": {
+    "container_name": "deltascope-ddl-golden-mysql84",
+    "image": "mysql:8.4.10",
+    "platform": null,
+    "ports": [
+      {
+        "mode": "ingress",
+        "host_ip": "127.0.0.1",
+        "target": 3306,
+        "published": "23384",
+        "protocol": "tcp"
+      }
+    ],
+    "depends_on": {},
+    "healthcheck_configured": true,
+    "healthcheck_interval": "5s",
+    "healthcheck_timeout": "5s",
+    "healthcheck_retries": 40,
+    "healthcheck_start_period": "20s"
+  },
+  "tidb85": {
+    "container_name": "deltascope-ddl-golden-tidb85",
+    "image": "pingcap/tidb:v8.5.0",
+    "platform": null,
+    "ports": [
+      {
+        "mode": "ingress",
+        "host_ip": "127.0.0.1",
+        "target": 4000,
+        "published": "24000",
+        "protocol": "tcp"
+      }
+    ],
+    "depends_on": {},
+    "healthcheck_configured": true,
+    "healthcheck_interval": "5s",
+    "healthcheck_timeout": "5s",
+    "healthcheck_retries": 60,
+    "healthcheck_start_period": "15s"
+  },
+  "tidb85-client": {
+    "container_name": "deltascope-ddl-golden-tidb85-client",
+    "image": "mysql:8.4.10",
+    "platform": null,
+    "ports": [],
+    "depends_on": {
+      "tidb85": {
+        "condition": "service_healthy",
+        "required": true
+      }
+    },
+    "healthcheck_configured": true,
+    "healthcheck_interval": "5s",
+    "healthcheck_timeout": "5s",
+    "healthcheck_retries": 30,
+    "healthcheck_start_period": "5s"
+  }
+}

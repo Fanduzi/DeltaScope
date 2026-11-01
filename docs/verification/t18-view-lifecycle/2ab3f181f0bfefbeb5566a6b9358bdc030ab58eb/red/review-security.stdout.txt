@@ -1,0 +1,6 @@
+=== RUN   TestT18ReviewUncertainSecurityConvergence
+    audit_t18_view_first_test.go:303: unchanged security was withheld: deltascope.StatementResult{Index:1, Kind:"ddl", RawSQL:"ALTER VIEW v AS SELECT id FROM t;", NormalizedSQL:"ALTER VIEW v AS SELECT id FROM t", Findings:[]deltascope.Finding{}, EvidenceGaps:[]deltascope.EvidenceGap{deltascope.EvidenceGap{RuleID:"ddl.view.security.definer.warn", ReasonCode:"unknown_table_state", RequiredFacts:[]string{"view.security"}}}, Impact:(*deltascope.Impact)(nil), Coverage:deltascope.Coverage{Status:"unverified"}, Explanation:(*deltascope.Explanation)(nil)}
+--- FAIL: TestT18ReviewUncertainSecurityConvergence (0.01s)
+FAIL
+FAIL	github.com/Fanduzi/DeltaScope/pkg/deltascope	0.603s
+FAIL

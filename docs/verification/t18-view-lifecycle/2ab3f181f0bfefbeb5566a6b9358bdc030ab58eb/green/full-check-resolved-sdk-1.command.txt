@@ -1,0 +1,1 @@
+go test ./pkg/deltascope -run '^TestT18FullCheckResolvedAlgorithms$' -count=1 -v

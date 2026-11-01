@@ -1,0 +1,8 @@
+{
+  "removed_containers": 26,
+  "removed_volumes": 140,
+  "preserved_original_containers": 17,
+  "remaining_containers": 17,
+  "remaining_volumes": 14,
+  "completed_utc": "2026-11-01T10:58:40.254969+00:00"
+}

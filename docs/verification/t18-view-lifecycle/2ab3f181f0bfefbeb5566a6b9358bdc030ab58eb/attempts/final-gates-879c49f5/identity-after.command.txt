@@ -1,0 +1,1 @@
+pwd; git rev-parse HEAD; git status --short; git worktree list --porcelain; check frozen 91 path hashes and foreign untracked set

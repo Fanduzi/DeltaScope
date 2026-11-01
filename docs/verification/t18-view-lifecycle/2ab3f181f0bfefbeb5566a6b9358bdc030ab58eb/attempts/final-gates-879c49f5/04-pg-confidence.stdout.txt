@@ -1,0 +1,49 @@
+/Library/Developer/CommandLineTools/usr/bin/make pg-unit-test-gates
+CGO_ENABLED=1 go test -tags postgresql -count=1 ./internal/infrastructure/parser/postgresql ./internal/application/audit ./internal/application/auditmeta ./internal/interfaces/cli ./internal/interfaces/http ./internal/interfaces/mcp ./pkg/deltascope
+ok  	github.com/Fanduzi/DeltaScope/internal/infrastructure/parser/postgresql	0.483s
+ok  	github.com/Fanduzi/DeltaScope/internal/application/audit	3.883s
+ok  	github.com/Fanduzi/DeltaScope/internal/application/auditmeta	1.690s
+Error: write failed
+Error: config lint requires --file
+Usage:
+  lint [flags]
+
+Flags:
+      --file string   path to the YAML config file to lint
+  -h, --help          help for lint
+      --strict        fail when lint warnings are present
+
+Error: write failed
+Error: write failed
+Error: rule "made.up.rule" not found
+Usage:
+  explain <rule-id> [flags]
+
+Flags:
+      --format string   output format: text or json (default "text")
+  -h, --help            help for explain
+
+Error: invalid kind "bad": must be one of ddl, dml
+Usage:
+  list [flags]
+
+Flags:
+      --category string   filter by category (case-insensitive substring)
+      --dialect string    filter by dialect: mysql, tidb, postgresql, common
+      --format string     output format: text or json (default "text")
+  -h, --help              help for list
+      --kind string       filter by kind: ddl, dml
+      --level string      filter by level: blocker, warning, notice
+      --limit int         limit result count; 0 means no limit
+      --search string     search across rule fields (case-insensitive substring)
+
+--- FAIL: TestDDLCoverage_EmbeddedCatalogMySQLParserUpgradeCandidate (0.00s)
+    ddl_coverage_test.go:31: output should contain ALTER VIEW
+--- FAIL: TestDDLCoverage_MySQLParserUpgradeCandidate (0.00s)
+    ddl_coverage_test.go:56: output should contain ALTER VIEW
+FAIL
+FAIL	github.com/Fanduzi/DeltaScope/internal/interfaces/cli	3.015s
+ok  	github.com/Fanduzi/DeltaScope/internal/interfaces/http	3.405s
+ok  	github.com/Fanduzi/DeltaScope/internal/interfaces/mcp	3.966s
+ok  	github.com/Fanduzi/DeltaScope/pkg/deltascope	4.621s
+FAIL

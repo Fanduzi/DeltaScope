@@ -1,0 +1,1 @@
+python3 /tmp/t18_native_cte_scope.py

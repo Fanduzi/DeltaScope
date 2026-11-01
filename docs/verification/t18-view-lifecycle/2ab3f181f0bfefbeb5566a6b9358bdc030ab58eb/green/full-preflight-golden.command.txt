@@ -1,0 +1,1 @@
+T18_MYSQL_PASSWORD=<compose fixture value> DS_T18_GOLDEN_PW=<compose fixture value> make ddl-golden TASK=T18 ARTIFACT_DIR=/tmp/ddl-golden-t18-full-preflight-1

@@ -1,0 +1,11 @@
+test_clean_public_json_passes (__main__.PublicJSONPrivacyTests.test_clean_public_json_passes) ... ok
+test_escaped_private_value_fails (__main__.PublicJSONPrivacyTests.test_escaped_private_value_fails) ... ok
+test_malformed_marker_sets_fail_closed (__main__.PublicJSONPrivacyTests.test_malformed_marker_sets_fail_closed) ... ok
+test_missing_public_json_is_not_a_clean_result (__main__.PublicJSONPrivacyTests.test_missing_public_json_is_not_a_clean_result) ... ok
+test_nested_private_value_fails (__main__.PublicJSONPrivacyTests.test_nested_private_value_fails) ... ok
+test_omitted_key_preserves_older_contract (__main__.PublicJSONPrivacyTests.test_omitted_key_preserves_older_contract) ... ok
+
+----------------------------------------------------------------------
+Ran 6 tests in 0.000s
+
+OK

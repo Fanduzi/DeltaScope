@@ -1,0 +1,1 @@
+python3 /tmp/t18-evidence/check_t18_artifact.py /tmp/ddl-golden-t18-final-T18-2ab3f181/T18/artifact.json /Users/fan/GolangProjects/DeltaScope/testdata/ddl-golden/T18.json 2ab3f181f0bfefbeb5566a6b9358bdc030ab58eb --phase final

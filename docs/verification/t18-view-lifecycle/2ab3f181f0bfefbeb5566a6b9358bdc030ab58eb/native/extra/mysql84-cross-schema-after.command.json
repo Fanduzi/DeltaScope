@@ -1,0 +1,19 @@
+{
+  "argv": [
+    "docker",
+    "exec",
+    "--env",
+    "MYSQL_PWD",
+    "deltascope-ddl-golden-mysql84",
+    "mysql",
+    "-uroot",
+    "--batch",
+    "--raw",
+    "--verbose",
+    "-e",
+    "SELECT TABLE_SCHEMA,TABLE_NAME,TABLE_TYPE FROM information_schema.TABLES WHERE TABLE_SCHEMA IN ('t18e_0','t18e_other') ORDER BY TABLE_SCHEMA,TABLE_NAME;SELECT TABLE_SCHEMA,TABLE_NAME,VIEW_DEFINITION,CHECK_OPTION,SECURITY_TYPE FROM information_schema.VIEWS WHERE TABLE_SCHEMA IN ('t18e_0','t18e_other') ORDER BY TABLE_SCHEMA,TABLE_NAME;"
+  ],
+  "sql": "SELECT TABLE_SCHEMA,TABLE_NAME,TABLE_TYPE FROM information_schema.TABLES WHERE TABLE_SCHEMA IN ('t18e_0','t18e_other') ORDER BY TABLE_SCHEMA,TABLE_NAME;SELECT TABLE_SCHEMA,TABLE_NAME,VIEW_DEFINITION,CHECK_OPTION,SECURITY_TYPE FROM information_schema.VIEWS WHERE TABLE_SCHEMA IN ('t18e_0','t18e_other') ORDER BY TABLE_SCHEMA,TABLE_NAME;",
+  "head": "7f67c5de42fb6096d9c80f51e2d0f217eb34e528",
+  "utc": "2026-11-01T08:44:00.214024+00:00"
+}

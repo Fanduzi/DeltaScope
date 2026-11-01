@@ -1,0 +1,8 @@
+--------------
+CREATE VIEW self_base_v AS WITH c AS (SELECT id FROM c) SELECT id FROM c
+--------------
+
+--------------
+SHOW WARNINGS
+--------------
+

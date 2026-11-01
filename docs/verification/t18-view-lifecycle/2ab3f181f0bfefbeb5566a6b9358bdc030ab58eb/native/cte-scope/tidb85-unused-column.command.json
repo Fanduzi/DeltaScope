@@ -1,0 +1,21 @@
+{
+  "argv": [
+    "docker",
+    "exec",
+    "deltascope-ddl-golden-tidb85-client",
+    "mysql",
+    "-h",
+    "tidb85",
+    "-P",
+    "4000",
+    "-uroot",
+    "--batch",
+    "--raw",
+    "--verbose",
+    "-e",
+    "USE t18cs;CREATE VIEW unused_column_v AS WITH unused AS (SELECT missing_col FROM t) SELECT id FROM t;SHOW WARNINGS;"
+  ],
+  "sql": "USE t18cs;CREATE VIEW unused_column_v AS WITH unused AS (SELECT missing_col FROM t) SELECT id FROM t;SHOW WARNINGS;",
+  "utc": "2026-11-01T10:11:46.737305+00:00",
+  "layer": "native grammar, not product proof"
+}

@@ -1,0 +1,4 @@
+--------------
+CREATE OR REPLACE VIEW t AS SELECT id FROM u
+--------------
+

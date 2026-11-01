@@ -1,0 +1,4 @@
+13f136fc6424e054540674ccf57c750394138b79d0ad7e8947816d27a0b62219  /tmp/ddl-golden-t18-full-preflight-1/T18/artifact.json
+c6081e18e9c28c74880d85b99451566bde81fa6aa290d1afa1babbd1a84b96ed  /tmp/t18-evidence/green/full-preflight-failure-summary.json
+63c65ade961d716746055a2b9f068aa95696e1c815a0d7db3b0abec496d88822  /tmp/t18-evidence/green/lint-fix-one-file.patch
+8954d989744d5582c7a8cba5934e3880cbeef844aff3ae12ebce97c3fa8ad274  /tmp/t18-evidence/preflight-lint-2/source.sha256.txt

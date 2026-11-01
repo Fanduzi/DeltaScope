@@ -1,0 +1,1 @@
+go build -o /tmp/t18-evidence/red/deltascope ./cmd/deltascope

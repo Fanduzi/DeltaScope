@@ -1,0 +1,9 @@
+{
+  "status": "PLANNED_CORRECTION_NOT_EXECUTED",
+  "case_ids_unchanged": true,
+  "sql_native_queries_semantic_oracles_unchanged": true,
+  "exact_allowed_delta_only": true,
+  "planned_cases": 149,
+  "manifest_sha256": "fef55d43bff8f0aa90e06fc55655afedbd6bf448a06e5ecfb2edee5d423ad3ac",
+  "author_sha256": "b4fc5e6de52958b1ca0f324226ee93eab0233c085e0b16ac5abb3c0484ce092a"
+}

@@ -1,0 +1,1 @@
+all metadata case connections use approved MySQL environment reference; TiDB has no password

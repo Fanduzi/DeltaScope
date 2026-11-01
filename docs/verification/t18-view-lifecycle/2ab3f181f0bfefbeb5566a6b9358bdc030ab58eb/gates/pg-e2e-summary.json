@@ -1,0 +1,77 @@
+{
+  "make_rc": 0,
+  "commands": [
+    "make test-e2e-cli-postgresql",
+    "make test-e2e-http-postgresql",
+    "make test-e2e-mcp-postgresql"
+  ],
+  "cli": {
+    "completed_all_pass_marker": true,
+    "failure_or_skip_marker_lines": [],
+    "case_labels": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17
+    ],
+    "fixture_source": "/Users/fan/GolangProjects/DeltaScope/scripts/test_cli_metadata_e2e_postgresql.sh",
+    "suite_has_early_exit_or_skip_statements": false,
+    "evidence": "17 sequential top-level case blocks, suite start and all-passed completion marker; zero skip or fail markers"
+  },
+  "verbose_e2e": {
+    "http": {
+      "executed": 10,
+      "passed": 10,
+      "failed": 0,
+      "skipped": 0,
+      "runs": [
+        "TestRunServesMetadataAwareAuditOverRealPostgreSQL",
+        "TestRunServesMetadataAwareAuditOverRealPostgreSQL/qualified_schema",
+        "TestRunServesMetadataAwareAuditOverRealPostgreSQL/explicit_schema",
+        "TestRunServesMetadataAwareAuditOverRealPostgreSQL/table_exists",
+        "TestRunServesMetadataAwareAuditOverRealPostgreSQL/plan_delete",
+        "TestRunServesMetadataAwareAuditOverRealPostgreSQL/plan_update",
+        "TestRunServesMetadataAwareAuditOverRealPostgreSQL/drop_pk",
+        "TestRunServesMetadataAwareAuditOverRealPostgreSQL/rename_col_missing",
+        "TestRunServesMetadataAwareAuditOverRealPostgreSQL/rename_idx_notice",
+        "TestRunServesMetadataAwareAuditOverRealPostgreSQL/drop_col_missing"
+      ]
+    },
+    "mcp": {
+      "executed": 11,
+      "passed": 11,
+      "failed": 0,
+      "skipped": 0,
+      "runs": [
+        "TestRunServesMetadataAwareAuditOverRealPostgreSQL",
+        "TestRunServesMetadataAwareAuditOverRealPostgreSQL/qualified_schema",
+        "TestRunServesMetadataAwareAuditOverRealPostgreSQL/explicit_schema",
+        "TestRunServesMetadataAwareAuditOverRealPostgreSQL/database_selection",
+        "TestRunServesMetadataAwareAuditOverRealPostgreSQL/table_exists",
+        "TestRunServesMetadataAwareAuditOverRealPostgreSQL/plan_delete",
+        "TestRunServesMetadataAwareAuditOverRealPostgreSQL/plan_update",
+        "TestRunServesMetadataAwareAuditOverRealPostgreSQL/drop_pk",
+        "TestRunServesMetadataAwareAuditOverRealPostgreSQL/rename_col_missing",
+        "TestRunServesMetadataAwareAuditOverRealPostgreSQL/rename_idx_forbid",
+        "TestRunServesMetadataAwareAuditOverRealPostgreSQL/drop_col_missing"
+      ]
+    }
+  },
+  "pg_unit_test_note": "Go unit command ran non-verbose, so its per-test skipped count is not observable from this output",
+  "stdout": "/tmp/t18-evidence/final-gates-2/04-pg-confidence.stdout.txt",
+  "stderr": "/tmp/t18-evidence/final-gates-2/04-pg-confidence.stderr.txt",
+  "cleanup": "/tmp/t18-evidence/final-gates-2/pg-cleanup.stdout.txt"
+}

@@ -1,0 +1,19 @@
+{
+  "argv": [
+    "docker",
+    "exec",
+    "--env",
+    "MYSQL_PWD",
+    "deltascope-ddl-golden-mysql57",
+    "mysql",
+    "-uroot",
+    "--batch",
+    "--raw",
+    "--verbose",
+    "-e",
+    "CREATE DATABASE t18cs;CREATE TABLE t18cs.t(id INT);CREATE TABLE t18cs.c(id INT);"
+  ],
+  "sql": "CREATE DATABASE t18cs;CREATE TABLE t18cs.t(id INT);CREATE TABLE t18cs.c(id INT);",
+  "utc": "2026-11-01T10:11:45.322038+00:00",
+  "layer": "native grammar, not product proof"
+}

@@ -1,0 +1,4 @@
+cwd=/Users/fan/GolangProjects/DeltaScope
+head=7f67c5de42fb6096d9c80f51e2d0f217eb34e528
+binary=/opt/homebrew/bin/golangci-lint
+golangci-lint has version 2.12.2 built with go1.26.2 from c0d3ddc on 2026-05-06T11:01:25Z

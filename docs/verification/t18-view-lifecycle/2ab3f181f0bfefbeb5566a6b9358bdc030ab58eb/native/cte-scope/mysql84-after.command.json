@@ -1,0 +1,19 @@
+{
+  "argv": [
+    "docker",
+    "exec",
+    "--env",
+    "MYSQL_PWD",
+    "deltascope-ddl-golden-mysql84",
+    "mysql",
+    "-uroot",
+    "--batch",
+    "--raw",
+    "--verbose",
+    "-e",
+    "SELECT TABLE_NAME,VIEW_DEFINITION,SECURITY_TYPE,CHECK_OPTION FROM information_schema.VIEWS WHERE TABLE_SCHEMA='t18cs' ORDER BY TABLE_NAME;"
+  ],
+  "sql": "SELECT TABLE_NAME,VIEW_DEFINITION,SECURITY_TYPE,CHECK_OPTION FROM information_schema.VIEWS WHERE TABLE_SCHEMA='t18cs' ORDER BY TABLE_NAME;",
+  "utc": "2026-11-01T10:11:46.511834+00:00",
+  "layer": "native grammar, not product proof"
+}

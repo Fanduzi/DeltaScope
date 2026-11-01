@@ -1,0 +1,8 @@
+--------------
+CREATE ALGORITHM=UNDEFINED DEFINER=CURRENT_USER SQL SECURITY INVOKER VIEW `new_v` (`x`) AS SELECT id FROM t
+--------------
+
+--------------
+SHOW WARNINGS
+--------------
+

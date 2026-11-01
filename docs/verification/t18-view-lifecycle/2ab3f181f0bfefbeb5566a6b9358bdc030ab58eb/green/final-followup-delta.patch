@@ -1,0 +1,184 @@
+--- a/docs/decisions/2026-11-01-ddl-view-lifecycle.md
++++ b/docs/decisions/2026-11-01-ddl-view-lifecycle.md
+@@ -43,7 +43,8 @@
+ Lexical CTE references share query identities, so every graph consumer,
+ including root attribution after a bounded assessment, must avoid repeated
+ expansion. Intrinsic exhaustion remains distinct from a missing catalog fact.
+-Named ordering references use the structured binding assessment; LIMIT,
++Named ordering references within individual SELECT scopes use the structured
++binding assessment; set-result ORDER BY (including named outputs), LIMIT,
+ inline windows and unmodeled positional ordering retain explicit capability
+ boundaries rather than silently publishing successful view facts. Repeated
+ TiDB targets consume prior same-name effects while keeping not-view separate
+--- a/docs/work-plans/t18-view-lifecycle/CONTRACT.md
++++ b/docs/work-plans/t18-view-lifecycle/CONTRACT.md
+@@ -34,10 +34,11 @@
+ 
+ ## Query Shape And Graph Budget Qualifications
+ 
+-Named ORDER BY references and output aliases use the same structured source
+-binding assessment as projections and filters. A proven invalid reference
++Within an individual SELECT, named ORDER BY references and output aliases use
++the same structured source binding assessment as projections and filters. A proven invalid reference
+ refuses publication; it does not retire an existing view definition.
+-LIMIT, inline window functions and unmodeled positional ordering retain a
++Set-result ORDER BY, including named output ordering, is not modeled in T18.
++LIMIT, inline window functions and unmodeled positional ordering also retain a
+ narrow `view_query_shape` capability boundary. They must not become complete
+ merely because their AST parses, or become caller-resolvable metadata gaps.
+ An uncertain ALTER withholds its mutable definition and output columns.
+--- a/docs/work-plans/t18-view-lifecycle/MATRIX.md
++++ b/docs/work-plans/t18-view-lifecycle/MATRIX.md
+@@ -10,10 +10,11 @@
+ 
+ - A shared zero-physical-source CTE DAG exhausts a bounded intrinsic budget,
+   including with all rules off; root attribution cannot evade the budget.
+-- Named ORDER BY references and aliases bind correctly. A missing column
++- Named ORDER BY references and aliases in individual SELECT scopes bind correctly. A missing column
+   produces the current source refusal and preserves the prior view for a
+   successor; LIMIT, inline windows and unmodeled positional ordering remain
+-  explicit capability boundaries without fabricated metadata gaps.
++  explicit capability boundaries without fabricated metadata gaps. All
++  set-result ORDER BY forms, including named outputs, retain that boundary.
+ - TiDB repeated unknown targets retain certain nonconditional refusal and
+   justified not-view postconditions, separately from IF EXISTS and unknown
+   prefix effects. No TiDB ALTER support is implied.
+--- a/internal/interfaces/http/audit_t18_view_privacy_test.go
++++ b/internal/interfaces/http/audit_t18_view_privacy_test.go
+@@ -183,8 +183,12 @@
+ 		t.Fatal("unexpected HTTP audit statement, diagnostics, or summary")
+ 	}
+ 	statement := result.Statements[0]
++	if statement.Index != 0 || statement.RawSQL != t18HTTPViewSQL {
++		t.Fatal("HTTP statement did not preserve the authored index and SQL")
++	}
+ 	if mode == "known" {
+ 		if result.Verdict != deltascope.VerdictReject || result.Coverage.Status != deltascope.CoverageComplete ||
++			statement.Coverage.Status != deltascope.CoverageComplete ||
+ 			result.Summary.Blockers != 1 || len(statement.Findings) != 2 || len(statement.EvidenceGaps) != 0 {
+ 			t.Fatal("known definition did not produce complete reject with two findings")
+ 		}
+@@ -205,6 +209,7 @@
+ 		return
+ 	}
+ 	if result.Verdict != deltascope.VerdictReview || result.Coverage.Status != deltascope.CoverageUnverified ||
++		statement.Coverage.Status != deltascope.CoverageUnverified ||
+ 		result.Summary.Blockers != 0 || len(statement.Findings) != 1 ||
+ 		statement.Findings[0].RuleID != "ddl.view.security.definer.warn" ||
+ 		statement.Findings[0].Level != deltascope.LevelWarning || len(statement.EvidenceGaps) != 2 {
+--- a/internal/interfaces/mcp/audit_t18_view_privacy_test.go
++++ b/internal/interfaces/mcp/audit_t18_view_privacy_test.go
+@@ -225,8 +225,12 @@
+ 		t.Fatal("unexpected MCP audit statement, diagnostics, or summary")
+ 	}
+ 	statement := result.Statements[0]
++	if statement.Index != 0 || statement.RawSQL != t18MCPViewSQL {
++		t.Fatal("MCP statement did not preserve the authored index and SQL")
++	}
+ 	if mode == "known" {
+ 		if result.Verdict != deltascope.VerdictReject || result.Coverage.Status != deltascope.CoverageComplete ||
++			statement.Coverage.Status != deltascope.CoverageComplete ||
+ 			result.Summary.Blockers != 1 || len(statement.Findings) != 2 || len(statement.EvidenceGaps) != 0 {
+ 			t.Fatal("known definition did not produce complete reject with two findings")
+ 		}
+@@ -247,6 +251,7 @@
+ 		return
+ 	}
+ 	if result.Verdict != deltascope.VerdictReview || result.Coverage.Status != deltascope.CoverageUnverified ||
++		statement.Coverage.Status != deltascope.CoverageUnverified ||
+ 		result.Summary.Blockers != 0 || len(statement.Findings) != 1 ||
+ 		statement.Findings[0].RuleID != "ddl.view.security.definer.warn" ||
+ 		statement.Findings[0].Level != deltascope.LevelWarning || len(statement.EvidenceGaps) != 2 {
+--- a/pkg/deltascope/audit_t18_view_first_test.go
++++ b/pkg/deltascope/audit_t18_view_first_test.go
+@@ -999,18 +999,22 @@
+ 	if !errors.Is(err, ErrUnsupportedStatement) || result.Coverage.Status != CoverageIncomplete ||
+ 		len(result.Unsupported) != 1 || result.Unsupported[0].Feature != "view.dependencies.limit" ||
+ 		len(result.Statements) != 1 || len(result.Statements[0].EvidenceGaps) != 0 ||
+-		len(result.Statements[0].Findings) != 0 {
++		len(result.Statements[0].Findings) != 0 || result.Statements[0].Index != 0 ||
++		result.Statements[0].RawSQL != sqlText.String() || result.Statements[0].Coverage.Status != CoverageIncomplete {
+ 		t.Fatalf("err=%v result=%#v", err, result)
+ 	}
+ }
+ 
+ func TestT18FullReviewQueryOrderBinding(t *testing.T) {
+-	sqlText := "ALTER VIEW v AS SELECT id FROM t ORDER BY missing_col;\nCREATE VIEW next_v AS SELECT id FROM v;"
++	firstSQL := "ALTER VIEW v AS SELECT id FROM t ORDER BY missing_col;"
++	sqlText := firstSQL + "\nCREATE VIEW next_v AS SELECT id FROM v;"
+ 	result, err := Audit(context.Background(), Request{
+ 		SQL: sqlText, Dialect: DialectMySQL, Schema: "g", ConfigPath: t18FullPolicy(t), MetadataProvider: t18FirstProvider{},
+ 	})
+ 	if err != nil || result.Coverage.Status != CoverageComplete || result.Verdict != VerdictReject ||
+-		len(result.Statements) != 2 || len(result.Diagnostics) != 0 || len(result.Unsupported) != 0 {
++		len(result.Statements) != 2 || len(result.Diagnostics) != 0 || len(result.Unsupported) != 0 ||
++		result.Statements[0].Index != 0 || result.Statements[0].RawSQL != firstSQL ||
++		result.Statements[0].Coverage.Status != CoverageComplete {
+ 		t.Fatalf("err=%v result=%#v", err, result)
+ 	}
+ 	var source, security *Finding
+@@ -1081,21 +1085,33 @@
+ }
+ 
+ func TestT18FullReviewQuerySetLimitBoundary(t *testing.T) {
+-	for _, query := range []string{
+-		"SELECT id FROM t UNION SELECT id FROM u LIMIT 1",
+-		"SELECT id FROM t UNION SELECT id FROM u ORDER BY 1",
+-	} {
+-		t.Run(query, func(t *testing.T) {
+-			result, err := Audit(context.Background(), Request{
+-				SQL: "CREATE VIEW next_v AS " + query + ";", Dialect: DialectMySQL, Schema: "g",
+-				ConfigPath: t18ReviewSelectedPolicy(t, false, false), MetadataProvider: t18FirstProvider{},
+-			})
+-			if !errors.Is(err, ErrUnsupportedStatement) || result.Coverage.Status != CoverageIncomplete ||
+-				len(result.Unsupported) != 1 || result.Unsupported[0].Feature != "create_view.option.view_query_shape" ||
+-				len(result.Statements) != 1 || len(result.Statements[0].EvidenceGaps) != 0 {
+-				t.Fatalf("err=%v result=%#v", err, result)
+-			}
+-		})
++	for _, dialect := range []Dialect{DialectMySQL, DialectTiDB} {
++		for _, query := range []string{
++			"SELECT id FROM t UNION SELECT id FROM u LIMIT 1",
++			"SELECT id FROM t UNION SELECT id FROM u ORDER BY 1",
++			"SELECT id FROM t UNION ALL SELECT id FROM u ORDER BY id",
++		} {
++			t.Run(string(dialect)+"/"+query, func(t *testing.T) {
++				sqlText := "CREATE VIEW next_v AS " + query + ";"
++				result, err := Audit(context.Background(), Request{
++					SQL: sqlText, Dialect: dialect, Schema: "g",
++					ConfigPath: t18ReviewSelectedPolicy(t, false, false), MetadataProvider: t18FirstProvider{},
++				})
++				if !errors.Is(err, ErrUnsupportedStatement) || result.Coverage.Status != CoverageIncomplete ||
++					result.Verdict != VerdictReview || len(result.Unsupported) != 1 ||
++					result.Unsupported[0].Feature != "create_view.option.view_query_shape" ||
++					len(result.Statements) != 1 || result.Statements[0].Index != 0 ||
++					result.Statements[0].RawSQL != sqlText || result.Statements[0].Coverage.Status != CoverageIncomplete ||
++					len(result.Statements[0].EvidenceGaps) != 0 || len(result.Statements[0].Findings) != 0 {
++					t.Fatalf("err=%v result=%#v", err, result)
++				}
++				for _, diagnostic := range result.Diagnostics {
++					if diagnostic.Classification == "parser_error" {
++						t.Fatalf("unexpected parser diagnostic: %#v", diagnostic)
++					}
++				}
++			})
++		}
+ 	}
+ }
+ 
+@@ -1123,6 +1139,7 @@
+ 					if !errors.Is(err, ErrUnsupportedStatement) || result.Coverage.Status != CoverageIncomplete ||
+ 						len(result.Unsupported) != 1 || result.Unsupported[0].Feature != "create_view.option.view_query_shape" ||
+ 						len(result.Statements) != 1 || len(result.Statements[0].EvidenceGaps) != 0 ||
++						result.Statements[0].Coverage.Status != CoverageIncomplete ||
+ 						result.Summary.Blockers != 0 || result.Summary.Warnings != wantWarnings || result.Summary.Notices != 0 {
+ 						t.Fatalf("err=%v result=%#v", err, result)
+ 					}
+@@ -1150,6 +1167,7 @@
+ 				ConfigPath: t18FullPolicy(t), MetadataProvider: t18FirstProvider{targetMode: "unknown"},
+ 			})
+ 			if err != nil || result.Coverage.Status != CoverageUnverified || len(result.Statements) != 1 ||
++				result.Statements[0].Coverage.Status != CoverageUnverified ||
+ 				len(result.Diagnostics) != 0 || len(result.Unsupported) != 0 ||
+ 				len(result.Statements[0].EvidenceGaps) != 1 ||
+ 				result.Statements[0].EvidenceGaps[0].RuleID != "ddl.view.target.valid" ||

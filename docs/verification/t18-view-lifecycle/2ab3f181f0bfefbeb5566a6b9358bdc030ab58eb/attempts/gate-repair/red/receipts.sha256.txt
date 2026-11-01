@@ -1,0 +1,2 @@
+045ca638192f47525bb7e641ee4c61eb8eaf047a3887d492b873c862cca2ce44  /tmp/t18-evidence/gate-repair/red/cli-catalog.stdout.txt
+bd368d2eaad58c0bcc27f820ae1cf522eeb31b4854e12acd22b296e1ff502c5e  /tmp/t18-evidence/gate-repair/red/t06-collector.stdout.txt

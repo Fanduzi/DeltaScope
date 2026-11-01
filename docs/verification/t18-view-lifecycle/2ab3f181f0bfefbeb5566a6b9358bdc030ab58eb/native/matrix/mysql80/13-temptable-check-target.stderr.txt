@@ -1,0 +1,1 @@
+ERROR 1368 (HY000) at line 1: CHECK OPTION on non-updatable view 't18p_13.new_v'

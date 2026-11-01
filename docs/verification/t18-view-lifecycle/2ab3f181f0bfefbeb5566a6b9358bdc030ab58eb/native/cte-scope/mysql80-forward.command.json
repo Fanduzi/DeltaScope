@@ -1,0 +1,19 @@
+{
+  "argv": [
+    "docker",
+    "exec",
+    "--env",
+    "MYSQL_PWD",
+    "deltascope-ddl-golden-mysql80",
+    "mysql",
+    "-uroot",
+    "--batch",
+    "--raw",
+    "--verbose",
+    "-e",
+    "USE t18cs;CREATE VIEW forward_v AS WITH first_c AS (SELECT id FROM later_c),later_c AS (SELECT id FROM t) SELECT id FROM first_c;SHOW WARNINGS;"
+  ],
+  "sql": "USE t18cs;CREATE VIEW forward_v AS WITH first_c AS (SELECT id FROM later_c),later_c AS (SELECT id FROM t) SELECT id FROM first_c;SHOW WARNINGS;",
+  "utc": "2026-11-01T10:11:46.085302+00:00",
+  "layer": "native grammar, not product proof"
+}

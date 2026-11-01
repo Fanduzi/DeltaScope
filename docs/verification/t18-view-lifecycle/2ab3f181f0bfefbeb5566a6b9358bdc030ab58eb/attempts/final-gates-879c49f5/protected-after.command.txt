@@ -1,0 +1,1 @@
+python3 /tmp/t18-evidence/verify-preserved-foreign.py

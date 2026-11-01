@@ -1,0 +1,10 @@
+--------------
+CREATE ALGORITHM=MERGE VIEW new_v AS SELECT COUNT(*) AS n FROM t
+--------------
+
+--------------
+SHOW WARNINGS
+--------------
+
+Level	Code	Message
+Warning	1354	View merge algorithm can't be used here for now (assumed undefined algorithm)

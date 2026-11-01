@@ -1,0 +1,1 @@
+compare saved initial and post-gate untracked root listings

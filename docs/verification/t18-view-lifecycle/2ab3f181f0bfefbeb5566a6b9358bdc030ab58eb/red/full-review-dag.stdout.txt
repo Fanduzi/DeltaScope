@@ -1,0 +1,130 @@
+=== RUN   TestT18FullReviewZeroSourceCTEDAGBudget
+panic: test timed out after 5s
+	running tests:
+		TestT18FullReviewZeroSourceCTEDAGBudget (5s)
+
+goroutine 37 [running]:
+testing.(*M).startAlarm.func1()
+	/Users/fan/.asdf/installs/golang/1.26.1/go/src/testing/testing.go:2802 +0x2c4
+created by time.goFunc
+	/Users/fan/.asdf/installs/golang/1.26.1/go/src/time/sleep.go:215 +0x38
+
+goroutine 1 [chan receive]:
+testing.(*T).Run(0x5967c81c6c8, {0x1036c7bba?, 0x5967cb0fb18?}, 0x104141b18)
+	/Users/fan/.asdf/installs/golang/1.26.1/go/src/testing/testing.go:2109 +0x3bc
+testing.runTests.func1(0x5967c81c6c8)
+	/Users/fan/.asdf/installs/golang/1.26.1/go/src/testing/testing.go:2585 +0x38
+testing.tRunner(0x5967c81c6c8, 0x5967cb0fc48)
+	/Users/fan/.asdf/installs/golang/1.26.1/go/src/testing/testing.go:2036 +0xc4
+testing.runTests({0x1036b6e65, 0x1d}, {0x1036d00b0, 0x2c}, 0x5967cb1c348, {0x104a479c0, 0xbf, 0xbf}, {0x808080808030041a?, 0x10369f60f?, ...})
+	/Users/fan/.asdf/installs/golang/1.26.1/go/src/testing/testing.go:2583 +0x3f0
+testing.(*M).Run(0x5967caf26e0)
+	/Users/fan/.asdf/installs/golang/1.26.1/go/src/testing/testing.go:2443 +0x578
+main.main()
+	_testmain.go:434 +0x80
+
+goroutine 49 [runnable]:
+github.com/Fanduzi/DeltaScope/internal/domain/spec.viewQueryFirstRoot(0x5967c8ca0b0)
+	/Users/fan/GolangProjects/DeltaScope/internal/domain/spec/view_query.go:186 +0x108
+github.com/Fanduzi/DeltaScope/internal/domain/spec.viewQueryFirstRoot(0x5967c8ca000)
+	/Users/fan/GolangProjects/DeltaScope/internal/domain/spec/view_query.go:194 +0x84
+github.com/Fanduzi/DeltaScope/internal/domain/spec.viewQueryFirstRoot(0x5967c8a9e40)
+	/Users/fan/GolangProjects/DeltaScope/internal/domain/spec/view_query.go:194 +0x84
+github.com/Fanduzi/DeltaScope/internal/domain/spec.viewQueryFirstRoot(0x5967c8a9d90)
+	/Users/fan/GolangProjects/DeltaScope/internal/domain/spec/view_query.go:194 +0x84
+github.com/Fanduzi/DeltaScope/internal/domain/spec.viewQueryFirstRoot(0x5967c8a9ce0)
+	/Users/fan/GolangProjects/DeltaScope/internal/domain/spec/view_query.go:194 +0x84
+github.com/Fanduzi/DeltaScope/internal/domain/spec.viewQueryFirstRoot(0x5967c8a9c30)
+	/Users/fan/GolangProjects/DeltaScope/internal/domain/spec/view_query.go:194 +0x84
+github.com/Fanduzi/DeltaScope/internal/domain/spec.viewQueryFirstRoot(0x5967c8a9b80)
+	/Users/fan/GolangProjects/DeltaScope/internal/domain/spec/view_query.go:194 +0x84
+github.com/Fanduzi/DeltaScope/internal/domain/spec.viewQueryFirstRoot(0x5967c8a9ad0)
+	/Users/fan/GolangProjects/DeltaScope/internal/domain/spec/view_query.go:194 +0x84
+github.com/Fanduzi/DeltaScope/internal/domain/spec.viewQueryFirstRoot(0x5967c8a9a20)
+	/Users/fan/GolangProjects/DeltaScope/internal/domain/spec/view_query.go:194 +0x84
+github.com/Fanduzi/DeltaScope/internal/domain/spec.viewQueryFirstRoot(0x5967c8a9970)
+	/Users/fan/GolangProjects/DeltaScope/internal/domain/spec/view_query.go:194 +0x84
+github.com/Fanduzi/DeltaScope/internal/domain/spec.viewQueryFirstRoot(0x5967c8a98c0)
+	/Users/fan/GolangProjects/DeltaScope/internal/domain/spec/view_query.go:194 +0x84
+github.com/Fanduzi/DeltaScope/internal/domain/spec.viewQueryFirstRoot(0x5967c8a9810)
+	/Users/fan/GolangProjects/DeltaScope/internal/domain/spec/view_query.go:194 +0x84
+github.com/Fanduzi/DeltaScope/internal/domain/spec.viewQueryFirstRoot(0x5967c8a9760)
+	/Users/fan/GolangProjects/DeltaScope/internal/domain/spec/view_query.go:194 +0x84
+github.com/Fanduzi/DeltaScope/internal/domain/spec.viewQueryFirstRoot(0x5967c8a96b0)
+	/Users/fan/GolangProjects/DeltaScope/internal/domain/spec/view_query.go:194 +0x84
+github.com/Fanduzi/DeltaScope/internal/domain/spec.viewQueryFirstRoot(0x5967c8a9600)
+	/Users/fan/GolangProjects/DeltaScope/internal/domain/spec/view_query.go:194 +0x84
+github.com/Fanduzi/DeltaScope/internal/domain/spec.viewQueryFirstRoot(0x5967c8a9550)
+	/Users/fan/GolangProjects/DeltaScope/internal/domain/spec/view_query.go:194 +0x84
+github.com/Fanduzi/DeltaScope/internal/domain/spec.viewQueryFirstRoot(0x5967c8a94a0)
+	/Users/fan/GolangProjects/DeltaScope/internal/domain/spec/view_query.go:194 +0x84
+github.com/Fanduzi/DeltaScope/internal/domain/spec.viewQueryFirstRoot(0x5967c8a93f0)
+	/Users/fan/GolangProjects/DeltaScope/internal/domain/spec/view_query.go:194 +0x84
+github.com/Fanduzi/DeltaScope/internal/domain/spec.viewQueryFirstRoot(0x5967c8a9340)
+	/Users/fan/GolangProjects/DeltaScope/internal/domain/spec/view_query.go:194 +0x84
+github.com/Fanduzi/DeltaScope/internal/domain/spec.viewQueryFirstRoot(0x5967c8a9290)
+	/Users/fan/GolangProjects/DeltaScope/internal/domain/spec/view_query.go:194 +0x84
+github.com/Fanduzi/DeltaScope/internal/domain/spec.viewQueryFirstRoot(0x5967c8a91e0)
+	/Users/fan/GolangProjects/DeltaScope/internal/domain/spec/view_query.go:194 +0x84
+github.com/Fanduzi/DeltaScope/internal/domain/spec.viewQueryFirstRoot(0x5967c8a9130)
+	/Users/fan/GolangProjects/DeltaScope/internal/domain/spec/view_query.go:194 +0x84
+github.com/Fanduzi/DeltaScope/internal/domain/spec.viewQueryFirstRoot(0x5967c8a9080)
+	/Users/fan/GolangProjects/DeltaScope/internal/domain/spec/view_query.go:194 +0x84
+github.com/Fanduzi/DeltaScope/internal/domain/spec.viewQueryFirstRoot(0x5967c8a8fd0)
+	/Users/fan/GolangProjects/DeltaScope/internal/domain/spec/view_query.go:194 +0x84
+github.com/Fanduzi/DeltaScope/internal/domain/spec.viewQueryFirstRoot(0x5967c8a8f20)
+	/Users/fan/GolangProjects/DeltaScope/internal/domain/spec/view_query.go:194 +0x84
+github.com/Fanduzi/DeltaScope/internal/domain/spec.viewQueryFirstRoot(0x5967c8a8e70)
+	/Users/fan/GolangProjects/DeltaScope/internal/domain/spec/view_query.go:194 +0x84
+github.com/Fanduzi/DeltaScope/internal/domain/spec.viewQueryFirstRoot(0x5967c8a8dc0)
+	/Users/fan/GolangProjects/DeltaScope/internal/domain/spec/view_query.go:194 +0x84
+github.com/Fanduzi/DeltaScope/internal/domain/spec.viewQueryFirstRoot(0x5967c8a8d10)
+	/Users/fan/GolangProjects/DeltaScope/internal/domain/spec/view_query.go:194 +0x84
+github.com/Fanduzi/DeltaScope/internal/domain/spec.(*viewQueryEvaluator).evaluate(0x5967cc992d0, 0x5967c8a8c60, {0x0, 0x0, 0x0}, 0x8)
+	/Users/fan/GolangProjects/DeltaScope/internal/domain/spec/view_query.go:126 +0x500
+github.com/Fanduzi/DeltaScope/internal/domain/spec.(*viewQueryEvaluator).evaluate(0x5967cc992d0, 0x5967c8a8bb0, {0x0, 0x0, 0x0}, 0x7)
+	/Users/fan/GolangProjects/DeltaScope/internal/domain/spec/view_query.go:125 +0x4ec
+github.com/Fanduzi/DeltaScope/internal/domain/spec.(*viewQueryEvaluator).evaluate(0x5967cc992d0, 0x5967c8a8b00, {0x0, 0x0, 0x0}, 0x6)
+	/Users/fan/GolangProjects/DeltaScope/internal/domain/spec/view_query.go:125 +0x4ec
+github.com/Fanduzi/DeltaScope/internal/domain/spec.(*viewQueryEvaluator).evaluate(0x5967cc992d0, 0x5967c8a8a50, {0x0, 0x0, 0x0}, 0x5)
+	/Users/fan/GolangProjects/DeltaScope/internal/domain/spec/view_query.go:125 +0x4ec
+github.com/Fanduzi/DeltaScope/internal/domain/spec.(*viewQueryEvaluator).evaluate(0x5967cc992d0, 0x5967c8a89a0, {0x0, 0x0, 0x0}, 0x4)
+	/Users/fan/GolangProjects/DeltaScope/internal/domain/spec/view_query.go:125 +0x4ec
+github.com/Fanduzi/DeltaScope/internal/domain/spec.(*viewQueryEvaluator).evaluate(0x5967cc992d0, 0x5967c8a88f0, {0x0, 0x0, 0x0}, 0x3)
+	/Users/fan/GolangProjects/DeltaScope/internal/domain/spec/view_query.go:125 +0x4ec
+github.com/Fanduzi/DeltaScope/internal/domain/spec.(*viewQueryEvaluator).evaluate(0x5967cc992d0, 0x5967c8a8840, {0x0, 0x0, 0x0}, 0x2)
+	/Users/fan/GolangProjects/DeltaScope/internal/domain/spec/view_query.go:125 +0x4ec
+github.com/Fanduzi/DeltaScope/internal/domain/spec.(*viewQueryEvaluator).evaluate(0x5967cc992d0, 0x5967c8a8790, {0x0, 0x0, 0x0}, 0x1)
+	/Users/fan/GolangProjects/DeltaScope/internal/domain/spec/view_query.go:125 +0x4ec
+github.com/Fanduzi/DeltaScope/internal/domain/spec.(*viewQueryEvaluator).evaluate(0x5967cc992d0, 0x5967c8a86e0, {0x0, 0x0, 0x0}, 0x0)
+	/Users/fan/GolangProjects/DeltaScope/internal/domain/spec/view_query.go:125 +0x4ec
+github.com/Fanduzi/DeltaScope/internal/domain/spec.assessViewQuery(0x5967c8a86e0, {0x0, 0x0, 0x0}, {0x10368ec98, 0x5})
+	/Users/fan/GolangProjects/DeltaScope/internal/domain/spec/view_query.go:39 +0xc4
+github.com/Fanduzi/DeltaScope/internal/domain/spec.AssessViewLifecycle({{0x10368db40, 0x3}, {0x10368ec98, 0x5}, {0x5967cc36000, 0x82c}, {0x5967cc36000, 0x82b}, {0x0, 0x0, ...}, ...})
+	/Users/fan/GolangProjects/DeltaScope/internal/domain/spec/view.go:379 +0x123c
+github.com/Fanduzi/DeltaScope/internal/application/audit.(*batchState).applyView(0x5967cc9aa58, {{0x10368db40, 0x3}, {0x10368ec98, 0x5}, {0x5967cc36000, 0x82c}, {0x5967cc36000, 0x82b}, {0x0, ...}, ...})
+	/Users/fan/GolangProjects/DeltaScope/internal/application/audit/batch_state_view.go:140 +0x84
+github.com/Fanduzi/DeltaScope/internal/application/audit.(*batchState).apply(0x5967cc7ca58, {0x104158908, 0x104aa68a0}, {{0x10368db40, 0x3}, {0x10368ec98, 0x5}, {0x5967cc36000, 0x82c}, {0x5967cc36000, ...}, ...})
+	/Users/fan/GolangProjects/DeltaScope/internal/application/audit/batch_state.go:383 +0x974
+github.com/Fanduzi/DeltaScope/internal/application/audit.(*batchState).enrichStatements(0x5967cc9aa58, {0x104158908, 0x104aa68a0}, 0x5967cbfb470, {0x5967c81ba70, 0x1, 0x5967cc7ca18?}, {0x0, 0x0, 0x0?}, ...)
+	/Users/fan/GolangProjects/DeltaScope/internal/application/audit/metadata.go:350 +0x1124
+github.com/Fanduzi/DeltaScope/internal/application/audit.enrichOrderedStatements({0x104158908, 0x104aa68a0}, {0x10368ec98, 0x5}, 0x5967cbfb470, {0x5967c81ba70, 0x1, 0x1}, {0x0, 0x0, ...}, ...)
+	/Users/fan/GolangProjects/DeltaScope/internal/application/audit/metadata.go:178 +0x144
+github.com/Fanduzi/DeltaScope/internal/application/audit.enrichStatementsWithMetadataLimits({0x104158908, 0x104aa68a0}, {0x10368ec98, 0x5}, 0x5967cbfb470, {0x5967c81ba70, 0x1, 0x1}, {0x0, 0x0, ...}, ...)
+	/Users/fan/GolangProjects/DeltaScope/internal/application/audit/metadata.go:113 +0x568
+github.com/Fanduzi/DeltaScope/internal/application/audit.auditWithLimits({0x104158908, 0x104aa68a0}, {{0x5967cc36000, 0x82c}, {0x10368ec98, 0x5}, {0x5967cbaa300, _}, {_, _}, ...}, ...)
+	/Users/fan/GolangProjects/DeltaScope/internal/application/audit/service.go:146 +0x890
+github.com/Fanduzi/DeltaScope/internal/application/audit.Service.Audit(...)
+	/Users/fan/GolangProjects/DeltaScope/internal/application/audit/service.go:75
+github.com/Fanduzi/DeltaScope/internal/application/audit.AuditSQL({0x104158908?, 0x104aa68a0?}, {{0x5967cc36000, 0x82c}, {0x10368ec98, 0x5}, {0x5967cbaa300, _}, {_, _}, ...})
+	/Users/fan/GolangProjects/DeltaScope/internal/application/audit/service.go:70 +0x110
+github.com/Fanduzi/DeltaScope/pkg/deltascope.Audit({0x104158908?, 0x104aa68a0?}, {{0x5967cc36000, 0x82c}, {0x10368ec98, 0x5}, {0x5967cbaa300, 0x72}, {_, _}, ...})
+	/Users/fan/GolangProjects/DeltaScope/pkg/deltascope/audit.go:262 +0x260
+github.com/Fanduzi/DeltaScope/pkg/deltascope.TestT18FullReviewZeroSourceCTEDAGBudget(0x5967c81c908)
+	/Users/fan/GolangProjects/DeltaScope/pkg/deltascope/audit_t18_view_first_test.go:986 +0x350
+testing.tRunner(0x5967c81c908, 0x104141b18)
+	/Users/fan/.asdf/installs/golang/1.26.1/go/src/testing/testing.go:2036 +0xc4
+created by testing.(*T).Run in goroutine 1
+	/Users/fan/.asdf/installs/golang/1.26.1/go/src/testing/testing.go:2101 +0x3a8
+FAIL	github.com/Fanduzi/DeltaScope/pkg/deltascope	5.728s
+FAIL

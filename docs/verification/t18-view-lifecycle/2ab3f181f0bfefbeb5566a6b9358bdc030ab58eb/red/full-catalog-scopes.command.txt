@@ -1,0 +1,1 @@
+go test ./internal/domain/rule/catalog -run '^TestT18ViewLifecycleCatalogScopes$' -count=1

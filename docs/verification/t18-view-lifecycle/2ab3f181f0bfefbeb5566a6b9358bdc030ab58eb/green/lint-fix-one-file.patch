@@ -1,0 +1,55 @@
+--- a/internal/domain/spec/view.go
++++ b/internal/domain/spec/view.go
+@@ -203,7 +203,7 @@
+ 		assessment.Security = metadata.Target.View.Security
+ 	}
+ 	assessment.SecurityUnknown = assessment.Security == "" &&
+-		!(ddl.Operation == DDLOperationAlterView && assessment.TargetInvalid && !ddl.View.SecurityExplicit)
++		(ddl.Operation != DDLOperationAlterView || !assessment.TargetInvalid || ddl.View.SecurityExplicit)
+ 	definition := ddl.View.Definition
+ 	if statement.Dialect == DialectMySQL {
+ 		assessment.AlgorithmWarn = ddl.View.AlgorithmExplicit &&
+@@ -223,7 +223,7 @@
+ 				} else if source.Exists && source.RelationKind == "view" &&
+ 					(source.View == nil || source.View.Updatable == nil) {
+ 					assessment.CheckRequired = appendViewFact(assessment.CheckRequired, "view.updatable")
+-				} else if source != nil && source.View != nil && source.View.Updatable != nil && !*source.View.Updatable {
++				} else if source.View != nil && source.View.Updatable != nil && !*source.View.Updatable {
+ 					assessment.CheckInvalid = true
+ 				}
+ 			}
+@@ -308,9 +308,9 @@
+ 			assessment.SourceRequired = appendViewFact(assessment.SourceRequired, "view.dependencies")
+ 		}
+ 	}
+-	if definition != nil && !definition.ShapeKnown && !shapeUnsupported && !(len(metadata.Sources) == 1 &&
+-		metadata.Sources[0].Snapshot != nil &&
+-		(!metadata.Sources[0].Snapshot.Exists || metadata.Sources[0].Snapshot.Temporary)) {
++	if definition != nil && !definition.ShapeKnown && !shapeUnsupported &&
++		(len(metadata.Sources) != 1 || metadata.Sources[0].Snapshot == nil ||
++			(metadata.Sources[0].Snapshot.Exists && !metadata.Sources[0].Snapshot.Temporary)) {
+ 		assessment.SourceRequired = appendViewFact(assessment.SourceRequired, "view.columns")
+ 	}
+ 	assessBindings := func(definition *ViewDefinition, sources []TargetBinding) (int, []string) {
+@@ -612,15 +612,17 @@
+ 			case duplicateMySQL:
+ 				target.Fate = ViewDropKeep
+ 			case ifExists:
+-				if kind == viewTargetView {
++				switch kind {
++				case viewTargetView:
+ 					target.Fate = ViewDropRemove
+-				} else if kind == viewTargetUnknown || kind == viewTargetUnknownKind {
++				case viewTargetUnknown, viewTargetUnknownKind:
+ 					target.Fate = ViewDropNotView
+ 				}
+ 			case !unknownVersion && !atomic:
+-				if kind == viewTargetView {
++				switch kind {
++				case viewTargetView:
+ 					target.Fate = ViewDropRemove
+-				} else if kind == viewTargetUnknown || kind == viewTargetUnknownKind {
++				case viewTargetUnknown, viewTargetUnknownKind:
+ 					target.Fate = ViewDropNotView
+ 				}
+ 			case potentialBad:

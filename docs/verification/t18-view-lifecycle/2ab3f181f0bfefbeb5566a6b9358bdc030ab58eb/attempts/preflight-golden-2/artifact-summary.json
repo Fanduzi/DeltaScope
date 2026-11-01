@@ -1,0 +1,19 @@
+{
+  "head_sha": "7f67c5de42fb6096d9c80f51e2d0f217eb34e528",
+  "executed_count": 149,
+  "case_count": 149,
+  "statuses": {
+    "pass": 149
+  },
+  "assertions": 3755,
+  "assertions_failed": [],
+  "cleanup_rc": 0,
+  "residual_containers": [],
+  "container_health": {
+    "deltascope-ddl-golden-mysql57": "healthy",
+    "deltascope-ddl-golden-mysql80": "healthy",
+    "deltascope-ddl-golden-mysql84": "healthy",
+    "deltascope-ddl-golden-tidb85": "healthy",
+    "deltascope-ddl-golden-tidb85-client": "healthy"
+  }
+}

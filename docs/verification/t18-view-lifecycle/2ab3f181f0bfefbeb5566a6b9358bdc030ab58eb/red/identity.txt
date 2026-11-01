@@ -1,0 +1,26 @@
+cwd:
+/Users/fan/GolangProjects/DeltaScope
+HEAD:
+7f67c5de42fb6096d9c80f51e2d0f217eb34e528
+branch:
+milestone/mysql-tidb-ddl-completion
+status:
+?? .agents/
+?? .codex/
+?? .cursor/
+?? .debug-journal.md
+?? .devin/
+?? .grok/
+?? .opencode/
+?? .pi-subagents/
+?? .qoder/
+?? artifacts/
+?? docs/quality/architecture-review-2026-08-11.html
+?? docs/verification/t06-a12/1a5dd90de898a59590ef8a19aa068c4b5e8ce7f8/T06/
+?? docs/work-plans/t18-view-lifecycle/
+?? pkg/deltascope/audit_t18_view_first_test.go
+go:
+go version go1.26.1 darwin/arm64
+test and policy SHA256:
+f878ba837cafd801a2ffce330059af6e78efed3efcceb8432c416bdf563a0c3e  pkg/deltascope/audit_t18_view_first_test.go
+71719b71562f751eef538e7184980439b998e0a218141eb864f1b9df3c8784e0  /tmp/t18-evidence/red/baseline-policy.yaml

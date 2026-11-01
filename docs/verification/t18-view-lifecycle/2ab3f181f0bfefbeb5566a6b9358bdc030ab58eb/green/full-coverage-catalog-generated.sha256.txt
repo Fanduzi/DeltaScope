@@ -1,0 +1,2 @@
+e1905f7640fa42e8dee25c301bf01789a94c7d0f308c5b210d9c9d4fd69f58cb  docs/reference/ddl-coverage-catalog.json
+e1905f7640fa42e8dee25c301bf01789a94c7d0f308c5b210d9c9d4fd69f58cb  internal/application/audit/catalogdata/ddl-coverage-catalog.json

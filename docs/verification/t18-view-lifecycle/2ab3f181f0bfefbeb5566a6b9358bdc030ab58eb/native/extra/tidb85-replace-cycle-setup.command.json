@@ -1,0 +1,21 @@
+{
+  "argv": [
+    "docker",
+    "exec",
+    "deltascope-ddl-golden-tidb85-client",
+    "mysql",
+    "-h",
+    "tidb85",
+    "-P",
+    "4000",
+    "-uroot",
+    "--batch",
+    "--raw",
+    "--verbose",
+    "-e",
+    "CREATE DATABASE t18e_3;USE t18e_3;CREATE TABLE t(id INT);CREATE TABLE u(id INT);CREATE VIEW v AS SELECT id FROM u;"
+  ],
+  "sql": "CREATE DATABASE t18e_3;USE t18e_3;CREATE TABLE t(id INT);CREATE TABLE u(id INT);CREATE VIEW v AS SELECT id FROM u;",
+  "head": "7f67c5de42fb6096d9c80f51e2d0f217eb34e528",
+  "utc": "2026-11-01T08:44:01.213062+00:00"
+}
