@@ -29,8 +29,8 @@ func t08r1Results(columns [][3]string) map[string]testQueryResult {
 	}
 	return map[string]testQueryResult{
 		"from information_schema.tables": {
-			columns: []string{"engine", "table_collation", "table_comment", "auto_increment", "row_format", "table_rows"},
-			rows:    [][]driver.Value{{"InnoDB", "utf8mb4_general_ci", "", nil, "Dynamic", int64(0)}},
+			columns: []string{"engine", "table_collation", "table_comment", "auto_increment", "row_format", "table_rows", "table_type"},
+			rows:    [][]driver.Value{{"InnoDB", "utf8mb4_general_ci", "", nil, "Dynamic", int64(0), "BASE TABLE"}},
 		},
 		"from information_schema.columns": {
 			columns: []string{"column_name", "column_type", "character_set_name", "collation_name", "column_comment", "column_default", "is_nullable", "extra", "generation_expression"},

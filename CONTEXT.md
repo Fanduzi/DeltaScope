@@ -97,6 +97,23 @@ The schema facts implied by preceding operations in an audited batch, conditiona
 on their successful execution. Unknown effects leave affected facts unknown.
 _Avoid_: live database state, executed migration, guaranteed final schema
 
+## Views
+
+**View Declaration**:
+The definition and clauses authored in a view statement. A declaration does not
+establish what an existing catalog records or whether execution is authorized.
+_Avoid_: catalog fact, authorization proof
+
+**Observed View Attribute**:
+A property read from an existing view's catalog. It is distinct from an authored
+clause and from a conditional property in Prospective Schema State.
+_Avoid_: requested setting, assumed default, effective privilege
+
+**View Dependency**:
+A static relation reference required by a view definition. A derived or CTE alias
+is not a separate database object, and dependency knowledge is not permission proof.
+_Avoid_: query result, authorization requirement, mentioned identifier
+
 ## Connection
 
 **Transport Connection Resolution**:

@@ -111,8 +111,8 @@ func (c t06a4SDKConn) QueryContext(_ context.Context, query string, _ []driver.N
 		}, nil
 	case strings.Contains(query, "information_schema.tables"):
 		return &t06a4SDKRows{
-			cols: []string{"engine", "table_collation", "table_comment", "auto_increment", "row_format", "table_rows"},
-			rows: [][]driver.Value{{"InnoDB", "utf8mb4_general_ci", "", nil, "Dynamic", int64(0)}},
+			cols: []string{"engine", "table_collation", "table_comment", "auto_increment", "row_format", "table_rows", "table_type"},
+			rows: [][]driver.Value{{"InnoDB", "utf8mb4_general_ci", "", nil, "Dynamic", int64(0), "BASE TABLE"}},
 		}, nil
 	}
 	return nil, sql.ErrNoRows

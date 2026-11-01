@@ -386,7 +386,7 @@ func (p *Provider) LoadTableSnapshot(ctx context.Context, dialect spec.Dialect, 
 	}
 
 	tableRow := p.db.QueryRowContext(ctx, `
-		select engine, table_collation, table_comment, auto_increment, row_format, table_rows
+		select engine, table_collation, table_comment, auto_increment, row_format, table_rows, table_type
 		from information_schema.tables
 		where table_schema = ? and table_name = ?
 	`, schema, table)
@@ -397,7 +397,8 @@ func (p *Provider) LoadTableSnapshot(ctx context.Context, dialect spec.Dialect, 
 	var autoIncrement sql.NullInt64
 	var rowFormat sql.NullString
 	var tableRows sql.NullInt64
-	if err := tableRow.Scan(&engine, &collation, &comment, &autoIncrement, &rowFormat, &tableRows); err != nil {
+	var relationType sql.NullString
+	if err := tableRow.Scan(&engine, &collation, &comment, &autoIncrement, &rowFormat, &tableRows, &relationType); err != nil {
 		if err == sql.ErrNoRows {
 			return snapshot, nil
 		}
@@ -406,6 +407,12 @@ func (p *Provider) LoadTableSnapshot(ctx context.Context, dialect spec.Dialect, 
 
 	snapshot.Exists = true
 	snapshot.Table = &spec.Table{Name: table, Comment: comment.String}
+	switch strings.ToUpper(strings.TrimSpace(relationType.String)) {
+	case "BASE TABLE":
+		snapshot.RelationKind = "table"
+	case "VIEW":
+		snapshot.RelationKind = "view"
+	}
 	snapshot.Options = map[string]string{}
 	if engine.Valid {
 		snapshot.Options["engine"] = engine.String
@@ -425,7 +432,16 @@ func (p *Provider) LoadTableSnapshot(ctx context.Context, dialect spec.Dialect, 
 	}
 
 	if err := p.loadColumns(ctx, snapshot); err != nil {
+		if snapshot.RelationKind == "view" {
+			return nil, safeViewReadError{cause: err}
+		}
 		return nil, fmt.Errorf("load table %s.%s columns: %w", snapshot.Schema, snapshot.Table.Name, err)
+	}
+	if snapshot.RelationKind == "view" {
+		if err := p.loadView(ctx, snapshot); err != nil {
+			return nil, safeViewReadError{cause: err}
+		}
+		return snapshot, nil
 	}
 	if err := p.loadIndexes(ctx, snapshot, dialect); err != nil {
 		return nil, fmt.Errorf("load table %s.%s indexes: %w", snapshot.Schema, snapshot.Table.Name, err)
@@ -452,6 +468,71 @@ func (p *Provider) LoadTableSnapshot(ctx context.Context, dialect spec.Dialect, 
 	}
 
 	return snapshot, nil
+}
+
+type safeViewReadError struct{ cause error }
+
+func (safeViewReadError) Error() string   { return "view metadata read failed" }
+func (e safeViewReadError) Unwrap() error { return e.cause }
+
+func (p *Provider) loadView(ctx context.Context, snapshot *spec.TableSnapshot) error {
+	var definition, security, check, updatable, definer sql.NullString
+	rows, err := p.db.QueryContext(ctx, `
+		select view_definition, security_type, check_option, is_updatable, definer
+		from information_schema.views
+		where table_schema = ? and table_name = ?
+	`, snapshot.Schema, snapshot.Table.Name)
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+	if !rows.Next() {
+		if err := rows.Err(); err != nil {
+			return err
+		}
+		snapshot.View = &spec.ViewSnapshot{}
+		return nil
+	}
+	if err := rows.Scan(&definition, &security, &check, &updatable, &definer); err != nil {
+		return err
+	}
+	if rows.Next() {
+		return fmt.Errorf("multiple view metadata rows")
+	}
+	if err := rows.Err(); err != nil {
+		return err
+	}
+	view := &spec.ViewSnapshot{
+		Security:    strings.ToLower(strings.TrimSpace(security.String)),
+		CheckOption: strings.ToLower(strings.TrimSpace(check.String)),
+	}
+	if definer.Valid {
+		view.DefinerKind = "named"
+		view.DefinerPrincipal = definer.String
+	}
+	if updatable.Valid {
+		switch strings.ToUpper(strings.TrimSpace(updatable.String)) {
+		case "YES":
+			v := true
+			view.Updatable = &v
+		case "NO":
+			v := false
+			view.Updatable = &v
+		}
+	}
+	if definition.Valid && strings.TrimSpace(definition.String) != "" {
+		parsed, parseErr := tidbparser.ParseViewDefinition(ctx, definition.String)
+		if err := ctx.Err(); err != nil {
+			return err
+		}
+		if parseErr != nil {
+			view.Definition = &spec.ViewDefinition{SQL: definition.String}
+		} else {
+			view.Definition = parsed
+		}
+	}
+	snapshot.View = view
+	return nil
 }
 
 // loadPartitionFacts records the observed partition catalog: whether the

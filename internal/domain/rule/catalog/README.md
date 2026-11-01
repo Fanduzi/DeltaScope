@@ -2,6 +2,11 @@
 
 Explanation-oriented metadata for shipped DeltaScope rules, with discoverability fields for CLI rule listing and explanation.
 
+T18 view target, source and security rules apply to MySQL and TiDB; algorithm
+and check-option rules apply only to MySQL, and ignored-option review only to
+TiDB. Target, source, security and check-option assessments can use ordered
+relation metadata; algorithm and ignored-option reviews use declared syntax.
+
 ## Files
 
 | File | Responsibility |

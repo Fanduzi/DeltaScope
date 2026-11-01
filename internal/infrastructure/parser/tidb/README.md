@@ -2,10 +2,18 @@
 
 TiDB-backed parser adapter for multi-statement SQL parsing, parser-warning collection, and query access extraction.
 
+The view adapter validates ALTER VIEW identifiers and definer productions
+against the locked parser, retains source aliases, star and expression
+references and authored offsets, and parses the untouched SELECT. Unmodeled
+query shapes remain incomplete.
+
 ## Files
 
 | File | Responsibility |
 |------|---------------|
+| view.go | Parses structured view headers and untouched SELECT definitions, validates definer account boundaries, and preserves private dependencies and clause-aware column locations |
+| view_query.go | Builds private lexical query scopes for joins, CTEs, derived tables, nested queries, set operands and SELECT ORDER BY; marks unmodeled LIMIT, window, positional-order and set-order shapes |
+| view_t18_first_test.go | Exercises ALTER identity, strict identifier and definer grammar, bare CHECK boundaries and external definition sources |
 | parser.go | Parses SQL text and preserves raw statement nodes plus parser warnings; on a base-grammar failure it runs the bounded `supplementDefaultExpressions` retry |
 | supplement.go | Bounded grammar supplement: `DEFAULT (<expr>)` sites are located by structural tokenization (strings, quoted identifiers, and comments skipped) with their column identity, rewritten in place with a same-width literal placeholder, reparsed, and rebound to the real `SELECT`-parsed expression AST by site-span position — CREATE `ColumnOptionDefaultValue` and ALTER `SET/DROP DEFAULT` setter options (carried as `ColumnOptionNoOption`) both bind, while options outside every planned site (bare literal defaults) stay untouched; original statement text/offsets are restored verbatim and any mismatch fails closed to the original parse error — the placeholder literal never escapes into facts |
 | expression_facts.go | Collects evaluation-free `spec.ExpressionFacts` from parsed expression ASTs — ordered deduplicated qualified column references, lowercase callee names plus the `CallCount` function-call-node count (so a single bare call is provable where a deduplicated name set cannot prove it), construct features (subquery/aggregate/arithmetic/unknown-function/unknown-shape), the `TopForm` outer-root classification (`call`/`literal`/`column`/`arithmetic`/`unary`/`case`/`subquery`/`aggregate`/`other`) for complete-shape adjudication, `RootParenthesized` for the authored parens wrapper (`parseSelectExpressionAST` strips only the wrapper layer it added itself), and a structural SHA-256 fingerprint — with a bounded node budget; `ParseCatalogExpressionFacts` parses provider `GENERATION_EXPRESSION`/default catalog text, decoding only one layer of valid SQL-string escapes and returning unknown facts for unparseable input; `MultiValuedCastFacts` normalizes a `CAST(… AS <T> ARRAY)` member into the element cast family plus the authored-length bit (FieldType.GetType reports JSON for the array wrapper, so element type/length come from `Tp.ArrayType()`) feeding the T10-R2 member-legality matrix |
@@ -48,6 +56,7 @@ TiDB-backed parser adapter for multi-statement SQL parsing, parser-warning colle
 - `Result`
 - `ExtractedStatement`
 - `New()`
+- `ParseViewDefinition()`
 - `WrapStatements()`
 - `QueryAccessExtractor`
 - `QueryAccessFacts`

@@ -43,13 +43,15 @@ func TestQueryCatalog_MySQLAlterView(t *testing.T) {
 	entries := loadTestCatalog(t)
 
 	tests := []struct {
-		name string
-		q    CatalogQuery
+		name  string
+		q     CatalogQuery
+		found bool
 	}{
-		{"dialect=mysql, classification=parser_error", CatalogQuery{Dialect: "mysql", Classification: "parser_error"}},
-		{"dialect=mysql, guidance_code=parser_upgrade_candidate", CatalogQuery{Dialect: "mysql", GuidanceCode: "parser_upgrade_candidate"}},
-		{"search=alter view", CatalogQuery{Dialect: "mysql", Search: "alter view"}},
-		{"form=ALTER VIEW", CatalogQuery{Dialect: "mysql", Form: "ALTER VIEW"}},
+		{"dialect=mysql, classification=parser_error", CatalogQuery{Dialect: "mysql", Classification: "parser_error"}, false},
+		{"dialect=mysql, guidance_code=parser_upgrade_candidate", CatalogQuery{Dialect: "mysql", GuidanceCode: "parser_upgrade_candidate"}, false},
+		{"dialect=mysql, classification=finding_covered", CatalogQuery{Dialect: "mysql", Classification: "finding_covered"}, true},
+		{"search=alter view", CatalogQuery{Dialect: "mysql", Search: "alter view"}, true},
+		{"form=ALTER VIEW", CatalogQuery{Dialect: "mysql", Form: "ALTER VIEW"}, true},
 	}
 
 	for _, tc := range tests {
@@ -59,17 +61,17 @@ func TestQueryCatalog_MySQLAlterView(t *testing.T) {
 			for _, e := range res.Entries {
 				if e.Dialect == "mysql" && e.Form == "ALTER VIEW" {
 					found = true
-					if e.Classification != "parser_error" {
-						t.Errorf("ALTER VIEW classification = %q, want parser_error", e.Classification)
+					if e.Classification != "finding_covered" {
+						t.Errorf("ALTER VIEW classification = %q, want finding_covered", e.Classification)
 					}
-					if e.GuidanceCode != "parser_upgrade_candidate" {
-						t.Errorf("ALTER VIEW guidance_code = %q, want parser_upgrade_candidate", e.GuidanceCode)
+					if e.GuidanceCode != "" {
+						t.Errorf("ALTER VIEW guidance_code = %q, want none", e.GuidanceCode)
 					}
 					break
 				}
 			}
-			if !found {
-				t.Error("ALTER VIEW not found in results")
+			if found != tc.found {
+				t.Errorf("ALTER VIEW found = %t, want %t", found, tc.found)
 			}
 		})
 	}

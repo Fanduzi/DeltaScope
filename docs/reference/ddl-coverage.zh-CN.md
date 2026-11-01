@@ -42,10 +42,10 @@ DDL 覆盖目录回答一个核心问题：对于给定的 DDL 形态，DeltaSco
 
 | 方言 | 总计 | finding_covered | normalized_silent | unsupported_boundary | parser_error | unclassified |
 |------|-----:|----------------:|------------------:|--------------------:|-------------:|-------------:|
-| MySQL | 61 | 46 | 0 | 0 | 15 | 0 |
-| TiDB | 54 | 45 | 0 | 0 | 9 | 0 |
-| PostgreSQL | 290 | 279 | 6 | 0 | 5 | 0 |
-| PG ALTER TABLE residual | 66 | 60 | 2 | 0 | 4 | 0 |
+| MySQL | 62 | 48 | 0 | 0 | 14 | 0 |
+| TiDB | 55 | 43 | 0 | 4 | 8 | 0 |
+| PostgreSQL | 290 | 277 | 8 | 0 | 5 | 0 |
+| PG ALTER TABLE residual | 66 | 59 | 3 | 0 | 4 | 0 |
 
 ---
 
@@ -68,13 +68,14 @@ deltascope audit --dialect mysql --sql "CREATE TABLE t (id INT PRIMARY KEY)"
 
 分类：`finding_covered`。可能触发的规则包括 `ddl.table.primary_key.require`、`ddl.column.not_null.require` 等，具体取决于表定义。
 
-### MySQL `ALTER VIEW` — `parser_error`（含 guidance）
+### MySQL `ALTER VIEW` — `finding_covered`
 
 ```bash
 deltascope audit --dialect mysql --sql "ALTER VIEW v AS SELECT 1"
 ```
 
-分类：`parser_error`。MySQL 方言 parser 无法解析 `ALTER VIEW`。此记录包含 `guidance_code=parser_upgrade_candidate` 和指向 parser-upgrade 候选证据的 `evidence_ref` 链接。
+分类：`finding_covered`。视图语法适配器保留 ALTER 操作并将查询交给锁定的
+parser；TiDB ALTER VIEW 仍是明确的厂商边界，无效 SELECT 仍是 parser error。
 
 ### TiDB `ALTER TABLE TTL` — `parser_error`
 
@@ -151,8 +152,8 @@ deltascope ddl-coverage [flags]
 
 ```text
 DIALECT  CLASSIFICATION  FAMILY          FORM                         GUIDANCE
-mysql    parser_error    view_lifecycle  ALTER VIEW                   parser_upgrade_candidate
-mysql    parser_error    view_lifecycle  CREATE VIEW                  parser_upgrade_candidate
+mysql    parser_error    routine_lifecycle  ALTER PROCEDURE            parser_upgrade_candidate
+mysql    parser_error    routine_lifecycle  CREATE FUNCTION            parser_upgrade_candidate
 
 2 entries
 ```
@@ -163,7 +164,7 @@ mysql    parser_error    view_lifecycle  CREATE VIEW                  parser_upg
 
 ```json
 {
-  "version": "v0.280.0",
+  "version": "v0.270.0",
   "summary": {
     "total": 2,
     "returned": 2,
@@ -175,8 +176,8 @@ mysql    parser_error    view_lifecycle  CREATE VIEW                  parser_upg
   "entries": [
     {
       "dialect": "mysql",
-      "family": "view_lifecycle",
-      "form": "ALTER VIEW",
+      "family": "routine_lifecycle",
+      "form": "ALTER PROCEDURE",
       "classification": "parser_error",
       "finding_rule_ids": null,
       "guidance_code": "parser_upgrade_candidate",

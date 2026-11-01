@@ -1,0 +1,33 @@
+name: view_lifecycle_rules
+dialect: mysql
+category: ddl
+expect:
+  parse_ok: true
+  statements:
+    count: 7
+  unsupported:
+    count: 0
+  findings:
+    include:
+      - ddl.view.target.valid
+      - ddl.view.source.valid
+      - ddl.view.security.definer.warn
+      - ddl.view.algorithm.warn
+      - ddl.view.check_option.valid
+metadata:
+  schema: app
+  instance:
+    version: "8.0.46"
+  tables:
+    t:
+      exists: false
+    v:
+      exists: false
+    invalid_source:
+      exists: false
+    algorithm_v:
+      exists: false
+    check_v:
+      exists: false
+    missing_view:
+      exists: false

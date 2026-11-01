@@ -42,10 +42,10 @@ This catalog has explicit boundaries. It is **not**:
 
 | Dialect | Total | finding_covered | normalized_silent | unsupported_boundary | parser_error | unclassified |
 |---------|------:|----------------:|------------------:|--------------------:|-------------:|-------------:|
-| MySQL | 61 | 46 | 0 | 0 | 15 | 0 |
-| TiDB | 54 | 45 | 0 | 0 | 9 | 0 |
-| PostgreSQL | 290 | 279 | 6 | 0 | 5 | 0 |
-| PG ALTER TABLE residual | 66 | 60 | 2 | 0 | 4 | 0 |
+| MySQL | 62 | 48 | 0 | 0 | 14 | 0 |
+| TiDB | 55 | 43 | 0 | 4 | 8 | 0 |
+| PostgreSQL | 290 | 277 | 8 | 0 | 5 | 0 |
+| PG ALTER TABLE residual | 66 | 59 | 3 | 0 | 4 | 0 |
 
 ---
 
@@ -69,13 +69,15 @@ deltascope audit --dialect mysql --sql "CREATE TABLE t (id INT PRIMARY KEY)"
 
 Classification: `finding_covered`. Rules that may fire include `ddl.table.primary_key.require`, `ddl.column.not_null.require`, and others depending on the table definition.
 
-### MySQL `ALTER VIEW` — `parser_error` with guidance
+### MySQL `ALTER VIEW` — `finding_covered`
 
 ```bash
 deltascope audit --dialect mysql --sql "ALTER VIEW v AS SELECT 1"
 ```
 
-Classification: `parser_error`. The MySQL dialect parser cannot parse `ALTER VIEW`. This entry carries `guidance_code=parser_upgrade_candidate` and an `evidence_ref` linking to the parser-upgrade candidate evidence.
+Classification: `finding_covered`. The view grammar adapter preserves the
+ALTER operation and delegates the query to the locked parser. TiDB ALTER VIEW
+remains an explicit vendor boundary; invalid SELECT syntax remains a parser error.
 
 ### TiDB `ALTER TABLE TTL` — `parser_error`
 
@@ -152,8 +154,8 @@ All filters are optional. When multiple filters are provided, they combine as AN
 
 ```text
 DIALECT  CLASSIFICATION  FAMILY          FORM                         GUIDANCE
-mysql    parser_error    view_lifecycle  ALTER VIEW                   parser_upgrade_candidate
-mysql    parser_error    view_lifecycle  CREATE VIEW                  parser_upgrade_candidate
+mysql    parser_error    routine_lifecycle  ALTER PROCEDURE            parser_upgrade_candidate
+mysql    parser_error    routine_lifecycle  CREATE FUNCTION            parser_upgrade_candidate
 
 2 entries
 ```
@@ -164,7 +166,7 @@ Text output is designed for human review. It is stable enough for casual use, bu
 
 ```json
 {
-  "version": "v0.280.0",
+  "version": "v0.270.0",
   "summary": {
     "total": 2,
     "returned": 2,
@@ -176,8 +178,8 @@ Text output is designed for human review. It is stable enough for casual use, bu
   "entries": [
     {
       "dialect": "mysql",
-      "family": "view_lifecycle",
-      "form": "ALTER VIEW",
+      "family": "routine_lifecycle",
+      "form": "ALTER PROCEDURE",
       "classification": "parser_error",
       "finding_rule_ids": null,
       "guidance_code": "parser_upgrade_candidate",

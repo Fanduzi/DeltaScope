@@ -1,0 +1,30 @@
+name: view_lifecycle_rules
+dialect: tidb
+category: ddl
+expect:
+  parse_ok: true
+  statements:
+    count: 6
+  unsupported:
+    count: 0
+  findings:
+    include:
+      - ddl.view.target.valid
+      - ddl.view.source.valid
+      - ddl.view.security.definer.warn
+      - ddl.view.options.ignored.warn
+metadata:
+  schema: app
+  instance:
+    version: "8.0.11-TiDB-v8.5.0"
+  tables:
+    t:
+      exists: false
+    v:
+      exists: false
+    invalid_source:
+      exists: false
+    options_v:
+      exists: false
+    missing_view:
+      exists: false

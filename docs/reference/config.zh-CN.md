@@ -1913,7 +1913,8 @@ rules:
 
 ### `ddl.view.create.forbid`
 
-禁止创建视图（CREATE VIEW）。
+禁止创建或替换视图；在 MySQL 上也覆盖 `ALTER VIEW` 定义变更。TiDB 的
+`ALTER VIEW` 是厂商边界，不作为已支持的策略评估。
 
 - **默认**：已启用，级别 `blocker`
 
@@ -1935,6 +1936,23 @@ rules:
     params:
       forbid: true
 ```
+
+### 视图生命周期语义规则
+
+以下规则默认启用，均无参数，可通过 `enabled` 和 `level` 配置：
+
+| 规则 | 默认级别 | 方言 |
+|------|----------|------|
+| `ddl.view.target.valid` | blocker | MySQL、TiDB |
+| `ddl.view.source.valid` | blocker | MySQL、TiDB |
+| `ddl.view.security.definer.warn` | warning | MySQL、TiDB |
+| `ddl.view.algorithm.warn` | warning | MySQL |
+| `ddl.view.check_option.valid` | blocker | MySQL |
+| `ddl.view.options.ignored.warn` | warning | TiDB |
+
+规则按需使用声明事实和请求内有序元数据；缺少必要事实产生证据缺口，
+不制造 finding。启用状态和级别不改变状态转换。具名 definer 的审查不
+证明账户或权限；TiDB `ALTER VIEW` 与裸 `WITH CHECK OPTION` 是厂商边界。
 
 ---
 

@@ -39,6 +39,12 @@ func corpusRuleDialectTargets(ruleID string) []string {
 		return nil
 	}
 	switch ruleID {
+	case "ddl.view.target.valid", "ddl.view.source.valid", "ddl.view.security.definer.warn":
+		return []string{"mysql", "tidb"}
+	case "ddl.view.algorithm.warn", "ddl.view.check_option.valid":
+		return []string{"mysql"}
+	case "ddl.view.options.ignored.warn":
+		return []string{"tidb"}
 	case "ddl.alter.merge.mysql.require":
 		return []string{"mysql"}
 	case "ddl.alter.merge.tidb.require":

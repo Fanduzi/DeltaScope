@@ -65,6 +65,15 @@ type InstanceFacts = spec.InstanceFacts
 // TableSnapshot mirrors metadata-aware target table snapshots for public providers.
 type TableSnapshot = spec.TableSnapshot
 
+// ViewSnapshot carries private view-definition facts for metadata providers.
+type ViewSnapshot = spec.ViewSnapshot
+
+// ViewDefinition carries a normalized, non-executed view query.
+type ViewDefinition = spec.ViewDefinition
+
+// ViewColumnBinding describes one statically identified view output column.
+type ViewColumnBinding = spec.ViewColumnBinding
+
 // Table mirrors the domain table shape used inside metadata snapshots.
 type Table = spec.Table
 
@@ -458,6 +467,7 @@ func cloneTableSnapshot(in *spec.TableSnapshot) *spec.TableSnapshot {
 		return nil
 	}
 	out := *in
+	out.View = spec.CloneViewSnapshot(in.View)
 	if in.Table != nil {
 		table := *in.Table
 		out.Table = &table

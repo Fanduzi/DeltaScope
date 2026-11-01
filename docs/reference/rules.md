@@ -357,11 +357,25 @@ These rules evaluate index definitions within a `CREATE TABLE` statement.
 
 **PostgreSQL index availability (v0.38.0, updated v0.49.0):** `ddl.index.secondary.prefix.require`, `ddl.index.unique.prefix.require`, and `ddl.index.columns.max_count` now also apply to standalone PostgreSQL `CREATE INDEX`, `CREATE UNIQUE INDEX`, and `CREATE INDEX CONCURRENTLY` statements. Since v0.49.0, partial indexes, expression indexes, INCLUDE covering indexes, and non-btree access methods (GIN, hash, etc.) normalize through the audit pipeline instead of returning unsupported. Operator classes and NULLS NOT DISTINCT remain out of scope.
 
-### View Rules (1 rule)
+### View Rules
 
 | Rule ID | Description | Default Level | Metadata Required |
 |---------|-------------|:-------------:|:-----------------:|
-| `ddl.view.create.forbid` | CREATE VIEW is forbidden | blocker | No |
+| `ddl.view.create.forbid` | Forbid CREATE/REPLACE and MySQL ALTER VIEW definitions | blocker | No |
+| `ddl.view.drop.forbid` | Forbid DROP VIEW | blocker | No |
+| `ddl.view.target.valid` | Check view target existence and kind | blocker | Ordered facts |
+| `ddl.view.source.valid` | Check dependencies, bindings, and output names | blocker | Ordered facts |
+| `ddl.view.security.definer.warn` | Review effective DEFINER security or an explicitly named definer | warning | Ordered facts for inheritance |
+| `ddl.view.algorithm.warn` | Review requested TEMPTABLE or known MERGE fallback (MySQL) | warning | No |
+| `ddl.view.check_option.valid` | Reject CHECK OPTION on a known non-updatable view (MySQL) | blocker | Ordered facts when needed |
+| `ddl.view.options.ignored.warn` | Review each explicitly declared option without a TiDB execution guarantee | warning | No |
+
+The six semantic rules have no parameters. Target, source and security apply to
+MySQL and TiDB; algorithm and check-option checks apply to MySQL, and
+ignored-option review to TiDB. TiDB ALTER VIEW and bare CHECK OPTION remain
+vendor boundaries. Unknown required facts yield evidence gaps, not invented
+findings; disabling rules or changing levels does not change ordered state.
+The security warning does not prove account existence or authorization.
 
 ---
 
@@ -582,7 +596,7 @@ These rules promote previously normalized-silent MySQL and TiDB DDL forms to fin
 | `ddl.drop_sequence.notice` | `DROP SEQUENCE` removes a sequence | notice | No |
 | `ddl.tidb.alter_table.placement_policy.notice` | `ALTER TABLE ... PLACEMENT POLICY` attaches a placement policy to a table | notice | No |
 
-> **Note:** These rules are MySQL/TiDB-specific and are automatically skipped when auditing PostgreSQL SQL. They are offline rules and do not require a database connection. These are informational notice rules only — they do not block, warn, or perform live validation. `ddl.drop_resource_group.notice` is MySQL-only and is automatically skipped for TiDB. TiDB placement policy and sequence rules are automatically skipped for MySQL. This is not full MySQL/TiDB DDL support — triggers, events, functions, ALTER VIEW, ALTER PROCEDURE, tablespace, and parser-error forms remain deferred.
+> **Note:** These rules are MySQL/TiDB-specific and are automatically skipped when auditing PostgreSQL SQL. They are offline rules and do not require a database connection. These are informational notice rules only — they do not block, warn, or perform live validation. `ddl.drop_resource_group.notice` is MySQL-only and is automatically skipped for TiDB. TiDB placement policy and sequence rules are automatically skipped for MySQL. This is not full MySQL/TiDB DDL support — triggers, events, functions, TiDB ALTER VIEW, ALTER PROCEDURE, tablespace, and parser-error forms remain deferred.
 
 ---
 

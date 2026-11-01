@@ -151,8 +151,8 @@ func (c t06a4Conn) answer(query string) t06a4Result {
 		}
 	case strings.Contains(query, "information_schema.tables"):
 		return t06a4Result{
-			cols: []string{"engine", "table_collation", "table_comment", "auto_increment", "row_format", "table_rows"},
-			rows: [][]driver.Value{{"InnoDB", "utf8mb4_general_ci", "", nil, "Dynamic", int64(0)}},
+			cols: []string{"engine", "table_collation", "table_comment", "auto_increment", "row_format", "table_rows", "table_type"},
+			rows: [][]driver.Value{{"InnoDB", "utf8mb4_general_ci", "", nil, "Dynamic", int64(0), "BASE TABLE"}},
 		}
 	}
 	return t06a4Result{err: sql.ErrNoRows}

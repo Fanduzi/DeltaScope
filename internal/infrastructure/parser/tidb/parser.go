@@ -39,7 +39,15 @@ func (p *Parser) Parse(ctx context.Context, sql string) (Result, error) {
 	// base parse so failures keep their original diagnostics.
 	var parsed []ast.StmtNode
 	var warns []error
-	if recovered, recoveredWarns, ok := runSupplementedParse(sql); ok {
+	header, viewHeaderOK := parseViewHeader(sql)
+	if viewHeaderOK && (header.operation == spec.DDLOperationAlterView || header.declaration.CheckBare) {
+		if view, viewWarns, ok := parseViewAdapter(ctx, sql); ok {
+			parsed, warns = []ast.StmtNode{view}, viewWarns
+		}
+	}
+	if parsed != nil {
+		// The adapter owns the original statement and its parsed SELECT.
+	} else if recovered, recoveredWarns, ok := runSupplementedParse(sql); ok {
 		parsed, warns = recovered, recoveredWarns
 	} else {
 		var err error

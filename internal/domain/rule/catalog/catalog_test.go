@@ -2,11 +2,35 @@
 package catalog
 
 import (
+	"reflect"
 	"strings"
 	"testing"
 
 	domainpolicy "github.com/Fanduzi/DeltaScope/internal/domain/policy"
 )
+
+func TestT18ViewLifecycleCatalogScopes(t *testing.T) {
+	for _, tc := range []struct {
+		id            string
+		dialects      []string
+		metadataAware bool
+	}{
+		{"ddl.view.target.valid", []string{"mysql", "tidb"}, true},
+		{"ddl.view.source.valid", []string{"mysql", "tidb"}, true},
+		{"ddl.view.security.definer.warn", []string{"mysql", "tidb"}, true},
+		{"ddl.view.algorithm.warn", []string{"mysql"}, false},
+		{"ddl.view.check_option.valid", []string{"mysql"}, true},
+		{"ddl.view.options.ignored.warn", []string{"tidb"}, false},
+	} {
+		entry, ok := Lookup(tc.id)
+		if !ok || !reflect.DeepEqual(entry.Dialects, tc.dialects) || entry.MetadataAware != tc.metadataAware {
+			t.Errorf("%s: entry=%#v present=%v", tc.id, entry, ok)
+		}
+		if tc.metadataAware && (entry.MetadataNotes == nil || !reflect.DeepEqual(entry.MetadataNotes.Kinds, []MetadataKind{MetadataKindTargetTable})) {
+			t.Errorf("%s: metadata notes=%#v", tc.id, entry.MetadataNotes)
+		}
+	}
+}
 
 func TestAllCoversEveryDefaultRule(t *testing.T) {
 	t.Parallel()

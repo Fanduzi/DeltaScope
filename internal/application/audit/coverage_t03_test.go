@@ -430,13 +430,6 @@ func TestAuditSQLT03RecognizedUnauditedAspectsIncomplete(t *testing.T) {
 		{name: "mysql binlog replay", sql: "BINLOG 'abc';", dialect: spec.DialectMySQL, wantFeature: "binlog", wantReason: spec.UnsupportedUnauditedReason, wantKind: "unknown"},
 		{name: "mysql select into outfile", sql: "SELECT 1 INTO OUTFILE '/tmp/x';", dialect: spec.DialectMySQL, wantFeature: "select_into", wantReason: spec.UnsupportedUnauditedReason, wantKind: "unknown"},
 		{name: "tidb union select into", sql: "SELECT 1 UNION SELECT 2 INTO OUTFILE '/tmp/x';", dialect: spec.DialectTiDB, wantFeature: "select_into", wantReason: spec.UnsupportedUnauditedReason, wantKind: "unknown"},
-		// CREATE VIEW option clauses the normalized model drops.
-		{name: "mysql create view or replace", sql: "CREATE OR REPLACE VIEW v AS SELECT 1;", dialect: spec.DialectMySQL, wantFeature: "create_view.option.or_replace", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
-		{name: "mysql create view columns", sql: "CREATE VIEW v (a, b) AS SELECT 1, 2;", dialect: spec.DialectMySQL, wantFeature: "create_view.option.view_columns", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
-		{name: "mysql create view algorithm", sql: "CREATE ALGORITHM=TEMPTABLE VIEW v AS SELECT 1;", dialect: spec.DialectMySQL, wantFeature: "create_view.option.view_algorithm", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
-		{name: "mysql create view definer", sql: "CREATE DEFINER='a'@'%' VIEW v AS SELECT 1;", dialect: spec.DialectMySQL, wantFeature: "create_view.option.definer", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
-		{name: "tidb create view sql security", sql: "CREATE SQL SECURITY INVOKER VIEW v AS SELECT 1;", dialect: spec.DialectTiDB, wantFeature: "create_view.option.sql_security", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
-		{name: "mysql create view check option", sql: "CREATE VIEW v AS SELECT 1 WITH LOCAL CHECK OPTION;", dialect: spec.DialectMySQL, wantFeature: "create_view.option.check_option", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
 		// GRANT/REVOKE option families.
 		{name: "mysql grant with grant option", sql: "GRANT SELECT ON db.t TO 'u'@'%' WITH GRANT OPTION;", dialect: spec.DialectMySQL, wantFeature: "grant.option.with_grant", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
 		{name: "mysql grant column privileges", sql: "GRANT SELECT(a) ON db.t TO 'u'@'%';", dialect: spec.DialectMySQL, wantFeature: "grant.option.column_privileges", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
@@ -560,13 +553,6 @@ func TestAuditSQLT03UnsupportedFeatureReasonPairs(t *testing.T) {
 		// Index member forms (prefix, expression, descending, multi-valued)
 		// and TiDB GLOBAL graduated to member-level audited facts in T10-R2 —
 		// they emit compat findings/gaps, never unsupported entries.
-		{name: "mysql create view combined options", sql: "CREATE ALGORITHM=TEMPTABLE DEFINER='a'@'%' SQL SECURITY INVOKER VIEW v (a) AS SELECT 1 WITH LOCAL CHECK OPTION;", dialect: spec.DialectMySQL, want: [][2]string{
-			{"create_view.option.check_option", spec.UnsupportedUnauditedReason},
-			{"create_view.option.definer", spec.UnsupportedUnauditedReason},
-			{"create_view.option.sql_security", spec.UnsupportedUnauditedReason},
-			{"create_view.option.view_algorithm", spec.UnsupportedUnauditedReason},
-			{"create_view.option.view_columns", spec.UnsupportedUnauditedReason},
-		}},
 		{name: "mysql grant combined options", sql: "GRANT SELECT(a) ON db.t TO 'u'@'%' WITH GRANT OPTION;", dialect: spec.DialectMySQL, want: [][2]string{
 			{"grant.option.column_privileges", spec.UnsupportedUnauditedReason},
 			{"grant.option.with_grant", spec.UnsupportedUnauditedReason},
@@ -640,6 +626,13 @@ func TestAuditSQLT03RecognizedOutOfSurfaceStaysComplete(t *testing.T) {
 		{name: "mysql plain union", sql: "SELECT 1 UNION SELECT 2;", dialect: spec.DialectMySQL},
 		{name: "mysql plain create view", sql: "CREATE VIEW v AS SELECT 1;", dialect: spec.DialectMySQL},
 		{name: "tidb plain create view", sql: "CREATE VIEW v AS SELECT 1;", dialect: spec.DialectTiDB},
+		{name: "mysql create view or replace", sql: "CREATE OR REPLACE VIEW v AS SELECT 1;", dialect: spec.DialectMySQL},
+		{name: "mysql create view columns", sql: "CREATE VIEW v (a, b) AS SELECT 1, 2;", dialect: spec.DialectMySQL},
+		{name: "mysql create view algorithm", sql: "CREATE ALGORITHM=TEMPTABLE VIEW v AS SELECT 1;", dialect: spec.DialectMySQL},
+		{name: "mysql create view definer", sql: "CREATE DEFINER='a'@'%' VIEW v AS SELECT 1;", dialect: spec.DialectMySQL},
+		{name: "tidb create view sql security", sql: "CREATE SQL SECURITY INVOKER VIEW v AS SELECT 1;", dialect: spec.DialectTiDB},
+		{name: "mysql create view check option", sql: "CREATE VIEW v AS SELECT 1 WITH LOCAL CHECK OPTION;", dialect: spec.DialectMySQL},
+		{name: "mysql create view combined options", sql: "CREATE ALGORITHM=TEMPTABLE DEFINER='a'@'%' SQL SECURITY INVOKER VIEW v (a) AS SELECT 1 WITH LOCAL CHECK OPTION;", dialect: spec.DialectMySQL},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {

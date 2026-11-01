@@ -149,8 +149,8 @@ func (c t08r1Conn) QueryContext(_ context.Context, query string, _ []driver.Name
 		}, nil
 	case strings.Contains(query, "information_schema.tables"):
 		return &t08r1Rows{
-			cols: []string{"engine", "table_collation", "table_comment", "auto_increment", "row_format", "table_rows"},
-			rows: [][]driver.Value{{"InnoDB", "utf8mb4_general_ci", "", nil, "Dynamic", int64(0)}},
+			cols: []string{"engine", "table_collation", "table_comment", "auto_increment", "row_format", "table_rows", "table_type"},
+			rows: [][]driver.Value{{"InnoDB", "utf8mb4_general_ci", "", nil, "Dynamic", int64(0), "BASE TABLE"}},
 		}, nil
 	}
 	return nil, sql.ErrNoRows

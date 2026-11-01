@@ -477,6 +477,24 @@ func Register(registry *rule.Registry, cfg policy.Policy) error {
 		{ruleID: ruleIDViewDropForbid, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
 			return newForbiddenDDLOperationRule(ruleIDViewDropForbid, spec.DDLOperationDropView, "drop view", rule.LevelBlocker, cfg)
 		}},
+		{ruleID: "ddl.view.target.valid", construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newViewLifecycleRule("ddl.view.target.valid", rule.LevelBlocker, cfg), nil
+		}},
+		{ruleID: "ddl.view.source.valid", construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newViewLifecycleRule("ddl.view.source.valid", rule.LevelBlocker, cfg), nil
+		}},
+		{ruleID: "ddl.view.security.definer.warn", construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newViewLifecycleRule("ddl.view.security.definer.warn", rule.LevelWarning, cfg), nil
+		}},
+		{ruleID: "ddl.view.algorithm.warn", construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newViewLifecycleRule("ddl.view.algorithm.warn", rule.LevelWarning, cfg), nil
+		}},
+		{ruleID: "ddl.view.check_option.valid", construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newViewLifecycleRule("ddl.view.check_option.valid", rule.LevelBlocker, cfg), nil
+		}},
+		{ruleID: "ddl.view.options.ignored.warn", construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newViewLifecycleRule("ddl.view.options.ignored.warn", rule.LevelWarning, cfg), nil
+		}},
 		{ruleID: ruleIDTableDropForbid, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
 			return newForbiddenDDLOperationRule(ruleIDTableDropForbid, spec.DDLOperationDropTable, "drop table", rule.LevelBlocker, cfg)
 		}},

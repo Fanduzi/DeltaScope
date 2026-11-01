@@ -255,6 +255,16 @@ func statementKindsForRule(ruleID string) []string {
 
 func triggerExampleForRule(ruleID string) string {
 	switch {
+	case ruleID == "ddl.view.target.valid":
+		return "DROP VIEW missing_view;"
+	case ruleID == "ddl.view.source.valid":
+		return "CREATE VIEW v AS SELECT missing_column FROM t;"
+	case ruleID == "ddl.view.security.definer.warn":
+		return "CREATE VIEW v AS SELECT id FROM t;"
+	case ruleID == "ddl.view.algorithm.warn", ruleID == "ddl.view.options.ignored.warn":
+		return "CREATE ALGORITHM=TEMPTABLE VIEW v AS SELECT id FROM t;"
+	case ruleID == "ddl.view.check_option.valid":
+		return "CREATE ALGORITHM=TEMPTABLE VIEW v AS SELECT id FROM t WITH LOCAL CHECK OPTION;"
 	case ruleID == "dml.where.require":
 		return "DELETE FROM users;"
 	case strings.HasPrefix(ruleID, "dml."):
@@ -270,6 +280,13 @@ func triggerExampleForRule(ruleID string) string {
 
 func validExampleForRule(ruleID string) string {
 	switch {
+	case ruleID == "ddl.view.target.valid":
+		return "DROP VIEW IF EXISTS v;"
+	case ruleID == "ddl.view.security.definer.warn":
+		return "CREATE SQL SECURITY INVOKER VIEW v AS SELECT id FROM t;"
+	case ruleID == "ddl.view.source.valid", ruleID == "ddl.view.algorithm.warn",
+		ruleID == "ddl.view.check_option.valid", ruleID == "ddl.view.options.ignored.warn":
+		return "CREATE VIEW v AS SELECT id FROM t;"
 	case ruleID == "dml.where.require":
 		return "DELETE FROM users WHERE id = 1;"
 	case strings.HasPrefix(ruleID, "dml."):
@@ -387,6 +404,13 @@ func metadataNotesForRule(ruleID string) *MetadataNotes {
 			Missing:  "Live instance facts are unavailable; the estimate runs on declared inputs only, and any required field left unresolved reports an evidence gap.",
 		}
 	}
+	if strings.HasPrefix(ruleID, "ddl.view.") {
+		return &MetadataNotes{
+			Kinds:    kinds,
+			Required: "Ordered relation and view facts support checks of target, source and inherited attributes where applicable.",
+			Missing:  "Unprovided facts remain evidence gaps when the enabled check needs them; declared facts are still assessed offline.",
+		}
+	}
 	return &MetadataNotes{
 		Kinds:    kinds,
 		Required: "Live metadata is available, so this explanation can use schema or instance facts for a more accurate judgment.",
@@ -396,6 +420,9 @@ func metadataNotesForRule(ruleID string) *MetadataNotes {
 
 func metadataKindsForRule(ruleID string) ([]MetadataKind, bool) {
 	switch ruleID {
+	case "ddl.view.target.valid", "ddl.view.source.valid", "ddl.view.security.definer.warn",
+		"ddl.view.check_option.valid":
+		return []MetadataKind{MetadataKindTargetTable}, true
 	case "dml.table.denylist.forbid", "ddl.table.denylist.forbid":
 		return []MetadataKind{MetadataKindSchema}, true
 	case "ddl.database.create.exists.forbid", "ddl.database.alter.exists.require",
@@ -459,6 +486,13 @@ func FormatYAMLScalar(value any) string {
 // All other rules (including most DML rules) apply to common dialect scope.
 func dialectsForRule(ruleID string) []string {
 	switch {
+	case ruleID == "ddl.view.target.valid", ruleID == "ddl.view.source.valid",
+		ruleID == "ddl.view.security.definer.warn":
+		return []string{"mysql", "tidb"}
+	case ruleID == "ddl.view.algorithm.warn", ruleID == "ddl.view.check_option.valid":
+		return []string{"mysql"}
+	case ruleID == "ddl.view.options.ignored.warn":
+		return []string{"tidb"}
 	case ruleID == "dml.table.exists.require":
 		return []string{"mysql", "tidb"}
 	case strings.HasPrefix(ruleID, "ddl.pg."):
@@ -736,6 +770,10 @@ func sourceForRule() string {
 const unknownPriorNullabilityAdvisoryRuleID = "ddl.alter.modify_column.explicit_nullability_change.unknown_prior_state.advisory"
 
 var metadataAwareRuleIDs = map[string]bool{
+	"ddl.view.target.valid":                         true,
+	"ddl.view.source.valid":                         true,
+	"ddl.view.security.definer.warn":                true,
+	"ddl.view.check_option.valid":                   true,
 	"ddl.alter.change_column.compatibility.require": true,
 	"ddl.alter.change_column.exists.require":        true,
 	"ddl.alter.change_column.target.exists.forbid":  true,

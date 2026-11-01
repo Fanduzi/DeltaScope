@@ -832,7 +832,7 @@ func ptrTestString(value string) *string {
 func TestLoadTableSnapshotReturnsNotExistsWhenNoTableRow(t *testing.T) {
 	db := openTestDB(t, map[string]testQueryResult{
 		"from information_schema.tables": {
-			columns: []string{"engine", "table_collation", "table_comment", "auto_increment", "row_format", "table_rows"},
+			columns: []string{"engine", "table_collation", "table_comment", "auto_increment", "row_format", "table_rows", "table_type"},
 			rows:    [][]driver.Value{},
 		},
 	})
@@ -876,9 +876,9 @@ func TestFindSchemasForTableWithMockDB(t *testing.T) {
 func TestLoadTableSnapshotPreservesIndexCardinalityFromStatisticsRows(t *testing.T) {
 	db := openTestDB(t, map[string]testQueryResult{
 		"from information_schema.tables": {
-			columns: []string{"engine", "table_collation", "table_comment", "auto_increment", "row_format", "table_rows"},
+			columns: []string{"engine", "table_collation", "table_comment", "auto_increment", "row_format", "table_rows", "table_type"},
 			rows: [][]driver.Value{{
-				"InnoDB", "utf8mb4_general_ci", "users table", nil, "Dynamic", int64(100),
+				"InnoDB", "utf8mb4_general_ci", "users table", nil, "Dynamic", int64(100), "BASE TABLE",
 			}},
 		},
 		"from information_schema.columns": {
@@ -1117,8 +1117,8 @@ func TestLoadTableSnapshotUnmodeledConstraintTypeUnvouchesCollection(t *testing.
 	baseResults := func() map[string]testQueryResult {
 		return map[string]testQueryResult{
 			"from information_schema.tables": {
-				columns: []string{"engine", "table_collation", "table_comment", "auto_increment", "row_format", "table_rows"},
-				rows:    [][]driver.Value{{"InnoDB", "utf8mb4_general_ci", "t", nil, "Dynamic", int64(10)}},
+				columns: []string{"engine", "table_collation", "table_comment", "auto_increment", "row_format", "table_rows", "table_type"},
+				rows:    [][]driver.Value{{"InnoDB", "utf8mb4_general_ci", "t", nil, "Dynamic", int64(10), "BASE TABLE"}},
 			},
 			"from information_schema.columns": {
 				columns: []string{"column_name", "column_type", "character_set_name", "collation_name", "column_comment", "column_default", "is_nullable", "extra", "generation_expression"},
@@ -1197,8 +1197,8 @@ func TestLoadTableSnapshotCheckConstraintMembers(t *testing.T) {
 	baseResults := func() map[string]testQueryResult {
 		return map[string]testQueryResult{
 			"from information_schema.tables": {
-				columns: []string{"engine", "table_collation", "table_comment", "auto_increment", "row_format", "table_rows"},
-				rows:    [][]driver.Value{{"InnoDB", "utf8mb4_general_ci", "t", nil, "Dynamic", int64(10)}},
+				columns: []string{"engine", "table_collation", "table_comment", "auto_increment", "row_format", "table_rows", "table_type"},
+				rows:    [][]driver.Value{{"InnoDB", "utf8mb4_general_ci", "t", nil, "Dynamic", int64(10), "BASE TABLE"}},
 			},
 			"from information_schema.columns": {
 				columns: []string{"column_name", "column_type", "character_set_name", "collation_name", "column_comment", "column_default", "is_nullable", "extra", "generation_expression"},

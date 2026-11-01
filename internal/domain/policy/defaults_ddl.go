@@ -558,6 +558,12 @@ func ddlCoreRules() map[string]RulePolicy {
 				"forbid": true,
 			},
 		},
+		"ddl.view.target.valid":          {Enabled: true, Level: rule.LevelBlocker},
+		"ddl.view.source.valid":          {Enabled: true, Level: rule.LevelBlocker},
+		"ddl.view.security.definer.warn": {Enabled: true, Level: rule.LevelWarning},
+		"ddl.view.algorithm.warn":        {Enabled: true, Level: rule.LevelWarning},
+		"ddl.view.check_option.valid":    {Enabled: true, Level: rule.LevelBlocker},
+		"ddl.view.options.ignored.warn":  {Enabled: true, Level: rule.LevelWarning},
 		"ddl.table.drop.forbid": {
 			Enabled: true,
 			Level:   rule.LevelBlocker,

@@ -981,7 +981,9 @@ rules:
 
 #### ddl.view.create.forbid
 
-Forbids `CREATE VIEW` statements.
+Forbids `CREATE VIEW` and `CREATE OR REPLACE VIEW`; on MySQL the same policy
+also covers `ALTER VIEW` definition changes. TiDB `ALTER VIEW` is a vendor
+boundary, not a supported policy evaluation.
 
 **Default:** `enabled: true`, `level: blocker`
 
@@ -1005,6 +1007,26 @@ rules:
     params:
       forbid: true
 ```
+
+#### View lifecycle semantic rules
+
+The following parameter-free rules are enabled by default; each supports
+`enabled` and `level` like other rules:
+
+| Rule | Default level | Dialects |
+|------|---------------|----------|
+| `ddl.view.target.valid` | blocker | MySQL, TiDB |
+| `ddl.view.source.valid` | blocker | MySQL, TiDB |
+| `ddl.view.security.definer.warn` | warning | MySQL, TiDB |
+| `ddl.view.algorithm.warn` | warning | MySQL |
+| `ddl.view.check_option.valid` | blocker | MySQL |
+| `ddl.view.options.ignored.warn` | warning | TiDB |
+
+They use declared facts and request-local ordered metadata where applicable.
+Missing required facts produce evidence gaps rather than synthetic findings.
+Levels and enabled flags do not alter state transitions. Named definer review
+does not prove account existence or authorization; TiDB `ALTER VIEW` and bare
+`WITH CHECK OPTION` are vendor boundaries.
 
 ---
 

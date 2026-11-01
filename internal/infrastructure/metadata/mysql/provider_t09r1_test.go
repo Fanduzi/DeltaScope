@@ -106,8 +106,8 @@ func TestT09R1ProviderLoadIndexesMarksNonPlain(t *testing.T) {
 			rows:    [][]driver.Value{{"8.0.46"}},
 		},
 		"from information_schema.tables": {
-			columns: []string{"engine", "table_collation", "table_comment", "auto_increment", "row_format", "table_rows"},
-			rows:    [][]driver.Value{{"InnoDB", "utf8mb4_general_ci", "", nil, "Dynamic", int64(0)}},
+			columns: []string{"engine", "table_collation", "table_comment", "auto_increment", "row_format", "table_rows", "table_type"},
+			rows:    [][]driver.Value{{"InnoDB", "utf8mb4_general_ci", "", nil, "Dynamic", int64(0), "BASE TABLE"}},
 		},
 		"from information_schema.statistics": {
 			columns: []string{"index_name", "non_unique", "index_type", "column_name", "cardinality", "sub_part", "collation"},

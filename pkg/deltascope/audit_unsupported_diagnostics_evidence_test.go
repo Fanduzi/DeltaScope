@@ -114,7 +114,7 @@ func TestUnsupportedDiagnosticsGuidanceCodeSDKMySQL(t *testing.T) {
 	t.Parallel()
 
 	result, err := Audit(context.Background(), Request{
-		SQL:     "ALTER VIEW v_users AS SELECT id, name FROM users",
+		SQL:     "ALTER PROCEDURE v_users COMMENT 'x'",
 		Dialect: DialectMySQL,
 	})
 	if err == nil {

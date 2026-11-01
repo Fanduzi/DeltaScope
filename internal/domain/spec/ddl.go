@@ -3,8 +3,9 @@ package spec
 
 // DDL contains the structural metadata extracted from a DDL statement.
 type DDL struct {
-	Operation DDLOperation `json:"operation,omitempty"`
-	Table     *Table       `json:"table,omitempty"`
+	Operation DDLOperation     `json:"operation,omitempty"`
+	Table     *Table           `json:"table,omitempty"`
+	View      *ViewDeclaration `json:"-"`
 	// Targets lists every table-level object identity the statement names, in
 	// source order: each DROP TABLE/VIEW name, each TRUNCATE relation, each
 	// RENAME TABLE source and destination pair-wise, and ALTER TABLE

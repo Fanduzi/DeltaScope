@@ -377,6 +377,10 @@ func statementCoverageAspects(dialect spec.Dialect, statement spec.Statement) []
 	}
 	ddl := statement.DDL
 	var gaps []spec.UnsupportedDetail
+	if statement.Metadata != nil && statement.Metadata.View != nil &&
+		(statement.Metadata.View.DependencyLimit || spec.AssessViewLifecycle(statement).DependencyLimit) {
+		gaps = append(gaps, aspectGap("view.dependencies.limit", false, map[string]any{"aspect": "dependency_limit"}))
+	}
 	for _, option := range ddl.UnextractedOptions {
 		// A dropped placement-policy or TiDB-only option is still a vendor
 		// boundary under MySQL — MySQL has no such feature regardless of

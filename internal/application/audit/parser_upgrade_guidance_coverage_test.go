@@ -19,13 +19,7 @@ func TestParserUpgradeCandidateGuidanceCoverage(t *testing.T) {
 		dialect        spec.Dialect
 		forbiddenNames []string
 	}{
-		// MySQL candidates (5)
-		{
-			name:           "MySQL ALTER VIEW",
-			sql:            "ALTER VIEW v_users AS SELECT id, name FROM users",
-			dialect:        spec.DialectMySQL,
-			forbiddenNames: []string{"v_users"},
-		},
+		// MySQL candidates (4)
 		{
 			name:           "MySQL ALTER PROCEDURE",
 			sql:            "ALTER PROCEDURE p1 COMMENT 'x'",
@@ -112,6 +106,17 @@ func TestParserUpgradeCandidateGuidanceCoverage(t *testing.T) {
 
 func TestParserUpgradeCandidateNegativeCases(t *testing.T) {
 	t.Parallel()
+
+	t.Run("invalid ALTER VIEW query is not an upgrade candidate", func(t *testing.T) {
+		result, err := AuditSQL(context.Background(), Request{
+			SQL: "ALTER VIEW v AS SELECT FROM t;", Dialect: spec.DialectMySQL,
+		})
+		if err == nil || len(result.Diagnostics) != 1 ||
+			result.Diagnostics[0].Classification != "parser_error" ||
+			result.Diagnostics[0].GuidanceCode == DiagnosticGuidanceParserUpgradeCandidate {
+			t.Fatalf("result=%#v err=%v", result, err)
+		}
+	})
 
 	t.Run("garbage SQL is not parser_upgrade_candidate", func(t *testing.T) {
 		t.Parallel()

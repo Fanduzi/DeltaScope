@@ -52,6 +52,7 @@ type batchTableEntry struct {
 	shape         *spec.TableSnapshot
 	displaySchema string
 	displayTable  string
+	notView       bool
 }
 
 // batchState owns ordered prospective table facts for one audit request. It is
@@ -296,6 +297,10 @@ func (s *batchState) apply(ctx context.Context, statement spec.Statement) error 
 		return s.applyDropTable(ctx, statement)
 	}
 	if statement.Unsupported != nil {
+		if statement.DDL != nil && statement.DDL.View != nil &&
+			statement.Unsupported.Reason == spec.UnsupportedVendorBoundaryReason {
+			return nil
+		}
 		// A vendor-boundary statement never executes on this dialect (the
 		// product lacks the feature — TiDB CTAS 1105, TiDB procedures,
 		// MySQL-side TiDB extensions). Its pre-state is provably unchanged
@@ -338,6 +343,11 @@ func (s *batchState) apply(ctx context.Context, statement spec.Statement) error 
 		return nil
 	}
 	ddl := statement.DDL
+	if ddl.Operation == spec.DDLOperationAlterTable && statement.Metadata != nil &&
+		statement.Metadata.TargetTable != nil && statement.Metadata.TargetTable.Exists &&
+		statement.Metadata.TargetTable.RelationKind == "view" && !statement.Metadata.TargetTable.Temporary {
+		return nil
+	}
 	// The shared advanced-column assessment gates state publication,
 	// independently of policy switches. A provably rejected transition must
 	// not keep the prior shape reusable as a success fact, and a structurally
@@ -368,6 +378,14 @@ func (s *batchState) apply(ctx context.Context, statement spec.Statement) error 
 		return nil
 	}
 	switch ddl.Operation {
+	case spec.DDLOperationCreateView, spec.DDLOperationAlterView:
+		if ddl.View != nil {
+			return s.applyView(statement)
+		}
+	case spec.DDLOperationDropView:
+		if ddl.View != nil {
+			return s.applyDropView(statement)
+		}
 	case spec.DDLOperationCreateTable:
 		return s.applyCreateTable(ctx, statement)
 	case spec.DDLOperationAlterTable:
@@ -946,6 +964,7 @@ func ctasDeclaredShape(displaySchema, displayTable string, ddl *spec.DDL) *spec.
 		Schema:             displaySchema,
 		Table:              &spec.Table{Schema: displaySchema, Name: displayTable, Comment: ddl.Table.Comment},
 		Exists:             true,
+		RelationKind:       "table",
 		Columns:            make([]spec.Column, 0, len(ddl.Columns)),
 		ColumnsTailUnknown: true,
 		Indexes:            []spec.Index{},
@@ -1021,12 +1040,13 @@ func (s *batchState) derivedCreateShape(displaySchema, displayTable string, ddl 
 
 func derivedCreateShape(dialect spec.Dialect, schema, table string, ddl *spec.DDL, tidbClusteredDefault *string, tidbAlterPK *bool) *spec.TableSnapshot {
 	snapshot := &spec.TableSnapshot{
-		Schema:      schema,
-		Table:       &spec.Table{Schema: schema, Name: table, Comment: ddl.Table.Comment},
-		Exists:      true,
-		Columns:     make([]spec.Column, 0, len(ddl.Columns)),
-		Indexes:     make([]spec.Index, 0, len(ddl.Indexes)),
-		Constraints: make([]spec.Constraint, 0, len(ddl.Constraints)),
+		Schema:       schema,
+		Table:        &spec.Table{Schema: schema, Name: table, Comment: ddl.Table.Comment},
+		Exists:       true,
+		RelationKind: "table",
+		Columns:      make([]spec.Column, 0, len(ddl.Columns)),
+		Indexes:      make([]spec.Index, 0, len(ddl.Indexes)),
+		Constraints:  make([]spec.Constraint, 0, len(ddl.Constraints)),
 	}
 	for _, column := range ddl.Columns {
 		snapshot.Columns = append(snapshot.Columns, cloneColumn(column))
@@ -2208,6 +2228,9 @@ func (s *batchState) applyDropTable(ctx context.Context, statement spec.Statemen
 			switch {
 			case ref.entry != nil && ref.entry.state == tableAbsent:
 				anyMissing = true
+			case ref.entry != nil && ref.entry.state == tablePresent && ref.entry.shape != nil &&
+				ref.entry.shape.RelationKind == "view":
+				anyMissing = true
 			case ref.entry == nil || ref.entry.state == tableUnknown:
 				// A member whose existence is unvouched could be the
 				// missing name an 8.x veto keys on — its presence makes
@@ -2228,6 +2251,10 @@ func (s *batchState) applyDropTable(ctx context.Context, statement spec.Statemen
 	dropped := make(map[batchTableKey]struct{})
 	unproven := make(map[batchTableKey]struct{})
 	for _, ref := range bound {
+		if ref.ns == namespacePersistent && ref.entry != nil && ref.entry.state == tablePresent &&
+			ref.entry.shape != nil && ref.entry.shape.RelationKind == "view" {
+			continue
+		}
 		fate := dropTargetFate(multiDropAtomic, multi, ifExists, anyMissing, anyUnvouched, ref.ns, ref.entry, s.dialect, s.resolvedVersion)
 		switch fate {
 		case dropFateDropped:
@@ -2884,6 +2911,7 @@ func cloneTableSnapshot(in *spec.TableSnapshot) *spec.TableSnapshot {
 		return nil
 	}
 	out := *in
+	out.View = spec.CloneViewSnapshot(in.View)
 	if in.Table != nil {
 		table := *in.Table
 		out.Table = &table

@@ -62,6 +62,15 @@ conditional-create refusal or withholding and the unextracted tiflash
 boundary with a following table target. Native receipts and ordered
 projection proofs are separate from these corpus expectations.
 
+## T18 view-lifecycle representatives
+
+MySQL and TiDB each have a `ddl/findings/view_lifecycle_rules` pair exercising
+ordered view target/source checks and security review. The MySQL pair also
+covers algorithm and CHECK applicability; the TiDB pair covers ignored
+declared options. TiDB ALTER VIEW remains a vendor boundary. The broader
+query-shape, version, privacy and ordered-state oracles are specified in the
+[T18 matrix](../../docs/work-plans/t18-view-lifecycle/MATRIX.md).
+
 ## PostgreSQL Representative Pack
 
 The PostgreSQL corpus keeps production-shaped coverage bounded and separate:

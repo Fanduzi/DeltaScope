@@ -6,6 +6,7 @@ Stable public package surface for library consumers.
 
 | File | Responsibility |
 |------|---------------|
+| audit_t18_view_first_test.go | Exercises public ALTER VIEW behavior, independent evidence, source bindings, parser controls and privacy |
 | doc.go | Declares the public package placeholder |
 | audit.go | Exposes the stable public audit API, optional metadata-provider hooks, and public result/request types |
 | query_access.go | Exposes the stable public query access analysis API, schema resolver interface, and public result/request types |
@@ -68,6 +69,7 @@ Stable public package surface for library consumers.
   server collation, and configurable utf8mb4 default collation; empty means
   unobserved and `DefaultCharset` is the request database charset.
 - `TableSnapshot`
+- `ViewSnapshot`, `ViewDefinition`, `ViewColumnBinding` for metadata-provider view facts
 - `Table`
 - `Column`
 - `Index`

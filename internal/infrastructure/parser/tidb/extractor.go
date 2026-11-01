@@ -74,16 +74,47 @@ func (e tidbExtractor) Extract(dialect spec.Dialect, rawSQL string) (spec.Statem
 	if e.kind == spec.KindUnknown {
 		statement.Warnings = append([]string(nil), e.warnings...)
 	}
+	if node, ok := e.node.(*viewStatement); ok {
+		if node.declaration.Definition != nil {
+			node.declaration.Definition = spec.SelectViewDefinition(node.declaration.Definition, dialect)
+		}
+		target := node.target
+		statement.DDL = &spec.DDL{
+			Operation: node.operation, Table: &target, HasSelect: true, View: node.declaration,
+			UnextractedOptions: unmodeledViewOptions(node.declaration),
+		}
+		if node.declaration.Definition != nil {
+			statement.DDL.SelectSources = append([]spec.Table(nil), node.declaration.Definition.Sources...)
+		}
+		applyCoverageBoundary(dialect, &statement, e.node)
+		if dialect == spec.DialectTiDB && (node.operation == spec.DDLOperationAlterView || node.declaration.CheckBare) {
+			statement.Unsupported = &spec.UnsupportedDetail{
+				Feature: "view.syntax", Reason: spec.UnsupportedVendorBoundaryReason,
+			}
+		}
+		return statement, nil
+	}
 
 	switch node := e.node.(type) {
 	case *ast.CreateTableStmt:
 		statement.DDL = extractCreateTable(node, rawSQL)
 	case *ast.CreateViewStmt:
 		statement.DDL = extractCreateView(node)
+		if header, ok := parseViewHeader(rawSQL); ok && header.operation == spec.DDLOperationCreateView {
+			header.declaration.Definition = spec.SelectViewDefinition(viewDefinition(node.Select, rawSQL, header.selectStart, 0, true), dialect)
+			statement.DDL.View = header.declaration
+			statement.DDL.UnextractedOptions = unmodeledViewOptions(header.declaration)
+			if header.declaration.Definition != nil {
+				statement.DDL.SelectSources = append([]spec.Table(nil), header.declaration.Definition.Sources...)
+			}
+		}
 	case *ast.AlterTableStmt:
 		statement.DDL = extractAlterTable(node, rawSQL)
 	case *ast.DropTableStmt:
 		statement.DDL = extractDropTable(node)
+		if node.IsView {
+			statement.DDL.View = &spec.ViewDeclaration{TargetOffsets: viewDropTargetOffsets(rawSQL)}
+		}
 	case *ast.TruncateTableStmt:
 		statement.DDL = extractTruncateTable(node)
 	case *ast.CreateDatabaseStmt:
@@ -216,6 +247,7 @@ func classify(stmt ast.StmtNode) spec.Kind {
 	switch stmt.(type) {
 	case *ast.CreateTableStmt,
 		*ast.CreateViewStmt,
+		*viewStatement,
 		*ast.CreateIndexStmt,
 		*ast.AlterTableStmt,
 		*ast.DropTableStmt,

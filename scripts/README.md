@@ -2,10 +2,18 @@
 
 Operational scripts for local DeltaScope workflows.
 
+Golden manifests can pin fixture-private JSON sentinels with
+`expect.serialized_not_contains`: a nonempty list of unique strings. The
+runner and offline validator reject a marker anywhere in public JSON and
+reject malformed marker sets or missing JSON. Use only private fixture values
+that are absent from caller-authored SQL, whose existing disclosure contract
+is unchanged.
+
 ## Files
 
 | File | Responsibility |
 |------|---------------|
+| test_ddl_golden_privacy.py | Pins fixture-private JSON checks, clean controls, nested disclosure, missing JSON, malformed marker sets and unchanged historical expectations |
 | t07_contract.py | Independent frozen T07 advanced-column role/oracle and full-entry validator: 207 identities, exact statement/column/dependent findings, Known-vs-empty gaps, product/version/vendor roles, complete native schemas/step errors, strict JSON counters and privacy; source of the materialized T07 manifest, never product-actual-derived expectations |
 | test_t07_contract.py | Full-entry T07 constructed valid control and adversarial validator sensitivity, plus owned-fixture/version/count/error/cleanup and environment-only credential controls; no product or native acceptance claim |
 | t08_contract.py | Independent frozen T08 column-governance role/oracle and full-entry validator: 172 identities, explicit default/nullability/auto_increment operation bindings, effective-default transition classes, column-position existence and ordering (FIRST/AFTER), bounded multi-action ordered state (MySQL accumulated vs TiDB pre-state), strict JSON counters and per-anchor native error pins; source of the materialized T08 manifest, never product-actual-derived expectations |

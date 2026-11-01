@@ -35,8 +35,8 @@ func t06a4ColumnRows(defaults []driver.Value) testQueryResult {
 func t06a4Results(defaults []driver.Value) map[string]testQueryResult {
 	return map[string]testQueryResult{
 		"from information_schema.tables": {
-			columns: []string{"engine", "table_collation", "table_comment", "auto_increment", "row_format", "table_rows"},
-			rows:    [][]driver.Value{{"InnoDB", "utf8mb4_general_ci", "", nil, "Dynamic", int64(0)}},
+			columns: []string{"engine", "table_collation", "table_comment", "auto_increment", "row_format", "table_rows", "table_type"},
+			rows:    [][]driver.Value{{"InnoDB", "utf8mb4_general_ci", "", nil, "Dynamic", int64(0), "BASE TABLE"}},
 		},
 		"from information_schema.columns": t06a4ColumnRows(defaults),
 		"from information_schema.statistics": {

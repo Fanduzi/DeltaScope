@@ -82,13 +82,9 @@ func assertParserErrorFeasibilityCase(t *testing.T, tc ddlParserErrorFeasibility
 	}
 }
 
-// --- MySQL parser-error feasibility cases (15) ---
+// --- MySQL parser-error feasibility cases (14) ---
 
 var mysqlParserErrorFeasibilityCases = []ddlParserErrorFeasibilityCase{
-	{Dialect: spec.DialectMySQL, Family: "view", Name: "ALTER VIEW",
-		SQL:      "ALTER VIEW v_users AS SELECT id, name FROM users",
-		Expected: boundedFallbackCandidate,
-		Reason:   "View name and ALTER action are bounded; SELECT body not needed for identity extraction"},
 	{Dialect: spec.DialectMySQL, Family: "routine", Name: "ALTER PROCEDURE",
 		SQL:      "ALTER PROCEDURE p_cleanup SQL SECURITY INVOKER",
 		Expected: unsafeFallbackDefer,
@@ -147,13 +143,9 @@ var mysqlParserErrorFeasibilityCases = []ddlParserErrorFeasibilityCase{
 		Reason:   "MySQL 8.0 resource group DDL; bounded key=value structure; TiDB parser may add support"},
 }
 
-// --- TiDB parser-error feasibility cases (9) ---
+// --- TiDB parser-error feasibility cases (8) ---
 
 var tidbParserErrorFeasibilityCases = []ddlParserErrorFeasibilityCase{
-	{Dialect: spec.DialectTiDB, Family: "view", Name: "ALTER VIEW",
-		SQL:      "ALTER VIEW v_users AS SELECT id, name FROM users",
-		Expected: boundedFallbackCandidate,
-		Reason:   "View name and ALTER action are bounded; SELECT body not needed for identity extraction"},
 	{Dialect: spec.DialectTiDB, Family: "table_option", Name: "ALTER TABLE TTL",
 		SQL:      "ALTER TABLE users TTL = 'created_at + INTERVAL 30 DAY'",
 		Expected: boundedFallbackCandidate,
@@ -245,11 +237,11 @@ func TestDDLParserErrorFeasibilityCensus(t *testing.T) {
 			tidbCount++
 		}
 	}
-	if mysqlCount != 15 {
-		t.Errorf("expected 15 MySQL parser-error cases, got %d", mysqlCount)
+	if mysqlCount != 14 {
+		t.Errorf("expected 14 MySQL parser-error cases, got %d", mysqlCount)
 	}
-	if tidbCount != 9 {
-		t.Errorf("expected 9 TiDB parser-error cases, got %d", tidbCount)
+	if tidbCount != 8 {
+		t.Errorf("expected 8 TiDB parser-error cases, got %d", tidbCount)
 	}
 	t.Logf("MySQL parser-error cases: %d", mysqlCount)
 	t.Logf("TiDB parser-error cases:  %d", tidbCount)

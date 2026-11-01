@@ -617,6 +617,22 @@ def cli_case_expect_checks(parsed, rc, expect):
             parsed is not None and isinstance(got, dict) and all(got.get(k) == v for k, v in want.items()),
             f"version={got!r} expected={want!r}",
         ))
+    if "serialized_not_contains" in expect:
+        markers = expect["serialized_not_contains"]
+        valid = (
+            isinstance(markers, list) and bool(markers)
+            and all(isinstance(marker, str) and marker for marker in markers)
+            and len(markers) == len(set(markers))
+        )
+        checks.append(("public JSON privacy oracle", bool(valid), "requires nonempty unique string markers"))
+        if valid:
+            serialized = json.dumps(parsed, sort_keys=True) if parsed is not None else ""
+            for index, marker in enumerate(markers):
+                checks.append((
+                    f"public JSON privacy marker {index}",
+                    parsed is not None and json.dumps(marker)[1:-1] not in serialized,
+                    "fixture-private marker must not occur in public JSON",
+                ))
     return checks
 
 

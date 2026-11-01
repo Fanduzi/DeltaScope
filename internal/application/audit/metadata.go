@@ -238,6 +238,16 @@ func (state *batchState) enrichStatements(ctx context.Context, request *Metadata
 			}
 		}
 
+		if statement.DDL != nil && statement.DDL.View != nil && statement.DDL.View.Definition != nil &&
+			statement.DDL.View.Definition.HasCTE && dialect == spec.DialectMySQL &&
+			resolvedVersion != nil && resolvedVersion.Major == 5 {
+			enriched[i].Unsupported = &spec.UnsupportedDetail{
+				Feature: "view_query_cte", Reason: spec.UnsupportedVendorBoundaryReason,
+			}
+			enriched[i].Metadata = &spec.Metadata{Schema: requestSchema, Instance: instanceFacts, Version: resolvedVersion}
+			continue
+		}
+
 		metadataSchema := metadataTargetSchema(request, statement)
 		metadata := &spec.Metadata{Schema: metadataSchema, Instance: instanceFacts, Version: resolvedVersion}
 
@@ -249,6 +259,9 @@ func (state *batchState) enrichStatements(ctx context.Context, request *Metadata
 			// primary binding's snapshot for single-target consumers.
 			bindings, source, sources, err := state.boundTargetsForStatement(ctx, statement)
 			if err != nil {
+				if statement.DDL.View != nil {
+					return nil, viewStateReadError{cause: err}
+				}
 				return nil, fmt.Errorf("load table snapshot: %w", err)
 			}
 			metadata.TargetTables = bindings
@@ -256,6 +269,13 @@ func (state *batchState) enrichStatements(ctx context.Context, request *Metadata
 			metadata.SourceTables = sources
 			if len(bindings) > 0 {
 				metadata.TargetTable = bindings[0].Snapshot
+			}
+			if statement.DDL.View != nil {
+				view, err := state.projectViewMetadata(ctx, statement, metadata.TargetTable, bindings, sources)
+				if err != nil {
+					return nil, viewStateReadError{cause: err}
+				}
+				metadata.View = view
 			}
 		} else {
 			target, err := orderedTargetTable(ctx, dialect, request, statement, metadataSchema)
@@ -289,7 +309,7 @@ func (state *batchState) enrichStatements(ctx context.Context, request *Metadata
 		// ExchangeTable participates in the mount: a statement carrying only
 		// a counterpart fact (no schema, no version, no provider target)
 		// still keeps its metadata so the counterpart rule sees it.
-		if metadata.Schema != "" || metadata.Instance != nil || metadata.TargetTable != nil ||
+		if metadata.Schema != "" || metadata.Instance != nil || metadata.TargetTable != nil || metadata.View != nil ||
 			metadata.ExchangeTable != nil || metadata.Version != nil {
 			enriched[i].Metadata = metadata
 		}

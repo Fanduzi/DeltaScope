@@ -28,6 +28,9 @@ ddl-golden:
 	@if [ "$(TASK)" = "T17" ]; then \
 		go test ./internal/application/audit -run 'TestT17R1GoldenProjections|TestT17R1ProviderErrorProof|TestT17R1Tail' -count=1 -v; \
 	fi
+	@if [ "$(TASK)" = "T18" ]; then \
+		go test ./internal/application/audit ./pkg/deltascope -run '^TestT18' -count=1 -v; \
+	fi
 	python3 ./scripts/ddl_golden.py run --task "$(TASK)" --artifact-dir "$(ARTIFACT_DIR)"
 
 # ddl-golden-validator-test: offline contract tests proving the artifact
@@ -35,6 +38,7 @@ ddl-golden:
 # hand-written PASS records. No Docker required.
 ddl-golden-validator-test:
 	python3 ./scripts/test_ddl_golden.py
+	python3 ./scripts/test_ddl_golden_privacy.py
 	python3 ./scripts/test_t07_contract.py
 	python3 ./scripts/test_t08_contract.py
 	python3 ./scripts/test_t09_contract.py

@@ -803,11 +803,11 @@ rows:
     sql_shape: "CREATE SQL SECURITY DEFINER VIEW v AS SELECT id FROM t"
     prerequisites: "referenced tables known for dependency facts"
     status: semantically_checked
-    status_evidence: "2026-09-22 CLI probe: ddl.view.create.forbid fires on plain/OR REPLACE/SQL SECURITY forms. 2026-09-25 T03 rework (#82): parsed-but-unmodeled view clauses now record create_view.option.<name> unaudited evidence — or_replace, view_columns, view_algorithm (non-UNDEFINED), definer (named non-CURRENT_USER identity), sql_security (INVOKER), check_option (LOCAL); parser-defaulted forms stay complete"
+    status_evidence: "2026-09-22 CLI probe: ddl.view.create.forbid fires on plain/OR REPLACE/SQL SECURITY forms. 2026-09-25 T03 rework (#82): parsed-but-unmodeled view clauses now record create_view.option.<name> unaudited evidence — or_replace, view_columns, view_algorithm (non-UNDEFINED), definer (named non-CURRENT_USER identity), sql_security (INVOKER), check_option (LOCAL); parser-defaulted forms stay complete. 2026-11-01 T18 (#97): focused SDK and ordered-state regressions cover target/source, replacement edges, structured query facts, security and algorithm; unmodeled query shapes remain explicit boundaries. Historical initial seed Golden covered only the first slice."
     targets: "view identity, source tables, security attributes"
     acceptance:
-      dimensions: "lifecycle policy, security-attribute capture, source dependency"
-      refs: ["file:testdata/sql-corpus/mysql/ddl/findings"]
+      dimensions: "target/source validity, replacement edges, query bindings, security/algorithm, privacy, policy-independent state"
+      refs: ["file:pkg/deltascope/audit_t18_view_first_test.go", "file:internal/application/audit/batch_state_t18_first_test.go", "file:testdata/sql-corpus/mysql/ddl/findings/view_lifecycle_rules.sql"]
     owner: T18
 
   - id: mysql.create-view-check-option
@@ -818,12 +818,12 @@ rows:
     subactions: ["WITH [CASCADED|LOCAL] CHECK OPTION"]
     sql_shape: "CREATE VIEW v AS SELECT id FROM t WITH CHECK OPTION"
     prerequisites: "none"
-    status: parser_unsupported
-    status_evidence: "2026-09-22 CLI probe: parser_error on a vendor-valid CHECK OPTION form. 2026-09-25 T03 rework (#82): scoped forms WITH LOCAL/CASCADED CHECK OPTION now parse — LOCAL records create_view.option.check_option unaudited evidence (CASCADED equals the parser default and stays silent); the bare WITH CHECK OPTION form remains a parser error"
+    status: semantically_checked
+    status_evidence: "2026-09-22 CLI probe: parser_error on a vendor-valid CHECK OPTION form. 2026-09-25 T03 rework (#82): scoped forms WITH LOCAL/CASCADED CHECK OPTION now parse — LOCAL records create_view.option.check_option unaudited evidence (CASCADED equals the parser default and stays silent); the bare WITH CHECK OPTION form remains a parser error. 2026-11-01 T18 (#97): bare/LOCAL/CASCADED syntax and known non-updatable refusal are covered by focused semantic regressions; unknown inherited algorithm remains an evidence gap."
     targets: "check-option semantics on the view"
     acceptance:
-      dimensions: "valid-form parser evidence, upgrade decision"
-      refs: ["missing: owner records parser-upgrade evidence"]
+      dimensions: "bare/local/cascaded declaration, updatability refusal, unknown premises"
+      refs: ["file:pkg/deltascope/audit_t18_view_first_test.go", "file:internal/infrastructure/parser/tidb/view_t18_first_test.go"]
     owner: T18
 
   - id: mysql.alter-view
@@ -834,12 +834,12 @@ rows:
     subactions: ["ALTER VIEW v AS SELECT ..."]
     sql_shape: "ALTER VIEW v AS SELECT id FROM t"
     prerequisites: "existing view"
-    status: parser_unsupported
-    status_evidence: "2026-09-22 CLI probe + census: parser_error on vendor-valid ALTER VIEW (T18 first-path oracle)"
+    status: semantically_checked
+    status_evidence: "2026-09-22 CLI probe + census: parser_error on vendor-valid ALTER VIEW. 2026-11-01 T18 (#97): typed ALTER adapter and shared assessment promote the MySQL form; focused SDK and ordered-state regressions cover inheritance, replacement dependencies, refusal and uncertainty."
     targets: "view identity, new definition, security attributes"
     acceptance:
-      dimensions: "parser support or explicit boundary, source dependency"
-      refs: ["file:internal/application/audit/cross_dialect_ddl_coverage_census_test.go"]
+      dimensions: "typed ALTER, inherited attributes, source binding, refusal and uncertain state"
+      refs: ["file:internal/application/audit/cross_dialect_ddl_coverage_census_test.go", "file:pkg/deltascope/audit_t18_view_first_test.go", "file:internal/application/audit/batch_state_t18_first_test.go"]
     owner: T18
 
   - id: mysql.drop-view
@@ -851,11 +851,11 @@ rows:
     sql_shape: "DROP VIEW v1, v2"
     prerequisites: "none"
     status: semantically_checked
-    status_evidence: "2026-09-22 CLI probe: ddl.view.drop.forbid fires; multi-view list targets share T01 all-target contract"
+    status_evidence: "2026-09-22 CLI probe: ddl.view.drop.forbid fires; multi-view list targets share T01 all-target contract. 2026-11-01 T18 (#97): focused regressions cover all targets, IF EXISTS, duplicates, 5.7 partial and 8.x atomic outcomes, and persistent versus temporary identities."
     targets: "every view identity, IF EXISTS"
     acceptance:
-      dimensions: "all-target evaluation, existence conditionals"
-      refs: ["file:testdata/sql-corpus/mysql/ddl/findings"]
+      dimensions: "all-target evaluation, IF EXISTS, duplicate and version-dependent ordered effects"
+      refs: ["file:pkg/deltascope/audit_t18_view_first_test.go", "file:internal/application/audit/batch_state_t18_first_test.go", "file:testdata/sql-corpus/mysql/ddl/findings/view_lifecycle_rules.sql"]
     owner: T18
 
   # ================= MySQL: stored programs =================
@@ -1676,11 +1676,11 @@ rows:
     sql_shape: "CREATE VIEW v AS SELECT id FROM t"
     prerequisites: "none"
     status: semantically_checked
-    status_evidence: "2026-09-22 CLI probe: ddl.view.create.forbid fires. 2026-09-25 T03 rework (#82): parsed-but-unmodeled view clauses record create_view.option.<name> unaudited evidence (or_replace, view_columns, view_algorithm, definer, sql_security, check_option) — same contract as MySQL"
+    status_evidence: "2026-09-22 CLI probe: ddl.view.create.forbid fires. 2026-09-25 T03 rework (#82): parsed-but-unmodeled view clauses record create_view.option.<name> unaudited evidence (or_replace, view_columns, view_algorithm, definer, sql_security, check_option) — same contract as MySQL. 2026-11-01 T18 (#97): focused regressions cover source/target and security, CTE scope, replacement, and warnings for explicitly declared options without execution guarantees."
     targets: "view identity, source tables, security attributes"
     acceptance:
-      dimensions: "lifecycle policy, attribute capture"
-      refs: ["file:testdata/sql-corpus/tidb/ddl/findings"]
+      dimensions: "target/source validity, CTE scope, replacement, security and ignored-option warnings"
+      refs: ["file:pkg/deltascope/audit_t18_view_first_test.go", "file:testdata/sql-corpus/tidb/ddl/findings/view_lifecycle_rules.sql"]
     owner: T18
 
   - id: tidb.alter-view
@@ -1692,11 +1692,11 @@ rows:
     sql_shape: "ALTER VIEW v AS SELECT ..."
     prerequisites: "vendor boundary: TiDB overview lists CREATE/DROP VIEW only"
     status: vendor_not_supported
-    status_evidence: "TiDB DDL list contains no ALTER VIEW; parser_error observed incidentally — vendor boundary is the governing fact"
+    status_evidence: "2026-09-22: TiDB DDL list contains no ALTER VIEW; parser_error observed incidentally. 2026-11-01 T18 (#97): the typed adapter recognizes this as an explicit unsupported vendor boundary; the vendor boundary remains the governing fact."
     targets: "explicit vendor boundary (CREATE OR REPLACE is the path)"
     acceptance:
-      dimensions: "boundary classification"
-      refs: ["file:docs/research/2026-09-21-mysql-tidb-ddl-official-baseline.md"]
+      dimensions: "recognized unsupported vendor boundary, not supported policy evaluation"
+      refs: ["file:docs/research/2026-09-21-mysql-tidb-ddl-official-baseline.md", "file:pkg/deltascope/audit_t18_view_first_test.go"]
     owner: T18
 
   - id: tidb.drop-view
@@ -1708,11 +1708,11 @@ rows:
     sql_shape: "DROP VIEW v1"
     prerequisites: "none"
     status: semantically_checked
-    status_evidence: "2026-09-22 CLI probe: ddl.view.drop.forbid fires"
+    status_evidence: "2026-09-22 CLI probe: ddl.view.drop.forbid fires. 2026-11-01 T18 (#97): focused regressions cover ordered partial effects, wrong-kind stops, IF EXISTS, duplicates and unknown target postconditions."
     targets: "view identity"
     acceptance:
-      dimensions: "lifecycle finding"
-      refs: ["file:testdata/sql-corpus/tidb/ddl/findings"]
+      dimensions: "all-target findings, ordered prefix and wrong-kind stop, duplicate and IF EXISTS"
+      refs: ["file:pkg/deltascope/audit_t18_view_first_test.go", "file:internal/application/audit/batch_state_t18_first_test.go", "file:testdata/sql-corpus/tidb/ddl/findings/view_lifecycle_rules.sql"]
     owner: T18
 
   # ================= TiDB: sequences =================

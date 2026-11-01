@@ -20,8 +20,8 @@ func TestT13R2SubpartitionedCatalogKeepsNamesUnobserved(t *testing.T) {
 	t.Parallel()
 	db := openTestDB(t, map[string]testQueryResult{
 		"select engine, table_collation": {
-			columns: []string{"engine", "table_collation", "table_comment", "auto_increment", "row_format", "table_rows"},
-			rows:    [][]driver.Value{{"InnoDB", "utf8mb4_bin", "", nil, "", nil}},
+			columns: []string{"engine", "table_collation", "table_comment", "auto_increment", "row_format", "table_rows", "table_type"},
+			rows:    [][]driver.Value{{"InnoDB", "utf8mb4_bin", "", nil, "", nil, "BASE TABLE"}},
 		},
 		"information_schema.columns": {
 			columns: []string{"column_name", "column_type", "character_set_name", "collation_name", "column_comment", "column_default", "is_nullable", "extra", "generation_expression"},
@@ -61,8 +61,8 @@ func TestT13R2PlainCatalogStillComplete(t *testing.T) {
 	t.Parallel()
 	db := openTestDB(t, map[string]testQueryResult{
 		"select engine, table_collation": {
-			columns: []string{"engine", "table_collation", "table_comment", "auto_increment", "row_format", "table_rows"},
-			rows:    [][]driver.Value{{"InnoDB", "utf8mb4_bin", "", nil, "", nil}},
+			columns: []string{"engine", "table_collation", "table_comment", "auto_increment", "row_format", "table_rows", "table_type"},
+			rows:    [][]driver.Value{{"InnoDB", "utf8mb4_bin", "", nil, "", nil, "BASE TABLE"}},
 		},
 		"information_schema.columns": {
 			columns: []string{"column_name", "column_type", "character_set_name", "collation_name", "column_comment", "column_default", "is_nullable", "extra", "generation_expression"},

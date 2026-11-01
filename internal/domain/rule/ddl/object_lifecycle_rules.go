@@ -37,10 +37,12 @@ func newForbiddenDDLOperationRule(ruleID string, operation spec.DDLOperation, la
 func (r forbiddenDDLOperationRule) ID() string { return r.ruleID }
 
 func (r forbiddenDDLOperationRule) AppliesTo(statement spec.Statement) bool {
+	operation := statement.DDL != nil && (statement.DDL.Operation == r.operation ||
+		(r.ruleID == ruleIDViewCreateForbid && statement.DDL.Operation == spec.DDLOperationAlterView &&
+			statement.DDL.View != nil && (statement.Dialect == spec.DialectMySQL || statement.Dialect == spec.DialectTiDB)))
 	return r.forbid &&
 		statement.Kind == spec.KindDDL &&
-		statement.DDL != nil &&
-		statement.DDL.Operation == r.operation &&
+		operation &&
 		statement.DDL.Table != nil
 }
 

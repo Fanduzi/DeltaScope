@@ -78,7 +78,9 @@ func (s *batchState) bindTarget(ctx context.Context, statement spec.Statement, t
 		entry, err := s.resolve(ctx, key, s.effectiveSchema(s.schema, table), table.Name)
 		return namespacePersistent, entry, key, err
 	}
-	if ddl != nil && ddl.Operation == spec.DDLOperationCreateTable {
+	if ddl != nil && (ddl.Operation == spec.DDLOperationCreateTable ||
+		ddl.Operation == spec.DDLOperationCreateView || ddl.Operation == spec.DDLOperationAlterView ||
+		ddl.Operation == spec.DDLOperationDropView) {
 		entry, err := s.resolve(ctx, key, s.effectiveSchema(s.schema, table), table.Name)
 		return namespacePersistent, entry, key, err
 	}
@@ -135,6 +137,7 @@ func (s *batchState) projectBoundSnapshot(key batchTableKey, ns boundNamespace, 
 		return binding
 	}
 	if entry.state == tableUnknown {
+		binding.NotView = entry.notView
 		return binding
 	}
 	snapshot := projectEntry(key, entry)
@@ -196,7 +199,8 @@ func (s *batchState) boundTargetsForStatement(ctx context.Context, statement spe
 		source = s.projectBoundSnapshot(key, ns, entry).Snapshot
 	}
 	var sources []*spec.TableSnapshot
-	if len(ddl.SelectSources) > 0 {
+	if len(ddl.SelectSources) > 0 && (ddl.View == nil || len(ddl.SelectSources) <= 256 &&
+		(ddl.View.Definition == nil || !ddl.View.Definition.QueryLimit)) {
 		sources = make([]*spec.TableSnapshot, len(ddl.SelectSources))
 		for i, table := range ddl.SelectSources {
 			ns, entry, key, err := s.bindSource(ctx, table)

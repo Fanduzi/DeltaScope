@@ -9,6 +9,7 @@ type Metadata struct {
 	Instance    *InstanceFacts   `json:"instance,omitempty"`
 	Version     *VersionIdentity `json:"version,omitempty"`
 	TargetTable *TableSnapshot   `json:"target_table,omitempty"`
+	View        *ViewMetadata    `json:"-"`
 	// ExchangeTable is the ordered pre-state projection of the
 	// EXCHANGE PARTITION counterpart table — the second object identity
 	// the action touches, resolved through the same once-per-key seam as
@@ -62,6 +63,7 @@ type TargetBinding struct {
 	Table     Table          `json:"table"`
 	Snapshot  *TableSnapshot `json:"snapshot,omitempty"`
 	Ambiguous bool           `json:"ambiguous,omitempty"`
+	NotView   bool           `json:"-"`
 }
 
 // InstanceFacts are normalized server-level facts that influence audit behavior.
@@ -130,14 +132,16 @@ type InstanceFacts struct {
 // nil as "loaded, absent/empty" — the *Unknown flags below override that
 // convention when a projection cannot vouch for those collections.
 type TableSnapshot struct {
-	Schema      string            `json:"schema,omitempty"`
-	Exists      bool              `json:"exists"`
-	Table       *Table            `json:"table,omitempty"`
-	Columns     []Column          `json:"columns,omitempty"`
-	PrimaryKey  *Index            `json:"primary_key,omitempty"`
-	Indexes     []Index           `json:"indexes,omitempty"`
-	Constraints []Constraint      `json:"constraints,omitempty"`
-	Options     map[string]string `json:"options,omitempty"`
+	Schema       string            `json:"schema,omitempty"`
+	Exists       bool              `json:"exists"`
+	Table        *Table            `json:"table,omitempty"`
+	RelationKind string            `json:"relation_kind,omitempty"`
+	View         *ViewSnapshot     `json:"-"`
+	Columns      []Column          `json:"columns,omitempty"`
+	PrimaryKey   *Index            `json:"primary_key,omitempty"`
+	Indexes      []Index           `json:"indexes,omitempty"`
+	Constraints  []Constraint      `json:"constraints,omitempty"`
+	Options      map[string]string `json:"options,omitempty"`
 
 	// PrimaryKeyIsHandle marks a TiDB PKIsHandle table: the single-integer
 	// clustered primary key is the row handle, so no operable PRIMARY index

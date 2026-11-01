@@ -13,10 +13,10 @@
   "summary": {
     "mysql": {
       "total": 62,
-      "finding_covered": 47,
+      "finding_covered": 48,
       "normalized_silent": 0,
       "unsupported_boundary": 0,
-      "parser_error": 15,
+      "parser_error": 14,
       "unclassified": 0
     },
     "postgresql": {
@@ -39,8 +39,8 @@
       "total": 55,
       "finding_covered": 43,
       "normalized_silent": 0,
-      "unsupported_boundary": 3,
-      "parser_error": 9,
+      "unsupported_boundary": 4,
+      "parser_error": 8,
       "unclassified": 0
     }
   },
@@ -650,16 +650,6 @@
       "dialect": "mysql",
       "family": "view_lifecycle",
       "form": "ALTER VIEW",
-      "classification": "parser_error",
-      "finding_rule_ids": [],
-      "guidance_code": "parser_upgrade_candidate",
-      "evidence_ref": "https://github.com/Fanduzi/DeltaScope/blob/main/docs/reference/cli.md#parser-upgrade-candidate-evidence-v02500",
-      "notes": "parser error"
-    },
-    {
-      "dialect": "mysql",
-      "family": "view_lifecycle",
-      "form": "CREATE OR REPLACE VIEW",
       "classification": "finding_covered",
       "finding_rule_ids": [
         "ddl.view.create.forbid"
@@ -669,10 +659,22 @@
     {
       "dialect": "mysql",
       "family": "view_lifecycle",
+      "form": "CREATE OR REPLACE VIEW",
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.view.create.forbid",
+        "ddl.view.security.definer.warn"
+      ],
+      "notes": ""
+    },
+    {
+      "dialect": "mysql",
+      "family": "view_lifecycle",
       "form": "CREATE VIEW",
       "classification": "finding_covered",
       "finding_rule_ids": [
-        "ddl.view.create.forbid"
+        "ddl.view.create.forbid",
+        "ddl.view.security.definer.warn"
       ],
       "notes": ""
     },
@@ -4171,11 +4173,9 @@
       "dialect": "tidb",
       "family": "view_lifecycle",
       "form": "ALTER VIEW",
-      "classification": "parser_error",
+      "classification": "unsupported_boundary",
       "finding_rule_ids": [],
-      "guidance_code": "parser_upgrade_candidate",
-      "evidence_ref": "https://github.com/Fanduzi/DeltaScope/blob/main/docs/reference/cli.md#parser-upgrade-candidate-evidence-v02500",
-      "notes": "parser error"
+      "notes": "recognized product boundary"
     },
     {
       "dialect": "tidb",
@@ -4183,7 +4183,8 @@
       "form": "CREATE OR REPLACE VIEW",
       "classification": "finding_covered",
       "finding_rule_ids": [
-        "ddl.view.create.forbid"
+        "ddl.view.create.forbid",
+        "ddl.view.security.definer.warn"
       ],
       "notes": ""
     },
@@ -4193,7 +4194,8 @@
       "form": "CREATE VIEW",
       "classification": "finding_covered",
       "finding_rule_ids": [
-        "ddl.view.create.forbid"
+        "ddl.view.create.forbid",
+        "ddl.view.security.definer.warn"
       ],
       "notes": ""
     },

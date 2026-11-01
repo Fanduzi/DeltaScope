@@ -355,11 +355,24 @@ rules:
 
 **PostgreSQL 索引可用性（v0.38.0，v0.49.0 更新）：** `ddl.index.secondary.prefix.require`、`ddl.index.unique.prefix.require` 和 `ddl.index.columns.max_count` 现在也适用于独立的 PostgreSQL `CREATE INDEX`、`CREATE UNIQUE INDEX` 和 `CREATE INDEX CONCURRENTLY` 语句。自 v0.49.0 起，partial index、expression index、INCLUDE 覆盖索引和非 btree 访问方法（GIN、hash 等）走规范化路径而非返回 unsupported。Operator class 和 NULLS NOT DISTINCT 仍不在 scope 内。
 
-### 视图规则（1 条）
+### 视图规则
 
 | 规则 ID | 描述 | 默认级别 | 是否需要元数据 |
 |---------|------|:--------:|:--------------:|
-| `ddl.view.create.forbid` | 禁止 CREATE VIEW | blocker | 否 |
+| `ddl.view.create.forbid` | 禁止 CREATE/REPLACE 以及 MySQL ALTER VIEW 定义 | blocker | 否 |
+| `ddl.view.drop.forbid` | 禁止 DROP VIEW | blocker | 否 |
+| `ddl.view.target.valid` | 检查视图目标的存在性和类型 | blocker | 有序状态 |
+| `ddl.view.source.valid` | 检查依赖、列绑定和输出名称 | blocker | 有序状态 |
+| `ddl.view.security.definer.warn` | 审查生效的 DEFINER 安全模式或显式具名 definer | warning | 继承时使用有序状态 |
+| `ddl.view.algorithm.warn` | 审查请求的 TEMPTABLE 或已知 MERGE 回退（MySQL） | warning | 否 |
+| `ddl.view.check_option.valid` | 拒绝已知不可更新视图上的 CHECK OPTION（MySQL） | blocker | 按需使用有序状态 |
+| `ddl.view.options.ignored.warn` | 审查 TiDB 上缺少执行保证的显式选项 | warning | 否 |
+
+六条语义规则没有参数。目标、来源与安全规则适用于 MySQL 和 TiDB；
+算法与检查选项规则仅适用于 MySQL，忽略选项审查仅适用于 TiDB。
+TiDB 的 ALTER VIEW 和裸 CHECK OPTION 仍是厂商边界。缺少必要事实时
+报告证据缺口，不制造 finding；关闭规则或调整级别不会改变有序状态。
+安全警告不证明账户存在或权限有效。
 
 ---
 
@@ -565,7 +578,7 @@ rules:
 | `ddl.drop_sequence.notice` | `DROP SEQUENCE` 删除序列 | notice | 否 |
 | `ddl.tidb.alter_table.placement_policy.notice` | `ALTER TABLE ... PLACEMENT POLICY` 将放置策略关联到表 | notice | 否 |
 
-> **说明：** 这些规则是 MySQL/TiDB 专用的，审计 PostgreSQL SQL 时会自动跳过。它们属于离线规则，不需要数据库连接。这些仅是信息性 notice 规则——不会阻止、警告或执行在线验证。`ddl.drop_resource_group.notice` 仅限 MySQL，TiDB 下自动跳过。TiDB placement policy 和 sequence 规则在 MySQL 下自动跳过。这不是完整的 MySQL/TiDB DDL 支持——triggers、events、functions、ALTER VIEW、ALTER PROCEDURE、tablespace 和 parser-error 形态仍推迟支持。
+> **说明：** 这些规则是 MySQL/TiDB 专用的，审计 PostgreSQL SQL 时会自动跳过。它们属于离线规则，不需要数据库连接。这些仅是信息性 notice 规则——不会阻止、警告或执行在线验证。`ddl.drop_resource_group.notice` 仅限 MySQL，TiDB 下自动跳过。TiDB placement policy 和 sequence 规则在 MySQL 下自动跳过。这不是完整的 MySQL/TiDB DDL 支持——triggers、events、functions、TiDB ALTER VIEW、ALTER PROCEDURE、tablespace 和 parser-error 形态仍推迟支持。
 
 ---
 

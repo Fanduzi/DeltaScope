@@ -124,7 +124,7 @@ var mysqlDDLCensusCases = []struct {
 	// --- 5. View lifecycle ---
 	{Name: "CREATE VIEW", SQL: "CREATE VIEW v_users AS SELECT id FROM users", Expected: ddlCoverageFindingCovered},
 	{Name: "CREATE OR REPLACE VIEW", SQL: "CREATE OR REPLACE VIEW v_users AS SELECT id FROM users", Expected: ddlCoverageFindingCovered},
-	{Name: "ALTER VIEW", SQL: "ALTER VIEW v_users AS SELECT id, name FROM users", Expected: ddlCoverageParserError},
+	{Name: "ALTER VIEW", SQL: "ALTER VIEW v_users AS SELECT id, name FROM users", Expected: ddlCoverageFindingCovered},
 	{Name: "DROP VIEW", SQL: "DROP VIEW v_users", Expected: ddlCoverageFindingCovered},
 
 	// --- 6. Routine lifecycle ---
@@ -207,7 +207,7 @@ var tidbDDLCensusCases = []struct {
 	// --- 5. View lifecycle ---
 	{Name: "CREATE VIEW", SQL: "CREATE VIEW v_users AS SELECT id FROM users", Expected: ddlCoverageFindingCovered},
 	{Name: "CREATE OR REPLACE VIEW", SQL: "CREATE OR REPLACE VIEW v_users AS SELECT id FROM users", Expected: ddlCoverageFindingCovered},
-	{Name: "ALTER VIEW", SQL: "ALTER VIEW v_users AS SELECT id, name FROM users", Expected: ddlCoverageParserError},
+	{Name: "ALTER VIEW", SQL: "ALTER VIEW v_users AS SELECT id, name FROM users", Expected: ddlCoverageUnsupportedBoundary},
 	{Name: "DROP VIEW", SQL: "DROP VIEW v_users", Expected: ddlCoverageFindingCovered},
 
 	// --- 6. Placement/Policy ---

@@ -55,11 +55,11 @@ func TestParserUpgradeCandidateGuidanceCodeMySQL(t *testing.T) {
 	t.Parallel()
 
 	result, err := AuditSQL(context.Background(), Request{
-		SQL:     "ALTER VIEW v_users AS SELECT id, name FROM users",
+		SQL:     "ALTER PROCEDURE v_users COMMENT 'x'",
 		Dialect: spec.DialectMySQL,
 	})
 	if err == nil {
-		t.Fatal("expected parser-error diagnostic for ALTER VIEW")
+		t.Fatal("expected parser-error diagnostic for ALTER PROCEDURE")
 	}
 
 	diagnostics := result.Diagnostics

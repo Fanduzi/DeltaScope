@@ -24,6 +24,7 @@ Policy model for rule configuration and future audit settings.
 
 ## Notes
 
+- The T18 view target/source/security rule identities and their option-specific companions have fixed defaults; option-specific evaluation is deferred in the first slice.
 - The default alter policy keeps `ddl.alter.change_column.forbid` enabled as the stricter coarse guard.
 - `ddl.alter.change_column.target_type_family.allowlist` remains enabled as a follow-on semantic guard for teams that intentionally relax the coarse forbid later.
 - The default metadata-aware alter policy now also enables source-aware compatibility checks for `modify column` and `change column`; those rules only fire when the statement carries a live table snapshot.
