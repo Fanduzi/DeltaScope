@@ -1,0 +1,3 @@
+# Exact copied archival receipts retain their original whitespace.
+# Authored documentation and generated indexes retain normal whitespace checks.
+/gates/04-pg-confidence.stderr.txt -whitespace

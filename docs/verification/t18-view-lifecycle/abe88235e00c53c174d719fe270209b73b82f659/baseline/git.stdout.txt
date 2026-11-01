@@ -1,0 +1,29 @@
+## milestone/mysql-tidb-ddl-completion...origin/milestone/mysql-tidb-ddl-completion [ahead 57]
+?? .agents/
+?? .codex/
+?? .cursor/
+?? .debug-journal.md
+?? .devin/
+?? .grok/
+?? .opencode/
+?? .pi-subagents/
+?? .qoder/
+?? artifacts/
+?? docs/quality/architecture-review-2026-08-11.html
+?? docs/verification/t06-a12/1a5dd90de898a59590ef8a19aa068c4b5e8ce7f8/T06/
+?? .agents/
+?? .codex/
+?? .cursor/
+?? .debug-journal.md
+?? .devin/
+?? .grok/
+?? .opencode/
+?? .pi-subagents/
+?? .qoder/
+?? artifacts/
+?? docs/quality/architecture-review-2026-08-11.html
+?? docs/verification/t06-a12/1a5dd90de898a59590ef8a19aa068c4b5e8ce7f8/T06/
+601d4fad84b519d6629b5f1903eee9ba6a88619b 19286f7ff73b79f6fca1cc76d11074f3aee751f2 docs(verification): archive T18-R1 view lifecycle evidence
+19286f7ff73b79f6fca1cc76d11074f3aee751f2 d96b4befdcd89b6fe31da012540c4f6f87e6d1e2 fix(audit): close T18 view lifecycle review gaps
+d96b4befdcd89b6fe31da012540c4f6f87e6d1e2 2ab3f181f0bfefbeb5566a6b9358bdc030ab58eb docs(verification): archive T18 view lifecycle evidence
+2ab3f181f0bfefbeb5566a6b9358bdc030ab58eb 879c49f58d8df02120875fffc901dc2d672210f0 test(audit): align T18 catalog and metadata fixtures

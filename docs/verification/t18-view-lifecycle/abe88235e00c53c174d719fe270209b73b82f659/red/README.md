@@ -1,0 +1,1 @@
+Behavior-red receipts on the fixed product baseline. `source-as-run/` preserves the exact test source used by the first red run; `source-final/` preserves the committed final test source replayed on the same baseline.

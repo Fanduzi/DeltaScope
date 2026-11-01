@@ -1,0 +1,44 @@
+=== RUN   TestT18R1TailTemptableViewRejectsDependentCheckOption
+--- PASS: TestT18R1TailTemptableViewRejectsDependentCheckOption (0.00s)
+=== RUN   TestT18R1TailProviderSourceNonUpdatableRejectsCheck
+=== RUN   TestT18R1TailProviderSourceNonUpdatableRejectsCheck/temptable
+=== RUN   TestT18R1TailProviderSourceNonUpdatableRejectsCheck/static
+--- PASS: TestT18R1TailProviderSourceNonUpdatableRejectsCheck (0.00s)
+    --- PASS: TestT18R1TailProviderSourceNonUpdatableRejectsCheck/temptable (0.00s)
+    --- PASS: TestT18R1TailProviderSourceNonUpdatableRejectsCheck/static (0.00s)
+=== RUN   TestT18R1TailViewUpdatableProofControls
+=== RUN   TestT18R1TailViewUpdatableProofControls/direct_create
+=== RUN   TestT18R1TailViewUpdatableProofControls/explicit_temptable
+=== RUN   TestT18R1TailViewUpdatableProofControls/inherited_temptable
+=== RUN   TestT18R1TailViewUpdatableProofControls/inherited_unknown
+=== RUN   TestT18R1TailViewUpdatableProofControls/static_false_beats_unknown_algorithm
+=== RUN   TestT18R1TailViewUpdatableProofControls/source_static_false_without_updatable_fact
+=== RUN   TestT18R1TailViewUpdatableProofControls/source_unknown
+=== RUN   TestT18R1TailViewUpdatableProofControls/source_false
+=== RUN   TestT18R1TailViewUpdatableProofControls/source_false_beats_unrelated_unknown
+--- PASS: TestT18R1TailViewUpdatableProofControls (0.00s)
+    --- PASS: TestT18R1TailViewUpdatableProofControls/direct_create (0.00s)
+    --- PASS: TestT18R1TailViewUpdatableProofControls/explicit_temptable (0.00s)
+    --- PASS: TestT18R1TailViewUpdatableProofControls/inherited_temptable (0.00s)
+    --- PASS: TestT18R1TailViewUpdatableProofControls/inherited_unknown (0.00s)
+    --- PASS: TestT18R1TailViewUpdatableProofControls/static_false_beats_unknown_algorithm (0.00s)
+    --- PASS: TestT18R1TailViewUpdatableProofControls/source_static_false_without_updatable_fact (0.00s)
+    --- PASS: TestT18R1TailViewUpdatableProofControls/source_unknown (0.00s)
+    --- PASS: TestT18R1TailViewUpdatableProofControls/source_false (0.00s)
+    --- PASS: TestT18R1TailViewUpdatableProofControls/source_false_beats_unrelated_unknown (0.00s)
+=== RUN   TestT18R1TailUnresolvedAlterMergesAlgorithmBranches
+=== RUN   TestT18R1TailUnresolvedAlterMergesAlgorithmBranches/omitted_algorithm
+=== RUN   TestT18R1TailUnresolvedAlterMergesAlgorithmBranches/explicit_undefined
+=== RUN   TestT18R1TailUnresolvedAlterMergesAlgorithmBranches/same_success_and_failure_value
+=== RUN   TestT18R1TailUnresolvedAlterMergesAlgorithmBranches/prior_unknown
+=== RUN   TestT18R1TailUnresolvedAlterMergesAlgorithmBranches/proven_refusal_keeps_prior
+=== RUN   TestT18R1TailUnresolvedAlterMergesAlgorithmBranches/proven_success_publishes_final
+--- PASS: TestT18R1TailUnresolvedAlterMergesAlgorithmBranches (0.00s)
+    --- PASS: TestT18R1TailUnresolvedAlterMergesAlgorithmBranches/omitted_algorithm (0.00s)
+    --- PASS: TestT18R1TailUnresolvedAlterMergesAlgorithmBranches/explicit_undefined (0.00s)
+    --- PASS: TestT18R1TailUnresolvedAlterMergesAlgorithmBranches/same_success_and_failure_value (0.00s)
+    --- PASS: TestT18R1TailUnresolvedAlterMergesAlgorithmBranches/prior_unknown (0.00s)
+    --- PASS: TestT18R1TailUnresolvedAlterMergesAlgorithmBranches/proven_refusal_keeps_prior (0.00s)
+    --- PASS: TestT18R1TailUnresolvedAlterMergesAlgorithmBranches/proven_success_publishes_final (0.00s)
+PASS
+ok  	github.com/Fanduzi/DeltaScope/internal/application/audit	0.551s

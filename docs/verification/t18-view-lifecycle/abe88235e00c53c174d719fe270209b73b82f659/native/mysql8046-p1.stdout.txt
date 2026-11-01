@@ -1,0 +1,47 @@
++ docker run -d --name ds-t18r1tail-mysql80-96121 -e MYSQL_ALLOW_EMPTY_PASSWORD=yes mysql:8.0.46
+e92ab51887e3253bbe8f159f9c41e5a7b1888b6e3ed02c7f850b9ef8068908af
+rc=0
+ready_rc=1
++ docker exec ds-t18r1tail-mysql80-96121 mysql -uroot --batch --raw -e SELECT VERSION()
+VERSION()
+8.0.46
+rc=0
++ docker exec ds-t18r1tail-mysql80-96121 mysql -uroot --batch --raw -e DROP DATABASE IF EXISTS t18r1tail; CREATE DATABASE t18r1tail; CREATE TABLE t18r1tail.t(id INT)
+
+rc=0
++ docker exec ds-t18r1tail-mysql80-96121 mysql -uroot --batch --raw -e CREATE ALGORITHM=TEMPTABLE VIEW t18r1tail.v AS SELECT id FROM t18r1tail.t
+
+rc=0
++ docker exec ds-t18r1tail-mysql80-96121 mysql -uroot --batch --raw -e SELECT TABLE_NAME, IS_UPDATABLE, CHECK_OPTION, SECURITY_TYPE FROM information_schema.VIEWS WHERE TABLE_SCHEMA='t18r1tail' AND TABLE_NAME='v'
+TABLE_NAME	IS_UPDATABLE	CHECK_OPTION	SECURITY_TYPE
+v	NO	NONE	DEFINER
+rc=0
++ docker exec ds-t18r1tail-mysql80-96121 mysql -uroot --batch --raw -e SHOW CREATE VIEW t18r1tail.v
+View	Create View	character_set_client	collation_connection
+v	CREATE ALGORITHM=TEMPTABLE DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `t18r1tail`.`v` AS select `t18r1tail`.`t`.`id` AS `id` from `t18r1tail`.`t`	latin1	latin1_swedish_ci
+rc=0
++ docker exec ds-t18r1tail-mysql80-96121 mysql -uroot --batch --raw -e CREATE VIEW t18r1tail.w AS SELECT id FROM t18r1tail.v WITH CHECK OPTION
+ERROR 1368 (HY000) at line 1: CHECK OPTION on non-updatable view 't18r1tail.w'
+rc=1
++ docker exec ds-t18r1tail-mysql80-96121 mysql -uroot --batch --raw --force -e CREATE VIEW t18r1tail.w2 AS SELECT id FROM t18r1tail.v WITH CHECK OPTION; SHOW WARNINGS
+ERROR 1368 (HY000) at line 1: CHECK OPTION on non-updatable view 't18r1tail.w2'
+rc=1
++ docker exec ds-t18r1tail-mysql80-96121 mysql -uroot --batch --raw -e CREATE ALGORITHM=UNDEFINED VIEW t18r1tail.undef_v AS SELECT id FROM t18r1tail.t
+
+rc=0
++ docker exec ds-t18r1tail-mysql80-96121 mysql -uroot --batch --raw -e SELECT TABLE_NAME, IS_UPDATABLE, CHECK_OPTION, SECURITY_TYPE FROM information_schema.VIEWS WHERE TABLE_SCHEMA='t18r1tail' ORDER BY TABLE_NAME
+TABLE_NAME	IS_UPDATABLE	CHECK_OPTION	SECURITY_TYPE
+undef_v	YES	NONE	DEFINER
+v	NO	NONE	DEFINER
+rc=0
++ docker exec ds-t18r1tail-mysql80-96121 mysql -uroot --batch --raw -e SELECT TABLE_NAME, TABLE_TYPE FROM information_schema.TABLES WHERE TABLE_SCHEMA='t18r1tail' ORDER BY TABLE_NAME
+TABLE_NAME	TABLE_TYPE
+t	BASE TABLE
+undef_v	VIEW
+v	VIEW
+rc=0
++ docker exec ds-t18r1tail-mysql80-96121 mysql -uroot --batch --raw -e DROP DATABASE t18r1tail
+
+rc=0
++ docker rm -v -f ds-t18r1tail-mysql80-96121
+ds-t18r1tail-mysql80-96121

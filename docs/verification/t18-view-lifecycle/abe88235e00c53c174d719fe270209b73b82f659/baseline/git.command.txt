@@ -1,0 +1,1 @@
+git status -sb && git status --porcelain=v1 --untracked-files=normal && git log -4 --format="%H %P %s"

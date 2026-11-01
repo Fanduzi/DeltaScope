@@ -1,0 +1,1 @@
+docker ps -a --format "{{.ID}} {{.Names}} {{.Status}}" && docker volume ls --format "{{.Name}}" && docker network ls --format "{{.Name}}"

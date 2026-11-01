@@ -1,0 +1,1 @@
+cd /tmp/t18r1tail-red-worktree && go test ./internal/application/audit -run ^TestT18R1Tail -count=1 -v

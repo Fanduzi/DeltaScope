@@ -1,0 +1,1 @@
+Initial numbered lint stems (`18-*`, `19-*`) captured valid lint output but did not match the accepted comparator file names. Canonical `lint-scoped` and `lint-fullrepo` receipts are under `../gates`.

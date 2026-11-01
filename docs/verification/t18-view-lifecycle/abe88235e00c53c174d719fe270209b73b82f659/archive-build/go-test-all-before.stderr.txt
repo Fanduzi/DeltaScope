@@ -1,0 +1,12 @@
+# github.com/Fanduzi/DeltaScope/docs/verification/t18-view-lifecycle/19286f7ff73b79f6fca1cc76d11074f3aee751f2/red
+docs/verification/t18-view-lifecycle/19286f7ff73b79f6fca1cc76d11074f3aee751f2/red/batch_state_t18r1_test.compat.go:10:28: undefined: t18FirstProvider
+docs/verification/t18-view-lifecycle/19286f7ff73b79f6fca1cc76d11074f3aee751f2/red/batch_state_t18r1_test.compat.go:11:14: undefined: t18FirstFixture
+docs/verification/t18-view-lifecycle/19286f7ff73b79f6fca1cc76d11074f3aee751f2/red/batch_state_t18r1_test.compat.go:20:23: undefined: t18FirstEnrich
+docs/verification/t18-view-lifecycle/19286f7ff73b79f6fca1cc76d11074f3aee751f2/red/batch_state_t18r1_test.compat.go:33:25: undefined: batchTableKey
+docs/verification/t18-view-lifecycle/19286f7ff73b79f6fca1cc76d11074f3aee751f2/red/batch_state_t18r1_test.compat.go:34:36: undefined: tableAbsent
+docs/verification/t18-view-lifecycle/19286f7ff73b79f6fca1cc76d11074f3aee751f2/red/batch_state_t18r1_test.compat.go:37:26: undefined: batchTableKey
+docs/verification/t18-view-lifecycle/19286f7ff73b79f6fca1cc76d11074f3aee751f2/red/batch_state_t18r1_test.compat.go:38:38: undefined: tablePresent
+docs/verification/t18-view-lifecycle/19286f7ff73b79f6fca1cc76d11074f3aee751f2/red/batch_state_t18r1_test.compat.go:46:19: undefined: t18FirstEnrich
+docs/verification/t18-view-lifecycle/19286f7ff73b79f6fca1cc76d11074f3aee751f2/red/batch_state_t18r1_test.compat.go:62:16: undefined: t18FirstFixture
+docs/verification/t18-view-lifecycle/19286f7ff73b79f6fca1cc76d11074f3aee751f2/red/batch_state_t18r1_test.compat.go:64:21: undefined: t18FirstEnrich
+docs/verification/t18-view-lifecycle/19286f7ff73b79f6fca1cc76d11074f3aee751f2/red/batch_state_t18r1_test.compat.go:64:21: too many errors

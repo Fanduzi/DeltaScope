@@ -1,0 +1,1 @@
+test -z "$(gofmt -l internal/application/audit/batch_state_view.go internal/application/audit/batch_state_t18r1tail_test.go internal/domain/spec/view.go pkg/deltascope/audit_t18r1tail_test.go)" && git diff --check HEAD^..HEAD

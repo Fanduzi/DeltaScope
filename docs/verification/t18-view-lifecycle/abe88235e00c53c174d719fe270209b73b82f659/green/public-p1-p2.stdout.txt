@@ -1,0 +1,8 @@
+=== RUN   TestT18R1TailTemptableSourceRejectsCheckOption
+--- PASS: TestT18R1TailTemptableSourceRejectsCheckOption (0.01s)
+=== RUN   TestT18R1TailCheckRuleOffDoesNotPublishRefusedView
+--- PASS: TestT18R1TailCheckRuleOffDoesNotPublishRefusedView (0.00s)
+=== RUN   TestT18R1TailPendingAlterLeavesControlledSourceGap
+--- PASS: TestT18R1TailPendingAlterLeavesControlledSourceGap (0.01s)
+PASS
+ok  	github.com/Fanduzi/DeltaScope/pkg/deltascope	0.612s

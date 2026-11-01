@@ -1,0 +1,44 @@
+=== RUN   TestT18R1TailTemptableViewRejectsDependentCheckOption
+    batch_state_t18r1tail_test.go:47: temptable view was not published as proven non-updatable: &spec.TableSnapshot{Schema:"g", Exists:true, Table:(*spec.Table)(0x2d4a4b8ace70), RelationKind:"view", View:(*spec.ViewSnapshot)(0x2d4a4b82e720), Columns:[]spec.Column{spec.Column{Name:"id", Type:"", Length:0, Charset:"", Collation:"", Comment:"", Unsigned:false, NotNull:false, AutoIncrement:false, HasDefault:false, DefaultValue:"", DefaultKind:"", DefaultIsNull:false, DefaultIsCurrentTimestamp:false, OnUpdateCurrentTimestamp:false, GeneratedWhen:"", IsIdentity:false, IdentityOptions:map[string]interface {}(nil), AutoRandom:false, UnextractedOptions:[]string(nil), Generated:(*spec.GeneratedColumn)(nil), DefaultExpression:(*spec.ExpressionFacts)(nil), Visibility:"", VisibilityExplicit:false, DefaultParenthesized:false, DefaultLiteral:(*spec.LiteralDefaultFacts)(nil)}}, PrimaryKey:(*spec.Index)(nil), Indexes:[]spec.Index(nil), Constraints:[]spec.Constraint(nil), Options:map[string]string(nil), PrimaryKeyIsHandle:false, PrimaryKeyHandleUnknown:false, PrimaryKeyClustered:false, PrimaryKeyClusteredUnknown:false, PrimaryKeyUnknown:false, IndexesUnknown:false, ConstraintsUnknown:false, IndexOrderCatalog:false, IndexNamesUnknown:false, Partitioned:(*bool)(nil), PartitionType:(*string)(nil), PartitionNames:[]string(nil), PartitionDescriptions:[]string(nil), PartitionDefs:[]spec.PartitionDef(nil), Subpartitioned:false, Temporary:false, GlobalTemporary:false, ColumnsTailUnknown:false, ReferencedBy:[]spec.Table(nil), ReferencedByUnknown:false}
+--- FAIL: TestT18R1TailTemptableViewRejectsDependentCheckOption (0.00s)
+=== RUN   TestT18R1TailViewUpdatableProofControls
+=== RUN   TestT18R1TailViewUpdatableProofControls/direct_create
+=== RUN   TestT18R1TailViewUpdatableProofControls/explicit_temptable
+    batch_state_t18r1tail_test.go:122: updatable=0x2d4a4b80c6a8 want=0x2d4a4b80c471 view=&spec.ViewSnapshot{Definition:(*spec.ViewDefinition)(0x2d4a4b8d5600), Algorithm:"temptable", Security:"definer", CheckOption:"none", Updatable:(*bool)(0x2d4a4b80c6a8), DefinerKind:"current_user", DefinerPrincipal:""}
+=== RUN   TestT18R1TailViewUpdatableProofControls/inherited_temptable
+    batch_state_t18r1tail_test.go:122: updatable=0x2d4a4b80c7c8 want=0x2d4a4b80c472 view=&spec.ViewSnapshot{Definition:(*spec.ViewDefinition)(0x2d4a4b8d5d90), Algorithm:"temptable", Security:"definer", CheckOption:"none", Updatable:(*bool)(0x2d4a4b80c7c8), DefinerKind:"", DefinerPrincipal:"private_test_principal"}
+=== RUN   TestT18R1TailViewUpdatableProofControls/inherited_unknown
+    batch_state_t18r1tail_test.go:122: updatable=0x2d4a4b80c8e8 want=<nil> view=&spec.ViewSnapshot{Definition:(*spec.ViewDefinition)(0x2d4a4b956840), Algorithm:"", Security:"definer", CheckOption:"none", Updatable:(*bool)(0x2d4a4b80c8e8), DefinerKind:"", DefinerPrincipal:"private_test_principal"}
+=== RUN   TestT18R1TailViewUpdatableProofControls/static_false_beats_unknown_algorithm
+=== RUN   TestT18R1TailViewUpdatableProofControls/source_unknown
+=== RUN   TestT18R1TailViewUpdatableProofControls/source_false
+=== RUN   TestT18R1TailViewUpdatableProofControls/source_false_beats_unrelated_unknown
+    batch_state_t18r1tail_test.go:122: updatable=<nil> want=0x2d4a4b80c475 view=&spec.ViewSnapshot{Definition:(*spec.ViewDefinition)(0x2d4a4b9d8fd0), Algorithm:"undefined", Security:"definer", CheckOption:"none", Updatable:(*bool)(nil), DefinerKind:"current_user", DefinerPrincipal:""}
+--- FAIL: TestT18R1TailViewUpdatableProofControls (0.00s)
+    --- PASS: TestT18R1TailViewUpdatableProofControls/direct_create (0.00s)
+    --- FAIL: TestT18R1TailViewUpdatableProofControls/explicit_temptable (0.00s)
+    --- FAIL: TestT18R1TailViewUpdatableProofControls/inherited_temptable (0.00s)
+    --- FAIL: TestT18R1TailViewUpdatableProofControls/inherited_unknown (0.00s)
+    --- PASS: TestT18R1TailViewUpdatableProofControls/static_false_beats_unknown_algorithm (0.00s)
+    --- PASS: TestT18R1TailViewUpdatableProofControls/source_unknown (0.00s)
+    --- PASS: TestT18R1TailViewUpdatableProofControls/source_false (0.00s)
+    --- FAIL: TestT18R1TailViewUpdatableProofControls/source_false_beats_unrelated_unknown (0.00s)
+=== RUN   TestT18R1TailUnresolvedAlterMergesAlgorithmBranches
+=== RUN   TestT18R1TailUnresolvedAlterMergesAlgorithmBranches/omitted_algorithm
+    batch_state_t18r1tail_test.go:161: algorithm="merge" want="" assessment=spec.ViewLifecycleAssessment{TargetInvalid:false, SourceInvalid:false, SourceRootIndex:-1, SourceBindingIndex:-1, SourceOffset:-1, SourceFailures:[]spec.ViewSourceFailure(nil), OutputNames:[]string{"n"}, OutputNamesKnown:true, TargetRequired:[]string(nil), SourceRequired:[]string{"table.exists"}, Security:"definer", SecurityUnknown:false, ReviewPrincipal:false, DependencyLimit:false, AlgorithmEffective:"merge", AlgorithmFinal:"undefined", AlgorithmWarn:true, CheckInvalid:false, CheckRequired:[]string(nil), DropTargets:[]spec.ViewDropTarget(nil)}
+=== RUN   TestT18R1TailUnresolvedAlterMergesAlgorithmBranches/explicit_undefined
+    batch_state_t18r1tail_test.go:161: algorithm="merge" want="" assessment=spec.ViewLifecycleAssessment{TargetInvalid:false, SourceInvalid:false, SourceRootIndex:-1, SourceBindingIndex:-1, SourceOffset:-1, SourceFailures:[]spec.ViewSourceFailure(nil), OutputNames:[]string{"n"}, OutputNamesKnown:true, TargetRequired:[]string(nil), SourceRequired:[]string{"table.exists"}, Security:"definer", SecurityUnknown:false, ReviewPrincipal:false, DependencyLimit:false, AlgorithmEffective:"merge", AlgorithmFinal:"undefined", AlgorithmWarn:true, CheckInvalid:false, CheckRequired:[]string(nil), DropTargets:[]spec.ViewDropTarget(nil)}
+=== RUN   TestT18R1TailUnresolvedAlterMergesAlgorithmBranches/same_success_and_failure_value
+=== RUN   TestT18R1TailUnresolvedAlterMergesAlgorithmBranches/prior_unknown
+=== RUN   TestT18R1TailUnresolvedAlterMergesAlgorithmBranches/proven_refusal_keeps_prior
+=== RUN   TestT18R1TailUnresolvedAlterMergesAlgorithmBranches/proven_success_publishes_final
+--- FAIL: TestT18R1TailUnresolvedAlterMergesAlgorithmBranches (0.00s)
+    --- FAIL: TestT18R1TailUnresolvedAlterMergesAlgorithmBranches/omitted_algorithm (0.00s)
+    --- FAIL: TestT18R1TailUnresolvedAlterMergesAlgorithmBranches/explicit_undefined (0.00s)
+    --- PASS: TestT18R1TailUnresolvedAlterMergesAlgorithmBranches/same_success_and_failure_value (0.00s)
+    --- PASS: TestT18R1TailUnresolvedAlterMergesAlgorithmBranches/prior_unknown (0.00s)
+    --- PASS: TestT18R1TailUnresolvedAlterMergesAlgorithmBranches/proven_refusal_keeps_prior (0.00s)
+    --- PASS: TestT18R1TailUnresolvedAlterMergesAlgorithmBranches/proven_success_publishes_final (0.00s)
+FAIL
+FAIL	github.com/Fanduzi/DeltaScope/internal/application/audit	0.880s
+FAIL
