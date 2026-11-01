@@ -27,8 +27,11 @@ func TestDDLCoverage_EmbeddedCatalogMySQLParserUpgradeCandidate(t *testing.T) {
 	}
 
 	output := stdout.String()
-	if !strings.Contains(output, "ALTER VIEW") {
-		t.Error("output should contain ALTER VIEW")
+	if strings.Contains(output, "ALTER VIEW") {
+		t.Error("promoted ALTER VIEW must not remain a parser upgrade candidate")
+	}
+	if !strings.Contains(output, "CREATE TABLESPACE") {
+		t.Error("output should contain CREATE TABLESPACE")
 	}
 	if !strings.Contains(output, "parser_upgrade_candidate") {
 		t.Error("output should contain parser_upgrade_candidate")
@@ -52,11 +55,51 @@ func TestDDLCoverage_MySQLParserUpgradeCandidate(t *testing.T) {
 	}
 
 	output := stdout.String()
-	if !strings.Contains(output, "ALTER VIEW") {
-		t.Error("output should contain ALTER VIEW")
+	if strings.Contains(output, "ALTER VIEW") {
+		t.Error("promoted ALTER VIEW must not remain a parser upgrade candidate")
+	}
+	if !strings.Contains(output, "CREATE TABLESPACE") {
+		t.Error("output should contain CREATE TABLESPACE")
 	}
 	if !strings.Contains(output, "parser_upgrade_candidate") {
 		t.Error("output should contain parser_upgrade_candidate")
+	}
+}
+
+func TestDDLCoverageMySQLAlterViewPromotion(t *testing.T) {
+	for _, tc := range []struct {
+		name    string
+		catalog string
+	}{
+		{name: "embedded"},
+		{name: "override", catalog: testDDLCoverageCatalogPath},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			stdout := &strings.Builder{}
+			stderr := &strings.Builder{}
+			args := []string{"ddl-coverage"}
+			if tc.catalog != "" {
+				args = append(args, "--catalog", tc.catalog)
+			}
+			args = append(args, "--dialect", "mysql", "--search", "alter view", "--format", "json")
+			code := Execute(context.Background(), args, strings.NewReader(""), stdout, stderr)
+			if code != 0 {
+				t.Fatalf("exit code = %d, want 0; stderr=%s", code, stderr.String())
+			}
+			var result ddlCoverageJSONOutput
+			if err := json.Unmarshal([]byte(stdout.String()), &result); err != nil {
+				t.Fatalf("JSON parse error: %v\noutput=%s", err, stdout.String())
+			}
+			if len(result.Entries) != 1 || result.Summary.Returned != 1 {
+				t.Fatalf("entries=%#v summary=%#v, want exactly one entry", result.Entries, result.Summary)
+			}
+			entry := result.Entries[0]
+			if entry.Dialect != "mysql" || entry.Form != "ALTER VIEW" ||
+				entry.Classification != "finding_covered" || len(entry.FindingRuleIDs) != 1 ||
+				entry.FindingRuleIDs[0] != "ddl.view.create.forbid" || entry.GuidanceCode != "" {
+				t.Fatalf("unexpected ALTER VIEW entry: %#v", entry)
+			}
+		})
 	}
 }
 

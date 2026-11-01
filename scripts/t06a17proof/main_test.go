@@ -142,11 +142,11 @@ func (c *faultConn) QueryContext(_ context.Context, query string, _ []driver.Nam
 	}
 	if strings.Contains(query, "from information_schema.tables") {
 		f.providerQueries++
-		rows := [][]driver.Value{{"InnoDB", "utf8mb4_bin", "", nil, "Dynamic", int64(0)}}
+		rows := [][]driver.Value{{"InnoDB", "utf8mb4_bin", "", nil, "Dynamic", int64(0), "BASE TABLE"}}
 		if f.providerAbsent {
 			rows = nil
 		}
-		return newFaultRows([]string{"engine", "table_collation", "table_comment", "auto_increment", "row_format", "table_rows"}, rows, -1), nil
+		return newFaultRows([]string{"engine", "table_collation", "table_comment", "auto_increment", "row_format", "table_rows", "table_type"}, rows, -1), nil
 	}
 	if strings.Contains(query, "from information_schema.columns") {
 		f.providerQueries++

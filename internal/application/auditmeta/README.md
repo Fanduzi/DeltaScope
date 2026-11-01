@@ -1,6 +1,7 @@
 # Application Audit Metadata Preparation Module
 
 Shared preparation helpers for metadata-aware audit requests before they enter the core DeltaScope audit service.
+The shared provider handoff preserves observed relation kind and private view payload; synthetic MySQL row fixtures retain `TABLE_TYPE`.
 
 ## Files
 
