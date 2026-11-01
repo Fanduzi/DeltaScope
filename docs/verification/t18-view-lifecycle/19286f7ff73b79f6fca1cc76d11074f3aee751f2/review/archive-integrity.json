@@ -1,6 +1,6 @@
 {
   "product_head": "19286f7ff73b79f6fca1cc76d11074f3aee751f2",
-  "file_count": 198,
+  "file_count": 199,
   "tracked_file_count": 194,
   "gate_count": 23,
   "expected_nonzero_gates": [
@@ -129,6 +129,7 @@
   },
   "residual_task_containers": [],
   "foreign_untracked_paths_preserved": true,
-  "copymanifest_entries": 196,
-  "whitespace_policy": "Raw receipts keep original bytes; .gitattributes disables whitespace checks only for the one receipt containing upstream trailing whitespace."
+  "copymanifest_entries": 197,
+  "whitespace_policy": "Raw receipts keep original bytes; .gitattributes disables whitespace checks only for the one receipt containing upstream trailing whitespace.",
+  "archive_source_isolation": "Evidence replay source snapshots use non-compiled extensions; no .go files remain inside this archive."
 }

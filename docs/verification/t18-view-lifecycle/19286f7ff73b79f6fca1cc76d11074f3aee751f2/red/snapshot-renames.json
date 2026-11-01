@@ -1,0 +1,11 @@
+{
+  "description": "Path corrections that keep archived source snapshots byte-identical while excluding them from Go package discovery.",
+  "renames": [
+    {
+      "old_archive_path": "red/batch_state_t18r1_test.compat.go",
+      "new_archive_path": "red/batch_state_t18r1_test.compat.go.txt",
+      "sha256": "9ea7627d7b99c2997e902bbf883e9b18133ca5b26947e6fde83654c281f32ae3",
+      "reason": "The .go extension made the evidence-only replay source discoverable as a product package; renaming preserves bytes and prevents compilation."
+    }
+  ]
+}

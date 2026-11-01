@@ -11,8 +11,8 @@
     },
     {
       "destination": "README.md",
-      "destination_sha256": "b04593dfe85adafcfff10e60182c95910dec92e1270dddb25cc434a99c5a61ce",
-      "size_bytes": 2632,
+      "destination_sha256": "0e30f4dacb6711301d01345a12a7b07c5576bfbf3ed520b7c759d6da4fe09662",
+      "size_bytes": 2734,
       "source": "generated during T18-R1 evidence assembly",
       "transformation": "generated"
     },
@@ -1406,18 +1406,20 @@
     },
     {
       "destination": "red/README.md",
-      "destination_sha256": "195ed2a4341c2cca92e7c1c8a56c69f4a6d55eec129d9f4589f5c300a0be3687",
-      "size_bytes": 971,
+      "destination_sha256": "d293ce9b74a52b3485abf14a353f51bf95e0ec0ee0ce0b8c68616aaabf3ec5b3",
+      "size_bytes": 1204,
       "source": "generated during T18-R1 evidence assembly",
       "transformation": "generated"
     },
     {
-      "destination": "red/batch_state_t18r1_test.compat.go",
+      "destination": "red/batch_state_t18r1_test.compat.go.txt",
       "destination_sha256": "9ea7627d7b99c2997e902bbf883e9b18133ca5b26947e6fde83654c281f32ae3",
       "size_bytes": 5954,
       "source": "/tmp/t18r1-evidence/batch_state_t18r1_test.compat.go",
       "source_sha256": "9ea7627d7b99c2997e902bbf883e9b18133ca5b26947e6fde83654c281f32ae3",
-      "transformation": "byte-identical"
+      "transformation": "byte-identical",
+      "previous_destination": "red/batch_state_t18r1_test.compat.go",
+      "path_correction": "non-compiled archive extension; content bytes unchanged"
     },
     {
       "destination": "red/red-identity.txt",
@@ -1524,6 +1526,13 @@
       "transformation": "byte-identical"
     },
     {
+      "destination": "red/snapshot-renames.json",
+      "source": "generated during T18-R1-tail archive isolation repair",
+      "transformation": "generated",
+      "destination_sha256": "705e6033b5458f6034604ad9519c7d2dca1a0391962dce0c510c6542221982ba",
+      "size_bytes": 550
+    },
+    {
       "destination": "review/FINAL-REVIEW.md",
       "destination_sha256": "28ceb32d233c457b8343b379387afcf171011b115cdf0f9a5d03cb965bcdf19b",
       "size_bytes": 3579,
@@ -1532,11 +1541,11 @@
     },
     {
       "destination": "review/archive-integrity.json",
-      "destination_sha256": "806a2d87cc36a3d91ebc1b2646834a5348af13f7630c61d916fe6c353dfc5d68",
-      "size_bytes": 8247,
+      "destination_sha256": "52f1ad7f629ffb9d7cb3ca22f5e8b496e7df3d13b5268902ce25659e2b2a6e86",
+      "size_bytes": 8415,
       "source": "generated during T18-R1 evidence assembly",
       "transformation": "generated"
     }
   ],
-  "file_count": 196
+  "file_count": 197
 }

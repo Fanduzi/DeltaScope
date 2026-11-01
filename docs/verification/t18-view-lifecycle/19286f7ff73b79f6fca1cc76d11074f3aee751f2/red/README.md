@@ -8,8 +8,12 @@ worktree at unfixed product `2ab3f181f0bfefbeb5566a6b9358bdc030ab58eb`.
 - `red-internal.*` is the literal internal companion replay. It is a build
   failure because the unfixed code lacks `ViewMetadata.TargetSchemaAbsent`; it
   is retained as provenance, not as the semantic proof.
-- `batch_state_t18r1_test.compat.go` is the internal replay source adjusted
-  only to use APIs already present on the unfixed baseline.
+- `batch_state_t18r1_test.compat.go.txt` is the byte-identical internal replay
+  source adjusted only to use APIs already present on the unfixed baseline. It
+  uses a non-compiled archive extension so evidence snapshots cannot join the
+  product build.
+- `snapshot-renames.json` records the archive-path correction and matching
+  content hash for that source snapshot.
 - `red-internal-compat.*` is the resulting semantic red run. It proves the
   schema premise was not consumed, non-updatable CHECK OPTION was accepted,
   inherited MERGE fallback was not reviewed, and the nearest correlated outer

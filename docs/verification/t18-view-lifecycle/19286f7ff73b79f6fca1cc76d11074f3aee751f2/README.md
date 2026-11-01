@@ -16,7 +16,9 @@ unchanged and is not evidence for this product SHA.
 - `red/`: replay of the R1 tests on unfixed product `2ab3f181...` in an isolated
   worktree. The direct internal replay records a compile failure because the
   fixed SHA introduces the `TargetSchemaAbsent` metadata field; the compatible
-  replay source records the real semantic failures for all four defects.
+  replay source records the real semantic failures for all four defects. Replay
+  source snapshots use non-compiled `.txt` extensions so they cannot join the
+  product build.
 - `green/`: focused internal companion and public Audit tests on product
   `19286f7f...`.
 - `native/`: bounded MySQL 8.0.46 disposable-container observations and cleanup
