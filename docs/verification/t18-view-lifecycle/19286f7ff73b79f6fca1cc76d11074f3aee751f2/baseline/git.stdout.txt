@@ -1,0 +1,33 @@
+milestone/mysql-tidb-ddl-completion
+d96b4befdcd89b6fe31da012540c4f6f87e6d1e2
+d96b4befdcd89b6fe31da012540c4f6f87e6d1e2
+9a28cc99c38770e6e40738515994f864166419f9
+?? .agents/
+?? .codex/
+?? .cursor/
+?? .debug-journal.md
+?? .devin/
+?? .grok/
+?? .opencode/
+?? .pi-subagents/
+?? .qoder/
+?? artifacts/
+?? docs/quality/architecture-review-2026-08-11.html
+?? docs/verification/t06-a12/1a5dd90de898a59590ef8a19aa068c4b5e8ce7f8/T06/
+worktree /Users/fan/GolangProjects/DeltaScope
+HEAD d96b4befdcd89b6fe31da012540c4f6f87e6d1e2
+branch refs/heads/milestone/mysql-tidb-ddl-completion
+
+worktree /Users/fan/GolangProjects/DeltaScope-agent-guidance
+HEAD 0fa922d062361add8a3cb9f01ee2dfb4292fdef6
+branch refs/heads/docs/agent-guidance
+
+d96b4befdcd89b6fe31da012540c4f6f87e6d1e2 docs(verification): archive T18 view lifecycle evidence
+2ab3f181f0bfefbeb5566a6b9358bdc030ab58eb test(audit): align T18 catalog and metadata fixtures
+879c49f58d8df02120875fffc901dc2d672210f0 feat(audit): complete T18 view lifecycle and security
+7f67c5de42fb6096d9c80f51e2d0f217eb34e528 docs(verification): append T17-R1-tail collation evidence (#96)
+c6eebc09b64a4c9ffc8d1dc73689f505da06d61c test(ddl): compare projection snapshots without conversion (#96)
+84762d9d6c9085dbe91307516e14a984efa76375 fix(ddl): derive schema collations from proven version and defaults (#96)
+9a28cc99c38770e6e40738515994f864166419f9	refs/heads/main
+d0c7cf3373167db7065d3027088a43c56ed6dbf5	refs/heads/milestone/mysql-tidb-ddl-completion
+d96b4befdcd89b6fe31da012540c4f6f87e6d1e2	refs/heads/workfree

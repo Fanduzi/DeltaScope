@@ -1,0 +1,22 @@
+=== RUN   TestT18R1DroppedSchemaRefusesCreateView
+--- PASS: TestT18R1DroppedSchemaRefusesCreateView (0.01s)
+=== RUN   TestT18R1CheckOptionRejectsStaticallyNonUpdatableViews
+=== RUN   TestT18R1CheckOptionRejectsStaticallyNonUpdatableViews/computed_only
+=== RUN   TestT18R1CheckOptionRejectsStaticallyNonUpdatableViews/outer_join
+--- PASS: TestT18R1CheckOptionRejectsStaticallyNonUpdatableViews (0.01s)
+    --- PASS: TestT18R1CheckOptionRejectsStaticallyNonUpdatableViews/computed_only (0.00s)
+    --- PASS: TestT18R1CheckOptionRejectsStaticallyNonUpdatableViews/outer_join (0.00s)
+=== RUN   TestT18R1CheckOptionKeepsUpdatableControls
+=== RUN   TestT18R1CheckOptionKeepsUpdatableControls/direct
+=== RUN   TestT18R1CheckOptionKeepsUpdatableControls/mixed_projection
+=== RUN   TestT18R1CheckOptionKeepsUpdatableControls/inner_join
+--- PASS: TestT18R1CheckOptionKeepsUpdatableControls (0.01s)
+    --- PASS: TestT18R1CheckOptionKeepsUpdatableControls/direct (0.00s)
+    --- PASS: TestT18R1CheckOptionKeepsUpdatableControls/mixed_projection (0.00s)
+    --- PASS: TestT18R1CheckOptionKeepsUpdatableControls/inner_join (0.00s)
+=== RUN   TestT18R1InheritedAlgorithmWarnsAndFallsBack
+--- PASS: TestT18R1InheritedAlgorithmWarnsAndFallsBack (0.00s)
+=== RUN   TestT18R1CorrelatedSubqueryAcceptsNearestOuterScope
+--- PASS: TestT18R1CorrelatedSubqueryAcceptsNearestOuterScope (0.00s)
+PASS
+ok  	github.com/Fanduzi/DeltaScope/pkg/deltascope	0.619s

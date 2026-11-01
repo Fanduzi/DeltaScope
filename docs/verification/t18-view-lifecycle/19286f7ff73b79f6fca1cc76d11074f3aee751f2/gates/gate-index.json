@@ -1,0 +1,143 @@
+{
+  "product_head": "19286f7ff73b79f6fca1cc76d11074f3aee751f2",
+  "gates": [
+    {
+      "stem": "01-go-test",
+      "command": "go test ./... -count=1",
+      "rc": 0,
+      "identity_tail": "19286f7ff73b79f6fca1cc76d11074f3aee751f2"
+    },
+    {
+      "stem": "02-go-vet",
+      "command": "go vet ./...",
+      "rc": 0,
+      "identity_tail": "19286f7ff73b79f6fca1cc76d11074f3aee751f2"
+    },
+    {
+      "stem": "03-race-internal",
+      "command": "env CGO_ENABLED=1 go test -race ./internal/... -count=1",
+      "rc": 0,
+      "identity_tail": "19286f7ff73b79f6fca1cc76d11074f3aee751f2"
+    },
+    {
+      "stem": "04-pg-confidence",
+      "command": "make pg-confidence-gates",
+      "rc": 0,
+      "identity_tail": "19286f7ff73b79f6fca1cc76d11074f3aee751f2"
+    },
+    {
+      "stem": "05-sql-corpus",
+      "command": "make sql-corpus-gates",
+      "rc": 0,
+      "identity_tail": "19286f7ff73b79f6fca1cc76d11074f3aee751f2"
+    },
+    {
+      "stem": "06-query-access-corpus",
+      "command": "make query-access-corpus-gates",
+      "rc": 0,
+      "identity_tail": "19286f7ff73b79f6fca1cc76d11074f3aee751f2"
+    },
+    {
+      "stem": "07-ddl-inventory",
+      "command": "make ddl-inventory-gate",
+      "rc": 0,
+      "identity_tail": "19286f7ff73b79f6fca1cc76d11074f3aee751f2"
+    },
+    {
+      "stem": "08-ddl-catalog",
+      "command": "make ddl-coverage-catalog-test",
+      "rc": 0,
+      "identity_tail": "19286f7ff73b79f6fca1cc76d11074f3aee751f2"
+    },
+    {
+      "stem": "09-golden-validator",
+      "command": "make ddl-golden-validator-test",
+      "rc": 0,
+      "identity_tail": "19286f7ff73b79f6fca1cc76d11074f3aee751f2"
+    },
+    {
+      "stem": "10-parser-error-contract",
+      "command": "make parser-error-unsupported-contract-test",
+      "rc": 0,
+      "identity_tail": "19286f7ff73b79f6fca1cc76d11074f3aee751f2"
+    },
+    {
+      "stem": "11-unsupported-diagnostics",
+      "command": "make unsupported-diagnostics-evidence-test",
+      "rc": 0,
+      "identity_tail": "19286f7ff73b79f6fca1cc76d11074f3aee751f2"
+    },
+    {
+      "stem": "12-http-mcp-t18",
+      "command": "go test ./internal/interfaces/http ./internal/interfaces/mcp -run ^TestT18 -count=1 -v",
+      "rc": 0,
+      "identity_tail": "19286f7ff73b79f6fca1cc76d11074f3aee751f2"
+    },
+    {
+      "stem": "13-docs-examples",
+      "command": "make docs-example-gates",
+      "rc": 0,
+      "identity_tail": "19286f7ff73b79f6fca1cc76d11074f3aee751f2"
+    },
+    {
+      "stem": "14-decision-record",
+      "command": "make decision-record-gate",
+      "rc": 0,
+      "identity_tail": "19286f7ff73b79f6fca1cc76d11074f3aee751f2"
+    },
+    {
+      "stem": "15-decision-range",
+      "command": "./scripts/check_decision_record.sh 7f67c5de42fb6096d9c80f51e2d0f217eb34e528..19286f7ff73b79f6fca1cc76d11074f3aee751f2",
+      "rc": 0,
+      "identity_tail": "19286f7ff73b79f6fca1cc76d11074f3aee751f2"
+    },
+    {
+      "stem": "16-l2-range",
+      "command": "/opt/homebrew/bin/bash docs/verification/t17-database-schema-lifecycle/adc1f7322e1c70524435ed687fe27b67b931abb5/gates/l2_committed_range_check.sh 7f67c5de42fb6096d9c80f51e2d0f217eb34e528..19286f7ff73b79f6fca1cc76d11074f3aee751f2",
+      "rc": 0,
+      "identity_tail": "19286f7ff73b79f6fca1cc76d11074f3aee751f2"
+    },
+    {
+      "stem": "17-format-diff",
+      "command": "gofmt changed Go files + git diff --check",
+      "rc": 0,
+      "identity_tail": "19286f7ff73b79f6fca1cc76d11074f3aee751f2"
+    },
+    {
+      "stem": "20-lint-comparison",
+      "command": "python3 /tmp/t18-evidence/compare_lint.py /tmp/t18r1-evidence/final-gates",
+      "rc": 0,
+      "identity_tail": "19286f7ff73b79f6fca1cc76d11074f3aee751f2"
+    },
+    {
+      "stem": "21-golden-t16",
+      "command": "python3 ./scripts/ddl_golden.py run --task \"T16\" --artifact-dir \"/tmp/ddl-golden-t18r1-final-T16-19286f7f\"",
+      "rc": 0,
+      "identity_tail": "19286f7ff73b79f6fca1cc76d11074f3aee751f2"
+    },
+    {
+      "stem": "22-golden-t17",
+      "command": "python3 ./scripts/ddl_golden.py run --task \"T17\" --artifact-dir \"/tmp/ddl-golden-t18r1-final-T17-19286f7f\"",
+      "rc": 0,
+      "identity_tail": "19286f7ff73b79f6fca1cc76d11074f3aee751f2"
+    },
+    {
+      "stem": "23-golden-t18",
+      "command": "python3 ./scripts/ddl_golden.py run --task \"T18\" --artifact-dir \"/tmp/ddl-golden-t18r1-final-T18-19286f7f-r3\"",
+      "rc": 0,
+      "identity_tail": "19286f7ff73b79f6fca1cc76d11074f3aee751f2"
+    },
+    {
+      "stem": "lint-fullrepo",
+      "command": "golangci-lint run ./...",
+      "rc": 1,
+      "identity_tail": "19286f7ff73b79f6fca1cc76d11074f3aee751f2"
+    },
+    {
+      "stem": "lint-scoped",
+      "command": "golangci-lint run ./internal/application/audit/... ./internal/application/auditmeta/... ./internal/domain/spec/... ./internal/domain/rule/ddl/... ./internal/domain/policy/... ./internal/domain/rule/catalog/... ./internal/infrastructure/metadata/mysql/... ./internal/infrastructure/parser/tidb/...",
+      "rc": 1,
+      "identity_tail": "19286f7ff73b79f6fca1cc76d11074f3aee751f2"
+    }
+  ]
+}

@@ -1,0 +1,1 @@
+go test ./internal/application/audit -run ^(TestT18FirstOrderedProjection|TestT18FirstRefusalPreservesPriorView|TestT18FirstPolicyIndependent|TestT18FirstReadFailureNotCached|TestT18FirstCrossSchemaSourcesBindRequestSchema|TestT18FirstDependencyLimitIsIntrinsic|TestT18R1) -count=1 -v

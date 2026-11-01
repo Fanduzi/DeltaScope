@@ -1,0 +1,1 @@
+generate gate-index.json from *.command.txt and *.rc.txt

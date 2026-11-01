@@ -1,0 +1,4 @@
+===== f4_show_create =====
+rc=0
+View	Create View	character_set_client	collation_connection
+corr_v	CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `t18r1_g`.`corr_v` AS select `t18r1_src`.`a`.`id` AS `id` from `t18r1_src`.`a` where exists(select 1 from `t18r1_src`.`b` where exists(select 1 from DUAL  where (`t18r1_src`.`b`.`id` > 0)))	latin1	latin1_swedish_ci

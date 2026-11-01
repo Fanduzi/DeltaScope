@@ -1,0 +1,1 @@
+python3 ./scripts/ddl_golden.py run --task "T18" --artifact-dir "/tmp/ddl-golden-t18r1-final-T18-19286f7f-r3"

@@ -1,0 +1,134 @@
+{
+  "product_head": "19286f7ff73b79f6fca1cc76d11074f3aee751f2",
+  "file_count": 198,
+  "tracked_file_count": 194,
+  "gate_count": 23,
+  "expected_nonzero_gates": [
+    "lint-scoped",
+    "lint-fullrepo"
+  ],
+  "golden": {
+    "T16": {
+      "artifact_path": "/tmp/ddl-golden-t18r1-final-T16-19286f7f/T16/artifact.json",
+      "artifact_sha256": "e60742f3adddc1bb96108c6ec14315ba7451d9c7175862a7ea604440674e52be",
+      "task_id": "T16",
+      "issue": 95,
+      "head_sha": "19286f7ff73b79f6fca1cc76d11074f3aee751f2",
+      "required_count": 60,
+      "executed_count": 60,
+      "case_count": 60,
+      "missing_case_ids": [],
+      "extra_case_ids": [],
+      "duplicate_case_ids": [],
+      "passed_cases": 60,
+      "failed_case_ids": [],
+      "assertions": 832,
+      "failed_assertions": 0,
+      "cli_sha256": "85f1980654b210d164a0d69acb1cad9597480954603972030c0b709f66557909",
+      "cli_build": {
+        "command": "CGO_ENABLED=0 go build -o <artifact>/deltascope ./cmd/deltascope",
+        "cgo_enabled": "0",
+        "go_version": "go1.26.1",
+        "built_at": "2026-11-01T15:09:17.071796+00:00",
+        "head_sha": "19286f7ff73b79f6fca1cc76d11074f3aee751f2"
+      },
+      "cleanup": {
+        "compose_down_rc": 0,
+        "compose_down_stderr": "Container deltascope-ddl-golden-mysql84 Stopping \n Container deltascope-ddl-golden-mysql57 Stopping \n Container deltascope-ddl-golden-mysql80 Stopping \n Container deltascope-ddl-golden-tidb85-client Stopping \n Container deltascope-ddl-golden-mysql80 Stopped \n Container deltascope-ddl-golden-mysql80 Removing \n Container deltascope-ddl-golden-mysql80 Removed \n Container deltascope-ddl-golden-mysql84 Stopped \n Container deltascope-ddl-golden-mysql84 Removing \n Container deltascope-ddl-golden-mysql84 Removed \n Container deltascope-ddl-golden-mysql57 Stopped \n Container deltascope-ddl-golden-mysql57 Removing \n Container deltascope-ddl-golden-mysql57 Removed \n Container deltascope-ddl-golden-tidb85-client Stopped \n Container deltascope-ddl-golden-tidb85-client Removing \n Container deltascope-ddl-golden-tidb85-client Removed \n Container deltascope-ddl-golden-tidb85 Stopping \n Container deltascope-ddl-golden-tidb85 Stopped \n Container deltascope-ddl-golden-tidb85 Removing \n Container deltascope-ddl-golden-tidb85 Removed \n Network deltascope-ddl-golden_default Removing \n Network deltascope-ddl-golden_default Removed",
+        "residual_containers": []
+      },
+      "container_health": {
+        "deltascope-ddl-golden-mysql57": "healthy",
+        "deltascope-ddl-golden-mysql80": "healthy",
+        "deltascope-ddl-golden-mysql84": "healthy",
+        "deltascope-ddl-golden-tidb85": "healthy",
+        "deltascope-ddl-golden-tidb85-client": "healthy"
+      }
+    },
+    "T17": {
+      "artifact_path": "/tmp/ddl-golden-t18r1-final-T17-19286f7f/T17/artifact.json",
+      "artifact_sha256": "950c65fb355127f512f7547df700cb32b15ca5337596c10301d1b459cc600c8b",
+      "task_id": "T17",
+      "issue": 96,
+      "head_sha": "19286f7ff73b79f6fca1cc76d11074f3aee751f2",
+      "required_count": 52,
+      "executed_count": 52,
+      "case_count": 52,
+      "missing_case_ids": [],
+      "extra_case_ids": [],
+      "duplicate_case_ids": [],
+      "passed_cases": 52,
+      "failed_case_ids": [],
+      "assertions": 834,
+      "failed_assertions": 0,
+      "cli_sha256": "85f1980654b210d164a0d69acb1cad9597480954603972030c0b709f66557909",
+      "cli_build": {
+        "command": "CGO_ENABLED=0 go build -o <artifact>/deltascope ./cmd/deltascope",
+        "cgo_enabled": "0",
+        "go_version": "go1.26.1",
+        "built_at": "2026-11-01T15:09:47.667620+00:00",
+        "head_sha": "19286f7ff73b79f6fca1cc76d11074f3aee751f2"
+      },
+      "cleanup": {
+        "compose_down_rc": 0,
+        "compose_down_stderr": "Container deltascope-ddl-golden-tidb85-client Stopping \n Container deltascope-ddl-golden-mysql57 Stopping \n Container deltascope-ddl-golden-mysql84 Stopping \n Container deltascope-ddl-golden-mysql80 Stopping \n Container deltascope-ddl-golden-mysql84 Stopped \n Container deltascope-ddl-golden-mysql84 Removing \n Container deltascope-ddl-golden-mysql84 Removed \n Container deltascope-ddl-golden-mysql80 Stopped \n Container deltascope-ddl-golden-mysql80 Removing \n Container deltascope-ddl-golden-mysql80 Removed \n Container deltascope-ddl-golden-mysql57 Stopped \n Container deltascope-ddl-golden-mysql57 Removing \n Container deltascope-ddl-golden-mysql57 Removed \n Container deltascope-ddl-golden-tidb85-client Stopped \n Container deltascope-ddl-golden-tidb85-client Removing \n Container deltascope-ddl-golden-tidb85-client Removed \n Container deltascope-ddl-golden-tidb85 Stopping \n Container deltascope-ddl-golden-tidb85 Stopped \n Container deltascope-ddl-golden-tidb85 Removing \n Container deltascope-ddl-golden-tidb85 Removed \n Network deltascope-ddl-golden_default Removing \n Network deltascope-ddl-golden_default Removed",
+        "residual_containers": []
+      },
+      "container_health": {
+        "deltascope-ddl-golden-mysql57": "healthy",
+        "deltascope-ddl-golden-mysql80": "healthy",
+        "deltascope-ddl-golden-mysql84": "healthy",
+        "deltascope-ddl-golden-tidb85": "healthy",
+        "deltascope-ddl-golden-tidb85-client": "healthy"
+      }
+    },
+    "T18": {
+      "artifact_path": "/tmp/ddl-golden-t18r1-final-T18-19286f7f-r3/T18/artifact.json",
+      "artifact_sha256": "45ceb8fa760eaaa79b0afd5c230cd30590eb4abf0fecd7883db71a23dbf6889e",
+      "task_id": "T18",
+      "issue": 97,
+      "head_sha": "19286f7ff73b79f6fca1cc76d11074f3aee751f2",
+      "required_count": 149,
+      "executed_count": 149,
+      "case_count": 149,
+      "missing_case_ids": [],
+      "extra_case_ids": [],
+      "duplicate_case_ids": [],
+      "passed_cases": 149,
+      "failed_case_ids": [],
+      "assertions": 3755,
+      "failed_assertions": 0,
+      "cli_sha256": "85f1980654b210d164a0d69acb1cad9597480954603972030c0b709f66557909",
+      "cli_build": {
+        "command": "CGO_ENABLED=0 go build -o <artifact>/deltascope ./cmd/deltascope",
+        "cgo_enabled": "0",
+        "go_version": "go1.26.1",
+        "built_at": "2026-11-01T15:07:39.891129+00:00",
+        "head_sha": "19286f7ff73b79f6fca1cc76d11074f3aee751f2"
+      },
+      "cleanup": {
+        "compose_down_rc": 0,
+        "compose_down_stderr": "Container deltascope-ddl-golden-mysql80 Stopping \n Container deltascope-ddl-golden-mysql84 Stopping \n Container deltascope-ddl-golden-tidb85-client Stopping \n Container deltascope-ddl-golden-mysql57 Stopping \n Container deltascope-ddl-golden-mysql84 Stopped \n Container deltascope-ddl-golden-mysql84 Removing \n Container deltascope-ddl-golden-mysql84 Removed \n Container deltascope-ddl-golden-mysql80 Stopped \n Container deltascope-ddl-golden-mysql80 Removing \n Container deltascope-ddl-golden-mysql80 Removed \n Container deltascope-ddl-golden-mysql57 Stopped \n Container deltascope-ddl-golden-mysql57 Removing \n Container deltascope-ddl-golden-mysql57 Removed \n Container deltascope-ddl-golden-tidb85-client Stopped \n Container deltascope-ddl-golden-tidb85-client Removing \n Container deltascope-ddl-golden-tidb85-client Removed \n Container deltascope-ddl-golden-tidb85 Stopping \n Container deltascope-ddl-golden-tidb85 Stopped \n Container deltascope-ddl-golden-tidb85 Removing \n Container deltascope-ddl-golden-tidb85 Removed \n Network deltascope-ddl-golden_default Removing \n Network deltascope-ddl-golden_default Removed",
+        "residual_containers": []
+      },
+      "container_health": {
+        "deltascope-ddl-golden-mysql57": "healthy",
+        "deltascope-ddl-golden-mysql80": "healthy",
+        "deltascope-ddl-golden-mysql84": "healthy",
+        "deltascope-ddl-golden-tidb85": "healthy",
+        "deltascope-ddl-golden-tidb85-client": "healthy"
+      }
+    }
+  },
+  "privacy_scan": {
+    "fixture_env_assignment_literals": 0,
+    "mysql_pwd_assignment_literals": 0,
+    "json_password_literals": 0,
+    "root_password_literals": 0,
+    "note": "Only credential environment variable names are recorded; no credential values are archived."
+  },
+  "residual_task_containers": [],
+  "foreign_untracked_paths_preserved": true,
+  "copymanifest_entries": 196,
+  "whitespace_policy": "Raw receipts keep original bytes; .gitattributes disables whitespace checks only for the one receipt containing upstream trailing whitespace."
+}

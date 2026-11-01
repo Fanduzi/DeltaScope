@@ -1,0 +1,33 @@
+=== RUN   TestT18R1CreateViewConsumesDroppedSchema
+    batch_state_t18r1_test.go:30: schema-absent create was not refused: statement=1 assessment=spec.ViewLifecycleAssessment{TargetInvalid:false, SourceInvalid:false, SourceRootIndex:-1, SourceBindingIndex:-1, SourceOffset:-1, SourceFailures:[]spec.ViewSourceFailure(nil), OutputNames:[]string{"id"}, OutputNamesKnown:true, TargetRequired:[]string(nil), SourceRequired:[]string(nil), Security:"definer", SecurityUnknown:false, ReviewPrincipal:false, DependencyLimit:false, AlgorithmWarn:false, CheckInvalid:false, CheckRequired:[]string(nil), DropTargets:[]spec.ViewDropTarget(nil)}
+--- FAIL: TestT18R1CreateViewConsumesDroppedSchema (0.00s)
+=== RUN   TestT18R1CreateViewLeavesNeverTouchedSchemaUnknown
+--- PASS: TestT18R1CreateViewLeavesNeverTouchedSchemaUnknown (0.00s)
+=== RUN   TestT18R1CheckOptionStaticPremise
+=== RUN   TestT18R1CheckOptionStaticPremise/computed_only
+    batch_state_t18r1_test.go:67: non-updatable CHECK OPTION was not refused: spec.ViewLifecycleAssessment{TargetInvalid:false, SourceInvalid:false, SourceRootIndex:-1, SourceBindingIndex:-1, SourceOffset:-1, SourceFailures:[]spec.ViewSourceFailure(nil), OutputNames:[]string{"x"}, OutputNamesKnown:true, TargetRequired:[]string{"table.exists"}, SourceRequired:[]string(nil), Security:"definer", SecurityUnknown:false, ReviewPrincipal:false, DependencyLimit:false, AlgorithmWarn:false, CheckInvalid:false, CheckRequired:[]string(nil), DropTargets:[]spec.ViewDropTarget(nil)}
+=== RUN   TestT18R1CheckOptionStaticPremise/outer_join
+    batch_state_t18r1_test.go:67: non-updatable CHECK OPTION was not refused: spec.ViewLifecycleAssessment{TargetInvalid:false, SourceInvalid:false, SourceRootIndex:-1, SourceBindingIndex:-1, SourceOffset:-1, SourceFailures:[]spec.ViewSourceFailure(nil), OutputNames:[]string{"id", "uid"}, OutputNamesKnown:true, TargetRequired:[]string{"table.exists"}, SourceRequired:[]string(nil), Security:"definer", SecurityUnknown:false, ReviewPrincipal:false, DependencyLimit:false, AlgorithmWarn:false, CheckInvalid:false, CheckRequired:[]string(nil), DropTargets:[]spec.ViewDropTarget(nil)}
+--- FAIL: TestT18R1CheckOptionStaticPremise (0.00s)
+    --- FAIL: TestT18R1CheckOptionStaticPremise/computed_only (0.00s)
+    --- FAIL: TestT18R1CheckOptionStaticPremise/outer_join (0.00s)
+=== RUN   TestT18R1InheritedAlgorithmFallback
+=== RUN   TestT18R1InheritedAlgorithmFallback/alter_
+    batch_state_t18r1_test.go:84: inherited merge fallback was not reviewed: spec.ViewLifecycleAssessment{TargetInvalid:false, SourceInvalid:false, SourceRootIndex:-1, SourceBindingIndex:-1, SourceOffset:-1, SourceFailures:[]spec.ViewSourceFailure(nil), OutputNames:[]string{"n"}, OutputNamesKnown:true, TargetRequired:[]string(nil), SourceRequired:[]string(nil), Security:"definer", SecurityUnknown:false, ReviewPrincipal:false, DependencyLimit:false, AlgorithmWarn:false, CheckInvalid:false, CheckRequired:[]string(nil), DropTargets:[]spec.ViewDropTarget(nil)}
+=== RUN   TestT18R1InheritedAlgorithmFallback/alter_ALGORITHM=UNDEFINED_
+    batch_state_t18r1_test.go:84: inherited merge fallback was not reviewed: spec.ViewLifecycleAssessment{TargetInvalid:false, SourceInvalid:false, SourceRootIndex:-1, SourceBindingIndex:-1, SourceOffset:-1, SourceFailures:[]spec.ViewSourceFailure(nil), OutputNames:[]string{"n"}, OutputNamesKnown:true, TargetRequired:[]string(nil), SourceRequired:[]string(nil), Security:"definer", SecurityUnknown:false, ReviewPrincipal:false, DependencyLimit:false, AlgorithmWarn:false, CheckInvalid:false, CheckRequired:[]string(nil), DropTargets:[]spec.ViewDropTarget(nil)}
+--- FAIL: TestT18R1InheritedAlgorithmFallback (0.00s)
+    --- FAIL: TestT18R1InheritedAlgorithmFallback/alter_ (0.00s)
+    --- FAIL: TestT18R1InheritedAlgorithmFallback/alter_ALGORITHM=UNDEFINED_ (0.00s)
+=== RUN   TestT18R1CorrelatedSubqueryNearestScope
+    batch_state_t18r1_test.go:109: nearest outer scope was flattened into ambiguity: spec.ViewLifecycleAssessment{TargetInvalid:false, SourceInvalid:true, SourceRootIndex:1, SourceBindingIndex:-1, SourceOffset:104, SourceFailures:[]spec.ViewSourceFailure{spec.ViewSourceFailure{Root:1, BindingIndex:-1, Offset:104}}, OutputNames:[]string{"id"}, OutputNamesKnown:true, TargetRequired:[]string{"table.exists"}, SourceRequired:[]string(nil), Security:"definer", SecurityUnknown:false, ReviewPrincipal:false, DependencyLimit:false, AlgorithmWarn:false, CheckInvalid:false, CheckRequired:[]string(nil), DropTargets:[]spec.ViewDropTarget(nil)}
+--- FAIL: TestT18R1CorrelatedSubqueryNearestScope (0.00s)
+=== RUN   TestT18R1CorrelatedSubqueryScopeControls
+=== RUN   TestT18R1CorrelatedSubqueryScopeControls/outer_fallback
+=== RUN   TestT18R1CorrelatedSubqueryScopeControls/same_scope_ambiguity
+--- PASS: TestT18R1CorrelatedSubqueryScopeControls (0.00s)
+    --- PASS: TestT18R1CorrelatedSubqueryScopeControls/outer_fallback (0.00s)
+    --- PASS: TestT18R1CorrelatedSubqueryScopeControls/same_scope_ambiguity (0.00s)
+FAIL
+FAIL	github.com/Fanduzi/DeltaScope/internal/application/audit	0.564s
+FAIL

@@ -1,0 +1,1 @@
+gofmt changed Go files + git diff --check

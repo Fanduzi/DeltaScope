@@ -1,0 +1,74 @@
+===== version =====
+rc=0
+version
+8.0.46
+===== catalog_before =====
+rc=0
+===== setup =====
+rc=0
+Note (Code 1008): Can't drop database 't18r1_g'; database doesn't exist
+Note (Code 1008): Can't drop database 't18r1_src'; database doesn't exist
+===== f1_drop_schema =====
+rc=0
+===== f1_create_in_absent_schema =====
+rc=1
+ERROR 1049 (42000) at line 1: Unknown database 't18r1_g'
+===== catalog_after_f1 =====
+rc=0
+SCHEMA_NAME
+t18r1_src
+TABLE_SCHEMA	TABLE_NAME	TABLE_TYPE
+t18r1_src	a	BASE TABLE
+t18r1_src	b	BASE TABLE
+t18r1_src	t	BASE TABLE
+t18r1_src	u	BASE TABLE
+===== f1_recreate_schema =====
+rc=0
+===== f1_create_after_rebuild =====
+rc=0
+===== f2_computed_only =====
+rc=1
+ERROR 1368 (HY000) at line 1: CHECK OPTION on non-updatable view 't18r1_g.calc_v'
+===== f2_outer_join =====
+rc=1
+ERROR 1368 (HY000) at line 1: CHECK OPTION on non-updatable view 't18r1_g.join_v'
+===== f2_inner_join_control =====
+rc=0
+===== f2_mixed_projection_control =====
+rc=0
+===== f3_merge_create =====
+rc=0
+===== f3_alter_inherited =====
+rc=0
+Warning (Code 1354): View merge algorithm can't be used here for now (assumed undefined algorithm)
+Level	Code	Message
+Warning	1354	View merge algorithm can't be used here for now (assumed undefined algorithm)
+View	Create View	character_set_client	collation_connection
+alg_v	CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `t18r1_g`.`alg_v` AS select count(0) AS `n` from `t18r1_src`.`t`	latin1	latin1_swedish_ci
+===== f3_recreate_merge =====
+rc=0
+===== f3_alter_undefined =====
+rc=0
+Warning (Code 1354): View merge algorithm can't be used here for now (assumed undefined algorithm)
+Level	Code	Message
+Warning	1354	View merge algorithm can't be used here for now (assumed undefined algorithm)
+View	Create View	character_set_client	collation_connection
+alg_v	CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `t18r1_g`.`alg_v` AS select count(0) AS `n` from `t18r1_src`.`t`	latin1	latin1_swedish_ci
+===== f4_correlated =====
+rc=0
+===== f4_prepare_sources =====
+rc=1
+ERROR 1050 (42S01) at line 1: Table 'a' already exists
+===== catalog_final =====
+rc=0
+TABLE_SCHEMA	TABLE_NAME	TABLE_TYPE
+t18r1_g	alg_v	VIEW
+t18r1_g	inner_v	VIEW
+t18r1_g	mixed_v	VIEW
+t18r1_g	v	VIEW
+t18r1_src	a	BASE TABLE
+t18r1_src	b	BASE TABLE
+t18r1_src	t	BASE TABLE
+t18r1_src	u	BASE TABLE
+===== cleanup =====
+rc=0

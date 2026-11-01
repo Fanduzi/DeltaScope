@@ -1,0 +1,38 @@
+=== RUN   TestT18FirstOrderedProjection
+--- PASS: TestT18FirstOrderedProjection (0.00s)
+=== RUN   TestT18FirstRefusalPreservesPriorView
+--- PASS: TestT18FirstRefusalPreservesPriorView (0.00s)
+=== RUN   TestT18FirstPolicyIndependent
+--- PASS: TestT18FirstPolicyIndependent (0.01s)
+=== RUN   TestT18FirstReadFailureNotCached
+--- PASS: TestT18FirstReadFailureNotCached (0.00s)
+=== RUN   TestT18FirstCrossSchemaSourcesBindRequestSchema
+--- PASS: TestT18FirstCrossSchemaSourcesBindRequestSchema (0.00s)
+=== RUN   TestT18FirstDependencyLimitIsIntrinsic
+--- PASS: TestT18FirstDependencyLimitIsIntrinsic (0.00s)
+=== RUN   TestT18R1CreateViewConsumesDroppedSchema
+--- PASS: TestT18R1CreateViewConsumesDroppedSchema (0.00s)
+=== RUN   TestT18R1CreateViewLeavesNeverTouchedSchemaUnknown
+--- PASS: TestT18R1CreateViewLeavesNeverTouchedSchemaUnknown (0.00s)
+=== RUN   TestT18R1CheckOptionStaticPremise
+=== RUN   TestT18R1CheckOptionStaticPremise/computed_only
+=== RUN   TestT18R1CheckOptionStaticPremise/outer_join
+--- PASS: TestT18R1CheckOptionStaticPremise (0.00s)
+    --- PASS: TestT18R1CheckOptionStaticPremise/computed_only (0.00s)
+    --- PASS: TestT18R1CheckOptionStaticPremise/outer_join (0.00s)
+=== RUN   TestT18R1InheritedAlgorithmFallback
+=== RUN   TestT18R1InheritedAlgorithmFallback/alter_
+=== RUN   TestT18R1InheritedAlgorithmFallback/alter_ALGORITHM=UNDEFINED_
+--- PASS: TestT18R1InheritedAlgorithmFallback (0.00s)
+    --- PASS: TestT18R1InheritedAlgorithmFallback/alter_ (0.00s)
+    --- PASS: TestT18R1InheritedAlgorithmFallback/alter_ALGORITHM=UNDEFINED_ (0.00s)
+=== RUN   TestT18R1CorrelatedSubqueryNearestScope
+--- PASS: TestT18R1CorrelatedSubqueryNearestScope (0.00s)
+=== RUN   TestT18R1CorrelatedSubqueryScopeControls
+=== RUN   TestT18R1CorrelatedSubqueryScopeControls/outer_fallback
+=== RUN   TestT18R1CorrelatedSubqueryScopeControls/same_scope_ambiguity
+--- PASS: TestT18R1CorrelatedSubqueryScopeControls (0.00s)
+    --- PASS: TestT18R1CorrelatedSubqueryScopeControls/outer_fallback (0.00s)
+    --- PASS: TestT18R1CorrelatedSubqueryScopeControls/same_scope_ambiguity (0.00s)
+PASS
+ok  	github.com/Fanduzi/DeltaScope/internal/application/audit	0.866s
