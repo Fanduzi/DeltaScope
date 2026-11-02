@@ -43,7 +43,7 @@ This catalog has explicit boundaries. It is **not**:
 | Dialect | Total | finding_covered | normalized_silent | unsupported_boundary | parser_error | unclassified |
 |---------|------:|----------------:|------------------:|--------------------:|-------------:|-------------:|
 | MySQL | 62 | 48 | 0 | 0 | 14 | 0 |
-| TiDB | 55 | 43 | 0 | 4 | 8 | 0 |
+| TiDB | 55 | 43 | 1 | 4 | 7 | 0 |
 | PostgreSQL | 290 | 277 | 8 | 0 | 5 | 0 |
 | PG ALTER TABLE residual | 66 | 59 | 3 | 0 | 4 | 0 |
 
@@ -79,13 +79,17 @@ Classification: `finding_covered`. The view grammar adapter preserves the
 ALTER operation and delegates the query to the locked parser. TiDB ALTER VIEW
 remains an explicit vendor boundary; invalid SELECT syntax remains a parser error.
 
-### TiDB `ALTER TABLE TTL` — `parser_error`
+### TiDB `ALTER TABLE TTL` — `normalized_silent` offline / `finding_covered` with TTL metadata
 
 ```bash
-deltascope audit --dialect tidb --sql "ALTER TABLE t TTL = INTERVAL 7 DAY"
+deltascope audit --dialect tidb --sql "ALTER TABLE t TTL = created_at + INTERVAL 7 DAY"
 ```
 
-Classification: `parser_error`. The TiDB dialect parser cannot parse the TTL clause.
+Classification: `normalized_silent` in the no-provider catalog case because the
+ordered TTL prerequisite facts are unproven. With catalog metadata proving a
+clean inbound-FK set and legal temporal column, `ddl.tidb.ttl.warn` warns that
+TTL enables automatic deletion. A quoted whole TTL expression remains a parser
+error.
 
 ### PostgreSQL `ALTER TABLE ... VALIDATE CONSTRAINT` — `finding_covered`
 

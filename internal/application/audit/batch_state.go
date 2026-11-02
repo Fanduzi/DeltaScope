@@ -208,15 +208,17 @@ func (s *batchState) resolve(ctx context.Context, key batchTableKey, providerSch
 	entry.displaySchema = providerSchema
 	entry.displayTable = providerTable
 	entry.shape = cloneTableSnapshot(snapshot)
-	// The provider's catalog load covers outbound foreign keys only — no
-	// reverse-edge query exists — so a provider-loaded present snapshot
-	// cannot vouch the inbound set: mark it unproven. TRUNCATE's 1701
-	// premise then reads batch-proven edges and gaps on the unvouched
-	// tail instead of fabricating a proven-empty set. The flag lives on
-	// the cloned shape; the provider's own snapshot stays untouched.
+	// A provider may publish the inbound set only after a successful
+	// reverse-edge catalog read. A nil ReferencedBy means that coverage was
+	// never attempted, so the cloned shape is unvouched; a non-nil empty or
+	// populated slice is the provider's proven answer and must survive.
+	// TRUNCATE's 1701 premise still reads batch-proven edges and gaps on an
+	// unvouched tail instead of fabricating a proven-empty set.
 	if snapshot.Exists {
 		entry.state = tablePresent
-		entry.shape.ReferencedByUnknown = true
+		if entry.shape.ReferencedBy == nil {
+			entry.shape.ReferencedByUnknown = true
+		}
 	} else {
 		entry.state = tableAbsent
 	}
@@ -488,6 +490,10 @@ func fullyAuditedStatement(dialect spec.Dialect, statement spec.Statement) bool 
 			aspect.Metadata["aspect"] == "temporary" {
 			continue
 		}
+		if aspect.Reason == spec.UnsupportedVendorBoundaryReason &&
+			aspect.Metadata["aspect"] == "ttl" {
+			continue
+		}
 		return false
 	}
 	return true
@@ -617,6 +623,13 @@ func (s *batchState) applyCreateTable(ctx context.Context, statement spec.Statem
 		dstMap = s.tempEntries
 	}
 	if !createAspectAdmissible(s.dialect, statement) {
+		s.invalidateBoundKey(key, destNamespace(tempDest))
+		return nil
+	}
+	switch createTTLStatementOutcome(s.dialect, ddl) {
+	case ttlCreateRefused:
+		return nil
+	case ttlCreateUnproven:
 		s.invalidateBoundKey(key, destNamespace(tempDest))
 		return nil
 	}
@@ -852,6 +865,9 @@ func createAspectAdmissible(dialect spec.Dialect, statement spec.Statement) bool
 		if aspect.Metadata["aspect"] == "option" && strings.HasSuffix(aspect.Feature, ".on_duplicate") {
 			continue
 		}
+		if aspect.Reason == spec.UnsupportedVendorBoundaryReason && aspect.Metadata["aspect"] == "ttl" {
+			continue
+		}
 		return false
 	}
 	return true
@@ -884,7 +900,16 @@ func (s *batchState) createDestShape(ctx context.Context, statement spec.Stateme
 			// Missing LIKE source refuses the statement (1146).
 			return nil, createShapeRefused, nil
 		case tablePresent:
-			return likeCopiedShape(entry.shape, displaySchema, displayTable), createShapeDerived, nil
+			shape := likeCopiedShape(entry.shape, displaySchema, displayTable)
+			outcome := s.createTTLShapeOutcome(ddl, displaySchema, entry.shape)
+			if outcome != createShapeDerived {
+				return nil, outcome, nil
+			}
+			if len(ddl.TTL) > 0 {
+				shape.TTLKnown = true
+				shape.TTL = authoredTTLConfig(ddl)
+			}
+			return shape, createShapeDerived, nil
 		default:
 			return nil, createShapeUnproven, nil
 		}
@@ -905,7 +930,11 @@ func (s *batchState) createDestShape(ctx context.Context, statement spec.Stateme
 				return nil, createShapeUnproven, nil
 			}
 		}
-		return ctasDeclaredShape(displaySchema, displayTable, ddl), createShapeDerived, nil
+		shape := ctasDeclaredShape(s.dialect, displaySchema, displayTable, ddl)
+		if outcome := s.createTTLShapeOutcome(ddl, displaySchema, nil); outcome != createShapeDerived {
+			return nil, outcome, nil
+		}
+		return shape, createShapeDerived, nil
 	}
 	shape := s.derivedCreateShape(displaySchema, displayTable, ddl)
 	if ddl.TemporaryScope == spec.TemporaryScopeGlobal {
@@ -915,7 +944,27 @@ func (s *batchState) createDestShape(ctx context.Context, statement spec.Stateme
 		}
 		shape.Options["on_commit"] = "delete"
 	}
+	if outcome := s.createTTLShapeOutcome(ddl, displaySchema, nil); outcome != createShapeDerived {
+		return nil, outcome, nil
+	}
 	return shape, createShapeDerived, nil
+}
+
+// createTTLShapeOutcome runs TiDB's post-TableInfo TTL gate only after the
+// clause-shape check has admitted a modeled TTL member set. LIKE sources carry
+// their own column/PK facts; CTAS and plain creates use the declared shape.
+func (s *batchState) createTTLShapeOutcome(ddl *spec.DDL, effectiveSchema string, likeSource *spec.TableSnapshot) createShapeOutcome {
+	if createTTLStatementOutcome(s.dialect, ddl) != ttlCreateApplied {
+		return createShapeDerived
+	}
+	switch spec.TTLCreateOutcome(s.dialect, ddl, effectiveSchema, s.instanceFacts, likeSource) {
+	case spec.TTLDefinitionApplied:
+		return createShapeDerived
+	case spec.TTLDefinitionRefused:
+		return createShapeRefused
+	default:
+		return createShapeUnproven
+	}
 }
 
 // likeCopiedShape projects the member set CREATE TABLE ... LIKE provably
@@ -952,6 +1001,10 @@ func likeCopiedShape(source *spec.TableSnapshot, displaySchema, displayTable str
 	}
 	shape.ReferencedBy = []spec.Table{}
 	shape.ReferencedByUnknown = false
+	// LIKE does not prove that a TTL binding crosses to the destination —
+	// leave the fact unobserved rather than resurrecting the source's config.
+	shape.TTL = nil
+	shape.TTLKnown = false
 	return shape
 }
 
@@ -959,7 +1012,7 @@ func likeCopiedShape(source *spec.TableSnapshot, displaySchema, displayTable str
 // destination: the authored column definitions land as the column prefix
 // and every select-appended member stays unproven — the select is never
 // executed or result-inferred.
-func ctasDeclaredShape(displaySchema, displayTable string, ddl *spec.DDL) *spec.TableSnapshot {
+func ctasDeclaredShape(dialect spec.Dialect, displaySchema, displayTable string, ddl *spec.DDL) *spec.TableSnapshot {
 	shape := &spec.TableSnapshot{
 		Schema:             displaySchema,
 		Table:              &spec.Table{Schema: displaySchema, Name: displayTable, Comment: ddl.Table.Comment},
@@ -970,9 +1023,13 @@ func ctasDeclaredShape(displaySchema, displayTable string, ddl *spec.DDL) *spec.
 		Indexes:            []spec.Index{},
 		Constraints:        []spec.Constraint{},
 		ReferencedBy:       []spec.Table{},
+		TTLKnown:           true,
 	}
 	for _, column := range ddl.Columns {
 		shape.Columns = append(shape.Columns, cloneColumn(column))
+	}
+	if dialect == spec.DialectTiDB && createTTLStatementOutcome(dialect, ddl) == ttlCreateApplied {
+		shape.TTL = authoredTTLConfig(ddl)
 	}
 	// Declared PK/index members on a CTAS are column-level attributes the
 	// engine honors or ignores per the select's landing; the member truth
@@ -1137,6 +1194,10 @@ func derivedCreateShape(dialect spec.Dialect, schema, table string, ddl *spec.DD
 			snapshot.Options[name] = value
 		}
 	}
+	snapshot.TTLKnown = true
+	if dialect == spec.DialectTiDB && createTTLStatementOutcome(dialect, ddl) == ttlCreateApplied {
+		snapshot.TTL = authoredTTLConfig(ddl)
+	}
 	return snapshot
 }
 
@@ -1226,6 +1287,21 @@ func (s *batchState) applyAlterTable(ctx context.Context, statement spec.Stateme
 			}
 			s.entries, s.tempEntries = s.tempEntries, s.entries
 			defer func() { s.entries, s.tempEntries = s.tempEntries, s.entries }()
+		}
+	}
+	// Any TTL clause sharing a multi-spec ALTER is an atomic TiDB refusal
+	// (8200, probed): the statement executes nothing, so every bound fact —
+	// including the unknown pre-state — stays exactly as it was.
+	if s.dialect == spec.DialectTiDB && len(ddl.Alter) > 1 && alterStatementHasTTL(ddl) {
+		return nil
+	}
+	if s.dialect == spec.DialectMySQL && alterStatementHasTTL(ddl) {
+		switch mysqlTTLAlterOutcome(ddl) {
+		case mysqlTTLAlterRefused:
+			return nil
+		case mysqlTTLAlterUnproven:
+			s.invalidateAll(targets)
+			return nil
 		}
 	}
 	// A partition action sharing a multi-spec ALTER is settled by the
@@ -1371,6 +1447,10 @@ func (s *batchState) applyAlterTable(ctx context.Context, statement spec.Stateme
 	}
 	if alter.Action == "algorithm" || alter.Action == "lock" {
 		s.applyModifierOnlyAlter(statement, targets)
+		return nil
+	}
+	if alter.Action == "remove_ttl" || len(alter.TTL) > 0 {
+		s.applyTTLAlter(alter, targets)
 		return nil
 	}
 	if alter.Action == "table_option" {
@@ -2943,6 +3023,14 @@ func cloneTableSnapshot(in *spec.TableSnapshot) *spec.TableSnapshot {
 		for name, value := range in.Options {
 			out.Options[name] = value
 		}
+	}
+	if in.TTL != nil {
+		ttl := *in.TTL
+		if in.TTL.Enabled != nil {
+			enabled := *in.TTL.Enabled
+			ttl.Enabled = &enabled
+		}
+		out.TTL = &ttl
 	}
 	if in.Partitioned != nil {
 		partitioned := *in.Partitioned

@@ -38,9 +38,9 @@
     "tidb": {
       "total": 55,
       "finding_covered": 43,
-      "normalized_silent": 0,
+      "normalized_silent": 1,
       "unsupported_boundary": 4,
-      "parser_error": 8,
+      "parser_error": 7,
       "unclassified": 0
     }
   },
@@ -3815,9 +3815,9 @@
       "dialect": "tidb",
       "family": "alter_table",
       "form": "ALTER TABLE TTL",
-      "classification": "parser_error",
+      "classification": "normalized_silent",
       "finding_rule_ids": [],
-      "notes": "parser error"
+      "notes": "normalized, no finding under default policy"
     },
     {
       "dialect": "tidb",

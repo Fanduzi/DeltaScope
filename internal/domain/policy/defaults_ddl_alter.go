@@ -466,6 +466,11 @@ func ddlAlterRules() map[string]RulePolicy {
 			Level:   rule.LevelWarning,
 			Params:  map[string]any{},
 		},
+		"ddl.tidb.ttl.warn": {
+			Enabled: true,
+			Level:   rule.LevelWarning,
+			Params:  map[string]any{},
+		},
 		"ddl.alter.modify_column.explicit_nullability_change.forbid": {
 			Enabled: true,
 			Level:   rule.LevelBlocker,

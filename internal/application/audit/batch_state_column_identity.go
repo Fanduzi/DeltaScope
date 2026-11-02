@@ -103,6 +103,9 @@ func (s *batchState) prepareColumnIdentity(statement spec.Statement, alter *spec
 		return invalidate(primary)
 	}
 	source := entry.shape.Columns[index]
+	if alter.Action == "change_column" && ttlColumnTypeOutcome(s.dialect, entry.shape, source.Name, alter.Column.Definition.Type) == ttlColumnActionUnsafe {
+		return invalidate(primary)
+	}
 	shape := cloneTableSnapshot(entry.shape)
 	if checkOutcome == checkIdentityCascade {
 		// TiDB CHANGE COLUMN silently drops the referencing members —
@@ -112,7 +115,7 @@ func (s *batchState) prepareColumnIdentity(statement spec.Statement, alter *spec
 	if alter.Action == "change_column" {
 		definition := alter.Column.Definition
 		inPK, pkKnown := primaryKeyMembership(entry.shape, source.Name)
-		if !modifyTypeTemplate(source, *definition) ||
+		if (!modifyTypeTemplate(source, *definition) && !ttlTemporalIdentityTemplate(s.dialect, entry.shape, source.Name, *definition)) ||
 			modifyDeclaresExtraMember(alter, *definition) ||
 			modifyTiDBPrimaryKeySignedness(s.dialect, inPK, source, *definition) ||
 			modifyTiDBAutoIncrementRemoval(s.dialect, source, *definition) ||
@@ -281,6 +284,9 @@ func rewriteIdentityColumnRefs(shape *spec.TableSnapshot, oldName, newName strin
 		}
 		shape.Indexes[i].Columns = rewriteColumnRefs(index.Columns, oldName, newName)
 	}
+	if shape.TTL != nil && strings.EqualFold(shape.TTL.TimeColumn, oldName) {
+		shape.TTL.TimeColumn = newName
+	}
 }
 
 func rewriteColumnRefs(columns []string, oldName, newName string) []string {
@@ -305,6 +311,7 @@ func scrubColumnIdentityMembers(shape *spec.TableSnapshot, oldName, newName stri
 	}
 	scrubIndexList(&shape.Indexes, &shape.IndexesUnknown, oldName, newName)
 	scrubConstraintList(shape, oldName, newName)
+	scrubTTLIdentityMembers(shape, oldName, newName)
 }
 
 func indexProvesUnrelated(index spec.Index, oldName, newName string) bool {

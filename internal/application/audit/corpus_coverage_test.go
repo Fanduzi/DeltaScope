@@ -153,7 +153,8 @@ func isTiDBOnlyRule(ruleID string) bool {
 		"ddl.create_sequence.notice",
 		"ddl.alter_sequence.notice",
 		"ddl.drop_sequence.notice",
-		"ddl.tidb.alter_table.placement_policy.notice":
+		"ddl.tidb.alter_table.placement_policy.notice",
+		"ddl.tidb.ttl.warn":
 		return true
 	default:
 		return false

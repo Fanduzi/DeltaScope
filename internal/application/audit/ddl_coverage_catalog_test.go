@@ -560,7 +560,7 @@ func TestDDLCoverageCatalog(t *testing.T) {
 
 	// Validate baselines.
 	assertCatalogSummary(t, "mysql", mysqlSummary, 62, 48, 0, 0, 14, 0)
-	assertCatalogSummary(t, "tidb", tidbSummary, 55, 43, 0, 4, 8, 0)
+	assertCatalogSummary(t, "tidb", tidbSummary, 55, 43, 1, 4, 7, 0)
 	assertCatalogSummary(t, "postgresql", pgSummary, 290, 277, 8, 0, 5, 0)
 	assertCatalogSummary(t, "postgresql_alter_table_residual", pgResSummary, 66, 59, 3, 0, 4, 0)
 

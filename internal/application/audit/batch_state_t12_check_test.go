@@ -34,7 +34,7 @@ func t12Table(name string, columns []string, checks ...spec.Constraint) *spec.Ta
 	return &spec.TableSnapshot{
 		Exists:  true,
 		Table:   &spec.Table{Schema: "golden", Name: name},
-		Columns: cols, Constraints: constraints,
+		Columns: cols, Constraints: constraints, TTLKnown: true,
 	}
 }
 

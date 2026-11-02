@@ -232,6 +232,12 @@ func (s *batchState) foreignKeyReferencedPremise(ctx context.Context, key batchT
 	case parentEntry.state != tablePresent || parentEntry.shape == nil:
 		return false, false, nil
 	}
+	switch spec.TTLForeignKeyParentOutcome(s.dialect, parentEntry.shape) {
+	case spec.TTLDefinitionRefused:
+		return true, true, nil
+	case spec.TTLDefinitionUnproven:
+		return false, false, nil
+	}
 	if parentEntry.shape.Columns == nil || constraint.UnmodeledReferencedParts > 0 || len(constraint.ReferencedColumns) == 0 {
 		return false, false, nil
 	}
@@ -310,6 +316,12 @@ func (s *batchState) createTableForeignKeyPremise(ctx context.Context, key batch
 		case parentEntry.state == tableAbsent:
 			return true, true, nil
 		case parentEntry.state != tablePresent || parentEntry.shape == nil:
+			return false, false, nil
+		}
+		switch spec.TTLForeignKeyParentOutcome(s.dialect, parentEntry.shape) {
+		case spec.TTLDefinitionRefused:
+			return true, true, nil
+		case spec.TTLDefinitionUnproven:
 			return false, false, nil
 		}
 		if parentEntry.shape.Columns == nil || constraint.UnmodeledReferencedParts > 0 || len(constraint.ReferencedColumns) == 0 {

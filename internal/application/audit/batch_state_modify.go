@@ -93,8 +93,11 @@ func (s *batchState) prepareModifyColumn(statement spec.Statement, alter *spec.A
 	}
 	source := entry.shape.Columns[index]
 	definition := alter.Column.Definition
+	if ttlColumnTypeOutcome(s.dialect, entry.shape, source.Name, definition.Type) == ttlColumnActionUnsafe {
+		return invalidate(primary)
+	}
 	inPK, pkKnown := primaryKeyMembership(entry.shape, source.Name)
-	if !modifyTypeTemplate(source, *definition) ||
+	if (!modifyTypeTemplate(source, *definition) && !ttlTemporalIdentityTemplate(s.dialect, entry.shape, source.Name, *definition)) ||
 		modifyDeclaresExtraMember(alter, *definition) ||
 		modifyTiDBPrimaryKeySignedness(s.dialect, inPK, source, *definition) ||
 		modifyTiDBAutoIncrementRemoval(s.dialect, source, *definition) ||

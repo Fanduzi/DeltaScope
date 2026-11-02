@@ -27,6 +27,11 @@ type DDL struct {
 	// recognized but did not model into Options. Presence marks an evidence
 	// gap: the fact was parsed but is not auditable.
 	UnextractedOptions []string `json:"unextracted_options,omitempty"`
+	// TTL carries the authored TiDB TTL members on CREATE TABLE. It records
+	// declarations only — never catalog or prospective configuration — and
+	// keeps the clause source so a TiDB feature comment is not conflated with
+	// bare MySQL-refused syntax.
+	TTL []TTLDeclaration `json:"-"`
 	// OmittedTargets counts parsed statement targets the normalized model
 	// collapsed or ignored entirely: extra names in DROP USER/ROLE/SEQUENCE
 	// lists, extra CREATE/ALTER USER specs, and the whole user list on
@@ -889,6 +894,40 @@ type Alter struct {
 	// UnextractedOptions names parsed table-option clauses that were dropped
 	// during extraction; see DDL.UnextractedOptions.
 	UnextractedOptions []string `json:"unextracted_options,omitempty"`
+	// TTL carries the authored TTL member on this ALTER spec — `TTL=`,
+	// `TTL_ENABLE=`, or `TTL_JOB_INTERVAL=`. REMOVE TTL remains an action
+	// (`remove_ttl`), not an option. The field records only what the clause
+	// declares, never whether the catalog or prospective table has TTL.
+	TTL []TTLDeclaration `json:"-"`
+}
+
+// TTLClauseSource identifies how a parsed TTL clause was authored. TiDB
+// feature comments and bare syntax reach the same AST nodes, so source
+// preservation is required for the MySQL ignore/refusal distinction.
+type TTLClauseSource string
+
+const (
+	TTLClauseSourceNative         TTLClauseSource = "native"
+	TTLClauseSourceFeatureComment TTLClauseSource = "tidb_feature_comment"
+	TTLClauseSourceUnproven       TTLClauseSource = "unproven"
+)
+
+// TTLDeclaration is one authored TTL member. Each optional fact is present
+// only when the parser proved it; a missing member means unmodeled, never a
+// catalog default or a proven absence.
+type TTLDeclaration struct {
+	Member        string          `json:"-"`
+	Source        TTLClauseSource `json:"-"`
+	TimeColumn    string          `json:"-"`
+	IntervalValue string          `json:"-"`
+	// IntervalExpr is the authored expression restored with SQL quoting —
+	// the same member TiDB stores before checkTTLIntervalExpr evaluates it.
+	// It stays empty when the expression could not be restored.
+	IntervalExpr string   `json:"-"`
+	IntervalUnit string   `json:"-"`
+	Enabled      *bool    `json:"-"`
+	JobInterval  string   `json:"-"`
+	Unmodeled    []string `json:"-"`
 }
 
 // OrderByItem is one member of an ALTER TABLE ... ORDER BY declaration —

@@ -29,6 +29,7 @@ func t05A6Base() *spec.TableSnapshot {
 	shape.Columns[1] = spec.Column{Name: "obsolete", Type: "int"}
 	shape.Columns[2] = spec.Column{Name: "keep_c", Type: "varchar", Length: 10, Charset: "utf8mb4", Collation: "utf8mb4_bin", NotNull: true}
 	shape.PrimaryKey = &spec.Index{Name: "primary", Kind: spec.IndexKindPrimary, Columns: []string{"id"}}
+	shape.TTLKnown = true
 	return shape
 }
 

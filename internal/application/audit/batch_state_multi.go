@@ -393,7 +393,7 @@ func multiActionApply(s *batchState, alter *spec.Alter, working *spec.TableSnaps
 	case "rename_column":
 		return multiActionRename(s, alter, working)
 	case "drop_column":
-		return applied(multiActionDrop(alter, working))
+		return multiActionDrop(s, alter, working)
 	case "set_column_default", "drop_column_default":
 		return applied(multiActionSetter(s, alter, working))
 	case "set_column_visibility":
@@ -413,8 +413,11 @@ func multiActionModify(s *batchState, alter *spec.Alter, working *spec.TableSnap
 	if strings.TrimSpace(definition.Type) == "" {
 		return false
 	}
+	if ttlColumnTypeOutcome(s.dialect, working, source.Name, definition.Type) == ttlColumnActionUnsafe {
+		return false
+	}
 	inPK, pkKnown := primaryKeyMembership(working, source.Name)
-	if !modifyTypeTemplate(source, *definition) ||
+	if (!modifyTypeTemplate(source, *definition) && !ttlTemporalIdentityTemplate(s.dialect, working, source.Name, *definition)) ||
 		modifyDeclaresExtraMember(alter, *definition) ||
 		modifyTiDBPrimaryKeySignedness(s.dialect, inPK, source, *definition) ||
 		modifyTiDBAutoIncrementRemoval(s.dialect, source, *definition) ||
@@ -474,8 +477,11 @@ func multiActionChange(s *batchState, alter *spec.Alter, working *spec.TableSnap
 		return multiActionApplyUnprovable
 	}
 	source := working.Columns[index]
+	if ttlColumnTypeOutcome(s.dialect, working, source.Name, definition.Type) == ttlColumnActionUnsafe {
+		return multiActionApplyUnprovable
+	}
 	inPK, pkKnown := primaryKeyMembership(working, source.Name)
-	if !modifyTypeTemplate(source, *definition) ||
+	if (!modifyTypeTemplate(source, *definition) && !ttlTemporalIdentityTemplate(s.dialect, working, source.Name, *definition)) ||
 		modifyDeclaresExtraMember(alter, *definition) ||
 		modifyTiDBPrimaryKeySignedness(s.dialect, inPK, source, *definition) ||
 		modifyTiDBAutoIncrementRemoval(s.dialect, source, *definition) ||
@@ -522,18 +528,23 @@ func multiActionRename(s *batchState, alter *spec.Alter, working *spec.TableSnap
 	return multiActionApplyOK
 }
 
-func multiActionDrop(alter *spec.Alter, working *spec.TableSnapshot) bool {
+func multiActionDrop(s *batchState, alter *spec.Alter, working *spec.TableSnapshot) multiActionVerdict {
 	index, count := dropColumnMatch(working.Columns, alter.Name)
 	if count != 1 || len(working.Columns) < 2 {
-		return false
+		return multiActionApplyUnprovable
 	}
 	source := working.Columns[index]
-	if dropTargetColumnSpecial(source) || dropColumnLocalVerdict(working, source.Name) != dropColumnLocalSafe {
-		return false
+	local := dropColumnLocalVerdict(working, source.Name)
+	ttl := ttlDropColumnOutcome(s.dialect, working, source.Name)
+	if local == dropColumnLocalRefused || ttl == ttlColumnActionRefused {
+		return multiActionApplyRefused
+	}
+	if dropTargetColumnSpecial(source) || local == dropColumnLocalUnsafe || ttl == ttlColumnActionUnsafe {
+		return multiActionApplyUnprovable
 	}
 	working.Columns = removeColumnAt(working.Columns, index)
 	dropColumnCascadedChecks(working, source.Name)
-	return true
+	return multiActionApplyOK
 }
 
 func multiActionSetter(s *batchState, alter *spec.Alter, working *spec.TableSnapshot) bool {

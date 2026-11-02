@@ -10,6 +10,7 @@ Stable public package surface for library consumers.
 | audit_t18r1_test.go | Exercises public T18-R1 corrections: absent-schema CREATE refusal, CHECK OPTION static applicability, valid controls, and nearest-outer correlated resolution |
 | audit_t18r1tail_test.go | Exercises public T18-R1-tail corrections: TEMPTABLE state feeding a later CHECK OPTION refusal, disabled-policy state honesty, and controlled unknown-source evidence |
 | audit_t18r1tail2_test.go | Exercises public T18-R1-tail2 corrections: mixed updatable components, nested source-view fields, unproven-updatable gaps, and the native global physical-table reuse boundary for CHECK OPTION |
+| audit_t19_test.go | Verifies the T19 public snapshot contract: provider-owned `TTLConfig.Enabled` pointers are deep-copied so ordered/public state cannot alias or mutate provider facts |
 | doc.go | Declares the public package placeholder |
 | audit.go | Exposes the stable public audit API, optional metadata-provider hooks, and public result/request types |
 | query_access.go | Exposes the stable public query access analysis API, schema resolver interface, and public result/request types |

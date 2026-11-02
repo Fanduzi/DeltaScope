@@ -408,6 +408,7 @@ func Register(registry *rule.Registry, cfg policy.Policy) error {
 		{ruleID: ruleIDAlterCharsetConversionApplicability, construct: newAlterCharsetConversionApplicabilityRule},
 		{ruleID: ruleIDAlterTableOptionApplicability, construct: newAlterTableOptionApplicabilityRule},
 		{ruleID: ruleIDAlterTableOptionWarn, construct: newAlterTableOptionWarnRule},
+		{ruleID: ruleIDTiDBTTLWarn, construct: newTiDBTTLWarnRule},
 		{ruleID: ruleIDAlterColumnDependencyRequire, construct: newColumnDependencyRule},
 		{ruleID: ruleIDColumnAdvancedCompatibilityRequire, construct: newAdvancedCompatibilityRule},
 		{ruleID: ruleIDAlterModifyColumnExplicitNullabilityChangeForbid, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {

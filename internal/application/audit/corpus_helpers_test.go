@@ -131,6 +131,23 @@ func corpusTableSnapshotToSpec(tableName, defaultSchema string, snapshot corpusT
 	}
 	out.PrimaryKeyUnknown = snapshot.PrimaryKeyUnknown
 	out.ConstraintsUnknown = snapshot.ConstraintsUnknown
+	out.TTLKnown = snapshot.TTLKnown
+	if snapshot.ReferencedBy != nil {
+		out.ReferencedBy = make([]spec.Table, 0, len(snapshot.ReferencedBy))
+		for _, ref := range snapshot.ReferencedBy {
+			out.ReferencedBy = append(out.ReferencedBy, spec.Table{Schema: ref.Schema, Name: ref.Name})
+		}
+	}
+	out.ReferencedByUnknown = snapshot.ReferencedByUnknown
+	if snapshot.TTL != nil {
+		out.TTL = &spec.TTLConfig{
+			TimeColumn:    snapshot.TTL.TimeColumn,
+			IntervalValue: snapshot.TTL.IntervalValue,
+			IntervalUnit:  snapshot.TTL.IntervalUnit,
+			Enabled:       snapshot.TTL.Enabled,
+			JobInterval:   snapshot.TTL.JobInterval,
+		}
+	}
 	if snapshot.Partitioned != nil {
 		partitioned := *snapshot.Partitioned
 		out.Partitioned = &partitioned

@@ -43,7 +43,7 @@ DDL 覆盖目录回答一个核心问题：对于给定的 DDL 形态，DeltaSco
 | 方言 | 总计 | finding_covered | normalized_silent | unsupported_boundary | parser_error | unclassified |
 |------|-----:|----------------:|------------------:|--------------------:|-------------:|-------------:|
 | MySQL | 62 | 48 | 0 | 0 | 14 | 0 |
-| TiDB | 55 | 43 | 0 | 4 | 8 | 0 |
+| TiDB | 55 | 43 | 1 | 4 | 7 | 0 |
 | PostgreSQL | 290 | 277 | 8 | 0 | 5 | 0 |
 | PG ALTER TABLE residual | 66 | 59 | 3 | 0 | 4 | 0 |
 
@@ -77,13 +77,16 @@ deltascope audit --dialect mysql --sql "ALTER VIEW v AS SELECT 1"
 分类：`finding_covered`。视图语法适配器保留 ALTER 操作并将查询交给锁定的
 parser；TiDB ALTER VIEW 仍是明确的厂商边界，无效 SELECT 仍是 parser error。
 
-### TiDB `ALTER TABLE TTL` — `parser_error`
+### TiDB `ALTER TABLE TTL` — 离线 `normalized_silent` / 具备 TTL 元数据时 `finding_covered`
 
 ```bash
-deltascope audit --dialect tidb --sql "ALTER TABLE t TTL = INTERVAL 7 DAY"
+deltascope audit --dialect tidb --sql "ALTER TABLE t TTL = created_at + INTERVAL 7 DAY"
 ```
 
-分类：`parser_error`。TiDB 方言 parser 无法解析 TTL 子句。
+分类：无 provider 的 catalog 用例为 `normalized_silent`，因为 ordered TTL
+前提事实未被证明。catalog 元数据证明无入站外键且时间列合法时，
+`ddl.tidb.ttl.warn` 会警告 TTL 启用自动删除。整体加引号的 TTL 表达式仍是
+parser error。
 
 ### PostgreSQL `ALTER TABLE ... VALIDATE CONSTRAINT` — `finding_covered`
 

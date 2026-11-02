@@ -134,9 +134,16 @@ type corpusTableSnapshot struct {
 	Constraints        []corpusConstraint `yaml:"constraints,omitempty"`
 	ConstraintsUnknown bool               `yaml:"constraints_unknown,omitempty"`
 	Options            map[string]string  `yaml:"options,omitempty"`
-	Partitioned        *bool              `yaml:"partitioned,omitempty"`
-	PartitionType      string             `yaml:"partition_type,omitempty"`
-	PartitionNames     []string           `yaml:"partition_names,omitempty"`
+	TTL                *corpusTTLConfig   `yaml:"ttl,omitempty"`
+	TTLKnown           bool               `yaml:"ttl_known,omitempty"`
+	// ReferencedBy carries the provider's reverse-edge read: present-but-
+	// empty means the catalog proved no inbound foreign keys, absent means
+	// the read never happened and the bound shape stays unvouched.
+	ReferencedBy        []corpusTable `yaml:"referenced_by,omitempty"`
+	ReferencedByUnknown bool          `yaml:"referenced_by_unknown,omitempty"`
+	Partitioned         *bool         `yaml:"partitioned,omitempty"`
+	PartitionType       string        `yaml:"partition_type,omitempty"`
+	PartitionNames      []string      `yaml:"partition_names,omitempty"`
 	// PartitionDescriptions carries the catalog PARTITION_DESCRIPTION
 	// text per member — the fixture describes exactly what
 	// information_schema would show; the converter projects it through
@@ -148,6 +155,14 @@ type corpusTable struct {
 	Schema  string `yaml:"schema,omitempty"`
 	Name    string `yaml:"name"`
 	Comment string `yaml:"comment,omitempty"`
+}
+
+type corpusTTLConfig struct {
+	TimeColumn    string `yaml:"time_column,omitempty"`
+	IntervalValue string `yaml:"interval_value,omitempty"`
+	IntervalUnit  string `yaml:"interval_unit,omitempty"`
+	Enabled       *bool  `yaml:"enabled,omitempty"`
+	JobInterval   string `yaml:"job_interval,omitempty"`
 }
 
 type corpusColumn struct {

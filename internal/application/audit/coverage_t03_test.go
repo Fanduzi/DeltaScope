@@ -161,7 +161,7 @@ func TestAuditSQLT03IncompletePreservesReject(t *testing.T) {
 // marked incomplete (not silently passed) ahead of #101. DROP/TRUNCATE/
 // EXCHANGE PARTITION left this boundary under T13 (#92); T14 (#93) promoted
 // the topology actions out of it — the remaining unaudited cell here is the
-// TiDB-vendor-refused maintenance op and the TiDB-only attribute form.
+// TiDB-vendor-refused maintenance op. TTL left this boundary under T19 (#98).
 func TestAuditSQLT03TiDBUnauditedBoundaries(t *testing.T) {
 	t.Parallel()
 	configPath := writeAllRulesDisabledPolicy(t)
@@ -174,7 +174,6 @@ func TestAuditSQLT03TiDBUnauditedBoundaries(t *testing.T) {
 		{name: "resource group create", sql: "CREATE RESOURCE GROUP rg1 RU_PER_SEC=100;", wantFeature: "create_resource_group"},
 		{name: "resource group alter", sql: "ALTER RESOURCE GROUP rg1 RU_PER_SEC=200;", wantFeature: "alter_resource_group"},
 		{name: "partition maintenance vendor refusal", sql: "ALTER TABLE t REBUILD PARTITION p0;", wantFeature: "alter_table.rebuild_partition"},
-		{name: "tidb ttl table option", sql: "ALTER TABLE t TTL_ENABLE = 'OFF';", wantFeature: "alter_table.option.ttl_enable"},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -207,8 +206,8 @@ func TestAuditSQLT03TiDBUnauditedBoundaries(t *testing.T) {
 }
 
 // TestAuditSQLT03TiDBAuditedBoundariesStayComplete guards the audited side of
-// the TiDB boundary: bare sequences and DROP RESOURCE GROUP keep complete
-// coverage because generic-notice rules model them. Option-bearing sequences
+// the TiDB boundary: bare sequences, DROP RESOURCE GROUP, and modeled TTL
+// lifecycle declarations keep complete coverage. Option-bearing sequences
 // carry create_sequence.options evidence instead — the option list itself is
 // extracted but unaudited (see the incomplete-aspects table).
 func TestAuditSQLT03TiDBAuditedBoundariesStayComplete(t *testing.T) {
@@ -216,7 +215,7 @@ func TestAuditSQLT03TiDBAuditedBoundariesStayComplete(t *testing.T) {
 	configPath := writeAllRulesDisabledPolicy(t)
 
 	result, err := AuditSQL(context.Background(), Request{
-		SQL:        "CREATE SEQUENCE seq1; DROP RESOURCE GROUP rg1;",
+		SQL:        "CREATE SEQUENCE seq1; DROP RESOURCE GROUP rg1; ALTER TABLE t TTL_ENABLE='OFF';",
 		Dialect:    spec.DialectTiDB,
 		ConfigPath: configPath,
 	})

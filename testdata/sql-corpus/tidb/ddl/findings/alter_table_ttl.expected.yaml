@@ -1,0 +1,26 @@
+name: alter_table_ttl
+dialect: tidb
+category: ddl
+expect:
+  parse_ok: true
+  statements:
+    count: 1
+  unsupported:
+    count: 0
+  findings:
+    include:
+      - ddl.tidb.ttl.warn
+metadata:
+  schema: golden
+  tables:
+    t19_ttl:
+      exists: true
+      ttl_known: true
+      # The provider's reverse-edge read answered empty: the catalog proves
+      # no inbound foreign keys reference this table, so the TTL landing
+      # gate can apply.
+      referenced_by: []
+      columns:
+        - {name: created_at, type: datetime}
+      options:
+        engine: InnoDB

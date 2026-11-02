@@ -499,6 +499,14 @@ func cloneTableSnapshot(in *spec.TableSnapshot) *spec.TableSnapshot {
 		partitionType := *in.PartitionType
 		out.PartitionType = &partitionType
 	}
+	if in.TTL != nil {
+		ttl := *in.TTL
+		if in.TTL.Enabled != nil {
+			enabled := *in.TTL.Enabled
+			ttl.Enabled = &enabled
+		}
+		out.TTL = &ttl
+	}
 	if in.PartitionNames != nil {
 		out.PartitionNames = append([]string{}, in.PartitionNames...)
 	}

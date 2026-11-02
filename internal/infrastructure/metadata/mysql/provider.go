@@ -449,6 +449,11 @@ func (p *Provider) LoadTableSnapshot(ctx context.Context, dialect spec.Dialect, 
 	if err := p.loadForeignKeys(ctx, snapshot); err != nil {
 		return nil, fmt.Errorf("load table %s.%s foreign keys: %w", snapshot.Schema, snapshot.Table.Name, err)
 	}
+	if dialect == spec.DialectTiDB {
+		if err := p.loadTiDBReferencedBy(ctx, snapshot); err != nil {
+			return nil, fmt.Errorf("load table %s.%s inbound foreign keys: %w", snapshot.Schema, snapshot.Table.Name, err)
+		}
+	}
 	if err := p.loadCheckConstraints(ctx, snapshot); err != nil {
 		return nil, fmt.Errorf("load table %s.%s check constraints: %w", snapshot.Schema, snapshot.Table.Name, err)
 	}
@@ -464,6 +469,9 @@ func (p *Provider) LoadTableSnapshot(ctx context.Context, dialect spec.Dialect, 
 		}
 		if err := p.loadTiDBPrimaryKeyHandle(ctx, snapshot); err != nil {
 			return nil, fmt.Errorf("load table %s.%s primary-key handle: %w", snapshot.Schema, snapshot.Table.Name, err)
+		}
+		if err := p.loadTiDBTTL(ctx, snapshot); err != nil {
+			return nil, fmt.Errorf("load table %s.%s ttl: %w", snapshot.Schema, snapshot.Table.Name, err)
 		}
 	}
 
@@ -1380,6 +1388,39 @@ func (p *Provider) loadForeignKeys(ctx context.Context, snapshot *spec.TableSnap
 		return fmt.Errorf("iterate table foreign keys: %w", err)
 	}
 	snapshot.Constraints = constraints
+	return nil
+}
+
+// loadTiDBReferencedBy loads every catalog-proven inbound foreign-key edge:
+// the distinct child table identities whose KEY_COLUMN_USAGE rows name this
+// table as their referenced table. A clean empty result publishes a proven
+// empty set; a query or row failure propagates because a failed catalog read
+// is not an answerable absence. The read is TiDB-scoped — it exists for the
+// TTL prerequisite check and leaves MySQL's unvouched inbound-edge contract
+// unchanged.
+func (p *Provider) loadTiDBReferencedBy(ctx context.Context, snapshot *spec.TableSnapshot) error {
+	rows, err := p.db.QueryContext(ctx, `
+		select distinct table_schema, table_name
+		from information_schema.key_column_usage
+		where referenced_table_schema = ? and referenced_table_name = ?
+		order by table_schema, table_name
+	`, snapshot.Schema, snapshot.Table.Name)
+	if err != nil {
+		return fmt.Errorf("query inbound foreign keys: %w", err)
+	}
+	defer rows.Close()
+
+	snapshot.ReferencedBy = []spec.Table{}
+	for rows.Next() {
+		var schema, table string
+		if err := rows.Scan(&schema, &table); err != nil {
+			return fmt.Errorf("scan inbound foreign key: %w", err)
+		}
+		snapshot.ReferencedBy = append(snapshot.ReferencedBy, spec.Table{Schema: schema, Name: table})
+	}
+	if err := rows.Err(); err != nil {
+		return fmt.Errorf("iterate inbound foreign keys: %w", err)
+	}
 	return nil
 }
 

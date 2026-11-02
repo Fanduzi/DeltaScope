@@ -1024,6 +1024,24 @@ func registerTestDriverResults(name string, results map[string]testQueryResult) 
 			columns: []string{"constraint_name", "enforced", "check_clause"},
 		}
 	}
+	// TiDB TTL reads the catalog through SHOW CREATE. Fixtures that do not
+	// care about TTL get an explicit no-TTL answer; arbitrary unstubbed
+	// queries still answer ErrNoRows.
+	if _, ok := cloned[testTTLFragment]; !ok {
+		cloned[testTTLFragment] = testQueryResult{
+			columns: []string{"Table", "Create Table"},
+			rows:    [][]driver.Value{{"t", "CREATE TABLE `t` (`id` bigint)"}},
+		}
+	}
+	// TiDB's inbound-edge read shares key_column_usage with the outbound
+	// join and pk-column probe, so its stub lives under the longer
+	// referenced_table_schema predicate. A fixture without it means a
+	// clean, proven-empty reverse-edge set — not an unstubbed query.
+	if _, ok := cloned[testInboundFKFragment]; !ok {
+		cloned[testInboundFKFragment] = testQueryResult{
+			columns: []string{"table_schema", "table_name"},
+		}
+	}
 	testDriverResults.Store(name, cloned)
 }
 
@@ -1055,6 +1073,14 @@ const testUnmodeledConstraintFragment = "constraint_type not in"
 // longer than the shared table_constraints fragment and the
 // unmodeled-type probe's, so longest-match routing stays deterministic.
 const testCheckMemberFragment = "constraint_type = 'CHECK'"
+
+// testTTLFragment is the stub key for TiDB's SHOW CREATE TTL surface.
+const testTTLFragment = "show create table"
+
+// testInboundFKFragment is the stub key for TiDB's reverse-edge
+// KEY_COLUMN_USAGE read — the DISTINCT child-table projection is longer than
+// the shared key_column_usage fragment used by the primary-column probe.
+const testInboundFKFragment = "select distinct table_schema, table_name"
 
 func (c testConn) QueryContext(_ context.Context, query string, _ []driver.NamedValue) (driver.Rows, error) {
 	// Longest matching fragment wins: loaders sharing a catalog table (the

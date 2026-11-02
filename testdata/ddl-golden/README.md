@@ -3,6 +3,21 @@
 Per-task manifests for the milestone DDL golden-path runner
 (`make ddl-golden TASK=<id> ARTIFACT_DIR=<dir>`, `scripts/ddl_golden.py`).
 
+## T19 TiDB TTL contract
+
+[T19.json](T19.json) pins the TiDB 8.5 TTL surface end to end: the
+metadata-backed `ddl.tidb.ttl.warn` path (provider `SHOW CREATE` TTL read
+plus the TiDB-only `KEY_COLUMN_USAGE` reverse-edge read), the
+`checkTTLInfoValid` refusal boundary (temporary destination, invalid
+interval, inbound foreign keys), the `checkTableForeignKey` parent-TTL
+refusal on both CREATE and ALTER edges, `REMOVE TTL` silence, and the
+MySQL feature-comment no-op control. Offline CLI cases pin the three
+outcomes — proven apply warns once, proven refusal stays silent, and an
+unproven prerequisite set owes a `target_table.ttl` evidence gap instead
+of a finding. `SHOW CREATE TABLE` native receipts travel as `execute`
+observations; information_schema scalars pin every mutable fact. The
+manifest declares expectations only — it is not a passing-result claim.
+
 ## T17 schema-lifecycle contract
 
 [T17.json](T17.json) retains the original 47 required cases and adds five

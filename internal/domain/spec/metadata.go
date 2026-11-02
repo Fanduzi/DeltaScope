@@ -126,6 +126,18 @@ type InstanceFacts struct {
 	TiDBEnableCheckConstraintKnown bool `json:"tidb_enable_check_constraint_known,omitempty"`
 }
 
+// TTLConfig is the proven TTL configuration recorded by the catalog or a
+// prospective ordered-state transition. Enabled uses a pointer so "member not
+// observed" stays distinct from OFF; interval members likewise remain empty
+// when the catalog did not prove them.
+type TTLConfig struct {
+	TimeColumn    string `json:"-"`
+	IntervalValue string `json:"-"`
+	IntervalUnit  string `json:"-"`
+	Enabled       *bool  `json:"-"`
+	JobInterval   string `json:"-"`
+}
+
 // TableSnapshot is the current metadata-backed shape of a target table.
 // Member collections keep their source semantics: a nil Columns marks a
 // withheld column set (unknown), while PrimaryKey/Indexes/Constraints treat
@@ -142,6 +154,15 @@ type TableSnapshot struct {
 	Indexes      []Index           `json:"indexes,omitempty"`
 	Constraints  []Constraint      `json:"constraints,omitempty"`
 	Options      map[string]string `json:"options,omitempty"`
+
+	// TTL is the catalog/prospective TTL configuration when one is proven
+	// present. nil means either proven absence (TTLKnown=true) or an
+	// unobserved state (TTLKnown=false); never infer either from the other.
+	TTL *TTLConfig `json:"-"`
+	// TTLKnown reports whether the snapshot established the TTL existence
+	// answer. TTLKnown=true + TTL=nil is the bounded "known no TTL" fact;
+	// TTLKnown=false keeps the configuration unobserved, not absent.
+	TTLKnown bool `json:"-"`
 
 	// PrimaryKeyIsHandle marks a TiDB PKIsHandle table: the single-integer
 	// clustered primary key is the row handle, so no operable PRIMARY index
@@ -265,17 +286,18 @@ type TableSnapshot struct {
 	// member set under this flag.
 	ColumnsTailUnknown bool `json:"-"`
 
-	// ReferencedBy carries inbound foreign-key edges the batch can prove:
-	// child tables created in-batch declaring REFERENCES <this table>.
-	// Only derived edges land here — a non-nil empty slice means "no
-	// proven inbound edge", nil means none recorded yet.
+	// ReferencedBy carries inbound foreign-key edges the state can prove:
+	// batch-derived children declaring REFERENCES <this table>, or a
+	// provider's successful reverse-edge catalog read. A non-nil slice is
+	// the proven answer (empty means none); nil means the set was never
+	// loaded and says nothing about inbound references.
 	ReferencedBy []Table `json:"-"`
 
 	// ReferencedByUnknown marks that the snapshot cannot vouch for
-	// inbound references at all — provider snapshots do not load reverse
-	// edges, so "no recorded child" on a provider path is unknown, never
-	// proven-empty. Consumers (TRUNCATE's 1701 premise) must gap instead
-	// of reading an empty ReferencedBy as safe.
+	// inbound references at all — provider paths that do not read reverse
+	// edges carry it, so "no recorded child" there is unknown, never
+	// proven-empty. Consumers (TRUNCATE's 1701 premise and TiDB's TTL
+	// prerequisite) must gap instead of reading an unvouched set as safe.
 	ReferencedByUnknown bool `json:"-"`
 }
 

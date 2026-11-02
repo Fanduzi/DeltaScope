@@ -37,6 +37,11 @@ func t10r2Table(name string, columns []spec.Column, indexes ...spec.Index) *spec
 		Columns:     columns,
 		Indexes:     indexes,
 		Constraints: []spec.Constraint{},
+		// A fully-vouched fixture row also vouches the TTL observation:
+		// catalog reads that surface the whole member set have seen SHOW
+		// CREATE, so the table carries proven no-TTL. Tests exercising the
+		// unobserved-TTL boundary build literal shapes instead.
+		TTLKnown: true,
 	}
 }
 

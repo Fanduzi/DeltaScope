@@ -54,6 +54,11 @@ func (s *batchState) prepareDropColumn(statement spec.Statement, alter *spec.Alt
 	if entry == nil || entry.state == tableUnknown || entry.state == tableAbsent {
 		return invalidate(primary), false
 	}
+	if ttl := ttlDropColumnOutcome(s.dialect, entry.shape, alter.Name); ttl == ttlColumnActionRefused {
+		// A proven TTL time column cannot be dropped — TiDB refuses the
+		// whole statement, so the exact pre-state survives.
+		return modifyPublication{}, false
+	}
 	// A withheld column set is not a one-column table. DROP does not keep a
 	// partial snapshot: the whole target becomes unknown.
 	if entry.shape == nil || entry.shape.Columns == nil {
@@ -72,7 +77,8 @@ func (s *batchState) prepareDropColumn(statement spec.Statement, alter *spec.Alt
 		// dependents all keep their pre-state.
 		return modifyPublication{}, false
 	}
-	if dropTargetColumnSpecial(source) || local == dropColumnLocalUnsafe || len(dependents) > 0 {
+	if dropTargetColumnSpecial(source) || local == dropColumnLocalUnsafe ||
+		ttlDropColumnOutcome(s.dialect, entry.shape, source.Name) == ttlColumnActionUnsafe || len(dependents) > 0 {
 		return invalidate(primary), false
 	}
 	shape := cloneTableSnapshot(entry.shape)

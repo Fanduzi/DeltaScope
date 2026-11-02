@@ -105,6 +105,7 @@ var auditedAlterActionsTiDB = func() map[string]struct{} {
 		set[action] = struct{}{}
 	}
 	set["placement_policy"] = struct{}{}
+	set["remove_ttl"] = struct{}{}
 	return set
 }()
 
@@ -408,6 +409,22 @@ func statementCoverageAspects(dialect spec.Dialect, statement spec.Statement) []
 			gaps = append(gaps, aspectGap(feature, vendor, map[string]any{"aspect": "option"}))
 		}
 	}
+	for _, declaration := range ddl.TTL {
+		// MySQL CREATE ignores a whole TTL feature comment. A bare or
+		// unattributable clause is a vendor boundary, while a parsed member
+		// whose AST fact was not modeled keeps the bounded option gap.
+		if dialect == spec.DialectMySQL && declaration.Source == spec.TTLClauseSourceFeatureComment {
+			continue
+		}
+		vendor := dialect == spec.DialectMySQL
+		if len(declaration.Unmodeled) == 0 && declaration.Source != spec.TTLClauseSourceUnproven && dialect == spec.DialectTiDB {
+			continue
+		}
+		gaps = append(gaps, aspectGap(
+			fmt.Sprintf("%s.ttl.%s", ddl.Operation, declaration.Member), vendor,
+			map[string]any{"aspect": "ttl", "member": declaration.Member},
+		))
+	}
 	if ddl.TemporaryScope == spec.TemporaryScopeGlobal {
 		// LOCAL temporary objects are fully modeled (T16): session
 		// namespace binding, shadowing, and lifecycle transitions all
@@ -605,6 +622,20 @@ func statementCoverageAspects(dialect spec.Dialect, statement spec.Statement) []
 				}
 			}
 		}
+		for _, declaration := range alter.TTL {
+			// Under MySQL every ALTER TTL clause — bare or feature-comment —
+			// remains a vendor boundary until a native receipt proves a
+			// different comment semantics. Under TiDB modeled members carry no
+			// aspect; unmodeled members keep the bounded evidence gap.
+			if dialect == spec.DialectTiDB && len(declaration.Unmodeled) == 0 && declaration.Source != spec.TTLClauseSourceUnproven {
+				continue
+			}
+			gaps = append(gaps, aspectGap(
+				fmt.Sprintf("%s.%s.ttl.%s", ddl.Operation, alter.Action, declaration.Member),
+				dialect == spec.DialectMySQL,
+				map[string]any{"aspect": "ttl", "action": alter.Action, "member": declaration.Member},
+			))
+		}
 		if alter.Constraint != nil {
 			if gap, vendor := alterConstraintGap(dialect, alter.Constraint.Type); gap {
 				gaps = append(gaps, aspectGap(
@@ -716,7 +747,7 @@ func unauditedActionVendor(dialect spec.Dialect, action string) bool {
 	switch dialect {
 	case spec.DialectMySQL:
 		switch action {
-		case "placement_policy", "partition_attributes", "partition_options":
+		case "placement_policy", "partition_attributes", "partition_options", "remove_ttl":
 			return true
 		}
 	case spec.DialectTiDB:

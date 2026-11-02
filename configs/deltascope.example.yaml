@@ -1047,6 +1047,11 @@ rules:
     level: notice
     params:
 
+  ddl.tidb.ttl.warn:
+    enabled: true
+    level: warning
+    params:
+
   ddl.tidb.local_temporary.alter:
     enabled: true
     level: blocker

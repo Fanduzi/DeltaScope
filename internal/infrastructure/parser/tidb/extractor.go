@@ -420,13 +420,14 @@ func extractCreateTable(stmt *ast.CreateTableStmt, rawSQL string) *spec.DDL {
 
 	normalizeCreatePrimaryKeyNullability(ddl, stmt.Cols)
 
-	extracted, unextracted := extractTableOptions(stmt.Options)
+	extracted, unextracted, ttl := extractTableOptions(stmt.Options, createTableOptionTail(rawSQL))
 	for key, value := range extracted {
 		ddl.Options[key] = value
 		if key == "comment" {
 			ddl.Table.Comment = value
 		}
 	}
+	ddl.TTL = ttl
 	ddl.UnextractedOptions = append(unextracted, partitionOptionNames(stmt.Partition)...)
 	if stmt.OnDuplicate != ast.OnDuplicateKeyHandlingError {
 		// CREATE TABLE ... IGNORE|REPLACE SELECT carries duplicate-key
@@ -808,12 +809,16 @@ func extractAlterSpec(specification *ast.AlterTableSpec, clause string) spec.Alt
 			alter.ExchangeValidation = "without"
 		}
 	}
-	options, unextracted := extractTableOptions(specification.Options)
+	options, unextracted, ttl := extractTableOptions(specification.Options, clause)
 	if len(options) > 0 {
 		alter.Options = options
 		if _, ok := options["placement_policy"]; ok && alter.Action == "table_option" {
 			alter.Action = "placement_policy"
 		}
+	}
+	alter.TTL = ttl
+	if alter.Action == "remove_ttl" {
+		alter.TTL = []spec.TTLDeclaration{{Member: "remove_ttl", Source: ttlClauseSource(clause, "remove_ttl")}}
 	}
 	// ALGORITHM/LOCK specs carry the authored keyword as a bounded option —
 	// the refusal classifier reads the value by name (the AST collapses the
@@ -1902,9 +1907,9 @@ func constraintProducesIndex(tp ast.ConstraintType) bool {
 // extractTableOptions splits parsed table options into modeled key/value facts
 // and bounded names of recognized-but-unmodeled options. Unextracted names let
 // the coverage layer mark the statement incomplete instead of silently passing.
-func extractTableOptions(options []*ast.TableOption) (map[string]string, []string) {
+func extractTableOptions(options []*ast.TableOption, clause string) (map[string]string, []string, []spec.TTLDeclaration) {
 	if len(options) == 0 {
-		return nil, nil
+		return nil, nil, nil
 	}
 	// A CONVERT TO CHARACTER SET option rebinds the sibling COLLATE to the
 	// conversion target — the AST marks the charset option, and only the
@@ -1919,6 +1924,7 @@ func extractTableOptions(options []*ast.TableOption) (map[string]string, []strin
 	}
 	extracted := make(map[string]string)
 	var unextracted []string
+	var ttl []spec.TTLDeclaration
 	for _, option := range options {
 		if option == nil {
 			continue
@@ -2006,6 +2012,49 @@ func extractTableOptions(options []*ast.TableOption) (map[string]string, []strin
 			extracted["secondary_engine"] = "null"
 		case ast.TableOptionUnion:
 			extracted["union"] = unionTableNames(option)
+		case ast.TableOptionTTL:
+			member := "ttl"
+			declaration := spec.TTLDeclaration{Member: member, Source: ttlClauseSource(clause, member)}
+			if option.ColumnName != nil {
+				declaration.TimeColumn = option.ColumnName.Name.L
+			} else {
+				declaration.Unmodeled = append(declaration.Unmodeled, "time_column")
+			}
+			if option.Value != nil {
+				if value, ok := option.Value.GetValue().(string); ok {
+					declaration.IntervalValue = value
+				} else {
+					declaration.IntervalValue = fmt.Sprint(option.Value.GetValue())
+				}
+				var interval strings.Builder
+				restore := format.NewRestoreCtx(format.RestoreStringSingleQuotes|format.RestoreNameBackQuotes, &interval)
+				if err := option.Value.Restore(restore); err == nil {
+					declaration.IntervalExpr = interval.String()
+				} else {
+					declaration.Unmodeled = append(declaration.Unmodeled, "interval_expr")
+				}
+			} else {
+				declaration.Unmodeled = append(declaration.Unmodeled, "interval_value")
+			}
+			if option.TimeUnitValue != nil {
+				declaration.IntervalUnit = strings.ToLower(option.TimeUnitValue.Unit.String())
+			} else {
+				declaration.Unmodeled = append(declaration.Unmodeled, "interval_unit")
+			}
+			ttl = append(ttl, declaration)
+		case ast.TableOptionTTLEnable:
+			member := "ttl_enable"
+			enabled := option.BoolValue
+			ttl = append(ttl, spec.TTLDeclaration{Member: member, Source: ttlClauseSource(clause, member), Enabled: &enabled})
+		case ast.TableOptionTTLJobInterval:
+			member := "ttl_job_interval"
+			declaration := spec.TTLDeclaration{Member: member, Source: ttlClauseSource(clause, member)}
+			if option.StrValue != "" {
+				declaration.JobInterval = option.StrValue
+			} else {
+				declaration.Unmodeled = append(declaration.Unmodeled, "job_interval")
+			}
+			ttl = append(ttl, declaration)
 		default:
 			unextracted = append(unextracted, tableOptionName(option.Tp))
 		}
@@ -2013,7 +2062,7 @@ func extractTableOptions(options []*ast.TableOption) (map[string]string, []strin
 	if len(extracted) == 0 {
 		extracted = nil
 	}
-	return extracted, unextracted
+	return extracted, unextracted, ttl
 }
 
 // tableOptionUintText records a numeric option's authored value — an
@@ -3133,6 +3182,261 @@ func sqlBareWords(text string) []string {
 
 func isBareWordChar(c byte) bool {
 	return c == '_' || c == '$' || ('0' <= c && c <= '9') || ('a' <= c && c <= 'z') || ('A' <= c && c <= 'Z')
+}
+
+// createTableOptionTail returns the CREATE TABLE tail in which table
+// options may legally appear: after the qualified table name, and after the
+// parenthesized element list when one exists. Restricting attribution to
+// this tail keeps table and column names that happen to spell TTL members
+// out of the source scan; an unalignable header answers empty text, which
+// leaves source unproven rather than guessing from the whole statement.
+func createTableOptionTail(rawSQL string) string {
+	word, end, ok := nextBareWordAfterComments(rawSQL, 0)
+	if !ok || word != "create" {
+		return ""
+	}
+	pos := end
+	for {
+		word, end, ok = nextBareWordAfterComments(rawSQL, pos)
+		if !ok {
+			return ""
+		}
+		pos = end
+		if word == "table" {
+			break
+		}
+	}
+	pos = skipSpaceAndCommentsOnly(rawSQL, pos)
+	if word, end, ok = nextBareWordAfterComments(rawSQL, pos); ok && word == "if" {
+		if word, end, ok = nextBareWordAfterComments(rawSQL, end); !ok || word != "not" {
+			return ""
+		}
+		if word, end, ok = nextBareWordAfterComments(rawSQL, end); !ok || word != "exists" {
+			return ""
+		}
+		pos = end
+	}
+	nameEnd, ok := consumeQualifiedSQLIdentifier(rawSQL, pos)
+	if !ok {
+		return ""
+	}
+	start := skipSpaceAndCommentsOnly(rawSQL, nameEnd)
+	if start < len(rawSQL) && rawSQL[start] == '(' {
+		closeIdx, ok := matchingParenClose(rawSQL, start)
+		if !ok {
+			return ""
+		}
+		start = closeIdx + 1
+	}
+	stop := len(rawSQL)
+	depth := 0
+	for i := start; i < len(rawSQL); {
+		if next := skipCommentOrQuoted(rawSQL, i); next > i {
+			i = next
+			continue
+		}
+		switch {
+		case rawSQL[i] == '(':
+			depth++
+			i++
+		case rawSQL[i] == ')':
+			if depth > 0 {
+				depth--
+			}
+			i++
+		case isBareWordChar(rawSQL[i]):
+			wordStart := i
+			for i < len(rawSQL) && isBareWordChar(rawSQL[i]) {
+				i++
+			}
+			if depth == 0 && createTableTailBoundary(rawSQL, strings.ToLower(rawSQL[wordStart:i]), i) {
+				stop = wordStart
+				return rawSQL[start:stop]
+			}
+		default:
+			i++
+		}
+	}
+	return rawSQL[start:stop]
+}
+
+func createTableTailBoundary(text string, word string, end int) bool {
+	switch word {
+	case "partition", "as", "select", "ignore", "replace", "on", "duplicate", "for", "with":
+		return true
+	case "union":
+		next := skipSpaceAndCommentsOnly(text, end)
+		return next >= len(text) || (text[next] != '=' && text[next] != '(')
+	default:
+		return false
+	}
+}
+
+// ttlClauseSource attributes one parsed TTL member to bare syntax or a
+// /*T![ttl] ... */ feature comment. The shared AST loses that wrapper, so
+// the clause's exact text is searched by member shape: `TTL=`/`REMOVE TTL`
+// binding positions count, while identifiers that merely spell ttl,
+// ttl_enable, or remove.ttl do not. Ordinary comments and quoted text never
+// become executable syntax; mixed or missing attribution stays unproven.
+func ttlClauseSource(clause string, member string) spec.TTLClauseSource {
+	outside := ttlMemberPresent(clause, member)
+	inside := false
+	for _, body := range ttlFeatureCommentBodies(clause) {
+		inside = ttlMemberPresent(body, member) || inside
+	}
+	switch {
+	case outside && !inside:
+		return spec.TTLClauseSourceNative
+	case inside && !outside:
+		return spec.TTLClauseSourceFeatureComment
+	default:
+		return spec.TTLClauseSourceUnproven
+	}
+}
+
+func ttlFeatureCommentBodies(text string) []string {
+	var bodies []string
+	for i := 0; i < len(text); {
+		if next := skipCommentOrQuoted(text, i); next > i {
+			if text[i] == '/' && i+9 <= len(text) && strings.EqualFold(text[i:i+9], "/*T![ttl]") {
+				bodyEnd := next
+				if bodyEnd >= i+11 && text[bodyEnd-2:bodyEnd] == "*/" {
+					bodyEnd -= 2
+				}
+				if bodyEnd >= i+9 {
+					bodies = append(bodies, text[i+9:bodyEnd])
+				}
+			}
+			i = next
+			continue
+		}
+		i++
+	}
+	return bodies
+}
+
+func ttlMemberPresent(text string, member string) bool {
+	for i := 0; i < len(text); {
+		if next := skipCommentOrQuoted(text, i); next > i {
+			i = next
+			continue
+		}
+		if !isBareWordChar(text[i]) {
+			i++
+			continue
+		}
+		start := i
+		for i < len(text) && isBareWordChar(text[i]) {
+			i++
+		}
+		word := strings.ToLower(text[start:i])
+		switch member {
+		case "ttl":
+			if word == "ttl" && ttlDefinitionMemberAt(text, i) {
+				return true
+			}
+		case "ttl_enable", "ttl_job_interval":
+			if word == member && ttlScalarMemberAt(text, i) {
+				return true
+			}
+		case "remove_ttl":
+			if word == "remove" {
+				next, _, ok := nextBareWordAfterComments(text, i)
+				if ok && next == "ttl" {
+					return true
+				}
+			}
+		}
+	}
+	return false
+}
+
+func ttlDefinitionMemberAt(text string, i int) bool {
+	i = skipSpaceAndCommentsOnly(text, i)
+	if i < len(text) && text[i] == '=' {
+		i = skipSpaceAndCommentsOnly(text, i+1)
+	}
+	identifierEnd, ok := consumeQualifiedSQLIdentifier(text, i)
+	if !ok {
+		return false
+	}
+	i = skipSpaceAndCommentsOnly(text, identifierEnd)
+	if i >= len(text) || text[i] != '+' {
+		return false
+	}
+	word, _, ok := nextBareWordAfterComments(text, i+1)
+	return ok && word == "interval"
+}
+
+func ttlScalarMemberAt(text string, i int) bool {
+	i = skipSpaceAndCommentsOnly(text, i)
+	if i < len(text) && text[i] == '=' {
+		i = skipSpaceAndCommentsOnly(text, i+1)
+	}
+	return i < len(text) && (text[i] == '\'' || text[i] == '"')
+}
+
+func nextBareWordAfterComments(text string, i int) (word string, end int, ok bool) {
+	i = skipSpaceAndCommentsOnly(text, i)
+	if i >= len(text) || !isBareWordChar(text[i]) {
+		return "", 0, false
+	}
+	start := i
+	for i < len(text) && isBareWordChar(text[i]) {
+		i++
+	}
+	return strings.ToLower(text[start:i]), i, true
+}
+
+func skipSpaceAndCommentsOnly(text string, i int) int {
+	for i < len(text) {
+		c := text[i]
+		if c == ' ' || c == '\t' || c == '\n' || c == '\r' || c == '\f' || c == '\v' {
+			i++
+			continue
+		}
+		if (c == '-' && dashDashOpensComment(text, i)) || c == '#' || (c == '/' && i+1 < len(text) && text[i+1] == '*') {
+			i = skipCommentOrQuoted(text, i)
+			continue
+		}
+		break
+	}
+	return i
+}
+
+func consumeQualifiedSQLIdentifier(text string, i int) (int, bool) {
+	end, ok := consumeSQLIdentifier(text, i)
+	if !ok {
+		return i, false
+	}
+	for {
+		next := skipSpaceAndCommentsOnly(text, end)
+		if next >= len(text) || text[next] != '.' {
+			return end, true
+		}
+		end, ok = consumeSQLIdentifier(text, next+1)
+		if !ok {
+			return i, false
+		}
+	}
+}
+
+func consumeSQLIdentifier(text string, i int) (int, bool) {
+	i = skipSpaceAndCommentsOnly(text, i)
+	if i >= len(text) {
+		return i, false
+	}
+	if text[i] == '\'' || text[i] == '"' || text[i] == '`' {
+		end := skipCommentOrQuoted(text, i)
+		return end, end > i
+	}
+	if !isBareWordChar(text[i]) {
+		return i, false
+	}
+	for i < len(text) && isBareWordChar(text[i]) {
+		i++
+	}
+	return i, true
 }
 
 // checkSpellingForClause recovers whether one alter_check|drop_check

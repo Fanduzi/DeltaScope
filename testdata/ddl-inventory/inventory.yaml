@@ -1384,12 +1384,12 @@ rows:
     subactions: ["TTL = col + INTERVAL n UNIT in CREATE TABLE"]
     sql_shape: "CREATE TABLE t (d DATETIME) TTL = d + INTERVAL 30 DAY"
     prerequisites: "TTL prerequisites per TTL doc (supported column type, no partition in some cases)"
-    status: generic_notice
-    status_evidence: "2026-09-22 CLI probe: parses; generic table rules fire but TTL definition and its automatic-deletion risk unchecked. 2026-09-23 T03 (#82): the unextracted TTL table option now records unsupported evidence (create_table.option.ttl) and coverage=incomplete while generic rules still run"
+    status: semantically_checked
+    status_evidence: "2026-11-09 T19 (#98): CREATE/ALTER TTL declarations extract native and executable feature-comment members into the normalized spec; a proven enabled TTL emits ddl.tidb.ttl.warn while OFF/REMOVE/unproven outcomes stay silent. Ordered state follows TiDB checkTTLInfoValid prerequisites (temporary target, evaluable interval, common-handle legality, provider-proven inbound-FK set, temporal column) and never publishes refused/unproven configuration. Catalog SHOW CREATE parsing distinguishes proven absent TTL from unobserved members; failed reads propagate."
     targets: "TTL column, interval, automatic deletion risk"
     acceptance:
-      dimensions: "TTL definition capture plus deletion-risk finding"
-      refs: ["missing: owner adds TTL fixtures"]
+      dimensions: "TTL definition capture, deletion-risk warning, ordered refused/applied/unproven outcomes"
+      refs: ["file:internal/application/audit/batch_state_ttl.go", "file:internal/application/audit/batch_state_t19_state_test.go", "file:internal/domain/rule/ddl/ttl_rules.go", "file:internal/infrastructure/metadata/mysql/provider_ttl.go", "file:internal/infrastructure/parser/tidb/ttl_test.go", "file:testdata/sql-corpus/tidb/ddl/findings/alter_table_ttl.sql"]
     owner: T19
 
   - id: tidb.create-table-cache
@@ -1577,12 +1577,12 @@ rows:
     subactions: ["TTL = col + INTERVAL n UNIT", "TTL_ENABLE = 'ON'/'OFF'", "REMOVE TTL", "TTL_JOB_INTERVAL", "/*T![ttl] ... */ comment form"]
     sql_shape: "ALTER TABLE t TTL = created_at + INTERVAL 30 DAY"
     prerequisites: "TTL column prerequisites; quoted-expression form is the known parser_error negative"
-    status: parse_only
-    status_evidence: "2026-09-22 CLI probe: valid TTL, TTL_ENABLE='OFF', and REMOVE TTL all parse silently (the spec's named silent-pass defect); quoted-expression form stays parser_error. 2026-09-23 T03 (#82): these now surface unsupported evidence (alter_table.option.ttl / ttl_enable / alter_table.remove_ttl) and coverage=incomplete until T19 models them; quoted form remains parser_error"
+    status: semantically_checked
+    status_evidence: "2026-11-09 T19 (#98): valid ALTER TTL/TTL_ENABLE/TTL_JOB_INTERVAL/REMOVE TTL and feature-comment forms project to authored declarations. Proven enabled TTL warns through ddl.tidb.ttl.warn; OFF/remove/atomic mixed-action refusal/unproven prior state do not fabricate cleanup. TiDB prerequisite ordering preserves exact pre-state on refusals and withholds only affected facts on unproven outcomes; quoted whole-expression TTL remains parser_error and the no-provider census stays normalized_silent."
     targets: "TTL column, interval, enable state, remove vs disable distinction, automatic-deletion risk"
     acceptance:
-      dimensions: "specific TTL finding on enable/set, no false 'enable' on disable/remove, quoted negative preserved"
-      refs: ["file:internal/application/audit/cross_dialect_ddl_coverage_census_test.go", "missing: TTL risk fixtures"]
+      dimensions: "specific TTL finding on proven enabled set, no false enable on disable/remove/refusal, quoted negative preserved"
+      refs: ["file:internal/application/audit/batch_state_ttl.go", "file:internal/application/audit/batch_state_t19_state_test.go", "file:internal/domain/rule/ddl/ttl_rules.go", "file:internal/infrastructure/parser/tidb/ttl_test.go", "file:testdata/sql-corpus/tidb/ddl/findings/alter_table_ttl.sql", "file:testdata/sql-corpus/tidb/ddl/findings/alter_table_ttl.expected.yaml"]
     owner: T19
 
   - id: tidb.alter-table.placement-binding
