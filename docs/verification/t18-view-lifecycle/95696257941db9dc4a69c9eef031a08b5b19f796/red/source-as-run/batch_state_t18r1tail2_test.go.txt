@@ -1,0 +1,125 @@
+package audit
+
+import (
+	"testing"
+
+	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
+)
+
+func t18R1Tail2Fixture() *t18FirstProvider {
+	provider := t18FirstFixture()
+	provider.tables["g.t_amount"] = &spec.TableSnapshot{Schema: "g",
+		Table: &spec.Table{Schema: "g", Name: "t_amount"}, Exists: true,
+		RelationKind: "table", Columns: []spec.Column{{Name: "x", Type: "int"}}}
+	provider.tables["g.t_base"] = &spec.TableSnapshot{Schema: "g",
+		Table: &spec.Table{Schema: "g", Name: "t_base"}, Exists: true,
+		RelationKind: "table", Columns: []spec.Column{{Name: "id", Type: "int"}}}
+	for _, name := range []string{"agg_v", "base_v", "joined_v", "checked_v", "joined_bad_v"} {
+		provider.tables["g."+name] = &spec.TableSnapshot{Schema: "g",
+			Table: &spec.Table{Schema: "g", Name: name}, Exists: false}
+	}
+	return provider
+}
+
+func t18R1Tail2Updatable(t *testing.T, state *batchState, name string) *bool {
+	t.Helper()
+	entry := state.entries[state.keyFor("g", spec.Table{Schema: "g", Name: name})]
+	if entry == nil || entry.state != tablePresent || entry.shape == nil || entry.shape.View == nil {
+		t.Fatalf("%s was not published as a view: %#v", name, entry)
+	}
+	return entry.shape.View.Updatable
+}
+
+func TestT18R1Tail2MixedJoinKeepsUpdatableComponent(t *testing.T) {
+	provider := t18R1Tail2Fixture()
+	state, statements := t18FirstEnrich(t, provider,
+		"CREATE VIEW agg_v AS SELECT SUM(x) AS total FROM t_amount;\n"+
+			"CREATE VIEW base_v AS SELECT id FROM t_base;\n"+
+			"CREATE VIEW joined_v AS SELECT agg_v.total, base_v.id FROM agg_v JOIN base_v ON agg_v.total = base_v.id;\n"+
+			"CREATE VIEW checked_v AS SELECT id FROM joined_v WITH CHECK OPTION;")
+	if len(statements) != 4 {
+		t.Fatalf("statements=%d", len(statements))
+	}
+	if got := t18R1Tail2Updatable(t, state, "agg_v"); got == nil || *got {
+		t.Fatalf("agg_v updatable=%v", got)
+	}
+	if got := t18R1Tail2Updatable(t, state, "base_v"); got == nil || !*got {
+		t.Fatalf("base_v updatable=%v", got)
+	}
+	if got := t18R1Tail2Updatable(t, state, "joined_v"); got == nil || !*got {
+		t.Fatalf("joined_v updatable=%v, want true", got)
+	}
+	check := spec.AssessViewLifecycle(statements[3])
+	if check.CheckInvalid {
+		t.Fatalf("check option on a view with an updatable component was refused: %#v", check)
+	}
+	if got := t18R1Tail2Updatable(t, state, "checked_v"); got == nil || !*got {
+		t.Fatalf("checked_v updatable=%v, want true", got)
+	}
+}
+
+func TestT18R1Tail2SourceCombinationControls(t *testing.T) {
+	viewSource := func(name string, updatable *bool) *spec.TableSnapshot {
+		return &spec.TableSnapshot{Schema: "g", Table: &spec.Table{Schema: "g", Name: name},
+			Exists: true, RelationKind: "view", Columns: []spec.Column{{Name: "id", Type: "int"}},
+			View: &spec.ViewSnapshot{Security: "definer", Updatable: updatable,
+				Definition: &spec.ViewDefinition{SQL: "SELECT id FROM g.t_base", SourcesKnown: true,
+					Sources: []spec.Table{{Schema: "g", Name: "t_base"}}, ShapeKnown: true,
+					Bindings: []spec.ViewColumnBinding{{Column: "id", Output: "id"}}}}}
+	}
+	for _, tc := range []struct {
+		name string
+		sql  string
+		want *bool
+		a, b *bool
+	}{
+		{name: "false_and_unknown", sql: "CREATE VIEW v AS SELECT a.id, b.id AS b_id FROM a JOIN b ON a.id = b.id;", want: nil,
+			a: t18R1TailBool(false), b: nil},
+		{name: "false_and_true", sql: "CREATE VIEW v AS SELECT a.id, b.id AS b_id FROM a JOIN b ON a.id = b.id;", want: t18R1TailBool(true),
+			a: t18R1TailBool(false), b: t18R1TailBool(true)},
+		{name: "only_false_source_output", sql: "CREATE VIEW v AS SELECT a.id FROM a JOIN b ON a.id = b.id;", want: t18R1TailBool(false),
+			a: t18R1TailBool(false), b: nil},
+		{name: "all_sources_false", sql: "CREATE VIEW v AS SELECT a.id, b.id AS b_id FROM a JOIN b ON a.id = b.id;", want: t18R1TailBool(false),
+			a: t18R1TailBool(false), b: t18R1TailBool(false)},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			provider := t18R1Tail2Fixture()
+			provider.tables["g.v"] = t18R1TailAbsent("v")
+			provider.tables["g.a"] = viewSource("a", tc.a)
+			provider.tables["g.b"] = viewSource("b", tc.b)
+			state, statements := t18FirstEnrich(t, provider, tc.sql)
+			if len(statements) != 1 {
+				t.Fatalf("statements=%d", len(statements))
+			}
+			got := t18R1Tail2Updatable(t, state, "v")
+			if (got == nil) != (tc.want == nil) || got != nil && tc.want != nil && *got != *tc.want {
+				t.Fatalf("updatable=%v want=%v", got, tc.want)
+			}
+		})
+	}
+}
+
+func TestT18R1Tail2ViewSourceColumnStaysFieldForUpdatableFlag(t *testing.T) {
+	provider := t18R1Tail2Fixture()
+	for _, name := range []string{"mixed_v", "bad_check_v", "expr_v", "next_check_v"} {
+		provider.tables["g."+name] = t18R1TailAbsent(name)
+	}
+	state, statements := t18FirstEnrich(t, provider,
+		"CREATE VIEW mixed_v AS SELECT id, id + 1 AS x FROM t_base;\n"+
+			"CREATE VIEW bad_check_v AS SELECT x FROM mixed_v WITH CHECK OPTION;\n"+
+			"CREATE VIEW expr_v AS SELECT x FROM mixed_v;\n"+
+			"CREATE VIEW next_check_v AS SELECT x FROM expr_v WITH CHECK OPTION;")
+	if len(statements) != 4 {
+		t.Fatalf("statements=%d", len(statements))
+	}
+	for _, name := range []string{"mixed_v", "bad_check_v", "expr_v", "next_check_v"} {
+		if got := t18R1Tail2Updatable(t, state, name); got == nil || !*got {
+			t.Fatalf("%s updatable=%v, want MySQL 8.0.46 true", name, got)
+		}
+	}
+	for i := 1; i < len(statements); i++ {
+		if assessment := spec.AssessViewLifecycle(statements[i]); assessment.CheckInvalid {
+			t.Fatalf("statement %d check option was refused contrary to MySQL 8.0.46: %#v", i, assessment)
+		}
+	}
+}

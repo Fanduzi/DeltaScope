@@ -1,0 +1,20 @@
+=== RUN   TestT18R1Tail2MixedJoinKeepsUpdatableComponent
+    batch_state_t18r1tail2_test.go:50: joined_v updatable=0x6eb414e86328, want true
+--- FAIL: TestT18R1Tail2MixedJoinKeepsUpdatableComponent (0.00s)
+=== RUN   TestT18R1Tail2SourceCombinationControls
+=== RUN   TestT18R1Tail2SourceCombinationControls/false_and_unknown
+    batch_state_t18r1tail2_test.go:96: updatable=0x6eb414e86578 want=<nil>
+=== RUN   TestT18R1Tail2SourceCombinationControls/false_and_true
+    batch_state_t18r1tail2_test.go:96: updatable=0x6eb414e86770 want=0x6eb414e863f9
+=== RUN   TestT18R1Tail2SourceCombinationControls/only_false_source_output
+=== RUN   TestT18R1Tail2SourceCombinationControls/all_sources_false
+--- FAIL: TestT18R1Tail2SourceCombinationControls (0.00s)
+    --- FAIL: TestT18R1Tail2SourceCombinationControls/false_and_unknown (0.00s)
+    --- FAIL: TestT18R1Tail2SourceCombinationControls/false_and_true (0.00s)
+    --- PASS: TestT18R1Tail2SourceCombinationControls/only_false_source_output (0.00s)
+    --- PASS: TestT18R1Tail2SourceCombinationControls/all_sources_false (0.00s)
+=== RUN   TestT18R1Tail2ViewSourceColumnStaysFieldForUpdatableFlag
+--- PASS: TestT18R1Tail2ViewSourceColumnStaysFieldForUpdatableFlag (0.00s)
+FAIL
+FAIL	github.com/Fanduzi/DeltaScope/internal/application/audit	0.558s
+FAIL

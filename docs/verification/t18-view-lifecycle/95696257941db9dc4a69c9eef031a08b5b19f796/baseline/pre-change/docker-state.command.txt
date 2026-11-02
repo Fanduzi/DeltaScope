@@ -1,0 +1,1 @@
+docker ps -a --format '{{.Names}} {{.Status}} {{.Image}}' && printf '\nVOLUMES\n' && docker volume ls --format '{{.Name}}' && printf '\nNETWORKS\n' && docker network ls --format '{{.Name}}'

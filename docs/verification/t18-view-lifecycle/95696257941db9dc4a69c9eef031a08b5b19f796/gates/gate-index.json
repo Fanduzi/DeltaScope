@@ -1,0 +1,143 @@
+{
+  "product_head": "95696257941db9dc4a69c9eef031a08b5b19f796",
+  "gates": [
+    {
+      "stem": "01-go-test",
+      "command": "go test ./... -count=1",
+      "rc": 0,
+      "identity_tail": "95696257941db9dc4a69c9eef031a08b5b19f796"
+    },
+    {
+      "stem": "02-go-vet",
+      "command": "go vet ./...",
+      "rc": 0,
+      "identity_tail": "95696257941db9dc4a69c9eef031a08b5b19f796"
+    },
+    {
+      "stem": "03-race-internal",
+      "command": "env CGO_ENABLED=1 go test -race ./internal/... -count=1",
+      "rc": 0,
+      "identity_tail": "95696257941db9dc4a69c9eef031a08b5b19f796"
+    },
+    {
+      "stem": "04-pg-confidence",
+      "command": "make pg-confidence-gates",
+      "rc": 0,
+      "identity_tail": "95696257941db9dc4a69c9eef031a08b5b19f796"
+    },
+    {
+      "stem": "05-sql-corpus",
+      "command": "make sql-corpus-gates",
+      "rc": 0,
+      "identity_tail": "95696257941db9dc4a69c9eef031a08b5b19f796"
+    },
+    {
+      "stem": "06-query-access-corpus",
+      "command": "make query-access-corpus-gates",
+      "rc": 0,
+      "identity_tail": "95696257941db9dc4a69c9eef031a08b5b19f796"
+    },
+    {
+      "stem": "07-ddl-inventory",
+      "command": "make ddl-inventory-gate",
+      "rc": 0,
+      "identity_tail": "95696257941db9dc4a69c9eef031a08b5b19f796"
+    },
+    {
+      "stem": "08-ddl-catalog",
+      "command": "make ddl-coverage-catalog-test",
+      "rc": 0,
+      "identity_tail": "95696257941db9dc4a69c9eef031a08b5b19f796"
+    },
+    {
+      "stem": "09-golden-validator",
+      "command": "make ddl-golden-validator-test",
+      "rc": 0,
+      "identity_tail": "95696257941db9dc4a69c9eef031a08b5b19f796"
+    },
+    {
+      "stem": "10-parser-error-contract",
+      "command": "make parser-error-unsupported-contract-test",
+      "rc": 0,
+      "identity_tail": "95696257941db9dc4a69c9eef031a08b5b19f796"
+    },
+    {
+      "stem": "11-unsupported-diagnostics",
+      "command": "make unsupported-diagnostics-evidence-test",
+      "rc": 0,
+      "identity_tail": "95696257941db9dc4a69c9eef031a08b5b19f796"
+    },
+    {
+      "stem": "12-http-mcp-t18",
+      "command": "go test ./internal/interfaces/http ./internal/interfaces/mcp -run ^TestT18 -count=1 -v",
+      "rc": 0,
+      "identity_tail": "95696257941db9dc4a69c9eef031a08b5b19f796"
+    },
+    {
+      "stem": "13-docs-examples",
+      "command": "make docs-example-gates",
+      "rc": 0,
+      "identity_tail": "95696257941db9dc4a69c9eef031a08b5b19f796"
+    },
+    {
+      "stem": "14-decision-record",
+      "command": "make decision-record-gate",
+      "rc": 0,
+      "identity_tail": "95696257941db9dc4a69c9eef031a08b5b19f796"
+    },
+    {
+      "stem": "15-decision-range",
+      "command": "./scripts/check_decision_record.sh d9eeb34aa5bd057aaaf22406413a92071463ba44..95696257941db9dc4a69c9eef031a08b5b19f796",
+      "rc": 0,
+      "identity_tail": "95696257941db9dc4a69c9eef031a08b5b19f796"
+    },
+    {
+      "stem": "16-l2-range",
+      "command": "/opt/homebrew/bin/bash docs/verification/t17-database-schema-lifecycle/adc1f7322e1c70524435ed687fe27b67b931abb5/gates/l2_committed_range_check.sh d9eeb34aa5bd057aaaf22406413a92071463ba44..95696257941db9dc4a69c9eef031a08b5b19f796",
+      "rc": 0,
+      "identity_tail": "95696257941db9dc4a69c9eef031a08b5b19f796"
+    },
+    {
+      "stem": "17-format-diff",
+      "command": "test -z \"$(gofmt -l internal/application/audit/batch_state_view.go internal/application/audit/batch_state_t18r1tail_test.go internal/application/audit/batch_state_t18r1tail2_test.go internal/domain/spec/view.go pkg/deltascope/audit_t18r1tail2_test.go)\" && git diff --check HEAD^..HEAD",
+      "rc": 0,
+      "identity_tail": "95696257941db9dc4a69c9eef031a08b5b19f796"
+    },
+    {
+      "stem": "lint-scoped",
+      "command": "golangci-lint run ./internal/application/audit/... ./internal/application/auditmeta/... ./internal/domain/spec/... ./internal/domain/rule/ddl/... ./internal/domain/policy/... ./internal/domain/rule/catalog/... ./internal/infrastructure/metadata/mysql/... ./internal/infrastructure/parser/tidb/...",
+      "rc": 1,
+      "identity_tail": "95696257941db9dc4a69c9eef031a08b5b19f796"
+    },
+    {
+      "stem": "lint-fullrepo",
+      "command": "golangci-lint run ./...",
+      "rc": 1,
+      "identity_tail": "95696257941db9dc4a69c9eef031a08b5b19f796"
+    },
+    {
+      "stem": "20-lint-comparison",
+      "command": "python3 /tmp/t18-evidence/compare_lint.py /tmp/t18r1tail2-95696257-evidence/final-gates",
+      "rc": 0,
+      "identity_tail": "95696257941db9dc4a69c9eef031a08b5b19f796"
+    },
+    {
+      "stem": "21-golden-t16",
+      "command": "python3 ./scripts/ddl_golden.py run --task \"T16\" --artifact-dir \"/tmp/ddl-golden-t18r1tail2-final-T16-95696257-r2\"",
+      "rc": 0,
+      "identity_tail": "95696257941db9dc4a69c9eef031a08b5b19f796"
+    },
+    {
+      "stem": "22-golden-t17",
+      "command": "python3 ./scripts/ddl_golden.py run --task \"T17\" --artifact-dir \"/tmp/ddl-golden-t18r1tail2-final-T17-95696257-r2\"",
+      "rc": 0,
+      "identity_tail": "95696257941db9dc4a69c9eef031a08b5b19f796"
+    },
+    {
+      "stem": "23-golden-t18",
+      "command": "python3 ./scripts/ddl_golden.py run --task \"T18\" --artifact-dir \"/tmp/ddl-golden-t18r1tail2-final-T18-95696257-r3\"",
+      "rc": 0,
+      "identity_tail": "95696257941db9dc4a69c9eef031a08b5b19f796"
+    }
+  ]
+}

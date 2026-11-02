@@ -1,0 +1,1 @@
+git rev-parse HEAD && printf 'origin/workfree=' && git rev-parse origin/workfree && printf 'origin/main=' && git rev-parse origin/main && printf 'origin/milestone=' && git rev-parse origin/milestone/mysql-tidb-ddl-completion && git log --format='%H %P %s' -6 && git status --short --branch

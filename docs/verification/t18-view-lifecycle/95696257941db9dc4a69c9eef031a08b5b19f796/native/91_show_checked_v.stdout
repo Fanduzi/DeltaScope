@@ -1,0 +1,1 @@
+checked_v	CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `ds_t18_tail2`.`checked_v` AS select `ds_t18_tail2`.`joined_v`.`id` AS `id` from `ds_t18_tail2`.`joined_v` WITH CASCADED CHECK OPTION	latin1	latin1_swedish_ci

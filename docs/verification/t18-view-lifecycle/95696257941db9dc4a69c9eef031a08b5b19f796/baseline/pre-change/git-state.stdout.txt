@@ -1,0 +1,23 @@
+d9eeb34aa5bd057aaaf22406413a92071463ba44
+origin/workfree=d9eeb34aa5bd057aaaf22406413a92071463ba44
+origin/main=9a28cc99c38770e6e40738515994f864166419f9
+origin/milestone=d0c7cf3373167db7065d3027088a43c56ed6dbf5
+d9eeb34aa5bd057aaaf22406413a92071463ba44 abe88235e00c53c174d719fe270209b73b82f659 docs(verification): archive T18-R1-tail view evidence
+abe88235e00c53c174d719fe270209b73b82f659 38836a07da7ff0952939d325485b6341ede96717 fix(audit): publish proven T18 view state
+38836a07da7ff0952939d325485b6341ede96717 601d4fad84b519d6629b5f1903eee9ba6a88619b docs(verification): isolate archived Go replay source
+601d4fad84b519d6629b5f1903eee9ba6a88619b 19286f7ff73b79f6fca1cc76d11074f3aee751f2 docs(verification): archive T18-R1 view lifecycle evidence
+19286f7ff73b79f6fca1cc76d11074f3aee751f2 d96b4befdcd89b6fe31da012540c4f6f87e6d1e2 fix(audit): close T18 view lifecycle review gaps
+d96b4befdcd89b6fe31da012540c4f6f87e6d1e2 2ab3f181f0bfefbeb5566a6b9358bdc030ab58eb docs(verification): archive T18 view lifecycle evidence
+## milestone/mysql-tidb-ddl-completion...origin/milestone/mysql-tidb-ddl-completion [ahead 60]
+?? .agents/
+?? .codex/
+?? .cursor/
+?? .debug-journal.md
+?? .devin/
+?? .grok/
+?? .opencode/
+?? .pi-subagents/
+?? .qoder/
+?? artifacts/
+?? docs/quality/architecture-review-2026-08-11.html
+?? docs/verification/t06-a12/1a5dd90de898a59590ef8a19aa068c4b5e8ce7f8/T06/

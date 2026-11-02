@@ -1,0 +1,1 @@
+agg_v	CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `ds_t18_tail2`.`agg_v` AS select sum(`ds_t18_tail2`.`t_amount`.`x`) AS `total` from `ds_t18_tail2`.`t_amount`	latin1	latin1_swedish_ci

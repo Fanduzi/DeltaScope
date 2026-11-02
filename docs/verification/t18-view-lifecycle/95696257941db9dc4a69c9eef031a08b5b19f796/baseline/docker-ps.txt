@@ -1,0 +1,24 @@
+t18r1tail2-mysql8046 mysql:8.0.46 Up 33 minutes
+isolated6-keeper-w2 alpine:3.20 Up 14 hours
+isolated6-keeper-w1 alpine:3.20 Up 14 hours
+isolated5-keeper-w2 alpine:3.20 Up 15 hours
+isolated5-keeper-w1 alpine:3.20 Up 15 hours
+isolated4-keeper-w1 alpine:3.20 Up 16 hours
+isolated4-keeper-w2 alpine:3.20 Up 16 hours
+isolated2-keeper-w1 alpine:3.20 Up 24 hours
+isolated2-keeper-w2 alpine:3.20 Up 24 hours
+soak-w1 binlog-soak-w1 Up 41 hours (healthy)
+soak-w2 binlog-soak-w2 Up 41 hours (healthy)
+soak-cp binlog-soak-cp Up 41 hours (healthy)
+soak-s3mock adobe/s3mock:latest Up 40 hours (healthy)
+soak-http503 python:3.12-slim Up 41 hours
+soak-meta mysql:8.0 Up 39 hours (healthy)
+soak-src-b mysql:8.0 Up 41 hours (healthy)
+soak-src-a mysql:8.0 Up 41 hours (healthy)
+soak-restore mysql:8.0 Up 41 hours (healthy)
+soak-proxy binlog-soak-proxy Up 41 hours (healthy)
+tmp-restore mysql:8.0 Up 2 days
+controlhub-query-e2e-mysql mysql:8.0 Up 5 days
+controlhub-demo-mysql mysql:8.0 Up 8 days
+controlhub-demo-pg 0af65001d052 Up 8 days
+mac-connector wenjunxiao/mac-docker-connector Up 3 weeks

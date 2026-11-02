@@ -1,0 +1,5 @@
+aliased_v	NO
+cte_expr_v	YES
+derived_direct_v	YES
+derived_expr_v	YES
+derived_mixed_v	YES

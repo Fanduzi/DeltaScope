@@ -1,0 +1,312 @@
+[ddl-golden][FAIL] case T16.db.mysql57.ddl: status='fail'
+[ddl-golden][FAIL] case T16.db.mysql57.ddl: failed assertion 'database reachable with expected version': "SELECT VERSION() rc=1 version='' expected_contains='5.7.44'"
+[ddl-golden][FAIL] case T16.db.mysql57.ddl: database not reachable
+[ddl-golden][FAIL] case T16.db.mysql57.ddl: version mismatch '' expected contains '5.7.44'
+[ddl-golden][FAIL] case T16.db.mysql57.ddl: step count 0 != manifest steps 3
+[ddl-golden][FAIL] case T16.db.mysql57.syntax_negative: status='fail'
+[ddl-golden][FAIL] case T16.db.mysql57.syntax_negative: failed assertion 'expected error class': "error_class='' expected='1064'"
+[ddl-golden][FAIL] case T16.db.mysql57.syntax_negative: error class '' != expected '1064'
+[ddl-golden][FAIL] case T16.db.mysql80.ddl: status='fail'
+[ddl-golden][FAIL] case T16.db.mysql80.ddl: failed assertion 'database reachable with expected version': "SELECT VERSION() rc=1 version='' expected_contains='8.0.46'"
+[ddl-golden][FAIL] case T16.db.mysql80.ddl: database not reachable
+[ddl-golden][FAIL] case T16.db.mysql80.ddl: version mismatch '' expected contains '8.0.46'
+[ddl-golden][FAIL] case T16.db.mysql80.ddl: step count 0 != manifest steps 3
+[ddl-golden][FAIL] case T16.db.mysql80.syntax_negative: status='fail'
+[ddl-golden][FAIL] case T16.db.mysql80.syntax_negative: failed assertion 'expected error class': "error_class='' expected='1064'"
+[ddl-golden][FAIL] case T16.db.mysql80.syntax_negative: error class '' != expected '1064'
+[ddl-golden][FAIL] case T16.db.mysql84.ddl: status='fail'
+[ddl-golden][FAIL] case T16.db.mysql84.ddl: failed assertion 'database reachable with expected version': "SELECT VERSION() rc=1 version='' expected_contains='8.4.10'"
+[ddl-golden][FAIL] case T16.db.mysql84.ddl: database not reachable
+[ddl-golden][FAIL] case T16.db.mysql84.ddl: version mismatch '' expected contains '8.4.10'
+[ddl-golden][FAIL] case T16.db.mysql84.ddl: step count 0 != manifest steps 3
+[ddl-golden][FAIL] case T16.db.mysql84.syntax_negative: status='fail'
+[ddl-golden][FAIL] case T16.db.mysql84.syntax_negative: failed assertion 'expected error class': "error_class='' expected='1064'"
+[ddl-golden][FAIL] case T16.db.mysql84.syntax_negative: error class '' != expected '1064'
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-seed-golden: status='fail'
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-seed-golden: failed assertion 'database reachable with expected version': "SELECT VERSION() rc=1 version='' expected_contains='8.0.46'"
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-seed-golden: database not reachable
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-seed-golden: version mismatch '' expected contains '8.0.46'
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-seed-golden: no recorded command
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-seed-golden: setup step count 0 != manifest 1
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-seed-golden: CLI stdout is not JSON
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-seed-golden: execute step count 0 != manifest 1
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-seed-golden: teardown count 0 != manifest 1
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-drop-multi-atomic: status='fail'
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-drop-multi-atomic: failed assertion 'database reachable with expected version': "SELECT VERSION() rc=1 version='' expected_contains='8.0.46'"
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-drop-multi-atomic: database not reachable
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-drop-multi-atomic: version mismatch '' expected contains '8.0.46'
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-drop-multi-atomic: no recorded command
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-drop-multi-atomic: setup step count 0 != manifest 1
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-drop-multi-atomic: CLI stdout is not JSON
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-drop-multi-atomic: execute step count 0 != manifest 1
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-drop-multi-atomic: teardown count 0 != manifest 1
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-drop-ifexists-mixed: status='fail'
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-drop-ifexists-mixed: failed assertion 'database reachable with expected version': "SELECT VERSION() rc=1 version='' expected_contains='8.0.46'"
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-drop-ifexists-mixed: database not reachable
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-drop-ifexists-mixed: version mismatch '' expected contains '8.0.46'
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-drop-ifexists-mixed: no recorded command
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-drop-ifexists-mixed: setup step count 0 != manifest 1
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-drop-ifexists-mixed: CLI stdout is not JSON
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-drop-ifexists-mixed: execute step count 0 != manifest 1
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-drop-duplicate: status='fail'
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-drop-duplicate: failed assertion 'database reachable with expected version': "SELECT VERSION() rc=1 version='' expected_contains='8.0.46'"
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-drop-duplicate: database not reachable
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-drop-duplicate: version mismatch '' expected contains '8.0.46'
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-drop-duplicate: no recorded command
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-drop-duplicate: setup step count 0 != manifest 1
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-drop-duplicate: CLI stdout is not JSON
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-drop-duplicate: post_verify count 0 != manifest 1
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-drop-duplicate: execute step count 0 != manifest 2
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-drop-duplicate: teardown count 0 != manifest 1
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-drop-temp-keyword-miss: status='fail'
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-drop-temp-keyword-miss: failed assertion 'database reachable with expected version': "SELECT VERSION() rc=1 version='' expected_contains='8.0.46'"
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-drop-temp-keyword-miss: database not reachable
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-drop-temp-keyword-miss: version mismatch '' expected contains '8.0.46'
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-drop-temp-keyword-miss: no recorded command
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-drop-temp-keyword-miss: setup step count 0 != manifest 1
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-drop-temp-keyword-miss: CLI stdout is not JSON
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-drop-temp-keyword-miss: execute step count 0 != manifest 1
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-drop-temp-keyword-miss: teardown count 0 != manifest 1
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-drop-multi-temp-resolvable: status='fail'
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-drop-multi-temp-resolvable: failed assertion 'database reachable with expected version': "SELECT VERSION() rc=1 version='' expected_contains='8.0.46'"
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-drop-multi-temp-resolvable: database not reachable
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-drop-multi-temp-resolvable: version mismatch '' expected contains '8.0.46'
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-drop-multi-temp-resolvable: no recorded command
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-drop-multi-temp-resolvable: setup step count 0 != manifest 1
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-drop-multi-temp-resolvable: CLI stdout is not JSON
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-drop-multi-temp-resolvable: execute step count 0 != manifest 1
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-drop-multi-temp-resolvable: teardown count 0 != manifest 1
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-temp-shadow-drop: status='fail'
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-temp-shadow-drop: failed assertion 'database reachable with expected version': "SELECT VERSION() rc=1 version='' expected_contains='8.0.46'"
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-temp-shadow-drop: database not reachable
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-temp-shadow-drop: version mismatch '' expected contains '8.0.46'
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-temp-shadow-drop: no recorded command
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-temp-shadow-drop: setup step count 0 != manifest 1
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-temp-shadow-drop: CLI stdout is not JSON
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-temp-shadow-drop: execute step count 0 != manifest 1
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-temp-shadow-drop: teardown count 0 != manifest 1
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-temp-create-dup: status='fail'
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-temp-create-dup: failed assertion 'database reachable with expected version': "SELECT VERSION() rc=1 version='' expected_contains='8.0.46'"
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-temp-create-dup: database not reachable
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-temp-create-dup: version mismatch '' expected contains '8.0.46'
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-temp-create-dup: no recorded command
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-temp-create-dup: CLI stdout is not JSON
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-temp-create-dup: execute step count 0 != manifest 1
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-alter-on-temp: status='fail'
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-alter-on-temp: failed assertion 'database reachable with expected version': "SELECT VERSION() rc=1 version='' expected_contains='8.0.46'"
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-alter-on-temp: database not reachable
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-alter-on-temp: version mismatch '' expected contains '8.0.46'
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-alter-on-temp: no recorded command
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-alter-on-temp: setup step count 0 != manifest 1
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-alter-on-temp: CLI stdout is not JSON
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-alter-on-temp: execute step count 0 != manifest 1
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-alter-on-temp: teardown count 0 != manifest 1
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-rename-temp-invisible: status='fail'
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-rename-temp-invisible: failed assertion 'database reachable with expected version': "SELECT VERSION() rc=1 version='' expected_contains='8.0.46'"
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-rename-temp-invisible: database not reachable
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-rename-temp-invisible: version mismatch '' expected contains '8.0.46'
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-rename-temp-invisible: no recorded command
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-rename-temp-invisible: CLI stdout is not JSON
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-rename-temp-invisible: execute step count 0 != manifest 2
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-alter-rename-temp: status='fail'
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-alter-rename-temp: failed assertion 'database reachable with expected version': "SELECT VERSION() rc=1 version='' expected_contains='8.0.46'"
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-alter-rename-temp: database not reachable
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-alter-rename-temp: version mismatch '' expected contains '8.0.46'
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-alter-rename-temp: no recorded command
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-alter-rename-temp: CLI stdout is not JSON
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-alter-rename-temp: execute step count 0 != manifest 1
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-rename-multi-atomic: status='fail'
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-rename-multi-atomic: failed assertion 'database reachable with expected version': "SELECT VERSION() rc=1 version='' expected_contains='8.0.46'"
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-rename-multi-atomic: database not reachable
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-rename-multi-atomic: version mismatch '' expected contains '8.0.46'
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-rename-multi-atomic: no recorded command
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-rename-multi-atomic: setup step count 0 != manifest 1
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-rename-multi-atomic: CLI stdout is not JSON
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-rename-multi-atomic: execute step count 0 != manifest 1
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-rename-multi-atomic: teardown count 0 != manifest 1
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-rename-dest-exists: status='fail'
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-rename-dest-exists: failed assertion 'database reachable with expected version': "SELECT VERSION() rc=1 version='' expected_contains='8.0.46'"
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-rename-dest-exists: database not reachable
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-rename-dest-exists: version mismatch '' expected contains '8.0.46'
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-rename-dest-exists: no recorded command
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-rename-dest-exists: setup step count 0 != manifest 1
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-rename-dest-exists: CLI stdout is not JSON
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-rename-dest-exists: execute step count 0 != manifest 1
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-rename-dest-exists: teardown count 0 != manifest 1
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-rename-swap: status='fail'
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-rename-swap: failed assertion 'database reachable with expected version': "SELECT VERSION() rc=1 version='' expected_contains='8.0.46'"
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-rename-swap: database not reachable
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-rename-swap: version mismatch '' expected contains '8.0.46'
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-rename-swap: no recorded command
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-rename-swap: setup step count 0 != manifest 1
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-rename-swap: CLI stdout is not JSON
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-rename-swap: execute step count 0 != manifest 1
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-rename-swap: teardown count 0 != manifest 1
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-rename-lastwrite-free: status='fail'
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-rename-lastwrite-free: failed assertion 'database reachable with expected version': "SELECT VERSION() rc=1 version='' expected_contains='8.0.46'"
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-rename-lastwrite-free: database not reachable
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-rename-lastwrite-free: version mismatch '' expected contains '8.0.46'
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-rename-lastwrite-free: no recorded command
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-rename-lastwrite-free: setup step count 0 != manifest 1
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-rename-lastwrite-free: CLI stdout is not JSON
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-rename-lastwrite-free: execute step count 0 != manifest 1
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-rename-lastwrite-free: teardown count 0 != manifest 1
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-rename-lastwrite-rollback: status='fail'
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-rename-lastwrite-rollback: failed assertion 'database reachable with expected version': "SELECT VERSION() rc=1 version='' expected_contains='8.0.46'"
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-rename-lastwrite-rollback: database not reachable
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-rename-lastwrite-rollback: version mismatch '' expected contains '8.0.46'
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-rename-lastwrite-rollback: no recorded command
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-rename-lastwrite-rollback: setup step count 0 != manifest 1
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-rename-lastwrite-rollback: CLI stdout is not JSON
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-rename-lastwrite-rollback: execute step count 0 != manifest 1
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-rename-lastwrite-rollback: teardown count 0 != manifest 1
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-rename-cross-schema: status='fail'
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-rename-cross-schema: failed assertion 'database reachable with expected version': "SELECT VERSION() rc=1 version='' expected_contains='8.0.46'"
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-rename-cross-schema: database not reachable
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-rename-cross-schema: version mismatch '' expected contains '8.0.46'
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-rename-cross-schema: no recorded command
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-rename-cross-schema: setup step count 0 != manifest 1
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-rename-cross-schema: CLI stdout is not JSON
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-rename-cross-schema: execute step count 0 != manifest 1
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-rename-cross-schema: teardown count 0 != manifest 1
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-alter-rename-self-noop: status='fail'
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-alter-rename-self-noop: failed assertion 'database reachable with expected version': "SELECT VERSION() rc=1 version='' expected_contains='8.0.46'"
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-alter-rename-self-noop: database not reachable
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-alter-rename-self-noop: version mismatch '' expected contains '8.0.46'
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-alter-rename-self-noop: no recorded command
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-alter-rename-self-noop: setup step count 0 != manifest 1
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-alter-rename-self-noop: CLI stdout is not JSON
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-alter-rename-self-noop: execute step count 0 != manifest 1
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-alter-rename-self-noop: teardown count 0 != manifest 1
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-like-members: status='fail'
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-like-members: failed assertion 'database reachable with expected version': "SELECT VERSION() rc=1 version='' expected_contains='8.0.46'"
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-like-members: database not reachable
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-like-members: version mismatch '' expected contains '8.0.46'
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-like-members: no recorded command
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-like-members: setup step count 0 != manifest 1
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-like-members: CLI stdout is not JSON
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-like-members: execute step count 0 != manifest 1
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-like-members: teardown count 0 != manifest 1
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-like-missing-source: status='fail'
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-like-missing-source: failed assertion 'database reachable with expected version': "SELECT VERSION() rc=1 version='' expected_contains='8.0.46'"
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-like-missing-source: database not reachable
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-like-missing-source: version mismatch '' expected contains '8.0.46'
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-like-missing-source: no recorded command
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-like-missing-source: CLI stdout is not JSON
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-like-missing-source: execute step count 0 != manifest 1
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-like-dest-exists: status='fail'
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-like-dest-exists: failed assertion 'database reachable with expected version': "SELECT VERSION() rc=1 version='' expected_contains='8.0.46'"
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-like-dest-exists: database not reachable
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-like-dest-exists: version mismatch '' expected contains '8.0.46'
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-like-dest-exists: no recorded command
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-like-dest-exists: setup step count 0 != manifest 1
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-like-dest-exists: CLI stdout is not JSON
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-like-dest-exists: execute step count 0 != manifest 1
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-like-dest-exists: teardown count 0 != manifest 1
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-like-temp-source: status='fail'
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-like-temp-source: failed assertion 'database reachable with expected version': "SELECT VERSION() rc=1 version='' expected_contains='8.0.46'"
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-like-temp-source: database not reachable
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-like-temp-source: version mismatch '' expected contains '8.0.46'
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-like-temp-source: no recorded command
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-like-temp-source: CLI stdout is not JSON
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-like-temp-source: execute step count 0 != manifest 1
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-like-temp-source: teardown count 0 != manifest 1
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-ctas-forms: status='fail'
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-ctas-forms: failed assertion 'database reachable with expected version': "SELECT VERSION() rc=1 version='' expected_contains='8.0.46'"
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-ctas-forms: database not reachable
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-ctas-forms: version mismatch '' expected contains '8.0.46'
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-ctas-forms: no recorded command
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-ctas-forms: CLI stdout is not JSON
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-ctas-forms: execute step count 0 != manifest 1
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-ctas-forms: teardown count 0 != manifest 1
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-ctas-missing-source: status='fail'
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-ctas-missing-source: failed assertion 'database reachable with expected version': "SELECT VERSION() rc=1 version='' expected_contains='8.0.46'"
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-ctas-missing-source: database not reachable
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-ctas-missing-source: version mismatch '' expected contains '8.0.46'
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-ctas-missing-source: no recorded command
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-ctas-missing-source: CLI stdout is not JSON
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-ctas-missing-source: execute step count 0 != manifest 1
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-ctas-defs: status='fail'
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-ctas-defs: failed assertion 'database reachable with expected version': "SELECT VERSION() rc=1 version='' expected_contains='8.0.46'"
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-ctas-defs: database not reachable
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-ctas-defs: version mismatch '' expected contains '8.0.46'
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-ctas-defs: no recorded command
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-ctas-defs: CLI stdout is not JSON
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-ctas-defs: execute step count 0 != manifest 1
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-ctas-defs: teardown count 0 != manifest 1
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-truncate-suite: status='fail'
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-truncate-suite: failed assertion 'database reachable with expected version': "SELECT VERSION() rc=1 version='' expected_contains='8.0.46'"
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-truncate-suite: database not reachable
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-truncate-suite: version mismatch '' expected contains '8.0.46'
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-truncate-suite: no recorded command
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-truncate-suite: setup step count 0 != manifest 1
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-truncate-suite: CLI stdout is not JSON
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-truncate-suite: execute step count 0 != manifest 3
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-truncate-suite: teardown count 0 != manifest 1
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-truncate-inbound-fk: status='fail'
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-truncate-inbound-fk: failed assertion 'database reachable with expected version': "SELECT VERSION() rc=1 version='' expected_contains='8.0.46'"
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-truncate-inbound-fk: database not reachable
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-truncate-inbound-fk: version mismatch '' expected contains '8.0.46'
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-truncate-inbound-fk: no recorded command
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-truncate-inbound-fk: CLI stdout is not JSON
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-truncate-inbound-fk: execute step count 0 != manifest 3
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-truncate-inbound-fk: teardown count 0 != manifest 1
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-ifexists-absent-noop: status='fail'
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-ifexists-absent-noop: failed assertion 'database reachable with expected version': "SELECT VERSION() rc=1 version='' expected_contains='8.0.46'"
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-ifexists-absent-noop: database not reachable
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-ifexists-absent-noop: version mismatch '' expected contains '8.0.46'
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-ifexists-absent-noop: no recorded command
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-ifexists-absent-noop: CLI stdout is not JSON
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-ifexists-absent-noop: execute step count 0 != manifest 1
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-denylist-multidrop: status='fail'
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-denylist-multidrop: failed assertion 'database reachable with expected version': "SELECT VERSION() rc=1 version='' expected_contains='8.0.46'"
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-denylist-multidrop: database not reachable
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-denylist-multidrop: version mismatch '' expected contains '8.0.46'
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-denylist-multidrop: no recorded command
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-denylist-multidrop: CLI stdout is not JSON
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-denylist-multidrop: execute step count 0 != manifest 3
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-denylist-multidrop: teardown count 0 != manifest 1
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-global-temp-vendor: status='fail'
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-global-temp-vendor: failed assertion 'database reachable with expected version': "SELECT VERSION() rc=1 version='' expected_contains='8.0.46'"
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-global-temp-vendor: database not reachable
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-global-temp-vendor: version mismatch '' expected contains '8.0.46'
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-global-temp-vendor: no recorded command
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-global-temp-vendor: CLI stdout is not JSON
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-global-temp-vendor: post_verify count 0 != manifest 1
+[ddl-golden][FAIL] case T16.meta.t16-mysql80-global-temp-vendor: execute step count 0 != manifest 1
+[ddl-golden][FAIL] case T16.meta.t16-mysql57-drop-multi-partial: status='fail'
+[ddl-golden][FAIL] case T16.meta.t16-mysql57-drop-multi-partial: failed assertion 'database reachable with expected version': "SELECT VERSION() rc=1 version='' expected_contains='5.7.44'"
+[ddl-golden][FAIL] case T16.meta.t16-mysql57-drop-multi-partial: database not reachable
+[ddl-golden][FAIL] case T16.meta.t16-mysql57-drop-multi-partial: version mismatch '' expected contains '5.7.44'
+[ddl-golden][FAIL] case T16.meta.t16-mysql57-drop-multi-partial: no recorded command
+[ddl-golden][FAIL] case T16.meta.t16-mysql57-drop-multi-partial: setup step count 0 != manifest 1
+[ddl-golden][FAIL] case T16.meta.t16-mysql57-drop-multi-partial: CLI stdout is not JSON
+[ddl-golden][FAIL] case T16.meta.t16-mysql57-drop-multi-partial: execute step count 0 != manifest 2
+[ddl-golden][FAIL] case T16.meta.t16-mysql57-drop-multi-partial: teardown count 0 != manifest 1
+[ddl-golden][FAIL] case T16.meta.t16-mysql57-temp-shadow: status='fail'
+[ddl-golden][FAIL] case T16.meta.t16-mysql57-temp-shadow: failed assertion 'database reachable with expected version': "SELECT VERSION() rc=1 version='' expected_contains='5.7.44'"
+[ddl-golden][FAIL] case T16.meta.t16-mysql57-temp-shadow: database not reachable
+[ddl-golden][FAIL] case T16.meta.t16-mysql57-temp-shadow: version mismatch '' expected contains '5.7.44'
+[ddl-golden][FAIL] case T16.meta.t16-mysql57-temp-shadow: no recorded command
+[ddl-golden][FAIL] case T16.meta.t16-mysql57-temp-shadow: setup step count 0 != manifest 1
+[ddl-golden][FAIL] case T16.meta.t16-mysql57-temp-shadow: CLI stdout is not JSON
+[ddl-golden][FAIL] case T16.meta.t16-mysql57-temp-shadow: execute step count 0 != manifest 1
+[ddl-golden][FAIL] case T16.meta.t16-mysql57-temp-shadow: teardown count 0 != manifest 1
+[ddl-golden][FAIL] case T16.meta.t16-mysql57-like: status='fail'
+[ddl-golden][FAIL] case T16.meta.t16-mysql57-like: failed assertion 'database reachable with expected version': "SELECT VERSION() rc=1 version='' expected_contains='5.7.44'"
+[ddl-golden][FAIL] case T16.meta.t16-mysql57-like: database not reachable
+[ddl-golden][FAIL] case T16.meta.t16-mysql57-like: version mismatch '' expected contains '5.7.44'
+[ddl-golden][FAIL] case T16.meta.t16-mysql57-like: no recorded command
+[ddl-golden][FAIL] case T16.meta.t16-mysql57-like: setup step count 0 != manifest 1
+[ddl-golden][FAIL] case T16.meta.t16-mysql57-like: CLI stdout is not JSON
+[ddl-golden][FAIL] case T16.meta.t16-mysql57-like: execute step count 0 != manifest 1
+[ddl-golden][FAIL] case T16.meta.t16-mysql57-like: teardown count 0 != manifest 1
+[ddl-golden][FAIL] case T16.meta.t16-mysql84-drop-multi-atomic: status='fail'
+[ddl-golden][FAIL] case T16.meta.t16-mysql84-drop-multi-atomic: failed assertion 'database reachable with expected version': "SELECT VERSION() rc=1 version='' expected_contains='8.4.10'"
+[ddl-golden][FAIL] case T16.meta.t16-mysql84-drop-multi-atomic: database not reachable
+[ddl-golden][FAIL] case T16.meta.t16-mysql84-drop-multi-atomic: version mismatch '' expected contains '8.4.10'
+[ddl-golden][FAIL] case T16.meta.t16-mysql84-drop-multi-atomic: no recorded command
+[ddl-golden][FAIL] case T16.meta.t16-mysql84-drop-multi-atomic: setup step count 0 != manifest 1
+[ddl-golden][FAIL] case T16.meta.t16-mysql84-drop-multi-atomic: CLI stdout is not JSON
+[ddl-golden][FAIL] case T16.meta.t16-mysql84-drop-multi-atomic: execute step count 0 != manifest 1
+[ddl-golden][FAIL] case T16.meta.t16-mysql84-drop-multi-atomic: teardown count 0 != manifest 1

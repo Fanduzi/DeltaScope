@@ -1,0 +1,8 @@
+95696257 (HEAD -> milestone/mysql-tidb-ddl-completion) fix(audit): share MySQL view updatability proof
+d9eeb34a (origin/workfree) docs(verification): archive T18-R1-tail view evidence
+abe88235 fix(audit): publish proven T18 view state
+38836a07 docs(verification): isolate archived Go replay source
+601d4fad docs(verification): archive T18-R1 view lifecycle evidence
+19286f7f fix(audit): close T18 view lifecycle review gaps
+d96b4bef docs(verification): archive T18 view lifecycle evidence
+2ab3f181 test(audit): align T18 catalog and metadata fixtures

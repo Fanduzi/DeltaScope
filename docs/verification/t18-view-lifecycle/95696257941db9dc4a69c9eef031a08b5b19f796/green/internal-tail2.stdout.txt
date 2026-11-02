@@ -1,0 +1,78 @@
+=== RUN   TestT18R1Tail2MixedJoinKeepsUpdatableComponent
+--- PASS: TestT18R1Tail2MixedJoinKeepsUpdatableComponent (0.00s)
+=== RUN   TestT18R1Tail2SourceCombinationControls
+=== RUN   TestT18R1Tail2SourceCombinationControls/false_and_unknown
+=== RUN   TestT18R1Tail2SourceCombinationControls/false_and_true
+=== RUN   TestT18R1Tail2SourceCombinationControls/false_output_with_true_source
+=== RUN   TestT18R1Tail2SourceCombinationControls/only_false_source_output
+=== RUN   TestT18R1Tail2SourceCombinationControls/expression_output_only
+=== RUN   TestT18R1Tail2SourceCombinationControls/all_sources_false
+--- PASS: TestT18R1Tail2SourceCombinationControls (0.00s)
+    --- PASS: TestT18R1Tail2SourceCombinationControls/false_and_unknown (0.00s)
+    --- PASS: TestT18R1Tail2SourceCombinationControls/false_and_true (0.00s)
+    --- PASS: TestT18R1Tail2SourceCombinationControls/false_output_with_true_source (0.00s)
+    --- PASS: TestT18R1Tail2SourceCombinationControls/only_false_source_output (0.00s)
+    --- PASS: TestT18R1Tail2SourceCombinationControls/expression_output_only (0.00s)
+    --- PASS: TestT18R1Tail2SourceCombinationControls/all_sources_false (0.00s)
+=== RUN   TestT18R1Tail2CheckSharesUnprovenUpdatable
+--- PASS: TestT18R1Tail2CheckSharesUnprovenUpdatable (0.00s)
+=== RUN   TestT18R1Tail2CatalogUpdatableDominatesParsedSourceShape
+--- PASS: TestT18R1Tail2CatalogUpdatableDominatesParsedSourceShape (0.00s)
+=== RUN   TestT18R1Tail2MissingOutputDoesNotProveUpdatable
+=== RUN   TestT18R1Tail2MissingOutputDoesNotProveUpdatable/single_source_view
+=== RUN   TestT18R1Tail2MissingOutputDoesNotProveUpdatable/joined_source_view
+=== RUN   TestT18R1Tail2MissingOutputDoesNotProveUpdatable/derived_source
+--- PASS: TestT18R1Tail2MissingOutputDoesNotProveUpdatable (0.00s)
+    --- PASS: TestT18R1Tail2MissingOutputDoesNotProveUpdatable/single_source_view (0.00s)
+    --- PASS: TestT18R1Tail2MissingOutputDoesNotProveUpdatable/joined_source_view (0.00s)
+    --- PASS: TestT18R1Tail2MissingOutputDoesNotProveUpdatable/derived_source (0.00s)
+=== RUN   TestT18R1Tail2QuerySourcesAndGlobalReuseControls
+=== RUN   TestT18R1Tail2QuerySourcesAndGlobalReuseControls/derived_expression_source
+=== RUN   TestT18R1Tail2QuerySourcesAndGlobalReuseControls/derived_inner_reuse
+=== RUN   TestT18R1Tail2QuerySourcesAndGlobalReuseControls/derived_outer_inner_same_leaf
+=== RUN   TestT18R1Tail2QuerySourcesAndGlobalReuseControls/cte_expression_source
+=== RUN   TestT18R1Tail2QuerySourcesAndGlobalReuseControls/cte_inner_reuse
+=== RUN   TestT18R1Tail2QuerySourcesAndGlobalReuseControls/cte_outer_inner_same_leaf
+=== RUN   TestT18R1Tail2QuerySourcesAndGlobalReuseControls/cte_referenced_again
+=== RUN   TestT18R1Tail2QuerySourcesAndGlobalReuseControls/with_unused_same
+=== RUN   TestT18R1Tail2QuerySourcesAndGlobalReuseControls/with_unused_diff
+=== RUN   TestT18R1Tail2QuerySourcesAndGlobalReuseControls/distinct_nested_table
+=== RUN   TestT18R1Tail2QuerySourcesAndGlobalReuseControls/view_source_reused
+=== RUN   TestT18R1Tail2QuerySourcesAndGlobalReuseControls/view_main_base_subquery
+=== RUN   TestT18R1Tail2QuerySourcesAndGlobalReuseControls/reuse_where
+=== RUN   TestT18R1Tail2QuerySourcesAndGlobalReuseControls/reuse_select_list
+=== RUN   TestT18R1Tail2QuerySourcesAndGlobalReuseControls/reuse_derived_subquery
+=== RUN   TestT18R1Tail2QuerySourcesAndGlobalReuseControls/same_table_second_alias
+=== RUN   TestT18R1Tail2QuerySourcesAndGlobalReuseControls/main_via_cte_subquery
+=== RUN   TestT18R1Tail2QuerySourcesAndGlobalReuseControls/main_via_cte_derived
+=== RUN   TestT18R1Tail2QuerySourcesAndGlobalReuseControls/main_via_view_subquery
+=== RUN   TestT18R1Tail2QuerySourcesAndGlobalReuseControls/main_via_view_derived
+=== RUN   TestT18R1Tail2QuerySourcesAndGlobalReuseControls/main_via_nested_view
+--- PASS: TestT18R1Tail2QuerySourcesAndGlobalReuseControls (0.00s)
+    --- PASS: TestT18R1Tail2QuerySourcesAndGlobalReuseControls/derived_expression_source (0.00s)
+    --- PASS: TestT18R1Tail2QuerySourcesAndGlobalReuseControls/derived_inner_reuse (0.00s)
+    --- PASS: TestT18R1Tail2QuerySourcesAndGlobalReuseControls/derived_outer_inner_same_leaf (0.00s)
+    --- PASS: TestT18R1Tail2QuerySourcesAndGlobalReuseControls/cte_expression_source (0.00s)
+    --- PASS: TestT18R1Tail2QuerySourcesAndGlobalReuseControls/cte_inner_reuse (0.00s)
+    --- PASS: TestT18R1Tail2QuerySourcesAndGlobalReuseControls/cte_outer_inner_same_leaf (0.00s)
+    --- PASS: TestT18R1Tail2QuerySourcesAndGlobalReuseControls/cte_referenced_again (0.00s)
+    --- PASS: TestT18R1Tail2QuerySourcesAndGlobalReuseControls/with_unused_same (0.00s)
+    --- PASS: TestT18R1Tail2QuerySourcesAndGlobalReuseControls/with_unused_diff (0.00s)
+    --- PASS: TestT18R1Tail2QuerySourcesAndGlobalReuseControls/distinct_nested_table (0.00s)
+    --- PASS: TestT18R1Tail2QuerySourcesAndGlobalReuseControls/view_source_reused (0.00s)
+    --- PASS: TestT18R1Tail2QuerySourcesAndGlobalReuseControls/view_main_base_subquery (0.00s)
+    --- PASS: TestT18R1Tail2QuerySourcesAndGlobalReuseControls/reuse_where (0.00s)
+    --- PASS: TestT18R1Tail2QuerySourcesAndGlobalReuseControls/reuse_select_list (0.00s)
+    --- PASS: TestT18R1Tail2QuerySourcesAndGlobalReuseControls/reuse_derived_subquery (0.00s)
+    --- PASS: TestT18R1Tail2QuerySourcesAndGlobalReuseControls/same_table_second_alias (0.00s)
+    --- PASS: TestT18R1Tail2QuerySourcesAndGlobalReuseControls/main_via_cte_subquery (0.00s)
+    --- PASS: TestT18R1Tail2QuerySourcesAndGlobalReuseControls/main_via_cte_derived (0.00s)
+    --- PASS: TestT18R1Tail2QuerySourcesAndGlobalReuseControls/main_via_view_subquery (0.00s)
+    --- PASS: TestT18R1Tail2QuerySourcesAndGlobalReuseControls/main_via_view_derived (0.00s)
+    --- PASS: TestT18R1Tail2QuerySourcesAndGlobalReuseControls/main_via_nested_view (0.00s)
+=== RUN   TestT18R1Tail2GlobalReuseUnprovenViewStaysUnknown
+--- PASS: TestT18R1Tail2GlobalReuseUnprovenViewStaysUnknown (0.00s)
+=== RUN   TestT18R1Tail2ViewSourceColumnStaysFieldForUpdatableFlag
+--- PASS: TestT18R1Tail2ViewSourceColumnStaysFieldForUpdatableFlag (0.00s)
+PASS
+ok  	github.com/Fanduzi/DeltaScope/internal/application/audit	0.704s

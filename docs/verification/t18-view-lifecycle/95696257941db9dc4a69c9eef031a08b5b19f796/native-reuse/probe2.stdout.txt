@@ -1,0 +1,58 @@
+===== version =====
+rc=0
+version
+8.0.46
+===== setup =====
+rc=0
+Note (Code 1008): Can't drop database 't18r1t2_g'; database doesn't exist
+Note (Code 1008): Can't drop database 't18r1t2_src'; database doesn't exist
+===== distinct_nested =====
+rc=0
+===== reuse_where =====
+rc=0
+===== reuse_select_list =====
+rc=0
+===== reuse_derived_subquery =====
+rc=0
+===== derived_inner_reuse =====
+rc=0
+===== derived_outer_inner_same_leaf =====
+rc=0
+===== cte_inner_reuse =====
+rc=0
+===== cte_outer_inner_same_leaf =====
+rc=0
+===== cte_referenced_again =====
+rc=0
+===== view_source_reused =====
+rc=0
+===== catalog =====
+rc=0
+TABLE_SCHEMA	TABLE_NAME	IS_UPDATABLE
+t18r1t2_g	cte_inner_reuse	YES
+t18r1t2_g	cte_outer_inner_same_leaf	YES
+t18r1t2_g	cte_referenced_again	YES
+t18r1t2_g	derived_inner_reuse	YES
+t18r1t2_g	derived_outer_inner_same_leaf	YES
+t18r1t2_g	distinct_nested	YES
+t18r1t2_g	reuse_derived_subquery	NO
+t18r1t2_g	reuse_select_list	NO
+t18r1t2_g	reuse_where	NO
+t18r1t2_g	view_source_reused	YES
+TABLE_SCHEMA	TABLE_NAME	TABLE_TYPE
+t18r1t2_g	cte_inner_reuse	VIEW
+t18r1t2_g	cte_outer_inner_same_leaf	VIEW
+t18r1t2_g	cte_referenced_again	VIEW
+t18r1t2_g	derived_inner_reuse	VIEW
+t18r1t2_g	derived_outer_inner_same_leaf	VIEW
+t18r1t2_g	distinct_nested	VIEW
+t18r1t2_g	reuse_derived_subquery	VIEW
+t18r1t2_g	reuse_select_list	VIEW
+t18r1t2_g	reuse_where	VIEW
+t18r1t2_g	view_source_reused	VIEW
+t18r1t2_src	a	VIEW
+t18r1t2_src	t	BASE TABLE
+t18r1t2_src	u	BASE TABLE
+t18r1t2_src	x	BASE TABLE
+===== cleanup =====
+rc=0

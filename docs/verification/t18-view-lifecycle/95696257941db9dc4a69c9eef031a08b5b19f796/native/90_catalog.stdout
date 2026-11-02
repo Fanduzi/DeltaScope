@@ -1,0 +1,11 @@
+agg_v	NO
+bad_check_v	YES
+base_v	YES
+checked_v	YES
+expr_v	YES
+good_check_v	YES
+joined_bad_v	YES
+joined_v	YES
+mixed_out_v	YES
+mixed_v	YES
+next_check_v	YES

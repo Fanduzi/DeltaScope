@@ -1,0 +1,1 @@
+The final internal test source references `assessment.Updatable`, a field introduced by the product fix. Replaying that final source on the behavior-red baseline fails at compile time; it is retained as a diagnostic attempt, not as behavior-red evidence.

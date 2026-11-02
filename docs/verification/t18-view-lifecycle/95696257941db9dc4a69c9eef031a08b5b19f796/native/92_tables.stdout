@@ -1,0 +1,13 @@
+agg_v	VIEW
+bad_check_v	VIEW
+base_v	VIEW
+checked_v	VIEW
+expr_v	VIEW
+good_check_v	VIEW
+joined_bad_v	VIEW
+joined_v	VIEW
+mixed_out_v	VIEW
+mixed_v	VIEW
+next_check_v	VIEW
+t_amount	BASE TABLE
+t_base	BASE TABLE

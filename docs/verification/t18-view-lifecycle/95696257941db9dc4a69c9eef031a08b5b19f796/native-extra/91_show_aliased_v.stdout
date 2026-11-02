@@ -1,0 +1,1 @@
+aliased_v	CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `ds_t18_tail2x`.`aliased_v` (`rx`) AS select (`ds_t18_tail2x`.`t`.`id` + 1) AS `id + 1` from `ds_t18_tail2x`.`t`	latin1	latin1_swedish_ci

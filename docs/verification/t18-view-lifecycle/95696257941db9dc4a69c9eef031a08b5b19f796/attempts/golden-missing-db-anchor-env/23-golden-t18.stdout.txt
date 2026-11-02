@@ -1,0 +1,2 @@
+[ddl-golden] task=T18 head=95696257941d cases=150 passed=51 assertions=1163
+[ddl-golden] artifact=/private/tmp/ddl-golden-t18r1tail2-final-T18-95696257/T18/artifact.json

@@ -1,0 +1,1415 @@
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-first: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-first: failed assertion 'exit code': 'rc=2 expected=0'
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-first: failed assertion 'verdict': 'verdict=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-first: failed assertion 'top-level statements': 'statements=0 expected=1'
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-first: failed assertion 'zero findings': 'findings=0'
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-first: failed assertion 'no diagnostics': 'diagnostics=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-first: failed assertion 'no unsupported': 'unsupported=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-first: failed assertion 'statement indices': 'indices=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-first: failed assertion 'aggregate coverage': 'coverage=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-first: failed assertion 'per-statement coverage': 'statement_coverage=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-first: failed assertion 'statement raw SQL identity': "raw_sql=[] expected=['ALTER VIEW v AS SELECT id FROM t;']"
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-first: failed assertion 'finding entries': "findings=[] expected=[(0, 'ddl.view.security.definer.warn', 'warning')]"
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-first: failed assertion 'finding location index=0': "locations=[] expected={'index': 0, 'line': 1, 'column': 1}"
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-first: failed assertion 'fail_on_triggered': 'fail_on_triggered=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-first: failed assertion 'version identity': "version=None expected={'product': 'mysql', 'version': '8.0.46'}"
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-first: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-dependencies: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-dependencies: failed assertion 'exit code': 'rc=2 expected=0'
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-dependencies: failed assertion 'verdict': 'verdict=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-dependencies: failed assertion 'top-level statements': 'statements=0 expected=2'
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-dependencies: failed assertion 'zero findings': 'findings=0'
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-dependencies: failed assertion 'no diagnostics': 'diagnostics=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-dependencies: failed assertion 'no unsupported': 'unsupported=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-dependencies: failed assertion 'statement indices': 'indices=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-dependencies: failed assertion 'aggregate coverage': 'coverage=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-dependencies: failed assertion 'per-statement coverage': 'statement_coverage=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-dependencies: failed assertion 'statement raw SQL identity': "raw_sql=[] expected=['ALTER VIEW v AS SELECT id FROM t;', 'CREATE VIEW next_v AS SELECT id FROM v;']"
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-dependencies: failed assertion 'finding entries': "findings=[] expected=[(0, 'ddl.view.security.definer.warn', 'warning'), (1, 'ddl.view.security.definer.warn', 'warning')]"
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-dependencies: failed assertion 'finding location index=0': "locations=[] expected={'index': 0, 'line': 1, 'column': 1}"
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-dependencies: failed assertion 'finding location index=1': "locations=[] expected={'index': 1, 'line': 2, 'column': 1}"
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-dependencies: failed assertion 'fail_on_triggered': 'fail_on_triggered=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-dependencies: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-source-absent: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-source-absent: failed assertion 'exit code': 'rc=2 expected=1'
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-source-absent: failed assertion 'verdict': 'verdict=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-source-absent: failed assertion 'top-level statements': 'statements=0 expected=1'
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-source-absent: failed assertion 'zero findings': 'findings=0'
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-source-absent: failed assertion 'no diagnostics': 'diagnostics=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-source-absent: failed assertion 'no unsupported': 'unsupported=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-source-absent: failed assertion 'statement indices': 'indices=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-source-absent: failed assertion 'aggregate coverage': 'coverage=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-source-absent: failed assertion 'per-statement coverage': 'statement_coverage=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-source-absent: failed assertion 'statement raw SQL identity': "raw_sql=[] expected=['ALTER VIEW v AS SELECT id FROM missing_t;']"
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-source-absent: failed assertion 'finding entries': "findings=[] expected=[(0, 'ddl.view.security.definer.warn', 'warning'), (0, 'ddl.view.source.valid', 'blocker')]"
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-source-absent: failed assertion 'fail_on_triggered': 'fail_on_triggered=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-source-absent: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-blanket: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-blanket: failed assertion 'exit code': 'rc=2 expected=1'
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-blanket: failed assertion 'verdict': 'verdict=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-blanket: failed assertion 'top-level statements': 'statements=0 expected=1'
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-blanket: failed assertion 'zero findings': 'findings=0'
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-blanket: failed assertion 'no diagnostics': 'diagnostics=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-blanket: failed assertion 'no unsupported': 'unsupported=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-blanket: failed assertion 'statement indices': 'indices=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-blanket: failed assertion 'aggregate coverage': 'coverage=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-blanket: failed assertion 'per-statement coverage': 'statement_coverage=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-blanket: failed assertion 'statement raw SQL identity': "raw_sql=[] expected=['ALTER VIEW v AS SELECT id FROM t;']"
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-blanket: failed assertion 'finding entries': "findings=[] expected=[(0, 'ddl.view.create.forbid', 'blocker'), (0, 'ddl.view.security.definer.warn', 'warning')]"
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-blanket: failed assertion 'fail_on_triggered': 'fail_on_triggered=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-blanket: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql57-create-plain: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql57-create-plain: failed assertion 'exit code': 'rc=2 expected=0'
+[ddl-golden][FAIL] case T18.meta.mysql57-create-plain: failed assertion 'verdict': 'verdict=None'
+[ddl-golden][FAIL] case T18.meta.mysql57-create-plain: failed assertion 'top-level statements': 'statements=0 expected=1'
+[ddl-golden][FAIL] case T18.meta.mysql57-create-plain: failed assertion 'zero findings': 'findings=0'
+[ddl-golden][FAIL] case T18.meta.mysql57-create-plain: failed assertion 'no diagnostics': 'diagnostics=[]'
+[ddl-golden][FAIL] case T18.meta.mysql57-create-plain: failed assertion 'no unsupported': 'unsupported=[]'
+[ddl-golden][FAIL] case T18.meta.mysql57-create-plain: failed assertion 'statement indices': 'indices=[]'
+[ddl-golden][FAIL] case T18.meta.mysql57-create-plain: failed assertion 'aggregate coverage': 'coverage=None'
+[ddl-golden][FAIL] case T18.meta.mysql57-create-plain: failed assertion 'per-statement coverage': 'statement_coverage=[]'
+[ddl-golden][FAIL] case T18.meta.mysql57-create-plain: failed assertion 'unsupported entries': 'entries=[] expected=[]'
+[ddl-golden][FAIL] case T18.meta.mysql57-create-plain: failed assertion 'statement raw SQL identity': "raw_sql=[] expected=['CREATE VIEW fresh AS SELECT id FROM t;']"
+[ddl-golden][FAIL] case T18.meta.mysql57-create-plain: failed assertion 'finding entries': "findings=[] expected=[(0, 'ddl.view.security.definer.warn', 'warning')]"
+[ddl-golden][FAIL] case T18.meta.mysql57-create-plain: failed assertion 'finding location index=0': "locations=[] expected={'index': 0, 'line': 1, 'column': 1}"
+[ddl-golden][FAIL] case T18.meta.mysql57-create-plain: failed assertion 'fail_on_triggered': 'fail_on_triggered=None'
+[ddl-golden][FAIL] case T18.meta.mysql57-create-plain: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql57-replace-edges: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql57-replace-edges: failed assertion 'exit code': 'rc=2 expected=0'
+[ddl-golden][FAIL] case T18.meta.mysql57-replace-edges: failed assertion 'verdict': 'verdict=None'
+[ddl-golden][FAIL] case T18.meta.mysql57-replace-edges: failed assertion 'top-level statements': 'statements=0 expected=3'
+[ddl-golden][FAIL] case T18.meta.mysql57-replace-edges: failed assertion 'zero findings': 'findings=0'
+[ddl-golden][FAIL] case T18.meta.mysql57-replace-edges: failed assertion 'no diagnostics': 'diagnostics=[]'
+[ddl-golden][FAIL] case T18.meta.mysql57-replace-edges: failed assertion 'no unsupported': 'unsupported=[]'
+[ddl-golden][FAIL] case T18.meta.mysql57-replace-edges: failed assertion 'statement indices': 'indices=[]'
+[ddl-golden][FAIL] case T18.meta.mysql57-replace-edges: failed assertion 'aggregate coverage': 'coverage=None'
+[ddl-golden][FAIL] case T18.meta.mysql57-replace-edges: failed assertion 'per-statement coverage': 'statement_coverage=[]'
+[ddl-golden][FAIL] case T18.meta.mysql57-replace-edges: failed assertion 'unsupported entries': 'entries=[] expected=[]'
+[ddl-golden][FAIL] case T18.meta.mysql57-replace-edges: failed assertion 'statement raw SQL identity': "raw_sql=[] expected=['CREATE OR REPLACE VIEW v AS SELECT id FROM t;', 'DROP TABLE u;', 'CREATE VIEW fresh AS SELECT id FROM v;']"
+[ddl-golden][FAIL] case T18.meta.mysql57-replace-edges: failed assertion 'finding entries': "findings=[] expected=[(0, 'ddl.view.security.definer.warn', 'warning'), (2, 'ddl.view.security.definer.warn', 'warning')]"
+[ddl-golden][FAIL] case T18.meta.mysql57-replace-edges: failed assertion 'fail_on_triggered': 'fail_on_triggered=None'
+[ddl-golden][FAIL] case T18.meta.mysql57-replace-edges: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql57-replace-table-refusal: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql57-replace-table-refusal: failed assertion 'exit code': 'rc=2 expected=1'
+[ddl-golden][FAIL] case T18.meta.mysql57-replace-table-refusal: failed assertion 'verdict': 'verdict=None'
+[ddl-golden][FAIL] case T18.meta.mysql57-replace-table-refusal: failed assertion 'top-level statements': 'statements=0 expected=1'
+[ddl-golden][FAIL] case T18.meta.mysql57-replace-table-refusal: failed assertion 'zero findings': 'findings=0'
+[ddl-golden][FAIL] case T18.meta.mysql57-replace-table-refusal: failed assertion 'no diagnostics': 'diagnostics=[]'
+[ddl-golden][FAIL] case T18.meta.mysql57-replace-table-refusal: failed assertion 'no unsupported': 'unsupported=[]'
+[ddl-golden][FAIL] case T18.meta.mysql57-replace-table-refusal: failed assertion 'statement indices': 'indices=[]'
+[ddl-golden][FAIL] case T18.meta.mysql57-replace-table-refusal: failed assertion 'aggregate coverage': 'coverage=None'
+[ddl-golden][FAIL] case T18.meta.mysql57-replace-table-refusal: failed assertion 'per-statement coverage': 'statement_coverage=[]'
+[ddl-golden][FAIL] case T18.meta.mysql57-replace-table-refusal: failed assertion 'unsupported entries': 'entries=[] expected=[]'
+[ddl-golden][FAIL] case T18.meta.mysql57-replace-table-refusal: failed assertion 'statement raw SQL identity': "raw_sql=[] expected=['CREATE OR REPLACE VIEW t AS SELECT id FROM u;']"
+[ddl-golden][FAIL] case T18.meta.mysql57-replace-table-refusal: failed assertion 'finding entries': "findings=[] expected=[(0, 'ddl.view.security.definer.warn', 'warning'), (0, 'ddl.view.target.valid', 'blocker')]"
+[ddl-golden][FAIL] case T18.meta.mysql57-replace-table-refusal: failed assertion "finding metadata (0, 'ddl.view.target.valid')": "findings=[] expected_subset={'view': 't', 'view_schema': 't18m_replace_table_refusal', 'role': 'target'}"
+[ddl-golden][FAIL] case T18.meta.mysql57-replace-table-refusal: failed assertion 'fail_on_triggered': 'fail_on_triggered=None'
+[ddl-golden][FAIL] case T18.meta.mysql57-replace-table-refusal: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql57-source-drop-column: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql57-source-drop-column: failed assertion 'exit code': 'rc=2 expected=1'
+[ddl-golden][FAIL] case T18.meta.mysql57-source-drop-column: failed assertion 'verdict': 'verdict=None'
+[ddl-golden][FAIL] case T18.meta.mysql57-source-drop-column: failed assertion 'top-level statements': 'statements=0 expected=2'
+[ddl-golden][FAIL] case T18.meta.mysql57-source-drop-column: failed assertion 'zero findings': 'findings=0'
+[ddl-golden][FAIL] case T18.meta.mysql57-source-drop-column: failed assertion 'no diagnostics': 'diagnostics=[]'
+[ddl-golden][FAIL] case T18.meta.mysql57-source-drop-column: failed assertion 'no unsupported': 'unsupported=[]'
+[ddl-golden][FAIL] case T18.meta.mysql57-source-drop-column: failed assertion 'statement indices': 'indices=[]'
+[ddl-golden][FAIL] case T18.meta.mysql57-source-drop-column: failed assertion 'aggregate coverage': 'coverage=None'
+[ddl-golden][FAIL] case T18.meta.mysql57-source-drop-column: failed assertion 'per-statement coverage': 'statement_coverage=[]'
+[ddl-golden][FAIL] case T18.meta.mysql57-source-drop-column: failed assertion 'unsupported entries': 'entries=[] expected=[]'
+[ddl-golden][FAIL] case T18.meta.mysql57-source-drop-column: failed assertion 'statement raw SQL identity': "raw_sql=[] expected=['ALTER TABLE u DROP COLUMN id;', 'CREATE VIEW fresh AS SELECT id FROM v;']"
+[ddl-golden][FAIL] case T18.meta.mysql57-source-drop-column: failed assertion 'finding entries': "findings=[] expected=[(1, 'ddl.view.security.definer.warn', 'warning'), (1, 'ddl.view.source.valid', 'blocker')]"
+[ddl-golden][FAIL] case T18.meta.mysql57-source-drop-column: failed assertion 'fail_on_triggered': 'fail_on_triggered=None'
+[ddl-golden][FAIL] case T18.meta.mysql57-source-drop-column: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql57-source-rename: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql57-source-rename: failed assertion 'exit code': 'rc=2 expected=1'
+[ddl-golden][FAIL] case T18.meta.mysql57-source-rename: failed assertion 'verdict': 'verdict=None'
+[ddl-golden][FAIL] case T18.meta.mysql57-source-rename: failed assertion 'top-level statements': 'statements=0 expected=2'
+[ddl-golden][FAIL] case T18.meta.mysql57-source-rename: failed assertion 'zero findings': 'findings=0'
+[ddl-golden][FAIL] case T18.meta.mysql57-source-rename: failed assertion 'no diagnostics': 'diagnostics=[]'
+[ddl-golden][FAIL] case T18.meta.mysql57-source-rename: failed assertion 'no unsupported': 'unsupported=[]'
+[ddl-golden][FAIL] case T18.meta.mysql57-source-rename: failed assertion 'statement indices': 'indices=[]'
+[ddl-golden][FAIL] case T18.meta.mysql57-source-rename: failed assertion 'aggregate coverage': 'coverage=None'
+[ddl-golden][FAIL] case T18.meta.mysql57-source-rename: failed assertion 'per-statement coverage': 'statement_coverage=[]'
+[ddl-golden][FAIL] case T18.meta.mysql57-source-rename: failed assertion 'unsupported entries': 'entries=[] expected=[]'
+[ddl-golden][FAIL] case T18.meta.mysql57-source-rename: failed assertion 'statement raw SQL identity': "raw_sql=[] expected=['RENAME TABLE u TO renamed_u;', 'CREATE VIEW fresh AS SELECT id FROM v;']"
+[ddl-golden][FAIL] case T18.meta.mysql57-source-rename: failed assertion 'finding entries': "findings=[] expected=[(1, 'ddl.view.security.definer.warn', 'warning'), (1, 'ddl.view.source.valid', 'blocker')]"
+[ddl-golden][FAIL] case T18.meta.mysql57-source-rename: failed assertion 'fail_on_triggered': 'fail_on_triggered=None'
+[ddl-golden][FAIL] case T18.meta.mysql57-source-rename: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql57-schema-recreate: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql57-schema-recreate: failed assertion 'exit code': 'rc=2 expected=1'
+[ddl-golden][FAIL] case T18.meta.mysql57-schema-recreate: failed assertion 'verdict': 'verdict=None'
+[ddl-golden][FAIL] case T18.meta.mysql57-schema-recreate: failed assertion 'top-level statements': 'statements=0 expected=3'
+[ddl-golden][FAIL] case T18.meta.mysql57-schema-recreate: failed assertion 'zero findings': 'findings=0'
+[ddl-golden][FAIL] case T18.meta.mysql57-schema-recreate: failed assertion 'no diagnostics': 'diagnostics=[]'
+[ddl-golden][FAIL] case T18.meta.mysql57-schema-recreate: failed assertion 'no unsupported': 'unsupported=[]'
+[ddl-golden][FAIL] case T18.meta.mysql57-schema-recreate: failed assertion 'statement indices': 'indices=[]'
+[ddl-golden][FAIL] case T18.meta.mysql57-schema-recreate: failed assertion 'aggregate coverage': 'coverage=None'
+[ddl-golden][FAIL] case T18.meta.mysql57-schema-recreate: failed assertion 'per-statement coverage': 'statement_coverage=[]'
+[ddl-golden][FAIL] case T18.meta.mysql57-schema-recreate: failed assertion 'unsupported entries': 'entries=[] expected=[]'
+[ddl-golden][FAIL] case T18.meta.mysql57-schema-recreate: failed assertion 'statement raw SQL identity': "raw_sql=[] expected=['DROP DATABASE t18m_schema_recreate;', 'CREATE DATABASE t18m_schema_recreate;', 'CREATE VIEW t18m_schema_recreate.fresh AS SELECT id FROM t18m_schema_recreate.v;']"
+[ddl-golden][FAIL] case T18.meta.mysql57-schema-recreate: failed assertion 'finding entries': "findings=[] expected=[(2, 'ddl.view.security.definer.warn', 'warning'), (2, 'ddl.view.source.valid', 'blocker')]"
+[ddl-golden][FAIL] case T18.meta.mysql57-schema-recreate: failed assertion 'fail_on_triggered': 'fail_on_triggered=None'
+[ddl-golden][FAIL] case T18.meta.mysql57-schema-recreate: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql57-qualified-target-current-source: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql57-qualified-target-current-source: failed assertion 'exit code': 'rc=2 expected=0'
+[ddl-golden][FAIL] case T18.meta.mysql57-qualified-target-current-source: failed assertion 'verdict': 'verdict=None'
+[ddl-golden][FAIL] case T18.meta.mysql57-qualified-target-current-source: failed assertion 'top-level statements': 'statements=0 expected=1'
+[ddl-golden][FAIL] case T18.meta.mysql57-qualified-target-current-source: failed assertion 'zero findings': 'findings=0'
+[ddl-golden][FAIL] case T18.meta.mysql57-qualified-target-current-source: failed assertion 'no diagnostics': 'diagnostics=[]'
+[ddl-golden][FAIL] case T18.meta.mysql57-qualified-target-current-source: failed assertion 'no unsupported': 'unsupported=[]'
+[ddl-golden][FAIL] case T18.meta.mysql57-qualified-target-current-source: failed assertion 'statement indices': 'indices=[]'
+[ddl-golden][FAIL] case T18.meta.mysql57-qualified-target-current-source: failed assertion 'aggregate coverage': 'coverage=None'
+[ddl-golden][FAIL] case T18.meta.mysql57-qualified-target-current-source: failed assertion 'per-statement coverage': 'statement_coverage=[]'
+[ddl-golden][FAIL] case T18.meta.mysql57-qualified-target-current-source: failed assertion 'unsupported entries': 'entries=[] expected=[]'
+[ddl-golden][FAIL] case T18.meta.mysql57-qualified-target-current-source: failed assertion 'statement raw SQL identity': "raw_sql=[] expected=['CREATE VIEW t18m_qualified_target_current_source_o.fresh AS SELECT id FROM t;']"
+[ddl-golden][FAIL] case T18.meta.mysql57-qualified-target-current-source: failed assertion 'finding entries': "findings=[] expected=[(0, 'ddl.view.security.definer.warn', 'warning')]"
+[ddl-golden][FAIL] case T18.meta.mysql57-qualified-target-current-source: failed assertion 'fail_on_triggered': 'fail_on_triggered=None'
+[ddl-golden][FAIL] case T18.meta.mysql57-qualified-target-current-source: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql57-missing-source: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql57-missing-source: failed assertion 'exit code': 'rc=2 expected=1'
+[ddl-golden][FAIL] case T18.meta.mysql57-missing-source: failed assertion 'verdict': 'verdict=None'
+[ddl-golden][FAIL] case T18.meta.mysql57-missing-source: failed assertion 'top-level statements': 'statements=0 expected=1'
+[ddl-golden][FAIL] case T18.meta.mysql57-missing-source: failed assertion 'zero findings': 'findings=0'
+[ddl-golden][FAIL] case T18.meta.mysql57-missing-source: failed assertion 'no diagnostics': 'diagnostics=[]'
+[ddl-golden][FAIL] case T18.meta.mysql57-missing-source: failed assertion 'no unsupported': 'unsupported=[]'
+[ddl-golden][FAIL] case T18.meta.mysql57-missing-source: failed assertion 'statement indices': 'indices=[]'
+[ddl-golden][FAIL] case T18.meta.mysql57-missing-source: failed assertion 'aggregate coverage': 'coverage=None'
+[ddl-golden][FAIL] case T18.meta.mysql57-missing-source: failed assertion 'per-statement coverage': 'statement_coverage=[]'
+[ddl-golden][FAIL] case T18.meta.mysql57-missing-source: failed assertion 'unsupported entries': 'entries=[] expected=[]'
+[ddl-golden][FAIL] case T18.meta.mysql57-missing-source: failed assertion 'statement raw SQL identity': "raw_sql=[] expected=['CREATE VIEW fresh AS SELECT id FROM missing_t;']"
+[ddl-golden][FAIL] case T18.meta.mysql57-missing-source: failed assertion 'finding entries': "findings=[] expected=[(0, 'ddl.view.security.definer.warn', 'warning'), (0, 'ddl.view.source.valid', 'blocker')]"
+[ddl-golden][FAIL] case T18.meta.mysql57-missing-source: failed assertion "finding metadata (0, 'ddl.view.source.valid')": "findings=[] expected_subset={'view': 'fresh', 'view_schema': 't18m_missing_source', 'table': 'missing_t', 'schema': 't18m_missing_source', 'role': 'source'}"
+[ddl-golden][FAIL] case T18.meta.mysql57-missing-source: failed assertion 'finding location index=0': "locations=[] expected={'index': 0, 'line': 1, 'column': 37}"
+[ddl-golden][FAIL] case T18.meta.mysql57-missing-source: failed assertion 'fail_on_triggered': 'fail_on_triggered=None'
+[ddl-golden][FAIL] case T18.meta.mysql57-missing-source: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql57-drop-missing-state: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql57-drop-missing-state: failed assertion 'exit code': 'rc=2 expected=1'
+[ddl-golden][FAIL] case T18.meta.mysql57-drop-missing-state: failed assertion 'verdict': 'verdict=None'
+[ddl-golden][FAIL] case T18.meta.mysql57-drop-missing-state: failed assertion 'top-level statements': 'statements=0 expected=2'
+[ddl-golden][FAIL] case T18.meta.mysql57-drop-missing-state: failed assertion 'zero findings': 'findings=0'
+[ddl-golden][FAIL] case T18.meta.mysql57-drop-missing-state: failed assertion 'no diagnostics': 'diagnostics=[]'
+[ddl-golden][FAIL] case T18.meta.mysql57-drop-missing-state: failed assertion 'no unsupported': 'unsupported=[]'
+[ddl-golden][FAIL] case T18.meta.mysql57-drop-missing-state: failed assertion 'statement indices': 'indices=[]'
+[ddl-golden][FAIL] case T18.meta.mysql57-drop-missing-state: failed assertion 'aggregate coverage': 'coverage=None'
+[ddl-golden][FAIL] case T18.meta.mysql57-drop-missing-state: failed assertion 'per-statement coverage': 'statement_coverage=[]'
+[ddl-golden][FAIL] case T18.meta.mysql57-drop-missing-state: failed assertion 'unsupported entries': 'entries=[] expected=[]'
+[ddl-golden][FAIL] case T18.meta.mysql57-drop-missing-state: failed assertion 'statement raw SQL identity': "raw_sql=[] expected=['DROP VIEW v,missing_v;', 'CREATE VIEW v AS SELECT id FROM t;']"
+[ddl-golden][FAIL] case T18.meta.mysql57-drop-missing-state: failed assertion 'finding entries': "findings=[] expected=[(0, 'ddl.view.target.valid', 'blocker'), (1, 'ddl.view.security.definer.warn', 'warning')]"
+[ddl-golden][FAIL] case T18.meta.mysql57-drop-missing-state: failed assertion 'fail_on_triggered': 'fail_on_triggered=None'
+[ddl-golden][FAIL] case T18.meta.mysql57-drop-missing-state: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql57-drop-wrongkind-state: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql57-drop-wrongkind-state: failed assertion 'exit code': 'rc=2 expected=1'
+[ddl-golden][FAIL] case T18.meta.mysql57-drop-wrongkind-state: failed assertion 'verdict': 'verdict=None'
+[ddl-golden][FAIL] case T18.meta.mysql57-drop-wrongkind-state: failed assertion 'top-level statements': 'statements=0 expected=3'
+[ddl-golden][FAIL] case T18.meta.mysql57-drop-wrongkind-state: failed assertion 'zero findings': 'findings=0'
+[ddl-golden][FAIL] case T18.meta.mysql57-drop-wrongkind-state: failed assertion 'no diagnostics': 'diagnostics=[]'
+[ddl-golden][FAIL] case T18.meta.mysql57-drop-wrongkind-state: failed assertion 'no unsupported': 'unsupported=[]'
+[ddl-golden][FAIL] case T18.meta.mysql57-drop-wrongkind-state: failed assertion 'statement indices': 'indices=[]'
+[ddl-golden][FAIL] case T18.meta.mysql57-drop-wrongkind-state: failed assertion 'aggregate coverage': 'coverage=None'
+[ddl-golden][FAIL] case T18.meta.mysql57-drop-wrongkind-state: failed assertion 'per-statement coverage': 'statement_coverage=[]'
+[ddl-golden][FAIL] case T18.meta.mysql57-drop-wrongkind-state: failed assertion 'unsupported entries': 'entries=[] expected=[]'
+[ddl-golden][FAIL] case T18.meta.mysql57-drop-wrongkind-state: failed assertion 'statement raw SQL identity': "raw_sql=[] expected=['DROP VIEW v,t,w;', 'CREATE VIEW v AS SELECT id FROM u;', 'CREATE VIEW w AS SELECT id FROM u;']"
+[ddl-golden][FAIL] case T18.meta.mysql57-drop-wrongkind-state: failed assertion 'finding entries': "findings=[] expected=[(0, 'ddl.view.target.valid', 'blocker'), (1, 'ddl.view.security.definer.warn', 'warning'), (2, 'ddl.view.security.definer.warn', 'warning')]"
+[ddl-golden][FAIL] case T18.meta.mysql57-drop-wrongkind-state: failed assertion "finding metadata (0, 'ddl.view.target.valid')": "findings=[] expected_subset={'view': 't', 'view_schema': 't18m_drop_wrongkind_state', 'role': 'target'}"
+[ddl-golden][FAIL] case T18.meta.mysql57-drop-wrongkind-state: failed assertion 'fail_on_triggered': 'fail_on_triggered=None'
+[ddl-golden][FAIL] case T18.meta.mysql57-drop-wrongkind-state: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql57-drop-if-wrongkind-state: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql57-drop-if-wrongkind-state: failed assertion 'exit code': 'rc=2 expected=0'
+[ddl-golden][FAIL] case T18.meta.mysql57-drop-if-wrongkind-state: failed assertion 'verdict': 'verdict=None'
+[ddl-golden][FAIL] case T18.meta.mysql57-drop-if-wrongkind-state: failed assertion 'top-level statements': 'statements=0 expected=3'
+[ddl-golden][FAIL] case T18.meta.mysql57-drop-if-wrongkind-state: failed assertion 'zero findings': 'findings=0'
+[ddl-golden][FAIL] case T18.meta.mysql57-drop-if-wrongkind-state: failed assertion 'no diagnostics': 'diagnostics=[]'
+[ddl-golden][FAIL] case T18.meta.mysql57-drop-if-wrongkind-state: failed assertion 'no unsupported': 'unsupported=[]'
+[ddl-golden][FAIL] case T18.meta.mysql57-drop-if-wrongkind-state: failed assertion 'statement indices': 'indices=[]'
+[ddl-golden][FAIL] case T18.meta.mysql57-drop-if-wrongkind-state: failed assertion 'aggregate coverage': 'coverage=None'
+[ddl-golden][FAIL] case T18.meta.mysql57-drop-if-wrongkind-state: failed assertion 'per-statement coverage': 'statement_coverage=[]'
+[ddl-golden][FAIL] case T18.meta.mysql57-drop-if-wrongkind-state: failed assertion 'unsupported entries': 'entries=[] expected=[]'
+[ddl-golden][FAIL] case T18.meta.mysql57-drop-if-wrongkind-state: failed assertion 'statement raw SQL identity': "raw_sql=[] expected=['DROP VIEW IF EXISTS v,t,w;', 'CREATE VIEW v AS SELECT id FROM u;', 'CREATE VIEW w AS SELECT id FROM u;']"
+[ddl-golden][FAIL] case T18.meta.mysql57-drop-if-wrongkind-state: failed assertion 'finding entries': "findings=[] expected=[(1, 'ddl.view.security.definer.warn', 'warning'), (2, 'ddl.view.security.definer.warn', 'warning')]"
+[ddl-golden][FAIL] case T18.meta.mysql57-drop-if-wrongkind-state: failed assertion 'fail_on_triggered': 'fail_on_triggered=None'
+[ddl-golden][FAIL] case T18.meta.mysql57-drop-if-wrongkind-state: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql57-drop-duplicate-state: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql57-drop-duplicate-state: failed assertion 'exit code': 'rc=2 expected=1'
+[ddl-golden][FAIL] case T18.meta.mysql57-drop-duplicate-state: failed assertion 'verdict': 'verdict=None'
+[ddl-golden][FAIL] case T18.meta.mysql57-drop-duplicate-state: failed assertion 'top-level statements': 'statements=0 expected=2'
+[ddl-golden][FAIL] case T18.meta.mysql57-drop-duplicate-state: failed assertion 'zero findings': 'findings=0'
+[ddl-golden][FAIL] case T18.meta.mysql57-drop-duplicate-state: failed assertion 'no diagnostics': 'diagnostics=[]'
+[ddl-golden][FAIL] case T18.meta.mysql57-drop-duplicate-state: failed assertion 'no unsupported': 'unsupported=[]'
+[ddl-golden][FAIL] case T18.meta.mysql57-drop-duplicate-state: failed assertion 'statement indices': 'indices=[]'
+[ddl-golden][FAIL] case T18.meta.mysql57-drop-duplicate-state: failed assertion 'aggregate coverage': 'coverage=None'
+[ddl-golden][FAIL] case T18.meta.mysql57-drop-duplicate-state: failed assertion 'per-statement coverage': 'statement_coverage=[]'
+[ddl-golden][FAIL] case T18.meta.mysql57-drop-duplicate-state: failed assertion 'unsupported entries': 'entries=[] expected=[]'
+[ddl-golden][FAIL] case T18.meta.mysql57-drop-duplicate-state: failed assertion 'statement raw SQL identity': "raw_sql=[] expected=['DROP VIEW v,v;', 'CREATE VIEW v AS SELECT id FROM t;']"
+[ddl-golden][FAIL] case T18.meta.mysql57-drop-duplicate-state: failed assertion 'finding entries': "findings=[] expected=[(0, 'ddl.view.target.valid', 'blocker'), (1, 'ddl.view.security.definer.warn', 'warning'), (1, 'ddl.view.target.valid', 'blocker')]"
+[ddl-golden][FAIL] case T18.meta.mysql57-drop-duplicate-state: failed assertion 'fail_on_triggered': 'fail_on_triggered=None'
+[ddl-golden][FAIL] case T18.meta.mysql57-drop-duplicate-state: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql57-drop-if-missing-state: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql57-drop-if-missing-state: failed assertion 'exit code': 'rc=2 expected=0'
+[ddl-golden][FAIL] case T18.meta.mysql57-drop-if-missing-state: failed assertion 'verdict': 'verdict=None'
+[ddl-golden][FAIL] case T18.meta.mysql57-drop-if-missing-state: failed assertion 'top-level statements': 'statements=0 expected=2'
+[ddl-golden][FAIL] case T18.meta.mysql57-drop-if-missing-state: failed assertion 'zero findings': 'findings=0'
+[ddl-golden][FAIL] case T18.meta.mysql57-drop-if-missing-state: failed assertion 'no diagnostics': 'diagnostics=[]'
+[ddl-golden][FAIL] case T18.meta.mysql57-drop-if-missing-state: failed assertion 'no unsupported': 'unsupported=[]'
+[ddl-golden][FAIL] case T18.meta.mysql57-drop-if-missing-state: failed assertion 'statement indices': 'indices=[]'
+[ddl-golden][FAIL] case T18.meta.mysql57-drop-if-missing-state: failed assertion 'aggregate coverage': 'coverage=None'
+[ddl-golden][FAIL] case T18.meta.mysql57-drop-if-missing-state: failed assertion 'per-statement coverage': 'statement_coverage=[]'
+[ddl-golden][FAIL] case T18.meta.mysql57-drop-if-missing-state: failed assertion 'unsupported entries': 'entries=[] expected=[]'
+[ddl-golden][FAIL] case T18.meta.mysql57-drop-if-missing-state: failed assertion 'statement raw SQL identity': "raw_sql=[] expected=['DROP VIEW IF EXISTS v,missing_v;', 'CREATE VIEW v AS SELECT id FROM t;']"
+[ddl-golden][FAIL] case T18.meta.mysql57-drop-if-missing-state: failed assertion 'finding entries': "findings=[] expected=[(1, 'ddl.view.security.definer.warn', 'warning')]"
+[ddl-golden][FAIL] case T18.meta.mysql57-drop-if-missing-state: failed assertion 'fail_on_triggered': 'fail_on_triggered=None'
+[ddl-golden][FAIL] case T18.meta.mysql57-drop-if-missing-state: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql80-create-plain: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql80-create-plain: failed assertion 'exit code': 'rc=2 expected=0'
+[ddl-golden][FAIL] case T18.meta.mysql80-create-plain: failed assertion 'verdict': 'verdict=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-create-plain: failed assertion 'top-level statements': 'statements=0 expected=1'
+[ddl-golden][FAIL] case T18.meta.mysql80-create-plain: failed assertion 'zero findings': 'findings=0'
+[ddl-golden][FAIL] case T18.meta.mysql80-create-plain: failed assertion 'no diagnostics': 'diagnostics=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-create-plain: failed assertion 'no unsupported': 'unsupported=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-create-plain: failed assertion 'statement indices': 'indices=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-create-plain: failed assertion 'aggregate coverage': 'coverage=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-create-plain: failed assertion 'per-statement coverage': 'statement_coverage=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-create-plain: failed assertion 'unsupported entries': 'entries=[] expected=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-create-plain: failed assertion 'statement raw SQL identity': "raw_sql=[] expected=['CREATE VIEW fresh AS SELECT id FROM t;']"
+[ddl-golden][FAIL] case T18.meta.mysql80-create-plain: failed assertion 'finding entries': "findings=[] expected=[(0, 'ddl.view.security.definer.warn', 'warning')]"
+[ddl-golden][FAIL] case T18.meta.mysql80-create-plain: failed assertion 'finding location index=0': "locations=[] expected={'index': 0, 'line': 1, 'column': 1}"
+[ddl-golden][FAIL] case T18.meta.mysql80-create-plain: failed assertion 'fail_on_triggered': 'fail_on_triggered=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-create-plain: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql80-replace-edges: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql80-replace-edges: failed assertion 'exit code': 'rc=2 expected=0'
+[ddl-golden][FAIL] case T18.meta.mysql80-replace-edges: failed assertion 'verdict': 'verdict=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-replace-edges: failed assertion 'top-level statements': 'statements=0 expected=3'
+[ddl-golden][FAIL] case T18.meta.mysql80-replace-edges: failed assertion 'zero findings': 'findings=0'
+[ddl-golden][FAIL] case T18.meta.mysql80-replace-edges: failed assertion 'no diagnostics': 'diagnostics=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-replace-edges: failed assertion 'no unsupported': 'unsupported=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-replace-edges: failed assertion 'statement indices': 'indices=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-replace-edges: failed assertion 'aggregate coverage': 'coverage=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-replace-edges: failed assertion 'per-statement coverage': 'statement_coverage=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-replace-edges: failed assertion 'unsupported entries': 'entries=[] expected=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-replace-edges: failed assertion 'statement raw SQL identity': "raw_sql=[] expected=['CREATE OR REPLACE VIEW v AS SELECT id FROM t;', 'DROP TABLE u;', 'CREATE VIEW fresh AS SELECT id FROM v;']"
+[ddl-golden][FAIL] case T18.meta.mysql80-replace-edges: failed assertion 'finding entries': "findings=[] expected=[(0, 'ddl.view.security.definer.warn', 'warning'), (2, 'ddl.view.security.definer.warn', 'warning')]"
+[ddl-golden][FAIL] case T18.meta.mysql80-replace-edges: failed assertion 'fail_on_triggered': 'fail_on_triggered=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-replace-edges: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql80-replace-table-refusal: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql80-replace-table-refusal: failed assertion 'exit code': 'rc=2 expected=1'
+[ddl-golden][FAIL] case T18.meta.mysql80-replace-table-refusal: failed assertion 'verdict': 'verdict=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-replace-table-refusal: failed assertion 'top-level statements': 'statements=0 expected=1'
+[ddl-golden][FAIL] case T18.meta.mysql80-replace-table-refusal: failed assertion 'zero findings': 'findings=0'
+[ddl-golden][FAIL] case T18.meta.mysql80-replace-table-refusal: failed assertion 'no diagnostics': 'diagnostics=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-replace-table-refusal: failed assertion 'no unsupported': 'unsupported=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-replace-table-refusal: failed assertion 'statement indices': 'indices=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-replace-table-refusal: failed assertion 'aggregate coverage': 'coverage=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-replace-table-refusal: failed assertion 'per-statement coverage': 'statement_coverage=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-replace-table-refusal: failed assertion 'unsupported entries': 'entries=[] expected=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-replace-table-refusal: failed assertion 'statement raw SQL identity': "raw_sql=[] expected=['CREATE OR REPLACE VIEW t AS SELECT id FROM u;']"
+[ddl-golden][FAIL] case T18.meta.mysql80-replace-table-refusal: failed assertion 'finding entries': "findings=[] expected=[(0, 'ddl.view.security.definer.warn', 'warning'), (0, 'ddl.view.target.valid', 'blocker')]"
+[ddl-golden][FAIL] case T18.meta.mysql80-replace-table-refusal: failed assertion "finding metadata (0, 'ddl.view.target.valid')": "findings=[] expected_subset={'view': 't', 'view_schema': 't18m_replace_table_refusal', 'role': 'target'}"
+[ddl-golden][FAIL] case T18.meta.mysql80-replace-table-refusal: failed assertion 'fail_on_triggered': 'fail_on_triggered=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-replace-table-refusal: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql80-source-drop-column: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql80-source-drop-column: failed assertion 'exit code': 'rc=2 expected=1'
+[ddl-golden][FAIL] case T18.meta.mysql80-source-drop-column: failed assertion 'verdict': 'verdict=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-source-drop-column: failed assertion 'top-level statements': 'statements=0 expected=2'
+[ddl-golden][FAIL] case T18.meta.mysql80-source-drop-column: failed assertion 'zero findings': 'findings=0'
+[ddl-golden][FAIL] case T18.meta.mysql80-source-drop-column: failed assertion 'no diagnostics': 'diagnostics=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-source-drop-column: failed assertion 'no unsupported': 'unsupported=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-source-drop-column: failed assertion 'statement indices': 'indices=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-source-drop-column: failed assertion 'aggregate coverage': 'coverage=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-source-drop-column: failed assertion 'per-statement coverage': 'statement_coverage=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-source-drop-column: failed assertion 'unsupported entries': 'entries=[] expected=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-source-drop-column: failed assertion 'statement raw SQL identity': "raw_sql=[] expected=['ALTER TABLE u DROP COLUMN id;', 'CREATE VIEW fresh AS SELECT id FROM v;']"
+[ddl-golden][FAIL] case T18.meta.mysql80-source-drop-column: failed assertion 'finding entries': "findings=[] expected=[(1, 'ddl.view.security.definer.warn', 'warning'), (1, 'ddl.view.source.valid', 'blocker')]"
+[ddl-golden][FAIL] case T18.meta.mysql80-source-drop-column: failed assertion 'fail_on_triggered': 'fail_on_triggered=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-source-drop-column: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql80-source-rename: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql80-source-rename: failed assertion 'exit code': 'rc=2 expected=1'
+[ddl-golden][FAIL] case T18.meta.mysql80-source-rename: failed assertion 'verdict': 'verdict=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-source-rename: failed assertion 'top-level statements': 'statements=0 expected=2'
+[ddl-golden][FAIL] case T18.meta.mysql80-source-rename: failed assertion 'zero findings': 'findings=0'
+[ddl-golden][FAIL] case T18.meta.mysql80-source-rename: failed assertion 'no diagnostics': 'diagnostics=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-source-rename: failed assertion 'no unsupported': 'unsupported=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-source-rename: failed assertion 'statement indices': 'indices=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-source-rename: failed assertion 'aggregate coverage': 'coverage=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-source-rename: failed assertion 'per-statement coverage': 'statement_coverage=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-source-rename: failed assertion 'unsupported entries': 'entries=[] expected=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-source-rename: failed assertion 'statement raw SQL identity': "raw_sql=[] expected=['RENAME TABLE u TO renamed_u;', 'CREATE VIEW fresh AS SELECT id FROM v;']"
+[ddl-golden][FAIL] case T18.meta.mysql80-source-rename: failed assertion 'finding entries': "findings=[] expected=[(1, 'ddl.view.security.definer.warn', 'warning'), (1, 'ddl.view.source.valid', 'blocker')]"
+[ddl-golden][FAIL] case T18.meta.mysql80-source-rename: failed assertion 'fail_on_triggered': 'fail_on_triggered=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-source-rename: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql80-schema-recreate: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql80-schema-recreate: failed assertion 'exit code': 'rc=2 expected=1'
+[ddl-golden][FAIL] case T18.meta.mysql80-schema-recreate: failed assertion 'verdict': 'verdict=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-schema-recreate: failed assertion 'top-level statements': 'statements=0 expected=3'
+[ddl-golden][FAIL] case T18.meta.mysql80-schema-recreate: failed assertion 'zero findings': 'findings=0'
+[ddl-golden][FAIL] case T18.meta.mysql80-schema-recreate: failed assertion 'no diagnostics': 'diagnostics=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-schema-recreate: failed assertion 'no unsupported': 'unsupported=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-schema-recreate: failed assertion 'statement indices': 'indices=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-schema-recreate: failed assertion 'aggregate coverage': 'coverage=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-schema-recreate: failed assertion 'per-statement coverage': 'statement_coverage=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-schema-recreate: failed assertion 'unsupported entries': 'entries=[] expected=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-schema-recreate: failed assertion 'statement raw SQL identity': "raw_sql=[] expected=['DROP DATABASE t18m_schema_recreate;', 'CREATE DATABASE t18m_schema_recreate;', 'CREATE VIEW t18m_schema_recreate.fresh AS SELECT id FROM t18m_schema_recreate.v;']"
+[ddl-golden][FAIL] case T18.meta.mysql80-schema-recreate: failed assertion 'finding entries': "findings=[] expected=[(2, 'ddl.view.security.definer.warn', 'warning'), (2, 'ddl.view.source.valid', 'blocker')]"
+[ddl-golden][FAIL] case T18.meta.mysql80-schema-recreate: failed assertion 'fail_on_triggered': 'fail_on_triggered=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-schema-recreate: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql80-qualified-target-current-source: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql80-qualified-target-current-source: failed assertion 'exit code': 'rc=2 expected=0'
+[ddl-golden][FAIL] case T18.meta.mysql80-qualified-target-current-source: failed assertion 'verdict': 'verdict=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-qualified-target-current-source: failed assertion 'top-level statements': 'statements=0 expected=1'
+[ddl-golden][FAIL] case T18.meta.mysql80-qualified-target-current-source: failed assertion 'zero findings': 'findings=0'
+[ddl-golden][FAIL] case T18.meta.mysql80-qualified-target-current-source: failed assertion 'no diagnostics': 'diagnostics=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-qualified-target-current-source: failed assertion 'no unsupported': 'unsupported=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-qualified-target-current-source: failed assertion 'statement indices': 'indices=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-qualified-target-current-source: failed assertion 'aggregate coverage': 'coverage=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-qualified-target-current-source: failed assertion 'per-statement coverage': 'statement_coverage=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-qualified-target-current-source: failed assertion 'unsupported entries': 'entries=[] expected=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-qualified-target-current-source: failed assertion 'statement raw SQL identity': "raw_sql=[] expected=['CREATE VIEW t18m_qualified_target_current_source_o.fresh AS SELECT id FROM t;']"
+[ddl-golden][FAIL] case T18.meta.mysql80-qualified-target-current-source: failed assertion 'finding entries': "findings=[] expected=[(0, 'ddl.view.security.definer.warn', 'warning')]"
+[ddl-golden][FAIL] case T18.meta.mysql80-qualified-target-current-source: failed assertion 'fail_on_triggered': 'fail_on_triggered=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-qualified-target-current-source: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql80-missing-source: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql80-missing-source: failed assertion 'exit code': 'rc=2 expected=1'
+[ddl-golden][FAIL] case T18.meta.mysql80-missing-source: failed assertion 'verdict': 'verdict=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-missing-source: failed assertion 'top-level statements': 'statements=0 expected=1'
+[ddl-golden][FAIL] case T18.meta.mysql80-missing-source: failed assertion 'zero findings': 'findings=0'
+[ddl-golden][FAIL] case T18.meta.mysql80-missing-source: failed assertion 'no diagnostics': 'diagnostics=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-missing-source: failed assertion 'no unsupported': 'unsupported=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-missing-source: failed assertion 'statement indices': 'indices=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-missing-source: failed assertion 'aggregate coverage': 'coverage=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-missing-source: failed assertion 'per-statement coverage': 'statement_coverage=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-missing-source: failed assertion 'unsupported entries': 'entries=[] expected=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-missing-source: failed assertion 'statement raw SQL identity': "raw_sql=[] expected=['CREATE VIEW fresh AS SELECT id FROM missing_t;']"
+[ddl-golden][FAIL] case T18.meta.mysql80-missing-source: failed assertion 'finding entries': "findings=[] expected=[(0, 'ddl.view.security.definer.warn', 'warning'), (0, 'ddl.view.source.valid', 'blocker')]"
+[ddl-golden][FAIL] case T18.meta.mysql80-missing-source: failed assertion "finding metadata (0, 'ddl.view.source.valid')": "findings=[] expected_subset={'view': 'fresh', 'view_schema': 't18m_missing_source', 'table': 'missing_t', 'schema': 't18m_missing_source', 'role': 'source'}"
+[ddl-golden][FAIL] case T18.meta.mysql80-missing-source: failed assertion 'finding location index=0': "locations=[] expected={'index': 0, 'line': 1, 'column': 37}"
+[ddl-golden][FAIL] case T18.meta.mysql80-missing-source: failed assertion 'fail_on_triggered': 'fail_on_triggered=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-missing-source: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql80-drop-missing-state: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql80-drop-missing-state: failed assertion 'exit code': 'rc=2 expected=1'
+[ddl-golden][FAIL] case T18.meta.mysql80-drop-missing-state: failed assertion 'verdict': 'verdict=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-drop-missing-state: failed assertion 'top-level statements': 'statements=0 expected=2'
+[ddl-golden][FAIL] case T18.meta.mysql80-drop-missing-state: failed assertion 'zero findings': 'findings=0'
+[ddl-golden][FAIL] case T18.meta.mysql80-drop-missing-state: failed assertion 'no diagnostics': 'diagnostics=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-drop-missing-state: failed assertion 'no unsupported': 'unsupported=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-drop-missing-state: failed assertion 'statement indices': 'indices=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-drop-missing-state: failed assertion 'aggregate coverage': 'coverage=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-drop-missing-state: failed assertion 'per-statement coverage': 'statement_coverage=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-drop-missing-state: failed assertion 'unsupported entries': 'entries=[] expected=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-drop-missing-state: failed assertion 'statement raw SQL identity': "raw_sql=[] expected=['DROP VIEW v,missing_v;', 'CREATE VIEW v AS SELECT id FROM t;']"
+[ddl-golden][FAIL] case T18.meta.mysql80-drop-missing-state: failed assertion 'finding entries': "findings=[] expected=[(0, 'ddl.view.target.valid', 'blocker'), (1, 'ddl.view.security.definer.warn', 'warning'), (1, 'ddl.view.target.valid', 'blocker')]"
+[ddl-golden][FAIL] case T18.meta.mysql80-drop-missing-state: failed assertion 'fail_on_triggered': 'fail_on_triggered=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-drop-missing-state: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql80-drop-wrongkind-state: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql80-drop-wrongkind-state: failed assertion 'exit code': 'rc=2 expected=1'
+[ddl-golden][FAIL] case T18.meta.mysql80-drop-wrongkind-state: failed assertion 'verdict': 'verdict=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-drop-wrongkind-state: failed assertion 'top-level statements': 'statements=0 expected=3'
+[ddl-golden][FAIL] case T18.meta.mysql80-drop-wrongkind-state: failed assertion 'zero findings': 'findings=0'
+[ddl-golden][FAIL] case T18.meta.mysql80-drop-wrongkind-state: failed assertion 'no diagnostics': 'diagnostics=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-drop-wrongkind-state: failed assertion 'no unsupported': 'unsupported=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-drop-wrongkind-state: failed assertion 'statement indices': 'indices=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-drop-wrongkind-state: failed assertion 'aggregate coverage': 'coverage=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-drop-wrongkind-state: failed assertion 'per-statement coverage': 'statement_coverage=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-drop-wrongkind-state: failed assertion 'unsupported entries': 'entries=[] expected=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-drop-wrongkind-state: failed assertion 'statement raw SQL identity': "raw_sql=[] expected=['DROP VIEW v,t,w;', 'CREATE VIEW v AS SELECT id FROM u;', 'CREATE VIEW w AS SELECT id FROM u;']"
+[ddl-golden][FAIL] case T18.meta.mysql80-drop-wrongkind-state: failed assertion 'finding entries': "findings=[] expected=[(0, 'ddl.view.target.valid', 'blocker'), (1, 'ddl.view.security.definer.warn', 'warning'), (1, 'ddl.view.target.valid', 'blocker'), (2, 'ddl.view.security.definer.warn', 'warning'), (2, 'ddl.view.target.valid', 'blocker')]"
+[ddl-golden][FAIL] case T18.meta.mysql80-drop-wrongkind-state: failed assertion "finding metadata (0, 'ddl.view.target.valid')": "findings=[] expected_subset={'view': 't', 'view_schema': 't18m_drop_wrongkind_state', 'role': 'target'}"
+[ddl-golden][FAIL] case T18.meta.mysql80-drop-wrongkind-state: failed assertion 'fail_on_triggered': 'fail_on_triggered=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-drop-wrongkind-state: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql80-drop-if-wrongkind-state: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql80-drop-if-wrongkind-state: failed assertion 'exit code': 'rc=2 expected=0'
+[ddl-golden][FAIL] case T18.meta.mysql80-drop-if-wrongkind-state: failed assertion 'verdict': 'verdict=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-drop-if-wrongkind-state: failed assertion 'top-level statements': 'statements=0 expected=3'
+[ddl-golden][FAIL] case T18.meta.mysql80-drop-if-wrongkind-state: failed assertion 'zero findings': 'findings=0'
+[ddl-golden][FAIL] case T18.meta.mysql80-drop-if-wrongkind-state: failed assertion 'no diagnostics': 'diagnostics=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-drop-if-wrongkind-state: failed assertion 'no unsupported': 'unsupported=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-drop-if-wrongkind-state: failed assertion 'statement indices': 'indices=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-drop-if-wrongkind-state: failed assertion 'aggregate coverage': 'coverage=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-drop-if-wrongkind-state: failed assertion 'per-statement coverage': 'statement_coverage=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-drop-if-wrongkind-state: failed assertion 'unsupported entries': 'entries=[] expected=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-drop-if-wrongkind-state: failed assertion 'statement raw SQL identity': "raw_sql=[] expected=['DROP VIEW IF EXISTS v,t,w;', 'CREATE VIEW v AS SELECT id FROM u;', 'CREATE VIEW w AS SELECT id FROM u;']"
+[ddl-golden][FAIL] case T18.meta.mysql80-drop-if-wrongkind-state: failed assertion 'finding entries': "findings=[] expected=[(1, 'ddl.view.security.definer.warn', 'warning'), (2, 'ddl.view.security.definer.warn', 'warning')]"
+[ddl-golden][FAIL] case T18.meta.mysql80-drop-if-wrongkind-state: failed assertion 'fail_on_triggered': 'fail_on_triggered=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-drop-if-wrongkind-state: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql80-drop-duplicate-state: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql80-drop-duplicate-state: failed assertion 'exit code': 'rc=2 expected=1'
+[ddl-golden][FAIL] case T18.meta.mysql80-drop-duplicate-state: failed assertion 'verdict': 'verdict=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-drop-duplicate-state: failed assertion 'top-level statements': 'statements=0 expected=2'
+[ddl-golden][FAIL] case T18.meta.mysql80-drop-duplicate-state: failed assertion 'zero findings': 'findings=0'
+[ddl-golden][FAIL] case T18.meta.mysql80-drop-duplicate-state: failed assertion 'no diagnostics': 'diagnostics=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-drop-duplicate-state: failed assertion 'no unsupported': 'unsupported=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-drop-duplicate-state: failed assertion 'statement indices': 'indices=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-drop-duplicate-state: failed assertion 'aggregate coverage': 'coverage=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-drop-duplicate-state: failed assertion 'per-statement coverage': 'statement_coverage=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-drop-duplicate-state: failed assertion 'unsupported entries': 'entries=[] expected=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-drop-duplicate-state: failed assertion 'statement raw SQL identity': "raw_sql=[] expected=['DROP VIEW v,v;', 'CREATE VIEW v AS SELECT id FROM t;']"
+[ddl-golden][FAIL] case T18.meta.mysql80-drop-duplicate-state: failed assertion 'finding entries': "findings=[] expected=[(0, 'ddl.view.target.valid', 'blocker'), (1, 'ddl.view.security.definer.warn', 'warning'), (1, 'ddl.view.target.valid', 'blocker')]"
+[ddl-golden][FAIL] case T18.meta.mysql80-drop-duplicate-state: failed assertion 'fail_on_triggered': 'fail_on_triggered=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-drop-duplicate-state: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql80-drop-if-missing-state: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql80-drop-if-missing-state: failed assertion 'exit code': 'rc=2 expected=0'
+[ddl-golden][FAIL] case T18.meta.mysql80-drop-if-missing-state: failed assertion 'verdict': 'verdict=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-drop-if-missing-state: failed assertion 'top-level statements': 'statements=0 expected=2'
+[ddl-golden][FAIL] case T18.meta.mysql80-drop-if-missing-state: failed assertion 'zero findings': 'findings=0'
+[ddl-golden][FAIL] case T18.meta.mysql80-drop-if-missing-state: failed assertion 'no diagnostics': 'diagnostics=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-drop-if-missing-state: failed assertion 'no unsupported': 'unsupported=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-drop-if-missing-state: failed assertion 'statement indices': 'indices=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-drop-if-missing-state: failed assertion 'aggregate coverage': 'coverage=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-drop-if-missing-state: failed assertion 'per-statement coverage': 'statement_coverage=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-drop-if-missing-state: failed assertion 'unsupported entries': 'entries=[] expected=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-drop-if-missing-state: failed assertion 'statement raw SQL identity': "raw_sql=[] expected=['DROP VIEW IF EXISTS v,missing_v;', 'CREATE VIEW v AS SELECT id FROM t;']"
+[ddl-golden][FAIL] case T18.meta.mysql80-drop-if-missing-state: failed assertion 'finding entries': "findings=[] expected=[(1, 'ddl.view.security.definer.warn', 'warning')]"
+[ddl-golden][FAIL] case T18.meta.mysql80-drop-if-missing-state: failed assertion 'fail_on_triggered': 'fail_on_triggered=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-drop-if-missing-state: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql84-create-plain: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql84-create-plain: failed assertion 'exit code': 'rc=2 expected=0'
+[ddl-golden][FAIL] case T18.meta.mysql84-create-plain: failed assertion 'verdict': 'verdict=None'
+[ddl-golden][FAIL] case T18.meta.mysql84-create-plain: failed assertion 'top-level statements': 'statements=0 expected=1'
+[ddl-golden][FAIL] case T18.meta.mysql84-create-plain: failed assertion 'zero findings': 'findings=0'
+[ddl-golden][FAIL] case T18.meta.mysql84-create-plain: failed assertion 'no diagnostics': 'diagnostics=[]'
+[ddl-golden][FAIL] case T18.meta.mysql84-create-plain: failed assertion 'no unsupported': 'unsupported=[]'
+[ddl-golden][FAIL] case T18.meta.mysql84-create-plain: failed assertion 'statement indices': 'indices=[]'
+[ddl-golden][FAIL] case T18.meta.mysql84-create-plain: failed assertion 'aggregate coverage': 'coverage=None'
+[ddl-golden][FAIL] case T18.meta.mysql84-create-plain: failed assertion 'per-statement coverage': 'statement_coverage=[]'
+[ddl-golden][FAIL] case T18.meta.mysql84-create-plain: failed assertion 'unsupported entries': 'entries=[] expected=[]'
+[ddl-golden][FAIL] case T18.meta.mysql84-create-plain: failed assertion 'statement raw SQL identity': "raw_sql=[] expected=['CREATE VIEW fresh AS SELECT id FROM t;']"
+[ddl-golden][FAIL] case T18.meta.mysql84-create-plain: failed assertion 'finding entries': "findings=[] expected=[(0, 'ddl.view.security.definer.warn', 'warning')]"
+[ddl-golden][FAIL] case T18.meta.mysql84-create-plain: failed assertion 'finding location index=0': "locations=[] expected={'index': 0, 'line': 1, 'column': 1}"
+[ddl-golden][FAIL] case T18.meta.mysql84-create-plain: failed assertion 'fail_on_triggered': 'fail_on_triggered=None'
+[ddl-golden][FAIL] case T18.meta.mysql84-create-plain: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql84-replace-edges: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql84-replace-edges: failed assertion 'exit code': 'rc=2 expected=0'
+[ddl-golden][FAIL] case T18.meta.mysql84-replace-edges: failed assertion 'verdict': 'verdict=None'
+[ddl-golden][FAIL] case T18.meta.mysql84-replace-edges: failed assertion 'top-level statements': 'statements=0 expected=3'
+[ddl-golden][FAIL] case T18.meta.mysql84-replace-edges: failed assertion 'zero findings': 'findings=0'
+[ddl-golden][FAIL] case T18.meta.mysql84-replace-edges: failed assertion 'no diagnostics': 'diagnostics=[]'
+[ddl-golden][FAIL] case T18.meta.mysql84-replace-edges: failed assertion 'no unsupported': 'unsupported=[]'
+[ddl-golden][FAIL] case T18.meta.mysql84-replace-edges: failed assertion 'statement indices': 'indices=[]'
+[ddl-golden][FAIL] case T18.meta.mysql84-replace-edges: failed assertion 'aggregate coverage': 'coverage=None'
+[ddl-golden][FAIL] case T18.meta.mysql84-replace-edges: failed assertion 'per-statement coverage': 'statement_coverage=[]'
+[ddl-golden][FAIL] case T18.meta.mysql84-replace-edges: failed assertion 'unsupported entries': 'entries=[] expected=[]'
+[ddl-golden][FAIL] case T18.meta.mysql84-replace-edges: failed assertion 'statement raw SQL identity': "raw_sql=[] expected=['CREATE OR REPLACE VIEW v AS SELECT id FROM t;', 'DROP TABLE u;', 'CREATE VIEW fresh AS SELECT id FROM v;']"
+[ddl-golden][FAIL] case T18.meta.mysql84-replace-edges: failed assertion 'finding entries': "findings=[] expected=[(0, 'ddl.view.security.definer.warn', 'warning'), (2, 'ddl.view.security.definer.warn', 'warning')]"
+[ddl-golden][FAIL] case T18.meta.mysql84-replace-edges: failed assertion 'fail_on_triggered': 'fail_on_triggered=None'
+[ddl-golden][FAIL] case T18.meta.mysql84-replace-edges: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql84-replace-table-refusal: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql84-replace-table-refusal: failed assertion 'exit code': 'rc=2 expected=1'
+[ddl-golden][FAIL] case T18.meta.mysql84-replace-table-refusal: failed assertion 'verdict': 'verdict=None'
+[ddl-golden][FAIL] case T18.meta.mysql84-replace-table-refusal: failed assertion 'top-level statements': 'statements=0 expected=1'
+[ddl-golden][FAIL] case T18.meta.mysql84-replace-table-refusal: failed assertion 'zero findings': 'findings=0'
+[ddl-golden][FAIL] case T18.meta.mysql84-replace-table-refusal: failed assertion 'no diagnostics': 'diagnostics=[]'
+[ddl-golden][FAIL] case T18.meta.mysql84-replace-table-refusal: failed assertion 'no unsupported': 'unsupported=[]'
+[ddl-golden][FAIL] case T18.meta.mysql84-replace-table-refusal: failed assertion 'statement indices': 'indices=[]'
+[ddl-golden][FAIL] case T18.meta.mysql84-replace-table-refusal: failed assertion 'aggregate coverage': 'coverage=None'
+[ddl-golden][FAIL] case T18.meta.mysql84-replace-table-refusal: failed assertion 'per-statement coverage': 'statement_coverage=[]'
+[ddl-golden][FAIL] case T18.meta.mysql84-replace-table-refusal: failed assertion 'unsupported entries': 'entries=[] expected=[]'
+[ddl-golden][FAIL] case T18.meta.mysql84-replace-table-refusal: failed assertion 'statement raw SQL identity': "raw_sql=[] expected=['CREATE OR REPLACE VIEW t AS SELECT id FROM u;']"
+[ddl-golden][FAIL] case T18.meta.mysql84-replace-table-refusal: failed assertion 'finding entries': "findings=[] expected=[(0, 'ddl.view.security.definer.warn', 'warning'), (0, 'ddl.view.target.valid', 'blocker')]"
+[ddl-golden][FAIL] case T18.meta.mysql84-replace-table-refusal: failed assertion "finding metadata (0, 'ddl.view.target.valid')": "findings=[] expected_subset={'view': 't', 'view_schema': 't18m_replace_table_refusal', 'role': 'target'}"
+[ddl-golden][FAIL] case T18.meta.mysql84-replace-table-refusal: failed assertion 'fail_on_triggered': 'fail_on_triggered=None'
+[ddl-golden][FAIL] case T18.meta.mysql84-replace-table-refusal: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql84-source-drop-column: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql84-source-drop-column: failed assertion 'exit code': 'rc=2 expected=1'
+[ddl-golden][FAIL] case T18.meta.mysql84-source-drop-column: failed assertion 'verdict': 'verdict=None'
+[ddl-golden][FAIL] case T18.meta.mysql84-source-drop-column: failed assertion 'top-level statements': 'statements=0 expected=2'
+[ddl-golden][FAIL] case T18.meta.mysql84-source-drop-column: failed assertion 'zero findings': 'findings=0'
+[ddl-golden][FAIL] case T18.meta.mysql84-source-drop-column: failed assertion 'no diagnostics': 'diagnostics=[]'
+[ddl-golden][FAIL] case T18.meta.mysql84-source-drop-column: failed assertion 'no unsupported': 'unsupported=[]'
+[ddl-golden][FAIL] case T18.meta.mysql84-source-drop-column: failed assertion 'statement indices': 'indices=[]'
+[ddl-golden][FAIL] case T18.meta.mysql84-source-drop-column: failed assertion 'aggregate coverage': 'coverage=None'
+[ddl-golden][FAIL] case T18.meta.mysql84-source-drop-column: failed assertion 'per-statement coverage': 'statement_coverage=[]'
+[ddl-golden][FAIL] case T18.meta.mysql84-source-drop-column: failed assertion 'unsupported entries': 'entries=[] expected=[]'
+[ddl-golden][FAIL] case T18.meta.mysql84-source-drop-column: failed assertion 'statement raw SQL identity': "raw_sql=[] expected=['ALTER TABLE u DROP COLUMN id;', 'CREATE VIEW fresh AS SELECT id FROM v;']"
+[ddl-golden][FAIL] case T18.meta.mysql84-source-drop-column: failed assertion 'finding entries': "findings=[] expected=[(1, 'ddl.view.security.definer.warn', 'warning'), (1, 'ddl.view.source.valid', 'blocker')]"
+[ddl-golden][FAIL] case T18.meta.mysql84-source-drop-column: failed assertion 'fail_on_triggered': 'fail_on_triggered=None'
+[ddl-golden][FAIL] case T18.meta.mysql84-source-drop-column: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql84-source-rename: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql84-source-rename: failed assertion 'exit code': 'rc=2 expected=1'
+[ddl-golden][FAIL] case T18.meta.mysql84-source-rename: failed assertion 'verdict': 'verdict=None'
+[ddl-golden][FAIL] case T18.meta.mysql84-source-rename: failed assertion 'top-level statements': 'statements=0 expected=2'
+[ddl-golden][FAIL] case T18.meta.mysql84-source-rename: failed assertion 'zero findings': 'findings=0'
+[ddl-golden][FAIL] case T18.meta.mysql84-source-rename: failed assertion 'no diagnostics': 'diagnostics=[]'
+[ddl-golden][FAIL] case T18.meta.mysql84-source-rename: failed assertion 'no unsupported': 'unsupported=[]'
+[ddl-golden][FAIL] case T18.meta.mysql84-source-rename: failed assertion 'statement indices': 'indices=[]'
+[ddl-golden][FAIL] case T18.meta.mysql84-source-rename: failed assertion 'aggregate coverage': 'coverage=None'
+[ddl-golden][FAIL] case T18.meta.mysql84-source-rename: failed assertion 'per-statement coverage': 'statement_coverage=[]'
+[ddl-golden][FAIL] case T18.meta.mysql84-source-rename: failed assertion 'unsupported entries': 'entries=[] expected=[]'
+[ddl-golden][FAIL] case T18.meta.mysql84-source-rename: failed assertion 'statement raw SQL identity': "raw_sql=[] expected=['RENAME TABLE u TO renamed_u;', 'CREATE VIEW fresh AS SELECT id FROM v;']"
+[ddl-golden][FAIL] case T18.meta.mysql84-source-rename: failed assertion 'finding entries': "findings=[] expected=[(1, 'ddl.view.security.definer.warn', 'warning'), (1, 'ddl.view.source.valid', 'blocker')]"
+[ddl-golden][FAIL] case T18.meta.mysql84-source-rename: failed assertion 'fail_on_triggered': 'fail_on_triggered=None'
+[ddl-golden][FAIL] case T18.meta.mysql84-source-rename: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql84-schema-recreate: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql84-schema-recreate: failed assertion 'exit code': 'rc=2 expected=1'
+[ddl-golden][FAIL] case T18.meta.mysql84-schema-recreate: failed assertion 'verdict': 'verdict=None'
+[ddl-golden][FAIL] case T18.meta.mysql84-schema-recreate: failed assertion 'top-level statements': 'statements=0 expected=3'
+[ddl-golden][FAIL] case T18.meta.mysql84-schema-recreate: failed assertion 'zero findings': 'findings=0'
+[ddl-golden][FAIL] case T18.meta.mysql84-schema-recreate: failed assertion 'no diagnostics': 'diagnostics=[]'
+[ddl-golden][FAIL] case T18.meta.mysql84-schema-recreate: failed assertion 'no unsupported': 'unsupported=[]'
+[ddl-golden][FAIL] case T18.meta.mysql84-schema-recreate: failed assertion 'statement indices': 'indices=[]'
+[ddl-golden][FAIL] case T18.meta.mysql84-schema-recreate: failed assertion 'aggregate coverage': 'coverage=None'
+[ddl-golden][FAIL] case T18.meta.mysql84-schema-recreate: failed assertion 'per-statement coverage': 'statement_coverage=[]'
+[ddl-golden][FAIL] case T18.meta.mysql84-schema-recreate: failed assertion 'unsupported entries': 'entries=[] expected=[]'
+[ddl-golden][FAIL] case T18.meta.mysql84-schema-recreate: failed assertion 'statement raw SQL identity': "raw_sql=[] expected=['DROP DATABASE t18m_schema_recreate;', 'CREATE DATABASE t18m_schema_recreate;', 'CREATE VIEW t18m_schema_recreate.fresh AS SELECT id FROM t18m_schema_recreate.v;']"
+[ddl-golden][FAIL] case T18.meta.mysql84-schema-recreate: failed assertion 'finding entries': "findings=[] expected=[(2, 'ddl.view.security.definer.warn', 'warning'), (2, 'ddl.view.source.valid', 'blocker')]"
+[ddl-golden][FAIL] case T18.meta.mysql84-schema-recreate: failed assertion 'fail_on_triggered': 'fail_on_triggered=None'
+[ddl-golden][FAIL] case T18.meta.mysql84-schema-recreate: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql84-qualified-target-current-source: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql84-qualified-target-current-source: failed assertion 'exit code': 'rc=2 expected=0'
+[ddl-golden][FAIL] case T18.meta.mysql84-qualified-target-current-source: failed assertion 'verdict': 'verdict=None'
+[ddl-golden][FAIL] case T18.meta.mysql84-qualified-target-current-source: failed assertion 'top-level statements': 'statements=0 expected=1'
+[ddl-golden][FAIL] case T18.meta.mysql84-qualified-target-current-source: failed assertion 'zero findings': 'findings=0'
+[ddl-golden][FAIL] case T18.meta.mysql84-qualified-target-current-source: failed assertion 'no diagnostics': 'diagnostics=[]'
+[ddl-golden][FAIL] case T18.meta.mysql84-qualified-target-current-source: failed assertion 'no unsupported': 'unsupported=[]'
+[ddl-golden][FAIL] case T18.meta.mysql84-qualified-target-current-source: failed assertion 'statement indices': 'indices=[]'
+[ddl-golden][FAIL] case T18.meta.mysql84-qualified-target-current-source: failed assertion 'aggregate coverage': 'coverage=None'
+[ddl-golden][FAIL] case T18.meta.mysql84-qualified-target-current-source: failed assertion 'per-statement coverage': 'statement_coverage=[]'
+[ddl-golden][FAIL] case T18.meta.mysql84-qualified-target-current-source: failed assertion 'unsupported entries': 'entries=[] expected=[]'
+[ddl-golden][FAIL] case T18.meta.mysql84-qualified-target-current-source: failed assertion 'statement raw SQL identity': "raw_sql=[] expected=['CREATE VIEW t18m_qualified_target_current_source_o.fresh AS SELECT id FROM t;']"
+[ddl-golden][FAIL] case T18.meta.mysql84-qualified-target-current-source: failed assertion 'finding entries': "findings=[] expected=[(0, 'ddl.view.security.definer.warn', 'warning')]"
+[ddl-golden][FAIL] case T18.meta.mysql84-qualified-target-current-source: failed assertion 'fail_on_triggered': 'fail_on_triggered=None'
+[ddl-golden][FAIL] case T18.meta.mysql84-qualified-target-current-source: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql84-missing-source: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql84-missing-source: failed assertion 'exit code': 'rc=2 expected=1'
+[ddl-golden][FAIL] case T18.meta.mysql84-missing-source: failed assertion 'verdict': 'verdict=None'
+[ddl-golden][FAIL] case T18.meta.mysql84-missing-source: failed assertion 'top-level statements': 'statements=0 expected=1'
+[ddl-golden][FAIL] case T18.meta.mysql84-missing-source: failed assertion 'zero findings': 'findings=0'
+[ddl-golden][FAIL] case T18.meta.mysql84-missing-source: failed assertion 'no diagnostics': 'diagnostics=[]'
+[ddl-golden][FAIL] case T18.meta.mysql84-missing-source: failed assertion 'no unsupported': 'unsupported=[]'
+[ddl-golden][FAIL] case T18.meta.mysql84-missing-source: failed assertion 'statement indices': 'indices=[]'
+[ddl-golden][FAIL] case T18.meta.mysql84-missing-source: failed assertion 'aggregate coverage': 'coverage=None'
+[ddl-golden][FAIL] case T18.meta.mysql84-missing-source: failed assertion 'per-statement coverage': 'statement_coverage=[]'
+[ddl-golden][FAIL] case T18.meta.mysql84-missing-source: failed assertion 'unsupported entries': 'entries=[] expected=[]'
+[ddl-golden][FAIL] case T18.meta.mysql84-missing-source: failed assertion 'statement raw SQL identity': "raw_sql=[] expected=['CREATE VIEW fresh AS SELECT id FROM missing_t;']"
+[ddl-golden][FAIL] case T18.meta.mysql84-missing-source: failed assertion 'finding entries': "findings=[] expected=[(0, 'ddl.view.security.definer.warn', 'warning'), (0, 'ddl.view.source.valid', 'blocker')]"
+[ddl-golden][FAIL] case T18.meta.mysql84-missing-source: failed assertion "finding metadata (0, 'ddl.view.source.valid')": "findings=[] expected_subset={'view': 'fresh', 'view_schema': 't18m_missing_source', 'table': 'missing_t', 'schema': 't18m_missing_source', 'role': 'source'}"
+[ddl-golden][FAIL] case T18.meta.mysql84-missing-source: failed assertion 'finding location index=0': "locations=[] expected={'index': 0, 'line': 1, 'column': 37}"
+[ddl-golden][FAIL] case T18.meta.mysql84-missing-source: failed assertion 'fail_on_triggered': 'fail_on_triggered=None'
+[ddl-golden][FAIL] case T18.meta.mysql84-missing-source: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql84-drop-missing-state: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql84-drop-missing-state: failed assertion 'exit code': 'rc=2 expected=1'
+[ddl-golden][FAIL] case T18.meta.mysql84-drop-missing-state: failed assertion 'verdict': 'verdict=None'
+[ddl-golden][FAIL] case T18.meta.mysql84-drop-missing-state: failed assertion 'top-level statements': 'statements=0 expected=2'
+[ddl-golden][FAIL] case T18.meta.mysql84-drop-missing-state: failed assertion 'zero findings': 'findings=0'
+[ddl-golden][FAIL] case T18.meta.mysql84-drop-missing-state: failed assertion 'no diagnostics': 'diagnostics=[]'
+[ddl-golden][FAIL] case T18.meta.mysql84-drop-missing-state: failed assertion 'no unsupported': 'unsupported=[]'
+[ddl-golden][FAIL] case T18.meta.mysql84-drop-missing-state: failed assertion 'statement indices': 'indices=[]'
+[ddl-golden][FAIL] case T18.meta.mysql84-drop-missing-state: failed assertion 'aggregate coverage': 'coverage=None'
+[ddl-golden][FAIL] case T18.meta.mysql84-drop-missing-state: failed assertion 'per-statement coverage': 'statement_coverage=[]'
+[ddl-golden][FAIL] case T18.meta.mysql84-drop-missing-state: failed assertion 'unsupported entries': 'entries=[] expected=[]'
+[ddl-golden][FAIL] case T18.meta.mysql84-drop-missing-state: failed assertion 'statement raw SQL identity': "raw_sql=[] expected=['DROP VIEW v,missing_v;', 'CREATE VIEW v AS SELECT id FROM t;']"
+[ddl-golden][FAIL] case T18.meta.mysql84-drop-missing-state: failed assertion 'finding entries': "findings=[] expected=[(0, 'ddl.view.target.valid', 'blocker'), (1, 'ddl.view.security.definer.warn', 'warning'), (1, 'ddl.view.target.valid', 'blocker')]"
+[ddl-golden][FAIL] case T18.meta.mysql84-drop-missing-state: failed assertion 'fail_on_triggered': 'fail_on_triggered=None'
+[ddl-golden][FAIL] case T18.meta.mysql84-drop-missing-state: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql84-drop-wrongkind-state: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql84-drop-wrongkind-state: failed assertion 'exit code': 'rc=2 expected=1'
+[ddl-golden][FAIL] case T18.meta.mysql84-drop-wrongkind-state: failed assertion 'verdict': 'verdict=None'
+[ddl-golden][FAIL] case T18.meta.mysql84-drop-wrongkind-state: failed assertion 'top-level statements': 'statements=0 expected=3'
+[ddl-golden][FAIL] case T18.meta.mysql84-drop-wrongkind-state: failed assertion 'zero findings': 'findings=0'
+[ddl-golden][FAIL] case T18.meta.mysql84-drop-wrongkind-state: failed assertion 'no diagnostics': 'diagnostics=[]'
+[ddl-golden][FAIL] case T18.meta.mysql84-drop-wrongkind-state: failed assertion 'no unsupported': 'unsupported=[]'
+[ddl-golden][FAIL] case T18.meta.mysql84-drop-wrongkind-state: failed assertion 'statement indices': 'indices=[]'
+[ddl-golden][FAIL] case T18.meta.mysql84-drop-wrongkind-state: failed assertion 'aggregate coverage': 'coverage=None'
+[ddl-golden][FAIL] case T18.meta.mysql84-drop-wrongkind-state: failed assertion 'per-statement coverage': 'statement_coverage=[]'
+[ddl-golden][FAIL] case T18.meta.mysql84-drop-wrongkind-state: failed assertion 'unsupported entries': 'entries=[] expected=[]'
+[ddl-golden][FAIL] case T18.meta.mysql84-drop-wrongkind-state: failed assertion 'statement raw SQL identity': "raw_sql=[] expected=['DROP VIEW v,t,w;', 'CREATE VIEW v AS SELECT id FROM u;', 'CREATE VIEW w AS SELECT id FROM u;']"
+[ddl-golden][FAIL] case T18.meta.mysql84-drop-wrongkind-state: failed assertion 'finding entries': "findings=[] expected=[(0, 'ddl.view.target.valid', 'blocker'), (1, 'ddl.view.security.definer.warn', 'warning'), (1, 'ddl.view.target.valid', 'blocker'), (2, 'ddl.view.security.definer.warn', 'warning'), (2, 'ddl.view.target.valid', 'blocker')]"
+[ddl-golden][FAIL] case T18.meta.mysql84-drop-wrongkind-state: failed assertion "finding metadata (0, 'ddl.view.target.valid')": "findings=[] expected_subset={'view': 't', 'view_schema': 't18m_drop_wrongkind_state', 'role': 'target'}"
+[ddl-golden][FAIL] case T18.meta.mysql84-drop-wrongkind-state: failed assertion 'fail_on_triggered': 'fail_on_triggered=None'
+[ddl-golden][FAIL] case T18.meta.mysql84-drop-wrongkind-state: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql84-drop-if-wrongkind-state: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql84-drop-if-wrongkind-state: failed assertion 'exit code': 'rc=2 expected=0'
+[ddl-golden][FAIL] case T18.meta.mysql84-drop-if-wrongkind-state: failed assertion 'verdict': 'verdict=None'
+[ddl-golden][FAIL] case T18.meta.mysql84-drop-if-wrongkind-state: failed assertion 'top-level statements': 'statements=0 expected=3'
+[ddl-golden][FAIL] case T18.meta.mysql84-drop-if-wrongkind-state: failed assertion 'zero findings': 'findings=0'
+[ddl-golden][FAIL] case T18.meta.mysql84-drop-if-wrongkind-state: failed assertion 'no diagnostics': 'diagnostics=[]'
+[ddl-golden][FAIL] case T18.meta.mysql84-drop-if-wrongkind-state: failed assertion 'no unsupported': 'unsupported=[]'
+[ddl-golden][FAIL] case T18.meta.mysql84-drop-if-wrongkind-state: failed assertion 'statement indices': 'indices=[]'
+[ddl-golden][FAIL] case T18.meta.mysql84-drop-if-wrongkind-state: failed assertion 'aggregate coverage': 'coverage=None'
+[ddl-golden][FAIL] case T18.meta.mysql84-drop-if-wrongkind-state: failed assertion 'per-statement coverage': 'statement_coverage=[]'
+[ddl-golden][FAIL] case T18.meta.mysql84-drop-if-wrongkind-state: failed assertion 'unsupported entries': 'entries=[] expected=[]'
+[ddl-golden][FAIL] case T18.meta.mysql84-drop-if-wrongkind-state: failed assertion 'statement raw SQL identity': "raw_sql=[] expected=['DROP VIEW IF EXISTS v,t,w;', 'CREATE VIEW v AS SELECT id FROM u;', 'CREATE VIEW w AS SELECT id FROM u;']"
+[ddl-golden][FAIL] case T18.meta.mysql84-drop-if-wrongkind-state: failed assertion 'finding entries': "findings=[] expected=[(1, 'ddl.view.security.definer.warn', 'warning'), (2, 'ddl.view.security.definer.warn', 'warning')]"
+[ddl-golden][FAIL] case T18.meta.mysql84-drop-if-wrongkind-state: failed assertion 'fail_on_triggered': 'fail_on_triggered=None'
+[ddl-golden][FAIL] case T18.meta.mysql84-drop-if-wrongkind-state: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql84-drop-duplicate-state: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql84-drop-duplicate-state: failed assertion 'exit code': 'rc=2 expected=1'
+[ddl-golden][FAIL] case T18.meta.mysql84-drop-duplicate-state: failed assertion 'verdict': 'verdict=None'
+[ddl-golden][FAIL] case T18.meta.mysql84-drop-duplicate-state: failed assertion 'top-level statements': 'statements=0 expected=2'
+[ddl-golden][FAIL] case T18.meta.mysql84-drop-duplicate-state: failed assertion 'zero findings': 'findings=0'
+[ddl-golden][FAIL] case T18.meta.mysql84-drop-duplicate-state: failed assertion 'no diagnostics': 'diagnostics=[]'
+[ddl-golden][FAIL] case T18.meta.mysql84-drop-duplicate-state: failed assertion 'no unsupported': 'unsupported=[]'
+[ddl-golden][FAIL] case T18.meta.mysql84-drop-duplicate-state: failed assertion 'statement indices': 'indices=[]'
+[ddl-golden][FAIL] case T18.meta.mysql84-drop-duplicate-state: failed assertion 'aggregate coverage': 'coverage=None'
+[ddl-golden][FAIL] case T18.meta.mysql84-drop-duplicate-state: failed assertion 'per-statement coverage': 'statement_coverage=[]'
+[ddl-golden][FAIL] case T18.meta.mysql84-drop-duplicate-state: failed assertion 'unsupported entries': 'entries=[] expected=[]'
+[ddl-golden][FAIL] case T18.meta.mysql84-drop-duplicate-state: failed assertion 'statement raw SQL identity': "raw_sql=[] expected=['DROP VIEW v,v;', 'CREATE VIEW v AS SELECT id FROM t;']"
+[ddl-golden][FAIL] case T18.meta.mysql84-drop-duplicate-state: failed assertion 'finding entries': "findings=[] expected=[(0, 'ddl.view.target.valid', 'blocker'), (1, 'ddl.view.security.definer.warn', 'warning'), (1, 'ddl.view.target.valid', 'blocker')]"
+[ddl-golden][FAIL] case T18.meta.mysql84-drop-duplicate-state: failed assertion 'fail_on_triggered': 'fail_on_triggered=None'
+[ddl-golden][FAIL] case T18.meta.mysql84-drop-duplicate-state: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql84-drop-if-missing-state: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql84-drop-if-missing-state: failed assertion 'exit code': 'rc=2 expected=0'
+[ddl-golden][FAIL] case T18.meta.mysql84-drop-if-missing-state: failed assertion 'verdict': 'verdict=None'
+[ddl-golden][FAIL] case T18.meta.mysql84-drop-if-missing-state: failed assertion 'top-level statements': 'statements=0 expected=2'
+[ddl-golden][FAIL] case T18.meta.mysql84-drop-if-missing-state: failed assertion 'zero findings': 'findings=0'
+[ddl-golden][FAIL] case T18.meta.mysql84-drop-if-missing-state: failed assertion 'no diagnostics': 'diagnostics=[]'
+[ddl-golden][FAIL] case T18.meta.mysql84-drop-if-missing-state: failed assertion 'no unsupported': 'unsupported=[]'
+[ddl-golden][FAIL] case T18.meta.mysql84-drop-if-missing-state: failed assertion 'statement indices': 'indices=[]'
+[ddl-golden][FAIL] case T18.meta.mysql84-drop-if-missing-state: failed assertion 'aggregate coverage': 'coverage=None'
+[ddl-golden][FAIL] case T18.meta.mysql84-drop-if-missing-state: failed assertion 'per-statement coverage': 'statement_coverage=[]'
+[ddl-golden][FAIL] case T18.meta.mysql84-drop-if-missing-state: failed assertion 'unsupported entries': 'entries=[] expected=[]'
+[ddl-golden][FAIL] case T18.meta.mysql84-drop-if-missing-state: failed assertion 'statement raw SQL identity': "raw_sql=[] expected=['DROP VIEW IF EXISTS v,missing_v;', 'CREATE VIEW v AS SELECT id FROM t;']"
+[ddl-golden][FAIL] case T18.meta.mysql84-drop-if-missing-state: failed assertion 'finding entries': "findings=[] expected=[(1, 'ddl.view.security.definer.warn', 'warning')]"
+[ddl-golden][FAIL] case T18.meta.mysql84-drop-if-missing-state: failed assertion 'fail_on_triggered': 'fail_on_triggered=None'
+[ddl-golden][FAIL] case T18.meta.mysql84-drop-if-missing-state: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql80-where: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql80-where: failed assertion 'exit code': 'rc=2 expected=0'
+[ddl-golden][FAIL] case T18.meta.mysql80-where: failed assertion 'verdict': 'verdict=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-where: failed assertion 'top-level statements': 'statements=0 expected=1'
+[ddl-golden][FAIL] case T18.meta.mysql80-where: failed assertion 'zero findings': 'findings=0'
+[ddl-golden][FAIL] case T18.meta.mysql80-where: failed assertion 'no diagnostics': 'diagnostics=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-where: failed assertion 'no unsupported': 'unsupported=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-where: failed assertion 'statement indices': 'indices=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-where: failed assertion 'aggregate coverage': 'coverage=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-where: failed assertion 'per-statement coverage': 'statement_coverage=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-where: failed assertion 'unsupported entries': 'entries=[] expected=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-where: failed assertion 'statement raw SQL identity': "raw_sql=[] expected=['CREATE VIEW fresh AS SELECT id FROM t WHERE id>0;']"
+[ddl-golden][FAIL] case T18.meta.mysql80-where: failed assertion 'finding entries': "findings=[] expected=[(0, 'ddl.view.security.definer.warn', 'warning')]"
+[ddl-golden][FAIL] case T18.meta.mysql80-where: failed assertion 'fail_on_triggered': 'fail_on_triggered=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-where: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql80-columns: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql80-columns: failed assertion 'exit code': 'rc=2 expected=0'
+[ddl-golden][FAIL] case T18.meta.mysql80-columns: failed assertion 'verdict': 'verdict=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-columns: failed assertion 'top-level statements': 'statements=0 expected=1'
+[ddl-golden][FAIL] case T18.meta.mysql80-columns: failed assertion 'zero findings': 'findings=0'
+[ddl-golden][FAIL] case T18.meta.mysql80-columns: failed assertion 'no diagnostics': 'diagnostics=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-columns: failed assertion 'no unsupported': 'unsupported=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-columns: failed assertion 'statement indices': 'indices=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-columns: failed assertion 'aggregate coverage': 'coverage=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-columns: failed assertion 'per-statement coverage': 'statement_coverage=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-columns: failed assertion 'unsupported entries': 'entries=[] expected=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-columns: failed assertion 'statement raw SQL identity': "raw_sql=[] expected=['CREATE VIEW fresh(x) AS SELECT id FROM t;']"
+[ddl-golden][FAIL] case T18.meta.mysql80-columns: failed assertion 'finding entries': "findings=[] expected=[(0, 'ddl.view.security.definer.warn', 'warning')]"
+[ddl-golden][FAIL] case T18.meta.mysql80-columns: failed assertion 'fail_on_triggered': 'fail_on_triggered=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-columns: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql80-named-expression: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql80-named-expression: failed assertion 'exit code': 'rc=2 expected=0'
+[ddl-golden][FAIL] case T18.meta.mysql80-named-expression: failed assertion 'verdict': 'verdict=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-named-expression: failed assertion 'top-level statements': 'statements=0 expected=1'
+[ddl-golden][FAIL] case T18.meta.mysql80-named-expression: failed assertion 'zero findings': 'findings=0'
+[ddl-golden][FAIL] case T18.meta.mysql80-named-expression: failed assertion 'no diagnostics': 'diagnostics=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-named-expression: failed assertion 'no unsupported': 'unsupported=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-named-expression: failed assertion 'statement indices': 'indices=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-named-expression: failed assertion 'aggregate coverage': 'coverage=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-named-expression: failed assertion 'per-statement coverage': 'statement_coverage=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-named-expression: failed assertion 'unsupported entries': 'entries=[] expected=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-named-expression: failed assertion 'statement raw SQL identity': "raw_sql=[] expected=['CREATE VIEW fresh(x) AS SELECT id+1 FROM t;']"
+[ddl-golden][FAIL] case T18.meta.mysql80-named-expression: failed assertion 'finding entries': "findings=[] expected=[(0, 'ddl.view.security.definer.warn', 'warning')]"
+[ddl-golden][FAIL] case T18.meta.mysql80-named-expression: failed assertion 'fail_on_triggered': 'fail_on_triggered=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-named-expression: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql80-join: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql80-join: failed assertion 'exit code': 'rc=2 expected=0'
+[ddl-golden][FAIL] case T18.meta.mysql80-join: failed assertion 'verdict': 'verdict=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-join: failed assertion 'top-level statements': 'statements=0 expected=1'
+[ddl-golden][FAIL] case T18.meta.mysql80-join: failed assertion 'zero findings': 'findings=0'
+[ddl-golden][FAIL] case T18.meta.mysql80-join: failed assertion 'no diagnostics': 'diagnostics=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-join: failed assertion 'no unsupported': 'unsupported=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-join: failed assertion 'statement indices': 'indices=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-join: failed assertion 'aggregate coverage': 'coverage=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-join: failed assertion 'per-statement coverage': 'statement_coverage=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-join: failed assertion 'unsupported entries': 'entries=[] expected=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-join: failed assertion 'statement raw SQL identity': "raw_sql=[] expected=['CREATE VIEW fresh AS SELECT a.id FROM t AS a JOIN u AS b ON a.id=b.id;']"
+[ddl-golden][FAIL] case T18.meta.mysql80-join: failed assertion 'finding entries': "findings=[] expected=[(0, 'ddl.view.security.definer.warn', 'warning')]"
+[ddl-golden][FAIL] case T18.meta.mysql80-join: failed assertion 'fail_on_triggered': 'fail_on_triggered=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-join: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql80-cte: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql80-cte: failed assertion 'exit code': 'rc=2 expected=0'
+[ddl-golden][FAIL] case T18.meta.mysql80-cte: failed assertion 'verdict': 'verdict=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-cte: failed assertion 'top-level statements': 'statements=0 expected=1'
+[ddl-golden][FAIL] case T18.meta.mysql80-cte: failed assertion 'zero findings': 'findings=0'
+[ddl-golden][FAIL] case T18.meta.mysql80-cte: failed assertion 'no diagnostics': 'diagnostics=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-cte: failed assertion 'no unsupported': 'unsupported=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-cte: failed assertion 'statement indices': 'indices=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-cte: failed assertion 'aggregate coverage': 'coverage=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-cte: failed assertion 'per-statement coverage': 'statement_coverage=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-cte: failed assertion 'unsupported entries': 'entries=[] expected=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-cte: failed assertion 'statement raw SQL identity': "raw_sql=[] expected=['CREATE VIEW fresh AS WITH c AS (SELECT id FROM t) SELECT id FROM c;']"
+[ddl-golden][FAIL] case T18.meta.mysql80-cte: failed assertion 'finding entries': "findings=[] expected=[(0, 'ddl.view.security.definer.warn', 'warning')]"
+[ddl-golden][FAIL] case T18.meta.mysql80-cte: failed assertion 'fail_on_triggered': 'fail_on_triggered=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-cte: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql80-derived: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql80-derived: failed assertion 'exit code': 'rc=2 expected=0'
+[ddl-golden][FAIL] case T18.meta.mysql80-derived: failed assertion 'verdict': 'verdict=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-derived: failed assertion 'top-level statements': 'statements=0 expected=1'
+[ddl-golden][FAIL] case T18.meta.mysql80-derived: failed assertion 'zero findings': 'findings=0'
+[ddl-golden][FAIL] case T18.meta.mysql80-derived: failed assertion 'no diagnostics': 'diagnostics=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-derived: failed assertion 'no unsupported': 'unsupported=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-derived: failed assertion 'statement indices': 'indices=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-derived: failed assertion 'aggregate coverage': 'coverage=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-derived: failed assertion 'per-statement coverage': 'statement_coverage=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-derived: failed assertion 'unsupported entries': 'entries=[] expected=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-derived: failed assertion 'statement raw SQL identity': "raw_sql=[] expected=['CREATE VIEW fresh AS SELECT d.id FROM (SELECT id FROM t) AS d;']"
+[ddl-golden][FAIL] case T18.meta.mysql80-derived: failed assertion 'finding entries': "findings=[] expected=[(0, 'ddl.view.security.definer.warn', 'warning')]"
+[ddl-golden][FAIL] case T18.meta.mysql80-derived: failed assertion 'fail_on_triggered': 'fail_on_triggered=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-derived: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql80-union: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql80-union: failed assertion 'exit code': 'rc=2 expected=0'
+[ddl-golden][FAIL] case T18.meta.mysql80-union: failed assertion 'verdict': 'verdict=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-union: failed assertion 'top-level statements': 'statements=0 expected=1'
+[ddl-golden][FAIL] case T18.meta.mysql80-union: failed assertion 'zero findings': 'findings=0'
+[ddl-golden][FAIL] case T18.meta.mysql80-union: failed assertion 'no diagnostics': 'diagnostics=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-union: failed assertion 'no unsupported': 'unsupported=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-union: failed assertion 'statement indices': 'indices=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-union: failed assertion 'aggregate coverage': 'coverage=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-union: failed assertion 'per-statement coverage': 'statement_coverage=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-union: failed assertion 'unsupported entries': 'entries=[] expected=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-union: failed assertion 'statement raw SQL identity': "raw_sql=[] expected=['CREATE VIEW fresh AS SELECT id FROM t UNION ALL SELECT id FROM u;']"
+[ddl-golden][FAIL] case T18.meta.mysql80-union: failed assertion 'finding entries': "findings=[] expected=[(0, 'ddl.view.security.definer.warn', 'warning')]"
+[ddl-golden][FAIL] case T18.meta.mysql80-union: failed assertion 'fail_on_triggered': 'fail_on_triggered=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-union: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql80-constant: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql80-constant: failed assertion 'exit code': 'rc=2 expected=0'
+[ddl-golden][FAIL] case T18.meta.mysql80-constant: failed assertion 'verdict': 'verdict=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-constant: failed assertion 'top-level statements': 'statements=0 expected=1'
+[ddl-golden][FAIL] case T18.meta.mysql80-constant: failed assertion 'zero findings': 'findings=0'
+[ddl-golden][FAIL] case T18.meta.mysql80-constant: failed assertion 'no diagnostics': 'diagnostics=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-constant: failed assertion 'no unsupported': 'unsupported=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-constant: failed assertion 'statement indices': 'indices=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-constant: failed assertion 'aggregate coverage': 'coverage=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-constant: failed assertion 'per-statement coverage': 'statement_coverage=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-constant: failed assertion 'unsupported entries': 'entries=[] expected=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-constant: failed assertion 'statement raw SQL identity': "raw_sql=[] expected=['CREATE VIEW fresh(x) AS SELECT 1;']"
+[ddl-golden][FAIL] case T18.meta.mysql80-constant: failed assertion 'finding entries': "findings=[] expected=[(0, 'ddl.view.security.definer.warn', 'warning')]"
+[ddl-golden][FAIL] case T18.meta.mysql80-constant: failed assertion 'fail_on_triggered': 'fail_on_triggered=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-constant: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql80-where-column-refusal: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql80-where-column-refusal: failed assertion 'exit code': 'rc=2 expected=1'
+[ddl-golden][FAIL] case T18.meta.mysql80-where-column-refusal: failed assertion 'verdict': 'verdict=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-where-column-refusal: failed assertion 'top-level statements': 'statements=0 expected=1'
+[ddl-golden][FAIL] case T18.meta.mysql80-where-column-refusal: failed assertion 'zero findings': 'findings=0'
+[ddl-golden][FAIL] case T18.meta.mysql80-where-column-refusal: failed assertion 'no diagnostics': 'diagnostics=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-where-column-refusal: failed assertion 'no unsupported': 'unsupported=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-where-column-refusal: failed assertion 'statement indices': 'indices=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-where-column-refusal: failed assertion 'aggregate coverage': 'coverage=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-where-column-refusal: failed assertion 'per-statement coverage': 'statement_coverage=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-where-column-refusal: failed assertion 'unsupported entries': 'entries=[] expected=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-where-column-refusal: failed assertion 'statement raw SQL identity': "raw_sql=[] expected=['CREATE VIEW fresh AS SELECT id FROM t WHERE missing_col>0;']"
+[ddl-golden][FAIL] case T18.meta.mysql80-where-column-refusal: failed assertion 'finding entries': "findings=[] expected=[(0, 'ddl.view.security.definer.warn', 'warning'), (0, 'ddl.view.source.valid', 'blocker')]"
+[ddl-golden][FAIL] case T18.meta.mysql80-where-column-refusal: failed assertion 'finding location index=0': "locations=[] expected={'index': 0, 'line': 1, 'column': 45}"
+[ddl-golden][FAIL] case T18.meta.mysql80-where-column-refusal: failed assertion 'fail_on_triggered': 'fail_on_triggered=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-where-column-refusal: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql80-explicit-count-refusal: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql80-explicit-count-refusal: failed assertion 'exit code': 'rc=2 expected=1'
+[ddl-golden][FAIL] case T18.meta.mysql80-explicit-count-refusal: failed assertion 'verdict': 'verdict=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-explicit-count-refusal: failed assertion 'top-level statements': 'statements=0 expected=1'
+[ddl-golden][FAIL] case T18.meta.mysql80-explicit-count-refusal: failed assertion 'zero findings': 'findings=0'
+[ddl-golden][FAIL] case T18.meta.mysql80-explicit-count-refusal: failed assertion 'no diagnostics': 'diagnostics=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-explicit-count-refusal: failed assertion 'no unsupported': 'unsupported=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-explicit-count-refusal: failed assertion 'statement indices': 'indices=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-explicit-count-refusal: failed assertion 'aggregate coverage': 'coverage=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-explicit-count-refusal: failed assertion 'per-statement coverage': 'statement_coverage=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-explicit-count-refusal: failed assertion 'unsupported entries': 'entries=[] expected=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-explicit-count-refusal: failed assertion 'statement raw SQL identity': "raw_sql=[] expected=['CREATE VIEW fresh(a,b) AS SELECT id FROM t;']"
+[ddl-golden][FAIL] case T18.meta.mysql80-explicit-count-refusal: failed assertion 'finding entries': "findings=[] expected=[(0, 'ddl.view.security.definer.warn', 'warning'), (0, 'ddl.view.source.valid', 'blocker')]"
+[ddl-golden][FAIL] case T18.meta.mysql80-explicit-count-refusal: failed assertion 'fail_on_triggered': 'fail_on_triggered=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-explicit-count-refusal: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql80-explicit-duplicate-refusal: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql80-explicit-duplicate-refusal: failed assertion 'exit code': 'rc=2 expected=1'
+[ddl-golden][FAIL] case T18.meta.mysql80-explicit-duplicate-refusal: failed assertion 'verdict': 'verdict=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-explicit-duplicate-refusal: failed assertion 'top-level statements': 'statements=0 expected=1'
+[ddl-golden][FAIL] case T18.meta.mysql80-explicit-duplicate-refusal: failed assertion 'zero findings': 'findings=0'
+[ddl-golden][FAIL] case T18.meta.mysql80-explicit-duplicate-refusal: failed assertion 'no diagnostics': 'diagnostics=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-explicit-duplicate-refusal: failed assertion 'no unsupported': 'unsupported=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-explicit-duplicate-refusal: failed assertion 'statement indices': 'indices=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-explicit-duplicate-refusal: failed assertion 'aggregate coverage': 'coverage=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-explicit-duplicate-refusal: failed assertion 'per-statement coverage': 'statement_coverage=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-explicit-duplicate-refusal: failed assertion 'unsupported entries': 'entries=[] expected=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-explicit-duplicate-refusal: failed assertion 'statement raw SQL identity': "raw_sql=[] expected=['CREATE VIEW fresh(a,a) AS SELECT id,id FROM t;']"
+[ddl-golden][FAIL] case T18.meta.mysql80-explicit-duplicate-refusal: failed assertion 'finding entries': "findings=[] expected=[(0, 'ddl.view.security.definer.warn', 'warning'), (0, 'ddl.view.source.valid', 'blocker')]"
+[ddl-golden][FAIL] case T18.meta.mysql80-explicit-duplicate-refusal: failed assertion 'fail_on_triggered': 'fail_on_triggered=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-explicit-duplicate-refusal: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql80-self-reference-refusal: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql80-self-reference-refusal: failed assertion 'exit code': 'rc=2 expected=1'
+[ddl-golden][FAIL] case T18.meta.mysql80-self-reference-refusal: failed assertion 'verdict': 'verdict=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-self-reference-refusal: failed assertion 'top-level statements': 'statements=0 expected=1'
+[ddl-golden][FAIL] case T18.meta.mysql80-self-reference-refusal: failed assertion 'zero findings': 'findings=0'
+[ddl-golden][FAIL] case T18.meta.mysql80-self-reference-refusal: failed assertion 'no diagnostics': 'diagnostics=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-self-reference-refusal: failed assertion 'no unsupported': 'unsupported=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-self-reference-refusal: failed assertion 'statement indices': 'indices=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-self-reference-refusal: failed assertion 'aggregate coverage': 'coverage=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-self-reference-refusal: failed assertion 'per-statement coverage': 'statement_coverage=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-self-reference-refusal: failed assertion 'unsupported entries': 'entries=[] expected=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-self-reference-refusal: failed assertion 'statement raw SQL identity': "raw_sql=[] expected=['CREATE OR REPLACE VIEW v AS SELECT id FROM v;']"
+[ddl-golden][FAIL] case T18.meta.mysql80-self-reference-refusal: failed assertion 'finding entries': "findings=[] expected=[(0, 'ddl.view.security.definer.warn', 'warning'), (0, 'ddl.view.source.valid', 'blocker')]"
+[ddl-golden][FAIL] case T18.meta.mysql80-self-reference-refusal: failed assertion 'fail_on_triggered': 'fail_on_triggered=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-self-reference-refusal: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql80-full-lifecycle: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql80-full-lifecycle: failed assertion 'exit code': 'rc=2 expected=1'
+[ddl-golden][FAIL] case T18.meta.mysql80-full-lifecycle: failed assertion 'verdict': 'verdict=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-full-lifecycle: failed assertion 'top-level statements': 'statements=0 expected=5'
+[ddl-golden][FAIL] case T18.meta.mysql80-full-lifecycle: failed assertion 'zero findings': 'findings=0'
+[ddl-golden][FAIL] case T18.meta.mysql80-full-lifecycle: failed assertion 'no diagnostics': 'diagnostics=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-full-lifecycle: failed assertion 'no unsupported': 'unsupported=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-full-lifecycle: failed assertion 'statement indices': 'indices=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-full-lifecycle: failed assertion 'aggregate coverage': 'coverage=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-full-lifecycle: failed assertion 'per-statement coverage': 'statement_coverage=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-full-lifecycle: failed assertion 'unsupported entries': 'entries=[] expected=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-full-lifecycle: failed assertion 'statement raw SQL identity': "raw_sql=[] expected=['CREATE TABLE x(id INT);', 'CREATE VIEW fresh AS SELECT id FROM x;', 'ALTER VIEW fresh AS SELECT id FROM u;', 'DROP VIEW fresh;', 'CREATE VIEW next_v AS SELECT id FROM fresh;']"
+[ddl-golden][FAIL] case T18.meta.mysql80-full-lifecycle: failed assertion 'finding entries': "findings=[] expected=[(1, 'ddl.view.security.definer.warn', 'warning'), (2, 'ddl.view.security.definer.warn', 'warning'), (4, 'ddl.view.security.definer.warn', 'warning'), (4, 'ddl.view.source.valid', 'blocker')]"
+[ddl-golden][FAIL] case T18.meta.mysql80-full-lifecycle: failed assertion 'fail_on_triggered': 'fail_on_triggered=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-full-lifecycle: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-refusal-preserves: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-refusal-preserves: failed assertion 'exit code': 'rc=2 expected=1'
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-refusal-preserves: failed assertion 'verdict': 'verdict=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-refusal-preserves: failed assertion 'top-level statements': 'statements=0 expected=3'
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-refusal-preserves: failed assertion 'zero findings': 'findings=0'
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-refusal-preserves: failed assertion 'no diagnostics': 'diagnostics=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-refusal-preserves: failed assertion 'no unsupported': 'unsupported=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-refusal-preserves: failed assertion 'statement indices': 'indices=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-refusal-preserves: failed assertion 'aggregate coverage': 'coverage=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-refusal-preserves: failed assertion 'per-statement coverage': 'statement_coverage=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-refusal-preserves: failed assertion 'unsupported entries': 'entries=[] expected=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-refusal-preserves: failed assertion 'statement raw SQL identity': "raw_sql=[] expected=['ALTER VIEW v AS SELECT missing_col FROM t;', 'DROP TABLE t;', 'CREATE VIEW fresh AS SELECT id FROM v;']"
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-refusal-preserves: failed assertion 'finding entries': "findings=[] expected=[(0, 'ddl.view.security.definer.warn', 'warning'), (0, 'ddl.view.source.valid', 'blocker'), (2, 'ddl.view.security.definer.warn', 'warning')]"
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-refusal-preserves: failed assertion 'fail_on_triggered': 'fail_on_triggered=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-refusal-preserves: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-missing-target: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-missing-target: failed assertion 'exit code': 'rc=2 expected=1'
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-missing-target: failed assertion 'verdict': 'verdict=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-missing-target: failed assertion 'top-level statements': 'statements=0 expected=1'
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-missing-target: failed assertion 'zero findings': 'findings=0'
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-missing-target: failed assertion 'no diagnostics': 'diagnostics=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-missing-target: failed assertion 'no unsupported': 'unsupported=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-missing-target: failed assertion 'statement indices': 'indices=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-missing-target: failed assertion 'aggregate coverage': 'coverage=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-missing-target: failed assertion 'per-statement coverage': 'statement_coverage=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-missing-target: failed assertion 'unsupported entries': 'entries=[] expected=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-missing-target: failed assertion 'statement raw SQL identity': "raw_sql=[] expected=['ALTER SQL SECURITY INVOKER VIEW missing_v AS SELECT id FROM t;']"
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-missing-target: failed assertion 'finding entries': "findings=[] expected=[(0, 'ddl.view.target.valid', 'blocker')]"
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-missing-target: failed assertion 'fail_on_triggered': 'fail_on_triggered=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-missing-target: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-table-target: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-table-target: failed assertion 'exit code': 'rc=2 expected=1'
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-table-target: failed assertion 'verdict': 'verdict=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-table-target: failed assertion 'top-level statements': 'statements=0 expected=1'
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-table-target: failed assertion 'zero findings': 'findings=0'
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-table-target: failed assertion 'no diagnostics': 'diagnostics=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-table-target: failed assertion 'no unsupported': 'unsupported=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-table-target: failed assertion 'statement indices': 'indices=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-table-target: failed assertion 'aggregate coverage': 'coverage=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-table-target: failed assertion 'per-statement coverage': 'statement_coverage=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-table-target: failed assertion 'unsupported entries': 'entries=[] expected=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-table-target: failed assertion 'statement raw SQL identity': "raw_sql=[] expected=['ALTER SQL SECURITY INVOKER VIEW t AS SELECT id FROM u;']"
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-table-target: failed assertion 'finding entries': "findings=[] expected=[(0, 'ddl.view.target.valid', 'blocker')]"
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-table-target: failed assertion 'fail_on_triggered': 'fail_on_triggered=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-table-target: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql80-frozen-star: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql80-frozen-star: failed assertion 'exit code': 'rc=2 expected=1'
+[ddl-golden][FAIL] case T18.meta.mysql80-frozen-star: failed assertion 'verdict': 'verdict=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-frozen-star: failed assertion 'top-level statements': 'statements=0 expected=3'
+[ddl-golden][FAIL] case T18.meta.mysql80-frozen-star: failed assertion 'zero findings': 'findings=0'
+[ddl-golden][FAIL] case T18.meta.mysql80-frozen-star: failed assertion 'no diagnostics': 'diagnostics=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-frozen-star: failed assertion 'no unsupported': 'unsupported=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-frozen-star: failed assertion 'statement indices': 'indices=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-frozen-star: failed assertion 'aggregate coverage': 'coverage=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-frozen-star: failed assertion 'per-statement coverage': 'statement_coverage=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-frozen-star: failed assertion 'unsupported entries': 'entries=[] expected=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-frozen-star: failed assertion 'statement raw SQL identity': "raw_sql=[] expected=['CREATE VIEW star_v AS SELECT * FROM t;', 'ALTER TABLE t ADD COLUMN added INT;', 'CREATE VIEW fresh AS SELECT added FROM star_v;']"
+[ddl-golden][FAIL] case T18.meta.mysql80-frozen-star: failed assertion 'finding entries': "findings=[] expected=[(0, 'ddl.view.security.definer.warn', 'warning'), (2, 'ddl.view.security.definer.warn', 'warning'), (2, 'ddl.view.source.valid', 'blocker')]"
+[ddl-golden][FAIL] case T18.meta.mysql80-frozen-star: failed assertion 'fail_on_triggered': 'fail_on_triggered=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-frozen-star: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql80-invisible-star: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql80-invisible-star: failed assertion 'exit code': 'rc=2 expected=1'
+[ddl-golden][FAIL] case T18.meta.mysql80-invisible-star: failed assertion 'verdict': 'verdict=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-invisible-star: failed assertion 'top-level statements': 'statements=0 expected=2'
+[ddl-golden][FAIL] case T18.meta.mysql80-invisible-star: failed assertion 'zero findings': 'findings=0'
+[ddl-golden][FAIL] case T18.meta.mysql80-invisible-star: failed assertion 'no diagnostics': 'diagnostics=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-invisible-star: failed assertion 'no unsupported': 'unsupported=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-invisible-star: failed assertion 'statement indices': 'indices=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-invisible-star: failed assertion 'aggregate coverage': 'coverage=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-invisible-star: failed assertion 'per-statement coverage': 'statement_coverage=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-invisible-star: failed assertion 'unsupported entries': 'entries=[] expected=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-invisible-star: failed assertion 'statement raw SQL identity': "raw_sql=[] expected=['CREATE VIEW star_v AS SELECT * FROM visible_source;', 'CREATE VIEW fresh AS SELECT hidden_col FROM star_v;']"
+[ddl-golden][FAIL] case T18.meta.mysql80-invisible-star: failed assertion 'finding entries': "findings=[] expected=[(0, 'ddl.view.security.definer.warn', 'warning'), (1, 'ddl.view.security.definer.warn', 'warning'), (1, 'ddl.view.source.valid', 'blocker')]"
+[ddl-golden][FAIL] case T18.meta.mysql80-invisible-star: failed assertion 'fail_on_triggered': 'fail_on_triggered=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-invisible-star: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql80-quoted-dot-identities: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql80-quoted-dot-identities: failed assertion 'exit code': 'rc=2 expected=0'
+[ddl-golden][FAIL] case T18.meta.mysql80-quoted-dot-identities: failed assertion 'verdict': 'verdict=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-quoted-dot-identities: failed assertion 'top-level statements': 'statements=0 expected=2'
+[ddl-golden][FAIL] case T18.meta.mysql80-quoted-dot-identities: failed assertion 'zero findings': 'findings=0'
+[ddl-golden][FAIL] case T18.meta.mysql80-quoted-dot-identities: failed assertion 'no diagnostics': 'diagnostics=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-quoted-dot-identities: failed assertion 'no unsupported': 'unsupported=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-quoted-dot-identities: failed assertion 'statement indices': 'indices=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-quoted-dot-identities: failed assertion 'aggregate coverage': 'coverage=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-quoted-dot-identities: failed assertion 'per-statement coverage': 'statement_coverage=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-quoted-dot-identities: failed assertion 'unsupported entries': 'entries=[] expected=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-quoted-dot-identities: failed assertion 'statement raw SQL identity': "raw_sql=[] expected=['CREATE VIEW `v.dot` (`out.dot`) AS SELECT `id.dot` FROM `t.dot`;', 'CREATE VIEW fresh AS SELECT `out.dot` FROM `v.dot`;']"
+[ddl-golden][FAIL] case T18.meta.mysql80-quoted-dot-identities: failed assertion 'finding entries': "findings=[] expected=[(0, 'ddl.view.security.definer.warn', 'warning'), (1, 'ddl.view.security.definer.warn', 'warning')]"
+[ddl-golden][FAIL] case T18.meta.mysql80-quoted-dot-identities: failed assertion 'fail_on_triggered': 'fail_on_triggered=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-quoted-dot-identities: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql80-temporary-source-refusal: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql80-temporary-source-refusal: failed assertion 'exit code': 'rc=2 expected=1'
+[ddl-golden][FAIL] case T18.meta.mysql80-temporary-source-refusal: failed assertion 'verdict': 'verdict=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-temporary-source-refusal: failed assertion 'top-level statements': 'statements=0 expected=2'
+[ddl-golden][FAIL] case T18.meta.mysql80-temporary-source-refusal: failed assertion 'zero findings': 'findings=0'
+[ddl-golden][FAIL] case T18.meta.mysql80-temporary-source-refusal: failed assertion 'no diagnostics': 'diagnostics=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-temporary-source-refusal: failed assertion 'no unsupported': 'unsupported=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-temporary-source-refusal: failed assertion 'statement indices': 'indices=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-temporary-source-refusal: failed assertion 'aggregate coverage': 'coverage=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-temporary-source-refusal: failed assertion 'per-statement coverage': 'statement_coverage=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-temporary-source-refusal: failed assertion 'unsupported entries': 'entries=[] expected=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-temporary-source-refusal: failed assertion 'statement raw SQL identity': "raw_sql=[] expected=['CREATE TEMPORARY TABLE tt(id INT);', 'CREATE VIEW fresh AS SELECT id FROM tt;']"
+[ddl-golden][FAIL] case T18.meta.mysql80-temporary-source-refusal: failed assertion 'finding entries': "findings=[] expected=[(1, 'ddl.view.security.definer.warn', 'warning'), (1, 'ddl.view.source.valid', 'blocker')]"
+[ddl-golden][FAIL] case T18.meta.mysql80-temporary-source-refusal: failed assertion 'fail_on_triggered': 'fail_on_triggered=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-temporary-source-refusal: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql80-temporary-shadow: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql80-temporary-shadow: failed assertion 'exit code': 'rc=2 expected=1'
+[ddl-golden][FAIL] case T18.meta.mysql80-temporary-shadow: failed assertion 'verdict': 'verdict=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-temporary-shadow: failed assertion 'top-level statements': 'statements=0 expected=4'
+[ddl-golden][FAIL] case T18.meta.mysql80-temporary-shadow: failed assertion 'zero findings': 'findings=0'
+[ddl-golden][FAIL] case T18.meta.mysql80-temporary-shadow: failed assertion 'no diagnostics': 'diagnostics=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-temporary-shadow: failed assertion 'no unsupported': 'unsupported=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-temporary-shadow: failed assertion 'statement indices': 'indices=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-temporary-shadow: failed assertion 'aggregate coverage': 'coverage=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-temporary-shadow: failed assertion 'per-statement coverage': 'statement_coverage=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-temporary-shadow: failed assertion 'unsupported entries': 'entries=[] expected=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-temporary-shadow: failed assertion 'statement raw SQL identity': "raw_sql=[] expected=['CREATE TEMPORARY TABLE v(id INT);', 'ALTER VIEW v AS SELECT id FROM t;', 'DROP VIEW v;', 'CREATE VIEW fresh AS SELECT id FROM v;']"
+[ddl-golden][FAIL] case T18.meta.mysql80-temporary-shadow: failed assertion 'finding entries': "findings=[] expected=[(1, 'ddl.view.security.definer.warn', 'warning'), (3, 'ddl.view.security.definer.warn', 'warning'), (3, 'ddl.view.source.valid', 'blocker')]"
+[ddl-golden][FAIL] case T18.meta.mysql80-temporary-shadow: failed assertion 'fail_on_triggered': 'fail_on_triggered=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-temporary-shadow: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql80-invoker: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql80-invoker: failed assertion 'exit code': 'rc=2 expected=0'
+[ddl-golden][FAIL] case T18.meta.mysql80-invoker: failed assertion 'verdict': 'verdict=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-invoker: failed assertion 'top-level statements': 'statements=0 expected=1'
+[ddl-golden][FAIL] case T18.meta.mysql80-invoker: failed assertion 'zero findings': 'findings=0'
+[ddl-golden][FAIL] case T18.meta.mysql80-invoker: failed assertion 'no diagnostics': 'diagnostics=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-invoker: failed assertion 'no unsupported': 'unsupported=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-invoker: failed assertion 'statement indices': 'indices=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-invoker: failed assertion 'aggregate coverage': 'coverage=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-invoker: failed assertion 'per-statement coverage': 'statement_coverage=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-invoker: failed assertion 'unsupported entries': 'entries=[] expected=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-invoker: failed assertion 'statement raw SQL identity': "raw_sql=[] expected=['CREATE SQL SECURITY INVOKER VIEW fresh AS SELECT id FROM t;']"
+[ddl-golden][FAIL] case T18.meta.mysql80-invoker: failed assertion 'finding entries': 'findings=[] expected=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-invoker: failed assertion 'fail_on_triggered': 'fail_on_triggered=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-invoker: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql80-current-user-invoker: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql80-current-user-invoker: failed assertion 'exit code': 'rc=2 expected=0'
+[ddl-golden][FAIL] case T18.meta.mysql80-current-user-invoker: failed assertion 'verdict': 'verdict=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-current-user-invoker: failed assertion 'top-level statements': 'statements=0 expected=1'
+[ddl-golden][FAIL] case T18.meta.mysql80-current-user-invoker: failed assertion 'zero findings': 'findings=0'
+[ddl-golden][FAIL] case T18.meta.mysql80-current-user-invoker: failed assertion 'no diagnostics': 'diagnostics=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-current-user-invoker: failed assertion 'no unsupported': 'unsupported=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-current-user-invoker: failed assertion 'statement indices': 'indices=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-current-user-invoker: failed assertion 'aggregate coverage': 'coverage=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-current-user-invoker: failed assertion 'per-statement coverage': 'statement_coverage=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-current-user-invoker: failed assertion 'unsupported entries': 'entries=[] expected=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-current-user-invoker: failed assertion 'statement raw SQL identity': "raw_sql=[] expected=['CREATE DEFINER=CURRENT_USER() SQL SECURITY INVOKER VIEW fresh AS SELECT id FROM t;']"
+[ddl-golden][FAIL] case T18.meta.mysql80-current-user-invoker: failed assertion 'finding entries': 'findings=[] expected=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-current-user-invoker: failed assertion 'fail_on_triggered': 'fail_on_triggered=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-current-user-invoker: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql80-named-invoker: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql80-named-invoker: failed assertion 'exit code': 'rc=2 expected=0'
+[ddl-golden][FAIL] case T18.meta.mysql80-named-invoker: failed assertion 'verdict': 'verdict=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-named-invoker: failed assertion 'top-level statements': 'statements=0 expected=1'
+[ddl-golden][FAIL] case T18.meta.mysql80-named-invoker: failed assertion 'zero findings': 'findings=0'
+[ddl-golden][FAIL] case T18.meta.mysql80-named-invoker: failed assertion 'no diagnostics': 'diagnostics=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-named-invoker: failed assertion 'no unsupported': 'unsupported=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-named-invoker: failed assertion 'statement indices': 'indices=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-named-invoker: failed assertion 'aggregate coverage': 'coverage=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-named-invoker: failed assertion 'per-statement coverage': 'statement_coverage=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-named-invoker: failed assertion 'unsupported entries': 'entries=[] expected=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-named-invoker: failed assertion 'statement raw SQL identity': 'raw_sql=[] expected=["CREATE DEFINER=\'t18_named_declaration\' SQL SECURITY INVOKER VIEW fresh AS SELECT id FROM t;"]'
+[ddl-golden][FAIL] case T18.meta.mysql80-named-invoker: failed assertion 'finding entries': "findings=[] expected=[(0, 'ddl.view.security.definer.warn', 'warning')]"
+[ddl-golden][FAIL] case T18.meta.mysql80-named-invoker: failed assertion 'finding location index=0': "locations=[] expected={'index': 0, 'line': 1, 'column': 8}"
+[ddl-golden][FAIL] case T18.meta.mysql80-named-invoker: failed assertion 'fail_on_triggered': 'fail_on_triggered=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-named-invoker: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-inherits-invoker: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-inherits-invoker: failed assertion 'exit code': 'rc=2 expected=0'
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-inherits-invoker: failed assertion 'verdict': 'verdict=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-inherits-invoker: failed assertion 'top-level statements': 'statements=0 expected=2'
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-inherits-invoker: failed assertion 'zero findings': 'findings=0'
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-inherits-invoker: failed assertion 'no diagnostics': 'diagnostics=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-inherits-invoker: failed assertion 'no unsupported': 'unsupported=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-inherits-invoker: failed assertion 'statement indices': 'indices=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-inherits-invoker: failed assertion 'aggregate coverage': 'coverage=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-inherits-invoker: failed assertion 'per-statement coverage': 'statement_coverage=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-inherits-invoker: failed assertion 'unsupported entries': 'entries=[] expected=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-inherits-invoker: failed assertion 'statement raw SQL identity': "raw_sql=[] expected=['ALTER VIEW v AS SELECT id FROM t;', 'CREATE VIEW fresh AS SELECT id FROM v;']"
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-inherits-invoker: failed assertion 'finding entries': "findings=[] expected=[(1, 'ddl.view.security.definer.warn', 'warning')]"
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-inherits-invoker: failed assertion 'fail_on_triggered': 'fail_on_triggered=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-inherits-invoker: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql80-replace-resets-invoker: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql80-replace-resets-invoker: failed assertion 'exit code': 'rc=2 expected=0'
+[ddl-golden][FAIL] case T18.meta.mysql80-replace-resets-invoker: failed assertion 'verdict': 'verdict=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-replace-resets-invoker: failed assertion 'top-level statements': 'statements=0 expected=1'
+[ddl-golden][FAIL] case T18.meta.mysql80-replace-resets-invoker: failed assertion 'zero findings': 'findings=0'
+[ddl-golden][FAIL] case T18.meta.mysql80-replace-resets-invoker: failed assertion 'no diagnostics': 'diagnostics=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-replace-resets-invoker: failed assertion 'no unsupported': 'unsupported=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-replace-resets-invoker: failed assertion 'statement indices': 'indices=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-replace-resets-invoker: failed assertion 'aggregate coverage': 'coverage=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-replace-resets-invoker: failed assertion 'per-statement coverage': 'statement_coverage=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-replace-resets-invoker: failed assertion 'unsupported entries': 'entries=[] expected=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-replace-resets-invoker: failed assertion 'statement raw SQL identity': "raw_sql=[] expected=['CREATE OR REPLACE VIEW v AS SELECT id FROM t;']"
+[ddl-golden][FAIL] case T18.meta.mysql80-replace-resets-invoker: failed assertion 'finding entries': "findings=[] expected=[(0, 'ddl.view.security.definer.warn', 'warning')]"
+[ddl-golden][FAIL] case T18.meta.mysql80-replace-resets-invoker: failed assertion 'fail_on_triggered': 'fail_on_triggered=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-replace-resets-invoker: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql80-algorithm-temporary: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql80-algorithm-temporary: failed assertion 'exit code': 'rc=2 expected=0'
+[ddl-golden][FAIL] case T18.meta.mysql80-algorithm-temporary: failed assertion 'verdict': 'verdict=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-algorithm-temporary: failed assertion 'top-level statements': 'statements=0 expected=1'
+[ddl-golden][FAIL] case T18.meta.mysql80-algorithm-temporary: failed assertion 'zero findings': 'findings=0'
+[ddl-golden][FAIL] case T18.meta.mysql80-algorithm-temporary: failed assertion 'no diagnostics': 'diagnostics=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-algorithm-temporary: failed assertion 'no unsupported': 'unsupported=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-algorithm-temporary: failed assertion 'statement indices': 'indices=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-algorithm-temporary: failed assertion 'aggregate coverage': 'coverage=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-algorithm-temporary: failed assertion 'per-statement coverage': 'statement_coverage=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-algorithm-temporary: failed assertion 'unsupported entries': 'entries=[] expected=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-algorithm-temporary: failed assertion 'statement raw SQL identity': "raw_sql=[] expected=['CREATE ALGORITHM=TEMPTABLE VIEW fresh AS SELECT id FROM t;']"
+[ddl-golden][FAIL] case T18.meta.mysql80-algorithm-temporary: failed assertion 'finding entries': "findings=[] expected=[(0, 'ddl.view.algorithm.warn', 'warning'), (0, 'ddl.view.security.definer.warn', 'warning')]"
+[ddl-golden][FAIL] case T18.meta.mysql80-algorithm-temporary: failed assertion 'finding location index=0': "locations=[] expected={'index': 0, 'line': 1, 'column': 8}"
+[ddl-golden][FAIL] case T18.meta.mysql80-algorithm-temporary: failed assertion 'fail_on_triggered': 'fail_on_triggered=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-algorithm-temporary: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql80-algorithm-merge-fallback: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql80-algorithm-merge-fallback: failed assertion 'exit code': 'rc=2 expected=0'
+[ddl-golden][FAIL] case T18.meta.mysql80-algorithm-merge-fallback: failed assertion 'verdict': 'verdict=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-algorithm-merge-fallback: failed assertion 'top-level statements': 'statements=0 expected=1'
+[ddl-golden][FAIL] case T18.meta.mysql80-algorithm-merge-fallback: failed assertion 'zero findings': 'findings=0'
+[ddl-golden][FAIL] case T18.meta.mysql80-algorithm-merge-fallback: failed assertion 'no diagnostics': 'diagnostics=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-algorithm-merge-fallback: failed assertion 'no unsupported': 'unsupported=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-algorithm-merge-fallback: failed assertion 'statement indices': 'indices=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-algorithm-merge-fallback: failed assertion 'aggregate coverage': 'coverage=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-algorithm-merge-fallback: failed assertion 'per-statement coverage': 'statement_coverage=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-algorithm-merge-fallback: failed assertion 'unsupported entries': 'entries=[] expected=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-algorithm-merge-fallback: failed assertion 'statement raw SQL identity': "raw_sql=[] expected=['CREATE ALGORITHM=MERGE VIEW fresh AS SELECT COUNT(*) AS n FROM t;']"
+[ddl-golden][FAIL] case T18.meta.mysql80-algorithm-merge-fallback: failed assertion 'finding entries': "findings=[] expected=[(0, 'ddl.view.algorithm.warn', 'warning'), (0, 'ddl.view.security.definer.warn', 'warning')]"
+[ddl-golden][FAIL] case T18.meta.mysql80-algorithm-merge-fallback: failed assertion 'fail_on_triggered': 'fail_on_triggered=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-algorithm-merge-fallback: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql80-algorithm-undefined: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql80-algorithm-undefined: failed assertion 'exit code': 'rc=2 expected=0'
+[ddl-golden][FAIL] case T18.meta.mysql80-algorithm-undefined: failed assertion 'verdict': 'verdict=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-algorithm-undefined: failed assertion 'top-level statements': 'statements=0 expected=1'
+[ddl-golden][FAIL] case T18.meta.mysql80-algorithm-undefined: failed assertion 'zero findings': 'findings=0'
+[ddl-golden][FAIL] case T18.meta.mysql80-algorithm-undefined: failed assertion 'no diagnostics': 'diagnostics=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-algorithm-undefined: failed assertion 'no unsupported': 'unsupported=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-algorithm-undefined: failed assertion 'statement indices': 'indices=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-algorithm-undefined: failed assertion 'aggregate coverage': 'coverage=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-algorithm-undefined: failed assertion 'per-statement coverage': 'statement_coverage=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-algorithm-undefined: failed assertion 'unsupported entries': 'entries=[] expected=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-algorithm-undefined: failed assertion 'statement raw SQL identity': "raw_sql=[] expected=['CREATE ALGORITHM=UNDEFINED VIEW fresh AS SELECT id FROM t;']"
+[ddl-golden][FAIL] case T18.meta.mysql80-algorithm-undefined: failed assertion 'finding entries': "findings=[] expected=[(0, 'ddl.view.security.definer.warn', 'warning')]"
+[ddl-golden][FAIL] case T18.meta.mysql80-algorithm-undefined: failed assertion 'fail_on_triggered': 'fail_on_triggered=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-algorithm-undefined: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql80-check-bare: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql80-check-bare: failed assertion 'exit code': 'rc=2 expected=0'
+[ddl-golden][FAIL] case T18.meta.mysql80-check-bare: failed assertion 'verdict': 'verdict=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-check-bare: failed assertion 'top-level statements': 'statements=0 expected=1'
+[ddl-golden][FAIL] case T18.meta.mysql80-check-bare: failed assertion 'zero findings': 'findings=0'
+[ddl-golden][FAIL] case T18.meta.mysql80-check-bare: failed assertion 'no diagnostics': 'diagnostics=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-check-bare: failed assertion 'no unsupported': 'unsupported=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-check-bare: failed assertion 'statement indices': 'indices=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-check-bare: failed assertion 'aggregate coverage': 'coverage=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-check-bare: failed assertion 'per-statement coverage': 'statement_coverage=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-check-bare: failed assertion 'unsupported entries': 'entries=[] expected=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-check-bare: failed assertion 'statement raw SQL identity': "raw_sql=[] expected=['CREATE VIEW fresh AS SELECT id FROM t WITH CHECK OPTION;']"
+[ddl-golden][FAIL] case T18.meta.mysql80-check-bare: failed assertion 'finding entries': "findings=[] expected=[(0, 'ddl.view.security.definer.warn', 'warning')]"
+[ddl-golden][FAIL] case T18.meta.mysql80-check-bare: failed assertion 'fail_on_triggered': 'fail_on_triggered=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-check-bare: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql80-check-local: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql80-check-local: failed assertion 'exit code': 'rc=2 expected=0'
+[ddl-golden][FAIL] case T18.meta.mysql80-check-local: failed assertion 'verdict': 'verdict=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-check-local: failed assertion 'top-level statements': 'statements=0 expected=1'
+[ddl-golden][FAIL] case T18.meta.mysql80-check-local: failed assertion 'zero findings': 'findings=0'
+[ddl-golden][FAIL] case T18.meta.mysql80-check-local: failed assertion 'no diagnostics': 'diagnostics=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-check-local: failed assertion 'no unsupported': 'unsupported=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-check-local: failed assertion 'statement indices': 'indices=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-check-local: failed assertion 'aggregate coverage': 'coverage=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-check-local: failed assertion 'per-statement coverage': 'statement_coverage=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-check-local: failed assertion 'unsupported entries': 'entries=[] expected=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-check-local: failed assertion 'statement raw SQL identity': "raw_sql=[] expected=['CREATE VIEW fresh AS SELECT id FROM t WITH LOCAL CHECK OPTION;']"
+[ddl-golden][FAIL] case T18.meta.mysql80-check-local: failed assertion 'finding entries': "findings=[] expected=[(0, 'ddl.view.security.definer.warn', 'warning')]"
+[ddl-golden][FAIL] case T18.meta.mysql80-check-local: failed assertion 'fail_on_triggered': 'fail_on_triggered=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-check-local: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql80-check-cascaded: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql80-check-cascaded: failed assertion 'exit code': 'rc=2 expected=0'
+[ddl-golden][FAIL] case T18.meta.mysql80-check-cascaded: failed assertion 'verdict': 'verdict=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-check-cascaded: failed assertion 'top-level statements': 'statements=0 expected=1'
+[ddl-golden][FAIL] case T18.meta.mysql80-check-cascaded: failed assertion 'zero findings': 'findings=0'
+[ddl-golden][FAIL] case T18.meta.mysql80-check-cascaded: failed assertion 'no diagnostics': 'diagnostics=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-check-cascaded: failed assertion 'no unsupported': 'unsupported=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-check-cascaded: failed assertion 'statement indices': 'indices=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-check-cascaded: failed assertion 'aggregate coverage': 'coverage=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-check-cascaded: failed assertion 'per-statement coverage': 'statement_coverage=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-check-cascaded: failed assertion 'unsupported entries': 'entries=[] expected=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-check-cascaded: failed assertion 'statement raw SQL identity': "raw_sql=[] expected=['CREATE VIEW fresh AS SELECT id FROM t WITH CASCADED CHECK OPTION;']"
+[ddl-golden][FAIL] case T18.meta.mysql80-check-cascaded: failed assertion 'finding entries': "findings=[] expected=[(0, 'ddl.view.security.definer.warn', 'warning')]"
+[ddl-golden][FAIL] case T18.meta.mysql80-check-cascaded: failed assertion 'fail_on_triggered': 'fail_on_triggered=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-check-cascaded: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql80-check-aggregate-refusal: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql80-check-aggregate-refusal: failed assertion 'exit code': 'rc=2 expected=1'
+[ddl-golden][FAIL] case T18.meta.mysql80-check-aggregate-refusal: failed assertion 'verdict': 'verdict=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-check-aggregate-refusal: failed assertion 'top-level statements': 'statements=0 expected=1'
+[ddl-golden][FAIL] case T18.meta.mysql80-check-aggregate-refusal: failed assertion 'zero findings': 'findings=0'
+[ddl-golden][FAIL] case T18.meta.mysql80-check-aggregate-refusal: failed assertion 'no diagnostics': 'diagnostics=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-check-aggregate-refusal: failed assertion 'no unsupported': 'unsupported=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-check-aggregate-refusal: failed assertion 'statement indices': 'indices=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-check-aggregate-refusal: failed assertion 'aggregate coverage': 'coverage=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-check-aggregate-refusal: failed assertion 'per-statement coverage': 'statement_coverage=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-check-aggregate-refusal: failed assertion 'unsupported entries': 'entries=[] expected=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-check-aggregate-refusal: failed assertion 'statement raw SQL identity': "raw_sql=[] expected=['CREATE VIEW fresh AS SELECT COUNT(*) AS n FROM t WITH CASCADED CHECK OPTION;']"
+[ddl-golden][FAIL] case T18.meta.mysql80-check-aggregate-refusal: failed assertion 'finding entries': "findings=[] expected=[(0, 'ddl.view.check_option.valid', 'blocker'), (0, 'ddl.view.security.definer.warn', 'warning')]"
+[ddl-golden][FAIL] case T18.meta.mysql80-check-aggregate-refusal: failed assertion 'finding location index=0': "locations=[] expected={'index': 0, 'line': 1, 'column': 50}"
+[ddl-golden][FAIL] case T18.meta.mysql80-check-aggregate-refusal: failed assertion 'fail_on_triggered': 'fail_on_triggered=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-check-aggregate-refusal: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql80-check-temporary-refusal: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql80-check-temporary-refusal: failed assertion 'exit code': 'rc=2 expected=1'
+[ddl-golden][FAIL] case T18.meta.mysql80-check-temporary-refusal: failed assertion 'verdict': 'verdict=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-check-temporary-refusal: failed assertion 'top-level statements': 'statements=0 expected=1'
+[ddl-golden][FAIL] case T18.meta.mysql80-check-temporary-refusal: failed assertion 'zero findings': 'findings=0'
+[ddl-golden][FAIL] case T18.meta.mysql80-check-temporary-refusal: failed assertion 'no diagnostics': 'diagnostics=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-check-temporary-refusal: failed assertion 'no unsupported': 'unsupported=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-check-temporary-refusal: failed assertion 'statement indices': 'indices=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-check-temporary-refusal: failed assertion 'aggregate coverage': 'coverage=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-check-temporary-refusal: failed assertion 'per-statement coverage': 'statement_coverage=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-check-temporary-refusal: failed assertion 'unsupported entries': 'entries=[] expected=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-check-temporary-refusal: failed assertion 'statement raw SQL identity': "raw_sql=[] expected=['CREATE ALGORITHM=TEMPTABLE VIEW fresh AS SELECT id FROM t WITH LOCAL CHECK OPTION;']"
+[ddl-golden][FAIL] case T18.meta.mysql80-check-temporary-refusal: failed assertion 'finding entries': "findings=[] expected=[(0, 'ddl.view.algorithm.warn', 'warning'), (0, 'ddl.view.check_option.valid', 'blocker'), (0, 'ddl.view.security.definer.warn', 'warning')]"
+[ddl-golden][FAIL] case T18.meta.mysql80-check-temporary-refusal: failed assertion 'fail_on_triggered': 'fail_on_triggered=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-check-temporary-refusal: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql80-check-temptable-state: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql80-check-temptable-state: failed assertion 'exit code': 'rc=2 expected=1'
+[ddl-golden][FAIL] case T18.meta.mysql80-check-temptable-state: failed assertion 'verdict': 'verdict=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-check-temptable-state: failed assertion 'top-level statements': 'statements=0 expected=2'
+[ddl-golden][FAIL] case T18.meta.mysql80-check-temptable-state: failed assertion 'zero findings': 'findings=0'
+[ddl-golden][FAIL] case T18.meta.mysql80-check-temptable-state: failed assertion 'no diagnostics': 'diagnostics=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-check-temptable-state: failed assertion 'no unsupported': 'unsupported=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-check-temptable-state: failed assertion 'statement indices': 'indices=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-check-temptable-state: failed assertion 'aggregate coverage': 'coverage=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-check-temptable-state: failed assertion 'per-statement coverage': 'statement_coverage=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-check-temptable-state: failed assertion 'unsupported entries': 'entries=[] expected=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-check-temptable-state: failed assertion 'statement raw SQL identity': "raw_sql=[] expected=['CREATE ALGORITHM=TEMPTABLE VIEW source_v AS SELECT id FROM t;', 'CREATE VIEW checked_v AS SELECT id FROM source_v WITH CHECK OPTION;']"
+[ddl-golden][FAIL] case T18.meta.mysql80-check-temptable-state: failed assertion 'finding entries': "findings=[] expected=[(0, 'ddl.view.algorithm.warn', 'warning'), (0, 'ddl.view.security.definer.warn', 'warning'), (1, 'ddl.view.check_option.valid', 'blocker'), (1, 'ddl.view.security.definer.warn', 'warning')]"
+[ddl-golden][FAIL] case T18.meta.mysql80-check-temptable-state: failed assertion 'fail_on_triggered': 'fail_on_triggered=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-check-temptable-state: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql80-notice-policy-refusal-state: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql80-notice-policy-refusal-state: failed assertion 'exit code': 'rc=2 expected=0'
+[ddl-golden][FAIL] case T18.meta.mysql80-notice-policy-refusal-state: failed assertion 'verdict': 'verdict=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-notice-policy-refusal-state: failed assertion 'top-level statements': 'statements=0 expected=3'
+[ddl-golden][FAIL] case T18.meta.mysql80-notice-policy-refusal-state: failed assertion 'zero findings': 'findings=0'
+[ddl-golden][FAIL] case T18.meta.mysql80-notice-policy-refusal-state: failed assertion 'no diagnostics': 'diagnostics=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-notice-policy-refusal-state: failed assertion 'no unsupported': 'unsupported=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-notice-policy-refusal-state: failed assertion 'statement indices': 'indices=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-notice-policy-refusal-state: failed assertion 'aggregate coverage': 'coverage=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-notice-policy-refusal-state: failed assertion 'per-statement coverage': 'statement_coverage=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-notice-policy-refusal-state: failed assertion 'unsupported entries': 'entries=[] expected=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-notice-policy-refusal-state: failed assertion 'statement raw SQL identity': "raw_sql=[] expected=['ALTER VIEW v AS SELECT missing_col FROM t;', 'DROP TABLE t;', 'CREATE VIEW fresh AS SELECT id FROM v;']"
+[ddl-golden][FAIL] case T18.meta.mysql80-notice-policy-refusal-state: failed assertion 'finding entries': "findings=[] expected=[(0, 'ddl.view.security.definer.warn', 'notice'), (0, 'ddl.view.source.valid', 'notice'), (2, 'ddl.view.security.definer.warn', 'notice')]"
+[ddl-golden][FAIL] case T18.meta.mysql80-notice-policy-refusal-state: failed assertion 'fail_on_triggered': 'fail_on_triggered=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-notice-policy-refusal-state: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql80-off-policy-refusal-state: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql80-off-policy-refusal-state: failed assertion 'exit code': 'rc=2 expected=0'
+[ddl-golden][FAIL] case T18.meta.mysql80-off-policy-refusal-state: failed assertion 'verdict': 'verdict=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-off-policy-refusal-state: failed assertion 'top-level statements': 'statements=0 expected=3'
+[ddl-golden][FAIL] case T18.meta.mysql80-off-policy-refusal-state: failed assertion 'zero findings': 'findings=0'
+[ddl-golden][FAIL] case T18.meta.mysql80-off-policy-refusal-state: failed assertion 'no diagnostics': 'diagnostics=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-off-policy-refusal-state: failed assertion 'no unsupported': 'unsupported=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-off-policy-refusal-state: failed assertion 'statement indices': 'indices=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-off-policy-refusal-state: failed assertion 'aggregate coverage': 'coverage=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-off-policy-refusal-state: failed assertion 'per-statement coverage': 'statement_coverage=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-off-policy-refusal-state: failed assertion 'unsupported entries': 'entries=[] expected=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-off-policy-refusal-state: failed assertion 'statement raw SQL identity': "raw_sql=[] expected=['ALTER VIEW v AS SELECT missing_col FROM t;', 'DROP TABLE t;', 'CREATE VIEW fresh AS SELECT id FROM v;']"
+[ddl-golden][FAIL] case T18.meta.mysql80-off-policy-refusal-state: failed assertion 'finding entries': 'findings=[] expected=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-off-policy-refusal-state: failed assertion 'fail_on_triggered': 'fail_on_triggered=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-off-policy-refusal-state: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql80-nonfirst-protected-target: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql80-nonfirst-protected-target: failed assertion 'exit code': 'rc=2 expected=1'
+[ddl-golden][FAIL] case T18.meta.mysql80-nonfirst-protected-target: failed assertion 'verdict': 'verdict=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-nonfirst-protected-target: failed assertion 'top-level statements': 'statements=0 expected=1'
+[ddl-golden][FAIL] case T18.meta.mysql80-nonfirst-protected-target: failed assertion 'zero findings': 'findings=0'
+[ddl-golden][FAIL] case T18.meta.mysql80-nonfirst-protected-target: failed assertion 'no diagnostics': 'diagnostics=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-nonfirst-protected-target: failed assertion 'no unsupported': 'unsupported=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-nonfirst-protected-target: failed assertion 'statement indices': 'indices=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-nonfirst-protected-target: failed assertion 'aggregate coverage': 'coverage=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-nonfirst-protected-target: failed assertion 'per-statement coverage': 'statement_coverage=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-nonfirst-protected-target: failed assertion 'unsupported entries': 'entries=[] expected=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-nonfirst-protected-target: failed assertion 'statement raw SQL identity': "raw_sql=[] expected=['DROP VIEW v,protected_v;']"
+[ddl-golden][FAIL] case T18.meta.mysql80-nonfirst-protected-target: failed assertion 'finding entries': "findings=[] expected=[(0, 'ddl.table.denylist.forbid', 'blocker')]"
+[ddl-golden][FAIL] case T18.meta.mysql80-nonfirst-protected-target: failed assertion "finding metadata (0, 'ddl.table.denylist.forbid')": "findings=[] expected_subset={'table': 'protected_v', 'schema': 't18m_nonfirst_protected_target'}"
+[ddl-golden][FAIL] case T18.meta.mysql80-nonfirst-protected-target: failed assertion 'finding location index=0': "locations=[] expected={'index': 0, 'line': 1, 'column': 13}"
+[ddl-golden][FAIL] case T18.meta.mysql80-nonfirst-protected-target: failed assertion 'fail_on_triggered': 'fail_on_triggered=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-nonfirst-protected-target: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql80-private-leaf: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql80-private-leaf: failed assertion 'exit code': 'rc=2 expected=1'
+[ddl-golden][FAIL] case T18.meta.mysql80-private-leaf: failed assertion 'verdict': 'verdict=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-private-leaf: failed assertion 'top-level statements': 'statements=0 expected=1'
+[ddl-golden][FAIL] case T18.meta.mysql80-private-leaf: failed assertion 'zero findings': 'findings=0'
+[ddl-golden][FAIL] case T18.meta.mysql80-private-leaf: failed assertion 'no diagnostics': 'diagnostics=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-private-leaf: failed assertion 'no unsupported': 'unsupported=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-private-leaf: failed assertion 'statement indices': 'indices=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-private-leaf: failed assertion 'aggregate coverage': 'coverage=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-private-leaf: failed assertion 'per-statement coverage': 'statement_coverage=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-private-leaf: failed assertion 'unsupported entries': 'entries=[] expected=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-private-leaf: failed assertion 'statement raw SQL identity': "raw_sql=[] expected=['CREATE VIEW fresh AS SELECT id FROM private_v;']"
+[ddl-golden][FAIL] case T18.meta.mysql80-private-leaf: failed assertion 'finding entries': "findings=[] expected=[(0, 'ddl.table.denylist.forbid', 'blocker'), (0, 'ddl.view.security.definer.warn', 'warning')]"
+[ddl-golden][FAIL] case T18.meta.mysql80-private-leaf: failed assertion 'fail_on_triggered': 'fail_on_triggered=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-private-leaf: failed assertion 'public JSON privacy marker 0': 'fixture-private marker must not occur in public JSON'
+[ddl-golden][FAIL] case T18.meta.mysql80-private-leaf: failed assertion 'public JSON privacy marker 1': 'fixture-private marker must not occur in public JSON'
+[ddl-golden][FAIL] case T18.meta.mysql80-private-leaf: failed assertion 'public JSON privacy marker 2': 'fixture-private marker must not occur in public JSON'
+[ddl-golden][FAIL] case T18.meta.mysql80-private-leaf: failed assertion 'public JSON privacy marker 3': 'fixture-private marker must not occur in public JSON'
+[ddl-golden][FAIL] case T18.meta.mysql80-private-leaf: failed assertion 'public JSON privacy marker 4': 'fixture-private marker must not occur in public JSON'
+[ddl-golden][FAIL] case T18.meta.mysql80-private-leaf: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql80-cte-unused-missing: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql80-cte-unused-missing: failed assertion 'exit code': 'rc=2 expected=0'
+[ddl-golden][FAIL] case T18.meta.mysql80-cte-unused-missing: failed assertion 'verdict': 'verdict=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-cte-unused-missing: failed assertion 'top-level statements': 'statements=0 expected=1'
+[ddl-golden][FAIL] case T18.meta.mysql80-cte-unused-missing: failed assertion 'zero findings': 'findings=0'
+[ddl-golden][FAIL] case T18.meta.mysql80-cte-unused-missing: failed assertion 'no diagnostics': 'diagnostics=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-cte-unused-missing: failed assertion 'no unsupported': 'unsupported=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-cte-unused-missing: failed assertion 'statement indices': 'indices=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-cte-unused-missing: failed assertion 'aggregate coverage': 'coverage=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-cte-unused-missing: failed assertion 'per-statement coverage': 'statement_coverage=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-cte-unused-missing: failed assertion 'unsupported entries': 'entries=[] expected=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-cte-unused-missing: failed assertion 'statement raw SQL identity': "raw_sql=[] expected=['CREATE VIEW fresh AS WITH unused AS (SELECT id FROM missing_t) SELECT id FROM t;']"
+[ddl-golden][FAIL] case T18.meta.mysql80-cte-unused-missing: failed assertion 'finding entries': "findings=[] expected=[(0, 'ddl.view.security.definer.warn', 'warning')]"
+[ddl-golden][FAIL] case T18.meta.mysql80-cte-unused-missing: failed assertion 'fail_on_triggered': 'fail_on_triggered=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-cte-unused-missing: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql80-cte-unused-column: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql80-cte-unused-column: failed assertion 'exit code': 'rc=2 expected=0'
+[ddl-golden][FAIL] case T18.meta.mysql80-cte-unused-column: failed assertion 'verdict': 'verdict=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-cte-unused-column: failed assertion 'top-level statements': 'statements=0 expected=1'
+[ddl-golden][FAIL] case T18.meta.mysql80-cte-unused-column: failed assertion 'zero findings': 'findings=0'
+[ddl-golden][FAIL] case T18.meta.mysql80-cte-unused-column: failed assertion 'no diagnostics': 'diagnostics=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-cte-unused-column: failed assertion 'no unsupported': 'unsupported=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-cte-unused-column: failed assertion 'statement indices': 'indices=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-cte-unused-column: failed assertion 'aggregate coverage': 'coverage=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-cte-unused-column: failed assertion 'per-statement coverage': 'statement_coverage=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-cte-unused-column: failed assertion 'unsupported entries': 'entries=[] expected=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-cte-unused-column: failed assertion 'statement raw SQL identity': "raw_sql=[] expected=['CREATE VIEW fresh AS WITH unused AS (SELECT missing_col FROM t) SELECT id FROM t;']"
+[ddl-golden][FAIL] case T18.meta.mysql80-cte-unused-column: failed assertion 'finding entries': "findings=[] expected=[(0, 'ddl.view.security.definer.warn', 'warning')]"
+[ddl-golden][FAIL] case T18.meta.mysql80-cte-unused-column: failed assertion 'fail_on_triggered': 'fail_on_triggered=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-cte-unused-column: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql80-cte-self-base: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql80-cte-self-base: failed assertion 'exit code': 'rc=2 expected=0'
+[ddl-golden][FAIL] case T18.meta.mysql80-cte-self-base: failed assertion 'verdict': 'verdict=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-cte-self-base: failed assertion 'top-level statements': 'statements=0 expected=1'
+[ddl-golden][FAIL] case T18.meta.mysql80-cte-self-base: failed assertion 'zero findings': 'findings=0'
+[ddl-golden][FAIL] case T18.meta.mysql80-cte-self-base: failed assertion 'no diagnostics': 'diagnostics=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-cte-self-base: failed assertion 'no unsupported': 'unsupported=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-cte-self-base: failed assertion 'statement indices': 'indices=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-cte-self-base: failed assertion 'aggregate coverage': 'coverage=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-cte-self-base: failed assertion 'per-statement coverage': 'statement_coverage=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-cte-self-base: failed assertion 'unsupported entries': 'entries=[] expected=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-cte-self-base: failed assertion 'statement raw SQL identity': "raw_sql=[] expected=['CREATE VIEW fresh AS WITH c AS (SELECT id FROM c) SELECT id FROM c;']"
+[ddl-golden][FAIL] case T18.meta.mysql80-cte-self-base: failed assertion 'finding entries': "findings=[] expected=[(0, 'ddl.view.security.definer.warn', 'warning')]"
+[ddl-golden][FAIL] case T18.meta.mysql80-cte-self-base: failed assertion 'fail_on_triggered': 'fail_on_triggered=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-cte-self-base: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql80-cte-forward-refusal: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql80-cte-forward-refusal: failed assertion 'exit code': 'rc=2 expected=1'
+[ddl-golden][FAIL] case T18.meta.mysql80-cte-forward-refusal: failed assertion 'verdict': 'verdict=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-cte-forward-refusal: failed assertion 'top-level statements': 'statements=0 expected=1'
+[ddl-golden][FAIL] case T18.meta.mysql80-cte-forward-refusal: failed assertion 'zero findings': 'findings=0'
+[ddl-golden][FAIL] case T18.meta.mysql80-cte-forward-refusal: failed assertion 'no diagnostics': 'diagnostics=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-cte-forward-refusal: failed assertion 'no unsupported': 'unsupported=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-cte-forward-refusal: failed assertion 'statement indices': 'indices=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-cte-forward-refusal: failed assertion 'aggregate coverage': 'coverage=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-cte-forward-refusal: failed assertion 'per-statement coverage': 'statement_coverage=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-cte-forward-refusal: failed assertion 'unsupported entries': 'entries=[] expected=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-cte-forward-refusal: failed assertion 'statement raw SQL identity': "raw_sql=[] expected=['CREATE VIEW fresh AS WITH first_c AS (SELECT id FROM later_c),later_c AS (SELECT id FROM t) SELECT id FROM first_c;']"
+[ddl-golden][FAIL] case T18.meta.mysql80-cte-forward-refusal: failed assertion 'finding entries': "findings=[] expected=[(0, 'ddl.view.security.definer.warn', 'warning'), (0, 'ddl.view.source.valid', 'blocker')]"
+[ddl-golden][FAIL] case T18.meta.mysql80-cte-forward-refusal: failed assertion 'fail_on_triggered': 'fail_on_triggered=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-cte-forward-refusal: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql57-review-orderby-refusal: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql57-review-orderby-refusal: failed assertion 'exit code': 'rc=2 expected=1'
+[ddl-golden][FAIL] case T18.meta.mysql57-review-orderby-refusal: failed assertion 'verdict': 'verdict=None'
+[ddl-golden][FAIL] case T18.meta.mysql57-review-orderby-refusal: failed assertion 'top-level statements': 'statements=0 expected=2'
+[ddl-golden][FAIL] case T18.meta.mysql57-review-orderby-refusal: failed assertion 'zero findings': 'findings=0'
+[ddl-golden][FAIL] case T18.meta.mysql57-review-orderby-refusal: failed assertion 'no diagnostics': 'diagnostics=[]'
+[ddl-golden][FAIL] case T18.meta.mysql57-review-orderby-refusal: failed assertion 'no unsupported': 'unsupported=[]'
+[ddl-golden][FAIL] case T18.meta.mysql57-review-orderby-refusal: failed assertion 'statement indices': 'indices=[]'
+[ddl-golden][FAIL] case T18.meta.mysql57-review-orderby-refusal: failed assertion 'aggregate coverage': 'coverage=None'
+[ddl-golden][FAIL] case T18.meta.mysql57-review-orderby-refusal: failed assertion 'per-statement coverage': 'statement_coverage=[]'
+[ddl-golden][FAIL] case T18.meta.mysql57-review-orderby-refusal: failed assertion 'unsupported entries': 'entries=[] expected=[]'
+[ddl-golden][FAIL] case T18.meta.mysql57-review-orderby-refusal: failed assertion 'statement raw SQL identity': "raw_sql=[] expected=['ALTER VIEW v AS SELECT id FROM t ORDER BY missing_col;', 'CREATE VIEW fresh AS SELECT id FROM v;']"
+[ddl-golden][FAIL] case T18.meta.mysql57-review-orderby-refusal: failed assertion 'finding entries': "findings=[] expected=[(0, 'ddl.view.security.definer.warn', 'warning'), (0, 'ddl.view.source.valid', 'blocker'), (1, 'ddl.view.security.definer.warn', 'warning')]"
+[ddl-golden][FAIL] case T18.meta.mysql57-review-orderby-refusal: failed assertion "finding metadata (0, 'ddl.view.source.valid')": "findings=[] expected_subset={'view': 'v', 'view_schema': 't18m_review_orderby_refusal', 'table': 't', 'schema': 't18m_review_orderby_refusal', 'role': 'source'}"
+[ddl-golden][FAIL] case T18.meta.mysql57-review-orderby-refusal: failed assertion 'finding location index=0': "locations=[] expected={'index': 0, 'line': 1, 'column': 43}"
+[ddl-golden][FAIL] case T18.meta.mysql57-review-orderby-refusal: failed assertion 'fail_on_triggered': 'fail_on_triggered=None'
+[ddl-golden][FAIL] case T18.meta.mysql57-review-orderby-refusal: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql80-review-orderby-refusal: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql80-review-orderby-refusal: failed assertion 'exit code': 'rc=2 expected=1'
+[ddl-golden][FAIL] case T18.meta.mysql80-review-orderby-refusal: failed assertion 'verdict': 'verdict=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-review-orderby-refusal: failed assertion 'top-level statements': 'statements=0 expected=2'
+[ddl-golden][FAIL] case T18.meta.mysql80-review-orderby-refusal: failed assertion 'zero findings': 'findings=0'
+[ddl-golden][FAIL] case T18.meta.mysql80-review-orderby-refusal: failed assertion 'no diagnostics': 'diagnostics=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-review-orderby-refusal: failed assertion 'no unsupported': 'unsupported=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-review-orderby-refusal: failed assertion 'statement indices': 'indices=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-review-orderby-refusal: failed assertion 'aggregate coverage': 'coverage=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-review-orderby-refusal: failed assertion 'per-statement coverage': 'statement_coverage=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-review-orderby-refusal: failed assertion 'unsupported entries': 'entries=[] expected=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-review-orderby-refusal: failed assertion 'statement raw SQL identity': "raw_sql=[] expected=['ALTER VIEW v AS SELECT id FROM t ORDER BY missing_col;', 'CREATE VIEW fresh AS SELECT id FROM v;']"
+[ddl-golden][FAIL] case T18.meta.mysql80-review-orderby-refusal: failed assertion 'finding entries': "findings=[] expected=[(0, 'ddl.view.security.definer.warn', 'warning'), (0, 'ddl.view.source.valid', 'blocker'), (1, 'ddl.view.security.definer.warn', 'warning')]"
+[ddl-golden][FAIL] case T18.meta.mysql80-review-orderby-refusal: failed assertion "finding metadata (0, 'ddl.view.source.valid')": "findings=[] expected_subset={'view': 'v', 'view_schema': 't18m_review_orderby_refusal', 'table': 't', 'schema': 't18m_review_orderby_refusal', 'role': 'source'}"
+[ddl-golden][FAIL] case T18.meta.mysql80-review-orderby-refusal: failed assertion 'finding location index=0': "locations=[] expected={'index': 0, 'line': 1, 'column': 43}"
+[ddl-golden][FAIL] case T18.meta.mysql80-review-orderby-refusal: failed assertion 'fail_on_triggered': 'fail_on_triggered=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-review-orderby-refusal: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql84-review-orderby-refusal: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql84-review-orderby-refusal: failed assertion 'exit code': 'rc=2 expected=1'
+[ddl-golden][FAIL] case T18.meta.mysql84-review-orderby-refusal: failed assertion 'verdict': 'verdict=None'
+[ddl-golden][FAIL] case T18.meta.mysql84-review-orderby-refusal: failed assertion 'top-level statements': 'statements=0 expected=2'
+[ddl-golden][FAIL] case T18.meta.mysql84-review-orderby-refusal: failed assertion 'zero findings': 'findings=0'
+[ddl-golden][FAIL] case T18.meta.mysql84-review-orderby-refusal: failed assertion 'no diagnostics': 'diagnostics=[]'
+[ddl-golden][FAIL] case T18.meta.mysql84-review-orderby-refusal: failed assertion 'no unsupported': 'unsupported=[]'
+[ddl-golden][FAIL] case T18.meta.mysql84-review-orderby-refusal: failed assertion 'statement indices': 'indices=[]'
+[ddl-golden][FAIL] case T18.meta.mysql84-review-orderby-refusal: failed assertion 'aggregate coverage': 'coverage=None'
+[ddl-golden][FAIL] case T18.meta.mysql84-review-orderby-refusal: failed assertion 'per-statement coverage': 'statement_coverage=[]'
+[ddl-golden][FAIL] case T18.meta.mysql84-review-orderby-refusal: failed assertion 'unsupported entries': 'entries=[] expected=[]'
+[ddl-golden][FAIL] case T18.meta.mysql84-review-orderby-refusal: failed assertion 'statement raw SQL identity': "raw_sql=[] expected=['ALTER VIEW v AS SELECT id FROM t ORDER BY missing_col;', 'CREATE VIEW fresh AS SELECT id FROM v;']"
+[ddl-golden][FAIL] case T18.meta.mysql84-review-orderby-refusal: failed assertion 'finding entries': "findings=[] expected=[(0, 'ddl.view.security.definer.warn', 'warning'), (0, 'ddl.view.source.valid', 'blocker'), (1, 'ddl.view.security.definer.warn', 'warning')]"
+[ddl-golden][FAIL] case T18.meta.mysql84-review-orderby-refusal: failed assertion "finding metadata (0, 'ddl.view.source.valid')": "findings=[] expected_subset={'view': 'v', 'view_schema': 't18m_review_orderby_refusal', 'table': 't', 'schema': 't18m_review_orderby_refusal', 'role': 'source'}"
+[ddl-golden][FAIL] case T18.meta.mysql84-review-orderby-refusal: failed assertion 'finding location index=0': "locations=[] expected={'index': 0, 'line': 1, 'column': 43}"
+[ddl-golden][FAIL] case T18.meta.mysql84-review-orderby-refusal: failed assertion 'fail_on_triggered': 'fail_on_triggered=None'
+[ddl-golden][FAIL] case T18.meta.mysql84-review-orderby-refusal: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql57-review-keyword-definer: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql57-review-keyword-definer: failed assertion 'exit code': 'rc=2 expected=0'
+[ddl-golden][FAIL] case T18.meta.mysql57-review-keyword-definer: failed assertion 'verdict': 'verdict=None'
+[ddl-golden][FAIL] case T18.meta.mysql57-review-keyword-definer: failed assertion 'top-level statements': 'statements=0 expected=1'
+[ddl-golden][FAIL] case T18.meta.mysql57-review-keyword-definer: failed assertion 'zero findings': 'findings=0'
+[ddl-golden][FAIL] case T18.meta.mysql57-review-keyword-definer: failed assertion 'no diagnostics': 'diagnostics=[]'
+[ddl-golden][FAIL] case T18.meta.mysql57-review-keyword-definer: failed assertion 'no unsupported': 'unsupported=[]'
+[ddl-golden][FAIL] case T18.meta.mysql57-review-keyword-definer: failed assertion 'statement indices': 'indices=[]'
+[ddl-golden][FAIL] case T18.meta.mysql57-review-keyword-definer: failed assertion 'aggregate coverage': 'coverage=None'
+[ddl-golden][FAIL] case T18.meta.mysql57-review-keyword-definer: failed assertion 'per-statement coverage': 'statement_coverage=[]'
+[ddl-golden][FAIL] case T18.meta.mysql57-review-keyword-definer: failed assertion 'unsupported entries': 'entries=[] expected=[]'
+[ddl-golden][FAIL] case T18.meta.mysql57-review-keyword-definer: failed assertion 'statement raw SQL identity': "raw_sql=[] expected=['ALTER DEFINER=view SQL SECURITY INVOKER VIEW v AS SELECT id FROM t;']"
+[ddl-golden][FAIL] case T18.meta.mysql57-review-keyword-definer: failed assertion 'finding entries': "findings=[] expected=[(0, 'ddl.view.security.definer.warn', 'warning')]"
+[ddl-golden][FAIL] case T18.meta.mysql57-review-keyword-definer: failed assertion 'finding location index=0': "locations=[] expected={'index': 0, 'line': 1, 'column': 7}"
+[ddl-golden][FAIL] case T18.meta.mysql57-review-keyword-definer: failed assertion 'fail_on_triggered': 'fail_on_triggered=None'
+[ddl-golden][FAIL] case T18.meta.mysql57-review-keyword-definer: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql80-review-keyword-definer: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql80-review-keyword-definer: failed assertion 'exit code': 'rc=2 expected=0'
+[ddl-golden][FAIL] case T18.meta.mysql80-review-keyword-definer: failed assertion 'verdict': 'verdict=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-review-keyword-definer: failed assertion 'top-level statements': 'statements=0 expected=1'
+[ddl-golden][FAIL] case T18.meta.mysql80-review-keyword-definer: failed assertion 'zero findings': 'findings=0'
+[ddl-golden][FAIL] case T18.meta.mysql80-review-keyword-definer: failed assertion 'no diagnostics': 'diagnostics=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-review-keyword-definer: failed assertion 'no unsupported': 'unsupported=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-review-keyword-definer: failed assertion 'statement indices': 'indices=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-review-keyword-definer: failed assertion 'aggregate coverage': 'coverage=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-review-keyword-definer: failed assertion 'per-statement coverage': 'statement_coverage=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-review-keyword-definer: failed assertion 'unsupported entries': 'entries=[] expected=[]'
+[ddl-golden][FAIL] case T18.meta.mysql80-review-keyword-definer: failed assertion 'statement raw SQL identity': "raw_sql=[] expected=['ALTER DEFINER=view SQL SECURITY INVOKER VIEW v AS SELECT id FROM t;']"
+[ddl-golden][FAIL] case T18.meta.mysql80-review-keyword-definer: failed assertion 'finding entries': "findings=[] expected=[(0, 'ddl.view.security.definer.warn', 'warning')]"
+[ddl-golden][FAIL] case T18.meta.mysql80-review-keyword-definer: failed assertion 'finding location index=0': "locations=[] expected={'index': 0, 'line': 1, 'column': 7}"
+[ddl-golden][FAIL] case T18.meta.mysql80-review-keyword-definer: failed assertion 'fail_on_triggered': 'fail_on_triggered=None'
+[ddl-golden][FAIL] case T18.meta.mysql80-review-keyword-definer: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql84-review-keyword-definer: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql84-review-keyword-definer: failed assertion 'exit code': 'rc=2 expected=0'
+[ddl-golden][FAIL] case T18.meta.mysql84-review-keyword-definer: failed assertion 'verdict': 'verdict=None'
+[ddl-golden][FAIL] case T18.meta.mysql84-review-keyword-definer: failed assertion 'top-level statements': 'statements=0 expected=1'
+[ddl-golden][FAIL] case T18.meta.mysql84-review-keyword-definer: failed assertion 'zero findings': 'findings=0'
+[ddl-golden][FAIL] case T18.meta.mysql84-review-keyword-definer: failed assertion 'no diagnostics': 'diagnostics=[]'
+[ddl-golden][FAIL] case T18.meta.mysql84-review-keyword-definer: failed assertion 'no unsupported': 'unsupported=[]'
+[ddl-golden][FAIL] case T18.meta.mysql84-review-keyword-definer: failed assertion 'statement indices': 'indices=[]'
+[ddl-golden][FAIL] case T18.meta.mysql84-review-keyword-definer: failed assertion 'aggregate coverage': 'coverage=None'
+[ddl-golden][FAIL] case T18.meta.mysql84-review-keyword-definer: failed assertion 'per-statement coverage': 'statement_coverage=[]'
+[ddl-golden][FAIL] case T18.meta.mysql84-review-keyword-definer: failed assertion 'unsupported entries': 'entries=[] expected=[]'
+[ddl-golden][FAIL] case T18.meta.mysql84-review-keyword-definer: failed assertion 'statement raw SQL identity': "raw_sql=[] expected=['ALTER DEFINER=view SQL SECURITY INVOKER VIEW v AS SELECT id FROM t;']"
+[ddl-golden][FAIL] case T18.meta.mysql84-review-keyword-definer: failed assertion 'finding entries': "findings=[] expected=[(0, 'ddl.view.security.definer.warn', 'warning')]"
+[ddl-golden][FAIL] case T18.meta.mysql84-review-keyword-definer: failed assertion 'finding location index=0': "locations=[] expected={'index': 0, 'line': 1, 'column': 7}"
+[ddl-golden][FAIL] case T18.meta.mysql84-review-keyword-definer: failed assertion 'fail_on_triggered': 'fail_on_triggered=None'
+[ddl-golden][FAIL] case T18.meta.mysql84-review-keyword-definer: CLI stdout is not JSON

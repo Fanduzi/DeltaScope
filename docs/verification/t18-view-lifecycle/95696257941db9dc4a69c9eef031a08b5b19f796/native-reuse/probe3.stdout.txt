@@ -1,0 +1,24 @@
+===== setup =====
+rc=0
+Note (Code 1008): Can't drop database 't18r1t2_g'; database doesn't exist
+Note (Code 1008): Can't drop database 't18r1t2_src'; database doesn't exist
+===== with_unused_same =====
+rc=0
+===== with_unused_diff =====
+rc=0
+===== main_via_view_subquery =====
+rc=0
+===== view_main_base_subquery =====
+rc=0
+===== same_table_second_alias =====
+rc=0
+===== catalog =====
+rc=0
+TABLE_SCHEMA	TABLE_NAME	IS_UPDATABLE
+t18r1t2_g	main_via_view_subquery	NO
+t18r1t2_g	same_table_second_alias	NO
+t18r1t2_g	view_main_base_subquery	YES
+t18r1t2_g	with_unused_diff	YES
+t18r1t2_g	with_unused_same	YES
+===== cleanup =====
+rc=0

@@ -1,0 +1,4 @@
+# github.com/Fanduzi/DeltaScope/internal/application/audit [github.com/Fanduzi/DeltaScope/internal/application/audit.test]
+internal/application/audit/batch_state_t18r1tail2_test.go:186:18: assessment.Updatable undefined (type spec.ViewLifecycleAssessment has no field or method Updatable)
+internal/application/audit/batch_state_t18r1tail2_test.go:187:65: assessment.Updatable undefined (type spec.ViewLifecycleAssessment has no field or method Updatable)
+internal/application/audit/batch_state_t18r1tail2_test.go:269:16: assessment.Updatable undefined (type spec.ViewLifecycleAssessment has no field or method Updatable)

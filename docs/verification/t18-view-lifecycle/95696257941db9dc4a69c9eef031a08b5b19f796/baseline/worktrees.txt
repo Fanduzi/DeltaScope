@@ -1,0 +1,19 @@
+worktree /Users/fan/GolangProjects/DeltaScope
+HEAD 95696257941db9dc4a69c9eef031a08b5b19f796
+branch refs/heads/milestone/mysql-tidb-ddl-completion
+
+worktree /private/tmp/t18r1-red-worktree
+HEAD 790d8eb24d2c4eb86b8db17a12492705ffcd7456
+branch refs/heads/test/t18r1-red
+
+worktree /private/tmp/t18r1tail-red-worktree
+HEAD 19286f7ff73b79f6fca1cc76d11074f3aee751f2
+detached
+
+worktree /private/tmp/t18r1tail2-red-worktree
+HEAD abe88235e00c53c174d719fe270209b73b82f659
+detached
+
+worktree /Users/fan/GolangProjects/DeltaScope-agent-guidance
+HEAD 0fa922d062361add8a3cb9f01ee2dfb4292fdef6
+branch refs/heads/docs/agent-guidance

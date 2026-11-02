@@ -1,0 +1,1 @@
+cte_expr_v	CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `ds_t18_tail2x`.`cte_expr_v` AS with `c` as (select (`ds_t18_tail2x`.`t`.`id` + 1) AS `x` from `ds_t18_tail2x`.`t`) select `c`.`x` AS `x` from `c`	latin1	latin1_swedish_ci

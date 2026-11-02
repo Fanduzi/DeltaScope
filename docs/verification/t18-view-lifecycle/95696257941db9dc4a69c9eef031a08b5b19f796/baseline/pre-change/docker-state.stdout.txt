@@ -1,0 +1,113 @@
+isolated6-w2 Exited (0) 12 hours ago binlog-isolated-app:local-1793501447-92702
+isolated6-w1 Exited (0) 12 hours ago binlog-isolated-app:local-1793501447-92702
+isolated6-keeper-w2 Up 12 hours alpine:3.20
+isolated6-keeper-w1 Up 12 hours alpine:3.20
+isolated6-cp Exited (0) 12 hours ago binlog-isolated-app:local-1793501447-92702
+isolated6-s3mock Exited (143) 3 hours ago adobe/s3mock:latest
+isolated6-http503 Exited (137) 12 hours ago python:3.12-slim
+isolated6-src-a Exited (0) 3 hours ago mysql:8.0
+isolated6-restore Exited (0) 3 hours ago mysql:8.0
+isolated6-meta Exited (0) 3 hours ago mysql:8.0
+isolated6-src-b Exited (0) 3 hours ago mysql:8.0
+isolated6-proxy Exited (137) 3 hours ago binlog-isolated-proxy:local-1793501447-92702
+isolated5-w2 Exited (0) 13 hours ago binlog-isolated-app:local-1793501447-92702
+isolated5-w1 Exited (0) 13 hours ago binlog-isolated-app:local-1793501447-92702
+isolated5-keeper-w2 Up 13 hours alpine:3.20
+isolated5-keeper-w1 Up 13 hours alpine:3.20
+isolated5-cp Exited (0) 13 hours ago binlog-isolated-app:local-1793501447-92702
+isolated5-s3mock Exited (143) 13 hours ago adobe/s3mock:latest
+isolated5-http503 Exited (137) 13 hours ago python:3.12-slim
+isolated5-restore Exited (0) 13 hours ago mysql:8.0
+isolated5-src-a Exited (0) 13 hours ago mysql:8.0
+isolated5-src-b Exited (0) 13 hours ago mysql:8.0
+isolated5-meta Exited (0) 13 hours ago mysql:8.0
+isolated5-proxy Exited (137) 13 hours ago binlog-isolated-proxy:local-1793501447-92702
+isolated4-w2 Exited (0) 14 hours ago binlog-isolated-app:local-1793501447-92702
+isolated4-w1 Exited (0) 14 hours ago binlog-isolated-app:local-1793501447-92702
+isolated4-keeper-w1 Up 14 hours alpine:3.20
+isolated4-keeper-w2 Up 14 hours alpine:3.20
+isolated4-cp Exited (0) 14 hours ago binlog-isolated-app:local-1793501447-92702
+isolated4-s3mock Exited (143) 14 hours ago adobe/s3mock:latest
+isolated4-http503 Exited (137) 14 hours ago python:3.12-slim
+isolated4-restore Exited (0) 14 hours ago mysql:8.0
+isolated4-src-b Exited (0) 14 hours ago mysql:8.0
+isolated4-src-a Exited (0) 14 hours ago mysql:8.0
+isolated4-meta Exited (0) 14 hours ago mysql:8.0
+isolated4-proxy Exited (137) 14 hours ago binlog-isolated-proxy:local-1793501447-92702
+isolated2-keeper-w1 Up 22 hours alpine:3.20
+isolated2-keeper-w2 Up 22 hours alpine:3.20
+soak-w1 Up 39 hours (healthy) binlog-soak-w1
+soak-w2 Up 39 hours (healthy) binlog-soak-w2
+soak-cp Up 39 hours (healthy) binlog-soak-cp
+soak-s3mock Up 38 hours (healthy) adobe/s3mock:latest
+soak-http503 Up 40 hours python:3.12-slim
+soak-meta Up 37 hours (healthy) mysql:8.0
+soak-src-b Up 40 hours (healthy) mysql:8.0
+soak-src-a Up 40 hours (healthy) mysql:8.0
+soak-restore Up 40 hours (healthy) mysql:8.0
+soak-proxy Up 40 hours (healthy) binlog-soak-proxy
+tmp-restore Up 2 days mysql:8.0
+controlhub-query-e2e-mysql Up 5 days mysql:8.0
+controlhub-demo-mysql Up 8 days mysql:8.0
+controlhub-demo-pg Up 8 days 0af65001d052
+mac-connector Up 3 weeks wenjunxiao/mac-docker-connector
+
+VOLUMES
+0b2f7fa431970b610eb2a3c989928d9bbd46d28ee4be39b65d9257ec41995929
+1bd6aa8893ec554082c12f7fe2bce950b0ee58b074a081b57caad3e4107c52ee
+12d19a67f623cd96523976ce052744c6884ce1aeea65d78a6b10e2da86e8af45
+267ee2cae88378cf07749466422c95f346e08eb0b16f4758c42b79d95980d4f2
+15138c052dfab4ad6fb965bc38a7a689bf1a6c82331ed198f9ed0d3ecf4c8336
+59579c55ef2b8ad7a8d8c11a8922b0d4c670c86170742cf11453ec014f95514e
+426943b6f54c2f5670cba7d738dabed86a4a4237a19d497bce9789bc39d19099
+a6a1205f9f316d03418323528cf98f2c1f544d07f6fd95790555e3c6e0751d4d
+af8b3187990365bead4729748a76c4e569d44488d5c1dbdca66417e4838ab7c6
+binlog-isolated2_w1-data
+binlog-isolated2_w2-data
+binlog-isolated4_cp-data
+binlog-isolated4_meta-data
+binlog-isolated4_s3mock-data
+binlog-isolated4_src-a-data
+binlog-isolated4_src-b-data
+binlog-isolated4_w1-data
+binlog-isolated4_w2-data
+binlog-isolated5_cp-data
+binlog-isolated5_meta-data
+binlog-isolated5_s3mock-data
+binlog-isolated5_src-a-data
+binlog-isolated5_src-b-data
+binlog-isolated5_w1-data
+binlog-isolated5_w2-data
+binlog-isolated6_cp-data
+binlog-isolated6_meta-data
+binlog-isolated6_s3mock-data
+binlog-isolated6_src-a-data
+binlog-isolated6_src-b-data
+binlog-isolated6_w1-data
+binlog-isolated6_w2-data
+binlog-soak_cp-data
+binlog-soak_meta-data
+binlog-soak_s3mock-data
+binlog-soak_src-a-data
+binlog-soak_src-b-data
+binlog-soak_w1-data
+binlog-soak_w2-data
+ce4f0bf5473ea849b9c2aa5d895980cd87e5fd962beefcb6abf9200e5c23256a
+controlhub-demo-mysql-data
+controlhub-demo-pg-data
+
+NETWORKS
+binlog-isolated2_default
+binlog-isolated3_default
+binlog-isolated4_default
+binlog-isolated5_default
+binlog-isolated6_default
+binlog-isolated_default
+binlog-soak_default
+bridge
+ci-test-network
+host
+kodus-backend-services
+monitoring-network
+none
+shared-network

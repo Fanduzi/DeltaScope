@@ -1,0 +1,113 @@
+{
+  "T16": {
+    "artifact_path": "/private/tmp/ddl-golden-t18r1tail2-final-T16-95696257-r2/T16/artifact.json",
+    "artifact_sha256": "be82c81647a964f2b76af066021ca4d64026c994f4ab6ac6eb5289023ca64060",
+    "assertions": 832,
+    "case_count": 60,
+    "cleanup": {
+      "compose_down_rc": 0,
+      "compose_down_stderr": "Container deltascope-ddl-golden-mysql80 Stopping \n Container deltascope-ddl-golden-tidb85-client Stopping \n Container deltascope-ddl-golden-mysql84 Stopping \n Container deltascope-ddl-golden-mysql57 Stopping \n Container deltascope-ddl-golden-mysql84 Stopped \n Container deltascope-ddl-golden-mysql84 Removing \n Container deltascope-ddl-golden-mysql84 Removed \n Container deltascope-ddl-golden-mysql80 Stopped \n Container deltascope-ddl-golden-mysql80 Removing \n Container deltascope-ddl-golden-mysql80 Removed \n Container deltascope-ddl-golden-mysql57 Stopped \n Container deltascope-ddl-golden-mysql57 Removing \n Container deltascope-ddl-golden-mysql57 Removed \n Container deltascope-ddl-golden-tidb85-client Stopped \n Container deltascope-ddl-golden-tidb85-client Removing \n Container deltascope-ddl-golden-tidb85-client Removed \n Container deltascope-ddl-golden-tidb85 Stopping \n Container deltascope-ddl-golden-tidb85 Stopped \n Container deltascope-ddl-golden-tidb85 Removing \n Container deltascope-ddl-golden-tidb85 Removed \n Network deltascope-ddl-golden_default Removing \n Network deltascope-ddl-golden_default Removed",
+      "residual_containers": []
+    },
+    "cli_build": {
+      "command": "CGO_ENABLED=0 go build -o <artifact>/deltascope ./cmd/deltascope",
+      "cgo_enabled": "0",
+      "go_version": "go1.26.1",
+      "built_at": "2026-11-02T06:26:02.364844+00:00",
+      "head_sha": "95696257941db9dc4a69c9eef031a08b5b19f796"
+    },
+    "cli_sha256": "53ee571c7f8d57846305789854f91be5258f24ab92e435ba97880ec3ed1d3ee5",
+    "container_health": {
+      "deltascope-ddl-golden-mysql57": "healthy",
+      "deltascope-ddl-golden-mysql80": "healthy",
+      "deltascope-ddl-golden-mysql84": "healthy",
+      "deltascope-ddl-golden-tidb85": "healthy",
+      "deltascope-ddl-golden-tidb85-client": "healthy"
+    },
+    "duplicate_case_ids": [],
+    "executed_count": 60,
+    "extra_case_ids": [],
+    "failed_assertions": 0,
+    "failed_case_ids": [],
+    "head_sha": "95696257941db9dc4a69c9eef031a08b5b19f796",
+    "issue": 95,
+    "missing_case_ids": [],
+    "passed_cases": 60,
+    "required_count": 60,
+    "task_id": "T16"
+  },
+  "T17": {
+    "artifact_path": "/private/tmp/ddl-golden-t18r1tail2-final-T17-95696257-r2/T17/artifact.json",
+    "artifact_sha256": "e26abf0c52b897c28e78e5bea630ab216b946084347c87412f64bdeed77f8e49",
+    "assertions": 834,
+    "case_count": 52,
+    "cleanup": {
+      "compose_down_rc": 0,
+      "compose_down_stderr": "Container deltascope-ddl-golden-mysql84 Stopping \n Container deltascope-ddl-golden-mysql57 Stopping \n Container deltascope-ddl-golden-mysql80 Stopping \n Container deltascope-ddl-golden-tidb85-client Stopping \n Container deltascope-ddl-golden-mysql84 Stopped \n Container deltascope-ddl-golden-mysql84 Removing \n Container deltascope-ddl-golden-mysql84 Removed \n Container deltascope-ddl-golden-mysql80 Stopped \n Container deltascope-ddl-golden-mysql80 Removing \n Container deltascope-ddl-golden-mysql80 Removed \n Container deltascope-ddl-golden-mysql57 Stopped \n Container deltascope-ddl-golden-mysql57 Removing \n Container deltascope-ddl-golden-mysql57 Removed \n Container deltascope-ddl-golden-tidb85-client Stopped \n Container deltascope-ddl-golden-tidb85-client Removing \n Container deltascope-ddl-golden-tidb85-client Removed \n Container deltascope-ddl-golden-tidb85 Stopping \n Container deltascope-ddl-golden-tidb85 Stopped \n Container deltascope-ddl-golden-tidb85 Removing \n Container deltascope-ddl-golden-tidb85 Removed \n Network deltascope-ddl-golden_default Removing \n Network deltascope-ddl-golden_default Removed",
+      "residual_containers": []
+    },
+    "cli_build": {
+      "command": "CGO_ENABLED=0 go build -o <artifact>/deltascope ./cmd/deltascope",
+      "cgo_enabled": "0",
+      "go_version": "go1.26.1",
+      "built_at": "2026-11-02T06:26:29.888643+00:00",
+      "head_sha": "95696257941db9dc4a69c9eef031a08b5b19f796"
+    },
+    "cli_sha256": "53ee571c7f8d57846305789854f91be5258f24ab92e435ba97880ec3ed1d3ee5",
+    "container_health": {
+      "deltascope-ddl-golden-mysql57": "healthy",
+      "deltascope-ddl-golden-mysql80": "healthy",
+      "deltascope-ddl-golden-mysql84": "healthy",
+      "deltascope-ddl-golden-tidb85": "healthy",
+      "deltascope-ddl-golden-tidb85-client": "healthy"
+    },
+    "duplicate_case_ids": [],
+    "executed_count": 52,
+    "extra_case_ids": [],
+    "failed_assertions": 0,
+    "failed_case_ids": [],
+    "head_sha": "95696257941db9dc4a69c9eef031a08b5b19f796",
+    "issue": 96,
+    "missing_case_ids": [],
+    "passed_cases": 52,
+    "required_count": 52,
+    "task_id": "T17"
+  },
+  "T18": {
+    "artifact_path": "/private/tmp/ddl-golden-t18r1tail2-final-T18-95696257-r3/T18/artifact.json",
+    "artifact_sha256": "10348848074d0fa841dbb1a69ec8a27329ca84b61325663ee5d848d7d4caba44",
+    "assertions": 3778,
+    "case_count": 150,
+    "cleanup": {
+      "compose_down_rc": 0,
+      "compose_down_stderr": "Container deltascope-ddl-golden-mysql57 Stopping \n Container deltascope-ddl-golden-mysql80 Stopping \n Container deltascope-ddl-golden-tidb85-client Stopping \n Container deltascope-ddl-golden-mysql84 Stopping \n Container deltascope-ddl-golden-mysql84 Stopped \n Container deltascope-ddl-golden-mysql84 Removing \n Container deltascope-ddl-golden-mysql84 Removed \n Container deltascope-ddl-golden-mysql57 Stopped \n Container deltascope-ddl-golden-mysql57 Removing \n Container deltascope-ddl-golden-mysql57 Removed \n Container deltascope-ddl-golden-mysql80 Stopped \n Container deltascope-ddl-golden-mysql80 Removing \n Container deltascope-ddl-golden-mysql80 Removed \n Container deltascope-ddl-golden-tidb85-client Stopped \n Container deltascope-ddl-golden-tidb85-client Removing \n Container deltascope-ddl-golden-tidb85-client Removed \n Container deltascope-ddl-golden-tidb85 Stopping \n Container deltascope-ddl-golden-tidb85 Stopped \n Container deltascope-ddl-golden-tidb85 Removing \n Container deltascope-ddl-golden-tidb85 Removed \n Network deltascope-ddl-golden_default Removing \n Network deltascope-ddl-golden_default Removed",
+      "residual_containers": []
+    },
+    "cli_build": {
+      "command": "CGO_ENABLED=0 go build -o <artifact>/deltascope ./cmd/deltascope",
+      "cgo_enabled": "0",
+      "go_version": "go1.26.1",
+      "built_at": "2026-11-02T06:28:32.519261+00:00",
+      "head_sha": "95696257941db9dc4a69c9eef031a08b5b19f796"
+    },
+    "cli_sha256": "53ee571c7f8d57846305789854f91be5258f24ab92e435ba97880ec3ed1d3ee5",
+    "container_health": {
+      "deltascope-ddl-golden-mysql57": "healthy",
+      "deltascope-ddl-golden-mysql80": "healthy",
+      "deltascope-ddl-golden-mysql84": "healthy",
+      "deltascope-ddl-golden-tidb85": "healthy",
+      "deltascope-ddl-golden-tidb85-client": "healthy"
+    },
+    "duplicate_case_ids": [],
+    "executed_count": 150,
+    "extra_case_ids": [],
+    "failed_assertions": 0,
+    "failed_case_ids": [],
+    "head_sha": "95696257941db9dc4a69c9eef031a08b5b19f796",
+    "issue": 97,
+    "missing_case_ids": [],
+    "passed_cases": 150,
+    "required_count": 150,
+    "task_id": "T18"
+  }
+}

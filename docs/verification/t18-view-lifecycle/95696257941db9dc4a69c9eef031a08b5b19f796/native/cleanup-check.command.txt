@@ -1,0 +1,1 @@
+docker ps -a --filter name=t18r1tail2-mysql8046 --filter name=ds-t18r1tail2-native --filter name=deltascope-ddl-golden --format "{{.Names}} {{.Image}} {{.Status}}"

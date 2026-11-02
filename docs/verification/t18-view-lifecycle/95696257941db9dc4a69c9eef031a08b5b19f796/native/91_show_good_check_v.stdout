@@ -1,0 +1,1 @@
+good_check_v	CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `ds_t18_tail2`.`good_check_v` AS select `ds_t18_tail2`.`mixed_v`.`id` AS `id` from `ds_t18_tail2`.`mixed_v` WITH CASCADED CHECK OPTION	latin1	latin1_swedish_ci

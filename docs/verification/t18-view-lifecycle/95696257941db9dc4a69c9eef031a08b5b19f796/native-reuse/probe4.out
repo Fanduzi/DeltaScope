@@ -1,0 +1,21 @@
+===== setup =====
+rc=0
+Note (Code 1008): Can't drop database 't18r1t2_g'; database doesn't exist
+Note (Code 1008): Can't drop database 't18r1t2_src'; database doesn't exist
+===== main_via_cte_subquery =====
+rc=0
+===== main_via_cte_derived =====
+rc=0
+===== main_via_view_derived =====
+rc=0
+===== main_via_nested_view =====
+rc=0
+===== catalog =====
+rc=0
+TABLE_SCHEMA	TABLE_NAME	IS_UPDATABLE
+t18r1t2_g	main_via_cte_derived	NO
+t18r1t2_g	main_via_cte_subquery	NO
+t18r1t2_g	main_via_nested_view	NO
+t18r1t2_g	main_via_view_derived	NO
+===== cleanup =====
+rc=0

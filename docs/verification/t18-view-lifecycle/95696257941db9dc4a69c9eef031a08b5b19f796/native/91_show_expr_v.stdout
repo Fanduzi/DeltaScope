@@ -1,0 +1,1 @@
+expr_v	CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `ds_t18_tail2`.`expr_v` AS select `ds_t18_tail2`.`mixed_v`.`x` AS `x` from `ds_t18_tail2`.`mixed_v`	latin1	latin1_swedish_ci

@@ -1,0 +1,33 @@
+===== version =====
+rc=0
+version
+8.0.46
+===== setup =====
+rc=0
+Note (Code 1008): Can't drop database 't18r1t2_g'; database doesn't exist
+Note (Code 1008): Can't drop database 't18r1t2_src'; database doesn't exist
+===== distinct_nested =====
+rc=0
+===== reuse_where =====
+rc=0
+===== reuse_select_list =====
+rc=0
+===== reuse_derived_subquery =====
+rc=0
+===== derived_inner_reuse =====
+rc=0
+===== derived_outer_inner_same_leaf =====
+rc=0
+===== cte_inner_reuse =====
+rc=0
+===== cte_outer_inner_same_leaf =====
+rc=0
+===== cte_referenced_again =====
+rc=0
+===== view_source_reused =====
+rc=0
+===== catalog =====
+rc=1
+ERROR 1054 (42S22) at line 1: Unknown column 'table_type' in 'field list'
+===== cleanup =====
+rc=0

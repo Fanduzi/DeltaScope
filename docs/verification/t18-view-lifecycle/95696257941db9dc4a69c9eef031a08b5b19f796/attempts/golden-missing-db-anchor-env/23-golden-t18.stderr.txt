@@ -1,0 +1,947 @@
+[ddl-golden][FAIL] case T18.db.mysql57.ddl: status='fail'
+[ddl-golden][FAIL] case T18.db.mysql57.ddl: failed assertion 'database reachable with expected version': "SELECT VERSION() rc=1 version='' expected_contains='5.7.44'"
+[ddl-golden][FAIL] case T18.db.mysql57.ddl: database not reachable
+[ddl-golden][FAIL] case T18.db.mysql57.ddl: version mismatch '' expected contains '5.7.44'
+[ddl-golden][FAIL] case T18.db.mysql57.ddl: step count 0 != manifest steps 5
+[ddl-golden][FAIL] case T18.db.mysql57.syntax_negative: status='fail'
+[ddl-golden][FAIL] case T18.db.mysql57.syntax_negative: failed assertion 'expected error class': "error_class='' expected='1064'"
+[ddl-golden][FAIL] case T18.db.mysql57.syntax_negative: error class '' != expected '1064'
+[ddl-golden][FAIL] case T18.db.mysql80.ddl: status='fail'
+[ddl-golden][FAIL] case T18.db.mysql80.ddl: failed assertion 'database reachable with expected version': "SELECT VERSION() rc=1 version='' expected_contains='8.0.46'"
+[ddl-golden][FAIL] case T18.db.mysql80.ddl: database not reachable
+[ddl-golden][FAIL] case T18.db.mysql80.ddl: version mismatch '' expected contains '8.0.46'
+[ddl-golden][FAIL] case T18.db.mysql80.ddl: step count 0 != manifest steps 5
+[ddl-golden][FAIL] case T18.db.mysql80.syntax_negative: status='fail'
+[ddl-golden][FAIL] case T18.db.mysql80.syntax_negative: failed assertion 'expected error class': "error_class='' expected='1064'"
+[ddl-golden][FAIL] case T18.db.mysql80.syntax_negative: error class '' != expected '1064'
+[ddl-golden][FAIL] case T18.db.mysql84.ddl: status='fail'
+[ddl-golden][FAIL] case T18.db.mysql84.ddl: failed assertion 'database reachable with expected version': "SELECT VERSION() rc=1 version='' expected_contains='8.4.10'"
+[ddl-golden][FAIL] case T18.db.mysql84.ddl: database not reachable
+[ddl-golden][FAIL] case T18.db.mysql84.ddl: version mismatch '' expected contains '8.4.10'
+[ddl-golden][FAIL] case T18.db.mysql84.ddl: step count 0 != manifest steps 5
+[ddl-golden][FAIL] case T18.db.mysql84.syntax_negative: status='fail'
+[ddl-golden][FAIL] case T18.db.mysql84.syntax_negative: failed assertion 'expected error class': "error_class='' expected='1064'"
+[ddl-golden][FAIL] case T18.db.mysql84.syntax_negative: error class '' != expected '1064'
+[ddl-golden][FAIL] case T18.db.tidb85.ddl: status='fail'
+[ddl-golden][FAIL] case T18.db.tidb85.ddl: failed assertion 'create-retired-source return code': 'rc=1 expected=0 stderr="cannot connect to the Docker daemon. Is \'docker daemon\' running on this host?: dial unix /Users/fan/.docker/run/docker.sock: connect: connection refused"'
+[ddl-golden][FAIL] case T18.db.tidb85.ddl: failed assertion 'create-original-view return code': 'rc=1 expected=0 stderr="ERROR 1146 (42S02) at line 1: Table \'t18fx.u\' doesn\'t exist"'
+[ddl-golden][FAIL] case T18.db.tidb85.ddl: failed assertion 'create-original-view: fixture target has VIEW identity': "rc=0 output='' expected='VIEW'"
+[ddl-golden][FAIL] case T18.db.tidb85.ddl: step create-retired-source rc 1 != 0
+[ddl-golden][FAIL] case T18.db.tidb85.ddl: step create-original-view rc 1 != 0
+[ddl-golden][FAIL] case T18.db.tidb85.ddl: verify fixture target has VIEW identity output '' != 'VIEW'
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-first: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-first: failed assertion 'database reachable with expected version': "SELECT VERSION() rc=1 version='' expected_contains='8.0.46'"
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-first: database not reachable
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-first: version mismatch '' expected contains '8.0.46'
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-first: no recorded command
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-first: setup step count 0 != manifest 2
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-first: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-first: execute step count 0 != manifest 1
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-dependencies: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-dependencies: failed assertion 'database reachable with expected version': "SELECT VERSION() rc=1 version='' expected_contains='8.0.46'"
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-dependencies: database not reachable
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-dependencies: version mismatch '' expected contains '8.0.46'
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-dependencies: no recorded command
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-dependencies: setup step count 0 != manifest 2
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-dependencies: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-source-absent: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-source-absent: failed assertion 'database reachable with expected version': "SELECT VERSION() rc=1 version='' expected_contains='8.0.46'"
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-source-absent: database not reachable
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-source-absent: version mismatch '' expected contains '8.0.46'
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-source-absent: no recorded command
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-source-absent: setup step count 0 != manifest 2
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-source-absent: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-blanket: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-blanket: failed assertion 'database reachable with expected version': "SELECT VERSION() rc=1 version='' expected_contains='8.0.46'"
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-blanket: database not reachable
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-blanket: version mismatch '' expected contains '8.0.46'
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-blanket: no recorded command
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-blanket: setup step count 0 != manifest 2
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-blanket: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql57-create-plain: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql57-create-plain: failed assertion 'database reachable with expected version': "SELECT VERSION() rc=1 version='' expected_contains='5.7.44'"
+[ddl-golden][FAIL] case T18.meta.mysql57-create-plain: database not reachable
+[ddl-golden][FAIL] case T18.meta.mysql57-create-plain: version mismatch '' expected contains '5.7.44'
+[ddl-golden][FAIL] case T18.meta.mysql57-create-plain: no recorded command
+[ddl-golden][FAIL] case T18.meta.mysql57-create-plain: setup step count 0 != manifest 1
+[ddl-golden][FAIL] case T18.meta.mysql57-create-plain: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql57-create-plain: post_verify count 0 != manifest 3
+[ddl-golden][FAIL] case T18.meta.mysql57-create-plain: structure query count 0 != manifest 3
+[ddl-golden][FAIL] case T18.meta.mysql57-create-plain: teardown count 0 != manifest 2
+[ddl-golden][FAIL] case T18.meta.mysql57-replace-edges: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql57-replace-edges: failed assertion 'database reachable with expected version': "SELECT VERSION() rc=1 version='' expected_contains='5.7.44'"
+[ddl-golden][FAIL] case T18.meta.mysql57-replace-edges: database not reachable
+[ddl-golden][FAIL] case T18.meta.mysql57-replace-edges: version mismatch '' expected contains '5.7.44'
+[ddl-golden][FAIL] case T18.meta.mysql57-replace-edges: no recorded command
+[ddl-golden][FAIL] case T18.meta.mysql57-replace-edges: setup step count 0 != manifest 1
+[ddl-golden][FAIL] case T18.meta.mysql57-replace-edges: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql57-replace-edges: post_verify count 0 != manifest 3
+[ddl-golden][FAIL] case T18.meta.mysql57-replace-edges: structure query count 0 != manifest 3
+[ddl-golden][FAIL] case T18.meta.mysql57-replace-edges: teardown count 0 != manifest 2
+[ddl-golden][FAIL] case T18.meta.mysql57-replace-table-refusal: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql57-replace-table-refusal: failed assertion 'database reachable with expected version': "SELECT VERSION() rc=1 version='' expected_contains='5.7.44'"
+[ddl-golden][FAIL] case T18.meta.mysql57-replace-table-refusal: database not reachable
+[ddl-golden][FAIL] case T18.meta.mysql57-replace-table-refusal: version mismatch '' expected contains '5.7.44'
+[ddl-golden][FAIL] case T18.meta.mysql57-replace-table-refusal: no recorded command
+[ddl-golden][FAIL] case T18.meta.mysql57-replace-table-refusal: setup step count 0 != manifest 1
+[ddl-golden][FAIL] case T18.meta.mysql57-replace-table-refusal: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql57-replace-table-refusal: post_verify count 0 != manifest 3
+[ddl-golden][FAIL] case T18.meta.mysql57-replace-table-refusal: structure query count 0 != manifest 3
+[ddl-golden][FAIL] case T18.meta.mysql57-replace-table-refusal: teardown count 0 != manifest 2
+[ddl-golden][FAIL] case T18.meta.mysql57-source-drop-column: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql57-source-drop-column: failed assertion 'database reachable with expected version': "SELECT VERSION() rc=1 version='' expected_contains='5.7.44'"
+[ddl-golden][FAIL] case T18.meta.mysql57-source-drop-column: database not reachable
+[ddl-golden][FAIL] case T18.meta.mysql57-source-drop-column: version mismatch '' expected contains '5.7.44'
+[ddl-golden][FAIL] case T18.meta.mysql57-source-drop-column: no recorded command
+[ddl-golden][FAIL] case T18.meta.mysql57-source-drop-column: setup step count 0 != manifest 1
+[ddl-golden][FAIL] case T18.meta.mysql57-source-drop-column: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql57-source-drop-column: post_verify count 0 != manifest 3
+[ddl-golden][FAIL] case T18.meta.mysql57-source-drop-column: structure query count 0 != manifest 3
+[ddl-golden][FAIL] case T18.meta.mysql57-source-drop-column: teardown count 0 != manifest 2
+[ddl-golden][FAIL] case T18.meta.mysql57-source-rename: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql57-source-rename: failed assertion 'database reachable with expected version': "SELECT VERSION() rc=1 version='' expected_contains='5.7.44'"
+[ddl-golden][FAIL] case T18.meta.mysql57-source-rename: database not reachable
+[ddl-golden][FAIL] case T18.meta.mysql57-source-rename: version mismatch '' expected contains '5.7.44'
+[ddl-golden][FAIL] case T18.meta.mysql57-source-rename: no recorded command
+[ddl-golden][FAIL] case T18.meta.mysql57-source-rename: setup step count 0 != manifest 1
+[ddl-golden][FAIL] case T18.meta.mysql57-source-rename: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql57-source-rename: post_verify count 0 != manifest 3
+[ddl-golden][FAIL] case T18.meta.mysql57-source-rename: structure query count 0 != manifest 3
+[ddl-golden][FAIL] case T18.meta.mysql57-source-rename: teardown count 0 != manifest 2
+[ddl-golden][FAIL] case T18.meta.mysql57-schema-recreate: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql57-schema-recreate: failed assertion 'database reachable with expected version': "SELECT VERSION() rc=1 version='' expected_contains='5.7.44'"
+[ddl-golden][FAIL] case T18.meta.mysql57-schema-recreate: database not reachable
+[ddl-golden][FAIL] case T18.meta.mysql57-schema-recreate: version mismatch '' expected contains '5.7.44'
+[ddl-golden][FAIL] case T18.meta.mysql57-schema-recreate: no recorded command
+[ddl-golden][FAIL] case T18.meta.mysql57-schema-recreate: setup step count 0 != manifest 1
+[ddl-golden][FAIL] case T18.meta.mysql57-schema-recreate: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql57-schema-recreate: post_verify count 0 != manifest 3
+[ddl-golden][FAIL] case T18.meta.mysql57-schema-recreate: structure query count 0 != manifest 3
+[ddl-golden][FAIL] case T18.meta.mysql57-schema-recreate: teardown count 0 != manifest 2
+[ddl-golden][FAIL] case T18.meta.mysql57-qualified-target-current-source: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql57-qualified-target-current-source: failed assertion 'database reachable with expected version': "SELECT VERSION() rc=1 version='' expected_contains='5.7.44'"
+[ddl-golden][FAIL] case T18.meta.mysql57-qualified-target-current-source: database not reachable
+[ddl-golden][FAIL] case T18.meta.mysql57-qualified-target-current-source: version mismatch '' expected contains '5.7.44'
+[ddl-golden][FAIL] case T18.meta.mysql57-qualified-target-current-source: no recorded command
+[ddl-golden][FAIL] case T18.meta.mysql57-qualified-target-current-source: setup step count 0 != manifest 1
+[ddl-golden][FAIL] case T18.meta.mysql57-qualified-target-current-source: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql57-qualified-target-current-source: post_verify count 0 != manifest 3
+[ddl-golden][FAIL] case T18.meta.mysql57-qualified-target-current-source: structure query count 0 != manifest 3
+[ddl-golden][FAIL] case T18.meta.mysql57-qualified-target-current-source: teardown count 0 != manifest 2
+[ddl-golden][FAIL] case T18.meta.mysql57-missing-source: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql57-missing-source: failed assertion 'database reachable with expected version': "SELECT VERSION() rc=1 version='' expected_contains='5.7.44'"
+[ddl-golden][FAIL] case T18.meta.mysql57-missing-source: database not reachable
+[ddl-golden][FAIL] case T18.meta.mysql57-missing-source: version mismatch '' expected contains '5.7.44'
+[ddl-golden][FAIL] case T18.meta.mysql57-missing-source: no recorded command
+[ddl-golden][FAIL] case T18.meta.mysql57-missing-source: setup step count 0 != manifest 1
+[ddl-golden][FAIL] case T18.meta.mysql57-missing-source: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql57-missing-source: post_verify count 0 != manifest 3
+[ddl-golden][FAIL] case T18.meta.mysql57-missing-source: structure query count 0 != manifest 3
+[ddl-golden][FAIL] case T18.meta.mysql57-missing-source: teardown count 0 != manifest 2
+[ddl-golden][FAIL] case T18.meta.mysql57-drop-missing-state: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql57-drop-missing-state: failed assertion 'database reachable with expected version': "SELECT VERSION() rc=1 version='' expected_contains='5.7.44'"
+[ddl-golden][FAIL] case T18.meta.mysql57-drop-missing-state: database not reachable
+[ddl-golden][FAIL] case T18.meta.mysql57-drop-missing-state: version mismatch '' expected contains '5.7.44'
+[ddl-golden][FAIL] case T18.meta.mysql57-drop-missing-state: no recorded command
+[ddl-golden][FAIL] case T18.meta.mysql57-drop-missing-state: setup step count 0 != manifest 1
+[ddl-golden][FAIL] case T18.meta.mysql57-drop-missing-state: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql57-drop-missing-state: post_verify count 0 != manifest 3
+[ddl-golden][FAIL] case T18.meta.mysql57-drop-missing-state: structure query count 0 != manifest 3
+[ddl-golden][FAIL] case T18.meta.mysql57-drop-missing-state: teardown count 0 != manifest 2
+[ddl-golden][FAIL] case T18.meta.mysql57-drop-wrongkind-state: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql57-drop-wrongkind-state: failed assertion 'database reachable with expected version': "SELECT VERSION() rc=1 version='' expected_contains='5.7.44'"
+[ddl-golden][FAIL] case T18.meta.mysql57-drop-wrongkind-state: database not reachable
+[ddl-golden][FAIL] case T18.meta.mysql57-drop-wrongkind-state: version mismatch '' expected contains '5.7.44'
+[ddl-golden][FAIL] case T18.meta.mysql57-drop-wrongkind-state: no recorded command
+[ddl-golden][FAIL] case T18.meta.mysql57-drop-wrongkind-state: setup step count 0 != manifest 1
+[ddl-golden][FAIL] case T18.meta.mysql57-drop-wrongkind-state: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql57-drop-wrongkind-state: post_verify count 0 != manifest 3
+[ddl-golden][FAIL] case T18.meta.mysql57-drop-wrongkind-state: structure query count 0 != manifest 3
+[ddl-golden][FAIL] case T18.meta.mysql57-drop-wrongkind-state: teardown count 0 != manifest 2
+[ddl-golden][FAIL] case T18.meta.mysql57-drop-if-wrongkind-state: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql57-drop-if-wrongkind-state: failed assertion 'database reachable with expected version': "SELECT VERSION() rc=1 version='' expected_contains='5.7.44'"
+[ddl-golden][FAIL] case T18.meta.mysql57-drop-if-wrongkind-state: database not reachable
+[ddl-golden][FAIL] case T18.meta.mysql57-drop-if-wrongkind-state: version mismatch '' expected contains '5.7.44'
+[ddl-golden][FAIL] case T18.meta.mysql57-drop-if-wrongkind-state: no recorded command
+[ddl-golden][FAIL] case T18.meta.mysql57-drop-if-wrongkind-state: setup step count 0 != manifest 1
+[ddl-golden][FAIL] case T18.meta.mysql57-drop-if-wrongkind-state: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql57-drop-if-wrongkind-state: post_verify count 0 != manifest 3
+[ddl-golden][FAIL] case T18.meta.mysql57-drop-if-wrongkind-state: structure query count 0 != manifest 3
+[ddl-golden][FAIL] case T18.meta.mysql57-drop-if-wrongkind-state: teardown count 0 != manifest 2
+[ddl-golden][FAIL] case T18.meta.mysql57-drop-duplicate-state: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql57-drop-duplicate-state: failed assertion 'database reachable with expected version': "SELECT VERSION() rc=1 version='' expected_contains='5.7.44'"
+[ddl-golden][FAIL] case T18.meta.mysql57-drop-duplicate-state: database not reachable
+[ddl-golden][FAIL] case T18.meta.mysql57-drop-duplicate-state: version mismatch '' expected contains '5.7.44'
+[ddl-golden][FAIL] case T18.meta.mysql57-drop-duplicate-state: no recorded command
+[ddl-golden][FAIL] case T18.meta.mysql57-drop-duplicate-state: setup step count 0 != manifest 1
+[ddl-golden][FAIL] case T18.meta.mysql57-drop-duplicate-state: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql57-drop-duplicate-state: post_verify count 0 != manifest 3
+[ddl-golden][FAIL] case T18.meta.mysql57-drop-duplicate-state: structure query count 0 != manifest 3
+[ddl-golden][FAIL] case T18.meta.mysql57-drop-duplicate-state: teardown count 0 != manifest 2
+[ddl-golden][FAIL] case T18.meta.mysql57-drop-if-missing-state: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql57-drop-if-missing-state: failed assertion 'database reachable with expected version': "SELECT VERSION() rc=1 version='' expected_contains='5.7.44'"
+[ddl-golden][FAIL] case T18.meta.mysql57-drop-if-missing-state: database not reachable
+[ddl-golden][FAIL] case T18.meta.mysql57-drop-if-missing-state: version mismatch '' expected contains '5.7.44'
+[ddl-golden][FAIL] case T18.meta.mysql57-drop-if-missing-state: no recorded command
+[ddl-golden][FAIL] case T18.meta.mysql57-drop-if-missing-state: setup step count 0 != manifest 1
+[ddl-golden][FAIL] case T18.meta.mysql57-drop-if-missing-state: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql57-drop-if-missing-state: post_verify count 0 != manifest 3
+[ddl-golden][FAIL] case T18.meta.mysql57-drop-if-missing-state: structure query count 0 != manifest 3
+[ddl-golden][FAIL] case T18.meta.mysql57-drop-if-missing-state: teardown count 0 != manifest 2
+[ddl-golden][FAIL] case T18.meta.mysql80-create-plain: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql80-create-plain: failed assertion 'database reachable with expected version': "SELECT VERSION() rc=1 version='' expected_contains='8.0.46'"
+[ddl-golden][FAIL] case T18.meta.mysql80-create-plain: database not reachable
+[ddl-golden][FAIL] case T18.meta.mysql80-create-plain: version mismatch '' expected contains '8.0.46'
+[ddl-golden][FAIL] case T18.meta.mysql80-create-plain: no recorded command
+[ddl-golden][FAIL] case T18.meta.mysql80-create-plain: setup step count 0 != manifest 1
+[ddl-golden][FAIL] case T18.meta.mysql80-create-plain: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql80-create-plain: post_verify count 0 != manifest 3
+[ddl-golden][FAIL] case T18.meta.mysql80-create-plain: structure query count 0 != manifest 3
+[ddl-golden][FAIL] case T18.meta.mysql80-create-plain: teardown count 0 != manifest 2
+[ddl-golden][FAIL] case T18.meta.mysql80-replace-edges: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql80-replace-edges: failed assertion 'database reachable with expected version': "SELECT VERSION() rc=1 version='' expected_contains='8.0.46'"
+[ddl-golden][FAIL] case T18.meta.mysql80-replace-edges: database not reachable
+[ddl-golden][FAIL] case T18.meta.mysql80-replace-edges: version mismatch '' expected contains '8.0.46'
+[ddl-golden][FAIL] case T18.meta.mysql80-replace-edges: no recorded command
+[ddl-golden][FAIL] case T18.meta.mysql80-replace-edges: setup step count 0 != manifest 1
+[ddl-golden][FAIL] case T18.meta.mysql80-replace-edges: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql80-replace-edges: post_verify count 0 != manifest 3
+[ddl-golden][FAIL] case T18.meta.mysql80-replace-edges: structure query count 0 != manifest 3
+[ddl-golden][FAIL] case T18.meta.mysql80-replace-edges: teardown count 0 != manifest 2
+[ddl-golden][FAIL] case T18.meta.mysql80-replace-table-refusal: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql80-replace-table-refusal: failed assertion 'database reachable with expected version': "SELECT VERSION() rc=1 version='' expected_contains='8.0.46'"
+[ddl-golden][FAIL] case T18.meta.mysql80-replace-table-refusal: database not reachable
+[ddl-golden][FAIL] case T18.meta.mysql80-replace-table-refusal: version mismatch '' expected contains '8.0.46'
+[ddl-golden][FAIL] case T18.meta.mysql80-replace-table-refusal: no recorded command
+[ddl-golden][FAIL] case T18.meta.mysql80-replace-table-refusal: setup step count 0 != manifest 1
+[ddl-golden][FAIL] case T18.meta.mysql80-replace-table-refusal: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql80-replace-table-refusal: post_verify count 0 != manifest 3
+[ddl-golden][FAIL] case T18.meta.mysql80-replace-table-refusal: structure query count 0 != manifest 3
+[ddl-golden][FAIL] case T18.meta.mysql80-replace-table-refusal: teardown count 0 != manifest 2
+[ddl-golden][FAIL] case T18.meta.mysql80-source-drop-column: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql80-source-drop-column: failed assertion 'database reachable with expected version': "SELECT VERSION() rc=1 version='' expected_contains='8.0.46'"
+[ddl-golden][FAIL] case T18.meta.mysql80-source-drop-column: database not reachable
+[ddl-golden][FAIL] case T18.meta.mysql80-source-drop-column: version mismatch '' expected contains '8.0.46'
+[ddl-golden][FAIL] case T18.meta.mysql80-source-drop-column: no recorded command
+[ddl-golden][FAIL] case T18.meta.mysql80-source-drop-column: setup step count 0 != manifest 1
+[ddl-golden][FAIL] case T18.meta.mysql80-source-drop-column: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql80-source-drop-column: post_verify count 0 != manifest 3
+[ddl-golden][FAIL] case T18.meta.mysql80-source-drop-column: structure query count 0 != manifest 3
+[ddl-golden][FAIL] case T18.meta.mysql80-source-drop-column: teardown count 0 != manifest 2
+[ddl-golden][FAIL] case T18.meta.mysql80-source-rename: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql80-source-rename: failed assertion 'database reachable with expected version': "SELECT VERSION() rc=1 version='' expected_contains='8.0.46'"
+[ddl-golden][FAIL] case T18.meta.mysql80-source-rename: database not reachable
+[ddl-golden][FAIL] case T18.meta.mysql80-source-rename: version mismatch '' expected contains '8.0.46'
+[ddl-golden][FAIL] case T18.meta.mysql80-source-rename: no recorded command
+[ddl-golden][FAIL] case T18.meta.mysql80-source-rename: setup step count 0 != manifest 1
+[ddl-golden][FAIL] case T18.meta.mysql80-source-rename: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql80-source-rename: post_verify count 0 != manifest 3
+[ddl-golden][FAIL] case T18.meta.mysql80-source-rename: structure query count 0 != manifest 3
+[ddl-golden][FAIL] case T18.meta.mysql80-source-rename: teardown count 0 != manifest 2
+[ddl-golden][FAIL] case T18.meta.mysql80-schema-recreate: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql80-schema-recreate: failed assertion 'database reachable with expected version': "SELECT VERSION() rc=1 version='' expected_contains='8.0.46'"
+[ddl-golden][FAIL] case T18.meta.mysql80-schema-recreate: database not reachable
+[ddl-golden][FAIL] case T18.meta.mysql80-schema-recreate: version mismatch '' expected contains '8.0.46'
+[ddl-golden][FAIL] case T18.meta.mysql80-schema-recreate: no recorded command
+[ddl-golden][FAIL] case T18.meta.mysql80-schema-recreate: setup step count 0 != manifest 1
+[ddl-golden][FAIL] case T18.meta.mysql80-schema-recreate: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql80-schema-recreate: post_verify count 0 != manifest 3
+[ddl-golden][FAIL] case T18.meta.mysql80-schema-recreate: structure query count 0 != manifest 3
+[ddl-golden][FAIL] case T18.meta.mysql80-schema-recreate: teardown count 0 != manifest 2
+[ddl-golden][FAIL] case T18.meta.mysql80-qualified-target-current-source: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql80-qualified-target-current-source: failed assertion 'database reachable with expected version': "SELECT VERSION() rc=1 version='' expected_contains='8.0.46'"
+[ddl-golden][FAIL] case T18.meta.mysql80-qualified-target-current-source: database not reachable
+[ddl-golden][FAIL] case T18.meta.mysql80-qualified-target-current-source: version mismatch '' expected contains '8.0.46'
+[ddl-golden][FAIL] case T18.meta.mysql80-qualified-target-current-source: no recorded command
+[ddl-golden][FAIL] case T18.meta.mysql80-qualified-target-current-source: setup step count 0 != manifest 1
+[ddl-golden][FAIL] case T18.meta.mysql80-qualified-target-current-source: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql80-qualified-target-current-source: post_verify count 0 != manifest 3
+[ddl-golden][FAIL] case T18.meta.mysql80-qualified-target-current-source: structure query count 0 != manifest 3
+[ddl-golden][FAIL] case T18.meta.mysql80-qualified-target-current-source: teardown count 0 != manifest 2
+[ddl-golden][FAIL] case T18.meta.mysql80-missing-source: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql80-missing-source: failed assertion 'database reachable with expected version': "SELECT VERSION() rc=1 version='' expected_contains='8.0.46'"
+[ddl-golden][FAIL] case T18.meta.mysql80-missing-source: database not reachable
+[ddl-golden][FAIL] case T18.meta.mysql80-missing-source: version mismatch '' expected contains '8.0.46'
+[ddl-golden][FAIL] case T18.meta.mysql80-missing-source: no recorded command
+[ddl-golden][FAIL] case T18.meta.mysql80-missing-source: setup step count 0 != manifest 1
+[ddl-golden][FAIL] case T18.meta.mysql80-missing-source: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql80-missing-source: post_verify count 0 != manifest 3
+[ddl-golden][FAIL] case T18.meta.mysql80-missing-source: structure query count 0 != manifest 3
+[ddl-golden][FAIL] case T18.meta.mysql80-missing-source: teardown count 0 != manifest 2
+[ddl-golden][FAIL] case T18.meta.mysql80-drop-missing-state: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql80-drop-missing-state: failed assertion 'database reachable with expected version': "SELECT VERSION() rc=1 version='' expected_contains='8.0.46'"
+[ddl-golden][FAIL] case T18.meta.mysql80-drop-missing-state: database not reachable
+[ddl-golden][FAIL] case T18.meta.mysql80-drop-missing-state: version mismatch '' expected contains '8.0.46'
+[ddl-golden][FAIL] case T18.meta.mysql80-drop-missing-state: no recorded command
+[ddl-golden][FAIL] case T18.meta.mysql80-drop-missing-state: setup step count 0 != manifest 1
+[ddl-golden][FAIL] case T18.meta.mysql80-drop-missing-state: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql80-drop-missing-state: post_verify count 0 != manifest 3
+[ddl-golden][FAIL] case T18.meta.mysql80-drop-missing-state: structure query count 0 != manifest 3
+[ddl-golden][FAIL] case T18.meta.mysql80-drop-missing-state: teardown count 0 != manifest 2
+[ddl-golden][FAIL] case T18.meta.mysql80-drop-wrongkind-state: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql80-drop-wrongkind-state: failed assertion 'database reachable with expected version': "SELECT VERSION() rc=1 version='' expected_contains='8.0.46'"
+[ddl-golden][FAIL] case T18.meta.mysql80-drop-wrongkind-state: database not reachable
+[ddl-golden][FAIL] case T18.meta.mysql80-drop-wrongkind-state: version mismatch '' expected contains '8.0.46'
+[ddl-golden][FAIL] case T18.meta.mysql80-drop-wrongkind-state: no recorded command
+[ddl-golden][FAIL] case T18.meta.mysql80-drop-wrongkind-state: setup step count 0 != manifest 1
+[ddl-golden][FAIL] case T18.meta.mysql80-drop-wrongkind-state: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql80-drop-wrongkind-state: post_verify count 0 != manifest 3
+[ddl-golden][FAIL] case T18.meta.mysql80-drop-wrongkind-state: structure query count 0 != manifest 3
+[ddl-golden][FAIL] case T18.meta.mysql80-drop-wrongkind-state: teardown count 0 != manifest 2
+[ddl-golden][FAIL] case T18.meta.mysql80-drop-if-wrongkind-state: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql80-drop-if-wrongkind-state: failed assertion 'database reachable with expected version': "SELECT VERSION() rc=1 version='' expected_contains='8.0.46'"
+[ddl-golden][FAIL] case T18.meta.mysql80-drop-if-wrongkind-state: database not reachable
+[ddl-golden][FAIL] case T18.meta.mysql80-drop-if-wrongkind-state: version mismatch '' expected contains '8.0.46'
+[ddl-golden][FAIL] case T18.meta.mysql80-drop-if-wrongkind-state: no recorded command
+[ddl-golden][FAIL] case T18.meta.mysql80-drop-if-wrongkind-state: setup step count 0 != manifest 1
+[ddl-golden][FAIL] case T18.meta.mysql80-drop-if-wrongkind-state: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql80-drop-if-wrongkind-state: post_verify count 0 != manifest 3
+[ddl-golden][FAIL] case T18.meta.mysql80-drop-if-wrongkind-state: structure query count 0 != manifest 3
+[ddl-golden][FAIL] case T18.meta.mysql80-drop-if-wrongkind-state: teardown count 0 != manifest 2
+[ddl-golden][FAIL] case T18.meta.mysql80-drop-duplicate-state: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql80-drop-duplicate-state: failed assertion 'database reachable with expected version': "SELECT VERSION() rc=1 version='' expected_contains='8.0.46'"
+[ddl-golden][FAIL] case T18.meta.mysql80-drop-duplicate-state: database not reachable
+[ddl-golden][FAIL] case T18.meta.mysql80-drop-duplicate-state: version mismatch '' expected contains '8.0.46'
+[ddl-golden][FAIL] case T18.meta.mysql80-drop-duplicate-state: no recorded command
+[ddl-golden][FAIL] case T18.meta.mysql80-drop-duplicate-state: setup step count 0 != manifest 1
+[ddl-golden][FAIL] case T18.meta.mysql80-drop-duplicate-state: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql80-drop-duplicate-state: post_verify count 0 != manifest 3
+[ddl-golden][FAIL] case T18.meta.mysql80-drop-duplicate-state: structure query count 0 != manifest 3
+[ddl-golden][FAIL] case T18.meta.mysql80-drop-duplicate-state: teardown count 0 != manifest 2
+[ddl-golden][FAIL] case T18.meta.mysql80-drop-if-missing-state: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql80-drop-if-missing-state: failed assertion 'database reachable with expected version': "SELECT VERSION() rc=1 version='' expected_contains='8.0.46'"
+[ddl-golden][FAIL] case T18.meta.mysql80-drop-if-missing-state: database not reachable
+[ddl-golden][FAIL] case T18.meta.mysql80-drop-if-missing-state: version mismatch '' expected contains '8.0.46'
+[ddl-golden][FAIL] case T18.meta.mysql80-drop-if-missing-state: no recorded command
+[ddl-golden][FAIL] case T18.meta.mysql80-drop-if-missing-state: setup step count 0 != manifest 1
+[ddl-golden][FAIL] case T18.meta.mysql80-drop-if-missing-state: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql80-drop-if-missing-state: post_verify count 0 != manifest 3
+[ddl-golden][FAIL] case T18.meta.mysql80-drop-if-missing-state: structure query count 0 != manifest 3
+[ddl-golden][FAIL] case T18.meta.mysql80-drop-if-missing-state: teardown count 0 != manifest 2
+[ddl-golden][FAIL] case T18.meta.mysql84-create-plain: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql84-create-plain: failed assertion 'database reachable with expected version': "SELECT VERSION() rc=1 version='' expected_contains='8.4.10'"
+[ddl-golden][FAIL] case T18.meta.mysql84-create-plain: database not reachable
+[ddl-golden][FAIL] case T18.meta.mysql84-create-plain: version mismatch '' expected contains '8.4.10'
+[ddl-golden][FAIL] case T18.meta.mysql84-create-plain: no recorded command
+[ddl-golden][FAIL] case T18.meta.mysql84-create-plain: setup step count 0 != manifest 1
+[ddl-golden][FAIL] case T18.meta.mysql84-create-plain: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql84-create-plain: post_verify count 0 != manifest 3
+[ddl-golden][FAIL] case T18.meta.mysql84-create-plain: structure query count 0 != manifest 3
+[ddl-golden][FAIL] case T18.meta.mysql84-create-plain: teardown count 0 != manifest 2
+[ddl-golden][FAIL] case T18.meta.mysql84-replace-edges: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql84-replace-edges: failed assertion 'database reachable with expected version': "SELECT VERSION() rc=1 version='' expected_contains='8.4.10'"
+[ddl-golden][FAIL] case T18.meta.mysql84-replace-edges: database not reachable
+[ddl-golden][FAIL] case T18.meta.mysql84-replace-edges: version mismatch '' expected contains '8.4.10'
+[ddl-golden][FAIL] case T18.meta.mysql84-replace-edges: no recorded command
+[ddl-golden][FAIL] case T18.meta.mysql84-replace-edges: setup step count 0 != manifest 1
+[ddl-golden][FAIL] case T18.meta.mysql84-replace-edges: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql84-replace-edges: post_verify count 0 != manifest 3
+[ddl-golden][FAIL] case T18.meta.mysql84-replace-edges: structure query count 0 != manifest 3
+[ddl-golden][FAIL] case T18.meta.mysql84-replace-edges: teardown count 0 != manifest 2
+[ddl-golden][FAIL] case T18.meta.mysql84-replace-table-refusal: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql84-replace-table-refusal: failed assertion 'database reachable with expected version': "SELECT VERSION() rc=1 version='' expected_contains='8.4.10'"
+[ddl-golden][FAIL] case T18.meta.mysql84-replace-table-refusal: database not reachable
+[ddl-golden][FAIL] case T18.meta.mysql84-replace-table-refusal: version mismatch '' expected contains '8.4.10'
+[ddl-golden][FAIL] case T18.meta.mysql84-replace-table-refusal: no recorded command
+[ddl-golden][FAIL] case T18.meta.mysql84-replace-table-refusal: setup step count 0 != manifest 1
+[ddl-golden][FAIL] case T18.meta.mysql84-replace-table-refusal: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql84-replace-table-refusal: post_verify count 0 != manifest 3
+[ddl-golden][FAIL] case T18.meta.mysql84-replace-table-refusal: structure query count 0 != manifest 3
+[ddl-golden][FAIL] case T18.meta.mysql84-replace-table-refusal: teardown count 0 != manifest 2
+[ddl-golden][FAIL] case T18.meta.mysql84-source-drop-column: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql84-source-drop-column: failed assertion 'database reachable with expected version': "SELECT VERSION() rc=1 version='' expected_contains='8.4.10'"
+[ddl-golden][FAIL] case T18.meta.mysql84-source-drop-column: database not reachable
+[ddl-golden][FAIL] case T18.meta.mysql84-source-drop-column: version mismatch '' expected contains '8.4.10'
+[ddl-golden][FAIL] case T18.meta.mysql84-source-drop-column: no recorded command
+[ddl-golden][FAIL] case T18.meta.mysql84-source-drop-column: setup step count 0 != manifest 1
+[ddl-golden][FAIL] case T18.meta.mysql84-source-drop-column: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql84-source-drop-column: post_verify count 0 != manifest 3
+[ddl-golden][FAIL] case T18.meta.mysql84-source-drop-column: structure query count 0 != manifest 3
+[ddl-golden][FAIL] case T18.meta.mysql84-source-drop-column: teardown count 0 != manifest 2
+[ddl-golden][FAIL] case T18.meta.mysql84-source-rename: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql84-source-rename: failed assertion 'database reachable with expected version': "SELECT VERSION() rc=1 version='' expected_contains='8.4.10'"
+[ddl-golden][FAIL] case T18.meta.mysql84-source-rename: database not reachable
+[ddl-golden][FAIL] case T18.meta.mysql84-source-rename: version mismatch '' expected contains '8.4.10'
+[ddl-golden][FAIL] case T18.meta.mysql84-source-rename: no recorded command
+[ddl-golden][FAIL] case T18.meta.mysql84-source-rename: setup step count 0 != manifest 1
+[ddl-golden][FAIL] case T18.meta.mysql84-source-rename: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql84-source-rename: post_verify count 0 != manifest 3
+[ddl-golden][FAIL] case T18.meta.mysql84-source-rename: structure query count 0 != manifest 3
+[ddl-golden][FAIL] case T18.meta.mysql84-source-rename: teardown count 0 != manifest 2
+[ddl-golden][FAIL] case T18.meta.mysql84-schema-recreate: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql84-schema-recreate: failed assertion 'database reachable with expected version': "SELECT VERSION() rc=1 version='' expected_contains='8.4.10'"
+[ddl-golden][FAIL] case T18.meta.mysql84-schema-recreate: database not reachable
+[ddl-golden][FAIL] case T18.meta.mysql84-schema-recreate: version mismatch '' expected contains '8.4.10'
+[ddl-golden][FAIL] case T18.meta.mysql84-schema-recreate: no recorded command
+[ddl-golden][FAIL] case T18.meta.mysql84-schema-recreate: setup step count 0 != manifest 1
+[ddl-golden][FAIL] case T18.meta.mysql84-schema-recreate: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql84-schema-recreate: post_verify count 0 != manifest 3
+[ddl-golden][FAIL] case T18.meta.mysql84-schema-recreate: structure query count 0 != manifest 3
+[ddl-golden][FAIL] case T18.meta.mysql84-schema-recreate: teardown count 0 != manifest 2
+[ddl-golden][FAIL] case T18.meta.mysql84-qualified-target-current-source: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql84-qualified-target-current-source: failed assertion 'database reachable with expected version': "SELECT VERSION() rc=1 version='' expected_contains='8.4.10'"
+[ddl-golden][FAIL] case T18.meta.mysql84-qualified-target-current-source: database not reachable
+[ddl-golden][FAIL] case T18.meta.mysql84-qualified-target-current-source: version mismatch '' expected contains '8.4.10'
+[ddl-golden][FAIL] case T18.meta.mysql84-qualified-target-current-source: no recorded command
+[ddl-golden][FAIL] case T18.meta.mysql84-qualified-target-current-source: setup step count 0 != manifest 1
+[ddl-golden][FAIL] case T18.meta.mysql84-qualified-target-current-source: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql84-qualified-target-current-source: post_verify count 0 != manifest 3
+[ddl-golden][FAIL] case T18.meta.mysql84-qualified-target-current-source: structure query count 0 != manifest 3
+[ddl-golden][FAIL] case T18.meta.mysql84-qualified-target-current-source: teardown count 0 != manifest 2
+[ddl-golden][FAIL] case T18.meta.mysql84-missing-source: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql84-missing-source: failed assertion 'database reachable with expected version': "SELECT VERSION() rc=1 version='' expected_contains='8.4.10'"
+[ddl-golden][FAIL] case T18.meta.mysql84-missing-source: database not reachable
+[ddl-golden][FAIL] case T18.meta.mysql84-missing-source: version mismatch '' expected contains '8.4.10'
+[ddl-golden][FAIL] case T18.meta.mysql84-missing-source: no recorded command
+[ddl-golden][FAIL] case T18.meta.mysql84-missing-source: setup step count 0 != manifest 1
+[ddl-golden][FAIL] case T18.meta.mysql84-missing-source: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql84-missing-source: post_verify count 0 != manifest 3
+[ddl-golden][FAIL] case T18.meta.mysql84-missing-source: structure query count 0 != manifest 3
+[ddl-golden][FAIL] case T18.meta.mysql84-missing-source: teardown count 0 != manifest 2
+[ddl-golden][FAIL] case T18.meta.mysql84-drop-missing-state: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql84-drop-missing-state: failed assertion 'database reachable with expected version': "SELECT VERSION() rc=1 version='' expected_contains='8.4.10'"
+[ddl-golden][FAIL] case T18.meta.mysql84-drop-missing-state: database not reachable
+[ddl-golden][FAIL] case T18.meta.mysql84-drop-missing-state: version mismatch '' expected contains '8.4.10'
+[ddl-golden][FAIL] case T18.meta.mysql84-drop-missing-state: no recorded command
+[ddl-golden][FAIL] case T18.meta.mysql84-drop-missing-state: setup step count 0 != manifest 1
+[ddl-golden][FAIL] case T18.meta.mysql84-drop-missing-state: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql84-drop-missing-state: post_verify count 0 != manifest 3
+[ddl-golden][FAIL] case T18.meta.mysql84-drop-missing-state: structure query count 0 != manifest 3
+[ddl-golden][FAIL] case T18.meta.mysql84-drop-missing-state: teardown count 0 != manifest 2
+[ddl-golden][FAIL] case T18.meta.mysql84-drop-wrongkind-state: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql84-drop-wrongkind-state: failed assertion 'database reachable with expected version': "SELECT VERSION() rc=1 version='' expected_contains='8.4.10'"
+[ddl-golden][FAIL] case T18.meta.mysql84-drop-wrongkind-state: database not reachable
+[ddl-golden][FAIL] case T18.meta.mysql84-drop-wrongkind-state: version mismatch '' expected contains '8.4.10'
+[ddl-golden][FAIL] case T18.meta.mysql84-drop-wrongkind-state: no recorded command
+[ddl-golden][FAIL] case T18.meta.mysql84-drop-wrongkind-state: setup step count 0 != manifest 1
+[ddl-golden][FAIL] case T18.meta.mysql84-drop-wrongkind-state: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql84-drop-wrongkind-state: post_verify count 0 != manifest 3
+[ddl-golden][FAIL] case T18.meta.mysql84-drop-wrongkind-state: structure query count 0 != manifest 3
+[ddl-golden][FAIL] case T18.meta.mysql84-drop-wrongkind-state: teardown count 0 != manifest 2
+[ddl-golden][FAIL] case T18.meta.mysql84-drop-if-wrongkind-state: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql84-drop-if-wrongkind-state: failed assertion 'database reachable with expected version': "SELECT VERSION() rc=1 version='' expected_contains='8.4.10'"
+[ddl-golden][FAIL] case T18.meta.mysql84-drop-if-wrongkind-state: database not reachable
+[ddl-golden][FAIL] case T18.meta.mysql84-drop-if-wrongkind-state: version mismatch '' expected contains '8.4.10'
+[ddl-golden][FAIL] case T18.meta.mysql84-drop-if-wrongkind-state: no recorded command
+[ddl-golden][FAIL] case T18.meta.mysql84-drop-if-wrongkind-state: setup step count 0 != manifest 1
+[ddl-golden][FAIL] case T18.meta.mysql84-drop-if-wrongkind-state: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql84-drop-if-wrongkind-state: post_verify count 0 != manifest 3
+[ddl-golden][FAIL] case T18.meta.mysql84-drop-if-wrongkind-state: structure query count 0 != manifest 3
+[ddl-golden][FAIL] case T18.meta.mysql84-drop-if-wrongkind-state: teardown count 0 != manifest 2
+[ddl-golden][FAIL] case T18.meta.mysql84-drop-duplicate-state: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql84-drop-duplicate-state: failed assertion 'database reachable with expected version': "SELECT VERSION() rc=1 version='' expected_contains='8.4.10'"
+[ddl-golden][FAIL] case T18.meta.mysql84-drop-duplicate-state: database not reachable
+[ddl-golden][FAIL] case T18.meta.mysql84-drop-duplicate-state: version mismatch '' expected contains '8.4.10'
+[ddl-golden][FAIL] case T18.meta.mysql84-drop-duplicate-state: no recorded command
+[ddl-golden][FAIL] case T18.meta.mysql84-drop-duplicate-state: setup step count 0 != manifest 1
+[ddl-golden][FAIL] case T18.meta.mysql84-drop-duplicate-state: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql84-drop-duplicate-state: post_verify count 0 != manifest 3
+[ddl-golden][FAIL] case T18.meta.mysql84-drop-duplicate-state: structure query count 0 != manifest 3
+[ddl-golden][FAIL] case T18.meta.mysql84-drop-duplicate-state: teardown count 0 != manifest 2
+[ddl-golden][FAIL] case T18.meta.mysql84-drop-if-missing-state: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql84-drop-if-missing-state: failed assertion 'database reachable with expected version': "SELECT VERSION() rc=1 version='' expected_contains='8.4.10'"
+[ddl-golden][FAIL] case T18.meta.mysql84-drop-if-missing-state: database not reachable
+[ddl-golden][FAIL] case T18.meta.mysql84-drop-if-missing-state: version mismatch '' expected contains '8.4.10'
+[ddl-golden][FAIL] case T18.meta.mysql84-drop-if-missing-state: no recorded command
+[ddl-golden][FAIL] case T18.meta.mysql84-drop-if-missing-state: setup step count 0 != manifest 1
+[ddl-golden][FAIL] case T18.meta.mysql84-drop-if-missing-state: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql84-drop-if-missing-state: post_verify count 0 != manifest 3
+[ddl-golden][FAIL] case T18.meta.mysql84-drop-if-missing-state: structure query count 0 != manifest 3
+[ddl-golden][FAIL] case T18.meta.mysql84-drop-if-missing-state: teardown count 0 != manifest 2
+[ddl-golden][FAIL] case T18.meta.mysql80-where: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql80-where: failed assertion 'database reachable with expected version': "SELECT VERSION() rc=1 version='' expected_contains='8.0.46'"
+[ddl-golden][FAIL] case T18.meta.mysql80-where: database not reachable
+[ddl-golden][FAIL] case T18.meta.mysql80-where: version mismatch '' expected contains '8.0.46'
+[ddl-golden][FAIL] case T18.meta.mysql80-where: no recorded command
+[ddl-golden][FAIL] case T18.meta.mysql80-where: setup step count 0 != manifest 1
+[ddl-golden][FAIL] case T18.meta.mysql80-where: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql80-where: post_verify count 0 != manifest 3
+[ddl-golden][FAIL] case T18.meta.mysql80-where: structure query count 0 != manifest 3
+[ddl-golden][FAIL] case T18.meta.mysql80-where: teardown count 0 != manifest 2
+[ddl-golden][FAIL] case T18.meta.mysql80-columns: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql80-columns: failed assertion 'database reachable with expected version': "SELECT VERSION() rc=1 version='' expected_contains='8.0.46'"
+[ddl-golden][FAIL] case T18.meta.mysql80-columns: database not reachable
+[ddl-golden][FAIL] case T18.meta.mysql80-columns: version mismatch '' expected contains '8.0.46'
+[ddl-golden][FAIL] case T18.meta.mysql80-columns: no recorded command
+[ddl-golden][FAIL] case T18.meta.mysql80-columns: setup step count 0 != manifest 1
+[ddl-golden][FAIL] case T18.meta.mysql80-columns: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql80-columns: post_verify count 0 != manifest 3
+[ddl-golden][FAIL] case T18.meta.mysql80-columns: structure query count 0 != manifest 3
+[ddl-golden][FAIL] case T18.meta.mysql80-columns: teardown count 0 != manifest 2
+[ddl-golden][FAIL] case T18.meta.mysql80-named-expression: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql80-named-expression: failed assertion 'database reachable with expected version': "SELECT VERSION() rc=1 version='' expected_contains='8.0.46'"
+[ddl-golden][FAIL] case T18.meta.mysql80-named-expression: database not reachable
+[ddl-golden][FAIL] case T18.meta.mysql80-named-expression: version mismatch '' expected contains '8.0.46'
+[ddl-golden][FAIL] case T18.meta.mysql80-named-expression: no recorded command
+[ddl-golden][FAIL] case T18.meta.mysql80-named-expression: setup step count 0 != manifest 1
+[ddl-golden][FAIL] case T18.meta.mysql80-named-expression: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql80-named-expression: post_verify count 0 != manifest 3
+[ddl-golden][FAIL] case T18.meta.mysql80-named-expression: structure query count 0 != manifest 3
+[ddl-golden][FAIL] case T18.meta.mysql80-named-expression: teardown count 0 != manifest 2
+[ddl-golden][FAIL] case T18.meta.mysql80-join: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql80-join: failed assertion 'database reachable with expected version': "SELECT VERSION() rc=1 version='' expected_contains='8.0.46'"
+[ddl-golden][FAIL] case T18.meta.mysql80-join: database not reachable
+[ddl-golden][FAIL] case T18.meta.mysql80-join: version mismatch '' expected contains '8.0.46'
+[ddl-golden][FAIL] case T18.meta.mysql80-join: no recorded command
+[ddl-golden][FAIL] case T18.meta.mysql80-join: setup step count 0 != manifest 1
+[ddl-golden][FAIL] case T18.meta.mysql80-join: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql80-join: post_verify count 0 != manifest 3
+[ddl-golden][FAIL] case T18.meta.mysql80-join: structure query count 0 != manifest 3
+[ddl-golden][FAIL] case T18.meta.mysql80-join: teardown count 0 != manifest 2
+[ddl-golden][FAIL] case T18.meta.mysql80-cte: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql80-cte: failed assertion 'database reachable with expected version': "SELECT VERSION() rc=1 version='' expected_contains='8.0.46'"
+[ddl-golden][FAIL] case T18.meta.mysql80-cte: database not reachable
+[ddl-golden][FAIL] case T18.meta.mysql80-cte: version mismatch '' expected contains '8.0.46'
+[ddl-golden][FAIL] case T18.meta.mysql80-cte: no recorded command
+[ddl-golden][FAIL] case T18.meta.mysql80-cte: setup step count 0 != manifest 1
+[ddl-golden][FAIL] case T18.meta.mysql80-cte: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql80-cte: post_verify count 0 != manifest 3
+[ddl-golden][FAIL] case T18.meta.mysql80-cte: structure query count 0 != manifest 3
+[ddl-golden][FAIL] case T18.meta.mysql80-cte: teardown count 0 != manifest 2
+[ddl-golden][FAIL] case T18.meta.mysql80-derived: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql80-derived: failed assertion 'database reachable with expected version': "SELECT VERSION() rc=1 version='' expected_contains='8.0.46'"
+[ddl-golden][FAIL] case T18.meta.mysql80-derived: database not reachable
+[ddl-golden][FAIL] case T18.meta.mysql80-derived: version mismatch '' expected contains '8.0.46'
+[ddl-golden][FAIL] case T18.meta.mysql80-derived: no recorded command
+[ddl-golden][FAIL] case T18.meta.mysql80-derived: setup step count 0 != manifest 1
+[ddl-golden][FAIL] case T18.meta.mysql80-derived: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql80-derived: post_verify count 0 != manifest 3
+[ddl-golden][FAIL] case T18.meta.mysql80-derived: structure query count 0 != manifest 3
+[ddl-golden][FAIL] case T18.meta.mysql80-derived: teardown count 0 != manifest 2
+[ddl-golden][FAIL] case T18.meta.mysql80-union: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql80-union: failed assertion 'database reachable with expected version': "SELECT VERSION() rc=1 version='' expected_contains='8.0.46'"
+[ddl-golden][FAIL] case T18.meta.mysql80-union: database not reachable
+[ddl-golden][FAIL] case T18.meta.mysql80-union: version mismatch '' expected contains '8.0.46'
+[ddl-golden][FAIL] case T18.meta.mysql80-union: no recorded command
+[ddl-golden][FAIL] case T18.meta.mysql80-union: setup step count 0 != manifest 1
+[ddl-golden][FAIL] case T18.meta.mysql80-union: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql80-union: post_verify count 0 != manifest 3
+[ddl-golden][FAIL] case T18.meta.mysql80-union: structure query count 0 != manifest 3
+[ddl-golden][FAIL] case T18.meta.mysql80-union: teardown count 0 != manifest 2
+[ddl-golden][FAIL] case T18.meta.mysql80-constant: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql80-constant: failed assertion 'database reachable with expected version': "SELECT VERSION() rc=1 version='' expected_contains='8.0.46'"
+[ddl-golden][FAIL] case T18.meta.mysql80-constant: database not reachable
+[ddl-golden][FAIL] case T18.meta.mysql80-constant: version mismatch '' expected contains '8.0.46'
+[ddl-golden][FAIL] case T18.meta.mysql80-constant: no recorded command
+[ddl-golden][FAIL] case T18.meta.mysql80-constant: setup step count 0 != manifest 1
+[ddl-golden][FAIL] case T18.meta.mysql80-constant: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql80-constant: post_verify count 0 != manifest 3
+[ddl-golden][FAIL] case T18.meta.mysql80-constant: structure query count 0 != manifest 3
+[ddl-golden][FAIL] case T18.meta.mysql80-constant: teardown count 0 != manifest 2
+[ddl-golden][FAIL] case T18.meta.mysql80-where-column-refusal: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql80-where-column-refusal: failed assertion 'database reachable with expected version': "SELECT VERSION() rc=1 version='' expected_contains='8.0.46'"
+[ddl-golden][FAIL] case T18.meta.mysql80-where-column-refusal: database not reachable
+[ddl-golden][FAIL] case T18.meta.mysql80-where-column-refusal: version mismatch '' expected contains '8.0.46'
+[ddl-golden][FAIL] case T18.meta.mysql80-where-column-refusal: no recorded command
+[ddl-golden][FAIL] case T18.meta.mysql80-where-column-refusal: setup step count 0 != manifest 1
+[ddl-golden][FAIL] case T18.meta.mysql80-where-column-refusal: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql80-where-column-refusal: post_verify count 0 != manifest 3
+[ddl-golden][FAIL] case T18.meta.mysql80-where-column-refusal: structure query count 0 != manifest 3
+[ddl-golden][FAIL] case T18.meta.mysql80-where-column-refusal: teardown count 0 != manifest 2
+[ddl-golden][FAIL] case T18.meta.mysql80-explicit-count-refusal: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql80-explicit-count-refusal: failed assertion 'database reachable with expected version': "SELECT VERSION() rc=1 version='' expected_contains='8.0.46'"
+[ddl-golden][FAIL] case T18.meta.mysql80-explicit-count-refusal: database not reachable
+[ddl-golden][FAIL] case T18.meta.mysql80-explicit-count-refusal: version mismatch '' expected contains '8.0.46'
+[ddl-golden][FAIL] case T18.meta.mysql80-explicit-count-refusal: no recorded command
+[ddl-golden][FAIL] case T18.meta.mysql80-explicit-count-refusal: setup step count 0 != manifest 1
+[ddl-golden][FAIL] case T18.meta.mysql80-explicit-count-refusal: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql80-explicit-count-refusal: post_verify count 0 != manifest 3
+[ddl-golden][FAIL] case T18.meta.mysql80-explicit-count-refusal: structure query count 0 != manifest 3
+[ddl-golden][FAIL] case T18.meta.mysql80-explicit-count-refusal: teardown count 0 != manifest 2
+[ddl-golden][FAIL] case T18.meta.mysql80-explicit-duplicate-refusal: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql80-explicit-duplicate-refusal: failed assertion 'database reachable with expected version': "SELECT VERSION() rc=1 version='' expected_contains='8.0.46'"
+[ddl-golden][FAIL] case T18.meta.mysql80-explicit-duplicate-refusal: database not reachable
+[ddl-golden][FAIL] case T18.meta.mysql80-explicit-duplicate-refusal: version mismatch '' expected contains '8.0.46'
+[ddl-golden][FAIL] case T18.meta.mysql80-explicit-duplicate-refusal: no recorded command
+[ddl-golden][FAIL] case T18.meta.mysql80-explicit-duplicate-refusal: setup step count 0 != manifest 1
+[ddl-golden][FAIL] case T18.meta.mysql80-explicit-duplicate-refusal: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql80-explicit-duplicate-refusal: post_verify count 0 != manifest 3
+[ddl-golden][FAIL] case T18.meta.mysql80-explicit-duplicate-refusal: structure query count 0 != manifest 3
+[ddl-golden][FAIL] case T18.meta.mysql80-explicit-duplicate-refusal: teardown count 0 != manifest 2
+[ddl-golden][FAIL] case T18.meta.mysql80-self-reference-refusal: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql80-self-reference-refusal: failed assertion 'database reachable with expected version': "SELECT VERSION() rc=1 version='' expected_contains='8.0.46'"
+[ddl-golden][FAIL] case T18.meta.mysql80-self-reference-refusal: database not reachable
+[ddl-golden][FAIL] case T18.meta.mysql80-self-reference-refusal: version mismatch '' expected contains '8.0.46'
+[ddl-golden][FAIL] case T18.meta.mysql80-self-reference-refusal: no recorded command
+[ddl-golden][FAIL] case T18.meta.mysql80-self-reference-refusal: setup step count 0 != manifest 1
+[ddl-golden][FAIL] case T18.meta.mysql80-self-reference-refusal: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql80-self-reference-refusal: post_verify count 0 != manifest 3
+[ddl-golden][FAIL] case T18.meta.mysql80-self-reference-refusal: structure query count 0 != manifest 3
+[ddl-golden][FAIL] case T18.meta.mysql80-self-reference-refusal: teardown count 0 != manifest 2
+[ddl-golden][FAIL] case T18.meta.mysql80-full-lifecycle: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql80-full-lifecycle: failed assertion 'database reachable with expected version': "SELECT VERSION() rc=1 version='' expected_contains='8.0.46'"
+[ddl-golden][FAIL] case T18.meta.mysql80-full-lifecycle: database not reachable
+[ddl-golden][FAIL] case T18.meta.mysql80-full-lifecycle: version mismatch '' expected contains '8.0.46'
+[ddl-golden][FAIL] case T18.meta.mysql80-full-lifecycle: no recorded command
+[ddl-golden][FAIL] case T18.meta.mysql80-full-lifecycle: setup step count 0 != manifest 1
+[ddl-golden][FAIL] case T18.meta.mysql80-full-lifecycle: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql80-full-lifecycle: post_verify count 0 != manifest 3
+[ddl-golden][FAIL] case T18.meta.mysql80-full-lifecycle: execute step count 0 != manifest 5
+[ddl-golden][FAIL] case T18.meta.mysql80-full-lifecycle: structure query count 0 != manifest 3
+[ddl-golden][FAIL] case T18.meta.mysql80-full-lifecycle: teardown count 0 != manifest 2
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-refusal-preserves: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-refusal-preserves: failed assertion 'database reachable with expected version': "SELECT VERSION() rc=1 version='' expected_contains='8.0.46'"
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-refusal-preserves: database not reachable
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-refusal-preserves: version mismatch '' expected contains '8.0.46'
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-refusal-preserves: no recorded command
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-refusal-preserves: setup step count 0 != manifest 1
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-refusal-preserves: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-refusal-preserves: post_verify count 0 != manifest 3
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-refusal-preserves: structure query count 0 != manifest 3
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-refusal-preserves: teardown count 0 != manifest 2
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-missing-target: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-missing-target: failed assertion 'database reachable with expected version': "SELECT VERSION() rc=1 version='' expected_contains='8.0.46'"
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-missing-target: database not reachable
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-missing-target: version mismatch '' expected contains '8.0.46'
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-missing-target: no recorded command
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-missing-target: setup step count 0 != manifest 1
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-missing-target: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-missing-target: post_verify count 0 != manifest 3
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-missing-target: structure query count 0 != manifest 3
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-missing-target: teardown count 0 != manifest 2
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-table-target: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-table-target: failed assertion 'database reachable with expected version': "SELECT VERSION() rc=1 version='' expected_contains='8.0.46'"
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-table-target: database not reachable
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-table-target: version mismatch '' expected contains '8.0.46'
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-table-target: no recorded command
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-table-target: setup step count 0 != manifest 1
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-table-target: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-table-target: post_verify count 0 != manifest 3
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-table-target: structure query count 0 != manifest 3
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-table-target: teardown count 0 != manifest 2
+[ddl-golden][FAIL] case T18.meta.mysql80-frozen-star: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql80-frozen-star: failed assertion 'database reachable with expected version': "SELECT VERSION() rc=1 version='' expected_contains='8.0.46'"
+[ddl-golden][FAIL] case T18.meta.mysql80-frozen-star: database not reachable
+[ddl-golden][FAIL] case T18.meta.mysql80-frozen-star: version mismatch '' expected contains '8.0.46'
+[ddl-golden][FAIL] case T18.meta.mysql80-frozen-star: no recorded command
+[ddl-golden][FAIL] case T18.meta.mysql80-frozen-star: setup step count 0 != manifest 1
+[ddl-golden][FAIL] case T18.meta.mysql80-frozen-star: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql80-frozen-star: post_verify count 0 != manifest 3
+[ddl-golden][FAIL] case T18.meta.mysql80-frozen-star: structure query count 0 != manifest 3
+[ddl-golden][FAIL] case T18.meta.mysql80-frozen-star: teardown count 0 != manifest 2
+[ddl-golden][FAIL] case T18.meta.mysql80-invisible-star: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql80-invisible-star: failed assertion 'database reachable with expected version': "SELECT VERSION() rc=1 version='' expected_contains='8.0.46'"
+[ddl-golden][FAIL] case T18.meta.mysql80-invisible-star: database not reachable
+[ddl-golden][FAIL] case T18.meta.mysql80-invisible-star: version mismatch '' expected contains '8.0.46'
+[ddl-golden][FAIL] case T18.meta.mysql80-invisible-star: no recorded command
+[ddl-golden][FAIL] case T18.meta.mysql80-invisible-star: setup step count 0 != manifest 1
+[ddl-golden][FAIL] case T18.meta.mysql80-invisible-star: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql80-invisible-star: post_verify count 0 != manifest 3
+[ddl-golden][FAIL] case T18.meta.mysql80-invisible-star: structure query count 0 != manifest 3
+[ddl-golden][FAIL] case T18.meta.mysql80-invisible-star: teardown count 0 != manifest 2
+[ddl-golden][FAIL] case T18.meta.mysql80-quoted-dot-identities: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql80-quoted-dot-identities: failed assertion 'database reachable with expected version': "SELECT VERSION() rc=1 version='' expected_contains='8.0.46'"
+[ddl-golden][FAIL] case T18.meta.mysql80-quoted-dot-identities: database not reachable
+[ddl-golden][FAIL] case T18.meta.mysql80-quoted-dot-identities: version mismatch '' expected contains '8.0.46'
+[ddl-golden][FAIL] case T18.meta.mysql80-quoted-dot-identities: no recorded command
+[ddl-golden][FAIL] case T18.meta.mysql80-quoted-dot-identities: setup step count 0 != manifest 1
+[ddl-golden][FAIL] case T18.meta.mysql80-quoted-dot-identities: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql80-quoted-dot-identities: post_verify count 0 != manifest 3
+[ddl-golden][FAIL] case T18.meta.mysql80-quoted-dot-identities: structure query count 0 != manifest 3
+[ddl-golden][FAIL] case T18.meta.mysql80-quoted-dot-identities: teardown count 0 != manifest 2
+[ddl-golden][FAIL] case T18.meta.mysql80-temporary-source-refusal: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql80-temporary-source-refusal: failed assertion 'database reachable with expected version': "SELECT VERSION() rc=1 version='' expected_contains='8.0.46'"
+[ddl-golden][FAIL] case T18.meta.mysql80-temporary-source-refusal: database not reachable
+[ddl-golden][FAIL] case T18.meta.mysql80-temporary-source-refusal: version mismatch '' expected contains '8.0.46'
+[ddl-golden][FAIL] case T18.meta.mysql80-temporary-source-refusal: no recorded command
+[ddl-golden][FAIL] case T18.meta.mysql80-temporary-source-refusal: setup step count 0 != manifest 1
+[ddl-golden][FAIL] case T18.meta.mysql80-temporary-source-refusal: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql80-temporary-source-refusal: post_verify count 0 != manifest 3
+[ddl-golden][FAIL] case T18.meta.mysql80-temporary-source-refusal: structure query count 0 != manifest 3
+[ddl-golden][FAIL] case T18.meta.mysql80-temporary-source-refusal: teardown count 0 != manifest 2
+[ddl-golden][FAIL] case T18.meta.mysql80-temporary-shadow: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql80-temporary-shadow: failed assertion 'database reachable with expected version': "SELECT VERSION() rc=1 version='' expected_contains='8.0.46'"
+[ddl-golden][FAIL] case T18.meta.mysql80-temporary-shadow: database not reachable
+[ddl-golden][FAIL] case T18.meta.mysql80-temporary-shadow: version mismatch '' expected contains '8.0.46'
+[ddl-golden][FAIL] case T18.meta.mysql80-temporary-shadow: no recorded command
+[ddl-golden][FAIL] case T18.meta.mysql80-temporary-shadow: setup step count 0 != manifest 1
+[ddl-golden][FAIL] case T18.meta.mysql80-temporary-shadow: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql80-temporary-shadow: post_verify count 0 != manifest 3
+[ddl-golden][FAIL] case T18.meta.mysql80-temporary-shadow: structure query count 0 != manifest 3
+[ddl-golden][FAIL] case T18.meta.mysql80-temporary-shadow: teardown count 0 != manifest 2
+[ddl-golden][FAIL] case T18.meta.mysql80-invoker: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql80-invoker: failed assertion 'database reachable with expected version': "SELECT VERSION() rc=1 version='' expected_contains='8.0.46'"
+[ddl-golden][FAIL] case T18.meta.mysql80-invoker: database not reachable
+[ddl-golden][FAIL] case T18.meta.mysql80-invoker: version mismatch '' expected contains '8.0.46'
+[ddl-golden][FAIL] case T18.meta.mysql80-invoker: no recorded command
+[ddl-golden][FAIL] case T18.meta.mysql80-invoker: setup step count 0 != manifest 1
+[ddl-golden][FAIL] case T18.meta.mysql80-invoker: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql80-invoker: post_verify count 0 != manifest 3
+[ddl-golden][FAIL] case T18.meta.mysql80-invoker: structure query count 0 != manifest 3
+[ddl-golden][FAIL] case T18.meta.mysql80-invoker: teardown count 0 != manifest 2
+[ddl-golden][FAIL] case T18.meta.mysql80-current-user-invoker: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql80-current-user-invoker: failed assertion 'database reachable with expected version': "SELECT VERSION() rc=1 version='' expected_contains='8.0.46'"
+[ddl-golden][FAIL] case T18.meta.mysql80-current-user-invoker: database not reachable
+[ddl-golden][FAIL] case T18.meta.mysql80-current-user-invoker: version mismatch '' expected contains '8.0.46'
+[ddl-golden][FAIL] case T18.meta.mysql80-current-user-invoker: no recorded command
+[ddl-golden][FAIL] case T18.meta.mysql80-current-user-invoker: setup step count 0 != manifest 1
+[ddl-golden][FAIL] case T18.meta.mysql80-current-user-invoker: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql80-current-user-invoker: post_verify count 0 != manifest 3
+[ddl-golden][FAIL] case T18.meta.mysql80-current-user-invoker: structure query count 0 != manifest 3
+[ddl-golden][FAIL] case T18.meta.mysql80-current-user-invoker: teardown count 0 != manifest 2
+[ddl-golden][FAIL] case T18.meta.mysql80-named-invoker: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql80-named-invoker: failed assertion 'database reachable with expected version': "SELECT VERSION() rc=1 version='' expected_contains='8.0.46'"
+[ddl-golden][FAIL] case T18.meta.mysql80-named-invoker: database not reachable
+[ddl-golden][FAIL] case T18.meta.mysql80-named-invoker: version mismatch '' expected contains '8.0.46'
+[ddl-golden][FAIL] case T18.meta.mysql80-named-invoker: no recorded command
+[ddl-golden][FAIL] case T18.meta.mysql80-named-invoker: setup step count 0 != manifest 1
+[ddl-golden][FAIL] case T18.meta.mysql80-named-invoker: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql80-named-invoker: post_verify count 0 != manifest 3
+[ddl-golden][FAIL] case T18.meta.mysql80-named-invoker: structure query count 0 != manifest 3
+[ddl-golden][FAIL] case T18.meta.mysql80-named-invoker: teardown count 0 != manifest 2
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-inherits-invoker: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-inherits-invoker: failed assertion 'database reachable with expected version': "SELECT VERSION() rc=1 version='' expected_contains='8.0.46'"
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-inherits-invoker: database not reachable
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-inherits-invoker: version mismatch '' expected contains '8.0.46'
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-inherits-invoker: no recorded command
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-inherits-invoker: setup step count 0 != manifest 1
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-inherits-invoker: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-inherits-invoker: post_verify count 0 != manifest 3
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-inherits-invoker: structure query count 0 != manifest 3
+[ddl-golden][FAIL] case T18.meta.mysql80-alter-inherits-invoker: teardown count 0 != manifest 2
+[ddl-golden][FAIL] case T18.meta.mysql80-replace-resets-invoker: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql80-replace-resets-invoker: failed assertion 'database reachable with expected version': "SELECT VERSION() rc=1 version='' expected_contains='8.0.46'"
+[ddl-golden][FAIL] case T18.meta.mysql80-replace-resets-invoker: database not reachable
+[ddl-golden][FAIL] case T18.meta.mysql80-replace-resets-invoker: version mismatch '' expected contains '8.0.46'
+[ddl-golden][FAIL] case T18.meta.mysql80-replace-resets-invoker: no recorded command
+[ddl-golden][FAIL] case T18.meta.mysql80-replace-resets-invoker: setup step count 0 != manifest 1
+[ddl-golden][FAIL] case T18.meta.mysql80-replace-resets-invoker: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql80-replace-resets-invoker: post_verify count 0 != manifest 3
+[ddl-golden][FAIL] case T18.meta.mysql80-replace-resets-invoker: structure query count 0 != manifest 3
+[ddl-golden][FAIL] case T18.meta.mysql80-replace-resets-invoker: teardown count 0 != manifest 2
+[ddl-golden][FAIL] case T18.meta.mysql80-algorithm-temporary: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql80-algorithm-temporary: failed assertion 'database reachable with expected version': "SELECT VERSION() rc=1 version='' expected_contains='8.0.46'"
+[ddl-golden][FAIL] case T18.meta.mysql80-algorithm-temporary: database not reachable
+[ddl-golden][FAIL] case T18.meta.mysql80-algorithm-temporary: version mismatch '' expected contains '8.0.46'
+[ddl-golden][FAIL] case T18.meta.mysql80-algorithm-temporary: no recorded command
+[ddl-golden][FAIL] case T18.meta.mysql80-algorithm-temporary: setup step count 0 != manifest 1
+[ddl-golden][FAIL] case T18.meta.mysql80-algorithm-temporary: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql80-algorithm-temporary: post_verify count 0 != manifest 3
+[ddl-golden][FAIL] case T18.meta.mysql80-algorithm-temporary: structure query count 0 != manifest 3
+[ddl-golden][FAIL] case T18.meta.mysql80-algorithm-temporary: teardown count 0 != manifest 2
+[ddl-golden][FAIL] case T18.meta.mysql80-algorithm-merge-fallback: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql80-algorithm-merge-fallback: failed assertion 'database reachable with expected version': "SELECT VERSION() rc=1 version='' expected_contains='8.0.46'"
+[ddl-golden][FAIL] case T18.meta.mysql80-algorithm-merge-fallback: database not reachable
+[ddl-golden][FAIL] case T18.meta.mysql80-algorithm-merge-fallback: version mismatch '' expected contains '8.0.46'
+[ddl-golden][FAIL] case T18.meta.mysql80-algorithm-merge-fallback: no recorded command
+[ddl-golden][FAIL] case T18.meta.mysql80-algorithm-merge-fallback: setup step count 0 != manifest 1
+[ddl-golden][FAIL] case T18.meta.mysql80-algorithm-merge-fallback: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql80-algorithm-merge-fallback: post_verify count 0 != manifest 3
+[ddl-golden][FAIL] case T18.meta.mysql80-algorithm-merge-fallback: structure query count 0 != manifest 3
+[ddl-golden][FAIL] case T18.meta.mysql80-algorithm-merge-fallback: teardown count 0 != manifest 2
+[ddl-golden][FAIL] case T18.meta.mysql80-algorithm-undefined: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql80-algorithm-undefined: failed assertion 'database reachable with expected version': "SELECT VERSION() rc=1 version='' expected_contains='8.0.46'"
+[ddl-golden][FAIL] case T18.meta.mysql80-algorithm-undefined: database not reachable
+[ddl-golden][FAIL] case T18.meta.mysql80-algorithm-undefined: version mismatch '' expected contains '8.0.46'
+[ddl-golden][FAIL] case T18.meta.mysql80-algorithm-undefined: no recorded command
+[ddl-golden][FAIL] case T18.meta.mysql80-algorithm-undefined: setup step count 0 != manifest 1
+[ddl-golden][FAIL] case T18.meta.mysql80-algorithm-undefined: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql80-algorithm-undefined: post_verify count 0 != manifest 3
+[ddl-golden][FAIL] case T18.meta.mysql80-algorithm-undefined: structure query count 0 != manifest 3
+[ddl-golden][FAIL] case T18.meta.mysql80-algorithm-undefined: teardown count 0 != manifest 2
+[ddl-golden][FAIL] case T18.meta.mysql80-check-bare: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql80-check-bare: failed assertion 'database reachable with expected version': "SELECT VERSION() rc=1 version='' expected_contains='8.0.46'"
+[ddl-golden][FAIL] case T18.meta.mysql80-check-bare: database not reachable
+[ddl-golden][FAIL] case T18.meta.mysql80-check-bare: version mismatch '' expected contains '8.0.46'
+[ddl-golden][FAIL] case T18.meta.mysql80-check-bare: no recorded command
+[ddl-golden][FAIL] case T18.meta.mysql80-check-bare: setup step count 0 != manifest 1
+[ddl-golden][FAIL] case T18.meta.mysql80-check-bare: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql80-check-bare: post_verify count 0 != manifest 3
+[ddl-golden][FAIL] case T18.meta.mysql80-check-bare: structure query count 0 != manifest 3
+[ddl-golden][FAIL] case T18.meta.mysql80-check-bare: teardown count 0 != manifest 2
+[ddl-golden][FAIL] case T18.meta.mysql80-check-local: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql80-check-local: failed assertion 'database reachable with expected version': "SELECT VERSION() rc=1 version='' expected_contains='8.0.46'"
+[ddl-golden][FAIL] case T18.meta.mysql80-check-local: database not reachable
+[ddl-golden][FAIL] case T18.meta.mysql80-check-local: version mismatch '' expected contains '8.0.46'
+[ddl-golden][FAIL] case T18.meta.mysql80-check-local: no recorded command
+[ddl-golden][FAIL] case T18.meta.mysql80-check-local: setup step count 0 != manifest 1
+[ddl-golden][FAIL] case T18.meta.mysql80-check-local: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql80-check-local: post_verify count 0 != manifest 3
+[ddl-golden][FAIL] case T18.meta.mysql80-check-local: structure query count 0 != manifest 3
+[ddl-golden][FAIL] case T18.meta.mysql80-check-local: teardown count 0 != manifest 2
+[ddl-golden][FAIL] case T18.meta.mysql80-check-cascaded: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql80-check-cascaded: failed assertion 'database reachable with expected version': "SELECT VERSION() rc=1 version='' expected_contains='8.0.46'"
+[ddl-golden][FAIL] case T18.meta.mysql80-check-cascaded: database not reachable
+[ddl-golden][FAIL] case T18.meta.mysql80-check-cascaded: version mismatch '' expected contains '8.0.46'
+[ddl-golden][FAIL] case T18.meta.mysql80-check-cascaded: no recorded command
+[ddl-golden][FAIL] case T18.meta.mysql80-check-cascaded: setup step count 0 != manifest 1
+[ddl-golden][FAIL] case T18.meta.mysql80-check-cascaded: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql80-check-cascaded: post_verify count 0 != manifest 3
+[ddl-golden][FAIL] case T18.meta.mysql80-check-cascaded: structure query count 0 != manifest 3
+[ddl-golden][FAIL] case T18.meta.mysql80-check-cascaded: teardown count 0 != manifest 2
+[ddl-golden][FAIL] case T18.meta.mysql80-check-aggregate-refusal: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql80-check-aggregate-refusal: failed assertion 'database reachable with expected version': "SELECT VERSION() rc=1 version='' expected_contains='8.0.46'"
+[ddl-golden][FAIL] case T18.meta.mysql80-check-aggregate-refusal: database not reachable
+[ddl-golden][FAIL] case T18.meta.mysql80-check-aggregate-refusal: version mismatch '' expected contains '8.0.46'
+[ddl-golden][FAIL] case T18.meta.mysql80-check-aggregate-refusal: no recorded command
+[ddl-golden][FAIL] case T18.meta.mysql80-check-aggregate-refusal: setup step count 0 != manifest 1
+[ddl-golden][FAIL] case T18.meta.mysql80-check-aggregate-refusal: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql80-check-aggregate-refusal: post_verify count 0 != manifest 3
+[ddl-golden][FAIL] case T18.meta.mysql80-check-aggregate-refusal: structure query count 0 != manifest 3
+[ddl-golden][FAIL] case T18.meta.mysql80-check-aggregate-refusal: teardown count 0 != manifest 2
+[ddl-golden][FAIL] case T18.meta.mysql80-check-temporary-refusal: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql80-check-temporary-refusal: failed assertion 'database reachable with expected version': "SELECT VERSION() rc=1 version='' expected_contains='8.0.46'"
+[ddl-golden][FAIL] case T18.meta.mysql80-check-temporary-refusal: database not reachable
+[ddl-golden][FAIL] case T18.meta.mysql80-check-temporary-refusal: version mismatch '' expected contains '8.0.46'
+[ddl-golden][FAIL] case T18.meta.mysql80-check-temporary-refusal: no recorded command
+[ddl-golden][FAIL] case T18.meta.mysql80-check-temporary-refusal: setup step count 0 != manifest 1
+[ddl-golden][FAIL] case T18.meta.mysql80-check-temporary-refusal: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql80-check-temporary-refusal: post_verify count 0 != manifest 3
+[ddl-golden][FAIL] case T18.meta.mysql80-check-temporary-refusal: structure query count 0 != manifest 3
+[ddl-golden][FAIL] case T18.meta.mysql80-check-temporary-refusal: teardown count 0 != manifest 2
+[ddl-golden][FAIL] case T18.meta.mysql80-check-temptable-state: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql80-check-temptable-state: failed assertion 'database reachable with expected version': "SELECT VERSION() rc=1 version='' expected_contains='8.0.46'"
+[ddl-golden][FAIL] case T18.meta.mysql80-check-temptable-state: database not reachable
+[ddl-golden][FAIL] case T18.meta.mysql80-check-temptable-state: version mismatch '' expected contains '8.0.46'
+[ddl-golden][FAIL] case T18.meta.mysql80-check-temptable-state: no recorded command
+[ddl-golden][FAIL] case T18.meta.mysql80-check-temptable-state: setup step count 0 != manifest 1
+[ddl-golden][FAIL] case T18.meta.mysql80-check-temptable-state: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql80-check-temptable-state: post_verify count 0 != manifest 1
+[ddl-golden][FAIL] case T18.meta.mysql80-check-temptable-state: structure query count 0 != manifest 1
+[ddl-golden][FAIL] case T18.meta.mysql80-check-temptable-state: teardown count 0 != manifest 1
+[ddl-golden][FAIL] case T18.meta.mysql80-notice-policy-refusal-state: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql80-notice-policy-refusal-state: failed assertion 'database reachable with expected version': "SELECT VERSION() rc=1 version='' expected_contains='8.0.46'"
+[ddl-golden][FAIL] case T18.meta.mysql80-notice-policy-refusal-state: database not reachable
+[ddl-golden][FAIL] case T18.meta.mysql80-notice-policy-refusal-state: version mismatch '' expected contains '8.0.46'
+[ddl-golden][FAIL] case T18.meta.mysql80-notice-policy-refusal-state: no recorded command
+[ddl-golden][FAIL] case T18.meta.mysql80-notice-policy-refusal-state: setup step count 0 != manifest 1
+[ddl-golden][FAIL] case T18.meta.mysql80-notice-policy-refusal-state: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql80-notice-policy-refusal-state: post_verify count 0 != manifest 3
+[ddl-golden][FAIL] case T18.meta.mysql80-notice-policy-refusal-state: structure query count 0 != manifest 3
+[ddl-golden][FAIL] case T18.meta.mysql80-notice-policy-refusal-state: teardown count 0 != manifest 2
+[ddl-golden][FAIL] case T18.meta.mysql80-off-policy-refusal-state: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql80-off-policy-refusal-state: failed assertion 'database reachable with expected version': "SELECT VERSION() rc=1 version='' expected_contains='8.0.46'"
+[ddl-golden][FAIL] case T18.meta.mysql80-off-policy-refusal-state: database not reachable
+[ddl-golden][FAIL] case T18.meta.mysql80-off-policy-refusal-state: version mismatch '' expected contains '8.0.46'
+[ddl-golden][FAIL] case T18.meta.mysql80-off-policy-refusal-state: no recorded command
+[ddl-golden][FAIL] case T18.meta.mysql80-off-policy-refusal-state: setup step count 0 != manifest 1
+[ddl-golden][FAIL] case T18.meta.mysql80-off-policy-refusal-state: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql80-off-policy-refusal-state: post_verify count 0 != manifest 3
+[ddl-golden][FAIL] case T18.meta.mysql80-off-policy-refusal-state: structure query count 0 != manifest 3
+[ddl-golden][FAIL] case T18.meta.mysql80-off-policy-refusal-state: teardown count 0 != manifest 2
+[ddl-golden][FAIL] case T18.meta.mysql80-nonfirst-protected-target: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql80-nonfirst-protected-target: failed assertion 'database reachable with expected version': "SELECT VERSION() rc=1 version='' expected_contains='8.0.46'"
+[ddl-golden][FAIL] case T18.meta.mysql80-nonfirst-protected-target: database not reachable
+[ddl-golden][FAIL] case T18.meta.mysql80-nonfirst-protected-target: version mismatch '' expected contains '8.0.46'
+[ddl-golden][FAIL] case T18.meta.mysql80-nonfirst-protected-target: no recorded command
+[ddl-golden][FAIL] case T18.meta.mysql80-nonfirst-protected-target: setup step count 0 != manifest 1
+[ddl-golden][FAIL] case T18.meta.mysql80-nonfirst-protected-target: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql80-nonfirst-protected-target: post_verify count 0 != manifest 3
+[ddl-golden][FAIL] case T18.meta.mysql80-nonfirst-protected-target: structure query count 0 != manifest 3
+[ddl-golden][FAIL] case T18.meta.mysql80-nonfirst-protected-target: teardown count 0 != manifest 2
+[ddl-golden][FAIL] case T18.meta.mysql80-private-leaf: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql80-private-leaf: failed assertion 'database reachable with expected version': "SELECT VERSION() rc=1 version='' expected_contains='8.0.46'"
+[ddl-golden][FAIL] case T18.meta.mysql80-private-leaf: database not reachable
+[ddl-golden][FAIL] case T18.meta.mysql80-private-leaf: version mismatch '' expected contains '8.0.46'
+[ddl-golden][FAIL] case T18.meta.mysql80-private-leaf: no recorded command
+[ddl-golden][FAIL] case T18.meta.mysql80-private-leaf: setup step count 0 != manifest 1
+[ddl-golden][FAIL] case T18.meta.mysql80-private-leaf: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql80-private-leaf: post_verify count 0 != manifest 3
+[ddl-golden][FAIL] case T18.meta.mysql80-private-leaf: structure query count 0 != manifest 3
+[ddl-golden][FAIL] case T18.meta.mysql80-private-leaf: teardown count 0 != manifest 2
+[ddl-golden][FAIL] case T18.meta.mysql80-cte-unused-missing: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql80-cte-unused-missing: failed assertion 'database reachable with expected version': "SELECT VERSION() rc=1 version='' expected_contains='8.0.46'"
+[ddl-golden][FAIL] case T18.meta.mysql80-cte-unused-missing: database not reachable
+[ddl-golden][FAIL] case T18.meta.mysql80-cte-unused-missing: version mismatch '' expected contains '8.0.46'
+[ddl-golden][FAIL] case T18.meta.mysql80-cte-unused-missing: no recorded command
+[ddl-golden][FAIL] case T18.meta.mysql80-cte-unused-missing: setup step count 0 != manifest 1
+[ddl-golden][FAIL] case T18.meta.mysql80-cte-unused-missing: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql80-cte-unused-missing: post_verify count 0 != manifest 3
+[ddl-golden][FAIL] case T18.meta.mysql80-cte-unused-missing: structure query count 0 != manifest 3
+[ddl-golden][FAIL] case T18.meta.mysql80-cte-unused-missing: teardown count 0 != manifest 2
+[ddl-golden][FAIL] case T18.meta.mysql80-cte-unused-column: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql80-cte-unused-column: failed assertion 'database reachable with expected version': "SELECT VERSION() rc=1 version='' expected_contains='8.0.46'"
+[ddl-golden][FAIL] case T18.meta.mysql80-cte-unused-column: database not reachable
+[ddl-golden][FAIL] case T18.meta.mysql80-cte-unused-column: version mismatch '' expected contains '8.0.46'
+[ddl-golden][FAIL] case T18.meta.mysql80-cte-unused-column: no recorded command
+[ddl-golden][FAIL] case T18.meta.mysql80-cte-unused-column: setup step count 0 != manifest 1
+[ddl-golden][FAIL] case T18.meta.mysql80-cte-unused-column: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql80-cte-unused-column: post_verify count 0 != manifest 3
+[ddl-golden][FAIL] case T18.meta.mysql80-cte-unused-column: structure query count 0 != manifest 3
+[ddl-golden][FAIL] case T18.meta.mysql80-cte-unused-column: teardown count 0 != manifest 2
+[ddl-golden][FAIL] case T18.meta.mysql80-cte-self-base: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql80-cte-self-base: failed assertion 'database reachable with expected version': "SELECT VERSION() rc=1 version='' expected_contains='8.0.46'"
+[ddl-golden][FAIL] case T18.meta.mysql80-cte-self-base: database not reachable
+[ddl-golden][FAIL] case T18.meta.mysql80-cte-self-base: version mismatch '' expected contains '8.0.46'
+[ddl-golden][FAIL] case T18.meta.mysql80-cte-self-base: no recorded command
+[ddl-golden][FAIL] case T18.meta.mysql80-cte-self-base: setup step count 0 != manifest 1
+[ddl-golden][FAIL] case T18.meta.mysql80-cte-self-base: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql80-cte-self-base: post_verify count 0 != manifest 3
+[ddl-golden][FAIL] case T18.meta.mysql80-cte-self-base: structure query count 0 != manifest 3
+[ddl-golden][FAIL] case T18.meta.mysql80-cte-self-base: teardown count 0 != manifest 2
+[ddl-golden][FAIL] case T18.meta.mysql80-cte-forward-refusal: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql80-cte-forward-refusal: failed assertion 'database reachable with expected version': "SELECT VERSION() rc=1 version='' expected_contains='8.0.46'"
+[ddl-golden][FAIL] case T18.meta.mysql80-cte-forward-refusal: database not reachable
+[ddl-golden][FAIL] case T18.meta.mysql80-cte-forward-refusal: version mismatch '' expected contains '8.0.46'
+[ddl-golden][FAIL] case T18.meta.mysql80-cte-forward-refusal: no recorded command
+[ddl-golden][FAIL] case T18.meta.mysql80-cte-forward-refusal: setup step count 0 != manifest 1
+[ddl-golden][FAIL] case T18.meta.mysql80-cte-forward-refusal: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql80-cte-forward-refusal: post_verify count 0 != manifest 3
+[ddl-golden][FAIL] case T18.meta.mysql80-cte-forward-refusal: structure query count 0 != manifest 3
+[ddl-golden][FAIL] case T18.meta.mysql80-cte-forward-refusal: teardown count 0 != manifest 2
+[ddl-golden][FAIL] case T18.meta.mysql57-review-orderby-refusal: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql57-review-orderby-refusal: failed assertion 'database reachable with expected version': "SELECT VERSION() rc=1 version='' expected_contains='5.7.44'"
+[ddl-golden][FAIL] case T18.meta.mysql57-review-orderby-refusal: database not reachable
+[ddl-golden][FAIL] case T18.meta.mysql57-review-orderby-refusal: version mismatch '' expected contains '5.7.44'
+[ddl-golden][FAIL] case T18.meta.mysql57-review-orderby-refusal: no recorded command
+[ddl-golden][FAIL] case T18.meta.mysql57-review-orderby-refusal: setup step count 0 != manifest 1
+[ddl-golden][FAIL] case T18.meta.mysql57-review-orderby-refusal: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql57-review-orderby-refusal: post_verify count 0 != manifest 3
+[ddl-golden][FAIL] case T18.meta.mysql57-review-orderby-refusal: execute step count 0 != manifest 1
+[ddl-golden][FAIL] case T18.meta.mysql57-review-orderby-refusal: structure query count 0 != manifest 3
+[ddl-golden][FAIL] case T18.meta.mysql57-review-orderby-refusal: teardown count 0 != manifest 2
+[ddl-golden][FAIL] case T18.meta.mysql80-review-orderby-refusal: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql80-review-orderby-refusal: failed assertion 'database reachable with expected version': "SELECT VERSION() rc=1 version='' expected_contains='8.0.46'"
+[ddl-golden][FAIL] case T18.meta.mysql80-review-orderby-refusal: database not reachable
+[ddl-golden][FAIL] case T18.meta.mysql80-review-orderby-refusal: version mismatch '' expected contains '8.0.46'
+[ddl-golden][FAIL] case T18.meta.mysql80-review-orderby-refusal: no recorded command
+[ddl-golden][FAIL] case T18.meta.mysql80-review-orderby-refusal: setup step count 0 != manifest 1
+[ddl-golden][FAIL] case T18.meta.mysql80-review-orderby-refusal: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql80-review-orderby-refusal: post_verify count 0 != manifest 3
+[ddl-golden][FAIL] case T18.meta.mysql80-review-orderby-refusal: execute step count 0 != manifest 1
+[ddl-golden][FAIL] case T18.meta.mysql80-review-orderby-refusal: structure query count 0 != manifest 3
+[ddl-golden][FAIL] case T18.meta.mysql80-review-orderby-refusal: teardown count 0 != manifest 2
+[ddl-golden][FAIL] case T18.meta.mysql84-review-orderby-refusal: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql84-review-orderby-refusal: failed assertion 'database reachable with expected version': "SELECT VERSION() rc=1 version='' expected_contains='8.4.10'"
+[ddl-golden][FAIL] case T18.meta.mysql84-review-orderby-refusal: database not reachable
+[ddl-golden][FAIL] case T18.meta.mysql84-review-orderby-refusal: version mismatch '' expected contains '8.4.10'
+[ddl-golden][FAIL] case T18.meta.mysql84-review-orderby-refusal: no recorded command
+[ddl-golden][FAIL] case T18.meta.mysql84-review-orderby-refusal: setup step count 0 != manifest 1
+[ddl-golden][FAIL] case T18.meta.mysql84-review-orderby-refusal: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql84-review-orderby-refusal: post_verify count 0 != manifest 3
+[ddl-golden][FAIL] case T18.meta.mysql84-review-orderby-refusal: execute step count 0 != manifest 1
+[ddl-golden][FAIL] case T18.meta.mysql84-review-orderby-refusal: structure query count 0 != manifest 3
+[ddl-golden][FAIL] case T18.meta.mysql84-review-orderby-refusal: teardown count 0 != manifest 2
+[ddl-golden][FAIL] case T18.meta.mysql57-review-keyword-definer: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql57-review-keyword-definer: failed assertion 'database reachable with expected version': "SELECT VERSION() rc=1 version='' expected_contains='5.7.44'"
+[ddl-golden][FAIL] case T18.meta.mysql57-review-keyword-definer: database not reachable
+[ddl-golden][FAIL] case T18.meta.mysql57-review-keyword-definer: version mismatch '' expected contains '5.7.44'
+[ddl-golden][FAIL] case T18.meta.mysql57-review-keyword-definer: no recorded command
+[ddl-golden][FAIL] case T18.meta.mysql57-review-keyword-definer: setup step count 0 != manifest 1
+[ddl-golden][FAIL] case T18.meta.mysql57-review-keyword-definer: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql57-review-keyword-definer: post_verify count 0 != manifest 3
+[ddl-golden][FAIL] case T18.meta.mysql57-review-keyword-definer: execute step count 0 != manifest 1
+[ddl-golden][FAIL] case T18.meta.mysql57-review-keyword-definer: structure query count 0 != manifest 3
+[ddl-golden][FAIL] case T18.meta.mysql57-review-keyword-definer: teardown count 0 != manifest 2
+[ddl-golden][FAIL] case T18.meta.mysql80-review-keyword-definer: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql80-review-keyword-definer: failed assertion 'database reachable with expected version': "SELECT VERSION() rc=1 version='' expected_contains='8.0.46'"
+[ddl-golden][FAIL] case T18.meta.mysql80-review-keyword-definer: database not reachable
+[ddl-golden][FAIL] case T18.meta.mysql80-review-keyword-definer: version mismatch '' expected contains '8.0.46'
+[ddl-golden][FAIL] case T18.meta.mysql80-review-keyword-definer: no recorded command
+[ddl-golden][FAIL] case T18.meta.mysql80-review-keyword-definer: setup step count 0 != manifest 1
+[ddl-golden][FAIL] case T18.meta.mysql80-review-keyword-definer: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql80-review-keyword-definer: post_verify count 0 != manifest 3
+[ddl-golden][FAIL] case T18.meta.mysql80-review-keyword-definer: execute step count 0 != manifest 1
+[ddl-golden][FAIL] case T18.meta.mysql80-review-keyword-definer: structure query count 0 != manifest 3
+[ddl-golden][FAIL] case T18.meta.mysql80-review-keyword-definer: teardown count 0 != manifest 2
+[ddl-golden][FAIL] case T18.meta.mysql84-review-keyword-definer: status='fail'
+[ddl-golden][FAIL] case T18.meta.mysql84-review-keyword-definer: failed assertion 'database reachable with expected version': "SELECT VERSION() rc=1 version='' expected_contains='8.4.10'"
+[ddl-golden][FAIL] case T18.meta.mysql84-review-keyword-definer: database not reachable
+[ddl-golden][FAIL] case T18.meta.mysql84-review-keyword-definer: version mismatch '' expected contains '8.4.10'
+[ddl-golden][FAIL] case T18.meta.mysql84-review-keyword-definer: no recorded command
+[ddl-golden][FAIL] case T18.meta.mysql84-review-keyword-definer: setup step count 0 != manifest 1
+[ddl-golden][FAIL] case T18.meta.mysql84-review-keyword-definer: CLI stdout is not JSON
+[ddl-golden][FAIL] case T18.meta.mysql84-review-keyword-definer: post_verify count 0 != manifest 3
+[ddl-golden][FAIL] case T18.meta.mysql84-review-keyword-definer: execute step count 0 != manifest 1
+[ddl-golden][FAIL] case T18.meta.mysql84-review-keyword-definer: structure query count 0 != manifest 3
+[ddl-golden][FAIL] case T18.meta.mysql84-review-keyword-definer: teardown count 0 != manifest 2

@@ -1,0 +1,4 @@
+/Users/fan/GolangProjects/DeltaScope                 d9eeb34a [milestone/mysql-tidb-ddl-completion]
+/private/tmp/t18r1-red-worktree                      790d8eb2 [test/t18r1-red]
+/private/tmp/t18r1tail-red-worktree                  19286f7f (detached HEAD)
+/Users/fan/GolangProjects/DeltaScope-agent-guidance  0fa922d0 [docs/agent-guidance]

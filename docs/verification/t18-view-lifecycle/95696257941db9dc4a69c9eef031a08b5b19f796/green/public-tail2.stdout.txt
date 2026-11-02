@@ -1,0 +1,14 @@
+=== RUN   TestT18R1Tail2MixedJoinDoesNotPublishFalseCheckBlocker
+--- PASS: TestT18R1Tail2MixedJoinDoesNotPublishFalseCheckBlocker (0.01s)
+=== RUN   TestT18R1Tail2NestedViewColumnCheckMatchesNative
+--- PASS: TestT18R1Tail2NestedViewColumnCheckMatchesNative (0.00s)
+=== RUN   TestT18R1Tail2GlobalReuseBoundaryMatchesNative
+=== RUN   TestT18R1Tail2GlobalReuseBoundaryMatchesNative/source_view_same_name
+=== RUN   TestT18R1Tail2GlobalReuseBoundaryMatchesNative/base_table_through_view
+--- PASS: TestT18R1Tail2GlobalReuseBoundaryMatchesNative (0.01s)
+    --- PASS: TestT18R1Tail2GlobalReuseBoundaryMatchesNative/source_view_same_name (0.00s)
+    --- PASS: TestT18R1Tail2GlobalReuseBoundaryMatchesNative/base_table_through_view (0.00s)
+=== RUN   TestT18R1Tail2CheckReportsUnprovenUpdatable
+--- PASS: TestT18R1Tail2CheckReportsUnprovenUpdatable (0.00s)
+PASS
+ok  	github.com/Fanduzi/DeltaScope/pkg/deltascope	0.631s

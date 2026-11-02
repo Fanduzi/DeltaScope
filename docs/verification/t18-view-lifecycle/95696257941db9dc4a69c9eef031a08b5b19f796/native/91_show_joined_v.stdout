@@ -1,0 +1,1 @@
+joined_v	CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `ds_t18_tail2`.`joined_v` AS select `ds_t18_tail2`.`agg_v`.`total` AS `total`,`ds_t18_tail2`.`base_v`.`id` AS `id` from (`ds_t18_tail2`.`agg_v` join `ds_t18_tail2`.`base_v` on((`ds_t18_tail2`.`agg_v`.`total` = `ds_t18_tail2`.`base_v`.`id`)))	latin1	latin1_swedish_ci

@@ -1,0 +1,1 @@
+derived_expr_v	CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `ds_t18_tail2x`.`derived_expr_v` AS select `dt`.`x` AS `x` from (select (`ds_t18_tail2x`.`t`.`id` + 1) AS `x` from `ds_t18_tail2x`.`t`) `dt`	latin1	latin1_swedish_ci

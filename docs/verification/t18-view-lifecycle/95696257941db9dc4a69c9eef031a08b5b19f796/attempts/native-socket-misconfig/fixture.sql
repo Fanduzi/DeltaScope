@@ -1,0 +1,16 @@
+CREATE DATABASE IF NOT EXISTS ds_t18_tail2;
+USE ds_t18_tail2;
+CREATE TABLE t_amount(x INT);
+CREATE TABLE t_base(id INT);
+CREATE VIEW agg_v AS SELECT SUM(x) AS total FROM t_amount;
+CREATE VIEW base_v AS SELECT id FROM t_base;
+CREATE VIEW joined_v AS SELECT agg_v.total, base_v.id FROM agg_v JOIN base_v ON agg_v.total = base_v.id;
+CREATE VIEW checked_v AS SELECT id FROM joined_v WITH CHECK OPTION;
+CREATE VIEW joined_bad_v AS SELECT agg_v.total FROM agg_v JOIN base_v ON agg_v.total = base_v.id;
+CREATE VIEW mixed_v AS SELECT id, id + 1 AS x FROM t_base;
+CREATE VIEW bad_check_v AS SELECT x FROM mixed_v WITH CHECK OPTION;
+CREATE VIEW expr_v AS SELECT x FROM mixed_v;
+CREATE VIEW next_check_v AS SELECT x FROM expr_v WITH CHECK OPTION;
+CREATE VIEW good_check_v AS SELECT id FROM mixed_v WITH CHECK OPTION;
+CREATE VIEW mixed_out_v AS SELECT id, x FROM mixed_v;
+SELECT TABLE_NAME, IS_UPDATABLE FROM information_schema.VIEWS WHERE TABLE_SCHEMA='ds_t18_tail2' ORDER BY TABLE_NAME;

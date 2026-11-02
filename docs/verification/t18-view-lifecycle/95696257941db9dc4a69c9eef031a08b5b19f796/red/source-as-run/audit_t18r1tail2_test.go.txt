@@ -1,0 +1,67 @@
+package deltascope
+
+import (
+	"context"
+	"testing"
+)
+
+type t18R1Tail2Provider struct{}
+
+func (t18R1Tail2Provider) LoadInstanceFacts(context.Context, Dialect, string) (*InstanceFacts, error) {
+	return &InstanceFacts{Version: "8.0.46"}, nil
+}
+
+func (t18R1Tail2Provider) LoadTableSnapshot(_ context.Context, _ Dialect, schema, table string) (*TableSnapshot, error) {
+	switch table {
+	case "t_amount":
+		return &TableSnapshot{Schema: schema, Table: &Table{Schema: schema, Name: table}, Exists: true,
+			RelationKind: "table", Columns: []Column{{Name: "x", Type: "int"}}}, nil
+	case "t_base":
+		return &TableSnapshot{Schema: schema, Table: &Table{Schema: schema, Name: table}, Exists: true,
+			RelationKind: "table", Columns: []Column{{Name: "id", Type: "int"}}}, nil
+	default:
+		return &TableSnapshot{Schema: schema, Table: &Table{Schema: schema, Name: table}, Exists: false}, nil
+	}
+}
+
+func TestT18R1Tail2MixedJoinDoesNotPublishFalseCheckBlocker(t *testing.T) {
+	result, err := Audit(context.Background(), Request{
+		SQL: "CREATE VIEW agg_v AS SELECT SUM(x) AS total FROM t_amount;\n" +
+			"CREATE VIEW base_v AS SELECT id FROM t_base;\n" +
+			"CREATE VIEW joined_v AS SELECT agg_v.total, base_v.id FROM agg_v JOIN base_v ON agg_v.total = base_v.id;\n" +
+			"CREATE VIEW checked_v AS SELECT id FROM joined_v WITH CHECK OPTION;",
+		Dialect: DialectMySQL, Schema: "g",
+		ConfigPath:       t18R1Policy(t, "ddl.view.check_option.valid"),
+		MetadataProvider: t18R1Tail2Provider{},
+	})
+	if err != nil || len(result.Statements) != 4 || result.Coverage.Status != CoverageComplete ||
+		result.Verdict != VerdictPass {
+		t.Fatalf("err=%v result=%#v", err, result)
+	}
+	for i, statement := range result.Statements {
+		if len(statement.Findings) != 0 || len(statement.EvidenceGaps) != 0 {
+			t.Fatalf("statement %d unexpected public evidence: %#v", i, statement)
+		}
+	}
+}
+
+func TestT18R1Tail2NestedViewColumnCheckMatchesNative(t *testing.T) {
+	result, err := Audit(context.Background(), Request{
+		SQL: "CREATE VIEW mixed_v AS SELECT id, id + 1 AS x FROM t_base;\n" +
+			"CREATE VIEW bad_check_v AS SELECT x FROM mixed_v WITH CHECK OPTION;\n" +
+			"CREATE VIEW expr_v AS SELECT x FROM mixed_v;\n" +
+			"CREATE VIEW next_check_v AS SELECT x FROM expr_v WITH CHECK OPTION;",
+		Dialect: DialectMySQL, Schema: "g",
+		ConfigPath:       t18R1Policy(t, "ddl.view.check_option.valid"),
+		MetadataProvider: t18R1Tail2Provider{},
+	})
+	if err != nil || len(result.Statements) != 4 || result.Coverage.Status != CoverageComplete ||
+		result.Verdict != VerdictPass {
+		t.Fatalf("err=%v result=%#v", err, result)
+	}
+	for i, statement := range result.Statements {
+		if len(statement.Findings) != 0 || len(statement.EvidenceGaps) != 0 {
+			t.Fatalf("statement %d unexpected public evidence: %#v", i, statement)
+		}
+	}
+}

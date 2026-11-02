@@ -1,0 +1,1 @@
+find docs/verification/t18-view-lifecycle/95696257941db9dc4a69c9eef031a08b5b19f796 -name '*.go' -print
