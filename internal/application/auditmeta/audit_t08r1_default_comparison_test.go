@@ -134,6 +134,15 @@ func (c t08r1Conn) QueryContext(_ context.Context, query string, _ []driver.Name
 		return &t08r1Rows{
 			cols: []string{"constraint_name", "column_name", "referenced_table_schema", "referenced_table_name", "referenced_column_name", "delete_rule", "update_rule", "match_option"},
 		}, nil
+	case strings.Contains(query, "select distinct table_schema, table_name"):
+		// TiDB reverse-edge coverage — this fixture has no inbound FKs.
+		return &t08r1Rows{cols: []string{"table_schema", "table_name"}}, nil
+	case strings.Contains(query, "show create table"):
+		// TiDB TTL coverage — this fixture table has no TTL clause.
+		return &t08r1Rows{
+			cols: []string{"Table", "Create Table"},
+			rows: [][]driver.Value{{"r1_defaults", "CREATE TABLE `r1_defaults` (`id` int)"}},
+		}, nil
 	case strings.Contains(query, "constraint_type = 'CHECK'"):
 		// T12 CHECK member projection — this fixture stores no checks.
 		return &t08r1Rows{cols: []string{"constraint_name", "enforced", "check_clause"}}, nil
