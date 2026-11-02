@@ -122,6 +122,7 @@ type ViewLifecycleAssessment struct {
 	AlgorithmEffective string
 	AlgorithmFinal     string
 	AlgorithmWarn      bool
+	Updatable          *bool
 	CheckInvalid       bool
 	CheckRequired      []string
 	DropTargets        []ViewDropTarget
@@ -165,8 +166,8 @@ func ViewSnapshotNonUpdatable(view *ViewSnapshot) bool {
 	if view == nil {
 		return false
 	}
-	if view.Updatable != nil && !*view.Updatable {
-		return true
+	if view.Updatable != nil {
+		return !*view.Updatable
 	}
 	if view.Algorithm == "temptable" {
 		return true
@@ -174,8 +175,360 @@ func ViewSnapshotNonUpdatable(view *ViewSnapshot) bool {
 	if view.Definition == nil {
 		return false
 	}
-	return view.Definition.NonUpdatable ||
-		(view.Algorithm == "merge" || view.Algorithm == "undefined") && view.Definition.NonMergeable
+	return view.Definition.NonUpdatable || view.Definition.NonMergeable
+}
+
+type viewUpdatableSource struct {
+	alias    string
+	identity Table
+	index    int
+	query    *ViewQuery
+	binding  TargetBinding
+}
+
+type viewUpdatableContribution uint8
+
+const (
+	viewContributionUnavailable viewUpdatableContribution = iota
+	viewContributionUnproven
+	viewContributionNo
+	viewContributionYes
+)
+
+func viewTopLevelSources(definition *ViewDefinition, sources []TargetBinding) []viewUpdatableSource {
+	if definition == nil {
+		return nil
+	}
+	if definition.Query == nil {
+		top := make([]viewUpdatableSource, 0, len(definition.Sources))
+		for i := range definition.Sources {
+			source := viewUpdatableSource{index: i}
+			if i < len(definition.SourceAliases) {
+				source.alias = definition.SourceAliases[i]
+			}
+			if i < len(sources) {
+				source.binding = sources[i]
+				source.identity = sources[i].Table
+			} else {
+				source.identity = definition.Sources[i]
+			}
+			top = append(top, source)
+		}
+		return top
+	}
+	top := make([]viewUpdatableSource, 0, len(definition.Query.Sources))
+	for i := range definition.Query.Sources {
+		parsed := &definition.Query.Sources[i]
+		source := viewUpdatableSource{alias: parsed.Alias, index: parsed.Index, query: parsed.Query}
+		if parsed.Table != nil {
+			source.identity = *parsed.Table
+			if parsed.Index >= 0 && parsed.Index < len(sources) {
+				source.binding = sources[parsed.Index]
+				source.identity = sources[parsed.Index].Table
+			}
+		}
+		top = append(top, source)
+	}
+	return top
+}
+
+func viewSchemaTable(identity Table) bool {
+	return strings.EqualFold(identity.Schema, "information_schema")
+}
+
+func viewSourceUpdatableContribution(source viewUpdatableSource) viewUpdatableContribution {
+	if source.query != nil {
+		return viewContributionYes
+	}
+	if viewSchemaTable(source.identity) {
+		return viewContributionNo
+	}
+	snapshot := source.binding.Snapshot
+	if snapshot == nil {
+		return viewContributionUnproven
+	}
+	if !snapshot.Exists || snapshot.Temporary {
+		return viewContributionUnavailable
+	}
+	if snapshot.RelationKind == "" {
+		return viewContributionUnproven
+	}
+	if snapshot.RelationKind != "view" {
+		return viewContributionYes
+	}
+	if ViewSnapshotNonUpdatable(snapshot.View) {
+		return viewContributionNo
+	}
+	if snapshot.View == nil || snapshot.View.Updatable == nil {
+		return viewContributionUnproven
+	}
+	if *snapshot.View.Updatable {
+		return viewContributionYes
+	}
+	return viewContributionNo
+}
+
+func viewSourceQualifier(source viewUpdatableSource) string {
+	if source.alias != "" {
+		return source.alias
+	}
+	return source.identity.Name
+}
+
+func viewSourceMatchesField(source viewUpdatableSource, binding ViewColumnBinding) bool {
+	qualifier := viewSourceQualifier(source)
+	return (binding.Table == "" || strings.EqualFold(binding.Table, qualifier)) &&
+		(binding.Schema == "" || strings.EqualFold(binding.Schema, source.identity.Schema))
+}
+
+func viewQueryOutputContains(query *ViewQuery, column string) *bool {
+	if query == nil {
+		return nil
+	}
+	known, unknown := false, false
+	seen := make(map[*ViewQuery]bool)
+	var visit func(*ViewQuery)
+	visit = func(current *ViewQuery) {
+		if current == nil || seen[current] {
+			return
+		}
+		seen[current] = true
+		for _, name := range current.ColumnAliases {
+			if strings.EqualFold(name, column) {
+				known = true
+			}
+		}
+		if len(current.ColumnAliases) == 0 {
+			for _, binding := range current.Bindings {
+				switch {
+				case binding.Star, binding.Expression && binding.Output == "":
+					unknown = true
+				case binding.Output != "" && strings.EqualFold(binding.Output, column):
+					known = true
+				case !binding.Expression && strings.EqualFold(binding.Column, column):
+					known = true
+				}
+			}
+			for _, operand := range current.SetOperands {
+				visit(operand)
+			}
+		}
+	}
+	visit(query)
+	switch {
+	case known && !unknown:
+		yes := true
+		return &yes
+	case !known && !unknown:
+		no := false
+		return &no
+	default:
+		return nil
+	}
+}
+
+func viewSourceCanSupplyField(source viewUpdatableSource, binding ViewColumnBinding) *bool {
+	if source.query != nil {
+		return viewQueryOutputContains(source.query, binding.Column)
+	}
+	snapshot := source.binding.Snapshot
+	if snapshot == nil || !snapshot.Exists || snapshot.Temporary {
+		return nil
+	}
+	for _, column := range snapshot.Columns {
+		if strings.EqualFold(column.Name, binding.Column) {
+			yes := true
+			return &yes
+		}
+	}
+	if snapshot.Columns == nil || snapshot.ColumnsTailUnknown {
+		return nil
+	}
+	no := false
+	return &no
+}
+
+func viewFieldUpdatableContribution(binding ViewColumnBinding, sources []viewUpdatableSource) viewUpdatableContribution {
+	if binding.Expression {
+		return viewContributionNo
+	}
+	if binding.Star {
+		for _, source := range sources {
+			if !viewSourceMatchesField(source, binding) {
+				continue
+			}
+			if !viewSchemaTable(source.identity) {
+				return viewContributionYes
+			}
+		}
+		return viewContributionNo
+	}
+	matched, unproven := false, false
+	for _, source := range sources {
+		if !viewSourceMatchesField(source, binding) {
+			continue
+		}
+		matched = true
+		supply := viewSourceCanSupplyField(source, binding)
+		if supply == nil {
+			unproven = true
+			continue
+		}
+		if *supply && !viewSchemaTable(source.identity) {
+			return viewContributionYes
+		}
+	}
+	if !matched {
+		return viewContributionUnavailable
+	}
+	if unproven {
+		return viewContributionUnproven
+	}
+	return viewContributionNo
+}
+
+func viewGlobalTableRefSkipped(binding TargetBinding) bool {
+	snapshot := binding.Snapshot
+	return snapshot != nil && snapshot.Exists &&
+		(snapshot.Temporary || snapshot.RelationKind == "view")
+}
+
+func viewHiddenTableRef(binding TargetBinding) bool {
+	snapshot := binding.Snapshot
+	if snapshot == nil || snapshot.Exists && snapshot.RelationKind == "" {
+		return true
+	}
+	return snapshot.Exists && !snapshot.Temporary && snapshot.RelationKind == "view" &&
+		(snapshot.View == nil || snapshot.View.Definition == nil || !snapshot.View.Definition.SourcesKnown)
+}
+
+func viewGlobalTableRefContribution(binding TargetBinding, identity Table) viewUpdatableContribution {
+	if sameViewIdentity(binding.Table, identity) {
+		if viewGlobalTableRefSkipped(binding) {
+			return viewContributionNo
+		}
+		return viewContributionYes
+	}
+	if viewHiddenTableRef(binding) {
+		return viewContributionUnproven
+	}
+	return viewContributionNo
+}
+
+func viewGlobalTableReuse(definition *ViewDefinition, metadata *ViewMetadata, top []viewUpdatableSource) viewUpdatableContribution {
+	if metadata == nil || definition == nil || definition.Query == nil ||
+		len(top) != 1 || len(definition.Query.SetOperands) != 0 {
+		return viewContributionNo
+	}
+	first := top[0]
+	if first.query != nil {
+		return viewContributionNo
+	}
+	if first.index < 0 || first.index >= len(definition.Sources) || first.index >= len(metadata.Sources) ||
+		!sameViewIdentity(metadata.Sources[first.index].Table, first.identity) {
+		return viewContributionUnproven
+	}
+	snapshot := first.binding.Snapshot
+	if snapshot == nil || !snapshot.Exists || snapshot.Temporary || snapshot.RelationKind == "" {
+		return viewContributionUnproven
+	}
+	if snapshot.RelationKind == "view" {
+		return viewContributionNo
+	}
+	unproven := false
+	for i := first.index + 1; i < len(definition.Sources); i++ {
+		binding := TargetBinding{Table: definition.Sources[i]}
+		if i < len(metadata.Sources) {
+			binding = metadata.Sources[i]
+		}
+		switch viewGlobalTableRefContribution(binding, first.identity) {
+		case viewContributionYes:
+			return viewContributionYes
+		case viewContributionUnproven:
+			unproven = true
+		}
+	}
+	for i, dependency := range metadata.Dependencies {
+		if i < len(metadata.DependencyRoots) && metadata.DependencyRoots[i] <= first.index {
+			continue
+		}
+		switch viewGlobalTableRefContribution(dependency, first.identity) {
+		case viewContributionYes:
+			return viewContributionYes
+		case viewContributionUnproven:
+			unproven = true
+		}
+	}
+	if metadata.DependencyUnproven || metadata.DependencyLimit || metadata.DependencyCycle {
+		unproven = true
+	}
+	if unproven {
+		return viewContributionUnproven
+	}
+	return viewContributionNo
+}
+
+func assessViewUpdatable(definition *ViewDefinition, algorithm string, metadata *ViewMetadata) (*bool, []string) {
+	if metadata == nil || definition == nil || !definition.ShapeKnown || !definition.SourcesKnown {
+		return nil, []string{"view.updatable"}
+	}
+	if definition.NonUpdatable || definition.NonMergeable || algorithm == "temptable" {
+		updatable := false
+		return &updatable, nil
+	}
+	top := viewTopLevelSources(definition, metadata.Sources)
+	if len(top) == 0 {
+		updatable := false
+		return &updatable, nil
+	}
+	sourceYes, sourceUnproven, sourceUnavailable := false, false, false
+	for _, source := range top {
+		switch viewSourceUpdatableContribution(source) {
+		case viewContributionYes:
+			sourceYes = true
+		case viewContributionUnproven:
+			sourceUnproven = true
+		case viewContributionUnavailable:
+			sourceUnavailable = true
+		}
+	}
+	fieldYes, fieldUnproven, fieldUnavailable := false, false, false
+	bindings := definition.Bindings
+	if definition.Query != nil {
+		bindings = definition.Query.Bindings
+	}
+	for _, binding := range bindings {
+		switch viewFieldUpdatableContribution(binding, top) {
+		case viewContributionYes:
+			fieldYes = true
+		case viewContributionUnproven:
+			fieldUnproven = true
+		case viewContributionUnavailable:
+			fieldUnavailable = true
+		}
+	}
+	reuse := viewContributionNo
+	if sourceYes && fieldYes {
+		reuse = viewGlobalTableReuse(definition, metadata, top)
+	}
+	if !sourceYes && !sourceUnproven && !sourceUnavailable ||
+		!fieldYes && !fieldUnproven && !fieldUnavailable ||
+		reuse == viewContributionYes {
+		updatable := false
+		return &updatable, nil
+	}
+	var required []string
+	if algorithm != "merge" && algorithm != "undefined" {
+		required = appendViewFact(required, "view.algorithm")
+	}
+	if !sourceYes && sourceUnproven || !fieldYes && fieldUnproven || reuse == viewContributionUnproven {
+		required = appendViewFact(required, "view.updatable")
+	}
+	if !sourceYes || !fieldYes || reuse != viewContributionNo || len(required) != 0 {
+		return nil, required
+	}
+	updatable := true
+	return &updatable, nil
 }
 
 func AssessViewLifecycle(statement Statement) ViewLifecycleAssessment {
@@ -247,25 +600,15 @@ func AssessViewLifecycle(statement Statement) ViewLifecycleAssessment {
 		assessment.AlgorithmEffective = effectiveAlgorithm
 		assessment.AlgorithmFinal = finalAlgorithm
 		assessment.AlgorithmWarn = ddl.View.AlgorithmExplicit && ddl.View.Algorithm == "temptable" || mergeFallback
+		updatable, updatableRequired := assessViewUpdatable(definition, finalAlgorithm, metadata)
+		assessment.Updatable = updatable
 		if ddl.View.CheckExplicit {
-			if effectiveAlgorithm == "temptable" || definition != nil && definition.NonUpdatable {
+			if updatable != nil && !*updatable {
 				assessment.CheckInvalid = true
-			} else if definition != nil && definition.ShapeKnown && len(metadata.Sources) == 1 {
-				source := metadata.Sources[0].Snapshot
-				if source == nil || source.Exists && source.RelationKind == "" {
-					assessment.CheckRequired = appendViewFact(assessment.CheckRequired, "view.updatable")
-				} else if source.Exists && source.RelationKind == "view" {
-					if ViewSnapshotNonUpdatable(source.View) {
-						assessment.CheckInvalid = true
-					} else if source.View == nil || source.View.Updatable == nil {
-						assessment.CheckRequired = appendViewFact(assessment.CheckRequired, "view.updatable")
-					}
+			} else {
+				for _, fact := range updatableRequired {
+					assessment.CheckRequired = appendViewFact(assessment.CheckRequired, fact)
 				}
-			}
-			if ddl.Operation == DDLOperationAlterView && !assessment.TargetInvalid &&
-				(!ddl.View.AlgorithmExplicit || ddl.View.Algorithm == "undefined") &&
-				effectiveAlgorithm == "" && !assessment.CheckInvalid {
-				assessment.CheckRequired = appendViewFact(assessment.CheckRequired, "view.algorithm")
 			}
 		}
 	}

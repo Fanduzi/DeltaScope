@@ -224,7 +224,7 @@ func (s *batchState) applyView(statement spec.Statement) error {
 	}
 	shape.View.Updatable = nil
 	if statement.Dialect == spec.DialectMySQL {
-		shape.View.Updatable = publishedViewUpdatable(definition, assessment.AlgorithmFinal, statement.Metadata.View.Sources)
+		shape.View.Updatable = assessment.Updatable
 	}
 	shape.Columns = nil
 	if definition.ShapeKnown {
@@ -268,39 +268,4 @@ func (s *batchState) applyView(statement spec.Statement) error {
 	}
 	s.entries[key] = &batchTableEntry{state: tablePresent, shape: shape, displaySchema: key.schema, displayTable: key.table}
 	return nil
-}
-
-func publishedViewUpdatable(definition *spec.ViewDefinition, algorithm string, sources []spec.TargetBinding) *bool {
-	if definition == nil || !definition.ShapeKnown {
-		return nil
-	}
-	nonUpdatable := definition.NonUpdatable || algorithm == "temptable" ||
-		(algorithm == "merge" || algorithm == "undefined") && definition.NonMergeable
-	allProven := (algorithm == "merge" || algorithm == "undefined") && !definition.NonMergeable && !nonUpdatable
-	for _, source := range sources {
-		snapshot := source.Snapshot
-		if snapshot == nil || !snapshot.Exists || snapshot.RelationKind != "view" {
-			continue
-		}
-		if snapshot.View == nil {
-			allProven = false
-			continue
-		}
-		if spec.ViewSnapshotNonUpdatable(snapshot.View) {
-			nonUpdatable = true
-			continue
-		}
-		if snapshot.View.Updatable == nil {
-			allProven = false
-		}
-	}
-	if nonUpdatable {
-		updatable := false
-		return &updatable
-	}
-	if !allProven {
-		return nil
-	}
-	updatable := true
-	return &updatable
 }

@@ -131,18 +131,31 @@ Verified native distinctions:
   1049 class and must not publish a present view or a fabricated duplicate
   target. Never-touched or unvouched schema state remains unknown rather than
   absent; the view path does not introduce a second schema resolver.
-- T18-R1 CHECK OPTION premise: MySQL CHECK OPTION reuses the structured
-  query's static updatability facts. An outer join or a projection with no
-  direct source column is proven non-updatable and is refused by
-  `check_option.valid`; direct, mixed direct/computed, and inner-join
-  controls remain valid. Missing updatability premises stay gaps.
-- T18-R1-tail updatable publication consumes the same effective/final
-  algorithm as CHECK. Statically non-updatable shapes, TEMPTABLE, a
-  non-mergeable UNDEFINED result, or a proven non-updatable view source prove
-  `Updatable=false`; MERGE/merge-capable UNDEFINED plus every view source
-  proven updatable proves `Updatable=true`. Unknown algorithm or source
-  updatability leaves the fact unpublished, and a proven false is not erased
-  by unrelated unknown premises.
+- T18-R1 CHECK OPTION premise: MySQL CHECK OPTION consumes the shared
+  `Updatable` tri-state rather than a narrower static-shape check. A
+  non-mergeable/static non-updatable target, TEMPTABLE, all top-level sources
+  proven unable to contribute, no visible direct field, or a proven global
+  physical-table reuse counterexample is refused by `check_option.valid`;
+  direct, mixed direct/computed, inner-join, derived, CTE, and source-view
+  controls remain valid when the required positives are proven. Missing
+  updatability premises stay gaps.
+- T18-R1-tail2 updatable publication consumes the same assessment as CHECK.
+  A statically non-updatable/non-mergeable target or TEMPTABLE proves
+  `Updatable=false`; otherwise MySQL 8.0.46 requires at least one top-level
+  updatable component and at least one visible field that resolves to a
+  non-schema source `Item_field`. A proven non-updatable source only
+  withholds its own component and does not veto a sibling proven component;
+  a proven updatable source does not make every syntactic column name a
+  direct output field. Source-view output fields remain fields in the parent
+  query even when the source view's own definition computes them.
+- T18-R1-tail2 global physical-table reuse is narrow: only a sole top-level
+  physical non-view `Table_ref` can be the first global table. Derived/CTE
+  top-level sources are opaque components for this check, while a later
+  subquery, derived query, CTE reference, or expanded source-view dependency
+  can still prove the same physical table appears again in the global chain.
+  Same-named source-view references do not trigger the counterexample, and
+  an unexpanded view/dependency leaves `view.updatable` unproven rather than
+  fabricating either true or false.
 - T18-R1 algorithm accounting separates authored, inherited/effective, and
   final algorithm. ALTER inherits the prior algorithm for omitted or explicit
   UNDEFINED, applies the native MERGE fallback to UNDEFINED for a

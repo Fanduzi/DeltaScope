@@ -114,6 +114,26 @@ A static relation reference required by a view definition. A derived or CTE alia
 is not a separate database object, and dependency knowledge is not permission proof.
 _Avoid_: query result, authorization requirement, mentioned identifier
 
+**Top-Level View Source**:
+A relation reference in the view's outermost query block. Derived and CTE bodies
+can contain their own sources without flattening those leaves into the parent
+block.
+_Avoid_: dependency, flattened leaf table, output field
+
+**View Updatability Fact**:
+The tri-state conclusion matching MySQL `IS_UPDATABLE`: true requires a
+merge-capable target, at least one top-level updatable component, and at least
+one visible non-schema source field; false requires a sufficient counterproof,
+including proven global physical-table reuse. Unknown stays withheld.
+_Avoid_: all sources updatable, any source false, per-column write permission
+
+**Global Table Reuse**:
+The MySQL counterproof where the sole top-level physical non-view source appears
+again in the later global physical table-reference chain, including through
+expanded view dependencies. A view, derived table, or CTE top-level node is not
+that first physical table, and a same-named source-view reference is not a match.
+_Avoid_: lexical name reuse, flattened source list, dependency edge
+
 ## Connection
 
 **Transport Connection Resolution**:

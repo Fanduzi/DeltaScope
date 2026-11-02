@@ -26,10 +26,18 @@ These are required public/companion regressions, not completed-run claims:
   absent, and source facts outside that schema survive.
 - T18-R1 CHECK OPTION statics: computed-only projections and outer joins are
   proven non-updatable; direct, mixed, and inner-join controls remain valid.
-- T18-R1-tail updatable proof: TEMPTABLE, static non-updatable shape, a
-  non-mergeable UNDEFINED result, or a proven non-updatable source proves
-  `Updatable=false`; unknown algorithm/source updatability never publishes
-  `true`; a proven false dominates unrelated unknown premises.
+- T18-R1-tail2 updatable proof: a static/non-mergeable or TEMPTABLE target,
+  all top-level sources proven unable to contribute, no visible direct field,
+  or proven global physical-table reuse proves `Updatable=false`. One proven
+  updatable component plus one direct non-schema output field proves `true`
+  when no reuse counterexample is proven;
+  a non-updatable source alone does not veto, an updatable source does not
+  make arbitrary names fields, and unknown premises leave the fact unpublished.
+- T18-R1-tail2 global reuse: the counterexample starts only at a sole
+  top-level physical non-view source. Derived/CTE first nodes and same-named
+  source-view references stay updatable; later physical references inside
+  subqueries, derived queries, referenced CTE bodies, or expanded view
+  dependencies can prove reuse. Unexpanded dependencies leave a gap.
 - T18-R1 ALTER algorithm: omitted or explicit UNDEFINED inherits a proven
   prior MERGE, non-mergeable replacement falls back to final UNDEFINED, and
   the warning/state use one verdict.

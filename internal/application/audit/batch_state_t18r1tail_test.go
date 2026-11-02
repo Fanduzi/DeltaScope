@@ -138,7 +138,7 @@ func TestT18R1TailViewUpdatableProofControls(t *testing.T) {
 			},
 		},
 		{
-			name: "source_false_beats_unrelated_unknown", sql: "CREATE VIEW v AS SELECT a.id, b.id AS b_id FROM a JOIN b ON a.id = b.id;", want: t18R1TailBool(false),
+			name: "source_false_with_unrelated_unknown_stays_unknown", sql: "CREATE VIEW v AS SELECT a.id, b.id AS b_id FROM a JOIN b ON a.id = b.id;", want: nil,
 			setup: func(provider *t18FirstProvider) {
 				provider.tables["g.v"] = t18R1TailAbsent("v")
 				provider.tables["g.a"] = t18R1TailSourceView("a", t18R1TailBool(false))

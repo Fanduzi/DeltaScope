@@ -67,13 +67,32 @@ analysis keeps lexical scope frames: nearest-scope binding wins, same-scope
 multiplicity stays ambiguous, and unknown facts stay required evidence.
 
 The R1-tail review narrows two publications without introducing a second
-view-state model. `ViewSnapshot.Updatable` is tri-state proof, not merely the
-absence of a static `NonUpdatable` marker: a statically non-updatable shape,
-effective/final TEMPTABLE, non-mergeable UNDEFINED result, or proven
-non-updatable view source publishes false; MERGE or merge-capable UNDEFINED
-with all view-source updatability proven publishes true; any required unknown
-premise leaves it unpublished. A proven false is not upgraded by unrelated
-unknowns. An unresolved ALTER merges option attributes branch-by-branch: the
+view-state model. `ViewSnapshot.Updatable` is tri-state proof and dominates a
+parsed source-shape fallback when the catalog provides it; otherwise a
+statically non-updatable shape, effective/final TEMPTABLE, non-mergeable
+UNDEFINED result, or proven static source-shape counterexample can still
+publish false. Unknown catalog and definition premises remain withheld.
+
+The R1-tail2 review maps MySQL 8.0.46 `is_updatable_view` into the same
+tri-state assessment rather than maintaining a separate CHECK/publication
+calculation. A target must be merge-capable, have at least one top-level
+updatable component, and expose at least one visible field that resolves to a
+non-schema source `Item_field`. A non-updatable source view therefore
+withholds only its own component; a sibling base table, derived table, CTE
+reference, or proven updatable view can still prove the target. Source-view
+output names remain fields in the parent query, while expressions or names
+that cannot be supplied do not satisfy `field_for_view_update`.
+
+Global physical-table reuse is a separate counterproof, not a flattened
+leaf-name heuristic. The check starts only when the view has exactly one
+top-level physical non-view `Table_ref`. It then compares that physical
+identity with later global `Table_ref` entries, including subquery leaves and
+physical leaves expanded through source-view dependencies. Derived and CTE
+top-level sources are opaque first nodes, same-named source-view references
+do not match, and an unexpanded dependency keeps the result unknown instead
+of publishing an invented true or false.
+
+An unresolved ALTER merges option attributes branch-by-branch: the
 proven-failure value and the possible-success value survive only when they
 agree, so a MERGE prior with an UNDEFINED success branch becomes unknown
 rather than stale MERGE or unproven UNDEFINED.
