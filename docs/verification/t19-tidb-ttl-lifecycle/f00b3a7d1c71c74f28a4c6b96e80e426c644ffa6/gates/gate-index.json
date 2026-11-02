@@ -1,0 +1,36 @@
+{
+  "product_head": "f00b3a7d1c71c74f28a4c6b96e80e426c644ffa6",
+  "gates": [
+    {
+      "stem": "01-go-test",
+      "command": "go test ./... -count=1",
+      "rc": 0,
+      "identity_tail": "f00b3a7d1c71c74f28a4c6b96e80e426c644ffa6"
+    },
+    {
+      "stem": "02-sql-corpus",
+      "command": "make sql-corpus-gates",
+      "rc": 0,
+      "identity_tail": "f00b3a7d1c71c74f28a4c6b96e80e426c644ffa6"
+    },
+    {
+      "stem": "03-ddl-inventory",
+      "command": "make ddl-inventory-gate",
+      "rc": 0,
+      "identity_tail": "f00b3a7d1c71c74f28a4c6b96e80e426c644ffa6"
+    },
+    {
+      "stem": "04-golden-validator",
+      "command": "make ddl-golden-validator-test",
+      "rc": 0,
+      "identity_tail": "f00b3a7d1c71c74f28a4c6b96e80e426c644ffa6"
+    },
+    {
+      "stem": "05-golden-t19",
+      "command": "make ddl-golden TASK=T19 ARTIFACT_DIR=/tmp/ddl-golden-t19-final",
+      "rc": 0,
+      "identity_tail": "f00b3a7d1c71c74f28a4c6b96e80e426c644ffa6",
+      "note": "real Docker anchors mysql:5.7.44 / mysql:8.0.46 / mysql:8.4.10 / pingcap/tidb:v8.5.0; 23 cases, 281 assertions, PASS on product head f00b3a7d"
+    }
+  ]
+}
