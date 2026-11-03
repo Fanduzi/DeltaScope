@@ -1417,7 +1417,7 @@ rows:
     sql_shape: "CREATE TABLE t (id INT) /*T![placement] PRIMARY_REGION='x' REGIONS='x' */"
     prerequisites: "direct placement options deprecated in favor of policies but still documented"
     status: parser_unsupported
-    status_evidence: "2026-09-22 CLI probe: parser_error on the placement-comment form"
+    status_evidence: "2026-09-22 CLI probe: parser_error on the placement-comment form. 2026-11-12 T20 (#99): confirmed on the TiDB 8.5 anchor — /*T![placement]*/ direct options lex as real tokens and the form is a 1064 parse error, so the row stays a parser boundary, not an auditable statement"
     targets: "direct placement attributes (legacy form)"
     acceptance:
       dimensions: "legacy placement form classification"
@@ -1594,7 +1594,7 @@ rows:
     sql_shape: "ALTER TABLE t PLACEMENT POLICY = p1"
     prerequisites: "policy existence/topology evidence"
     status: generic_notice
-    status_evidence: "2026-09-22 CLI probe: only ddl.tidb.alter_table.placement_policy.notice on both bind and DEFAULT forms"
+    status_evidence: "2026-09-22 CLI probe: only ddl.tidb.alter_table.placement_policy.notice on both bind and DEFAULT forms. 2026-11-12 T20 (#99): tri-state binding modeled — a proven named bind fires ddl.tidb.placement.warn once, = DEFAULT unbinds silently, a catalog-proven-absent policy refuses preserving pre-state, an unvouched catalog yields placement_policy.catalog gaps; MySQL stays a vendor boundary. Golden: T20.meta.tidb85-golden-bind / bind-missing-refused / default-unbind / partition-bind"
     targets: "table/partition target, policy identity, bind vs unbind"
     acceptance:
       dimensions: "binding risk, missing/unknown policy handling"
@@ -1774,7 +1774,7 @@ rows:
     sql_shape: "CREATE PLACEMENT POLICY p1 PRIMARY_REGION='us-east-1' REGIONS='us-east-1'"
     prerequisites: "PD topology evidence for validity claims"
     status: generic_notice
-    status_evidence: "2026-09-24 T03 rework (#82): extracted-but-unchecked option facts now carry bounded unsupported evidence (create_placement_policy.options when an option list is present) and coverage=incomplete; option semantics still owned by T20. 2026-09-22 CLI probe: only ddl.create_placement_policy.notice fires; option/constraint semantics unchecked"
+    status_evidence: "2026-09-24 T03 rework (#82): extracted-but-unchecked option facts now carry bounded unsupported evidence (create_placement_policy.options when an option list is present) and coverage=incomplete; option semantics still owned by T20. 2026-09-22 CLI probe: only ddl.create_placement_policy.notice fires; option/constraint semantics unchecked. 2026-11-12 T20 (#99): lifecycle modeled — bounded PlacementOption keys (constraint bodies never reach findings), IF NOT EXISTS / OR REPLACE / name-conflict outcomes, proven-absent catalog lands + warns, unvouched catalog yields gaps; MySQL vendor boundary preserved"
     targets: "policy identity, region/role/constraint attributes"
     acceptance:
       dimensions: "option capture, topology-dependent checks explicit"
@@ -1790,7 +1790,7 @@ rows:
     sql_shape: "ALTER PLACEMENT POLICY p1 PRIMARY_REGION='us-west-1' REGIONS='us-west-1'"
     prerequisites: "bound-object effects"
     status: generic_notice
-    status_evidence: "2026-09-24 T03 rework (#82): extracted-but-unchecked option facts now carry bounded unsupported evidence (alter_placement_policy.options when an option list is present) and coverage=incomplete; option semantics still owned by T20. 2026-09-22 CLI probe: only ddl.alter_placement_policy.notice fires"
+    status_evidence: "2026-09-24 T03 rework (#82): extracted-but-unchecked option facts now carry bounded unsupported evidence (alter_placement_policy.options when an option list is present) and coverage=incomplete; option semantics still owned by T20. 2026-09-22 CLI probe: only ddl.alter_placement_policy.notice fires. 2026-11-12 T20 (#99): ALTER merges option keys per native semantics without disturbing bound references, proven-present warns via ddl.tidb.placement.warn, proven-absent refuses, unvouched catalog yields gaps"
     targets: "policy identity, attribute transitions, bound-object effects"
     acceptance:
       dimensions: "attribute transitions, bound-object visibility"
@@ -1806,7 +1806,7 @@ rows:
     sql_shape: "DROP PLACEMENT POLICY p1"
     prerequisites: "bound objects prevent drop at runtime"
     status: generic_notice
-    status_evidence: "2026-09-22 CLI probe: only ddl.drop_placement_policy.notice fires"
+    status_evidence: "2026-09-22 CLI probe: only ddl.drop_placement_policy.notice fires. 2026-11-12 T20 (#99): drop adjudicated — proven bound targets refuse natively (8241 parity, Golden T20.meta.tidb85-drop-bound-refused), IF EXISTS over proven absence is a no-op, proven unbound drop lands + warns, unvouched bound set stays unproven rather than guessing"
     targets: "policy identity, bound-object protection"
     acceptance:
       dimensions: "drop lifecycle, bound-object evidence"
@@ -1822,7 +1822,7 @@ rows:
     sql_shape: "ALTER RANGE global PLACEMENT POLICY p1"
     prerequisites: "range scope identity"
     status: parse_only
-    status_evidence: "2026-09-22 CLI probe: parses silently with zero findings. 2026-09-23 T03 (#82): valid ALTER RANGE forms now carry unsupported evidence (alter_range_placement) and coverage=incomplete until T20 models range placements"
+    status_evidence: "2026-09-22 CLI probe: parses silently with zero findings. 2026-09-23 T03 (#82): valid ALTER RANGE forms now carry unsupported evidence (alter_range_placement) and coverage=incomplete until T20 models range placements. 2026-11-12 T20 (#99): extracted and bounded to {global, meta} per native probing (dist/others refuse 1105); a proven named bind warns, missing-policy refuses, unvouched catalog yields gaps; MySQL vendor boundary preserved"
     targets: "range scope, bound policy"
     acceptance:
       dimensions: "scope-level binding classification"
