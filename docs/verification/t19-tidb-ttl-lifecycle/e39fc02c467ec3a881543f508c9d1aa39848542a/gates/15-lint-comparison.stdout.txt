@@ -1,0 +1,4 @@
+lint-scoped: baseline_diags=22 current_diags=23 added=1 removed=0
+  ADDED x1 internal/domain/rule/catalog/catalog.go: File is not properly formatted (gofmt)
+lint-fullrepo: baseline_diags=39 current_diags=40 added=1 removed=0
+  ADDED x1 internal/domain/rule/catalog/catalog.go: File is not properly formatted (gofmt)

@@ -1,0 +1,2 @@
+lint-scoped: baseline=22 current=22 added=0 removed=0
+lint-fullrepo: baseline=39 current=39 added=0 removed=0

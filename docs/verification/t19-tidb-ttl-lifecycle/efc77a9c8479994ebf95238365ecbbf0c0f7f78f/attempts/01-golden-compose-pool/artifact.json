@@ -1,0 +1,80 @@
+{
+  "task_id": "T19",
+  "issue": 98,
+  "head_sha": "efc77a9c8479994ebf95238365ecbbf0c0f7f78f",
+  "generated_at": "2026-11-03T12:01:16.519366+00:00",
+  "cli": {
+    "path": "/private/tmp/ddl-golden-t19r1/T19/bin/deltascope",
+    "sha256": "473530c34bc23adbf2e981ea3e70c79253c2653d7146cfe08c3854f8e7cacadb",
+    "build": {
+      "command": "CGO_ENABLED=0 go build -o <artifact>/deltascope ./cmd/deltascope",
+      "cgo_enabled": "0",
+      "go_version": "go1.26.1",
+      "built_at": "2026-11-03T12:01:09.543298+00:00",
+      "head_sha": "efc77a9c8479994ebf95238365ecbbf0c0f7f78f"
+    }
+  },
+  "policy_profile": {
+    "profile": "all-rules-disabled",
+    "path": "/private/tmp/ddl-golden-t19r1/T19/golden-policy-all-off.yaml",
+    "sha256": "2714b1f91dfbcc14f8a40276cc996e340f60a5cf09379dcc6832eec76926d945",
+    "catalog_rules": 465,
+    "enabled_rules": {},
+    "disabled_rules": 465
+  },
+  "policies": [
+    {
+      "profile": "all-rules-disabled",
+      "path": "/private/tmp/ddl-golden-t19r1/T19/golden-policy-all-off.yaml",
+      "sha256": "2714b1f91dfbcc14f8a40276cc996e340f60a5cf09379dcc6832eec76926d945",
+      "catalog_rules": 465,
+      "enabled_rules": {},
+      "disabled_rules": 465
+    },
+    {
+      "profile": "t19-ttl",
+      "path": "/private/tmp/ddl-golden-t19r1/T19/golden-policy-t19-ttl.yaml",
+      "sha256": "dc15dd67e85bbb8044e37feb3b7091bf1433461a9b70a2830f6f7f861f17bb39",
+      "catalog_rules": 465,
+      "enabled_rules": {
+        "ddl.tidb.ttl.warn": {
+          "level": "warning"
+        }
+      },
+      "disabled_rules": 464
+    }
+  ],
+  "required_case_ids": [
+    "T19.db.mysql57.ddl",
+    "T19.db.mysql57.syntax_negative",
+    "T19.db.mysql80.ddl",
+    "T19.db.mysql80.syntax_negative",
+    "T19.db.mysql84.ddl",
+    "T19.db.mysql84.syntax_negative",
+    "T19.db.tidb85.ddl",
+    "T19.db.tidb85.syntax_negative",
+    "T19.meta.tidb85-alter-applied",
+    "T19.meta.tidb85-alter-inbound-refused",
+    "T19.meta.tidb85-create-applied",
+    "T19.meta.tidb85-create-temporary-refused",
+    "T19.meta.tidb85-fk-into-ttl-parent-refused",
+    "T19.meta.tidb85-remove-ttl",
+    "T19.meta.mysql80-comment-noop",
+    "T19.cli.tidb-create-warn",
+    "T19.cli.tidb-create-temp-silent",
+    "T19.cli.tidb-create-interval-silent",
+    "T19.cli.tidb-create-self-fk-silent",
+    "T19.cli.tidb-create-clustered-gap",
+    "T19.cli.tidb-alter-gap",
+    "T19.cli.tidb-remove-silent",
+    "T19.cli.mysql-comment-noop"
+  ],
+  "cases": [],
+  "executed_count": 0,
+  "cleanup": {
+    "compose_down_rc": 0,
+    "compose_down_stderr": "",
+    "residual_containers": []
+  },
+  "external_blocker": "compose up failed: Network deltascope-ddl-golden_default Creating \n Network deltascope-ddl-golden_default Creating \n Network deltascope-ddl-golden_default Error Error response from daemon: all predefined address pools have been fully subnetted\n network:default failed to create network deltascope-ddl-golden_default: Error response from daemon: all predefined address pools have been fully subnetted \n Container deltascope-ddl-golden-tidb85 Creating \n Container deltascope-ddl-golden-mysql57 Creating \n Container deltascope-ddl-golden-mysql84 Creating \n Container deltascope-ddl-golden-mysql80 Creating \nfailed to create network deltascope-ddl-golden_default: Error response from daemon: all predefined address pools have been fully subnetted"
+}

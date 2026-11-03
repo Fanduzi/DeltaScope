@@ -1,0 +1,4 @@
+[three-level-doc][L2] module changed but README.md not updated: internal/application/auditmeta/README.md
+[three-level-doc][L2] module changed but README.md not updated: internal/domain/policy/README.md
+[three-level-doc][L2] module changed but README.md not updated: internal/domain/rule/catalog/README.md
+[three-level-doc] FAILED

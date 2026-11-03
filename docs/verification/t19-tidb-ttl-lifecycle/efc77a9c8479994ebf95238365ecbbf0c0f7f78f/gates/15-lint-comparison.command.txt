@@ -1,0 +1,1 @@
+python3 - compare lint diagnostic identity vs docs/verification/t18-view-lifecycle/abe88235e00c53c174d719fe270209b73b82f659/gates

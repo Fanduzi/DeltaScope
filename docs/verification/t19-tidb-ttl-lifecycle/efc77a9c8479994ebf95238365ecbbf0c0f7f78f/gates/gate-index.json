@@ -1,0 +1,22 @@
+{
+  "product_head": "efc77a9c8479994ebf95238365ecbbf0c0f7f78f",
+  "chain": "efc77a9c -> 3ba1f860 -> e39fc02c -> 3966020e -> f00b3a7d -> 4ef016df",
+  "gates": [
+    {"stem": "01-go-test", "command": "go test ./... -count=1", "rc": 0},
+    {"stem": "02-go-vet", "command": "go vet ./...", "rc": 0},
+    {"stem": "03-race-internal", "command": "env CGO_ENABLED=1 go test -race ./internal/... -count=1", "rc": 0},
+    {"stem": "04-sql-corpus", "command": "make sql-corpus-gates", "rc": 0},
+    {"stem": "05-ddl-inventory", "command": "make ddl-inventory-gate", "rc": 0},
+    {"stem": "06-coverage-catalog", "command": "make ddl-coverage-catalog-test", "rc": 0},
+    {"stem": "07-parser-unsupported", "command": "make parser-error-unsupported-contract-test", "rc": 0},
+    {"stem": "08-unsupported-diagnostics", "command": "make unsupported-diagnostics-evidence-test", "rc": 0},
+    {"stem": "09-docs-examples", "command": "make docs-example-gates", "rc": 0},
+    {"stem": "10-decision-record", "command": "make decision-record-gate", "rc": 0},
+    {"stem": "11-l2-range", "command": "l2_committed_range_check.sh 4ef016df..efc77a9c", "rc": 0},
+    {"stem": "12-golden-validator", "command": "make ddl-golden-validator-test", "rc": 0},
+    {"stem": "13-lint-scoped", "command": "golangci-lint run <8 scoped dirs>", "rc": 1, "note": "accepted baseline diagnostics"},
+    {"stem": "14-lint-fullrepo", "command": "golangci-lint run ./...", "rc": 1, "note": "accepted baseline diagnostics"},
+    {"stem": "15-lint-comparison", "command": "diagnostic identity vs T18 abe88235 baseline", "rc": 0, "note": "scoped added=0 removed=0; fullrepo added=0 removed=0"},
+    {"stem": "16-golden-t19", "command": "make ddl-golden TASK=T19 (attempt 2; attempt 1 preserved)", "rc": 0, "note": "23 cases, 281 assertions, head_sha=cli.build.head_sha=efc77a9c, cleanup rc=0, residual_containers=[]"}
+  ]
+}
