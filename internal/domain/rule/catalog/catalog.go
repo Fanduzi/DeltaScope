@@ -828,11 +828,11 @@ var metadataAwareRuleIDs = map[string]bool{
 	"ddl.tidb.local_temporary.rename":           true,
 	"ddl.tidb.local_temporary.like":             true,
 	// T19 reads the ordered target's TTL configuration and prerequisites.
-	"ddl.tidb.ttl.warn": true,
-	"dml.table.denylist.forbid":                 true,
-	"dml.table.exists.require":                  true,
-	"ddl.table.denylist.forbid":                 true,
-	"ddl.alter.add_column.exists.forbid":        true,
-	"ddl.alter.add_index.exists.forbid":         true,
-	"ddl.index.key_length.max_bytes.require":    true,
+	"ddl.tidb.ttl.warn":                      true,
+	"dml.table.denylist.forbid":              true,
+	"dml.table.exists.require":               true,
+	"ddl.table.denylist.forbid":              true,
+	"ddl.alter.add_column.exists.forbid":     true,
+	"ddl.alter.add_index.exists.forbid":      true,
+	"ddl.index.key_length.max_bytes.require": true,
 }
