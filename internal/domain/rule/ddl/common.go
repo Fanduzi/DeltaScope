@@ -216,7 +216,9 @@ const (
 	ruleIDAlterTableOptionApplicability       = "ddl.alter.table_option.applicability"
 	ruleIDAlterTableOptionWarn                = "ddl.alter.table_option.warn"
 	// T19: TiDB TTL lifecycle declarations.
-	ruleIDTiDBTTLWarn                                       = "ddl.tidb.ttl.warn"
+	ruleIDTiDBTTLWarn = "ddl.tidb.ttl.warn"
+	// T20: TiDB placement-policy lifecycle and bindings.
+	ruleIDTiDBPlacementWarn                                 = "ddl.tidb.placement.warn"
 	ruleIDViewCreateForbid                                  = "ddl.view.create.forbid"
 	ruleIDViewDropForbid                                    = "ddl.view.drop.forbid"
 	ruleIDTableDropForbid                                   = "ddl.table.drop.forbid"

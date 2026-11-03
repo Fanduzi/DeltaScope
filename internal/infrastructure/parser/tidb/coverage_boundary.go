@@ -53,7 +53,8 @@ func dialectBoundaryFeature(dialect spec.Dialect, ddl *spec.DDL) (feature string
 	case spec.DialectMySQL:
 		switch ddl.Operation {
 		case spec.DDLOperationCreateSequence, spec.DDLOperationAlterSequence, spec.DDLOperationDropSequence,
-			spec.DDLOperationCreatePlacementPolicy, spec.DDLOperationAlterPlacementPolicy, spec.DDLOperationDropPlacementPolicy:
+			spec.DDLOperationCreatePlacementPolicy, spec.DDLOperationAlterPlacementPolicy, spec.DDLOperationDropPlacementPolicy,
+			spec.DDLOperationAlterRangePlacement:
 			return string(ddl.Operation), true, true
 		}
 		if ddl.Operation == spec.DDLOperationCreateIndex {
@@ -157,8 +158,6 @@ func unhandledStatementFeature(node ast.StmtNode) string {
 		return "alter_resource_group"
 	case *ast.SetResourceGroupStmt:
 		return "set_resource_group"
-	case *ast.AlterRangeStmt:
-		return "alter_range_placement"
 	case *ast.AlterInstanceStmt:
 		return "alter_instance"
 	case *ast.AdminStmt:

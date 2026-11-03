@@ -59,6 +59,11 @@ func partitionDefsFromAST(defs []*ast.PartitionDefinition) []spec.PartitionDef {
 			Bound:          partitionBoundFromClause(def.Clause),
 			Subpartitioned: len(def.Sub) > 0,
 		}
+		for _, option := range def.Options {
+			if option != nil && option.Tp == ast.TableOptionPlacementPolicy {
+				member.Placement = placementBindingFromValue(option.StrValue, option.Default)
+			}
+		}
 		out = append(out, member)
 	}
 	return out

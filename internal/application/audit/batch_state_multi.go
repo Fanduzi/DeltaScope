@@ -126,6 +126,24 @@ func (s *batchState) prepareMultiAction(statement spec.Statement, targets []spec
 			applyTableOptionEffects(s.dialect, &ddl.Alter[i], working)
 		}
 	}
+	// Placement binds publish with the same atomic successor: the policy
+	// premise was already proven at the statement gate, and the bound
+	// identity feeds the policy's inbound-reference set (T20/#99).
+	for i := range ddl.Alter {
+		alter := &ddl.Alter[i]
+		if alter.Action != "placement_policy" || alter.Placement == nil {
+			continue
+		}
+		displaySchema := primary.schema
+		if entry.displaySchema != "" {
+			displaySchema = entry.displaySchema
+		}
+		if len(alter.Partitions) == 0 {
+			s.applyPlacementBindToShape(working, *alter.Placement, nil, placementTableRef(displaySchema, primary.table))
+		} else {
+			s.applyPlacementBindToShape(working, *alter.Placement, alter.Partitions, displaySchema+"."+primary.table)
+		}
+	}
 	clearModifyAffectedStats(working)
 	return modifyPublication{
 		invalidate: dependents,
@@ -599,7 +617,7 @@ const (
 // with siblings.
 func multiActionNonPrimaryAction(alter *spec.Alter) bool {
 	switch alter.Action {
-	case "algorithm", "lock", "table_option",
+	case "algorithm", "lock", "table_option", "placement_policy",
 		"order_by_columns", "force", "enable_keys", "disable_keys":
 		return true
 	default:

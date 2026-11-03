@@ -79,10 +79,13 @@ var tidbPromotedMetadataCases = []metadataCensusCase{
 	{Name: "CREATE UNIQUE INDEX", SQL: "CREATE UNIQUE INDEX idx_email ON users (email)", ExpectFindings: true},
 	{Name: "DROP INDEX", SQL: "DROP INDEX idx_email ON users", ExpectFindings: true},
 	{Name: "ALTER DATABASE", SQL: "ALTER DATABASE app CHARACTER SET utf8mb4", ExpectFindings: true},
+	// T20: policy member sets are modeled bounded facts — supported under
+	// TiDB. The privacy contract stays pinned: constraint bodies never leak
+	// into findings or metadata projections.
 	{Name: "CREATE PLACEMENT POLICY", SQL: "CREATE PLACEMENT POLICY p1 PRIMARY_REGION='us-east-1' REGIONS='us-east-1'", Sensitive: true,
-		ForbiddenSubstrings: []string{"us-east-1"}, ExpectFindings: true, ExpectIncomplete: true},
+		ForbiddenSubstrings: []string{"us-east-1"}, ExpectFindings: true},
 	{Name: "ALTER PLACEMENT POLICY", SQL: "ALTER PLACEMENT POLICY p1 PRIMARY_REGION='us-west-1' REGIONS='us-west-1'", Sensitive: true,
-		ForbiddenSubstrings: []string{"us-west-1"}, ExpectFindings: true, ExpectIncomplete: true},
+		ForbiddenSubstrings: []string{"us-west-1"}, ExpectFindings: true},
 	{Name: "DROP PLACEMENT POLICY", SQL: "DROP PLACEMENT POLICY p1", ExpectFindings: true},
 	{Name: "CREATE SEQUENCE", SQL: "CREATE SEQUENCE seq1 START WITH 1 INCREMENT BY 1", Sensitive: true,
 		ForbiddenSubstrings: []string{"START WITH 1", "INCREMENT BY 1"}, ExpectFindings: true, ExpectIncomplete: true},

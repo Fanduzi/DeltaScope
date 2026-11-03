@@ -199,10 +199,10 @@ func alterConstraintGap(dialect spec.Dialect, constraintType string) (gap bool, 
 func extractedOptionGap(dialect spec.Dialect, op spec.DDLOperation, name string) (gap bool, vendor bool) {
 	switch name {
 	case "placement_policy":
-		// Placement policies are a TiDB feature: vendor boundary under MySQL,
-		// extracted-but-unaudited binding under TiDB — the binding premise
-		// (the named policy's existence) stays unvouchable (T17).
-		return true, dialect == spec.DialectMySQL
+		// Placement policies are a TiDB feature: vendor boundary under
+		// MySQL. Under TiDB the binding is modeled and audited (T20) — the
+		// ordered state and placement rule consume the declared option.
+		return dialect == spec.DialectMySQL, dialect == spec.DialectMySQL
 	case "encryption":
 		// Schema-level ENCRYPTION is modeled on schema ops (version-gated
 		// transitions, T17); on CREATE TABLE it stays the T15 extracted-but-
@@ -392,6 +392,12 @@ func statementCoverageAspects(dialect spec.Dialect, statement spec.Statement) []
 		// to routines, which TiDB does not have — a vendor boundary there.
 		vendor := dialect == spec.DialectMySQL && (option == "placement_policy" || option == "partition_update_indexes" || option == "split_index" || option == "resource_group_name" || option == "hypo_index" || option == "tiflash_replica" || tidbOnlyTableOption(option, dialect))
 		vendor = vendor || (dialect == spec.DialectTiDB && option == "routine_object")
+		if dialect == spec.DialectTiDB && option == "placement_policy" {
+			// Partition-definition bindings are modeled facts since T20 —
+			// the name stays in UnextractedOptions only so MySQL keeps its
+			// vendor boundary.
+			continue
+		}
 		gaps = append(gaps, aspectGap(
 			fmt.Sprintf("%s.option.%s", ddl.Operation, option), vendor,
 			map[string]any{"aspect": "option"},

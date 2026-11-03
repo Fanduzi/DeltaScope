@@ -459,7 +459,7 @@ func (p *Provider) LoadTableSnapshot(ctx context.Context, dialect spec.Dialect, 
 	}
 	// Partition facts are loaded on both products — the TiDB GLOBAL index
 	// gate and the partition-action applicability checks both consume them.
-	if err := p.loadPartitionFacts(ctx, snapshot); err != nil {
+	if err := p.loadPartitionFacts(ctx, snapshot, dialect); err != nil {
 		return nil, fmt.Errorf("load table %s.%s partition state: %w", snapshot.Schema, snapshot.Table.Name, err)
 	}
 	if dialect == spec.DialectTiDB {
@@ -472,6 +472,9 @@ func (p *Provider) LoadTableSnapshot(ctx context.Context, dialect spec.Dialect, 
 		}
 		if err := p.loadTiDBTTL(ctx, snapshot); err != nil {
 			return nil, fmt.Errorf("load table %s.%s ttl: %w", snapshot.Schema, snapshot.Table.Name, err)
+		}
+		if err := p.loadTiDBPlacement(ctx, snapshot); err != nil {
+			return nil, fmt.Errorf("load table %s.%s placement policy: %w", snapshot.Schema, snapshot.Table.Name, err)
 		}
 	}
 
@@ -550,9 +553,22 @@ func (p *Provider) loadView(ctx context.Context, snapshot *spec.TableSnapshot) e
 // fact unknown (nil) — a bounded gap, not a guessed "not partitioned".
 // A partitioned table's catalog answer always carries a method, so a
 // nil PartitionType under partitioned=true is itself an unobserved fact.
-func (p *Provider) loadPartitionFacts(ctx context.Context, snapshot *spec.TableSnapshot) error {
+func (p *Provider) loadPartitionFacts(ctx context.Context, snapshot *spec.TableSnapshot, dialect spec.Dialect) error {
+	// TIDB_PLACEMENT_POLICY_NAME is TiDB-only: the capability probe keeps
+	// loading honest — member bindings stay unvouched where the column
+	// cannot answer rather than a failed query or a guessed set (T20/#99).
+	placementSelect := ""
+	if dialect == spec.DialectTiDB {
+		hasPlacement, err := p.informationSchemaHasColumn(ctx, "PARTITIONS", "TIDB_PLACEMENT_POLICY_NAME")
+		if err != nil {
+			return fmt.Errorf("probe partitions placement column: %w", err)
+		}
+		if hasPlacement {
+			placementSelect = ", tidb_placement_policy_name"
+		}
+	}
 	rows, err := p.db.QueryContext(ctx, `
-		select partition_method, partition_name, subpartition_name, partition_description
+		select partition_method, partition_name, subpartition_name, partition_description`+placementSelect+`
 		from information_schema.partitions
 		where table_schema = ? and table_name = ?
 			and partition_name is not null
@@ -573,10 +589,21 @@ func (p *Provider) loadPartitionFacts(ctx context.Context, snapshot *spec.TableS
 	seen := make(map[string]bool)
 	var method string
 	subpartitioned := false
+	placements := map[string]string{}
 	for rows.Next() {
-		var rawMethod, name, subName, description sql.NullString
-		if err := rows.Scan(&rawMethod, &name, &subName, &description); err != nil {
+		var rawMethod, name, subName, description, placement sql.NullString
+		dest := []any{&rawMethod, &name, &subName, &description}
+		if placementSelect != "" {
+			dest = append(dest, &placement)
+		}
+		if err := rows.Scan(dest...); err != nil {
 			return fmt.Errorf("scan partition for table %s.%s: %w", snapshot.Schema, snapshot.Table.Name, err)
+		}
+		if placementSelect != "" && name.Valid && !subName.Valid &&
+			placement.Valid && strings.TrimSpace(placement.String) != "" {
+			// Top-level member rows carry the member's own binding; a
+			// subpartition row's parent is not its binding identity.
+			placements[strings.ToLower(name.String)] = strings.ToLower(strings.TrimSpace(placement.String))
 		}
 		if method == "" && rawMethod.Valid {
 			method = strings.ToLower(rawMethod.String)
@@ -624,6 +651,13 @@ func (p *Provider) loadPartitionFacts(ctx context.Context, snapshot *spec.TableS
 		// No partition rows is an observed-empty member set on a
 		// known-plain table — never confused with an unobserved set.
 		snapshot.PartitionNames = []string{}
+	}
+	if placementSelect != "" && !subpartitioned {
+		// The member binding directory was read: bound members carry their
+		// policy name, every other member is proven unbound. An unreadable
+		// column never reaches here, so nil stays the unvouched answer
+		// (T20/#99).
+		snapshot.PartitionPlacements = placements
 	}
 	return nil
 }

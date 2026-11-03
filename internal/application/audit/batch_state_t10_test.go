@@ -74,6 +74,8 @@ type t10Provider struct {
 	restrictNonStandard *bool
 	tidbCheck           *bool
 	tables              map[string]*spec.TableSnapshot
+	placement           map[string]*spec.PlacementPolicyFact
+	placementErr        error
 	calls               []string
 }
 
@@ -100,6 +102,16 @@ func (p *t10Provider) LoadTableSnapshot(_ context.Context, _ spec.Dialect, schem
 		return snap, nil
 	}
 	return &spec.TableSnapshot{Exists: false, Table: &spec.Table{Schema: schema, Name: table}}, nil
+}
+
+// LoadPlacementPolicies serves the T20 policy catalog: nil placement is the
+// unvouched answer (loader present but directory unread), a non-nil map is
+// the proven set. placementErr propagates a failed read.
+func (p *t10Provider) LoadPlacementPolicies(context.Context, spec.Dialect) (map[string]*spec.PlacementPolicyFact, error) {
+	if p.placementErr != nil {
+		return nil, p.placementErr
+	}
+	return p.placement, nil
 }
 
 func t10Audit(t *testing.T, dialect spec.Dialect, sql string, provider MetadataProvider, policy string) report.Result {

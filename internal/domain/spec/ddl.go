@@ -32,6 +32,17 @@ type DDL struct {
 	// keeps the clause source so a TiDB feature comment is not conflated with
 	// bare MySQL-refused syntax.
 	TTL []TTLDeclaration `json:"-"`
+	// PlacementOptions carries the normalized member set of CREATE/ALTER
+	// PLACEMENT POLICY (bounded key names plus parsed values); nil when the
+	// statement declares none (issue #99 T20).
+	PlacementOptions []PlacementOption `json:"-"`
+	// PlacementBinding carries an authored PLACEMENT POLICY assignment at
+	// statement level — the ALTER RANGE scope bind plus CREATE TABLE and
+	// ALTER DATABASE option-form binds (issue #99 T20).
+	PlacementBinding *PlacementBinding `json:"-"`
+	// PlacementRange carries the authored ALTER RANGE scope name
+	// (global/meta/...) on alter_range_placement statements (issue #99 T20).
+	PlacementRange string `json:"placement_range,omitempty"`
 	// OmittedTargets counts parsed statement targets the normalized model
 	// collapsed or ignored entirely: extra names in DROP USER/ROLE/SEQUENCE
 	// lists, extra CREATE/ALTER USER specs, and the whole user list on
@@ -217,6 +228,7 @@ const (
 	DDLOperationCreatePlacementPolicy DDLOperation = "create_placement_policy"
 	DDLOperationAlterPlacementPolicy  DDLOperation = "alter_placement_policy"
 	DDLOperationDropPlacementPolicy   DDLOperation = "drop_placement_policy"
+	DDLOperationAlterRangePlacement   DDLOperation = "alter_range_placement"
 	DDLOperationDropResourceGroup     DDLOperation = "drop_resource_group"
 
 	DDLOperationAlterIndex            DDLOperation = "alter_index"
@@ -471,6 +483,9 @@ type PartitionDef struct {
 	Name           string          `json:"name,omitempty"`
 	Bound          *PartitionBound `json:"bound,omitempty"`
 	Subpartitioned bool            `json:"subpartitioned,omitempty"`
+	// Placement carries a member-level PLACEMENT POLICY assignment declared
+	// inside this partition definition (issue #99 T20).
+	Placement *PlacementBinding `json:"placement,omitempty"`
 }
 
 // PartitionScheme is a partitioning declaration in normalized form — the
@@ -514,6 +529,10 @@ func ClonePartitionDefs(in []PartitionDef) []PartitionDef {
 				}
 			}
 			out[i].Bound = &bound
+		}
+		if def.Placement != nil {
+			placement := *def.Placement
+			out[i].Placement = &placement
 		}
 	}
 	return out
@@ -859,6 +878,11 @@ type Alter struct {
 	// in clause order. It is empty for the TRUNCATE PARTITION ALL form —
 	// an empty name is never fabricated.
 	Partitions []string `json:"partitions,omitempty"`
+	// Placement carries the authored PLACEMENT POLICY assignment of the
+	// `placement_policy` alter action — table-level (`Alter.Partitions`
+	// empty) or partition-level (`Alter.Partitions` holds the bound member
+	// names) (issue #99 T20).
+	Placement *PlacementBinding `json:"placement,omitempty"`
 	// AllPartitions marks the `TRUNCATE PARTITION ALL` form — a distinct
 	// modeled fact from an empty Partitions list on the named forms.
 	AllPartitions bool `json:"all_partitions,omitempty"`

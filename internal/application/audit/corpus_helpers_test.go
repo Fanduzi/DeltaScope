@@ -47,6 +47,9 @@ type corpusFixtureMetadataProvider struct {
 	instance    *spec.InstanceFacts
 	tables      map[string]*spec.TableSnapshot
 	indexOwners map[string]string
+	// placement nil means the catalog is unvouched; a non-nil map is the
+	// proven policy set (empty map = proven-empty).
+	placement map[string]*spec.PlacementPolicyFact
 }
 
 func newCorpusMetadataProvider(metadata *corpusMetadata) *corpusFixtureMetadataProvider {
@@ -73,6 +76,16 @@ func newCorpusMetadataProvider(metadata *corpusMetadata) *corpusFixtureMetadataP
 	for indexName, tableName := range metadata.IndexOwners {
 		provider.indexOwners[strings.ToLower(strings.TrimSpace(indexName))] = strings.TrimSpace(tableName)
 	}
+	if metadata.PlacementPolicies != nil {
+		provider.placement = make(map[string]*spec.PlacementPolicyFact, len(metadata.PlacementPolicies))
+		for name, policy := range metadata.PlacementPolicies {
+			provider.placement[strings.ToLower(strings.TrimSpace(name))] = &spec.PlacementPolicyFact{
+				PrimaryRegion: policy.PrimaryRegion,
+				Regions:       policy.Regions,
+				BoundTargets:  append([]string{}, policy.BoundTargets...),
+			}
+		}
+	}
 	return provider
 }
 
@@ -96,6 +109,12 @@ func (p *corpusFixtureMetadataProvider) LoadTableSnapshot(_ context.Context, _ s
 
 func (p *corpusFixtureMetadataProvider) ResolveTableForIndex(_ context.Context, _ spec.Dialect, _ string, index string) (string, error) {
 	return p.indexOwners[strings.ToLower(strings.TrimSpace(index))], nil
+}
+
+// LoadPlacementPolicies serves the fixture's proven policy catalog — nil
+// keeps the catalog unvouched, never a fabricated empty set.
+func (p *corpusFixtureMetadataProvider) LoadPlacementPolicies(context.Context, spec.Dialect) (map[string]*spec.PlacementPolicyFact, error) {
+	return p.placement, nil
 }
 
 func corpusTableSnapshotToSpec(tableName, defaultSchema string, snapshot corpusTableSnapshot) spec.TableSnapshot {
@@ -132,6 +151,9 @@ func corpusTableSnapshotToSpec(tableName, defaultSchema string, snapshot corpusT
 	out.PrimaryKeyUnknown = snapshot.PrimaryKeyUnknown
 	out.ConstraintsUnknown = snapshot.ConstraintsUnknown
 	out.TTLKnown = snapshot.TTLKnown
+	out.PlacementPolicy = snapshot.PlacementPolicy
+	out.PlacementPolicyKnown = snapshot.PlacementPolicyKnown
+	out.PartitionPlacements = snapshot.PartitionPlacements
 	if snapshot.ReferencedBy != nil {
 		out.ReferencedBy = make([]spec.Table, 0, len(snapshot.ReferencedBy))
 		for _, ref := range snapshot.ReferencedBy {

@@ -39,6 +39,10 @@ func (c mysqlClient) ResolveObject(ctx context.Context, dialect spec.Dialect, re
 	return c.provider.ResolveObject(ctx, dialect, request)
 }
 
+func (c mysqlClient) LoadPlacementPolicies(ctx context.Context, dialect spec.Dialect) (map[string]*spec.PlacementPolicyFact, error) {
+	return c.provider.LoadPlacementPolicies(ctx, dialect)
+}
+
 func (c mysqlClient) Close() error {
 	return c.db.Close()
 }

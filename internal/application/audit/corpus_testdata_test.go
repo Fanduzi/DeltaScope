@@ -110,6 +110,18 @@ type corpusMetadata struct {
 	Instance    *corpusInstanceFacts           `yaml:"instance,omitempty"`
 	Tables      map[string]corpusTableSnapshot `yaml:"tables,omitempty"`
 	IndexOwners map[string]string              `yaml:"index_owners,omitempty"`
+	// PlacementPolicies is the proven TiDB policy catalog the provider
+	// reads once: a non-nil map (even empty) is a vouched policy set;
+	// bound_targets lists the proven inbound references the drop premise
+	// consults. Omit the key to leave the catalog unvouched.
+	PlacementPolicies map[string]corpusPlacementPolicy `yaml:"placement_policies,omitempty"`
+}
+
+// corpusPlacementPolicy is the catalog fact for one proven policy.
+type corpusPlacementPolicy struct {
+	PrimaryRegion string   `yaml:"primary_region,omitempty"`
+	Regions       string   `yaml:"regions,omitempty"`
+	BoundTargets  []string `yaml:"bound_targets,omitempty"`
 }
 
 type corpusInstanceFacts struct {
@@ -149,6 +161,12 @@ type corpusTableSnapshot struct {
 	// information_schema would show; the converter projects it through
 	// spec.CatalogPartitionDefs so fixtures never hand-author the model.
 	PartitionDescriptions []string `yaml:"partition_descriptions,omitempty"`
+	// PlacementPolicy is the catalog TIDB_PLACEMENT_POLICY_NAME read for
+	// the table; placement_policy_known marks the read as proven. A bound
+	// member directory lands in partition_placements keyed by member name.
+	PlacementPolicy      string            `yaml:"placement_policy,omitempty"`
+	PlacementPolicyKnown bool              `yaml:"placement_policy_known,omitempty"`
+	PartitionPlacements  map[string]string `yaml:"partition_placements,omitempty"`
 }
 
 type corpusTable struct {

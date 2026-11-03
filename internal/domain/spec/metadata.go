@@ -35,6 +35,12 @@ type Metadata struct {
 	// unvouched source; an empty slice means the select named no base
 	// table (literal select — no source premise at all).
 	SourceTables []*TableSnapshot `json:"source_tables,omitempty"`
+	// PlacementPolicies carries the proven placement-policy catalog on TiDB:
+	// presence of a name key is the proven-existence answer, the whole map
+	// being nil means the catalog was never loaded, and BoundTargets is the
+	// proven inbound-reference set the 8241 drop refusal consults
+	// (issue #99 T20).
+	PlacementPolicies map[string]*PlacementPolicyFact `json:"-"`
 	// SchemaTarget binds a schema-scoped statement (CREATE/ALTER/DROP
 	// DATABASE|SCHEMA) to its ordered pre-state projection: confirmed
 	// schema attributes when the identity is provably present, an empty
@@ -163,6 +169,17 @@ type TableSnapshot struct {
 	// answer. TTLKnown=true + TTL=nil is the bounded "known no TTL" fact;
 	// TTLKnown=false keeps the configuration unobserved, not absent.
 	TTLKnown bool `json:"-"`
+	// PlacementPolicy carries the proven bound placement-policy name;
+	// PlacementPolicyKnown=true + "" is the bounded "known unbound" fact,
+	// and Known=false keeps the binding unobserved rather than absent
+	// (issue #99 T20).
+	PlacementPolicy      string `json:"-"`
+	PlacementPolicyKnown bool   `json:"-"`
+	// PartitionPlacements carries the proven per-partition bound policy
+	// names when the partition directory was loaded; nil means the member
+	// bindings were never observed, never read as confirmed unbound
+	// (issue #99 T20).
+	PartitionPlacements map[string]string `json:"-"`
 
 	// PrimaryKeyIsHandle marks a TiDB PKIsHandle table: the single-integer
 	// clustered primary key is the row handle, so no operable PRIMARY index

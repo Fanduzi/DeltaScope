@@ -100,6 +100,25 @@ type batchState struct {
 	// provider-less). Stored here so a batch-derived shape answers the
 	// session mode the statements actually execute under.
 	instanceFacts *spec.InstanceFacts
+	// placements is the ordered placement-policy registry — policy
+	// existence, bounded attrs, and the proven inbound-reference set the
+	// native 8241 drop refusal consults (T20/#99).
+	placements map[string]*batchPlacementEntry
+	// placementsSeeded marks the one-shot catalog merge: the registry is
+	// seeded once from the request's proven PlacementPolicies fact, never
+	// re-read mid-batch.
+	placementsSeeded bool
+	// placementsKnownComplete marks a proven-complete catalog seed — names
+	// the registry never saw answer proven-absent rather than unvouched.
+	placementsKnownComplete bool
+	// rangePlacements is the ordered TiDB range-scope binding map
+	// (global/meta → bound policy name); absent keys are unobserved, never
+	// proven-unbound (T20/#99).
+	rangePlacements map[string]string
+	// placementCatalog is the provider's one-shot proven policy catalog
+	// (nil = never loaded — unvouched, not empty). It seeds the registry
+	// once and is never re-read (T20/#99).
+	placementCatalog map[string]*spec.PlacementPolicyFact
 }
 
 func newBatchState(dialect spec.Dialect, schema string, provider MetadataProvider) *batchState {
@@ -379,7 +398,16 @@ func (s *batchState) apply(ctx context.Context, statement spec.Statement) error 
 		publication.apply(s)
 		return nil
 	}
+	// The placement-policy registry seeds once from the request's proven
+	// catalog; seeding before any transition keeps every bind/drop outcome
+	// consistent (T20/#99).
+	s.seedPlacementCatalog()
 	switch ddl.Operation {
+	case spec.DDLOperationCreatePlacementPolicy,
+		spec.DDLOperationAlterPlacementPolicy,
+		spec.DDLOperationDropPlacementPolicy,
+		spec.DDLOperationAlterRangePlacement:
+		return s.applyPlacementStatement(statement)
 	case spec.DDLOperationCreateView, spec.DDLOperationAlterView:
 		if ddl.View != nil {
 			return s.applyView(statement)
@@ -473,6 +501,12 @@ func fullyAuditedStatement(dialect spec.Dialect, statement spec.Statement) bool 
 		if aspect.Reason == spec.UnsupportedVendorBoundaryReason &&
 			aspect.Metadata["aspect"] == "action" {
 			if _, refused := tidbVendorRefusedAlterActions[fmt.Sprint(aspect.Metadata["action"])]; refused {
+				continue
+			}
+			// PLACEMENT POLICY under MySQL is the mirror image: a proven
+			// vendor refusal (MySQL has no such clause) — the bind
+			// transition keeps the exact pre-state (T20/#99).
+			if fmt.Sprint(aspect.Metadata["action"]) == "placement_policy" {
 				continue
 			}
 		}
@@ -742,6 +776,41 @@ func (s *batchState) applyCreateTable(ctx context.Context, statement spec.Statem
 			}
 		}
 	}
+	// A declared placement binding shares the create's atomic fate (probed
+	// v8.5.0: a missing policy refuses the whole CREATE, 8239). A proven
+	// bind publishes with the table; an unproven premise leaves the
+	// destination unvouched rather than guessing either arm (T20/#99).
+	if ddl.PlacementBinding != nil {
+		// MySQL's shared parser accepts the clause but the engine refuses
+		// it (1064 vendor boundary) — the create never executes.
+		if s.dialect != spec.DialectTiDB {
+			return nil
+		}
+		binding := *ddl.PlacementBinding
+		if !binding.Default {
+			switch spec.PlacementBindOutcome(s.dialect, binding, s.placementPolicyExists(binding.Policy)) {
+			case spec.PlacementRefused:
+				return nil
+			case spec.PlacementUnproven:
+				s.invalidateBoundKey(key, destNamespace(tempDest))
+				return nil
+			}
+		}
+	}
+	for i := range ddl.PartitionDefs {
+		def := &ddl.PartitionDefs[i]
+		if def.Placement == nil || def.Placement.Default || s.dialect != spec.DialectTiDB {
+			continue
+		}
+		binding := *def.Placement
+		switch spec.PlacementBindOutcome(s.dialect, binding, s.placementPolicyExists(binding.Policy)) {
+		case spec.PlacementRefused:
+			return nil
+		case spec.PlacementUnproven:
+			s.invalidateBoundKey(key, destNamespace(tempDest))
+			return nil
+		}
+	}
 	shape, outcome, err := s.createDestShape(ctx, statement, displaySchema, displayTable)
 	if err != nil {
 		return err
@@ -767,6 +836,28 @@ func (s *batchState) applyCreateTable(ctx context.Context, statement spec.Statem
 		// landed; the member set differs between those outcomes.
 		s.entries[key] = presentIncompleteEntry(displaySchema, displayTable)
 		return nil
+	}
+	if s.dialect == spec.DialectTiDB && ddl.PlacementBinding != nil {
+		binding := *ddl.PlacementBinding
+		ref := placementTableRef(displaySchema, displayTable)
+		if !binding.Default && shape != nil {
+			shape.PlacementPolicy = binding.Policy
+			shape.PlacementPolicyKnown = true
+			s.placementAddRef(binding.Policy, ref)
+		}
+	}
+	// Member-level placement declarations bind with the same create —
+	// proven binds land, refused premises already refused the statement.
+	for i := range ddl.PartitionDefs {
+		def := &ddl.PartitionDefs[i]
+		if def.Placement != nil && !def.Placement.Default && shape != nil {
+			if shape.PartitionPlacements == nil {
+				shape.PartitionPlacements = map[string]string{}
+			}
+			member := strings.ToLower(def.Name)
+			shape.PartitionPlacements[member] = def.Placement.Policy
+			s.placementAddRef(def.Placement.Policy, placementPartitionRef(displaySchema, displayTable, member))
+		}
 	}
 	s.entries[key] = &batchTableEntry{
 		state:         tablePresent,
@@ -1304,6 +1395,20 @@ func (s *batchState) applyAlterTable(ctx context.Context, statement spec.Stateme
 			return nil
 		}
 	}
+	// A placement bind sharing a multi-spec ALTER is settled atomically by
+	// the policy premise (probed v8.5.0: a missing policy refuses the whole
+	// statement, 8239 — no sibling publishes). A proven bind falls through
+	// to the multi-action model, which publishes the placement spec's own
+	// effect; an unproven premise withholds the whole successor (T20/#99).
+	if len(ddl.Alter) > 1 && alterStatementHasPlacement(ddl) {
+		switch s.placementPremiseOutcome(ddl) {
+		case spec.PlacementRefused:
+			return nil
+		case spec.PlacementUnproven:
+			s.invalidateAll(targets)
+			return nil
+		}
+	}
 	// A partition action sharing a multi-spec ALTER is settled by the
 	// probed combination matrix, not by a blanket refusal: structural
 	// siblings, table-option siblings, and multiple partition actions are
@@ -1447,6 +1552,12 @@ func (s *batchState) applyAlterTable(ctx context.Context, statement spec.Stateme
 	}
 	if alter.Action == "algorithm" || alter.Action == "lock" {
 		s.applyModifierOnlyAlter(statement, targets)
+		return nil
+	}
+	if alter.Action == "placement_policy" {
+		for _, target := range targets {
+			s.applyPlacementBind(alter, s.schema, target)
+		}
 		return nil
 	}
 	if alter.Action == "remove_ttl" || len(alter.TTL) > 0 {
@@ -1886,6 +1997,20 @@ func (s *batchState) applyRenameTable(ctx context.Context, statement spec.Statem
 				displaySchema: s.effectiveSchema(s.schema, pair.destination),
 				displayTable:  pair.destination.Name,
 			}
+			// A proven rename carries the binding with the object — rekey
+			// the policy's inbound references in declared pair order,
+			// unconditional on later slot reoccupation (T20/#99).
+			srcDisplaySchema := s.effectiveSchema(s.schema, pair.source)
+			srcName := pair.source.Name
+			if pair.srcEntry != nil {
+				if pair.srcEntry.displaySchema != "" {
+					srcDisplaySchema = pair.srcEntry.displaySchema
+				}
+				if pair.srcEntry.displayTable != "" {
+					srcName = pair.srcEntry.displayTable
+				}
+			}
+			s.placementRekeyTableRef(srcDisplaySchema+"."+srcName, s.effectiveSchema(s.schema, pair.destination)+"."+pair.destination.Name)
 		}
 		for i := range pairs {
 			pair := &pairs[i]
@@ -2067,6 +2192,19 @@ func (s *batchState) applyRenamePair(ctx context.Context, statement spec.Stateme
 			displaySchema: s.effectiveSchema(s.schema, source),
 			displayTable:  source.Name,
 		}
+		// A proven rename carries the binding with the object — rekey the
+		// policy's inbound references to the destination identity (T20/#99).
+		srcDisplaySchema := s.effectiveSchema(s.schema, source)
+		srcName := source.Name
+		// A migrate fate proves srcEntry — the transition refuses it
+		// whenever the member set cannot move.
+		if srcEntry.displaySchema != "" {
+			srcDisplaySchema = srcEntry.displaySchema
+		}
+		if srcEntry.displayTable != "" {
+			srcName = srcEntry.displayTable
+		}
+		s.placementRekeyTableRef(srcDisplaySchema+"."+srcName, s.effectiveSchema(s.schema, destination)+"."+destination.Name)
 	case renamePairUnproven:
 		// The undecidable pair tombstones its bound endpoints and every
 		// loaded dependent of those identities — an endpoint whose state
@@ -2351,6 +2489,9 @@ func (s *batchState) applyDropTable(ctx context.Context, statement spec.Statemen
 					}
 				}
 				s.entries[ref.key] = &batchTableEntry{state: tableAbsent, displaySchema: s.effectiveSchema(s.schema, ref.target), displayTable: ref.target.Name}
+				// A proven drop dissolves the proven inbound placement
+				// references the object carried (T20/#99).
+				s.placementTableDropRefs(s.effectiveSchema(s.schema, ref.target), ref.target.Name)
 			}
 		case dropFateUnproven:
 			unproven[ref.key] = struct{}{}
@@ -2358,10 +2499,12 @@ func (s *batchState) applyDropTable(ctx context.Context, statement spec.Statemen
 			case namespaceAmbiguous:
 				s.invalidateKey(ref.key)
 				s.invalidateTempKey(ref.key)
+				s.placementTableMayDropRefs(s.effectiveSchema(s.schema, ref.target), ref.target.Name)
 			case namespaceTemporary:
 				s.invalidateTempKey(ref.key)
 			default:
 				s.invalidateKey(ref.key)
+				s.placementTableMayDropRefs(s.effectiveSchema(s.schema, ref.target), ref.target.Name)
 			}
 		}
 	}

@@ -128,7 +128,7 @@ const (
 // proven parse refusal (5.7 answers 1064), an unproven version withholds,
 // TiDB's accepted-ignored form publishes nothing, and a TiDB placement
 // clause's binding premise is unvouchable today.
-func schemaPostAttrs(dialect spec.Dialect, version *spec.VersionIdentity, facts *spec.InstanceFacts, prior *batchSchemaEntry, declared map[string]string, creating bool) (map[string]string, schemaAttrOutcome) {
+func schemaPostAttrs(dialect spec.Dialect, version *spec.VersionIdentity, facts *spec.InstanceFacts, prior *batchSchemaEntry, declared map[string]string, creating bool, declaredBinding *spec.PlacementBinding, policyExists *bool) (map[string]string, schemaAttrOutcome) {
 	attrs := map[string]string{}
 	if prior != nil {
 		for k, v := range prior.attrs {
@@ -187,15 +187,32 @@ func schemaPostAttrs(dialect spec.Dialect, version *spec.VersionIdentity, facts 
 	}
 	if _, ok := declared["placement_policy"]; ok {
 		if dialect == spec.DialectTiDB {
-			// Binding premise — the named placement policy's existence —
-			// is unvouchable today (8239 refusal is the engine's answer to
-			// a missing policy, and no provider lookup exists). The whole
-			// outcome stays withheld rather than fabricating either side.
-			return nil, schemaAttrsWithhold
+			// The binding premise adjudicates through the shared tri-state
+			// outcome: a `= DEFAULT` unbind always lands, a named policy
+			// requires proven existence (8239 on a proven-absent name is
+			// the engine's refusal), and an unvouched policy set keeps the
+			// whole outcome withheld (T20/#99).
+			binding := spec.PlacementBinding{Default: true}
+			if declaredBinding != nil {
+				binding = *declaredBinding
+			}
+			switch spec.PlacementBindOutcome(dialect, binding, policyExists) {
+			case spec.PlacementApplied:
+				if binding.Default {
+					delete(attrs, "placement_policy")
+				} else {
+					attrs["placement_policy"] = binding.Policy
+				}
+			case spec.PlacementRefused:
+				return nil, schemaAttrsRefused
+			default:
+				return nil, schemaAttrsWithhold
+			}
+		} else {
+			// MySQL refuses the clause outright (1064 vendor boundary) — the
+			// statement never executes.
+			return nil, schemaAttrsRefused
 		}
-		// MySQL refuses the clause outright (1064 vendor boundary) — the
-		// statement never executes.
-		return nil, schemaAttrsRefused
 	}
 	return attrs, schemaAttrsApply
 }
@@ -278,8 +295,8 @@ func defaultCollationForCharset(dialect spec.Dialect, version *spec.VersionIdent
 	return ""
 }
 
-func schemaCreateAttrs(dialect spec.Dialect, version *spec.VersionIdentity, facts *spec.InstanceFacts, ddl *spec.DDL) (map[string]string, schemaAttrOutcome) {
-	attrs, outcome := schemaPostAttrs(dialect, version, facts, nil, schemaDeclaredOptions(ddl), true)
+func schemaCreateAttrs(dialect spec.Dialect, version *spec.VersionIdentity, facts *spec.InstanceFacts, ddl *spec.DDL, policyExists *bool) (map[string]string, schemaAttrOutcome) {
+	attrs, outcome := schemaPostAttrs(dialect, version, facts, nil, schemaDeclaredOptions(ddl), true, ddl.PlacementBinding, policyExists)
 	// A proven refusal dominates any unmodeled option.
 	if outcome == schemaAttrsRefused {
 		return nil, schemaAttrsRefused
@@ -317,7 +334,7 @@ func (s *batchState) applyCreateSchema(ctx context.Context, statement spec.State
 	case schemaPresent:
 		return nil
 	case schemaAbsent:
-		attrs, outcome := schemaCreateAttrs(s.dialect, s.resolvedVersion, s.instanceFacts, statement.DDL)
+		attrs, outcome := schemaCreateAttrs(s.dialect, s.resolvedVersion, s.instanceFacts, statement.DDL, s.declaredPlacementPolicyExists(statement.DDL))
 		switch outcome {
 		case schemaAttrsRefused:
 			return nil
@@ -330,10 +347,11 @@ func (s *batchState) applyCreateSchema(ctx context.Context, statement spec.State
 		entry.state = schemaPresent
 		entry.attrs = attrs
 		entry.batchCreated = true
+		s.placementSchemaRefSync(name, "", attrs["placement_policy"])
 		return nil
 	default:
 		if statement.DDL.Options["if_not_exists"] == "true" {
-			if _, outcome := schemaCreateAttrs(s.dialect, s.resolvedVersion, s.instanceFacts, statement.DDL); outcome == schemaAttrsApply {
+			if _, outcome := schemaCreateAttrs(s.dialect, s.resolvedVersion, s.instanceFacts, statement.DDL, s.declaredPlacementPolicyExists(statement.DDL)); outcome == schemaAttrsApply {
 				entry.state = schemaPresent
 				entry.attrs = nil
 				entry.batchCreated = false
@@ -369,7 +387,8 @@ func (s *batchState) applyAlterSchema(ctx context.Context, statement spec.Statem
 	case schemaAbsent:
 		return nil
 	case schemaPresent:
-		attrs, outcome := schemaPostAttrs(s.dialect, s.resolvedVersion, s.instanceFacts, entry, declared, false)
+		oldPolicy := entry.attrs["placement_policy"]
+		attrs, outcome := schemaPostAttrs(s.dialect, s.resolvedVersion, s.instanceFacts, entry, declared, false, statement.DDL.PlacementBinding, s.declaredPlacementPolicyExists(statement.DDL))
 		switch outcome {
 		case schemaAttrsRefused:
 			// Proven option refusal keeps the whole pre-state verbatim.
@@ -384,9 +403,13 @@ func (s *batchState) applyAlterSchema(ctx context.Context, statement spec.Statem
 			if _, ok := declared["charset"]; ok {
 				delete(entry.attrs, "collation")
 			}
+			// The schema's placement answer is unvouched — so is the
+			// inbound set for either arm's policy (T20/#99).
+			s.placementSchemaRefUnvouch(name, oldPolicy, declared["placement_policy"])
 			return nil
 		}
 		entry.attrs = attrs
+		s.placementSchemaRefSync(name, oldPolicy, attrs["placement_policy"])
 		return nil
 	default:
 		return nil
@@ -422,6 +445,9 @@ func (s *batchState) applyDropSchema(ctx context.Context, statement spec.Stateme
 				s.tempEntries[key] = &batchTableEntry{state: tableAbsent}
 			}
 		}
+		// A proven schema drop dissolves every proven placement reference
+		// under it — the schema bind plus all bound objects (T20/#99).
+		s.placementSchemaDropRefs(name)
 		return nil
 	case schemaAbsent:
 		return nil
@@ -444,10 +470,13 @@ func (s *batchState) applyDropSchema(ctx context.Context, statement spec.Stateme
 					s.tempEntries[key] = &batchTableEntry{state: tableAbsent}
 				}
 			}
+			s.placementSchemaDropRefs(name)
 			return nil
 		}
 		// Undecidable drop: the schema and every identity under it stay
-		// unvouched — never marked deleted.
+		// unvouched — never marked deleted. Bound sets that referenced it
+		// become unvouched too (T20/#99).
+		s.placementSchemaMayDropRefs(name)
 		entry.state = schemaUnknown
 		for key := range s.entries {
 			if key.schema == name {

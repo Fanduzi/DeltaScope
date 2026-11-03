@@ -31,6 +31,15 @@ type ObjectResolver interface {
 	ResolveObject(ctx context.Context, dialect spec.Dialect, request spec.ObjectLookupRequest) (*spec.ObjectSnapshot, error)
 }
 
+// PlacementPolicyLoader optionally loads the TiDB placement-policy catalog:
+// proven existence plus each policy's bounded bound-object set. A nil map
+// return means the catalog was not loaded (unvouched); a non-nil empty map
+// is the proven-empty answer. Errors propagate — a failed read is never
+// cached as absence (T20/#99).
+type PlacementPolicyLoader interface {
+	LoadPlacementPolicies(ctx context.Context, dialect spec.Dialect) (map[string]*spec.PlacementPolicyFact, error)
+}
+
 // MetadataRequest describes one optional metadata-aware audit invocation.
 type MetadataRequest struct {
 	Schema   string
@@ -185,6 +194,19 @@ func (state *batchState) enrichStatements(ctx context.Context, request *Metadata
 		requestSchema = request.Schema
 	}
 	enriched := make([]spec.Statement, len(statements))
+	// The TiDB placement-policy catalog loads at most once per request and
+	// only when a statement carries a placement fact — the proven existence
+	// and bound-object sets the bind/drop adjudicators consume. Errors
+	// propagate rather than caching a failed read as absence (T20/#99).
+	if state.provider != nil && dialect == spec.DialectTiDB && statementsNeedPlacementCatalog(statements) {
+		if loader, ok := state.provider.(PlacementPolicyLoader); ok {
+			catalog, err := loader.LoadPlacementPolicies(ctx, dialect)
+			if err != nil {
+				return nil, fmt.Errorf("load placement policies: %w", err)
+			}
+			state.placementCatalog = catalog
+		}
+	}
 	// Object lookups resolve at most once per distinct (schema, type, name,
 	// qualifiers) identity per request — the same object is never re-asked.
 	objectCache := make(map[objectLookupKey]*spec.ObjectSnapshot)
@@ -345,6 +367,16 @@ func (state *batchState) enrichStatements(ctx context.Context, request *Metadata
 					enriched[i].Metadata.Objects = append(enriched[i].Metadata.Objects, *objSnapshot)
 				}
 			}
+		}
+
+		// Placement-policy facts attach the registry's ordered pre-state —
+		// the existence and bound-set answer this statement adjudicates
+		// against (T20/#99).
+		if projection := state.placementPoliciesProjection(); projection != nil {
+			if enriched[i].Metadata == nil {
+				enriched[i].Metadata = &spec.Metadata{Schema: requestSchema, Instance: instanceFacts, Version: resolvedVersion}
+			}
+			enriched[i].Metadata.PlacementPolicies = projection
 		}
 
 		if err := state.apply(ctx, enriched[i]); err != nil {

@@ -648,6 +648,23 @@ func (p publicMetadataProvider) LoadPlanEstimate(ctx context.Context, statement 
 	return &cloned, nil
 }
 
+// PlacementPolicyProvider optionally supplies the TiDB placement-policy
+// catalog a metadata-aware audit binds against (issue #99 T20).
+type PlacementPolicyProvider interface {
+	LoadPlacementPolicies(ctx context.Context, dialect Dialect) (map[string]*spec.PlacementPolicyFact, error)
+}
+
+func (p publicMetadataProvider) LoadPlacementPolicies(ctx context.Context, dialect spec.Dialect) (map[string]*spec.PlacementPolicyFact, error) {
+	if p.provider == nil {
+		return nil, nil
+	}
+	loader, ok := p.provider.(PlacementPolicyProvider)
+	if !ok {
+		return nil, nil
+	}
+	return loader.LoadPlacementPolicies(ctx, Dialect(dialect))
+}
+
 func (p publicMetadataProvider) ResolveObject(ctx context.Context, dialect spec.Dialect, request spec.ObjectLookupRequest) (*spec.ObjectSnapshot, error) {
 	if p.provider == nil {
 		return &spec.ObjectSnapshot{

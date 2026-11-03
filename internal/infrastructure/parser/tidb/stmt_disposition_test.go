@@ -63,7 +63,7 @@ var stmtDispositions = map[string]string{
 	"CreateResourceGroupStmt":   "create_resource_group",
 	"AlterResourceGroupStmt":    "alter_resource_group",
 	"SetResourceGroupStmt":      "set_resource_group",
-	"AlterRangeStmt":            "alter_range_placement",
+	"AlterRangeStmt":            "extracted",
 	"AlterInstanceStmt":         "alter_instance",
 	"AdminStmt":                 "admin",
 	"FlashBackTableStmt":        "flashback_table",

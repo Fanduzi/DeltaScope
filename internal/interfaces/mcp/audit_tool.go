@@ -321,6 +321,16 @@ func (p publicMetadataProvider) LoadPlanEstimate(ctx context.Context, statement 
 	return provider.LoadPlanEstimate(ctx, statement)
 }
 
+func (p publicMetadataProvider) LoadPlacementPolicies(ctx context.Context, dialect spec.Dialect) (map[string]*spec.PlacementPolicyFact, error) {
+	loader, ok := p.client.(interface {
+		LoadPlacementPolicies(context.Context, spec.Dialect) (map[string]*spec.PlacementPolicyFact, error)
+	})
+	if !ok {
+		return nil, nil
+	}
+	return loader.LoadPlacementPolicies(ctx, dialect)
+}
+
 func (p publicMetadataProvider) ResolveObject(ctx context.Context, dialect spec.Dialect, request spec.ObjectLookupRequest) (*spec.ObjectSnapshot, error) {
 	type objectResolver interface {
 		ResolveObject(context.Context, spec.Dialect, spec.ObjectLookupRequest) (*spec.ObjectSnapshot, error)

@@ -338,7 +338,9 @@ func TestAuditSQLT03RecognizedUnauditedAspectsIncomplete(t *testing.T) {
 		// ALTER|DROP CHECK graduated to audited semantics in T12 — see
 		// TestT12* — so the action no longer lands here.
 		{name: "mysql nested placement policy", sql: "CREATE TABLE t (id INT) PLACEMENT POLICY=p;", dialect: spec.DialectMySQL, wantFeature: "create_table.option.placement_policy", wantReason: spec.UnsupportedVendorBoundaryReason, wantKind: "ddl"},
-		{name: "tidb nested placement policy", sql: "CREATE TABLE t (id INT) PLACEMENT POLICY=p;", dialect: spec.DialectTiDB, wantFeature: "create_table.option.placement_policy", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
+		// TiDB placement bindings graduated to audited semantics in T20 —
+		// the policy registry, binding transitions, and the placement rule
+		// consume them, so they no longer land here (see TestAuditSQLT20*).
 		{name: "tidb drop procedure", sql: "DROP PROCEDURE IF EXISTS p;", dialect: spec.DialectTiDB, wantFeature: "drop_procedure", wantReason: spec.UnsupportedVendorBoundaryReason, wantKind: "ddl"},
 		{name: "tidb explain analyze", sql: "EXPLAIN ANALYZE DELETE FROM t;", dialect: spec.DialectTiDB, wantFeature: "explain_analyze", wantReason: spec.UnsupportedUnauditedReason, wantKind: "unknown"},
 		{name: "mysql explain analyze", sql: "EXPLAIN ANALYZE DELETE FROM t;", dialect: spec.DialectMySQL, wantFeature: "explain_analyze", wantReason: spec.UnsupportedUnauditedReason, wantKind: "unknown"},
@@ -348,9 +350,8 @@ func TestAuditSQLT03RecognizedUnauditedAspectsIncomplete(t *testing.T) {
 		{name: "tidb explain explore", sql: "EXPLAIN EXPLORE SELECT * FROM t;", dialect: spec.DialectTiDB, wantFeature: "explain_explore", wantReason: spec.UnsupportedUnauditedReason, wantKind: "unknown"},
 		{name: "tidb sequence options", sql: "CREATE SEQUENCE seq1 START WITH 1;", dialect: spec.DialectTiDB, wantFeature: "create_sequence.options", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
 		{name: "tidb alter sequence options", sql: "ALTER SEQUENCE seq1 START WITH 100;", dialect: spec.DialectTiDB, wantFeature: "alter_sequence.options", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
-		{name: "tidb placement policy options", sql: "CREATE PLACEMENT POLICY p1 PRIMARY_REGION='us-east-1';", dialect: spec.DialectTiDB, wantFeature: "create_placement_policy.options", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
-		{name: "tidb alter placement options", sql: "ALTER PLACEMENT POLICY p1 REGIONS='us-west-1';", dialect: spec.DialectTiDB, wantFeature: "alter_placement_policy.options", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
-		{name: "tidb alter schema placement", sql: "ALTER DATABASE d1 PLACEMENT POLICY=p1;", dialect: spec.DialectTiDB, wantFeature: "alter_schema.option.placement_policy", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
+		// Placement-policy member sets and schema bindings are modeled facts
+		// since T20 — no longer unaudited aspects under TiDB.
 		{name: "mysql alter schema placement vendor", sql: "ALTER DATABASE d1 PLACEMENT POLICY=p1;", dialect: spec.DialectMySQL, wantFeature: "alter_schema.option.placement_policy", wantReason: spec.UnsupportedVendorBoundaryReason, wantKind: "ddl"},
 		// Local temporary tables graduated to fully modeled semantics in T16
 		// (session namespace, shadowing, lifecycle transitions) — plain
@@ -399,7 +400,6 @@ func TestAuditSQLT03RecognizedUnauditedAspectsIncomplete(t *testing.T) {
 		{name: "tidb alter add foreign key expr ref desc", sql: "ALTER TABLE t ADD FOREIGN KEY ((LOWER(c))) REFERENCES p(id(3) DESC);", dialect: spec.DialectTiDB, wantFeature: "alter_table.add_constraint.constraint.foreign_key.parts", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl", wantMetadata: map[string]any{"aspect": "constraint_parts", "action": "add_constraint", "constraint_type": "foreign_key", "local_parts": 1, "referenced_parts": 1, "refer_actions": 0}},
 		{name: "mysql create table foreign key match", sql: "CREATE TABLE t (a INT, FOREIGN KEY (a) REFERENCES p(id) MATCH FULL);", dialect: spec.DialectMySQL, wantFeature: "create_table.constraint.foreign_key.parts", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl", wantMetadata: map[string]any{"aspect": "constraint_parts", "constraint_type": "foreign_key", "local_parts": 0, "referenced_parts": 0, "refer_actions": 1}},
 		{name: "mysql create table partition placement", sql: "CREATE TABLE t (id INT) PARTITION BY RANGE (id) (PARTITION p0 VALUES LESS THAN (10) PLACEMENT POLICY=p);", dialect: spec.DialectMySQL, wantFeature: "create_table.option.placement_policy", wantReason: spec.UnsupportedVendorBoundaryReason, wantKind: "ddl"},
-		{name: "tidb create table partition placement", sql: "CREATE TABLE t (id INT) PARTITION BY RANGE (id) (PARTITION p0 VALUES LESS THAN (10) PLACEMENT POLICY=p);", dialect: spec.DialectTiDB, wantFeature: "create_table.option.placement_policy", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
 		{name: "mysql alter user current function", sql: "ALTER USER CURRENT_USER() IDENTIFIED BY 'x';", dialect: spec.DialectMySQL, wantFeature: "alter_user.unaudited_targets", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl", wantMetadata: map[string]any{"aspect": "targets", "omitted": 1}},
 		{name: "mysql alter user current bare", sql: "ALTER USER CURRENT_USER IDENTIFIED BY 'x';", dialect: spec.DialectMySQL, wantFeature: "alter_user.unaudited_targets", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl", wantMetadata: map[string]any{"aspect": "targets", "omitted": 1}},
 		{name: "tidb create user current function", sql: "CREATE USER CURRENT_USER() IDENTIFIED BY 'x';", dialect: spec.DialectTiDB, wantFeature: "create_user.unaudited_targets", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl", wantMetadata: map[string]any{"aspect": "targets", "omitted": 1}},
@@ -448,7 +448,8 @@ func TestAuditSQLT03RecognizedUnauditedAspectsIncomplete(t *testing.T) {
 		{name: "mysql alter user identified", sql: "ALTER USER u IDENTIFIED BY 'x';", dialect: spec.DialectMySQL, wantFeature: "alter_user.option.identified", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
 		{name: "mysql alter user dual password", sql: "ALTER USER u IDENTIFIED BY 'x' RETAIN CURRENT PASSWORD;", dialect: spec.DialectMySQL, wantFeature: "alter_user.option.dual_password", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
 		{name: "mysql alter user current dual password", sql: "ALTER USER USER() IDENTIFIED BY 'x' RETAIN CURRENT PASSWORD;", dialect: spec.DialectMySQL, wantFeature: "alter_user.option.dual_password", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
-		{name: "tidb create placement policy or replace", sql: "CREATE OR REPLACE PLACEMENT POLICY p1 PRIMARY_REGION='us-east-1' REGIONS='us-east-1';", dialect: spec.DialectTiDB, wantFeature: "create_placement_policy.option.or_replace", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
+		// CREATE OR REPLACE PLACEMENT POLICY is modeled since T20: the
+		// registry treats a replace as a land under the proven policy set.
 		// Field-conditional statement markers closed in the sixth round.
 		{name: "mysql union parenthesized select into", sql: "SELECT 1 UNION (SELECT 2 INTO OUTFILE '/tmp/x.txt');", dialect: spec.DialectMySQL, wantFeature: "select_into", wantReason: spec.UnsupportedUnauditedReason, wantKind: "unknown"},
 		{name: "mysql union nested list select into", sql: "SELECT 1 UNION ((SELECT 2 INTO OUTFILE '/tmp/y.txt') UNION SELECT 3);", dialect: spec.DialectMySQL, wantFeature: "select_into", wantReason: spec.UnsupportedUnauditedReason, wantKind: "unknown"},
@@ -602,6 +603,15 @@ func TestAuditSQLT03RecognizedOutOfSurfaceStaysComplete(t *testing.T) {
 		{name: "mysql plain explain", sql: "EXPLAIN SELECT id FROM t;", dialect: spec.DialectMySQL},
 		{name: "tidb prepare deallocate", sql: "PREPARE s FROM 'SELECT 1'; DEALLOCATE PREPARE s;", dialect: spec.DialectTiDB},
 		{name: "tidb alter placement policy", sql: "ALTER TABLE t PLACEMENT POLICY=p;", dialect: spec.DialectTiDB},
+		{name: "tidb alter placement default", sql: "ALTER TABLE t PLACEMENT POLICY=DEFAULT;", dialect: spec.DialectTiDB},
+		{name: "tidb create placement policy options", sql: "CREATE PLACEMENT POLICY p1 PRIMARY_REGION='us-east-1' REGIONS='us-east-1' FOLLOWERS=2;", dialect: spec.DialectTiDB},
+		{name: "tidb create placement policy or replace", sql: "CREATE OR REPLACE PLACEMENT POLICY p1 PRIMARY_REGION='us-east-1';", dialect: spec.DialectTiDB},
+		{name: "tidb alter placement policy options", sql: "ALTER PLACEMENT POLICY p1 REGIONS='us-west-1';", dialect: spec.DialectTiDB},
+		{name: "tidb drop placement policy if exists", sql: "DROP PLACEMENT POLICY IF EXISTS p1;", dialect: spec.DialectTiDB},
+		{name: "tidb alter schema placement", sql: "ALTER DATABASE d1 PLACEMENT POLICY=p1;", dialect: spec.DialectTiDB},
+		{name: "tidb alter range global placement", sql: "ALTER RANGE global PLACEMENT POLICY=p1;", dialect: spec.DialectTiDB},
+		{name: "tidb create table placement", sql: "CREATE TABLE t (id INT) PLACEMENT POLICY=p;", dialect: spec.DialectTiDB},
+		{name: "tidb create table partition placement", sql: "CREATE TABLE t (id INT) PARTITION BY RANGE (id) (PARTITION p0 VALUES LESS THAN (10) PLACEMENT POLICY=p);", dialect: spec.DialectTiDB},
 		{name: "mysql plain create table", sql: "CREATE TABLE t (id INT PRIMARY KEY);", dialect: spec.DialectMySQL},
 		{name: "mysql create table generated column supported", sql: "CREATE TABLE t (a INT, b INT GENERATED ALWAYS AS (a+1) STORED);", dialect: spec.DialectMySQL},
 		{name: "tidb plain create table", sql: "CREATE TABLE t (id INT PRIMARY KEY);", dialect: spec.DialectTiDB},

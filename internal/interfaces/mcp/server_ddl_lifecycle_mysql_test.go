@@ -98,7 +98,7 @@ func TestAuditSQLToolTiDBDDLLifecycleFindings(t *testing.T) {
 		wantRuleID     string
 		wantIncomplete bool
 	}{
-		{name: "create_placement_policy", sql: "CREATE PLACEMENT POLICY p1 PRIMARY_REGION='us-east-1' REGIONS='us-east-1'", wantRuleID: "ddl.create_placement_policy.notice", wantIncomplete: true},
+		{name: "create_placement_policy", sql: "CREATE PLACEMENT POLICY p1 PRIMARY_REGION='us-east-1' REGIONS='us-east-1'", wantRuleID: "ddl.create_placement_policy.notice"},
 		{name: "create_sequence", sql: "CREATE SEQUENCE seq1 START WITH 1 INCREMENT BY 1", wantRuleID: "ddl.create_sequence.notice", wantIncomplete: true},
 		{name: "alter_table_placement_policy", sql: "ALTER TABLE users PLACEMENT POLICY p1", wantRuleID: "ddl.tidb.alter_table.placement_policy.notice"},
 	}

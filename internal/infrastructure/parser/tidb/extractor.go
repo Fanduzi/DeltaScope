@@ -157,6 +157,8 @@ func (e tidbExtractor) Extract(dialect spec.Dialect, rawSQL string) (spec.Statem
 		statement.DDL = extractAlterPlacementPolicy(node)
 	case *ast.DropPlacementPolicyStmt:
 		statement.DDL = extractDropPlacementPolicy(node)
+	case *ast.AlterRangeStmt:
+		statement.DDL = extractAlterRangePlacement(node)
 	case *ast.CreateSequenceStmt:
 		statement.DDL = extractCreateSequence(node)
 	case *ast.AlterSequenceStmt:
@@ -268,6 +270,7 @@ func classify(stmt ast.StmtNode) spec.Kind {
 		*ast.CreatePlacementPolicyStmt,
 		*ast.AlterPlacementPolicyStmt,
 		*ast.DropPlacementPolicyStmt,
+		*ast.AlterRangeStmt,
 		*ast.CreateSequenceStmt,
 		*ast.AlterSequenceStmt,
 		*ast.DropSequenceStmt:
@@ -425,6 +428,9 @@ func extractCreateTable(stmt *ast.CreateTableStmt, rawSQL string) *spec.DDL {
 		ddl.Options[key] = value
 		if key == "comment" {
 			ddl.Table.Comment = value
+		}
+		if key == "placement_policy" {
+			ddl.PlacementBinding = placementBindingFromValue(value, false)
 		}
 	}
 	ddl.TTL = ttl
@@ -661,13 +667,17 @@ func extractCreateDatabase(stmt *ast.CreateDatabaseStmt) *spec.DDL {
 			unextracted = append(unextracted, databaseOptionName(opt.Tp))
 		}
 	}
-	return &spec.DDL{
+	ddl := &spec.DDL{
 		Operation:          spec.DDLOperationCreateSchema,
 		ObjectName:         stmt.Name.L,
 		ObjectType:         "database",
 		Options:            options,
 		UnextractedOptions: unextracted,
 	}
+	if policy, ok := options["placement_policy"]; ok {
+		ddl.PlacementBinding = placementBindingFromValue(policy, false)
+	}
+	return ddl
 }
 
 func extractDropDatabase(stmt *ast.DropDatabaseStmt) *spec.DDL {
@@ -812,8 +822,12 @@ func extractAlterSpec(specification *ast.AlterTableSpec, clause string) spec.Alt
 	options, unextracted, ttl := extractTableOptions(specification.Options, clause)
 	if len(options) > 0 {
 		alter.Options = options
-		if _, ok := options["placement_policy"]; ok && alter.Action == "table_option" {
+		if policy, ok := options["placement_policy"]; ok &&
+			(alter.Action == "table_option" || alter.Action == "partition_options") {
 			alter.Action = "placement_policy"
+			// The `= DEFAULT` unbind is normalized by extractTableOptions to
+			// the "default" marker value (issue #99 T20).
+			alter.Placement = placementBindingFromValue(policy, false)
 		}
 	}
 	alter.TTL = ttl
@@ -1423,7 +1437,7 @@ func extractAlterDatabase(stmt *ast.AlterDatabaseStmt) *spec.DDL {
 			unextracted = append(unextracted, databaseOptionName(opt.Tp))
 		}
 	}
-	return &spec.DDL{
+	ddl := &spec.DDL{
 		Operation:          spec.DDLOperationAlterSchema,
 		ObjectName:         stmt.Name.L,
 		ObjectType:         "database",
@@ -1431,6 +1445,10 @@ func extractAlterDatabase(stmt *ast.AlterDatabaseStmt) *spec.DDL {
 		UnextractedOptions: unextracted,
 		AlterDefaultSchema: stmt.AlterDefaultDatabase,
 	}
+	if policy, ok := options["placement_policy"]; ok {
+		ddl.PlacementBinding = placementBindingFromValue(policy, false)
+	}
+	return ddl
 }
 
 // databaseOptionName maps a parsed DatabaseOption type to a stable bounded
@@ -1732,14 +1750,17 @@ func extractCreatePlacementPolicy(stmt *ast.CreatePlacementPolicyStmt) *spec.DDL
 		ObjectName: stmt.PolicyName.L,
 		ObjectType: "placement_policy",
 	}
+	options := map[string]string{}
+	if stmt.IfNotExists {
+		options["if_not_exists"] = "true"
+	}
 	if stmt.OrReplace {
-		// CREATE OR REPLACE PLACEMENT POLICY is parsed but the replacement
-		// semantics are unmodeled; record bounded presence.
-		ddl.UnextractedOptions = append(ddl.UnextractedOptions, "or_replace")
+		options["or_replace"] = "true"
 	}
-	if len(stmt.PlacementOptions) > 0 {
-		ddl.Options = map[string]string{"has_options": "true"}
+	if len(options) > 0 {
+		ddl.Options = options
 	}
+	ddl.PlacementOptions = extractPlacementPolicyOptions(stmt.PlacementOptions)
 	return ddl
 }
 
@@ -1749,17 +1770,124 @@ func extractAlterPlacementPolicy(stmt *ast.AlterPlacementPolicyStmt) *spec.DDL {
 		ObjectName: stmt.PolicyName.L,
 		ObjectType: "placement_policy",
 	}
-	if len(stmt.PlacementOptions) > 0 {
-		ddl.Options = map[string]string{"has_options": "true"}
-	}
+	ddl.PlacementOptions = extractPlacementPolicyOptions(stmt.PlacementOptions)
 	return ddl
 }
 
 func extractDropPlacementPolicy(stmt *ast.DropPlacementPolicyStmt) *spec.DDL {
-	return &spec.DDL{
+	ddl := &spec.DDL{
 		Operation:  spec.DDLOperationDropPlacementPolicy,
 		ObjectName: stmt.PolicyName.L,
 		ObjectType: "placement_policy",
+	}
+	if stmt.IfExists {
+		ddl.Options = map[string]string{"if_exists": "true"}
+	}
+	return ddl
+}
+
+// extractAlterRangePlacement normalizes `ALTER RANGE <name> PLACEMENT
+// POLICY = <policy|DEFAULT>`. The range scope name stays bounded in
+// PlacementRange; the assignment lands in PlacementBinding (issue #99 T20).
+func extractAlterRangePlacement(stmt *ast.AlterRangeStmt) *spec.DDL {
+	ddl := &spec.DDL{
+		Operation:      spec.DDLOperationAlterRangePlacement,
+		ObjectName:     stmt.RangeName.L,
+		ObjectType:     "range",
+		PlacementRange: stmt.RangeName.L,
+	}
+	ddl.PlacementBinding = placementOptionToBinding(stmt.PlacementOption)
+	return ddl
+}
+
+// placementBindingFromValue converts a parsed placement-policy option
+// value into the bounded binding fact: the `= DEFAULT` unbind form
+// (Default flag or the literal `default` value) carries no policy name.
+func placementBindingFromValue(value string, isDefault bool) *spec.PlacementBinding {
+	v := strings.ToLower(strings.TrimSpace(value))
+	if isDefault || v == "" || v == "default" {
+		return &spec.PlacementBinding{Default: true}
+	}
+	return &spec.PlacementBinding{Policy: v}
+}
+
+// placementOptionToBinding converts one AST PLACEMENT POLICY assignment
+// into the bounded binding fact: a `= DEFAULT` form carries Default=true
+// with no policy name, a named form carries the lower-cased policy name.
+func placementOptionToBinding(opt *ast.PlacementOption) *spec.PlacementBinding {
+	if opt == nil {
+		return nil
+	}
+	value := strings.ToLower(strings.TrimSpace(opt.StrValue))
+	if value == "" || value == "default" {
+		return &spec.PlacementBinding{Default: true}
+	}
+	return &spec.PlacementBinding{Policy: value}
+}
+
+// extractPlacementPolicyOptions normalizes the authored member set of
+// CREATE/ALTER PLACEMENT POLICY into bounded key names plus parsed values.
+// The constraint bodies stay on the normalized statement (they are input
+// facts) but findings must only ever expose the key names (issue #99 T20).
+func extractPlacementPolicyOptions(options []*ast.PlacementOption) []spec.PlacementOption {
+	if len(options) == 0 {
+		return nil
+	}
+	members := make([]spec.PlacementOption, 0, len(options))
+	for _, opt := range options {
+		if opt == nil {
+			continue
+		}
+		member := spec.PlacementOption{Key: placementOptionKey(opt.Tp), StrValue: opt.StrValue}
+		if member.Key == "" {
+			member.Key = "unknown"
+		}
+		if member.Key != "primary_region" && member.Key != "regions" &&
+			member.Key != "constraints" && member.Key != "leader_constraints" &&
+			member.Key != "follower_constraints" && member.Key != "voter_constraints" &&
+			member.Key != "learner_constraints" && member.Key != "schedule" &&
+			member.Key != "survival_preferences" {
+			v := opt.UintValue
+			member.UintValue = &v
+		}
+		members = append(members, member)
+	}
+	if len(members) == 0 {
+		return nil
+	}
+	return members
+}
+
+// placementOptionKey maps an AST PlacementOptionType to the bounded
+// lowercase member key used across the normalized model.
+func placementOptionKey(tp ast.PlacementOptionType) string {
+	switch tp {
+	case ast.PlacementOptionPrimaryRegion:
+		return "primary_region"
+	case ast.PlacementOptionRegions:
+		return "regions"
+	case ast.PlacementOptionFollowerCount:
+		return "followers"
+	case ast.PlacementOptionVoterCount:
+		return "voters"
+	case ast.PlacementOptionLearnerCount:
+		return "learners"
+	case ast.PlacementOptionSchedule:
+		return "schedule"
+	case ast.PlacementOptionConstraints:
+		return "constraints"
+	case ast.PlacementOptionLeaderConstraints:
+		return "leader_constraints"
+	case ast.PlacementOptionFollowerConstraints:
+		return "follower_constraints"
+	case ast.PlacementOptionVoterConstraints:
+		return "voter_constraints"
+	case ast.PlacementOptionLearnerConstraints:
+		return "learner_constraints"
+	case ast.PlacementOptionSurvivalPreferences:
+		return "survival_preferences"
+	default:
+		return ""
 	}
 }
 
@@ -1959,7 +2087,9 @@ func extractTableOptions(options []*ast.TableOption, clause string) (map[string]
 		case ast.TableOptionAutoIncrement:
 			extracted["auto_increment"] = strconv.FormatUint(option.UintValue, 10)
 		case ast.TableOptionPlacementPolicy:
-			if option.StrValue != "" {
+			if option.Default {
+				extracted["placement_policy"] = "default"
+			} else if option.StrValue != "" {
 				extracted["placement_policy"] = option.StrValue
 			} else {
 				unextracted = append(unextracted, tableOptionName(option.Tp))
