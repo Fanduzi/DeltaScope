@@ -1,0 +1,77 @@
+[
+ {
+  "stem": "01-go-test",
+  "command": "go test ./... -count=1",
+  "rc": 0
+ },
+ {
+  "stem": "02-go-vet",
+  "command": "go vet ./...",
+  "rc": 0
+ },
+ {
+  "stem": "03-race-internal",
+  "command": "env CGO_ENABLED=1 go test -race ./internal/... -count=1",
+  "rc": 0
+ },
+ {
+  "stem": "04-sql-corpus",
+  "command": "make sql-corpus-gates",
+  "rc": 0
+ },
+ {
+  "stem": "05-ddl-inventory",
+  "command": "make ddl-inventory-gate",
+  "rc": 0
+ },
+ {
+  "stem": "06-coverage-catalog",
+  "command": "make ddl-coverage-catalog-test",
+  "rc": 0
+ },
+ {
+  "stem": "07-parser-unsupported",
+  "command": "make parser-error-unsupported-contract-test",
+  "rc": 0
+ },
+ {
+  "stem": "08-unsupported-diagnostics",
+  "command": "make unsupported-diagnostics-evidence-test",
+  "rc": 0
+ },
+ {
+  "stem": "09-docs-examples",
+  "command": "make docs-example-gates",
+  "rc": 0
+ },
+ {
+  "stem": "10-decision-record",
+  "command": "make decision-record-gate",
+  "rc": 0
+ },
+ {
+  "stem": "11-l2-range",
+  "command": "/opt/homebrew/bin/bash docs/verification/t17-database-schema-lifecycle/adc1f7322e1c70524435ed687fe27b67b931abb5/gates/l2_committed_range_check.sh 57c207a8486497b49c17dd9f0b8fd0b16dc103a7..8ce694df",
+  "rc": 0
+ },
+ {
+  "stem": "12-golden-validator",
+  "command": "make ddl-golden-validator-test",
+  "rc": 0
+ },
+ {
+  "stem": "13-lint-scoped",
+  "command": "golangci-lint run ./internal/application/audit/... ./internal/application/auditmeta/... ./internal/domain/spec/... ./internal/domain/rule/ddl/... ./internal/domain/policy/... ./internal/domain/rule/catalog/... ./internal/infrastructure/metadata/mysql/... ./internal/infrastructure/parser/tidb/...",
+  "rc": 1
+ },
+ {
+  "stem": "14-lint-fullrepo",
+  "command": "golangci-lint run ./...",
+  "rc": 1
+ },
+ {
+  "stem": "15-lint-comparison",
+  "command": "python3 - compare lint diagnostic identity vs docs/verification/t19-tidb-ttl-lifecycle/efc77a9c8479994ebf95238365ecbbf0c0f7f78f/gates",
+  "rc": 0
+ }
+]

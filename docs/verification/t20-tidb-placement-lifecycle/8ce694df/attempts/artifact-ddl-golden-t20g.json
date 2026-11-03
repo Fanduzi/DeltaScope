@@ -1,0 +1,3774 @@
+{
+  "task_id": "T20",
+  "issue": 99,
+  "head_sha": "dd4f031b6c36b62ab475482e8c9db0375a01d606",
+  "generated_at": "2026-11-03T17:27:33.900832+00:00",
+  "cli": {
+    "path": "/private/tmp/ddl-golden-t20g/T20/bin/deltascope",
+    "sha256": "db1860b9d6a5ad66327d200bc12fa628bed79478253864a8e49e2f13cea73508",
+    "build": {
+      "command": "CGO_ENABLED=0 go build -o <artifact>/deltascope ./cmd/deltascope",
+      "cgo_enabled": "0",
+      "go_version": "go1.26.1",
+      "built_at": "2026-11-03T17:27:09.662879+00:00",
+      "head_sha": "dd4f031b6c36b62ab475482e8c9db0375a01d606"
+    }
+  },
+  "policy_profile": {
+    "profile": "all-rules-disabled",
+    "path": "/private/tmp/ddl-golden-t20g/T20/golden-policy-all-off.yaml",
+    "sha256": "a11c8b2900e56197f94ef80f97188006100d57bece959b309d69a43a959cd938",
+    "catalog_rules": 466,
+    "enabled_rules": {},
+    "disabled_rules": 466
+  },
+  "policies": [
+    {
+      "profile": "all-rules-disabled",
+      "path": "/private/tmp/ddl-golden-t20g/T20/golden-policy-all-off.yaml",
+      "sha256": "a11c8b2900e56197f94ef80f97188006100d57bece959b309d69a43a959cd938",
+      "catalog_rules": 466,
+      "enabled_rules": {},
+      "disabled_rules": 466
+    },
+    {
+      "profile": "t20-placement",
+      "path": "/private/tmp/ddl-golden-t20g/T20/golden-policy-t20-placement.yaml",
+      "sha256": "b42e96df1ede9a726a7d2dff28239494831b801103e4e53dafef2ff2f1f04d98",
+      "catalog_rules": 466,
+      "enabled_rules": {
+        "ddl.tidb.placement.warn": {
+          "level": "warning"
+        }
+      },
+      "disabled_rules": 465
+    }
+  ],
+  "required_case_ids": [
+    "T20.db.mysql57.ddl",
+    "T20.db.mysql57.syntax_negative",
+    "T20.db.mysql80.ddl",
+    "T20.db.mysql80.syntax_negative",
+    "T20.db.mysql84.ddl",
+    "T20.db.mysql84.syntax_negative",
+    "T20.db.tidb85.ddl",
+    "T20.db.tidb85.syntax_negative",
+    "T20.meta.tidb85-golden-bind",
+    "T20.meta.tidb85-bind-missing-refused",
+    "T20.meta.tidb85-default-unbind",
+    "T20.meta.tidb85-drop-bound-refused",
+    "T20.meta.tidb85-schema-bind",
+    "T20.meta.tidb85-partition-bind",
+    "T20.meta.tidb85-alter-policy",
+    "T20.cli.tidb-create-policy-gap",
+    "T20.cli.tidb-alter-bind-gap",
+    "T20.cli.tidb-default-unbind-silent",
+    "T20.cli.tidb-drop-policy-gap",
+    "T20.cli.tidb-alter-range-global-gap",
+    "T20.cli.tidb-alter-range-dist-silent",
+    "T20.cli.mysql-create-policy-vendor",
+    "T20.cli.mysql-alter-bind-vendor"
+  ],
+  "cases": [
+    {
+      "case_id": "T20.db.mysql57.ddl",
+      "kind": "db_ddl",
+      "anchor": "mysql57",
+      "input_sql": [
+        "DROP DATABASE IF EXISTS t20fx",
+        "CREATE DATABASE t20fx;CREATE TABLE t20fx.t (id INT PRIMARY KEY)"
+      ],
+      "expected": {
+        "steps": [
+          {
+            "name": "clear-task-fixture",
+            "rc": 0,
+            "verify": []
+          },
+          {
+            "name": "seed-fixture-schema",
+            "rc": 0,
+            "verify": [
+              {
+                "assert": "fixture table exists",
+                "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='t20fx' AND TABLE_NAME='t'",
+                "expect": "1"
+              }
+            ]
+          }
+        ]
+      },
+      "actual": {
+        "steps": [
+          {
+            "name": "clear-task-fixture",
+            "sql": "DROP DATABASE IF EXISTS t20fx",
+            "verify": [],
+            "rc": 0,
+            "stdout": "",
+            "stderr": ""
+          },
+          {
+            "name": "seed-fixture-schema",
+            "sql": "CREATE DATABASE t20fx;CREATE TABLE t20fx.t (id INT PRIMARY KEY)",
+            "verify": [
+              {
+                "assert": "fixture table exists",
+                "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='t20fx' AND TABLE_NAME='t'",
+                "rc": 0,
+                "output": "1",
+                "stderr": ""
+              }
+            ],
+            "rc": 0,
+            "stdout": "",
+            "stderr": ""
+          }
+        ],
+        "database": {
+          "product": "mysql",
+          "image": "mysql:5.7.44",
+          "image_digest": "mysql@sha256:4bc6bc963e6d8443453676cae56536f4b8156d78bae03c0145cbe47c2aad73bb",
+          "container": "deltascope-ddl-golden-mysql57",
+          "reachable": true,
+          "version": "5.7.44"
+        }
+      },
+      "assertions": [
+        {
+          "name": "database reachable with expected version",
+          "ok": true,
+          "detail": "SELECT VERSION() rc=0 version='5.7.44' expected_contains='5.7.44'"
+        },
+        {
+          "name": "clear-task-fixture return code",
+          "ok": true,
+          "detail": "rc=0 expected=0 stderr=''"
+        },
+        {
+          "name": "seed-fixture-schema return code",
+          "ok": true,
+          "detail": "rc=0 expected=0 stderr=''"
+        },
+        {
+          "name": "seed-fixture-schema: fixture table exists",
+          "ok": true,
+          "detail": "rc=0 output='1' expected='1'"
+        }
+      ],
+      "status": "pass"
+    },
+    {
+      "case_id": "T20.db.mysql57.syntax_negative",
+      "kind": "db_syntax_negative",
+      "anchor": "mysql57",
+      "input_sql": "CREATE PLACEMENT POLICY",
+      "expected": {
+        "error_class": "1064",
+        "forbidden_markers": [
+          "Access denied",
+          "Connection refused",
+          "doesn't exist",
+          "already exists"
+        ]
+      },
+      "actual": {
+        "rc": 1,
+        "stdout": "",
+        "stderr": "ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'PLACEMENT POLICY' at line 1",
+        "error_class": "1064"
+      },
+      "assertions": [
+        {
+          "name": "nonzero syntax failure",
+          "ok": true,
+          "detail": "rc=1"
+        },
+        {
+          "name": "expected error class",
+          "ok": true,
+          "detail": "error_class='1064' expected='1064'"
+        },
+        {
+          "name": "no permission/connection/object-conflict markers",
+          "ok": true,
+          "detail": "forbidden markers found: []"
+        }
+      ],
+      "status": "pass"
+    },
+    {
+      "case_id": "T20.db.mysql80.ddl",
+      "kind": "db_ddl",
+      "anchor": "mysql80",
+      "input_sql": [
+        "DROP DATABASE IF EXISTS t20fx",
+        "CREATE DATABASE t20fx;CREATE TABLE t20fx.t (id INT PRIMARY KEY)"
+      ],
+      "expected": {
+        "steps": [
+          {
+            "name": "clear-task-fixture",
+            "rc": 0,
+            "verify": []
+          },
+          {
+            "name": "seed-fixture-schema",
+            "rc": 0,
+            "verify": [
+              {
+                "assert": "fixture table exists",
+                "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='t20fx' AND TABLE_NAME='t'",
+                "expect": "1"
+              }
+            ]
+          }
+        ]
+      },
+      "actual": {
+        "steps": [
+          {
+            "name": "clear-task-fixture",
+            "sql": "DROP DATABASE IF EXISTS t20fx",
+            "verify": [],
+            "rc": 0,
+            "stdout": "",
+            "stderr": ""
+          },
+          {
+            "name": "seed-fixture-schema",
+            "sql": "CREATE DATABASE t20fx;CREATE TABLE t20fx.t (id INT PRIMARY KEY)",
+            "verify": [
+              {
+                "assert": "fixture table exists",
+                "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='t20fx' AND TABLE_NAME='t'",
+                "rc": 0,
+                "output": "1",
+                "stderr": ""
+              }
+            ],
+            "rc": 0,
+            "stdout": "",
+            "stderr": ""
+          }
+        ],
+        "database": {
+          "product": "mysql",
+          "image": "mysql:8.0.46",
+          "image_digest": "mysql@sha256:7dcddc01f13bab2f15cde676d44d01f61fc9f99fe7785e86196dfc07d358ae2b",
+          "container": "deltascope-ddl-golden-mysql80",
+          "reachable": true,
+          "version": "8.0.46"
+        }
+      },
+      "assertions": [
+        {
+          "name": "database reachable with expected version",
+          "ok": true,
+          "detail": "SELECT VERSION() rc=0 version='8.0.46' expected_contains='8.0.46'"
+        },
+        {
+          "name": "clear-task-fixture return code",
+          "ok": true,
+          "detail": "rc=0 expected=0 stderr=''"
+        },
+        {
+          "name": "seed-fixture-schema return code",
+          "ok": true,
+          "detail": "rc=0 expected=0 stderr=''"
+        },
+        {
+          "name": "seed-fixture-schema: fixture table exists",
+          "ok": true,
+          "detail": "rc=0 output='1' expected='1'"
+        }
+      ],
+      "status": "pass"
+    },
+    {
+      "case_id": "T20.db.mysql80.syntax_negative",
+      "kind": "db_syntax_negative",
+      "anchor": "mysql80",
+      "input_sql": "CREATE PLACEMENT POLICY",
+      "expected": {
+        "error_class": "1064",
+        "forbidden_markers": [
+          "Access denied",
+          "Connection refused",
+          "doesn't exist",
+          "already exists"
+        ]
+      },
+      "actual": {
+        "rc": 1,
+        "stdout": "",
+        "stderr": "ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'PLACEMENT POLICY' at line 1",
+        "error_class": "1064"
+      },
+      "assertions": [
+        {
+          "name": "nonzero syntax failure",
+          "ok": true,
+          "detail": "rc=1"
+        },
+        {
+          "name": "expected error class",
+          "ok": true,
+          "detail": "error_class='1064' expected='1064'"
+        },
+        {
+          "name": "no permission/connection/object-conflict markers",
+          "ok": true,
+          "detail": "forbidden markers found: []"
+        }
+      ],
+      "status": "pass"
+    },
+    {
+      "case_id": "T20.db.mysql84.ddl",
+      "kind": "db_ddl",
+      "anchor": "mysql84",
+      "input_sql": [
+        "DROP DATABASE IF EXISTS t20fx",
+        "CREATE DATABASE t20fx;CREATE TABLE t20fx.t (id INT PRIMARY KEY)"
+      ],
+      "expected": {
+        "steps": [
+          {
+            "name": "clear-task-fixture",
+            "rc": 0,
+            "verify": []
+          },
+          {
+            "name": "seed-fixture-schema",
+            "rc": 0,
+            "verify": [
+              {
+                "assert": "fixture table exists",
+                "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='t20fx' AND TABLE_NAME='t'",
+                "expect": "1"
+              }
+            ]
+          }
+        ]
+      },
+      "actual": {
+        "steps": [
+          {
+            "name": "clear-task-fixture",
+            "sql": "DROP DATABASE IF EXISTS t20fx",
+            "verify": [],
+            "rc": 0,
+            "stdout": "",
+            "stderr": ""
+          },
+          {
+            "name": "seed-fixture-schema",
+            "sql": "CREATE DATABASE t20fx;CREATE TABLE t20fx.t (id INT PRIMARY KEY)",
+            "verify": [
+              {
+                "assert": "fixture table exists",
+                "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='t20fx' AND TABLE_NAME='t'",
+                "rc": 0,
+                "output": "1",
+                "stderr": ""
+              }
+            ],
+            "rc": 0,
+            "stdout": "",
+            "stderr": ""
+          }
+        ],
+        "database": {
+          "product": "mysql",
+          "image": "mysql:8.4.10",
+          "image_digest": "mysql@sha256:8dbcf531a03aade657e181b9cf2f1d1803ce621a1d55610cb44cb531ab7d7db6",
+          "container": "deltascope-ddl-golden-mysql84",
+          "reachable": true,
+          "version": "8.4.10"
+        }
+      },
+      "assertions": [
+        {
+          "name": "database reachable with expected version",
+          "ok": true,
+          "detail": "SELECT VERSION() rc=0 version='8.4.10' expected_contains='8.4.10'"
+        },
+        {
+          "name": "clear-task-fixture return code",
+          "ok": true,
+          "detail": "rc=0 expected=0 stderr=''"
+        },
+        {
+          "name": "seed-fixture-schema return code",
+          "ok": true,
+          "detail": "rc=0 expected=0 stderr=''"
+        },
+        {
+          "name": "seed-fixture-schema: fixture table exists",
+          "ok": true,
+          "detail": "rc=0 output='1' expected='1'"
+        }
+      ],
+      "status": "pass"
+    },
+    {
+      "case_id": "T20.db.mysql84.syntax_negative",
+      "kind": "db_syntax_negative",
+      "anchor": "mysql84",
+      "input_sql": "CREATE PLACEMENT POLICY",
+      "expected": {
+        "error_class": "1064",
+        "forbidden_markers": [
+          "Access denied",
+          "Connection refused",
+          "doesn't exist",
+          "already exists"
+        ]
+      },
+      "actual": {
+        "rc": 1,
+        "stdout": "",
+        "stderr": "ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'PLACEMENT POLICY' at line 1",
+        "error_class": "1064"
+      },
+      "assertions": [
+        {
+          "name": "nonzero syntax failure",
+          "ok": true,
+          "detail": "rc=1"
+        },
+        {
+          "name": "expected error class",
+          "ok": true,
+          "detail": "error_class='1064' expected='1064'"
+        },
+        {
+          "name": "no permission/connection/object-conflict markers",
+          "ok": true,
+          "detail": "forbidden markers found: []"
+        }
+      ],
+      "status": "pass"
+    },
+    {
+      "case_id": "T20.db.tidb85.ddl",
+      "kind": "db_ddl",
+      "anchor": "tidb85",
+      "input_sql": [
+        "DROP DATABASE IF EXISTS t20fx",
+        "CREATE DATABASE t20fx;CREATE TABLE t20fx.t (id INT PRIMARY KEY)"
+      ],
+      "expected": {
+        "steps": [
+          {
+            "name": "clear-task-fixture",
+            "rc": 0,
+            "verify": []
+          },
+          {
+            "name": "seed-fixture-schema",
+            "rc": 0,
+            "verify": [
+              {
+                "assert": "fixture table exists",
+                "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='t20fx' AND TABLE_NAME='t'",
+                "expect": "1"
+              }
+            ]
+          }
+        ]
+      },
+      "actual": {
+        "steps": [
+          {
+            "name": "clear-task-fixture",
+            "sql": "DROP DATABASE IF EXISTS t20fx",
+            "verify": [],
+            "rc": 0,
+            "stdout": "",
+            "stderr": ""
+          },
+          {
+            "name": "seed-fixture-schema",
+            "sql": "CREATE DATABASE t20fx;CREATE TABLE t20fx.t (id INT PRIMARY KEY)",
+            "verify": [
+              {
+                "assert": "fixture table exists",
+                "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='t20fx' AND TABLE_NAME='t'",
+                "rc": 0,
+                "output": "1",
+                "stderr": ""
+              }
+            ],
+            "rc": 0,
+            "stdout": "",
+            "stderr": ""
+          }
+        ],
+        "database": {
+          "product": "tidb",
+          "image": "pingcap/tidb:v8.5.0",
+          "image_digest": "pingcap/tidb@sha256:490861bd4a2fa643dbe76b77ffecafcad66e6a42774e580b82f4ec2429a80e57",
+          "container": "deltascope-ddl-golden-tidb85",
+          "reachable": true,
+          "version": "8.0.11-TiDB-v8.5.0"
+        }
+      },
+      "assertions": [
+        {
+          "name": "database reachable with expected version",
+          "ok": true,
+          "detail": "SELECT VERSION() rc=0 version='8.0.11-TiDB-v8.5.0' expected_contains='v8.5.0'"
+        },
+        {
+          "name": "fixture database created",
+          "ok": true,
+          "detail": "CREATE DATABASE rc=0 stderr=''"
+        },
+        {
+          "name": "clear-task-fixture return code",
+          "ok": true,
+          "detail": "rc=0 expected=0 stderr=''"
+        },
+        {
+          "name": "seed-fixture-schema return code",
+          "ok": true,
+          "detail": "rc=0 expected=0 stderr=''"
+        },
+        {
+          "name": "seed-fixture-schema: fixture table exists",
+          "ok": true,
+          "detail": "rc=0 output='1' expected='1'"
+        }
+      ],
+      "status": "pass"
+    },
+    {
+      "case_id": "T20.db.tidb85.syntax_negative",
+      "kind": "db_syntax_negative",
+      "anchor": "tidb85",
+      "input_sql": "CREATE PLACEMENT POLICY",
+      "expected": {
+        "error_class": "1064",
+        "forbidden_markers": [
+          "Access denied",
+          "Connection refused",
+          "doesn't exist",
+          "already exists"
+        ]
+      },
+      "actual": {
+        "rc": 1,
+        "stdout": "",
+        "stderr": "ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your TiDB version for the right syntax to use line 1 column 23 near \"\"",
+        "error_class": "1064"
+      },
+      "assertions": [
+        {
+          "name": "nonzero syntax failure",
+          "ok": true,
+          "detail": "rc=1"
+        },
+        {
+          "name": "expected error class",
+          "ok": true,
+          "detail": "error_class='1064' expected='1064'"
+        },
+        {
+          "name": "no permission/connection/object-conflict markers",
+          "ok": true,
+          "detail": "forbidden markers found: []"
+        }
+      ],
+      "status": "pass"
+    },
+    {
+      "case_id": "T20.cli.tidb-create-policy-gap",
+      "kind": "cli_audit",
+      "cli_case": "tidb-create-policy-gap",
+      "dialect": "tidb",
+      "input_sql": "CREATE PLACEMENT POLICY p PRIMARY_REGION='r1' REGIONS='r1' FOLLOWERS=2;",
+      "policy_profile": "t20-placement",
+      "policy_path": "/private/tmp/ddl-golden-t20g/T20/golden-policy-t20-placement.yaml",
+      "command": [
+        "/private/tmp/ddl-golden-t20g/T20/bin/deltascope",
+        "audit",
+        "--dialect",
+        "tidb",
+        "--sql",
+        "CREATE PLACEMENT POLICY p PRIMARY_REGION='r1' REGIONS='r1' FOLLOWERS=2;",
+        "--config",
+        "/private/tmp/ddl-golden-t20g/T20/golden-policy-t20-placement.yaml",
+        "--format",
+        "json",
+        "--fail-on",
+        "blocker"
+      ],
+      "expected": {
+        "exit": 0,
+        "verdict": "review",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "unverified",
+        "statement_coverage": [
+          "unverified"
+        ],
+        "evidence_gaps": 1,
+        "fail_on_triggered": false
+      },
+      "actual": {
+        "exit": 0,
+        "stdout": "{\"verdict\":\"review\",\"coverage\":{\"status\":\"unverified\"},\"summary\":{\"statements\":1,\"blockers\":0,\"warnings\":0,\"notices\":0},\"statements\":[{\"index\":0,\"kind\":\"ddl\",\"raw_sql\":\"CREATE PLACEMENT POLICY p PRIMARY_REGION='r1' REGIONS='r1' FOLLOWERS=2;\",\"normalized_sql\":\"CREATE PLACEMENT POLICY p PRIMARY_REGION='r1' REGIONS='r1' FOLLOWERS=2\",\"evidence_gaps\":[{\"rule_id\":\"ddl.tidb.placement.warn\",\"reason_code\":\"unknown_table_state\",\"required_facts\":[\"placement_policy.catalog\"]}],\"coverage\":{\"status\":\"unverified\"}}],\"fail_on_triggered\":false,\"rule_summary\":{\"loaded\":1,\"applicable\":1,\"skipped\":[]},\"context\":{\"mode\":\"offline\",\"dialect\":\"tidb\",\"dialect_source\":\"flag\",\"note\":\"existence not checked (no database connection)\",\"unproven\":[\"column_exists\",\"table_exists\"]}}\n",
+        "stderr": "",
+        "parsed": {
+          "verdict": "review",
+          "coverage": {
+            "status": "unverified"
+          },
+          "summary": {
+            "statements": 1,
+            "blockers": 0,
+            "warnings": 0,
+            "notices": 0
+          },
+          "statements": [
+            {
+              "index": 0,
+              "kind": "ddl",
+              "raw_sql": "CREATE PLACEMENT POLICY p PRIMARY_REGION='r1' REGIONS='r1' FOLLOWERS=2;",
+              "normalized_sql": "CREATE PLACEMENT POLICY p PRIMARY_REGION='r1' REGIONS='r1' FOLLOWERS=2",
+              "evidence_gaps": [
+                {
+                  "rule_id": "ddl.tidb.placement.warn",
+                  "reason_code": "unknown_table_state",
+                  "required_facts": [
+                    "placement_policy.catalog"
+                  ]
+                }
+              ],
+              "coverage": {
+                "status": "unverified"
+              }
+            }
+          ],
+          "fail_on_triggered": false,
+          "rule_summary": {
+            "loaded": 1,
+            "applicable": 1,
+            "skipped": []
+          },
+          "context": {
+            "mode": "offline",
+            "dialect": "tidb",
+            "dialect_source": "flag",
+            "note": "existence not checked (no database connection)",
+            "unproven": [
+              "column_exists",
+              "table_exists"
+            ]
+          }
+        },
+        "version_evidence": {
+          "target_raw": null,
+          "target_canonical": null,
+          "observed_raw": null,
+          "observed_canonical": null,
+          "resolved": null
+        }
+      },
+      "assertions": [
+        {
+          "name": "exit code",
+          "ok": true,
+          "detail": "rc=0 expected=0"
+        },
+        {
+          "name": "verdict",
+          "ok": true,
+          "detail": "verdict='review'"
+        },
+        {
+          "name": "top-level statements",
+          "ok": true,
+          "detail": "statements=1 expected=1"
+        },
+        {
+          "name": "zero findings",
+          "ok": true,
+          "detail": "findings=0"
+        },
+        {
+          "name": "no diagnostics",
+          "ok": true,
+          "detail": "diagnostics=[]"
+        },
+        {
+          "name": "no unsupported",
+          "ok": true,
+          "detail": "unsupported=[]"
+        },
+        {
+          "name": "aggregate coverage",
+          "ok": true,
+          "detail": "coverage='unverified'"
+        },
+        {
+          "name": "per-statement coverage",
+          "ok": true,
+          "detail": "statement_coverage=['unverified']"
+        },
+        {
+          "name": "evidence gap count",
+          "ok": true,
+          "detail": "gaps=1"
+        },
+        {
+          "name": "fail_on_triggered",
+          "ok": true,
+          "detail": "fail_on_triggered=False"
+        }
+      ],
+      "status": "pass"
+    },
+    {
+      "case_id": "T20.cli.tidb-alter-bind-gap",
+      "kind": "cli_audit",
+      "cli_case": "tidb-alter-bind-gap",
+      "dialect": "tidb",
+      "input_sql": "ALTER TABLE t PLACEMENT POLICY=p;",
+      "policy_profile": "t20-placement",
+      "policy_path": "/private/tmp/ddl-golden-t20g/T20/golden-policy-t20-placement.yaml",
+      "command": [
+        "/private/tmp/ddl-golden-t20g/T20/bin/deltascope",
+        "audit",
+        "--dialect",
+        "tidb",
+        "--sql",
+        "ALTER TABLE t PLACEMENT POLICY=p;",
+        "--config",
+        "/private/tmp/ddl-golden-t20g/T20/golden-policy-t20-placement.yaml",
+        "--format",
+        "json",
+        "--fail-on",
+        "blocker"
+      ],
+      "expected": {
+        "exit": 0,
+        "verdict": "review",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "unverified",
+        "statement_coverage": [
+          "unverified"
+        ],
+        "evidence_gaps": 1,
+        "fail_on_triggered": false
+      },
+      "actual": {
+        "exit": 0,
+        "stdout": "{\"verdict\":\"review\",\"coverage\":{\"status\":\"unverified\"},\"summary\":{\"statements\":1,\"blockers\":0,\"warnings\":0,\"notices\":0},\"statements\":[{\"index\":0,\"kind\":\"ddl\",\"raw_sql\":\"ALTER TABLE t PLACEMENT POLICY=p;\",\"normalized_sql\":\"ALTER TABLE t PLACEMENT POLICY=p\",\"evidence_gaps\":[{\"rule_id\":\"ddl.tidb.placement.warn\",\"reason_code\":\"unknown_table_state\",\"required_facts\":[\"placement_policy.catalog\"]}],\"coverage\":{\"status\":\"unverified\"}}],\"fail_on_triggered\":false,\"rule_summary\":{\"loaded\":1,\"applicable\":1,\"skipped\":[]},\"context\":{\"mode\":\"offline\",\"dialect\":\"tidb\",\"dialect_source\":\"flag\",\"note\":\"existence not checked (no database connection)\",\"unproven\":[\"column_exists\",\"table_exists\"]}}\n",
+        "stderr": "",
+        "parsed": {
+          "verdict": "review",
+          "coverage": {
+            "status": "unverified"
+          },
+          "summary": {
+            "statements": 1,
+            "blockers": 0,
+            "warnings": 0,
+            "notices": 0
+          },
+          "statements": [
+            {
+              "index": 0,
+              "kind": "ddl",
+              "raw_sql": "ALTER TABLE t PLACEMENT POLICY=p;",
+              "normalized_sql": "ALTER TABLE t PLACEMENT POLICY=p",
+              "evidence_gaps": [
+                {
+                  "rule_id": "ddl.tidb.placement.warn",
+                  "reason_code": "unknown_table_state",
+                  "required_facts": [
+                    "placement_policy.catalog"
+                  ]
+                }
+              ],
+              "coverage": {
+                "status": "unverified"
+              }
+            }
+          ],
+          "fail_on_triggered": false,
+          "rule_summary": {
+            "loaded": 1,
+            "applicable": 1,
+            "skipped": []
+          },
+          "context": {
+            "mode": "offline",
+            "dialect": "tidb",
+            "dialect_source": "flag",
+            "note": "existence not checked (no database connection)",
+            "unproven": [
+              "column_exists",
+              "table_exists"
+            ]
+          }
+        },
+        "version_evidence": {
+          "target_raw": null,
+          "target_canonical": null,
+          "observed_raw": null,
+          "observed_canonical": null,
+          "resolved": null
+        }
+      },
+      "assertions": [
+        {
+          "name": "exit code",
+          "ok": true,
+          "detail": "rc=0 expected=0"
+        },
+        {
+          "name": "verdict",
+          "ok": true,
+          "detail": "verdict='review'"
+        },
+        {
+          "name": "top-level statements",
+          "ok": true,
+          "detail": "statements=1 expected=1"
+        },
+        {
+          "name": "zero findings",
+          "ok": true,
+          "detail": "findings=0"
+        },
+        {
+          "name": "no diagnostics",
+          "ok": true,
+          "detail": "diagnostics=[]"
+        },
+        {
+          "name": "no unsupported",
+          "ok": true,
+          "detail": "unsupported=[]"
+        },
+        {
+          "name": "aggregate coverage",
+          "ok": true,
+          "detail": "coverage='unverified'"
+        },
+        {
+          "name": "per-statement coverage",
+          "ok": true,
+          "detail": "statement_coverage=['unverified']"
+        },
+        {
+          "name": "evidence gap count",
+          "ok": true,
+          "detail": "gaps=1"
+        },
+        {
+          "name": "fail_on_triggered",
+          "ok": true,
+          "detail": "fail_on_triggered=False"
+        }
+      ],
+      "status": "pass"
+    },
+    {
+      "case_id": "T20.cli.tidb-default-unbind-silent",
+      "kind": "cli_audit",
+      "cli_case": "tidb-default-unbind-silent",
+      "dialect": "tidb",
+      "input_sql": "ALTER TABLE t PLACEMENT POLICY=DEFAULT;",
+      "policy_profile": "t20-placement",
+      "policy_path": "/private/tmp/ddl-golden-t20g/T20/golden-policy-t20-placement.yaml",
+      "command": [
+        "/private/tmp/ddl-golden-t20g/T20/bin/deltascope",
+        "audit",
+        "--dialect",
+        "tidb",
+        "--sql",
+        "ALTER TABLE t PLACEMENT POLICY=DEFAULT;",
+        "--config",
+        "/private/tmp/ddl-golden-t20g/T20/golden-policy-t20-placement.yaml",
+        "--format",
+        "json",
+        "--fail-on",
+        "blocker"
+      ],
+      "expected": {
+        "exit": 0,
+        "verdict": "pass",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "complete",
+        "statement_coverage": [
+          "complete"
+        ],
+        "evidence_gaps": 0,
+        "fail_on_triggered": false
+      },
+      "actual": {
+        "exit": 0,
+        "stdout": "{\"verdict\":\"pass\",\"coverage\":{\"status\":\"complete\"},\"summary\":{\"statements\":1,\"blockers\":0,\"warnings\":0,\"notices\":0},\"statements\":[{\"index\":0,\"kind\":\"ddl\",\"raw_sql\":\"ALTER TABLE t PLACEMENT POLICY=DEFAULT;\",\"normalized_sql\":\"ALTER TABLE t PLACEMENT POLICY=DEFAULT\",\"coverage\":{\"status\":\"complete\"}}],\"fail_on_triggered\":false,\"rule_summary\":{\"loaded\":1,\"applicable\":1,\"skipped\":[]},\"context\":{\"mode\":\"offline\",\"dialect\":\"tidb\",\"dialect_source\":\"flag\",\"note\":\"existence not checked (no database connection)\",\"unproven\":[\"column_exists\",\"table_exists\"]}}\n",
+        "stderr": "",
+        "parsed": {
+          "verdict": "pass",
+          "coverage": {
+            "status": "complete"
+          },
+          "summary": {
+            "statements": 1,
+            "blockers": 0,
+            "warnings": 0,
+            "notices": 0
+          },
+          "statements": [
+            {
+              "index": 0,
+              "kind": "ddl",
+              "raw_sql": "ALTER TABLE t PLACEMENT POLICY=DEFAULT;",
+              "normalized_sql": "ALTER TABLE t PLACEMENT POLICY=DEFAULT",
+              "coverage": {
+                "status": "complete"
+              }
+            }
+          ],
+          "fail_on_triggered": false,
+          "rule_summary": {
+            "loaded": 1,
+            "applicable": 1,
+            "skipped": []
+          },
+          "context": {
+            "mode": "offline",
+            "dialect": "tidb",
+            "dialect_source": "flag",
+            "note": "existence not checked (no database connection)",
+            "unproven": [
+              "column_exists",
+              "table_exists"
+            ]
+          }
+        },
+        "version_evidence": {
+          "target_raw": null,
+          "target_canonical": null,
+          "observed_raw": null,
+          "observed_canonical": null,
+          "resolved": null
+        }
+      },
+      "assertions": [
+        {
+          "name": "exit code",
+          "ok": true,
+          "detail": "rc=0 expected=0"
+        },
+        {
+          "name": "verdict",
+          "ok": true,
+          "detail": "verdict='pass'"
+        },
+        {
+          "name": "top-level statements",
+          "ok": true,
+          "detail": "statements=1 expected=1"
+        },
+        {
+          "name": "zero findings",
+          "ok": true,
+          "detail": "findings=0"
+        },
+        {
+          "name": "no diagnostics",
+          "ok": true,
+          "detail": "diagnostics=[]"
+        },
+        {
+          "name": "no unsupported",
+          "ok": true,
+          "detail": "unsupported=[]"
+        },
+        {
+          "name": "aggregate coverage",
+          "ok": true,
+          "detail": "coverage='complete'"
+        },
+        {
+          "name": "per-statement coverage",
+          "ok": true,
+          "detail": "statement_coverage=['complete']"
+        },
+        {
+          "name": "evidence gap count",
+          "ok": true,
+          "detail": "gaps=0"
+        },
+        {
+          "name": "fail_on_triggered",
+          "ok": true,
+          "detail": "fail_on_triggered=False"
+        }
+      ],
+      "status": "pass"
+    },
+    {
+      "case_id": "T20.cli.tidb-drop-policy-gap",
+      "kind": "cli_audit",
+      "cli_case": "tidb-drop-policy-gap",
+      "dialect": "tidb",
+      "input_sql": "DROP PLACEMENT POLICY p;",
+      "policy_profile": "t20-placement",
+      "policy_path": "/private/tmp/ddl-golden-t20g/T20/golden-policy-t20-placement.yaml",
+      "command": [
+        "/private/tmp/ddl-golden-t20g/T20/bin/deltascope",
+        "audit",
+        "--dialect",
+        "tidb",
+        "--sql",
+        "DROP PLACEMENT POLICY p;",
+        "--config",
+        "/private/tmp/ddl-golden-t20g/T20/golden-policy-t20-placement.yaml",
+        "--format",
+        "json",
+        "--fail-on",
+        "blocker"
+      ],
+      "expected": {
+        "exit": 0,
+        "verdict": "review",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "unverified",
+        "statement_coverage": [
+          "unverified"
+        ],
+        "evidence_gaps": 1,
+        "fail_on_triggered": false
+      },
+      "actual": {
+        "exit": 0,
+        "stdout": "{\"verdict\":\"review\",\"coverage\":{\"status\":\"unverified\"},\"summary\":{\"statements\":1,\"blockers\":0,\"warnings\":0,\"notices\":0},\"statements\":[{\"index\":0,\"kind\":\"ddl\",\"raw_sql\":\"DROP PLACEMENT POLICY p;\",\"normalized_sql\":\"DROP PLACEMENT POLICY p\",\"evidence_gaps\":[{\"rule_id\":\"ddl.tidb.placement.warn\",\"reason_code\":\"unknown_table_state\",\"required_facts\":[\"placement_policy.catalog\",\"placement_policy.bound_targets\"]}],\"coverage\":{\"status\":\"unverified\"}}],\"fail_on_triggered\":false,\"rule_summary\":{\"loaded\":1,\"applicable\":1,\"skipped\":[]},\"context\":{\"mode\":\"offline\",\"dialect\":\"tidb\",\"dialect_source\":\"flag\",\"note\":\"existence not checked (no database connection)\",\"unproven\":[\"column_exists\",\"table_exists\"]}}\n",
+        "stderr": "",
+        "parsed": {
+          "verdict": "review",
+          "coverage": {
+            "status": "unverified"
+          },
+          "summary": {
+            "statements": 1,
+            "blockers": 0,
+            "warnings": 0,
+            "notices": 0
+          },
+          "statements": [
+            {
+              "index": 0,
+              "kind": "ddl",
+              "raw_sql": "DROP PLACEMENT POLICY p;",
+              "normalized_sql": "DROP PLACEMENT POLICY p",
+              "evidence_gaps": [
+                {
+                  "rule_id": "ddl.tidb.placement.warn",
+                  "reason_code": "unknown_table_state",
+                  "required_facts": [
+                    "placement_policy.catalog",
+                    "placement_policy.bound_targets"
+                  ]
+                }
+              ],
+              "coverage": {
+                "status": "unverified"
+              }
+            }
+          ],
+          "fail_on_triggered": false,
+          "rule_summary": {
+            "loaded": 1,
+            "applicable": 1,
+            "skipped": []
+          },
+          "context": {
+            "mode": "offline",
+            "dialect": "tidb",
+            "dialect_source": "flag",
+            "note": "existence not checked (no database connection)",
+            "unproven": [
+              "column_exists",
+              "table_exists"
+            ]
+          }
+        },
+        "version_evidence": {
+          "target_raw": null,
+          "target_canonical": null,
+          "observed_raw": null,
+          "observed_canonical": null,
+          "resolved": null
+        }
+      },
+      "assertions": [
+        {
+          "name": "exit code",
+          "ok": true,
+          "detail": "rc=0 expected=0"
+        },
+        {
+          "name": "verdict",
+          "ok": true,
+          "detail": "verdict='review'"
+        },
+        {
+          "name": "top-level statements",
+          "ok": true,
+          "detail": "statements=1 expected=1"
+        },
+        {
+          "name": "zero findings",
+          "ok": true,
+          "detail": "findings=0"
+        },
+        {
+          "name": "no diagnostics",
+          "ok": true,
+          "detail": "diagnostics=[]"
+        },
+        {
+          "name": "no unsupported",
+          "ok": true,
+          "detail": "unsupported=[]"
+        },
+        {
+          "name": "aggregate coverage",
+          "ok": true,
+          "detail": "coverage='unverified'"
+        },
+        {
+          "name": "per-statement coverage",
+          "ok": true,
+          "detail": "statement_coverage=['unverified']"
+        },
+        {
+          "name": "evidence gap count",
+          "ok": true,
+          "detail": "gaps=1"
+        },
+        {
+          "name": "fail_on_triggered",
+          "ok": true,
+          "detail": "fail_on_triggered=False"
+        }
+      ],
+      "status": "pass"
+    },
+    {
+      "case_id": "T20.cli.tidb-alter-range-global-gap",
+      "kind": "cli_audit",
+      "cli_case": "tidb-alter-range-global-gap",
+      "dialect": "tidb",
+      "input_sql": "ALTER RANGE global PLACEMENT POLICY=p;",
+      "policy_profile": "t20-placement",
+      "policy_path": "/private/tmp/ddl-golden-t20g/T20/golden-policy-t20-placement.yaml",
+      "command": [
+        "/private/tmp/ddl-golden-t20g/T20/bin/deltascope",
+        "audit",
+        "--dialect",
+        "tidb",
+        "--sql",
+        "ALTER RANGE global PLACEMENT POLICY=p;",
+        "--config",
+        "/private/tmp/ddl-golden-t20g/T20/golden-policy-t20-placement.yaml",
+        "--format",
+        "json",
+        "--fail-on",
+        "blocker"
+      ],
+      "expected": {
+        "exit": 0,
+        "verdict": "review",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "unverified",
+        "statement_coverage": [
+          "unverified"
+        ],
+        "evidence_gaps": 1,
+        "fail_on_triggered": false
+      },
+      "actual": {
+        "exit": 0,
+        "stdout": "{\"verdict\":\"review\",\"coverage\":{\"status\":\"unverified\"},\"summary\":{\"statements\":1,\"blockers\":0,\"warnings\":0,\"notices\":0},\"statements\":[{\"index\":0,\"kind\":\"ddl\",\"raw_sql\":\"ALTER RANGE global PLACEMENT POLICY=p;\",\"normalized_sql\":\"ALTER RANGE global PLACEMENT POLICY=p\",\"evidence_gaps\":[{\"rule_id\":\"ddl.tidb.placement.warn\",\"reason_code\":\"unknown_table_state\",\"required_facts\":[\"placement_policy.catalog\"]}],\"coverage\":{\"status\":\"unverified\"}}],\"fail_on_triggered\":false,\"rule_summary\":{\"loaded\":1,\"applicable\":1,\"skipped\":[]},\"context\":{\"mode\":\"offline\",\"dialect\":\"tidb\",\"dialect_source\":\"flag\",\"note\":\"existence not checked (no database connection)\",\"unproven\":[\"column_exists\",\"table_exists\"]}}\n",
+        "stderr": "",
+        "parsed": {
+          "verdict": "review",
+          "coverage": {
+            "status": "unverified"
+          },
+          "summary": {
+            "statements": 1,
+            "blockers": 0,
+            "warnings": 0,
+            "notices": 0
+          },
+          "statements": [
+            {
+              "index": 0,
+              "kind": "ddl",
+              "raw_sql": "ALTER RANGE global PLACEMENT POLICY=p;",
+              "normalized_sql": "ALTER RANGE global PLACEMENT POLICY=p",
+              "evidence_gaps": [
+                {
+                  "rule_id": "ddl.tidb.placement.warn",
+                  "reason_code": "unknown_table_state",
+                  "required_facts": [
+                    "placement_policy.catalog"
+                  ]
+                }
+              ],
+              "coverage": {
+                "status": "unverified"
+              }
+            }
+          ],
+          "fail_on_triggered": false,
+          "rule_summary": {
+            "loaded": 1,
+            "applicable": 1,
+            "skipped": []
+          },
+          "context": {
+            "mode": "offline",
+            "dialect": "tidb",
+            "dialect_source": "flag",
+            "note": "existence not checked (no database connection)",
+            "unproven": [
+              "column_exists",
+              "table_exists"
+            ]
+          }
+        },
+        "version_evidence": {
+          "target_raw": null,
+          "target_canonical": null,
+          "observed_raw": null,
+          "observed_canonical": null,
+          "resolved": null
+        }
+      },
+      "assertions": [
+        {
+          "name": "exit code",
+          "ok": true,
+          "detail": "rc=0 expected=0"
+        },
+        {
+          "name": "verdict",
+          "ok": true,
+          "detail": "verdict='review'"
+        },
+        {
+          "name": "top-level statements",
+          "ok": true,
+          "detail": "statements=1 expected=1"
+        },
+        {
+          "name": "zero findings",
+          "ok": true,
+          "detail": "findings=0"
+        },
+        {
+          "name": "no diagnostics",
+          "ok": true,
+          "detail": "diagnostics=[]"
+        },
+        {
+          "name": "no unsupported",
+          "ok": true,
+          "detail": "unsupported=[]"
+        },
+        {
+          "name": "aggregate coverage",
+          "ok": true,
+          "detail": "coverage='unverified'"
+        },
+        {
+          "name": "per-statement coverage",
+          "ok": true,
+          "detail": "statement_coverage=['unverified']"
+        },
+        {
+          "name": "evidence gap count",
+          "ok": true,
+          "detail": "gaps=1"
+        },
+        {
+          "name": "fail_on_triggered",
+          "ok": true,
+          "detail": "fail_on_triggered=False"
+        }
+      ],
+      "status": "pass"
+    },
+    {
+      "case_id": "T20.cli.tidb-alter-range-dist-silent",
+      "kind": "cli_audit",
+      "cli_case": "tidb-alter-range-dist-silent",
+      "dialect": "tidb",
+      "input_sql": "ALTER RANGE dist PLACEMENT POLICY=p;",
+      "policy_profile": "t20-placement",
+      "policy_path": "/private/tmp/ddl-golden-t20g/T20/golden-policy-t20-placement.yaml",
+      "command": [
+        "/private/tmp/ddl-golden-t20g/T20/bin/deltascope",
+        "audit",
+        "--dialect",
+        "tidb",
+        "--sql",
+        "ALTER RANGE dist PLACEMENT POLICY=p;",
+        "--config",
+        "/private/tmp/ddl-golden-t20g/T20/golden-policy-t20-placement.yaml",
+        "--format",
+        "json",
+        "--fail-on",
+        "blocker"
+      ],
+      "expected": {
+        "exit": 0,
+        "verdict": "pass",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "complete",
+        "statement_coverage": [
+          "complete"
+        ],
+        "evidence_gaps": 0,
+        "fail_on_triggered": false
+      },
+      "actual": {
+        "exit": 0,
+        "stdout": "{\"verdict\":\"pass\",\"coverage\":{\"status\":\"complete\"},\"summary\":{\"statements\":1,\"blockers\":0,\"warnings\":0,\"notices\":0},\"statements\":[{\"index\":0,\"kind\":\"ddl\",\"raw_sql\":\"ALTER RANGE dist PLACEMENT POLICY=p;\",\"normalized_sql\":\"ALTER RANGE dist PLACEMENT POLICY=p\",\"coverage\":{\"status\":\"complete\"}}],\"fail_on_triggered\":false,\"rule_summary\":{\"loaded\":1,\"applicable\":1,\"skipped\":[]},\"context\":{\"mode\":\"offline\",\"dialect\":\"tidb\",\"dialect_source\":\"flag\",\"note\":\"existence not checked (no database connection)\",\"unproven\":[\"column_exists\",\"table_exists\"]}}\n",
+        "stderr": "",
+        "parsed": {
+          "verdict": "pass",
+          "coverage": {
+            "status": "complete"
+          },
+          "summary": {
+            "statements": 1,
+            "blockers": 0,
+            "warnings": 0,
+            "notices": 0
+          },
+          "statements": [
+            {
+              "index": 0,
+              "kind": "ddl",
+              "raw_sql": "ALTER RANGE dist PLACEMENT POLICY=p;",
+              "normalized_sql": "ALTER RANGE dist PLACEMENT POLICY=p",
+              "coverage": {
+                "status": "complete"
+              }
+            }
+          ],
+          "fail_on_triggered": false,
+          "rule_summary": {
+            "loaded": 1,
+            "applicable": 1,
+            "skipped": []
+          },
+          "context": {
+            "mode": "offline",
+            "dialect": "tidb",
+            "dialect_source": "flag",
+            "note": "existence not checked (no database connection)",
+            "unproven": [
+              "column_exists",
+              "table_exists"
+            ]
+          }
+        },
+        "version_evidence": {
+          "target_raw": null,
+          "target_canonical": null,
+          "observed_raw": null,
+          "observed_canonical": null,
+          "resolved": null
+        }
+      },
+      "assertions": [
+        {
+          "name": "exit code",
+          "ok": true,
+          "detail": "rc=0 expected=0"
+        },
+        {
+          "name": "verdict",
+          "ok": true,
+          "detail": "verdict='pass'"
+        },
+        {
+          "name": "top-level statements",
+          "ok": true,
+          "detail": "statements=1 expected=1"
+        },
+        {
+          "name": "zero findings",
+          "ok": true,
+          "detail": "findings=0"
+        },
+        {
+          "name": "no diagnostics",
+          "ok": true,
+          "detail": "diagnostics=[]"
+        },
+        {
+          "name": "no unsupported",
+          "ok": true,
+          "detail": "unsupported=[]"
+        },
+        {
+          "name": "aggregate coverage",
+          "ok": true,
+          "detail": "coverage='complete'"
+        },
+        {
+          "name": "per-statement coverage",
+          "ok": true,
+          "detail": "statement_coverage=['complete']"
+        },
+        {
+          "name": "evidence gap count",
+          "ok": true,
+          "detail": "gaps=0"
+        },
+        {
+          "name": "fail_on_triggered",
+          "ok": true,
+          "detail": "fail_on_triggered=False"
+        }
+      ],
+      "status": "pass"
+    },
+    {
+      "case_id": "T20.cli.mysql-create-policy-vendor",
+      "kind": "cli_audit",
+      "cli_case": "mysql-create-policy-vendor",
+      "dialect": "mysql",
+      "input_sql": "CREATE PLACEMENT POLICY p PRIMARY_REGION='r1';",
+      "policy_profile": "t20-placement",
+      "policy_path": "/private/tmp/ddl-golden-t20g/T20/golden-policy-t20-placement.yaml",
+      "command": [
+        "/private/tmp/ddl-golden-t20g/T20/bin/deltascope",
+        "audit",
+        "--dialect",
+        "mysql",
+        "--sql",
+        "CREATE PLACEMENT POLICY p PRIMARY_REGION='r1';",
+        "--config",
+        "/private/tmp/ddl-golden-t20g/T20/golden-policy-t20-placement.yaml",
+        "--format",
+        "json",
+        "--fail-on",
+        "blocker"
+      ],
+      "expected": {
+        "exit": 1,
+        "verdict": "review",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 1,
+        "unsupported": 1,
+        "coverage": "incomplete",
+        "statement_coverage": [
+          "incomplete"
+        ],
+        "evidence_gaps": 0,
+        "fail_on_triggered": false
+      },
+      "actual": {
+        "exit": 1,
+        "stdout": "{\"verdict\":\"review\",\"coverage\":{\"status\":\"incomplete\"},\"summary\":{\"statements\":1,\"blockers\":0,\"warnings\":0,\"notices\":0},\"statements\":[{\"index\":0,\"kind\":\"ddl\",\"raw_sql\":\"CREATE PLACEMENT POLICY p PRIMARY_REGION='r1';\",\"normalized_sql\":\"CREATE PLACEMENT POLICY p PRIMARY_REGION='r1'\",\"coverage\":{\"status\":\"incomplete\"}}],\"unsupported\":[{\"feature\":\"create_placement_policy\",\"sql\":\"CREATE PLACEMENT POLICY p PRIMARY_REGION='r1';\",\"reason\":\"parsed by the shared parser but outside the supported statement surface for this dialect\",\"metadata\":{\"boundary\":\"vendor\"}}],\"diagnostics\":[{\"classification\":\"unsupported_statement\",\"reason\":\"DeltaScope recognized this statement or feature but does not audit it yet\",\"action_hint\":\"treat this statement as not covered by DeltaScope policy checks; review it manually or track support in a future DeltaScope release\",\"audited\":false,\"dialect\":\"mysql\"}],\"fail_on_triggered\":false,\"rule_summary\":{\"loaded\":1,\"applicable\":0,\"skipped\":[]},\"context\":{\"mode\":\"offline\",\"dialect\":\"mysql\",\"dialect_source\":\"flag\",\"note\":\"existence not checked (no database connection)\",\"unproven\":[\"column_exists\",\"table_exists\"]}}\n",
+        "stderr": "",
+        "parsed": {
+          "verdict": "review",
+          "coverage": {
+            "status": "incomplete"
+          },
+          "summary": {
+            "statements": 1,
+            "blockers": 0,
+            "warnings": 0,
+            "notices": 0
+          },
+          "statements": [
+            {
+              "index": 0,
+              "kind": "ddl",
+              "raw_sql": "CREATE PLACEMENT POLICY p PRIMARY_REGION='r1';",
+              "normalized_sql": "CREATE PLACEMENT POLICY p PRIMARY_REGION='r1'",
+              "coverage": {
+                "status": "incomplete"
+              }
+            }
+          ],
+          "unsupported": [
+            {
+              "feature": "create_placement_policy",
+              "sql": "CREATE PLACEMENT POLICY p PRIMARY_REGION='r1';",
+              "reason": "parsed by the shared parser but outside the supported statement surface for this dialect",
+              "metadata": {
+                "boundary": "vendor"
+              }
+            }
+          ],
+          "diagnostics": [
+            {
+              "classification": "unsupported_statement",
+              "reason": "DeltaScope recognized this statement or feature but does not audit it yet",
+              "action_hint": "treat this statement as not covered by DeltaScope policy checks; review it manually or track support in a future DeltaScope release",
+              "audited": false,
+              "dialect": "mysql"
+            }
+          ],
+          "fail_on_triggered": false,
+          "rule_summary": {
+            "loaded": 1,
+            "applicable": 0,
+            "skipped": []
+          },
+          "context": {
+            "mode": "offline",
+            "dialect": "mysql",
+            "dialect_source": "flag",
+            "note": "existence not checked (no database connection)",
+            "unproven": [
+              "column_exists",
+              "table_exists"
+            ]
+          }
+        },
+        "version_evidence": {
+          "target_raw": null,
+          "target_canonical": null,
+          "observed_raw": null,
+          "observed_canonical": null,
+          "resolved": null
+        }
+      },
+      "assertions": [
+        {
+          "name": "exit code",
+          "ok": true,
+          "detail": "rc=1 expected=1"
+        },
+        {
+          "name": "verdict",
+          "ok": true,
+          "detail": "verdict='review'"
+        },
+        {
+          "name": "top-level statements",
+          "ok": true,
+          "detail": "statements=1 expected=1"
+        },
+        {
+          "name": "zero findings",
+          "ok": true,
+          "detail": "findings=0"
+        },
+        {
+          "name": "no diagnostics",
+          "ok": true,
+          "detail": "diagnostics=[{'classification': 'unsupported_statement', 'reason': 'DeltaScope recognized this statement or feature but does not audit it yet', 'action_hint': 'treat this statement as not covered by DeltaScope policy checks; review it manually or track support in a future DeltaScope release', 'audited': False, 'dialect': 'mysql'}]"
+        },
+        {
+          "name": "no unsupported",
+          "ok": true,
+          "detail": "unsupported=[{'feature': 'create_placement_policy', 'sql': \"CREATE PLACEMENT POLICY p PRIMARY_REGION='r1';\", 'reason': 'parsed by the shared parser but outside the supported statement surface for this dialect', 'metadata': {'boundary': 'vendor'}}]"
+        },
+        {
+          "name": "aggregate coverage",
+          "ok": true,
+          "detail": "coverage='incomplete'"
+        },
+        {
+          "name": "per-statement coverage",
+          "ok": true,
+          "detail": "statement_coverage=['incomplete']"
+        },
+        {
+          "name": "unsupported sql identity index=0",
+          "ok": true,
+          "detail": "sql=\"CREATE PLACEMENT POLICY p PRIMARY_REGION='r1';\" expected=\"CREATE PLACEMENT POLICY p PRIMARY_REGION='r1';\""
+        },
+        {
+          "name": "evidence gap count",
+          "ok": true,
+          "detail": "gaps=0"
+        },
+        {
+          "name": "fail_on_triggered",
+          "ok": true,
+          "detail": "fail_on_triggered=False"
+        }
+      ],
+      "status": "pass"
+    },
+    {
+      "case_id": "T20.cli.mysql-alter-bind-vendor",
+      "kind": "cli_audit",
+      "cli_case": "mysql-alter-bind-vendor",
+      "dialect": "mysql",
+      "input_sql": "ALTER TABLE t PLACEMENT POLICY=p;",
+      "policy_profile": "t20-placement",
+      "policy_path": "/private/tmp/ddl-golden-t20g/T20/golden-policy-t20-placement.yaml",
+      "command": [
+        "/private/tmp/ddl-golden-t20g/T20/bin/deltascope",
+        "audit",
+        "--dialect",
+        "mysql",
+        "--sql",
+        "ALTER TABLE t PLACEMENT POLICY=p;",
+        "--config",
+        "/private/tmp/ddl-golden-t20g/T20/golden-policy-t20-placement.yaml",
+        "--format",
+        "json",
+        "--fail-on",
+        "blocker"
+      ],
+      "expected": {
+        "exit": 1,
+        "verdict": "review",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 1,
+        "unsupported": 1,
+        "coverage": "incomplete",
+        "statement_coverage": [
+          "incomplete"
+        ],
+        "evidence_gaps": 0,
+        "fail_on_triggered": false
+      },
+      "actual": {
+        "exit": 1,
+        "stdout": "{\"verdict\":\"review\",\"coverage\":{\"status\":\"incomplete\"},\"summary\":{\"statements\":1,\"blockers\":0,\"warnings\":0,\"notices\":0},\"statements\":[{\"index\":0,\"kind\":\"ddl\",\"raw_sql\":\"ALTER TABLE t PLACEMENT POLICY=p;\",\"normalized_sql\":\"ALTER TABLE t PLACEMENT POLICY=p\",\"coverage\":{\"status\":\"incomplete\"}}],\"unsupported\":[{\"feature\":\"alter_table.placement_policy\",\"sql\":\"ALTER TABLE t PLACEMENT POLICY=p;\",\"reason\":\"parsed by the shared parser but outside the supported statement surface for this dialect\",\"metadata\":{\"action\":\"placement_policy\",\"aspect\":\"action\"}}],\"diagnostics\":[{\"classification\":\"unsupported_statement\",\"reason\":\"DeltaScope recognized this statement or feature but does not audit it yet\",\"action_hint\":\"treat this statement as not covered by DeltaScope policy checks; review it manually or track support in a future DeltaScope release\",\"audited\":false,\"dialect\":\"mysql\"}],\"fail_on_triggered\":false,\"rule_summary\":{\"loaded\":1,\"applicable\":0,\"skipped\":[]},\"context\":{\"mode\":\"offline\",\"dialect\":\"mysql\",\"dialect_source\":\"flag\",\"note\":\"existence not checked (no database connection)\",\"unproven\":[\"column_exists\",\"table_exists\"]}}\n",
+        "stderr": "",
+        "parsed": {
+          "verdict": "review",
+          "coverage": {
+            "status": "incomplete"
+          },
+          "summary": {
+            "statements": 1,
+            "blockers": 0,
+            "warnings": 0,
+            "notices": 0
+          },
+          "statements": [
+            {
+              "index": 0,
+              "kind": "ddl",
+              "raw_sql": "ALTER TABLE t PLACEMENT POLICY=p;",
+              "normalized_sql": "ALTER TABLE t PLACEMENT POLICY=p",
+              "coverage": {
+                "status": "incomplete"
+              }
+            }
+          ],
+          "unsupported": [
+            {
+              "feature": "alter_table.placement_policy",
+              "sql": "ALTER TABLE t PLACEMENT POLICY=p;",
+              "reason": "parsed by the shared parser but outside the supported statement surface for this dialect",
+              "metadata": {
+                "action": "placement_policy",
+                "aspect": "action"
+              }
+            }
+          ],
+          "diagnostics": [
+            {
+              "classification": "unsupported_statement",
+              "reason": "DeltaScope recognized this statement or feature but does not audit it yet",
+              "action_hint": "treat this statement as not covered by DeltaScope policy checks; review it manually or track support in a future DeltaScope release",
+              "audited": false,
+              "dialect": "mysql"
+            }
+          ],
+          "fail_on_triggered": false,
+          "rule_summary": {
+            "loaded": 1,
+            "applicable": 0,
+            "skipped": []
+          },
+          "context": {
+            "mode": "offline",
+            "dialect": "mysql",
+            "dialect_source": "flag",
+            "note": "existence not checked (no database connection)",
+            "unproven": [
+              "column_exists",
+              "table_exists"
+            ]
+          }
+        },
+        "version_evidence": {
+          "target_raw": null,
+          "target_canonical": null,
+          "observed_raw": null,
+          "observed_canonical": null,
+          "resolved": null
+        }
+      },
+      "assertions": [
+        {
+          "name": "exit code",
+          "ok": true,
+          "detail": "rc=1 expected=1"
+        },
+        {
+          "name": "verdict",
+          "ok": true,
+          "detail": "verdict='review'"
+        },
+        {
+          "name": "top-level statements",
+          "ok": true,
+          "detail": "statements=1 expected=1"
+        },
+        {
+          "name": "zero findings",
+          "ok": true,
+          "detail": "findings=0"
+        },
+        {
+          "name": "no diagnostics",
+          "ok": true,
+          "detail": "diagnostics=[{'classification': 'unsupported_statement', 'reason': 'DeltaScope recognized this statement or feature but does not audit it yet', 'action_hint': 'treat this statement as not covered by DeltaScope policy checks; review it manually or track support in a future DeltaScope release', 'audited': False, 'dialect': 'mysql'}]"
+        },
+        {
+          "name": "no unsupported",
+          "ok": true,
+          "detail": "unsupported=[{'feature': 'alter_table.placement_policy', 'sql': 'ALTER TABLE t PLACEMENT POLICY=p;', 'reason': 'parsed by the shared parser but outside the supported statement surface for this dialect', 'metadata': {'action': 'placement_policy', 'aspect': 'action'}}]"
+        },
+        {
+          "name": "aggregate coverage",
+          "ok": true,
+          "detail": "coverage='incomplete'"
+        },
+        {
+          "name": "per-statement coverage",
+          "ok": true,
+          "detail": "statement_coverage=['incomplete']"
+        },
+        {
+          "name": "unsupported sql identity index=0",
+          "ok": true,
+          "detail": "sql='ALTER TABLE t PLACEMENT POLICY=p;' expected='ALTER TABLE t PLACEMENT POLICY=p;'"
+        },
+        {
+          "name": "evidence gap count",
+          "ok": true,
+          "detail": "gaps=0"
+        },
+        {
+          "name": "fail_on_triggered",
+          "ok": true,
+          "detail": "fail_on_triggered=False"
+        }
+      ],
+      "status": "pass"
+    },
+    {
+      "case_id": "T20.meta.tidb85-golden-bind",
+      "kind": "cli_metadata",
+      "cli_case": "tidb85-golden-bind",
+      "anchor": "tidb85",
+      "dialect": "tidb",
+      "input_sql": "ALTER TABLE t PLACEMENT POLICY=t20m_p;",
+      "policy_profile": "t20-placement",
+      "policy_path": "/private/tmp/ddl-golden-t20g/T20/golden-policy-t20-placement.yaml",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 24000,
+        "user": "root",
+        "schema": "t20m_golden_bind"
+      },
+      "expected": {
+        "exit": 0,
+        "verdict": "review",
+        "statements": 1,
+        "findings": 1,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "complete",
+        "statement_coverage": [
+          "complete"
+        ],
+        "evidence_gaps": 0,
+        "finding_entries": [
+          {
+            "index": 0,
+            "rule_id": "ddl.tidb.placement.warn",
+            "level": "warning"
+          }
+        ],
+        "fail_on_triggered": false
+      },
+      "actual": {
+        "database": {
+          "product": "tidb",
+          "image": "pingcap/tidb:v8.5.0",
+          "image_digest": "pingcap/tidb@sha256:490861bd4a2fa643dbe76b77ffecafcad66e6a42774e580b82f4ec2429a80e57",
+          "container": "deltascope-ddl-golden-tidb85",
+          "reachable": true,
+          "version": "8.0.11-TiDB-v8.5.0"
+        },
+        "setup": [
+          {
+            "name": "create-owned-fixture",
+            "sql": "CREATE DATABASE t20m_golden_bind;CREATE PLACEMENT POLICY t20m_p PRIMARY_REGION='us-east-1' REGIONS='us-east-1' FOLLOWERS=2;CREATE TABLE t20m_golden_bind.t (id INT PRIMARY KEY)",
+            "rc": 0,
+            "stdout": "",
+            "stderr": "",
+            "verify": [
+              {
+                "assert": "policy object exists in the catalog",
+                "sql": "SELECT COUNT(*) FROM information_schema.PLACEMENT_POLICIES WHERE POLICY_NAME='t20m_p'",
+                "rc": 0,
+                "output": "1",
+                "stderr": ""
+              }
+            ]
+          }
+        ],
+        "post_verify": [
+          {
+            "assert": "audit did not fabricate a binding",
+            "sql": "SELECT COALESCE(TIDB_PLACEMENT_POLICY_NAME,'') FROM information_schema.TABLES WHERE TABLE_SCHEMA='t20m_golden_bind' AND TABLE_NAME='t'",
+            "rc": 0,
+            "output": "",
+            "stderr": ""
+          }
+        ],
+        "execute": [
+          {
+            "name": "driver applies the audited binding",
+            "sql": "ALTER TABLE t20m_golden_bind.t PLACEMENT POLICY=t20m_p;",
+            "rc": 0,
+            "stdout": "",
+            "stderr": ""
+          }
+        ],
+        "structure": [
+          {
+            "assert": "catalog proves the table binding",
+            "sql": "SELECT TIDB_PLACEMENT_POLICY_NAME FROM information_schema.TABLES WHERE TABLE_SCHEMA='t20m_golden_bind' AND TABLE_NAME='t'",
+            "rc": 0,
+            "output": "t20m_p",
+            "stderr": ""
+          },
+          {
+            "assert": "catalog records the bound policy on the policy object",
+            "sql": "SELECT COUNT(*) FROM information_schema.PLACEMENT_POLICIES WHERE POLICY_NAME='t20m_p'",
+            "rc": 0,
+            "output": "1",
+            "stderr": ""
+          }
+        ],
+        "teardown": [
+          {
+            "name": "drop fixture",
+            "sql": "DROP DATABASE IF EXISTS t20m_golden_bind;DROP PLACEMENT POLICY IF EXISTS t20m_p",
+            "rc": 0,
+            "stderr": ""
+          }
+        ],
+        "exit": 0,
+        "stdout": "{\"verdict\":\"review\",\"coverage\":{\"status\":\"complete\"},\"summary\":{\"statements\":1,\"blockers\":0,\"warnings\":1,\"notices\":0},\"statements\":[{\"index\":0,\"kind\":\"ddl\",\"raw_sql\":\"ALTER TABLE t PLACEMENT POLICY=t20m_p;\",\"normalized_sql\":\"ALTER TABLE t PLACEMENT POLICY=t20m_p\",\"findings\":[{\"rule_id\":\"ddl.tidb.placement.warn\",\"level\":\"warning\",\"message\":\"PLACEMENT POLICY \\\"t20m_p\\\" binds table \\\"t\\\" to a topology policy\",\"statement_kind\":\"ddl\",\"location\":{\"line\":1,\"column\":1},\"suggestion\":\"verify the placement policy's region constraints, replica counts, and PD/TiKV topology prerequisites intentionally — a bound policy reassigns the object's physical placement\",\"metadata\":{\"action\":\"placement_policy\",\"policy\":\"t20m_p\",\"target\":\"t\",\"target_kind\":\"table\"},\"explanation\":{\"summary\":\"Warn on DDL tidb placement warn\",\"why\":\"The statement reached a caution rule that highlights an operational trade-off.\",\"risk\":\"Ignoring this rule can weaken schema-governance guarantees and make changes harder to review safely.\",\"suggestion\":\"verify the placement policy's region constraints, replica counts, and PD/TiKV topology prerequisites intentionally — a bound policy reassigns the object's physical placement\"}}],\"coverage\":{\"status\":\"complete\"}}],\"version\":{\"product\":\"tidb\",\"version\":\"8.5.0\",\"major\":8,\"minor\":5,\"patch\":0,\"source\":\"observed\",\"validated_range\":true},\"fail_on_triggered\":false,\"rule_summary\":{\"loaded\":1,\"applicable\":1,\"skipped\":[]},\"context\":{\"mode\":\"metadata-aware\",\"dialect\":\"tidb\",\"dialect_source\":\"detected\",\"schema\":\"t20m_golden_bind\",\"schema_source\":\"flag\"}}\n",
+        "stderr": "",
+        "parsed": {
+          "verdict": "review",
+          "coverage": {
+            "status": "complete"
+          },
+          "summary": {
+            "statements": 1,
+            "blockers": 0,
+            "warnings": 1,
+            "notices": 0
+          },
+          "statements": [
+            {
+              "index": 0,
+              "kind": "ddl",
+              "raw_sql": "ALTER TABLE t PLACEMENT POLICY=t20m_p;",
+              "normalized_sql": "ALTER TABLE t PLACEMENT POLICY=t20m_p",
+              "findings": [
+                {
+                  "rule_id": "ddl.tidb.placement.warn",
+                  "level": "warning",
+                  "message": "PLACEMENT POLICY \"t20m_p\" binds table \"t\" to a topology policy",
+                  "statement_kind": "ddl",
+                  "location": {
+                    "line": 1,
+                    "column": 1
+                  },
+                  "suggestion": "verify the placement policy's region constraints, replica counts, and PD/TiKV topology prerequisites intentionally — a bound policy reassigns the object's physical placement",
+                  "metadata": {
+                    "action": "placement_policy",
+                    "policy": "t20m_p",
+                    "target": "t",
+                    "target_kind": "table"
+                  },
+                  "explanation": {
+                    "summary": "Warn on DDL tidb placement warn",
+                    "why": "The statement reached a caution rule that highlights an operational trade-off.",
+                    "risk": "Ignoring this rule can weaken schema-governance guarantees and make changes harder to review safely.",
+                    "suggestion": "verify the placement policy's region constraints, replica counts, and PD/TiKV topology prerequisites intentionally — a bound policy reassigns the object's physical placement"
+                  }
+                }
+              ],
+              "coverage": {
+                "status": "complete"
+              }
+            }
+          ],
+          "version": {
+            "product": "tidb",
+            "version": "8.5.0",
+            "major": 8,
+            "minor": 5,
+            "patch": 0,
+            "source": "observed",
+            "validated_range": true
+          },
+          "fail_on_triggered": false,
+          "rule_summary": {
+            "loaded": 1,
+            "applicable": 1,
+            "skipped": []
+          },
+          "context": {
+            "mode": "metadata-aware",
+            "dialect": "tidb",
+            "dialect_source": "detected",
+            "schema": "t20m_golden_bind",
+            "schema_source": "flag"
+          }
+        },
+        "version_evidence": {
+          "target_raw": null,
+          "target_canonical": null,
+          "observed_raw": "8.0.11-TiDB-v8.5.0",
+          "observed_canonical": {
+            "product": "tidb",
+            "version": "8.5.0"
+          },
+          "resolved": {
+            "product": "tidb",
+            "version": "8.5.0",
+            "major": 8,
+            "minor": 5,
+            "patch": 0,
+            "source": "observed",
+            "validated_range": true
+          }
+        }
+      },
+      "assertions": [
+        {
+          "name": "database reachable with expected version",
+          "ok": true,
+          "detail": "SELECT VERSION() rc=0 version='8.0.11-TiDB-v8.5.0' expected_contains='v8.5.0'"
+        },
+        {
+          "name": "setup create-owned-fixture return code",
+          "ok": true,
+          "detail": "rc=0 expected=0 stderr=''"
+        },
+        {
+          "name": "setup create-owned-fixture: policy object exists in the catalog",
+          "ok": true,
+          "detail": "rc=0 output='1' expected='1'"
+        },
+        {
+          "name": "exit code",
+          "ok": true,
+          "detail": "rc=0 expected=0"
+        },
+        {
+          "name": "verdict",
+          "ok": true,
+          "detail": "verdict='review'"
+        },
+        {
+          "name": "top-level statements",
+          "ok": true,
+          "detail": "statements=1 expected=1"
+        },
+        {
+          "name": "zero findings",
+          "ok": true,
+          "detail": "findings=1"
+        },
+        {
+          "name": "no diagnostics",
+          "ok": true,
+          "detail": "diagnostics=[]"
+        },
+        {
+          "name": "no unsupported",
+          "ok": true,
+          "detail": "unsupported=[]"
+        },
+        {
+          "name": "aggregate coverage",
+          "ok": true,
+          "detail": "coverage='complete'"
+        },
+        {
+          "name": "per-statement coverage",
+          "ok": true,
+          "detail": "statement_coverage=['complete']"
+        },
+        {
+          "name": "evidence gap count",
+          "ok": true,
+          "detail": "gaps=0"
+        },
+        {
+          "name": "finding entries",
+          "ok": true,
+          "detail": "findings=[(0, 'ddl.tidb.placement.warn', 'warning')] expected=[(0, 'ddl.tidb.placement.warn', 'warning')]"
+        },
+        {
+          "name": "fail_on_triggered",
+          "ok": true,
+          "detail": "fail_on_triggered=False"
+        },
+        {
+          "name": "post-verify audit did not fabricate a binding",
+          "ok": true,
+          "detail": "rc=0 output='' expected=''"
+        },
+        {
+          "name": "execute driver applies the audited binding return code",
+          "ok": true,
+          "detail": "rc=0 expected=0 stderr=''"
+        },
+        {
+          "name": "structure catalog proves the table binding",
+          "ok": true,
+          "detail": "rc=0 output='t20m_p' expected='t20m_p'"
+        },
+        {
+          "name": "structure catalog records the bound policy on the policy object",
+          "ok": true,
+          "detail": "rc=0 output='1' expected='1'"
+        },
+        {
+          "name": "teardown drop fixture return code",
+          "ok": true,
+          "detail": "rc=0 expected=0 stderr=''"
+        }
+      ],
+      "status": "pass",
+      "command": [
+        "/private/tmp/ddl-golden-t20g/T20/bin/deltascope",
+        "audit",
+        "--dialect",
+        "tidb",
+        "--sql",
+        "ALTER TABLE t PLACEMENT POLICY=t20m_p;",
+        "--config",
+        "/private/tmp/ddl-golden-t20g/T20/golden-policy-t20-placement.yaml",
+        "--format",
+        "json",
+        "--host",
+        "127.0.0.1",
+        "--port",
+        "24000",
+        "--user",
+        "root",
+        "--schema",
+        "t20m_golden_bind",
+        "--fail-on",
+        "blocker"
+      ]
+    },
+    {
+      "case_id": "T20.meta.tidb85-bind-missing-refused",
+      "kind": "cli_metadata",
+      "cli_case": "tidb85-bind-missing-refused",
+      "anchor": "tidb85",
+      "dialect": "tidb",
+      "input_sql": "ALTER TABLE t PLACEMENT POLICY=ghost;",
+      "policy_profile": "t20-placement",
+      "policy_path": "/private/tmp/ddl-golden-t20g/T20/golden-policy-t20-placement.yaml",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 24000,
+        "user": "root",
+        "schema": "t20m_bind_missing"
+      },
+      "expected": {
+        "exit": 0,
+        "verdict": "pass",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "complete",
+        "statement_coverage": [
+          "complete"
+        ],
+        "evidence_gaps": 0,
+        "fail_on_triggered": false
+      },
+      "actual": {
+        "database": {
+          "product": "tidb",
+          "image": "pingcap/tidb:v8.5.0",
+          "image_digest": "pingcap/tidb@sha256:490861bd4a2fa643dbe76b77ffecafcad66e6a42774e580b82f4ec2429a80e57",
+          "container": "deltascope-ddl-golden-tidb85",
+          "reachable": true,
+          "version": "8.0.11-TiDB-v8.5.0"
+        },
+        "setup": [
+          {
+            "name": "create-owned-fixture",
+            "sql": "CREATE DATABASE t20m_bind_missing;CREATE TABLE t20m_bind_missing.t (id INT PRIMARY KEY)",
+            "rc": 0,
+            "stdout": "",
+            "stderr": "",
+            "verify": [
+              {
+                "assert": "ghost policy absent from the catalog",
+                "sql": "SELECT COUNT(*) FROM information_schema.PLACEMENT_POLICIES WHERE POLICY_NAME='ghost'",
+                "rc": 0,
+                "output": "0",
+                "stderr": ""
+              }
+            ]
+          }
+        ],
+        "post_verify": [
+          {
+            "assert": "audit did not fabricate a binding",
+            "sql": "SELECT COALESCE(TIDB_PLACEMENT_POLICY_NAME,'') FROM information_schema.TABLES WHERE TABLE_SCHEMA='t20m_bind_missing' AND TABLE_NAME='t'",
+            "rc": 0,
+            "output": "",
+            "stderr": ""
+          }
+        ],
+        "execute": [
+          {
+            "name": "native bind to a missing policy refuses (8239)",
+            "sql": "ALTER TABLE t20m_bind_missing.t PLACEMENT POLICY=ghost;",
+            "rc": 1,
+            "stdout": "",
+            "stderr": "ERROR 8239 (HY000) at line 1: Unknown placement policy 'ghost'"
+          }
+        ],
+        "structure": [
+          {
+            "assert": "refused bind leaves the table unbound",
+            "sql": "SELECT COALESCE(TIDB_PLACEMENT_POLICY_NAME,'') FROM information_schema.TABLES WHERE TABLE_SCHEMA='t20m_bind_missing' AND TABLE_NAME='t'",
+            "rc": 0,
+            "output": "",
+            "stderr": ""
+          }
+        ],
+        "teardown": [
+          {
+            "name": "drop fixture",
+            "sql": "DROP DATABASE IF EXISTS t20m_bind_missing",
+            "rc": 0,
+            "stderr": ""
+          }
+        ],
+        "exit": 0,
+        "stdout": "{\"verdict\":\"pass\",\"coverage\":{\"status\":\"complete\"},\"summary\":{\"statements\":1,\"blockers\":0,\"warnings\":0,\"notices\":0},\"statements\":[{\"index\":0,\"kind\":\"ddl\",\"raw_sql\":\"ALTER TABLE t PLACEMENT POLICY=ghost;\",\"normalized_sql\":\"ALTER TABLE t PLACEMENT POLICY=ghost\",\"coverage\":{\"status\":\"complete\"}}],\"version\":{\"product\":\"tidb\",\"version\":\"8.5.0\",\"major\":8,\"minor\":5,\"patch\":0,\"source\":\"observed\",\"validated_range\":true},\"fail_on_triggered\":false,\"rule_summary\":{\"loaded\":1,\"applicable\":1,\"skipped\":[]},\"context\":{\"mode\":\"metadata-aware\",\"dialect\":\"tidb\",\"dialect_source\":\"detected\",\"schema\":\"t20m_bind_missing\",\"schema_source\":\"flag\"}}\n",
+        "stderr": "",
+        "parsed": {
+          "verdict": "pass",
+          "coverage": {
+            "status": "complete"
+          },
+          "summary": {
+            "statements": 1,
+            "blockers": 0,
+            "warnings": 0,
+            "notices": 0
+          },
+          "statements": [
+            {
+              "index": 0,
+              "kind": "ddl",
+              "raw_sql": "ALTER TABLE t PLACEMENT POLICY=ghost;",
+              "normalized_sql": "ALTER TABLE t PLACEMENT POLICY=ghost",
+              "coverage": {
+                "status": "complete"
+              }
+            }
+          ],
+          "version": {
+            "product": "tidb",
+            "version": "8.5.0",
+            "major": 8,
+            "minor": 5,
+            "patch": 0,
+            "source": "observed",
+            "validated_range": true
+          },
+          "fail_on_triggered": false,
+          "rule_summary": {
+            "loaded": 1,
+            "applicable": 1,
+            "skipped": []
+          },
+          "context": {
+            "mode": "metadata-aware",
+            "dialect": "tidb",
+            "dialect_source": "detected",
+            "schema": "t20m_bind_missing",
+            "schema_source": "flag"
+          }
+        },
+        "version_evidence": {
+          "target_raw": null,
+          "target_canonical": null,
+          "observed_raw": "8.0.11-TiDB-v8.5.0",
+          "observed_canonical": {
+            "product": "tidb",
+            "version": "8.5.0"
+          },
+          "resolved": {
+            "product": "tidb",
+            "version": "8.5.0",
+            "major": 8,
+            "minor": 5,
+            "patch": 0,
+            "source": "observed",
+            "validated_range": true
+          }
+        }
+      },
+      "assertions": [
+        {
+          "name": "database reachable with expected version",
+          "ok": true,
+          "detail": "SELECT VERSION() rc=0 version='8.0.11-TiDB-v8.5.0' expected_contains='v8.5.0'"
+        },
+        {
+          "name": "setup create-owned-fixture return code",
+          "ok": true,
+          "detail": "rc=0 expected=0 stderr=''"
+        },
+        {
+          "name": "setup create-owned-fixture: ghost policy absent from the catalog",
+          "ok": true,
+          "detail": "rc=0 output='0' expected='0'"
+        },
+        {
+          "name": "exit code",
+          "ok": true,
+          "detail": "rc=0 expected=0"
+        },
+        {
+          "name": "verdict",
+          "ok": true,
+          "detail": "verdict='pass'"
+        },
+        {
+          "name": "top-level statements",
+          "ok": true,
+          "detail": "statements=1 expected=1"
+        },
+        {
+          "name": "zero findings",
+          "ok": true,
+          "detail": "findings=0"
+        },
+        {
+          "name": "no diagnostics",
+          "ok": true,
+          "detail": "diagnostics=[]"
+        },
+        {
+          "name": "no unsupported",
+          "ok": true,
+          "detail": "unsupported=[]"
+        },
+        {
+          "name": "aggregate coverage",
+          "ok": true,
+          "detail": "coverage='complete'"
+        },
+        {
+          "name": "per-statement coverage",
+          "ok": true,
+          "detail": "statement_coverage=['complete']"
+        },
+        {
+          "name": "evidence gap count",
+          "ok": true,
+          "detail": "gaps=0"
+        },
+        {
+          "name": "fail_on_triggered",
+          "ok": true,
+          "detail": "fail_on_triggered=False"
+        },
+        {
+          "name": "post-verify audit did not fabricate a binding",
+          "ok": true,
+          "detail": "rc=0 output='' expected=''"
+        },
+        {
+          "name": "execute native bind to a missing policy refuses (8239) return code",
+          "ok": true,
+          "detail": "rc=1 expected=1 stderr=\"ERROR 8239 (HY000) at line 1: Unknown placement policy 'ghost'\""
+        },
+        {
+          "name": "structure refused bind leaves the table unbound",
+          "ok": true,
+          "detail": "rc=0 output='' expected=''"
+        },
+        {
+          "name": "teardown drop fixture return code",
+          "ok": true,
+          "detail": "rc=0 expected=0 stderr=''"
+        }
+      ],
+      "status": "pass",
+      "command": [
+        "/private/tmp/ddl-golden-t20g/T20/bin/deltascope",
+        "audit",
+        "--dialect",
+        "tidb",
+        "--sql",
+        "ALTER TABLE t PLACEMENT POLICY=ghost;",
+        "--config",
+        "/private/tmp/ddl-golden-t20g/T20/golden-policy-t20-placement.yaml",
+        "--format",
+        "json",
+        "--host",
+        "127.0.0.1",
+        "--port",
+        "24000",
+        "--user",
+        "root",
+        "--schema",
+        "t20m_bind_missing",
+        "--fail-on",
+        "blocker"
+      ]
+    },
+    {
+      "case_id": "T20.meta.tidb85-default-unbind",
+      "kind": "cli_metadata",
+      "cli_case": "tidb85-default-unbind",
+      "anchor": "tidb85",
+      "dialect": "tidb",
+      "input_sql": "ALTER TABLE t PLACEMENT POLICY=DEFAULT;",
+      "policy_profile": "t20-placement",
+      "policy_path": "/private/tmp/ddl-golden-t20g/T20/golden-policy-t20-placement.yaml",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 24000,
+        "user": "root",
+        "schema": "t20m_default"
+      },
+      "expected": {
+        "exit": 0,
+        "verdict": "pass",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "complete",
+        "statement_coverage": [
+          "complete"
+        ],
+        "evidence_gaps": 0,
+        "fail_on_triggered": false
+      },
+      "actual": {
+        "database": {
+          "product": "tidb",
+          "image": "pingcap/tidb:v8.5.0",
+          "image_digest": "pingcap/tidb@sha256:490861bd4a2fa643dbe76b77ffecafcad66e6a42774e580b82f4ec2429a80e57",
+          "container": "deltascope-ddl-golden-tidb85",
+          "reachable": true,
+          "version": "8.0.11-TiDB-v8.5.0"
+        },
+        "setup": [
+          {
+            "name": "create-owned-fixture",
+            "sql": "CREATE DATABASE t20m_default;CREATE PLACEMENT POLICY t20m_p PRIMARY_REGION='us-east-1' REGIONS='us-east-1' FOLLOWERS=2;CREATE TABLE t20m_default.t (id INT PRIMARY KEY) PLACEMENT POLICY=t20m_p",
+            "rc": 0,
+            "stdout": "",
+            "stderr": "",
+            "verify": [
+              {
+                "assert": "fixture table starts bound",
+                "sql": "SELECT TIDB_PLACEMENT_POLICY_NAME FROM information_schema.TABLES WHERE TABLE_SCHEMA='t20m_default' AND TABLE_NAME='t'",
+                "rc": 0,
+                "output": "t20m_p",
+                "stderr": ""
+              }
+            ]
+          }
+        ],
+        "post_verify": [
+          {
+            "assert": "audit did not mutate the existing binding",
+            "sql": "SELECT COALESCE(TIDB_PLACEMENT_POLICY_NAME,'') FROM information_schema.TABLES WHERE TABLE_SCHEMA='t20m_default' AND TABLE_NAME='t'",
+            "rc": 0,
+            "output": "t20m_p",
+            "stderr": ""
+          }
+        ],
+        "execute": [
+          {
+            "name": "native DEFAULT unbind lands",
+            "sql": "ALTER TABLE t20m_default.t PLACEMENT POLICY=DEFAULT;",
+            "rc": 0,
+            "stdout": "",
+            "stderr": ""
+          }
+        ],
+        "structure": [
+          {
+            "assert": "catalog proves the unbind",
+            "sql": "SELECT COALESCE(TIDB_PLACEMENT_POLICY_NAME,'') FROM information_schema.TABLES WHERE TABLE_SCHEMA='t20m_default' AND TABLE_NAME='t'",
+            "rc": 0,
+            "output": "",
+            "stderr": ""
+          }
+        ],
+        "teardown": [
+          {
+            "name": "drop fixture",
+            "sql": "DROP DATABASE IF EXISTS t20m_default;DROP PLACEMENT POLICY IF EXISTS t20m_p",
+            "rc": 0,
+            "stderr": ""
+          }
+        ],
+        "exit": 0,
+        "stdout": "{\"verdict\":\"pass\",\"coverage\":{\"status\":\"complete\"},\"summary\":{\"statements\":1,\"blockers\":0,\"warnings\":0,\"notices\":0},\"statements\":[{\"index\":0,\"kind\":\"ddl\",\"raw_sql\":\"ALTER TABLE t PLACEMENT POLICY=DEFAULT;\",\"normalized_sql\":\"ALTER TABLE t PLACEMENT POLICY=DEFAULT\",\"coverage\":{\"status\":\"complete\"}}],\"version\":{\"product\":\"tidb\",\"version\":\"8.5.0\",\"major\":8,\"minor\":5,\"patch\":0,\"source\":\"observed\",\"validated_range\":true},\"fail_on_triggered\":false,\"rule_summary\":{\"loaded\":1,\"applicable\":1,\"skipped\":[]},\"context\":{\"mode\":\"metadata-aware\",\"dialect\":\"tidb\",\"dialect_source\":\"detected\",\"schema\":\"t20m_default\",\"schema_source\":\"flag\"}}\n",
+        "stderr": "",
+        "parsed": {
+          "verdict": "pass",
+          "coverage": {
+            "status": "complete"
+          },
+          "summary": {
+            "statements": 1,
+            "blockers": 0,
+            "warnings": 0,
+            "notices": 0
+          },
+          "statements": [
+            {
+              "index": 0,
+              "kind": "ddl",
+              "raw_sql": "ALTER TABLE t PLACEMENT POLICY=DEFAULT;",
+              "normalized_sql": "ALTER TABLE t PLACEMENT POLICY=DEFAULT",
+              "coverage": {
+                "status": "complete"
+              }
+            }
+          ],
+          "version": {
+            "product": "tidb",
+            "version": "8.5.0",
+            "major": 8,
+            "minor": 5,
+            "patch": 0,
+            "source": "observed",
+            "validated_range": true
+          },
+          "fail_on_triggered": false,
+          "rule_summary": {
+            "loaded": 1,
+            "applicable": 1,
+            "skipped": []
+          },
+          "context": {
+            "mode": "metadata-aware",
+            "dialect": "tidb",
+            "dialect_source": "detected",
+            "schema": "t20m_default",
+            "schema_source": "flag"
+          }
+        },
+        "version_evidence": {
+          "target_raw": null,
+          "target_canonical": null,
+          "observed_raw": "8.0.11-TiDB-v8.5.0",
+          "observed_canonical": {
+            "product": "tidb",
+            "version": "8.5.0"
+          },
+          "resolved": {
+            "product": "tidb",
+            "version": "8.5.0",
+            "major": 8,
+            "minor": 5,
+            "patch": 0,
+            "source": "observed",
+            "validated_range": true
+          }
+        }
+      },
+      "assertions": [
+        {
+          "name": "database reachable with expected version",
+          "ok": true,
+          "detail": "SELECT VERSION() rc=0 version='8.0.11-TiDB-v8.5.0' expected_contains='v8.5.0'"
+        },
+        {
+          "name": "setup create-owned-fixture return code",
+          "ok": true,
+          "detail": "rc=0 expected=0 stderr=''"
+        },
+        {
+          "name": "setup create-owned-fixture: fixture table starts bound",
+          "ok": true,
+          "detail": "rc=0 output='t20m_p' expected='t20m_p'"
+        },
+        {
+          "name": "exit code",
+          "ok": true,
+          "detail": "rc=0 expected=0"
+        },
+        {
+          "name": "verdict",
+          "ok": true,
+          "detail": "verdict='pass'"
+        },
+        {
+          "name": "top-level statements",
+          "ok": true,
+          "detail": "statements=1 expected=1"
+        },
+        {
+          "name": "zero findings",
+          "ok": true,
+          "detail": "findings=0"
+        },
+        {
+          "name": "no diagnostics",
+          "ok": true,
+          "detail": "diagnostics=[]"
+        },
+        {
+          "name": "no unsupported",
+          "ok": true,
+          "detail": "unsupported=[]"
+        },
+        {
+          "name": "aggregate coverage",
+          "ok": true,
+          "detail": "coverage='complete'"
+        },
+        {
+          "name": "per-statement coverage",
+          "ok": true,
+          "detail": "statement_coverage=['complete']"
+        },
+        {
+          "name": "evidence gap count",
+          "ok": true,
+          "detail": "gaps=0"
+        },
+        {
+          "name": "fail_on_triggered",
+          "ok": true,
+          "detail": "fail_on_triggered=False"
+        },
+        {
+          "name": "post-verify audit did not mutate the existing binding",
+          "ok": true,
+          "detail": "rc=0 output='t20m_p' expected='t20m_p'"
+        },
+        {
+          "name": "execute native DEFAULT unbind lands return code",
+          "ok": true,
+          "detail": "rc=0 expected=0 stderr=''"
+        },
+        {
+          "name": "structure catalog proves the unbind",
+          "ok": true,
+          "detail": "rc=0 output='' expected=''"
+        },
+        {
+          "name": "teardown drop fixture return code",
+          "ok": true,
+          "detail": "rc=0 expected=0 stderr=''"
+        }
+      ],
+      "status": "pass",
+      "command": [
+        "/private/tmp/ddl-golden-t20g/T20/bin/deltascope",
+        "audit",
+        "--dialect",
+        "tidb",
+        "--sql",
+        "ALTER TABLE t PLACEMENT POLICY=DEFAULT;",
+        "--config",
+        "/private/tmp/ddl-golden-t20g/T20/golden-policy-t20-placement.yaml",
+        "--format",
+        "json",
+        "--host",
+        "127.0.0.1",
+        "--port",
+        "24000",
+        "--user",
+        "root",
+        "--schema",
+        "t20m_default",
+        "--fail-on",
+        "blocker"
+      ]
+    },
+    {
+      "case_id": "T20.meta.tidb85-drop-bound-refused",
+      "kind": "cli_metadata",
+      "cli_case": "tidb85-drop-bound-refused",
+      "anchor": "tidb85",
+      "dialect": "tidb",
+      "input_sql": "DROP PLACEMENT POLICY t20m_p;",
+      "policy_profile": "t20-placement",
+      "policy_path": "/private/tmp/ddl-golden-t20g/T20/golden-policy-t20-placement.yaml",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 24000,
+        "user": "root",
+        "schema": "t20m_drop_bound"
+      },
+      "expected": {
+        "exit": 0,
+        "verdict": "pass",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "complete",
+        "statement_coverage": [
+          "complete"
+        ],
+        "evidence_gaps": 0,
+        "fail_on_triggered": false
+      },
+      "actual": {
+        "database": {
+          "product": "tidb",
+          "image": "pingcap/tidb:v8.5.0",
+          "image_digest": "pingcap/tidb@sha256:490861bd4a2fa643dbe76b77ffecafcad66e6a42774e580b82f4ec2429a80e57",
+          "container": "deltascope-ddl-golden-tidb85",
+          "reachable": true,
+          "version": "8.0.11-TiDB-v8.5.0"
+        },
+        "setup": [
+          {
+            "name": "create-owned-fixture",
+            "sql": "CREATE DATABASE t20m_drop_bound;CREATE PLACEMENT POLICY t20m_p PRIMARY_REGION='us-east-1' REGIONS='us-east-1' FOLLOWERS=2;CREATE TABLE t20m_drop_bound.t (id INT PRIMARY KEY) PLACEMENT POLICY=t20m_p",
+            "rc": 0,
+            "stdout": "",
+            "stderr": "",
+            "verify": [
+              {
+                "assert": "policy starts bound",
+                "sql": "SELECT TIDB_PLACEMENT_POLICY_NAME FROM information_schema.TABLES WHERE TABLE_SCHEMA='t20m_drop_bound' AND TABLE_NAME='t'",
+                "rc": 0,
+                "output": "t20m_p",
+                "stderr": ""
+              }
+            ]
+          }
+        ],
+        "post_verify": [
+          {
+            "assert": "refused drop keeps the policy",
+            "sql": "SELECT COUNT(*) FROM information_schema.PLACEMENT_POLICIES WHERE POLICY_NAME='t20m_p'",
+            "rc": 0,
+            "output": "1",
+            "stderr": ""
+          }
+        ],
+        "execute": [
+          {
+            "name": "native bound-policy drop refuses (8241)",
+            "sql": "DROP PLACEMENT POLICY t20m_p;",
+            "rc": 1,
+            "stdout": "",
+            "stderr": "ERROR 8241 (HY000) at line 1: Placement policy 't20m_p' is still in use"
+          }
+        ],
+        "structure": [],
+        "teardown": [
+          {
+            "name": "drop fixture",
+            "sql": "DROP DATABASE IF EXISTS t20m_drop_bound;DROP PLACEMENT POLICY IF EXISTS t20m_p",
+            "rc": 0,
+            "stderr": ""
+          }
+        ],
+        "exit": 0,
+        "stdout": "{\"verdict\":\"pass\",\"coverage\":{\"status\":\"complete\"},\"summary\":{\"statements\":1,\"blockers\":0,\"warnings\":0,\"notices\":0},\"statements\":[{\"index\":0,\"kind\":\"ddl\",\"raw_sql\":\"DROP PLACEMENT POLICY t20m_p;\",\"normalized_sql\":\"DROP PLACEMENT POLICY t20m_p\",\"coverage\":{\"status\":\"complete\"}}],\"version\":{\"product\":\"tidb\",\"version\":\"8.5.0\",\"major\":8,\"minor\":5,\"patch\":0,\"source\":\"observed\",\"validated_range\":true},\"fail_on_triggered\":false,\"rule_summary\":{\"loaded\":1,\"applicable\":1,\"skipped\":[]},\"context\":{\"mode\":\"metadata-aware\",\"dialect\":\"tidb\",\"dialect_source\":\"detected\",\"schema\":\"t20m_drop_bound\",\"schema_source\":\"flag\"}}\n",
+        "stderr": "",
+        "parsed": {
+          "verdict": "pass",
+          "coverage": {
+            "status": "complete"
+          },
+          "summary": {
+            "statements": 1,
+            "blockers": 0,
+            "warnings": 0,
+            "notices": 0
+          },
+          "statements": [
+            {
+              "index": 0,
+              "kind": "ddl",
+              "raw_sql": "DROP PLACEMENT POLICY t20m_p;",
+              "normalized_sql": "DROP PLACEMENT POLICY t20m_p",
+              "coverage": {
+                "status": "complete"
+              }
+            }
+          ],
+          "version": {
+            "product": "tidb",
+            "version": "8.5.0",
+            "major": 8,
+            "minor": 5,
+            "patch": 0,
+            "source": "observed",
+            "validated_range": true
+          },
+          "fail_on_triggered": false,
+          "rule_summary": {
+            "loaded": 1,
+            "applicable": 1,
+            "skipped": []
+          },
+          "context": {
+            "mode": "metadata-aware",
+            "dialect": "tidb",
+            "dialect_source": "detected",
+            "schema": "t20m_drop_bound",
+            "schema_source": "flag"
+          }
+        },
+        "version_evidence": {
+          "target_raw": null,
+          "target_canonical": null,
+          "observed_raw": "8.0.11-TiDB-v8.5.0",
+          "observed_canonical": {
+            "product": "tidb",
+            "version": "8.5.0"
+          },
+          "resolved": {
+            "product": "tidb",
+            "version": "8.5.0",
+            "major": 8,
+            "minor": 5,
+            "patch": 0,
+            "source": "observed",
+            "validated_range": true
+          }
+        }
+      },
+      "assertions": [
+        {
+          "name": "database reachable with expected version",
+          "ok": true,
+          "detail": "SELECT VERSION() rc=0 version='8.0.11-TiDB-v8.5.0' expected_contains='v8.5.0'"
+        },
+        {
+          "name": "setup create-owned-fixture return code",
+          "ok": true,
+          "detail": "rc=0 expected=0 stderr=''"
+        },
+        {
+          "name": "setup create-owned-fixture: policy starts bound",
+          "ok": true,
+          "detail": "rc=0 output='t20m_p' expected='t20m_p'"
+        },
+        {
+          "name": "exit code",
+          "ok": true,
+          "detail": "rc=0 expected=0"
+        },
+        {
+          "name": "verdict",
+          "ok": true,
+          "detail": "verdict='pass'"
+        },
+        {
+          "name": "top-level statements",
+          "ok": true,
+          "detail": "statements=1 expected=1"
+        },
+        {
+          "name": "zero findings",
+          "ok": true,
+          "detail": "findings=0"
+        },
+        {
+          "name": "no diagnostics",
+          "ok": true,
+          "detail": "diagnostics=[]"
+        },
+        {
+          "name": "no unsupported",
+          "ok": true,
+          "detail": "unsupported=[]"
+        },
+        {
+          "name": "aggregate coverage",
+          "ok": true,
+          "detail": "coverage='complete'"
+        },
+        {
+          "name": "per-statement coverage",
+          "ok": true,
+          "detail": "statement_coverage=['complete']"
+        },
+        {
+          "name": "evidence gap count",
+          "ok": true,
+          "detail": "gaps=0"
+        },
+        {
+          "name": "fail_on_triggered",
+          "ok": true,
+          "detail": "fail_on_triggered=False"
+        },
+        {
+          "name": "post-verify refused drop keeps the policy",
+          "ok": true,
+          "detail": "rc=0 output='1' expected='1'"
+        },
+        {
+          "name": "execute native bound-policy drop refuses (8241) return code",
+          "ok": true,
+          "detail": "rc=1 expected=1 stderr=\"ERROR 8241 (HY000) at line 1: Placement policy 't20m_p' is still in use\""
+        },
+        {
+          "name": "teardown drop fixture return code",
+          "ok": true,
+          "detail": "rc=0 expected=0 stderr=''"
+        }
+      ],
+      "status": "pass",
+      "command": [
+        "/private/tmp/ddl-golden-t20g/T20/bin/deltascope",
+        "audit",
+        "--dialect",
+        "tidb",
+        "--sql",
+        "DROP PLACEMENT POLICY t20m_p;",
+        "--config",
+        "/private/tmp/ddl-golden-t20g/T20/golden-policy-t20-placement.yaml",
+        "--format",
+        "json",
+        "--host",
+        "127.0.0.1",
+        "--port",
+        "24000",
+        "--user",
+        "root",
+        "--schema",
+        "t20m_drop_bound",
+        "--fail-on",
+        "blocker"
+      ]
+    },
+    {
+      "case_id": "T20.meta.tidb85-schema-bind",
+      "kind": "cli_metadata",
+      "cli_case": "tidb85-schema-bind",
+      "anchor": "tidb85",
+      "dialect": "tidb",
+      "input_sql": "ALTER DATABASE t20m_schema_bind_d PLACEMENT POLICY=t20m_p;",
+      "policy_profile": "t20-placement",
+      "policy_path": "/private/tmp/ddl-golden-t20g/T20/golden-policy-t20-placement.yaml",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 24000,
+        "user": "root",
+        "schema": "t20m_schema_bind"
+      },
+      "expected": {
+        "exit": 0,
+        "verdict": "review",
+        "statements": 1,
+        "findings": 1,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "complete",
+        "statement_coverage": [
+          "complete"
+        ],
+        "evidence_gaps": 0,
+        "fail_on_triggered": false,
+        "finding_entries": [
+          {
+            "index": 0,
+            "rule_id": "ddl.tidb.placement.warn",
+            "level": "warning"
+          }
+        ]
+      },
+      "actual": {
+        "database": {
+          "product": "tidb",
+          "image": "pingcap/tidb:v8.5.0",
+          "image_digest": "pingcap/tidb@sha256:490861bd4a2fa643dbe76b77ffecafcad66e6a42774e580b82f4ec2429a80e57",
+          "container": "deltascope-ddl-golden-tidb85",
+          "reachable": true,
+          "version": "8.0.11-TiDB-v8.5.0"
+        },
+        "setup": [
+          {
+            "name": "create-owned-fixture",
+            "sql": "CREATE DATABASE t20m_schema_bind;CREATE DATABASE t20m_schema_bind_d;CREATE PLACEMENT POLICY t20m_p PRIMARY_REGION='us-east-1' REGIONS='us-east-1' FOLLOWERS=2",
+            "rc": 0,
+            "stdout": "",
+            "stderr": ""
+          }
+        ],
+        "post_verify": [
+          {
+            "assert": "audit did not bind the schema",
+            "sql": "SELECT COALESCE(TIDB_PLACEMENT_POLICY_NAME,'') FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='t20m_schema_bind_d'",
+            "rc": 0,
+            "output": "",
+            "stderr": ""
+          }
+        ],
+        "execute": [
+          {
+            "name": "native schema bind lands",
+            "sql": "ALTER DATABASE t20m_schema_bind_d PLACEMENT POLICY=t20m_p;",
+            "rc": 0,
+            "stdout": "",
+            "stderr": ""
+          }
+        ],
+        "structure": [
+          {
+            "assert": "catalog proves the schema binding",
+            "sql": "SELECT COALESCE(TIDB_PLACEMENT_POLICY_NAME,'') FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='t20m_schema_bind_d'",
+            "rc": 0,
+            "output": "t20m_p",
+            "stderr": ""
+          }
+        ],
+        "teardown": [
+          {
+            "name": "drop fixture",
+            "sql": "DROP DATABASE IF EXISTS t20m_schema_bind;DROP DATABASE IF EXISTS t20m_schema_bind_d;DROP PLACEMENT POLICY IF EXISTS t20m_p",
+            "rc": 0,
+            "stderr": ""
+          }
+        ],
+        "exit": 0,
+        "stdout": "{\"verdict\":\"review\",\"coverage\":{\"status\":\"complete\"},\"summary\":{\"statements\":1,\"blockers\":0,\"warnings\":1,\"notices\":0},\"statements\":[{\"index\":0,\"kind\":\"ddl\",\"raw_sql\":\"ALTER DATABASE t20m_schema_bind_d PLACEMENT POLICY=t20m_p;\",\"normalized_sql\":\"ALTER DATABASE t20m_schema_bind_d PLACEMENT POLICY=t20m_p\",\"findings\":[{\"rule_id\":\"ddl.tidb.placement.warn\",\"level\":\"warning\",\"message\":\"PLACEMENT POLICY \\\"t20m_p\\\" binds schema \\\"t20m_schema_bind_d\\\" to a topology policy\",\"statement_kind\":\"ddl\",\"location\":{\"line\":1,\"column\":1},\"suggestion\":\"verify the placement policy's region constraints, replica counts, and PD/TiKV topology prerequisites intentionally — a bound policy reassigns the object's physical placement\",\"metadata\":{\"action\":\"alter_schema\",\"policy\":\"t20m_p\",\"target\":\"t20m_schema_bind_d\",\"target_kind\":\"schema\"},\"explanation\":{\"summary\":\"Warn on DDL tidb placement warn\",\"why\":\"The statement reached a caution rule that highlights an operational trade-off.\",\"risk\":\"Ignoring this rule can weaken schema-governance guarantees and make changes harder to review safely.\",\"suggestion\":\"verify the placement policy's region constraints, replica counts, and PD/TiKV topology prerequisites intentionally — a bound policy reassigns the object's physical placement\"}}],\"coverage\":{\"status\":\"complete\"}}],\"version\":{\"product\":\"tidb\",\"version\":\"8.5.0\",\"major\":8,\"minor\":5,\"patch\":0,\"source\":\"observed\",\"validated_range\":true},\"fail_on_triggered\":false,\"rule_summary\":{\"loaded\":1,\"applicable\":1,\"skipped\":[]},\"context\":{\"mode\":\"metadata-aware\",\"dialect\":\"tidb\",\"dialect_source\":\"detected\",\"schema\":\"t20m_schema_bind\",\"schema_source\":\"flag\"}}\n",
+        "stderr": "",
+        "parsed": {
+          "verdict": "review",
+          "coverage": {
+            "status": "complete"
+          },
+          "summary": {
+            "statements": 1,
+            "blockers": 0,
+            "warnings": 1,
+            "notices": 0
+          },
+          "statements": [
+            {
+              "index": 0,
+              "kind": "ddl",
+              "raw_sql": "ALTER DATABASE t20m_schema_bind_d PLACEMENT POLICY=t20m_p;",
+              "normalized_sql": "ALTER DATABASE t20m_schema_bind_d PLACEMENT POLICY=t20m_p",
+              "findings": [
+                {
+                  "rule_id": "ddl.tidb.placement.warn",
+                  "level": "warning",
+                  "message": "PLACEMENT POLICY \"t20m_p\" binds schema \"t20m_schema_bind_d\" to a topology policy",
+                  "statement_kind": "ddl",
+                  "location": {
+                    "line": 1,
+                    "column": 1
+                  },
+                  "suggestion": "verify the placement policy's region constraints, replica counts, and PD/TiKV topology prerequisites intentionally — a bound policy reassigns the object's physical placement",
+                  "metadata": {
+                    "action": "alter_schema",
+                    "policy": "t20m_p",
+                    "target": "t20m_schema_bind_d",
+                    "target_kind": "schema"
+                  },
+                  "explanation": {
+                    "summary": "Warn on DDL tidb placement warn",
+                    "why": "The statement reached a caution rule that highlights an operational trade-off.",
+                    "risk": "Ignoring this rule can weaken schema-governance guarantees and make changes harder to review safely.",
+                    "suggestion": "verify the placement policy's region constraints, replica counts, and PD/TiKV topology prerequisites intentionally — a bound policy reassigns the object's physical placement"
+                  }
+                }
+              ],
+              "coverage": {
+                "status": "complete"
+              }
+            }
+          ],
+          "version": {
+            "product": "tidb",
+            "version": "8.5.0",
+            "major": 8,
+            "minor": 5,
+            "patch": 0,
+            "source": "observed",
+            "validated_range": true
+          },
+          "fail_on_triggered": false,
+          "rule_summary": {
+            "loaded": 1,
+            "applicable": 1,
+            "skipped": []
+          },
+          "context": {
+            "mode": "metadata-aware",
+            "dialect": "tidb",
+            "dialect_source": "detected",
+            "schema": "t20m_schema_bind",
+            "schema_source": "flag"
+          }
+        },
+        "version_evidence": {
+          "target_raw": null,
+          "target_canonical": null,
+          "observed_raw": "8.0.11-TiDB-v8.5.0",
+          "observed_canonical": {
+            "product": "tidb",
+            "version": "8.5.0"
+          },
+          "resolved": {
+            "product": "tidb",
+            "version": "8.5.0",
+            "major": 8,
+            "minor": 5,
+            "patch": 0,
+            "source": "observed",
+            "validated_range": true
+          }
+        }
+      },
+      "assertions": [
+        {
+          "name": "database reachable with expected version",
+          "ok": true,
+          "detail": "SELECT VERSION() rc=0 version='8.0.11-TiDB-v8.5.0' expected_contains='v8.5.0'"
+        },
+        {
+          "name": "setup create-owned-fixture return code",
+          "ok": true,
+          "detail": "rc=0 expected=0 stderr=''"
+        },
+        {
+          "name": "exit code",
+          "ok": true,
+          "detail": "rc=0 expected=0"
+        },
+        {
+          "name": "verdict",
+          "ok": true,
+          "detail": "verdict='review'"
+        },
+        {
+          "name": "top-level statements",
+          "ok": true,
+          "detail": "statements=1 expected=1"
+        },
+        {
+          "name": "zero findings",
+          "ok": true,
+          "detail": "findings=1"
+        },
+        {
+          "name": "no diagnostics",
+          "ok": true,
+          "detail": "diagnostics=[]"
+        },
+        {
+          "name": "no unsupported",
+          "ok": true,
+          "detail": "unsupported=[]"
+        },
+        {
+          "name": "aggregate coverage",
+          "ok": true,
+          "detail": "coverage='complete'"
+        },
+        {
+          "name": "per-statement coverage",
+          "ok": true,
+          "detail": "statement_coverage=['complete']"
+        },
+        {
+          "name": "evidence gap count",
+          "ok": true,
+          "detail": "gaps=0"
+        },
+        {
+          "name": "finding entries",
+          "ok": true,
+          "detail": "findings=[(0, 'ddl.tidb.placement.warn', 'warning')] expected=[(0, 'ddl.tidb.placement.warn', 'warning')]"
+        },
+        {
+          "name": "fail_on_triggered",
+          "ok": true,
+          "detail": "fail_on_triggered=False"
+        },
+        {
+          "name": "post-verify audit did not bind the schema",
+          "ok": true,
+          "detail": "rc=0 output='' expected=''"
+        },
+        {
+          "name": "execute native schema bind lands return code",
+          "ok": true,
+          "detail": "rc=0 expected=0 stderr=''"
+        },
+        {
+          "name": "structure catalog proves the schema binding",
+          "ok": true,
+          "detail": "rc=0 output='t20m_p' expected='t20m_p'"
+        },
+        {
+          "name": "teardown drop fixture return code",
+          "ok": true,
+          "detail": "rc=0 expected=0 stderr=''"
+        }
+      ],
+      "status": "pass",
+      "command": [
+        "/private/tmp/ddl-golden-t20g/T20/bin/deltascope",
+        "audit",
+        "--dialect",
+        "tidb",
+        "--sql",
+        "ALTER DATABASE t20m_schema_bind_d PLACEMENT POLICY=t20m_p;",
+        "--config",
+        "/private/tmp/ddl-golden-t20g/T20/golden-policy-t20-placement.yaml",
+        "--format",
+        "json",
+        "--host",
+        "127.0.0.1",
+        "--port",
+        "24000",
+        "--user",
+        "root",
+        "--schema",
+        "t20m_schema_bind",
+        "--fail-on",
+        "blocker"
+      ]
+    },
+    {
+      "case_id": "T20.meta.tidb85-partition-bind",
+      "kind": "cli_metadata",
+      "cli_case": "tidb85-partition-bind",
+      "anchor": "tidb85",
+      "dialect": "tidb",
+      "input_sql": "ALTER TABLE t PARTITION p0 PLACEMENT POLICY=t20m_p;",
+      "policy_profile": "t20-placement",
+      "policy_path": "/private/tmp/ddl-golden-t20g/T20/golden-policy-t20-placement.yaml",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 24000,
+        "user": "root",
+        "schema": "t20m_partition_bind"
+      },
+      "expected": {
+        "exit": 0,
+        "verdict": "review",
+        "statements": 1,
+        "findings": 1,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "complete",
+        "statement_coverage": [
+          "complete"
+        ],
+        "evidence_gaps": 0,
+        "finding_entries": [
+          {
+            "index": 0,
+            "rule_id": "ddl.tidb.placement.warn",
+            "level": "warning"
+          }
+        ],
+        "fail_on_triggered": false
+      },
+      "actual": {
+        "database": {
+          "product": "tidb",
+          "image": "pingcap/tidb:v8.5.0",
+          "image_digest": "pingcap/tidb@sha256:490861bd4a2fa643dbe76b77ffecafcad66e6a42774e580b82f4ec2429a80e57",
+          "container": "deltascope-ddl-golden-tidb85",
+          "reachable": true,
+          "version": "8.0.11-TiDB-v8.5.0"
+        },
+        "setup": [
+          {
+            "name": "create-owned-fixture",
+            "sql": "CREATE DATABASE t20m_partition_bind;CREATE PLACEMENT POLICY t20m_p PRIMARY_REGION='us-east-1' REGIONS='us-east-1' FOLLOWERS=2;CREATE TABLE t20m_partition_bind.t (id INT PRIMARY KEY) PARTITION BY RANGE (id) (PARTITION p0 VALUES LESS THAN (10), PARTITION p1 VALUES LESS THAN (100))",
+            "rc": 0,
+            "stdout": "",
+            "stderr": ""
+          }
+        ],
+        "post_verify": [
+          {
+            "assert": "audit did not bind the member",
+            "sql": "SELECT COALESCE(TIDB_PLACEMENT_POLICY_NAME,'') FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='t20m_partition_bind' AND TABLE_NAME='t' AND PARTITION_NAME='p0'",
+            "rc": 0,
+            "output": "",
+            "stderr": ""
+          }
+        ],
+        "execute": [
+          {
+            "name": "native member bind lands",
+            "sql": "ALTER TABLE t20m_partition_bind.t PARTITION p0 PLACEMENT POLICY=t20m_p;",
+            "rc": 0,
+            "stdout": "",
+            "stderr": ""
+          }
+        ],
+        "structure": [
+          {
+            "assert": "catalog proves the member binding",
+            "sql": "SELECT COALESCE(TIDB_PLACEMENT_POLICY_NAME,'') FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='t20m_partition_bind' AND TABLE_NAME='t' AND PARTITION_NAME='p0'",
+            "rc": 0,
+            "output": "t20m_p",
+            "stderr": ""
+          }
+        ],
+        "teardown": [
+          {
+            "name": "drop fixture",
+            "sql": "DROP DATABASE IF EXISTS t20m_partition_bind;DROP PLACEMENT POLICY IF EXISTS t20m_p",
+            "rc": 0,
+            "stderr": ""
+          }
+        ],
+        "exit": 0,
+        "stdout": "{\"verdict\":\"review\",\"coverage\":{\"status\":\"complete\"},\"summary\":{\"statements\":1,\"blockers\":0,\"warnings\":1,\"notices\":0},\"statements\":[{\"index\":0,\"kind\":\"ddl\",\"raw_sql\":\"ALTER TABLE t PARTITION p0 PLACEMENT POLICY=t20m_p;\",\"normalized_sql\":\"ALTER TABLE t PARTITION p0 PLACEMENT POLICY=t20m_p\",\"findings\":[{\"rule_id\":\"ddl.tidb.placement.warn\",\"level\":\"warning\",\"message\":\"PLACEMENT POLICY \\\"t20m_p\\\" binds partition \\\"t\\\" to a topology policy\",\"statement_kind\":\"ddl\",\"location\":{\"line\":1,\"column\":1},\"suggestion\":\"verify the placement policy's region constraints, replica counts, and PD/TiKV topology prerequisites intentionally — a bound policy reassigns the object's physical placement\",\"metadata\":{\"action\":\"placement_policy\",\"policy\":\"t20m_p\",\"target\":\"t\",\"target_kind\":\"partition\"},\"explanation\":{\"summary\":\"Warn on DDL tidb placement warn\",\"why\":\"The statement reached a caution rule that highlights an operational trade-off.\",\"risk\":\"Ignoring this rule can weaken schema-governance guarantees and make changes harder to review safely.\",\"suggestion\":\"verify the placement policy's region constraints, replica counts, and PD/TiKV topology prerequisites intentionally — a bound policy reassigns the object's physical placement\"}}],\"coverage\":{\"status\":\"complete\"}}],\"version\":{\"product\":\"tidb\",\"version\":\"8.5.0\",\"major\":8,\"minor\":5,\"patch\":0,\"source\":\"observed\",\"validated_range\":true},\"fail_on_triggered\":false,\"rule_summary\":{\"loaded\":1,\"applicable\":1,\"skipped\":[]},\"context\":{\"mode\":\"metadata-aware\",\"dialect\":\"tidb\",\"dialect_source\":\"detected\",\"schema\":\"t20m_partition_bind\",\"schema_source\":\"flag\"}}\n",
+        "stderr": "",
+        "parsed": {
+          "verdict": "review",
+          "coverage": {
+            "status": "complete"
+          },
+          "summary": {
+            "statements": 1,
+            "blockers": 0,
+            "warnings": 1,
+            "notices": 0
+          },
+          "statements": [
+            {
+              "index": 0,
+              "kind": "ddl",
+              "raw_sql": "ALTER TABLE t PARTITION p0 PLACEMENT POLICY=t20m_p;",
+              "normalized_sql": "ALTER TABLE t PARTITION p0 PLACEMENT POLICY=t20m_p",
+              "findings": [
+                {
+                  "rule_id": "ddl.tidb.placement.warn",
+                  "level": "warning",
+                  "message": "PLACEMENT POLICY \"t20m_p\" binds partition \"t\" to a topology policy",
+                  "statement_kind": "ddl",
+                  "location": {
+                    "line": 1,
+                    "column": 1
+                  },
+                  "suggestion": "verify the placement policy's region constraints, replica counts, and PD/TiKV topology prerequisites intentionally — a bound policy reassigns the object's physical placement",
+                  "metadata": {
+                    "action": "placement_policy",
+                    "policy": "t20m_p",
+                    "target": "t",
+                    "target_kind": "partition"
+                  },
+                  "explanation": {
+                    "summary": "Warn on DDL tidb placement warn",
+                    "why": "The statement reached a caution rule that highlights an operational trade-off.",
+                    "risk": "Ignoring this rule can weaken schema-governance guarantees and make changes harder to review safely.",
+                    "suggestion": "verify the placement policy's region constraints, replica counts, and PD/TiKV topology prerequisites intentionally — a bound policy reassigns the object's physical placement"
+                  }
+                }
+              ],
+              "coverage": {
+                "status": "complete"
+              }
+            }
+          ],
+          "version": {
+            "product": "tidb",
+            "version": "8.5.0",
+            "major": 8,
+            "minor": 5,
+            "patch": 0,
+            "source": "observed",
+            "validated_range": true
+          },
+          "fail_on_triggered": false,
+          "rule_summary": {
+            "loaded": 1,
+            "applicable": 1,
+            "skipped": []
+          },
+          "context": {
+            "mode": "metadata-aware",
+            "dialect": "tidb",
+            "dialect_source": "detected",
+            "schema": "t20m_partition_bind",
+            "schema_source": "flag"
+          }
+        },
+        "version_evidence": {
+          "target_raw": null,
+          "target_canonical": null,
+          "observed_raw": "8.0.11-TiDB-v8.5.0",
+          "observed_canonical": {
+            "product": "tidb",
+            "version": "8.5.0"
+          },
+          "resolved": {
+            "product": "tidb",
+            "version": "8.5.0",
+            "major": 8,
+            "minor": 5,
+            "patch": 0,
+            "source": "observed",
+            "validated_range": true
+          }
+        }
+      },
+      "assertions": [
+        {
+          "name": "database reachable with expected version",
+          "ok": true,
+          "detail": "SELECT VERSION() rc=0 version='8.0.11-TiDB-v8.5.0' expected_contains='v8.5.0'"
+        },
+        {
+          "name": "setup create-owned-fixture return code",
+          "ok": true,
+          "detail": "rc=0 expected=0 stderr=''"
+        },
+        {
+          "name": "exit code",
+          "ok": true,
+          "detail": "rc=0 expected=0"
+        },
+        {
+          "name": "verdict",
+          "ok": true,
+          "detail": "verdict='review'"
+        },
+        {
+          "name": "top-level statements",
+          "ok": true,
+          "detail": "statements=1 expected=1"
+        },
+        {
+          "name": "zero findings",
+          "ok": true,
+          "detail": "findings=1"
+        },
+        {
+          "name": "no diagnostics",
+          "ok": true,
+          "detail": "diagnostics=[]"
+        },
+        {
+          "name": "no unsupported",
+          "ok": true,
+          "detail": "unsupported=[]"
+        },
+        {
+          "name": "aggregate coverage",
+          "ok": true,
+          "detail": "coverage='complete'"
+        },
+        {
+          "name": "per-statement coverage",
+          "ok": true,
+          "detail": "statement_coverage=['complete']"
+        },
+        {
+          "name": "evidence gap count",
+          "ok": true,
+          "detail": "gaps=0"
+        },
+        {
+          "name": "finding entries",
+          "ok": true,
+          "detail": "findings=[(0, 'ddl.tidb.placement.warn', 'warning')] expected=[(0, 'ddl.tidb.placement.warn', 'warning')]"
+        },
+        {
+          "name": "fail_on_triggered",
+          "ok": true,
+          "detail": "fail_on_triggered=False"
+        },
+        {
+          "name": "post-verify audit did not bind the member",
+          "ok": true,
+          "detail": "rc=0 output='' expected=''"
+        },
+        {
+          "name": "execute native member bind lands return code",
+          "ok": true,
+          "detail": "rc=0 expected=0 stderr=''"
+        },
+        {
+          "name": "structure catalog proves the member binding",
+          "ok": true,
+          "detail": "rc=0 output='t20m_p' expected='t20m_p'"
+        },
+        {
+          "name": "teardown drop fixture return code",
+          "ok": true,
+          "detail": "rc=0 expected=0 stderr=''"
+        }
+      ],
+      "status": "pass",
+      "command": [
+        "/private/tmp/ddl-golden-t20g/T20/bin/deltascope",
+        "audit",
+        "--dialect",
+        "tidb",
+        "--sql",
+        "ALTER TABLE t PARTITION p0 PLACEMENT POLICY=t20m_p;",
+        "--config",
+        "/private/tmp/ddl-golden-t20g/T20/golden-policy-t20-placement.yaml",
+        "--format",
+        "json",
+        "--host",
+        "127.0.0.1",
+        "--port",
+        "24000",
+        "--user",
+        "root",
+        "--schema",
+        "t20m_partition_bind",
+        "--fail-on",
+        "blocker"
+      ]
+    },
+    {
+      "case_id": "T20.meta.tidb85-alter-policy",
+      "kind": "cli_metadata",
+      "cli_case": "tidb85-alter-policy",
+      "anchor": "tidb85",
+      "dialect": "tidb",
+      "input_sql": "ALTER PLACEMENT POLICY t20m_p FOLLOWERS=3;",
+      "policy_profile": "t20-placement",
+      "policy_path": "/private/tmp/ddl-golden-t20g/T20/golden-policy-t20-placement.yaml",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 24000,
+        "user": "root",
+        "schema": "t20m_alter_policy"
+      },
+      "expected": {
+        "exit": 0,
+        "verdict": "review",
+        "statements": 1,
+        "findings": 1,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "complete",
+        "statement_coverage": [
+          "complete"
+        ],
+        "evidence_gaps": 0,
+        "finding_entries": [
+          {
+            "index": 0,
+            "rule_id": "ddl.tidb.placement.warn",
+            "level": "warning"
+          }
+        ],
+        "fail_on_triggered": false
+      },
+      "actual": {
+        "database": {
+          "product": "tidb",
+          "image": "pingcap/tidb:v8.5.0",
+          "image_digest": "pingcap/tidb@sha256:490861bd4a2fa643dbe76b77ffecafcad66e6a42774e580b82f4ec2429a80e57",
+          "container": "deltascope-ddl-golden-tidb85",
+          "reachable": true,
+          "version": "8.0.11-TiDB-v8.5.0"
+        },
+        "setup": [
+          {
+            "name": "create-owned-fixture",
+            "sql": "CREATE DATABASE t20m_alter_policy;CREATE PLACEMENT POLICY t20m_p PRIMARY_REGION='us-east-1' REGIONS='us-east-1' FOLLOWERS=2",
+            "rc": 0,
+            "stdout": "",
+            "stderr": ""
+          }
+        ],
+        "post_verify": [],
+        "execute": [
+          {
+            "name": "native policy alter lands",
+            "sql": "ALTER PLACEMENT POLICY t20m_p FOLLOWERS=3;",
+            "rc": 0,
+            "stdout": "",
+            "stderr": ""
+          }
+        ],
+        "structure": [],
+        "teardown": [
+          {
+            "name": "drop fixture",
+            "sql": "DROP DATABASE IF EXISTS t20m_alter_policy;DROP PLACEMENT POLICY IF EXISTS t20m_p",
+            "rc": 0,
+            "stderr": ""
+          }
+        ],
+        "exit": 0,
+        "stdout": "{\"verdict\":\"review\",\"coverage\":{\"status\":\"complete\"},\"summary\":{\"statements\":1,\"blockers\":0,\"warnings\":1,\"notices\":0},\"statements\":[{\"index\":0,\"kind\":\"ddl\",\"raw_sql\":\"ALTER PLACEMENT POLICY t20m_p FOLLOWERS=3;\",\"normalized_sql\":\"ALTER PLACEMENT POLICY t20m_p FOLLOWERS=3\",\"findings\":[{\"rule_id\":\"ddl.tidb.placement.warn\",\"level\":\"warning\",\"message\":\"ALTER PLACEMENT POLICY \\\"t20m_p\\\" changes the topology contract of every bound object\",\"statement_kind\":\"ddl\",\"location\":{\"line\":1,\"column\":1},\"suggestion\":\"verify the placement policy's region constraints, replica counts, and PD/TiKV topology prerequisites intentionally — a bound policy reassigns the object's physical placement\",\"metadata\":{\"action\":\"alter_placement_policy\",\"policy\":\"t20m_p\"},\"explanation\":{\"summary\":\"Warn on DDL tidb placement warn\",\"why\":\"The statement reached a caution rule that highlights an operational trade-off.\",\"risk\":\"Ignoring this rule can weaken schema-governance guarantees and make changes harder to review safely.\",\"suggestion\":\"verify the placement policy's region constraints, replica counts, and PD/TiKV topology prerequisites intentionally — a bound policy reassigns the object's physical placement\"}}],\"coverage\":{\"status\":\"complete\"}}],\"version\":{\"product\":\"tidb\",\"version\":\"8.5.0\",\"major\":8,\"minor\":5,\"patch\":0,\"source\":\"observed\",\"validated_range\":true},\"fail_on_triggered\":false,\"rule_summary\":{\"loaded\":1,\"applicable\":1,\"skipped\":[]},\"context\":{\"mode\":\"metadata-aware\",\"dialect\":\"tidb\",\"dialect_source\":\"detected\",\"schema\":\"t20m_alter_policy\",\"schema_source\":\"flag\"}}\n",
+        "stderr": "",
+        "parsed": {
+          "verdict": "review",
+          "coverage": {
+            "status": "complete"
+          },
+          "summary": {
+            "statements": 1,
+            "blockers": 0,
+            "warnings": 1,
+            "notices": 0
+          },
+          "statements": [
+            {
+              "index": 0,
+              "kind": "ddl",
+              "raw_sql": "ALTER PLACEMENT POLICY t20m_p FOLLOWERS=3;",
+              "normalized_sql": "ALTER PLACEMENT POLICY t20m_p FOLLOWERS=3",
+              "findings": [
+                {
+                  "rule_id": "ddl.tidb.placement.warn",
+                  "level": "warning",
+                  "message": "ALTER PLACEMENT POLICY \"t20m_p\" changes the topology contract of every bound object",
+                  "statement_kind": "ddl",
+                  "location": {
+                    "line": 1,
+                    "column": 1
+                  },
+                  "suggestion": "verify the placement policy's region constraints, replica counts, and PD/TiKV topology prerequisites intentionally — a bound policy reassigns the object's physical placement",
+                  "metadata": {
+                    "action": "alter_placement_policy",
+                    "policy": "t20m_p"
+                  },
+                  "explanation": {
+                    "summary": "Warn on DDL tidb placement warn",
+                    "why": "The statement reached a caution rule that highlights an operational trade-off.",
+                    "risk": "Ignoring this rule can weaken schema-governance guarantees and make changes harder to review safely.",
+                    "suggestion": "verify the placement policy's region constraints, replica counts, and PD/TiKV topology prerequisites intentionally — a bound policy reassigns the object's physical placement"
+                  }
+                }
+              ],
+              "coverage": {
+                "status": "complete"
+              }
+            }
+          ],
+          "version": {
+            "product": "tidb",
+            "version": "8.5.0",
+            "major": 8,
+            "minor": 5,
+            "patch": 0,
+            "source": "observed",
+            "validated_range": true
+          },
+          "fail_on_triggered": false,
+          "rule_summary": {
+            "loaded": 1,
+            "applicable": 1,
+            "skipped": []
+          },
+          "context": {
+            "mode": "metadata-aware",
+            "dialect": "tidb",
+            "dialect_source": "detected",
+            "schema": "t20m_alter_policy",
+            "schema_source": "flag"
+          }
+        },
+        "version_evidence": {
+          "target_raw": null,
+          "target_canonical": null,
+          "observed_raw": "8.0.11-TiDB-v8.5.0",
+          "observed_canonical": {
+            "product": "tidb",
+            "version": "8.5.0"
+          },
+          "resolved": {
+            "product": "tidb",
+            "version": "8.5.0",
+            "major": 8,
+            "minor": 5,
+            "patch": 0,
+            "source": "observed",
+            "validated_range": true
+          }
+        }
+      },
+      "assertions": [
+        {
+          "name": "database reachable with expected version",
+          "ok": true,
+          "detail": "SELECT VERSION() rc=0 version='8.0.11-TiDB-v8.5.0' expected_contains='v8.5.0'"
+        },
+        {
+          "name": "setup create-owned-fixture return code",
+          "ok": true,
+          "detail": "rc=0 expected=0 stderr=''"
+        },
+        {
+          "name": "exit code",
+          "ok": true,
+          "detail": "rc=0 expected=0"
+        },
+        {
+          "name": "verdict",
+          "ok": true,
+          "detail": "verdict='review'"
+        },
+        {
+          "name": "top-level statements",
+          "ok": true,
+          "detail": "statements=1 expected=1"
+        },
+        {
+          "name": "zero findings",
+          "ok": true,
+          "detail": "findings=1"
+        },
+        {
+          "name": "no diagnostics",
+          "ok": true,
+          "detail": "diagnostics=[]"
+        },
+        {
+          "name": "no unsupported",
+          "ok": true,
+          "detail": "unsupported=[]"
+        },
+        {
+          "name": "aggregate coverage",
+          "ok": true,
+          "detail": "coverage='complete'"
+        },
+        {
+          "name": "per-statement coverage",
+          "ok": true,
+          "detail": "statement_coverage=['complete']"
+        },
+        {
+          "name": "evidence gap count",
+          "ok": true,
+          "detail": "gaps=0"
+        },
+        {
+          "name": "finding entries",
+          "ok": true,
+          "detail": "findings=[(0, 'ddl.tidb.placement.warn', 'warning')] expected=[(0, 'ddl.tidb.placement.warn', 'warning')]"
+        },
+        {
+          "name": "fail_on_triggered",
+          "ok": true,
+          "detail": "fail_on_triggered=False"
+        },
+        {
+          "name": "execute native policy alter lands return code",
+          "ok": true,
+          "detail": "rc=0 expected=0 stderr=''"
+        },
+        {
+          "name": "teardown drop fixture return code",
+          "ok": true,
+          "detail": "rc=0 expected=0 stderr=''"
+        }
+      ],
+      "status": "pass",
+      "command": [
+        "/private/tmp/ddl-golden-t20g/T20/bin/deltascope",
+        "audit",
+        "--dialect",
+        "tidb",
+        "--sql",
+        "ALTER PLACEMENT POLICY t20m_p FOLLOWERS=3;",
+        "--config",
+        "/private/tmp/ddl-golden-t20g/T20/golden-policy-t20-placement.yaml",
+        "--format",
+        "json",
+        "--host",
+        "127.0.0.1",
+        "--port",
+        "24000",
+        "--user",
+        "root",
+        "--schema",
+        "t20m_alter_policy",
+        "--fail-on",
+        "blocker"
+      ]
+    }
+  ],
+  "executed_count": 23,
+  "cleanup": {
+    "compose_down_rc": 0,
+    "compose_down_stderr": "Container deltascope-ddl-golden-mysql84 Stopping \n Container deltascope-ddl-golden-mysql80 Stopping \n Container deltascope-ddl-golden-tidb85-client Stopping \n Container deltascope-ddl-golden-mysql57 Stopping \n Container deltascope-ddl-golden-mysql80 Stopped \n Container deltascope-ddl-golden-mysql80 Removing \n Container deltascope-ddl-golden-mysql80 Removed \n Container deltascope-ddl-golden-mysql84 Stopped \n Container deltascope-ddl-golden-mysql84 Removing \n Container deltascope-ddl-golden-mysql84 Removed \n Container deltascope-ddl-golden-mysql57 Stopped \n Container deltascope-ddl-golden-mysql57 Removing \n Container deltascope-ddl-golden-mysql57 Removed \n Container deltascope-ddl-golden-tidb85-client Stopped \n Container deltascope-ddl-golden-tidb85-client Removing \n Container deltascope-ddl-golden-tidb85-client Removed \n Container deltascope-ddl-golden-tidb85 Stopping \n Container deltascope-ddl-golden-tidb85 Stopped \n Container deltascope-ddl-golden-tidb85 Removing \n Container deltascope-ddl-golden-tidb85 Removed",
+    "residual_containers": []
+  },
+  "container_health": {
+    "deltascope-ddl-golden-mysql57": "healthy",
+    "deltascope-ddl-golden-mysql80": "healthy",
+    "deltascope-ddl-golden-mysql84": "healthy",
+    "deltascope-ddl-golden-tidb85": "healthy",
+    "deltascope-ddl-golden-tidb85-client": "healthy"
+  }
+}
