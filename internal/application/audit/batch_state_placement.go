@@ -288,17 +288,6 @@ func (s *batchState) placementAddRef(policy, ref string) {
 	entry.refs[ref] = struct{}{}
 }
 
-// placementRemoveRef drops one proven inbound reference. Dropping a
-// bound object also drops its reference — the set stays proven when the
-// drop is proven.
-func (s *batchState) placementRemoveRef(policy, ref string) {
-	entry := s.placementPolicies()[policy]
-	if entry == nil {
-		return
-	}
-	delete(entry.refs, ref)
-}
-
 // placementRefsUnder removes every proven reference whose identity carries
 // the given prefix — the drop of a bound object dissolves its references.
 func (s *batchState) placementRefsUnder(prefix string) {

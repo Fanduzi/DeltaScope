@@ -155,12 +155,13 @@ func (s *batchState) applyPartitionOperation(targets []spec.Table, alter *spec.A
 // discards the member map first (native 21-24, T20-R4).
 func (s *batchState) publishAlterMemberPlacements(shape, next *spec.TableSnapshot, alter *spec.Alter, facts *spec.PlacementFacts, displaySchema, tableName string) {
 	table := strings.ToLower(tableName)
-	if alter.Action == "partition" {
+	switch alter.Action {
+	case "partition":
 		// The declared scheme replaces every member binding for this
 		// table — retire all old partition refs and restart the map.
 		s.placementRefsUnder("partition:" + strings.ToLower(displaySchema) + "." + table + ".")
 		next.PartitionPlacements = map[string]string{}
-	} else if alter.Action == "reorganize_partition" {
+	case "reorganize_partition":
 		for _, member := range alter.Partitions {
 			name := strings.ToLower(member)
 			if next.PartitionPlacements != nil {
