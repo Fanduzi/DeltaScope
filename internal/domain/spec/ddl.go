@@ -72,6 +72,11 @@ type DDL struct {
 	// `p0..p(n-1)` set the engine assigns under `PARTITIONS n` on both
 	// products. Empty when no members are declared.
 	PartitionNames []string `json:"partition_names,omitempty"`
+	// PartitionPrimaryNames is an internal capability projection (never
+	// serialized): the primary member names a TiDB-ignored subpartition
+	// axis concealed. Set only when a structured subpartition marker is
+	// present; nil means no concealed names (T20-R4).
+	PartitionPrimaryNames []string `json:"-"`
 	// PartitionDefs carries the declared member definitions with their
 	// boundary clauses — the fidelity layer PartitionNames alone cannot
 	// keep (member identity + bound). nil when no explicit members are

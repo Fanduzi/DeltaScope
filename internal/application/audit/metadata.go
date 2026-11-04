@@ -372,6 +372,23 @@ func (state *batchState) enrichStatements(ctx context.Context, request *Metadata
 		// Placement-policy facts attach the registry's ordered pre-state —
 		// the existence and bound-set answer this statement adjudicates
 		// against (T20/#99).
+		if targets := spec.CollectPlacementBindings(enriched[i].DDL); len(targets) != 0 || isPlacementPolicyLifecycle(enriched[i].DDL) {
+			state.seedPlacementCatalog()
+			facts := spec.AssessPlacementBindings(dialect, targets, state.placementPolicyExists)
+			fillPlacementTargetSchema(facts, requestSchema)
+			if isPlacementPolicyLifecycle(enriched[i].DDL) {
+				name := enriched[i].DDL.ObjectName
+				facts.Policy = &spec.PlacementPolicyPremise{
+					Name:         name,
+					Exists:       copyBoolPtr(state.placementPolicyExists(name)),
+					BoundTargets: state.placementBoundSet(name),
+				}
+			}
+			if enriched[i].Metadata == nil {
+				enriched[i].Metadata = &spec.Metadata{Schema: requestSchema, Instance: instanceFacts, Version: resolvedVersion}
+			}
+			enriched[i].Metadata.Placement = facts
+		}
 		if projection := state.placementPoliciesProjection(); projection != nil {
 			if enriched[i].Metadata == nil {
 				enriched[i].Metadata = &spec.Metadata{Schema: requestSchema, Instance: instanceFacts, Version: resolvedVersion}

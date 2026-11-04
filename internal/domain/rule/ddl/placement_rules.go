@@ -48,20 +48,10 @@ func appliesToTiDBPlacementSurface(statement spec.Statement) bool {
 		spec.DDLOperationAlterRangePlacement:
 		return true
 	}
-	if ddl.PlacementBinding != nil {
-		return true
-	}
-	for i := range ddl.Alter {
-		if ddl.Alter[i].Action == "placement_policy" && ddl.Alter[i].Placement != nil {
-			return true
-		}
-	}
-	for i := range ddl.PartitionDefs {
-		if ddl.PartitionDefs[i].Placement != nil && !ddl.PartitionDefs[i].Placement.Default {
-			return true
-		}
-	}
-	return false
+	// Every authored binding applies — direct binds, member definitions,
+	// alter member defs and partition-scheme defs; DEFAULT retained so an
+	// unbind still reaches its premise checks (T20-R4).
+	return len(spec.CollectPlacementBindings(ddl)) > 0
 }
 
 func (r tidbPlacementWarnRule) Evaluate(ctx context.Context, statement spec.Statement) ([]rule.Finding, error) {
@@ -72,26 +62,42 @@ func (r tidbPlacementWarnRule) Evaluate(ctx context.Context, statement spec.Stat
 		return nil, err
 	}
 	outcome := r.outcome(statement)
-	if !outcome.warning {
-		return nil, nil
+	var findings []rule.Finding
+	for _, warn := range outcome.warnings {
+		metadata := map[string]any{
+			"policy": warn.policy,
+			"action": warn.action,
+		}
+		if warn.target != "" {
+			metadata["target"] = warn.target
+		}
+		if warn.targetKind != "" {
+			metadata["target_kind"] = warn.targetKind
+		}
+		if warn.schema != "" {
+			metadata["schema"] = warn.schema
+		}
+		if warn.table != "" {
+			metadata["table"] = warn.table
+		}
+		if warn.partition != "" {
+			metadata["partition"] = warn.partition
+		}
+		if warn.bindingSource != "" && warn.actionIndex >= 0 {
+			metadata["action_index"] = warn.actionIndex
+		}
+		if warn.bindingSource != "" && warn.bindingSource != "direct" {
+			metadata["binding_source"] = warn.bindingSource
+		}
+		findings = append(findings, rule.Finding{
+			RuleID:     r.ID(),
+			Level:      r.level,
+			Message:    warn.message,
+			Suggestion: "verify the placement policy's region constraints, replica counts, and PD/TiKV topology prerequisites intentionally — a bound policy reassigns the object's physical placement",
+			Metadata:   metadata,
+		})
 	}
-	metadata := map[string]any{
-		"policy": outcome.policy,
-		"action": outcome.action,
-	}
-	if outcome.target != "" {
-		metadata["target"] = outcome.target
-	}
-	if outcome.targetKind != "" {
-		metadata["target_kind"] = outcome.targetKind
-	}
-	return []rule.Finding{{
-		RuleID:     r.ID(),
-		Level:      r.level,
-		Message:    outcome.message,
-		Suggestion: "verify the placement policy's region constraints, replica counts, and PD/TiKV topology prerequisites intentionally — a bound policy reassigns the object's physical placement",
-		Metadata:   metadata,
-	}}, nil
+	return findings, nil
 }
 
 func (r tidbPlacementWarnRule) EvidenceGaps(statement spec.Statement) []rule.EvidenceGap {
@@ -129,15 +135,28 @@ func placementTopologyFacts(statement spec.Statement) *spec.PlacementTopologyFac
 	return statement.Metadata.PlacementTopology
 }
 
+// placementWarnRecord is one applicable binding occurrence's warning
+// payload — bounded identities only, never raw regions or constraints.
+type placementWarnRecord struct {
+	policy        string
+	action        string
+	target        string
+	targetKind    string
+	message       string
+	schema        string
+	table         string
+	partition     string
+	bindingSource string
+	actionIndex   int
+}
+
+// placementRuleOutcome aggregates a statement's binding warnings (one per
+// applied occurrence), the deduplicated missing evidence, and whether any
+// applied bind owes the single statement-level topology gap (T20-R4).
 type placementRuleOutcome struct {
-	warning    bool
-	topology   bool
-	message    string
-	policy     string
-	action     string
-	target     string
-	targetKind string
-	facts      []string
+	warnings []placementWarnRecord
+	topology bool
+	facts    []string
 }
 
 func (r tidbPlacementWarnRule) outcome(statement spec.Statement) placementRuleOutcome {
@@ -145,22 +164,22 @@ func (r tidbPlacementWarnRule) outcome(statement spec.Statement) placementRuleOu
 	if ddl == nil {
 		return placementRuleOutcome{}
 	}
-	policies := placementPolicyFacts(statement)
 	switch ddl.Operation {
 	case spec.DDLOperationCreatePlacementPolicy:
-		exists := placementPolicyExists(policies, ddl.ObjectName)
+		exists, _ := placementLifecyclePremise(statement, ddl.ObjectName)
 		switch spec.PlacementCreateOutcome(statement.Dialect,
 			ddl.Options["or_replace"] == "true", ddl.Options["if_not_exists"] == "true", exists) {
 		case spec.PlacementApplied:
 			outcome := placementRuleOutcome{
-				warning: true,
+				warnings: []placementWarnRecord{{
+					policy:  strings.ToLower(ddl.ObjectName),
+					action:  "create_placement_policy",
+					message: fmt.Sprintf("CREATE PLACEMENT POLICY %q declares a topology policy objects can bind to", ddl.ObjectName),
+				}},
 				// OR REPLACE on a proven-existing policy rewrites the
 				// definition every bound object deploys — the same live
 				// reassignment an ALTER POLICY performs.
 				topology: ddl.Options["or_replace"] == "true" && exists != nil && *exists,
-				policy:   strings.ToLower(ddl.ObjectName),
-				action:   "create_placement_policy",
-				message:  fmt.Sprintf("CREATE PLACEMENT POLICY %q declares a topology policy objects can bind to", ddl.ObjectName),
 			}
 			if ddl.Options["or_replace"] == "true" && exists == nil {
 				// Whether the replace rewrote live bound deployments is
@@ -173,83 +192,159 @@ func (r tidbPlacementWarnRule) outcome(statement spec.Statement) placementRuleOu
 			return placementRuleOutcome{facts: []string{"placement_policy.catalog"}}
 		}
 	case spec.DDLOperationAlterPlacementPolicy:
-		exists := placementPolicyExists(policies, ddl.ObjectName)
+		exists, _ := placementLifecyclePremise(statement, ddl.ObjectName)
 		switch spec.PlacementAlterOutcome(statement.Dialect, exists) {
 		case spec.PlacementApplied:
 			return placementRuleOutcome{
-				warning:  true,
+				warnings: []placementWarnRecord{{
+					policy:  strings.ToLower(ddl.ObjectName),
+					action:  "alter_placement_policy",
+					message: fmt.Sprintf("ALTER PLACEMENT POLICY %q changes the topology contract of every bound object", ddl.ObjectName),
+				}},
 				topology: true,
-				policy:   strings.ToLower(ddl.ObjectName),
-				action:   "alter_placement_policy",
-				message:  fmt.Sprintf("ALTER PLACEMENT POLICY %q changes the topology contract of every bound object", ddl.ObjectName),
 			}
 		case spec.PlacementUnproven:
 			return placementRuleOutcome{facts: []string{"placement_policy.catalog"}}
 		}
 	case spec.DDLOperationDropPlacementPolicy:
-		exists := placementPolicyExists(policies, ddl.ObjectName)
-		bound := placementBoundTargets(policies, ddl.ObjectName)
+		exists, bound := placementLifecyclePremise(statement, ddl.ObjectName)
 		switch spec.PlacementDropOutcome(statement.Dialect,
 			ddl.Options["if_exists"] == "true", exists, bound) {
 		case spec.PlacementApplied:
-			return placementRuleOutcome{
-				// An IF EXISTS no-op over proven absence removes nothing —
-				// the warning only fires when a policy provably existed.
-				warning: exists != nil && *exists,
-				policy:  strings.ToLower(ddl.ObjectName),
-				action:  "drop_placement_policy",
-				message: fmt.Sprintf("DROP PLACEMENT POLICY %q removes a topology policy", ddl.ObjectName),
+			out := placementRuleOutcome{}
+			// An IF EXISTS no-op over proven absence removes nothing —
+			// the warning only fires when a policy provably existed.
+			if exists != nil && *exists {
+				out.warnings = []placementWarnRecord{{
+					policy:  strings.ToLower(ddl.ObjectName),
+					action:  "drop_placement_policy",
+					message: fmt.Sprintf("DROP PLACEMENT POLICY %q removes a topology policy", ddl.ObjectName),
+				}}
 			}
+			return out
 		case spec.PlacementUnproven:
-			// Attribute the missing premise precisely: an unvouched
-			// catalog owes the catalog fact; a proven-existing policy
-			// whose bound set was never read owes bound_targets alone.
-			if policies == nil {
-				return placementRuleOutcome{facts: []string{"placement_policy.catalog", "placement_policy.bound_targets"}}
+			// Attribute the missing premise precisely on the per-target
+			// proof: unknown existence owes the catalog fact; a bound set
+			// never vouched owes bound_targets. An unvouched catalog is
+			// itself missing evidence — the bound uncertainty stems from
+			// it — so it is owed alongside (T20-R4).
+			var facts []string
+			if exists == nil || placementPolicyFacts(statement) == nil {
+				facts = append(facts, "placement_policy.catalog")
 			}
-			return placementRuleOutcome{facts: []string{"placement_policy.bound_targets"}}
+			if bound == nil {
+				facts = append(facts, "placement_policy.bound_targets")
+			}
+			return placementRuleOutcome{facts: facts}
 		}
 	case spec.DDLOperationAlterRangePlacement:
 		if spec.PlacementRangeOutcome(statement.Dialect, ddl.PlacementRange) != spec.PlacementApplied {
 			return placementRuleOutcome{}
 		}
-		return r.bindOutcome(statement, ddl.PlacementBinding, policies, "range:"+strings.ToLower(ddl.PlacementRange), "range", "alter_range_placement")
+		// The range's own binding rides the same per-record assessment —
+		// collected as a range target — so a subsequently-unknown policy
+		// can never read as a false scalar absence (T20-R4).
+		return r.bindingOutcome(statement)
 	default:
-		binding, action, target, targetKind := firstNamedPlacementBinding(ddl)
-		if binding == nil {
-			return placementRuleOutcome{}
-		}
-		return r.bindOutcome(statement, binding, policies, target, targetKind, action)
+		return r.bindingOutcome(statement)
 	}
 	return placementRuleOutcome{}
 }
 
-// bindOutcome adjudicates one authored assignment through the shared
-// tri-state outcome against the same catalog fact the ordered state
-// consumed. DEFAULT unbinds and missing-policy refusals stay silent —
-// nothing risky lands. A proven named bind warns; an unproven premise
-// reports the catalog gap.
-func (r tidbPlacementWarnRule) bindOutcome(statement spec.Statement, binding *spec.PlacementBinding, policies map[string]*spec.PlacementPolicyFact, target, targetKind, action string) placementRuleOutcome {
-	if binding == nil || binding.Default {
+// bindingOutcome consumes the per-statement adjudicated placement facts:
+// every collected binding — not just the first — so a later member def's
+// missing policy still suppresses the warning and owes no topology gap.
+// Aggregate or mutation refusal stays silent; an unproven aggregate owes
+// the catalog fact; an unproven mutation owes its bounded static facts;
+// otherwise each applied named binding earns its own warning while the
+// topology gap stays deduplicated at statement level (T20-R4).
+func (r tidbPlacementWarnRule) bindingOutcome(statement spec.Statement) placementRuleOutcome {
+	facts := placementFactsFor(statement)
+	if facts == nil {
 		return placementRuleOutcome{}
 	}
-	exists := placementPolicyExists(policies, binding.Policy)
-	switch spec.PlacementBindOutcome(statement.Dialect, *binding, exists) {
-	case spec.PlacementApplied:
-		return placementRuleOutcome{
-			warning:    true,
-			topology:   true,
-			policy:     binding.Policy,
-			action:     action,
-			target:     target,
-			targetKind: targetKind,
-			message:    fmt.Sprintf("PLACEMENT POLICY %q binds %s %q to a topology policy", binding.Policy, targetKind, target),
+	outcome := placementRuleOutcome{}
+	mutation := spec.PlacementOutcome(-1)
+	if facts.MutationOutcome != nil {
+		mutation = *facts.MutationOutcome
+	}
+	// DEFAULT-only bindings carry no placement premise — no warn and no
+	// gap, regardless of the mutation outcome (T20-R4).
+	named := false
+	for _, item := range facts.Bindings {
+		if !item.Target.Binding.Default {
+			named = true
+			break
 		}
-	case spec.PlacementUnproven:
-		return placementRuleOutcome{facts: []string{"placement_policy.catalog"}}
-	default:
-		return placementRuleOutcome{}
 	}
+	if !named {
+		return outcome
+	}
+	switch {
+	case facts.Outcome == spec.PlacementRefused || mutation == spec.PlacementRefused:
+		return outcome
+	case facts.Outcome == spec.PlacementUnproven:
+		outcome.facts = []string{"placement_policy.catalog"}
+		return outcome
+	case mutation == spec.PlacementUnproven:
+		outcome.facts = facts.RequiredFacts
+		return outcome
+	}
+	for _, binding := range facts.Bindings {
+		if binding.Outcome != spec.PlacementApplied || binding.Target.Binding.Default {
+			continue
+		}
+		target := binding.Target
+		display := target.Target
+		if display == "" {
+			display = target.Table
+		}
+		outcome.warnings = append(outcome.warnings, placementWarnRecord{
+			policy:        target.Binding.Policy,
+			action:        target.Action,
+			target:        display,
+			targetKind:    target.TargetKind,
+			schema:        target.Schema,
+			table:         target.Table,
+			partition:     target.Partition,
+			bindingSource: target.Source,
+			actionIndex:   target.ActionIndex,
+			message: fmt.Sprintf("If applied, PLACEMENT POLICY %q would bind %s %q to a topology policy",
+				target.Binding.Policy, target.TargetKind, display),
+		})
+		outcome.topology = true
+	}
+	return outcome
+}
+
+// placementFactsFor returns the enrichment-attached adjudicated facts or
+// builds the same assessment over the statement's catalog projection —
+// the fallback keeps bare rule-unit fixtures working without enrichment.
+func placementFactsFor(statement spec.Statement) *spec.PlacementFacts {
+	if statement.DDL == nil {
+		return nil
+	}
+	if statement.Metadata != nil && statement.Metadata.Placement != nil {
+		return statement.Metadata.Placement
+	}
+	policies := placementPolicyFacts(statement)
+	return spec.AssessPlacementBindings(statement.Dialect,
+		spec.CollectPlacementBindings(statement.DDL),
+		func(name string) *bool { return placementPolicyExists(policies, name) })
+}
+
+// placementLifecyclePremise prefers the lifecycle target's own per-statement
+// premise when it names the same policy — a proven-positive bound list
+// refuses DROP without laundering a partial catalog into a complete one.
+func placementLifecyclePremise(statement spec.Statement, name string) (*bool, *[]string) {
+	if statement.Metadata != nil && statement.Metadata.Placement != nil &&
+		statement.Metadata.Placement.Policy != nil &&
+		strings.EqualFold(statement.Metadata.Placement.Policy.Name, name) {
+		premise := statement.Metadata.Placement.Policy
+		return premise.Exists, premise.BoundTargets
+	}
+	policies := placementPolicyFacts(statement)
+	return placementPolicyExists(policies, name), placementBoundTargets(policies, name)
 }
 
 // placementPolicyFacts reads the ordered pre-state catalog the enrich pass
@@ -302,14 +397,10 @@ func (r tidbPlacementExistsRequireRule) Evaluate(ctx context.Context, statement 
 	if err := ctx.Err(); err != nil {
 		return nil, err
 	}
-	policies := placementPolicyFacts(statement)
-	if policies == nil {
-		return nil, nil // unvouched catalog — evidence gap carries it
-	}
 	ddl := statement.DDL
 	switch ddl.Operation {
 	case spec.DDLOperationCreatePlacementPolicy:
-		exists := placementPolicyExists(policies, ddl.ObjectName)
+		exists, _ := placementLifecyclePremise(statement, ddl.ObjectName)
 		if spec.PlacementCreateOutcome(statement.Dialect,
 			ddl.Options["or_replace"] == "true", ddl.Options["if_not_exists"] == "true",
 			exists) == spec.PlacementRefused {
@@ -319,100 +410,91 @@ func (r tidbPlacementExistsRequireRule) Evaluate(ctx context.Context, statement 
 		}
 		return nil, nil
 	case spec.DDLOperationAlterPlacementPolicy:
-		exists := placementPolicyExists(policies, ddl.ObjectName)
+		exists, _ := placementLifecyclePremise(statement, ddl.ObjectName)
 		if spec.PlacementAlterOutcome(statement.Dialect, exists) == spec.PlacementRefused {
 			return r.missingPolicyFinding(ddl.ObjectName, "alter_placement_policy", "", "")
 		}
 		return nil, nil
 	case spec.DDLOperationDropPlacementPolicy:
-		return r.dropFinding(statement, ddl, policies)
+		return r.dropFinding(statement, ddl)
 	case spec.DDLOperationAlterRangePlacement:
 		// A refused range name is a range premise, not a policy-existence
-		// premise — this rule stays silent there.
+		// premise — this rule stays silent there; the binding itself is
+		// adjudicated through the same per-record proof as every other
+		// authored assignment (T20-R4).
 		if spec.PlacementRangeOutcome(statement.Dialect, ddl.PlacementRange) != spec.PlacementApplied {
 			return nil, nil
 		}
-		return r.bindFinding(statement, ddl.PlacementBinding, policies,
-			"range:"+strings.ToLower(ddl.PlacementRange), "range", "alter_range_placement")
+		return r.bindingFindings(statement)
 	default:
-		binding, action, target, targetKind := firstNamedPlacementBinding(ddl)
-		if binding == nil {
-			return nil, nil
-		}
-		return r.bindFinding(statement, binding, policies, target, targetKind, action)
+		return r.bindingFindings(statement)
 	}
 }
 
-// firstNamedPlacementBinding returns the first authored named (non-DEFAULT)
-// placement binding the statement carries — the shared scan both placement
-// rules use: statement-level binding, alter action, partition def. A
-// DEFAULT clause is an unbind, never a named reference, so the scan skips
-// it and keeps looking (a CREATE TABLE can legitimately carry a table-level
-// = DEFAULT beside named partition binds).
-func firstNamedPlacementBinding(ddl *spec.DDL) (binding *spec.PlacementBinding, action, target, targetKind string) {
-	target = ""
-	targetKind = "table"
-	if ddl.Table != nil {
-		target = ddl.Table.Name
+// bindingFindings walks every collected binding record and emits one
+// missing-policy finding per refused named occurrence — per-object
+// registry proof, never a scalar read of a possibly-stale catalog map
+// (T20-R4).
+func (r tidbPlacementExistsRequireRule) bindingFindings(statement spec.Statement) ([]rule.Finding, error) {
+	facts := placementFactsFor(statement)
+	if facts == nil {
+		return nil, nil
 	}
-	if ddl.Operation == spec.DDLOperationCreateSchema || ddl.Operation == spec.DDLOperationAlterSchema {
-		targetKind = "schema"
-		target = ddl.ObjectName
-	}
-	if ddl.PlacementBinding != nil && !ddl.PlacementBinding.Default {
-		return ddl.PlacementBinding, strings.ToLower(string(ddl.Operation)), target, targetKind
-	}
-	for i := range ddl.Alter {
-		alter := &ddl.Alter[i]
-		if alter.Action == "placement_policy" && alter.Placement != nil && !alter.Placement.Default {
-			if len(alter.Partitions) > 0 {
-				targetKind = "partition"
-			}
-			return alter.Placement, "placement_policy", target, targetKind
+	var findings []rule.Finding
+	for _, binding := range facts.Bindings {
+		if binding.Outcome != spec.PlacementRefused || binding.Target.Binding.Default {
+			continue
 		}
-	}
-	for i := range ddl.PartitionDefs {
-		def := &ddl.PartitionDefs[i]
-		if def.Placement != nil && !def.Placement.Default {
-			return def.Placement, "create_table", target, "partition"
+		found, err := r.missingPolicyFinding(binding.Target.Binding.Policy,
+			binding.Target.Action, binding.Target.Target, binding.Target.TargetKind,
+			binding.Target)
+		if err != nil {
+			return nil, err
 		}
+		findings = append(findings, found...)
 	}
-	return nil, "", "", ""
+	return findings, nil
 }
 
 func (r tidbPlacementExistsRequireRule) EvidenceGaps(statement spec.Statement) []rule.EvidenceGap {
 	if !r.AppliesTo(statement) {
 		return nil
 	}
-	policies := placementPolicyFacts(statement)
 	ddl := statement.DDL
-	catalogGap := rule.EvidenceGap{
-		ReasonCode:    gapReasonUnknownTableState,
-		RequiredFacts: []string{"placement_policy.catalog"},
-	}
 	switch ddl.Operation {
-	case spec.DDLOperationCreatePlacementPolicy:
-		// OR REPLACE / IF NOT EXISTS disarm the existence premise.
-		if ddl.Options["or_replace"] == "true" || ddl.Options["if_not_exists"] == "true" {
+	case spec.DDLOperationCreatePlacementPolicy, spec.DDLOperationAlterPlacementPolicy:
+		if ddl.Operation == spec.DDLOperationCreatePlacementPolicy &&
+			(ddl.Options["or_replace"] == "true" || ddl.Options["if_not_exists"] == "true") {
 			return nil
 		}
-	case spec.DDLOperationAlterPlacementPolicy:
-		// always consults the catalog
+		// The lifecycle target's own proof decides — an unread
+		// existence premise owes the catalog fact; it never falls
+		// through silently (T20-R4).
+		if exists, _ := placementLifecyclePremise(statement, ddl.ObjectName); exists == nil {
+			return []rule.EvidenceGap{{
+				ReasonCode:    gapReasonUnknownTableState,
+				RequiredFacts: []string{"placement_policy.catalog"},
+			}}
+		}
+		return nil
 	case spec.DDLOperationDropPlacementPolicy:
 		// IF EXISTS disarms only the existence premise — the bound set
 		// stays a live premise because a proven-bound policy still
 		// refuses under IF EXISTS (native 8241 ignores the clause).
-		if policies == nil {
-			return []rule.EvidenceGap{{
-				ReasonCode:    gapReasonUnknownTableState,
-				RequiredFacts: []string{"placement_policy.catalog", "placement_policy.bound_targets"},
-			}}
+		// The per-target premise — not the global map — decides which
+		// fact is owed (T20-R4).
+		exists, bound := placementLifecyclePremise(statement, ddl.ObjectName)
+		var facts []string
+		if exists == nil || placementPolicyFacts(statement) == nil {
+			facts = append(facts, "placement_policy.catalog")
 		}
-		exists := placementPolicyExists(policies, ddl.ObjectName)
-		if *exists && placementBoundTargets(policies, ddl.ObjectName) == nil {
+		if bound == nil {
+			facts = append(facts, "placement_policy.bound_targets")
+		}
+		if len(facts) > 0 {
 			return []rule.EvidenceGap{{
 				ReasonCode:    gapReasonUnknownTableState,
-				RequiredFacts: []string{"placement_policy.bound_targets"},
+				RequiredFacts: facts,
 			}}
 		}
 		return nil
@@ -421,37 +503,39 @@ func (r tidbPlacementExistsRequireRule) EvidenceGaps(statement spec.Statement) [
 			ddl.PlacementBinding == nil || ddl.PlacementBinding.Default {
 			return nil
 		}
+		return r.bindingGaps(statement)
 	default:
-		binding, _, _, _ := firstNamedPlacementBinding(ddl)
-		if binding == nil {
-			return nil
-		}
-	}
-	if policies == nil {
-		return []rule.EvidenceGap{catalogGap}
+		return r.bindingGaps(statement)
 	}
 	return nil
 }
 
-// bindFinding surfaces the proven-absent policy behind a refused named
-// binding. A DEFAULT unbind and an unproven premise stay silent.
-func (r tidbPlacementExistsRequireRule) bindFinding(statement spec.Statement, binding *spec.PlacementBinding, policies map[string]*spec.PlacementPolicyFact, target, targetKind, action string) ([]rule.Finding, error) {
-	if binding == nil || binding.Default {
-		return nil, nil
+// bindingGaps reports the binding records' missing premise: a refused
+// statement carries no gap (the blocker finding explains it), an
+// unproven aggregate owes the catalog fact, and a decided statement
+// owes nothing — the per-object proof replaces the old global-map nil
+// test that could lose a gap after a complete seed plus unknown DROP
+// (T20-R4).
+func (r tidbPlacementExistsRequireRule) bindingGaps(statement spec.Statement) []rule.EvidenceGap {
+	facts := placementFactsFor(statement)
+	if facts == nil || facts.Outcome == spec.PlacementRefused ||
+		(facts.MutationOutcome != nil && *facts.MutationOutcome == spec.PlacementRefused) {
+		return nil
 	}
-	exists := placementPolicyExists(policies, binding.Policy)
-	if spec.PlacementBindOutcome(statement.Dialect, *binding, exists) != spec.PlacementRefused {
-		return nil, nil
+	if facts.Outcome == spec.PlacementUnproven {
+		return []rule.EvidenceGap{{
+			ReasonCode:    gapReasonUnknownTableState,
+			RequiredFacts: []string{"placement_policy.catalog"},
+		}}
 	}
-	return r.missingPolicyFinding(binding.Policy, action, target, targetKind)
+	return nil
 }
 
 // dropFinding adjudicates the drop's catalog premise: a bare drop of a
 // proven-absent policy refuses the missing policy, while a proven-bound
 // policy refuses the inbound references (native 8241).
-func (r tidbPlacementExistsRequireRule) dropFinding(statement spec.Statement, ddl *spec.DDL, policies map[string]*spec.PlacementPolicyFact) ([]rule.Finding, error) {
-	exists := placementPolicyExists(policies, ddl.ObjectName)
-	bound := placementBoundTargets(policies, ddl.ObjectName)
+func (r tidbPlacementExistsRequireRule) dropFinding(statement spec.Statement, ddl *spec.DDL) ([]rule.Finding, error) {
+	exists, bound := placementLifecyclePremise(statement, ddl.ObjectName)
 	if spec.PlacementDropOutcome(statement.Dialect,
 		ddl.Options["if_exists"] == "true", exists, bound) != spec.PlacementRefused {
 		return nil, nil
@@ -473,13 +557,31 @@ func (r tidbPlacementExistsRequireRule) dropFinding(statement spec.Statement, dd
 		})
 }
 
-func (r tidbPlacementExistsRequireRule) missingPolicyFinding(policy, action, target, targetKind string) ([]rule.Finding, error) {
+func (r tidbPlacementExistsRequireRule) missingPolicyFinding(policy, action, target, targetKind string, source ...spec.PlacementBindingTarget) ([]rule.Finding, error) {
 	metadata := map[string]any{"policy": strings.ToLower(policy), "action": action}
 	if target != "" {
 		metadata["target"] = target
 	}
 	if targetKind != "" {
 		metadata["target_kind"] = targetKind
+	}
+	if len(source) > 0 {
+		t := source[0]
+		if t.Schema != "" {
+			metadata["schema"] = t.Schema
+		}
+		if t.Table != "" {
+			metadata["table"] = t.Table
+		}
+		if t.Partition != "" {
+			metadata["partition"] = t.Partition
+		}
+		if t.ActionIndex >= 0 {
+			metadata["action_index"] = t.ActionIndex
+		}
+		if t.Source != "" && t.Source != "direct" {
+			metadata["binding_source"] = t.Source
+		}
 	}
 	return r.finding(
 		fmt.Sprintf("placement policy %q does not exist", policy),

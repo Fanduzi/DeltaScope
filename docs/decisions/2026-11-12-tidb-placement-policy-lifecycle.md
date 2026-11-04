@@ -94,7 +94,8 @@ dialect they can carry no placement semantics at all (T20-R2).
    refuse; missing range information is unproven. MySQL `ALTER RANGE`
    is a vendor boundary.
 7. **Rule `ddl.tidb.placement.warn`** is a warning-level statement rule
-   that fires once when a placement lifecycle or binding action is
+   that fires once for an applicable lifecycle action and once per
+   authored named binding occurrence when its static premises are
    proven applied; refused, unproven, and unbind outcomes stay silent
    (unproven yields evidence gaps instead). The rule never mutates
    ordered state; rule enablement does not change transitions.
@@ -196,8 +197,10 @@ acceptance review re-read #99 against the shipped profile:
     least one entry was present, and consumers read absent keys as
     proven-false — fabricating missing-policy blockers on unproven
     names. The projection now reads unvouched (nil) unless the registry
-    is proven-complete, matching the ordered state's own tri-state
-    answers; batch-proven entries lose nothing they can honestly claim.
+    is proven-complete. This protects untouched names from false
+    absence, although the catalog projection alone cannot carry every
+    independently proven in-batch fact; T20-R4 supplies a bounded
+    current-statement proof without changing catalog completeness.
 13. **Real-cluster evidence bounds the deferral.** A disposable
     1×PD + 3×TiKV + 1×TiDB v8.5.0 fixture (labels `region=t20rev`,
     `zone=z1..z3`, `host=h1..h3`, STRICT mode) proved the native
@@ -209,6 +212,58 @@ acceptance review re-read #99 against the shipped profile:
     `docs/verification/t20-tidb-placement-lifecycle/` beside the
     compose manifest; they bound the semantics the rules model but do
     not claim the product evaluates topology.
+
+### T20-R4 — complete occurrence collection and member transitions
+
+The fixed-tree acceptance review found two publicly reachable omissions:
+CREATE only checked the first named assignment, and ALTER member-definition
+assignments never reached placement applicability or reference maintenance.
+The repair uses one structural collection rather than separate source scans.
+
+14. **Preserve every authored assignment and its object identity.** Direct
+    schema/table/RANGE assignments, CREATE members, each ALTER direct
+    assignment and each ALTER member/scheme definition share one collector.
+    DEFAULT remains a record and cannot end a scan. Policy lookup deduplication
+    never removes distinct occurrences. Findings preserve bounded schema,
+    table, partition and action identity, with existing statement locations.
+    No raw placement constraints or fabricated source spans are introduced.
+15. **Adjudicate the enclosing operation before describing its change.**
+    Any proven missing binding dominates other unknown bindings. T14 still
+    owns partition method, member and boundary validity. Refused atomic
+    CREATE/ADD/REORGANIZE operations preserve exact pre-state and emit no
+    contradictory binding-change warning or topology gap. Applicable named
+    occurrences get conditional risk wording and a single per-rule topology
+    gap per statement. This does not change ALTER DATABASE's partial behavior.
+16. **Member publication includes reference maintenance.** ADD retains old
+    members and installs the new explicit assignments. REORGANIZE retires only
+    source identities before installing replacements. Native 8.5.0 proves
+    omitted/DEFAULT replacements do not copy the old member's override; their
+    effective inheritance remains through the table. Unknown effects withhold
+    affected facts and retain unaffected bindings. Individually proven refs
+    and exhaustive-set knowledge are distinct: a nonempty proven subset can
+    refuse DROP, while an incomplete empty set cannot authorize it. An owned,
+    current-target proof supplies these decisions to rules without publishing
+    a partial catalog as a complete map or mutating provider snapshots.
+    A replacement PARTITION BY retires the prior member directory and its
+    references as a whole; fixed 8.5.0 controls verify the new named/DEFAULT
+    assignments and missing-policy atomic refusal. Uncertain CREATE/member
+    operations also withdraw candidate policies' proven-empty reference
+    sets: withholding new positive references alone is insufficient.
+17. **TiDB subpartitions remain an explicit ignored capability boundary.**
+    Release-8.5 documents SUBPARTITION as unsupported; the fixed 8.5.0 native
+    CREATE probe returns Warning 8200 and keeps only the primary RANGE axis.
+    The original structural marker produces `tidb_subpartition` incomplete
+    coverage as an aspect, preserving sibling rule evaluation. State
+    normalization is restricted to CREATE TABLE with primary RANGE at
+    TiDB 8.5.0, on an owned copy of the declaration. The observed ignored
+    subaxis creates no child policy reference or missing-policy blocker.
+    Independently analyzable primary/table facts remain, with no new leaf
+    model or inferred MySQL/version behavior.
+
+The durable repair scope and evidence distinctions are in
+[the T20 contract](../work-plans/t20-tidb-placement-lifecycle/CONTRACT.md).
+The small unistore native checks prove catalog and DDL behavior only. Earlier
+PD/TiKV topology receipts retain their original product identities and meaning.
 
 ## Consequences
 
@@ -242,8 +297,10 @@ acceptance review re-read #99 against the shipped profile:
   table/schema/partition/range scope, 8239/8241 refusals, `= DEFAULT`
   unbind, `ALTER RANGE dist` 1105 — executed during development and
   encoded as `T20` Golden metadata cases.
-- Golden: `testdata/ddl-golden/T20.json` — 25 required case IDs across
-  four anchors; native receipts are evidence, not topology claims.
+- Golden: `testdata/ddl-golden/T20.json` retains the original 25 case
+  definitions across four anchors and adds seven live metadata cases plus
+  three offline controls for T20-R4. Execution and assertion totals belong to
+  the resulting artifact; native receipts are not topology claims.
 - T20-R3 public-path matrix: `batch_state_t20r3_test.go` — topology gap
   on applied binds/policy ALTERs, per-rule catalog-gap ownership,
   exists.require blocker on proven refusals, disarmed-premise silence,
@@ -251,3 +308,7 @@ acceptance review re-read #99 against the shipped profile:
 - Corpus: `testdata/sql-corpus/tidb/ddl/findings/placement_policy_missing.*`
   covers `ddl.tidb.placement.exists.require` on the supported-rule
   inventory.
+- T20-R4: `batch_state_t20r4_test.go` reconstructs the acceptance counterexamples
+  on the public AuditSQL seam and checks successor projections through real
+  parse/extract/enrich companions. The red receipts are reconstructed behavior
+  evidence, not the deleted independent review's original logs.

@@ -378,6 +378,13 @@ func statementCoverageAspects(dialect spec.Dialect, statement spec.Statement) []
 	}
 	ddl := statement.DDL
 	var gaps []spec.UnsupportedDetail
+	if dialect == spec.DialectTiDB && spec.HasSubpartitionDeclaration(ddl) {
+		gaps = append(gaps, aspectGap("tidb_subpartition", true, map[string]any{
+			"aspect": "partition", "boundary": "vendor",
+			"native_behavior": "ignored", "native_warning": "8200",
+			"native_version": "8.5.0",
+		}))
+	}
 	if statement.Metadata != nil && statement.Metadata.View != nil &&
 		(statement.Metadata.View.DependencyLimit || spec.AssessViewLifecycle(statement).DependencyLimit) {
 		gaps = append(gaps, aspectGap("view.dependencies.limit", false, map[string]any{"aspect": "dependency_limit"}))

@@ -71,6 +71,15 @@ declared options. TiDB ALTER VIEW remains a vendor boundary. The broader
 query-shape, version, privacy and ordered-state oracles are specified in the
 [T18 matrix](../../docs/work-plans/t18-view-lifecycle/MATRIX.md).
 
+## T20 placement representatives
+
+The TiDB `placement_policy_missing` pair covers a direct assignment, a later
+CREATE member, ADD and REORGANIZE member assignments. Its complete policy
+catalog proves `p_missing` absent; unknown old partition bounds must not hide
+that independent refusal or produce a binding-change warning. Exact legal
+range, successor directory and reference proofs live in the T20-R4 companions
+and [Golden contract](../../docs/work-plans/t20-tidb-placement-lifecycle/CONTRACT.md).
+
 ## PostgreSQL Representative Pack
 
 The PostgreSQL corpus keeps production-shaped coverage bounded and separate:

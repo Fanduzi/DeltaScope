@@ -77,20 +77,279 @@ func unvouchPartitioning(shape *spec.TableSnapshot) {
 // outcome — partitions never add/remove/rename columns, indexes, or
 // constraints — while the member directory and the data-derived statistics
 // follow each action's evidence-bounded transition.
-func (s *batchState) applyPartitionOperation(targets []spec.Table, alter *spec.Alter) {
+func (s *batchState) applyPartitionOperation(targets []spec.Table, alter *spec.Alter, statement spec.Statement) {
+	// Aggregate every collected placement premise first — a proven
+	// refusal anywhere (missing member policy on ADD/REORG defs) refuses
+	// the atomic statement before T14 member judgement, while an unknown
+	// premise never short-circuits a proven structural refusal (T20-R4).
+	facts := s.placementFacts(statement)
+	bindingOutcome := spec.PlacementApplied
+	if facts != nil {
+		bindingOutcome = facts.Outcome
+	}
+	if bindingOutcome == spec.PlacementRefused {
+		setPlacementMutationOutcome(statement, spec.PlacementRefused)
+		return
+	}
 	for _, target := range targets {
 		key := s.keyFor(s.schema, target)
 		entry, ok := s.entries[key]
 		if !ok || entry.state != tablePresent || entry.shape == nil {
+			if ok && entry.state == tableAbsent {
+				// Proven absent target: the statement refuses — no warn,
+				// no member publication (T20-R4).
+				setPlacementMutationOutcome(statement, spec.PlacementRefused)
+				continue
+			}
+			// An unresolvable/unknown target stays unknown: each named
+			// member policy may have gained a ref and (for REORG) the
+			// source members' refs may have retired, so exact identities
+			// are revoked under the resolved schema/table — a nil
+			// snapshot is never a proven-absent table (T20-R4).
+			displaySchema := s.schema
+			if ok && entry != nil {
+				displaySchema = entryDisplaySchema(entry, s.schema, target)
+			} else if target.Schema != "" {
+				displaySchema = target.Schema
+			}
+			s.placementRefCompletenessUndecided(alter, facts, displaySchema, target.Name)
+			setPlacementMutationOutcome(statement, spec.PlacementUnproven, "target_table.existence")
 			continue
 		}
 		next := s.applyPartitionAction(entry.shape, alter)
 		if next == nil {
 			// Proven refusal: the exact pre-state stands.
+			setPlacementMutationOutcome(statement, spec.PlacementRefused)
 			continue
+		}
+		displaySchema := entryDisplaySchema(entry, s.schema, target)
+		// A nonnil T14 result is only an applied candidate when the
+		// member-mutating action produced a vouched directory; an
+		// unproven member set must not publish refs as if it landed
+		// (T20-R4).
+		memberMutation := alter.Action == "add_partitions" ||
+			alter.Action == "reorganize_partition" || alter.Action == "partition"
+		structuralUnknown := memberMutation && next.PartitionNames == nil
+		if bindingOutcome == spec.PlacementUnproven || structuralUnknown {
+			next = s.partitionTopologyUnproven(entry.shape, alter.Action == "partition")
+			next.PartitionPlacements = s.partitionPlacementsUndecided(entry.shape, alter)
+			s.placementRefCompletenessUndecided(alter, facts, displaySchema, target.Name)
+			setPlacementMutationOutcome(statement, spec.PlacementUnproven,
+				s.partitionBindingUndecidedFacts(entry.shape, alter, facts)...)
+		} else {
+			s.publishAlterMemberPlacements(entry.shape, next, alter, facts, displaySchema, target.Name)
+			setPlacementMutationOutcome(statement, spec.PlacementApplied)
 		}
 		s.entries[key] = &batchTableEntry{state: tablePresent, shape: next, displaySchema: entry.displaySchema, displayTable: entry.displayTable}
 	}
+}
+
+// publishAlterMemberPlacements stamps each new member's explicit override
+// on the published successor and maintains the proven reference sets.
+// Definitions initialize OMITTED/DEFAULT members as known-empty ""
+// overrides (they inherit the table binding effectively — never a
+// materialized explicit ref); the collected binding records then overlay
+// each named assignment, so no definition is read for its Placement a
+// second time. REORG retires only the source members' exact refs and
+// keys; PARTITION BY retires every old partition ref for THIS table and
+// discards the member map first (native 21-24, T20-R4).
+func (s *batchState) publishAlterMemberPlacements(shape, next *spec.TableSnapshot, alter *spec.Alter, facts *spec.PlacementFacts, displaySchema, tableName string) {
+	table := strings.ToLower(tableName)
+	if alter.Action == "partition" {
+		// The declared scheme replaces every member binding for this
+		// table — retire all old partition refs and restart the map.
+		s.placementRefsUnder("partition:" + strings.ToLower(displaySchema) + "." + table + ".")
+		next.PartitionPlacements = map[string]string{}
+	} else if alter.Action == "reorganize_partition" {
+		for _, member := range alter.Partitions {
+			name := strings.ToLower(member)
+			if next.PartitionPlacements != nil {
+				delete(next.PartitionPlacements, name)
+			}
+			s.placementRemoveTargetRef(placementPartitionRef(displaySchema, table, name))
+		}
+	}
+	defs := alter.PartitionDefs
+	if alter.PartitionScheme != nil {
+		defs = alter.PartitionScheme.Defs
+	}
+	for _, def := range defs {
+		name := strings.ToLower(def.Name)
+		if next.PartitionPlacements == nil {
+			next.PartitionPlacements = map[string]string{}
+		}
+		// Every new member carries a known explicit override — empty
+		// until the collected record overlays a named bind.
+		next.PartitionPlacements[name] = ""
+	}
+	if facts != nil {
+		for _, binding := range facts.Bindings {
+			target := binding.Target
+			if target.Action != alter.Action ||
+				(target.Source != "member_definition" && target.Source != "scheme_definition") {
+				continue
+			}
+			if target.TargetKind != "partition" || target.Partition == "" {
+				continue
+			}
+			if target.Binding.Default || binding.Outcome != spec.PlacementApplied {
+				continue
+			}
+			name := strings.ToLower(target.Partition)
+			next.PartitionPlacements[name] = target.Binding.Policy
+			s.placementAddRef(target.Binding.Policy, placementPartitionRef(displaySchema, table, name))
+		}
+	}
+	// Other proven directory changes (e.g. DROP PARTITION) retire exactly
+	// the members that disappeared: the T14 successor proved the new
+	// directory, so each vanished member's exact ref dissolves without a
+	// placement scan (T20-R4).
+	if shape.PartitionNames != nil && next.PartitionNames != nil {
+		members := map[string]bool{}
+		for _, name := range next.PartitionNames {
+			members[strings.ToLower(name)] = true
+		}
+		for _, member := range shape.PartitionNames {
+			name := strings.ToLower(member)
+			if !members[name] {
+				if next.PartitionPlacements != nil {
+					delete(next.PartitionPlacements, name)
+				}
+				s.placementRemoveTargetRef(placementPartitionRef(displaySchema, table, name))
+			}
+		}
+	}
+}
+
+// partitionPlacementsUndecided derives the member-placement map for an
+// undecided partition operation: ADD keeps every old key (no old member
+// can change); REORG loses only the source members' keys (their bindings
+// may have retired); PARTITION BY returns nil — every old member binding
+// may have changed, so nothing old is retained (T20-R4).
+func (s *batchState) partitionPlacementsUndecided(shape *spec.TableSnapshot, alter *spec.Alter) map[string]string {
+	if alter.Action == "partition" {
+		return nil
+	}
+	var out map[string]string
+	if shape.PartitionPlacements != nil {
+		out = make(map[string]string, len(shape.PartitionPlacements))
+		for k, v := range shape.PartitionPlacements {
+			out[k] = v
+		}
+	}
+	if alter.Action == "reorganize_partition" {
+		for _, member := range alter.Partitions {
+			if out != nil {
+				delete(out, strings.ToLower(member))
+			}
+		}
+	}
+	return out
+}
+
+// placementRefCompletenessUndecided marks only the reference sets the
+// undecidable operation could have changed: EVERY prospective named
+// member policy may have gained a ref — including a proven-present
+// policy that sat next to an unknown one — and (for REORG/PARTITION BY)
+// the source members' old refs may have retired. Unrelated policies keep
+// their certainty and no unproven positive is inserted (T20-R4).
+func (s *batchState) placementRefCompletenessUndecided(alter *spec.Alter, facts *spec.PlacementFacts, displaySchema, tableName string) {
+	s.placementMayAddBindingRefs(facts)
+	if displaySchema == "" || tableName == "" {
+		return
+	}
+	table := strings.ToLower(tableName)
+	if alter.Action == "reorganize_partition" {
+		for _, member := range alter.Partitions {
+			ref := placementPartitionRef(displaySchema, table, strings.ToLower(member))
+			for _, entry := range s.placements {
+				if _, had := entry.refs[ref]; had {
+					delete(entry.refs, ref)
+					entry.refsKnown = false
+				}
+			}
+		}
+		return
+	}
+	if alter.Action == "partition" {
+		prefix := "partition:" + strings.ToLower(displaySchema) + "." + table + "."
+		for _, entry := range s.placements {
+			affected := false
+			for ref := range entry.refs {
+				if strings.HasPrefix(ref, prefix) {
+					delete(entry.refs, ref)
+					affected = true
+				}
+			}
+			if affected {
+				entry.refsKnown = false
+			}
+		}
+	}
+}
+
+// partitionBindingUndecidedFacts lists the bounded missing evidence for
+// an undecided partition operation. When the catalog premise itself is
+// unvouched, the catalog fact alone is owed — unrelated static facts do
+// not stack. Otherwise the exact T14 facts are reported with their
+// canonical names (target_table.partitions, not partition_names), and
+// declared-but-uncomparable member literals owe statement.partition_defs
+// (T20-R4).
+func (s *batchState) partitionBindingUndecidedFacts(shape *spec.TableSnapshot, alter *spec.Alter, facts *spec.PlacementFacts) []string {
+	if facts != nil {
+		for _, binding := range facts.Bindings {
+			if binding.Outcome == spec.PlacementUnproven {
+				return []string{"placement_policy.catalog"}
+			}
+		}
+	}
+	var method string
+	if shape.PartitionType != nil {
+		method = *shape.PartitionType
+	}
+	defs := alter.PartitionDefs
+	if alter.PartitionScheme != nil {
+		defs = alter.PartitionScheme.Defs
+		if alter.PartitionScheme.Type != "" {
+			method = alter.PartitionScheme.Type
+		}
+	}
+	targetDefsUnproven := shape.PartitionDefs == nil ||
+		(method != "" && declaredSchemeOutcome(method, shape.PartitionDefs) == partitionOutcomeUnproven)
+	statementDefsUnproven := len(defs) > 0 && method != "" &&
+		declaredSchemeOutcome(method, defs) == partitionOutcomeUnproven
+	seen := map[string]bool{}
+	var out []string
+	add := func(fact string) {
+		if !seen[fact] {
+			seen[fact] = true
+			out = append(out, fact)
+		}
+	}
+	if shape.Partitioned == nil {
+		add("target_table.partitioned")
+	}
+	if shape.PartitionType == nil {
+		add("target_table.partition_type")
+	}
+	if shape.PartitionNames == nil {
+		add("target_table.partitions")
+	}
+	if targetDefsUnproven {
+		add("target_table.partition_defs")
+	}
+	if statementDefsUnproven {
+		// Only declared-but-uncomparable literals owe this — a provided
+		// comparable list is never reported missing (T20-R4).
+		add("statement.partition_defs")
+	}
+	if len(out) == 0 && len(defs) > 0 {
+		// Each list can be modeled while their cross-bound comparison
+		// remains undecidable. Both operands are then the missing proof.
+		add("target_table.partition_defs")
+		add("statement.partition_defs")
+	}
+	return out
 }
 
 // applyPartitionAction clones the target shape and applies the action's

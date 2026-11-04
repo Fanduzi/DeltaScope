@@ -24,21 +24,15 @@ func statementsNeedPlacementCatalog(statements []spec.Statement) bool {
 			spec.DDLOperationAlterRangePlacement:
 			return true
 		}
-		if ddl.PlacementBinding != nil {
-			return true
-		}
 		if _, ok := ddl.Options["placement_policy"]; ok {
 			return true
 		}
-		for i := range ddl.Alter {
-			if ddl.Alter[i].Action == "placement_policy" || ddl.Alter[i].Placement != nil {
-				return true
-			}
-		}
-		for i := range ddl.PartitionDefs {
-			if ddl.PartitionDefs[i].Placement != nil {
-				return true
-			}
+		// Every authored placement assignment triggers the one-shot
+		// catalog load — direct binds, member definitions, alter member
+		// defs and partition-scheme defs alike, DEFAULT retained so its
+		// effective unbind state stays adjudicable (T20-R4).
+		if len(spec.CollectPlacementBindings(ddl)) > 0 {
+			return true
 		}
 	}
 	return false
@@ -64,10 +58,13 @@ type batchPlacementEntry struct {
 	state placementPolicyState
 	// attrs carries proven option values keyed by bounded member name.
 	attrs map[string]string
-	// refs is the proven inbound-reference identity set when refsKnown;
-	// identities are "table:<schema>.<name>", "partition:<schema>.<name>.<part>",
-	// "schema:<name>", "range:<name>". refsKnown=false keeps the set
-	// unvouched — never read nil refs as proven-empty.
+	// refs is the set of individually proven inbound-reference identities:
+	// "table:<schema>.<name>", "partition:<schema>.<name>.<part>",
+	// "schema:<name>", "range:<name>". refsKnown reports whether the set is
+	// exhaustive; a non-exhaustive set still retains sufficient positive
+	// proof for a refused DROP, while an empty unread set under
+	// refsKnown=false authorizes nothing — never read it as proven-empty
+	// (issue #99 T20-R4).
 	refs      map[string]struct{}
 	refsKnown bool
 }
@@ -144,9 +141,11 @@ func (s *batchState) seedPlacementCatalog() {
 func (s *batchState) schemaBoundPlacementPolicy(schema string) (string, bool) {
 	ref := placementSchemaRef(schema)
 	for name, entry := range s.placements {
-		if entry == nil || entry.state != placementPolicyPresent || !entry.refsKnown {
+		if entry == nil || entry.state != placementPolicyPresent {
 			continue
 		}
+		// An individually proven schema ref answers the binding even
+		// while the owning set is non-exhaustive (T20-R4).
 		if _, ok := entry.refs[ref]; ok {
 			return name, true
 		}
@@ -237,12 +236,25 @@ func (s *batchState) placementBoundSet(name string) *[]string {
 			empty := []string{}
 			return &empty
 		}
+		if len(entry.refs) > 0 {
+			// The set is not exhaustive, but each retained identity is
+			// individually proven — a nonempty list is still sufficient
+			// reference proof for a refused DROP (8241); it is never a
+			// catalog enumeration claim (T20-R4).
+			refs := make([]string, 0, len(entry.refs))
+			for ref := range entry.refs {
+				refs = append(refs, ref)
+			}
+			sort.Strings(refs)
+			return &refs
+		}
 		return nil
 	}
 	refs := make([]string, 0, len(entry.refs))
 	for ref := range entry.refs {
 		refs = append(refs, ref)
 	}
+	sort.Strings(refs)
 	return &refs
 }
 
@@ -265,9 +277,14 @@ func placementRangeRef(name string) string {
 // placementAddRef records one proven inbound reference on a present policy.
 func (s *batchState) placementAddRef(policy, ref string) {
 	entry := s.placementPolicies()[policy]
-	if entry == nil || !entry.refsKnown {
+	if entry == nil || entry.state != placementPolicyPresent {
 		return
 	}
+	if entry.refs == nil {
+		entry.refs = map[string]struct{}{}
+	}
+	// The reference is individually proven — record it even while the set
+	// is non-exhaustive. refsKnown is never flipped by an add.
 	entry.refs[ref] = struct{}{}
 }
 
@@ -276,7 +293,7 @@ func (s *batchState) placementAddRef(policy, ref string) {
 // drop is proven.
 func (s *batchState) placementRemoveRef(policy, ref string) {
 	entry := s.placementPolicies()[policy]
-	if entry == nil || !entry.refsKnown {
+	if entry == nil {
 		return
 	}
 	delete(entry.refs, ref)
@@ -286,13 +303,61 @@ func (s *batchState) placementRemoveRef(policy, ref string) {
 // the given prefix — the drop of a bound object dissolves its references.
 func (s *batchState) placementRefsUnder(prefix string) {
 	for _, entry := range s.placements {
-		if !entry.refsKnown {
-			continue
-		}
 		for ref := range entry.refs {
 			if strings.HasPrefix(ref, prefix) {
 				delete(entry.refs, ref)
 			}
+		}
+	}
+}
+
+// placementRemoveTargetRef deletes one exact identity from every
+// registry set — proven removal dissolves the proof regardless of the
+// owning set's completeness (T20-R4).
+func (s *batchState) placementRemoveTargetRef(ref string) {
+	for _, entry := range s.placements {
+		delete(entry.refs, ref)
+	}
+}
+
+// placementMayChangeTargetRef revokes one identity's proof and marks the
+// candidate policies' completeness unknown — an undecidable bind/unbind
+// may have moved the reference to any named policy or dropped it. The
+// proof itself is always deleted; never inserted (T20-R4).
+func (s *batchState) placementMayChangeTargetRef(ref string, candidates ...string) {
+	named := map[string]bool{}
+	for _, name := range candidates {
+		name = strings.ToLower(strings.TrimSpace(name))
+		if name != "" && name != "default" {
+			named[name] = true
+		}
+	}
+	for name, entry := range s.placements {
+		_, had := entry.refs[ref]
+		if had {
+			delete(entry.refs, ref)
+		}
+		if had || named[name] {
+			entry.refsKnown = false
+		}
+	}
+}
+
+// placementMayAddBindingRefs marks every named binding policy's reference
+// set non-exhaustive — the undecided operation may have bound any of them.
+// Known positives are never touched; an empty set under a marked flag
+// authorizes nothing (T20-R4).
+func (s *batchState) placementMayAddBindingRefs(facts *spec.PlacementFacts) {
+	if facts == nil {
+		return
+	}
+	for _, item := range facts.Bindings {
+		if item.Target.Binding.Default {
+			continue
+		}
+		name := strings.ToLower(strings.TrimSpace(item.Target.Binding.Policy))
+		if entry := s.placementPolicies()[name]; entry != nil {
+			entry.refsKnown = false
 		}
 	}
 }
@@ -439,28 +504,46 @@ func (s *batchState) applyAlterRangePlacement(statement spec.Statement) {
 		}
 		binding := ddl.PlacementBinding
 		rangeName := strings.ToLower(strings.TrimSpace(ddl.PlacementRange))
+		rangeRef := placementRangeRef(rangeName)
 		if binding == nil {
 			s.rangePlacements[rangeName] = ""
 			return
 		}
 		if binding.Default {
-			old := s.rangePlacements[rangeName]
+			// A proven DEFAULT dissolves the range's exact reference on
+			// every policy — including a stale positive in a
+			// non-exhaustive set (T20-R4).
 			s.rangePlacements[rangeName] = ""
-			if old != "" {
-				s.placementRemoveRef(old, placementRangeRef(rangeName))
-			}
+			s.placementRemoveTargetRef(rangeRef)
 			return
 		}
-		exists := s.placementPolicyExists(binding.Policy)
-		switch spec.PlacementBindOutcome(s.dialect, *binding, exists) {
-		case spec.PlacementApplied:
-			old := s.rangePlacements[rangeName]
-			s.rangePlacements[rangeName] = binding.Policy
-			if old != "" && old != binding.Policy {
-				s.placementRemoveRef(old, placementRangeRef(rangeName))
+		var outcome spec.PlacementOutcome
+		found := false
+		if facts := s.placementFacts(statement); facts != nil {
+			for _, item := range facts.Bindings {
+				if item.Target.TargetKind == "range" {
+					outcome = item.Outcome
+					found = true
+					break
+				}
 			}
-			s.placementAddRef(binding.Policy, placementRangeRef(rangeName))
+		}
+		if !found {
+			exists := s.placementPolicyExists(binding.Policy)
+			outcome = spec.PlacementBindOutcome(s.dialect, *binding, exists)
+		}
+		switch outcome {
+		case spec.PlacementApplied:
+			// A proven bind moves the exact ref: dissolve it on every
+			// policy, then add it to the named one.
+			s.placementRemoveTargetRef(rangeRef)
+			s.rangePlacements[rangeName] = binding.Policy
+			s.placementAddRef(binding.Policy, rangeRef)
 		case spec.PlacementUnproven:
+			// The bind may have landed or not — revoke the stale ref's
+			// proof and mark the candidate's completeness unknown
+			// without losing other proven range refs (T20-R4).
+			s.placementMayChangeTargetRef(rangeRef, binding.Policy)
 			delete(s.rangePlacements, rangeName)
 		}
 	case spec.PlacementRefused:
@@ -507,27 +590,34 @@ func (s *batchState) applyPlacementBind(alter *spec.Alter, schema string, target
 // Reports whether the shape changed.
 func (s *batchState) applyPlacementBindToShape(shape *spec.TableSnapshot, binding spec.PlacementBinding, partitions []string, ref string) bool {
 	if len(partitions) == 0 {
-		old, known := shape.PlacementPolicy, shape.PlacementPolicyKnown
+		old := shape.PlacementPolicy
 		outcome := spec.PlacementBindOutcome(s.dialect, binding, s.placementPolicyExists(binding.Policy))
 		switch outcome {
 		case spec.PlacementApplied:
 			if binding.Default {
 				shape.PlacementPolicy = ""
 				shape.PlacementPolicyKnown = true
-				if known && old != "" {
-					s.placementRemoveRef(old, ref)
-				}
 			} else {
 				shape.PlacementPolicy = binding.Policy
 				shape.PlacementPolicyKnown = true
-				if known && old != "" && old != binding.Policy {
-					s.placementRemoveRef(old, ref)
-				}
+			}
+			// A proven bind dissolves the old target's reference on every
+			// policy — identity-level removal keeps non-exhaustive sets
+			// honest instead of trusting a stale recorded name (T20-R4).
+			s.placementRemoveTargetRef(ref)
+			if !binding.Default {
 				s.placementAddRef(binding.Policy, ref)
 			}
 			return true
 		case spec.PlacementUnproven:
+			// The bind may have landed on either arm — revoke the old
+			// ref's proof and mark both candidates' sets incomplete.
 			shape.PlacementPolicyKnown = false
+			if old != "" {
+				s.placementMayChangeTargetRef(ref, old, binding.Policy)
+			} else {
+				s.placementMayChangeTargetRef(ref, binding.Policy)
+			}
 			return true
 		default:
 			return false
@@ -536,9 +626,10 @@ func (s *batchState) applyPlacementBindToShape(shape *spec.TableSnapshot, bindin
 	changed := false
 	for _, member := range partitions {
 		memberName := strings.ToLower(member)
-		memberOld, memberKnown := "", false
+		var memberOld string
+		var memberKnown bool
 		if shape.PartitionPlacements != nil {
-			memberOld, memberKnown = shape.PartitionPlacements[memberName], true
+			memberOld, memberKnown = shape.PartitionPlacements[memberName]
 		}
 		partRef := "partition:" + ref + "." + memberName
 		outcome := spec.PlacementBindOutcome(s.dialect, binding, s.placementPolicyExists(binding.Policy))
@@ -547,23 +638,31 @@ func (s *batchState) applyPlacementBindToShape(shape *spec.TableSnapshot, bindin
 			if shape.PartitionPlacements == nil {
 				shape.PartitionPlacements = map[string]string{}
 			}
+			// A proven member bind dissolves that member's exact ref on
+			// every policy; DEFAULT publishes a known-empty override, not
+			// an absent key (T20-R4).
+			s.placementRemoveTargetRef(partRef)
 			if binding.Default {
-				delete(shape.PartitionPlacements, memberName)
-				if memberKnown && memberOld != "" {
-					s.placementRemoveRef(memberOld, partRef)
-				}
+				shape.PartitionPlacements[memberName] = ""
 			} else {
 				shape.PartitionPlacements[memberName] = binding.Policy
-				if memberKnown && memberOld != "" && memberOld != binding.Policy {
-					s.placementRemoveRef(memberOld, partRef)
-				}
 				s.placementAddRef(binding.Policy, partRef)
 			}
 			changed = true
 		case spec.PlacementUnproven:
+			// The member's own override may have changed or stayed —
+			// drop the map proof and revoke the ref proof, marking the
+			// candidates' completeness unknown.
 			if shape.PartitionPlacements != nil {
-				delete(shape.PartitionPlacements, memberName)
-				changed = true
+				if _, had := shape.PartitionPlacements[memberName]; had {
+					delete(shape.PartitionPlacements, memberName)
+					changed = true
+				}
+			}
+			if memberKnown && memberOld != "" {
+				s.placementMayChangeTargetRef(partRef, memberOld, binding.Policy)
+			} else {
+				s.placementMayChangeTargetRef(partRef, binding.Policy)
 			}
 		}
 	}
@@ -585,14 +684,15 @@ func (s *batchState) placementTableMayDropRefs(displaySchema, name string) {
 	tableRef := "table:" + full
 	partPrefix := "partition:" + full + "."
 	for _, entry := range s.placements {
-		if !entry.refsKnown {
-			continue
-		}
+		affected := false
 		for ref := range entry.refs {
 			if ref == tableRef || strings.HasPrefix(ref, partPrefix) {
-				entry.refsKnown = false
-				break
+				delete(entry.refs, ref)
+				affected = true
 			}
+		}
+		if affected {
+			entry.refsKnown = false
 		}
 	}
 }
@@ -624,14 +724,15 @@ func (s *batchState) placementSchemaMayDropRefs(name string) {
 	tablePrefix := "table:" + name + "."
 	partPrefix := "partition:" + name + "."
 	for _, entry := range s.placements {
-		if !entry.refsKnown {
-			continue
-		}
+		affected := false
 		for ref := range entry.refs {
 			if ref == schemaRef || strings.HasPrefix(ref, tablePrefix) || strings.HasPrefix(ref, partPrefix) {
-				entry.refsKnown = false
-				break
+				delete(entry.refs, ref)
+				affected = true
 			}
+		}
+		if affected {
+			entry.refsKnown = false
 		}
 	}
 }
@@ -644,9 +745,6 @@ func (s *batchState) placementRekeyTableRef(oldFull, newFull string) {
 	oldTable := "table:" + oldFull
 	oldPart := "partition:" + oldFull + "."
 	for _, entry := range s.placements {
-		if !entry.refsKnown {
-			continue
-		}
 		for ref := range entry.refs {
 			switch {
 			case ref == oldTable:
@@ -678,7 +776,7 @@ func (s *batchState) declaredPlacementPolicyExists(ddl *spec.DDL) *bool {
 func (s *batchState) placementSchemaRefSync(schema, newPolicy string) {
 	ref := placementSchemaRef(schema)
 	for name, entry := range s.placements {
-		if name == newPolicy || !entry.refsKnown {
+		if name == newPolicy {
 			continue
 		}
 		delete(entry.refs, ref)
@@ -695,23 +793,11 @@ func (s *batchState) placementSchemaRefSync(schema, newPolicy string) {
 // a policy can carry the reference even when the schema's own attr
 // projection never vouched the name (T20-R1/#99).
 func (s *batchState) placementSchemaRefUnvouch(schema, oldPolicy, declaredPolicy string) {
-	ref := placementSchemaRef(schema)
-	oldPolicy = strings.ToLower(strings.TrimSpace(oldPolicy))
-	declaredPolicy = strings.ToLower(strings.TrimSpace(declaredPolicy))
-	for name, entry := range s.placements {
-		if entry == nil || !entry.refsKnown {
-			continue
-		}
-		if _, ok := entry.refs[ref]; ok {
-			delete(entry.refs, ref)
-			entry.refsKnown = false
-			continue
-		}
-		if name == oldPolicy || (declaredPolicy != "" && declaredPolicy != "default" && name == declaredPolicy) {
-			entry.refs[ref] = struct{}{}
-			entry.refsKnown = false
-		}
-	}
+	// The schema's reference may have moved to either candidate policy or
+	// vanished — revoke its proof and mark each candidate's completeness
+	// unknown. An undecidable arm never inserts an unproven positive ref
+	// (T20-R4).
+	s.placementMayChangeTargetRef(placementSchemaRef(schema), oldPolicy, declaredPolicy)
 }
 
 // entryDisplaySchema resolves the schema a table entry binds under for
@@ -758,22 +844,137 @@ func alterPlacementMultiChange(ddl *spec.DDL) bool {
 // placementPremiseOutcome evaluates the policy-existence premise of every
 // placement spec in one ALTER. refused wins, then unproven.
 func (s *batchState) placementPremiseOutcome(ddl *spec.DDL) spec.PlacementOutcome {
-	unproven := false
-	for _, alter := range ddl.Alter {
-		if alter.Action != "placement_policy" || alter.Placement == nil {
-			continue
+	s.seedPlacementCatalog()
+	facts := spec.AssessPlacementBindings(s.dialect, spec.CollectPlacementBindings(ddl), s.placementPolicyExists)
+	return facts.Outcome
+}
+
+// isPlacementPolicyLifecycle reports the three policy-object lifecycle
+// operations whose target premise is carried per-statement.
+func isPlacementPolicyLifecycle(ddl *spec.DDL) bool {
+	if ddl == nil {
+		return false
+	}
+	switch ddl.Operation {
+	case spec.DDLOperationCreatePlacementPolicy, spec.DDLOperationAlterPlacementPolicy,
+		spec.DDLOperationDropPlacementPolicy:
+		return true
+	}
+	return false
+}
+
+// copyBoolPtr deep-copies a tri-state answer so metadata never aliases the
+// live registry pointer.
+func copyBoolPtr(in *bool) *bool {
+	if in == nil {
+		return nil
+	}
+	out := *in
+	return &out
+}
+
+// setPlacementMutationOutcome completes the enclosing atomic mutation's
+// static outcome on a statement's owned placement facts. facts lists the
+// bounded evidence the undecided case owes; it is nil-safe — statements
+// without attached placement facts simply carry no mutation annotation.
+func setPlacementMutationOutcome(statement spec.Statement, outcome spec.PlacementOutcome, facts ...string) {
+	if statement.Metadata == nil || statement.Metadata.Placement == nil {
+		return
+	}
+	copyOutcome := outcome
+	statement.Metadata.Placement.MutationOutcome = &copyOutcome
+	statement.Metadata.Placement.RequiredFacts = append([]string(nil), facts...)
+}
+
+// placementFacts returns the statement's adjudicated placement facts —
+// the enrichment-attached owned projection when present, or a fresh
+// assessment through the same collector + registry lookup for direct
+// state tests that bypass enrichment. The fallback attaches into
+// statement metadata when it exists so the mutation outcome lands on the
+// same object the rules read (T20-R4).
+func (s *batchState) placementFacts(statement spec.Statement) *spec.PlacementFacts {
+	if statement.DDL == nil {
+		return nil
+	}
+	if statement.Metadata != nil && statement.Metadata.Placement != nil {
+		return statement.Metadata.Placement
+	}
+	s.seedPlacementCatalog()
+	facts := spec.AssessPlacementBindings(s.dialect, spec.CollectPlacementBindings(statement.DDL), s.placementPolicyExists)
+	fillPlacementTargetSchema(facts, s.schema)
+	if statement.Metadata != nil {
+		statement.Metadata.Placement = facts
+	}
+	return facts
+}
+
+// fillPlacementTargetSchema stamps the resolved effective schema onto
+// every collected target that left the qualifier implicit, so member
+// finding identities carry the same schema the state adjudicated under.
+// Explicitly qualified targets are never overwritten; schema-scoped
+// targets adopt the resolved name when the operation named none (T20-R4).
+func fillPlacementTargetSchema(facts *spec.PlacementFacts, effectiveSchema string) {
+	if facts == nil {
+		return
+	}
+	for i := range facts.Bindings {
+		target := &facts.Bindings[i].Target
+		// RANGE targets are global/meta, never schema-owned.
+		if target.Schema == "" && target.TargetKind != "range" {
+			target.Schema = effectiveSchema
 		}
-		binding := *alter.Placement
-		exists := s.placementPolicyExists(binding.Policy)
-		switch spec.PlacementBindOutcome(s.dialect, binding, exists) {
-		case spec.PlacementRefused:
-			return spec.PlacementRefused
-		case spec.PlacementUnproven:
-			unproven = true
+		if target.TargetKind == "schema" && target.Target == "" {
+			target.Target = target.Schema
 		}
 	}
-	if unproven {
-		return spec.PlacementUnproven
+}
+
+// isTiDB85 gates the execution normalization that models TiDB 8.5's
+// probed discard of the subpartitioning axis. Other versions withhold —
+// an unprobed ignored behavior is never inferred.
+func isTiDB85(version *spec.VersionIdentity) bool {
+	return version != nil && version.Product == spec.VersionProductTiDB &&
+		version.Major == 8 && version.Minor == 5 && version.Patch == 0
+}
+
+// normalizeIgnoredSubpartition returns an owned statement copy whose DDL
+// has every subpartition marker cleared — modeling the axis TiDB 8.5.0
+// provably discards — and whose primary member names are restored from
+// the capability projection the extractor derived. Only the copy is
+// normalized: the original statement, markers, and concealed-name
+// projection stay immutable, and no child names or refs are fabricated
+// (T20-R4).
+func normalizeIgnoredSubpartition(statement spec.Statement) spec.Statement {
+	normalized := statement
+	ddl := *statement.DDL
+	normalized.DDL = &ddl
+	ddl.Subpartitioned = false
+	if ddl.PartitionPrimaryNames != nil {
+		ddl.PartitionNames = append([]string(nil), ddl.PartitionPrimaryNames...)
 	}
-	return spec.PlacementApplied
+	ddl.PartitionDefs = spec.ClonePartitionDefs(statement.DDL.PartitionDefs)
+	for i := range ddl.PartitionDefs {
+		ddl.PartitionDefs[i].Subpartitioned = false
+	}
+	if statement.DDL.Alter != nil {
+		ddl.Alter = make([]spec.Alter, len(statement.DDL.Alter))
+		for i, alter := range statement.DDL.Alter {
+			ddl.Alter[i] = alter
+			if alter.PartitionDefs != nil {
+				ddl.Alter[i].PartitionDefs = spec.ClonePartitionDefs(alter.PartitionDefs)
+				for j := range ddl.Alter[i].PartitionDefs {
+					ddl.Alter[i].PartitionDefs[j].Subpartitioned = false
+				}
+			}
+			if alter.PartitionScheme != nil {
+				ddl.Alter[i].PartitionScheme = spec.ClonePartitionScheme(alter.PartitionScheme)
+				ddl.Alter[i].PartitionScheme.Subpartitioned = false
+				ddl.Alter[i].PartitionScheme.SubType = ""
+				for j := range ddl.Alter[i].PartitionScheme.Defs {
+					ddl.Alter[i].PartitionScheme.Defs[j].Subpartitioned = false
+				}
+			}
+		}
+	}
+	return normalized
 }

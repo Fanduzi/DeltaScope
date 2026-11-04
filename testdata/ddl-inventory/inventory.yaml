@@ -1324,8 +1324,8 @@ rows:
     status_evidence: "2026-09-22 CLI probe: ddl.table.partition.forbid fires; subpartition/vendor limits not yet checked. 2026-09-24 T03 rework (#82): nested partition/sub-partition option lists (e.g. PLACEMENT POLICY inside a partition definition) now surface bounded create_table.option.<name> unaudited evidence. 2026-11-07 T14 (#93): CREATE PARTITION BY extraction carries method, member names, ordered bound literals incl. per-item MAXVALUE tuple positions, and the authored PARTITIONS count (*uint64). 2026-10-28 T14-R1: the declared-scheme validity gate PARTITION BY shares with ALTER applies to CREATE on TiDB too — provably-invalid schemes (decreasing bounds 1493, duplicate member names 1517, duplicate LIST values 1495, count past 8192 → 1499) never publish the table; valid schemes publish the projected directory; PARTITIONS 0 and range|list counts are parser refusals (1504/1492). p15 probe confirms TiDB natively folds constant bound expressions (1+0 → 1495/1493) while the product keeps expression items an explicit capability boundary rather than evaluating."
     targets: "scheme, partition identities, TiDB-specific limits"
     acceptance:
-      dimensions: "scheme fidelity, unsupported-variant boundary"
-      refs: ["file:testdata/sql-corpus/tidb/ddl/findings", "file:testdata/ddl-golden/T14.json", "file:docs/work-plans/t14-partition-topology/CONTRACT.md"]
+      dimensions: "scheme fidelity, unsupported-variant boundary; T20-R4 complete member placements and TiDB 8.5.0 warning-8200 ignored-subpartition boundary with supported parent facts"
+      refs: ["file:testdata/sql-corpus/tidb/ddl/findings", "file:testdata/ddl-golden/T14.json", "file:docs/work-plans/t14-partition-topology/CONTRACT.md", "file:docs/work-plans/t20-tidb-placement-lifecycle/CONTRACT.md", "file:internal/application/audit/batch_state_t20r4_test.go", "file:testdata/ddl-golden/T20.json"]
     owner: T14
 
   - id: tidb.create-table-auto-random
@@ -1590,15 +1590,15 @@ rows:
     versions: ["8.5"]
     sources: [tidb85]
     family: placement
-    subactions: ["PLACEMENT POLICY = p", "PLACEMENT POLICY = DEFAULT", "partition-level placement"]
+    subactions: ["PLACEMENT POLICY = p", "PLACEMENT POLICY = DEFAULT", "partition-level placement", "ADD PARTITION member placement", "REORGANIZE PARTITION replacement placement"]
     sql_shape: "ALTER TABLE t PLACEMENT POLICY = p1"
     prerequisites: "policy existence/topology evidence"
     status: semantically_checked
     status_evidence: "2026-09-22 CLI probe: only ddl.tidb.alter_table.placement_policy.notice on both bind and DEFAULT forms. 2026-11-12 T20 (#99): tri-state binding modeled — a proven named bind fires ddl.tidb.placement.warn once, = DEFAULT unbinds silently, a catalog-proven-absent policy refuses preserving pre-state, an unvouched catalog yields placement_policy.catalog gaps; MySQL stays a vendor boundary. Golden: T20.meta.tidb85-golden-bind / bind-missing-refused / default-unbind / partition-bind. 2026-11-04 T20-R1 (#99): a placement spec may only be the sole schema-changing action of a multi-spec ALTER — probed 8200 on v8.5.0 when a structural/option sibling or a second placement spec shares the statement; ALGORITHM/LOCK modifiers combine (rc=0); missing policy refuses atomically (8239) either order; CREATE TABLE under a proven-bound schema stamps the policy and the stamp survives the schema =DEFAULT as a bound reference (8241); ALTER DATABASE comma multi-option is a grammar 1064. 2026-11-04 T20-R2 (#99): ALTER DATABASE whitespace-separated DatabaseOptionList IS legal — and partially applies: probed on v8.5.0 that AlterSchema runs charset/collate BEFORE the binding step, so `CHARACTER SET latin1 PLACEMENT POLICY=missing` fails 8239 but charset still lands (either SQL option order), a prior binding survives a failed rebind, and CREATE DATABASE stays atomic on 8239. The model publishes the proven non-placement attrs and tri-states only the binding dimension. 2026-11-04 T20-R3 (#99): the binding's two missing public checks now fire — a proven-absent policy reference blocks via ddl.tidb.placement.exists.require (8239 parity, verdict reject), and an applied bind owes placement_policy.topology evidence under ddl.tidb.placement.warn while topology facts are unread (unverified, never implied deployability); DEFAULT unbinds keep no premise"
-    targets: "table/partition target, policy identity, bind vs unbind"
+    targets: "every ordered table/partition assignment, schema-qualified member identity, policy identity, DEFAULT vs omitted binding"
     acceptance:
-      dimensions: "binding risk, missing/unknown policy handling"
-      refs: ["file:internal/application/audit/batch_state_placement.go", "file:internal/domain/rule/ddl/placement_rules.go", "file:internal/application/audit/batch_state_t20r3_test.go", "file:testdata/ddl-golden/T20.json", "file:testdata/sql-corpus/tidb/ddl/findings/placement_policy_missing.sql"]
+      dimensions: "binding risk, missing/unknown policy handling; complete occurrence collection, refusal dominance, T14 atomic member transitions, affected reference retirement/publication, per-rule topology gap"
+      refs: ["file:internal/domain/spec/placement.go", "file:internal/application/audit/batch_state_placement.go", "file:internal/domain/rule/ddl/placement_rules.go", "file:internal/application/audit/batch_state_t20r3_test.go", "file:internal/application/audit/batch_state_t20r4_test.go", "file:docs/work-plans/t20-tidb-placement-lifecycle/CONTRACT.md", "file:testdata/ddl-golden/T20.json", "file:testdata/sql-corpus/tidb/ddl/findings/placement_policy_missing.sql"]
     owner: T20
 
   - id: tidb.alter-table.layout-id

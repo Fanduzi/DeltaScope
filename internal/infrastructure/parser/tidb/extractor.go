@@ -335,6 +335,13 @@ func extractCreateTable(stmt *ast.CreateTableStmt, rawSQL string) *spec.DDL {
 				ddl.Subpartitioned = true
 			}
 		}
+		if ddl.Subpartitioned {
+			// The ignored subaxis conceals the primary member directory —
+			// derive it once from an AST copy that clears only Sub (the
+			// TiDB-ignored axis) so the bounded normalization can restore
+			// primary names without a second parser pass (T20-R4).
+			ddl.PartitionPrimaryNames = primaryPartitionMemberNames(stmt.Partition)
+		}
 	}
 	if stmt.IfNotExists {
 		ddl.Options["if_not_exists"] = "true"
@@ -2618,6 +2625,29 @@ func partitionMethodName(partition *ast.PartitionOptions) string {
 // over-bound declaration produces no member proof at all rather than an
 // uncontrolled allocation or a truncated list.
 const maxPartitionMembers = 8192
+
+// primaryPartitionMemberNames derives the primary member names a
+// concealed subpartitioning axis withheld — an AST copy with every Sub
+// axis cleared feeds the shared name projection, so interval/count
+// refusal logic stays identical. Only called when a subaxis marker is
+// present (T20-R4).
+func primaryPartitionMemberNames(partition *ast.PartitionOptions) []string {
+	if partition == nil {
+		return nil
+	}
+	primary := *partition
+	primary.Sub = nil
+	primary.Definitions = make([]*ast.PartitionDefinition, len(partition.Definitions))
+	for i, def := range partition.Definitions {
+		if def == nil {
+			continue
+		}
+		copied := *def
+		copied.Sub = nil
+		primary.Definitions[i] = &copied
+	}
+	return partitionMemberNames(&primary)
+}
 
 // partitionMemberNames returns the declared partition member names in
 // declaration order, or nil when the declaration cannot project a complete

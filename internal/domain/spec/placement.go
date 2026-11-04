@@ -166,3 +166,184 @@ func PlacementRangeOutcome(dialect Dialect, rangeName string) PlacementOutcome {
 		return PlacementRefused
 	}
 }
+
+// PlacementBindingTarget identifies one authored assignment. Indices are
+// zero-based; -1 denotes the enclosing statement/no member definition.
+// DEFAULT is retained. Source is direct, member_definition, or scheme_definition.
+// No raw SQL, options, constraint text, or invented source offset is retained.
+type PlacementBindingTarget struct {
+	Binding         PlacementBinding
+	Action          string
+	ActionIndex     int
+	DefinitionIndex int
+	Source          string
+	TargetKind      string
+	Schema          string
+	Table           string
+	Partition       string
+	Target          string
+}
+
+// PlacementBindingFact is one collected binding's adjudicated outcome.
+type PlacementBindingFact struct {
+	Target  PlacementBindingTarget
+	Exists  *bool
+	Outcome PlacementOutcome
+}
+
+// PlacementPolicyPremise contains only the current lifecycle target's
+// proof, without turning a partial catalog into a complete one.
+// BoundTargets != nil is either a proven-empty COMPLETE set, or a nonempty
+// set of proven references sufficient to refuse DROP. It is not a public
+// catalog enumeration or a claim that a nonempty list is exhaustive.
+type PlacementPolicyPremise struct {
+	Name         string
+	Exists       *bool
+	BoundTargets *[]string
+}
+
+// PlacementFacts is an owned per-statement pre-state projection. Outcome is
+// the aggregate binding premise. MutationOutcome is the enclosing atomic
+// CREATE/partition operation's static outcome, populated by the existing
+// transition; topology satisfaction is deliberately not part of either.
+type PlacementFacts struct {
+	Bindings        []PlacementBindingFact
+	Outcome         PlacementOutcome
+	Policy          *PlacementPolicyPremise
+	MutationOutcome *PlacementOutcome
+	RequiredFacts   []string
+}
+
+// CollectPlacementBindings enumerates every authored placement assignment a
+// statement carries, in structured source order: the statement-level
+// binding, CREATE member definitions, each alter action's direct binding
+// (expanded once per named partition target), alter member definitions and
+// alter partition-scheme definitions. DEFAULT bindings are retained.
+// Subpartition children carry no structured Placement and are never
+// collected (TiDB discards the whole subpartition axis).
+func CollectPlacementBindings(ddl *DDL) []PlacementBindingTarget {
+	if ddl == nil {
+		return nil
+	}
+	var out []PlacementBindingTarget
+	base := PlacementBindingTarget{
+		Action: string(ddl.Operation), ActionIndex: -1, DefinitionIndex: -1,
+		Source: "direct", TargetKind: "table",
+	}
+	if ddl.Table != nil {
+		base.Schema, base.Table, base.Target = ddl.Table.Schema, ddl.Table.Name, ddl.Table.Name
+	}
+	switch ddl.Operation {
+	case DDLOperationCreateSchema, DDLOperationAlterSchema:
+		base.TargetKind, base.Schema, base.Target = "schema", ddl.ObjectName, ddl.ObjectName
+	case DDLOperationAlterRangePlacement:
+		base.TargetKind, base.Target = "range", "range:"+strings.ToLower(ddl.PlacementRange)
+	}
+	appendBinding := func(target PlacementBindingTarget, binding *PlacementBinding) {
+		if binding == nil {
+			return
+		}
+		target.Binding = *binding
+		out = append(out, target)
+	}
+	appendDefs := func(target PlacementBindingTarget, defs []PartitionDef, source string) {
+		for i, def := range defs {
+			target.Source, target.DefinitionIndex = source, i
+			target.TargetKind, target.Partition = "partition", def.Name
+			appendBinding(target, def.Placement)
+		}
+	}
+	appendBinding(base, ddl.PlacementBinding)
+	appendDefs(base, ddl.PartitionDefs, "member_definition")
+	for i, alter := range ddl.Alter {
+		target := base
+		target.Action, target.ActionIndex = alter.Action, i
+		if len(alter.Partitions) == 0 {
+			appendBinding(target, alter.Placement)
+		} else {
+			for _, part := range alter.Partitions {
+				member := target
+				member.TargetKind, member.Partition = "partition", part
+				appendBinding(member, alter.Placement)
+			}
+		}
+		appendDefs(target, alter.PartitionDefs, "member_definition")
+		if alter.PartitionScheme != nil {
+			appendDefs(target, alter.PartitionScheme.Defs, "scheme_definition")
+		}
+	}
+	return out
+}
+
+// AssessPlacementBindings adjudicates each collected target against the
+// shared tri-state outcome. lookup answers a policy's existence (nil means
+// unvouched); results are cached per lower-cased name. Refusal dominates
+// the aggregate, then unproven.
+func AssessPlacementBindings(dialect Dialect, targets []PlacementBindingTarget,
+	lookup func(string) *bool) *PlacementFacts {
+	facts := &PlacementFacts{Outcome: PlacementApplied}
+	cache := map[string]*bool{}
+	for _, target := range targets {
+		key := strings.ToLower(strings.TrimSpace(target.Binding.Policy))
+		var exists *bool
+		if !target.Binding.Default && lookup != nil {
+			var seen bool
+			exists, seen = cache[key]
+			if !seen {
+				if answer := lookup(key); answer != nil {
+					copied := *answer
+					exists = &copied
+				}
+				cache[key] = exists
+			}
+		}
+		outcome := PlacementBindOutcome(dialect, target.Binding, exists)
+		facts.Bindings = append(facts.Bindings, PlacementBindingFact{Target: target, Exists: exists, Outcome: outcome})
+		switch outcome {
+		case PlacementRefused:
+			facts.Outcome = PlacementRefused
+		case PlacementUnproven:
+			if facts.Outcome != PlacementRefused {
+				facts.Outcome = PlacementUnproven
+			}
+		}
+	}
+	return facts
+}
+
+// HasSubpartitionDeclaration reports whether any structured declaration
+// carries a subpartitioning axis — the CREATE tail, member definitions,
+// alter member defs, or an alter PARTITION BY scheme including its defs.
+// Consumers adjudicate the execution boundary by dialect, version and
+// statement form; this predicate only preserves the authored marker.
+func HasSubpartitionDeclaration(ddl *DDL) bool {
+	if ddl == nil {
+		return false
+	}
+	if ddl.Subpartitioned {
+		return true
+	}
+	for i := range ddl.PartitionDefs {
+		if ddl.PartitionDefs[i].Subpartitioned {
+			return true
+		}
+	}
+	for i := range ddl.Alter {
+		for j := range ddl.Alter[i].PartitionDefs {
+			if ddl.Alter[i].PartitionDefs[j].Subpartitioned {
+				return true
+			}
+		}
+		if scheme := ddl.Alter[i].PartitionScheme; scheme != nil {
+			if scheme.Subpartitioned {
+				return true
+			}
+			for j := range scheme.Defs {
+				if scheme.Defs[j].Subpartitioned {
+					return true
+				}
+			}
+		}
+	}
+	return false
+}

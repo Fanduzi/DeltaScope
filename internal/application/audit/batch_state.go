@@ -317,6 +317,17 @@ func (s *batchState) apply(ctx context.Context, statement spec.Statement) error 
 	if statement.DDL != nil && statement.DDL.Operation == spec.DDLOperationDropTable {
 		return s.applyDropTable(ctx, statement)
 	}
+	if s.dialect == spec.DialectTiDB && statement.Unsupported == nil &&
+		statement.DDL != nil && statement.DDL.Operation == spec.DDLOperationCreateTable &&
+		statement.DDL.PartitionType == "range" &&
+		spec.HasSubpartitionDeclaration(statement.DDL) && isTiDB85(s.resolvedVersion) {
+		// The verified TiDB 8.5.0 CREATE TABLE RANGE shape: the ignored
+		// subpartition axis is a bounded aspect boundary, so the normal
+		// transitions run on an owned copy with the concealed primary
+		// member names restored. The original statement and its
+		// structural markers stay untouched (T20-R4).
+		return s.apply(ctx, normalizeIgnoredSubpartition(statement))
+	}
 	if statement.Unsupported != nil {
 		if statement.DDL != nil && statement.DDL.View != nil &&
 			statement.Unsupported.Reason == spec.UnsupportedVendorBoundaryReason {
@@ -645,6 +656,7 @@ func (s *batchState) applyCreateTable(ctx context.Context, statement spec.Statem
 		return nil
 	}
 	if temporaryClauseVendorRefused(s.dialect, ddl) {
+		setPlacementMutationOutcome(statement, spec.PlacementRefused)
 		return nil
 	}
 	dest := targets[0]
@@ -656,21 +668,53 @@ func (s *batchState) applyCreateTable(ctx context.Context, statement spec.Statem
 	if tempDest {
 		dstMap = s.tempEntries
 	}
+	// Placement bindings share the create's atomic fate (probed 8239):
+	// a proven refusal anywhere — including a later member def — refuses
+	// before any unproven invalidation gate can erase the precise
+	// pre-state, and a provably-invalid declared scheme is the same
+	// recognized refusal (T20-R4).
+	facts := s.placementFacts(statement)
+	bindingOutcome := spec.PlacementApplied
+	if facts != nil {
+		bindingOutcome = facts.Outcome
+	}
+	// An unproven mutation may still have bound named policies — mark
+	// every candidate's reference set non-exhaustive so a later DROP
+	// cannot read a stale proven-empty arm (T20-R4).
+	finish := func(outcome spec.PlacementOutcome, needed ...string) {
+		setPlacementMutationOutcome(statement, outcome, needed...)
+		if outcome == spec.PlacementUnproven {
+			s.placementMayAddBindingRefs(facts)
+		}
+	}
+	if bindingOutcome == spec.PlacementRefused {
+		setPlacementMutationOutcome(statement, spec.PlacementRefused)
+		return nil
+	}
+	if ddl.HasPartition &&
+		partitionSchemeOutcome(ddl.PartitionType, ddl.PartitionDefs, ddl.PartitionCount) == partitionOutcomeRefused {
+		setPlacementMutationOutcome(statement, spec.PlacementRefused)
+		return nil
+	}
 	if !createAspectAdmissible(s.dialect, statement) {
 		s.invalidateBoundKey(key, destNamespace(tempDest))
+		finish(spec.PlacementUnproven)
 		return nil
 	}
 	switch createTTLStatementOutcome(s.dialect, ddl) {
 	case ttlCreateRefused:
+		finish(spec.PlacementRefused)
 		return nil
 	case ttlCreateUnproven:
 		s.invalidateBoundKey(key, destNamespace(tempDest))
+		finish(spec.PlacementUnproven)
 		return nil
 	}
 	// A provably-absent schema refuses every create under it (1049): the
 	// destination keeps its proven pre-state instead of publishing a shape
 	// the engine never built.
 	if s.schemaStateForTarget(key.schema) == schemaAbsent {
+		finish(spec.PlacementRefused)
 		return nil
 	}
 	var entry *batchTableEntry
@@ -690,14 +734,17 @@ func (s *batchState) applyCreateTable(ctx context.Context, statement spec.Statem
 	// either way the bound fact stands. An unvouched temp slot stays
 	// tombstoned (the session slot cannot be recovered conservatively).
 	if entryState == tablePresent {
+		finish(spec.PlacementRefused)
 		return nil
 	}
 	if s.schemaStateForTarget(key.schema) == schemaUnknown {
 		s.invalidateBoundKey(key, destNamespace(tempDest))
+		finish(spec.PlacementUnproven, "schema.existence")
 		return nil
 	}
 	if tempDest {
 		if entryState == tableUnknown {
+			finish(spec.PlacementUnproven)
 			return nil
 		}
 		// Temp destinations cannot carry foreign keys or partitions
@@ -706,6 +753,7 @@ func (s *batchState) applyCreateTable(ctx context.Context, statement spec.Statem
 		// a shape the engine may have refused.
 		if hasDeclaredForeignKey(ddl) || ddl.HasPartition {
 			s.invalidateTempKey(key)
+			finish(spec.PlacementUnproven)
 			return nil
 		}
 		shape, outcome, err := s.createDestShape(ctx, statement, displaySchema, displayTable)
@@ -714,11 +762,14 @@ func (s *batchState) applyCreateTable(ctx context.Context, statement spec.Statem
 		}
 		switch outcome {
 		case createShapeRefused:
+			finish(spec.PlacementRefused)
 			return nil
 		case createShapeUnproven:
 			s.invalidateTempKey(key)
+			finish(spec.PlacementUnproven)
 			return nil
 		}
+		finish(spec.PlacementApplied)
 		dstMap[key] = &batchTableEntry{state: tablePresent, shape: shape, displaySchema: displaySchema, displayTable: displayTable}
 		return nil
 	}
@@ -738,9 +789,11 @@ func (s *batchState) applyCreateTable(ctx context.Context, statement spec.Statem
 		}
 		if !decided {
 			s.invalidateKey(key)
+			finish(spec.PlacementUnproven)
 			return nil
 		}
 		if refused {
+			finish(spec.PlacementRefused)
 			return nil
 		}
 	}
@@ -751,6 +804,7 @@ func (s *batchState) applyCreateTable(ctx context.Context, statement spec.Statem
 	arm := s.checkArmFor()
 	for _, member := range ddl.Constraints {
 		if spec.CheckExplicitClauseRefused(s.dialect, arm, member) {
+			finish(spec.PlacementRefused)
 			return nil
 		}
 		if member.Type == "check" && member.EnforcedUnproven &&
@@ -759,6 +813,7 @@ func (s *batchState) applyCreateTable(ctx context.Context, statement spec.Statem
 			// have refused 1064 or landed the table — existence is
 			// undecidable, so the entry is unvouched rather than published.
 			s.invalidateKey(key)
+			finish(spec.PlacementUnproven)
 			return nil
 		}
 	}
@@ -769,47 +824,31 @@ func (s *batchState) applyCreateTable(ctx context.Context, statement spec.Statem
 		if ddl.HasPartition {
 			switch partitionSchemeOutcome(ddl.PartitionType, ddl.PartitionDefs, ddl.PartitionCount) {
 			case partitionOutcomeRefused:
+				finish(spec.PlacementRefused)
 				return nil
 			case partitionOutcomeUnproven:
 				s.invalidateKey(key)
+				finish(spec.PlacementUnproven, "statement.partition_defs")
 				return nil
 			}
 		}
 	}
 	// A declared placement binding shares the create's atomic fate (probed
-	// v8.5.0: a missing policy refuses the whole CREATE, 8239). A proven
-	// bind publishes with the table; an unproven premise leaves the
-	// destination unvouched rather than guessing either arm (T20/#99).
-	if ddl.PlacementBinding != nil {
+	// v8.5.0: a missing policy refuses the whole CREATE, 8239). Refusals
+	// already returned above; only the unproven premise reaches this
+	// deferred gate, leaving the destination unvouched rather than
+	// guessing either arm (T20/#99, T20-R4).
+	if s.dialect != spec.DialectTiDB {
 		// MySQL's shared parser accepts the clause but the engine refuses
 		// it (1064 vendor boundary) — the create never executes.
-		if s.dialect != spec.DialectTiDB {
+		if ddl.PlacementBinding != nil {
+			finish(spec.PlacementRefused)
 			return nil
 		}
-		binding := *ddl.PlacementBinding
-		if !binding.Default {
-			switch spec.PlacementBindOutcome(s.dialect, binding, s.placementPolicyExists(binding.Policy)) {
-			case spec.PlacementRefused:
-				return nil
-			case spec.PlacementUnproven:
-				s.invalidateBoundKey(key, destNamespace(tempDest))
-				return nil
-			}
-		}
-	}
-	for i := range ddl.PartitionDefs {
-		def := &ddl.PartitionDefs[i]
-		if def.Placement == nil || def.Placement.Default || s.dialect != spec.DialectTiDB {
-			continue
-		}
-		binding := *def.Placement
-		switch spec.PlacementBindOutcome(s.dialect, binding, s.placementPolicyExists(binding.Policy)) {
-		case spec.PlacementRefused:
-			return nil
-		case spec.PlacementUnproven:
-			s.invalidateBoundKey(key, destNamespace(tempDest))
-			return nil
-		}
+	} else if bindingOutcome == spec.PlacementUnproven {
+		s.invalidateBoundKey(key, destNamespace(tempDest))
+		finish(spec.PlacementUnproven, "placement_policy.catalog")
+		return nil
 	}
 	shape, outcome, err := s.createDestShape(ctx, statement, displaySchema, displayTable)
 	if err != nil {
@@ -817,12 +856,14 @@ func (s *batchState) applyCreateTable(ctx context.Context, statement spec.Statem
 	}
 	switch outcome {
 	case createShapeRefused:
+		finish(spec.PlacementRefused)
 		return nil
 	case createShapeUnproven:
 		// A withheld member set can still carry conditional existence:
 		// IF NOT EXISTS on an unvouched destination proves presence only;
 		// a LIKE/CTAS whose source premise stayed unproven leaves the
 		// destination tombstoned — the create may never have run.
+		finish(spec.PlacementUnproven)
 		if ifNotExists && !ddl.HasReferTable && !ddl.HasSelect {
 			s.entries[key] = presentIncompleteEntry(displaySchema, displayTable)
 			return nil
@@ -834,6 +875,7 @@ func (s *batchState) applyCreateTable(ctx context.Context, statement spec.Statem
 		// IF NOT EXISTS on an unvouched destination can only prove
 		// existence — either the pre-existing table stood or the create
 		// landed; the member set differs between those outcomes.
+		finish(spec.PlacementUnproven)
 		s.entries[key] = presentIncompleteEntry(displaySchema, displayTable)
 		return nil
 	}
@@ -858,19 +900,34 @@ func (s *batchState) applyCreateTable(ctx context.Context, statement spec.Statem
 			}
 		}
 	}
-	// Member-level placement declarations bind with the same create —
+	// Member-level placement declarations publish with the same create —
 	// proven binds land, refused premises already refused the statement.
-	for i := range ddl.PartitionDefs {
-		def := &ddl.PartitionDefs[i]
-		if def.Placement != nil && !def.Placement.Default && shape != nil {
-			if shape.PartitionPlacements == nil {
-				shape.PartitionPlacements = map[string]string{}
+	// Omitted and DEFAULT members carry a known-empty explicit override;
+	// they inherit the table binding effectively without a fabricated
+	// reference (T20-R4).
+	if shape != nil {
+		if len(ddl.PartitionDefs) > 0 && shape.PartitionPlacements == nil {
+			shape.PartitionPlacements = map[string]string{}
+		}
+		for _, def := range ddl.PartitionDefs {
+			shape.PartitionPlacements[strings.ToLower(def.Name)] = ""
+		}
+		if facts != nil {
+			for _, item := range facts.Bindings {
+				target := item.Target
+				if target.ActionIndex != -1 || target.Source != "member_definition" ||
+					target.TargetKind != "partition" || item.Outcome != spec.PlacementApplied {
+					continue
+				}
+				name := strings.ToLower(target.Partition)
+				if !target.Binding.Default {
+					shape.PartitionPlacements[name] = target.Binding.Policy
+					s.placementAddRef(target.Binding.Policy, placementPartitionRef(displaySchema, displayTable, name))
+				}
 			}
-			member := strings.ToLower(def.Name)
-			shape.PartitionPlacements[member] = def.Placement.Policy
-			s.placementAddRef(def.Placement.Policy, placementPartitionRef(displaySchema, displayTable, member))
 		}
 	}
+	finish(spec.PlacementApplied)
 	s.entries[key] = &batchTableEntry{
 		state:         tablePresent,
 		shape:         shape,
@@ -1415,6 +1472,7 @@ func (s *batchState) applyAlterTable(ctx context.Context, statement spec.Stateme
 	// exact pre-state on every bound fact (T20-R1/#99).
 	if s.dialect == spec.DialectTiDB && len(ddl.Alter) > 1 &&
 		alterStatementHasPlacement(ddl) && alterPlacementMultiChange(ddl) {
+		setPlacementMutationOutcome(statement, spec.PlacementRefused)
 		return nil
 	}
 	// In the remaining combinable form (placement + modifiers only), the
@@ -1425,9 +1483,11 @@ func (s *batchState) applyAlterTable(ctx context.Context, statement spec.Stateme
 	if len(ddl.Alter) > 1 && alterStatementHasPlacement(ddl) {
 		switch s.placementPremiseOutcome(ddl) {
 		case spec.PlacementRefused:
+			setPlacementMutationOutcome(statement, spec.PlacementRefused)
 			return nil
 		case spec.PlacementUnproven:
 			s.invalidateAll(targets)
+			setPlacementMutationOutcome(statement, spec.PlacementUnproven, "placement_policy.catalog")
 			return nil
 		}
 	}
@@ -1442,6 +1502,7 @@ func (s *batchState) applyAlterTable(ctx context.Context, statement spec.Stateme
 	if len(ddl.Alter) > 1 && hasPartitionAlterAction(ddl) {
 		switch s.partitionMixedOutcome(ddl) {
 		case partitionOutcomeRefused:
+			setPlacementMutationOutcome(statement, spec.PlacementRefused)
 			return nil
 		case partitionOutcomeCombinable:
 			var partitionAlter *spec.Alter
@@ -1451,10 +1512,11 @@ func (s *batchState) applyAlterTable(ctx context.Context, statement spec.Stateme
 					break
 				}
 			}
-			s.applyPartitionOperation(targets, partitionAlter)
+			s.applyPartitionOperation(targets, partitionAlter, statement)
 			return nil
 		default:
 			s.invalidateAll(targets)
+			setPlacementMutationOutcome(statement, spec.PlacementUnproven)
 			return nil
 		}
 	}
@@ -1506,7 +1568,7 @@ func (s *batchState) applyAlterTable(ctx context.Context, statement spec.Stateme
 	// Every other aspect keeps the statement fail-closed.
 	if len(ddl.Alter) == 1 && len(targets) > 0 && isPartitionAlterAction(ddl.Alter[0].Action) &&
 		partitionStateAdmissible(s.dialect, statement) {
-		s.applyPartitionOperation(targets, &ddl.Alter[0])
+		s.applyPartitionOperation(targets, &ddl.Alter[0], statement)
 		return nil
 	}
 	if !fullyAuditedStatement(s.dialect, statement) || len(ddl.Alter) != 1 || len(targets) == 0 {
@@ -1596,7 +1658,7 @@ func (s *batchState) applyAlterTable(ctx context.Context, statement spec.Stateme
 		return nil
 	}
 	if isPartitionAlterAction(alter.Action) {
-		s.applyPartitionOperation(targets, alter)
+		s.applyPartitionOperation(targets, alter, statement)
 		return nil
 	}
 	if alter.Action != "add_columns" || alter.Column == nil || alter.Column.Definition == nil {
@@ -3215,6 +3277,12 @@ func cloneTableSnapshot(in *spec.TableSnapshot) *spec.TableSnapshot {
 	}
 	if in.PartitionDefs != nil {
 		out.PartitionDefs = spec.ClonePartitionDefs(in.PartitionDefs)
+	}
+	if in.PartitionPlacements != nil {
+		out.PartitionPlacements = make(map[string]string, len(in.PartitionPlacements))
+		for member, policy := range in.PartitionPlacements {
+			out.PartitionPlacements[member] = policy
+		}
 	}
 	if in.ReferencedBy != nil {
 		out.ReferencedBy = append([]spec.Table{}, in.ReferencedBy...)

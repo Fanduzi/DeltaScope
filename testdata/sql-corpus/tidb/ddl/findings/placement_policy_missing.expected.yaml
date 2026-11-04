@@ -4,7 +4,7 @@ category: ddl
 expect:
   parse_ok: true
   statements:
-    count: 1
+    count: 4
   unsupported:
     count: 0
   findings:
@@ -20,10 +20,15 @@ metadata:
     t20:
       exists: true
       placement_policy_known: true
+      partitioned: true
+      partition_type: range
+      partition_names: [p0, p_keep]
       columns:
         - {name: id, type: int}
       options:
         engine: InnoDB
+    t20_new:
+      exists: false
   placement_policies:
     p20:
       primary_region: r1

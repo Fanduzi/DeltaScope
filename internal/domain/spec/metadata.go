@@ -48,6 +48,13 @@ type Metadata struct {
 	// placement_policy.topology evidence gap instead of implying verified
 	// deployability (issue #99 T20-R3).
 	PlacementTopology *PlacementTopologyFacts `json:"-"`
+	// Placement carries the per-statement adjudicated placement facts —
+	// every collected authored binding's outcome, the aggregate premise,
+	// the lifecycle target's own policy premise, and the enclosing atomic
+	// mutation's static outcome. An owned projection built once per
+	// statement before its transition; never live registry pointers
+	// (issue #99 T20-R4).
+	Placement *PlacementFacts `json:"-"`
 	// SchemaTarget binds a schema-scoped statement (CREATE/ALTER/DROP
 	// DATABASE|SCHEMA) to its ordered pre-state projection: confirmed
 	// schema attributes when the identity is provably present, an empty
@@ -186,6 +193,12 @@ type TableSnapshot struct {
 	// names when the partition directory was loaded; nil means the member
 	// bindings were never observed, never read as confirmed unbound
 	// (issue #99 T20).
+	// PartitionPlacements maps a member name to its EXPLICIT placement
+	// override. nil = the whole member binding space is unobserved; an
+	// absent key = that member's override is unknown; an empty string =
+	// a known-empty override (omitted or DEFAULT — the member inherits
+	// the table binding effectively). Never read a missing key as a
+	// known empty override (T20-R4).
 	PartitionPlacements map[string]string `json:"-"`
 
 	// PrimaryKeyIsHandle marks a TiDB PKIsHandle table: the single-integer
