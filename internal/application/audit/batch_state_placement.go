@@ -131,6 +131,27 @@ func (s *batchState) seedPlacementCatalog() {
 	s.placementsKnownComplete = true
 }
 
+// schemaBoundPlacementPolicy answers which policy the schema is proven
+// bound to, read from the policy registry's inbound-reference sets — the
+// source of truth regardless of whether the binding arrived through the
+// provider catalog or a batch ALTER DATABASE. A proven bound schema
+// stamps its policy onto new tables' catalog rows at CREATE time
+// (probed v8.5.0); the stamp is a real bound reference that outlives a
+// later schema =DEFAULT and still refuses the policy drop (8241)
+// (T20-R1/#99).
+func (s *batchState) schemaBoundPlacementPolicy(schema string) (string, bool) {
+	ref := placementSchemaRef(schema)
+	for name, entry := range s.placements {
+		if entry == nil || entry.state != placementPolicyPresent || !entry.refsKnown {
+			continue
+		}
+		if _, ok := entry.refs[ref]; ok {
+			return name, true
+		}
+	}
+	return "", false
+}
+
 // placementPoliciesProjection projects the registry's ordered pre-state
 // for statement metadata: a non-nil map answers proven existence per key
 // (absent keys are proven-absent only while the registry is
@@ -347,16 +368,19 @@ func (s *batchState) applyAlterPlacementPolicy(statement spec.Statement) {
 			entry = &batchPlacementEntry{state: placementPolicyPresent, refs: map[string]struct{}{}, refsKnown: true}
 			registry[name] = entry
 		}
+		// ALTER PLACEMENT POLICY replaces the definition — probed on
+		// v8.5.0: SHOW CREATE after ALTER emits only the newly stated
+		// members; unstated prior members do not survive (T20-R1/#99).
+		// The policy identity and its bound references are untouched.
+		attrs := map[string]string{}
 		for _, opt := range ddl.PlacementOptions {
-			if entry.attrs == nil {
-				entry.attrs = map[string]string{}
-			}
 			if opt.StrValue != "" {
-				entry.attrs[opt.Key] = opt.StrValue
+				attrs[opt.Key] = opt.StrValue
 			} else if opt.UintValue != nil {
-				entry.attrs[opt.Key] = "*"
+				attrs[opt.Key] = "*"
 			}
 		}
+		entry.attrs = attrs
 	case spec.PlacementUnproven:
 		if entry := registry[name]; entry != nil && entry.state == placementPolicyPresent {
 			// The alter may have landed: attrs are no longer provable.
@@ -630,37 +654,47 @@ func (s *batchState) declaredPlacementPolicyExists(ddl *spec.DDL) *bool {
 	return s.placementPolicyExists(ddl.PlacementBinding.Policy)
 }
 
-// placementSchemaRefSync maintains the inbound-reference set across a
-// proven schema bind transition: the old bound policy loses the schema
-// reference, the new one gains it.
-func (s *batchState) placementSchemaRefSync(schema, oldPolicy, newPolicy string) {
+// placementSchemaRefSync maintains the inbound-reference sets across a
+// proven schema bind transition: the statement's landed post-state is
+// "this schema binds exactly newPolicy", so every other policy's
+// proven set loses the reference (a rebind or =DEFAULT dissolves it
+// even when the schema's own attr projection never vouched the old
+// name — the registry-side ref is the authoritative record, T20-R1/#99).
+func (s *batchState) placementSchemaRefSync(schema, newPolicy string) {
 	ref := placementSchemaRef(schema)
-	if oldPolicy != "" && oldPolicy != newPolicy {
-		s.placementRemoveRef(oldPolicy, ref)
+	for name, entry := range s.placements {
+		if name == newPolicy || !entry.refsKnown {
+			continue
+		}
+		delete(entry.refs, ref)
 	}
 	if newPolicy != "" {
 		s.placementAddRef(newPolicy, ref)
 	}
 }
 
-// placementSchemaRefUnvouch marks the inbound sets of both candidate
-// policies unvouched when the schema bind outcome is undecidable.
+// placementSchemaRefUnvouch marks every proven set that carries the
+// schema's reference unvouched — an undecidable bind/unbind may have
+// dissolved it — plus both candidate policies the statement named
+// (either arm may have bound it). The registry refs are authoritative:
+// a policy can carry the reference even when the schema's own attr
+// projection never vouched the name (T20-R1/#99).
 func (s *batchState) placementSchemaRefUnvouch(schema, oldPolicy, declaredPolicy string) {
 	ref := placementSchemaRef(schema)
-	for _, policy := range []string{oldPolicy, declaredPolicy} {
-		policy = strings.ToLower(strings.TrimSpace(policy))
-		if policy == "" || policy == "default" {
+	oldPolicy = strings.ToLower(strings.TrimSpace(oldPolicy))
+	declaredPolicy = strings.ToLower(strings.TrimSpace(declaredPolicy))
+	for name, entry := range s.placements {
+		if entry == nil || !entry.refsKnown {
 			continue
 		}
-		if entry := s.placementPolicies()[policy]; entry != nil {
-			if entry.refsKnown {
-				if _, ok := entry.refs[ref]; ok {
-					delete(entry.refs, ref)
-				} else {
-					entry.refs[ref] = struct{}{}
-				}
-				entry.refsKnown = false
-			}
+		if _, ok := entry.refs[ref]; ok {
+			delete(entry.refs, ref)
+			entry.refsKnown = false
+			continue
+		}
+		if name == oldPolicy || (declaredPolicy != "" && declaredPolicy != "default" && name == declaredPolicy) {
+			entry.refs[ref] = struct{}{}
+			entry.refsKnown = false
 		}
 	}
 }
@@ -686,6 +720,24 @@ func alterStatementHasPlacement(ddl *spec.DDL) bool {
 		}
 	}
 	return false
+}
+
+// alterPlacementMultiChange reports whether placement shares the ALTER
+// with a second schema-changing spec — probed 8200 on v8.5.0
+// ("Unsupported multi schema change for alter table placement"): a
+// placement spec may only accompany ALGORITHM/LOCK modifiers; a second
+// placement spec or any structural/option sibling refuses the whole
+// statement (T20-R1/#99).
+func alterPlacementMultiChange(ddl *spec.DDL) bool {
+	schemaChanging := 0
+	for _, alter := range ddl.Alter {
+		switch alter.Action {
+		case "algorithm", "lock":
+			continue
+		}
+		schemaChanging++
+	}
+	return schemaChanging > 1
 }
 
 // placementPremiseOutcome evaluates the policy-existence premise of every

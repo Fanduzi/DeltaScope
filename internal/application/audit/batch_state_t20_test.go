@@ -1,7 +1,9 @@
 package audit
 
 import (
+	"context"
 	"errors"
+	"strings"
 	"testing"
 
 	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
@@ -201,9 +203,12 @@ func TestT20AlterPolicyLifecycle(t *testing.T) {
 	state, _ := t17Enrich(t, spec.DialectTiDB,
 		"CREATE PLACEMENT POLICY p PRIMARY_REGION='r1'; ALTER PLACEMENT POLICY p REGIONS='r2'; ALTER PLACEMENT POLICY ghost FOLLOWERS=1; ALTER TABLE t ADD COLUMN c INT;", "golden", t20v805, provider)
 	entry := state.placements["p"]
-	if entry == nil || entry.state != placementPolicyPresent || len(entry.attrs) != 2 ||
-		entry.attrs["primary_region"] != "r1" || entry.attrs["regions"] != "r2" {
-		t.Fatalf("altered policy = %#v, want merged members (alter rewrites only named members)", entry)
+	if entry == nil || entry.state != placementPolicyPresent || len(entry.attrs) != 1 ||
+		entry.attrs["regions"] != "r2" {
+		t.Fatalf("altered policy = %#v, want replaced definition — v8.5.0 keeps only restated members", entry)
+	}
+	if _, kept := entry.attrs["primary_region"]; kept {
+		t.Fatalf("unstated member must not survive the replace, got %#v", entry.attrs)
 	}
 	if ghost := state.placements["ghost"]; ghost != nil && ghost.state == placementPolicyPresent {
 		t.Fatalf("alter on absent name must not fabricate presence, got %#v", ghost)
@@ -251,23 +256,166 @@ func TestT20AlterRange(t *testing.T) {
 	}
 }
 
-// A placement spec sharing a multi-action ALTER settles atomically: a
-// missing policy refuses the whole statement — the sibling column never
-// publishes (native mixed ALTER is atomic).
+// A placement spec sharing a multi-action ALTER settles atomically
+// (probed v8.5.0): a missing policy refuses the whole statement (8239)
+// in either spec order — the sibling column never publishes. A proven
+// policy still refuses when a structural sibling or a second placement
+// spec shares the ALTER (8200 "Unsupported multi schema change for alter
+// table placement"): placement may only be the sole schema-changing
+// action beside ALGORITHM/LOCK modifiers.
 func TestT20MixedAlterAtomicRefusal(t *testing.T) {
-	provider := &t10Provider{
-		version:   "8.0.11-TiDB-v8.5.0",
-		placement: t20Catalog(),
-		tables:    map[string]*spec.TableSnapshot{"t": t20PlacementShape("t")},
+	newProvider := func(catalog map[string]*spec.PlacementPolicyFact) *t10Provider {
+		return &t10Provider{
+			version:   "8.0.11-TiDB-v8.5.0",
+			placement: catalog,
+			tables:    map[string]*spec.TableSnapshot{"t": t20PlacementShape("t")},
+		}
 	}
-	snapshot := t20SuccessorSnapshot(t, provider,
-		"ALTER TABLE t ADD COLUMN c INT, PLACEMENT POLICY=missing; ALTER TABLE t ADD COLUMN d INT;")
-	if snapshot == nil {
-		t.Fatal("expected successor snapshot")
+	t.Run("missing policy refuses, both orders", func(t *testing.T) {
+		for _, first := range []string{
+			"ALTER TABLE t ADD COLUMN c INT, PLACEMENT POLICY=missing;",
+			"ALTER TABLE t PLACEMENT POLICY=missing, ADD COLUMN c INT;",
+		} {
+			snapshot := t20SuccessorSnapshot(t, newProvider(t20Catalog()), first+" ALTER TABLE t ADD COLUMN d INT;")
+			if snapshot == nil {
+				t.Fatal("expected successor snapshot")
+			}
+			if snapshot.FindColumn("c") != nil {
+				t.Fatalf("8239 refusal must not publish the sibling spec %q: %#v", first, snapshot.Columns)
+			}
+			if snapshot.PlacementPolicy != "" {
+				t.Fatalf("8239 refusal must not publish a binding: %#v", snapshot.PlacementPolicy)
+			}
+		}
+	})
+	t.Run("proven policy plus structural sibling refuses 8200", func(t *testing.T) {
+		snapshot := t20SuccessorSnapshot(t, newProvider(t20Catalog("p")),
+			"ALTER TABLE t ADD COLUMN c INT, PLACEMENT POLICY=p; ALTER TABLE t ADD COLUMN d INT;")
+		if snapshot == nil {
+			t.Fatal("expected successor snapshot")
+		}
+		if snapshot.FindColumn("c") != nil {
+			t.Fatalf("8200 refusal must not publish the sibling spec: %#v", snapshot.Columns)
+		}
+		if snapshot.PlacementPolicy != "" {
+			t.Fatalf("8200 refusal must not publish the binding: %#v", snapshot.PlacementPolicy)
+		}
+	})
+	t.Run("modifier plus placement lands", func(t *testing.T) {
+		// Probed rc=0 on v8.5.0: ALGORITHM=INSTANT/INPLACE/COPY and LOCK
+		// modifiers combine with a sole placement spec — the binding
+		// publishes on the same atomic successor.
+		snapshot := t20SuccessorSnapshot(t, newProvider(t20Catalog("p")),
+			"ALTER TABLE t ALGORITHM=INSTANT, PLACEMENT POLICY=p; ALTER TABLE t ADD COLUMN d INT;")
+		if snapshot == nil || !snapshot.PlacementPolicyKnown || snapshot.PlacementPolicy != "p" {
+			t.Fatalf("combinable modifier+placement must publish the binding, got %#v", snapshot)
+		}
+	})
+	t.Run("unvouched policy withholds the combinable form", func(t *testing.T) {
+		// Existence unproven (no catalog at all): the statement cannot be
+		// adjudicated, so no successor publishes a binding.
+		snapshot := t20SuccessorSnapshot(t, newProvider(nil),
+			"ALTER TABLE t ALGORITHM=INSTANT, PLACEMENT POLICY=p; ALTER TABLE t ADD COLUMN d INT;")
+		if snapshot != nil && snapshot.PlacementPolicyKnown && snapshot.PlacementPolicy != "" {
+			t.Fatalf("unvouched premise must not publish a binding, got %#v", snapshot.PlacementPolicy)
+		}
+	})
+	t.Run("two placement specs refuse 8200", func(t *testing.T) {
+		snapshot := t20SuccessorSnapshot(t, newProvider(t20Catalog("p")),
+			"ALTER TABLE t PLACEMENT POLICY=p, PLACEMENT POLICY=p; ALTER TABLE t ADD COLUMN d INT;")
+		if snapshot == nil {
+			t.Fatal("expected successor snapshot")
+		}
+		if snapshot.PlacementPolicy != "" {
+			t.Fatalf("double placement spec must refuse (8200), got %#v", snapshot.PlacementPolicy)
+		}
+	})
+}
+
+// t20SchemaAwareProvider extends the T20 mock with schema resolution so
+// ALTER DATABASE premises can be proven in-test.
+type t20SchemaAwareProvider struct {
+	*t10Provider
+	schemas map[string]*spec.ObjectSnapshot
+}
+
+func (p *t20SchemaAwareProvider) ResolveObject(_ context.Context, _ spec.Dialect, req spec.ObjectLookupRequest) (*spec.ObjectSnapshot, error) {
+	if req.Type == "schema" {
+		if snap, ok := p.schemas[strings.ToLower(req.Name)]; ok {
+			out := *snap
+			out.Schema, out.Type, out.Name = req.Schema, req.Type, req.Name
+			return &out, nil
+		}
 	}
-	if snapshot.FindColumn("c") != nil {
-		t.Fatalf("atomic refusal must not publish the sibling spec: %#v", snapshot.Columns)
+	return &spec.ObjectSnapshot{Status: spec.MetadataStatusUnavailable}, nil
+}
+
+// A proven schema binding stamps its policy onto tables created under it
+// (probed v8.5.0): the stamp is a real bound reference — it survives the
+// schema's own =DEFAULT, so the policy drop still refuses (8241). A
+// pre-existing table is never backfilled.
+func TestT20SchemaPolicyStampOnCreate(t *testing.T) {
+	provider := &t20SchemaAwareProvider{
+		t10Provider: &t10Provider{
+			version:   "8.0.11-TiDB-v8.5.0",
+			placement: map[string]*spec.PlacementPolicyFact{"p": {BoundTargets: []string{"schema:golden"}}},
+			tables:    map[string]*spec.TableSnapshot{},
+		},
+		schemas: map[string]*spec.ObjectSnapshot{
+			"golden": {Status: spec.MetadataStatusConfirmed, Exists: true, Attributes: map[string]string{}},
+		},
 	}
+	state, stmts := t17Enrich(t, spec.DialectTiDB,
+		"CREATE TABLE t2 (id INT); ALTER DATABASE golden PLACEMENT POLICY=DEFAULT; DROP PLACEMENT POLICY p; ALTER TABLE t2 ADD COLUMN c INT;",
+		"golden", t20v805, provider)
+	entry := state.placements["p"]
+	if entry == nil || entry.state != placementPolicyPresent {
+		t.Fatalf("stamped-table reference must refuse the drop (8241), got %#v", entry)
+	}
+	if _, ok := entry.refs["table:golden.t2"]; !ok {
+		t.Fatalf("created table's stamp missing from the bound set: %#v", entry.refs)
+	}
+	if _, still := entry.refs["schema:golden"]; still {
+		t.Fatalf("schema =DEFAULT must dissolve the schema reference: %#v", entry.refs)
+	}
+	snapshot := stmts[3].Metadata.TargetTables[0].Snapshot
+	if snapshot == nil || !snapshot.PlacementPolicyKnown || snapshot.PlacementPolicy != "p" {
+		t.Fatalf("t2 successor = %#v, want stamped policy p", snapshot)
+	}
+}
+
+// The /*T![placement] PLACEMENT POLICY=<name> */ feature comment is a
+// real binding form on v8.5.0 (probed: binds, SHOW CREATE emits it back;
+// a missing policy inside it refuses 8239 like the bare clause). The
+// direct legacy options form /*T![placement] PRIMARY_REGION=... */ stays
+// a 1064 parse boundary — two different comment semantics (T20-R1/#99).
+func TestT20PlacementCommentForms(t *testing.T) {
+	mk := func(cat map[string]*spec.PlacementPolicyFact) *t10Provider {
+		return &t10Provider{version: "8.0.11-TiDB-v8.5.0", placement: cat, tables: map[string]*spec.TableSnapshot{}}
+	}
+	t.Run("policy-reference comment binds", func(t *testing.T) {
+		state, _ := t17Enrich(t, spec.DialectTiDB,
+			"CREATE TABLE t (id INT) /*T![placement] PLACEMENT POLICY=p */; ALTER TABLE t ADD COLUMN c INT;",
+			"golden", t20v805, mk(t20Catalog("p")))
+		entry := state.entries[state.keyFor("golden", spec.Table{Name: "t"})]
+		if entry == nil || entry.state != tablePresent || entry.shape == nil || entry.shape.PlacementPolicy != "p" {
+			t.Fatalf("comment-form bind must land, got %#v", entry)
+		}
+	})
+	t.Run("missing policy in comment refuses create", func(t *testing.T) {
+		state, _ := t17Enrich(t, spec.DialectTiDB,
+			"CREATE TABLE t2 (id INT) /*T![placement] PLACEMENT POLICY=missing */; SELECT 1;",
+			"golden", t20v805, mk(t20Catalog("p")))
+		if e := state.entries[state.keyFor("golden", spec.Table{Name: "t2"})]; e != nil && e.state == tablePresent {
+			t.Fatalf("comment-form missing policy must refuse the create (8239), got %#v", e)
+		}
+	})
+	t.Run("direct options comment stays a parse boundary", func(t *testing.T) {
+		_, err := Parse(t.Context(), "CREATE TABLE t (id INT) /*T![placement] PRIMARY_REGION='r1' */;", spec.DialectTiDB)
+		if err == nil {
+			t.Fatal("direct placement options inside /*T![placement]*/ must stay a parse error")
+		}
+	})
 }
 
 // A proven table drop dissolves its inbound reference; a proven rename

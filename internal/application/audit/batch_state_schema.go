@@ -347,7 +347,7 @@ func (s *batchState) applyCreateSchema(ctx context.Context, statement spec.State
 		entry.state = schemaPresent
 		entry.attrs = attrs
 		entry.batchCreated = true
-		s.placementSchemaRefSync(name, "", attrs["placement_policy"])
+		s.placementSchemaRefSync(name, attrs["placement_policy"])
 		return nil
 	default:
 		if statement.DDL.Options["if_not_exists"] == "true" {
@@ -409,7 +409,7 @@ func (s *batchState) applyAlterSchema(ctx context.Context, statement spec.Statem
 			return nil
 		}
 		entry.attrs = attrs
-		s.placementSchemaRefSync(name, oldPolicy, attrs["placement_policy"])
+		s.placementSchemaRefSync(name, attrs["placement_policy"])
 		return nil
 	default:
 		return nil

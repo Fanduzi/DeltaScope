@@ -103,11 +103,14 @@ var inplaceCapableActions = map[string]struct{}{
 
 // tidbInstantCapableActions is the probed ALGORITHM=INSTANT acceptance
 // set on TiDB v8.5; add_index is a proven 1846 refusal instead.
+// placement_policy is probed combinable (rc=0, v8.5.0) — a placement spec
+// may only sit beside ALGORITHM/LOCK modifiers natively anyway (T20/#99).
 var tidbInstantCapableActions = map[string]struct{}{
-	"add_columns":   {},
-	"drop_column":   {},
-	"modify_column": {},
-	"rename_column": {},
+	"add_columns":      {},
+	"drop_column":      {},
+	"modify_column":    {},
+	"rename_column":    {},
+	"placement_policy": {},
 }
 
 // OnlineDDLOutcomeFor adjudicates the statement's effective ALGORITHM/LOCK

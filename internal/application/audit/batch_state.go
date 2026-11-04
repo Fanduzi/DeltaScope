@@ -837,13 +837,25 @@ func (s *batchState) applyCreateTable(ctx context.Context, statement spec.Statem
 		s.entries[key] = presentIncompleteEntry(displaySchema, displayTable)
 		return nil
 	}
-	if s.dialect == spec.DialectTiDB && ddl.PlacementBinding != nil {
-		binding := *ddl.PlacementBinding
-		ref := placementTableRef(displaySchema, displayTable)
-		if !binding.Default && shape != nil {
-			shape.PlacementPolicy = binding.Policy
-			shape.PlacementPolicyKnown = true
-			s.placementAddRef(binding.Policy, ref)
+	if s.dialect == spec.DialectTiDB {
+		if ddl.PlacementBinding != nil {
+			binding := *ddl.PlacementBinding
+			ref := placementTableRef(displaySchema, displayTable)
+			if !binding.Default && shape != nil {
+				shape.PlacementPolicy = binding.Policy
+				shape.PlacementPolicyKnown = true
+				s.placementAddRef(binding.Policy, ref)
+			}
+		} else if shape != nil {
+			// A proven schema binding stamps its policy onto the new
+			// table's catalog row (probed v8.5.0); the stamp is a real
+			// bound reference — it survives a later schema =DEFAULT and
+			// still refuses the policy drop (8241) (T20-R1/#99).
+			if policy, ok := s.schemaBoundPlacementPolicy(displaySchema); ok {
+				shape.PlacementPolicy = policy
+				shape.PlacementPolicyKnown = true
+				s.placementAddRef(policy, placementTableRef(displaySchema, displayTable))
+			}
 		}
 	}
 	// Member-level placement declarations bind with the same create —
@@ -1395,11 +1407,21 @@ func (s *batchState) applyAlterTable(ctx context.Context, statement spec.Stateme
 			return nil
 		}
 	}
-	// A placement bind sharing a multi-spec ALTER is settled atomically by
-	// the policy premise (probed v8.5.0: a missing policy refuses the whole
-	// statement, 8239 — no sibling publishes). A proven bind falls through
-	// to the multi-action model, which publishes the placement spec's own
-	// effect; an unproven premise withholds the whole successor (T20/#99).
+	// A placement spec may only be the sole schema-changing action of a
+	// multi-spec ALTER — probed 8200 on v8.5.0 ("Unsupported multi schema
+	// change for alter table placement") when a structural/option sibling
+	// or a second placement spec shares the statement; ALGORITHM/LOCK
+	// modifiers remain combinable (probed rc=0). The refusal keeps the
+	// exact pre-state on every bound fact (T20-R1/#99).
+	if s.dialect == spec.DialectTiDB && len(ddl.Alter) > 1 &&
+		alterStatementHasPlacement(ddl) && alterPlacementMultiChange(ddl) {
+		return nil
+	}
+	// In the remaining combinable form (placement + modifiers only), the
+	// policy premise settles the statement atomically (probed v8.5.0: a
+	// missing policy refuses the whole statement, 8239 — no sibling
+	// publishes). A proven bind falls through to the multi-action model;
+	// an unproven premise withholds the whole successor (T20/#99).
 	if len(ddl.Alter) > 1 && alterStatementHasPlacement(ddl) {
 		switch s.placementPremiseOutcome(ddl) {
 		case spec.PlacementRefused:

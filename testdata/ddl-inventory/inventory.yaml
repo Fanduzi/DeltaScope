@@ -1417,7 +1417,7 @@ rows:
     sql_shape: "CREATE TABLE t (id INT) /*T![placement] PRIMARY_REGION='x' REGIONS='x' */"
     prerequisites: "direct placement options deprecated in favor of policies but still documented"
     status: parser_unsupported
-    status_evidence: "2026-09-22 CLI probe: parser_error on the placement-comment form. 2026-11-12 T20 (#99): confirmed on the TiDB 8.5 anchor — /*T![placement]*/ direct options lex as real tokens and the form is a 1064 parse error, so the row stays a parser boundary, not an auditable statement"
+    status_evidence: "2026-09-22 CLI probe: parser_error on the placement-comment form. 2026-11-12 T20 (#99): confirmed on the TiDB 8.5 anchor — /*T![placement]*/ direct options lex as real tokens and the form is a 1064 parse error, so the row stays a parser boundary, not an auditable statement. 2026-11-04 T20-R1 (#99): the sibling /*T![placement] PLACEMENT POLICY=<name> */ reference form is a different, valid comment (rc=0, binds; SHOW CREATE emits it back) — it is modeled by the binding rows, NOT by this row; the 1064 boundary covers only direct region/constraint option syntax. On MySQL every /*T![placement]*/ form is an ignored ordinary comment (probed 8.0.46: lands rc=0, no binding); the product's MySQL dialect still parse-errors the direct-option comment and vendor-refuses the policy-reference comment — a conservative over-refusal gap recorded in the T20 ADR"
     targets: "direct placement attributes (legacy form)"
     acceptance:
       dimensions: "legacy placement form classification"
@@ -1790,7 +1790,7 @@ rows:
     sql_shape: "ALTER PLACEMENT POLICY p1 PRIMARY_REGION='us-west-1' REGIONS='us-west-1'"
     prerequisites: "bound-object effects"
     status: generic_notice
-    status_evidence: "2026-09-24 T03 rework (#82): extracted-but-unchecked option facts now carry bounded unsupported evidence (alter_placement_policy.options when an option list is present) and coverage=incomplete; option semantics still owned by T20. 2026-09-22 CLI probe: only ddl.alter_placement_policy.notice fires. 2026-11-12 T20 (#99): ALTER merges option keys per native semantics without disturbing bound references, proven-present warns via ddl.tidb.placement.warn, proven-absent refuses, unvouched catalog yields gaps"
+    status_evidence: "2026-09-24 T03 rework (#82): extracted-but-unchecked option facts now carry bounded unsupported evidence (alter_placement_policy.options when an option list is present) and coverage=incomplete; option semantics still owned by T20. 2026-09-22 CLI probe: only ddl.alter_placement_policy.notice fires. 2026-11-12 T20 (#99): ALTER merges option keys per native semantics without disturbing bound references, proven-present warns via ddl.tidb.placement.warn, proven-absent refuses, unvouched catalog yields gaps. 2026-11-04 T20-R1 (#99): corrected — the merge claim was wrong; probed v8.5.0 shows ALTER replaces the whole definition (post-ALTER SHOW CREATE emits only restated members), so unstated members do not survive while identity and bound references persist"
     targets: "policy identity, attribute transitions, bound-object effects"
     acceptance:
       dimensions: "attribute transitions, bound-object visibility"

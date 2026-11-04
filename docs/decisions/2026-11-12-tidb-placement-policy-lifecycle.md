@@ -59,14 +59,21 @@ including `= DEFAULT` (an unbind is still a vendor feature).
    policy proven absent), applied (DEFAULT unbind unconditionally; named
    policy proven present), or unproven (policy catalog cannot answer).
    Proven refusal preserves exact pre-state; unproven withholds only
-   the affected fact — sibling ALTER actions in one statement still
-   publish their own modeled effects.
+   the affected fact. A placement spec may only be the sole
+   schema-changing action of a multi-spec ALTER — probed 8200 on
+   v8.5.0 ("Unsupported multi schema change for alter table
+   placement"): any structural/option sibling or a second placement
+   spec refuses the whole statement atomically; only ALGORITHM/LOCK
+   modifiers combine (probed rc=0) (T20-R1 correction).
 3. **Inbound references are maintained, not recomputed.** Bind,
    unbind, drop-table/drop-schema, and rename paths update
    `BoundTargets` with exact identity matching (`schema:foo` must not
    collide with `schema:foobar`; renames rekey `table:` identities).
-   Policy ALTER merges option keys per native semantics and never
-   disturbs bound references.
+   Policy ALTER *replaces* the option definition — probed on
+   v8.5.0: after `ALTER PLACEMENT POLICY p FOLLOWERS=4`,
+   `SHOW CREATE` emits only `FOLLOWERS=4`; unstated prior members do
+   not survive. Policy identity and bound references are untouched
+   (T20-R1 correction).
 4. **Topology is explicitly out of scope.** A successful binding audit
    states that the catalog would record the binding — it never claims
    placement has deployed. `SHOW PLACEMENT`/`SCHEDULE_STATE` data is
