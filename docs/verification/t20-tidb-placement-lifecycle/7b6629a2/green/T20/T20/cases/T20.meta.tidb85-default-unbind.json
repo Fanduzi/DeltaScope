@@ -1,0 +1,269 @@
+{
+  "case_id": "T20.meta.tidb85-default-unbind",
+  "kind": "cli_metadata",
+  "cli_case": "tidb85-default-unbind",
+  "anchor": "tidb85",
+  "dialect": "tidb",
+  "input_sql": "ALTER TABLE t PLACEMENT POLICY=DEFAULT;",
+  "policy_profile": "t20-placement",
+  "policy_path": "/Users/fan/GolangProjects/DeltaScope/docs/verification/t20-tidb-placement-lifecycle/7b6629a2/green/T20/T20/golden-policy-t20-placement.yaml",
+  "connect": {
+    "host": "127.0.0.1",
+    "port": 24000,
+    "user": "root",
+    "schema": "t20m_default"
+  },
+  "expected": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+      "complete"
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false
+  },
+  "actual": {
+    "database": {
+      "product": "tidb",
+      "image": "pingcap/tidb:v8.5.0",
+      "image_digest": "pingcap/tidb@sha256:490861bd4a2fa643dbe76b77ffecafcad66e6a42774e580b82f4ec2429a80e57",
+      "container": "deltascope-ddl-golden-tidb85",
+      "reachable": true,
+      "version": "8.0.11-TiDB-v8.5.0"
+    },
+    "setup": [
+      {
+        "name": "create-owned-fixture",
+        "sql": "CREATE DATABASE t20m_default;CREATE PLACEMENT POLICY t20m_p PRIMARY_REGION='us-east-1' REGIONS='us-east-1' FOLLOWERS=2;CREATE TABLE t20m_default.t (id INT PRIMARY KEY) PLACEMENT POLICY=t20m_p",
+        "rc": 0,
+        "stdout": "",
+        "stderr": "",
+        "verify": [
+          {
+            "assert": "fixture table starts bound",
+            "sql": "SELECT TIDB_PLACEMENT_POLICY_NAME FROM information_schema.TABLES WHERE TABLE_SCHEMA='t20m_default' AND TABLE_NAME='t'",
+            "rc": 0,
+            "output": "t20m_p",
+            "stderr": ""
+          }
+        ]
+      }
+    ],
+    "post_verify": [
+      {
+        "assert": "audit did not mutate the existing binding",
+        "sql": "SELECT COALESCE(TIDB_PLACEMENT_POLICY_NAME,'') FROM information_schema.TABLES WHERE TABLE_SCHEMA='t20m_default' AND TABLE_NAME='t'",
+        "rc": 0,
+        "output": "t20m_p",
+        "stderr": ""
+      }
+    ],
+    "execute": [
+      {
+        "name": "native DEFAULT unbind lands",
+        "sql": "ALTER TABLE t20m_default.t PLACEMENT POLICY=DEFAULT;",
+        "rc": 0,
+        "stdout": "",
+        "stderr": ""
+      }
+    ],
+    "structure": [
+      {
+        "assert": "catalog proves the unbind",
+        "sql": "SELECT COALESCE(TIDB_PLACEMENT_POLICY_NAME,'') FROM information_schema.TABLES WHERE TABLE_SCHEMA='t20m_default' AND TABLE_NAME='t'",
+        "rc": 0,
+        "output": "",
+        "stderr": ""
+      }
+    ],
+    "teardown": [
+      {
+        "name": "drop fixture",
+        "sql": "DROP DATABASE IF EXISTS t20m_default;DROP PLACEMENT POLICY IF EXISTS t20m_p",
+        "rc": 0,
+        "stderr": ""
+      }
+    ],
+    "exit": 0,
+    "stdout": "{\"verdict\":\"pass\",\"coverage\":{\"status\":\"complete\"},\"summary\":{\"statements\":1,\"blockers\":0,\"warnings\":0,\"notices\":0},\"statements\":[{\"index\":0,\"kind\":\"ddl\",\"raw_sql\":\"ALTER TABLE t PLACEMENT POLICY=DEFAULT;\",\"normalized_sql\":\"ALTER TABLE t PLACEMENT POLICY=DEFAULT\",\"coverage\":{\"status\":\"complete\"}}],\"version\":{\"product\":\"tidb\",\"version\":\"8.5.0\",\"major\":8,\"minor\":5,\"patch\":0,\"source\":\"observed\",\"validated_range\":true},\"fail_on_triggered\":false,\"rule_summary\":{\"loaded\":2,\"applicable\":2,\"skipped\":[]},\"context\":{\"mode\":\"metadata-aware\",\"dialect\":\"tidb\",\"dialect_source\":\"detected\",\"schema\":\"t20m_default\",\"schema_source\":\"flag\"}}\n",
+    "stderr": "",
+    "parsed": {
+      "verdict": "pass",
+      "coverage": {
+        "status": "complete"
+      },
+      "summary": {
+        "statements": 1,
+        "blockers": 0,
+        "warnings": 0,
+        "notices": 0
+      },
+      "statements": [
+        {
+          "index": 0,
+          "kind": "ddl",
+          "raw_sql": "ALTER TABLE t PLACEMENT POLICY=DEFAULT;",
+          "normalized_sql": "ALTER TABLE t PLACEMENT POLICY=DEFAULT",
+          "coverage": {
+            "status": "complete"
+          }
+        }
+      ],
+      "version": {
+        "product": "tidb",
+        "version": "8.5.0",
+        "major": 8,
+        "minor": 5,
+        "patch": 0,
+        "source": "observed",
+        "validated_range": true
+      },
+      "fail_on_triggered": false,
+      "rule_summary": {
+        "loaded": 2,
+        "applicable": 2,
+        "skipped": []
+      },
+      "context": {
+        "mode": "metadata-aware",
+        "dialect": "tidb",
+        "dialect_source": "detected",
+        "schema": "t20m_default",
+        "schema_source": "flag"
+      }
+    },
+    "version_evidence": {
+      "target_raw": null,
+      "target_canonical": null,
+      "observed_raw": "8.0.11-TiDB-v8.5.0",
+      "observed_canonical": {
+        "product": "tidb",
+        "version": "8.5.0"
+      },
+      "resolved": {
+        "product": "tidb",
+        "version": "8.5.0",
+        "major": 8,
+        "minor": 5,
+        "patch": 0,
+        "source": "observed",
+        "validated_range": true
+      }
+    }
+  },
+  "assertions": [
+    {
+      "name": "database reachable with expected version",
+      "ok": true,
+      "detail": "SELECT VERSION() rc=0 version='8.0.11-TiDB-v8.5.0' expected_contains='v8.5.0'"
+    },
+    {
+      "name": "setup create-owned-fixture return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "setup create-owned-fixture: fixture table starts bound",
+      "ok": true,
+      "detail": "rc=0 output='t20m_p' expected='t20m_p'"
+    },
+    {
+      "name": "exit code",
+      "ok": true,
+      "detail": "rc=0 expected=0"
+    },
+    {
+      "name": "verdict",
+      "ok": true,
+      "detail": "verdict='pass'"
+    },
+    {
+      "name": "top-level statements",
+      "ok": true,
+      "detail": "statements=1 expected=1"
+    },
+    {
+      "name": "zero findings",
+      "ok": true,
+      "detail": "findings=0"
+    },
+    {
+      "name": "no diagnostics",
+      "ok": true,
+      "detail": "diagnostics=[]"
+    },
+    {
+      "name": "no unsupported",
+      "ok": true,
+      "detail": "unsupported=[]"
+    },
+    {
+      "name": "aggregate coverage",
+      "ok": true,
+      "detail": "coverage='complete'"
+    },
+    {
+      "name": "per-statement coverage",
+      "ok": true,
+      "detail": "statement_coverage=['complete']"
+    },
+    {
+      "name": "evidence gap count",
+      "ok": true,
+      "detail": "gaps=0"
+    },
+    {
+      "name": "fail_on_triggered",
+      "ok": true,
+      "detail": "fail_on_triggered=False"
+    },
+    {
+      "name": "post-verify audit did not mutate the existing binding",
+      "ok": true,
+      "detail": "rc=0 output='t20m_p' expected='t20m_p'"
+    },
+    {
+      "name": "execute native DEFAULT unbind lands return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "structure catalog proves the unbind",
+      "ok": true,
+      "detail": "rc=0 output='' expected=''"
+    },
+    {
+      "name": "teardown drop fixture return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    }
+  ],
+  "status": "pass",
+  "command": [
+    "/Users/fan/GolangProjects/DeltaScope/docs/verification/t20-tidb-placement-lifecycle/7b6629a2/green/T20/T20/bin/deltascope",
+    "audit",
+    "--dialect",
+    "tidb",
+    "--sql",
+    "ALTER TABLE t PLACEMENT POLICY=DEFAULT;",
+    "--config",
+    "/Users/fan/GolangProjects/DeltaScope/docs/verification/t20-tidb-placement-lifecycle/7b6629a2/green/T20/T20/golden-policy-t20-placement.yaml",
+    "--format",
+    "json",
+    "--host",
+    "127.0.0.1",
+    "--port",
+    "24000",
+    "--user",
+    "root",
+    "--schema",
+    "t20m_default",
+    "--fail-on",
+    "blocker"
+  ]
+}
