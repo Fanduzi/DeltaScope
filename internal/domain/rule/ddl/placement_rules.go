@@ -459,17 +459,18 @@ func (r tidbPlacementExistsRequireRule) dropFinding(statement spec.Statement, dd
 	if exists != nil && !*exists {
 		return r.missingPolicyFinding(ddl.ObjectName, "drop_placement_policy", "", "")
 	}
-	metadata := map[string]any{
-		"policy": strings.ToLower(ddl.ObjectName),
-		"action": "drop_placement_policy",
-	}
+	var boundTargets []string
 	if bound != nil {
-		metadata["bound_targets"] = append([]string(nil), (*bound)...)
+		boundTargets = append([]string(nil), (*bound)...)
 	}
 	return r.finding(
-		fmt.Sprintf("placement policy %q still has %d bound object(s)", ddl.ObjectName, len(*bound)),
+		fmt.Sprintf("placement policy %q still has %d bound object(s)", ddl.ObjectName, len(boundTargets)),
 		"unbind the dependent objects with PLACEMENT POLICY=DEFAULT first, or drop the bound objects",
-		metadata)
+		map[string]any{
+			"policy":        strings.ToLower(ddl.ObjectName),
+			"action":        "drop_placement_policy",
+			"bound_targets": boundTargets,
+		})
 }
 
 func (r tidbPlacementExistsRequireRule) missingPolicyFinding(policy, action, target, targetKind string) ([]rule.Finding, error) {

@@ -186,6 +186,18 @@ acceptance review re-read #99 against the shipped profile:
     refuse); a fresh create over a tombstone seeds a proven-empty bound
     set rather than leaving it unvouched; and a proven no-op `IF
     EXISTS` drop no longer claims it "removes a topology policy".
+    Verification of that commit caught the tombstone-create seed being
+    claimed too broadly: an OR REPLACE under an unvouched catalog can
+    replace a policy carrying live bindings, so proven-empty `refs` are
+    now seeded only when existence was *proven* absent — under
+    `exists == nil` the bound set stays unvouched. The same review
+    exposed a pre-existing amplification the fix had made reachable:
+    `placementPoliciesProjection` returned a partial map whenever at
+    least one entry was present, and consumers read absent keys as
+    proven-false — fabricating missing-policy blockers on unproven
+    names. The projection now reads unvouched (nil) unless the registry
+    is proven-complete, matching the ordered state's own tri-state
+    answers; batch-proven entries lose nothing they can honestly claim.
 13. **Real-cluster evidence bounds the deferral.** A disposable
     1×PD + 3×TiKV + 1×TiDB v8.5.0 fixture (labels `region=t20rev`,
     `zone=z1..z3`, `host=h1..h3`, STRICT mode) proved the native

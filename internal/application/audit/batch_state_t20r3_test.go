@@ -360,4 +360,39 @@ func TestT20R3TopologyGapAndMissingRefusal(t *testing.T) {
 			t.Fatalf("proven drop must still warn, got %#v", result.Statements[2].Findings)
 		}
 	})
+
+	// O: OR REPLACE under an unvouched catalog lands the policy but its
+	// bound set stays unvouched — the replace may have rewritten live
+	// bindings. The following DROP must stay unproven (gaps, not a
+	// silent apply), and a different policy reference must gap rather
+	// than fabricate a proven-absent blocker (#99 invariant).
+	t.Run("or_replace under unvouched catalog fabricates nothing", func(t *testing.T) {
+		provider := boundProvider()
+		provider.placement = nil
+		result := audit(t, provider, bothRules,
+			"CREATE OR REPLACE PLACEMENT POLICY p FOLLOWERS=2; "+
+				"DROP PLACEMENT POLICY p; "+
+				"ALTER TABLE t PLACEMENT POLICY=q;")
+		// The drop cannot be proven unbound: the replaced policy may have
+		// carried live bindings — both rules owe the premise facts.
+		for _, id := range []string{"ddl.tidb.placement.warn", "ddl.tidb.placement.exists.require"} {
+			facts := gapFactsOf(result, 1, id)
+			if len(facts) != 2 || facts[0] != "placement_policy.catalog" || facts[1] != "placement_policy.bound_targets" {
+				t.Fatalf("%s must owe catalog+bound_targets on the unproven drop, got %v", id, facts)
+			}
+		}
+		if len(findingsByRule(result, 1, "ddl.tidb.placement.warn")) != 0 {
+			t.Fatalf("unproven drop must not claim it removed a policy, got %#v", result.Statements[1].Findings)
+		}
+		// A different policy name under an unvouched catalog is unproven,
+		// never proven-absent — gaps, not a fabricated blocker.
+		if len(findingsByRule(result, 2, "ddl.tidb.placement.exists.require")) != 0 {
+			t.Fatalf("unvouched catalog must not fabricate a missing-policy blocker, got %#v", result.Statements[2].Findings)
+		}
+		for _, id := range []string{"ddl.tidb.placement.warn", "ddl.tidb.placement.exists.require"} {
+			if !hasGap(result, 2, id, "placement_policy.catalog") {
+				t.Fatalf("%s must owe the catalog gap on the unproven bind, got %#v", id, gapsOf(result, 2))
+			}
+		}
+	})
 }

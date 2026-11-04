@@ -163,16 +163,12 @@ func (s *batchState) schemaBoundPlacementPolicy(schema string) (string, bool) {
 func (s *batchState) placementPoliciesProjection() map[string]*spec.PlacementPolicyFact {
 	s.seedPlacementCatalog()
 	if !s.placementsKnownComplete {
-		present := false
-		for _, entry := range s.placements {
-			if entry.state == placementPolicyPresent {
-				present = true
-				break
-			}
-		}
-		if !present {
-			return nil
-		}
+		// A partially-known registry cannot answer absence: entries the
+		// batch proved are present facts, but absent keys are unproven —
+		// never proven-absent. Exposing a partial map lets consumers read
+		// absent keys as false and fabricate refusals (#99 invariant:
+		// unknown never becomes proven), so the catalog reads unvouched.
+		return nil
 	}
 	out := map[string]*spec.PlacementPolicyFact{}
 	for name, entry := range s.placements {
@@ -327,15 +323,22 @@ func (s *batchState) applyCreatePlacementPolicy(statement spec.Statement) error 
 	case spec.PlacementApplied:
 		entry := registry[name]
 		if entry == nil {
-			entry = &batchPlacementEntry{refs: map[string]struct{}{}, refsKnown: true}
+			entry = &batchPlacementEntry{}
 			registry[name] = entry
-		} else if entry.state != placementPolicyPresent {
-			// A fresh create over a tombstone starts with a proven-empty
-			// bound set — nothing could bind to a policy that did not
-			// exist (OR REPLACE over a present entry keeps its refs:
-			// bound objects keep referencing the name — probed).
-			entry.refs = map[string]struct{}{}
-			entry.refsKnown = true
+		}
+		if entry.state != placementPolicyPresent {
+			// A create over a proven-absent policy starts with a
+			// proven-empty bound set — nothing could bind to a policy
+			// that did not exist. An OR REPLACE under an unvouched
+			// catalog may have replaced a bound policy — the bound set
+			// stays unvouched (OR REPLACE over a present entry keeps its
+			// refs: bound objects keep referencing the name — probed).
+			entry.refsKnown = exists != nil && !*exists
+			if entry.refsKnown {
+				entry.refs = map[string]struct{}{}
+			} else {
+				entry.refs = nil
+			}
 		}
 		entry.state = placementPolicyPresent
 		if orReplace {
