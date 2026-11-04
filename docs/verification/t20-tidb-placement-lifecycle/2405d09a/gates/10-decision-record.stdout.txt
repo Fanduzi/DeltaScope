@@ -1,0 +1,1 @@
+decision-record-gate: trigger paths hit but no trigger keywords in diff, PASS

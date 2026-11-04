@@ -1,0 +1,39 @@
+{
+  "case_id": "T20.db.mysql57.syntax_negative",
+  "kind": "db_syntax_negative",
+  "anchor": "mysql57",
+  "input_sql": "CREATE PLACEMENT POLICY",
+  "expected": {
+    "error_class": "1064",
+    "forbidden_markers": [
+      "Access denied",
+      "Connection refused",
+      "doesn't exist",
+      "already exists"
+    ]
+  },
+  "actual": {
+    "rc": 1,
+    "stdout": "",
+    "stderr": "required fixture credential environment is unavailable",
+    "error_class": ""
+  },
+  "assertions": [
+    {
+      "name": "nonzero syntax failure",
+      "ok": true,
+      "detail": "rc=1"
+    },
+    {
+      "name": "expected error class",
+      "ok": false,
+      "detail": "error_class='' expected='1064'"
+    },
+    {
+      "name": "no permission/connection/object-conflict markers",
+      "ok": true,
+      "detail": "forbidden markers found: []"
+    }
+  ],
+  "status": "fail"
+}

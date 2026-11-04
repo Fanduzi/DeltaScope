@@ -1,0 +1,199 @@
+{
+  "case_id": "T20.cli.tidb-drop-policy-gap",
+  "kind": "cli_audit",
+  "cli_case": "tidb-drop-policy-gap",
+  "dialect": "tidb",
+  "input_sql": "DROP PLACEMENT POLICY p;",
+  "policy_profile": "t20-placement",
+  "policy_path": "/Users/fan/GolangProjects/DeltaScope/docs/verification/t20-tidb-placement-lifecycle/2405d09a/green/T20/T20/golden-policy-t20-placement.yaml",
+  "command": [
+    "/Users/fan/GolangProjects/DeltaScope/docs/verification/t20-tidb-placement-lifecycle/2405d09a/green/T20/T20/bin/deltascope",
+    "audit",
+    "--dialect",
+    "tidb",
+    "--sql",
+    "DROP PLACEMENT POLICY p;",
+    "--config",
+    "/Users/fan/GolangProjects/DeltaScope/docs/verification/t20-tidb-placement-lifecycle/2405d09a/green/T20/T20/golden-policy-t20-placement.yaml",
+    "--format",
+    "json",
+    "--fail-on",
+    "blocker"
+  ],
+  "expected": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": [
+      "unverified"
+    ],
+    "evidence_gaps": 2,
+    "fail_on_triggered": false,
+    "evidence_gap_entries": [
+      {
+        "index": 0,
+        "rule_id": "ddl.tidb.placement.warn",
+        "reason_code": "unknown_table_state",
+        "required_facts": [
+          "placement_policy.catalog",
+          "placement_policy.bound_targets"
+        ]
+      },
+      {
+        "index": 0,
+        "rule_id": "ddl.tidb.placement.exists.require",
+        "reason_code": "unknown_table_state",
+        "required_facts": [
+          "placement_policy.catalog",
+          "placement_policy.bound_targets"
+        ]
+      }
+    ]
+  },
+  "actual": {
+    "exit": 0,
+    "stdout": "{\"verdict\":\"review\",\"coverage\":{\"status\":\"unverified\"},\"summary\":{\"statements\":1,\"blockers\":0,\"warnings\":0,\"notices\":0},\"statements\":[{\"index\":0,\"kind\":\"ddl\",\"raw_sql\":\"DROP PLACEMENT POLICY p;\",\"normalized_sql\":\"DROP PLACEMENT POLICY p\",\"evidence_gaps\":[{\"rule_id\":\"ddl.tidb.placement.warn\",\"reason_code\":\"unknown_table_state\",\"required_facts\":[\"placement_policy.catalog\",\"placement_policy.bound_targets\"]},{\"rule_id\":\"ddl.tidb.placement.exists.require\",\"reason_code\":\"unknown_table_state\",\"required_facts\":[\"placement_policy.catalog\",\"placement_policy.bound_targets\"]}],\"coverage\":{\"status\":\"unverified\"}}],\"fail_on_triggered\":false,\"rule_summary\":{\"loaded\":2,\"applicable\":2,\"skipped\":[]},\"context\":{\"mode\":\"offline\",\"dialect\":\"tidb\",\"dialect_source\":\"flag\",\"note\":\"existence not checked (no database connection)\",\"unproven\":[\"column_exists\",\"table_exists\"]}}\n",
+    "stderr": "",
+    "parsed": {
+      "verdict": "review",
+      "coverage": {
+        "status": "unverified"
+      },
+      "summary": {
+        "statements": 1,
+        "blockers": 0,
+        "warnings": 0,
+        "notices": 0
+      },
+      "statements": [
+        {
+          "index": 0,
+          "kind": "ddl",
+          "raw_sql": "DROP PLACEMENT POLICY p;",
+          "normalized_sql": "DROP PLACEMENT POLICY p",
+          "evidence_gaps": [
+            {
+              "rule_id": "ddl.tidb.placement.warn",
+              "reason_code": "unknown_table_state",
+              "required_facts": [
+                "placement_policy.catalog",
+                "placement_policy.bound_targets"
+              ]
+            },
+            {
+              "rule_id": "ddl.tidb.placement.exists.require",
+              "reason_code": "unknown_table_state",
+              "required_facts": [
+                "placement_policy.catalog",
+                "placement_policy.bound_targets"
+              ]
+            }
+          ],
+          "coverage": {
+            "status": "unverified"
+          }
+        }
+      ],
+      "fail_on_triggered": false,
+      "rule_summary": {
+        "loaded": 2,
+        "applicable": 2,
+        "skipped": []
+      },
+      "context": {
+        "mode": "offline",
+        "dialect": "tidb",
+        "dialect_source": "flag",
+        "note": "existence not checked (no database connection)",
+        "unproven": [
+          "column_exists",
+          "table_exists"
+        ]
+      }
+    },
+    "version_evidence": {
+      "target_raw": null,
+      "target_canonical": null,
+      "observed_raw": null,
+      "observed_canonical": null,
+      "resolved": null
+    }
+  },
+  "assertions": [
+    {
+      "name": "exit code",
+      "ok": true,
+      "detail": "rc=0 expected=0"
+    },
+    {
+      "name": "verdict",
+      "ok": true,
+      "detail": "verdict='review'"
+    },
+    {
+      "name": "top-level statements",
+      "ok": true,
+      "detail": "statements=1 expected=1"
+    },
+    {
+      "name": "zero findings",
+      "ok": true,
+      "detail": "findings=0"
+    },
+    {
+      "name": "no diagnostics",
+      "ok": true,
+      "detail": "diagnostics=[]"
+    },
+    {
+      "name": "no unsupported",
+      "ok": true,
+      "detail": "unsupported=[]"
+    },
+    {
+      "name": "aggregate coverage",
+      "ok": true,
+      "detail": "coverage='unverified'"
+    },
+    {
+      "name": "per-statement coverage",
+      "ok": true,
+      "detail": "statement_coverage=['unverified']"
+    },
+    {
+      "name": "evidence gap count",
+      "ok": true,
+      "detail": "gaps=2"
+    },
+    {
+      "name": "evidence gap entries",
+      "ok": true,
+      "detail": "gaps=[(0, 'ddl.tidb.placement.exists.require', 'unknown_table_state'), (0, 'ddl.tidb.placement.warn', 'unknown_table_state')] expected=[(0, 'ddl.tidb.placement.exists.require', 'unknown_table_state'), (0, 'ddl.tidb.placement.warn', 'unknown_table_state')]"
+    },
+    {
+      "name": "evidence gap required_facts (0, 'ddl.tidb.placement.warn', 'unknown_table_state')",
+      "ok": true,
+      "detail": "gaps=[{'rule_id': 'ddl.tidb.placement.warn', 'reason_code': 'unknown_table_state', 'required_facts': ['placement_policy.catalog', 'placement_policy.bound_targets']}, {'rule_id': 'ddl.tidb.placement.exists.require', 'reason_code': 'unknown_table_state', 'required_facts': ['placement_policy.catalog', 'placement_policy.bound_targets']}] expected_facts=['placement_policy.catalog', 'placement_policy.bound_targets']"
+    },
+    {
+      "name": "evidence gap required_facts (0, 'ddl.tidb.placement.exists.require', 'unknown_table_state')",
+      "ok": true,
+      "detail": "gaps=[{'rule_id': 'ddl.tidb.placement.warn', 'reason_code': 'unknown_table_state', 'required_facts': ['placement_policy.catalog', 'placement_policy.bound_targets']}, {'rule_id': 'ddl.tidb.placement.exists.require', 'reason_code': 'unknown_table_state', 'required_facts': ['placement_policy.catalog', 'placement_policy.bound_targets']}] expected_facts=['placement_policy.catalog', 'placement_policy.bound_targets']"
+    },
+    {
+      "name": "no gap encoded as finding",
+      "ok": true,
+      "detail": "findings carrying gap shape=[]"
+    },
+    {
+      "name": "fail_on_triggered",
+      "ok": true,
+      "detail": "fail_on_triggered=False"
+    }
+  ],
+  "status": "pass"
+}

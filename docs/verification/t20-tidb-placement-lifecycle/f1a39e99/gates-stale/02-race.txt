@@ -1,0 +1,7 @@
+ok  	github.com/Fanduzi/DeltaScope/internal/application/audit	17.301s
+ok  	github.com/Fanduzi/DeltaScope/internal/domain/rule	2.892s
+ok  	github.com/Fanduzi/DeltaScope/internal/domain/rule/catalog	1.515s
+ok  	github.com/Fanduzi/DeltaScope/internal/domain/rule/ddl	3.431s
+ok  	github.com/Fanduzi/DeltaScope/internal/domain/rule/dml	2.477s
+ok  	github.com/Fanduzi/DeltaScope/internal/domain/spec	3.794s
+ok  	github.com/Fanduzi/DeltaScope/internal/domain/policy	4.201s

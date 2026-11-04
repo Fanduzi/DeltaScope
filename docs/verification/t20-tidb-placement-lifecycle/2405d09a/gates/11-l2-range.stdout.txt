@@ -1,0 +1,14 @@
+range: f457df422933152cefe938e4201b1e5cdc1e9613..2405d09a6d0e5d85b83ef831097d81e81b910526
+changed files:
+docs/decisions/2026-11-12-tidb-placement-policy-lifecycle.md
+internal/application/audit/README.md
+internal/application/audit/batch_state_placement.go
+internal/application/audit/batch_state_t20r3_test.go
+internal/domain/rule/ddl/placement_rules.go
+testdata/ddl-golden/T20.json
+testdata/ddl-inventory/inventory.yaml
+--- L2 README parity: modules with source changes vs README presence in diff:
+internal/application/audit go_files=2 readme_changed=1
+internal/domain/rule/ddl go_files=1 readme_changed=0
+internal/domain/spec go_files=0 readme_changed=0
+internal/domain/policy go_files=0 readme_changed=0
