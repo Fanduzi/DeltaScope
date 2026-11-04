@@ -1,0 +1,13 @@
+{
+  "command": [
+    "python3",
+    "/tmp/deltascope-t20r4-6ac1e918/verify_resources.py",
+    "--output",
+    "/tmp/deltascope-t20r4-6ac1e918/protected-resources.json"
+  ],
+  "head_before": "2f01f500d296bb29ee518bc113a58ec26172dc1a",
+  "head_after": "2f01f500d296bb29ee518bc113a58ec26172dc1a",
+  "started_at": "2026-11-04T17:20:46.069331+00:00",
+  "ended_at": "2026-11-04T17:20:53.109944+00:00",
+  "returncode": 1
+}

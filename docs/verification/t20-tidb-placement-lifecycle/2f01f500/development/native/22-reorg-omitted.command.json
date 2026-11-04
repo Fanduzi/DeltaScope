@@ -1,0 +1,19 @@
+[
+  "docker",
+  "exec",
+  "deltascope-ddl-golden-tidb85-client",
+  "mysql",
+  "--protocol=tcp",
+  "-h",
+  "tidb85",
+  "-P",
+  "4000",
+  "-uroot",
+  "--batch",
+  "--raw",
+  "--verbose",
+  "-D",
+  "t20r4_native",
+  "-e",
+  "SET SESSION tidb_placement_mode='STRICT';\n\nALTER TABLE t_omit REORGANIZE PARTITION p0 INTO (\n PARTITION p00 VALUES LESS THAN (50),\n PARTITION p01 VALUES LESS THAN (100) PLACEMENT POLICY=t20r4_ok);\nSHOW WARNINGS; SHOW CREATE TABLE t_omit;\n"
+]

@@ -1,0 +1,1 @@
+./scripts/check_decision_record.sh 6ac1e918b3558d6d611d7d8a59a770d73341c2f9..bb5e347cd814c463a6873f6b0293613f91013867

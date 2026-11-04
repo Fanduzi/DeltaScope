@@ -1,0 +1,21 @@
+=== RUN   TestT20R4R1UncertainReorgThenDropOK
+--- PASS: TestT20R4R1UncertainReorgThenDropOK (0.01s)
+=== RUN   TestT20R4R1ReorgSurvivorRefAndRelease
+--- PASS: TestT20R4R1ReorgSurvivorRefAndRelease (0.01s)
+=== RUN   TestT20R4R1FindingIdentities
+    batch_state_t20r4_test.go:621: finding schema = <nil>, want golden
+--- FAIL: TestT20R4R1FindingIdentities (0.01s)
+=== RUN   TestT20R4R1RefusedCreateSilentWarn
+--- PASS: TestT20R4R1RefusedCreateSilentWarn (0.00s)
+=== RUN   TestT20R4R1SubpartitionAspectBoundary
+    batch_state_t20r4_test.go:664: audit: audit includes unsupported statements: 1 item(s)
+--- FAIL: TestT20R4R1SubpartitionAspectBoundary (0.00s)
+=== RUN   TestT20R4R1BoundSetSortedOutput
+    batch_state_t20r4_test.go:720: bound_targets = [partition:golden.t.p5], want >=2 proven refs
+--- FAIL: TestT20R4R1BoundSetSortedOutput (0.00s)
+=== RUN   TestT20R4R1AbsentAndUnknownTargets
+    batch_state_t20r4_test.go:741: absent table must not warn: [{ddl.tidb.placement.warn warning If applied, PLACEMENT POLICY "p_ok" would bind partition "t2" to a topology policy 0 ddl 0x18deeb626040 verify the placement policy's region constraints, replica counts, and PD/TiKV topology prerequisites intentionally — a bound policy reassigns the object's physical placement map[action:add_partitions action_index:0 binding_source:member_definition partition:p0 policy:p_ok table:t2 target:t2 target_kind:partition] 0x18deeb7b4140}]
+--- FAIL: TestT20R4R1AbsentAndUnknownTargets (0.00s)
+FAIL
+FAIL	github.com/Fanduzi/DeltaScope/internal/application/audit	0.389s
+FAIL

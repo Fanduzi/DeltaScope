@@ -1,0 +1,62 @@
+ M docs/decisions/2026-11-12-tidb-placement-policy-lifecycle.md
+ M internal/application/audit/batch_state.go
+ M internal/application/audit/batch_state_placement.go
+ M internal/application/audit/metadata.go
+ M internal/application/audit/partition_transitions.go
+ M internal/domain/rule/ddl/placement_rules.go
+ M internal/domain/spec/metadata.go
+ M internal/domain/spec/placement.go
+ M internal/infrastructure/parser/tidb/coverage_boundary.go
+ M testdata/ddl-golden/README.md
+ M testdata/ddl-golden/T20.json
+ M testdata/ddl-inventory/inventory.yaml
+ M testdata/sql-corpus/README.md
+ M testdata/sql-corpus/tidb/ddl/findings/placement_policy_missing.expected.yaml
+ M testdata/sql-corpus/tidb/ddl/findings/placement_policy_missing.sql
+?? .agents/
+?? .codex/
+?? .cursor/
+?? .debug-journal.md
+?? .devin/
+?? .grok/
+?? .opencode/
+?? .pi-subagents/
+?? .qoder/
+?? artifacts/
+?? docs/quality/architecture-review-2026-08-11.html
+?? docs/verification/t06-a12/1a5dd90de898a59590ef8a19aa068c4b5e8ce7f8/T06/
+?? docs/verification/t06-a4/527fd48dde8190b3c3037ef2335c97ec7ad2853e/plan/probe-src/go.sum
+?? docs/work-plans/t20-tidb-placement-lifecycle/
+?? internal/application/audit/batch_state_t20r4_test.go
+ M docs/decisions/2026-11-12-tidb-placement-policy-lifecycle.md
+ M internal/application/audit/README.md
+ M internal/application/audit/batch_state.go
+ M internal/application/audit/batch_state_placement.go
+ M internal/application/audit/metadata.go
+ M internal/application/audit/partition_transitions.go
+ M internal/domain/rule/ddl/placement_rules.go
+ M internal/domain/spec/README.md
+ M internal/domain/spec/metadata.go
+ M internal/domain/spec/placement.go
+ M internal/infrastructure/parser/tidb/coverage_boundary.go
+ M testdata/ddl-golden/README.md
+ M testdata/ddl-golden/T20.json
+ M testdata/ddl-inventory/inventory.yaml
+ M testdata/sql-corpus/README.md
+ M testdata/sql-corpus/tidb/ddl/findings/placement_policy_missing.expected.yaml
+ M testdata/sql-corpus/tidb/ddl/findings/placement_policy_missing.sql
+?? .agents/
+?? .codex/
+?? .cursor/
+?? .debug-journal.md
+?? .devin/
+?? .grok/
+?? .opencode/
+?? .pi-subagents/
+?? .qoder/
+?? artifacts/
+?? docs/quality/architecture-review-2026-08-11.html
+?? docs/verification/t06-a12/1a5dd90de898a59590ef8a19aa068c4b5e8ce7f8/T06/
+?? docs/verification/t06-a4/527fd48dde8190b3c3037ef2335c97ec7ad2853e/plan/probe-src/go.sum
+?? docs/work-plans/t20-tidb-placement-lifecycle/
+?? internal/application/audit/batch_state_t20r4_test.go

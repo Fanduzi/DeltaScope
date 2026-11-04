@@ -1,0 +1,1 @@
+python3 /tmp/deltascope-t20r4-6ac1e918/formal_golden.py --artifact-dir /private/tmp/deltascope-t20r4-6ac1e918/final-2f01f500/golden

@@ -1,0 +1,10 @@
+--------------
+SET SESSION tidb_placement_mode='STRICT'
+--------------
+
+--------------
+CREATE TABLE t_create_missing (id INT) PARTITION BY RANGE(id) (
+ PARTITION p0 VALUES LESS THAN (100) PLACEMENT POLICY=t20r4_ok,
+ PARTITION p1 VALUES LESS THAN (200) PLACEMENT POLICY=t20r4_missing)
+--------------
+

@@ -1,0 +1,22 @@
+{
+  "head_sha": "2f01f500d296bb29ee518bc113a58ec26172dc1a",
+  "canonical_runner": "/Users/fan/GolangProjects/DeltaScope/scripts/ddl_golden.py",
+  "canonical_runner_sha256": "2a95f51a0c1a4a775237f8998b0c74a35979e3f39ef1e58b57ed18f63f99fc78",
+  "canonical_compose": "/Users/fan/GolangProjects/DeltaScope/docker/ddl-golden-compose.yaml",
+  "canonical_compose_sha256": "6f41e7adc77b0739c1f8ad58b86fd01fed6bcd43c6e7dbaa0575ce1af122632c",
+  "effective_compose": "/private/tmp/deltascope-t20r4-6ac1e918/final-2f01f500/golden/network-preserving-compose.yaml",
+  "effective_compose_sha256": "baef0b9308d8f810e5b77f7576df3ec524ca2fa45175641edae1388e1a7e84d7",
+  "protected_network_name": "deltascope-ddl-golden_default",
+  "protected_network_id_before": "6c9d7550a450a89b64be8f4e97a29253444f923d8cbf0caaa5e58906202e7f43",
+  "project_containers_before": [
+    "deltascope-ddl-golden-tidb85",
+    "deltascope-ddl-golden-tidb85-client"
+  ],
+  "only_overrides": [
+    "default network declared external to preserve its preexisting identity",
+    "auxiliary read-only bind mount made absolute after compose relocation"
+  ],
+  "protected_network_id_after": "6c9d7550a450a89b64be8f4e97a29253444f923d8cbf0caaa5e58906202e7f43",
+  "network_preserved": true,
+  "runner_returncode": 0
+}

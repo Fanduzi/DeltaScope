@@ -1,0 +1,24 @@
+--------------
+SET SESSION tidb_placement_mode='STRICT'
+--------------
+
+--------------
+DROP DATABASE t20r4_native
+--------------
+
+--------------
+DROP PLACEMENT POLICY IF EXISTS t20r4_ok
+--------------
+
+--------------
+DROP PLACEMENT POLICY IF EXISTS t20r4_old
+--------------
+
+--------------
+DROP PLACEMENT POLICY IF EXISTS t20r4_second
+--------------
+
+--------------
+DROP PLACEMENT POLICY IF EXISTS t20r4_table
+--------------
+

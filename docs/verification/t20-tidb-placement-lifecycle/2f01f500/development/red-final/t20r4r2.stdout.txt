@@ -1,0 +1,37 @@
+=== RUN   TestT20R4R2UnknownAggregateNoDropAuthorization
+=== RUN   TestT20R4R2UnknownAggregateNoDropAuthorization/create
+    batch_state_t20r4_test.go:919: stmt2 drop warn = [{ddl.tidb.placement.warn warning DROP PLACEMENT POLICY "p_ok" removes a topology policy 2 ddl 0x43536fb63a30 verify the placement policy's region constraints, replica counts, and PD/TiKV topology prerequisites intentionally — a bound policy reassigns the object's physical placement map[action:drop_placement_policy policy:p_ok] 0x43536fb00370}], want none while bound set unvouched
+    batch_state_t20r4_test.go:925: stmt2 must owe placement_policy.bound_targets
+    batch_state_t20r4_test.go:932: stmt3 fabricated missing-policy blocker: {ddl.tidb.placement.exists.require blocker placement policy "p_ok" does not exist 3 ddl 0x43536fb63a40 create the placement policy first or correct the policy reference map[action:alter_placement_policy policy:p_ok] 0x43536fb004b0}
+=== RUN   TestT20R4R2UnknownAggregateNoDropAuthorization/add
+=== RUN   TestT20R4R2UnknownAggregateNoDropAuthorization/reorg
+=== RUN   TestT20R4R2UnknownAggregateNoDropAuthorization/partition_by
+--- FAIL: TestT20R4R2UnknownAggregateNoDropAuthorization (0.02s)
+    --- FAIL: TestT20R4R2UnknownAggregateNoDropAuthorization/create (0.00s)
+    --- PASS: TestT20R4R2UnknownAggregateNoDropAuthorization/add (0.00s)
+    --- PASS: TestT20R4R2UnknownAggregateNoDropAuthorization/reorg (0.00s)
+    --- PASS: TestT20R4R2UnknownAggregateNoDropAuthorization/partition_by (0.00s)
+=== RUN   TestT20R4R2UnknownThenMissing
+--- PASS: TestT20R4R2UnknownThenMissing (0.00s)
+=== RUN   TestT20R4R2UnknownTargetRetirement
+    batch_state_t20r4_test.go:982: stmt1 drop blocker = [{ddl.tidb.placement.exists.require blocker placement policy "p_old" still has 1 bound object(s) 1 ddl 0x43536faaa110 unbind the dependent objects with PLACEMENT POLICY=DEFAULT first, or drop the bound objects map[action:drop_placement_policy bound_targets:[partition:golden.t.p0] policy:p_old] 0x43536fb00280}], want bound_targets gap
+    batch_state_t20r4_test.go:985: stmt1 DROP p_old must owe bound_targets gap
+--- FAIL: TestT20R4R2UnknownTargetRetirement (0.00s)
+=== RUN   TestT20R4R2UnreadBindingMapDrop
+    batch_state_t20r4_test.go:1003: DROP p_old blocker = [{ddl.tidb.placement.exists.require blocker placement policy "p_old" still has 1 bound object(s) 1 ddl 0x43536faaa0e0 unbind the dependent objects with PLACEMENT POLICY=DEFAULT first, or drop the bound objects map[action:drop_placement_policy bound_targets:[partition:golden.t.p0] policy:p_old] 0x43536fb004b0}], want applied — p0 ref retired by directory
+--- FAIL: TestT20R4R2UnreadBindingMapDrop (0.00s)
+=== RUN   TestT20R4R2T14UnknownStaticFacts
+    batch_state_t20r4_test.go:1033: warn RequiredFacts = map[statement.partition_defs:true target_table.partition_defs:true], want exactly [target_table.partition_defs]
+--- FAIL: TestT20R4R2T14UnknownStaticFacts (0.00s)
+=== RUN   TestT20R4R2LifecycleUnknownWarnOff
+    batch_state_t20r4_test.go:1055: create must owe exists.require catalog gap
+    batch_state_t20r4_test.go:1055: alter must owe exists.require catalog gap
+--- FAIL: TestT20R4R2LifecycleUnknownWarnOff (0.01s)
+=== RUN   TestT20R4R2RangeDefaultRevokesRef
+    batch_state_t20r4_test.go:1072: DROP p_old blocker = [{ddl.tidb.placement.exists.require blocker placement policy "p_old" still has 1 bound object(s) 1 ddl 0x43536ff02040 unbind the dependent objects with PLACEMENT POLICY=DEFAULT first, or drop the bound objects map[action:drop_placement_policy bound_targets:[range:global] policy:p_old] 0x43536fb001e0}], want applied — global ref revoked
+--- FAIL: TestT20R4R2RangeDefaultRevokesRef (0.00s)
+=== RUN   TestT20R4R2QualifiedMemberSameName
+--- PASS: TestT20R4R2QualifiedMemberSameName (0.00s)
+FAIL
+FAIL	github.com/Fanduzi/DeltaScope/internal/application/audit	0.402s
+FAIL

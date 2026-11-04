@@ -1,0 +1,1 @@
+ERROR 8241 (HY000) at line 2: Placement policy 't20r4_old' is still in use

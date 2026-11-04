@@ -1,0 +1,7 @@
+Table	Create Table
+t	CREATE TABLE `t` (
+  `id` int DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin
+PARTITION BY RANGE (`id`)
+(PARTITION `q0` VALUES LESS THAN (50) /*T![placement] PLACEMENT POLICY=`r4scheme_ok_6ac1e918` */,
+ PARTITION `q1` VALUES LESS THAN (200))

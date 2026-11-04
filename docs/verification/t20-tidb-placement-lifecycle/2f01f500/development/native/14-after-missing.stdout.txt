@@ -1,0 +1,43 @@
+--------------
+SET SESSION tidb_placement_mode='STRICT'
+--------------
+
+--------------
+SELECT TABLE_NAME,TIDB_PLACEMENT_POLICY_NAME
+FROM information_schema.TABLES WHERE TABLE_SCHEMA='t20r4_native' ORDER BY TABLE_NAME
+--------------
+
+TABLE_NAME	TIDB_PLACEMENT_POLICY_NAME
+t_add	t20r4_table
+t_create_ok	NULL
+t_default	t20r4_table
+t_omit	t20r4_table
+t_reorg	t20r4_table
+--------------
+SELECT TABLE_NAME,PARTITION_NAME,SUBPARTITION_NAME,PARTITION_ORDINAL_POSITION,
+       PARTITION_DESCRIPTION,TIDB_PLACEMENT_POLICY_NAME
+FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='t20r4_native'
+ORDER BY TABLE_NAME,PARTITION_ORDINAL_POSITION,SUBPARTITION_ORDINAL_POSITION
+--------------
+
+TABLE_NAME	PARTITION_NAME	SUBPARTITION_NAME	PARTITION_ORDINAL_POSITION	PARTITION_DESCRIPTION	TIDB_PLACEMENT_POLICY_NAME
+t_add	p0	NULL	1	100	t20r4_old
+t_add	p_keep	NULL	2	200	t20r4_old
+t_create_ok	p0	NULL	1	100	t20r4_ok
+t_create_ok	p1	NULL	2	200	t20r4_second
+t_default	p0	NULL	1	100	t20r4_old
+t_default	p_keep	NULL	2	200	t20r4_old
+t_omit	p0	NULL	1	100	t20r4_old
+t_omit	p_keep	NULL	2	200	t20r4_old
+t_reorg	p0	NULL	1	100	t20r4_old
+t_reorg	p_keep	NULL	2	200	t20r4_old
+--------------
+SELECT POLICY_NAME,FOLLOWERS FROM information_schema.PLACEMENT_POLICIES
+WHERE POLICY_NAME LIKE 't20r4\_%' ORDER BY POLICY_NAME
+--------------
+
+POLICY_NAME	FOLLOWERS
+t20r4_ok	1
+t20r4_old	1
+t20r4_second	1
+t20r4_table	1

@@ -1,0 +1,522 @@
+package audit
+
+// T20-R4/#99: reconstructed review-red tests for two settled placement
+// behavior defects. These are permanent regression tests written from the
+// review record, not copies of the deleted temporary review tests.
+//
+// B1: both placement rules adjudicate through firstNamedPlacementBinding —
+// only the first authored named (non-DEFAULT) binding a statement carries.
+// A CREATE TABLE with a proven-existing policy on an earlier member and a
+// missing policy on a later member escapes the catalog check entirely, so
+// the refused native 8239 outcome is published as an applied create. The
+// ordered CREATE state already scans every member def; the rules do not.
+//
+// B2: member-level PLACEMENT POLICY inside ALTER ... ADD PARTITION /
+// REORGANIZE PARTITION lands in alter.PartitionDefs — extracted by the
+// parser — but statementsNeedPlacementCatalog and firstNamedPlacementBinding
+// never look there. The catalog is never loaded and no rule sees the
+// binding, so a named missing policy on a member add/reorg mutates state
+// silently instead of refusing and preserving pre-state.
+//
+// Fixture shape (approved seams only): t20r4Provider wraps t10Provider and
+// adds ObjectResolver — schema lookups confirm, other objects stay
+// unavailable. t is a range-partitioned table with p0/p_keep both bound to
+// p_old; p_ok and p_second exist unbound; p_missing is absent from the
+// proven (non-nil) policy catalog — key absence under a proven map is the
+// proven-absent answer, never an injected partial map.
+
+import (
+	"context"
+	"encoding/json"
+	"reflect"
+	"strings"
+	"testing"
+
+	"github.com/Fanduzi/DeltaScope/internal/domain/report"
+	"github.com/Fanduzi/DeltaScope/internal/domain/rule"
+	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
+)
+
+type t20r4Provider struct{ *t10Provider }
+
+func (p *t20r4Provider) ResolveObject(_ context.Context, _ spec.Dialect, req spec.ObjectLookupRequest) (*spec.ObjectSnapshot, error) {
+	if req.Type == "schema" {
+		return &spec.ObjectSnapshot{Schema: req.Schema, Type: req.Type, Name: req.Name, Exists: true, Status: spec.MetadataStatusConfirmed}, nil
+	}
+	return &spec.ObjectSnapshot{Schema: req.Schema, Type: req.Type, Name: req.Name, Status: spec.MetadataStatusUnavailable}, nil
+}
+
+func t20r4RangeShape() *spec.TableSnapshot {
+	shape := t20PlacementShape("t")
+	shape.Table.Schema = "golden"
+	partitioned, method := true, "range"
+	shape.Partitioned, shape.PartitionType = &partitioned, &method
+	shape.PartitionNames = []string{"p0", "p_keep"}
+	shape.PartitionDescriptions = []string{"100", "200"}
+	shape.PartitionDefs = spec.CatalogPartitionDefs(shape.PartitionNames, shape.PartitionDescriptions, method)
+	shape.PartitionPlacements = map[string]string{"p0": "p_old", "p_keep": "p_old"}
+	shape.Options["table_rows"] = "9"
+	return shape
+}
+
+func t20r4Fixture() *t20r4Provider {
+	return &t20r4Provider{&t10Provider{
+		version: "8.0.11-TiDB-v8.5.0",
+		tables:  map[string]*spec.TableSnapshot{"t": t20r4RangeShape()},
+		placement: map[string]*spec.PlacementPolicyFact{
+			"p_ok":     {BoundTargets: []string{}},
+			"p_second": {BoundTargets: []string{}},
+			"p_old":    {BoundTargets: []string{"partition:golden.t.p0", "partition:golden.t.p_keep"}},
+		},
+	}}
+}
+
+const (
+	t20r4PlacementWarn          = "ddl.tidb.placement.warn"
+	t20r4PlacementExistsRequire = "ddl.tidb.placement.exists.require"
+)
+
+func t20r4Policies(t *testing.T) (isolated, warnOff string) {
+	t.Helper()
+	isolated = t05PolicyPathConfigured(t, map[string]t05RuleConfig{
+		t20r4PlacementWarn:          {level: "warning"},
+		t20r4PlacementExistsRequire: {level: "blocker"},
+	})
+	warnOff = t05PolicyPathConfigured(t, map[string]t05RuleConfig{
+		t20r4PlacementExistsRequire: {level: "blocker"},
+	})
+	return isolated, warnOff
+}
+
+func t20r4Findings(result report.Result, stmt int, id string) []rule.Finding {
+	var out []rule.Finding
+	for _, f := range result.Statements[stmt].Findings {
+		if f.RuleID == id {
+			out = append(out, f)
+		}
+	}
+	return out
+}
+
+func t20r4HasGap(result report.Result, stmt int, ruleID, fact string) bool {
+	for _, g := range result.Statements[stmt].EvidenceGaps {
+		if ruleID != "" && g.RuleID != ruleID {
+			continue
+		}
+		for _, f := range g.RequiredFacts {
+			if f == fact {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func t20r4HasPlacementGap(result report.Result, stmt int) bool {
+	for _, g := range result.Statements[stmt].EvidenceGaps {
+		for _, f := range g.RequiredFacts {
+			if strings.HasPrefix(f, "placement_policy.") {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func t20r4Audit(t *testing.T, provider *t20r4Provider, policy, sql string) (report.Result, error) {
+	t.Helper()
+	return AuditSQL(context.Background(), Request{
+		SQL:              sql,
+		Dialect:          spec.DialectTiDB,
+		Schema:           "golden",
+		ConfigPath:       policy,
+		MetadataProvider: provider,
+	})
+}
+
+const t20r4CreateLate = "CREATE TABLE t2 (id INT) PARTITION BY RANGE(id) " +
+	"(PARTITION p0 VALUES LESS THAN (100) PLACEMENT POLICY=p_ok, " +
+	"PARTITION p1 VALUES LESS THAN (200) PLACEMENT POLICY=p_missing);"
+
+const t20r4CreateFirst = "CREATE TABLE t2 (id INT) PARTITION BY RANGE(id) " +
+	"(PARTITION p0 VALUES LESS THAN (100) PLACEMENT POLICY=p_missing, " +
+	"PARTITION p1 VALUES LESS THAN (200) PLACEMENT POLICY=p_ok);"
+
+const t20r4CreateMiddle = "CREATE TABLE t2 (id INT) PARTITION BY RANGE(id) " +
+	"(PARTITION p0 VALUES LESS THAN (100) PLACEMENT POLICY=p_ok, " +
+	"PARTITION p1 VALUES LESS THAN (200) PLACEMENT POLICY=p_missing, " +
+	"PARTITION p2 VALUES LESS THAN (300) PLACEMENT POLICY=p_second);"
+
+const t20r4CreateLast = "CREATE TABLE t2 (id INT) PARTITION BY RANGE(id) " +
+	"(PARTITION p0 VALUES LESS THAN (100) PLACEMENT POLICY=p_ok, " +
+	"PARTITION p1 VALUES LESS THAN (200) PLACEMENT POLICY=p_second, " +
+	"PARTITION p2 VALUES LESS THAN (300) PLACEMENT POLICY=p_missing);"
+
+const t20r4DefaultThenNamed = "CREATE TABLE t2 (id INT) PARTITION BY RANGE(id) " +
+	"(PARTITION p0 VALUES LESS THAN (100) PLACEMENT POLICY=DEFAULT, " +
+	"PARTITION p1 VALUES LESS THAN (200) PLACEMENT POLICY=p_ok, " +
+	"PARTITION p2 VALUES LESS THAN (300) PLACEMENT POLICY=p_missing);"
+
+const t20r4TableThenPartition = "CREATE TABLE t2 (id INT) PLACEMENT POLICY=p_ok " +
+	"PARTITION BY RANGE(id) " +
+	"(PARTITION p0 VALUES LESS THAN (100) PLACEMENT POLICY=p_missing);"
+
+const t20r4AddMissing = "ALTER TABLE t ADD PARTITION " +
+	"(PARTITION p5 VALUES LESS THAN (500) PLACEMENT POLICY=p_missing);"
+
+const t20r4ReorgMissing = "ALTER TABLE t REORGANIZE PARTITION p0 INTO " +
+	"(PARTITION p00 VALUES LESS THAN (50) PLACEMENT POLICY=p_ok, " +
+	"PARTITION p01 VALUES LESS THAN (100) PLACEMENT POLICY=p_missing);"
+
+const t20r4FixtureDescription = "t20r4Provider(t10Provider{version=8.0.11-TiDB-v8.5.0, " +
+	"tables={t: range partition p0<100/p_keep<200 both bound to p_old, options table_rows=9}, " +
+	"placement={p_ok:[], p_second:[], p_old:[partition:golden.t.p0 partition:golden.t.p_keep]}, " +
+	"p_missing proven absent by key omission}; ResolveObject schema->confirmed else->unavailable)"
+
+// Every authored missing-policy bind — wherever it lands in the statement —
+// must surface the same proven refusal: exists.require blocker, no bind
+// warning, no topology gap, reject verdict. First-binding-only scans let
+// later CREATE member binds and every member-level alter def slip through.
+func TestT20R4PublicMissingBindings(t *testing.T) {
+	isolated, warnOff := t20r4Policies(t)
+	profiles := []struct {
+		name   string
+		path   string
+		strict bool
+	}{
+		{"isolated", isolated, true},
+		{"default", "", false},
+		{"warn_off", warnOff, true},
+	}
+	cases := []struct {
+		name string
+		sql  string
+	}{
+		{"create_late", t20r4CreateLate},
+		{"create_first", t20r4CreateFirst},
+		{"create_middle", t20r4CreateMiddle},
+		{"create_last", t20r4CreateLast},
+		{"default_then_named", t20r4DefaultThenNamed},
+		{"table_then_partition", t20r4TableThenPartition},
+		{"add_missing", t20r4AddMissing},
+		{"reorg_missing", t20r4ReorgMissing},
+	}
+	for _, tc := range cases {
+		for _, profile := range profiles {
+			t.Run(tc.name+"/"+profile.name, func(t *testing.T) {
+				provider := t20r4Fixture()
+				t.Logf("fixture: %s", t20r4FixtureDescription)
+				t.Logf("case=%s profile=%s config=%q sql=%s", tc.name, profile.name, profile.path, tc.sql)
+				result, err := t20r4Audit(t, provider, profile.path, tc.sql)
+				if err != nil {
+					t.Errorf("audit error for %q: %v", tc.sql, err)
+					return
+				}
+				if data, marshalErr := json.Marshal(result); marshalErr == nil {
+					t.Logf("public report: %s", data)
+				}
+				if len(result.Statements) != 1 {
+					t.Errorf("statements = %d, want 1", len(result.Statements))
+					return
+				}
+				if len(result.Unsupported) != 0 {
+					t.Errorf("unsupported = %#v, want none", result.Unsupported)
+				}
+				if len(result.Diagnostics) != 0 {
+					t.Errorf("diagnostics = %#v, want none", result.Diagnostics)
+				}
+				found := t20r4Findings(result, 0, t20r4PlacementExistsRequire)
+				missingPolicy := false
+				for _, f := range found {
+					if f.Level == rule.LevelBlocker && f.Metadata["policy"] == "p_missing" {
+						missingPolicy = true
+					}
+				}
+				if !missingPolicy {
+					t.Errorf("missing exists.require blocker with policy=p_missing, got findings %#v",
+						result.Statements[0].Findings)
+				}
+				if warns := t20r4Findings(result, 0, t20r4PlacementWarn); len(warns) != 0 {
+					t.Errorf("refused statement must not warn on surviving binds, got %#v", warns)
+				}
+				if t20r4HasGap(result, 0, "", "placement_policy.topology") {
+					t.Errorf("refused statement must not carry topology gaps, got %#v",
+						result.Statements[0].EvidenceGaps)
+				}
+				if profile.strict {
+					if t20r4HasPlacementGap(result, 0) {
+						t.Errorf("unexpected placement evidence gaps under %s: %#v",
+							profile.name, result.Statements[0].EvidenceGaps)
+					}
+					if result.Statements[0].Coverage.Status != report.CoverageComplete {
+						t.Errorf("coverage = %s, want complete under %s",
+							result.Statements[0].Coverage.Status, profile.name)
+					}
+				}
+				if result.Verdict != report.VerdictReject {
+					t.Errorf("verdict = %s, want reject", result.Verdict)
+				}
+			})
+		}
+	}
+}
+
+// A proven refusal preserves exact pre-state: the member mutation must not
+// publish and the proven catalog projections must retain the old references.
+// The companion batch seam (Parse -> Extract -> enrich) exposes the ordered
+// pre-state the second statement reads.
+func TestT20R4RefusedMemberState(t *testing.T) {
+	cases := []struct {
+		name   string
+		sql    string
+		target string
+	}{
+		{"create_late", t20r4CreateLate, "t2"},
+		{"add_missing", t20r4AddMissing, "t"},
+		{"reorg_missing", t20r4ReorgMissing, "t"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			provider := t20r4Fixture()
+			original := cloneTableSnapshot(provider.tables["t"])
+			batchSQL := tc.sql + "ALTER TABLE " + tc.target + " TRUNCATE PARTITION p0;"
+			t.Logf("fixture: %s", t20r4FixtureDescription)
+			t.Logf("case=%s batch=%s", tc.name, batchSQL)
+			_, statements := t17Enrich(t, spec.DialectTiDB, batchSQL, "golden", t20v805, provider)
+			if len(statements) != 2 {
+				t.Errorf("statements = %d, want 2", len(statements))
+				return
+			}
+			metadata := statements[1].Metadata
+			var snapshot *spec.TableSnapshot
+			if metadata == nil || len(metadata.TargetTables) != 1 {
+				t.Errorf("second target bindings = %#v, want exactly one", metadata)
+			} else {
+				snapshot = metadata.TargetTables[0].Snapshot
+			}
+			policies := map[string]*spec.PlacementPolicyFact(nil)
+			if metadata != nil {
+				policies = metadata.PlacementPolicies
+			}
+			for i, statement := range statements {
+				if statement.Metadata != nil {
+					for name, fact := range statement.Metadata.PlacementPolicies {
+						bounds := []string(nil)
+						if fact != nil {
+							bounds = fact.BoundTargets
+						}
+						t.Logf("stmt %d policy %s bound_targets=%v", i, name, bounds)
+					}
+				}
+			}
+			if snapshot != nil {
+				t.Logf("second-statement snapshot: exists=%v partition_names=%v partition_defs=%+v "+
+					"partition_placements=%v options=%v",
+					snapshot.Exists, snapshot.PartitionNames, snapshot.PartitionDefs,
+					snapshot.PartitionPlacements, snapshot.Options)
+			}
+			if tc.name == "create_late" {
+				if snapshot == nil || snapshot.Exists {
+					t.Errorf("refused create must leave t2 proven absent, got %#v", snapshot)
+				}
+			} else if snapshot == nil {
+				t.Errorf("second statement must bind t's snapshot, got nil")
+			} else if !reflect.DeepEqual(snapshot, original) {
+				t.Errorf("refused %s must preserve exact pre-state snapshot", tc.name)
+			}
+			if !reflect.DeepEqual(provider.tables["t"], original) {
+				t.Errorf("provider snapshot mutated in place")
+			}
+			if policies == nil {
+				t.Errorf("second statement must carry the placement policy projection")
+			} else {
+				assertBounds := func(policy string, want []string) {
+					fact := policies[policy]
+					if fact == nil {
+						t.Errorf("policy %s missing from projection, got %v", policy, policies)
+						return
+					}
+					if !reflect.DeepEqual(asSet(fact.BoundTargets), asSet(want)) {
+						t.Errorf("policy %s bound_targets = %v, want %v", policy, fact.BoundTargets, want)
+					}
+				}
+				assertBounds("p_old", []string{"partition:golden.t.p0", "partition:golden.t.p_keep"})
+				assertBounds("p_ok", nil)
+				assertBounds("p_second", nil)
+				for name, fact := range policies {
+					if fact == nil {
+						continue
+					}
+					for _, ref := range fact.BoundTargets {
+						for _, member := range []string{".p5", ".p00", ".p01"} {
+							if strings.HasSuffix(ref, member) {
+								t.Errorf("refused member mutation leaked ref %q into policy %s", ref, name)
+							}
+						}
+					}
+				}
+			}
+		})
+	}
+}
+
+func asSet(in []string) map[string]struct{} {
+	out := map[string]struct{}{}
+	for _, v := range in {
+		out[v] = struct{}{}
+	}
+	return out
+}
+
+const t20r4CreateAllPresent = "CREATE TABLE t2 (id INT) PARTITION BY RANGE(id) " +
+	"(PARTITION p0 VALUES LESS THAN (100) PLACEMENT POLICY=p_ok, " +
+	"PARTITION p1 VALUES LESS THAN (200) PLACEMENT POLICY=p_second);"
+
+const t20r4CreateSamePolicy = "CREATE TABLE t2 (id INT) PARTITION BY RANGE(id) " +
+	"(PARTITION p0 VALUES LESS THAN (100) PLACEMENT POLICY=p_ok, " +
+	"PARTITION p1 VALUES LESS THAN (200) PLACEMENT POLICY=p_ok);"
+
+const t20r4AddPresent = "ALTER TABLE t ADD PARTITION " +
+	"(PARTITION p5 VALUES LESS THAN (500) PLACEMENT POLICY=p_ok);"
+
+const t20r4ReorgPresent = "ALTER TABLE t REORGANIZE PARTITION p0 INTO " +
+	"(PARTITION p00 VALUES LESS THAN (50) PLACEMENT POLICY=p_ok, " +
+	"PARTITION p01 VALUES LESS THAN (100) PLACEMENT POLICY=p_ok);"
+
+const t20r4AddDefault = "ALTER TABLE t ADD PARTITION " +
+	"(PARTITION p5 VALUES LESS THAN (500) PLACEMENT POLICY=DEFAULT);"
+
+const t20r4ReorgDefault = "ALTER TABLE t REORGANIZE PARTITION p0 INTO " +
+	"(PARTITION p00 VALUES LESS THAN (50) PLACEMENT POLICY=DEFAULT, " +
+	"PARTITION p01 VALUES LESS THAN (100) PLACEMENT POLICY=DEFAULT);"
+
+// Controls pin the behavior boundary around the defects: proven binds warn
+// with exactly one topology gap, unvouched catalogs owe the catalog fact on
+// both rules without findings, and DEFAULT binds stay silent. Member-level
+// alter binds must reach the same seam — silently skipping them is the B2
+// defect this test reconstructs.
+func TestT20R4PublicBindingControls(t *testing.T) {
+	bothRules, _ := t20r4Policies(t)
+	presentCases := []struct {
+		name string
+		sql  string
+	}{
+		{"create_all_present", t20r4CreateAllPresent},
+		{"create_same_policy", t20r4CreateSamePolicy},
+		{"add_ok", t20r4AddPresent},
+		{"reorg_ok", t20r4ReorgPresent},
+	}
+	for _, tc := range presentCases {
+		t.Run("present/"+tc.name, func(t *testing.T) {
+			provider := t20r4Fixture()
+			t.Logf("fixture: %s", t20r4FixtureDescription)
+			t.Logf("case=%s policy=isolated sql=%s", tc.name, tc.sql)
+			result, err := t20r4Audit(t, provider, bothRules, tc.sql)
+			if err != nil {
+				t.Errorf("audit error for %q: %v", tc.sql, err)
+				return
+			}
+			if data, marshalErr := json.Marshal(result); marshalErr == nil {
+				t.Logf("public report: %s", data)
+			}
+			if len(result.Statements) != 1 {
+				t.Errorf("statements = %d, want 1", len(result.Statements))
+				return
+			}
+			if warns := t20r4Findings(result, 0, t20r4PlacementWarn); len(warns) == 0 {
+				t.Errorf("proven bind must warn, got findings %#v", result.Statements[0].Findings)
+			}
+			if found := t20r4Findings(result, 0, t20r4PlacementExistsRequire); len(found) != 0 {
+				t.Errorf("proven policies must not draw existence findings, got %#v", found)
+			}
+			topology := 0
+			for _, g := range result.Statements[0].EvidenceGaps {
+				if g.RuleID != t20r4PlacementWarn || g.ReasonCode != "unknown_table_state" {
+					continue
+				}
+				for _, f := range g.RequiredFacts {
+					if f == "placement_policy.topology" {
+						topology++
+					}
+				}
+			}
+			if topology != 1 {
+				t.Errorf("topology gaps = %d, want exactly one, got %#v",
+					topology, result.Statements[0].EvidenceGaps)
+			}
+			if result.Statements[0].Coverage.Status != report.CoverageUnverified {
+				t.Errorf("coverage = %s, want unverified", result.Statements[0].Coverage.Status)
+			}
+			if result.Verdict != report.VerdictReview {
+				t.Errorf("verdict = %s, want review", result.Verdict)
+			}
+		})
+	}
+	for _, tc := range presentCases {
+		t.Run("unknown/"+tc.name, func(t *testing.T) {
+			provider := t20r4Fixture()
+			provider.placement = nil
+			t.Logf("fixture: %s with placement=nil (unvouched catalog)", t20r4FixtureDescription)
+			t.Logf("case=%s policy=isolated sql=%s", tc.name, tc.sql)
+			result, err := t20r4Audit(t, provider, bothRules, tc.sql)
+			if err != nil {
+				t.Errorf("audit error for %q: %v", tc.sql, err)
+				return
+			}
+			if len(result.Statements) != 1 {
+				t.Errorf("statements = %d, want 1", len(result.Statements))
+				return
+			}
+			if found := t20r4Findings(result, 0, t20r4PlacementExistsRequire); len(found) != 0 {
+				t.Errorf("unvouched catalog must not fabricate existence blockers, got %#v", found)
+			}
+			if warns := t20r4Findings(result, 0, t20r4PlacementWarn); len(warns) != 0 {
+				t.Errorf("unproven binds must not warn, got %#v", warns)
+			}
+			if t20r4HasGap(result, 0, "", "placement_policy.topology") {
+				t.Errorf("unproven binds must not fabricate topology gaps, got %#v",
+					result.Statements[0].EvidenceGaps)
+			}
+			if !t20r4HasGap(result, 0, t20r4PlacementWarn, "placement_policy.catalog") {
+				t.Errorf("unvouched catalog must owe the warn catalog gap, got %#v",
+					result.Statements[0].EvidenceGaps)
+			}
+			if !t20r4HasGap(result, 0, t20r4PlacementExistsRequire, "placement_policy.catalog") {
+				t.Errorf("unvouched catalog must owe the exists.require catalog gap, got %#v",
+					result.Statements[0].EvidenceGaps)
+			}
+		})
+	}
+	defaultCases := []struct {
+		name string
+		sql  string
+	}{
+		{"add_default", t20r4AddDefault},
+		{"reorg_default", t20r4ReorgDefault},
+	}
+	for _, tc := range defaultCases {
+		t.Run("default_bind/"+tc.name, func(t *testing.T) {
+			provider := t20r4Fixture()
+			t.Logf("fixture: %s", t20r4FixtureDescription)
+			t.Logf("case=%s policy=isolated sql=%s", tc.name, tc.sql)
+			result, err := t20r4Audit(t, provider, bothRules, tc.sql)
+			if err != nil {
+				t.Errorf("audit error for %q: %v", tc.sql, err)
+				return
+			}
+			if len(result.Statements) != 1 {
+				t.Errorf("statements = %d, want 1", len(result.Statements))
+				return
+			}
+			for _, id := range []string{t20r4PlacementWarn, t20r4PlacementExistsRequire} {
+				if found := t20r4Findings(result, 0, id); len(found) != 0 {
+					t.Errorf("DEFAULT binds stay silent, got %s findings %#v", id, found)
+				}
+			}
+			if t20r4HasPlacementGap(result, 0) {
+				t.Errorf("DEFAULT binds with all bounds known owe no placement gaps, got %#v",
+					result.Statements[0].EvidenceGaps)
+			}
+		})
+	}
+}

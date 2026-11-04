@@ -1,0 +1,410 @@
+{
+  "case_id": "T20.meta.tidb85-r4-create-same-policy-members",
+  "kind": "cli_metadata",
+  "cli_case": "tidb85-r4-create-same-policy-members",
+  "anchor": "tidb85",
+  "dialect": "tidb",
+  "input_sql": "CREATE TABLE t2 (id INT) PARTITION BY RANGE(id) (PARTITION p0 VALUES LESS THAN (100) PLACEMENT POLICY=t20r4_g_ok, PARTITION p1 VALUES LESS THAN (200) PLACEMENT POLICY=t20r4_g_ok);",
+  "policy_profile": "t20-placement",
+  "policy_path": "/private/tmp/deltascope-t20r4-6ac1e918/final-2f01f500/golden/T20/golden-policy-t20-placement.yaml",
+  "connect": {
+    "host": "127.0.0.1",
+    "port": 24000,
+    "user": "root",
+    "schema": "t20r4_g_cp"
+  },
+  "expected": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 2,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": [
+      "unverified"
+    ],
+    "evidence_gaps": 1,
+    "fail_on_triggered": false,
+    "finding_entries": [
+      {
+        "index": 0,
+        "rule_id": "ddl.tidb.placement.warn",
+        "level": "warning"
+      },
+      {
+        "index": 0,
+        "rule_id": "ddl.tidb.placement.warn",
+        "level": "warning"
+      }
+    ],
+    "finding_metadata": [
+      {
+        "index": 0,
+        "rule_id": "ddl.tidb.placement.warn",
+        "metadata": {
+          "policy": "t20r4_g_ok",
+          "schema": "t20r4_g_cp",
+          "table": "t2",
+          "partition": "p0",
+          "target_kind": "partition"
+        }
+      },
+      {
+        "index": 0,
+        "rule_id": "ddl.tidb.placement.warn",
+        "metadata": {
+          "policy": "t20r4_g_ok",
+          "schema": "t20r4_g_cp",
+          "table": "t2",
+          "partition": "p1",
+          "target_kind": "partition"
+        }
+      }
+    ],
+    "evidence_gap_entries": [
+      {
+        "index": 0,
+        "rule_id": "ddl.tidb.placement.warn",
+        "reason_code": "unknown_table_state",
+        "required_facts": [
+          "placement_policy.topology"
+        ]
+      }
+    ]
+  },
+  "actual": {
+    "database": {
+      "product": "tidb",
+      "image": "pingcap/tidb:v8.5.0",
+      "image_digest": "pingcap/tidb@sha256:490861bd4a2fa643dbe76b77ffecafcad66e6a42774e580b82f4ec2429a80e57",
+      "container": "deltascope-ddl-golden-tidb85",
+      "reachable": true,
+      "version": "8.0.11-TiDB-v8.5.0"
+    },
+    "setup": [
+      {
+        "name": "create owned schema and proven policy",
+        "sql": "CREATE DATABASE t20r4_g_cp;CREATE PLACEMENT POLICY t20r4_g_ok FOLLOWERS=1",
+        "rc": 0,
+        "stdout": "",
+        "stderr": "",
+        "verify": [
+          {
+            "assert": "policy is present",
+            "sql": "SELECT COUNT(*) FROM information_schema.PLACEMENT_POLICIES WHERE POLICY_NAME='t20r4_g_ok'",
+            "rc": 0,
+            "output": "1",
+            "stderr": ""
+          }
+        ]
+      }
+    ],
+    "post_verify": [
+      {
+        "assert": "audit did not create destination",
+        "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='t20r4_g_cp' AND TABLE_NAME='t2'",
+        "rc": 0,
+        "output": "0",
+        "stderr": ""
+      }
+    ],
+    "execute": [
+      {
+        "name": "native two distinct members bind same policy",
+        "sql": "CREATE TABLE t20r4_g_cp.t2 (id INT) PARTITION BY RANGE(id) (PARTITION p0 VALUES LESS THAN (100) PLACEMENT POLICY=t20r4_g_ok, PARTITION p1 VALUES LESS THAN (200) PLACEMENT POLICY=t20r4_g_ok);",
+        "rc": 0,
+        "stdout": "",
+        "stderr": ""
+      }
+    ],
+    "structure": [
+      {
+        "assert": "both member identities retain the binding",
+        "sql": "SELECT GROUP_CONCAT(CONCAT(PARTITION_NAME,':',PARTITION_DESCRIPTION,':',COALESCE(TIDB_PLACEMENT_POLICY_NAME,'')) ORDER BY PARTITION_ORDINAL_POSITION SEPARATOR '|') FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='t20r4_g_cp' AND TABLE_NAME='t2'",
+        "rc": 0,
+        "output": "p0:100:t20r4_g_ok|p1:200:t20r4_g_ok",
+        "stderr": ""
+      }
+    ],
+    "teardown": [
+      {
+        "name": "remove owned fixture",
+        "sql": "DROP DATABASE t20r4_g_cp;DROP PLACEMENT POLICY t20r4_g_ok",
+        "rc": 0,
+        "stderr": ""
+      }
+    ],
+    "exit": 0,
+    "stdout": "{\"verdict\":\"review\",\"coverage\":{\"status\":\"unverified\"},\"summary\":{\"statements\":1,\"blockers\":0,\"warnings\":2,\"notices\":0},\"statements\":[{\"index\":0,\"kind\":\"ddl\",\"raw_sql\":\"CREATE TABLE t2 (id INT) PARTITION BY RANGE(id) (PARTITION p0 VALUES LESS THAN (100) PLACEMENT POLICY=t20r4_g_ok, PARTITION p1 VALUES LESS THAN (200) PLACEMENT POLICY=t20r4_g_ok);\",\"normalized_sql\":\"CREATE TABLE t2 (id INT) PARTITION BY RANGE(id) (PARTITION p0 VALUES LESS THAN (100) PLACEMENT POLICY=t20r4_g_ok, PARTITION p1 VALUES LESS THAN (200) PLACEMENT POLICY=t20r4_g_ok)\",\"findings\":[{\"rule_id\":\"ddl.tidb.placement.warn\",\"level\":\"warning\",\"message\":\"If applied, PLACEMENT POLICY \\\"t20r4_g_ok\\\" would bind partition \\\"t2\\\" to a topology policy\",\"statement_kind\":\"ddl\",\"location\":{\"line\":1,\"column\":1},\"suggestion\":\"verify the placement policy's region constraints, replica counts, and PD/TiKV topology prerequisites intentionally — a bound policy reassigns the object's physical placement\",\"metadata\":{\"action\":\"create_table\",\"binding_source\":\"member_definition\",\"partition\":\"p0\",\"policy\":\"t20r4_g_ok\",\"schema\":\"t20r4_g_cp\",\"table\":\"t2\",\"target\":\"t2\",\"target_kind\":\"partition\"},\"explanation\":{\"summary\":\"Warn on DDL tidb placement warn\",\"why\":\"The statement reached a caution rule that highlights an operational trade-off.\",\"risk\":\"Ignoring this rule can weaken schema-governance guarantees and make changes harder to review safely.\",\"suggestion\":\"verify the placement policy's region constraints, replica counts, and PD/TiKV topology prerequisites intentionally — a bound policy reassigns the object's physical placement\"}},{\"rule_id\":\"ddl.tidb.placement.warn\",\"level\":\"warning\",\"message\":\"If applied, PLACEMENT POLICY \\\"t20r4_g_ok\\\" would bind partition \\\"t2\\\" to a topology policy\",\"statement_kind\":\"ddl\",\"location\":{\"line\":1,\"column\":1},\"suggestion\":\"verify the placement policy's region constraints, replica counts, and PD/TiKV topology prerequisites intentionally — a bound policy reassigns the object's physical placement\",\"metadata\":{\"action\":\"create_table\",\"binding_source\":\"member_definition\",\"partition\":\"p1\",\"policy\":\"t20r4_g_ok\",\"schema\":\"t20r4_g_cp\",\"table\":\"t2\",\"target\":\"t2\",\"target_kind\":\"partition\"},\"explanation\":{\"summary\":\"Warn on DDL tidb placement warn\",\"why\":\"The statement reached a caution rule that highlights an operational trade-off.\",\"risk\":\"Ignoring this rule can weaken schema-governance guarantees and make changes harder to review safely.\",\"suggestion\":\"verify the placement policy's region constraints, replica counts, and PD/TiKV topology prerequisites intentionally — a bound policy reassigns the object's physical placement\"}}],\"evidence_gaps\":[{\"rule_id\":\"ddl.tidb.placement.warn\",\"reason_code\":\"unknown_table_state\",\"required_facts\":[\"placement_policy.topology\"]}],\"coverage\":{\"status\":\"unverified\"}}],\"version\":{\"product\":\"tidb\",\"version\":\"8.5.0\",\"major\":8,\"minor\":5,\"patch\":0,\"source\":\"observed\",\"validated_range\":true},\"fail_on_triggered\":false,\"rule_summary\":{\"loaded\":2,\"applicable\":2,\"skipped\":[]},\"context\":{\"mode\":\"metadata-aware\",\"dialect\":\"tidb\",\"dialect_source\":\"detected\",\"schema\":\"t20r4_g_cp\",\"schema_source\":\"flag\"}}\n",
+    "stderr": "",
+    "parsed": {
+      "verdict": "review",
+      "coverage": {
+        "status": "unverified"
+      },
+      "summary": {
+        "statements": 1,
+        "blockers": 0,
+        "warnings": 2,
+        "notices": 0
+      },
+      "statements": [
+        {
+          "index": 0,
+          "kind": "ddl",
+          "raw_sql": "CREATE TABLE t2 (id INT) PARTITION BY RANGE(id) (PARTITION p0 VALUES LESS THAN (100) PLACEMENT POLICY=t20r4_g_ok, PARTITION p1 VALUES LESS THAN (200) PLACEMENT POLICY=t20r4_g_ok);",
+          "normalized_sql": "CREATE TABLE t2 (id INT) PARTITION BY RANGE(id) (PARTITION p0 VALUES LESS THAN (100) PLACEMENT POLICY=t20r4_g_ok, PARTITION p1 VALUES LESS THAN (200) PLACEMENT POLICY=t20r4_g_ok)",
+          "findings": [
+            {
+              "rule_id": "ddl.tidb.placement.warn",
+              "level": "warning",
+              "message": "If applied, PLACEMENT POLICY \"t20r4_g_ok\" would bind partition \"t2\" to a topology policy",
+              "statement_kind": "ddl",
+              "location": {
+                "line": 1,
+                "column": 1
+              },
+              "suggestion": "verify the placement policy's region constraints, replica counts, and PD/TiKV topology prerequisites intentionally — a bound policy reassigns the object's physical placement",
+              "metadata": {
+                "action": "create_table",
+                "binding_source": "member_definition",
+                "partition": "p0",
+                "policy": "t20r4_g_ok",
+                "schema": "t20r4_g_cp",
+                "table": "t2",
+                "target": "t2",
+                "target_kind": "partition"
+              },
+              "explanation": {
+                "summary": "Warn on DDL tidb placement warn",
+                "why": "The statement reached a caution rule that highlights an operational trade-off.",
+                "risk": "Ignoring this rule can weaken schema-governance guarantees and make changes harder to review safely.",
+                "suggestion": "verify the placement policy's region constraints, replica counts, and PD/TiKV topology prerequisites intentionally — a bound policy reassigns the object's physical placement"
+              }
+            },
+            {
+              "rule_id": "ddl.tidb.placement.warn",
+              "level": "warning",
+              "message": "If applied, PLACEMENT POLICY \"t20r4_g_ok\" would bind partition \"t2\" to a topology policy",
+              "statement_kind": "ddl",
+              "location": {
+                "line": 1,
+                "column": 1
+              },
+              "suggestion": "verify the placement policy's region constraints, replica counts, and PD/TiKV topology prerequisites intentionally — a bound policy reassigns the object's physical placement",
+              "metadata": {
+                "action": "create_table",
+                "binding_source": "member_definition",
+                "partition": "p1",
+                "policy": "t20r4_g_ok",
+                "schema": "t20r4_g_cp",
+                "table": "t2",
+                "target": "t2",
+                "target_kind": "partition"
+              },
+              "explanation": {
+                "summary": "Warn on DDL tidb placement warn",
+                "why": "The statement reached a caution rule that highlights an operational trade-off.",
+                "risk": "Ignoring this rule can weaken schema-governance guarantees and make changes harder to review safely.",
+                "suggestion": "verify the placement policy's region constraints, replica counts, and PD/TiKV topology prerequisites intentionally — a bound policy reassigns the object's physical placement"
+              }
+            }
+          ],
+          "evidence_gaps": [
+            {
+              "rule_id": "ddl.tidb.placement.warn",
+              "reason_code": "unknown_table_state",
+              "required_facts": [
+                "placement_policy.topology"
+              ]
+            }
+          ],
+          "coverage": {
+            "status": "unverified"
+          }
+        }
+      ],
+      "version": {
+        "product": "tidb",
+        "version": "8.5.0",
+        "major": 8,
+        "minor": 5,
+        "patch": 0,
+        "source": "observed",
+        "validated_range": true
+      },
+      "fail_on_triggered": false,
+      "rule_summary": {
+        "loaded": 2,
+        "applicable": 2,
+        "skipped": []
+      },
+      "context": {
+        "mode": "metadata-aware",
+        "dialect": "tidb",
+        "dialect_source": "detected",
+        "schema": "t20r4_g_cp",
+        "schema_source": "flag"
+      }
+    },
+    "version_evidence": {
+      "target_raw": null,
+      "target_canonical": null,
+      "observed_raw": "8.0.11-TiDB-v8.5.0",
+      "observed_canonical": {
+        "product": "tidb",
+        "version": "8.5.0"
+      },
+      "resolved": {
+        "product": "tidb",
+        "version": "8.5.0",
+        "major": 8,
+        "minor": 5,
+        "patch": 0,
+        "source": "observed",
+        "validated_range": true
+      }
+    }
+  },
+  "assertions": [
+    {
+      "name": "database reachable with expected version",
+      "ok": true,
+      "detail": "SELECT VERSION() rc=0 version='8.0.11-TiDB-v8.5.0' expected_contains='v8.5.0'"
+    },
+    {
+      "name": "setup create owned schema and proven policy return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "setup create owned schema and proven policy: policy is present",
+      "ok": true,
+      "detail": "rc=0 output='1' expected='1'"
+    },
+    {
+      "name": "exit code",
+      "ok": true,
+      "detail": "rc=0 expected=0"
+    },
+    {
+      "name": "verdict",
+      "ok": true,
+      "detail": "verdict='review'"
+    },
+    {
+      "name": "top-level statements",
+      "ok": true,
+      "detail": "statements=1 expected=1"
+    },
+    {
+      "name": "zero findings",
+      "ok": true,
+      "detail": "findings=2"
+    },
+    {
+      "name": "no diagnostics",
+      "ok": true,
+      "detail": "diagnostics=[]"
+    },
+    {
+      "name": "no unsupported",
+      "ok": true,
+      "detail": "unsupported=[]"
+    },
+    {
+      "name": "aggregate coverage",
+      "ok": true,
+      "detail": "coverage='unverified'"
+    },
+    {
+      "name": "per-statement coverage",
+      "ok": true,
+      "detail": "statement_coverage=['unverified']"
+    },
+    {
+      "name": "evidence gap count",
+      "ok": true,
+      "detail": "gaps=1"
+    },
+    {
+      "name": "evidence gap entries",
+      "ok": true,
+      "detail": "gaps=[(0, 'ddl.tidb.placement.warn', 'unknown_table_state')] expected=[(0, 'ddl.tidb.placement.warn', 'unknown_table_state')]"
+    },
+    {
+      "name": "evidence gap required_facts (0, 'ddl.tidb.placement.warn', 'unknown_table_state')",
+      "ok": true,
+      "detail": "gaps=[{'rule_id': 'ddl.tidb.placement.warn', 'reason_code': 'unknown_table_state', 'required_facts': ['placement_policy.topology']}] expected_facts=['placement_policy.topology']"
+    },
+    {
+      "name": "no gap encoded as finding",
+      "ok": true,
+      "detail": "findings carrying gap shape=[]"
+    },
+    {
+      "name": "finding entries",
+      "ok": true,
+      "detail": "findings=[(0, 'ddl.tidb.placement.warn', 'warning'), (0, 'ddl.tidb.placement.warn', 'warning')] expected=[(0, 'ddl.tidb.placement.warn', 'warning'), (0, 'ddl.tidb.placement.warn', 'warning')]"
+    },
+    {
+      "name": "finding metadata (0, 'ddl.tidb.placement.warn')",
+      "ok": true,
+      "detail": "findings=[{'action': 'create_table', 'binding_source': 'member_definition', 'partition': 'p0', 'policy': 't20r4_g_ok', 'schema': 't20r4_g_cp', 'table': 't2', 'target': 't2', 'target_kind': 'partition'}, {'action': 'create_table', 'binding_source': 'member_definition', 'partition': 'p1', 'policy': 't20r4_g_ok', 'schema': 't20r4_g_cp', 'table': 't2', 'target': 't2', 'target_kind': 'partition'}] expected_subset={'policy': 't20r4_g_ok', 'schema': 't20r4_g_cp', 'table': 't2', 'partition': 'p0', 'target_kind': 'partition'}"
+    },
+    {
+      "name": "finding metadata (0, 'ddl.tidb.placement.warn')",
+      "ok": true,
+      "detail": "findings=[{'action': 'create_table', 'binding_source': 'member_definition', 'partition': 'p0', 'policy': 't20r4_g_ok', 'schema': 't20r4_g_cp', 'table': 't2', 'target': 't2', 'target_kind': 'partition'}, {'action': 'create_table', 'binding_source': 'member_definition', 'partition': 'p1', 'policy': 't20r4_g_ok', 'schema': 't20r4_g_cp', 'table': 't2', 'target': 't2', 'target_kind': 'partition'}] expected_subset={'policy': 't20r4_g_ok', 'schema': 't20r4_g_cp', 'table': 't2', 'partition': 'p1', 'target_kind': 'partition'}"
+    },
+    {
+      "name": "fail_on_triggered",
+      "ok": true,
+      "detail": "fail_on_triggered=False"
+    },
+    {
+      "name": "post-verify audit did not create destination",
+      "ok": true,
+      "detail": "rc=0 output='0' expected='0'"
+    },
+    {
+      "name": "execute native two distinct members bind same policy return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "structure both member identities retain the binding",
+      "ok": true,
+      "detail": "rc=0 output='p0:100:t20r4_g_ok|p1:200:t20r4_g_ok' expected='p0:100:t20r4_g_ok|p1:200:t20r4_g_ok'"
+    },
+    {
+      "name": "teardown remove owned fixture return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    }
+  ],
+  "status": "pass",
+  "command": [
+    "/private/tmp/deltascope-t20r4-6ac1e918/final-2f01f500/golden/T20/bin/deltascope",
+    "audit",
+    "--dialect",
+    "tidb",
+    "--sql",
+    "CREATE TABLE t2 (id INT) PARTITION BY RANGE(id) (PARTITION p0 VALUES LESS THAN (100) PLACEMENT POLICY=t20r4_g_ok, PARTITION p1 VALUES LESS THAN (200) PLACEMENT POLICY=t20r4_g_ok);",
+    "--config",
+    "/private/tmp/deltascope-t20r4-6ac1e918/final-2f01f500/golden/T20/golden-policy-t20-placement.yaml",
+    "--format",
+    "json",
+    "--host",
+    "127.0.0.1",
+    "--port",
+    "24000",
+    "--user",
+    "root",
+    "--schema",
+    "t20r4_g_cp",
+    "--fail-on",
+    "blocker"
+  ]
+}

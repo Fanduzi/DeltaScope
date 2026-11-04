@@ -1,0 +1,9 @@
+--------------
+SET SESSION tidb_placement_mode='STRICT'
+--------------
+
+--------------
+ALTER TABLE t_add ADD PARTITION (
+ PARTITION p5 VALUES LESS THAN (500) PLACEMENT POLICY=t20r4_missing)
+--------------
+

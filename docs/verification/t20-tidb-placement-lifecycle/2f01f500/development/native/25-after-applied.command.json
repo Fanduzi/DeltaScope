@@ -1,0 +1,17 @@
+[
+  "docker",
+  "exec",
+  "deltascope-ddl-golden-tidb85-client",
+  "mysql",
+  "--protocol=tcp",
+  "-h",
+  "tidb85",
+  "-P",
+  "4000",
+  "-uroot",
+  "--batch",
+  "--raw",
+  "--verbose",
+  "-e",
+  "SET SESSION tidb_placement_mode='STRICT';\n\nSELECT TABLE_NAME,TIDB_PLACEMENT_POLICY_NAME\nFROM information_schema.TABLES WHERE TABLE_SCHEMA='t20r4_native' ORDER BY TABLE_NAME;\nSELECT TABLE_NAME,PARTITION_NAME,SUBPARTITION_NAME,PARTITION_ORDINAL_POSITION,\n       PARTITION_DESCRIPTION,TIDB_PLACEMENT_POLICY_NAME\nFROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='t20r4_native'\nORDER BY TABLE_NAME,PARTITION_ORDINAL_POSITION,SUBPARTITION_ORDINAL_POSITION;\nSELECT POLICY_NAME,FOLLOWERS FROM information_schema.PLACEMENT_POLICIES\nWHERE POLICY_NAME LIKE 't20r4\\_%' ORDER BY POLICY_NAME;\n"
+]

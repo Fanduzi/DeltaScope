@@ -1,0 +1,1 @@
+python3 /tmp/deltascope-t20r4-6ac1e918/verify_candidate.py --product 2f01f500d296bb29ee518bc113a58ec26172dc1a --evidence-dir /tmp/deltascope-t20r4-6ac1e918/final-2f01f500 --output /tmp/deltascope-t20r4-6ac1e918/lead-verification.json

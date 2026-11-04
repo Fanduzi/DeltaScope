@@ -1,0 +1,22 @@
+ .../2026-11-12-tidb-placement-policy-lifecycle.md  |  71 +++-
+ internal/application/audit/README.md               |   3 +-
+ internal/application/audit/batch_state.go          | 144 +++++--
+ .../application/audit/batch_state_placement.go     | 397 +++++++++++++-----
+ internal/application/audit/coverage.go             |   7 +
+ internal/application/audit/metadata.go             |  17 +
+ .../application/audit/partition_transitions.go     | 255 +++++++++++-
+ internal/domain/rule/ddl/README.md                 |   2 +-
+ internal/domain/rule/ddl/placement_rules.go        | 462 +++++++++++++--------
+ internal/domain/spec/README.md                     |   4 +-
+ internal/domain/spec/ddl.go                        |   5 +
+ internal/domain/spec/metadata.go                   |  13 +
+ internal/domain/spec/placement.go                  | 181 ++++++++
+ internal/infrastructure/parser/tidb/README.md      |   2 +-
+ internal/infrastructure/parser/tidb/extractor.go   |  30 ++
+ testdata/ddl-golden/README.md                      |  17 +
+ testdata/ddl-golden/T20.json                       | 305 +++++++++++++-
+ testdata/ddl-inventory/inventory.yaml              |  12 +-
+ testdata/sql-corpus/README.md                      |   9 +
+ .../placement_policy_missing.expected.yaml         |   7 +-
+ .../tidb/ddl/findings/placement_policy_missing.sql |  11 +
+ 21 files changed, 1616 insertions(+), 338 deletions(-)

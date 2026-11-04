@@ -1,0 +1,1 @@
+python3 /tmp/deltascope-t20r4-6ac1e918/verify_resources.py --output /tmp/deltascope-t20r4-6ac1e918/protected-resources-corrected.json

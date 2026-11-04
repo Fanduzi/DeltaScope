@@ -1,0 +1,770 @@
+# RTK - Rust Token Killer
+
+**Usage**: Token-optimized CLI proxy (60-90% savings on dev operations)
+
+## Meta Commands (always use rtk directly)
+
+```bash
+rtk gain              # Show token savings analytics
+rtk gain --history    # Show command usage history with savings
+rtk discover          # Analyze Claude Code history for missed opportunities
+rtk proxy <cmd>       # Execute raw command without filtering (for debugging)
+```
+
+## Installation Verification
+
+```bash
+rtk --version         # Should show: rtk X.Y.Z
+rtk gain              # Should work (not "command not found")
+which rtk             # Verify correct binary
+```
+
+⚠️ **Name collision**: If `rtk gain` fails, you may have reachingforthejack/rtk (Rust Type Kit) installed instead.
+
+## Hook-Based Usage
+
+All other commands are automatically rewritten by the Claude Code hook.
+Example: `git status` → `rtk git status` (transparent, 0 tokens overhead)
+
+Refer to CLAUDE.md for full command reference.
+# Repository Guidelines
+
+## Agent skills
+
+### Issue tracker
+
+Issues live in GitHub Issues for this repository. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Use the default five-label vocabulary. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+This is a single-context repository. See `docs/agents/domain.md`.
+
+## Project Structure & Module Organization
+
+DeltaScope is a layered Go repository. Keep entrypoints thin in `cmd/` (`deltascope`, `deltascope-server`, `deltascope-mcp`), transport adapters in `internal/interfaces/`, use-case orchestration in `internal/application/`, core audit logic in `internal/domain/`, and external adapters in `internal/infrastructure/`. The stable public API lives in `pkg/deltascope/`. Supporting material lives in `configs/`, `docs/`, `scripts/`, `docker/`, and `testdata/sql-corpus/`. The npm launcher for MCP clients is in `packages/deltascope-mcp/`.
+
+## Build, Test, and Development Commands
+
+- `make test`: fast default verification; runs `go test ./...`.
+- `make build`: builds all local binaries into `bin/`.
+- `make build-cli`, `make build-server`, `make build-mcp`: build one surface at a time.
+- `make build-linux`: cross-compiles Linux amd64 binaries.
+- `make test-e2e-cli`, `make test-e2e-http-mysql`, `make test-e2e-mcp-postgresql`: Docker-backed metadata e2e suites.
+- `make pg-unit-test-gates` and `make pg-confidence-gates`: canonical PostgreSQL verification targets.
+- `npm test --prefix packages/deltascope-mcp`: runs the Node launcher tests (`node --test`).
+
+## Coding Style & Naming Conventions
+
+Use standard Go formatting with `gofmt`; keep package names lowercase and exported identifiers in `CamelCase`. Match the existing architecture: `cmd` binds flags and startup only, interfaces translate requests, application coordinates work, domain owns rules/specs, and infrastructure wraps third-party dependencies. Test files should stay adjacent to code and use the usual `*_test.go` naming.
+
+### File Headers
+
+L3 `input:` / `output:` / `pos:` / `note:` header blocks are not required in this repository; do not add them. The shared `three-level-doc` skill and its checker do not gate this repository. Keep standard Go package comments (`// Package ...`) where they clarify the package.
+
+## Testing Guidelines
+
+Prefer focused `go test ./path/... -run TestName` during development, then finish with `make test`. PostgreSQL-tagged coverage uses `-tags postgresql` and the Make targets above. Metadata-aware CLI/HTTP/MCP suites require Docker; CLI metadata scripts also require Python 3. Add or update fixtures under `testdata/sql-corpus/` when rule behavior changes.
+
+## Commit & Pull Request Guidelines
+
+Recent history follows short conventional subjects such as `feat:`, `fix:`, `test:`, `docs:`, and `chore:`; scoped forms like `feat(http): ...` fit well. Keep commits focused by surface or layer. PRs should explain the affected surface, link the issue when applicable, and list the exact verification commands run. If you change package exports, module responsibilities, or dependencies, update the affected package `README.md` in the same change. When install or release-facing docs change, sync `README.md`, `README_ZH.md`, and relevant release docs together.
+
+## Decision Record Discipline
+
+For milestone work or any change that introduces a non-obvious product, architecture, parser, rule, metadata, privacy, or public-contract boundary, create or update a committed decision record under `docs/decisions/`.
+
+Decision records are for durable rationale, not task logs. Do not paste full task reports. Summarize the decision, rationale, public contract, deferred scope, verification evidence, and links to tests, corpus fixtures, docs, and commits.
+
+A decision record is required when:
+- a feature is intentionally deferred
+- an unsupported boundary is promoted to supported or finding-covered behavior
+- public output shape changes
+- privacy/no-leak behavior is part of the design
+- cross-surface behavior must stay consistent across SDK, CLI, HTTP, or MCP
+- release docs mention a nuanced non-goal, boundary, or compatibility promise
+- a milestone makes multiple related commits whose rationale would otherwise live only in chat or local plans
+
+Before completing a task, explicitly state whether a decision record was required. If required, commit it with the task. If not required, explain why in the final report.
+
+## Milestone Branch Discipline
+
+For multi-task milestones, default to one milestone branch/worktree, not one branch per task. Start the milestone from current local `main`; implement each task as a focused commit on the milestone branch. Before moving to the next task, commit the current task and run its required gates. Use separate task worktrees only for explicitly parallel work with disjoint write sets, then integrate them back into the milestone branch before continuing sequential work. Merge the milestone branch into local `main` only after the whole milestone is ready; use `--ff-only` when possible, and stop if it fails. Do not push, tag, or release unless explicitly instructed.
+
+## Task Report Accuracy
+
+Task reports must distinguish task-commit diff (`<previous-task>..HEAD`) from milestone diff (`main...HEAD`). Final milestone reports must include actual branch, HEAD, base, working tree status, and `git diff --name-only <base>...HEAD` scope.
+
+## Release Prompt Discipline
+
+Any DeltaScope release handoff prompt must be skill-first. It must explicitly require the executor to call and follow the `go-release` skill instead of treating hand-written shell steps as a substitute release workflow. Repository-specific context, version numbers, safety constraints, and final reporting requirements may be included after that requirement, but they are acceptance criteria and guardrails, not a replacement for the skill. If the `go-release` skill and a hand-written command checklist differ, follow the skill unless the checklist is a stricter safety requirement such as `no-co-author`, release-readiness verification, AI-attribution checks, asset validation, or binary version smoke tests.
+
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+## What is DeltaScope
+
+DeltaScope is an offline-first SQL audit engine for MySQL and TiDB. It ships three binaries (`deltascope`, `deltascope-server`, `deltascope-mcp`) and a stable Go library (`pkg/deltascope`).
+
+## Build & Test Commands
+
+```bash
+# Run all unit tests
+make test           # equivalent: go test ./...
+
+# Run a single test package or test function
+go test ./internal/domain/rule/... -run TestRegistryDeterministic
+
+# Build all binaries → bin/
+make build
+
+# Build individual binaries
+make build-cli
+make build-server
+make build-mcp
+
+# Cross-compile Linux amd64 binaries
+make build-linux
+
+# Metadata E2E tests (require Docker + Go; CLI targets also need Python 3)
+make test-e2e-cli          # CLI against both MySQL and TiDB
+make test-e2e-cli-mysql
+make test-e2e-cli-tidb
+make test-e2e-mcp-mysql
+make test-e2e-mcp-tidb
+make test-e2e-http-mysql
+make test-e2e-http-tidb
+```
+
+All builds use `CGO_ENABLED=0` by default.
+
+## Architecture
+
+The codebase follows a strict layered architecture. Dependencies only flow downward:
+
+```
+cmd/                        → thin entrypoints, bind flags/startup only
+internal/interfaces/        → transport adapters (cli, http, mcp)
+internal/application/       → use-case orchestration (audit, auditmeta, policy)
+internal/domain/            → core logic: spec, rule, report, policy
+internal/infrastructure/    → adapters to external deps (parser/tidb, config/viper, metadata/mysql, output/json|markdown)
+pkg/deltascope/             → stable public library facade (Audit, Request, Result, ...)
+```
+
+Key boundaries:
+- `cmd` packages stay thin — mostly flag binding and binary startup.
+- `internal/interfaces` owns request/response translation for CLI, HTTP, and MCP. Delegates real work to `internal/application` or `pkg/deltascope`.
+- `internal/application/audit` runs the main offline audit path: parse → enrich → evaluate rules → build report.
+- `internal/domain/spec` defines normalized statement models (`Statement`, `DDL`, `DML`, `Alter`, etc.) that rules consume.
+- `internal/domain/rule` owns `Finding`, `Registry`, `StatementRule`, and `GlobalRule` — the rule contract layer.
+- `internal/infrastructure/parser/tidb` wraps the TiDB parser for both MySQL and TiDB dialects.
+- `pkg/deltascope` is the stable public API (`Audit(ctx, request)`) that library consumers import.
+
+## Rule Configuration
+
+Rules are configured via YAML. See `configs/deltascope.example.yaml` for all rule IDs, default levels (`blocker`/`warning`/`notice`), and params. The config is loaded through `internal/infrastructure/config/viper`.
+
+## Module README Update Rule
+
+Each package under `internal/` and `pkg/` has a `README.md` that lists exports and dependencies. **When changing a package's exported symbols or inter-package dependencies, update that package's `README.md` in the same commit.**
+
+## File Header Rule
+
+L3 `input:` / `output:` / `pos:` / `note:` file headers are not required. Do not add them; keep standard Go package comments only.
+
+## Decision Record Discipline
+
+For milestone work or any change that introduces a non-obvious product, architecture, parser, rule, metadata, privacy, or public-contract boundary, create or update a committed decision record under `docs/decisions/`.
+
+Decision records are for durable rationale, not task logs. Do not paste full task reports. Summarize the decision, rationale, public contract, deferred scope, verification evidence, and links to tests, corpus fixtures, docs, and commits.
+
+A decision record is required when:
+- a feature is intentionally deferred
+- an unsupported boundary is promoted to supported or finding-covered behavior
+- public output shape changes
+- privacy/no-leak behavior is part of the design
+- cross-surface behavior must stay consistent across SDK, CLI, HTTP, or MCP
+- release docs mention a nuanced non-goal, boundary, or compatibility promise
+- a milestone makes multiple related commits whose rationale would otherwise live only in chat or local plans
+
+Before completing a task, explicitly state whether a decision record was required. If required, commit it with the task. If not required, explain why in the final report.
+
+## Milestone Branch Discipline
+
+For multi-task milestones, default to one milestone branch/worktree, not one branch per task. Start from current local `main`; implement each task as a focused commit on the milestone branch. Before moving to the next task, commit the current task and run its gates. Use separate task worktrees only for explicitly parallel work with disjoint write sets, then integrate them back into the milestone branch before continuing. Merge the milestone branch into local `main` only after the whole milestone is ready; use `--ff-only` when possible, and stop if it fails. Do not push, tag, or release unless explicitly instructed.
+
+## Task Report Accuracy
+
+Task reports must distinguish task-commit diff (`<previous-task>..HEAD`) from milestone diff (`main...HEAD`). Final milestone reports must include actual branch, HEAD, base, working tree status, and `git diff --name-only <base>...HEAD` scope.
+
+## Agent skills
+
+### Issue tracker
+
+Issues live in GitHub Issues for this repository. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Use the default five-label vocabulary. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+This is a single-context repository. See `docs/agents/domain.md`.
+# Issue tracker: GitHub
+
+Issues and product requests for this repository live in GitHub Issues. Use the
+`gh` CLI for issue operations.
+
+## Conventions
+
+- Create an issue: `gh issue create --title "..." --body "..."`.
+- Read an issue: `gh issue view <number> --comments`.
+- List issues: `gh issue list --state open` with appropriate filters.
+- Comment, label, or close: use `gh issue comment`, `gh issue edit`, and
+  `gh issue close`.
+
+Infer the repository from `git remote -v`; `gh` does this automatically when
+run inside this clone.
+
+## Pull requests as a triage surface
+
+PRs as a request surface: no.
+
+## Skill mapping
+
+When a skill says to publish to the issue tracker, create a GitHub issue. When
+it says to fetch a ticket, run `gh issue view <number> --comments`.
+# Domain Docs
+
+## Layout
+
+DeltaScope is a single-context repository. `CONTEXT.md` may be added at the
+repository root when a maintained domain glossary is needed. Durable
+architecture decisions live in `docs/decisions/`.
+
+## Before Exploring
+
+- Read root `CONTEXT.md` if it exists.
+- Read decision records in `docs/decisions/` relevant to the area being
+  changed.
+- If those files do not exist, proceed without treating their absence as an
+  error.
+
+## Vocabulary and Decisions
+
+Use terms defined in `CONTEXT.md` when it exists. If a proposed change
+contradicts an accepted decision record, state the conflict explicitly instead
+of silently overriding it.
+# Decision: TiDB 8.5 placement-policy lifecycle, binding state, and the metadata/topology split (MySQL vendor boundary)
+
+Date: 2026-11-12 — milestone decision-record convention: decision dates
+are assigned per task slot and run ahead of commit dates; neighboring
+records follow the same convention.
+Status: Accepted
+Related milestone/version: mysql-tidb-ddl-completion (issue #79, task T20 under #99)
+Related commits: this task's commits on the milestone line after `57c207a8`
+Related tests: `internal/application/audit` T20 suite
+(`batch_state_t20_test.go`), parser disposition updates
+(`stmt_disposition_test.go`), coverage pins
+(`coverage_t03_test.go`), census privacy pins
+(`mysql_tidb_ddl_normalized_silent_metadata_census_test.go`), corpus
+fixtures under `testdata/sql-corpus/`, and
+`make ddl-golden TASK=T20 ARTIFACT_DIR=...` against
+`testdata/ddl-golden/T20.json`
+Related docs: module README updates in the same change
+(`internal/domain/spec`, `internal/application/audit`,
+`internal/domain/rule/ddl`, `internal/infrastructure/parser/tidb`,
+`internal/infrastructure/metadata/mysql`), `testdata/ddl-inventory`,
+coverage catalog `docs/reference/ddl-coverage.*`
+
+## Context
+
+Issue #99 owns the TiDB placement-policy surface: `CREATE | ALTER | DROP
+PLACEMENT POLICY`, placement binds on databases, tables, partitions, and
+`ALTER RANGE`, the `= DEFAULT` unbind form, and the new
+`ddl.tidb.placement.warn` finding. TiDB 8.5 native probing established
+four facts that shape the design:
+
+- A named-policy bind refuses natively when the policy is absent
+  (ERROR 8239); binding is a catalog fact (`*_PLACEMENT_POLICY_NAME`
+  columns in `SCHEMATA`, `TABLES`, `PARTITIONS`) that is provable from
+  `information_schema` — while `SHOW PLACEMENT` reporting `PENDING`
+  demonstrates that catalog binding never proves topology deployment.
+- `= DEFAULT` is an unconditional unbind at every level; it does not
+  require the policy to exist.
+- `DROP PLACEMENT POLICY` refuses while any object is bound
+  (ERROR 8241).
+- `ALTER RANGE` accepts only `global`/`meta` on v8.5; other range names
+  fail parse/semantic validation (1105). The legacy
+  `/*T![placement]*/` direct-options form is a 1064 parse error on
+  8.5 — the comment is lexed as real tokens, not silently ignored.
+
+MySQL has no placement feature: every placement statement or option
+under MySQL is a vendor boundary that preserves exact pre-state,
+including `= DEFAULT` (an unbind is still a vendor feature).
+`/*T![feature]*/` comments are a different question — MySQL parses them
+as ordinary comments and ignores them entirely, so under the MySQL
+dialect they can carry no placement semantics at all (T20-R2).
+
+## Decision
+
+1. **Policy registry is ordered state, seeded from metadata.** The
+   provider gains `LoadPlacementPolicies`; a nil catalog means
+   unvouched (unreadable), a non-nil map — including empty — is a
+   proven catalog. `PlacementPolicyFact` carries proven `BoundTargets`
+   so a bound-policy drop refuses (native 8241 parity) and an
+   unvouched drop stays unproven rather than guessing absence.
+2. **Binding is a tri-state outcome, not a flag.**
+   `PlacementBindOutcome` returns refused (non-TiDB dialect, or named
+   policy proven absent), applied (DEFAULT unbind unconditionally; named
+   policy proven present), or unproven (policy catalog cannot answer).
+   Proven refusal preserves exact pre-state; unproven withholds only
+   the affected fact. A placement spec may only be the sole
+   schema-changing action of a multi-spec ALTER — probed 8200 on
+   v8.5.0 ("Unsupported multi schema change for alter table
+   placement"): any structural/option sibling or a second placement
+   spec refuses the whole statement atomically; only ALGORITHM/LOCK
+   modifiers combine (probed rc=0) (T20-R1 correction).
+3. **Inbound references are maintained, not recomputed.** Bind,
+   unbind, drop-table/drop-schema, and rename paths update
+   `BoundTargets` with exact identity matching (`schema:foo` must not
+   collide with `schema:foobar`; renames rekey `table:` identities).
+   Policy ALTER *replaces* the option definition — probed on
+   v8.5.0: after `ALTER PLACEMENT POLICY p FOLLOWERS=4`,
+   `SHOW CREATE` emits only `FOLLOWERS=4`; unstated prior members do
+   not survive. Policy identity and bound references are untouched
+   (T20-R1 correction).
+4. **Topology is explicitly out of scope.** A successful binding audit
+   states that the catalog would record the binding — it never claims
+   placement has deployed. `SHOW PLACEMENT`/`SCHEDULE_STATE` data is
+   documented as a separate evidence layer; where it cannot be proven,
+   the finding and decision record say so instead of implying success.
+5. **Bounded option modeling with a privacy contract.** Placement
+   options are stored as bounded keys (`primary_region`, `regions`,
+   `follower_count`, `voter_count`, `learner_count`, `schedule`,
+   `constraints`, `leader_constraints`, `follower_constraints`,
+   `voter_constraints`, `learner_constraints`, `survival_preferences`)
+   with normalized display values; raw constraint bodies (e.g. region
+   name lists) are not copied into findings or metadata projections.
+   Census tests pin this no-leak contract.
+6. **`ALTER RANGE` is bounded to `{global, meta}`.** Other known names
+   refuse; missing range information is unproven. MySQL `ALTER RANGE`
+   is a vendor boundary.
+7. **Rule `ddl.tidb.placement.warn`** is a warning-level statement rule
+   that fires once when a placement lifecycle or binding action is
+   proven applied; refused, unproven, and unbind outcomes stay silent
+   (unproven yields evidence gaps instead). The rule never mutates
+   ordered state; rule enablement does not change transitions.
+8. **MySQL ignores `/*T!` feature comments; the dialect entry blanks
+   them (T20-R2).** `blankTiDBFeatureComments` rewrites `/*T! ... */`
+   regions to same-width whitespace before the shared TiDB parser sees
+   a chunk, using a real lexer pass (strings, quoted identifiers, and
+   other comments are never scanned). Positions, `RawSQL`, and
+   statement boundaries keep the original text; the AST simply never
+   contains the comment's tokens. Probed on mysql:8.0.46 —
+   create/alter/direct-option comment forms all land rc=0 with no
+   binding, `ALTER TABLE t` with only a comment is a legal no-op, and
+   the bare `PLACEMENT POLICY` clause stays a 1064 vendor boundary. The
+   blanking covers every `/*T!` feature uniformly because MySQL treats
+   them all identically; it does not touch `/*!` executable comments
+   or `/*+` hints.
+9. **`ALTER DATABASE` applies non-placement options before the binding
+   step (T20-R2).** v8.5.0 `AlterSchema` runs
+   `ModifySchemaCharsetAndCollate` then `ModifySchemaDefaultPlacement`:
+   a proven-absent policy fails 8239 yet the declared charset still
+   lands — in either SQL option order — and a prior binding survives
+   the failed rebind. `schemaPostAttrs` therefore returns the placement
+   outcome separately: ALTER publishes the proven non-placement attrs
+   and keeps the prior binding on a refused bind, invalidates only the
+   `placement_policy` attr and the inbound refs on an unproven bind;
+   CREATE stays atomic (8239 → no schema row). The earlier comma-form
+   probe (1064) was a grammar boundary, not the multi-option grammar —
+   whitespace-separated `DatabaseOptionList` is the legal form.
+
+### T20-R3 — catalog premise rule and the topology evidence gap
+
+Two contract gaps surfaced when the real PD/TiKV fixture ran and the
+acceptance review re-read #99 against the shipped profile:
+
+10. **`ddl.tidb.placement.exists.require` owns the catalog premise
+    (blocker).** The warn rule's job is binding risk on *applied*
+    outcomes, so disabling it — or simply never firing it — left a
+    proven-absent policy reference silently passing (`pass/0/0`). The
+    new rule adjudicates the existence premise independently of the
+    risk warning: a proven-absent named reference refuses as a blocker
+    (8239 parity), a proven-bound policy drop refuses (8241 parity),
+    and a bare `CREATE POLICY` on a proven-existing name refuses.
+    `OR REPLACE`/`IF NOT EXISTS`/`IF EXISTS` disarmed forms and
+    `= DEFAULT` unbinds carry no premise and stay silent; an
+    unvouched catalog or bound-target set yields that rule's own
+    `placement_policy.catalog`/`placement_policy.bound_targets` gaps.
+    Ordered state already refused these paths — the change surfaces
+    the refusal in public findings instead of letting the internal
+    state alone imply it.
+11. **Unknown topology is a structured gap, not a suggestion.** #99
+    requires 拓扑未知给gap而非猜测可部署; previously an applied bind
+    produced only the binding-risk warning and `coverage=complete`,
+    which implied deployability the product never verified. The warn
+    rule now emits a `placement_policy.topology` evidence gap for
+    topology-relevant applied outcomes — binds and policy ALTERs that
+    reassign live placement — while `Metadata.PlacementTopology` is
+    nil. `spec.PlacementTopologyFacts` (label universe + observed
+    `SCHEDULING_STATE`, `json:"-"`) is defined as the receiving slot;
+    no provider populates it yet, so the gap fires honestly on every
+    applied bind — including against a real cluster whose topology is
+    provably satisfiable. CREATE/DROP policy, DEFAULT unbinds, and
+    refused/unproven outcomes carry no topology premise and never
+    stack the gap.
+12. **Premise attribution is exact, and OR REPLACE rewrites are
+    topology-relevant (T20-R3 review corrections).** Both placement
+    rules report only the facts actually missing: an unvouched catalog
+    owes `[catalog, bound_targets]` on a drop (existence decides
+    whether the bound set is even consultable), while a
+    proven-existing policy with an unread bound set owes
+    `bound_targets` alone. `CREATE OR REPLACE` on a proven-existing
+    policy carries the topology gap — it rewrites the definition every
+    bound object deploys, the same live reassignment as ALTER POLICY.
+    Review also surfaced a laundering bug in the ordered-state seed:
+    a provider fact whose `BoundTargets` was nil (unread) seeded
+    `refsKnown=true`, laundering "bound set unvouched" into "provably
+    unbound" — `refsKnown` is now only set when the provider read is
+    present. A second review pass tightened the same surfaces: `IF
+    EXISTS` disarms only the existence premise — the bound set stays
+    live because native 8241 refuses a bound policy under the clause
+    too, so `exists.require` reports drop gaps under `IF EXISTS` with
+    identical attribution while a proven-absent no-op stays silent; a
+    table-level `= DEFAULT` is an unbind, not a binding, so the shared
+    named-binding scan (both rules) skips it and keeps looking — a
+    `CREATE TABLE` carrying table-level `DEFAULT` beside named
+    partition binds now reaches warn and exists.require identically;
+    `CREATE OR REPLACE` over an unvouched catalog owes the warn rule's
+    catalog gap because bound-rewrite relevance is undecidable
+    (exists.require stays disarmed — OR REPLACE genuinely cannot
+    refuse); a fresh create over a tombstone seeds a proven-empty bound
+    set rather than leaving it unvouched; and a proven no-op `IF
+    EXISTS` drop no longer claims it "removes a topology policy".
+    Verification of that commit caught the tombstone-create seed being
+    claimed too broadly: an OR REPLACE under an unvouched catalog can
+    replace a policy carrying live bindings, so proven-empty `refs` are
+    now seeded only when existence was *proven* absent — under
+    `exists == nil` the bound set stays unvouched. The same review
+    exposed a pre-existing amplification the fix had made reachable:
+    `placementPoliciesProjection` returned a partial map whenever at
+    least one entry was present, and consumers read absent keys as
+    proven-false — fabricating missing-policy blockers on unproven
+    names. The projection now reads unvouched (nil) unless the registry
+    is proven-complete, matching the ordered state's own tri-state
+    answers; batch-proven entries lose nothing they can honestly claim.
+13. **Real-cluster evidence bounds the deferral.** A disposable
+    1×PD + 3×TiKV + 1×TiDB v8.5.0 fixture (labels `region=t20rev`,
+    `zone=z1..z3`, `host=h1..h3`, STRICT mode) proved the native
+    spectrum this contract separates: satisfiable bind → `SCHEDULED`;
+    missing policy → 8239 with the prior binding preserved;
+    label-unmatchable policy → 8243 refused at bind time; a
+    replica-count policy (FOLLOWERS=5 vs 3 stores) → bind accepted and
+    persistently `PENDING`. Receipts live under
+    `docs/verification/t20-tidb-placement-lifecycle/` beside the
+    compose manifest; they bound the semantics the rules model but do
+    not claim the product evaluates topology.
+
+## Consequences
+
+- TiDB placement statements are promoted from the unaudited gap list to
+  audited coverage; MySQL retains its vendor-boundary coverage rows.
+- `TableSnapshot`/`SchemaSnapshot` gain `PlacementPolicy` (and
+  `PartitionPlacements` member map) projection fields. Subpartitioned
+  catalogs leave leaf member placement unobserved rather than
+  fabricating a directory.
+d0c7cf3373167db7065d3027088a43c56ed6dbf5	refs/heads/milestone/mysql-tidb-ddl-completion
+57c207a8486497b49c17dd9f0b8fd0b16dc103a7	refs/heads/workfree
+04d39de461faa88815ea9336f06b2ac66a3cf2937fca2824e611d7b5f61bdb1b	vm-worker-of0004-s3mock	sha256:ab01a6946750f451ca215a47e91030695b260e4003b8a5a6201d25029b8fca92	Exited (143) 6 hours ago	
+3676c8c40250daf2afe5c8eef55c585af32a73afb20ce03cc9688a74b9fdc47b	vm-worker-of0004-restore	sha256:7dcddc01f13bab2f15cde676d44d01f61fc9f99fe7785e86196dfc07d358ae2b	Exited (0) 6 hours ago	
+6f91d86e35658118a73794af538733c42aa95e1c616deed1718bb39b6aa69011	vm-worker-of0004-meta	sha256:7dcddc01f13bab2f15cde676d44d01f61fc9f99fe7785e86196dfc07d358ae2b	Exited (0) 6 hours ago	
+2088a383fd631aaaeef550053eadad12d69ddb7041443d7ab99ce2652b3a927a	vm-worker-of0004-src	sha256:7dcddc01f13bab2f15cde676d44d01f61fc9f99fe7785e86196dfc07d358ae2b	Exited (0) 6 hours ago	
+b78b4a805f60029e5b29e60c3ffb2030e2100914df7961a0d81fbcb5c7dbdd6c	vm-worker-of0004-forward	sha256:aa943ce411423c7582288f18707ff66eddcbaeb510502d747a72aeb34f30d159	Exited (0) 6 hours ago	
+f907e9cce234a525062a2618ca1582ea8bbdfdb9bc4284bb578be7539a5cc025	vm-worker-of0001-s3mock	sha256:ab01a6946750f451ca215a47e91030695b260e4003b8a5a6201d25029b8fca92	Exited (143) 7 hours ago	
+e7beb77fd4dad985a27813adcce8b2acdd971e1484794c059ab42aab56346d8e	vm-worker-of0001-restore	sha256:7dcddc01f13bab2f15cde676d44d01f61fc9f99fe7785e86196dfc07d358ae2b	Exited (0) 7 hours ago	
+1a77f7a8c45dcdd05e5a1918d59cc24d0f538b2d35c4d0dcafab03cb549200a3	vm-worker-of0001-meta	sha256:7dcddc01f13bab2f15cde676d44d01f61fc9f99fe7785e86196dfc07d358ae2b	Exited (0) 7 hours ago	
+b2c80f6e99a6164fc737f09880f18042752cc060cc559c1d68b3d4a0d630d07f	vm-worker-of0001-src	sha256:7dcddc01f13bab2f15cde676d44d01f61fc9f99fe7785e86196dfc07d358ae2b	Exited (0) 7 hours ago	
+e7b63be03eed8df8796ea57410097b760c580cd64d8afba6d5a0ed87fdc1f4e7	vm-worker-of0001-forward	sha256:aa943ce411423c7582288f18707ff66eddcbaeb510502d747a72aeb34f30d159	Exited (0) 7 hours ago	
+8f0d1c99877a5c972ac8372c7b754a9c50822d811edea8301a34de0276ebcf7a	vm-worker-wk0007-s3mock	sha256:ab01a6946750f451ca215a47e91030695b260e4003b8a5a6201d25029b8fca92	Exited (143) 7 hours ago	
+d2f3a45106c77c0d5661a65bbb708e400feba9dd9996eb1b6a3eadeeeca51863	vm-worker-wk0007-restore	sha256:7dcddc01f13bab2f15cde676d44d01f61fc9f99fe7785e86196dfc07d358ae2b	Exited (0) 7 hours ago	
+af55a5cd99b389f7b5579a6e686db57929a5f89d956bcf9be126b6ca66b06cfc	vm-worker-wk0007-meta	sha256:7dcddc01f13bab2f15cde676d44d01f61fc9f99fe7785e86196dfc07d358ae2b	Exited (0) 7 hours ago	
+5e5cde63ec264b43ae7c3b1a939ed6a0610fbaa196809893de609df8cbd5ae0a	vm-worker-wk0007-src	sha256:7dcddc01f13bab2f15cde676d44d01f61fc9f99fe7785e86196dfc07d358ae2b	Exited (0) 7 hours ago	
+3e8c8e7000e79a99b7039bc7b719c301d524c635a938312036f35e2baff5c22c	vm-worker-wk0007-forward	sha256:aa943ce411423c7582288f18707ff66eddcbaeb510502d747a72aeb34f30d159	Exited (0) 7 hours ago	
+1f44fa81f0109da5aec3b0f2207c226ed73f2df594705b3dd4665864952e6890	vm-worker-wk0006-s3mock	sha256:ab01a6946750f451ca215a47e91030695b260e4003b8a5a6201d25029b8fca92	Exited (143) 8 hours ago	
+7f2a5ae8c7434530f3e70afbbe75710e710c281792b6acafbcf685768c3714af	vm-worker-wk0006-restore	sha256:7dcddc01f13bab2f15cde676d44d01f61fc9f99fe7785e86196dfc07d358ae2b	Exited (0) 8 hours ago	
+f18a66e835611c34eea26242a41d147392ba37b36f9a81aaedb60b18873213e2	vm-worker-wk0006-meta	sha256:7dcddc01f13bab2f15cde676d44d01f61fc9f99fe7785e86196dfc07d358ae2b	Exited (0) 8 hours ago	
+a4535693da78af3090e098180e8eac05e0b84980933fa89f6a7b0ccf1f9b5585	vm-worker-wk0006-src	sha256:7dcddc01f13bab2f15cde676d44d01f61fc9f99fe7785e86196dfc07d358ae2b	Exited (0) 8 hours ago	
+6a60bd34ce71390e97c0d2cb0f99d07a01921d77d207749bf5fb3484de4b9724	vm-worker-wk0006-forward	sha256:aa943ce411423c7582288f18707ff66eddcbaeb510502d747a72aeb34f30d159	Exited (0) 8 hours ago	
+33a9deb12c2c890fcbe751eeda27450ba80a8337020dfc0a9d0edd4074cde619	vm-worker-wk0005-s3mock	sha256:ab01a6946750f451ca215a47e91030695b260e4003b8a5a6201d25029b8fca92	Exited (143) 8 hours ago	
+529ad4bec1437dde04e300b9699c7fbdfc9f7f268f7f42a82f40ef4e3452b1c5	vm-worker-wk0005-restore	sha256:7dcddc01f13bab2f15cde676d44d01f61fc9f99fe7785e86196dfc07d358ae2b	Exited (0) 8 hours ago	
+9d9a26a7af8bf1263d1bb30284709affce2c45b1c2921bea84811b3b478df327	vm-worker-wk0005-meta	sha256:7dcddc01f13bab2f15cde676d44d01f61fc9f99fe7785e86196dfc07d358ae2b	Exited (0) 8 hours ago	
+00d16e05edf1037182f77215398ca1326d391e0f63d832cf9f0f7131d4d30060	vm-worker-wk0005-src	sha256:7dcddc01f13bab2f15cde676d44d01f61fc9f99fe7785e86196dfc07d358ae2b	Exited (0) 8 hours ago	
+38f81c0e5f88d3a5b59eeb9cf234bb38d7294487077baa993e0976830580aacd	vm-worker-wk0005-forward	sha256:aa943ce411423c7582288f18707ff66eddcbaeb510502d747a72aeb34f30d159	Exited (0) 8 hours ago	
+be329f73e3a8114eb0daaa3ab92a33d6defb3963ee562a4a76eeff0e70bd6f13	vm-worker-wk0003-s3mock	sha256:ab01a6946750f451ca215a47e91030695b260e4003b8a5a6201d25029b8fca92	Exited (143) 8 hours ago	
+e8142444b9fd2f34ee4bf55c13e00bc0708d2489033fc34e801e18590901d89c	vm-worker-wk0003-restore	sha256:7dcddc01f13bab2f15cde676d44d01f61fc9f99fe7785e86196dfc07d358ae2b	Exited (0) 8 hours ago	
+841361cee4828d49e6591d58e39df49cfaa27ce17908cc264df375130804b643	vm-worker-wk0003-meta	sha256:7dcddc01f13bab2f15cde676d44d01f61fc9f99fe7785e86196dfc07d358ae2b	Exited (0) 8 hours ago	
+2560e182912e8d648de48d2d7514c2c45428d3a42490d282146e36c530831ff2	vm-worker-wk0003-src	sha256:7dcddc01f13bab2f15cde676d44d01f61fc9f99fe7785e86196dfc07d358ae2b	Exited (0) 8 hours ago	
+626e1126f65dc7c47dc3db0fd30fabbe38909ae86d7fa2033903087c000a4bbb	vm-worker-wk0003-forward	sha256:aa943ce411423c7582288f18707ff66eddcbaeb510502d747a72aeb34f30d159	Exited (0) 8 hours ago	
+764bc6f5536b1eb7e15b428959e5d95c14ccc06d5357afb72472e1905cabde81	vm-worker-wk0002-s3mock	sha256:ab01a6946750f451ca215a47e91030695b260e4003b8a5a6201d25029b8fca92	Exited (143) 8 hours ago	
+68bde2c59cb63e5948839fca8670ea73616d13291420e945c9d0afb6a8d63577	vm-worker-wk0002-restore	sha256:7dcddc01f13bab2f15cde676d44d01f61fc9f99fe7785e86196dfc07d358ae2b	Exited (0) 8 hours ago	
+a4c86484e382826ac631827d188c6b1d698acfb5f96364a224d0b538012b2181	vm-worker-wk0002-meta	sha256:7dcddc01f13bab2f15cde676d44d01f61fc9f99fe7785e86196dfc07d358ae2b	Exited (0) 8 hours ago	
+02ea6f33fdf87a3cc97fabf3fe55fed49185877acc63efaf4880a5a7af682afc	vm-worker-wk0002-src	sha256:7dcddc01f13bab2f15cde676d44d01f61fc9f99fe7785e86196dfc07d358ae2b	Exited (0) 8 hours ago	
+1f30c56b0ace350e9c46f607c896bcb9031448425dc2e0b092bb6feeb90af2f2	vm-worker-wk0002-forward	sha256:aa943ce411423c7582288f18707ff66eddcbaeb510502d747a72aeb34f30d159	Exited (0) 8 hours ago	
+0ab37395d68941211d19e357d1f3d97b90ed481838def1ea39b02b13a2ab36a0	vm-worker-wk0001-s3mock	sha256:ab01a6946750f451ca215a47e91030695b260e4003b8a5a6201d25029b8fca92	Exited (143) 8 hours ago	
+0dbff24fe36260b8f1709e96f272f682d3df72184e5a3a9d3e399e5668f91e08	vm-worker-wk0001-restore	sha256:7dcddc01f13bab2f15cde676d44d01f61fc9f99fe7785e86196dfc07d358ae2b	Exited (0) 8 hours ago	
+686e8802ab5b5aec68c8af6314fdf24e32af249fcf5f7c8c10da1f807a7e00ea	vm-worker-wk0001-meta	sha256:7dcddc01f13bab2f15cde676d44d01f61fc9f99fe7785e86196dfc07d358ae2b	Exited (0) 8 hours ago	
+cccac218b1b72fce426242e90cd216bb44da1dbef42564aa41b764d8c5a3896c	vm-worker-wk0001-src	sha256:7dcddc01f13bab2f15cde676d44d01f61fc9f99fe7785e86196dfc07d358ae2b	Exited (0) 8 hours ago	
+512931e646f2fb6ae15700fa2da4720c3db56d162646f2b4258be166e84fddcf	vm-worker-wk0001-forward	sha256:aa943ce411423c7582288f18707ff66eddcbaeb510502d747a72aeb34f30d159	Exited (0) 8 hours ago	
+4fea9b628850fffafc5bf2452d7337cd9064678c40a128724177bd9e3d312cb2	vm-worker-mk0001-s3mock	sha256:ab01a6946750f451ca215a47e91030695b260e4003b8a5a6201d25029b8fca92	Exited (143) 8 hours ago	
+741996c6aeb56bfe745fc96ad9105f4d13d7fe226759ef2214e9ae120b05a226	vm-worker-mk0001-restore	sha256:7dcddc01f13bab2f15cde676d44d01f61fc9f99fe7785e86196dfc07d358ae2b	Exited (0) 8 hours ago	
+391860bee9500349d200d36dfe72493b006130865a9f3805fe17c9e264394de7	vm-worker-mk0001-meta	sha256:7dcddc01f13bab2f15cde676d44d01f61fc9f99fe7785e86196dfc07d358ae2b	Exited (0) 8 hours ago	
+1c7cae339aea053cd0db4e1060149cda4ff2cb44b958000e67f9163d362525fb	vm-worker-mk0001-src	sha256:7dcddc01f13bab2f15cde676d44d01f61fc9f99fe7785e86196dfc07d358ae2b	Exited (0) 8 hours ago	
+cc92a63bd228872989658514a030f4e30e28f80bd17379bc404457b108ba148c	vm-worker-mk0001-forward	sha256:aa943ce411423c7582288f18707ff66eddcbaeb510502d747a72aeb34f30d159	Exited (0) 8 hours ago	
+67fb628cbb6d5230c492fe2affce0ba22558f85e60789094aa048563e267c7d9	vm-worker-df0004-s3mock	sha256:ab01a6946750f451ca215a47e91030695b260e4003b8a5a6201d25029b8fca92	Exited (143) 8 hours ago	
+26b14cc2a0b2129ae2b39ed1810eeb7be606416e083441b96476fd1c91c6af4b	vm-worker-df0004-restore	sha256:7dcddc01f13bab2f15cde676d44d01f61fc9f99fe7785e86196dfc07d358ae2b	Exited (0) 8 hours ago	
+f4ed3c3962efb2768194d5e415200f4287f0911ce0761f05974df96f59409be0	vm-worker-df0004-meta	sha256:7dcddc01f13bab2f15cde676d44d01f61fc9f99fe7785e86196dfc07d358ae2b	Exited (0) 8 hours ago	
+05f2d621ac0aea235bebe3f8d41fec767e6860164a8f95eed582629ff301f7c7	vm-worker-df0004-src	sha256:7dcddc01f13bab2f15cde676d44d01f61fc9f99fe7785e86196dfc07d358ae2b	Exited (0) 8 hours ago	
+1bce788709af9011d13114214af107c9bc4eadfe43529b677a12d5b4a435a415	vm-worker-df0004-forward	sha256:aa943ce411423c7582288f18707ff66eddcbaeb510502d747a72aeb34f30d159	Exited (0) 8 hours ago	
+fbf8483d52cbd9d409eff653150b22a771e436e6c5656da9fa4d2ce17cf66766	vm-worker-df0003-s3mock	sha256:ab01a6946750f451ca215a47e91030695b260e4003b8a5a6201d25029b8fca92	Exited (143) 8 hours ago	
+c74bbb7692e00c80f794aff40f8f317bf171480ee84a4a72540ba100ab65d5e7	vm-worker-df0003-restore	sha256:7dcddc01f13bab2f15cde676d44d01f61fc9f99fe7785e86196dfc07d358ae2b	Exited (0) 8 hours ago	
+d087578938872b14988ddb5dc252a7e5db9e2ab9232ca0d157addce49f943425	vm-worker-df0003-meta	sha256:7dcddc01f13bab2f15cde676d44d01f61fc9f99fe7785e86196dfc07d358ae2b	Exited (0) 8 hours ago	
+13710248cc598e78f9fc9374d1ab95d83c3c6600b434ca217e5e31d0da570758	vm-worker-df0003-src	sha256:7dcddc01f13bab2f15cde676d44d01f61fc9f99fe7785e86196dfc07d358ae2b	Exited (0) 8 hours ago	
+42c395032ab0ce108c0e16cea9564b71de5920df81406b84bc68504bf2935fa2	vm-worker-df0003-forward	sha256:aa943ce411423c7582288f18707ff66eddcbaeb510502d747a72aeb34f30d159	Exited (0) 8 hours ago	
+51a50f9c529dc63e4039426f81f5e9de0de811b45d8066f70ff363a69f12240e	vm-worker-df0002-s3mock	sha256:ab01a6946750f451ca215a47e91030695b260e4003b8a5a6201d25029b8fca92	Exited (143) 8 hours ago	
+a13a74b48cf6717e4571f220bd6bcff2cdfdaf2fddaf63cca7d8c7f918a18e00	vm-worker-df0002-restore	sha256:7dcddc01f13bab2f15cde676d44d01f61fc9f99fe7785e86196dfc07d358ae2b	Exited (0) 8 hours ago	
+17c3d2f41665c42205012eca45706e32488c4c0673392732a2d3affa13ac957c	vm-worker-df0002-meta	sha256:7dcddc01f13bab2f15cde676d44d01f61fc9f99fe7785e86196dfc07d358ae2b	Exited (0) 8 hours ago	
+1aa45eab7c5e18cc1709835422da842742d9df3085a3de8b424c63aade0c3793	vm-worker-df0002-src	sha256:7dcddc01f13bab2f15cde676d44d01f61fc9f99fe7785e86196dfc07d358ae2b	Exited (0) 8 hours ago	
+607b2a872f30751e75e0f29061010ba4a02f617bfbfb79b2238704c0d71a8916	vm-worker-df0002-forward	sha256:aa943ce411423c7582288f18707ff66eddcbaeb510502d747a72aeb34f30d159	Exited (0) 8 hours ago	
+8f5cd55c70f6d9afcda799a0a0a2d31b93791d94ceee1bfe4b32f1573a5d6548	vm-worker-cj0005-s3mock	sha256:ab01a6946750f451ca215a47e91030695b260e4003b8a5a6201d25029b8fca92	Exited (143) 9 hours ago	
+80993d5602fcb47cf30cc5958d475c7e8f51c2f1677bb37c2127da5b61ab1ac0	vm-worker-cj0005-restore	sha256:7dcddc01f13bab2f15cde676d44d01f61fc9f99fe7785e86196dfc07d358ae2b	Exited (0) 9 hours ago	
+5a359f9ba1e18404c3e22fc094f0a6c33f41d5524924382ed64eece27692ea08	vm-worker-cj0005-meta	sha256:7dcddc01f13bab2f15cde676d44d01f61fc9f99fe7785e86196dfc07d358ae2b	Exited (0) 9 hours ago	
+d95ee99583a8635d55762487e7e029e3ed0ae1a6ffe34da90c9815849e5ecf3d	vm-worker-cj0005-src	sha256:7dcddc01f13bab2f15cde676d44d01f61fc9f99fe7785e86196dfc07d358ae2b	Exited (0) 9 hours ago	
+e01611cf48798207854627a0451bea6b51c4e4276d963fe34155167ac0eee9d8	vm-worker-cj0005-forward	sha256:aa943ce411423c7582288f18707ff66eddcbaeb510502d747a72aeb34f30d159	Exited (0) 9 hours ago	
+c55f9e21eac42d9d89ade2ad993703083f4258d798e4490728b434ca4e09e061	vm-worker-cj0004-s3mock	sha256:ab01a6946750f451ca215a47e91030695b260e4003b8a5a6201d25029b8fca92	Exited (143) 9 hours ago	
+98d66284ef972e011d2c0889f2c44769b1a5f04b1e237cd58f811170b6fdf250	vm-worker-cj0004-restore	sha256:7dcddc01f13bab2f15cde676d44d01f61fc9f99fe7785e86196dfc07d358ae2b	Exited (0) 9 hours ago	
+23cd2223e102fd08eb9fd9826ddbb62634cb1945c7a69b2b1d0f05f3c7c59bb0	vm-worker-cj0004-meta	sha256:7dcddc01f13bab2f15cde676d44d01f61fc9f99fe7785e86196dfc07d358ae2b	Exited (0) 9 hours ago	
+44f492b2c342ce1230b1da98fc297ed58047aa82456b4083bb68431bd8032639	vm-worker-cj0004-src	sha256:7dcddc01f13bab2f15cde676d44d01f61fc9f99fe7785e86196dfc07d358ae2b	Exited (0) 9 hours ago	
+ac85a2b2b42f7b7465ee4be2e04e431af2c81d928344d0e5581ab7c843be9a8d	vm-worker-cj0004-forward	sha256:aa943ce411423c7582288f18707ff66eddcbaeb510502d747a72aeb34f30d159	Exited (0) 9 hours ago	
+dc81c6a4e21336c1cc9e68d34f8ee340b397f5177adbff522f8c4a21e719dce3	vm-worker-cj0003-s3mock	sha256:ab01a6946750f451ca215a47e91030695b260e4003b8a5a6201d25029b8fca92	Exited (143) 9 hours ago	
+635efab0263df3ea1c839d791c318d284858cf951c204146b121c2cd3ab0589b	vm-worker-cj0003-restore	sha256:7dcddc01f13bab2f15cde676d44d01f61fc9f99fe7785e86196dfc07d358ae2b	Exited (0) 9 hours ago	
+b6710e4291d4a9f0969f177c6ff69320a977d7f8375ecba5c2cfa71850e3a549	vm-worker-cj0003-meta	sha256:7dcddc01f13bab2f15cde676d44d01f61fc9f99fe7785e86196dfc07d358ae2b	Exited (0) 9 hours ago	
+f80f233df3928888de25136270b7fbb300a7dca8138dbaea03797a2f71148c4e	vm-worker-cj0003-src	sha256:7dcddc01f13bab2f15cde676d44d01f61fc9f99fe7785e86196dfc07d358ae2b	Exited (0) 9 hours ago	
+0439f2239642ff068f3b9a2c0a6ba03470808a3d0bf245420c0ace3c09812e15	vm-worker-cj0003-forward	sha256:aa943ce411423c7582288f18707ff66eddcbaeb510502d747a72aeb34f30d159	Exited (0) 9 hours ago	
+01581965cf7935956cb830e3d0a0dd098c972c6fa7573b07fd900a145218bb21	vm-worker-cj0002-src	sha256:7dcddc01f13bab2f15cde676d44d01f61fc9f99fe7785e86196dfc07d358ae2b	Exited (0) 9 hours ago	
+0da4c9ee40c6ddf7129f4639811a762a904d461aaceeb444cf10aa422cb2204b	vm-worker-cj0002-forward	sha256:aa943ce411423c7582288f18707ff66eddcbaeb510502d747a72aeb34f30d159	Exited (0) 9 hours ago	
+8ad646bbcdcae1b69290451e4e2cbb719b4f087eb95845a53eafc598c187ae21	soak-native-vm-rootfs-1793609556-6446	alpine:3.20	Created	
+b3fb81c654979e564fc41c2be461801f44585389e168e94d09c3f9a5cea4faac	capacityprobe90907	binlog-isolated-proxy:local-1793501447-92702	Exited (0) 2 days ago	
+f24bcff5ada6e8986e130ed565b7959058f8846f64d0a5f999f5718e5565cc51	soak-quota-layer-probe-1793608915-82013	binlog-isolated-proxy:local-1793501447-92702	Exited (137) 2 days ago	
+98c190900677f1aa1bce97d3c4253d2ef857df35b8daf8d69171156bcbd623ec	reclaimprobe73254	binlog-isolated-proxy:local-1793501447-92702	Exited (0) 2 days ago	
+d62e647ed744cbc007b105be50739f89c367251a0ab87c1b73de71d5b9cb52b4	epic_boyd	sha256:b2b7f4e6e3c33aba382e9c2d0a1fa56e132b85df667aaafd6a9a50ccfb6de609	Exited (0) 2 days ago	
+da6c846e07675f1ac83c0cc625ec76cc2fd744e7a82c1ca4ccc59d10612f004b	diskmount4609-worker	binlog-isolated-proxy:local-1793501447-92702	Exited (0) 2 days ago	
+afd69ca0cf234fc3e81696f9a7b38cfabb744b4d6bdcd1c7e2ea254a02c21c62	diskhelper87360-helper	binlog-isolated-proxy:local-1793501447-92702	Exited (137) 2 days ago	
+756097e057a0ec8ad685e040ef9aa746e538d705247b18545f8bda8948b96874	diskhelper87360-w1	binlog-isolated-proxy:local-1793501447-92702	Exited (0) 2 days ago	
+49db21d7f20a7161109cef7f35e0bc853ca5cf22f75f5ea6a11c4b950bb5a29b	diskhelper86504-helper	binlog-isolated-proxy:local-1793501447-92702	Exited (137) 2 days ago	
+5c5b51d42ee937c3021f7222f5d8e2ad57a5407059ceef69485c4997418f2e62	diskhelper86504-w1	binlog-isolated-proxy:local-1793501447-92702	Exited (0) 2 days ago	
+acab2715f27dd2562a729be5370b8a599afa3e142775d811a4b4155650064e55	diskfillprobe79661-w1	binlog-isolated-proxy:local-1793501447-92702	Exited (0) 2 days ago	
+fbaca60d1336378ee12202e2e0cef4e5dda4712248d642197636687244434325	soak-quota-probe-1793597280-66551	binlog-isolated-proxy:local-1793501447-92702	Exited (0) 2 days ago	
+23c75f46d36bc352dafc7d7df94cb14977bd2cda5e57c0a14c867ddc52101168	loaddebug9-src-a	mysql:8.0	Exited (0) 2 days ago	
+2c81257ef0857ac8d6ed4d387ef97eca9b20099809721c7cb395f2c9af570d74	loaddebug9-proxy	binlog-isolated-proxy:local-1793501447-92702	Exited (137) 2 days ago	
+a4918181c5faaf4c6b6ebb72c3caf69325bde3db0b647e223ec67288eb3ab73e	loaddebug8-src-a	mysql:8.0	Exited (0) 2 days ago	
+98f82c58b7cdb68617f2016f126e22c53e2677267b91d0104b2796a465da0879	loaddebug8-proxy	binlog-isolated-proxy:local-1793501447-92702	Exited (137) 2 days ago	
+6914ec0dae199db21eb00620180c5b308bc2b14638c97ef236ce33061674390c	loaddebug7-src-a	mysql:8.0	Exited (0) 2 days ago	
+0da494047773ba632d960054c611d4243d3acfbcd0e4bd8b3f839fce7dfd2159	loaddebug7-proxy	binlog-isolated-proxy:local-1793501447-92702	Exited (137) 2 days ago	
+f6736191e83cb677d692a825557107803cf743802975d1cfae6b7b2b43bd5aa2	isolated6-w2	binlog-isolated-app:local-1793501447-92702	Exited (0) 2 days ago	
+cb0fea6bddf55fb6f0fd22d10cded16b6f70f86de5c126904e3066057933c06d	isolated6-w1	binlog-isolated-app:local-1793501447-92702	Exited (0) 2 days ago	
+964f2babf109dbf95bdf694a77feb64bb9cbd566fc694213baac970621cd1de4	isolated6-keeper-w2	alpine:3.20	Exited (137) 2 days ago	
+8dd2e651b7823ee28f6685479c997361d303e7ba42ce2c70a3d618b062dbd7c3	isolated6-keeper-w1	alpine:3.20	Exited (137) 2 days ago	
+bd81f80d5ffd63b1e6631bb37276e2e5414b3d65485ed305b6b4ec6f9b6bf3e4	isolated6-cp	binlog-isolated-app:local-1793501447-92702	Exited (0) 2 days ago	
+f268f62d5350bb596c2e9830d19a436d0f9b0ef0f3b0f43f4c6cd354dee6b3ce	isolated6-s3mock	adobe/s3mock:latest	Exited (143) 2 days ago	
+7b89048468511cc92ba81da3f461ddd62d0f2cafeca3406ecdefdfb369e8ce08	isolated6-http503	python:3.12-slim	Exited (137) 2 days ago	
+c9aa1cc17737241d2dc9e6001580c067be6c5d808e868abc3511d1b3a119a528	isolated6-src-a	mysql:8.0	Exited (0) 2 days ago	
+5a7ce8c1ec2090e5462040e5fd4d873ab5eea354abd331095a6dde15f09b75c4	isolated6-restore	mysql:8.0	Exited (0) 2 days ago	
+ab0abff279d45791f48e9e25c862b177ddd420e8e6ed05303129c2c875c270be	isolated6-meta	mysql:8.0	Exited (0) 2 days ago	
+4215869def6da12c461b75f780f675a4fc623607e794063efa1189ba1bedb086	isolated6-src-b	mysql:8.0	Exited (0) 2 days ago	
+87cd8a7ac7efa7706e47d26127c4550015975af6322b98941a1173594082502e	isolated6-proxy	binlog-isolated-proxy:local-1793501447-92702	Exited (137) 2 days ago	
+8375d7eff6884c01724b727ec16d9889e136d1fc5c9bc7b1ddd71763a33600d9	isolated5-w2	binlog-isolated-app:local-1793501447-92702	Exited (0) 2 days ago	
+10c1ac13e97470a69887c5cc120578f52f0842ef34ab8873c442e5ce245f5f5f	isolated5-w1	binlog-isolated-app:local-1793501447-92702	Exited (0) 2 days ago	
+c1e0662dea72ea2a939953bd25142a70935d19aceb3cb44fc13a4377216af0cc	isolated5-keeper-w2	alpine:3.20	Exited (137) 2 days ago	
+3379bb3a3f5a8ba1a3f70ab8235e2cc5ae272593564657a52e7f0b87ed3a4306	isolated5-keeper-w1	alpine:3.20	Exited (137) 2 days ago	
+e71ba01f633952386c8c83bf1fba2449300132f99ddf07e7699b1ee9b3832a32	isolated5-cp	binlog-isolated-app:local-1793501447-92702	Exited (0) 2 days ago	
+508e99fcf20360c7880eb580413bfd5c5d160fe56eb4301961dbfc78aed69aa9	isolated5-s3mock	adobe/s3mock:latest	Exited (143) 2 days ago	
+b5a170186eae551380219d45d0142cb11f8ec99da98e8b67380f29168e7f2976	isolated5-http503	python:3.12-slim	Exited (137) 2 days ago	
+03f55c7cc4225ce43eb07c9fbb99e50b0b43c81c6ed32ce9020fe12720cc9cd3	isolated5-restore	mysql:8.0	Exited (0) 2 days ago	
+42da252d08360c0323d24833c85b889a7016565da1269fbd749379105f4d95ff	isolated5-src-a	mysql:8.0	Exited (0) 2 days ago	
+e9570aef3c4e8aee87731d41a653413110c65b2e05b229e2dfc1ed2f51225c44	isolated5-src-b	mysql:8.0	Exited (0) 2 days ago	
+af3fe70bf52e33d8d175f590a3cc71b80659110b428bdb098057bee736c08574	isolated5-meta	mysql:8.0	Exited (0) 2 days ago	
+485748e1fd9dafb869f7e08bf0cb24bc6bc018e1bc5525071fdca940fbe6e96b	isolated5-proxy	binlog-isolated-proxy:local-1793501447-92702	Exited (137) 2 days ago	
+36d90b0ba580d2fcc8eb441cebe6fbd34b00a090f30090bc1ffb2c9d3eae9322	isolated4-w2	binlog-isolated-app:local-1793501447-92702	Exited (0) 3 days ago	
+ce7c2ee4a175ecb44f6b60726eb24ccccc4eece7cc65cf57cfb14820238865f3	isolated4-w1	binlog-isolated-app:local-1793501447-92702	Exited (0) 3 days ago	
+2752dab186f7091f2c03d18a14c74a80e1833024b0479d9ddfda1786fb81c4e3	isolated4-keeper-w1	alpine:3.20	Exited (137) 2 days ago	
+0b08db56e9aac0cea9624d501cd17df2f7fa7041b726e087b8c6d37b9e2bf1ad	isolated4-keeper-w2	alpine:3.20	Exited (137) 2 days ago	
+57e47635bd5eb006c2019398bacba107d41d0987d2d2eaf58486947ff8f1b012	isolated4-cp	binlog-isolated-app:local-1793501447-92702	Exited (0) 3 days ago	
+76bfb295dfcb841551b2abe19aaad9a0b0e53c7c140b0a2f11270e4e81ebb39a	isolated4-s3mock	adobe/s3mock:latest	Exited (143) 3 days ago	
+fefc806cbd89f43e6154c31289df574a71905495b9e09b9c2ddd06414b9fe913	isolated4-http503	python:3.12-slim	Exited (137) 3 days ago	
+def2e8c97fbaa53190091dbe767ea2abb19f5f27698348d1ea51340f6891fcc1	isolated4-restore	mysql:8.0	Exited (0) 3 days ago	
+77547c41ec87e33c03fe5fff07e9bad32aec9e6cb422e588ac14efe27c7c9ea0	isolated4-src-b	mysql:8.0	Exited (0) 3 days ago	
+f26691aa0b754b59cd8fb1430628ba9191f7929e9d36a39c7b719dbe24ee5f9a	isolated4-src-a	mysql:8.0	Exited (0) 3 days ago	
+fc65f26e0cbceb38eeb8143f337823ce2bac1d963f35b738d67d2ced8d705e3c	isolated4-meta	mysql:8.0	Exited (0) 3 days ago	
+bed9a51239d6d012989ce277547fea1c02062ad5711712458f62344492c21e52	isolated4-proxy	binlog-isolated-proxy:local-1793501447-92702	Exited (137) 3 days ago	
+ce27014cffc9fa99c8495d43610f3c358362b2d6ab98527010ef22edad93a993	isolated2-keeper-w1	alpine:3.20	Exited (137) 2 days ago	
+c4de72ce6ab99d9a61b7b64c7ea7d107c7c2e13e8283979b96b32b0d9df02f62	isolated2-keeper-w2	alpine:3.20	Exited (137) 2 days ago	
+f6543da395ceaa492781d733621f65bac82b2671e9221086140e22486c2f4233	soak-w1	binlog-soak-w1	Exited (0) 2 days ago	
+c9c96f1abeca9a834976a156b4fff8dc151a5890b6c80467e25e6006463c65a0	soak-w2	binlog-soak-w2	Exited (0) 2 days ago	
+ab2a60e0735220b08dac6e59864b1b076857c68fc69e7bfadbf17a5c0e15f1bb	soak-cp	binlog-soak-cp	Exited (0) 2 days ago	
+b7275f4d15f5bd4e94d540682acb87dd7d5ae2a202f44db296c6236a7013d33f	soak-s3mock	adobe/s3mock:latest	Exited (143) 2 days ago	
+4d0e560d0ff2464267882d57e680606e49b9068d5bd3179f910d019669646ecf	soak-http503	python:3.12-slim	Exited (137) 2 days ago	
+40d43ddea7f1afd7dfc201a722bf5fdc6510882970e227494c6ad93424724e53	soak-meta	mysql:8.0	Exited (0) 2 days ago	
+fded5439020739eb52de5d320ae916f319e8900ca67f73a2298bd4cbfe121209	soak-src-b	mysql:8.0	Exited (0) 2 days ago	
+32f7e0495de9a7d6625ee0c7d4b806f598d166573f119b325517280bba776d90	soak-src-a	mysql:8.0	Exited (0) 2 days ago	
+ede9800d299e2e334a63c287426b8d20a767e6a812755ef1ebe9cdc40dc2d78c	soak-restore	mysql:8.0	Exited (0) 2 days ago	
+0fb99b3142be39f8e0dae6ea777e959202a5d1f83243c1d8c831794a4fe41829	soak-proxy	binlog-soak-proxy	Exited (137) 2 days ago	
+438a91a8d3b9d33a2353a45d6c495923949874cbe8d6893697c2906407b92f4e	tmp-restore	mysql:8.0	Exited (0) 2 days ago	
+29a7a9858426c6cf682b1d74d4cee408f81c63c7221a6a223516cdf0bd528c11	controlhub-query-e2e-mysql	mysql:8.0	Up 7 days	0.0.0.0:13306->3306/tcp, [::]:13306->3306/tcp
+23691c7383567ede4d3d397a9aa7d7cb416d44c0e3fd446e5e3b222fb466fbb9	controlhub-demo-mysql	mysql:8.0	Up 10 days	127.0.0.1:13307->3306/tcp
+6c3f6e9d3c9c9bef48e3bb2cbb2e2cdff5e6b3dd9ef580024cfddbf49c5087b9	controlhub-demo-pg	sha256:0af65001d05296a2ead57ac4a6412433d8913d1bb5d0c88435a7d1e1ee5cb04b	Up 10 days	127.0.0.1:55433->5432/tcp
+474b6ea23bef8341f94bb89662639bbbdd55ab7a5fdcc6d712e2c0ca9087799d	mac-connector	wenjunxiao/mac-docker-connector	Up 3 weeks	
+NETWORK ID                                                         NAME                            DRIVER    SCOPE
+80a348da8d50a6fbe5dbaba53dce75064345f08874e1a1b9a8571029c397a9a0   binlog-isolated2_default        bridge    local
+76c803ef28800ae46816c69556f7582bdf9f35eeddfee3e2b8502e4b9c6e2df8   binlog-isolated3_default        bridge    local
+31958250df78a51a7cf721835fd0adb43e3514b60a09098b4db2d1f8bbddee98   binlog-isolated4_default        bridge    local
+30dec5138b79f4c4b21ac56809f31361a0bd52f99f3681d4d533e1a64520ed37   binlog-isolated5_default        bridge    local
+89add0f1a8b24dd69c9582a54d35abf03d10fc2969beba69b77e6b7e3064ed14   binlog-isolated6_default        bridge    local
+753aefee3d7eaa59ef754bf7eee60e78ea8b31c78434ae69286234b64d0a9ed9   binlog-isolated_default         bridge    local
+f24609bbc02bb574fa26f0f475de2ce184fc7902825e2e1e93a69ee647e68883   binlog-load-debug7_default      bridge    local
+3f185f15e8f6aedd5f9e4529e7ef2dd55c3647e2c89fdcf25fe12743fb7717ab   binlog-load-debug8_default      bridge    local
+5972031847a8d86662003e07577eade6f935c7aae61bea9eee0b9a7af7d535ee   binlog-load-debug9_default      bridge    local
+9806fe4faf93508b07a08af21e21e53fb5a0e2f94a0d1c1966af4abf774e00ba   binlog-soak_default             bridge    local
+acec1f406191d6d2485424fc5e7830ab73bdc3ab582f8b8eb5103c37c51e08d4   bridge                          bridge    local
+20b628d817e021d291c31c21ee2d3cbc9bb14640326c29de6488a4ea4a1efb10   ci-test-network                 bridge    local
+6c9d7550a450a89b64be8f4e97a29253444f923d8cbf0caaa5e58906202e7f43   deltascope-ddl-golden_default   bridge    local
+cc896857bf9d3c7f34232f60746c5dcba9c57bf9bae517dee9043963e3d97385   docker_default                  bridge    local
+a1bf4b8ef97e3322198be6c1cedc2edfe360528d48be8ef9aee62cbaac2dd341   host                            host      local
+2137780b4419826f9931d44af588753e90e11c85f3b432e80f520cce8405c5ec   kodus-backend-services          bridge    local
+4f8e09d6f7914124a2f53776b07456f540154b17ca2a3b141a8683c27291f3e1   monitoring-network              bridge    local
+dcc73fcc74b378b2094637cf3b1f6e4796d6eb28bf9e6c455e36f0ef46788c72   none                            null      local
+9d14f074def2d49582bd2b782fe40c8aa878b400850aaa5235c6fd6c231cc3f5   shared-network                  bridge    local
+DRIVER    VOLUME NAME
+local     0b2f7fa431970b610eb2a3c989928d9bbd46d28ee4be39b65d9257ec41995929
+local     1a459b89e9e79abdd6534cbacfc921af0b7afe8860a8135bd1fa6dfb9b573ae6
+local     5a3712a55b58075d9cddf0fabf9669c9ace2db6d46a1d62c54e4a24024ae9556
+local     267ee2cae88378cf07749466422c95f346e08eb0b16f4758c42b79d95980d4f2
+local     15138c052dfab4ad6fb965bc38a7a689bf1a6c82331ed198f9ed0d3ecf4c8336
+local     426943b6f54c2f5670cba7d738dabed86a4a4237a19d497bce9789bc39d19099
+local     a6a1205f9f316d03418323528cf98f2c1f544d07f6fd95790555e3c6e0751d4d
+local     af8b3187990365bead4729748a76c4e569d44488d5c1dbdca66417e4838ab7c6
+local     binlog-isolated2_w1-data
+local     binlog-isolated2_w2-data
+local     binlog-isolated4_cp-data
+local     binlog-isolated4_meta-data
+local     binlog-isolated4_s3mock-data
+local     binlog-isolated4_src-a-data
+local     binlog-isolated4_src-b-data
+local     binlog-isolated4_w1-data
+local     binlog-isolated4_w2-data
+local     binlog-isolated5_cp-data
+local     binlog-isolated5_meta-data
+local     binlog-isolated5_s3mock-data
+local     binlog-isolated5_src-a-data
+local     binlog-isolated5_src-b-data
+local     binlog-isolated5_w1-data
+local     binlog-isolated5_w2-data
+local     binlog-isolated6_cp-data
+local     binlog-isolated6_meta-data
+local     binlog-isolated6_s3mock-data
+local     binlog-isolated6_src-a-data
+local     binlog-isolated6_src-b-data
+local     binlog-isolated6_w1-data
+local     binlog-isolated6_w2-data
+local     binlog-load-debug7_src-a-data
+local     binlog-load-debug8_src-a-data
+local     binlog-load-debug9_src-a-data
+local     binlog-soak_cp-data
+local     binlog-soak_meta-data
+local     binlog-soak_s3mock-data
+local     binlog-soak_src-a-data
+local     binlog-soak_src-b-data
+local     binlog-soak_w1-data
+local     binlog-soak_w2-data
+local     controlhub-demo-mysql-data
+local     controlhub-demo-pg-data
+local     vm-worker-cj0002-src-data
+local     vm-worker-cj0003-meta-data
+local     vm-worker-cj0003-restore-data
+local     vm-worker-cj0003-s3mock-data
+local     vm-worker-cj0003-src-data
+local     vm-worker-cj0004-meta-data
+local     vm-worker-cj0004-restore-data
+local     vm-worker-cj0004-s3mock-data
+local     vm-worker-cj0004-src-data
+local     vm-worker-cj0005-meta-data
+local     vm-worker-cj0005-restore-data
+local     vm-worker-cj0005-s3mock-data
+local     vm-worker-cj0005-src-data
+local     vm-worker-df0002-meta-data
+local     vm-worker-df0002-restore-data
+local     vm-worker-df0002-s3mock-data
+local     vm-worker-df0002-src-data
+local     vm-worker-df0003-meta-data
+local     vm-worker-df0003-restore-data
+local     vm-worker-df0003-s3mock-data
+local     vm-worker-df0003-src-data
+local     vm-worker-df0004-meta-data
+local     vm-worker-df0004-restore-data
+local     vm-worker-df0004-s3mock-data
+local     vm-worker-df0004-src-data
+local     vm-worker-mk0001-meta-data
+local     vm-worker-mk0001-restore-data
+local     vm-worker-mk0001-s3mock-data
+local     vm-worker-mk0001-src-data
+local     vm-worker-of0001-meta-data
+local     vm-worker-of0001-restore-data
+local     vm-worker-of0001-s3mock-data
+local     vm-worker-of0001-src-data
+local     vm-worker-of0004-meta-data
+local     vm-worker-of0004-restore-data
+local     vm-worker-of0004-s3mock-data
+local     vm-worker-of0004-src-data
+local     vm-worker-tk0001-meta-data
+local     vm-worker-tk0001-restore-data
+local     vm-worker-tk0001-s3mock-data
+local     vm-worker-tk0001-src-data
+local     vm-worker-tk0002-meta-data
+local     vm-worker-tk0002-restore-data
+local     vm-worker-tk0002-s3mock-data
+local     vm-worker-tk0002-src-data
+local     vm-worker-tk0003-meta-data
+local     vm-worker-tk0003-restore-data
+local     vm-worker-tk0003-s3mock-data
+local     vm-worker-tk0003-src-data
+local     vm-worker-wk0001-meta-data
+local     vm-worker-wk0001-restore-data
+local     vm-worker-wk0001-s3mock-data
+local     vm-worker-wk0001-src-data
+local     vm-worker-wk0002-meta-data
+local     vm-worker-wk0002-restore-data
+local     vm-worker-wk0002-s3mock-data
+local     vm-worker-wk0002-src-data
+local     vm-worker-wk0003-meta-data
+local     vm-worker-wk0003-restore-data
+local     vm-worker-wk0003-s3mock-data
+local     vm-worker-wk0003-src-data
+local     vm-worker-wk0005-meta-data
+local     vm-worker-wk0005-restore-data
+local     vm-worker-wk0005-s3mock-data
+local     vm-worker-wk0005-src-data
+local     vm-worker-wk0006-meta-data
+local     vm-worker-wk0006-restore-data
+local     vm-worker-wk0006-s3mock-data
+local     vm-worker-wk0006-src-data
+local     vm-worker-wk0007-meta-data
+local     vm-worker-wk0007-restore-data
+local     vm-worker-wk0007-s3mock-data
+local     vm-worker-wk0007-src-data
+{"body":"## Problem Statement\n\nDeltaScope 的 MySQL/TiDB 规则覆盖率只以已有规则为分母。当前 586/586 的 fixture 指标不能发现未进入目录的 DDL。源码基线 9a28cc9 的 153 个离线探针确认：多表 DROP/RENAME 只检查第一个目标的黑名单；分区删除/清空/交换、有效 TiDB TTL、ALTER COLUMN SET/DROP DEFAULT 等可以静默 pass；独立 CREATE INDEX 与 ALTER ADD INDEX、CREATE 与 ALTER 外键存在治理差异。用户要求按官方 DDL 清单完善语义与测试，而非仅补几个高风险操作或追平 PostgreSQL 文件数。\n\n## Solution\n\n建立以官方版本文档为分母的 DDL 语义验收清单，在 MySQL 5.7、8.0、8.4（InnoDB）和 TiDB 8.5 上逐项兑现。识别所有相关对象和选项，执行适用规则，区分政策违规、Audit Evidence Gap 与不支持分析。涵盖连续迁移的 Prospective Schema State、存储对象内的静态 SQL 和明确的动态边界。提供逐语句 fixture 与隔离数据库验证，使使用者知道哪些检查完成、哪些结论需要证据、哪些 SQL 未被审计。\n\n## User Stories\n\n1. As a migration author, I want all target objects checked, so that protected objects cannot hide after the first DROP/RENAME target.\n2. As a policy owner, I want equivalent index and constraint forms governed consistently, so that spelling does not bypass policy.\n3. As an operator, I want DROP/TRUNCATE PARTITION risks identified, so that data deletion is not silently approved.\n4. As an operator, I want both EXCHANGE PARTITION objects analyzed, so that exchange effects and protected targets are visible.\n5. As a TiDB user, I want valid TTL forms and enable/remove variants checked, so that automatic deletion is reviewed.\n6. As a migration author, I want ADD/MODIFY/CHANGE/default/nullability effects checked, so that column changes receive meaningful analysis.\n7. As a DBA, I want index expressions, prefixes, visibility and engine-specific forms distinguished, so that parsing alone is not mistaken for semantic support.\n8. As a policy owner, I want PK/UNIQUE/FK/CHECK operations evaluated across CREATE and ALTER, so that constraints receive consistent governance.\n9. As an operator, I want partition creation, reorganization and maintenance distinguished, so that topology changes are not reduced to a generic ALTER notice.\n10. As an operator, I want table options and online-DDL clauses analyzed with their prerequisites, so that unsupported cost/locking claims are not invented.\n11. As a database owner, I want schema, view, rename, drop and truncate variants covered, so that object lifecycle changes have complete target evidence.\n12. As a TiDB operator, I want placement, sequence, resource-group, cache, ID and replica operations covered, so that TiDB extensions do not inherit inappropriate MySQL assumptions.\n13. As a MySQL operator, I want uncommon documented objects listed and classified, so that low-frequency syntax does not disappear from the denominator.\n14. As a stored-code author, I want static SQL inside routines, triggers and events audited, so that a lifecycle notice does not hide dangerous body statements.\n15. As a reviewer, I want dynamic SQL and unresolved control-flow effects marked incomplete, so that unknown execution is not guessed.\n16. As an offline user, I want optional Target Database Version, so that version-independent checks remain useful without invented version facts.\n17. As an online user, I want observed version and engine facts used, so that requested assumptions cannot override the actual database.\n18. As a reviewer, I want missing evidence distinguished from unsupported semantics, so that a review result explains what information is needed.\n19. As a migration author, I want later statements to see deterministic earlier schema changes, so that a create-then-alter migration is not checked solely against an old snapshot.\n20. As a reviewer, I want unknown prior effects to invalidate affected derived facts, so that stale schema certainty does not survive a failed analysis.\n21. As a CI maintainer, I want incomplete analysis to preserve valid siblings and signal failure, so that partial results cannot masquerade as a successful audit.\n22. As an integrator, I want consistent SDK/CLI/HTTP/MCP semantics with source locations, so that findings are actionable regardless of entrypoint.\n23. As a security-conscious operator, I want diagnostics to avoid credentials and body-text leakage, so that richer evidence does not expose submitted secrets.\n24. As a maintainer, I want per-statement positive, negative, boundary and configuration assertions, so that a finding on the wrong statement cannot satisfy the suite.\n25. As a maintainer, I want valid and intentionally invalid fixtures checked on exact database versions, so that malformed SQL does not misclassify parser capabilities.\n26. As a release owner, I want inventory-to-test traceability and four-version closure gates, so that completion claims have repeatable evidence.\n\n## Implementation Decisions\n\n### Scope and sources\n\n- Main audit flow and public SDK are the shared semantic seam. Existing parser adapters, statement specification, policy registry, metadata adapters and result aggregation are extended in their existing layers. No new generic proof engine or duplicate transport-specific semantic implementations.\n- Include every official DDL family and documented semantically relevant variants/interactions, including rare objects. Inventory each variant with source, product/version/engine prerequisites, normalized facts, applicable rules, expected completeness, fixtures and owning ticket. Arbitrary SQL-string Cartesian combinations are not claimed exhaustive.\n- Full acceptance targets MySQL InnoDB and TiDB. Other-engine-specific forms remain explicit applicability/analysis boundaries rather than silently passing or disappearing. Vendor-inapplicable syntax remains a vendor boundary, not a feature to simulate. DCL/account governance remains existing behavior unless directly part of a DDL definition/security property; no unrelated authorization engine.\n- Version anchors start at repository-configured MySQL 5.7.44, 8.0.46, 8.4.10 and TiDB 8.5.0. Resolve image digests and record observed versions. Verify official 5.7/8.0 sources; the existing 8.4/8.5 research does not prove older behavior. Add specific boundary-version evidence where a feature changed within a family; four anchors do not imply every patch was exercised.\n\n### Result contract\n\n- Preserve existing pass/review/reject and finding levels. Direct data destruction defaults to blocker; data exchange, enabling TTL and context-dependent rebuild risks default to warning; informational cases use notice. Levels remain configurable and per-rule decisions must be documented.\n- Introduce additive result and statement coverage.status with complete, unverified and incomplete. Complete means the applicable supported analysis completed, not that execution is safe. Unverified means supported analysis lacks evidence for an enabled applicable check. Incomplete means syntax/semantics could not be fully analyzed. Aggregate precedence is incomplete, then unverified, then complete; policy Verdict remains a separate dimension.\n- Add per-statement evidence_gaps for unverified checks: stable rule_id, reason_code and required_facts; use bounded safe identifiers when necessary, never copied SQL/body/credential payload. Result coverage is the aggregate, not a second copy of the entire gap list. Existing unsupported/diagnostics retain the reason for incomplete outcomes.\n- Missing facts that matter to an enabled applicable check impose a review floor but do not create a parser/unsupported error. Disabled/inapplicable checks create no gap. Preserve reject over review and normal caller fail thresholds. Actual provider/connection failures remain errors.\n- Recognized unsupported semantics return retained partial results, at least review, SDK unsupported error, CLI exit 1 even with fail-on none, HTTP 400, MCP isError. Unknown AST and omitted ALTER actions cannot count as complete merely because parsing succeeded. Parser failures retain their distinct error behavior, CLI exit 2, bounded diagnostics and retained valid siblings; wholly unparseable empty Verdict behavior remains unchanged.\n- Coverage annotations cannot disappear when the caller disables a policy rule: unsupported analysis is a capability fact, not a configurable finding. Preserve original statement counts and locations; body findings are associated with their containing top-level definition and point to original source locations with bounded body-origin identity.\n\n### Target version and evidence\n\n- Add optional target_version to public audit requests and --target-version to CLI. Online audit uses observed product/version; an explicitly conflicting version is an input mismatch. Malformed versions are input errors. Missing or out-of-validated-range versions allow independent checks, but affected version-dependent conclusions are explicitly unverified. No default-to-latest.\n- Engine facts come from explicit SQL, known Prospective Schema State or metadata. Engine-specific safety claims need those facts; do not infer an engine solely from parser acceptance. Recognized unsupported-engine forms produce explicit boundaries.\n\n### Migration and body semantics\n\n- Maintain bounded Prospective Schema State for deterministic changes to object identities, columns, indexes, constraints and relevant options. It is conditional on prior operations successfully executing, not a database execution or success guarantee. A policy blocker does not erase a syntactically valid operation from the hypothetical sequence.\n- Unsupported/invalid effects cannot establish facts. Invalidate affected state; if the scope cannot be bounded, invalidate relevant batch-derived certainty. Conditional existence clauses need known existence. Never assume rollback, retain stale statistics after relevant mutations, or materialize invented data.\n- Static bodies of MySQL procedures/functions/triggers/events are in scope, including local binding analysis sufficient to resolve static effects. Stored definitions have separate scopes; defining a body does not execute it or mutate outer migration state. Unknown dynamic SQL, data-dependent effects and unresolved external routine dependencies remain explicitly incomplete; no runtime execution simulation.\n- Parser upgrades are allowed where necessary after compatibility verification. Use parser-owned structure, not regex/keyword inference from failed parse text. Resource/depth limits must yield explicit incomplete results, never partial pass.\n\n### Delivery\n\n- One milestone branch, milestone/mysql-tidb-ddl-completion, from local main at 9a28cc9. Accepted design/evidence is local commit 4d282a2; it has not been pushed. This issue is self-contained and does not depend on a remotely accessible unpublished commit.\n- Every implementation ticket is a vertical slice with its rules/results/fixtures/documentation and focused transport evidence. Use TDD and Standards+Spec review before each task commit. No code-based milestone closure until all in-scope inventory rows and required gates have evidence. No push, tag or release without separate authorization.\n- Tightened findings, review floors and additive fields are intentional integration changes: synchronize English/Chinese public documentation and preserve unrelated PostgreSQL regression behavior.\n\n## Testing Decisions\n\n- Highest shared seam: public audit SDK/application result. Test observable findings, counts, target identities, coverage, errors, Verdict and original source locations. Parser/normalizer tests support diagnosis, not substitutes for end-to-end semantic acceptance.\n- Build on existing paired SQL/YAML corpus, metadata snapshots, census/catalog integrity and cross-surface error/privacy tests. Extend per-statement expected findings, levels, exact/bounded counts, coverage and explicit zero-findings assertions; retain existing broad packs.\n- Each relevant form has dangerous, safe, boundary, version, policy-on/off and metadata-present/absent evidence where behavior differs. Mark genuinely inapplicable dimensions with rationale rather than dummy tests. Multi-target ordering and mixed valid/invalid migrations are mandatory regressions.\n- PR gates run static corpus, semantic tests and inventory traceability. Real database suites validate valid syntax, expected version errors, metadata and key DDL effects using disposable isolated databases and dedicated objects. Ensure intentional syntax negatives do not fail for missing prerequisites or permissions instead.\n- All four version anchors must pass before integration/closure; per-family tickets add their applicable real-DB cases as they land. No executing submitted user SQL in DeltaScope. Tests may execute their own isolated fixture SQL, including controlled event/trigger effects with deterministic cleanup.\n- CLI/HTTP/MCP test transport-specific input/status/exit/error/privacy/rendering plus representative real routes; do not copy the complete semantic matrix to each adapter.\n- Preserve PostgreSQL tagged gates, existing release/privacy/installer gates and record representative single-statement, batch and body performance before/after. Fix currently failing required gates before claiming closure.\n\n## Out of Scope\n\n- Executing submitted SQL, returning query results, deciding authorization or predicting exact lock duration/data effects.\n- Full NDB or other-engine runtime semantics; those forms stay visible with explicit boundaries.\n- Guessing dynamic SQL/runtime-dependent effects, promising every SQL string/patch combination or treating fixture counts as completeness.\n- New workflow UI, independent audit engine per adapter, unrelated Query Access expansion, or unsolicited publication/release.\n\n## Further Notes\n\nUser accepted all recommendations through the design interview and delegated subsequent choices. This is ready-for-agent without another interview. Labels indicate specified work, not that blockers are complete.\n\nOfficial starting sources: [MySQL 8.4 DDL](https://dev.mysql.com/doc/refman/8.4/en/sql-data-definition-statements.html), [MySQL 5.7 DDL](https://dev.mysql.com/doc/refman/5.7/en/sql-data-definition-statements.html), [MySQL 8.0 DDL](https://dev.mysql.com/doc/refman/8.0/en/sql-data-definition-statements.html), [TiDB 8.5 statements](https://raw.githubusercontent.com/pingcap/docs/release-8.5/sql-statements/sql-statement-overview.md), [TiDB TTL](https://raw.githubusercontent.com/pingcap/docs/release-8.5/time-to-live.md). Re-verify the versioned sources during inventory construction rather than treating this source list as completed research.\n\nInitial proof examples: with blanket DROP forbidden disabled and sensitive protected by table denylist, DROP TABLE sensitive rejects but DROP TABLE harmless, sensitive passes in both dialects. ALTER TABLE t DROP PARTITION p0 and valid TiDB ALTER TABLE t TTL = created_at + INTERVAL 30 DAY return silent pass on the baseline. Regression expectations must capture the intended contract, not enshrine those observed failures.\n\n\n### Planned vertical slices\n\n- T01: 修复多目标 DROP/RENAME 的表黑名单漏查 — blocked by none\n- T02: 建立四版本官方 DDL 清单与可执行基线 — blocked by none\n- T03: 为未覆盖 DDL 返回明确的不完整审计结果 — blocked by T02\n- T04: 支持目标版本与缺少证据的审计结论 — blocked by T03\n- T05: 按顺序分析迁移批次的预期表结构 — blocked by T01, T04\n- T06: 完善四版本 CREATE TABLE 基础语义验收 — blocked by T05\n- T07: 覆盖生成列、表达式默认值与不可见列 — blocked by T06\n- T08: 统一列修改、默认值与可空性治理 — blocked by T06\n- T09: 统一独立与嵌套索引的基础治理 — blocked by T05\n- T10: 覆盖高级索引与可见性变更 — blocked by T09\n- T11: 统一主键、唯一和外键的CREATE/ALTER检查 — blocked by T06, T09\n- T12: 完善CHECK约束与执行状态分析 — blocked by T11\n- T13: 审计分区删除、清空和交换风险 — blocked by T05\n- T14: 完善分区定义、重组与维护语义 — blocked by T13\n- T15: 完善表选项、字符集转换与在线DDL条件 — blocked by T08\n- T16: 完善表生命周期、临时表与条件操作 — blocked by T05\n- T17: 完善数据库与schema生命周期 — blocked by T05\n- T18: 完善视图生命周期与安全属性 — blocked by T05\n- T19: 完善TiDB TTL的有效语法与删除风险审计 — blocked by T08\n- T20: 完善TiDB placement策略及绑定审计 — blocked by T05\n- T21: 完善TiDB sequence生命周期与重启语义 — blocked by T05\n- T22: 完善TiDB resource group的CREATE/ALTER/DROP — blocked by T04\n- T23: 完善TiDB物理布局、ID与缓存表操作 — blocked by T08\n- T24: 完善MySQL资源组DDL的版本与CPU语义 — blocked by T04\n- T25: 完善InnoDB表空间与其他引擎显式边界 — blocked by T15\n- T26: 覆盖MySQL SERVER与空间参考系统等低频DDL — blocked by T04\n- T27: 审计MySQL过程和函数中的静态SQL — blocked by T05\n- T28: 完善存储体控制流、变量及动态分析边界 — blocked by T27\n- T29: 审计MySQL触发器定义与OLD/NEW语义 — blocked by T28\n- T30: 审计MySQL事件定义、调度和静态body — blocked by T28\n- T31: 完成官方清单、四版本矩阵与发布前闭环 — blocked by T07, T10, T12, T14, T16, T17, T18, T19, T20, T21, T22, T23, T24, T25, T26, T29, T30\n\n\n<!-- DEVIN_GOLDEN_BEGIN -->\n## Devin execution constraints — Golden Path First\n\nThis section is normative and narrows execution of this issue. It does not reduce the accepted official-DDL scope. Implement one ticket and one inspectable behavior at a time; do not treat parent #79 as permission for a single 31-ticket coding run.\n\n### 0. Checkout and source of truth\n\n- Remote baseline verified on 2026-09-21: `origin/main = 9a28cc99c38770e6e40738515994f864166419f9`. Local planning commits `4d282a2` / `7a46ebc` have NOT been pushed and cannot be assumed available to Devin. The published parent and child issue bodies contain the governing contract.\n- In a fresh clone, fetch remote main, record its actual SHA and inspect differences if it no longer matches the baseline. Start/reuse one milestone checkout on `milestone/mysql-tidb-ddl-completion`. If a branch/worktree already contains previous ticket work, preserve it. Do not reset/clean the workspace, substitute an old baseline, or fabricate access to unpublished commits.\n- Before a dependent ticket, verify both the native blocker relationships and the implementing commits/artifacts present in THIS checkout. A closed issue without its code is not an available dependency. Missing prerequisite code, Docker, compiler/CGO or required database topology is an external blocker; report it rather than simulating a pass.\n- No automatic push/tag/release or mass-closing issues. Deliver a local commit/diff plus proof. Changes must preserve unrelated work. If the executor cannot carry local commits to its next session, report that delivery blocker; do not silently assume permission to publish source.\n\n### 1. Freeze the first observable behavior before editing production code\n\nFor the ticket's Golden Path card, record: input SQL; exact dialect and target version; schema/metadata and policy profile; enabled rule IDs and parameters; expected per-statement findings (IDs, levels, counts and target identity); coverage and gaps; Verdict; process/SDK/transport outcome. A new risk rule's stable ID/level belongs in this expectation BEFORE implementation; reuse an existing semantically equivalent rule instead of adding duplicates. Attach the expectation to the task evidence so code cannot redefine its own oracle.\n\nOnly inspect/refactor the path needed for that input. Start with the existing parser adapter -> normalized statement facts -> shared application/policy -> SDK/result -> real CLI. For a bug, enumerate all consumers/callers of the fact being changed, including siblings outside the reported surface, before editing. Do not introduce a generic execution engine, new plugin/interface layer, unrelated cleanup or dependencies to accommodate hypothetical future forms. Parser upgrades require a demonstrated unparseable valid input and versioned compatibility evidence first.\n\n### 2. Proof entrypoint and exact commands\n\n**T01 is immediately runnable** using the self-contained build + Python oracle in #80. No new Make target, Docker fixture, target_version flag or coverage field is needed to start it.\n\n**T02 must deliver** a thin `make ddl-golden TASK=T02 ARTIFACT_DIR=/tmp/ddl-golden` entrypoint around the existing test/build/database mechanisms, and demonstrate its own first real database case. The target is NOT present on the baseline: do not report it as an existing or already-passing command. Later tickets add their own case to that same entrypoint, not a new test framework per ticket.\n\nFor T03–T30 the required proof command is:\n\n```sh\nmake ddl-golden TASK=Txx ARTIFACT_DIR=/tmp/ddl-golden\n```\n\nReplace `Txx` with the ticket's literal ID. This must build the current checkout's CLI, execute a real subprocess with SQL/config/connection inputs, parse its JSON and assert the frozen oracle. Metadata/DB paths must use the named disposable real instance and verify the relevant setup/effect/metadata facts. An internal function call or a unit-test-only mock does not satisfy this proof. Existing Go/Python test machinery is sufficient; a Go test using a real CLI subprocess and real database is acceptable.\n\nFor T31:\n\n```sh\nmake ddl-golden TASK=all ARTIFACT_DIR=/tmp/ddl-golden\nmake test\nmake pg-unit-test-gates\n```\n\nThen run the existing applicable lint/release/transport/privacy/database gates specified by the inventory. Release commands must be nonpublishing; do not tag to satisfy a test.\n\nEvery proof writes an inspectable artifact with task ID, git HEAD, build options, actual executable, executed input/case IDs, policy/metadata profile, raw JSON/stderr/exit status, expected/asserted result, and actual database version/digest where used. Redact credentials; do not attach real user SQL. Missing target, zero executed cases, missing oracle fields, skipped required profiles, stale binary or missing database are failures, not passing evidence. Fail if the executed case set differs from the manifest's required set.\n\nAfter EVERY meaningful change, run the Golden Path FIRST, then focused regression tests. Only once both pass add the next SQL form or boundary case; repeat. Before the task commit run its full acceptance set, `make test`, the applicable PostgreSQL gate and required actual DB cases. Success of the first seed does not close the rest of the ticket's manifest rows.\n\n### 3. Policy isolation and anti-false-green requirements\n\n- A focused golden profile may disable unrelated rules to isolate one semantic check. Assert that its subject rule exists, enable it explicitly with frozen parameters, and retain a separate default-policy regression. Never change repository defaults just to make the proof pass.\n- Assert per statement, not the union of rule IDs across a batch. Specify zero findings explicitly for clean controls; empty include lists are not a zero assertion. Findings on the wrong object/line do not count.\n- Do not weaken severity, replace supported behavior with unsupported, increment fake warning counts, delete negative fixtures, accept any nonzero error as the expected error, use skip/tolerated failures, or regenerate expectations from actual output to get green.\n- Existing catalog changes are deterministic consequences of verified semantic changes; investigate every diff. A 100% figure over a smaller denominator is not evidence of improvement.\n- Query and effect SQL executed by tests is restricted to fixed, synthetic, disposable objects. Product analysis remains nonexecuting. DB syntax negatives must fail for the intended syntax/version reason, not missing setup or permission failures.\n\n### 4. Shared public oracle\n\n| Outcome | coverage | Verdict | CLI | SDK / HTTP / MCP |\n|---|---|---|---|---|\n| All applicable checks complete, no policy finding | complete | pass | 0 | nil / 200 / isError=false |\n| Known policy blocker | complete or unverified if another check lacks evidence | reject | 1 at blocker/warning/notice threshold, 0 at none unless independent errors | nil / 200 / false unless an independent error exists |\n| Only evidence gaps for enabled applicable checks | unverified | review | warning/notice=1; blocker/none=0 | nil / 200 / false |\n| Recognized but semantically unsupported action | incomplete | at least review; preserve reject | 1 even fail-on none | unsupported error / 400 / true |\n| Parser failure with valid siblings | incomplete | at least review; preserve reject | 2 even fail-on none | parser error / 400 / true |\n| Wholly unparseable input | incomplete | preserve existing empty Verdict behavior | 2 | existing parser error envelope / 400 / true |\n\nFinding counts must equal actual findings, not synthetic gap weight. `coverage.status` is present at result and retained statement levels; aggregate incomplete > unverified > complete. `evidence_gaps` use stable rule_id/reason_code/required_facts and bounded safe identities. Do not put raw SQL, credentials or stored-body text into new diagnostics. Keep original top-level statement counts and map body findings back to their source definition. Version-independent checks do not require a target_version; conflicts with observed online version are input errors.\n\n### 5. Change boundary and stop rule\n\nThe card gives module ownership, not permission to edit everything under those directories. Keep every diff explainable by the current input or its regression. Preserve old callers during unavoidable shared type changes; do not rewrite all adapters in the same patch merely for style.\n\nIf the SAME blocker survives TWO attempted fixes, stop editing that path. Re-read input normalization, parser output, ownership/state transition and consumer assumptions. Record both attempted fixes and the first broken assumption. Fix at that root boundary or report the external blocker. Do not try a third local guard or continue unrelated tickets to appear productive.\n\nFinish each work cycle with:\n\n- Golden Path: pass / fail / blocked (blocked is NOT pass)\n- Proof command, tested HEAD, executed case/profile count and actual result/artifact\n- Root blocker, if any; unknown facts remain explicit\n- Next smallest change within the current ticket\n\nTask completion additionally requires its remaining acceptance rows, focused regressions, current-checkout evidence, changed module READMEs/file headers where required, ADR/public-contract notes, and Standards + Spec review. Do not claim the entire milestone complete from one golden seed.\n\n### Concrete task cards\n\nEach child issue now contains its own input, metadata/policy profile, expected result, negative control, write boundary and proof command. T01/#80 includes a complete runnable oracle with a measured red baseline (16 cases, 8 failures). Start there. T02/#81 owns the future shared runner and exact database profiles. The accepted macro-scope remains intact.\n\n<!-- DEVIN_GOLDEN_END -->\n","number":79,"title":"[DDL completion] MySQL 5.7/8.0/8.4 与 TiDB 8.5 官方清单语义验收规格","url":"https://github.com/Fanduzi/DeltaScope/issues/79"}
+{"body":"## Parent\n\nhttps://github.com/Fanduzi/DeltaScope/issues/79\n\n## What to build\n\n覆盖策略生命周期以及库、表、分区绑定和默认恢复，明确拓扑前提。\n\n## Acceptance criteria\n\n- [ ] CREATE/ALTER/DROP POLICY、数据库/表/分区绑定、DEFAULT/移除按官方8.5清单覆盖；MySQL为明确厂商边界。\n- [ ] 保留所有绑定对象、策略引用和影响安全判断的参数语义，拓扑未知给gap而非猜测可部署。\n- [ ] 多选项及混合ALTER不吞掉其他动作，策略改名/删除依赖和批次未知状态正确传播。\n- [ ] findings仅输出允许的有界属性，不泄露完整region约束或敏感配置。\n- [ ] 危险/安全/未满足前提fixture及隔离TiDB metadata/操作验证；普通单机不具备拓扑时明确测试前提，不能假冒成功。\n\n## Blocked by\n\n- https://github.com/Fanduzi/DeltaScope/issues/84\n\n## Execution contract\n\n- Work on the existing milestone branch `milestone/mysql-tidb-ddl-completion`; preserve unrelated changes. No push, tag or release. Each task is a focused commit after its gates.\n- The parent spec owns public coverage/version/error contracts. Use shared Audit/SDK semantics; transports test their own status/exit/input/privacy behavior. No adapter-specific semantic copy.\n- Use TDD with a failing behavior check, then run applicable corpus/normalizer/rule tests, `make test`, and `make pg-unit-test-gates` when shared/tagged paths are affected. Add applicable isolated DB evidence for the supported version anchors. Finish with Standards + Spec review, affected docs/ADR and no AI co-author trailer.\n- Assert statement identity, finding IDs/levels/counts, Verdict/coverage and source locations where relevant. Explicitly distinguish zero findings, disabled/inapplicable checks, evidence gaps and unsupported semantics. Existing broad-pack success alone is insufficient.\n- The current 153-probe audit describes failures, not the intended oracle. Add inventory evidence for this slice; never close an in-scope static form merely by labeling it unsupported. Complete sibling results and no-leak contracts remain intact.\n\n\n<!-- DEVIN_GOLDEN_BEGIN -->\n## Devin / Golden Path execution addendum\n\n必须先阅读 [父规格的 Devin 执行约束](https://github.com/Fanduzi/DeltaScope/issues/79#devin-execution-constraints--golden-path-first)，再执行本卡片。父规格保留整体验收，本卡片规定第一个可运行切片。**首条路径通过不代表整单完成**；先让它变绿，再逐项推进本任务的manifest行。\n\n### T20 first Golden Path\n\n- **允许修改的责任范围**：TiDB placement对象/绑定、已批准safe projection、state。具体改动仍须能追溯到本路径或其回归；不是目录内任意重构授权。\n- **输入前提 / fixture profile**：TiDB拓扑前提明确，policy p有效且真实表t存在；不具备所需拓扑则先报告blocker。\n- **真实输入**：`ALTER TABLE t PLACEMENT POLICY = p`\n- **独立oracle**：明确t和p引用及适用性；binding检查和改变的风险结果不是仅generic notice；DB metadata可定位绑定，后续DEFAULT能解除。\n- **必须同时通过的反例**：不存在/未知policy分别给对应错误或gap；mixed ALTER其他action不能被placement吞掉；region约束不泄漏。\n- **本轮非目标**：不模拟缺失PD/TiKV拓扑，不用mock-only替代关键真实验证，不把整个网络/集群平台作为本任务新增框架。\n- **证明命令**：`make ddl-golden TASK=T20 ARTIFACT_DIR=/tmp/ddl-golden`\n\n**Runner 状态**：T01现在可直接运行；`make ddl-golden`是T02/#81必须交付的新入口，当前基线不存在。后续TASK必须实际构建/调用CLI并校验JSON，不得仅跑内部单测。缺target/零case/缺前置代码/必需DB不可达均失败。不能把命令名存在或exit0当行为已证明。\n\n**每次改动后的顺序**：Golden Path → 最小相关回归 → 下一条case；当前task全部验收完成后才跑全量门禁/评审/提交。不要并行扩展其他ticket。同一blocker两次修改仍存在，停止局部修补，记录尝试并回到最早错误的假设或所有权边界。\n\n**回报必须包含**：Golden Path pass/fail/blocked；确切命令和tested HEAD；实际case/profile数量、JSON/退出码与artifact；root blocker；next smallest change。不得改oracle、删负例、改分母、降级finding、用unsupported代替承诺支持或虚构metadata来变绿。\n\n<!-- DEVIN_GOLDEN_END -->\n","number":99,"title":"[DDL T20] 完善TiDB placement策略及绑定审计","url":"https://github.com/Fanduzi/DeltaScope/issues/99"}

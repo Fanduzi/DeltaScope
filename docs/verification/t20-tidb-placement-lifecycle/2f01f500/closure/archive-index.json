@@ -1,0 +1,79 @@
+{
+  "files": [
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/archive-checks/diff-check.command.txt",
+      "path": "closure/package-discovery/diff-check.command.txt",
+      "sha256": "d9ef3d1695645413cdc098707c0b447cc19275eb61556bf9d84a09633cf075a6"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/archive-checks/diff-check.execution.json",
+      "path": "closure/package-discovery/diff-check.execution.json",
+      "sha256": "265ac42e7b0cc125524f2b54c4599c696d5cdf934feb0aa4ccc05f9ff76e1a23"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/archive-checks/diff-check.head-after.txt",
+      "path": "closure/package-discovery/diff-check.head-after.txt",
+      "sha256": "ddd540ddb5cfaad5a4f3c104ef2c30f182e4a789248591017f66a9166e856f8c"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/archive-checks/diff-check.head-before.txt",
+      "path": "closure/package-discovery/diff-check.head-before.txt",
+      "sha256": "ddd540ddb5cfaad5a4f3c104ef2c30f182e4a789248591017f66a9166e856f8c"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/archive-checks/diff-check.rc.txt",
+      "path": "closure/package-discovery/diff-check.rc.txt",
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/archive-checks/diff-check.stderr.txt",
+      "path": "closure/package-discovery/diff-check.stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/archive-checks/diff-check.stdout.txt",
+      "path": "closure/package-discovery/diff-check.stdout.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/archive-checks/go-list.command.txt",
+      "path": "closure/package-discovery/go-list.command.txt",
+      "sha256": "943968c4f48d3965d2f8020181ab40e35d5343bc0eec6b0f75810be5c8469708"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/archive-checks/go-list.execution.json",
+      "path": "closure/package-discovery/go-list.execution.json",
+      "sha256": "60a3968d7501737be54b7f72856fe2d1995ccc963160dd273f481d296ce31f68"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/archive-checks/go-list.head-after.txt",
+      "path": "closure/package-discovery/go-list.head-after.txt",
+      "sha256": "ddd540ddb5cfaad5a4f3c104ef2c30f182e4a789248591017f66a9166e856f8c"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/archive-checks/go-list.head-before.txt",
+      "path": "closure/package-discovery/go-list.head-before.txt",
+      "sha256": "ddd540ddb5cfaad5a4f3c104ef2c30f182e4a789248591017f66a9166e856f8c"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/archive-checks/go-list.rc.txt",
+      "path": "closure/package-discovery/go-list.rc.txt",
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/archive-checks/go-list.stderr.txt",
+      "path": "closure/package-discovery/go-list.stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/archive-checks/go-list.stdout.txt",
+      "path": "closure/package-discovery/go-list.stdout.txt",
+      "sha256": "37d3378f5deea7033557fd724d2a62cc63b353f25656ea76f737f84ca102cc3d"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/archive-checks/head.txt",
+      "path": "closure/package-discovery/head.txt",
+      "sha256": "ddd540ddb5cfaad5a4f3c104ef2c30f182e4a789248591017f66a9166e856f8c"
+    }
+  ]
+}

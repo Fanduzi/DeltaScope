@@ -1,0 +1,16 @@
+{
+  "command": [
+    "go",
+    "test",
+    "./internal/application/audit",
+    "-run",
+    "^TestT20R4",
+    "-count=1",
+    "-v"
+  ],
+  "head_before": "bb5e347cd814c463a6873f6b0293613f91013867",
+  "head_after": "bb5e347cd814c463a6873f6b0293613f91013867",
+  "started_at": "2026-11-04T17:11:09.772129+00:00",
+  "ended_at": "2026-11-04T17:11:13.088060+00:00",
+  "returncode": 0
+}

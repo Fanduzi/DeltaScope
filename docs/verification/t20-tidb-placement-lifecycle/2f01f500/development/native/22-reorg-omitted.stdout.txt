@@ -1,0 +1,28 @@
+--------------
+SET SESSION tidb_placement_mode='STRICT'
+--------------
+
+--------------
+ALTER TABLE t_omit REORGANIZE PARTITION p0 INTO (
+ PARTITION p00 VALUES LESS THAN (50),
+ PARTITION p01 VALUES LESS THAN (100) PLACEMENT POLICY=t20r4_ok)
+--------------
+
+--------------
+SHOW WARNINGS
+--------------
+
+Level	Code	Message
+Warning	1105	The statistics of related partitions will be outdated after reorganizing partitions. Please use 'ANALYZE TABLE' statement if you want to update it now
+--------------
+SHOW CREATE TABLE t_omit
+--------------
+
+Table	Create Table
+t_omit	CREATE TABLE `t_omit` (
+  `id` int DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin /*T![placement] PLACEMENT POLICY=`t20r4_table` */
+PARTITION BY RANGE (`id`)
+(PARTITION `p00` VALUES LESS THAN (50),
+ PARTITION `p01` VALUES LESS THAN (100) /*T![placement] PLACEMENT POLICY=`t20r4_ok` */,
+ PARTITION `p_keep` VALUES LESS THAN (200) /*T![placement] PLACEMENT POLICY=`t20r4_old` */)

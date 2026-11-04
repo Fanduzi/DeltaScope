@@ -1,0 +1,42 @@
+diff --git a/internal/application/audit/batch_state_placement.go b/internal/application/audit/batch_state_placement.go
+index ce87c92a..e9a9a092 100644
+--- a/internal/application/audit/batch_state_placement.go
++++ b/internal/application/audit/batch_state_placement.go
+@@ -288,17 +288,6 @@ func (s *batchState) placementAddRef(policy, ref string) {
+ 	entry.refs[ref] = struct{}{}
+ }
+ 
+-// placementRemoveRef drops one proven inbound reference. Dropping a
+-// bound object also drops its reference — the set stays proven when the
+-// drop is proven.
+-func (s *batchState) placementRemoveRef(policy, ref string) {
+-	entry := s.placementPolicies()[policy]
+-	if entry == nil {
+-		return
+-	}
+-	delete(entry.refs, ref)
+-}
+-
+ // placementRefsUnder removes every proven reference whose identity carries
+ // the given prefix — the drop of a bound object dissolves its references.
+ func (s *batchState) placementRefsUnder(prefix string) {
+diff --git a/internal/application/audit/partition_transitions.go b/internal/application/audit/partition_transitions.go
+index 2e9357ed..d56a813d 100644
+--- a/internal/application/audit/partition_transitions.go
++++ b/internal/application/audit/partition_transitions.go
+@@ -155,12 +155,13 @@ func (s *batchState) applyPartitionOperation(targets []spec.Table, alter *spec.A
+ // discards the member map first (native 21-24, T20-R4).
+ func (s *batchState) publishAlterMemberPlacements(shape, next *spec.TableSnapshot, alter *spec.Alter, facts *spec.PlacementFacts, displaySchema, tableName string) {
+ 	table := strings.ToLower(tableName)
+-	if alter.Action == "partition" {
++	switch alter.Action {
++	case "partition":
+ 		// The declared scheme replaces every member binding for this
+ 		// table — retire all old partition refs and restart the map.
+ 		s.placementRefsUnder("partition:" + strings.ToLower(displaySchema) + "." + table + ".")
+ 		next.PartitionPlacements = map[string]string{}
+-	} else if alter.Action == "reorganize_partition" {
++	case "reorganize_partition":
+ 		for _, member := range alter.Partitions {
+ 			name := strings.ToLower(member)
+ 			if next.PartitionPlacements != nil {

@@ -1,0 +1,16 @@
+[
+  "docker",
+  "exec",
+  "deltascope-ddl-golden-tidb85-client",
+  "mysql",
+  "-h",
+  "tidb85",
+  "-P",
+  "4000",
+  "-u",
+  "root",
+  "--batch",
+  "--raw",
+  "-e",
+  "DROP DATABASE IF EXISTS t20r4_scheme_6ac1e918;"
+]

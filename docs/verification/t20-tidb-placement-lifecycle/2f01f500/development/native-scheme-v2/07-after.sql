@@ -1,0 +1,1 @@
+SHOW CREATE TABLE t20r4_scheme_6ac1e918.t;

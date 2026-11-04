@@ -1,0 +1,170 @@
+[
+  {
+    "name": "00-identity",
+    "head": "6ac1e918b3558d6d611d7d8a59a770d73341c2f9",
+    "started_at": "2026-11-04T14:50:59.599781+00:00",
+    "rc": 0
+  },
+  {
+    "name": "01-setup",
+    "head": "6ac1e918b3558d6d611d7d8a59a770d73341c2f9",
+    "started_at": "2026-11-04T14:50:59.648642+00:00",
+    "rc": 0
+  },
+  {
+    "name": "02-seed-t_add",
+    "head": "6ac1e918b3558d6d611d7d8a59a770d73341c2f9",
+    "started_at": "2026-11-04T14:50:59.714558+00:00",
+    "rc": 0
+  },
+  {
+    "name": "02-seed-t_reorg",
+    "head": "6ac1e918b3558d6d611d7d8a59a770d73341c2f9",
+    "started_at": "2026-11-04T14:50:59.757972+00:00",
+    "rc": 0
+  },
+  {
+    "name": "02-seed-t_omit",
+    "head": "6ac1e918b3558d6d611d7d8a59a770d73341c2f9",
+    "started_at": "2026-11-04T14:50:59.802566+00:00",
+    "rc": 0
+  },
+  {
+    "name": "02-seed-t_default",
+    "head": "6ac1e918b3558d6d611d7d8a59a770d73341c2f9",
+    "started_at": "2026-11-04T14:50:59.844933+00:00",
+    "rc": 0
+  },
+  {
+    "name": "03-before",
+    "head": "6ac1e918b3558d6d611d7d8a59a770d73341c2f9",
+    "started_at": "2026-11-04T14:50:59.888699+00:00",
+    "rc": 0
+  },
+  {
+    "name": "10-create-late-missing",
+    "head": "6ac1e918b3558d6d611d7d8a59a770d73341c2f9",
+    "started_at": "2026-11-04T14:50:59.927860+00:00",
+    "rc": 1
+  },
+  {
+    "name": "11-create-all-present",
+    "head": "6ac1e918b3558d6d611d7d8a59a770d73341c2f9",
+    "started_at": "2026-11-04T14:50:59.968733+00:00",
+    "rc": 0
+  },
+  {
+    "name": "12-add-missing",
+    "head": "6ac1e918b3558d6d611d7d8a59a770d73341c2f9",
+    "started_at": "2026-11-04T14:51:00.039104+00:00",
+    "rc": 1
+  },
+  {
+    "name": "13-reorg-missing",
+    "head": "6ac1e918b3558d6d611d7d8a59a770d73341c2f9",
+    "started_at": "2026-11-04T14:51:00.082014+00:00",
+    "rc": 1
+  },
+  {
+    "name": "14-after-missing",
+    "head": "6ac1e918b3558d6d611d7d8a59a770d73341c2f9",
+    "started_at": "2026-11-04T14:51:00.130423+00:00",
+    "rc": 0
+  },
+  {
+    "name": "20-add-present",
+    "head": "6ac1e918b3558d6d611d7d8a59a770d73341c2f9",
+    "started_at": "2026-11-04T14:51:00.170991+00:00",
+    "rc": 0
+  },
+  {
+    "name": "21-reorg-present",
+    "head": "6ac1e918b3558d6d611d7d8a59a770d73341c2f9",
+    "started_at": "2026-11-04T14:51:00.239796+00:00",
+    "rc": 0
+  },
+  {
+    "name": "22-reorg-omitted",
+    "head": "6ac1e918b3558d6d611d7d8a59a770d73341c2f9",
+    "started_at": "2026-11-04T14:51:00.313075+00:00",
+    "rc": 0
+  },
+  {
+    "name": "23-reorg-default",
+    "head": "6ac1e918b3558d6d611d7d8a59a770d73341c2f9",
+    "started_at": "2026-11-04T14:51:00.388929+00:00",
+    "rc": 0
+  },
+  {
+    "name": "24-add-omitted-default",
+    "head": "6ac1e918b3558d6d611d7d8a59a770d73341c2f9",
+    "started_at": "2026-11-04T14:51:00.464118+00:00",
+    "rc": 0
+  },
+  {
+    "name": "25-after-applied",
+    "head": "6ac1e918b3558d6d611d7d8a59a770d73341c2f9",
+    "started_at": "2026-11-04T14:51:00.519666+00:00",
+    "rc": 0
+  },
+  {
+    "name": "26-drop-bound-ok",
+    "head": "6ac1e918b3558d6d611d7d8a59a770d73341c2f9",
+    "started_at": "2026-11-04T14:51:00.558538+00:00",
+    "rc": 1
+  },
+  {
+    "name": "27-drop-old-with-unaffected-members",
+    "head": "6ac1e918b3558d6d611d7d8a59a770d73341c2f9",
+    "started_at": "2026-11-04T14:51:00.601694+00:00",
+    "rc": 1
+  },
+  {
+    "name": "30-subpartition-named-missing",
+    "head": "6ac1e918b3558d6d611d7d8a59a770d73341c2f9",
+    "started_at": "2026-11-04T14:51:00.650687+00:00",
+    "rc": 0
+  },
+  {
+    "name": "31-subpartition-parent-known",
+    "head": "6ac1e918b3558d6d611d7d8a59a770d73341c2f9",
+    "started_at": "2026-11-04T14:51:00.694187+00:00",
+    "rc": 0
+  },
+  {
+    "name": "32-after-subpartition",
+    "head": "6ac1e918b3558d6d611d7d8a59a770d73341c2f9",
+    "started_at": "2026-11-04T14:51:00.737771+00:00",
+    "rc": 0
+  },
+  {
+    "name": "40-release-old-refs",
+    "head": "6ac1e918b3558d6d611d7d8a59a770d73341c2f9",
+    "started_at": "2026-11-04T14:51:00.777127+00:00",
+    "rc": 0
+  },
+  {
+    "name": "41-before-drop-retired-old",
+    "head": "6ac1e918b3558d6d611d7d8a59a770d73341c2f9",
+    "started_at": "2026-11-04T14:51:00.858070+00:00",
+    "rc": 0
+  },
+  {
+    "name": "42-drop-retired-old",
+    "head": "6ac1e918b3558d6d611d7d8a59a770d73341c2f9",
+    "started_at": "2026-11-04T14:51:00.895875+00:00",
+    "rc": 0
+  },
+  {
+    "name": "43-after-drop-retired-old",
+    "head": "6ac1e918b3558d6d611d7d8a59a770d73341c2f9",
+    "started_at": "2026-11-04T14:51:00.946972+00:00",
+    "rc": 0
+  },
+  {
+    "name": "90-cleanup",
+    "head": "6ac1e918b3558d6d611d7d8a59a770d73341c2f9",
+    "started_at": "2026-11-04T14:51:00.984682+00:00",
+    "rc": 0
+  }
+]

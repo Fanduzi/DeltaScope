@@ -1,0 +1,16 @@
+[
+  "docker",
+  "exec",
+  "deltascope-ddl-golden-tidb85-client",
+  "mysql",
+  "-h",
+  "tidb85",
+  "-P",
+  "4000",
+  "-u",
+  "root",
+  "--batch",
+  "--raw",
+  "-e",
+  "CREATE PLACEMENT POLICY r4scheme_ok_6ac1e918 FOLLOWERS=1;"
+]

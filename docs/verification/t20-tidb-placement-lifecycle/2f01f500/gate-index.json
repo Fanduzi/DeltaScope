@@ -1,0 +1,407 @@
+{
+  "product_sha": "2f01f500d296bb29ee518bc113a58ec26172dc1a",
+  "base_sha": "6ac1e918b3558d6d611d7d8a59a770d73341c2f9",
+  "required_password_variables": [
+    "T20_MYSQL_PASSWORD"
+  ],
+  "required_gate_names": [
+    "01-test",
+    "02-vet",
+    "03-race",
+    "04-pg",
+    "05-sql-corpus",
+    "06-query-access-corpus",
+    "07-inventory",
+    "08-coverage-catalog",
+    "09-parser-unsupported",
+    "10-diagnostic-evidence",
+    "11-privacy",
+    "12-docs-examples",
+    "13-decision-record",
+    "14-l2",
+    "15-golden-validator",
+    "16-lint-scoped",
+    "17-lint-fullrepo",
+    "18-lint-identity",
+    "19-golden",
+    "20-artifact-validator"
+  ],
+  "gates": [
+    {
+      "name": "01-test",
+      "command": [
+        "go",
+        "test",
+        "-count=1",
+        "./..."
+      ],
+      "started_at": "2026-11-04T16:45:07.120195+00:00",
+      "ended_at": "2026-11-04T16:45:28.257924+00:00",
+      "head_before": "5fc298539006c21a8af7adbe2152ba591b8f2546",
+      "head_after": "5fc298539006c21a8af7adbe2152ba591b8f2546",
+      "returncode": 0,
+      "allowed_raw_returncodes": [
+        0
+      ],
+      "reused_from_product": "5fc298539006c21a8af7adbe2152ba591b8f2546",
+      "equivalence_proof": "full-test-reuse.json",
+      "post_lint_reuse_proof": "gate-reuse-final.json"
+    },
+    {
+      "name": "02-vet",
+      "command": [
+        "go",
+        "vet",
+        "./..."
+      ],
+      "started_at": "2026-11-04T17:18:17.372018+00:00",
+      "ended_at": "2026-11-04T17:18:18.520532+00:00",
+      "head_before": "2f01f500d296bb29ee518bc113a58ec26172dc1a",
+      "head_after": "2f01f500d296bb29ee518bc113a58ec26172dc1a",
+      "returncode": 0,
+      "allowed_raw_returncodes": [
+        0
+      ]
+    },
+    {
+      "name": "03-race",
+      "command": [
+        "env",
+        "CGO_ENABLED=1",
+        "go",
+        "test",
+        "-race",
+        "-count=1",
+        "./internal/..."
+      ],
+      "started_at": "2026-11-04T16:58:48.122244+00:00",
+      "ended_at": "2026-11-04T16:59:17.261778+00:00",
+      "head_before": "bb5e347cd814c463a6873f6b0293613f91013867",
+      "head_after": "bb5e347cd814c463a6873f6b0293613f91013867",
+      "returncode": 0,
+      "allowed_raw_returncodes": [
+        0
+      ],
+      "reused_from_product": "bb5e347cd814c463a6873f6b0293613f91013867",
+      "equivalence_proof": "gate-reuse-final.json",
+      "post_lint_reuse_proof": "gate-reuse-final.json"
+    },
+    {
+      "name": "04-pg",
+      "command": [
+        "make",
+        "pg-unit-test-gates"
+      ],
+      "started_at": "2026-11-04T16:59:17.273040+00:00",
+      "ended_at": "2026-11-04T16:59:26.126679+00:00",
+      "head_before": "bb5e347cd814c463a6873f6b0293613f91013867",
+      "head_after": "bb5e347cd814c463a6873f6b0293613f91013867",
+      "returncode": 0,
+      "allowed_raw_returncodes": [
+        0
+      ],
+      "reused_from_product": "bb5e347cd814c463a6873f6b0293613f91013867",
+      "equivalence_proof": "gate-reuse-final.json",
+      "post_lint_reuse_proof": "gate-reuse-final.json"
+    },
+    {
+      "name": "05-sql-corpus",
+      "command": [
+        "make",
+        "sql-corpus-gates"
+      ],
+      "started_at": "2026-11-04T16:59:26.136678+00:00",
+      "ended_at": "2026-11-04T16:59:27.315849+00:00",
+      "head_before": "bb5e347cd814c463a6873f6b0293613f91013867",
+      "head_after": "bb5e347cd814c463a6873f6b0293613f91013867",
+      "returncode": 0,
+      "allowed_raw_returncodes": [
+        0
+      ],
+      "reused_from_product": "bb5e347cd814c463a6873f6b0293613f91013867",
+      "equivalence_proof": "gate-reuse-final.json",
+      "post_lint_reuse_proof": "gate-reuse-final.json"
+    },
+    {
+      "name": "06-query-access-corpus",
+      "command": [
+        "make",
+        "query-access-corpus-gates"
+      ],
+      "started_at": "2026-11-04T16:59:27.326698+00:00",
+      "ended_at": "2026-11-04T16:59:29.854984+00:00",
+      "head_before": "bb5e347cd814c463a6873f6b0293613f91013867",
+      "head_after": "bb5e347cd814c463a6873f6b0293613f91013867",
+      "returncode": 0,
+      "allowed_raw_returncodes": [
+        0
+      ],
+      "reused_from_product": "bb5e347cd814c463a6873f6b0293613f91013867",
+      "equivalence_proof": "gate-reuse-final.json",
+      "post_lint_reuse_proof": "gate-reuse-final.json"
+    },
+    {
+      "name": "07-inventory",
+      "command": [
+        "make",
+        "ddl-inventory-gate"
+      ],
+      "started_at": "2026-11-04T16:59:29.866388+00:00",
+      "ended_at": "2026-11-04T16:59:30.786905+00:00",
+      "head_before": "bb5e347cd814c463a6873f6b0293613f91013867",
+      "head_after": "bb5e347cd814c463a6873f6b0293613f91013867",
+      "returncode": 0,
+      "allowed_raw_returncodes": [
+        0
+      ],
+      "reused_from_product": "bb5e347cd814c463a6873f6b0293613f91013867",
+      "equivalence_proof": "gate-reuse-final.json",
+      "post_lint_reuse_proof": "gate-reuse-final.json"
+    },
+    {
+      "name": "08-coverage-catalog",
+      "command": [
+        "make",
+        "ddl-coverage-catalog-test"
+      ],
+      "started_at": "2026-11-04T16:59:30.797960+00:00",
+      "ended_at": "2026-11-04T16:59:32.277135+00:00",
+      "head_before": "bb5e347cd814c463a6873f6b0293613f91013867",
+      "head_after": "bb5e347cd814c463a6873f6b0293613f91013867",
+      "returncode": 0,
+      "allowed_raw_returncodes": [
+        0
+      ],
+      "reused_from_product": "bb5e347cd814c463a6873f6b0293613f91013867",
+      "equivalence_proof": "gate-reuse-final.json",
+      "post_lint_reuse_proof": "gate-reuse-final.json"
+    },
+    {
+      "name": "09-parser-unsupported",
+      "command": [
+        "make",
+        "parser-error-unsupported-contract-test"
+      ],
+      "started_at": "2026-11-04T16:59:32.287397+00:00",
+      "ended_at": "2026-11-04T16:59:40.171917+00:00",
+      "head_before": "bb5e347cd814c463a6873f6b0293613f91013867",
+      "head_after": "bb5e347cd814c463a6873f6b0293613f91013867",
+      "returncode": 0,
+      "allowed_raw_returncodes": [
+        0
+      ],
+      "reused_from_product": "bb5e347cd814c463a6873f6b0293613f91013867",
+      "equivalence_proof": "gate-reuse-final.json",
+      "post_lint_reuse_proof": "gate-reuse-final.json"
+    },
+    {
+      "name": "10-diagnostic-evidence",
+      "command": [
+        "make",
+        "unsupported-diagnostics-evidence-test"
+      ],
+      "started_at": "2026-11-04T16:59:40.181742+00:00",
+      "ended_at": "2026-11-04T16:59:46.633453+00:00",
+      "head_before": "bb5e347cd814c463a6873f6b0293613f91013867",
+      "head_after": "bb5e347cd814c463a6873f6b0293613f91013867",
+      "returncode": 0,
+      "allowed_raw_returncodes": [
+        0
+      ],
+      "reused_from_product": "bb5e347cd814c463a6873f6b0293613f91013867",
+      "equivalence_proof": "gate-reuse-final.json",
+      "post_lint_reuse_proof": "gate-reuse-final.json"
+    },
+    {
+      "name": "11-privacy",
+      "command": [
+        "go",
+        "test",
+        "./internal/application/audit",
+        "-run",
+        "^(TestT20R2PlacementPrivacySentinel|TestMySQLTiDBPromotedDDLMetadataCensus)$",
+        "-count=1",
+        "-v"
+      ],
+      "started_at": "2026-11-04T16:59:46.642621+00:00",
+      "ended_at": "2026-11-04T16:59:47.489017+00:00",
+      "head_before": "bb5e347cd814c463a6873f6b0293613f91013867",
+      "head_after": "bb5e347cd814c463a6873f6b0293613f91013867",
+      "returncode": 0,
+      "allowed_raw_returncodes": [
+        0
+      ],
+      "reused_from_product": "bb5e347cd814c463a6873f6b0293613f91013867",
+      "equivalence_proof": "gate-reuse-final.json",
+      "post_lint_reuse_proof": "gate-reuse-final.json"
+    },
+    {
+      "name": "12-docs-examples",
+      "command": [
+        "make",
+        "docs-example-gates"
+      ],
+      "started_at": "2026-11-04T16:59:47.498056+00:00",
+      "ended_at": "2026-11-04T16:59:47.614882+00:00",
+      "head_before": "bb5e347cd814c463a6873f6b0293613f91013867",
+      "head_after": "bb5e347cd814c463a6873f6b0293613f91013867",
+      "returncode": 0,
+      "allowed_raw_returncodes": [
+        0
+      ],
+      "reused_from_product": "bb5e347cd814c463a6873f6b0293613f91013867",
+      "equivalence_proof": "gate-reuse-final.json",
+      "post_lint_reuse_proof": "gate-reuse-final.json"
+    },
+    {
+      "name": "13-decision-record",
+      "command": [
+        "./scripts/check_decision_record.sh",
+        "6ac1e918b3558d6d611d7d8a59a770d73341c2f9..2f01f500d296bb29ee518bc113a58ec26172dc1a"
+      ],
+      "started_at": "2026-11-04T17:18:18.531019+00:00",
+      "ended_at": "2026-11-04T17:18:18.625250+00:00",
+      "head_before": "2f01f500d296bb29ee518bc113a58ec26172dc1a",
+      "head_after": "2f01f500d296bb29ee518bc113a58ec26172dc1a",
+      "returncode": 0,
+      "allowed_raw_returncodes": [
+        0
+      ]
+    },
+    {
+      "name": "14-l2",
+      "command": [
+        "python3",
+        "/tmp/deltascope-t20r4-6ac1e918/check_l2.py",
+        "--base",
+        "6ac1e918b3558d6d611d7d8a59a770d73341c2f9",
+        "--head",
+        "2f01f500d296bb29ee518bc113a58ec26172dc1a"
+      ],
+      "started_at": "2026-11-04T17:18:18.634926+00:00",
+      "ended_at": "2026-11-04T17:18:18.701256+00:00",
+      "head_before": "2f01f500d296bb29ee518bc113a58ec26172dc1a",
+      "head_after": "2f01f500d296bb29ee518bc113a58ec26172dc1a",
+      "returncode": 0,
+      "allowed_raw_returncodes": [
+        0
+      ]
+    },
+    {
+      "name": "15-golden-validator",
+      "command": [
+        "make",
+        "ddl-golden-validator-test"
+      ],
+      "started_at": "2026-11-04T16:59:47.835447+00:00",
+      "ended_at": "2026-11-04T17:00:39.159974+00:00",
+      "head_before": "bb5e347cd814c463a6873f6b0293613f91013867",
+      "head_after": "bb5e347cd814c463a6873f6b0293613f91013867",
+      "returncode": 0,
+      "allowed_raw_returncodes": [
+        0
+      ],
+      "reused_from_product": "bb5e347cd814c463a6873f6b0293613f91013867",
+      "equivalence_proof": "gate-reuse-final.json",
+      "post_lint_reuse_proof": "gate-reuse-final.json"
+    },
+    {
+      "name": "16-lint-scoped",
+      "command": [
+        "golangci-lint",
+        "run",
+        "./internal/application/audit/...",
+        "./internal/domain/spec/...",
+        "./internal/domain/rule/ddl/...",
+        "./internal/domain/policy/...",
+        "./internal/infrastructure/parser/tidb/..."
+      ],
+      "started_at": "2026-11-04T17:18:18.710130+00:00",
+      "ended_at": "2026-11-04T17:18:31.242111+00:00",
+      "head_before": "2f01f500d296bb29ee518bc113a58ec26172dc1a",
+      "head_after": "2f01f500d296bb29ee518bc113a58ec26172dc1a",
+      "returncode": 1,
+      "allowed_raw_returncodes": [
+        0,
+        1
+      ]
+    },
+    {
+      "name": "17-lint-fullrepo",
+      "command": [
+        "golangci-lint",
+        "run",
+        "./..."
+      ],
+      "started_at": "2026-11-04T17:18:31.252401+00:00",
+      "ended_at": "2026-11-04T17:18:40.817336+00:00",
+      "head_before": "2f01f500d296bb29ee518bc113a58ec26172dc1a",
+      "head_after": "2f01f500d296bb29ee518bc113a58ec26172dc1a",
+      "returncode": 1,
+      "allowed_raw_returncodes": [
+        0,
+        1
+      ]
+    },
+    {
+      "name": "18-lint-identity",
+      "command": [
+        "python3",
+        "/tmp/deltascope-t20r4-6ac1e918/lint_identity.py",
+        "compare",
+        "--baseline",
+        "/tmp/deltascope-t20r4-6ac1e918/lint-baseline.json",
+        "--scoped",
+        "/private/tmp/deltascope-t20r4-6ac1e918/final-2f01f500/gates/16-lint-scoped.stdout.txt",
+        "--full",
+        "/private/tmp/deltascope-t20r4-6ac1e918/final-2f01f500/gates/17-lint-fullrepo.stdout.txt",
+        "--output",
+        "/private/tmp/deltascope-t20r4-6ac1e918/final-2f01f500/gates/18-lint-identities.json"
+      ],
+      "started_at": "2026-11-04T17:18:40.827898+00:00",
+      "ended_at": "2026-11-04T17:18:40.867095+00:00",
+      "head_before": "2f01f500d296bb29ee518bc113a58ec26172dc1a",
+      "head_after": "2f01f500d296bb29ee518bc113a58ec26172dc1a",
+      "returncode": 0,
+      "allowed_raw_returncodes": [
+        0
+      ]
+    },
+    {
+      "name": "19-golden",
+      "command": [
+        "python3",
+        "/tmp/deltascope-t20r4-6ac1e918/formal_golden.py",
+        "--artifact-dir",
+        "/private/tmp/deltascope-t20r4-6ac1e918/final-2f01f500/golden"
+      ],
+      "started_at": "2026-11-04T17:18:40.877205+00:00",
+      "ended_at": "2026-11-04T17:19:03.973413+00:00",
+      "head_before": "2f01f500d296bb29ee518bc113a58ec26172dc1a",
+      "head_after": "2f01f500d296bb29ee518bc113a58ec26172dc1a",
+      "returncode": 0,
+      "allowed_raw_returncodes": [
+        0
+      ]
+    },
+    {
+      "name": "20-artifact-validator",
+      "command": [
+        "python3",
+        "./scripts/ddl_golden.py",
+        "validate",
+        "--artifact",
+        "/private/tmp/deltascope-t20r4-6ac1e918/final-2f01f500/golden/T20/artifact.json"
+      ],
+      "started_at": "2026-11-04T17:19:03.989857+00:00",
+      "ended_at": "2026-11-04T17:19:04.110188+00:00",
+      "head_before": "2f01f500d296bb29ee518bc113a58ec26172dc1a",
+      "head_after": "2f01f500d296bb29ee518bc113a58ec26172dc1a",
+      "returncode": 0,
+      "allowed_raw_returncodes": [
+        0
+      ]
+    }
+  ],
+  "note": "raw lint rc 1 is not lint success; diagnostic identity gate is independent"
+}

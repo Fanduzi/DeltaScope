@@ -1,0 +1,230 @@
+{
+  "product_sha": "2f01f500d296bb29ee518bc113a58ec26172dc1a",
+  "verification_head": "2f01f500d296bb29ee518bc113a58ec26172dc1a",
+  "artifact": "/private/tmp/deltascope-t20r4-6ac1e918/final-2f01f500/golden/T20/artifact.json",
+  "artifact_sha256": "eee3c43c660d9ba1a10d0e67da5b72eab2b41f2007c7352371554ec650e8014b",
+  "cli_sha256": "adbec424f57663d75f5f1fc72bfdee63944b5ff7dd48e582565e162d7e83b833",
+  "executed_cases": 35,
+  "passed_cases": 35,
+  "assertions": 497,
+  "original_cases": 25,
+  "original_assertions": 286,
+  "new_cases": 10,
+  "new_assertions": 211,
+  "required_equals_executed": true,
+  "duplicate_ids": [],
+  "failed_assertions": [],
+  "skipped_cases": [],
+  "gate_returncodes": {
+    "01-test": 0,
+    "02-vet": 0,
+    "03-race": 0,
+    "04-pg": 0,
+    "05-sql-corpus": 0,
+    "06-query-access-corpus": 0,
+    "07-inventory": 0,
+    "08-coverage-catalog": 0,
+    "09-parser-unsupported": 0,
+    "10-diagnostic-evidence": 0,
+    "11-privacy": 0,
+    "12-docs-examples": 0,
+    "13-decision-record": 0,
+    "14-l2": 0,
+    "15-golden-validator": 0,
+    "16-lint-scoped": 1,
+    "17-lint-fullrepo": 1,
+    "18-lint-identity": 0,
+    "19-golden": 0,
+    "20-artifact-validator": 0
+  },
+  "equivalent_reused_gates": [
+    {
+      "gate": "01-test",
+      "actual_execution_sha": "5fc298539006c21a8af7adbe2152ba591b8f2546",
+      "equivalent_target_sha": "2f01f500d296bb29ee518bc113a58ec26172dc1a",
+      "equivalence": {
+        "changed_files": [
+          "internal/application/audit/batch_state_placement.go",
+          "internal/application/audit/partition_transitions.go"
+        ],
+        "diff_sha256": "e31e9d42b59d1a800fb6a1d722121e8a59d1170885237bfa56679121d22374fb",
+        "basis": "Delete a private function diagnosed as unused, with no callers, and replace two mutually exclusive comparisons of immutable alter.Action with the corresponding tagged switch. Branch bodies and all other tracked bytes are unchanged. Fresh focused T20-R4 regression passes; vet, committed ADR/L2 scope checks, lint and Golden run at the target."
+      },
+      "inherited_full_test_proof": true
+    },
+    {
+      "gate": "03-race",
+      "actual_execution_sha": "bb5e347cd814c463a6873f6b0293613f91013867",
+      "equivalent_target_sha": "2f01f500d296bb29ee518bc113a58ec26172dc1a",
+      "equivalence": {
+        "changed_files": [
+          "internal/application/audit/batch_state_placement.go",
+          "internal/application/audit/partition_transitions.go"
+        ],
+        "diff_sha256": "e31e9d42b59d1a800fb6a1d722121e8a59d1170885237bfa56679121d22374fb",
+        "basis": "Delete a private function diagnosed as unused, with no callers, and replace two mutually exclusive comparisons of immutable alter.Action with the corresponding tagged switch. Branch bodies and all other tracked bytes are unchanged. Fresh focused T20-R4 regression passes; vet, committed ADR/L2 scope checks, lint and Golden run at the target."
+      },
+      "inherited_full_test_proof": false
+    },
+    {
+      "gate": "04-pg",
+      "actual_execution_sha": "bb5e347cd814c463a6873f6b0293613f91013867",
+      "equivalent_target_sha": "2f01f500d296bb29ee518bc113a58ec26172dc1a",
+      "equivalence": {
+        "changed_files": [
+          "internal/application/audit/batch_state_placement.go",
+          "internal/application/audit/partition_transitions.go"
+        ],
+        "diff_sha256": "e31e9d42b59d1a800fb6a1d722121e8a59d1170885237bfa56679121d22374fb",
+        "basis": "Delete a private function diagnosed as unused, with no callers, and replace two mutually exclusive comparisons of immutable alter.Action with the corresponding tagged switch. Branch bodies and all other tracked bytes are unchanged. Fresh focused T20-R4 regression passes; vet, committed ADR/L2 scope checks, lint and Golden run at the target."
+      },
+      "inherited_full_test_proof": false
+    },
+    {
+      "gate": "05-sql-corpus",
+      "actual_execution_sha": "bb5e347cd814c463a6873f6b0293613f91013867",
+      "equivalent_target_sha": "2f01f500d296bb29ee518bc113a58ec26172dc1a",
+      "equivalence": {
+        "changed_files": [
+          "internal/application/audit/batch_state_placement.go",
+          "internal/application/audit/partition_transitions.go"
+        ],
+        "diff_sha256": "e31e9d42b59d1a800fb6a1d722121e8a59d1170885237bfa56679121d22374fb",
+        "basis": "Delete a private function diagnosed as unused, with no callers, and replace two mutually exclusive comparisons of immutable alter.Action with the corresponding tagged switch. Branch bodies and all other tracked bytes are unchanged. Fresh focused T20-R4 regression passes; vet, committed ADR/L2 scope checks, lint and Golden run at the target."
+      },
+      "inherited_full_test_proof": false
+    },
+    {
+      "gate": "06-query-access-corpus",
+      "actual_execution_sha": "bb5e347cd814c463a6873f6b0293613f91013867",
+      "equivalent_target_sha": "2f01f500d296bb29ee518bc113a58ec26172dc1a",
+      "equivalence": {
+        "changed_files": [
+          "internal/application/audit/batch_state_placement.go",
+          "internal/application/audit/partition_transitions.go"
+        ],
+        "diff_sha256": "e31e9d42b59d1a800fb6a1d722121e8a59d1170885237bfa56679121d22374fb",
+        "basis": "Delete a private function diagnosed as unused, with no callers, and replace two mutually exclusive comparisons of immutable alter.Action with the corresponding tagged switch. Branch bodies and all other tracked bytes are unchanged. Fresh focused T20-R4 regression passes; vet, committed ADR/L2 scope checks, lint and Golden run at the target."
+      },
+      "inherited_full_test_proof": false
+    },
+    {
+      "gate": "07-inventory",
+      "actual_execution_sha": "bb5e347cd814c463a6873f6b0293613f91013867",
+      "equivalent_target_sha": "2f01f500d296bb29ee518bc113a58ec26172dc1a",
+      "equivalence": {
+        "changed_files": [
+          "internal/application/audit/batch_state_placement.go",
+          "internal/application/audit/partition_transitions.go"
+        ],
+        "diff_sha256": "e31e9d42b59d1a800fb6a1d722121e8a59d1170885237bfa56679121d22374fb",
+        "basis": "Delete a private function diagnosed as unused, with no callers, and replace two mutually exclusive comparisons of immutable alter.Action with the corresponding tagged switch. Branch bodies and all other tracked bytes are unchanged. Fresh focused T20-R4 regression passes; vet, committed ADR/L2 scope checks, lint and Golden run at the target."
+      },
+      "inherited_full_test_proof": false
+    },
+    {
+      "gate": "08-coverage-catalog",
+      "actual_execution_sha": "bb5e347cd814c463a6873f6b0293613f91013867",
+      "equivalent_target_sha": "2f01f500d296bb29ee518bc113a58ec26172dc1a",
+      "equivalence": {
+        "changed_files": [
+          "internal/application/audit/batch_state_placement.go",
+          "internal/application/audit/partition_transitions.go"
+        ],
+        "diff_sha256": "e31e9d42b59d1a800fb6a1d722121e8a59d1170885237bfa56679121d22374fb",
+        "basis": "Delete a private function diagnosed as unused, with no callers, and replace two mutually exclusive comparisons of immutable alter.Action with the corresponding tagged switch. Branch bodies and all other tracked bytes are unchanged. Fresh focused T20-R4 regression passes; vet, committed ADR/L2 scope checks, lint and Golden run at the target."
+      },
+      "inherited_full_test_proof": false
+    },
+    {
+      "gate": "09-parser-unsupported",
+      "actual_execution_sha": "bb5e347cd814c463a6873f6b0293613f91013867",
+      "equivalent_target_sha": "2f01f500d296bb29ee518bc113a58ec26172dc1a",
+      "equivalence": {
+        "changed_files": [
+          "internal/application/audit/batch_state_placement.go",
+          "internal/application/audit/partition_transitions.go"
+        ],
+        "diff_sha256": "e31e9d42b59d1a800fb6a1d722121e8a59d1170885237bfa56679121d22374fb",
+        "basis": "Delete a private function diagnosed as unused, with no callers, and replace two mutually exclusive comparisons of immutable alter.Action with the corresponding tagged switch. Branch bodies and all other tracked bytes are unchanged. Fresh focused T20-R4 regression passes; vet, committed ADR/L2 scope checks, lint and Golden run at the target."
+      },
+      "inherited_full_test_proof": false
+    },
+    {
+      "gate": "10-diagnostic-evidence",
+      "actual_execution_sha": "bb5e347cd814c463a6873f6b0293613f91013867",
+      "equivalent_target_sha": "2f01f500d296bb29ee518bc113a58ec26172dc1a",
+      "equivalence": {
+        "changed_files": [
+          "internal/application/audit/batch_state_placement.go",
+          "internal/application/audit/partition_transitions.go"
+        ],
+        "diff_sha256": "e31e9d42b59d1a800fb6a1d722121e8a59d1170885237bfa56679121d22374fb",
+        "basis": "Delete a private function diagnosed as unused, with no callers, and replace two mutually exclusive comparisons of immutable alter.Action with the corresponding tagged switch. Branch bodies and all other tracked bytes are unchanged. Fresh focused T20-R4 regression passes; vet, committed ADR/L2 scope checks, lint and Golden run at the target."
+      },
+      "inherited_full_test_proof": false
+    },
+    {
+      "gate": "11-privacy",
+      "actual_execution_sha": "bb5e347cd814c463a6873f6b0293613f91013867",
+      "equivalent_target_sha": "2f01f500d296bb29ee518bc113a58ec26172dc1a",
+      "equivalence": {
+        "changed_files": [
+          "internal/application/audit/batch_state_placement.go",
+          "internal/application/audit/partition_transitions.go"
+        ],
+        "diff_sha256": "e31e9d42b59d1a800fb6a1d722121e8a59d1170885237bfa56679121d22374fb",
+        "basis": "Delete a private function diagnosed as unused, with no callers, and replace two mutually exclusive comparisons of immutable alter.Action with the corresponding tagged switch. Branch bodies and all other tracked bytes are unchanged. Fresh focused T20-R4 regression passes; vet, committed ADR/L2 scope checks, lint and Golden run at the target."
+      },
+      "inherited_full_test_proof": false
+    },
+    {
+      "gate": "12-docs-examples",
+      "actual_execution_sha": "bb5e347cd814c463a6873f6b0293613f91013867",
+      "equivalent_target_sha": "2f01f500d296bb29ee518bc113a58ec26172dc1a",
+      "equivalence": {
+        "changed_files": [
+          "internal/application/audit/batch_state_placement.go",
+          "internal/application/audit/partition_transitions.go"
+        ],
+        "diff_sha256": "e31e9d42b59d1a800fb6a1d722121e8a59d1170885237bfa56679121d22374fb",
+        "basis": "Delete a private function diagnosed as unused, with no callers, and replace two mutually exclusive comparisons of immutable alter.Action with the corresponding tagged switch. Branch bodies and all other tracked bytes are unchanged. Fresh focused T20-R4 regression passes; vet, committed ADR/L2 scope checks, lint and Golden run at the target."
+      },
+      "inherited_full_test_proof": false
+    },
+    {
+      "gate": "15-golden-validator",
+      "actual_execution_sha": "bb5e347cd814c463a6873f6b0293613f91013867",
+      "equivalent_target_sha": "2f01f500d296bb29ee518bc113a58ec26172dc1a",
+      "equivalence": {
+        "changed_files": [
+          "internal/application/audit/batch_state_placement.go",
+          "internal/application/audit/partition_transitions.go"
+        ],
+        "diff_sha256": "e31e9d42b59d1a800fb6a1d722121e8a59d1170885237bfa56679121d22374fb",
+        "basis": "Delete a private function diagnosed as unused, with no callers, and replace two mutually exclusive comparisons of immutable alter.Action with the corresponding tagged switch. Branch bodies and all other tracked bytes are unchanged. Fresh focused T20-R4 regression passes; vet, committed ADR/L2 scope checks, lint and Golden run at the target."
+      },
+      "inherited_full_test_proof": false
+    }
+  ],
+  "historical_evidence_unchanged": true,
+  "preexisting_network_preserved": true,
+  "lint": {
+    "scoped": {
+      "baseline_raw": 22,
+      "current_raw": 22,
+      "baseline_normalized": 18,
+      "current_normalized": 18,
+      "added": [],
+      "removed": []
+    },
+    "full": {
+      "baseline_raw": 39,
+      "current_raw": 39,
+      "baseline_normalized": 33,
+      "current_normalized": 33,
+      "added": [],
+      "removed": []
+    }
+  }
+}

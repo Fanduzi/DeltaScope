@@ -1,0 +1,417 @@
+{
+  "case_id": "T20.meta.tidb85-r4-subpartition-ignored-boundary",
+  "kind": "cli_metadata",
+  "cli_case": "tidb85-r4-subpartition-ignored-boundary",
+  "anchor": "tidb85",
+  "dialect": "tidb",
+  "input_sql": "CREATE TABLE t2 (id INT) PLACEMENT POLICY=t20r4_g_ok PARTITION BY RANGE(id) SUBPARTITION BY HASH(id) (PARTITION p0 VALUES LESS THAN (100) (SUBPARTITION s0 PLACEMENT POLICY=t20r4_g_missing, SUBPARTITION s1 PLACEMENT POLICY=DEFAULT));",
+  "policy_profile": "t20-placement",
+  "policy_path": "/private/tmp/deltascope-t20r4-6ac1e918/final-2f01f500/golden/T20/golden-policy-t20-placement.yaml",
+  "connect": {
+    "host": "127.0.0.1",
+    "port": 24000,
+    "user": "root",
+    "schema": "t20r4_g_sub"
+  },
+  "expected": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+      "incomplete"
+    ],
+    "evidence_gaps": 1,
+    "fail_on_triggered": false,
+    "unsupported_features": [
+      "tidb_subpartition"
+    ],
+    "finding_entries": [
+      {
+        "index": 0,
+        "rule_id": "ddl.tidb.placement.warn",
+        "level": "warning"
+      }
+    ],
+    "finding_metadata": [
+      {
+        "index": 0,
+        "rule_id": "ddl.tidb.placement.warn",
+        "metadata": {
+          "policy": "t20r4_g_ok",
+          "schema": "t20r4_g_sub",
+          "table": "t2",
+          "target_kind": "table"
+        }
+      }
+    ],
+    "evidence_gap_entries": [
+      {
+        "index": 0,
+        "rule_id": "ddl.tidb.placement.warn",
+        "reason_code": "unknown_table_state",
+        "required_facts": [
+          "placement_policy.topology"
+        ]
+      }
+    ]
+  },
+  "actual": {
+    "database": {
+      "product": "tidb",
+      "image": "pingcap/tidb:v8.5.0",
+      "image_digest": "pingcap/tidb@sha256:490861bd4a2fa643dbe76b77ffecafcad66e6a42774e580b82f4ec2429a80e57",
+      "container": "deltascope-ddl-golden-tidb85",
+      "reachable": true,
+      "version": "8.0.11-TiDB-v8.5.0"
+    },
+    "setup": [
+      {
+        "name": "create parent policy with absent child policy",
+        "sql": "CREATE DATABASE t20r4_g_sub;CREATE PLACEMENT POLICY t20r4_g_ok FOLLOWERS=1",
+        "rc": 0,
+        "stdout": "",
+        "stderr": "",
+        "verify": [
+          {
+            "assert": "child policy is absent",
+            "sql": "SELECT COUNT(*) FROM information_schema.PLACEMENT_POLICIES WHERE POLICY_NAME='t20r4_g_missing'",
+            "rc": 0,
+            "output": "0",
+            "stderr": ""
+          }
+        ]
+      }
+    ],
+    "post_verify": [
+      {
+        "assert": "audit did not create parent table",
+        "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='t20r4_g_sub' AND TABLE_NAME='t2'",
+        "rc": 0,
+        "output": "0",
+        "stderr": ""
+      }
+    ],
+    "execute": [
+      {
+        "name": "native warns and discards unsupported child axis",
+        "sql": "CREATE TABLE t20r4_g_sub.t2 (id INT) PLACEMENT POLICY=t20r4_g_ok PARTITION BY RANGE(id) SUBPARTITION BY HASH(id) (PARTITION p0 VALUES LESS THAN (100) (SUBPARTITION s0 PLACEMENT POLICY=t20r4_g_missing, SUBPARTITION s1 PLACEMENT POLICY=DEFAULT));SHOW WARNINGS;",
+        "rc": 0,
+        "stdout": "Level\tCode\tMessage\nWarning\t8200\tUnsupported subpartitioning, only using RANGE partitioning",
+        "stderr": ""
+      }
+    ],
+    "structure": [
+      {
+        "assert": "table parent binding is retained",
+        "sql": "SELECT TIDB_PLACEMENT_POLICY_NAME FROM information_schema.TABLES WHERE TABLE_SCHEMA='t20r4_g_sub' AND TABLE_NAME='t2'",
+        "rc": 0,
+        "output": "t20r4_g_ok",
+        "stderr": ""
+      },
+      {
+        "assert": "one primary partition and no child override",
+        "sql": "SELECT GROUP_CONCAT(CONCAT(PARTITION_NAME,':',PARTITION_DESCRIPTION,':',COALESCE(SUBPARTITION_NAME,''),':',COALESCE(TIDB_PLACEMENT_POLICY_NAME,'')) ORDER BY PARTITION_ORDINAL_POSITION SEPARATOR '|') FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='t20r4_g_sub' AND TABLE_NAME='t2'",
+        "rc": 0,
+        "output": "p0:100::",
+        "stderr": ""
+      }
+    ],
+    "teardown": [
+      {
+        "name": "remove owned fixture",
+        "sql": "DROP DATABASE t20r4_g_sub;DROP PLACEMENT POLICY t20r4_g_ok",
+        "rc": 0,
+        "stderr": ""
+      }
+    ],
+    "exit": 1,
+    "stdout": "{\"verdict\":\"review\",\"coverage\":{\"status\":\"incomplete\"},\"summary\":{\"statements\":1,\"blockers\":0,\"warnings\":1,\"notices\":0},\"statements\":[{\"index\":0,\"kind\":\"ddl\",\"raw_sql\":\"CREATE TABLE t2 (id INT) PLACEMENT POLICY=t20r4_g_ok PARTITION BY RANGE(id) SUBPARTITION BY HASH(id) (PARTITION p0 VALUES LESS THAN (100) (SUBPARTITION s0 PLACEMENT POLICY=t20r4_g_missing, SUBPARTITION s1 PLACEMENT POLICY=DEFAULT));\",\"normalized_sql\":\"CREATE TABLE t2 (id INT) PLACEMENT POLICY=t20r4_g_ok PARTITION BY RANGE(id) SUBPARTITION BY HASH(id) (PARTITION p0 VALUES LESS THAN (100) (SUBPARTITION s0 PLACEMENT POLICY=t20r4_g_missing, SUBPARTITION s1 PLACEMENT POLICY=DEFAULT))\",\"findings\":[{\"rule_id\":\"ddl.tidb.placement.warn\",\"level\":\"warning\",\"message\":\"If applied, PLACEMENT POLICY \\\"t20r4_g_ok\\\" would bind table \\\"t2\\\" to a topology policy\",\"statement_kind\":\"ddl\",\"location\":{\"line\":1,\"column\":1},\"suggestion\":\"verify the placement policy's region constraints, replica counts, and PD/TiKV topology prerequisites intentionally — a bound policy reassigns the object's physical placement\",\"metadata\":{\"action\":\"create_table\",\"policy\":\"t20r4_g_ok\",\"schema\":\"t20r4_g_sub\",\"table\":\"t2\",\"target\":\"t2\",\"target_kind\":\"table\"},\"explanation\":{\"summary\":\"Warn on DDL tidb placement warn\",\"why\":\"The statement reached a caution rule that highlights an operational trade-off.\",\"risk\":\"Ignoring this rule can weaken schema-governance guarantees and make changes harder to review safely.\",\"suggestion\":\"verify the placement policy's region constraints, replica counts, and PD/TiKV topology prerequisites intentionally — a bound policy reassigns the object's physical placement\"}}],\"evidence_gaps\":[{\"rule_id\":\"ddl.tidb.placement.warn\",\"reason_code\":\"unknown_table_state\",\"required_facts\":[\"placement_policy.topology\"]}],\"coverage\":{\"status\":\"incomplete\"}}],\"unsupported\":[{\"feature\":\"tidb_subpartition\",\"sql\":\"CREATE TABLE t2 (id INT) PLACEMENT POLICY=t20r4_g_ok PARTITION BY RANGE(id) SUBPARTITION BY HASH(id) (PARTITION p0 VALUES LESS THAN (100) (SUBPARTITION s0 PLACEMENT POLICY=t20r4_g_missing, SUBPARTITION s1 PLACEMENT POLICY=DEFAULT));\",\"reason\":\"parsed by the shared parser but outside the supported statement surface for this dialect\",\"metadata\":{\"aspect\":\"partition\",\"boundary\":\"vendor\",\"native_behavior\":\"ignored\",\"native_version\":\"8.5.0\",\"native_warning\":\"8200\"}}],\"diagnostics\":[{\"classification\":\"unsupported_statement\",\"reason\":\"DeltaScope recognized this statement or feature but does not audit it yet\",\"action_hint\":\"treat this statement as not covered by DeltaScope policy checks; review it manually or track support in a future DeltaScope release\",\"audited\":false,\"dialect\":\"tidb\"}],\"version\":{\"product\":\"tidb\",\"version\":\"8.5.0\",\"major\":8,\"minor\":5,\"patch\":0,\"source\":\"observed\",\"validated_range\":true},\"fail_on_triggered\":false,\"rule_summary\":{\"loaded\":2,\"applicable\":2,\"skipped\":[]},\"context\":{\"mode\":\"metadata-aware\",\"dialect\":\"tidb\",\"dialect_source\":\"detected\",\"schema\":\"t20r4_g_sub\",\"schema_source\":\"flag\"}}\n",
+    "stderr": "",
+    "parsed": {
+      "verdict": "review",
+      "coverage": {
+        "status": "incomplete"
+      },
+      "summary": {
+        "statements": 1,
+        "blockers": 0,
+        "warnings": 1,
+        "notices": 0
+      },
+      "statements": [
+        {
+          "index": 0,
+          "kind": "ddl",
+          "raw_sql": "CREATE TABLE t2 (id INT) PLACEMENT POLICY=t20r4_g_ok PARTITION BY RANGE(id) SUBPARTITION BY HASH(id) (PARTITION p0 VALUES LESS THAN (100) (SUBPARTITION s0 PLACEMENT POLICY=t20r4_g_missing, SUBPARTITION s1 PLACEMENT POLICY=DEFAULT));",
+          "normalized_sql": "CREATE TABLE t2 (id INT) PLACEMENT POLICY=t20r4_g_ok PARTITION BY RANGE(id) SUBPARTITION BY HASH(id) (PARTITION p0 VALUES LESS THAN (100) (SUBPARTITION s0 PLACEMENT POLICY=t20r4_g_missing, SUBPARTITION s1 PLACEMENT POLICY=DEFAULT))",
+          "findings": [
+            {
+              "rule_id": "ddl.tidb.placement.warn",
+              "level": "warning",
+              "message": "If applied, PLACEMENT POLICY \"t20r4_g_ok\" would bind table \"t2\" to a topology policy",
+              "statement_kind": "ddl",
+              "location": {
+                "line": 1,
+                "column": 1
+              },
+              "suggestion": "verify the placement policy's region constraints, replica counts, and PD/TiKV topology prerequisites intentionally — a bound policy reassigns the object's physical placement",
+              "metadata": {
+                "action": "create_table",
+                "policy": "t20r4_g_ok",
+                "schema": "t20r4_g_sub",
+                "table": "t2",
+                "target": "t2",
+                "target_kind": "table"
+              },
+              "explanation": {
+                "summary": "Warn on DDL tidb placement warn",
+                "why": "The statement reached a caution rule that highlights an operational trade-off.",
+                "risk": "Ignoring this rule can weaken schema-governance guarantees and make changes harder to review safely.",
+                "suggestion": "verify the placement policy's region constraints, replica counts, and PD/TiKV topology prerequisites intentionally — a bound policy reassigns the object's physical placement"
+              }
+            }
+          ],
+          "evidence_gaps": [
+            {
+              "rule_id": "ddl.tidb.placement.warn",
+              "reason_code": "unknown_table_state",
+              "required_facts": [
+                "placement_policy.topology"
+              ]
+            }
+          ],
+          "coverage": {
+            "status": "incomplete"
+          }
+        }
+      ],
+      "unsupported": [
+        {
+          "feature": "tidb_subpartition",
+          "sql": "CREATE TABLE t2 (id INT) PLACEMENT POLICY=t20r4_g_ok PARTITION BY RANGE(id) SUBPARTITION BY HASH(id) (PARTITION p0 VALUES LESS THAN (100) (SUBPARTITION s0 PLACEMENT POLICY=t20r4_g_missing, SUBPARTITION s1 PLACEMENT POLICY=DEFAULT));",
+          "reason": "parsed by the shared parser but outside the supported statement surface for this dialect",
+          "metadata": {
+            "aspect": "partition",
+            "boundary": "vendor",
+            "native_behavior": "ignored",
+            "native_version": "8.5.0",
+            "native_warning": "8200"
+          }
+        }
+      ],
+      "diagnostics": [
+        {
+          "classification": "unsupported_statement",
+          "reason": "DeltaScope recognized this statement or feature but does not audit it yet",
+          "action_hint": "treat this statement as not covered by DeltaScope policy checks; review it manually or track support in a future DeltaScope release",
+          "audited": false,
+          "dialect": "tidb"
+        }
+      ],
+      "version": {
+        "product": "tidb",
+        "version": "8.5.0",
+        "major": 8,
+        "minor": 5,
+        "patch": 0,
+        "source": "observed",
+        "validated_range": true
+      },
+      "fail_on_triggered": false,
+      "rule_summary": {
+        "loaded": 2,
+        "applicable": 2,
+        "skipped": []
+      },
+      "context": {
+        "mode": "metadata-aware",
+        "dialect": "tidb",
+        "dialect_source": "detected",
+        "schema": "t20r4_g_sub",
+        "schema_source": "flag"
+      }
+    },
+    "version_evidence": {
+      "target_raw": null,
+      "target_canonical": null,
+      "observed_raw": "8.0.11-TiDB-v8.5.0",
+      "observed_canonical": {
+        "product": "tidb",
+        "version": "8.5.0"
+      },
+      "resolved": {
+        "product": "tidb",
+        "version": "8.5.0",
+        "major": 8,
+        "minor": 5,
+        "patch": 0,
+        "source": "observed",
+        "validated_range": true
+      }
+    }
+  },
+  "assertions": [
+    {
+      "name": "database reachable with expected version",
+      "ok": true,
+      "detail": "SELECT VERSION() rc=0 version='8.0.11-TiDB-v8.5.0' expected_contains='v8.5.0'"
+    },
+    {
+      "name": "setup create parent policy with absent child policy return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "setup create parent policy with absent child policy: child policy is absent",
+      "ok": true,
+      "detail": "rc=0 output='0' expected='0'"
+    },
+    {
+      "name": "exit code",
+      "ok": true,
+      "detail": "rc=1 expected=1"
+    },
+    {
+      "name": "verdict",
+      "ok": true,
+      "detail": "verdict='review'"
+    },
+    {
+      "name": "top-level statements",
+      "ok": true,
+      "detail": "statements=1 expected=1"
+    },
+    {
+      "name": "zero findings",
+      "ok": true,
+      "detail": "findings=1"
+    },
+    {
+      "name": "no diagnostics",
+      "ok": true,
+      "detail": "diagnostics=[{'classification': 'unsupported_statement', 'reason': 'DeltaScope recognized this statement or feature but does not audit it yet', 'action_hint': 'treat this statement as not covered by DeltaScope policy checks; review it manually or track support in a future DeltaScope release', 'audited': False, 'dialect': 'tidb'}]"
+    },
+    {
+      "name": "no unsupported",
+      "ok": true,
+      "detail": "unsupported=[{'feature': 'tidb_subpartition', 'sql': 'CREATE TABLE t2 (id INT) PLACEMENT POLICY=t20r4_g_ok PARTITION BY RANGE(id) SUBPARTITION BY HASH(id) (PARTITION p0 VALUES LESS THAN (100) (SUBPARTITION s0 PLACEMENT POLICY=t20r4_g_missing, SUBPARTITION s1 PLACEMENT POLICY=DEFAULT));', 'reason': 'parsed by the shared parser but outside the supported statement surface for this dialect', 'metadata': {'aspect': 'partition', 'boundary': 'vendor', 'native_behavior': 'ignored', 'native_version': '8.5.0', 'native_warning': '8200'}}]"
+    },
+    {
+      "name": "aggregate coverage",
+      "ok": true,
+      "detail": "coverage='incomplete'"
+    },
+    {
+      "name": "per-statement coverage",
+      "ok": true,
+      "detail": "statement_coverage=['incomplete']"
+    },
+    {
+      "name": "unsupported features",
+      "ok": true,
+      "detail": "features=['tidb_subpartition'] expected=['tidb_subpartition']"
+    },
+    {
+      "name": "unsupported sql identity index=0",
+      "ok": true,
+      "detail": "sql='CREATE TABLE t2 (id INT) PLACEMENT POLICY=t20r4_g_ok PARTITION BY RANGE(id) SUBPARTITION BY HASH(id) (PARTITION p0 VALUES LESS THAN (100) (SUBPARTITION s0 PLACEMENT POLICY=t20r4_g_missing, SUBPARTITION s1 PLACEMENT POLICY=DEFAULT));' expected='CREATE TABLE t2 (id INT) PLACEMENT POLICY=t20r4_g_ok PARTITION BY RANGE(id) SUBPARTITION BY HASH(id) (PARTITION p0 VALUES LESS THAN (100) (SUBPARTITION s0 PLACEMENT POLICY=t20r4_g_missing, SUBPARTITION s1 PLACEMENT POLICY=DEFAULT));'"
+    },
+    {
+      "name": "evidence gap count",
+      "ok": true,
+      "detail": "gaps=1"
+    },
+    {
+      "name": "evidence gap entries",
+      "ok": true,
+      "detail": "gaps=[(0, 'ddl.tidb.placement.warn', 'unknown_table_state')] expected=[(0, 'ddl.tidb.placement.warn', 'unknown_table_state')]"
+    },
+    {
+      "name": "evidence gap required_facts (0, 'ddl.tidb.placement.warn', 'unknown_table_state')",
+      "ok": true,
+      "detail": "gaps=[{'rule_id': 'ddl.tidb.placement.warn', 'reason_code': 'unknown_table_state', 'required_facts': ['placement_policy.topology']}] expected_facts=['placement_policy.topology']"
+    },
+    {
+      "name": "no gap encoded as finding",
+      "ok": true,
+      "detail": "findings carrying gap shape=[]"
+    },
+    {
+      "name": "finding entries",
+      "ok": true,
+      "detail": "findings=[(0, 'ddl.tidb.placement.warn', 'warning')] expected=[(0, 'ddl.tidb.placement.warn', 'warning')]"
+    },
+    {
+      "name": "finding metadata (0, 'ddl.tidb.placement.warn')",
+      "ok": true,
+      "detail": "findings=[{'action': 'create_table', 'policy': 't20r4_g_ok', 'schema': 't20r4_g_sub', 'table': 't2', 'target': 't2', 'target_kind': 'table'}] expected_subset={'policy': 't20r4_g_ok', 'schema': 't20r4_g_sub', 'table': 't2', 'target_kind': 'table'}"
+    },
+    {
+      "name": "fail_on_triggered",
+      "ok": true,
+      "detail": "fail_on_triggered=False"
+    },
+    {
+      "name": "post-verify audit did not create parent table",
+      "ok": true,
+      "detail": "rc=0 output='0' expected='0'"
+    },
+    {
+      "name": "execute native warns and discards unsupported child axis return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "execute native warns and discards unsupported child axis stdout marker",
+      "ok": true,
+      "detail": "8200"
+    },
+    {
+      "name": "execute native warns and discards unsupported child axis stdout marker",
+      "ok": true,
+      "detail": "Unsupported subpartitioning, only using RANGE partitioning"
+    },
+    {
+      "name": "structure table parent binding is retained",
+      "ok": true,
+      "detail": "rc=0 output='t20r4_g_ok' expected='t20r4_g_ok'"
+    },
+    {
+      "name": "structure one primary partition and no child override",
+      "ok": true,
+      "detail": "rc=0 output='p0:100::' expected='p0:100::'"
+    },
+    {
+      "name": "teardown remove owned fixture return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    }
+  ],
+  "status": "pass",
+  "command": [
+    "/private/tmp/deltascope-t20r4-6ac1e918/final-2f01f500/golden/T20/bin/deltascope",
+    "audit",
+    "--dialect",
+    "tidb",
+    "--sql",
+    "CREATE TABLE t2 (id INT) PLACEMENT POLICY=t20r4_g_ok PARTITION BY RANGE(id) SUBPARTITION BY HASH(id) (PARTITION p0 VALUES LESS THAN (100) (SUBPARTITION s0 PLACEMENT POLICY=t20r4_g_missing, SUBPARTITION s1 PLACEMENT POLICY=DEFAULT));",
+    "--config",
+    "/private/tmp/deltascope-t20r4-6ac1e918/final-2f01f500/golden/T20/golden-policy-t20-placement.yaml",
+    "--format",
+    "json",
+    "--host",
+    "127.0.0.1",
+    "--port",
+    "24000",
+    "--user",
+    "root",
+    "--schema",
+    "t20r4_g_sub",
+    "--fail-on",
+    "blocker"
+  ]
+}

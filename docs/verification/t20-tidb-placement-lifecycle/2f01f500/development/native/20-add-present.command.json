@@ -1,0 +1,19 @@
+[
+  "docker",
+  "exec",
+  "deltascope-ddl-golden-tidb85-client",
+  "mysql",
+  "--protocol=tcp",
+  "-h",
+  "tidb85",
+  "-P",
+  "4000",
+  "-uroot",
+  "--batch",
+  "--raw",
+  "--verbose",
+  "-D",
+  "t20r4_native",
+  "-e",
+  "SET SESSION tidb_placement_mode='STRICT';\n\nALTER TABLE t_add ADD PARTITION (\n PARTITION p5 VALUES LESS THAN (500) PLACEMENT POLICY=t20r4_ok);\nSHOW WARNINGS; SHOW CREATE TABLE t_add;\n"
+]

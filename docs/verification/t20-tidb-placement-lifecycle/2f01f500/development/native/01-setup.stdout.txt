@@ -1,0 +1,24 @@
+--------------
+SET SESSION tidb_placement_mode='STRICT'
+--------------
+
+--------------
+CREATE DATABASE t20r4_native
+--------------
+
+--------------
+CREATE PLACEMENT POLICY t20r4_ok FOLLOWERS=1
+--------------
+
+--------------
+CREATE PLACEMENT POLICY t20r4_old FOLLOWERS=1
+--------------
+
+--------------
+CREATE PLACEMENT POLICY t20r4_second FOLLOWERS=1
+--------------
+
+--------------
+CREATE PLACEMENT POLICY t20r4_table FOLLOWERS=1
+--------------
+

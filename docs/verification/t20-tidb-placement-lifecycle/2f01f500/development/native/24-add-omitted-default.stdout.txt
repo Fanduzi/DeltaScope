@@ -1,0 +1,28 @@
+--------------
+SET SESSION tidb_placement_mode='STRICT'
+--------------
+
+--------------
+ALTER TABLE t_add ADD PARTITION (
+ PARTITION p6 VALUES LESS THAN (600),
+ PARTITION p7 VALUES LESS THAN (700) PLACEMENT POLICY=DEFAULT)
+--------------
+
+--------------
+SHOW WARNINGS
+--------------
+
+--------------
+SHOW CREATE TABLE t_add
+--------------
+
+Table	Create Table
+t_add	CREATE TABLE `t_add` (
+  `id` int DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin /*T![placement] PLACEMENT POLICY=`t20r4_table` */
+PARTITION BY RANGE (`id`)
+(PARTITION `p0` VALUES LESS THAN (100) /*T![placement] PLACEMENT POLICY=`t20r4_old` */,
+ PARTITION `p_keep` VALUES LESS THAN (200) /*T![placement] PLACEMENT POLICY=`t20r4_old` */,
+ PARTITION `p5` VALUES LESS THAN (500) /*T![placement] PLACEMENT POLICY=`t20r4_ok` */,
+ PARTITION `p6` VALUES LESS THAN (600),
+ PARTITION `p7` VALUES LESS THAN (700))

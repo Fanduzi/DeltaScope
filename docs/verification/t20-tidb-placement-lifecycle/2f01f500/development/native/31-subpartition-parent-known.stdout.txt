@@ -1,0 +1,28 @@
+--------------
+SET SESSION tidb_placement_mode='STRICT'
+--------------
+
+--------------
+CREATE TABLE t_sub_parent (id INT) PLACEMENT POLICY=t20r4_ok
+PARTITION BY RANGE(id) SUBPARTITION BY HASH(id) (
+ PARTITION p0 VALUES LESS THAN (100) (
+  SUBPARTITION s0 PLACEMENT POLICY=t20r4_missing,
+  SUBPARTITION s1 PLACEMENT POLICY=DEFAULT))
+--------------
+
+--------------
+SHOW WARNINGS
+--------------
+
+Level	Code	Message
+Warning	8200	Unsupported subpartitioning, only using RANGE partitioning
+--------------
+SHOW CREATE TABLE t_sub_parent
+--------------
+
+Table	Create Table
+t_sub_parent	CREATE TABLE `t_sub_parent` (
+  `id` int DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin /*T![placement] PLACEMENT POLICY=`t20r4_ok` */
+PARTITION BY RANGE (`id`)
+(PARTITION `p0` VALUES LESS THAN (100))

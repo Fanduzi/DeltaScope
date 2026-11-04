@@ -1,0 +1,975 @@
+--- /tmp/deltascope-t20r4-6ac1e918/rework-product-review.diff	2026-11-04 23:44:00
++++ /tmp/deltascope-t20r4-6ac1e918/final-product-review.diff	2026-11-05 00:18:33
+@@ -1,26 +1,31 @@
+ diff --git a/internal/application/audit/README.md b/internal/application/audit/README.md
+-index 1f02e4fe..a3e9525f 100644
++index 1f02e4fe..48cad3db 100644
+ --- a/internal/application/audit/README.md
+ +++ b/internal/application/audit/README.md
+-@@ -12,7 +12,7 @@ Application orchestration for parsing and, later, evaluating SQL audit requests.
++@@ -12,10 +12,11 @@ Application orchestration for parsing and, later, evaluating SQL audit requests.
+  | batch_state_t18r1tail_test.go | Verifies T18-R1-tail view-state corrections: TEMPTABLE/non-updatable proof publication controls and unresolved ALTER algorithm branch merging |
+  | batch_state_t18r1tail2_test.go | Verifies T18-R1-tail2 `Updatable` combination: mixed and source-view components, direct-field contribution, catalog fact precedence, unknown dependency withholding, and the narrowed global physical-table reuse boundary |
+  | batch_state_ttl.go | Applies the TiDB TTL ordered-state outcome shared by CREATE/ALTER: proven native refusals preserve exact pre-state, proven executions publish only modeled TTL members, and unproven prerequisite chains invalidate only affected facts; TTL prerequisite order follows TiDB `checkTTLInfoValid` (temporary target, interval evaluability, common-handle member legality, inbound-FK proof, then time-column legality) |
+ -| batch_state_placement.go | Applies the TiDB placement-policy ordered state (issue #99 T20): seeds the policy registry from the provider catalog (nil catalog = unvouched; a nil `BoundTargets` read keeps the bound set unvouched — never laundered into proven-empty), maintains inbound `BoundTargets` on bind/unbind/drop/rename with exact identity matching, refuses proven bound-policy drops and missing-policy binds, keeps unproven premises withheld rather than partially applied, and preserves exact pre-state on MySQL vendor refusals |
+-+| batch_state_placement.go | Applies the TiDB placement-policy ordered state (issue #99 T20, reworked T20-R4): seeds the policy registry from the provider catalog (nil catalog = unvouched; a nil `BoundTargets` read keeps the bound set unvouched — never laundered into proven-empty), maintains inbound `BoundTargets` on bind/unbind/drop/rename with exact identity matching, refuses proven bound-policy drops and missing-policy binds, keeps unproven premises withheld rather than partially applied, and preserves exact pre-state on MySQL vendor refusals |
+++| batch_state_placement.go | Applies the TiDB placement-policy ordered state (issue #99 T20, reworked T20-R4): seeds the policy registry; ref sets follow positive-subset semantics — each recorded identity is individually proven and a nonempty incomplete set still refuses DROP while `refsKnown=false` never authorizes proven-empty from the provider catalog (nil catalog = unvouched; a nil `BoundTargets` read keeps the bound set unvouched — never laundered into proven-empty), maintains inbound `BoundTargets` on bind/unbind/drop/rename with exact identity matching, refuses proven bound-policy drops and missing-policy binds, keeps unproven premises withheld rather than partially applied, and preserves exact pre-state on MySQL vendor refusals |
+  | batch_state_t19_test.go | Verifies the public `AuditSQL` TTL contract, including provider snapshots, warning behavior, and non-aliasing ordered state |
+  | batch_state_t19_state_test.go | Verifies the T19 ordered lifecycle matrix: refused/applied/unproven outcomes, prerequisite ordering, atomic mixed-action refusal, provider-proven reverse edges, and preservation of unrelated facts |
+  | batch_state_t20r2_test.go | Verifies the T20-R2 corrections (issue #99): the MySQL `/*T!` comment-blanking matrix (ignored policy-reference/direct-option/comment-only-alter forms, untouched strings/`/*!`/`/*+`/positions, surviving bare-form vendor boundary, TiDB-side binding parity), the ALTER DATABASE partial-apply matrix (charset lands before a missing-policy 8239 in either SQL option order, prior binding survives a failed rebind, unvouched bind invalidates only the placement dimension, CREATE stays atomic), and the placement privacy sentinel marshal check |
+++| batch_state_t20r4_test.go | Permanent T20-R4 reconstructed regression tests (issue #99): the reconstructed B1/B2 red suite — missing policies on later CREATE member defs and ALTER ADD/REORGANIZE member defs now produce per-occurrence blockers, atomic refusal preserves the exact pre-state and ref sets — plus the rework distinguishing matrix: unknown-aggregate DROP non-authorization, unknown-target retirement, unread binding-map drop, T14 static-fact attribution, lifecycle-unvouched gaps, PARTITION BY scheme publish, RANGE rebinds, positive-subset rename chains, source location/identity, collector positional matrix, subpartition aspect boundary incl. MySQL control, and provider fail-loud sentinels |
++ | batch_state_t20r3_test.go | Verifies the T20-R3 contract corrections (issue #99): a proven applied bind/policy-ALTER carries a structured `placement_policy.topology` evidence gap under `ddl.tidb.placement.warn` while no topology facts are loaded (unverified, never implied deployability); `ddl.tidb.placement.exists.require` independently owns the catalog premise — proven-absent policy references and proven-bound drops block (8239/8241 parity), unvouched catalog/bound-target facts gap per premise, IF EXISTS/OR REPLACE disarmed forms and DEFAULT unbinds stay silent, disabled warn never suppresses the refusal, and provider catalog errors stay fail-loud |
++ | parse.go | Normalizes one leading UTF-8 BOM, parses bounded top-level statement slices independently by dialect, and translates successful locations from each slice so failed text cannot capture a valid sibling's source match |
++ | statement_boundary.go | Splits top-level SQL only at semicolons outside supported dialect strings, quoted identifiers, comments, and PostgreSQL dollar-quoted bodies (including Unicode identifier tags) while distinguishing dollar signs inside unquoted identifiers; it does not infer statement semantics |
+ diff --git a/internal/application/audit/batch_state.go b/internal/application/audit/batch_state.go
+-index f24423e9..f4619e22 100644
++index f24423e9..080ace2a 100644
+ --- a/internal/application/audit/batch_state.go
+ +++ b/internal/application/audit/batch_state.go
+-@@ -317,6 +317,16 @@ func (s *batchState) apply(ctx context.Context, statement spec.Statement) error
++@@ -317,6 +317,17 @@ func (s *batchState) apply(ctx context.Context, statement spec.Statement) error
+  	if statement.DDL != nil && statement.DDL.Operation == spec.DDLOperationDropTable {
+  		return s.applyDropTable(ctx, statement)
+  	}
+ +	if s.dialect == spec.DialectTiDB && statement.Unsupported == nil &&
+ +		statement.DDL != nil && statement.DDL.Operation == spec.DDLOperationCreateTable &&
+++		statement.DDL.PartitionType == "range" &&
+ +		spec.HasSubpartitionDeclaration(statement.DDL) && isTiDB85(s.resolvedVersion) {
+ +		// The verified TiDB 8.5.0 CREATE TABLE RANGE shape: the ignored
+ +		// subpartition axis is a bounded aspect boundary, so the normal
+@@ -32,7 +37,7 @@
+  	if statement.Unsupported != nil {
+  		if statement.DDL != nil && statement.DDL.View != nil &&
+  			statement.Unsupported.Reason == spec.UnsupportedVendorBoundaryReason {
+-@@ -645,6 +655,7 @@ func (s *batchState) applyCreateTable(ctx context.Context, statement spec.Statem
++@@ -645,6 +656,7 @@ func (s *batchState) applyCreateTable(ctx context.Context, statement spec.Statem
+  		return nil
+  	}
+  	if temporaryClauseVendorRefused(s.dialect, ddl) {
+@@ -40,7 +45,7 @@
+  		return nil
+  	}
+  	dest := targets[0]
+-@@ -656,21 +667,44 @@ func (s *batchState) applyCreateTable(ctx context.Context, statement spec.Statem
++@@ -656,21 +668,53 @@ func (s *batchState) applyCreateTable(ctx context.Context, statement spec.Statem
+  	if tempDest {
+  		dstMap = s.tempEntries
+  	}
+@@ -54,6 +59,15 @@
+ +	if facts != nil {
+ +		bindingOutcome = facts.Outcome
+ +	}
+++	// An unproven mutation may still have bound named policies — mark
+++	// every candidate's reference set non-exhaustive so a later DROP
+++	// cannot read a stale proven-empty arm (T20-R4).
+++	finish := func(outcome spec.PlacementOutcome, needed ...string) {
+++		setPlacementMutationOutcome(statement, outcome, needed...)
+++		if outcome == spec.PlacementUnproven {
+++			s.placementMayAddBindingRefs(facts)
+++		}
+++	}
+ +	if bindingOutcome == spec.PlacementRefused {
+ +		setPlacementMutationOutcome(statement, spec.PlacementRefused)
+ +		return nil
+@@ -65,104 +79,104 @@
+ +	}
+  	if !createAspectAdmissible(s.dialect, statement) {
+  		s.invalidateBoundKey(key, destNamespace(tempDest))
+-+		setPlacementMutationOutcome(statement, spec.PlacementUnproven)
+++		finish(spec.PlacementUnproven)
+  		return nil
+  	}
+  	switch createTTLStatementOutcome(s.dialect, ddl) {
+  	case ttlCreateRefused:
+-+		setPlacementMutationOutcome(statement, spec.PlacementRefused)
+++		finish(spec.PlacementRefused)
+  		return nil
+  	case ttlCreateUnproven:
+  		s.invalidateBoundKey(key, destNamespace(tempDest))
+-+		setPlacementMutationOutcome(statement, spec.PlacementUnproven)
+++		finish(spec.PlacementUnproven)
+  		return nil
+  	}
+  	// A provably-absent schema refuses every create under it (1049): the
+  	// destination keeps its proven pre-state instead of publishing a shape
+  	// the engine never built.
+  	if s.schemaStateForTarget(key.schema) == schemaAbsent {
+-+		setPlacementMutationOutcome(statement, spec.PlacementRefused)
+++		finish(spec.PlacementRefused)
+  		return nil
+  	}
+  	var entry *batchTableEntry
+-@@ -690,14 +724,17 @@ func (s *batchState) applyCreateTable(ctx context.Context, statement spec.Statem
++@@ -690,14 +734,17 @@ func (s *batchState) applyCreateTable(ctx context.Context, statement spec.Statem
+  	// either way the bound fact stands. An unvouched temp slot stays
+  	// tombstoned (the session slot cannot be recovered conservatively).
+  	if entryState == tablePresent {
+-+		setPlacementMutationOutcome(statement, spec.PlacementRefused)
+++		finish(spec.PlacementRefused)
+  		return nil
+  	}
+  	if s.schemaStateForTarget(key.schema) == schemaUnknown {
+  		s.invalidateBoundKey(key, destNamespace(tempDest))
+-+		setPlacementMutationOutcome(statement, spec.PlacementUnproven, "schema.existence")
+++		finish(spec.PlacementUnproven, "schema.existence")
+  		return nil
+  	}
+  	if tempDest {
+  		if entryState == tableUnknown {
+-+			setPlacementMutationOutcome(statement, spec.PlacementUnproven)
+++			finish(spec.PlacementUnproven)
+  			return nil
+  		}
+  		// Temp destinations cannot carry foreign keys or partitions
+-@@ -706,6 +743,7 @@ func (s *batchState) applyCreateTable(ctx context.Context, statement spec.Statem
++@@ -706,6 +753,7 @@ func (s *batchState) applyCreateTable(ctx context.Context, statement spec.Statem
+  		// a shape the engine may have refused.
+  		if hasDeclaredForeignKey(ddl) || ddl.HasPartition {
+  			s.invalidateTempKey(key)
+-+			setPlacementMutationOutcome(statement, spec.PlacementUnproven)
+++			finish(spec.PlacementUnproven)
+  			return nil
+  		}
+  		shape, outcome, err := s.createDestShape(ctx, statement, displaySchema, displayTable)
+-@@ -714,11 +752,14 @@ func (s *batchState) applyCreateTable(ctx context.Context, statement spec.Statem
++@@ -714,11 +762,14 @@ func (s *batchState) applyCreateTable(ctx context.Context, statement spec.Statem
+  		}
+  		switch outcome {
+  		case createShapeRefused:
+-+			setPlacementMutationOutcome(statement, spec.PlacementRefused)
+++			finish(spec.PlacementRefused)
+  			return nil
+  		case createShapeUnproven:
+  			s.invalidateTempKey(key)
+-+			setPlacementMutationOutcome(statement, spec.PlacementUnproven)
+++			finish(spec.PlacementUnproven)
+  			return nil
+  		}
+-+		setPlacementMutationOutcome(statement, spec.PlacementApplied)
+++		finish(spec.PlacementApplied)
+  		dstMap[key] = &batchTableEntry{state: tablePresent, shape: shape, displaySchema: displaySchema, displayTable: displayTable}
+  		return nil
+  	}
+-@@ -738,9 +779,11 @@ func (s *batchState) applyCreateTable(ctx context.Context, statement spec.Statem
++@@ -738,9 +789,11 @@ func (s *batchState) applyCreateTable(ctx context.Context, statement spec.Statem
+  		}
+  		if !decided {
+  			s.invalidateKey(key)
+-+			setPlacementMutationOutcome(statement, spec.PlacementUnproven)
+++			finish(spec.PlacementUnproven)
+  			return nil
+  		}
+  		if refused {
+-+			setPlacementMutationOutcome(statement, spec.PlacementRefused)
+++			finish(spec.PlacementRefused)
+  			return nil
+  		}
+  	}
+-@@ -751,6 +794,7 @@ func (s *batchState) applyCreateTable(ctx context.Context, statement spec.Statem
++@@ -751,6 +804,7 @@ func (s *batchState) applyCreateTable(ctx context.Context, statement spec.Statem
+  	arm := s.checkArmFor()
+  	for _, member := range ddl.Constraints {
+  		if spec.CheckExplicitClauseRefused(s.dialect, arm, member) {
+-+			setPlacementMutationOutcome(statement, spec.PlacementRefused)
+++			finish(spec.PlacementRefused)
+  			return nil
+  		}
+  		if member.Type == "check" && member.EnforcedUnproven &&
+-@@ -759,6 +803,7 @@ func (s *batchState) applyCreateTable(ctx context.Context, statement spec.Statem
++@@ -759,6 +813,7 @@ func (s *batchState) applyCreateTable(ctx context.Context, statement spec.Statem
+  			// have refused 1064 or landed the table — existence is
+  			// undecidable, so the entry is unvouched rather than published.
+  			s.invalidateKey(key)
+-+			setPlacementMutationOutcome(statement, spec.PlacementUnproven)
+++			finish(spec.PlacementUnproven)
+  			return nil
+  		}
+  	}
+-@@ -769,47 +814,31 @@ func (s *batchState) applyCreateTable(ctx context.Context, statement spec.Statem
++@@ -769,47 +824,31 @@ func (s *batchState) applyCreateTable(ctx context.Context, statement spec.Statem
+  		if ddl.HasPartition {
+  			switch partitionSchemeOutcome(ddl.PartitionType, ddl.PartitionDefs, ddl.PartitionCount) {
+  			case partitionOutcomeRefused:
+-+				setPlacementMutationOutcome(statement, spec.PlacementRefused)
+++				finish(spec.PlacementRefused)
+  				return nil
+  			case partitionOutcomeUnproven:
+  				s.invalidateKey(key)
+-+				setPlacementMutationOutcome(statement, spec.PlacementUnproven, "statement.partition_defs")
+++				finish(spec.PlacementUnproven, "statement.partition_defs")
+  				return nil
+  			}
+  		}
+@@ -205,40 +219,40 @@
+ -		case spec.PlacementUnproven:
+ -			s.invalidateBoundKey(key, destNamespace(tempDest))
+ +		if ddl.PlacementBinding != nil {
+-+			setPlacementMutationOutcome(statement, spec.PlacementRefused)
+++			finish(spec.PlacementRefused)
+  			return nil
+  		}
+ +	} else if bindingOutcome == spec.PlacementUnproven {
+ +		s.invalidateBoundKey(key, destNamespace(tempDest))
+-+		setPlacementMutationOutcome(statement, spec.PlacementUnproven, "placement_policy.catalog")
+++		finish(spec.PlacementUnproven, "placement_policy.catalog")
+ +		return nil
+  	}
+  	shape, outcome, err := s.createDestShape(ctx, statement, displaySchema, displayTable)
+  	if err != nil {
+-@@ -817,12 +846,14 @@ func (s *batchState) applyCreateTable(ctx context.Context, statement spec.Statem
++@@ -817,12 +856,14 @@ func (s *batchState) applyCreateTable(ctx context.Context, statement spec.Statem
+  	}
+  	switch outcome {
+  	case createShapeRefused:
+-+		setPlacementMutationOutcome(statement, spec.PlacementRefused)
+++		finish(spec.PlacementRefused)
+  		return nil
+  	case createShapeUnproven:
+  		// A withheld member set can still carry conditional existence:
+  		// IF NOT EXISTS on an unvouched destination proves presence only;
+  		// a LIKE/CTAS whose source premise stayed unproven leaves the
+  		// destination tombstoned — the create may never have run.
+-+		setPlacementMutationOutcome(statement, spec.PlacementUnproven)
+++		finish(spec.PlacementUnproven)
+  		if ifNotExists && !ddl.HasReferTable && !ddl.HasSelect {
+  			s.entries[key] = presentIncompleteEntry(displaySchema, displayTable)
+  			return nil
+-@@ -834,6 +865,7 @@ func (s *batchState) applyCreateTable(ctx context.Context, statement spec.Statem
++@@ -834,6 +875,7 @@ func (s *batchState) applyCreateTable(ctx context.Context, statement spec.Statem
+  		// IF NOT EXISTS on an unvouched destination can only prove
+  		// existence — either the pre-existing table stood or the create
+  		// landed; the member set differs between those outcomes.
+-+		setPlacementMutationOutcome(statement, spec.PlacementUnproven)
+++		finish(spec.PlacementUnproven)
+  		s.entries[key] = presentIncompleteEntry(displaySchema, displayTable)
+  		return nil
+  	}
+-@@ -858,19 +890,27 @@ func (s *batchState) applyCreateTable(ctx context.Context, statement spec.Statem
++@@ -858,19 +900,34 @@ func (s *batchState) applyCreateTable(ctx context.Context, statement spec.Statem
+  			}
+  		}
+  	}
+@@ -248,30 +262,41 @@
+ -	for i := range ddl.PartitionDefs {
+ -		def := &ddl.PartitionDefs[i]
+ -		if def.Placement != nil && !def.Placement.Default && shape != nil {
++-			if shape.PartitionPlacements == nil {
++-				shape.PartitionPlacements = map[string]string{}
+ +	// Omitted and DEFAULT members carry a known-empty explicit override;
+ +	// they inherit the table binding effectively without a fabricated
+ +	// reference (T20-R4).
+ +	if shape != nil {
+-+		for i := range ddl.PartitionDefs {
+-+			def := &ddl.PartitionDefs[i]
+-+			member := strings.ToLower(def.Name)
+- 			if shape.PartitionPlacements == nil {
+- 				shape.PartitionPlacements = map[string]string{}
+++		if len(ddl.PartitionDefs) > 0 && shape.PartitionPlacements == nil {
+++			shape.PartitionPlacements = map[string]string{}
+++		}
+++		for _, def := range ddl.PartitionDefs {
+++			shape.PartitionPlacements[strings.ToLower(def.Name)] = ""
+++		}
+++		if facts != nil {
+++			for _, item := range facts.Bindings {
+++				target := item.Target
+++				if target.ActionIndex != -1 || target.Source != "member_definition" ||
+++					target.TargetKind != "partition" || item.Outcome != spec.PlacementApplied {
+++					continue
+++				}
+++				name := strings.ToLower(target.Partition)
+++				if !target.Binding.Default {
+++					shape.PartitionPlacements[name] = target.Binding.Policy
+++					s.placementAddRef(target.Binding.Policy, placementPartitionRef(displaySchema, displayTable, name))
+++				}
+  			}
+ -			member := strings.ToLower(def.Name)
+-+			if def.Placement == nil || def.Placement.Default {
+-+				shape.PartitionPlacements[member] = ""
+-+				continue
+-+			}
+- 			shape.PartitionPlacements[member] = def.Placement.Policy
+- 			s.placementAddRef(def.Placement.Policy, placementPartitionRef(displaySchema, displayTable, member))
++-			shape.PartitionPlacements[member] = def.Placement.Policy
++-			s.placementAddRef(def.Placement.Policy, placementPartitionRef(displaySchema, displayTable, member))
+  		}
+  	}
+-+	setPlacementMutationOutcome(statement, spec.PlacementApplied)
+++	finish(spec.PlacementApplied)
+  	s.entries[key] = &batchTableEntry{
+  		state:         tablePresent,
+  		shape:         shape,
+-@@ -1415,6 +1455,7 @@ func (s *batchState) applyAlterTable(ctx context.Context, statement spec.Stateme
++@@ -1415,6 +1472,7 @@ func (s *batchState) applyAlterTable(ctx context.Context, statement spec.Stateme
+  	// exact pre-state on every bound fact (T20-R1/#99).
+  	if s.dialect == spec.DialectTiDB && len(ddl.Alter) > 1 &&
+  		alterStatementHasPlacement(ddl) && alterPlacementMultiChange(ddl) {
+@@ -279,7 +304,7 @@
+  		return nil
+  	}
+  	// In the remaining combinable form (placement + modifiers only), the
+-@@ -1425,9 +1466,11 @@ func (s *batchState) applyAlterTable(ctx context.Context, statement spec.Stateme
++@@ -1425,9 +1483,11 @@ func (s *batchState) applyAlterTable(ctx context.Context, statement spec.Stateme
+  	if len(ddl.Alter) > 1 && alterStatementHasPlacement(ddl) {
+  		switch s.placementPremiseOutcome(ddl) {
+  		case spec.PlacementRefused:
+@@ -291,7 +316,7 @@
+  			return nil
+  		}
+  	}
+-@@ -1442,6 +1485,7 @@ func (s *batchState) applyAlterTable(ctx context.Context, statement spec.Stateme
++@@ -1442,6 +1502,7 @@ func (s *batchState) applyAlterTable(ctx context.Context, statement spec.Stateme
+  	if len(ddl.Alter) > 1 && hasPartitionAlterAction(ddl) {
+  		switch s.partitionMixedOutcome(ddl) {
+  		case partitionOutcomeRefused:
+@@ -299,7 +324,7 @@
+  			return nil
+  		case partitionOutcomeCombinable:
+  			var partitionAlter *spec.Alter
+-@@ -1451,10 +1495,11 @@ func (s *batchState) applyAlterTable(ctx context.Context, statement spec.Stateme
++@@ -1451,10 +1512,11 @@ func (s *batchState) applyAlterTable(ctx context.Context, statement spec.Stateme
+  					break
+  				}
+  			}
+@@ -312,7 +337,7 @@
+  			return nil
+  		}
+  	}
+-@@ -1506,7 +1551,7 @@ func (s *batchState) applyAlterTable(ctx context.Context, statement spec.Stateme
++@@ -1506,7 +1568,7 @@ func (s *batchState) applyAlterTable(ctx context.Context, statement spec.Stateme
+  	// Every other aspect keeps the statement fail-closed.
+  	if len(ddl.Alter) == 1 && len(targets) > 0 && isPartitionAlterAction(ddl.Alter[0].Action) &&
+  		partitionStateAdmissible(s.dialect, statement) {
+@@ -321,7 +346,7 @@
+  		return nil
+  	}
+  	if !fullyAuditedStatement(s.dialect, statement) || len(ddl.Alter) != 1 || len(targets) == 0 {
+-@@ -1596,7 +1641,7 @@ func (s *batchState) applyAlterTable(ctx context.Context, statement spec.Stateme
++@@ -1596,7 +1658,7 @@ func (s *batchState) applyAlterTable(ctx context.Context, statement spec.Stateme
+  		return nil
+  	}
+  	if isPartitionAlterAction(alter.Action) {
+@@ -331,7 +356,7 @@
+  	}
+  	if alter.Action != "add_columns" || alter.Column == nil || alter.Column.Definition == nil {
+ diff --git a/internal/application/audit/batch_state_placement.go b/internal/application/audit/batch_state_placement.go
+-index 16747d4e..1f201953 100644
++index 16747d4e..ce87c92a 100644
+ --- a/internal/application/audit/batch_state_placement.go
+ +++ b/internal/application/audit/batch_state_placement.go
+ @@ -24,21 +24,15 @@ func statementsNeedPlacementCatalog(statements []spec.Statement) bool {
+@@ -454,7 +479,7 @@
+  		for ref := range entry.refs {
+  			if strings.HasPrefix(ref, prefix) {
+  				delete(entry.refs, ref)
+-@@ -297,6 +311,38 @@ func (s *batchState) placementRefsUnder(prefix string) {
++@@ -297,6 +311,57 @@ func (s *batchState) placementRefsUnder(prefix string) {
+  	}
+  }
+  
+@@ -490,10 +515,95 @@
+ +	}
+ +}
+ +
+++// placementMayAddBindingRefs marks every named binding policy's reference
+++// set non-exhaustive — the undecided operation may have bound any of them.
+++// Known positives are never touched; an empty set under a marked flag
+++// authorizes nothing (T20-R4).
+++func (s *batchState) placementMayAddBindingRefs(facts *spec.PlacementFacts) {
+++	if facts == nil {
+++		return
+++	}
+++	for _, item := range facts.Bindings {
+++		if item.Target.Binding.Default {
+++			continue
+++		}
+++		name := strings.ToLower(strings.TrimSpace(item.Target.Binding.Policy))
+++		if entry := s.placementPolicies()[name]; entry != nil {
+++			entry.refsKnown = false
+++		}
+++	}
+++}
+++
+  // applyPlacementStatement dispatches the four placement lifecycle
+  // operations. Policy objects are schema-independent identities.
+  func (s *batchState) applyPlacementStatement(statement spec.Statement) error {
+-@@ -514,20 +560,29 @@ func (s *batchState) applyPlacementBindToShape(shape *spec.TableSnapshot, bindin
++@@ -439,28 +504,46 @@ func (s *batchState) applyAlterRangePlacement(statement spec.Statement) {
++ 		}
++ 		binding := ddl.PlacementBinding
++ 		rangeName := strings.ToLower(strings.TrimSpace(ddl.PlacementRange))
+++		rangeRef := placementRangeRef(rangeName)
++ 		if binding == nil {
++ 			s.rangePlacements[rangeName] = ""
++ 			return
++ 		}
++ 		if binding.Default {
++-			old := s.rangePlacements[rangeName]
+++			// A proven DEFAULT dissolves the range's exact reference on
+++			// every policy — including a stale positive in a
+++			// non-exhaustive set (T20-R4).
++ 			s.rangePlacements[rangeName] = ""
++-			if old != "" {
++-				s.placementRemoveRef(old, placementRangeRef(rangeName))
++-			}
+++			s.placementRemoveTargetRef(rangeRef)
++ 			return
++ 		}
++-		exists := s.placementPolicyExists(binding.Policy)
++-		switch spec.PlacementBindOutcome(s.dialect, *binding, exists) {
+++		var outcome spec.PlacementOutcome
+++		found := false
+++		if facts := s.placementFacts(statement); facts != nil {
+++			for _, item := range facts.Bindings {
+++				if item.Target.TargetKind == "range" {
+++					outcome = item.Outcome
+++					found = true
+++					break
+++				}
+++			}
+++		}
+++		if !found {
+++			exists := s.placementPolicyExists(binding.Policy)
+++			outcome = spec.PlacementBindOutcome(s.dialect, *binding, exists)
+++		}
+++		switch outcome {
++ 		case spec.PlacementApplied:
++-			old := s.rangePlacements[rangeName]
+++			// A proven bind moves the exact ref: dissolve it on every
+++			// policy, then add it to the named one.
+++			s.placementRemoveTargetRef(rangeRef)
++ 			s.rangePlacements[rangeName] = binding.Policy
++-			if old != "" && old != binding.Policy {
++-				s.placementRemoveRef(old, placementRangeRef(rangeName))
++-			}
++-			s.placementAddRef(binding.Policy, placementRangeRef(rangeName))
+++			s.placementAddRef(binding.Policy, rangeRef)
++ 		case spec.PlacementUnproven:
+++			// The bind may have landed or not — revoke the stale ref's
+++			// proof and mark the candidate's completeness unknown
+++			// without losing other proven range refs (T20-R4).
+++			s.placementMayChangeTargetRef(rangeRef, binding.Policy)
++ 			delete(s.rangePlacements, rangeName)
++ 		}
++ 	case spec.PlacementRefused:
++@@ -507,27 +590,34 @@ func (s *batchState) applyPlacementBind(alter *spec.Alter, schema string, target
++ // Reports whether the shape changed.
++ func (s *batchState) applyPlacementBindToShape(shape *spec.TableSnapshot, binding spec.PlacementBinding, partitions []string, ref string) bool {
++ 	if len(partitions) == 0 {
++-		old, known := shape.PlacementPolicy, shape.PlacementPolicyKnown
+++		old := shape.PlacementPolicy
++ 		outcome := spec.PlacementBindOutcome(s.dialect, binding, s.placementPolicyExists(binding.Policy))
++ 		switch outcome {
++ 		case spec.PlacementApplied:
+  			if binding.Default {
+  				shape.PlacementPolicy = ""
+  				shape.PlacementPolicyKnown = true
+@@ -514,8 +624,6 @@
+ +			if !binding.Default {
+  				s.placementAddRef(binding.Policy, ref)
+  			}
+-+			_ = old
+-+			_ = known
+  			return true
+  		case spec.PlacementUnproven:
+ +			// The bind may have landed on either arm — revoke the old
+@@ -529,7 +637,7 @@
+  			return true
+  		default:
+  			return false
+-@@ -536,9 +591,10 @@ func (s *batchState) applyPlacementBindToShape(shape *spec.TableSnapshot, bindin
++@@ -536,9 +626,10 @@ func (s *batchState) applyPlacementBindToShape(shape *spec.TableSnapshot, bindin
+  	changed := false
+  	for _, member := range partitions {
+  		memberName := strings.ToLower(member)
+@@ -542,7 +650,7 @@
+  		}
+  		partRef := "partition:" + ref + "." + memberName
+  		outcome := spec.PlacementBindOutcome(s.dialect, binding, s.placementPolicyExists(binding.Policy))
+-@@ -547,23 +603,33 @@ func (s *batchState) applyPlacementBindToShape(shape *spec.TableSnapshot, bindin
++@@ -547,23 +638,31 @@ func (s *batchState) applyPlacementBindToShape(shape *spec.TableSnapshot, bindin
+  			if shape.PartitionPlacements == nil {
+  				shape.PartitionPlacements = map[string]string{}
+  			}
+@@ -563,8 +671,6 @@
+ -				}
+  				s.placementAddRef(binding.Policy, partRef)
+  			}
+-+			_ = memberOld
+-+			_ = memberKnown
+  			changed = true
+  		case spec.PlacementUnproven:
+ +			// The member's own override may have changed or stayed —
+@@ -585,7 +691,7 @@
+  			}
+  		}
+  	}
+-@@ -585,15 +651,16 @@ func (s *batchState) placementTableMayDropRefs(displaySchema, name string) {
++@@ -585,15 +684,16 @@ func (s *batchState) placementTableMayDropRefs(displaySchema, name string) {
+  	tableRef := "table:" + full
+  	partPrefix := "partition:" + full + "."
+  	for _, entry := range s.placements {
+@@ -607,7 +713,7 @@
+  	}
+  }
+  
+-@@ -624,15 +691,16 @@ func (s *batchState) placementSchemaMayDropRefs(name string) {
++@@ -624,15 +724,16 @@ func (s *batchState) placementSchemaMayDropRefs(name string) {
+  	tablePrefix := "table:" + name + "."
+  	partPrefix := "partition:" + name + "."
+  	for _, entry := range s.placements {
+@@ -629,7 +735,7 @@
+  	}
+  }
+  
+-@@ -644,9 +712,6 @@ func (s *batchState) placementRekeyTableRef(oldFull, newFull string) {
++@@ -644,9 +745,6 @@ func (s *batchState) placementRekeyTableRef(oldFull, newFull string) {
+  	oldTable := "table:" + oldFull
+  	oldPart := "partition:" + oldFull + "."
+  	for _, entry := range s.placements {
+@@ -639,7 +745,7 @@
+  		for ref := range entry.refs {
+  			switch {
+  			case ref == oldTable:
+-@@ -678,7 +743,7 @@ func (s *batchState) declaredPlacementPolicyExists(ddl *spec.DDL) *bool {
++@@ -678,7 +776,7 @@ func (s *batchState) declaredPlacementPolicyExists(ddl *spec.DDL) *bool {
+  func (s *batchState) placementSchemaRefSync(schema, newPolicy string) {
+  	ref := placementSchemaRef(schema)
+  	for name, entry := range s.placements {
+@@ -648,7 +754,7 @@
+  			continue
+  		}
+  		delete(entry.refs, ref)
+-@@ -695,23 +760,11 @@ func (s *batchState) placementSchemaRefSync(schema, newPolicy string) {
++@@ -695,23 +793,11 @@ func (s *batchState) placementSchemaRefSync(schema, newPolicy string) {
+  // a policy can carry the reference even when the schema's own attr
+  // projection never vouched the name (T20-R1/#99).
+  func (s *batchState) placementSchemaRefUnvouch(schema, oldPolicy, declaredPolicy string) {
+@@ -677,7 +783,7 @@
+  }
+  
+  // entryDisplaySchema resolves the schema a table entry binds under for
+-@@ -758,22 +811,136 @@ func alterPlacementMultiChange(ddl *spec.DDL) bool {
++@@ -758,22 +844,137 @@ func alterPlacementMultiChange(ddl *spec.DDL) bool {
+  // placementPremiseOutcome evaluates the policy-existence premise of every
+  // placement spec in one ALTER. refused wins, then unproven.
+  func (s *batchState) placementPremiseOutcome(ddl *spec.DDL) spec.PlacementOutcome {
+@@ -699,7 +805,7 @@
+ +	return facts.Outcome
+ +}
+ +
+-+// isPlacementPolicyLifecycle reports the four policy-object lifecycle
+++// isPlacementPolicyLifecycle reports the three policy-object lifecycle
+ +// operations whose target premise is carried per-statement.
+ +func isPlacementPolicyLifecycle(ddl *spec.DDL) bool {
+ +	if ddl == nil {
+@@ -771,7 +877,8 @@
+ +	}
+ +	for i := range facts.Bindings {
+ +		target := &facts.Bindings[i].Target
+-+		if target.Schema == "" {
+++		// RANGE targets are global/meta, never schema-owned.
+++		if target.Schema == "" && target.TargetKind != "range" {
+ +			target.Schema = effectiveSchema
+ +		}
+ +		if target.TargetKind == "schema" && target.Target == "" {
+@@ -877,10 +984,10 @@
+  			if enriched[i].Metadata == nil {
+  				enriched[i].Metadata = &spec.Metadata{Schema: requestSchema, Instance: instanceFacts, Version: resolvedVersion}
+ diff --git a/internal/application/audit/partition_transitions.go b/internal/application/audit/partition_transitions.go
+-index 00386d3e..ddc48d33 100644
++index 00386d3e..fa339f6c 100644
+ --- a/internal/application/audit/partition_transitions.go
+ +++ b/internal/application/audit/partition_transitions.go
+-@@ -77,22 +77,257 @@ func unvouchPartitioning(shape *spec.TableSnapshot) {
++@@ -77,22 +77,275 @@ func unvouchPartitioning(shape *spec.TableSnapshot) {
+  // outcome — partitions never add/remove/rename columns, indexes, or
+  // constraints — while the member directory and the data-derived statistics
+  // follow each action's evidence-bounded transition.
+@@ -910,11 +1017,17 @@
+ +				continue
+ +			}
+ +			// An unresolvable/unknown target stays unknown: each named
+-+			// member policy may have gained a ref, so its set is marked
+-+			// non-exhaustive without inserting positives, and the
+-+			// mutation owes target existence rather than claiming a
+-+			// landed or refused outcome.
+-+			s.placementRefCompletenessUndecided(alter, facts, "", "")
+++			// member policy may have gained a ref and (for REORG) the
+++			// source members' refs may have retired, so exact identities
+++			// are revoked under the resolved schema/table — a nil
+++			// snapshot is never a proven-absent table (T20-R4).
+++			displaySchema := s.schema
+++			if ok && entry != nil {
+++				displaySchema = entryDisplaySchema(entry, s.schema, target)
+++			} else if target.Schema != "" {
+++				displaySchema = target.Schema
+++			}
+++			s.placementRefCompletenessUndecided(alter, facts, displaySchema, target.Name)
+ +			setPlacementMutationOutcome(statement, spec.PlacementUnproven, "target_table.existence")
+  			continue
+  		}
+@@ -987,6 +1100,10 @@
+ +	if facts != nil {
+ +		for _, binding := range facts.Bindings {
+ +			target := binding.Target
+++			if target.Action != alter.Action ||
+++				(target.Source != "member_definition" && target.Source != "scheme_definition") {
+++				continue
+++			}
+ +			if target.TargetKind != "partition" || target.Partition == "" {
+ +				continue
+ +			}
+@@ -1002,17 +1119,18 @@
+ +	// the members that disappeared: the T14 successor proved the new
+ +	// directory, so each vanished member's exact ref dissolves without a
+ +	// placement scan (T20-R4).
+-+	if shape.PartitionPlacements != nil && next.PartitionNames != nil {
+++	if shape.PartitionNames != nil && next.PartitionNames != nil {
+ +		members := map[string]bool{}
+ +		for _, name := range next.PartitionNames {
+ +			members[strings.ToLower(name)] = true
+ +		}
+-+		for member, policy := range shape.PartitionPlacements {
+++		for _, member := range shape.PartitionNames {
+ +			name := strings.ToLower(member)
+ +			if !members[name] {
+-+				delete(next.PartitionPlacements, name)
+++				if next.PartitionPlacements != nil {
+++					delete(next.PartitionPlacements, name)
+++				}
+ +				s.placementRemoveTargetRef(placementPartitionRef(displaySchema, table, name))
+-+				_ = policy
+ +			}
+ +		}
+ +	}
+@@ -1051,17 +1169,7 @@
+ +// the source members' old refs may have retired. Unrelated policies keep
+ +// their certainty and no unproven positive is inserted (T20-R4).
+ +func (s *batchState) placementRefCompletenessUndecided(alter *spec.Alter, facts *spec.PlacementFacts, displaySchema, tableName string) {
+-+	if facts != nil {
+-+		for _, binding := range facts.Bindings {
+-+			if binding.Target.Binding.Default {
+-+				continue
+-+			}
+-+			policy := strings.ToLower(strings.TrimSpace(binding.Target.Binding.Policy))
+-+			if entry := s.placementPolicies()[policy]; entry != nil {
+-+				entry.refsKnown = false
+-+			}
+-+		}
+-+	}
+++	s.placementMayAddBindingRefs(facts)
+ +	if displaySchema == "" || tableName == "" {
+ +		return
+ +	}
+@@ -1110,6 +1218,21 @@
+ +			}
+ +		}
+ +	}
+++	var method string
+++	if shape.PartitionType != nil {
+++		method = *shape.PartitionType
+++	}
+++	defs := alter.PartitionDefs
+++	if alter.PartitionScheme != nil {
+++		defs = alter.PartitionScheme.Defs
+++		if alter.PartitionScheme.Type != "" {
+++			method = alter.PartitionScheme.Type
+++		}
+++	}
+++	targetDefsUnproven := shape.PartitionDefs == nil ||
+++		(method != "" && declaredSchemeOutcome(method, shape.PartitionDefs) == partitionOutcomeUnproven)
+++	statementDefsUnproven := len(defs) > 0 && method != "" &&
+++		declaredSchemeOutcome(method, defs) == partitionOutcomeUnproven
+ +	seen := map[string]bool{}
+ +	var out []string
+ +	add := func(fact string) {
+@@ -1127,10 +1250,12 @@
+ +	if shape.PartitionNames == nil {
+ +		add("target_table.partitions")
+ +	}
+-+	if shape.PartitionDefs == nil {
+++	if targetDefsUnproven {
+ +		add("target_table.partition_defs")
+ +	}
+-+	if len(alter.PartitionDefs) > 0 || (alter.PartitionScheme != nil && len(alter.PartitionScheme.Defs) > 0) {
+++	if statementDefsUnproven {
+++		// Only declared-but-uncomparable literals owe this — a provided
+++		// comparable list is never reported missing (T20-R4).
+ +		add("statement.partition_defs")
+ +	}
+ +	return out
+@@ -1153,7 +1278,7 @@
+  | database_lifecycle_rules_test.go | Verifies MySQL/TiDB database lifecycle rules with positive, negative, cross-dialect, registration, and defaults coverage |
+  | mysql_tidb_lifecycle_rules.go | Implements MySQL/TiDB standalone lifecycle notices plus create-index notice reuse for normalized ALTER add-index actions, with normalized object-identifier messages |
+ diff --git a/internal/domain/rule/ddl/placement_rules.go b/internal/domain/rule/ddl/placement_rules.go
+-index fea1c86c..f4e3a34f 100644
++index fea1c86c..eb2a6b7b 100644
+ --- a/internal/domain/rule/ddl/placement_rules.go
+ +++ b/internal/domain/rule/ddl/placement_rules.go
+ @@ -48,20 +48,10 @@ func appliesToTiDBPlacementSurface(statement spec.Statement) bool {
+@@ -1243,24 +1368,23 @@
+  }
+  
+  func (r tidbPlacementWarnRule) EvidenceGaps(statement spec.Statement) []rule.EvidenceGap {
+-@@ -129,15 +135,29 @@ func placementTopologyFacts(statement spec.Statement) *spec.PlacementTopologyFac
++@@ -129,15 +135,28 @@ func placementTopologyFacts(statement spec.Statement) *spec.PlacementTopologyFac
+  	return statement.Metadata.PlacementTopology
+  }
+  
+ +// placementWarnRecord is one applicable binding occurrence's warning
+ +// payload — bounded identities only, never raw regions or constraints.
+ +type placementWarnRecord struct {
+-+	policy          string
+-+	action          string
+-+	target          string
+-+	targetKind      string
+-+	message         string
+-+	schema          string
+-+	table           string
+-+	partition       string
+-+	bindingSource   string
+-+	actionIndex     int
+-+	definitionIndex int
+++	policy        string
+++	action        string
+++	target        string
+++	targetKind    string
+++	message       string
+++	schema        string
+++	table         string
+++	partition     string
+++	bindingSource string
+++	actionIndex   int
+ +}
+ +
+ +// placementRuleOutcome aggregates a statement's binding warnings (one per
+@@ -1281,7 +1405,7 @@
+  }
+  
+  func (r tidbPlacementWarnRule) outcome(statement spec.Statement) placementRuleOutcome {
+-@@ -145,22 +165,22 @@ func (r tidbPlacementWarnRule) outcome(statement spec.Statement) placementRuleOu
++@@ -145,22 +164,22 @@ func (r tidbPlacementWarnRule) outcome(statement spec.Statement) placementRuleOu
+  	if ddl == nil {
+  		return placementRuleOutcome{}
+  	}
+@@ -1310,7 +1434,7 @@
+  			}
+  			if ddl.Options["or_replace"] == "true" && exists == nil {
+  				// Whether the replace rewrote live bound deployments is
+-@@ -173,83 +193,148 @@ func (r tidbPlacementWarnRule) outcome(statement spec.Statement) placementRuleOu
++@@ -173,83 +192,159 @@ func (r tidbPlacementWarnRule) outcome(statement spec.Statement) placementRuleOu
+  			return placementRuleOutcome{facts: []string{"placement_policy.catalog"}}
+  		}
+  	case spec.DDLOperationAlterPlacementPolicy:
+@@ -1434,6 +1558,22 @@
+ +	if facts.MutationOutcome != nil {
+ +		mutation = *facts.MutationOutcome
+ +	}
+++	// DEFAULT-only bindings carry no placement premise — no warn and no
+++	// gap, regardless of the mutation outcome (T20-R4).
+++	named := false
+++	for _, item := range facts.Bindings {
+++		if !item.Target.Binding.Default {
+++			named = true
+++			break
++ 		}
++-	case spec.PlacementUnproven:
++-		return placementRuleOutcome{facts: []string{"placement_policy.catalog"}}
++-	default:
++-		return placementRuleOutcome{}
++ 	}
+++	if !named {
+++		return outcome
+++	}
+ +	switch {
+ +	case facts.Outcome == spec.PlacementRefused || mutation == spec.PlacementRefused:
+ +		return outcome
+@@ -1447,32 +1587,27 @@
+ +	for _, binding := range facts.Bindings {
+ +		if binding.Outcome != spec.PlacementApplied || binding.Target.Binding.Default {
+ +			continue
+- 		}
+--	case spec.PlacementUnproven:
+--		return placementRuleOutcome{facts: []string{"placement_policy.catalog"}}
+--	default:
+--		return placementRuleOutcome{}
+++		}
+ +		target := binding.Target
+ +		display := target.Target
+ +		if display == "" {
+ +			display = target.Table
+ +		}
+ +		outcome.warnings = append(outcome.warnings, placementWarnRecord{
+-+			policy:          target.Binding.Policy,
+-+			action:          target.Action,
+-+			target:          display,
+-+			targetKind:      target.TargetKind,
+-+			schema:          target.Schema,
+-+			table:           target.Table,
+-+			partition:       target.Partition,
+-+			bindingSource:   target.Source,
+-+			actionIndex:     target.ActionIndex,
+-+			definitionIndex: target.DefinitionIndex,
+++			policy:        target.Binding.Policy,
+++			action:        target.Action,
+++			target:        display,
+++			targetKind:    target.TargetKind,
+++			schema:        target.Schema,
+++			table:         target.Table,
+++			partition:     target.Partition,
+++			bindingSource: target.Source,
+++			actionIndex:   target.ActionIndex,
+ +			message: fmt.Sprintf("If applied, PLACEMENT POLICY %q would bind %s %q to a topology policy",
+ +				target.Binding.Policy, target.TargetKind, display),
+ +		})
+ +		outcome.topology = true
+- 	}
+++	}
+ +	return outcome
+ +}
+ +
+@@ -1507,7 +1642,7 @@
+  }
+  
+  // placementPolicyFacts reads the ordered pre-state catalog the enrich pass
+-@@ -302,14 +387,10 @@ func (r tidbPlacementExistsRequireRule) Evaluate(ctx context.Context, statement
++@@ -302,14 +397,10 @@ func (r tidbPlacementExistsRequireRule) Evaluate(ctx context.Context, statement
+  	if err := ctx.Err(); err != nil {
+  		return nil, err
+  	}
+@@ -1523,7 +1658,7 @@
+  		if spec.PlacementCreateOutcome(statement.Dialect,
+  			ddl.Options["or_replace"] == "true", ddl.Options["if_not_exists"] == "true",
+  			exists) == spec.PlacementRefused {
+-@@ -319,77 +400,57 @@ func (r tidbPlacementExistsRequireRule) Evaluate(ctx context.Context, statement
++@@ -319,100 +410,91 @@ func (r tidbPlacementExistsRequireRule) Evaluate(ctx context.Context, statement
+  		}
+  		return nil, nil
+  	case spec.DDLOperationAlterPlacementPolicy:
+@@ -1602,13 +1737,13 @@
+ +	for _, binding := range facts.Bindings {
+ +		if binding.Outcome != spec.PlacementRefused || binding.Target.Binding.Default {
+ +			continue
+- 		}
+++		}
+ +		found, err := r.missingPolicyFinding(binding.Target.Binding.Policy,
+ +			binding.Target.Action, binding.Target.Target, binding.Target.TargetKind,
+ +			binding.Target)
+ +		if err != nil {
+ +			return nil, err
+-+		}
++ 		}
+ +		findings = append(findings, found...)
+  	}
+ -	return nil, "", "", ""
+@@ -1626,9 +1761,27 @@
+ -		RequiredFacts: []string{"placement_policy.catalog"},
+ -	}
+  	switch ddl.Operation {
+- 	case spec.DDLOperationCreatePlacementPolicy:
+- 		// OR REPLACE / IF NOT EXISTS disarm the existence premise.
+-@@ -402,17 +463,20 @@ func (r tidbPlacementExistsRequireRule) EvidenceGaps(statement spec.Statement) [
++-	case spec.DDLOperationCreatePlacementPolicy:
++-		// OR REPLACE / IF NOT EXISTS disarm the existence premise.
++-		if ddl.Options["or_replace"] == "true" || ddl.Options["if_not_exists"] == "true" {
+++	case spec.DDLOperationCreatePlacementPolicy, spec.DDLOperationAlterPlacementPolicy:
+++		if ddl.Operation == spec.DDLOperationCreatePlacementPolicy &&
+++			(ddl.Options["or_replace"] == "true" || ddl.Options["if_not_exists"] == "true") {
++ 			return nil
++ 		}
++-	case spec.DDLOperationAlterPlacementPolicy:
++-		// always consults the catalog
+++		// The lifecycle target's own proof decides — an unread
+++		// existence premise owes the catalog fact; it never falls
+++		// through silently (T20-R4).
+++		if exists, _ := placementLifecyclePremise(statement, ddl.ObjectName); exists == nil {
+++			return []rule.EvidenceGap{{
+++				ReasonCode:    gapReasonUnknownTableState,
+++				RequiredFacts: []string{"placement_policy.catalog"},
+++			}}
+++		}
+++		return nil
++ 	case spec.DDLOperationDropPlacementPolicy:
+  		// IF EXISTS disarms only the existence premise — the bound set
+  		// stays a live premise because a proven-bound policy still
+  		// refuses under IF EXISTS (native 8241 ignores the clause).
+@@ -1657,7 +1810,7 @@
+  			}}
+  		}
+  		return nil
+-@@ -421,37 +485,39 @@ func (r tidbPlacementExistsRequireRule) EvidenceGaps(statement spec.Statement) [
++@@ -421,37 +503,39 @@ func (r tidbPlacementExistsRequireRule) EvidenceGaps(statement spec.Statement) [
+  			ddl.PlacementBinding == nil || ddl.PlacementBinding.Default {
+  			return nil
+  		}
+@@ -1716,7 +1869,7 @@
+  	if spec.PlacementDropOutcome(statement.Dialect,
+  		ddl.Options["if_exists"] == "true", exists, bound) != spec.PlacementRefused {
+  		return nil, nil
+-@@ -473,7 +539,7 @@ func (r tidbPlacementExistsRequireRule) dropFinding(statement spec.Statement, dd
++@@ -473,7 +557,7 @@ func (r tidbPlacementExistsRequireRule) dropFinding(statement spec.Statement, dd
+  		})
+  }
+  
+@@ -1725,7 +1878,7 @@
+  	metadata := map[string]any{"policy": strings.ToLower(policy), "action": action}
+  	if target != "" {
+  		metadata["target"] = target
+-@@ -481,6 +547,24 @@ func (r tidbPlacementExistsRequireRule) missingPolicyFinding(policy, action, tar
++@@ -481,6 +565,24 @@ func (r tidbPlacementExistsRequireRule) missingPolicyFinding(policy, action, tar
+  	if targetKind != "" {
+  		metadata["target_kind"] = targetKind
+  	}
+@@ -1751,7 +1904,7 @@
+  		fmt.Sprintf("placement policy %q does not exist", policy),
+  		"create the placement policy first or correct the policy reference",
+ diff --git a/internal/domain/spec/README.md b/internal/domain/spec/README.md
+-index 5929ba91..14c646a3 100644
++index 5929ba91..05b22c96 100644
+ --- a/internal/domain/spec/README.md
+ +++ b/internal/domain/spec/README.md
+ @@ -11,14 +11,14 @@ Normalized statement specifications used as the stable input for rule evaluation
+@@ -1767,7 +1920,7 @@
+  | rename.go | Defines the shared T16-R1 ordered multi-pair RENAME adjudicator `RenamePairClasses` consumed identically by the ordered-state transition and the rule layer so findings, gaps, and post-state never diverge: each pair resolves its source then destination against a left-to-right evolving work set where the LAST write to an identity decides its state — a destination an earlier pair vacated is free (`a→b, b→c, d→b` migrates, probed), a produced-then-consumed source reads absent again (`a→b, b→c, b→a` refuses 1146 and rolls back atomically, probed), an ALTER-form self-pair classifies `renameEndpointSelfPair` (probed no-op) while a standalone `RENAME TABLE a TO a` stays an ordinary destination-occupied pair (probed 1050), and each pair's verdict carries the bound source identity so the apply layer publishes the shape its own pair resolved — never a later pair's overwrite (issue #95 T16-R1) |
+  | ttl.go | Defines the shared T19 tri-state TTL adjudicators consumed identically by ordered state and `ddl.tidb.ttl.warn`: `TTLDefinitionOutcome` (refused/applied/unproven), `TTLDefinitionLandingOutcome` applying TiDB's `checkTTLInfoValid` order (temporary → interval → common-handle PK → inbound FKs → time column), `TTLCreateOutcome` for the CREATE-side declared-shape seam (new destinations carry a proven-empty inbound set, LIKE reuses the bound source's member facts, CTAS keeps its select tail unprovable), `TTLForeignKeyParentOutcome` for the `checkTableForeignKey` parent-TTL restriction (non-TiDB applies, unvouched parent unproven, proven TTL parent refuses), the restored-expression interval evaluability gate, and `TTLTimeColumnType` (issue #98 T19) |
+ -| placement.go | Defines the shared T20 tri-state placement adjudicators consumed identically by ordered state and `ddl.tidb.placement.warn`: `PlacementCreateOutcome`/`PlacementAlterOutcome`/`PlacementDropOutcome`/`PlacementRangeOutcome`/`PlacementBindOutcome` (refused/applied/unproven; the dialect gate runs first so MySQL refuses even `= DEFAULT`), `PlacementBinding` (`Policy`/`Default`), bounded `PlacementOption` keys, and `PlacementPolicyFact` carrying proven `BoundTargets` — a nil catalog means unvouched, never proven-empty — plus `PlacementTopologyFacts`, the bounded private projection of proven topology prerequisites (label universe, scheduling state) where nil means topology was never read (issue #99 T20) |
+-+| placement.go | Defines the shared T20 tri-state placement adjudicators consumed identically by ordered state and `ddl.tidb.placement.warn`: `PlacementCreateOutcome`/`PlacementAlterOutcome`/`PlacementDropOutcome`/`PlacementRangeOutcome`/`PlacementBindOutcome` (refused/applied/unproven; the dialect gate runs first so MySQL refuses even `= DEFAULT`), `PlacementBinding` (`Policy`/`Default`), bounded `PlacementOption` keys, and `PlacementPolicyFact` carrying proven `BoundTargets` — a nil catalog means unvouched, never proven-empty — plus `PlacementTopologyFacts`, the bounded private projection of proven topology prerequisites (label universe, scheduling state) where nil means topology was never read (issue #99 T20); T20-R4 adds the structural `CollectPlacementBindings` collector and `AssessPlacementBindings` assessor enumerating every authored binding (direct, member_definition, scheme_definition; DEFAULT retained, no occurrence dedup) (issue #99 T20-R4) |
+++| placement.go | Defines the shared T20 tri-state placement adjudicators consumed identically by ordered state and `ddl.tidb.placement.warn`: `PlacementCreateOutcome`/`PlacementAlterOutcome`/`PlacementDropOutcome`/`PlacementRangeOutcome`/`PlacementBindOutcome` (refused/applied/unproven; the dialect gate runs first so MySQL refuses even `= DEFAULT`), `PlacementBinding` (`Policy`/`Default`), bounded `PlacementOption` keys, and `PlacementPolicyFact` carrying proven `BoundTargets` — a nil catalog means unvouched, never proven-empty — plus `PlacementTopologyFacts`, the bounded private projection of proven topology prerequisites (label universe, scheduling state) where nil means topology was never read (issue #99 T20); T20-R4 adds the structural `CollectPlacementBindings` collector and `AssessPlacementBindings` assessor enumerating every authored binding (direct, member_definition, scheme_definition; DEFAULT retained, no occurrence dedup), `HasSubpartitionDeclaration` flagging any structured subpartition axis for the TiDB aspect boundary, `DDL.PartitionPrimaryNames` — the internal capability projection restoring the primary member directory a TiDB-ignored subpartition axis concealed — and `Metadata.PlacementFacts`'s positive-subset `BoundTargets` contract where a nonempty incomplete set is sufficient DROP-refusal proof, never an exhaustive claim (issue #99 T20-R4) |
+  | ttl_test.go | — see `internal/domain/spec` test suites for TTL outcome coverage |
+  | ddl.go | Defines the T19 authored TTL declarations (`TTLDeclaration`, clause source, time column, interval value/unit, restored interval expression, enabled pointer, job interval, and bounded unmodeled members) on CREATE/ALTER, preserving declaration facts separately from catalog/prospective state. It also defines DDL-oriented specification types, including explicit DDL operations, richer column facts, typed index metadata (with the T10 `Visibility`/`VisibilityExplicit` effective-vs-authored pair, `MultiValuedParts` CAST-ARRAY member marks, the `DirectionUnknown`/`DirectionUnknownParts` direction-withheld member marks beside the existing part-kind counts, and the per-member `NameUnknown` name-provability marker), multi-target `Targets` plus `TableTargets()` fallback, create-table/object-lifecycle shape flags, declared-constraint alter payloads, and parsed-but-unmodeled option name evidence (`UnextractedOptions`) plus `OmittedTargets` for collapsed multi-object target lists for offline and metadata-aware DDL rules. T13 adds the partition payload on `spec.Alter` — `Partitions` (as-written names, lower-cased, clause order), `AllPartitions` (TRUNCATE PARTITION ALL), `ExchangeTable` plus `ExchangeValidation` (`with` for WITH VALIDATION and the omitted form the PingCAP AST collapses to true; `without` only for explicit WITHOUT VALIDATION) — with `alter.Name` carrying the first partition name and `DDL.Targets` gaining the EXCHANGE counterpart as an existing object (issue #92 T13). T13-R1 adds `DDL.PartitionType`/`DDL.PartitionNames` — the CREATE TABLE declared partition method (bounded vocabulary, implicit `p0..p(n-1)` names for `PARTITIONS n`) and the `algorithm`/`lock` keyword values on `Alter.Options` consumed by the partition-action refusal classifier (issue #92 T13-R1). T14 adds the normalized partition-definition vocabulary — `PartitionBound`/`BoundLiteral`/`PartitionDef`/`PartitionScheme`/`PartitionMaintenance` — plus `DDL.PartitionScheme` (declared method + member defs), `Alter.PartitionDefs` (target definitions on ADD/REORGANIZE/PARTITION BY), `Alter.PartitionMethod` (redefinition method), and `Alter.PartitionMaintenance` (per-operation maintenance classification) so topology rules and the ordered state read one faithful definition model (issue #93 T14). T14-R1 adds `DDL.PartitionCount *uint64` — the authored `PARTITIONS n` on CREATE TABLE (nil = omitted, explicit zero preserved so parser-refused forms stay distinguishable from absent counts) — and the `PartitionBoundMaxValue` `BoundLiteral` kind that keeps MAXVALUE as a positional tuple item rather than collapsing the whole bound to a scalar tail (issue #93 T14-R1). T15 adds `Alter.OrderBy`/`OrderByItem` — the authored `ORDER BY col [ASC|DESC]` member list in clause order — and `IsPartitionAlterAction`, the canonical partition-action vocabulary the audit ordered-state delegates to so rule, coverage, and state layers share one partition-action set (issue #94 T15) T16 adds the lifecycle payload facts: `DDL.TemporaryScope` (`local`/`global` — explicit scope only; a plain CREATE carries none), `DDL.OnCommitDelete` (TiDB `ON COMMIT DELETE ROWS`; `PRESERVE ROWS` projects as false and stays a vendor boundary), `DDL.ReferTable` (the `CREATE TABLE ... LIKE` source identity), `DDL.SelectSources` (CTAS `SELECT` source identities in clause order), `DDL.RenameStatementForm` (`standalone` `RENAME TABLE` vs `alter` `RENAME TO` — the pair-evaluation semantics differ), and `DDL.RenameStatementForm()` (standalone `RENAME TABLE` vs `ALTER TABLE ... RENAME TO` — the pair-evaluation semantics differ; issue #95 T16) T17 adds `DDL.AlterDefaultSchema` — the marker for `ALTER DATABASE` written without a target name (the AST's AlterDefaultDatabase form binds the session's current database; the ordered state binds the request's trusted schema downstream, never a guess) (issue #96 T17) T20 adds the placement surface: `DDL.PlacementBinding`/`PlacementRange`, `Alter.Placement`, `PartitionDef.Placement`, and policy lifecycle operations (issue #99) |
+  | partition_bounds.go | Projects the catalog `PARTITION_DESCRIPTION` text into the same `BoundLiteral` vocabulary the declaration side stores (`CatalogPartitionDefs` — nil names stay nil, an unprojectable member keeps a clause shell with no rows rather than a bound-free member), and provides the bounded comparisons the T14 topology rules and transitions consume — `BoundLiteralEqual`/`BoundRowEqual`/`BoundRowCompare`/`BoundRowLessThan`/`LessThanBoundUpper`: literal-domain equality, big-decimal numeric ordering, and `MAXVALUE` semantics, where any non-literal/expression item answers unproven rather than "same" (issue #93 T14). T14-R1 makes the comparison domains tri-state: string literals no longer compare by Go byte order — an unproven collation domain answers `ok=false` (neither proven-equal nor proven-ordered) while byte-equal strings still prove; RANGE COLUMNS catalog rows keep per-item `MAXVALUE` positions so `(10,MAXVALUE)` compares by tuple position instead of collapsing to a scalar `+∞` tail; an all-MAXVALUE row is the true tail; `InBoundsOverlap` reports proven-overlap/proven-disjoint/unproven so an expression item never folds into "no overlap" (issue #93 T14-R1). T14-R2 adds `LessThanPairOutcome`, the shared adjacent-pair adjudicator (proven violation / provably ordered / undecidable) that the topology rules, evidence gaps, and ordered-state transitions consume from one result so an undecidable member can no longer masquerade as decided or swallow a later provable violation (issue #93 T14-R2) |
+@@ -2021,7 +2174,7 @@
+  | query_access_effect_candidates.go | Defines bounded internal candidate facts, operand hints, and copy-safe candidate accumulation |
+  | query_access_effect_collector.go | Traverses query locations, scopes, subqueries, CTEs, derived tables, set operations, and LIMIT/OFFSET expressions |
+ diff --git a/internal/infrastructure/parser/tidb/extractor.go b/internal/infrastructure/parser/tidb/extractor.go
+-index 8b567d50..68366b46 100644
++index 8b567d50..2412370e 100644
+ --- a/internal/infrastructure/parser/tidb/extractor.go
+ +++ b/internal/infrastructure/parser/tidb/extractor.go
+ @@ -335,6 +335,13 @@ func extractCreateTable(stmt *ast.CreateTableStmt, rawSQL string) *spec.DDL {
+@@ -2038,10 +2191,10 @@
+  	}
+  	if stmt.IfNotExists {
+  		ddl.Options["if_not_exists"] = "true"
+-@@ -2628,6 +2635,29 @@ const maxPartitionMembers = 8192
+- // "unobserved" — never a complete-empty claim. `PARTITIONS n` without
+- // definitions assigns implicit names p0..p(n-1) on both products — the
+- // published set names them rather than staying silent.
++@@ -2619,6 +2626,29 @@ func partitionMethodName(partition *ast.PartitionOptions) string {
++ // uncontrolled allocation or a truncated list.
++ const maxPartitionMembers = 8192
++ 
+ +// primaryPartitionMemberNames derives the primary member names a
+ +// concealed subpartitioning axis withheld — an AST copy with every Sub
+ +// axis cleared feeds the shared name projection, so interval/count
+@@ -2065,6 +2218,6 @@
+ +	return partitionMemberNames(&primary)
+ +}
+ +
+- func partitionMemberNames(partition *ast.PartitionOptions) []string {
+- 	if partition.Sub != nil {
+- 		return nil
++ // partitionMemberNames returns the declared partition member names in
++ // declaration order, or nil when the declaration cannot project a complete
++ // member set: a subpartitioned table's top-level list is not the member

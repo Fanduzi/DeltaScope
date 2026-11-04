@@ -1,0 +1,16 @@
+[
+  "docker",
+  "exec",
+  "deltascope-ddl-golden-tidb85-client",
+  "mysql",
+  "-h",
+  "tidb85",
+  "-P",
+  "4000",
+  "-u",
+  "root",
+  "--batch",
+  "--raw",
+  "-e",
+  "ALTER TABLE t20r4_scheme_6ac1e918.t PARTITION BY RANGE(id) (PARTITION q0 VALUES LESS THAN (50) PLACEMENT POLICY=r4scheme_ok_6ac1e918, PARTITION q1 VALUES LESS THAN (200) PLACEMENT POLICY=DEFAULT);"
+]

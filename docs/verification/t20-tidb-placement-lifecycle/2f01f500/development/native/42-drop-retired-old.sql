@@ -1,0 +1,2 @@
+SET SESSION tidb_placement_mode='STRICT';
+DROP PLACEMENT POLICY t20r4_old; SHOW WARNINGS;

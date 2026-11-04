@@ -1,0 +1,1 @@
+90988d442050471dab0fbab8bee0ab598747b6b374ca115c619c05d78b50ecbd  /tmp/deltascope-t20r4-6ac1e918/red/batch_state_t20r4_test.go.txt

@@ -1,0 +1,45 @@
+{
+  "source_product_sha": "5fc298539006c21a8af7adbe2152ba591b8f2546",
+  "target_product_sha": "bb5e347cd814c463a6873f6b0293613f91013867",
+  "gate": "01-test",
+  "command": [
+    "go",
+    "test",
+    "-count=1",
+    "./..."
+  ],
+  "source_attempt_directory": "/private/tmp/deltascope-t20r4-6ac1e918/final-5fc29853",
+  "source_execution": {
+    "name": "01-test",
+    "command": [
+      "go",
+      "test",
+      "-count=1",
+      "./..."
+    ],
+    "started_at": "2026-11-04T16:45:07.120195+00:00",
+    "ended_at": "2026-11-04T16:45:28.257924+00:00",
+    "head_before": "5fc298539006c21a8af7adbe2152ba591b8f2546",
+    "head_after": "5fc298539006c21a8af7adbe2152ba591b8f2546",
+    "returncode": 0,
+    "allowed_raw_returncodes": [
+      0
+    ]
+  },
+  "receipt_sha256": {
+    "command.txt": "3fab27cc4c37b0db59636bc57ac89b7de2d5dc00a76d83269241935786893592",
+    "stdout.txt": "8861a293e037f1dc68bacd22688d6ea3a620dd3f9bd6533568d1fb89f2e8af3c",
+    "stderr.txt": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "rc.txt": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
+    "head-before.txt": "5c384d931e2056e892810619971951b77e8318f8ee0d032fbd0b5a51a9b8ebcc",
+    "head-after.txt": "5c384d931e2056e892810619971951b77e8318f8ee0d032fbd0b5a51a9b8ebcc"
+  },
+  "vet_diagnosis_sha256": "622d16a4539110405243dc366e0aff1b4e2e5bd892b25c63a6e38fac3262ebc9",
+  "equivalence": {
+    "changed_file": "internal/domain/rule/ddl/placement_rules.go",
+    "source_blob": "eb2a6b7b9bd50625e1b35c7625a9c475af3cf4ec",
+    "target_blob": "018f11df1f676d314b4f67a602d3528b2dcdeab2",
+    "diff_sha256": "6b82320fdd01d6e67992b2ac98cfafef432736989ca4a77e94217dade5933126"
+  },
+  "reason": "All switch branches return; go vet identified the trailing return as unreachable. The target deletes that single statement and changes no other tracked file. The full-test result is reused with its actual source HEAD; vet and later gates execute at the target HEAD. This does not claim a full-test rerun at the target."
+}

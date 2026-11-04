@@ -1,0 +1,17 @@
+[
+  "docker",
+  "exec",
+  "deltascope-ddl-golden-tidb85-client",
+  "mysql",
+  "--protocol=tcp",
+  "-h",
+  "tidb85",
+  "-P",
+  "4000",
+  "-uroot",
+  "--batch",
+  "--raw",
+  "--verbose",
+  "-e",
+  "SET SESSION tidb_placement_mode='STRICT';\n\nDROP DATABASE t20r4_native;\nDROP PLACEMENT POLICY IF EXISTS t20r4_ok;\nDROP PLACEMENT POLICY IF EXISTS t20r4_old;\nDROP PLACEMENT POLICY IF EXISTS t20r4_second;\nDROP PLACEMENT POLICY IF EXISTS t20r4_table;\n"
+]

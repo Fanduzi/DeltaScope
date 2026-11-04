@@ -1,0 +1,24 @@
+--------------
+SET SESSION tidb_placement_mode='STRICT'
+--------------
+
+--------------
+ALTER TABLE t_add PARTITION p0 PLACEMENT POLICY=DEFAULT
+--------------
+
+--------------
+ALTER TABLE t_add PARTITION p_keep PLACEMENT POLICY=DEFAULT
+--------------
+
+--------------
+ALTER TABLE t_reorg PARTITION p_keep PLACEMENT POLICY=DEFAULT
+--------------
+
+--------------
+ALTER TABLE t_omit PARTITION p_keep PLACEMENT POLICY=DEFAULT
+--------------
+
+--------------
+ALTER TABLE t_default PARTITION p_keep PLACEMENT POLICY=DEFAULT
+--------------
+

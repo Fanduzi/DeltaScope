@@ -1,0 +1,3794 @@
+{
+  "product_sha": "2f01f500d296bb29ee518bc113a58ec26172dc1a",
+  "files": [
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/baseline/go-version.txt",
+      "path": "development/baseline/go-version.txt",
+      "sha256": "f8a6d01388733770328170efc30f53fe843ffc421b46755597094b3a7de9e54c"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/baseline/head.txt",
+      "path": "development/baseline/head.txt",
+      "sha256": "3aa68f5fc414679f94cb073e1663d63d0368911bc8303944267e65c9b2c46226"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/baseline/initial-readonly.txt",
+      "path": "development/baseline/initial-readonly.txt",
+      "sha256": "d2f1ba24494f99a0ad320a63ce1ebecb423078e661babbb2e68c3c04ec0e7240"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/baseline/staged.diff",
+      "path": "development/baseline/staged.diff",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/baseline/status.txt",
+      "path": "development/baseline/status.txt",
+      "sha256": "13aa8681849e4bafee832144b59d4eb976f62e325e78017d95f555bdbafd7903"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/baseline/working.diff",
+      "path": "development/baseline/working.diff",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/red/batch_state_t20r4_test.go.txt",
+      "path": "development/red/batch_state_t20r4_test.go.txt",
+      "sha256": "90988d442050471dab0fbab8bee0ab598747b6b374ca115c619c05d78b50ecbd"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/red/command.txt",
+      "path": "development/red/command.txt",
+      "sha256": "df8391e2beb39fa238a0e7ee2722171566a53639a7853fdc7041411ec2452339"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/red/head-after.txt",
+      "path": "development/red/head-after.txt",
+      "sha256": "3aa68f5fc414679f94cb073e1663d63d0368911bc8303944267e65c9b2c46226"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/red/head-before.txt",
+      "path": "development/red/head-before.txt",
+      "sha256": "3aa68f5fc414679f94cb073e1663d63d0368911bc8303944267e65c9b2c46226"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/red/rc.txt",
+      "path": "development/red/rc.txt",
+      "sha256": "4355a46b19d348dc2f57c046f8ef63d4538ebb936000f3c9ee954a27460dd865"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/red/status-after.txt",
+      "path": "development/red/status-after.txt",
+      "sha256": "62dcc2e0fe5710b18190cf611e3ddf5606f4611a166e0c334dddebec8f08129e"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/red/stderr.txt",
+      "path": "development/red/stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/red/stdout.txt",
+      "path": "development/red/stdout.txt",
+      "sha256": "b5faa61195ddae4d7023db0575bb21bf54b195d196f626049fc8fdc55e8b1fa7"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/red/test-source.sha256.txt",
+      "path": "development/red/test-source.sha256.txt",
+      "sha256": "9f5d6ebbc8261747bcc25a4c603b6e474287f815e5d3afb9787285fd95662966"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/red/tracked.diff",
+      "path": "development/red/tracked.diff",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/red/untracked-files.txt",
+      "path": "development/red/untracked-files.txt",
+      "sha256": "6aee4a0978211185b3aef026444d5481214476f4b8d8b0add11bf3722a450141"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native-environment/banner.stderr.txt",
+      "path": "development/native-environment/banner.stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native-environment/banner.txt",
+      "path": "development/native-environment/banner.txt",
+      "sha256": "6e63ec25de63c55aae7dc376eb5901138604cb931c9b77594b59db9bc608a255"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native-environment/fixture-identity.stderr.txt",
+      "path": "development/native-environment/fixture-identity.stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native-environment/fixture-identity.txt",
+      "path": "development/native-environment/fixture-identity.txt",
+      "sha256": "b13b3e4624cc0e8b6defe47d31ecf20db891fa6d9662e8046bc3fbfb9a42e2f9"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native-environment/head.txt",
+      "path": "development/native-environment/head.txt",
+      "sha256": "3aa68f5fc414679f94cb073e1663d63d0368911bc8303944267e65c9b2c46226"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native-environment/health-wait.command.txt",
+      "path": "development/native-environment/health-wait.command.txt",
+      "sha256": "e2e0a9200c91e2df3c535eb05c79f0e44e19a9e4506ca52db5fa8aeec99a6e8e"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native-environment/health-wait.rc.txt",
+      "path": "development/native-environment/health-wait.rc.txt",
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native-environment/health-wait.stdout.txt",
+      "path": "development/native-environment/health-wait.stdout.txt",
+      "sha256": "1389cad9ce4492257be079940879dd7c3ce7920aa853bce639d5d88839af3238"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native-environment/image-identity.txt",
+      "path": "development/native-environment/image-identity.txt",
+      "sha256": "9ec7abf0657d012f1acb8775fbe75dadd6cfb785a7fdb4d6ce711752523a9d20"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native-environment/images.txt",
+      "path": "development/native-environment/images.txt",
+      "sha256": "9335f8ee979d34734783fb682a93a20e9d6caa8f9df09123bbf9b779201a7be8"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native-environment/networks.txt",
+      "path": "development/native-environment/networks.txt",
+      "sha256": "c9e676ba046398d6edf45938ca251de78854ca66c926ce2286492f61c336cca4"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native-environment/probe.command.txt",
+      "path": "development/native-environment/probe.command.txt",
+      "sha256": "2aa6c8cd62515a8b564be86f7bed0f81955ad542d3ffc98735f861995999cdf8"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native-environment/probe.rc.txt",
+      "path": "development/native-environment/probe.rc.txt",
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native-environment/probe.stderr.txt",
+      "path": "development/native-environment/probe.stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native-environment/probe.stdout.txt",
+      "path": "development/native-environment/probe.stdout.txt",
+      "sha256": "025070d14db023e64c7a2a065bda0b7ae50fe7e0590bc0c325071f9a802a1e13"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native-environment/protected-inventory.txt",
+      "path": "development/native-environment/protected-inventory.txt",
+      "sha256": "1f6ddf4e9b47fe23c7e54293b8c111916c5b9f2da520a7cbca1fcc8727cba82c"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native-environment/tidb-status.json",
+      "path": "development/native-environment/tidb-status.json",
+      "sha256": "160ad71932107ea5a0cf1625d39cccafa214ea53cbbb7b674d0814f4db8b5125"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native-environment/tidb-status.stderr.txt",
+      "path": "development/native-environment/tidb-status.stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native-environment/up.command.txt",
+      "path": "development/native-environment/up.command.txt",
+      "sha256": "491fb3fc676c6317443ee9f5310e930d7b7d3a9facc434c2dd1a8f507ca5c924"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native-environment/up.rc.txt",
+      "path": "development/native-environment/up.rc.txt",
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native-environment/up.stderr.txt",
+      "path": "development/native-environment/up.stderr.txt",
+      "sha256": "3764b373307bfd9921c0b25be965185c41d48d6462d0bd64bc58cf161651de6d"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native-environment/up.stdout.txt",
+      "path": "development/native-environment/up.stdout.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native-environment/volumes.txt",
+      "path": "development/native-environment/volumes.txt",
+      "sha256": "dce5fba31bf121e162980cecc64f0beea275034b28bc363815e97d452c7b4945"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native/00-identity.command.json",
+      "path": "development/native/00-identity.command.json",
+      "sha256": "8af6bef56df320632405edbcefbb438226f49d27db9c9246e47bf894cbf81251"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native/00-identity.identity.json",
+      "path": "development/native/00-identity.identity.json",
+      "sha256": "0a34a6f927ccd32dd144763604b957b6ced8ff815d79405fc0a5ecbb4a709187"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native/00-identity.rc.txt",
+      "path": "development/native/00-identity.rc.txt",
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native/00-identity.sql",
+      "path": "development/native/00-identity.sql",
+      "sha256": "75572755e653195bd08d68d46c8feb2040347ae5cae21b8d162e724e7cfdd39e"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native/00-identity.stderr.txt",
+      "path": "development/native/00-identity.stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native/00-identity.stdout.txt",
+      "path": "development/native/00-identity.stdout.txt",
+      "sha256": "90cade2695ca0a5ccb86632f90327ab48672e1f87e11c835f4df8a2020bb5002"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native/01-setup.command.json",
+      "path": "development/native/01-setup.command.json",
+      "sha256": "fa4aac8c4d4da2ead1fbd4bf0d66a3f71f7628c93728eab51ea4d1edb0646b11"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native/01-setup.identity.json",
+      "path": "development/native/01-setup.identity.json",
+      "sha256": "a684283b1638a0f8be065a8ed9c1adcf36b798b4caeb8dea97308943f0779e83"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native/01-setup.rc.txt",
+      "path": "development/native/01-setup.rc.txt",
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native/01-setup.sql",
+      "path": "development/native/01-setup.sql",
+      "sha256": "d4690f378b527f8a6888cae2d974ce36cbcbd15f8cd11aefb6c17f949f7f6d04"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native/01-setup.stderr.txt",
+      "path": "development/native/01-setup.stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native/01-setup.stdout.txt",
+      "path": "development/native/01-setup.stdout.txt",
+      "sha256": "a578fb0a07a543b68c35a911a06d1e8c6720fcddef9d962a879f27fcf5823939"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native/02-seed-t_add.command.json",
+      "path": "development/native/02-seed-t_add.command.json",
+      "sha256": "c48321de391d5adba554dc5ec4d8b751d01690925b1fa5acba5ddd5f0c18e538"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native/02-seed-t_add.identity.json",
+      "path": "development/native/02-seed-t_add.identity.json",
+      "sha256": "7559cf6e863b0590416796da2dd8cb79f487d534febb5681d439a16081b396ec"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native/02-seed-t_add.rc.txt",
+      "path": "development/native/02-seed-t_add.rc.txt",
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native/02-seed-t_add.sql",
+      "path": "development/native/02-seed-t_add.sql",
+      "sha256": "637ac909bd1904a417f19bff71ec17ecd3de09cb9a04540f20018398a879a06c"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native/02-seed-t_add.stderr.txt",
+      "path": "development/native/02-seed-t_add.stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native/02-seed-t_add.stdout.txt",
+      "path": "development/native/02-seed-t_add.stdout.txt",
+      "sha256": "21d1b5eeeaa3a469a010bf760fa06c818a777a5fc83d9f643cb341e4f6598161"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native/02-seed-t_default.command.json",
+      "path": "development/native/02-seed-t_default.command.json",
+      "sha256": "fcecb3e82c414b5b263b8f5b7f1cca111f45615099cbd7e6cd58c24a0e617a13"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native/02-seed-t_default.identity.json",
+      "path": "development/native/02-seed-t_default.identity.json",
+      "sha256": "0a74fc4098f00e60e8c026070d8209237640cff17906c35a72297d6a86513878"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native/02-seed-t_default.rc.txt",
+      "path": "development/native/02-seed-t_default.rc.txt",
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native/02-seed-t_default.sql",
+      "path": "development/native/02-seed-t_default.sql",
+      "sha256": "44c9c4d465c2e5eee00fecdb12a6e042efe4598f3173d3a802e07ff5bf452477"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native/02-seed-t_default.stderr.txt",
+      "path": "development/native/02-seed-t_default.stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native/02-seed-t_default.stdout.txt",
+      "path": "development/native/02-seed-t_default.stdout.txt",
+      "sha256": "7c2e8bcdcd211220bb409734a77bf96cf0106a59a4faa9ebcc02e132b6cff8a6"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native/02-seed-t_omit.command.json",
+      "path": "development/native/02-seed-t_omit.command.json",
+      "sha256": "7875ea6fbbaf022eea96e4ec6b724e2e85429df8abd26d3280ec098eacfbf887"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native/02-seed-t_omit.identity.json",
+      "path": "development/native/02-seed-t_omit.identity.json",
+      "sha256": "cf3ad3463416dbb6ae7943d7287e25cb1abcba7540d620947d235fcce68efc30"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native/02-seed-t_omit.rc.txt",
+      "path": "development/native/02-seed-t_omit.rc.txt",
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native/02-seed-t_omit.sql",
+      "path": "development/native/02-seed-t_omit.sql",
+      "sha256": "d464f981e0123d0f1378d7b304c79143d2a89d18c9854e7ee49ba14a28230b09"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native/02-seed-t_omit.stderr.txt",
+      "path": "development/native/02-seed-t_omit.stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native/02-seed-t_omit.stdout.txt",
+      "path": "development/native/02-seed-t_omit.stdout.txt",
+      "sha256": "1fadf8969aa4cd2a6cea2ef8ca9367a9011a2ad66c4c291cb39229d094d2f1d8"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native/02-seed-t_reorg.command.json",
+      "path": "development/native/02-seed-t_reorg.command.json",
+      "sha256": "5b5d9308db5b1fee9f1f76fb7ffc3ba4463b2917ec429fee091200ab78512036"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native/02-seed-t_reorg.identity.json",
+      "path": "development/native/02-seed-t_reorg.identity.json",
+      "sha256": "a83fd7329b5758110c9953db9ed615d9e299b06c662cd0d8aa49392917d35b99"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native/02-seed-t_reorg.rc.txt",
+      "path": "development/native/02-seed-t_reorg.rc.txt",
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native/02-seed-t_reorg.sql",
+      "path": "development/native/02-seed-t_reorg.sql",
+      "sha256": "7f30225f228f4d6a3bd4ddb67f9afda4eb59f2ed7a6e07edfb64aa40ea102835"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native/02-seed-t_reorg.stderr.txt",
+      "path": "development/native/02-seed-t_reorg.stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native/02-seed-t_reorg.stdout.txt",
+      "path": "development/native/02-seed-t_reorg.stdout.txt",
+      "sha256": "e20336cd4005e485cf89d6f23210e382b26741c63dd678fb720b07728485831b"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native/03-before.command.json",
+      "path": "development/native/03-before.command.json",
+      "sha256": "681fdad055e33855397655dcd9c7f7585d04422a374616d10e4762cd35786b64"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native/03-before.identity.json",
+      "path": "development/native/03-before.identity.json",
+      "sha256": "4d42f8c31cb23ab8362c62bf56fe8ecbc9ae3d5609043bb1091aae3de3458c79"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native/03-before.rc.txt",
+      "path": "development/native/03-before.rc.txt",
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native/03-before.sql",
+      "path": "development/native/03-before.sql",
+      "sha256": "202039da36f129a48f0ad3cd025d7d48fd119109807d3ec11e80f20e760e7af1"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native/03-before.stderr.txt",
+      "path": "development/native/03-before.stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native/03-before.stdout.txt",
+      "path": "development/native/03-before.stdout.txt",
+      "sha256": "f72e82485e9d11f5c078360a9231faf131958219d24ad92b3bfc84c655256948"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native/10-create-late-missing.command.json",
+      "path": "development/native/10-create-late-missing.command.json",
+      "sha256": "dfa93d5fe5184d890d410c031301b7500d933f3504e404e0f91e0f9cfe016367"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native/10-create-late-missing.identity.json",
+      "path": "development/native/10-create-late-missing.identity.json",
+      "sha256": "4769f4f035e3ba55c2f0f2ba93a5e5b2d0cb5bc60085932b3bd271bc54d4f49d"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native/10-create-late-missing.rc.txt",
+      "path": "development/native/10-create-late-missing.rc.txt",
+      "sha256": "4355a46b19d348dc2f57c046f8ef63d4538ebb936000f3c9ee954a27460dd865"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native/10-create-late-missing.sql",
+      "path": "development/native/10-create-late-missing.sql",
+      "sha256": "424e5cec505622b1a0f6f2ae1aa83caec7be10818c1dc44ac4898de5d3f1b75f"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native/10-create-late-missing.stderr.txt",
+      "path": "development/native/10-create-late-missing.stderr.txt",
+      "sha256": "a9c5ed33d4083ee219ecf2c9191f90379c6202e7a63c497e32090ed7f2d1f228"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native/10-create-late-missing.stdout.txt",
+      "path": "development/native/10-create-late-missing.stdout.txt",
+      "sha256": "68a1bbd41f5e24536b519a9d1665ddc14e4bbd8b71ecd3b63af9e3fd5d98af18"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native/11-create-all-present.command.json",
+      "path": "development/native/11-create-all-present.command.json",
+      "sha256": "98003cdfbcfb4713093c66d0a448a1d948978fc3dd36b258200d90a7dca74d00"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native/11-create-all-present.identity.json",
+      "path": "development/native/11-create-all-present.identity.json",
+      "sha256": "29f184fe85bc95b7a8132c041abf16a2e5b5450391fe94641b241a8f33278281"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native/11-create-all-present.rc.txt",
+      "path": "development/native/11-create-all-present.rc.txt",
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native/11-create-all-present.sql",
+      "path": "development/native/11-create-all-present.sql",
+      "sha256": "b66c16a90ec9ac2f53318aebca630917246eb39bbeb441f8105a58ad57172727"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native/11-create-all-present.stderr.txt",
+      "path": "development/native/11-create-all-present.stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native/11-create-all-present.stdout.txt",
+      "path": "development/native/11-create-all-present.stdout.txt",
+      "sha256": "bdaca64373fb7589318d0a277d0bd6f50b17a71192edeae4e6924de311c64841"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native/12-add-missing.command.json",
+      "path": "development/native/12-add-missing.command.json",
+      "sha256": "1c18c8c7803d147cc9398738e6ecf1f8aa59f33300a41ba56b6cc81b96d67906"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native/12-add-missing.identity.json",
+      "path": "development/native/12-add-missing.identity.json",
+      "sha256": "77faf20c3253d7c3dbbb1d759799e3fa4db78d84c035c1b93b66ae669825aa04"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native/12-add-missing.rc.txt",
+      "path": "development/native/12-add-missing.rc.txt",
+      "sha256": "4355a46b19d348dc2f57c046f8ef63d4538ebb936000f3c9ee954a27460dd865"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native/12-add-missing.sql",
+      "path": "development/native/12-add-missing.sql",
+      "sha256": "806cecf22b7621092f62ba6c33518679b1d4d7d192d62fca0c01af8cae81e01f"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native/12-add-missing.stderr.txt",
+      "path": "development/native/12-add-missing.stderr.txt",
+      "sha256": "a9c5ed33d4083ee219ecf2c9191f90379c6202e7a63c497e32090ed7f2d1f228"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native/12-add-missing.stdout.txt",
+      "path": "development/native/12-add-missing.stdout.txt",
+      "sha256": "6fcafac887d55140124c0e57b741f74f94ba88f3bc5b340212dc31e2bf698146"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native/13-reorg-missing.command.json",
+      "path": "development/native/13-reorg-missing.command.json",
+      "sha256": "2ea9553794c18d245d91ac9a58d18e18790d09939849f6687d14e7d5b062a0b7"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native/13-reorg-missing.identity.json",
+      "path": "development/native/13-reorg-missing.identity.json",
+      "sha256": "28ebb003cfdb4ecea10d2bf106e40c0a984753d93e29609f3bdb8a28e418d9b3"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native/13-reorg-missing.rc.txt",
+      "path": "development/native/13-reorg-missing.rc.txt",
+      "sha256": "4355a46b19d348dc2f57c046f8ef63d4538ebb936000f3c9ee954a27460dd865"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native/13-reorg-missing.sql",
+      "path": "development/native/13-reorg-missing.sql",
+      "sha256": "0e6180f4af79d23ff7da275c832cb7881ce800db7d6dc415cc11449bcb3b814d"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native/13-reorg-missing.stderr.txt",
+      "path": "development/native/13-reorg-missing.stderr.txt",
+      "sha256": "a9c5ed33d4083ee219ecf2c9191f90379c6202e7a63c497e32090ed7f2d1f228"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native/13-reorg-missing.stdout.txt",
+      "path": "development/native/13-reorg-missing.stdout.txt",
+      "sha256": "a267ed76d5d55fd13eeddb4465790826a381865ec63d99b689dae095149d1e85"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native/14-after-missing.command.json",
+      "path": "development/native/14-after-missing.command.json",
+      "sha256": "681fdad055e33855397655dcd9c7f7585d04422a374616d10e4762cd35786b64"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native/14-after-missing.identity.json",
+      "path": "development/native/14-after-missing.identity.json",
+      "sha256": "81c8e1b2b417a092df95529342a293a5f5492ab7eafb671a77e3369ff7b79c2e"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native/14-after-missing.rc.txt",
+      "path": "development/native/14-after-missing.rc.txt",
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native/14-after-missing.sql",
+      "path": "development/native/14-after-missing.sql",
+      "sha256": "202039da36f129a48f0ad3cd025d7d48fd119109807d3ec11e80f20e760e7af1"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native/14-after-missing.stderr.txt",
+      "path": "development/native/14-after-missing.stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native/14-after-missing.stdout.txt",
+      "path": "development/native/14-after-missing.stdout.txt",
+      "sha256": "5ea0a3a69fc52e19c145cb5f7c0c92cfc884c639496e0bd2faa7848111c027b1"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native/20-add-present.command.json",
+      "path": "development/native/20-add-present.command.json",
+      "sha256": "5ef42dd0418b5c5ce5ac65b05945598c590afa2a5ca07c750fd9bf56e51c4a96"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native/20-add-present.identity.json",
+      "path": "development/native/20-add-present.identity.json",
+      "sha256": "edfa02c6a783a92e93a89187d880a9a6f1f4dbe8cfabb5a579e211e131364bdb"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native/20-add-present.rc.txt",
+      "path": "development/native/20-add-present.rc.txt",
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native/20-add-present.sql",
+      "path": "development/native/20-add-present.sql",
+      "sha256": "246356541c694cc29a6434b767d725932bb330996018380c6bc72e4a183b1a94"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native/20-add-present.stderr.txt",
+      "path": "development/native/20-add-present.stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native/20-add-present.stdout.txt",
+      "path": "development/native/20-add-present.stdout.txt",
+      "sha256": "c9934ff0c939f18a27df8394ddc2f5a1f7f3dc0769338c6983998aaf75ed0e4d"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native/21-reorg-present.command.json",
+      "path": "development/native/21-reorg-present.command.json",
+      "sha256": "46f07245c8be95b20fec245d078fe528b67b08df9efd90523596bdc0e9decdab"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native/21-reorg-present.identity.json",
+      "path": "development/native/21-reorg-present.identity.json",
+      "sha256": "64134668801c15fc9efb104c6187fcd0c65d177ec50b64bc59ac845bd9dd921f"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native/21-reorg-present.rc.txt",
+      "path": "development/native/21-reorg-present.rc.txt",
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native/21-reorg-present.sql",
+      "path": "development/native/21-reorg-present.sql",
+      "sha256": "a757e80e981a446bf5ee18cf92fd35d7c6ffbe98ac7a93c112821af2d6e16aeb"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native/21-reorg-present.stderr.txt",
+      "path": "development/native/21-reorg-present.stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native/21-reorg-present.stdout.txt",
+      "path": "development/native/21-reorg-present.stdout.txt",
+      "sha256": "2d41a149e3152ed0bccb9e9971353cacc510b474ae35fa0ca62f00f366945b13"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native/22-reorg-omitted.command.json",
+      "path": "development/native/22-reorg-omitted.command.json",
+      "sha256": "1d89062aa360a1d003dd7420af9d90978aab62ce7cf870101412582514549a7b"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native/22-reorg-omitted.identity.json",
+      "path": "development/native/22-reorg-omitted.identity.json",
+      "sha256": "f2ffdd41380b2c0dc256e10396656844e4fca2ccf4eaf803c4232c032b862221"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native/22-reorg-omitted.rc.txt",
+      "path": "development/native/22-reorg-omitted.rc.txt",
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native/22-reorg-omitted.sql",
+      "path": "development/native/22-reorg-omitted.sql",
+      "sha256": "a77881f62bce2e15fd37fa7be30579c8fdd439adc944b7c6c0d8c528fab01a82"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native/22-reorg-omitted.stderr.txt",
+      "path": "development/native/22-reorg-omitted.stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native/22-reorg-omitted.stdout.txt",
+      "path": "development/native/22-reorg-omitted.stdout.txt",
+      "sha256": "eb6b5d48b3a18a5a0f810f1f90b8d44604e318f93a383b87cfd55396162110bf"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native/23-reorg-default.command.json",
+      "path": "development/native/23-reorg-default.command.json",
+      "sha256": "c0c3ee3fd830652577eb89bf7d10a1c3243edaeaef9accae9dd48ab49b99a359"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native/23-reorg-default.identity.json",
+      "path": "development/native/23-reorg-default.identity.json",
+      "sha256": "433bf0e1610cbff92d1b2e7b9caad8b0bf6e6e508906ffa9cf839853c054e4b2"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native/23-reorg-default.rc.txt",
+      "path": "development/native/23-reorg-default.rc.txt",
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native/23-reorg-default.sql",
+      "path": "development/native/23-reorg-default.sql",
+      "sha256": "f71f1b672f6064a881a4ced395df668fbb0accf812278b979910c61d90e92e10"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native/23-reorg-default.stderr.txt",
+      "path": "development/native/23-reorg-default.stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native/23-reorg-default.stdout.txt",
+      "path": "development/native/23-reorg-default.stdout.txt",
+      "sha256": "00d89bc54c219c8d142e9684ba489830aa1de974441cf4373144f11b8ce76936"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native/24-add-omitted-default.command.json",
+      "path": "development/native/24-add-omitted-default.command.json",
+      "sha256": "b76d34359430facb75190c5e37a2300b029f5e43c5960208b39147586416660b"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native/24-add-omitted-default.identity.json",
+      "path": "development/native/24-add-omitted-default.identity.json",
+      "sha256": "7b6909530249d2d48161436fffc9e63e78fb1df6fefd1f8166ea548b5398e0dc"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native/24-add-omitted-default.rc.txt",
+      "path": "development/native/24-add-omitted-default.rc.txt",
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native/24-add-omitted-default.sql",
+      "path": "development/native/24-add-omitted-default.sql",
+      "sha256": "525b6cd89a52434e1347a25bb220deac76c7dd71c9ca1540f7175146889b49e2"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native/24-add-omitted-default.stderr.txt",
+      "path": "development/native/24-add-omitted-default.stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native/24-add-omitted-default.stdout.txt",
+      "path": "development/native/24-add-omitted-default.stdout.txt",
+      "sha256": "6df1457b238f7a80044e974aa734dc552f55d8b6c72d4236e1ee6e2be28234f5"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native/25-after-applied.command.json",
+      "path": "development/native/25-after-applied.command.json",
+      "sha256": "681fdad055e33855397655dcd9c7f7585d04422a374616d10e4762cd35786b64"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native/25-after-applied.identity.json",
+      "path": "development/native/25-after-applied.identity.json",
+      "sha256": "700a795d89c8e1ac958bdfd639c383f1da98a2a9d8852582e6bb143964790ab7"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native/25-after-applied.rc.txt",
+      "path": "development/native/25-after-applied.rc.txt",
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native/25-after-applied.sql",
+      "path": "development/native/25-after-applied.sql",
+      "sha256": "202039da36f129a48f0ad3cd025d7d48fd119109807d3ec11e80f20e760e7af1"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native/25-after-applied.stderr.txt",
+      "path": "development/native/25-after-applied.stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native/25-after-applied.stdout.txt",
+      "path": "development/native/25-after-applied.stdout.txt",
+      "sha256": "42bb351d926c898d35a59dbfc744199a478a7ca1d08acbb041195cae0b9ea81e"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native/26-drop-bound-ok.command.json",
+      "path": "development/native/26-drop-bound-ok.command.json",
+      "sha256": "f9cee82536feb48883416999e1aabc9a5bfab3ca9effeee70f610830f4369eba"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native/26-drop-bound-ok.identity.json",
+      "path": "development/native/26-drop-bound-ok.identity.json",
+      "sha256": "c10ae012b10277240f0232ce92bf6e8ff52ab7e831da51106f1c964b0a990411"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native/26-drop-bound-ok.rc.txt",
+      "path": "development/native/26-drop-bound-ok.rc.txt",
+      "sha256": "4355a46b19d348dc2f57c046f8ef63d4538ebb936000f3c9ee954a27460dd865"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native/26-drop-bound-ok.sql",
+      "path": "development/native/26-drop-bound-ok.sql",
+      "sha256": "4823d6b67aa3761655d6bab91a8408d78de332986ee8652bc9a2a25c972f6ee7"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native/26-drop-bound-ok.stderr.txt",
+      "path": "development/native/26-drop-bound-ok.stderr.txt",
+      "sha256": "bf3462ebeaf726efa979a0e90057eca9688dc87932ff4fcdaf0fcf9b8d88ef99"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native/26-drop-bound-ok.stdout.txt",
+      "path": "development/native/26-drop-bound-ok.stdout.txt",
+      "sha256": "bb3a21bad22f7f41727ae1eb1a0877212e285c6796535b46ddeb441a421dd41a"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native/27-drop-old-with-unaffected-members.command.json",
+      "path": "development/native/27-drop-old-with-unaffected-members.command.json",
+      "sha256": "928746b8347e16ddb209050df8026ac777e2137ae4453b45787e9b65174cb34f"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native/27-drop-old-with-unaffected-members.identity.json",
+      "path": "development/native/27-drop-old-with-unaffected-members.identity.json",
+      "sha256": "cbf9539d176598fe345631bd724bf1bae097bceb3934f115a6e8ebce835c6485"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native/27-drop-old-with-unaffected-members.rc.txt",
+      "path": "development/native/27-drop-old-with-unaffected-members.rc.txt",
+      "sha256": "4355a46b19d348dc2f57c046f8ef63d4538ebb936000f3c9ee954a27460dd865"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native/27-drop-old-with-unaffected-members.sql",
+      "path": "development/native/27-drop-old-with-unaffected-members.sql",
+      "sha256": "18e9e09788a420d92f59ad7a9f97a098d87ad136489c574a5776530718d9b469"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native/27-drop-old-with-unaffected-members.stderr.txt",
+      "path": "development/native/27-drop-old-with-unaffected-members.stderr.txt",
+      "sha256": "7852b3bf33544a662b8e3ea88c5ae7a8878347744890c5478e8330386bda462b"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native/27-drop-old-with-unaffected-members.stdout.txt",
+      "path": "development/native/27-drop-old-with-unaffected-members.stdout.txt",
+      "sha256": "9d03a49f202ef56602c21a71297afb38474a315b2bfabe39cfcbf3935edba3d2"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native/30-subpartition-named-missing.command.json",
+      "path": "development/native/30-subpartition-named-missing.command.json",
+      "sha256": "2a4b26e231f10b16e37f1b1910c8ab596aa75ee12722c5dac0c1682ffa00c6ab"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native/30-subpartition-named-missing.identity.json",
+      "path": "development/native/30-subpartition-named-missing.identity.json",
+      "sha256": "bdac0de5b0cd9cff67d63c3b2a2ae50a66d2d95f1e4f5de0d5cd6e1a7a56d593"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native/30-subpartition-named-missing.rc.txt",
+      "path": "development/native/30-subpartition-named-missing.rc.txt",
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native/30-subpartition-named-missing.sql",
+      "path": "development/native/30-subpartition-named-missing.sql",
+      "sha256": "3d34fa50e67a66af2a098710c1c7e8766c77256b571997c94e5e0890a6857cbb"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native/30-subpartition-named-missing.stderr.txt",
+      "path": "development/native/30-subpartition-named-missing.stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native/30-subpartition-named-missing.stdout.txt",
+      "path": "development/native/30-subpartition-named-missing.stdout.txt",
+      "sha256": "a54854db04bfc4a4fa3d112cdc9a27d95f1876e85948e261d6112282adaf97d1"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native/31-subpartition-parent-known.command.json",
+      "path": "development/native/31-subpartition-parent-known.command.json",
+      "sha256": "527461399fd3d37cd1b10bc939c78d76750f56f8424f6e549eef034b577a7a2c"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native/31-subpartition-parent-known.identity.json",
+      "path": "development/native/31-subpartition-parent-known.identity.json",
+      "sha256": "371f206b0b752dcddadb4f11ababa7051c660462a5b6c1755aae1b9b407e5125"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native/31-subpartition-parent-known.rc.txt",
+      "path": "development/native/31-subpartition-parent-known.rc.txt",
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native/31-subpartition-parent-known.sql",
+      "path": "development/native/31-subpartition-parent-known.sql",
+      "sha256": "ec5cb031bb36de5ed286c12130558e4c27131678adde60045f4793ee4857aaca"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native/31-subpartition-parent-known.stderr.txt",
+      "path": "development/native/31-subpartition-parent-known.stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native/31-subpartition-parent-known.stdout.txt",
+      "path": "development/native/31-subpartition-parent-known.stdout.txt",
+      "sha256": "140c1d900a872874985fabed2a8eb3c552b61f8626e97f2fdd134d4dbcf49982"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native/32-after-subpartition.command.json",
+      "path": "development/native/32-after-subpartition.command.json",
+      "sha256": "681fdad055e33855397655dcd9c7f7585d04422a374616d10e4762cd35786b64"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native/32-after-subpartition.identity.json",
+      "path": "development/native/32-after-subpartition.identity.json",
+      "sha256": "a7f98804be1f91cabd43bf8257fc19cda19d78e9821fdbe171d482e99f8ff036"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native/32-after-subpartition.rc.txt",
+      "path": "development/native/32-after-subpartition.rc.txt",
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native/32-after-subpartition.sql",
+      "path": "development/native/32-after-subpartition.sql",
+      "sha256": "202039da36f129a48f0ad3cd025d7d48fd119109807d3ec11e80f20e760e7af1"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native/32-after-subpartition.stderr.txt",
+      "path": "development/native/32-after-subpartition.stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native/32-after-subpartition.stdout.txt",
+      "path": "development/native/32-after-subpartition.stdout.txt",
+      "sha256": "2ad5d623905342a808291f9f56ae899ce6680cf4f944be92f4189ebedc6dc38c"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native/40-release-old-refs.command.json",
+      "path": "development/native/40-release-old-refs.command.json",
+      "sha256": "16c73a511ecda3fe67faac2b2ac12c473bd9bf0a45a50c59ce2736a775cbffb1"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native/40-release-old-refs.identity.json",
+      "path": "development/native/40-release-old-refs.identity.json",
+      "sha256": "c092f96380b955e523c8ebf1b0b3755dd0da4c5ee707a41d512d87b6ecbcd054"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native/40-release-old-refs.rc.txt",
+      "path": "development/native/40-release-old-refs.rc.txt",
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native/40-release-old-refs.sql",
+      "path": "development/native/40-release-old-refs.sql",
+      "sha256": "0d8add2aa641fdf0ecbf2e1778bf88bbfd25df000b8ed54e4b6394bb7c4bd04f"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native/40-release-old-refs.stderr.txt",
+      "path": "development/native/40-release-old-refs.stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native/40-release-old-refs.stdout.txt",
+      "path": "development/native/40-release-old-refs.stdout.txt",
+      "sha256": "c59c88696c3c55900258452bfdac8c0cae578043314b6e0a7ebc79f0330950f7"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native/41-before-drop-retired-old.command.json",
+      "path": "development/native/41-before-drop-retired-old.command.json",
+      "sha256": "681fdad055e33855397655dcd9c7f7585d04422a374616d10e4762cd35786b64"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native/41-before-drop-retired-old.identity.json",
+      "path": "development/native/41-before-drop-retired-old.identity.json",
+      "sha256": "b29a57066adfa503bc13433ef6b79cd480026c5e111563994a78eefa95255511"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native/41-before-drop-retired-old.rc.txt",
+      "path": "development/native/41-before-drop-retired-old.rc.txt",
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native/41-before-drop-retired-old.sql",
+      "path": "development/native/41-before-drop-retired-old.sql",
+      "sha256": "202039da36f129a48f0ad3cd025d7d48fd119109807d3ec11e80f20e760e7af1"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native/41-before-drop-retired-old.stderr.txt",
+      "path": "development/native/41-before-drop-retired-old.stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native/41-before-drop-retired-old.stdout.txt",
+      "path": "development/native/41-before-drop-retired-old.stdout.txt",
+      "sha256": "2ec39da25d91cb9a54ae707b9b90627f2b237b69d77ff0e287109fa22242368b"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native/42-drop-retired-old.command.json",
+      "path": "development/native/42-drop-retired-old.command.json",
+      "sha256": "928746b8347e16ddb209050df8026ac777e2137ae4453b45787e9b65174cb34f"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native/42-drop-retired-old.identity.json",
+      "path": "development/native/42-drop-retired-old.identity.json",
+      "sha256": "15b58fc8bb6d32960af458010a75754968a3cd0ebc4c6474747e97d817307f38"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native/42-drop-retired-old.rc.txt",
+      "path": "development/native/42-drop-retired-old.rc.txt",
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native/42-drop-retired-old.sql",
+      "path": "development/native/42-drop-retired-old.sql",
+      "sha256": "18e9e09788a420d92f59ad7a9f97a098d87ad136489c574a5776530718d9b469"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native/42-drop-retired-old.stderr.txt",
+      "path": "development/native/42-drop-retired-old.stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native/42-drop-retired-old.stdout.txt",
+      "path": "development/native/42-drop-retired-old.stdout.txt",
+      "sha256": "99e46e20967423b1cc34004004dfa7bfea18bf38645a6f87d89d55433ca8593a"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native/43-after-drop-retired-old.command.json",
+      "path": "development/native/43-after-drop-retired-old.command.json",
+      "sha256": "681fdad055e33855397655dcd9c7f7585d04422a374616d10e4762cd35786b64"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native/43-after-drop-retired-old.identity.json",
+      "path": "development/native/43-after-drop-retired-old.identity.json",
+      "sha256": "b41efef91ed52aaa16cd45434138b92044e9b379a783f3764337456ce035a9a1"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native/43-after-drop-retired-old.rc.txt",
+      "path": "development/native/43-after-drop-retired-old.rc.txt",
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native/43-after-drop-retired-old.sql",
+      "path": "development/native/43-after-drop-retired-old.sql",
+      "sha256": "202039da36f129a48f0ad3cd025d7d48fd119109807d3ec11e80f20e760e7af1"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native/43-after-drop-retired-old.stderr.txt",
+      "path": "development/native/43-after-drop-retired-old.stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native/43-after-drop-retired-old.stdout.txt",
+      "path": "development/native/43-after-drop-retired-old.stdout.txt",
+      "sha256": "dc027cb4a35be04f77efbd02ecbdd3078f24404a7216b447ce1667e834cef3fd"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native/90-cleanup.command.json",
+      "path": "development/native/90-cleanup.command.json",
+      "sha256": "3a133c908b79e9eac84e056f6df39261ba8c905a95c39e278e8b63329f0b26f3"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native/90-cleanup.identity.json",
+      "path": "development/native/90-cleanup.identity.json",
+      "sha256": "1d1b74569c4911e457c7e2ccda9cea3aee27efcd18e9882356fd751433d5c132"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native/90-cleanup.rc.txt",
+      "path": "development/native/90-cleanup.rc.txt",
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native/90-cleanup.sql",
+      "path": "development/native/90-cleanup.sql",
+      "sha256": "cd4fa049fd2464377be0cc279f7d6969c1ca4cf05f33715604019cab378349aa"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native/90-cleanup.stderr.txt",
+      "path": "development/native/90-cleanup.stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native/90-cleanup.stdout.txt",
+      "path": "development/native/90-cleanup.stdout.txt",
+      "sha256": "737f317180ffafa7ef67332a6e7a8c9370aa4ddf0d15949c60c0219d4773b79a"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native/index.json",
+      "path": "development/native/index.json",
+      "sha256": "4b822bd7fd9320d2d3291be4314744664c259dcba4791f01fe2c3d70c884fd74"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native-scheme/01-version.command.json",
+      "path": "development/native-scheme/01-version.command.json",
+      "sha256": "f33478f5e53c7584b88d11b8cde3f7c40710827a951b160761a0818f6f967f2f"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native-scheme/01-version.head.txt",
+      "path": "development/native-scheme/01-version.head.txt",
+      "sha256": "3aa68f5fc414679f94cb073e1663d63d0368911bc8303944267e65c9b2c46226"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native-scheme/01-version.rc.txt",
+      "path": "development/native-scheme/01-version.rc.txt",
+      "sha256": "4355a46b19d348dc2f57c046f8ef63d4538ebb936000f3c9ee954a27460dd865"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native-scheme/01-version.sql",
+      "path": "development/native-scheme/01-version.sql",
+      "sha256": "321a9b77ce0fb46e610bf3ed914d2c9f0924476ff82982943e97e887d1e5876e"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native-scheme/01-version.stderr.txt",
+      "path": "development/native-scheme/01-version.stderr.txt",
+      "sha256": "5fa58267d6deec94bd5080c75f3246dc339a6fdeb42da0b0f33e960b1a3707ba"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native-scheme/01-version.stdout.txt",
+      "path": "development/native-scheme/01-version.stdout.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native-scheme-v2/01-version.command.json",
+      "path": "development/native-scheme-v2/01-version.command.json",
+      "sha256": "a94fc725023ae9f2952c9a6e53b60f1556703b2d3cd2e60be8cfd2ffcb1ff48e"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native-scheme-v2/01-version.head.txt",
+      "path": "development/native-scheme-v2/01-version.head.txt",
+      "sha256": "3aa68f5fc414679f94cb073e1663d63d0368911bc8303944267e65c9b2c46226"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native-scheme-v2/01-version.rc.txt",
+      "path": "development/native-scheme-v2/01-version.rc.txt",
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native-scheme-v2/01-version.sql",
+      "path": "development/native-scheme-v2/01-version.sql",
+      "sha256": "321a9b77ce0fb46e610bf3ed914d2c9f0924476ff82982943e97e887d1e5876e"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native-scheme-v2/01-version.stderr.txt",
+      "path": "development/native-scheme-v2/01-version.stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native-scheme-v2/01-version.stdout.txt",
+      "path": "development/native-scheme-v2/01-version.stdout.txt",
+      "sha256": "c3b3891c30d466afda2e9c32d2af3daee907a41d7e2d5f9ec319ad8e6b19c2dd"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native-scheme-v2/02-schema.command.json",
+      "path": "development/native-scheme-v2/02-schema.command.json",
+      "sha256": "e2ffbbe81993d8074bd60893aa358fdd22ce32fd3a03e4b6cc137833558b00b9"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native-scheme-v2/02-schema.head.txt",
+      "path": "development/native-scheme-v2/02-schema.head.txt",
+      "sha256": "3aa68f5fc414679f94cb073e1663d63d0368911bc8303944267e65c9b2c46226"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native-scheme-v2/02-schema.rc.txt",
+      "path": "development/native-scheme-v2/02-schema.rc.txt",
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native-scheme-v2/02-schema.sql",
+      "path": "development/native-scheme-v2/02-schema.sql",
+      "sha256": "01532a5b33801a32efc99578b6190556b24f5d9e2e69426c26221fafec6343ee"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native-scheme-v2/02-schema.stderr.txt",
+      "path": "development/native-scheme-v2/02-schema.stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native-scheme-v2/02-schema.stdout.txt",
+      "path": "development/native-scheme-v2/02-schema.stdout.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native-scheme-v2/03-ok.command.json",
+      "path": "development/native-scheme-v2/03-ok.command.json",
+      "sha256": "03c6a90f19242e93dccb86dddb51b71b448b71cddf8b3af2e479e98555046144"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native-scheme-v2/03-ok.head.txt",
+      "path": "development/native-scheme-v2/03-ok.head.txt",
+      "sha256": "3aa68f5fc414679f94cb073e1663d63d0368911bc8303944267e65c9b2c46226"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native-scheme-v2/03-ok.rc.txt",
+      "path": "development/native-scheme-v2/03-ok.rc.txt",
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native-scheme-v2/03-ok.sql",
+      "path": "development/native-scheme-v2/03-ok.sql",
+      "sha256": "1d91e283c10e30976bc7198d2962d7a15c4061245f9bcc185168f1e73525ecdf"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native-scheme-v2/03-ok.stderr.txt",
+      "path": "development/native-scheme-v2/03-ok.stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native-scheme-v2/03-ok.stdout.txt",
+      "path": "development/native-scheme-v2/03-ok.stdout.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native-scheme-v2/04-old.command.json",
+      "path": "development/native-scheme-v2/04-old.command.json",
+      "sha256": "a849e505f8bf78461da25c0ad99fb5308094e29ffb0a82afa7541c249bb18462"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native-scheme-v2/04-old.head.txt",
+      "path": "development/native-scheme-v2/04-old.head.txt",
+      "sha256": "3aa68f5fc414679f94cb073e1663d63d0368911bc8303944267e65c9b2c46226"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native-scheme-v2/04-old.rc.txt",
+      "path": "development/native-scheme-v2/04-old.rc.txt",
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native-scheme-v2/04-old.sql",
+      "path": "development/native-scheme-v2/04-old.sql",
+      "sha256": "0c0f8f9a73ccf3f1ceb62fce9db84af02233569a1d2b3f7aed0d8d592d84a735"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native-scheme-v2/04-old.stderr.txt",
+      "path": "development/native-scheme-v2/04-old.stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native-scheme-v2/04-old.stdout.txt",
+      "path": "development/native-scheme-v2/04-old.stdout.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native-scheme-v2/05-table.command.json",
+      "path": "development/native-scheme-v2/05-table.command.json",
+      "sha256": "bfe27d95347a65e62cd4a1bddc255c1f52df73943c39128b70196c66ed97360a"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native-scheme-v2/05-table.head.txt",
+      "path": "development/native-scheme-v2/05-table.head.txt",
+      "sha256": "3aa68f5fc414679f94cb073e1663d63d0368911bc8303944267e65c9b2c46226"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native-scheme-v2/05-table.rc.txt",
+      "path": "development/native-scheme-v2/05-table.rc.txt",
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native-scheme-v2/05-table.sql",
+      "path": "development/native-scheme-v2/05-table.sql",
+      "sha256": "f4f88526ad64ad9a98a5ac4e95e25d03c38e4428edc8ecb7ce925a90a135fda6"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native-scheme-v2/05-table.stderr.txt",
+      "path": "development/native-scheme-v2/05-table.stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native-scheme-v2/05-table.stdout.txt",
+      "path": "development/native-scheme-v2/05-table.stdout.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native-scheme-v2/06-replace.command.json",
+      "path": "development/native-scheme-v2/06-replace.command.json",
+      "sha256": "1b5153011de11f05b1fc7ce9cd4dea3dcc0fbf3898e46619b6031cfb698ab74d"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native-scheme-v2/06-replace.head.txt",
+      "path": "development/native-scheme-v2/06-replace.head.txt",
+      "sha256": "3aa68f5fc414679f94cb073e1663d63d0368911bc8303944267e65c9b2c46226"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native-scheme-v2/06-replace.rc.txt",
+      "path": "development/native-scheme-v2/06-replace.rc.txt",
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native-scheme-v2/06-replace.sql",
+      "path": "development/native-scheme-v2/06-replace.sql",
+      "sha256": "18f2cd9e81cbaf09e1f3c3bca97baa7ad231bb27e007416bdc38704f73571049"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native-scheme-v2/06-replace.stderr.txt",
+      "path": "development/native-scheme-v2/06-replace.stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native-scheme-v2/06-replace.stdout.txt",
+      "path": "development/native-scheme-v2/06-replace.stdout.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native-scheme-v2/07-after.command.json",
+      "path": "development/native-scheme-v2/07-after.command.json",
+      "sha256": "0dd08e3d0265ae1b599c2daccf620ffb6fd3344f26f5dbb179c2109de8daa7f7"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native-scheme-v2/07-after.head.txt",
+      "path": "development/native-scheme-v2/07-after.head.txt",
+      "sha256": "3aa68f5fc414679f94cb073e1663d63d0368911bc8303944267e65c9b2c46226"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native-scheme-v2/07-after.rc.txt",
+      "path": "development/native-scheme-v2/07-after.rc.txt",
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native-scheme-v2/07-after.sql",
+      "path": "development/native-scheme-v2/07-after.sql",
+      "sha256": "e5266563000737c6bfbb11740acaf599b4460d292e22a02c9f5e9779772df0e4"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native-scheme-v2/07-after.stderr.txt",
+      "path": "development/native-scheme-v2/07-after.stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native-scheme-v2/07-after.stdout.txt",
+      "path": "development/native-scheme-v2/07-after.stdout.txt",
+      "sha256": "2971379856a170d7c0292094d161b8de30338f40028b8631ec0cd6258cc1391f"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native-scheme-v2/08-drop-old.command.json",
+      "path": "development/native-scheme-v2/08-drop-old.command.json",
+      "sha256": "ec5014bd5ae68902afb26a59ee04aca75094a2e24092b2d69ddbe24b7d53b51d"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native-scheme-v2/08-drop-old.head.txt",
+      "path": "development/native-scheme-v2/08-drop-old.head.txt",
+      "sha256": "3aa68f5fc414679f94cb073e1663d63d0368911bc8303944267e65c9b2c46226"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native-scheme-v2/08-drop-old.rc.txt",
+      "path": "development/native-scheme-v2/08-drop-old.rc.txt",
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native-scheme-v2/08-drop-old.sql",
+      "path": "development/native-scheme-v2/08-drop-old.sql",
+      "sha256": "c25565dbf188a6f75bbda032acc22230422212bc39c434d50a7ef79b2ce98427"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native-scheme-v2/08-drop-old.stderr.txt",
+      "path": "development/native-scheme-v2/08-drop-old.stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native-scheme-v2/08-drop-old.stdout.txt",
+      "path": "development/native-scheme-v2/08-drop-old.stdout.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native-scheme-v2/09-drop-ok-bound.command.json",
+      "path": "development/native-scheme-v2/09-drop-ok-bound.command.json",
+      "sha256": "58b5f64f3d58f06b8dc005f0c695310bef276f761d0fed271709fe21a48a80f4"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native-scheme-v2/09-drop-ok-bound.head.txt",
+      "path": "development/native-scheme-v2/09-drop-ok-bound.head.txt",
+      "sha256": "3aa68f5fc414679f94cb073e1663d63d0368911bc8303944267e65c9b2c46226"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native-scheme-v2/09-drop-ok-bound.rc.txt",
+      "path": "development/native-scheme-v2/09-drop-ok-bound.rc.txt",
+      "sha256": "4355a46b19d348dc2f57c046f8ef63d4538ebb936000f3c9ee954a27460dd865"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native-scheme-v2/09-drop-ok-bound.sql",
+      "path": "development/native-scheme-v2/09-drop-ok-bound.sql",
+      "sha256": "c88b90057a814cb120ad159465ac5bbf7d87e4024ec05deb55942536a2084a83"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native-scheme-v2/09-drop-ok-bound.stderr.txt",
+      "path": "development/native-scheme-v2/09-drop-ok-bound.stderr.txt",
+      "sha256": "176eabc8aef7862c35403631abed184d181011a8e59d243942f47915458a69ee"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native-scheme-v2/09-drop-ok-bound.stdout.txt",
+      "path": "development/native-scheme-v2/09-drop-ok-bound.stdout.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native-scheme-v2/10-missing.command.json",
+      "path": "development/native-scheme-v2/10-missing.command.json",
+      "sha256": "e278ed06f436695c88c932e707fa44686c5364bb3d27c5af15baf5611b35cf87"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native-scheme-v2/10-missing.head.txt",
+      "path": "development/native-scheme-v2/10-missing.head.txt",
+      "sha256": "3aa68f5fc414679f94cb073e1663d63d0368911bc8303944267e65c9b2c46226"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native-scheme-v2/10-missing.rc.txt",
+      "path": "development/native-scheme-v2/10-missing.rc.txt",
+      "sha256": "4355a46b19d348dc2f57c046f8ef63d4538ebb936000f3c9ee954a27460dd865"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native-scheme-v2/10-missing.sql",
+      "path": "development/native-scheme-v2/10-missing.sql",
+      "sha256": "62f90733be6bd1563370299fabd18cfa7e5de20cfc9466f939cf0e705eeef74f"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native-scheme-v2/10-missing.stderr.txt",
+      "path": "development/native-scheme-v2/10-missing.stderr.txt",
+      "sha256": "0b8af622924fe68d99169b8a06771bf59759a0ac5f2bb36063c0d5e541736c7b"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native-scheme-v2/10-missing.stdout.txt",
+      "path": "development/native-scheme-v2/10-missing.stdout.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native-scheme-v2/11-after-refusal.command.json",
+      "path": "development/native-scheme-v2/11-after-refusal.command.json",
+      "sha256": "0dd08e3d0265ae1b599c2daccf620ffb6fd3344f26f5dbb179c2109de8daa7f7"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native-scheme-v2/11-after-refusal.head.txt",
+      "path": "development/native-scheme-v2/11-after-refusal.head.txt",
+      "sha256": "3aa68f5fc414679f94cb073e1663d63d0368911bc8303944267e65c9b2c46226"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native-scheme-v2/11-after-refusal.rc.txt",
+      "path": "development/native-scheme-v2/11-after-refusal.rc.txt",
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native-scheme-v2/11-after-refusal.sql",
+      "path": "development/native-scheme-v2/11-after-refusal.sql",
+      "sha256": "e5266563000737c6bfbb11740acaf599b4460d292e22a02c9f5e9779772df0e4"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native-scheme-v2/11-after-refusal.stderr.txt",
+      "path": "development/native-scheme-v2/11-after-refusal.stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native-scheme-v2/11-after-refusal.stdout.txt",
+      "path": "development/native-scheme-v2/11-after-refusal.stdout.txt",
+      "sha256": "2971379856a170d7c0292094d161b8de30338f40028b8631ec0cd6258cc1391f"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native-scheme-v2/90-clean-schema.command.json",
+      "path": "development/native-scheme-v2/90-clean-schema.command.json",
+      "sha256": "5f68816ba5bacc56f95fb24af3d4e8c8a61d3547dd32d0805f0a7bffb95d9e71"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native-scheme-v2/90-clean-schema.head.txt",
+      "path": "development/native-scheme-v2/90-clean-schema.head.txt",
+      "sha256": "3aa68f5fc414679f94cb073e1663d63d0368911bc8303944267e65c9b2c46226"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native-scheme-v2/90-clean-schema.rc.txt",
+      "path": "development/native-scheme-v2/90-clean-schema.rc.txt",
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native-scheme-v2/90-clean-schema.sql",
+      "path": "development/native-scheme-v2/90-clean-schema.sql",
+      "sha256": "d4b5b440b4742c71dab236848575fc2622ed4c85bab76a7af9378d048debf16b"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native-scheme-v2/90-clean-schema.stderr.txt",
+      "path": "development/native-scheme-v2/90-clean-schema.stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native-scheme-v2/90-clean-schema.stdout.txt",
+      "path": "development/native-scheme-v2/90-clean-schema.stdout.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native-scheme-v2/91-clean-policy.command.json",
+      "path": "development/native-scheme-v2/91-clean-policy.command.json",
+      "sha256": "81ebfaacacdfc43a3e68daaf23726d019a3dc82f9cca0b810aa9c1a88732671f"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native-scheme-v2/91-clean-policy.head.txt",
+      "path": "development/native-scheme-v2/91-clean-policy.head.txt",
+      "sha256": "3aa68f5fc414679f94cb073e1663d63d0368911bc8303944267e65c9b2c46226"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native-scheme-v2/91-clean-policy.rc.txt",
+      "path": "development/native-scheme-v2/91-clean-policy.rc.txt",
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native-scheme-v2/91-clean-policy.sql",
+      "path": "development/native-scheme-v2/91-clean-policy.sql",
+      "sha256": "1b5bd4ed981ed3b25c77960ad6b90f9c91592201461872cc5a34b3c4f6f75ea1"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native-scheme-v2/91-clean-policy.stderr.txt",
+      "path": "development/native-scheme-v2/91-clean-policy.stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native-scheme-v2/91-clean-policy.stdout.txt",
+      "path": "development/native-scheme-v2/91-clean-policy.stdout.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native-scheme-v2/92-clean-policy.command.json",
+      "path": "development/native-scheme-v2/92-clean-policy.command.json",
+      "sha256": "0cf7ff9bc82970c04265325c7e76bf2e4e83f5a4c8f15b97d3b3aaf4271e4c26"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native-scheme-v2/92-clean-policy.head.txt",
+      "path": "development/native-scheme-v2/92-clean-policy.head.txt",
+      "sha256": "3aa68f5fc414679f94cb073e1663d63d0368911bc8303944267e65c9b2c46226"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native-scheme-v2/92-clean-policy.rc.txt",
+      "path": "development/native-scheme-v2/92-clean-policy.rc.txt",
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native-scheme-v2/92-clean-policy.sql",
+      "path": "development/native-scheme-v2/92-clean-policy.sql",
+      "sha256": "7004749b93def4c216032f3fbb471075600466fc8df98580dab0448d5523b827"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native-scheme-v2/92-clean-policy.stderr.txt",
+      "path": "development/native-scheme-v2/92-clean-policy.stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native-scheme-v2/92-clean-policy.stdout.txt",
+      "path": "development/native-scheme-v2/92-clean-policy.stdout.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/green/diff-stat.txt",
+      "path": "development/green/diff-stat.txt",
+      "sha256": "c95da7df56712f0b0446a3e26d706fc1c6a28de5647ae36e6928aa54ca01f6e9"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/green/head.txt",
+      "path": "development/green/head.txt",
+      "sha256": "3aa68f5fc414679f94cb073e1663d63d0368911bc8303944267e65c9b2c46226"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/green/packages.command.txt",
+      "path": "development/green/packages.command.txt",
+      "sha256": "a6810c09d0261697cb592b6f0987f6ab80c3c0d0b6d006df461fade0c2a8fc5c"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/green/packages.rc.txt",
+      "path": "development/green/packages.rc.txt",
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/green/packages.stderr.txt",
+      "path": "development/green/packages.stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/green/packages.stdout.txt",
+      "path": "development/green/packages.stdout.txt",
+      "sha256": "1426bbc0e1eb8d1279f0c8753b059cd1dfbccbeae07a3295e24ba0b330a5808a"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/green/status.txt",
+      "path": "development/green/status.txt",
+      "sha256": "bac321d29e67c5919d75781a912213181dfe42262200f8fc54af96129115dceb"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/green/t14t19t20.command.txt",
+      "path": "development/green/t14t19t20.command.txt",
+      "sha256": "13fb0f46dbde2dea18787d81e278c6ddef018567f092107261e24f698e4bc8ee"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/green/t14t19t20.rc.txt",
+      "path": "development/green/t14t19t20.rc.txt",
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/green/t14t19t20.stderr.txt",
+      "path": "development/green/t14t19t20.stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/green/t14t19t20.stdout.txt",
+      "path": "development/green/t14t19t20.stdout.txt",
+      "sha256": "8345cd833986cc93bd3870d65d58694797e0086b07b0a8b8fddfecc3ce5b2f09"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/green/t20r4.command.txt",
+      "path": "development/green/t20r4.command.txt",
+      "sha256": "c333a5c409ed862a6ed1f87f40cd21b4275880b7bc30e32d1c95919276366c09"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/green/t20r4.rc.txt",
+      "path": "development/green/t20r4.rc.txt",
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/green/t20r4.stderr.txt",
+      "path": "development/green/t20r4.stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/green/t20r4.stdout.txt",
+      "path": "development/green/t20r4.stdout.txt",
+      "sha256": "3af87f4d41c7cf79dfc2ad31e377210a24eb42e4db418d3ba1f533118efc2961"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/red-r1/t20r4r1.rc.txt",
+      "path": "development/red-r1/t20r4r1.rc.txt",
+      "sha256": "4355a46b19d348dc2f57c046f8ef63d4538ebb936000f3c9ee954a27460dd865"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/red-r1/t20r4r1.stderr.txt",
+      "path": "development/red-r1/t20r4r1.stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/red-r1/t20r4r1.stdout.txt",
+      "path": "development/red-r1/t20r4r1.stdout.txt",
+      "sha256": "facf6a19fdd0e030ea1f29d88874589d36140d38db50505312a599184cf3d1fc"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/green-r1/corpus.command.txt",
+      "path": "development/green-r1/corpus.command.txt",
+      "sha256": "2217af9db55b4bd10ff98ccc83fb430d6ffe4c4e42ea8411b5747fd01b8e5a6f"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/green-r1/corpus.rc.txt",
+      "path": "development/green-r1/corpus.rc.txt",
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/green-r1/corpus.stderr.txt",
+      "path": "development/green-r1/corpus.stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/green-r1/corpus.stdout.txt",
+      "path": "development/green-r1/corpus.stdout.txt",
+      "sha256": "720e64174d43e87230b23956c2f9429cf42bd2119c491be67c9d5daa7f3f06e0"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/green-r1/coverage.command.txt",
+      "path": "development/green-r1/coverage.command.txt",
+      "sha256": "a1412553a7b8d5359f58fd0d47d2e3273a04e70de9e540c98db2a1fc1170977f"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/green-r1/coverage.rc.txt",
+      "path": "development/green-r1/coverage.rc.txt",
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/green-r1/coverage.stderr.txt",
+      "path": "development/green-r1/coverage.stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/green-r1/coverage.stdout.txt",
+      "path": "development/green-r1/coverage.stdout.txt",
+      "sha256": "0df676c7336219a79b3f1e13cc51f2207af7ea5e13754e3f4a5cf822cfe487e4"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/green-r1/diff-stat.txt",
+      "path": "development/green-r1/diff-stat.txt",
+      "sha256": "152ef89e4d7ed0a0f8d7b34d747965d9616825146129f4dcb9778dc92054073b"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/green-r1/head.txt",
+      "path": "development/green-r1/head.txt",
+      "sha256": "3aa68f5fc414679f94cb073e1663d63d0368911bc8303944267e65c9b2c46226"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/green-r1/packages.command.txt",
+      "path": "development/green-r1/packages.command.txt",
+      "sha256": "a6810c09d0261697cb592b6f0987f6ab80c3c0d0b6d006df461fade0c2a8fc5c"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/green-r1/packages.rc.txt",
+      "path": "development/green-r1/packages.rc.txt",
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/green-r1/packages.stderr.txt",
+      "path": "development/green-r1/packages.stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/green-r1/packages.stdout.txt",
+      "path": "development/green-r1/packages.stdout.txt",
+      "sha256": "eace0a2f1c1a35e6faaca0e9a54d6e274db111b46e1edc36fcc6c6564918376b"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/green-r1/status.txt",
+      "path": "development/green-r1/status.txt",
+      "sha256": "29cd6b0f62db35d055c05fa9a7c0ee9eee94c8b21172ad2ffbe784e88ea970b4"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/green-r1/t14t19t20.command.txt",
+      "path": "development/green-r1/t14t19t20.command.txt",
+      "sha256": "a47be13fa455cf0c2c241225b5f1291691affd4c248908b27958d3e0c0847089"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/green-r1/t14t19t20.rc.txt",
+      "path": "development/green-r1/t14t19t20.rc.txt",
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/green-r1/t14t19t20.stderr.txt",
+      "path": "development/green-r1/t14t19t20.stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/green-r1/t14t19t20.stdout.txt",
+      "path": "development/green-r1/t14t19t20.stdout.txt",
+      "sha256": "640ed47428ef43f7c1644fb1f2816ecdd74ebeb3e8455d095cdb8358479dd69e"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/green-r1/t20r4.command.txt",
+      "path": "development/green-r1/t20r4.command.txt",
+      "sha256": "880a4889c46d7770be1447b7a0477d297a13591d4228332d32a8bac3497900f7"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/green-r1/t20r4.rc.txt",
+      "path": "development/green-r1/t20r4.rc.txt",
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/green-r1/t20r4.stderr.txt",
+      "path": "development/green-r1/t20r4.stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/green-r1/t20r4.stdout.txt",
+      "path": "development/green-r1/t20r4.stdout.txt",
+      "sha256": "d9d21b445fe79d9f0faf69d14578d13a2e6483f1b82aad6a7b570fd2f3605df7"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/red-final/t20r4r2.rc.txt",
+      "path": "development/red-final/t20r4r2.rc.txt",
+      "sha256": "4355a46b19d348dc2f57c046f8ef63d4538ebb936000f3c9ee954a27460dd865"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/red-final/t20r4r2.stderr.txt",
+      "path": "development/red-final/t20r4r2.stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/red-final/t20r4r2.stdout.txt",
+      "path": "development/red-final/t20r4r2.stdout.txt",
+      "sha256": "92df799df438aa0e8bf1600528a474186a523a675cdf4d372125afdb7c3c3795"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/green-final/corpus.command.txt",
+      "path": "development/green-final/corpus.command.txt",
+      "sha256": "2217af9db55b4bd10ff98ccc83fb430d6ffe4c4e42ea8411b5747fd01b8e5a6f"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/green-final/corpus.rc.txt",
+      "path": "development/green-final/corpus.rc.txt",
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/green-final/corpus.stderr.txt",
+      "path": "development/green-final/corpus.stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/green-final/corpus.stdout.txt",
+      "path": "development/green-final/corpus.stdout.txt",
+      "sha256": "828ea5c6b48fe8e13a3786dd37e325dfac9e92601f55c8815fb70d0f476e1b93"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/green-final/coverage.command.txt",
+      "path": "development/green-final/coverage.command.txt",
+      "sha256": "a1412553a7b8d5359f58fd0d47d2e3273a04e70de9e540c98db2a1fc1170977f"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/green-final/coverage.rc.txt",
+      "path": "development/green-final/coverage.rc.txt",
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/green-final/coverage.stderr.txt",
+      "path": "development/green-final/coverage.stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/green-final/coverage.stdout.txt",
+      "path": "development/green-final/coverage.stdout.txt",
+      "sha256": "fbb7d328e0ce29c4fdc5b7ee3e28517b7f47aa6712664b92dca5ff91f2e99d89"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/green-final/diff-stat.txt",
+      "path": "development/green-final/diff-stat.txt",
+      "sha256": "163786bf49ea21bd44e37f37c8aa4fef83a88a9d720585ed7ca5a1885d0d694d"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/green-final/head.txt",
+      "path": "development/green-final/head.txt",
+      "sha256": "3aa68f5fc414679f94cb073e1663d63d0368911bc8303944267e65c9b2c46226"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/green-final/packages.command.txt",
+      "path": "development/green-final/packages.command.txt",
+      "sha256": "a6810c09d0261697cb592b6f0987f6ab80c3c0d0b6d006df461fade0c2a8fc5c"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/green-final/packages.rc.txt",
+      "path": "development/green-final/packages.rc.txt",
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/green-final/packages.stderr.txt",
+      "path": "development/green-final/packages.stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/green-final/packages.stdout.txt",
+      "path": "development/green-final/packages.stdout.txt",
+      "sha256": "bbe174a2b7477d70e73d107213efa4ef46e00504dc5951b98b468f4ddca64c12"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/green-final/status.txt",
+      "path": "development/green-final/status.txt",
+      "sha256": "29cd6b0f62db35d055c05fa9a7c0ee9eee94c8b21172ad2ffbe784e88ea970b4"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/green-final/t14t19t20.command.txt",
+      "path": "development/green-final/t14t19t20.command.txt",
+      "sha256": "a47be13fa455cf0c2c241225b5f1291691affd4c248908b27958d3e0c0847089"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/green-final/t14t19t20.rc.txt",
+      "path": "development/green-final/t14t19t20.rc.txt",
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/green-final/t14t19t20.stderr.txt",
+      "path": "development/green-final/t14t19t20.stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/green-final/t14t19t20.stdout.txt",
+      "path": "development/green-final/t14t19t20.stdout.txt",
+      "sha256": "3e887d05a1fa80fdd398231565c46ae12d565390c222c2989ea31acc53446092"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/green-final/t20r4.command.txt",
+      "path": "development/green-final/t20r4.command.txt",
+      "sha256": "880a4889c46d7770be1447b7a0477d297a13591d4228332d32a8bac3497900f7"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/green-final/t20r4.rc.txt",
+      "path": "development/green-final/t20r4.rc.txt",
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/green-final/t20r4.stderr.txt",
+      "path": "development/green-final/t20r4.stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/green-final/t20r4.stdout.txt",
+      "path": "development/green-final/t20r4.stdout.txt",
+      "sha256": "68d948adaada3d5e346492fb4a5a3ced5c1ba6eb39b7b7f08370f8e86e63eca4"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/lead-controls-red/batch_state_t20r4_test.go.txt",
+      "path": "development/lead-controls-red/batch_state_t20r4_test.go.txt",
+      "sha256": "3f8f569b4226bb2b9ab70d9aa3adc777029e6dec457154d3bd4d417d65b8f4cb"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/lead-controls-red/focused.command.txt",
+      "path": "development/lead-controls-red/focused.command.txt",
+      "sha256": "c333a5c409ed862a6ed1f87f40cd21b4275880b7bc30e32d1c95919276366c09"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/lead-controls-red/focused.execution.json",
+      "path": "development/lead-controls-red/focused.execution.json",
+      "sha256": "416c326e301c924c1752bdb3a2de35fdf74fd4acdf0679d4058e52ec43e82c8e"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/lead-controls-red/focused.head-after.txt",
+      "path": "development/lead-controls-red/focused.head-after.txt",
+      "sha256": "3aa68f5fc414679f94cb073e1663d63d0368911bc8303944267e65c9b2c46226"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/lead-controls-red/focused.head-before.txt",
+      "path": "development/lead-controls-red/focused.head-before.txt",
+      "sha256": "3aa68f5fc414679f94cb073e1663d63d0368911bc8303944267e65c9b2c46226"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/lead-controls-red/focused.rc.txt",
+      "path": "development/lead-controls-red/focused.rc.txt",
+      "sha256": "4355a46b19d348dc2f57c046f8ef63d4538ebb936000f3c9ee954a27460dd865"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/lead-controls-red/focused.stderr.txt",
+      "path": "development/lead-controls-red/focused.stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/lead-controls-red/focused.stdout.txt",
+      "path": "development/lead-controls-red/focused.stdout.txt",
+      "sha256": "86a35cbd1da81c0ba2363d4be833e72376cff60a14481e8e5e80d22de386ff70"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/lead-controls-red/head.txt",
+      "path": "development/lead-controls-red/head.txt",
+      "sha256": "3aa68f5fc414679f94cb073e1663d63d0368911bc8303944267e65c9b2c46226"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/lead-controls-red/pre-run.diff",
+      "path": "development/lead-controls-red/pre-run.diff",
+      "sha256": "8814afaba1a6bfa0915c040e08b7b7e8ca9ab1372ba0432571e178ffd54dcc93"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/lead-controls-red/status.txt",
+      "path": "development/lead-controls-red/status.txt",
+      "sha256": "29cd6b0f62db35d055c05fa9a7c0ee9eee94c8b21172ad2ffbe784e88ea970b4"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/lead-controls-green/batch_state_t20r4_test.go.txt",
+      "path": "development/lead-controls-green/batch_state_t20r4_test.go.txt",
+      "sha256": "0a6042f3f74fdd9fc3de26f64a80c187c565f23dfb37a0e03aebcba6459c3f12"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/lead-controls-green/diffcheck.command.txt",
+      "path": "development/lead-controls-green/diffcheck.command.txt",
+      "sha256": "d9ef3d1695645413cdc098707c0b447cc19275eb61556bf9d84a09633cf075a6"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/lead-controls-green/diffcheck.execution.json",
+      "path": "development/lead-controls-green/diffcheck.execution.json",
+      "sha256": "f4e70ed3c8e8d117a1cbfb067590bd324c5a945416a15188d171c6cefecb3af0"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/lead-controls-green/diffcheck.head-after.txt",
+      "path": "development/lead-controls-green/diffcheck.head-after.txt",
+      "sha256": "3aa68f5fc414679f94cb073e1663d63d0368911bc8303944267e65c9b2c46226"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/lead-controls-green/diffcheck.head-before.txt",
+      "path": "development/lead-controls-green/diffcheck.head-before.txt",
+      "sha256": "3aa68f5fc414679f94cb073e1663d63d0368911bc8303944267e65c9b2c46226"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/lead-controls-green/diffcheck.rc.txt",
+      "path": "development/lead-controls-green/diffcheck.rc.txt",
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/lead-controls-green/diffcheck.stderr.txt",
+      "path": "development/lead-controls-green/diffcheck.stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/lead-controls-green/diffcheck.stdout.txt",
+      "path": "development/lead-controls-green/diffcheck.stdout.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/lead-controls-green/head.txt",
+      "path": "development/lead-controls-green/head.txt",
+      "sha256": "3aa68f5fc414679f94cb073e1663d63d0368911bc8303944267e65c9b2c46226"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/lead-controls-green/packages.command.txt",
+      "path": "development/lead-controls-green/packages.command.txt",
+      "sha256": "a6810c09d0261697cb592b6f0987f6ab80c3c0d0b6d006df461fade0c2a8fc5c"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/lead-controls-green/packages.execution.json",
+      "path": "development/lead-controls-green/packages.execution.json",
+      "sha256": "c163a44716b4c14b1d0edd0970b1e7e28def1f94c1258adc1d2415a2d3ee6fa9"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/lead-controls-green/packages.head-after.txt",
+      "path": "development/lead-controls-green/packages.head-after.txt",
+      "sha256": "3aa68f5fc414679f94cb073e1663d63d0368911bc8303944267e65c9b2c46226"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/lead-controls-green/packages.head-before.txt",
+      "path": "development/lead-controls-green/packages.head-before.txt",
+      "sha256": "3aa68f5fc414679f94cb073e1663d63d0368911bc8303944267e65c9b2c46226"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/lead-controls-green/packages.rc.txt",
+      "path": "development/lead-controls-green/packages.rc.txt",
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/lead-controls-green/packages.stderr.txt",
+      "path": "development/lead-controls-green/packages.stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/lead-controls-green/packages.stdout.txt",
+      "path": "development/lead-controls-green/packages.stdout.txt",
+      "sha256": "c6733ae6c2d7d9fdacbee304adee25dbd15b2583b23328588072a92d9be4e612"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/lead-controls-green/pre-run.diff",
+      "path": "development/lead-controls-green/pre-run.diff",
+      "sha256": "860c65b67a6454d1b38a215e017c4be94b06a2474fff6597604d0d7566dba956"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/lead-controls-green/status.txt",
+      "path": "development/lead-controls-green/status.txt",
+      "sha256": "29cd6b0f62db35d055c05fa9a7c0ee9eee94c8b21172ad2ffbe784e88ea970b4"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/lead-controls-green/t14t19t20.command.txt",
+      "path": "development/lead-controls-green/t14t19t20.command.txt",
+      "sha256": "13fb0f46dbde2dea18787d81e278c6ddef018567f092107261e24f698e4bc8ee"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/lead-controls-green/t14t19t20.execution.json",
+      "path": "development/lead-controls-green/t14t19t20.execution.json",
+      "sha256": "a726eb3ce883fd3cbac9e5c80114d2988627a958ea1878181ebe2900e1867cbe"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/lead-controls-green/t14t19t20.head-after.txt",
+      "path": "development/lead-controls-green/t14t19t20.head-after.txt",
+      "sha256": "3aa68f5fc414679f94cb073e1663d63d0368911bc8303944267e65c9b2c46226"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/lead-controls-green/t14t19t20.head-before.txt",
+      "path": "development/lead-controls-green/t14t19t20.head-before.txt",
+      "sha256": "3aa68f5fc414679f94cb073e1663d63d0368911bc8303944267e65c9b2c46226"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/lead-controls-green/t14t19t20.rc.txt",
+      "path": "development/lead-controls-green/t14t19t20.rc.txt",
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/lead-controls-green/t14t19t20.stderr.txt",
+      "path": "development/lead-controls-green/t14t19t20.stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/lead-controls-green/t14t19t20.stdout.txt",
+      "path": "development/lead-controls-green/t14t19t20.stdout.txt",
+      "sha256": "a131455016d2bb4d073a8a5e4bbc7bc9127d402597bc4c91dafbf15029e6242f"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/lead-controls-green/t20r4.command.txt",
+      "path": "development/lead-controls-green/t20r4.command.txt",
+      "sha256": "c333a5c409ed862a6ed1f87f40cd21b4275880b7bc30e32d1c95919276366c09"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/lead-controls-green/t20r4.execution.json",
+      "path": "development/lead-controls-green/t20r4.execution.json",
+      "sha256": "fe146b51317a7baaad366a0ad487fd5bc36f36f50c03ca6cfcc60ccfbfb65740"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/lead-controls-green/t20r4.head-after.txt",
+      "path": "development/lead-controls-green/t20r4.head-after.txt",
+      "sha256": "3aa68f5fc414679f94cb073e1663d63d0368911bc8303944267e65c9b2c46226"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/lead-controls-green/t20r4.head-before.txt",
+      "path": "development/lead-controls-green/t20r4.head-before.txt",
+      "sha256": "3aa68f5fc414679f94cb073e1663d63d0368911bc8303944267e65c9b2c46226"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/lead-controls-green/t20r4.rc.txt",
+      "path": "development/lead-controls-green/t20r4.rc.txt",
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/lead-controls-green/t20r4.stderr.txt",
+      "path": "development/lead-controls-green/t20r4.stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/lead-controls-green/t20r4.stdout.txt",
+      "path": "development/lead-controls-green/t20r4.stdout.txt",
+      "sha256": "81b8aa4e8afcb70cc6e5174d59e2ff6e1a2b88c8b72285ab322d84040778a054"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/lint-repair/head.txt",
+      "path": "development/lint-repair/head.txt",
+      "sha256": "8718b17246c7859908d28ec4edf3c2ce737308723cea847b2fef7417742d9a8d"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/lint-repair/pre-run.diff",
+      "path": "development/lint-repair/pre-run.diff",
+      "sha256": "e31e9d42b59d1a800fb6a1d722121e8a59d1170885237bfa56679121d22374fb"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/lint-repair/status.txt",
+      "path": "development/lint-repair/status.txt",
+      "sha256": "5edca232af11542262fb26ef246cfe803ee64fbd3555490106a3c88db883eae6"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/lint-repair/t20r4.command.txt",
+      "path": "development/lint-repair/t20r4.command.txt",
+      "sha256": "c333a5c409ed862a6ed1f87f40cd21b4275880b7bc30e32d1c95919276366c09"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/lint-repair/t20r4.execution.json",
+      "path": "development/lint-repair/t20r4.execution.json",
+      "sha256": "2caba6e06d04504befffe3fc8833e4e203f4212e6bbbd1067e32a931feef859b"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/lint-repair/t20r4.head-after.txt",
+      "path": "development/lint-repair/t20r4.head-after.txt",
+      "sha256": "8718b17246c7859908d28ec4edf3c2ce737308723cea847b2fef7417742d9a8d"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/lint-repair/t20r4.head-before.txt",
+      "path": "development/lint-repair/t20r4.head-before.txt",
+      "sha256": "8718b17246c7859908d28ec4edf3c2ce737308723cea847b2fef7417742d9a8d"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/lint-repair/t20r4.rc.txt",
+      "path": "development/lint-repair/t20r4.rc.txt",
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/lint-repair/t20r4.stderr.txt",
+      "path": "development/lint-repair/t20r4.stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/lint-repair/t20r4.stdout.txt",
+      "path": "development/lint-repair/t20r4.stdout.txt",
+      "sha256": "6194346c0257bfc4bfc586062819b4b98e9d1bbda318f4c536cb80876e477f90"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/lead-checks/artifact.command.txt",
+      "path": "development/lead-checks/artifact.command.txt",
+      "sha256": "5c0b46e4d6b128c0e3a7ae2523e9aa09093ce8ee22da73d5376bcf9190005ebb"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/lead-checks/artifact.console.txt",
+      "path": "development/lead-checks/artifact.console.txt",
+      "sha256": "a27b4182bdda64c7835f15a208d8e41152659ead558ca3175a753e63c7736303"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/lead-checks/artifact.execution.json",
+      "path": "development/lead-checks/artifact.execution.json",
+      "sha256": "25a4e5551917cd7c5dd4e51e188824e1e2e1113f5c52c71e7e60fc21257ecd3c"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/lead-checks/artifact.head-after.txt",
+      "path": "development/lead-checks/artifact.head-after.txt",
+      "sha256": "ddd540ddb5cfaad5a4f3c104ef2c30f182e4a789248591017f66a9166e856f8c"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/lead-checks/artifact.head-before.txt",
+      "path": "development/lead-checks/artifact.head-before.txt",
+      "sha256": "ddd540ddb5cfaad5a4f3c104ef2c30f182e4a789248591017f66a9166e856f8c"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/lead-checks/artifact.rc.txt",
+      "path": "development/lead-checks/artifact.rc.txt",
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/lead-checks/artifact.stderr.txt",
+      "path": "development/lead-checks/artifact.stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/lead-checks/artifact.stdout.txt",
+      "path": "development/lead-checks/artifact.stdout.txt",
+      "sha256": "a27b4182bdda64c7835f15a208d8e41152659ead558ca3175a753e63c7736303"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/lead-checks/resources-refcompare.command.txt",
+      "path": "development/lead-checks/resources-refcompare.command.txt",
+      "sha256": "965557f5179e19089d2eeb3e6eb0bba3f311a53808a185a6b68ecfd4b12125b8"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/lead-checks/resources-refcompare.console.txt",
+      "path": "development/lead-checks/resources-refcompare.console.txt",
+      "sha256": "d6693d46b655a4d7ac0fe40e4e98b32effed3bbc29fa80549e227b785dbc30e9"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/lead-checks/resources-refcompare.execution.json",
+      "path": "development/lead-checks/resources-refcompare.execution.json",
+      "sha256": "2779c4b5d77e26b089b882dc4e001fa543769e690620f19cf2acc75a0eefea54"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/lead-checks/resources-refcompare.head-after.txt",
+      "path": "development/lead-checks/resources-refcompare.head-after.txt",
+      "sha256": "ddd540ddb5cfaad5a4f3c104ef2c30f182e4a789248591017f66a9166e856f8c"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/lead-checks/resources-refcompare.head-before.txt",
+      "path": "development/lead-checks/resources-refcompare.head-before.txt",
+      "sha256": "ddd540ddb5cfaad5a4f3c104ef2c30f182e4a789248591017f66a9166e856f8c"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/lead-checks/resources-refcompare.rc.txt",
+      "path": "development/lead-checks/resources-refcompare.rc.txt",
+      "sha256": "4355a46b19d348dc2f57c046f8ef63d4538ebb936000f3c9ee954a27460dd865"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/lead-checks/resources-refcompare.stderr.txt",
+      "path": "development/lead-checks/resources-refcompare.stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/lead-checks/resources-refcompare.stdout.txt",
+      "path": "development/lead-checks/resources-refcompare.stdout.txt",
+      "sha256": "d6693d46b655a4d7ac0fe40e4e98b32effed3bbc29fa80549e227b785dbc30e9"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/lead-checks/resources.command.txt",
+      "path": "development/lead-checks/resources.command.txt",
+      "sha256": "b28dc4e4b5e846dfc98686c4948eeb11e08e9bc87ba24726cc39b0688443d859"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/lead-checks/resources.console.txt",
+      "path": "development/lead-checks/resources.console.txt",
+      "sha256": "0a560ba408a0bb12c03747693595869a4b23f82d86d12af34004f6f6ec65f3ca"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/lead-checks/resources.execution.json",
+      "path": "development/lead-checks/resources.execution.json",
+      "sha256": "0da626427da6d4c5a58f2ecd6df1d1348e637f248d580c16a44f6c541f51ac4d"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/lead-checks/resources.head-after.txt",
+      "path": "development/lead-checks/resources.head-after.txt",
+      "sha256": "ddd540ddb5cfaad5a4f3c104ef2c30f182e4a789248591017f66a9166e856f8c"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/lead-checks/resources.head-before.txt",
+      "path": "development/lead-checks/resources.head-before.txt",
+      "sha256": "ddd540ddb5cfaad5a4f3c104ef2c30f182e4a789248591017f66a9166e856f8c"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/lead-checks/resources.rc.txt",
+      "path": "development/lead-checks/resources.rc.txt",
+      "sha256": "4355a46b19d348dc2f57c046f8ef63d4538ebb936000f3c9ee954a27460dd865"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/lead-checks/resources.stderr.txt",
+      "path": "development/lead-checks/resources.stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/lead-checks/resources.stdout.txt",
+      "path": "development/lead-checks/resources.stdout.txt",
+      "sha256": "0a560ba408a0bb12c03747693595869a4b23f82d86d12af34004f6f6ec65f3ca"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-5fc29853/gate-index.json",
+      "path": "attempts/5fc29853-vet-failure/gate-index.json",
+      "sha256": "b3bae9528b3bea07481c1f43c525bd89a70a510971d59df490e6adeb16fa62c1"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-5fc29853/gates/01-test.command.txt",
+      "path": "attempts/5fc29853-vet-failure/gates/01-test.command.txt",
+      "sha256": "3fab27cc4c37b0db59636bc57ac89b7de2d5dc00a76d83269241935786893592"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-5fc29853/gates/01-test.head-after.txt",
+      "path": "attempts/5fc29853-vet-failure/gates/01-test.head-after.txt",
+      "sha256": "5c384d931e2056e892810619971951b77e8318f8ee0d032fbd0b5a51a9b8ebcc"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-5fc29853/gates/01-test.head-before.txt",
+      "path": "attempts/5fc29853-vet-failure/gates/01-test.head-before.txt",
+      "sha256": "5c384d931e2056e892810619971951b77e8318f8ee0d032fbd0b5a51a9b8ebcc"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-5fc29853/gates/01-test.rc.txt",
+      "path": "attempts/5fc29853-vet-failure/gates/01-test.rc.txt",
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-5fc29853/gates/01-test.stderr.txt",
+      "path": "attempts/5fc29853-vet-failure/gates/01-test.stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-5fc29853/gates/01-test.stdout.txt",
+      "path": "attempts/5fc29853-vet-failure/gates/01-test.stdout.txt",
+      "sha256": "8861a293e037f1dc68bacd22688d6ea3a620dd3f9bd6533568d1fb89f2e8af3c"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-5fc29853/gates/02-vet.command.txt",
+      "path": "attempts/5fc29853-vet-failure/gates/02-vet.command.txt",
+      "sha256": "685d158f951e3eb11749d2e519a64eba4f57dcc93cd562eaee2cc9457f72846e"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-5fc29853/gates/02-vet.head-after.txt",
+      "path": "attempts/5fc29853-vet-failure/gates/02-vet.head-after.txt",
+      "sha256": "5c384d931e2056e892810619971951b77e8318f8ee0d032fbd0b5a51a9b8ebcc"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-5fc29853/gates/02-vet.head-before.txt",
+      "path": "attempts/5fc29853-vet-failure/gates/02-vet.head-before.txt",
+      "sha256": "5c384d931e2056e892810619971951b77e8318f8ee0d032fbd0b5a51a9b8ebcc"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-5fc29853/gates/02-vet.rc.txt",
+      "path": "attempts/5fc29853-vet-failure/gates/02-vet.rc.txt",
+      "sha256": "4355a46b19d348dc2f57c046f8ef63d4538ebb936000f3c9ee954a27460dd865"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-5fc29853/gates/02-vet.stderr.txt",
+      "path": "attempts/5fc29853-vet-failure/gates/02-vet.stderr.txt",
+      "sha256": "622d16a4539110405243dc366e0aff1b4e2e5bd892b25c63a6e38fac3262ebc9"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-5fc29853/gates/02-vet.stdout.txt",
+      "path": "attempts/5fc29853-vet-failure/gates/02-vet.stdout.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-bb5e347c/full-test-reuse.json",
+      "path": "attempts/bb5e347c-lint-delta/full-test-reuse.json",
+      "sha256": "deec3337b913e4bce2ec4dbf5f766850df8c3e55d19d96bc92379b097b1fafe8"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-bb5e347c/gate-index.json",
+      "path": "attempts/bb5e347c-lint-delta/gate-index.json",
+      "sha256": "ad2ec9b2b337fbe4337903304877c089dcc2fbc4f5ba5419ea1b0a9cfe2f6f0f"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-bb5e347c/gates/01-test.command.txt",
+      "path": "attempts/bb5e347c-lint-delta/gates/01-test.command.txt",
+      "sha256": "3fab27cc4c37b0db59636bc57ac89b7de2d5dc00a76d83269241935786893592"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-bb5e347c/gates/01-test.head-after.txt",
+      "path": "attempts/bb5e347c-lint-delta/gates/01-test.head-after.txt",
+      "sha256": "5c384d931e2056e892810619971951b77e8318f8ee0d032fbd0b5a51a9b8ebcc"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-bb5e347c/gates/01-test.head-before.txt",
+      "path": "attempts/bb5e347c-lint-delta/gates/01-test.head-before.txt",
+      "sha256": "5c384d931e2056e892810619971951b77e8318f8ee0d032fbd0b5a51a9b8ebcc"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-bb5e347c/gates/01-test.rc.txt",
+      "path": "attempts/bb5e347c-lint-delta/gates/01-test.rc.txt",
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-bb5e347c/gates/01-test.stderr.txt",
+      "path": "attempts/bb5e347c-lint-delta/gates/01-test.stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-bb5e347c/gates/01-test.stdout.txt",
+      "path": "attempts/bb5e347c-lint-delta/gates/01-test.stdout.txt",
+      "sha256": "8861a293e037f1dc68bacd22688d6ea3a620dd3f9bd6533568d1fb89f2e8af3c"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-bb5e347c/gates/02-vet.command.txt",
+      "path": "attempts/bb5e347c-lint-delta/gates/02-vet.command.txt",
+      "sha256": "685d158f951e3eb11749d2e519a64eba4f57dcc93cd562eaee2cc9457f72846e"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-bb5e347c/gates/02-vet.head-after.txt",
+      "path": "attempts/bb5e347c-lint-delta/gates/02-vet.head-after.txt",
+      "sha256": "8718b17246c7859908d28ec4edf3c2ce737308723cea847b2fef7417742d9a8d"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-bb5e347c/gates/02-vet.head-before.txt",
+      "path": "attempts/bb5e347c-lint-delta/gates/02-vet.head-before.txt",
+      "sha256": "8718b17246c7859908d28ec4edf3c2ce737308723cea847b2fef7417742d9a8d"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-bb5e347c/gates/02-vet.rc.txt",
+      "path": "attempts/bb5e347c-lint-delta/gates/02-vet.rc.txt",
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-bb5e347c/gates/02-vet.stderr.txt",
+      "path": "attempts/bb5e347c-lint-delta/gates/02-vet.stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-bb5e347c/gates/02-vet.stdout.txt",
+      "path": "attempts/bb5e347c-lint-delta/gates/02-vet.stdout.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-bb5e347c/gates/03-race.command.txt",
+      "path": "attempts/bb5e347c-lint-delta/gates/03-race.command.txt",
+      "sha256": "cb2dc241ec2a4978953fb5a1d273f3f5a06c26f98ddfee756342ea49945b4a11"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-bb5e347c/gates/03-race.head-after.txt",
+      "path": "attempts/bb5e347c-lint-delta/gates/03-race.head-after.txt",
+      "sha256": "8718b17246c7859908d28ec4edf3c2ce737308723cea847b2fef7417742d9a8d"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-bb5e347c/gates/03-race.head-before.txt",
+      "path": "attempts/bb5e347c-lint-delta/gates/03-race.head-before.txt",
+      "sha256": "8718b17246c7859908d28ec4edf3c2ce737308723cea847b2fef7417742d9a8d"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-bb5e347c/gates/03-race.rc.txt",
+      "path": "attempts/bb5e347c-lint-delta/gates/03-race.rc.txt",
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-bb5e347c/gates/03-race.stderr.txt",
+      "path": "attempts/bb5e347c-lint-delta/gates/03-race.stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-bb5e347c/gates/03-race.stdout.txt",
+      "path": "attempts/bb5e347c-lint-delta/gates/03-race.stdout.txt",
+      "sha256": "bf94998b039439b405a233c0bd730c487b94973cef2058f2a9553ef7563cb9d4"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-bb5e347c/gates/04-pg.command.txt",
+      "path": "attempts/bb5e347c-lint-delta/gates/04-pg.command.txt",
+      "sha256": "18322e62eaade2565ec82d80d91d466305279556e00b6c2e2803f8f0bc9288ce"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-bb5e347c/gates/04-pg.head-after.txt",
+      "path": "attempts/bb5e347c-lint-delta/gates/04-pg.head-after.txt",
+      "sha256": "8718b17246c7859908d28ec4edf3c2ce737308723cea847b2fef7417742d9a8d"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-bb5e347c/gates/04-pg.head-before.txt",
+      "path": "attempts/bb5e347c-lint-delta/gates/04-pg.head-before.txt",
+      "sha256": "8718b17246c7859908d28ec4edf3c2ce737308723cea847b2fef7417742d9a8d"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-bb5e347c/gates/04-pg.rc.txt",
+      "path": "attempts/bb5e347c-lint-delta/gates/04-pg.rc.txt",
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-bb5e347c/gates/04-pg.stderr.txt",
+      "path": "attempts/bb5e347c-lint-delta/gates/04-pg.stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-bb5e347c/gates/04-pg.stdout.txt",
+      "path": "attempts/bb5e347c-lint-delta/gates/04-pg.stdout.txt",
+      "sha256": "eabf5370c65f0b3ba14f7fd76ea919c9ba4a3a9d0d9fda88ba51ca36cc8c327d"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-bb5e347c/gates/05-sql-corpus.command.txt",
+      "path": "attempts/bb5e347c-lint-delta/gates/05-sql-corpus.command.txt",
+      "sha256": "c0ff97a39062ab5024235e9b3a74a9799f92c6bc17f856a4fbd2d2fb0d722b58"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-bb5e347c/gates/05-sql-corpus.head-after.txt",
+      "path": "attempts/bb5e347c-lint-delta/gates/05-sql-corpus.head-after.txt",
+      "sha256": "8718b17246c7859908d28ec4edf3c2ce737308723cea847b2fef7417742d9a8d"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-bb5e347c/gates/05-sql-corpus.head-before.txt",
+      "path": "attempts/bb5e347c-lint-delta/gates/05-sql-corpus.head-before.txt",
+      "sha256": "8718b17246c7859908d28ec4edf3c2ce737308723cea847b2fef7417742d9a8d"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-bb5e347c/gates/05-sql-corpus.rc.txt",
+      "path": "attempts/bb5e347c-lint-delta/gates/05-sql-corpus.rc.txt",
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-bb5e347c/gates/05-sql-corpus.stderr.txt",
+      "path": "attempts/bb5e347c-lint-delta/gates/05-sql-corpus.stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-bb5e347c/gates/05-sql-corpus.stdout.txt",
+      "path": "attempts/bb5e347c-lint-delta/gates/05-sql-corpus.stdout.txt",
+      "sha256": "63de2c1c0c98a259c5cd6167ca924104913e28f831f3a903e4a32c990a80e4c5"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-bb5e347c/gates/06-query-access-corpus.command.txt",
+      "path": "attempts/bb5e347c-lint-delta/gates/06-query-access-corpus.command.txt",
+      "sha256": "f800974ade03b4c3b190cae00d0ce75b900bb64170be24bd13ba646de5dc9048"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-bb5e347c/gates/06-query-access-corpus.head-after.txt",
+      "path": "attempts/bb5e347c-lint-delta/gates/06-query-access-corpus.head-after.txt",
+      "sha256": "8718b17246c7859908d28ec4edf3c2ce737308723cea847b2fef7417742d9a8d"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-bb5e347c/gates/06-query-access-corpus.head-before.txt",
+      "path": "attempts/bb5e347c-lint-delta/gates/06-query-access-corpus.head-before.txt",
+      "sha256": "8718b17246c7859908d28ec4edf3c2ce737308723cea847b2fef7417742d9a8d"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-bb5e347c/gates/06-query-access-corpus.rc.txt",
+      "path": "attempts/bb5e347c-lint-delta/gates/06-query-access-corpus.rc.txt",
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-bb5e347c/gates/06-query-access-corpus.stderr.txt",
+      "path": "attempts/bb5e347c-lint-delta/gates/06-query-access-corpus.stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-bb5e347c/gates/06-query-access-corpus.stdout.txt",
+      "path": "attempts/bb5e347c-lint-delta/gates/06-query-access-corpus.stdout.txt",
+      "sha256": "770d6875cd251dc10c51e0136310bf39a26451b224ca122352a57ac902bee3bb"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-bb5e347c/gates/07-inventory.command.txt",
+      "path": "attempts/bb5e347c-lint-delta/gates/07-inventory.command.txt",
+      "sha256": "cbf444a118bcdab43e82b37f7ef5484161a4a90f7225412f2e7f821afeddd392"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-bb5e347c/gates/07-inventory.head-after.txt",
+      "path": "attempts/bb5e347c-lint-delta/gates/07-inventory.head-after.txt",
+      "sha256": "8718b17246c7859908d28ec4edf3c2ce737308723cea847b2fef7417742d9a8d"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-bb5e347c/gates/07-inventory.head-before.txt",
+      "path": "attempts/bb5e347c-lint-delta/gates/07-inventory.head-before.txt",
+      "sha256": "8718b17246c7859908d28ec4edf3c2ce737308723cea847b2fef7417742d9a8d"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-bb5e347c/gates/07-inventory.rc.txt",
+      "path": "attempts/bb5e347c-lint-delta/gates/07-inventory.rc.txt",
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-bb5e347c/gates/07-inventory.stderr.txt",
+      "path": "attempts/bb5e347c-lint-delta/gates/07-inventory.stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-bb5e347c/gates/07-inventory.stdout.txt",
+      "path": "attempts/bb5e347c-lint-delta/gates/07-inventory.stdout.txt",
+      "sha256": "306ed30d4d552ea7f24473520d47226d2e883a673ad42d7189fddf5e4c2b9c15"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-bb5e347c/gates/08-coverage-catalog.command.txt",
+      "path": "attempts/bb5e347c-lint-delta/gates/08-coverage-catalog.command.txt",
+      "sha256": "0b591d781895f580d3c4da92fe4e7a9b0f849252cb53974274186a24e4666140"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-bb5e347c/gates/08-coverage-catalog.head-after.txt",
+      "path": "attempts/bb5e347c-lint-delta/gates/08-coverage-catalog.head-after.txt",
+      "sha256": "8718b17246c7859908d28ec4edf3c2ce737308723cea847b2fef7417742d9a8d"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-bb5e347c/gates/08-coverage-catalog.head-before.txt",
+      "path": "attempts/bb5e347c-lint-delta/gates/08-coverage-catalog.head-before.txt",
+      "sha256": "8718b17246c7859908d28ec4edf3c2ce737308723cea847b2fef7417742d9a8d"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-bb5e347c/gates/08-coverage-catalog.rc.txt",
+      "path": "attempts/bb5e347c-lint-delta/gates/08-coverage-catalog.rc.txt",
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-bb5e347c/gates/08-coverage-catalog.stderr.txt",
+      "path": "attempts/bb5e347c-lint-delta/gates/08-coverage-catalog.stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-bb5e347c/gates/08-coverage-catalog.stdout.txt",
+      "path": "attempts/bb5e347c-lint-delta/gates/08-coverage-catalog.stdout.txt",
+      "sha256": "ac104c51fac1a4eaddfdbde5950140c5273fa2392fad0bd73c200fe0bcb87ef4"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-bb5e347c/gates/09-parser-unsupported.command.txt",
+      "path": "attempts/bb5e347c-lint-delta/gates/09-parser-unsupported.command.txt",
+      "sha256": "6bc62f572960d8d39723e3b510a0557a52e5f0a8771919a318ba2dcc01b0a3d4"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-bb5e347c/gates/09-parser-unsupported.head-after.txt",
+      "path": "attempts/bb5e347c-lint-delta/gates/09-parser-unsupported.head-after.txt",
+      "sha256": "8718b17246c7859908d28ec4edf3c2ce737308723cea847b2fef7417742d9a8d"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-bb5e347c/gates/09-parser-unsupported.head-before.txt",
+      "path": "attempts/bb5e347c-lint-delta/gates/09-parser-unsupported.head-before.txt",
+      "sha256": "8718b17246c7859908d28ec4edf3c2ce737308723cea847b2fef7417742d9a8d"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-bb5e347c/gates/09-parser-unsupported.rc.txt",
+      "path": "attempts/bb5e347c-lint-delta/gates/09-parser-unsupported.rc.txt",
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-bb5e347c/gates/09-parser-unsupported.stderr.txt",
+      "path": "attempts/bb5e347c-lint-delta/gates/09-parser-unsupported.stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-bb5e347c/gates/09-parser-unsupported.stdout.txt",
+      "path": "attempts/bb5e347c-lint-delta/gates/09-parser-unsupported.stdout.txt",
+      "sha256": "e823b4ad6a82944ee1e90a381d005eebfc4263b70905287282806c29052f352e"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-bb5e347c/gates/10-diagnostic-evidence.command.txt",
+      "path": "attempts/bb5e347c-lint-delta/gates/10-diagnostic-evidence.command.txt",
+      "sha256": "cc6dfcc471f395dc1344da35c94922db8059448cf1a83bcf87817bd478fc40cb"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-bb5e347c/gates/10-diagnostic-evidence.head-after.txt",
+      "path": "attempts/bb5e347c-lint-delta/gates/10-diagnostic-evidence.head-after.txt",
+      "sha256": "8718b17246c7859908d28ec4edf3c2ce737308723cea847b2fef7417742d9a8d"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-bb5e347c/gates/10-diagnostic-evidence.head-before.txt",
+      "path": "attempts/bb5e347c-lint-delta/gates/10-diagnostic-evidence.head-before.txt",
+      "sha256": "8718b17246c7859908d28ec4edf3c2ce737308723cea847b2fef7417742d9a8d"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-bb5e347c/gates/10-diagnostic-evidence.rc.txt",
+      "path": "attempts/bb5e347c-lint-delta/gates/10-diagnostic-evidence.rc.txt",
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-bb5e347c/gates/10-diagnostic-evidence.stderr.txt",
+      "path": "attempts/bb5e347c-lint-delta/gates/10-diagnostic-evidence.stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-bb5e347c/gates/10-diagnostic-evidence.stdout.txt",
+      "path": "attempts/bb5e347c-lint-delta/gates/10-diagnostic-evidence.stdout.txt",
+      "sha256": "00aeb5f91e2b034b31b0e913d95fd3393da8f17efefb336df56dd2fc0b4ae56a"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-bb5e347c/gates/11-privacy.command.txt",
+      "path": "attempts/bb5e347c-lint-delta/gates/11-privacy.command.txt",
+      "sha256": "561503cbbc0b7e6b3b2df4f9bad5fad0302d54017e4a7039407df0a8bf6290da"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-bb5e347c/gates/11-privacy.head-after.txt",
+      "path": "attempts/bb5e347c-lint-delta/gates/11-privacy.head-after.txt",
+      "sha256": "8718b17246c7859908d28ec4edf3c2ce737308723cea847b2fef7417742d9a8d"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-bb5e347c/gates/11-privacy.head-before.txt",
+      "path": "attempts/bb5e347c-lint-delta/gates/11-privacy.head-before.txt",
+      "sha256": "8718b17246c7859908d28ec4edf3c2ce737308723cea847b2fef7417742d9a8d"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-bb5e347c/gates/11-privacy.rc.txt",
+      "path": "attempts/bb5e347c-lint-delta/gates/11-privacy.rc.txt",
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-bb5e347c/gates/11-privacy.stderr.txt",
+      "path": "attempts/bb5e347c-lint-delta/gates/11-privacy.stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-bb5e347c/gates/11-privacy.stdout.txt",
+      "path": "attempts/bb5e347c-lint-delta/gates/11-privacy.stdout.txt",
+      "sha256": "d25f39e8ce49a91054ba46dce26b9c472de164518b146849a30eb48991ec0e92"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-bb5e347c/gates/12-docs-examples.command.txt",
+      "path": "attempts/bb5e347c-lint-delta/gates/12-docs-examples.command.txt",
+      "sha256": "9f80442a6b3d900184c7f2cacd9ae52b2b52323c69eb7804e9b7f13384b9b3b5"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-bb5e347c/gates/12-docs-examples.head-after.txt",
+      "path": "attempts/bb5e347c-lint-delta/gates/12-docs-examples.head-after.txt",
+      "sha256": "8718b17246c7859908d28ec4edf3c2ce737308723cea847b2fef7417742d9a8d"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-bb5e347c/gates/12-docs-examples.head-before.txt",
+      "path": "attempts/bb5e347c-lint-delta/gates/12-docs-examples.head-before.txt",
+      "sha256": "8718b17246c7859908d28ec4edf3c2ce737308723cea847b2fef7417742d9a8d"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-bb5e347c/gates/12-docs-examples.rc.txt",
+      "path": "attempts/bb5e347c-lint-delta/gates/12-docs-examples.rc.txt",
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-bb5e347c/gates/12-docs-examples.stderr.txt",
+      "path": "attempts/bb5e347c-lint-delta/gates/12-docs-examples.stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-bb5e347c/gates/12-docs-examples.stdout.txt",
+      "path": "attempts/bb5e347c-lint-delta/gates/12-docs-examples.stdout.txt",
+      "sha256": "aef03d3e770fa619a745b0fa20520ae993b9c123cead3325ec50b4e6ff8beb3e"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-bb5e347c/gates/13-decision-record.command.txt",
+      "path": "attempts/bb5e347c-lint-delta/gates/13-decision-record.command.txt",
+      "sha256": "1720c9ecec4747d0e7ff1726ec9d4ec2592756fd6d64f499a5d799faf477f00f"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-bb5e347c/gates/13-decision-record.head-after.txt",
+      "path": "attempts/bb5e347c-lint-delta/gates/13-decision-record.head-after.txt",
+      "sha256": "8718b17246c7859908d28ec4edf3c2ce737308723cea847b2fef7417742d9a8d"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-bb5e347c/gates/13-decision-record.head-before.txt",
+      "path": "attempts/bb5e347c-lint-delta/gates/13-decision-record.head-before.txt",
+      "sha256": "8718b17246c7859908d28ec4edf3c2ce737308723cea847b2fef7417742d9a8d"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-bb5e347c/gates/13-decision-record.rc.txt",
+      "path": "attempts/bb5e347c-lint-delta/gates/13-decision-record.rc.txt",
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-bb5e347c/gates/13-decision-record.stderr.txt",
+      "path": "attempts/bb5e347c-lint-delta/gates/13-decision-record.stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-bb5e347c/gates/13-decision-record.stdout.txt",
+      "path": "attempts/bb5e347c-lint-delta/gates/13-decision-record.stdout.txt",
+      "sha256": "528c9d9b1c1a445d49b9d95ae13d30fd79eb496175547b92d35f8e32642b9079"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-bb5e347c/gates/14-l2.command.txt",
+      "path": "attempts/bb5e347c-lint-delta/gates/14-l2.command.txt",
+      "sha256": "fb89a6dc7fa5d52a5d370fead788eb534ba96eba0843bd56fbe5966129b3a623"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-bb5e347c/gates/14-l2.head-after.txt",
+      "path": "attempts/bb5e347c-lint-delta/gates/14-l2.head-after.txt",
+      "sha256": "8718b17246c7859908d28ec4edf3c2ce737308723cea847b2fef7417742d9a8d"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-bb5e347c/gates/14-l2.head-before.txt",
+      "path": "attempts/bb5e347c-lint-delta/gates/14-l2.head-before.txt",
+      "sha256": "8718b17246c7859908d28ec4edf3c2ce737308723cea847b2fef7417742d9a8d"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-bb5e347c/gates/14-l2.rc.txt",
+      "path": "attempts/bb5e347c-lint-delta/gates/14-l2.rc.txt",
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-bb5e347c/gates/14-l2.stderr.txt",
+      "path": "attempts/bb5e347c-lint-delta/gates/14-l2.stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-bb5e347c/gates/14-l2.stdout.txt",
+      "path": "attempts/bb5e347c-lint-delta/gates/14-l2.stdout.txt",
+      "sha256": "701f84372196bd9b2537104c1404c05d9d9f2036f9113c90e00c4a8235da78c0"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-bb5e347c/gates/15-golden-validator.command.txt",
+      "path": "attempts/bb5e347c-lint-delta/gates/15-golden-validator.command.txt",
+      "sha256": "a8f696db1bc6883625eeb4d9a9e0b980753f936e63c00e35282cb7c5599898ad"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-bb5e347c/gates/15-golden-validator.head-after.txt",
+      "path": "attempts/bb5e347c-lint-delta/gates/15-golden-validator.head-after.txt",
+      "sha256": "8718b17246c7859908d28ec4edf3c2ce737308723cea847b2fef7417742d9a8d"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-bb5e347c/gates/15-golden-validator.head-before.txt",
+      "path": "attempts/bb5e347c-lint-delta/gates/15-golden-validator.head-before.txt",
+      "sha256": "8718b17246c7859908d28ec4edf3c2ce737308723cea847b2fef7417742d9a8d"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-bb5e347c/gates/15-golden-validator.rc.txt",
+      "path": "attempts/bb5e347c-lint-delta/gates/15-golden-validator.rc.txt",
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-bb5e347c/gates/15-golden-validator.stderr.txt",
+      "path": "attempts/bb5e347c-lint-delta/gates/15-golden-validator.stderr.txt",
+      "sha256": "dcd2147edfda2291b456dfb6d9f3021f0fed07760d5a1c8869fc5446f30e28fe"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-bb5e347c/gates/15-golden-validator.stdout.txt",
+      "path": "attempts/bb5e347c-lint-delta/gates/15-golden-validator.stdout.txt",
+      "sha256": "39bbc09f08b98010a43b3fc268a59b2e4aafe0d6c9ebf523f507f9c03d345f2f"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-bb5e347c/gates/16-lint-scoped.command.txt",
+      "path": "attempts/bb5e347c-lint-delta/gates/16-lint-scoped.command.txt",
+      "sha256": "a75221341b800604d3b8c3cbd2cd8e318620eaf0bb5e6daaa26dc30c183df0ef"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-bb5e347c/gates/16-lint-scoped.head-after.txt",
+      "path": "attempts/bb5e347c-lint-delta/gates/16-lint-scoped.head-after.txt",
+      "sha256": "8718b17246c7859908d28ec4edf3c2ce737308723cea847b2fef7417742d9a8d"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-bb5e347c/gates/16-lint-scoped.head-before.txt",
+      "path": "attempts/bb5e347c-lint-delta/gates/16-lint-scoped.head-before.txt",
+      "sha256": "8718b17246c7859908d28ec4edf3c2ce737308723cea847b2fef7417742d9a8d"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-bb5e347c/gates/16-lint-scoped.rc.txt",
+      "path": "attempts/bb5e347c-lint-delta/gates/16-lint-scoped.rc.txt",
+      "sha256": "4355a46b19d348dc2f57c046f8ef63d4538ebb936000f3c9ee954a27460dd865"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-bb5e347c/gates/16-lint-scoped.stderr.txt",
+      "path": "attempts/bb5e347c-lint-delta/gates/16-lint-scoped.stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-bb5e347c/gates/16-lint-scoped.stdout.txt",
+      "path": "attempts/bb5e347c-lint-delta/gates/16-lint-scoped.stdout.txt",
+      "sha256": "4cb1e9d9afc5fc1b1d35f2e9fbaf55d4a62862566537fe770d57fc553646fc95"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-bb5e347c/gates/17-lint-fullrepo.command.txt",
+      "path": "attempts/bb5e347c-lint-delta/gates/17-lint-fullrepo.command.txt",
+      "sha256": "3e62fe27626f6c3d37ea34b247909162ed1e33690f9f2d09a8a0f40ca1d56cc3"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-bb5e347c/gates/17-lint-fullrepo.head-after.txt",
+      "path": "attempts/bb5e347c-lint-delta/gates/17-lint-fullrepo.head-after.txt",
+      "sha256": "8718b17246c7859908d28ec4edf3c2ce737308723cea847b2fef7417742d9a8d"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-bb5e347c/gates/17-lint-fullrepo.head-before.txt",
+      "path": "attempts/bb5e347c-lint-delta/gates/17-lint-fullrepo.head-before.txt",
+      "sha256": "8718b17246c7859908d28ec4edf3c2ce737308723cea847b2fef7417742d9a8d"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-bb5e347c/gates/17-lint-fullrepo.rc.txt",
+      "path": "attempts/bb5e347c-lint-delta/gates/17-lint-fullrepo.rc.txt",
+      "sha256": "4355a46b19d348dc2f57c046f8ef63d4538ebb936000f3c9ee954a27460dd865"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-bb5e347c/gates/17-lint-fullrepo.stderr.txt",
+      "path": "attempts/bb5e347c-lint-delta/gates/17-lint-fullrepo.stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-bb5e347c/gates/17-lint-fullrepo.stdout.txt",
+      "path": "attempts/bb5e347c-lint-delta/gates/17-lint-fullrepo.stdout.txt",
+      "sha256": "e63cf4ab390c25111efb2e06d743611a8ce322e13540180370dc82dd482430c8"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-bb5e347c/gates/18-lint-identities.json",
+      "path": "attempts/bb5e347c-lint-delta/gates/18-lint-identities.json",
+      "sha256": "8969f3dbc8f58c691145afe09d47bff2a33a8912086a9d8c099a17c083c1bc71"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-bb5e347c/gates/18-lint-identity.command.txt",
+      "path": "attempts/bb5e347c-lint-delta/gates/18-lint-identity.command.txt",
+      "sha256": "2c1e578893eca095444b08d8e1849cbbae6bb9a307c7cc504bd450e28fe23567"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-bb5e347c/gates/18-lint-identity.head-after.txt",
+      "path": "attempts/bb5e347c-lint-delta/gates/18-lint-identity.head-after.txt",
+      "sha256": "8718b17246c7859908d28ec4edf3c2ce737308723cea847b2fef7417742d9a8d"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-bb5e347c/gates/18-lint-identity.head-before.txt",
+      "path": "attempts/bb5e347c-lint-delta/gates/18-lint-identity.head-before.txt",
+      "sha256": "8718b17246c7859908d28ec4edf3c2ce737308723cea847b2fef7417742d9a8d"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-bb5e347c/gates/18-lint-identity.rc.txt",
+      "path": "attempts/bb5e347c-lint-delta/gates/18-lint-identity.rc.txt",
+      "sha256": "4355a46b19d348dc2f57c046f8ef63d4538ebb936000f3c9ee954a27460dd865"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-bb5e347c/gates/18-lint-identity.stderr.txt",
+      "path": "attempts/bb5e347c-lint-delta/gates/18-lint-identity.stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-bb5e347c/gates/18-lint-identity.stdout.txt",
+      "path": "attempts/bb5e347c-lint-delta/gates/18-lint-identity.stdout.txt",
+      "sha256": "57309fe22b89cb6a1ed5aa164316d66ecf4654ae6c2456aa79205b8c825392d9"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-2f01f500/full-test-reuse.json",
+      "path": "full-test-reuse.json",
+      "sha256": "deec3337b913e4bce2ec4dbf5f766850df8c3e55d19d96bc92379b097b1fafe8"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-2f01f500/gate-index.json",
+      "path": "gate-index.json",
+      "sha256": "92da9c1db565a013cb147c8beba153b1ae667af0788b6ec2019b6b8a5b5ccbe1"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-2f01f500/gate-reuse-final.json",
+      "path": "gate-reuse-final.json",
+      "sha256": "839812f511ba99bb9a4948ee964bd019af9c2c4124dacc26a797b9bbe4eade2f"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-2f01f500/gates/01-test.command.txt",
+      "path": "gates/01-test.command.txt",
+      "sha256": "3fab27cc4c37b0db59636bc57ac89b7de2d5dc00a76d83269241935786893592"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-2f01f500/gates/01-test.head-after.txt",
+      "path": "gates/01-test.head-after.txt",
+      "sha256": "5c384d931e2056e892810619971951b77e8318f8ee0d032fbd0b5a51a9b8ebcc"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-2f01f500/gates/01-test.head-before.txt",
+      "path": "gates/01-test.head-before.txt",
+      "sha256": "5c384d931e2056e892810619971951b77e8318f8ee0d032fbd0b5a51a9b8ebcc"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-2f01f500/gates/01-test.rc.txt",
+      "path": "gates/01-test.rc.txt",
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-2f01f500/gates/01-test.stderr.txt",
+      "path": "gates/01-test.stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-2f01f500/gates/01-test.stdout.txt",
+      "path": "gates/01-test.stdout.txt",
+      "sha256": "8861a293e037f1dc68bacd22688d6ea3a620dd3f9bd6533568d1fb89f2e8af3c"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-2f01f500/gates/02-vet.command.txt",
+      "path": "gates/02-vet.command.txt",
+      "sha256": "685d158f951e3eb11749d2e519a64eba4f57dcc93cd562eaee2cc9457f72846e"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-2f01f500/gates/02-vet.head-after.txt",
+      "path": "gates/02-vet.head-after.txt",
+      "sha256": "ddd540ddb5cfaad5a4f3c104ef2c30f182e4a789248591017f66a9166e856f8c"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-2f01f500/gates/02-vet.head-before.txt",
+      "path": "gates/02-vet.head-before.txt",
+      "sha256": "ddd540ddb5cfaad5a4f3c104ef2c30f182e4a789248591017f66a9166e856f8c"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-2f01f500/gates/02-vet.rc.txt",
+      "path": "gates/02-vet.rc.txt",
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-2f01f500/gates/02-vet.stderr.txt",
+      "path": "gates/02-vet.stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-2f01f500/gates/02-vet.stdout.txt",
+      "path": "gates/02-vet.stdout.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-2f01f500/gates/03-race.command.txt",
+      "path": "gates/03-race.command.txt",
+      "sha256": "cb2dc241ec2a4978953fb5a1d273f3f5a06c26f98ddfee756342ea49945b4a11"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-2f01f500/gates/03-race.head-after.txt",
+      "path": "gates/03-race.head-after.txt",
+      "sha256": "8718b17246c7859908d28ec4edf3c2ce737308723cea847b2fef7417742d9a8d"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-2f01f500/gates/03-race.head-before.txt",
+      "path": "gates/03-race.head-before.txt",
+      "sha256": "8718b17246c7859908d28ec4edf3c2ce737308723cea847b2fef7417742d9a8d"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-2f01f500/gates/03-race.rc.txt",
+      "path": "gates/03-race.rc.txt",
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-2f01f500/gates/03-race.stderr.txt",
+      "path": "gates/03-race.stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-2f01f500/gates/03-race.stdout.txt",
+      "path": "gates/03-race.stdout.txt",
+      "sha256": "bf94998b039439b405a233c0bd730c487b94973cef2058f2a9553ef7563cb9d4"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-2f01f500/gates/04-pg.command.txt",
+      "path": "gates/04-pg.command.txt",
+      "sha256": "18322e62eaade2565ec82d80d91d466305279556e00b6c2e2803f8f0bc9288ce"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-2f01f500/gates/04-pg.head-after.txt",
+      "path": "gates/04-pg.head-after.txt",
+      "sha256": "8718b17246c7859908d28ec4edf3c2ce737308723cea847b2fef7417742d9a8d"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-2f01f500/gates/04-pg.head-before.txt",
+      "path": "gates/04-pg.head-before.txt",
+      "sha256": "8718b17246c7859908d28ec4edf3c2ce737308723cea847b2fef7417742d9a8d"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-2f01f500/gates/04-pg.rc.txt",
+      "path": "gates/04-pg.rc.txt",
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-2f01f500/gates/04-pg.stderr.txt",
+      "path": "gates/04-pg.stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-2f01f500/gates/04-pg.stdout.txt",
+      "path": "gates/04-pg.stdout.txt",
+      "sha256": "eabf5370c65f0b3ba14f7fd76ea919c9ba4a3a9d0d9fda88ba51ca36cc8c327d"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-2f01f500/gates/05-sql-corpus.command.txt",
+      "path": "gates/05-sql-corpus.command.txt",
+      "sha256": "c0ff97a39062ab5024235e9b3a74a9799f92c6bc17f856a4fbd2d2fb0d722b58"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-2f01f500/gates/05-sql-corpus.head-after.txt",
+      "path": "gates/05-sql-corpus.head-after.txt",
+      "sha256": "8718b17246c7859908d28ec4edf3c2ce737308723cea847b2fef7417742d9a8d"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-2f01f500/gates/05-sql-corpus.head-before.txt",
+      "path": "gates/05-sql-corpus.head-before.txt",
+      "sha256": "8718b17246c7859908d28ec4edf3c2ce737308723cea847b2fef7417742d9a8d"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-2f01f500/gates/05-sql-corpus.rc.txt",
+      "path": "gates/05-sql-corpus.rc.txt",
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-2f01f500/gates/05-sql-corpus.stderr.txt",
+      "path": "gates/05-sql-corpus.stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-2f01f500/gates/05-sql-corpus.stdout.txt",
+      "path": "gates/05-sql-corpus.stdout.txt",
+      "sha256": "63de2c1c0c98a259c5cd6167ca924104913e28f831f3a903e4a32c990a80e4c5"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-2f01f500/gates/06-query-access-corpus.command.txt",
+      "path": "gates/06-query-access-corpus.command.txt",
+      "sha256": "f800974ade03b4c3b190cae00d0ce75b900bb64170be24bd13ba646de5dc9048"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-2f01f500/gates/06-query-access-corpus.head-after.txt",
+      "path": "gates/06-query-access-corpus.head-after.txt",
+      "sha256": "8718b17246c7859908d28ec4edf3c2ce737308723cea847b2fef7417742d9a8d"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-2f01f500/gates/06-query-access-corpus.head-before.txt",
+      "path": "gates/06-query-access-corpus.head-before.txt",
+      "sha256": "8718b17246c7859908d28ec4edf3c2ce737308723cea847b2fef7417742d9a8d"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-2f01f500/gates/06-query-access-corpus.rc.txt",
+      "path": "gates/06-query-access-corpus.rc.txt",
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-2f01f500/gates/06-query-access-corpus.stderr.txt",
+      "path": "gates/06-query-access-corpus.stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-2f01f500/gates/06-query-access-corpus.stdout.txt",
+      "path": "gates/06-query-access-corpus.stdout.txt",
+      "sha256": "770d6875cd251dc10c51e0136310bf39a26451b224ca122352a57ac902bee3bb"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-2f01f500/gates/07-inventory.command.txt",
+      "path": "gates/07-inventory.command.txt",
+      "sha256": "cbf444a118bcdab43e82b37f7ef5484161a4a90f7225412f2e7f821afeddd392"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-2f01f500/gates/07-inventory.head-after.txt",
+      "path": "gates/07-inventory.head-after.txt",
+      "sha256": "8718b17246c7859908d28ec4edf3c2ce737308723cea847b2fef7417742d9a8d"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-2f01f500/gates/07-inventory.head-before.txt",
+      "path": "gates/07-inventory.head-before.txt",
+      "sha256": "8718b17246c7859908d28ec4edf3c2ce737308723cea847b2fef7417742d9a8d"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-2f01f500/gates/07-inventory.rc.txt",
+      "path": "gates/07-inventory.rc.txt",
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-2f01f500/gates/07-inventory.stderr.txt",
+      "path": "gates/07-inventory.stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-2f01f500/gates/07-inventory.stdout.txt",
+      "path": "gates/07-inventory.stdout.txt",
+      "sha256": "306ed30d4d552ea7f24473520d47226d2e883a673ad42d7189fddf5e4c2b9c15"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-2f01f500/gates/08-coverage-catalog.command.txt",
+      "path": "gates/08-coverage-catalog.command.txt",
+      "sha256": "0b591d781895f580d3c4da92fe4e7a9b0f849252cb53974274186a24e4666140"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-2f01f500/gates/08-coverage-catalog.head-after.txt",
+      "path": "gates/08-coverage-catalog.head-after.txt",
+      "sha256": "8718b17246c7859908d28ec4edf3c2ce737308723cea847b2fef7417742d9a8d"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-2f01f500/gates/08-coverage-catalog.head-before.txt",
+      "path": "gates/08-coverage-catalog.head-before.txt",
+      "sha256": "8718b17246c7859908d28ec4edf3c2ce737308723cea847b2fef7417742d9a8d"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-2f01f500/gates/08-coverage-catalog.rc.txt",
+      "path": "gates/08-coverage-catalog.rc.txt",
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-2f01f500/gates/08-coverage-catalog.stderr.txt",
+      "path": "gates/08-coverage-catalog.stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-2f01f500/gates/08-coverage-catalog.stdout.txt",
+      "path": "gates/08-coverage-catalog.stdout.txt",
+      "sha256": "ac104c51fac1a4eaddfdbde5950140c5273fa2392fad0bd73c200fe0bcb87ef4"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-2f01f500/gates/09-parser-unsupported.command.txt",
+      "path": "gates/09-parser-unsupported.command.txt",
+      "sha256": "6bc62f572960d8d39723e3b510a0557a52e5f0a8771919a318ba2dcc01b0a3d4"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-2f01f500/gates/09-parser-unsupported.head-after.txt",
+      "path": "gates/09-parser-unsupported.head-after.txt",
+      "sha256": "8718b17246c7859908d28ec4edf3c2ce737308723cea847b2fef7417742d9a8d"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-2f01f500/gates/09-parser-unsupported.head-before.txt",
+      "path": "gates/09-parser-unsupported.head-before.txt",
+      "sha256": "8718b17246c7859908d28ec4edf3c2ce737308723cea847b2fef7417742d9a8d"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-2f01f500/gates/09-parser-unsupported.rc.txt",
+      "path": "gates/09-parser-unsupported.rc.txt",
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-2f01f500/gates/09-parser-unsupported.stderr.txt",
+      "path": "gates/09-parser-unsupported.stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-2f01f500/gates/09-parser-unsupported.stdout.txt",
+      "path": "gates/09-parser-unsupported.stdout.txt",
+      "sha256": "e823b4ad6a82944ee1e90a381d005eebfc4263b70905287282806c29052f352e"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-2f01f500/gates/10-diagnostic-evidence.command.txt",
+      "path": "gates/10-diagnostic-evidence.command.txt",
+      "sha256": "cc6dfcc471f395dc1344da35c94922db8059448cf1a83bcf87817bd478fc40cb"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-2f01f500/gates/10-diagnostic-evidence.head-after.txt",
+      "path": "gates/10-diagnostic-evidence.head-after.txt",
+      "sha256": "8718b17246c7859908d28ec4edf3c2ce737308723cea847b2fef7417742d9a8d"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-2f01f500/gates/10-diagnostic-evidence.head-before.txt",
+      "path": "gates/10-diagnostic-evidence.head-before.txt",
+      "sha256": "8718b17246c7859908d28ec4edf3c2ce737308723cea847b2fef7417742d9a8d"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-2f01f500/gates/10-diagnostic-evidence.rc.txt",
+      "path": "gates/10-diagnostic-evidence.rc.txt",
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-2f01f500/gates/10-diagnostic-evidence.stderr.txt",
+      "path": "gates/10-diagnostic-evidence.stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-2f01f500/gates/10-diagnostic-evidence.stdout.txt",
+      "path": "gates/10-diagnostic-evidence.stdout.txt",
+      "sha256": "00aeb5f91e2b034b31b0e913d95fd3393da8f17efefb336df56dd2fc0b4ae56a"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-2f01f500/gates/11-privacy.command.txt",
+      "path": "gates/11-privacy.command.txt",
+      "sha256": "561503cbbc0b7e6b3b2df4f9bad5fad0302d54017e4a7039407df0a8bf6290da"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-2f01f500/gates/11-privacy.head-after.txt",
+      "path": "gates/11-privacy.head-after.txt",
+      "sha256": "8718b17246c7859908d28ec4edf3c2ce737308723cea847b2fef7417742d9a8d"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-2f01f500/gates/11-privacy.head-before.txt",
+      "path": "gates/11-privacy.head-before.txt",
+      "sha256": "8718b17246c7859908d28ec4edf3c2ce737308723cea847b2fef7417742d9a8d"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-2f01f500/gates/11-privacy.rc.txt",
+      "path": "gates/11-privacy.rc.txt",
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-2f01f500/gates/11-privacy.stderr.txt",
+      "path": "gates/11-privacy.stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-2f01f500/gates/11-privacy.stdout.txt",
+      "path": "gates/11-privacy.stdout.txt",
+      "sha256": "d25f39e8ce49a91054ba46dce26b9c472de164518b146849a30eb48991ec0e92"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-2f01f500/gates/12-docs-examples.command.txt",
+      "path": "gates/12-docs-examples.command.txt",
+      "sha256": "9f80442a6b3d900184c7f2cacd9ae52b2b52323c69eb7804e9b7f13384b9b3b5"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-2f01f500/gates/12-docs-examples.head-after.txt",
+      "path": "gates/12-docs-examples.head-after.txt",
+      "sha256": "8718b17246c7859908d28ec4edf3c2ce737308723cea847b2fef7417742d9a8d"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-2f01f500/gates/12-docs-examples.head-before.txt",
+      "path": "gates/12-docs-examples.head-before.txt",
+      "sha256": "8718b17246c7859908d28ec4edf3c2ce737308723cea847b2fef7417742d9a8d"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-2f01f500/gates/12-docs-examples.rc.txt",
+      "path": "gates/12-docs-examples.rc.txt",
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-2f01f500/gates/12-docs-examples.stderr.txt",
+      "path": "gates/12-docs-examples.stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-2f01f500/gates/12-docs-examples.stdout.txt",
+      "path": "gates/12-docs-examples.stdout.txt",
+      "sha256": "aef03d3e770fa619a745b0fa20520ae993b9c123cead3325ec50b4e6ff8beb3e"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-2f01f500/gates/13-decision-record.command.txt",
+      "path": "gates/13-decision-record.command.txt",
+      "sha256": "0ce47266b1fda2e7239153f0d7267560413ca47186b53733c656f5b0f708ebd8"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-2f01f500/gates/13-decision-record.head-after.txt",
+      "path": "gates/13-decision-record.head-after.txt",
+      "sha256": "ddd540ddb5cfaad5a4f3c104ef2c30f182e4a789248591017f66a9166e856f8c"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-2f01f500/gates/13-decision-record.head-before.txt",
+      "path": "gates/13-decision-record.head-before.txt",
+      "sha256": "ddd540ddb5cfaad5a4f3c104ef2c30f182e4a789248591017f66a9166e856f8c"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-2f01f500/gates/13-decision-record.rc.txt",
+      "path": "gates/13-decision-record.rc.txt",
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-2f01f500/gates/13-decision-record.stderr.txt",
+      "path": "gates/13-decision-record.stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-2f01f500/gates/13-decision-record.stdout.txt",
+      "path": "gates/13-decision-record.stdout.txt",
+      "sha256": "528c9d9b1c1a445d49b9d95ae13d30fd79eb496175547b92d35f8e32642b9079"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-2f01f500/gates/14-l2.command.txt",
+      "path": "gates/14-l2.command.txt",
+      "sha256": "623518249911783f1d739c722cfeb23ec245c32b4529e2cdd75e14b424867c9b"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-2f01f500/gates/14-l2.head-after.txt",
+      "path": "gates/14-l2.head-after.txt",
+      "sha256": "ddd540ddb5cfaad5a4f3c104ef2c30f182e4a789248591017f66a9166e856f8c"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-2f01f500/gates/14-l2.head-before.txt",
+      "path": "gates/14-l2.head-before.txt",
+      "sha256": "ddd540ddb5cfaad5a4f3c104ef2c30f182e4a789248591017f66a9166e856f8c"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-2f01f500/gates/14-l2.rc.txt",
+      "path": "gates/14-l2.rc.txt",
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-2f01f500/gates/14-l2.stderr.txt",
+      "path": "gates/14-l2.stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-2f01f500/gates/14-l2.stdout.txt",
+      "path": "gates/14-l2.stdout.txt",
+      "sha256": "8dc655e101b57ed1c40fd9b1b787d3500f4f9e6d2953b9ca153d79f56fe4bbce"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-2f01f500/gates/15-golden-validator.command.txt",
+      "path": "gates/15-golden-validator.command.txt",
+      "sha256": "a8f696db1bc6883625eeb4d9a9e0b980753f936e63c00e35282cb7c5599898ad"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-2f01f500/gates/15-golden-validator.head-after.txt",
+      "path": "gates/15-golden-validator.head-after.txt",
+      "sha256": "8718b17246c7859908d28ec4edf3c2ce737308723cea847b2fef7417742d9a8d"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-2f01f500/gates/15-golden-validator.head-before.txt",
+      "path": "gates/15-golden-validator.head-before.txt",
+      "sha256": "8718b17246c7859908d28ec4edf3c2ce737308723cea847b2fef7417742d9a8d"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-2f01f500/gates/15-golden-validator.rc.txt",
+      "path": "gates/15-golden-validator.rc.txt",
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-2f01f500/gates/15-golden-validator.stderr.txt",
+      "path": "gates/15-golden-validator.stderr.txt",
+      "sha256": "dcd2147edfda2291b456dfb6d9f3021f0fed07760d5a1c8869fc5446f30e28fe"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-2f01f500/gates/15-golden-validator.stdout.txt",
+      "path": "gates/15-golden-validator.stdout.txt",
+      "sha256": "39bbc09f08b98010a43b3fc268a59b2e4aafe0d6c9ebf523f507f9c03d345f2f"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-2f01f500/gates/16-lint-scoped.command.txt",
+      "path": "gates/16-lint-scoped.command.txt",
+      "sha256": "a75221341b800604d3b8c3cbd2cd8e318620eaf0bb5e6daaa26dc30c183df0ef"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-2f01f500/gates/16-lint-scoped.head-after.txt",
+      "path": "gates/16-lint-scoped.head-after.txt",
+      "sha256": "ddd540ddb5cfaad5a4f3c104ef2c30f182e4a789248591017f66a9166e856f8c"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-2f01f500/gates/16-lint-scoped.head-before.txt",
+      "path": "gates/16-lint-scoped.head-before.txt",
+      "sha256": "ddd540ddb5cfaad5a4f3c104ef2c30f182e4a789248591017f66a9166e856f8c"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-2f01f500/gates/16-lint-scoped.rc.txt",
+      "path": "gates/16-lint-scoped.rc.txt",
+      "sha256": "4355a46b19d348dc2f57c046f8ef63d4538ebb936000f3c9ee954a27460dd865"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-2f01f500/gates/16-lint-scoped.stderr.txt",
+      "path": "gates/16-lint-scoped.stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-2f01f500/gates/16-lint-scoped.stdout.txt",
+      "path": "gates/16-lint-scoped.stdout.txt",
+      "sha256": "14a6c50455a2f8cdbd812536fa166bbe3a08e3be073eb4d292934c7159417aea"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-2f01f500/gates/17-lint-fullrepo.command.txt",
+      "path": "gates/17-lint-fullrepo.command.txt",
+      "sha256": "3e62fe27626f6c3d37ea34b247909162ed1e33690f9f2d09a8a0f40ca1d56cc3"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-2f01f500/gates/17-lint-fullrepo.head-after.txt",
+      "path": "gates/17-lint-fullrepo.head-after.txt",
+      "sha256": "ddd540ddb5cfaad5a4f3c104ef2c30f182e4a789248591017f66a9166e856f8c"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-2f01f500/gates/17-lint-fullrepo.head-before.txt",
+      "path": "gates/17-lint-fullrepo.head-before.txt",
+      "sha256": "ddd540ddb5cfaad5a4f3c104ef2c30f182e4a789248591017f66a9166e856f8c"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-2f01f500/gates/17-lint-fullrepo.rc.txt",
+      "path": "gates/17-lint-fullrepo.rc.txt",
+      "sha256": "4355a46b19d348dc2f57c046f8ef63d4538ebb936000f3c9ee954a27460dd865"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-2f01f500/gates/17-lint-fullrepo.stderr.txt",
+      "path": "gates/17-lint-fullrepo.stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-2f01f500/gates/17-lint-fullrepo.stdout.txt",
+      "path": "gates/17-lint-fullrepo.stdout.txt",
+      "sha256": "982a477973a272a7f949a526472555e8f3215b83ed520a9f4566857d0fa1ff4d"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-2f01f500/gates/18-lint-identities.json",
+      "path": "gates/18-lint-identities.json",
+      "sha256": "3c74773d4024c904c674d1e23460f4530db4f4f987ca601c5727dc7ba2d63ce3"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-2f01f500/gates/18-lint-identity.command.txt",
+      "path": "gates/18-lint-identity.command.txt",
+      "sha256": "3f85e054c42da25033ac7ea7e8a25ee0d085f7b196b53ddb96370cef45398cbd"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-2f01f500/gates/18-lint-identity.head-after.txt",
+      "path": "gates/18-lint-identity.head-after.txt",
+      "sha256": "ddd540ddb5cfaad5a4f3c104ef2c30f182e4a789248591017f66a9166e856f8c"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-2f01f500/gates/18-lint-identity.head-before.txt",
+      "path": "gates/18-lint-identity.head-before.txt",
+      "sha256": "ddd540ddb5cfaad5a4f3c104ef2c30f182e4a789248591017f66a9166e856f8c"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-2f01f500/gates/18-lint-identity.rc.txt",
+      "path": "gates/18-lint-identity.rc.txt",
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-2f01f500/gates/18-lint-identity.stderr.txt",
+      "path": "gates/18-lint-identity.stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-2f01f500/gates/18-lint-identity.stdout.txt",
+      "path": "gates/18-lint-identity.stdout.txt",
+      "sha256": "e7bad71d1aff01d882438d22c0f4cb1ec5130cd4048434196f28e9f293c267f2"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-2f01f500/gates/19-golden.command.txt",
+      "path": "gates/19-golden.command.txt",
+      "sha256": "117e610624026884fd6f31ef1771931cec0cdc83c404df54090876cbebf21cb5"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-2f01f500/gates/19-golden.head-after.txt",
+      "path": "gates/19-golden.head-after.txt",
+      "sha256": "ddd540ddb5cfaad5a4f3c104ef2c30f182e4a789248591017f66a9166e856f8c"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-2f01f500/gates/19-golden.head-before.txt",
+      "path": "gates/19-golden.head-before.txt",
+      "sha256": "ddd540ddb5cfaad5a4f3c104ef2c30f182e4a789248591017f66a9166e856f8c"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-2f01f500/gates/19-golden.rc.txt",
+      "path": "gates/19-golden.rc.txt",
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-2f01f500/gates/19-golden.stderr.txt",
+      "path": "gates/19-golden.stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-2f01f500/gates/19-golden.stdout.txt",
+      "path": "gates/19-golden.stdout.txt",
+      "sha256": "4204848cd138266dd79f95e39f7b5303b52bf66714fef8b46c78ef7a99df0ddf"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-2f01f500/gates/20-artifact-validator.command.txt",
+      "path": "gates/20-artifact-validator.command.txt",
+      "sha256": "ba37c3b5f03f52f630523e414051faf515517ce9766eaa8485e0933029418b8b"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-2f01f500/gates/20-artifact-validator.head-after.txt",
+      "path": "gates/20-artifact-validator.head-after.txt",
+      "sha256": "ddd540ddb5cfaad5a4f3c104ef2c30f182e4a789248591017f66a9166e856f8c"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-2f01f500/gates/20-artifact-validator.head-before.txt",
+      "path": "gates/20-artifact-validator.head-before.txt",
+      "sha256": "ddd540ddb5cfaad5a4f3c104ef2c30f182e4a789248591017f66a9166e856f8c"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-2f01f500/gates/20-artifact-validator.rc.txt",
+      "path": "gates/20-artifact-validator.rc.txt",
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-2f01f500/gates/20-artifact-validator.stderr.txt",
+      "path": "gates/20-artifact-validator.stderr.txt",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-2f01f500/gates/20-artifact-validator.stdout.txt",
+      "path": "gates/20-artifact-validator.stdout.txt",
+      "sha256": "7cf2b76b8eea8da6ac3ab13c7a396e56b30a81345d8921b440114ab6ab9fd211"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-2f01f500/golden/T20/artifact.json",
+      "path": "golden/T20/artifact.json",
+      "sha256": "eee3c43c660d9ba1a10d0e67da5b72eab2b41f2007c7352371554ec650e8014b"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-2f01f500/golden/T20/cases/T20.cli.mysql-alter-bind-vendor.json",
+      "path": "golden/T20/cases/T20.cli.mysql-alter-bind-vendor.json",
+      "sha256": "ade1057ae1d48f8b1b7ad6cba21c4638fbfbd0c25bfefea4f0595aa0c4947a03"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-2f01f500/golden/T20/cases/T20.cli.mysql-create-policy-vendor.json",
+      "path": "golden/T20/cases/T20.cli.mysql-create-policy-vendor.json",
+      "sha256": "ac3fd3d2ccb2c9da2827c0e1d6c73453eb3a1fe45b92ecd626d3566bb066d19c"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-2f01f500/golden/T20/cases/T20.cli.mysql-placement-comment-ignored.json",
+      "path": "golden/T20/cases/T20.cli.mysql-placement-comment-ignored.json",
+      "sha256": "069c7542fdf079f951f73a07657f3360027853454ba55e466c1512873bea19e9"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-2f01f500/golden/T20/cases/T20.cli.tidb-alter-bind-gap.json",
+      "path": "golden/T20/cases/T20.cli.tidb-alter-bind-gap.json",
+      "sha256": "f0665a6e90f8e7b65215a7cf6805b1970a4b0c43073eb8917eed0606cbcebd7a"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-2f01f500/golden/T20/cases/T20.cli.tidb-alter-range-dist-silent.json",
+      "path": "golden/T20/cases/T20.cli.tidb-alter-range-dist-silent.json",
+      "sha256": "45292fc1e1e39fcaa7ef0e537070fc492b150fba5ed0e893e16e4e0de276ce3c"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-2f01f500/golden/T20/cases/T20.cli.tidb-alter-range-global-gap.json",
+      "path": "golden/T20/cases/T20.cli.tidb-alter-range-global-gap.json",
+      "sha256": "2f02a10987f2f1a314b72bb3fb3dee1808e968fce9a59422d3d0a4537f5a0b50"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-2f01f500/golden/T20/cases/T20.cli.tidb-create-policy-gap.json",
+      "path": "golden/T20/cases/T20.cli.tidb-create-policy-gap.json",
+      "sha256": "52f65a860f26fb8333e586d2494c6410873b1d414eca575c6e20f1cd4ffd2287"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-2f01f500/golden/T20/cases/T20.cli.tidb-default-unbind-silent.json",
+      "path": "golden/T20/cases/T20.cli.tidb-default-unbind-silent.json",
+      "sha256": "6116341ef46121f89141a25d7e58c8be0295295acb72b0c0ebbdc45494fd3080"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-2f01f500/golden/T20/cases/T20.cli.tidb-drop-policy-gap.json",
+      "path": "golden/T20/cases/T20.cli.tidb-drop-policy-gap.json",
+      "sha256": "f6f56fefef744b4d86819acba1c0598e12ee9ecf4c3d956e90d3c8829b6ca26d"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-2f01f500/golden/T20/cases/T20.cli.tidb-r4-add-member-unknown.json",
+      "path": "golden/T20/cases/T20.cli.tidb-r4-add-member-unknown.json",
+      "sha256": "07790d17abf7e5ea74872067daa45cc0c4a60d73e18bf876a60f65686d2779db"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-2f01f500/golden/T20/cases/T20.cli.tidb-r4-create-members-unknown.json",
+      "path": "golden/T20/cases/T20.cli.tidb-r4-create-members-unknown.json",
+      "sha256": "a44cee6c45a344078d5e7c17c8156939b48b57f67630eaabac5fbe901621e7a9"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-2f01f500/golden/T20/cases/T20.cli.tidb-r4-reorg-members-unknown.json",
+      "path": "golden/T20/cases/T20.cli.tidb-r4-reorg-members-unknown.json",
+      "sha256": "f4fb3bd75da9e409bcbe1dee356d240840d680b61f8ba7aa277faf8315d1d4eb"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-2f01f500/golden/T20/cases/T20.db.mysql57.ddl.json",
+      "path": "golden/T20/cases/T20.db.mysql57.ddl.json",
+      "sha256": "10b3d87320babe47dac87fc0257ed303604992374226ea5b06e961df322ad1d0"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-2f01f500/golden/T20/cases/T20.db.mysql57.syntax_negative.json",
+      "path": "golden/T20/cases/T20.db.mysql57.syntax_negative.json",
+      "sha256": "d90d975eb6fb60b99abdf9616b2233f9cd156a22243a6c255747e68fe555128c"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-2f01f500/golden/T20/cases/T20.db.mysql80.ddl.json",
+      "path": "golden/T20/cases/T20.db.mysql80.ddl.json",
+      "sha256": "7724d0eb4fb3231ea467dbfd21c7229a8f43a3ced3f169f9035a7b989fa62777"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-2f01f500/golden/T20/cases/T20.db.mysql80.syntax_negative.json",
+      "path": "golden/T20/cases/T20.db.mysql80.syntax_negative.json",
+      "sha256": "5b8590091dd665b96bd2c9722ffc7dc8b5f9c4ece1e492f409e90db146fa6ae8"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-2f01f500/golden/T20/cases/T20.db.mysql84.ddl.json",
+      "path": "golden/T20/cases/T20.db.mysql84.ddl.json",
+      "sha256": "1c7dd34f0a348652f368b5d62bd5985d6e796e7250e5022eb7dc4d52de398500"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-2f01f500/golden/T20/cases/T20.db.mysql84.syntax_negative.json",
+      "path": "golden/T20/cases/T20.db.mysql84.syntax_negative.json",
+      "sha256": "378173b3450fc39bd0cc6c758af9b193390ea990f486e621db02b90f7668e5c1"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-2f01f500/golden/T20/cases/T20.db.tidb85.ddl.json",
+      "path": "golden/T20/cases/T20.db.tidb85.ddl.json",
+      "sha256": "4397bfc9bbf67ce7fdea7467c3fccba132e2fa38e3f03f1b65d6ba03cf48cbf6"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-2f01f500/golden/T20/cases/T20.db.tidb85.syntax_negative.json",
+      "path": "golden/T20/cases/T20.db.tidb85.syntax_negative.json",
+      "sha256": "ab83274f0bc5f292457ae4e509ecf19ade9f60da1270345d121b55bdd90efea0"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-2f01f500/golden/T20/cases/T20.meta.tidb85-alter-policy.json",
+      "path": "golden/T20/cases/T20.meta.tidb85-alter-policy.json",
+      "sha256": "1431866efa0d3704a32b5fadef15c13e3cafce2174a5648ddcb1035b7e60afd3"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-2f01f500/golden/T20/cases/T20.meta.tidb85-alterdb-partial.json",
+      "path": "golden/T20/cases/T20.meta.tidb85-alterdb-partial.json",
+      "sha256": "124c922292c4ca97081959ca2e8e8880bc9c9d6cd9b5652ad79fa4b2489b5da3"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-2f01f500/golden/T20/cases/T20.meta.tidb85-bind-missing-refused.json",
+      "path": "golden/T20/cases/T20.meta.tidb85-bind-missing-refused.json",
+      "sha256": "db275f83df248ee07cf294f444016e727ddb7d20bf694e9215687cd409341e6a"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-2f01f500/golden/T20/cases/T20.meta.tidb85-default-unbind.json",
+      "path": "golden/T20/cases/T20.meta.tidb85-default-unbind.json",
+      "sha256": "090cc121406dda10fdfa0547194f06ecddeb292a11a1765dbce36ff9fef2878c"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-2f01f500/golden/T20/cases/T20.meta.tidb85-drop-bound-refused.json",
+      "path": "golden/T20/cases/T20.meta.tidb85-drop-bound-refused.json",
+      "sha256": "c6ea657bd4e05f1f6f774dc0aa8a76839d9833d4c3b9c43aeee2ffdb8e15719d"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-2f01f500/golden/T20/cases/T20.meta.tidb85-golden-bind.json",
+      "path": "golden/T20/cases/T20.meta.tidb85-golden-bind.json",
+      "sha256": "514b438e2615f4651dfbd5142b4ec9cebf48b954a8a0bbffd4c16573109c005b"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-2f01f500/golden/T20/cases/T20.meta.tidb85-partition-bind.json",
+      "path": "golden/T20/cases/T20.meta.tidb85-partition-bind.json",
+      "sha256": "dc5b1a7bb70a37cd78368f5fa52fc5ddede81da4adea6886d2410167a4d465e2"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-2f01f500/golden/T20/cases/T20.meta.tidb85-r4-add-member-bound-drop.json",
+      "path": "golden/T20/cases/T20.meta.tidb85-r4-add-member-bound-drop.json",
+      "sha256": "24aab72e241efe1a55a05dd13ad07f4c42556d01c85bd3bb7ec6d57fdcb1ca56"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-2f01f500/golden/T20/cases/T20.meta.tidb85-r4-add-member-missing.json",
+      "path": "golden/T20/cases/T20.meta.tidb85-r4-add-member-missing.json",
+      "sha256": "018da65dac6e2940e0376c1b4072dda47be7fe2af99180d106fb9a977ea1768f"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-2f01f500/golden/T20/cases/T20.meta.tidb85-r4-create-late-missing.json",
+      "path": "golden/T20/cases/T20.meta.tidb85-r4-create-late-missing.json",
+      "sha256": "1ef484f4ddb587bf5ec137f3e7e4d6303b0373b0dfcc5bdc472d872cc4b52c28"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-2f01f500/golden/T20/cases/T20.meta.tidb85-r4-create-same-policy-members.json",
+      "path": "golden/T20/cases/T20.meta.tidb85-r4-create-same-policy-members.json",
+      "sha256": "4c6dbc7c7a817d542d4cdba46ccfcfa32d8c3841cbe4ed0c84078c694bf6b181"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-2f01f500/golden/T20/cases/T20.meta.tidb85-r4-reorg-keeps-other-reference.json",
+      "path": "golden/T20/cases/T20.meta.tidb85-r4-reorg-keeps-other-reference.json",
+      "sha256": "c7759af401666190f4c3e6fa62c9e9a8f328fd8b30ae706c423c038b448578b9"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-2f01f500/golden/T20/cases/T20.meta.tidb85-r4-reorg-late-missing.json",
+      "path": "golden/T20/cases/T20.meta.tidb85-r4-reorg-late-missing.json",
+      "sha256": "9b24f6a5d51d63100a2d50a8081f2fb36b5605f2cba2734358be2856ba55d545"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-2f01f500/golden/T20/cases/T20.meta.tidb85-r4-subpartition-ignored-boundary.json",
+      "path": "golden/T20/cases/T20.meta.tidb85-r4-subpartition-ignored-boundary.json",
+      "sha256": "575fafb6f8332343199343065dfbee7c3f47b3d39e5852b81d1607fc79cfde6f"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-2f01f500/golden/T20/cases/T20.meta.tidb85-schema-bind.json",
+      "path": "golden/T20/cases/T20.meta.tidb85-schema-bind.json",
+      "sha256": "ff6d21a4146f928284d808cd09afa3b14d8098e2786daf71aadf3f51c697e483"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-2f01f500/golden/T20/golden-policy-all-off.yaml",
+      "path": "golden/T20/golden-policy-all-off.yaml",
+      "sha256": "efeba62e7b42bbcdb923761975b8ff106bcd7708cca77056bf35127698090dd2"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-2f01f500/golden/T20/golden-policy-t20-placement.yaml",
+      "path": "golden/T20/golden-policy-t20-placement.yaml",
+      "sha256": "70ad0943027c454245683fda9baffac01796956d4b518e3d9b39036856e434a2"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-2f01f500/golden/network-preserving-compose.yaml",
+      "path": "golden/network-preserving-compose.yaml",
+      "sha256": "baef0b9308d8f810e5b77f7576df3ec524ca2fa45175641edae1388e1a7e84d7"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-2f01f500/golden/runner-environment.json",
+      "path": "golden/runner-environment.json",
+      "sha256": "98e611a95600f6b4ba578698afbca2c8be83149bfbed2113f93b672aca20138d"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native_probe.py",
+      "path": "tools/native_probe.py",
+      "sha256": "4a6b3b02961a01ff7938db6fa5356e1e7d28aa19e6c599234bde1cd2941072ce"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/native_scheme_probe.py",
+      "path": "tools/native_scheme_probe.py",
+      "sha256": "bf8bf67082c35155dd41db5e50b31413539e4be5ab9603d2eb370a3f9a79e72a"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/capture_check.py",
+      "path": "tools/capture_check.py",
+      "sha256": "86724b5472032cbf0d3558c1527460d0835ad5c29d976fd1a06b6261513c020c"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/check_l2.py",
+      "path": "tools/check_l2.py",
+      "sha256": "3613f0b053f2d4bb6b06c20ad6fbf26a297046ce3219a87bd549294cf62ca3e0"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/lint_identity.py",
+      "path": "tools/lint_identity.py",
+      "sha256": "39e1d79c2ec35c982a87b729bb58a2640f5fca34b6ed4513e05e46798d4b0cdc"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/lint-baseline.json",
+      "path": "tools/lint-baseline.json",
+      "sha256": "a460607f88678c014f81732ba13bbe975c3adc0921eee2f0cb8100a87666a83e"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/formal_golden.py",
+      "path": "tools/formal_golden.py",
+      "sha256": "1ad9b787adcaae82aee42a12770897bfe305279777447a493b1eff73f309e25e"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/run_final_gates.py",
+      "path": "tools/run_final_gates.py",
+      "sha256": "a2d133d91d51f60c091759b88e10d07b37d7ee0fc48ec2f20599c34ba344bbf4"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/run_final_gates.initial.py",
+      "path": "tools/run_final_gates.initial.py",
+      "sha256": "5e3c83860366864e99b976dac049e8b622b25a8e9c3bce95aca9f6ec9ab20ce3"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/verify_candidate.py",
+      "path": "tools/verify_candidate.py",
+      "sha256": "0afcba91b859b24516794b91d501fc0f378e9dc3536a53f4daebb79b375e5ee4"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/verify_candidate.initial.py",
+      "path": "tools/verify_candidate.initial.py",
+      "sha256": "f7d9b8333f4685139374816def164caa5c90d6c9bba79c42d9b5af3c80713998"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/gate_reuse.py",
+      "path": "tools/gate_reuse.py",
+      "sha256": "38e5f3c1bc71649ae8a929a297d99c8d9600e860ba5bae11c01df05a5d244036"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/gate_reuse_final.py",
+      "path": "tools/gate_reuse_final.py",
+      "sha256": "d67e7be86c4dca24d4315f55c7d2829052eb0fd1a51af929ca8a64485a231c5f"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/verify_resources.py",
+      "path": "tools/verify_resources.py",
+      "sha256": "6b3194127d871c33cffe85bdd5abe1394e4cbe7f7a5bfae1b3707d43f98a745f"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/verify_resources.initial.py",
+      "path": "tools/verify_resources.initial.py",
+      "sha256": "9c56b472c5f40a19ec56916823f50c54ef1bbca457caf0fb1761973844d6f139"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/capture_scopes.py",
+      "path": "tools/capture_scopes.py",
+      "sha256": "6d2466570f74ba3eeb80954d31c28ec992ea902ac9877f3700fa1cc024c778d2"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/assemble_evidence.py",
+      "path": "tools/assemble_evidence.py",
+      "sha256": "2b24a96c2b3bd0ae15bd9e4b1c1ecf5c0abcfb8d6b62230f052bd67741ce3ea0"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/lead-verification.json",
+      "path": "lead-verification.json",
+      "sha256": "a27b4182bdda64c7835f15a208d8e41152659ead558ca3175a753e63c7736303"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/protected-resources.json",
+      "path": "protected-resources.json",
+      "sha256": "0a560ba408a0bb12c03747693595869a4b23f82d86d12af34004f6f6ec65f3ca"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/protected-resources-corrected.json",
+      "path": "protected-resources-corrected.json",
+      "sha256": "d6693d46b655a4d7ac0fe40e4e98b32effed3bbc29fa80549e227b785dbc30e9"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/scope-product.json",
+      "path": "scope-product.json",
+      "sha256": "bf013869f374b62cd7345906fe02b677fe65c6f0f25f434cbb3e61b017dbd5e7"
+    },
+    {
+      "source": "/Users/fan/GolangProjects/DeltaScope/internal/application/audit/batch_state_t20r4_test.go",
+      "path": "source/batch_state_t20r4_test.go.txt.txt",
+      "sha256": "0a6042f3f74fdd9fc3de26f64a80c187c565f23dfb37a0e03aebcba6459c3f12"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/rework-product-review.diff",
+      "path": "development/review-snapshots/rework-product-review.diff",
+      "sha256": "93746ab613fd18c16d7a76af59aef9d6dedfc1ddeb6efa531c0f5a4075f24482"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-product-review.diff",
+      "path": "development/review-snapshots/final-product-review.diff",
+      "sha256": "05b7da58a7581f2bf0ba7feb27a5f2d995d2b4af465c7590d475eac140a82468"
+    },
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-review-delta.diff",
+      "path": "development/review-snapshots/final-review-delta.diff",
+      "sha256": "5a796a92de4eb077518d8d767117f6e6131d7a1120d4faf2b2f240bdb8cf2e71"
+    }
+  ],
+  "omitted_binaries": [
+    {
+      "source": "/tmp/deltascope-t20r4-6ac1e918/final-2f01f500/golden/T20/bin/deltascope",
+      "reason": "built CLI remains at its execution path",
+      "verified_sha256": "adbec424f57663d75f5f1fc72bfdee63944b5ff7dd48e582565e162d7e83b833"
+    }
+  ],
+  "counts_source": "lead-verification.json",
+  "note": "Raw receipt bytes and recorded execution HEADs are preserved. Only archived source filenames ending .go acquire .txt. README/REVIEW_HANDOFF prose is authored separately from this copy ledger."
+}

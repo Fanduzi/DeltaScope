@@ -1,0 +1,11 @@
+time="2026-11-04T22:50:30+08:00" level=warning msg="a network with name deltascope-ddl-golden_default exists but was not created by compose.\nSet `external: true` to use an existing network"
+ Container deltascope-ddl-golden-tidb85 Creating 
+ Container deltascope-ddl-golden-tidb85 Created 
+ Container deltascope-ddl-golden-tidb85-client Creating 
+ Container deltascope-ddl-golden-tidb85-client Created 
+ Container deltascope-ddl-golden-tidb85 Starting 
+ Container deltascope-ddl-golden-tidb85 Started 
+ Container deltascope-ddl-golden-tidb85 Waiting 
+ Container deltascope-ddl-golden-tidb85 Healthy 
+ Container deltascope-ddl-golden-tidb85-client Starting 
+ Container deltascope-ddl-golden-tidb85-client Started 

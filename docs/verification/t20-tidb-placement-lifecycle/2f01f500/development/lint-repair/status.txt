@@ -1,0 +1,15 @@
+ M internal/application/audit/batch_state_placement.go
+ M internal/application/audit/partition_transitions.go
+?? .agents/
+?? .codex/
+?? .cursor/
+?? .debug-journal.md
+?? .devin/
+?? .grok/
+?? .opencode/
+?? .pi-subagents/
+?? .qoder/
+?? artifacts/
+?? docs/quality/architecture-review-2026-08-11.html
+?? docs/verification/t06-a12/1a5dd90de898a59590ef8a19aa068c4b5e8ce7f8/T06/
+?? docs/verification/t06-a4/527fd48dde8190b3c3037ef2335c97ec7ad2853e/plan/probe-src/go.sum

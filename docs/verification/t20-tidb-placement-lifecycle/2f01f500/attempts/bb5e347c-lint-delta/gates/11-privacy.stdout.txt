@@ -1,0 +1,448 @@
+=== RUN   TestT20R2PlacementPrivacySentinel
+--- PASS: TestT20R2PlacementPrivacySentinel (0.00s)
+=== RUN   TestMySQLTiDBPromotedDDLMetadataCensus
+=== PAUSE TestMySQLTiDBPromotedDDLMetadataCensus
+=== CONT  TestMySQLTiDBPromotedDDLMetadataCensus
+=== RUN   TestMySQLTiDBPromotedDDLMetadataCensus/MySQL
+=== PAUSE TestMySQLTiDBPromotedDDLMetadataCensus/MySQL
+=== RUN   TestMySQLTiDBPromotedDDLMetadataCensus/TiDB
+=== PAUSE TestMySQLTiDBPromotedDDLMetadataCensus/TiDB
+=== CONT  TestMySQLTiDBPromotedDDLMetadataCensus/MySQL
+=== CONT  TestMySQLTiDBPromotedDDLMetadataCensus/TiDB
+=== RUN   TestMySQLTiDBPromotedDDLMetadataCensus/TiDB/RENAME_TABLE
+=== PAUSE TestMySQLTiDBPromotedDDLMetadataCensus/TiDB/RENAME_TABLE
+=== RUN   TestMySQLTiDBPromotedDDLMetadataCensus/MySQL/RENAME_TABLE
+=== PAUSE TestMySQLTiDBPromotedDDLMetadataCensus/MySQL/RENAME_TABLE
+=== RUN   TestMySQLTiDBPromotedDDLMetadataCensus/MySQL/ALTER_TABLE_ADD_COLUMN
+=== RUN   TestMySQLTiDBPromotedDDLMetadataCensus/TiDB/ALTER_TABLE_ADD_COLUMN
+=== PAUSE TestMySQLTiDBPromotedDDLMetadataCensus/TiDB/ALTER_TABLE_ADD_COLUMN
+=== PAUSE TestMySQLTiDBPromotedDDLMetadataCensus/MySQL/ALTER_TABLE_ADD_COLUMN
+=== RUN   TestMySQLTiDBPromotedDDLMetadataCensus/MySQL/ALTER_TABLE_DROP_COLUMN
+=== RUN   TestMySQLTiDBPromotedDDLMetadataCensus/TiDB/ALTER_TABLE_DROP_COLUMN
+=== PAUSE TestMySQLTiDBPromotedDDLMetadataCensus/TiDB/ALTER_TABLE_DROP_COLUMN
+=== PAUSE TestMySQLTiDBPromotedDDLMetadataCensus/MySQL/ALTER_TABLE_DROP_COLUMN
+=== RUN   TestMySQLTiDBPromotedDDLMetadataCensus/TiDB/ALTER_TABLE_MODIFY_COLUMN
+=== RUN   TestMySQLTiDBPromotedDDLMetadataCensus/MySQL/ALTER_TABLE_MODIFY_COLUMN
+=== PAUSE TestMySQLTiDBPromotedDDLMetadataCensus/TiDB/ALTER_TABLE_MODIFY_COLUMN
+=== PAUSE TestMySQLTiDBPromotedDDLMetadataCensus/MySQL/ALTER_TABLE_MODIFY_COLUMN
+=== RUN   TestMySQLTiDBPromotedDDLMetadataCensus/TiDB/ALTER_TABLE_ADD_PRIMARY_KEY
+=== PAUSE TestMySQLTiDBPromotedDDLMetadataCensus/TiDB/ALTER_TABLE_ADD_PRIMARY_KEY
+=== RUN   TestMySQLTiDBPromotedDDLMetadataCensus/TiDB/ALTER_TABLE_ADD_INDEX
+=== PAUSE TestMySQLTiDBPromotedDDLMetadataCensus/TiDB/ALTER_TABLE_ADD_INDEX
+=== RUN   TestMySQLTiDBPromotedDDLMetadataCensus/TiDB/ALTER_TABLE_DROP_INDEX
+=== RUN   TestMySQLTiDBPromotedDDLMetadataCensus/MySQL/ALTER_TABLE_ADD_PRIMARY_KEY
+=== PAUSE TestMySQLTiDBPromotedDDLMetadataCensus/TiDB/ALTER_TABLE_DROP_INDEX
+=== PAUSE TestMySQLTiDBPromotedDDLMetadataCensus/MySQL/ALTER_TABLE_ADD_PRIMARY_KEY
+=== RUN   TestMySQLTiDBPromotedDDLMetadataCensus/TiDB/ALTER_TABLE_ADD_FOREIGN_KEY
+=== PAUSE TestMySQLTiDBPromotedDDLMetadataCensus/TiDB/ALTER_TABLE_ADD_FOREIGN_KEY
+=== RUN   TestMySQLTiDBPromotedDDLMetadataCensus/TiDB/ALTER_TABLE_DROP_FOREIGN_KEY
+=== PAUSE TestMySQLTiDBPromotedDDLMetadataCensus/TiDB/ALTER_TABLE_DROP_FOREIGN_KEY
+=== RUN   TestMySQLTiDBPromotedDDLMetadataCensus/TiDB/CREATE_INDEX
+=== PAUSE TestMySQLTiDBPromotedDDLMetadataCensus/TiDB/CREATE_INDEX
+=== RUN   TestMySQLTiDBPromotedDDLMetadataCensus/MySQL/ALTER_TABLE_ADD_INDEX
+=== RUN   TestMySQLTiDBPromotedDDLMetadataCensus/TiDB/CREATE_UNIQUE_INDEX
+=== PAUSE TestMySQLTiDBPromotedDDLMetadataCensus/MySQL/ALTER_TABLE_ADD_INDEX
+=== RUN   TestMySQLTiDBPromotedDDLMetadataCensus/MySQL/ALTER_TABLE_DROP_INDEX
+=== PAUSE TestMySQLTiDBPromotedDDLMetadataCensus/MySQL/ALTER_TABLE_DROP_INDEX
+=== PAUSE TestMySQLTiDBPromotedDDLMetadataCensus/TiDB/CREATE_UNIQUE_INDEX
+=== RUN   TestMySQLTiDBPromotedDDLMetadataCensus/TiDB/DROP_INDEX
+=== RUN   TestMySQLTiDBPromotedDDLMetadataCensus/MySQL/ALTER_TABLE_ADD_FOREIGN_KEY
+=== PAUSE TestMySQLTiDBPromotedDDLMetadataCensus/TiDB/DROP_INDEX
+=== PAUSE TestMySQLTiDBPromotedDDLMetadataCensus/MySQL/ALTER_TABLE_ADD_FOREIGN_KEY
+=== RUN   TestMySQLTiDBPromotedDDLMetadataCensus/TiDB/ALTER_DATABASE
+=== RUN   TestMySQLTiDBPromotedDDLMetadataCensus/MySQL/ALTER_TABLE_DROP_FOREIGN_KEY
+=== PAUSE TestMySQLTiDBPromotedDDLMetadataCensus/MySQL/ALTER_TABLE_DROP_FOREIGN_KEY
+=== RUN   TestMySQLTiDBPromotedDDLMetadataCensus/MySQL/CREATE_INDEX
+=== PAUSE TestMySQLTiDBPromotedDDLMetadataCensus/MySQL/CREATE_INDEX
+=== RUN   TestMySQLTiDBPromotedDDLMetadataCensus/MySQL/CREATE_UNIQUE_INDEX
+=== PAUSE TestMySQLTiDBPromotedDDLMetadataCensus/MySQL/CREATE_UNIQUE_INDEX
+=== RUN   TestMySQLTiDBPromotedDDLMetadataCensus/MySQL/CREATE_FULLTEXT_INDEX
+=== PAUSE TestMySQLTiDBPromotedDDLMetadataCensus/MySQL/CREATE_FULLTEXT_INDEX
+=== RUN   TestMySQLTiDBPromotedDDLMetadataCensus/MySQL/CREATE_SPATIAL_INDEX
+=== PAUSE TestMySQLTiDBPromotedDDLMetadataCensus/MySQL/CREATE_SPATIAL_INDEX
+=== RUN   TestMySQLTiDBPromotedDDLMetadataCensus/MySQL/DROP_INDEX
+=== PAUSE TestMySQLTiDBPromotedDDLMetadataCensus/MySQL/DROP_INDEX
+=== RUN   TestMySQLTiDBPromotedDDLMetadataCensus/MySQL/ALTER_DATABASE
+=== PAUSE TestMySQLTiDBPromotedDDLMetadataCensus/MySQL/ALTER_DATABASE
+=== RUN   TestMySQLTiDBPromotedDDLMetadataCensus/MySQL/CREATE_PROCEDURE
+=== PAUSE TestMySQLTiDBPromotedDDLMetadataCensus/TiDB/ALTER_DATABASE
+=== PAUSE TestMySQLTiDBPromotedDDLMetadataCensus/MySQL/CREATE_PROCEDURE
+=== RUN   TestMySQLTiDBPromotedDDLMetadataCensus/MySQL/DROP_PROCEDURE
+=== RUN   TestMySQLTiDBPromotedDDLMetadataCensus/TiDB/CREATE_PLACEMENT_POLICY
+=== PAUSE TestMySQLTiDBPromotedDDLMetadataCensus/MySQL/DROP_PROCEDURE
+=== PAUSE TestMySQLTiDBPromotedDDLMetadataCensus/TiDB/CREATE_PLACEMENT_POLICY
+=== RUN   TestMySQLTiDBPromotedDDLMetadataCensus/MySQL/CREATE_USER
+=== RUN   TestMySQLTiDBPromotedDDLMetadataCensus/TiDB/ALTER_PLACEMENT_POLICY
+=== PAUSE TestMySQLTiDBPromotedDDLMetadataCensus/MySQL/CREATE_USER
+=== PAUSE TestMySQLTiDBPromotedDDLMetadataCensus/TiDB/ALTER_PLACEMENT_POLICY
+=== RUN   TestMySQLTiDBPromotedDDLMetadataCensus/MySQL/ALTER_USER
+=== RUN   TestMySQLTiDBPromotedDDLMetadataCensus/TiDB/DROP_PLACEMENT_POLICY
+=== PAUSE TestMySQLTiDBPromotedDDLMetadataCensus/MySQL/ALTER_USER
+=== RUN   TestMySQLTiDBPromotedDDLMetadataCensus/MySQL/DROP_USER
+=== PAUSE TestMySQLTiDBPromotedDDLMetadataCensus/TiDB/DROP_PLACEMENT_POLICY
+=== PAUSE TestMySQLTiDBPromotedDDLMetadataCensus/MySQL/DROP_USER
+=== RUN   TestMySQLTiDBPromotedDDLMetadataCensus/TiDB/CREATE_SEQUENCE
+=== RUN   TestMySQLTiDBPromotedDDLMetadataCensus/MySQL/CREATE_ROLE
+=== PAUSE TestMySQLTiDBPromotedDDLMetadataCensus/TiDB/CREATE_SEQUENCE
+=== PAUSE TestMySQLTiDBPromotedDDLMetadataCensus/MySQL/CREATE_ROLE
+=== RUN   TestMySQLTiDBPromotedDDLMetadataCensus/TiDB/ALTER_SEQUENCE
+=== PAUSE TestMySQLTiDBPromotedDDLMetadataCensus/TiDB/ALTER_SEQUENCE
+=== RUN   TestMySQLTiDBPromotedDDLMetadataCensus/TiDB/DROP_SEQUENCE
+=== PAUSE TestMySQLTiDBPromotedDDLMetadataCensus/TiDB/DROP_SEQUENCE
+=== RUN   TestMySQLTiDBPromotedDDLMetadataCensus/TiDB/CREATE_PROCEDURE
+=== PAUSE TestMySQLTiDBPromotedDDLMetadataCensus/TiDB/CREATE_PROCEDURE
+=== RUN   TestMySQLTiDBPromotedDDLMetadataCensus/TiDB/DROP_PROCEDURE
+=== RUN   TestMySQLTiDBPromotedDDLMetadataCensus/MySQL/DROP_ROLE
+=== PAUSE TestMySQLTiDBPromotedDDLMetadataCensus/TiDB/DROP_PROCEDURE
+=== RUN   TestMySQLTiDBPromotedDDLMetadataCensus/TiDB/CREATE_USER
+=== PAUSE TestMySQLTiDBPromotedDDLMetadataCensus/TiDB/CREATE_USER
+=== RUN   TestMySQLTiDBPromotedDDLMetadataCensus/TiDB/ALTER_USER
+=== PAUSE TestMySQLTiDBPromotedDDLMetadataCensus/TiDB/ALTER_USER
+=== PAUSE TestMySQLTiDBPromotedDDLMetadataCensus/MySQL/DROP_ROLE
+=== RUN   TestMySQLTiDBPromotedDDLMetadataCensus/MySQL/GRANT_SELECT
+=== PAUSE TestMySQLTiDBPromotedDDLMetadataCensus/MySQL/GRANT_SELECT
+=== RUN   TestMySQLTiDBPromotedDDLMetadataCensus/MySQL/REVOKE_SELECT
+=== PAUSE TestMySQLTiDBPromotedDDLMetadataCensus/MySQL/REVOKE_SELECT
+=== RUN   TestMySQLTiDBPromotedDDLMetadataCensus/TiDB/DROP_USER
+=== PAUSE TestMySQLTiDBPromotedDDLMetadataCensus/TiDB/DROP_USER
+=== RUN   TestMySQLTiDBPromotedDDLMetadataCensus/TiDB/GRANT_SELECT
+=== RUN   TestMySQLTiDBPromotedDDLMetadataCensus/MySQL/DROP_RESOURCE_GROUP
+=== PAUSE TestMySQLTiDBPromotedDDLMetadataCensus/MySQL/DROP_RESOURCE_GROUP
+=== PAUSE TestMySQLTiDBPromotedDDLMetadataCensus/TiDB/GRANT_SELECT
+=== CONT  TestMySQLTiDBPromotedDDLMetadataCensus/MySQL/RENAME_TABLE
+=== RUN   TestMySQLTiDBPromotedDDLMetadataCensus/TiDB/REVOKE_SELECT
+=== CONT  TestMySQLTiDBPromotedDDLMetadataCensus/MySQL/REVOKE_SELECT
+=== PAUSE TestMySQLTiDBPromotedDDLMetadataCensus/TiDB/REVOKE_SELECT
+=== CONT  TestMySQLTiDBPromotedDDLMetadataCensus/MySQL/ALTER_TABLE_ADD_INDEX
+=== CONT  TestMySQLTiDBPromotedDDLMetadataCensus/MySQL/ALTER_TABLE_DROP_FOREIGN_KEY
+=== CONT  TestMySQLTiDBPromotedDDLMetadataCensus/MySQL/DROP_RESOURCE_GROUP
+=== CONT  TestMySQLTiDBPromotedDDLMetadataCensus/MySQL/CREATE_SPATIAL_INDEX
+=== CONT  TestMySQLTiDBPromotedDDLMetadataCensus/MySQL/CREATE_INDEX
+=== CONT  TestMySQLTiDBPromotedDDLMetadataCensus/MySQL/ALTER_TABLE_ADD_FOREIGN_KEY
+=== CONT  TestMySQLTiDBPromotedDDLMetadataCensus/MySQL/CREATE_FULLTEXT_INDEX
+=== RUN   TestMySQLTiDBPromotedDDLMetadataCensus/TiDB/ALTER_TABLE_PLACEMENT_POLICY
+=== CONT  TestMySQLTiDBPromotedDDLMetadataCensus/MySQL/ALTER_TABLE_DROP_INDEX
+=== CONT  TestMySQLTiDBPromotedDDLMetadataCensus/MySQL/CREATE_UNIQUE_INDEX
+=== PAUSE TestMySQLTiDBPromotedDDLMetadataCensus/TiDB/ALTER_TABLE_PLACEMENT_POLICY
+=== CONT  TestMySQLTiDBPromotedDDLMetadataCensus/MySQL/ALTER_USER
+=== NAME  TestMySQLTiDBPromotedDDLMetadataCensus/MySQL/RENAME_TABLE
+    mysql_tidb_ddl_normalized_silent_metadata_census_test.go:202: metadata-shape: MySQL RENAME TABLE                             kind=ddl
+    mysql_tidb_ddl_normalized_silent_metadata_census_test.go:202: metadata-shape: MySQL RENAME TABLE                             operation=rename_table object_type= object_name=
+    mysql_tidb_ddl_normalized_silent_metadata_census_test.go:202: metadata-shape: MySQL RENAME TABLE                             table=users
+    mysql_tidb_ddl_normalized_silent_metadata_census_test.go:202: metadata-shape: MySQL RENAME TABLE                             alter=[action=rename_table]
+=== CONT  TestMySQLTiDBPromotedDDLMetadataCensus/MySQL/GRANT_SELECT
+=== NAME  TestMySQLTiDBPromotedDDLMetadataCensus/MySQL/DROP_RESOURCE_GROUP
+    mysql_tidb_ddl_normalized_silent_metadata_census_test.go:202: metadata-shape: MySQL DROP RESOURCE GROUP                      kind=ddl
+    mysql_tidb_ddl_normalized_silent_metadata_census_test.go:202: metadata-shape: MySQL DROP RESOURCE GROUP                      operation=drop_resource_group object_type=resource_group object_name=rg1
+=== CONT  TestMySQLTiDBPromotedDDLMetadataCensus/MySQL/DROP_ROLE
+=== NAME  TestMySQLTiDBPromotedDDLMetadataCensus/MySQL/ALTER_TABLE_DROP_INDEX
+    mysql_tidb_ddl_normalized_silent_metadata_census_test.go:202: metadata-shape: MySQL ALTER TABLE DROP INDEX                   kind=ddl
+    mysql_tidb_ddl_normalized_silent_metadata_census_test.go:202: metadata-shape: MySQL ALTER TABLE DROP INDEX                   operation=alter_table object_type= object_name=
+    mysql_tidb_ddl_normalized_silent_metadata_census_test.go:202: metadata-shape: MySQL ALTER TABLE DROP INDEX                   table=users
+    mysql_tidb_ddl_normalized_silent_metadata_census_test.go:202: metadata-shape: MySQL ALTER TABLE DROP INDEX                   alter=[action=drop_index name=idx_email index.old_name=idx_email]
+=== CONT  TestMySQLTiDBPromotedDDLMetadataCensus/MySQL/CREATE_ROLE
+=== NAME  TestMySQLTiDBPromotedDDLMetadataCensus/MySQL/CREATE_INDEX
+    mysql_tidb_ddl_normalized_silent_metadata_census_test.go:202: metadata-shape: MySQL CREATE INDEX                             kind=ddl
+    mysql_tidb_ddl_normalized_silent_metadata_census_test.go:202: metadata-shape: MySQL CREATE INDEX                             operation=create_index object_type= object_name=
+    mysql_tidb_ddl_normalized_silent_metadata_census_test.go:202: metadata-shape: MySQL CREATE INDEX                             table=users
+    mysql_tidb_ddl_normalized_silent_metadata_census_test.go:202: metadata-shape: MySQL CREATE INDEX                             alter=[action=create_index index.old_name=]
+=== CONT  TestMySQLTiDBPromotedDDLMetadataCensus/MySQL/DROP_USER
+=== NAME  TestMySQLTiDBPromotedDDLMetadataCensus/MySQL/ALTER_TABLE_DROP_FOREIGN_KEY
+    mysql_tidb_ddl_normalized_silent_metadata_census_test.go:202: metadata-shape: MySQL ALTER TABLE DROP FOREIGN KEY             kind=ddl
+    mysql_tidb_ddl_normalized_silent_metadata_census_test.go:202: metadata-shape: MySQL ALTER TABLE DROP FOREIGN KEY             operation=alter_table object_type= object_name=
+    mysql_tidb_ddl_normalized_silent_metadata_census_test.go:202: metadata-shape: MySQL ALTER TABLE DROP FOREIGN KEY             table=orders
+    mysql_tidb_ddl_normalized_silent_metadata_census_test.go:202: metadata-shape: MySQL ALTER TABLE DROP FOREIGN KEY             alter=[action=drop_foreign_key name=fk_user]
+=== CONT  TestMySQLTiDBPromotedDDLMetadataCensus/MySQL/CREATE_PROCEDURE
+=== NAME  TestMySQLTiDBPromotedDDLMetadataCensus/MySQL/ALTER_TABLE_ADD_FOREIGN_KEY
+    mysql_tidb_ddl_normalized_silent_metadata_census_test.go:202: metadata-shape: MySQL ALTER TABLE ADD FOREIGN KEY              kind=ddl
+    mysql_tidb_ddl_normalized_silent_metadata_census_test.go:202: metadata-shape: MySQL ALTER TABLE ADD FOREIGN KEY              operation=alter_table object_type= object_name=
+    mysql_tidb_ddl_normalized_silent_metadata_census_test.go:202: metadata-shape: MySQL ALTER TABLE ADD FOREIGN KEY              table=orders
+    mysql_tidb_ddl_normalized_silent_metadata_census_test.go:202: metadata-shape: MySQL ALTER TABLE ADD FOREIGN KEY              alter=[action=add_constraint]
+=== CONT  TestMySQLTiDBPromotedDDLMetadataCensus/MySQL/CREATE_USER
+=== NAME  TestMySQLTiDBPromotedDDLMetadataCensus/MySQL/CREATE_FULLTEXT_INDEX
+    mysql_tidb_ddl_normalized_silent_metadata_census_test.go:202: metadata-shape: MySQL CREATE FULLTEXT INDEX                    kind=ddl
+    mysql_tidb_ddl_normalized_silent_metadata_census_test.go:202: metadata-shape: MySQL CREATE FULLTEXT INDEX                    operation=create_index object_type= object_name=
+    mysql_tidb_ddl_normalized_silent_metadata_census_test.go:202: metadata-shape: MySQL CREATE FULLTEXT INDEX                    table=posts
+=== NAME  TestMySQLTiDBPromotedDDLMetadataCensus/MySQL/ALTER_TABLE_ADD_INDEX
+    mysql_tidb_ddl_normalized_silent_metadata_census_test.go:202: metadata-shape: MySQL ALTER TABLE ADD INDEX                    kind=ddl
+    mysql_tidb_ddl_normalized_silent_metadata_census_test.go:202: metadata-shape: MySQL ALTER TABLE ADD INDEX                    operation=alter_table object_type= object_name=
+    mysql_tidb_ddl_normalized_silent_metadata_census_test.go:202: metadata-shape: MySQL ALTER TABLE ADD INDEX                    table=users
+    mysql_tidb_ddl_normalized_silent_metadata_census_test.go:202: metadata-shape: MySQL ALTER TABLE ADD INDEX                    alter=[action=add_index name=idx_email index.old_name=]
+=== CONT  TestMySQLTiDBPromotedDDLMetadataCensus/MySQL/DROP_PROCEDURE
+=== NAME  TestMySQLTiDBPromotedDDLMetadataCensus/MySQL/CREATE_FULLTEXT_INDEX
+    mysql_tidb_ddl_normalized_silent_metadata_census_test.go:202: metadata-shape: MySQL CREATE FULLTEXT INDEX                    alter=[action=create_index index.old_name=]
+=== CONT  TestMySQLTiDBPromotedDDLMetadataCensus/MySQL/ALTER_DATABASE
+=== NAME  TestMySQLTiDBPromotedDDLMetadataCensus/MySQL/GRANT_SELECT
+    mysql_tidb_ddl_normalized_silent_metadata_census_test.go:202: metadata-shape: MySQL GRANT SELECT                             kind=ddl
+    mysql_tidb_ddl_normalized_silent_metadata_census_test.go:202: metadata-shape: MySQL GRANT SELECT                             operation=grant object_type= object_name=
+=== NAME  TestMySQLTiDBPromotedDDLMetadataCensus/MySQL/CREATE_UNIQUE_INDEX
+    mysql_tidb_ddl_normalized_silent_metadata_census_test.go:202: metadata-shape: MySQL CREATE UNIQUE INDEX                      kind=ddl
+    mysql_tidb_ddl_normalized_silent_metadata_census_test.go:202: metadata-shape: MySQL CREATE UNIQUE INDEX                      operation=create_index object_type= object_name=
+    mysql_tidb_ddl_normalized_silent_metadata_census_test.go:202: metadata-shape: MySQL CREATE UNIQUE INDEX                      table=users
+    mysql_tidb_ddl_normalized_silent_metadata_census_test.go:202: metadata-shape: MySQL CREATE UNIQUE INDEX                      alter=[action=create_index index.old_name=]
+=== CONT  TestMySQLTiDBPromotedDDLMetadataCensus/MySQL/ALTER_TABLE_MODIFY_COLUMN
+=== NAME  TestMySQLTiDBPromotedDDLMetadataCensus/MySQL/GRANT_SELECT
+    mysql_tidb_ddl_normalized_silent_metadata_census_test.go:202: metadata-shape: MySQL GRANT SELECT                             options_keys=[privilege object_type]
+=== CONT  TestMySQLTiDBPromotedDDLMetadataCensus/MySQL/ALTER_TABLE_ADD_PRIMARY_KEY
+=== NAME  TestMySQLTiDBPromotedDDLMetadataCensus/MySQL/REVOKE_SELECT
+    mysql_tidb_ddl_normalized_silent_metadata_census_test.go:202: metadata-shape: MySQL REVOKE SELECT                            kind=ddl
+    mysql_tidb_ddl_normalized_silent_metadata_census_test.go:202: metadata-shape: MySQL REVOKE SELECT                            operation=revoke object_type= object_name=
+    mysql_tidb_ddl_normalized_silent_metadata_census_test.go:202: metadata-shape: MySQL REVOKE SELECT                            options_keys=[privilege object_type]
+=== NAME  TestMySQLTiDBPromotedDDLMetadataCensus/MySQL/CREATE_SPATIAL_INDEX
+    mysql_tidb_ddl_normalized_silent_metadata_census_test.go:202: metadata-shape: MySQL CREATE SPATIAL INDEX                     kind=ddl
+    mysql_tidb_ddl_normalized_silent_metadata_census_test.go:202: metadata-shape: MySQL CREATE SPATIAL INDEX                     operation=create_index object_type= object_name=
+    mysql_tidb_ddl_normalized_silent_metadata_census_test.go:202: metadata-shape: MySQL CREATE SPATIAL INDEX                     table=places
+    mysql_tidb_ddl_normalized_silent_metadata_census_test.go:202: metadata-shape: MySQL CREATE SPATIAL INDEX                     alter=[action=create_index index.old_name=]
+=== CONT  TestMySQLTiDBPromotedDDLMetadataCensus/MySQL/DROP_INDEX
+=== NAME  TestMySQLTiDBPromotedDDLMetadataCensus/MySQL/DROP_ROLE
+    mysql_tidb_ddl_normalized_silent_metadata_census_test.go:202: metadata-shape: MySQL DROP ROLE                                kind=ddl
+    mysql_tidb_ddl_normalized_silent_metadata_census_test.go:202: metadata-shape: MySQL DROP ROLE                                operation=drop_role object_type=role object_name=manager
+=== CONT  TestMySQLTiDBPromotedDDLMetadataCensus/MySQL/ALTER_TABLE_ADD_COLUMN
+=== CONT  TestMySQLTiDBPromotedDDLMetadataCensus/MySQL/ALTER_TABLE_DROP_COLUMN
+=== NAME  TestMySQLTiDBPromotedDDLMetadataCensus/MySQL/CREATE_ROLE
+    mysql_tidb_ddl_normalized_silent_metadata_census_test.go:202: metadata-shape: MySQL CREATE ROLE                              kind=ddl
+    mysql_tidb_ddl_normalized_silent_metadata_census_test.go:202: metadata-shape: MySQL CREATE ROLE                              operation=create_role object_type=role object_name=manager
+=== CONT  TestMySQLTiDBPromotedDDLMetadataCensus/TiDB/RENAME_TABLE
+=== NAME  TestMySQLTiDBPromotedDDLMetadataCensus/MySQL/ALTER_USER
+    mysql_tidb_ddl_normalized_silent_metadata_census_test.go:202: metadata-shape: MySQL ALTER USER                               kind=ddl
+=== NAME  TestMySQLTiDBPromotedDDLMetadataCensus/MySQL/DROP_PROCEDURE
+    mysql_tidb_ddl_normalized_silent_metadata_census_test.go:202: metadata-shape: MySQL DROP PROCEDURE                           kind=ddl
+=== NAME  TestMySQLTiDBPromotedDDLMetadataCensus/MySQL/CREATE_USER
+    mysql_tidb_ddl_normalized_silent_metadata_census_test.go:202: metadata-shape: MySQL CREATE USER                              kind=ddl
+    mysql_tidb_ddl_normalized_silent_metadata_census_test.go:202: metadata-shape: MySQL CREATE USER                              operation=create_user object_type=user object_name=admin
+    mysql_tidb_ddl_normalized_silent_metadata_census_test.go:202: metadata-shape: MySQL CREATE USER                              options_keys=[has_auth]
+=== CONT  TestMySQLTiDBPromotedDDLMetadataCensus/TiDB/ALTER_PLACEMENT_POLICY
+=== NAME  TestMySQLTiDBPromotedDDLMetadataCensus/MySQL/DROP_PROCEDURE
+    mysql_tidb_ddl_normalized_silent_metadata_census_test.go:202: metadata-shape: MySQL DROP PROCEDURE                           operation=drop_procedure object_type=procedure object_name=p_cleanup
+=== CONT  TestMySQLTiDBPromotedDDLMetadataCensus/TiDB/ALTER_TABLE_PLACEMENT_POLICY
+=== NAME  TestMySQLTiDBPromotedDDLMetadataCensus/MySQL/ALTER_TABLE_MODIFY_COLUMN
+    mysql_tidb_ddl_normalized_silent_metadata_census_test.go:202: metadata-shape: MySQL ALTER TABLE MODIFY COLUMN                kind=ddl
+    mysql_tidb_ddl_normalized_silent_metadata_census_test.go:202: metadata-shape: MySQL ALTER TABLE MODIFY COLUMN                operation=alter_table object_type= object_name=
+    mysql_tidb_ddl_normalized_silent_metadata_census_test.go:202: metadata-shape: MySQL ALTER TABLE MODIFY COLUMN                table=users
+    mysql_tidb_ddl_normalized_silent_metadata_census_test.go:202: metadata-shape: MySQL ALTER TABLE MODIFY COLUMN                alter=[action=modify_column name=email column.old_name=]
+=== CONT  TestMySQLTiDBPromotedDDLMetadataCensus/TiDB/REVOKE_SELECT
+=== NAME  TestMySQLTiDBPromotedDDLMetadataCensus/MySQL/CREATE_PROCEDURE
+    mysql_tidb_ddl_normalized_silent_metadata_census_test.go:202: metadata-shape: MySQL CREATE PROCEDURE                         kind=ddl
+    mysql_tidb_ddl_normalized_silent_metadata_census_test.go:202: metadata-shape: MySQL CREATE PROCEDURE                         operation=create_procedure object_type=procedure object_name=p_cleanup
+    mysql_tidb_ddl_normalized_silent_metadata_census_test.go:202: metadata-shape: MySQL CREATE PROCEDURE                         options_keys=[has_body]
+=== CONT  TestMySQLTiDBPromotedDDLMetadataCensus/TiDB/GRANT_SELECT
+=== NAME  TestMySQLTiDBPromotedDDLMetadataCensus/MySQL/ALTER_USER
+    mysql_tidb_ddl_normalized_silent_metadata_census_test.go:202: metadata-shape: MySQL ALTER USER                               operation=alter_user object_type=user object_name=admin
+    mysql_tidb_ddl_normalized_silent_metadata_census_test.go:202: metadata-shape: MySQL ALTER USER                               options_keys=[has_auth]
+=== CONT  TestMySQLTiDBPromotedDDLMetadataCensus/TiDB/DROP_USER
+=== NAME  TestMySQLTiDBPromotedDDLMetadataCensus/MySQL/ALTER_DATABASE
+    mysql_tidb_ddl_normalized_silent_metadata_census_test.go:202: metadata-shape: MySQL ALTER DATABASE                           kind=ddl
+    mysql_tidb_ddl_normalized_silent_metadata_census_test.go:202: metadata-shape: MySQL ALTER DATABASE                           operation=alter_schema object_type=database object_name=app
+    mysql_tidb_ddl_normalized_silent_metadata_census_test.go:202: metadata-shape: MySQL ALTER DATABASE                           options_keys=[charset]
+=== CONT  TestMySQLTiDBPromotedDDLMetadataCensus/TiDB/ALTER_USER
+=== NAME  TestMySQLTiDBPromotedDDLMetadataCensus/MySQL/DROP_INDEX
+    mysql_tidb_ddl_normalized_silent_metadata_census_test.go:202: metadata-shape: MySQL DROP INDEX                               kind=ddl
+    mysql_tidb_ddl_normalized_silent_metadata_census_test.go:202: metadata-shape: MySQL DROP INDEX                               operation=drop_index object_type= object_name=
+    mysql_tidb_ddl_normalized_silent_metadata_census_test.go:202: metadata-shape: MySQL DROP INDEX                               table=users
+    mysql_tidb_ddl_normalized_silent_metadata_census_test.go:202: metadata-shape: MySQL DROP INDEX                               alter=[action=drop_index index.old_name=idx_email]
+=== CONT  TestMySQLTiDBPromotedDDLMetadataCensus/TiDB/CREATE_USER
+=== NAME  TestMySQLTiDBPromotedDDLMetadataCensus/MySQL/DROP_USER
+    mysql_tidb_ddl_normalized_silent_metadata_census_test.go:202: metadata-shape: MySQL DROP USER                                kind=ddl
+    mysql_tidb_ddl_normalized_silent_metadata_census_test.go:202: metadata-shape: MySQL DROP USER                                operation=drop_user object_type=user object_name=admin
+=== CONT  TestMySQLTiDBPromotedDDLMetadataCensus/TiDB/DROP_PROCEDURE
+=== NAME  TestMySQLTiDBPromotedDDLMetadataCensus/TiDB/RENAME_TABLE
+    mysql_tidb_ddl_normalized_silent_metadata_census_test.go:202: metadata-shape: TiDB RENAME TABLE                             kind=ddl
+    mysql_tidb_ddl_normalized_silent_metadata_census_test.go:202: metadata-shape: TiDB RENAME TABLE                             operation=rename_table object_type= object_name=
+    mysql_tidb_ddl_normalized_silent_metadata_census_test.go:202: metadata-shape: TiDB RENAME TABLE                             table=users
+    mysql_tidb_ddl_normalized_silent_metadata_census_test.go:202: metadata-shape: TiDB RENAME TABLE                             alter=[action=rename_table]
+=== NAME  TestMySQLTiDBPromotedDDLMetadataCensus/MySQL/ALTER_TABLE_ADD_PRIMARY_KEY
+    mysql_tidb_ddl_normalized_silent_metadata_census_test.go:202: metadata-shape: MySQL ALTER TABLE ADD PRIMARY KEY              kind=ddl
+    mysql_tidb_ddl_normalized_silent_metadata_census_test.go:202: metadata-shape: MySQL ALTER TABLE ADD PRIMARY KEY              operation=alter_table object_type= object_name=
+    mysql_tidb_ddl_normalized_silent_metadata_census_test.go:202: metadata-shape: MySQL ALTER TABLE ADD PRIMARY KEY              table=users
+    mysql_tidb_ddl_normalized_silent_metadata_census_test.go:202: metadata-shape: MySQL ALTER TABLE ADD PRIMARY KEY              alter=[action=add_constraint name=primary index.old_name=]
+=== CONT  TestMySQLTiDBPromotedDDLMetadataCensus/TiDB/DROP_SEQUENCE
+=== CONT  TestMySQLTiDBPromotedDDLMetadataCensus/TiDB/CREATE_PROCEDURE
+=== NAME  TestMySQLTiDBPromotedDDLMetadataCensus/MySQL/ALTER_TABLE_DROP_COLUMN
+    mysql_tidb_ddl_normalized_silent_metadata_census_test.go:202: metadata-shape: MySQL ALTER TABLE DROP COLUMN                  kind=ddl
+    mysql_tidb_ddl_normalized_silent_metadata_census_test.go:202: metadata-shape: MySQL ALTER TABLE DROP COLUMN                  operation=alter_table object_type= object_name=
+    mysql_tidb_ddl_normalized_silent_metadata_census_test.go:202: metadata-shape: MySQL ALTER TABLE DROP COLUMN                  table=users
+    mysql_tidb_ddl_normalized_silent_metadata_census_test.go:202: metadata-shape: MySQL ALTER TABLE DROP COLUMN                  alter=[action=drop_column name=email column.old_name=email]
+=== CONT  TestMySQLTiDBPromotedDDLMetadataCensus/TiDB/ALTER_SEQUENCE
+=== NAME  TestMySQLTiDBPromotedDDLMetadataCensus/TiDB/ALTER_PLACEMENT_POLICY
+    mysql_tidb_ddl_normalized_silent_metadata_census_test.go:202: metadata-shape: TiDB ALTER PLACEMENT POLICY                   kind=ddl
+    mysql_tidb_ddl_normalized_silent_metadata_census_test.go:202: metadata-shape: TiDB ALTER PLACEMENT POLICY                   operation=alter_placement_policy object_type=placement_policy object_name=p1
+=== CONT  TestMySQLTiDBPromotedDDLMetadataCensus/TiDB/DROP_PLACEMENT_POLICY
+=== CONT  TestMySQLTiDBPromotedDDLMetadataCensus/TiDB/CREATE_SEQUENCE
+=== NAME  TestMySQLTiDBPromotedDDLMetadataCensus/TiDB/REVOKE_SELECT
+    mysql_tidb_ddl_normalized_silent_metadata_census_test.go:202: metadata-shape: TiDB REVOKE SELECT                            kind=ddl
+    mysql_tidb_ddl_normalized_silent_metadata_census_test.go:202: metadata-shape: TiDB REVOKE SELECT                            operation=revoke object_type= object_name=
+    mysql_tidb_ddl_normalized_silent_metadata_census_test.go:202: metadata-shape: TiDB REVOKE SELECT                            options_keys=[privilege object_type]
+=== CONT  TestMySQLTiDBPromotedDDLMetadataCensus/TiDB/ALTER_TABLE_ADD_FOREIGN_KEY
+=== NAME  TestMySQLTiDBPromotedDDLMetadataCensus/TiDB/ALTER_TABLE_PLACEMENT_POLICY
+    mysql_tidb_ddl_normalized_silent_metadata_census_test.go:202: metadata-shape: TiDB ALTER TABLE PLACEMENT POLICY             kind=ddl
+    mysql_tidb_ddl_normalized_silent_metadata_census_test.go:202: metadata-shape: TiDB ALTER TABLE PLACEMENT POLICY             operation=alter_table object_type= object_name=
+    mysql_tidb_ddl_normalized_silent_metadata_census_test.go:202: metadata-shape: TiDB ALTER TABLE PLACEMENT POLICY             table=users
+    mysql_tidb_ddl_normalized_silent_metadata_census_test.go:202: metadata-shape: TiDB ALTER TABLE PLACEMENT POLICY             alter=[action=placement_policy]
+=== CONT  TestMySQLTiDBPromotedDDLMetadataCensus/TiDB/CREATE_PLACEMENT_POLICY
+=== NAME  TestMySQLTiDBPromotedDDLMetadataCensus/TiDB/ALTER_USER
+    mysql_tidb_ddl_normalized_silent_metadata_census_test.go:202: metadata-shape: TiDB ALTER USER                               kind=ddl
+    mysql_tidb_ddl_normalized_silent_metadata_census_test.go:202: metadata-shape: TiDB ALTER USER                               operation=alter_user object_type=user object_name=admin
+    mysql_tidb_ddl_normalized_silent_metadata_census_test.go:202: metadata-shape: TiDB ALTER USER                               options_keys=[has_auth]
+=== CONT  TestMySQLTiDBPromotedDDLMetadataCensus/TiDB/ALTER_DATABASE
+=== NAME  TestMySQLTiDBPromotedDDLMetadataCensus/MySQL/ALTER_TABLE_ADD_COLUMN
+    mysql_tidb_ddl_normalized_silent_metadata_census_test.go:202: metadata-shape: MySQL ALTER TABLE ADD COLUMN                   kind=ddl
+    mysql_tidb_ddl_normalized_silent_metadata_census_test.go:202: metadata-shape: MySQL ALTER TABLE ADD COLUMN                   operation=alter_table object_type= object_name=
+    mysql_tidb_ddl_normalized_silent_metadata_census_test.go:202: metadata-shape: MySQL ALTER TABLE ADD COLUMN                   table=users
+    mysql_tidb_ddl_normalized_silent_metadata_census_test.go:202: metadata-shape: MySQL ALTER TABLE ADD COLUMN                   alter=[action=add_columns name=email column.old_name=]
+=== NAME  TestMySQLTiDBPromotedDDLMetadataCensus/TiDB/CREATE_USER
+    mysql_tidb_ddl_normalized_silent_metadata_census_test.go:202: metadata-shape: TiDB CREATE USER                              kind=ddl
+    mysql_tidb_ddl_normalized_silent_metadata_census_test.go:202: metadata-shape: TiDB CREATE USER                              operation=create_user object_type=user object_name=admin
+    mysql_tidb_ddl_normalized_silent_metadata_census_test.go:202: metadata-shape: TiDB CREATE USER                              options_keys=[has_auth]
+=== CONT  TestMySQLTiDBPromotedDDLMetadataCensus/TiDB/DROP_INDEX
+=== CONT  TestMySQLTiDBPromotedDDLMetadataCensus/TiDB/CREATE_UNIQUE_INDEX
+=== NAME  TestMySQLTiDBPromotedDDLMetadataCensus/TiDB/ALTER_SEQUENCE
+    mysql_tidb_ddl_normalized_silent_metadata_census_test.go:202: metadata-shape: TiDB ALTER SEQUENCE                           kind=ddl
+    mysql_tidb_ddl_normalized_silent_metadata_census_test.go:202: metadata-shape: TiDB ALTER SEQUENCE                           operation=alter_sequence object_type=sequence object_name=seq1
+    mysql_tidb_ddl_normalized_silent_metadata_census_test.go:202: metadata-shape: TiDB ALTER SEQUENCE                           options_keys=[has_options]
+=== CONT  TestMySQLTiDBPromotedDDLMetadataCensus/TiDB/CREATE_INDEX
+=== NAME  TestMySQLTiDBPromotedDDLMetadataCensus/TiDB/CREATE_SEQUENCE
+    mysql_tidb_ddl_normalized_silent_metadata_census_test.go:202: metadata-shape: TiDB CREATE SEQUENCE                          kind=ddl
+    mysql_tidb_ddl_normalized_silent_metadata_census_test.go:202: metadata-shape: TiDB CREATE SEQUENCE                          operation=create_sequence object_type=sequence object_name=seq1
+    mysql_tidb_ddl_normalized_silent_metadata_census_test.go:202: metadata-shape: TiDB CREATE SEQUENCE                          options_keys=[has_options]
+=== NAME  TestMySQLTiDBPromotedDDLMetadataCensus/TiDB/DROP_USER
+    mysql_tidb_ddl_normalized_silent_metadata_census_test.go:202: metadata-shape: TiDB DROP USER                                kind=ddl
+    mysql_tidb_ddl_normalized_silent_metadata_census_test.go:202: metadata-shape: TiDB DROP USER                                operation=drop_user object_type=user object_name=admin
+=== CONT  TestMySQLTiDBPromotedDDLMetadataCensus/TiDB/ALTER_TABLE_ADD_PRIMARY_KEY
+=== CONT  TestMySQLTiDBPromotedDDLMetadataCensus/TiDB/ALTER_TABLE_DROP_FOREIGN_KEY
+=== NAME  TestMySQLTiDBPromotedDDLMetadataCensus/TiDB/GRANT_SELECT
+    mysql_tidb_ddl_normalized_silent_metadata_census_test.go:202: metadata-shape: TiDB GRANT SELECT                             kind=ddl
+    mysql_tidb_ddl_normalized_silent_metadata_census_test.go:202: metadata-shape: TiDB GRANT SELECT                             operation=grant object_type= object_name=
+    mysql_tidb_ddl_normalized_silent_metadata_census_test.go:202: metadata-shape: TiDB GRANT SELECT                             options_keys=[privilege object_type]
+=== CONT  TestMySQLTiDBPromotedDDLMetadataCensus/TiDB/ALTER_TABLE_DROP_INDEX
+=== CONT  TestMySQLTiDBPromotedDDLMetadataCensus/TiDB/ALTER_TABLE_ADD_INDEX
+=== NAME  TestMySQLTiDBPromotedDDLMetadataCensus/TiDB/DROP_SEQUENCE
+    mysql_tidb_ddl_normalized_silent_metadata_census_test.go:202: metadata-shape: TiDB DROP SEQUENCE                            kind=ddl
+    mysql_tidb_ddl_normalized_silent_metadata_census_test.go:202: metadata-shape: TiDB DROP SEQUENCE                            operation=drop_sequence object_type=sequence object_name=seq1
+=== NAME  TestMySQLTiDBPromotedDDLMetadataCensus/TiDB/DROP_PLACEMENT_POLICY
+    mysql_tidb_ddl_normalized_silent_metadata_census_test.go:202: metadata-shape: TiDB DROP PLACEMENT POLICY                    kind=ddl
+    mysql_tidb_ddl_normalized_silent_metadata_census_test.go:202: metadata-shape: TiDB DROP PLACEMENT POLICY                    operation=drop_placement_policy object_type=placement_policy object_name=p1
+=== CONT  TestMySQLTiDBPromotedDDLMetadataCensus/TiDB/ALTER_TABLE_MODIFY_COLUMN
+=== CONT  TestMySQLTiDBPromotedDDLMetadataCensus/TiDB/ALTER_TABLE_DROP_COLUMN
+=== NAME  TestMySQLTiDBPromotedDDLMetadataCensus/TiDB/CREATE_UNIQUE_INDEX
+    mysql_tidb_ddl_normalized_silent_metadata_census_test.go:202: metadata-shape: TiDB CREATE UNIQUE INDEX                      kind=ddl
+    mysql_tidb_ddl_normalized_silent_metadata_census_test.go:202: metadata-shape: TiDB CREATE UNIQUE INDEX                      operation=create_index object_type= object_name=
+    mysql_tidb_ddl_normalized_silent_metadata_census_test.go:202: metadata-shape: TiDB CREATE UNIQUE INDEX                      table=users
+    mysql_tidb_ddl_normalized_silent_metadata_census_test.go:202: metadata-shape: TiDB CREATE UNIQUE INDEX                      alter=[action=create_index index.old_name=]
+=== CONT  TestMySQLTiDBPromotedDDLMetadataCensus/TiDB/ALTER_TABLE_ADD_COLUMN
+=== NAME  TestMySQLTiDBPromotedDDLMetadataCensus/TiDB/ALTER_TABLE_ADD_FOREIGN_KEY
+    mysql_tidb_ddl_normalized_silent_metadata_census_test.go:202: metadata-shape: TiDB ALTER TABLE ADD FOREIGN KEY              kind=ddl
+    mysql_tidb_ddl_normalized_silent_metadata_census_test.go:202: metadata-shape: TiDB ALTER TABLE ADD FOREIGN KEY              operation=alter_table object_type= object_name=
+    mysql_tidb_ddl_normalized_silent_metadata_census_test.go:202: metadata-shape: TiDB ALTER TABLE ADD FOREIGN KEY              table=orders
+    mysql_tidb_ddl_normalized_silent_metadata_census_test.go:202: metadata-shape: TiDB ALTER TABLE ADD FOREIGN KEY              alter=[action=add_constraint]
+=== NAME  TestMySQLTiDBPromotedDDLMetadataCensus/TiDB/CREATE_PLACEMENT_POLICY
+    mysql_tidb_ddl_normalized_silent_metadata_census_test.go:202: metadata-shape: TiDB CREATE PLACEMENT POLICY                  kind=ddl
+    mysql_tidb_ddl_normalized_silent_metadata_census_test.go:202: metadata-shape: TiDB CREATE PLACEMENT POLICY                  operation=create_placement_policy object_type=placement_policy object_name=p1
+=== NAME  TestMySQLTiDBPromotedDDLMetadataCensus/TiDB/ALTER_DATABASE
+    mysql_tidb_ddl_normalized_silent_metadata_census_test.go:202: metadata-shape: TiDB ALTER DATABASE                           kind=ddl
+    mysql_tidb_ddl_normalized_silent_metadata_census_test.go:202: metadata-shape: TiDB ALTER DATABASE                           operation=alter_schema object_type=database object_name=app
+    mysql_tidb_ddl_normalized_silent_metadata_census_test.go:202: metadata-shape: TiDB ALTER DATABASE                           options_keys=[charset]
+=== NAME  TestMySQLTiDBPromotedDDLMetadataCensus/TiDB/DROP_INDEX
+    mysql_tidb_ddl_normalized_silent_metadata_census_test.go:202: metadata-shape: TiDB DROP INDEX                               kind=ddl
+    mysql_tidb_ddl_normalized_silent_metadata_census_test.go:202: metadata-shape: TiDB DROP INDEX                               operation=drop_index object_type= object_name=
+    mysql_tidb_ddl_normalized_silent_metadata_census_test.go:202: metadata-shape: TiDB DROP INDEX                               table=users
+    mysql_tidb_ddl_normalized_silent_metadata_census_test.go:202: metadata-shape: TiDB DROP INDEX                               alter=[action=drop_index index.old_name=idx_email]
+=== NAME  TestMySQLTiDBPromotedDDLMetadataCensus/TiDB/ALTER_TABLE_DROP_FOREIGN_KEY
+    mysql_tidb_ddl_normalized_silent_metadata_census_test.go:202: metadata-shape: TiDB ALTER TABLE DROP FOREIGN KEY             kind=ddl
+=== NAME  TestMySQLTiDBPromotedDDLMetadataCensus/TiDB/ALTER_TABLE_DROP_COLUMN
+    mysql_tidb_ddl_normalized_silent_metadata_census_test.go:202: metadata-shape: TiDB ALTER TABLE DROP COLUMN                  kind=ddl
+    mysql_tidb_ddl_normalized_silent_metadata_census_test.go:202: metadata-shape: TiDB ALTER TABLE DROP COLUMN                  operation=alter_table object_type= object_name=
+    mysql_tidb_ddl_normalized_silent_metadata_census_test.go:202: metadata-shape: TiDB ALTER TABLE DROP COLUMN                  table=users
+    mysql_tidb_ddl_normalized_silent_metadata_census_test.go:202: metadata-shape: TiDB ALTER TABLE DROP COLUMN                  alter=[action=drop_column name=email column.old_name=email]
+=== NAME  TestMySQLTiDBPromotedDDLMetadataCensus/TiDB/ALTER_TABLE_DROP_FOREIGN_KEY
+    mysql_tidb_ddl_normalized_silent_metadata_census_test.go:202: metadata-shape: TiDB ALTER TABLE DROP FOREIGN KEY             operation=alter_table object_type= object_name=
+    mysql_tidb_ddl_normalized_silent_metadata_census_test.go:202: metadata-shape: TiDB ALTER TABLE DROP FOREIGN KEY             table=orders
+=== NAME  TestMySQLTiDBPromotedDDLMetadataCensus/TiDB/ALTER_TABLE_DROP_INDEX
+    mysql_tidb_ddl_normalized_silent_metadata_census_test.go:202: metadata-shape: TiDB ALTER TABLE DROP INDEX                   kind=ddl
+    mysql_tidb_ddl_normalized_silent_metadata_census_test.go:202: metadata-shape: TiDB ALTER TABLE DROP INDEX                   operation=alter_table object_type= object_name=
+    mysql_tidb_ddl_normalized_silent_metadata_census_test.go:202: metadata-shape: TiDB ALTER TABLE DROP INDEX                   table=users
+    mysql_tidb_ddl_normalized_silent_metadata_census_test.go:202: metadata-shape: TiDB ALTER TABLE DROP INDEX                   alter=[action=drop_index name=idx_email index.old_name=idx_email]
+=== NAME  TestMySQLTiDBPromotedDDLMetadataCensus/TiDB/ALTER_TABLE_DROP_FOREIGN_KEY
+    mysql_tidb_ddl_normalized_silent_metadata_census_test.go:202: metadata-shape: TiDB ALTER TABLE DROP FOREIGN KEY             alter=[action=drop_foreign_key name=fk_user]
+=== NAME  TestMySQLTiDBPromotedDDLMetadataCensus/TiDB/ALTER_TABLE_ADD_INDEX
+    mysql_tidb_ddl_normalized_silent_metadata_census_test.go:202: metadata-shape: TiDB ALTER TABLE ADD INDEX                    kind=ddl
+    mysql_tidb_ddl_normalized_silent_metadata_census_test.go:202: metadata-shape: TiDB ALTER TABLE ADD INDEX                    operation=alter_table object_type= object_name=
+    mysql_tidb_ddl_normalized_silent_metadata_census_test.go:202: metadata-shape: TiDB ALTER TABLE ADD INDEX                    table=users
+    mysql_tidb_ddl_normalized_silent_metadata_census_test.go:202: metadata-shape: TiDB ALTER TABLE ADD INDEX                    alter=[action=add_index name=idx_email index.old_name=]
+=== NAME  TestMySQLTiDBPromotedDDLMetadataCensus/TiDB/CREATE_INDEX
+    mysql_tidb_ddl_normalized_silent_metadata_census_test.go:202: metadata-shape: TiDB CREATE INDEX                             kind=ddl
+    mysql_tidb_ddl_normalized_silent_metadata_census_test.go:202: metadata-shape: TiDB CREATE INDEX                             operation=create_index object_type= object_name=
+    mysql_tidb_ddl_normalized_silent_metadata_census_test.go:202: metadata-shape: TiDB CREATE INDEX                             table=users
+    mysql_tidb_ddl_normalized_silent_metadata_census_test.go:202: metadata-shape: TiDB CREATE INDEX                             alter=[action=create_index index.old_name=]
+=== NAME  TestMySQLTiDBPromotedDDLMetadataCensus/TiDB/ALTER_TABLE_MODIFY_COLUMN
+    mysql_tidb_ddl_normalized_silent_metadata_census_test.go:202: metadata-shape: TiDB ALTER TABLE MODIFY COLUMN                kind=ddl
+    mysql_tidb_ddl_normalized_silent_metadata_census_test.go:202: metadata-shape: TiDB ALTER TABLE MODIFY COLUMN                operation=alter_table object_type= object_name=
+    mysql_tidb_ddl_normalized_silent_metadata_census_test.go:202: metadata-shape: TiDB ALTER TABLE MODIFY COLUMN                table=users
+    mysql_tidb_ddl_normalized_silent_metadata_census_test.go:202: metadata-shape: TiDB ALTER TABLE MODIFY COLUMN                alter=[action=modify_column name=email column.old_name=]
+=== NAME  TestMySQLTiDBPromotedDDLMetadataCensus/TiDB/ALTER_TABLE_ADD_COLUMN
+    mysql_tidb_ddl_normalized_silent_metadata_census_test.go:202: metadata-shape: TiDB ALTER TABLE ADD COLUMN                   kind=ddl
+=== NAME  TestMySQLTiDBPromotedDDLMetadataCensus/TiDB/ALTER_TABLE_ADD_PRIMARY_KEY
+    mysql_tidb_ddl_normalized_silent_metadata_census_test.go:202: metadata-shape: TiDB ALTER TABLE ADD PRIMARY KEY              kind=ddl
+    mysql_tidb_ddl_normalized_silent_metadata_census_test.go:202: metadata-shape: TiDB ALTER TABLE ADD PRIMARY KEY              operation=alter_table object_type= object_name=
+    mysql_tidb_ddl_normalized_silent_metadata_census_test.go:202: metadata-shape: TiDB ALTER TABLE ADD PRIMARY KEY              table=users
+    mysql_tidb_ddl_normalized_silent_metadata_census_test.go:202: metadata-shape: TiDB ALTER TABLE ADD PRIMARY KEY              alter=[action=add_constraint name=primary index.old_name=]
+=== NAME  TestMySQLTiDBPromotedDDLMetadataCensus/TiDB/ALTER_TABLE_ADD_COLUMN
+    mysql_tidb_ddl_normalized_silent_metadata_census_test.go:202: metadata-shape: TiDB ALTER TABLE ADD COLUMN                   operation=alter_table object_type= object_name=
+    mysql_tidb_ddl_normalized_silent_metadata_census_test.go:202: metadata-shape: TiDB ALTER TABLE ADD COLUMN                   table=users
+    mysql_tidb_ddl_normalized_silent_metadata_census_test.go:202: metadata-shape: TiDB ALTER TABLE ADD COLUMN                   alter=[action=add_columns name=email column.old_name=]
+--- PASS: TestMySQLTiDBPromotedDDLMetadataCensus (0.00s)
+    --- PASS: TestMySQLTiDBPromotedDDLMetadataCensus/MySQL (0.00s)
+        --- PASS: TestMySQLTiDBPromotedDDLMetadataCensus/MySQL/RENAME_TABLE (0.00s)
+        --- PASS: TestMySQLTiDBPromotedDDLMetadataCensus/MySQL/DROP_RESOURCE_GROUP (0.00s)
+        --- PASS: TestMySQLTiDBPromotedDDLMetadataCensus/MySQL/ALTER_TABLE_DROP_INDEX (0.00s)
+        --- PASS: TestMySQLTiDBPromotedDDLMetadataCensus/MySQL/CREATE_INDEX (0.00s)
+        --- PASS: TestMySQLTiDBPromotedDDLMetadataCensus/MySQL/ALTER_TABLE_DROP_FOREIGN_KEY (0.00s)
+        --- PASS: TestMySQLTiDBPromotedDDLMetadataCensus/MySQL/ALTER_TABLE_ADD_FOREIGN_KEY (0.00s)
+        --- PASS: TestMySQLTiDBPromotedDDLMetadataCensus/MySQL/ALTER_TABLE_ADD_INDEX (0.00s)
+        --- PASS: TestMySQLTiDBPromotedDDLMetadataCensus/MySQL/CREATE_FULLTEXT_INDEX (0.00s)
+        --- PASS: TestMySQLTiDBPromotedDDLMetadataCensus/MySQL/CREATE_UNIQUE_INDEX (0.00s)
+        --- PASS: TestMySQLTiDBPromotedDDLMetadataCensus/MySQL/GRANT_SELECT (0.00s)
+        --- PASS: TestMySQLTiDBPromotedDDLMetadataCensus/MySQL/REVOKE_SELECT (0.01s)
+        --- PASS: TestMySQLTiDBPromotedDDLMetadataCensus/MySQL/CREATE_SPATIAL_INDEX (0.01s)
+        --- PASS: TestMySQLTiDBPromotedDDLMetadataCensus/MySQL/DROP_ROLE (0.00s)
+        --- PASS: TestMySQLTiDBPromotedDDLMetadataCensus/MySQL/CREATE_ROLE (0.00s)
+        --- PASS: TestMySQLTiDBPromotedDDLMetadataCensus/MySQL/CREATE_USER (0.00s)
+        --- PASS: TestMySQLTiDBPromotedDDLMetadataCensus/MySQL/DROP_PROCEDURE (0.00s)
+        --- PASS: TestMySQLTiDBPromotedDDLMetadataCensus/MySQL/ALTER_TABLE_MODIFY_COLUMN (0.00s)
+        --- PASS: TestMySQLTiDBPromotedDDLMetadataCensus/MySQL/CREATE_PROCEDURE (0.00s)
+        --- PASS: TestMySQLTiDBPromotedDDLMetadataCensus/MySQL/ALTER_USER (0.01s)
+        --- PASS: TestMySQLTiDBPromotedDDLMetadataCensus/MySQL/ALTER_DATABASE (0.00s)
+        --- PASS: TestMySQLTiDBPromotedDDLMetadataCensus/MySQL/DROP_INDEX (0.00s)
+        --- PASS: TestMySQLTiDBPromotedDDLMetadataCensus/MySQL/DROP_USER (0.01s)
+        --- PASS: TestMySQLTiDBPromotedDDLMetadataCensus/MySQL/ALTER_TABLE_ADD_PRIMARY_KEY (0.00s)
+        --- PASS: TestMySQLTiDBPromotedDDLMetadataCensus/MySQL/ALTER_TABLE_DROP_COLUMN (0.00s)
+        --- PASS: TestMySQLTiDBPromotedDDLMetadataCensus/MySQL/ALTER_TABLE_ADD_COLUMN (0.01s)
+    --- PASS: TestMySQLTiDBPromotedDDLMetadataCensus/TiDB (0.00s)
+        --- PASS: TestMySQLTiDBPromotedDDLMetadataCensus/TiDB/RENAME_TABLE (0.00s)
+        --- PASS: TestMySQLTiDBPromotedDDLMetadataCensus/TiDB/ALTER_PLACEMENT_POLICY (0.00s)
+        --- PASS: TestMySQLTiDBPromotedDDLMetadataCensus/TiDB/DROP_PROCEDURE (0.00s)
+        --- PASS: TestMySQLTiDBPromotedDDLMetadataCensus/TiDB/REVOKE_SELECT (0.00s)
+        --- PASS: TestMySQLTiDBPromotedDDLMetadataCensus/TiDB/ALTER_TABLE_PLACEMENT_POLICY (0.00s)
+        --- PASS: TestMySQLTiDBPromotedDDLMetadataCensus/TiDB/ALTER_USER (0.00s)
+        --- PASS: TestMySQLTiDBPromotedDDLMetadataCensus/TiDB/CREATE_USER (0.00s)
+        --- PASS: TestMySQLTiDBPromotedDDLMetadataCensus/TiDB/ALTER_SEQUENCE (0.00s)
+        --- PASS: TestMySQLTiDBPromotedDDLMetadataCensus/TiDB/CREATE_SEQUENCE (0.00s)
+        --- PASS: TestMySQLTiDBPromotedDDLMetadataCensus/TiDB/DROP_USER (0.00s)
+        --- PASS: TestMySQLTiDBPromotedDDLMetadataCensus/TiDB/GRANT_SELECT (0.00s)
+        --- PASS: TestMySQLTiDBPromotedDDLMetadataCensus/TiDB/CREATE_PROCEDURE (0.00s)
+        --- PASS: TestMySQLTiDBPromotedDDLMetadataCensus/TiDB/DROP_SEQUENCE (0.00s)
+        --- PASS: TestMySQLTiDBPromotedDDLMetadataCensus/TiDB/DROP_PLACEMENT_POLICY (0.00s)
+        --- PASS: TestMySQLTiDBPromotedDDLMetadataCensus/TiDB/CREATE_UNIQUE_INDEX (0.00s)
+        --- PASS: TestMySQLTiDBPromotedDDLMetadataCensus/TiDB/ALTER_TABLE_ADD_FOREIGN_KEY (0.00s)
+        --- PASS: TestMySQLTiDBPromotedDDLMetadataCensus/TiDB/CREATE_PLACEMENT_POLICY (0.00s)
+        --- PASS: TestMySQLTiDBPromotedDDLMetadataCensus/TiDB/ALTER_DATABASE (0.00s)
+        --- PASS: TestMySQLTiDBPromotedDDLMetadataCensus/TiDB/DROP_INDEX (0.00s)
+        --- PASS: TestMySQLTiDBPromotedDDLMetadataCensus/TiDB/ALTER_TABLE_DROP_COLUMN (0.00s)
+        --- PASS: TestMySQLTiDBPromotedDDLMetadataCensus/TiDB/ALTER_TABLE_DROP_INDEX (0.00s)
+        --- PASS: TestMySQLTiDBPromotedDDLMetadataCensus/TiDB/ALTER_TABLE_DROP_FOREIGN_KEY (0.00s)
+        --- PASS: TestMySQLTiDBPromotedDDLMetadataCensus/TiDB/ALTER_TABLE_ADD_INDEX (0.00s)
+        --- PASS: TestMySQLTiDBPromotedDDLMetadataCensus/TiDB/CREATE_INDEX (0.00s)
+        --- PASS: TestMySQLTiDBPromotedDDLMetadataCensus/TiDB/ALTER_TABLE_MODIFY_COLUMN (0.00s)
+        --- PASS: TestMySQLTiDBPromotedDDLMetadataCensus/TiDB/ALTER_TABLE_ADD_PRIMARY_KEY (0.00s)
+        --- PASS: TestMySQLTiDBPromotedDDLMetadataCensus/TiDB/ALTER_TABLE_ADD_COLUMN (0.00s)
+PASS
+ok  	github.com/Fanduzi/DeltaScope/internal/application/audit	0.390s

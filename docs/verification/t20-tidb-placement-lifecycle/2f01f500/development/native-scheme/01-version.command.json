@@ -1,0 +1,14 @@
+[
+  "docker",
+  "exec",
+  "deltascope-ddl-golden-tidb85-client",
+  "mysql",
+  "-h",
+  "tidb85",
+  "-u",
+  "root",
+  "--batch",
+  "--raw",
+  "-e",
+  "SELECT VERSION();"
+]

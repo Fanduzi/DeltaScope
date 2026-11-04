@@ -1,0 +1,65 @@
+{
+  "product_sha": "5fc298539006c21a8af7adbe2152ba591b8f2546",
+  "base_sha": "6ac1e918b3558d6d611d7d8a59a770d73341c2f9",
+  "required_password_variables": [
+    "T20_MYSQL_PASSWORD"
+  ],
+  "required_gate_names": [
+    "01-test",
+    "02-vet",
+    "03-race",
+    "04-pg",
+    "05-sql-corpus",
+    "06-query-access-corpus",
+    "07-inventory",
+    "08-coverage-catalog",
+    "09-parser-unsupported",
+    "10-diagnostic-evidence",
+    "11-privacy",
+    "12-docs-examples",
+    "13-decision-record",
+    "14-l2",
+    "15-golden-validator",
+    "16-lint-scoped",
+    "17-lint-fullrepo",
+    "18-lint-identity",
+    "19-golden",
+    "20-artifact-validator"
+  ],
+  "gates": [
+    {
+      "name": "01-test",
+      "command": [
+        "go",
+        "test",
+        "-count=1",
+        "./..."
+      ],
+      "started_at": "2026-11-04T16:45:07.120195+00:00",
+      "ended_at": "2026-11-04T16:45:28.257924+00:00",
+      "head_before": "5fc298539006c21a8af7adbe2152ba591b8f2546",
+      "head_after": "5fc298539006c21a8af7adbe2152ba591b8f2546",
+      "returncode": 0,
+      "allowed_raw_returncodes": [
+        0
+      ]
+    },
+    {
+      "name": "02-vet",
+      "command": [
+        "go",
+        "vet",
+        "./..."
+      ],
+      "started_at": "2026-11-04T16:45:28.268262+00:00",
+      "ended_at": "2026-11-04T16:45:29.411108+00:00",
+      "head_before": "5fc298539006c21a8af7adbe2152ba591b8f2546",
+      "head_after": "5fc298539006c21a8af7adbe2152ba591b8f2546",
+      "returncode": 1,
+      "allowed_raw_returncodes": [
+        0
+      ]
+    }
+  ],
+  "note": "raw lint rc 1 is not lint success; diagnostic identity gate is independent"
+}
