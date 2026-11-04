@@ -1,0 +1,4 @@
+# CLI build identity used by probes/22-24
+# captured: 2026-11-04T06:09:42Z
+	build	vcs.revision=7bf6e257332b5fd0a632cd881af8487f5dbc9a0b
+	build	vcs.modified=true

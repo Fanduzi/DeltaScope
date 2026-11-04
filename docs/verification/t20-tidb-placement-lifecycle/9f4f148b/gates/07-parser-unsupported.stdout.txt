@@ -1,0 +1,4 @@
+go test ./internal/application/audit -count=1 -run TestDDLParserErrorUnsupportedContract
+ok  	github.com/Fanduzi/DeltaScope/internal/application/audit	0.363s
+go test ./internal/application/audit -count=1 -tags postgresql -run TestDDLParserErrorUnsupportedContract
+ok  	github.com/Fanduzi/DeltaScope/internal/application/audit	0.430s

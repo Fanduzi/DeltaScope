@@ -1,0 +1,7 @@
+python3 ./scripts/ddl_golden.py run --task "T20" --artifact-dir "docs/verification/t20-tidb-placement-lifecycle/f9633bde/green/T20"
+[ddl-golden][FAIL] case T20.cli.tidb-drop-policy-gap: status='fail'
+[ddl-golden][FAIL] case T20.cli.tidb-drop-policy-gap: failed assertion "evidence gap required_facts (0, 'ddl.tidb.placement.warn', 'unknown_table_state')": "gaps=[{'rule_id': 'ddl.tidb.placement.warn', 'reason_code': 'unknown_table_state', 'required_facts': ['placement_policy.catalog', 'placement_policy.bound_targets']}, {'rule_id': 'ddl.tidb.placement.exists.require', 'reason_code': 'unknown_table_state', 'required_facts': ['placement_policy.catalog']}] expected_facts=['placement_policy.catalog']"
+[ddl-golden][FAIL] case T20.cli.tidb-drop-policy-gap: evidence gap required_facts (0, 'ddl.tidb.placement.warn', 'unknown_table_state'): gaps=[{'rule_id': 'ddl.tidb.placement.warn', 'reason_code': 'unknown_table_state', 'required_facts': ['placement_policy.catalog', 'placement_policy.bound_targets']}, {'rule_id': 'ddl.tidb.placement.exists.require', 'reason_code': 'unknown_table_state', 'required_facts': ['placement_policy.catalog']}] expected_facts=['placement_policy.catalog']
+[ddl-golden] task=T20 head=f9633bdedc75 cases=25 passed=24 assertions=286
+[ddl-golden] artifact=/Users/fan/GolangProjects/DeltaScope/docs/verification/t20-tidb-placement-lifecycle/f9633bde/green/T20/T20/artifact.json
+make: *** [ddl-golden] Error 1

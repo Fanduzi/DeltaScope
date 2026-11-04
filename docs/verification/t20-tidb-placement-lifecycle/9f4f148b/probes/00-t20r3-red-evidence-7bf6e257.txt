@@ -1,0 +1,14 @@
+--- FAIL: TestT20R3TopologyGapAndMissingRefusal (0.03s)
+    --- FAIL: TestT20R3TopologyGapAndMissingRefusal/proven_bind_warns_and_gaps_topology (0.01s)
+        batch_state_t20r3_test.go:96: topology-unknown bind must report a placement_policy.topology gap, got []rule.EvidenceGap(nil)
+    --- FAIL: TestT20R3TopologyGapAndMissingRefusal/disabled_warn_emits_nothing_and_state_still_binds (0.00s)
+        batch_state_t20r3_test.go:117: bound drop must refuse via exists.require (bind published despite disabled warn), got []rule.Finding(nil)
+    --- FAIL: TestT20R3TopologyGapAndMissingRefusal/unvouched_catalog_reports_catalog_gaps_only (0.00s)
+        batch_state_t20r3_test.go:131: exists.require must own its catalog gap, got []rule.EvidenceGap{rule.EvidenceGap{RuleID:"ddl.tidb.placement.warn", ReasonCode:"unknown_table_state", RequiredFacts:[]string{"placement_policy.catalog"}}}
+    --- FAIL: TestT20R3TopologyGapAndMissingRefusal/missing_policy_blocks_and_keeps_prior_binding (0.00s)
+        batch_state_t20r3_test.go:149: proven-absent policy must block, got []rule.Finding(nil)
+    --- FAIL: TestT20R3TopologyGapAndMissingRefusal/only_topology-relevant_outcomes_gap (0.00s)
+        batch_state_t20r3_test.go:181: applied alter-policy rebinds live placement — topology gap required, got []rule.EvidenceGap(nil)
+FAIL
+FAIL	github.com/Fanduzi/DeltaScope/internal/application/audit	0.637s
+FAIL

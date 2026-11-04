@@ -1,0 +1,15 @@
+time="2026-11-04T14:32:36+08:00" level=warning msg="a network with name docker_default exists but was not created by compose.\nSet `external: true` to use an existing network"
+ Container deltascope-pg-e2e Creating 
+ Container deltascope-pg-e2e Created 
+ Container deltascope-pg-e2e Starting 
+ Container deltascope-pg-e2e Started 
+time="2026-11-04T14:32:44+08:00" level=warning msg="a network with name docker_default exists but was not created by compose.\nSet `external: true` to use an existing network"
+ Container deltascope-pg-e2e Creating 
+ Container deltascope-pg-e2e Created 
+ Container deltascope-pg-e2e Starting 
+ Container deltascope-pg-e2e Started 
+time="2026-11-04T14:32:58+08:00" level=warning msg="a network with name docker_default exists but was not created by compose.\nSet `external: true` to use an existing network"
+ Container deltascope-pg-e2e Creating 
+ Container deltascope-pg-e2e Created 
+ Container deltascope-pg-e2e Starting 
+ Container deltascope-pg-e2e Started 
