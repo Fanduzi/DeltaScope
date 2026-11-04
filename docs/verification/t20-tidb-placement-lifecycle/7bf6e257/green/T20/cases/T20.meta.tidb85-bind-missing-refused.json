@@ -1,0 +1,269 @@
+{
+  "case_id": "T20.meta.tidb85-bind-missing-refused",
+  "kind": "cli_metadata",
+  "cli_case": "tidb85-bind-missing-refused",
+  "anchor": "tidb85",
+  "dialect": "tidb",
+  "input_sql": "ALTER TABLE t PLACEMENT POLICY=ghost;",
+  "policy_profile": "t20-placement",
+  "policy_path": "/private/tmp/ddl-golden-t20r2/T20/golden-policy-t20-placement.yaml",
+  "connect": {
+    "host": "127.0.0.1",
+    "port": 24000,
+    "user": "root",
+    "schema": "t20m_bind_missing"
+  },
+  "expected": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+      "complete"
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false
+  },
+  "actual": {
+    "database": {
+      "product": "tidb",
+      "image": "pingcap/tidb:v8.5.0",
+      "image_digest": "pingcap/tidb@sha256:490861bd4a2fa643dbe76b77ffecafcad66e6a42774e580b82f4ec2429a80e57",
+      "container": "deltascope-ddl-golden-tidb85",
+      "reachable": true,
+      "version": "8.0.11-TiDB-v8.5.0"
+    },
+    "setup": [
+      {
+        "name": "create-owned-fixture",
+        "sql": "CREATE DATABASE t20m_bind_missing;CREATE TABLE t20m_bind_missing.t (id INT PRIMARY KEY)",
+        "rc": 0,
+        "stdout": "",
+        "stderr": "",
+        "verify": [
+          {
+            "assert": "ghost policy absent from the catalog",
+            "sql": "SELECT COUNT(*) FROM information_schema.PLACEMENT_POLICIES WHERE POLICY_NAME='ghost'",
+            "rc": 0,
+            "output": "0",
+            "stderr": ""
+          }
+        ]
+      }
+    ],
+    "post_verify": [
+      {
+        "assert": "audit did not fabricate a binding",
+        "sql": "SELECT COALESCE(TIDB_PLACEMENT_POLICY_NAME,'') FROM information_schema.TABLES WHERE TABLE_SCHEMA='t20m_bind_missing' AND TABLE_NAME='t'",
+        "rc": 0,
+        "output": "",
+        "stderr": ""
+      }
+    ],
+    "execute": [
+      {
+        "name": "native bind to a missing policy refuses (8239)",
+        "sql": "ALTER TABLE t20m_bind_missing.t PLACEMENT POLICY=ghost;",
+        "rc": 1,
+        "stdout": "",
+        "stderr": "ERROR 8239 (HY000) at line 1: Unknown placement policy 'ghost'"
+      }
+    ],
+    "structure": [
+      {
+        "assert": "refused bind leaves the table unbound",
+        "sql": "SELECT COALESCE(TIDB_PLACEMENT_POLICY_NAME,'') FROM information_schema.TABLES WHERE TABLE_SCHEMA='t20m_bind_missing' AND TABLE_NAME='t'",
+        "rc": 0,
+        "output": "",
+        "stderr": ""
+      }
+    ],
+    "teardown": [
+      {
+        "name": "drop fixture",
+        "sql": "DROP DATABASE IF EXISTS t20m_bind_missing",
+        "rc": 0,
+        "stderr": ""
+      }
+    ],
+    "exit": 0,
+    "stdout": "{\"verdict\":\"pass\",\"coverage\":{\"status\":\"complete\"},\"summary\":{\"statements\":1,\"blockers\":0,\"warnings\":0,\"notices\":0},\"statements\":[{\"index\":0,\"kind\":\"ddl\",\"raw_sql\":\"ALTER TABLE t PLACEMENT POLICY=ghost;\",\"normalized_sql\":\"ALTER TABLE t PLACEMENT POLICY=ghost\",\"coverage\":{\"status\":\"complete\"}}],\"version\":{\"product\":\"tidb\",\"version\":\"8.5.0\",\"major\":8,\"minor\":5,\"patch\":0,\"source\":\"observed\",\"validated_range\":true},\"fail_on_triggered\":false,\"rule_summary\":{\"loaded\":1,\"applicable\":1,\"skipped\":[]},\"context\":{\"mode\":\"metadata-aware\",\"dialect\":\"tidb\",\"dialect_source\":\"detected\",\"schema\":\"t20m_bind_missing\",\"schema_source\":\"flag\"}}\n",
+    "stderr": "",
+    "parsed": {
+      "verdict": "pass",
+      "coverage": {
+        "status": "complete"
+      },
+      "summary": {
+        "statements": 1,
+        "blockers": 0,
+        "warnings": 0,
+        "notices": 0
+      },
+      "statements": [
+        {
+          "index": 0,
+          "kind": "ddl",
+          "raw_sql": "ALTER TABLE t PLACEMENT POLICY=ghost;",
+          "normalized_sql": "ALTER TABLE t PLACEMENT POLICY=ghost",
+          "coverage": {
+            "status": "complete"
+          }
+        }
+      ],
+      "version": {
+        "product": "tidb",
+        "version": "8.5.0",
+        "major": 8,
+        "minor": 5,
+        "patch": 0,
+        "source": "observed",
+        "validated_range": true
+      },
+      "fail_on_triggered": false,
+      "rule_summary": {
+        "loaded": 1,
+        "applicable": 1,
+        "skipped": []
+      },
+      "context": {
+        "mode": "metadata-aware",
+        "dialect": "tidb",
+        "dialect_source": "detected",
+        "schema": "t20m_bind_missing",
+        "schema_source": "flag"
+      }
+    },
+    "version_evidence": {
+      "target_raw": null,
+      "target_canonical": null,
+      "observed_raw": "8.0.11-TiDB-v8.5.0",
+      "observed_canonical": {
+        "product": "tidb",
+        "version": "8.5.0"
+      },
+      "resolved": {
+        "product": "tidb",
+        "version": "8.5.0",
+        "major": 8,
+        "minor": 5,
+        "patch": 0,
+        "source": "observed",
+        "validated_range": true
+      }
+    }
+  },
+  "assertions": [
+    {
+      "name": "database reachable with expected version",
+      "ok": true,
+      "detail": "SELECT VERSION() rc=0 version='8.0.11-TiDB-v8.5.0' expected_contains='v8.5.0'"
+    },
+    {
+      "name": "setup create-owned-fixture return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "setup create-owned-fixture: ghost policy absent from the catalog",
+      "ok": true,
+      "detail": "rc=0 output='0' expected='0'"
+    },
+    {
+      "name": "exit code",
+      "ok": true,
+      "detail": "rc=0 expected=0"
+    },
+    {
+      "name": "verdict",
+      "ok": true,
+      "detail": "verdict='pass'"
+    },
+    {
+      "name": "top-level statements",
+      "ok": true,
+      "detail": "statements=1 expected=1"
+    },
+    {
+      "name": "zero findings",
+      "ok": true,
+      "detail": "findings=0"
+    },
+    {
+      "name": "no diagnostics",
+      "ok": true,
+      "detail": "diagnostics=[]"
+    },
+    {
+      "name": "no unsupported",
+      "ok": true,
+      "detail": "unsupported=[]"
+    },
+    {
+      "name": "aggregate coverage",
+      "ok": true,
+      "detail": "coverage='complete'"
+    },
+    {
+      "name": "per-statement coverage",
+      "ok": true,
+      "detail": "statement_coverage=['complete']"
+    },
+    {
+      "name": "evidence gap count",
+      "ok": true,
+      "detail": "gaps=0"
+    },
+    {
+      "name": "fail_on_triggered",
+      "ok": true,
+      "detail": "fail_on_triggered=False"
+    },
+    {
+      "name": "post-verify audit did not fabricate a binding",
+      "ok": true,
+      "detail": "rc=0 output='' expected=''"
+    },
+    {
+      "name": "execute native bind to a missing policy refuses (8239) return code",
+      "ok": true,
+      "detail": "rc=1 expected=1 stderr=\"ERROR 8239 (HY000) at line 1: Unknown placement policy 'ghost'\""
+    },
+    {
+      "name": "structure refused bind leaves the table unbound",
+      "ok": true,
+      "detail": "rc=0 output='' expected=''"
+    },
+    {
+      "name": "teardown drop fixture return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    }
+  ],
+  "status": "pass",
+  "command": [
+    "/private/tmp/ddl-golden-t20r2/T20/bin/deltascope",
+    "audit",
+    "--dialect",
+    "tidb",
+    "--sql",
+    "ALTER TABLE t PLACEMENT POLICY=ghost;",
+    "--config",
+    "/private/tmp/ddl-golden-t20r2/T20/golden-policy-t20-placement.yaml",
+    "--format",
+    "json",
+    "--host",
+    "127.0.0.1",
+    "--port",
+    "24000",
+    "--user",
+    "root",
+    "--schema",
+    "t20m_bind_missing",
+    "--fail-on",
+    "blocker"
+  ]
+}

@@ -1,0 +1,12 @@
+# T20-R2 A red evidence — public audit.AuditSQL on pre-fix 0632f66c
+# executed: 2026-11-04T03:20:56Z via go run ./tmpred (probe source archived as 00-prefix-red-probe.go.txt)
+# provider: schema proven-present, tables proven-absent, catalog proven-empty; dialect=mysql
+SQL: CREATE TABLE t20_comment (id INT) /*T![placement] PLACEMENT POLICY=p20_missing */;
+  audit error: audit includes unsupported statements: 1 item(s)
+
+SQL: CREATE TABLE t20_direct (id INT) /*T![placement] PRIMARY_REGION='us-east-1' */;
+  audit error: statement was not audited because the selected dialect parser could not parse it; no audit findings were inferred
+
+SQL: ALTER TABLE t20_x /*T![placement] PLACEMENT POLICY=p20_missing */;
+  audit error: audit includes unsupported statements: 1 item(s)
+

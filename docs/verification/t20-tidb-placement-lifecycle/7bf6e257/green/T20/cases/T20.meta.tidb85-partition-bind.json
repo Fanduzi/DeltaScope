@@ -1,0 +1,292 @@
+{
+  "case_id": "T20.meta.tidb85-partition-bind",
+  "kind": "cli_metadata",
+  "cli_case": "tidb85-partition-bind",
+  "anchor": "tidb85",
+  "dialect": "tidb",
+  "input_sql": "ALTER TABLE t PARTITION p0 PLACEMENT POLICY=t20m_p;",
+  "policy_profile": "t20-placement",
+  "policy_path": "/private/tmp/ddl-golden-t20r2/T20/golden-policy-t20-placement.yaml",
+  "connect": {
+    "host": "127.0.0.1",
+    "port": 24000,
+    "user": "root",
+    "schema": "t20m_partition_bind"
+  },
+  "expected": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+      "complete"
+    ],
+    "evidence_gaps": 0,
+    "finding_entries": [
+      {
+        "index": 0,
+        "rule_id": "ddl.tidb.placement.warn",
+        "level": "warning"
+      }
+    ],
+    "fail_on_triggered": false
+  },
+  "actual": {
+    "database": {
+      "product": "tidb",
+      "image": "pingcap/tidb:v8.5.0",
+      "image_digest": "pingcap/tidb@sha256:490861bd4a2fa643dbe76b77ffecafcad66e6a42774e580b82f4ec2429a80e57",
+      "container": "deltascope-ddl-golden-tidb85",
+      "reachable": true,
+      "version": "8.0.11-TiDB-v8.5.0"
+    },
+    "setup": [
+      {
+        "name": "create-owned-fixture",
+        "sql": "CREATE DATABASE t20m_partition_bind;CREATE PLACEMENT POLICY t20m_p PRIMARY_REGION='us-east-1' REGIONS='us-east-1' FOLLOWERS=2;CREATE TABLE t20m_partition_bind.t (id INT PRIMARY KEY) PARTITION BY RANGE (id) (PARTITION p0 VALUES LESS THAN (10), PARTITION p1 VALUES LESS THAN (100))",
+        "rc": 0,
+        "stdout": "",
+        "stderr": ""
+      }
+    ],
+    "post_verify": [
+      {
+        "assert": "audit did not bind the member",
+        "sql": "SELECT COALESCE(TIDB_PLACEMENT_POLICY_NAME,'') FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='t20m_partition_bind' AND TABLE_NAME='t' AND PARTITION_NAME='p0'",
+        "rc": 0,
+        "output": "",
+        "stderr": ""
+      }
+    ],
+    "execute": [
+      {
+        "name": "native member bind lands",
+        "sql": "ALTER TABLE t20m_partition_bind.t PARTITION p0 PLACEMENT POLICY=t20m_p;",
+        "rc": 0,
+        "stdout": "",
+        "stderr": ""
+      }
+    ],
+    "structure": [
+      {
+        "assert": "catalog proves the member binding",
+        "sql": "SELECT COALESCE(TIDB_PLACEMENT_POLICY_NAME,'') FROM information_schema.PARTITIONS WHERE TABLE_SCHEMA='t20m_partition_bind' AND TABLE_NAME='t' AND PARTITION_NAME='p0'",
+        "rc": 0,
+        "output": "t20m_p",
+        "stderr": ""
+      }
+    ],
+    "teardown": [
+      {
+        "name": "drop fixture",
+        "sql": "DROP DATABASE IF EXISTS t20m_partition_bind;DROP PLACEMENT POLICY IF EXISTS t20m_p",
+        "rc": 0,
+        "stderr": ""
+      }
+    ],
+    "exit": 0,
+    "stdout": "{\"verdict\":\"review\",\"coverage\":{\"status\":\"complete\"},\"summary\":{\"statements\":1,\"blockers\":0,\"warnings\":1,\"notices\":0},\"statements\":[{\"index\":0,\"kind\":\"ddl\",\"raw_sql\":\"ALTER TABLE t PARTITION p0 PLACEMENT POLICY=t20m_p;\",\"normalized_sql\":\"ALTER TABLE t PARTITION p0 PLACEMENT POLICY=t20m_p\",\"findings\":[{\"rule_id\":\"ddl.tidb.placement.warn\",\"level\":\"warning\",\"message\":\"PLACEMENT POLICY \\\"t20m_p\\\" binds partition \\\"t\\\" to a topology policy\",\"statement_kind\":\"ddl\",\"location\":{\"line\":1,\"column\":1},\"suggestion\":\"verify the placement policy's region constraints, replica counts, and PD/TiKV topology prerequisites intentionally — a bound policy reassigns the object's physical placement\",\"metadata\":{\"action\":\"placement_policy\",\"policy\":\"t20m_p\",\"target\":\"t\",\"target_kind\":\"partition\"},\"explanation\":{\"summary\":\"Warn on DDL tidb placement warn\",\"why\":\"The statement reached a caution rule that highlights an operational trade-off.\",\"risk\":\"Ignoring this rule can weaken schema-governance guarantees and make changes harder to review safely.\",\"suggestion\":\"verify the placement policy's region constraints, replica counts, and PD/TiKV topology prerequisites intentionally — a bound policy reassigns the object's physical placement\"}}],\"coverage\":{\"status\":\"complete\"}}],\"version\":{\"product\":\"tidb\",\"version\":\"8.5.0\",\"major\":8,\"minor\":5,\"patch\":0,\"source\":\"observed\",\"validated_range\":true},\"fail_on_triggered\":false,\"rule_summary\":{\"loaded\":1,\"applicable\":1,\"skipped\":[]},\"context\":{\"mode\":\"metadata-aware\",\"dialect\":\"tidb\",\"dialect_source\":\"detected\",\"schema\":\"t20m_partition_bind\",\"schema_source\":\"flag\"}}\n",
+    "stderr": "",
+    "parsed": {
+      "verdict": "review",
+      "coverage": {
+        "status": "complete"
+      },
+      "summary": {
+        "statements": 1,
+        "blockers": 0,
+        "warnings": 1,
+        "notices": 0
+      },
+      "statements": [
+        {
+          "index": 0,
+          "kind": "ddl",
+          "raw_sql": "ALTER TABLE t PARTITION p0 PLACEMENT POLICY=t20m_p;",
+          "normalized_sql": "ALTER TABLE t PARTITION p0 PLACEMENT POLICY=t20m_p",
+          "findings": [
+            {
+              "rule_id": "ddl.tidb.placement.warn",
+              "level": "warning",
+              "message": "PLACEMENT POLICY \"t20m_p\" binds partition \"t\" to a topology policy",
+              "statement_kind": "ddl",
+              "location": {
+                "line": 1,
+                "column": 1
+              },
+              "suggestion": "verify the placement policy's region constraints, replica counts, and PD/TiKV topology prerequisites intentionally — a bound policy reassigns the object's physical placement",
+              "metadata": {
+                "action": "placement_policy",
+                "policy": "t20m_p",
+                "target": "t",
+                "target_kind": "partition"
+              },
+              "explanation": {
+                "summary": "Warn on DDL tidb placement warn",
+                "why": "The statement reached a caution rule that highlights an operational trade-off.",
+                "risk": "Ignoring this rule can weaken schema-governance guarantees and make changes harder to review safely.",
+                "suggestion": "verify the placement policy's region constraints, replica counts, and PD/TiKV topology prerequisites intentionally — a bound policy reassigns the object's physical placement"
+              }
+            }
+          ],
+          "coverage": {
+            "status": "complete"
+          }
+        }
+      ],
+      "version": {
+        "product": "tidb",
+        "version": "8.5.0",
+        "major": 8,
+        "minor": 5,
+        "patch": 0,
+        "source": "observed",
+        "validated_range": true
+      },
+      "fail_on_triggered": false,
+      "rule_summary": {
+        "loaded": 1,
+        "applicable": 1,
+        "skipped": []
+      },
+      "context": {
+        "mode": "metadata-aware",
+        "dialect": "tidb",
+        "dialect_source": "detected",
+        "schema": "t20m_partition_bind",
+        "schema_source": "flag"
+      }
+    },
+    "version_evidence": {
+      "target_raw": null,
+      "target_canonical": null,
+      "observed_raw": "8.0.11-TiDB-v8.5.0",
+      "observed_canonical": {
+        "product": "tidb",
+        "version": "8.5.0"
+      },
+      "resolved": {
+        "product": "tidb",
+        "version": "8.5.0",
+        "major": 8,
+        "minor": 5,
+        "patch": 0,
+        "source": "observed",
+        "validated_range": true
+      }
+    }
+  },
+  "assertions": [
+    {
+      "name": "database reachable with expected version",
+      "ok": true,
+      "detail": "SELECT VERSION() rc=0 version='8.0.11-TiDB-v8.5.0' expected_contains='v8.5.0'"
+    },
+    {
+      "name": "setup create-owned-fixture return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "exit code",
+      "ok": true,
+      "detail": "rc=0 expected=0"
+    },
+    {
+      "name": "verdict",
+      "ok": true,
+      "detail": "verdict='review'"
+    },
+    {
+      "name": "top-level statements",
+      "ok": true,
+      "detail": "statements=1 expected=1"
+    },
+    {
+      "name": "zero findings",
+      "ok": true,
+      "detail": "findings=1"
+    },
+    {
+      "name": "no diagnostics",
+      "ok": true,
+      "detail": "diagnostics=[]"
+    },
+    {
+      "name": "no unsupported",
+      "ok": true,
+      "detail": "unsupported=[]"
+    },
+    {
+      "name": "aggregate coverage",
+      "ok": true,
+      "detail": "coverage='complete'"
+    },
+    {
+      "name": "per-statement coverage",
+      "ok": true,
+      "detail": "statement_coverage=['complete']"
+    },
+    {
+      "name": "evidence gap count",
+      "ok": true,
+      "detail": "gaps=0"
+    },
+    {
+      "name": "finding entries",
+      "ok": true,
+      "detail": "findings=[(0, 'ddl.tidb.placement.warn', 'warning')] expected=[(0, 'ddl.tidb.placement.warn', 'warning')]"
+    },
+    {
+      "name": "fail_on_triggered",
+      "ok": true,
+      "detail": "fail_on_triggered=False"
+    },
+    {
+      "name": "post-verify audit did not bind the member",
+      "ok": true,
+      "detail": "rc=0 output='' expected=''"
+    },
+    {
+      "name": "execute native member bind lands return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "structure catalog proves the member binding",
+      "ok": true,
+      "detail": "rc=0 output='t20m_p' expected='t20m_p'"
+    },
+    {
+      "name": "teardown drop fixture return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    }
+  ],
+  "status": "pass",
+  "command": [
+    "/private/tmp/ddl-golden-t20r2/T20/bin/deltascope",
+    "audit",
+    "--dialect",
+    "tidb",
+    "--sql",
+    "ALTER TABLE t PARTITION p0 PLACEMENT POLICY=t20m_p;",
+    "--config",
+    "/private/tmp/ddl-golden-t20r2/T20/golden-policy-t20-placement.yaml",
+    "--format",
+    "json",
+    "--host",
+    "127.0.0.1",
+    "--port",
+    "24000",
+    "--user",
+    "root",
+    "--schema",
+    "t20m_partition_bind",
+    "--fail-on",
+    "blocker"
+  ]
+}

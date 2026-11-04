@@ -1,0 +1,59 @@
+package main
+
+import (
+	"context"
+	"fmt"
+
+	"github.com/Fanduzi/DeltaScope/internal/application/audit"
+	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
+)
+
+type p struct{}
+
+func (p) LoadInstanceFacts(ctx context.Context, dialect spec.Dialect, schema string) (*spec.InstanceFacts, error) {
+	return &spec.InstanceFacts{Version: "8.0.46"}, nil
+}
+func (p) LoadTableSnapshot(ctx context.Context, dialect spec.Dialect, schema, table string) (*spec.TableSnapshot, error) {
+	return nil, nil // proven-absent target tables
+}
+func (p) ResolveObject(ctx context.Context, dialect spec.Dialect, req spec.ObjectLookupRequest) (*spec.ObjectSnapshot, error) {
+	return &spec.ObjectSnapshot{Exists: true}, nil // schema proven-present
+}
+func (p) LoadPlacementPolicies(ctx context.Context, dialect spec.Dialect) (map[string]*spec.PlacementPolicyFact, error) {
+	return map[string]*spec.PlacementPolicyFact{}, nil // proven-empty catalog
+}
+
+func main() {
+	reqs := []string{
+		"CREATE TABLE t20_comment (id INT) /*T![placement] PLACEMENT POLICY=p20_missing */;",
+		"CREATE TABLE t20_direct (id INT) /*T![placement] PRIMARY_REGION='us-east-1' */;",
+		"ALTER TABLE t20_x /*T![placement] PLACEMENT POLICY=p20_missing */;",
+	}
+	for _, sql := range reqs {
+		res, err := audit.AuditSQL(context.Background(), audit.Request{
+			SQL:              sql,
+			Dialect:          spec.DialectMySQL,
+			Schema:           "golden",
+			MetadataProvider: p{},
+		})
+		if err != nil {
+			fmt.Printf("SQL: %s\n  audit error: %v\n\n", sql, err)
+			continue
+		}
+		fmt.Printf("SQL: %s\n", sql)
+		for i := range res.Statements {
+			st := res.Statements[i]
+			fmt.Printf("  stmt[%d] kind=%s coverage=%s raw=%q\n", i, st.Kind, st.Coverage.Status, st.RawSQL)
+			for _, f := range st.Findings {
+				fmt.Printf("    finding rule=%s level=%s msg=%s\n", f.RuleID, f.Level, f.Message)
+			}
+			for _, g := range st.EvidenceGaps {
+				fmt.Printf("    gap rule=%s reason=%s\n", g.RuleID, g.ReasonCode)
+			}
+		}
+		for _, u := range res.Unsupported {
+			fmt.Printf("  unsupported feature=%s reason=%s\n", u.Feature, u.Reason)
+		}
+		fmt.Println()
+	}
+}

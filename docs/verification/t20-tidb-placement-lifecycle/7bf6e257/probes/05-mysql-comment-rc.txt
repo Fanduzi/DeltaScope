@@ -1,0 +1,19 @@
+# T20-R2 MySQL comment receipts — mysql:8.0.46
+# executed: 2026-11-04T03:06:55Z host=FanMac-mini-M4-Pro.local
+mysql: [Warning] Using a password on the command line interface can be insecure.
+8.0.46
+mysql: [Warning] Using a password on the command line interface can be insecure.
+== alter comment-only lands (rc=0, empty alter is legal) ==
+mysql: [Warning] Using a password on the command line interface can be insecure.
+mysql: [Warning] Using a password on the command line interface can be insecure.
+alter-comment rc=0
+mysql: [Warning] Using a password on the command line interface can be insecure.
+bare-alter rc=0
+== create comment forms land, no binding ==
+mysql: [Warning] Using a password on the command line interface can be insecure.
+create-comment rc=0
+mysql: [Warning] Using a password on the command line interface can be insecure.
+direct-comment rc=0
+== bare form still 1064 ==
+ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'PLACEMENT POLICY=p' at line 1
+mysql: [Warning] Using a password on the command line interface can be insecure.

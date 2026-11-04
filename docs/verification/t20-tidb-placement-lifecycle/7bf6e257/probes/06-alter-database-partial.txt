@@ -1,0 +1,18 @@
+# T20-R2 ALTER DATABASE multi-option receipts — TiDB v8.5.0 unistore
+# executed: 2026-11-04T03:07:03Z host=FanMac-mini-M4-Pro.local
+8.0.11-TiDB-v8.5.0
+== A: charset-first then missing policy — partial apply ==
+ERROR 8239 (HY000) at line 1: Unknown placement policy 'missing_policy'
+t20_review	latin1	latin1_bin	<null>
+== B: placement-first then charset — same executor order ==
+ERROR 8239 (HY000) at line 1: Unknown placement policy 'missing_policy'
+t20_review	latin1	latin1_bin	<null>
+== C: charset + existing policy ==
+t20_review	latin1	latin1_bin	p20_existing
+== D: prior binding survives failed rebind ==
+ERROR 8239 (HY000) at line 1: Unknown placement policy 'missing_policy'
+t20_review	utf8mb4	utf8mb4_bin	p20_existing
+== E: CREATE atomic on 8239 ==
+ERROR 8239 (HY000) at line 1: Unknown placement policy 'missing_policy'
+== F: comma form stays grammar 1064 ==
+ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your TiDB version for the right syntax to use line 1 column 48 near ", PLACEMENT POLICY=p20_existing" 
