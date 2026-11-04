@@ -1,0 +1,137 @@
+# T20/#99 topology round fixture: real PD + 3x TiKV + TiDB v8.5.0 (NOT unistore).
+# One-shot dedicated environment for real topology-prerequisite verification.
+# All pins fixed at v8.5.0; observed digests are recorded into the evidence
+# receipts. Loopback-only host publishes; dedicated subnet verified free of
+# IPAM conflicts at authoring time (10.203/16, 10.210/16, 10.254.x taken).
+# TiKV labels are SYNTHETIC single-host logical labels (region=t20rev,
+# distinct zone/host per store) — they prove label-aware rule evaluation,
+# NOT real multi-datacenter or hardware fault tolerance.
+services:
+  pd0:
+    image: pingcap/pd:v8.5.0
+    container_name: deltascope-t20-topo-pd0
+    command:
+      - --name=pd0
+      - --data-dir=/data
+      - --client-urls=http://0.0.0.0:2379
+      - --advertise-client-urls=http://pd0:2379
+      - --peer-urls=http://0.0.0.0:2380
+      - --advertise-peer-urls=http://pd0:2380
+      - --initial-cluster=pd0=http://pd0:2380
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O - http://127.0.0.1:2379/pd/api/v1/health >/dev/null 2>&1"]
+      interval: 5s
+      timeout: 5s
+      retries: 40
+      start_period: 10s
+
+  tikv1:
+    image: pingcap/tikv:v8.5.0
+    container_name: deltascope-t20-topo-tikv1
+    depends_on:
+      pd0:
+        condition: service_healthy
+    command:
+      - --pd-endpoints=pd0:2379
+      - --addr=0.0.0.0:20160
+      - --advertise-addr=tikv1:20160
+      - --status-addr=0.0.0.0:20180
+      - --advertise-status-addr=tikv1:20180
+      - --data-dir=/data
+      - --labels=region=t20rev,zone=z1,host=h1
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O - http://127.0.0.1:20180/status >/dev/null 2>&1"]
+      interval: 5s
+      timeout: 5s
+      retries: 60
+      start_period: 15s
+
+  tikv2:
+    image: pingcap/tikv:v8.5.0
+    container_name: deltascope-t20-topo-tikv2
+    depends_on:
+      pd0:
+        condition: service_healthy
+    command:
+      - --pd-endpoints=pd0:2379
+      - --addr=0.0.0.0:20160
+      - --advertise-addr=tikv2:20160
+      - --status-addr=0.0.0.0:20180
+      - --advertise-status-addr=tikv2:20180
+      - --data-dir=/data
+      - --labels=region=t20rev,zone=z2,host=h2
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O - http://127.0.0.1:20180/status >/dev/null 2>&1"]
+      interval: 5s
+      timeout: 5s
+      retries: 60
+      start_period: 15s
+
+  tikv3:
+    image: pingcap/tikv:v8.5.0
+    container_name: deltascope-t20-topo-tikv3
+    depends_on:
+      pd0:
+        condition: service_healthy
+    command:
+      - --pd-endpoints=pd0:2379
+      - --addr=0.0.0.0:20160
+      - --advertise-addr=tikv3:20160
+      - --status-addr=0.0.0.0:20180
+      - --advertise-status-addr=tikv3:20180
+      - --data-dir=/data
+      - --labels=region=t20rev,zone=z3,host=h3
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O - http://127.0.0.1:20180/status >/dev/null 2>&1"]
+      interval: 5s
+      timeout: 5s
+      retries: 60
+      start_period: 15s
+
+  tidb0:
+    image: pingcap/tidb:v8.5.0
+    container_name: deltascope-t20-topo-tidb0
+    depends_on:
+      tikv1:
+        condition: service_healthy
+      tikv2:
+        condition: service_healthy
+      tikv3:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:24100:4000"
+      - "127.0.0.1:24180:10080"
+    command:
+      - --store=tikv
+      - --path=pd0:2379
+      - --advertise-address=tidb0
+      - --status=10080
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O - http://127.0.0.1:10080/status >/dev/null 2>&1"]
+      interval: 5s
+      timeout: 5s
+      retries: 60
+      start_period: 20s
+
+  client:
+    image: mysql:8.4.10
+    container_name: deltascope-t20-topo-client
+    depends_on:
+      tidb0:
+        condition: service_healthy
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - exec sleep infinity
+    healthcheck:
+      test: ["CMD-SHELL", "mysql --protocol=tcp -h tidb0 -P 4000 -uroot -Nse 'SELECT 1' | grep -qx '1'"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 5s
+
+networks:
+  default:
+    name: deltascope-t20-topo
+    ipam:
+      config:
+        - subnet: 10.211.0.0/24
