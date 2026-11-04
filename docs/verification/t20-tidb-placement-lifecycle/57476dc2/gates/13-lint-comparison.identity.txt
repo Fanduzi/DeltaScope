@@ -1,0 +1,3 @@
+scoped: baseline=18 current=18 added=0 removed=0
+full: baseline=33 current=33 added=0 removed=0
+note: vs 2405d09a/cb310591/7b6629a2 baseline, same commands and normalization
