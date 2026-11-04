@@ -108,7 +108,15 @@ func parseStatement(ctx context.Context, sql string, dialect spec.Dialect) (Pars
 }
 
 func parseTiDB(ctx context.Context, sql string, dialect spec.Dialect) (ParsedSQL, error) {
-	result, err := tidbparser.New().Parse(ctx, sql)
+	// MySQL ignores /*T! ... */ feature comments entirely; the shared TiDB
+	// parser resolves them into AST nodes. Blank them same-width under the
+	// MySQL dialect so the parser sees exactly what MySQL executes, while
+	// RawSQL and positions keep the original text.
+	parseInput := sql
+	if dialect == spec.DialectMySQL {
+		parseInput = blankTiDBFeatureComments(sql)
+	}
+	result, err := tidbparser.New().Parse(ctx, parseInput)
 	if err != nil {
 		return ParsedSQL{}, fmt.Errorf("parse sql: %w", err)
 	}
@@ -120,9 +128,16 @@ func parseTiDB(ctx context.Context, sql string, dialect spec.Dialect) (ParsedSQL
 	}
 
 	for _, stmt := range tidbparser.WrapStatements(result.Statements, result.Warnings) {
+		rawSQL := stmt.RawSQL
+		if parseInput != sql && len(result.Statements) == 1 {
+			// The blanked input would hide the original comment text; the
+			// chunk is exactly one statement, so its original text is the
+			// authoritative RawSQL.
+			rawSQL = sql
+		}
 		parsed.Statements = append(parsed.Statements, ParsedStatement{
 			Kind:      stmt.Kind,
-			RawSQL:    stmt.RawSQL,
+			RawSQL:    rawSQL,
 			Extractor: stmt.Extractor,
 		})
 	}

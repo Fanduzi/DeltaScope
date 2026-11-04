@@ -126,9 +126,12 @@ const (
 // values on ALTER or derive the server defaults on CREATE. Version-gated
 // options adjudicate by the resolved version: ENCRYPTION before 8.0.16 is a
 // proven parse refusal (5.7 answers 1064), an unproven version withholds,
-// TiDB's accepted-ignored form publishes nothing, and a TiDB placement
-// clause's binding premise is unvouchable today.
-func schemaPostAttrs(dialect spec.Dialect, version *spec.VersionIdentity, facts *spec.InstanceFacts, prior *batchSchemaEntry, declared map[string]string, creating bool, declaredBinding *spec.PlacementBinding, policyExists *bool) (map[string]string, schemaAttrOutcome) {
+// TiDB's accepted-ignored form publishes nothing. The TiDB placement clause
+// reports its own tri-state outcome: the returned attrs always carry the
+// proven non-placement result, and the caller decides whether a refused or
+// unproven binding wipes the statement (CREATE is atomic) or only its own
+// dimension (ALTER applies charset/collate first — T20-R2/#99).
+func schemaPostAttrs(dialect spec.Dialect, version *spec.VersionIdentity, facts *spec.InstanceFacts, prior *batchSchemaEntry, declared map[string]string, creating bool, declaredBinding *spec.PlacementBinding, policyExists *bool) (map[string]string, schemaAttrOutcome, spec.PlacementOutcome) {
 	attrs := map[string]string{}
 	if prior != nil {
 		for k, v := range prior.attrs {
@@ -175,46 +178,49 @@ func schemaPostAttrs(dialect spec.Dialect, version *spec.VersionIdentity, facts 
 			if version == nil {
 				// Version unproven: the option's applicability is
 				// undecidable → the whole outcome stays withheld.
-				return nil, schemaAttrsWithhold
+				return nil, schemaAttrsWithhold, spec.PlacementApplied
 			}
 			if version.Major < 8 || (version.Major == 8 && version.Minor == 0 && version.Patch < 16) {
 				// ENCRYPTION before 8.0.16 is a proven parse refusal
 				// (5.7 answers 1064) — the statement never executes.
-				return nil, schemaAttrsRefused
+				return nil, schemaAttrsRefused, spec.PlacementRefused
 			}
 			attrs["encryption"] = schemaEncryptionValue(enc)
 		}
 	}
+	placement := spec.PlacementApplied
 	if _, ok := declared["placement_policy"]; ok {
 		if dialect == spec.DialectTiDB {
 			// The binding premise adjudicates through the shared tri-state
 			// outcome: a `= DEFAULT` unbind always lands, a named policy
 			// requires proven existence (8239 on a proven-absent name is
-			// the engine's refusal), and an unvouched policy set keeps the
-			// whole outcome withheld (T20/#99).
+			// the engine's refusal), and an unvouched policy set stays
+			// unproven (T20/#99).
 			binding := spec.PlacementBinding{Default: true}
 			if declaredBinding != nil {
 				binding = *declaredBinding
 			}
-			switch spec.PlacementBindOutcome(dialect, binding, policyExists) {
-			case spec.PlacementApplied:
+			placement = spec.PlacementBindOutcome(dialect, binding, policyExists)
+			if placement == spec.PlacementApplied {
 				if binding.Default {
 					delete(attrs, "placement_policy")
 				} else {
 					attrs["placement_policy"] = binding.Policy
 				}
-			case spec.PlacementRefused:
-				return nil, schemaAttrsRefused
-			default:
-				return nil, schemaAttrsWithhold
 			}
+			// Refused/unproven leave the placement attribute untouched in
+			// attrs (the prior value, if any). ALTER DATABASE applies the
+			// non-placement options BEFORE the binding step — probed on
+			// v8.5.0: charset lands while a proven-absent policy fails
+			// 8239 and the prior binding survives — so the caller, not
+			// this function, decides partial apply vs atomic refusal.
 		} else {
 			// MySQL refuses the clause outright (1064 vendor boundary) — the
 			// statement never executes.
-			return nil, schemaAttrsRefused
+			return nil, schemaAttrsRefused, spec.PlacementRefused
 		}
 	}
-	return attrs, schemaAttrsApply
+	return attrs, schemaAttrsApply, placement
 }
 
 // schemaEncryptionValue normalizes a declared ENCRYPTION clause to the
@@ -296,10 +302,15 @@ func defaultCollationForCharset(dialect spec.Dialect, version *spec.VersionIdent
 }
 
 func schemaCreateAttrs(dialect spec.Dialect, version *spec.VersionIdentity, facts *spec.InstanceFacts, ddl *spec.DDL, policyExists *bool) (map[string]string, schemaAttrOutcome) {
-	attrs, outcome := schemaPostAttrs(dialect, version, facts, nil, schemaDeclaredOptions(ddl), true, ddl.PlacementBinding, policyExists)
-	// A proven refusal dominates any unmodeled option.
-	if outcome == schemaAttrsRefused {
+	attrs, outcome, placement := schemaPostAttrs(dialect, version, facts, nil, schemaDeclaredOptions(ddl), true, ddl.PlacementBinding, policyExists)
+	// A proven refusal dominates any unmodeled option; CREATE DATABASE is
+	// atomic, so a refused or undecidable binding discards the whole
+	// create-arm outcome (probed 8239 → no schema row at all).
+	if outcome == schemaAttrsRefused || placement == spec.PlacementRefused {
 		return nil, schemaAttrsRefused
+	}
+	if placement == spec.PlacementUnproven {
+		return nil, schemaAttrsWithhold
 	}
 	if dialect == spec.DialectMySQL {
 		for _, name := range ddl.UnextractedOptions {
@@ -388,7 +399,7 @@ func (s *batchState) applyAlterSchema(ctx context.Context, statement spec.Statem
 		return nil
 	case schemaPresent:
 		oldPolicy := entry.attrs["placement_policy"]
-		attrs, outcome := schemaPostAttrs(s.dialect, s.resolvedVersion, s.instanceFacts, entry, declared, false, statement.DDL.PlacementBinding, s.declaredPlacementPolicyExists(statement.DDL))
+		attrs, outcome, placement := schemaPostAttrs(s.dialect, s.resolvedVersion, s.instanceFacts, entry, declared, false, statement.DDL.PlacementBinding, s.declaredPlacementPolicyExists(statement.DDL))
 		switch outcome {
 		case schemaAttrsRefused:
 			// Proven option refusal keeps the whole pre-state verbatim.
@@ -408,6 +419,19 @@ func (s *batchState) applyAlterSchema(ctx context.Context, statement spec.Statem
 			s.placementSchemaRefUnvouch(name, oldPolicy, declared["placement_policy"])
 			return nil
 		}
+		if placement == spec.PlacementUnproven {
+			// Non-placement options provably applied (charset/collate run
+			// before the binding step); only the binding dimension is
+			// unproven — invalidate the placement attribute and the inbound
+			// sets for either arm's policy.
+			entry.attrs = attrs
+			delete(entry.attrs, "placement_policy")
+			s.placementSchemaRefUnvouch(name, oldPolicy, declared["placement_policy"])
+			return nil
+		}
+		// PlacementApplied publishes the new binding; PlacementRefused
+		// still publishes the proven non-placement attrs with the prior
+		// binding intact (native keeps the old binding on a failed rebind).
 		entry.attrs = attrs
 		s.placementSchemaRefSync(name, attrs["placement_policy"])
 		return nil

@@ -45,6 +45,9 @@ four facts that shape the design:
 MySQL has no placement feature: every placement statement or option
 under MySQL is a vendor boundary that preserves exact pre-state,
 including `= DEFAULT` (an unbind is still a vendor feature).
+`/*T![feature]*/` comments are a different question — MySQL parses them
+as ordinary comments and ignores them entirely, so under the MySQL
+dialect they can carry no placement semantics at all (T20-R2).
 
 ## Decision
 
@@ -95,6 +98,31 @@ including `= DEFAULT` (an unbind is still a vendor feature).
    proven applied; refused, unproven, and unbind outcomes stay silent
    (unproven yields evidence gaps instead). The rule never mutates
    ordered state; rule enablement does not change transitions.
+8. **MySQL ignores `/*T!` feature comments; the dialect entry blanks
+   them (T20-R2).** `blankTiDBFeatureComments` rewrites `/*T! ... */`
+   regions to same-width whitespace before the shared TiDB parser sees
+   a chunk, using a real lexer pass (strings, quoted identifiers, and
+   other comments are never scanned). Positions, `RawSQL`, and
+   statement boundaries keep the original text; the AST simply never
+   contains the comment's tokens. Probed on mysql:8.0.46 —
+   create/alter/direct-option comment forms all land rc=0 with no
+   binding, `ALTER TABLE t` with only a comment is a legal no-op, and
+   the bare `PLACEMENT POLICY` clause stays a 1064 vendor boundary. The
+   blanking covers every `/*T!` feature uniformly because MySQL treats
+   them all identically; it does not touch `/*!` executable comments
+   or `/*+` hints.
+9. **`ALTER DATABASE` applies non-placement options before the binding
+   step (T20-R2).** v8.5.0 `AlterSchema` runs
+   `ModifySchemaCharsetAndCollate` then `ModifySchemaDefaultPlacement`:
+   a proven-absent policy fails 8239 yet the declared charset still
+   lands — in either SQL option order — and a prior binding survives
+   the failed rebind. `schemaPostAttrs` therefore returns the placement
+   outcome separately: ALTER publishes the proven non-placement attrs
+   and keeps the prior binding on a refused bind, invalidates only the
+   `placement_policy` attr and the inbound refs on an unproven bind;
+   CREATE stays atomic (8239 → no schema row). The earlier comma-form
+   probe (1064) was a grammar boundary, not the multi-option grammar —
+   whitespace-separated `DatabaseOptionList` is the legal form.
 
 ## Consequences
 

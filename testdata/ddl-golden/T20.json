@@ -619,6 +619,73 @@
      "expect_rc": 0
     }
    ]
+  },
+  {
+   "id": "tidb85-alterdb-partial",
+   "anchor": "tidb85",
+   "dialect": "tidb",
+   "sql": "ALTER DATABASE t20m_alterdb_d CHARACTER SET latin1 PLACEMENT POLICY=t20m_missing;",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 24000,
+    "user": "root",
+    "schema": "t20m_alterdb"
+   },
+   "policy": "t20-placement",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "setup": [
+    {
+     "name": "create-owned-fixture",
+     "sql": "CREATE DATABASE t20m_alterdb;CREATE DATABASE t20m_alterdb_d CHARACTER SET utf8mb4 COLLATE utf8mb4_bin",
+     "expect_rc": 0,
+     "verify": []
+    }
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false
+   },
+   "execute": [
+    {
+     "name": "native multi-option alter errors 8239 on the missing policy",
+     "sql": "ALTER DATABASE t20m_alterdb_d CHARACTER SET latin1 PLACEMENT POLICY=t20m_missing;",
+     "expect_rc": 1
+    }
+   ],
+   "post_verify": [
+    {
+     "assert": "audit did not change charset or bind",
+     "sql": "SELECT CONCAT(DEFAULT_CHARACTER_SET_NAME,'|',COALESCE(TIDB_PLACEMENT_POLICY_NAME,'')) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='t20m_alterdb_d'",
+     "expect": "utf8mb4|"
+    }
+   ],
+   "structure": [
+    {
+     "assert": "charset landed while the refused bind stayed absent",
+     "sql": "SELECT CONCAT(DEFAULT_CHARACTER_SET_NAME,'|',COALESCE(TIDB_PLACEMENT_POLICY_NAME,'')) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='t20m_alterdb_d'",
+     "expect": "latin1|"
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop fixture",
+     "sql": "DROP DATABASE IF EXISTS t20m_alterdb;DROP DATABASE IF EXISTS t20m_alterdb_d",
+     "expect_rc": 0
+    }
+   ]
   }
  ],
  "cli_cases": [
@@ -813,6 +880,30 @@
     "evidence_gaps": 0,
     "fail_on_triggered": false
    }
+  },
+  {
+   "id": "mysql-placement-comment-ignored",
+   "dialect": "mysql",
+   "sql": "ALTER TABLE t /*T![placement] PLACEMENT POLICY=p20_missing */;",
+   "policy": "t20-placement",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false
+   }
   }
  ],
  "required_case_ids": [
@@ -838,6 +929,8 @@
   "T20.cli.tidb-alter-range-global-gap",
   "T20.cli.tidb-alter-range-dist-silent",
   "T20.cli.mysql-create-policy-vendor",
-  "T20.cli.mysql-alter-bind-vendor"
+  "T20.cli.mysql-alter-bind-vendor",
+  "T20.cli.mysql-placement-comment-ignored",
+  "T20.meta.tidb85-alterdb-partial"
  ]
 }
