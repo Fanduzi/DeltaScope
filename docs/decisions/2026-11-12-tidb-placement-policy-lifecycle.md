@@ -158,7 +158,21 @@ acceptance review re-read #99 against the shipped profile:
     provably satisfiable. CREATE/DROP policy, DEFAULT unbinds, and
     refused/unproven outcomes carry no topology premise and never
     stack the gap.
-12. **Real-cluster evidence bounds the deferral.** A disposable
+12. **Premise attribution is exact, and OR REPLACE rewrites are
+    topology-relevant (T20-R3 review corrections).** Both placement
+    rules report only the facts actually missing: an unvouched catalog
+    owes `[catalog, bound_targets]` on a drop (existence decides
+    whether the bound set is even consultable), while a
+    proven-existing policy with an unread bound set owes
+    `bound_targets` alone. `CREATE OR REPLACE` on a proven-existing
+    policy carries the topology gap — it rewrites the definition every
+    bound object deploys, the same live reassignment as ALTER POLICY.
+    Review also surfaced a laundering bug in the ordered-state seed:
+    a provider fact whose `BoundTargets` was nil (unread) seeded
+    `refsKnown=true`, laundering "bound set unvouched" into "provably
+    unbound" — `refsKnown` is now only set when the provider read is
+    present.
+13. **Real-cluster evidence bounds the deferral.** A disposable
     1×PD + 3×TiKV + 1×TiDB v8.5.0 fixture (labels `region=t20rev`,
     `zone=z1..z3`, `host=h1..h3`, STRICT mode) proved the native
     spectrum this contract separates: satisfiable bind → `SCHEDULED`;

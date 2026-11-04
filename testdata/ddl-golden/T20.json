@@ -898,7 +898,8 @@
       "rule_id": "ddl.tidb.placement.exists.require",
       "reason_code": "unknown_table_state",
       "required_facts": [
-       "placement_policy.catalog"
+       "placement_policy.catalog",
+       "placement_policy.bound_targets"
       ]
      }
     ]

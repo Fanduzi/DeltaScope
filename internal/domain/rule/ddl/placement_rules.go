@@ -154,9 +154,13 @@ func (r tidbPlacementWarnRule) outcome(statement spec.Statement) placementRuleOu
 		case spec.PlacementApplied:
 			return placementRuleOutcome{
 				warning: true,
-				policy:  strings.ToLower(ddl.ObjectName),
-				action:  "create_placement_policy",
-				message: fmt.Sprintf("CREATE PLACEMENT POLICY %q declares a topology policy objects can bind to", ddl.ObjectName),
+				// OR REPLACE on a proven-existing policy rewrites the
+				// definition every bound object deploys — the same live
+				// reassignment an ALTER POLICY performs.
+				topology: ddl.Options["or_replace"] == "true" && exists != nil && *exists,
+				policy:   strings.ToLower(ddl.ObjectName),
+				action:   "create_placement_policy",
+				message:  fmt.Sprintf("CREATE PLACEMENT POLICY %q declares a topology policy objects can bind to", ddl.ObjectName),
 			}
 		case spec.PlacementUnproven:
 			return placementRuleOutcome{facts: []string{"placement_policy.catalog"}}
@@ -188,7 +192,13 @@ func (r tidbPlacementWarnRule) outcome(statement spec.Statement) placementRuleOu
 				message: fmt.Sprintf("DROP PLACEMENT POLICY %q removes a topology policy", ddl.ObjectName),
 			}
 		case spec.PlacementUnproven:
-			return placementRuleOutcome{facts: []string{"placement_policy.catalog", "placement_policy.bound_targets"}}
+			// Attribute the missing premise precisely: an unvouched
+			// catalog owes the catalog fact; a proven-existing policy
+			// whose bound set was never read owes bound_targets alone.
+			if policies == nil {
+				return placementRuleOutcome{facts: []string{"placement_policy.catalog", "placement_policy.bound_targets"}}
+			}
+			return placementRuleOutcome{facts: []string{"placement_policy.bound_targets"}}
 		}
 	case spec.DDLOperationAlterRangePlacement:
 		if spec.PlacementRangeOutcome(statement.Dialect, ddl.PlacementRange) != spec.PlacementApplied {
@@ -307,9 +317,12 @@ func (r tidbPlacementExistsRequireRule) AppliesTo(statement spec.Statement) bool
 	return appliesToTiDBPlacementSurface(statement)
 }
 
-func (r tidbPlacementExistsRequireRule) Evaluate(_ context.Context, statement spec.Statement) ([]rule.Finding, error) {
+func (r tidbPlacementExistsRequireRule) Evaluate(ctx context.Context, statement spec.Statement) ([]rule.Finding, error) {
 	if !r.AppliesTo(statement) {
 		return nil, nil
+	}
+	if err := ctx.Err(); err != nil {
+		return nil, err
 	}
 	policies := placementPolicyFacts(statement)
 	if policies == nil {
@@ -330,7 +343,7 @@ func (r tidbPlacementExistsRequireRule) Evaluate(_ context.Context, statement sp
 	case spec.DDLOperationAlterPlacementPolicy:
 		exists := placementPolicyExists(policies, ddl.ObjectName)
 		if spec.PlacementAlterOutcome(statement.Dialect, exists) == spec.PlacementRefused {
-			return r.missingPolicyFinding(ddl.ObjectName, "alter_placement_policy")
+			return r.missingPolicyFinding(ddl.ObjectName, "alter_placement_policy", "", "")
 		}
 		return nil, nil
 	case spec.DDLOperationDropPlacementPolicy:
@@ -341,25 +354,50 @@ func (r tidbPlacementExistsRequireRule) Evaluate(_ context.Context, statement sp
 		if spec.PlacementRangeOutcome(statement.Dialect, ddl.PlacementRange) != spec.PlacementApplied {
 			return nil, nil
 		}
-		return r.bindFinding(statement, ddl.PlacementBinding, policies, "alter_range_placement")
+		return r.bindFinding(statement, ddl.PlacementBinding, policies, "alter_range_placement",
+			"range:"+strings.ToLower(ddl.PlacementRange), "range")
 	default:
-		if ddl.PlacementBinding != nil {
-			return r.bindFinding(statement, ddl.PlacementBinding, policies, strings.ToLower(string(ddl.Operation)))
+		binding, action, target, targetKind := firstNamedPlacementBinding(ddl)
+		if binding == nil {
+			return nil, nil
 		}
-		for i := range ddl.Alter {
-			alter := &ddl.Alter[i]
-			if alter.Action == "placement_policy" && alter.Placement != nil {
-				return r.bindFinding(statement, alter.Placement, policies, "placement_policy")
+		return r.bindFinding(statement, binding, policies, action, target, targetKind)
+	}
+}
+
+// firstNamedPlacementBinding returns the first authored named (non-DEFAULT)
+// placement binding the statement carries, in the same scan order the warn
+// outcome uses — statement-level binding, alter action, partition def —
+// with the action label and bounded target identity for findings.
+func firstNamedPlacementBinding(ddl *spec.DDL) (binding *spec.PlacementBinding, action, target, targetKind string) {
+	target = ""
+	targetKind = "table"
+	if ddl.Table != nil {
+		target = ddl.Table.Name
+	}
+	if ddl.Operation == spec.DDLOperationCreateSchema || ddl.Operation == spec.DDLOperationAlterSchema {
+		targetKind = "schema"
+		target = ddl.ObjectName
+	}
+	if ddl.PlacementBinding != nil && !ddl.PlacementBinding.Default {
+		return ddl.PlacementBinding, strings.ToLower(string(ddl.Operation)), target, targetKind
+	}
+	for i := range ddl.Alter {
+		alter := &ddl.Alter[i]
+		if alter.Action == "placement_policy" && alter.Placement != nil && !alter.Placement.Default {
+			if len(alter.Partitions) > 0 {
+				targetKind = "partition"
 			}
-		}
-		for i := range ddl.PartitionDefs {
-			def := &ddl.PartitionDefs[i]
-			if def.Placement != nil && !def.Placement.Default {
-				return r.bindFinding(statement, def.Placement, policies, "create_table")
-			}
+			return alter.Placement, "placement_policy", target, targetKind
 		}
 	}
-	return nil, nil
+	for i := range ddl.PartitionDefs {
+		def := &ddl.PartitionDefs[i]
+		if def.Placement != nil && !def.Placement.Default {
+			return def.Placement, "create_table", target, "partition"
+		}
+	}
+	return nil, "", "", ""
 }
 
 func (r tidbPlacementExistsRequireRule) EvidenceGaps(statement spec.Statement) []rule.EvidenceGap {
@@ -384,37 +422,28 @@ func (r tidbPlacementExistsRequireRule) EvidenceGaps(statement spec.Statement) [
 		if ddl.Options["if_exists"] == "true" {
 			return nil // native no-op — no premise
 		}
-		if policies != nil {
-			exists := placementPolicyExists(policies, ddl.ObjectName)
-			if exists != nil && *exists && placementBoundTargets(policies, ddl.ObjectName) == nil {
-				return []rule.EvidenceGap{{
-					ReasonCode:    gapReasonUnknownTableState,
-					RequiredFacts: []string{"placement_policy.bound_targets"},
-				}}
-			}
-			return nil
+		if policies == nil {
+			return []rule.EvidenceGap{{
+				ReasonCode:    gapReasonUnknownTableState,
+				RequiredFacts: []string{"placement_policy.catalog", "placement_policy.bound_targets"},
+			}}
 		}
+		exists := placementPolicyExists(policies, ddl.ObjectName)
+		if *exists && placementBoundTargets(policies, ddl.ObjectName) == nil {
+			return []rule.EvidenceGap{{
+				ReasonCode:    gapReasonUnknownTableState,
+				RequiredFacts: []string{"placement_policy.bound_targets"},
+			}}
+		}
+		return nil
 	case spec.DDLOperationAlterRangePlacement:
 		if spec.PlacementRangeOutcome(statement.Dialect, ddl.PlacementRange) != spec.PlacementApplied ||
 			ddl.PlacementBinding == nil || ddl.PlacementBinding.Default {
 			return nil
 		}
 	default:
-		named := false
-		if ddl.PlacementBinding != nil && !ddl.PlacementBinding.Default {
-			named = true
-		}
-		for i := range ddl.Alter {
-			if ddl.Alter[i].Action == "placement_policy" && ddl.Alter[i].Placement != nil && !ddl.Alter[i].Placement.Default {
-				named = true
-			}
-		}
-		for i := range ddl.PartitionDefs {
-			if ddl.PartitionDefs[i].Placement != nil && !ddl.PartitionDefs[i].Placement.Default {
-				named = true
-			}
-		}
-		if !named {
+		binding, _, _, _ := firstNamedPlacementBinding(ddl)
+		if binding == nil {
 			return nil
 		}
 	}
@@ -426,7 +455,7 @@ func (r tidbPlacementExistsRequireRule) EvidenceGaps(statement spec.Statement) [
 
 // bindFinding surfaces the proven-absent policy behind a refused named
 // binding. A DEFAULT unbind and an unproven premise stay silent.
-func (r tidbPlacementExistsRequireRule) bindFinding(statement spec.Statement, binding *spec.PlacementBinding, policies map[string]*spec.PlacementPolicyFact, action string) ([]rule.Finding, error) {
+func (r tidbPlacementExistsRequireRule) bindFinding(statement spec.Statement, binding *spec.PlacementBinding, policies map[string]*spec.PlacementPolicyFact, action, target, targetKind string) ([]rule.Finding, error) {
 	if binding == nil || binding.Default {
 		return nil, nil
 	}
@@ -434,7 +463,7 @@ func (r tidbPlacementExistsRequireRule) bindFinding(statement spec.Statement, bi
 	if spec.PlacementBindOutcome(statement.Dialect, *binding, exists) != spec.PlacementRefused {
 		return nil, nil
 	}
-	return r.missingPolicyFinding(binding.Policy, action)
+	return r.missingPolicyFinding(binding.Policy, action, target, targetKind)
 }
 
 // dropFinding adjudicates the drop's catalog premise: a bare drop of a
@@ -448,7 +477,7 @@ func (r tidbPlacementExistsRequireRule) dropFinding(statement spec.Statement, dd
 		return nil, nil
 	}
 	if exists != nil && !*exists {
-		return r.missingPolicyFinding(ddl.ObjectName, "drop_placement_policy")
+		return r.missingPolicyFinding(ddl.ObjectName, "drop_placement_policy", "", "")
 	}
 	metadata := map[string]any{
 		"policy": strings.ToLower(ddl.ObjectName),
@@ -463,11 +492,18 @@ func (r tidbPlacementExistsRequireRule) dropFinding(statement spec.Statement, dd
 		metadata)
 }
 
-func (r tidbPlacementExistsRequireRule) missingPolicyFinding(policy, action string) ([]rule.Finding, error) {
+func (r tidbPlacementExistsRequireRule) missingPolicyFinding(policy, action, target, targetKind string) ([]rule.Finding, error) {
+	metadata := map[string]any{"policy": strings.ToLower(policy), "action": action}
+	if target != "" {
+		metadata["target"] = target
+	}
+	if targetKind != "" {
+		metadata["target_kind"] = targetKind
+	}
 	return r.finding(
 		fmt.Sprintf("placement policy %q does not exist", policy),
 		"create the placement policy first or correct the policy reference",
-		map[string]any{"policy": strings.ToLower(policy), "action": action})
+		metadata)
 }
 
 func (r tidbPlacementExistsRequireRule) finding(message, suggestion string, metadata map[string]any) ([]rule.Finding, error) {
@@ -488,12 +524,12 @@ func placementBoundTargets(policies map[string]*spec.PlacementPolicyFact, name s
 		return nil
 	}
 	fact := policies[strings.ToLower(strings.TrimSpace(name))]
-	if fact == nil || fact.BoundTargets == nil {
-		if fact == nil {
-			empty := []string{}
-			return &empty
-		}
-		return nil
+	if fact == nil {
+		empty := []string{}
+		return &empty // proven-absent policy has a proven-empty bound set
+	}
+	if fact.BoundTargets == nil {
+		return nil // bound set unvouched
 	}
 	return &fact.BoundTargets
 }

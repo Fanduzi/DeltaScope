@@ -119,11 +119,13 @@ func (s *batchState) seedPlacementCatalog() {
 				}
 				entry.attrs["regions"] = fact.Regions
 			}
-			entry.refs = map[string]struct{}{}
-			for _, ref := range fact.BoundTargets {
-				entry.refs[ref] = struct{}{}
+			if fact.BoundTargets != nil {
+				entry.refs = map[string]struct{}{}
+				for _, ref := range fact.BoundTargets {
+					entry.refs[ref] = struct{}{}
+				}
+				entry.refsKnown = true
 			}
-			entry.refsKnown = true
 		}
 	}
 	// A proven non-nil catalog answers absence for every name it omits:

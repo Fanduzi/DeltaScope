@@ -25,6 +25,9 @@ import (
 //     ddl.tidb.placement.exists.require is the catalog-premise check —
 //     blocker on a proven refusal (8239 missing reference, 8241 bound
 //     drop, create-on-existing), catalog/bound_targets gaps on unvouched.
+//     Both rules attribute only the premise actually missing (cell I),
+//     and an applied CREATE OR REPLACE on a proven-existing policy is
+//     topology-relevant the same way ALTER POLICY is (cell J).
 func TestT20R3TopologyGapAndMissingRefusal(t *testing.T) {
 	existsTable := &spec.TableSnapshot{Exists: true, Table: &spec.Table{Schema: "golden", Name: "t"}}
 	boundProvider := func() *t10Provider {
@@ -215,6 +218,66 @@ func TestT20R3TopologyGapAndMissingRefusal(t *testing.T) {
 		result := audit(t, boundProvider(), bothRules, "DROP PLACEMENT POLICY IF EXISTS ghost;")
 		if len(findingsByRule(result, 0, "ddl.tidb.placement.exists.require")) != 0 {
 			t.Fatalf("IF EXISTS must not fire on a proven-absent policy, got %#v", result.Statements[0].Findings)
+		}
+	})
+
+	gapFactsOf := func(result report.Result, stmt int, ruleID string) []string {
+		var facts []string
+		for _, g := range result.Statements[stmt].EvidenceGaps {
+			if g.RuleID != ruleID {
+				continue
+			}
+			facts = append(facts, g.RequiredFacts...)
+		}
+		return facts
+	}
+
+	// I: drop premise attribution — a proven-existing policy whose bound
+	// set is unvouched owes bound_targets alone; an unvouched catalog owes
+	// catalog+bound_targets (existence decides whether bound is even
+	// consultable). Neither rule may claim a held fact as missing.
+	t.Run("drop gaps attribute only the missing premise", func(t *testing.T) {
+		provider := boundProvider()
+		provider.placement["p_nobounds"] = &spec.PlacementPolicyFact{BoundTargets: nil}
+		result := audit(t, provider, bothRules, "DROP PLACEMENT POLICY p_nobounds;")
+		for _, id := range []string{"ddl.tidb.placement.warn", "ddl.tidb.placement.exists.require"} {
+			facts := gapFactsOf(result, 0, id)
+			if len(facts) != 1 || facts[0] != "placement_policy.bound_targets" {
+				t.Fatalf("%s must owe bound_targets only on a proven-existing policy, got %v", id, facts)
+			}
+		}
+		provider.placement = nil
+		result = audit(t, provider, bothRules, "DROP PLACEMENT POLICY p;")
+		for _, id := range []string{"ddl.tidb.placement.warn", "ddl.tidb.placement.exists.require"} {
+			facts := gapFactsOf(result, 0, id)
+			if len(facts) != 2 || facts[0] != "placement_policy.catalog" || facts[1] != "placement_policy.bound_targets" {
+				t.Fatalf("%s must owe catalog+bound_targets on an unvouched catalog, got %v", id, facts)
+			}
+		}
+	})
+
+	// J: CREATE OR REPLACE on a proven-existing policy rewrites the
+	// definition every bound object deploys — the same live reassignment
+	// as ALTER POLICY — so it carries the topology gap; on a proven-absent
+	// policy it is a plain create with no bound readers and no premise.
+	t.Run("or_replace create carries topology only when replacing", func(t *testing.T) {
+		result := audit(t, boundProvider(), bothRules,
+			"CREATE OR REPLACE PLACEMENT POLICY p FOLLOWERS=2; "+
+				"CREATE OR REPLACE PLACEMENT POLICY p_fresh FOLLOWERS=2;")
+		if len(findingsByRule(result, 0, "ddl.tidb.placement.warn")) != 1 {
+			t.Fatalf("applied or_replace must still warn, got %#v", result.Statements[0].Findings)
+		}
+		if !hasGap(result, 0, "ddl.tidb.placement.warn", "placement_policy.topology") {
+			t.Fatalf("or_replace on an existing policy reassigns live placement — topology gap required, got %#v", gapsOf(result, 0))
+		}
+		if len(findingsByRule(result, 1, "ddl.tidb.placement.warn")) != 1 {
+			t.Fatalf("or_replace on a new policy must still warn, got %#v", result.Statements[1].Findings)
+		}
+		if hasGap(result, 1, "ddl.tidb.placement.warn", "placement_policy.topology") {
+			t.Fatalf("or_replace on a new policy reassigns nothing — no topology gap, got %#v", gapsOf(result, 1))
+		}
+		if len(findingsByRule(result, 1, "ddl.tidb.placement.exists.require")) != 0 {
+			t.Fatalf("or_replace on a proven-absent policy is a legal create, got %#v", result.Statements[1].Findings)
 		}
 	})
 }
