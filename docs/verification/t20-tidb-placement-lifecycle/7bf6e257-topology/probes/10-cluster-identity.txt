@@ -1,0 +1,254 @@
+# T20 topology fixture proof — real PD/TiKV, NOT unistore
+# executed: 2026-11-04T05:48:31Z project=deltascope-t20-topo subnet=10.211.0.0/24
+
+== 1. tidb-server argv (storage backend) ==
+["--store=tikv","--path=pd0:2379","--advertise-address=tidb0","--status=10080"]
+
+== 2. image digests ==
+pingcap/pd:v8.5.0 pingcap/pd@sha256:5cf66a73894ca652dd640e2ae72bc0bff6211ec55efbe95fbf45f98807e26af0 arm64
+pingcap/tikv:v8.5.0 pingcap/tikv@sha256:0524a2070bbfe3fef1331589113344f10050e6b821c2c0a4b79108b4b535f824 arm64
+pingcap/tidb:v8.5.0 pingcap/tidb@sha256:490861bd4a2fa643dbe76b77ffecafcad66e6a42774e580b82f4ec2429a80e57 arm64
+
+== 3. PD cluster identity + health (queried inside pd0) ==
+[
+  {
+    "name": "pd0",
+    "member_id": 16382016976602811638,
+    "client_urls": [
+      "http://pd0:2379"
+    ],
+    "health": true
+  }
+]
+
+{
+  "id": 7704189008621554081,
+  "max_peer_count": 3
+}
+
+{
+  "header": {
+    "cluster_id": 7704189008621554081
+  },
+  "members": [
+    {
+      "name": "pd0",
+      "member_id": 16382016976602811638,
+      "peer_urls": [
+        "http://pd0:2380"
+      ],
+      "client_urls": [
+        "http://pd0:2379"
+      ],
+      "deploy_path": "/",
+      "binary_version": "v8.5.0",
+      "git_hash": "d190c0e9082de46128b756f93b1291768dda645a"
+    }
+  ],
+  "leader": {
+    "name": "pd0",
+    "member_id": 16382016976602811638,
+    "peer_urls": [
+      "http://pd0:2380"
+    ],
+    "client_urls": [
+      "http://pd0:2379"
+    ],
+    "deploy_path": "/",
+    "binary_version": "v8.5.0",
+    "git_hash": "d190c0e9082de46128b756f93b1291768dda645a"
+  },
+  "etcd_leader": {
+    "name": "pd0",
+    "member_id": 16382016976602811638,
+    "peer_urls": [
+      "http://pd0:2380"
+    ],
+    "client_urls": [
+      "http://pd0:2379"
+    ],
+    "deploy_path": "/",
+    "binary_version": "v8.5.0",
+    "git_hash": "d190c0e9082de46128b756f93b1291768dda645a"
+  }
+}
+
+== 4. TiKV stores (id/state/address/labels from PD itself) ==
+{
+  "count": 3,
+  "stores": [
+    {
+      "store": {
+        "id": 1,
+        "address": "tikv1:20160",
+        "labels": [
+          {
+            "key": "region",
+            "value": "t20rev"
+          },
+          {
+            "key": "host",
+            "value": "h1"
+          },
+          {
+            "key": "zone",
+            "value": "z1"
+          }
+        ],
+        "version": "8.5.0",
+        "peer_address": "tikv1:20160",
+        "status_address": "tikv1:20180",
+        "git_hash": "a2c58c94f89cbb410e66d8f85c236308d6fc64f0",
+        "start_timestamp": 1793771289,
+        "deploy_path": "/",
+        "last_heartbeat": 1793771309473957002,
+        "node_state": 1,
+        "state_name": "Up"
+      },
+      "status": {
+        "capacity": "47.07GiB",
+        "available": "22.63GiB",
+        "used_size": "1.286GiB",
+        "leader_count": 28,
+        "leader_weight": 1,
+        "leader_score": 28,
+        "leader_size": 27,
+        "region_count": 64,
+        "region_weight": 1,
+        "region_score": 5473679592.350502,
+        "region_size": 63,
+        "slow_score": 1,
+        "slow_trend": {
+          "cause_value": 250459.67336683418,
+          "cause_rate": 0,
+          "result_value": 55,
+          "result_rate": 0
+        },
+        "start_ts": "2026-11-04T05:48:09Z",
+        "last_heartbeat_ts": "2026-11-04T05:48:29.473957002Z",
+        "uptime": "20.473957002s"
+      }
+    },
+    {
+      "store": {
+        "id": 4,
+        "address": "tikv3:20160",
+        "labels": [
+          {
+            "key": "region",
+            "value": "t20rev"
+          },
+          {
+            "key": "host",
+            "value": "h3"
+          },
+          {
+            "key": "zone",
+            "value": "z3"
+          }
+        ],
+        "version": "8.5.0",
+        "peer_address": "tikv3:20160",
+        "status_address": "tikv3:20180",
+        "git_hash": "a2c58c94f89cbb410e66d8f85c236308d6fc64f0",
+        "start_timestamp": 1793771289,
+        "deploy_path": "/",
+        "last_heartbeat": 1793771309473124127,
+        "node_state": 1,
+        "state_name": "Up"
+      },
+      "status": {
+        "capacity": "47.07GiB",
+        "available": "22.63GiB",
+        "used_size": "288.2MiB",
+        "leader_count": 18,
+        "leader_weight": 1,
+        "leader_score": 18,
+        "leader_size": 18,
+        "region_count": 64,
+        "region_weight": 1,
+        "region_score": 5473679592.350502,
+        "region_size": 63,
+        "slow_score": 1,
+        "slow_trend": {
+          "cause_value": 250156.74494949495,
+          "cause_rate": 0,
+          "result_value": 6,
+          "result_rate": 0
+        },
+        "start_ts": "2026-11-04T05:48:09Z",
+        "last_heartbeat_ts": "2026-11-04T05:48:29.473124127Z",
+        "uptime": "20.473124127s"
+      }
+    },
+    {
+      "store": {
+        "id": 5,
+        "address": "tikv2:20160",
+        "labels": [
+          {
+            "key": "region",
+            "value": "t20rev"
+          },
+          {
+            "key": "host",
+            "value": "h2"
+          },
+          {
+            "key": "zone",
+            "value": "z2"
+          }
+        ],
+        "version": "8.5.0",
+        "peer_address": "tikv2:20160",
+        "status_address": "tikv2:20180",
+        "git_hash": "a2c58c94f89cbb410e66d8f85c236308d6fc64f0",
+        "start_timestamp": 1793771289,
+        "deploy_path": "/",
+        "last_heartbeat": 1793771309444860127,
+        "node_state": 1,
+        "state_name": "Up"
+      },
+      "status": {
+        "capacity": "47.07GiB",
+        "available": "22.63GiB",
+        "used_size": "1.281GiB",
+        "leader_count": 18,
+        "leader_weight": 1,
+        "leader_score": 18,
+        "leader_size": 18,
+        "region_count": 64,
+        "region_weight": 1,
+        "region_score": 5473679592.350502,
+        "region_size": 63,
+        "slow_score": 1,
+        "slow_trend": {
+          "cause_value": 250129.48743718592,
+          "cause_rate": 0,
+          "result_value": 1,
+          "result_rate": 0
+        },
+        "start_ts": "2026-11-04T05:48:09Z",
+        "last_heartbeat_ts": "2026-11-04T05:48:29.444860127Z",
+        "uptime": "20.444860127s"
+      }
+    }
+  ]
+}
+
+== 5. SQL-side topology proof ==
+8.0.11-TiDB-v8.5.0
+--- SHOW PLACEMENT LABELS ---
+Key	Values
+host	["h1", "h2", "h3"]
+region	["t20rev"]
+zone	["z1", "z2", "z3"]
+--- placement mode ---
+Variable_name	Value
+tidb_placement_mode	STRICT
+--- endpoint correspondence: tidb0 status -> PD members ---
+{
+ "is_owner": true,
+ "max_procs": 8,
+ "gogc": 500,
+ "version": "8.0.11-TiDB-v8.5.0",

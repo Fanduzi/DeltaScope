@@ -1,0 +1,8 @@
+=== case D-offline: no topology/catalog facts at all ===
+coverage: unverified
+gap rule: ddl.tidb.placement.warn
+  reason_code: unknown_table_state
+  required_facts: ['placement_policy.catalog']
+gap rule: ddl.table.exists.alter.require
+  reason_code: unknown_table_state
+  required_facts: ['target_table.existence']

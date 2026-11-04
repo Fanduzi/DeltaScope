@@ -1,0 +1,34 @@
+# teardown receipt — this round only (project deltascope-t20-topo)
+# executed: 2026-11-04T05:53:12Z
+Target	Placement	Scheduling_State
+POLICY p_cli	PRIMARY_REGION="t20rev" REGIONS="t20rev"	NULL
+ Container deltascope-t20-topo-client Stopping 
+ Container deltascope-t20-topo-client Stopped 
+ Container deltascope-t20-topo-client Removing 
+ Container deltascope-t20-topo-client Removed 
+ Container deltascope-t20-topo-tidb0 Stopping 
+ Container deltascope-t20-topo-tidb0 Stopped 
+ Container deltascope-t20-topo-tidb0 Removing 
+ Container deltascope-t20-topo-tidb0 Removed 
+ Container deltascope-t20-topo-tikv2 Stopping 
+ Container deltascope-t20-topo-tikv3 Stopping 
+ Container deltascope-t20-topo-tikv1 Stopping 
+ Container deltascope-t20-topo-tikv2 Stopped 
+ Container deltascope-t20-topo-tikv2 Removing 
+ Container deltascope-t20-topo-tikv2 Removed 
+ Container deltascope-t20-topo-tikv1 Stopped 
+ Container deltascope-t20-topo-tikv1 Removing 
+ Container deltascope-t20-topo-tikv3 Stopped 
+ Container deltascope-t20-topo-tikv3 Removing 
+ Container deltascope-t20-topo-tikv1 Removed 
+ Container deltascope-t20-topo-tikv3 Removed 
+ Container deltascope-t20-topo-pd0 Stopping 
+ Container deltascope-t20-topo-pd0 Stopped 
+ Container deltascope-t20-topo-pd0 Removing 
+ Container deltascope-t20-topo-pd0 Removed 
+ Network deltascope-t20-topo Removing 
+ Network deltascope-t20-topo Removed 
+--- post-teardown residual (must be empty) ---
+(no containers)
+(no network)
+(no volumes)

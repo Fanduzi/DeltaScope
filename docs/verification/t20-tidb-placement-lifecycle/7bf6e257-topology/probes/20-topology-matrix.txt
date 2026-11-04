@@ -1,0 +1,162 @@
+=== setup: dedicated schema+table ===
+## SQL> DROP DATABASE IF EXISTS t20topo
+## rc=0
+
+## SQL> CREATE DATABASE t20topo
+## rc=0
+
+## SQL> CREATE TABLE t20topo.t (id INT PRIMARY KEY, v VARCHAR(20))
+## rc=0
+
+## SQL> INSERT INTO t20topo.t VALUES (1,'a'),(2,'b'),(3,'c')
+## rc=0
+
+
+=== case A: satisfiable policy (region=t20rev covers all 3 stores) ===
+## SQL> CREATE PLACEMENT POLICY p_sat PRIMARY_REGION="t20rev" REGIONS="t20rev"
+## rc=0
+
+## SHOW> SHOW CREATE PLACEMENT POLICY p_sat
+Policy	Create Policy
+p_sat	CREATE PLACEMENT POLICY `p_sat` PRIMARY_REGION="t20rev" REGIONS="t20rev"
+
+## SQL> ALTER TABLE t20topo.t PLACEMENT POLICY=p_sat
+## rc=0
+
+## SHOW> SHOW PLACEMENT FOR TABLE t20topo.t
+Target	Placement	Scheduling_State
+TABLE t20topo.t	PRIMARY_REGION="t20rev" REGIONS="t20rev"	SCHEDULED
+
+## SHOW> SELECT POLICY_NAME, PRIMARY_REGION, REGIONS, LEADERS, FOLLOWERS FROM information_schema.PLACEMENT_POLICIES WHERE POLICY_NAME='p_sat'
+ERROR 1054 (42S22) at line 1: Unknown column 'leaders' in 'field list'
+
+--- poll SCHEDULING_STATE (5s interval, max 120s) ---
+poll[0] state=
+poll[1] state=
+poll[2] state=
+poll[3] state=
+poll[4] state=
+poll[5] state=
+poll[6] state=
+poll[7] state=
+poll[8] state=
+poll[9] state=
+poll[10] state=
+poll[11] state=
+poll[12] state=
+poll[13] state=
+poll[14] state=
+poll[15] state=
+poll[16] state=
+poll[17] state=
+poll[18] state=
+poll[19] state=
+poll[20] state=
+poll[21] state=
+poll[22] state=
+poll[23] state=
+--- PD-side rule for the bound table (placement rules in PD) ---
+[
+  {
+    "group_id": "TiDB_DDL_112",
+    "id": "table_rule_112_0",
+    "index": 40,
+    "start_key": "7480000000000000ff7000000000000000f8",
+    "end_key": "7480000000000000ff7100000000000000f8",
+    "role": "voter",
+    "is_witness": false,
+    "count": 3,
+    "label_constraints": [
+      {
+        "key": "region",
+        "op": "in",
+        "values": [
+          "t20rev"
+        ]
+      },
+      {
+        "key": "engine",
+        "op": "notIn",
+        "values": [
+          "tiflash"
+        ]
+      }
+    ],
+    "create_timestamp": 1793771335
+  },
+  {
+    "group_id": "pd",
+    "id": "default",
+    "start_key": "",
+    "end_key": "",
+    "role": "voter",
+    "is_witness": false,
+    "count": 3
+  }
+]
+
+=== case A-unbind: DEFAULT ===
+## SQL> ALTER TABLE t20topo.t PLACEMENT POLICY=DEFAULT
+## rc=0
+
+## SHOW> SHOW PLACEMENT FOR TABLE t20topo.t
+
+
+=== case B: proven-missing policy refuses, prior binding kept ===
+## SQL> CREATE PLACEMENT POLICY p_keep PRIMARY_REGION="t20rev" REGIONS="t20rev"
+## rc=0
+
+## SQL> ALTER TABLE t20topo.t PLACEMENT POLICY=p_keep
+## rc=0
+
+## SHOW> SELECT POLICY_NAME FROM information_schema.PLACEMENT_POLICIES WHERE POLICY_NAME='p_no_such'
+
+## SQL> ALTER TABLE t20topo.t PLACEMENT POLICY=p_no_such
+ERROR 8239 (HY000) at line 1: Unknown placement policy 'p_no_such'
+## rc=1
+
+## SHOW> SHOW PLACEMENT FOR TABLE t20topo.t
+Target	Placement	Scheduling_State
+TABLE t20topo.t	PRIMARY_REGION="t20rev" REGIONS="t20rev"	SCHEDULED
+
+
+=== case C: catalog-accepted but topologically unsatisfiable policy ===
+## SQL> CREATE PLACEMENT POLICY p_unsat PRIMARY_REGION="t20-noreg" REGIONS="t20-noreg"
+## rc=0
+
+## SHOW> SHOW CREATE PLACEMENT POLICY p_unsat
+Policy	Create Policy
+p_unsat	CREATE PLACEMENT POLICY `p_unsat` PRIMARY_REGION="t20-noreg" REGIONS="t20-noreg"
+
+## SQL> ALTER TABLE t20topo.t PLACEMENT POLICY=p_unsat
+ERROR 8243 (HY000) at line 1: "[PD:placement:ErrRuleContent]invalid rule content, rule 'table_rule_112_0' from rule group 'TiDB_DDL_112' can not match any store"
+
+## rc=1
+
+--- poll 30s ---
+poll[0] state=
+poll[1] state=
+poll[2] state=
+poll[3] state=
+poll[4] state=
+poll[5] state=
+## SHOW> SHOW PLACEMENT FOR TABLE t20topo.t
+Target	Placement	Scheduling_State
+TABLE t20topo.t	PRIMARY_REGION="t20rev" REGIONS="t20rev"	SCHEDULED
+
+--- cleanup case C objects (restore sane state) ---
+## SQL> ALTER TABLE t20topo.t PLACEMENT POLICY=DEFAULT
+## rc=0
+
+## SQL> DROP PLACEMENT POLICY p_unsat
+## rc=0
+
+## SQL> DROP PLACEMENT POLICY p_keep
+## rc=0
+
+## SQL> DROP PLACEMENT POLICY p_sat
+## rc=0
+
+=== residual policies ===
+## SHOW> SHOW PLACEMENT
+

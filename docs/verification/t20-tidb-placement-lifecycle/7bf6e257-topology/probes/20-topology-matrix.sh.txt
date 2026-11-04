@@ -1,0 +1,66 @@
+#!/bin/sh
+# T20 real-topology matrix — TiDB v8.5.0 real PD/TiKV cluster
+# M: mysql invocation on the client container
+M="docker exec deltascope-t20-topo-client mysql --protocol=tcp -h tidb0 -P 4000 -uroot"
+run() { echo "## SQL> $1"; $M -e "$1"; echo "## rc=$?"; echo; }
+show() { echo "## SHOW> $1"; $M -e "$1" 2>&1; echo; }
+
+echo '=== setup: dedicated schema+table ==='
+run "DROP DATABASE IF EXISTS t20topo"
+run "CREATE DATABASE t20topo"
+run "CREATE TABLE t20topo.t (id INT PRIMARY KEY, v VARCHAR(20))"
+run "INSERT INTO t20topo.t VALUES (1,'a'),(2,'b'),(3,'c')"
+echo
+
+echo '=== case A: satisfiable policy (region=t20rev covers all 3 stores) ==='
+run "CREATE PLACEMENT POLICY p_sat PRIMARY_REGION=\"t20rev\" REGIONS=\"t20rev\""
+show "SHOW CREATE PLACEMENT POLICY p_sat"
+run "ALTER TABLE t20topo.t PLACEMENT POLICY=p_sat"
+show "SHOW PLACEMENT FOR TABLE t20topo.t"
+show "SELECT POLICY_NAME, PRIMARY_REGION, REGIONS, LEADERS, FOLLOWERS FROM information_schema.PLACEMENT_POLICIES WHERE POLICY_NAME='p_sat'"
+echo '--- poll SCHEDULING_STATE (5s interval, max 120s) ---'
+i=0
+while [ $i -lt 24 ]; do
+  s=$($M -Nse "SELECT SCHEDULING_STATE FROM information_schema.PLACEMENT_POLICIES WHERE OBJECT_TYPE='TABLE' AND OBJECT_SCHEMA='t20topo' AND OBJECT_NAME='t'" 2>/dev/null)
+  t=$($M -Nse "SELECT SCHEDULING_STATE FROM (SELECT 1) d WHERE 0" 2>/dev/null)
+  st=$($M -Nse "SHOW PLACEMENT FOR TABLE t20topo.t" 2>/dev/null | awk 'NR>1{print $NF}')
+  echo "poll[$i] state=$st"
+  case "$st" in SCHEDULED) break;; esac
+  sleep 5; i=$((i+1))
+done
+echo '--- PD-side rule for the bound table (placement rules in PD) ---'
+docker exec deltascope-t20-topo-pd0 wget -q -O - 'http://127.0.0.1:2379/pd/api/v1/config/rules' | head -40
+echo
+echo '=== case A-unbind: DEFAULT ==='
+run "ALTER TABLE t20topo.t PLACEMENT POLICY=DEFAULT"
+show "SHOW PLACEMENT FOR TABLE t20topo.t"
+echo
+
+echo '=== case B: proven-missing policy refuses, prior binding kept ==='
+run "CREATE PLACEMENT POLICY p_keep PRIMARY_REGION=\"t20rev\" REGIONS=\"t20rev\""
+run "ALTER TABLE t20topo.t PLACEMENT POLICY=p_keep"
+show "SELECT POLICY_NAME FROM information_schema.PLACEMENT_POLICIES WHERE POLICY_NAME='p_no_such'"
+run "ALTER TABLE t20topo.t PLACEMENT POLICY=p_no_such"
+show "SHOW PLACEMENT FOR TABLE t20topo.t"
+echo
+
+echo '=== case C: catalog-accepted but topologically unsatisfiable policy ==='
+run "CREATE PLACEMENT POLICY p_unsat PRIMARY_REGION=\"t20-noreg\" REGIONS=\"t20-noreg\""
+show "SHOW CREATE PLACEMENT POLICY p_unsat"
+run "ALTER TABLE t20topo.t PLACEMENT POLICY=p_unsat"
+echo '--- poll 30s ---'
+i=0
+while [ $i -lt 6 ]; do
+  st=$($M -Nse "SHOW PLACEMENT FOR TABLE t20topo.t" 2>/dev/null | awk 'NR>1{print $NF}')
+  echo "poll[$i] state=$st"
+  case "$st" in SCHEDULED) break;; esac
+  sleep 5; i=$((i+1))
+done
+show "SHOW PLACEMENT FOR TABLE t20topo.t"
+echo '--- cleanup case C objects (restore sane state) ---'
+run "ALTER TABLE t20topo.t PLACEMENT POLICY=DEFAULT"
+run "DROP PLACEMENT POLICY p_unsat"
+run "DROP PLACEMENT POLICY p_keep"
+run "DROP PLACEMENT POLICY p_sat"
+echo '=== residual policies ==='
+show "SHOW PLACEMENT"

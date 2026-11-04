@@ -1,0 +1,14 @@
+=== case D: product audit against REAL cluster (metadata-aware) ===
+--- setup on real cluster ---
+--- D1: bind to existing policy (catalog-provable) ---
+[warning] ddl.tidb.placement.warn: PLACEMENT POLICY "p_cli" binds table "t2" to a topology policy
+[notice] ddl.tidb.alter_table.placement_policy.notice: ALTER TABLE t2 PLACEMENT POLICY assigns a placement policy
+[summary] loaded=456 applicable=12 skipped=190
+[context] mode=metadata-aware dialect=tidb dialect_source=detected schema=t20topo schema_source=flag
+cli rc=0
+
+--- D2: bind to missing policy (catalog-proven absent) ---
+[notice] ddl.tidb.alter_table.placement_policy.notice: ALTER TABLE t2 PLACEMENT POLICY assigns a placement policy
+[summary] loaded=456 applicable=12 skipped=190
+[context] mode=metadata-aware dialect=tidb dialect_source=detected schema=t20topo schema_source=flag
+cli rc=0

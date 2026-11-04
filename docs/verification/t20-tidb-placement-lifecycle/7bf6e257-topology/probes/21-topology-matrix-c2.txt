@@ -1,0 +1,23 @@
+=== case C2: replica-count unsatisfiable (FOLLOWERS=5 on 3 stores) ===
+## SQL> CREATE PLACEMENT POLICY p_5f FOLLOWERS=5
+## rc=0
+
+Policy	Create Policy
+p_5f	CREATE PLACEMENT POLICY `p_5f` FOLLOWERS=5
+
+## SQL> ALTER TABLE t20topo.t PLACEMENT POLICY=p_5f
+## rc=0
+
+Target	Placement	Scheduling_State
+TABLE t20topo.t	FOLLOWERS=5	PENDING
+
+--- poll SCHEDULING_STATE 15s ---
+Target	Placement	Scheduling_State
+TABLE t20topo.t	FOLLOWERS=5	PENDING
+Target	Placement	Scheduling_State
+TABLE t20topo.t	FOLLOWERS=5	PENDING
+Target	Placement	Scheduling_State
+TABLE t20topo.t	FOLLOWERS=5	PENDING
+--- restore: unbind + drop ---
+unbind rc=0
+drop rc=0
