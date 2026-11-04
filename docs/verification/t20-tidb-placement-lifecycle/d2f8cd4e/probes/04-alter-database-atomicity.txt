@@ -1,0 +1,6 @@
+== P2b: ALTER DATABASE atomicity — multi-option is a grammar 1064 ==
+ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your TiDB version for the right syntax to use line 1 column 43 near ", PLACEMENT POLICY=p20db_p" 
+multi-option rc=1
+ERROR 8239 (HY000) at line 1: Unknown placement policy 'missing'
+missing rc=1
+<null>
