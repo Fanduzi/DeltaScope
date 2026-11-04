@@ -507,7 +507,6 @@ func (r tidbPlacementExistsRequireRule) EvidenceGaps(statement spec.Statement) [
 	default:
 		return r.bindingGaps(statement)
 	}
-	return nil
 }
 
 // bindingGaps reports the binding records' missing premise: a refused
