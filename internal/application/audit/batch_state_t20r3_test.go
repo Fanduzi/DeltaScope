@@ -395,4 +395,16 @@ func TestT20R3TopologyGapAndMissingRefusal(t *testing.T) {
 			}
 		}
 	})
+
+	// P: a tombstoned policy's bound set is proven-empty (a nonexistent
+	// object binds nothing) — a bare re-drop adjudicates refused
+	// (missing-policy blocker), never unproven.
+	t.Run("re-drop of a tombstone refuses instead of gapping", func(t *testing.T) {
+		result := audit(t, boundProvider(), bothRules,
+			"DROP PLACEMENT POLICY p; DROP PLACEMENT POLICY p;")
+		found := findingsByRule(result, 1, "ddl.tidb.placement.exists.require")
+		if len(found) != 1 || found[0].Level != rule.LevelBlocker {
+			t.Fatalf("bare re-drop of a proven-absent policy must block (8239 parity), got %#v", result.Statements[1].Findings)
+		}
+	})
 }

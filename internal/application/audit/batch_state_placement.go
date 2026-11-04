@@ -231,6 +231,12 @@ func (s *batchState) placementBoundSet(name string) *[]string {
 		return nil
 	}
 	if !entry.refsKnown {
+		if entry.state == placementPolicyAbsent {
+			// A proven-absent policy binds nothing — proven-empty, not
+			// unvouched (mirrors the nil-entry arm above).
+			empty := []string{}
+			return &empty
+		}
 		return nil
 	}
 	refs := make([]string, 0, len(entry.refs))
@@ -375,11 +381,8 @@ func (s *batchState) applyAlterPlacementPolicy(statement spec.Statement) {
 	registry := s.placementPolicies()
 	switch spec.PlacementAlterOutcome(s.dialect, exists) {
 	case spec.PlacementApplied:
+		// exists is proven true here, so a present entry always exists.
 		entry := registry[name]
-		if entry == nil {
-			entry = &batchPlacementEntry{state: placementPolicyPresent, refs: map[string]struct{}{}, refsKnown: true}
-			registry[name] = entry
-		}
 		// ALTER PLACEMENT POLICY replaces the definition — probed on
 		// v8.5.0: SHOW CREATE after ALTER emits only the newly stated
 		// members; unstated prior members do not survive (T20-R1/#99).
