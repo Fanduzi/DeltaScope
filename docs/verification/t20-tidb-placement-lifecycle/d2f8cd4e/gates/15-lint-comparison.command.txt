@@ -1,0 +1,1 @@
+python3 - compare lint diagnostic identity vs docs/verification/t19-tidb-ttl-lifecycle/efc77a9c8479994ebf95238365ecbbf0c0f7f78f/gates

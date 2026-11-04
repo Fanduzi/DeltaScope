@@ -1,0 +1,29 @@
+== P4: schema binding stamps new tables; stamp outlives unbind ==
+p20r_e
+p20r_e
+POLICY p20r_e	FOLLOWERS=2	NULL
+POLICY p20r_p	FOLLOWERS=4	NULL
+TABLE p20s2.t	FOLLOWERS=2	PENDING
+TABLE p20r.t	FOLLOWERS=2	PENDING
+ERROR 8241 (HY000) at line 1: Placement policy 'p20r_e' is still in use
+drop rc=1
+<null>
+
+== P5: feature-comment classification ==
+comment-bind rc=0
+p20c_p2
+ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your TiDB version for the right syntax to use line 1 column 60 near "PRIMARY_REGION='r1' */" 
+direct-options rc=1
+ERROR 8239 (HY000) at line 1: Unknown placement policy 'missing'
+comment-missing rc=1
+alter-comment rc=0
+
+== P3: topology environment — unistore, no PD ==
+ERROR 1105 (HY000) at line 1: pd http client unavailable
+labels rc=1
+POLICY p20c_p2	FOLLOWERS=2	NULL
+POLICY p20r_e	FOLLOWERS=2	NULL
+POLICY p20r_p	FOLLOWERS=4	NULL
+TABLE p20s2.t	FOLLOWERS=2	PENDING
+TABLE p20r.a1	FOLLOWERS=4	PENDING
+TABLE p20r.t	FOLLOWERS=2	PENDING

@@ -1,0 +1,7 @@
+== P5-MySQL: /*T![placement]*/ is an ignored ordinary comment on MySQL 8.0.46 ==
+8.0.46
+comment-bind rc=0
+direct-options rc=0
+alter-comment rc=0
+ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'PLACEMENT POLICY=p' at line 1
+bare rc=1

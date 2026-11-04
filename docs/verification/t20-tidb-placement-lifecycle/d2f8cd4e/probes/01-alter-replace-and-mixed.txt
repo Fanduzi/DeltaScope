@@ -1,0 +1,24 @@
+# T20-R1 native probes — TiDB v8.5.0 (pingcap/tidb:v8.5.0, --store=unistore)
+# executed: 2026-11-04T01:43:53Z host=FanMac-mini-M4-Pro.local
+8.0.11-TiDB-v8.5.0
+
+== P1: ALTER PLACEMENT POLICY replaces the definition ==
+create rc=0
+p20r_p	CREATE PLACEMENT POLICY `p20r_p` PRIMARY_REGION="review-east" REGIONS="review-east,review-west"
+alter rc=0
+p20r_p	CREATE PLACEMENT POLICY `p20r_p` FOLLOWERS=4
+
+== P2: mixed ALTER — placement is a sole schema-change action ==
+ERROR 8239 (HY000) at line 1: Unknown placement policy 'missing_policy'
+A rc=1
+0
+ERROR 8239 (HY000) at line 1: Unknown placement policy 'missing_policy'
+B rc=1
+ERROR 8200 (HY000) at line 1: Unsupported multi schema change for alter table placement
+C rc=1
+0
+D rc=0
+ERROR 8200 (HY000) at line 1: Unsupported multi schema change for alter table placement
+E rc=1
+lock rc=0
+copy rc=0
