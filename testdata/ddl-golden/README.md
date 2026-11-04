@@ -18,6 +18,23 @@ of a finding. `SHOW CREATE TABLE` native receipts travel as `execute`
 observations; information_schema scalars pin every mutable fact. The
 manifest declares expectations only — it is not a passing-result claim.
 
+## T20 placement binding contract
+
+[T20.json](T20.json) retains the original 25 case definitions. T20-R4 adds
+seven live metadata cases and three offline controls: CREATE with a later
+missing policy or repeated policy on distinct members; ADD/REORGANIZE member
+refusal and successful binding followed by a bound-policy DROP; unknown
+catalog controls for all three forms; and the TiDB 8.5.0 ignored-subpartition
+boundary with a retained parent binding.
+
+Member findings pin policy and schema/table/partition identity. Applied
+bindings retain a separate topology gap; known refusals have no contradictory
+placement warning. Native queries prove server catalog behavior, while
+`batch_state_t20r4_test.go` companions prove private ordered projections.
+The [contract](../../docs/work-plans/t20-tidb-placement-lifecycle/CONTRACT.md)
+defines the distinction and version scope. Historical artifacts remain
+unchanged; assertion counts are computed from each completed run.
+
 ## T17 schema-lifecycle contract
 
 [T17.json](T17.json) retains the original 47 required cases and adds five
