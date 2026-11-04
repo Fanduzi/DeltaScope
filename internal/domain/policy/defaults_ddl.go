@@ -756,6 +756,7 @@ func ddlCoreRules() map[string]RulePolicy {
 		"ddl.alter.drop_foreign_key.notice":            {Enabled: true, Level: rule.LevelNotice, Params: map[string]any{}},
 		"ddl.tidb.alter_table.placement_policy.notice": {Enabled: true, Level: rule.LevelNotice, Params: map[string]any{}},
 		"ddl.tidb.placement.warn":                      {Enabled: true, Level: rule.LevelWarning, Params: map[string]any{}},
+		"ddl.tidb.placement.exists.require":            {Enabled: true, Level: rule.LevelBlocker, Params: map[string]any{}},
 		"ddl.tidb.alter.compat_options.notice":         {Enabled: true, Level: rule.LevelNotice, Params: map[string]any{}},
 	}
 }

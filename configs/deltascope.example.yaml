@@ -1052,6 +1052,11 @@ rules:
     level: warning
     params:
 
+  ddl.tidb.placement.exists.require:
+    enabled: true
+    level: blocker
+    params:
+
   ddl.tidb.ttl.warn:
     enabled: true
     level: warning

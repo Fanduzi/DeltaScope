@@ -39,6 +39,28 @@ type PlacementPolicyFact struct {
 	BoundTargets  []string `json:"bound_targets,omitempty"`
 }
 
+// PlacementTopologyFacts is the bounded, proven observation of the
+// topology prerequisites behind a placement action — a different evidence
+// layer from the catalog: where the policy *could physically deploy*.
+// A nil Metadata.PlacementTopology means topology was never read; rules
+// surface that absence as a structured evidence gap rather than implying
+// verified deployability (issue #99: 拓扑未知给gap而非猜测可部署).
+//
+// The projection is deliberately bounded: label keys/values and scheduling
+// state are provider-visible facts, never constraint bodies copied from
+// authored SQL, and the whole structure stays off public JSON (json:"-").
+type PlacementTopologyFacts struct {
+	// StoreLabels is the proven label universe (SHOW PLACEMENT LABELS):
+	// label key → observed values across stores. nil means labels were
+	// never read.
+	StoreLabels map[string][]string `json:"-"`
+	// SchedulingState is the bound target's proven SCHEDULING_STATE
+	// (PENDING|INPROGRESS|SCHEDULED) when observed. Empty means not
+	// observed — and PENDING is an observed pending state, never itself
+	// proof of satisfaction or failure.
+	SchedulingState string `json:"-"`
+}
+
 // PlacementBindOutcome adjudicates `PLACEMENT POLICY = <name|DEFAULT>`
 // against policy existence. DEFAULT is the unconditional unbind and always
 // applies; a named policy applies only when existence is proven (native

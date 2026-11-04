@@ -124,6 +124,52 @@ dialect they can carry no placement semantics at all (T20-R2).
    probe (1064) was a grammar boundary, not the multi-option grammar —
    whitespace-separated `DatabaseOptionList` is the legal form.
 
+### T20-R3 — catalog premise rule and the topology evidence gap
+
+Two contract gaps surfaced when the real PD/TiKV fixture ran and the
+acceptance review re-read #99 against the shipped profile:
+
+10. **`ddl.tidb.placement.exists.require` owns the catalog premise
+    (blocker).** The warn rule's job is binding risk on *applied*
+    outcomes, so disabling it — or simply never firing it — left a
+    proven-absent policy reference silently passing (`pass/0/0`). The
+    new rule adjudicates the existence premise independently of the
+    risk warning: a proven-absent named reference refuses as a blocker
+    (8239 parity), a proven-bound policy drop refuses (8241 parity),
+    and a bare `CREATE POLICY` on a proven-existing name refuses.
+    `OR REPLACE`/`IF NOT EXISTS`/`IF EXISTS` disarmed forms and
+    `= DEFAULT` unbinds carry no premise and stay silent; an
+    unvouched catalog or bound-target set yields that rule's own
+    `placement_policy.catalog`/`placement_policy.bound_targets` gaps.
+    Ordered state already refused these paths — the change surfaces
+    the refusal in public findings instead of letting the internal
+    state alone imply it.
+11. **Unknown topology is a structured gap, not a suggestion.** #99
+    requires 拓扑未知给gap而非猜测可部署; previously an applied bind
+    produced only the binding-risk warning and `coverage=complete`,
+    which implied deployability the product never verified. The warn
+    rule now emits a `placement_policy.topology` evidence gap for
+    topology-relevant applied outcomes — binds and policy ALTERs that
+    reassign live placement — while `Metadata.PlacementTopology` is
+    nil. `spec.PlacementTopologyFacts` (label universe + observed
+    `SCHEDULING_STATE`, `json:"-"`) is defined as the receiving slot;
+    no provider populates it yet, so the gap fires honestly on every
+    applied bind — including against a real cluster whose topology is
+    provably satisfiable. CREATE/DROP policy, DEFAULT unbinds, and
+    refused/unproven outcomes carry no topology premise and never
+    stack the gap.
+12. **Real-cluster evidence bounds the deferral.** A disposable
+    1×PD + 3×TiKV + 1×TiDB v8.5.0 fixture (labels `region=t20rev`,
+    `zone=z1..z3`, `host=h1..h3`, STRICT mode) proved the native
+    spectrum this contract separates: satisfiable bind → `SCHEDULED`;
+    missing policy → 8239 with the prior binding preserved;
+    label-unmatchable policy → 8243 refused at bind time; a
+    replica-count policy (FOLLOWERS=5 vs 3 stores) → bind accepted and
+    persistently `PENDING`. Receipts live under
+    `docs/verification/t20-tidb-placement-lifecycle/` beside the
+    compose manifest; they bound the semantics the rules model but do
+    not claim the product evaluates topology.
+
 ## Consequences
 
 - TiDB placement statements are promoted from the unaudited gap list to
@@ -135,7 +181,16 @@ dialect they can carry no placement semantics at all (T20-R2).
 - Deferred/unmodeled: `PLACEMENT POLICY` option *values* do not drive
   state beyond bounded display facts; `SHOW PLACEMENT`,
   `SHOW PLACEMENT FOR`, label schedules, and topology/PD facts are not
-  modeled and are called out as evidence gaps where relevant.
+  modeled. Applied binds carry the structured
+  `placement_policy.topology` gap until a provider wires
+  `PlacementTopologyFacts`; missing-policy and bound-drop refusals are
+  public blocker findings, not silent state.
+- Golden oracle corrections (T20-R3, case IDs preserved):
+  `tidb85-bind-missing-refused`, `tidb85-drop-bound-refused`, and
+  `tidb85-alterdb-partial` now expect `reject`/blocker/exit 1; the four
+  applied-bind cases expect `unverified` + the topology gap; the four
+  catalog-gap CLI cases expect two per-rule `placement_policy.catalog`
+  gaps.
 
 ## Verification
 
@@ -147,5 +202,12 @@ dialect they can carry no placement semantics at all (T20-R2).
   table/schema/partition/range scope, 8239/8241 refusals, `= DEFAULT`
   unbind, `ALTER RANGE dist` 1105 — executed during development and
   encoded as `T20` Golden metadata cases.
-- Golden: `testdata/ddl-golden/T20.json` — 23 required case IDs across
+- Golden: `testdata/ddl-golden/T20.json` — 25 required case IDs across
   four anchors; native receipts are evidence, not topology claims.
+- T20-R3 public-path matrix: `batch_state_t20r3_test.go` — topology gap
+  on applied binds/policy ALTERs, per-rule catalog-gap ownership,
+  exists.require blocker on proven refusals, disarmed-premise silence,
+  and fail-loud provider errors.
+- Corpus: `testdata/sql-corpus/tidb/ddl/findings/placement_policy_missing.*`
+  covers `ddl.tidb.placement.exists.require` on the supported-rule
+  inventory.

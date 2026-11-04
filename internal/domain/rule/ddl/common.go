@@ -219,6 +219,7 @@ const (
 	ruleIDTiDBTTLWarn = "ddl.tidb.ttl.warn"
 	// T20: TiDB placement-policy lifecycle and bindings.
 	ruleIDTiDBPlacementWarn                                 = "ddl.tidb.placement.warn"
+	ruleIDTiDBPlacementExistsRequire                        = "ddl.tidb.placement.exists.require"
 	ruleIDViewCreateForbid                                  = "ddl.view.create.forbid"
 	ruleIDViewDropForbid                                    = "ddl.view.drop.forbid"
 	ruleIDTableDropForbid                                   = "ddl.table.drop.forbid"

@@ -41,6 +41,13 @@ type Metadata struct {
 	// proven inbound-reference set the 8241 drop refusal consults
 	// (issue #99 T20).
 	PlacementPolicies map[string]*PlacementPolicyFact `json:"-"`
+	// PlacementTopology carries the proven topology-prerequisite facts for
+	// a placement action — label universe plus observed scheduling state —
+	// a separate evidence layer from the catalog. nil means topology was
+	// never read; rules translate that absence into a structured
+	// placement_policy.topology evidence gap instead of implying verified
+	// deployability (issue #99 T20-R3).
+	PlacementTopology *PlacementTopologyFacts `json:"-"`
 	// SchemaTarget binds a schema-scoped statement (CREATE/ALTER/DROP
 	// DATABASE|SCHEMA) to its ordered pre-state projection: confirmed
 	// schema attributes when the identity is provably present, an empty

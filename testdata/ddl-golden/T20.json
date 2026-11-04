@@ -109,6 +109,9 @@
     "enable": {
      "ddl.tidb.placement.warn": {
       "level": "warning"
+     },
+     "ddl.tidb.placement.exists.require": {
+      "level": "blocker"
      }
     }
    }
@@ -152,11 +155,11 @@
     "findings": 1,
     "diagnostics": 0,
     "unsupported": 0,
-    "coverage": "complete",
+    "coverage": "unverified",
     "statement_coverage": [
-     "complete"
+     "unverified"
     ],
-    "evidence_gaps": 0,
+    "evidence_gaps": 1,
     "finding_entries": [
      {
       "index": 0,
@@ -164,7 +167,17 @@
       "level": "warning"
      }
     ],
-    "fail_on_triggered": false
+    "fail_on_triggered": false,
+    "evidence_gap_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.tidb.placement.warn",
+      "reason_code": "unknown_table_state",
+      "required_facts": [
+       "placement_policy.topology"
+      ]
+     }
+    ]
    },
    "execute": [
     {
@@ -231,10 +244,10 @@
     }
    ],
    "expect": {
-    "exit": 0,
-    "verdict": "pass",
+    "exit": 1,
+    "verdict": "reject",
     "statements": 1,
-    "findings": 0,
+    "findings": 1,
     "diagnostics": 0,
     "unsupported": 0,
     "coverage": "complete",
@@ -242,7 +255,14 @@
      "complete"
     ],
     "evidence_gaps": 0,
-    "fail_on_triggered": false
+    "fail_on_triggered": true,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.tidb.placement.exists.require",
+      "level": "blocker"
+     }
+    ]
    },
    "execute": [
     {
@@ -377,10 +397,10 @@
     }
    ],
    "expect": {
-    "exit": 0,
-    "verdict": "pass",
+    "exit": 1,
+    "verdict": "reject",
     "statements": 1,
-    "findings": 0,
+    "findings": 1,
     "diagnostics": 0,
     "unsupported": 0,
     "coverage": "complete",
@@ -388,7 +408,14 @@
      "complete"
     ],
     "evidence_gaps": 0,
-    "fail_on_triggered": false
+    "fail_on_triggered": true,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.tidb.placement.exists.require",
+      "level": "blocker"
+     }
+    ]
    },
    "execute": [
     {
@@ -443,17 +470,27 @@
     "findings": 1,
     "diagnostics": 0,
     "unsupported": 0,
-    "coverage": "complete",
+    "coverage": "unverified",
     "statement_coverage": [
-     "complete"
+     "unverified"
     ],
-    "evidence_gaps": 0,
+    "evidence_gaps": 1,
     "fail_on_triggered": false,
     "finding_entries": [
      {
       "index": 0,
       "rule_id": "ddl.tidb.placement.warn",
       "level": "warning"
+     }
+    ],
+    "evidence_gap_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.tidb.placement.warn",
+      "reason_code": "unknown_table_state",
+      "required_facts": [
+       "placement_policy.topology"
+      ]
      }
     ]
    },
@@ -517,11 +554,11 @@
     "findings": 1,
     "diagnostics": 0,
     "unsupported": 0,
-    "coverage": "complete",
+    "coverage": "unverified",
     "statement_coverage": [
-     "complete"
+     "unverified"
     ],
-    "evidence_gaps": 0,
+    "evidence_gaps": 1,
     "finding_entries": [
      {
       "index": 0,
@@ -529,7 +566,17 @@
       "level": "warning"
      }
     ],
-    "fail_on_triggered": false
+    "fail_on_triggered": false,
+    "evidence_gap_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.tidb.placement.warn",
+      "reason_code": "unknown_table_state",
+      "required_facts": [
+       "placement_policy.topology"
+      ]
+     }
+    ]
    },
    "execute": [
     {
@@ -591,11 +638,11 @@
     "findings": 1,
     "diagnostics": 0,
     "unsupported": 0,
-    "coverage": "complete",
+    "coverage": "unverified",
     "statement_coverage": [
-     "complete"
+     "unverified"
     ],
-    "evidence_gaps": 0,
+    "evidence_gaps": 1,
     "finding_entries": [
      {
       "index": 0,
@@ -603,7 +650,17 @@
       "level": "warning"
      }
     ],
-    "fail_on_triggered": false
+    "fail_on_triggered": false,
+    "evidence_gap_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.tidb.placement.warn",
+      "reason_code": "unknown_table_state",
+      "required_facts": [
+       "placement_policy.topology"
+      ]
+     }
+    ]
    },
    "execute": [
     {
@@ -645,10 +702,10 @@
     }
    ],
    "expect": {
-    "exit": 0,
-    "verdict": "pass",
+    "exit": 1,
+    "verdict": "reject",
     "statements": 1,
-    "findings": 0,
+    "findings": 1,
     "diagnostics": 0,
     "unsupported": 0,
     "coverage": "complete",
@@ -656,7 +713,14 @@
      "complete"
     ],
     "evidence_gaps": 0,
-    "fail_on_triggered": false
+    "fail_on_triggered": true,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.tidb.placement.exists.require",
+      "level": "blocker"
+     }
+    ]
    },
    "execute": [
     {
@@ -709,8 +773,26 @@
     "statement_coverage": [
      "unverified"
     ],
-    "evidence_gaps": 1,
-    "fail_on_triggered": false
+    "evidence_gaps": 2,
+    "fail_on_triggered": false,
+    "evidence_gap_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.tidb.placement.warn",
+      "reason_code": "unknown_table_state",
+      "required_facts": [
+       "placement_policy.catalog"
+      ]
+     },
+     {
+      "index": 0,
+      "rule_id": "ddl.tidb.placement.exists.require",
+      "reason_code": "unknown_table_state",
+      "required_facts": [
+       "placement_policy.catalog"
+      ]
+     }
+    ]
    }
   },
   {
@@ -733,8 +815,26 @@
     "statement_coverage": [
      "unverified"
     ],
-    "evidence_gaps": 1,
-    "fail_on_triggered": false
+    "evidence_gaps": 2,
+    "fail_on_triggered": false,
+    "evidence_gap_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.tidb.placement.warn",
+      "reason_code": "unknown_table_state",
+      "required_facts": [
+       "placement_policy.catalog"
+      ]
+     },
+     {
+      "index": 0,
+      "rule_id": "ddl.tidb.placement.exists.require",
+      "reason_code": "unknown_table_state",
+      "required_facts": [
+       "placement_policy.catalog"
+      ]
+     }
+    ]
    }
   },
   {
@@ -781,8 +881,27 @@
     "statement_coverage": [
      "unverified"
     ],
-    "evidence_gaps": 1,
-    "fail_on_triggered": false
+    "evidence_gaps": 2,
+    "fail_on_triggered": false,
+    "evidence_gap_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.tidb.placement.warn",
+      "reason_code": "unknown_table_state",
+      "required_facts": [
+       "placement_policy.catalog",
+       "placement_policy.bound_targets"
+      ]
+     },
+     {
+      "index": 0,
+      "rule_id": "ddl.tidb.placement.exists.require",
+      "reason_code": "unknown_table_state",
+      "required_facts": [
+       "placement_policy.catalog"
+      ]
+     }
+    ]
    }
   },
   {
@@ -805,8 +924,26 @@
     "statement_coverage": [
      "unverified"
     ],
-    "evidence_gaps": 1,
-    "fail_on_triggered": false
+    "evidence_gaps": 2,
+    "fail_on_triggered": false,
+    "evidence_gap_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.tidb.placement.warn",
+      "reason_code": "unknown_table_state",
+      "required_facts": [
+       "placement_policy.catalog"
+      ]
+     },
+     {
+      "index": 0,
+      "rule_id": "ddl.tidb.placement.exists.require",
+      "reason_code": "unknown_table_state",
+      "required_facts": [
+       "placement_policy.catalog"
+      ]
+     }
+    ]
    }
   },
   {

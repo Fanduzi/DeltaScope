@@ -1,0 +1,30 @@
+name: placement_policy_missing
+dialect: tidb
+category: ddl
+expect:
+  parse_ok: true
+  statements:
+    count: 1
+  unsupported:
+    count: 0
+  findings:
+    include:
+      - ddl.tidb.placement.exists.require
+    exclude:
+      - ddl.tidb.placement.warn
+metadata:
+  schema: golden
+  instance:
+    version: "8.0.11-TiDB-v8.5.0"
+  tables:
+    t20:
+      exists: true
+      placement_policy_known: true
+      columns:
+        - {name: id, type: int}
+      options:
+        engine: InnoDB
+  placement_policies:
+    p20:
+      primary_region: r1
+      regions: r1

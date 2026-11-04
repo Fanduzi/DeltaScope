@@ -410,6 +410,7 @@ func Register(registry *rule.Registry, cfg policy.Policy) error {
 		{ruleID: ruleIDAlterTableOptionWarn, construct: newAlterTableOptionWarnRule},
 		{ruleID: ruleIDTiDBTTLWarn, construct: newTiDBTTLWarnRule},
 		{ruleID: ruleIDTiDBPlacementWarn, construct: newTiDBPlacementWarnRule},
+		{ruleID: ruleIDTiDBPlacementExistsRequire, construct: newTiDBPlacementExistsRequireRule},
 		{ruleID: ruleIDAlterColumnDependencyRequire, construct: newColumnDependencyRule},
 		{ruleID: ruleIDColumnAdvancedCompatibilityRequire, construct: newAdvancedCompatibilityRule},
 		{ruleID: ruleIDAlterModifyColumnExplicitNullabilityChangeForbid, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
