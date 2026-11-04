@@ -171,7 +171,21 @@ acceptance review re-read #99 against the shipped profile:
     a provider fact whose `BoundTargets` was nil (unread) seeded
     `refsKnown=true`, laundering "bound set unvouched" into "provably
     unbound" — `refsKnown` is now only set when the provider read is
-    present.
+    present. A second review pass tightened the same surfaces: `IF
+    EXISTS` disarms only the existence premise — the bound set stays
+    live because native 8241 refuses a bound policy under the clause
+    too, so `exists.require` reports drop gaps under `IF EXISTS` with
+    identical attribution while a proven-absent no-op stays silent; a
+    table-level `= DEFAULT` is an unbind, not a binding, so the shared
+    named-binding scan (both rules) skips it and keeps looking — a
+    `CREATE TABLE` carrying table-level `DEFAULT` beside named
+    partition binds now reaches warn and exists.require identically;
+    `CREATE OR REPLACE` over an unvouched catalog owes the warn rule's
+    catalog gap because bound-rewrite relevance is undecidable
+    (exists.require stays disarmed — OR REPLACE genuinely cannot
+    refuse); a fresh create over a tombstone seeds a proven-empty bound
+    set rather than leaving it unvouched; and a proven no-op `IF
+    EXISTS` drop no longer claims it "removes a topology policy".
 13. **Real-cluster evidence bounds the deferral.** A disposable
     1×PD + 3×TiKV + 1×TiDB v8.5.0 fixture (labels `region=t20rev`,
     `zone=z1..z3`, `host=h1..h3`, STRICT mode) proved the native

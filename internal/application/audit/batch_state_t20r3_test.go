@@ -280,4 +280,84 @@ func TestT20R3TopologyGapAndMissingRefusal(t *testing.T) {
 			t.Fatalf("or_replace on a proven-absent policy is a legal create, got %#v", result.Statements[1].Findings)
 		}
 	})
+
+	// K: IF EXISTS disarms only the existence premise — the bound set
+	// stays live because native 8241 ignores the clause. A proven-existing
+	// policy with an unvouched bound set owes bound_targets on BOTH rules,
+	// and a proven-bound one still blocks under IF EXISTS.
+	t.Run("if_exists keeps the bound premise alive", func(t *testing.T) {
+		provider := boundProvider()
+		provider.placement["p_nobounds"] = &spec.PlacementPolicyFact{BoundTargets: nil}
+		result := audit(t, provider, bothRules, "DROP PLACEMENT POLICY IF EXISTS p_nobounds;")
+		for _, id := range []string{"ddl.tidb.placement.warn", "ddl.tidb.placement.exists.require"} {
+			facts := gapFactsOf(result, 0, id)
+			if len(facts) != 1 || facts[0] != "placement_policy.bound_targets" {
+				t.Fatalf("%s must owe bound_targets under IF EXISTS too, got %v", id, facts)
+			}
+		}
+		found := findingsByRule(result, 0, "ddl.tidb.placement.exists.require")
+		if len(found) != 0 {
+			t.Fatalf("unproven drop must not fabricate a finding, got %#v", found)
+		}
+		result = audit(t, boundProvider(), bothRules, "DROP PLACEMENT POLICY IF EXISTS p_bound;")
+		found = findingsByRule(result, 0, "ddl.tidb.placement.exists.require")
+		if len(found) != 1 || found[0].Level != rule.LevelBlocker {
+			t.Fatalf("proven-bound policy must still block under IF EXISTS (8241 ignores the clause), got %#v", result.Statements[0].Findings)
+		}
+	})
+
+	// L: a table-level = DEFAULT is an unbind, not a binding — the shared
+	// scan must keep looking so a named partition bind after it reaches
+	// both rules identically (warn was previously silent here).
+	t.Run("table-level DEFAULT does not hide a named partition bind", func(t *testing.T) {
+		sqlText := "CREATE TABLE nt (id INT) PLACEMENT POLICY = DEFAULT PARTITION BY RANGE (id) " +
+			"(PARTITION p0 VALUES LESS THAN (10) PLACEMENT POLICY = ghost);"
+		result := audit(t, boundProvider(), bothRules, sqlText)
+		found := findingsByRule(result, 0, "ddl.tidb.placement.exists.require")
+		if len(found) != 1 || found[0].Level != rule.LevelBlocker {
+			t.Fatalf("named partition bind to a proven-absent policy must block, got %#v", result.Statements[0].Findings)
+		}
+		sqlText = "CREATE TABLE nt (id INT) PLACEMENT POLICY = DEFAULT PARTITION BY RANGE (id) " +
+			"(PARTITION p0 VALUES LESS THAN (10) PLACEMENT POLICY = p);"
+		result = audit(t, boundProvider(), bothRules, sqlText)
+		if len(findingsByRule(result, 0, "ddl.tidb.placement.warn")) != 1 {
+			t.Fatalf("the partition bind must reach the warn rule too, got %#v", result.Statements[0].Findings)
+		}
+		if !hasGap(result, 0, "ddl.tidb.placement.warn", "placement_policy.topology") {
+			t.Fatalf("applied partition bind owes the topology gap, got %#v", gapsOf(result, 0))
+		}
+	})
+
+	// M: OR REPLACE over an unvouched catalog — the create lands and warns,
+	// but whether bound objects were rewritten is undecidable: the warn
+	// rule owes the catalog fact rather than staying silent on the premise.
+	t.Run("or_replace over unvouched catalog owes the catalog gap", func(t *testing.T) {
+		provider := boundProvider()
+		provider.placement = nil
+		result := audit(t, provider, bothRules, "CREATE OR REPLACE PLACEMENT POLICY p FOLLOWERS=2;")
+		if len(findingsByRule(result, 0, "ddl.tidb.placement.warn")) != 1 {
+			t.Fatalf("or_replace still lands a policy — warn must fire, got %#v", result.Statements[0].Findings)
+		}
+		if !hasGap(result, 0, "ddl.tidb.placement.warn", "placement_policy.catalog") {
+			t.Fatalf("bound-rewrite relevance is undecidable — warn owes the catalog gap, got %#v", gapsOf(result, 0))
+		}
+	})
+
+	// N: a fresh create over a tombstone starts with a proven-empty bound
+	// set — a later drop applies cleanly instead of over-gapping.
+	t.Run("fresh create resets the bound set to proven-empty", func(t *testing.T) {
+		result := audit(t, boundProvider(), bothRules,
+			"DROP PLACEMENT POLICY p; "+
+				"CREATE PLACEMENT POLICY p PRIMARY_REGION='r1' REGIONS='r1' FOLLOWERS=1; "+
+				"DROP PLACEMENT POLICY p;")
+		if len(findingsByRule(result, 2, "ddl.tidb.placement.exists.require")) != 0 {
+			t.Fatalf("drop of a freshly-created policy must not block, got %#v", result.Statements[2].Findings)
+		}
+		if facts := gapFactsOf(result, 2, "ddl.tidb.placement.warn"); len(facts) != 0 {
+			t.Fatalf("fresh policy's bound set is proven-empty — no bound_targets gap owed, got %v", facts)
+		}
+		if len(findingsByRule(result, 2, "ddl.tidb.placement.warn")) != 1 {
+			t.Fatalf("proven drop must still warn, got %#v", result.Statements[2].Findings)
+		}
+	})
 }

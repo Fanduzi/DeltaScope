@@ -329,6 +329,13 @@ func (s *batchState) applyCreatePlacementPolicy(statement spec.Statement) error 
 		if entry == nil {
 			entry = &batchPlacementEntry{refs: map[string]struct{}{}, refsKnown: true}
 			registry[name] = entry
+		} else if entry.state != placementPolicyPresent {
+			// A fresh create over a tombstone starts with a proven-empty
+			// bound set — nothing could bind to a policy that did not
+			// exist (OR REPLACE over a present entry keeps its refs:
+			// bound objects keep referencing the name — probed).
+			entry.refs = map[string]struct{}{}
+			entry.refsKnown = true
 		}
 		entry.state = placementPolicyPresent
 		if orReplace {
