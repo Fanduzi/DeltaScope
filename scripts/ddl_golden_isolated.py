@@ -25,6 +25,7 @@ import importlib.util
 import json
 import os
 import pathlib
+import re
 import secrets
 import sys
 
@@ -43,6 +44,7 @@ DENIED_ENDPOINTS = (
     ".docker/run/docker.sock",
 )
 MYSQL_DATA_DIR = "/var/lib/mysql"
+NOT_FOUND_RE = re.compile(r"no such|not found|does not exist", re.IGNORECASE)
 
 
 def utc_stamp():
@@ -77,17 +79,28 @@ class IsoRun:
             "containers": [],
             "networks": [],
             "volumes": [],
+            "generations": [],
             "actions": [],
         }
         # Every subprocess spawned by ddl_golden inherits this environment:
         # compose(), docker exec, health probes, and docker version all pin
         # to the isolated daemon. DOCKER_CONTEXT is cleared so a stray
-        # context cannot reroute calls back to the host default.
+        # context cannot reroute calls back to the host default — the
+        # removal is recorded once it happens, never silently.
+        self._cleared_context = os.environ.get("DOCKER_CONTEXT")
         self.env = dict(os.environ)
         self.env["DOCKER_HOST"] = self.daemon
         self.env.pop("DOCKER_CONTEXT", None)
 
     def record(self, action, rc, detail=""):
+        if getattr(self, "_cleared_context", None) is not None:
+            self.receipts["actions"].append(
+                {"action": "env.docker_context.cleared", "rc": 0,
+                 "detail": f"DOCKER_CONTEXT={self._cleared_context!r} removed "
+                           "from this task's child env only",
+                 "at": utc_stamp()}
+            )
+            self._cleared_context = None
         self.receipts["actions"].append(
             {"action": action, "rc": rc, "detail": detail[:2000], "at": utc_stamp()}
         )
@@ -113,10 +126,73 @@ class IsoRun:
             env=self.env,
         )
 
-    # -- preflight ------------------------------------------------------
+    # -- object inspection: ok / notfound / error are distinct verdicts --
 
-    def preflight(self, manifest):
-        """Verify daemon identity, capture it, and refuse host daemons."""
+    @staticmethod
+    def _verdict(rc, err):
+        """Classify an inspect failure: only an explicit NotFound may be
+        treated as 'gone'. Daemon unreachable, permission denied, context
+        errors and timeouts are 'error' — never idempotent absence."""
+        if rc == 0:
+            return "ok"
+        return "notfound" if NOT_FOUND_RE.search(err or "") else "error"
+
+    def _inspect_container(self, ref):
+        try:
+            rc, out, err = self.docker(
+                "inspect", "--format",
+                "{{.Id}}|{{.Name}}|"
+                "{{index .Config.Labels \"org.deltascope.run\"}}|"
+                "{{.Image}}|{{json .Mounts}}",
+                ref, timeout=30,
+            )
+        except Exception as exc:  # subprocess timeout / OSError
+            return {"verdict": "error", "detail": str(exc)}
+        verdict = self._verdict(rc, err)
+        if verdict != "ok":
+            return {"verdict": verdict, "detail": (err or "").strip()}
+        parts = out.strip().split("|", 4)
+        parts += [""] * (5 - len(parts))
+        try:
+            mounts = json.loads(parts[4]) if parts[4] else []
+        except json.JSONDecodeError:
+            mounts = []
+        return {"verdict": "ok", "id": parts[0], "name": parts[1].lstrip("/"),
+                "label": parts[2], "image": parts[3], "mounts": mounts}
+
+    def _inspect_network(self, nid):
+        try:
+            rc, out, err = self.docker(
+                "network", "inspect", "--format",
+                "{{index .Labels \"com.docker.compose.project\"}}",
+                nid, timeout=30,
+            )
+        except Exception as exc:
+            return {"verdict": "error", "detail": str(exc)}
+        verdict = self._verdict(rc, err)
+        if verdict != "ok":
+            return {"verdict": verdict, "detail": (err or "").strip()}
+        return {"verdict": "ok", "project": out.strip()}
+
+    def _inspect_volume(self, name):
+        try:
+            rc, out, err = self.docker(
+                "volume", "inspect", "--format",
+                "{{.Driver}}|{{index .Labels \"org.deltascope.run\"}}",
+                name, timeout=30,
+            )
+        except Exception as exc:
+            return {"verdict": "error", "detail": str(exc)}
+        verdict = self._verdict(rc, err)
+        if verdict != "ok":
+            return {"verdict": verdict, "detail": (err or "").strip()}
+        parts = out.strip().split("|")
+        return {"verdict": "ok", "driver": parts[0],
+                "label": parts[1] if len(parts) > 1 else ""}
+
+    # -- daemon binding --------------------------------------------------
+
+    def _capture_daemon_identity(self):
         rc, out, err = self.docker("info", "--format", "{{json .}}", timeout=30)
         if rc != 0:
             raise SystemExit(f"[iso][FAIL] isolated daemon unreachable: {err.strip()}")
@@ -128,6 +204,44 @@ class IsoRun:
             "docker_version": info.get("ServerVersion"),
         }
         self.receipts["daemon_identity"] = identity
+        return identity
+
+    def _verify_daemon_binding(self):
+        """Teardown only runs against the daemon this run's receipts
+        recorded: same endpoint string AND same live server ID. Anything
+        else — different endpoint, unreachable daemon, foreign server —
+        refuses before a single object is touched."""
+        want = self.receipts.get("daemon_endpoint")
+        if not want or self.daemon != want:
+            self.record("daemon.endpoint.mismatch", 1,
+                        f"arg={self.daemon} recorded={want}")
+            raise SystemExit(
+                f"[iso][FAIL] endpoint {self.daemon!r} does not match "
+                f"receipts endpoint {want!r}"
+            )
+        ident = (self.receipts.get("daemon_identity") or {}).get("server_id")
+        try:
+            rc, out, err = self.docker("info", "--format", "{{.ID}}", timeout=30)
+        except Exception as exc:
+            rc, out, err = 1, "", str(exc)
+        if rc != 0:
+            self.record("daemon.unreachable", 1, (err or "").strip())
+            raise SystemExit(
+                "[iso][FAIL] cannot verify daemon identity — daemon unreachable"
+            )
+        live = out.strip()
+        if not ident or live != ident:
+            self.record("daemon.identity.mismatch", 1,
+                        f"recorded={ident} live={live}")
+            raise SystemExit(
+                "[iso][FAIL] live daemon ID does not match creation-time identity"
+            )
+
+    # -- preflight ------------------------------------------------------
+
+    def preflight(self, manifest):
+        """Verify daemon identity, capture it, and refuse host daemons."""
+        identity = self._capture_daemon_identity()
         self.record("preflight.info", 0, json.dumps(identity))
         name = (identity.get("name") or "").lower()
         if "docker desktop" in name or identity.get("os") == "Docker Desktop":
@@ -173,10 +287,165 @@ class IsoRun:
         self._volumes = volumes
         return override
 
+    # -- append-only generation ledger ------------------------------------
+    #
+    # Every controlled create/up is followed by a capture pass that reads
+    # the daemon's real object identities and APPENDS them as a new
+    # generation. Teardown consumes only IDs and names the ledger holds;
+    # a live object that shares our name and labels but was never captured
+    # is refused, never adopted.
+
+    def _generations(self):
+        gens = self.receipts.get("generations")
+        if gens:
+            return gens
+        containers = self.receipts.get("containers") or []
+        networks = self.receipts.get("networks") or []
+        volumes = self.receipts.get("volumes") or []
+        if not (containers or networks or volumes):
+            return []
+        return [{
+            "at": self.receipts.get("created_at"), "action": "legacy.capture",
+            "containers": list(containers),
+            "networks": [{"id": n} if isinstance(n, str) else dict(n)
+                         for n in networks],
+            "volumes": [{"declared": v["name"], "name": None,
+                         "kind": v.get("kind", "named"),
+                         "driver": v.get("driver", "local")}
+                        for v in volumes],
+        }]
+
+    def _registered_container_pairs(self):
+        pairs = {}
+        for gen in self._generations():
+            for c in gen.get("containers", []):
+                pairs.setdefault(c["name"], set()).add(c["id"])
+        return pairs
+
+    def _registered_network_ids(self):
+        ids = set()
+        for gen in self._generations():
+            for n in gen.get("networks", []):
+                ids.add(n["id"] if isinstance(n, dict) else n)
+        return ids
+
+    def _registered_volumes(self):
+        named, anon = {}, set()
+        for gen in self._generations():
+            for v in gen.get("volumes", []):
+                if v.get("kind") == "anonymous":
+                    if v.get("name"):
+                        anon.add(v["name"])
+                    continue
+                decl = v.get("declared") or v.get("name")
+                if not decl:
+                    continue
+                cands = named.setdefault(decl, set())
+                if v.get("name"):
+                    cands.add(v["name"])
+        return named, anon
+
+    def _declared_volume_names(self):
+        declared = set(getattr(self, "_volumes", []) or [])
+        for gen in self._generations():
+            for v in gen.get("volumes", []):
+                if v.get("kind") != "anonymous":
+                    declared.add(v.get("declared") or v.get("name"))
+        return {d for d in declared if d}
+
+    def _classify_volume_name(self, vname):
+        for decl in self._declared_volume_names():
+            if vname in (decl, f"{self.receipts['project']}_{decl}"):
+                return decl
+        return None
+
+    def _capture_generation(self, action):
+        """Post-create capture: read real identities and append a
+        generation record. Old -> new ID transitions stay visible because
+        generations are never rewritten."""
+        manifest = getattr(self, "_manifest", None)
+        gen = {"at": utc_stamp(), "action": action,
+               "containers": [], "networks": [], "volumes": []}
+        if manifest:
+            for anchor in manifest["anchors"].values():
+                for name in (anchor.get("container"),
+                             anchor.get("client_container")):
+                    if not name:
+                        continue
+                    r = self._inspect_container(name)
+                    if r["verdict"] == "error":
+                        self.record("capture.error", 1,
+                                    f"{name}: {r['detail'][:160]}")
+                        continue
+                    if r["verdict"] != "ok":
+                        continue
+                    if r["label"] != self.run_id:
+                        self.record("capture.foreign", 1,
+                                    f"{name}: label={r['label']!r}")
+                        continue
+                    gen["containers"].append(
+                        {"name": name, "id": r["id"],
+                         "image_ref": r["image"]})
+                    for mount in r["mounts"]:
+                        if mount.get("Type") != "volume":
+                            continue
+                        vname = mount.get("Name") or ""
+                        decl = self._classify_volume_name(vname)
+                        if decl:
+                            entry = {"kind": "named", "declared": decl,
+                                     "name": vname}
+                        else:
+                            entry = {"kind": "anonymous", "name": vname,
+                                     "mounted_by": name,
+                                     "destination": mount.get("Destination")}
+                        if not any(v.get("name") == vname
+                                   for v in gen["volumes"]):
+                            gen["volumes"].append(entry)
+        rc, nets, err = self.docker(
+            "network", "ls", "--filter", f"name={self.run_id}", "-q",
+            timeout=30)
+        if rc != 0:
+            self.record("capture.network-list.error", 1, (err or "").strip())
+        else:
+            for nid in filter(None, (x.strip() for x in nets.splitlines())):
+                v = self._inspect_network(nid)
+                if v["verdict"] == "ok" and v["project"] == self.receipts["project"]:
+                    gen["networks"].append({"id": nid})
+        for decl in self._declared_volume_names():
+            if any(v.get("declared") == decl for v in gen["volumes"]):
+                continue
+            for cand in (f"{self.receipts['project']}_{decl}", decl):
+                v = self._inspect_volume(cand)
+                if v["verdict"] == "ok" and v["label"] == self.run_id:
+                    gen["volumes"].append(
+                        {"kind": "named", "declared": decl, "name": cand,
+                         "driver": v["driver"]})
+                    break
+                if v["verdict"] == "ok":
+                    self.record("capture.volume-foreign", 1,
+                                f"{cand}: label={v['label']!r}")
+                    break
+        self.receipts.setdefault("generations", []).append(gen)
+        # Flat fields mirror the latest generation for readability; the
+        # ledger is the authority.
+        self.receipts["containers"] = list(gen["containers"])
+        self.receipts["networks"] = [n["id"] for n in gen["networks"]]
+        self.receipts["volumes"] = [
+            {"name": v.get("declared") or v["name"],
+             "driver": v.get("driver", "local")}
+            for v in gen["volumes"] if v.get("kind") != "anonymous"]
+        self.record(
+            "generation.capture", 0,
+            f"{action}: {len(gen['containers'])}c/"
+            f"{len(gen['networks'])}n/{len(gen['volumes'])}v")
+        return gen
+
     # -- lifecycle ------------------------------------------------------
 
     def up(self, manifest, task):
         self._task = task
+        self._manifest = manifest
+        self._capture_daemon_identity()
         self.write_override(manifest)
         services = []
         for anchor in manifest["anchors"].values():
@@ -187,173 +456,176 @@ class IsoRun:
         self.record("compose.up", rc, err.strip() or out.strip())
         if rc != 0:
             raise SystemExit(f"[iso][FAIL] compose up failed: {err.strip()}")
-        # Capture real container identities — names are fixed on the
-        # manifest; the IDs are what teardown may address.
-        containers = []
-        for anchor in manifest["anchors"].values():
-            names = [anchor["container"], anchor.get("client_container")]
-            for name in names:
-                if not name:
-                    continue
-                rc, iid, err = self.docker(
-                    "inspect", "--format",
-                    "{{.Id}}|{{.Image}}|{{index .Config.Labels \"org.deltascope.run\"}}",
-                    name, timeout=30,
-                )
-                if rc == 0:
-                    cid, image, label_run = (iid.strip() + "||").split("|")[:3]
-                    if label_run == self.run_id:
-                        containers.append(
-                            {"name": name, "id": cid, "image_ref": image}
-                        )
-        self.receipts["containers"] = containers
-        rc, nets, _ = self.docker(
-            "network", "ls", "--filter", f"name={self.run_id}", "-q", timeout=30
-        )
-        self.receipts["networks"] = [
-            n for n in nets.splitlines() if n.strip()
-        ]
-        self.receipts["volumes"] = [
-            {"name": v, "driver": "local"} for v in getattr(self, "_volumes", [])
-        ]
-        self.record("receipts.capture", 0, f"{len(containers)} containers")
-        return containers
+        gen = self._capture_generation("compose.up")
+        return gen["containers"]
 
-    def _verified_ids(self, want_containers):
-        """Return receipt container IDs, refusing when identity diverges.
+    # -- teardown: consume the ledger only --------------------------------
 
-        A mid-run `compose up` may recreate containers under fresh IDs —
-        the run label on the live object carries the same ownership proof
-        the receipt recorded, so identity re-derives by name + label before
-        falling back to refusal.
-        """
-        ids = []
-        missing = []
-        for c in self.receipts["containers"]:
-            cid, verdict = self._live_id(c["name"], c["id"])
-            if cid:
-                ids.append(cid)
-            elif verdict == "gone":
-                self.record("identity.gone", 0, c["name"])
-            else:
-                missing.append(c["name"])
-        if missing:
-            self.record("identity.mismatch", 1, ",".join(missing))
+    def _verified_ids(self):
+        """Container IDs authorized for teardown: only IDs the ledger
+        registered. A live object holding a registered name with an
+        unregistered ID — even when run-labeled — refuses the whole
+        teardown rather than being adopted."""
+        pairs = self._registered_container_pairs()
+        ids, refuse = [], []
+        for name, reg_ids in pairs.items():
+            for rid in reg_ids:
+                r = self._inspect_container(rid)
+                if r["verdict"] == "ok":
+                    if r["label"] != self.run_id:
+                        refuse.append(f"{name}:{rid[:12]} relabeled")
+                    else:
+                        ids.append(rid)
+                elif r["verdict"] == "notfound":
+                    self.record("identity.gone", 0, f"{name}:{rid[:12]}")
+                else:
+                    refuse.append(f"{name}:{rid[:12]} error:{r['detail'][:80]}")
+            live = self._inspect_container(name)
+            if live["verdict"] == "ok":
+                if live["label"] != self.run_id:
+                    refuse.append(f"{name} held-by-foreign-label")
+                elif live["id"] not in reg_ids:
+                    refuse.append(f"{name} unregistered-id {live['id'][:12]}")
+            elif live["verdict"] == "error":
+                refuse.append(f"{name} error:{live['detail'][:80]}")
+        if refuse:
+            self.record("identity.refuse", 1, ";".join(refuse))
             raise SystemExit(
-                f"[iso][FAIL] receipt containers no longer match run identity: {missing}"
-            )
-        return ids
-
-    def _live_id(self, name, fallback):
-        """Resolve a container's current ID by receipt name, accepting only
-        objects still carrying this run's label — recreated IDs qualify,
-        foreign or unlabeled ones never do. Returns (id, verdict): a live
-        run-labeled ID, or (None, 'gone') when nothing exists under either
-        identity — a vanished object needs no teardown — or (None,
-        'foreign') when an object exists but fails the ownership check."""
-        saw_object = False
-        for candidate in (fallback, name):
-            if not candidate:
-                continue
-            rc, out, _ = self.docker(
-                "inspect", "--format",
-                "{{.Id}}|{{index .Config.Labels \"org.deltascope.run\"}}",
-                candidate, timeout=30,
-            )
-            if rc != 0:
-                continue
-            saw_object = True
-            cid, run_label = (out.strip() + "|").split("|")[:2]
-            if run_label == self.run_id:
-                return cid, "owned"
-        return None, ("foreign" if saw_object else "gone")
-
-    def stop(self):
-        ids = self._verified_ids(self.receipts["containers"])
-        for cid in ids:
-            rc, out, err = self.docker("stop", cid, timeout=60)
-            self.record(f"stop.{cid[:12]}", rc, err.strip())
-
-    def rm(self):
-        ids = self._verified_ids(self.receipts["containers"])
-        for cid in ids:
-            rc, out, err = self.docker("rm", cid, timeout=60)
-            self.record(f"rm.{cid[:12]}", rc, err.strip())
-        for net in self._verified_networks():
-            rc, out, err = self.docker("network", "rm", net, timeout=60)
-            self.record(f"network.rm.{net[:12]}", rc, err.strip())
+                f"[iso][FAIL] ledger identity verification failed: {refuse}")
+        return sorted(set(ids))
 
     def _verified_networks(self):
-        """Resolve live network IDs for this run's receipts.
-
-        `compose up` may recreate the project network under a fresh ID, so
-        identity re-derives by name filter + project label — the run-scoped
-        project name is as strong an ownership proof as the receipt ID."""
-        found = []
-        for net in self.receipts["networks"]:
-            rc, out, _ = self.docker(
-                "network", "inspect", "--format",
-                "{{index .Labels \"com.docker.compose.project\"}}",
-                net, timeout=30,
-            )
-            if rc == 0 and out.strip() == self.receipts["project"]:
-                found.append(net)
-        rc, listed, _ = self.docker(
-            "network", "ls", "--filter", f"name={self.run_id}", "-q", timeout=30
-        )
-        if rc == 0:
-            for nid in listed.splitlines():
-                nid = nid.strip()
-                if not nid or nid in found:
+        """Network IDs authorized for teardown: registered IDs only.
+        A live network under this run's name whose ID no generation
+        captured is refused, not adopted."""
+        registered = self._registered_network_ids()
+        project = self.receipts["project"]
+        ids, refuse = [], []
+        for nid in registered:
+            r = self._inspect_network(nid)
+            if r["verdict"] == "ok":
+                if r["project"] != project:
+                    refuse.append(f"net:{nid[:12]} foreign-project")
+                else:
+                    ids.append(nid)
+            elif r["verdict"] == "notfound":
+                self.record("identity.gone", 0, f"net:{nid[:12]}")
+            else:
+                refuse.append(f"net:{nid[:12]} error:{r['detail'][:80]}")
+        try:
+            rc, listed, err = self.docker(
+                "network", "ls", "--filter", f"name={self.run_id}", "-q",
+                timeout=30)
+        except Exception as exc:
+            rc, listed, err = 1, "", str(exc)
+        if rc != 0:
+            refuse.append(f"network-list error:{(err or '')[:80]}")
+        else:
+            for nid in filter(None, (x.strip() for x in listed.splitlines())):
+                if nid in registered:
                     continue
-                rc, out, _ = self.docker(
-                    "network", "inspect", "--format",
-                    "{{index .Labels \"com.docker.compose.project\"}}",
-                    nid, timeout=30,
-                )
-                if rc == 0 and out.strip() == self.receipts["project"]:
-                    found.append(nid)
-        return found
+                r = self._inspect_network(nid)
+                if r["verdict"] == "ok" and r["project"] == project:
+                    refuse.append(f"net:{nid[:12]} unregistered")
+                elif r["verdict"] == "error":
+                    refuse.append(f"net:{nid[:12]} error:{r['detail'][:80]}")
+        if refuse:
+            self.record("network.refuse", 1, ";".join(refuse))
+            raise SystemExit(
+                f"[iso][FAIL] ledger network verification failed: {refuse}")
+        return sorted(set(ids))
+
+    def stop(self):
+        self._verify_daemon_binding()
+        acted = []
+        for cid in self._verified_ids():
+            rc, out, err = self.docker("stop", cid, timeout=60)
+            self.record(f"stop.{cid[:12]}", rc, err.strip())
+            acted.append(cid)
+        return acted
+
+    def rm(self):
+        self._verify_daemon_binding()
+        acted = []
+        for cid in self._verified_ids():
+            rc, out, err = self.docker("rm", cid, timeout=60)
+            self.record(f"rm.{cid[:12]}", rc, err.strip())
+            acted.append(cid)
+        for nid in self._verified_networks():
+            rc, out, err = self.docker("network", "rm", nid, timeout=60)
+            self.record(f"network.rm.{nid[:12]}", rc, err.strip())
+        return acted
 
     def rmvolumes(self):
-        for vol in self.receipts["volumes"]:
-            name = self._live_volume_name(vol["name"])
-            if not name:
-                self.record(f"volume.skip.{vol['name']}", 1, "no live run-labeled volume")
-                continue
-            rc, out, err = self.docker("volume", "rm", name, timeout=60)
-            self.record(f"volume.rm.{name}", rc, err.strip())
-
-    def _live_volume_name(self, declared):
-        """Resolve a declared volume to its live name, requiring the run
-        label. Compose prefixes declared names with the project, so both
-        forms are candidates; anything without the run label is skipped."""
-        for candidate in (declared, f"{self.receipts['project']}_{declared}"):
-            rc, out, _ = self.docker(
-                "volume", "inspect", "--format",
-                "{{index .Labels \"org.deltascope.run\"}}",
-                candidate, timeout=30,
-            )
-            if rc == 0 and out.strip() == self.run_id:
-                return candidate
-        return None
+        self._verify_daemon_binding()
+        named, anon = self._registered_volumes()
+        project = self.receipts["project"]
+        for decl, cands in named.items():
+            candidates = sorted(cands) + [decl, f"{project}_{decl}"]
+            seen = set()
+            handled = False
+            for cand in candidates:
+                if cand in seen:
+                    continue
+                seen.add(cand)
+                v = self._inspect_volume(cand)
+                if v["verdict"] == "ok":
+                    if v["label"] == self.run_id:
+                        rc, out, err = self.docker("volume", "rm", cand,
+                                                   timeout=60)
+                        self.record(f"volume.rm.{cand}", rc, err.strip())
+                    else:
+                        self.record(f"volume.retained.{cand}", 0,
+                                    f"label={v['label']!r} — not this run")
+                    handled = True
+                    break
+                if v["verdict"] == "error":
+                    self.record("volume.refuse", 1,
+                                f"{cand}: {v['detail'][:120]}")
+                    raise SystemExit(
+                        f"[iso][FAIL] volume inspect failed: {cand}")
+            if not handled:
+                self.record("volume.gone", 0, decl)
+        for vname in sorted(anon):
+            v = self._inspect_volume(vname)
+            if v["verdict"] == "ok":
+                rc, out, err = self.docker("volume", "rm", vname, timeout=60)
+                self.record(f"volume.rm.{vname}", rc, err.strip())
+            elif v["verdict"] == "error":
+                self.record("volume.refuse", 1,
+                            f"{vname}: {v['detail'][:120]}")
+                raise SystemExit(
+                    f"[iso][FAIL] volume inspect failed: {vname}")
+            else:
+                self.record("volume.gone", 0, vname)
 
     # -- delegation -----------------------------------------------------
 
     def patched_cleanup(self):
-        """Replacement for ddl_golden.compose_cleanup: receipt-scoped only."""
+        """Replacement for ddl_golden.compose_cleanup: ledger-scoped only.
+        The rc field reports the real stop+rm outcome; it is never set to
+        a synthetic value to satisfy a validator."""
         result = {"isolated": True, "stopped": [], "removed": [],
                   "compose_down_rc": 1,
-                  "rc_note": "compose_down_rc carries the receipt-scoped stop+rm outcome, not a compose-down run"}
+                  "rc_note": "compose_down_rc carries the receipt-scoped "
+                             "stop+rm outcome, not a compose-down run"}
         try:
-            self.stop()
-            self.rm()
-            result["stopped"] = [c["id"][:12] for c in self.receipts["containers"]]
-            result["removed"] = result["stopped"]
+            stopped = self.stop()
+            removed = self.rm()
+            result["stopped"] = [i[:12] for i in stopped]
+            result["removed"] = [i[:12] for i in removed]
             result["compose_down_rc"] = 0
         except SystemExit as exc:
             result["error"] = str(exc)
-        result["residual_containers"] = []
+        try:
+            rc, out, _ = self.docker(
+                "ps", "-aq", "--filter",
+                f"label=org.deltascope.run={self.run_id}", timeout=30)
+            result["residual_containers"] = (
+                [c for c in out.splitlines() if c.strip()] if rc == 0
+                else ["<unverifiable>"])
+        except Exception:
+            result["residual_containers"] = ["<unverifiable>"]
         return result
 
 
@@ -405,11 +677,26 @@ def main():
     if args.command == "run":
         # Delegate to the stock runner with only the lifecycle seams replaced:
         # project/compose/env pinned to the isolated daemon, cleanup replaced
-        # by receipt-scoped teardown. No other behavior is altered.
+        # by ledger-scoped teardown. No other behavior is altered.
+        run._task = args.task
+        run._manifest = manifest
+        run.write_override(manifest)
         os.environ["DOCKER_HOST"] = run.daemon
         os.environ.pop("DOCKER_CONTEXT", None)
         dg.COMPOSE_PROJECT = run.run_id
-        dg.compose = run.compose
+
+        # Every controlled compose up is followed by an append-only
+        # generation capture, so mid-run recreations enter the ledger as
+        # new generations instead of orphaning receipt IDs.
+        base_compose = run.compose
+
+        def ledger_compose(*cargs, **ckw):
+            result = base_compose(*cargs, **ckw)
+            if cargs and cargs[0] == "up" and result[0] == 0:
+                run._capture_generation("compose.up.run")
+            return result
+
+        dg.compose = ledger_compose
         dg.compose_cleanup = run.patched_cleanup
         # Diagnostic: capture the real stderr of failed docker exec calls so
         # anchor reachability failures carry their cause into the receipts.
@@ -437,12 +724,10 @@ def main():
             if anchor.get("environment_gap")
         }
         if gap_services:
-            inner_compose = run.compose
-
             def gap_compose(*cargs, **ckw):
                 if cargs and cargs[0] == "up":
                     cargs = tuple(a for a in cargs if a not in gap_services)
-                return inner_compose(*cargs, **ckw)
+                return ledger_compose(*cargs, **ckw)
 
             dg.compose = gap_compose
             inner_wait = dg.wait_for_healthy
