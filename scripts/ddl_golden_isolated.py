@@ -279,27 +279,64 @@ class IsoRun:
         for cid in ids:
             rc, out, err = self.docker("rm", cid, timeout=60)
             self.record(f"rm.{cid[:12]}", rc, err.strip())
-        for net in self.receipts["networks"]:
+        for net in self._verified_networks():
             rc, out, err = self.docker("network", "rm", net, timeout=60)
             self.record(f"network.rm.{net[:12]}", rc, err.strip())
 
+    def _verified_networks(self):
+        """Resolve live network IDs for this run's receipts.
+
+        `compose up` may recreate the project network under a fresh ID, so
+        identity re-derives by name filter + project label — the run-scoped
+        project name is as strong an ownership proof as the receipt ID."""
+        found = []
+        for net in self.receipts["networks"]:
+            rc, out, _ = self.docker(
+                "network", "inspect", "--format",
+                "{{index .Labels \"com.docker.compose.project\"}}",
+                net, timeout=30,
+            )
+            if rc == 0 and out.strip() == self.receipts["project"]:
+                found.append(net)
+        rc, listed, _ = self.docker(
+            "network", "ls", "--filter", f"name={self.run_id}", "-q", timeout=30
+        )
+        if rc == 0:
+            for nid in listed.splitlines():
+                nid = nid.strip()
+                if not nid or nid in found:
+                    continue
+                rc, out, _ = self.docker(
+                    "network", "inspect", "--format",
+                    "{{index .Labels \"com.docker.compose.project\"}}",
+                    nid, timeout=30,
+                )
+                if rc == 0 and out.strip() == self.receipts["project"]:
+                    found.append(nid)
+        return found
+
     def rmvolumes(self):
         for vol in self.receipts["volumes"]:
-            name = vol["name"]
-            rc, out, err = self.docker(
-                "volume", "inspect", "--format",
-                "{{.Driver}}|{{index .Labels \"org.deltascope.run\"}}|{{.Mountpoint}}",
-                name, timeout=30,
-            )
-            if rc != 0:
-                self.record(f"volume.inspect.{name}", rc, err.strip())
-                continue
-            driver, label_run, _mp = (out.strip() + "||").split("|")[:3]
-            if label_run != self.run_id:
-                self.record(f"volume.skip.{name}", 1, "run label mismatch")
+            name = self._live_volume_name(vol["name"])
+            if not name:
+                self.record(f"volume.skip.{vol['name']}", 1, "no live run-labeled volume")
                 continue
             rc, out, err = self.docker("volume", "rm", name, timeout=60)
             self.record(f"volume.rm.{name}", rc, err.strip())
+
+    def _live_volume_name(self, declared):
+        """Resolve a declared volume to its live name, requiring the run
+        label. Compose prefixes declared names with the project, so both
+        forms are candidates; anything without the run label is skipped."""
+        for candidate in (declared, f"{self.receipts['project']}_{declared}"):
+            rc, out, _ = self.docker(
+                "volume", "inspect", "--format",
+                "{{index .Labels \"org.deltascope.run\"}}",
+                candidate, timeout=30,
+            )
+            if rc == 0 and out.strip() == self.run_id:
+                return candidate
+        return None
 
     # -- delegation -----------------------------------------------------
 
