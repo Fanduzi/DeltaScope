@@ -220,24 +220,46 @@ class IsoRun:
         return containers
 
     def _verified_ids(self, want_containers):
-        """Return receipt container IDs, refusing when identity diverges."""
+        """Return receipt container IDs, refusing when identity diverges.
+
+        A mid-run `compose up` may recreate containers under fresh IDs —
+        the run label on the live object carries the same ownership proof
+        the receipt recorded, so identity re-derives by name + label before
+        falling back to refusal.
+        """
         ids = []
+        missing = []
         for c in self.receipts["containers"]:
-            rc, run_label, _ = self.docker(
-                "inspect", "--format",
-                "{{index .Config.Labels \"org.deltascope.run\"}}",
-                c["id"], timeout=30,
-            )
-            if rc == 0 and run_label.strip() == self.run_id:
-                ids.append(c["id"])
-        missing = [c["name"] for c in self.receipts["containers"]
-                   if c["id"] not in ids]
+            cid = self._live_id(c["name"], c["id"])
+            if cid:
+                ids.append(cid)
+            else:
+                missing.append(c["name"])
         if missing:
             self.record("identity.mismatch", 1, ",".join(missing))
             raise SystemExit(
                 f"[iso][FAIL] receipt containers no longer match run identity: {missing}"
             )
         return ids
+
+    def _live_id(self, name, fallback):
+        """Resolve a container's current ID by receipt name, accepting only
+        objects still carrying this run's label — recreated IDs qualify,
+        foreign or unlabeled ones never do."""
+        for candidate in (fallback, name):
+            if not candidate:
+                continue
+            rc, out, _ = self.docker(
+                "inspect", "--format",
+                "{{.Id}}|{{index .Config.Labels \"org.deltascope.run\"}}",
+                candidate, timeout=30,
+            )
+            if rc != 0:
+                continue
+            cid, run_label = (out.strip() + "|").split("|")[:2]
+            if run_label == self.run_id:
+                return cid
+        return None
 
     def stop(self):
         ids = self._verified_ids(self.receipts["containers"])
@@ -276,12 +298,15 @@ class IsoRun:
 
     def patched_cleanup(self):
         """Replacement for ddl_golden.compose_cleanup: receipt-scoped only."""
-        result = {"isolated": True, "stopped": [], "removed": []}
+        result = {"isolated": True, "stopped": [], "removed": [],
+                  "compose_down_rc": 1,
+                  "rc_note": "compose_down_rc carries the receipt-scoped stop+rm outcome, not a compose-down run"}
         try:
             self.stop()
             self.rm()
             result["stopped"] = [c["id"][:12] for c in self.receipts["containers"]]
             result["removed"] = result["stopped"]
+            result["compose_down_rc"] = 0
         except SystemExit as exc:
             result["error"] = str(exc)
         result["residual_containers"] = []

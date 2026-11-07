@@ -65,8 +65,7 @@
         "--default-character-set=utf8mb4",
         "-P4000"
       ],
-      "needs_database_create": true,
-      "exec_password_env": "T21_MYSQL_PASSWORD"
+      "needs_database_create": true
     }
   },
   "ddl_steps": [

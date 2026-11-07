@@ -153,7 +153,7 @@ class TestTeardownScope(unittest.TestCase):
         def dispatch(args, cwd=None, timeout=120, stdin_text=None, env=None):
             calls.append(list(args))
             if args[1] == "inspect":
-                return 0, RUN, ""
+                return 0, f"{args[-1]}|{RUN}", ""
             if args[1:3] == ["volume", "inspect"]:
                 return 0, f"local|{RUN}|/var/lib/docker/volumes/x/_data", ""
             return 0, "", ""
