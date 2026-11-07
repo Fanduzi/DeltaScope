@@ -37,7 +37,7 @@ type sequenceBinding struct {
 // deterministic key order — every identity carries the effective-schema key
 // the ordered state projected under.
 func sequenceBindings(statement spec.Statement) []sequenceBinding {
-	if statement.DDL == nil || statement.DDL.Sequence == nil || statement.Metadata == nil || len(statement.Metadata.Sequences) == 0 {
+	if statement.DDL == nil || statement.Metadata == nil || len(statement.Metadata.Sequences) == 0 {
 		return nil
 	}
 	keys := make([]string, 0, len(statement.Metadata.Sequences))
@@ -57,6 +57,17 @@ func sequenceApplies(statement spec.Statement) bool {
 		statement.Kind == spec.KindDDL &&
 		statement.DDL != nil &&
 		statement.DDL.Sequence != nil
+}
+
+// sequenceRenameApplies marks a RENAME TABLE pair that binds at least one
+// sequence identity — the shared-namespace path TiDB uses for sequence
+// rename (T21 native-verified: identity and definition move with the pair).
+func sequenceRenameApplies(statement spec.Statement) bool {
+	return statement.Dialect == spec.DialectTiDB &&
+		statement.Kind == spec.KindDDL &&
+		statement.DDL != nil &&
+		statement.DDL.Operation == spec.DDLOperationRenameTable &&
+		len(sequenceBindings(statement)) > 0
 }
 
 func sequenceFinding(level rule.Level, message, suggestion string, binding sequenceBinding, operation string) rule.Finding {
@@ -84,7 +95,7 @@ func newTiDBSequenceValidRule(cfg policy.RulePolicy) (rule.StatementRule, error)
 func (r sequenceValidRule) ID() string { return ruleIDTiDBSequenceValid }
 
 func (r sequenceValidRule) AppliesTo(statement spec.Statement) bool {
-	return sequenceApplies(statement)
+	return sequenceApplies(statement) || sequenceRenameApplies(statement)
 }
 
 func (r sequenceValidRule) Evaluate(_ context.Context, statement spec.Statement) ([]rule.Finding, error) {
@@ -111,17 +122,21 @@ func (r sequenceValidRule) Evaluate(_ context.Context, statement spec.Statement)
 					binding, "create"))
 			}
 		case spec.DDLOperationAlterSequence:
-			if state.ConflictKind != "" && !declaration.IfExists {
+			// TiDB 8.5 accepts ALTER SEQUENCE ... IF EXISTS syntactically but
+			// the guard never rescues an absent or wrong-kind target — the
+			// native verdict stays 1146/1347. Proven-absent bindings refuse
+			// regardless of the authored guard.
+			if state.ConflictKind != "" {
 				findings = append(findings, sequenceFinding(r.level,
 					fmt.Sprintf("Sequence %q does not exist; the identity is bound to a %s object.", qualifiedName(state), state.ConflictKind),
 					"verify the target name and object kind before altering",
 					binding, "alter"))
 				continue
 			}
-			if !state.Exists && !declaration.IfExists {
+			if !state.Exists {
 				findings = append(findings, sequenceFinding(r.level,
 					fmt.Sprintf("Sequence %q does not exist.", qualifiedName(state)),
-					"create the sequence first or use ALTER SEQUENCE IF EXISTS",
+					"create the sequence first — IF EXISTS does not tolerate an absent ALTER target",
 					binding, "alter"))
 			}
 		case spec.DDLOperationDropSequence:
@@ -163,8 +178,11 @@ func (r sequenceValidRule) EvidenceGaps(statement spec.Statement) []rule.Evidenc
 		}
 		// An in-place definition change on a proven-live sequence revokes
 		// issuance assumptions (cache reset, bound changes) — the runtime
-		// premise is required and unprovable without issuance facts.
-		if statement.DDL.Operation == spec.DDLOperationAlterSequence && state.Exists && declaration.ChangesDefinition() {
+		// premise is required and unprovable without issuance facts. A
+		// proven-live sequence moved by RENAME TABLE carries the same
+		// premise: the persisted issuance position cannot be re-derived.
+		if state.Exists && (statement.DDL.Operation == spec.DDLOperationRenameTable ||
+			(statement.DDL.Operation == spec.DDLOperationAlterSequence && declaration != nil && declaration.ChangesDefinition())) {
 			gaps = append(gaps, rule.EvidenceGap{
 				ReasonCode:    sequenceGapUnknownRuntime,
 				RequiredFacts: []string{sequenceFactRuntime},
@@ -288,22 +306,34 @@ func newTiDBSequenceReferencesWarnRule(cfg policy.RulePolicy) (rule.StatementRul
 func (r sequenceReferencesRule) ID() string { return ruleIDTiDBSequenceReferencesWarn }
 
 func (r sequenceReferencesRule) AppliesTo(statement spec.Statement) bool {
-	return sequenceApplies(statement) &&
-		statement.DDL.Operation == spec.DDLOperationDropSequence
+	return (sequenceApplies(statement) &&
+		statement.DDL.Operation == spec.DDLOperationDropSequence) ||
+		sequenceRenameApplies(statement)
 }
 
 func (r sequenceReferencesRule) Evaluate(_ context.Context, statement spec.Statement) ([]rule.Finding, error) {
 	var findings []rule.Finding
+	rename := statement.DDL.Operation == spec.DDLOperationRenameTable
 	for _, binding := range sequenceBindings(statement) {
 		state := binding.state
 		if state == nil || !state.Proven() || !state.Exists {
 			continue
 		}
 		for _, edge := range state.References {
-			finding := sequenceFinding(r.level,
-				fmt.Sprintf("Sequence %q is still referenced by %s; dropping it leaves the dependent broken.", qualifiedName(state), sequenceRefEdgeLabel(edge)),
-				"remove the referencing column default before dropping the sequence",
-				binding, "drop")
+			var finding rule.Finding
+			if rename {
+				// The stored DEFAULT keeps the pre-rename identity — the
+				// bound expression dangles once the source name moves.
+				finding = sequenceFinding(r.level,
+					fmt.Sprintf("Sequence %q is still referenced by %s; renaming it leaves the dependent broken.", qualifiedName(state), sequenceRefEdgeLabel(edge)),
+					"remove or rebind the referencing column default before renaming the sequence",
+					binding, "rename")
+			} else {
+				finding = sequenceFinding(r.level,
+					fmt.Sprintf("Sequence %q is still referenced by %s; dropping it leaves the dependent broken.", qualifiedName(state), sequenceRefEdgeLabel(edge)),
+					"remove the referencing column default before dropping the sequence",
+					binding, "drop")
+			}
 			finding.Metadata["owner_kind"] = edge.OwnerKind
 			finding.Metadata["owner_schema"] = edge.OwnerSchema
 			finding.Metadata["owner_name"] = edge.OwnerName

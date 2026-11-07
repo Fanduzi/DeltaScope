@@ -414,7 +414,8 @@ func (state *batchState) enrichStatements(ctx context.Context, request *Metadata
 		// Sequence facts attach the registry's ordered pre-state — the
 		// existence and definition answer this statement adjudicates against
 		// (T21/#100).
-		if enriched[i].DDL != nil && enriched[i].DDL.Sequence != nil {
+		if enriched[i].DDL != nil && (enriched[i].DDL.Sequence != nil ||
+			enriched[i].DDL.Operation == spec.DDLOperationRenameTable) {
 			sequences, serr := state.sequenceTargetsForStatement(ctx, enriched[i])
 			if serr != nil {
 				return nil, serr

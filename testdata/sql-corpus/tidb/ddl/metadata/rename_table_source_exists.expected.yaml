@@ -15,3 +15,8 @@ metadata:
       exists: false
     dst:
       exists: false
+  sequences:
+    app.missing_src:
+      status: not_found
+    app.dst:
+      status: not_found

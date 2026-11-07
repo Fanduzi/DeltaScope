@@ -112,6 +112,33 @@ func renamePairVerdicts(statement spec.Statement) (srcVerdicts, dstVerdicts []re
 		srcBase[i] = boundEndpointClass(sources[i])
 		dstBase[i] = boundEndpointClass(destinations[i])
 	}
+	// Endpoints absent as tables may still resolve in the shared sequence
+	// namespace — TiDB 8.5 renames sequences through RENAME TABLE. Consult
+	// the statement's sequence pre-state before the pair classes settle: a
+	// proven sequence upgrades the endpoint, an unvouched one revokes the
+	// table-side absence claim, and no projection keeps the table verdict.
+	if statement.Metadata != nil && len(statement.Metadata.Sequences) > 0 {
+		upgrade := func(key string, base spec.RenameEndpointClass, occupied spec.RenameEndpointClass) spec.RenameEndpointClass {
+			if base != spec.RenameEndpointAbsent {
+				return base
+			}
+			state, queried := statement.Metadata.Sequences[strings.TrimSuffix(key, ":")]
+			if !queried {
+				return base
+			}
+			if state == nil || !state.Proven() {
+				return spec.RenameEndpointUnknown
+			}
+			if state.Exists {
+				return occupied
+			}
+			return base
+		}
+		for i := range sources {
+			srcBase[i] = upgrade(srcKeys[i], srcBase[i], spec.RenameEndpointPresent)
+			dstBase[i] = upgrade(dstKeys[i], dstBase[i], spec.RenameEndpointPresent)
+		}
+	}
 	alterForm := statement.DDL.Operation == spec.DDLOperationAlterTable
 	for i, verdict := range spec.RenamePairClasses(srcKeys, dstKeys, srcBase, dstBase) {
 		srcV := renameSrcVerdict(verdict.Src)

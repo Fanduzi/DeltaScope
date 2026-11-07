@@ -178,3 +178,81 @@ func TestT21R1UndecidableOwnerRetiresProviderEdge(t *testing.T) {
 		t.Fatalf("gaps = %#v, want unknown_sequence_references — edge fate undecidable", result.Statements[1].EvidenceGaps)
 	}
 }
+
+// Native-verified A1 closures — TiDB 8.5 proofs:
+//
+//	ALTER SEQUENCE IF EXISTS on a proven-absent or wrong-kind target is still
+//	refused (1146/1347); the guard does not rescue it.
+//	RENAME TABLE moves a proven sequence identity, so the source must not
+//	adjudicate as an absent table; the valid rule reports the runtime
+//	premise and references evaluate the renamed-away target's edges.
+func TestT21N1AlterIfExistsStillRefusedOnAbsent(t *testing.T) {
+	policyPath := t21Policy(t, t21ValidRule, t21RestartRule, t21CycleRule, t21RefsRule)
+	result, err := t21Audit(t, "ALTER SEQUENCE IF EXISTS missing START WITH 5", t21Fixture(), policyPath)
+	if err != nil {
+		t.Fatalf("audit: %v", err)
+	}
+	findings := t21Findings(result, 0, t21ValidRule)
+	if len(findings) == 0 {
+		t.Fatal("ALTER IF EXISTS on proven-absent must refuse — native returns 1146 regardless of the guard")
+	}
+	result, err = t21Audit(t, "DROP SEQUENCE IF EXISTS missing", t21Fixture(), policyPath)
+	if err != nil {
+		t.Fatalf("audit: %v", err)
+	}
+	if got := t21Findings(result, 0, t21ValidRule); len(got) != 0 {
+		t.Fatalf("DROP IF EXISTS on proven-absent is a proven no-op — no refusal expected, got %v", got)
+	}
+}
+
+func TestT21N1RenameSequenceResponsibilities(t *testing.T) {
+	policyPath := t21Policy(t, t21ValidRule, t21RestartRule, t21CycleRule, t21RefsRule,
+		"ddl.table.rename.source.exists.require", "ddl.table.rename.dest.exists.forbid", "ddl.rename_table.notice")
+	result, err := t21Audit(t,
+		"RENAME TABLE t21.seq_ref TO t21.seq_ref2; DROP SEQUENCE t21.seq_ref2; DROP SEQUENCE t21.seq_ref;",
+		t21Fixture(), policyPath)
+	if err != nil {
+		t.Fatalf("audit: %v", err)
+	}
+	// A proven sequence source exists — the absent-table blocker must not fire.
+	if got := t21Findings(result, 0, "ddl.table.rename.source.exists.require"); len(got) != 0 {
+		t.Fatalf("sequence source wrongly adjudicated as absent table: %v", got)
+	}
+	// The live-sequence rename carries the runtime-issuance premise gap.
+	runtimeGap := false
+	for _, gap := range t21Gaps(result, 0, t21ValidRule) {
+		if gap.ReasonCode == t21RuntimeGap {
+			runtimeGap = true
+		}
+	}
+	if !runtimeGap {
+		t.Fatal("sequence rename must emit sequence.runtime_state gap")
+	}
+	// The renamed-away target's vouched inbound edge must warn.
+	refs := t21Findings(result, 0, t21RefsRule)
+	if len(refs) != 1 {
+		t.Fatalf("expected 1 references warning on renamed-away sequence, got %v", refs)
+	}
+	// Post-state: the identity moved — seq_ref2 binds proven, seq_ref re-resolves.
+	if got := t21Findings(result, 1, t21ValidRule); len(got) != 0 {
+		t.Fatalf("DROP on moved identity should bind present, got %v", got)
+	}
+	if got := t21Gaps(result, 1, t21ValidRule); len(got) != 0 {
+		t.Fatalf("DROP on moved identity should not gap on state, got %v", got)
+	}
+}
+
+func TestT21N1RenameOccupiedBySequence(t *testing.T) {
+	policyPath := t21Policy(t, t21ValidRule, t21RestartRule, t21CycleRule, t21RefsRule,
+		"ddl.table.rename.dest.exists.forbid")
+	result, err := t21Audit(t,
+		"RENAME TABLE t21.seq TO t21.seq_ref;",
+		t21Fixture(), policyPath)
+	if err != nil {
+		t.Fatalf("audit: %v", err)
+	}
+	// Destination occupied by a proven sequence is the proven 1050 refusal.
+	if got := t21Findings(result, 0, "ddl.table.rename.dest.exists.forbid"); len(got) == 0 {
+		t.Fatal("rename onto an existing sequence must fire the dest-occupied refusal")
+	}
+}

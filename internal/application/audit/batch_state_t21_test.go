@@ -265,8 +265,10 @@ func TestT21A1RestartControlDoesNotWarn(t *testing.T) {
 }
 
 // Existence guards condition the same proven answer: IF NOT EXISTS absorbs a
-// duplicate create, IF EXISTS absorbs a missing alter/drop, and the unguarded
-// forms block on the proven contradiction.
+// duplicate create, IF EXISTS absorbs a missing drop, and the unguarded forms
+// block on the proven contradiction. TiDB 8.5 native: ALTER SEQUENCE ...
+// IF EXISTS still refuses an absent target with 1146 — the guard is inert
+// on ALTER and the blocker stands.
 func TestT21A1GuardedExistenceContracts(t *testing.T) {
 	policyPath := t21Policy(t, t21ValidRule)
 	cases := []struct {
@@ -277,7 +279,7 @@ func TestT21A1GuardedExistenceContracts(t *testing.T) {
 		{"duplicate create blocks", "CREATE SEQUENCE seq", true},
 		{"if not exists absorbs duplicate", "CREATE SEQUENCE IF NOT EXISTS seq", false},
 		{"missing alter blocks", "ALTER SEQUENCE missing START WITH 5", true},
-		{"if exists absorbs missing alter", "ALTER SEQUENCE IF EXISTS missing START WITH 5", false},
+		{"if exists still blocks missing alter", "ALTER SEQUENCE IF EXISTS missing START WITH 5", true},
 		{"missing drop blocks", "DROP SEQUENCE missing", true},
 		{"if exists absorbs missing drop", "DROP SEQUENCE IF EXISTS missing", false},
 		{"create on absent lands", "CREATE SEQUENCE missing", false},

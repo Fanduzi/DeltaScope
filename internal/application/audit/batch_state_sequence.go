@@ -265,11 +265,17 @@ func (s *batchState) derivedSequenceEdges(key sequenceKey) []spec.SequenceRefEdg
 // projects the ordered pre-state into metadata.Sequences keyed `schema.name`.
 // Reads go through the same once-per-request cache Metadata.Objects uses.
 func (s *batchState) bindSequences(ctx context.Context, statement spec.Statement) (map[string]*spec.SequenceState, error) {
-	declaration := statement.DDL.Sequence
-	if declaration == nil {
-		return nil, nil
+	var refs []spec.SequenceRef
+	if declaration := statement.DDL.Sequence; declaration != nil {
+		refs = declaration.TargetRefs()
+	} else if statement.Dialect == spec.DialectTiDB && statement.DDL.Operation == spec.DDLOperationRenameTable {
+		// RENAME TABLE pair endpoints share the sequence namespace — resolve
+		// both sides so proven sequence identities bind like sequence targets.
+		// Sequences are TiDB-only; MySQL pairs keep their table verdict.
+		for _, target := range statement.DDL.Targets {
+			refs = append(refs, spec.SequenceRef{Schema: target.Schema, Name: target.Name})
+		}
 	}
-	refs := declaration.TargetRefs()
 	if len(refs) == 0 {
 		return nil, nil
 	}

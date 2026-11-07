@@ -29,6 +29,7 @@ import secrets
 import sys
 
 ROOT_DIR = pathlib.Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(ROOT_DIR / "scripts"))
 SPEC = importlib.util.spec_from_file_location(
     "ddl_golden", ROOT_DIR / "scripts" / "ddl_golden.py"
 )
