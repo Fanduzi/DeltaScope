@@ -174,6 +174,12 @@ type ExpressionFacts struct {
 	// `uuid()`). It proves nothing about evaluation, argument values, or
 	// results; it is a count, not expression content.
 	CallCount int
+	// SequenceRefs lists every ast.TableNameExpr identity carried inside
+	// sequence-function arguments (NEXT VALUE FOR / NEXTVAL targets), in
+	// declaration order, deduplicated by identity. An empty set proves no
+	// sequence target appears inside the expression; the targets stay
+	// authored — schema resolution happens at bind time.
+	SequenceRefs []SequenceRef
 }
 
 // Expression root-shape names recorded in ExpressionFacts.TopForm: the
@@ -224,6 +230,7 @@ func CloneExpressionFacts(in *ExpressionFacts) *ExpressionFacts {
 	out.References = append([]ColumnReference(nil), in.References...)
 	out.Functions = append([]string(nil), in.Functions...)
 	out.Features = append([]string(nil), in.Features...)
+	out.SequenceRefs = append([]SequenceRef(nil), in.SequenceRefs...)
 	return &out
 }
 

@@ -217,11 +217,11 @@ func extractedOptionGap(dialect spec.Dialect, op spec.DDLOperation, name string)
 		// ops consume it through the existing allowlist.
 		return false, false
 	case "has_options":
-		// Sequence and placement-policy option lists are observed but not
-		// modeled (inventory: option/constraint semantics unchecked).
+		// Placement-policy option lists are observed but not modeled
+		// (inventory: option/constraint semantics unchecked). Sequence
+		// options are typed declarations since T21 — modeled, not a gap.
 		switch op {
-		case spec.DDLOperationCreateSequence, spec.DDLOperationAlterSequence,
-			spec.DDLOperationCreatePlacementPolicy, spec.DDLOperationAlterPlacementPolicy:
+		case spec.DDLOperationCreatePlacementPolicy, spec.DDLOperationAlterPlacementPolicy:
 			return true, false
 		}
 	case "has_body":

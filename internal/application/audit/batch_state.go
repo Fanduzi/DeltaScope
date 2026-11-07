@@ -88,6 +88,15 @@ type batchState struct {
 	// ordered binding never ask the provider twice. Nil falls back to the
 	// provider's ObjectResolver directly.
 	schemaResolver func(ctx context.Context, name string) (*spec.ObjectSnapshot, error)
+	// sequenceEntries holds the batch's ordered knowledge of each sequence
+	// identity a sequence-lifecycle statement named — present/absent/unknown
+	// plus the proven definition parameter set. Schema gates and invalidation
+	// apply exactly like tables (T21/#100).
+	sequenceEntries map[sequenceKey]*batchSequenceEntry
+	// sequenceResolver, when set, is the enrich-loop's objectCache-backed
+	// sequence lookup — same once-per-request identity cache as
+	// Metadata.Objects. Nil falls back to the provider's ObjectResolver.
+	sequenceResolver func(ctx context.Context, lookup spec.ObjectLookupRequest) (*spec.ObjectSnapshot, error)
 	// resolvedVersion is the request's already-parsed version fact. Rules read
 	// the same fact from statement metadata. apply still receives the original
 	// statement, so RENAME COLUMN applicability reads this copy. Nil means the
@@ -130,6 +139,7 @@ func newBatchState(dialect spec.Dialect, schema string, provider MetadataProvide
 		tempEntries:        make(map[batchTableKey]*batchTableEntry),
 		invalidatedSchemas: make(map[string]struct{}),
 		schemaEntries:      make(map[string]*batchSchemaEntry),
+		sequenceEntries:    make(map[sequenceKey]*batchSequenceEntry),
 	}
 }
 
@@ -375,6 +385,15 @@ func (s *batchState) apply(ctx context.Context, statement spec.Statement) error 
 		return nil
 	}
 	ddl := statement.DDL
+	if (ddl.Operation == spec.DDLOperationCreateTable || ddl.Operation == spec.DDLOperationAlterTable) &&
+		len(s.authoredSequenceRefUses(statement)) > 0 {
+		// Authored column-default sequence references reconcile against the
+		// owner's landed state on every exit — proven landings and proven
+		// refusals need nothing, undecidable owners (tombstoned shapes,
+		// unsupported transitions, unproven drops) unvouch the targets'
+		// completeness (T21-R1 B2).
+		defer s.reconcileSequenceRefUses(statement)
+	}
 	if ddl.Operation == spec.DDLOperationAlterTable && statement.Metadata != nil &&
 		statement.Metadata.TargetTable != nil && statement.Metadata.TargetTable.Exists &&
 		statement.Metadata.TargetTable.RelationKind == "view" && !statement.Metadata.TargetTable.Temporary {
@@ -438,13 +457,23 @@ func (s *batchState) apply(ctx context.Context, statement spec.Statement) error 
 	case spec.DDLOperationTruncateTable:
 		return s.applyTruncateTable(ctx, statement)
 	case spec.DDLOperationRenameTable:
-		return s.applyRenameTable(ctx, statement)
+		if err := s.applyRenameTable(ctx, statement); err != nil {
+			return err
+		}
+		// TiDB renames sequences through RENAME TABLE — a proven sequence
+		// identity moves with the pair, and the old name's facts are revoked
+		// (T21/#100).
+		s.renameSequencePairs(statement)
+		return nil
 	case spec.DDLOperationCreateSchema:
 		return s.applyCreateSchema(ctx, statement)
 	case spec.DDLOperationAlterSchema:
 		return s.applyAlterSchema(ctx, statement)
 	case spec.DDLOperationDropSchema:
 		return s.applyDropSchema(ctx, statement)
+	case spec.DDLOperationCreateSequence, spec.DDLOperationAlterSequence,
+		spec.DDLOperationDropSequence:
+		return s.applySequenceStatement(ctx, statement)
 	default:
 		// No modeled transition: schema-scoped operations invalidate their
 		// scope, table-bound operations invalidate their targets.
@@ -598,17 +627,57 @@ func (s *batchState) invalidateSchema(schema string) {
 	s.schemaEntries[lower] = &batchSchemaEntry{state: schemaUnknown}
 	for key := range s.entries {
 		if key.schema == lower {
+			s.poisonSequenceRefsFromEntry(s.entries[key])
 			s.entries[key] = &batchTableEntry{state: tableUnknown}
 		}
 	}
 	for key := range s.tempEntries {
 		if key.schema == lower {
+			s.poisonSequenceRefsFromEntry(s.tempEntries[key])
 			s.tempEntries[key] = &batchTableEntry{state: tableUnknown}
+		}
+	}
+	for key := range s.sequenceEntries {
+		if key.schema == lower {
+			// Resolved tombstone: the batch's undecidable answer is final —
+			// a later provider read must not revive pre-invalidated state.
+			s.sequenceEntries[key] = &batchSequenceEntry{state: sequenceUnknown, resolved: true}
 		}
 	}
 }
 
+// poisonSequenceRefsFromEntry retires the proven inbound edges a table
+// carried when its shape becomes undecidable: the columns' sequence
+// references might persist or might be gone, so every target they named
+// loses reference-set completeness (T21-R1 B2).
+func (s *batchState) poisonSequenceRefsFromEntry(entry *batchTableEntry) {
+	if entry == nil || entry.shape == nil {
+		return
+	}
+	for _, column := range entry.shape.Columns {
+		if column.DefaultExpression == nil {
+			continue
+		}
+		for _, ref := range column.DefaultExpression.SequenceRefs {
+			s.poisonSequenceRefTarget(s.sequenceKeyFor(ref))
+		}
+	}
+}
+
+// poisonSequenceRefTarget marks one sequence's inbound set unprovable —
+// the batch cannot tell whether an authored or formerly-derived edge still
+// exists, so completeness stays unknown instead of collapsing to empty.
+func (s *batchState) poisonSequenceRefTarget(key sequenceKey) {
+	entry := s.sequenceEntries[key]
+	if entry == nil {
+		entry = &batchSequenceEntry{state: sequenceUnknown}
+		s.sequenceEntries[key] = entry
+	}
+	entry.refsDiverged = true
+}
+
 func (s *batchState) invalidateKey(key batchTableKey) {
+	s.poisonSequenceRefsFromEntry(s.entries[key])
 	s.entries[key] = &batchTableEntry{state: tableUnknown}
 }
 

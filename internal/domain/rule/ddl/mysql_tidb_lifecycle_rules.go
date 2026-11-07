@@ -18,6 +18,11 @@ type mysqlTidbLifecycleRule struct {
 	objectType string
 	message    string
 	suggestion string
+	// adjudicate, when set, lets a lifecycle notice consume the shared
+	// ordered-state judgment instead of the unconditional single finding:
+	// the hook returns (findings, true) to own the verdict or (nil, false)
+	// to fall back to the generic path (T21-R1 B1 — sequence notices).
+	adjudicate func(level rule.Level, statement spec.Statement) ([]rule.Finding, bool)
 }
 
 func newMySQLTiDBLifecycleRule(id string, level rule.Level, operation spec.DDLOperation, objectType string, message string, suggestion string, cfg policy.RulePolicy) (rule.StatementRule, error) {
@@ -52,6 +57,11 @@ func (r mysqlTidbLifecycleRule) AppliesTo(statement spec.Statement) bool {
 func (r mysqlTidbLifecycleRule) Evaluate(ctx context.Context, statement spec.Statement) ([]rule.Finding, error) {
 	if !r.AppliesTo(statement) {
 		return nil, nil
+	}
+	if r.adjudicate != nil {
+		if findings, handled := r.adjudicate(r.level, statement); handled {
+			return findings, nil
+		}
 	}
 	objectName := statement.DDL.ObjectName
 	message := r.message
@@ -277,28 +287,46 @@ func newDropPlacementPolicyNoticeRule(cfg policy.RulePolicy) (rule.StatementRule
 }
 
 func newCreateSequenceNoticeRule(cfg policy.RulePolicy) (rule.StatementRule, error) {
-	return newMySQLTiDBLifecycleRule(
+	base, err := newMySQLTiDBLifecycleRule(
 		ruleIDCreateSequenceNotice, rule.LevelNotice, spec.DDLOperationCreateSequence, "sequence",
-		"CREATE SEQUENCE %q creates a new sequence generator",
+		"CREATE SEQUENCE %q declares a new sequence generator",
 		"review sequence options and initial values before deploying",
 		cfg,
 	)
+	if err != nil {
+		return nil, err
+	}
+	n := base.(mysqlTidbLifecycleRule)
+	n.adjudicate = sequenceNoticeAdjudicator("create", n.message, n.suggestion)
+	return n, nil
 }
 
 func newAlterSequenceNoticeRule(cfg policy.RulePolicy) (rule.StatementRule, error) {
-	return newMySQLTiDBLifecycleRule(
+	base, err := newMySQLTiDBLifecycleRule(
 		ruleIDAlterSequenceNotice, rule.LevelNotice, spec.DDLOperationAlterSequence, "sequence",
-		"ALTER SEQUENCE %q modifies an existing sequence generator",
+		"ALTER SEQUENCE %q declares changes to a sequence generator",
 		"review sequence changes for impact on auto-generated values",
 		cfg,
 	)
+	if err != nil {
+		return nil, err
+	}
+	n := base.(mysqlTidbLifecycleRule)
+	n.adjudicate = sequenceNoticeAdjudicator("alter", n.message, n.suggestion)
+	return n, nil
 }
 
 func newDropSequenceNoticeRule(cfg policy.RulePolicy) (rule.StatementRule, error) {
-	return newMySQLTiDBLifecycleRule(
+	base, err := newMySQLTiDBLifecycleRule(
 		ruleIDDropSequenceNotice, rule.LevelNotice, spec.DDLOperationDropSequence, "sequence",
-		"DROP SEQUENCE %q removes a sequence generator",
+		"DROP SEQUENCE %q declares removal of a sequence generator",
 		"verify no applications or default values reference this sequence before dropping",
 		cfg,
 	)
+	if err != nil {
+		return nil, err
+	}
+	n := base.(mysqlTidbLifecycleRule)
+	n.adjudicate = sequenceNoticeAdjudicator("drop", n.message, n.suggestion)
+	return n, nil
 }

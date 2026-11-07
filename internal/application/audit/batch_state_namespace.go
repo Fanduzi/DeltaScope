@@ -260,5 +260,6 @@ func (s *batchState) invalidateBound(ctx context.Context, statement spec.Stateme
 }
 
 func (s *batchState) invalidateTempKey(key batchTableKey) {
+	s.poisonSequenceRefsFromEntry(s.tempEntries[key])
 	s.tempEntries[key] = &batchTableEntry{state: tableUnknown}
 }

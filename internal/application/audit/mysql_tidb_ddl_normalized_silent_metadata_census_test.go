@@ -87,10 +87,12 @@ var tidbPromotedMetadataCases = []metadataCensusCase{
 	{Name: "ALTER PLACEMENT POLICY", SQL: "ALTER PLACEMENT POLICY p1 PRIMARY_REGION='us-west-1' REGIONS='us-west-1'", Sensitive: true,
 		ForbiddenSubstrings: []string{"us-west-1"}, ExpectFindings: true},
 	{Name: "DROP PLACEMENT POLICY", SQL: "DROP PLACEMENT POLICY p1", ExpectFindings: true},
+	// T21: sequence options are typed declarations — supported under TiDB.
+	// Option values stay out of findings either way.
 	{Name: "CREATE SEQUENCE", SQL: "CREATE SEQUENCE seq1 START WITH 1 INCREMENT BY 1", Sensitive: true,
-		ForbiddenSubstrings: []string{"START WITH 1", "INCREMENT BY 1"}, ExpectFindings: true, ExpectIncomplete: true},
+		ForbiddenSubstrings: []string{"START WITH 1", "INCREMENT BY 1"}, ExpectFindings: true},
 	{Name: "ALTER SEQUENCE", SQL: "ALTER SEQUENCE seq1 START WITH 100", Sensitive: true,
-		ForbiddenSubstrings: []string{"START WITH 100"}, ExpectFindings: true, ExpectIncomplete: true},
+		ForbiddenSubstrings: []string{"START WITH 100"}, ExpectFindings: true},
 	{Name: "DROP SEQUENCE", SQL: "DROP SEQUENCE seq1", ExpectFindings: true},
 	{Name: "CREATE PROCEDURE", SQL: "CREATE PROCEDURE p_cleanup() SELECT 1", Sensitive: true,
 		ForbiddenSubstrings: []string{"SELECT 1"}, ExpectUnsupported: true},

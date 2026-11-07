@@ -63,6 +63,12 @@ type Metadata struct {
 	// ALTER DATABASE binds the request's trusted schema — never a
 	// connection guess.
 	SchemaTarget *ObjectSnapshot `json:"schema_target,omitempty"`
+	// Sequences binds each sequence identity the statement touches to its
+	// ordered pre-state, keyed `schema.name` (effective schema, lowercase).
+	// Values are owned projections — never live registry pointers. Runtime
+	// facts (current/next value, persisted position) are absent by design;
+	// rules that need them emit bounded evidence gaps (T21/#100).
+	Sequences map[string]*SequenceState `json:"sequences,omitempty"`
 }
 
 // MetadataSchemaTarget is the ordered schema binding accessor rules use —
@@ -539,6 +545,16 @@ type ObjectSnapshot struct {
 	Exists              bool              `json:"exists"`
 	Attributes          map[string]string `json:"attributes,omitempty"`
 	AmbiguousCandidates []string          `json:"ambiguous_candidates,omitempty"`
+	// Sequence carries the provider-proven sequence definition parameters
+	// when the resolved object is a sequence. Internal evidence only —
+	// definition parameters are never runtime issuance progress (T21/#100).
+	Sequence *SequenceDefinition `json:"-"`
+	// SequenceReferences is the bounded inbound-reference read for a proven
+	// sequence identity — the catalog's owner-slot/target edge list. A nil
+	// slice means the read never happened — never a proven-empty set;
+	// SequenceReferencesUnknown reports the same unvouched shape explicitly.
+	SequenceReferences        []SequenceRefEdge `json:"-"`
+	SequenceReferencesUnknown bool              `json:"-"`
 }
 
 // ObjectLookupRequest describes one object to resolve from live metadata.

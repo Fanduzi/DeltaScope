@@ -1724,12 +1724,12 @@ rows:
     subactions: ["CREATE SEQUENCE", "START WITH", "INCREMENT BY", "MINVALUE/MAXVALUE", "CYCLE", "CACHE/NOCACHE", "SHOW"]
     sql_shape: "CREATE SEQUENCE seq1 START WITH 1 INCREMENT BY 1"
     prerequisites: "TiDB-only object (MySQL vendor boundary covered by T03 oracle)"
-    status: generic_notice
-    status_evidence: "2026-09-24 T03 rework (#82): extracted-but-unchecked option facts now carry bounded unsupported evidence (create_sequence.options when an option list is present) and coverage=incomplete; option semantics still owned by T21. 2026-09-22 CLI probe: only ddl.create_sequence.notice fires; option facts unchecked. 2026-09-25: the shared table-option tail accepted by CREATE SEQUENCE records create_sequence.option.<name> unaudited evidence"
+    status: semantically_checked
+    status_evidence: "2026-11-06 T21-A1 (#100): typed option declarations modeled end to end — ordered option list (START/INCREMENT/MINVALUE/MAXVALUE/CACHE/CYCLE/COMMENT presence), IF NOT EXISTS guard, shared table-namespace conflict, proven-absent create lands a batch-derived definition while unvouched targets stay unknown; ddl.tidb.sequence.valid and ddl.tidb.sequence.cycle.warn adjudicate; create_sequence.options unaudited aspect retired. 2026-11-07 T21-R1 (#100 remediation): the legacy create notice now consumes the shared ordered outcome — a proven duplicate target or IF NOT EXISTS guard no-op suppresses the success claim while applicable/unproven targets keep bounded declarative intent; the official TiDB ResolveObject reader loads information_schema.SEQUENCES definitions (nullable members unproven, zero rows unknown, errors propagate). 2026-09-24 T03 rework (#82): extracted-but-unchecked option facts carried bounded unsupported evidence. 2026-09-22 CLI probe: only ddl.create_sequence.notice fires"
     targets: "sequence identity, start/increment/bounds/cycle/cache"
     acceptance:
-      dimensions: "option capture, MySQL boundary stays explicit (not TiDB support on mysql)"
-      refs: ["missing: owner adds option fixtures"]
+      dimensions: "typed options, guards, namespace conflict, ordered post-state, outcome-consistent notice; runtime issuance progress deferred to A2, native oracles NATIVE-PENDING"
+      refs: ["file:internal/domain/spec/sequence.go", "file:internal/application/audit/batch_state_sequence.go", "file:internal/application/audit/batch_state_t21_test.go", "file:internal/application/audit/batch_state_t21r1_test.go", "file:internal/domain/rule/ddl/sequence_rules.go", "file:internal/infrastructure/metadata/mysql/provider_t21r1_test.go", "file:internal/application/auditmeta/audit_t21r1_test.go", "file:testdata/ddl-golden/T21.json", "file:testdata/sql-corpus/tidb/ddl/findings/sequence_lifecycle_rules.sql"]
     owner: T21
 
   - id: tidb.alter-sequence
@@ -1740,12 +1740,12 @@ rows:
     subactions: ["ALTER SEQUENCE ... RESTART [WITH]", "option changes"]
     sql_shape: "ALTER SEQUENCE seq1 RESTART WITH 1"
     prerequisites: "current sequence position known for collision risk"
-    status: generic_notice
-    status_evidence: "2026-09-24 T03 rework (#82): extracted-but-unchecked option facts now carry bounded unsupported evidence (alter_sequence.options when an option list is present) and coverage=incomplete; option semantics still owned by T21. 2026-09-22 CLI probe: only ddl.alter_sequence.notice on both option-change and RESTART forms"
+    status: semantically_checked
+    status_evidence: "2026-11-06 T21-A1 (#100): RESTART / RESTART WITH separated from definition parameters — ddl.tidb.sequence.restart.warn fires on a proven-live target and owns the sequence.runtime_state evidence gap (no collision claim, no predicted next value); non-RESTART definition changes merge onto the proven definition with the runtime premise owed by ddl.tidb.sequence.valid; guards, schema binding, and ordered post-state modeled. 2026-11-07 T21-R1 (#100 remediation): the legacy alter notice suppresses on proven-absent targets and IF EXISTS guard no-ops instead of claiming modification; the official TiDB ResolveObject reader loads information_schema.SEQUENCES definitions. 2026-09-24 T03 rework (#82): option facts carried bounded unsupported evidence"
     targets: "sequence identity, restart vs option-change distinction, collision risk"
     acceptance:
-      dimensions: "restart-specific warning, no invented collision claims"
-      refs: ["missing: owner adds restart fixtures"]
+      dimensions: "restart warning + runtime gap, definition merge, guards, outcome-consistent notice; current/next value and restart recovery deferred to A2, native oracles NATIVE-PENDING"
+      refs: ["file:internal/domain/spec/sequence.go", "file:internal/application/audit/batch_state_sequence.go", "file:internal/application/audit/batch_state_t21_test.go", "file:internal/application/audit/batch_state_t21r1_test.go", "file:internal/domain/rule/ddl/sequence_rules.go", "file:internal/infrastructure/metadata/mysql/provider_t21r1_test.go", "file:internal/application/auditmeta/audit_t21r1_test.go", "file:testdata/ddl-golden/T21.json", "file:testdata/sql-corpus/tidb/ddl/findings/sequence_lifecycle_rules.sql"]
     owner: T21
 
   - id: tidb.drop-sequence
@@ -1756,12 +1756,12 @@ rows:
     subactions: ["DROP SEQUENCE", "IF EXISTS"]
     sql_shape: "DROP SEQUENCE seq1"
     prerequisites: "none"
-    status: generic_notice
-    status_evidence: "2026-09-22 CLI probe: only ddl.drop_sequence.notice fires"
+    status: semantically_checked
+    status_evidence: "2026-11-06 T21-A1 (#100): per-target adjudication modeled — multi-target DROP binds every named identity, a proven member drops while a proven-absent member blocks via ddl.tidb.sequence.valid (no all-or-nothing rollback), IF EXISTS absorbs the absent member, a vouched inbound-reference set warns via ddl.tidb.sequence.references.warn, and dropped-schema members prove absent. 2026-11-07 T21-R1 (#100 remediation): references graduate to structured owner-slot/target edges — one warning per proven edge (provider-vouched or batch-derived from live column defaults), the rule owes unknown_sequence_references whenever completeness is unvouched or batch-diverged, proven-empty sets stay silent, undecidable owners retire edges instead of keeping stale positives, and the legacy drop notice suppresses on proven-absent targets/guard no-ops while adjudicating per member. 2026-09-22 CLI probe: only ddl.drop_sequence.notice fires"
     targets: "sequence identity"
     acceptance:
-      dimensions: "lifecycle classification"
-      refs: ["missing: owner adds fixtures"]
+      dimensions: "per-target partial effects, guarded forms, bounded references as owner-slot/target edges with completeness gaps, outcome-consistent notice; native multi-target oracle NATIVE-PENDING"
+      refs: ["file:internal/domain/spec/sequence.go", "file:internal/application/audit/batch_state_sequence.go", "file:internal/application/audit/batch_state_t21_test.go", "file:internal/application/audit/batch_state_t21r1_test.go", "file:internal/domain/rule/ddl/sequence_rules.go", "file:internal/infrastructure/metadata/mysql/provider_t21r1_test.go", "file:internal/application/auditmeta/audit_t21r1_test.go", "file:testdata/ddl-golden/T21.json", "file:testdata/sql-corpus/tidb/ddl/findings/sequence_lifecycle_rules.sql"]
     owner: T21
 
   # ================= TiDB: placement policies =================

@@ -226,6 +226,21 @@ func (state *batchState) enrichStatements(ctx context.Context, request *Metadata
 			objectCache[cacheKey] = snapshot
 			return snapshot, nil
 		}
+		// Sequence lookups share the same once-per-request cache: the ordered
+		// binding and the Metadata.Objects projection never ask the provider
+		// twice for the same (schema, type, name) identity.
+		state.sequenceResolver = func(ctx context.Context, lookup spec.ObjectLookupRequest) (*spec.ObjectSnapshot, error) {
+			cacheKey := newObjectLookupKey(&lookup)
+			if snapshot, ok := objectCache[cacheKey]; ok {
+				return snapshot, nil
+			}
+			snapshot, err := resolveObjectSnapshot(ctx, request, dialect, &lookup)
+			if err != nil {
+				return nil, err
+			}
+			objectCache[cacheKey] = snapshot
+			return snapshot, nil
+		}
 	}
 
 	consumed := 0
@@ -394,6 +409,22 @@ func (state *batchState) enrichStatements(ctx context.Context, request *Metadata
 				enriched[i].Metadata = &spec.Metadata{Schema: requestSchema, Instance: instanceFacts, Version: resolvedVersion}
 			}
 			enriched[i].Metadata.PlacementPolicies = projection
+		}
+
+		// Sequence facts attach the registry's ordered pre-state — the
+		// existence and definition answer this statement adjudicates against
+		// (T21/#100).
+		if enriched[i].DDL != nil && enriched[i].DDL.Sequence != nil {
+			sequences, serr := state.sequenceTargetsForStatement(ctx, enriched[i])
+			if serr != nil {
+				return nil, serr
+			}
+			if sequences != nil {
+				if enriched[i].Metadata == nil {
+					enriched[i].Metadata = &spec.Metadata{Schema: metadataSchema, Instance: instanceFacts, Version: resolvedVersion}
+				}
+				enriched[i].Metadata.Sequences = sequences
+			}
 		}
 
 		if err := state.apply(ctx, enriched[i]); err != nil {
@@ -595,6 +626,13 @@ func planObjectLookup(schema string, statement spec.Statement) *spec.ObjectLooku
 		Schema: schema,
 		Type:   objType,
 		Name:   name,
+	}
+	// A qualified sequence target resolves under its authored schema — the
+	// qualifier wins over the request schema everywhere it is read.
+	if ddl.Sequence != nil {
+		if authored := strings.TrimSpace(ddl.Sequence.Schema); authored != "" {
+			req.Schema = authored
+		}
 	}
 	if ddl.Options != nil {
 		if table := strings.TrimSpace(ddl.Options["table"]); table != "" {

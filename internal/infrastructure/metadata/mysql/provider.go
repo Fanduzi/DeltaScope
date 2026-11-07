@@ -1706,8 +1706,10 @@ func referActionName(rule string) string {
 // objects. T17 resolves schema identities through
 // information_schema.SCHEMATA: existence, default charset/collation, the
 // DEFAULT_ENCRYPTION column (MySQL 8.0.16+, capability-probed), and TiDB's
-// TIDB_PLACEMENT_POLICY_NAME binding. Every other object type reports
-// unavailable — the resolver never fabricates coverage it does not query.
+// TIDB_PLACEMENT_POLICY_NAME binding. T21 resolves TiDB sequence identities
+// through information_schema.SEQUENCES definition columns. Every other
+// object type reports unavailable — the resolver never fabricates coverage
+// it does not query.
 func (p *Provider) ResolveObject(ctx context.Context, dialect spec.Dialect, request spec.ObjectLookupRequest) (*spec.ObjectSnapshot, error) {
 	snapshot := &spec.ObjectSnapshot{
 		Schema: request.Schema,
@@ -1715,10 +1717,91 @@ func (p *Provider) ResolveObject(ctx context.Context, dialect spec.Dialect, requ
 		Name:   request.Name,
 		Status: spec.MetadataStatusUnavailable,
 	}
-	if request.Type != "schema" || strings.TrimSpace(request.Name) == "" {
+	if strings.TrimSpace(request.Name) == "" {
 		return snapshot, nil
 	}
-	return p.loadSchemaObject(ctx, dialect, request.Name, snapshot)
+	switch request.Type {
+	case "schema":
+		return p.loadSchemaObject(ctx, dialect, request.Name, snapshot)
+	case "sequence":
+		if dialect != spec.DialectTiDB {
+			// MySQL has no sequence catalog — never emit a TiDB-only query.
+			return snapshot, nil
+		}
+		return p.loadSequenceObject(ctx, request, snapshot)
+	}
+	return snapshot, nil
+}
+
+// loadSequenceObject resolves one TiDB sequence identity through
+// information_schema.SEQUENCES — definition parameters only (T21-R1 B3).
+// Runtime issuance is never queried: no NEXTVAL/SETVAL, no current/next
+// position, no cache consumption. A zero-row answer stays unknown rather
+// than fabricating absence — the catalog filters by privilege, so an
+// invisible sequence is not a proven-missing one. NULL members map to
+// unproven fields (nil), never to guessed defaults. Query, scan, and
+// driver errors propagate wrapped with identity context and are never
+// cached as absence.
+func (p *Provider) loadSequenceObject(ctx context.Context, request spec.ObjectLookupRequest, snapshot *spec.ObjectSnapshot) (*spec.ObjectSnapshot, error) {
+	row := p.db.QueryRowContext(ctx, `
+		select sequence_schema, sequence_name, `+"`increment`"+`, `+"`start`"+`,
+			min_value, max_value, `+"`cache`"+`, cache_value, `+"`cycle`"+`
+		from information_schema.sequences
+		where sequence_schema = ? and sequence_name = ?
+	`, request.Schema, request.Name)
+	var seqSchema, seqName, cache, cycle sql.NullString
+	var increment, start, minValue, maxValue, cacheValue sql.NullInt64
+	if err := row.Scan(&seqSchema, &seqName, &increment, &start, &minValue, &maxValue, &cache, &cacheValue, &cycle); err != nil {
+		if err == sql.ErrNoRows {
+			return snapshot, nil
+		}
+		return nil, fmt.Errorf("query sequence snapshot %s.%s: %w", request.Schema, request.Name, err)
+	}
+	snapshot.Status = spec.MetadataStatusConfirmed
+	snapshot.Exists = true
+	snapshot.Schema = seqSchema.String
+	snapshot.Name = seqName.String
+	snapshot.Sequence = &spec.SequenceDefinition{
+		Increment:  nullInt64Ptr(increment),
+		Start:      nullInt64Ptr(start),
+		MinValue:   nullInt64Ptr(minValue),
+		MaxValue:   nullInt64Ptr(maxValue),
+		CacheValue: nullInt64Ptr(cacheValue),
+		Cache:      catalogYesNo(cache),
+		Cycle:      catalogYesNo(cycle),
+	}
+	// The bounded SEQUENCES read carries no inbound-reference set — the
+	// edge list stays unvouched (never a proven-empty claim).
+	snapshot.SequenceReferencesUnknown = true
+	return snapshot, nil
+}
+
+// nullInt64Ptr projects a nullable catalog number into the definition's
+// unproven-aware pointer shape.
+func nullInt64Ptr(v sql.NullInt64) *int64 {
+	if !v.Valid {
+		return nil
+	}
+	value := v.Int64
+	return &value
+}
+
+// catalogYesNo maps the catalog's YES/NO flag vocabulary; NULL or any
+// unrecognized token stays unproven (nil) rather than a guessed default.
+func catalogYesNo(v sql.NullString) *bool {
+	if !v.Valid {
+		return nil
+	}
+	var value bool
+	switch strings.ToUpper(strings.TrimSpace(v.String)) {
+	case "YES":
+		value = true
+	case "NO":
+		value = false
+	default:
+		return nil
+	}
+	return &value
 }
 
 func (p *Provider) loadSchemaObject(ctx context.Context, dialect spec.Dialect, name string, snapshot *spec.ObjectSnapshot) (*spec.ObjectSnapshot, error) {

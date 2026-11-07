@@ -858,6 +858,10 @@ func Register(registry *rule.Registry, cfg policy.Policy) error {
 		{ruleID: ruleIDCreateSequenceNotice, construct: newCreateSequenceNoticeRule},
 		{ruleID: ruleIDAlterSequenceNotice, construct: newAlterSequenceNoticeRule},
 		{ruleID: ruleIDDropSequenceNotice, construct: newDropSequenceNoticeRule},
+		{ruleID: ruleIDTiDBSequenceValid, construct: newTiDBSequenceValidRule},
+		{ruleID: ruleIDTiDBSequenceRestartWarn, construct: newTiDBSequenceRestartWarnRule},
+		{ruleID: ruleIDTiDBSequenceCycleWarn, construct: newTiDBSequenceCycleWarnRule},
+		{ruleID: ruleIDTiDBSequenceReferencesWarn, construct: newTiDBSequenceReferencesWarnRule},
 		// MySQL/TiDB alter action notice rules.
 		{ruleID: ruleIDAlterAddColumnNotice, construct: newAlterAddColumnNoticeRule},
 		{ruleID: ruleIDAlterAddConstraintNotice, construct: newAlterAddConstraintNoticeRule},

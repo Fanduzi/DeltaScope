@@ -747,6 +747,10 @@ func ddlCoreRules() map[string]RulePolicy {
 		"ddl.create_sequence.notice":         {Enabled: true, Level: rule.LevelNotice, Params: map[string]any{}},
 		"ddl.alter_sequence.notice":          {Enabled: true, Level: rule.LevelNotice, Params: map[string]any{}},
 		"ddl.drop_sequence.notice":           {Enabled: true, Level: rule.LevelNotice, Params: map[string]any{}},
+		"ddl.tidb.sequence.valid":            {Enabled: true, Level: rule.LevelBlocker, Params: map[string]any{}},
+		"ddl.tidb.sequence.restart.warn":     {Enabled: true, Level: rule.LevelWarning, Params: map[string]any{}},
+		"ddl.tidb.sequence.cycle.warn":       {Enabled: true, Level: rule.LevelWarning, Params: map[string]any{}},
+		"ddl.tidb.sequence.references.warn":  {Enabled: true, Level: rule.LevelWarning, Params: map[string]any{}},
 		// MySQL/TiDB alter action notice rules.
 		"ddl.alter.add_column.notice":                  {Enabled: true, Level: rule.LevelNotice, Params: map[string]any{}},
 		"ddl.alter.add_constraint.notice":              {Enabled: true, Level: rule.LevelNotice, Params: map[string]any{}},

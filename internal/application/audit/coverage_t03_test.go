@@ -207,9 +207,8 @@ func TestAuditSQLT03TiDBUnauditedBoundaries(t *testing.T) {
 
 // TestAuditSQLT03TiDBAuditedBoundariesStayComplete guards the audited side of
 // the TiDB boundary: bare sequences, DROP RESOURCE GROUP, and modeled TTL
-// lifecycle declarations keep complete coverage. Option-bearing sequences
-// carry create_sequence.options evidence instead — the option list itself is
-// extracted but unaudited (see the incomplete-aspects table).
+// lifecycle declarations keep complete coverage. Sequence options are typed
+// declarations since T21 — modeled facts, never unaudited aspects.
 func TestAuditSQLT03TiDBAuditedBoundariesStayComplete(t *testing.T) {
 	t.Parallel()
 	configPath := writeAllRulesDisabledPolicy(t)
@@ -348,8 +347,8 @@ func TestAuditSQLT03RecognizedUnauditedAspectsIncomplete(t *testing.T) {
 		{name: "mysql execute prepared", sql: "EXECUTE stmt;", dialect: spec.DialectMySQL, wantFeature: "execute_prepared", wantReason: spec.UnsupportedUnauditedReason, wantKind: "unknown"},
 		{name: "tidb trace", sql: "TRACE DELETE FROM t;", dialect: spec.DialectTiDB, wantFeature: "trace", wantReason: spec.UnsupportedUnauditedReason, wantKind: "unknown"},
 		{name: "tidb explain explore", sql: "EXPLAIN EXPLORE SELECT * FROM t;", dialect: spec.DialectTiDB, wantFeature: "explain_explore", wantReason: spec.UnsupportedUnauditedReason, wantKind: "unknown"},
-		{name: "tidb sequence options", sql: "CREATE SEQUENCE seq1 START WITH 1;", dialect: spec.DialectTiDB, wantFeature: "create_sequence.options", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
-		{name: "tidb alter sequence options", sql: "ALTER SEQUENCE seq1 START WITH 100;", dialect: spec.DialectTiDB, wantFeature: "alter_sequence.options", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
+		// Sequence option lists graduated to typed declarations in T21 —
+		// modeled facts, no longer unaudited aspects under TiDB.
 		// Placement-policy member sets and schema bindings are modeled facts
 		// since T20 — no longer unaudited aspects under TiDB.
 		{name: "mysql alter schema placement vendor", sql: "ALTER DATABASE d1 PLACEMENT POLICY=p1;", dialect: spec.DialectMySQL, wantFeature: "alter_schema.option.placement_policy", wantReason: spec.UnsupportedVendorBoundaryReason, wantKind: "ddl"},
@@ -384,7 +383,8 @@ func TestAuditSQLT03RecognizedUnauditedAspectsIncomplete(t *testing.T) {
 		// ALTER ADD CHECK graduated to audited semantics in T12.
 		{name: "mysql alter add list comment interference", sql: "ALTER TABLE t ADD (c INT COMMENT 'ADD CONSTRAINT', UNIQUE KEY uk (c) GLOBAL);", dialect: spec.DialectMySQL, wantFeature: "alter_table.add_index.index.global", wantReason: spec.UnsupportedVendorBoundaryReason, wantKind: "ddl"},
 		{name: "mysql drop user multi", sql: "DROP USER u1, u2;", dialect: spec.DialectMySQL, wantFeature: "drop_user.unaudited_targets", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
-		{name: "tidb drop sequence multi", sql: "DROP SEQUENCE s1, s2;", dialect: spec.DialectTiDB, wantFeature: "drop_sequence.unaudited_targets", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
+		// Multi-target DROP SEQUENCE is modeled per-target since T21 — no
+		// unaudited-targets aspect remains.
 		{name: "tidb drop role multi", sql: "DROP ROLE r1, r2;", dialect: spec.DialectTiDB, wantFeature: "drop_role.unaudited_targets", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
 		{name: "mysql grant multi", sql: "GRANT SELECT ON db.* TO 'a'@'%', 'b'@'%';", dialect: spec.DialectMySQL, wantFeature: "grant.unaudited_targets", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
 		{name: "tidb revoke single", sql: "REVOKE SELECT ON db.* FROM 'a'@'%';", dialect: spec.DialectTiDB, wantFeature: "revoke.unaudited_targets", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
@@ -441,7 +441,8 @@ func TestAuditSQLT03RecognizedUnauditedAspectsIncomplete(t *testing.T) {
 		{name: "mysql create index lock algorithm", sql: "CREATE INDEX ix ON t (c) ALGORITHM=INPLACE LOCK=NONE;", dialect: spec.DialectMySQL, wantFeature: "create_index.option.lock_algorithm", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
 		{name: "tidb drop index lock algorithm", sql: "DROP INDEX ix ON t LOCK=SHARED;", dialect: spec.DialectTiDB, wantFeature: "drop_index.option.lock_algorithm", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
 		{name: "mysql create procedure params", sql: "CREATE PROCEDURE p(IN x INT) SELECT 1;", dialect: spec.DialectMySQL, wantFeature: "create_procedure.option.params", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
-		{name: "tidb create sequence table option", sql: "CREATE SEQUENCE s COMMENT 'x';", dialect: spec.DialectTiDB, wantFeature: "create_sequence.option.comment", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
+		// CREATE SEQUENCE COMMENT is a typed option member since T21 —
+		// declared, never an unaudited aspect.
 		// Per-spec account auth clauses and placement-policy REPLACE — the field
 		// census surface that previously completed silently.
 		{name: "mysql create user identified", sql: "CREATE USER u IDENTIFIED BY 'x';", dialect: spec.DialectMySQL, wantFeature: "create_user.option.identified", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},

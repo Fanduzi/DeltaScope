@@ -1,0 +1,33 @@
+name: sequence_lifecycle_rules
+dialect: tidb
+category: ddl
+metadata:
+  schema: golden
+  sequences:
+    golden.seq:
+      status: confirmed
+      definition:
+        start: 1
+        increment: 1
+    golden.cyc:
+      status: not_found
+    golden.absent_seq:
+      status: not_found
+    golden.seq_ref:
+      status: confirmed
+      references:
+        - owner_kind: table
+          owner_schema: golden
+          owner_name: t
+          slot: "default:c"
+expect:
+  parse_ok: true
+  findings:
+    include:
+      - ddl.tidb.sequence.valid
+      - ddl.tidb.sequence.restart.warn
+      - ddl.tidb.sequence.cycle.warn
+      - ddl.tidb.sequence.references.warn
+      - ddl.alter_sequence.notice
+      - ddl.create_sequence.notice
+      - ddl.drop_sequence.notice

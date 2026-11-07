@@ -119,6 +119,11 @@ type DDL struct {
 	// database, not a named object. ObjectName stays empty; the ordered
 	// state binds the request's trusted schema downstream.
 	AlterDefaultSchema bool `json:"alter_default_schema,omitempty"`
+	// Sequence carries the authored TiDB sequence declaration on
+	// CREATE/ALTER/DROP SEQUENCE — identity, guards, the ordered option
+	// list, and every drop target. It is internal evidence (never
+	// serialized); definition and runtime facts live elsewhere (T21/#100).
+	Sequence *SequenceDeclaration `json:"-"`
 }
 
 // TemporaryScope identifies the parsed temporary-table scope on CREATE and

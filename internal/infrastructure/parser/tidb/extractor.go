@@ -1898,56 +1898,142 @@ func placementOptionKey(tp ast.PlacementOptionType) string {
 	}
 }
 
+// sequenceOptionKinds maps the parser's SequenceOptionType enum to the bounded
+// spec vocabulary. Every parsed member lands here in authored order —
+// duplicates included — so declaration fidelity never collapses into a map.
+func sequenceOptionKind(tp ast.SequenceOptionType) spec.SequenceOptionKind {
+	switch tp {
+	case ast.SequenceOptionIncrementBy:
+		return spec.SequenceOptionIncrementBy
+	case ast.SequenceStartWith:
+		return spec.SequenceOptionStartWith
+	case ast.SequenceMinValue:
+		return spec.SequenceOptionMinValue
+	case ast.SequenceNoMinValue:
+		return spec.SequenceOptionNoMinValue
+	case ast.SequenceMaxValue:
+		return spec.SequenceOptionMaxValue
+	case ast.SequenceNoMaxValue:
+		return spec.SequenceOptionNoMaxValue
+	case ast.SequenceCache:
+		return spec.SequenceOptionCache
+	case ast.SequenceNoCache:
+		return spec.SequenceOptionNoCache
+	case ast.SequenceCycle:
+		return spec.SequenceOptionCycle
+	case ast.SequenceNoCycle:
+		return spec.SequenceOptionNoCycle
+	case ast.SequenceRestart:
+		return spec.SequenceOptionRestart
+	case ast.SequenceRestartWith:
+		return spec.SequenceOptionRestartWith
+	default:
+		return spec.SequenceOptionUnknown
+	}
+}
+
+func sequenceOptionValue(kind spec.SequenceOptionKind, intValue int64) *int64 {
+	switch kind {
+	case spec.SequenceOptionIncrementBy, spec.SequenceOptionStartWith,
+		spec.SequenceOptionMinValue, spec.SequenceOptionMaxValue,
+		spec.SequenceOptionCache, spec.SequenceOptionRestartWith:
+		value := intValue
+		return &value
+	default:
+		return nil
+	}
+}
+
+func extractSequenceOptions(options []*ast.SequenceOption) []spec.SequenceOption {
+	if len(options) == 0 {
+		return nil
+	}
+	out := make([]spec.SequenceOption, 0, len(options))
+	for _, opt := range options {
+		if opt == nil {
+			continue
+		}
+		kind := sequenceOptionKind(opt.Tp)
+		out = append(out, spec.SequenceOption{
+			Kind:  kind,
+			Value: sequenceOptionValue(kind, opt.IntValue),
+		})
+	}
+	return out
+}
+
 func extractCreateSequence(stmt *ast.CreateSequenceStmt) *spec.DDL {
+	declaration := &spec.SequenceDeclaration{IfNotExists: stmt.IfNotExists}
 	name := ""
 	if stmt.Name != nil {
 		name = stmt.Name.Name.L
+		declaration.Name = name
+		declaration.Schema = stmt.Name.Schema.L
 	}
+	declaration.Options = extractSequenceOptions(stmt.SeqOptions)
 	ddl := &spec.DDL{
 		Operation:  spec.DDLOperationCreateSequence,
 		ObjectName: name,
 		ObjectType: "sequence",
-	}
-	if len(stmt.SeqOptions) > 0 {
-		ddl.Options = map[string]string{"has_options": "true"}
+		Sequence:   declaration,
 	}
 	for _, opt := range stmt.TblOptions {
 		if opt == nil {
 			continue
 		}
-		// CREATE SEQUENCE accepts the shared table-option tail (e.g. COMMENT);
-		// every member is an unmodeled aspect on a sequence object.
+		// COMMENT is a bounded presence marker only — the text never enters
+		// diagnostics or state. Every other shared table-option tail member
+		// stays an unmodeled aspect on a sequence object.
+		if opt.Tp == ast.TableOptionComment {
+			declaration.CommentDeclared = true
+			continue
+		}
 		ddl.UnextractedOptions = append(ddl.UnextractedOptions, tableOptionName(opt.Tp))
 	}
 	return ddl
 }
 
 func extractAlterSequence(stmt *ast.AlterSequenceStmt) *spec.DDL {
+	declaration := &spec.SequenceDeclaration{IfExists: stmt.IfExists}
 	name := ""
 	if stmt.Name != nil {
 		name = stmt.Name.Name.L
+		declaration.Name = name
+		declaration.Schema = stmt.Name.Schema.L
 	}
-	ddl := &spec.DDL{
+	declaration.Options = extractSequenceOptions(stmt.SeqOptions)
+	return &spec.DDL{
 		Operation:  spec.DDLOperationAlterSequence,
 		ObjectName: name,
 		ObjectType: "sequence",
+		Sequence:   declaration,
 	}
-	if len(stmt.SeqOptions) > 0 {
-		ddl.Options = map[string]string{"has_options": "true"}
-	}
-	return ddl
 }
 
 func extractDropSequence(stmt *ast.DropSequenceStmt) *spec.DDL {
+	declaration := &spec.SequenceDeclaration{IfExists: stmt.IfExists}
 	name := ""
 	if len(stmt.Sequences) > 0 && stmt.Sequences[0] != nil {
 		name = stmt.Sequences[0].Name.L
+		declaration.Name = name
+		declaration.Schema = stmt.Sequences[0].Schema.L
+	}
+	// Every target identity is preserved in source order — a multi-target
+	// DROP adjudicates per member, never all-or-nothing.
+	for _, seq := range stmt.Sequences {
+		if seq == nil {
+			continue
+		}
+		declaration.Targets = append(declaration.Targets, spec.SequenceRef{
+			Schema: seq.Schema.L,
+			Name:   seq.Name.L,
+		})
 	}
 	return &spec.DDL{
-		Operation:      spec.DDLOperationDropSequence,
-		ObjectName:     name,
-		ObjectType:     "sequence",
-		OmittedTargets: len(stmt.Sequences) - 1,
+		Operation:  spec.DDLOperationDropSequence,
+		ObjectName: name,
+		ObjectType: "sequence",
+		Sequence:   declaration,
 	}
 }
 

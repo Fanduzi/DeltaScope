@@ -600,18 +600,18 @@ func TestT05A7VendorAndAspectBoundariesAtZeroQuota(t *testing.T) {
 		if !errors.Is(err, ErrUnsupportedStatement) {
 			t.Fatalf("expected ErrUnsupportedStatement, got %v", err)
 		}
-		if len(result.Unsupported) != 3 {
-			t.Fatalf("unsupported entries = %d, want 3: %+v", len(result.Unsupported), result.Unsupported)
+		if len(result.Unsupported) != 2 {
+			t.Fatalf("unsupported entries = %d, want 2: %+v", len(result.Unsupported), result.Unsupported)
 		}
 		raw := result.Statements[0].RawSQL
-		features := []string{"create_sequence", "create_sequence.options", "audit.resource_limit"}
-		reasons := []string{spec.UnsupportedVendorBoundaryReason, spec.UnsupportedUnauditedReason, spec.AuditResourceLimitReason}
+		features := []string{"create_sequence", "audit.resource_limit"}
+		reasons := []string{spec.UnsupportedVendorBoundaryReason, spec.AuditResourceLimitReason}
 		for i, item := range result.Unsupported {
 			if item.Feature != features[i] || item.Reason != reasons[i] || item.SQL != raw {
 				t.Fatalf("unsupported[%d] = %+v, want feature=%s reason=%s sql=%q", i, item, features[i], reasons[i], raw)
 			}
 		}
-		t05A7AssertResourceEntry(t, result.Unsupported[2], result.Statements[0], 0, 0)
+		t05A7AssertResourceEntry(t, result.Unsupported[1], result.Statements[0], 0, 0)
 
 		input := t05A7Extract(t, sql, spec.DialectMySQL)
 		if input[0].Unsupported == nil {

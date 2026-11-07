@@ -1062,6 +1062,26 @@ rules:
     level: warning
     params:
 
+  ddl.tidb.sequence.valid:
+    enabled: true
+    level: blocker
+    params:
+
+  ddl.tidb.sequence.restart.warn:
+    enabled: true
+    level: warning
+    params:
+
+  ddl.tidb.sequence.cycle.warn:
+    enabled: true
+    level: warning
+    params:
+
+  ddl.tidb.sequence.references.warn:
+    enabled: true
+    level: warning
+    params:
+
   ddl.tidb.local_temporary.alter:
     enabled: true
     level: blocker

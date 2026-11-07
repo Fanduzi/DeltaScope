@@ -37,7 +37,8 @@ func corpusMetadataFields(tc corpusExpected) (string, MetadataProvider) {
 	if tc.Metadata == nil {
 		return "", nil
 	}
-	if tc.Metadata.Instance == nil && len(tc.Metadata.Tables) == 0 && len(tc.Metadata.IndexOwners) == 0 {
+	if tc.Metadata.Instance == nil && len(tc.Metadata.Tables) == 0 && len(tc.Metadata.IndexOwners) == 0 &&
+		len(tc.Metadata.PlacementPolicies) == 0 && len(tc.Metadata.Sequences) == 0 {
 		return strings.TrimSpace(tc.Metadata.Schema), nil
 	}
 	return strings.TrimSpace(tc.Metadata.Schema), newCorpusMetadataProvider(tc.Metadata)
@@ -50,6 +51,10 @@ type corpusFixtureMetadataProvider struct {
 	// placement nil means the catalog is unvouched; a non-nil map is the
 	// proven policy set (empty map = proven-empty).
 	placement map[string]*spec.PlacementPolicyFact
+	// sequences nil means every sequence identity is unvouched; entries are
+	// keyed `schema.name` and carry the catalog's existence answer plus —
+	// when proven — definition parameters and the bounded reference read.
+	sequences map[string]*spec.ObjectSnapshot
 }
 
 func newCorpusMetadataProvider(metadata *corpusMetadata) *corpusFixtureMetadataProvider {
@@ -86,7 +91,71 @@ func newCorpusMetadataProvider(metadata *corpusMetadata) *corpusFixtureMetadataP
 			}
 		}
 	}
+	if metadata.Sequences != nil {
+		provider.sequences = make(map[string]*spec.ObjectSnapshot, len(metadata.Sequences))
+		for key, object := range metadata.Sequences {
+			provider.sequences[strings.ToLower(strings.TrimSpace(key))] = corpusSequenceToSnapshot(key, metadata.Schema, object)
+		}
+	}
 	return provider
+}
+
+// corpusSequenceToSnapshot converts a fixture sequence entry into the
+// catalog answer the object resolver would return. A conflict_kind marks
+// the identity bound to a non-sequence object (sequences share the table
+// namespace); otherwise the status word is the provenance answer.
+func corpusSequenceToSnapshot(key, defaultSchema string, object corpusSequenceObject) *spec.ObjectSnapshot {
+	schema, name := defaultSchema, strings.TrimSpace(key)
+	if idx := strings.LastIndex(name, "."); idx >= 0 {
+		schema, name = strings.TrimSpace(name[:idx]), strings.TrimSpace(name[idx+1:])
+	}
+	snapshot := &spec.ObjectSnapshot{
+		Schema: schema,
+		Name:   name,
+		Type:   "sequence",
+	}
+	switch strings.ToLower(strings.TrimSpace(object.Status)) {
+	case "confirmed":
+		snapshot.Status = spec.MetadataStatusConfirmed
+		snapshot.Exists = true
+	case "not_found":
+		snapshot.Status = spec.MetadataStatusNotFound
+	default:
+		snapshot.Status = spec.MetadataStatusUnavailable
+	}
+	if object.Exists != nil {
+		snapshot.Exists = *object.Exists
+	}
+	if object.ConflictKind != "" {
+		snapshot.Type = object.ConflictKind
+	}
+	if object.Definition != nil {
+		snapshot.Sequence = &spec.SequenceDefinition{
+			Start:      object.Definition.Start,
+			Increment:  object.Definition.Increment,
+			MinValue:   object.Definition.MinValue,
+			MaxValue:   object.Definition.MaxValue,
+			CacheValue: object.Definition.CacheValue,
+			Cache:      object.Definition.Cache,
+			Cycle:      object.Definition.Cycle,
+		}
+	}
+	if object.References != nil {
+		edges := make([]spec.SequenceRefEdge, 0, len(object.References))
+		for _, ref := range object.References {
+			edges = append(edges, spec.SequenceRefEdge{
+				OwnerKind:    ref.OwnerKind,
+				OwnerSchema:  ref.OwnerSchema,
+				OwnerName:    ref.OwnerName,
+				Slot:         ref.Slot,
+				TargetSchema: snapshot.Schema,
+				TargetName:   snapshot.Name,
+			})
+		}
+		snapshot.SequenceReferences = edges
+	}
+	snapshot.SequenceReferencesUnknown = object.ReferencesUnknown
+	return snapshot
 }
 
 func (p *corpusFixtureMetadataProvider) LoadInstanceFacts(context.Context, spec.Dialect, string) (*spec.InstanceFacts, error) {
@@ -115,6 +184,31 @@ func (p *corpusFixtureMetadataProvider) ResolveTableForIndex(_ context.Context, 
 // keeps the catalog unvouched, never a fabricated empty set.
 func (p *corpusFixtureMetadataProvider) LoadPlacementPolicies(context.Context, spec.Dialect) (map[string]*spec.PlacementPolicyFact, error) {
 	return p.placement, nil
+}
+
+// ResolveObject serves the fixture's sequence object answers — keyed
+// `schema.name`. An unkeyed identity or a nil sequence map is unvouched,
+// never a silent absent; non-sequence lookups stay unavailable.
+func (p *corpusFixtureMetadataProvider) ResolveObject(_ context.Context, _ spec.Dialect, request spec.ObjectLookupRequest) (*spec.ObjectSnapshot, error) {
+	if request.Type != "sequence" || p.sequences == nil {
+		return &spec.ObjectSnapshot{
+			Schema: request.Schema,
+			Type:   request.Type,
+			Name:   request.Name,
+			Status: spec.MetadataStatusUnavailable,
+		}, nil
+	}
+	key := strings.ToLower(strings.TrimSpace(request.Schema) + "." + strings.TrimSpace(request.Name))
+	snapshot, ok := p.sequences[key]
+	if !ok {
+		return &spec.ObjectSnapshot{
+			Schema: request.Schema,
+			Type:   request.Type,
+			Name:   request.Name,
+			Status: spec.MetadataStatusUnavailable,
+		}, nil
+	}
+	return snapshot, nil
 }
 
 func corpusTableSnapshotToSpec(tableName, defaultSchema string, snapshot corpusTableSnapshot) spec.TableSnapshot {

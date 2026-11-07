@@ -54,11 +54,12 @@ func expressionFacts(expr ast.ExprNode) spec.ExpressionFacts {
 	v.known = true
 	expr.Accept(v)
 	facts := spec.ExpressionFacts{
-		References: v.references,
-		Functions:  sortedKeys(v.functions),
-		Features:   sortedKeys(v.features),
-		TopForm:    expressionTopForm(expr),
-		CallCount:  v.calls,
+		References:   v.references,
+		Functions:    sortedKeys(v.functions),
+		Features:     sortedKeys(v.features),
+		TopForm:      expressionTopForm(expr),
+		CallCount:    v.calls,
+		SequenceRefs: v.sequenceRefs,
 	}
 	_, facts.RootParenthesized = expr.(*ast.ParenthesesExpr)
 	facts.Known = v.known && v.nodes <= expressionFactNodeLimit && !v.limitHit
@@ -128,14 +129,16 @@ func numericCoerceBinaryOp(op opcode.Op) bool {
 // expressionFactVisitor collects column references, callee names, and
 // construct markers in declaration order.
 type expressionFactVisitor struct {
-	references []spec.ColumnReference
-	seenRefs   map[spec.ColumnReference]struct{}
-	functions  map[string]bool
-	features   map[string]bool
-	known      bool
-	limitHit   bool
-	nodes      int
-	calls      int
+	references   []spec.ColumnReference
+	seenRefs     map[spec.ColumnReference]struct{}
+	sequenceRefs []spec.SequenceRef
+	seenSeqRefs  map[spec.SequenceRef]struct{}
+	functions    map[string]bool
+	features     map[string]bool
+	known        bool
+	limitHit     bool
+	nodes        int
+	calls        int
 }
 
 func (v *expressionFactVisitor) Enter(in ast.Node) (ast.Node, bool) {
@@ -156,6 +159,21 @@ func (v *expressionFactVisitor) Enter(in ast.Node) (ast.Node, bool) {
 			Table:  node.Name.Table.O,
 			Name:   node.Name.Name.O,
 		})
+		return in, true
+	case *ast.TableNameExpr:
+		// Sequence-function targets arrive as TableNameExpr wrapping a plain
+		// TableName — never a column reference and never a string to parse.
+		// The qualified identity is recorded verbatim; the expression itself
+		// stays an unverifiable shape (sequence functions are not in the
+		// recognized vocabulary).
+		if node.Name != nil && strings.TrimSpace(node.Name.Name.O) != "" {
+			v.addSequenceRef(spec.SequenceRef{
+				Schema: node.Name.Schema.O,
+				Name:   node.Name.Name.O,
+			})
+		}
+		v.features[spec.ExpressionFeatureUnknownShape] = true
+		v.known = false
 		return in, true
 	case *ast.ColumnName:
 		return in, true
@@ -219,6 +237,23 @@ func (v *expressionFactVisitor) addReference(ref spec.ColumnReference) {
 	}
 	v.seenRefs[key] = struct{}{}
 	v.references = append(v.references, ref)
+}
+
+// addSequenceRef records one sequence-function target identity, deduplicated
+// by normalized identity — the same target re-observed is one edge source.
+func (v *expressionFactVisitor) addSequenceRef(ref spec.SequenceRef) {
+	if v.seenSeqRefs == nil {
+		v.seenSeqRefs = map[spec.SequenceRef]struct{}{}
+	}
+	key := spec.SequenceRef{
+		Schema: strings.ToLower(ref.Schema),
+		Name:   strings.ToLower(ref.Name),
+	}
+	if _, dup := v.seenSeqRefs[key]; dup {
+		return
+	}
+	v.seenSeqRefs[key] = struct{}{}
+	v.sequenceRefs = append(v.sequenceRefs, ref)
 }
 
 func sortedKeys(set map[string]bool) []string {

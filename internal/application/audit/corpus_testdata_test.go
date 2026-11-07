@@ -115,6 +115,11 @@ type corpusMetadata struct {
 	// bound_targets lists the proven inbound references the drop premise
 	// consults. Omit the key to leave the catalog unvouched.
 	PlacementPolicies map[string]corpusPlacementPolicy `yaml:"placement_policies,omitempty"`
+	// Sequences is the proven sequence object set keyed `name` (bound under
+	// metadata.schema): each entry carries the catalog's existence answer
+	// and, when proven, the definition parameters. Omit the key to leave
+	// every sequence identity unvouched (T21/#100).
+	Sequences map[string]corpusSequenceObject `yaml:"sequences,omitempty"`
 }
 
 // corpusPlacementPolicy is the catalog fact for one proven policy.
@@ -122,6 +127,39 @@ type corpusPlacementPolicy struct {
 	PrimaryRegion string   `yaml:"primary_region,omitempty"`
 	Regions       string   `yaml:"regions,omitempty"`
 	BoundTargets  []string `yaml:"bound_targets,omitempty"`
+}
+
+// corpusSequenceObject is the catalog fact for one sequence identity.
+// Status is the provenance answer (confirmed | not_found | unavailable);
+// definition and references are only read on a confirmed-existing object.
+type corpusSequenceObject struct {
+	Status            string                    `yaml:"status"`
+	Exists            *bool                     `yaml:"exists,omitempty"`
+	Definition        *corpusSequenceDefinition `yaml:"definition,omitempty"`
+	References        []corpusSequenceRefEdge   `yaml:"references,omitempty"`
+	ReferencesUnknown bool                      `yaml:"references_unknown,omitempty"`
+	ConflictKind      string                    `yaml:"conflict_kind,omitempty"`
+}
+
+// corpusSequenceRefEdge is one vouched inbound reference: the owner-side
+// identity and slot; the target is always the resolved sequence object.
+type corpusSequenceRefEdge struct {
+	OwnerKind   string `yaml:"owner_kind"`
+	OwnerSchema string `yaml:"owner_schema,omitempty"`
+	OwnerName   string `yaml:"owner_name"`
+	Slot        string `yaml:"slot,omitempty"`
+}
+
+// corpusSequenceDefinition mirrors the catalog definition parameters —
+// omitted members stay unproven, never defaulted.
+type corpusSequenceDefinition struct {
+	Start      *int64 `yaml:"start,omitempty"`
+	Increment  *int64 `yaml:"increment,omitempty"`
+	MinValue   *int64 `yaml:"min_value,omitempty"`
+	MaxValue   *int64 `yaml:"max_value,omitempty"`
+	CacheValue *int64 `yaml:"cache_value,omitempty"`
+	Cache      *bool  `yaml:"cache,omitempty"`
+	Cycle      *bool  `yaml:"cycle,omitempty"`
 }
 
 type corpusInstanceFacts struct {

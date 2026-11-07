@@ -491,6 +491,10 @@ const (
 	ruleIDCreateSequenceNotice        = "ddl.create_sequence.notice"
 	ruleIDAlterSequenceNotice         = "ddl.alter_sequence.notice"
 	ruleIDDropSequenceNotice          = "ddl.drop_sequence.notice"
+	ruleIDTiDBSequenceValid           = "ddl.tidb.sequence.valid"
+	ruleIDTiDBSequenceRestartWarn     = "ddl.tidb.sequence.restart.warn"
+	ruleIDTiDBSequenceCycleWarn       = "ddl.tidb.sequence.cycle.warn"
+	ruleIDTiDBSequenceReferencesWarn  = "ddl.tidb.sequence.references.warn"
 	// MySQL/TiDB alter action notice rules.
 	ruleIDAlterAddColumnNotice                = "ddl.alter.add_column.notice"
 	ruleIDAlterAddConstraintNotice            = "ddl.alter.add_constraint.notice"
