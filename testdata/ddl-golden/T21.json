@@ -60,9 +60,12 @@
       "database": "golden",
       "exec_client": [
         "mysql",
-        "-uroot",
-        "--default-character-set=utf8mb4",
-        "-P4000"
+        "--protocol=tcp",
+        "-h",
+        "tidb85",
+        "-P",
+        "4000",
+        "-uroot"
       ],
       "needs_database_create": true
     }
