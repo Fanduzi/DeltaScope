@@ -1,9 +1,25 @@
 {
-  "task_id": "T21",
+  "task_id": "T21-arm64",
   "issue": 100,
   "policy_profile": "t21-sequence",
-  "description": "T21 TiDB 8.5 sequence lifecycle and restart oracles. The manifest pins the frozen A1 contract: typed sequence options are definition parameters, never runtime issuance progress; SQL RESTART / RESTART WITH carries a bounded warning plus a runtime-issuance evidence gap; CYCLE enablement warns on declared or catalog-proven state; drop warns only on a vouched inbound-reference set; sequence identity shares the table namespace; multi-target DROP adjudicates per member without all-or-nothing rollback; reader errors propagate uncached; unvouched identity yields unknown_sequence_state, never a fabricated absent. metadata_cases encode the native probes whose oracles still require the isolated TiDB 8.5 environment — none of them has run and none may be claimed as native PASS. CLI cases are provider-free offline contracts. Runtime allocator, cache consumption, current/next value, and persisted progress are deferred to A2 and appear nowhere in this manifest. ARM64 VARIANT: the mysql57 anchor is removed because mysql:5.7.44 ships only linux/amd64 and this run profile forbids emulation — required_case_ids keep the baseline rows so the artifact records the environment gap rather than shrinking the denominator.",
+  "description": "T21 TiDB 8.5 sequence lifecycle and restart oracles. The manifest pins the frozen A1 contract: typed sequence options are definition parameters, never runtime issuance progress; SQL RESTART / RESTART WITH carries a bounded warning plus a runtime-issuance evidence gap; CYCLE enablement warns on declared or catalog-proven state; drop warns only on a vouched inbound-reference set; sequence identity shares the table namespace; multi-target DROP adjudicates per member without all-or-nothing rollback; reader errors propagate uncached; unvouched identity yields unknown_sequence_state, never a fabricated absent. metadata_cases encode the native probes whose oracles still require the isolated TiDB 8.5 environment — none of them has run and none may be claimed as native PASS. CLI cases are provider-free offline contracts. Runtime allocator, cache consumption, current/next value, and persisted progress are deferred to A2 and appear nowhere in this manifest. ARM64 VARIANT: mysql57 ships only linux/amd64 and this run profile forbids emulation (no binfmt/Rosetta); the anchor stays declared so the locked baseline remains visible, its service is skipped at compose-up, its cases still execute and record the real environment failure. POLICY FIX: the t21-sequence enable map moved from policy.profiles to policy.enable; the runner forbids profiles redefining the default policy_profile name. EXPECT FILLED: metadata_case expects completed from TiDB 8.5.0 native evidence (probes.json) plus the repaired contract — unvouched identities gap, never fabricate absence.",
   "anchors": {
+    "mysql57": {
+      "service": "mysql57",
+      "container": "deltascope-ddl-golden-mysql57",
+      "image": "mysql:5.7.44",
+      "product": "mysql",
+      "version_contains": "5.7.44",
+      "database": "golden",
+      "exec_client": [
+        "mysql",
+        "-uroot",
+        "--default-character-set=utf8mb4"
+      ],
+      "needs_database_create": false,
+      "exec_password_env": "T21_MYSQL_PASSWORD",
+      "environment_gap": "linux/amd64-only image; run profile forbids emulation"
+    },
     "mysql80": {
       "service": "mysql80",
       "container": "deltascope-ddl-golden-mysql80",
@@ -86,22 +102,18 @@
     }
   },
   "policy": {
-    "profiles": {
-      "t21-sequence": {
-        "enable": {
-          "ddl.tidb.sequence.valid": {
-            "level": "blocker"
-          },
-          "ddl.tidb.sequence.restart.warn": {
-            "level": "warning"
-          },
-          "ddl.tidb.sequence.cycle.warn": {
-            "level": "warning"
-          },
-          "ddl.tidb.sequence.references.warn": {
-            "level": "warning"
-          }
-        }
+    "enable": {
+      "ddl.tidb.sequence.valid": {
+        "level": "blocker"
+      },
+      "ddl.tidb.sequence.restart.warn": {
+        "level": "warning"
+      },
+      "ddl.tidb.sequence.cycle.warn": {
+        "level": "warning"
+      },
+      "ddl.tidb.sequence.references.warn": {
+        "level": "warning"
       }
     }
   },
@@ -270,9 +282,28 @@
         }
       ],
       "expect": {
+        "exit": 0,
         "verdict": "review",
+        "statements": 1,
         "findings": 1,
-        "evidence_gaps": 1
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "unverified",
+        "evidence_gaps": 1,
+        "finding_entries": [
+          {
+            "index": 0,
+            "rule_id": "ddl.tidb.sequence.restart.warn",
+            "level": "warning"
+          }
+        ],
+        "evidence_gap_entries": [
+          {
+            "index": 0,
+            "rule_id": "ddl.tidb.sequence.restart.warn",
+            "reason_code": "unknown_sequence_runtime_state"
+          }
+        ]
       }
     },
     {
@@ -300,7 +331,28 @@
           "verify": []
         }
       ],
-      "expect_native_probe": "native per-member outcome recorded by the probe runner — a proven member may drop while an absent member errors; no all-or-nothing assumption"
+      "expect": {
+        "exit": 0,
+        "verdict": "review",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "unverified",
+        "evidence_gaps": 2,
+        "evidence_gap_entries": [
+          {
+            "index": 0,
+            "rule_id": "ddl.tidb.sequence.valid",
+            "reason_code": "unknown_sequence_state"
+          },
+          {
+            "index": 0,
+            "rule_id": "ddl.tidb.sequence.references.warn",
+            "reason_code": "unknown_sequence_references"
+          }
+        ]
+      }
     },
     {
       "id": "tidb85-alter-if-exists",
@@ -319,7 +371,23 @@
         "blocker"
       ],
       "pending_native": true,
-      "expect_native_probe": "native acceptance of ALTER ... IF EXISTS recorded by the probe runner"
+      "expect": {
+        "exit": 0,
+        "verdict": "review",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "unverified",
+        "evidence_gaps": 1,
+        "evidence_gap_entries": [
+          {
+            "index": 0,
+            "rule_id": "ddl.tidb.sequence.valid",
+            "reason_code": "unknown_sequence_state"
+          }
+        ]
+      }
     },
     {
       "id": "tidb85-restart-out-of-range",
@@ -346,7 +414,30 @@
           "verify": []
         }
       ],
-      "expect_native_probe": "native verdict on out-of-range RESTART WITH recorded by the probe runner — no refusal is predicted offline"
+      "expect": {
+        "exit": 0,
+        "verdict": "review",
+        "statements": 1,
+        "findings": 1,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "unverified",
+        "evidence_gaps": 1,
+        "finding_entries": [
+          {
+            "index": 0,
+            "rule_id": "ddl.tidb.sequence.restart.warn",
+            "level": "warning"
+          }
+        ],
+        "evidence_gap_entries": [
+          {
+            "index": 0,
+            "rule_id": "ddl.tidb.sequence.restart.warn",
+            "reason_code": "unknown_sequence_runtime_state"
+          }
+        ]
+      }
     },
     {
       "id": "tidb85-rename-binding",
@@ -373,7 +464,33 @@
           "verify": []
         }
       ],
-      "expect_native_probe": "native rename acceptance and post-rename identity recorded by the probe runner"
+      "expect": {
+        "exit": 0,
+        "verdict": "review",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "unverified",
+        "evidence_gaps": 3,
+        "evidence_gap_entries": [
+          {
+            "index": 0,
+            "rule_id": "ddl.tidb.sequence.valid",
+            "reason_code": "unknown_sequence_runtime_state"
+          },
+          {
+            "index": 0,
+            "rule_id": "ddl.tidb.sequence.valid",
+            "reason_code": "unknown_sequence_state"
+          },
+          {
+            "index": 0,
+            "rule_id": "ddl.tidb.sequence.references.warn",
+            "reason_code": "unknown_sequence_references"
+          }
+        ]
+      }
     },
     {
       "id": "tidb85-drop-referenced",
@@ -400,28 +517,44 @@
           "verify": []
         }
       ],
-      "expect_native_probe": "native reference visibility and drop outcome recorded by the probe runner"
+      "expect": {
+        "exit": 0,
+        "verdict": "review",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "unverified",
+        "evidence_gaps": 1,
+        "evidence_gap_entries": [
+          {
+            "index": 0,
+            "rule_id": "ddl.tidb.sequence.references.warn",
+            "reason_code": "unknown_sequence_references"
+          }
+        ]
+      }
     }
   ],
   "required_case_ids": [
-    "T21.db.mysql57.ddl",
-    "T21.db.mysql57.syntax_negative",
-    "T21.db.mysql80.ddl",
-    "T21.db.mysql80.syntax_negative",
-    "T21.db.mysql84.ddl",
-    "T21.db.mysql84.syntax_negative",
-    "T21.db.tidb85.ddl",
-    "T21.db.tidb85.syntax_negative",
-    "T21.cli.tidb-restart-gap",
-    "T21.cli.tidb-create-cycle-warn",
-    "T21.cli.tidb-multi-drop-gaps",
-    "T21.cli.tidb-if-not-exists-create-gap",
-    "T21.cli.mysql-create-sequence-vendor",
-    "T21.meta.tidb85-restart-warn-gap",
-    "T21.meta.tidb85-multi-drop-partial",
-    "T21.meta.tidb85-alter-if-exists",
-    "T21.meta.tidb85-restart-out-of-range",
-    "T21.meta.tidb85-rename-binding",
-    "T21.meta.tidb85-drop-referenced"
+    "T21-arm64.db.mysql57.ddl",
+    "T21-arm64.db.mysql57.syntax_negative",
+    "T21-arm64.db.mysql80.ddl",
+    "T21-arm64.db.mysql80.syntax_negative",
+    "T21-arm64.db.mysql84.ddl",
+    "T21-arm64.db.mysql84.syntax_negative",
+    "T21-arm64.db.tidb85.ddl",
+    "T21-arm64.db.tidb85.syntax_negative",
+    "T21-arm64.cli.tidb-restart-gap",
+    "T21-arm64.cli.tidb-create-cycle-warn",
+    "T21-arm64.cli.tidb-multi-drop-gaps",
+    "T21-arm64.cli.tidb-if-not-exists-create-gap",
+    "T21-arm64.cli.mysql-create-sequence-vendor",
+    "T21-arm64.meta.tidb85-restart-warn-gap",
+    "T21-arm64.meta.tidb85-multi-drop-partial",
+    "T21-arm64.meta.tidb85-alter-if-exists",
+    "T21-arm64.meta.tidb85-restart-out-of-range",
+    "T21-arm64.meta.tidb85-rename-binding",
+    "T21-arm64.meta.tidb85-drop-referenced"
   ]
 }

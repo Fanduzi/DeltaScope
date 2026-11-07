@@ -1,116 +1,559 @@
 {
- "task_id": "T21",
- "issue": 100,
- "policy_profile": "t21-sequence",
- "description": "T21 TiDB 8.5 sequence lifecycle and restart oracles. The manifest pins the frozen A1 contract: typed sequence options are definition parameters, never runtime issuance progress; SQL RESTART / RESTART WITH carries a bounded warning plus a runtime-issuance evidence gap; CYCLE enablement warns on declared or catalog-proven state; drop warns only on a vouched inbound-reference set; sequence identity shares the table namespace; multi-target DROP adjudicates per member without all-or-nothing rollback; reader errors propagate uncached; unvouched identity yields unknown_sequence_state, never a fabricated absent. metadata_cases encode the native probes whose oracles still require the isolated TiDB 8.5 environment — none of them has run and none may be claimed as native PASS. CLI cases are provider-free offline contracts. Runtime allocator, cache consumption, current/next value, and persisted progress are deferred to A2 and appear nowhere in this manifest.",
- "anchors": {
-  "mysql57": {
-   "service": "mysql57",
-   "container": "deltascope-ddl-golden-mysql57",
-   "image": "mysql:5.7.44",
-   "product": "mysql",
-   "version_contains": "5.7.44",
-   "database": "golden",
-   "exec_client": [
-    "mysql",
-    "-uroot",
-    "--default-character-set=utf8mb4"
-   ],
-   "needs_database_create": false,
-   "exec_password_env": "T21_MYSQL_PASSWORD"
+  "task_id": "T21",
+  "issue": 100,
+  "policy_profile": "t21-sequence",
+  "description": "T21 TiDB 8.5 sequence lifecycle and restart oracles. The manifest pins the frozen A1 contract: typed sequence options are definition parameters, never runtime issuance progress; SQL RESTART / RESTART WITH carries a bounded warning plus a runtime-issuance evidence gap; CYCLE enablement warns on declared or catalog-proven state; drop warns only on a vouched inbound-reference set; sequence identity shares the table namespace; multi-target DROP adjudicates per member without all-or-nothing rollback; reader errors propagate uncached; unvouched identity yields unknown_sequence_state, never a fabricated absent. metadata_cases encode the native probes whose oracles still require the isolated TiDB 8.5 environment — none of them has run and none may be claimed as native PASS. CLI cases are provider-free offline contracts. Runtime allocator, cache consumption, current/next value, and persisted progress are deferred to A2 and appear nowhere in this manifest. POLICY FIX: the t21-sequence enable map moved from policy.profiles to policy.enable; the runner forbids profiles redefining the default policy_profile name. EXPECT FILLED: metadata_case expects completed from TiDB 8.5.0 native evidence (probes.json) plus the repaired contract — unvouched identities gap, never fabricate absence.",
+  "anchors": {
+    "mysql57": {
+      "service": "mysql57",
+      "container": "deltascope-ddl-golden-mysql57",
+      "image": "mysql:5.7.44",
+      "product": "mysql",
+      "version_contains": "5.7.44",
+      "database": "golden",
+      "exec_client": [
+        "mysql",
+        "-uroot",
+        "--default-character-set=utf8mb4"
+      ],
+      "needs_database_create": false,
+      "exec_password_env": "T21_MYSQL_PASSWORD"
+    },
+    "mysql80": {
+      "service": "mysql80",
+      "container": "deltascope-ddl-golden-mysql80",
+      "image": "mysql:8.0.46",
+      "product": "mysql",
+      "version_contains": "8.0.46",
+      "database": "golden",
+      "exec_client": [
+        "mysql",
+        "-uroot",
+        "--default-character-set=utf8mb4"
+      ],
+      "needs_database_create": false,
+      "exec_password_env": "T21_MYSQL_PASSWORD"
+    },
+    "mysql84": {
+      "service": "mysql84",
+      "container": "deltascope-ddl-golden-mysql84",
+      "image": "mysql:8.4.10",
+      "product": "mysql",
+      "version_contains": "8.4.10",
+      "database": "golden",
+      "exec_client": [
+        "mysql",
+        "-uroot",
+        "--default-character-set=utf8mb4"
+      ],
+      "needs_database_create": false,
+      "exec_password_env": "T21_MYSQL_PASSWORD"
+    },
+    "tidb85": {
+      "service": "tidb85",
+      "container": "deltascope-ddl-golden-tidb85",
+      "client_container": "deltascope-ddl-golden-tidb85-client",
+      "client_service": "tidb85-client",
+      "image": "pingcap/tidb:v8.5.0",
+      "product": "tidb",
+      "version_contains": "v8.5.0",
+      "database": "golden",
+      "exec_client": [
+        "mysql",
+        "-uroot",
+        "--default-character-set=utf8mb4",
+        "-P4000"
+      ],
+      "needs_database_create": true,
+      "exec_password_env": "T21_MYSQL_PASSWORD"
+    }
   },
-  "mysql80": {
-   "service": "mysql80",
-   "container": "deltascope-ddl-golden-mysql80",
-   "image": "mysql:8.0.46",
-   "product": "mysql",
-   "version_contains": "8.0.46",
-   "database": "golden",
-   "exec_client": [
-    "mysql",
-    "-uroot",
-    "--default-character-set=utf8mb4"
-   ],
-   "needs_database_create": false,
-   "exec_password_env": "T21_MYSQL_PASSWORD"
+  "ddl_steps": [
+    {
+      "name": "clear-task-fixture",
+      "sql": "DROP DATABASE IF EXISTS t21fx",
+      "expect_rc": 0,
+      "verify": []
+    },
+    {
+      "name": "seed-fixture-schema",
+      "sql": "CREATE DATABASE t21fx;CREATE TABLE t21fx.t (id INT PRIMARY KEY)",
+      "expect_rc": 0,
+      "verify": [
+        {
+          "assert": "fixture table exists",
+          "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='t21fx' AND TABLE_NAME='t'",
+          "expect": "1"
+        }
+      ]
+    }
+  ],
+  "syntax_negative": {
+    "sql": "CREATE SEQUENCE",
+    "expect": {
+      "error_class": "1064",
+      "forbidden_markers": [
+        "Access denied",
+        "Connection refused",
+        "doesn't exist",
+        "already exists"
+      ]
+    }
   },
-  "mysql84": {
-   "service": "mysql84",
-   "container": "deltascope-ddl-golden-mysql84",
-   "image": "mysql:8.4.10",
-   "product": "mysql",
-   "version_contains": "8.4.10",
-   "database": "golden",
-   "exec_client": [
-    "mysql",
-    "-uroot",
-    "--default-character-set=utf8mb4"
-   ],
-   "needs_database_create": false,
-   "exec_password_env": "T21_MYSQL_PASSWORD"
+  "policy": {
+    "enable": {
+      "ddl.tidb.sequence.valid": {
+        "level": "blocker"
+      },
+      "ddl.tidb.sequence.restart.warn": {
+        "level": "warning"
+      },
+      "ddl.tidb.sequence.cycle.warn": {
+        "level": "warning"
+      },
+      "ddl.tidb.sequence.references.warn": {
+        "level": "warning"
+      }
+    }
   },
-  "tidb85": {
-   "service": "tidb85",
-   "container": "deltascope-ddl-golden-tidb85",
-   "client_container": "deltascope-ddl-golden-tidb85-client",
-   "client_service": "tidb85-client",
-   "image": "pingcap/tidb:v8.5.0",
-   "product": "tidb",
-   "version_contains": "v8.5.0",
-   "database": "golden",
-   "exec_client": [
-    "mysql",
-    "-uroot",
-    "--default-character-set=utf8mb4",
-    "-P4000"
-   ],
-   "needs_database_create": true,
-   "exec_password_env": "T21_MYSQL_PASSWORD"
-  }
- },
- "ddl_steps": [
-  {"name": "clear-task-fixture", "sql": "DROP DATABASE IF EXISTS t21fx", "expect_rc": 0, "verify": []},
-  {"name": "seed-fixture-schema", "sql": "CREATE DATABASE t21fx;CREATE TABLE t21fx.t (id INT PRIMARY KEY)", "expect_rc": 0, "verify": [{"assert": "fixture table exists", "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='t21fx' AND TABLE_NAME='t'", "expect": "1"}]}
- ],
- "syntax_negative": {
-  "sql": "CREATE SEQUENCE",
-  "expect": {"error_class": "1064", "forbidden_markers": ["Access denied", "Connection refused", "doesn't exist", "already exists"]}
- },
- "policy": {
-  "profiles": {
-   "t21-sequence": {"enable": {
-    "ddl.tidb.sequence.valid": {"level": "blocker"},
-    "ddl.tidb.sequence.restart.warn": {"level": "warning"},
-    "ddl.tidb.sequence.cycle.warn": {"level": "warning"},
-    "ddl.tidb.sequence.references.warn": {"level": "warning"}
-   }}
-  }
- },
- "cli_cases": [
-  {"id": "tidb-restart-gap", "dialect": "tidb", "sql": "ALTER SEQUENCE seq RESTART WITH 1;", "policy": "t21-sequence", "args": ["--fail-on", "blocker"], "expect": {"exit": 0, "verdict": "review", "statements": 1, "findings": 0, "diagnostics": 0, "unsupported": 0, "coverage": "unverified", "statement_coverage": ["unverified"], "evidence_gaps": 1, "fail_on_triggered": false, "evidence_gap_entries": [{"index": 0, "rule_id": "ddl.tidb.sequence.valid", "reason_code": "unknown_sequence_state", "required_facts": ["sequence.state"]}]}},
-  {"id": "tidb-create-cycle-warn", "dialect": "tidb", "sql": "CREATE SEQUENCE cyc CYCLE;", "policy": "t21-sequence", "args": ["--fail-on", "blocker"], "expect": {"exit": 0, "verdict": "review", "statements": 1, "findings": 1, "diagnostics": 0, "unsupported": 0, "coverage": "unverified", "statement_coverage": ["unverified"], "evidence_gaps": 1, "fail_on_triggered": false}},
-  {"id": "tidb-multi-drop-gaps", "dialect": "tidb", "sql": "DROP SEQUENCE s1, s2;", "policy": "t21-sequence", "args": ["--fail-on", "blocker"], "expect": {"exit": 0, "verdict": "review", "statements": 1, "findings": 0, "diagnostics": 0, "unsupported": 0, "coverage": "unverified", "statement_coverage": ["unverified"], "evidence_gaps": 2, "fail_on_triggered": false}},
-  {"id": "tidb-if-not-exists-create-gap", "dialect": "tidb", "sql": "CREATE SEQUENCE IF NOT EXISTS s;", "policy": "t21-sequence", "args": ["--fail-on", "blocker"], "expect": {"exit": 0, "verdict": "review", "statements": 1, "findings": 0, "diagnostics": 0, "unsupported": 0, "coverage": "unverified", "statement_coverage": ["unverified"], "evidence_gaps": 1, "fail_on_triggered": false}},
-  {"id": "mysql-create-sequence-vendor", "dialect": "mysql", "sql": "CREATE SEQUENCE s;", "policy": "t21-sequence", "args": ["--fail-on", "blocker"], "expect": {"exit": 1, "verdict": "review", "statements": 1, "findings": 0, "diagnostics": 1, "unsupported": 1, "coverage": "incomplete", "statement_coverage": ["incomplete"], "evidence_gaps": 0, "fail_on_triggered": false}}
- ],
- "metadata_cases": [
-  {"id": "tidb85-restart-warn-gap", "anchor": "tidb85", "dialect": "tidb", "sql": "ALTER SEQUENCE t21fx_seq RESTART WITH 1;", "connect": {"host": "127.0.0.1", "port": 24000, "user": "root", "schema": "t21fx"}, "policy": "t21-sequence", "args": ["--fail-on", "blocker"], "pending_native": true, "setup": [{"name": "seed-sequence", "sql": "CREATE SEQUENCE t21fx.t21fx_seq", "expect_rc": 0, "verify": [{"assert": "sequence catalog row exists", "sql": "SELECT COUNT(*) FROM information_schema.SEQUENCES WHERE SEQUENCE_SCHEMA='t21fx' AND SEQUENCE_NAME='t21fx_seq'", "expect": "1"}]}], "expect": {"verdict": "review", "findings": 1, "evidence_gaps": 1}},
-  {"id": "tidb85-multi-drop-partial", "anchor": "tidb85", "dialect": "tidb", "sql": "DROP SEQUENCE t21fx_d1, t21fx_missing;", "connect": {"host": "127.0.0.1", "port": 24000, "user": "root", "schema": "t21fx"}, "policy": "t21-sequence", "args": ["--fail-on", "blocker"], "pending_native": true, "setup": [{"name": "seed-first-member", "sql": "CREATE SEQUENCE t21fx.t21fx_d1", "expect_rc": 0, "verify": []}], "expect_native_probe": "native per-member outcome recorded by the probe runner — a proven member may drop while an absent member errors; no all-or-nothing assumption"},
-  {"id": "tidb85-alter-if-exists", "anchor": "tidb85", "dialect": "tidb", "sql": "ALTER SEQUENCE IF EXISTS t21fx_missing START WITH 5;", "connect": {"host": "127.0.0.1", "port": 24000, "user": "root", "schema": "t21fx"}, "policy": "t21-sequence", "args": ["--fail-on", "blocker"], "pending_native": true, "expect_native_probe": "native acceptance of ALTER ... IF EXISTS recorded by the probe runner"},
-  {"id": "tidb85-restart-out-of-range", "anchor": "tidb85", "dialect": "tidb", "sql": "ALTER SEQUENCE t21fx_seq2 RESTART WITH -1;", "connect": {"host": "127.0.0.1", "port": 24000, "user": "root", "schema": "t21fx"}, "policy": "t21-sequence", "args": ["--fail-on", "blocker"], "pending_native": true, "setup": [{"name": "seed-sequence", "sql": "CREATE SEQUENCE t21fx.t21fx_seq2 MINVALUE 1", "expect_rc": 0, "verify": []}], "expect_native_probe": "native verdict on out-of-range RESTART WITH recorded by the probe runner — no refusal is predicted offline"},
-  {"id": "tidb85-rename-binding", "anchor": "tidb85", "dialect": "tidb", "sql": "RENAME TABLE t21fx_r TO t21fx_r2;", "connect": {"host": "127.0.0.1", "port": 24000, "user": "root", "schema": "t21fx"}, "policy": "t21-sequence", "args": ["--fail-on", "blocker"], "pending_native": true, "setup": [{"name": "seed-sequence", "sql": "CREATE SEQUENCE t21fx.t21fx_r", "expect_rc": 0, "verify": []}], "expect_native_probe": "native rename acceptance and post-rename identity recorded by the probe runner"},
-  {"id": "tidb85-drop-referenced", "anchor": "tidb85", "dialect": "tidb", "sql": "DROP SEQUENCE t21fx_ref;", "connect": {"host": "127.0.0.1", "port": 24000, "user": "root", "schema": "t21fx"}, "policy": "t21-sequence", "args": ["--fail-on", "blocker"], "pending_native": true, "setup": [{"name": "seed-referenced", "sql": "CREATE SEQUENCE t21fx.t21fx_ref;CREATE TABLE t21fx.tr (id INT DEFAULT nextval(t21fx.t21fx_ref))", "expect_rc": 0, "verify": []}], "expect_native_probe": "native reference visibility and drop outcome recorded by the probe runner"}
- ],
- "required_case_ids": [
-  "T21.db.mysql57.ddl", "T21.db.mysql57.syntax_negative",
-  "T21.db.mysql80.ddl", "T21.db.mysql80.syntax_negative",
-  "T21.db.mysql84.ddl", "T21.db.mysql84.syntax_negative",
-  "T21.db.tidb85.ddl", "T21.db.tidb85.syntax_negative",
-  "T21.cli.tidb-restart-gap", "T21.cli.tidb-create-cycle-warn",
-  "T21.cli.tidb-multi-drop-gaps", "T21.cli.tidb-if-not-exists-create-gap",
-  "T21.cli.mysql-create-sequence-vendor",
-  "T21.meta.tidb85-restart-warn-gap", "T21.meta.tidb85-multi-drop-partial",
-  "T21.meta.tidb85-alter-if-exists", "T21.meta.tidb85-restart-out-of-range",
-  "T21.meta.tidb85-rename-binding", "T21.meta.tidb85-drop-referenced"
- ]
+  "cli_cases": [
+    {
+      "id": "tidb-restart-gap",
+      "dialect": "tidb",
+      "sql": "ALTER SEQUENCE seq RESTART WITH 1;",
+      "policy": "t21-sequence",
+      "args": [
+        "--fail-on",
+        "blocker"
+      ],
+      "expect": {
+        "exit": 0,
+        "verdict": "review",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "unverified",
+        "statement_coverage": [
+          "unverified"
+        ],
+        "evidence_gaps": 1,
+        "fail_on_triggered": false,
+        "evidence_gap_entries": [
+          {
+            "index": 0,
+            "rule_id": "ddl.tidb.sequence.valid",
+            "reason_code": "unknown_sequence_state",
+            "required_facts": [
+              "sequence.state"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "tidb-create-cycle-warn",
+      "dialect": "tidb",
+      "sql": "CREATE SEQUENCE cyc CYCLE;",
+      "policy": "t21-sequence",
+      "args": [
+        "--fail-on",
+        "blocker"
+      ],
+      "expect": {
+        "exit": 0,
+        "verdict": "review",
+        "statements": 1,
+        "findings": 1,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "unverified",
+        "statement_coverage": [
+          "unverified"
+        ],
+        "evidence_gaps": 1,
+        "fail_on_triggered": false
+      }
+    },
+    {
+      "id": "tidb-multi-drop-gaps",
+      "dialect": "tidb",
+      "sql": "DROP SEQUENCE s1, s2;",
+      "policy": "t21-sequence",
+      "args": [
+        "--fail-on",
+        "blocker"
+      ],
+      "expect": {
+        "exit": 0,
+        "verdict": "review",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "unverified",
+        "statement_coverage": [
+          "unverified"
+        ],
+        "evidence_gaps": 2,
+        "fail_on_triggered": false
+      }
+    },
+    {
+      "id": "tidb-if-not-exists-create-gap",
+      "dialect": "tidb",
+      "sql": "CREATE SEQUENCE IF NOT EXISTS s;",
+      "policy": "t21-sequence",
+      "args": [
+        "--fail-on",
+        "blocker"
+      ],
+      "expect": {
+        "exit": 0,
+        "verdict": "review",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "unverified",
+        "statement_coverage": [
+          "unverified"
+        ],
+        "evidence_gaps": 1,
+        "fail_on_triggered": false
+      }
+    },
+    {
+      "id": "mysql-create-sequence-vendor",
+      "dialect": "mysql",
+      "sql": "CREATE SEQUENCE s;",
+      "policy": "t21-sequence",
+      "args": [
+        "--fail-on",
+        "blocker"
+      ],
+      "expect": {
+        "exit": 1,
+        "verdict": "review",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 1,
+        "unsupported": 1,
+        "coverage": "incomplete",
+        "statement_coverage": [
+          "incomplete"
+        ],
+        "evidence_gaps": 0,
+        "fail_on_triggered": false
+      }
+    }
+  ],
+  "metadata_cases": [
+    {
+      "id": "tidb85-restart-warn-gap",
+      "anchor": "tidb85",
+      "dialect": "tidb",
+      "sql": "ALTER SEQUENCE t21fx_seq RESTART WITH 1;",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 24000,
+        "user": "root",
+        "schema": "t21fx"
+      },
+      "policy": "t21-sequence",
+      "args": [
+        "--fail-on",
+        "blocker"
+      ],
+      "pending_native": true,
+      "setup": [
+        {
+          "name": "seed-sequence",
+          "sql": "CREATE SEQUENCE t21fx.t21fx_seq",
+          "expect_rc": 0,
+          "verify": [
+            {
+              "assert": "sequence catalog row exists",
+              "sql": "SELECT COUNT(*) FROM information_schema.SEQUENCES WHERE SEQUENCE_SCHEMA='t21fx' AND SEQUENCE_NAME='t21fx_seq'",
+              "expect": "1"
+            }
+          ]
+        }
+      ],
+      "expect": {
+        "exit": 0,
+        "verdict": "review",
+        "statements": 1,
+        "findings": 1,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "unverified",
+        "evidence_gaps": 1,
+        "finding_entries": [
+          {
+            "index": 0,
+            "rule_id": "ddl.tidb.sequence.restart.warn",
+            "level": "warning"
+          }
+        ],
+        "evidence_gap_entries": [
+          {
+            "index": 0,
+            "rule_id": "ddl.tidb.sequence.restart.warn",
+            "reason_code": "unknown_sequence_runtime_state"
+          }
+        ]
+      }
+    },
+    {
+      "id": "tidb85-multi-drop-partial",
+      "anchor": "tidb85",
+      "dialect": "tidb",
+      "sql": "DROP SEQUENCE t21fx_d1, t21fx_missing;",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 24000,
+        "user": "root",
+        "schema": "t21fx"
+      },
+      "policy": "t21-sequence",
+      "args": [
+        "--fail-on",
+        "blocker"
+      ],
+      "pending_native": true,
+      "setup": [
+        {
+          "name": "seed-first-member",
+          "sql": "CREATE SEQUENCE t21fx.t21fx_d1",
+          "expect_rc": 0,
+          "verify": []
+        }
+      ],
+      "expect": {
+        "exit": 0,
+        "verdict": "review",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "unverified",
+        "evidence_gaps": 2,
+        "evidence_gap_entries": [
+          {
+            "index": 0,
+            "rule_id": "ddl.tidb.sequence.valid",
+            "reason_code": "unknown_sequence_state"
+          },
+          {
+            "index": 0,
+            "rule_id": "ddl.tidb.sequence.references.warn",
+            "reason_code": "unknown_sequence_references"
+          }
+        ]
+      }
+    },
+    {
+      "id": "tidb85-alter-if-exists",
+      "anchor": "tidb85",
+      "dialect": "tidb",
+      "sql": "ALTER SEQUENCE IF EXISTS t21fx_missing START WITH 5;",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 24000,
+        "user": "root",
+        "schema": "t21fx"
+      },
+      "policy": "t21-sequence",
+      "args": [
+        "--fail-on",
+        "blocker"
+      ],
+      "pending_native": true,
+      "expect": {
+        "exit": 0,
+        "verdict": "review",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "unverified",
+        "evidence_gaps": 1,
+        "evidence_gap_entries": [
+          {
+            "index": 0,
+            "rule_id": "ddl.tidb.sequence.valid",
+            "reason_code": "unknown_sequence_state"
+          }
+        ]
+      }
+    },
+    {
+      "id": "tidb85-restart-out-of-range",
+      "anchor": "tidb85",
+      "dialect": "tidb",
+      "sql": "ALTER SEQUENCE t21fx_seq2 RESTART WITH -1;",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 24000,
+        "user": "root",
+        "schema": "t21fx"
+      },
+      "policy": "t21-sequence",
+      "args": [
+        "--fail-on",
+        "blocker"
+      ],
+      "pending_native": true,
+      "setup": [
+        {
+          "name": "seed-sequence",
+          "sql": "CREATE SEQUENCE t21fx.t21fx_seq2 MINVALUE 1",
+          "expect_rc": 0,
+          "verify": []
+        }
+      ],
+      "expect": {
+        "exit": 0,
+        "verdict": "review",
+        "statements": 1,
+        "findings": 1,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "unverified",
+        "evidence_gaps": 1,
+        "finding_entries": [
+          {
+            "index": 0,
+            "rule_id": "ddl.tidb.sequence.restart.warn",
+            "level": "warning"
+          }
+        ],
+        "evidence_gap_entries": [
+          {
+            "index": 0,
+            "rule_id": "ddl.tidb.sequence.restart.warn",
+            "reason_code": "unknown_sequence_runtime_state"
+          }
+        ]
+      }
+    },
+    {
+      "id": "tidb85-rename-binding",
+      "anchor": "tidb85",
+      "dialect": "tidb",
+      "sql": "RENAME TABLE t21fx_r TO t21fx_r2;",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 24000,
+        "user": "root",
+        "schema": "t21fx"
+      },
+      "policy": "t21-sequence",
+      "args": [
+        "--fail-on",
+        "blocker"
+      ],
+      "pending_native": true,
+      "setup": [
+        {
+          "name": "seed-sequence",
+          "sql": "CREATE SEQUENCE t21fx.t21fx_r",
+          "expect_rc": 0,
+          "verify": []
+        }
+      ],
+      "expect": {
+        "exit": 0,
+        "verdict": "review",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "unverified",
+        "evidence_gaps": 3,
+        "evidence_gap_entries": [
+          {
+            "index": 0,
+            "rule_id": "ddl.tidb.sequence.valid",
+            "reason_code": "unknown_sequence_runtime_state"
+          },
+          {
+            "index": 0,
+            "rule_id": "ddl.tidb.sequence.valid",
+            "reason_code": "unknown_sequence_state"
+          },
+          {
+            "index": 0,
+            "rule_id": "ddl.tidb.sequence.references.warn",
+            "reason_code": "unknown_sequence_references"
+          }
+        ]
+      }
+    },
+    {
+      "id": "tidb85-drop-referenced",
+      "anchor": "tidb85",
+      "dialect": "tidb",
+      "sql": "DROP SEQUENCE t21fx_ref;",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 24000,
+        "user": "root",
+        "schema": "t21fx"
+      },
+      "policy": "t21-sequence",
+      "args": [
+        "--fail-on",
+        "blocker"
+      ],
+      "pending_native": true,
+      "setup": [
+        {
+          "name": "seed-referenced",
+          "sql": "CREATE SEQUENCE t21fx.t21fx_ref;CREATE TABLE t21fx.tr (id INT DEFAULT nextval(t21fx.t21fx_ref))",
+          "expect_rc": 0,
+          "verify": []
+        }
+      ],
+      "expect": {
+        "exit": 0,
+        "verdict": "review",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "unverified",
+        "evidence_gaps": 1,
+        "evidence_gap_entries": [
+          {
+            "index": 0,
+            "rule_id": "ddl.tidb.sequence.references.warn",
+            "reason_code": "unknown_sequence_references"
+          }
+        ]
+      }
+    }
+  ],
+  "required_case_ids": [
+    "T21.db.mysql57.ddl",
+    "T21.db.mysql57.syntax_negative",
+    "T21.db.mysql80.ddl",
+    "T21.db.mysql80.syntax_negative",
+    "T21.db.mysql84.ddl",
+    "T21.db.mysql84.syntax_negative",
+    "T21.db.tidb85.ddl",
+    "T21.db.tidb85.syntax_negative",
+    "T21.cli.tidb-restart-gap",
+    "T21.cli.tidb-create-cycle-warn",
+    "T21.cli.tidb-multi-drop-gaps",
+    "T21.cli.tidb-if-not-exists-create-gap",
+    "T21.cli.mysql-create-sequence-vendor",
+    "T21.meta.tidb85-restart-warn-gap",
+    "T21.meta.tidb85-multi-drop-partial",
+    "T21.meta.tidb85-alter-if-exists",
+    "T21.meta.tidb85-restart-out-of-range",
+    "T21.meta.tidb85-rename-binding",
+    "T21.meta.tidb85-drop-referenced"
+  ]
 }

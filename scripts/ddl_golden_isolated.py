@@ -342,6 +342,35 @@ def main():
         dg.COMPOSE_PROJECT = run.run_id
         dg.compose = run.compose
         dg.compose_cleanup = run.patched_cleanup
+        # Anchors the manifest declares as environment gaps stay in the
+        # manifest and the locked baseline, and their cases still execute to
+        # record the real failure — only compose-up and the health wait are
+        # told the service can never start on this profile.
+        gap_services = {
+            anchor["service"]
+            for anchor in manifest["anchors"].values()
+            if anchor.get("environment_gap")
+        }
+        gap_containers = {
+            anchor["container"]
+            for anchor in manifest["anchors"].values()
+            if anchor.get("environment_gap")
+        }
+        if gap_services:
+            inner_compose = run.compose
+
+            def gap_compose(*cargs, **ckw):
+                if cargs and cargs[0] == "up":
+                    cargs = tuple(a for a in cargs if a not in gap_services)
+                return inner_compose(*cargs, **ckw)
+
+            dg.compose = gap_compose
+            inner_wait = dg.wait_for_healthy
+
+            def gap_wait(containers):
+                return inner_wait([c for c in containers if c not in gap_containers])
+
+            dg.wait_for_healthy = gap_wait
         sys.argv = [
             "ddl_golden.py", "run", "--task", args.task,
             "--artifact-dir", str(run.artifact_dir / "golden"),
