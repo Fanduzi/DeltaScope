@@ -43,6 +43,7 @@ ddl-golden-validator-test:
 	python3 ./scripts/test_t08_contract.py
 	python3 ./scripts/test_t09_contract.py
 	python3 ./scripts/test_t10_contract.py
+	python3 ./scripts/test_ddl_golden_isolated.py
 
 # ddl-inventory-gate: contract gate for the official DDL acceptance inventory
 # (testdata/ddl-inventory/inventory.yaml). Enforces unique row IDs, required
