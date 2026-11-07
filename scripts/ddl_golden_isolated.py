@@ -230,9 +230,11 @@ class IsoRun:
         ids = []
         missing = []
         for c in self.receipts["containers"]:
-            cid = self._live_id(c["name"], c["id"])
+            cid, verdict = self._live_id(c["name"], c["id"])
             if cid:
                 ids.append(cid)
+            elif verdict == "gone":
+                self.record("identity.gone", 0, c["name"])
             else:
                 missing.append(c["name"])
         if missing:
@@ -245,7 +247,11 @@ class IsoRun:
     def _live_id(self, name, fallback):
         """Resolve a container's current ID by receipt name, accepting only
         objects still carrying this run's label — recreated IDs qualify,
-        foreign or unlabeled ones never do."""
+        foreign or unlabeled ones never do. Returns (id, verdict): a live
+        run-labeled ID, or (None, 'gone') when nothing exists under either
+        identity — a vanished object needs no teardown — or (None,
+        'foreign') when an object exists but fails the ownership check."""
+        saw_object = False
         for candidate in (fallback, name):
             if not candidate:
                 continue
@@ -256,10 +262,11 @@ class IsoRun:
             )
             if rc != 0:
                 continue
+            saw_object = True
             cid, run_label = (out.strip() + "|").split("|")[:2]
             if run_label == self.run_id:
-                return cid
-        return None
+                return cid, "owned"
+        return None, ("foreign" if saw_object else "gone")
 
     def stop(self):
         ids = self._verified_ids(self.receipts["containers"])
@@ -367,6 +374,17 @@ def main():
         dg.COMPOSE_PROJECT = run.run_id
         dg.compose = run.compose
         dg.compose_cleanup = run.patched_cleanup
+        # Diagnostic: capture the real stderr of failed docker exec calls so
+        # anchor reachability failures carry their cause into the receipts.
+        _inner_run_cmd = dg.run_cmd
+        _dbg = run.artifact_dir / "exec-dbg.jsonl"
+        def dbg_run_cmd(args, **kw):
+            rc, out, err = _inner_run_cmd(args, **kw)
+            if rc != 0 and list(args)[:2] == ["docker", "exec"]:
+                with _dbg.open("a") as fh:
+                    fh.write(json.dumps({"args": args, "rc": rc, "stderr": err.strip()[:300]}) + "\n")
+            return rc, out, err
+        dg.run_cmd = dbg_run_cmd
         # Anchors the manifest declares as environment gaps stay in the
         # manifest and the locked baseline, and their cases still execute to
         # record the real failure — only compose-up and the health wait are
