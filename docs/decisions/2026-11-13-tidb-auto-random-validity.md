@@ -329,13 +329,19 @@ preserve the exact pre-state.
 
 - **Cache status is a real catalog fact, not a marker guess.** A bare
   `/* CACHED ON */` comment in SHOW CREATE proves Enable; its absence
-  proves nothing (Switching emits no marker). The formal source is
-  `mysql.table_cache_meta` joined through
-  `information_schema.tables.tidb_table_id`: the row is only ever
-  inserted/updated, never deleted, so an absent row proves never-cached
-  Disable, a present row without the marker proves Switching, and a
-  failed read stays unobserved. The reader no longer fabricates
-  `disable` for a missing marker.
+  proves nothing (Switching emits no marker). The auxiliary source is
+  `mysql.table_cache_meta` LEFT-JOINed onto the anchor
+  `information_schema.tables` row: upstream writes that row as a lock
+  record before the cache DDL job and never deletes it, so it is not a
+  status projection — a NULL lock cell proves never-cached Disable, a
+  live lock row without the marker stays unobserved (a completed
+  NOCACHE, a pending CACHE and true Switching share that exact shape),
+  a missing anchor row stays unobserved, and query/scan failures
+  propagate (R7-review correction: an earlier draft claimed
+  row-without-marker proved Switching — the lock record is not a
+  status projection, and the read's errors must propagate, not degrade
+  into a missing key). The reader no longer fabricates `disable` for a
+  missing marker.
 - **NOCACHE converges without observing the old state.** Upstream's
   Disable→Switching→Enable machine makes every legal old status
   converge to Disable, so `ALTER ... NOCACHE` publishes `disable`
@@ -358,8 +364,19 @@ preserve the exact pre-state.
   `ParseAttributesSpecValue` wraps the spec text as a YAML flow
   sequence and applies NewLabel/Add semantics — exactly one `=` per
   item, non-empty trimmed key and value, same-key same-value
-  deduplication, same-key conflicting-value refusal — matching how
-  TiDB's own parser evaluates the list (including its quoting and
-  unclosed-quote recovery). `ATTRIBUTES=DEFAULT` and successfully
-  parsed empty lists clear attributes. Authored attribute text stays
-  out of findings, gaps, and published facts.
+  deduplication, same-key conflicting-value refusal. Upstream v8.5.0
+  runs `gopkg.in/yaml.v2` `UnmarshalStrict`; a bounded offline
+  differential over the reachable input domain (32 cases: items,
+  quoting, trailing commas, separators, YAML-1.1 bool-like scalars)
+  showed zero divergence with the `go.yaml.in/yaml/v3` engine kept
+  here, including the quote recovery and trailing-comma tolerance.
+  `ATTRIBUTES=DEFAULT` and successfully parsed empty lists clear
+  attributes. Authored attribute text stays out of findings, gaps,
+  and published facts.
+- **Rename endpoints keep independently-proven identities.** Upstream
+  checks source/destination identity (`ExtractTblInfos`) before the
+  cache gate, so when a destination is proven-live — or a RENAME
+  TABLE source proven-absent — the statement refuses regardless of
+  the unobserved cache status and no endpoint proof lapses (R7-review
+  correction: withheld transitions unvouch only names that could
+  actually have moved).

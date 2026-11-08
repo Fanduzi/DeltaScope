@@ -1051,14 +1051,17 @@ func registerTestDriverResults(name string, results map[string]testQueryResult) 
 			rows:    [][]driver.Value{{"NOT_SHARDED"}},
 		}
 	}
-	// TiDB cache status reads mysql.table_cache_meta through a join — an
-	// empty answer is the upstream-proven never-cached Disable, so a
-	// fixture that does not care models an ordinary table. Fixtures that
-	// want Enable/Switching stub a row; an unstubbed query errors and
-	// leaves the status unobserved (issue #102 R7).
+	// TiDB cache status LEFT JOINs mysql.table_cache_meta onto the
+	// information_schema table row — a single NULL lock cell is the
+	// upstream-proven never-cached Disable, so a fixture that does not
+	// care models an ordinary table. A live lock row without the marker
+	// stays unobserved (ambiguous post-NOCACHE/pending/Switching shape);
+	// an unstubbed query answers ErrNoRows = anchor row not observed,
+	// also unobserved (issue #102 R7).
 	if _, ok := cloned[testCacheMetaFragment]; !ok {
 		cloned[testCacheMetaFragment] = testQueryResult{
 			columns: []string{"tid"},
+			rows:    [][]driver.Value{{nil}},
 		}
 	}
 	testDriverResults.Store(name, cloned)
@@ -1108,8 +1111,10 @@ const testInboundFKFragment = "select distinct table_schema, table_name"
 const testShardingInfoFragment = "select tidb_row_id_sharding_info"
 
 // testCacheMetaFragment is the stub key for the mysql.table_cache_meta
-// join that resolves the TiDB cache status (issue #102 R7).
-const testCacheMetaFragment = "mysql.table_cache_meta"
+// LEFT JOIN that resolves the TiDB cache status (issue #102 R7). It is
+// longer than the generic "from information_schema.tables" fragment so
+// longest-match routing keeps the anchor-table join deterministic.
+const testCacheMetaFragment = "left join mysql.table_cache_meta"
 
 func (c testConn) QueryContext(_ context.Context, query string, _ []driver.NamedValue) (driver.Rows, error) {
 	// Longest matching fragment wins: loaders sharing a catalog table (the

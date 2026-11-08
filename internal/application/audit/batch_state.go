@@ -2265,27 +2265,38 @@ func (s *batchState) applyRenameTable(ctx context.Context, statement spec.Statem
 	// (the atomic rollback keeps every endpoint), while an unobserved
 	// status unvouches only what the withheld transition could have
 	// moved — every source name, plus each destination that was not
-	// proven live (a rename onto a live name refuses natively, so a
-	// proven-present destination keeps its identity either way)
-	// (issue #102 R7).
+	// proven live. Upstream checks endpoint identity before the cache
+	// gate, so a proven-absent source or a proven-present destination
+	// already refuses the statement atomically and no cache premise can
+	// move any name (issue #102 R7 review).
 	if s.dialect == spec.DialectTiDB {
-		withheld := false
+		provablyRefused := false
 		for _, pair := range pairs {
-			switch s.cacheGuardOutcome(pair.srcEntry) {
-			case spec.AutoRandomRefused:
-				return nil
-			case spec.AutoRandomUndecidable:
-				withheld = true
+			if (pair.srcEntry != nil && pair.srcEntry.state == tableAbsent) ||
+				(pair.dstEntry != nil && pair.dstEntry.state == tablePresent) {
+				provablyRefused = true
+				break
 			}
 		}
-		if withheld {
+		if !provablyRefused {
+			withheld := false
 			for _, pair := range pairs {
-				s.invalidateAll([]spec.Table{pair.source})
-				if pair.dstEntry == nil || pair.dstEntry.state != tablePresent {
-					s.invalidateAll([]spec.Table{pair.destination})
+				switch s.cacheGuardOutcome(pair.srcEntry) {
+				case spec.AutoRandomRefused:
+					return nil
+				case spec.AutoRandomUndecidable:
+					withheld = true
 				}
 			}
-			return nil
+			if withheld {
+				for _, pair := range pairs {
+					s.invalidateAll([]spec.Table{pair.source})
+					if pair.dstEntry == nil || pair.dstEntry.state != tablePresent {
+						s.invalidateAll([]spec.Table{pair.destination})
+					}
+				}
+				return nil
+			}
 		}
 	}
 	// The shared work-set adjudication answers each endpoint's class at
@@ -2542,18 +2553,21 @@ func (s *batchState) applyRenamePair(ctx context.Context, statement spec.Stateme
 	// source table: a proven non-Disable status refuses the pair (the
 	// exact pre-state stands) and an unobserved status unvouches only
 	// what the withheld transition could have moved — the source name
-	// always, and a destination that was not proven live (a rename onto
-	// a live name refuses natively, so a proven-present destination
-	// keeps its identity either way) (issue #102 R7).
+	// always, and a destination that was not proven live. Upstream
+	// checks endpoint identity before the cache gate, so a
+	// proven-present destination already refuses the statement
+	// atomically and no cache premise can move either name (issue #102
+	// R7 review).
 	if s.dialect == spec.DialectTiDB {
 		switch s.cacheGuardOutcome(srcEntry) {
 		case spec.AutoRandomRefused:
 			return nil
 		case spec.AutoRandomUndecidable:
-			s.invalidateAll([]spec.Table{source})
-			if dstEntry == nil || dstEntry.state != tablePresent {
-				s.invalidateAll([]spec.Table{destination})
+			if dstEntry != nil && dstEntry.state == tablePresent {
+				return nil
 			}
+			s.invalidateAll([]spec.Table{source})
+			s.invalidateAll([]spec.Table{destination})
 			return nil
 		}
 	}

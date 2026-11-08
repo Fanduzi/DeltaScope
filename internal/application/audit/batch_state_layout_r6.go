@@ -72,12 +72,18 @@ func (s *batchState) cachedTableGuardWithholds(alters []spec.Alter, targets []sp
 	}
 	// An ALTER RENAME unvouches the source name — the withheld source may
 	// have moved away — plus a destination that was not proven live: a
-	// rename onto a live name refuses natively, so a proven-present
-	// destination keeps its identity either way, while a proven-absent
-	// or unproven destination may now hold the moved shape and its
-	// proof lapses.
+	// rename onto a live name refuses natively (upstream checks endpoint
+	// identity before the cache gate), so a proven-present destination
+	// both keeps its identity and proves the whole statement refused —
+	// the source's proven state stands then too.
 	renameForm := len(targets) == 2 && specCount == 1 &&
 		len(alters) > 0 && alters[0].Action == "rename_table"
+	if renameForm {
+		dst := s.entries[s.keyFor(s.schema, targets[1])]
+		if dst != nil && dst.state == tablePresent {
+			return false
+		}
+	}
 	withheld := false
 	for ti, target := range targets {
 		key := s.keyFor(s.schema, target)

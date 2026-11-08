@@ -179,12 +179,16 @@ func CacheGuardOutcome(facts AlterLayoutR6Facts) (AutoRandomVerdict, string) {
 
 // ParseAttributesSpecValue emulates upstream label.Rule.ApplyAttributesSpec
 // plus NewLabels/Add: the spec text is wrapped as a YAML flow sequence
-// (`[value]`) and strict-unmarshaled into a string list; every item must be
+// (`[value]`) and unmarshaled into a string list; every item must be
 // one `key=value` label with a non-empty trimmed key and value, a same-key
 // same-value duplicate is a no-op, and a same-key conflicting value is a
-// refusal (pkg/ddl/label/rule.go + attributes.go). Quoted items and commas
-// inside quotes are honored through the real YAML scan, so a user value
-// containing SQL-shaped text is never keyword-scanned.
+// refusal (pkg/ddl/label/rule.go + attributes.go). Upstream v8.5.0 runs
+// gopkg.in/yaml.v2 UnmarshalStrict; a bounded offline differential across
+// the reachable ATTRIBUTES input domain showed zero divergence between
+// that call and this go.yaml.in/yaml/v3 parse, so the existing dependency
+// is kept. Quoted items and commas inside quotes are honored through the
+// real YAML scan, so a user value containing SQL-shaped text is never
+// keyword-scanned.
 func ParseAttributesSpecValue(value string) bool {
 	var items []string
 	if err := yaml.Unmarshal([]byte("["+value+"]"), &items); err != nil {

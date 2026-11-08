@@ -250,3 +250,25 @@ func TestT23R7CacheGuardCoverage(t *testing.T) {
 		t.Fatalf("batch-created table must publish disable and apply the alter, got %+v", entry)
 	}
 }
+
+// TestT23R7CacheGuardRenameOccupiedDestination pins the review
+// counterexample: when source and destination are both proven-present
+// and the source cache status is unobserved, the statement refuses on
+// endpoint identity upstream (ExtractTblInfos precedes the cache gate),
+// so neither name may lose its proof to the withheld premise — a
+// successor must not meet a fabricated existence gap (issue #102 R7).
+func TestT23R7CacheGuardRenameOccupiedDestination(t *testing.T) {
+	t.Parallel()
+	for _, sql := range []string{
+		"RENAME TABLE t TO t2;",
+		"ALTER TABLE t RENAME TO t2;",
+	} {
+		state, _ := t23State(t, sql, &t23Provider{snapshot: t23R7ShapeStatus("")})
+		for _, name := range []string{"t", "t2"} {
+			entry := state.entries[state.keyFor("req", spec.Table{Schema: "req", Name: name})]
+			if entry == nil || entry.state != tablePresent || entry.shape == nil {
+				t.Fatalf("%s with occupied proven destination must preserve %q, got %+v", sql, name, entry)
+			}
+		}
+	}
+}

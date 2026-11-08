@@ -184,10 +184,11 @@ func (c t08r1Conn) QueryContext(_ context.Context, query string, _ []driver.Name
 		}, nil
 	case strings.Contains(query, "table_cache_meta"):
 		// TiDB cache-status probe (issue #102 R7) — must precede the
-		// generic information_schema.tables arm: the join's text contains
-		// that fragment too. An empty answer is the upstream-proven
-		// never-cached Disable this fixture's ordinary table models.
-		return &t08r1Rows{cols: []string{"tid"}}, nil
+		// generic information_schema.tables arm: the LEFT JOIN's text
+		// contains that fragment too. One NULL lock cell is the
+		// upstream-proven never-cached Disable this fixture's ordinary
+		// table models (a live lock row would stay unobserved instead).
+		return &t08r1Rows{cols: []string{"tid"}, rows: [][]driver.Value{{nil}}}, nil
 	case strings.Contains(query, "information_schema.tables"):
 		return &t08r1Rows{
 			cols: []string{"engine", "table_collation", "table_comment", "auto_increment", "row_format", "table_rows", "table_type"},

@@ -32,7 +32,11 @@ func (p *Provider) loadTiDBTTL(ctx context.Context, snapshot *spec.TableSnapshot
 	snapshot.TTLKnown = true
 	snapshot.TTL = config
 	options := parseCatalogLayoutOptions(createSQL)
-	if status, ok := p.loadTiDBCacheStatus(ctx, snapshot, options["cache_status"] == "enable"); ok {
+	status, err := p.loadTiDBCacheStatus(ctx, snapshot, options["cache_status"] == "enable")
+	if err != nil {
+		return err
+	}
+	if status != "" {
 		options["cache_status"] = status
 	}
 	for name, value := range options {
@@ -42,31 +46,40 @@ func (p *Provider) loadTiDBTTL(ctx context.Context, snapshot *spec.TableSnapshot
 }
 
 // loadTiDBCacheStatus resolves the table's cache status from
-// mysql.table_cache_meta — the formal fact source upstream maintains.
-// The row is inserted on the first cache transition and only ever
-// updated afterwards (state_remote.go), never deleted, so an absent row
-// proves the table was never cached — Disable. A present row is cached:
-// Enable only when SHOW CREATE also emits the bare /* CACHED ON */
-// marker, Switching otherwise. A failed read leaves the fact unobserved
-// rather than degrading into either arm (issue #102 T23-R7 B1).
-func (p *Provider) loadTiDBCacheStatus(ctx context.Context, snapshot *spec.TableSnapshot, cachedOn bool) (string, bool) {
-	var tid int64
+// mysql.table_cache_meta — the lock record upstream writes before the
+// cache DDL job (state_remote.go), never deleted afterwards. The row
+// only proves the table once entered the cache path; it is not a status
+// projection — a completed NOCACHE leaves it behind, a pending CACHE
+// shares the same shape, and Switching carries no marker either, so
+// row-present without the bare /* CACHED ON */ marker stays unobserved
+// rather than claiming a non-Disable status. The LEFT JOIN anchors on
+// the information_schema table row itself: zero rows means the table
+// identity was not observed (no claim), a NULL lock column proves
+// never-cached Disable, and the bare marker alone proves Enable.
+// Query and scan failures propagate — an auxiliary read never degrades
+// into a status claim (issue #102 T23-R7 B1).
+func (p *Provider) loadTiDBCacheStatus(ctx context.Context, snapshot *spec.TableSnapshot, cachedOn bool) (string, error) {
+	var tid sql.NullInt64
 	err := p.db.QueryRowContext(ctx,
-		"select c.tid from mysql.table_cache_meta c join information_schema.tables t on c.tid = t.tidb_table_id where t.table_schema = ? and t.table_name = ?",
+		"select c.tid from information_schema.tables t left join mysql.table_cache_meta c on c.tid = t.tidb_table_id where t.table_schema = ? and t.table_name = ?",
 		snapshot.Schema, snapshot.Table.Name).Scan(&tid)
 	switch {
 	case err == sql.ErrNoRows:
+		// The anchor table row itself was not observed — the snapshot's
+		// own existence answer owns that claim. The bare marker still
+		// proves Enable on its own; anything else stays unobserved.
 		if cachedOn {
-			return "enable", true
+			return "enable", nil
 		}
-		return "disable", true
+		return "", nil
 	case err != nil:
-		return "", false
+		return "", fmt.Errorf("query table cache status: %w", err)
+	case cachedOn:
+		return "enable", nil
+	case !tid.Valid:
+		return "disable", nil
 	default:
-		if cachedOn {
-			return "enable", true
-		}
-		return "switching", true
+		return "", nil
 	}
 }
 

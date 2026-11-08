@@ -136,6 +136,28 @@ func TestT23R6AttributesSpecParser(t *testing.T) {
 		{"", true},         // empty spec parses to the empty label list
 		{"a={x:1}", false}, // non-string YAML item refused
 		{`"a=1","b=2"`, true},
+		// R7 review differential — every verdict below was verified
+		// identical against upstream v8.5.0's exact engine call
+		// (gopkg.in/yaml.v2 UnmarshalStrict) on the reachable input
+		// domain; go.yaml.in/yaml/v3 is kept because the bounded
+		// differential showed zero divergence.
+		{" a = 1 ", true},     // keys/values trim before the empty check
+		{"k=1, k =1", true},   // spaced duplicate key trims to the same pair
+		{"a=1,a =1", true},    // same trimmed key + same value dedups
+		{"a=1,{bad", false},   // YAML flow error refused
+		{"a=1]", true},        // stray trailing bracket tolerated by the engine
+		{"[a=1", false},       // malformed nested flow refused
+		{"a=\t1", true},       // tabbed value trims to a real pair
+		{"a=yes", true},       // YAML 1.1 bool-likes stay plain scalars inside key=value
+		{"yes=1", true},       // same non-divergence on the key side
+		{"a=null", true},      // literal "null" is a non-empty value string
+		{"a=~", true},         // "~" is a non-empty value string
+		{"a=  ", false},       // whitespace-only value is empty after trim
+		{"a= on ", true},      // spaced "on" stays a plain scalar value
+		{"a==1", false},       // two separators refuse
+		{"=b", false},         // empty key refused
+		{"a=1\n,b=2", true},   // newline inside the flow list tolerated
+		{"a=1 , b=2 ,", true}, // spaced trailing comma tolerated
 	} {
 		if got := ParseAttributesSpecValue(tc.value); got != tc.want {
 			t.Fatalf("ParseAttributesSpecValue(%q)=%v want %v", tc.value, got, tc.want)
