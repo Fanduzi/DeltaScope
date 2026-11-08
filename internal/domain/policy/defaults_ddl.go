@@ -605,6 +605,16 @@ func ddlCoreRules() map[string]RulePolicy {
 			Level:   rule.LevelBlocker,
 			Params:  map[string]any{},
 		},
+		"ddl.table.split_region.exists.require": {
+			Enabled: true,
+			Level:   rule.LevelBlocker,
+			Params:  map[string]any{},
+		},
+		"ddl.table.compact.exists.require": {
+			Enabled: true,
+			Level:   rule.LevelBlocker,
+			Params:  map[string]any{},
+		},
 		"ddl.table.truncate.adaptive_hash.warn": {
 			Enabled: true,
 			Level:   rule.LevelWarning,
@@ -758,6 +768,8 @@ func ddlCoreRules() map[string]RulePolicy {
 		"ddl.tidb.table.cache.valid":             {Enabled: true, Level: rule.LevelBlocker, Params: map[string]any{}},
 		"ddl.tidb.table.attributes.valid":        {Enabled: true, Level: rule.LevelBlocker, Params: map[string]any{}},
 		"ddl.tidb.table.tiflash.valid":           {Enabled: true, Level: rule.LevelBlocker, Params: map[string]any{}},
+		"ddl.tidb.table.split_region.valid":      {Enabled: true, Level: rule.LevelBlocker, Params: map[string]any{}},
+		"ddl.tidb.table.compact.valid":           {Enabled: true, Level: rule.LevelBlocker, Params: map[string]any{}},
 		"ddl.create_placement_policy.notice":     {Enabled: true, Level: rule.LevelNotice, Params: map[string]any{}},
 		"ddl.alter_placement_policy.notice":      {Enabled: true, Level: rule.LevelNotice, Params: map[string]any{}},
 		"ddl.drop_placement_policy.notice":       {Enabled: true, Level: rule.LevelNotice, Params: map[string]any{}},

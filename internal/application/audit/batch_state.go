@@ -487,6 +487,12 @@ func (s *batchState) apply(ctx context.Context, statement spec.Statement) error 
 	case spec.DDLOperationCreateResourceGroup, spec.DDLOperationAlterResourceGroup,
 		spec.DDLOperationDropResourceGroup:
 		return s.applyResourceGroupStatement(ctx, statement)
+	case spec.DDLOperationSplitRegion, spec.DDLOperationCompactTable:
+		// Neither statement moves a catalog fact: region scatter and
+		// replica compaction leave identity, columns, indexes, and every
+		// modeled option untouched — refused or executed, the successor
+		// is the pre-state (issue #102 T23-R8).
+		return nil
 	default:
 		// No modeled transition: schema-scoped operations invalidate their
 		// scope, table-bound operations invalidate their targets.

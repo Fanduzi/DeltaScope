@@ -516,7 +516,8 @@ func instanceFactVersion(facts *spec.InstanceFacts) string {
 func targetTableName(statement spec.Statement) string {
 	if statement.DDL != nil && statement.DDL.Table != nil {
 		switch statement.DDL.Operation {
-		case spec.DDLOperationCreateTable, spec.DDLOperationAlterTable, spec.DDLOperationDropTable, spec.DDLOperationTruncateTable:
+		case spec.DDLOperationCreateTable, spec.DDLOperationAlterTable, spec.DDLOperationDropTable, spec.DDLOperationTruncateTable,
+			spec.DDLOperationSplitRegion, spec.DDLOperationCompactTable:
 			return strings.TrimSpace(statement.DDL.Table.Name)
 		default:
 			return ""

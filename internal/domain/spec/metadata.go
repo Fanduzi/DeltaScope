@@ -167,6 +167,16 @@ type InstanceFacts struct {
 	// the row.
 	TiDBEnableResourceControl      bool `json:"tidb_enable_resource_control,omitempty"`
 	TiDBEnableResourceControlKnown bool `json:"tidb_enable_resource_control_known,omitempty"`
+
+	// TiDBSplitRegionMaxNum is the observed tidb-server
+	// split-region-max-num config — the upper bound on authored SPLIT
+	// ... REGIONS counts (v8.5.0 planbuilder.go checks it against
+	// config.GetGlobalConfig().SplitRegionMaxNum). Read through
+	// SHOW CONFIG; every tidb-server instance row must parse and agree
+	// for the fact to become Known. MySQL never consults it. TiDB
+	// only (issue #102 T23-R8).
+	TiDBSplitRegionMaxNum      int  `json:"tidb_split_region_max_num,omitempty"`
+	TiDBSplitRegionMaxNumKnown bool `json:"tidb_split_region_max_num_known,omitempty"`
 }
 
 // TTLConfig is the proven TTL configuration recorded by the catalog or a

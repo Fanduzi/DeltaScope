@@ -1,0 +1,24 @@
+name: table_split_compact_rules
+dialect: tidb
+category: ddl
+metadata:
+  schema: req
+  instance:
+    version: "8.0.11-TiDB-v8.5.0"
+  tables:
+    t:
+      exists: true
+      partitioned: false
+      columns:
+        - name: id
+          type: int
+    ghost:
+      exists: false
+expect:
+  parse_ok: true
+  findings:
+    include:
+      - ddl.table.split_region.exists.require
+      - ddl.table.compact.exists.require
+      - ddl.tidb.table.split_region.valid
+      - ddl.tidb.table.compact.valid

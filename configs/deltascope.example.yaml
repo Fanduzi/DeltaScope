@@ -1151,6 +1151,16 @@ rules:
     level: blocker
     params:
 
+  ddl.tidb.table.split_region.valid:
+    enabled: true
+    level: blocker
+    params:
+
+  ddl.tidb.table.compact.valid:
+    enabled: true
+    level: blocker
+    params:
+
   ddl.tidb.local_temporary.alter:
     enabled: true
     level: blocker
@@ -2461,6 +2471,16 @@ rules:
     params:
 
   ddl.table.truncate.exists.require:
+    enabled: true
+    level: blocker
+    params:
+
+  ddl.table.split_region.exists.require:
+    enabled: true
+    level: blocker
+    params:
+
+  ddl.table.compact.exists.require:
     enabled: true
     level: blocker
     params:

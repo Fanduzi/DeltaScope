@@ -516,6 +516,12 @@ func Register(registry *rule.Registry, cfg policy.Policy) error {
 		{ruleID: ruleIDTableTruncateExistsRequire, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
 			return newTableOperationExistenceRule(ruleIDTableTruncateExistsRequire, spec.DDLOperationTruncateTable, "truncate table", rule.LevelBlocker, cfg)
 		}},
+		{ruleID: ruleIDTableSplitRegionExistsRequire, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newTableOperationExistenceRule(ruleIDTableSplitRegionExistsRequire, spec.DDLOperationSplitRegion, "split table region", rule.LevelBlocker, cfg)
+		}},
+		{ruleID: ruleIDTableCompactExistsRequire, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newTableOperationExistenceRule(ruleIDTableCompactExistsRequire, spec.DDLOperationCompactTable, "compact table", rule.LevelBlocker, cfg)
+		}},
 		{ruleID: ruleIDTableTruncateInboundFK, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
 			return newTruncateInboundFKRule(ruleIDTableTruncateInboundFK, rule.LevelBlocker, cfg)
 		}},
@@ -864,6 +870,8 @@ func Register(registry *rule.Registry, cfg policy.Policy) error {
 		{ruleID: ruleIDTiDBTableCacheValid, construct: newTableCacheValidRule},
 		{ruleID: ruleIDTiDBTableAttributesValid, construct: newTableAttributesValidRule},
 		{ruleID: ruleIDTiDBTableTiFlashValid, construct: newTableTiFlashValidRule},
+		{ruleID: ruleIDTiDBTableSplitRegionValid, construct: newTableSplitRegionValidRule},
+		{ruleID: ruleIDTiDBTableCompactValid, construct: newTableCompactValidRule},
 		{ruleID: ruleIDCreatePlacementPolicyNotice, construct: newCreatePlacementPolicyNoticeRule},
 		{ruleID: ruleIDAlterPlacementPolicyNotice, construct: newAlterPlacementPolicyNoticeRule},
 		{ruleID: ruleIDDropPlacementPolicyNotice, construct: newDropPlacementPolicyNoticeRule},

@@ -380,3 +380,55 @@ preserve the exact pre-state.
   the unobserved cache status and no endpoint proof lapses (R7-review
   correction: withheld transitions unvouch only names that could
   actually have moved).
+
+### R8 amendment — SPLIT/COMPACT audited through the common path (issue #102)
+
+- **Both standalone statements are now normalized operations, not
+  parser-boundary or request-only rows.** `SPLIT [REGION FOR]
+  [PARTITION] TABLE` extracts as `spec.DDLOperationSplitRegion` and
+  `ALTER TABLE ... COMPACT` as `spec.DDLOperationCompactTable`. The
+  authored declaration keeps the index/member target, the
+  `SPLIT PARTITION TABLE` clause variant, partition names, the
+  BY-vs-BETWEEN bound shape, per-position value classes (NULL,
+  provably-non-numeric string, plain literal, non-literal expression —
+  the literal payload itself never enters the model), and the authored
+  REGIONS count. `ALTER TABLE ... SPLIT INDEX` is an embedded spec, not
+  the standalone statement — it stays bounded-unmodeled through the
+  existing `alter_table.split_index` evidence.
+- **`spec.SplitRegionOutcome`/`CompactTableOutcome` follow upstream
+  v8.5.0 order.** SPLIT adjudicates temporary → SPLIT-PARTITION-clause
+  on a non-partitioned target → index arms (clustered primary refuses;
+  a proven nonclustered primary splits its own regions; missing index
+  refuses) → value tuples (exact table-handle arity vs partial index
+  arity; NULL refused on the table path, unproven on the index path;
+  a provably non-numeric string refused against a proven integer
+  member, while an unobserved member type stays a third state, never a
+  guessed non-integer) → the REGIONS bound (`<1` refuses, `>limit`
+  refuses only against a proven limit, unproven limit stays a gap) →
+  exec-time partition-member resolution that ignores names on a
+  non-partitioned table exactly like the executor does. COMPACT
+  adjudicates replica kind (only TIFLASH/ALL accepted; the bare form
+  normalizes to ALL; TIKV is refused statically) → proven
+  TiKV-compatible storage → explicit member resolution → the proven
+  no-TiFlash arm, which upstream answers with a warning no-op and the
+  rule reports as a bounded warning finding, never claimed compaction.
+- **Undecidable premises emit named facts, not guessed outcomes.** The
+  evidence gaps name `table.handle_columns`, `table.index_members`,
+  `table.partitioned`, `table.partition_names`,
+  `table.member_column_types`, `statement.split_value_foldability`,
+  `instance.split_region_max_num`, and
+  `instance.tikv_compatible_storage`; a non-table object that is proven
+  non-auditable stays a bounded undecidable without a required-fact
+  name. `split-region-max-num` loads through `SHOW CONFIG` under the
+  same every-instance-must-agree contract as `max-index-length` —
+  query/scan/iteration failures are provider errors, and inconsistent
+  or invalid values keep the fact unknown rather than applying the
+  documented 1000 default.
+- **Neither statement publishes a post-state.** SPLIT moves region
+  topology and COMPACT drives replica work — neither mutates a catalog
+  fact — so the ordered-state publisher keeps the exact pre-state on
+  every verdict, while the statements still participate in
+  target-table existence/lifecycle guards through the shared
+  `targetTableName` seam. MySQL keeps explicit vendor boundaries
+  because the shared parser accepts TiDB syntax under the MySQL
+  dialect flag.

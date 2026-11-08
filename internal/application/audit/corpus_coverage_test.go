@@ -183,7 +183,14 @@ func isTiDBOnlyRule(ruleID string) bool {
 		// replica declaration — vendor-boundary under MySQL.
 		"ddl.tidb.table.cache.valid",
 		"ddl.tidb.table.attributes.valid",
-		"ddl.tidb.table.tiflash.valid":
+		"ddl.tidb.table.tiflash.valid",
+		// R8: the standalone SPLIT/COMPACT statements vendor-boundary
+		// under MySQL — existence guards and semantic rules can only
+		// fire under TiDB.
+		"ddl.table.split_region.exists.require",
+		"ddl.table.compact.exists.require",
+		"ddl.tidb.table.split_region.valid",
+		"ddl.tidb.table.compact.valid":
 		return true
 	default:
 		return false

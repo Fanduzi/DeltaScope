@@ -286,6 +286,14 @@ func (p *Provider) LoadInstanceFacts(ctx context.Context, _ spec.Dialect, _ stri
 			facts.TiDBAlterPrimaryKey = alterPK
 			facts.TiDBAlterPrimaryKeyKnown = true
 		}
+		splitMax, splitKnown, splitErr := p.loadTiDBSplitRegionMaxNum(ctx)
+		if splitErr != nil {
+			return nil, fmt.Errorf("load tidb split-region-max-num: %w", splitErr)
+		}
+		if splitKnown {
+			facts.TiDBSplitRegionMaxNum = splitMax
+			facts.TiDBSplitRegionMaxNumKnown = true
+		}
 	} else {
 		// A non-TiDB server never consults the clustered-index mode — an
 		// unexpected row must not leak a TiDB fact onto MySQL facts.
@@ -334,6 +342,55 @@ func (p *Provider) loadTiDBMaxIndexLength(ctx context.Context) (value int, ok bo
 	}
 	if err := rows.Err(); err != nil {
 		return 0, false, fmt.Errorf("iterate tidb max-index-length: %w", err)
+	}
+	if !consistent {
+		return 0, false, nil
+	}
+	return value, ok, nil
+}
+
+// loadTiDBSplitRegionMaxNum reads the tidb-server split-region-max-num
+// configuration via SHOW CONFIG — the REGIONS-count bound the SPLIT
+// statement's BETWEEN form is checked against upstream. Same contract
+// as loadTiDBMaxIndexLength: query, scan, and iteration failures
+// propagate as provider errors, and every matching row (one per
+// tidb-server instance) must carry the same positive value or the fact
+// stays unknown so a BETWEEN form resolves to a bounded gap, never a
+// guessed 1000 default (issue #102 T23-R8).
+func (p *Provider) loadTiDBSplitRegionMaxNum(ctx context.Context) (value int, ok bool, err error) {
+	rows, err := p.db.QueryContext(ctx, `
+		show config where Type = 'tidb' and Name = 'split-region-max-num'
+	`)
+	if err != nil {
+		return 0, false, fmt.Errorf("query tidb split-region-max-num: %w", err)
+	}
+	defer rows.Close()
+
+	consistent := true
+	for rows.Next() {
+		var typ, instance, name, raw string
+		if err := rows.Scan(&typ, &instance, &name, &raw); err != nil {
+			return 0, false, fmt.Errorf("scan tidb split-region-max-num: %w", err)
+		}
+		if !strings.EqualFold(strings.TrimSpace(name), "split-region-max-num") {
+			// The server-side WHERE already filters; the name guard keeps
+			// a generic `show config` stub or a divergent row set from
+			// leaking a different config's value into this fact.
+			continue
+		}
+		parsed, parseErr := strconv.Atoi(strings.TrimSpace(raw))
+		if parseErr != nil || parsed <= 0 {
+			consistent = false
+			continue
+		}
+		if !ok {
+			value, ok = parsed, true
+		} else if parsed != value {
+			consistent = false
+		}
+	}
+	if err := rows.Err(); err != nil {
+		return 0, false, fmt.Errorf("iterate tidb split-region-max-num: %w", err)
 	}
 	if !consistent {
 		return 0, false, nil

@@ -43,6 +43,13 @@ type DDL struct {
 	// PlacementRange carries the authored ALTER RANGE scope name
 	// (global/meta/...) on alter_range_placement statements (issue #99 T20).
 	PlacementRange string `json:"placement_range,omitempty"`
+	// SplitRegion carries the authored SPLIT statement — object, member,
+	// bound, and REGIONS facts — on operation=split_region (issue #102
+	// T23-R8). The literal value payloads never enter the model.
+	SplitRegion *SplitRegionDecl `json:"-"`
+	// CompactTable carries the authored COMPACT replica kind and member
+	// names on operation=compact_table (issue #102 T23-R8).
+	CompactTable *CompactTableDecl `json:"-"`
 	// OmittedTargets counts parsed statement targets the normalized model
 	// collapsed or ignored entirely: extra names in DROP USER/ROLE/SEQUENCE
 	// lists, extra CREATE/ALTER USER specs, and the whole user list on
@@ -194,6 +201,15 @@ const (
 	DDLOperationCreateIndex   DDLOperation = "create_index"
 	DDLOperationDropView      DDLOperation = "drop_view"
 	DDLOperationTruncateTable DDLOperation = "truncate_table"
+	// DDLOperationSplitRegion is the standalone TiDB `SPLIT [REGION FOR]
+	// [PARTITION] TABLE ... [INDEX ...] [PARTITION (...)] BETWEEN|BY`
+	// statement. TiDB-only syntax; MySQL keeps a vendor boundary
+	// (issue #102 T23-R8).
+	DDLOperationSplitRegion DDLOperation = "split_region"
+	// DDLOperationCompactTable is the standalone TiDB `ALTER TABLE t
+	// COMPACT [PARTITION (names)] [TIFLASH REPLICA]` statement
+	// (ast.CompactTableStmt). TiDB-only; MySQL keeps a vendor boundary.
+	DDLOperationCompactTable DDLOperation = "compact_table"
 
 	DDLOperationCreateSchema            DDLOperation = "create_schema"
 	DDLOperationDropSchema              DDLOperation = "drop_schema"

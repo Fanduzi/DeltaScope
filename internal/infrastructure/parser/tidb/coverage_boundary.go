@@ -69,6 +69,14 @@ func dialectBoundaryFeature(dialect spec.Dialect, ddl *spec.DDL) (feature string
 				return string(ddl.Operation), true, true
 			}
 		}
+		switch ddl.Operation {
+		case spec.DDLOperationSplitRegion, spec.DDLOperationCompactTable:
+			// SPLIT and COMPACT are TiDB physical-layout statements; the
+			// shared parser still produces them under the mysql dialect,
+			// so MySQL keeps a vendor boundary, never an audited verdict
+			// (issue #102 T23-R8).
+			return string(ddl.Operation), true, true
+		}
 	case spec.DialectTiDB:
 		switch ddl.Operation {
 		case spec.DDLOperationCreateProcedure, spec.DDLOperationDropProcedure:
@@ -187,8 +195,6 @@ func unhandledStatementFeature(node ast.StmtNode) string {
 		return "cancel_distribution_job"
 	case *ast.CleanupTableLockStmt:
 		return "cleanup_table_lock"
-	case *ast.CompactTableStmt:
-		return "compact_table"
 	case *ast.CreateMaskingPolicyStmt:
 		return "create_masking_policy"
 	case *ast.CreateStatisticsStmt:
@@ -251,8 +257,6 @@ func unhandledStatementFeature(node ast.StmtNode) string {
 		return "restart"
 	case *ast.FlushStmt:
 		return "flush"
-	case *ast.SplitRegionStmt:
-		return "split_region"
 	case *ast.PlanReplayerStmt:
 		return "plan_replayer"
 	case *ast.RecommendIndexStmt:

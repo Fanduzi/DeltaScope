@@ -802,12 +802,18 @@ var metadataAwareRuleIDs = map[string]bool{
 	"ddl.table.drop.adaptive_hash.warn":        true,
 	"ddl.table.drop.exists.require":            true,
 	"ddl.table.drop.rows.max_count":            true,
-	"ddl.table.exists.alter.require":           true,
-	"ddl.table.exists.create.forbid":           true,
-	"ddl.table.row_size.max_bytes.require":     true,
-	"ddl.table.truncate.adaptive_hash.warn":    true,
-	"ddl.table.truncate.exists.require":        true,
-	"ddl.table.truncate.inbound_fk":            true,
+	// T23-R8: the standalone TiDB physical-layout statements read the
+	// bound target snapshot for existence and member/type adjudication.
+	"ddl.table.split_region.exists.require": true,
+	"ddl.table.compact.exists.require":      true,
+	"ddl.tidb.table.split_region.valid":     true,
+	"ddl.tidb.table.compact.valid":          true,
+	"ddl.table.exists.alter.require":        true,
+	"ddl.table.exists.create.forbid":        true,
+	"ddl.table.row_size.max_bytes.require":  true,
+	"ddl.table.truncate.adaptive_hash.warn": true,
+	"ddl.table.truncate.exists.require":     true,
+	"ddl.table.truncate.inbound_fk":         true,
 	// T17 schema-lifecycle rules read the ordered schema binding
 	// (Metadata.SchemaTarget). The name-keyed protection rules
 	// (denylist, system.modify) evaluate identically offline, so they

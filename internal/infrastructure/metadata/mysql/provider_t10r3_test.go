@@ -183,6 +183,10 @@ func TestT10R3TiDBAlterPrimaryKeyFactMatrix(t *testing.T) {
 				"show variables":      tidbVariables,
 				"'max-index-length'":  {columns: configColumns, rows: [][]driver.Value{{"tidb", "n1:4000", "max-index-length", "3072"}}},
 				"'alter-primary-key'": tc.config,
+				// T23-R8 sibling reader shares the SHOW CONFIG surface:
+				// a clean empty answer keeps the fact unknown rather
+				// than an ErrNoRows provider failure.
+				"split-region-max-num": {columns: configColumns, rows: [][]driver.Value{}},
 			})
 			defer db.Close()
 

@@ -118,6 +118,10 @@ func (e tidbExtractor) Extract(dialect spec.Dialect, rawSQL string) (spec.Statem
 		}
 	case *ast.TruncateTableStmt:
 		statement.DDL = extractTruncateTable(node)
+	case *ast.SplitRegionStmt:
+		statement.DDL = extractSplitRegion(node)
+	case *ast.CompactTableStmt:
+		statement.DDL = extractCompactTable(node)
 	case *ast.CreateDatabaseStmt:
 		statement.DDL = extractCreateDatabase(node)
 	case *ast.DropDatabaseStmt:
@@ -292,6 +296,8 @@ func classify(stmt ast.StmtNode) spec.Kind {
 		*ast.AlterPlacementPolicyStmt,
 		*ast.DropPlacementPolicyStmt,
 		*ast.AlterRangeStmt,
+		*ast.SplitRegionStmt,
+		*ast.CompactTableStmt,
 		*ast.CreateSequenceStmt,
 		*ast.AlterSequenceStmt,
 		*ast.DropSequenceStmt:
@@ -670,6 +676,120 @@ func extractTruncateTable(stmt *ast.TruncateTableStmt) *spec.DDL {
 		ddl.Table = &spec.Table{Schema: stmt.Table.Schema.L, Name: stmt.Table.Name.L}
 	}
 	return ddl
+}
+
+// extractSplitRegion normalizes the standalone TiDB SPLIT statement into
+// the authored declaration — object, index member, clause variant,
+// partition names, and positional value classes. Literal payloads stay
+// classified only (issue #102 T23-R8).
+func extractSplitRegion(stmt *ast.SplitRegionStmt) *spec.DDL {
+	ddl := &spec.DDL{Operation: spec.DDLOperationSplitRegion}
+	if stmt.Table != nil {
+		ddl.Table = &spec.Table{Schema: stmt.Table.Schema.L, Name: stmt.Table.Name.L}
+	}
+	decl := &spec.SplitRegionDecl{IndexName: stmt.IndexName.L}
+	if stmt.SplitSyntaxOpt != nil {
+		decl.HasPartitionClause = stmt.SplitSyntaxOpt.HasPartition
+	}
+	for _, name := range stmt.PartitionNames {
+		decl.PartitionNames = append(decl.PartitionNames, name.L)
+	}
+	if stmt.SplitOpt != nil {
+		if len(stmt.SplitOpt.ValueLists) > 0 {
+			decl.Bound.Arities = make([]int, 0, len(stmt.SplitOpt.ValueLists))
+			decl.Bound.Classes = make([][]spec.SplitValueClass, 0, len(stmt.SplitOpt.ValueLists))
+			for _, values := range stmt.SplitOpt.ValueLists {
+				decl.Bound.Arities = append(decl.Bound.Arities, len(values))
+				decl.Bound.Classes = append(decl.Bound.Classes, splitValueClasses(values))
+			}
+		} else {
+			decl.Bound.LowerArity = len(stmt.SplitOpt.Lower)
+			decl.Bound.UpperArity = len(stmt.SplitOpt.Upper)
+			decl.Bound.LowerClasses = splitValueClasses(stmt.SplitOpt.Lower)
+			decl.Bound.UpperClasses = splitValueClasses(stmt.SplitOpt.Upper)
+			num := stmt.SplitOpt.Num
+			decl.Num = &num
+		}
+	}
+	ddl.SplitRegion = decl
+	return ddl
+}
+
+// extractCompactTable normalizes `ALTER TABLE ... COMPACT` — replica
+// kind plus the authored member names (issue #102 T23-R8).
+func extractCompactTable(stmt *ast.CompactTableStmt) *spec.DDL {
+	ddl := &spec.DDL{Operation: spec.DDLOperationCompactTable}
+	if stmt.Table != nil {
+		ddl.Table = &spec.Table{Schema: stmt.Table.Schema.L, Name: stmt.Table.Name.L}
+	}
+	decl := &spec.CompactTableDecl{ReplicaKind: strings.ToLower(string(stmt.ReplicaKind))}
+	if decl.ReplicaKind == "" {
+		// The parser leaves ReplicaKind empty on the bare form; upstream
+		// treats it as ALL (executor builder requires TIFLASH|ALL).
+		decl.ReplicaKind = "all"
+	}
+	if stmt.PartitionNames != nil {
+		decl.PartitionNames = make([]string, 0, len(stmt.PartitionNames))
+		for _, name := range stmt.PartitionNames {
+			decl.PartitionNames = append(decl.PartitionNames, name.L)
+		}
+	}
+	ddl.CompactTable = decl
+	return ddl
+}
+
+// splitValueClasses classifies one authored value tuple: NULL literal,
+// provably non-numeric string literal, plain literal, or a non-literal
+// expression whose foldability stays unproven. Parenthesized operands
+// unwrap, and a unary ± integer keeps its sign as a literal. The payload
+// itself is never retained.
+func splitValueClasses(values []ast.ExprNode) []spec.SplitValueClass {
+	classes := make([]spec.SplitValueClass, 0, len(values))
+	for _, expr := range values {
+		classes = append(classes, splitValueClass(expr))
+	}
+	return classes
+}
+
+func splitValueClass(expr ast.ExprNode) spec.SplitValueClass {
+	if exprIsNullLiteral(expr) {
+		return spec.SplitValueNull
+	}
+	node := unwrapParenthesesExpr(expr)
+	if valueExpr, ok := node.(ast.ValueExpr); ok {
+		if value, ok := valueExpr.GetValue().(string); ok && !splitNumericString(value) {
+			return spec.SplitValueNonNumeric
+		}
+		return spec.SplitValueLiteral
+	}
+	if unary, ok := node.(*ast.UnaryOperationExpr); ok {
+		if inner, ok := unwrapParenthesesExpr(unary.V).(ast.ValueExpr); ok {
+			switch inner.GetValue().(type) {
+			case int64, uint64, float64, float32:
+				return spec.SplitValueLiteral
+			}
+		}
+	}
+	return spec.SplitValueExpr
+}
+
+// splitNumericString reports whether a string literal converts cleanly
+// to a number — the boundary between a literal the member-type arm can
+// still accept and one upstream refuses on an integer member.
+func splitNumericString(value string) bool {
+	if value == "" {
+		return false
+	}
+	if _, err := strconv.ParseInt(value, 10, 64); err == nil {
+		return true
+	}
+	if _, err := strconv.ParseUint(value, 10, 64); err == nil {
+		return true
+	}
+	if _, err := strconv.ParseFloat(value, 64); err == nil {
+		return true
+	}
+	return false
 }
 
 func extractCreateDatabase(stmt *ast.CreateDatabaseStmt) *spec.DDL {
