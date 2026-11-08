@@ -1,0 +1,254 @@
+{
+  "case_id": "T22.meta.tidb85-alter-absent-unproven",
+  "kind": "cli_metadata",
+  "cli_case": "tidb85-alter-absent-unproven",
+  "anchor": "tidb85",
+  "dialect": "tidb",
+  "input_sql": "ALTER RESOURCE GROUP t22fx_ghost RU_PER_SEC=10;",
+  "policy_profile": "t22-resource-group",
+  "policy_path": "/Users/fan/GolangProjects/DeltaScope/docs/verification/t22/59b1e4abbe6e9fffacbbe3c21826ad956a736e38/native/t22a-r6-20261108t04531794113630z-6468/golden/T22/golden-policy.yaml",
+  "connect": {
+    "host": "127.0.0.1",
+    "port": 24000,
+    "user": "root",
+    "schema": "t22fx"
+  },
+  "expected": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+      "complete"
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": true,
+    "finding_entries": [
+      {
+        "index": 0,
+        "rule_id": "ddl.tidb.resource_group.valid",
+        "level": "blocker"
+      }
+    ]
+  },
+  "actual": {
+    "database": {
+      "product": "tidb",
+      "image": "pingcap/tidb:v8.5.0",
+      "image_digest": "pingcap/tidb@sha256:490861bd4a2fa643dbe76b77ffecafcad66e6a42774e580b82f4ec2429a80e57",
+      "container": "deltascope-ddl-golden-tidb85",
+      "reachable": true,
+      "version": "8.0.11-TiDB-v8.5.0"
+    },
+    "setup": [
+      {
+        "name": "ensure-ghost-absent",
+        "sql": "DROP RESOURCE GROUP IF EXISTS t22fx_ghost",
+        "rc": 0,
+        "stdout": "",
+        "stderr": "",
+        "verify": [
+          {
+            "assert": "ghost group absent",
+            "sql": "SELECT COUNT(*) FROM information_schema.RESOURCE_GROUPS WHERE NAME='t22fx_ghost'",
+            "rc": 0,
+            "output": "0",
+            "stderr": ""
+          }
+        ]
+      }
+    ],
+    "post_verify": [],
+    "execute": [],
+    "structure": [],
+    "teardown": [],
+    "exit": 1,
+    "stdout": "{\"verdict\":\"reject\",\"coverage\":{\"status\":\"complete\"},\"summary\":{\"statements\":1,\"blockers\":1,\"warnings\":0,\"notices\":0},\"statements\":[{\"index\":0,\"kind\":\"ddl\",\"raw_sql\":\"ALTER RESOURCE GROUP t22fx_ghost RU_PER_SEC=10;\",\"normalized_sql\":\"ALTER RESOURCE GROUP t22fx_ghost RU_PER_SEC=10\",\"findings\":[{\"rule_id\":\"ddl.tidb.resource_group.valid\",\"level\":\"blocker\",\"message\":\"ALTER RESOURCE GROUP names the absent group \\\"t22fx_ghost\\\".\",\"statement_kind\":\"ddl\",\"location\":{\"line\":1,\"column\":1},\"suggestion\":\"create the resource group first or use ALTER RESOURCE GROUP IF EXISTS\",\"metadata\":{\"object_name\":\"t22fx_ghost\",\"object_type\":\"resource_group\",\"operation\":\"alter_resource_group\"},\"explanation\":{\"summary\":\"Check DDL tidb resource group valid\",\"why\":\"The statement matched the shipped governance rule for this pattern.\",\"risk\":\"Ignoring this rule can weaken schema-governance guarantees and make changes harder to review safely.\",\"suggestion\":\"create the resource group first or use ALTER RESOURCE GROUP IF EXISTS\"}}],\"coverage\":{\"status\":\"complete\"}}],\"version\":{\"product\":\"tidb\",\"version\":\"8.5.0\",\"major\":8,\"minor\":5,\"patch\":0,\"source\":\"observed\",\"validated_range\":true},\"fail_on_triggered\":true,\"rule_summary\":{\"loaded\":6,\"applicable\":3,\"skipped\":[]},\"context\":{\"mode\":\"metadata-aware\",\"dialect\":\"tidb\",\"dialect_source\":\"detected\",\"schema\":\"t22fx\",\"schema_source\":\"flag\"}}\n",
+    "stderr": "",
+    "parsed": {
+      "verdict": "reject",
+      "coverage": {
+        "status": "complete"
+      },
+      "summary": {
+        "statements": 1,
+        "blockers": 1,
+        "warnings": 0,
+        "notices": 0
+      },
+      "statements": [
+        {
+          "index": 0,
+          "kind": "ddl",
+          "raw_sql": "ALTER RESOURCE GROUP t22fx_ghost RU_PER_SEC=10;",
+          "normalized_sql": "ALTER RESOURCE GROUP t22fx_ghost RU_PER_SEC=10",
+          "findings": [
+            {
+              "rule_id": "ddl.tidb.resource_group.valid",
+              "level": "blocker",
+              "message": "ALTER RESOURCE GROUP names the absent group \"t22fx_ghost\".",
+              "statement_kind": "ddl",
+              "location": {
+                "line": 1,
+                "column": 1
+              },
+              "suggestion": "create the resource group first or use ALTER RESOURCE GROUP IF EXISTS",
+              "metadata": {
+                "object_name": "t22fx_ghost",
+                "object_type": "resource_group",
+                "operation": "alter_resource_group"
+              },
+              "explanation": {
+                "summary": "Check DDL tidb resource group valid",
+                "why": "The statement matched the shipped governance rule for this pattern.",
+                "risk": "Ignoring this rule can weaken schema-governance guarantees and make changes harder to review safely.",
+                "suggestion": "create the resource group first or use ALTER RESOURCE GROUP IF EXISTS"
+              }
+            }
+          ],
+          "coverage": {
+            "status": "complete"
+          }
+        }
+      ],
+      "version": {
+        "product": "tidb",
+        "version": "8.5.0",
+        "major": 8,
+        "minor": 5,
+        "patch": 0,
+        "source": "observed",
+        "validated_range": true
+      },
+      "fail_on_triggered": true,
+      "rule_summary": {
+        "loaded": 6,
+        "applicable": 3,
+        "skipped": []
+      },
+      "context": {
+        "mode": "metadata-aware",
+        "dialect": "tidb",
+        "dialect_source": "detected",
+        "schema": "t22fx",
+        "schema_source": "flag"
+      }
+    },
+    "version_evidence": {
+      "target_raw": null,
+      "target_canonical": null,
+      "observed_raw": "8.0.11-TiDB-v8.5.0",
+      "observed_canonical": {
+        "product": "tidb",
+        "version": "8.5.0"
+      },
+      "resolved": {
+        "product": "tidb",
+        "version": "8.5.0",
+        "major": 8,
+        "minor": 5,
+        "patch": 0,
+        "source": "observed",
+        "validated_range": true
+      }
+    }
+  },
+  "assertions": [
+    {
+      "name": "database reachable with expected version",
+      "ok": true,
+      "detail": "SELECT VERSION() rc=0 version='8.0.11-TiDB-v8.5.0' expected_contains='v8.5.0'"
+    },
+    {
+      "name": "setup ensure-ghost-absent return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "setup ensure-ghost-absent: ghost group absent",
+      "ok": true,
+      "detail": "rc=0 output='0' expected='0'"
+    },
+    {
+      "name": "exit code",
+      "ok": true,
+      "detail": "rc=1 expected=1"
+    },
+    {
+      "name": "verdict",
+      "ok": true,
+      "detail": "verdict='reject'"
+    },
+    {
+      "name": "top-level statements",
+      "ok": true,
+      "detail": "statements=1 expected=1"
+    },
+    {
+      "name": "zero findings",
+      "ok": true,
+      "detail": "findings=1"
+    },
+    {
+      "name": "no diagnostics",
+      "ok": true,
+      "detail": "diagnostics=[]"
+    },
+    {
+      "name": "no unsupported",
+      "ok": true,
+      "detail": "unsupported=[]"
+    },
+    {
+      "name": "aggregate coverage",
+      "ok": true,
+      "detail": "coverage='complete'"
+    },
+    {
+      "name": "per-statement coverage",
+      "ok": true,
+      "detail": "statement_coverage=['complete']"
+    },
+    {
+      "name": "evidence gap count",
+      "ok": true,
+      "detail": "gaps=0"
+    },
+    {
+      "name": "finding entries",
+      "ok": true,
+      "detail": "findings=[(0, 'ddl.tidb.resource_group.valid', 'blocker')] expected=[(0, 'ddl.tidb.resource_group.valid', 'blocker')]"
+    },
+    {
+      "name": "fail_on_triggered",
+      "ok": true,
+      "detail": "fail_on_triggered=True"
+    }
+  ],
+  "status": "pass",
+  "command": [
+    "/Users/fan/GolangProjects/DeltaScope/docs/verification/t22/59b1e4abbe6e9fffacbbe3c21826ad956a736e38/native/t22a-r6-20261108t04531794113630z-6468/golden/T22/bin/deltascope",
+    "audit",
+    "--dialect",
+    "tidb",
+    "--sql",
+    "ALTER RESOURCE GROUP t22fx_ghost RU_PER_SEC=10;",
+    "--config",
+    "/Users/fan/GolangProjects/DeltaScope/docs/verification/t22/59b1e4abbe6e9fffacbbe3c21826ad956a736e38/native/t22a-r6-20261108t04531794113630z-6468/golden/T22/golden-policy.yaml",
+    "--format",
+    "json",
+    "--host",
+    "127.0.0.1",
+    "--port",
+    "24000",
+    "--user",
+    "root",
+    "--schema",
+    "t22fx",
+    "--fail-on",
+    "blocker"
+  ]
+}

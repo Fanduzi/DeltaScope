@@ -1,0 +1,490 @@
+{
+  "run_id": "t22a-r6-20261108t04531794113630z-6468",
+  "daemon_endpoint": "unix:///Users/fan/.colima/ds-t21-20261107t1158z-e514c8/docker.sock",
+  "owner": "devin-t22",
+  "created_at": "20261108T045407Z",
+  "daemon_identity": {
+    "server_id": "35b66e6e-49f3-4615-b556-6a10062d4737",
+    "name": "colima-ds-t21-20261107t1158z-e514c8",
+    "os": "Ubuntu 24.04.4 LTS",
+    "docker_version": "29.5.2"
+  },
+  "project": "t22a-r6-20261108t04531794113630z-6468",
+  "containers": [
+    {
+      "name": "deltascope-ddl-golden-mysql57",
+      "id": "a528135720c2308cfa59e87c647b2858ae4fbf5c3f0e91a49ab672cde68dfb67",
+      "image_ref": "sha256:4bc6bc963e6d8443453676cae56536f4b8156d78bae03c0145cbe47c2aad73bb"
+    },
+    {
+      "name": "deltascope-ddl-golden-mysql80",
+      "id": "29c50792ce5a1231213f2584865ee4103f93a34f70fdf37c03347d2347861120",
+      "image_ref": "sha256:7dcddc01f13bab2f15cde676d44d01f61fc9f99fe7785e86196dfc07d358ae2b"
+    },
+    {
+      "name": "deltascope-ddl-golden-mysql84",
+      "id": "3d2f70c01fe9ea689f8ab50c4d027c37b321dd4bd74a15e92b514f871c9a3a50",
+      "image_ref": "sha256:8dbcf531a03aade657e181b9cf2f1d1803ce621a1d55610cb44cb531ab7d7db6"
+    },
+    {
+      "name": "deltascope-ddl-golden-tidb85",
+      "id": "e8fbee87d6ddb8975c09484e51f66218acc4b5cee9e0cb908f49a21036f66e38",
+      "image_ref": "sha256:490861bd4a2fa643dbe76b77ffecafcad66e6a42774e580b82f4ec2429a80e57"
+    },
+    {
+      "name": "deltascope-ddl-golden-tidb85-client",
+      "id": "1007598dce08bf40677f9f13be98621241a28701b5a2603c0883482608022f7b",
+      "image_ref": "sha256:8dbcf531a03aade657e181b9cf2f1d1803ce621a1d55610cb44cb531ab7d7db6"
+    }
+  ],
+  "networks": [
+    "b0017b19d4c6"
+  ],
+  "volumes": [
+    {
+      "name": "t22a-r6-20261108t04531794113630z-6468-mysql57-data",
+      "driver": "local"
+    },
+    {
+      "name": "t22a-r6-20261108t04531794113630z-6468-mysql80-data",
+      "driver": "local"
+    },
+    {
+      "name": "t22a-r6-20261108t04531794113630z-6468-mysql84-data",
+      "driver": "local"
+    }
+  ],
+  "generations": [
+    {
+      "at": "20261108T045413Z",
+      "action": "compose.up",
+      "containers": [
+        {
+          "name": "deltascope-ddl-golden-mysql57",
+          "id": "00d43b229f6cc8ce65eaa142530394cecc320850113d0408ecd687fd039c7fab",
+          "image_ref": "sha256:4bc6bc963e6d8443453676cae56536f4b8156d78bae03c0145cbe47c2aad73bb"
+        },
+        {
+          "name": "deltascope-ddl-golden-mysql80",
+          "id": "12a00666ec96595fcb1716ce95302d75edcd4f8b708a02253b36b43548a985df",
+          "image_ref": "sha256:7dcddc01f13bab2f15cde676d44d01f61fc9f99fe7785e86196dfc07d358ae2b"
+        },
+        {
+          "name": "deltascope-ddl-golden-mysql84",
+          "id": "daf7334c707b7abba87776c97785d78afe84a484c81dd9d6d4f7b1f60c020b06",
+          "image_ref": "sha256:8dbcf531a03aade657e181b9cf2f1d1803ce621a1d55610cb44cb531ab7d7db6"
+        },
+        {
+          "name": "deltascope-ddl-golden-tidb85",
+          "id": "77f8d4114f693f4526375d22841380a1449467d883c06bbecca52526fd5709ca",
+          "image_ref": "sha256:490861bd4a2fa643dbe76b77ffecafcad66e6a42774e580b82f4ec2429a80e57"
+        },
+        {
+          "name": "deltascope-ddl-golden-tidb85-client",
+          "id": "dbd13d9fda703f34d63297fe39b2cab33db6404af75dd92b7244c60733f26c76",
+          "image_ref": "sha256:8dbcf531a03aade657e181b9cf2f1d1803ce621a1d55610cb44cb531ab7d7db6"
+        }
+      ],
+      "networks": [
+        {
+          "id": "fdfd93ed4371"
+        }
+      ],
+      "volumes": [
+        {
+          "kind": "named",
+          "declared": "t22a-r6-20261108t04531794113630z-6468-mysql57-data",
+          "name": "t22a-r6-20261108t04531794113630z-6468_t22a-r6-20261108t04531794113630z-6468-mysql57-data"
+        },
+        {
+          "kind": "named",
+          "declared": "t22a-r6-20261108t04531794113630z-6468-mysql80-data",
+          "name": "t22a-r6-20261108t04531794113630z-6468_t22a-r6-20261108t04531794113630z-6468-mysql80-data"
+        },
+        {
+          "kind": "named",
+          "declared": "t22a-r6-20261108t04531794113630z-6468-mysql84-data",
+          "name": "t22a-r6-20261108t04531794113630z-6468_t22a-r6-20261108t04531794113630z-6468-mysql84-data"
+        },
+        {
+          "kind": "anonymous",
+          "name": "589b2a40aba627001e7083522b1d1caeb1bfc16d90b3a7f7be18ddf30c371c85",
+          "mounted_by": "deltascope-ddl-golden-tidb85-client",
+          "destination": "/var/lib/mysql"
+        }
+      ]
+    },
+    {
+      "at": "20261108T045437Z",
+      "action": "compose.up.run",
+      "containers": [
+        {
+          "name": "deltascope-ddl-golden-mysql57",
+          "id": "00d43b229f6cc8ce65eaa142530394cecc320850113d0408ecd687fd039c7fab",
+          "image_ref": "sha256:4bc6bc963e6d8443453676cae56536f4b8156d78bae03c0145cbe47c2aad73bb"
+        },
+        {
+          "name": "deltascope-ddl-golden-mysql80",
+          "id": "12a00666ec96595fcb1716ce95302d75edcd4f8b708a02253b36b43548a985df",
+          "image_ref": "sha256:7dcddc01f13bab2f15cde676d44d01f61fc9f99fe7785e86196dfc07d358ae2b"
+        },
+        {
+          "name": "deltascope-ddl-golden-mysql84",
+          "id": "daf7334c707b7abba87776c97785d78afe84a484c81dd9d6d4f7b1f60c020b06",
+          "image_ref": "sha256:8dbcf531a03aade657e181b9cf2f1d1803ce621a1d55610cb44cb531ab7d7db6"
+        },
+        {
+          "name": "deltascope-ddl-golden-tidb85",
+          "id": "77f8d4114f693f4526375d22841380a1449467d883c06bbecca52526fd5709ca",
+          "image_ref": "sha256:490861bd4a2fa643dbe76b77ffecafcad66e6a42774e580b82f4ec2429a80e57"
+        },
+        {
+          "name": "deltascope-ddl-golden-tidb85-client",
+          "id": "dbd13d9fda703f34d63297fe39b2cab33db6404af75dd92b7244c60733f26c76",
+          "image_ref": "sha256:8dbcf531a03aade657e181b9cf2f1d1803ce621a1d55610cb44cb531ab7d7db6"
+        }
+      ],
+      "networks": [
+        {
+          "id": "fdfd93ed4371"
+        }
+      ],
+      "volumes": [
+        {
+          "kind": "named",
+          "declared": "t22a-r6-20261108t04531794113630z-6468-mysql57-data",
+          "name": "t22a-r6-20261108t04531794113630z-6468_t22a-r6-20261108t04531794113630z-6468-mysql57-data"
+        },
+        {
+          "kind": "named",
+          "declared": "t22a-r6-20261108t04531794113630z-6468-mysql80-data",
+          "name": "t22a-r6-20261108t04531794113630z-6468_t22a-r6-20261108t04531794113630z-6468-mysql80-data"
+        },
+        {
+          "kind": "named",
+          "declared": "t22a-r6-20261108t04531794113630z-6468-mysql84-data",
+          "name": "t22a-r6-20261108t04531794113630z-6468_t22a-r6-20261108t04531794113630z-6468-mysql84-data"
+        },
+        {
+          "kind": "anonymous",
+          "name": "589b2a40aba627001e7083522b1d1caeb1bfc16d90b3a7f7be18ddf30c371c85",
+          "mounted_by": "deltascope-ddl-golden-tidb85-client",
+          "destination": "/var/lib/mysql"
+        }
+      ]
+    },
+    {
+      "at": "20261108T045522Z",
+      "action": "compose.up.run",
+      "containers": [
+        {
+          "name": "deltascope-ddl-golden-mysql57",
+          "id": "a528135720c2308cfa59e87c647b2858ae4fbf5c3f0e91a49ab672cde68dfb67",
+          "image_ref": "sha256:4bc6bc963e6d8443453676cae56536f4b8156d78bae03c0145cbe47c2aad73bb"
+        },
+        {
+          "name": "deltascope-ddl-golden-mysql80",
+          "id": "29c50792ce5a1231213f2584865ee4103f93a34f70fdf37c03347d2347861120",
+          "image_ref": "sha256:7dcddc01f13bab2f15cde676d44d01f61fc9f99fe7785e86196dfc07d358ae2b"
+        },
+        {
+          "name": "deltascope-ddl-golden-mysql84",
+          "id": "3d2f70c01fe9ea689f8ab50c4d027c37b321dd4bd74a15e92b514f871c9a3a50",
+          "image_ref": "sha256:8dbcf531a03aade657e181b9cf2f1d1803ce621a1d55610cb44cb531ab7d7db6"
+        },
+        {
+          "name": "deltascope-ddl-golden-tidb85",
+          "id": "e8fbee87d6ddb8975c09484e51f66218acc4b5cee9e0cb908f49a21036f66e38",
+          "image_ref": "sha256:490861bd4a2fa643dbe76b77ffecafcad66e6a42774e580b82f4ec2429a80e57"
+        },
+        {
+          "name": "deltascope-ddl-golden-tidb85-client",
+          "id": "1007598dce08bf40677f9f13be98621241a28701b5a2603c0883482608022f7b",
+          "image_ref": "sha256:8dbcf531a03aade657e181b9cf2f1d1803ce621a1d55610cb44cb531ab7d7db6"
+        }
+      ],
+      "networks": [
+        {
+          "id": "b0017b19d4c6"
+        }
+      ],
+      "volumes": [
+        {
+          "kind": "named",
+          "declared": "t22a-r6-20261108t04531794113630z-6468-mysql57-data",
+          "name": "t22a-r6-20261108t04531794113630z-6468_t22a-r6-20261108t04531794113630z-6468-mysql57-data"
+        },
+        {
+          "kind": "named",
+          "declared": "t22a-r6-20261108t04531794113630z-6468-mysql80-data",
+          "name": "t22a-r6-20261108t04531794113630z-6468_t22a-r6-20261108t04531794113630z-6468-mysql80-data"
+        },
+        {
+          "kind": "named",
+          "declared": "t22a-r6-20261108t04531794113630z-6468-mysql84-data",
+          "name": "t22a-r6-20261108t04531794113630z-6468_t22a-r6-20261108t04531794113630z-6468-mysql84-data"
+        },
+        {
+          "kind": "anonymous",
+          "name": "784c728d29030f1421d126cb823ed7de4b2cbc7fd155971f5ba7bc156cf0be0a",
+          "mounted_by": "deltascope-ddl-golden-tidb85-client",
+          "destination": "/var/lib/mysql"
+        }
+      ]
+    }
+  ],
+  "actions": [
+    {
+      "action": "compose.up",
+      "rc": 0,
+      "detail": "Network t22a-r6-20261108t04531794113630z-6468_default Creating \n Volume t22a-r6-20261108t04531794113630z-6468_t22a-r6-20261108t04531794113630z-6468-mysql84-data Creating \n Volume t22a-r6-20261108t04531794113630z-6468_t22a-r6-20261108t04531794113630z-6468-mysql80-data Creating \n Volume t22a-r6-20261108t04531794113630z-6468_t22a-r6-20261108t04531794113630z-6468-mysql57-data Creating \n Volume t22a-r6-20261108t04531794113630z-6468_t22a-r6-20261108t04531794113630z-6468-mysql84-data Creating \n Volume t22a-r6-20261108t04531794113630z-6468_t22a-r6-20261108t04531794113630z-6468-mysql57-data Creating \n Network t22a-r6-20261108t04531794113630z-6468_default Creating \n Volume t22a-r6-20261108t04531794113630z-6468_t22a-r6-20261108t04531794113630z-6468-mysql80-data Creating \n Volume t22a-r6-20261108t04531794113630z-6468_t22a-r6-20261108t04531794113630z-6468-mysql57-data Created \n Volume t22a-r6-20261108t04531794113630z-6468_t22a-r6-20261108t04531794113630z-6468-mysql57-data Created \n Volume t22a-r6-20261108t04531794113630z-6468_t22a-r6-20261108t04531794113630z-6468-mysql84-data Created \n Volume t22a-r6-20261108t04531794113630z-6468_t22a-r6-20261108t04531794113630z-6468-mysql84-data Created \n Volume t22a-r6-20261108t04531794113630z-6468_t22a-r6-20261108t04531794113630z-6468-mysql80-data Created \n Volume t22a-r6-20261108t04531794113630z-6468_t22a-r6-20261108t04531794113630z-6468-mysql80-data Created \n Network t22a-r6-20261108t04531794113630z-6468_default Created \n Network t22a-r6-20261108t04531794113630z-6468_default Created \n Container deltascope-ddl-golden-tidb85 Creating \n Container deltascope-ddl-golden-mysql84 Creating \n Container deltascope-ddl-golden-mysql57 Creating \n Container deltascope-ddl-golden-mysql80 Creating \n Container deltascope-ddl-golden-tidb85 Created \n Container deltascope-ddl-golden-tidb85-client Creating \n Container deltascope-ddl-golden-mysql57 Created \n Container deltascope-ddl-golden-mysql84 Created \n Container deltascope-ddl-golden-mysql80 Created \n Conta",
+      "at": "20261108T045413Z"
+    },
+    {
+      "action": "generation.capture",
+      "rc": 0,
+      "detail": "compose.up: 5c/1n/4v",
+      "at": "20261108T045413Z"
+    },
+    {
+      "action": "generation.capture",
+      "rc": 0,
+      "detail": "compose.up.run: 5c/1n/4v",
+      "at": "20261108T045437Z"
+    },
+    {
+      "action": "stop.00d43b229f6c",
+      "rc": 0,
+      "detail": "",
+      "at": "20261108T045442Z"
+    },
+    {
+      "action": "stop.12a00666ec96",
+      "rc": 0,
+      "detail": "",
+      "at": "20261108T045443Z"
+    },
+    {
+      "action": "stop.77f8d4114f69",
+      "rc": 0,
+      "detail": "",
+      "at": "20261108T045443Z"
+    },
+    {
+      "action": "stop.daf7334c707b",
+      "rc": 0,
+      "detail": "",
+      "at": "20261108T045444Z"
+    },
+    {
+      "action": "stop.dbd13d9fda70",
+      "rc": 0,
+      "detail": "",
+      "at": "20261108T045454Z"
+    },
+    {
+      "action": "rm.00d43b229f6c",
+      "rc": 0,
+      "detail": "",
+      "at": "20261108T045455Z"
+    },
+    {
+      "action": "rm.12a00666ec96",
+      "rc": 0,
+      "detail": "",
+      "at": "20261108T045455Z"
+    },
+    {
+      "action": "rm.77f8d4114f69",
+      "rc": 0,
+      "detail": "",
+      "at": "20261108T045455Z"
+    },
+    {
+      "action": "rm.daf7334c707b",
+      "rc": 0,
+      "detail": "",
+      "at": "20261108T045455Z"
+    },
+    {
+      "action": "rm.dbd13d9fda70",
+      "rc": 0,
+      "detail": "",
+      "at": "20261108T045455Z"
+    },
+    {
+      "action": "network.rm.fdfd93ed4371",
+      "rc": 0,
+      "detail": "",
+      "at": "20261108T045455Z"
+    },
+    {
+      "action": "generation.capture",
+      "rc": 0,
+      "detail": "compose.up.run: 5c/1n/4v",
+      "at": "20261108T045522Z"
+    },
+    {
+      "action": "identity.gone",
+      "rc": 0,
+      "detail": "deltascope-ddl-golden-mysql57:00d43b229f6c",
+      "at": "20261108T045530Z"
+    },
+    {
+      "action": "identity.gone",
+      "rc": 0,
+      "detail": "deltascope-ddl-golden-mysql80:12a00666ec96",
+      "at": "20261108T045530Z"
+    },
+    {
+      "action": "identity.gone",
+      "rc": 0,
+      "detail": "deltascope-ddl-golden-mysql84:daf7334c707b",
+      "at": "20261108T045530Z"
+    },
+    {
+      "action": "identity.gone",
+      "rc": 0,
+      "detail": "deltascope-ddl-golden-tidb85:77f8d4114f69",
+      "at": "20261108T045530Z"
+    },
+    {
+      "action": "identity.gone",
+      "rc": 0,
+      "detail": "deltascope-ddl-golden-tidb85-client:dbd13d9fda70",
+      "at": "20261108T045530Z"
+    },
+    {
+      "action": "stop.1007598dce08",
+      "rc": 0,
+      "detail": "",
+      "at": "20261108T045540Z"
+    },
+    {
+      "action": "stop.29c50792ce5a",
+      "rc": 0,
+      "detail": "",
+      "at": "20261108T045541Z"
+    },
+    {
+      "action": "stop.3d2f70c01fe9",
+      "rc": 0,
+      "detail": "",
+      "at": "20261108T045543Z"
+    },
+    {
+      "action": "stop.a528135720c2",
+      "rc": 0,
+      "detail": "",
+      "at": "20261108T045544Z"
+    },
+    {
+      "action": "stop.e8fbee87d6dd",
+      "rc": 0,
+      "detail": "",
+      "at": "20261108T045544Z"
+    },
+    {
+      "action": "identity.gone",
+      "rc": 0,
+      "detail": "deltascope-ddl-golden-mysql57:00d43b229f6c",
+      "at": "20261108T045544Z"
+    },
+    {
+      "action": "identity.gone",
+      "rc": 0,
+      "detail": "deltascope-ddl-golden-mysql80:12a00666ec96",
+      "at": "20261108T045544Z"
+    },
+    {
+      "action": "identity.gone",
+      "rc": 0,
+      "detail": "deltascope-ddl-golden-mysql84:daf7334c707b",
+      "at": "20261108T045544Z"
+    },
+    {
+      "action": "identity.gone",
+      "rc": 0,
+      "detail": "deltascope-ddl-golden-tidb85:77f8d4114f69",
+      "at": "20261108T045544Z"
+    },
+    {
+      "action": "identity.gone",
+      "rc": 0,
+      "detail": "deltascope-ddl-golden-tidb85-client:dbd13d9fda70",
+      "at": "20261108T045545Z"
+    },
+    {
+      "action": "rm.1007598dce08",
+      "rc": 0,
+      "detail": "",
+      "at": "20261108T045545Z"
+    },
+    {
+      "action": "rm.29c50792ce5a",
+      "rc": 0,
+      "detail": "",
+      "at": "20261108T045545Z"
+    },
+    {
+      "action": "rm.3d2f70c01fe9",
+      "rc": 0,
+      "detail": "",
+      "at": "20261108T045545Z"
+    },
+    {
+      "action": "rm.a528135720c2",
+      "rc": 0,
+      "detail": "",
+      "at": "20261108T045545Z"
+    },
+    {
+      "action": "rm.e8fbee87d6dd",
+      "rc": 0,
+      "detail": "",
+      "at": "20261108T045545Z"
+    },
+    {
+      "action": "identity.gone",
+      "rc": 0,
+      "detail": "net:fdfd93ed4371",
+      "at": "20261108T045545Z"
+    },
+    {
+      "action": "network.rm.b0017b19d4c6",
+      "rc": 0,
+      "detail": "",
+      "at": "20261108T045545Z"
+    },
+    {
+      "action": "volume.rm.t22a-r6-20261108t04531794113630z-6468_t22a-r6-20261108t04531794113630z-6468-mysql57-data",
+      "rc": 0,
+      "detail": "",
+      "at": "20261108T045619Z"
+    },
+    {
+      "action": "volume.rm.t22a-r6-20261108t04531794113630z-6468_t22a-r6-20261108t04531794113630z-6468-mysql80-data",
+      "rc": 0,
+      "detail": "",
+      "at": "20261108T045619Z"
+    },
+    {
+      "action": "volume.rm.t22a-r6-20261108t04531794113630z-6468_t22a-r6-20261108t04531794113630z-6468-mysql84-data",
+      "rc": 0,
+      "detail": "",
+      "at": "20261108T045619Z"
+    },
+    {
+      "action": "volume.rm.589b2a40aba627001e7083522b1d1caeb1bfc16d90b3a7f7be18ddf30c371c85",
+      "rc": 0,
+      "detail": "",
+      "at": "20261108T045619Z"
+    },
+    {
+      "action": "volume.rm.784c728d29030f1421d126cb823ed7de4b2cbc7fd155971f5ba7bc156cf0be0a",
+      "rc": 0,
+      "detail": "",
+      "at": "20261108T045619Z"
+    }
+  ]
+}

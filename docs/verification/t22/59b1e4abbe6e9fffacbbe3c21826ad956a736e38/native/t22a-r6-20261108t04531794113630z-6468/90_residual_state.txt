@@ -1,0 +1,5 @@
+# residual state at teardown
+containers: 0 | networks: defaults only
+volumes before rmvolumes: 8 protected + 3 run-named + 2 run-anonymous
+volumes after rmvolumes: exactly the 8 protected (verified)
+profile ds-t21-20261107t1158z-e514c8 stopped normally

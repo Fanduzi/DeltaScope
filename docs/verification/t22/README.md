@@ -173,3 +173,34 @@ with `SHA256SUMS` + `latest`.
 
 Profile A native re-verification of these amendments is queued under
 the original authorization card.
+
+### R6 native re-verification (executed)
+
+Run `t22a-r6-20261108t04531794113630z-6468` on the same isolated daemon
+(`35b66e6e-…`), canonical product `0becef72915cb5bc7ce9e1db2ca7f0349ff4fda4`
+(product `59b1e4ab` + oracle corrections):
+
+- Canonical golden: **20/20 required cases pass, 186/186 assertions**,
+  no duplicates/missing/extra, `head_sha=0becef72`, CGO=0 CLI
+  `38ca82b6…` built on that head.
+- First-path closes natively: `tidb85-ru-first-path` = verdict `pass`,
+  coverage `complete`, 0 gaps, create+alter notices (proven-absent →
+  CREATE 100 publishes → ALTER 200 projects through ordered state).
+- `tidb85-capability-off-refusal` = verdict `reject`, valid blocker,
+  **0 gaps** (proven-OFF concluded the check).
+- `tidb85-alter-absent-unproven` = proven-absent refusal (blocker,
+  reject) — the case id retains its historical name; the premise is no
+  longer unproven.
+- New static-refusal cases: `QUERY_LIMIT=(EXEC_ELAPSED='30s')` → valid
+  blocker (missing ACTION); `QUERY_LIMIT=(ACTION=KILL)` → runaway.warn
+  + valid blocker (all-zero thresholds + declared KILL warn).
+- Teardown: 5 containers stopped+removed, run network gone,
+  `rmvolumes` reclaimed 3 named + 2 mount-attributed anonymous volumes;
+  volume inventory returned to exactly the 8 protected volumes; profile
+  stopped normally.
+- Attempt hygiene: this run is preserved under
+  `golden/T22.attempts/0becef72915c/attempt-1/` with `SHA256SUMS` +
+  `latest`; the earlier attempt-1 under `unknown-head/` (pre-key-fix
+  head detection) is retained as its own honest record.
+- Still NOT claimed: real PD resource-manager integration, cross-TiKV
+  scheduling/metering, workload performance — Profile B scope.
