@@ -24,7 +24,10 @@ const (
 	alterAutoRandomFactOptionsValue = "table.options.value"
 	alterAutoRandomFactClustered    = "table.primary_key.clustered"
 	alterAutoRandomFactAllocator    = "runtime.auto_random_allocator"
-	alterAutoRandomFactRows         = "runtime.row_data"
+	// runtime.row_data names the allocator premise — the positive-target
+	// SHARD_ROW_ID_BITS and AUTO_RANDOM redeclare checks read the live
+	// allocator's NextGlobalAutoID, not the table's row contents.
+	alterAutoRandomFactRows = "runtime.row_data"
 )
 
 type alterAutoRandomValidRule struct {
@@ -273,7 +276,16 @@ func alterLayoutFacts(snapshot *spec.TableSnapshot) spec.AlterLayoutFacts {
 			facts.AutoRandomBits, facts.AutoRandomRangeBits = spec.AutoRandomEffectiveBits(column)
 			facts.AutoRandomBitsKnown = true
 			facts.AutoRandomPKHasUnsigned = column.Unsigned
+			facts.AutoRandomPKUnsignedKnown = true
 			break
+		}
+	}
+	if !facts.AutoRandomBitsKnown {
+		// The table-level catalog record survives unattributable member
+		// shapes — the carrier's signedness then stays unproven.
+		if bits, rng, ok := spec.AutoRandomBitsFromOptions(snapshot.Options); ok {
+			facts.AutoRandomBits, facts.AutoRandomRangeBits = bits, rng
+			facts.AutoRandomBitsKnown = true
 		}
 	}
 	facts.HasPKColumn = snapshot.PrimaryKey != nil && len(snapshot.PrimaryKey.Columns) > 0
@@ -382,6 +394,8 @@ func (r alterTableOptionsValidRule) EvidenceGaps(statement spec.Statement) []rul
 				required[alterAutoRandomFactClustered] = true
 			case spec.AlterOptionReasonAutoRandomBitsUnprov:
 				required[alterAutoRandomFactBits] = true
+			case spec.AlterOptionReasonUnsignedUnproven:
+				required[alterAutoRandomFactOldColumn] = true
 			case spec.AlterOptionReasonRuntimeRowsUnproven:
 				required[alterAutoRandomFactRows] = true
 			default:

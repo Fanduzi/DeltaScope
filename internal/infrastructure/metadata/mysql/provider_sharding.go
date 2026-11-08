@@ -41,6 +41,14 @@ func (p *Provider) loadTiDBShardingInfo(ctx context.Context, snapshot *spec.Tabl
 		if !ok {
 			return fmt.Errorf("unrecognized sharding info %q", info)
 		}
+		// The sharding text is table-level — it proves AUTO_RANDOM exists
+		// without naming the carrier. Record the table-level fact first so
+		// an unattributable member never reads as proven-absent, then flag
+		// the first PK member when the member list is proven (upstream
+		// AUTO_RANDOM always rides the first clustered member; a
+		// single-member PKIsHandle is the same arm).
+		snapshot.Options["auto_random_bits"] = strconv.FormatInt(shard, 10)
+		snapshot.Options["auto_random_range_bits"] = strconv.FormatInt(rangeBits, 10)
 		markAutoRandomColumn(snapshot, shard, rangeBits)
 	case strings.HasPrefix(info, "SHARD_BITS="):
 		bits, err := strconv.ParseUint(strings.TrimPrefix(info, "SHARD_BITS="), 10, 64)
@@ -48,10 +56,13 @@ func (p *Provider) loadTiDBShardingInfo(ctx context.Context, snapshot *spec.Tabl
 			return fmt.Errorf("unrecognized sharding info %q", info)
 		}
 		snapshot.Options["shard_row_id_bits"] = strconv.FormatUint(bits, 10)
+		snapshot.Options["auto_random_bits"] = "0"
 	case info == "NOT_SHARDED" || info == "NOT_SHARDED(PK_IS_HANDLE)":
 		// ShardRowIDBits == 0 is the proven stored value; PK_IS_HANDLE
-		// corroborates the handle answer the primary-key probe owns.
+		// corroborates the handle answer the primary-key probe owns. A
+		// non-AUTO_RANDOM table stores zero random bits too.
 		snapshot.Options["shard_row_id_bits"] = "0"
+		snapshot.Options["auto_random_bits"] = "0"
 	default:
 		return fmt.Errorf("unrecognized sharding info %q", info)
 	}
@@ -82,11 +93,14 @@ func parseShardingAutoRandom(info string) (shardBits, rangeBits int64, ok bool) 
 	return shard, rangeBits, true
 }
 
-// markAutoRandomColumn flags the single-member primary key column — the
-// only column upstream can carry AUTO_RANDOM (PKIsHandle) — with the
-// stored shard/range values as the authored declaration equivalent.
+// markAutoRandomColumn flags the primary key's first member — upstream
+// AUTO_RANDOM always rides the first clustered-primary-key member, on a
+// single-member PKIsHandle and on a multi-member common handle alike —
+// with the stored shard/range values as the authored declaration
+// equivalent. An unproven member list or an unresolvable first member
+// leaves the table-level Options record standing on its own.
 func markAutoRandomColumn(snapshot *spec.TableSnapshot, shardBits, rangeBits int64) {
-	if snapshot.PrimaryKey == nil || len(snapshot.PrimaryKey.Columns) != 1 {
+	if snapshot.PrimaryKey == nil || len(snapshot.PrimaryKey.Columns) == 0 {
 		return
 	}
 	for i := range snapshot.Columns {

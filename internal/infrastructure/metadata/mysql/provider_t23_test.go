@@ -244,3 +244,191 @@ func TestT23AutoIDCacheCatalogValue(t *testing.T) {
 		}
 	})
 }
+
+// T23-R5 reader red-green: a catalog-proven composite (common-handle)
+// AUTO_RANDOM primary key must (a) retain the table-level proven bits in
+// Options and (b) flag the first PK member — upstream AUTO_RANDOM always
+// rides the first clustered member, which the stored member order
+// proves. Unattributable shapes keep the table-level fact rather than
+// reading as proven-absent.
+func TestT23CompositePKShardingAttribution(t *testing.T) {
+	t.Parallel()
+	queries := map[string]testQueryResult{
+		"select engine, table_collation": {
+			columns: []string{"engine", "table_collation", "table_comment", "auto_increment", "row_format", "table_rows", "table_type"},
+			rows:    [][]driver.Value{{"InnoDB", "utf8mb4_bin", "", nil, "", nil, "BASE TABLE"}},
+		},
+		"information_schema.columns": {
+			columns: []string{"column_name", "column_type", "character_set_name", "collation_name", "column_comment", "column_default", "is_nullable", "extra", "generation_expression"},
+			rows: [][]driver.Value{
+				{"a", "bigint(20)", nil, nil, "", nil, "NO", "", nil},
+				{"b", "int(11)", nil, nil, "", nil, "NO", "", nil},
+			},
+		},
+		"column_name = 'IS_VISIBLE'": {columns: []string{"count"}, rows: [][]driver.Value{{1}}},
+		"column_name = 'EXPRESSION'": {columns: []string{"count"}, rows: [][]driver.Value{{1}}},
+		"information_schema.statistics": {
+			columns: []string{"index_name", "non_unique", "index_type", "column_name", "cardinality", "sub_part", "collation", "is_visible", "expression"},
+			rows: [][]driver.Value{
+				{"PRIMARY", 0, "BTREE", "a", nil, nil, "A", "YES", nil},
+				{"PRIMARY", 0, "BTREE", "b", nil, nil, "A", "YES", nil},
+			},
+		},
+		"information_schema.partitions": {columns: []string{"partition_method", "partition_name", "subpartition_name"}},
+		"table_constraints":             {columns: []string{"count"}, rows: [][]driver.Value{{1}}},
+		"information_schema.tidb_indexes": {
+			columns: []string{"clustered"},
+			rows:    [][]driver.Value{{"YES"}},
+		},
+		testShardingInfoFragment: {
+			columns: []string{"tidb_row_id_sharding_info"},
+			rows:    [][]driver.Value{{"PK_AUTO_RANDOM_BITS=5"}},
+		},
+	}
+	db := openTestDB(t, queries)
+	defer db.Close()
+	snapshot, err := NewProvider(db).LoadTableSnapshot(context.Background(), spec.DialectTiDB, "app", "t")
+	if err != nil {
+		t.Fatalf("LoadTableSnapshot: %v", err)
+	}
+	if got := snapshot.Options["auto_random_bits"]; got != "5" {
+		t.Fatalf("table-level proven bits must be retained, got %q", got)
+	}
+	if got := snapshot.Options["auto_random_range_bits"]; got != "64" {
+		t.Fatalf("omitted range bits is the proven default 64, got %q", got)
+	}
+	column := snapshot.FindColumn("a")
+	if column == nil || !column.AutoRandom {
+		t.Fatalf("first clustered member must be flagged, got %+v", snapshot.Columns)
+	}
+	if other := snapshot.FindColumn("b"); other != nil && other.AutoRandom {
+		t.Fatalf("non-first member must not be flagged: %+v", other)
+	}
+}
+
+// NOT_SHARDED proves both layout facts zero — including the
+// auto_random_bits record the composite-PK consumers read.
+func TestT23NotShardedProvesAutoRandomZero(t *testing.T) {
+	t.Parallel()
+	queries := map[string]testQueryResult{
+		"select engine, table_collation": {
+			columns: []string{"engine", "table_collation", "table_comment", "auto_increment", "row_format", "table_rows", "table_type"},
+			rows:    [][]driver.Value{{"InnoDB", "utf8mb4_bin", "", nil, "", nil, "BASE TABLE"}},
+		},
+		"information_schema.columns": {
+			columns: []string{"column_name", "column_type", "character_set_name", "collation_name", "column_comment", "column_default", "is_nullable", "extra", "generation_expression"},
+			rows:    [][]driver.Value{{"id", "bigint(20)", nil, nil, "", nil, "NO", "", nil}},
+		},
+		"column_name = 'IS_VISIBLE'": {columns: []string{"count"}, rows: [][]driver.Value{{1}}},
+		"column_name = 'EXPRESSION'": {columns: []string{"count"}, rows: [][]driver.Value{{1}}},
+		"information_schema.statistics": {
+			columns: []string{"index_name", "non_unique", "index_type", "column_name", "cardinality", "sub_part", "collation", "is_visible", "expression"},
+			rows:    [][]driver.Value{{"PRIMARY", 0, "BTREE", "id", nil, nil, "A", "YES", nil}},
+		},
+		"information_schema.partitions": {columns: []string{"partition_method", "partition_name", "subpartition_name"}},
+		"table_constraints":             {columns: []string{"count"}, rows: [][]driver.Value{{1}}},
+		"information_schema.tidb_indexes": {
+			columns: []string{"clustered"},
+			rows:    [][]driver.Value{{"YES"}},
+		},
+		testShardingInfoFragment: {
+			columns: []string{"tidb_row_id_sharding_info"},
+			rows:    [][]driver.Value{{"NOT_SHARDED(PK_IS_HANDLE)"}},
+		},
+	}
+	db := openTestDB(t, queries)
+	defer db.Close()
+	snapshot, err := NewProvider(db).LoadTableSnapshot(context.Background(), spec.DialectTiDB, "app", "t")
+	if err != nil {
+		t.Fatalf("LoadTableSnapshot: %v", err)
+	}
+	if got := snapshot.Options["auto_random_bits"]; got != "0" {
+		t.Fatalf("NOT_SHARDED proves auto_random_bits=0, got %q", got)
+	}
+	if got := snapshot.Options["shard_row_id_bits"]; got != "0" {
+		t.Fatalf("NOT_SHARDED proves shard_row_id_bits=0, got %q", got)
+	}
+}
+
+// T23-R5 injection red-green: a marker literal inside the quoted table
+// COMMENT is user text, never a feature comment — a clean read with no
+// real feature comment keeps the upstream-proven zero.
+func TestT23FeatureCommentInjectionIgnored(t *testing.T) {
+	t.Parallel()
+	base := func(create string) map[string]testQueryResult {
+		return map[string]testQueryResult{
+			"select engine, table_collation": {
+				columns: []string{"engine", "table_collation", "table_comment", "auto_increment", "row_format", "table_rows", "table_type"},
+				rows:    [][]driver.Value{{"InnoDB", "utf8mb4_bin", "", nil, "", nil, "BASE TABLE"}},
+			},
+			"information_schema.columns": {
+				columns: []string{"column_name", "column_type", "character_set_name", "collation_name", "column_comment", "column_default", "is_nullable", "extra", "generation_expression"},
+				rows:    [][]driver.Value{{"id", "bigint(20)", nil, nil, "", nil, "NO", "", nil}},
+			},
+			"column_name = 'IS_VISIBLE'": {columns: []string{"count"}, rows: [][]driver.Value{{1}}},
+			"column_name = 'EXPRESSION'": {columns: []string{"count"}, rows: [][]driver.Value{{1}}},
+			"information_schema.statistics": {
+				columns: []string{"index_name", "non_unique", "index_type", "column_name", "cardinality", "sub_part", "collation", "is_visible", "expression"},
+				rows:    [][]driver.Value{{"PRIMARY", 0, "BTREE", "id", nil, nil, "A", "YES", nil}},
+			},
+			"information_schema.partitions": {columns: []string{"partition_method", "partition_name", "subpartition_name"}},
+			"table_constraints":             {columns: []string{"count"}, rows: [][]driver.Value{{1}}},
+			"information_schema.tidb_indexes": {
+				columns: []string{"clustered"},
+				rows:    [][]driver.Value{{"YES"}},
+			},
+			testTTLFragment: {
+				columns: []string{"Table", "Create Table"},
+				rows:    [][]driver.Value{{"t", create}},
+			},
+		}
+	}
+	t.Run("quoted comment text cannot fabricate auto_id_cache", func(t *testing.T) {
+		t.Parallel()
+		db := openTestDB(t, base("CREATE TABLE `t` (\n  `id` bigint(20) NOT NULL\n) ENGINE=InnoDB COMMENT='note /*T![auto_id_cache] AUTO_ID_CACHE=9 */ end'"))
+		defer db.Close()
+		snapshot, err := NewProvider(db).LoadTableSnapshot(context.Background(), spec.DialectTiDB, "app", "t")
+		if err != nil {
+			t.Fatalf("LoadTableSnapshot: %v", err)
+		}
+		if got := snapshot.Options["auto_id_cache"]; got != "0" {
+			t.Fatalf("quoted marker must not fabricate a catalog value, got %q", got)
+		}
+	})
+	t.Run("quoted comment text cannot fabricate a TTL definition", func(t *testing.T) {
+		t.Parallel()
+		db := openTestDB(t, base("CREATE TABLE `t` (\n  `id` bigint(20) NOT NULL\n) ENGINE=InnoDB COMMENT=\"note /*T![ttl] TTL=`id` + INTERVAL 1 DAY */ end\""))
+		defer db.Close()
+		snapshot, err := NewProvider(db).LoadTableSnapshot(context.Background(), spec.DialectTiDB, "app", "t")
+		if err != nil {
+			t.Fatalf("LoadTableSnapshot: %v", err)
+		}
+		if snapshot.TTL != nil && snapshot.TTL.TimeColumn != "" {
+			t.Fatalf("quoted marker must not fabricate TTL, got %+v", snapshot.TTL)
+		}
+	})
+	t.Run("real feature comment still reads", func(t *testing.T) {
+		t.Parallel()
+		db := openTestDB(t, base("CREATE TABLE `t` (\n  `id` bigint(20) NOT NULL\n) /*T![auto_id_cache] AUTO_ID_CACHE=5 */"))
+		defer db.Close()
+		snapshot, err := NewProvider(db).LoadTableSnapshot(context.Background(), spec.DialectTiDB, "app", "t")
+		if err != nil {
+			t.Fatalf("LoadTableSnapshot: %v", err)
+		}
+		if got := snapshot.Options["auto_id_cache"]; got != "5" {
+			t.Fatalf("real feature comment must still project, got %q", got)
+		}
+	})
+	t.Run("real comment wins over quoted fake", func(t *testing.T) {
+		t.Parallel()
+		db := openTestDB(t, base("CREATE TABLE `t` (\n  `id` bigint(20) NOT NULL\n) COMMENT='fake /*T![auto_id_cache] AUTO_ID_CACHE=9 */' /*T![auto_id_cache] AUTO_ID_CACHE=5 */"))
+		defer db.Close()
+		snapshot, err := NewProvider(db).LoadTableSnapshot(context.Background(), spec.DialectTiDB, "app", "t")
+		if err != nil {
+			t.Fatalf("LoadTableSnapshot: %v", err)
+		}
+		if got := snapshot.Options["auto_id_cache"]; got != "5" {
+			t.Fatalf("lexical position decides, not order: got %q", got)
+		}
+	})
+}

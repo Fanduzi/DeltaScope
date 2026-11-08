@@ -225,3 +225,45 @@ CLI evidence for both policy profiles.
   validated against the live rule catalog, baseline anchors clean.
 - Commits: this file's task commit; see `git log` for the product
   commit range.
+
+## R5 amendment — three proven blockers repaired (issue #102)
+
+Independent R4 review found three real defects on the R3 head; this
+amendment records the repairs without rewriting the R4 failure
+receipts.
+
+- **Zeroing `SHARD_ROW_ID_BITS` needs no allocator premise.** Upstream
+  `verifyNoOverflowShardBits` returns nil for a zero target without
+  reading the allocator; `AlterLayoutOptionOutcome` now classifies the
+  zero arm `AutoRandomOK` after the same-value check and before the
+  positive-target runtime premise, so `shard_row_id_bits=0` publishes
+  `Options["shard_row_id_bits"]="0"` as a proven successor fact —
+  distinct from omission or unknown. Positive targets keep the
+  allocator (`NextGlobalAutoID`) premise; the `runtime.row_data` fact
+  key is retained for compatibility but now documented as the
+  allocator premise, not a row scan.
+- **Table-level AUTO_RANDOM facts outlive member attribution.**
+  `PK_AUTO_RANDOM_BITS` is a table-level catalog fact: the provider
+  records `Options["auto_random_bits"]`/`["auto_random_range_bits"]`
+  unconditionally and flags the first PK member only when the member
+  list is proven. `SHARD_BITS`/`NOT_SHARDED` publish the proven
+  `auto_random_bits=0` negative. `AlterAutoRandomOldFacts` derives the
+  carrier from the table-level record when the member list is proven
+  (upstream AUTO_RANDOM always rides the first clustered member) and
+  keeps `memberKnown=false` when the list itself is unproven — the
+  unattributed shape can no longer fabricate a
+  `change_from_non_auto_increment` refusal or drop the bits fact an
+  `AUTO_RANDOM_BASE` overflow verdict needs. An unproven carrier
+  signedness evaluates both mask arms and only decides when they
+  agree.
+- **Quoted text is not a catalog feature comment.** `featureComments`
+  now scans SHOW CREATE quote-aware: markers inside single-quoted or
+  double-quoted string literals and backtick identifiers (with
+  backslash and doubled-quote escapes) are user-authored text and
+  never produce `AUTO_ID_CACHE`, AUTO_RANDOM or TTL facts. One shared
+  lexical walk protects both the TTL and the auto_id_cache
+  projections; real feature comments outside quotes parse unchanged.
+  `audit_t23r5_injection_test.go` proves the reader-to-public-Audit
+  boundary: the same TTL ALTER yields the add warning against a
+  quoted-fake catalog and the `target_table.ttl_enable` gap against a
+  real comment.

@@ -250,3 +250,149 @@ func TestT23AlterAutoRandomBaseOnNonAutoRandomTable(t *testing.T) {
 		t.Fatalf("pre-state option must survive, got %q", got)
 	}
 }
+
+// T23-R5 (issue #102): a zero SHARD_ROW_ID_BITS target is a deterministic
+// application — upstream verifyNoOverflowShardBits returns nil for uVal=0
+// without reading the allocator, so the post-state publishes the proven
+// zero rather than unvouching the option and owing a runtime gap.
+func TestT23AlterShardZeroPublishesZero(t *testing.T) {
+	t.Parallel()
+	facts := &spec.InstanceFacts{Version: "8.0.11-TiDB-v8.5.0", TiDBEnableClusteredIndex: "on"}
+	state, _ := t23State(t,
+		"CREATE TABLE t (id BIGINT PRIMARY KEY NONCLUSTERED) SHARD_ROW_ID_BITS=4;"+
+			"ALTER TABLE t SHARD_ROW_ID_BITS=0;",
+		&t23Provider{facts: facts})
+	entry := t23Entry(t, state)
+	if entry == nil || entry.state != tablePresent || entry.shape == nil {
+		t.Fatalf("zero shard target must publish, got %+v", entry)
+	}
+	if got := entry.shape.Options["shard_row_id_bits"]; got != "0" {
+		t.Fatalf("post-state shard_row_id_bits=%q, want proven 0", got)
+	}
+}
+
+// T23-R5: the zero target needs no allocator premise — the rule layer
+// must not owe runtime.row_data for it.
+func TestT23AlterShardZeroOwesNoRuntimeGap(t *testing.T) {
+	t.Parallel()
+	facts := &spec.InstanceFacts{Version: "8.0.11-TiDB-v8.5.0", TiDBEnableClusteredIndex: "on"}
+	result := t05A4Audit(t,
+		"CREATE TABLE t (id BIGINT PRIMARY KEY NONCLUSTERED) SHARD_ROW_ID_BITS=4;\n"+
+			"ALTER TABLE t SHARD_ROW_ID_BITS=0;",
+		spec.DialectTiDB, &t23Provider{facts: facts}, "")
+	for _, gap := range result.Statements[1].EvidenceGaps {
+		for _, fact := range gap.RequiredFacts {
+			if fact == "runtime.row_data" {
+				t.Fatalf("zero target owes no allocator premise: %+v", gap)
+			}
+		}
+	}
+}
+
+// T23-R5: a catalog-proven composite (common-handle) AUTO_RANDOM table
+// keeps its table-level bits even when the column attribution path is
+// exercised — a same-bits redeclare owes only the allocator premise
+// (undecidable), never a fabricated change_from_non_auto_increment
+// refusal.
+func TestT23AlterCompositePKRedeclareStaysUndecidable(t *testing.T) {
+	t.Parallel()
+	snapshot := &spec.TableSnapshot{
+		Exists:              true,
+		Schema:              "req",
+		PrimaryKey:          &spec.Index{Name: "PRIMARY", Kind: spec.IndexKindPrimary, Columns: []string{"a", "b"}},
+		PrimaryKeyClustered: true,
+		Options: map[string]string{
+			"auto_random_bits":       "5",
+			"auto_random_range_bits": "64",
+		},
+		Columns: []spec.Column{
+			{Name: "a", Type: "bigint(20)", NotNull: true},
+			{Name: "b", Type: "int(11)", NotNull: true},
+		},
+	}
+	facts := &spec.InstanceFacts{Version: "8.0.11-TiDB-v8.5.0", TiDBEnableClusteredIndex: "on"}
+	result := t05A4Audit(t,
+		"ALTER TABLE t MODIFY COLUMN a BIGINT AUTO_RANDOM(5);",
+		spec.DialectTiDB, &t23Provider{snapshot: snapshot, facts: facts}, "")
+	for _, finding := range result.Statements[0].Findings {
+		if finding.RuleID == "ddl.tidb.alter.auto_random.valid" {
+			t.Fatalf("redeclare on proven auto_random table must not fabricate a refusal: %+v", finding)
+		}
+	}
+	allocatorGap := false
+	for _, gap := range result.Statements[0].EvidenceGaps {
+		for _, fact := range gap.RequiredFacts {
+			if fact == "runtime.auto_random_allocator" {
+				allocatorGap = true
+			}
+		}
+	}
+	if !allocatorGap {
+		t.Fatalf("same-bits redeclare owes the allocator premise: %+v", result.Statements[0].EvidenceGaps)
+	}
+}
+
+// T23-R5: AUTO_RANDOM_BASE consumes the table-level proven bits on the
+// composite-PK table — a base beyond the incremental mask is the proven
+// refusal, not an auto_random_bits gap.
+func TestT23AlterAutoRandomBaseReadsTableLevelBits(t *testing.T) {
+	t.Parallel()
+	snapshot := &spec.TableSnapshot{
+		Exists:              true,
+		Schema:              "req",
+		PrimaryKey:          &spec.Index{Name: "PRIMARY", Kind: spec.IndexKindPrimary, Columns: []string{"a", "b"}},
+		PrimaryKeyClustered: true,
+		Options: map[string]string{
+			"auto_random_bits":       "5",
+			"auto_random_range_bits": "64",
+		},
+		Columns: []spec.Column{
+			{Name: "a", Type: "bigint(20)", NotNull: true},
+			{Name: "b", Type: "int(11)", NotNull: true},
+		},
+	}
+	facts := &spec.InstanceFacts{Version: "8.0.11-TiDB-v8.5.0", TiDBEnableClusteredIndex: "on"}
+	result := t05A4Audit(t,
+		"ALTER TABLE t AUTO_RANDOM_BASE=4611686018427387904;",
+		spec.DialectTiDB, &t23Provider{snapshot: snapshot, facts: facts}, "")
+	found := false
+	for _, finding := range result.Statements[0].Findings {
+		if finding.RuleID == "ddl.tidb.alter.table_options.valid" {
+			found = true
+		}
+	}
+	if !found {
+		t.Fatalf("overflow base on proven bits=5 must be the refused outcome: %+v", result.Statements[0])
+	}
+}
+
+func t23ptrInt64(value int64) *int64 { return &value }
+
+// T23-R5: a table-level proven AUTO_RANDOM record with proven PK members
+// but an unproven clustered answer must not let the vacuous fold read
+// old bits as zero — the member premise stays undecidable.
+func TestT23AlterTableLevelFactBlocksVacuousFold(t *testing.T) {
+	t.Parallel()
+	snapshot := &spec.TableSnapshot{
+		Exists:                     true,
+		Schema:                     "req",
+		PrimaryKey:                 &spec.Index{Name: "PRIMARY", Kind: spec.IndexKindPrimary, Columns: []string{"a", "b"}},
+		PrimaryKeyClusteredUnknown: true,
+		Options: map[string]string{
+			"auto_random_bits":       "5",
+			"auto_random_range_bits": "64",
+		},
+		Columns: []spec.Column{
+			{Name: "a", Type: "bigint(20)", NotNull: true},
+			{Name: "b", Type: "int(11)", NotNull: true},
+		},
+	}
+	state, _ := t23State(t,
+		"ALTER TABLE t MODIFY COLUMN a BIGINT NOT NULL;",
+		&t23Provider{snapshot: snapshot,
+			facts: &spec.InstanceFacts{Version: "8.0.11-TiDB-v8.5.0", TiDBEnableClusteredIndex: "on"}})
+	entry := t23Entry(t, state)
+	if entry != nil && entry.state == tablePresent && entry.shape != nil {
+		t.Fatalf("proven table-level auto_random with unproven clustered premise must not fold to zero bits: %+v", entry.shape)
+	}
+}

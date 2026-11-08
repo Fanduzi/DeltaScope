@@ -72,7 +72,16 @@ func (s *batchState) alterLayoutFacts(shape *spec.TableSnapshot) spec.AlterLayou
 			facts.AutoRandomBits, facts.AutoRandomRangeBits = spec.AutoRandomEffectiveBits(column)
 			facts.AutoRandomBitsKnown = true
 			facts.AutoRandomPKHasUnsigned = column.Unsigned
+			facts.AutoRandomPKUnsignedKnown = true
 			break
+		}
+	}
+	if !facts.AutoRandomBitsKnown {
+		// The table-level catalog record survives unattributable member
+		// shapes — the carrier's signedness then stays unproven.
+		if bits, rng, ok := spec.AutoRandomBitsFromOptions(shape.Options); ok {
+			facts.AutoRandomBits, facts.AutoRandomRangeBits = bits, rng
+			facts.AutoRandomBitsKnown = true
 		}
 	}
 	facts.HasPKColumn = shape.PrimaryKey != nil && len(shape.PrimaryKey.Columns) > 0

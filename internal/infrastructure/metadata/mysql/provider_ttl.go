@@ -55,22 +55,47 @@ func parseCatalogLayoutOptions(createSQL string) map[string]string {
 }
 
 // featureComments extracts every /*T![ns] ... */ comment for one feature
-// namespace from the SHOW CREATE text.
+// namespace from the SHOW CREATE text. The scan is quote-aware: markers
+// inside single-quoted or double-quoted string literals and backtick
+// quoted identifiers are user-authored text, not generated catalog
+// comments, and never match. String literals honour backslash escapes
+// and doubled quote characters; backtick identifiers only the doubled
+// backtick.
 func featureComments(text, marker string) []string {
 	var comments []string
 	lower := strings.ToLower(text)
-	for offset := 0; offset+len(marker) <= len(text); {
-		idx := strings.Index(lower[offset:], marker)
-		if idx < 0 {
-			break
+	for i := 0; i < len(text); {
+		switch c := text[i]; c {
+		case '\'', '"', '`':
+			i++
+			for i < len(text) {
+				if text[i] == '\\' && c != '`' {
+					i += 2
+					continue
+				}
+				if text[i] == c {
+					if i+1 < len(text) && text[i+1] == c {
+						i += 2
+						continue
+					}
+					i++
+					break
+				}
+				i++
+			}
+		default:
+			if !strings.HasPrefix(lower[i:], marker) {
+				i++
+				continue
+			}
+			start := i + len(marker)
+			end := strings.Index(text[start:], "*/")
+			if end < 0 {
+				return comments
+			}
+			comments = append(comments, text[start:start+end])
+			i = start + end + 2
 		}
-		start := offset + idx + len(marker)
-		end := strings.Index(text[start:], "*/")
-		if end < 0 {
-			break
-		}
-		comments = append(comments, text[start:start+end])
-		offset = start + end + 2
 	}
 	return comments
 }

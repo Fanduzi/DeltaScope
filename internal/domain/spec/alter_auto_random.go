@@ -153,6 +153,13 @@ func AlterAutoRandomOldFacts(shape *TableSnapshot, oldName string) (
 			break
 		}
 	}
+	if !hasAuto {
+		// The catalog's table-level AUTO_RANDOM record outlives member
+		// attribution — an unflagged column set never proves absence.
+		if bits, _, ok := AutoRandomBitsFromOptions(shape.Options); ok && bits > 0 {
+			hasAuto = true
+		}
+	}
 	if shape.PrimaryKey == nil {
 		if shape.PrimaryKeyUnknown {
 			return false, false, 0, 0, false, hasAuto
@@ -185,6 +192,17 @@ func AlterAutoRandomOldFacts(shape *TableSnapshot, oldName string) (
 				break
 			}
 		}
+		if shardBits == 0 && len(shape.PrimaryKey.Columns) > 0 &&
+			strings.EqualFold(strings.TrimSpace(shape.PrimaryKey.Columns[0]), oldName) {
+			// Upstream AUTO_RANDOM always rides the first clustered
+			// member, so a proven member list derives the carrier even
+			// without a column flag — the table-level record supplies
+			// the stored bits. An unproven member list already returned
+			// memberKnown=false above.
+			if bits, rng, ok := AutoRandomBitsFromOptions(shape.Options); ok && bits > 0 {
+				shardBits, rangeBits = bits, rng
+			}
+		}
 	}
 	return true, true, shardBits, rangeBits, isPKHandle, hasAuto
 }
@@ -213,6 +231,7 @@ const (
 	AlterOptionReasonAutoRandomBitsUnprov = "auto_random_bits_unproven"
 	AlterOptionReasonRuntimeRowsUnproven  = "runtime_row_data_unproven"
 	AlterOptionReasonValueUnproven        = "option_value_unproven"
+	AlterOptionReasonUnsignedUnproven     = "auto_random_unsigned_unproven"
 )
 
 // AlterLayoutFacts carries the target facts an ALTER layout-option
@@ -228,14 +247,43 @@ type AlterLayoutFacts struct {
 	AutoRandomRangeBits     int64
 	AutoRandomBitsKnown     bool
 	AutoRandomPKHasUnsigned bool
-	HasPKColumn             bool
+	// AutoRandomPKUnsignedKnown distinguishes a proven signed carrier
+	// (false) from an unproven signedness — the AUTO_RANDOM_BASE mask
+	// then evaluates both arms and only decides when they agree.
+	AutoRandomPKUnsignedKnown bool
+	HasPKColumn               bool
+}
+
+// AutoRandomBitsFromOptions reads the table-level AUTO_RANDOM record the
+// TiDB provider projects from TIDB_ROW_ID_SHARDING_INFO —
+// Options["auto_random_bits"]/["auto_random_range_bits"]. ok=false means
+// the record was never observed; a stored zero is a proven negative, not
+// an absent one.
+func AutoRandomBitsFromOptions(options map[string]string) (shardBits, rangeBits int64, ok bool) {
+	raw, present := options["auto_random_bits"]
+	if !present {
+		return 0, 0, false
+	}
+	shard, err := strconv.ParseInt(strings.TrimSpace(raw), 10, 64)
+	if err != nil {
+		return 0, 0, false
+	}
+	rangeBits = AutoRandomDefaultRangeBits
+	if raw, present := options["auto_random_range_bits"]; present {
+		if parsed, err := strconv.ParseInt(strings.TrimSpace(raw), 10, 64); err == nil {
+			rangeBits = parsed
+		}
+	}
+	return shard, rangeBits, true
 }
 
 // AlterLayoutOptionOutcome adjudicates one extracted ALTER TABLE option
 // name/value pair under TiDB against the fixed dispatch: pre_split_regions
 // hits the unsupported-option default; auto_id_cache refuses int64
 // overflow and the 1↔non-1 boundary; shard_row_id_bits refuses temporary
-// and clustered targets and owes the runtime row-scan for real changes;
+// and clustered targets and owes the allocator (NextGlobalAutoID)
+// runtime premise for real positive changes — a zero target applies
+// directly because upstream skips the overflow probe entirely;
 // auto_random_base refuses non-AUTO_RANDOM targets and overflow bases and
 // owes the runtime-adjusted base without FORCE. The caller supplies the
 // option's authored value and the proven target facts.
@@ -289,8 +337,16 @@ func AlterLayoutOptionOutcome(name, value string, facts AlterLayoutFacts) (AutoR
 				return AutoRandomRefused, AlterOptionReasonShardClustered
 			}
 		}
-		// verifyNoOverflowShardBits scans the live rows — a runtime
-		// premise the offline audit cannot prove.
+		if n == 0 {
+			// verifyNoOverflowShardBits returns nil for a zero target
+			// without reading the allocator — the decrease branch then
+			// writes the lower value directly.
+			return AutoRandomOK, ""
+		}
+		// For every positive target the executor calls
+		// verifyNoOverflowShardBits, which reads the allocator's
+		// NextGlobalAutoID — a runtime premise the offline audit cannot
+		// prove.
 		return AutoRandomUndecidable, AlterOptionReasonRuntimeRowsUnproven
 	case "auto_random_base":
 		n, err := strconv.ParseUint(strings.TrimSpace(value), 10, 64)
@@ -300,20 +356,36 @@ func AlterLayoutOptionOutcome(name, value string, facts AlterLayoutFacts) (AutoR
 		if !facts.AutoRandomBitsKnown {
 			return AutoRandomUndecidable, AlterOptionReasonAutoRandomBitsUnprov
 		}
-		if facts.AutoRandomBits == 0 || !facts.HasPKColumn {
+		if facts.AutoRandomBits == 0 {
 			return AutoRandomRefused, AlterOptionReasonRebaseNotApplicable
 		}
 		// IncrementalMask()&newBase != newBase refuses — incremental bits
 		// are range minus shard minus the sign bit a signed BIGINT spends.
-		incremental := facts.AutoRandomRangeBits - facts.AutoRandomBits
-		if !facts.AutoRandomPKHasUnsigned {
-			incremental--
+		// An unproven carrier signedness decides only when both arms
+		// agree.
+		incrementalBase := facts.AutoRandomRangeBits - facts.AutoRandomBits
+		overflows := func(incremental int64) bool {
+			if incremental <= 0 || incremental >= 63 {
+				return false
+			}
+			return n&((uint64(1)<<uint(incremental))-1) != n
 		}
-		if incremental > 0 && incremental < 63 {
-			mask := (uint64(1) << uint(incremental)) - 1
-			if n&mask != n {
+		if facts.AutoRandomPKUnsignedKnown {
+			incremental := incrementalBase
+			if !facts.AutoRandomPKHasUnsigned {
+				incremental--
+			}
+			if overflows(incremental) {
 				return AutoRandomRefused, AlterOptionReasonRebaseOverflow
 			}
+			return AutoRandomOK, ""
+		}
+		signedOverflow, unsignedOverflow := overflows(incrementalBase-1), overflows(incrementalBase)
+		switch {
+		case signedOverflow && unsignedOverflow:
+			return AutoRandomRefused, AlterOptionReasonRebaseOverflow
+		case signedOverflow != unsignedOverflow:
+			return AutoRandomUndecidable, AlterOptionReasonUnsignedUnproven
 		}
 		return AutoRandomOK, ""
 	}

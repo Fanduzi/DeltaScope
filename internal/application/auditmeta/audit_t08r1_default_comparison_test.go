@@ -42,6 +42,14 @@ type t08r1Fixture struct {
 	// columns renders one information_schema.columns row per entry:
 	// name, column_type, column_default (nil = stored SQL NULL), extra.
 	columns []t08r1Column
+	// createSQL, when set, is the exact SHOW CREATE TABLE text the
+	// fixture serves — the T23-R5 injection cells carry user-authored
+	// COMMENT bodies that mimic feature comments.
+	createSQL string
+	// pkClustered, when set, is the information_schema.tidb_indexes
+	// clustered answer for the fixture PK — empty keeps the historical
+	// ErrNoRows/unproven-handle behavior.
+	pkClustered string
 }
 
 type t08r1Column struct {
@@ -138,10 +146,15 @@ func (c t08r1Conn) QueryContext(_ context.Context, query string, _ []driver.Name
 		// TiDB reverse-edge coverage — this fixture has no inbound FKs.
 		return &t08r1Rows{cols: []string{"table_schema", "table_name"}}, nil
 	case strings.Contains(query, "show create table"):
-		// TiDB TTL coverage — this fixture table has no TTL clause.
+		// TiDB TTL/layout coverage — the fixture table carries no feature
+		// comments unless a cell authors the exact catalog text.
+		createSQL := c.fixture.createSQL
+		if createSQL == "" {
+			createSQL = "CREATE TABLE `r1_defaults` (`id` int)"
+		}
 		return &t08r1Rows{
 			cols: []string{"Table", "Create Table"},
-			rows: [][]driver.Value{{"r1_defaults", "CREATE TABLE `r1_defaults` (`id` int)"}},
+			rows: [][]driver.Value{{"r1_defaults", createSQL}},
 		}, nil
 	case strings.Contains(query, "constraint_type = 'CHECK'"):
 		// T12 CHECK member projection — this fixture stores no checks.
@@ -159,6 +172,16 @@ func (c t08r1Conn) QueryContext(_ context.Context, query string, _ []driver.Name
 	case strings.Contains(query, "tidb_row_id_sharding_info"):
 		// T23 TiDB sharding probe — this fixture predates it; nil cell stays unobserved.
 		return &t08r1Rows{cols: []string{"tidb_row_id_sharding_info"}, rows: [][]driver.Value{{nil}}}, nil
+	case strings.Contains(query, "tidb_indexes"):
+		// TiDB clustered-index probe — cells that do not declare the answer
+		// keep the historical unproven-handle behavior.
+		if c.fixture.pkClustered == "" {
+			return nil, sql.ErrNoRows
+		}
+		return &t08r1Rows{
+			cols: []string{"clustered"},
+			rows: [][]driver.Value{{c.fixture.pkClustered}},
+		}, nil
 	case strings.Contains(query, "information_schema.tables"):
 		return &t08r1Rows{
 			cols: []string{"engine", "table_collation", "table_comment", "auto_increment", "row_format", "table_rows", "table_type"},
