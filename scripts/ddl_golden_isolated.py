@@ -761,7 +761,8 @@ def archive_attempt(artifact_dir, task):
     artifact = golden / "artifact.json"
     if artifact.is_file():
         try:
-            head = (json.loads(artifact.read_text()).get("head") or "unknown-head")[:12]
+            payload = json.loads(artifact.read_text())
+            head = (payload.get("head_sha") or payload.get("head") or "unknown-head")[:12]
         except Exception:
             pass
     attempts = artifact_dir / "golden" / f"{task}.attempts" / head
