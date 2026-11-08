@@ -90,6 +90,8 @@ def baseline_manifest_failures(manifest, baseline):
         if anchor is None:
             failures.append(f"baseline anchor {key} missing from manifest")
             continue
+        if anchor.get("infra_only"):
+            failures.append(f"baseline anchor {key}: infra_only downgrade would lose its required db cases")
         for field in ("product", "version_contains", "image"):
             if anchor.get(field) != spec.get(field):
                 failures.append(f"baseline anchor {key}: manifest {field}={anchor.get(field)!r} != baseline {spec.get(field)!r}")
@@ -293,6 +295,56 @@ def policy_for_case(manifest, policies, spec):
     return name, policy
 
 
+def _expect_repr(mverify):
+    """How a verify entry's wanted value reads in evidence: the exact
+    'expect' equality target or a 'contains' substring (for outputs like
+    EXPLAIN rows whose full text is not a stable oracle)."""
+    if "contains" in mverify:
+        return f"contains {mverify['contains']!r}"
+    return repr(mverify.get("expect"))
+
+
+def verify_output_matches(mverify, output):
+    """The single comparator shared by the runner and the artifact
+    validator: 'contains' is a substring match, otherwise exact equality
+    against 'expect'."""
+    if "contains" in mverify:
+        return mverify["contains"] in output
+    return output == mverify.get("expect")
+
+
+def run_verify_check(anchor, verify, database=None):
+    """Execute one verify SELECT against the anchor. Without 'poll' this is
+    the historical single read; with poll the read repeats at
+    'interval_sec' until the comparator matches or 'attempts' is
+    exhausted. An exhausted poll is timeout_undetermined evidence — the
+    record carries the last observed output and the timeout marker, never
+    a fabricated match. Returns (record, ok, timed_out)."""
+    poll = verify.get("poll") or {}
+    attempts = max(1, int(poll.get("attempts") or 1))
+    interval = float(poll.get("interval_sec") or 0)
+    last = {"rc": None, "output": "", "stderr": ""}
+    for n in range(attempts):
+        vrc, vout, verr = mysql_exec(
+            anchor, verify["sql"],
+            database=database if verify.get("use_database") else None,
+            silent=True)
+        last = {"rc": vrc, "output": vout.strip(), "stderr": verr.strip()}
+        if vrc == 0 and verify_output_matches(verify, last["output"]):
+            record = {"assert": verify["assert"], "sql": verify["sql"],
+                      "rc": vrc, "output": last["output"], "stderr": last["stderr"]}
+            if attempts > 1:
+                record["attempts"] = n + 1
+            return record, True, False
+        if n + 1 < attempts:
+            time.sleep(interval)
+    if poll:
+        last["attempts"] = attempts
+        last["timeout"] = True
+    last.update({"assert": verify["assert"], "sql": verify["sql"]})
+    return last, False, bool(poll)
+
+
 def execute_ddl_case(manifest, anchor_key):
     anchor = manifest["anchors"][anchor_key]
     case_id = f"{manifest['task_id']}.db.{anchor_key}.ddl"
@@ -348,13 +400,16 @@ def execute_ddl_case(manifest, anchor_key):
             "detail": f"rc={rc} expected={step['expect_rc']} stderr={err.strip()!r}",
         })
         for verify in step["verify"]:
-            vrc, vout, verr = mysql_exec(anchor, verify["sql"], silent=True)
-            step_actual["verify"].append({"assert": verify["assert"], "sql": verify["sql"], "rc": vrc, "output": vout.strip(), "stderr": verr.strip()})
-            case["assertions"].append({
+            vrec, vok, vtimeout = run_verify_check(anchor, verify)
+            step_actual["verify"].append(vrec)
+            assertion = {
                 "name": f"{step['name']}: {verify['assert']}",
-                "ok": vrc == 0 and vout.strip() == verify["expect"],
-                "detail": f"rc={vrc} output={vout.strip()!r} expected={verify['expect']!r}",
-            })
+                "ok": vok,
+                "detail": f"rc={vrec['rc']} output={vrec['output']!r} expected={_expect_repr(verify)}",
+            }
+            if vtimeout:
+                assertion["timeout"] = True
+            case["assertions"].append(assertion)
         case["actual"]["steps"].append(step_actual)
 
     if not all(a["ok"] for a in case["assertions"]):
@@ -894,14 +949,17 @@ def _execute_metadata_case(manifest, anchor_key, binary, policies, spec, fixture
             "detail": f"rc={src} expected={step.get('expect_rc', 0)} stderr={serr.strip()!r}",
         })
         for verify in step.get("verify") or []:
-            vrc, vout, verr = mysql_exec(anchor, verify["sql"], database=anchor["database"] if verify.get("use_database") else None, silent=True)
-            record.setdefault("verify", []).append({"assert": verify["assert"], "sql": verify["sql"], "rc": vrc, "output": vout.strip(), "stderr": verr.strip()})
-            case["assertions"].append({
+            vrec, vok, vtimeout = run_verify_check(anchor, verify, database=anchor["database"])
+            record.setdefault("verify", []).append(vrec)
+            assertion = {
                 "name": f"setup {step['name']}: {verify['assert']}",
-                "ok": vrc == 0 and vout.strip() == verify["expect"],
-                "detail": f"rc={vrc} output={vout.strip()!r} expected={verify['expect']!r}",
-            })
-            step_ok = step_ok and type(vrc) is int and vrc == 0 and vout.strip() == verify["expect"]
+                "ok": vok,
+                "detail": f"rc={vrec['rc']} output={vrec['output']!r} expected={_expect_repr(verify)}",
+            }
+            if vtimeout:
+                assertion["timeout"] = True
+            case["assertions"].append(assertion)
+            step_ok = step_ok and vok
         if fixture is not None:
             if step.get("requires_absence"):
                 fixture["absence_proved"] = step_ok
@@ -956,13 +1014,16 @@ def _execute_metadata_case(manifest, anchor_key, binary, policies, spec, fixture
         case["assertions"].append({"name": name, "ok": bool(ok), "detail": detail})
 
     for check in spec.get("post_verify") or []:
-        vrc, vout, verr = mysql_exec(anchor, check["sql"], database=anchor["database"] if check.get("use_database") else None, silent=True)
-        case["actual"]["post_verify"].append({"assert": check["assert"], "sql": check["sql"], "rc": vrc, "output": vout.strip(), "stderr": verr.strip()})
-        case["assertions"].append({
+        vrec, vok, vtimeout = run_verify_check(anchor, check, database=anchor["database"])
+        case["actual"]["post_verify"].append(vrec)
+        assertion = {
             "name": f"post-verify {check['assert']}",
-            "ok": vrc == 0 and vout.strip() == check["expect"],
-            "detail": f"rc={vrc} output={vout.strip()!r} expected={check['expect']!r}",
-        })
+            "ok": vok,
+            "detail": f"rc={vrec['rc']} output={vrec['output']!r} expected={_expect_repr(check)}",
+        }
+        if vtimeout:
+            assertion["timeout"] = True
+        case["assertions"].append(assertion)
 
     # The test driver applies the audited statements itself, statement by
     # statement — the product only ever reads; the fixture must prove the
@@ -990,14 +1051,17 @@ def _execute_metadata_case(manifest, anchor_key, binary, policies, spec, fixture
             case["assertions"].append({"name": f"execute {step['name']} stdout marker",
                                        "ok": marker in eout, "detail": marker})
         for verify in step.get("verify") or []:
-            vrc, vout, verr = mysql_exec(anchor, verify["sql"], database=anchor["database"] if verify.get("use_database") else None, silent=True)
-            record.setdefault("verify", []).append({"assert": verify["assert"], "sql": verify["sql"], "rc": vrc, "output": vout.strip(), "stderr": verr.strip()})
-            case["assertions"].append({
+            vrec, vok, vtimeout = run_verify_check(anchor, verify, database=anchor["database"])
+            record.setdefault("verify", []).append(vrec)
+            assertion = {
                 "name": f"execute {step['name']}: {verify['assert']}",
-                "ok": vrc == 0 and vout.strip() == verify["expect"],
-                "detail": f"rc={vrc} output={vout.strip()!r} expected={verify['expect']!r}",
-            })
-            step_ok = step_ok and type(vrc) is int and vrc == 0 and vout.strip() == verify["expect"]
+                "ok": vok,
+                "detail": f"rc={vrec['rc']} output={vrec['output']!r} expected={_expect_repr(verify)}",
+            }
+            if vtimeout:
+                assertion["timeout"] = True
+            case["assertions"].append(assertion)
+            step_ok = step_ok and vok
         if fixture is not None and not step_ok:
             case["status"] = "fail"
             return case
@@ -1006,13 +1070,16 @@ def _execute_metadata_case(manifest, anchor_key, binary, policies, spec, fixture
     # resulting schema must match the frozen expectation exactly — column
     # type, index membership/order, primary key membership/order.
     for check in spec.get("structure") or []:
-        vrc, vout, verr = mysql_exec(anchor, check["sql"], database=anchor["database"] if check.get("use_database") else None, silent=True)
-        case["actual"]["structure"].append({"assert": check["assert"], "sql": check["sql"], "rc": vrc, "output": vout.strip(), "stderr": verr.strip()})
-        case["assertions"].append({
+        vrec, vok, vtimeout = run_verify_check(anchor, check, database=anchor["database"])
+        case["actual"]["structure"].append(vrec)
+        assertion = {
             "name": f"structure {check['assert']}",
-            "ok": vrc == 0 and vout.strip() == check["expect"],
-            "detail": f"rc={vrc} output={vout.strip()!r} expected={check['expect']!r}",
-        })
+            "ok": vok,
+            "detail": f"rc={vrec['rc']} output={vrec['output']!r} expected={_expect_repr(check)}",
+        }
+        if vtimeout:
+            assertion["timeout"] = True
+        case["assertions"].append(assertion)
 
     for step in spec.get("teardown") or []:
         if fixture is not None and step.get("drops_fixture") and not fixture["created"]:
@@ -1030,13 +1097,16 @@ def _execute_metadata_case(manifest, anchor_key, binary, policies, spec, fixture
             "detail": f"rc={trc} expected={step.get('expect_rc', 0)} stderr={terr.strip()!r}",
         })
         for verify in step.get("verify") or []:
-            vrc, vout, verr = mysql_exec(anchor, verify["sql"], database=anchor["database"] if verify.get("use_database") else None, silent=True)
-            record.setdefault("verify", []).append({"assert": verify["assert"], "sql": verify["sql"], "rc": vrc, "output": vout.strip(), "stderr": verr.strip()})
-            case["assertions"].append({
+            vrec, vok, vtimeout = run_verify_check(anchor, verify, database=anchor["database"])
+            record.setdefault("verify", []).append(vrec)
+            assertion = {
                 "name": f"teardown {step['name']}: {verify['assert']}",
-                "ok": vrc == 0 and vout.strip() == verify["expect"],
-                "detail": f"rc={vrc} output={vout.strip()!r} expected={verify['expect']!r}",
-            })
+                "ok": vok,
+                "detail": f"rc={vrec['rc']} output={vrec['output']!r} expected={_expect_repr(verify)}",
+            }
+            if vtimeout:
+                assertion["timeout"] = True
+            case["assertions"].append(assertion)
 
     if not all(a["ok"] for a in case["assertions"]):
         case["status"] = "fail"
@@ -7424,8 +7494,10 @@ def validate_artifact(artifact, manifest, baseline=None, verify_binary=True):
                         failures.append(f"case {case_id}: verify {j} identity mismatch (assert/sql differ from manifest)")
                     if verify.get("rc") != 0:
                         failures.append(f"case {case_id}: verify {mverify['assert']} rc {verify.get('rc')} != 0")
-                    if verify.get("output") != mverify["expect"]:
-                        failures.append(f"case {case_id}: verify {mverify['assert']} output {verify.get('output')!r} != {mverify['expect']!r}")
+                    if not verify_output_matches(mverify, verify.get("output") or ""):
+                        failures.append(f"case {case_id}: verify {mverify['assert']} output mismatch {verify.get('output')!r} != {_expect_repr(mverify)}")
+                    if verify.get("timeout"):
+                        failures.append(f"case {case_id}: verify {mverify['assert']} marked timeout — undetermined evidence is never a pass")
         elif kind == "db_syntax_negative":
             negative = manifest["syntax_negative"]
             if case.get("input_sql") != negative["sql"]:
@@ -7534,8 +7606,10 @@ def validate_artifact(artifact, manifest, baseline=None, verify_binary=True):
                     verify = verifies[j]
                     if verify.get("assert") != mverify["assert"] or verify.get("sql") != mverify["sql"]:
                         failures.append(f"case {case_id}: setup verify {j} identity mismatch")
-                    if verify.get("rc") != 0 or verify.get("output") != mverify["expect"]:
-                        failures.append(f"case {case_id}: setup verify {mverify['assert']} output {verify.get('output')!r} != {mverify['expect']!r}")
+                    if verify.get("rc") != 0 or not verify_output_matches(mverify, verify.get("output") or ""):
+                        failures.append(f"case {case_id}: setup verify {mverify['assert']} output mismatch {verify.get('output')!r} != {_expect_repr(mverify)}")
+                        if verify.get("timeout"):
+                            failures.append(f"case {case_id}: setup verify {mverify['assert']} marked timeout — undetermined evidence is never a pass")
             cli_stdout_expect_failures(case, spec, failures, anchor=anchor)
             # Declared instance facts must have been read live and recorded —
             # a missing or diverging record means the evidence was fabricated
@@ -7561,8 +7635,10 @@ def validate_artifact(artifact, manifest, baseline=None, verify_binary=True):
                 check = posts[i]
                 if check.get("assert") != mcheck["assert"] or check.get("sql") != mcheck["sql"]:
                     failures.append(f"case {case_id}: post_verify {i} identity mismatch")
-                if check.get("rc") != 0 or check.get("output") != mcheck["expect"]:
-                    failures.append(f"case {case_id}: post_verify {mcheck['assert']} output {check.get('output')!r} != {mcheck['expect']!r}")
+                if check.get("rc") != 0 or not verify_output_matches(mcheck, check.get("output") or ""):
+                    failures.append(f"case {case_id}: post_verify {mcheck['assert']} output {check.get('output')!r} != {_expect_repr(mcheck)}")
+                if check.get("timeout"):
+                    failures.append(f"case {case_id}: post_verify {mcheck['assert']} marked timeout — undetermined evidence is never a pass")
             # Driver-applied statements and the structure oracle are recorded
             # evidence, not decoration: every manifest-declared execute step
             # must appear in order with the expected return code, and every
@@ -7593,8 +7669,10 @@ def validate_artifact(artifact, manifest, baseline=None, verify_binary=True):
                     verify = verifies[j]
                     if verify.get("assert") != mverify["assert"] or verify.get("sql") != mverify["sql"]:
                         failures.append(f"case {case_id}: execute verify {j} identity mismatch")
-                    if verify.get("rc") != 0 or verify.get("output") != mverify["expect"]:
-                        failures.append(f"case {case_id}: execute verify {mverify['assert']} output mismatch")
+                    if verify.get("rc") != 0 or not verify_output_matches(mverify, verify.get("output") or ""):
+                        failures.append(f"case {case_id}: execute verify {mverify['assert']} output mismatch {verify.get('output')!r} != {_expect_repr(mverify)}")
+                        if verify.get("timeout"):
+                            failures.append(f"case {case_id}: execute verify {mverify['assert']} marked timeout — undetermined evidence is never a pass")
             structures = actual.get("structure") or []
             manifest_structure = spec.get("structure") or []
             if len(structures) != len(manifest_structure):
@@ -7605,8 +7683,10 @@ def validate_artifact(artifact, manifest, baseline=None, verify_binary=True):
                 check = structures[i]
                 if check.get("assert") != mcheck["assert"] or check.get("sql") != mcheck["sql"]:
                     failures.append(f"case {case_id}: structure {i} identity mismatch")
-                if check.get("rc") != 0 or check.get("output") != mcheck["expect"]:
-                    failures.append(f"case {case_id}: structure {mcheck['assert']} output {check.get('output')!r} != {mcheck['expect']!r}")
+                if check.get("rc") != 0 or not verify_output_matches(mcheck, check.get("output") or ""):
+                    failures.append(f"case {case_id}: structure {mcheck['assert']} output {check.get('output')!r} != {_expect_repr(mcheck)}")
+                if check.get("timeout"):
+                    failures.append(f"case {case_id}: structure {mcheck['assert']} marked timeout — undetermined evidence is never a pass")
             teardowns = actual.get("teardown") or []
             manifest_teardowns = spec.get("teardown") or []
             if len(teardowns) != len(manifest_teardowns):
@@ -7626,8 +7706,10 @@ def validate_artifact(artifact, manifest, baseline=None, verify_binary=True):
                     verify = verifies[j]
                     if verify.get("assert") != mverify["assert"] or verify.get("sql") != mverify["sql"]:
                         failures.append(f"case {case_id}: teardown verify {j} identity mismatch")
-                    if verify.get("rc") != 0 or verify.get("output") != mverify["expect"]:
-                        failures.append(f"case {case_id}: teardown verify {mverify['assert']} output {verify.get('output')!r} != {mverify['expect']!r}")
+                    if verify.get("rc") != 0 or not verify_output_matches(mverify, verify.get("output") or ""):
+                        failures.append(f"case {case_id}: teardown verify {mverify['assert']} output mismatch {verify.get('output')!r} != {_expect_repr(mverify)}")
+                        if verify.get("timeout"):
+                            failures.append(f"case {case_id}: teardown verify {mverify['assert']} marked timeout — undetermined evidence is never a pass")
         elif kind == "cli_error":
             spec = error_case_spec_for(manifest, case)
             if spec is None:
@@ -7673,7 +7755,9 @@ def validate_artifact(artifact, manifest, baseline=None, verify_binary=True):
         else:
             failures.append(f"case {case_id}: unknown kind {kind!r}")
 
-    for anchor_key in anchors:
+    for anchor_key, anchor in anchors.items():
+        if anchor.get("infra_only"):
+            continue
         if anchor_key not in covered_anchors:
             failures.append(f"required anchor {anchor_key} skipped (no executed db_ddl case)")
 
@@ -7743,7 +7827,9 @@ def cmd_run(args):
             if unhealthy:
                 artifact["external_blocker"] = f"required database containers not healthy: {unhealthy}"
             else:
-                for anchor_key in manifest["anchors"]:
+                for anchor_key, anchor_def in manifest["anchors"].items():
+                    if anchor_def.get("infra_only"):
+                        continue
                     artifact["cases"].append(execute_ddl_case(manifest, anchor_key))
                     artifact["cases"].append(execute_negative_case(manifest, anchor_key))
                 for spec in cli_case_specs(manifest):

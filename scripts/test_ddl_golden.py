@@ -232,6 +232,95 @@ def main():
         a["executed_count"] = 1
         results.append(check("manifest anchors + artifact shrunk together rejected", a, "baseline anchor", manifest=m))
 
+        # T23N infra_only anchors: lifecycle-managed infrastructure services
+        # (PD/TiKV/TiFlash) carry no db cases; the coverage exemption must be
+        # an explicit manifest flag, never a silent skip.
+        m = copy.deepcopy(MANIFEST)
+        m["anchors"]["pdX"] = {
+            "service": "pdX",
+            "container": "golden-test-pdX",
+            "image": "pingcap/pd:v9.9.9",
+            "infra_only": True,
+        }
+        a = copy.deepcopy(base)
+        results.append(check("infra_only anchor without db case accepted", a, "", manifest=m))
+
+        m2 = copy.deepcopy(MANIFEST)
+        m2["anchors"]["extraDB"] = {
+            "service": "extraDB",
+            "container": "golden-test-extraDB",
+            "image": "mysql:9.9.9",
+            "product": "mysql",
+            "version_contains": "9.9.9",
+            "database": "golden",
+            "exec_client": ["mysql", "-uroot"],
+        }
+        results.append(check("non-infra anchor without db case rejected", a, "skipped", manifest=m2))
+
+        # A baseline-required anchor can never downgrade itself to infra_only:
+        # the locked denominator would silently lose its db cases.
+        m3 = copy.deepcopy(MANIFEST)
+        m3["anchors"]["mysqlX"]["infra_only"] = True
+        results.append(check("baseline anchor infra_only downgrade rejected", a, "infra_only", manifest=m3))
+
+        # T23N 'contains' verifies: the validator applies the same substring
+        # comparator the runner records, so an EXPLAIN-row proof passes only
+        # when the recorded output actually carries the marker.
+        m4 = copy.deepcopy(MANIFEST)
+        m4["ddl_steps"][0]["verify"] = [
+            {"assert": "engine row", "sql": "EXPLAIN SELECT 1", "contains": "tiflash"}
+        ]
+        a = copy.deepcopy(base)
+        a["cases"][0]["expected"]["steps"][0]["verify"] = m4["ddl_steps"][0]["verify"]
+        a["cases"][0]["actual"]["steps"][0]["verify"] = [
+            {"assert": "engine row", "sql": "EXPLAIN SELECT 1", "rc": 0,
+             "output": "id\ttask\n5\tcop[tiflash]", "stderr": ""}
+        ]
+        results.append(check("contains verify with marker accepted", a, "", manifest=m4))
+
+        a = copy.deepcopy(base)
+        a["cases"][0]["expected"]["steps"][0]["verify"] = m4["ddl_steps"][0]["verify"]
+        a["cases"][0]["actual"]["steps"][0]["verify"] = [
+            {"assert": "engine row", "sql": "EXPLAIN SELECT 1", "rc": 0,
+             "output": "id\ttask\n5\tcop[tikv]", "stderr": ""}
+        ]
+        results.append(check("contains verify missing marker rejected", a, "contains", manifest=m4))
+
+        # A poll-timeout record must still carry the decisive observation —
+        # the validator re-checks the recorded output against the comparator,
+        # so a timed-out verify can never validate as matched.
+        m5 = copy.deepcopy(MANIFEST)
+        m5["ddl_steps"][0]["verify"] = [
+            {"assert": "replica up", "sql": "SELECT available",
+             "expect": "1", "poll": {"attempts": 3, "interval_sec": 1}}
+        ]
+        a = copy.deepcopy(base)
+        a["cases"][0]["expected"]["steps"][0]["verify"] = m5["ddl_steps"][0]["verify"]
+        a["cases"][0]["actual"]["steps"][0]["verify"] = [
+            {"assert": "replica up", "sql": "SELECT available", "rc": 0,
+             "output": "0", "stderr": "", "attempts": 3, "timeout": True}
+        ]
+        results.append(check("poll-timeout record rejected as unverified", a, "output", manifest=m5))
+
+        a = copy.deepcopy(base)
+        a["cases"][0]["expected"]["steps"][0]["verify"] = m5["ddl_steps"][0]["verify"]
+        a["cases"][0]["actual"]["steps"][0]["verify"] = [
+            {"assert": "replica up", "sql": "SELECT available", "rc": 0,
+             "output": "1", "stderr": "", "attempts": 2}
+        ]
+        results.append(check("poll-matched record accepted", a, "", manifest=m5))
+
+        # A forged record may not launder a timed-out read by pairing the
+        # timeout marker with a matching output — undetermined evidence is
+        # never a pass, whatever the output field says.
+        a = copy.deepcopy(base)
+        a["cases"][0]["expected"]["steps"][0]["verify"] = m5["ddl_steps"][0]["verify"]
+        a["cases"][0]["actual"]["steps"][0]["verify"] = [
+            {"assert": "replica up", "sql": "SELECT available", "rc": 0,
+             "output": "1", "stderr": "", "attempts": 3, "timeout": True}
+        ]
+        results.append(check("timeout forged with matching output rejected", a, "timeout", manifest=m5))
+
         m = copy.deepcopy(MANIFEST)
         m["required_case_ids"] = ["TX.cli.mysql"]
         a = copy.deepcopy(base)
@@ -1524,6 +1613,8 @@ def main():
         results.extend(t06_contract_tests(tmp))
         results.extend(t08_oracle_migration_tests(tmp))
         results.extend(t23_instance_fact_tests(tmp))
+        results.extend(t23n_verify_primitive_tests(tmp))
+        results.extend(t23s_manifest_tests(tmp))
 
     failures = results.count(False)
     print(f"contract cases={len(results)} failures={failures}")
@@ -6014,6 +6105,181 @@ def t23_instance_fact_tests(tmp):
         print(("PASS " if results[-1] else "FAIL ") + "t23 unknown fact key returns None")
         results.append(ddl_golden.read_instance_fact(anchor, "innodb_page_size") is None)
         print(("PASS " if results[-1] else "FAIL ") + "t23 failed read returns None, never a default")
+
+    return results
+
+
+def t23n_verify_primitive_tests(tmp):
+    """T23N verify primitives (issue #102): the real-TiFlash oracle needs two
+    comparators the single-shot equality check cannot express — a 'contains'
+    substring match for EXPLAIN task rows and a bounded 'poll' for async
+    replica availability. An exhausted poll is timeout_undetermined evidence,
+    never a pass."""
+    results = []
+    anchor = {"exec_client": ["mysql"], "database": "golden"}
+
+    def report(name, ok):
+        print(("PASS " if ok else "FAIL ") + name)
+        results.append(ok)
+
+    v_exact = {"assert": "a", "sql": "SELECT 1", "expect": "1"}
+    v_contains = {"assert": "a", "sql": "EXPLAIN SELECT 1", "contains": "tiflash"}
+    report("t23n verify exact match true",
+           ddl_golden.verify_output_matches(v_exact, "1"))
+    report("t23n verify exact match false",
+           not ddl_golden.verify_output_matches(v_exact, "2"))
+    report("t23n verify contains match true",
+           ddl_golden.verify_output_matches(v_contains, "id\ttask\n5\tcop[tiflash]"))
+    report("t23n verify contains match false",
+           not ddl_golden.verify_output_matches(v_contains, "id\ttask\n5\tcop[tikv]"))
+
+    calls = []
+
+    def sequence_call(anchor_, sql, database=None, silent=True):
+        calls.append(sql)
+        return outs.pop(0)
+
+    # Single-shot verify behaves exactly like the historical read.
+    outs = [(0, "0", "")]
+    with mock.patch.object(ddl_golden, "mysql_exec", side_effect=sequence_call):
+        rec, ok, timeout = ddl_golden.run_verify_check(anchor, v_exact)
+    report("t23n single-shot mismatch keeps historical shape",
+           not ok and not timeout and rec["output"] == "0" and "attempts" not in rec)
+
+    # Poll retries until the comparator matches and records the attempt count.
+    outs = [(0, "0", ""), (0, "0", ""), (0, "1", "")]
+    calls.clear()
+    polled = dict(v_exact)
+    polled["poll"] = {"attempts": 5, "interval_sec": 0}
+    with mock.patch.object(ddl_golden, "mysql_exec", side_effect=sequence_call):
+        rec, ok, timeout = ddl_golden.run_verify_check(anchor, polled)
+    report("t23n poll matches on third attempt",
+           ok and not timeout and rec.get("attempts") == 3 and len(calls) == 3)
+
+    # An exhausted poll is a timeout record carrying the last observation,
+    # never a fabricated match.
+    outs = [(0, "0", "")] * 5
+    calls.clear()
+    with mock.patch.object(ddl_golden, "mysql_exec", side_effect=sequence_call):
+        rec, ok, timeout = ddl_golden.run_verify_check(anchor, polled)
+    report("t23n exhausted poll is timeout_undetermined",
+           not ok and timeout and rec.get("timeout") is True
+           and rec.get("attempts") == 5 and rec["output"] == "0" and len(calls) == 5)
+
+    # A transient rc failure inside the window still lets a later read match.
+    outs = [(1, "", "conn refused"), (0, "1", "")]
+    calls.clear()
+    with mock.patch.object(ddl_golden, "mysql_exec", side_effect=sequence_call):
+        rec, ok, timeout = ddl_golden.run_verify_check(anchor, polled)
+    report("t23n poll survives transient rc failure",
+           ok and rec.get("attempts") == 2)
+
+    return results
+
+
+def t23s_manifest_tests(tmp):
+    """T23S specials-manifest integrity (issue #102): the authorization-gated
+    manifest must keep the locked four-anchor baseline verbatim, mark the new
+    PD/TiKV/TiFlash services infra_only with declared data_volumes, and wire
+    every TiFlash/apk case to an existing anchor with bounded oracles."""
+    results = []
+    path = ddl_golden.MANIFEST_DIR / "T23S.json"
+    manifest = json.loads(path.read_text(encoding="utf-8"))
+    baseline = ddl_golden.load_baseline()
+
+    def report(name, ok):
+        print(("PASS " if ok else "FAIL ") + name)
+        results.append(bool(ok))
+
+    report("t23s task_id matches file", manifest["task_id"] == "T23S")
+
+    # The locked denominator survives: no baseline failures, and each
+    # baseline anchor carries the same pin fields the frozen T23 run used.
+    report("t23s baseline anchors pass contract",
+           ddl_golden.baseline_manifest_failures(manifest, baseline) == [])
+    t23 = json.loads((ddl_golden.MANIFEST_DIR / "T23.json").read_text(encoding="utf-8"))
+    same = all(
+        manifest["anchors"][k].get(f) == t23["anchors"][k].get(f)
+        for k in baseline["required_anchors"]
+        for f in ("service", "container", "image", "product",
+                  "version_contains", "database", "client_service",
+                  "client_container"))
+    report("t23s baseline anchors identical to T23", same)
+
+    # Infra anchors: explicit flag + declared volumes with safe fields.
+    infra = {"t23spd", "t23stikv", "t23stiflash"}
+    report("t23s infra anchors flagged",
+           all(manifest["anchors"][k].get("infra_only") for k in infra))
+    vols_ok = True
+    for k in infra:
+        for dv in manifest["anchors"][k].get("data_volumes") or []:
+            vols_ok &= bool(dv.get("mount", "").startswith("/")) \
+                and bool(dv.get("suffix"))
+    report("t23s infra data_volumes declared", vols_ok)
+
+    # Case wiring: every meta case binds a declared anchor; non-infra
+    # anchors still expose exec_client; required ids equal the emitted set.
+    anchors = manifest["anchors"]
+    meta = manifest["metadata_cases"]
+    report("t23s meta anchors exist",
+           all(c["anchor"] in anchors for c in meta))
+    emitted = []
+    for key, a in anchors.items():
+        if a.get("infra_only"):
+            continue
+        emitted += [f"T23S.db.{key}.ddl", f"T23S.db.{key}.syntax_negative"]
+    emitted += [f"T23S.cli.{c['id']}" for c in manifest["cli_cases"]]
+    emitted += [f"T23S.meta.{c['id']}" for c in meta]
+    report("t23s required ids equal emitted set",
+           manifest["required_case_ids"] == emitted)
+    dialects = {c["dialect"] for c in manifest["cli_cases"]}
+    report("t23s cli dialects cover baseline",
+           set(baseline["required_cli_dialects"]) <= dialects)
+
+    # Oracle discipline: 'contains' never coexists with 'expect'; every poll
+    # is bounded; the AVAILABLE oracle is the only polled check and it is
+    # capped.
+    shape_ok = True
+    polls = []
+    for c in meta:
+        for section in ("setup", "execute", "teardown"):
+            for step in c.get(section) or []:
+                for v in step.get("verify") or []:
+                    shape_ok &= not ("contains" in v and "expect" in v)
+                    if "poll" in v:
+                        polls.append(v)
+        for section in ("post_verify", "structure"):
+            for v in c.get(section) or []:
+                shape_ok &= not ("contains" in v and "expect" in v)
+                if "poll" in v:
+                    polls.append(v)
+    for v in polls:
+        p = v["poll"]
+        shape_ok &= int(p.get("attempts") or 0) >= 1 \
+            and float(p.get("interval_sec") or 0) >= 0
+    report("t23s verify shapes: contains/expect disjoint, polls bounded",
+           shape_ok)
+
+    tfc = next(c for c in meta if c["id"] == "C-tiflash-real")
+    report("t23s tiflash case pinned to the tikv anchor + requires tiflash",
+           tfc["anchor"] == "tidb85tikv"
+           and tfc.get("requires_service") == "tiflash")
+    avail = [v for s in tfc["execute"] for v in (s.get("verify") or [])
+             if "AVAILABLE" in v["sql"]]
+    report("t23s tiflash AVAILABLE oracles are bounded polls",
+           len(avail) == 2 and all("poll" in v for v in avail))
+
+    apk = [c for c in meta if c["anchor"] == "tidb85apk"]
+    report("t23s apk matrix has five cells on the aux anchor", len(apk) == 5)
+    facts_ok = all(
+        (c["expect"].get("instance_facts") or {})
+        .get("tidb_alter_primary_key") == "true"
+        for c in apk)
+    report("t23s apk cells pin the alter-primary-key=true fact", facts_ok)
+    ctl = next(c for c in meta if c["id"] == "apk-false-control-plain-pk")
+    report("t23s apk=false control on tikv anchor pins 'false'",
+           ctl["anchor"] == "tidb85tikv" and
+           (ctl["expect"]["instance_facts"]["tidb_alter_primary_key"] == "false"))
 
     return results
 

@@ -9,6 +9,7 @@ generation ledger, refuse-mode teardown, and the absence of the stock
 `down -v --remove-orphans` path.
 """
 
+import copy
 import importlib.util
 import json
 import os
@@ -556,6 +557,147 @@ class TestComposeScoping(unittest.TestCase):
         self.assertIn("org.deltascope.owner: tester", override)
         self.assertIn(f"{RUN}-mysql57-data:/var/lib/mysql", override)
         self.assertNotIn(f"{RUN}-tidb85-data", override)
+
+    # T23-S: non-mysql infrastructure services (PD/TiKV/TiFlash) declare
+    # their data mounts via anchor 'data_volumes' so the override mounts
+    # them as run-labelled named volumes — the ledger can classify them
+    # instead of adopting anonymous mounts by name alone.
+    def test_override_declared_data_volumes(self):
+        manifest = copy.deepcopy(MANIFEST)
+        manifest["anchors"]["tiflash"] = {
+            "service": "t23s-tiflash", "container": "c-tf",
+            "image": "pingcap/tiflash:v8.5.0", "infra_only": True,
+            "data_volumes": [{"mount": "/data", "suffix": "data"},
+                             {"mount": "/logs", "suffix": "logs"}],
+        }
+        run = make_run(tempfile.mkdtemp())
+        override = run.write_override(manifest).read_text()
+        self.assertIn(f"{RUN}-t23s-tiflash-data:/data", override)
+        self.assertIn(f"{RUN}-t23s-tiflash-logs:/logs", override)
+        self.assertIn(f"  {RUN}-t23s-tiflash-data:", override)
+        self.assertIn(f"  {RUN}-t23s-tiflash-logs:", override)
+        self.assertEqual(
+            sorted(run._volumes),
+            [f"{RUN}-mysql57-data", f"{RUN}-t23s-tiflash-data",
+             f"{RUN}-t23s-tiflash-logs"])
+
+    def test_override_data_volumes_on_client_service_rejected(self):
+        # data_volumes belong to the anchor service; mounting them on the
+        # client side would smuggle lifecycle-managed storage into a
+        # disposable helper container.
+        manifest = copy.deepcopy(MANIFEST)
+        manifest["anchors"]["tidb85"]["data_volumes"] = [
+            {"mount": "/data", "suffix": "data", "on": "client"}]
+        run = make_run(tempfile.mkdtemp())
+        with self.assertRaises(SystemExit):
+            run.write_override(manifest)
+
+    def test_override_data_volumes_bad_suffix_rejected(self):
+        for suffix in ("../escape", "a/b", "white space", "", "-"):
+            manifest = copy.deepcopy(MANIFEST)
+            manifest["anchors"]["pd"] = {
+                "service": "t23s-pd", "container": "c-pd",
+                "image": "pingcap/pd:v8.5.0", "infra_only": True,
+                "data_volumes": [{"mount": "/data", "suffix": suffix}],
+            }
+            run = make_run(tempfile.mkdtemp())
+            with self.assertRaises(SystemExit, msg=f"suffix {suffix!r}"):
+                run.write_override(manifest)
+
+    def test_override_data_volumes_missing_fields_rejected(self):
+        for entry in ({"suffix": "data"}, {"mount": "/data"},
+                      {"mount": "", "suffix": "data"},
+                      {"mount": "rel/path", "suffix": "data"}):
+            manifest = copy.deepcopy(MANIFEST)
+            manifest["anchors"]["pd"] = {
+                "service": "t23s-pd", "container": "c-pd",
+                "image": "pingcap/pd:v8.5.0", "infra_only": True,
+                "data_volumes": [entry],
+            }
+            run = make_run(tempfile.mkdtemp())
+            with self.assertRaises(SystemExit, msg=f"entry {entry!r}"):
+                run.write_override(manifest)
+
+
+class TestMultiServiceCapture(unittest.TestCase):
+    """T23-S: a wider anchor set (PD/TiKV/TiFlash infra + TiDB servers)
+    must all appear in the generation ledger — every declared container
+    and every declared data volume, classified named vs anonymous."""
+
+    def _manifest(self):
+        manifest = copy.deepcopy(MANIFEST)
+        for key, svc, img, vols in (
+            ("pd", "t23s-pd", "pingcap/pd:v8.5.0", ["data"]),
+            ("tikv", "t23s-tikv", "pingcap/tikv:v8.5.0", ["data"]),
+            ("tiflash", "t23s-tiflash", "pingcap/tiflash:v8.5.0",
+             ["data", "logs"]),
+        ):
+            manifest["anchors"][key] = {
+                "service": svc, "container": f"c-{svc}",
+                "image": img, "infra_only": True,
+                "data_volumes": [{"mount": "/data" if s == "data"
+                                  else "/logs", "suffix": s}
+                                 for s in vols],
+            }
+        return manifest
+
+    def test_capture_registers_infra_containers_and_volumes(self):
+        manifest = self._manifest()
+        state = FakeDaemon()
+        state.add_container("c-mysql57", "id-m57")
+        state.add_container("c-tidb85", "id-t85")
+        state.add_container("c-tidb85-client", "id-cl")
+        for svc in ("t23s-pd", "t23s-tikv", "t23s-tiflash"):
+            mounts = []
+            for anchor in manifest["anchors"].values():
+                if anchor["service"] != svc:
+                    continue
+                for dv in anchor["data_volumes"]:
+                    mounts.append({
+                        "Type": "volume",
+                        "Name": f"{RUN}_{RUN}-{svc}-{dv['suffix']}",
+                        "Destination": dv["mount"]})
+            state.add_container(f"c-{svc}", f"id-{svc}", mounts=mounts)
+        run = make_run(tempfile.mkdtemp(), state)
+        run._volumes = [
+            f"{RUN}-{a['service']}-{dv['suffix']}"
+            for a in manifest["anchors"].values()
+            for dv in a.get("data_volumes", [])]
+        run._volumes.append(f"{RUN}-mysql57-data")
+        run._manifest = manifest
+        gen = run._capture_generation("test.capture")
+        names = {c["name"] for c in gen["containers"]}
+        self.assertEqual(
+            names, {"c-mysql57", "c-tidb85", "c-tidb85-client",
+                    "c-t23s-pd", "c-t23s-tikv", "c-t23s-tiflash"})
+        kinds = {v["name"]: v["kind"] for v in gen["volumes"]}
+        for svc, vols in (("t23s-pd", ["data"]),
+                          ("t23s-tikv", ["data"]),
+                          ("t23s-tiflash", ["data", "logs"])):
+            for suffix in vols:
+                self.assertEqual(
+                    kinds.get(f"{RUN}_{RUN}-{svc}-{suffix}"), "named",
+                    f"{svc}-{suffix}")
+
+    def test_capture_undeclared_infra_mount_is_anonymous(self):
+        manifest = self._manifest()
+        state = FakeDaemon()
+        state.add_container("c-mysql57", "id-m57")
+        state.add_container("c-tidb85", "id-t85")
+        state.add_container("c-tidb85-client", "id-cl")
+        state.add_container(
+            "c-t23s-tikv", "id-t23s-tikv",
+            mounts=[{"Type": "volume", "Name": "5f6e7d8canon",
+                     "Destination": "/data"}])
+        run = make_run(tempfile.mkdtemp(), state)
+        run._volumes = [
+            f"{RUN}-{a['service']}-{dv['suffix']}"
+            for a in manifest["anchors"].values()
+            for dv in a.get("data_volumes", [])]
+        run._manifest = manifest
+        gen = run._capture_generation("test.capture")
+        kinds = {v["name"]: v["kind"] for v in gen["volumes"]}
+        self.assertEqual(kinds.get("5f6e7d8canon"), "anonymous")
 
 
 class TestCreationLedger(unittest.TestCase):

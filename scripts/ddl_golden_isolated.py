@@ -392,11 +392,40 @@ class IsoRun:
 
     # -- compose override -----------------------------------------------
 
+    _DATA_VOLUME_SUFFIX = re.compile(r"^[a-z0-9][a-z0-9-]*$")
+
+    def _anchor_data_volumes(self, anchor):
+        """Anchor-declared named data volumes for non-mysql services (the
+        mysql path above derives its own). Each entry needs an absolute
+        'mount' and a lowercase volume-name 'suffix'; anything else is
+        refused before compose sees it — a malformed suffix would create
+        an unledgered or foreign-looking volume."""
+        declared = []
+        for entry in anchor.get("data_volumes") or []:
+            mount = entry.get("mount") or ""
+            suffix = entry.get("suffix") or ""
+            if entry.get("on") not in (None, "service"):
+                raise SystemExit(
+                    f"[iso][FAIL] data_volumes may only target the anchor "
+                    f"service, got on={entry.get('on')!r}")
+            if not mount.startswith("/"):
+                raise SystemExit(
+                    f"[iso][FAIL] data_volumes mount must be absolute: "
+                    f"{mount!r}")
+            if not self._DATA_VOLUME_SUFFIX.match(suffix):
+                raise SystemExit(
+                    f"[iso][FAIL] data_volumes suffix unsafe for a volume "
+                    f"name: {suffix!r}")
+            declared.append(
+                (f"{self.run_id}-{anchor['service']}-{suffix}", mount))
+        return declared
+
     def write_override(self, manifest):
         """Generate run-scoped labels and named data volumes per service."""
         lines = ["services:"]
         volumes = []
         for anchor in manifest["anchors"].values():
+            declared = self._anchor_data_volumes(anchor)
             for svc in (anchor["service"], anchor.get("client_service")):
                 if not svc:
                     continue
@@ -410,6 +439,11 @@ class IsoRun:
                     lines.append("    volumes:")
                     lines.append(f"      - {vol}:{MYSQL_DATA_DIR}")
                     volumes.append(vol)
+                elif svc == anchor["service"] and declared:
+                    lines.append("    volumes:")
+                    for vol, mount in declared:
+                        lines.append(f"      - {vol}:{mount}")
+                    volumes.extend(vol for vol, _ in declared)
         lines.append("volumes:")
         for vol in volumes:
             lines.append(f"  {vol}:")
