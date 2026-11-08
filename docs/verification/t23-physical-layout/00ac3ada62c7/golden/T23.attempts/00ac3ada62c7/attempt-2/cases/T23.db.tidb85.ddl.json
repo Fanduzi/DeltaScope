@@ -1,0 +1,48 @@
+{
+  "case_id": "T23.db.tidb85.ddl",
+  "kind": "db_ddl",
+  "anchor": "tidb85",
+  "input_sql": [
+    "DROP DATABASE IF EXISTS t23fx",
+    "CREATE DATABASE t23fx;CREATE TABLE t23fx.t (id INT PRIMARY KEY)"
+  ],
+  "expected": {
+    "steps": [
+      {
+        "name": "clear-task-fixture",
+        "rc": 0,
+        "verify": []
+      },
+      {
+        "name": "seed-fixture-schema",
+        "rc": 0,
+        "verify": [
+          {
+            "assert": "fixture table exists",
+            "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='t23fx' AND TABLE_NAME='t'",
+            "expect": "1"
+          }
+        ]
+      }
+    ]
+  },
+  "actual": {
+    "steps": [],
+    "database": {
+      "product": "tidb",
+      "image": "pingcap/tidb:v8.5.0",
+      "image_digest": "pingcap/tidb@sha256:490861bd4a2fa643dbe76b77ffecafcad66e6a42774e580b82f4ec2429a80e57",
+      "container": "deltascope-ddl-golden-tidb85",
+      "reachable": false,
+      "version": ""
+    }
+  },
+  "assertions": [
+    {
+      "name": "database reachable with expected version",
+      "ok": false,
+      "detail": "SELECT VERSION() rc=1 version='' expected_contains='v8.5.0'"
+    }
+  ],
+  "status": "fail"
+}

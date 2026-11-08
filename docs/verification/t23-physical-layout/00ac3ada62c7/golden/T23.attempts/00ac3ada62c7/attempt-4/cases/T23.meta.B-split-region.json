@@ -1,0 +1,834 @@
+{
+  "case_id": "T23.meta.B-split-region",
+  "kind": "cli_metadata",
+  "cli_case": "B-split-region",
+  "anchor": "tidb85",
+  "dialect": "tidb",
+  "input_sql": "SPLIT TABLE t23fx.t23fx_sp BETWEEN (0) AND (10000) REGIONS 4;\nSPLIT TABLE t23fx.t23fx_sp BETWEEN (0) AND (100) REGIONS 4;\nSPLIT TABLE t23fx.t23fx_sp BETWEEN (100) AND (0) REGIONS 4;\nSPLIT TABLE t23fx.t23fx_sp BETWEEN (NULL) AND (10000) REGIONS 4;\nSPLIT TABLE t23fx.t23fx_sp BY (1),(2),(3);\nSPLIT TABLE t23fx.t23fx_sp INDEX missing_idx BETWEEN (0) AND (10000) REGIONS 4;\nSPLIT TABLE t23fx.t23fx_sp_ix INDEX ix BETWEEN (0) AND (10000) REGIONS 2;\nSPLIT TABLE t23fx.t23fx_ch BETWEEN (0,0) AND (10000,0) REGIONS 4;\nSPLIT TABLE t23fx.t23fx_noh BETWEEN (0) AND (10000) REGIONS 4;\nSPLIT TABLE t23fx.t23fx_sp BETWEEN (0) AND (10000) REGIONS 0;\nSPLIT TABLE t23fx.t23fx_sp BETWEEN (0) AND (10000) REGIONS 2000;\nSPLIT TABLE t23fx.t23fx_sp PARTITION (p9) BETWEEN (0) AND (10000) REGIONS 4;",
+  "policy_profile": "t23-layout-id",
+  "policy_path": "/private/tmp/t23r10-artifact/golden/T23/golden-policy.yaml",
+  "connect": {
+    "host": "127.0.0.1",
+    "port": 24000,
+    "user": "root",
+    "schema": "t23fx"
+  },
+  "expected": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 12,
+    "findings": 7,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "evidence_gaps": 2,
+    "finding_entries": [
+      {
+        "index": 1,
+        "rule_id": "ddl.tidb.table.split_region.valid",
+        "level": "blocker"
+      },
+      {
+        "index": 2,
+        "rule_id": "ddl.tidb.table.split_region.valid",
+        "level": "blocker"
+      },
+      {
+        "index": 3,
+        "rule_id": "ddl.tidb.table.split_region.valid",
+        "level": "blocker"
+      },
+      {
+        "index": 5,
+        "rule_id": "ddl.tidb.table.split_region.valid",
+        "level": "blocker"
+      },
+      {
+        "index": 9,
+        "rule_id": "ddl.tidb.table.split_region.valid",
+        "level": "blocker"
+      },
+      {
+        "index": 10,
+        "rule_id": "ddl.tidb.table.split_region.valid",
+        "level": "blocker"
+      },
+      {
+        "index": 11,
+        "rule_id": "ddl.tidb.table.split_region.valid",
+        "level": "blocker"
+      }
+    ],
+    "evidence_gap_entries": [
+      {
+        "index": 6,
+        "rule_id": "ddl.tidb.table.split_region.valid",
+        "reason_code": "unproven_statement_fact",
+        "required_facts": [
+          "statement.split_bound_relation"
+        ]
+      },
+      {
+        "index": 7,
+        "rule_id": "ddl.tidb.table.split_region.valid",
+        "reason_code": "unproven_statement_fact",
+        "required_facts": [
+          "statement.split_bound_relation"
+        ]
+      }
+    ],
+    "instance_facts": {
+      "tidb_split_region_max_num": 1000
+    }
+  },
+  "actual": {
+    "database": {
+      "product": "tidb",
+      "image": "pingcap/tidb:v8.5.0",
+      "image_digest": "pingcap/tidb@sha256:490861bd4a2fa643dbe76b77ffecafcad66e6a42774e580b82f4ec2429a80e57",
+      "container": "deltascope-ddl-golden-tidb85",
+      "reachable": true,
+      "version": "8.0.11-TiDB-v8.5.0"
+    },
+    "setup": [
+      {
+        "name": "seed sp",
+        "sql": "CREATE TABLE t23fx.t23fx_sp (id BIGINT PRIMARY KEY)",
+        "rc": 0,
+        "stdout": "",
+        "stderr": ""
+      },
+      {
+        "name": "seed ch",
+        "sql": "CREATE TABLE t23fx.t23fx_ch (a BIGINT, b BIGINT, PRIMARY KEY(a,b) CLUSTERED)",
+        "rc": 0,
+        "stdout": "",
+        "stderr": ""
+      },
+      {
+        "name": "seed sp_ix",
+        "sql": "CREATE TABLE t23fx.t23fx_sp_ix (id BIGINT PRIMARY KEY, v BIGINT, KEY ix(v))",
+        "rc": 0,
+        "stdout": "",
+        "stderr": ""
+      },
+      {
+        "name": "seed noh",
+        "sql": "CREATE TABLE t23fx.t23fx_noh (v INT)",
+        "rc": 0,
+        "stdout": "",
+        "stderr": ""
+      },
+      {
+        "name": "seed sp_part",
+        "sql": "CREATE TABLE t23fx.t23fx_sp_part (id BIGINT PRIMARY KEY, v INT) PARTITION BY RANGE (id) (PARTITION p0 VALUES LESS THAN (100), PARTITION p1 VALUES LESS THAN MAXVALUE)",
+        "rc": 0,
+        "stdout": "",
+        "stderr": ""
+      }
+    ],
+    "post_verify": [
+      {
+        "assert": "audit split nothing",
+        "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='t23fx' AND TABLE_NAME LIKE 't23fx_%'",
+        "rc": 0,
+        "output": "6",
+        "stderr": ""
+      }
+    ],
+    "execute": [
+      {
+        "name": "native valid split",
+        "sql": "SPLIT TABLE t23fx.t23fx_sp BETWEEN (0) AND (10000) REGIONS 4",
+        "rc": 0,
+        "stdout": "TOTAL_SPLIT_REGION\tSCATTER_FINISH_RATIO\n3\t1",
+        "stderr": ""
+      },
+      {
+        "name": "native step too small",
+        "sql": "SPLIT TABLE t23fx.t23fx_sp BETWEEN (0) AND (100) REGIONS 4",
+        "rc": 1,
+        "stdout": "",
+        "stderr": "ERROR 8212 (HY000) at line 1: Failed to split region ranges: the region size is too small, expected at least 1000, but got 25"
+      },
+      {
+        "name": "native bound not increasing",
+        "sql": "SPLIT TABLE t23fx.t23fx_sp BETWEEN (100) AND (0) REGIONS 4",
+        "rc": 1,
+        "stdout": "",
+        "stderr": "ERROR 8212 (HY000) at line 1: Failed to split region ranges: lower value 100 should less than the upper value 0"
+      },
+      {
+        "name": "native null bound",
+        "sql": "SPLIT TABLE t23fx.t23fx_sp BETWEEN (NULL) AND (10000) REGIONS 4",
+        "rc": 1,
+        "stdout": "",
+        "stderr": "ERROR 1048 (23000) at line 1: Column 'id' cannot be null"
+      },
+      {
+        "name": "native by-list",
+        "sql": "SPLIT TABLE t23fx.t23fx_sp BY (1),(2),(3)",
+        "rc": 0,
+        "stdout": "TOTAL_SPLIT_REGION\tSCATTER_FINISH_RATIO\n3\t1",
+        "stderr": ""
+      },
+      {
+        "name": "native missing index",
+        "sql": "SPLIT TABLE t23fx.t23fx_sp INDEX missing_idx BETWEEN (0) AND (10000) REGIONS 4",
+        "rc": 1,
+        "stdout": "",
+        "stderr": "ERROR 1176 (42000) at line 1: Key 'missing_idx' doesn't exist in table 't23fx_sp'"
+      },
+      {
+        "name": "native index split",
+        "sql": "SPLIT TABLE t23fx.t23fx_sp_ix INDEX ix BETWEEN (0) AND (10000) REGIONS 2",
+        "rc": 0,
+        "stdout": "TOTAL_SPLIT_REGION\tSCATTER_FINISH_RATIO\n2\t1",
+        "stderr": ""
+      },
+      {
+        "name": "native common-handle split",
+        "sql": "SPLIT TABLE t23fx.t23fx_ch BETWEEN (0,0) AND (10000,0) REGIONS 4",
+        "rc": 0,
+        "stdout": "TOTAL_SPLIT_REGION\tSCATTER_FINISH_RATIO\n3\t1",
+        "stderr": ""
+      },
+      {
+        "name": "native rowid split",
+        "sql": "SPLIT TABLE t23fx.t23fx_noh BETWEEN (0) AND (10000) REGIONS 4",
+        "rc": 0,
+        "stdout": "TOTAL_SPLIT_REGION\tSCATTER_FINISH_RATIO\n3\t1",
+        "stderr": ""
+      },
+      {
+        "name": "native regions zero",
+        "sql": "SPLIT TABLE t23fx.t23fx_sp BETWEEN (0) AND (10000) REGIONS 0",
+        "rc": 1,
+        "stdout": "",
+        "stderr": "ERROR 1105 (HY000) at line 1: Split table region num should more than 0"
+      },
+      {
+        "name": "native regions over limit",
+        "sql": "SPLIT TABLE t23fx.t23fx_sp BETWEEN (0) AND (10000) REGIONS 2000",
+        "rc": 1,
+        "stdout": "",
+        "stderr": "ERROR 1105 (HY000) at line 1: Split table region num exceeded the limit 1000"
+      },
+      {
+        "name": "native missing partition",
+        "sql": "SPLIT TABLE t23fx.t23fx_sp PARTITION (p9) BETWEEN (0) AND (10000) REGIONS 4",
+        "rc": 0,
+        "stdout": "TOTAL_SPLIT_REGION\tSCATTER_FINISH_RATIO\n0\t0",
+        "stderr": ""
+      }
+    ],
+    "structure": [],
+    "teardown": [
+      {
+        "name": "drop t23fx_sp",
+        "sql": "DROP TABLE IF EXISTS t23fx.t23fx_sp",
+        "rc": 0,
+        "stderr": ""
+      },
+      {
+        "name": "drop t23fx_ch",
+        "sql": "DROP TABLE IF EXISTS t23fx.t23fx_ch",
+        "rc": 0,
+        "stderr": ""
+      },
+      {
+        "name": "drop t23fx_sp_ix",
+        "sql": "DROP TABLE IF EXISTS t23fx.t23fx_sp_ix",
+        "rc": 0,
+        "stderr": ""
+      },
+      {
+        "name": "drop t23fx_noh",
+        "sql": "DROP TABLE IF EXISTS t23fx.t23fx_noh",
+        "rc": 0,
+        "stderr": ""
+      },
+      {
+        "name": "drop t23fx_sp_part",
+        "sql": "DROP TABLE IF EXISTS t23fx.t23fx_sp_part",
+        "rc": 0,
+        "stderr": ""
+      }
+    ],
+    "exit": 1,
+    "stdout": "{\"verdict\":\"reject\",\"coverage\":{\"status\":\"unverified\"},\"summary\":{\"statements\":12,\"blockers\":6,\"warnings\":0,\"notices\":0},\"statements\":[{\"index\":0,\"kind\":\"ddl\",\"raw_sql\":\"SPLIT TABLE t23fx.t23fx_sp BETWEEN (0) AND (10000) REGIONS 4;\",\"normalized_sql\":\"SPLIT TABLE t23fx.t23fx_sp BETWEEN (0) AND (10000) REGIONS 4\",\"coverage\":{\"status\":\"complete\"}},{\"index\":1,\"kind\":\"ddl\",\"raw_sql\":\"SPLIT TABLE t23fx.t23fx_sp BETWEEN (0) AND (100) REGIONS 4;\",\"normalized_sql\":\"SPLIT TABLE t23fx.t23fx_sp BETWEEN (0) AND (100) REGIONS 4\",\"findings\":[{\"rule_id\":\"ddl.tidb.table.split_region.valid\",\"level\":\"blocker\",\"message\":\"split table region on \\\"t23fx_sp\\\" declares a BETWEEN range whose per-region step is below the fixed minimum\",\"statement_index\":1,\"statement_kind\":\"ddl\",\"location\":{\"line\":2,\"column\":1},\"suggestion\":\"widen the BETWEEN range or lower the REGIONS count\",\"metadata\":{\"index\":\"\",\"reason\":\"split_step_too_small\",\"table\":\"t23fx_sp\"},\"explanation\":{\"summary\":\"Check DDL tidb table split region valid\",\"why\":\"The statement matched the shipped governance rule for this pattern.\",\"risk\":\"Ignoring this rule can hide live-schema or instance-state risks that only metadata reveals.\",\"suggestion\":\"widen the BETWEEN range or lower the REGIONS count\",\"metadata\":{\"status\":\"available\",\"note\":\"Live metadata is available, so this explanation can use schema or instance facts for a more accurate judgment.\"}}}],\"coverage\":{\"status\":\"complete\"}},{\"index\":2,\"kind\":\"ddl\",\"raw_sql\":\"SPLIT TABLE t23fx.t23fx_sp BETWEEN (100) AND (0) REGIONS 4;\",\"normalized_sql\":\"SPLIT TABLE t23fx.t23fx_sp BETWEEN (100) AND (0) REGIONS 4\",\"findings\":[{\"rule_id\":\"ddl.tidb.table.split_region.valid\",\"level\":\"blocker\",\"message\":\"split table region on \\\"t23fx_sp\\\" declares an upper bound that is not greater than the lower bound\",\"statement_index\":2,\"statement_kind\":\"ddl\",\"location\":{\"line\":3,\"column\":1},\"suggestion\":\"order the BETWEEN bounds so the upper value is strictly greater\",\"metadata\":{\"index\":\"\",\"reason\":\"split_bound_not_increasing\",\"table\":\"t23fx_sp\"},\"explanation\":{\"summary\":\"Check DDL tidb table split region valid\",\"why\":\"The statement matched the shipped governance rule for this pattern.\",\"risk\":\"Ignoring this rule can hide live-schema or instance-state risks that only metadata reveals.\",\"suggestion\":\"order the BETWEEN bounds so the upper value is strictly greater\",\"metadata\":{\"status\":\"available\",\"note\":\"Live metadata is available, so this explanation can use schema or instance facts for a more accurate judgment.\"}}}],\"coverage\":{\"status\":\"complete\"}},{\"index\":3,\"kind\":\"ddl\",\"raw_sql\":\"SPLIT TABLE t23fx.t23fx_sp BETWEEN (NULL) AND (10000) REGIONS 4;\",\"normalized_sql\":\"SPLIT TABLE t23fx.t23fx_sp BETWEEN (NULL) AND (10000) REGIONS 4\",\"findings\":[{\"rule_id\":\"ddl.tidb.table.split_region.valid\",\"level\":\"blocker\",\"message\":\"split table region on \\\"t23fx_sp\\\" contains a NULL literal in a split value tuple\",\"statement_index\":3,\"statement_kind\":\"ddl\",\"location\":{\"line\":4,\"column\":1},\"suggestion\":\"use non-NULL boundary values\",\"metadata\":{\"index\":\"\",\"reason\":\"split_null_value\",\"table\":\"t23fx_sp\"},\"explanation\":{\"summary\":\"Check DDL tidb table split region valid\",\"why\":\"The statement matched the shipped governance rule for this pattern.\",\"risk\":\"Ignoring this rule can hide live-schema or instance-state risks that only metadata reveals.\",\"suggestion\":\"use non-NULL boundary values\",\"metadata\":{\"status\":\"available\",\"note\":\"Live metadata is available, so this explanation can use schema or instance facts for a more accurate judgment.\"}}}],\"coverage\":{\"status\":\"complete\"}},{\"index\":4,\"kind\":\"ddl\",\"raw_sql\":\"SPLIT TABLE t23fx.t23fx_sp BY (1),(2),(3);\",\"normalized_sql\":\"SPLIT TABLE t23fx.t23fx_sp BY (1),(2),(3)\",\"coverage\":{\"status\":\"complete\"}},{\"index\":5,\"kind\":\"ddl\",\"raw_sql\":\"SPLIT TABLE t23fx.t23fx_sp INDEX missing_idx BETWEEN (0) AND (10000) REGIONS 4;\",\"normalized_sql\":\"SPLIT TABLE t23fx.t23fx_sp INDEX missing_idx BETWEEN (0) AND (10000) REGIONS 4\",\"findings\":[{\"rule_id\":\"ddl.tidb.table.split_region.valid\",\"level\":\"blocker\",\"message\":\"split table region on \\\"t23fx_sp\\\" references an index that does not exist on the target table\",\"statement_index\":5,\"statement_kind\":\"ddl\",\"location\":{\"line\":6,\"column\":1},\"suggestion\":\"check the index name or split the table regions directly\",\"metadata\":{\"index\":\"missing_idx\",\"reason\":\"split_index_missing\",\"table\":\"t23fx_sp\"},\"explanation\":{\"summary\":\"Check DDL tidb table split region valid\",\"why\":\"The statement matched the shipped governance rule for this pattern.\",\"risk\":\"Ignoring this rule can hide live-schema or instance-state risks that only metadata reveals.\",\"suggestion\":\"check the index name or split the table regions directly\",\"metadata\":{\"status\":\"available\",\"note\":\"Live metadata is available, so this explanation can use schema or instance facts for a more accurate judgment.\"}}}],\"coverage\":{\"status\":\"complete\"}},{\"index\":6,\"kind\":\"ddl\",\"raw_sql\":\"SPLIT TABLE t23fx.t23fx_sp_ix INDEX ix BETWEEN (0) AND (10000) REGIONS 2;\",\"normalized_sql\":\"SPLIT TABLE t23fx.t23fx_sp_ix INDEX ix BETWEEN (0) AND (10000) REGIONS 2\",\"evidence_gaps\":[{\"rule_id\":\"ddl.tidb.table.split_region.valid\",\"reason_code\":\"unproven_statement_fact\",\"required_facts\":[\"statement.split_bound_relation\"]}],\"coverage\":{\"status\":\"unverified\"}},{\"index\":7,\"kind\":\"ddl\",\"raw_sql\":\"SPLIT TABLE t23fx.t23fx_ch BETWEEN (0,0) AND (10000,0) REGIONS 4;\",\"normalized_sql\":\"SPLIT TABLE t23fx.t23fx_ch BETWEEN (0,0) AND (10000,0) REGIONS 4\",\"evidence_gaps\":[{\"rule_id\":\"ddl.tidb.table.split_region.valid\",\"reason_code\":\"unproven_statement_fact\",\"required_facts\":[\"statement.split_bound_relation\"]}],\"coverage\":{\"status\":\"unverified\"}},{\"index\":8,\"kind\":\"ddl\",\"raw_sql\":\"SPLIT TABLE t23fx.t23fx_noh BETWEEN (0) AND (10000) REGIONS 4;\",\"normalized_sql\":\"SPLIT TABLE t23fx.t23fx_noh BETWEEN (0) AND (10000) REGIONS 4\",\"coverage\":{\"status\":\"complete\"}},{\"index\":9,\"kind\":\"ddl\",\"raw_sql\":\"SPLIT TABLE t23fx.t23fx_sp BETWEEN (0) AND (10000) REGIONS 0;\",\"normalized_sql\":\"SPLIT TABLE t23fx.t23fx_sp BETWEEN (0) AND (10000) REGIONS 0\",\"findings\":[{\"rule_id\":\"ddl.tidb.table.split_region.valid\",\"level\":\"blocker\",\"message\":\"split table region on \\\"t23fx_sp\\\" declares a REGIONS count below 1\",\"statement_index\":9,\"statement_kind\":\"ddl\",\"location\":{\"line\":10,\"column\":1},\"suggestion\":\"request at least one region\",\"metadata\":{\"index\":\"\",\"reason\":\"split_num_below_one\",\"table\":\"t23fx_sp\"},\"explanation\":{\"summary\":\"Check DDL tidb table split region valid\",\"why\":\"The statement matched the shipped governance rule for this pattern.\",\"risk\":\"Ignoring this rule can hide live-schema or instance-state risks that only metadata reveals.\",\"suggestion\":\"request at least one region\",\"metadata\":{\"status\":\"available\",\"note\":\"Live metadata is available, so this explanation can use schema or instance facts for a more accurate judgment.\"}}}],\"coverage\":{\"status\":\"complete\"}},{\"index\":10,\"kind\":\"ddl\",\"raw_sql\":\"SPLIT TABLE t23fx.t23fx_sp BETWEEN (0) AND (10000) REGIONS 2000;\",\"normalized_sql\":\"SPLIT TABLE t23fx.t23fx_sp BETWEEN (0) AND (10000) REGIONS 2000\",\"findings\":[{\"rule_id\":\"ddl.tidb.table.split_region.valid\",\"level\":\"blocker\",\"message\":\"split table region on \\\"t23fx_sp\\\" declares a REGIONS count above the server split-region-max-num limit\",\"statement_index\":10,\"statement_kind\":\"ddl\",\"location\":{\"line\":11,\"column\":1},\"suggestion\":\"lower the region count or raise the server configuration\",\"metadata\":{\"index\":\"\",\"reason\":\"split_num_over_limit\",\"table\":\"t23fx_sp\"},\"explanation\":{\"summary\":\"Check DDL tidb table split region valid\",\"why\":\"The statement matched the shipped governance rule for this pattern.\",\"risk\":\"Ignoring this rule can hide live-schema or instance-state risks that only metadata reveals.\",\"suggestion\":\"lower the region count or raise the server configuration\",\"metadata\":{\"status\":\"available\",\"note\":\"Live metadata is available, so this explanation can use schema or instance facts for a more accurate judgment.\"}}}],\"coverage\":{\"status\":\"complete\"}},{\"index\":11,\"kind\":\"ddl\",\"raw_sql\":\"SPLIT TABLE t23fx.t23fx_sp PARTITION (p9) BETWEEN (0) AND (10000) REGIONS 4;\",\"normalized_sql\":\"SPLIT TABLE t23fx.t23fx_sp PARTITION (p9) BETWEEN (0) AND (10000) REGIONS 4\",\"coverage\":{\"status\":\"complete\"}}],\"version\":{\"product\":\"tidb\",\"version\":\"8.5.0\",\"major\":8,\"minor\":5,\"patch\":0,\"source\":\"observed\",\"validated_range\":true},\"fail_on_triggered\":true,\"rule_summary\":{\"loaded\":13,\"applicable\":2,\"skipped\":[]},\"context\":{\"mode\":\"metadata-aware\",\"dialect\":\"tidb\",\"dialect_source\":\"detected\",\"schema\":\"t23fx\",\"schema_source\":\"flag\"}}\n",
+    "stderr": "",
+    "parsed": {
+      "verdict": "reject",
+      "coverage": {
+        "status": "unverified"
+      },
+      "summary": {
+        "statements": 12,
+        "blockers": 6,
+        "warnings": 0,
+        "notices": 0
+      },
+      "statements": [
+        {
+          "index": 0,
+          "kind": "ddl",
+          "raw_sql": "SPLIT TABLE t23fx.t23fx_sp BETWEEN (0) AND (10000) REGIONS 4;",
+          "normalized_sql": "SPLIT TABLE t23fx.t23fx_sp BETWEEN (0) AND (10000) REGIONS 4",
+          "coverage": {
+            "status": "complete"
+          }
+        },
+        {
+          "index": 1,
+          "kind": "ddl",
+          "raw_sql": "SPLIT TABLE t23fx.t23fx_sp BETWEEN (0) AND (100) REGIONS 4;",
+          "normalized_sql": "SPLIT TABLE t23fx.t23fx_sp BETWEEN (0) AND (100) REGIONS 4",
+          "findings": [
+            {
+              "rule_id": "ddl.tidb.table.split_region.valid",
+              "level": "blocker",
+              "message": "split table region on \"t23fx_sp\" declares a BETWEEN range whose per-region step is below the fixed minimum",
+              "statement_index": 1,
+              "statement_kind": "ddl",
+              "location": {
+                "line": 2,
+                "column": 1
+              },
+              "suggestion": "widen the BETWEEN range or lower the REGIONS count",
+              "metadata": {
+                "index": "",
+                "reason": "split_step_too_small",
+                "table": "t23fx_sp"
+              },
+              "explanation": {
+                "summary": "Check DDL tidb table split region valid",
+                "why": "The statement matched the shipped governance rule for this pattern.",
+                "risk": "Ignoring this rule can hide live-schema or instance-state risks that only metadata reveals.",
+                "suggestion": "widen the BETWEEN range or lower the REGIONS count",
+                "metadata": {
+                  "status": "available",
+                  "note": "Live metadata is available, so this explanation can use schema or instance facts for a more accurate judgment."
+                }
+              }
+            }
+          ],
+          "coverage": {
+            "status": "complete"
+          }
+        },
+        {
+          "index": 2,
+          "kind": "ddl",
+          "raw_sql": "SPLIT TABLE t23fx.t23fx_sp BETWEEN (100) AND (0) REGIONS 4;",
+          "normalized_sql": "SPLIT TABLE t23fx.t23fx_sp BETWEEN (100) AND (0) REGIONS 4",
+          "findings": [
+            {
+              "rule_id": "ddl.tidb.table.split_region.valid",
+              "level": "blocker",
+              "message": "split table region on \"t23fx_sp\" declares an upper bound that is not greater than the lower bound",
+              "statement_index": 2,
+              "statement_kind": "ddl",
+              "location": {
+                "line": 3,
+                "column": 1
+              },
+              "suggestion": "order the BETWEEN bounds so the upper value is strictly greater",
+              "metadata": {
+                "index": "",
+                "reason": "split_bound_not_increasing",
+                "table": "t23fx_sp"
+              },
+              "explanation": {
+                "summary": "Check DDL tidb table split region valid",
+                "why": "The statement matched the shipped governance rule for this pattern.",
+                "risk": "Ignoring this rule can hide live-schema or instance-state risks that only metadata reveals.",
+                "suggestion": "order the BETWEEN bounds so the upper value is strictly greater",
+                "metadata": {
+                  "status": "available",
+                  "note": "Live metadata is available, so this explanation can use schema or instance facts for a more accurate judgment."
+                }
+              }
+            }
+          ],
+          "coverage": {
+            "status": "complete"
+          }
+        },
+        {
+          "index": 3,
+          "kind": "ddl",
+          "raw_sql": "SPLIT TABLE t23fx.t23fx_sp BETWEEN (NULL) AND (10000) REGIONS 4;",
+          "normalized_sql": "SPLIT TABLE t23fx.t23fx_sp BETWEEN (NULL) AND (10000) REGIONS 4",
+          "findings": [
+            {
+              "rule_id": "ddl.tidb.table.split_region.valid",
+              "level": "blocker",
+              "message": "split table region on \"t23fx_sp\" contains a NULL literal in a split value tuple",
+              "statement_index": 3,
+              "statement_kind": "ddl",
+              "location": {
+                "line": 4,
+                "column": 1
+              },
+              "suggestion": "use non-NULL boundary values",
+              "metadata": {
+                "index": "",
+                "reason": "split_null_value",
+                "table": "t23fx_sp"
+              },
+              "explanation": {
+                "summary": "Check DDL tidb table split region valid",
+                "why": "The statement matched the shipped governance rule for this pattern.",
+                "risk": "Ignoring this rule can hide live-schema or instance-state risks that only metadata reveals.",
+                "suggestion": "use non-NULL boundary values",
+                "metadata": {
+                  "status": "available",
+                  "note": "Live metadata is available, so this explanation can use schema or instance facts for a more accurate judgment."
+                }
+              }
+            }
+          ],
+          "coverage": {
+            "status": "complete"
+          }
+        },
+        {
+          "index": 4,
+          "kind": "ddl",
+          "raw_sql": "SPLIT TABLE t23fx.t23fx_sp BY (1),(2),(3);",
+          "normalized_sql": "SPLIT TABLE t23fx.t23fx_sp BY (1),(2),(3)",
+          "coverage": {
+            "status": "complete"
+          }
+        },
+        {
+          "index": 5,
+          "kind": "ddl",
+          "raw_sql": "SPLIT TABLE t23fx.t23fx_sp INDEX missing_idx BETWEEN (0) AND (10000) REGIONS 4;",
+          "normalized_sql": "SPLIT TABLE t23fx.t23fx_sp INDEX missing_idx BETWEEN (0) AND (10000) REGIONS 4",
+          "findings": [
+            {
+              "rule_id": "ddl.tidb.table.split_region.valid",
+              "level": "blocker",
+              "message": "split table region on \"t23fx_sp\" references an index that does not exist on the target table",
+              "statement_index": 5,
+              "statement_kind": "ddl",
+              "location": {
+                "line": 6,
+                "column": 1
+              },
+              "suggestion": "check the index name or split the table regions directly",
+              "metadata": {
+                "index": "missing_idx",
+                "reason": "split_index_missing",
+                "table": "t23fx_sp"
+              },
+              "explanation": {
+                "summary": "Check DDL tidb table split region valid",
+                "why": "The statement matched the shipped governance rule for this pattern.",
+                "risk": "Ignoring this rule can hide live-schema or instance-state risks that only metadata reveals.",
+                "suggestion": "check the index name or split the table regions directly",
+                "metadata": {
+                  "status": "available",
+                  "note": "Live metadata is available, so this explanation can use schema or instance facts for a more accurate judgment."
+                }
+              }
+            }
+          ],
+          "coverage": {
+            "status": "complete"
+          }
+        },
+        {
+          "index": 6,
+          "kind": "ddl",
+          "raw_sql": "SPLIT TABLE t23fx.t23fx_sp_ix INDEX ix BETWEEN (0) AND (10000) REGIONS 2;",
+          "normalized_sql": "SPLIT TABLE t23fx.t23fx_sp_ix INDEX ix BETWEEN (0) AND (10000) REGIONS 2",
+          "evidence_gaps": [
+            {
+              "rule_id": "ddl.tidb.table.split_region.valid",
+              "reason_code": "unproven_statement_fact",
+              "required_facts": [
+                "statement.split_bound_relation"
+              ]
+            }
+          ],
+          "coverage": {
+            "status": "unverified"
+          }
+        },
+        {
+          "index": 7,
+          "kind": "ddl",
+          "raw_sql": "SPLIT TABLE t23fx.t23fx_ch BETWEEN (0,0) AND (10000,0) REGIONS 4;",
+          "normalized_sql": "SPLIT TABLE t23fx.t23fx_ch BETWEEN (0,0) AND (10000,0) REGIONS 4",
+          "evidence_gaps": [
+            {
+              "rule_id": "ddl.tidb.table.split_region.valid",
+              "reason_code": "unproven_statement_fact",
+              "required_facts": [
+                "statement.split_bound_relation"
+              ]
+            }
+          ],
+          "coverage": {
+            "status": "unverified"
+          }
+        },
+        {
+          "index": 8,
+          "kind": "ddl",
+          "raw_sql": "SPLIT TABLE t23fx.t23fx_noh BETWEEN (0) AND (10000) REGIONS 4;",
+          "normalized_sql": "SPLIT TABLE t23fx.t23fx_noh BETWEEN (0) AND (10000) REGIONS 4",
+          "coverage": {
+            "status": "complete"
+          }
+        },
+        {
+          "index": 9,
+          "kind": "ddl",
+          "raw_sql": "SPLIT TABLE t23fx.t23fx_sp BETWEEN (0) AND (10000) REGIONS 0;",
+          "normalized_sql": "SPLIT TABLE t23fx.t23fx_sp BETWEEN (0) AND (10000) REGIONS 0",
+          "findings": [
+            {
+              "rule_id": "ddl.tidb.table.split_region.valid",
+              "level": "blocker",
+              "message": "split table region on \"t23fx_sp\" declares a REGIONS count below 1",
+              "statement_index": 9,
+              "statement_kind": "ddl",
+              "location": {
+                "line": 10,
+                "column": 1
+              },
+              "suggestion": "request at least one region",
+              "metadata": {
+                "index": "",
+                "reason": "split_num_below_one",
+                "table": "t23fx_sp"
+              },
+              "explanation": {
+                "summary": "Check DDL tidb table split region valid",
+                "why": "The statement matched the shipped governance rule for this pattern.",
+                "risk": "Ignoring this rule can hide live-schema or instance-state risks that only metadata reveals.",
+                "suggestion": "request at least one region",
+                "metadata": {
+                  "status": "available",
+                  "note": "Live metadata is available, so this explanation can use schema or instance facts for a more accurate judgment."
+                }
+              }
+            }
+          ],
+          "coverage": {
+            "status": "complete"
+          }
+        },
+        {
+          "index": 10,
+          "kind": "ddl",
+          "raw_sql": "SPLIT TABLE t23fx.t23fx_sp BETWEEN (0) AND (10000) REGIONS 2000;",
+          "normalized_sql": "SPLIT TABLE t23fx.t23fx_sp BETWEEN (0) AND (10000) REGIONS 2000",
+          "findings": [
+            {
+              "rule_id": "ddl.tidb.table.split_region.valid",
+              "level": "blocker",
+              "message": "split table region on \"t23fx_sp\" declares a REGIONS count above the server split-region-max-num limit",
+              "statement_index": 10,
+              "statement_kind": "ddl",
+              "location": {
+                "line": 11,
+                "column": 1
+              },
+              "suggestion": "lower the region count or raise the server configuration",
+              "metadata": {
+                "index": "",
+                "reason": "split_num_over_limit",
+                "table": "t23fx_sp"
+              },
+              "explanation": {
+                "summary": "Check DDL tidb table split region valid",
+                "why": "The statement matched the shipped governance rule for this pattern.",
+                "risk": "Ignoring this rule can hide live-schema or instance-state risks that only metadata reveals.",
+                "suggestion": "lower the region count or raise the server configuration",
+                "metadata": {
+                  "status": "available",
+                  "note": "Live metadata is available, so this explanation can use schema or instance facts for a more accurate judgment."
+                }
+              }
+            }
+          ],
+          "coverage": {
+            "status": "complete"
+          }
+        },
+        {
+          "index": 11,
+          "kind": "ddl",
+          "raw_sql": "SPLIT TABLE t23fx.t23fx_sp PARTITION (p9) BETWEEN (0) AND (10000) REGIONS 4;",
+          "normalized_sql": "SPLIT TABLE t23fx.t23fx_sp PARTITION (p9) BETWEEN (0) AND (10000) REGIONS 4",
+          "coverage": {
+            "status": "complete"
+          }
+        }
+      ],
+      "version": {
+        "product": "tidb",
+        "version": "8.5.0",
+        "major": 8,
+        "minor": 5,
+        "patch": 0,
+        "source": "observed",
+        "validated_range": true
+      },
+      "fail_on_triggered": true,
+      "rule_summary": {
+        "loaded": 13,
+        "applicable": 2,
+        "skipped": []
+      },
+      "context": {
+        "mode": "metadata-aware",
+        "dialect": "tidb",
+        "dialect_source": "detected",
+        "schema": "t23fx",
+        "schema_source": "flag"
+      }
+    },
+    "version_evidence": {
+      "target_raw": null,
+      "target_canonical": null,
+      "observed_raw": "8.0.11-TiDB-v8.5.0",
+      "observed_canonical": {
+        "product": "tidb",
+        "version": "8.5.0"
+      },
+      "resolved": {
+        "product": "tidb",
+        "version": "8.5.0",
+        "major": 8,
+        "minor": 5,
+        "patch": 0,
+        "source": "observed",
+        "validated_range": true
+      }
+    },
+    "instance_facts": {
+      "tidb_split_region_max_num": 1000
+    }
+  },
+  "assertions": [
+    {
+      "name": "database reachable with expected version",
+      "ok": true,
+      "detail": "SELECT VERSION() rc=0 version='8.0.11-TiDB-v8.5.0' expected_contains='v8.5.0'"
+    },
+    {
+      "name": "setup seed sp return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "setup seed ch return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "setup seed sp_ix return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "setup seed noh return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "setup seed sp_part return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "instance fact tidb_split_region_max_num",
+      "ok": true,
+      "detail": "tidb_split_region_max_num=1000 expected=1000"
+    },
+    {
+      "name": "exit code",
+      "ok": true,
+      "detail": "rc=1 expected=1"
+    },
+    {
+      "name": "verdict",
+      "ok": true,
+      "detail": "verdict='reject'"
+    },
+    {
+      "name": "top-level statements",
+      "ok": true,
+      "detail": "statements=12 expected=12"
+    },
+    {
+      "name": "zero findings",
+      "ok": false,
+      "detail": "findings=6"
+    },
+    {
+      "name": "no diagnostics",
+      "ok": true,
+      "detail": "diagnostics=[]"
+    },
+    {
+      "name": "no unsupported",
+      "ok": true,
+      "detail": "unsupported=[]"
+    },
+    {
+      "name": "aggregate coverage",
+      "ok": true,
+      "detail": "coverage='unverified'"
+    },
+    {
+      "name": "evidence gap count",
+      "ok": true,
+      "detail": "gaps=2"
+    },
+    {
+      "name": "evidence gap entries",
+      "ok": true,
+      "detail": "gaps=[(6, 'ddl.tidb.table.split_region.valid', 'unproven_statement_fact'), (7, 'ddl.tidb.table.split_region.valid', 'unproven_statement_fact')] expected=[(6, 'ddl.tidb.table.split_region.valid', 'unproven_statement_fact'), (7, 'ddl.tidb.table.split_region.valid', 'unproven_statement_fact')]"
+    },
+    {
+      "name": "evidence gap required_facts (6, 'ddl.tidb.table.split_region.valid', 'unproven_statement_fact')",
+      "ok": true,
+      "detail": "gaps=[{'rule_id': 'ddl.tidb.table.split_region.valid', 'reason_code': 'unproven_statement_fact', 'required_facts': ['statement.split_bound_relation']}, {'rule_id': 'ddl.tidb.table.split_region.valid', 'reason_code': 'unproven_statement_fact', 'required_facts': ['statement.split_bound_relation']}] expected_facts=['statement.split_bound_relation']"
+    },
+    {
+      "name": "evidence gap required_facts (7, 'ddl.tidb.table.split_region.valid', 'unproven_statement_fact')",
+      "ok": true,
+      "detail": "gaps=[{'rule_id': 'ddl.tidb.table.split_region.valid', 'reason_code': 'unproven_statement_fact', 'required_facts': ['statement.split_bound_relation']}, {'rule_id': 'ddl.tidb.table.split_region.valid', 'reason_code': 'unproven_statement_fact', 'required_facts': ['statement.split_bound_relation']}] expected_facts=['statement.split_bound_relation']"
+    },
+    {
+      "name": "no gap encoded as finding",
+      "ok": true,
+      "detail": "findings carrying gap shape=[]"
+    },
+    {
+      "name": "finding entries",
+      "ok": false,
+      "detail": "findings=[(1, 'ddl.tidb.table.split_region.valid', 'blocker'), (2, 'ddl.tidb.table.split_region.valid', 'blocker'), (3, 'ddl.tidb.table.split_region.valid', 'blocker'), (5, 'ddl.tidb.table.split_region.valid', 'blocker'), (9, 'ddl.tidb.table.split_region.valid', 'blocker'), (10, 'ddl.tidb.table.split_region.valid', 'blocker')] expected=[(1, 'ddl.tidb.table.split_region.valid', 'blocker'), (2, 'ddl.tidb.table.split_region.valid', 'blocker'), (3, 'ddl.tidb.table.split_region.valid', 'blocker'), (5, 'ddl.tidb.table.split_region.valid', 'blocker'), (9, 'ddl.tidb.table.split_region.valid', 'blocker'), (10, 'ddl.tidb.table.split_region.valid', 'blocker'), (11, 'ddl.tidb.table.split_region.valid', 'blocker')]"
+    },
+    {
+      "name": "post-verify audit split nothing",
+      "ok": true,
+      "detail": "rc=0 output='6' expected='6'"
+    },
+    {
+      "name": "execute native valid split return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "execute native step too small return code",
+      "ok": true,
+      "detail": "rc=1 expected=1 stderr='ERROR 8212 (HY000) at line 1: Failed to split region ranges: the region size is too small, expected at least 1000, but got 25'"
+    },
+    {
+      "name": "execute native bound not increasing return code",
+      "ok": true,
+      "detail": "rc=1 expected=1 stderr='ERROR 8212 (HY000) at line 1: Failed to split region ranges: lower value 100 should less than the upper value 0'"
+    },
+    {
+      "name": "execute native null bound return code",
+      "ok": true,
+      "detail": "rc=1 expected=1 stderr=\"ERROR 1048 (23000) at line 1: Column 'id' cannot be null\""
+    },
+    {
+      "name": "execute native by-list return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "execute native missing index return code",
+      "ok": true,
+      "detail": "rc=1 expected=1 stderr=\"ERROR 1176 (42000) at line 1: Key 'missing_idx' doesn't exist in table 't23fx_sp'\""
+    },
+    {
+      "name": "execute native index split return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "execute native common-handle split return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "execute native rowid split return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "execute native regions zero return code",
+      "ok": true,
+      "detail": "rc=1 expected=1 stderr='ERROR 1105 (HY000) at line 1: Split table region num should more than 0'"
+    },
+    {
+      "name": "execute native regions over limit return code",
+      "ok": true,
+      "detail": "rc=1 expected=1 stderr='ERROR 1105 (HY000) at line 1: Split table region num exceeded the limit 1000'"
+    },
+    {
+      "name": "execute native missing partition return code",
+      "ok": false,
+      "detail": "rc=0 expected=1 stderr=''"
+    },
+    {
+      "name": "teardown drop t23fx_sp return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "teardown drop t23fx_ch return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "teardown drop t23fx_sp_ix return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "teardown drop t23fx_noh return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "teardown drop t23fx_sp_part return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    }
+  ],
+  "status": "fail",
+  "command": [
+    "/private/tmp/t23r10-artifact/golden/T23/bin/deltascope",
+    "audit",
+    "--dialect",
+    "tidb",
+    "--sql",
+    "SPLIT TABLE t23fx.t23fx_sp BETWEEN (0) AND (10000) REGIONS 4;\nSPLIT TABLE t23fx.t23fx_sp BETWEEN (0) AND (100) REGIONS 4;\nSPLIT TABLE t23fx.t23fx_sp BETWEEN (100) AND (0) REGIONS 4;\nSPLIT TABLE t23fx.t23fx_sp BETWEEN (NULL) AND (10000) REGIONS 4;\nSPLIT TABLE t23fx.t23fx_sp BY (1),(2),(3);\nSPLIT TABLE t23fx.t23fx_sp INDEX missing_idx BETWEEN (0) AND (10000) REGIONS 4;\nSPLIT TABLE t23fx.t23fx_sp_ix INDEX ix BETWEEN (0) AND (10000) REGIONS 2;\nSPLIT TABLE t23fx.t23fx_ch BETWEEN (0,0) AND (10000,0) REGIONS 4;\nSPLIT TABLE t23fx.t23fx_noh BETWEEN (0) AND (10000) REGIONS 4;\nSPLIT TABLE t23fx.t23fx_sp BETWEEN (0) AND (10000) REGIONS 0;\nSPLIT TABLE t23fx.t23fx_sp BETWEEN (0) AND (10000) REGIONS 2000;\nSPLIT TABLE t23fx.t23fx_sp PARTITION (p9) BETWEEN (0) AND (10000) REGIONS 4;",
+    "--config",
+    "/private/tmp/t23r10-artifact/golden/T23/golden-policy.yaml",
+    "--format",
+    "json",
+    "--host",
+    "127.0.0.1",
+    "--port",
+    "24000",
+    "--user",
+    "root",
+    "--schema",
+    "t23fx",
+    "--fail-on",
+    "blocker"
+  ]
+}

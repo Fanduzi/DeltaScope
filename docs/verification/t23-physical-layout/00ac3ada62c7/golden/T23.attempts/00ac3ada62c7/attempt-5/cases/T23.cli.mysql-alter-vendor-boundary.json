@@ -1,0 +1,159 @@
+{
+  "case_id": "T23.cli.mysql-alter-vendor-boundary",
+  "kind": "cli_audit",
+  "cli_case": "mysql-alter-vendor-boundary",
+  "dialect": "mysql",
+  "input_sql": "ALTER TABLE t AUTO_ID_CACHE=5;",
+  "policy_profile": "t23-layout-id",
+  "policy_path": "/private/tmp/t23r10-artifact/golden/T23/golden-policy.yaml",
+  "command": [
+    "/private/tmp/t23r10-artifact/golden/T23/bin/deltascope",
+    "audit",
+    "--dialect",
+    "mysql",
+    "--sql",
+    "ALTER TABLE t AUTO_ID_CACHE=5;",
+    "--config",
+    "/private/tmp/t23r10-artifact/golden/T23/golden-policy.yaml",
+    "--format",
+    "json",
+    "--fail-on",
+    "blocker"
+  ],
+  "expected": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "coverage": "incomplete",
+    "unsupported_entries": [
+      {
+        "index": 0,
+        "feature": "alter_table.option.auto_id_cache",
+        "reason": "parsed by the shared parser but outside the supported statement surface for this dialect"
+      }
+    ],
+    "diagnostics": 1,
+    "unsupported": 1,
+    "findings": 0
+  },
+  "actual": {
+    "exit": 1,
+    "stdout": "{\"verdict\":\"review\",\"coverage\":{\"status\":\"incomplete\"},\"summary\":{\"statements\":1,\"blockers\":0,\"warnings\":0,\"notices\":0},\"statements\":[{\"index\":0,\"kind\":\"ddl\",\"raw_sql\":\"ALTER TABLE t AUTO_ID_CACHE=5;\",\"normalized_sql\":\"ALTER TABLE t AUTO_ID_CACHE=5\",\"coverage\":{\"status\":\"incomplete\"}}],\"unsupported\":[{\"feature\":\"alter_table.option.auto_id_cache\",\"sql\":\"ALTER TABLE t AUTO_ID_CACHE=5;\",\"reason\":\"parsed by the shared parser but outside the supported statement surface for this dialect\",\"metadata\":{\"action\":\"table_option\",\"aspect\":\"option\",\"option\":\"auto_id_cache\"}}],\"diagnostics\":[{\"classification\":\"unsupported_statement\",\"reason\":\"DeltaScope recognized this statement or feature but does not audit it yet\",\"action_hint\":\"treat this statement as not covered by DeltaScope policy checks; review it manually or track support in a future DeltaScope release\",\"audited\":false,\"dialect\":\"mysql\"}],\"fail_on_triggered\":false,\"rule_summary\":{\"loaded\":13,\"applicable\":0,\"skipped\":[]},\"context\":{\"mode\":\"offline\",\"dialect\":\"mysql\",\"dialect_source\":\"flag\",\"note\":\"existence not checked (no database connection)\",\"unproven\":[\"column_exists\",\"table_exists\"]}}\n",
+    "stderr": "",
+    "parsed": {
+      "verdict": "review",
+      "coverage": {
+        "status": "incomplete"
+      },
+      "summary": {
+        "statements": 1,
+        "blockers": 0,
+        "warnings": 0,
+        "notices": 0
+      },
+      "statements": [
+        {
+          "index": 0,
+          "kind": "ddl",
+          "raw_sql": "ALTER TABLE t AUTO_ID_CACHE=5;",
+          "normalized_sql": "ALTER TABLE t AUTO_ID_CACHE=5",
+          "coverage": {
+            "status": "incomplete"
+          }
+        }
+      ],
+      "unsupported": [
+        {
+          "feature": "alter_table.option.auto_id_cache",
+          "sql": "ALTER TABLE t AUTO_ID_CACHE=5;",
+          "reason": "parsed by the shared parser but outside the supported statement surface for this dialect",
+          "metadata": {
+            "action": "table_option",
+            "aspect": "option",
+            "option": "auto_id_cache"
+          }
+        }
+      ],
+      "diagnostics": [
+        {
+          "classification": "unsupported_statement",
+          "reason": "DeltaScope recognized this statement or feature but does not audit it yet",
+          "action_hint": "treat this statement as not covered by DeltaScope policy checks; review it manually or track support in a future DeltaScope release",
+          "audited": false,
+          "dialect": "mysql"
+        }
+      ],
+      "fail_on_triggered": false,
+      "rule_summary": {
+        "loaded": 13,
+        "applicable": 0,
+        "skipped": []
+      },
+      "context": {
+        "mode": "offline",
+        "dialect": "mysql",
+        "dialect_source": "flag",
+        "note": "existence not checked (no database connection)",
+        "unproven": [
+          "column_exists",
+          "table_exists"
+        ]
+      }
+    },
+    "version_evidence": {
+      "target_raw": null,
+      "target_canonical": null,
+      "observed_raw": null,
+      "observed_canonical": null,
+      "resolved": null
+    }
+  },
+  "assertions": [
+    {
+      "name": "exit code",
+      "ok": true,
+      "detail": "rc=1 expected=1"
+    },
+    {
+      "name": "verdict",
+      "ok": true,
+      "detail": "verdict='review'"
+    },
+    {
+      "name": "top-level statements",
+      "ok": true,
+      "detail": "statements=1 expected=1"
+    },
+    {
+      "name": "zero findings",
+      "ok": true,
+      "detail": "findings=0"
+    },
+    {
+      "name": "no diagnostics",
+      "ok": true,
+      "detail": "diagnostics=[{'classification': 'unsupported_statement', 'reason': 'DeltaScope recognized this statement or feature but does not audit it yet', 'action_hint': 'treat this statement as not covered by DeltaScope policy checks; review it manually or track support in a future DeltaScope release', 'audited': False, 'dialect': 'mysql'}]"
+    },
+    {
+      "name": "no unsupported",
+      "ok": true,
+      "detail": "unsupported=[{'feature': 'alter_table.option.auto_id_cache', 'sql': 'ALTER TABLE t AUTO_ID_CACHE=5;', 'reason': 'parsed by the shared parser but outside the supported statement surface for this dialect', 'metadata': {'action': 'table_option', 'aspect': 'option', 'option': 'auto_id_cache'}}]"
+    },
+    {
+      "name": "aggregate coverage",
+      "ok": true,
+      "detail": "coverage='incomplete'"
+    },
+    {
+      "name": "unsupported entries",
+      "ok": true,
+      "detail": "entries=[(0, 'alter_table.option.auto_id_cache', 'parsed by the shared parser but outside the supported statement surface for this dialect')] expected=[(0, 'alter_table.option.auto_id_cache', 'parsed by the shared parser but outside the supported statement surface for this dialect')]"
+    },
+    {
+      "name": "unsupported sql identity index=0",
+      "ok": true,
+      "detail": "sql='ALTER TABLE t AUTO_ID_CACHE=5;' expected='ALTER TABLE t AUTO_ID_CACHE=5;'"
+    }
+  ],
+  "status": "pass"
+}

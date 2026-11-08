@@ -1,0 +1,474 @@
+{
+  "case_id": "T23.meta.A-clustered-mode-comparison",
+  "kind": "cli_metadata",
+  "cli_case": "A-clustered-mode-comparison",
+  "anchor": "tidb85",
+  "dialect": "tidb",
+  "input_sql": "CREATE TABLE t23fx.t23fx_cm1 (id BIGINT UNSIGNED PRIMARY KEY AUTO_RANDOM(5,64));",
+  "policy_profile": "t23-layout-id",
+  "policy_path": "/private/tmp/t23r10-artifact/golden/T23/golden-policy.yaml",
+  "connect": {
+    "host": "127.0.0.1",
+    "port": 24000,
+    "user": "root",
+    "schema": "t23fx"
+  },
+  "expected": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "evidence_gaps": 0,
+    "finding_entries": [
+      {
+        "index": 0,
+        "rule_id": "ddl.tidb.table.auto_random.valid",
+        "level": "blocker"
+      }
+    ],
+    "instance_facts": {
+      "tidb_enable_clustered_index": "OFF",
+      "tidb_alter_primary_key": "false"
+    }
+  },
+  "actual": {
+    "database": {
+      "product": "tidb",
+      "image": "pingcap/tidb:v8.5.0",
+      "image_digest": "pingcap/tidb@sha256:490861bd4a2fa643dbe76b77ffecafcad66e6a42774e580b82f4ec2429a80e57",
+      "container": "deltascope-ddl-golden-tidb85",
+      "reachable": true,
+      "version": "8.0.11-TiDB-v8.5.0"
+    },
+    "setup": [
+      {
+        "name": "record clustered baseline",
+        "sql": "SELECT @@global.tidb_enable_clustered_index",
+        "rc": 0,
+        "stdout": "@@global.tidb_enable_clustered_index\nON",
+        "stderr": "",
+        "verify": [
+          {
+            "assert": "baseline is ON on this stack",
+            "sql": "SELECT @@global.tidb_enable_clustered_index",
+            "rc": 0,
+            "output": "ON",
+            "stderr": ""
+          }
+        ]
+      },
+      {
+        "name": "flip clustered mode off",
+        "sql": "SET GLOBAL tidb_enable_clustered_index='off'",
+        "rc": 0,
+        "stdout": "",
+        "stderr": "",
+        "verify": [
+          {
+            "assert": "mode is off",
+            "sql": "SELECT @@global.tidb_enable_clustered_index",
+            "rc": 0,
+            "output": "OFF",
+            "stderr": ""
+          }
+        ]
+      }
+    ],
+    "post_verify": [
+      {
+        "assert": "audit created nothing under off",
+        "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='t23fx' AND TABLE_NAME='t23fx_cm1'",
+        "rc": 0,
+        "output": "0",
+        "stderr": ""
+      }
+    ],
+    "execute": [
+      {
+        "name": "native off refuses",
+        "sql": "CREATE TABLE t23fx.t23fx_cm1 (id BIGINT UNSIGNED PRIMARY KEY AUTO_RANDOM(5,64))",
+        "rc": 1,
+        "stdout": "",
+        "stderr": "ERROR 8216 (HY000) at line 1: Invalid auto random: auto_random is only supported on the tables with clustered primary key",
+        "verify": [
+          {
+            "assert": "cm1 absent under off",
+            "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='t23fx' AND TABLE_NAME='t23fx_cm1'",
+            "rc": 0,
+            "output": "0",
+            "stderr": ""
+          }
+        ]
+      },
+      {
+        "name": "set clustered on",
+        "sql": "SET GLOBAL tidb_enable_clustered_index='on'",
+        "rc": 0,
+        "stdout": "",
+        "stderr": ""
+      },
+      {
+        "name": "native on accepts",
+        "sql": "CREATE TABLE t23fx.t23fx_cm_on (id BIGINT UNSIGNED PRIMARY KEY AUTO_RANDOM(5,64))",
+        "rc": 0,
+        "stdout": "",
+        "stderr": "",
+        "verify": [
+          {
+            "assert": "cm_on exists",
+            "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='t23fx' AND TABLE_NAME='t23fx_cm_on'",
+            "rc": 0,
+            "output": "1",
+            "stderr": ""
+          }
+        ]
+      },
+      {
+        "name": "drop cm_on",
+        "sql": "DROP TABLE IF EXISTS t23fx.t23fx_cm_on",
+        "rc": 0,
+        "stdout": "",
+        "stderr": ""
+      },
+      {
+        "name": "set clustered int_only",
+        "sql": "SET GLOBAL tidb_enable_clustered_index='int_only'",
+        "rc": 0,
+        "stdout": "",
+        "stderr": ""
+      },
+      {
+        "name": "native int_only accepts",
+        "sql": "CREATE TABLE t23fx.t23fx_cm_io (id BIGINT UNSIGNED PRIMARY KEY AUTO_RANDOM(5,64))",
+        "rc": 0,
+        "stdout": "",
+        "stderr": "",
+        "verify": [
+          {
+            "assert": "cm_io exists",
+            "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='t23fx' AND TABLE_NAME='t23fx_cm_io'",
+            "rc": 0,
+            "output": "1",
+            "stderr": ""
+          }
+        ]
+      },
+      {
+        "name": "drop cm_io",
+        "sql": "DROP TABLE IF EXISTS t23fx.t23fx_cm_io",
+        "rc": 0,
+        "stdout": "",
+        "stderr": ""
+      }
+    ],
+    "structure": [],
+    "teardown": [
+      {
+        "name": "restore clustered baseline ON",
+        "sql": "SET GLOBAL tidb_enable_clustered_index='ON'",
+        "rc": 0,
+        "stderr": "",
+        "verify": [
+          {
+            "assert": "mode restored to ON",
+            "sql": "SELECT @@global.tidb_enable_clustered_index",
+            "rc": 0,
+            "output": "ON",
+            "stderr": ""
+          }
+        ]
+      },
+      {
+        "name": "drop cm1",
+        "sql": "DROP TABLE IF EXISTS t23fx.t23fx_cm1",
+        "rc": 0,
+        "stderr": "",
+        "verify": [
+          {
+            "assert": "no residual fixtures",
+            "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='t23fx' AND TABLE_NAME LIKE 't23fx_cm%'",
+            "rc": 0,
+            "output": "0",
+            "stderr": ""
+          }
+        ]
+      }
+    ],
+    "exit": 1,
+    "stdout": "{\"verdict\":\"reject\",\"coverage\":{\"status\":\"complete\"},\"summary\":{\"statements\":1,\"blockers\":1,\"warnings\":0,\"notices\":0},\"statements\":[{\"index\":0,\"kind\":\"ddl\",\"raw_sql\":\"CREATE TABLE t23fx.t23fx_cm1 (id BIGINT UNSIGNED PRIMARY KEY AUTO_RANDOM(5,64));\",\"normalized_sql\":\"CREATE TABLE t23fx.t23fx_cm1 (id BIGINT UNSIGNED PRIMARY KEY AUTO_RANDOM(5,64))\",\"findings\":[{\"rule_id\":\"ddl.tidb.table.auto_random.valid\",\"level\":\"blocker\",\"message\":\"auto_random column \\\"id\\\" requires a clustered primary key, but this primary key is not clustered\",\"statement_kind\":\"ddl\",\"location\":{\"line\":1,\"column\":1},\"suggestion\":\"use a clustered primary key or remove AUTO_RANDOM\",\"metadata\":{\"column\":\"id\",\"table\":\"t23fx_cm1\"},\"explanation\":{\"summary\":\"Check DDL tidb table auto random valid\",\"why\":\"The statement matched the shipped governance rule for this pattern.\",\"risk\":\"Ignoring this rule can weaken schema-governance guarantees and make changes harder to review safely.\",\"suggestion\":\"use a clustered primary key or remove AUTO_RANDOM\"}}],\"coverage\":{\"status\":\"complete\"}}],\"version\":{\"product\":\"tidb\",\"version\":\"8.5.0\",\"major\":8,\"minor\":5,\"patch\":0,\"source\":\"observed\",\"validated_range\":true},\"fail_on_triggered\":true,\"rule_summary\":{\"loaded\":13,\"applicable\":3,\"skipped\":[]},\"context\":{\"mode\":\"metadata-aware\",\"dialect\":\"tidb\",\"dialect_source\":\"detected\",\"schema\":\"t23fx\",\"schema_source\":\"flag\"}}\n",
+    "stderr": "",
+    "parsed": {
+      "verdict": "reject",
+      "coverage": {
+        "status": "complete"
+      },
+      "summary": {
+        "statements": 1,
+        "blockers": 1,
+        "warnings": 0,
+        "notices": 0
+      },
+      "statements": [
+        {
+          "index": 0,
+          "kind": "ddl",
+          "raw_sql": "CREATE TABLE t23fx.t23fx_cm1 (id BIGINT UNSIGNED PRIMARY KEY AUTO_RANDOM(5,64));",
+          "normalized_sql": "CREATE TABLE t23fx.t23fx_cm1 (id BIGINT UNSIGNED PRIMARY KEY AUTO_RANDOM(5,64))",
+          "findings": [
+            {
+              "rule_id": "ddl.tidb.table.auto_random.valid",
+              "level": "blocker",
+              "message": "auto_random column \"id\" requires a clustered primary key, but this primary key is not clustered",
+              "statement_kind": "ddl",
+              "location": {
+                "line": 1,
+                "column": 1
+              },
+              "suggestion": "use a clustered primary key or remove AUTO_RANDOM",
+              "metadata": {
+                "column": "id",
+                "table": "t23fx_cm1"
+              },
+              "explanation": {
+                "summary": "Check DDL tidb table auto random valid",
+                "why": "The statement matched the shipped governance rule for this pattern.",
+                "risk": "Ignoring this rule can weaken schema-governance guarantees and make changes harder to review safely.",
+                "suggestion": "use a clustered primary key or remove AUTO_RANDOM"
+              }
+            }
+          ],
+          "coverage": {
+            "status": "complete"
+          }
+        }
+      ],
+      "version": {
+        "product": "tidb",
+        "version": "8.5.0",
+        "major": 8,
+        "minor": 5,
+        "patch": 0,
+        "source": "observed",
+        "validated_range": true
+      },
+      "fail_on_triggered": true,
+      "rule_summary": {
+        "loaded": 13,
+        "applicable": 3,
+        "skipped": []
+      },
+      "context": {
+        "mode": "metadata-aware",
+        "dialect": "tidb",
+        "dialect_source": "detected",
+        "schema": "t23fx",
+        "schema_source": "flag"
+      }
+    },
+    "version_evidence": {
+      "target_raw": null,
+      "target_canonical": null,
+      "observed_raw": "8.0.11-TiDB-v8.5.0",
+      "observed_canonical": {
+        "product": "tidb",
+        "version": "8.5.0"
+      },
+      "resolved": {
+        "product": "tidb",
+        "version": "8.5.0",
+        "major": 8,
+        "minor": 5,
+        "patch": 0,
+        "source": "observed",
+        "validated_range": true
+      }
+    },
+    "instance_facts": {
+      "tidb_enable_clustered_index": "OFF",
+      "tidb_alter_primary_key": "false"
+    }
+  },
+  "assertions": [
+    {
+      "name": "database reachable with expected version",
+      "ok": true,
+      "detail": "SELECT VERSION() rc=0 version='8.0.11-TiDB-v8.5.0' expected_contains='v8.5.0'"
+    },
+    {
+      "name": "setup record clustered baseline return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "setup record clustered baseline: baseline is ON on this stack",
+      "ok": true,
+      "detail": "rc=0 output='ON' expected='ON'"
+    },
+    {
+      "name": "setup flip clustered mode off return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "setup flip clustered mode off: mode is off",
+      "ok": true,
+      "detail": "rc=0 output='OFF' expected='OFF'"
+    },
+    {
+      "name": "instance fact tidb_enable_clustered_index",
+      "ok": true,
+      "detail": "tidb_enable_clustered_index='OFF' expected='OFF'"
+    },
+    {
+      "name": "instance fact tidb_alter_primary_key",
+      "ok": true,
+      "detail": "tidb_alter_primary_key='false' expected='false'"
+    },
+    {
+      "name": "exit code",
+      "ok": true,
+      "detail": "rc=1 expected=1"
+    },
+    {
+      "name": "verdict",
+      "ok": true,
+      "detail": "verdict='reject'"
+    },
+    {
+      "name": "top-level statements",
+      "ok": true,
+      "detail": "statements=1 expected=1"
+    },
+    {
+      "name": "zero findings",
+      "ok": true,
+      "detail": "findings=1"
+    },
+    {
+      "name": "no diagnostics",
+      "ok": true,
+      "detail": "diagnostics=[]"
+    },
+    {
+      "name": "no unsupported",
+      "ok": true,
+      "detail": "unsupported=[]"
+    },
+    {
+      "name": "aggregate coverage",
+      "ok": true,
+      "detail": "coverage='complete'"
+    },
+    {
+      "name": "evidence gap count",
+      "ok": true,
+      "detail": "gaps=0"
+    },
+    {
+      "name": "finding entries",
+      "ok": true,
+      "detail": "findings=[(0, 'ddl.tidb.table.auto_random.valid', 'blocker')] expected=[(0, 'ddl.tidb.table.auto_random.valid', 'blocker')]"
+    },
+    {
+      "name": "post-verify audit created nothing under off",
+      "ok": true,
+      "detail": "rc=0 output='0' expected='0'"
+    },
+    {
+      "name": "execute native off refuses return code",
+      "ok": true,
+      "detail": "rc=1 expected=1 stderr='ERROR 8216 (HY000) at line 1: Invalid auto random: auto_random is only supported on the tables with clustered primary key'"
+    },
+    {
+      "name": "execute native off refuses: cm1 absent under off",
+      "ok": true,
+      "detail": "rc=0 output='0' expected='0'"
+    },
+    {
+      "name": "execute set clustered on return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "execute native on accepts return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "execute native on accepts: cm_on exists",
+      "ok": true,
+      "detail": "rc=0 output='1' expected='1'"
+    },
+    {
+      "name": "execute drop cm_on return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "execute set clustered int_only return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "execute native int_only accepts return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "execute native int_only accepts: cm_io exists",
+      "ok": true,
+      "detail": "rc=0 output='1' expected='1'"
+    },
+    {
+      "name": "execute drop cm_io return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "teardown restore clustered baseline ON return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "teardown restore clustered baseline ON: mode restored to ON",
+      "ok": true,
+      "detail": "rc=0 output='ON' expected='ON'"
+    },
+    {
+      "name": "teardown drop cm1 return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "teardown drop cm1: no residual fixtures",
+      "ok": true,
+      "detail": "rc=0 output='0' expected='0'"
+    }
+  ],
+  "status": "pass",
+  "command": [
+    "/private/tmp/t23r10-artifact/golden/T23/bin/deltascope",
+    "audit",
+    "--dialect",
+    "tidb",
+    "--sql",
+    "CREATE TABLE t23fx.t23fx_cm1 (id BIGINT UNSIGNED PRIMARY KEY AUTO_RANDOM(5,64));",
+    "--config",
+    "/private/tmp/t23r10-artifact/golden/T23/golden-policy.yaml",
+    "--format",
+    "json",
+    "--host",
+    "127.0.0.1",
+    "--port",
+    "24000",
+    "--user",
+    "root",
+    "--schema",
+    "t23fx",
+    "--fail-on",
+    "blocker"
+  ]
+}

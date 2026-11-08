@@ -1,0 +1,198 @@
+{
+  "case_id": "T23.cli.tidb-alter-split-index-bounded",
+  "kind": "cli_audit",
+  "cli_case": "tidb-alter-split-index-bounded",
+  "dialect": "tidb",
+  "input_sql": "ALTER TABLE t SPLIT INDEX ix BETWEEN (0) AND (100) REGIONS 4;",
+  "policy_profile": "t23-layout-id",
+  "policy_path": "/private/tmp/t23r10-artifact/golden/T23/golden-policy.yaml",
+  "command": [
+    "/private/tmp/t23r10-artifact/golden/T23/bin/deltascope",
+    "audit",
+    "--dialect",
+    "tidb",
+    "--sql",
+    "ALTER TABLE t SPLIT INDEX ix BETWEEN (0) AND (100) REGIONS 4;",
+    "--config",
+    "/private/tmp/t23r10-artifact/golden/T23/golden-policy.yaml",
+    "--format",
+    "json",
+    "--fail-on",
+    "blocker"
+  ],
+  "expected": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "coverage": "incomplete",
+    "unsupported": 1,
+    "unsupported_entries": [
+      {
+        "index": 0,
+        "feature": "alter_table.split_index",
+        "reason": "parsed by the shared parser but not covered by audited semantics"
+      }
+    ],
+    "evidence_gaps": 1,
+    "evidence_gap_entries": [
+      {
+        "index": 0,
+        "rule_id": "ddl.tidb.table.cache.valid",
+        "reason_code": "missing_instance_fact",
+        "required_facts": [
+          "table.cache_status"
+        ]
+      }
+    ]
+  },
+  "actual": {
+    "exit": 1,
+    "stdout": "{\"verdict\":\"review\",\"coverage\":{\"status\":\"incomplete\"},\"summary\":{\"statements\":1,\"blockers\":0,\"warnings\":0,\"notices\":0},\"statements\":[{\"index\":0,\"kind\":\"ddl\",\"raw_sql\":\"ALTER TABLE t SPLIT INDEX ix BETWEEN (0) AND (100) REGIONS 4;\",\"normalized_sql\":\"ALTER TABLE t SPLIT INDEX ix BETWEEN (0) AND (100) REGIONS 4\",\"evidence_gaps\":[{\"rule_id\":\"ddl.tidb.table.cache.valid\",\"reason_code\":\"missing_instance_fact\",\"required_facts\":[\"table.cache_status\"]}],\"coverage\":{\"status\":\"incomplete\"}}],\"unsupported\":[{\"feature\":\"alter_table.split_index\",\"sql\":\"ALTER TABLE t SPLIT INDEX ix BETWEEN (0) AND (100) REGIONS 4;\",\"reason\":\"parsed by the shared parser but not covered by audited semantics\",\"metadata\":{\"action\":\"split_index\",\"aspect\":\"action\"}}],\"diagnostics\":[{\"classification\":\"unsupported_statement\",\"reason\":\"DeltaScope recognized this statement or feature but does not audit it yet\",\"action_hint\":\"treat this statement as not covered by DeltaScope policy checks; review it manually or track support in a future DeltaScope release\",\"audited\":false,\"dialect\":\"tidb\"}],\"fail_on_triggered\":false,\"rule_summary\":{\"loaded\":13,\"applicable\":1,\"skipped\":[]},\"context\":{\"mode\":\"offline\",\"dialect\":\"tidb\",\"dialect_source\":\"flag\",\"note\":\"existence not checked (no database connection)\",\"unproven\":[\"column_exists\",\"table_exists\"]}}\n",
+    "stderr": "",
+    "parsed": {
+      "verdict": "review",
+      "coverage": {
+        "status": "incomplete"
+      },
+      "summary": {
+        "statements": 1,
+        "blockers": 0,
+        "warnings": 0,
+        "notices": 0
+      },
+      "statements": [
+        {
+          "index": 0,
+          "kind": "ddl",
+          "raw_sql": "ALTER TABLE t SPLIT INDEX ix BETWEEN (0) AND (100) REGIONS 4;",
+          "normalized_sql": "ALTER TABLE t SPLIT INDEX ix BETWEEN (0) AND (100) REGIONS 4",
+          "evidence_gaps": [
+            {
+              "rule_id": "ddl.tidb.table.cache.valid",
+              "reason_code": "missing_instance_fact",
+              "required_facts": [
+                "table.cache_status"
+              ]
+            }
+          ],
+          "coverage": {
+            "status": "incomplete"
+          }
+        }
+      ],
+      "unsupported": [
+        {
+          "feature": "alter_table.split_index",
+          "sql": "ALTER TABLE t SPLIT INDEX ix BETWEEN (0) AND (100) REGIONS 4;",
+          "reason": "parsed by the shared parser but not covered by audited semantics",
+          "metadata": {
+            "action": "split_index",
+            "aspect": "action"
+          }
+        }
+      ],
+      "diagnostics": [
+        {
+          "classification": "unsupported_statement",
+          "reason": "DeltaScope recognized this statement or feature but does not audit it yet",
+          "action_hint": "treat this statement as not covered by DeltaScope policy checks; review it manually or track support in a future DeltaScope release",
+          "audited": false,
+          "dialect": "tidb"
+        }
+      ],
+      "fail_on_triggered": false,
+      "rule_summary": {
+        "loaded": 13,
+        "applicable": 1,
+        "skipped": []
+      },
+      "context": {
+        "mode": "offline",
+        "dialect": "tidb",
+        "dialect_source": "flag",
+        "note": "existence not checked (no database connection)",
+        "unproven": [
+          "column_exists",
+          "table_exists"
+        ]
+      }
+    },
+    "version_evidence": {
+      "target_raw": null,
+      "target_canonical": null,
+      "observed_raw": null,
+      "observed_canonical": null,
+      "resolved": null
+    }
+  },
+  "assertions": [
+    {
+      "name": "exit code",
+      "ok": true,
+      "detail": "rc=1 expected=1"
+    },
+    {
+      "name": "verdict",
+      "ok": true,
+      "detail": "verdict='review'"
+    },
+    {
+      "name": "top-level statements",
+      "ok": true,
+      "detail": "statements=1 expected=1"
+    },
+    {
+      "name": "zero findings",
+      "ok": true,
+      "detail": "findings=0"
+    },
+    {
+      "name": "no diagnostics",
+      "ok": true,
+      "detail": "diagnostics=[{'classification': 'unsupported_statement', 'reason': 'DeltaScope recognized this statement or feature but does not audit it yet', 'action_hint': 'treat this statement as not covered by DeltaScope policy checks; review it manually or track support in a future DeltaScope release', 'audited': False, 'dialect': 'tidb'}]"
+    },
+    {
+      "name": "no unsupported",
+      "ok": true,
+      "detail": "unsupported=[{'feature': 'alter_table.split_index', 'sql': 'ALTER TABLE t SPLIT INDEX ix BETWEEN (0) AND (100) REGIONS 4;', 'reason': 'parsed by the shared parser but not covered by audited semantics', 'metadata': {'action': 'split_index', 'aspect': 'action'}}]"
+    },
+    {
+      "name": "aggregate coverage",
+      "ok": true,
+      "detail": "coverage='incomplete'"
+    },
+    {
+      "name": "unsupported entries",
+      "ok": true,
+      "detail": "entries=[(0, 'alter_table.split_index', 'parsed by the shared parser but not covered by audited semantics')] expected=[(0, 'alter_table.split_index', 'parsed by the shared parser but not covered by audited semantics')]"
+    },
+    {
+      "name": "unsupported sql identity index=0",
+      "ok": true,
+      "detail": "sql='ALTER TABLE t SPLIT INDEX ix BETWEEN (0) AND (100) REGIONS 4;' expected='ALTER TABLE t SPLIT INDEX ix BETWEEN (0) AND (100) REGIONS 4;'"
+    },
+    {
+      "name": "evidence gap count",
+      "ok": true,
+      "detail": "gaps=1"
+    },
+    {
+      "name": "evidence gap entries",
+      "ok": true,
+      "detail": "gaps=[(0, 'ddl.tidb.table.cache.valid', 'missing_instance_fact')] expected=[(0, 'ddl.tidb.table.cache.valid', 'missing_instance_fact')]"
+    },
+    {
+      "name": "evidence gap required_facts (0, 'ddl.tidb.table.cache.valid', 'missing_instance_fact')",
+      "ok": true,
+      "detail": "gaps=[{'rule_id': 'ddl.tidb.table.cache.valid', 'reason_code': 'missing_instance_fact', 'required_facts': ['table.cache_status']}] expected_facts=['table.cache_status']"
+    },
+    {
+      "name": "no gap encoded as finding",
+      "ok": true,
+      "detail": "findings carrying gap shape=[]"
+    }
+  ],
+  "status": "pass"
+}

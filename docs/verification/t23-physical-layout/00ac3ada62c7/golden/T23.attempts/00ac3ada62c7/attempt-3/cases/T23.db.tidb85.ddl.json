@@ -1,0 +1,88 @@
+{
+  "case_id": "T23.db.tidb85.ddl",
+  "kind": "db_ddl",
+  "anchor": "tidb85",
+  "input_sql": [
+    "DROP DATABASE IF EXISTS t23fx",
+    "CREATE DATABASE t23fx;CREATE TABLE t23fx.t (id INT PRIMARY KEY)"
+  ],
+  "expected": {
+    "steps": [
+      {
+        "name": "clear-task-fixture",
+        "rc": 0,
+        "verify": []
+      },
+      {
+        "name": "seed-fixture-schema",
+        "rc": 0,
+        "verify": [
+          {
+            "assert": "fixture table exists",
+            "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='t23fx' AND TABLE_NAME='t'",
+            "expect": "1"
+          }
+        ]
+      }
+    ]
+  },
+  "actual": {
+    "steps": [
+      {
+        "name": "clear-task-fixture",
+        "sql": "DROP DATABASE IF EXISTS t23fx",
+        "verify": [],
+        "rc": 1,
+        "stdout": "",
+        "stderr": "ERROR 1049 (42000): Unknown database 'golden'"
+      },
+      {
+        "name": "seed-fixture-schema",
+        "sql": "CREATE DATABASE t23fx;CREATE TABLE t23fx.t (id INT PRIMARY KEY)",
+        "verify": [
+          {
+            "assert": "fixture table exists",
+            "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='t23fx' AND TABLE_NAME='t'",
+            "rc": 0,
+            "output": "0",
+            "stderr": ""
+          }
+        ],
+        "rc": 1,
+        "stdout": "",
+        "stderr": "ERROR 1049 (42000): Unknown database 'golden'"
+      }
+    ],
+    "database": {
+      "product": "tidb",
+      "image": "pingcap/tidb:v8.5.0",
+      "image_digest": "pingcap/tidb@sha256:490861bd4a2fa643dbe76b77ffecafcad66e6a42774e580b82f4ec2429a80e57",
+      "container": "deltascope-ddl-golden-tidb85",
+      "reachable": true,
+      "version": "8.0.11-TiDB-v8.5.0"
+    }
+  },
+  "assertions": [
+    {
+      "name": "database reachable with expected version",
+      "ok": true,
+      "detail": "SELECT VERSION() rc=0 version='8.0.11-TiDB-v8.5.0' expected_contains='v8.5.0'"
+    },
+    {
+      "name": "clear-task-fixture return code",
+      "ok": false,
+      "detail": "rc=1 expected=0 stderr=\"ERROR 1049 (42000): Unknown database 'golden'\""
+    },
+    {
+      "name": "seed-fixture-schema return code",
+      "ok": false,
+      "detail": "rc=1 expected=0 stderr=\"ERROR 1049 (42000): Unknown database 'golden'\""
+    },
+    {
+      "name": "seed-fixture-schema: fixture table exists",
+      "ok": false,
+      "detail": "rc=0 output='0' expected='1'"
+    }
+  ],
+  "status": "fail"
+}

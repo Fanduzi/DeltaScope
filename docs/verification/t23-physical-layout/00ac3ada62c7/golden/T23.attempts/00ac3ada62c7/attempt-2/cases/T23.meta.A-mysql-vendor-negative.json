@@ -1,0 +1,376 @@
+{
+  "case_id": "T23.meta.A-mysql-vendor-negative",
+  "kind": "cli_metadata",
+  "cli_case": "A-mysql-vendor-negative",
+  "anchor": "mysql80",
+  "dialect": "mysql",
+  "input_sql": "CREATE TABLE t23fx.t23fx_mv1 (id BIGINT UNSIGNED PRIMARY KEY AUTO_RANDOM);\nCREATE TABLE t23fx.t23fx_mv2 (id BIGINT) SHARD_ROW_ID_BITS=4;",
+  "policy_profile": "t23-layout-id",
+  "policy_path": "/private/tmp/t23r10-artifact/golden/T23/golden-policy.yaml",
+  "connect": {
+    "host": "127.0.0.1",
+    "port": 23380,
+    "user": "root",
+    "schema": "t23fx",
+    "password_env": "DS_T23_GOLDEN_PW"
+  },
+  "expected": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 2,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 2,
+    "coverage": "incomplete",
+    "evidence_gaps": 0,
+    "finding_entries": [
+      {
+        "index": 0,
+        "rule_id": "ddl.table.primary_key.auto_increment.require",
+        "level": "blocker"
+      }
+    ],
+    "unsupported_entries": [
+      {
+        "index": 0,
+        "feature": "create_table.column.auto_random",
+        "reason": "parsed by the shared parser but outside the supported statement surface for this dialect"
+      },
+      {
+        "index": 1,
+        "feature": "create_table.option.shard_row_id_bits",
+        "reason": "parsed by the shared parser but outside the supported statement surface for this dialect"
+      }
+    ]
+  },
+  "actual": {
+    "database": {
+      "product": "mysql",
+      "image": "mysql:8.0.46",
+      "image_digest": "mysql@sha256:7dcddc01f13bab2f15cde676d44d01f61fc9f99fe7785e86196dfc07d358ae2b",
+      "container": "deltascope-ddl-golden-mysql80",
+      "reachable": true,
+      "version": "8.0.46"
+    },
+    "setup": [],
+    "post_verify": [
+      {
+        "assert": "audit created nothing on mysql80",
+        "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='t23fx' AND TABLE_NAME LIKE 't23fx_mv%'",
+        "rc": 0,
+        "output": "0",
+        "stderr": ""
+      }
+    ],
+    "execute": [
+      {
+        "name": "mysql refuses auto_random",
+        "sql": "CREATE TABLE t23fx.t23fx_mv1 (id BIGINT UNSIGNED PRIMARY KEY AUTO_RANDOM)",
+        "rc": 1,
+        "stdout": "",
+        "stderr": "ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'AUTO_RANDOM)' at line 1",
+        "verify": [
+          {
+            "assert": "mv1 absent",
+            "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='t23fx' AND TABLE_NAME='t23fx_mv1'",
+            "rc": 0,
+            "output": "0",
+            "stderr": ""
+          }
+        ]
+      },
+      {
+        "name": "mysql refuses shard",
+        "sql": "CREATE TABLE t23fx.t23fx_mv2 (id BIGINT) SHARD_ROW_ID_BITS=4",
+        "rc": 1,
+        "stdout": "",
+        "stderr": "ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'SHARD_ROW_ID_BITS=4' at line 1",
+        "verify": [
+          {
+            "assert": "mv2 absent",
+            "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='t23fx' AND TABLE_NAME='t23fx_mv2'",
+            "rc": 0,
+            "output": "0",
+            "stderr": ""
+          }
+        ]
+      }
+    ],
+    "structure": [],
+    "teardown": [
+      {
+        "name": "drop mv1",
+        "sql": "DROP TABLE IF EXISTS t23fx.t23fx_mv1",
+        "rc": 0,
+        "stderr": ""
+      },
+      {
+        "name": "drop mv2",
+        "sql": "DROP TABLE IF EXISTS t23fx.t23fx_mv2",
+        "rc": 0,
+        "stderr": ""
+      }
+    ],
+    "exit": 1,
+    "stdout": "{\"verdict\":\"reject\",\"coverage\":{\"status\":\"incomplete\"},\"summary\":{\"statements\":2,\"blockers\":1,\"warnings\":0,\"notices\":0},\"statements\":[{\"index\":0,\"kind\":\"ddl\",\"raw_sql\":\"CREATE TABLE t23fx.t23fx_mv1 (id BIGINT UNSIGNED PRIMARY KEY AUTO_RANDOM);\",\"normalized_sql\":\"CREATE TABLE t23fx.t23fx_mv1 (id BIGINT UNSIGNED PRIMARY KEY AUTO_RANDOM)\",\"findings\":[{\"rule_id\":\"ddl.table.primary_key.auto_increment.require\",\"level\":\"blocker\",\"message\":\"primary key column \\\"id\\\" must use auto_increment\",\"statement_kind\":\"ddl\",\"location\":{\"line\":1,\"column\":1},\"suggestion\":\"add AUTO_INCREMENT to the primary key column\",\"metadata\":{\"column\":\"id\",\"table\":\"t23fx_mv1\",\"type\":\"bigint(20) unsigned\"},\"explanation\":{\"summary\":\"Require DDL table primary key auto increment require\",\"why\":\"The statement is missing a clause, option, or object that the shipped policy requires.\",\"risk\":\"Ignoring this rule can weaken schema-governance guarantees and make changes harder to review safely.\",\"suggestion\":\"add AUTO_INCREMENT to the primary key column\"}}],\"coverage\":{\"status\":\"incomplete\"}},{\"index\":1,\"kind\":\"ddl\",\"raw_sql\":\"CREATE TABLE t23fx.t23fx_mv2 (id BIGINT) SHARD_ROW_ID_BITS=4;\",\"normalized_sql\":\"CREATE TABLE t23fx.t23fx_mv2 (id BIGINT) SHARD_ROW_ID_BITS=4\",\"coverage\":{\"status\":\"incomplete\"}}],\"unsupported\":[{\"feature\":\"create_table.column.auto_random\",\"sql\":\"CREATE TABLE t23fx.t23fx_mv1 (id BIGINT UNSIGNED PRIMARY KEY AUTO_RANDOM);\",\"reason\":\"parsed by the shared parser but outside the supported statement surface for this dialect\",\"metadata\":{\"aspect\":\"column\"}},{\"index\":1,\"feature\":\"create_table.option.shard_row_id_bits\",\"sql\":\"CREATE TABLE t23fx.t23fx_mv2 (id BIGINT) SHARD_ROW_ID_BITS=4;\",\"reason\":\"parsed by the shared parser but outside the supported statement surface for this dialect\",\"metadata\":{\"aspect\":\"option\"}}],\"diagnostics\":[{\"classification\":\"unsupported_statement\",\"reason\":\"DeltaScope recognized this statement or feature but does not audit it yet\",\"action_hint\":\"treat this statement as not covered by DeltaScope policy checks; review it manually or track support in a future DeltaScope release\",\"audited\":false,\"dialect\":\"mysql\"},{\"classification\":\"unsupported_statement\",\"reason\":\"DeltaScope recognized this statement or feature but does not audit it yet\",\"action_hint\":\"treat this statement as not covered by DeltaScope policy checks; review it manually or track support in a future DeltaScope release\",\"audited\":false,\"dialect\":\"mysql\"}],\"version\":{\"product\":\"mysql\",\"version\":\"8.0.46\",\"major\":8,\"minor\":0,\"patch\":46,\"source\":\"observed\",\"validated_range\":true},\"fail_on_triggered\":true,\"rule_summary\":{\"loaded\":13,\"applicable\":2,\"skipped\":[]},\"context\":{\"mode\":\"metadata-aware\",\"dialect\":\"mysql\",\"dialect_source\":\"detected\",\"schema\":\"t23fx\",\"schema_source\":\"flag\"}}\n",
+    "stderr": "",
+    "parsed": {
+      "verdict": "reject",
+      "coverage": {
+        "status": "incomplete"
+      },
+      "summary": {
+        "statements": 2,
+        "blockers": 1,
+        "warnings": 0,
+        "notices": 0
+      },
+      "statements": [
+        {
+          "index": 0,
+          "kind": "ddl",
+          "raw_sql": "CREATE TABLE t23fx.t23fx_mv1 (id BIGINT UNSIGNED PRIMARY KEY AUTO_RANDOM);",
+          "normalized_sql": "CREATE TABLE t23fx.t23fx_mv1 (id BIGINT UNSIGNED PRIMARY KEY AUTO_RANDOM)",
+          "findings": [
+            {
+              "rule_id": "ddl.table.primary_key.auto_increment.require",
+              "level": "blocker",
+              "message": "primary key column \"id\" must use auto_increment",
+              "statement_kind": "ddl",
+              "location": {
+                "line": 1,
+                "column": 1
+              },
+              "suggestion": "add AUTO_INCREMENT to the primary key column",
+              "metadata": {
+                "column": "id",
+                "table": "t23fx_mv1",
+                "type": "bigint(20) unsigned"
+              },
+              "explanation": {
+                "summary": "Require DDL table primary key auto increment require",
+                "why": "The statement is missing a clause, option, or object that the shipped policy requires.",
+                "risk": "Ignoring this rule can weaken schema-governance guarantees and make changes harder to review safely.",
+                "suggestion": "add AUTO_INCREMENT to the primary key column"
+              }
+            }
+          ],
+          "coverage": {
+            "status": "incomplete"
+          }
+        },
+        {
+          "index": 1,
+          "kind": "ddl",
+          "raw_sql": "CREATE TABLE t23fx.t23fx_mv2 (id BIGINT) SHARD_ROW_ID_BITS=4;",
+          "normalized_sql": "CREATE TABLE t23fx.t23fx_mv2 (id BIGINT) SHARD_ROW_ID_BITS=4",
+          "coverage": {
+            "status": "incomplete"
+          }
+        }
+      ],
+      "unsupported": [
+        {
+          "feature": "create_table.column.auto_random",
+          "sql": "CREATE TABLE t23fx.t23fx_mv1 (id BIGINT UNSIGNED PRIMARY KEY AUTO_RANDOM);",
+          "reason": "parsed by the shared parser but outside the supported statement surface for this dialect",
+          "metadata": {
+            "aspect": "column"
+          }
+        },
+        {
+          "index": 1,
+          "feature": "create_table.option.shard_row_id_bits",
+          "sql": "CREATE TABLE t23fx.t23fx_mv2 (id BIGINT) SHARD_ROW_ID_BITS=4;",
+          "reason": "parsed by the shared parser but outside the supported statement surface for this dialect",
+          "metadata": {
+            "aspect": "option"
+          }
+        }
+      ],
+      "diagnostics": [
+        {
+          "classification": "unsupported_statement",
+          "reason": "DeltaScope recognized this statement or feature but does not audit it yet",
+          "action_hint": "treat this statement as not covered by DeltaScope policy checks; review it manually or track support in a future DeltaScope release",
+          "audited": false,
+          "dialect": "mysql"
+        },
+        {
+          "classification": "unsupported_statement",
+          "reason": "DeltaScope recognized this statement or feature but does not audit it yet",
+          "action_hint": "treat this statement as not covered by DeltaScope policy checks; review it manually or track support in a future DeltaScope release",
+          "audited": false,
+          "dialect": "mysql"
+        }
+      ],
+      "version": {
+        "product": "mysql",
+        "version": "8.0.46",
+        "major": 8,
+        "minor": 0,
+        "patch": 46,
+        "source": "observed",
+        "validated_range": true
+      },
+      "fail_on_triggered": true,
+      "rule_summary": {
+        "loaded": 13,
+        "applicable": 2,
+        "skipped": []
+      },
+      "context": {
+        "mode": "metadata-aware",
+        "dialect": "mysql",
+        "dialect_source": "detected",
+        "schema": "t23fx",
+        "schema_source": "flag"
+      }
+    },
+    "version_evidence": {
+      "target_raw": null,
+      "target_canonical": null,
+      "observed_raw": "8.0.46",
+      "observed_canonical": {
+        "product": "mysql",
+        "version": "8.0.46"
+      },
+      "resolved": {
+        "product": "mysql",
+        "version": "8.0.46",
+        "major": 8,
+        "minor": 0,
+        "patch": 46,
+        "source": "observed",
+        "validated_range": true
+      }
+    }
+  },
+  "assertions": [
+    {
+      "name": "database reachable with expected version",
+      "ok": true,
+      "detail": "SELECT VERSION() rc=0 version='8.0.46' expected_contains='8.0.46'"
+    },
+    {
+      "name": "exit code",
+      "ok": true,
+      "detail": "rc=1 expected=1"
+    },
+    {
+      "name": "verdict",
+      "ok": true,
+      "detail": "verdict='reject'"
+    },
+    {
+      "name": "top-level statements",
+      "ok": true,
+      "detail": "statements=2 expected=2"
+    },
+    {
+      "name": "zero findings",
+      "ok": true,
+      "detail": "findings=1"
+    },
+    {
+      "name": "no diagnostics",
+      "ok": false,
+      "detail": "diagnostics=[{'classification': 'unsupported_statement', 'reason': 'DeltaScope recognized this statement or feature but does not audit it yet', 'action_hint': 'treat this statement as not covered by DeltaScope policy checks; review it manually or track support in a future DeltaScope release', 'audited': False, 'dialect': 'mysql'}, {'classification': 'unsupported_statement', 'reason': 'DeltaScope recognized this statement or feature but does not audit it yet', 'action_hint': 'treat this statement as not covered by DeltaScope policy checks; review it manually or track support in a future DeltaScope release', 'audited': False, 'dialect': 'mysql'}]"
+    },
+    {
+      "name": "no unsupported",
+      "ok": true,
+      "detail": "unsupported=[{'feature': 'create_table.column.auto_random', 'sql': 'CREATE TABLE t23fx.t23fx_mv1 (id BIGINT UNSIGNED PRIMARY KEY AUTO_RANDOM);', 'reason': 'parsed by the shared parser but outside the supported statement surface for this dialect', 'metadata': {'aspect': 'column'}}, {'index': 1, 'feature': 'create_table.option.shard_row_id_bits', 'sql': 'CREATE TABLE t23fx.t23fx_mv2 (id BIGINT) SHARD_ROW_ID_BITS=4;', 'reason': 'parsed by the shared parser but outside the supported statement surface for this dialect', 'metadata': {'aspect': 'option'}}]"
+    },
+    {
+      "name": "aggregate coverage",
+      "ok": true,
+      "detail": "coverage='incomplete'"
+    },
+    {
+      "name": "unsupported entries",
+      "ok": true,
+      "detail": "entries=[(0, 'create_table.column.auto_random', 'parsed by the shared parser but outside the supported statement surface for this dialect'), (1, 'create_table.option.shard_row_id_bits', 'parsed by the shared parser but outside the supported statement surface for this dialect')] expected=[(0, 'create_table.column.auto_random', 'parsed by the shared parser but outside the supported statement surface for this dialect'), (1, 'create_table.option.shard_row_id_bits', 'parsed by the shared parser but outside the supported statement surface for this dialect')]"
+    },
+    {
+      "name": "unsupported sql identity index=0",
+      "ok": true,
+      "detail": "sql='CREATE TABLE t23fx.t23fx_mv1 (id BIGINT UNSIGNED PRIMARY KEY AUTO_RANDOM);' expected='CREATE TABLE t23fx.t23fx_mv1 (id BIGINT UNSIGNED PRIMARY KEY AUTO_RANDOM);'"
+    },
+    {
+      "name": "unsupported sql identity index=1",
+      "ok": true,
+      "detail": "sql='CREATE TABLE t23fx.t23fx_mv2 (id BIGINT) SHARD_ROW_ID_BITS=4;' expected='CREATE TABLE t23fx.t23fx_mv2 (id BIGINT) SHARD_ROW_ID_BITS=4;'"
+    },
+    {
+      "name": "evidence gap count",
+      "ok": true,
+      "detail": "gaps=0"
+    },
+    {
+      "name": "finding entries",
+      "ok": true,
+      "detail": "findings=[(0, 'ddl.table.primary_key.auto_increment.require', 'blocker')] expected=[(0, 'ddl.table.primary_key.auto_increment.require', 'blocker')]"
+    },
+    {
+      "name": "post-verify audit created nothing on mysql80",
+      "ok": true,
+      "detail": "rc=0 output='0' expected='0'"
+    },
+    {
+      "name": "execute mysql refuses auto_random return code",
+      "ok": true,
+      "detail": "rc=1 expected=1 stderr=\"ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'AUTO_RANDOM)' at line 1\""
+    },
+    {
+      "name": "execute mysql refuses auto_random: mv1 absent",
+      "ok": true,
+      "detail": "rc=0 output='0' expected='0'"
+    },
+    {
+      "name": "execute mysql refuses shard return code",
+      "ok": true,
+      "detail": "rc=1 expected=1 stderr=\"ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'SHARD_ROW_ID_BITS=4' at line 1\""
+    },
+    {
+      "name": "execute mysql refuses shard: mv2 absent",
+      "ok": true,
+      "detail": "rc=0 output='0' expected='0'"
+    },
+    {
+      "name": "teardown drop mv1 return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "teardown drop mv2 return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    }
+  ],
+  "status": "fail",
+  "command": [
+    "/private/tmp/t23r10-artifact/golden/T23/bin/deltascope",
+    "audit",
+    "--dialect",
+    "mysql",
+    "--sql",
+    "CREATE TABLE t23fx.t23fx_mv1 (id BIGINT UNSIGNED PRIMARY KEY AUTO_RANDOM);\nCREATE TABLE t23fx.t23fx_mv2 (id BIGINT) SHARD_ROW_ID_BITS=4;",
+    "--config",
+    "/private/tmp/t23r10-artifact/golden/T23/golden-policy.yaml",
+    "--format",
+    "json",
+    "--host",
+    "127.0.0.1",
+    "--port",
+    "23380",
+    "--user",
+    "root",
+    "--password-env",
+    "DS_T23_GOLDEN_PW",
+    "--schema",
+    "t23fx",
+    "--fail-on",
+    "blocker"
+  ]
+}

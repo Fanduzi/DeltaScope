@@ -1,0 +1,170 @@
+{
+  "case_id": "T23.cli.tidb-compact-offline-gap",
+  "kind": "cli_audit",
+  "cli_case": "tidb-compact-offline-gap",
+  "dialect": "tidb",
+  "input_sql": "ALTER TABLE t COMPACT TIFLASH REPLICA;",
+  "policy_profile": "t23-layout-id",
+  "policy_path": "/private/tmp/t23r10-artifact/golden/T23/golden-policy.yaml",
+  "command": [
+    "/private/tmp/t23r10-artifact/golden/T23/bin/deltascope",
+    "audit",
+    "--dialect",
+    "tidb",
+    "--sql",
+    "ALTER TABLE t COMPACT TIFLASH REPLICA;",
+    "--config",
+    "/private/tmp/t23r10-artifact/golden/T23/golden-policy.yaml",
+    "--format",
+    "json",
+    "--fail-on",
+    "blocker"
+  ],
+  "expected": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "evidence_gaps": 1,
+    "evidence_gap_entries": [
+      {
+        "index": 0,
+        "rule_id": "ddl.tidb.table.compact.valid",
+        "reason_code": "missing_instance_fact",
+        "required_facts": [
+          "instance.tikv_compatible_storage"
+        ]
+      }
+    ],
+    "gap_entries": [
+      {
+        "index": 0,
+        "rule_id": "ddl.tidb.table.compact.valid",
+        "required_facts": [
+          "instance.tikv_compatible_storage"
+        ]
+      }
+    ]
+  },
+  "actual": {
+    "exit": 0,
+    "stdout": "{\"verdict\":\"review\",\"coverage\":{\"status\":\"unverified\"},\"summary\":{\"statements\":1,\"blockers\":0,\"warnings\":0,\"notices\":0},\"statements\":[{\"index\":0,\"kind\":\"ddl\",\"raw_sql\":\"ALTER TABLE t COMPACT TIFLASH REPLICA;\",\"normalized_sql\":\"ALTER TABLE t COMPACT TIFLASH REPLICA\",\"evidence_gaps\":[{\"rule_id\":\"ddl.tidb.table.compact.valid\",\"reason_code\":\"missing_instance_fact\",\"required_facts\":[\"instance.tikv_compatible_storage\"]}],\"coverage\":{\"status\":\"unverified\"}}],\"fail_on_triggered\":false,\"rule_summary\":{\"loaded\":13,\"applicable\":2,\"skipped\":[]},\"context\":{\"mode\":\"offline\",\"dialect\":\"tidb\",\"dialect_source\":\"flag\",\"note\":\"existence not checked (no database connection)\",\"unproven\":[\"column_exists\",\"table_exists\"]}}\n",
+    "stderr": "",
+    "parsed": {
+      "verdict": "review",
+      "coverage": {
+        "status": "unverified"
+      },
+      "summary": {
+        "statements": 1,
+        "blockers": 0,
+        "warnings": 0,
+        "notices": 0
+      },
+      "statements": [
+        {
+          "index": 0,
+          "kind": "ddl",
+          "raw_sql": "ALTER TABLE t COMPACT TIFLASH REPLICA;",
+          "normalized_sql": "ALTER TABLE t COMPACT TIFLASH REPLICA",
+          "evidence_gaps": [
+            {
+              "rule_id": "ddl.tidb.table.compact.valid",
+              "reason_code": "missing_instance_fact",
+              "required_facts": [
+                "instance.tikv_compatible_storage"
+              ]
+            }
+          ],
+          "coverage": {
+            "status": "unverified"
+          }
+        }
+      ],
+      "fail_on_triggered": false,
+      "rule_summary": {
+        "loaded": 13,
+        "applicable": 2,
+        "skipped": []
+      },
+      "context": {
+        "mode": "offline",
+        "dialect": "tidb",
+        "dialect_source": "flag",
+        "note": "existence not checked (no database connection)",
+        "unproven": [
+          "column_exists",
+          "table_exists"
+        ]
+      }
+    },
+    "version_evidence": {
+      "target_raw": null,
+      "target_canonical": null,
+      "observed_raw": null,
+      "observed_canonical": null,
+      "resolved": null
+    }
+  },
+  "assertions": [
+    {
+      "name": "exit code",
+      "ok": true,
+      "detail": "rc=0 expected=0"
+    },
+    {
+      "name": "verdict",
+      "ok": true,
+      "detail": "verdict='review'"
+    },
+    {
+      "name": "top-level statements",
+      "ok": true,
+      "detail": "statements=1 expected=1"
+    },
+    {
+      "name": "zero findings",
+      "ok": true,
+      "detail": "findings=0"
+    },
+    {
+      "name": "no diagnostics",
+      "ok": true,
+      "detail": "diagnostics=[]"
+    },
+    {
+      "name": "no unsupported",
+      "ok": true,
+      "detail": "unsupported=[]"
+    },
+    {
+      "name": "aggregate coverage",
+      "ok": true,
+      "detail": "coverage='unverified'"
+    },
+    {
+      "name": "evidence gap count",
+      "ok": true,
+      "detail": "gaps=1"
+    },
+    {
+      "name": "evidence gap entries",
+      "ok": true,
+      "detail": "gaps=[(0, 'ddl.tidb.table.compact.valid', 'missing_instance_fact')] expected=[(0, 'ddl.tidb.table.compact.valid', 'missing_instance_fact')]"
+    },
+    {
+      "name": "evidence gap required_facts (0, 'ddl.tidb.table.compact.valid', 'missing_instance_fact')",
+      "ok": true,
+      "detail": "gaps=[{'rule_id': 'ddl.tidb.table.compact.valid', 'reason_code': 'missing_instance_fact', 'required_facts': ['instance.tikv_compatible_storage']}] expected_facts=['instance.tikv_compatible_storage']"
+    },
+    {
+      "name": "no gap encoded as finding",
+      "ok": true,
+      "detail": "findings carrying gap shape=[]"
+    }
+  ],
+  "status": "pass"
+}

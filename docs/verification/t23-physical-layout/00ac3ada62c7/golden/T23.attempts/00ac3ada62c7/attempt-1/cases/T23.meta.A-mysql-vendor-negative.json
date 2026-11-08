@@ -1,0 +1,69 @@
+{
+  "case_id": "T23.meta.A-mysql-vendor-negative",
+  "kind": "cli_metadata",
+  "cli_case": "A-mysql-vendor-negative",
+  "anchor": "mysql80",
+  "dialect": "mysql",
+  "input_sql": "CREATE TABLE t23fx.t23fx_mv1 (id BIGINT UNSIGNED PRIMARY KEY AUTO_RANDOM);\nCREATE TABLE t23fx.t23fx_mv2 (id BIGINT) SHARD_ROW_ID_BITS=4;",
+  "policy_profile": "t23-layout-id",
+  "policy_path": "/private/tmp/t23r10-artifact/golden/T23/golden-policy.yaml",
+  "connect": {
+    "host": "127.0.0.1",
+    "port": 23380,
+    "user": "root",
+    "schema": "t23fx",
+    "password_env": "DS_T23_GOLDEN_PW"
+  },
+  "expected": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 2,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 2,
+    "coverage": "incomplete",
+    "evidence_gaps": 0,
+    "finding_entries": [
+      {
+        "index": 0,
+        "rule_id": "ddl.table.primary_key.auto_increment.require",
+        "level": "blocker"
+      }
+    ],
+    "unsupported_entries": [
+      {
+        "index": 0,
+        "feature": "create_table.column.auto_random",
+        "reason": "parsed by the shared parser but outside the supported statement surface for this dialect"
+      },
+      {
+        "index": 1,
+        "feature": "create_table.option.shard_row_id_bits",
+        "reason": "parsed by the shared parser but outside the supported statement surface for this dialect"
+      }
+    ]
+  },
+  "actual": {
+    "database": {
+      "product": "mysql",
+      "image": "mysql:8.0.46",
+      "image_digest": "mysql@sha256:7dcddc01f13bab2f15cde676d44d01f61fc9f99fe7785e86196dfc07d358ae2b",
+      "container": "deltascope-ddl-golden-mysql80",
+      "reachable": false,
+      "version": ""
+    },
+    "setup": [],
+    "post_verify": [],
+    "execute": [],
+    "structure": [],
+    "teardown": []
+  },
+  "assertions": [
+    {
+      "name": "database reachable with expected version",
+      "ok": false,
+      "detail": "SELECT VERSION() rc=1 version='' expected_contains='8.0.46'"
+    }
+  ],
+  "status": "fail"
+}

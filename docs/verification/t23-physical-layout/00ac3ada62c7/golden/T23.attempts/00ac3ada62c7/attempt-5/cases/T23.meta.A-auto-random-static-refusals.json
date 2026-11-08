@@ -1,0 +1,867 @@
+{
+  "case_id": "T23.meta.A-auto-random-static-refusals",
+  "kind": "cli_metadata",
+  "cli_case": "A-auto-random-static-refusals",
+  "anchor": "tidb85",
+  "dialect": "tidb",
+  "input_sql": "CREATE TABLE t23fx.t23fx_ref1 (id INT UNSIGNED PRIMARY KEY AUTO_RANDOM);\nCREATE TABLE t23fx.t23fx_ref2 (id BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT AUTO_RANDOM);\nCREATE TABLE t23fx.t23fx_ref3 (id BIGINT UNSIGNED PRIMARY KEY AUTO_RANDOM DEFAULT 7);\nCREATE TABLE t23fx.t23fx_ref4 (id BIGINT UNSIGNED PRIMARY KEY AUTO_RANDOM(16,64));\nCREATE TABLE t23fx.t23fx_ref5 (id BIGINT UNSIGNED PRIMARY KEY AUTO_RANDOM(5,31));\nCREATE TABLE t23fx.t23fx_ref6 (id BIGINT UNSIGNED PRIMARY KEY AUTO_RANDOM(15,41));\nCREATE TABLE t23fx.t23fx_ref7 (id BIGINT UNSIGNED PRIMARY KEY NONCLUSTERED AUTO_RANDOM);\nCREATE TABLE t23fx.t23fx_ref8 (v INT, id BIGINT UNSIGNED AUTO_RANDOM, PRIMARY KEY(v,id));",
+  "policy_profile": "t23-layout-id",
+  "policy_path": "/private/tmp/t23r10-artifact/golden/T23/golden-policy.yaml",
+  "connect": {
+    "host": "127.0.0.1",
+    "port": 24000,
+    "user": "root",
+    "schema": "t23fx"
+  },
+  "expected": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 8,
+    "findings": 8,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "evidence_gaps": 0,
+    "finding_entries": [
+      {
+        "index": 0,
+        "rule_id": "ddl.tidb.table.auto_random.valid",
+        "level": "blocker"
+      },
+      {
+        "index": 1,
+        "rule_id": "ddl.tidb.table.auto_random.valid",
+        "level": "blocker"
+      },
+      {
+        "index": 2,
+        "rule_id": "ddl.tidb.table.auto_random.valid",
+        "level": "blocker"
+      },
+      {
+        "index": 3,
+        "rule_id": "ddl.tidb.table.auto_random.valid",
+        "level": "blocker"
+      },
+      {
+        "index": 4,
+        "rule_id": "ddl.tidb.table.auto_random.valid",
+        "level": "blocker"
+      },
+      {
+        "index": 5,
+        "rule_id": "ddl.tidb.table.auto_random.valid",
+        "level": "blocker"
+      },
+      {
+        "index": 6,
+        "rule_id": "ddl.tidb.table.auto_random.valid",
+        "level": "blocker"
+      },
+      {
+        "index": 7,
+        "rule_id": "ddl.tidb.table.auto_random.valid",
+        "level": "blocker"
+      }
+    ]
+  },
+  "actual": {
+    "database": {
+      "product": "tidb",
+      "image": "pingcap/tidb:v8.5.0",
+      "image_digest": "pingcap/tidb@sha256:490861bd4a2fa643dbe76b77ffecafcad66e6a42774e580b82f4ec2429a80e57",
+      "container": "deltascope-ddl-golden-tidb85",
+      "reachable": true,
+      "version": "8.0.11-TiDB-v8.5.0"
+    },
+    "setup": [
+      {
+        "name": "record clustered baseline",
+        "sql": "SELECT @@global.tidb_enable_clustered_index",
+        "rc": 0,
+        "stdout": "@@global.tidb_enable_clustered_index\nON",
+        "stderr": "",
+        "verify": [
+          {
+            "assert": "baseline is ON on this stack",
+            "sql": "SELECT @@global.tidb_enable_clustered_index",
+            "rc": 0,
+            "output": "ON",
+            "stderr": ""
+          }
+        ]
+      },
+      {
+        "name": "set clustered int_only for case",
+        "sql": "SET GLOBAL tidb_enable_clustered_index='int_only'",
+        "rc": 0,
+        "stdout": "",
+        "stderr": "",
+        "verify": [
+          {
+            "assert": "mode is int_only",
+            "sql": "SELECT @@global.tidb_enable_clustered_index",
+            "rc": 0,
+            "output": "INT_ONLY",
+            "stderr": ""
+          }
+        ]
+      }
+    ],
+    "post_verify": [
+      {
+        "assert": "audit created nothing",
+        "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='t23fx' AND TABLE_NAME LIKE 't23fx_ref%'",
+        "rc": 0,
+        "output": "0",
+        "stderr": ""
+      }
+    ],
+    "execute": [
+      {
+        "name": "native ref1 refused",
+        "sql": "CREATE TABLE t23fx.t23fx_ref1 (id INT UNSIGNED PRIMARY KEY AUTO_RANDOM)",
+        "rc": 1,
+        "stdout": "",
+        "stderr": "ERROR 8216 (HY000) at line 1: Invalid auto random: auto_random option must be defined on `bigint` column, but not on `int` column",
+        "verify": [
+          {
+            "assert": "ref1 absent after refusal",
+            "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='t23fx' AND TABLE_NAME='t23fx_ref1'",
+            "rc": 0,
+            "output": "0",
+            "stderr": ""
+          }
+        ]
+      },
+      {
+        "name": "native ref2 refused",
+        "sql": "CREATE TABLE t23fx.t23fx_ref2 (id BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT AUTO_RANDOM)",
+        "rc": 1,
+        "stdout": "",
+        "stderr": "ERROR 8216 (HY000) at line 1: Invalid auto random: auto_random is incompatible with auto_increment",
+        "verify": [
+          {
+            "assert": "ref2 absent after refusal",
+            "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='t23fx' AND TABLE_NAME='t23fx_ref2'",
+            "rc": 0,
+            "output": "0",
+            "stderr": ""
+          }
+        ]
+      },
+      {
+        "name": "native ref3 refused",
+        "sql": "CREATE TABLE t23fx.t23fx_ref3 (id BIGINT UNSIGNED PRIMARY KEY AUTO_RANDOM DEFAULT 7)",
+        "rc": 1,
+        "stdout": "",
+        "stderr": "ERROR 8216 (HY000) at line 1: Invalid auto random: auto_random is incompatible with default",
+        "verify": [
+          {
+            "assert": "ref3 absent after refusal",
+            "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='t23fx' AND TABLE_NAME='t23fx_ref3'",
+            "rc": 0,
+            "output": "0",
+            "stderr": ""
+          }
+        ]
+      },
+      {
+        "name": "native ref4 refused",
+        "sql": "CREATE TABLE t23fx.t23fx_ref4 (id BIGINT UNSIGNED PRIMARY KEY AUTO_RANDOM(16,64))",
+        "rc": 1,
+        "stdout": "",
+        "stderr": "ERROR 8216 (HY000) at line 1: Invalid auto random: max allowed auto_random shard bits is 15, but got 16 on column `id`",
+        "verify": [
+          {
+            "assert": "ref4 absent after refusal",
+            "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='t23fx' AND TABLE_NAME='t23fx_ref4'",
+            "rc": 0,
+            "output": "0",
+            "stderr": ""
+          }
+        ]
+      },
+      {
+        "name": "native ref5 refused",
+        "sql": "CREATE TABLE t23fx.t23fx_ref5 (id BIGINT UNSIGNED PRIMARY KEY AUTO_RANDOM(5,31))",
+        "rc": 1,
+        "stdout": "",
+        "stderr": "ERROR 8216 (HY000) at line 1: Invalid auto random: auto_random range bits must be between 32 and 64, but got 31",
+        "verify": [
+          {
+            "assert": "ref5 absent after refusal",
+            "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='t23fx' AND TABLE_NAME='t23fx_ref5'",
+            "rc": 0,
+            "output": "0",
+            "stderr": ""
+          }
+        ]
+      },
+      {
+        "name": "native ref6 refused",
+        "sql": "CREATE TABLE t23fx.t23fx_ref6 (id BIGINT UNSIGNED PRIMARY KEY AUTO_RANDOM(15,41))",
+        "rc": 1,
+        "stdout": "",
+        "stderr": "ERROR 8216 (HY000) at line 1: Invalid auto random: auto_random ID space is too small, please decrease the shard bits or increase the range bits",
+        "verify": [
+          {
+            "assert": "ref6 absent after refusal",
+            "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='t23fx' AND TABLE_NAME='t23fx_ref6'",
+            "rc": 0,
+            "output": "0",
+            "stderr": ""
+          }
+        ]
+      },
+      {
+        "name": "native ref7 refused",
+        "sql": "CREATE TABLE t23fx.t23fx_ref7 (id BIGINT UNSIGNED PRIMARY KEY NONCLUSTERED AUTO_RANDOM)",
+        "rc": 1,
+        "stdout": "",
+        "stderr": "ERROR 8216 (HY000) at line 1: Invalid auto random: auto_random is only supported on the tables with clustered primary key",
+        "verify": [
+          {
+            "assert": "ref7 absent after refusal",
+            "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='t23fx' AND TABLE_NAME='t23fx_ref7'",
+            "rc": 0,
+            "output": "0",
+            "stderr": ""
+          }
+        ]
+      },
+      {
+        "name": "native ref8 refused",
+        "sql": "CREATE TABLE t23fx.t23fx_ref8 (v INT, id BIGINT UNSIGNED AUTO_RANDOM, PRIMARY KEY(v,id))",
+        "rc": 1,
+        "stdout": "",
+        "stderr": "ERROR 8216 (HY000) at line 1: Invalid auto random: auto_random is only supported on the tables with clustered primary key",
+        "verify": [
+          {
+            "assert": "ref8 absent after refusal",
+            "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='t23fx' AND TABLE_NAME='t23fx_ref8'",
+            "rc": 0,
+            "output": "0",
+            "stderr": ""
+          }
+        ]
+      }
+    ],
+    "structure": [],
+    "teardown": [
+      {
+        "name": "restore clustered baseline ON",
+        "sql": "SET GLOBAL tidb_enable_clustered_index='ON'",
+        "rc": 0,
+        "stderr": "",
+        "verify": [
+          {
+            "assert": "mode restored to ON",
+            "sql": "SELECT @@global.tidb_enable_clustered_index",
+            "rc": 0,
+            "output": "ON",
+            "stderr": ""
+          }
+        ]
+      },
+      {
+        "name": "drop ref1",
+        "sql": "DROP TABLE IF EXISTS t23fx.t23fx_ref1",
+        "rc": 0,
+        "stderr": ""
+      },
+      {
+        "name": "drop ref2",
+        "sql": "DROP TABLE IF EXISTS t23fx.t23fx_ref2",
+        "rc": 0,
+        "stderr": ""
+      },
+      {
+        "name": "drop ref3",
+        "sql": "DROP TABLE IF EXISTS t23fx.t23fx_ref3",
+        "rc": 0,
+        "stderr": ""
+      },
+      {
+        "name": "drop ref4",
+        "sql": "DROP TABLE IF EXISTS t23fx.t23fx_ref4",
+        "rc": 0,
+        "stderr": ""
+      },
+      {
+        "name": "drop ref5",
+        "sql": "DROP TABLE IF EXISTS t23fx.t23fx_ref5",
+        "rc": 0,
+        "stderr": ""
+      },
+      {
+        "name": "drop ref6",
+        "sql": "DROP TABLE IF EXISTS t23fx.t23fx_ref6",
+        "rc": 0,
+        "stderr": ""
+      },
+      {
+        "name": "drop ref7",
+        "sql": "DROP TABLE IF EXISTS t23fx.t23fx_ref7",
+        "rc": 0,
+        "stderr": ""
+      },
+      {
+        "name": "drop ref8",
+        "sql": "DROP TABLE IF EXISTS t23fx.t23fx_ref8",
+        "rc": 0,
+        "stderr": ""
+      }
+    ],
+    "exit": 1,
+    "stdout": "{\"verdict\":\"reject\",\"coverage\":{\"status\":\"complete\"},\"summary\":{\"statements\":8,\"blockers\":8,\"warnings\":0,\"notices\":0},\"statements\":[{\"index\":0,\"kind\":\"ddl\",\"raw_sql\":\"CREATE TABLE t23fx.t23fx_ref1 (id INT UNSIGNED PRIMARY KEY AUTO_RANDOM);\",\"normalized_sql\":\"CREATE TABLE t23fx.t23fx_ref1 (id INT UNSIGNED PRIMARY KEY AUTO_RANDOM)\",\"findings\":[{\"rule_id\":\"ddl.tidb.table.auto_random.valid\",\"level\":\"blocker\",\"message\":\"auto_random column \\\"id\\\" must be BIGINT: TiDB supports AUTO_RANDOM only on BIGINT columns\",\"statement_kind\":\"ddl\",\"location\":{\"line\":1,\"column\":1},\"suggestion\":\"change the column type to BIGINT\",\"metadata\":{\"column\":\"id\",\"table\":\"t23fx_ref1\"},\"explanation\":{\"summary\":\"Check DDL tidb table auto random valid\",\"why\":\"The statement matched the shipped governance rule for this pattern.\",\"risk\":\"Ignoring this rule can weaken schema-governance guarantees and make changes harder to review safely.\",\"suggestion\":\"change the column type to BIGINT\"}}],\"coverage\":{\"status\":\"complete\"}},{\"index\":1,\"kind\":\"ddl\",\"raw_sql\":\"CREATE TABLE t23fx.t23fx_ref2 (id BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT AUTO_RANDOM);\",\"normalized_sql\":\"CREATE TABLE t23fx.t23fx_ref2 (id BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT AUTO_RANDOM)\",\"findings\":[{\"rule_id\":\"ddl.tidb.table.auto_random.valid\",\"level\":\"blocker\",\"message\":\"auto_random column \\\"id\\\" cannot combine AUTO_RANDOM with AUTO_INCREMENT\",\"statement_index\":1,\"statement_kind\":\"ddl\",\"location\":{\"line\":2,\"column\":1},\"suggestion\":\"remove AUTO_INCREMENT from the column\",\"metadata\":{\"column\":\"id\",\"table\":\"t23fx_ref2\"},\"explanation\":{\"summary\":\"Check DDL tidb table auto random valid\",\"why\":\"The statement matched the shipped governance rule for this pattern.\",\"risk\":\"Ignoring this rule can weaken schema-governance guarantees and make changes harder to review safely.\",\"suggestion\":\"remove AUTO_INCREMENT from the column\"}}],\"coverage\":{\"status\":\"complete\"}},{\"index\":2,\"kind\":\"ddl\",\"raw_sql\":\"CREATE TABLE t23fx.t23fx_ref3 (id BIGINT UNSIGNED PRIMARY KEY AUTO_RANDOM DEFAULT 7);\",\"normalized_sql\":\"CREATE TABLE t23fx.t23fx_ref3 (id BIGINT UNSIGNED PRIMARY KEY AUTO_RANDOM DEFAULT 7)\",\"findings\":[{\"rule_id\":\"ddl.tidb.table.auto_random.valid\",\"level\":\"blocker\",\"message\":\"auto_random column \\\"id\\\" cannot combine AUTO_RANDOM with an explicit DEFAULT\",\"statement_index\":2,\"statement_kind\":\"ddl\",\"location\":{\"line\":3,\"column\":1},\"suggestion\":\"remove the DEFAULT clause from the column\",\"metadata\":{\"column\":\"id\",\"table\":\"t23fx_ref3\"},\"explanation\":{\"summary\":\"Check DDL tidb table auto random valid\",\"why\":\"The statement matched the shipped governance rule for this pattern.\",\"risk\":\"Ignoring this rule can weaken schema-governance guarantees and make changes harder to review safely.\",\"suggestion\":\"remove the DEFAULT clause from the column\"}}],\"coverage\":{\"status\":\"complete\"}},{\"index\":3,\"kind\":\"ddl\",\"raw_sql\":\"CREATE TABLE t23fx.t23fx_ref4 (id BIGINT UNSIGNED PRIMARY KEY AUTO_RANDOM(16,64));\",\"normalized_sql\":\"CREATE TABLE t23fx.t23fx_ref4 (id BIGINT UNSIGNED PRIMARY KEY AUTO_RANDOM(16,64))\",\"findings\":[{\"rule_id\":\"ddl.tidb.table.auto_random.valid\",\"level\":\"blocker\",\"message\":\"auto_random column \\\"id\\\" has shard bits 16 outside the allowed range 1..15\",\"statement_index\":3,\"statement_kind\":\"ddl\",\"location\":{\"line\":4,\"column\":1},\"suggestion\":\"choose AUTO_RANDOM shard bits between 1 and 15\",\"metadata\":{\"column\":\"id\",\"table\":\"t23fx_ref4\"},\"explanation\":{\"summary\":\"Check DDL tidb table auto random valid\",\"why\":\"The statement matched the shipped governance rule for this pattern.\",\"risk\":\"Ignoring this rule can weaken schema-governance guarantees and make changes harder to review safely.\",\"suggestion\":\"choose AUTO_RANDOM shard bits between 1 and 15\"}}],\"coverage\":{\"status\":\"complete\"}},{\"index\":4,\"kind\":\"ddl\",\"raw_sql\":\"CREATE TABLE t23fx.t23fx_ref5 (id BIGINT UNSIGNED PRIMARY KEY AUTO_RANDOM(5,31));\",\"normalized_sql\":\"CREATE TABLE t23fx.t23fx_ref5 (id BIGINT UNSIGNED PRIMARY KEY AUTO_RANDOM(5,31))\",\"findings\":[{\"rule_id\":\"ddl.tidb.table.auto_random.valid\",\"level\":\"blocker\",\"message\":\"auto_random column \\\"id\\\" has range bits 31 outside the allowed range 32..64\",\"statement_index\":4,\"statement_kind\":\"ddl\",\"location\":{\"line\":5,\"column\":1},\"suggestion\":\"choose AUTO_RANDOM range bits between 32 and 64\",\"metadata\":{\"column\":\"id\",\"table\":\"t23fx_ref5\"},\"explanation\":{\"summary\":\"Check DDL tidb table auto random valid\",\"why\":\"The statement matched the shipped governance rule for this pattern.\",\"risk\":\"Ignoring this rule can weaken schema-governance guarantees and make changes harder to review safely.\",\"suggestion\":\"choose AUTO_RANDOM range bits between 32 and 64\"}}],\"coverage\":{\"status\":\"complete\"}},{\"index\":5,\"kind\":\"ddl\",\"raw_sql\":\"CREATE TABLE t23fx.t23fx_ref6 (id BIGINT UNSIGNED PRIMARY KEY AUTO_RANDOM(15,41));\",\"normalized_sql\":\"CREATE TABLE t23fx.t23fx_ref6 (id BIGINT UNSIGNED PRIMARY KEY AUTO_RANDOM(15,41))\",\"findings\":[{\"rule_id\":\"ddl.tidb.table.auto_random.valid\",\"level\":\"blocker\",\"message\":\"auto_random column \\\"id\\\" leaves only 26 incremental bits; TiDB requires at least 27\",\"statement_index\":5,\"statement_kind\":\"ddl\",\"location\":{\"line\":6,\"column\":1},\"suggestion\":\"reduce the shard bits or raise the range bits\",\"metadata\":{\"column\":\"id\",\"table\":\"t23fx_ref6\"},\"explanation\":{\"summary\":\"Check DDL tidb table auto random valid\",\"why\":\"The statement matched the shipped governance rule for this pattern.\",\"risk\":\"Ignoring this rule can weaken schema-governance guarantees and make changes harder to review safely.\",\"suggestion\":\"reduce the shard bits or raise the range bits\"}}],\"coverage\":{\"status\":\"complete\"}},{\"index\":6,\"kind\":\"ddl\",\"raw_sql\":\"CREATE TABLE t23fx.t23fx_ref7 (id BIGINT UNSIGNED PRIMARY KEY NONCLUSTERED AUTO_RANDOM);\",\"normalized_sql\":\"CREATE TABLE t23fx.t23fx_ref7 (id BIGINT UNSIGNED PRIMARY KEY NONCLUSTERED AUTO_RANDOM)\",\"findings\":[{\"rule_id\":\"ddl.tidb.table.auto_random.valid\",\"level\":\"blocker\",\"message\":\"auto_random column \\\"id\\\" requires a clustered primary key, but this primary key is not clustered\",\"statement_index\":6,\"statement_kind\":\"ddl\",\"location\":{\"line\":7,\"column\":1},\"suggestion\":\"use a clustered primary key or remove AUTO_RANDOM\",\"metadata\":{\"column\":\"id\",\"table\":\"t23fx_ref7\"},\"explanation\":{\"summary\":\"Check DDL tidb table auto random valid\",\"why\":\"The statement matched the shipped governance rule for this pattern.\",\"risk\":\"Ignoring this rule can weaken schema-governance guarantees and make changes harder to review safely.\",\"suggestion\":\"use a clustered primary key or remove AUTO_RANDOM\"}}],\"coverage\":{\"status\":\"complete\"}},{\"index\":7,\"kind\":\"ddl\",\"raw_sql\":\"CREATE TABLE t23fx.t23fx_ref8 (v INT, id BIGINT UNSIGNED AUTO_RANDOM, PRIMARY KEY(v,id));\",\"normalized_sql\":\"CREATE TABLE t23fx.t23fx_ref8 (v INT, id BIGINT UNSIGNED AUTO_RANDOM, PRIMARY KEY(v,id))\",\"findings\":[{\"rule_id\":\"ddl.tidb.table.auto_random.valid\",\"level\":\"blocker\",\"message\":\"auto_random column \\\"id\\\" must be the first primary key column (the row handle on TiDB)\",\"statement_index\":7,\"statement_kind\":\"ddl\",\"location\":{\"line\":8,\"column\":1},\"suggestion\":\"list this column first in the primary key\",\"metadata\":{\"column\":\"id\",\"table\":\"t23fx_ref8\"},\"explanation\":{\"summary\":\"Check DDL tidb table auto random valid\",\"why\":\"The statement matched the shipped governance rule for this pattern.\",\"risk\":\"Ignoring this rule can weaken schema-governance guarantees and make changes harder to review safely.\",\"suggestion\":\"list this column first in the primary key\"}}],\"coverage\":{\"status\":\"complete\"}}],\"version\":{\"product\":\"tidb\",\"version\":\"8.5.0\",\"major\":8,\"minor\":5,\"patch\":0,\"source\":\"observed\",\"validated_range\":true},\"fail_on_triggered\":true,\"rule_summary\":{\"loaded\":13,\"applicable\":3,\"skipped\":[]},\"context\":{\"mode\":\"metadata-aware\",\"dialect\":\"tidb\",\"dialect_source\":\"detected\",\"schema\":\"t23fx\",\"schema_source\":\"flag\"}}\n",
+    "stderr": "",
+    "parsed": {
+      "verdict": "reject",
+      "coverage": {
+        "status": "complete"
+      },
+      "summary": {
+        "statements": 8,
+        "blockers": 8,
+        "warnings": 0,
+        "notices": 0
+      },
+      "statements": [
+        {
+          "index": 0,
+          "kind": "ddl",
+          "raw_sql": "CREATE TABLE t23fx.t23fx_ref1 (id INT UNSIGNED PRIMARY KEY AUTO_RANDOM);",
+          "normalized_sql": "CREATE TABLE t23fx.t23fx_ref1 (id INT UNSIGNED PRIMARY KEY AUTO_RANDOM)",
+          "findings": [
+            {
+              "rule_id": "ddl.tidb.table.auto_random.valid",
+              "level": "blocker",
+              "message": "auto_random column \"id\" must be BIGINT: TiDB supports AUTO_RANDOM only on BIGINT columns",
+              "statement_kind": "ddl",
+              "location": {
+                "line": 1,
+                "column": 1
+              },
+              "suggestion": "change the column type to BIGINT",
+              "metadata": {
+                "column": "id",
+                "table": "t23fx_ref1"
+              },
+              "explanation": {
+                "summary": "Check DDL tidb table auto random valid",
+                "why": "The statement matched the shipped governance rule for this pattern.",
+                "risk": "Ignoring this rule can weaken schema-governance guarantees and make changes harder to review safely.",
+                "suggestion": "change the column type to BIGINT"
+              }
+            }
+          ],
+          "coverage": {
+            "status": "complete"
+          }
+        },
+        {
+          "index": 1,
+          "kind": "ddl",
+          "raw_sql": "CREATE TABLE t23fx.t23fx_ref2 (id BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT AUTO_RANDOM);",
+          "normalized_sql": "CREATE TABLE t23fx.t23fx_ref2 (id BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT AUTO_RANDOM)",
+          "findings": [
+            {
+              "rule_id": "ddl.tidb.table.auto_random.valid",
+              "level": "blocker",
+              "message": "auto_random column \"id\" cannot combine AUTO_RANDOM with AUTO_INCREMENT",
+              "statement_index": 1,
+              "statement_kind": "ddl",
+              "location": {
+                "line": 2,
+                "column": 1
+              },
+              "suggestion": "remove AUTO_INCREMENT from the column",
+              "metadata": {
+                "column": "id",
+                "table": "t23fx_ref2"
+              },
+              "explanation": {
+                "summary": "Check DDL tidb table auto random valid",
+                "why": "The statement matched the shipped governance rule for this pattern.",
+                "risk": "Ignoring this rule can weaken schema-governance guarantees and make changes harder to review safely.",
+                "suggestion": "remove AUTO_INCREMENT from the column"
+              }
+            }
+          ],
+          "coverage": {
+            "status": "complete"
+          }
+        },
+        {
+          "index": 2,
+          "kind": "ddl",
+          "raw_sql": "CREATE TABLE t23fx.t23fx_ref3 (id BIGINT UNSIGNED PRIMARY KEY AUTO_RANDOM DEFAULT 7);",
+          "normalized_sql": "CREATE TABLE t23fx.t23fx_ref3 (id BIGINT UNSIGNED PRIMARY KEY AUTO_RANDOM DEFAULT 7)",
+          "findings": [
+            {
+              "rule_id": "ddl.tidb.table.auto_random.valid",
+              "level": "blocker",
+              "message": "auto_random column \"id\" cannot combine AUTO_RANDOM with an explicit DEFAULT",
+              "statement_index": 2,
+              "statement_kind": "ddl",
+              "location": {
+                "line": 3,
+                "column": 1
+              },
+              "suggestion": "remove the DEFAULT clause from the column",
+              "metadata": {
+                "column": "id",
+                "table": "t23fx_ref3"
+              },
+              "explanation": {
+                "summary": "Check DDL tidb table auto random valid",
+                "why": "The statement matched the shipped governance rule for this pattern.",
+                "risk": "Ignoring this rule can weaken schema-governance guarantees and make changes harder to review safely.",
+                "suggestion": "remove the DEFAULT clause from the column"
+              }
+            }
+          ],
+          "coverage": {
+            "status": "complete"
+          }
+        },
+        {
+          "index": 3,
+          "kind": "ddl",
+          "raw_sql": "CREATE TABLE t23fx.t23fx_ref4 (id BIGINT UNSIGNED PRIMARY KEY AUTO_RANDOM(16,64));",
+          "normalized_sql": "CREATE TABLE t23fx.t23fx_ref4 (id BIGINT UNSIGNED PRIMARY KEY AUTO_RANDOM(16,64))",
+          "findings": [
+            {
+              "rule_id": "ddl.tidb.table.auto_random.valid",
+              "level": "blocker",
+              "message": "auto_random column \"id\" has shard bits 16 outside the allowed range 1..15",
+              "statement_index": 3,
+              "statement_kind": "ddl",
+              "location": {
+                "line": 4,
+                "column": 1
+              },
+              "suggestion": "choose AUTO_RANDOM shard bits between 1 and 15",
+              "metadata": {
+                "column": "id",
+                "table": "t23fx_ref4"
+              },
+              "explanation": {
+                "summary": "Check DDL tidb table auto random valid",
+                "why": "The statement matched the shipped governance rule for this pattern.",
+                "risk": "Ignoring this rule can weaken schema-governance guarantees and make changes harder to review safely.",
+                "suggestion": "choose AUTO_RANDOM shard bits between 1 and 15"
+              }
+            }
+          ],
+          "coverage": {
+            "status": "complete"
+          }
+        },
+        {
+          "index": 4,
+          "kind": "ddl",
+          "raw_sql": "CREATE TABLE t23fx.t23fx_ref5 (id BIGINT UNSIGNED PRIMARY KEY AUTO_RANDOM(5,31));",
+          "normalized_sql": "CREATE TABLE t23fx.t23fx_ref5 (id BIGINT UNSIGNED PRIMARY KEY AUTO_RANDOM(5,31))",
+          "findings": [
+            {
+              "rule_id": "ddl.tidb.table.auto_random.valid",
+              "level": "blocker",
+              "message": "auto_random column \"id\" has range bits 31 outside the allowed range 32..64",
+              "statement_index": 4,
+              "statement_kind": "ddl",
+              "location": {
+                "line": 5,
+                "column": 1
+              },
+              "suggestion": "choose AUTO_RANDOM range bits between 32 and 64",
+              "metadata": {
+                "column": "id",
+                "table": "t23fx_ref5"
+              },
+              "explanation": {
+                "summary": "Check DDL tidb table auto random valid",
+                "why": "The statement matched the shipped governance rule for this pattern.",
+                "risk": "Ignoring this rule can weaken schema-governance guarantees and make changes harder to review safely.",
+                "suggestion": "choose AUTO_RANDOM range bits between 32 and 64"
+              }
+            }
+          ],
+          "coverage": {
+            "status": "complete"
+          }
+        },
+        {
+          "index": 5,
+          "kind": "ddl",
+          "raw_sql": "CREATE TABLE t23fx.t23fx_ref6 (id BIGINT UNSIGNED PRIMARY KEY AUTO_RANDOM(15,41));",
+          "normalized_sql": "CREATE TABLE t23fx.t23fx_ref6 (id BIGINT UNSIGNED PRIMARY KEY AUTO_RANDOM(15,41))",
+          "findings": [
+            {
+              "rule_id": "ddl.tidb.table.auto_random.valid",
+              "level": "blocker",
+              "message": "auto_random column \"id\" leaves only 26 incremental bits; TiDB requires at least 27",
+              "statement_index": 5,
+              "statement_kind": "ddl",
+              "location": {
+                "line": 6,
+                "column": 1
+              },
+              "suggestion": "reduce the shard bits or raise the range bits",
+              "metadata": {
+                "column": "id",
+                "table": "t23fx_ref6"
+              },
+              "explanation": {
+                "summary": "Check DDL tidb table auto random valid",
+                "why": "The statement matched the shipped governance rule for this pattern.",
+                "risk": "Ignoring this rule can weaken schema-governance guarantees and make changes harder to review safely.",
+                "suggestion": "reduce the shard bits or raise the range bits"
+              }
+            }
+          ],
+          "coverage": {
+            "status": "complete"
+          }
+        },
+        {
+          "index": 6,
+          "kind": "ddl",
+          "raw_sql": "CREATE TABLE t23fx.t23fx_ref7 (id BIGINT UNSIGNED PRIMARY KEY NONCLUSTERED AUTO_RANDOM);",
+          "normalized_sql": "CREATE TABLE t23fx.t23fx_ref7 (id BIGINT UNSIGNED PRIMARY KEY NONCLUSTERED AUTO_RANDOM)",
+          "findings": [
+            {
+              "rule_id": "ddl.tidb.table.auto_random.valid",
+              "level": "blocker",
+              "message": "auto_random column \"id\" requires a clustered primary key, but this primary key is not clustered",
+              "statement_index": 6,
+              "statement_kind": "ddl",
+              "location": {
+                "line": 7,
+                "column": 1
+              },
+              "suggestion": "use a clustered primary key or remove AUTO_RANDOM",
+              "metadata": {
+                "column": "id",
+                "table": "t23fx_ref7"
+              },
+              "explanation": {
+                "summary": "Check DDL tidb table auto random valid",
+                "why": "The statement matched the shipped governance rule for this pattern.",
+                "risk": "Ignoring this rule can weaken schema-governance guarantees and make changes harder to review safely.",
+                "suggestion": "use a clustered primary key or remove AUTO_RANDOM"
+              }
+            }
+          ],
+          "coverage": {
+            "status": "complete"
+          }
+        },
+        {
+          "index": 7,
+          "kind": "ddl",
+          "raw_sql": "CREATE TABLE t23fx.t23fx_ref8 (v INT, id BIGINT UNSIGNED AUTO_RANDOM, PRIMARY KEY(v,id));",
+          "normalized_sql": "CREATE TABLE t23fx.t23fx_ref8 (v INT, id BIGINT UNSIGNED AUTO_RANDOM, PRIMARY KEY(v,id))",
+          "findings": [
+            {
+              "rule_id": "ddl.tidb.table.auto_random.valid",
+              "level": "blocker",
+              "message": "auto_random column \"id\" must be the first primary key column (the row handle on TiDB)",
+              "statement_index": 7,
+              "statement_kind": "ddl",
+              "location": {
+                "line": 8,
+                "column": 1
+              },
+              "suggestion": "list this column first in the primary key",
+              "metadata": {
+                "column": "id",
+                "table": "t23fx_ref8"
+              },
+              "explanation": {
+                "summary": "Check DDL tidb table auto random valid",
+                "why": "The statement matched the shipped governance rule for this pattern.",
+                "risk": "Ignoring this rule can weaken schema-governance guarantees and make changes harder to review safely.",
+                "suggestion": "list this column first in the primary key"
+              }
+            }
+          ],
+          "coverage": {
+            "status": "complete"
+          }
+        }
+      ],
+      "version": {
+        "product": "tidb",
+        "version": "8.5.0",
+        "major": 8,
+        "minor": 5,
+        "patch": 0,
+        "source": "observed",
+        "validated_range": true
+      },
+      "fail_on_triggered": true,
+      "rule_summary": {
+        "loaded": 13,
+        "applicable": 3,
+        "skipped": []
+      },
+      "context": {
+        "mode": "metadata-aware",
+        "dialect": "tidb",
+        "dialect_source": "detected",
+        "schema": "t23fx",
+        "schema_source": "flag"
+      }
+    },
+    "version_evidence": {
+      "target_raw": null,
+      "target_canonical": null,
+      "observed_raw": "8.0.11-TiDB-v8.5.0",
+      "observed_canonical": {
+        "product": "tidb",
+        "version": "8.5.0"
+      },
+      "resolved": {
+        "product": "tidb",
+        "version": "8.5.0",
+        "major": 8,
+        "minor": 5,
+        "patch": 0,
+        "source": "observed",
+        "validated_range": true
+      }
+    }
+  },
+  "assertions": [
+    {
+      "name": "database reachable with expected version",
+      "ok": true,
+      "detail": "SELECT VERSION() rc=0 version='8.0.11-TiDB-v8.5.0' expected_contains='v8.5.0'"
+    },
+    {
+      "name": "setup record clustered baseline return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "setup record clustered baseline: baseline is ON on this stack",
+      "ok": true,
+      "detail": "rc=0 output='ON' expected='ON'"
+    },
+    {
+      "name": "setup set clustered int_only for case return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "setup set clustered int_only for case: mode is int_only",
+      "ok": true,
+      "detail": "rc=0 output='INT_ONLY' expected='INT_ONLY'"
+    },
+    {
+      "name": "exit code",
+      "ok": true,
+      "detail": "rc=1 expected=1"
+    },
+    {
+      "name": "verdict",
+      "ok": true,
+      "detail": "verdict='reject'"
+    },
+    {
+      "name": "top-level statements",
+      "ok": true,
+      "detail": "statements=8 expected=8"
+    },
+    {
+      "name": "zero findings",
+      "ok": true,
+      "detail": "findings=8"
+    },
+    {
+      "name": "no diagnostics",
+      "ok": true,
+      "detail": "diagnostics=[]"
+    },
+    {
+      "name": "no unsupported",
+      "ok": true,
+      "detail": "unsupported=[]"
+    },
+    {
+      "name": "aggregate coverage",
+      "ok": true,
+      "detail": "coverage='complete'"
+    },
+    {
+      "name": "evidence gap count",
+      "ok": true,
+      "detail": "gaps=0"
+    },
+    {
+      "name": "finding entries",
+      "ok": true,
+      "detail": "findings=[(0, 'ddl.tidb.table.auto_random.valid', 'blocker'), (1, 'ddl.tidb.table.auto_random.valid', 'blocker'), (2, 'ddl.tidb.table.auto_random.valid', 'blocker'), (3, 'ddl.tidb.table.auto_random.valid', 'blocker'), (4, 'ddl.tidb.table.auto_random.valid', 'blocker'), (5, 'ddl.tidb.table.auto_random.valid', 'blocker'), (6, 'ddl.tidb.table.auto_random.valid', 'blocker'), (7, 'ddl.tidb.table.auto_random.valid', 'blocker')] expected=[(0, 'ddl.tidb.table.auto_random.valid', 'blocker'), (1, 'ddl.tidb.table.auto_random.valid', 'blocker'), (2, 'ddl.tidb.table.auto_random.valid', 'blocker'), (3, 'ddl.tidb.table.auto_random.valid', 'blocker'), (4, 'ddl.tidb.table.auto_random.valid', 'blocker'), (5, 'ddl.tidb.table.auto_random.valid', 'blocker'), (6, 'ddl.tidb.table.auto_random.valid', 'blocker'), (7, 'ddl.tidb.table.auto_random.valid', 'blocker')]"
+    },
+    {
+      "name": "post-verify audit created nothing",
+      "ok": true,
+      "detail": "rc=0 output='0' expected='0'"
+    },
+    {
+      "name": "execute native ref1 refused return code",
+      "ok": true,
+      "detail": "rc=1 expected=1 stderr='ERROR 8216 (HY000) at line 1: Invalid auto random: auto_random option must be defined on `bigint` column, but not on `int` column'"
+    },
+    {
+      "name": "execute native ref1 refused: ref1 absent after refusal",
+      "ok": true,
+      "detail": "rc=0 output='0' expected='0'"
+    },
+    {
+      "name": "execute native ref2 refused return code",
+      "ok": true,
+      "detail": "rc=1 expected=1 stderr='ERROR 8216 (HY000) at line 1: Invalid auto random: auto_random is incompatible with auto_increment'"
+    },
+    {
+      "name": "execute native ref2 refused: ref2 absent after refusal",
+      "ok": true,
+      "detail": "rc=0 output='0' expected='0'"
+    },
+    {
+      "name": "execute native ref3 refused return code",
+      "ok": true,
+      "detail": "rc=1 expected=1 stderr='ERROR 8216 (HY000) at line 1: Invalid auto random: auto_random is incompatible with default'"
+    },
+    {
+      "name": "execute native ref3 refused: ref3 absent after refusal",
+      "ok": true,
+      "detail": "rc=0 output='0' expected='0'"
+    },
+    {
+      "name": "execute native ref4 refused return code",
+      "ok": true,
+      "detail": "rc=1 expected=1 stderr='ERROR 8216 (HY000) at line 1: Invalid auto random: max allowed auto_random shard bits is 15, but got 16 on column `id`'"
+    },
+    {
+      "name": "execute native ref4 refused: ref4 absent after refusal",
+      "ok": true,
+      "detail": "rc=0 output='0' expected='0'"
+    },
+    {
+      "name": "execute native ref5 refused return code",
+      "ok": true,
+      "detail": "rc=1 expected=1 stderr='ERROR 8216 (HY000) at line 1: Invalid auto random: auto_random range bits must be between 32 and 64, but got 31'"
+    },
+    {
+      "name": "execute native ref5 refused: ref5 absent after refusal",
+      "ok": true,
+      "detail": "rc=0 output='0' expected='0'"
+    },
+    {
+      "name": "execute native ref6 refused return code",
+      "ok": true,
+      "detail": "rc=1 expected=1 stderr='ERROR 8216 (HY000) at line 1: Invalid auto random: auto_random ID space is too small, please decrease the shard bits or increase the range bits'"
+    },
+    {
+      "name": "execute native ref6 refused: ref6 absent after refusal",
+      "ok": true,
+      "detail": "rc=0 output='0' expected='0'"
+    },
+    {
+      "name": "execute native ref7 refused return code",
+      "ok": true,
+      "detail": "rc=1 expected=1 stderr='ERROR 8216 (HY000) at line 1: Invalid auto random: auto_random is only supported on the tables with clustered primary key'"
+    },
+    {
+      "name": "execute native ref7 refused: ref7 absent after refusal",
+      "ok": true,
+      "detail": "rc=0 output='0' expected='0'"
+    },
+    {
+      "name": "execute native ref8 refused return code",
+      "ok": true,
+      "detail": "rc=1 expected=1 stderr='ERROR 8216 (HY000) at line 1: Invalid auto random: auto_random is only supported on the tables with clustered primary key'"
+    },
+    {
+      "name": "execute native ref8 refused: ref8 absent after refusal",
+      "ok": true,
+      "detail": "rc=0 output='0' expected='0'"
+    },
+    {
+      "name": "teardown restore clustered baseline ON return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "teardown restore clustered baseline ON: mode restored to ON",
+      "ok": true,
+      "detail": "rc=0 output='ON' expected='ON'"
+    },
+    {
+      "name": "teardown drop ref1 return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "teardown drop ref2 return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "teardown drop ref3 return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "teardown drop ref4 return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "teardown drop ref5 return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "teardown drop ref6 return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "teardown drop ref7 return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "teardown drop ref8 return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    }
+  ],
+  "status": "pass",
+  "command": [
+    "/private/tmp/t23r10-artifact/golden/T23/bin/deltascope",
+    "audit",
+    "--dialect",
+    "tidb",
+    "--sql",
+    "CREATE TABLE t23fx.t23fx_ref1 (id INT UNSIGNED PRIMARY KEY AUTO_RANDOM);\nCREATE TABLE t23fx.t23fx_ref2 (id BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT AUTO_RANDOM);\nCREATE TABLE t23fx.t23fx_ref3 (id BIGINT UNSIGNED PRIMARY KEY AUTO_RANDOM DEFAULT 7);\nCREATE TABLE t23fx.t23fx_ref4 (id BIGINT UNSIGNED PRIMARY KEY AUTO_RANDOM(16,64));\nCREATE TABLE t23fx.t23fx_ref5 (id BIGINT UNSIGNED PRIMARY KEY AUTO_RANDOM(5,31));\nCREATE TABLE t23fx.t23fx_ref6 (id BIGINT UNSIGNED PRIMARY KEY AUTO_RANDOM(15,41));\nCREATE TABLE t23fx.t23fx_ref7 (id BIGINT UNSIGNED PRIMARY KEY NONCLUSTERED AUTO_RANDOM);\nCREATE TABLE t23fx.t23fx_ref8 (v INT, id BIGINT UNSIGNED AUTO_RANDOM, PRIMARY KEY(v,id));",
+    "--config",
+    "/private/tmp/t23r10-artifact/golden/T23/golden-policy.yaml",
+    "--format",
+    "json",
+    "--host",
+    "127.0.0.1",
+    "--port",
+    "24000",
+    "--user",
+    "root",
+    "--schema",
+    "t23fx",
+    "--fail-on",
+    "blocker"
+  ]
+}

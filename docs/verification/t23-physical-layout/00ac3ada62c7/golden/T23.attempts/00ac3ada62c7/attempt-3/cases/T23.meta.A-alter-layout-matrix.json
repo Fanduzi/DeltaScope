@@ -1,0 +1,613 @@
+{
+  "case_id": "T23.meta.A-alter-layout-matrix",
+  "kind": "cli_metadata",
+  "cli_case": "A-alter-layout-matrix",
+  "anchor": "tidb85",
+  "dialect": "tidb",
+  "input_sql": "ALTER TABLE t23fx.t23fx_al_base ADD COLUMN ar BIGINT AUTO_RANDOM;\nALTER TABLE t23fx.t23fx_al_ar_inc MODIFY COLUMN id BIGINT UNSIGNED AUTO_RANDOM(6,64);\nALTER TABLE t23fx.t23fx_al_ar_dec MODIFY COLUMN id BIGINT UNSIGNED AUTO_RANDOM(4,64);\nALTER TABLE t23fx.t23fx_al_ar_type MODIFY COLUMN id INT AUTO_RANDOM;\nALTER TABLE t23fx.t23fx_al_ar_rem MODIFY COLUMN id BIGINT UNSIGNED;\nALTER TABLE t23fx.t23fx_al_opts AUTO_ID_CACHE=100;\nALTER TABLE t23fx.t23fx_al_opts2 AUTO_ID_CACHE=1;\nALTER TABLE t23fx.t23fx_al_opts2 AUTO_ID_CACHE=200;\nALTER TABLE t23fx.t23fx_al_clu SHARD_ROW_ID_BITS=4;\nALTER TABLE t23fx.t23fx_al_nonclu SHARD_ROW_ID_BITS=20;\nALTER TABLE t23fx.t23fx_al_ar AUTO_RANDOM_BASE=200;\nALTER TABLE t23fx.t23fx_al_base PRE_SPLIT_REGIONS=2;",
+  "policy_profile": "t23-layout-id",
+  "policy_path": "/private/tmp/t23r10-artifact/golden/T23/golden-policy.yaml",
+  "connect": {
+    "host": "127.0.0.1",
+    "port": 24000,
+    "user": "root",
+    "schema": "t23fx"
+  },
+  "expected": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 12,
+    "findings": 7,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "evidence_gaps": 2,
+    "finding_entries": [
+      {
+        "index": 0,
+        "rule_id": "ddl.tidb.alter.auto_random.valid",
+        "level": "blocker"
+      },
+      {
+        "index": 2,
+        "rule_id": "ddl.tidb.alter.auto_random.valid",
+        "level": "blocker"
+      },
+      {
+        "index": 3,
+        "rule_id": "ddl.tidb.alter.auto_random.valid",
+        "level": "blocker"
+      },
+      {
+        "index": 4,
+        "rule_id": "ddl.tidb.alter.auto_random.valid",
+        "level": "blocker"
+      },
+      {
+        "index": 5,
+        "rule_id": "ddl.tidb.alter.table_options.valid",
+        "level": "blocker"
+      },
+      {
+        "index": 6,
+        "rule_id": "ddl.tidb.alter.table_options.valid",
+        "level": "blocker"
+      },
+      {
+        "index": 8,
+        "rule_id": "ddl.tidb.alter.table_options.valid",
+        "level": "blocker"
+      },
+      {
+        "index": 11,
+        "rule_id": "ddl.tidb.alter.table_options.valid",
+        "level": "blocker"
+      }
+    ],
+    "evidence_gap_entries": [
+      {
+        "index": 1,
+        "rule_id": "ddl.tidb.alter.auto_random.valid",
+        "reason_code": "missing_instance_fact",
+        "required_facts": [
+          "runtime.auto_random_allocator"
+        ]
+      },
+      {
+        "index": 9,
+        "rule_id": "ddl.tidb.alter.table_options.valid",
+        "reason_code": "missing_instance_fact",
+        "required_facts": [
+          "runtime.row_data"
+        ]
+      }
+    ]
+  },
+  "actual": {
+    "database": {
+      "product": "tidb",
+      "image": "pingcap/tidb:v8.5.0",
+      "image_digest": "pingcap/tidb@sha256:490861bd4a2fa643dbe76b77ffecafcad66e6a42774e580b82f4ec2429a80e57",
+      "container": "deltascope-ddl-golden-tidb85",
+      "reachable": true,
+      "version": "8.0.11-TiDB-v8.5.0"
+    },
+    "setup": [
+      {
+        "name": "seed al_base",
+        "sql": "CREATE TABLE t23fx.t23fx_al_base (id BIGINT UNSIGNED PRIMARY KEY)",
+        "rc": 1,
+        "stdout": "",
+        "stderr": "ERROR 1049 (42000): Unknown database 'golden'"
+      },
+      {
+        "name": "seed al_ar",
+        "sql": "CREATE TABLE t23fx.t23fx_al_ar (id BIGINT UNSIGNED AUTO_RANDOM, v INT, PRIMARY KEY(id))",
+        "rc": 1,
+        "stdout": "",
+        "stderr": "ERROR 1049 (42000): Unknown database 'golden'"
+      },
+      {
+        "name": "seed al_ar_inc",
+        "sql": "CREATE TABLE t23fx.t23fx_al_ar_inc (id BIGINT UNSIGNED AUTO_RANDOM, v INT, PRIMARY KEY(id))",
+        "rc": 1,
+        "stdout": "",
+        "stderr": "ERROR 1049 (42000): Unknown database 'golden'"
+      },
+      {
+        "name": "seed al_ar_dec",
+        "sql": "CREATE TABLE t23fx.t23fx_al_ar_dec (id BIGINT UNSIGNED AUTO_RANDOM, v INT, PRIMARY KEY(id))",
+        "rc": 1,
+        "stdout": "",
+        "stderr": "ERROR 1049 (42000): Unknown database 'golden'"
+      },
+      {
+        "name": "seed al_ar_type",
+        "sql": "CREATE TABLE t23fx.t23fx_al_ar_type (id BIGINT UNSIGNED AUTO_RANDOM, v INT, PRIMARY KEY(id))",
+        "rc": 1,
+        "stdout": "",
+        "stderr": "ERROR 1049 (42000): Unknown database 'golden'"
+      },
+      {
+        "name": "seed al_ar_rem",
+        "sql": "CREATE TABLE t23fx.t23fx_al_ar_rem (id BIGINT UNSIGNED AUTO_RANDOM, v INT, PRIMARY KEY(id))",
+        "rc": 1,
+        "stdout": "",
+        "stderr": "ERROR 1049 (42000): Unknown database 'golden'"
+      },
+      {
+        "name": "seed al_opts cache1",
+        "sql": "CREATE TABLE t23fx.t23fx_al_opts (id BIGINT PRIMARY KEY) AUTO_ID_CACHE=1",
+        "rc": 1,
+        "stdout": "",
+        "stderr": "ERROR 1049 (42000): Unknown database 'golden'"
+      },
+      {
+        "name": "seed al_opts2 cache100",
+        "sql": "CREATE TABLE t23fx.t23fx_al_opts2 (id BIGINT PRIMARY KEY) AUTO_ID_CACHE=100",
+        "rc": 1,
+        "stdout": "",
+        "stderr": "ERROR 1049 (42000): Unknown database 'golden'"
+      },
+      {
+        "name": "seed al_clu",
+        "sql": "CREATE TABLE t23fx.t23fx_al_clu (id BIGINT PRIMARY KEY CLUSTERED)",
+        "rc": 1,
+        "stdout": "",
+        "stderr": "ERROR 1049 (42000): Unknown database 'golden'"
+      },
+      {
+        "name": "seed al_nonclu",
+        "sql": "CREATE TABLE t23fx.t23fx_al_nonclu (id BIGINT PRIMARY KEY NONCLUSTERED)",
+        "rc": 1,
+        "stdout": "",
+        "stderr": "ERROR 1049 (42000): Unknown database 'golden'"
+      }
+    ],
+    "post_verify": [
+      {
+        "assert": "audit changed nothing",
+        "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='t23fx' AND TABLE_NAME LIKE 't23fx_al_%'",
+        "rc": 1,
+        "output": "",
+        "stderr": "ERROR 1049 (42000): Unknown database 'golden'"
+      }
+    ],
+    "execute": [
+      {
+        "name": "native add-column refused",
+        "sql": "ALTER TABLE t23fx.t23fx_al_base ADD COLUMN ar BIGINT AUTO_RANDOM",
+        "rc": 1,
+        "stdout": "",
+        "stderr": "ERROR 1049 (42000): Unknown database 'golden'"
+      },
+      {
+        "name": "native increase allowed",
+        "sql": "ALTER TABLE t23fx.t23fx_al_ar_inc MODIFY COLUMN id BIGINT UNSIGNED AUTO_RANDOM(6,64)",
+        "rc": 1,
+        "stdout": "",
+        "stderr": "ERROR 1049 (42000): Unknown database 'golden'"
+      },
+      {
+        "name": "native decrease refused",
+        "sql": "ALTER TABLE t23fx.t23fx_al_ar_dec MODIFY COLUMN id BIGINT UNSIGNED AUTO_RANDOM(4,64)",
+        "rc": 1,
+        "stdout": "",
+        "stderr": "ERROR 1049 (42000): Unknown database 'golden'"
+      },
+      {
+        "name": "native int refused",
+        "sql": "ALTER TABLE t23fx.t23fx_al_ar_type MODIFY COLUMN id INT AUTO_RANDOM",
+        "rc": 1,
+        "stdout": "",
+        "stderr": "ERROR 1049 (42000): Unknown database 'golden'"
+      },
+      {
+        "name": "native removal refused",
+        "sql": "ALTER TABLE t23fx.t23fx_al_ar_rem MODIFY COLUMN id BIGINT UNSIGNED",
+        "rc": 1,
+        "stdout": "",
+        "stderr": "ERROR 1049 (42000): Unknown database 'golden'"
+      },
+      {
+        "name": "native cache 1->100 refused",
+        "sql": "ALTER TABLE t23fx.t23fx_al_opts AUTO_ID_CACHE=100",
+        "rc": 1,
+        "stdout": "",
+        "stderr": "ERROR 1049 (42000): Unknown database 'golden'"
+      },
+      {
+        "name": "native cache 100->1 refused",
+        "sql": "ALTER TABLE t23fx.t23fx_al_opts2 AUTO_ID_CACHE=1",
+        "rc": 1,
+        "stdout": "",
+        "stderr": "ERROR 1049 (42000): Unknown database 'golden'"
+      },
+      {
+        "name": "native cache 100->200 accepted",
+        "sql": "ALTER TABLE t23fx.t23fx_al_opts2 AUTO_ID_CACHE=200",
+        "rc": 1,
+        "stdout": "",
+        "stderr": "ERROR 1049 (42000): Unknown database 'golden'"
+      },
+      {
+        "name": "native clustered shard refused",
+        "sql": "ALTER TABLE t23fx.t23fx_al_clu SHARD_ROW_ID_BITS=4",
+        "rc": 1,
+        "stdout": "",
+        "stderr": "ERROR 1049 (42000): Unknown database 'golden'"
+      },
+      {
+        "name": "native nonclustered shard clamp accepted",
+        "sql": "ALTER TABLE t23fx.t23fx_al_nonclu SHARD_ROW_ID_BITS=20",
+        "rc": 1,
+        "stdout": "",
+        "stderr": "ERROR 1049 (42000): Unknown database 'golden'"
+      },
+      {
+        "name": "native base rebase accepted",
+        "sql": "ALTER TABLE t23fx.t23fx_al_ar AUTO_RANDOM_BASE=200",
+        "rc": 1,
+        "stdout": "",
+        "stderr": "ERROR 1049 (42000): Unknown database 'golden'"
+      },
+      {
+        "name": "native pre-split refused",
+        "sql": "ALTER TABLE t23fx.t23fx_al_base PRE_SPLIT_REGIONS=2",
+        "rc": 1,
+        "stdout": "",
+        "stderr": "ERROR 1049 (42000): Unknown database 'golden'"
+      }
+    ],
+    "structure": [
+      {
+        "assert": "al_nonclu shard clamped to 15",
+        "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='t23fx' AND TABLE_NAME='t23fx_al_nonclu' AND TIDB_ROW_ID_SHARDING_INFO LIKE '%SHARD%15%'",
+        "rc": 1,
+        "output": "",
+        "stderr": "ERROR 1049 (42000): Unknown database 'golden'"
+      }
+    ],
+    "teardown": [
+      {
+        "name": "drop t23fx_al_base",
+        "sql": "DROP TABLE IF EXISTS t23fx.t23fx_al_base",
+        "rc": 1,
+        "stderr": "ERROR 1049 (42000): Unknown database 'golden'"
+      },
+      {
+        "name": "drop t23fx_al_ar",
+        "sql": "DROP TABLE IF EXISTS t23fx.t23fx_al_ar",
+        "rc": 1,
+        "stderr": "ERROR 1049 (42000): Unknown database 'golden'"
+      },
+      {
+        "name": "drop t23fx_al_ar_inc",
+        "sql": "DROP TABLE IF EXISTS t23fx.t23fx_al_ar_inc",
+        "rc": 1,
+        "stderr": "ERROR 1049 (42000): Unknown database 'golden'"
+      },
+      {
+        "name": "drop t23fx_al_ar_dec",
+        "sql": "DROP TABLE IF EXISTS t23fx.t23fx_al_ar_dec",
+        "rc": 1,
+        "stderr": "ERROR 1049 (42000): Unknown database 'golden'"
+      },
+      {
+        "name": "drop t23fx_al_ar_type",
+        "sql": "DROP TABLE IF EXISTS t23fx.t23fx_al_ar_type",
+        "rc": 1,
+        "stderr": "ERROR 1049 (42000): Unknown database 'golden'"
+      },
+      {
+        "name": "drop t23fx_al_ar_rem",
+        "sql": "DROP TABLE IF EXISTS t23fx.t23fx_al_ar_rem",
+        "rc": 1,
+        "stderr": "ERROR 1049 (42000): Unknown database 'golden'"
+      },
+      {
+        "name": "drop t23fx_al_opts",
+        "sql": "DROP TABLE IF EXISTS t23fx.t23fx_al_opts",
+        "rc": 1,
+        "stderr": "ERROR 1049 (42000): Unknown database 'golden'"
+      },
+      {
+        "name": "drop t23fx_al_opts2",
+        "sql": "DROP TABLE IF EXISTS t23fx.t23fx_al_opts2",
+        "rc": 1,
+        "stderr": "ERROR 1049 (42000): Unknown database 'golden'"
+      },
+      {
+        "name": "drop t23fx_al_clu",
+        "sql": "DROP TABLE IF EXISTS t23fx.t23fx_al_clu",
+        "rc": 1,
+        "stderr": "ERROR 1049 (42000): Unknown database 'golden'"
+      },
+      {
+        "name": "drop t23fx_al_nonclu",
+        "sql": "DROP TABLE IF EXISTS t23fx.t23fx_al_nonclu",
+        "rc": 1,
+        "stderr": "ERROR 1049 (42000): Unknown database 'golden'"
+      }
+    ],
+    "exit": 3,
+    "stdout": "",
+    "stderr": "connection failed\n",
+    "parsed": null,
+    "version_evidence": {
+      "target_raw": null,
+      "target_canonical": null,
+      "observed_raw": "8.0.11-TiDB-v8.5.0",
+      "observed_canonical": {
+        "product": "tidb",
+        "version": "8.5.0"
+      },
+      "resolved": null
+    }
+  },
+  "assertions": [
+    {
+      "name": "database reachable with expected version",
+      "ok": true,
+      "detail": "SELECT VERSION() rc=0 version='8.0.11-TiDB-v8.5.0' expected_contains='v8.5.0'"
+    },
+    {
+      "name": "setup seed al_base return code",
+      "ok": false,
+      "detail": "rc=1 expected=0 stderr=\"ERROR 1049 (42000): Unknown database 'golden'\""
+    },
+    {
+      "name": "setup seed al_ar return code",
+      "ok": false,
+      "detail": "rc=1 expected=0 stderr=\"ERROR 1049 (42000): Unknown database 'golden'\""
+    },
+    {
+      "name": "setup seed al_ar_inc return code",
+      "ok": false,
+      "detail": "rc=1 expected=0 stderr=\"ERROR 1049 (42000): Unknown database 'golden'\""
+    },
+    {
+      "name": "setup seed al_ar_dec return code",
+      "ok": false,
+      "detail": "rc=1 expected=0 stderr=\"ERROR 1049 (42000): Unknown database 'golden'\""
+    },
+    {
+      "name": "setup seed al_ar_type return code",
+      "ok": false,
+      "detail": "rc=1 expected=0 stderr=\"ERROR 1049 (42000): Unknown database 'golden'\""
+    },
+    {
+      "name": "setup seed al_ar_rem return code",
+      "ok": false,
+      "detail": "rc=1 expected=0 stderr=\"ERROR 1049 (42000): Unknown database 'golden'\""
+    },
+    {
+      "name": "setup seed al_opts cache1 return code",
+      "ok": false,
+      "detail": "rc=1 expected=0 stderr=\"ERROR 1049 (42000): Unknown database 'golden'\""
+    },
+    {
+      "name": "setup seed al_opts2 cache100 return code",
+      "ok": false,
+      "detail": "rc=1 expected=0 stderr=\"ERROR 1049 (42000): Unknown database 'golden'\""
+    },
+    {
+      "name": "setup seed al_clu return code",
+      "ok": false,
+      "detail": "rc=1 expected=0 stderr=\"ERROR 1049 (42000): Unknown database 'golden'\""
+    },
+    {
+      "name": "setup seed al_nonclu return code",
+      "ok": false,
+      "detail": "rc=1 expected=0 stderr=\"ERROR 1049 (42000): Unknown database 'golden'\""
+    },
+    {
+      "name": "exit code",
+      "ok": false,
+      "detail": "rc=3 expected=1"
+    },
+    {
+      "name": "verdict",
+      "ok": false,
+      "detail": "verdict=None"
+    },
+    {
+      "name": "top-level statements",
+      "ok": false,
+      "detail": "statements=0 expected=12"
+    },
+    {
+      "name": "zero findings",
+      "ok": false,
+      "detail": "findings=0"
+    },
+    {
+      "name": "no diagnostics",
+      "ok": false,
+      "detail": "diagnostics=[]"
+    },
+    {
+      "name": "no unsupported",
+      "ok": false,
+      "detail": "unsupported=[]"
+    },
+    {
+      "name": "aggregate coverage",
+      "ok": false,
+      "detail": "coverage=None"
+    },
+    {
+      "name": "evidence gap count",
+      "ok": false,
+      "detail": "gaps=0"
+    },
+    {
+      "name": "evidence gap entries",
+      "ok": false,
+      "detail": "gaps=[] expected=[(1, 'ddl.tidb.alter.auto_random.valid', 'missing_instance_fact'), (9, 'ddl.tidb.alter.table_options.valid', 'missing_instance_fact')]"
+    },
+    {
+      "name": "evidence gap required_facts (1, 'ddl.tidb.alter.auto_random.valid', 'missing_instance_fact')",
+      "ok": false,
+      "detail": "gaps=[] expected_facts=['runtime.auto_random_allocator']"
+    },
+    {
+      "name": "evidence gap required_facts (9, 'ddl.tidb.alter.table_options.valid', 'missing_instance_fact')",
+      "ok": false,
+      "detail": "gaps=[] expected_facts=['runtime.row_data']"
+    },
+    {
+      "name": "no gap encoded as finding",
+      "ok": true,
+      "detail": "findings carrying gap shape=[]"
+    },
+    {
+      "name": "finding entries",
+      "ok": false,
+      "detail": "findings=[] expected=[(0, 'ddl.tidb.alter.auto_random.valid', 'blocker'), (2, 'ddl.tidb.alter.auto_random.valid', 'blocker'), (3, 'ddl.tidb.alter.auto_random.valid', 'blocker'), (4, 'ddl.tidb.alter.auto_random.valid', 'blocker'), (5, 'ddl.tidb.alter.table_options.valid', 'blocker'), (6, 'ddl.tidb.alter.table_options.valid', 'blocker'), (8, 'ddl.tidb.alter.table_options.valid', 'blocker'), (11, 'ddl.tidb.alter.table_options.valid', 'blocker')]"
+    },
+    {
+      "name": "post-verify audit changed nothing",
+      "ok": false,
+      "detail": "rc=1 output='' expected='10'"
+    },
+    {
+      "name": "execute native add-column refused return code",
+      "ok": true,
+      "detail": "rc=1 expected=1 stderr=\"ERROR 1049 (42000): Unknown database 'golden'\""
+    },
+    {
+      "name": "execute native increase allowed return code",
+      "ok": false,
+      "detail": "rc=1 expected=0 stderr=\"ERROR 1049 (42000): Unknown database 'golden'\""
+    },
+    {
+      "name": "execute native decrease refused return code",
+      "ok": true,
+      "detail": "rc=1 expected=1 stderr=\"ERROR 1049 (42000): Unknown database 'golden'\""
+    },
+    {
+      "name": "execute native int refused return code",
+      "ok": true,
+      "detail": "rc=1 expected=1 stderr=\"ERROR 1049 (42000): Unknown database 'golden'\""
+    },
+    {
+      "name": "execute native removal refused return code",
+      "ok": true,
+      "detail": "rc=1 expected=1 stderr=\"ERROR 1049 (42000): Unknown database 'golden'\""
+    },
+    {
+      "name": "execute native cache 1->100 refused return code",
+      "ok": true,
+      "detail": "rc=1 expected=1 stderr=\"ERROR 1049 (42000): Unknown database 'golden'\""
+    },
+    {
+      "name": "execute native cache 100->1 refused return code",
+      "ok": true,
+      "detail": "rc=1 expected=1 stderr=\"ERROR 1049 (42000): Unknown database 'golden'\""
+    },
+    {
+      "name": "execute native cache 100->200 accepted return code",
+      "ok": false,
+      "detail": "rc=1 expected=0 stderr=\"ERROR 1049 (42000): Unknown database 'golden'\""
+    },
+    {
+      "name": "execute native clustered shard refused return code",
+      "ok": true,
+      "detail": "rc=1 expected=1 stderr=\"ERROR 1049 (42000): Unknown database 'golden'\""
+    },
+    {
+      "name": "execute native nonclustered shard clamp accepted return code",
+      "ok": false,
+      "detail": "rc=1 expected=0 stderr=\"ERROR 1049 (42000): Unknown database 'golden'\""
+    },
+    {
+      "name": "execute native base rebase accepted return code",
+      "ok": false,
+      "detail": "rc=1 expected=0 stderr=\"ERROR 1049 (42000): Unknown database 'golden'\""
+    },
+    {
+      "name": "execute native pre-split refused return code",
+      "ok": true,
+      "detail": "rc=1 expected=1 stderr=\"ERROR 1049 (42000): Unknown database 'golden'\""
+    },
+    {
+      "name": "structure al_nonclu shard clamped to 15",
+      "ok": false,
+      "detail": "rc=1 output='' expected='1'"
+    },
+    {
+      "name": "teardown drop t23fx_al_base return code",
+      "ok": false,
+      "detail": "rc=1 expected=0 stderr=\"ERROR 1049 (42000): Unknown database 'golden'\""
+    },
+    {
+      "name": "teardown drop t23fx_al_ar return code",
+      "ok": false,
+      "detail": "rc=1 expected=0 stderr=\"ERROR 1049 (42000): Unknown database 'golden'\""
+    },
+    {
+      "name": "teardown drop t23fx_al_ar_inc return code",
+      "ok": false,
+      "detail": "rc=1 expected=0 stderr=\"ERROR 1049 (42000): Unknown database 'golden'\""
+    },
+    {
+      "name": "teardown drop t23fx_al_ar_dec return code",
+      "ok": false,
+      "detail": "rc=1 expected=0 stderr=\"ERROR 1049 (42000): Unknown database 'golden'\""
+    },
+    {
+      "name": "teardown drop t23fx_al_ar_type return code",
+      "ok": false,
+      "detail": "rc=1 expected=0 stderr=\"ERROR 1049 (42000): Unknown database 'golden'\""
+    },
+    {
+      "name": "teardown drop t23fx_al_ar_rem return code",
+      "ok": false,
+      "detail": "rc=1 expected=0 stderr=\"ERROR 1049 (42000): Unknown database 'golden'\""
+    },
+    {
+      "name": "teardown drop t23fx_al_opts return code",
+      "ok": false,
+      "detail": "rc=1 expected=0 stderr=\"ERROR 1049 (42000): Unknown database 'golden'\""
+    },
+    {
+      "name": "teardown drop t23fx_al_opts2 return code",
+      "ok": false,
+      "detail": "rc=1 expected=0 stderr=\"ERROR 1049 (42000): Unknown database 'golden'\""
+    },
+    {
+      "name": "teardown drop t23fx_al_clu return code",
+      "ok": false,
+      "detail": "rc=1 expected=0 stderr=\"ERROR 1049 (42000): Unknown database 'golden'\""
+    },
+    {
+      "name": "teardown drop t23fx_al_nonclu return code",
+      "ok": false,
+      "detail": "rc=1 expected=0 stderr=\"ERROR 1049 (42000): Unknown database 'golden'\""
+    }
+  ],
+  "status": "fail",
+  "command": [
+    "/private/tmp/t23r10-artifact/golden/T23/bin/deltascope",
+    "audit",
+    "--dialect",
+    "tidb",
+    "--sql",
+    "ALTER TABLE t23fx.t23fx_al_base ADD COLUMN ar BIGINT AUTO_RANDOM;\nALTER TABLE t23fx.t23fx_al_ar_inc MODIFY COLUMN id BIGINT UNSIGNED AUTO_RANDOM(6,64);\nALTER TABLE t23fx.t23fx_al_ar_dec MODIFY COLUMN id BIGINT UNSIGNED AUTO_RANDOM(4,64);\nALTER TABLE t23fx.t23fx_al_ar_type MODIFY COLUMN id INT AUTO_RANDOM;\nALTER TABLE t23fx.t23fx_al_ar_rem MODIFY COLUMN id BIGINT UNSIGNED;\nALTER TABLE t23fx.t23fx_al_opts AUTO_ID_CACHE=100;\nALTER TABLE t23fx.t23fx_al_opts2 AUTO_ID_CACHE=1;\nALTER TABLE t23fx.t23fx_al_opts2 AUTO_ID_CACHE=200;\nALTER TABLE t23fx.t23fx_al_clu SHARD_ROW_ID_BITS=4;\nALTER TABLE t23fx.t23fx_al_nonclu SHARD_ROW_ID_BITS=20;\nALTER TABLE t23fx.t23fx_al_ar AUTO_RANDOM_BASE=200;\nALTER TABLE t23fx.t23fx_al_base PRE_SPLIT_REGIONS=2;",
+    "--config",
+    "/private/tmp/t23r10-artifact/golden/T23/golden-policy.yaml",
+    "--format",
+    "json",
+    "--host",
+    "127.0.0.1",
+    "--port",
+    "24000",
+    "--user",
+    "root",
+    "--schema",
+    "t23fx",
+    "--fail-on",
+    "blocker"
+  ]
+}

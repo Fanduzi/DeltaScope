@@ -1,0 +1,109 @@
+{
+  "case_id": "T23.meta.A-alter-layout-matrix",
+  "kind": "cli_metadata",
+  "cli_case": "A-alter-layout-matrix",
+  "anchor": "tidb85",
+  "dialect": "tidb",
+  "input_sql": "ALTER TABLE t23fx.t23fx_al_base ADD COLUMN ar BIGINT AUTO_RANDOM;\nALTER TABLE t23fx.t23fx_al_ar_inc MODIFY COLUMN id BIGINT UNSIGNED AUTO_RANDOM(6,64);\nALTER TABLE t23fx.t23fx_al_ar_dec MODIFY COLUMN id BIGINT UNSIGNED AUTO_RANDOM(4,64);\nALTER TABLE t23fx.t23fx_al_ar_type MODIFY COLUMN id INT AUTO_RANDOM;\nALTER TABLE t23fx.t23fx_al_ar_rem MODIFY COLUMN id BIGINT UNSIGNED;\nALTER TABLE t23fx.t23fx_al_opts AUTO_ID_CACHE=100;\nALTER TABLE t23fx.t23fx_al_opts2 AUTO_ID_CACHE=1;\nALTER TABLE t23fx.t23fx_al_opts2 AUTO_ID_CACHE=200;\nALTER TABLE t23fx.t23fx_al_clu SHARD_ROW_ID_BITS=4;\nALTER TABLE t23fx.t23fx_al_nonclu SHARD_ROW_ID_BITS=20;\nALTER TABLE t23fx.t23fx_al_ar AUTO_RANDOM_BASE=200;\nALTER TABLE t23fx.t23fx_al_base PRE_SPLIT_REGIONS=2;",
+  "policy_profile": "t23-layout-id",
+  "policy_path": "/private/tmp/t23r10-artifact/golden/T23/golden-policy.yaml",
+  "connect": {
+    "host": "127.0.0.1",
+    "port": 24000,
+    "user": "root",
+    "schema": "t23fx"
+  },
+  "expected": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 12,
+    "findings": 7,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "evidence_gaps": 2,
+    "finding_entries": [
+      {
+        "index": 0,
+        "rule_id": "ddl.tidb.alter.auto_random.valid",
+        "level": "blocker"
+      },
+      {
+        "index": 2,
+        "rule_id": "ddl.tidb.alter.auto_random.valid",
+        "level": "blocker"
+      },
+      {
+        "index": 3,
+        "rule_id": "ddl.tidb.alter.auto_random.valid",
+        "level": "blocker"
+      },
+      {
+        "index": 4,
+        "rule_id": "ddl.tidb.alter.auto_random.valid",
+        "level": "blocker"
+      },
+      {
+        "index": 5,
+        "rule_id": "ddl.tidb.alter.table_options.valid",
+        "level": "blocker"
+      },
+      {
+        "index": 6,
+        "rule_id": "ddl.tidb.alter.table_options.valid",
+        "level": "blocker"
+      },
+      {
+        "index": 8,
+        "rule_id": "ddl.tidb.alter.table_options.valid",
+        "level": "blocker"
+      },
+      {
+        "index": 11,
+        "rule_id": "ddl.tidb.alter.table_options.valid",
+        "level": "blocker"
+      }
+    ],
+    "evidence_gap_entries": [
+      {
+        "index": 1,
+        "rule_id": "ddl.tidb.alter.auto_random.valid",
+        "reason_code": "missing_instance_fact",
+        "required_facts": [
+          "runtime.auto_random_allocator"
+        ]
+      },
+      {
+        "index": 9,
+        "rule_id": "ddl.tidb.alter.table_options.valid",
+        "reason_code": "missing_instance_fact",
+        "required_facts": [
+          "runtime.row_data"
+        ]
+      }
+    ]
+  },
+  "actual": {
+    "database": {
+      "product": "tidb",
+      "image": "pingcap/tidb:v8.5.0",
+      "image_digest": "pingcap/tidb@sha256:490861bd4a2fa643dbe76b77ffecafcad66e6a42774e580b82f4ec2429a80e57",
+      "container": "deltascope-ddl-golden-tidb85",
+      "reachable": false,
+      "version": ""
+    },
+    "setup": [],
+    "post_verify": [],
+    "execute": [],
+    "structure": [],
+    "teardown": []
+  },
+  "assertions": [
+    {
+      "name": "database reachable with expected version",
+      "ok": false,
+      "detail": "SELECT VERSION() rc=1 version='' expected_contains='v8.5.0'"
+    }
+  ],
+  "status": "fail"
+}

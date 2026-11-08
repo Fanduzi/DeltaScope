@@ -1,0 +1,240 @@
+{
+  "case_id": "T23.meta.C-tiflash-replica",
+  "kind": "cli_metadata",
+  "cli_case": "C-tiflash-replica",
+  "anchor": "tidb85",
+  "dialect": "tidb",
+  "input_sql": "ALTER TABLE t23fx.t23fx_tf SET TIFLASH REPLICA 2;",
+  "policy_profile": "t23-layout-id",
+  "policy_path": "/private/tmp/t23r10-artifact/golden/T23/golden-policy.yaml",
+  "connect": {
+    "host": "127.0.0.1",
+    "port": 24000,
+    "user": "root",
+    "schema": "t23fx"
+  },
+  "expected": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "evidence_gaps": 1,
+    "evidence_gap_entries": [
+      {
+        "index": 0,
+        "rule_id": "ddl.tidb.table.tiflash.valid",
+        "reason_code": "missing_instance_fact",
+        "required_facts": [
+          "table.tiflash_replica"
+        ]
+      }
+    ]
+  },
+  "actual": {
+    "database": {
+      "product": "tidb",
+      "image": "pingcap/tidb:v8.5.0",
+      "image_digest": "pingcap/tidb@sha256:490861bd4a2fa643dbe76b77ffecafcad66e6a42774e580b82f4ec2429a80e57",
+      "container": "deltascope-ddl-golden-tidb85",
+      "reachable": true,
+      "version": "8.0.11-TiDB-v8.5.0"
+    },
+    "setup": [
+      {
+        "name": "seed tf",
+        "sql": "CREATE TABLE t23fx.t23fx_tf (id BIGINT PRIMARY KEY)",
+        "rc": 1,
+        "stdout": "",
+        "stderr": "ERROR 1049 (42000): Unknown database 'golden'"
+      }
+    ],
+    "post_verify": [
+      {
+        "assert": "audit declared nothing",
+        "sql": "SELECT COUNT(*) FROM information_schema.tiflash_replica WHERE table_schema='t23fx' AND table_name='t23fx_tf'",
+        "rc": 1,
+        "output": "",
+        "stderr": "ERROR 1049 (42000): Unknown database 'golden'"
+      }
+    ],
+    "execute": [
+      {
+        "name": "native replica declaration",
+        "sql": "ALTER TABLE t23fx.t23fx_tf SET TIFLASH REPLICA 2",
+        "rc": 1,
+        "stdout": "",
+        "stderr": "ERROR 1049 (42000): Unknown database 'golden'",
+        "verify": [
+          {
+            "assert": "replica row recorded",
+            "sql": "SELECT COUNT(*) FROM information_schema.tiflash_replica WHERE table_schema='t23fx' AND table_name='t23fx_tf'",
+            "rc": 1,
+            "output": "",
+            "stderr": "ERROR 1049 (42000): Unknown database 'golden'"
+          }
+        ]
+      }
+    ],
+    "structure": [
+      {
+        "assert": "replica count declared as 2",
+        "sql": "SELECT COUNT(*) FROM information_schema.tiflash_replica WHERE table_schema='t23fx' AND table_name='t23fx_tf' AND replica_count=2",
+        "rc": 1,
+        "output": "",
+        "stderr": "ERROR 1049 (42000): Unknown database 'golden'"
+      },
+      {
+        "assert": "replica unavailable without tiflash store",
+        "sql": "SELECT COUNT(*) FROM information_schema.tiflash_replica WHERE table_schema='t23fx' AND table_name='t23fx_tf' AND available=1",
+        "rc": 1,
+        "output": "",
+        "stderr": "ERROR 1049 (42000): Unknown database 'golden'"
+      }
+    ],
+    "teardown": [
+      {
+        "name": "drop tf",
+        "sql": "DROP TABLE IF EXISTS t23fx.t23fx_tf",
+        "rc": 1,
+        "stderr": "ERROR 1049 (42000): Unknown database 'golden'"
+      }
+    ],
+    "exit": 3,
+    "stdout": "",
+    "stderr": "connection failed\n",
+    "parsed": null,
+    "version_evidence": {
+      "target_raw": null,
+      "target_canonical": null,
+      "observed_raw": "8.0.11-TiDB-v8.5.0",
+      "observed_canonical": {
+        "product": "tidb",
+        "version": "8.5.0"
+      },
+      "resolved": null
+    }
+  },
+  "assertions": [
+    {
+      "name": "database reachable with expected version",
+      "ok": true,
+      "detail": "SELECT VERSION() rc=0 version='8.0.11-TiDB-v8.5.0' expected_contains='v8.5.0'"
+    },
+    {
+      "name": "setup seed tf return code",
+      "ok": false,
+      "detail": "rc=1 expected=0 stderr=\"ERROR 1049 (42000): Unknown database 'golden'\""
+    },
+    {
+      "name": "exit code",
+      "ok": false,
+      "detail": "rc=3 expected=0"
+    },
+    {
+      "name": "verdict",
+      "ok": false,
+      "detail": "verdict=None"
+    },
+    {
+      "name": "top-level statements",
+      "ok": false,
+      "detail": "statements=0 expected=1"
+    },
+    {
+      "name": "zero findings",
+      "ok": false,
+      "detail": "findings=0"
+    },
+    {
+      "name": "no diagnostics",
+      "ok": false,
+      "detail": "diagnostics=[]"
+    },
+    {
+      "name": "no unsupported",
+      "ok": false,
+      "detail": "unsupported=[]"
+    },
+    {
+      "name": "aggregate coverage",
+      "ok": false,
+      "detail": "coverage=None"
+    },
+    {
+      "name": "evidence gap count",
+      "ok": false,
+      "detail": "gaps=0"
+    },
+    {
+      "name": "evidence gap entries",
+      "ok": false,
+      "detail": "gaps=[] expected=[(0, 'ddl.tidb.table.tiflash.valid', 'missing_instance_fact')]"
+    },
+    {
+      "name": "evidence gap required_facts (0, 'ddl.tidb.table.tiflash.valid', 'missing_instance_fact')",
+      "ok": false,
+      "detail": "gaps=[] expected_facts=['table.tiflash_replica']"
+    },
+    {
+      "name": "no gap encoded as finding",
+      "ok": true,
+      "detail": "findings carrying gap shape=[]"
+    },
+    {
+      "name": "post-verify audit declared nothing",
+      "ok": false,
+      "detail": "rc=1 output='' expected='0'"
+    },
+    {
+      "name": "execute native replica declaration return code",
+      "ok": false,
+      "detail": "rc=1 expected=0 stderr=\"ERROR 1049 (42000): Unknown database 'golden'\""
+    },
+    {
+      "name": "execute native replica declaration: replica row recorded",
+      "ok": false,
+      "detail": "rc=1 output='' expected='1'"
+    },
+    {
+      "name": "structure replica count declared as 2",
+      "ok": false,
+      "detail": "rc=1 output='' expected='1'"
+    },
+    {
+      "name": "structure replica unavailable without tiflash store",
+      "ok": false,
+      "detail": "rc=1 output='' expected='0'"
+    },
+    {
+      "name": "teardown drop tf return code",
+      "ok": false,
+      "detail": "rc=1 expected=0 stderr=\"ERROR 1049 (42000): Unknown database 'golden'\""
+    }
+  ],
+  "status": "fail",
+  "command": [
+    "/private/tmp/t23r10-artifact/golden/T23/bin/deltascope",
+    "audit",
+    "--dialect",
+    "tidb",
+    "--sql",
+    "ALTER TABLE t23fx.t23fx_tf SET TIFLASH REPLICA 2;",
+    "--config",
+    "/private/tmp/t23r10-artifact/golden/T23/golden-policy.yaml",
+    "--format",
+    "json",
+    "--host",
+    "127.0.0.1",
+    "--port",
+    "24000",
+    "--user",
+    "root",
+    "--schema",
+    "t23fx",
+    "--fail-on",
+    "blocker"
+  ]
+}

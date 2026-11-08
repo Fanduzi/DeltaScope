@@ -1,0 +1,48 @@
+{
+  "case_id": "T23.db.mysql57.ddl",
+  "kind": "db_ddl",
+  "anchor": "mysql57",
+  "input_sql": [
+    "DROP DATABASE IF EXISTS t23fx",
+    "CREATE DATABASE t23fx;CREATE TABLE t23fx.t (id INT PRIMARY KEY)"
+  ],
+  "expected": {
+    "steps": [
+      {
+        "name": "clear-task-fixture",
+        "rc": 0,
+        "verify": []
+      },
+      {
+        "name": "seed-fixture-schema",
+        "rc": 0,
+        "verify": [
+          {
+            "assert": "fixture table exists",
+            "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='t23fx' AND TABLE_NAME='t'",
+            "expect": "1"
+          }
+        ]
+      }
+    ]
+  },
+  "actual": {
+    "steps": [],
+    "database": {
+      "product": "mysql",
+      "image": "mysql:5.7.44",
+      "image_digest": "mysql@sha256:4bc6bc963e6d8443453676cae56536f4b8156d78bae03c0145cbe47c2aad73bb",
+      "container": "deltascope-ddl-golden-mysql57",
+      "reachable": false,
+      "version": ""
+    }
+  },
+  "assertions": [
+    {
+      "name": "database reachable with expected version",
+      "ok": false,
+      "detail": "SELECT VERSION() rc=1 version='' expected_contains='5.7.44'"
+    }
+  ],
+  "status": "fail"
+}

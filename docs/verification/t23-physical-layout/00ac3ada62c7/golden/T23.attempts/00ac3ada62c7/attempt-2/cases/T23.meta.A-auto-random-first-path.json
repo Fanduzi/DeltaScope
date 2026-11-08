@@ -1,0 +1,53 @@
+{
+  "case_id": "T23.meta.A-auto-random-first-path",
+  "kind": "cli_metadata",
+  "cli_case": "A-auto-random-first-path",
+  "anchor": "tidb85",
+  "dialect": "tidb",
+  "input_sql": "CREATE TABLE t23fx.t23fx_ar1 (id BIGINT UNSIGNED PRIMARY KEY AUTO_RANDOM(5,64));\nALTER TABLE t23fx.t23fx_ar0 ADD COLUMN ar_note VARCHAR(8);",
+  "policy_profile": "t23-layout-id",
+  "policy_path": "/private/tmp/t23r10-artifact/golden/T23/golden-policy.yaml",
+  "connect": {
+    "host": "127.0.0.1",
+    "port": 24000,
+    "user": "root",
+    "schema": "t23fx"
+  },
+  "expected": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 2,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "evidence_gaps": 0,
+    "instance_facts": {
+      "tidb_enable_clustered_index": "int_only",
+      "tidb_alter_primary_key": "false"
+    }
+  },
+  "actual": {
+    "database": {
+      "product": "tidb",
+      "image": "pingcap/tidb:v8.5.0",
+      "image_digest": "pingcap/tidb@sha256:490861bd4a2fa643dbe76b77ffecafcad66e6a42774e580b82f4ec2429a80e57",
+      "container": "deltascope-ddl-golden-tidb85",
+      "reachable": false,
+      "version": ""
+    },
+    "setup": [],
+    "post_verify": [],
+    "execute": [],
+    "structure": [],
+    "teardown": []
+  },
+  "assertions": [
+    {
+      "name": "database reachable with expected version",
+      "ok": false,
+      "detail": "SELECT VERSION() rc=1 version='' expected_contains='v8.5.0'"
+    }
+  ],
+  "status": "fail"
+}

@@ -1,0 +1,107 @@
+{
+  "case_id": "T23.meta.B-split-region",
+  "kind": "cli_metadata",
+  "cli_case": "B-split-region",
+  "anchor": "tidb85",
+  "dialect": "tidb",
+  "input_sql": "SPLIT TABLE t23fx.t23fx_sp BETWEEN (0) AND (10000) REGIONS 4;\nSPLIT TABLE t23fx.t23fx_sp BETWEEN (0) AND (100) REGIONS 4;\nSPLIT TABLE t23fx.t23fx_sp BETWEEN (100) AND (0) REGIONS 4;\nSPLIT TABLE t23fx.t23fx_sp BETWEEN (NULL) AND (10000) REGIONS 4;\nSPLIT TABLE t23fx.t23fx_sp BY (1),(2),(3);\nSPLIT TABLE t23fx.t23fx_sp INDEX missing_idx BETWEEN (0) AND (10000) REGIONS 4;\nSPLIT TABLE t23fx.t23fx_sp_ix INDEX ix BETWEEN (0) AND (10000) REGIONS 2;\nSPLIT TABLE t23fx.t23fx_ch BETWEEN (0,0) AND (10000,0) REGIONS 4;\nSPLIT TABLE t23fx.t23fx_noh BETWEEN (0) AND (10000) REGIONS 4;\nSPLIT TABLE t23fx.t23fx_sp BETWEEN (0) AND (10000) REGIONS 0;\nSPLIT TABLE t23fx.t23fx_sp BETWEEN (0) AND (10000) REGIONS 2000;\nSPLIT TABLE t23fx.t23fx_sp PARTITION (p9) BETWEEN (0) AND (10000) REGIONS 4;",
+  "policy_profile": "t23-layout-id",
+  "policy_path": "/private/tmp/t23r10-artifact/golden/T23/golden-policy.yaml",
+  "connect": {
+    "host": "127.0.0.1",
+    "port": 24000,
+    "user": "root",
+    "schema": "t23fx"
+  },
+  "expected": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 12,
+    "findings": 7,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "evidence_gaps": 2,
+    "finding_entries": [
+      {
+        "index": 1,
+        "rule_id": "ddl.tidb.table.split_region.valid",
+        "level": "blocker"
+      },
+      {
+        "index": 2,
+        "rule_id": "ddl.tidb.table.split_region.valid",
+        "level": "blocker"
+      },
+      {
+        "index": 3,
+        "rule_id": "ddl.tidb.table.split_region.valid",
+        "level": "blocker"
+      },
+      {
+        "index": 5,
+        "rule_id": "ddl.tidb.table.split_region.valid",
+        "level": "blocker"
+      },
+      {
+        "index": 9,
+        "rule_id": "ddl.tidb.table.split_region.valid",
+        "level": "blocker"
+      },
+      {
+        "index": 10,
+        "rule_id": "ddl.tidb.table.split_region.valid",
+        "level": "blocker"
+      },
+      {
+        "index": 11,
+        "rule_id": "ddl.tidb.table.split_region.valid",
+        "level": "blocker"
+      }
+    ],
+    "evidence_gap_entries": [
+      {
+        "index": 6,
+        "rule_id": "ddl.tidb.table.split_region.valid",
+        "reason_code": "unproven_statement_fact",
+        "required_facts": [
+          "statement.split_bound_relation"
+        ]
+      },
+      {
+        "index": 7,
+        "rule_id": "ddl.tidb.table.split_region.valid",
+        "reason_code": "unproven_statement_fact",
+        "required_facts": [
+          "statement.split_bound_relation"
+        ]
+      }
+    ],
+    "instance_facts": {
+      "tidb_split_region_max_num": 1000
+    }
+  },
+  "actual": {
+    "database": {
+      "product": "tidb",
+      "image": "pingcap/tidb:v8.5.0",
+      "image_digest": "pingcap/tidb@sha256:490861bd4a2fa643dbe76b77ffecafcad66e6a42774e580b82f4ec2429a80e57",
+      "container": "deltascope-ddl-golden-tidb85",
+      "reachable": false,
+      "version": ""
+    },
+    "setup": [],
+    "post_verify": [],
+    "execute": [],
+    "structure": [],
+    "teardown": []
+  },
+  "assertions": [
+    {
+      "name": "database reachable with expected version",
+      "ok": false,
+      "detail": "SELECT VERSION() rc=1 version='' expected_contains='v8.5.0'"
+    }
+  ],
+  "status": "fail"
+}

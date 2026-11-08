@@ -1,0 +1,252 @@
+{
+  "case_id": "T23.meta.C-compact-noop",
+  "kind": "cli_metadata",
+  "cli_case": "C-compact-noop",
+  "anchor": "tidb85",
+  "dialect": "tidb",
+  "input_sql": "ALTER TABLE t23fx.t23fx_cx COMPACT TIFLASH REPLICA;\nALTER TABLE t23fx.t23fx_cx COMPACT PARTITION p0 TIFLASH REPLICA;\nALTER TABLE t23fx.t23fx_cx_part COMPACT PARTITION p9 TIFLASH REPLICA;\nALTER TABLE t23fx.t23fx_cx_part COMPACT TIFLASH REPLICA;",
+  "policy_profile": "t23-layout-id",
+  "policy_path": "/private/tmp/t23r10-artifact/golden/T23/golden-policy.yaml",
+  "connect": {
+    "host": "127.0.0.1",
+    "port": 24000,
+    "user": "root",
+    "schema": "t23fx"
+  },
+  "expected": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 4,
+    "findings": 2,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "evidence_gaps": 0,
+    "finding_entries": [
+      {
+        "index": 1,
+        "rule_id": "ddl.tidb.table.compact.valid",
+        "level": "blocker"
+      },
+      {
+        "index": 2,
+        "rule_id": "ddl.tidb.table.compact.valid",
+        "level": "blocker"
+      }
+    ]
+  },
+  "actual": {
+    "database": {
+      "product": "tidb",
+      "image": "pingcap/tidb:v8.5.0",
+      "image_digest": "pingcap/tidb@sha256:490861bd4a2fa643dbe76b77ffecafcad66e6a42774e580b82f4ec2429a80e57",
+      "container": "deltascope-ddl-golden-tidb85",
+      "reachable": true,
+      "version": "8.0.11-TiDB-v8.5.0"
+    },
+    "setup": [
+      {
+        "name": "seed cx",
+        "sql": "CREATE TABLE t23fx.t23fx_cx (id BIGINT PRIMARY KEY)",
+        "rc": 1,
+        "stdout": "",
+        "stderr": "ERROR 1049 (42000): Unknown database 'golden'"
+      },
+      {
+        "name": "seed cx_part",
+        "sql": "CREATE TABLE t23fx.t23fx_cx_part (id BIGINT PRIMARY KEY, v INT) PARTITION BY RANGE (id) (PARTITION p0 VALUES LESS THAN (100), PARTITION p1 VALUES LESS THAN MAXVALUE)",
+        "rc": 1,
+        "stdout": "",
+        "stderr": "ERROR 1049 (42000): Unknown database 'golden'"
+      }
+    ],
+    "post_verify": [
+      {
+        "assert": "audit changed nothing",
+        "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='t23fx' AND TABLE_NAME LIKE 't23fx_cx%'",
+        "rc": 1,
+        "output": "",
+        "stderr": "ERROR 1049 (42000): Unknown database 'golden'"
+      }
+    ],
+    "execute": [
+      {
+        "name": "native compact no-replica accepted",
+        "sql": "ALTER TABLE t23fx.t23fx_cx COMPACT TIFLASH REPLICA",
+        "rc": 1,
+        "stdout": "",
+        "stderr": "ERROR 1049 (42000): Unknown database 'golden'"
+      },
+      {
+        "name": "native compact partition on nonpartitioned",
+        "sql": "ALTER TABLE t23fx.t23fx_cx COMPACT PARTITION p0 TIFLASH REPLICA",
+        "rc": 1,
+        "stdout": "",
+        "stderr": "ERROR 1049 (42000): Unknown database 'golden'"
+      },
+      {
+        "name": "native compact missing partition",
+        "sql": "ALTER TABLE t23fx.t23fx_cx_part COMPACT PARTITION p9 TIFLASH REPLICA",
+        "rc": 1,
+        "stdout": "",
+        "stderr": "ERROR 1049 (42000): Unknown database 'golden'"
+      },
+      {
+        "name": "native compact partitioned table",
+        "sql": "ALTER TABLE t23fx.t23fx_cx_part COMPACT TIFLASH REPLICA",
+        "rc": 1,
+        "stdout": "",
+        "stderr": "ERROR 1049 (42000): Unknown database 'golden'"
+      }
+    ],
+    "structure": [],
+    "teardown": [
+      {
+        "name": "drop t23fx_cx",
+        "sql": "DROP TABLE IF EXISTS t23fx.t23fx_cx",
+        "rc": 1,
+        "stderr": "ERROR 1049 (42000): Unknown database 'golden'"
+      },
+      {
+        "name": "drop t23fx_cx_part",
+        "sql": "DROP TABLE IF EXISTS t23fx.t23fx_cx_part",
+        "rc": 1,
+        "stderr": "ERROR 1049 (42000): Unknown database 'golden'"
+      }
+    ],
+    "exit": 3,
+    "stdout": "",
+    "stderr": "connection failed\n",
+    "parsed": null,
+    "version_evidence": {
+      "target_raw": null,
+      "target_canonical": null,
+      "observed_raw": "8.0.11-TiDB-v8.5.0",
+      "observed_canonical": {
+        "product": "tidb",
+        "version": "8.5.0"
+      },
+      "resolved": null
+    }
+  },
+  "assertions": [
+    {
+      "name": "database reachable with expected version",
+      "ok": true,
+      "detail": "SELECT VERSION() rc=0 version='8.0.11-TiDB-v8.5.0' expected_contains='v8.5.0'"
+    },
+    {
+      "name": "setup seed cx return code",
+      "ok": false,
+      "detail": "rc=1 expected=0 stderr=\"ERROR 1049 (42000): Unknown database 'golden'\""
+    },
+    {
+      "name": "setup seed cx_part return code",
+      "ok": false,
+      "detail": "rc=1 expected=0 stderr=\"ERROR 1049 (42000): Unknown database 'golden'\""
+    },
+    {
+      "name": "exit code",
+      "ok": false,
+      "detail": "rc=3 expected=1"
+    },
+    {
+      "name": "verdict",
+      "ok": false,
+      "detail": "verdict=None"
+    },
+    {
+      "name": "top-level statements",
+      "ok": false,
+      "detail": "statements=0 expected=4"
+    },
+    {
+      "name": "zero findings",
+      "ok": false,
+      "detail": "findings=0"
+    },
+    {
+      "name": "no diagnostics",
+      "ok": false,
+      "detail": "diagnostics=[]"
+    },
+    {
+      "name": "no unsupported",
+      "ok": false,
+      "detail": "unsupported=[]"
+    },
+    {
+      "name": "aggregate coverage",
+      "ok": false,
+      "detail": "coverage=None"
+    },
+    {
+      "name": "evidence gap count",
+      "ok": true,
+      "detail": "gaps=0"
+    },
+    {
+      "name": "finding entries",
+      "ok": false,
+      "detail": "findings=[] expected=[(1, 'ddl.tidb.table.compact.valid', 'blocker'), (2, 'ddl.tidb.table.compact.valid', 'blocker')]"
+    },
+    {
+      "name": "post-verify audit changed nothing",
+      "ok": false,
+      "detail": "rc=1 output='' expected='2'"
+    },
+    {
+      "name": "execute native compact no-replica accepted return code",
+      "ok": false,
+      "detail": "rc=1 expected=0 stderr=\"ERROR 1049 (42000): Unknown database 'golden'\""
+    },
+    {
+      "name": "execute native compact partition on nonpartitioned return code",
+      "ok": true,
+      "detail": "rc=1 expected=1 stderr=\"ERROR 1049 (42000): Unknown database 'golden'\""
+    },
+    {
+      "name": "execute native compact missing partition return code",
+      "ok": true,
+      "detail": "rc=1 expected=1 stderr=\"ERROR 1049 (42000): Unknown database 'golden'\""
+    },
+    {
+      "name": "execute native compact partitioned table return code",
+      "ok": false,
+      "detail": "rc=1 expected=0 stderr=\"ERROR 1049 (42000): Unknown database 'golden'\""
+    },
+    {
+      "name": "teardown drop t23fx_cx return code",
+      "ok": false,
+      "detail": "rc=1 expected=0 stderr=\"ERROR 1049 (42000): Unknown database 'golden'\""
+    },
+    {
+      "name": "teardown drop t23fx_cx_part return code",
+      "ok": false,
+      "detail": "rc=1 expected=0 stderr=\"ERROR 1049 (42000): Unknown database 'golden'\""
+    }
+  ],
+  "status": "fail",
+  "command": [
+    "/private/tmp/t23r10-artifact/golden/T23/bin/deltascope",
+    "audit",
+    "--dialect",
+    "tidb",
+    "--sql",
+    "ALTER TABLE t23fx.t23fx_cx COMPACT TIFLASH REPLICA;\nALTER TABLE t23fx.t23fx_cx COMPACT PARTITION p0 TIFLASH REPLICA;\nALTER TABLE t23fx.t23fx_cx_part COMPACT PARTITION p9 TIFLASH REPLICA;\nALTER TABLE t23fx.t23fx_cx_part COMPACT TIFLASH REPLICA;",
+    "--config",
+    "/private/tmp/t23r10-artifact/golden/T23/golden-policy.yaml",
+    "--format",
+    "json",
+    "--host",
+    "127.0.0.1",
+    "--port",
+    "24000",
+    "--user",
+    "root",
+    "--schema",
+    "t23fx",
+    "--fail-on",
+    "blocker"
+  ]
+}

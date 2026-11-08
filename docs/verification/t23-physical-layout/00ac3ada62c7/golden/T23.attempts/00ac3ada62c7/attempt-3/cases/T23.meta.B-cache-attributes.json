@@ -1,0 +1,386 @@
+{
+  "case_id": "T23.meta.B-cache-attributes",
+  "kind": "cli_metadata",
+  "cli_case": "B-cache-attributes",
+  "anchor": "tidb85",
+  "dialect": "tidb",
+  "input_sql": "ALTER TABLE t23fx.t23fx_cache NOCACHE;\nALTER TABLE t23fx.t23fx_cache CACHE;\nALTER TABLE t23fx.t23fx_cache_part CACHE;\nALTER TABLE t23fx.t23fx_attr ATTRIBUTES='merge_option=deny';\nALTER TABLE t23fx.t23fx_attr ATTRIBUTES=DEFAULT;\nALTER TABLE t23fx.t23fx_attr ATTRIBUTES='key';\nALTER TABLE t23fx.t23fx_attr_part PARTITION p0 ATTRIBUTES='key=value';",
+  "policy_profile": "t23-layout-id",
+  "policy_path": "/private/tmp/t23r10-artifact/golden/T23/golden-policy.yaml",
+  "connect": {
+    "host": "127.0.0.1",
+    "port": 24000,
+    "user": "root",
+    "schema": "t23fx"
+  },
+  "expected": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 7,
+    "findings": 2,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "evidence_gaps": 1,
+    "finding_entries": [
+      {
+        "index": 2,
+        "rule_id": "ddl.tidb.table.cache.valid",
+        "level": "blocker"
+      },
+      {
+        "index": 5,
+        "rule_id": "ddl.tidb.table.attributes.valid",
+        "level": "blocker"
+      }
+    ],
+    "evidence_gap_entries": [
+      {
+        "index": 1,
+        "rule_id": "ddl.tidb.table.cache.valid",
+        "reason_code": "missing_instance_fact",
+        "required_facts": [
+          "runtime.cache_table_size"
+        ]
+      }
+    ]
+  },
+  "actual": {
+    "database": {
+      "product": "tidb",
+      "image": "pingcap/tidb:v8.5.0",
+      "image_digest": "pingcap/tidb@sha256:490861bd4a2fa643dbe76b77ffecafcad66e6a42774e580b82f4ec2429a80e57",
+      "container": "deltascope-ddl-golden-tidb85",
+      "reachable": true,
+      "version": "8.0.11-TiDB-v8.5.0"
+    },
+    "setup": [
+      {
+        "name": "seed cache table",
+        "sql": "CREATE TABLE t23fx.t23fx_cache (id BIGINT PRIMARY KEY)",
+        "rc": 1,
+        "stdout": "",
+        "stderr": "ERROR 1049 (42000): Unknown database 'golden'"
+      },
+      {
+        "name": "seed cache part",
+        "sql": "CREATE TABLE t23fx.t23fx_cache_part (id BIGINT PRIMARY KEY, v INT) PARTITION BY RANGE (id) (PARTITION p0 VALUES LESS THAN (100), PARTITION p1 VALUES LESS THAN MAXVALUE)",
+        "rc": 1,
+        "stdout": "",
+        "stderr": "ERROR 1049 (42000): Unknown database 'golden'"
+      },
+      {
+        "name": "seed attr table",
+        "sql": "CREATE TABLE t23fx.t23fx_attr (id BIGINT PRIMARY KEY)",
+        "rc": 1,
+        "stdout": "",
+        "stderr": "ERROR 1049 (42000): Unknown database 'golden'"
+      },
+      {
+        "name": "seed attr part",
+        "sql": "CREATE TABLE t23fx.t23fx_attr_part (id BIGINT PRIMARY KEY, v INT) PARTITION BY RANGE (id) (PARTITION p0 VALUES LESS THAN (100), PARTITION p1 VALUES LESS THAN MAXVALUE)",
+        "rc": 1,
+        "stdout": "",
+        "stderr": "ERROR 1049 (42000): Unknown database 'golden'"
+      }
+    ],
+    "post_verify": [
+      {
+        "assert": "audit applied nothing",
+        "sql": "SELECT COUNT(*) FROM mysql.table_cache_meta c JOIN information_schema.tables t ON c.tid = t.tidb_table_id WHERE t.table_schema='t23fx'",
+        "rc": 1,
+        "output": "",
+        "stderr": "ERROR 1049 (42000): Unknown database 'golden'"
+      }
+    ],
+    "execute": [
+      {
+        "name": "native nocache",
+        "sql": "ALTER TABLE t23fx.t23fx_cache NOCACHE",
+        "rc": 1,
+        "stdout": "",
+        "stderr": "ERROR 1049 (42000): Unknown database 'golden'"
+      },
+      {
+        "name": "native cache declaration accepted",
+        "sql": "ALTER TABLE t23fx.t23fx_cache CACHE",
+        "rc": 1,
+        "stdout": "",
+        "stderr": "ERROR 1049 (42000): Unknown database 'golden'",
+        "verify": [
+          {
+            "assert": "cache lock row exists",
+            "sql": "SELECT COUNT(*) FROM mysql.table_cache_meta c JOIN information_schema.tables t ON c.tid = t.tidb_table_id WHERE t.table_schema='t23fx' AND t.table_name='t23fx_cache'",
+            "rc": 1,
+            "output": "",
+            "stderr": "ERROR 1049 (42000): Unknown database 'golden'"
+          }
+        ]
+      },
+      {
+        "name": "native cache partitioned refused",
+        "sql": "ALTER TABLE t23fx.t23fx_cache_part CACHE",
+        "rc": 1,
+        "stdout": "",
+        "stderr": "ERROR 1049 (42000): Unknown database 'golden'"
+      },
+      {
+        "name": "native attributes set",
+        "sql": "ALTER TABLE t23fx.t23fx_attr ATTRIBUTES='merge_option=deny'",
+        "rc": 1,
+        "stdout": "",
+        "stderr": "ERROR 1049 (42000): Unknown database 'golden'"
+      },
+      {
+        "name": "native attributes default",
+        "sql": "ALTER TABLE t23fx.t23fx_attr ATTRIBUTES=DEFAULT",
+        "rc": 1,
+        "stdout": "",
+        "stderr": "ERROR 1049 (42000): Unknown database 'golden'"
+      },
+      {
+        "name": "native attributes invalid refused",
+        "sql": "ALTER TABLE t23fx.t23fx_attr ATTRIBUTES='key'",
+        "rc": 1,
+        "stdout": "",
+        "stderr": "ERROR 1049 (42000): Unknown database 'golden'"
+      },
+      {
+        "name": "native partition attributes",
+        "sql": "ALTER TABLE t23fx.t23fx_attr_part PARTITION p0 ATTRIBUTES='key=value'",
+        "rc": 1,
+        "stdout": "",
+        "stderr": "ERROR 1049 (42000): Unknown database 'golden'"
+      }
+    ],
+    "structure": [
+      {
+        "assert": "partition attribute row recorded",
+        "sql": "SELECT COUNT(*) FROM information_schema.attributes WHERE id LIKE 'schema/t23fx/%'",
+        "rc": 1,
+        "output": "",
+        "stderr": "ERROR 1049 (42000): Unknown database 'golden'"
+      }
+    ],
+    "teardown": [
+      {
+        "name": "drop t23fx_cache",
+        "sql": "DROP TABLE IF EXISTS t23fx.t23fx_cache",
+        "rc": 1,
+        "stderr": "ERROR 1049 (42000): Unknown database 'golden'"
+      },
+      {
+        "name": "drop t23fx_cache_part",
+        "sql": "DROP TABLE IF EXISTS t23fx.t23fx_cache_part",
+        "rc": 1,
+        "stderr": "ERROR 1049 (42000): Unknown database 'golden'"
+      },
+      {
+        "name": "drop t23fx_attr",
+        "sql": "DROP TABLE IF EXISTS t23fx.t23fx_attr",
+        "rc": 1,
+        "stderr": "ERROR 1049 (42000): Unknown database 'golden'"
+      },
+      {
+        "name": "drop t23fx_attr_part",
+        "sql": "DROP TABLE IF EXISTS t23fx.t23fx_attr_part",
+        "rc": 1,
+        "stderr": "ERROR 1049 (42000): Unknown database 'golden'"
+      }
+    ],
+    "exit": 3,
+    "stdout": "",
+    "stderr": "connection failed\n",
+    "parsed": null,
+    "version_evidence": {
+      "target_raw": null,
+      "target_canonical": null,
+      "observed_raw": "8.0.11-TiDB-v8.5.0",
+      "observed_canonical": {
+        "product": "tidb",
+        "version": "8.5.0"
+      },
+      "resolved": null
+    }
+  },
+  "assertions": [
+    {
+      "name": "database reachable with expected version",
+      "ok": true,
+      "detail": "SELECT VERSION() rc=0 version='8.0.11-TiDB-v8.5.0' expected_contains='v8.5.0'"
+    },
+    {
+      "name": "setup seed cache table return code",
+      "ok": false,
+      "detail": "rc=1 expected=0 stderr=\"ERROR 1049 (42000): Unknown database 'golden'\""
+    },
+    {
+      "name": "setup seed cache part return code",
+      "ok": false,
+      "detail": "rc=1 expected=0 stderr=\"ERROR 1049 (42000): Unknown database 'golden'\""
+    },
+    {
+      "name": "setup seed attr table return code",
+      "ok": false,
+      "detail": "rc=1 expected=0 stderr=\"ERROR 1049 (42000): Unknown database 'golden'\""
+    },
+    {
+      "name": "setup seed attr part return code",
+      "ok": false,
+      "detail": "rc=1 expected=0 stderr=\"ERROR 1049 (42000): Unknown database 'golden'\""
+    },
+    {
+      "name": "exit code",
+      "ok": false,
+      "detail": "rc=3 expected=1"
+    },
+    {
+      "name": "verdict",
+      "ok": false,
+      "detail": "verdict=None"
+    },
+    {
+      "name": "top-level statements",
+      "ok": false,
+      "detail": "statements=0 expected=7"
+    },
+    {
+      "name": "zero findings",
+      "ok": false,
+      "detail": "findings=0"
+    },
+    {
+      "name": "no diagnostics",
+      "ok": false,
+      "detail": "diagnostics=[]"
+    },
+    {
+      "name": "no unsupported",
+      "ok": false,
+      "detail": "unsupported=[]"
+    },
+    {
+      "name": "aggregate coverage",
+      "ok": false,
+      "detail": "coverage=None"
+    },
+    {
+      "name": "evidence gap count",
+      "ok": false,
+      "detail": "gaps=0"
+    },
+    {
+      "name": "evidence gap entries",
+      "ok": false,
+      "detail": "gaps=[] expected=[(1, 'ddl.tidb.table.cache.valid', 'missing_instance_fact')]"
+    },
+    {
+      "name": "evidence gap required_facts (1, 'ddl.tidb.table.cache.valid', 'missing_instance_fact')",
+      "ok": false,
+      "detail": "gaps=[] expected_facts=['runtime.cache_table_size']"
+    },
+    {
+      "name": "no gap encoded as finding",
+      "ok": true,
+      "detail": "findings carrying gap shape=[]"
+    },
+    {
+      "name": "finding entries",
+      "ok": false,
+      "detail": "findings=[] expected=[(2, 'ddl.tidb.table.cache.valid', 'blocker'), (5, 'ddl.tidb.table.attributes.valid', 'blocker')]"
+    },
+    {
+      "name": "post-verify audit applied nothing",
+      "ok": false,
+      "detail": "rc=1 output='' expected='0'"
+    },
+    {
+      "name": "execute native nocache return code",
+      "ok": false,
+      "detail": "rc=1 expected=0 stderr=\"ERROR 1049 (42000): Unknown database 'golden'\""
+    },
+    {
+      "name": "execute native cache declaration accepted return code",
+      "ok": false,
+      "detail": "rc=1 expected=0 stderr=\"ERROR 1049 (42000): Unknown database 'golden'\""
+    },
+    {
+      "name": "execute native cache declaration accepted: cache lock row exists",
+      "ok": false,
+      "detail": "rc=1 output='' expected='1'"
+    },
+    {
+      "name": "execute native cache partitioned refused return code",
+      "ok": true,
+      "detail": "rc=1 expected=1 stderr=\"ERROR 1049 (42000): Unknown database 'golden'\""
+    },
+    {
+      "name": "execute native attributes set return code",
+      "ok": false,
+      "detail": "rc=1 expected=0 stderr=\"ERROR 1049 (42000): Unknown database 'golden'\""
+    },
+    {
+      "name": "execute native attributes default return code",
+      "ok": false,
+      "detail": "rc=1 expected=0 stderr=\"ERROR 1049 (42000): Unknown database 'golden'\""
+    },
+    {
+      "name": "execute native attributes invalid refused return code",
+      "ok": true,
+      "detail": "rc=1 expected=1 stderr=\"ERROR 1049 (42000): Unknown database 'golden'\""
+    },
+    {
+      "name": "execute native partition attributes return code",
+      "ok": false,
+      "detail": "rc=1 expected=0 stderr=\"ERROR 1049 (42000): Unknown database 'golden'\""
+    },
+    {
+      "name": "structure partition attribute row recorded",
+      "ok": false,
+      "detail": "rc=1 output='' expected='1'"
+    },
+    {
+      "name": "teardown drop t23fx_cache return code",
+      "ok": false,
+      "detail": "rc=1 expected=0 stderr=\"ERROR 1049 (42000): Unknown database 'golden'\""
+    },
+    {
+      "name": "teardown drop t23fx_cache_part return code",
+      "ok": false,
+      "detail": "rc=1 expected=0 stderr=\"ERROR 1049 (42000): Unknown database 'golden'\""
+    },
+    {
+      "name": "teardown drop t23fx_attr return code",
+      "ok": false,
+      "detail": "rc=1 expected=0 stderr=\"ERROR 1049 (42000): Unknown database 'golden'\""
+    },
+    {
+      "name": "teardown drop t23fx_attr_part return code",
+      "ok": false,
+      "detail": "rc=1 expected=0 stderr=\"ERROR 1049 (42000): Unknown database 'golden'\""
+    }
+  ],
+  "status": "fail",
+  "command": [
+    "/private/tmp/t23r10-artifact/golden/T23/bin/deltascope",
+    "audit",
+    "--dialect",
+    "tidb",
+    "--sql",
+    "ALTER TABLE t23fx.t23fx_cache NOCACHE;\nALTER TABLE t23fx.t23fx_cache CACHE;\nALTER TABLE t23fx.t23fx_cache_part CACHE;\nALTER TABLE t23fx.t23fx_attr ATTRIBUTES='merge_option=deny';\nALTER TABLE t23fx.t23fx_attr ATTRIBUTES=DEFAULT;\nALTER TABLE t23fx.t23fx_attr ATTRIBUTES='key';\nALTER TABLE t23fx.t23fx_attr_part PARTITION p0 ATTRIBUTES='key=value';",
+    "--config",
+    "/private/tmp/t23r10-artifact/golden/T23/golden-policy.yaml",
+    "--format",
+    "json",
+    "--host",
+    "127.0.0.1",
+    "--port",
+    "24000",
+    "--user",
+    "root",
+    "--schema",
+    "t23fx",
+    "--fail-on",
+    "blocker"
+  ]
+}

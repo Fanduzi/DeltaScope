@@ -1,0 +1,387 @@
+{
+  "case_id": "T23.meta.C-compact-noop",
+  "kind": "cli_metadata",
+  "cli_case": "C-compact-noop",
+  "anchor": "tidb85",
+  "dialect": "tidb",
+  "input_sql": "ALTER TABLE t23fx.t23fx_cx COMPACT TIFLASH REPLICA;\nALTER TABLE t23fx.t23fx_cx COMPACT PARTITION p0 TIFLASH REPLICA;\nALTER TABLE t23fx.t23fx_cx_part COMPACT PARTITION p9 TIFLASH REPLICA;\nALTER TABLE t23fx.t23fx_cx_part COMPACT TIFLASH REPLICA;",
+  "policy_profile": "t23-layout-id",
+  "policy_path": "/private/tmp/t23r10-artifact/golden/T23/golden-policy.yaml",
+  "connect": {
+    "host": "127.0.0.1",
+    "port": 24000,
+    "user": "root",
+    "schema": "t23fx"
+  },
+  "expected": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 4,
+    "findings": 2,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "evidence_gaps": 0,
+    "finding_entries": [
+      {
+        "index": 1,
+        "rule_id": "ddl.tidb.table.compact.valid",
+        "level": "blocker"
+      },
+      {
+        "index": 2,
+        "rule_id": "ddl.tidb.table.compact.valid",
+        "level": "blocker"
+      }
+    ]
+  },
+  "actual": {
+    "database": {
+      "product": "tidb",
+      "image": "pingcap/tidb:v8.5.0",
+      "image_digest": "pingcap/tidb@sha256:490861bd4a2fa643dbe76b77ffecafcad66e6a42774e580b82f4ec2429a80e57",
+      "container": "deltascope-ddl-golden-tidb85",
+      "reachable": true,
+      "version": "8.0.11-TiDB-v8.5.0"
+    },
+    "setup": [
+      {
+        "name": "seed cx",
+        "sql": "CREATE TABLE t23fx.t23fx_cx (id BIGINT PRIMARY KEY)",
+        "rc": 0,
+        "stdout": "",
+        "stderr": ""
+      },
+      {
+        "name": "seed cx_part",
+        "sql": "CREATE TABLE t23fx.t23fx_cx_part (id BIGINT PRIMARY KEY, v INT) PARTITION BY RANGE (id) (PARTITION p0 VALUES LESS THAN (100), PARTITION p1 VALUES LESS THAN MAXVALUE)",
+        "rc": 0,
+        "stdout": "",
+        "stderr": ""
+      }
+    ],
+    "post_verify": [
+      {
+        "assert": "audit changed nothing",
+        "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='t23fx' AND TABLE_NAME LIKE 't23fx_cx%'",
+        "rc": 0,
+        "output": "2",
+        "stderr": ""
+      }
+    ],
+    "execute": [
+      {
+        "name": "native compact no-replica accepted",
+        "sql": "ALTER TABLE t23fx.t23fx_cx COMPACT TIFLASH REPLICA",
+        "rc": 0,
+        "stdout": "",
+        "stderr": ""
+      },
+      {
+        "name": "native compact partition on nonpartitioned",
+        "sql": "ALTER TABLE t23fx.t23fx_cx COMPACT PARTITION p0 TIFLASH REPLICA",
+        "rc": 1,
+        "stdout": "",
+        "stderr": "ERROR 1105 (HY000) at line 1: table:t23fx_cx is not a partition table, but user specify partition name list:[p0]"
+      },
+      {
+        "name": "native compact missing partition",
+        "sql": "ALTER TABLE t23fx.t23fx_cx_part COMPACT PARTITION p9 TIFLASH REPLICA",
+        "rc": 1,
+        "stdout": "",
+        "stderr": "ERROR 1735 (HY000) at line 1: Unknown partition 'p9' in table 't23fx_cx_part'"
+      },
+      {
+        "name": "native compact partitioned table",
+        "sql": "ALTER TABLE t23fx.t23fx_cx_part COMPACT TIFLASH REPLICA",
+        "rc": 0,
+        "stdout": "",
+        "stderr": ""
+      }
+    ],
+    "structure": [],
+    "teardown": [
+      {
+        "name": "drop t23fx_cx",
+        "sql": "DROP TABLE IF EXISTS t23fx.t23fx_cx",
+        "rc": 0,
+        "stderr": ""
+      },
+      {
+        "name": "drop t23fx_cx_part",
+        "sql": "DROP TABLE IF EXISTS t23fx.t23fx_cx_part",
+        "rc": 0,
+        "stderr": ""
+      }
+    ],
+    "exit": 1,
+    "stdout": "{\"verdict\":\"reject\",\"coverage\":{\"status\":\"complete\"},\"summary\":{\"statements\":4,\"blockers\":2,\"warnings\":0,\"notices\":0},\"statements\":[{\"index\":0,\"kind\":\"ddl\",\"raw_sql\":\"ALTER TABLE t23fx.t23fx_cx COMPACT TIFLASH REPLICA;\",\"normalized_sql\":\"ALTER TABLE t23fx.t23fx_cx COMPACT TIFLASH REPLICA\",\"coverage\":{\"status\":\"complete\"}},{\"index\":1,\"kind\":\"ddl\",\"raw_sql\":\"ALTER TABLE t23fx.t23fx_cx COMPACT PARTITION p0 TIFLASH REPLICA;\",\"normalized_sql\":\"ALTER TABLE t23fx.t23fx_cx COMPACT PARTITION p0 TIFLASH REPLICA\",\"findings\":[{\"rule_id\":\"ddl.tidb.table.compact.valid\",\"level\":\"blocker\",\"message\":\"compact table on \\\"t23fx_cx\\\" names partitions on a non-partitioned table\",\"statement_index\":1,\"statement_kind\":\"ddl\",\"location\":{\"line\":2,\"column\":1},\"suggestion\":\"drop the PARTITION clause or compact the whole table\",\"metadata\":{\"reason\":\"compact_on_nonpartitioned\",\"table\":\"t23fx_cx\"},\"explanation\":{\"summary\":\"Check DDL tidb table compact valid\",\"why\":\"The statement matched the shipped governance rule for this pattern.\",\"risk\":\"Ignoring this rule can hide live-schema or instance-state risks that only metadata reveals.\",\"suggestion\":\"drop the PARTITION clause or compact the whole table\",\"metadata\":{\"status\":\"available\",\"note\":\"Live metadata is available, so this explanation can use schema or instance facts for a more accurate judgment.\"}}}],\"coverage\":{\"status\":\"complete\"}},{\"index\":2,\"kind\":\"ddl\",\"raw_sql\":\"ALTER TABLE t23fx.t23fx_cx_part COMPACT PARTITION p9 TIFLASH REPLICA;\",\"normalized_sql\":\"ALTER TABLE t23fx.t23fx_cx_part COMPACT PARTITION p9 TIFLASH REPLICA\",\"findings\":[{\"rule_id\":\"ddl.tidb.table.compact.valid\",\"level\":\"blocker\",\"message\":\"compact table on \\\"t23fx_cx_part\\\" names a partition that does not exist on the target table\",\"statement_index\":2,\"statement_kind\":\"ddl\",\"location\":{\"line\":3,\"column\":1},\"suggestion\":\"check the partition member names\",\"metadata\":{\"reason\":\"compact_partition_not_found\",\"table\":\"t23fx_cx_part\"},\"explanation\":{\"summary\":\"Check DDL tidb table compact valid\",\"why\":\"The statement matched the shipped governance rule for this pattern.\",\"risk\":\"Ignoring this rule can hide live-schema or instance-state risks that only metadata reveals.\",\"suggestion\":\"check the partition member names\",\"metadata\":{\"status\":\"available\",\"note\":\"Live metadata is available, so this explanation can use schema or instance facts for a more accurate judgment.\"}}}],\"coverage\":{\"status\":\"complete\"}},{\"index\":3,\"kind\":\"ddl\",\"raw_sql\":\"ALTER TABLE t23fx.t23fx_cx_part COMPACT TIFLASH REPLICA;\",\"normalized_sql\":\"ALTER TABLE t23fx.t23fx_cx_part COMPACT TIFLASH REPLICA\",\"coverage\":{\"status\":\"complete\"}}],\"version\":{\"product\":\"tidb\",\"version\":\"8.5.0\",\"major\":8,\"minor\":5,\"patch\":0,\"source\":\"observed\",\"validated_range\":true},\"fail_on_triggered\":true,\"rule_summary\":{\"loaded\":13,\"applicable\":2,\"skipped\":[]},\"context\":{\"mode\":\"metadata-aware\",\"dialect\":\"tidb\",\"dialect_source\":\"detected\",\"schema\":\"t23fx\",\"schema_source\":\"flag\"}}\n",
+    "stderr": "",
+    "parsed": {
+      "verdict": "reject",
+      "coverage": {
+        "status": "complete"
+      },
+      "summary": {
+        "statements": 4,
+        "blockers": 2,
+        "warnings": 0,
+        "notices": 0
+      },
+      "statements": [
+        {
+          "index": 0,
+          "kind": "ddl",
+          "raw_sql": "ALTER TABLE t23fx.t23fx_cx COMPACT TIFLASH REPLICA;",
+          "normalized_sql": "ALTER TABLE t23fx.t23fx_cx COMPACT TIFLASH REPLICA",
+          "coverage": {
+            "status": "complete"
+          }
+        },
+        {
+          "index": 1,
+          "kind": "ddl",
+          "raw_sql": "ALTER TABLE t23fx.t23fx_cx COMPACT PARTITION p0 TIFLASH REPLICA;",
+          "normalized_sql": "ALTER TABLE t23fx.t23fx_cx COMPACT PARTITION p0 TIFLASH REPLICA",
+          "findings": [
+            {
+              "rule_id": "ddl.tidb.table.compact.valid",
+              "level": "blocker",
+              "message": "compact table on \"t23fx_cx\" names partitions on a non-partitioned table",
+              "statement_index": 1,
+              "statement_kind": "ddl",
+              "location": {
+                "line": 2,
+                "column": 1
+              },
+              "suggestion": "drop the PARTITION clause or compact the whole table",
+              "metadata": {
+                "reason": "compact_on_nonpartitioned",
+                "table": "t23fx_cx"
+              },
+              "explanation": {
+                "summary": "Check DDL tidb table compact valid",
+                "why": "The statement matched the shipped governance rule for this pattern.",
+                "risk": "Ignoring this rule can hide live-schema or instance-state risks that only metadata reveals.",
+                "suggestion": "drop the PARTITION clause or compact the whole table",
+                "metadata": {
+                  "status": "available",
+                  "note": "Live metadata is available, so this explanation can use schema or instance facts for a more accurate judgment."
+                }
+              }
+            }
+          ],
+          "coverage": {
+            "status": "complete"
+          }
+        },
+        {
+          "index": 2,
+          "kind": "ddl",
+          "raw_sql": "ALTER TABLE t23fx.t23fx_cx_part COMPACT PARTITION p9 TIFLASH REPLICA;",
+          "normalized_sql": "ALTER TABLE t23fx.t23fx_cx_part COMPACT PARTITION p9 TIFLASH REPLICA",
+          "findings": [
+            {
+              "rule_id": "ddl.tidb.table.compact.valid",
+              "level": "blocker",
+              "message": "compact table on \"t23fx_cx_part\" names a partition that does not exist on the target table",
+              "statement_index": 2,
+              "statement_kind": "ddl",
+              "location": {
+                "line": 3,
+                "column": 1
+              },
+              "suggestion": "check the partition member names",
+              "metadata": {
+                "reason": "compact_partition_not_found",
+                "table": "t23fx_cx_part"
+              },
+              "explanation": {
+                "summary": "Check DDL tidb table compact valid",
+                "why": "The statement matched the shipped governance rule for this pattern.",
+                "risk": "Ignoring this rule can hide live-schema or instance-state risks that only metadata reveals.",
+                "suggestion": "check the partition member names",
+                "metadata": {
+                  "status": "available",
+                  "note": "Live metadata is available, so this explanation can use schema or instance facts for a more accurate judgment."
+                }
+              }
+            }
+          ],
+          "coverage": {
+            "status": "complete"
+          }
+        },
+        {
+          "index": 3,
+          "kind": "ddl",
+          "raw_sql": "ALTER TABLE t23fx.t23fx_cx_part COMPACT TIFLASH REPLICA;",
+          "normalized_sql": "ALTER TABLE t23fx.t23fx_cx_part COMPACT TIFLASH REPLICA",
+          "coverage": {
+            "status": "complete"
+          }
+        }
+      ],
+      "version": {
+        "product": "tidb",
+        "version": "8.5.0",
+        "major": 8,
+        "minor": 5,
+        "patch": 0,
+        "source": "observed",
+        "validated_range": true
+      },
+      "fail_on_triggered": true,
+      "rule_summary": {
+        "loaded": 13,
+        "applicable": 2,
+        "skipped": []
+      },
+      "context": {
+        "mode": "metadata-aware",
+        "dialect": "tidb",
+        "dialect_source": "detected",
+        "schema": "t23fx",
+        "schema_source": "flag"
+      }
+    },
+    "version_evidence": {
+      "target_raw": null,
+      "target_canonical": null,
+      "observed_raw": "8.0.11-TiDB-v8.5.0",
+      "observed_canonical": {
+        "product": "tidb",
+        "version": "8.5.0"
+      },
+      "resolved": {
+        "product": "tidb",
+        "version": "8.5.0",
+        "major": 8,
+        "minor": 5,
+        "patch": 0,
+        "source": "observed",
+        "validated_range": true
+      }
+    }
+  },
+  "assertions": [
+    {
+      "name": "database reachable with expected version",
+      "ok": true,
+      "detail": "SELECT VERSION() rc=0 version='8.0.11-TiDB-v8.5.0' expected_contains='v8.5.0'"
+    },
+    {
+      "name": "setup seed cx return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "setup seed cx_part return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "exit code",
+      "ok": true,
+      "detail": "rc=1 expected=1"
+    },
+    {
+      "name": "verdict",
+      "ok": true,
+      "detail": "verdict='reject'"
+    },
+    {
+      "name": "top-level statements",
+      "ok": true,
+      "detail": "statements=4 expected=4"
+    },
+    {
+      "name": "zero findings",
+      "ok": true,
+      "detail": "findings=2"
+    },
+    {
+      "name": "no diagnostics",
+      "ok": true,
+      "detail": "diagnostics=[]"
+    },
+    {
+      "name": "no unsupported",
+      "ok": true,
+      "detail": "unsupported=[]"
+    },
+    {
+      "name": "aggregate coverage",
+      "ok": true,
+      "detail": "coverage='complete'"
+    },
+    {
+      "name": "evidence gap count",
+      "ok": true,
+      "detail": "gaps=0"
+    },
+    {
+      "name": "finding entries",
+      "ok": true,
+      "detail": "findings=[(1, 'ddl.tidb.table.compact.valid', 'blocker'), (2, 'ddl.tidb.table.compact.valid', 'blocker')] expected=[(1, 'ddl.tidb.table.compact.valid', 'blocker'), (2, 'ddl.tidb.table.compact.valid', 'blocker')]"
+    },
+    {
+      "name": "post-verify audit changed nothing",
+      "ok": true,
+      "detail": "rc=0 output='2' expected='2'"
+    },
+    {
+      "name": "execute native compact no-replica accepted return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "execute native compact partition on nonpartitioned return code",
+      "ok": true,
+      "detail": "rc=1 expected=1 stderr='ERROR 1105 (HY000) at line 1: table:t23fx_cx is not a partition table, but user specify partition name list:[p0]'"
+    },
+    {
+      "name": "execute native compact missing partition return code",
+      "ok": true,
+      "detail": "rc=1 expected=1 stderr=\"ERROR 1735 (HY000) at line 1: Unknown partition 'p9' in table 't23fx_cx_part'\""
+    },
+    {
+      "name": "execute native compact partitioned table return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "teardown drop t23fx_cx return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "teardown drop t23fx_cx_part return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    }
+  ],
+  "status": "pass",
+  "command": [
+    "/private/tmp/t23r10-artifact/golden/T23/bin/deltascope",
+    "audit",
+    "--dialect",
+    "tidb",
+    "--sql",
+    "ALTER TABLE t23fx.t23fx_cx COMPACT TIFLASH REPLICA;\nALTER TABLE t23fx.t23fx_cx COMPACT PARTITION p0 TIFLASH REPLICA;\nALTER TABLE t23fx.t23fx_cx_part COMPACT PARTITION p9 TIFLASH REPLICA;\nALTER TABLE t23fx.t23fx_cx_part COMPACT TIFLASH REPLICA;",
+    "--config",
+    "/private/tmp/t23r10-artifact/golden/T23/golden-policy.yaml",
+    "--format",
+    "json",
+    "--host",
+    "127.0.0.1",
+    "--port",
+    "24000",
+    "--user",
+    "root",
+    "--schema",
+    "t23fx",
+    "--fail-on",
+    "blocker"
+  ]
+}

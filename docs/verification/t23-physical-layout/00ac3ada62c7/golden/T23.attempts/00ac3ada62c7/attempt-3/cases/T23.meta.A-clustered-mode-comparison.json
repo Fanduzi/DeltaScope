@@ -1,0 +1,375 @@
+{
+  "case_id": "T23.meta.A-clustered-mode-comparison",
+  "kind": "cli_metadata",
+  "cli_case": "A-clustered-mode-comparison",
+  "anchor": "tidb85",
+  "dialect": "tidb",
+  "input_sql": "CREATE TABLE t23fx.t23fx_cm1 (id BIGINT UNSIGNED PRIMARY KEY AUTO_RANDOM(5,64));",
+  "policy_profile": "t23-layout-id",
+  "policy_path": "/private/tmp/t23r10-artifact/golden/T23/golden-policy.yaml",
+  "connect": {
+    "host": "127.0.0.1",
+    "port": 24000,
+    "user": "root",
+    "schema": "t23fx"
+  },
+  "expected": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "evidence_gaps": 0,
+    "finding_entries": [
+      {
+        "index": 0,
+        "rule_id": "ddl.tidb.table.auto_random.valid",
+        "level": "blocker"
+      }
+    ],
+    "instance_facts": {
+      "tidb_enable_clustered_index": "off",
+      "tidb_alter_primary_key": "false"
+    }
+  },
+  "actual": {
+    "database": {
+      "product": "tidb",
+      "image": "pingcap/tidb:v8.5.0",
+      "image_digest": "pingcap/tidb@sha256:490861bd4a2fa643dbe76b77ffecafcad66e6a42774e580b82f4ec2429a80e57",
+      "container": "deltascope-ddl-golden-tidb85",
+      "reachable": true,
+      "version": "8.0.11-TiDB-v8.5.0"
+    },
+    "setup": [
+      {
+        "name": "record clustered baseline",
+        "sql": "SELECT @@global.tidb_enable_clustered_index",
+        "rc": 1,
+        "stdout": "",
+        "stderr": "ERROR 1049 (42000): Unknown database 'golden'",
+        "verify": [
+          {
+            "assert": "baseline is int_only on this stack",
+            "sql": "SELECT @@global.tidb_enable_clustered_index",
+            "rc": 1,
+            "output": "",
+            "stderr": "ERROR 1049 (42000): Unknown database 'golden'"
+          }
+        ]
+      },
+      {
+        "name": "flip clustered mode off",
+        "sql": "SET GLOBAL tidb_enable_clustered_index='off'",
+        "rc": 1,
+        "stdout": "",
+        "stderr": "ERROR 1049 (42000): Unknown database 'golden'",
+        "verify": [
+          {
+            "assert": "mode is off",
+            "sql": "SELECT @@global.tidb_enable_clustered_index",
+            "rc": 1,
+            "output": "",
+            "stderr": "ERROR 1049 (42000): Unknown database 'golden'"
+          }
+        ]
+      }
+    ],
+    "post_verify": [
+      {
+        "assert": "audit created nothing under off",
+        "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='t23fx' AND TABLE_NAME='t23fx_cm1'",
+        "rc": 1,
+        "output": "",
+        "stderr": "ERROR 1049 (42000): Unknown database 'golden'"
+      }
+    ],
+    "execute": [
+      {
+        "name": "native off refuses",
+        "sql": "CREATE TABLE t23fx.t23fx_cm1 (id BIGINT UNSIGNED PRIMARY KEY AUTO_RANDOM(5,64))",
+        "rc": 1,
+        "stdout": "",
+        "stderr": "ERROR 1049 (42000): Unknown database 'golden'",
+        "verify": [
+          {
+            "assert": "cm1 absent under off",
+            "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='t23fx' AND TABLE_NAME='t23fx_cm1'",
+            "rc": 1,
+            "output": "",
+            "stderr": "ERROR 1049 (42000): Unknown database 'golden'"
+          }
+        ]
+      },
+      {
+        "name": "native on accepts",
+        "sql": "SET GLOBAL tidb_enable_clustered_index='on';CREATE TABLE t23fx.t23fx_cm_on (id BIGINT UNSIGNED PRIMARY KEY AUTO_RANDOM(5,64))",
+        "rc": 1,
+        "stdout": "",
+        "stderr": "ERROR 1049 (42000): Unknown database 'golden'",
+        "verify": [
+          {
+            "assert": "cm_on exists",
+            "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='t23fx' AND TABLE_NAME='t23fx_cm_on'",
+            "rc": 1,
+            "output": "",
+            "stderr": "ERROR 1049 (42000): Unknown database 'golden'"
+          }
+        ]
+      },
+      {
+        "name": "drop cm_on",
+        "sql": "DROP TABLE IF EXISTS t23fx.t23fx_cm_on",
+        "rc": 1,
+        "stdout": "",
+        "stderr": "ERROR 1049 (42000): Unknown database 'golden'"
+      },
+      {
+        "name": "native int_only accepts",
+        "sql": "SET GLOBAL tidb_enable_clustered_index='int_only';CREATE TABLE t23fx.t23fx_cm_io (id BIGINT UNSIGNED PRIMARY KEY AUTO_RANDOM(5,64))",
+        "rc": 1,
+        "stdout": "",
+        "stderr": "ERROR 1049 (42000): Unknown database 'golden'",
+        "verify": [
+          {
+            "assert": "cm_io exists",
+            "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='t23fx' AND TABLE_NAME='t23fx_cm_io'",
+            "rc": 1,
+            "output": "",
+            "stderr": "ERROR 1049 (42000): Unknown database 'golden'"
+          }
+        ]
+      },
+      {
+        "name": "drop cm_io",
+        "sql": "DROP TABLE IF EXISTS t23fx.t23fx_cm_io",
+        "rc": 1,
+        "stdout": "",
+        "stderr": "ERROR 1049 (42000): Unknown database 'golden'"
+      }
+    ],
+    "structure": [],
+    "teardown": [
+      {
+        "name": "restore clustered mode",
+        "sql": "SET GLOBAL tidb_enable_clustered_index='int_only'",
+        "rc": 1,
+        "stderr": "ERROR 1049 (42000): Unknown database 'golden'",
+        "verify": [
+          {
+            "assert": "mode restored to int_only",
+            "sql": "SELECT @@global.tidb_enable_clustered_index",
+            "rc": 1,
+            "output": "",
+            "stderr": "ERROR 1049 (42000): Unknown database 'golden'"
+          }
+        ]
+      },
+      {
+        "name": "drop cm1",
+        "sql": "DROP TABLE IF EXISTS t23fx.t23fx_cm1",
+        "rc": 1,
+        "stderr": "ERROR 1049 (42000): Unknown database 'golden'",
+        "verify": [
+          {
+            "assert": "no residual fixtures",
+            "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='t23fx' AND TABLE_NAME LIKE 't23fx_cm%'",
+            "rc": 1,
+            "output": "",
+            "stderr": "ERROR 1049 (42000): Unknown database 'golden'"
+          }
+        ]
+      }
+    ],
+    "exit": 3,
+    "stdout": "",
+    "stderr": "connection failed\n",
+    "parsed": null,
+    "version_evidence": {
+      "target_raw": null,
+      "target_canonical": null,
+      "observed_raw": "8.0.11-TiDB-v8.5.0",
+      "observed_canonical": {
+        "product": "tidb",
+        "version": "8.5.0"
+      },
+      "resolved": null
+    },
+    "instance_facts": {
+      "tidb_enable_clustered_index": "ON",
+      "tidb_alter_primary_key": "false"
+    }
+  },
+  "assertions": [
+    {
+      "name": "database reachable with expected version",
+      "ok": true,
+      "detail": "SELECT VERSION() rc=0 version='8.0.11-TiDB-v8.5.0' expected_contains='v8.5.0'"
+    },
+    {
+      "name": "setup record clustered baseline return code",
+      "ok": false,
+      "detail": "rc=1 expected=0 stderr=\"ERROR 1049 (42000): Unknown database 'golden'\""
+    },
+    {
+      "name": "setup record clustered baseline: baseline is int_only on this stack",
+      "ok": false,
+      "detail": "rc=1 output='' expected='int_only'"
+    },
+    {
+      "name": "setup flip clustered mode off return code",
+      "ok": false,
+      "detail": "rc=1 expected=0 stderr=\"ERROR 1049 (42000): Unknown database 'golden'\""
+    },
+    {
+      "name": "setup flip clustered mode off: mode is off",
+      "ok": false,
+      "detail": "rc=1 output='' expected='off'"
+    },
+    {
+      "name": "instance fact tidb_enable_clustered_index",
+      "ok": false,
+      "detail": "tidb_enable_clustered_index='ON' expected='off'"
+    },
+    {
+      "name": "instance fact tidb_alter_primary_key",
+      "ok": true,
+      "detail": "tidb_alter_primary_key='false' expected='false'"
+    },
+    {
+      "name": "exit code",
+      "ok": false,
+      "detail": "rc=3 expected=1"
+    },
+    {
+      "name": "verdict",
+      "ok": false,
+      "detail": "verdict=None"
+    },
+    {
+      "name": "top-level statements",
+      "ok": false,
+      "detail": "statements=0 expected=1"
+    },
+    {
+      "name": "zero findings",
+      "ok": false,
+      "detail": "findings=0"
+    },
+    {
+      "name": "no diagnostics",
+      "ok": false,
+      "detail": "diagnostics=[]"
+    },
+    {
+      "name": "no unsupported",
+      "ok": false,
+      "detail": "unsupported=[]"
+    },
+    {
+      "name": "aggregate coverage",
+      "ok": false,
+      "detail": "coverage=None"
+    },
+    {
+      "name": "evidence gap count",
+      "ok": true,
+      "detail": "gaps=0"
+    },
+    {
+      "name": "finding entries",
+      "ok": false,
+      "detail": "findings=[] expected=[(0, 'ddl.tidb.table.auto_random.valid', 'blocker')]"
+    },
+    {
+      "name": "post-verify audit created nothing under off",
+      "ok": false,
+      "detail": "rc=1 output='' expected='0'"
+    },
+    {
+      "name": "execute native off refuses return code",
+      "ok": true,
+      "detail": "rc=1 expected=1 stderr=\"ERROR 1049 (42000): Unknown database 'golden'\""
+    },
+    {
+      "name": "execute native off refuses: cm1 absent under off",
+      "ok": false,
+      "detail": "rc=1 output='' expected='0'"
+    },
+    {
+      "name": "execute native on accepts return code",
+      "ok": false,
+      "detail": "rc=1 expected=0 stderr=\"ERROR 1049 (42000): Unknown database 'golden'\""
+    },
+    {
+      "name": "execute native on accepts: cm_on exists",
+      "ok": false,
+      "detail": "rc=1 output='' expected='1'"
+    },
+    {
+      "name": "execute drop cm_on return code",
+      "ok": false,
+      "detail": "rc=1 expected=0 stderr=\"ERROR 1049 (42000): Unknown database 'golden'\""
+    },
+    {
+      "name": "execute native int_only accepts return code",
+      "ok": false,
+      "detail": "rc=1 expected=0 stderr=\"ERROR 1049 (42000): Unknown database 'golden'\""
+    },
+    {
+      "name": "execute native int_only accepts: cm_io exists",
+      "ok": false,
+      "detail": "rc=1 output='' expected='1'"
+    },
+    {
+      "name": "execute drop cm_io return code",
+      "ok": false,
+      "detail": "rc=1 expected=0 stderr=\"ERROR 1049 (42000): Unknown database 'golden'\""
+    },
+    {
+      "name": "teardown restore clustered mode return code",
+      "ok": false,
+      "detail": "rc=1 expected=0 stderr=\"ERROR 1049 (42000): Unknown database 'golden'\""
+    },
+    {
+      "name": "teardown restore clustered mode: mode restored to int_only",
+      "ok": false,
+      "detail": "rc=1 output='' expected='int_only'"
+    },
+    {
+      "name": "teardown drop cm1 return code",
+      "ok": false,
+      "detail": "rc=1 expected=0 stderr=\"ERROR 1049 (42000): Unknown database 'golden'\""
+    },
+    {
+      "name": "teardown drop cm1: no residual fixtures",
+      "ok": false,
+      "detail": "rc=1 output='' expected='0'"
+    }
+  ],
+  "status": "fail",
+  "command": [
+    "/private/tmp/t23r10-artifact/golden/T23/bin/deltascope",
+    "audit",
+    "--dialect",
+    "tidb",
+    "--sql",
+    "CREATE TABLE t23fx.t23fx_cm1 (id BIGINT UNSIGNED PRIMARY KEY AUTO_RANDOM(5,64));",
+    "--config",
+    "/private/tmp/t23r10-artifact/golden/T23/golden-policy.yaml",
+    "--format",
+    "json",
+    "--host",
+    "127.0.0.1",
+    "--port",
+    "24000",
+    "--user",
+    "root",
+    "--schema",
+    "t23fx",
+    "--fail-on",
+    "blocker"
+  ]
+}

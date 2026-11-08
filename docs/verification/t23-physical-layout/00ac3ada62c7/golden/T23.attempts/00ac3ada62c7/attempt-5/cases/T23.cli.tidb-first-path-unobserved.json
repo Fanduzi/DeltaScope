@@ -1,0 +1,145 @@
+{
+  "case_id": "T23.cli.tidb-first-path-unobserved",
+  "kind": "cli_audit",
+  "cli_case": "tidb-first-path-unobserved",
+  "dialect": "tidb",
+  "input_sql": "CREATE TABLE t (id BIGINT UNSIGNED PRIMARY KEY AUTO_RANDOM);",
+  "policy_profile": "t23-layout-id",
+  "policy_path": "/private/tmp/t23r10-artifact/golden/T23/golden-policy.yaml",
+  "command": [
+    "/private/tmp/t23r10-artifact/golden/T23/bin/deltascope",
+    "audit",
+    "--dialect",
+    "tidb",
+    "--sql",
+    "CREATE TABLE t (id BIGINT UNSIGNED PRIMARY KEY AUTO_RANDOM);",
+    "--config",
+    "/private/tmp/t23r10-artifact/golden/T23/golden-policy.yaml",
+    "--format",
+    "json",
+    "--fail-on",
+    "blocker"
+  ],
+  "expected": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "coverage": "unverified",
+    "evidence_gaps": 1,
+    "gap_entries": [
+      {
+        "index": 0,
+        "rule_id": "ddl.tidb.table.auto_random.valid",
+        "required_facts": [
+          "instance.tidb_enable_clustered_index"
+        ]
+      }
+    ],
+    "diagnostics": 0,
+    "unsupported": 0
+  },
+  "actual": {
+    "exit": 0,
+    "stdout": "{\"verdict\":\"review\",\"coverage\":{\"status\":\"unverified\"},\"summary\":{\"statements\":1,\"blockers\":0,\"warnings\":0,\"notices\":0},\"statements\":[{\"index\":0,\"kind\":\"ddl\",\"raw_sql\":\"CREATE TABLE t (id BIGINT UNSIGNED PRIMARY KEY AUTO_RANDOM);\",\"normalized_sql\":\"CREATE TABLE t (id BIGINT UNSIGNED PRIMARY KEY AUTO_RANDOM)\",\"evidence_gaps\":[{\"rule_id\":\"ddl.tidb.table.auto_random.valid\",\"reason_code\":\"missing_instance_fact\",\"required_facts\":[\"instance.tidb_enable_clustered_index\"]}],\"coverage\":{\"status\":\"unverified\"}}],\"fail_on_triggered\":false,\"rule_summary\":{\"loaded\":13,\"applicable\":3,\"skipped\":[]},\"context\":{\"mode\":\"offline\",\"dialect\":\"tidb\",\"dialect_source\":\"flag\",\"note\":\"existence not checked (no database connection)\",\"unproven\":[\"column_exists\",\"table_exists\"]}}\n",
+    "stderr": "",
+    "parsed": {
+      "verdict": "review",
+      "coverage": {
+        "status": "unverified"
+      },
+      "summary": {
+        "statements": 1,
+        "blockers": 0,
+        "warnings": 0,
+        "notices": 0
+      },
+      "statements": [
+        {
+          "index": 0,
+          "kind": "ddl",
+          "raw_sql": "CREATE TABLE t (id BIGINT UNSIGNED PRIMARY KEY AUTO_RANDOM);",
+          "normalized_sql": "CREATE TABLE t (id BIGINT UNSIGNED PRIMARY KEY AUTO_RANDOM)",
+          "evidence_gaps": [
+            {
+              "rule_id": "ddl.tidb.table.auto_random.valid",
+              "reason_code": "missing_instance_fact",
+              "required_facts": [
+                "instance.tidb_enable_clustered_index"
+              ]
+            }
+          ],
+          "coverage": {
+            "status": "unverified"
+          }
+        }
+      ],
+      "fail_on_triggered": false,
+      "rule_summary": {
+        "loaded": 13,
+        "applicable": 3,
+        "skipped": []
+      },
+      "context": {
+        "mode": "offline",
+        "dialect": "tidb",
+        "dialect_source": "flag",
+        "note": "existence not checked (no database connection)",
+        "unproven": [
+          "column_exists",
+          "table_exists"
+        ]
+      }
+    },
+    "version_evidence": {
+      "target_raw": null,
+      "target_canonical": null,
+      "observed_raw": null,
+      "observed_canonical": null,
+      "resolved": null
+    }
+  },
+  "assertions": [
+    {
+      "name": "exit code",
+      "ok": true,
+      "detail": "rc=0 expected=0"
+    },
+    {
+      "name": "verdict",
+      "ok": true,
+      "detail": "verdict='review'"
+    },
+    {
+      "name": "top-level statements",
+      "ok": true,
+      "detail": "statements=1 expected=1"
+    },
+    {
+      "name": "zero findings",
+      "ok": true,
+      "detail": "findings=0"
+    },
+    {
+      "name": "no diagnostics",
+      "ok": true,
+      "detail": "diagnostics=[]"
+    },
+    {
+      "name": "no unsupported",
+      "ok": true,
+      "detail": "unsupported=[]"
+    },
+    {
+      "name": "aggregate coverage",
+      "ok": true,
+      "detail": "coverage='unverified'"
+    },
+    {
+      "name": "evidence gap count",
+      "ok": true,
+      "detail": "gaps=1"
+    }
+  ],
+  "status": "pass"
+}

@@ -1,0 +1,1062 @@
+{
+  "case_id": "T23.meta.A-alter-layout-matrix",
+  "kind": "cli_metadata",
+  "cli_case": "A-alter-layout-matrix",
+  "anchor": "tidb85",
+  "dialect": "tidb",
+  "input_sql": "ALTER TABLE t23fx.t23fx_al_base ADD COLUMN ar BIGINT AUTO_RANDOM;\nALTER TABLE t23fx.t23fx_al_ar_inc MODIFY COLUMN id BIGINT UNSIGNED AUTO_RANDOM(6,64);\nALTER TABLE t23fx.t23fx_al_ar_dec MODIFY COLUMN id BIGINT UNSIGNED AUTO_RANDOM(4,64);\nALTER TABLE t23fx.t23fx_al_ar_type MODIFY COLUMN id INT AUTO_RANDOM;\nALTER TABLE t23fx.t23fx_al_ar_rem MODIFY COLUMN id BIGINT UNSIGNED;\nALTER TABLE t23fx.t23fx_al_opts AUTO_ID_CACHE=100;\nALTER TABLE t23fx.t23fx_al_opts2 AUTO_ID_CACHE=1;\nALTER TABLE t23fx.t23fx_al_opts2 AUTO_ID_CACHE=200;\nALTER TABLE t23fx.t23fx_al_clu SHARD_ROW_ID_BITS=4;\nALTER TABLE t23fx.t23fx_al_nonclu SHARD_ROW_ID_BITS=20;\nALTER TABLE t23fx.t23fx_al_ar AUTO_RANDOM_BASE=200;\nALTER TABLE t23fx.t23fx_al_base PRE_SPLIT_REGIONS=2;",
+  "policy_profile": "t23-layout-id",
+  "policy_path": "/private/tmp/t23r10-artifact/golden/T23/golden-policy.yaml",
+  "connect": {
+    "host": "127.0.0.1",
+    "port": 24000,
+    "user": "root",
+    "schema": "t23fx"
+  },
+  "expected": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 12,
+    "findings": 7,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "evidence_gaps": 2,
+    "finding_entries": [
+      {
+        "index": 0,
+        "rule_id": "ddl.tidb.alter.auto_random.valid",
+        "level": "blocker"
+      },
+      {
+        "index": 2,
+        "rule_id": "ddl.tidb.alter.auto_random.valid",
+        "level": "blocker"
+      },
+      {
+        "index": 3,
+        "rule_id": "ddl.tidb.alter.auto_random.valid",
+        "level": "blocker"
+      },
+      {
+        "index": 4,
+        "rule_id": "ddl.tidb.alter.auto_random.valid",
+        "level": "blocker"
+      },
+      {
+        "index": 5,
+        "rule_id": "ddl.tidb.alter.table_options.valid",
+        "level": "blocker"
+      },
+      {
+        "index": 6,
+        "rule_id": "ddl.tidb.alter.table_options.valid",
+        "level": "blocker"
+      },
+      {
+        "index": 8,
+        "rule_id": "ddl.tidb.alter.table_options.valid",
+        "level": "blocker"
+      },
+      {
+        "index": 11,
+        "rule_id": "ddl.tidb.alter.table_options.valid",
+        "level": "blocker"
+      }
+    ],
+    "evidence_gap_entries": [
+      {
+        "index": 1,
+        "rule_id": "ddl.tidb.alter.auto_random.valid",
+        "reason_code": "missing_instance_fact",
+        "required_facts": [
+          "runtime.auto_random_allocator"
+        ]
+      },
+      {
+        "index": 9,
+        "rule_id": "ddl.tidb.alter.table_options.valid",
+        "reason_code": "missing_instance_fact",
+        "required_facts": [
+          "runtime.row_data"
+        ]
+      }
+    ]
+  },
+  "actual": {
+    "database": {
+      "product": "tidb",
+      "image": "pingcap/tidb:v8.5.0",
+      "image_digest": "pingcap/tidb@sha256:490861bd4a2fa643dbe76b77ffecafcad66e6a42774e580b82f4ec2429a80e57",
+      "container": "deltascope-ddl-golden-tidb85",
+      "reachable": true,
+      "version": "8.0.11-TiDB-v8.5.0"
+    },
+    "setup": [
+      {
+        "name": "record clustered baseline",
+        "sql": "SELECT @@global.tidb_enable_clustered_index",
+        "rc": 0,
+        "stdout": "@@global.tidb_enable_clustered_index\nON",
+        "stderr": "",
+        "verify": [
+          {
+            "assert": "baseline is ON on this stack",
+            "sql": "SELECT @@global.tidb_enable_clustered_index",
+            "rc": 0,
+            "output": "ON",
+            "stderr": ""
+          }
+        ]
+      },
+      {
+        "name": "set clustered int_only for case",
+        "sql": "SET GLOBAL tidb_enable_clustered_index='int_only'",
+        "rc": 0,
+        "stdout": "",
+        "stderr": "",
+        "verify": [
+          {
+            "assert": "mode is int_only",
+            "sql": "SELECT @@global.tidb_enable_clustered_index",
+            "rc": 0,
+            "output": "INT_ONLY",
+            "stderr": ""
+          }
+        ]
+      },
+      {
+        "name": "seed al_base",
+        "sql": "CREATE TABLE t23fx.t23fx_al_base (id BIGINT UNSIGNED PRIMARY KEY)",
+        "rc": 0,
+        "stdout": "",
+        "stderr": ""
+      },
+      {
+        "name": "seed al_ar",
+        "sql": "CREATE TABLE t23fx.t23fx_al_ar (id BIGINT UNSIGNED AUTO_RANDOM, v INT, PRIMARY KEY(id))",
+        "rc": 0,
+        "stdout": "",
+        "stderr": ""
+      },
+      {
+        "name": "seed al_ar_inc",
+        "sql": "CREATE TABLE t23fx.t23fx_al_ar_inc (id BIGINT UNSIGNED AUTO_RANDOM, v INT, PRIMARY KEY(id))",
+        "rc": 0,
+        "stdout": "",
+        "stderr": ""
+      },
+      {
+        "name": "seed al_ar_dec",
+        "sql": "CREATE TABLE t23fx.t23fx_al_ar_dec (id BIGINT UNSIGNED AUTO_RANDOM, v INT, PRIMARY KEY(id))",
+        "rc": 0,
+        "stdout": "",
+        "stderr": ""
+      },
+      {
+        "name": "seed al_ar_type",
+        "sql": "CREATE TABLE t23fx.t23fx_al_ar_type (id BIGINT UNSIGNED AUTO_RANDOM, v INT, PRIMARY KEY(id))",
+        "rc": 0,
+        "stdout": "",
+        "stderr": ""
+      },
+      {
+        "name": "seed al_ar_rem",
+        "sql": "CREATE TABLE t23fx.t23fx_al_ar_rem (id BIGINT UNSIGNED AUTO_RANDOM, v INT, PRIMARY KEY(id))",
+        "rc": 0,
+        "stdout": "",
+        "stderr": ""
+      },
+      {
+        "name": "seed al_opts cache1",
+        "sql": "CREATE TABLE t23fx.t23fx_al_opts (id BIGINT PRIMARY KEY) AUTO_ID_CACHE=1",
+        "rc": 0,
+        "stdout": "",
+        "stderr": ""
+      },
+      {
+        "name": "seed al_opts2 cache100",
+        "sql": "CREATE TABLE t23fx.t23fx_al_opts2 (id BIGINT PRIMARY KEY) AUTO_ID_CACHE=100",
+        "rc": 0,
+        "stdout": "",
+        "stderr": ""
+      },
+      {
+        "name": "seed al_clu",
+        "sql": "CREATE TABLE t23fx.t23fx_al_clu (id BIGINT PRIMARY KEY CLUSTERED)",
+        "rc": 0,
+        "stdout": "",
+        "stderr": ""
+      },
+      {
+        "name": "seed al_nonclu",
+        "sql": "CREATE TABLE t23fx.t23fx_al_nonclu (id BIGINT PRIMARY KEY NONCLUSTERED)",
+        "rc": 0,
+        "stdout": "",
+        "stderr": ""
+      }
+    ],
+    "post_verify": [
+      {
+        "assert": "audit changed nothing",
+        "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='t23fx' AND TABLE_NAME LIKE 't23fx_al_%'",
+        "rc": 0,
+        "output": "10",
+        "stderr": ""
+      }
+    ],
+    "execute": [
+      {
+        "name": "native add-column refused",
+        "sql": "ALTER TABLE t23fx.t23fx_al_base ADD COLUMN ar BIGINT AUTO_RANDOM",
+        "rc": 1,
+        "stdout": "",
+        "stderr": "ERROR 8216 (HY000) at line 1: Invalid auto random: unsupported add column 'ar' constraint AUTO_RANDOM when altering 't23fx.t23fx_al_base'"
+      },
+      {
+        "name": "native increase allowed",
+        "sql": "ALTER TABLE t23fx.t23fx_al_ar_inc MODIFY COLUMN id BIGINT UNSIGNED AUTO_RANDOM(6,64)",
+        "rc": 0,
+        "stdout": "",
+        "stderr": ""
+      },
+      {
+        "name": "native decrease refused",
+        "sql": "ALTER TABLE t23fx.t23fx_al_ar_dec MODIFY COLUMN id BIGINT UNSIGNED AUTO_RANDOM(4,64)",
+        "rc": 1,
+        "stdout": "",
+        "stderr": "ERROR 8216 (HY000) at line 1: Invalid auto random: decreasing auto_random shard bits is not supported"
+      },
+      {
+        "name": "native int refused",
+        "sql": "ALTER TABLE t23fx.t23fx_al_ar_type MODIFY COLUMN id INT AUTO_RANDOM",
+        "rc": 1,
+        "stdout": "",
+        "stderr": "ERROR 8200 (HY000) at line 1: Unsupported modify column: this column has primary key flag"
+      },
+      {
+        "name": "native removal refused",
+        "sql": "ALTER TABLE t23fx.t23fx_al_ar_rem MODIFY COLUMN id BIGINT UNSIGNED",
+        "rc": 1,
+        "stdout": "",
+        "stderr": "ERROR 8216 (HY000) at line 1: Invalid auto random: adding/dropping/modifying auto_random is not supported"
+      },
+      {
+        "name": "native cache 1->100 refused",
+        "sql": "ALTER TABLE t23fx.t23fx_al_opts AUTO_ID_CACHE=100",
+        "rc": 1,
+        "stdout": "",
+        "stderr": "ERROR 1105 (HY000) at line 1: Can't Alter AUTO_ID_CACHE between 1 and non-1, the underlying implementation is different"
+      },
+      {
+        "name": "native cache 100->1 refused",
+        "sql": "ALTER TABLE t23fx.t23fx_al_opts2 AUTO_ID_CACHE=1",
+        "rc": 1,
+        "stdout": "",
+        "stderr": "ERROR 1105 (HY000) at line 1: Can't Alter AUTO_ID_CACHE between 1 and non-1, the underlying implementation is different"
+      },
+      {
+        "name": "native cache 100->200 accepted",
+        "sql": "ALTER TABLE t23fx.t23fx_al_opts2 AUTO_ID_CACHE=200",
+        "rc": 0,
+        "stdout": "",
+        "stderr": ""
+      },
+      {
+        "name": "native clustered shard refused",
+        "sql": "ALTER TABLE t23fx.t23fx_al_clu SHARD_ROW_ID_BITS=4",
+        "rc": 1,
+        "stdout": "",
+        "stderr": "ERROR 8200 (HY000) at line 1: Unsupported shard_row_id_bits for table with primary key as row id"
+      },
+      {
+        "name": "native nonclustered shard clamp accepted",
+        "sql": "ALTER TABLE t23fx.t23fx_al_nonclu SHARD_ROW_ID_BITS=20",
+        "rc": 0,
+        "stdout": "",
+        "stderr": ""
+      },
+      {
+        "name": "native base rebase accepted",
+        "sql": "ALTER TABLE t23fx.t23fx_al_ar AUTO_RANDOM_BASE=200",
+        "rc": 0,
+        "stdout": "",
+        "stderr": ""
+      },
+      {
+        "name": "native pre-split refused",
+        "sql": "ALTER TABLE t23fx.t23fx_al_base PRE_SPLIT_REGIONS=2",
+        "rc": 1,
+        "stdout": "",
+        "stderr": "ERROR 8200 (HY000) at line 1: This type of ALTER TABLE is currently unsupported"
+      }
+    ],
+    "structure": [
+      {
+        "assert": "al_nonclu shard clamped to 15",
+        "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='t23fx' AND TABLE_NAME='t23fx_al_nonclu' AND TIDB_ROW_ID_SHARDING_INFO LIKE '%SHARD%15%'",
+        "rc": 0,
+        "output": "1",
+        "stderr": ""
+      }
+    ],
+    "teardown": [
+      {
+        "name": "restore clustered baseline ON",
+        "sql": "SET GLOBAL tidb_enable_clustered_index='ON'",
+        "rc": 0,
+        "stderr": "",
+        "verify": [
+          {
+            "assert": "mode restored to ON",
+            "sql": "SELECT @@global.tidb_enable_clustered_index",
+            "rc": 0,
+            "output": "ON",
+            "stderr": ""
+          }
+        ]
+      },
+      {
+        "name": "drop t23fx_al_base",
+        "sql": "DROP TABLE IF EXISTS t23fx.t23fx_al_base",
+        "rc": 0,
+        "stderr": ""
+      },
+      {
+        "name": "drop t23fx_al_ar",
+        "sql": "DROP TABLE IF EXISTS t23fx.t23fx_al_ar",
+        "rc": 0,
+        "stderr": ""
+      },
+      {
+        "name": "drop t23fx_al_ar_inc",
+        "sql": "DROP TABLE IF EXISTS t23fx.t23fx_al_ar_inc",
+        "rc": 0,
+        "stderr": ""
+      },
+      {
+        "name": "drop t23fx_al_ar_dec",
+        "sql": "DROP TABLE IF EXISTS t23fx.t23fx_al_ar_dec",
+        "rc": 0,
+        "stderr": ""
+      },
+      {
+        "name": "drop t23fx_al_ar_type",
+        "sql": "DROP TABLE IF EXISTS t23fx.t23fx_al_ar_type",
+        "rc": 0,
+        "stderr": ""
+      },
+      {
+        "name": "drop t23fx_al_ar_rem",
+        "sql": "DROP TABLE IF EXISTS t23fx.t23fx_al_ar_rem",
+        "rc": 0,
+        "stderr": ""
+      },
+      {
+        "name": "drop t23fx_al_opts",
+        "sql": "DROP TABLE IF EXISTS t23fx.t23fx_al_opts",
+        "rc": 0,
+        "stderr": ""
+      },
+      {
+        "name": "drop t23fx_al_opts2",
+        "sql": "DROP TABLE IF EXISTS t23fx.t23fx_al_opts2",
+        "rc": 0,
+        "stderr": ""
+      },
+      {
+        "name": "drop t23fx_al_clu",
+        "sql": "DROP TABLE IF EXISTS t23fx.t23fx_al_clu",
+        "rc": 0,
+        "stderr": ""
+      },
+      {
+        "name": "drop t23fx_al_nonclu",
+        "sql": "DROP TABLE IF EXISTS t23fx.t23fx_al_nonclu",
+        "rc": 0,
+        "stderr": ""
+      }
+    ],
+    "exit": 1,
+    "stdout": "{\"verdict\":\"reject\",\"coverage\":{\"status\":\"unverified\"},\"summary\":{\"statements\":12,\"blockers\":8,\"warnings\":0,\"notices\":0},\"statements\":[{\"index\":0,\"kind\":\"ddl\",\"raw_sql\":\"ALTER TABLE t23fx.t23fx_al_base ADD COLUMN ar BIGINT AUTO_RANDOM;\",\"normalized_sql\":\"ALTER TABLE t23fx.t23fx_al_base ADD COLUMN ar BIGINT AUTO_RANDOM\",\"findings\":[{\"rule_id\":\"ddl.tidb.alter.auto_random.valid\",\"level\":\"blocker\",\"message\":\"auto_random column \\\"ar\\\" cannot be added with AUTO_RANDOM: TiDB refuses AUTO_RANDOM on ADD COLUMN\",\"statement_kind\":\"ddl\",\"location\":{\"line\":1,\"column\":1},\"suggestion\":\"add the column without AUTO_RANDOM, or convert an existing AUTO_INCREMENT primary key with MODIFY COLUMN\",\"metadata\":{\"action\":\"add_columns\",\"column\":\"ar\",\"reason\":\"add_column_auto_random\",\"table\":\"t23fx_al_base\"},\"explanation\":{\"summary\":\"Check DDL tidb alter auto random valid\",\"why\":\"The statement matched the shipped governance rule for this pattern.\",\"risk\":\"Ignoring this rule can weaken schema-governance guarantees and make changes harder to review safely.\",\"suggestion\":\"add the column without AUTO_RANDOM, or convert an existing AUTO_INCREMENT primary key with MODIFY COLUMN\"}}],\"coverage\":{\"status\":\"complete\"}},{\"index\":1,\"kind\":\"ddl\",\"raw_sql\":\"ALTER TABLE t23fx.t23fx_al_ar_inc MODIFY COLUMN id BIGINT UNSIGNED AUTO_RANDOM(6,64);\",\"normalized_sql\":\"ALTER TABLE t23fx.t23fx_al_ar_inc MODIFY COLUMN id BIGINT UNSIGNED AUTO_RANDOM(6,64)\",\"evidence_gaps\":[{\"rule_id\":\"ddl.tidb.alter.auto_random.valid\",\"reason_code\":\"missing_instance_fact\",\"required_facts\":[\"runtime.auto_random_allocator\"]}],\"coverage\":{\"status\":\"unverified\"}},{\"index\":2,\"kind\":\"ddl\",\"raw_sql\":\"ALTER TABLE t23fx.t23fx_al_ar_dec MODIFY COLUMN id BIGINT UNSIGNED AUTO_RANDOM(4,64);\",\"normalized_sql\":\"ALTER TABLE t23fx.t23fx_al_ar_dec MODIFY COLUMN id BIGINT UNSIGNED AUTO_RANDOM(4,64)\",\"findings\":[{\"rule_id\":\"ddl.tidb.alter.auto_random.valid\",\"level\":\"blocker\",\"message\":\"auto_random column \\\"id\\\" cannot decrease AUTO_RANDOM shard bits\",\"statement_index\":2,\"statement_kind\":\"ddl\",\"location\":{\"line\":3,\"column\":1},\"suggestion\":\"keep or increase the shard bits\",\"metadata\":{\"action\":\"modify_column\",\"column\":\"id\",\"reason\":\"decrease_shard_bits\",\"table\":\"t23fx_al_ar_dec\"},\"explanation\":{\"summary\":\"Check DDL tidb alter auto random valid\",\"why\":\"The statement matched the shipped governance rule for this pattern.\",\"risk\":\"Ignoring this rule can weaken schema-governance guarantees and make changes harder to review safely.\",\"suggestion\":\"keep or increase the shard bits\"}}],\"coverage\":{\"status\":\"complete\"}},{\"index\":3,\"kind\":\"ddl\",\"raw_sql\":\"ALTER TABLE t23fx.t23fx_al_ar_type MODIFY COLUMN id INT AUTO_RANDOM;\",\"normalized_sql\":\"ALTER TABLE t23fx.t23fx_al_ar_type MODIFY COLUMN id INT AUTO_RANDOM\",\"findings\":[{\"rule_id\":\"ddl.tidb.alter.auto_random.valid\",\"level\":\"blocker\",\"message\":\"auto_random column \\\"id\\\" cannot change the column type of an AUTO_RANDOM column\",\"statement_index\":3,\"statement_kind\":\"ddl\",\"location\":{\"line\":4,\"column\":1},\"suggestion\":\"keep the column type\",\"metadata\":{\"action\":\"modify_column\",\"column\":\"id\",\"reason\":\"modify_column_type\",\"table\":\"t23fx_al_ar_type\"},\"explanation\":{\"summary\":\"Check DDL tidb alter auto random valid\",\"why\":\"The statement matched the shipped governance rule for this pattern.\",\"risk\":\"Ignoring this rule can weaken schema-governance guarantees and make changes harder to review safely.\",\"suggestion\":\"keep the column type\"}}],\"coverage\":{\"status\":\"complete\"}},{\"index\":4,\"kind\":\"ddl\",\"raw_sql\":\"ALTER TABLE t23fx.t23fx_al_ar_rem MODIFY COLUMN id BIGINT UNSIGNED;\",\"normalized_sql\":\"ALTER TABLE t23fx.t23fx_al_ar_rem MODIFY COLUMN id BIGINT UNSIGNED\",\"findings\":[{\"rule_id\":\"ddl.tidb.alter.auto_random.valid\",\"level\":\"blocker\",\"message\":\"auto_random column \\\"id\\\" cannot drop the AUTO_RANDOM attribute: TiDB refuses auto_random removal\",\"statement_index\":4,\"statement_kind\":\"ddl\",\"location\":{\"line\":5,\"column\":1},\"suggestion\":\"keep AUTO_RANDOM on the column\",\"metadata\":{\"action\":\"modify_column\",\"column\":\"id\",\"reason\":\"remove_auto_random\",\"table\":\"t23fx_al_ar_rem\"},\"explanation\":{\"summary\":\"Check DDL tidb alter auto random valid\",\"why\":\"The statement matched the shipped governance rule for this pattern.\",\"risk\":\"Ignoring this rule can weaken schema-governance guarantees and make changes harder to review safely.\",\"suggestion\":\"keep AUTO_RANDOM on the column\"}}],\"coverage\":{\"status\":\"complete\"}},{\"index\":5,\"kind\":\"ddl\",\"raw_sql\":\"ALTER TABLE t23fx.t23fx_al_opts AUTO_ID_CACHE=100;\",\"normalized_sql\":\"ALTER TABLE t23fx.t23fx_al_opts AUTO_ID_CACHE=100\",\"findings\":[{\"rule_id\":\"ddl.tidb.alter.table_options.valid\",\"level\":\"blocker\",\"message\":\"table \\\"t23fx_al_opts\\\" option AUTO_ID_CACHE cannot move between 1 and non-1 values\",\"statement_index\":5,\"statement_kind\":\"ddl\",\"location\":{\"line\":6,\"column\":1},\"suggestion\":\"keep AUTO_ID_CACHE on the same side of the 1 boundary\",\"metadata\":{\"option\":\"auto_id_cache\",\"reason\":\"auto_id_cache_1_boundary\",\"table\":\"t23fx_al_opts\"},\"explanation\":{\"summary\":\"Check DDL tidb alter table options valid\",\"why\":\"The statement matched the shipped governance rule for this pattern.\",\"risk\":\"Ignoring this rule can weaken schema-governance guarantees and make changes harder to review safely.\",\"suggestion\":\"keep AUTO_ID_CACHE on the same side of the 1 boundary\"}}],\"coverage\":{\"status\":\"complete\"}},{\"index\":6,\"kind\":\"ddl\",\"raw_sql\":\"ALTER TABLE t23fx.t23fx_al_opts2 AUTO_ID_CACHE=1;\",\"normalized_sql\":\"ALTER TABLE t23fx.t23fx_al_opts2 AUTO_ID_CACHE=1\",\"findings\":[{\"rule_id\":\"ddl.tidb.alter.table_options.valid\",\"level\":\"blocker\",\"message\":\"table \\\"t23fx_al_opts2\\\" option AUTO_ID_CACHE cannot move between 1 and non-1 values\",\"statement_index\":6,\"statement_kind\":\"ddl\",\"location\":{\"line\":7,\"column\":1},\"suggestion\":\"keep AUTO_ID_CACHE on the same side of the 1 boundary\",\"metadata\":{\"option\":\"auto_id_cache\",\"reason\":\"auto_id_cache_1_boundary\",\"table\":\"t23fx_al_opts2\"},\"explanation\":{\"summary\":\"Check DDL tidb alter table options valid\",\"why\":\"The statement matched the shipped governance rule for this pattern.\",\"risk\":\"Ignoring this rule can weaken schema-governance guarantees and make changes harder to review safely.\",\"suggestion\":\"keep AUTO_ID_CACHE on the same side of the 1 boundary\"}}],\"coverage\":{\"status\":\"complete\"}},{\"index\":7,\"kind\":\"ddl\",\"raw_sql\":\"ALTER TABLE t23fx.t23fx_al_opts2 AUTO_ID_CACHE=200;\",\"normalized_sql\":\"ALTER TABLE t23fx.t23fx_al_opts2 AUTO_ID_CACHE=200\",\"coverage\":{\"status\":\"complete\"}},{\"index\":8,\"kind\":\"ddl\",\"raw_sql\":\"ALTER TABLE t23fx.t23fx_al_clu SHARD_ROW_ID_BITS=4;\",\"normalized_sql\":\"ALTER TABLE t23fx.t23fx_al_clu SHARD_ROW_ID_BITS=4\",\"findings\":[{\"rule_id\":\"ddl.tidb.alter.table_options.valid\",\"level\":\"blocker\",\"message\":\"table \\\"t23fx_al_clu\\\" option SHARD_ROW_ID_BITS \\u003e 0 on a clustered primary key is refused by TiDB\",\"statement_index\":8,\"statement_kind\":\"ddl\",\"location\":{\"line\":9,\"column\":1},\"suggestion\":\"use a nonclustered primary key or drop SHARD_ROW_ID_BITS\",\"metadata\":{\"option\":\"shard_row_id_bits\",\"reason\":\"shard_row_id_bits_clustered\",\"table\":\"t23fx_al_clu\"},\"explanation\":{\"summary\":\"Check DDL tidb alter table options valid\",\"why\":\"The statement matched the shipped governance rule for this pattern.\",\"risk\":\"Ignoring this rule can weaken schema-governance guarantees and make changes harder to review safely.\",\"suggestion\":\"use a nonclustered primary key or drop SHARD_ROW_ID_BITS\"}}],\"coverage\":{\"status\":\"complete\"}},{\"index\":9,\"kind\":\"ddl\",\"raw_sql\":\"ALTER TABLE t23fx.t23fx_al_nonclu SHARD_ROW_ID_BITS=20;\",\"normalized_sql\":\"ALTER TABLE t23fx.t23fx_al_nonclu SHARD_ROW_ID_BITS=20\",\"evidence_gaps\":[{\"rule_id\":\"ddl.tidb.alter.table_options.valid\",\"reason_code\":\"missing_instance_fact\",\"required_facts\":[\"runtime.row_data\"]}],\"coverage\":{\"status\":\"unverified\"}},{\"index\":10,\"kind\":\"ddl\",\"raw_sql\":\"ALTER TABLE t23fx.t23fx_al_ar AUTO_RANDOM_BASE=200;\",\"normalized_sql\":\"ALTER TABLE t23fx.t23fx_al_ar AUTO_RANDOM_BASE=200\",\"coverage\":{\"status\":\"complete\"}},{\"index\":11,\"kind\":\"ddl\",\"raw_sql\":\"ALTER TABLE t23fx.t23fx_al_base PRE_SPLIT_REGIONS=2;\",\"normalized_sql\":\"ALTER TABLE t23fx.t23fx_al_base PRE_SPLIT_REGIONS=2\",\"findings\":[{\"rule_id\":\"ddl.tidb.alter.table_options.valid\",\"level\":\"blocker\",\"message\":\"table \\\"t23fx_al_base\\\" option PRE_SPLIT_REGIONS is not supported on ALTER TABLE; TiDB refuses the option\",\"statement_index\":11,\"statement_kind\":\"ddl\",\"location\":{\"line\":12,\"column\":1},\"suggestion\":\"declare PRE_SPLIT_REGIONS only at CREATE TABLE\",\"metadata\":{\"option\":\"pre_split_regions\",\"reason\":\"pre_split_regions_unsupported_alter\",\"table\":\"t23fx_al_base\"},\"explanation\":{\"summary\":\"Check DDL tidb alter table options valid\",\"why\":\"The statement matched the shipped governance rule for this pattern.\",\"risk\":\"Ignoring this rule can weaken schema-governance guarantees and make changes harder to review safely.\",\"suggestion\":\"declare PRE_SPLIT_REGIONS only at CREATE TABLE\"}}],\"coverage\":{\"status\":\"complete\"}}],\"version\":{\"product\":\"tidb\",\"version\":\"8.5.0\",\"major\":8,\"minor\":5,\"patch\":0,\"source\":\"observed\",\"validated_range\":true},\"fail_on_triggered\":true,\"rule_summary\":{\"loaded\":13,\"applicable\":3,\"skipped\":[]},\"context\":{\"mode\":\"metadata-aware\",\"dialect\":\"tidb\",\"dialect_source\":\"detected\",\"schema\":\"t23fx\",\"schema_source\":\"flag\"}}\n",
+    "stderr": "",
+    "parsed": {
+      "verdict": "reject",
+      "coverage": {
+        "status": "unverified"
+      },
+      "summary": {
+        "statements": 12,
+        "blockers": 8,
+        "warnings": 0,
+        "notices": 0
+      },
+      "statements": [
+        {
+          "index": 0,
+          "kind": "ddl",
+          "raw_sql": "ALTER TABLE t23fx.t23fx_al_base ADD COLUMN ar BIGINT AUTO_RANDOM;",
+          "normalized_sql": "ALTER TABLE t23fx.t23fx_al_base ADD COLUMN ar BIGINT AUTO_RANDOM",
+          "findings": [
+            {
+              "rule_id": "ddl.tidb.alter.auto_random.valid",
+              "level": "blocker",
+              "message": "auto_random column \"ar\" cannot be added with AUTO_RANDOM: TiDB refuses AUTO_RANDOM on ADD COLUMN",
+              "statement_kind": "ddl",
+              "location": {
+                "line": 1,
+                "column": 1
+              },
+              "suggestion": "add the column without AUTO_RANDOM, or convert an existing AUTO_INCREMENT primary key with MODIFY COLUMN",
+              "metadata": {
+                "action": "add_columns",
+                "column": "ar",
+                "reason": "add_column_auto_random",
+                "table": "t23fx_al_base"
+              },
+              "explanation": {
+                "summary": "Check DDL tidb alter auto random valid",
+                "why": "The statement matched the shipped governance rule for this pattern.",
+                "risk": "Ignoring this rule can weaken schema-governance guarantees and make changes harder to review safely.",
+                "suggestion": "add the column without AUTO_RANDOM, or convert an existing AUTO_INCREMENT primary key with MODIFY COLUMN"
+              }
+            }
+          ],
+          "coverage": {
+            "status": "complete"
+          }
+        },
+        {
+          "index": 1,
+          "kind": "ddl",
+          "raw_sql": "ALTER TABLE t23fx.t23fx_al_ar_inc MODIFY COLUMN id BIGINT UNSIGNED AUTO_RANDOM(6,64);",
+          "normalized_sql": "ALTER TABLE t23fx.t23fx_al_ar_inc MODIFY COLUMN id BIGINT UNSIGNED AUTO_RANDOM(6,64)",
+          "evidence_gaps": [
+            {
+              "rule_id": "ddl.tidb.alter.auto_random.valid",
+              "reason_code": "missing_instance_fact",
+              "required_facts": [
+                "runtime.auto_random_allocator"
+              ]
+            }
+          ],
+          "coverage": {
+            "status": "unverified"
+          }
+        },
+        {
+          "index": 2,
+          "kind": "ddl",
+          "raw_sql": "ALTER TABLE t23fx.t23fx_al_ar_dec MODIFY COLUMN id BIGINT UNSIGNED AUTO_RANDOM(4,64);",
+          "normalized_sql": "ALTER TABLE t23fx.t23fx_al_ar_dec MODIFY COLUMN id BIGINT UNSIGNED AUTO_RANDOM(4,64)",
+          "findings": [
+            {
+              "rule_id": "ddl.tidb.alter.auto_random.valid",
+              "level": "blocker",
+              "message": "auto_random column \"id\" cannot decrease AUTO_RANDOM shard bits",
+              "statement_index": 2,
+              "statement_kind": "ddl",
+              "location": {
+                "line": 3,
+                "column": 1
+              },
+              "suggestion": "keep or increase the shard bits",
+              "metadata": {
+                "action": "modify_column",
+                "column": "id",
+                "reason": "decrease_shard_bits",
+                "table": "t23fx_al_ar_dec"
+              },
+              "explanation": {
+                "summary": "Check DDL tidb alter auto random valid",
+                "why": "The statement matched the shipped governance rule for this pattern.",
+                "risk": "Ignoring this rule can weaken schema-governance guarantees and make changes harder to review safely.",
+                "suggestion": "keep or increase the shard bits"
+              }
+            }
+          ],
+          "coverage": {
+            "status": "complete"
+          }
+        },
+        {
+          "index": 3,
+          "kind": "ddl",
+          "raw_sql": "ALTER TABLE t23fx.t23fx_al_ar_type MODIFY COLUMN id INT AUTO_RANDOM;",
+          "normalized_sql": "ALTER TABLE t23fx.t23fx_al_ar_type MODIFY COLUMN id INT AUTO_RANDOM",
+          "findings": [
+            {
+              "rule_id": "ddl.tidb.alter.auto_random.valid",
+              "level": "blocker",
+              "message": "auto_random column \"id\" cannot change the column type of an AUTO_RANDOM column",
+              "statement_index": 3,
+              "statement_kind": "ddl",
+              "location": {
+                "line": 4,
+                "column": 1
+              },
+              "suggestion": "keep the column type",
+              "metadata": {
+                "action": "modify_column",
+                "column": "id",
+                "reason": "modify_column_type",
+                "table": "t23fx_al_ar_type"
+              },
+              "explanation": {
+                "summary": "Check DDL tidb alter auto random valid",
+                "why": "The statement matched the shipped governance rule for this pattern.",
+                "risk": "Ignoring this rule can weaken schema-governance guarantees and make changes harder to review safely.",
+                "suggestion": "keep the column type"
+              }
+            }
+          ],
+          "coverage": {
+            "status": "complete"
+          }
+        },
+        {
+          "index": 4,
+          "kind": "ddl",
+          "raw_sql": "ALTER TABLE t23fx.t23fx_al_ar_rem MODIFY COLUMN id BIGINT UNSIGNED;",
+          "normalized_sql": "ALTER TABLE t23fx.t23fx_al_ar_rem MODIFY COLUMN id BIGINT UNSIGNED",
+          "findings": [
+            {
+              "rule_id": "ddl.tidb.alter.auto_random.valid",
+              "level": "blocker",
+              "message": "auto_random column \"id\" cannot drop the AUTO_RANDOM attribute: TiDB refuses auto_random removal",
+              "statement_index": 4,
+              "statement_kind": "ddl",
+              "location": {
+                "line": 5,
+                "column": 1
+              },
+              "suggestion": "keep AUTO_RANDOM on the column",
+              "metadata": {
+                "action": "modify_column",
+                "column": "id",
+                "reason": "remove_auto_random",
+                "table": "t23fx_al_ar_rem"
+              },
+              "explanation": {
+                "summary": "Check DDL tidb alter auto random valid",
+                "why": "The statement matched the shipped governance rule for this pattern.",
+                "risk": "Ignoring this rule can weaken schema-governance guarantees and make changes harder to review safely.",
+                "suggestion": "keep AUTO_RANDOM on the column"
+              }
+            }
+          ],
+          "coverage": {
+            "status": "complete"
+          }
+        },
+        {
+          "index": 5,
+          "kind": "ddl",
+          "raw_sql": "ALTER TABLE t23fx.t23fx_al_opts AUTO_ID_CACHE=100;",
+          "normalized_sql": "ALTER TABLE t23fx.t23fx_al_opts AUTO_ID_CACHE=100",
+          "findings": [
+            {
+              "rule_id": "ddl.tidb.alter.table_options.valid",
+              "level": "blocker",
+              "message": "table \"t23fx_al_opts\" option AUTO_ID_CACHE cannot move between 1 and non-1 values",
+              "statement_index": 5,
+              "statement_kind": "ddl",
+              "location": {
+                "line": 6,
+                "column": 1
+              },
+              "suggestion": "keep AUTO_ID_CACHE on the same side of the 1 boundary",
+              "metadata": {
+                "option": "auto_id_cache",
+                "reason": "auto_id_cache_1_boundary",
+                "table": "t23fx_al_opts"
+              },
+              "explanation": {
+                "summary": "Check DDL tidb alter table options valid",
+                "why": "The statement matched the shipped governance rule for this pattern.",
+                "risk": "Ignoring this rule can weaken schema-governance guarantees and make changes harder to review safely.",
+                "suggestion": "keep AUTO_ID_CACHE on the same side of the 1 boundary"
+              }
+            }
+          ],
+          "coverage": {
+            "status": "complete"
+          }
+        },
+        {
+          "index": 6,
+          "kind": "ddl",
+          "raw_sql": "ALTER TABLE t23fx.t23fx_al_opts2 AUTO_ID_CACHE=1;",
+          "normalized_sql": "ALTER TABLE t23fx.t23fx_al_opts2 AUTO_ID_CACHE=1",
+          "findings": [
+            {
+              "rule_id": "ddl.tidb.alter.table_options.valid",
+              "level": "blocker",
+              "message": "table \"t23fx_al_opts2\" option AUTO_ID_CACHE cannot move between 1 and non-1 values",
+              "statement_index": 6,
+              "statement_kind": "ddl",
+              "location": {
+                "line": 7,
+                "column": 1
+              },
+              "suggestion": "keep AUTO_ID_CACHE on the same side of the 1 boundary",
+              "metadata": {
+                "option": "auto_id_cache",
+                "reason": "auto_id_cache_1_boundary",
+                "table": "t23fx_al_opts2"
+              },
+              "explanation": {
+                "summary": "Check DDL tidb alter table options valid",
+                "why": "The statement matched the shipped governance rule for this pattern.",
+                "risk": "Ignoring this rule can weaken schema-governance guarantees and make changes harder to review safely.",
+                "suggestion": "keep AUTO_ID_CACHE on the same side of the 1 boundary"
+              }
+            }
+          ],
+          "coverage": {
+            "status": "complete"
+          }
+        },
+        {
+          "index": 7,
+          "kind": "ddl",
+          "raw_sql": "ALTER TABLE t23fx.t23fx_al_opts2 AUTO_ID_CACHE=200;",
+          "normalized_sql": "ALTER TABLE t23fx.t23fx_al_opts2 AUTO_ID_CACHE=200",
+          "coverage": {
+            "status": "complete"
+          }
+        },
+        {
+          "index": 8,
+          "kind": "ddl",
+          "raw_sql": "ALTER TABLE t23fx.t23fx_al_clu SHARD_ROW_ID_BITS=4;",
+          "normalized_sql": "ALTER TABLE t23fx.t23fx_al_clu SHARD_ROW_ID_BITS=4",
+          "findings": [
+            {
+              "rule_id": "ddl.tidb.alter.table_options.valid",
+              "level": "blocker",
+              "message": "table \"t23fx_al_clu\" option SHARD_ROW_ID_BITS > 0 on a clustered primary key is refused by TiDB",
+              "statement_index": 8,
+              "statement_kind": "ddl",
+              "location": {
+                "line": 9,
+                "column": 1
+              },
+              "suggestion": "use a nonclustered primary key or drop SHARD_ROW_ID_BITS",
+              "metadata": {
+                "option": "shard_row_id_bits",
+                "reason": "shard_row_id_bits_clustered",
+                "table": "t23fx_al_clu"
+              },
+              "explanation": {
+                "summary": "Check DDL tidb alter table options valid",
+                "why": "The statement matched the shipped governance rule for this pattern.",
+                "risk": "Ignoring this rule can weaken schema-governance guarantees and make changes harder to review safely.",
+                "suggestion": "use a nonclustered primary key or drop SHARD_ROW_ID_BITS"
+              }
+            }
+          ],
+          "coverage": {
+            "status": "complete"
+          }
+        },
+        {
+          "index": 9,
+          "kind": "ddl",
+          "raw_sql": "ALTER TABLE t23fx.t23fx_al_nonclu SHARD_ROW_ID_BITS=20;",
+          "normalized_sql": "ALTER TABLE t23fx.t23fx_al_nonclu SHARD_ROW_ID_BITS=20",
+          "evidence_gaps": [
+            {
+              "rule_id": "ddl.tidb.alter.table_options.valid",
+              "reason_code": "missing_instance_fact",
+              "required_facts": [
+                "runtime.row_data"
+              ]
+            }
+          ],
+          "coverage": {
+            "status": "unverified"
+          }
+        },
+        {
+          "index": 10,
+          "kind": "ddl",
+          "raw_sql": "ALTER TABLE t23fx.t23fx_al_ar AUTO_RANDOM_BASE=200;",
+          "normalized_sql": "ALTER TABLE t23fx.t23fx_al_ar AUTO_RANDOM_BASE=200",
+          "coverage": {
+            "status": "complete"
+          }
+        },
+        {
+          "index": 11,
+          "kind": "ddl",
+          "raw_sql": "ALTER TABLE t23fx.t23fx_al_base PRE_SPLIT_REGIONS=2;",
+          "normalized_sql": "ALTER TABLE t23fx.t23fx_al_base PRE_SPLIT_REGIONS=2",
+          "findings": [
+            {
+              "rule_id": "ddl.tidb.alter.table_options.valid",
+              "level": "blocker",
+              "message": "table \"t23fx_al_base\" option PRE_SPLIT_REGIONS is not supported on ALTER TABLE; TiDB refuses the option",
+              "statement_index": 11,
+              "statement_kind": "ddl",
+              "location": {
+                "line": 12,
+                "column": 1
+              },
+              "suggestion": "declare PRE_SPLIT_REGIONS only at CREATE TABLE",
+              "metadata": {
+                "option": "pre_split_regions",
+                "reason": "pre_split_regions_unsupported_alter",
+                "table": "t23fx_al_base"
+              },
+              "explanation": {
+                "summary": "Check DDL tidb alter table options valid",
+                "why": "The statement matched the shipped governance rule for this pattern.",
+                "risk": "Ignoring this rule can weaken schema-governance guarantees and make changes harder to review safely.",
+                "suggestion": "declare PRE_SPLIT_REGIONS only at CREATE TABLE"
+              }
+            }
+          ],
+          "coverage": {
+            "status": "complete"
+          }
+        }
+      ],
+      "version": {
+        "product": "tidb",
+        "version": "8.5.0",
+        "major": 8,
+        "minor": 5,
+        "patch": 0,
+        "source": "observed",
+        "validated_range": true
+      },
+      "fail_on_triggered": true,
+      "rule_summary": {
+        "loaded": 13,
+        "applicable": 3,
+        "skipped": []
+      },
+      "context": {
+        "mode": "metadata-aware",
+        "dialect": "tidb",
+        "dialect_source": "detected",
+        "schema": "t23fx",
+        "schema_source": "flag"
+      }
+    },
+    "version_evidence": {
+      "target_raw": null,
+      "target_canonical": null,
+      "observed_raw": "8.0.11-TiDB-v8.5.0",
+      "observed_canonical": {
+        "product": "tidb",
+        "version": "8.5.0"
+      },
+      "resolved": {
+        "product": "tidb",
+        "version": "8.5.0",
+        "major": 8,
+        "minor": 5,
+        "patch": 0,
+        "source": "observed",
+        "validated_range": true
+      }
+    }
+  },
+  "assertions": [
+    {
+      "name": "database reachable with expected version",
+      "ok": true,
+      "detail": "SELECT VERSION() rc=0 version='8.0.11-TiDB-v8.5.0' expected_contains='v8.5.0'"
+    },
+    {
+      "name": "setup record clustered baseline return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "setup record clustered baseline: baseline is ON on this stack",
+      "ok": true,
+      "detail": "rc=0 output='ON' expected='ON'"
+    },
+    {
+      "name": "setup set clustered int_only for case return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "setup set clustered int_only for case: mode is int_only",
+      "ok": false,
+      "detail": "rc=0 output='INT_ONLY' expected='int_only'"
+    },
+    {
+      "name": "setup seed al_base return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "setup seed al_ar return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "setup seed al_ar_inc return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "setup seed al_ar_dec return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "setup seed al_ar_type return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "setup seed al_ar_rem return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "setup seed al_opts cache1 return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "setup seed al_opts2 cache100 return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "setup seed al_clu return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "setup seed al_nonclu return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "exit code",
+      "ok": true,
+      "detail": "rc=1 expected=1"
+    },
+    {
+      "name": "verdict",
+      "ok": true,
+      "detail": "verdict='reject'"
+    },
+    {
+      "name": "top-level statements",
+      "ok": true,
+      "detail": "statements=12 expected=12"
+    },
+    {
+      "name": "zero findings",
+      "ok": false,
+      "detail": "findings=8"
+    },
+    {
+      "name": "no diagnostics",
+      "ok": true,
+      "detail": "diagnostics=[]"
+    },
+    {
+      "name": "no unsupported",
+      "ok": true,
+      "detail": "unsupported=[]"
+    },
+    {
+      "name": "aggregate coverage",
+      "ok": true,
+      "detail": "coverage='unverified'"
+    },
+    {
+      "name": "evidence gap count",
+      "ok": true,
+      "detail": "gaps=2"
+    },
+    {
+      "name": "evidence gap entries",
+      "ok": true,
+      "detail": "gaps=[(1, 'ddl.tidb.alter.auto_random.valid', 'missing_instance_fact'), (9, 'ddl.tidb.alter.table_options.valid', 'missing_instance_fact')] expected=[(1, 'ddl.tidb.alter.auto_random.valid', 'missing_instance_fact'), (9, 'ddl.tidb.alter.table_options.valid', 'missing_instance_fact')]"
+    },
+    {
+      "name": "evidence gap required_facts (1, 'ddl.tidb.alter.auto_random.valid', 'missing_instance_fact')",
+      "ok": true,
+      "detail": "gaps=[{'rule_id': 'ddl.tidb.alter.auto_random.valid', 'reason_code': 'missing_instance_fact', 'required_facts': ['runtime.auto_random_allocator']}, {'rule_id': 'ddl.tidb.alter.table_options.valid', 'reason_code': 'missing_instance_fact', 'required_facts': ['runtime.row_data']}] expected_facts=['runtime.auto_random_allocator']"
+    },
+    {
+      "name": "evidence gap required_facts (9, 'ddl.tidb.alter.table_options.valid', 'missing_instance_fact')",
+      "ok": true,
+      "detail": "gaps=[{'rule_id': 'ddl.tidb.alter.auto_random.valid', 'reason_code': 'missing_instance_fact', 'required_facts': ['runtime.auto_random_allocator']}, {'rule_id': 'ddl.tidb.alter.table_options.valid', 'reason_code': 'missing_instance_fact', 'required_facts': ['runtime.row_data']}] expected_facts=['runtime.row_data']"
+    },
+    {
+      "name": "no gap encoded as finding",
+      "ok": true,
+      "detail": "findings carrying gap shape=[]"
+    },
+    {
+      "name": "finding entries",
+      "ok": true,
+      "detail": "findings=[(0, 'ddl.tidb.alter.auto_random.valid', 'blocker'), (2, 'ddl.tidb.alter.auto_random.valid', 'blocker'), (3, 'ddl.tidb.alter.auto_random.valid', 'blocker'), (4, 'ddl.tidb.alter.auto_random.valid', 'blocker'), (5, 'ddl.tidb.alter.table_options.valid', 'blocker'), (6, 'ddl.tidb.alter.table_options.valid', 'blocker'), (8, 'ddl.tidb.alter.table_options.valid', 'blocker'), (11, 'ddl.tidb.alter.table_options.valid', 'blocker')] expected=[(0, 'ddl.tidb.alter.auto_random.valid', 'blocker'), (2, 'ddl.tidb.alter.auto_random.valid', 'blocker'), (3, 'ddl.tidb.alter.auto_random.valid', 'blocker'), (4, 'ddl.tidb.alter.auto_random.valid', 'blocker'), (5, 'ddl.tidb.alter.table_options.valid', 'blocker'), (6, 'ddl.tidb.alter.table_options.valid', 'blocker'), (8, 'ddl.tidb.alter.table_options.valid', 'blocker'), (11, 'ddl.tidb.alter.table_options.valid', 'blocker')]"
+    },
+    {
+      "name": "post-verify audit changed nothing",
+      "ok": true,
+      "detail": "rc=0 output='10' expected='10'"
+    },
+    {
+      "name": "execute native add-column refused return code",
+      "ok": true,
+      "detail": "rc=1 expected=1 stderr=\"ERROR 8216 (HY000) at line 1: Invalid auto random: unsupported add column 'ar' constraint AUTO_RANDOM when altering 't23fx.t23fx_al_base'\""
+    },
+    {
+      "name": "execute native increase allowed return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "execute native decrease refused return code",
+      "ok": true,
+      "detail": "rc=1 expected=1 stderr='ERROR 8216 (HY000) at line 1: Invalid auto random: decreasing auto_random shard bits is not supported'"
+    },
+    {
+      "name": "execute native int refused return code",
+      "ok": true,
+      "detail": "rc=1 expected=1 stderr='ERROR 8200 (HY000) at line 1: Unsupported modify column: this column has primary key flag'"
+    },
+    {
+      "name": "execute native removal refused return code",
+      "ok": true,
+      "detail": "rc=1 expected=1 stderr='ERROR 8216 (HY000) at line 1: Invalid auto random: adding/dropping/modifying auto_random is not supported'"
+    },
+    {
+      "name": "execute native cache 1->100 refused return code",
+      "ok": true,
+      "detail": "rc=1 expected=1 stderr=\"ERROR 1105 (HY000) at line 1: Can't Alter AUTO_ID_CACHE between 1 and non-1, the underlying implementation is different\""
+    },
+    {
+      "name": "execute native cache 100->1 refused return code",
+      "ok": true,
+      "detail": "rc=1 expected=1 stderr=\"ERROR 1105 (HY000) at line 1: Can't Alter AUTO_ID_CACHE between 1 and non-1, the underlying implementation is different\""
+    },
+    {
+      "name": "execute native cache 100->200 accepted return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "execute native clustered shard refused return code",
+      "ok": true,
+      "detail": "rc=1 expected=1 stderr='ERROR 8200 (HY000) at line 1: Unsupported shard_row_id_bits for table with primary key as row id'"
+    },
+    {
+      "name": "execute native nonclustered shard clamp accepted return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "execute native base rebase accepted return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "execute native pre-split refused return code",
+      "ok": true,
+      "detail": "rc=1 expected=1 stderr='ERROR 8200 (HY000) at line 1: This type of ALTER TABLE is currently unsupported'"
+    },
+    {
+      "name": "structure al_nonclu shard clamped to 15",
+      "ok": true,
+      "detail": "rc=0 output='1' expected='1'"
+    },
+    {
+      "name": "teardown restore clustered baseline ON return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "teardown restore clustered baseline ON: mode restored to ON",
+      "ok": true,
+      "detail": "rc=0 output='ON' expected='ON'"
+    },
+    {
+      "name": "teardown drop t23fx_al_base return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "teardown drop t23fx_al_ar return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "teardown drop t23fx_al_ar_inc return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "teardown drop t23fx_al_ar_dec return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "teardown drop t23fx_al_ar_type return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "teardown drop t23fx_al_ar_rem return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "teardown drop t23fx_al_opts return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "teardown drop t23fx_al_opts2 return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "teardown drop t23fx_al_clu return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "teardown drop t23fx_al_nonclu return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    }
+  ],
+  "status": "fail",
+  "command": [
+    "/private/tmp/t23r10-artifact/golden/T23/bin/deltascope",
+    "audit",
+    "--dialect",
+    "tidb",
+    "--sql",
+    "ALTER TABLE t23fx.t23fx_al_base ADD COLUMN ar BIGINT AUTO_RANDOM;\nALTER TABLE t23fx.t23fx_al_ar_inc MODIFY COLUMN id BIGINT UNSIGNED AUTO_RANDOM(6,64);\nALTER TABLE t23fx.t23fx_al_ar_dec MODIFY COLUMN id BIGINT UNSIGNED AUTO_RANDOM(4,64);\nALTER TABLE t23fx.t23fx_al_ar_type MODIFY COLUMN id INT AUTO_RANDOM;\nALTER TABLE t23fx.t23fx_al_ar_rem MODIFY COLUMN id BIGINT UNSIGNED;\nALTER TABLE t23fx.t23fx_al_opts AUTO_ID_CACHE=100;\nALTER TABLE t23fx.t23fx_al_opts2 AUTO_ID_CACHE=1;\nALTER TABLE t23fx.t23fx_al_opts2 AUTO_ID_CACHE=200;\nALTER TABLE t23fx.t23fx_al_clu SHARD_ROW_ID_BITS=4;\nALTER TABLE t23fx.t23fx_al_nonclu SHARD_ROW_ID_BITS=20;\nALTER TABLE t23fx.t23fx_al_ar AUTO_RANDOM_BASE=200;\nALTER TABLE t23fx.t23fx_al_base PRE_SPLIT_REGIONS=2;",
+    "--config",
+    "/private/tmp/t23r10-artifact/golden/T23/golden-policy.yaml",
+    "--format",
+    "json",
+    "--host",
+    "127.0.0.1",
+    "--port",
+    "24000",
+    "--user",
+    "root",
+    "--schema",
+    "t23fx",
+    "--fail-on",
+    "blocker"
+  ]
+}
