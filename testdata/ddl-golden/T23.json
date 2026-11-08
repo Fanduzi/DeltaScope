@@ -32,7 +32,7 @@
     "--default-character-set=utf8mb4"
    ],
    "needs_database_create": false,
-   "exec_password_env": "T23_MYSQL_PASSWORD"
+   "exec_password_env": "T21_MYSQL_PASSWORD"
   },
   "mysql84": {
    "service": "mysql84",
@@ -60,13 +60,14 @@
    "database": "golden",
    "exec_client": [
     "mysql",
-    "-h127.0.0.1",
-    "-P4000",
-    "-uroot",
-    "--default-character-set=utf8mb4"
+    "--protocol=tcp",
+    "-h",
+    "tidb85",
+    "-P",
+    "4000",
+    "-uroot"
    ],
-   "needs_database_create": false,
-   "exec_password_env": "T23_TIDB_PASSWORD"
+   "needs_database_create": true
   }
  },
  "ddl_steps": [
@@ -776,6 +777,32 @@
    "note": "AUTO_RANDOM first path: canonical CREATE + successor ALTER on a real AUTO_RANDOM fixture. Product reads tidb_enable_clustered_index (session) and alter-primary-key (SHOW CONFIG); expected product output derived from frozen contract probe.",
    "setup": [
     {
+     "name": "record clustered baseline",
+     "sql": "SELECT @@global.tidb_enable_clustered_index",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "baseline is ON on this stack",
+       "sql": "SELECT @@global.tidb_enable_clustered_index",
+       "expect": "ON",
+       "use_database": true
+      }
+     ]
+    },
+    {
+     "name": "set clustered int_only for case",
+     "sql": "SET GLOBAL tidb_enable_clustered_index='int_only'",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "mode is int_only",
+       "sql": "SELECT @@global.tidb_enable_clustered_index",
+       "expect": "INT_ONLY",
+       "use_database": true
+      }
+     ]
+    },
+    {
      "name": "seed-base-table",
      "sql": "CREATE TABLE t23fx.t23fx_ar0 (id BIGINT UNSIGNED PRIMARY KEY AUTO_RANDOM)",
      "expect_rc": 0,
@@ -799,7 +826,7 @@
     "coverage": "complete",
     "evidence_gaps": 0,
     "instance_facts": {
-     "tidb_enable_clustered_index": "int_only",
+     "tidb_enable_clustered_index": "INT_ONLY",
      "tidb_alter_primary_key": "false"
     }
    },
@@ -846,12 +873,25 @@
     },
     {
      "assert": "ar1 carries AUTO_RANDOM",
-     "sql": "SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA='t23fx' AND TABLE_NAME='t23fx_ar1' AND COLUMN_NAME='id' AND EXTRA LIKE '%auto_random%'",
+     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='t23fx' AND TABLE_NAME='t23fx_ar1' AND TIDB_ROW_ID_SHARDING_INFO LIKE 'PK_AUTO_RANDOM_BITS%'",
      "expect": "1",
      "use_database": true
     }
    ],
    "teardown": [
+    {
+     "name": "restore clustered baseline ON",
+     "sql": "SET GLOBAL tidb_enable_clustered_index='ON'",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "mode restored to ON",
+       "sql": "SELECT @@global.tidb_enable_clustered_index",
+       "expect": "ON",
+       "use_database": true
+      }
+     ]
+    },
     {
      "name": "drop ar1",
      "sql": "DROP TABLE IF EXISTS t23fx.t23fx_ar1",
@@ -891,7 +931,34 @@
    ],
    "pending_native": true,
    "note": "Eight statically refused AUTO_RANDOM CREATEs; each refusal must preserve pre-state (table absent).",
-   "setup": [],
+   "setup": [
+    {
+     "name": "record clustered baseline",
+     "sql": "SELECT @@global.tidb_enable_clustered_index",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "baseline is ON on this stack",
+       "sql": "SELECT @@global.tidb_enable_clustered_index",
+       "expect": "ON",
+       "use_database": true
+      }
+     ]
+    },
+    {
+     "name": "set clustered int_only for case",
+     "sql": "SET GLOBAL tidb_enable_clustered_index='int_only'",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "mode is int_only",
+       "sql": "SELECT @@global.tidb_enable_clustered_index",
+       "expect": "INT_ONLY",
+       "use_database": true
+      }
+     ]
+    }
+   ],
    "expect": {
     "exit": 1,
     "verdict": "reject",
@@ -1061,6 +1128,19 @@
    "structure": [],
    "teardown": [
     {
+     "name": "restore clustered baseline ON",
+     "sql": "SET GLOBAL tidb_enable_clustered_index='ON'",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "mode restored to ON",
+       "sql": "SELECT @@global.tidb_enable_clustered_index",
+       "expect": "ON",
+       "use_database": true
+      }
+     ]
+    },
+    {
      "name": "drop ref1",
      "sql": "DROP TABLE IF EXISTS t23fx.t23fx_ref1",
      "expect_rc": 0
@@ -1128,9 +1208,9 @@
      "expect_rc": 0,
      "verify": [
       {
-       "assert": "baseline is int_only on this stack",
+       "assert": "baseline is ON on this stack",
        "sql": "SELECT @@global.tidb_enable_clustered_index",
-       "expect": "int_only",
+       "expect": "ON",
        "use_database": true
       }
      ]
@@ -1143,7 +1223,7 @@
       {
        "assert": "mode is off",
        "sql": "SELECT @@global.tidb_enable_clustered_index",
-       "expect": "off",
+       "expect": "OFF",
        "use_database": true
       }
      ]
@@ -1166,7 +1246,7 @@
      }
     ],
     "instance_facts": {
-     "tidb_enable_clustered_index": "off",
+     "tidb_enable_clustered_index": "OFF",
      "tidb_alter_primary_key": "false"
     }
    },
@@ -1193,8 +1273,13 @@
      ]
     },
     {
+     "name": "set clustered on",
+     "sql": "SET GLOBAL tidb_enable_clustered_index='on'",
+     "expect_rc": 0
+    },
+    {
      "name": "native on accepts",
-     "sql": "SET GLOBAL tidb_enable_clustered_index='on';CREATE TABLE t23fx.t23fx_cm_on (id BIGINT UNSIGNED PRIMARY KEY AUTO_RANDOM(5,64))",
+     "sql": "CREATE TABLE t23fx.t23fx_cm_on (id BIGINT UNSIGNED PRIMARY KEY AUTO_RANDOM(5,64))",
      "expect_rc": 0,
      "verify": [
       {
@@ -1211,8 +1296,13 @@
      "expect_rc": 0
     },
     {
+     "name": "set clustered int_only",
+     "sql": "SET GLOBAL tidb_enable_clustered_index='int_only'",
+     "expect_rc": 0
+    },
+    {
      "name": "native int_only accepts",
-     "sql": "SET GLOBAL tidb_enable_clustered_index='int_only';CREATE TABLE t23fx.t23fx_cm_io (id BIGINT UNSIGNED PRIMARY KEY AUTO_RANDOM(5,64))",
+     "sql": "CREATE TABLE t23fx.t23fx_cm_io (id BIGINT UNSIGNED PRIMARY KEY AUTO_RANDOM(5,64))",
      "expect_rc": 0,
      "verify": [
       {
@@ -1232,14 +1322,14 @@
    "structure": [],
    "teardown": [
     {
-     "name": "restore clustered mode",
-     "sql": "SET GLOBAL tidb_enable_clustered_index='int_only'",
+     "name": "restore clustered baseline ON",
+     "sql": "SET GLOBAL tidb_enable_clustered_index='ON'",
      "expect_rc": 0,
      "verify": [
       {
-       "assert": "mode restored to int_only",
+       "assert": "mode restored to ON",
        "sql": "SELECT @@global.tidb_enable_clustered_index",
-       "expect": "int_only",
+       "expect": "ON",
        "use_database": true
       }
      ]
@@ -1286,7 +1376,7 @@
     "verdict": "reject",
     "statements": 2,
     "findings": 1,
-    "diagnostics": 0,
+    "diagnostics": 2,
     "unsupported": 2,
     "coverage": "incomplete",
     "evidence_gaps": 0,
@@ -1379,7 +1469,34 @@
    ],
    "pending_native": true,
    "note": "AUTO_RANDOM_BASE declaration vs allocator floor: declaration acceptance is not runtime progress; NEXT_GLOBAL_AUTO_ID floor >= 100 proves the declared base was applied, not issued-ID history.",
-   "setup": [],
+   "setup": [
+    {
+     "name": "record clustered baseline",
+     "sql": "SELECT @@global.tidb_enable_clustered_index",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "baseline is ON on this stack",
+       "sql": "SELECT @@global.tidb_enable_clustered_index",
+       "expect": "ON",
+       "use_database": true
+      }
+     ]
+    },
+    {
+     "name": "set clustered int_only for case",
+     "sql": "SET GLOBAL tidb_enable_clustered_index='int_only'",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "mode is int_only",
+       "sql": "SELECT @@global.tidb_enable_clustered_index",
+       "expect": "INT_ONLY",
+       "use_database": true
+      }
+     ]
+    }
+   ],
    "expect": {
     "exit": 0,
     "verdict": "pass",
@@ -1408,12 +1525,25 @@
    "structure": [
     {
      "assert": "declared base reached allocator floor",
-     "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='t23fx' AND TABLE_NAME='t23fx_ab' AND NEXT_GLOBAL_AUTO_ID >= 100",
-     "expect": "1",
+     "sql": "SHOW TABLE t23fx.t23fx_ab NEXT_ROW_ID",
+     "expect": "t23fx\tt23fx_ab\tid\t100\tAUTO_RANDOM",
      "use_database": true
     }
    ],
    "teardown": [
+    {
+     "name": "restore clustered baseline ON",
+     "sql": "SET GLOBAL tidb_enable_clustered_index='ON'",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "mode restored to ON",
+       "sql": "SELECT @@global.tidb_enable_clustered_index",
+       "expect": "ON",
+       "use_database": true
+      }
+     ]
+    },
     {
      "name": "drop ab",
      "sql": "DROP TABLE IF EXISTS t23fx.t23fx_ab",
@@ -1449,6 +1579,32 @@
    "pending_native": true,
    "note": "ALTER-side matrix; each MODIFY variant gets a dedicated fixture so every audit statement sees a proven pre-state (an undecidable MODIFY would make later statements on the same table read the bounded derived shape).",
    "setup": [
+    {
+     "name": "record clustered baseline",
+     "sql": "SELECT @@global.tidb_enable_clustered_index",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "baseline is ON on this stack",
+       "sql": "SELECT @@global.tidb_enable_clustered_index",
+       "expect": "ON",
+       "use_database": true
+      }
+     ]
+    },
+    {
+     "name": "set clustered int_only for case",
+     "sql": "SET GLOBAL tidb_enable_clustered_index='int_only'",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "mode is int_only",
+       "sql": "SELECT @@global.tidb_enable_clustered_index",
+       "expect": "INT_ONLY",
+       "use_database": true
+      }
+     ]
+    },
     {
      "name": "seed al_base",
      "sql": "CREATE TABLE t23fx.t23fx_al_base (id BIGINT UNSIGNED PRIMARY KEY)",
@@ -1504,7 +1660,7 @@
     "exit": 1,
     "verdict": "reject",
     "statements": 12,
-    "findings": 7,
+    "findings": 8,
     "diagnostics": 0,
     "unsupported": 0,
     "coverage": "unverified",
@@ -1649,6 +1805,19 @@
     }
    ],
    "teardown": [
+    {
+     "name": "restore clustered baseline ON",
+     "sql": "SET GLOBAL tidb_enable_clustered_index='ON'",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "mode restored to ON",
+       "sql": "SELECT @@global.tidb_enable_clustered_index",
+       "expect": "ON",
+       "use_database": true
+      }
+     ]
+    },
     {
      "name": "drop t23fx_al_base",
      "sql": "DROP TABLE IF EXISTS t23fx.t23fx_al_base",
@@ -1837,6 +2006,11 @@
    ],
    "teardown": [
     {
+     "name": "nocache before drop (upstream DROP guard on cache tables)",
+     "sql": "ALTER TABLE t23fx.t23fx_cache NOCACHE",
+     "expect_rc": 0
+    },
+    {
      "name": "drop t23fx_cache",
      "sql": "DROP TABLE IF EXISTS t23fx.t23fx_cache",
      "expect_rc": 0
@@ -1863,7 +2037,7 @@
    "id": "B-split-region",
    "anchor": "tidb85",
    "dialect": "tidb",
-   "sql": "SPLIT TABLE t23fx.t23fx_sp BETWEEN (0) AND (10000) REGIONS 4;\nSPLIT TABLE t23fx.t23fx_sp BETWEEN (0) AND (100) REGIONS 4;\nSPLIT TABLE t23fx.t23fx_sp BETWEEN (100) AND (0) REGIONS 4;\nSPLIT TABLE t23fx.t23fx_sp BETWEEN (NULL) AND (10000) REGIONS 4;\nSPLIT TABLE t23fx.t23fx_sp BY (1),(2),(3);\nSPLIT TABLE t23fx.t23fx_sp INDEX missing_idx BETWEEN (0) AND (10000) REGIONS 4;\nSPLIT TABLE t23fx.t23fx_sp_ix INDEX ix BETWEEN (0) AND (10000) REGIONS 2;\nSPLIT TABLE t23fx.t23fx_ch BETWEEN (0,0) AND (10000,0) REGIONS 4;\nSPLIT TABLE t23fx.t23fx_noh BETWEEN (0) AND (10000) REGIONS 4;\nSPLIT TABLE t23fx.t23fx_sp BETWEEN (0) AND (10000) REGIONS 0;\nSPLIT TABLE t23fx.t23fx_sp BETWEEN (0) AND (10000) REGIONS 2000;\nSPLIT TABLE t23fx.t23fx_sp PARTITION (p9) BETWEEN (0) AND (10000) REGIONS 4;",
+   "sql": "SPLIT TABLE t23fx.t23fx_sp BETWEEN (0) AND (10000) REGIONS 4;\nSPLIT TABLE t23fx.t23fx_sp BETWEEN (0) AND (100) REGIONS 4;\nSPLIT TABLE t23fx.t23fx_sp BETWEEN (100) AND (0) REGIONS 4;\nSPLIT TABLE t23fx.t23fx_sp BETWEEN (NULL) AND (10000) REGIONS 4;\nSPLIT TABLE t23fx.t23fx_sp BY (1),(2),(3);\nSPLIT TABLE t23fx.t23fx_sp INDEX missing_idx BETWEEN (0) AND (10000) REGIONS 4;\nSPLIT TABLE t23fx.t23fx_sp_ix INDEX ix BETWEEN (0) AND (10000) REGIONS 2;\nSPLIT TABLE t23fx.t23fx_ch BETWEEN (0,0) AND (10000,0) REGIONS 4;\nSPLIT TABLE t23fx.t23fx_noh BETWEEN (0) AND (10000) REGIONS 4;\nSPLIT TABLE t23fx.t23fx_sp BETWEEN (0) AND (10000) REGIONS 0;\nSPLIT TABLE t23fx.t23fx_sp BETWEEN (0) AND (10000) REGIONS 2000;\nSPLIT TABLE t23fx.t23fx_sp_part PARTITION (p9) BETWEEN (0) AND (10000) REGIONS 4;",
    "connect": {
     "host": "127.0.0.1",
     "port": 24000,
@@ -1976,7 +2150,7 @@
     {
      "assert": "audit split nothing",
      "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='t23fx' AND TABLE_NAME LIKE 't23fx_%'",
-     "expect": "6",
+     "expect": "5",
      "use_database": true
     }
    ],
@@ -2038,7 +2212,7 @@
     },
     {
      "name": "native missing partition",
-     "sql": "SPLIT TABLE t23fx.t23fx_sp PARTITION (p9) BETWEEN (0) AND (10000) REGIONS 4",
+     "sql": "SPLIT TABLE t23fx.t23fx_sp_part PARTITION (p9) BETWEEN (0) AND (10000) REGIONS 4",
      "expect_rc": 1
     }
    ],
@@ -2187,7 +2361,7 @@
    ],
    "pending_native": true,
    "requires_service": "tiflash",
-   "note": "TiFlash replica declaration on unistore — NEGATIVE-ONLY arm: catalog declaration row and async AVAILABLE=0 are provable negatives on a zero-TiFlash store; rc=0 acceptance and the declaration row are not replica availability. The product-side unverified table.tiflash_replica gap is classification #3: the provider catalog loader for information_schema.tiflash_replica is not implemented (interface scope: REPLICA_COUNT/AVAILABLE per table); the only tiflash_replica_count producer today is ordered-state same-batch declaration tracking. Positive success/recovery arms require a real TiFlash+PD+TiKV stack and stay pending an incremental resource approval — they are not covered by this case and are not claimed as environment_gap-by-default.",
+   "note": "TiFlash replica declaration on unistore — NEGATIVE-ONLY arm: upstream refuses SET TIFLASH REPLICA 2 at plan time when tiflash store count is 0 (ERROR 1105 'replica count: 2 should be less than the total tiflash server count: 0'), so no declaration row exists — the provable negative is the plan-time refusal itself. The product-side unverified gap is table.columns.charset (the provider does not publish a charset fact for this fixture's columns); the wider loader gap is classification #3: information_schema.tiflash_replica is never queried. Positive success/recovery arms stay pending a real TiFlash stack under an incremental resource approval.",
    "setup": [
     {
      "name": "seed tf",
@@ -2210,7 +2384,7 @@
       "rule_id": "ddl.tidb.table.tiflash.valid",
       "reason_code": "missing_instance_fact",
       "required_facts": [
-       "table.tiflash_replica"
+       "table.columns.charset"
       ]
      }
     ]
@@ -2227,12 +2401,12 @@
     {
      "name": "native replica declaration",
      "sql": "ALTER TABLE t23fx.t23fx_tf SET TIFLASH REPLICA 2",
-     "expect_rc": 0,
+     "expect_rc": 1,
      "verify": [
       {
        "assert": "replica row recorded",
        "sql": "SELECT COUNT(*) FROM information_schema.tiflash_replica WHERE table_schema='t23fx' AND table_name='t23fx_tf'",
-       "expect": "1",
+       "expect": "0",
        "use_database": true
       }
      ]
@@ -2242,7 +2416,7 @@
     {
      "assert": "replica count declared as 2",
      "sql": "SELECT COUNT(*) FROM information_schema.tiflash_replica WHERE table_schema='t23fx' AND table_name='t23fx_tf' AND replica_count=2",
-     "expect": "1",
+     "expect": "0",
      "use_database": true
     },
     {

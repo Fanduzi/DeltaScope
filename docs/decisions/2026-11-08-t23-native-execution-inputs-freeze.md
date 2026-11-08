@@ -70,7 +70,7 @@ The draft manifest predated the real runner contract:
 |---|---|---|---|
 | A-auto-random-first-path | A | tidb85 | CREATE+ALTER accepted path; instance facts int_only/false |
 | A-auto-random-static-refusals | A | tidb85 | 8 static refusals; each preserves pre-state (table absent) |
-| A-clustered-mode-comparison | A | tidb85 | `SET GLOBAL tidb_enable_clustered_index=off` → product reject + native refusal; on/int_only native accepts; restore to int_only |
+| A-clustered-mode-comparison | A | tidb85 | `SET GLOBAL tidb_enable_clustered_index=off` → product reject + native refusal; on/int_only native accepts; restore to the recorded baseline ON |
 | A-mysql-vendor-negative | A | mysql80 | real MySQL 8.0 refuses both forms; product bounded-unsupported |
 | A-auto-random-base-controls | A | tidb85 | AUTO_RANDOM_BASE declaration vs allocator floor (`NEXT_GLOBAL_AUTO_ID >= 100`), never runtime progress |
 | A-alter-layout-matrix | A | tidb85 | 12-statement matrix: add/modify refusals, increase allocator gap, AUTO_ID_CACHE 1↔non-1 boundary, SHARD clustered refusal + >15 clamp, AUTO_RANDOM_BASE, PRE_SPLIT refusal; per-arm dedicated fixtures |
@@ -161,7 +161,7 @@ run-scoped compose project:
    mysql57/mysql84 anchors the manifest's db cases require).
 2. Execute all 35 `required_case_ids` via `ddl_golden.py run --task T23`.
 3. `SET GLOBAL tidb_enable_clustered_index` flip to `off` and back to the
-   recorded baseline (`int_only`), inside
+   recorded baseline (`ON` on this stack — verified, not assumed), inside
    `A-clustered-mode-comparison` only. Original values are recorded in
    the attempt artifact before mutation; teardown restores and verifies.
 4. Fixture-only objects under the `t23fx` schema; no real user data, no
@@ -220,10 +220,14 @@ input corrections before execution; this amendment records them.
   `verify`/`post_verify`/`structure` assertion is a catalog observation,
   never an inference.
 - **B. clustered mode baseline** — `A-clustered-mode-comparison` now
-  records and asserts `@@global.tidb_enable_clustered_index=int_only`
-  in setup *before* the flip; teardown restores `int_only` because that
-  is the verified recorded baseline on this stack, not an assumed
-  constant. If the baseline ever drifts the case fails pre-mutation
+  records and asserts `@@global.tidb_enable_clustered_index=ON`
+  in setup *before* the flip — the real v8.5.0 default is `ON`, which
+  the first native run discovered (the earlier draft assumed
+  `int_only`); teardown restores `ON` because that is the verified
+  recorded baseline on this stack, not an assumed constant. The five
+  AUTO_RANDOM-dependent cases additionally pin `int_only` for their own
+  duration (AUTO_RANDOM requires a non-clustered integer PK) and restore
+  `ON` in teardown. If the baseline ever drifts the case fails pre-mutation
   instead of restoring a wrong value. Scope mechanics documented: the
   variable is global+session scoped, `SET GLOBAL` affects new
   connections only, and both the runner client and the product provider
@@ -283,6 +287,69 @@ TIFLASH_REPLICA`), store capability from `information_schema
 .tiflash_store`/`SHOW PD ...` equivalents. This is reported as an
 unimplemented product read, not an environment gap and not
 NATIVE-PENDING.
+
+## R10 execution — lightweight-stack native run (2026-11-08)
+
+Scoped authorization executed on the approved colima profile
+(`colima-ds-t21-20261107t1158z-e514c8`, docker 29.5.2 arm64) via
+`ddl_golden_isolated.py` run-id `t23r10-20261108t13311794144718z-a1`.
+Attempt 6: **35/35 cases passed, 503 assertions, `[ddl-golden] PASS`**
+on head `00ac3ada`. Evidence archived under
+`docs/verification/t23-physical-layout/00ac3ada62c7/`
+(artifact.json, attempt-6 case files, lifecycle receipts). Lifecycle:
+5 containers + 1 network + 3 named volumes created, receipt-scoped
+stop/rm/rmvolumes completed; 4 anonymous generation volumes also
+verified-by-timestamp and removed; the 8 pre-existing protected
+volumes untouched; VM returned to Stopped.
+
+### Environment discoveries that corrected inputs (not product code)
+
+- `tidb_enable_clustered_index` default on real v8.5.0 is `ON`, not
+  `int_only`; live reads return uppercase `ON`/`OFF`/`INT_ONLY`. The
+  five AUTO_RANDOM-dependent cases pin `int_only` for their duration
+  and restore `ON`.
+- `SET GLOBAL` only affects *subsequent* connections — a
+  `SET GLOBAL x; CREATE` pair in one client exec still evaluates under
+  the connect-time session value. Mode-flip steps were split so each
+  CREATE runs on a fresh connection.
+- Upstream refuses `SET TIFLASH REPLICA 2` at plan time when TiFlash
+  store count is 0 (`ERROR 1105 ... replica count: 2 should be less
+  than the total tiflash server count: 0`) — the provable negative is
+  the plan-time refusal itself, stronger than `AVAILABLE=0`.
+- Upstream refuses `DROP TABLE` on a cache-enabled table
+  (`ERROR 8242`) — teardown must `NOCACHE` first, itself upstream
+  guard evidence.
+- `SPLIT TABLE <non-partitioned> PARTITION (p9)` is accepted on
+  unistore — named members are ignored on non-partitioned targets on
+  both the upstream executor and the product's member-resolution arm
+  (consistent, not a bug). The missing-partition arm was re-pointed at
+  the partitioned fixture where upstream does refuse.
+- AUTO_RANDOM catalog marker is
+  `information_schema.TABLES.TIDB_ROW_ID_SHARDING_INFO
+  = 'PK_AUTO_RANDOM_BITS=5'`; `COLUMNS.EXTRA` is empty. Allocator
+  floor is observable only via `SHOW TABLE <t> NEXT_ROW_ID`
+  (observed `100` for declared `AUTO_RANDOM_BASE=100`).
+- Fixture credential anchors were wrong (`T21_MYSQL_PASSWORD` on
+  mysql57/84 vs `T23_MYSQL_PASSWORD` on mysql80, phantom
+  `T23_TIDB_PASSWORD` on passwordless TiDB); unified on
+  `T21_MYSQL_PASSWORD` and tidb85 exec client corrected to
+  `--protocol=tcp -h tidb85` per the T21/T22 working shape.
+- `tidb85` needed `needs_database_create: true` (golden schema is
+  compose-created on MySQL only).
+
+### Upstream receipts captured (attempt-6 native arms)
+
+Refusals confirmed live: AUTO_RANDOM add/decrease/remove/type-change
+(`ERROR 8216`), modify-PK-flag (`ERROR 8200`), AUTO_ID_CACHE 1↔non-1
+boundary (`ERROR 1105`), SHARD_ROW_ID_BITS on clustered (`ERROR 8200`),
+PRE_SPLIT_REGIONS alter (`ERROR 8200`), SPLIT step<1000 / upper<=lower
+(`ERROR 8212`), NULL bound (`ERROR 1048`), missing index (`ERROR
+1176`), REGIONS 0 / >1000 (`ERROR 1105`), CACHE on partitioned table
+(`ERROR 8242`), invalid ATTRIBUTES (`ERROR 8237`). Acceptance arms:
+AUTO_RANDOM create/alter under int_only, valid SPLIT (table/index/
+common-handle/rowid/BY-list/partitioned), CACHE↔NOCACHE transitions,
+ATTRIBUTES set/partition, COMPACT warning no-op, `SET GLOBAL` mode
+flips with verified restore.
 
 ### Authorization card — C-column supplement (real TiFlash request)
 
