@@ -52,3 +52,51 @@ func TestResourceGroupUnmodeledOptionKinds(t *testing.T) {
 		}
 	}
 }
+
+// A non-reset QUERY_LIMIT member list that omits ACTION or omits every
+// threshold member is a form fixed TiDB v8.5.0 refuses at run time
+// (ERROR 1105 "unknown resource group runaway action" / "please set at
+// least one field"). Until the audit models that completeness refusal
+// explicitly, the whole option stays bounded unmodeled evidence — never
+// a claimed-clean clause — matching the issue #101 T22 native probe.
+func TestResourceGroupUnmodeledIncompleteRunaway(t *testing.T) {
+	incomplete := []ResourceGroupRunawayDeclaration{
+		{Members: []ResourceGroupRunawayMember{
+			{Kind: ResourceGroupRunawayExecElapsed, TextValue: "30s"},
+		}},
+		{Members: []ResourceGroupRunawayMember{
+			{Kind: ResourceGroupRunawayAction, TextValue: "kill"},
+		}},
+		{Members: []ResourceGroupRunawayMember{
+			{Kind: ResourceGroupRunawayWatch, TextValue: "exact:1m"},
+		}},
+	}
+	for i, runaway := range incomplete {
+		decl := ResourceGroupDeclaration{Options: []ResourceGroupOption{
+			{Kind: ResourceGroupOptionQueryLimit, Runaway: &runaway},
+		}}
+		got := decl.UnmodeledOptionKinds()
+		if len(got) != 1 || got[0] != ResourceGroupOptionQueryLimit {
+			t.Fatalf("case %d: UnmodeledOptionKinds = %v, want [query_limit]", i, got)
+		}
+	}
+
+	complete := ResourceGroupDeclaration{Options: []ResourceGroupOption{
+		{Kind: ResourceGroupOptionQueryLimit, Runaway: &ResourceGroupRunawayDeclaration{
+			Members: []ResourceGroupRunawayMember{
+				{Kind: ResourceGroupRunawayExecElapsed, TextValue: "30s"},
+				{Kind: ResourceGroupRunawayAction, TextValue: "kill"},
+			},
+		}},
+	}}
+	if got := complete.UnmodeledOptionKinds(); len(got) != 0 {
+		t.Fatalf("threshold+action list reported unmodeled kinds %v", got)
+	}
+
+	reset := ResourceGroupDeclaration{Options: []ResourceGroupOption{
+		{Kind: ResourceGroupOptionQueryLimit, Runaway: &ResourceGroupRunawayDeclaration{Reset: true}},
+	}}
+	if got := reset.UnmodeledOptionKinds(); len(got) != 0 {
+		t.Fatalf("reset runaway reported unmodeled kinds %v", got)
+	}
+}

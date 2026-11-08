@@ -254,14 +254,30 @@ func (d *ResourceGroupDeclaration) UnmodeledOptionKinds() []ResourceGroupOptionK
 			// A QUERY_LIMIT member the extractor could not classify
 			// stays bounded evidence and marks the whole option aspect
 			// unmodeled — the runaway group is never half-audited.
+			// A non-reset list missing ACTION or every threshold member
+			// is refused at run time by fixed TiDB v8.5.0 (ERROR 1105);
+			// until that completeness refusal is modeled explicitly the
+			// same bound applies rather than claiming a clean clause.
 			if option.Runaway != nil {
+				unmodeled, hasAction, hasThreshold := false, false, false
 				for _, member := range option.Runaway.Members {
 					switch member.Kind {
 					case ResourceGroupRunawayExecElapsed, ResourceGroupRunawayProcessedKeys,
-						ResourceGroupRunawayRU, ResourceGroupRunawayAction, ResourceGroupRunawayWatch:
+						ResourceGroupRunawayRU:
+						hasThreshold = true
+					case ResourceGroupRunawayAction:
+						hasAction = true
+					case ResourceGroupRunawayWatch:
 					default:
-						out = append(out, option.Kind)
+						unmodeled = true
 					}
+				}
+				if !option.Runaway.Reset && len(option.Runaway.Members) > 0 &&
+					(!hasAction || !hasThreshold) {
+					unmodeled = true
+				}
+				if unmodeled {
+					out = append(out, option.Kind)
 				}
 			}
 		}

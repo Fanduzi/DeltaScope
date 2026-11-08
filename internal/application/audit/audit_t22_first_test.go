@@ -198,3 +198,27 @@ func TestT22RulesDisabledEmitNoGaps(t *testing.T) {
 		t.Fatalf("gaps = %+v, want none with rules disabled", stmt.EvidenceGaps)
 	}
 }
+
+// A non-empty QUERY_LIMIT list missing ACTION or every threshold member
+// is refused at run time by fixed TiDB v8.5.0 (ERROR 1105, issue #101 T22
+// native probe). Until that completeness refusal is modeled explicitly the
+// option stays bounded unmodeled evidence — unsupported aspect plus
+// non-complete coverage — never a silent clean audit.
+func TestT22IncompleteRunawayStaysBounded(t *testing.T) {
+	cases := []string{
+		"CREATE RESOURCE GROUP q_noaction RU_PER_SEC=10 QUERY_LIMIT=(EXEC_ELAPSED='30s');",
+		"CREATE RESOURCE GROUP q_nothreshold RU_PER_SEC=10 QUERY_LIMIT=(ACTION=KILL);",
+	}
+	for _, sql := range cases {
+		result, err := t22Audit(t, sql, spec.DialectTiDB, nil, "")
+		if !errors.Is(err, ErrUnsupportedStatement) {
+			t.Fatalf("%q err = %v, want ErrUnsupportedStatement", sql, err)
+		}
+		if len(result.Unsupported) != 1 {
+			t.Fatalf("%q unsupported = %+v, want one bounded aspect", sql, result.Unsupported)
+		}
+		if result.Statements[0].Coverage.Status == report.CoverageComplete {
+			t.Fatalf("%q reported complete coverage", sql)
+		}
+	}
+}
