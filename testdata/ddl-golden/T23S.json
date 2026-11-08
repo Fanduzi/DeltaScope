@@ -339,7 +339,6 @@
     "--fail-on",
     "blocker"
    ],
-   "pending_native": true,
    "requires_service": "tiflash",
    "note": "Real TiFlash arm on the TiKV-backed stack (1 PD + 1 TiKV + 1 TiFlash). Product side keeps the loader-gap verdict: tiflash_replica is never queried, so AVAILABLE stays a native fact, not a product claim. Native arms prove, in order: over-count refusal (2 > 1 store, refused at DDL time), declaration, bounded poll until AVAILABLE=1, a forced tidb_isolation_read_engines='tiflash' read plus EXPLAIN task evidence, REPLICA 0 clear, and one rebuild+re-read. No compaction benefit, space recovery, or HA claim.",
    "setup": [
@@ -439,11 +438,9 @@
     },
     {
      "name": "forced tiflash read",
-     "sql": "SET SESSION tidb_isolation_read_engines='tiflash'; SELECT COUNT(*) FROM t23fx.t23fx_tf",
+     "sql": "SET SESSION tidb_isolation_read_engines='tiflash'; SELECT COUNT(*) AS tiflash_rows FROM t23fx.t23fx_tf",
      "expect_rc": 0,
-     "stdout_contains": [
-      "1"
-     ]
+     "expect_stdout": "tiflash_rows\n1"
     },
     {
      "name": "explain resolves tiflash task",
@@ -489,11 +486,9 @@
     },
     {
      "name": "forced tiflash read after rebuild",
-     "sql": "SET SESSION tidb_isolation_read_engines='tiflash'; SELECT COUNT(*) FROM t23fx.t23fx_tf",
+     "sql": "SET SESSION tidb_isolation_read_engines='tiflash'; SELECT COUNT(*) AS tiflash_rows FROM t23fx.t23fx_tf",
      "expect_rc": 0,
-     "stdout_contains": [
-      "1"
-     ]
+     "expect_stdout": "tiflash_rows\n1"
     },
     {
      "name": "compact request on real replica",
@@ -553,7 +548,6 @@
     "--fail-on",
     "blocker"
    ],
-   "pending_native": true,
    "note": "apk=false CONTROL on the TiKV-backed server: under INT_ONLY the same bare single-int PK is clustered, which is the native contrast for apk-intonly-plain-pk. Also pins the alter-primary-key fact read through the real cluster path (SHOW CONFIG over the registered components, filtered Type='tidb' -> one row 'false').",
    "setup": [
     {
@@ -667,7 +661,6 @@
     "--fail-on",
     "blocker"
    ],
-   "pending_native": true,
    "note": "apk=true DIFFERENTIATOR: under INT_ONLY the deprecated alter-primary-key knob flips the bare single-int PK to NONCLUSTERED (upstream ShouldBuildClusteredIndex requires !AlterPrimaryKey). Product passes the legal statement either way; the clustered-vs-not distinction is native-only evidence.",
    "setup": [
     {
@@ -781,7 +774,6 @@
     "--fail-on",
     "blocker"
    ],
-   "pending_native": true,
    "note": "apk=true x INT_ONLY x AUTO_RANDOM: the AUTO_RANDOM path is refused because the PK is no longer clustered — the exact inverse of A-auto-random-first-path (INT_ONLY x apk=false, accepted). Product rejects with ddl.tidb.table.auto_random.valid; native refuses the same statement.",
    "setup": [
     {
@@ -902,7 +894,6 @@
     "--fail-on",
     "blocker"
    ],
-   "pending_native": true,
    "note": "CONTROL: an explicit PRIMARY KEY ... CLUSTERED wins over alter-primary-key=true — the knob only applies to the implicit path.",
    "setup": [
     {
@@ -1016,7 +1007,6 @@
     "--fail-on",
     "blocker"
    ],
-   "pending_native": true,
    "note": "CONTROL: explicit NONCLUSTERED + AUTO_RANDOM is refused on any configuration — the keyword path reaches the same verdict as the apk implicit path for a different reason.",
    "setup": [
     {
@@ -1137,7 +1127,6 @@
     "--fail-on",
     "blocker"
    ],
-   "pending_native": true,
    "note": "CONTROL: alter-primary-key only takes effect under INT_ONLY; under the default ON mode the bare single-int PK is clustered and AUTO_RANDOM is accepted even with the knob set.",
    "setup": [
     {

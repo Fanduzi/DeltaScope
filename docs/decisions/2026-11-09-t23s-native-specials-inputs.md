@@ -93,17 +93,20 @@ row to agree, so apk=true and apk=false servers may never share a cluster.
 
 ### Authorization card (the single remaining decision)
 
-**Requested increment over the historical `ds-t21` colima profile:**
-create one new run (`ds-t23s-<timestamp>`) bringing up at most **12
-containers**: the 4 baseline anchors, 3 existing-style clients, PD/TiKV/
-TiFlash, the TiKV-backed TiDB, and the apk aux TiDB.
+**Requested increment over the historical `ds-t21` colima profile**
+(current profile: 4 vCPU, 8 GiB RAM): create one new run
+(`ds-t23s-<timestamp>`) bringing up at most **12 concurrent containers**
+— an upper bound on simultaneous identities, not a cumulative count —
+the 4 baseline anchors, 3 existing-style clients, PD/TiKV/TiFlash, the
+TiKV-backed TiDB, and the apk aux TiDB.
 
 | resource | bound | basis |
 |---|---|---|
-| vCPU | ≤ 4 total for the VM (increment ≈ +2) | dev/test machine minimums do not apply; fixture is idle between statements (UNVERIFIED headroom) |
-| RAM | ≤ 12 GiB total (increment ≈ +6–8 GiB over the lightweight run) | tikv ~1.5–4 GiB (block cache 45% RAM), tiflash ~2–4 GiB (C++ engine + proxy + 1 GiB mark cache), mysql×3 + tidb×3 + pd + clients ≈ 3.5 GiB (UNVERIFIED — no container minimums are documented) |
-| disk | ≤ 12 GiB incremental | image pulls ≈ 1.85 GiB compressed arm64 (~4 GiB uncompressed) + small fixture data + receipts |
-| services | ≤ 12 containers, ≤ 1 network, ≤ 8 declared volumes (4 mysql-named + pd-data + tikv-data + tiflash-data + tiflash-logs) + incidental anonymous client volumes | manifest anchors + `data_volumes` declarations |
+| vCPU | ≤ 4 total for the VM (increment +0 over the 4 vCPU baseline) | dev/test machine minimums do not apply; fixture is idle between statements (UNVERIFIED headroom) |
+| RAM | ≤ 12 GiB total (increment +4 GiB over the 8 GiB baseline) | tikv ~1.5–4 GiB (block cache 45% RAM), tiflash ~2–4 GiB (C++ engine + proxy + 1 GiB mark cache), mysql×3 + tidb×3 + pd + clients ≈ 3.5 GiB (UNVERIFIED — no container minimums are documented) |
+| disk | accounted within existing capacity, not a new fixed budget | existing root/data volume already carries prior run images and protected volumes; this run adds ≈ 1.85 GiB compressed arm64 pulls (~4 GiB unpacked) + small fixture data + receipts, bounded by the free space recorded in preflight — the preflight `docker system df`/`df` reading is the gate, and any capacity expansion is a separate approval item |
+| services | ≤ 12 concurrent containers, ≤ 1 network, ≤ 8 declared volumes — mysql57-data, mysql80-data, mysql84-data, tidb85-data, t23spd-data, t23stikv-data, t23stiflash-data, t23stiflash-logs — plus ≈ 3 anonymous client volumes per creation generation (one per MySQL client service; actual ownership from `Mounts` capture + ledger registration) | manifest anchors + `data_volumes` declarations |
+| recreation generations | ≤ 2 creation generations for the whole run (initial `up` + at most one recreate) | anonymous client volumes grow per generation; unbounded retries are not sanctioned |
 | loopback ports | 24002, 24003, 24379 only | tidb85tikv/apk product connects + PD API debug |
 
 Images (all `linux/arm64` manifests verified on Docker Hub, v8.5.0
@@ -126,6 +129,21 @@ Scope granted if approved: image pull for the listed tags only; one
 profile budget adjustment; one new run under a new RUN_ID; the DDL/DML/
 read-only verifies the manifest declares; normal `stop`/`rm`; and
 ledger-scoped S/R/V cleanup through `ddl_golden_isolated.py`.
+
+First step before any service start — a configuration-visibility probe
+with a synthetic minimal file (not a real TOML): write a throwaway
+`probe-mount.conf` under `docker/tidb/` whose only content is a random
+nonce; start one short-lived `mysql:8.4.10` probe container (already
+pulled) bind-mounting that single file read-only; `sha256sum` the
+container-side path and compare the fingerprint to the host-side hash.
+If the bind mount is unavailable or resolves to the wrong path the run
+stops immediately and reports — it does **not** silently enable home
+sharing, widen file sharing, mount old sockets, make the repository
+broadly writable, or modify VM/profile settings to make mounts work.
+The probe container is part of the authorised resource plan: it is
+registered in the lifecycle ledger and removed by the same S/R/V
+cleanup — no manual `docker run`/`rm` bypass.
+
 Not granted: fault injection, mounting old volumes, wider account
 permissions, VM deletion, or "adjust until it works". If resources are
 insufficient the run stops and reports — no auto-expansion, no external
@@ -157,6 +175,54 @@ or the accepted artifact. `T23S.json` is a new manifest; `infra_only`,
 with validator pins. Undetermined (`timeout`) evidence can never
 validate as success — now enforced at six validator sites.
 
+## R19 remediation (reviewer-driven)
+
+The R18 audit found three runner blockers and four input/card gaps on
+the `2ddaa52a` tree; the fixes below close them without touching any
+accepted artifact.
+
+- A1 — timeout enforcement was nested inside the output-mismatch branch
+  at `setup`/`execute`/`teardown`, so a forged `timeout:true` record
+  with matching output passed. All six verify sites now share
+  `_verify_marker_failures` as a sibling of the comparator: `timeout`,
+  `error`, invalid declarations and malformed poll histories fail even
+  when the recorded output matches exactly.
+- A2 — `contains` now has a static shape contract (`verify_shape_error`):
+  non-empty string only, mutually exclusive with `expect`, no `str()`
+  coercion. The runner rejects an invalid declaration before any mysql
+  call (`error_kind: declaration`); the comparator can never wildcard.
+- A3 — `run_verify_check` preserves every attempt in `observations`
+  (`n`/`rc`/`output`/`stderr`/markers), fails fast on nonzero rc,
+  execution exceptions and per-query timeouts (`query_timeout`), and
+  continues only on rc=0 unmatched output. The validator independently
+  re-checks: cap vs declared attempts, no post-error continuation, and
+  summary ≡ last observation — a matching summary cannot launder a
+  missing or forged history. Single-shot records keep their historical
+  shape.
+- B1 — the EXPLAIN step already pinned `stdout_contains: ["tiflash"]`
+  (plan-task marker); kept and pinned by contract test.
+- B2 — both forced reads drop the weak `contains("1")` for
+  `expect_stdout: "tiflash_rows\n1"` (aliased `COUNT(*)` under `-e`
+  tabular mode), a new exact-stdout oracle the runner asserts and the
+  validator independently re-checks.
+- B3 — the stale `pending_native` flag is removed from all seven
+  metadata cases; execution status lives only in this record.
+- B4/C — the authorization card now fixes a synthetic bind-mount
+  visibility probe as the first step (nonce fingerprint, stop on
+  failure, probe container inside the ledger), declares ≤12 as a
+  *concurrent* container bound, names all eight declared volumes,
+  quantifies ≈3 anonymous client volumes per creation generation with
+  a two-generation cap, and states the resource increment against the
+  real profile baseline: total ≤4 vCPU (+0) and ≤12 GiB RAM (+4 GiB
+  over 8 GiB), with disk accounted inside existing capacity rather
+  than as a new fixed budget.
+
+A latent harness defect was also found and fixed in this round: a
+mid-file `unittest.main()` in `test_ddl_golden_isolated.py` ran before
+the R15 `TestLoadFailureLockRelease` class was defined, so its four
+tests silently never collected (57 reported as the suite total; 61
+after the fix).
+
 ## Deferred / Out Of Scope
 
 Execution itself, performance claims, HA/fault injection, allocator
@@ -166,9 +232,11 @@ TiKV-cluster value was not source-verified, so no fact is pinned).
 
 ## Verification Evidence
 
-Offline only: 796 contract cases (runner primitives + validator pins +
-`t23s_manifest_tests`) and 61 isolated-lifecycle cases (incl.
-`data_volumes` + six-service capture). Topology, flags, ports, and the
+Offline only: 822 contract cases (runner primitives + validator pins +
+`t23s_manifest_tests`, including a six-site forged-marker matrix and
+poll-history forgery matrix) and 61 isolated-lifecycle cases (incl.
+`data_volumes` + six-service capture + the four load-failure lock tests
+now actually collected). Topology, flags, ports, and the
 `alter-primary-key`/`tiflash_replica` semantics are source-verified in
 `RESEARCH-tiflash-topology.md`; product expects were re-derived with the
 locally rebuilt CLI under the generated `t23-layout-id` policy. Zero
