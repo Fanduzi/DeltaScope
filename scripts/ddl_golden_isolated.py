@@ -28,6 +28,12 @@ import pathlib
 import re
 import secrets
 import sys
+import time
+
+try:
+    import fcntl
+except ImportError:
+    fcntl = None
 
 ROOT_DIR = pathlib.Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT_DIR / "scripts"))
@@ -83,9 +89,16 @@ class IsoRun:
             "actions": [],
         }
         # Bytes of the ledger this entry last loaded or wrote. record()
-        # refuses when the on-disk file moved past that snapshot, so two
-        # same-run entries can never silently last-writer-wins.
+        # refuses when the on-disk file moved past that snapshot —
+        # detection for non-cooperative writers; mutual exclusion
+        # between cooperating entries comes from the ledger lock.
         self._ledger_snapshot = None
+        # Cross-process entry lock: fd held on <active receipts>.lock,
+        # a stable sidecar file (never receipts.json itself, whose inode
+        # os.replace() swaps). Covers the whole entry lifetime —
+        # acquire before ledger load, release at entry end.
+        self.lock_path = None
+        self._lock_fd = None
         # Every subprocess spawned by ddl_golden inherits this environment:
         # compose(), docker exec, health probes, and docker version all pin
         # to the isolated daemon. DOCKER_CONTEXT is cleared so a stray
@@ -112,14 +125,20 @@ class IsoRun:
         return rc
 
     def _persist_ledger(self):
-        """Append-safe ledger write: compare-and-swap plus atomic replace.
+        """Append-safe ledger write: atomic replace + stale-snapshot
+        detection.
 
-        A file whose bytes moved past the snapshot this entry loaded or
-        last wrote belongs to another same-run entry — refuse rather than
-        overwrite its appended records. The payload goes to a private tmp
-        file, fsyncs, and os.replace()s atomically, so a crash mid-write
-        leaves the previous valid ledger readable. New files get 0o600;
-        nothing here truncates or chmods pre-existing files."""
+        The payload goes to a private tmp file, fsyncs, and os.replace()s
+        atomically, so a crash mid-write leaves the previous valid ledger
+        readable. Before writing, the on-disk bytes are compared with the
+        snapshot this entry last loaded or wrote: a file that moved past
+        it was touched by a writer that does not follow the ledger lock —
+        detection refuses rather than overwrite its appended records.
+        This check is NOT an atomic compare-and-swap: read-then-replace
+        has a window, so cooperating same-run entries must also hold the
+        entry lock (acquire_ledger_lock), which is what provides mutual
+        exclusion. New files get 0o600; nothing here truncates or chmods
+        pre-existing files."""
         if self.receipts_path.exists():
             try:
                 disk = self.receipts_path.read_bytes()
@@ -154,6 +173,63 @@ class IsoRun:
                 pass
             raise SystemExit(f"[iso][FAIL] ledger write failed: {exc}")
         self._ledger_snapshot = payload
+
+    # -- cross-process entry lock -----------------------------------------
+
+    def _lock_wait_seconds(self):
+        raw = os.environ.get("DS_ISO_LOCK_WAIT_SEC", "60")
+        try:
+            return max(0.0, float(raw))
+        except ValueError:
+            return 60.0
+
+    def acquire_ledger_lock(self):
+        """Mutual exclusion between cooperating entries of THIS run.
+
+        The lock lives on a stable sidecar, <active receipts>.lock —
+        never on receipts.json, whose inode os.replace() swaps and which
+        could not coordinate holders across a replace. The fd is held for
+        the whole entry lifetime: acquire happens in load_run before the
+        ledger is read, so identity checks, daemon calls and persists all
+        run inside it. The run wrapper's internal calls reuse this held
+        fd (same-object re-entry is a no-op) instead of competing against
+        themselves. PEP 446 non-inheritable: spawned subprocesses never
+        keep it past the entry's exit. A platform without flock refuses —
+        the contract cannot be met silently."""
+        if fcntl is None:
+            raise SystemExit(
+                "[iso][FAIL] this platform lacks fcntl.flock — ledger "
+                "mutual exclusion cannot be guaranteed, refusing")
+        if self._lock_fd is not None:
+            return
+        self.lock_path = self.receipts_path.with_name(
+            self.receipts_path.name + ".lock")
+        fd = os.open(self.lock_path, os.O_RDWR | os.O_CREAT, 0o600)
+        deadline = time.monotonic() + self._lock_wait_seconds()
+        while True:
+            try:
+                fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                break
+            except BlockingIOError:
+                if time.monotonic() >= deadline:
+                    os.close(fd)
+                    raise SystemExit(
+                        "[iso][FAIL] ledger lock held by another entry — "
+                        f"timed out waiting: {self.lock_path}")
+                time.sleep(0.05)
+        os.set_inheritable(fd, False)
+        self._lock_fd = fd
+
+    def release_ledger_lock(self):
+        """Release on every exit path. The sidecar file itself is never
+        deleted — releasing is fd close, not unlinking the lock's shared
+        identity out from under other waiters."""
+        if self._lock_fd is not None:
+            try:
+                fcntl.flock(self._lock_fd, fcntl.LOCK_UN)
+            finally:
+                os.close(self._lock_fd)
+                self._lock_fd = None
 
     def docker(self, *args, timeout=180):
         rc, out, err = self.dg.run_cmd(["docker", *args], timeout=timeout, env=self.env)
@@ -528,6 +604,20 @@ class IsoRun:
             + (" incomplete" if incomplete else ""))
         return gen
 
+    def _capture_or_fail(self, action):
+        """Capture a generation, then refuse to continue when the view
+        is partial. The incomplete generation is already persisted —
+        observed objects keep their source, the unobserved scope is
+        marked — so exiting non-zero here never rewrites a smaller
+        world as complete."""
+        gen = self._capture_generation(action)
+        if gen.get("capture_incomplete"):
+            raise SystemExit(
+                f"[iso][FAIL] {action}: capture incomplete — ledger "
+                "keeps the partial generation; refusing to continue "
+                "on a smaller-than-real world view")
+        return gen
+
     # -- lifecycle ------------------------------------------------------
 
     def up(self, manifest, task):
@@ -544,7 +634,7 @@ class IsoRun:
         self.record("compose.up", rc, err.strip() or out.strip())
         if rc != 0:
             raise SystemExit(f"[iso][FAIL] compose up failed: {err.strip()}")
-        gen = self._capture_generation("compose.up")
+        gen = self._capture_or_fail("compose.up")
         return gen["containers"]
 
     # -- teardown: consume the ledger only --------------------------------
@@ -626,22 +716,36 @@ class IsoRun:
     def stop(self):
         self._verify_daemon_binding()
         acted = []
+        unclosed = []
         for cid in self._verified_ids():
             rc, out, err = self.docker("stop", cid, timeout=60)
             self.record(f"stop.{cid[:12]}", rc, err.strip())
+            if rc != 0:
+                unclosed.append(f"{cid[:12]} rc={rc}")
             acted.append(cid)
+        if unclosed:
+            raise SystemExit(
+                f"[iso][FAIL] stop incomplete: {unclosed}")
         return acted
 
     def rm(self):
         self._verify_daemon_binding()
         acted = []
+        unclosed = []
         for cid in self._verified_ids():
             rc, out, err = self.docker("rm", cid, timeout=60)
             self.record(f"rm.{cid[:12]}", rc, err.strip())
+            if rc != 0:
+                unclosed.append(f"{cid[:12]} rc={rc}")
             acted.append(cid)
         for nid in self._verified_networks():
             rc, out, err = self.docker("network", "rm", nid, timeout=60)
             self.record(f"network.rm.{nid[:12]}", rc, err.strip())
+            if rc != 0:
+                unclosed.append(f"net:{nid[:12]} rc={rc}")
+        if unclosed:
+            raise SystemExit(
+                f"[iso][FAIL] rm incomplete: {unclosed}")
         return acted
 
     def _volume_users(self, vname):
@@ -662,6 +766,10 @@ class IsoRun:
         self._verify_daemon_binding()
         named, anon = self._registered_volumes()
         project = self.receipts["project"]
+        # Anything this invocation was asked to consume but could not
+        # close makes the command non-zero at the end — the ledger keeps
+        # completed, refused and kept parts regardless.
+        unclosed = []
         for decl, cands in named.items():
             candidates = sorted(cands) + [decl, f"{project}_{decl}"]
             seen = set()
@@ -686,11 +794,14 @@ class IsoRun:
                             # deletion and report; never force-detach.
                             self.record(f"volume.inuse.{cand}", 1,
                                         ",".join(users))
+                            unclosed.append(f"{cand} in-use")
                         else:
                             rc, out, err = self.docker("volume", "rm",
                                                        cand, timeout=60)
                             self.record(f"volume.rm.{cand}", rc,
                                         err.strip())
+                            if rc != 0:
+                                unclosed.append(f"{cand} rm rc={rc}")
                     else:
                         self.record(f"volume.retained.{cand}", 0,
                                     f"label={v['label']!r} — not this run")
@@ -717,9 +828,12 @@ class IsoRun:
                 if users:
                     self.record(f"volume.inuse.{vname}", 1,
                                 ",".join(users))
+                    unclosed.append(f"{vname} in-use")
                     continue
                 rc, out, err = self.docker("volume", "rm", vname, timeout=60)
                 self.record(f"volume.rm.{vname}", rc, err.strip())
+                if rc != 0:
+                    unclosed.append(f"{vname} rm rc={rc}")
             elif v["verdict"] == "error":
                 self.record("volume.refuse", 1,
                             f"{vname}: {v['detail'][:120]}")
@@ -727,6 +841,10 @@ class IsoRun:
                     f"[iso][FAIL] volume inspect failed: {vname}")
             else:
                 self.record("volume.gone", 0, vname)
+        if unclosed:
+            raise SystemExit(
+                "[iso][FAIL] rmvolumes incomplete — requested objects "
+                f"still unclosed: {unclosed}")
 
     # -- delegation -----------------------------------------------------
 
@@ -772,6 +890,13 @@ def load_run(args):
         # An explicit ledger path IS the run's ledger for the whole
         # lifecycle — reads and writes bind to it, not just the load.
         run.receipts_path = source
+    # The entry lock is acquired BEFORE the ledger is read: the snapshot
+    # the entry works from is taken under the lock, first-time
+    # initialisation races serialise behind the holder, and no docker
+    # call of this entry can happen unlocked. The lock file lives next
+    # to the resolved receipts path, so read/lock/write never split
+    # across different files.
+    run.acquire_ledger_lock()
     if source.exists():
         try:
             raw = source.read_bytes()
@@ -832,6 +957,13 @@ def main():
     manifest = dg.load_manifest(args.task)
     run = load_run(args)
 
+    try:
+        _dispatch(args, run, manifest)
+    finally:
+        run.release_ledger_lock()
+
+
+def _dispatch(args, run, manifest):
     if args.command == "preflight":
         identity, images = run.preflight(manifest)
         print(json.dumps({"daemon": identity, "images": images}, indent=2))
@@ -867,7 +999,7 @@ def main():
         def ledger_compose(*cargs, **ckw):
             result = base_compose(*cargs, **ckw)
             if cargs and cargs[0] == "up" and result[0] == 0:
-                run._capture_generation("compose.up.run")
+                run._capture_or_fail("compose.up.run")
             return result
 
         dg.compose = ledger_compose

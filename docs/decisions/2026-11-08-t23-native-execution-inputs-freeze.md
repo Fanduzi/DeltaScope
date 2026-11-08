@@ -381,10 +381,12 @@ remove anonymous volumes).
 - Corruption/interruption: missing explicit `--receipts`, unreadable
   or non-object JSON, and teardown without any ledger all refuse —
   no silent empty-ledger init.
-- Durability: ledger writes are compare-and-swap against the loaded
-  snapshot plus tmp+fsync+`os.replace`; a writer holding a stale
-  snapshot refuses instead of last-writer-wins; failed writes leave
-  the last valid ledger intact; new ledger files are mode 0600.
+- Durability: ledger writes are tmp+fsync+`os.replace` against the
+  loaded snapshot; the snapshot check is non-cooperating-modification
+  detection, not an atomic compare-and-swap (see R12 amendment) — a
+  serial writer holding a stale snapshot refuses instead of
+  last-writer-wins; failed writes leave the last valid ledger intact;
+  new ledger files are mode 0600.
 - Generation records: re-observing a registered object appends a
   `reobserved` marker, never a second creation record; partial
   captures mark `capture_incomplete` instead of reporting a smaller
@@ -427,6 +429,39 @@ Deferred incremental request for the real success/recovery arms:
   with a bounded cap.
 - End classifications stay per the taxonomy above; success requires
   AVAILABLE=1 observed, not just the declaration row.
+
+## R12/R13 amendment — entry lock and incomplete-status propagation (2026-11-08)
+
+The R12 independent audit replayed the repaired tool and found two
+remaining blockers, fixed under the R13 order:
+
+- B1 — cross-process lost update: the R11 snapshot check is a
+  read/compare/replace sequence, not an interprocess CAS. Two entries
+  loading the same ledger bytes could both pass the comparison and
+  last-writer-wins. The tool now takes a stable sidecar lock
+  (`<active receipts>.lock`, `fcntl.flock`, mode 0600) covering the
+  whole entry lifecycle — resolved `--receipts` binding, ledger
+  load/initialisation, identity validation, all daemon operations,
+  every ledger persistence, release. The sidecar inode is never the
+  receipts inode (atomic `os.replace` swaps the latter) and is never
+  deleted on release; the descriptor is non-inheritable so children
+  do not carry it. A finite monotonic wait (`DS_ISO_LOCK_WAIT_SEC`)
+  refuses non-zero with zero daemon calls and no ledger write. The
+  lock is per active receipts path — independent runs are not
+  globally serialised — and does not claim protection against writers
+  that bypass the protocol; the snapshot check still detects those.
+- B2 — silent incomplete exits: `capture_incomplete`, `volume.inuse`,
+  inspect/mount-query/removal failures and identity refusals were
+  recorded in the ledger while the process still exited 0. Every such
+  unclosed result now propagates non-zero through `main()`, the `run`
+  wrapper, patched cleanup and `compose_down_rc`; the ledger retains
+  the refused/unknown/failure records so a later retry — after the
+  obstruction clears — can complete without erasing history.
+  Explicit NotFound remains the idempotent success it always was.
+
+Both repairs are verified offline only (51 fake-daemon contract
+cases including real-`main()` subprocess lock races); no real
+daemon/database/resource action was taken or is claimed.
 
 ## Links
 

@@ -13,8 +13,10 @@ import importlib.util
 import json
 import os
 import pathlib
+import subprocess
 import sys
 import tempfile
+import time
 import unittest
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
@@ -69,6 +71,10 @@ class FakeDaemon:
         self.fail_next_up = False
         self.error_containers = set()
         self.inspect_error_once = False
+        # ps --filter volume=<name> fails for these volume names
+        self.ps_error_volumes = set()
+        # docker volume rm <name> fails for these volume names
+        self.fail_volume_rm = set()
 
     def bind(self, run):
         run.docker = lambda *a, timeout=180: self.dispatch(
@@ -132,6 +138,8 @@ class FakeDaemon:
                 if x == "--filter" and i + 1 < len(a):
                     if a[i + 1].startswith("volume="):
                         want_vol = a[i + 1][len("volume="):]
+            if want_vol is not None and want_vol in self.ps_error_volumes:
+                return 1, "", "daemon timed out reading mount table"
             ids = []
             for c in self.containers.values():
                 if want_vol is not None:
@@ -153,6 +161,8 @@ class FakeDaemon:
             self.networks.pop(a[-1], None)
             return 0, a[-1], ""
         if verb == "volume" and a[1] == "rm":
+            if a[-1] in self.fail_volume_rm:
+                return 1, "", "volume is in use by another container"
             self.volumes.pop(a[-1], None)
             return 0, a[-1], ""
         return 0, "", ""
@@ -468,7 +478,8 @@ class TestLedgerPersistenceDispatch(unittest.TestCase):
             "volumes": [{"kind": "anonymous", "name": "ab12anon",
                          "mounted_by": "c-cl",
                          "destination": "/var/lib/mysql"}]}])
-        run.rmvolumes()
+        with self.assertRaises(SystemExit):
+            run.rmvolumes()
         self.assertEqual(state.removed_volumes(), [])
         self.assertIn("ab12anon", state.volumes)
         self.assertTrue(any(a["action"] == "volume.inuse.ab12anon"
@@ -794,6 +805,488 @@ class TestTeardownLedger(unittest.TestCase):
         self.assertTrue(result.get("isolated"))
         self.assertEqual(result["compose_down_rc"], 0)
         self.assertEqual(result["residual_containers"], [])
+
+
+FAKE_DOCKER_PY = '''#!/usr/bin/env python3
+"""PATH-level fake docker for cross-process lock tests. State under
+FAKE_DOCKER_STATE; every call appends argv to argv.log so tests can see
+exactly which daemon calls each entry issued and when."""
+import json, os, pathlib, secrets, sys, time
+
+STATE = pathlib.Path(os.environ["FAKE_DOCKER_STATE"]) / "state.json"
+LOG = pathlib.Path(os.environ["FAKE_DOCKER_STATE"]) / "argv.log"
+MAP = {"mysql57": "deltascope-ddl-golden-mysql57",
+       "mysql80": "deltascope-ddl-golden-mysql80",
+       "mysql84": "deltascope-ddl-golden-mysql84",
+       "tidb85": "deltascope-ddl-golden-tidb85",
+       "tidb85-client": "deltascope-ddl-golden-tidb85-client"}
+IMG = {"mysql57": "mysql:5.7.44", "mysql80": "mysql:8.0.46",
+       "mysql84": "mysql:8.4.10", "tidb85": "pingcap/tidb:v8.5.0",
+       "tidb85-client": "mysql:8.4.10"}
+
+
+def load():
+    if STATE.exists():
+        return json.loads(STATE.read_text())
+    return {"containers": {}, "volumes": {}, "networks": {}}
+
+
+def save(s):
+    STATE.write_text(json.dumps(s))
+
+
+args = sys.argv[1:]
+LOG.parent.mkdir(parents=True, exist_ok=True)
+with LOG.open("a") as fh:
+    fh.write(json.dumps(args) + "\\n")
+s = load()
+
+if args[0] == "info":
+    fmt = args[args.index("--format") + 1] if "--format" in args else ""
+    if "{{json" in fmt:
+        print(json.dumps({"ID": "fake-srv-1", "Name": "fake",
+                          "OperatingSystem": "fake",
+                          "ServerVersion": "0"}))
+    else:
+        print("fake-srv-1")
+    sys.exit(0)
+
+if args[0] == "compose" and "up" in args:
+    stall = os.environ.get("FAKE_UP_STALL")
+    if stall:
+        mark = os.environ.get("FAKE_UP_MARK")
+        if mark:
+            pathlib.Path(mark).touch()
+        deadline = time.monotonic() + 60
+        while not pathlib.Path(stall).exists():
+            if time.monotonic() > deadline:
+                sys.exit(3)
+            time.sleep(0.05)
+    proj = args[args.index("-p") + 1]
+    for svc in args[args.index("-d") + 1:]:
+        name = MAP.get(svc)
+        if not name:
+            continue
+        old = s["containers"].pop(name, None)
+        if old:
+            for v in s["volumes"].values():
+                if old["id"] in v.get("users", []):
+                    v["users"].remove(old["id"])
+        cid = secrets.token_hex(32)
+        mounts = []
+        if svc == "tidb85-client":
+            vname = secrets.token_hex(32)
+            s["volumes"][vname] = {"label": "", "driver": "local",
+                                   "users": [cid]}
+            mounts.append({"Type": "volume", "Name": vname,
+                           "Destination": "/var/lib/mysql"})
+        else:
+            vname = f"{proj}-{svc}-data"
+            s["volumes"].setdefault(
+                vname, {"label": proj, "driver": "local", "users": [cid]})
+            mounts.append({"Type": "volume", "Name": vname,
+                           "Destination": "/var/lib/mysql"})
+        s["containers"][name] = {"id": cid, "label": proj,
+                                 "image": IMG[svc], "mounts": mounts}
+    s["networks"][f"net-{proj}"] = {"project": proj}
+    save(s)
+    sys.exit(0)
+
+if args[0] == "inspect":
+    ref = args[-1]
+    c = s["containers"].get(ref)
+    if c is None:
+        for cc in s["containers"].values():
+            if cc["id"] == ref or cc["id"].startswith(ref):
+                c = cc
+                break
+    if c is None:
+        print(f"Error: No such object: {ref}", file=sys.stderr)
+        sys.exit(1)
+    name = next(n for n, cc in s["containers"].items() if cc is c)
+    print(f"{c['id']}|/{name}|{c['label']}|{c['image']}"
+          f"|{json.dumps(c['mounts'])}")
+    sys.exit(0)
+
+if args[0] == "network":
+    if args[1] == "ls":
+        for nid in s["networks"]:
+            print(nid)
+        sys.exit(0)
+    if args[1] == "inspect":
+        net = s["networks"].get(args[-1])
+        if net is None:
+            print("Error: No such network", file=sys.stderr)
+            sys.exit(1)
+        print(net["project"])
+        sys.exit(0)
+    if args[1] == "rm":
+        s["networks"].pop(args[-1], None)
+        save(s)
+        sys.exit(0)
+
+if args[0] == "volume":
+    if args[1] == "inspect":
+        v = s["volumes"].get(args[-1])
+        if v is None:
+            print("Error: No such volume", file=sys.stderr)
+            sys.exit(1)
+        print(f"{v['driver']}|{v['label']}")
+        sys.exit(0)
+    if args[1] == "rm":
+        s["volumes"].pop(args[-1], None)
+        save(s)
+        sys.exit(0)
+
+if args[0] == "ps":
+    joined = " ".join(args)
+    if "volume=" in joined:
+        vname = joined.split("volume=")[1].split('"')[0].split()[0]
+        for u in s["volumes"].get(vname, {}).get("users", []):
+            print(u)
+    else:
+        for c in s["containers"].values():
+            print(c["id"])
+    sys.exit(0)
+
+if args[0] in ("stop", "rm"):
+    if args[0] == "rm":
+        for name, c in list(s["containers"].items()):
+            if name == args[-1] or c["id"] == args[-1]:
+                for v in s["volumes"].values():
+                    if c["id"] in v.get("users", []):
+                        v["users"].remove(c["id"])
+                del s["containers"][name]
+        save(s)
+    sys.exit(0)
+
+print(f"fake-docker: unhandled {args}", file=sys.stderr)
+sys.exit(2)
+'''
+
+
+class TestCrossProcessEntryLock(unittest.TestCase):
+    """B1: cooperating same-run entries serialise on a stable sidecar
+    lock for the WHOLE entry lifetime — acquire before ledger load, hold
+    across daemon side-effects, release at exit. Real main()
+    subprocesses against a PATH-level fake daemon; no in-process
+    shortcuts for the two-entry scenarios."""
+
+    ISO_SCRIPT = ROOT / "scripts" / "ddl_golden_isolated.py"
+
+    def _layout(self):
+        tmp = pathlib.Path(tempfile.mkdtemp())
+        fake = tmp / "fakebin"
+        dstate = tmp / "dstate"
+        art = tmp / "art"
+        fake.mkdir(); dstate.mkdir(); art.mkdir()
+        (fake / "docker").write_text(FAKE_DOCKER_PY)
+        os.chmod(fake / "docker", 0o755)
+        return tmp, fake, dstate, art
+
+    def _spawn(self, fake, dstate, art, cmd, extra_env=None):
+        env = dict(os.environ)
+        env["PATH"] = f"{fake}:{env['PATH']}"
+        env["FAKE_DOCKER_STATE"] = str(dstate)
+        env.pop("DOCKER_HOST", None)
+        env.pop("DOCKER_CONTEXT", None)
+        env.update(extra_env or {})
+        return subprocess.Popen(
+            [sys.executable, str(self.ISO_SCRIPT),
+             "--run-id", "r12lock", "--daemon", "unix:///fake",
+             "--owner", "audit", "--artifact-dir", str(art),
+             "--task", "T21", cmd],
+            env=env, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+    @staticmethod
+    def _argv_lines(dstate):
+        log = dstate / "argv.log"
+        return log.read_text().strip().splitlines() if log.exists() else []
+
+    @staticmethod
+    def _wait_mark(path, timeout=15.0):
+        deadline = time.monotonic() + timeout
+        while not pathlib.Path(path).exists():
+            if time.monotonic() > deadline:
+                raise AssertionError(f"marker {path} never appeared")
+            time.sleep(0.05)
+
+    def _stall_env(self, tmp, name):
+        release = tmp / f"{name}.release"
+        mark = tmp / f"{name}.mark"
+        return release, mark, {
+            "FAKE_UP_STALL": str(release), "FAKE_UP_MARK": str(mark)}
+
+    def test_two_entries_existing_run_serialise(self):
+        """Scenario A: A holds the lock stalled inside compose up; B
+        must not reach ANY daemon call until A finishes; afterwards B
+        acquires, reloads, appends — both records preserved."""
+        tmp, fake, dstate, art = self._layout()
+        release, mark, env = self._stall_env(tmp, "A")
+        # seed one completed up so the run ledger already exists
+        seed = self._spawn(fake, dstate, art, "up")
+        self.assertEqual(seed.wait(timeout=60), 0)
+        baseline = len(self._argv_lines(dstate))
+        A = self._spawn(fake, dstate, art, "up", env)
+        self._wait_mark(mark)
+        B = self._spawn(fake, dstate, art, "preflight")
+        time.sleep(0.8)  # B's window to do daemon work — must be zero
+        during = self._argv_lines(dstate)
+        self.assertEqual(len(during), baseline + 2,
+                         "B reached the daemon while A held the lock: "
+                         f"{during[baseline:]}")
+        release.touch()
+        self.assertEqual(A.wait(timeout=60), 0)
+        self.assertEqual(B.wait(timeout=60), 0)
+        disk = json.loads((art / "receipts.json").read_text())
+        actions = [a["action"] for a in disk["actions"]]
+        self.assertEqual(actions.count("compose.up"), 2)
+        self.assertIn("preflight.info", actions)
+        self.assertEqual(len(disk["generations"]), 2)
+
+    def test_first_init_second_entry_serialised(self):
+        """Scenario B: empty ledger — the second entry must serialise
+        behind the first, not race its own initialisation or get
+        refused only at first record."""
+        tmp, fake, dstate, art = self._layout()
+        release, mark, env = self._stall_env(tmp, "A")
+        A = self._spawn(fake, dstate, art, "up", env)
+        self._wait_mark(mark)
+        B = self._spawn(fake, dstate, art, "up")
+        time.sleep(0.8)
+        during = self._argv_lines(dstate)
+        composes = [l for l in during if '"compose"' in l]
+        self.assertEqual(len(composes), 1,
+                         "second up reached compose during first-init "
+                         f"race: {during}")
+        release.touch()
+        self.assertEqual(A.wait(timeout=60), 0)
+        self.assertEqual(B.wait(timeout=60), 0)
+        disk = json.loads((art / "receipts.json").read_text())
+        self.assertEqual(len(disk["generations"]), 2)
+
+    def test_lock_wait_timeout_refuses_without_side_effects(self):
+        """Scenario C: B times out non-zero, issued no daemon call, and
+        A's history stays intact."""
+        tmp, fake, dstate, art = self._layout()
+        seed = self._spawn(fake, dstate, art, "up")
+        self.assertEqual(seed.wait(timeout=60), 0)
+        baseline = len(self._argv_lines(dstate))
+        release, mark, env = self._stall_env(tmp, "A")
+        A = self._spawn(fake, dstate, art, "up", env)
+        self._wait_mark(mark)
+        B = self._spawn(fake, dstate, art, "preflight",
+                        {"DS_ISO_LOCK_WAIT_SEC": "0.4"})
+        b_rc = B.wait(timeout=30)
+        self.assertNotEqual(b_rc, 0)
+        self.assertEqual(len(self._argv_lines(dstate)), baseline + 2,
+                         "timed-out entry touched the daemon")
+        release.touch()
+        self.assertEqual(A.wait(timeout=60), 0)
+
+    def test_abnormal_exit_releases_lock(self):
+        """Scenario D: A dies mid-entry; the OS releases the lock and
+        B acquires + reads the last valid ledger."""
+        tmp, fake, dstate, art = self._layout()
+        seed = self._spawn(fake, dstate, art, "up")
+        self.assertEqual(seed.wait(timeout=60), 0)
+        release, mark, env = self._stall_env(tmp, "A")
+        A = self._spawn(fake, dstate, art, "up", env)
+        self._wait_mark(mark)
+        A.kill()
+        A.wait(timeout=10)
+        B = self._spawn(fake, dstate, art, "preflight")
+        self.assertEqual(B.wait(timeout=60), 0)
+        disk = json.loads((art / "receipts.json").read_text())
+        self.assertTrue(disk["generations"])
+
+    def test_independent_runs_not_globally_serialized(self):
+        """Scenario E: a different run's artifact dir = a different
+        lock file; it is not blocked by this run's held lock."""
+        tmp, fake, dstate, art = self._layout()
+        art2 = tmp / "art2"; art2.mkdir()
+        release, mark, env = self._stall_env(tmp, "A")
+        A = self._spawn(fake, dstate, art, "up", env)
+        self._wait_mark(mark)
+        B = self._spawn(fake, dstate, art2, "preflight")
+        self.assertEqual(B.wait(timeout=30), 0,
+                         "independent run serialised on a foreign lock")
+        release.touch()
+        self.assertEqual(A.wait(timeout=60), 0)
+
+
+class TestIncompleteStatusPropagation(unittest.TestCase):
+    """B2: a subcommand whose requested operations leave unclosed
+    results exits non-zero. The ledger keeps completed, refused and
+    unknown parts; nothing turns 'kept objects' into 'all clean'."""
+
+    def _drive(self, tmp, state, *commands, run_id=RUN, daemon=DAEMON,
+               owner="tester"):
+        orig_argv, orig_lm, orig_rc = (
+            sys.argv, iso.dg.load_manifest, iso.dg.run_cmd)
+
+        def fake_run_cmd(args, cwd=None, timeout=120, stdin_text=None,
+                         env=None):
+            args = list(args)
+            if args[:2] == ["docker", "compose"]:
+                if "up" in args:
+                    if state.fail_next_up:
+                        state.fail_next_up = False
+                        return 1, "", "compose up failed (fake)"
+                    state.simulate_up()
+                    return 0, "", ""
+                return 0, "", ""
+            return state.dispatch(args, env=env)
+
+        iso.dg.load_manifest = lambda task: MANIFEST
+        iso.dg.run_cmd = fake_run_cmd
+        try:
+            for cmd in commands:
+                sys.argv = [
+                    "ddl_golden_isolated.py",
+                    "--run-id", run_id, "--daemon", daemon,
+                    "--owner", owner, "--artifact-dir", str(tmp), cmd]
+                iso.main()
+        finally:
+            sys.argv, iso.dg.load_manifest, iso.dg.run_cmd = \
+                orig_argv, orig_lm, orig_rc
+
+    def _mounted_world(self, tmp, state):
+        """One anonymous volume mounted by a live client + one free
+        named volume, both registered in the ledger."""
+        state.add_container(
+            "c-cl", "id-cl",
+            mounts=[{"Type": "volume", "Name": "v-anon",
+                     "Destination": "/var/lib/mysql"}])
+        state.volumes["v-anon"] = {"driver": "local", "label": ""}
+        named = f"{RUN}_{RUN}-mysql57-data"
+        state.volumes[named] = {"driver": "local", "label": RUN}
+        run = iso.IsoRun(RUN, DAEMON, "tester", tmp)
+        state.bind(run)
+        raw_path = pathlib.Path(tmp) / "receipts.json"
+        run.receipts["daemon_endpoint"] = DAEMON
+        run.receipts["daemon_identity"] = {"server_id": SID}
+        run.receipts["generations"] = [{
+            "at": "t0", "action": "compose.up",
+            "containers": [{"name": "c-cl", "id": "id-cl"}],
+            "networks": [],
+            "volumes": [
+                {"kind": "named", "declared": f"{RUN}-mysql57-data",
+                 "name": named, "driver": "local"},
+                {"kind": "anonymous", "name": "v-anon",
+                 "mounted_by": "c-cl", "destination": "/var/lib/mysql"}]}]
+        run._ledger_snapshot = None
+        run._persist_ledger()
+        return run
+
+    def test_all_volumes_inuse_nonzero_all_kept(self):
+        """B2.1: every registered volume still mounted — nothing is
+        deleted and the command fails instead of reporting clean."""
+        tmp = pathlib.Path(tempfile.mkdtemp())
+        state = FakeDaemon()
+        self._mounted_world(tmp, state)
+        # mount the named volume too so EVERY registered object is in-use
+        state.add_container(
+            "c-db", "id-db",
+            mounts=[{"Type": "volume",
+                     "Name": f"{RUN}_{RUN}-mysql57-data",
+                     "Destination": "/var/lib/mysql"}])
+        with self.assertRaises(SystemExit):
+            self._drive(str(tmp), state, "rmvolumes")
+        self.assertIn("v-anon", state.volumes)
+        self.assertEqual(state.removed_volumes(), [])
+        disk = json.loads((tmp / "receipts.json").read_text())
+        self.assertTrue(any(a["action"].startswith("volume.inuse")
+                            for a in disk["actions"]))
+
+    def test_mixed_inuse_and_free_nonzero_partial_progress(self):
+        """B2.2: the free volume is consumed, the mounted one kept,
+        and the command still reports non-zero."""
+        tmp = pathlib.Path(tempfile.mkdtemp())
+        state = FakeDaemon()
+        self._mounted_world(tmp, state)
+        with self.assertRaises(SystemExit):
+            self._drive(str(tmp), state, "rmvolumes")
+        named = f"{RUN}_{RUN}-mysql57-data"
+        self.assertNotIn(named, state.volumes)   # free one consumed
+        self.assertIn("v-anon", state.volumes)   # mounted one kept
+
+    def test_volume_usage_check_failure_nonzero(self):
+        """B2.3: unreadable mount view refuses AND reports non-zero —
+        it is not treated as NotFound and the volume survives."""
+        tmp = pathlib.Path(tempfile.mkdtemp())
+        state = FakeDaemon()
+        self._mounted_world(tmp, state)
+        state.ps_error_volumes.add("v-anon")
+        with self.assertRaises(SystemExit):
+            self._drive(str(tmp), state, "rmvolumes")
+        self.assertIn("v-anon", state.volumes)
+        disk = json.loads((tmp / "receipts.json").read_text())
+        self.assertTrue(any(a["action"] == "volume.refuse"
+                            for a in disk["actions"]))
+
+    def test_volume_rm_failure_nonzero_volume_kept(self):
+        """Delete failure is an unclosed result, not a green exit."""
+        tmp = pathlib.Path(tempfile.mkdtemp())
+        state = FakeDaemon()
+        self._mounted_world(tmp, state)
+        state.containers.pop("c-cl")      # free the anon volume
+        state.fail_volume_rm.add("v-anon")
+        with self.assertRaises(SystemExit):
+            self._drive(str(tmp), state, "rmvolumes")
+        self.assertIn("v-anon", state.volumes)
+        disk = json.loads((tmp / "receipts.json").read_text())
+        self.assertTrue(any(a["action"] == "volume.rm.v-anon"
+                            and a["rc"] == 1 for a in disk["actions"]))
+
+    def test_up_capture_incomplete_nonzero_but_persisted(self):
+        """B2.5: an up whose capture hits an inspect error persists
+        the incomplete generation and then exits non-zero instead of
+        continuing on a smaller world view."""
+        tmp = pathlib.Path(tempfile.mkdtemp())
+        state = FakeDaemon()
+        state.error_containers.add("c-tidb85-client")
+        with self.assertRaises(SystemExit):
+            self._drive(str(tmp), state, "up")
+        disk = json.loads((tmp / "receipts.json").read_text())
+        self.assertTrue(disk["generations"])
+        self.assertTrue(disk["generations"][-1].get("capture_incomplete"))
+        # observed objects were kept, not silently dropped
+        self.assertTrue(disk["generations"][-1]["containers"])
+
+    def test_run_wrapped_capture_incomplete_propagates(self):
+        """B2.6: the same failure inside the run wrapper's compose-up
+        capture path raises — the runner cannot wrap it as full
+        success. This drives the exact _capture_or_fail call
+        ledger_compose makes."""
+        tmp = pathlib.Path(tempfile.mkdtemp())
+        state = FakeDaemon()
+        state.add_container("c-mysql57", "id-m57")
+        state.add_container("c-tidb85", "id-t85")
+        state.add_container("c-tidb85-client", "id-clx")
+        state.error_containers.add("c-tidb85-client")
+        run = make_run(str(tmp), state)
+        run._manifest = MANIFEST
+        with self.assertRaises(SystemExit):
+            run._capture_or_fail("compose.up.run")
+        disk = json.loads((tmp / "receipts.json").read_text())
+        self.assertTrue(disk["generations"][-1].get("capture_incomplete"))
+
+    def test_retry_after_unblock_succeeds_history_kept(self):
+        """B2.8: once the mount frees, a retry succeeds — with the
+        earlier inuse history still recorded, not erased."""
+        tmp = pathlib.Path(tempfile.mkdtemp())
+        state = FakeDaemon()
+        self._mounted_world(tmp, state)
+        with self.assertRaises(SystemExit):
+            self._drive(str(tmp), state, "rmvolumes")
+        state.containers.pop("c-cl")   # foreign/unblocked mount gone
+        self._drive(str(tmp), state, "rmvolumes")
+        self.assertNotIn("v-anon", state.volumes)
+        disk = json.loads((tmp / "receipts.json").read_text())
+        actions = [a["action"] for a in disk["actions"]]
+        self.assertIn("volume.inuse.v-anon", actions)
+        self.assertIn("volume.rm.v-anon", actions)
 
 
 if __name__ == "__main__":
