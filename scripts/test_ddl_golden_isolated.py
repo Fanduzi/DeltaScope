@@ -1433,10 +1433,6 @@ class TestIncompleteStatusPropagation(unittest.TestCase):
         self.assertIn("volume.rm.v-anon", actions)
 
 
-if __name__ == "__main__":
-    unittest.main()
-
-
 class TestLoadFailureLockRelease(unittest.TestCase):
     """R15: a post-acquire load failure must release the held lock, so a
     corrected same-process retry is not refused by a phantom holder.

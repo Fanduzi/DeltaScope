@@ -306,9 +306,42 @@ def main():
         a["cases"][0]["expected"]["steps"][0]["verify"] = m5["ddl_steps"][0]["verify"]
         a["cases"][0]["actual"]["steps"][0]["verify"] = [
             {"assert": "replica up", "sql": "SELECT available", "rc": 0,
-             "output": "1", "stderr": "", "attempts": 2}
+             "output": "1", "stderr": "", "attempts": 2,
+             "observations": [
+                 {"n": 1, "rc": 0, "output": "0", "stderr": ""},
+                 {"n": 2, "rc": 0, "output": "1", "stderr": ""}]}
         ]
         results.append(check("poll-matched record accepted", a, "", manifest=m5))
+
+        # R19 polling contract: every attempt is preserved as an
+        # observation; the validator independently re-checks the history.
+        forged = {"assert": "replica up", "sql": "SELECT available",
+                  "rc": 0, "output": "1", "stderr": "", "attempts": 2}
+        a = copy.deepcopy(base)
+        a["cases"][0]["expected"]["steps"][0]["verify"] = m5["ddl_steps"][0]["verify"]
+        a["cases"][0]["actual"]["steps"][0]["verify"] = [forged]
+        results.append(check("poll without observations rejected", a, "poll", manifest=m5))
+
+        a = copy.deepcopy(base)
+        a["cases"][0]["expected"]["steps"][0]["verify"] = m5["ddl_steps"][0]["verify"]
+        a["cases"][0]["actual"]["steps"][0]["verify"] = [dict(forged, observations=[
+            {"n": 1, "rc": 1, "output": "", "stderr": "ERROR 1142 denied"},
+            {"n": 2, "rc": 0, "output": "1", "stderr": ""}])]
+        results.append(check("poll error-then-match rejected", a, "launder", manifest=m5))
+
+        a = copy.deepcopy(base)
+        a["cases"][0]["expected"]["steps"][0]["verify"] = m5["ddl_steps"][0]["verify"]
+        a["cases"][0]["actual"]["steps"][0]["verify"] = [dict(forged, attempts=4, observations=[
+            {"n": i, "rc": 0, "output": "0" if i < 4 else "1", "stderr": ""}
+            for i in range(1, 5)])]
+        results.append(check("poll exceeding declared cap rejected", a, "cap", manifest=m5))
+
+        a = copy.deepcopy(base)
+        a["cases"][0]["expected"]["steps"][0]["verify"] = m5["ddl_steps"][0]["verify"]
+        a["cases"][0]["actual"]["steps"][0]["verify"] = [dict(forged, observations=[
+            {"n": 1, "rc": 0, "output": "0", "stderr": ""},
+            {"n": 2, "rc": 0, "output": "0", "stderr": ""}])]
+        results.append(check("poll summary-inconsistent rejected", a, "inconsistent", manifest=m5))
 
         # A forged record may not launder a timed-out read by pairing the
         # timeout marker with a matching output — undetermined evidence is
@@ -478,8 +511,12 @@ def main():
             "expect": {"exit": 0, "verdict": "pass", "statements": 1, "findings": 0,
                        "diagnostics": 0, "unsupported": 0, "coverage": "complete",
                        "statement_coverage": ["complete"], "evidence_gaps": 0},
+            "execute": [{"name": "exec", "sql": "SELECT 1", "expect_rc": 0,
+                         "verify": [{"assert": "x", "sql": "SELECT 'y'", "expect": "y"}]}],
             "post_verify": [{"assert": "not executed", "sql": "SELECT COLUMN_TYPE", "expect": "varchar(10)"}],
-            "teardown": [{"name": "drop", "sql": "DROP TABLE t"}],
+            "structure": [{"assert": "shape", "sql": "SELECT 's'", "expect": "s"}],
+            "teardown": [{"name": "drop", "sql": "DROP TABLE t",
+                          "verify": [{"assert": "gone", "sql": "SELECT 'z'", "expect": "z"}]}],
         }]
         mg["error_cases"] = [{
             "id": "refused", "dialect": "mysql",
@@ -583,7 +620,14 @@ def main():
                                "global_findings": [], "diagnostics": [], "unsupported": []},
                     "post_verify": [{"assert": "not executed", "sql": "SELECT COLUMN_TYPE",
                                      "rc": 0, "output": "varchar(10)", "stderr": ""}],
-                    "teardown": [{"name": "drop", "sql": "DROP TABLE t", "rc": 0, "stderr": ""}],
+                    "execute": [{"name": "exec", "sql": "SELECT 1", "rc": 0, "stdout": "",
+                                 "stderr": "", "verify": [{"assert": "x", "sql": "SELECT 'y'",
+                                 "rc": 0, "output": "y", "stderr": ""}]}],
+                    "structure": [{"assert": "shape", "sql": "SELECT 's'",
+                                   "rc": 0, "output": "s", "stderr": ""}],
+                    "teardown": [{"name": "drop", "sql": "DROP TABLE t", "rc": 0, "stderr": "",
+                                  "verify": [{"assert": "gone", "sql": "SELECT 'z'",
+                                              "rc": 0, "output": "z", "stderr": ""}]}],
                 },
                 "assertions": [{"name": "a", "ok": True, "detail": "d"}], "status": "pass",
             }
@@ -643,6 +687,47 @@ def main():
         a = gap_artifact()
         a["cases"][3]["actual"]["post_verify"][0]["output"] = "varchar(20)"
         results.append(check("t04 tampered post_verify rejected", a, "post_verify", manifest=mg))
+
+        # R19 A1: a timeout or execution-error marker paired with a
+        # *matching* output is rejected at every one of the six verify
+        # record sites — undetermined or failed evidence can never be
+        # laundered by a good-looking output field.
+        site_records = {
+            "db_ddl": lambda a: a["cases"][0]["actual"]["steps"][0]["verify"][0],
+            "setup": lambda a: a["cases"][3]["actual"]["setup"][0]["verify"][0],
+            "execute": lambda a: a["cases"][3]["actual"]["execute"][0]["verify"][0],
+            "post_verify": lambda a: a["cases"][3]["actual"]["post_verify"][0],
+            "structure": lambda a: a["cases"][3]["actual"]["structure"][0],
+            "teardown": lambda a: a["cases"][3]["actual"]["teardown"][0]["verify"][0],
+        }
+        for site, pick in site_records.items():
+            for marker in ("timeout", "error"):
+                a = gap_artifact()
+                rec = pick(a)
+                rec[marker] = True
+                if marker == "timeout":
+                    rec["attempts"] = 3
+                results.append(check(
+                    f"r19 {marker}+matching-output forged at {site} rejected",
+                    a, marker, manifest=mg))
+
+        # R19 B2: expect_stdout is an exact-stdout oracle on execute steps —
+        # the validator independently re-checks the recorded stdout, so a
+        # miscounted or fabricated result row fails even when rc=0 and the
+        # stdout happens to contain an expected-looking token.
+        mg2 = copy.deepcopy(mg)
+        mg2["metadata_cases"][0]["execute"][0]["sql"] = "SELECT COUNT(*) AS n FROM t"
+        mg2["metadata_cases"][0]["execute"][0]["expect_stdout"] = "n\n1"
+        a = gap_artifact()
+        ex = a["cases"][3]["actual"]["execute"][0]
+        ex["sql"] = "SELECT COUNT(*) AS n FROM t"
+        ex["stdout"] = "n\n1"
+        results.append(check("r19 expect_stdout exact pass", a, "", manifest=mg2))
+        a = gap_artifact()
+        ex = a["cases"][3]["actual"]["execute"][0]
+        ex["sql"] = "SELECT COUNT(*) AS n FROM t"
+        ex["stdout"] = "n\n10"
+        results.append(check("r19 expect_stdout wrong count rejected", a, "stdout", manifest=mg2))
 
         a = gap_artifact()
         a["cases"][3]["command"].append("root")
@@ -6166,13 +6251,48 @@ def t23n_verify_primitive_tests(tmp):
            not ok and timeout and rec.get("timeout") is True
            and rec.get("attempts") == 5 and rec["output"] == "0" and len(calls) == 5)
 
-    # A transient rc failure inside the window still lets a later read match.
+    # R19 A3: a nonzero rc is a real failed observation — polling fails fast,
+    # never retried into an apparent success. The record carries the error and
+    # preserves every observation.
     outs = [(1, "", "conn refused"), (0, "1", "")]
     calls.clear()
     with mock.patch.object(ddl_golden, "mysql_exec", side_effect=sequence_call):
         rec, ok, timeout = ddl_golden.run_verify_check(anchor, polled)
-    report("t23n poll survives transient rc failure",
-           ok and rec.get("attempts") == 2)
+    report("r19 poll fails fast on nonzero rc",
+           not ok and rec.get("error") is True and len(calls) == 1
+           and [o["n"] for o in rec["observations"]] == [1])
+
+    # R19 A2: a malformed 'contains' declaration is an invalid-verify error
+    # record before any mysql call — never a wildcard, never a TypeError.
+    outs = [(0, "1", "")]
+    calls.clear()
+    for bad in ("", 1, None, ["x"], {"k": 1}):
+        badv = dict(v_exact); badv.pop("expect"); badv["contains"] = bad
+        with mock.patch.object(ddl_golden, "mysql_exec", side_effect=sequence_call):
+            rec, ok, timeout = ddl_golden.run_verify_check(anchor, badv)
+        if not (not ok and rec.get("error") is True and len(calls) == 0):
+            report(f"r19 invalid contains {bad!r} rejected before exec", False)
+            break
+    else:
+        report("r19 invalid contains values rejected before exec", True)
+    report("r19 contains and expect together rejected",
+           ddl_golden.verify_shape_error({"contains": "x", "expect": "y"}) is not None)
+    report("r19 valid contains shape accepted",
+           ddl_golden.verify_shape_error({"contains": "tiflash"}) is None)
+    report("r19 absent contains keeps expect comparator",
+           ddl_golden.verify_output_matches({"expect": "1"}, "1")
+           and not ddl_golden.verify_output_matches({"expect": "1"}, "2"))
+
+    # A per-query timeout inside a poll is an error record with its own
+    # marker — never an unbounded retry.
+    import subprocess as _sp
+    def timeout_boom(*a, **k):
+        raise _sp.TimeoutExpired(cmd="mysql", timeout=120)
+    with mock.patch.object(ddl_golden, "mysql_exec", side_effect=timeout_boom):
+        rec, ok, timeout = ddl_golden.run_verify_check(anchor, polled)
+    report("r19 query timeout is error record not silent retry",
+           not ok and rec.get("error") is True and rec.get("query_timeout") is True
+           and len(rec["observations"]) == 1)
 
     return results
 
@@ -6268,6 +6388,19 @@ def t23s_manifest_tests(tmp):
              if "AVAILABLE" in v["sql"]]
     report("t23s tiflash AVAILABLE oracles are bounded polls",
            len(avail) == 2 and all("poll" in v for v in avail))
+
+    # R19 B1/B2/B3: the TiFlash case asserts real plan + data evidence and
+    # no case inherits a stale pending_native flag — the manifest itself is
+    # the only marker; native execution status lives in the decision record.
+    explain = [s for s in tfc["execute"] if "EXPLAIN" in s["sql"].upper()]
+    report("t23s EXPLAIN step asserts a tiflash task marker",
+           len(explain) == 1 and "tiflash" in (explain[0].get("stdout_contains") or []))
+    reads = [s for s in tfc["execute"] if "forced tiflash read" in s["name"]]
+    report("t23s forced reads pin exact stdout",
+           len(reads) == 2 and all(s.get("expect_stdout") == "tiflash_rows\n1"
+                                   for s in reads))
+    report("t23s no meta case inherits pending_native",
+           all("pending_native" not in c for c in meta))
 
     apk = [c for c in meta if c["anchor"] == "tidb85apk"]
     report("t23s apk matrix has five cells on the aux anchor", len(apk) == 5)

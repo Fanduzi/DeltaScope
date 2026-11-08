@@ -304,12 +304,29 @@ def _expect_repr(mverify):
     return repr(mverify.get("expect"))
 
 
+def verify_shape_error(mverify):
+    """Static verify-declaration contract, checked before any comparison:
+    'contains', when present, must be a non-empty string and is mutually
+    exclusive with 'expect'. An invalid declaration is a configuration
+    error, never a mismatch — it may not be retried, coerced with str(),
+    or laundered through the comparator. Returns a bounded reason or
+    None."""
+    if "contains" in mverify:
+        if "expect" in mverify:
+            return "contains and expect are mutually exclusive"
+        if not isinstance(mverify["contains"], str) or not mverify["contains"]:
+            return "contains must be a non-empty string"
+    return None
+
+
 def verify_output_matches(mverify, output):
     """The single comparator shared by the runner and the artifact
     validator: 'contains' is a substring match, otherwise exact equality
-    against 'expect'."""
+    against 'expect'. An invalid 'contains' declaration can never match —
+    verify_shape_error reports it as a declaration error upstream."""
     if "contains" in mverify:
-        return mverify["contains"] in output
+        contains = mverify["contains"]
+        return isinstance(contains, str) and bool(contains) and contains in output
     return output == mverify.get("expect")
 
 
@@ -317,32 +334,112 @@ def run_verify_check(anchor, verify, database=None):
     """Execute one verify SELECT against the anchor. Without 'poll' this is
     the historical single read; with poll the read repeats at
     'interval_sec' until the comparator matches or 'attempts' is
-    exhausted. An exhausted poll is timeout_undetermined evidence — the
-    record carries the last observed output and the timeout marker, never
-    a fabricated match. Returns (record, ok, timed_out)."""
+    exhausted. Every attempt is preserved in 'observations' — an error's
+    identity is never erased by a later observation. rc=0 without a match
+    keeps waiting within budget; a nonzero rc, an execution exception or
+    a per-query timeout is terminal and fails immediately. An exhausted
+    poll is timeout_undetermined evidence — the record carries the last
+    observation, the full history and the timeout marker, never a
+    fabricated match. Returns (record, ok, timed_out)."""
+    shape_error = verify_shape_error(verify)
+    if shape_error:
+        return ({"assert": verify["assert"], "sql": verify["sql"],
+                 "rc": 1, "output": "",
+                 "stderr": f"invalid verify declaration: {shape_error}",
+                 "error": True, "error_kind": "declaration"},
+                False, False)
     poll = verify.get("poll") or {}
     attempts = max(1, int(poll.get("attempts") or 1))
     interval = float(poll.get("interval_sec") or 0)
-    last = {"rc": None, "output": "", "stderr": ""}
+    observations = []
     for n in range(attempts):
-        vrc, vout, verr = mysql_exec(
-            anchor, verify["sql"],
-            database=database if verify.get("use_database") else None,
-            silent=True)
-        last = {"rc": vrc, "output": vout.strip(), "stderr": verr.strip()}
-        if vrc == 0 and verify_output_matches(verify, last["output"]):
+        try:
+            vrc, vout, verr = mysql_exec(
+                anchor, verify["sql"],
+                database=database if verify.get("use_database") else None,
+                silent=True)
+            obs = {"n": n + 1, "rc": vrc,
+                   "output": vout.strip(), "stderr": verr.strip()}
+        except subprocess.TimeoutExpired as exc:
+            obs = {"n": n + 1, "rc": None, "output": "",
+                   "stderr": f"query timeout after {exc.timeout}s",
+                   "query_timeout": True}
+        observations.append(obs)
+        if obs["rc"] != 0:
             record = {"assert": verify["assert"], "sql": verify["sql"],
-                      "rc": vrc, "output": last["output"], "stderr": last["stderr"]}
-            if attempts > 1:
+                      "rc": obs["rc"], "output": obs["output"],
+                      "stderr": obs["stderr"], "error": True}
+            if "query_timeout" in obs:
+                record["query_timeout"] = True
+            if poll:
                 record["attempts"] = n + 1
+                record["observations"] = list(observations)
+            return record, False, False
+        if verify_output_matches(verify, obs["output"]):
+            record = {"assert": verify["assert"], "sql": verify["sql"],
+                      "rc": 0, "output": obs["output"], "stderr": obs["stderr"]}
+            if poll:
+                record["attempts"] = n + 1
+                record["observations"] = list(observations)
             return record, True, False
         if n + 1 < attempts:
             time.sleep(interval)
+    last = dict(observations[-1])
+    last.pop("n", None)
     if poll:
-        last["attempts"] = attempts
-        last["timeout"] = True
+        last.update({"attempts": attempts, "timeout": True,
+                     "observations": observations})
     last.update({"assert": verify["assert"], "sql": verify["sql"]})
     return last, False, bool(poll)
+
+
+def _verify_marker_failures(failures, case_id, label, mverify, verify):
+    """The validator-side contract every verify record site shares: an
+    invalid 'contains' declaration, a timeout marker, an execution-error
+    marker, or a forged/incomplete poll history is never a pass —
+    regardless of what the recorded output happens to equal. Called as a
+    sibling of each site's output comparator so a matching output can
+    never launder an undetermined or errored observation."""
+    assert_name = mverify.get("assert", "?")
+    shape_error = verify_shape_error(mverify)
+    if shape_error:
+        failures.append(
+            f"case {case_id}: {label} {assert_name} invalid verify "
+            f"declaration: {shape_error}")
+    if verify.get("timeout"):
+        failures.append(
+            f"case {case_id}: {label} {assert_name} marked timeout — "
+            "undetermined evidence is never a pass")
+    if verify.get("error"):
+        failures.append(
+            f"case {case_id}: {label} {assert_name} recorded an "
+            "execution error — never a pass")
+    if "poll" not in mverify and "observations" not in verify:
+        return
+    obs = verify.get("observations")
+    if not isinstance(obs, list) or not obs:
+        failures.append(
+            f"case {case_id}: {label} {assert_name} missing poll "
+            "history — a matching summary cannot fabricate the attempts")
+        return
+    cap = (mverify.get("poll") or {}).get("attempts") or 1
+    if len(obs) > int(cap):
+        failures.append(
+            f"case {case_id}: {label} {assert_name} poll history "
+            f"{len(obs)} attempts exceeds declared cap {cap}")
+    for i, attempt in enumerate(obs[:-1]):
+        if attempt.get("rc") != 0:
+            failures.append(
+                f"case {case_id}: {label} {assert_name} poll history "
+                "continues after an execution error — a later match "
+                "cannot launder it")
+            break
+    last = obs[-1]
+    if (last.get("rc") != verify.get("rc")
+            or last.get("output") != verify.get("output")):
+        failures.append(
+            f"case {case_id}: {label} {assert_name} summary "
+            "inconsistent with its last observation")
 
 
 def execute_ddl_case(manifest, anchor_key):
@@ -409,6 +506,8 @@ def execute_ddl_case(manifest, anchor_key):
             }
             if vtimeout:
                 assertion["timeout"] = True
+            if vrec.get("error"):
+                assertion["error"] = True
             case["assertions"].append(assertion)
         case["actual"]["steps"].append(step_actual)
 
@@ -958,6 +1057,8 @@ def _execute_metadata_case(manifest, anchor_key, binary, policies, spec, fixture
             }
             if vtimeout:
                 assertion["timeout"] = True
+            if vrec.get("error"):
+                assertion["error"] = True
             case["assertions"].append(assertion)
             step_ok = step_ok and vok
         if fixture is not None:
@@ -1023,6 +1124,8 @@ def _execute_metadata_case(manifest, anchor_key, binary, policies, spec, fixture
         }
         if vtimeout:
             assertion["timeout"] = True
+        if vrec.get("error"):
+            assertion["error"] = True
         case["assertions"].append(assertion)
 
     # The test driver applies the audited statements itself, statement by
@@ -1050,6 +1153,12 @@ def _execute_metadata_case(manifest, anchor_key, binary, policies, spec, fixture
         for marker in step.get("stdout_contains") or []:
             case["assertions"].append({"name": f"execute {step['name']} stdout marker",
                                        "ok": marker in eout, "detail": marker})
+        if "expect_stdout" in step:
+            case["assertions"].append({
+                "name": f"execute {step['name']} stdout exact",
+                "ok": eout.strip() == step["expect_stdout"],
+                "detail": f"stdout={eout.strip()!r} expected={step['expect_stdout']!r}",
+            })
         for verify in step.get("verify") or []:
             vrec, vok, vtimeout = run_verify_check(anchor, verify, database=anchor["database"])
             record.setdefault("verify", []).append(vrec)
@@ -1060,6 +1169,8 @@ def _execute_metadata_case(manifest, anchor_key, binary, policies, spec, fixture
             }
             if vtimeout:
                 assertion["timeout"] = True
+            if vrec.get("error"):
+                assertion["error"] = True
             case["assertions"].append(assertion)
             step_ok = step_ok and vok
         if fixture is not None and not step_ok:
@@ -1079,6 +1190,8 @@ def _execute_metadata_case(manifest, anchor_key, binary, policies, spec, fixture
         }
         if vtimeout:
             assertion["timeout"] = True
+        if vrec.get("error"):
+            assertion["error"] = True
         case["assertions"].append(assertion)
 
     for step in spec.get("teardown") or []:
@@ -1106,6 +1219,8 @@ def _execute_metadata_case(manifest, anchor_key, binary, policies, spec, fixture
             }
             if vtimeout:
                 assertion["timeout"] = True
+            if vrec.get("error"):
+                assertion["error"] = True
             case["assertions"].append(assertion)
 
     if not all(a["ok"] for a in case["assertions"]):
@@ -7496,8 +7611,7 @@ def validate_artifact(artifact, manifest, baseline=None, verify_binary=True):
                         failures.append(f"case {case_id}: verify {mverify['assert']} rc {verify.get('rc')} != 0")
                     if not verify_output_matches(mverify, verify.get("output") or ""):
                         failures.append(f"case {case_id}: verify {mverify['assert']} output mismatch {verify.get('output')!r} != {_expect_repr(mverify)}")
-                    if verify.get("timeout"):
-                        failures.append(f"case {case_id}: verify {mverify['assert']} marked timeout — undetermined evidence is never a pass")
+                    _verify_marker_failures(failures, case_id, "verify", mverify, verify)
         elif kind == "db_syntax_negative":
             negative = manifest["syntax_negative"]
             if case.get("input_sql") != negative["sql"]:
@@ -7608,8 +7722,7 @@ def validate_artifact(artifact, manifest, baseline=None, verify_binary=True):
                         failures.append(f"case {case_id}: setup verify {j} identity mismatch")
                     if verify.get("rc") != 0 or not verify_output_matches(mverify, verify.get("output") or ""):
                         failures.append(f"case {case_id}: setup verify {mverify['assert']} output mismatch {verify.get('output')!r} != {_expect_repr(mverify)}")
-                        if verify.get("timeout"):
-                            failures.append(f"case {case_id}: setup verify {mverify['assert']} marked timeout — undetermined evidence is never a pass")
+                    _verify_marker_failures(failures, case_id, "setup verify", mverify, verify)
             cli_stdout_expect_failures(case, spec, failures, anchor=anchor)
             # Declared instance facts must have been read live and recorded —
             # a missing or diverging record means the evidence was fabricated
@@ -7637,8 +7750,7 @@ def validate_artifact(artifact, manifest, baseline=None, verify_binary=True):
                     failures.append(f"case {case_id}: post_verify {i} identity mismatch")
                 if check.get("rc") != 0 or not verify_output_matches(mcheck, check.get("output") or ""):
                     failures.append(f"case {case_id}: post_verify {mcheck['assert']} output {check.get('output')!r} != {_expect_repr(mcheck)}")
-                if check.get("timeout"):
-                    failures.append(f"case {case_id}: post_verify {mcheck['assert']} marked timeout — undetermined evidence is never a pass")
+                _verify_marker_failures(failures, case_id, "post_verify", mcheck, check)
             # Driver-applied statements and the structure oracle are recorded
             # evidence, not decoration: every manifest-declared execute step
             # must appear in order with the expected return code, and every
@@ -7660,6 +7772,10 @@ def validate_artifact(artifact, manifest, baseline=None, verify_binary=True):
                     for marker in mstep.get(field + "_contains") or []:
                         if marker not in (step.get(field) or ""):
                             failures.append(f"case {case_id}: execute {mstep['name']} missing {field} marker {marker!r}")
+                if "expect_stdout" in mstep and (step.get("stdout") or "").strip() != mstep["expect_stdout"]:
+                    failures.append(
+                        f"case {case_id}: execute {mstep['name']} stdout "
+                        f"{(step.get('stdout') or '').strip()!r} != expected {mstep['expect_stdout']!r}")
                 verifies = step.get("verify") or []
                 if len(verifies) != len(mstep.get("verify") or []):
                     failures.append(f"case {case_id}: execute {mstep['name']} verify count mismatch")
@@ -7671,8 +7787,7 @@ def validate_artifact(artifact, manifest, baseline=None, verify_binary=True):
                         failures.append(f"case {case_id}: execute verify {j} identity mismatch")
                     if verify.get("rc") != 0 or not verify_output_matches(mverify, verify.get("output") or ""):
                         failures.append(f"case {case_id}: execute verify {mverify['assert']} output mismatch {verify.get('output')!r} != {_expect_repr(mverify)}")
-                        if verify.get("timeout"):
-                            failures.append(f"case {case_id}: execute verify {mverify['assert']} marked timeout — undetermined evidence is never a pass")
+                    _verify_marker_failures(failures, case_id, "execute verify", mverify, verify)
             structures = actual.get("structure") or []
             manifest_structure = spec.get("structure") or []
             if len(structures) != len(manifest_structure):
@@ -7685,8 +7800,7 @@ def validate_artifact(artifact, manifest, baseline=None, verify_binary=True):
                     failures.append(f"case {case_id}: structure {i} identity mismatch")
                 if check.get("rc") != 0 or not verify_output_matches(mcheck, check.get("output") or ""):
                     failures.append(f"case {case_id}: structure {mcheck['assert']} output {check.get('output')!r} != {_expect_repr(mcheck)}")
-                if check.get("timeout"):
-                    failures.append(f"case {case_id}: structure {mcheck['assert']} marked timeout — undetermined evidence is never a pass")
+                _verify_marker_failures(failures, case_id, "structure", mcheck, check)
             teardowns = actual.get("teardown") or []
             manifest_teardowns = spec.get("teardown") or []
             if len(teardowns) != len(manifest_teardowns):
@@ -7708,8 +7822,7 @@ def validate_artifact(artifact, manifest, baseline=None, verify_binary=True):
                         failures.append(f"case {case_id}: teardown verify {j} identity mismatch")
                     if verify.get("rc") != 0 or not verify_output_matches(mverify, verify.get("output") or ""):
                         failures.append(f"case {case_id}: teardown verify {mverify['assert']} output mismatch {verify.get('output')!r} != {_expect_repr(mverify)}")
-                        if verify.get("timeout"):
-                            failures.append(f"case {case_id}: teardown verify {mverify['assert']} marked timeout — undetermined evidence is never a pass")
+                    _verify_marker_failures(failures, case_id, "teardown verify", mverify, verify)
         elif kind == "cli_error":
             spec = error_case_spec_for(manifest, case)
             if spec is None:
