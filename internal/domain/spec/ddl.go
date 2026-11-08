@@ -950,6 +950,34 @@ type Alter struct {
 	// (`remove_ttl`), not an option. The field records only what the clause
 	// declares, never whether the catalog or prospective table has TTL.
 	TTL []TTLDeclaration `json:"-"`
+	// Attributes carries the authored ATTRIBUTES payload of the
+	// `attributes` and `partition_attributes` actions. Partition targets
+	// live in Alter.Partitions; the raw spec text stays unexported
+	// vocabulary — consumers read Value/Default, never re-parse SQL
+	// (issue #102 T23-R6).
+	Attributes *AlterAttributesDecl `json:"-"`
+	// TiFlashReplica carries the authored SET TIFLASH REPLICA declaration
+	// of the `set_tiflash_replica` action — desired count, location
+	// labels, and the hypothetical flag exactly as parsed.
+	TiFlashReplica *TiFlashReplicaDecl `json:"-"`
+}
+
+// AlterAttributesDecl is one authored ATTRIBUTES clause.
+type AlterAttributesDecl struct {
+	// Value is the raw authored attribute list text
+	// (`merge_option=allow,x=1`); empty when Default is set.
+	Value string `json:"-"`
+	// Default marks the authored `ATTRIBUTES=DEFAULT` clear form.
+	Default bool `json:"-"`
+}
+
+// TiFlashReplicaDecl is one authored SET TIFLASH REPLICA declaration.
+type TiFlashReplicaDecl struct {
+	Count  uint64   `json:"-"`
+	Labels []string `json:"-"`
+	// Hypo marks the hypothetical-replica form used by the index advisor;
+	// it mutates session state only and never reaches the catalog.
+	Hypo bool `json:"-"`
 }
 
 // TTLClauseSource identifies how a parsed TTL clause was authored. TiDB

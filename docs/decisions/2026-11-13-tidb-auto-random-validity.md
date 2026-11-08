@@ -267,3 +267,54 @@ receipts.
   boundary: the same TTL ALTER yields the add warning against a
   quoted-fake catalog and the `target_table.ttl_enable` gap against a
   real comment.
+
+## R6 amendment — physical layout actions (issue #102, T23-R6)
+
+The remaining `tidb.alter-table.layout-id` inventory surface is wired in
+the same shared-verdict shape as R3/R5: `internal/domain/spec/
+alter_layout_r6.go` owns one adjudicator per action, rules and the
+ordered-state publisher consume identical verdicts, and proven refusals
+preserve the exact pre-state.
+
+- **CACHE/NOCACHE follows the upstream ordering.** `AlterTableCacheOutcome`
+  mirrors the v8.5.0 executor: already-cache-enabled CACHE and
+  already-disabled NOCACHE are proven no-ops; system/memory schemas,
+  temporary tables and partitioned tables refuse statically; the 64 MiB
+  data-size check is the sole undecidable arm (a `missing_instance_fact`,
+  never a guessed answer). Proven CACHE publishes
+  `Options["cache_status"]="enable"`, proven NOCACHE publishes
+  `"disable"`, and an undecidable outcome unvouches the status key rather
+  than keeping a stale claim. The provider projects the bare
+  `/* CACHED ON */` SHOW CREATE trailer through the same quote-aware walk
+  (quoted user text never matches); CREATE-side `CACHED` is dead syntax in
+  the v8.5.0 parser and stays a parser boundary.
+- **The cached-table guard preserves every target.** Upstream refuses
+  every ALTER spec except a single CACHE/NOCACHE on a proven
+  cache-enabled table. `CachedTableGuardRefused` fires before the
+  generic audited gate and `cachedTableGuardBlocks` preserves each
+  target exactly — including present-incomplete entries — so a guarded
+  batch never tombstones or alternates existence gaps.
+- **ATTRIBUTES publishes bounded presence, never the raw spec.**
+  `AlterAttributesOutcome` emulates the upstream YAML-flow label-list
+  syntax (`ParseAttributesSpecValue`: quoted items, embedded commas,
+  `ATTRIBUTES=DEFAULT` clearing) plus the non-partitioned and
+  missing-member refusals; an unproven member space stays undecidable.
+  Ordered state publishes only `attributes_present` /
+  `partition_attributes_present.<name>` markers — the authored spec text
+  never lands in catalog facts.
+- **SET TIFLASH REPLICA is declaration-only.** `AlterTiFlashReplicaOutcome`
+  refuses sys-DB/temporary/view-or-sequence/unsupported-charset targets
+  statically; a proven same-definition redeclare is a no-op (positive
+  counts only — upstream nils the record on `REPLICA 0`, so count=0
+  applies unconditionally and publishes the proven-absent marker); a
+  positive count owes the live TiFlash store count as an undecidable
+  premise and never claims replica readiness. Hypothetical
+  (`HYPOTHETICAL`) declarations mutate session state upstream and never
+  touch ordered catalog facts.
+- **COMPACT and SPLIT stay bounded.** `ALTER ... COMPACT` parses as a
+  separate request-only statement with no catalog fact — it is audited
+  without a state transition. Every tested SPLIT form is a v8.5.0 parser
+  error, so SPLIT remains a parser boundary rather than an invented
+  action. Real TiFlash store success/recovery fixtures stay
+  `pending_native` in `T23.json` (`B-cache-attributes`,
+  `C-tiflash-replica`) until separately authorized.

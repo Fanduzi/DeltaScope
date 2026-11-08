@@ -106,6 +106,15 @@ var auditedAlterActionsTiDB = func() map[string]struct{} {
 	}
 	set["placement_policy"] = struct{}{}
 	set["remove_ttl"] = struct{}{}
+	// T23-R6: the TiDB physical-layout actions — cache lifecycle, label
+	// attributes at table/partition level, and the TiFlash replica
+	// declaration — carry shared refusal/undecidable verdicts and
+	// ordered-state transitions.
+	set["cache"] = struct{}{}
+	set["nocache"] = struct{}{}
+	set["attributes"] = struct{}{}
+	set["partition_attributes"] = struct{}{}
+	set["set_tiflash_replica"] = struct{}{}
 	return set
 }()
 
@@ -785,7 +794,8 @@ func unauditedActionVendor(dialect spec.Dialect, action string) bool {
 	switch dialect {
 	case spec.DialectMySQL:
 		switch action {
-		case "placement_policy", "partition_attributes", "partition_options", "remove_ttl":
+		case "placement_policy", "partition_attributes", "partition_options", "remove_ttl",
+			"cache", "nocache", "attributes", "set_tiflash_replica":
 			return true
 		}
 	case spec.DialectTiDB:

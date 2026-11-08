@@ -1,0 +1,24 @@
+name: table_cache_rules
+dialect: tidb
+category: ddl
+metadata:
+  schema: req
+  tables:
+    t:
+      exists: true
+      partitioned: true
+      columns:
+        - name: id
+          type: bigint(20)
+    t2:
+      exists: true
+      columns:
+        - name: c
+          type: int
+      options:
+        cache_status: enable
+expect:
+  parse_ok: true
+  findings:
+    include:
+      - ddl.tidb.table.cache.valid

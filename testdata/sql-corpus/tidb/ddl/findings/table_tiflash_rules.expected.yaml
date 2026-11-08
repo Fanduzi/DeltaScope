@@ -1,0 +1,17 @@
+name: table_tiflash_rules
+dialect: tidb
+category: ddl
+metadata:
+  schema: req
+  tables:
+    t:
+      exists: true
+      columns:
+        - name: id
+          type: int
+          charset: utf16
+expect:
+  parse_ok: true
+  findings:
+    include:
+      - ddl.tidb.table.tiflash.valid

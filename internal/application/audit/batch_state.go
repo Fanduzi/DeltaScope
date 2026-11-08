@@ -1726,6 +1726,12 @@ func (s *batchState) applyAlterTable(ctx context.Context, statement spec.Stateme
 		s.applyPartitionOperation(targets, &ddl.Alter[0], statement)
 		return nil
 	}
+	// The TiDB cached-table guard refuses every ALTER spec on a proven
+	// cache-enabled table except a single CACHE/NOCACHE — the refusal
+	// preserves the exact pre-state, never a tombstone (issue #102 R6).
+	if s.dialect == spec.DialectTiDB && s.cachedTableGuardBlocks(ddl.Alter, targets) {
+		return nil
+	}
 	if !fullyAuditedStatement(s.dialect, statement) || len(ddl.Alter) != 1 || len(targets) == 0 {
 		s.invalidateAll(targets)
 		return nil
@@ -1805,6 +1811,10 @@ func (s *batchState) applyAlterTable(ctx context.Context, statement spec.Stateme
 	}
 	if alter.Action == "table_option" {
 		s.applyTableOptionAlter(alter, targets)
+		return nil
+	}
+	if alterLayoutR6Action(alter.Action) {
+		s.applyLayoutR6Alter(alter, targets)
 		return nil
 	}
 	switch alter.Action {

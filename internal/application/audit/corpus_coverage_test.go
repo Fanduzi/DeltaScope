@@ -177,7 +177,13 @@ func isTiDBOnlyRule(ruleID string) bool {
 		"ddl.tidb.table.auto_random.valid",
 		"ddl.tidb.table.options.valid",
 		"ddl.tidb.alter.auto_random.valid",
-		"ddl.tidb.alter.table_options.valid":
+		"ddl.tidb.alter.table_options.valid",
+		// R6: the physical-layout rules — cache lifecycle plus the
+		// cached-table guard, table/partition ATTRIBUTES, and the TiFlash
+		// replica declaration — vendor-boundary under MySQL.
+		"ddl.tidb.table.cache.valid",
+		"ddl.tidb.table.attributes.valid",
+		"ddl.tidb.table.tiflash.valid":
 		return true
 	default:
 		return false

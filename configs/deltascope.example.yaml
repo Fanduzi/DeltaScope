@@ -1130,6 +1130,27 @@ rules:
     level: blocker
     params:
 
+  # TiDB table CACHE/NOCACHE validity, including the cached-table guard
+  # that refuses every other spec on a cache-enabled table.
+  ddl.tidb.table.cache.valid:
+    enabled: true
+    level: blocker
+    params:
+
+  # TiDB ATTRIBUTES validity at table and partition level (spec syntax,
+  # non-partitioned target, and member-existence refusals).
+  ddl.tidb.table.attributes.valid:
+    enabled: true
+    level: blocker
+    params:
+
+  # TiDB SET TIFLASH REPLICA validity (system-db, temporary, view/sequence,
+  # and unsupported-charset refusals; store count stays a runtime premise).
+  ddl.tidb.table.tiflash.valid:
+    enabled: true
+    level: blocker
+    params:
+
   ddl.tidb.local_temporary.alter:
     enabled: true
     level: blocker

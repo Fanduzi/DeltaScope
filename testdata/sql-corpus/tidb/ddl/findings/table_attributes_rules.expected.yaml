@@ -1,0 +1,18 @@
+name: table_attributes_rules
+dialect: tidb
+category: ddl
+metadata:
+  schema: req
+  tables:
+    t:
+      exists: true
+      partitioned: true
+      partition_names: [p0]
+      columns:
+        - name: id
+          type: int
+expect:
+  parse_ok: true
+  findings:
+    include:
+      - ddl.tidb.table.attributes.valid

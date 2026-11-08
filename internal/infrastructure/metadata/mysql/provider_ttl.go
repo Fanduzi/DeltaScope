@@ -41,7 +41,7 @@ func (p *Provider) loadTiDBTTL(ctx context.Context, snapshot *spec.TableSnapshot
 // upstream-proven zero — TiDB only emits it for a stored non-zero
 // AutoIDCache — so a clean read publishes the proven catalog value.
 func parseCatalogLayoutOptions(createSQL string) map[string]string {
-	out := map[string]string{"auto_id_cache": "0"}
+	out := map[string]string{"auto_id_cache": "0", "cache_status": "disable"}
 	for _, comment := range featureComments(createSQL, "/*t![auto_id_cache]") {
 		member, body, ok := catalogMember(comment)
 		if !ok || member != "auto_id_cache" {
@@ -51,7 +51,56 @@ func parseCatalogLayoutOptions(createSQL string) map[string]string {
 			out["auto_id_cache"] = value
 		}
 	}
+	// Upstream emits a bare `/* CACHED ON */` comment — deliberately not a
+	// feature comment — exactly when TableCacheStatusType is Enable. Its
+	// absence is the proven disable. The scan is the same quote-aware
+	// pass: a user-authored COMMENT echoing the token never matches.
+	if plainCommentToken(createSQL, "cached on") {
+		out["cache_status"] = "enable"
+	}
 	return out
+}
+
+// plainCommentToken reports whether the SHOW CREATE text carries a
+// /* token */ comment (any case) outside quoted regions. Unlike
+// featureComments it matches plain comments, not /*T![ns] markers.
+func plainCommentToken(text, token string) bool {
+	lower := strings.ToLower(text)
+	for i := 0; i < len(text); {
+		switch c := text[i]; c {
+		case '\'', '"', '`':
+			i++
+			for i < len(text) {
+				if text[i] == '\\' && c != '`' {
+					i += 2
+					continue
+				}
+				if text[i] == c {
+					if i+1 < len(text) && text[i+1] == c {
+						i += 2
+						continue
+					}
+					i++
+					break
+				}
+				i++
+			}
+		default:
+			if strings.HasPrefix(lower[i:], "/*") {
+				end := strings.Index(text[i+2:], "*/")
+				if end < 0 {
+					return false
+				}
+				if strings.EqualFold(strings.TrimSpace(text[i+2:i+2+end]), token) {
+					return true
+				}
+				i += end + 4
+				continue
+			}
+			i++
+		}
+	}
+	return false
 }
 
 // featureComments extracts every /*T![ns] ... */ comment for one feature

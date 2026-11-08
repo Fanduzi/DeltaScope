@@ -892,6 +892,22 @@ func extractAlterSpec(specification *ast.AlterTableSpec, clause string) spec.Alt
 			})
 		}
 	}
+	if specification.AttributesSpec != nil {
+		alter.Attributes = &spec.AlterAttributesDecl{
+			Value:   specification.AttributesSpec.Attributes,
+			Default: specification.AttributesSpec.Default,
+		}
+	}
+	if specification.TiFlashReplica != nil {
+		replica := &spec.TiFlashReplicaDecl{
+			Count: specification.TiFlashReplica.Count,
+			Hypo:  specification.TiFlashReplica.Hypo,
+		}
+		if len(specification.TiFlashReplica.Labels) > 0 {
+			replica.Labels = append([]string(nil), specification.TiFlashReplica.Labels...)
+		}
+		alter.TiFlashReplica = replica
+	}
 	if len(unextracted) > 0 {
 		alter.UnextractedOptions = unextracted
 	}
