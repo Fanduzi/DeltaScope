@@ -1523,6 +1523,7 @@ def main():
         results.extend(a3_contract_tests(tmp))
         results.extend(t06_contract_tests(tmp))
         results.extend(t08_oracle_migration_tests(tmp))
+        results.extend(t23_instance_fact_tests(tmp))
 
     failures = results.count(False)
     print(f"contract cases={len(results)} failures={failures}")
@@ -5963,6 +5964,56 @@ def t06_contract_tests(tmp):
                       if s["id"] != "t06-a15-mysql-missing-both"]
     m["required_case_ids"].remove(victim)
     run("t06a15 case deleted on both sides rejected", a, "T06-A1", m)
+
+    return results
+
+
+def t23_instance_fact_tests(tmp):
+    """T23 instance-fact query contract (issue #102): the manifest's native
+    metadata cases declare tidb_enable_clustered_index, tidb_alter_primary_key
+    and tidb_split_region_max_num in expect.instance_facts — the runner must
+    resolve each to the same live read the provider performs (a session global
+    for the clustered mode, SHOW CONFIG rows for the two tidb-server knobs),
+    and a missing/unreadable fact must return None, never a guessed default."""
+    results = []
+    queries = ddl_golden.INSTANCE_FACT_QUERIES
+
+    ok = queries.get("tidb_enable_clustered_index") == \
+        "show variables like 'tidb_enable_clustered_index'"
+    print(("PASS " if ok else "FAIL ") + "t23 clustered-index fact reads session global")
+    results.append(ok)
+
+    ok = queries.get("tidb_alter_primary_key") == \
+        "show config where Type = 'tidb' and Name = 'alter-primary-key'"
+    print(("PASS " if ok else "FAIL ") + "t23 alter-primary-key fact reads show config")
+    results.append(ok)
+
+    ok = queries.get("tidb_split_region_max_num") == \
+        "show config where Type = 'tidb' and Name = 'split-region-max-num'"
+    print(("PASS " if ok else "FAIL ") + "t23 split-region-max-num fact reads show config")
+    results.append(ok)
+
+    def database_call(anchor, sql, database=None, silent=True):
+        if "tidb_enable_clustered_index" in sql:
+            return 0, "tidb_enable_clustered_index\tint_only", ""
+        if "alter-primary-key" in sql:
+            return 0, "tidb\t127.0.0.1:4000\talter-primary-key\tfalse", ""
+        if "split-region-max-num" in sql:
+            return 0, "tidb\t127.0.0.1:4000\tsplit-region-max-num\t1000", ""
+        return 1, "", "unknown fact"
+
+    with mock.patch.object(ddl_golden, "mysql_exec", side_effect=database_call):
+        anchor = {"exec_client": ["mysql"], "database": "golden"}
+        results.append(ddl_golden.read_instance_fact(anchor, "tidb_enable_clustered_index") == "int_only")
+        print(("PASS " if results[-1] else "FAIL ") + "t23 clustered-index value resolves to int_only")
+        results.append(ddl_golden.read_instance_fact(anchor, "tidb_alter_primary_key") == "false")
+        print(("PASS " if results[-1] else "FAIL ") + "t23 alter-primary-key value resolves to false")
+        results.append(ddl_golden.read_instance_fact(anchor, "tidb_split_region_max_num") == 1000)
+        print(("PASS " if results[-1] else "FAIL ") + "t23 split-region-max-num resolves numeric 1000")
+        results.append(ddl_golden.read_instance_fact(anchor, "nonexistent_fact") is None)
+        print(("PASS " if results[-1] else "FAIL ") + "t23 unknown fact key returns None")
+        results.append(ddl_golden.read_instance_fact(anchor, "innodb_page_size") is None)
+        print(("PASS " if results[-1] else "FAIL ") + "t23 failed read returns None, never a default")
 
     return results
 

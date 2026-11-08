@@ -759,6 +759,13 @@ INSTANCE_FACT_QUERIES = {
     "sql_require_primary_key": "show variables like 'sql_require_primary_key'",
     "sql_generate_invisible_primary_key": "show variables like 'sql_generate_invisible_primary_key'",
     "show_gipk_in_create_table_and_information_schema": "show variables like 'show_gipk_in_create_table_and_information_schema'",
+    # TiDB clustered-index / layout facts (issue #102 T23): the clustered
+    # mode is a session-visible global the product provider reads; the two
+    # config rows are tidb-server config, reachable only through SHOW
+    # CONFIG — a missing row must stay unobserved, never default-guessed.
+    "tidb_enable_clustered_index": "show variables like 'tidb_enable_clustered_index'",
+    "tidb_alter_primary_key": "show config where Type = 'tidb' and Name = 'alter-primary-key'",
+    "tidb_split_region_max_num": "show config where Type = 'tidb' and Name = 'split-region-max-num'",
 }
 
 

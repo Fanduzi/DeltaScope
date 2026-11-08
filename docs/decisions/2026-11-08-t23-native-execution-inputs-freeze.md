@@ -1,0 +1,213 @@
+# Decision: T23 native-execution input freeze — frozen manifest, per-case oracles, and the one-shot authorization card
+
+Date: 2026-11-08
+Status: Frozen, awaiting one-shot itemized authorization (no native execution performed)
+Related milestone/version: mysql-tidb-ddl-completion (issue #79, task T23 under #102)
+Related product commit: `f4fe758da61e196b69255034348dcd0cb182a66c` (accepted R9 fixed tree)
+Related manifest: `testdata/ddl-golden/T23.json`
+Related runner: `scripts/ddl_golden.py`, `scripts/ddl_golden_isolated.py`
+Related docs: `docs/decisions/2026-11-13-tidb-auto-random-validity.md` (product semantics, R5–R9)
+
+## Context
+
+The accepted R9 tree proves the offline semantics for the T23 surface.
+This record freezes the runnable inputs for the deferred native-validation
+step: the manifest denominator, fixture seeds, per-case oracles, the
+runner/lifecycle contract, attempt identity, and the resource
+authorization card. Freezing inputs is not execution: nothing in this
+record starts a daemon, connects to a database, or runs native SQL.
+
+### Identity closed before authoring
+
+- HEAD/branch: `f4fe758da61e196b69255034348dcd0cb182a66c` on
+  `milestone/mysql-tidb-ddl-completion`; parent `09f412c5` (R8), R7-tail
+  `182b1db`, R5 `47fff59`.
+- Tracked/staged state at freeze start: clean; 13 historical untracked
+  paths and all existing worktrees preserved.
+- Anchor topology (frozen, `docker/ddl-golden-compose.yaml`): tidb85 is
+  `pingcap/tidb:v8.5.0` running `--store=unistore` behind the MySQL
+  protocol on `127.0.0.1:24000`; mysql80 is `mysql:8.0.46` on `23380`.
+  There is no PD, no separate TiKV node, and no TiFlash store.
+
+## Manifest defects repaired (execution-input fixes only)
+
+The draft manifest predated the real runner contract:
+
+1. `required_case_ids` were 25 bare ids; the runner emits fully prefixed
+   `T23.db.*`/`T23.cli.*`/`T23.meta.*` case ids and `validate_artifact`
+   requires exact equality. Frozen denominator is now **35**:
+   8 db anchor cases + 17 CLI cases + 10 metadata cases.
+2. `ddl_steps` was empty — no `t23fx` fixture seed existed; now mirrors
+   the T21/T20 seed shape (`DROP DATABASE IF EXISTS` + schema + seed
+   table + existence verify).
+3. All 8 metadata cases were `EXPECT FILLED` stubs; they now carry
+   complete setup/expect/post_verify/execute/structure/teardown bodies.
+   Two new cases (`B-split-region`, `C-compact-noop`) were added because
+   the authorization groups B (SPLIT) and C (COMPACT) had no native case.
+4. `policy.enable` gained `ddl.tidb.table.cache.valid`,
+   `ddl.tidb.table.attributes.valid`, `ddl.tidb.table.tiflash.valid`
+   (13 enabled rules total), so the B/C cases evaluate their rules. The
+   honest consequence: the cache guard now emits `table.cache_status`
+   `missing_instance_fact` gaps on ALTER statements bound to unobserved
+   tables — CLI-case expects were reconciled to the actual frozen product
+   output (see below), not to older prose.
+5. Older CLI-case expects were missing the strict checker's required
+   keys (`diagnostics`, `unsupported`) and carried stale values: the two
+   MySQL vendor-boundary cases now emit `diagnostics=1` + `exit=1`, the
+   two undecidable ALTER cases emit 2 gaps each, and
+   `tidb-alter-split-index-bounded` gained the cache-guard gap. All 17
+   CLI cases were re-derived against the built CLI (`0` failures).
+6. `INSTANCE_FACT_QUERIES` gained `tidb_enable_clustered_index`
+   (session global), `tidb_alter_primary_key` and
+   `tidb_split_region_max_num` (both `SHOW CONFIG` rows — the same read
+   path the provider uses). A missing row returns `None`; nothing is
+   default-guessed. Pinned by `t23_instance_fact_tests` in
+   `scripts/test_ddl_golden.py`.
+
+## Canonical denominator and A/B/C allocation
+
+| Case id (prefix `T23.meta.`) | Group | Anchor | Proof scope |
+|---|---|---|---|
+| A-auto-random-first-path | A | tidb85 | CREATE+ALTER accepted path; instance facts int_only/false |
+| A-auto-random-static-refusals | A | tidb85 | 8 static refusals; each preserves pre-state (table absent) |
+| A-clustered-mode-comparison | A | tidb85 | `SET GLOBAL tidb_enable_clustered_index=off` → product reject + native refusal; on/int_only native accepts; restore to int_only |
+| A-mysql-vendor-negative | A | mysql80 | real MySQL 8.0 refuses both forms; product bounded-unsupported |
+| A-auto-random-base-controls | A | tidb85 | AUTO_RANDOM_BASE declaration vs allocator floor (`NEXT_GLOBAL_AUTO_ID >= 100`), never runtime progress |
+| A-alter-layout-matrix | A | tidb85 | 12-statement matrix: add/modify refusals, increase allocator gap, AUTO_ID_CACHE 1↔non-1 boundary, SHARD clustered refusal + >15 clamp, AUTO_RANDOM_BASE, PRE_SPLIT refusal; per-arm dedicated fixtures |
+| B-cache-attributes | B | tidb85 | NOCACHE/CACHE declaration + lock-row catalog evidence + partitioned refusal; ATTRIBUTES set/default/invalid/partition; effect stays open |
+| B-split-region | B | tidb85 | 12 statements: valid split, plan-time refusals (step/bound/NULL/index/partition/regions), BY list; index+common-handle BETWEEN stay bounded-unproven product-side |
+| C-compact-noop | C | tidb85 | COMPACT acceptance (warning no-op) + partition refusals; compaction effect stays open |
+| C-tiflash-replica | C | tidb85 | `requires_service: tiflash`; declaration + replica_count=2 + AVAILABLE=0 negative arm only |
+
+### Expected output contract (probe-derived, frozen)
+
+Every `expect` block was derived by running the real parse → enrich →
+`EvaluateStatements` path against provider-shaped snapshots on the fixed
+tree — not by copying prose. Highlighted non-obvious frozen values:
+
+- `A-alter-layout-matrix`: 7 blockers + 2 unverified gaps
+  (`runtime.auto_random_allocator`, `runtime.row_data`), verdict reject.
+  Each MODIFY variant owns a dedicated fixture table: an undecidable
+  MODIFY makes the ordered-state post-shape unproven, so a shared table
+  would make later statements read the bounded derived shape instead of
+  the proven catalog.
+- `B-cache-attributes`: `ALTER TABLE ... CACHE` stays `unverified` with
+  the `runtime.cache_table_size` gap — a deliberately runtime-only fact;
+  `CACHE` on a partitioned table is a proven refusal;
+  `ATTRIBUTES='key'` (no `=value`) is a proven refusal.
+- `B-split-region`: 7 blockers + 2 `unproven_statement_fact` gaps
+  (`statement.split_bound_relation`) on index and common-handle BETWEEN;
+  verdict reject. `(0,100) REGIONS 4` is a step-too-small refusal, not a
+  success path; NULL bounds are `ErrBadNull` refusals on the table path.
+- `C-tiflash-replica`: `unverified` gap `table.tiflash_replica` — the
+  provider never publishes a replica-count fact, so the product can never
+  claim a prior-replica answer; native replica_count=2 + AVAILABLE=0 is a
+  proven negative only.
+- `A-clustered-mode-comparison`: under `off` the product must reject the
+  same statement A-auto-random-first-path passes under `int_only`.
+  `alter-primary-key` is a SHOW CONFIG startup knob — it cannot be
+  flipped by runtime SQL, so the apk=true axis is an authorization item
+  (config mount), not a setup step.
+
+## Runner and lifecycle contract
+
+- Entry point: `scripts/ddl_golden_isolated.py` (`preflight`, `up`,
+  `run`, `stop`, `rm`, `rmvolumes`). It requires an explicit `--daemon`;
+  it rejects default Docker endpoints, clears `DOCKER_CONTEXT`, uses a
+  run-scoped compose project and labels, and tears down only
+  receipt-registered objects. No `down -v`, no global prune.
+- The product audit path inside `_execute_metadata_case` is
+  read-only: fixture SQL is applied by the test driver through
+  `mysql_exec`; the product CLI only reads metadata. `post_verify`
+  steps prove the audited objects were not mutated.
+- Per-case `expect` asserts exit/verdict/statement/findings/diagnostics/
+  unsupported/coverage/gaps plus optional `finding_entries`,
+  `evidence_gap_entries` (with `required_facts`), and `instance_facts`
+  (live `INSTANCE_FACT_QUERIES` reads).
+- Attempt identity: `<artifact-root>/golden/T23.attempts/<head12>/attempt-N/`
+  with `SHA256SUMS` and a `latest` index; failed attempts are never
+  overwritten. Evidence must contain raw rc/stdout/stderr; a copied
+  product result cannot substitute for native receipts.
+
+## Async / service end-classifications
+
+For every async or service-gated arm the run must end in exactly one of:
+
+- `accepted_proven` — SQL rc=0 AND the declared post-condition verified
+  (catalog row, count, marker). rc=0 alone never proves it.
+- `refused_native` — SQL rc=1 with the recorded error.
+- `mismatch` — native actual differs from the frozen expect; preserve
+  rc/stdout/stderr and before/after state, then classify fixture error /
+  oracle error / product counterevidence. Never rewrite expected to
+  actual on the spot and never tune SQL to bypass a mismatch.
+- `environment_gap` — a required store/capability is absent (TiFlash,
+  non-unistore backend, a SHOW CONFIG row the image lacks). Record the
+  probe evidence; never promote it to success.
+- `timeout_undetermined` — a bounded poll expired; the result is
+  undetermined, not failed-by-assumption. Polling caps live in the
+  per-case notes; no unbounded waits and no service restarts.
+
+Explicit non-proofs: a reachable port does not prove store capability;
+`table_cache_meta` row presence proves the DDL job ran, not a cache
+status; `information_schema.tiflash_replica` rows prove declaration,
+not availability.
+
+## One-shot itemized authorization card
+
+Requested runtime actions, all inside the isolated lifecycle wrapper and
+run-scoped compose project:
+
+1. Start the golden stack (tidb85 unistore, mysql80, plus the baseline
+   mysql57/mysql84 anchors the manifest's db cases require).
+2. Execute all 35 `required_case_ids` via `ddl_golden.py run --task T23`.
+3. `SET GLOBAL tidb_enable_clustered_index` flip to `off` and back to the
+   recorded baseline (`int_only`), inside
+   `A-clustered-mode-comparison` only. Original values are recorded in
+   the attempt artifact before mutation; teardown restores and verifies.
+4. Fixture-only objects under the `t23fx` schema; no real user data, no
+   secrets in argv/logs. MySQL connects use `password_env`/`password`
+   the runner already models.
+5. SPLIT/COMPACT/CACHE/SET-TIFLASH native executions on the unistore
+   anchor within the per-case rc expectations; environment mismatches
+   classify per the taxonomy above — they are never forced green.
+
+Explicitly NOT requested / declared-open:
+
+- TiFlash store availability/ready/recovery arms (no TiFlash service in
+  the frozen stack); the case's positive arms stay `environment_gap`.
+- `alter-primary-key=true` matrix arms — requires a tidb-server config
+  mount change and restart; out of this card's scope.
+- Any performance, region-count, cache-effectiveness, or
+  compaction-benefit claim.
+- Push, merge, PR, issue closure, release, or any non-fixture account.
+
+## Verification Evidence
+
+- `python3 scripts/test_ddl_golden.py`: 766 contract cases, 0 failures —
+  including the 8 new T23 instance-fact pins.
+- All 17 `cli_cases` re-executed through `make_policies` +
+  `cli_case_expect_checks` against a locally built CLI: 0 failures.
+- Manifest consistency: `baseline_manifest_failures` clean; 35 unique
+  required ids; every case's policy profile resolves; all 13 enabled
+  rule ids exist in the live `rules list` catalog (487 rules).
+- Oracle derivation: read-only Go probe (verify worktree, uncommitted)
+  exercising the real parse → enrich → evaluate path per case.
+
+## Consequences
+
+- The frozen denominator is 35 and is now runner-checkable; shrinking it
+  silently is impossible because db anchor cases are independently
+  required by the baseline contract.
+- Product semantics were not touched: every `expect` change records the
+  fixed tree's actual output. If a later review finds an oracle should
+  differ, that is evidence against the product, not a manifest fix.
+- `tidb_enable_clustered_index` restore targets the recorded
+  pre-mutation value, never an assumed constant.
+
+## Links
+
+- Manifest: `testdata/ddl-golden/T23.json`
+- Runner: `scripts/ddl_golden.py` (`INSTANCE_FACT_QUERIES`,
+  `_execute_metadata_case`, `cli_case_expect_checks`)
+- Lifecycle: `scripts/ddl_golden_isolated.py`
+- Product ADR: `docs/decisions/2026-11-13-tidb-auto-random-validity.md`
