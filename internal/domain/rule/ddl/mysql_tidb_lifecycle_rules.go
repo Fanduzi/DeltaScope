@@ -250,13 +250,49 @@ func newRevokeNoticeRule(cfg policy.RulePolicy) (rule.StatementRule, error) {
 	)
 }
 
+func newCreateResourceGroupNoticeRule(cfg policy.RulePolicy) (rule.StatementRule, error) {
+	base, err := newMySQLTiDBLifecycleRule(
+		ruleIDCreateResourceGroupNotice, rule.LevelNotice, spec.DDLOperationCreateResourceGroup, "resource_group",
+		"CREATE RESOURCE GROUP %q defines a new resource group",
+		"review quota and burst settings before sessions bind to the group",
+		cfg,
+	)
+	if err != nil {
+		return nil, err
+	}
+	n := base.(mysqlTidbLifecycleRule)
+	n.adjudicate = resourceGroupNoticeAdjudicator("create", n.message, n.suggestion)
+	return n, nil
+}
+
+func newAlterResourceGroupNoticeRule(cfg policy.RulePolicy) (rule.StatementRule, error) {
+	base, err := newMySQLTiDBLifecycleRule(
+		ruleIDAlterResourceGroupNotice, rule.LevelNotice, spec.DDLOperationAlterResourceGroup, "resource_group",
+		"ALTER RESOURCE GROUP %q modifies an existing resource group",
+		"review quota and priority changes for impact on bound workloads",
+		cfg,
+	)
+	if err != nil {
+		return nil, err
+	}
+	n := base.(mysqlTidbLifecycleRule)
+	n.adjudicate = resourceGroupNoticeAdjudicator("alter", n.message, n.suggestion)
+	return n, nil
+}
+
 func newDropResourceGroupNoticeRule(cfg policy.RulePolicy) (rule.StatementRule, error) {
-	return newMySQLTiDBLifecycleRule(
+	base, err := newMySQLTiDBLifecycleRule(
 		ruleIDDropResourceGroupNotice, rule.LevelNotice, spec.DDLOperationDropResourceGroup, "resource_group",
 		"DROP RESOURCE GROUP %q removes a resource group",
 		"verify no sessions are using this resource group before dropping",
 		cfg,
 	)
+	if err != nil {
+		return nil, err
+	}
+	n := base.(mysqlTidbLifecycleRule)
+	n.adjudicate = resourceGroupNoticeAdjudicator("drop", n.message, n.suggestion)
+	return n, nil
 }
 
 func newCreatePlacementPolicyNoticeRule(cfg policy.RulePolicy) (rule.StatementRule, error) {

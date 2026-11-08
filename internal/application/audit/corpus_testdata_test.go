@@ -120,6 +120,30 @@ type corpusMetadata struct {
 	// and, when proven, the definition parameters. Omit the key to leave
 	// every sequence identity unvouched (T21/#100).
 	Sequences map[string]corpusSequenceObject `yaml:"sequences,omitempty"`
+	// ResourceGroups is the proven TiDB resource-group object set keyed
+	// `name`: each entry carries the catalog's existence answer and, when
+	// proven, the definition parameters. Omit the key to leave every
+	// resource-group identity unvouched (T22/#101).
+	ResourceGroups map[string]corpusResourceGroupObject `yaml:"resource_groups,omitempty"`
+}
+
+// corpusResourceGroupObject is the catalog fact for one resource-group
+// identity. Status is the provenance answer (confirmed | not_found |
+// unavailable); definition is only read on a confirmed-existing object.
+type corpusResourceGroupObject struct {
+	Status     string                         `yaml:"status"`
+	Exists     *bool                          `yaml:"exists,omitempty"`
+	Definition *corpusResourceGroupDefinition `yaml:"definition,omitempty"`
+}
+
+// corpusResourceGroupDefinition mirrors the catalog definition parameters —
+// omitted members stay unproven, never defaulted.
+type corpusResourceGroupDefinition struct {
+	RUPerSec    *uint64 `yaml:"ru_per_sec,omitempty"`
+	RUUnlimited bool    `yaml:"ru_unlimited,omitempty"`
+	Priority    string  `yaml:"priority,omitempty"`
+	Burstable   *bool   `yaml:"burstable,omitempty"`
+	QueryLimit  *string `yaml:"query_limit,omitempty"`
 }
 
 // corpusPlacementPolicy is the catalog fact for one proven policy.
@@ -171,6 +195,8 @@ type corpusInstanceFacts struct {
 	InnoDBAdaptiveHashEnabled      bool   `yaml:"innodb_adaptive_hash_enabled,omitempty"`
 	TiDBEnableCheckConstraint      bool   `yaml:"tidb_enable_check_constraint,omitempty"`
 	TiDBEnableCheckConstraintKnown bool   `yaml:"tidb_enable_check_constraint_known,omitempty"`
+	TiDBEnableResourceControl      bool   `yaml:"tidb_enable_resource_control,omitempty"`
+	TiDBEnableResourceControlKnown bool   `yaml:"tidb_enable_resource_control_known,omitempty"`
 }
 
 type corpusTableSnapshot struct {

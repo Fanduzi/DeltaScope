@@ -38,7 +38,7 @@ func corpusMetadataFields(tc corpusExpected) (string, MetadataProvider) {
 		return "", nil
 	}
 	if tc.Metadata.Instance == nil && len(tc.Metadata.Tables) == 0 && len(tc.Metadata.IndexOwners) == 0 &&
-		len(tc.Metadata.PlacementPolicies) == 0 && len(tc.Metadata.Sequences) == 0 {
+		len(tc.Metadata.PlacementPolicies) == 0 && len(tc.Metadata.Sequences) == 0 && len(tc.Metadata.ResourceGroups) == 0 {
 		return strings.TrimSpace(tc.Metadata.Schema), nil
 	}
 	return strings.TrimSpace(tc.Metadata.Schema), newCorpusMetadataProvider(tc.Metadata)
@@ -55,6 +55,10 @@ type corpusFixtureMetadataProvider struct {
 	// keyed `schema.name` and carry the catalog's existence answer plus —
 	// when proven — definition parameters and the bounded reference read.
 	sequences map[string]*spec.ObjectSnapshot
+	// resourceGroups nil means every resource-group identity is unvouched;
+	// entries are keyed `name` and carry the catalog's existence answer
+	// plus — when proven — definition parameters (T22/#101).
+	resourceGroups map[string]*spec.ObjectSnapshot
 }
 
 func newCorpusMetadataProvider(metadata *corpusMetadata) *corpusFixtureMetadataProvider {
@@ -72,6 +76,8 @@ func newCorpusMetadataProvider(metadata *corpusMetadata) *corpusFixtureMetadataP
 			InnoDBAdaptiveHashEnabled:      metadata.Instance.InnoDBAdaptiveHashEnabled,
 			TiDBEnableCheckConstraint:      metadata.Instance.TiDBEnableCheckConstraint,
 			TiDBEnableCheckConstraintKnown: metadata.Instance.TiDBEnableCheckConstraintKnown,
+			TiDBEnableResourceControl:      metadata.Instance.TiDBEnableResourceControl,
+			TiDBEnableResourceControlKnown: metadata.Instance.TiDBEnableResourceControlKnown,
 		}
 	}
 	for tableName, snapshot := range metadata.Tables {
@@ -97,7 +103,46 @@ func newCorpusMetadataProvider(metadata *corpusMetadata) *corpusFixtureMetadataP
 			provider.sequences[strings.ToLower(strings.TrimSpace(key))] = corpusSequenceToSnapshot(key, metadata.Schema, object)
 		}
 	}
+	if metadata.ResourceGroups != nil {
+		provider.resourceGroups = make(map[string]*spec.ObjectSnapshot, len(metadata.ResourceGroups))
+		for key, object := range metadata.ResourceGroups {
+			provider.resourceGroups[strings.ToLower(strings.TrimSpace(key))] = corpusResourceGroupToSnapshot(key, object)
+		}
+	}
 	return provider
+}
+
+// corpusResourceGroupToSnapshot converts a fixture resource-group entry
+// into the catalog answer the object resolver would return. The status
+// word is the provenance answer; a missing or empty group name keeps the
+// identity blank rather than fabricating one.
+func corpusResourceGroupToSnapshot(key string, object corpusResourceGroupObject) *spec.ObjectSnapshot {
+	snapshot := &spec.ObjectSnapshot{
+		Name: strings.TrimSpace(key),
+		Type: "resource_group",
+	}
+	switch strings.ToLower(strings.TrimSpace(object.Status)) {
+	case "confirmed":
+		snapshot.Status = spec.MetadataStatusConfirmed
+		snapshot.Exists = true
+	case "not_found":
+		snapshot.Status = spec.MetadataStatusNotFound
+	default:
+		snapshot.Status = spec.MetadataStatusUnavailable
+	}
+	if object.Exists != nil {
+		snapshot.Exists = *object.Exists
+	}
+	if object.Definition != nil {
+		snapshot.ResourceGroup = &spec.ResourceGroupDefinition{
+			RUPerSec:    object.Definition.RUPerSec,
+			RUUnlimited: object.Definition.RUUnlimited,
+			Priority:    object.Definition.Priority,
+			Burstable:   object.Definition.Burstable,
+			QueryLimit:  object.Definition.QueryLimit,
+		}
+	}
+	return snapshot
 }
 
 // corpusSequenceToSnapshot converts a fixture sequence entry into the
@@ -190,6 +235,27 @@ func (p *corpusFixtureMetadataProvider) LoadPlacementPolicies(context.Context, s
 // `schema.name`. An unkeyed identity or a nil sequence map is unvouched,
 // never a silent absent; non-sequence lookups stay unavailable.
 func (p *corpusFixtureMetadataProvider) ResolveObject(_ context.Context, _ spec.Dialect, request spec.ObjectLookupRequest) (*spec.ObjectSnapshot, error) {
+	if request.Type == "resource_group" {
+		if p.resourceGroups == nil {
+			return &spec.ObjectSnapshot{
+				Schema: request.Schema,
+				Type:   request.Type,
+				Name:   request.Name,
+				Status: spec.MetadataStatusUnavailable,
+			}, nil
+		}
+		key := strings.ToLower(strings.TrimSpace(request.Name))
+		snapshot, ok := p.resourceGroups[key]
+		if !ok {
+			return &spec.ObjectSnapshot{
+				Schema: request.Schema,
+				Type:   request.Type,
+				Name:   request.Name,
+				Status: spec.MetadataStatusUnavailable,
+			}, nil
+		}
+		return snapshot, nil
+	}
 	if request.Type != "sequence" || p.sequences == nil {
 		return &spec.ObjectSnapshot{
 			Schema: request.Schema,

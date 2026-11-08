@@ -1,0 +1,25 @@
+name: resource_group_lifecycle_rules
+dialect: tidb
+category: ddl
+metadata:
+  instance:
+    tidb_enable_resource_control: true
+    tidb_enable_resource_control_known: true
+  resource_groups:
+    rg_runaway:
+      status: confirmed
+      definition:
+        ru_per_sec: 200
+    rg_absent:
+      status: not_found
+    default:
+      status: confirmed
+expect:
+  parse_ok: true
+  findings:
+    include:
+      - ddl.create_resource_group.notice
+      - ddl.alter_resource_group.notice
+      - ddl.tidb.resource_group.valid
+      - ddl.tidb.resource_group.burstable.warn
+      - ddl.tidb.resource_group.runaway.warn

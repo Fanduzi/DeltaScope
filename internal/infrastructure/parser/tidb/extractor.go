@@ -149,6 +149,10 @@ func (e tidbExtractor) Extract(dialect spec.Dialect, rawSQL string) (spec.Statem
 		statement.DDL = extractGrant(node)
 	case *ast.RevokeStmt:
 		statement.DDL = extractRevoke(node)
+	case *ast.CreateResourceGroupStmt:
+		statement.DDL = extractCreateResourceGroup(node)
+	case *ast.AlterResourceGroupStmt:
+		statement.DDL = extractAlterResourceGroup(node)
 	case *ast.DropResourceGroupStmt:
 		statement.DDL = extractDropResourceGroup(node)
 	case *ast.CreatePlacementPolicyStmt:
@@ -266,6 +270,8 @@ func classify(stmt ast.StmtNode) spec.Kind {
 		*ast.DropUserStmt,
 		*ast.GrantStmt,
 		*ast.RevokeStmt,
+		*ast.CreateResourceGroupStmt,
+		*ast.AlterResourceGroupStmt,
 		*ast.DropResourceGroupStmt,
 		*ast.CreatePlacementPolicyStmt,
 		*ast.AlterPlacementPolicyStmt,
@@ -1743,12 +1749,166 @@ func extractRevoke(stmt *ast.RevokeStmt) *spec.DDL {
 	}
 }
 
+func extractCreateResourceGroup(stmt *ast.CreateResourceGroupStmt) *spec.DDL {
+	declaration := &spec.ResourceGroupDeclaration{
+		Name:        stmt.ResourceGroupName.L,
+		IfNotExists: stmt.IfNotExists,
+		Options:     extractResourceGroupOptions(stmt.ResourceGroupOptionList),
+	}
+	return &spec.DDL{
+		Operation:     spec.DDLOperationCreateResourceGroup,
+		ObjectName:    stmt.ResourceGroupName.L,
+		ObjectType:    "resource_group",
+		ResourceGroup: declaration,
+	}
+}
+
+func extractAlterResourceGroup(stmt *ast.AlterResourceGroupStmt) *spec.DDL {
+	declaration := &spec.ResourceGroupDeclaration{
+		Name:     stmt.ResourceGroupName.L,
+		IfExists: stmt.IfExists,
+		Options:  extractResourceGroupOptions(stmt.ResourceGroupOptionList),
+	}
+	return &spec.DDL{
+		Operation:     spec.DDLOperationAlterResourceGroup,
+		ObjectName:    stmt.ResourceGroupName.L,
+		ObjectType:    "resource_group",
+		ResourceGroup: declaration,
+	}
+}
+
 func extractDropResourceGroup(stmt *ast.DropResourceGroupStmt) *spec.DDL {
 	return &spec.DDL{
 		Operation:  spec.DDLOperationDropResourceGroup,
 		ObjectName: stmt.ResourceGroupName.L,
 		ObjectType: "resource_group",
+		ResourceGroup: &spec.ResourceGroupDeclaration{
+			Name:     stmt.ResourceGroupName.L,
+			IfExists: stmt.IfExists,
+		},
 	}
+}
+
+// extractResourceGroupOptions preserves every parsed option in order.
+// The grammar's CheckAppend guard rejects duplicate top-level kinds, so
+// each kind appears at most once; a member the model cannot classify
+// keeps the unrecognized marker for the coverage boundary.
+func extractResourceGroupOptions(list []*ast.ResourceGroupOption) []spec.ResourceGroupOption {
+	var options []spec.ResourceGroupOption
+	for _, opt := range list {
+		if opt == nil {
+			continue
+		}
+		switch opt.Tp {
+		case ast.ResourceRURate:
+			option := spec.ResourceGroupOption{Kind: spec.ResourceGroupOptionRURate}
+			if opt.Burstable == ast.BurstableUnlimited {
+				option.Unlimited = true
+			} else {
+				value := opt.UintValue
+				option.UintValue = &value
+			}
+			options = append(options, option)
+		case ast.ResourcePriority:
+			options = append(options, spec.ResourceGroupOption{
+				Kind:      spec.ResourceGroupOptionPriority,
+				TextValue: ast.PriorityValueToName(opt.UintValue),
+			})
+		case ast.ResourceBurstable:
+			burstable := spec.ResourceGroupBurstableDisabled
+			switch opt.Burstable {
+			case ast.BurstableModerated:
+				burstable = spec.ResourceGroupBurstableModerated
+			case ast.BurstableUnlimited:
+				burstable = spec.ResourceGroupBurstableUnlimited
+			}
+			options = append(options, spec.ResourceGroupOption{
+				Kind:      spec.ResourceGroupOptionBurstable,
+				Burstable: burstable,
+			})
+		case ast.ResourceGroupRunaway:
+			options = append(options, spec.ResourceGroupOption{
+				Kind:    spec.ResourceGroupOptionQueryLimit,
+				Runaway: extractResourceGroupRunaway(opt.RunawayOptionList),
+			})
+		case ast.ResourceGroupBackground:
+			options = append(options, spec.ResourceGroupOption{
+				Kind:       spec.ResourceGroupOptionBackground,
+				Background: &spec.ResourceGroupBackgroundDeclaration{Reset: len(opt.BackgroundOptions) == 0, Members: len(opt.BackgroundOptions)},
+			})
+		default:
+			// Raw-mode or any Tp the grammar did not produce here:
+			// recognized evidence, never silently dropped.
+			options = append(options, spec.ResourceGroupOption{Kind: spec.ResourceGroupOptionUnrecognized})
+		}
+	}
+	return options
+}
+
+// extractResourceGroupRunaway models one QUERY_LIMIT clause. A nil or
+// empty member list is the reset form (QUERY_LIMIT = NULL or ()); member
+// values stay typed, never raw SQL.
+func extractResourceGroupRunaway(list []*ast.ResourceGroupRunawayOption) *spec.ResourceGroupRunawayDeclaration {
+	declaration := &spec.ResourceGroupRunawayDeclaration{Reset: len(list) == 0}
+	for _, opt := range list {
+		if opt == nil {
+			continue
+		}
+		switch opt.Tp {
+		case ast.RunawayRule:
+			if opt.RuleOption == nil {
+				continue
+			}
+			switch opt.RuleOption.Tp {
+			case ast.RunawayRuleExecElapsed:
+				declaration.Members = append(declaration.Members, spec.ResourceGroupRunawayMember{
+					Kind:      spec.ResourceGroupRunawayExecElapsed,
+					TextValue: opt.RuleOption.ExecElapsed,
+				})
+			case ast.RunawayRuleProcessedKeys:
+				value := uint64(opt.RuleOption.ProcessedKeys)
+				declaration.Members = append(declaration.Members, spec.ResourceGroupRunawayMember{
+					Kind:      spec.ResourceGroupRunawayProcessedKeys,
+					UintValue: &value,
+				})
+			case ast.RunawayRuleRequestUnit:
+				value := uint64(opt.RuleOption.RequestUnit)
+				declaration.Members = append(declaration.Members, spec.ResourceGroupRunawayMember{
+					Kind:      spec.ResourceGroupRunawayRU,
+					UintValue: &value,
+				})
+			default:
+				declaration.Members = append(declaration.Members, spec.ResourceGroupRunawayMember{Kind: "unrecognized"})
+			}
+		case ast.RunawayAction:
+			if opt.ActionOption == nil {
+				continue
+			}
+			action := strings.ToLower(opt.ActionOption.Type.String())
+			if opt.ActionOption.Type == ast.RunawayActionSwitchGroup {
+				action = "switch_group:" + opt.ActionOption.SwitchGroupName.L
+			}
+			declaration.Members = append(declaration.Members, spec.ResourceGroupRunawayMember{
+				Kind:      spec.ResourceGroupRunawayAction,
+				TextValue: action,
+			})
+		case ast.RunawayWatch:
+			if opt.WatchOption == nil {
+				continue
+			}
+			watch := strings.ToLower(opt.WatchOption.Type.String())
+			if opt.WatchOption.Duration != "" {
+				watch += ":" + opt.WatchOption.Duration
+			}
+			declaration.Members = append(declaration.Members, spec.ResourceGroupRunawayMember{
+				Kind:      spec.ResourceGroupRunawayWatch,
+				TextValue: watch,
+			})
+		default:
+			declaration.Members = append(declaration.Members, spec.ResourceGroupRunawayMember{Kind: "unrecognized"})
+		}
+	}
+	return declaration
 }
 
 func extractCreatePlacementPolicy(stmt *ast.CreatePlacementPolicyStmt) *spec.DDL {

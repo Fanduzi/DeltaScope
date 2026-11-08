@@ -160,7 +160,15 @@ func isTiDBOnlyRule(ruleID string) bool {
 		"ddl.tidb.sequence.valid",
 		"ddl.tidb.sequence.restart.warn",
 		"ddl.tidb.sequence.cycle.warn",
-		"ddl.tidb.sequence.references.warn":
+		"ddl.tidb.sequence.references.warn",
+		// T22: TiDB RU resource groups vendor-boundary under MySQL — the
+		// CREATE/ALTER notices and every tidb.* lifecycle rule can only
+		// fire under TiDB.
+		"ddl.create_resource_group.notice",
+		"ddl.alter_resource_group.notice",
+		"ddl.tidb.resource_group.valid",
+		"ddl.tidb.resource_group.burstable.warn",
+		"ddl.tidb.resource_group.runaway.warn":
 		return true
 	default:
 		return false

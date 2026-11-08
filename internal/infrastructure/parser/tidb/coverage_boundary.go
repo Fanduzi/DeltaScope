@@ -54,7 +54,14 @@ func dialectBoundaryFeature(dialect spec.Dialect, ddl *spec.DDL) (feature string
 		switch ddl.Operation {
 		case spec.DDLOperationCreateSequence, spec.DDLOperationAlterSequence, spec.DDLOperationDropSequence,
 			spec.DDLOperationCreatePlacementPolicy, spec.DDLOperationAlterPlacementPolicy, spec.DDLOperationDropPlacementPolicy,
-			spec.DDLOperationAlterRangePlacement:
+			spec.DDLOperationAlterRangePlacement,
+			spec.DDLOperationCreateResourceGroup, spec.DDLOperationAlterResourceGroup:
+			// TiDB RU resource-group options (RU_PER_SEC / PRIORITY /
+			// BURSTABLE / QUERY_LIMIT) are not MySQL semantics — the
+			// parsed form is unambiguously TiDB syntax, so MySQL keeps a
+			// vendor boundary rather than a silent audited create. MySQL's
+			// own CPU resource-group family is a separate surface (T24);
+			// DROP is shared syntax and stays audited on both dialects.
 			return string(ddl.Operation), true, true
 		}
 		if ddl.Operation == spec.DDLOperationCreateIndex {
@@ -152,10 +159,6 @@ func unhandledStatementFeature(node ast.StmtNode) string {
 		return "trace"
 	case *ast.ExecuteStmt:
 		return "execute_prepared"
-	case *ast.CreateResourceGroupStmt:
-		return "create_resource_group"
-	case *ast.AlterResourceGroupStmt:
-		return "alter_resource_group"
 	case *ast.SetResourceGroupStmt:
 		return "set_resource_group"
 	case *ast.AlterInstanceStmt:

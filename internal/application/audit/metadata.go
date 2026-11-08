@@ -226,10 +226,11 @@ func (state *batchState) enrichStatements(ctx context.Context, request *Metadata
 			objectCache[cacheKey] = snapshot
 			return snapshot, nil
 		}
-		// Sequence lookups share the same once-per-request cache: the ordered
-		// binding and the Metadata.Objects projection never ask the provider
-		// twice for the same (schema, type, name) identity.
-		state.sequenceResolver = func(ctx context.Context, lookup spec.ObjectLookupRequest) (*spec.ObjectSnapshot, error) {
+		// Sequence and resource-group lookups share the same
+		// once-per-request cache: the ordered binding and the
+		// Metadata.Objects projection never ask the provider twice for the
+		// same (schema, type, name) identity.
+		cachedObjectResolver := func(ctx context.Context, lookup spec.ObjectLookupRequest) (*spec.ObjectSnapshot, error) {
 			cacheKey := newObjectLookupKey(&lookup)
 			if snapshot, ok := objectCache[cacheKey]; ok {
 				return snapshot, nil
@@ -241,6 +242,8 @@ func (state *batchState) enrichStatements(ctx context.Context, request *Metadata
 			objectCache[cacheKey] = snapshot
 			return snapshot, nil
 		}
+		state.sequenceResolver = cachedObjectResolver
+		state.resourceGroupResolver = cachedObjectResolver
 	}
 
 	consumed := 0
@@ -425,6 +428,23 @@ func (state *batchState) enrichStatements(ctx context.Context, request *Metadata
 					enriched[i].Metadata = &spec.Metadata{Schema: metadataSchema, Instance: instanceFacts, Version: resolvedVersion}
 				}
 				enriched[i].Metadata.Sequences = sequences
+			}
+		}
+
+		// Resource-group facts attach the registry's ordered pre-state —
+		// the existence and definition answer this statement adjudicates
+		// against. TiDB-only: other dialects bind nothing so the parser
+		// vendor boundary holds the CPU-family surface apart (T22/#101).
+		if enriched[i].DDL != nil && enriched[i].DDL.ResourceGroup != nil && dialect == spec.DialectTiDB {
+			groups, gerr := state.bindResourceGroups(ctx, enriched[i])
+			if gerr != nil {
+				return nil, gerr
+			}
+			if groups != nil {
+				if enriched[i].Metadata == nil {
+					enriched[i].Metadata = &spec.Metadata{Schema: metadataSchema, Instance: instanceFacts, Version: resolvedVersion}
+				}
+				enriched[i].Metadata.ResourceGroups = groups
 			}
 		}
 
@@ -677,6 +697,8 @@ func objectTypeForOperation(op spec.DDLOperation, extractedType string) string {
 		return "schema"
 	case spec.DDLOperationCreateSequence, spec.DDLOperationAlterSequence, spec.DDLOperationDropSequence:
 		return "sequence"
+	case spec.DDLOperationCreateResourceGroup, spec.DDLOperationAlterResourceGroup, spec.DDLOperationDropResourceGroup:
+		return "resource_group"
 	case spec.DDLOperationCreateMaterializedView, spec.DDLOperationDropMaterializedView, spec.DDLOperationRefreshMaterializedView, spec.DDLOperationAlterMaterializedView:
 		return "materialized_view"
 	case spec.DDLOperationCommentOn, spec.DDLOperationSecurityLabel:

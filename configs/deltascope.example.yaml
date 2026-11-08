@@ -1001,6 +1001,16 @@ rules:
     level: notice
     params:
 
+  ddl.create_resource_group.notice:
+    enabled: true
+    level: notice
+    params:
+
+  ddl.alter_resource_group.notice:
+    enabled: true
+    level: notice
+    params:
+
   # MySQL/TiDB alter action notice rules.
   ddl.alter.add_column.notice:
     enabled: true
@@ -1078,6 +1088,21 @@ rules:
     params:
 
   ddl.tidb.sequence.references.warn:
+    enabled: true
+    level: warning
+    params:
+
+  ddl.tidb.resource_group.valid:
+    enabled: true
+    level: blocker
+    params:
+
+  ddl.tidb.resource_group.burstable.warn:
+    enabled: true
+    level: warning
+    params:
+
+  ddl.tidb.resource_group.runaway.warn:
     enabled: true
     level: warning
     params:

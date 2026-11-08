@@ -171,8 +171,6 @@ func TestAuditSQLT03TiDBUnauditedBoundaries(t *testing.T) {
 		sql         string
 		wantFeature string
 	}{
-		{name: "resource group create", sql: "CREATE RESOURCE GROUP rg1 RU_PER_SEC=100;", wantFeature: "create_resource_group"},
-		{name: "resource group alter", sql: "ALTER RESOURCE GROUP rg1 RU_PER_SEC=200;", wantFeature: "alter_resource_group"},
 		{name: "partition maintenance vendor refusal", sql: "ALTER TABLE t REBUILD PARTITION p0;", wantFeature: "alter_table.rebuild_partition"},
 	}
 	for _, tc := range cases {

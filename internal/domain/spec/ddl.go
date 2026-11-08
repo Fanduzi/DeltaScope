@@ -124,6 +124,13 @@ type DDL struct {
 	// list, and every drop target. It is internal evidence (never
 	// serialized); definition and runtime facts live elsewhere (T21/#100).
 	Sequence *SequenceDeclaration `json:"-"`
+	// ResourceGroup carries the authored TiDB RU resource-group
+	// declaration on CREATE/ALTER/DROP RESOURCE GROUP — identity, guards,
+	// and the ordered option list. It is internal evidence (never
+	// serialized); catalog definitions and instance capability facts live
+	// elsewhere, and MySQL CPU resource groups are a different object
+	// family (T22/#101, T24).
+	ResourceGroup *ResourceGroupDeclaration `json:"-"`
 }
 
 // TemporaryScope identifies the parsed temporary-table scope on CREATE and
@@ -239,6 +246,8 @@ const (
 	DDLOperationAlterPlacementPolicy  DDLOperation = "alter_placement_policy"
 	DDLOperationDropPlacementPolicy   DDLOperation = "drop_placement_policy"
 	DDLOperationAlterRangePlacement   DDLOperation = "alter_range_placement"
+	DDLOperationCreateResourceGroup   DDLOperation = "create_resource_group"
+	DDLOperationAlterResourceGroup    DDLOperation = "alter_resource_group"
 	DDLOperationDropResourceGroup     DDLOperation = "drop_resource_group"
 
 	DDLOperationAlterIndex            DDLOperation = "alter_index"

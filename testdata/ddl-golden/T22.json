@@ -1,0 +1,578 @@
+{
+ "task_id": "T22",
+ "issue": 101,
+ "policy_profile": "t22-resource-group",
+ "description": "T22 TiDB 8.5 RU resource-group lifecycle and quota oracles. The manifest pins the frozen T22 contract: CREATE/ALTER/DROP RESOURCE GROUP reach kind=ddl with audited semantics on TiDB; authored RU_PER_SEC numeric and UNLIMITED stay distinct, bare BURSTABLE projects moderated, QUERY_LIMIT keeps typed runaway members; the resource-control capability gate tidb_enable_resource_control is a proven-refusal premise (known-OFF refuses before existence adjudication, unobserved owes unknown_resource_group_capability, never a guessed ON); the builtin default group is Reserved and its DROP is a proven refusal; unproven targets owe unknown_resource_group_state rather than a fabricated blocker or absence; proven refusals and guard no-ops suppress lifecycle notices; MySQL keeps a vendor boundary with boundary=vendor metadata for the TiDB RU forms while its own CPU VCPU family stays a parser error (T24 surface, untouched). BACKGROUND and SET RESOURCE GROUP stay bounded-outside the T22 denominator. metadata_cases encode the native probes whose oracles require the isolated TiDB 8.5 environment — none of them has run and none may be claimed as native PASS. CLI cases are provider-free offline contracts: no instance facts are observed, so each audited statement owes the capability gap plus the state gap. EXPECT FILLED: metadata_case expects completed from TiDB 8.5.0 native evidence plus the repaired contract — unvouched identities gap, never fabricate absence; a known-OFF gate refuses every lifecycle statement.",
+ "anchors": {
+  "mysql57": {
+   "service": "mysql57",
+   "container": "deltascope-ddl-golden-mysql57",
+   "image": "mysql:5.7.44",
+   "product": "mysql",
+   "version_contains": "5.7.44",
+   "database": "golden",
+   "exec_client": [
+    "mysql",
+    "-uroot",
+    "--default-character-set=utf8mb4"
+   ],
+   "needs_database_create": false,
+   "exec_password_env": "T21_MYSQL_PASSWORD"
+  },
+  "mysql80": {
+   "service": "mysql80",
+   "container": "deltascope-ddl-golden-mysql80",
+   "image": "mysql:8.0.46",
+   "product": "mysql",
+   "version_contains": "8.0.46",
+   "database": "golden",
+   "exec_client": [
+    "mysql",
+    "-uroot",
+    "--default-character-set=utf8mb4"
+   ],
+   "needs_database_create": false,
+   "exec_password_env": "T21_MYSQL_PASSWORD"
+  },
+  "mysql84": {
+   "service": "mysql84",
+   "container": "deltascope-ddl-golden-mysql84",
+   "image": "mysql:8.4.10",
+   "product": "mysql",
+   "version_contains": "8.4.10",
+   "database": "golden",
+   "exec_client": [
+    "mysql",
+    "-uroot",
+    "--default-character-set=utf8mb4"
+   ],
+   "needs_database_create": false,
+   "exec_password_env": "T21_MYSQL_PASSWORD"
+  },
+  "tidb85": {
+   "service": "tidb85",
+   "container": "deltascope-ddl-golden-tidb85",
+   "client_container": "deltascope-ddl-golden-tidb85-client",
+   "client_service": "tidb85-client",
+   "image": "pingcap/tidb:v8.5.0",
+   "product": "tidb",
+   "version_contains": "v8.5.0",
+   "database": "golden",
+   "exec_client": [
+    "mysql",
+    "--protocol=tcp",
+    "-h",
+    "tidb85",
+    "-P",
+    "4000",
+    "-uroot"
+   ],
+   "needs_database_create": true
+  }
+ },
+ "ddl_steps": [
+  {
+   "name": "clear-task-fixture",
+   "sql": "DROP DATABASE IF EXISTS t22fx",
+   "expect_rc": 0,
+   "verify": []
+  },
+  {
+   "name": "seed-fixture-schema",
+   "sql": "CREATE DATABASE t22fx",
+   "expect_rc": 0,
+   "verify": [
+    {
+     "assert": "fixture schema exists",
+     "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='t22fx'",
+     "expect": "1"
+    }
+   ]
+  },
+  {
+   "name": "clear-fixture-groups",
+   "sql": "DROP RESOURCE GROUP IF EXISTS t22fx_rg;DROP RESOURCE GROUP IF EXISTS t22fx_keep",
+   "expect_rc": 0,
+   "verify": []
+  }
+ ],
+ "syntax_negative": {
+  "sql": "CREATE RESOURCE GROUP t22fx_bad RU_PER_SEC",
+  "expect": {
+   "error_class": "1064",
+   "forbidden_markers": [
+    "Access denied",
+    "Connection refused",
+    "doesn't exist",
+    "already exists"
+   ]
+  }
+ },
+ "policy": {
+  "enable": {
+   "ddl.tidb.resource_group.valid": {
+    "level": "blocker"
+   },
+   "ddl.tidb.resource_group.burstable.warn": {
+    "level": "warning"
+   },
+   "ddl.tidb.resource_group.runaway.warn": {
+    "level": "warning"
+   }
+  }
+ },
+ "cli_cases": [
+  {
+   "id": "tidb-ru-first-path",
+   "dialect": "tidb",
+   "sql": "CREATE RESOURCE GROUP golden_rg RU_PER_SEC = 100;\nALTER RESOURCE GROUP golden_rg RU_PER_SEC = 200;",
+   "policy": "t22-resource-group",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 2,
+    "findings": 2,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": [
+     "unverified",
+     "unverified"
+    ],
+    "evidence_gaps": 4,
+    "fail_on_triggered": false,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.create_resource_group.notice",
+      "level": "notice"
+     },
+     {
+      "index": 1,
+      "rule_id": "ddl.alter_resource_group.notice",
+      "level": "notice"
+     }
+    ],
+    "evidence_gap_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.tidb.resource_group.valid",
+      "reason_code": "unknown_resource_group_capability",
+      "required_facts": [
+       "tidb_enable_resource_control"
+      ]
+     },
+     {
+      "index": 0,
+      "rule_id": "ddl.tidb.resource_group.valid",
+      "reason_code": "unknown_resource_group_state",
+      "required_facts": [
+       "resource_group.state"
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "id": "tidb-burstable-warn",
+   "dialect": "tidb",
+   "sql": "CREATE RESOURCE GROUP rg_burst RU_PER_SEC=1000 BURSTABLE;",
+   "policy": "t22-resource-group",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 2,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": [
+     "unverified"
+    ],
+    "evidence_gaps": 2,
+    "fail_on_triggered": false,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.tidb.resource_group.burstable.warn",
+      "level": "warning"
+     }
+    ]
+   }
+  },
+  {
+   "id": "tidb-runaway-kill-warn",
+   "dialect": "tidb",
+   "sql": "CREATE RESOURCE GROUP rg_run RU_PER_SEC=500 QUERY_LIMIT=(EXEC_ELAPSED='60s' ACTION=KILL);",
+   "policy": "t22-resource-group",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 2,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": [
+     "unverified"
+    ],
+    "evidence_gaps": 2,
+    "fail_on_triggered": false,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.tidb.resource_group.runaway.warn",
+      "level": "warning"
+     }
+    ]
+   }
+  },
+  {
+   "id": "tidb-drop-guarded",
+   "dialect": "tidb",
+   "sql": "DROP RESOURCE GROUP IF EXISTS rg;",
+   "policy": "t22-resource-group",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": [
+     "unverified"
+    ],
+    "evidence_gaps": 2,
+    "fail_on_triggered": false,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.drop_resource_group.notice",
+      "level": "notice"
+     }
+    ]
+   }
+  },
+  {
+   "id": "mysql-ru-vendor-boundary",
+   "dialect": "mysql",
+   "sql": "CREATE RESOURCE GROUP rg RU_PER_SEC=100;",
+   "policy": "t22-resource-group",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false
+   }
+  }
+ ],
+ "metadata_cases": [
+  {
+   "id": "tidb85-ru-first-path",
+   "anchor": "tidb85",
+   "dialect": "tidb",
+   "sql": "CREATE RESOURCE GROUP t22fx_rg RU_PER_SEC = 100;\nALTER RESOURCE GROUP t22fx_rg RU_PER_SEC = 200;",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 24000,
+    "user": "root",
+    "schema": "t22fx"
+   },
+   "policy": "t22-resource-group",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "pending_native": true,
+   "setup": [
+    {
+     "name": "resource-control-on",
+     "sql": "SHOW GLOBAL VARIABLES LIKE 'tidb_enable_resource_control'",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "capability row readable",
+       "sql": "SELECT COUNT(*) FROM information_schema.VARIABLES_INFO WHERE VARIABLE_NAME='tidb_enable_resource_control'",
+       "expect": "1"
+      }
+     ]
+    },
+    {
+     "name": "clear-fixture-group",
+     "sql": "DROP RESOURCE GROUP IF EXISTS t22fx_rg",
+     "expect_rc": 0,
+     "verify": []
+    }
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 2,
+    "findings": 2,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "evidence_gaps": 0,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.create_resource_group.notice",
+      "level": "notice"
+     },
+     {
+      "index": 1,
+      "rule_id": "ddl.alter_resource_group.notice",
+      "level": "notice"
+     }
+    ]
+   }
+  },
+  {
+   "id": "tidb85-catalog-definition",
+   "anchor": "tidb85",
+   "dialect": "tidb",
+   "sql": "ALTER RESOURCE GROUP t22fx_keep RU_PER_SEC = 500;",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 24000,
+    "user": "root",
+    "schema": "t22fx"
+   },
+   "policy": "t22-resource-group",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "pending_native": true,
+   "setup": [
+    {
+     "name": "seed-keep-group",
+     "sql": "CREATE RESOURCE GROUP IF NOT EXISTS t22fx_keep RU_PER_SEC=100 BURSTABLE",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "resource group row exists",
+       "sql": "SELECT COUNT(*) FROM information_schema.RESOURCE_GROUPS WHERE NAME='t22fx_keep'",
+       "expect": "1"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 2,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "evidence_gaps": 0,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.alter_resource_group.notice",
+      "level": "notice"
+     },
+     {
+      "index": 0,
+      "rule_id": "ddl.tidb.resource_group.burstable.warn",
+      "level": "warning"
+     }
+    ]
+   }
+  },
+  {
+   "id": "tidb85-drop-default-refused",
+   "anchor": "tidb85",
+   "dialect": "tidb",
+   "sql": "DROP RESOURCE GROUP default;",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 24000,
+    "user": "root",
+    "schema": "t22fx"
+   },
+   "policy": "t22-resource-group",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "pending_native": true,
+   "setup": [],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "evidence_gaps": 0,
+    "fail_on_triggered": true,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.tidb.resource_group.valid",
+      "level": "blocker"
+     }
+    ]
+   }
+  },
+  {
+   "id": "tidb85-alter-absent-blocks",
+   "anchor": "tidb85",
+   "dialect": "tidb",
+   "sql": "ALTER RESOURCE GROUP t22fx_ghost RU_PER_SEC=10;",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 24000,
+    "user": "root",
+    "schema": "t22fx"
+   },
+   "policy": "t22-resource-group",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "pending_native": true,
+   "setup": [
+    {
+     "name": "ensure-ghost-absent",
+     "sql": "DROP RESOURCE GROUP IF EXISTS t22fx_ghost",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "ghost group absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.RESOURCE_GROUPS WHERE NAME='t22fx_ghost'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "evidence_gaps": 0,
+    "fail_on_triggered": true,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.tidb.resource_group.valid",
+      "level": "blocker"
+     }
+    ]
+   }
+  },
+  {
+   "id": "tidb85-capability-off-refusal",
+   "anchor": "tidb85",
+   "dialect": "tidb",
+   "sql": "CREATE RESOURCE GROUP t22fx_off RU_PER_SEC=10;",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 24000,
+    "user": "root",
+    "schema": "t22fx"
+   },
+   "policy": "t22-resource-group",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "pending_native": true,
+   "setup": [
+    {
+     "name": "disable-resource-control",
+     "sql": "SET GLOBAL tidb_enable_resource_control=OFF",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "gate observed OFF",
+       "sql": "SHOW GLOBAL VARIABLES LIKE 'tidb_enable_resource_control'",
+       "expect": "OFF"
+      }
+     ]
+    }
+   ],
+   "teardown": [
+    {
+     "name": "restore-resource-control",
+     "sql": "SET GLOBAL tidb_enable_resource_control=ON",
+     "expect_rc": 0
+    }
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "evidence_gaps": 0,
+    "fail_on_triggered": true,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.tidb.resource_group.valid",
+      "level": "blocker"
+     }
+    ]
+   }
+  }
+ ],
+ "required_case_ids": [
+  "T22.db.mysql57.ddl",
+  "T22.db.mysql57.syntax_negative",
+  "T22.db.mysql80.ddl",
+  "T22.db.mysql80.syntax_negative",
+  "T22.db.mysql84.ddl",
+  "T22.db.mysql84.syntax_negative",
+  "T22.db.tidb85.ddl",
+  "T22.db.tidb85.syntax_negative",
+  "T22.cli.tidb-ru-first-path",
+  "T22.cli.tidb-burstable-warn",
+  "T22.cli.tidb-runaway-kill-warn",
+  "T22.cli.tidb-drop-guarded",
+  "T22.cli.mysql-ru-vendor-boundary",
+  "T22.meta.tidb85-ru-first-path",
+  "T22.meta.tidb85-catalog-definition",
+  "T22.meta.tidb85-drop-default-refused",
+  "T22.meta.tidb85-alter-absent-blocks",
+  "T22.meta.tidb85-capability-off-refusal"
+ ]
+}

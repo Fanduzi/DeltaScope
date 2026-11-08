@@ -97,6 +97,15 @@ type batchState struct {
 	// sequence lookup — same once-per-request identity cache as
 	// Metadata.Objects. Nil falls back to the provider's ObjectResolver.
 	sequenceResolver func(ctx context.Context, lookup spec.ObjectLookupRequest) (*spec.ObjectSnapshot, error)
+	// resourceGroupEntries holds the batch's ordered knowledge of each
+	// TiDB resource-group identity — present/absent/unknown plus the
+	// proven definition. Groups are globally namespaced (T22/#101).
+	resourceGroupEntries map[string]*batchResourceGroupEntry
+	// resourceGroupResolver, when set, is the same once-per-request
+	// objectCache-backed lookup as sequenceResolver — a resource-group
+	// read never asks the provider twice. Nil falls back to the
+	// provider's ObjectResolver.
+	resourceGroupResolver func(ctx context.Context, lookup spec.ObjectLookupRequest) (*spec.ObjectSnapshot, error)
 	// resolvedVersion is the request's already-parsed version fact. Rules read
 	// the same fact from statement metadata. apply still receives the original
 	// statement, so RENAME COLUMN applicability reads this copy. Nil means the
@@ -132,14 +141,15 @@ type batchState struct {
 
 func newBatchState(dialect spec.Dialect, schema string, provider MetadataProvider) *batchState {
 	return &batchState{
-		provider:           provider,
-		dialect:            dialect,
-		schema:             strings.TrimSpace(schema),
-		entries:            make(map[batchTableKey]*batchTableEntry),
-		tempEntries:        make(map[batchTableKey]*batchTableEntry),
-		invalidatedSchemas: make(map[string]struct{}),
-		schemaEntries:      make(map[string]*batchSchemaEntry),
-		sequenceEntries:    make(map[sequenceKey]*batchSequenceEntry),
+		provider:             provider,
+		dialect:              dialect,
+		schema:               strings.TrimSpace(schema),
+		entries:              make(map[batchTableKey]*batchTableEntry),
+		tempEntries:          make(map[batchTableKey]*batchTableEntry),
+		invalidatedSchemas:   make(map[string]struct{}),
+		schemaEntries:        make(map[string]*batchSchemaEntry),
+		sequenceEntries:      make(map[sequenceKey]*batchSequenceEntry),
+		resourceGroupEntries: make(map[string]*batchResourceGroupEntry),
 	}
 }
 
@@ -474,6 +484,9 @@ func (s *batchState) apply(ctx context.Context, statement spec.Statement) error 
 	case spec.DDLOperationCreateSequence, spec.DDLOperationAlterSequence,
 		spec.DDLOperationDropSequence:
 		return s.applySequenceStatement(ctx, statement)
+	case spec.DDLOperationCreateResourceGroup, spec.DDLOperationAlterResourceGroup,
+		spec.DDLOperationDropResourceGroup:
+		return s.applyResourceGroupStatement(ctx, statement)
 	default:
 		// No modeled transition: schema-scoped operations invalidate their
 		// scope, table-bound operations invalidate their targets.

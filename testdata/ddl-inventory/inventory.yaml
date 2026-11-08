@@ -1838,12 +1838,12 @@ rows:
     subactions: ["CREATE RESOURCE GROUP", "RU_PER_SEC", "PRIORITY", "BURSTABLE", "QUERY_LIMIT"]
     sql_shape: "CREATE RESOURCE GROUP rg1 RU_PER_SEC = 100"
     prerequisites: "resource-control feature availability"
-    status: parse_only
-    status_evidence: "2026-09-22 CLI probe: parses silently with zero findings; RU semantics unchecked. 2026-09-23 T03 (#82): valid CREATE RESOURCE GROUP forms now carry unsupported evidence (create_resource_group) and coverage=incomplete until T22 models them"
+    status: semantically_checked
+    status_evidence: "2026-11-08 T22 (#101) offline implementation candidate: typed option declarations modeled end to end — ordered option list (RU_PER_SEC numeric/UNLIMITED distinct, PRIORITY, BURSTABLE three-state, QUERY_LIMIT typed runaway members, BACKGROUND kept as bounded unrecognized member), IF NOT EXISTS guard, globally-namespaced identity, the tidb_enable_resource_control capability gate refuses on known-OFF before existence adjudication and owes unknown_resource_group_capability when unobserved; ddl.tidb.resource_group.valid adjudicates proven contracts (duplicate create without the guard blocks, unproven targets owe unknown_resource_group_state); ddl.tidb.resource_group.burstable.warn and ddl.tidb.resource_group.runaway.warn fire on authored declarations; MySQL keeps a vendor boundary with boundary=vendor metadata. 2026-09-23 T03 (#82): valid CREATE RESOURCE GROUP forms carried unsupported evidence (create_resource_group) and coverage=incomplete. 2026-09-22 CLI probe: parses silently with zero findings"
     targets: "group identity, RU/burst/priority/runaway attributes (distinct from MySQL CPU fields)"
     acceptance:
-      dimensions: "RU attribute checks, no MySQL-CPU-field reuse"
-      refs: ["missing: owner adds fixtures"]
+      dimensions: "typed options, guards, capability premise, ordered post-state, outcome-consistent notice; workload effects unmodeled, native oracles NATIVE-PENDING"
+      refs: ["file:internal/domain/spec/resource_group.go", "file:internal/application/audit/batch_state_resource_group.go", "file:internal/application/audit/batch_state_t22_test.go", "file:internal/application/audit/audit_t22_first_test.go", "file:internal/domain/rule/ddl/resource_group_rules.go", "file:internal/infrastructure/metadata/mysql/provider_t22_test.go", "file:internal/application/auditmeta/audit_t22_test.go", "file:internal/infrastructure/parser/tidb/extractor_t22_test.go", "file:testdata/ddl-golden/T22.json", "file:testdata/sql-corpus/tidb/ddl/findings/resource_group_lifecycle_rules.sql"]
     owner: T22
 
   - id: tidb.alter-resource-group
@@ -1854,12 +1854,12 @@ rows:
     subactions: ["ALTER RESOURCE GROUP ... RU_PER_SEC/PRIORITY/BURSTABLE/QUERY_LIMIT"]
     sql_shape: "ALTER RESOURCE GROUP rg1 RU_PER_SEC = 200"
     prerequisites: "none"
-    status: parse_only
-    status_evidence: "2026-09-22 CLI probe: parses silently with zero findings. 2026-09-23 T03 (#82): valid ALTER RESOURCE GROUP forms now carry unsupported evidence (alter_resource_group) and coverage=incomplete until T22 models them"
+    status: semantically_checked
+    status_evidence: "2026-11-08 T22 (#101) offline implementation candidate: authored option transitions modeled — the frozen CREATE 100 to ALTER 200 path preserves each authored rate at the extractor seam, the capability gate and proven-absent target adjudication precede attribute checks, IF EXISTS absorbs a proven-absent target into a guard no-op that suppresses the notice (never a success claim), and the catalog definition read publishes observed members without conflating omitted/NULL/zero. 2026-09-23 T03 (#82): valid ALTER RESOURCE GROUP forms carried unsupported evidence (alter_resource_group) and coverage=incomplete. 2026-09-22 CLI probe: parses silently with zero findings"
     targets: "group identity, attribute transitions"
     acceptance:
-      dimensions: "attribute-change checks"
-      refs: ["missing: owner adds fixtures"]
+      dimensions: "attribute-change checks, guard no-op, refusal preservation; native oracles NATIVE-PENDING"
+      refs: ["file:internal/domain/spec/resource_group.go", "file:internal/application/audit/batch_state_resource_group.go", "file:internal/application/audit/batch_state_t22_test.go", "file:internal/application/audit/audit_t22_first_test.go", "file:internal/domain/rule/ddl/resource_group_rules.go", "file:internal/infrastructure/metadata/mysql/provider_t22_test.go", "file:internal/application/auditmeta/audit_t22_test.go", "file:internal/infrastructure/parser/tidb/extractor_t22_test.go", "file:testdata/ddl-golden/T22.json", "file:testdata/sql-corpus/tidb/ddl/findings/resource_group_lifecycle_rules.sql"]
     owner: T22
 
   - id: tidb.drop-resource-group
@@ -1870,12 +1870,12 @@ rows:
     subactions: ["DROP RESOURCE GROUP"]
     sql_shape: "DROP RESOURCE GROUP rg1"
     prerequisites: "none"
-    status: generic_notice
-    status_evidence: "2026-09-22 CLI probe: only ddl.drop_resource_group.notice fires"
+    status: semantically_checked
+    status_evidence: "2026-11-08 T22 (#101) offline implementation candidate: existence and reserved-group adjudication modeled — a proven-absent target blocks without IF EXISTS while the guard absorbs it into a no-op, the builtin default group is Reserved and its drop is a proven refusal (the notice suppresses rather than claiming success), batch-dropped identities resolve ahead of provider reads, and the capability gate refuses on known-OFF before existence checks. 2026-09-22 CLI probe: only ddl.drop_resource_group.notice fires"
     targets: "group identity"
     acceptance:
-      dimensions: "lifecycle classification"
-      refs: ["missing: owner adds fixtures"]
+      dimensions: "lifecycle classification, reserved-group refusal, guard no-op; native oracles NATIVE-PENDING"
+      refs: ["file:internal/domain/spec/resource_group.go", "file:internal/application/audit/batch_state_resource_group.go", "file:internal/application/audit/batch_state_t22_test.go", "file:internal/application/audit/audit_t22_first_test.go", "file:internal/domain/rule/ddl/resource_group_rules.go", "file:internal/infrastructure/metadata/mysql/provider_t22_test.go", "file:internal/application/auditmeta/audit_t22_test.go", "file:testdata/ddl-golden/T22.json", "file:testdata/sql-corpus/tidb/ddl/findings/resource_group_lifecycle_rules.sql"]
     owner: T22
 
   # ================= TiDB: vendor boundaries =================

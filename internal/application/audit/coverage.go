@@ -422,6 +422,18 @@ func statementCoverageAspects(dialect spec.Dialect, statement spec.Statement) []
 			gaps = append(gaps, aspectGap(feature, vendor, map[string]any{"aspect": "option"}))
 		}
 	}
+	if ddl.ResourceGroup != nil {
+		// BACKGROUND is parsed but outside the T22 audit surface; an
+		// option Tp the grammar never produces lands on unrecognized.
+		// Both stay recognized evidence — bounded unaudited aspects under
+		// TiDB, vendor boundaries under MySQL — never silent acceptance.
+		for _, kind := range ddl.ResourceGroup.UnmodeledOptionKinds() {
+			gaps = append(gaps, aspectGap(
+				fmt.Sprintf("%s.option.%s", ddl.Operation, kind), dialect == spec.DialectMySQL,
+				map[string]any{"aspect": "option"},
+			))
+		}
+	}
 	for _, declaration := range ddl.TTL {
 		// MySQL CREATE ignores a whole TTL feature comment. A bare or
 		// unattributable clause is a vendor boundary, while a parsed member

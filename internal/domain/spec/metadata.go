@@ -69,6 +69,12 @@ type Metadata struct {
 	// facts (current/next value, persisted position) are absent by design;
 	// rules that need them emit bounded evidence gaps (T21/#100).
 	Sequences map[string]*SequenceState `json:"sequences,omitempty"`
+	// ResourceGroups binds each TiDB resource-group identity the statement
+	// touches to its ordered pre-state, keyed by lowercase group name —
+	// resource groups are globally namespaced, never schema-qualified.
+	// Values are owned projections — never live registry pointers. The
+	// resource-control capability premise lives in Instance (T22/#101).
+	ResourceGroups map[string]*ResourceGroupState `json:"resource_groups,omitempty"`
 }
 
 // MetadataSchemaTarget is the ordered schema binding accessor rules use —
@@ -150,6 +156,17 @@ type InstanceFacts struct {
 	// row.
 	TiDBEnableCheckConstraint      bool `json:"tidb_enable_check_constraint,omitempty"`
 	TiDBEnableCheckConstraintKnown bool `json:"tidb_enable_check_constraint_known,omitempty"`
+
+	// TiDBEnableResourceControl is the observed
+	// tidb_enable_resource_control value — TiDB's gate for the whole
+	// resource-group surface (CREATE/ALTER/DROP RESOURCE GROUP and RU
+	// accounting). OFF means resource-group DDL refuses with a
+	// resource-control-disabled error; the Known bit separates "probed
+	// off" from "never probed" so an unobserved value resolves to
+	// undecidable, never a guessed ON. TiDB only; MySQL never returns
+	// the row.
+	TiDBEnableResourceControl      bool `json:"tidb_enable_resource_control,omitempty"`
+	TiDBEnableResourceControlKnown bool `json:"tidb_enable_resource_control_known,omitempty"`
 }
 
 // TTLConfig is the proven TTL configuration recorded by the catalog or a
@@ -555,6 +572,10 @@ type ObjectSnapshot struct {
 	// SequenceReferencesUnknown reports the same unvouched shape explicitly.
 	SequenceReferences        []SequenceRefEdge `json:"-"`
 	SequenceReferencesUnknown bool              `json:"-"`
+	// ResourceGroup carries the provider-proven resource-group definition
+	// when the resolved object is a TiDB resource group — the bounded
+	// information_schema.resource_groups row shape (T22/#101).
+	ResourceGroup *ResourceGroupDefinition `json:"-"`
 }
 
 // ObjectLookupRequest describes one object to resolve from live metadata.

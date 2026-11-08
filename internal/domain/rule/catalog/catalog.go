@@ -561,6 +561,8 @@ func categoryForDDLRule(ruleID string) string {
 		{"drop_role", "user_management"},
 		{"grant", "privilege"},
 		{"revoke", "privilege"},
+		{"create_resource_group", "resource_management"},
+		{"alter_resource_group", "resource_management"},
 		{"drop_resource_group", "resource_management"},
 		{"create_placement_policy", "resource_management"},
 		{"alter_placement_policy", "resource_management"},

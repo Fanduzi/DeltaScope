@@ -198,7 +198,7 @@ var _ appaudit.MetadataProvider = (*Provider)(nil)
 func (p *Provider) LoadInstanceFacts(ctx context.Context, _ spec.Dialect, _ string) (*spec.InstanceFacts, error) {
 	rows, err := p.db.QueryContext(ctx, `
 		show variables where Variable_name in
-		('version','character_set_database','character_set_server','collation_server','default_collation_for_utf8mb4','innodb_large_prefix','innodb_default_row_format','innodb_adaptive_hash_index','innodb_page_size','tidb_enable_clustered_index','restrict_fk_on_non_standard_key','tidb_enable_check_constraint')
+		('version','character_set_database','character_set_server','collation_server','default_collation_for_utf8mb4','innodb_large_prefix','innodb_default_row_format','innodb_adaptive_hash_index','innodb_page_size','tidb_enable_clustered_index','restrict_fk_on_non_standard_key','tidb_enable_check_constraint','tidb_enable_resource_control')
 	`)
 	if err != nil {
 		return nil, fmt.Errorf("query instance facts: %w", err)
@@ -252,6 +252,12 @@ func (p *Provider) LoadInstanceFacts(ctx context.Context, _ spec.Dialect, _ stri
 			// MySQL never returns the row; unobserved stays Known=false.
 			facts.TiDBEnableCheckConstraint = normalizeOnOff(value)
 			facts.TiDBEnableCheckConstraintKnown = true
+		case "tidb_enable_resource_control":
+			// TiDB's resource-control gate (v8.5.0) — OFF refuses every
+			// CREATE/ALTER/DROP RESOURCE GROUP before existence checks.
+			// MySQL never returns the row; unobserved stays Known=false.
+			facts.TiDBEnableResourceControl = normalizeOnOff(value)
+			facts.TiDBEnableResourceControlKnown = true
 		}
 	}
 	if err := rows.Err(); err != nil {
@@ -1729,6 +1735,13 @@ func (p *Provider) ResolveObject(ctx context.Context, dialect spec.Dialect, requ
 			return snapshot, nil
 		}
 		return p.loadSequenceObject(ctx, request, snapshot)
+	case "resource_group":
+		if dialect != spec.DialectTiDB {
+			// MySQL's CPU resource-group family is a different surface —
+			// never emit the TiDB RU catalog query under another dialect.
+			return snapshot, nil
+		}
+		return p.loadResourceGroupObject(ctx, request, snapshot)
 	}
 	return snapshot, nil
 }
@@ -1774,6 +1787,70 @@ func (p *Provider) loadSequenceObject(ctx context.Context, request spec.ObjectLo
 	// edge list stays unvouched (never a proven-empty claim).
 	snapshot.SequenceReferencesUnknown = true
 	return snapshot, nil
+}
+
+// loadResourceGroupObject resolves one TiDB resource-group identity
+// through information_schema.RESOURCE_GROUPS — the bounded
+// name/RU_PER_SEC/PRIORITY/BURSTABLE/QUERY_LIMIT read shape (T22/#101).
+// A zero-row answer stays unknown rather than fabricating absence — the
+// catalog filters by privilege, so an invisible group is not a
+// proven-missing one. NULL members map to unproven fields (nil), never
+// to guessed defaults; RU_PER_SEC keeps the varchar 'UNLIMITED' token
+// distinct from a numeric rate. BACKGROUND is outside the T22 surface
+// and is never queried. Query, scan, and driver errors propagate wrapped
+// with identity context and are never cached as absence.
+func (p *Provider) loadResourceGroupObject(ctx context.Context, request spec.ObjectLookupRequest, snapshot *spec.ObjectSnapshot) (*spec.ObjectSnapshot, error) {
+	row := p.db.QueryRowContext(ctx, `
+		select name, ru_per_sec, priority, burstable, query_limit
+		from information_schema.resource_groups
+		where name = ?
+	`, request.Name)
+	var name, ruPerSec, priority, burstable, queryLimit sql.NullString
+	if err := row.Scan(&name, &ruPerSec, &priority, &burstable, &queryLimit); err != nil {
+		if err == sql.ErrNoRows {
+			return snapshot, nil
+		}
+		return nil, fmt.Errorf("query resource group snapshot %s: %w", request.Name, err)
+	}
+	snapshot.Status = spec.MetadataStatusConfirmed
+	snapshot.Exists = true
+	snapshot.Name = name.String
+	definition := &spec.ResourceGroupDefinition{QueryLimit: nullStringPtr(queryLimit)}
+	if priority.Valid {
+		definition.Priority = strings.ToUpper(strings.TrimSpace(priority.String))
+	}
+	if burstable.Valid {
+		// The catalog stores the burst mode as MODERATED/UNLIMITED — both
+		// mean burst-capable; any other token or NULL stays unproven.
+		switch strings.ToUpper(strings.TrimSpace(burstable.String)) {
+		case "MODERATED", "UNLIMITED":
+			enabled := true
+			definition.Burstable = &enabled
+		}
+	}
+	if ruPerSec.Valid {
+		switch value := strings.TrimSpace(ruPerSec.String); {
+		case strings.EqualFold(value, "unlimited"):
+			definition.RUUnlimited = true
+		default:
+			if parsed, parseErr := strconv.ParseUint(value, 10, 64); parseErr == nil {
+				definition.RUPerSec = &parsed
+			}
+			// An unrecognized token leaves both members nil — unproven,
+			// never a conflated zero.
+		}
+	}
+	snapshot.ResourceGroup = definition
+	return snapshot, nil
+}
+
+// nullStringPtr projects a nullable catalog string; NULL stays unproven.
+func nullStringPtr(v sql.NullString) *string {
+	if !v.Valid {
+		return nil
+	}
+	value := v.String
+	return &value
 }
 
 // nullInt64Ptr projects a nullable catalog number into the definition's
