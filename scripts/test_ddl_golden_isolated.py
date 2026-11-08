@@ -17,7 +17,9 @@ import subprocess
 import sys
 import tempfile
 import time
+import types
 import unittest
+import unittest.mock
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "scripts"))
@@ -1287,6 +1289,157 @@ class TestIncompleteStatusPropagation(unittest.TestCase):
         actions = [a["action"] for a in disk["actions"]]
         self.assertIn("volume.inuse.v-anon", actions)
         self.assertIn("volume.rm.v-anon", actions)
+
+
+if __name__ == "__main__":
+    unittest.main()
+
+
+class TestLoadFailureLockRelease(unittest.TestCase):
+    """R15: a post-acquire load failure must release the held lock, so a
+    corrected same-process retry is not refused by a phantom holder.
+
+    `_drive` invokes iso.main() in this very process per command — the
+    same-process entry convention the leak violates. On the unfixed
+    tool each scenario dies at a 2s phantom timeout; on the fixed tool
+    the retry acquires immediately."""
+
+    def setUp(self):
+        self._orig_wait = os.environ.get("DS_ISO_LOCK_WAIT_SEC")
+        os.environ["DS_ISO_LOCK_WAIT_SEC"] = "2"
+
+    def tearDown(self):
+        if self._orig_wait is None:
+            os.environ.pop("DS_ISO_LOCK_WAIT_SEC", None)
+        else:
+            os.environ["DS_ISO_LOCK_WAIT_SEC"] = self._orig_wait
+
+    def _drive(self, tmp, state, *commands, run_id=RUN, daemon=DAEMON,
+               owner="tester"):
+        """Same in-process entry boundary as the earlier classes."""
+        orig_argv, orig_lm, orig_rc = (
+            sys.argv, iso.dg.load_manifest, iso.dg.run_cmd)
+
+        def fake_run_cmd(args, cwd=None, timeout=120, stdin_text=None,
+                         env=None):
+            args = list(args)
+            if args[:2] == ["docker", "compose"]:
+                if "up" in args:
+                    if state.fail_next_up:
+                        state.fail_next_up = False
+                        return 1, "", "compose up failed (fake)"
+                    state.simulate_up()
+                    return 0, "", ""
+                return 0, "", ""
+            return state.dispatch(args, env=env)
+
+        iso.dg.load_manifest = lambda task: MANIFEST
+        iso.dg.run_cmd = fake_run_cmd
+        try:
+            for cmd in commands:
+                sys.argv = [
+                    "ddl_golden_isolated.py",
+                    "--run-id", run_id, "--daemon", daemon,
+                    "--owner", owner, "--artifact-dir", str(tmp), cmd]
+                iso.main()
+        finally:
+            sys.argv, iso.dg.load_manifest, iso.dg.run_cmd = (
+                orig_argv, orig_lm, orig_rc)
+
+    def test_corrupt_ledger_failure_releases_lock_same_process(self):
+        """A: entry acquires the lock, then refuses on corrupt JSON.
+        After the caller restores the fixture bytes, a same-process
+        retry acquires the same sidecar instead of timing out."""
+        tmp = tempfile.mkdtemp()
+        state = FakeDaemon()
+        self._drive(tmp, state, "up")
+        receipts = pathlib.Path(tmp) / "receipts.json"
+        good = receipts.read_bytes()
+        sidecar = receipts.with_name(receipts.name + ".lock")
+        self.assertTrue(sidecar.exists())   # proof the entry acquired
+        ino = sidecar.stat().st_ino
+        containers_before = dict(state.containers)
+        receipts.write_text("{corrupt")
+        with self.assertRaises(SystemExit) as cm:
+            self._drive(tmp, state, "up")
+        self.assertIn("unreadable", str(cm.exception))
+        # refused entry: zero resource side effects, ledger bytes intact
+        self.assertEqual(dict(state.containers), containers_before)
+        receipts.write_bytes(good)
+        self.assertTrue(sidecar.exists())
+        self.assertEqual(sidecar.stat().st_ino, ino)   # never unlinked
+        self._drive(tmp, state, "up")   # same process — must not time out
+        disk = json.loads(receipts.read_text())
+        self.assertEqual(len(disk["generations"]), 2)
+
+    def test_binding_mismatch_failure_releases_lock_same_process(self):
+        """B: entry acquires, then refuses on an owner binding mismatch.
+        Correcting only the caller's argument lets the retry proceed —
+        the ledger's recorded identity is never rewritten to match."""
+        tmp = tempfile.mkdtemp()
+        state = FakeDaemon()
+        self._drive(tmp, state, "up")
+        with self.assertRaises(SystemExit) as cm:
+            self._drive(tmp, state, "up", owner="someone-else")
+        self.assertIn("identity mismatch", str(cm.exception))
+        self._drive(tmp, state, "up")
+        disk = json.loads(
+            (pathlib.Path(tmp) / "receipts.json").read_text())
+        self.assertEqual(disk["owner"], "tester")
+        self.assertEqual(len(disk["generations"]), 2)
+
+    def test_non_systemexit_load_error_releases_lock(self):
+        """C: a load-phase error that is NOT a SystemExit (mocked read
+        failure) must also release — the boundary catches
+        BaseException, not only the tool's own refusal paths."""
+        tmp = tempfile.mkdtemp()
+        state = FakeDaemon()
+        self._drive(tmp, state, "up")
+        receipts = pathlib.Path(tmp) / "receipts.json"
+        good = receipts.read_bytes()
+        with unittest.mock.patch.object(
+                pathlib.Path, "read_bytes",
+                side_effect=RuntimeError("disk gone (mock)")):
+            with self.assertRaises(RuntimeError):
+                self._drive(tmp, state, "up")
+        # ledger untouched by the aborted entry
+        self.assertEqual(receipts.read_bytes(), good)
+        self._drive(tmp, state, "up")
+        disk = json.loads(receipts.read_text())
+        self.assertEqual(len(disk["generations"]), 2)
+
+    @unittest.skipUnless(hasattr(iso, "fcntl") and iso.fcntl,
+                         "POSIX flock required")
+    def test_successful_load_keeps_lock_held_until_release(self):
+        """Control: after load_run returns, the lock is still held for
+        dispatch — the new exception boundary must not unlock early.
+        A competing flock on a fresh fd must fail while held and
+        succeed after release_ledger_lock."""
+        tmp = tempfile.mkdtemp()
+        state = FakeDaemon()
+        self._drive(tmp, state, "up")
+        args = types.SimpleNamespace(
+            run_id=RUN, daemon=DAEMON, owner="tester",
+            artifact_dir=tmp, receipts=None, command="up", task="T21")
+        run = iso.load_run(args)
+        try:
+            self.assertIsNotNone(run._lock_fd)
+            fd2 = os.open(run.lock_path, os.O_RDWR)
+            try:
+                with self.assertRaises(BlockingIOError):
+                    iso.fcntl.flock(
+                        fd2, iso.fcntl.LOCK_EX | iso.fcntl.LOCK_NB)
+            finally:
+                os.close(fd2)
+        finally:
+            run.release_ledger_lock()
+        self.assertIsNone(run._lock_fd)
+        fd3 = os.open(run.lock_path, os.O_RDWR)
+        try:
+            iso.fcntl.flock(fd3, iso.fcntl.LOCK_EX | iso.fcntl.LOCK_NB)
+            iso.fcntl.flock(fd3, iso.fcntl.LOCK_UN)
+        finally:
+            os.close(fd3)
 
 
 if __name__ == "__main__":

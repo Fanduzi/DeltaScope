@@ -897,42 +897,52 @@ def load_run(args):
     # to the resolved receipts path, so read/lock/write never split
     # across different files.
     run.acquire_ledger_lock()
-    if source.exists():
-        try:
-            raw = source.read_bytes()
-        except OSError as exc:
+    try:
+        if source.exists():
+            try:
+                raw = source.read_bytes()
+            except OSError as exc:
+                raise SystemExit(
+                    f"[iso][FAIL] cannot read ledger {source}: {exc}")
+            try:
+                data = json.loads(raw.decode("utf-8"))
+            except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+                raise SystemExit(
+                    f"[iso][FAIL] ledger {source} unreadable — refusing to "
+                    f"reinitialise over it: {exc}")
+            if not isinstance(data, dict):
+                raise SystemExit(
+                    f"[iso][FAIL] ledger {source} is not an object — "
+                    "refusing to reinitialise over it")
+            mismatches = []
+            for field, want in (("run_id", run.run_id),
+                                ("project", run.run_id),
+                                ("daemon_endpoint", run.daemon),
+                                ("owner", run.owner)):
+                got = data.get(field)
+                if got != want:
+                    mismatches.append(f"{field}={got!r} expected {want!r}")
+            if mismatches:
+                raise SystemExit(
+                    f"[iso][FAIL] ledger identity mismatch: {mismatches}")
+            run.receipts = data
+            run._ledger_snapshot = raw
+        elif args.receipts:
             raise SystemExit(
-                f"[iso][FAIL] cannot read ledger {source}: {exc}")
-        try:
-            data = json.loads(raw.decode("utf-8"))
-        except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+                f"[iso][FAIL] explicit --receipts {source} does not exist")
+        elif args.command in ("stop", "rm", "rmvolumes"):
             raise SystemExit(
-                f"[iso][FAIL] ledger {source} unreadable — refusing to "
-                f"reinitialise over it: {exc}")
-        if not isinstance(data, dict):
-            raise SystemExit(
-                f"[iso][FAIL] ledger {source} is not an object — "
-                "refusing to reinitialise over it")
-        mismatches = []
-        for field, want in (("run_id", run.run_id),
-                            ("project", run.run_id),
-                            ("daemon_endpoint", run.daemon),
-                            ("owner", run.owner)):
-            got = data.get(field)
-            if got != want:
-                mismatches.append(f"{field}={got!r} expected {want!r}")
-        if mismatches:
-            raise SystemExit(
-                f"[iso][FAIL] ledger identity mismatch: {mismatches}")
-        run.receipts = data
-        run._ledger_snapshot = raw
-    elif args.receipts:
-        raise SystemExit(
-            f"[iso][FAIL] explicit --receipts {source} does not exist")
-    elif args.command in ("stop", "rm", "rmvolumes"):
-        raise SystemExit(
-            f"[iso][FAIL] no ledger at {run.receipts_path} — teardown "
-            "has no registered objects to consume")
+                f"[iso][FAIL] no ledger at {run.receipts_path} — teardown "
+                "has no registered objects to consume")
+    except BaseException:
+        # main() only releases after dispatch begins. A load-time
+        # refusal (SystemExit) or unexpected error would otherwise leak
+        # the held fd, and a same-process caller retrying after fixing
+        # the cause would be refused by its own abandoned lock. Release
+        # on failure only: on success the lock transfers to main()'s
+        # finally unchanged.
+        run.release_ledger_lock()
+        raise
     return run
 
 

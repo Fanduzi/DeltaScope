@@ -463,6 +463,21 @@ Both repairs are verified offline only (51 fake-daemon contract
 cases including real-`main()` subprocess lock races); no real
 daemon/database/resource action was taken or is claimed.
 
+R15 follow-up (2026-11-08): the R14 differential audit found one
+remaining hole — a `load_run` failure after lock acquisition (corrupt
+ledger, identity mismatch, unreadable file) leaked the held lock fd,
+because `main()`'s finally only covers the dispatch phase. Standalone
+CLI processes were unaffected (OS reclaims at exit), but the
+in-process `iso.main()` convention used by the test driver would see
+every later retry on that ledger refused by its own abandoned lock.
+`load_run` now wraps the post-acquire read/initialise/validate block
+in a `BaseException` boundary that releases the lock and re-raises
+the original failure unchanged; a successful load still transfers
+lock ownership to `main()`'s finally. Verified offline (55 cases:
+corrupt-JSON, binding-mismatch and non-SystemExit load failures each
+release for a corrected same-process retry, and a control proves the
+lock stays held from successful load through dispatch).
+
 ## Links
 
 - Manifest: `testdata/ddl-golden/T23.json`
