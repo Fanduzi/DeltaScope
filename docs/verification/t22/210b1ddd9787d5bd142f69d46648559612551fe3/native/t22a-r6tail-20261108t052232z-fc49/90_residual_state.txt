@@ -1,0 +1,12 @@
+R6-tail differential residual state (post-teardown):
+- containers: 0
+- volumes: exactly the 8 protected volumes (hash list identical to initial inventory)
+- networks: bridge/host/none only — the run project network was removed
+- run artifacts kept: failed-up attempt dir t22a-r6tail-20261108T052156z-4ba3
+  (uppercase RUN_ID rejected by compose project naming; receipts+override retained)
+- diff/ probes: P1 refused clause -> [valid blocker]; P2 legal KILL -> runaway.warn;
+  P3 OFF + catalog BURSTABLE -> blocker + catalog warn survives;
+  P3b OFF + declared BURSTABLE -> blocker only (declared suppressed)
+- capability restored ON (@@GLOBAL readback = 1) before teardown
+- CLI: bin/deltascope sha256 3aa3db60bf1bb8740a064649f6f654ae10b26e35ae0e7302b916f64bae8e47db
+  built at HEAD 210b1ddd9787d5bd142f69d46648559612551fe3 (CGO_ENABLED=0, go1.26.1)

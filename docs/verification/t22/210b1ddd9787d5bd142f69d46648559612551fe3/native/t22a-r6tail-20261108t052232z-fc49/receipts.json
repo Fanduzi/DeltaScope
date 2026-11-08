@@ -1,0 +1,282 @@
+{
+  "run_id": "t22a-r6tail-20261108t052232z-fc49",
+  "daemon_endpoint": "unix:///Users/fan/.colima/ds-t21-20261107t1158z-e514c8/docker.sock",
+  "owner": "devin-t22",
+  "created_at": "20261108T052241Z",
+  "daemon_identity": {
+    "server_id": "35b66e6e-49f3-4615-b556-6a10062d4737",
+    "name": "colima-ds-t21-20261107t1158z-e514c8",
+    "os": "Ubuntu 24.04.4 LTS",
+    "docker_version": "29.5.2"
+  },
+  "project": "t22a-r6tail-20261108t052232z-fc49",
+  "containers": [
+    {
+      "name": "deltascope-ddl-golden-mysql57",
+      "id": "bd332f0222b2dd4bbdbf554ee32eaa18bab2f6b967cc86ae8679e83c75731bcc",
+      "image_ref": "sha256:4bc6bc963e6d8443453676cae56536f4b8156d78bae03c0145cbe47c2aad73bb"
+    },
+    {
+      "name": "deltascope-ddl-golden-mysql80",
+      "id": "0d8813811c962fd6fc165e74ac7177a7eccd6a0140bd81a7714d54582b9d1cd3",
+      "image_ref": "sha256:7dcddc01f13bab2f15cde676d44d01f61fc9f99fe7785e86196dfc07d358ae2b"
+    },
+    {
+      "name": "deltascope-ddl-golden-mysql84",
+      "id": "00eb1839909949f334c08be15a55d2174b7b036113430a28e2ec1525acd211e2",
+      "image_ref": "sha256:8dbcf531a03aade657e181b9cf2f1d1803ce621a1d55610cb44cb531ab7d7db6"
+    },
+    {
+      "name": "deltascope-ddl-golden-tidb85",
+      "id": "b26847f4bbae02484a425c56eb80eb202cdbf17e76cab8f2e87e131b352f4c70",
+      "image_ref": "sha256:490861bd4a2fa643dbe76b77ffecafcad66e6a42774e580b82f4ec2429a80e57"
+    },
+    {
+      "name": "deltascope-ddl-golden-tidb85-client",
+      "id": "6f57b4c1c61008c0c4f54f5787357577d4b08a6169badbaa3857d6856b1b53da",
+      "image_ref": "sha256:8dbcf531a03aade657e181b9cf2f1d1803ce621a1d55610cb44cb531ab7d7db6"
+    }
+  ],
+  "networks": [
+    "af1ec096f5ae"
+  ],
+  "volumes": [
+    {
+      "name": "t22a-r6tail-20261108t052232z-fc49-mysql57-data",
+      "driver": "local"
+    },
+    {
+      "name": "t22a-r6tail-20261108t052232z-fc49-mysql80-data",
+      "driver": "local"
+    },
+    {
+      "name": "t22a-r6tail-20261108t052232z-fc49-mysql84-data",
+      "driver": "local"
+    }
+  ],
+  "generations": [
+    {
+      "at": "20261108T052247Z",
+      "action": "compose.up",
+      "containers": [
+        {
+          "name": "deltascope-ddl-golden-mysql57",
+          "id": "bd332f0222b2dd4bbdbf554ee32eaa18bab2f6b967cc86ae8679e83c75731bcc",
+          "image_ref": "sha256:4bc6bc963e6d8443453676cae56536f4b8156d78bae03c0145cbe47c2aad73bb"
+        },
+        {
+          "name": "deltascope-ddl-golden-mysql80",
+          "id": "0d8813811c962fd6fc165e74ac7177a7eccd6a0140bd81a7714d54582b9d1cd3",
+          "image_ref": "sha256:7dcddc01f13bab2f15cde676d44d01f61fc9f99fe7785e86196dfc07d358ae2b"
+        },
+        {
+          "name": "deltascope-ddl-golden-mysql84",
+          "id": "00eb1839909949f334c08be15a55d2174b7b036113430a28e2ec1525acd211e2",
+          "image_ref": "sha256:8dbcf531a03aade657e181b9cf2f1d1803ce621a1d55610cb44cb531ab7d7db6"
+        },
+        {
+          "name": "deltascope-ddl-golden-tidb85",
+          "id": "b26847f4bbae02484a425c56eb80eb202cdbf17e76cab8f2e87e131b352f4c70",
+          "image_ref": "sha256:490861bd4a2fa643dbe76b77ffecafcad66e6a42774e580b82f4ec2429a80e57"
+        },
+        {
+          "name": "deltascope-ddl-golden-tidb85-client",
+          "id": "6f57b4c1c61008c0c4f54f5787357577d4b08a6169badbaa3857d6856b1b53da",
+          "image_ref": "sha256:8dbcf531a03aade657e181b9cf2f1d1803ce621a1d55610cb44cb531ab7d7db6"
+        }
+      ],
+      "networks": [
+        {
+          "id": "af1ec096f5ae"
+        }
+      ],
+      "volumes": [
+        {
+          "kind": "named",
+          "declared": "t22a-r6tail-20261108t052232z-fc49-mysql57-data",
+          "name": "t22a-r6tail-20261108t052232z-fc49_t22a-r6tail-20261108t052232z-fc49-mysql57-data"
+        },
+        {
+          "kind": "named",
+          "declared": "t22a-r6tail-20261108t052232z-fc49-mysql80-data",
+          "name": "t22a-r6tail-20261108t052232z-fc49_t22a-r6tail-20261108t052232z-fc49-mysql80-data"
+        },
+        {
+          "kind": "named",
+          "declared": "t22a-r6tail-20261108t052232z-fc49-mysql84-data",
+          "name": "t22a-r6tail-20261108t052232z-fc49_t22a-r6tail-20261108t052232z-fc49-mysql84-data"
+        },
+        {
+          "kind": "anonymous",
+          "name": "fb017480284b7bbcd9c819270e7857af28e46357894d3db0fa4cb0a43b5ca687",
+          "mounted_by": "deltascope-ddl-golden-tidb85-client",
+          "destination": "/var/lib/mysql"
+        }
+      ]
+    }
+  ],
+  "actions": [
+    {
+      "action": "compose.up",
+      "rc": 0,
+      "detail": "Volume t22a-r6tail-20261108t052232z-fc49_t22a-r6tail-20261108t052232z-fc49-mysql80-data Creating \n Network t22a-r6tail-20261108t052232z-fc49_default Creating \n Network t22a-r6tail-20261108t052232z-fc49_default Creating \n Volume t22a-r6tail-20261108t052232z-fc49_t22a-r6tail-20261108t052232z-fc49-mysql80-data Creating \n Volume t22a-r6tail-20261108t052232z-fc49_t22a-r6tail-20261108t052232z-fc49-mysql57-data Creating \n Volume t22a-r6tail-20261108t052232z-fc49_t22a-r6tail-20261108t052232z-fc49-mysql57-data Creating \n Volume t22a-r6tail-20261108t052232z-fc49_t22a-r6tail-20261108t052232z-fc49-mysql84-data Creating \n Volume t22a-r6tail-20261108t052232z-fc49_t22a-r6tail-20261108t052232z-fc49-mysql84-data Creating \n Volume t22a-r6tail-20261108t052232z-fc49_t22a-r6tail-20261108t052232z-fc49-mysql80-data Created \n Volume t22a-r6tail-20261108t052232z-fc49_t22a-r6tail-20261108t052232z-fc49-mysql80-data Created \n Volume t22a-r6tail-20261108t052232z-fc49_t22a-r6tail-20261108t052232z-fc49-mysql84-data Created \n Volume t22a-r6tail-20261108t052232z-fc49_t22a-r6tail-20261108t052232z-fc49-mysql84-data Created \n Volume t22a-r6tail-20261108t052232z-fc49_t22a-r6tail-20261108t052232z-fc49-mysql57-data Created \n Volume t22a-r6tail-20261108t052232z-fc49_t22a-r6tail-20261108t052232z-fc49-mysql57-data Created \n Network t22a-r6tail-20261108t052232z-fc49_default Created \n Network t22a-r6tail-20261108t052232z-fc49_default Created \n Container deltascope-ddl-golden-mysql80 Creating \n Container deltascope-ddl-golden-tidb85 Creating \n Container deltascope-ddl-golden-mysql57 Creating \n Container deltascope-ddl-golden-mysql84 Creating \n Container deltascope-ddl-golden-tidb85 Created \n Container deltascope-ddl-golden-tidb85-client Creating \n Container deltascope-ddl-golden-mysql57 Created \n Container deltascope-ddl-golden-mysql84 Created \n Container deltascope-ddl-golden-mysql80 Created \n Container deltascope-ddl-golden-tidb85-client Created \n Container deltascope-ddl-golden-mysql84 Starting \n Container ",
+      "at": "20261108T052247Z"
+    },
+    {
+      "action": "generation.capture",
+      "rc": 0,
+      "detail": "compose.up: 5c/1n/4v",
+      "at": "20261108T052247Z"
+    },
+    {
+      "action": "rm.00eb18399099",
+      "rc": 1,
+      "detail": "Error response from daemon: cannot remove container \"00eb1839909949f334c08be15a55d2174b7b036113430a28e2ec1525acd211e2\": container is running: stop the container before removing or force remove",
+      "at": "20261108T052410Z"
+    },
+    {
+      "action": "rm.0d8813811c96",
+      "rc": 1,
+      "detail": "Error response from daemon: cannot remove container \"0d8813811c962fd6fc165e74ac7177a7eccd6a0140bd81a7714d54582b9d1cd3\": container is running: stop the container before removing or force remove",
+      "at": "20261108T052410Z"
+    },
+    {
+      "action": "rm.6f57b4c1c610",
+      "rc": 1,
+      "detail": "Error response from daemon: cannot remove container \"6f57b4c1c61008c0c4f54f5787357577d4b08a6169badbaa3857d6856b1b53da\": container is running: stop the container before removing or force remove",
+      "at": "20261108T052410Z"
+    },
+    {
+      "action": "rm.b26847f4bbae",
+      "rc": 1,
+      "detail": "Error response from daemon: cannot remove container \"b26847f4bbae02484a425c56eb80eb202cdbf17e76cab8f2e87e131b352f4c70\": container is running: stop the container before removing or force remove",
+      "at": "20261108T052410Z"
+    },
+    {
+      "action": "rm.bd332f0222b2",
+      "rc": 1,
+      "detail": "Error response from daemon: cannot remove container \"bd332f0222b2dd4bbdbf554ee32eaa18bab2f6b967cc86ae8679e83c75731bcc\": container is running: stop the container before removing or force remove",
+      "at": "20261108T052410Z"
+    },
+    {
+      "action": "network.rm.af1ec096f5ae",
+      "rc": 1,
+      "detail": "Error response from daemon: error while removing network: network t22a-r6tail-20261108t052232z-fc49_default has active endpoints (name:\"deltascope-ddl-golden-tidb85\" id:\"482666a72741\", name:\"deltascope-ddl-golden-mysql84\" id:\"edf96c7f7e71\", name:\"deltascope-ddl-golden-mysql80\" id:\"3d0390dc240f\", name:\"deltascope-ddl-golden-mysql57\" id:\"bba934026d04\", name:\"deltascope-ddl-golden-tidb85-client\" id:\"ec5d07fda297\")\nexit status 1",
+      "at": "20261108T052410Z"
+    },
+    {
+      "action": "volume.rm.t22a-r6tail-20261108t052232z-fc49_t22a-r6tail-20261108t052232z-fc49-mysql57-data",
+      "rc": 1,
+      "detail": "Error response from daemon: remove t22a-r6tail-20261108t052232z-fc49_t22a-r6tail-20261108t052232z-fc49-mysql57-data: volume is in use - [bd332f0222b2dd4bbdbf554ee32eaa18bab2f6b967cc86ae8679e83c75731bcc]",
+      "at": "20261108T052411Z"
+    },
+    {
+      "action": "volume.rm.t22a-r6tail-20261108t052232z-fc49_t22a-r6tail-20261108t052232z-fc49-mysql80-data",
+      "rc": 1,
+      "detail": "Error response from daemon: remove t22a-r6tail-20261108t052232z-fc49_t22a-r6tail-20261108t052232z-fc49-mysql80-data: volume is in use - [0d8813811c962fd6fc165e74ac7177a7eccd6a0140bd81a7714d54582b9d1cd3]",
+      "at": "20261108T052411Z"
+    },
+    {
+      "action": "volume.rm.t22a-r6tail-20261108t052232z-fc49_t22a-r6tail-20261108t052232z-fc49-mysql84-data",
+      "rc": 1,
+      "detail": "Error response from daemon: remove t22a-r6tail-20261108t052232z-fc49_t22a-r6tail-20261108t052232z-fc49-mysql84-data: volume is in use - [00eb1839909949f334c08be15a55d2174b7b036113430a28e2ec1525acd211e2]",
+      "at": "20261108T052411Z"
+    },
+    {
+      "action": "volume.rm.fb017480284b7bbcd9c819270e7857af28e46357894d3db0fa4cb0a43b5ca687",
+      "rc": 1,
+      "detail": "Error response from daemon: remove fb017480284b7bbcd9c819270e7857af28e46357894d3db0fa4cb0a43b5ca687: volume is in use - [6f57b4c1c61008c0c4f54f5787357577d4b08a6169badbaa3857d6856b1b53da]",
+      "at": "20261108T052411Z"
+    },
+    {
+      "action": "stop.00eb18399099",
+      "rc": 0,
+      "detail": "",
+      "at": "20261108T052419Z"
+    },
+    {
+      "action": "stop.0d8813811c96",
+      "rc": 0,
+      "detail": "",
+      "at": "20261108T052420Z"
+    },
+    {
+      "action": "stop.6f57b4c1c610",
+      "rc": 0,
+      "detail": "",
+      "at": "20261108T052430Z"
+    },
+    {
+      "action": "stop.b26847f4bbae",
+      "rc": 0,
+      "detail": "",
+      "at": "20261108T052430Z"
+    },
+    {
+      "action": "stop.bd332f0222b2",
+      "rc": 0,
+      "detail": "",
+      "at": "20261108T052432Z"
+    },
+    {
+      "action": "rm.00eb18399099",
+      "rc": 0,
+      "detail": "",
+      "at": "20261108T052432Z"
+    },
+    {
+      "action": "rm.0d8813811c96",
+      "rc": 0,
+      "detail": "",
+      "at": "20261108T052432Z"
+    },
+    {
+      "action": "rm.6f57b4c1c610",
+      "rc": 0,
+      "detail": "",
+      "at": "20261108T052432Z"
+    },
+    {
+      "action": "rm.b26847f4bbae",
+      "rc": 0,
+      "detail": "",
+      "at": "20261108T052432Z"
+    },
+    {
+      "action": "rm.bd332f0222b2",
+      "rc": 0,
+      "detail": "",
+      "at": "20261108T052432Z"
+    },
+    {
+      "action": "network.rm.af1ec096f5ae",
+      "rc": 0,
+      "detail": "",
+      "at": "20261108T052433Z"
+    },
+    {
+      "action": "volume.rm.t22a-r6tail-20261108t052232z-fc49_t22a-r6tail-20261108t052232z-fc49-mysql57-data",
+      "rc": 0,
+      "detail": "",
+      "at": "20261108T052433Z"
+    },
+    {
+      "action": "volume.rm.t22a-r6tail-20261108t052232z-fc49_t22a-r6tail-20261108t052232z-fc49-mysql80-data",
+      "rc": 0,
+      "detail": "",
+      "at": "20261108T052433Z"
+    },
+    {
+      "action": "volume.rm.t22a-r6tail-20261108t052232z-fc49_t22a-r6tail-20261108t052232z-fc49-mysql84-data",
+      "rc": 0,
+      "detail": "",
+      "at": "20261108T052433Z"
+    },
+    {
+      "action": "volume.rm.fb017480284b7bbcd9c819270e7857af28e46357894d3db0fa4cb0a43b5ca687",
+      "rc": 0,
+      "detail": "",
+      "at": "20261108T052433Z"
+    }
+  ]
+}

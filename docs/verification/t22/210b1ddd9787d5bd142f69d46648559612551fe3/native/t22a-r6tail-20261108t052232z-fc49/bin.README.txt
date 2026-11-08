@@ -1,0 +1,1 @@
+(binary removed — sha recorded in receipts/diff/00_cli_policy_sha.txt)

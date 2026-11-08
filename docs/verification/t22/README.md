@@ -204,3 +204,34 @@ Run `t22a-r6-20261108t04531794113630z-6468` on the same isolated daemon
   head detection) is retained as its own honest record.
 - Still NOT claimed: real PD resource-manager integration, cross-TiKV
   scheduling/metering, workload performance — Profile B scope.
+
+### R6-tail differential native verification (executed)
+
+Independent final review found one bounded defect in the R6 tree:
+`runaway.warn` (and the declared branch of `burstable.warn`) described
+the applied effect of a config on statements that were already proven
+refusals — the same misleading-success class the notice adjudicator
+already suppresses. Fix `210b1ddd`: a shared `resourceGroupStatementRefused`
+predicate (proven-OFF gate, statically-invalid runaway clause, proven
+existence/reserved refusal) now gates every declared-effect warning and
+the success notices; the proven-catalog BURSTABLE branch is untouched
+because a live catalog fact is independent of the refused statement.
+
+Differential run `t22a-r6tail-20261108t052232z-fc49` on the same isolated
+daemon, product `210b1ddd…` (CLI sha256 `3aa3db60…`, CGO=0 go1.26.1),
+scope = affected cases only, not a canonical 20/20 rerun:
+
+- P1 `QUERY_LIMIT=(ACTION=KILL)` (all-zero thresholds) → `[valid blocker]`
+  only, reject, 0 gaps — the declared KILL warning is gone.
+- P2 legal `EXEC_ELAPSED='30s',ACTION=KILL` → `runaway.warn` + create
+  notice — positive control intact.
+- P3 OFF gate + catalog `BURSTABLE=true` group, ALTER without declared
+  member → OFF blocker **and** catalog `burstable.warn` — the catalog
+  fact survives the same refusal.
+- P3b OFF + declared `BURSTABLE=TRUE` → blocker only — declared branch
+  suppressed.
+- `tidb_enable_resource_control` restored ON with `@@GLOBAL` readback=1
+  before teardown; ledger teardown left 0 containers, exactly the 8
+  protected volumes, default networks only; profile stopped normally.
+- Oracle: `tidb85-runaway-missing-threshold-refused` expectation now
+  `[valid blocker]` — the canonical 20 required ids are unchanged.

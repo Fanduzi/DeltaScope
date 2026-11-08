@@ -1,0 +1,2 @@
+@@GLOBAL.tidb_enable_resource_control
+1

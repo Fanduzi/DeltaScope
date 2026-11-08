@@ -1,0 +1,25 @@
+{
+  "run_id": "t22a-r6tail-20261108T052156z-4ba3",
+  "daemon_endpoint": "unix:///Users/fan/.colima/ds-t21-20261107t1158z-e514c8/docker.sock",
+  "owner": "devin-t22",
+  "created_at": "20261108T052215Z",
+  "daemon_identity": {
+    "server_id": "35b66e6e-49f3-4615-b556-6a10062d4737",
+    "name": "colima-ds-t21-20261107t1158z-e514c8",
+    "os": "Ubuntu 24.04.4 LTS",
+    "docker_version": "29.5.2"
+  },
+  "project": "t22a-r6tail-20261108T052156z-4ba3",
+  "containers": [],
+  "networks": [],
+  "volumes": [],
+  "generations": [],
+  "actions": [
+    {
+      "action": "compose.up",
+      "rc": 1,
+      "detail": "invalid project name \"t22a-r6tail-20261108T052156z-4ba3\": must consist only of lowercase alphanumeric characters, hyphens, and underscores as well as start with a letter or number",
+      "at": "20261108T052215Z"
+    }
+  ]
+}

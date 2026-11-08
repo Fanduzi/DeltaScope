@@ -1,0 +1,2 @@
+Variable_name	Value
+tidb_enable_resource_control	ON

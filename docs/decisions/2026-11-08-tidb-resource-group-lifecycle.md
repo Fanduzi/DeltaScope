@@ -360,3 +360,17 @@ canonical run — recorded as a missing artifact, not "all failure
 artifacts preserved". `scripts/ddl_golden_isolated.py` now archives each
 run to `golden/<task>.attempts/<head12>/attempt-N/` (next free index,
 never overwritten) with a `SHA256SUMS` manifest and `latest` pointer.
+
+### D. Declared-effect warnings obey refusal dominance (R6-tail)
+
+A proven refusal suppresses not only success notices but any warning
+whose premise is this statement's own declaration taking effect. The
+shared `resourceGroupStatementRefused` predicate — proven-OFF gate,
+statically-invalid runaway clause, or proven existence/reserved-target
+refusal — now gates `runaway.warn` outright and the declared branch of
+`burstable.warn`. The proven-catalog BURSTABLE branch is deliberately
+preserved: a live group's catalog flag is a fact independent of the
+refused statement (verified natively: OFF blocker + catalog warn can
+co-fire). The predicate reads shared facts only — never the verdict,
+other rules' findings, or whether `valid` is enabled — so policy
+configuration cannot reintroduce the misleading warning.
