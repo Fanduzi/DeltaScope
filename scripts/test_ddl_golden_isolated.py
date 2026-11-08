@@ -62,6 +62,13 @@ class FakeDaemon:
         self.networks = {}
         self.volumes = {}
         self.calls = []
+        # Fault hooks used by the negative-control groups:
+        # fail_next_up      -> simulate_up() reports compose failure once
+        # error_containers  -> names answering a non-NotFound inspect error
+        # inspect_error_once-> first inspect call errors once, then clears
+        self.fail_next_up = False
+        self.error_containers = set()
+        self.inspect_error_once = False
 
     def bind(self, run):
         run.docker = lambda *a, timeout=180: self.dispatch(
@@ -93,9 +100,14 @@ class FakeDaemon:
                     "ServerVersion": "29.5.2"}), ""
             return 0, self.server_id, ""
         if verb == "inspect":
+            if self.inspect_error_once:
+                self.inspect_error_once = False
+                return 1, "", "daemon took too long to respond"
             name, c = self._find_container(a[-1])
             if c is None:
                 return 1, "", f"Error: No such container: {a[-1]}"
+            if name in self.error_containers:
+                return 1, "", "permission denied on container object"
             return 0, "|".join([
                 c["id"], name, c["label"], c["image"],
                 json.dumps(c["mounts"])]), ""
@@ -115,9 +127,21 @@ class FakeDaemon:
             v = self.volumes[name]
             return 0, f"{v['driver']}|{v['label']}", ""
         if verb == "ps":
-            names = [f"{c['id'][:12]}\n" for c in self.containers.values()
-                     if c["label"] == RUN]
-            return 0, "".join(names), ""
+            want_vol = None
+            for i, x in enumerate(a):
+                if x == "--filter" and i + 1 < len(a):
+                    if a[i + 1].startswith("volume="):
+                        want_vol = a[i + 1][len("volume="):]
+            ids = []
+            for c in self.containers.values():
+                if want_vol is not None:
+                    if any(m.get("Type") == "volume"
+                           and m.get("Name") == want_vol
+                           for m in c["mounts"]):
+                        ids.append(c["id"])
+                elif c["label"] == RUN:
+                    ids.append(c["id"])
+            return 0, "".join(i[:12] + "\n" for i in ids), ""
         if verb in ("stop", "rm"):
             if verb == "rm":
                 ref = a[-1]
@@ -146,6 +170,29 @@ class FakeDaemon:
         return [c[-1] for c in self.calls
                 if c[1:3] == ["volume", "rm"]]
 
+    def simulate_up(self):
+        """Model one `compose up -d`: persistent services keep their
+        identities, the run network exists once, the named mysql data
+        volume persists, and the client container is RECREATED — a new
+        ID plus a fresh anonymous /var/lib/mysql volume, leaving the
+        previous generation's anonymous volume behind (as compose does
+        for image-declared VOLUME dirs)."""
+        self._up_count = getattr(self, "_up_count", 0) + 1
+        n = self._up_count
+        self.add_container("c-mysql57", "id-m57",
+                           mounts=[{"Type": "volume",
+                                    "Name": f"{RUN}_{RUN}-mysql57-data",
+                                    "Destination": "/var/lib/mysql"}])
+        self.add_container("c-tidb85", "id-t85")
+        self.add_container(
+            "c-tidb85-client", f"id-cl{n}",
+            mounts=[{"Type": "volume", "Name": f"anonvol-{n}",
+                     "Destination": "/var/lib/mysql"}])
+        self.networks.setdefault(f"net-{RUN[:8]}", RUN)
+        self.volumes.setdefault(
+            f"{RUN}_{RUN}-mysql57-data", {"driver": "local", "label": RUN})
+        self.volumes[f"anonvol-{n}"] = {"driver": "local", "label": RUN}
+
 
 def make_run(tmp, state=None):
     run = iso.IsoRun(RUN, DAEMON, "tester", tmp)
@@ -167,6 +214,282 @@ def seed_ledger(run, containers=None, networks=None, volumes=None,
     run.receipts["networks"] = networks or []
     run.receipts["volumes"] = volumes or []
     return run
+
+
+class TestLedgerPersistenceDispatch(unittest.TestCase):
+    """R11 persistence contract via the real CLI dispatch path: every
+    command runs a fresh IsoRun instance against the same on-disk
+    ledger, exactly like repeated ddl_golden_isolated invocations.
+
+    The fake intercepts dg.run_cmd (the single external-command seam)
+    so no docker/colima binary is ever reached; compose up calls mutate
+    the fake daemon's state the way a real recreate would.
+    """
+
+    def _drive(self, tmp, state, *commands, run_id=RUN, daemon=DAEMON,
+               owner="tester"):
+        """Run each subcommand through iso.main() with a fresh argv —
+        an independent invocation boundary per command."""
+        orig_argv, orig_lm, orig_rc = (
+            sys.argv, iso.dg.load_manifest, iso.dg.run_cmd)
+
+        def fake_run_cmd(args, cwd=None, timeout=120, stdin_text=None,
+                         env=None):
+            args = list(args)
+            if args[:2] == ["docker", "compose"]:
+                if "up" in args:
+                    if state.fail_next_up:
+                        state.fail_next_up = False
+                        return 1, "", "compose up failed (fake)"
+                    state.simulate_up()
+                    return 0, "", ""
+                return 0, "", ""
+            return state.dispatch(args, env=env)
+
+        iso.dg.load_manifest = lambda task: MANIFEST
+        iso.dg.run_cmd = fake_run_cmd
+        try:
+            for cmd in commands:
+                sys.argv = [
+                    "ddl_golden_isolated.py",
+                    "--run-id", run_id, "--daemon", daemon,
+                    "--owner", owner, "--artifact-dir", str(tmp), cmd]
+                iso.main()
+        finally:
+            sys.argv, iso.dg.load_manifest, iso.dg.run_cmd = orig_argv, orig_lm, orig_rc
+
+    def test_second_up_preserves_ledger_generations(self):
+        """RED on unfixed tree: `load_run` skips reload for `up`, so a
+        second up reinitializes the receipts dict and the first record()
+        truncates every prior generation — the client's earlier
+        anonymous volume orphans out of the cleanup set."""
+        tmp = tempfile.mkdtemp()
+        state = FakeDaemon()
+        self._drive(tmp, state, "up", "up")
+        disk = json.loads(
+            (pathlib.Path(tmp) / "receipts.json").read_text())
+        self.assertEqual(len(disk["generations"]), 2)
+        anon = {v["name"] for g in disk["generations"]
+                for v in g["volumes"] if v.get("kind") == "anonymous"}
+        self.assertEqual(anon, {"anonvol-1", "anonvol-2"})
+
+    def test_repeated_up_teardown_consumes_all_generations(self):
+        """After up → up → run-style capture, rmvolumes must still
+        consume volumes registered in the superseded generation —
+        not only the last up's objects."""
+        tmp = tempfile.mkdtemp()
+        state = FakeDaemon()
+        self._drive(tmp, state, "up", "up")
+        # A run-wrapped capture (what ledger_compose records inside
+        # `run`) appends another generation over the restored ledger.
+        run = iso.IsoRun(RUN, DAEMON, "tester", tmp)
+        raw = (pathlib.Path(tmp) / "receipts.json").read_bytes()
+        run.receipts = json.loads(raw)
+        run._ledger_snapshot = raw
+        state.bind(run)
+        run._capture_generation("compose.up.run")
+        self._drive(tmp, state, "stop", "rm", "rmvolumes")
+        self.assertEqual(sorted(state.removed_volumes()),
+                         sorted(["anonvol-1", "anonvol-2",
+                                 f"{RUN}_{RUN}-mysql57-data"]))
+        disk = json.loads(
+            (pathlib.Path(tmp) / "receipts.json").read_text())
+        self.assertEqual(len(disk["generations"]), 3)
+
+    def test_reobserved_marks_second_sighting_not_new_creation(self):
+        """Group A continuation: re-capturing a still-live registered
+        object marks reobserved, never a second creation record."""
+        tmp = tempfile.mkdtemp()
+        state = FakeDaemon()
+        self._drive(tmp, state, "up", "up")
+        disk = json.loads(
+            (pathlib.Path(tmp) / "receipts.json").read_text())
+        gen1 = disk["generations"][1]
+        persistent = {c["name"]: c for c in gen1["containers"]
+                      if c["name"] == "c-mysql57"}
+        self.assertTrue(persistent["c-mysql57"].get("reobserved"))
+        client = {c["name"]: c for c in gen1["containers"]
+                  if c["name"] == "c-tidb85-client"}
+        # The recreated client is a NEW id — a real creation, not a
+        # re-observation.
+        self.assertNotIn("reobserved", client["c-tidb85-client"])
+
+    # -- Group B: protected and unregistered objects stay untouched ------
+    def test_teardown_leaves_protected_and_unregistered(self):
+        tmp = tempfile.mkdtemp()
+        state = FakeDaemon()
+        state.volumes["protected-old-data"] = {"driver": "local",
+                                               "label": ""}
+        state.volumes["foreign-anon-9f"] = {"driver": "local",
+                                            "label": "other-run"}
+        self._drive(tmp, state, "up", "up", "stop", "rm", "rmvolumes")
+        self.assertIn("protected-old-data", state.volumes)
+        self.assertIn("foreign-anon-9f", state.volumes)
+        # nothing unregistered ever entered the rm argv
+        for v in state.removed_volumes():
+            self.assertNotIn(v, ["protected-old-data", "foreign-anon-9f"])
+
+    # -- Group C: cross-run and identity isolation -----------------------
+    def test_cross_run_ledger_refused(self):
+        tmp = tempfile.mkdtemp()
+        self._drive(tmp, FakeDaemon(), "up")
+        with self.assertRaises(SystemExit):
+            self._drive(tmp, FakeDaemon(), "up",
+                        run_id="ds-t21-20990101T000000Z-other")
+        disk = json.loads(
+            (pathlib.Path(tmp) / "receipts.json").read_text())
+        self.assertEqual(disk["run_id"], RUN)
+
+    def test_resumed_run_endpoint_mismatch_refused(self):
+        tmp = tempfile.mkdtemp()
+        self._drive(tmp, FakeDaemon(), "up")
+        with self.assertRaises(SystemExit):
+            self._drive(tmp, FakeDaemon(), "up",
+                        daemon="unix:///tmp/iso-vm/other.sock")
+
+    def test_resumed_run_owner_mismatch_refused(self):
+        tmp = tempfile.mkdtemp()
+        self._drive(tmp, FakeDaemon(), "up")
+        with self.assertRaises(SystemExit):
+            self._drive(tmp, FakeDaemon(), "up", owner="someone-else")
+
+    def test_teardown_without_ledger_refused(self):
+        tmp = tempfile.mkdtemp()
+        for cmd in ("stop", "rm", "rmvolumes"):
+            with self.assertRaises(SystemExit):
+                self._drive(tmp, FakeDaemon(), cmd)
+
+    # -- Group D: corruption, interruption, concurrent writers ------------
+    def test_corrupt_ledger_refused_not_reinitialised(self):
+        tmp = tempfile.mkdtemp()
+        self._drive(tmp, FakeDaemon(), "up")
+        path = pathlib.Path(tmp) / "receipts.json"
+        before = path.read_bytes()
+        path.write_bytes(b"{ not json !!!")
+        with self.assertRaises(SystemExit):
+            self._drive(tmp, FakeDaemon(), "up")
+        self.assertEqual(path.read_bytes(), b"{ not json !!!")
+        self.assertNotEqual(path.read_bytes(), before)
+
+    def test_concurrent_writer_conflict_refused(self):
+        """Two same-run entries both holding the same snapshot: the
+        second writer's stale snapshot refuses, so appended history from
+        the first is never overwritten."""
+        tmp = tempfile.mkdtemp()
+        raw_path = pathlib.Path(tmp) / "receipts.json"
+        entry_a = iso.IsoRun(RUN, DAEMON, "tester", tmp)
+        entry_a.record("entry.a", 0)
+        raw = raw_path.read_bytes()
+        # entry_b "loaded" the pre-a state
+        stale = iso.IsoRun(RUN, DAEMON, "tester", tmp)
+        stale.receipts = json.loads(raw)
+        stale._ledger_snapshot = b"{}\n"   # what it thinks is on disk
+        with self.assertRaises(SystemExit):
+            stale.record("entry.b", 0)
+        disk = json.loads(raw_path.read_text())
+        self.assertEqual([a["action"] for a in disk["actions"]],
+                         ["entry.a"])
+
+    def test_write_failure_keeps_last_valid_ledger(self):
+        tmp = tempfile.mkdtemp()
+        run = make_run(tmp)
+        run.record("ok.write", 0)
+        good = (pathlib.Path(tmp) / "receipts.json").read_bytes()
+        orig_replace = iso.os.replace
+        iso.os.replace = lambda *a, **k: (_ for _ in ()).throw(
+            OSError("disk full"))
+        try:
+            with self.assertRaises(SystemExit):
+                run.record("must.fail", 0)
+        finally:
+            iso.os.replace = orig_replace
+        self.assertEqual(
+            (pathlib.Path(tmp) / "receipts.json").read_bytes(), good)
+        # tmp file cleaned up after the failure
+        self.assertFalse(
+            (pathlib.Path(tmp) / "receipts.json.tmp").exists())
+
+    def test_ledger_file_mode_restricted(self):
+        tmp = tempfile.mkdtemp()
+        run = make_run(tmp)
+        run.record("perm.check", 0)
+        mode = (pathlib.Path(tmp) / "receipts.json").stat().st_mode & 0o777
+        self.assertEqual(mode, 0o600)
+
+    # -- Group E: up partial failure -------------------------------------
+    def test_failed_up_keeps_history_and_marks_no_fake_zero(self):
+        tmp = tempfile.mkdtemp()
+        state = FakeDaemon()
+        self._drive(tmp, state, "up")
+        state.fail_next_up = True
+        with self.assertRaises(SystemExit):
+            self._drive(tmp, state, "up")
+        disk = json.loads(
+            (pathlib.Path(tmp) / "receipts.json").read_text())
+        # old generation kept, failed compose.up recorded, nothing new
+        # entered the ledger
+        self.assertEqual(len(disk["generations"]), 1)
+        self.assertTrue(any(a["action"] == "compose.up" and a["rc"] == 1
+                            for a in disk["actions"]))
+
+    def test_capture_incomplete_marked_on_partial_failure(self):
+        tmp = tempfile.mkdtemp()
+        state = FakeDaemon()
+        state.add_container("c-mysql57", "id-m57")
+        state.add_container("c-tidb85", "id-t85")
+        state.add_container("c-tidb85-client", "id-clx")
+        # The client exists but its inspect call errors — capture must
+        # mark the generation incomplete instead of reporting a smaller
+        # world.
+        state.error_containers.add("c-tidb85-client")
+        run = make_run(tmp, state)
+        run._manifest = MANIFEST
+        gen = run._capture_generation("test.capture")
+        self.assertTrue(gen.get("capture_incomplete"))
+        self.assertEqual([c["name"] for c in gen["containers"]],
+                         ["c-mysql57", "c-tidb85"])
+        self.assertTrue(any(a["action"] == "capture.error"
+                            for a in run.receipts["actions"]))
+
+    # -- Group F: teardown refusal classes and idempotent retry -----------
+    def test_mounted_registered_volume_refused_and_kept(self):
+        tmp = tempfile.mkdtemp()
+        state = FakeDaemon()
+        state.add_container(
+            "c-cl", "id-cl",
+            mounts=[{"Type": "volume", "Name": "ab12anon",
+                     "Destination": "/var/lib/mysql"}])
+        state.volumes["ab12anon"] = {"driver": "local", "label": ""}
+        run = make_run(tmp, state)
+        seed_ledger(run, generations=[{
+            "at": "t0", "action": "compose.up",
+            "containers": [{"name": "c-cl", "id": "id-cl"}],
+            "networks": [],
+            "volumes": [{"kind": "anonymous", "name": "ab12anon",
+                         "mounted_by": "c-cl",
+                         "destination": "/var/lib/mysql"}]}])
+        run.rmvolumes()
+        self.assertEqual(state.removed_volumes(), [])
+        self.assertIn("ab12anon", state.volumes)
+        self.assertTrue(any(a["action"] == "volume.inuse.ab12anon"
+                            for a in run.receipts["actions"]))
+
+    def test_teardown_retry_after_failure_preserves_history(self):
+        tmp = tempfile.mkdtemp()
+        state = FakeDaemon()
+        state.add_container("c1", "id-A")
+        run = make_run(tmp, state)
+        seed_ledger(run, containers=[{"name": "c1", "id": "id-A"}])
+        state.inspect_error_once = True
+        with self.assertRaises(SystemExit):
+            run.stop()
+        state.inspect_error_once = False
+        run.stop()
+        run.rm()
+        self.assertEqual(state.removed_containers(), ["id-A"])
+        acts = [a["action"] for a in run.receipts["actions"]]
+        self.assertIn("identity.refuse", acts)
+        self.assertIn("rm.id-A", acts)
 
 
 class TestEndpointConstraints(unittest.TestCase):

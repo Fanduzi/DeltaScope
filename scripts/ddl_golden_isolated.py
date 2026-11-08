@@ -82,6 +82,10 @@ class IsoRun:
             "generations": [],
             "actions": [],
         }
+        # Bytes of the ledger this entry last loaded or wrote. record()
+        # refuses when the on-disk file moved past that snapshot, so two
+        # same-run entries can never silently last-writer-wins.
+        self._ledger_snapshot = None
         # Every subprocess spawned by ddl_golden inherits this environment:
         # compose(), docker exec, health probes, and docker version all pin
         # to the isolated daemon. DOCKER_CONTEXT is cleared so a stray
@@ -104,10 +108,52 @@ class IsoRun:
         self.receipts["actions"].append(
             {"action": action, "rc": rc, "detail": detail[:2000], "at": utc_stamp()}
         )
-        with self.receipts_path.open("w", encoding="utf-8") as handle:
-            json.dump(self.receipts, handle, indent=2, ensure_ascii=False)
-            handle.write("\n")
+        self._persist_ledger()
         return rc
+
+    def _persist_ledger(self):
+        """Append-safe ledger write: compare-and-swap plus atomic replace.
+
+        A file whose bytes moved past the snapshot this entry loaded or
+        last wrote belongs to another same-run entry — refuse rather than
+        overwrite its appended records. The payload goes to a private tmp
+        file, fsyncs, and os.replace()s atomically, so a crash mid-write
+        leaves the previous valid ledger readable. New files get 0o600;
+        nothing here truncates or chmods pre-existing files."""
+        if self.receipts_path.exists():
+            try:
+                disk = self.receipts_path.read_bytes()
+            except OSError as exc:
+                raise SystemExit(
+                    f"[iso][FAIL] cannot read ledger before write: {exc}")
+            if disk != self._ledger_snapshot:
+                raise SystemExit(
+                    "[iso][FAIL] ledger changed under this entry — "
+                    "refusing to overwrite another entry's records")
+            try:
+                json.loads(disk.decode("utf-8"))
+            except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+                raise SystemExit(
+                    "[iso][FAIL] on-disk ledger unreadable — refusing "
+                    f"to overwrite: {exc}")
+        payload = (json.dumps(self.receipts, indent=2, ensure_ascii=False)
+                   + "\n").encode("utf-8")
+        tmp = self.receipts_path.with_name(self.receipts_path.name + ".tmp")
+        try:
+            fd = os.open(tmp, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+            with os.fdopen(fd, "wb") as handle:
+                handle.write(payload)
+                handle.flush()
+                os.fsync(handle.fileno())
+            os.replace(tmp, self.receipts_path)
+            os.chmod(self.receipts_path, 0o600)
+        except OSError as exc:
+            try:
+                tmp.unlink()
+            except OSError:
+                pass
+            raise SystemExit(f"[iso][FAIL] ledger write failed: {exc}")
+        self._ledger_snapshot = payload
 
     def docker(self, *args, timeout=180):
         rc, out, err = self.dg.run_cmd(["docker", *args], timeout=timeout, env=self.env)
@@ -197,14 +243,26 @@ class IsoRun:
         if rc != 0:
             raise SystemExit(f"[iso][FAIL] isolated daemon unreachable: {err.strip()}")
         info = json.loads(out.strip() or "{}")
-        identity = {
+        live = {
             "server_id": info.get("ID"),
             "name": info.get("Name"),
             "os": info.get("OperatingSystem"),
             "docker_version": info.get("ServerVersion"),
         }
-        self.receipts["daemon_identity"] = identity
-        return identity
+        recorded = self.receipts.get("daemon_identity") or {}
+        if recorded.get("server_id"):
+            # A resumed run verifies against the identity captured at
+            # creation; it never silently re-binds to a different daemon.
+            if recorded["server_id"] != live["server_id"]:
+                self.record(
+                    "daemon.identity.mismatch", 1,
+                    f"recorded={recorded['server_id']} live={live['server_id']}")
+                raise SystemExit(
+                    "[iso][FAIL] live daemon ID does not match the "
+                    "identity recorded at creation")
+            return recorded
+        self.receipts["daemon_identity"] = live
+        return live
 
     def _verify_daemon_binding(self):
         """Teardown only runs against the daemon this run's receipts
@@ -362,8 +420,19 @@ class IsoRun:
     def _capture_generation(self, action):
         """Post-create capture: read real identities and append a
         generation record. Old -> new ID transitions stay visible because
-        generations are never rewritten."""
+        generations are never rewritten. Re-observing an already
+        registered object appends a reobserved marker — a second sighting
+        is never forged into another creation record. Any capture failure
+        marks the generation capture_incomplete instead of silently
+        reporting a smaller world."""
         manifest = getattr(self, "_manifest", None)
+        known_pairs = self._registered_container_pairs()
+        known_volumes = {
+            v.get("name")
+            for g in self._generations() for v in g.get("volumes", [])
+            if v.get("name")
+        }
+        incomplete = False
         gen = {"at": utc_stamp(), "action": action,
                "containers": [], "networks": [], "volumes": []}
         if manifest:
@@ -374,18 +443,22 @@ class IsoRun:
                         continue
                     r = self._inspect_container(name)
                     if r["verdict"] == "error":
+                        incomplete = True
                         self.record("capture.error", 1,
                                     f"{name}: {r['detail'][:160]}")
                         continue
                     if r["verdict"] != "ok":
                         continue
                     if r["label"] != self.run_id:
+                        incomplete = True
                         self.record("capture.foreign", 1,
                                     f"{name}: label={r['label']!r}")
                         continue
-                    gen["containers"].append(
-                        {"name": name, "id": r["id"],
-                         "image_ref": r["image"]})
+                    entry = {"name": name, "id": r["id"],
+                             "image_ref": r["image"]}
+                    if r["id"] in known_pairs.get(name, set()):
+                        entry["reobserved"] = True
+                    gen["containers"].append(entry)
                     for mount in r["mounts"]:
                         if mount.get("Type") != "volume":
                             continue
@@ -398,6 +471,8 @@ class IsoRun:
                             entry = {"kind": "anonymous", "name": vname,
                                      "mounted_by": name,
                                      "destination": mount.get("Destination")}
+                        if vname in known_volumes:
+                            entry["reobserved"] = True
                         if not any(v.get("name") == vname
                                    for v in gen["volumes"]):
                             gen["volumes"].append(entry)
@@ -405,30 +480,42 @@ class IsoRun:
             "network", "ls", "--filter", f"name={self.run_id}", "-q",
             timeout=30)
         if rc != 0:
+            incomplete = True
             self.record("capture.network-list.error", 1, (err or "").strip())
         else:
+            known_nets = self._registered_network_ids()
             for nid in filter(None, (x.strip() for x in nets.splitlines())):
                 v = self._inspect_network(nid)
                 if v["verdict"] == "ok" and v["project"] == self.receipts["project"]:
-                    gen["networks"].append({"id": nid})
+                    entry = {"id": nid}
+                    if nid in known_nets:
+                        entry["reobserved"] = True
+                    gen["networks"].append(entry)
         for decl in self._declared_volume_names():
             if any(v.get("declared") == decl for v in gen["volumes"]):
                 continue
             for cand in (f"{self.receipts['project']}_{decl}", decl):
                 v = self._inspect_volume(cand)
                 if v["verdict"] == "ok" and v["label"] == self.run_id:
-                    gen["volumes"].append(
-                        {"kind": "named", "declared": decl, "name": cand,
-                         "driver": v["driver"]})
+                    entry = {"kind": "named", "declared": decl,
+                             "name": cand, "driver": v["driver"]}
+                    if cand in known_volumes:
+                        entry["reobserved"] = True
+                    gen["volumes"].append(entry)
                     break
                 if v["verdict"] == "ok":
+                    incomplete = True
                     self.record("capture.volume-foreign", 1,
                                 f"{cand}: label={v['label']!r}")
                     break
+        if incomplete:
+            gen["capture_incomplete"] = True
         self.receipts.setdefault("generations", []).append(gen)
         # Flat fields mirror the latest generation for readability; the
         # ledger is the authority.
-        self.receipts["containers"] = list(gen["containers"])
+        self.receipts["containers"] = [
+            {k: v for k, v in c.items() if k != "reobserved"}
+            for c in gen["containers"]]
         self.receipts["networks"] = [n["id"] for n in gen["networks"]]
         self.receipts["volumes"] = [
             {"name": v.get("declared") or v["name"],
@@ -437,7 +524,8 @@ class IsoRun:
         self.record(
             "generation.capture", 0,
             f"{action}: {len(gen['containers'])}c/"
-            f"{len(gen['networks'])}n/{len(gen['volumes'])}v")
+            f"{len(gen['networks'])}n/{len(gen['volumes'])}v"
+            + (" incomplete" if incomplete else ""))
         return gen
 
     # -- lifecycle ------------------------------------------------------
@@ -556,6 +644,20 @@ class IsoRun:
             self.record(f"network.rm.{nid[:12]}", rc, err.strip())
         return acted
 
+    def _volume_users(self, vname):
+        """Container IDs currently mounting a volume, via the daemon's
+        own mount view. ('ok', ids) / ('error', detail) — an unreadable
+        mount view refuses the deletion rather than guessing."""
+        try:
+            rc, out, err = self.docker(
+                "ps", "-a", "--filter", f"volume={vname}",
+                "--format", "{{.ID}}", timeout=30)
+        except Exception as exc:
+            return "error", str(exc)
+        if rc != 0:
+            return "error", (err or "").strip()
+        return "ok", [x for x in out.split() if x]
+
     def rmvolumes(self):
         self._verify_daemon_binding()
         named, anon = self._registered_volumes()
@@ -571,9 +673,24 @@ class IsoRun:
                 v = self._inspect_volume(cand)
                 if v["verdict"] == "ok":
                     if v["label"] == self.run_id:
-                        rc, out, err = self.docker("volume", "rm", cand,
-                                                   timeout=60)
-                        self.record(f"volume.rm.{cand}", rc, err.strip())
+                        verdict, users = self._volume_users(cand)
+                        if verdict != "ok":
+                            self.record(
+                                "volume.refuse", 1,
+                                f"{cand}: usage check failed: "
+                                f"{users[:120] if isinstance(users, str) else users}")
+                            raise SystemExit(
+                                f"[iso][FAIL] volume usage check failed: {cand}")
+                        if users:
+                            # Registered but still mounted — refuse the
+                            # deletion and report; never force-detach.
+                            self.record(f"volume.inuse.{cand}", 1,
+                                        ",".join(users))
+                        else:
+                            rc, out, err = self.docker("volume", "rm",
+                                                       cand, timeout=60)
+                            self.record(f"volume.rm.{cand}", rc,
+                                        err.strip())
                     else:
                         self.record(f"volume.retained.{cand}", 0,
                                     f"label={v['label']!r} — not this run")
@@ -589,6 +706,18 @@ class IsoRun:
         for vname in sorted(anon):
             v = self._inspect_volume(vname)
             if v["verdict"] == "ok":
+                verdict, users = self._volume_users(vname)
+                if verdict != "ok":
+                    self.record(
+                        "volume.refuse", 1,
+                        f"{vname}: usage check failed: "
+                        f"{users[:120] if isinstance(users, str) else users}")
+                    raise SystemExit(
+                        f"[iso][FAIL] volume usage check failed: {vname}")
+                if users:
+                    self.record(f"volume.inuse.{vname}", 1,
+                                ",".join(users))
+                    continue
                 rc, out, err = self.docker("volume", "rm", vname, timeout=60)
                 self.record(f"volume.rm.{vname}", rc, err.strip())
             elif v["verdict"] == "error":
@@ -630,10 +759,55 @@ class IsoRun:
 
 
 def load_run(args):
+    """Restore-once loading: the same run initialises its ledger exactly
+    once. Every entry — including `up` — resumes the persisted ledger
+    when one exists, and a restored ledger must bind to THIS run id,
+    endpoint, project and owner. A missing, unreadable or identity-
+    mismatched ledger refuses rather than silently reinitialising over
+    another run's history."""
     run = IsoRun(args.run_id, args.daemon, args.owner, args.artifact_dir)
-    if (args.receipts or run.receipts_path.exists()) and args.command != "up":
-        with run.receipts_path.open() as handle:
-            run.receipts = json.load(handle)
+    source = (pathlib.Path(args.receipts)
+              if args.receipts else run.receipts_path)
+    if args.receipts:
+        # An explicit ledger path IS the run's ledger for the whole
+        # lifecycle — reads and writes bind to it, not just the load.
+        run.receipts_path = source
+    if source.exists():
+        try:
+            raw = source.read_bytes()
+        except OSError as exc:
+            raise SystemExit(
+                f"[iso][FAIL] cannot read ledger {source}: {exc}")
+        try:
+            data = json.loads(raw.decode("utf-8"))
+        except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+            raise SystemExit(
+                f"[iso][FAIL] ledger {source} unreadable — refusing to "
+                f"reinitialise over it: {exc}")
+        if not isinstance(data, dict):
+            raise SystemExit(
+                f"[iso][FAIL] ledger {source} is not an object — "
+                "refusing to reinitialise over it")
+        mismatches = []
+        for field, want in (("run_id", run.run_id),
+                            ("project", run.run_id),
+                            ("daemon_endpoint", run.daemon),
+                            ("owner", run.owner)):
+            got = data.get(field)
+            if got != want:
+                mismatches.append(f"{field}={got!r} expected {want!r}")
+        if mismatches:
+            raise SystemExit(
+                f"[iso][FAIL] ledger identity mismatch: {mismatches}")
+        run.receipts = data
+        run._ledger_snapshot = raw
+    elif args.receipts:
+        raise SystemExit(
+            f"[iso][FAIL] explicit --receipts {source} does not exist")
+    elif args.command in ("stop", "rm", "rmvolumes"):
+        raise SystemExit(
+            f"[iso][FAIL] no ledger at {run.receipts_path} — teardown "
+            "has no registered objects to consume")
     return run
 
 

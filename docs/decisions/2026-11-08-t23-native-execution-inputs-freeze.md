@@ -351,6 +351,65 @@ common-handle/rowid/BY-list/partitioned), CACHE↔NOCACHE transitions,
 ATTRIBUTES set/partition, COMPACT warning no-op, `SET GLOBAL` mode
 flips with verified restore.
 
+## R11 — isolated-entry ledger persistence repair (2026-11-08)
+
+Post-run independent acceptance located a tool defect behind the
+manual deletion of four anonymous volumes, reported honestly in the
+dual-track verdict rather than signed as compliant.
+
+### Root cause
+
+`ddl_golden_isolated.py::load_run` reloaded `receipts.json` for every
+subcommand **except `up`** (`args.command != "up"`). Each `up`
+invocation therefore constructed a fresh receipts dict and the first
+`record()` truncated the file, erasing every generation an earlier
+`up`/`run` cycle had registered — including the anonymous
+`/var/lib/mysql` volume of a recreated fixture client. `rmvolumes`
+consumed only the last generation's registrations; earlier cycles'
+anonymous volumes became unledgered orphans (compose `down` does not
+remove anonymous volumes).
+
+### Repair semantics (offline, fake-executor verified)
+
+- Restore-once: every entry — `preflight`, `up`, `run`, `stop`, `rm`,
+  `rmvolumes` — resumes the persisted ledger when it exists. A run
+  initialises its ledger exactly once; a second `up` appends a new
+  generation instead of reinitialising.
+- Binding: a restored ledger must match run-id, project, daemon
+  endpoint and owner; daemon server-id recorded at creation is
+  verified live, never overwritten.
+- Corruption/interruption: missing explicit `--receipts`, unreadable
+  or non-object JSON, and teardown without any ledger all refuse —
+  no silent empty-ledger init.
+- Durability: ledger writes are compare-and-swap against the loaded
+  snapshot plus tmp+fsync+`os.replace`; a writer holding a stale
+  snapshot refuses instead of last-writer-wins; failed writes leave
+  the last valid ledger intact; new ledger files are mode 0600.
+- Generation records: re-observing a registered object appends a
+  `reobserved` marker, never a second creation record; partial
+  captures mark `capture_incomplete` instead of reporting a smaller
+  world.
+- Teardown: cleanup still consumes the cumulative ledger only;
+  registered-but-mounted volumes refuse deletion and are reported
+  (`volume.inuse.*`) rather than force-detached.
+- Forbidden fallbacks unchanged: no label/time/label-prefix orphan
+  sweeps, no `prune`, no `--remove-orphans`, no unregistered-ID
+  re-derivation.
+
+### Scope honesty
+
+- The code fix does **not** retroactively legitimise the historical
+  manual deletion of the four anonymous volumes; that deviation and
+  its object-level evidence gap remain recorded as-is.
+- The repaired entry is verified offline only (39 fake-daemon
+  contract cases). A bounded real-lifecycle verification — repeated
+  `up`, one real client recreation, cumulative-ledger reclamation —
+  remains pending a separate authorization; this commit does not
+  claim native re-validation.
+- The accepted T23 lightweight-stack result (35/35, 503/503) stays
+  bound to run tree `00ac3ada`; this tool repair does not rewrite
+  `artifact.head_sha` or re-open product semantics.
+
 ### Authorization card — C-column supplement (real TiFlash request)
 
 Deferred incremental request for the real success/recovery arms:
