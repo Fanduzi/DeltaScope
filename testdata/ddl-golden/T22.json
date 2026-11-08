@@ -691,7 +691,7 @@
     "exit": 1,
     "verdict": "reject",
     "statements": 1,
-    "findings": 2,
+    "findings": 1,
     "diagnostics": 0,
     "unsupported": 0,
     "coverage": "complete",
@@ -701,11 +701,6 @@
     "evidence_gaps": 0,
     "fail_on_triggered": true,
     "finding_entries": [
-     {
-      "index": 0,
-      "rule_id": "ddl.tidb.resource_group.runaway.warn",
-      "level": "warning"
-     },
      {
       "index": 0,
       "rule_id": "ddl.tidb.resource_group.valid",

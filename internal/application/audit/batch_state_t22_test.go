@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/Fanduzi/DeltaScope/internal/domain/policy"
 	"github.com/Fanduzi/DeltaScope/internal/domain/rule"
 	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
 )
@@ -193,6 +194,145 @@ func TestT22StaticInvalidRunawaySuppressesNotice(t *testing.T) {
 	}
 	if got := len(t22Findings(result, 0, "ddl.create_resource_group.notice")); got != 0 {
 		t.Fatalf("notices = %d, want 0 — a proven static refusal suppresses the success claim", got)
+	}
+}
+
+// R6-tail: declared-effect warnings obey the same refusal dominance the
+// notices already follow — a statement that provably cannot take effect
+// must not warn about the declared config's applied effect.
+func TestT22DeclaredWarningsSuppressedOnStaticRefusal(t *testing.T) {
+	provider := t22ProviderOn(map[string]t22GroupFact{})
+	result := t22MustAudit(t,
+		"CREATE RESOURCE GROUP rg_bad RU_PER_SEC=10 QUERY_LIMIT=(ACTION=KILL);",
+		spec.DialectTiDB, provider, "")
+	if got := len(t22Findings(result, 0, t22ValidRule)); got != 1 {
+		t.Fatalf("valid findings = %d, want the static blocker", got)
+	}
+	if got := len(t22Findings(result, 0, t22RunawayRule)); got != 0 {
+		t.Fatalf("runaway warnings = %d, want 0 — a refused clause never lands KILL", got)
+	}
+	result = t22MustAudit(t,
+		"CREATE RESOURCE GROUP rg_bad2 RU_PER_SEC=10 BURSTABLE=TRUE QUERY_LIMIT=(ACTION=KILL);",
+		spec.DialectTiDB, provider, "")
+	if got := len(t22Findings(result, 0, t22ValidRule)); got != 1 {
+		t.Fatalf("valid findings = %d, want the static blocker", got)
+	}
+	if got := len(t22Findings(result, 0, t22BurstableRule)); got != 0 {
+		t.Fatalf("burstable warnings = %d, want 0 — the refused statement never lands BURSTABLE", got)
+	}
+}
+
+// The same dominance under a proven-OFF gate: declared KILL and declared
+// BURSTABLE warnings stay silent on the refused statement.
+func TestT22DeclaredWarningsSuppressedOnOffRefusal(t *testing.T) {
+	provider := &t22Provider{capabilityKnown: true, capabilityOn: false, groups: map[string]t22GroupFact{}}
+	result := t22MustAudit(t,
+		"CREATE RESOURCE GROUP rg_off RU_PER_SEC=10 BURSTABLE=TRUE QUERY_LIMIT=(EXEC_ELAPSED='30s',ACTION=KILL);",
+		spec.DialectTiDB, provider, "")
+	if got := len(t22Findings(result, 0, t22ValidRule)); got != 1 {
+		t.Fatalf("valid findings = %d, want the OFF blocker", got)
+	}
+	if got := len(t22Findings(result, 0, t22RunawayRule)); got != 0 {
+		t.Fatalf("runaway warnings = %d, want 0 on a proven-OFF refusal", got)
+	}
+	if got := len(t22Findings(result, 0, t22BurstableRule)); got != 0 {
+		t.Fatalf("burstable warnings = %d, want 0 on a proven-OFF refusal", got)
+	}
+}
+
+// Existence-adjudicated refusals suppress declared warnings too: CREATE
+// on an existing group refuses its declared BURSTABLE; ALTER on an
+// absent group refuses its declared KILL clause.
+func TestT22DeclaredWarningsSuppressedOnExistenceRefusal(t *testing.T) {
+	provider := t22ProviderOn(map[string]t22GroupFact{
+		"rg_live":  {status: spec.MetadataStatusConfirmed, exists: true},
+		"rg_ghost": {status: spec.MetadataStatusNotFound, exists: false},
+	})
+	result := t22MustAudit(t,
+		"CREATE RESOURCE GROUP rg_live RU_PER_SEC=10 BURSTABLE=TRUE;",
+		spec.DialectTiDB, provider, "")
+	if got := len(t22Findings(result, 0, t22ValidRule)); got != 1 {
+		t.Fatalf("valid findings = %d, want the existing-name blocker", got)
+	}
+	if got := len(t22Findings(result, 0, t22BurstableRule)); got != 0 {
+		t.Fatalf("burstable warnings = %d, want 0 — the refused CREATE lands nothing", got)
+	}
+	result = t22MustAudit(t,
+		"ALTER RESOURCE GROUP rg_ghost QUERY_LIMIT=(EXEC_ELAPSED='30s',ACTION=KILL);",
+		spec.DialectTiDB, provider, "")
+	if got := len(t22Findings(result, 0, t22ValidRule)); got != 1 {
+		t.Fatalf("valid findings = %d, want the absent-target blocker", got)
+	}
+	if got := len(t22Findings(result, 0, t22RunawayRule)); got != 0 {
+		t.Fatalf("runaway warnings = %d, want 0 — the refused ALTER lands nothing", got)
+	}
+}
+
+// The refusal judgment reads shared facts, not the valid rule's output:
+// with valid disabled the same proven refusal still silences declared
+// warnings — and a natively-applicable statement keeps its warnings even
+// while another policy level blocks nothing of the statement's effect.
+func TestT22WarningGatingIndependentOfValidRule(t *testing.T) {
+	policyPath := t22Policy(t, map[string]policy.RulePolicy{t22ValidRule: {Enabled: false}})
+	provider := t22ProviderOn(map[string]t22GroupFact{})
+	result := t22MustAudit(t,
+		"CREATE RESOURCE GROUP rg_bad RU_PER_SEC=10 QUERY_LIMIT=(ACTION=KILL);",
+		spec.DialectTiDB, provider, policyPath)
+	if got := len(t22Findings(result, 0, t22ValidRule)); got != 0 {
+		t.Fatalf("valid findings = %d, want 0 — the rule is disabled", got)
+	}
+	if got := len(t22Findings(result, 0, t22RunawayRule)); got != 0 {
+		t.Fatalf("runaway warnings = %d, want 0 — refusal gating does not read the blocker", got)
+	}
+}
+
+// A catalog-grounded warning reports the live group's proven BURSTABLE
+// flag — a fact independent of the refused statement — so it survives
+// the same refusal that suppresses declared-effect warnings. The false
+// control confirms the branch is not upgraded.
+func TestT22CatalogBurstableWarnSurvivesRefusal(t *testing.T) {
+	truth := true
+	falsity := false
+	for _, tc := range []struct {
+		name      string
+		burstable *bool
+		wantWarn  int
+	}{
+		{name: "proven_true_warns", burstable: &truth, wantWarn: 1},
+		{name: "proven_false_silent", burstable: &falsity, wantWarn: 0},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			provider := &t22Provider{capabilityKnown: true, capabilityOn: false, groups: map[string]t22GroupFact{
+				"rg_burst": {status: spec.MetadataStatusConfirmed, exists: true,
+					definition: &spec.ResourceGroupDefinition{Burstable: tc.burstable}},
+			}}
+			result := t22MustAudit(t,
+				"ALTER RESOURCE GROUP rg_burst RU_PER_SEC=20;",
+				spec.DialectTiDB, provider, "")
+			if got := len(t22Findings(result, 0, t22ValidRule)); got != 1 {
+				t.Fatalf("valid findings = %d, want the OFF blocker", got)
+			}
+			if got := len(t22Findings(result, 0, t22BurstableRule)); got != tc.wantWarn {
+				t.Fatalf("burstable warnings = %d, want %d — the catalog fact is not the refused statement", got, tc.wantWarn)
+			}
+		})
+	}
+}
+
+// Positive control: a natively-applicable declaration keeps its declared
+// warnings — suppression is refusal-driven, not a blanket disable.
+func TestT22DeclaredWarningsFireOnApplicableStatement(t *testing.T) {
+	provider := t22ProviderOn(map[string]t22GroupFact{
+		"rg_new": {status: spec.MetadataStatusNotFound, exists: false},
+	})
+	result := t22MustAudit(t,
+		"CREATE RESOURCE GROUP rg_new RU_PER_SEC=10 BURSTABLE=TRUE QUERY_LIMIT=(EXEC_ELAPSED='30s',ACTION=KILL);",
+		spec.DialectTiDB, provider, "")
+	if got := len(t22Findings(result, 0, t22RunawayRule)); got != 1 {
+		t.Fatalf("runaway warnings = %d, want 1 — legal KILL keeps its warning", got)
+	}
+	if got := len(t22Findings(result, 0, t22BurstableRule)); got != 1 {
+		t.Fatalf("burstable warnings = %d, want 1 — declared BURSTABLE keeps its warning", got)
 	}
 }
 

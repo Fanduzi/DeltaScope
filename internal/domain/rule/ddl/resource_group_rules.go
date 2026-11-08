@@ -77,6 +77,30 @@ func resourceGroupProvenRefusal(statement spec.Statement, state *spec.ResourceGr
 	return false
 }
 
+// resourceGroupStatementRefused reports whether the statement provably
+// cannot take effect under fixed TiDB 8.5 semantics: a proven-OFF
+// resource-control gate, a statically-invalid runaway clause, or a
+// proven existence/reserved-target refusal. It reads only shared facts —
+// spec declarations, ordered state and observed metadata — never the
+// verdict, another rule's findings, or whether the valid rule is
+// enabled. Declared-effect warnings and success notices consume it so a
+// refused statement never claims its authored config will apply.
+func resourceGroupStatementRefused(statement spec.Statement) bool {
+	if statement.Metadata != nil && statement.Metadata.Instance != nil &&
+		statement.Metadata.Instance.TiDBEnableResourceControlKnown &&
+		!statement.Metadata.Instance.TiDBEnableResourceControl {
+		return true
+	}
+	if statement.DDL == nil || statement.DDL.ResourceGroup == nil {
+		return false
+	}
+	if resourceGroupRunawayInvalidReason(statement.DDL.Operation,
+		statement.DDL.ResourceGroup) != "" {
+		return true
+	}
+	return resourceGroupProvenRefusal(statement, resourceGroupBinding(statement))
+}
+
 // resourceGroupValidRule adjudicates the existence and premise contracts
 // of resource-group lifecycle statements: the proven resource-control
 // gate, the reserved builtin group, proven duplicates, and proven-absent
@@ -250,7 +274,11 @@ func (r resourceGroupBurstableWarnRule) Evaluate(_ context.Context, statement sp
 	decl := statement.DDL.ResourceGroup
 	state := resourceGroupBinding(statement)
 	burstable, declared := decl.DeclaredBurstable()
-	enabled := declared && burstable.Enabled()
+	// The authored declaration describes a config the statement will not
+	// land once the statement itself is a proven refusal — suppress that
+	// branch only. The proven catalog flag is a live fact independent of
+	// this statement's outcome and still earns its warning.
+	enabled := declared && burstable.Enabled() && !resourceGroupStatementRefused(statement)
 	if !declared && statement.DDL.Operation == spec.DDLOperationAlterResourceGroup &&
 		state != nil && state.Proven() && state.Exists && state.Definition != nil && state.Definition.Burstable != nil {
 		// ALTER without a BURSTABLE member keeps the proven catalog flag.
@@ -289,6 +317,11 @@ func (r resourceGroupRunawayWarnRule) AppliesTo(statement spec.Statement) bool {
 }
 
 func (r resourceGroupRunawayWarnRule) Evaluate(_ context.Context, statement spec.Statement) ([]rule.Finding, error) {
+	// The warning describes the declared action's applied effect — a
+	// proven refusal lands nothing, so it must stay silent.
+	if resourceGroupStatementRefused(statement) {
+		return nil, nil
+	}
 	state := resourceGroupBinding(statement)
 	switch action := statement.DDL.ResourceGroup.DeclaredRunaway().Action(); {
 	case action == "kill":
@@ -314,19 +347,11 @@ func resourceGroupNoticeAdjudicator(operation, message, suggestion string) func(
 		if statement.Dialect != spec.DialectTiDB {
 			return nil, false
 		}
-		// A proven-OFF resource-control gate refuses before existence
-		// adjudication — the same dominance that suppresses notices on
-		// proven refusals applies even when the target stays unproven
-		// (issue #101 T22 Profile A native finding).
-		if statement.Metadata != nil && statement.Metadata.Instance != nil &&
-			statement.Metadata.Instance.TiDBEnableResourceControlKnown &&
-			!statement.Metadata.Instance.TiDBEnableResourceControl {
-			return []rule.Finding{}, true
-		}
-		// A statically-invalid runaway clause is a proven refusal — the
-		// notice must not claim a successful application.
-		if resourceGroupRunawayInvalidReason(statement.DDL.Operation,
-			statement.DDL.ResourceGroup) != "" {
+		// A proven refusal — the OFF gate, a statically-invalid runaway
+		// clause or existence adjudication — suppresses the success
+		// notice even when the target stays unproven (issue #101 T22
+		// Profile A native finding).
+		if resourceGroupStatementRefused(statement) {
 			return []rule.Finding{}, true
 		}
 		state := resourceGroupBinding(statement)
