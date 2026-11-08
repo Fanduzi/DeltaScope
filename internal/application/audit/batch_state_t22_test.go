@@ -209,6 +209,23 @@ func TestT22GoldenPathCompletePremises(t *testing.T) {
 			t.Fatalf("statement %d valid findings = %d, want 0 — every premise proven", i, got)
 		}
 	}
+	// The dedicated lifecycle checks must have actually evaluated — a
+	// clean result is only proof when the rules applied, not skipped.
+	// valid, burstable.warn, and both notices apply to every RG create/
+	// alter statement; their positive-path counterparts (state gaps,
+	// burst warnings, blocks) are pinned by the surrounding controls.
+	if result.RuleSummary == nil {
+		t.Fatal("RuleSummary missing — cannot prove the dedicated rules applied")
+	}
+	if result.RuleSummary.Applicable < 4 {
+		t.Fatalf("applicable rules = %d, want the four dedicated RG checks evaluated", result.RuleSummary.Applicable)
+	}
+	for _, s := range result.RuleSummary.Skipped {
+		switch s.RuleID {
+		case t22ValidRule, t22BurstableRule, "ddl.create_resource_group.notice", "ddl.alter_resource_group.notice":
+			t.Fatalf("rule %q skipped on the golden path — it must evaluate and find nothing to block", s.RuleID)
+		}
+	}
 }
 
 // The CREATE post-state is a complete authored specification: fixed

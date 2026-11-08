@@ -168,3 +168,53 @@ bounded state gap on each statement) and the renamed
 `tidb85-alter-absent-unproven` (a zero-row read cannot prove absence —
 the honest outcome is the state gap plus the declarative notice, not a
 blocker).
+
+## Amendment R2 — Boolean arm, runaway-member coverage, dual-path evidence
+
+Review rejected two residual positions of the first correction:
+
+1. **The `BURSTABLE = Boolean` arm is legal v8.5 syntax and must be
+   supported** — recording it as a permanent parse error was accepting a
+   locked-parser limitation as product truth. The arm now parses through
+   the existing bounded supplement pipeline (`supplement.go`): inside
+   `CREATE/ALTER RESOURCE GROUP` spans only, an authored
+   `BURSTABLE [EqOpt] <TRUE|FALSE|NUM>` site has its `[=] value` bytes
+   blanked same-width, reparses as the bare keyword the locked grammar
+   accepts, and rebinds the authored truth as a typed `supp.burstable`
+   fact that `applySupplements` writes onto the `ResourceGroupOption`.
+   Rebind is one-to-one by statement order plus AST shape
+   (`countResourceGroupBurstableOptions` demands exactly one
+   `ast.ResourceBurstable` per supplemented statement — resource-group
+   nodes carry no `OriginTextPosition`, so span revalidation is
+   structurally impossible there and never attempted). Non-Boolean
+   operands (strings, decimals, negatives, identifiers) never match the
+   site pattern and keep the base parse error; duplicates still hit the
+   grammar's `CheckAppend`; `BURSTABLE`-shaped tokens outside
+   resource-group statements are untouched. Original statement
+   text/offsets are restored verbatim — the supplement alters only the
+   internal parse input.
+2. **QUERY_LIMIT member coverage had a silent gap**: an unclassifiable
+   member inside a recognized `QUERY_LIMIT` option was extracted but did
+   not lower coverage. `UnmodeledOptionKinds` now marks the whole
+   `QUERY_LIMIT` option's aspect unmodeled when any runaway member is
+   outside the five modeled kinds (`exec_elapsed`, `processed_keys`,
+   `ru`, `action`, `watch`), so the boundary degrades to
+   `unsupported_statement_aspect` instead of pretending the clause was
+   audited.
+
+The two ordered-state first paths are now independently evidenced:
+
+- **complete-premises golden path** (`TestT22GoldenPathCompletePremises`):
+  proven capability ON + proven-absent target → CREATE and ALTER both
+  reach `coverage=complete` with zero evidence gaps, the lifecycle
+  notices fire, and `RuleSummary` proves the dedicated rules were
+  applicable rather than skipped; the successor state publishes
+  `RU_PER_SEC=100` then `RU_PER_SEC=200`.
+- **unknown-state control** (`tidb85-ru-first-path` manifest case):
+  zero catalog rows keep the target unproven ⇒ `coverage=unverified`
+  with the bounded state gap — never upgraded to complete by the setup
+  `DROP` alone.
+
+`TRUE`/`FALSE`/`NUM` and bare keywords are distinct authored forms but
+one semantic: enabled when Boolean-truthy, disabled otherwise —
+matching the v8.5 `BoolValue`/`Boolean` grammar arm exactly.

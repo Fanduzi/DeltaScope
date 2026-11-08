@@ -40,9 +40,10 @@ Baseline behavior, reproduced by the permanent public red test
 ## Green receipts (post-implementation, offline)
 
 - `go test ./internal/application/audit -run TestT22 -count=1`:
-  19/19 PASS — first path `kind=ddl` + `unknown_resource_group_capability`
+  22/22 PASS — first path `kind=ddl` + `unknown_resource_group_capability`
   gap + zero unsupported; complete-premises golden path reaches
-  `coverage=complete` with no gaps and both notices; the CREATE batch
+  `coverage=complete` with no gaps and both notices and `RuleSummary`
+  proves the dedicated rules applied (not skipped); the CREATE batch
   projection publishes the fixed `NewResourceGroupSettings` defaults and
   `RU_PER_SEC=UNLIMITED` pins burst enabled; ALTER merges member-wise at
   the top level while a declared `QUERY_LIMIT` rebuilds the nested group
@@ -53,12 +54,17 @@ Baseline behavior, reproduced by the permanent public red test
   claim; resolver errors propagate uncached; disabled rules emit no
   gaps.
 - `go test ./internal/infrastructure/parser/tidb -run TestT22 -count=1`:
-  7/7 PASS — authored `100`/`200` kept distinct at the extractor seam,
+  10/10 PASS — authored `100`/`200` kept distinct at the extractor seam,
   `UNLIMITED` stays a token, bare `BURSTABLE` projects the 8.5 enabled
-  flag while the post-8.5 keyword forms (`MODERATED`/`UNLIMITED`/`OFF`)
-  extract as bounded `unsupported_form` members (the 8.5 `BURSTABLE=bool`
-  arm is an honest parse error on the locked parser), BACKGROUND stays a
-  bounded member, MySQL keeps the vendor-boundary marker.
+  flag, and the legal 8.5 `BURSTABLE [EqOpt] <TRUE|FALSE|NUM>` arm
+  extracts authored enabled/disabled through the resource-group
+  supplement (same-width blank → reparse → one-to-one typed rebind;
+  statement text/positions preserved verbatim; multi-statement input
+  works) while the post-8.5 keyword forms (`MODERATED`/`UNLIMITED`/`OFF`)
+  stay bounded `unsupported_form` members and non-Boolean operands
+  (strings, negatives, decimals, identifiers) plus duplicates keep the
+  base parse error, BACKGROUND stays a bounded member, MySQL keeps the
+  vendor-boundary marker.
 - `go test ./internal/infrastructure/metadata/mysql -run TestT22 -count=1`:
   8/8 PASS — official RESOURCE_GROUPS reader publishes definitions,
   `UNLIMITED` distinct from numeric rates, zero rows stay unknown,

@@ -19,12 +19,12 @@ const (
 )
 
 // ResourceGroupBurstable is the authored burst allowance under the fixed
-// TiDB 8.5 grammar: bare BURSTABLE and BURSTABLE = TRUE enable it,
-// BURSTABLE = FALSE disables. The locked parser's newer keyword forms
-// (BURSTABLE = MODERATED/UNLIMITED/OFF) are post-8.5 vocabulary it accepts
-// but the target does not — unsupported_form is bounded evidence, never
-// 8.5 truth. Disabled is unreachable through the locked parser (it
-// rejects the Boolean arm) and is kept for model completeness.
+// TiDB 8.5 grammar: bare BURSTABLE and BURSTABLE [EqOpt] Boolean
+// (TRUE/FALSE/NUM — rebound through the resource-group supplement, which
+// the locked grammar cannot represent) enable or disable it. The locked
+// parser's newer keyword forms (BURSTABLE = MODERATED/UNLIMITED/OFF) are
+// post-8.5 vocabulary it accepts but the target does not —
+// unsupported_form is bounded evidence, never 8.5 truth.
 type ResourceGroupBurstable string
 
 const (
@@ -247,6 +247,20 @@ func (d *ResourceGroupDeclaration) UnmodeledOptionKinds() []ResourceGroupOptionK
 		case ResourceGroupOptionBurstable:
 			if option.Burstable == ResourceGroupBurstableUnsupportedForm {
 				out = append(out, option.Kind)
+			}
+		case ResourceGroupOptionQueryLimit:
+			// A QUERY_LIMIT member the extractor could not classify
+			// stays bounded evidence and marks the whole option aspect
+			// unmodeled — the runaway group is never half-audited.
+			if option.Runaway != nil {
+				for _, member := range option.Runaway.Members {
+					switch member.Kind {
+					case ResourceGroupRunawayExecElapsed, ResourceGroupRunawayProcessedKeys,
+						ResourceGroupRunawayRU, ResourceGroupRunawayAction, ResourceGroupRunawayWatch:
+					default:
+						out = append(out, option.Kind)
+					}
+				}
 			}
 		}
 	}

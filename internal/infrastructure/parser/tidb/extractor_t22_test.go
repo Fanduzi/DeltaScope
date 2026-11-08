@@ -6,6 +6,7 @@ package tidbparser
 
 import (
 	"context"
+	"strings"
 	"testing"
 
 	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
@@ -146,11 +147,86 @@ func TestT22BurstableExplicitFormsUnsupported(t *testing.T) {
 			t.Fatalf("unmodeled kinds = %v for %q, want the burstable aspect bounded", decl.UnmodeledOptionKinds(), sql)
 		}
 	}
-	// The v8.5 Boolean arm itself is unparseable through the locked
-	// parser — an honest parse error, never a silently modeled flag.
+}
+
+// The legal v8.5 `BURSTABLE [EqOpt] Boolean` arm rides the supplement
+// path: the locked grammar cannot represent it, so a same-width blank +
+// typed rebind recovers the authored truth. Every Boolean spelling the
+// fixed grammar accepts must extract enabled/disabled — never a parse
+// error, never a guessed flag.
+func TestT22BurstableBooleanArmExtracts(t *testing.T) {
+	for _, tc := range []struct {
+		sql  string
+		want spec.ResourceGroupBurstable
+	}{
+		{"CREATE RESOURCE GROUP rg RU_PER_SEC=100 BURSTABLE=TRUE;", spec.ResourceGroupBurstableEnabled},
+		{"CREATE RESOURCE GROUP rg RU_PER_SEC=100 BURSTABLE TRUE;", spec.ResourceGroupBurstableEnabled},
+		{"CREATE RESOURCE GROUP rg RU_PER_SEC=100 BURSTABLE = TRUE;", spec.ResourceGroupBurstableEnabled},
+		{"CREATE RESOURCE GROUP rg RU_PER_SEC=100 BURSTABLE=1;", spec.ResourceGroupBurstableEnabled},
+		{"CREATE RESOURCE GROUP rg RU_PER_SEC=100 BURSTABLE=42;", spec.ResourceGroupBurstableEnabled},
+		{"CREATE RESOURCE GROUP rg RU_PER_SEC=100 BURSTABLE=FALSE;", spec.ResourceGroupBurstableDisabled},
+		{"CREATE RESOURCE GROUP rg RU_PER_SEC=100 BURSTABLE FALSE;", spec.ResourceGroupBurstableDisabled},
+		{"CREATE RESOURCE GROUP rg RU_PER_SEC=100 BURSTABLE=0;", spec.ResourceGroupBurstableDisabled},
+		{"ALTER RESOURCE GROUP rg BURSTABLE=FALSE;", spec.ResourceGroupBurstableDisabled},
+		{"ALTER RESOURCE GROUP rg BURSTABLE=1;", spec.ResourceGroupBurstableEnabled},
+	} {
+		stmt := parseExtractT22(t, tc.sql)
+		burstable, ok := stmt.DDL.ResourceGroup.DeclaredBurstable()
+		if !ok || burstable != tc.want {
+			t.Fatalf("burstable = %q (ok=%t) for %q, want %q", burstable, ok, tc.sql, tc.want)
+		}
+		for _, kind := range stmt.DDL.ResourceGroup.UnmodeledOptionKinds() {
+			if kind == spec.ResourceGroupOptionBurstable {
+				t.Fatalf("burstable marked unmodeled for %q — legal 8.5 arm is modeled", tc.sql)
+			}
+		}
+	}
+}
+
+// The supplement never invents syntax: non-Boolean operands keep the
+// base grammar's own parse error, and a duplicate BURSTABLE arm stays a
+// duplicated-option rejection exactly as v8.5's CheckAppend decrees.
+func TestT22BurstableNonBooleanKeepsParseError(t *testing.T) {
 	parser := New()
-	if _, err := parser.Parse(context.Background(), "CREATE RESOURCE GROUP rg RU_PER_SEC=100 BURSTABLE=TRUE;"); err == nil {
-		t.Fatal("BURSTABLE=TRUE parsed — the locked parser unexpectedly accepts the 8.5 Boolean arm")
+	for _, sql := range []string{
+		"CREATE RESOURCE GROUP rg BURSTABLE='yes';",
+		"CREATE RESOURCE GROUP rg BURSTABLE=-1;",
+		"CREATE RESOURCE GROUP rg BURSTABLE=1.5;",
+		"CREATE RESOURCE GROUP rg BURSTABLE=abc;",
+		"CREATE RESOURCE GROUP rg BURSTABLE=TRUE BURSTABLE=FALSE;",
+		"CREATE RESOURCE GROUP rg BURSTABLE BURSTABLE;",
+	} {
+		if _, err := parser.Parse(context.Background(), sql); err == nil {
+			t.Fatalf("%q parsed — the supplement must not rescue non-Boolean or duplicate arms", sql)
+		}
+	}
+}
+
+// RawSQL and positions stay verbatim: the same-width rewrite is a
+// parse-input detail, never visible in the recovered statement text.
+func TestT22BurstableBooleanPreservesRawSQL(t *testing.T) {
+	sql := "CREATE TABLE t (x int); CREATE RESOURCE GROUP rg RU_PER_SEC=100 BURSTABLE=FALSE; ALTER RESOURCE GROUP rg BURSTABLE=1;"
+	parser := New()
+	result, err := parser.Parse(context.Background(), sql)
+	if err != nil {
+		t.Fatalf("parse sql: %v", err)
+	}
+	if len(result.Statements) != 3 {
+		t.Fatalf("statements = %d, want 3", len(result.Statements))
+	}
+	wrapped := WrapStatements(result.Statements, result.Warnings)
+	if got := strings.TrimSpace(wrapped[1].RawSQL); got != "CREATE RESOURCE GROUP rg RU_PER_SEC=100 BURSTABLE=FALSE;" {
+		t.Fatalf("raw sql = %q, want verbatim authored text", wrapped[1].RawSQL)
+	}
+	if got := strings.TrimSpace(wrapped[2].RawSQL); got != "ALTER RESOURCE GROUP rg BURSTABLE=1;" {
+		t.Fatalf("raw sql = %q, want verbatim authored text", wrapped[2].RawSQL)
+	}
+	alter, err := wrapped[2].Extractor.Extract(spec.DialectTiDB, wrapped[2].RawSQL)
+	if err != nil {
+		t.Fatalf("extract: %v", err)
+	}
+	if burstable, _ := alter.DDL.ResourceGroup.DeclaredBurstable(); burstable != spec.ResourceGroupBurstableEnabled {
+		t.Fatalf("alter burstable = %q, want enabled", burstable)
 	}
 }
 

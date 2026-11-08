@@ -28,6 +28,10 @@ type statementSupplements struct {
 	visibility       map[string]string
 	setterVisibility string
 	defaultParens    map[string]bool
+	// burstable carries the authored truth value of a fixed-8.5
+	// `BURSTABLE [EqOpt] Boolean` arm the locked grammar cannot
+	// represent; nil when the statement has no supplemented site.
+	burstable *bool
 }
 
 type sqlTokKind byte
@@ -152,11 +156,23 @@ type stmtSupplementPlan struct {
 	defaults   []defaultExprSite
 	visibility []columnVisibilityFact
 	setter     *visibilitySetterFact
+	burstable  *burstableBoolSite
 	invalid    bool
 }
 
+// burstableBoolSite marks one authored `BURSTABLE [EqOpt] Boolean`
+// span — legal fixed-v8.5 grammar the locked parser's post-8.5 keyword
+// enum cannot represent. start/end bound the `[=] value` bytes blanked
+// for the rewrite (leaving the bare keyword the grammar accepts);
+// enabled is the v8.5 Boolean result (TRUE/NUM!=0 → true).
+type burstableBoolSite struct {
+	start   int
+	end     int
+	enabled bool
+}
+
 func (p *stmtSupplementPlan) hasWork() bool {
-	return len(p.defaults) > 0 || len(p.visibility) > 0 || p.setter != nil
+	return len(p.defaults) > 0 || len(p.visibility) > 0 || p.setter != nil || p.burstable != nil
 }
 
 // visibilitySetterFact is the narrow whole-statement form
@@ -221,7 +237,14 @@ func analyzeSupplementStatement(toks []sqlTok, sqlText string, lo, hi int) stmtS
 		for i < hi && (toks[i].wordIs(sqlText, "temporary") || toks[i].wordIs(sqlText, "global") || toks[i].wordIs(sqlText, "local")) {
 			i++
 		}
-		if i >= hi || !toks[i].wordIs(sqlText, "table") {
+		if i >= hi {
+			return plan
+		}
+		if i+1 < hi && toks[i].wordIs(sqlText, "resource") && toks[i+1].wordIs(sqlText, "group") {
+			analyzeResourceGroupOptions(toks, sqlText, i+2, hi, &plan)
+			return plan
+		}
+		if !toks[i].wordIs(sqlText, "table") {
 			return plan
 		}
 		i++
@@ -236,7 +259,14 @@ func analyzeSupplementStatement(toks []sqlTok, sqlText string, lo, hi int) stmtS
 		}
 	case toks[i].wordIs(sqlText, "alter"):
 		i++
-		if i >= hi || !toks[i].wordIs(sqlText, "table") {
+		if i >= hi {
+			return plan
+		}
+		if i+1 < hi && toks[i].wordIs(sqlText, "resource") && toks[i+1].wordIs(sqlText, "group") {
+			analyzeResourceGroupOptions(toks, sqlText, i+2, hi, &plan)
+			return plan
+		}
+		if !toks[i].wordIs(sqlText, "table") {
 			return plan
 		}
 		i++
@@ -315,6 +345,85 @@ func matchVisibilitySetter(toks []sqlTok, sqlText string, i, hi int) (*visibilit
 	}
 	fact.visibility = strings.ToLower(toks[i].text(sqlText))
 	return fact, true
+}
+
+// analyzeResourceGroupOptions scans one CREATE|ALTER RESOURCE GROUP
+// span's option region for the fixed-v8.5 `BURSTABLE [EqOpt] Boolean`
+// arm the locked grammar cannot represent (it accepts only the bare
+// keyword and the post-8.5 MODERATED/UNLIMITED/OFF words). The authored
+// `[=] value` bytes are planned for blanking so the bare keyword parses;
+// the Boolean truth rides as a typed supplement. Blanking is safe by
+// construction: wherever the grammar accepts bare BURSTABLE the v8.5
+// grammar accepts the authored Boolean arm in the same position, and
+// anywhere else the rewritten text fails the same way the original did.
+func analyzeResourceGroupOptions(toks []sqlTok, sqlText string, i, hi int, plan *stmtSupplementPlan) {
+	if i+2 < hi && toks[i].wordIs(sqlText, "if") && toks[i+1].wordIs(sqlText, "not") && toks[i+2].wordIs(sqlText, "exists") {
+		i += 3
+	} else if i+1 < hi && toks[i].wordIs(sqlText, "if") && toks[i+1].wordIs(sqlText, "exists") {
+		i += 2
+	}
+	if i < hi && isIdentToken(toks[i]) {
+		i++ // group name
+	}
+	for i < hi {
+		if !toks[i].wordIs(sqlText, "burstable") {
+			i++
+			continue
+		}
+		i++
+		blankStart := toks[i-1].end
+		j := i
+		if j < hi && toks[j].kind == tokPunct && toks[j].text(sqlText) == "=" {
+			blankStart = toks[j].start
+			j++
+		}
+		if j >= hi {
+			break
+		}
+		if enabled, ok := resourceGroupBoolValue(toks[j], sqlText); ok {
+			if plan.burstable == nil {
+				plan.burstable = &burstableBoolSite{start: blankStart, end: toks[j].end, enabled: enabled}
+			}
+			i = j + 1
+			continue
+		}
+		i = j
+	}
+}
+
+// resourceGroupBoolValue evaluates a v8.5 `Boolean` operand:
+// TRUE → true, FALSE → false, NUM → value != 0. Any other token kind or
+// spelling is not the Boolean arm — the site stays untouched so the
+// base grammar keeps its own verdict on the authored text.
+func resourceGroupBoolValue(tok sqlTok, sqlText string) (bool, bool) {
+	if tok.kind != tokWord {
+		return false, false
+	}
+	word := tok.text(sqlText)
+	if strings.EqualFold(word, "true") {
+		return true, true
+	}
+	if strings.EqualFold(word, "false") {
+		return false, true
+	}
+	// v8.5 `NUM` is an unsigned decimal literal; magnitude is irrelevant
+	// to the Boolean result, so a pure digit run is ≠0 unless every
+	// digit is zero — no width limit to overflow against.
+	digits := true
+	nonzero := false
+	for i := 0; i < len(word); i++ {
+		if word[i] < '0' || word[i] > '9' {
+			digits = false
+			break
+		}
+		if word[i] != '0' {
+			nonzero = true
+		}
+	}
+	if digits && len(word) > 0 {
+		return nonzero, true
+	}
+	return false, false
 }
 
 // skipQualifiedName consumes `name[.name[.name]]` and returns the index after
@@ -589,6 +698,13 @@ func applySupplementPlan(sqlText string, plan supplementPlan) []byte {
 				rewritten[i] = ' '
 			}
 		}
+		if stmt.burstable != nil {
+			for i := stmt.burstable.start; i < stmt.burstable.end; i++ {
+				if rewritten[i] != '\n' && rewritten[i] != '\r' {
+					rewritten[i] = ' '
+				}
+			}
+		}
 	}
 	return rewritten
 }
@@ -620,9 +736,15 @@ func bindSupplementPlan(sqlText string, plan supplementPlan, parsed []ast.StmtNo
 		}
 		node := parsed[pi]
 		pi++
-		if pos := node.OriginTextPosition(); pos < stmt.byteStart || pos > stmt.byteEnd {
-			return nil, false
+		if stmt.burstable == nil {
+			if pos := node.OriginTextPosition(); pos < stmt.byteStart || pos > stmt.byteEnd {
+				return nil, false
+			}
 		}
+		// Resource-group productions leave OriginTextPosition unset in the
+		// locked grammar, so the burstable-site statements bind by the
+		// ordered one-to-one consumption plus the node shape check below
+		// instead of a byte-range assertion.
 		supp := &statementSupplements{}
 		if !bindDefaultSites(sqlText, stmt, node) {
 			return nil, false
@@ -644,6 +766,16 @@ func bindSupplementPlan(sqlText string, plan supplementPlan, parsed []ast.StmtNo
 				}
 				supp.visibility[fact.column] = fact.visibility
 			}
+		}
+		if stmt.burstable != nil {
+			// The blanked value parses as the bare keyword, so the node
+			// must carry exactly one burstable option — anything else
+			// means the rewrite bound to unexpected syntax: fail closed.
+			if countResourceGroupBurstableOptions(node) != 1 {
+				return nil, false
+			}
+			enabled := stmt.burstable.enabled
+			supp.burstable = &enabled
 		}
 		out = append(out, &supplementedStatement{StmtNode: node, supp: supp})
 	}
@@ -721,6 +853,28 @@ func countParsedColumnDefs(node ast.StmtNode, name string) int {
 					match(def)
 				}
 			}
+		}
+	}
+	return count
+}
+
+// countResourceGroupBurstableOptions counts the BURSTABLE option
+// members a CREATE/ALTER RESOURCE GROUP node parsed with — the same
+// one-to-one binding discipline the column facts use.
+func countResourceGroupBurstableOptions(node ast.StmtNode) int {
+	var list []*ast.ResourceGroupOption
+	switch stmt := node.(type) {
+	case *ast.CreateResourceGroupStmt:
+		list = stmt.ResourceGroupOptionList
+	case *ast.AlterResourceGroupStmt:
+		list = stmt.ResourceGroupOptionList
+	default:
+		return 0
+	}
+	count := 0
+	for _, opt := range list {
+		if opt != nil && opt.Tp == ast.ResourceBurstable {
+			count++
 		}
 	}
 	return count

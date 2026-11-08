@@ -247,6 +247,20 @@ func (e tidbExtractor) applySupplements(statement *spec.Statement) {
 				}
 			}
 		}
+	case spec.DDLOperationCreateResourceGroup, spec.DDLOperationAlterResourceGroup:
+		if supp.burstable == nil || ddl.ResourceGroup == nil {
+			return
+		}
+		for i := range ddl.ResourceGroup.Options {
+			if ddl.ResourceGroup.Options[i].Kind != spec.ResourceGroupOptionBurstable {
+				continue
+			}
+			if *supp.burstable {
+				ddl.ResourceGroup.Options[i].Burstable = spec.ResourceGroupBurstableEnabled
+			} else {
+				ddl.ResourceGroup.Options[i].Burstable = spec.ResourceGroupBurstableDisabled
+			}
+		}
 	}
 }
 
