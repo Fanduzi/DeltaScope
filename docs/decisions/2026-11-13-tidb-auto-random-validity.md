@@ -119,3 +119,49 @@ into a claimed value.
 - Upstream: pingcap/tidb v8.5.0 `pkg/ddl/create_table.go`,
   `pkg/ddl/executor.go`, `pkg/meta/autoid/autoid.go`
 - Issue: #102 (T23), parent #79
+
+## Amendment — T23-R2 (2026-11-08 follow-up): shared verdict, refusal-proof post-state, create-time options, explicit policy parameter
+
+The review required the allocator acceptance to be team-configurable
+rather than unconditional, and the refusal matrix to be authoritative in
+ordered state — not merely a rule finding.
+
+- `spec/auto_random.go` is now the single shared verdict:
+  `AutoRandomColumnVerdict` feeds `ddl.tidb.table.auto_random.valid` and
+  `applyCreateTable` identically. A statically-refused CREATE keeps the
+  exact pre-state (no ghost shape even with the rule disabled — ordered
+  state never consults the rule engine); an undecidable clustered
+  premise invalidates the bound fact. `CREATE TABLE ... IF NOT EXISTS`
+  on a proven-present target still settles before any premise engages.
+- `auto_increment.require` gains `accept_tidb_auto_random` (unset =
+  strict literal `AUTO_INCREMENT`; shipped default `true`). A legal
+  AUTO_RANDOM under the strict profile emits the named policy blocker —
+  never described as a parser/vendor/native refusal — and the native
+  post-state still publishes. `unsigned.require` stays literal-only.
+- `spec.CreateTableOptionOutcome` mirrors `handleTableOptions` for the
+  four create-time options: `AUTO_ID_CACHE` >MaxInt64 refuses, nonzero
+  `SHARD_ROW_ID_BITS` on a clustered PK refuses (same tri-state premise,
+  same minimal gap), `PRE_SPLIT_REGIONS` on a temporary table refuses,
+  `AUTO_RANDOM_BASE` accepts any authored uint. Declared values publish
+  unchanged into `shape.Options` — source clamps (shard>15→15,
+  pre-split>shardingBits) are effective-state normalization, never
+  authored rewrites or blockers.
+- New rule `ddl.tidb.table.options.valid` emits the finding/gap; MySQL
+  keeps the vendor boundary on CREATE and ALTER
+  (`spec.mysqlAlterVendorOptions`); ALTER-side mutability and ALTER
+  column AUTO_RANDOM stay bounded unaudited gaps pending R2.6.
+- CACHE/NOCACHE, ATTRIBUTES, and SET TIFLASH REPLICA remain
+  inventory-pending: TiFlash success claims require a real TiFlash
+  store; a unistore store-count=0 proves only a negative.
+- `testdata/ddl-golden/T23.json` records the offline implementation
+  candidate and the narrowed A/B/C restricted-fixture card; every
+  mutable variable records scope, reads the original value, and restores
+  the observed original. No native case has run; none is claimed.
+
+Verification additions: `batch_state_t23_test.go` (refusal matrix → no
+publish, undecidable → invalidate, applicable → publish with handle PK,
+pre-existing shape preserved), `batch_state_t23opt_test.go`,
+`auto_random_t23opt_test.go` (option refusals + minimal gaps),
+`pkg/deltascope/audit_t23_test.go` (public-Audit seam through a stub
+provider), `testdata/sql-corpus/tidb/ddl/findings/table_options_rules.*`,
+CLI evidence for both policy profiles.

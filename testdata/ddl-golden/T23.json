@@ -1,0 +1,317 @@
+{
+ "task_id": "T23",
+ "issue": 102,
+ "policy_profile": "t23-layout-id",
+ "description": "T23 TiDB 8.5 physical layout / ID / cache table operations. OFFLINE IMPLEMENTATION CANDIDATE \u2014 no native case has run and none may be claimed. Modeled offline: spec.AutoRandomColumnVerdict (v8.5.0 setTableAutoRandomBits + NewShardIDFormat) shared by ddl.tidb.table.auto_random.valid and applyCreateTable \u2014 refused CREATEs keep pre-state, undecidable clustered premises invalidate; spec.CreateTableOptionOutcome (handleTableOptions) for AUTO_RANDOM_BASE / AUTO_ID_CACHE / SHARD_ROW_ID_BITS / PRE_SPLIT_REGIONS shared by ddl.tidb.table.options.valid and state publication \u2014 authored values publish unchanged, source clamps are effective-state normalization only; auto_increment.require is policy-parameterized (accept_tidb_auto_random, unset = strict literal, shipped default true), unsigned.require stays literal; MySQL keeps the vendor boundary on CREATE and ALTER; ALTER-side auto_random/option mutability stays bounded unaudited pending R2.6; CACHE/NOCACHE, ATTRIBUTES, TiFlash replica remain inventory-pending (TiFlash success paths require a real TiFlash store \u2014 a unistore store-count=0 proves only a negative). metadata_cases are EXPECT-FILLED restricted-fixture experiments grouped by the narrowed authorization card: A = AUTO_RANDOM/ID SQL + formal provider reads + clustered-mode comparison + minimal MySQL vendor negative + AUTO_RANDOM_BASE controls; B = CACHE/ATTRIBUTES with backend/state prerequisites confirmed before any effect claim; C = TiFlash declaration vs replica count vs store capability vs asynchronous availability \u2014 requires the real service, missing-service cases stay explicitly incomplete. Every mutable variable records scope (session/global), reads the original value, and restores the observed original \u2014 never an assumed constant. cli_cases are provider-free offline contracts: no instance facts observed, so AUTO_RANDOM statements owe the minimal instance-fact gap.",
+ "anchors": {
+  "tidb85": {
+   "service": "tidb85",
+   "container": "deltascope-ddl-golden-tidb85",
+   "client_container": "deltascope-ddl-golden-tidb85-client",
+   "client_service": "tidb85-client",
+   "image": "pingcap/tidb:v8.5.0",
+   "product": "tidb",
+   "version_contains": "v8.5.0",
+   "database": "golden",
+   "exec_client": [
+    "mysql",
+    "-h127.0.0.1",
+    "-P4000",
+    "-uroot",
+    "--default-character-set=utf8mb4"
+   ],
+   "needs_database_create": false,
+   "exec_password_env": "T23_TIDB_PASSWORD"
+  },
+  "mysql80": {
+   "service": "mysql80",
+   "container": "deltascope-ddl-golden-mysql80",
+   "image": "mysql:8.0.46",
+   "product": "mysql",
+   "version_contains": "8.0.46",
+   "database": "golden",
+   "exec_client": [
+    "mysql",
+    "-uroot",
+    "--default-character-set=utf8mb4"
+   ],
+   "needs_database_create": false,
+   "exec_password_env": "T23_MYSQL_PASSWORD"
+  }
+ },
+ "ddl_steps": [],
+ "syntax_negative": {
+  "sql": "CREATE TABLE t23fx_bad (id BIGINT PRIMARY KEY AUTO_RANDOM(",
+  "expect": {
+   "error_class": "1064",
+   "forbidden_markers": [
+    "Access denied",
+    "Connection refused",
+    "doesn't exist",
+    "already exists"
+   ]
+  }
+ },
+ "policy": {
+  "enable": {
+   "ddl.tidb.table.auto_random.valid": {
+    "level": "blocker"
+   },
+   "ddl.tidb.table.options.valid": {
+    "level": "blocker"
+   },
+   "ddl.table.primary_key.auto_increment.require": {
+    "level": "blocker",
+    "params": {
+     "required": true,
+     "accept_tidb_auto_random": true
+    }
+   },
+   "ddl.table.primary_key.unsigned.require": {
+    "level": "blocker",
+    "params": {
+     "required": true
+    }
+   }
+  },
+  "profiles": {
+   "t23-strict-literal": {
+    "enable": {
+     "ddl.tidb.table.auto_random.valid": {
+      "level": "blocker"
+     },
+     "ddl.tidb.table.options.valid": {
+      "level": "blocker"
+     },
+     "ddl.table.primary_key.auto_increment.require": {
+      "level": "blocker",
+      "params": {
+       "required": true,
+       "accept_tidb_auto_random": false
+      }
+     },
+     "ddl.table.primary_key.unsigned.require": {
+      "level": "blocker",
+      "params": {
+       "required": true
+      }
+     }
+    }
+   }
+  }
+ },
+ "cli_cases": [
+  {
+   "id": "tidb-first-path-unobserved",
+   "dialect": "tidb",
+   "sql": "CREATE TABLE t (id BIGINT UNSIGNED PRIMARY KEY AUTO_RANDOM);",
+   "policy": "t23-layout-id",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "coverage": "unverified",
+    "evidence_gaps": 1,
+    "gap_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.tidb.table.auto_random.valid",
+      "required_facts": [
+       "instance.tidb_enable_clustered_index"
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "id": "tidb-first-path-strict-policy",
+   "dialect": "tidb",
+   "sql": "CREATE TABLE t (id BIGINT UNSIGNED PRIMARY KEY AUTO_RANDOM);",
+   "policy": "t23-strict-literal",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "coverage": "unverified",
+    "evidence_gaps": 1,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.primary_key.auto_increment.require",
+      "level": "blocker"
+     }
+    ]
+   }
+  },
+  {
+   "id": "tidb-refused-no-ghost",
+   "dialect": "tidb",
+   "sql": "CREATE TABLE t (id INT PRIMARY KEY AUTO_RANDOM);",
+   "policy": "t23-layout-id",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 2,
+    "coverage": "complete",
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.table.primary_key.unsigned.require",
+      "level": "blocker"
+     },
+     {
+      "index": 0,
+      "rule_id": "ddl.tidb.table.auto_random.valid",
+      "level": "blocker"
+     }
+    ]
+   }
+  },
+  {
+   "id": "tidb-shard-clustered-refused",
+   "dialect": "tidb",
+   "sql": "CREATE TABLE t (id BIGINT PRIMARY KEY CLUSTERED) SHARD_ROW_ID_BITS=5;",
+   "policy": "t23-layout-id",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 3,
+    "coverage": "complete",
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.tidb.table.options.valid",
+      "level": "blocker"
+     }
+    ]
+   }
+  },
+  {
+   "id": "tidb-options-legal",
+   "dialect": "tidb",
+   "sql": "CREATE TABLE t (id INT) AUTO_ID_CACHE=3000 AUTO_RANDOM_BASE=100 PRE_SPLIT_REGIONS=4;",
+   "policy": "t23-layout-id",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "coverage": "complete",
+    "evidence_gaps": 0
+   }
+  },
+  {
+   "id": "mysql-vendor-boundary",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (id INT) SHARD_ROW_ID_BITS=4;",
+   "policy": "t23-layout-id",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 1,
+    "coverage": "incomplete",
+    "unsupported_entries": [
+     {
+      "index": 0,
+      "feature": "create_table.option.shard_row_id_bits"
+     }
+    ]
+   }
+  }
+ ],
+ "metadata_cases": [
+  {
+   "id": "A-auto-random-first-path",
+   "anchor": "tidb85",
+   "dialect": "tidb",
+   "pending_native": true,
+   "note": "EXPECT FILLED - restricted fixture experiment: canonical CREATE + successor; formal provider reads tidb_enable_clustered_index and alter_primary_key; public Audit result vs native SHOW CREATE."
+  },
+  {
+   "id": "A-auto-random-static-refusals",
+   "anchor": "tidb85",
+   "dialect": "tidb",
+   "pending_native": true,
+   "note": "EXPECT FILLED - non-BIGINT, +AUTO_INCREMENT, +DEFAULT, shard/range bounds, incremental floor, missing clustered PK, non-first member; each refusal preserves pre-state."
+  },
+  {
+   "id": "A-clustered-mode-comparison",
+   "anchor": "tidb85",
+   "dialect": "tidb",
+   "pending_native": true,
+   "note": "EXPECT FILLED - tidb_enable_clustered_index on/off/int_only x alter_primary_key; record+restore original values (never assumed)."
+  },
+  {
+   "id": "A-mysql-vendor-negative",
+   "anchor": "mysql80",
+   "dialect": "mysql",
+   "pending_native": true,
+   "note": "EXPECT FILLED - minimal MySQL control: AUTO_RANDOM / SHARD_ROW_ID_BITS forms are vendor-negative on real MySQL 8.0."
+  },
+  {
+   "id": "A-auto-random-base-controls",
+   "anchor": "tidb85",
+   "dialect": "tidb",
+   "pending_native": true,
+   "note": "EXPECT FILLED - AUTO_RANDOM_BASE declared value vs allocator position vs next issued ID; declaration != runtime progress."
+  },
+  {
+   "id": "B-cache-attributes",
+   "anchor": "tidb85",
+   "dialect": "tidb",
+   "pending_native": true,
+   "note": "EXPECT FILLED - CACHE/NOCACHE + ATTRIBUTES: confirm backend and state prerequisites first; separate declaration acceptance, catalog state, actual effect; unistore may be insufficient."
+  },
+  {
+   "id": "C-tiflash-replica",
+   "anchor": "tidb85",
+   "dialect": "tidb",
+   "pending_native": true,
+   "requires_service": "tiflash",
+   "note": "EXPECT FILLED - declaration vs replica count vs store capability vs async availability; requires real TiFlash; unistore store-count=0 is only a negative case; missing-service work stays explicitly incomplete."
+  }
+ ],
+ "required_case_ids": [
+  "tidb-first-path-unobserved",
+  "tidb-first-path-strict-policy",
+  "tidb-refused-no-ghost",
+  "tidb-shard-clustered-refused",
+  "tidb-options-legal",
+  "mysql-vendor-boundary",
+  "A-auto-random-first-path",
+  "A-auto-random-static-refusals",
+  "A-clustered-mode-comparison",
+  "A-mysql-vendor-negative",
+  "A-auto-random-base-controls",
+  "B-cache-attributes",
+  "C-tiflash-replica"
+ ]
+}
