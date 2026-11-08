@@ -1,0 +1,31 @@
+# input: tiflash server config for the ddl-golden T23-S real-stack fixture
+# output: one TiFlash store joined to the single-PD cluster as a raft learner;
+#         the embedded proxy starts because raft.pd_addr is set (issue #102,
+#         authorization-gated). Minimal layout per v8.5.0 Server.cpp:
+#         service_addr hosts RAFT+coprocessor, proxy keys are inline
+# pos: mounted read-only into the t23s-tiflash service in
+#      ddl-golden-compose.yaml
+listen_host = "0.0.0.0"
+path = "/data/tiflash"
+
+[flash]
+service_addr = "0.0.0.0:3930"
+
+[flash.proxy]
+addr = "0.0.0.0:20170"
+advertise-addr = "t23s-tiflash:20170"
+status-addr = "0.0.0.0:20292"
+advertise-status-addr = "t23s-tiflash:20292"
+engine-addr = "t23s-tiflash:3930"
+data-dir = "/data/flash"
+
+[raft]
+pd_addr = "t23s-pd:2379"
+
+[status]
+metrics_port = 8234
+
+[logger]
+log = "/logs/tiflash.log"
+errorlog = "/logs/tiflash_error.log"
+level = "info"

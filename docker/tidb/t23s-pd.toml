@@ -1,0 +1,10 @@
+# input: pd-server scheduling config for the ddl-golden T23-S real-stack fixture
+# output: a single-node PD that schedules one voter per region so the lone
+#         TiKV store does not sit under a permanent miss-peer condition;
+#         placement rules stay enabled because SET TIFLASH REPLICA installs
+#         learner rules through them (issue #102, authorization-gated)
+# pos: mounted read-only into the t23s-pd service in ddl-golden-compose.yaml
+[replication]
+enable-placement-rules = true
+max-replicas = 1
+location-labels = []

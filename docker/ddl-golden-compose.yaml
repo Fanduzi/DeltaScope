@@ -139,3 +139,145 @@ services:
       timeout: 5s
       retries: 30
       start_period: 5s
+
+  # --- T23-S real TiKV-backed stack + alter-primary-key aux (issue #102) --
+  # Authorization-gated fixtures: only testdata/ddl-golden/T23S.json names
+  # these services, so the frozen T23 and T21 runs never start them. All
+  # images pinned to the same v8.5.0 as the tidb85 anchor. Topology is the
+  # documented minimum for a real TiFlash replica: one PD, one TiKV, one
+  # TiFlash store, one TiDB server on --store=tikv, one mysql client. The
+  # tidb85-apk aux TiDB is a separate unistore instance whose startup config
+  # sets alter-primary-key=true; it is deliberately NOT joined to the TiKV
+  # cluster so SHOW CONFIG never returns conflicting alter-primary-key rows.
+
+  t23s-pd:
+    image: pingcap/pd:v8.5.0
+    container_name: deltascope-ddl-golden-t23s-pd
+    ports:
+      - "127.0.0.1:24379:2379"
+    volumes:
+      - ./tidb/t23s-pd.toml:/pd.toml:ro
+    command:
+      - --name=t23s-pd
+      - --data-dir=/data
+      - --client-urls=http://0.0.0.0:2379
+      - --peer-urls=http://0.0.0.0:2380
+      - --advertise-client-urls=http://t23s-pd:2379
+      - --advertise-peer-urls=http://t23s-pd:2380
+      - --initial-cluster=t23s-pd=http://t23s-pd:2380
+      - --config=/pd.toml
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O - http://127.0.0.1:2379/pd/api/v1/health 2>/dev/null | grep -q health"]
+      interval: 5s
+      timeout: 5s
+      retries: 60
+      start_period: 10s
+
+  t23s-tikv:
+    image: pingcap/tikv:v8.5.0
+    container_name: deltascope-ddl-golden-t23s-tikv
+    depends_on:
+      t23s-pd:
+        condition: service_healthy
+    command:
+      - --addr=0.0.0.0:20160
+      - --advertise-addr=t23s-tikv:20160
+      - --status-addr=0.0.0.0:20180
+      - --advertise-status-addr=t23s-tikv:20180
+      - --data-dir=/data
+      - --pd=t23s-pd:2379
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O - http://127.0.0.1:20180/status >/dev/null 2>&1"]
+      interval: 5s
+      timeout: 5s
+      retries: 60
+      start_period: 15s
+
+  t23s-tiflash:
+    image: pingcap/tiflash:v8.5.0
+    container_name: deltascope-ddl-golden-t23s-tiflash
+    depends_on:
+      t23s-tikv:
+        condition: service_healthy
+    volumes:
+      - ./tidb/t23s-tiflash.toml:/tiflash/tiflash.toml:ro
+    command:
+      - --config-file=/tiflash/tiflash.toml
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O - http://127.0.0.1:8234/metrics >/dev/null 2>&1"]
+      interval: 5s
+      timeout: 5s
+      retries: 60
+      start_period: 20s
+
+  t23s-tidb:
+    image: pingcap/tidb:v8.5.0
+    container_name: deltascope-ddl-golden-t23s-tidb
+    depends_on:
+      t23s-tikv:
+        condition: service_healthy
+      t23s-tiflash:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:24002:4000"
+    command:
+      - --store=tikv
+      - --path=t23s-pd:2379
+      - --advertise-address=t23s-tidb
+      - --status=10080
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O - http://127.0.0.1:10080/status >/dev/null 2>&1"]
+      interval: 5s
+      timeout: 5s
+      retries: 60
+      start_period: 15s
+
+  t23s-tidb-client:
+    image: mysql:8.4.10
+    container_name: deltascope-ddl-golden-t23s-tidb-client
+    depends_on:
+      t23s-tidb:
+        condition: service_healthy
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - exec sleep infinity
+    healthcheck:
+      test: ["CMD-SHELL", "mysql --protocol=tcp -h t23s-tidb -P 4000 -uroot -Nse 'SELECT 1' | grep -qx '1'"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 5s
+
+  tidb85-apk:
+    image: pingcap/tidb:v8.5.0
+    container_name: deltascope-ddl-golden-tidb85-apk
+    ports:
+      - "127.0.0.1:24003:4000"
+    volumes:
+      - ./tidb/t23s-apk.toml:/tidb-apk.toml:ro
+    command:
+      - --store=unistore
+      - --path=
+      - --config=/tidb-apk.toml
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O - http://127.0.0.1:10080/status >/dev/null 2>&1"]
+      interval: 5s
+      timeout: 5s
+      retries: 60
+      start_period: 15s
+
+  tidb85-apk-client:
+    image: mysql:8.4.10
+    container_name: deltascope-ddl-golden-tidb85-apk-client
+    depends_on:
+      tidb85-apk:
+        condition: service_healthy
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - exec sleep infinity
+    healthcheck:
+      test: ["CMD-SHELL", "mysql --protocol=tcp -h tidb85-apk -P 4000 -uroot -Nse 'SELECT 1' | grep -qx '1'"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 5s

@@ -1,0 +1,9 @@
+# input: tidb-server config for the ddl-golden T23-S alter-primary-key fixture
+# output: the deprecated startup knob pinned to true — under
+#         tidb_enable_clustered_index=INT_ONLY a bare single-integer primary
+#         key is created NONCLUSTERED, so AUTO_RANDOM is refused where the
+#         apk=false control stack accepts it (issue #102,
+#         authorization-gated)
+# pos: mounted read-only into the tidb85-apk service in
+#      ddl-golden-compose.yaml
+alter-primary-key = true
