@@ -204,6 +204,104 @@ Explicitly NOT requested / declared-open:
 - `tidb_enable_clustered_index` restore targets the recorded
   pre-mutation value, never an assumed constant.
 
+## R10 amendment — scoped authorization corrections (2026-11-08)
+
+The reviewer's lightweight-stack authorization asked for four limited
+input corrections before execution; this amendment records them.
+
+### §二 corrections applied
+
+- **A. actual vs oracle separation** — every metadata case now carries
+  `oracle_basis`: the product `expect` is the frozen contract derived
+  from the fixed tree `f4fe758d` through the real
+  parse→enrich→EvaluateStatements path (the runner collects `actual`
+  from the built binary, so `expect` never oracles itself), while each
+  native `expect_rc` mirrors the documented upstream v8.5.0 arm and each
+  `verify`/`post_verify`/`structure` assertion is a catalog observation,
+  never an inference.
+- **B. clustered mode baseline** — `A-clustered-mode-comparison` now
+  records and asserts `@@global.tidb_enable_clustered_index=int_only`
+  in setup *before* the flip; teardown restores `int_only` because that
+  is the verified recorded baseline on this stack, not an assumed
+  constant. If the baseline ever drifts the case fails pre-mutation
+  instead of restoring a wrong value. Scope mechanics documented: the
+  variable is global+session scoped, `SET GLOBAL` affects new
+  connections only, and both the runner client and the product provider
+  open fresh connections, so `off` is observed through session
+  `SHOW VARIABLES` exactly as `LoadInstanceFacts` reads it.
+- **C. C-group scope separation** — `C-tiflash-replica` is marked
+  negative-only; positive arms are out-of-scope pending real TiFlash,
+  never silently absent.
+- **D. canonical vs selected set** — the manifest gains
+  `selected_case_ids` (= all 35 canonical ids for this run; selection is
+  declared, not runner-enforced) so the canonical denominator and the
+  authorized run scope are separate fields.
+
+### §三 oracle audit
+
+25→35 id mapping (the draft's 25 bare ids were never runner-valid):
+
+- 17 `T23.cli.*` — 1:1 prefix fix of the 17 bare cli ids.
+- 8 `T23.meta.*` — 1:1 prefix fix of the 8 bare meta ids (A-×6,
+  `B-cache-attributes`, `C-tiflash-replica`), now with real bodies.
+- +8 `T23.db.<anchor>.{ddl,syntax_negative}` — baseline-contract db
+  anchor cases the draft omitted entirely.
+- +2 `T23.meta.*` — `B-split-region`, `C-compact-noop`, added because
+  groups B (SPLIT) and C (COMPACT) had no native case.
+
+Instance-fact query audit (the three added `INSTANCE_FACT_QUERIES`):
+
+- Executed by the runner through `mysql_exec` — a fresh fixture-client
+  invocation per read; results are consumed only at the
+  `expect.instance_facts` assertion layer as independent environment
+  observations. They are not product inputs: the product reads
+  `tidb_enable_clustered_index` itself via `SHOW VARIABLES` in
+  `LoadInstanceFacts`, and `alter-primary-key`/`split-region-max-num`
+  via its own `SHOW CONFIG` path, so nothing bypasses the product's
+  own reads.
+- Failed/empty reads return `None` and the assertion fails; zero rows,
+  errors, and inconsistencies can never masquerade as observed values.
+  Expected fact values are hypotheses checked at run time, not
+  injected facts.
+
+Probe-derived expects are the product contract (what the fixed product
+should output), not independent oracles of correctness; the
+independent axis in every case is the native `expect_rc`/catalog
+assertion set, which mirrors upstream v8.5.0 semantics.
+
+### §六 TiFlash classification
+
+The claim "the provider never publishes a replica fact" is
+classification **#3 — the catalog loader is not implemented**:
+`information_schema.tiflash_replica` (REPLICA_COUNT, AVAILABLE per
+table) is never queried by `internal/infrastructure/metadata/mysql`;
+the only `tiflash_replica_count` producer is ordered-state same-batch
+declaration tracking in `batch_state_layout_r6.go`. Interface scope for
+a future loader: per-table replica count + availability from
+`information_schema.tiflash_replica` (or `SHOW TABLE <t>
+TIFLASH_REPLICA`), store capability from `information_schema
+.tiflash_store`/`SHOW PD ...` equivalents. This is reported as an
+unimplemented product read, not an environment gap and not
+NATIVE-PENDING.
+
+### Authorization card — C-column supplement (real TiFlash request)
+
+Deferred incremental request for the real success/recovery arms:
+
+- Minimal components: 1× PD, 1× TiKV, 1× TiFlash plus the existing
+  tidb-server, pinned to `v8.5.0` images (`pingcap/pd:v8.5.0`,
+  `pingcap/tikv:v8.5.0`, `pingcap/tiflash:v8.5.0`) on the aarch64 Lima
+  profile.
+- Estimated increment over the current profile: ~4 vCPU / ~6-8 GiB RAM /
+  ~10 GiB disk additional budget.
+- Replica math: replica_count=2 requires ≥2 TiFlash stores for AVAILABLE
+  to reach 1 — decide 1 vs 2 stores at request time and record which.
+- Synthetic data: a single small `t23fx` table suffices; readiness is
+  observed via `information_schema.tiflash_replica.AVAILABLE` polling
+  with a bounded cap.
+- End classifications stay per the taxonomy above; success requires
+  AVAILABLE=1 observed, not just the declaration row.
+
 ## Links
 
 - Manifest: `testdata/ddl-golden/T23.json`
