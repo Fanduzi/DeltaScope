@@ -1,0 +1,31 @@
+{
+  "run_id": "ds-iso-r16-20261108T2352Z-a1b2c3d4",
+  "daemon_endpoint": "unix:///Users/fan/.colima/ds-t21-20261107t1158z-e514c8/docker.sock",
+  "owner": "r16-audit",
+  "created_at": "20261108T155227Z",
+  "daemon_identity": {
+    "server_id": "35b66e6e-49f3-4615-b556-6a10062d4737",
+    "name": "colima-ds-t21-20261107t1158z-e514c8",
+    "os": "Ubuntu 24.04.4 LTS",
+    "docker_version": "29.5.2"
+  },
+  "project": "ds-iso-r16-20261108T2352Z-a1b2c3d4",
+  "containers": [],
+  "networks": [],
+  "volumes": [],
+  "generations": [],
+  "actions": [
+    {
+      "action": "preflight.info",
+      "rc": 0,
+      "detail": "{\"server_id\": \"35b66e6e-49f3-4615-b556-6a10062d4737\", \"name\": \"colima-ds-t21-20261107t1158z-e514c8\", \"os\": \"Ubuntu 24.04.4 LTS\", \"docker_version\": \"29.5.2\"}",
+      "at": "20261108T155228Z"
+    },
+    {
+      "action": "compose.up",
+      "rc": 1,
+      "detail": "invalid project name \"ds-iso-r16-20261108T2352Z-a1b2c3d4\": must consist only of lowercase alphanumeric characters, hyphens, and underscores as well as start with a letter or number",
+      "at": "20261108T155233Z"
+    }
+  ]
+}

@@ -1,0 +1,45 @@
+services:
+  mysql57:
+    labels:
+      org.deltascope.task: T21
+      org.deltascope.run: ds-iso-r16-20261108t2352z-a1b2c3d4
+      org.deltascope.owner: r16-audit
+    volumes:
+      - ds-iso-r16-20261108t2352z-a1b2c3d4-mysql57-data:/var/lib/mysql
+  mysql80:
+    labels:
+      org.deltascope.task: T21
+      org.deltascope.run: ds-iso-r16-20261108t2352z-a1b2c3d4
+      org.deltascope.owner: r16-audit
+    volumes:
+      - ds-iso-r16-20261108t2352z-a1b2c3d4-mysql80-data:/var/lib/mysql
+  mysql84:
+    labels:
+      org.deltascope.task: T21
+      org.deltascope.run: ds-iso-r16-20261108t2352z-a1b2c3d4
+      org.deltascope.owner: r16-audit
+    volumes:
+      - ds-iso-r16-20261108t2352z-a1b2c3d4-mysql84-data:/var/lib/mysql
+  tidb85:
+    labels:
+      org.deltascope.task: T21
+      org.deltascope.run: ds-iso-r16-20261108t2352z-a1b2c3d4
+      org.deltascope.owner: r16-audit
+  tidb85-client:
+    labels:
+      org.deltascope.task: T21
+      org.deltascope.run: ds-iso-r16-20261108t2352z-a1b2c3d4
+      org.deltascope.owner: r16-audit
+volumes:
+  ds-iso-r16-20261108t2352z-a1b2c3d4-mysql57-data:
+    labels:
+      org.deltascope.run: ds-iso-r16-20261108t2352z-a1b2c3d4
+      org.deltascope.owner: r16-audit
+  ds-iso-r16-20261108t2352z-a1b2c3d4-mysql80-data:
+    labels:
+      org.deltascope.run: ds-iso-r16-20261108t2352z-a1b2c3d4
+      org.deltascope.owner: r16-audit
+  ds-iso-r16-20261108t2352z-a1b2c3d4-mysql84-data:
+    labels:
+      org.deltascope.run: ds-iso-r16-20261108t2352z-a1b2c3d4
+      org.deltascope.owner: r16-audit
