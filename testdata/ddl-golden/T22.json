@@ -112,6 +112,15 @@
       },
       "ddl.tidb.resource_group.runaway.warn": {
         "level": "warning"
+      },
+      "ddl.create_resource_group.notice": {
+        "level": "notice"
+      },
+      "ddl.alter_resource_group.notice": {
+        "level": "notice"
+      },
+      "ddl.drop_resource_group.notice": {
+        "level": "notice"
       }
     }
   },
@@ -167,6 +176,22 @@
             "required_facts": [
               "resource_group.state"
             ]
+          },
+          {
+            "index": 1,
+            "rule_id": "ddl.tidb.resource_group.valid",
+            "reason_code": "unknown_resource_group_capability",
+            "required_facts": [
+              "tidb_enable_resource_control"
+            ]
+          },
+          {
+            "index": 1,
+            "rule_id": "ddl.tidb.resource_group.valid",
+            "reason_code": "unknown_resource_group_state",
+            "required_facts": [
+              "resource_group.state"
+            ]
           }
         ]
       }
@@ -194,6 +219,11 @@
         "evidence_gaps": 2,
         "fail_on_triggered": false,
         "finding_entries": [
+          {
+            "index": 0,
+            "rule_id": "ddl.create_resource_group.notice",
+            "level": "notice"
+          },
           {
             "index": 0,
             "rule_id": "ddl.tidb.resource_group.burstable.warn",
@@ -225,6 +255,11 @@
         "evidence_gaps": 2,
         "fail_on_triggered": false,
         "finding_entries": [
+          {
+            "index": 0,
+            "rule_id": "ddl.create_resource_group.notice",
+            "level": "notice"
+          },
           {
             "index": 0,
             "rule_id": "ddl.tidb.resource_group.runaway.warn",
@@ -564,8 +599,8 @@
           "verify": [
             {
               "assert": "gate initially ON — teardown restores the observed value",
-              "sql": "SHOW GLOBAL VARIABLES LIKE 'tidb_enable_resource_control'",
-              "expect": "ON"
+              "sql": "SELECT @@GLOBAL.tidb_enable_resource_control",
+              "expect": "1"
             }
           ]
         },
@@ -576,8 +611,8 @@
           "verify": [
             {
               "assert": "gate observed OFF",
-              "sql": "SHOW GLOBAL VARIABLES LIKE 'tidb_enable_resource_control'",
-              "expect": "OFF"
+              "sql": "SELECT @@GLOBAL.tidb_enable_resource_control",
+              "expect": "0"
             }
           ]
         }
@@ -596,14 +631,24 @@
         "findings": 1,
         "diagnostics": 0,
         "unsupported": 0,
-        "coverage": "complete",
-        "evidence_gaps": 0,
+        "coverage": "unverified",
+        "evidence_gaps": 1,
         "fail_on_triggered": true,
         "finding_entries": [
           {
             "index": 0,
             "rule_id": "ddl.tidb.resource_group.valid",
             "level": "blocker"
+          }
+        ],
+        "evidence_gap_entries": [
+          {
+            "index": 0,
+            "rule_id": "ddl.tidb.resource_group.valid",
+            "reason_code": "unknown_resource_group_state",
+            "required_facts": [
+              "resource_group.state"
+            ]
           }
         ]
       }
@@ -626,7 +671,7 @@
     "T22.meta.tidb85-ru-first-path",
     "T22.meta.tidb85-catalog-definition",
     "T22.meta.tidb85-drop-default-refused",
-    "tidb85-alter-absent-unproven",
+    "T22.meta.tidb85-alter-absent-unproven",
     "T22.meta.tidb85-capability-off-refusal"
   ]
 }

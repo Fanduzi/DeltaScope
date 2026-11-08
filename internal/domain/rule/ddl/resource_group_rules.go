@@ -261,6 +261,15 @@ func resourceGroupNoticeAdjudicator(operation, message, suggestion string) func(
 		if statement.Dialect != spec.DialectTiDB {
 			return nil, false
 		}
+		// A proven-OFF resource-control gate refuses before existence
+		// adjudication — the same dominance that suppresses notices on
+		// proven refusals applies even when the target stays unproven
+		// (issue #101 T22 Profile A native finding).
+		if statement.Metadata != nil && statement.Metadata.Instance != nil &&
+			statement.Metadata.Instance.TiDBEnableResourceControlKnown &&
+			!statement.Metadata.Instance.TiDBEnableResourceControl {
+			return []rule.Finding{}, true
+		}
 		state := resourceGroupBinding(statement)
 		if state == nil {
 			return nil, false

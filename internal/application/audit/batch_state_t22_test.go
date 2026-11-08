@@ -152,6 +152,9 @@ func TestT22CapabilityOffRefuses(t *testing.T) {
 			}
 		}
 	}
+	if got := len(t22Findings(result, 0, "ddl.drop_resource_group.notice")); got != 0 {
+		t.Fatalf("notices = %d, want 0 — a proven OFF refusal suppresses the success claim", got)
+	}
 }
 
 // A failed catalog read propagates as an error — never downgraded to an
