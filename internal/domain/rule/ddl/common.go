@@ -490,6 +490,7 @@ const (
 	ruleIDTiDBResourceGroupValid         = "ddl.tidb.resource_group.valid"
 	ruleIDTiDBResourceGroupBurstableWarn = "ddl.tidb.resource_group.burstable.warn"
 	ruleIDTiDBResourceGroupRunawayWarn   = "ddl.tidb.resource_group.runaway.warn"
+	ruleIDTiDBTableAutoRandomValid       = "ddl.tidb.table.auto_random.valid"
 	ruleIDCreatePlacementPolicyNotice    = "ddl.create_placement_policy.notice"
 	ruleIDAlterPlacementPolicyNotice     = "ddl.alter_placement_policy.notice"
 	ruleIDDropPlacementPolicyNotice      = "ddl.drop_placement_policy.notice"

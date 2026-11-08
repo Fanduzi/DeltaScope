@@ -857,6 +857,7 @@ func Register(registry *rule.Registry, cfg policy.Policy) error {
 		{ruleID: ruleIDTiDBResourceGroupValid, construct: newTiDBResourceGroupValidRule},
 		{ruleID: ruleIDTiDBResourceGroupBurstableWarn, construct: newTiDBResourceGroupBurstableWarnRule},
 		{ruleID: ruleIDTiDBResourceGroupRunawayWarn, construct: newTiDBResourceGroupRunawayWarnRule},
+		{ruleID: ruleIDTiDBTableAutoRandomValid, construct: newAutoRandomValidRule},
 		{ruleID: ruleIDCreatePlacementPolicyNotice, construct: newCreatePlacementPolicyNoticeRule},
 		{ruleID: ruleIDAlterPlacementPolicyNotice, construct: newAlterPlacementPolicyNoticeRule},
 		{ruleID: ruleIDDropPlacementPolicyNotice, construct: newDropPlacementPolicyNoticeRule},

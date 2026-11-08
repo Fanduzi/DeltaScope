@@ -372,6 +372,14 @@ type Column struct {
 	// AutoRandom marks a parsed TiDB AUTO_RANDOM column attribute. MySQL has
 	// no such feature, so it is a vendor boundary there (owner T23).
 	AutoRandom bool `json:"auto_random,omitempty"`
+	// AutoRandomShardBits is the authored AUTO_RANDOM shard-bits argument —
+	// nil means the clause carried no length, which upstream normalizes to
+	// its 5-bit default rather than to a zero fact (owner T23).
+	AutoRandomShardBits *int64 `json:"auto_random_shard_bits,omitempty"`
+	// AutoRandomRangeBits is the authored AUTO_RANDOM range-bits argument —
+	// nil means unwritten, normalized upstream to the 64-bit BIGINT width
+	// (owner T23).
+	AutoRandomRangeBits *int64 `json:"auto_random_range_bits,omitempty"`
 	// UnextractedOptions names parsed column options the extractor recognized
 	// but did not model; see DDL.UnextractedOptions.
 	UnextractedOptions []string `json:"unextracted_options,omitempty"`

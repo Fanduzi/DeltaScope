@@ -212,7 +212,7 @@ func TestAuditSQLT03TiDBAuditedBoundariesStayComplete(t *testing.T) {
 	configPath := writeAllRulesDisabledPolicy(t)
 
 	result, err := AuditSQL(context.Background(), Request{
-		SQL:        "CREATE SEQUENCE seq1; DROP RESOURCE GROUP rg1; ALTER TABLE t TTL_ENABLE='OFF';",
+		SQL:        "CREATE SEQUENCE seq1; DROP RESOURCE GROUP rg1; ALTER TABLE t TTL_ENABLE='OFF'; CREATE TABLE t2 (id BIGINT PRIMARY KEY AUTO_RANDOM);",
 		Dialect:    spec.DialectTiDB,
 		ConfigPath: configPath,
 	})
@@ -355,7 +355,9 @@ func TestAuditSQLT03RecognizedUnauditedAspectsIncomplete(t *testing.T) {
 		// CREATE TEMPORARY and DROP TEMPORARY no longer land here.
 		{name: "tidb create global temporary preserve rows", sql: "CREATE GLOBAL TEMPORARY TABLE t (id INT PRIMARY KEY) ON COMMIT PRESERVE ROWS;", dialect: spec.DialectTiDB, wantFeature: "create_table.temporary.global.preserve", wantReason: spec.UnsupportedVendorBoundaryReason, wantKind: "ddl"},
 		{name: "mysql create global temporary table", sql: "CREATE GLOBAL TEMPORARY TABLE t (id INT PRIMARY KEY) ON COMMIT DELETE ROWS;", dialect: spec.DialectMySQL, wantFeature: "create_table.temporary.global", wantReason: spec.UnsupportedVendorBoundaryReason, wantKind: "ddl"},
-		{name: "tidb create table auto_random", sql: "CREATE TABLE t (id BIGINT PRIMARY KEY AUTO_RANDOM);", dialect: spec.DialectTiDB, wantFeature: "create_table.column.auto_random", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
+		// TiDB create-table AUTO_RANDOM graduated to audited semantics in T23 —
+		// the modeled bits facts and ddl.tidb.table.auto_random.valid consume
+		// the declaration (see TestAuditSQLT03TiDBAuditedBoundariesStayComplete).
 		{name: "mysql create table auto_random", sql: "CREATE TABLE t (id BIGINT PRIMARY KEY AUTO_RANDOM);", dialect: spec.DialectMySQL, wantFeature: "create_table.column.auto_random", wantReason: spec.UnsupportedVendorBoundaryReason, wantKind: "ddl"},
 		{name: "tidb alter add column auto_random", sql: "ALTER TABLE t ADD COLUMN id BIGINT AUTO_RANDOM;", dialect: spec.DialectTiDB, wantFeature: "alter_table.add_columns.column.auto_random", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
 		{name: "mysql alter add column auto_random", sql: "ALTER TABLE t ADD COLUMN id BIGINT AUTO_RANDOM;", dialect: spec.DialectMySQL, wantFeature: "alter_table.add_columns.column.auto_random", wantReason: spec.UnsupportedVendorBoundaryReason, wantKind: "ddl"},

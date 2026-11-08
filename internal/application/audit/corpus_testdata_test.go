@@ -197,6 +197,9 @@ type corpusInstanceFacts struct {
 	TiDBEnableCheckConstraintKnown bool   `yaml:"tidb_enable_check_constraint_known,omitempty"`
 	TiDBEnableResourceControl      bool   `yaml:"tidb_enable_resource_control,omitempty"`
 	TiDBEnableResourceControlKnown bool   `yaml:"tidb_enable_resource_control_known,omitempty"`
+	TiDBEnableClusteredIndex       string `yaml:"tidb_enable_clustered_index,omitempty"`
+	TiDBAlterPrimaryKey            bool   `yaml:"tidb_alter_primary_key,omitempty"`
+	TiDBAlterPrimaryKeyKnown       bool   `yaml:"tidb_alter_primary_key_known,omitempty"`
 }
 
 type corpusTableSnapshot struct {

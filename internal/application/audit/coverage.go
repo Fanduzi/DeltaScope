@@ -316,10 +316,17 @@ func columnAspectGaps(dialect spec.Dialect, op spec.DDLOperation, action string,
 	}
 	var gaps []spec.UnsupportedDetail
 	if column.AutoRandom {
-		gaps = append(gaps, aspectGap(
-			prefix+".auto_random", dialect == spec.DialectMySQL,
-			map[string]any{"aspect": "column"},
-		))
+		// AUTO_RANDOM is audited on TiDB CREATE TABLE since T23 — the
+		// modeled bits facts and the auto_random.valid rule consume the
+		// declaration there. Under MySQL it stays a vendor boundary, and
+		// on TiDB ALTER-side declarations it remains the bounded
+		// unaudited aspect (alter validation is not modeled yet).
+		if dialect == spec.DialectMySQL || op != spec.DDLOperationCreateTable {
+			gaps = append(gaps, aspectGap(
+				prefix+".auto_random", dialect == spec.DialectMySQL,
+				map[string]any{"aspect": "column"},
+			))
+		}
 	}
 	if column.VisibilityExplicit && dialect == spec.DialectTiDB {
 		// Column VISIBLE/INVISIBLE is MySQL-only syntax the shared parser

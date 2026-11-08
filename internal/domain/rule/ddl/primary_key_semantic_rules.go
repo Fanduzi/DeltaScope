@@ -17,6 +17,11 @@ type singlePrimaryKeyColumnRule struct {
 	predicate func(spec.Column) bool
 	message   string
 	suggest   string
+	// acceptsTiDBAutoRandom lets a TiDB AUTO_RANDOM member satisfy the
+	// rule's auto-allocation intent (owner T23): AUTO_RANDOM is TiDB's
+	// native surrogate-key allocator, so requiring a literal
+	// AUTO_INCREMENT attribute on it is a false positive.
+	acceptsTiDBAutoRandom bool
 }
 
 func newSinglePrimaryKeyColumnRule(ruleID string, fallbackLevel rule.Level, message, suggest string, predicate func(spec.Column) bool, cfg policy.RulePolicy) (rule.StatementRule, error) {
@@ -37,6 +42,9 @@ func newSinglePrimaryKeyColumnRule(ruleID string, fallbackLevel rule.Level, mess
 		predicate: predicate,
 		message:   message,
 		suggest:   suggest,
+		// AUTO_INCREMENT's intent is an auto-allocated surrogate key;
+		// TiDB AUTO_RANDOM is that allocator's native form.
+		acceptsTiDBAutoRandom: ruleID == ruleIDPrimaryKeyAutoIncrementRequire,
 	}, nil
 }
 
@@ -65,16 +73,26 @@ func (r singlePrimaryKeyColumnRule) Evaluate(ctx context.Context, statement spec
 			return nil, nil
 		}
 		column, verdict := orderedColumnFact(statement, members[0])
-		if verdict != orderedColumnResolved || r.predicate(column) {
+		if verdict != orderedColumnResolved || r.satisfied(statement, column) {
 			return nil, nil
 		}
 		return []rule.Finding{r.finding(statement, column)}, nil
 	}
 	columns := primaryKeyColumnSpecs(statement)
-	if len(columns) != 1 || r.predicate(columns[0]) {
+	if len(columns) != 1 || r.satisfied(statement, columns[0]) {
 		return nil, nil
 	}
 	return []rule.Finding{r.finding(statement, columns[0])}, nil
+}
+
+// satisfied reports whether the resolved member meets the rule's intent —
+// the column predicate outright, or TiDB's native AUTO_RANDOM allocator
+// for the auto-allocation rule.
+func (r singlePrimaryKeyColumnRule) satisfied(statement spec.Statement, column spec.Column) bool {
+	if r.predicate(column) {
+		return true
+	}
+	return r.acceptsTiDBAutoRandom && statement.Dialect == spec.DialectTiDB && column.AutoRandom
 }
 
 func (r singlePrimaryKeyColumnRule) finding(statement spec.Statement, column spec.Column) rule.Finding {

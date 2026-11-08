@@ -78,6 +78,9 @@ func newCorpusMetadataProvider(metadata *corpusMetadata) *corpusFixtureMetadataP
 			TiDBEnableCheckConstraintKnown: metadata.Instance.TiDBEnableCheckConstraintKnown,
 			TiDBEnableResourceControl:      metadata.Instance.TiDBEnableResourceControl,
 			TiDBEnableResourceControlKnown: metadata.Instance.TiDBEnableResourceControlKnown,
+			TiDBEnableClusteredIndex:       metadata.Instance.TiDBEnableClusteredIndex,
+			TiDBAlterPrimaryKey:            metadata.Instance.TiDBAlterPrimaryKey,
+			TiDBAlterPrimaryKeyKnown:       metadata.Instance.TiDBAlterPrimaryKeyKnown,
 		}
 	}
 	for tableName, snapshot := range metadata.Tables {

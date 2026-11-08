@@ -648,8 +648,8 @@ var fieldDispositions = map[string]map[string]string{
 		"Default":      "subsumed:unaudited_action",
 	},
 	"AutoRandomOption": {
-		"ShardBits": "carried:auto_random — detail under the typed AutoRandom flag",
-		"RangeBits": "carried:auto_random",
+		"ShardBits": "carried:auto_random — typed AutoRandomShardBits fact (T23); UnspecifiedLength stays nil",
+		"RangeBits": "carried:auto_random — typed AutoRandomRangeBits fact (T23)",
 	},
 }
 

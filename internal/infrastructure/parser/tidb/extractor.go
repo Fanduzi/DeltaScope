@@ -1212,6 +1212,16 @@ func extractColumn(col *ast.ColumnDef) spec.Column {
 			column.OnUpdateCurrentTimestamp = exprIsCurrentTimestamp(option.Expr)
 		case ast.ColumnOptionAutoRandom:
 			column.AutoRandom = true
+			// Authored bit arguments are modeled facts; the parser's
+			// UnspecifiedLength sentinel marks an unwritten argument whose
+			// value upstream normalizes to its default, so nil stays the
+			// honest "not authored" answer (owner T23).
+			if shard := int64(option.AutoRandOpt.ShardBits); shard != tidbtypes.UnspecifiedLength {
+				column.AutoRandomShardBits = &shard
+			}
+			if rangeBits := int64(option.AutoRandOpt.RangeBits); rangeBits != tidbtypes.UnspecifiedLength {
+				column.AutoRandomRangeBits = &rangeBits
+			}
 		case ast.ColumnOptionUniqKey:
 			// The TiDB-only GLOBAL qualifier (StrValue=="Global") changes the
 			// index class, so it gets its own bounded option name.
