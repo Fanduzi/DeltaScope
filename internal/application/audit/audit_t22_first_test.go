@@ -199,26 +199,31 @@ func TestT22RulesDisabledEmitNoGaps(t *testing.T) {
 	}
 }
 
-// A non-empty QUERY_LIMIT list missing ACTION or every threshold member
-// is refused at run time by fixed TiDB v8.5.0 (ERROR 1105, issue #101 T22
-// native probe). Until that completeness refusal is modeled explicitly the
-// option stays bounded unmodeled evidence — unsupported aspect plus
-// non-complete coverage — never a silent clean audit.
-func TestT22IncompleteRunawayStaysBounded(t *testing.T) {
+// A complete, fully-recognized non-empty QUERY_LIMIT list missing ACTION
+// or every positive threshold is statically refused by fixed TiDB v8.5.0
+// NewGroupFromOptions (ERROR 1105, issue #101 T22 native probe) — the
+// valid rule reports it as a refusal, not an unsupported aspect. The
+// unproven-state gap stays honest alongside it.
+func TestT22IncompleteRunawayStaticRefusal(t *testing.T) {
 	cases := []string{
 		"CREATE RESOURCE GROUP q_noaction RU_PER_SEC=10 QUERY_LIMIT=(EXEC_ELAPSED='30s');",
 		"CREATE RESOURCE GROUP q_nothreshold RU_PER_SEC=10 QUERY_LIMIT=(ACTION=KILL);",
 	}
 	for _, sql := range cases {
 		result, err := t22Audit(t, sql, spec.DialectTiDB, nil, "")
-		if !errors.Is(err, ErrUnsupportedStatement) {
-			t.Fatalf("%q err = %v, want ErrUnsupportedStatement", sql, err)
+		if err != nil {
+			t.Fatalf("%q AuditSQL: %v — a recognized static refusal stays kind=ddl", sql, err)
 		}
-		if len(result.Unsupported) != 1 {
-			t.Fatalf("%q unsupported = %+v, want one bounded aspect", sql, result.Unsupported)
+		if len(result.Unsupported) != 0 {
+			t.Fatalf("%q unsupported = %+v, want none — recognized clause is modeled", sql, result.Unsupported)
 		}
-		if result.Statements[0].Coverage.Status == report.CoverageComplete {
-			t.Fatalf("%q reported complete coverage", sql)
+		stmt := result.Statements[0]
+		blockers := t22Findings(result, 0, t22ValidRule)
+		if len(blockers) != 1 || blockers[0].Level != rule.LevelBlocker {
+			t.Fatalf("%q findings = %+v, want one valid blocker", sql, stmt.Findings)
+		}
+		if result.Verdict != report.VerdictReject {
+			t.Fatalf("%q verdict = %s, want reject for a refused clause", sql, result.Verdict)
 		}
 	}
 }

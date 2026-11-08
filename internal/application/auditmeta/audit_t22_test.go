@@ -127,12 +127,11 @@ func t22Queries(gate string, rows [][]driver.Value) map[string]t22Result {
 }
 
 // The #101 first path through the official provider: capability ON and a
-// zero-row catalog. A privilege-visible zero-row read can never prove
-// absence, so CREATE's outcome is unproven and publishes no created
-// state — both statements stay unverified with the bounded state gap
-// while both lifecycle notices fire with no blockers. The zero-gap
-// complete form is exercised through the resolver-injected proven-absent
-// fixture in the audit package.
+// complete successful zero-row catalog read. Fixed TiDB v8.5.0 emits
+// every resource group with no row-level privilege filter, so zero rows
+// prove absence — CREATE publishes the conditional definition (RU=100),
+// the ordered state feeds ALTER, and both statements complete with the
+// lifecycle notices firing and no gaps or blockers.
 func TestT22GoldenPathThroughOfficialReader(t *testing.T) {
 	db := openT22DB(t, t22Queries("ON", nil))
 	provider := mysqlmeta.NewProvider(db)
@@ -153,23 +152,30 @@ func TestT22GoldenPathThroughOfficialReader(t *testing.T) {
 	if create.Kind != "ddl" || alter.Kind != "ddl" {
 		t.Fatalf("kinds = %s/%s, want ddl/ddl", create.Kind, alter.Kind)
 	}
-	if create.Coverage.Status != "unverified" || alter.Coverage.Status != "unverified" {
-		t.Fatalf("coverage = %s/%s, want unverified/unverified", create.Coverage.Status, alter.Coverage.Status)
+	if create.Coverage.Status != "complete" || alter.Coverage.Status != "complete" {
+		t.Fatalf("coverage = %s/%s, want complete/complete — zero-row read proves absence", create.Coverage.Status, alter.Coverage.Status)
 	}
-	// Each statement owes only the bounded state gap — the zero-row
-	// catalog can never prove absence, the unproven CREATE publishes no
-	// created state, and the capability premise is satisfied (ON).
 	for i, stmt := range result.Statements {
-		if len(stmt.EvidenceGaps) != 1 || stmt.EvidenceGaps[0].ReasonCode != t22StateGap {
-			t.Fatalf("statement %d gaps = %+v, want exactly %s", i, stmt.EvidenceGaps, t22StateGap)
+		if len(stmt.EvidenceGaps) != 0 {
+			t.Fatalf("statement %d gaps = %+v, want none — every required premise is proven", i, stmt.EvidenceGaps)
 		}
 	}
+	var createNotice, alterNotice bool
 	for i, stmt := range result.Statements {
 		for _, finding := range stmt.Findings {
 			if finding.RuleID == t22ValidRule {
 				t.Fatalf("statement %d valid finding = %#v, want none", i, finding)
 			}
+			if finding.RuleID == "ddl.create_resource_group.notice" {
+				createNotice = true
+			}
+			if finding.RuleID == "ddl.alter_resource_group.notice" {
+				alterNotice = true
+			}
 		}
+	}
+	if !createNotice || !alterNotice {
+		t.Fatalf("notices = %v/%v, want create+alter lifecycle notices on the proven first path", createNotice, alterNotice)
 	}
 }
 
@@ -235,10 +241,12 @@ func TestT22CapabilityOffRefusesBeforeExistence(t *testing.T) {
 	}
 }
 
-// Zero catalog rows stay unknown through the public path: the existence
-// premise reports the bounded state gap — never a proven absence, never
-// a blocker on an unprovable target.
-func TestT22OfficialReaderZeroRowsStayUnknown(t *testing.T) {
+// A complete successful zero-row catalog read proves absence through the
+// public path: an unguarded ALTER on the proven-absent group is a refusal
+// — the valid rule blocks, no state gap remains, and coverage completes.
+// (Error and unavailable reads stay unknown — TestT22OfficialReaderErrorPropagates
+// covers the error arm.)
+func TestT22OfficialReaderZeroRowsProveAbsent(t *testing.T) {
 	db := openT22DB(t, t22Queries("ON", nil))
 	provider := mysqlmeta.NewProvider(db)
 	policy := t06a4Policy(t, map[string]string{t22ValidRule: ""})
@@ -251,18 +259,18 @@ func TestT22OfficialReaderZeroRowsStayUnknown(t *testing.T) {
 	if err != nil {
 		t.Fatalf("AuditSQL: %v", err)
 	}
-	gotStateGap := false
-	for _, gap := range result.Statements[0].EvidenceGaps {
-		if gap.RuleID == t22ValidRule && gap.ReasonCode == t22StateGap {
-			gotStateGap = true
-		}
-	}
-	if !gotStateGap {
-		t.Fatalf("gaps = %#v, want %s on the unvouched catalog read", result.Statements[0].EvidenceGaps, t22StateGap)
-	}
+	var blocker bool
 	for _, finding := range result.Statements[0].Findings {
 		if finding.RuleID == t22ValidRule {
-			t.Fatalf("unexpected blocker on an unproven target: %#v", finding)
+			blocker = true
+		}
+	}
+	if !blocker {
+		t.Fatalf("findings = %#v, want the absent-target refusal on the proven-absent read", result.Statements[0].Findings)
+	}
+	for _, gap := range result.Statements[0].EvidenceGaps {
+		if gap.RuleID == t22ValidRule && gap.ReasonCode == t22StateGap {
+			t.Fatalf("state gap = %#v on a proven-absent read — existence is adjudicated", gap)
 		}
 	}
 }

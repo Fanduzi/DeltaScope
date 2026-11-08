@@ -114,10 +114,15 @@ func (r resourceGroupValidRule) Evaluate(_ context.Context, statement spec.State
 			"enable tidb_enable_resource_control or remove the statement", operation, state)}, nil
 	}
 
-	if state == nil || !state.Proven() {
-		return nil, nil
-	}
 	var findings []rule.Finding
+	if reason := resourceGroupRunawayInvalidReason(statement.DDL.Operation, decl); reason != "" {
+		findings = append(findings, resourceGroupFinding(r.level,
+			fmt.Sprintf("%s on %q declares a runaway clause TiDB 8.5 statically refuses: %s.", operation, decl.Name, reason),
+			"declare at least one positive EXEC_ELAPSED/PROCESSED_KEYS/RU threshold and an ACTION", operation, state))
+	}
+	if state == nil || !state.Proven() {
+		return findings, nil
+	}
 	switch statement.DDL.Operation {
 	case spec.DDLOperationCreateResourceGroup:
 		if state.Exists && !decl.IfNotExists {
@@ -157,6 +162,8 @@ func (r resourceGroupValidRule) EvidenceGaps(statement spec.Statement) []rule.Ev
 	if statement.Metadata != nil {
 		instance = statement.Metadata.Instance
 	}
+	provenOff := instance != nil && instance.TiDBEnableResourceControlKnown &&
+		!instance.TiDBEnableResourceControl
 	if instance == nil || !instance.TiDBEnableResourceControlKnown {
 		if !resourceGroupProvenRefusal(statement, state) {
 			gaps = append(gaps, rule.EvidenceGap{
@@ -165,13 +172,59 @@ func (r resourceGroupValidRule) EvidenceGaps(statement spec.Statement) []rule.Ev
 			})
 		}
 	}
-	if state == nil || !state.Proven() {
+	// A proven-OFF gate already concluded this check with a refusal —
+	// target existence is no longer a required premise, so no residual
+	// state gap follows (the object itself may stay unknown internally;
+	// only the gap that a completed check no longer needs is dropped).
+	if !provenOff && (state == nil || !state.Proven()) {
 		gaps = append(gaps, rule.EvidenceGap{
 			ReasonCode:    resourceGroupGapUnknownState,
 			RequiredFacts: []string{resourceGroupFactState},
 		})
 	}
 	return gaps
+}
+
+// resourceGroupRunawayInvalidReason reports the fixed v8.5.0 static
+// refusal for a complete, fully-recognized non-reset QUERY_LIMIT clause:
+// NewGroupFromOptions rejects a runaway rule whose thresholds are all
+// zero before rejecting a missing ACTION, so the same order applies.
+// Only the two proven conditions are adjudicated — an unrecognized
+// member stays a capability gap (the whole option is unmodeled), a reset
+// clause is a legal clear, and QUERY_LIMIT member values are never
+// simulated. Returns "" for CREATE/ALTER without an offending clause and
+// always for DROP.
+func resourceGroupRunawayInvalidReason(operation spec.DDLOperation, decl *spec.ResourceGroupDeclaration) string {
+	if decl == nil || (operation != spec.DDLOperationCreateResourceGroup &&
+		operation != spec.DDLOperationAlterResourceGroup) {
+		return ""
+	}
+	for _, option := range decl.Options {
+		if option.Kind != spec.ResourceGroupOptionQueryLimit ||
+			option.Runaway == nil || option.Runaway.Reset {
+			continue
+		}
+		recognized := true
+		for _, member := range option.Runaway.Members {
+			switch member.Kind {
+			case spec.ResourceGroupRunawayExecElapsed, spec.ResourceGroupRunawayProcessedKeys,
+				spec.ResourceGroupRunawayRU, spec.ResourceGroupRunawayAction,
+				spec.ResourceGroupRunawayWatch:
+			default:
+				recognized = false
+			}
+		}
+		if !recognized {
+			continue
+		}
+		if !option.Runaway.HasEffectiveThreshold() {
+			return "every runaway threshold is zero"
+		}
+		if option.Runaway.Action() == "" {
+			return "no runaway ACTION is declared"
+		}
+	}
+	return ""
 }
 
 // resourceGroupBurstableWarnRule reports a declared-or-proven burst
@@ -268,6 +321,12 @@ func resourceGroupNoticeAdjudicator(operation, message, suggestion string) func(
 		if statement.Metadata != nil && statement.Metadata.Instance != nil &&
 			statement.Metadata.Instance.TiDBEnableResourceControlKnown &&
 			!statement.Metadata.Instance.TiDBEnableResourceControl {
+			return []rule.Finding{}, true
+		}
+		// A statically-invalid runaway clause is a proven refusal — the
+		// notice must not claim a successful application.
+		if resourceGroupRunawayInvalidReason(statement.DDL.Operation,
+			statement.DDL.ResourceGroup) != "" {
 			return []rule.Finding{}, true
 		}
 		state := resourceGroupBinding(statement)

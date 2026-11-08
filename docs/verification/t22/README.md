@@ -133,3 +133,43 @@ resource-manager path only — no real PD/TiKV integration is claimed.
   eight historical protected volumes remain; profile stopped normally.
 - Still NOT claimed: real PD resource-manager integration, cross-TiKV
   scheduling/metering, workload performance — Profile B scope.
+
+## R6 contract amendment (post-Profile-A review — pending native re-verification)
+
+Reviewer R5 found one acknowledged coverage gap plus two contract
+convergences; the R6 work order amended three bounded items (details and
+upstream citations: `docs/decisions/2026-11-08-tidb-resource-group-lifecycle.md`
+R5/R6 amendment):
+
+1. **`RESOURCE_GROUPS` zero-row → proven-absent.** Fixed v8.5.0 emits
+   every group unfiltered (`setDataFromResourceGroups` →
+   `infosync.ListResourceGroups`), so a complete successful zero-row
+   read is `MetadataStatusNotFound` — object/version-scoped, never a
+   generic `ErrNoRows` rule (SEQUENCES unchanged). The #101 complete
+   CREATE→ALTER first path now holds through the official reader.
+2. **Proven-OFF refusal drops the residual `unknown_resource_group_state`
+   gap** — the valid check concluded; existence is no longer its premise.
+   Internal state may stay unknown; not a global "blocker clears gaps".
+3. **Recognized incomplete `QUERY_LIMIT` → static refusal.** Fixed
+   v8.5.0 `NewGroupFromOptions` rejects all-zero thresholds then missing
+   ACTION statically — now a `valid` blocker (thresholds first), not an
+   unmodeled aspect. Only unrecognized members stay unmodeled; NULL/`()`
+   remain legal clears; the notice adjudicator suppresses the success
+   claim on a statically-refused clause.
+
+Golden-oracle consequences (manifest `required` 18→20):
+`tidb85-ru-first-path` now completes (0 gaps, 2 notices);
+`tidb85-alter-absent-unproven` is a proven-absent refusal (blocker,
+reject); `tidb85-capability-off-refusal` drops its residual gap;
+new cases `tidb85-runaway-missing-action-refused` and
+`tidb85-runaway-missing-threshold-refused` pin the two static refusals.
+The original 18/170 artifact is not rewritten.
+
+Evidence hygiene correction: the earlier dirty-tree run's artifact was
+overwritten by the canonical run — a recorded missing artifact, not
+"all failure artifacts preserved". `ddl_golden_isolated.py` now archives
+each run to `golden/<task>.attempts/<head12>/attempt-N/` (never reused)
+with `SHA256SUMS` + `latest`.
+
+Profile A native re-verification of these amendments is queued under
+the original authorization card.

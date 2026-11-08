@@ -73,17 +73,20 @@ func TestT22ResourceGroupLoaderUnlimitedRU(t *testing.T) {
 	}
 }
 
-// Zero rows stay unknown: RESOURCE_GROUPS filters by privilege, so an
-// invisible group is never a proven absence.
-func TestT22ResourceGroupLoaderZeroRowsStaysUnknown(t *testing.T) {
+// A complete successful zero-row read proves absence: fixed TiDB v8.5.0
+// emits every resource group through infosync.ListResourceGroups with no
+// row-level privilege filter, so a query that completes and returns no
+// row means the named group does not exist. The bound stays scoped to
+// this object and version — it is not a generic ErrNoRows contract.
+func TestT22ResourceGroupLoaderZeroRowsProvesAbsent(t *testing.T) {
 	snapshot, err := t22Resolve(t, map[string]testQueryResult{
 		testResourceGroupFragment: {columns: testResourceGroupColumns},
 	}, spec.DialectTiDB, spec.ObjectLookupRequest{Type: "resource_group", Name: "ghost"})
 	if err != nil {
 		t.Fatalf("ResolveObject: %v", err)
 	}
-	if !snapshot.IsUnavailable() || snapshot.IsNotFound() || snapshot.Exists {
-		t.Fatalf("snapshot = %#v, want unavailable — never fabricated absence", snapshot)
+	if !snapshot.IsNotFound() || snapshot.Exists {
+		t.Fatalf("snapshot = %#v, want proven-absent (not_found)", snapshot)
 	}
 }
 

@@ -1792,13 +1792,17 @@ func (p *Provider) loadSequenceObject(ctx context.Context, request spec.ObjectLo
 // loadResourceGroupObject resolves one TiDB resource-group identity
 // through information_schema.RESOURCE_GROUPS — the bounded
 // name/RU_PER_SEC/PRIORITY/BURSTABLE/QUERY_LIMIT read shape (T22/#101).
-// A zero-row answer stays unknown rather than fabricating absence — the
-// catalog filters by privilege, so an invisible group is not a
-// proven-missing one. NULL members map to unproven fields (nil), never
-// to guessed defaults; RU_PER_SEC keeps the varchar 'UNLIMITED' token
-// distinct from a numeric rate. BACKGROUND is outside the T22 surface
-// and is never queried. Query, scan, and driver errors propagate wrapped
-// with identity context and are never cached as absence.
+// Fixed TiDB v8.5.0 emits every group via infosync.ListResourceGroups
+// with no row-level privilege filtering (setDataFromResourceGroups), so
+// a complete successful read that returns zero rows proves the named
+// group absent — scoped to this object/version, never a generic
+// ErrNoRows→absent rule for other catalogs. A row proves existence;
+// NULL members map to unproven fields (nil), never to guessed defaults;
+// RU_PER_SEC keeps the varchar 'UNLIMITED' token distinct from a
+// numeric rate. BACKGROUND is outside the T22 surface and is never
+// queried. Query, scan, and driver errors propagate wrapped with
+// identity context — an access denial or transport failure is an error,
+// never absence — and failures are never cached as absence.
 func (p *Provider) loadResourceGroupObject(ctx context.Context, request spec.ObjectLookupRequest, snapshot *spec.ObjectSnapshot) (*spec.ObjectSnapshot, error) {
 	row := p.db.QueryRowContext(ctx, `
 		select name, ru_per_sec, priority, burstable, query_limit
@@ -1808,6 +1812,7 @@ func (p *Provider) loadResourceGroupObject(ctx context.Context, request spec.Obj
 	var name, ruPerSec, priority, burstable, queryLimit sql.NullString
 	if err := row.Scan(&name, &ruPerSec, &priority, &burstable, &queryLimit); err != nil {
 		if err == sql.ErrNoRows {
+			snapshot.Status = spec.MetadataStatusNotFound
 			return snapshot, nil
 		}
 		return nil, fmt.Errorf("query resource group snapshot %s: %w", request.Name, err)

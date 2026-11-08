@@ -1,5 +1,7 @@
 package spec
 
+import "time"
+
 // ResourceGroupOptionKind names one authored resource-group option member.
 // The vocabulary is what TiDB 8.5's DirectResourceGroupOption grammar
 // produces; the parser rejects duplicates per type, so authored order is
@@ -102,6 +104,30 @@ func (d *ResourceGroupRunawayDeclaration) Action() string {
 		}
 	}
 	return ""
+}
+
+// HasEffectiveThreshold reports whether any declared threshold member is
+// positive — matching fixed TiDB v8.5.0 NewGroupFromOptions, which
+// statically refuses a runaway rule whose EXEC_ELAPSED / PROCESSED_KEYS /
+// RU members are all zero (declared-but-zero still counts as zero).
+// An unparseable EXEC_ELAPSED duration contributes nothing.
+func (d *ResourceGroupRunawayDeclaration) HasEffectiveThreshold() bool {
+	if d == nil {
+		return false
+	}
+	for _, member := range d.Members {
+		switch member.Kind {
+		case ResourceGroupRunawayProcessedKeys, ResourceGroupRunawayRU:
+			if member.UintValue != nil && *member.UintValue > 0 {
+				return true
+			}
+		case ResourceGroupRunawayExecElapsed:
+			if duration, err := time.ParseDuration(member.TextValue); err == nil && duration > 0 {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 // ResourceGroupBackgroundDeclaration is one authored BACKGROUND clause.
@@ -253,28 +279,20 @@ func (d *ResourceGroupDeclaration) UnmodeledOptionKinds() []ResourceGroupOptionK
 		case ResourceGroupOptionQueryLimit:
 			// A QUERY_LIMIT member the extractor could not classify
 			// stays bounded evidence and marks the whole option aspect
-			// unmodeled — the runaway group is never half-audited.
-			// A non-reset list missing ACTION or every threshold member
-			// is refused at run time by fixed TiDB v8.5.0 (ERROR 1105);
-			// until that completeness refusal is modeled explicitly the
-			// same bound applies rather than claiming a clean clause.
+			// unmodeled — the runaway group is never half-audited. A
+			// complete, fully-recognized declaration is adjudicated by
+			// the valid rule instead (fixed v8.5.0 NewGroupFromOptions
+			// statically refuses a missing ACTION or all-zero thresholds).
 			if option.Runaway != nil {
-				unmodeled, hasAction, hasThreshold := false, false, false
+				unmodeled := false
 				for _, member := range option.Runaway.Members {
 					switch member.Kind {
 					case ResourceGroupRunawayExecElapsed, ResourceGroupRunawayProcessedKeys,
-						ResourceGroupRunawayRU:
-						hasThreshold = true
-					case ResourceGroupRunawayAction:
-						hasAction = true
-					case ResourceGroupRunawayWatch:
+						ResourceGroupRunawayRU, ResourceGroupRunawayAction,
+						ResourceGroupRunawayWatch:
 					default:
 						unmodeled = true
 					}
-				}
-				if !option.Runaway.Reset && len(option.Runaway.Members) > 0 &&
-					(!hasAction || !hasThreshold) {
-					unmodeled = true
 				}
 				if unmodeled {
 					out = append(out, option.Kind)

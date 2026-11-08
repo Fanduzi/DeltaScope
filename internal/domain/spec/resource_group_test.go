@@ -53,13 +53,11 @@ func TestResourceGroupUnmodeledOptionKinds(t *testing.T) {
 	}
 }
 
-// A non-reset QUERY_LIMIT member list that omits ACTION or omits every
-// threshold member is a form fixed TiDB v8.5.0 refuses at run time
-// (ERROR 1105 "unknown resource group runaway action" / "please set at
-// least one field"). Until the audit models that completeness refusal
-// explicitly, the whole option stays bounded unmodeled evidence — never
-// a claimed-clean clause — matching the issue #101 T22 native probe.
-func TestResourceGroupUnmodeledIncompleteRunaway(t *testing.T) {
+// A complete, fully-recognized QUERY_LIMIT list that omits ACTION or has
+// no positive threshold is adjudicated by the valid rule as a static
+// refusal (fixed v8.5.0 NewGroupFromOptions) — it is NOT unmodeled
+// evidence. Only an unrecognized member bounds the aspect unmodeled.
+func TestResourceGroupRecognizedIncompleteRunawayModeled(t *testing.T) {
 	incomplete := []ResourceGroupRunawayDeclaration{
 		{Members: []ResourceGroupRunawayMember{
 			{Kind: ResourceGroupRunawayExecElapsed, TextValue: "30s"},
@@ -70,14 +68,17 @@ func TestResourceGroupUnmodeledIncompleteRunaway(t *testing.T) {
 		{Members: []ResourceGroupRunawayMember{
 			{Kind: ResourceGroupRunawayWatch, TextValue: "exact:1m"},
 		}},
+		{Members: []ResourceGroupRunawayMember{
+			{Kind: ResourceGroupRunawayRU, UintValue: func() *uint64 { v := uint64(0); return &v }()},
+			{Kind: ResourceGroupRunawayAction, TextValue: "kill"},
+		}},
 	}
 	for i, runaway := range incomplete {
 		decl := ResourceGroupDeclaration{Options: []ResourceGroupOption{
 			{Kind: ResourceGroupOptionQueryLimit, Runaway: &runaway},
 		}}
-		got := decl.UnmodeledOptionKinds()
-		if len(got) != 1 || got[0] != ResourceGroupOptionQueryLimit {
-			t.Fatalf("case %d: UnmodeledOptionKinds = %v, want [query_limit]", i, got)
+		if got := decl.UnmodeledOptionKinds(); len(got) != 0 {
+			t.Fatalf("case %d: UnmodeledOptionKinds = %v, want [] — recognized static refusal stays modeled", i, got)
 		}
 	}
 
@@ -98,5 +99,47 @@ func TestResourceGroupUnmodeledIncompleteRunaway(t *testing.T) {
 	}}
 	if got := reset.UnmodeledOptionKinds(); len(got) != 0 {
 		t.Fatalf("reset runaway reported unmodeled kinds %v", got)
+	}
+}
+
+// HasEffectiveThreshold follows the fixed v8.5.0 all-zero refusal:
+// declared-but-zero still counts as zero; a positive value in any one of
+// the three threshold kinds suffices; an unparseable duration is not
+// positive.
+func TestResourceGroupRunawayEffectiveThreshold(t *testing.T) {
+	zero := uint64(0)
+	positive := uint64(10)
+	cases := []struct {
+		name    string
+		members []ResourceGroupRunawayMember
+		want    bool
+	}{
+		{"no threshold members", []ResourceGroupRunawayMember{
+			{Kind: ResourceGroupRunawayAction, TextValue: "kill"},
+		}, false},
+		{"declared zero ru", []ResourceGroupRunawayMember{
+			{Kind: ResourceGroupRunawayRU, UintValue: &zero},
+		}, false},
+		{"positive ru", []ResourceGroupRunawayMember{
+			{Kind: ResourceGroupRunawayRU, UintValue: &positive},
+		}, true},
+		{"positive elapsed", []ResourceGroupRunawayMember{
+			{Kind: ResourceGroupRunawayExecElapsed, TextValue: "30s"},
+		}, true},
+		{"zero elapsed", []ResourceGroupRunawayMember{
+			{Kind: ResourceGroupRunawayExecElapsed, TextValue: "0s"},
+		}, false},
+		{"unparseable elapsed", []ResourceGroupRunawayMember{
+			{Kind: ResourceGroupRunawayExecElapsed, TextValue: "not-a-duration"},
+		}, false},
+		{"positive keys", []ResourceGroupRunawayMember{
+			{Kind: ResourceGroupRunawayProcessedKeys, UintValue: &positive},
+		}, true},
+	}
+	for _, tc := range cases {
+		decl := ResourceGroupRunawayDeclaration{Members: tc.members}
+		if got := decl.HasEffectiveThreshold(); got != tc.want {
+			t.Fatalf("%s: HasEffectiveThreshold = %v, want %v", tc.name, got, tc.want)
+		}
 	}
 }

@@ -76,10 +76,11 @@ with no existence, reserved-group, or capability adjudication.
   `IF EXISTS`, which is a no-op, not a success.
 - The official provider reads `information_schema.RESOURCE_GROUPS`
   (NAME/RU_PER_SEC/PRIORITY/BURSTABLE/QUERY_LIMIT — BACKGROUND is never
-  queried). Zero rows stay unknown rather than proven-absent (catalog
-  visibility can be privilege-limited); NULL or unrecognized members
-  stay unproven; query/scan errors propagate uncached; the MySQL dialect
-  never emits the TiDB catalog query.
+  queried). A complete successful zero-row read proves absence
+  (`MetadataStatusNotFound`) — amended from the original "zero rows stay
+  unknown" contract, see the R5/R6 amendment below; NULL or unrecognized
+  members stay unproven; query/scan errors propagate uncached; the MySQL
+  dialect never emits the TiDB catalog query.
 - Workload effects — actual throttling, achieved burst, priority
   latency, runaway enforcement — are deliberately unmodeled: authored
   declarations, catalog-observed configuration, batch-derived
@@ -297,3 +298,65 @@ duration text; `BACKGROUND` is native ERROR 1105 on non-default groups;
 resource group`; capability OFF refuses CREATE and DROP alike with
 ERROR 8250 while the catalog stays readable; `ALTER` on an absent group
 is ERROR 8249 and `IF EXISTS` rescues it to rc=0.
+
+## Amendment — R5/R6 contract closure (post-Profile-A review)
+
+Three bounded amendments resolved under the R5 review; each cites fixed
+v8.5.0 source and is scoped to this object/version — none broadens the
+T22 surface.
+
+### A. `RESOURCE_GROUPS` zero-row reads prove absence
+
+The earlier contract kept a zero-row answer unknown on the theory that
+the catalog filters by privilege. Fixed v8.5.0 disproves the premise for
+this object: `setDataFromResourceGroups`
+(`pkg/executor/infoschema_reader.go`) emits every group returned by
+`infosync.ListResourceGroups` with no row-level privilege filter, and
+the retriever dispatch carries no per-table gate. A *complete
+successful* zero-row read therefore proves the named group absent
+(`MetadataStatusNotFound`); a denied/failed/cancelled read still
+propagates as an error — never absence. The bound is deliberately
+object-scoped: SEQUENCES and other catalogs keep their own semantics
+(`loadSequenceObject` still treats zero rows as unknown) and no generic
+`ErrNoRows`→absent rule is introduced. This closes the #101 complete
+CREATE→ALTER first path through the official reader: proven-absent →
+CREATE publishes the conditional definition → the ordered state feeds
+ALTER (RU 100→200), both statements complete.
+
+### B. Proven-OFF refusal drops the residual state gap
+
+A proven `tidb_enable_resource_control=OFF` premise refuses the
+statement before existence adjudication (upstream checks the gate first
+in all three `execute*ResourceGroup` entry points). The valid check is
+then *concluded* — target existence is no longer a required premise, so
+`EvidenceGaps` no longer emits `unknown_resource_group_state` for that
+check. Internal object state may stay unknown; only the gap a completed
+check no longer needs is dropped. This is not a global "a blocker clears
+all gaps" rule — other rules' independent premises still emit their own
+gaps.
+
+### C. Recognized QUERY_LIMIT invalidity is a static refusal, not unmodeled
+
+Fixed v8.5.0 `NewGroupFromOptions` (`pkg/ddl/resourcegroup/group.go`)
+statically rejects a runaway rule whose three thresholds
+(`ExecElapsedTimeMs`/`ProcessedKeys`/`RequestUnit`) are all zero, then a
+missing `ACTION` — before any runtime simulation and before existence
+checks beyond the capability gate. `UnmodeledOptionKinds` therefore
+bounds the whole QUERY_LIMIT aspect only when a member is
+*unrecognized*; a complete, fully-recognized list missing ACTION or a
+positive threshold is instead a `ddl.tidb.resource_group.valid` blocker
+(thresholds checked first, matching upstream order). `QUERY_LIMIT=NULL`
+and `=()` remain legal clears; declared-but-zero thresholds still count
+as zero; an unrecognized member can never be presumed to supply the
+missing fact. The lifecycle notice adjudicator treats the same two
+conditions as a proven refusal — no success claim on a refused clause.
+The `ACTION=SWITCH_GROUP` missing-target refusal remains unimplemented
+(this round implements only the two proven conditions).
+
+### Evidence hygiene
+
+The earlier dirty-tree golden run's artifact was overwritten by the
+canonical run — recorded as a missing artifact, not "all failure
+artifacts preserved". `scripts/ddl_golden_isolated.py` now archives each
+run to `golden/<task>.attempts/<head12>/attempt-N/` (next free index,
+never overwritten) with a `SHA256SUMS` manifest and `latest` pointer.

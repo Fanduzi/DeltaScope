@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/Fanduzi/DeltaScope/internal/domain/rule"
 	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
 )
 
@@ -154,6 +155,44 @@ func TestT22CapabilityOffRefuses(t *testing.T) {
 	}
 	if got := len(t22Findings(result, 0, "ddl.drop_resource_group.notice")); got != 0 {
 		t.Fatalf("notices = %d, want 0 — a proven OFF refusal suppresses the success claim", got)
+	}
+}
+
+// A proven-OFF refusal concludes the valid check: the blocker stands and
+// no residual state gap follows — target existence is no longer a
+// required premise for a check that already refused. Internal state may
+// stay unknown; only the unneeded gap is dropped.
+func TestT22CapabilityOffDropsResidualStateGap(t *testing.T) {
+	provider := &t22Provider{capabilityKnown: true, capabilityOn: false, groups: map[string]t22GroupFact{}}
+	result := t22MustAudit(t, "CREATE RESOURCE GROUP rg_off RU_PER_SEC=10;", spec.DialectTiDB, provider, "")
+	findings := t22Findings(result, 0, t22ValidRule)
+	if len(findings) != 1 || findings[0].Level != rule.LevelBlocker {
+		t.Fatalf("findings = %+v, want one valid blocker", findings)
+	}
+	if gaps := result.Statements[0].EvidenceGaps; len(gaps) != 0 {
+		t.Fatalf("gaps = %+v, want none — proven-OFF already refused without existence", gaps)
+	}
+	if got := len(t22Findings(result, 0, "ddl.create_resource_group.notice")); got != 0 {
+		t.Fatalf("notices = %d, want 0 — a proven OFF refusal suppresses the success claim", got)
+	}
+}
+
+// A statically-invalid runaway clause is a proven refusal: the valid
+// blocker stands and the lifecycle notice stays suppressed.
+func TestT22StaticInvalidRunawaySuppressesNotice(t *testing.T) {
+	provider := t22ProviderOn(map[string]t22GroupFact{})
+	result := t22MustAudit(t,
+		"CREATE RESOURCE GROUP rg_bad RU_PER_SEC=10 QUERY_LIMIT=(EXEC_ELAPSED='30s');",
+		spec.DialectTiDB, provider, "")
+	findings := t22Findings(result, 0, t22ValidRule)
+	if len(findings) != 1 || findings[0].Level != rule.LevelBlocker {
+		t.Fatalf("findings = %+v, want one valid blocker", findings)
+	}
+	if !strings.Contains(findings[0].Message, "runaway") {
+		t.Fatalf("finding = %q, want the runaway static refusal", findings[0].Message)
+	}
+	if got := len(t22Findings(result, 0, "ddl.create_resource_group.notice")); got != 0 {
+		t.Fatalf("notices = %d, want 0 — a proven static refusal suppresses the success claim", got)
 	}
 }
 

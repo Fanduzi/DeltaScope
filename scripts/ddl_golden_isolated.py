@@ -741,6 +741,52 @@ def main():
             "--artifact-dir", str(run.artifact_dir / "golden"),
         ]
         dg.main()
+        archive_attempt(run.artifact_dir, args.task)
+
+
+def archive_attempt(artifact_dir, task):
+    """Snapshot golden/<task> into a unique attempt directory —
+    <task>.attempts/<head12>/<attempt-N>/. Refuses silent reuse: the next
+    free index is computed and an existing directory is never
+    overwritten. A SHA256SUMS manifest and a 'latest' index file follow
+    so a re-run preserves history instead of clobbering the prior
+    artifact (issue #101 T22 R5 finding)."""
+    import hashlib
+    import shutil
+
+    golden = artifact_dir / "golden" / task
+    if not golden.is_dir():
+        return
+    head = "unknown-head"
+    artifact = golden / "artifact.json"
+    if artifact.is_file():
+        try:
+            head = (json.loads(artifact.read_text()).get("head") or "unknown-head")[:12]
+        except Exception:
+            pass
+    attempts = artifact_dir / "golden" / f"{task}.attempts" / head
+    attempts.mkdir(parents=True, exist_ok=True)
+    index = 0
+    while True:
+        index += 1
+        dest = attempts / f"attempt-{index}"
+        if not dest.exists():
+            break
+    dest.mkdir()
+    for item in sorted(golden.iterdir()):
+        if item.name.startswith("bin"):
+            continue
+        if item.is_dir():
+            shutil.copytree(item, dest / item.name)
+        else:
+            shutil.copy2(item, dest / item.name)
+    sums = []
+    for path in sorted(dest.rglob("*")):
+        if path.is_file() and path.name != "SHA256SUMS":
+            sums.append(f"{hashlib.sha256(path.read_bytes()).hexdigest()}  {path.relative_to(dest)}\n")
+    (dest / "SHA256SUMS").write_text("".join(sums))
+    (attempts / "latest").write_text(dest.name + "\n")
+    print(f"[attempt] archived {task} evidence -> {dest} ({len(sums)} files hashed)")
 
 
 if __name__ == "__main__":
