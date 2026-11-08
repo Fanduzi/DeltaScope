@@ -2440,6 +2440,12 @@ func extractTableOptions(options []*ast.TableOption, clause string) (map[string]
 			extracted["auto_id_cache"] = tableOptionUintText(option)
 		case ast.TableOptionAutoRandomBase:
 			extracted["auto_random_base"] = tableOptionUintText(option)
+			if option.BoolValue {
+				// ALTER ... AUTO_RANDOM_BASE = n FORCE skips the
+				// next-global-ID floor — the declared value is the
+				// applied base, not a request.
+				extracted["auto_random_base_force"] = "true"
+			}
 		case ast.TableOptionShardRowID:
 			extracted["shard_row_id_bits"] = tableOptionUintText(option)
 		case ast.TableOptionPreSplitRegion:

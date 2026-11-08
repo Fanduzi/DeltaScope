@@ -103,6 +103,9 @@ func (c t06a17Conn) QueryContext(_ context.Context, query string, _ []driver.Nam
 		return &t06a17Rows{
 			cols: []string{"constraint_name", "column_name", "referenced_table_schema", "referenced_table_name", "referenced_column_name", "delete_rule", "update_rule", "match_option"},
 		}, nil
+	case strings.Contains(query, "tidb_row_id_sharding_info"):
+		// T23 TiDB sharding probe — this fixture predates it; nil cell stays unobserved.
+		return &t06a17Rows{cols: []string{"tidb_row_id_sharding_info"}, rows: [][]driver.Value{{nil}}}, nil
 	case strings.Contains(query, "information_schema.tables"):
 		return &t06a17Rows{
 			cols: []string{"engine", "table_collation", "table_comment", "auto_increment", "row_format", "table_rows", "table_type"},

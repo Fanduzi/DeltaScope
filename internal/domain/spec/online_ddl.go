@@ -346,6 +346,19 @@ var tidbAlterConsumedOptions = map[string]struct{}{
 	"comment":            {},
 	"convert_to_charset": {},
 	"convert_to_collate": {},
+	// T23: the layout options in the AlterTableOption dispatch —
+	// auto_id_cache / auto_random_base(+FORCE) / shard_row_id_bits run
+	// the shared AlterLayoutOptionOutcome verdict (refusal preservation,
+	// unvouched values, or catalog-effective publication).
+	"auto_id_cache":          {},
+	"auto_random_base":       {},
+	"auto_random_base_force": {},
+	"shard_row_id_bits":      {},
+	// PRE_SPLIT_REGIONS never reaches the AlterTableOption dispatch —
+	// the v8.5.0 default arm refuses it with ErrUnsupportedAlterTableOption.
+	// R3 models that proven refusal (finding + pre-state preservation), so
+	// the name is consumed, not an unsupported aspect.
+	"pre_split_regions": {},
 }
 
 // mysqlAlterVendorOptions are extracted names the shared parser accepts

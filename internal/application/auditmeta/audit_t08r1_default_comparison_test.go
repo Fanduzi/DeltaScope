@@ -156,6 +156,9 @@ func (c t08r1Conn) QueryContext(_ context.Context, query string, _ []driver.Name
 			cols: []string{"count"},
 			rows: [][]driver.Value{{1}},
 		}, nil
+	case strings.Contains(query, "tidb_row_id_sharding_info"):
+		// T23 TiDB sharding probe — this fixture predates it; nil cell stays unobserved.
+		return &t08r1Rows{cols: []string{"tidb_row_id_sharding_info"}, rows: [][]driver.Value{{nil}}}, nil
 	case strings.Contains(query, "information_schema.tables"):
 		return &t08r1Rows{
 			cols: []string{"engine", "table_collation", "table_comment", "auto_increment", "row_format", "table_rows", "table_type"},

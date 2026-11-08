@@ -122,6 +122,9 @@ func (sessionTestConn) Ping(context.Context) error          { return nil }
 
 func (sessionTestConn) QueryContext(_ context.Context, query string, _ []driver.NamedValue) (driver.Rows, error) {
 	switch {
+	case strings.Contains(query, "tidb_row_id_sharding_info"):
+		// T23 TiDB sharding probe — this fixture predates it; nil cell stays unobserved.
+		return newSessionTestRows([]string{"tidb_row_id_sharding_info"}, [][]driver.Value{{nil}}), nil
 	case strings.Contains(query, "information_schema.tables"):
 		return newSessionTestRows([]string{"table_type"}, [][]driver.Value{{"BASE TABLE"}}), nil
 	case strings.Contains(query, "information_schema.columns"):
@@ -217,6 +220,9 @@ func (recordingConn) Ping(context.Context) error          { return nil }
 func (c recordingConn) QueryContext(_ context.Context, query string, _ []driver.NamedValue) (driver.Rows, error) {
 	c.rec.record(query)
 	switch {
+	case strings.Contains(query, "tidb_row_id_sharding_info"):
+		// T23 TiDB sharding probe — this fixture predates it; nil cell stays unobserved.
+		return newSessionTestRows([]string{"tidb_row_id_sharding_info"}, [][]driver.Value{{nil}}), nil
 	case strings.Contains(query, "information_schema.tables"):
 		return newSessionTestRows([]string{"table_type"}, [][]driver.Value{{"BASE TABLE"}}), nil
 	case strings.Contains(query, "information_schema.columns"):

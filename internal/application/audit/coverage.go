@@ -231,13 +231,10 @@ func extractedOptionGap(dialect spec.Dialect, op spec.DDLOperation, name string)
 		return op == spec.DDLOperationCreateProcedure, false
 	case "auto_random_base", "auto_id_cache", "shard_row_id_bits", "pre_split_regions":
 		// T23: TiDB CREATE models the declared value, the shared
-		// refusal/undecidable verdict, and post-state publication.
-		// MySQL never ships these options — vendor boundary there —
-		// and ALTER-side handling stays bounded pending T23-R2.6.
-		if dialect == spec.DialectMySQL {
-			return true, true
-		}
-		return op != spec.DDLOperationCreateTable, false
+		// refusal/undecidable verdict, and post-state publication;
+		// TiDB ALTER consumes them through AlterTableOptionOutcome.
+		// MySQL never ships these options — vendor boundary there.
+		return dialect == spec.DialectMySQL, dialect == spec.DialectMySQL
 	}
 	if t15ExtractedTableOption(name) {
 		// T15 extracts the shared MySQL/TiDB table-option vocabulary on
@@ -327,10 +324,10 @@ func columnAspectGaps(dialect spec.Dialect, op spec.DDLOperation, action string,
 	if column.AutoRandom {
 		// AUTO_RANDOM is audited on TiDB CREATE TABLE since T23 — the
 		// modeled bits facts and the auto_random.valid rule consume the
-		// declaration there. Under MySQL it stays a vendor boundary, and
-		// on TiDB ALTER-side declarations it remains the bounded
-		// unaudited aspect (alter validation is not modeled yet).
-		if dialect == spec.DialectMySQL || op != spec.DDLOperationCreateTable {
+		// declaration there — and on TiDB ALTER since R3, where the
+		// shared checkAutoRandom verdict consumes ADD/MODIFY/CHANGE
+		// declarations. Under MySQL it stays a vendor boundary.
+		if dialect == spec.DialectMySQL {
 			gaps = append(gaps, aspectGap(
 				prefix+".auto_random", dialect == spec.DialectMySQL,
 				map[string]any{"aspect": "column"},

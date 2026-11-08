@@ -103,6 +103,17 @@ func (s *batchState) prepareColumnIdentity(statement spec.Statement, alter *spec
 		return invalidate(primary)
 	}
 	source := entry.shape.Columns[index]
+	// TiDB CHANGE COLUMN runs the same checkAutoRandom matrix as MODIFY:
+	// a proven refusal keeps the exact pre-state and an unproven premise
+	// poisons the target. RENAME COLUMN never reaches the matrix.
+	if alter.Action == "change_column" {
+		switch s.alterAutoRandomGate(entry.shape, source.Name, alter.Column.Definition) {
+		case spec.AutoRandomRefused:
+			return modifyPublication{}
+		case spec.AutoRandomUndecidable:
+			return invalidate(primary)
+		}
+	}
 	if alter.Action == "change_column" && ttlColumnTypeOutcome(s.dialect, entry.shape, source.Name, alter.Column.Definition.Type) == ttlColumnActionUnsafe {
 		return invalidate(primary)
 	}

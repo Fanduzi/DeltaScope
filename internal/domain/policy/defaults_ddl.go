@@ -753,6 +753,8 @@ func ddlCoreRules() map[string]RulePolicy {
 		"ddl.tidb.resource_group.runaway.warn":   {Enabled: true, Level: rule.LevelWarning, Params: map[string]any{}},
 		"ddl.tidb.table.auto_random.valid":       {Enabled: true, Level: rule.LevelBlocker, Params: map[string]any{}},
 		"ddl.tidb.table.options.valid":           {Enabled: true, Level: rule.LevelBlocker, Params: map[string]any{}},
+		"ddl.tidb.alter.auto_random.valid":       {Enabled: true, Level: rule.LevelBlocker, Params: map[string]any{}},
+		"ddl.tidb.alter.table_options.valid":     {Enabled: true, Level: rule.LevelBlocker, Params: map[string]any{}},
 		"ddl.create_placement_policy.notice":     {Enabled: true, Level: rule.LevelNotice, Params: map[string]any{}},
 		"ddl.alter_placement_policy.notice":      {Enabled: true, Level: rule.LevelNotice, Params: map[string]any{}},
 		"ddl.drop_placement_policy.notice":       {Enabled: true, Level: rule.LevelNotice, Params: map[string]any{}},

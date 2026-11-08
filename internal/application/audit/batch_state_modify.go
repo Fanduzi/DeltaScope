@@ -93,6 +93,16 @@ func (s *batchState) prepareModifyColumn(statement spec.Statement, alter *spec.A
 	}
 	source := entry.shape.Columns[index]
 	definition := alter.Column.Definition
+	// TiDB checkAutoRandom is a state gate: a proven refusal keeps the
+	// exact pre-state (the statement never runs), an unproven premise —
+	// clustered member or the runtime allocator overflow check — poisons
+	// the target rather than publishing a guessed shape.
+	switch s.alterAutoRandomGate(entry.shape, source.Name, definition) {
+	case spec.AutoRandomRefused:
+		return modifyPublication{}
+	case spec.AutoRandomUndecidable:
+		return invalidate(primary)
+	}
 	if ttlColumnTypeOutcome(s.dialect, entry.shape, source.Name, definition.Type) == ttlColumnActionUnsafe {
 		return invalidate(primary)
 	}
@@ -645,7 +655,11 @@ func modifyReferencesOwnColumn(shape *spec.TableSnapshot, constraint spec.Constr
 }
 
 func modifyColumnGenerated(column spec.Column) bool {
-	if strings.TrimSpace(column.GeneratedWhen) != "" || column.IsIdentity || column.AutoRandom {
+	// AUTO_RANDOM is not blanket-unsafe for MODIFY: the shared
+	// checkAutoRandom verdict gates the modified column itself, and a
+	// neighbouring auto_random column never blocks an unrelated modify.
+	// Unextracted auto_random still counts — it lacks verdict fidelity.
+	if strings.TrimSpace(column.GeneratedWhen) != "" || column.IsIdentity {
 		return true
 	}
 	for _, option := range column.UnextractedOptions {

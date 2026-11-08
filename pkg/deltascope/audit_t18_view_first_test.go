@@ -309,6 +309,9 @@ func (t18ReviewConn) Close() error                        { return nil }
 func (t18ReviewConn) Begin() (driver.Tx, error)           { return nil, driver.ErrSkip }
 func (c t18ReviewConn) QueryContext(_ context.Context, query string, _ []driver.NamedValue) (driver.Rows, error) {
 	switch {
+	case strings.Contains(query, "tidb_row_id_sharding_info"):
+		// T23 TiDB sharding probe — this fixture predates it; nil cell stays unobserved.
+		return &t06a4SDKRows{cols: []string{"tidb_row_id_sharding_info"}, rows: [][]driver.Value{{nil}}}, nil
 	case strings.Contains(query, "information_schema.tables"):
 		return &t06a4SDKRows{
 			cols: []string{"engine", "table_collation", "table_comment", "auto_increment", "row_format", "table_rows", "table_type"},

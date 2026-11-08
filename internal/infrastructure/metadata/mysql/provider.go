@@ -482,6 +482,9 @@ func (p *Provider) LoadTableSnapshot(ctx context.Context, dialect spec.Dialect, 
 		if err := p.loadTiDBPlacement(ctx, snapshot); err != nil {
 			return nil, fmt.Errorf("load table %s.%s placement policy: %w", snapshot.Schema, snapshot.Table.Name, err)
 		}
+		if err := p.loadTiDBShardingInfo(ctx, snapshot); err != nil {
+			return nil, fmt.Errorf("load table %s.%s sharding info: %w", snapshot.Schema, snapshot.Table.Name, err)
+		}
 	}
 
 	return snapshot, nil

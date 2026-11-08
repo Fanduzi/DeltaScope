@@ -492,6 +492,8 @@ const (
 	ruleIDTiDBResourceGroupRunawayWarn   = "ddl.tidb.resource_group.runaway.warn"
 	ruleIDTiDBTableAutoRandomValid       = "ddl.tidb.table.auto_random.valid"
 	ruleIDTiDBTableOptionsValid          = "ddl.tidb.table.options.valid"
+	ruleIDTiDBAlterAutoRandomValid       = "ddl.tidb.alter.auto_random.valid"
+	ruleIDTiDBAlterTableOptionsValid     = "ddl.tidb.alter.table_options.valid"
 	ruleIDCreatePlacementPolicyNotice    = "ddl.create_placement_policy.notice"
 	ruleIDAlterPlacementPolicyNotice     = "ddl.alter_placement_policy.notice"
 	ruleIDDropPlacementPolicyNotice      = "ddl.drop_placement_policy.notice"

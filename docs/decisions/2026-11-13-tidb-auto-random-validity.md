@@ -165,3 +165,63 @@ pre-existing shape preserved), `batch_state_t23opt_test.go`,
 `pkg/deltascope/audit_t23_test.go` (public-Audit seam through a stub
 provider), `testdata/sql-corpus/tidb/ddl/findings/table_options_rules.*`,
 CLI evidence for both policy profiles.
+
+## Amendment — T23-R3 (2026-11-14 follow-up): ALTER/ID wiring, declared-to-effective post-state, reader chain
+
+- `spec/alter_auto_random.go` adds the shared ALTER verdicts consumed
+  identically by `ddl.tidb.alter.auto_random.valid`,
+  `ddl.tidb.alter.table_options.valid`, and the ordered-state publisher:
+  `AlterAutoRandomOldFacts` resolves the old column's clustered-PK
+  membership, authored shard/range bits, PK-handle status, and the
+  has-AUTO_RANDOM fact — including the vacuous arm where a table provably
+  without AUTO_RANDOM answers zero bits instead of leaving the clustered
+  premise unknown, so an ordinary PRIMARY KEY widen is never poisoned;
+  `AlterAutoRandomColumnVerdict` mirrors the v8.5.0 `checkAutoRandom`
+  ALTER matrix (`MODIFY`/`CHANGE`: removal, bit decrease, range/type
+  change, non-BIGINT, AUTO_INCREMENT/DEFAULT conflicts refuse; same-bits
+  redeclaration and increases owe the runtime allocator check as
+  undecidable; `ADD COLUMN AUTO_RANDOM` is the fixed
+  `AutoRandomAlterAddColumn` refusal); `AlterLayoutOptionOutcome`
+  adjudicates the four layout options — AUTO_ID_CACHE overflow and the
+  1↔non-1 boundary refuse, SHARD_ROW_ID_BITS temporary/clustered refuse
+  with the >15 clamp and a runtime row-scan premise on real changes,
+  AUTO_RANDOM_BASE non-AUTO_RANDOM/overflow refuse with FORCE publishing
+  the declared base while non-FORCE unvouches the runtime-adjusted value,
+  and PRE_SPLIT_REGIONS is the proven unsupported-alter refusal.
+- Ordered state applies the same verdicts: proven refusal preserves the
+  exact pre-state; undecidable premises poison the successor or unvouch
+  only the affected option while preserving unrelated facts; rule
+  disablement changes finding emission only — never the state verdict
+  (pinned by `batch_state_t23alter_test.go` matrix + disabled-policy
+  invariance cases).
+- Declared-vs-effective layering: `DDL.Options` keeps authored values;
+  `TableSnapshot.Options` publishes catalog-effective values via
+  `AutoRandomEffectiveBits`/`CreateTableOptionsOutcome` normalization
+  (unwritten shard/range normalize to 5/64, presplit clamps to
+  shardingBits).
+- Reader chain: the TiDB provider reads
+  `information_schema.TABLES.TIDB_ROW_ID_SHARDING_INFO`
+  (`PK_AUTO_RANDOM_BITS=n[, RANGE BITS=m]` flags the single-member PK
+  column `AutoRandom` with stored bits, `SHARD_BITS=n` and the
+  `NOT_SHARDED` family publish proven `Options["shard_row_id_bits"]` —
+  zero included; a nil cell stays unobserved, an unrecognized shape
+  fails the read) and projects the SHOW CREATE
+  `/*T![auto_id_cache] AUTO_ID_CACHE=n */` feature comment into
+  `Options["auto_id_cache"]` (absent comment = upstream-proven zero).
+  The MySQL provider never issues the TiDB probes.
+  `provider_t23_test.go` pins stub→provider→`InstanceFacts` fidelity.
+- Manifest: `testdata/ddl-golden/T23.json` gains the baseline anchors
+  mysql57/mysql84, the `t23-layout-id`/`t23-strict-literal` policy
+  profiles, 11 offline CLI cases verified against the real binary, and
+  8 metadata cases retained `pending_native` (TiFlash case keeps
+  `requires_service: "tiflash"` — no TiFlash service exists in the
+  golden stack).
+- Remaining bounded scope: ATTRIBUTES, CACHE/NOCACHE, TiFlash replica
+  success paths, COMPACT, SPLIT stay inventory-pending; all 8 native
+  cases await the restricted-fixture authorization card.
+- Verification: `go test ./...` all green; corpus 335 expected files,
+  coverage_percent=100, missing_rule_dialect_targets=0; manifest
+  offline validation — 19/19 required cases, no duplicates, policy IDs
+  validated against the live rule catalog, baseline anchors clean.
+- Commits: this file's task commit; see `git log` for the product
+  commit range.

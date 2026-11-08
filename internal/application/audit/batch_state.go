@@ -1501,6 +1501,13 @@ func derivedCreateShape(dialect spec.Dialect, schema, table string, ddl *spec.DD
 		for name, value := range ddl.Options {
 			snapshot.Options[name] = value
 		}
+		// The shape projects what the catalog stores, not the authored
+		// text: TiDB clamps shard_row_id_bits to MaxShardRowIDBits and
+		// pre_split_regions to the effective sharding bits before they
+		// land in TableInfo. Authored declarations stay in ddl.Options.
+		for name, value := range spec.CreateTableEffectiveOptions(dialect, ddl) {
+			snapshot.Options[name] = value
+		}
 	}
 	snapshot.TTLKnown = true
 	if dialect == spec.DialectTiDB && createTTLStatementOutcome(dialect, ddl) == ttlCreateApplied {
@@ -1813,6 +1820,14 @@ func (s *batchState) applyAlterTable(ctx context.Context, statement spec.Stateme
 		s.invalidateAll(targets)
 		return nil
 	}
+	// TiDB refuses AUTO_RANDOM on ADD COLUMN outright
+	// (AutoRandomAlterAddColumn) — a proven refusal keeps the exact
+	// pre-state and never fabricates the added member.
+	if s.dialect == spec.DialectTiDB {
+		if verdict, _ := spec.AlterAutoRandomAddColumnVerdict(alter.Column.Definition); verdict == spec.AutoRandomRefused {
+			return nil
+		}
+	}
 	key := s.keyFor(s.schema, targets[0])
 	entry := s.entries[key]
 	switch {
@@ -1950,6 +1965,50 @@ func (s *batchState) applyTableOptionAlter(alter *spec.Alter, targets []spec.Tab
 			return
 		}
 	}
+	// TiDB layout options share one verdict across rule and state: a
+	// proven refusal keeps the exact pre-state, an unproven premise
+	// unvouches only the option's catalog value (the table stays), and
+	// an applied option projects its catalog-effective value.
+	unvouched := map[string]bool{}
+	if s.dialect == spec.DialectTiDB && t23AlterHasLayoutOption(alter) {
+		if entry == nil || entry.state != tablePresent || entry.shape == nil {
+			// The target's existence or shape is unproven — an option
+			// whose outcome needs old facts can neither prove refusal nor
+			// claim the statement landed. Target-independent refusals
+			// (pre_split, int64 overflow) still hold though.
+			for _, name := range t23AlterLayoutOptionKeys {
+				if _, ok := alter.Options[name]; !ok {
+					continue
+				}
+				verdict, _ := spec.AlterLayoutOptionOutcome(name, alter.Options[name], spec.AlterLayoutFacts{})
+				if verdict == spec.AutoRandomRefused {
+					return
+				}
+			}
+			return
+		}
+		facts := s.alterLayoutFacts(entry.shape)
+		for _, name := range t23AlterLayoutOptionKeys {
+			value, ok := alter.Options[name]
+			if !ok {
+				continue
+			}
+			verdict, _ := spec.AlterLayoutOptionOutcome(name, value, facts)
+			switch verdict {
+			case spec.AutoRandomRefused:
+				return
+			case spec.AutoRandomUndecidable:
+				unvouched[name] = true
+			case spec.AutoRandomOK:
+				// A non-FORCE rebase stores max(declared, nextGlobalID)
+				// — the applied base is a runtime value, not the
+				// authored request.
+				if name == "auto_random_base" && alter.Options["auto_random_base_force"] != "true" {
+					unvouched[name] = true
+				}
+			}
+		}
+	}
 	if s.dialect == spec.DialectTiDB {
 		if charset := alter.Options["convert_to_charset"]; charset != "" {
 			// TiDB's own conversion arm: a refused target keeps the exact
@@ -1972,6 +2031,12 @@ func (s *batchState) applyTableOptionAlter(alter *spec.Alter, targets []spec.Tab
 	case entry.state == tablePresent && entry.shape != nil:
 		shape := cloneTableSnapshot(entry.shape)
 		applyTableOptionEffects(s.dialect, alter, shape)
+		// An undecidable layout option may have applied or been refused —
+		// the table stays but its catalog value is unvouched, so the
+		// projected key is dropped rather than guessed either way.
+		for name := range unvouched {
+			delete(shape.Options, name)
+		}
 		s.entries[key] = &batchTableEntry{state: tablePresent, shape: shape, displaySchema: entry.displaySchema, displayTable: entry.displayTable}
 	}
 }
@@ -2006,6 +2071,30 @@ func applyTableOptionEffects(dialect spec.Dialect, alter *spec.Alter, shape *spe
 		}
 		if value, ok := alter.Options["auto_increment"]; ok && value != "" {
 			applyAutoIncrementSeed(shape, value)
+		}
+	}
+	if dialect == spec.DialectTiDB {
+		// AUTO_ID_CACHE stores the declared value verbatim
+		// (AlterTableAutoIDCache) — reachable only after the shared
+		// verdict proved the XOR-1 boundary does not refuse.
+		if value, ok := alter.Options["auto_id_cache"]; ok && value != "" {
+			shape.Options["auto_id_cache"] = value
+		}
+		// SHARD_ROW_ID_BITS stores the clamped effective value — the
+		// dispatch clamps >15 before ShardRowID records it.
+		if value, ok := alter.Options["shard_row_id_bits"]; ok && value != "" {
+			if n, err := strconv.ParseUint(strings.TrimSpace(value), 10, 64); err == nil && n > 15 {
+				shape.Options["shard_row_id_bits"] = "15"
+			} else {
+				shape.Options["shard_row_id_bits"] = value
+			}
+		}
+		// AUTO_RANDOM_BASE lands only with FORCE — otherwise the applied
+		// base is max(declared, nextGlobalID), a runtime value the model
+		// cannot vouch for; the shared verdict unvouches it instead.
+		if value, ok := alter.Options["auto_random_base"]; ok && value != "" &&
+			alter.Options["auto_random_base_force"] == "true" {
+			shape.Options["auto_random_base"] = value
 		}
 	}
 	// CONVERT TO lands on both dialects: MySQL rewrites every string

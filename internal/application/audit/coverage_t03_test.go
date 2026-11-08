@@ -359,7 +359,9 @@ func TestAuditSQLT03RecognizedUnauditedAspectsIncomplete(t *testing.T) {
 		// the modeled bits facts and ddl.tidb.table.auto_random.valid consume
 		// the declaration (see TestAuditSQLT03TiDBAuditedBoundariesStayComplete).
 		{name: "mysql create table auto_random", sql: "CREATE TABLE t (id BIGINT PRIMARY KEY AUTO_RANDOM);", dialect: spec.DialectMySQL, wantFeature: "create_table.column.auto_random", wantReason: spec.UnsupportedVendorBoundaryReason, wantKind: "ddl"},
-		{name: "tidb alter add column auto_random", sql: "ALTER TABLE t ADD COLUMN id BIGINT AUTO_RANDOM;", dialect: spec.DialectTiDB, wantFeature: "alter_table.add_columns.column.auto_random", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
+		// TiDB ALTER-side AUTO_RANDOM graduated in T23-R3: the shared
+		// checkAutoRandom verdict consumes ADD/MODIFY/CHANGE declarations
+		// and ddl.tidb.alter.auto_random.valid audits the refusal matrix.
 		{name: "mysql alter add column auto_random", sql: "ALTER TABLE t ADD COLUMN id BIGINT AUTO_RANDOM;", dialect: spec.DialectMySQL, wantFeature: "alter_table.add_columns.column.auto_random", wantReason: spec.UnsupportedVendorBoundaryReason, wantKind: "ddl"},
 		// Positioned add/modify/change column_position is audited semantics
 		// (T08): those statements complete cleanly and are covered by

@@ -1117,6 +1117,19 @@ rules:
     level: blocker
     params:
 
+  # TiDB ALTER-side AUTO_RANDOM validity (ADD/MODIFY/CHANGE shared verdict).
+  ddl.tidb.alter.auto_random.valid:
+    enabled: true
+    level: blocker
+    params:
+
+  # TiDB ALTER table-option validity (AUTO_ID_CACHE / AUTO_RANDOM_BASE /
+  # SHARD_ROW_ID_BITS / PRE_SPLIT_REGIONS shared dispatch).
+  ddl.tidb.alter.table_options.valid:
+    enabled: true
+    level: blocker
+    params:
+
   ddl.tidb.local_temporary.alter:
     enabled: true
     level: blocker

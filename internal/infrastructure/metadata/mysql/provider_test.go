@@ -1042,6 +1042,15 @@ func registerTestDriverResults(name string, results map[string]testQueryResult) 
 			columns: []string{"table_schema", "table_name"},
 		}
 	}
+	// TiDB sharding reads information_schema.tables.tidb_row_id_sharding_info.
+	// A fixture that does not care gets the explicit NOT_SHARDED answer —
+	// arbitrary unstubbed queries still answer ErrNoRows.
+	if _, ok := cloned[testShardingInfoFragment]; !ok {
+		cloned[testShardingInfoFragment] = testQueryResult{
+			columns: []string{"tidb_row_id_sharding_info"},
+			rows:    [][]driver.Value{{"NOT_SHARDED"}},
+		}
+	}
 	testDriverResults.Store(name, cloned)
 }
 
@@ -1081,6 +1090,12 @@ const testTTLFragment = "show create table"
 // KEY_COLUMN_USAGE read — the DISTINCT child-table projection is longer than
 // the shared key_column_usage fragment used by the primary-column probe.
 const testInboundFKFragment = "select distinct table_schema, table_name"
+
+// testShardingInfoFragment is the stub key for TiDB's
+// TABLES.TIDB_ROW_ID_SHARDING_INFO read — longer than the shared
+// "from information_schema.tables" fragment so longest-match routing
+// keeps the sharding probe and the base table row deterministic.
+const testShardingInfoFragment = "select tidb_row_id_sharding_info"
 
 func (c testConn) QueryContext(_ context.Context, query string, _ []driver.NamedValue) (driver.Rows, error) {
 	// Longest matching fragment wins: loaders sharing a catalog table (the

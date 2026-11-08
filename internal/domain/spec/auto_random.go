@@ -173,3 +173,52 @@ func CreateTableOptionOutcome(dialect Dialect, ddl *DDL, tidbClusteredMode *stri
 	}
 	return AutoRandomOK, ""
 }
+
+// createOptionMaxShardRowIDBits mirrors upstream variable.MaxShardRowIDBits.
+const createOptionMaxShardRowIDBits = 15
+
+// CreateTableEffectiveOptions returns the catalog-effective values for
+// the CREATE options upstream normalizes before storing in TableInfo
+// (handleTableOptions): shard_row_id_bits clamps to MaxShardRowIDBits and
+// pre_split_regions clamps to shardingBits — the post-clamp shard bits
+// when declared nonzero, else the AUTO_RANDOM column's effective shard
+// bits. The returned map holds only overrides; callers overlay it onto
+// the authored copy so the authored text stays in ddl.Options while the
+// shape projects what the catalog would record. Run it only after
+// CreateTableOptionOutcome proves the statement was not refused or left
+// undecidable — a refused statement never publishes a shape.
+func CreateTableEffectiveOptions(dialect Dialect, ddl *DDL) map[string]string {
+	if dialect != DialectTiDB || ddl == nil {
+		return nil
+	}
+	overrides := map[string]string{}
+	shard := uint64(0)
+	if value, ok := ddl.Options["shard_row_id_bits"]; ok {
+		if n, err := strconv.ParseUint(strings.TrimSpace(value), 10, 64); err == nil {
+			if n > createOptionMaxShardRowIDBits {
+				n = createOptionMaxShardRowIDBits
+			}
+			shard = n
+			overrides["shard_row_id_bits"] = strconv.FormatUint(n, 10)
+		}
+	}
+	if value, ok := ddl.Options["pre_split_regions"]; ok {
+		if n, err := strconv.ParseUint(strings.TrimSpace(value), 10, 64); err == nil {
+			sharding := shard
+			if sharding == 0 {
+				for _, column := range ddl.Columns {
+					if column.AutoRandom {
+						bits, _ := AutoRandomEffectiveBits(column)
+						sharding = uint64(bits)
+						break
+					}
+				}
+			}
+			if n > sharding {
+				n = sharding
+			}
+			overrides["pre_split_regions"] = strconv.FormatUint(n, 10)
+		}
+	}
+	return overrides
+}

@@ -1,0 +1,11 @@
+name: alter_auto_random_rules
+dialect: tidb
+category: ddl
+metadata:
+  instance:
+    tidb_enable_clustered_index: 'on'
+expect:
+  parse_ok: true
+  findings:
+    include:
+      - ddl.tidb.alter.auto_random.valid

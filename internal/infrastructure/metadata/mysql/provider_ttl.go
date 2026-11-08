@@ -15,9 +15,11 @@ func quoteIdentifier(identifier string) string {
 }
 
 // loadTiDBTTL reads the authoritative SHOW CREATE surface TiDB exposes for
-// TTL configuration. A clean read establishes the existence answer; a TTL
-// member whose catalog text is unrecognizable stays unmodeled inside a
-// proven-present config rather than being guessed.
+// TTL configuration and the TiDB option feature comments. A clean read
+// establishes the existence answer; a TTL member whose catalog text is
+// unrecognizable stays unmodeled inside a proven-present config rather than
+// being guessed, and an absent option comment is the upstream-proven zero
+// (TiDB emits the comment only for a stored non-zero value).
 func (p *Provider) loadTiDBTTL(ctx context.Context, snapshot *spec.TableSnapshot) error {
 	var objectName, createSQL string
 	if err := p.db.QueryRowContext(ctx,
@@ -28,7 +30,68 @@ func (p *Provider) loadTiDBTTL(ctx context.Context, snapshot *spec.TableSnapshot
 	config, _ := parseCatalogTTLConfig(createSQL)
 	snapshot.TTLKnown = true
 	snapshot.TTL = config
+	for name, value := range parseCatalogLayoutOptions(createSQL) {
+		snapshot.Options[name] = value
+	}
 	return nil
+}
+
+// parseCatalogLayoutOptions projects the SHOW CREATE feature comments for
+// the T23 layout options. An absent /*T![auto_id_cache] comment is the
+// upstream-proven zero — TiDB only emits it for a stored non-zero
+// AutoIDCache — so a clean read publishes the proven catalog value.
+func parseCatalogLayoutOptions(createSQL string) map[string]string {
+	out := map[string]string{"auto_id_cache": "0"}
+	for _, comment := range featureComments(createSQL, "/*t![auto_id_cache]") {
+		member, body, ok := catalogMember(comment)
+		if !ok || member != "auto_id_cache" {
+			continue
+		}
+		if value, ok := parseCatalogScalar(body); ok && value != "" {
+			out["auto_id_cache"] = value
+		}
+	}
+	return out
+}
+
+// featureComments extracts every /*T![ns] ... */ comment for one feature
+// namespace from the SHOW CREATE text.
+func featureComments(text, marker string) []string {
+	var comments []string
+	lower := strings.ToLower(text)
+	for offset := 0; offset+len(marker) <= len(text); {
+		idx := strings.Index(lower[offset:], marker)
+		if idx < 0 {
+			break
+		}
+		start := offset + idx + len(marker)
+		end := strings.Index(text[start:], "*/")
+		if end < 0 {
+			break
+		}
+		comments = append(comments, text[start:start+end])
+		offset = start + end + 2
+	}
+	return comments
+}
+
+// catalogMember splits a feature-comment body into the leading member
+// name and the value text after '='.
+func catalogMember(comment string) (string, string, bool) {
+	comment = strings.TrimSpace(comment)
+	i := 0
+	for i < len(comment) && isCatalogBareWord(comment[i]) {
+		i++
+	}
+	if i == 0 {
+		return "", "", false
+	}
+	member := strings.ToLower(comment[:i])
+	i = skipCatalogSpace(comment, i)
+	if i >= len(comment) || comment[i] != '=' {
+		return "", "", false
+	}
+	return member, comment[i+1:], true
 }
 
 func parseCatalogTTLConfig(createSQL string) (*spec.TTLConfig, bool) {
@@ -77,22 +140,7 @@ func parseCatalogTTLConfig(createSQL string) (*spec.TTLConfig, bool) {
 }
 
 func ttlFeatureComments(text string) []string {
-	var comments []string
-	lower := strings.ToLower(text)
-	for offset := 0; offset+9 <= len(text); {
-		idx := strings.Index(lower[offset:], "/*t![ttl]")
-		if idx < 0 {
-			break
-		}
-		start := offset + idx + 9
-		end := strings.Index(text[start:], "*/")
-		if end < 0 {
-			break
-		}
-		comments = append(comments, text[start:start+end])
-		offset = start + end + 2
-	}
-	return comments
+	return featureComments(text, "/*t![ttl]")
 }
 
 func ttlCatalogMember(comment string) (string, string, bool) {

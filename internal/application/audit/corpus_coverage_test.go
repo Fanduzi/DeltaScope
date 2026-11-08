@@ -171,9 +171,13 @@ func isTiDBOnlyRule(ruleID string) bool {
 		"ddl.tidb.resource_group.runaway.warn",
 		// T23: AUTO_RANDOM declaration validity and the TiDB create-time
 		// table options are TiDB-only — under MySQL each is a vendor
-		// boundary.
+		// boundary. R3 adds the ALTER-side pair: the column verdict
+		// consumes ADD/MODIFY/CHANGE declarations and the option rule
+		// audits the four layout options under TiDB only.
 		"ddl.tidb.table.auto_random.valid",
-		"ddl.tidb.table.options.valid":
+		"ddl.tidb.table.options.valid",
+		"ddl.tidb.alter.auto_random.valid",
+		"ddl.tidb.alter.table_options.valid":
 		return true
 	default:
 		return false
