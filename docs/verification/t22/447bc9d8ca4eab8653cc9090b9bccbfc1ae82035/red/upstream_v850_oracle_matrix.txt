@@ -1,0 +1,20 @@
+BURSTABLE=TRUE                   → ACCEPT
+BURSTABLE=FALSE                  → ACCEPT
+BURSTABLE=0                      → ACCEPT
+BURSTABLE=1                      → ACCEPT
+BURSTABLE=42                     → ACCEPT
+BURSTABLE=007                    → ACCEPT
+BURSTABLE=9223372036854775807    → ACCEPT
+BURSTABLE=9223372036854775808    → PANIC: interface conversion: interface {} is uint64, not int64
+BURSTABLE=18446744073709551615   → PANIC: interface conversion: interface {} is uint64, not int64
+BURSTABLE=18446744073709551616   → ERROR: line 1 column 70 near "18446744073709551616" 
+BURSTABLE=99999999999999999999   → ERROR: line 1 column 70 near "99999999999999999999" 
+BURSTABLE=ON                     → ERROR: line 1 column 52 near "ON" 
+BURSTABLE=-1                     → ERROR: line 1 column 51 near "-1" 
+BURSTABLE=1.5                    → ERROR: line 1 column 53 near "1.5" 
+BURSTABLE=1e3                    → ERROR: line 1 column 53 near "1e3" 
+BURSTABLE='x'                    → ERROR: line 1 column 53 near "'x'" 
+BURSTABLE=abc                    → ERROR: line 1 column 53 near "abc" 
+bare BURSTABLE           → ACCEPT
+BURSTABLE FALSE          → ACCEPT
+BURSTABLE TRUE (no eq)   → ACCEPT

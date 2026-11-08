@@ -1,0 +1,5 @@
+# product red receipts on 447bc9d8 (bin/deltascope built at that sha)
+## B1 — out-of-domain numeric accepted as enabled (BUG)
+BURSTABLE=9223372036854775808    → Statement kind: `ddl`
+BURSTABLE=18446744073709551616   → Statement kind: `ddl`
+## B2 — mixed batch fail-closed (BUG)

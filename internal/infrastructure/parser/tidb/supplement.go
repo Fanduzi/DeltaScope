@@ -2,6 +2,8 @@
 package tidbparser
 
 import (
+	"math"
+	"strconv"
 	"strings"
 
 	"github.com/pingcap/tidb/pkg/parser"
@@ -406,22 +408,16 @@ func resourceGroupBoolValue(tok sqlTok, sqlText string) (bool, bool) {
 	if strings.EqualFold(word, "false") {
 		return false, true
 	}
-	// v8.5 `NUM` is an unsigned decimal literal; magnitude is irrelevant
-	// to the Boolean result, so a pure digit run is ≠0 unless every
-	// digit is zero — no width limit to overflow against.
-	digits := true
-	nonzero := false
-	for i := 0; i < len(word); i++ {
-		if word[i] < '0' || word[i] > '9' {
-			digits = false
-			break
-		}
-		if word[i] != '0' {
-			nonzero = true
-		}
-	}
-	if digits && len(word) > 0 {
-		return nonzero, true
+	// The v8.5 `NUM` operand is the lexer's intLit: `toInt` accepts
+	// exactly `strconv.ParseUint(_, 10, 64)` (overflow becomes decLit —
+	// a syntax error upstream, never a Boolean). The Boolean action then
+	// asserts the item as `.(int64)`, which only holds when
+	// `n <= MaxInt64`; larger accepted literals are a target-parser
+	// panic anomaly, not normal success — the site stays untouched so
+	// the authored text keeps a controlled parse failure instead of a
+	// synthetic rebound truth.
+	if value, err := strconv.ParseUint(word, 10, 64); err == nil && value <= math.MaxInt64 {
+		return value != 0, true
 	}
 	return false, false
 }
@@ -736,15 +732,15 @@ func bindSupplementPlan(sqlText string, plan supplementPlan, parsed []ast.StmtNo
 		}
 		node := parsed[pi]
 		pi++
-		if stmt.burstable == nil {
-			if pos := node.OriginTextPosition(); pos < stmt.byteStart || pos > stmt.byteEnd {
-				return nil, false
-			}
-		}
-		// Resource-group productions leave OriginTextPosition unset in the
-		// locked grammar, so the burstable-site statements bind by the
-		// ordered one-to-one consumption plus the node shape check below
-		// instead of a byte-range assertion.
+		// The locked parser leaves OriginTextPosition unset on every
+		// statement kind, so no byte-range check can validate the
+		// pairing — attribution instead rides on the invariants the
+		// rewrite cannot break: blanked site bytes become spaces and
+		// never include `;`, so statement count and order survive the
+		// rewrite, and the one-to-one consumption below pairs each plan
+		// with its node. Per-supplement shape checks (column-def counts,
+		// burstable-option counts, setter node construction) then prove
+		// each fact lands on the node it was planned for.
 		supp := &statementSupplements{}
 		if !bindDefaultSites(sqlText, stmt, node) {
 			return nil, false

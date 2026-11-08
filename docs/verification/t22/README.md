@@ -54,16 +54,26 @@ Baseline behavior, reproduced by the permanent public red test
   claim; resolver errors propagate uncached; disabled rules emit no
   gaps.
 - `go test ./internal/infrastructure/parser/tidb -run TestT22 -count=1`:
-  10/10 PASS — authored `100`/`200` kept distinct at the extractor seam,
+  14/14 PASS — authored `100`/`200` kept distinct at the extractor seam,
   `UNLIMITED` stays a token, bare `BURSTABLE` projects the 8.5 enabled
   flag, and the legal 8.5 `BURSTABLE [EqOpt] <TRUE|FALSE|NUM>` arm
   extracts authored enabled/disabled through the resource-group
-  supplement (same-width blank → reparse → one-to-one typed rebind;
-  statement text/positions preserved verbatim; multi-statement input
-  works) while the post-8.5 keyword forms (`MODERATED`/`UNLIMITED`/`OFF`)
-  stay bounded `unsupported_form` members and non-Boolean operands
-  (strings, negatives, decimals, identifiers) plus duplicates keep the
-  base parse error, BACKGROUND stays a bounded member, MySQL keeps the
+  supplement (same-width blank → reparse → ordered one-to-one rebind
+  with per-type shape checks; statement text/positions preserved
+  verbatim). The numeric operand domain is bounded to the upstream
+  v8.5.0 accept set — `ParseUint` success and `n <= MaxInt64`: the
+  MaxInt64+1..MaxUint64 band is a target-parser `.(int64)` panic
+  anomaly (controlled failure here, never rebound truth) and
+  out-of-range digit runs are upstream decLit syntax errors
+  (`447bc9d8` red receipts + upstream oracle matrix archived under
+  `447bc9d8/`). Mixed-batch binding is permanent-covered: the dead
+  `OriginTextPosition` byte-range gate that made supplemented
+  multi-statement input fail closed is removed, and the same recovery
+  now applies to the pre-existing default-parens path. The post-8.5
+  keyword forms (`MODERATED`/`UNLIMITED`/`OFF`) stay bounded
+  `unsupported_form` members and non-Boolean operands (strings,
+  negatives, decimals, identifiers) plus duplicates keep the base
+  parse error, BACKGROUND stays a bounded member, MySQL keeps the
   vendor-boundary marker.
 - `go test ./internal/infrastructure/metadata/mysql -run TestT22 -count=1`:
   8/8 PASS — official RESOURCE_GROUPS reader publishes definitions,

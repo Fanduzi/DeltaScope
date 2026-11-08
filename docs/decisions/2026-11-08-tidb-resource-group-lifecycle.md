@@ -218,3 +218,47 @@ The two ordered-state first paths are now independently evidenced:
 `TRUE`/`FALSE`/`NUM` and bare keywords are distinct authored forms but
 one semantic: enabled when Boolean-truthy, disabled otherwise —
 matching the v8.5 `BoolValue`/`Boolean` grammar arm exactly.
+
+## Amendment R4 — numeric domain bound and bind attribution repair
+
+The offline review of the R2 candidate reproduced two blockers; both
+are fixed in this round.
+
+1. **B1 — the numeric operand domain over-accepted.** The first
+   supplement judged a pure digit run without a numeric bound, so
+   `BURSTABLE=18446744073709551616` (2^64) parsed as an enabled
+   declaration where v8.5.0 emits a syntax error. A bounded upstream
+   oracle (`pkg/parser` module `v0.0.0-20241203170126-9812d85d0d25`,
+   the v8.5.0-era grammar — its `toInt` and `Boolean` action read
+   verbatim) shows the full picture: `toInt` accepts exactly
+   `strconv.ParseUint(_, 10, 64)` (overflow becomes `decLit`, not
+   `NUM` → syntax error), and the `Boolean` action asserts
+   `.(int64) != 0`, which upstream only satisfies for `n <= MaxInt64`;
+   `MaxInt64 < n <= MaxUint64` lexes fine but panics in the action — a
+   target-parser anomaly, not normal acceptance. The product domain is
+   therefore `ParseUint` success **and** `n <= MaxInt64` (truth =
+   `n != 0`); anything outside stays untouched and keeps a controlled
+   parse failure — never a synthetic rebound truth, and the product
+   does not replicate the panic.
+2. **B2 — a latent bind defect predating R2.** `bindSupplementPlan`
+   gated every non-supplemented statement on
+   `OriginTextPosition` falling inside its byte span — but the locked
+   parser never populates that field on any statement kind, so any
+   statement beginning after byte 0 failed the check and the whole
+   supplemented parse fell back to the base error. The same failure
+   existed for the older default-parens supplement on mixed batches.
+   The check was decorative and is removed; attribution now rests on
+   the invariants the same-width rewrite structurally preserves
+   (blanked bytes become spaces and never include `;`, so statement
+   count and order are invariant) plus the one-to-one ordered
+   consumption, the `pi != len(parsed)` count check, and per-type
+   shape validation (`countParsedColumnDefs`,
+   `countResourceGroupBurstableOptions`, setter node construction).
+   Public audit input was never exposed — `splitSQLStatements` chunks
+   at top-level semicolons before `Parser.Parse`, so the public path
+   always fed single-statement parses; the defect bit only direct
+   multi-statement parser callers, and that is now covered by the
+   permanent `TestT22R4*` matrix.
+
+No QUERY_LIMIT, dual-path, provider, or manifest work was reopened;
+those stayed green throughout.

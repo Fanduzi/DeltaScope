@@ -20,8 +20,10 @@ const (
 
 // ResourceGroupBurstable is the authored burst allowance under the fixed
 // TiDB 8.5 grammar: bare BURSTABLE and BURSTABLE [EqOpt] Boolean
-// (TRUE/FALSE/NUM — rebound through the resource-group supplement, which
-// the locked grammar cannot represent) enable or disable it. The locked
+// (TRUE/FALSE/NUM with NUM ≤ MaxInt64 — rebound through the
+// resource-group supplement, which the locked grammar cannot represent;
+// larger literals are a target-parser anomaly that stays a controlled
+// parse failure) enable or disable it. The locked
 // parser's newer keyword forms (BURSTABLE = MODERATED/UNLIMITED/OFF) are
 // post-8.5 vocabulary it accepts but the target does not —
 // unsupported_form is bounded evidence, never 8.5 truth.

@@ -1,0 +1,40 @@
+package main
+
+import (
+	"fmt"
+
+	"github.com/pingcap/tidb/pkg/parser"
+	_ "github.com/pingcap/tidb/pkg/parser/test_driver"
+)
+
+func try(sql string) (res string) {
+	defer func() {
+		if r := recover(); r != nil {
+			res = fmt.Sprintf("PANIC: %v", r)
+		}
+	}()
+	_, _, err := parser.New().Parse(sql, "", "")
+	if err != nil {
+		return fmt.Sprintf("ERROR: %v", err)
+	}
+	return "ACCEPT"
+}
+
+func main() {
+	vals := []string{
+		"TRUE", "FALSE", "0", "1", "42", "007",
+		"9223372036854775807", // MaxInt64
+		"9223372036854775808", // MaxInt64+1
+		"18446744073709551615", // MaxUint64
+		"18446744073709551616", // MaxUint64+1 = 2^64
+		"99999999999999999999",
+		"ON", "-1", "1.5", "1e3", "'x'", "abc",
+	}
+	for _, v := range vals {
+		sql := "CREATE RESOURCE GROUP rg RU_PER_SEC=100 BURSTABLE=" + v
+		fmt.Printf("BURSTABLE=%-22s → %s\n", v, try(sql))
+	}
+	fmt.Printf("%-24s → %s\n", "bare BURSTABLE", try("CREATE RESOURCE GROUP rg RU_PER_SEC=100 BURSTABLE"))
+	fmt.Printf("%-24s → %s\n", "BURSTABLE FALSE", try("CREATE RESOURCE GROUP rg RU_PER_SEC=100 BURSTABLE FALSE"))
+	fmt.Printf("%-24s → %s\n", "BURSTABLE TRUE (no eq)", try("CREATE RESOURCE GROUP rg RU_PER_SEC=100 BURSTABLE TRUE"))
+}
