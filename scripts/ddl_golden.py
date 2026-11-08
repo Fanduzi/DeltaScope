@@ -428,7 +428,8 @@ def _verify_marker_failures(failures, case_id, label, mverify, verify):
             f"case {case_id}: {label} {assert_name} poll history "
             f"{len(obs)} attempts exceeds declared cap {cap}")
     for i, attempt in enumerate(obs):
-        if attempt.get("n") != i + 1:
+        n = attempt.get("n")
+        if type(n) is not int or n != i + 1:
             failures.append(
                 f"case {case_id}: {label} {assert_name} poll history "
                 f"sequence break at position {i + 1} — observations "

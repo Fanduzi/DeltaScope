@@ -370,6 +370,22 @@ def main():
             {"n": 3, "rc": 0, "output": "1", "stderr": ""}])]
         results.append(check("poll broken sequence rejected", a, "sequence", manifest=m5))
 
+        # R23: equal-valued non-int n must not satisfy the int contract —
+        # Python bool/float compare equal to ints (True == 1, 1.0 == 1).
+        a = copy.deepcopy(base)
+        a["cases"][0]["expected"]["steps"][0]["verify"] = m5["ddl_steps"][0]["verify"]
+        a["cases"][0]["actual"]["steps"][0]["verify"] = [dict(forged, observations=[
+            {"n": True, "rc": 0, "output": "0", "stderr": ""},
+            {"n": 2, "rc": 0, "output": "1", "stderr": ""}])]
+        results.append(check("poll bool sequence number rejected", a, "sequence", manifest=m5))
+
+        a = copy.deepcopy(base)
+        a["cases"][0]["expected"]["steps"][0]["verify"] = m5["ddl_steps"][0]["verify"]
+        a["cases"][0]["actual"]["steps"][0]["verify"] = [dict(forged, observations=[
+            {"n": 1.0, "rc": 0, "output": "0", "stderr": ""},
+            {"n": 2, "rc": 0, "output": "1", "stderr": ""}])]
+        results.append(check("poll float sequence number rejected", a, "sequence", manifest=m5))
+
         # Positive controls: a matched non-final via 'contains' comparator is
         # judged with the real comparator, and a clean unmatched history
         # followed by a match still passes.
