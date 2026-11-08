@@ -427,12 +427,28 @@ def _verify_marker_failures(failures, case_id, label, mverify, verify):
         failures.append(
             f"case {case_id}: {label} {assert_name} poll history "
             f"{len(obs)} attempts exceeds declared cap {cap}")
+    for i, attempt in enumerate(obs):
+        if attempt.get("n") != i + 1:
+            failures.append(
+                f"case {case_id}: {label} {assert_name} poll history "
+                f"sequence break at position {i + 1} — observations "
+                "must be numbered 1..n contiguously")
+            break
     for i, attempt in enumerate(obs[:-1]):
         if attempt.get("rc") != 0:
             failures.append(
                 f"case {case_id}: {label} {assert_name} poll history "
                 "continues after an execution error — a later match "
                 "cannot launder it")
+            break
+    for i, attempt in enumerate(obs[:-1]):
+        if (attempt.get("rc") == 0 and not attempt.get("error")
+                and not attempt.get("query_timeout")
+                and verify_output_matches(mverify, attempt.get("output") or "")):
+            failures.append(
+                f"case {case_id}: {label} {assert_name} poll history "
+                "continues after a matched observation — the runner "
+                "stops at the first match")
             break
     last = obs[-1]
     if (last.get("rc") != verify.get("rc")

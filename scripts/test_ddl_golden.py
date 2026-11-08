@@ -343,6 +343,62 @@ def main():
             {"n": 2, "rc": 0, "output": "0", "stderr": ""}])]
         results.append(check("poll summary-inconsistent rejected", a, "inconsistent", manifest=m5))
 
+        # R21: two further history invariants the R20 audit found missing —
+        # observations must be numbered 1..n contiguously, and an
+        # observation that already satisfied the comparator terminates the
+        # history (the runner would have stopped there). All other record
+        # fields stay legal, so each rejection must come from the new
+        # invariant, not a neighbouring check.
+        a = copy.deepcopy(base)
+        a["cases"][0]["expected"]["steps"][0]["verify"] = m5["ddl_steps"][0]["verify"]
+        a["cases"][0]["actual"]["steps"][0]["verify"] = [dict(forged, observations=[
+            {"n": 1, "rc": 0, "output": "1", "stderr": ""},
+            {"n": 2, "rc": 0, "output": "1", "stderr": ""}])]
+        results.append(check("poll post-match continuation rejected", a, "matched observation", manifest=m5))
+
+        a = copy.deepcopy(base)
+        a["cases"][0]["expected"]["steps"][0]["verify"] = m5["ddl_steps"][0]["verify"]
+        a["cases"][0]["actual"]["steps"][0]["verify"] = [dict(forged, observations=[
+            {"n": 1, "rc": 0, "output": "0", "stderr": ""},
+            {"n": 1, "rc": 0, "output": "1", "stderr": ""}])]
+        results.append(check("poll duplicate sequence rejected", a, "sequence", manifest=m5))
+
+        a = copy.deepcopy(base)
+        a["cases"][0]["expected"]["steps"][0]["verify"] = m5["ddl_steps"][0]["verify"]
+        a["cases"][0]["actual"]["steps"][0]["verify"] = [dict(forged, observations=[
+            {"n": 1, "rc": 0, "output": "0", "stderr": ""},
+            {"n": 3, "rc": 0, "output": "1", "stderr": ""}])]
+        results.append(check("poll broken sequence rejected", a, "sequence", manifest=m5))
+
+        # Positive controls: a matched non-final via 'contains' comparator is
+        # judged with the real comparator, and a clean unmatched history
+        # followed by a match still passes.
+        m6 = copy.deepcopy(MANIFEST)
+        m6["ddl_steps"][0]["verify"] = [
+            {"assert": "engine row", "sql": "EXPLAIN SELECT 1", "contains": "cop[tiflash]",
+             "poll": {"attempts": 3, "interval_sec": 1}}
+        ]
+        a = copy.deepcopy(base)
+        a["cases"][0]["expected"]["steps"][0]["verify"] = m6["ddl_steps"][0]["verify"]
+        a["cases"][0]["actual"]["steps"][0]["verify"] = [
+            {"assert": "engine row", "sql": "EXPLAIN SELECT 1", "rc": 0,
+             "output": "id\ttask\n5\tcop[tiflash]", "stderr": "", "attempts": 2,
+             "observations": [
+                 {"n": 1, "rc": 0, "output": "id\ttask\n5\tcop[tikv]", "stderr": ""},
+                 {"n": 2, "rc": 0, "output": "id\ttask\n5\tcop[tiflash]", "stderr": ""}]}
+        ]
+        results.append(check("poll contains-comparator history accepted", a, "", manifest=m6))
+        a = copy.deepcopy(base)
+        a["cases"][0]["expected"]["steps"][0]["verify"] = m6["ddl_steps"][0]["verify"]
+        a["cases"][0]["actual"]["steps"][0]["verify"] = [
+            {"assert": "engine row", "sql": "EXPLAIN SELECT 1", "rc": 0,
+             "output": "id\ttask\n5\tcop[tiflash]", "stderr": "", "attempts": 2,
+             "observations": [
+                 {"n": 1, "rc": 0, "output": "id\ttask\n5\tcop[tiflash]", "stderr": ""},
+                 {"n": 2, "rc": 0, "output": "id\ttask\n5\tcop[tiflash]", "stderr": ""}]}
+        ]
+        results.append(check("poll contains post-match continuation rejected", a, "matched observation", manifest=m6))
+
         # A forged record may not launder a timed-out read by pairing the
         # timeout marker with a matching output — undetermined evidence is
         # never a pass, whatever the output field says.

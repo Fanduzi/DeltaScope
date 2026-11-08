@@ -142,7 +142,13 @@ sharing, widen file sharing, mount old sockets, make the repository
 broadly writable, or modify VM/profile settings to make mounts work.
 The probe container is part of the authorised resource plan: it is
 registered in the lifecycle ledger and removed by the same S/R/V
-cleanup — no manual `docker run`/`rm` bypass.
+cleanup — no manual `docker run`/`rm` bypass. If the probe image's own
+`VOLUME` declaration produces an implicit anonymous volume, that volume
+must be captured through `Mounts` at creation, registered, counted in
+this run's concurrent/per-generation resource budget, and recovered in
+the sanctioned V phase — a read-only bind or temporary probe identity
+does not exempt it, and unregistered objects are never claimed or
+deleted after the fact by label, age, or mount state.
 
 Not granted: fault injection, mounting old volumes, wider account
 permissions, VM deletion, or "adjust until it works". If resources are
@@ -220,8 +226,24 @@ accepted artifact.
 A latent harness defect was also found and fixed in this round: a
 mid-file `unittest.main()` in `test_ddl_golden_isolated.py` ran before
 the R15 `TestLoadFailureLockRelease` class was defined, so its four
-tests silently never collected (57 reported as the suite total; 61
-after the fix).
+tests silently never collected **via the direct-script entry** (the
+`python -m unittest` module entry already collected all 61; after the
+fix both entries collect 61).
+
+## R21 amendment
+
+The R20 differential audit accepted everything except three poll-history
+invariants. `_verify_marker_failures` now also enforces: (a) observation
+`n` values are 1..n contiguous in recorded order — duplicates, gaps, or
+mistyped values are bounded validation failures, never renumbered or
+re-sorted; (b) no observation before the last may already satisfy the
+declaration's real comparator (`expect` or `contains`) — the runner
+stops at the first match, so a continued history is impossible evidence.
+The three reproduced counterexamples (post-match continuation, duplicate
+sequence, broken sequence) are pinned as permanent validator negatives;
+the mount-visibility probe paragraph gains the anonymous-volume
+responsibility clause (`Mounts` capture, budget accounting, V-phase
+recovery).
 
 ## Deferred / Out Of Scope
 
