@@ -1,0 +1,20 @@
+=== P3 BURSTABLE forms → catalog ===
+NAME	BURSTABLE
+p_0	NO
+p_1	YES
+p_bare	YES
+p_false	NO
+p_true	YES
+=== P4 post-8.5 forms → real errors ===
+ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your TiDB version for the right syntax to use line 1 column 62 near "MODERATED" 
+rc=1
+ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your TiDB version for the right syntax to use line 1 column 62 near "UNLIMITED" 
+rc=1
+ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your TiDB version for the right syntax to use line 1 column 56 near "OFF" 
+rc=1
+=== P5 RU_PER_SEC UNLIMITED ===
+NAME	RU_PER_SEC	BURSTABLE
+p_unlim	UNLIMITED	YES
+=== P6 CREATE defaults (name+RU only) ===
+NAME	RU_PER_SEC	PRIORITY	BURSTABLE	QUERY_LIMIT	BACKGROUND
+p_def	300	MEDIUM	NO	NULL	NULL

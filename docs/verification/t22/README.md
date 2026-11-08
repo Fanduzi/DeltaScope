@@ -102,12 +102,34 @@ Baseline behavior, reproduced by the permanent public red test
   `--dialect mysql` the same CREATE returns one unsupported entry with
   `metadata.boundary=vendor` and `coverage=incomplete`.
 
-## Native-pending branches (explicitly NOT claimed)
+## Profile A native run (executed, isolated Colima daemon)
 
-- Real TiDB 8.5 `information_schema.RESOURCE_GROUPS` row shape and the
-  `tidb_enable_resource_control=OFF` native refusal error class.
-- Catalog-backed definition reads on a live anchor (`YES`/`NO` burst
-  flag, QUERY_LIMIT column text and its NULL-on-unset form).
-- Golden manifest execution (`make ddl-golden TASK=T22`) — requires the
-  T22 native authorization card; the eight historical Docker volumes
-  stay protected.
+Run `t22-a-20261108t040551z-4cbdf8` under the T22 Profile A
+authorization card: TiDB v8.5.0/unistore + upstream mock
+resource-manager path only — no real PD/TiKV integration is claimed.
+
+- Canonical golden: **18/18 required cases pass, 170/170 assertions**,
+  committed product `87b329057cd53ba673569cecdd59684fceb5a43a`
+  (artifact: `432fc6aa…/native/t22-a-…/golden/T22/artifact.json`).
+- Native facts recorded: `tidb_enable_resource_control` defaults ON on
+  unistore; `RESOURCE_GROUPS` columns
+  `NAME,RU_PER_SEC,PRIORITY,BURSTABLE,QUERY_LIMIT,BACKGROUND`; builtin
+  `default` = `UNLIMITED/MEDIUM/YES/NULL/NULL`; post-8.5
+  `BURSTABLE=MODERATED/UNLIMITED/OFF` are native ERROR 1064;
+  `RU_PER_SEC=UNLIMITED` publishes `BURSTABLE=YES`; CREATE defaults
+  `MEDIUM/NO/NULL`; ALTER preserves omitted top-level members;
+  `QUERY_LIMIT=NULL` and `()` both clear; a non-empty runaway list
+  missing ACTION or every threshold member is ERROR 1105; `BACKGROUND`
+  on non-default groups is ERROR 1105; `DROP RESOURCE GROUP default` is
+  ERROR 1105 `can't drop reserved resource group`; capability OFF
+  refuses CREATE and DROP with ERROR 8250 while the catalog stays
+  readable; absent ALTER is ERROR 8249 and `IF EXISTS` rescues it.
+- Native counter-evidence fixes (each with a permanent offline red→green
+  test): runaway member-completeness bound (`e387831c`), MySQL-anchor
+  fixture step scoped to tidb85 (`5c53eba6`), lifecycle-notice
+  suppression on proven-OFF refusals (`87b32905`).
+- Lifecycle: generation-ledger teardown reclaimed all 5 containers, 1
+  network, 3 named + 4 mount-attributed anonymous volumes; exactly the
+  eight historical protected volumes remain; profile stopped normally.
+- Still NOT claimed: real PD resource-manager integration, cross-TiKV
+  scheduling/metering, workload performance — Profile B scope.

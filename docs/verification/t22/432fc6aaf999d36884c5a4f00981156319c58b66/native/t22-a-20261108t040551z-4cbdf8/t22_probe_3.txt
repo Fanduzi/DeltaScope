@@ -1,0 +1,23 @@
+=== P7 ALTER: declared replaced, omitted preserved ===
+NAME	RU_PER_SEC	PRIORITY	BURSTABLE	QUERY_LIMIT
+p_def	400	HIGH	YES	NULL
+NAME	RU_PER_SEC	PRIORITY	BURSTABLE	QUERY_LIMIT
+p_def	500	HIGH	YES	NULL
+=== P8 QUERY_LIMIT typed members + replace + clear ===
+NAME	QUERY_LIMIT
+p_def	EXEC_ELAPSED='1m0s', ACTION=KILL
+NAME	QUERY_LIMIT
+p_def	EXEC_ELAPSED='30s', PROCESSED_KEYS=1000, RU=2000, ACTION=SWITCH_GROUP(other_rg), WATCH=EXACT DURATION='10m0s'
+NAME	isnull
+p_def	1
+ERROR 1105 (HY000) at line 1: unknown resource group runaway action
+NAME	isnull
+p_def	1
+=== P9 guards ===
+RU_PER_SEC
+500
+rc=0
+rc=0
+=== P10 reserved default drop ===
+ERROR 1105 (HY000) at line 1: can't drop reserved resource group
+rc=1

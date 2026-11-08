@@ -1,0 +1,330 @@
+{
+  "case_id": "T22.meta.tidb85-capability-off-refusal",
+  "kind": "cli_metadata",
+  "cli_case": "tidb85-capability-off-refusal",
+  "anchor": "tidb85",
+  "dialect": "tidb",
+  "input_sql": "CREATE RESOURCE GROUP t22fx_off RU_PER_SEC=10;",
+  "policy_profile": "t22-resource-group",
+  "policy_path": "/Users/fan/GolangProjects/DeltaScope/docs/verification/t22/432fc6aaf999d36884c5a4f00981156319c58b66/native/t22-a-20261108t040551z-4cbdf8/golden/T22/golden-policy.yaml",
+  "connect": {
+    "host": "127.0.0.1",
+    "port": 24000,
+    "user": "root",
+    "schema": "t22fx"
+  },
+  "expected": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "evidence_gaps": 1,
+    "fail_on_triggered": true,
+    "finding_entries": [
+      {
+        "index": 0,
+        "rule_id": "ddl.tidb.resource_group.valid",
+        "level": "blocker"
+      }
+    ],
+    "evidence_gap_entries": [
+      {
+        "index": 0,
+        "rule_id": "ddl.tidb.resource_group.valid",
+        "reason_code": "unknown_resource_group_state",
+        "required_facts": [
+          "resource_group.state"
+        ]
+      }
+    ]
+  },
+  "actual": {
+    "database": {
+      "product": "tidb",
+      "image": "pingcap/tidb:v8.5.0",
+      "image_digest": "pingcap/tidb@sha256:490861bd4a2fa643dbe76b77ffecafcad66e6a42774e580b82f4ec2429a80e57",
+      "container": "deltascope-ddl-golden-tidb85",
+      "reachable": true,
+      "version": "8.0.11-TiDB-v8.5.0"
+    },
+    "setup": [
+      {
+        "name": "clear-off-group",
+        "sql": "DROP RESOURCE GROUP IF EXISTS t22fx_off",
+        "rc": 0,
+        "stdout": "",
+        "stderr": ""
+      },
+      {
+        "name": "observe-initial-resource-control",
+        "sql": "SHOW GLOBAL VARIABLES LIKE 'tidb_enable_resource_control'",
+        "rc": 0,
+        "stdout": "Variable_name\tValue\ntidb_enable_resource_control\tON",
+        "stderr": "",
+        "verify": [
+          {
+            "assert": "gate initially ON — teardown restores the observed value",
+            "sql": "SELECT @@GLOBAL.tidb_enable_resource_control",
+            "rc": 0,
+            "output": "1",
+            "stderr": ""
+          }
+        ]
+      },
+      {
+        "name": "disable-resource-control",
+        "sql": "SET GLOBAL tidb_enable_resource_control=OFF",
+        "rc": 0,
+        "stdout": "",
+        "stderr": "",
+        "verify": [
+          {
+            "assert": "gate observed OFF",
+            "sql": "SELECT @@GLOBAL.tidb_enable_resource_control",
+            "rc": 0,
+            "output": "0",
+            "stderr": ""
+          }
+        ]
+      }
+    ],
+    "post_verify": [],
+    "execute": [],
+    "structure": [],
+    "teardown": [
+      {
+        "name": "restore-resource-control",
+        "sql": "SET GLOBAL tidb_enable_resource_control=ON",
+        "rc": 0,
+        "stderr": ""
+      }
+    ],
+    "exit": 1,
+    "stdout": "{\"verdict\":\"reject\",\"coverage\":{\"status\":\"unverified\"},\"summary\":{\"statements\":1,\"blockers\":1,\"warnings\":0,\"notices\":0},\"statements\":[{\"index\":0,\"kind\":\"ddl\",\"raw_sql\":\"CREATE RESOURCE GROUP t22fx_off RU_PER_SEC=10;\",\"normalized_sql\":\"CREATE RESOURCE GROUP t22fx_off RU_PER_SEC=10\",\"findings\":[{\"rule_id\":\"ddl.tidb.resource_group.valid\",\"level\":\"blocker\",\"message\":\"create_resource_group on \\\"t22fx_off\\\" refuses while tidb_enable_resource_control is OFF.\",\"statement_kind\":\"ddl\",\"location\":{\"line\":1,\"column\":1},\"suggestion\":\"enable tidb_enable_resource_control or remove the statement\",\"metadata\":{\"object_name\":\"t22fx_off\",\"object_type\":\"resource_group\",\"operation\":\"create_resource_group\"},\"explanation\":{\"summary\":\"Check DDL tidb resource group valid\",\"why\":\"The statement matched the shipped governance rule for this pattern.\",\"risk\":\"Ignoring this rule can weaken schema-governance guarantees and make changes harder to review safely.\",\"suggestion\":\"enable tidb_enable_resource_control or remove the statement\"}}],\"evidence_gaps\":[{\"rule_id\":\"ddl.tidb.resource_group.valid\",\"reason_code\":\"unknown_resource_group_state\",\"required_facts\":[\"resource_group.state\"]}],\"coverage\":{\"status\":\"unverified\"}}],\"version\":{\"product\":\"tidb\",\"version\":\"8.5.0\",\"major\":8,\"minor\":5,\"patch\":0,\"source\":\"observed\",\"validated_range\":true},\"fail_on_triggered\":true,\"rule_summary\":{\"loaded\":6,\"applicable\":3,\"skipped\":[]},\"context\":{\"mode\":\"metadata-aware\",\"dialect\":\"tidb\",\"dialect_source\":\"detected\",\"schema\":\"t22fx\",\"schema_source\":\"flag\"}}\n",
+    "stderr": "",
+    "parsed": {
+      "verdict": "reject",
+      "coverage": {
+        "status": "unverified"
+      },
+      "summary": {
+        "statements": 1,
+        "blockers": 1,
+        "warnings": 0,
+        "notices": 0
+      },
+      "statements": [
+        {
+          "index": 0,
+          "kind": "ddl",
+          "raw_sql": "CREATE RESOURCE GROUP t22fx_off RU_PER_SEC=10;",
+          "normalized_sql": "CREATE RESOURCE GROUP t22fx_off RU_PER_SEC=10",
+          "findings": [
+            {
+              "rule_id": "ddl.tidb.resource_group.valid",
+              "level": "blocker",
+              "message": "create_resource_group on \"t22fx_off\" refuses while tidb_enable_resource_control is OFF.",
+              "statement_kind": "ddl",
+              "location": {
+                "line": 1,
+                "column": 1
+              },
+              "suggestion": "enable tidb_enable_resource_control or remove the statement",
+              "metadata": {
+                "object_name": "t22fx_off",
+                "object_type": "resource_group",
+                "operation": "create_resource_group"
+              },
+              "explanation": {
+                "summary": "Check DDL tidb resource group valid",
+                "why": "The statement matched the shipped governance rule for this pattern.",
+                "risk": "Ignoring this rule can weaken schema-governance guarantees and make changes harder to review safely.",
+                "suggestion": "enable tidb_enable_resource_control or remove the statement"
+              }
+            }
+          ],
+          "evidence_gaps": [
+            {
+              "rule_id": "ddl.tidb.resource_group.valid",
+              "reason_code": "unknown_resource_group_state",
+              "required_facts": [
+                "resource_group.state"
+              ]
+            }
+          ],
+          "coverage": {
+            "status": "unverified"
+          }
+        }
+      ],
+      "version": {
+        "product": "tidb",
+        "version": "8.5.0",
+        "major": 8,
+        "minor": 5,
+        "patch": 0,
+        "source": "observed",
+        "validated_range": true
+      },
+      "fail_on_triggered": true,
+      "rule_summary": {
+        "loaded": 6,
+        "applicable": 3,
+        "skipped": []
+      },
+      "context": {
+        "mode": "metadata-aware",
+        "dialect": "tidb",
+        "dialect_source": "detected",
+        "schema": "t22fx",
+        "schema_source": "flag"
+      }
+    },
+    "version_evidence": {
+      "target_raw": null,
+      "target_canonical": null,
+      "observed_raw": "8.0.11-TiDB-v8.5.0",
+      "observed_canonical": {
+        "product": "tidb",
+        "version": "8.5.0"
+      },
+      "resolved": {
+        "product": "tidb",
+        "version": "8.5.0",
+        "major": 8,
+        "minor": 5,
+        "patch": 0,
+        "source": "observed",
+        "validated_range": true
+      }
+    }
+  },
+  "assertions": [
+    {
+      "name": "database reachable with expected version",
+      "ok": true,
+      "detail": "SELECT VERSION() rc=0 version='8.0.11-TiDB-v8.5.0' expected_contains='v8.5.0'"
+    },
+    {
+      "name": "setup clear-off-group return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "setup observe-initial-resource-control return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "setup observe-initial-resource-control: gate initially ON — teardown restores the observed value",
+      "ok": true,
+      "detail": "rc=0 output='1' expected='1'"
+    },
+    {
+      "name": "setup disable-resource-control return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "setup disable-resource-control: gate observed OFF",
+      "ok": true,
+      "detail": "rc=0 output='0' expected='0'"
+    },
+    {
+      "name": "exit code",
+      "ok": true,
+      "detail": "rc=1 expected=1"
+    },
+    {
+      "name": "verdict",
+      "ok": true,
+      "detail": "verdict='reject'"
+    },
+    {
+      "name": "top-level statements",
+      "ok": true,
+      "detail": "statements=1 expected=1"
+    },
+    {
+      "name": "zero findings",
+      "ok": true,
+      "detail": "findings=1"
+    },
+    {
+      "name": "no diagnostics",
+      "ok": true,
+      "detail": "diagnostics=[]"
+    },
+    {
+      "name": "no unsupported",
+      "ok": true,
+      "detail": "unsupported=[]"
+    },
+    {
+      "name": "aggregate coverage",
+      "ok": true,
+      "detail": "coverage='unverified'"
+    },
+    {
+      "name": "evidence gap count",
+      "ok": true,
+      "detail": "gaps=1"
+    },
+    {
+      "name": "evidence gap entries",
+      "ok": true,
+      "detail": "gaps=[(0, 'ddl.tidb.resource_group.valid', 'unknown_resource_group_state')] expected=[(0, 'ddl.tidb.resource_group.valid', 'unknown_resource_group_state')]"
+    },
+    {
+      "name": "evidence gap required_facts (0, 'ddl.tidb.resource_group.valid', 'unknown_resource_group_state')",
+      "ok": true,
+      "detail": "gaps=[{'rule_id': 'ddl.tidb.resource_group.valid', 'reason_code': 'unknown_resource_group_state', 'required_facts': ['resource_group.state']}] expected_facts=['resource_group.state']"
+    },
+    {
+      "name": "no gap encoded as finding",
+      "ok": true,
+      "detail": "findings carrying gap shape=[]"
+    },
+    {
+      "name": "finding entries",
+      "ok": true,
+      "detail": "findings=[(0, 'ddl.tidb.resource_group.valid', 'blocker')] expected=[(0, 'ddl.tidb.resource_group.valid', 'blocker')]"
+    },
+    {
+      "name": "fail_on_triggered",
+      "ok": true,
+      "detail": "fail_on_triggered=True"
+    },
+    {
+      "name": "teardown restore-resource-control return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    }
+  ],
+  "status": "pass",
+  "command": [
+    "/Users/fan/GolangProjects/DeltaScope/docs/verification/t22/432fc6aaf999d36884c5a4f00981156319c58b66/native/t22-a-20261108t040551z-4cbdf8/golden/T22/bin/deltascope",
+    "audit",
+    "--dialect",
+    "tidb",
+    "--sql",
+    "CREATE RESOURCE GROUP t22fx_off RU_PER_SEC=10;",
+    "--config",
+    "/Users/fan/GolangProjects/DeltaScope/docs/verification/t22/432fc6aaf999d36884c5a4f00981156319c58b66/native/t22-a-20261108t040551z-4cbdf8/golden/T22/golden-policy.yaml",
+    "--format",
+    "json",
+    "--host",
+    "127.0.0.1",
+    "--port",
+    "24000",
+    "--user",
+    "root",
+    "--schema",
+    "t22fx",
+    "--fail-on",
+    "blocker"
+  ]
+}

@@ -1,0 +1,8 @@
+=== P0 version + capability ===
+8.0.11-TiDB-v8.5.0
+tidb_enable_resource_control	ON
+=== P1 RESOURCE_GROUPS columns ===
+NAME,RU_PER_SEC,PRIORITY,BURSTABLE,QUERY_LIMIT,BACKGROUND
+=== P2 initial catalog rows ===
+NAME	RU_PER_SEC	PRIORITY	BURSTABLE	QUERY_LIMIT	BACKGROUND
+default	UNLIMITED	MEDIUM	YES	NULL	NULL

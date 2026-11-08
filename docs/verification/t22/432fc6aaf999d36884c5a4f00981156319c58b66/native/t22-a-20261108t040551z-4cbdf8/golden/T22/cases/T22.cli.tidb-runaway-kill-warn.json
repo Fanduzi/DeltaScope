@@ -1,0 +1,220 @@
+{
+  "case_id": "T22.cli.tidb-runaway-kill-warn",
+  "kind": "cli_audit",
+  "cli_case": "tidb-runaway-kill-warn",
+  "dialect": "tidb",
+  "input_sql": "CREATE RESOURCE GROUP rg_run RU_PER_SEC=500 QUERY_LIMIT=(EXEC_ELAPSED='60s' ACTION=KILL);",
+  "policy_profile": "t22-resource-group",
+  "policy_path": "/Users/fan/GolangProjects/DeltaScope/docs/verification/t22/432fc6aaf999d36884c5a4f00981156319c58b66/native/t22-a-20261108t040551z-4cbdf8/golden/T22/golden-policy.yaml",
+  "command": [
+    "/Users/fan/GolangProjects/DeltaScope/docs/verification/t22/432fc6aaf999d36884c5a4f00981156319c58b66/native/t22-a-20261108t040551z-4cbdf8/golden/T22/bin/deltascope",
+    "audit",
+    "--dialect",
+    "tidb",
+    "--sql",
+    "CREATE RESOURCE GROUP rg_run RU_PER_SEC=500 QUERY_LIMIT=(EXEC_ELAPSED='60s' ACTION=KILL);",
+    "--config",
+    "/Users/fan/GolangProjects/DeltaScope/docs/verification/t22/432fc6aaf999d36884c5a4f00981156319c58b66/native/t22-a-20261108t040551z-4cbdf8/golden/T22/golden-policy.yaml",
+    "--format",
+    "json",
+    "--fail-on",
+    "blocker"
+  ],
+  "expected": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 2,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": [
+      "unverified"
+    ],
+    "evidence_gaps": 2,
+    "fail_on_triggered": false,
+    "finding_entries": [
+      {
+        "index": 0,
+        "rule_id": "ddl.create_resource_group.notice",
+        "level": "notice"
+      },
+      {
+        "index": 0,
+        "rule_id": "ddl.tidb.resource_group.runaway.warn",
+        "level": "warning"
+      }
+    ]
+  },
+  "actual": {
+    "exit": 0,
+    "stdout": "{\"verdict\":\"review\",\"coverage\":{\"status\":\"unverified\"},\"summary\":{\"statements\":1,\"blockers\":0,\"warnings\":1,\"notices\":1},\"statements\":[{\"index\":0,\"kind\":\"ddl\",\"raw_sql\":\"CREATE RESOURCE GROUP rg_run RU_PER_SEC=500 QUERY_LIMIT=(EXEC_ELAPSED='60s' ACTION=KILL);\",\"normalized_sql\":\"CREATE RESOURCE GROUP rg_run RU_PER_SEC=500 QUERY_LIMIT=(EXEC_ELAPSED='60s' ACTION=KILL)\",\"findings\":[{\"rule_id\":\"ddl.create_resource_group.notice\",\"level\":\"notice\",\"message\":\"CREATE RESOURCE GROUP \\\"rg_run\\\" defines a new resource group\",\"statement_kind\":\"ddl\",\"location\":{\"line\":1,\"column\":1},\"suggestion\":\"review quota and burst settings before sessions bind to the group\",\"metadata\":{\"object_name\":\"rg_run\",\"object_type\":\"resource_group\",\"operation\":\"create\"},\"explanation\":{\"summary\":\"Check DDL create resource group notice\",\"why\":\"The statement matched the shipped governance rule for this pattern.\",\"risk\":\"Ignoring this rule can weaken schema-governance guarantees and make changes harder to review safely.\",\"suggestion\":\"review quota and burst settings before sessions bind to the group\"}},{\"rule_id\":\"ddl.tidb.resource_group.runaway.warn\",\"level\":\"warning\",\"message\":\"QUERY_LIMIT ACTION=KILL terminates queries that exceed the runaway rule.\",\"statement_kind\":\"ddl\",\"location\":{\"line\":1,\"column\":1},\"suggestion\":\"verify killed statements are retryable or expected before enabling\",\"metadata\":{\"object_name\":\"rg_run\",\"object_type\":\"resource_group\",\"operation\":\"query_limit\"},\"explanation\":{\"summary\":\"Warn on DDL tidb resource group runaway warn\",\"why\":\"The statement reached a caution rule that highlights an operational trade-off.\",\"risk\":\"Ignoring this rule can weaken schema-governance guarantees and make changes harder to review safely.\",\"suggestion\":\"verify killed statements are retryable or expected before enabling\"}}],\"evidence_gaps\":[{\"rule_id\":\"ddl.tidb.resource_group.valid\",\"reason_code\":\"unknown_resource_group_capability\",\"required_facts\":[\"tidb_enable_resource_control\"]},{\"rule_id\":\"ddl.tidb.resource_group.valid\",\"reason_code\":\"unknown_resource_group_state\",\"required_facts\":[\"resource_group.state\"]}],\"coverage\":{\"status\":\"unverified\"}}],\"fail_on_triggered\":false,\"rule_summary\":{\"loaded\":6,\"applicable\":4,\"skipped\":[]},\"context\":{\"mode\":\"offline\",\"dialect\":\"tidb\",\"dialect_source\":\"flag\",\"note\":\"existence not checked (no database connection)\",\"unproven\":[\"column_exists\",\"table_exists\"]}}\n",
+    "stderr": "",
+    "parsed": {
+      "verdict": "review",
+      "coverage": {
+        "status": "unverified"
+      },
+      "summary": {
+        "statements": 1,
+        "blockers": 0,
+        "warnings": 1,
+        "notices": 1
+      },
+      "statements": [
+        {
+          "index": 0,
+          "kind": "ddl",
+          "raw_sql": "CREATE RESOURCE GROUP rg_run RU_PER_SEC=500 QUERY_LIMIT=(EXEC_ELAPSED='60s' ACTION=KILL);",
+          "normalized_sql": "CREATE RESOURCE GROUP rg_run RU_PER_SEC=500 QUERY_LIMIT=(EXEC_ELAPSED='60s' ACTION=KILL)",
+          "findings": [
+            {
+              "rule_id": "ddl.create_resource_group.notice",
+              "level": "notice",
+              "message": "CREATE RESOURCE GROUP \"rg_run\" defines a new resource group",
+              "statement_kind": "ddl",
+              "location": {
+                "line": 1,
+                "column": 1
+              },
+              "suggestion": "review quota and burst settings before sessions bind to the group",
+              "metadata": {
+                "object_name": "rg_run",
+                "object_type": "resource_group",
+                "operation": "create"
+              },
+              "explanation": {
+                "summary": "Check DDL create resource group notice",
+                "why": "The statement matched the shipped governance rule for this pattern.",
+                "risk": "Ignoring this rule can weaken schema-governance guarantees and make changes harder to review safely.",
+                "suggestion": "review quota and burst settings before sessions bind to the group"
+              }
+            },
+            {
+              "rule_id": "ddl.tidb.resource_group.runaway.warn",
+              "level": "warning",
+              "message": "QUERY_LIMIT ACTION=KILL terminates queries that exceed the runaway rule.",
+              "statement_kind": "ddl",
+              "location": {
+                "line": 1,
+                "column": 1
+              },
+              "suggestion": "verify killed statements are retryable or expected before enabling",
+              "metadata": {
+                "object_name": "rg_run",
+                "object_type": "resource_group",
+                "operation": "query_limit"
+              },
+              "explanation": {
+                "summary": "Warn on DDL tidb resource group runaway warn",
+                "why": "The statement reached a caution rule that highlights an operational trade-off.",
+                "risk": "Ignoring this rule can weaken schema-governance guarantees and make changes harder to review safely.",
+                "suggestion": "verify killed statements are retryable or expected before enabling"
+              }
+            }
+          ],
+          "evidence_gaps": [
+            {
+              "rule_id": "ddl.tidb.resource_group.valid",
+              "reason_code": "unknown_resource_group_capability",
+              "required_facts": [
+                "tidb_enable_resource_control"
+              ]
+            },
+            {
+              "rule_id": "ddl.tidb.resource_group.valid",
+              "reason_code": "unknown_resource_group_state",
+              "required_facts": [
+                "resource_group.state"
+              ]
+            }
+          ],
+          "coverage": {
+            "status": "unverified"
+          }
+        }
+      ],
+      "fail_on_triggered": false,
+      "rule_summary": {
+        "loaded": 6,
+        "applicable": 4,
+        "skipped": []
+      },
+      "context": {
+        "mode": "offline",
+        "dialect": "tidb",
+        "dialect_source": "flag",
+        "note": "existence not checked (no database connection)",
+        "unproven": [
+          "column_exists",
+          "table_exists"
+        ]
+      }
+    },
+    "version_evidence": {
+      "target_raw": null,
+      "target_canonical": null,
+      "observed_raw": null,
+      "observed_canonical": null,
+      "resolved": null
+    }
+  },
+  "assertions": [
+    {
+      "name": "exit code",
+      "ok": true,
+      "detail": "rc=0 expected=0"
+    },
+    {
+      "name": "verdict",
+      "ok": true,
+      "detail": "verdict='review'"
+    },
+    {
+      "name": "top-level statements",
+      "ok": true,
+      "detail": "statements=1 expected=1"
+    },
+    {
+      "name": "zero findings",
+      "ok": true,
+      "detail": "findings=2"
+    },
+    {
+      "name": "no diagnostics",
+      "ok": true,
+      "detail": "diagnostics=[]"
+    },
+    {
+      "name": "no unsupported",
+      "ok": true,
+      "detail": "unsupported=[]"
+    },
+    {
+      "name": "aggregate coverage",
+      "ok": true,
+      "detail": "coverage='unverified'"
+    },
+    {
+      "name": "per-statement coverage",
+      "ok": true,
+      "detail": "statement_coverage=['unverified']"
+    },
+    {
+      "name": "evidence gap count",
+      "ok": true,
+      "detail": "gaps=2"
+    },
+    {
+      "name": "finding entries",
+      "ok": true,
+      "detail": "findings=[(0, 'ddl.create_resource_group.notice', 'notice'), (0, 'ddl.tidb.resource_group.runaway.warn', 'warning')] expected=[(0, 'ddl.create_resource_group.notice', 'notice'), (0, 'ddl.tidb.resource_group.runaway.warn', 'warning')]"
+    },
+    {
+      "name": "fail_on_triggered",
+      "ok": true,
+      "detail": "fail_on_triggered=False"
+    }
+  ],
+  "status": "pass"
+}

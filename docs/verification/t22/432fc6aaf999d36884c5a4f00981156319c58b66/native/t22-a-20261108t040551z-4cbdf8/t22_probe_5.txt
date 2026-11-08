@@ -1,0 +1,19 @@
+--- single-member list no ACTION ---
+ERROR 1105 (HY000) at line 1: unknown resource group runaway action
+rc=1
+--- NULL with eq on CREATE ---
+rc=0
+--- NULL without eq on CREATE ---
+rc=0
+--- list with ACTION only ---
+ERROR 1105 (HY000) at line 1: please set at least one field(exec_elapsed_time_ms, processed_keys, ru)
+rc=1
+--- () empty list on CREATE ---
+rc=0
+--- catalog ---
+q_b	NULL	1
+q_c	NULL	1
+q_e	NULL	1
+--- ALTER NULL eq vs bare on existing ---
+rc=0
+rc=0

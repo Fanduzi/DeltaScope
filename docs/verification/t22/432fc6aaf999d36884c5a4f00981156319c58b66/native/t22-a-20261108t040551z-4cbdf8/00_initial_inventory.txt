@@ -1,0 +1,27 @@
+RUN_ID=t22-a-20261108t040551z-4cbdf8
+2026年11月 8日 星期日 04时05分52秒 UTC
+daemon=unix:///Users/fan/.colima/ds-t21-20261107t1158z-e514c8/docker.sock
+id=35b66e6e-49f3-4615-b556-6a10062d4737 ver=29.5.2 driver=overlayfs
+--- containers ---
+CONTAINER ID   IMAGE     COMMAND   CREATED   STATUS    PORTS     NAMES
+--- networks ---
+NETWORK ID     NAME      DRIVER    SCOPE
+02a479aaa9c2   bridge    bridge    local
+04ce1546a4c8   host      host      local
+1bd578dc036f   none      null      local
+--- volumes(protected x8) ---
+DRIVER    VOLUME NAME
+local     81a656663d0746b8ea3d136b4bf8ce7860fd572c34d63a496f3da27fcd303896
+local     ac493965ea52842d87b0da0b2259b77f5949ccf436db49997351b98b688a62f2
+local     aef5f283f134c0663026f88a721f354195bc538cb800e85e407b80f83b0ff968
+local     c0dad5103a4ac1bae766d13097bd23f35a5cfbcd6f7712e622745f2a14c724e7
+local     c4394d5191c9f853b874364bc1ad2f64a063f8d5d62b607f800a6bdc6b74b616
+local     cd1b9292a6ffd6fd4f6e65945da1c3c519c23b5e4bf61ef36e694784f427b811
+local     ec43c7f2976a592386c8f7cf930def120f7edcfeb5d2e76b3fa4dcfb585cab87
+local     ee208a22e019ef9e1605d793b627e9946e10e86b46aea3b8b0dd0c2e9eca90dc
+--- images ---
+IMAGE                 ID             DISK USAGE   CONTENT SIZE   EXTRA
+mysql:5.7.44          4bc6bc963e6d        700MB          149MB        
+mysql:8.0.46          7dcddc01f13b       1.09GB          245MB        
+mysql:8.4.10          8dbcf531a03a       1.12GB          249MB        
+pingcap/tidb:v8.5.0   490861bd4a2f        833MB          212MB        

@@ -1,0 +1,45 @@
+services:
+  mysql57:
+    labels:
+      org.deltascope.task: T22
+      org.deltascope.run: t22-a-20261108t040551z-4cbdf8
+      org.deltascope.owner: devin-t22
+    volumes:
+      - t22-a-20261108t040551z-4cbdf8-mysql57-data:/var/lib/mysql
+  mysql80:
+    labels:
+      org.deltascope.task: T22
+      org.deltascope.run: t22-a-20261108t040551z-4cbdf8
+      org.deltascope.owner: devin-t22
+    volumes:
+      - t22-a-20261108t040551z-4cbdf8-mysql80-data:/var/lib/mysql
+  mysql84:
+    labels:
+      org.deltascope.task: T22
+      org.deltascope.run: t22-a-20261108t040551z-4cbdf8
+      org.deltascope.owner: devin-t22
+    volumes:
+      - t22-a-20261108t040551z-4cbdf8-mysql84-data:/var/lib/mysql
+  tidb85:
+    labels:
+      org.deltascope.task: T22
+      org.deltascope.run: t22-a-20261108t040551z-4cbdf8
+      org.deltascope.owner: devin-t22
+  tidb85-client:
+    labels:
+      org.deltascope.task: T22
+      org.deltascope.run: t22-a-20261108t040551z-4cbdf8
+      org.deltascope.owner: devin-t22
+volumes:
+  t22-a-20261108t040551z-4cbdf8-mysql57-data:
+    labels:
+      org.deltascope.run: t22-a-20261108t040551z-4cbdf8
+      org.deltascope.owner: devin-t22
+  t22-a-20261108t040551z-4cbdf8-mysql80-data:
+    labels:
+      org.deltascope.run: t22-a-20261108t040551z-4cbdf8
+      org.deltascope.owner: devin-t22
+  t22-a-20261108t040551z-4cbdf8-mysql84-data:
+    labels:
+      org.deltascope.run: t22-a-20261108t040551z-4cbdf8
+      org.deltascope.owner: devin-t22

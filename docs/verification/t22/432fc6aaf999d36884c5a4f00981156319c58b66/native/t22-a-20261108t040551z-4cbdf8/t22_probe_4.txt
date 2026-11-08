@@ -1,0 +1,20 @@
+=== P11 ALTER absent (no guard) ===
+ERROR 8249 (HY000) at line 1: Unknown resource group 'p_ghost'
+rc=1
+=== P12 QUERY_LIMIT NULL arm variants ===
+rc=0
+rc=0
+=== P13 BACKGROUND member ===
+ERROR 1105 (HY000) at line 1: unsupported operation. Currently, only the default resource group support change background settings
+rc=1
+=== P14 capability OFF refusal ===
+set_rc=0
+tidb_enable_resource_control	OFF
+ERROR 8250 (HY000) at line 1: Resource control feature is disabled. Run `SET GLOBAL tidb_enable_resource_control='on'` to enable the feature
+rc=1
+COUNT(*)
+0
+ERROR 8250 (HY000) at line 1: Resource control feature is disabled. Run `SET GLOBAL tidb_enable_resource_control='on'` to enable the feature
+drop_rc=1
+restore_rc=0
+tidb_enable_resource_control	ON

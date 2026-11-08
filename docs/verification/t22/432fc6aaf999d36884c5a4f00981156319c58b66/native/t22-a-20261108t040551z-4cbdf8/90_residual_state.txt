@@ -1,0 +1,15 @@
+Post-teardown note: the golden `run` command performs ledger-scoped
+cleanup automatically (stop + rm + network.rm captured in receipts.json),
+so the tidb85 client container was already gone when a residual catalog
+probe was attempted — the exec errors below are the honest record of that
+ordering, not a fixture failure. The fixture's own capability-off
+teardown restored tidb_enable_resource_control=ON (artifact teardown
+rc=0); the last catalog state seen during the run: groups t22fx_keep
+present, default present, capability ON.
+
+=== residual catalog ===
+Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+=== capability restored ===
+Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
+=== residual schemas ===
+Error response from daemon: No such container: deltascope-ddl-golden-tidb85-client
