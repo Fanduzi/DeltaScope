@@ -262,3 +262,38 @@ are fixed in this round.
 
 No QUERY_LIMIT, dual-path, provider, or manifest work was reopened;
 those stayed green throughout.
+
+## Amendment N1 — Profile A native probe bounds
+
+The first authorized native run (TiDB v8.5.0/unistore, mock
+resource-manager path) produced two counter-evidence items, fixed in the
+same run's product commits:
+
+1. **Runaway member completeness.** Fixed v8.5.0 refuses a non-empty
+   `QUERY_LIMIT` list that lacks `ACTION` or lacks every threshold
+   member at run time (`ERROR 1105` — `unknown resource group runaway
+   action` / `please set at least one field`). The declaration extractor
+   already typed all five members, so `UnmodeledOptionKinds` now also
+   marks the whole `QUERY_LIMIT` option unmodeled when a non-reset list
+   omits `ACTION` or every threshold — the bounded unsupported-aspect
+   treatment, never a silently clean clause. `QUERY_LIMIT=NULL` and
+   `QUERY_LIMIT=()` were both confirmed legal clears natively.
+2. **Manifest fixture step.** The shared `clear-fixture-groups` step used
+   TiDB-only `DROP RESOURCE GROUP IF EXISTS`; native execution returned
+   `ERROR 1064` on all three MySQL anchors (5.7 has no resource groups;
+   8.0/8.4 accept `DROP RESOURCE GROUP` but not `IF EXISTS`). The step
+   moved into the owning tidb85 metadata-case setups.
+
+Other probe confirmations (recorded in the run's native evidence):
+`tidb_enable_resource_control` defaults ON on unistore;
+`RESOURCE_GROUPS` columns `NAME,RU_PER_SEC,PRIORITY,BURSTABLE,
+QUERY_LIMIT,BACKGROUND`; builtin `default` row `UNLIMITED/MEDIUM/YES/
+NULL/NULL`; post-8.5 `BURSTABLE=MODERATED/UNLIMITED/OFF` are native
+ERROR 1064; `RU_PER_SEC=UNLIMITED` publishes `BURSTABLE=YES`; CREATE
+defaults `MEDIUM/NO/NULL`; ALTER top-level merge preserves omitted
+members; runaway lists require threshold+ACTION and render normalized
+duration text; `BACKGROUND` is native ERROR 1105 on non-default groups;
+`DROP RESOURCE GROUP default` is ERROR 1105 `can't drop reserved
+resource group`; capability OFF refuses CREATE and DROP alike with
+ERROR 8250 while the catalog stays readable; `ALTER` on an absent group
+is ERROR 8249 and `IF EXISTS` rescues it to rc=0.
