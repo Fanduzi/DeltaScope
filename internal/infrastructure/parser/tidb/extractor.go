@@ -3,6 +3,7 @@ package tidbparser
 
 import (
 	"fmt"
+	"math"
 	"regexp"
 	"strconv"
 	"strings"
@@ -697,16 +698,16 @@ func extractSplitRegion(stmt *ast.SplitRegionStmt) *spec.DDL {
 	if stmt.SplitOpt != nil {
 		if len(stmt.SplitOpt.ValueLists) > 0 {
 			decl.Bound.Arities = make([]int, 0, len(stmt.SplitOpt.ValueLists))
-			decl.Bound.Classes = make([][]spec.SplitValueClass, 0, len(stmt.SplitOpt.ValueLists))
+			decl.Bound.Values = make([][]spec.SplitBoundValue, 0, len(stmt.SplitOpt.ValueLists))
 			for _, values := range stmt.SplitOpt.ValueLists {
 				decl.Bound.Arities = append(decl.Bound.Arities, len(values))
-				decl.Bound.Classes = append(decl.Bound.Classes, splitValueClasses(values))
+				decl.Bound.Values = append(decl.Bound.Values, splitBoundValues(values))
 			}
 		} else {
 			decl.Bound.LowerArity = len(stmt.SplitOpt.Lower)
 			decl.Bound.UpperArity = len(stmt.SplitOpt.Upper)
-			decl.Bound.LowerClasses = splitValueClasses(stmt.SplitOpt.Lower)
-			decl.Bound.UpperClasses = splitValueClasses(stmt.SplitOpt.Upper)
+			decl.Bound.Lower = splitBoundValues(stmt.SplitOpt.Lower)
+			decl.Bound.Upper = splitBoundValues(stmt.SplitOpt.Upper)
 			num := stmt.SplitOpt.Num
 			decl.Num = &num
 		}
@@ -738,39 +739,91 @@ func extractCompactTable(stmt *ast.CompactTableStmt) *spec.DDL {
 	return ddl
 }
 
-// splitValueClasses classifies one authored value tuple: NULL literal,
-// provably non-numeric string literal, plain literal, or a non-literal
-// expression whose foldability stays unproven. Parenthesized operands
-// unwrap, and a unary ± integer keeps its sign as a literal. The payload
-// itself is never retained.
-func splitValueClasses(values []ast.ExprNode) []spec.SplitValueClass {
-	classes := make([]spec.SplitValueClass, 0, len(values))
+// splitBoundValues classifies one authored value tuple and keeps the
+// foldable 64-bit integer payload the int-handle BETWEEN arm needs
+// (issue #102 T23-R9). NULL literal, provably non-numeric string
+// literal, plain literal, or a non-literal expression whose foldability
+// stays unproven. Parenthesized operands unwrap; a unary ± folds its
+// sign into the typed payload. Raw literal text is never retained —
+// only the typed domain value.
+func splitBoundValues(values []ast.ExprNode) []spec.SplitBoundValue {
+	out := make([]spec.SplitBoundValue, 0, len(values))
 	for _, expr := range values {
-		classes = append(classes, splitValueClass(expr))
+		out = append(out, splitBoundValue(expr))
 	}
-	return classes
+	return out
 }
 
-func splitValueClass(expr ast.ExprNode) spec.SplitValueClass {
+func splitBoundValue(expr ast.ExprNode) spec.SplitBoundValue {
 	if exprIsNullLiteral(expr) {
-		return spec.SplitValueNull
+		return spec.SplitBoundValue{Class: spec.SplitValueNull}
 	}
 	node := unwrapParenthesesExpr(expr)
 	if valueExpr, ok := node.(ast.ValueExpr); ok {
-		if value, ok := valueExpr.GetValue().(string); ok && !splitNumericString(value) {
-			return spec.SplitValueNonNumeric
-		}
-		return spec.SplitValueLiteral
+		return splitLiteralBoundValue(valueExpr.GetValue(), false)
 	}
 	if unary, ok := node.(*ast.UnaryOperationExpr); ok {
+		if unary.Op != opcode.Minus && unary.Op != opcode.Plus {
+			return spec.SplitBoundValue{Class: spec.SplitValueExpr}
+		}
 		if inner, ok := unwrapParenthesesExpr(unary.V).(ast.ValueExpr); ok {
-			switch inner.GetValue().(type) {
-			case int64, uint64, float64, float32:
-				return spec.SplitValueLiteral
+			value := inner.GetValue()
+			// A unary sign folds only onto a numeric operand — -'abc'
+			// upstream evaluates to a number through the expression
+			// evaluator, a foldability this model does not simulate.
+			if s, isString := value.(string); isString && !splitNumericString(s) {
+				return spec.SplitBoundValue{Class: spec.SplitValueExpr}
 			}
+			return splitLiteralBoundValue(value, unary.Op == opcode.Minus)
 		}
 	}
-	return spec.SplitValueExpr
+	return spec.SplitBoundValue{Class: spec.SplitValueExpr}
+}
+
+// splitLiteralBoundValue maps one literal payload to its typed bound
+// value. Integer-family payloads carry the 64-bit domain value; numeric
+// but non-integer payloads (floats, decimals, numeric non-integer
+// strings) stay payload-free — their upstream member-type conversion is
+// not modeled.
+func splitLiteralBoundValue(value any, negate bool) spec.SplitBoundValue {
+	switch v := value.(type) {
+	case int64:
+		if negate {
+			if v == math.MinInt64 {
+				// -(MinInt64) is +2^63 — an unsigned payload.
+				return spec.SplitBoundValue{Class: spec.SplitValueLiteral, Int: spec.SplitIntUnsigned, Uint64: 1 << 63}
+			}
+			v = -v
+		}
+		return spec.SplitBoundValue{Class: spec.SplitValueLiteral, Int: spec.SplitIntSigned, Int64: v}
+	case uint64:
+		if negate {
+			if v > uint64(math.MaxInt64)+1 {
+				return spec.SplitBoundValue{Class: spec.SplitValueLiteral}
+			}
+			return spec.SplitBoundValue{Class: spec.SplitValueLiteral, Int: spec.SplitIntSigned, Int64: -int64(v)}
+		}
+		return spec.SplitBoundValue{Class: spec.SplitValueLiteral, Int: spec.SplitIntUnsigned, Uint64: v}
+	case string:
+		if !splitNumericString(v) {
+			return spec.SplitBoundValue{Class: spec.SplitValueNonNumeric}
+		}
+		return splitNumericStringBoundValue(v, negate)
+	}
+	return spec.SplitBoundValue{Class: spec.SplitValueLiteral}
+}
+
+// splitNumericStringBoundValue folds an integer-parseable string
+// literal into the typed payload; a numeric but non-integer string
+// keeps the literal class without a payload.
+func splitNumericStringBoundValue(value string, negate bool) spec.SplitBoundValue {
+	if i, err := strconv.ParseInt(value, 10, 64); err == nil {
+		return splitLiteralBoundValue(i, negate)
+	}
+	if u, err := strconv.ParseUint(value, 10, 64); err == nil {
+		return splitLiteralBoundValue(u, negate)
+	}
+	return spec.SplitBoundValue{Class: spec.SplitValueLiteral}
 }
 
 // splitNumericString reports whether a string literal converts cleanly

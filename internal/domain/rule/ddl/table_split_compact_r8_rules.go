@@ -22,6 +22,8 @@ const (
 	layoutR8FactHandle       = "table.handle_columns"
 	layoutR8FactMemberTypes  = "table.member_column_types"
 	layoutR8FactValueExpr    = "statement.split_value_foldability"
+	layoutR8FactBoundCompare = "statement.split_bound_relation"
+	layoutR8FactBoundConvert = "statement.split_bound_conversion"
 	layoutR8FactNumLimit     = "instance.split_region_max_num"
 	layoutR8FactTiKVStore    = "instance.tikv_compatible_storage"
 )
@@ -91,6 +93,12 @@ func splitRefusalText(reason string) (message, suggestion string) {
 	case spec.LayoutReasonSplitPartMissing:
 		return "names a partition that does not exist on the target table",
 			"check the partition member names"
+	case spec.LayoutReasonSplitBoundNotIncreasing:
+		return "declares an upper bound that is not greater than the lower bound",
+			"order the BETWEEN bounds so the upper value is strictly greater"
+	case spec.LayoutReasonSplitStepTooSmall:
+		return "declares a BETWEEN range whose per-region step is below the fixed minimum",
+			"widen the BETWEEN range or lower the REGIONS count"
 	default:
 		return "is statically refused by TiDB",
 			"adjust the SPLIT declaration"
@@ -178,9 +186,19 @@ func (r tableSplitRegionValidRule) EvidenceGaps(statement spec.Statement) []rule
 	case spec.LayoutReasonSplitMemberUnproven:
 		fact = layoutR8FactMemberTypes
 	case spec.LayoutReasonSplitValueExpr:
-		fact = layoutR8FactValueExpr
+		// Expression foldability is a statement-side premise the
+		// analyzer cannot establish — a statement fact, not a missing
+		// instance fact.
+		return []rule.EvidenceGap{{ReasonCode: gapReasonUnprovenStatementFact, RequiredFacts: []string{layoutR8FactValueExpr}}}
 	case spec.LayoutReasonSplitNumLimitUnproven:
 		fact = layoutR8FactNumLimit
+	case spec.LayoutReasonSplitBoundCompareUnsupported:
+		// The encoded-key comparison on common-handle/index BETWEEN is
+		// a statement-side analysis boundary, not a missing instance
+		// fact — disclose the unproven premise as such.
+		return []rule.EvidenceGap{{ReasonCode: gapReasonUnprovenStatementFact, RequiredFacts: []string{layoutR8FactBoundCompare}}}
+	case spec.LayoutReasonSplitBoundConvertUnproven:
+		return []rule.EvidenceGap{{ReasonCode: gapReasonUnprovenStatementFact, RequiredFacts: []string{layoutR8FactBoundConvert}}}
 	case spec.LayoutReasonSplitNonTableObject:
 		// The executor's behavior on a non-table target is an unmodeled
 		// product boundary, not a missing catalog fact — bounded

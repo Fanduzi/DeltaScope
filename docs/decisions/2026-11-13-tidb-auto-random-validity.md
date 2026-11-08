@@ -432,3 +432,56 @@ preserve the exact pre-state.
   `targetTableName` seam. MySQL keeps explicit vendor boundaries
   because the shared parser accepts TiDB syntax under the MySQL
   dialect flag.
+
+### R9 amendment — BETWEEN bound relation/step and NULL-semantics correction (issue #102)
+
+- **Bound positions now carry a typed integer payload, never raw
+  text.** `SplitBoundValue` keeps the value class plus a foldable
+  64-bit payload (`SplitIntSigned`/`SplitIntUnsigned`/`SplitIntNone`)
+  the extractor folds from integer literals, integer-parseable
+  strings, and unary ±. Floats, non-integer numerics, expressions,
+  and NULL stay payload-free; the raw literal text is never retained.
+- **The integer-handle BETWEEN arm now adjudicates the executor's
+  relation and minimum-step checks** (`calculateIntBoundValue`,
+  v8.5.0 `pkg/executor/split.go`): `upper <= lower` refuses
+  (`split_bound_not_increasing`) and a per-region step below the fixed
+  `minRegionStepValue = 1000` refuses (`split_step_too_small`) — the
+  constant is a compile-time executor constant, never read from
+  `SHOW CONFIG`. The step is computed in the arm's domain: unsigned
+  only under `PKIsHandle` with a proven unsigned column; the signed
+  arm includes the synthetic `_tidb_rowid` handle. Upstream casts the
+  step back to int64, so a step beyond `MaxInt64` refuses identically.
+  A bound value outside the member column's domain resolves to
+  sql_mode-dependent upstream conversion, so it stays undecidable
+  (`split_bound_convert_unproven`) rather than clipped or rejected
+  early. The int arm is exactly PKIsHandle-or-rowid: **every** common
+  handle — a single int member included — and every index target
+  compares encoded keys upstream (`BuildHandleByDatums`/`GenIndexKey`),
+  a disclosed capability boundary reported as undecidable
+  (`split_bound_compare_unsupported`), never a fabricated complete.
+  BY tuples carry no relation or step semantics upstream and never
+  reach this check.
+- **The R8-review NULL direction is corrected, not implemented.** The
+  R9 work order asked to normalize NULL bounds to zero on the int
+  handle path, inheriting an interim finding that upstream converts
+  NULL to zero. Re-verification against the v8.5.0 tag shows
+  `convertValueListToData` (`pkg/planner/core/planbuilder.go`) gates
+  the converted datum with `IsNull() → ErrBadNull` — so NULL bounds
+  on the **table** path refuse for BETWEEN and BY alike, and the R8
+  `split_null_value` refusal was already correct; only the index
+  path's unproven arm stands (`convertValue2ColumnType` has no NULL
+  gate — it encodes NULL, and the encoded-key comparison is the
+  unsupported boundary above). No NULL normalization was added.
+- **Statement-side analysis boundaries stop disguising themselves as
+  missing instance facts.** `split_bound_compare_unsupported`,
+  `split_bound_convert_unproven`, and `split_value_expr_unproven` now
+  emit `unproven_statement_fact` gaps naming
+  `statement.split_bound_relation`,
+  `statement.split_bound_conversion`, and
+  `statement.split_value_foldability` — the statement, not the
+  instance, is where the premise lives.
+- **The storage-capability comment is corrected** — unistore test
+  backends embed a real `*tikv.KVStore`, so upstream's `tikv.Storage`
+  assertion does hold there; the product's `-tidb-` version gate is a
+  provenance gate on the MySQL-protocol servers it can actually reach,
+  not a claim about arbitrary version strings.

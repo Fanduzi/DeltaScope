@@ -57,12 +57,17 @@ func TestT23R8SplitFindings(t *testing.T) {
 	if err != nil {
 		t.Fatalf("new rule: %v", err)
 	}
-	lit := []spec.SplitValueClass{spec.SplitValueLiteral}
-	between := func(lower, upper int, num int64, lc, uc []spec.SplitValueClass) *spec.SplitRegionDecl {
+	lit := []spec.SplitBoundValue{{Class: spec.SplitValueLiteral}}
+	between := func(lower, upper int, num int64, lc, uc []spec.SplitBoundValue) *spec.SplitRegionDecl {
 		return &spec.SplitRegionDecl{
-			Bound: spec.SplitBound{LowerArity: lower, UpperArity: upper, LowerClasses: lc, UpperClasses: uc},
+			Bound: spec.SplitBound{LowerArity: lower, UpperArity: upper, Lower: lc, Upper: uc},
 			Num:   &num,
 		}
+	}
+	intBetween := func(lo, hi, num int64) *spec.SplitRegionDecl {
+		return between(1, 1, num,
+			[]spec.SplitBoundValue{{Class: spec.SplitValueLiteral, Int: spec.SplitIntSigned, Int64: lo}},
+			[]spec.SplitBoundValue{{Class: spec.SplitValueLiteral, Int: spec.SplitIntSigned, Int64: hi}})
 	}
 	snap := &spec.TableSnapshot{Options: map[string]string{}}
 	cases := []struct {
@@ -72,22 +77,24 @@ func TestT23R8SplitFindings(t *testing.T) {
 		wantReason string
 		wantNone   bool
 	}{
-		{"temporary_refused", between(1, 1, 4, lit, lit), &spec.TableSnapshot{Temporary: true}, spec.LayoutReasonSplitTemporary, false},
-		{"arity_refused", between(2, 2, 4, []spec.SplitValueClass{lit[0], lit[0]}, []spec.SplitValueClass{lit[0], lit[0]}), snap, spec.LayoutReasonSplitArityTable, false},
-		{"null_refused", between(1, 1, 4, []spec.SplitValueClass{spec.SplitValueNull}, lit), snap, spec.LayoutReasonSplitNullValue, false},
-		{"over_limit_refused", between(1, 1, 1001, lit, lit), snap, spec.LayoutReasonSplitNumOverLimit, false},
+		{"temporary_refused", intBetween(0, 10000, 4), &spec.TableSnapshot{Temporary: true}, spec.LayoutReasonSplitTemporary, false},
+		{"arity_refused", between(2, 2, 4, []spec.SplitBoundValue{lit[0], lit[0]}, []spec.SplitBoundValue{lit[0], lit[0]}), snap, spec.LayoutReasonSplitArityTable, false},
+		{"null_refused", between(1, 1, 4, []spec.SplitBoundValue{{Class: spec.SplitValueNull}}, lit), snap, spec.LayoutReasonSplitNullValue, false},
+		{"over_limit_refused", intBetween(0, 10000, 1001), snap, spec.LayoutReasonSplitNumOverLimit, false},
+		{"bounds_reversed_refused", intBetween(100, 0, 4), snap, spec.LayoutReasonSplitBoundNotIncreasing, false},
+		{"step_too_small_refused", intBetween(0, 100, 4), snap, spec.LayoutReasonSplitStepTooSmall, false},
 		{"clustered_primary_refused", func() *spec.SplitRegionDecl {
-			d := between(1, 1, 4, lit, lit)
+			d := intBetween(0, 10000, 4)
 			d.IndexName = "primary"
 			return d
 		}(), &spec.TableSnapshot{PrimaryKeyClustered: true, PrimaryKey: &spec.Index{Columns: []string{"a"}}, Columns: []spec.Column{{Name: "a", Type: "int"}}}, spec.LayoutReasonSplitPrimaryClustered, false},
 		{"missing_index_refused", func() *spec.SplitRegionDecl {
-			d := between(1, 1, 4, lit, lit)
+			d := intBetween(0, 10000, 4)
 			d.IndexName = "ghost"
 			return d
 		}(), snap, spec.LayoutReasonSplitIndexMissing, false},
-		{"accepted_silent", between(1, 1, 4, lit, lit), snap, "", true},
-		{"undecidable_silent", between(1, 1, 4, lit, lit), nil, "", true},
+		{"accepted_silent", intBetween(0, 10000, 4), snap, "", true},
+		{"undecidable_silent", intBetween(0, 10000, 4), nil, "", true},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -121,21 +128,34 @@ func TestT23R8SplitGaps(t *testing.T) {
 		t.Fatalf("new rule: %v", err)
 	}
 	reporter := ruleObj.(rule.EvidenceReporter)
-	lit := []spec.SplitValueClass{spec.SplitValueLiteral}
+	lit := []spec.SplitBoundValue{{Class: spec.SplitValueLiteral}}
 	num := int64(4)
+	intBound := func(v int64) []spec.SplitBoundValue {
+		return []spec.SplitBoundValue{{Class: spec.SplitValueLiteral, Int: spec.SplitIntSigned, Int64: v}}
+	}
+	betweenDecl := func(lc, uc []spec.SplitBoundValue) *spec.SplitRegionDecl {
+		return &spec.SplitRegionDecl{Bound: spec.SplitBound{LowerArity: 1, UpperArity: 1, Lower: lc, Upper: uc}, Num: &num}
+	}
 	cases := []struct {
-		name     string
-		decl     *spec.SplitRegionDecl
-		snapshot *spec.TableSnapshot
-		instance *spec.InstanceFacts
-		wantFact string
+		name       string
+		decl       *spec.SplitRegionDecl
+		snapshot   *spec.TableSnapshot
+		instance   *spec.InstanceFacts
+		wantReason string
+		wantFact   string
 	}{
-		{"offline_owes_handle", &spec.SplitRegionDecl{Bound: spec.SplitBound{LowerArity: 1, UpperArity: 1, LowerClasses: lit, UpperClasses: lit}, Num: &num}, nil, nil, "table.handle_columns"},
-		{"index_owes_members", &spec.SplitRegionDecl{IndexName: "ix", Bound: spec.SplitBound{LowerArity: 1, UpperArity: 1, LowerClasses: lit, UpperClasses: lit}, Num: &num}, &spec.TableSnapshot{IndexesUnknown: true}, nil, "table.index_members"},
-		{"between_owes_limit", &spec.SplitRegionDecl{Bound: spec.SplitBound{LowerArity: 1, UpperArity: 1, LowerClasses: lit, UpperClasses: lit}, Num: &num}, &spec.TableSnapshot{}, nil, "instance.split_region_max_num"},
-		{"expr_owes_foldability", &spec.SplitRegionDecl{Bound: spec.SplitBound{LowerArity: 1, UpperArity: 1, LowerClasses: []spec.SplitValueClass{spec.SplitValueExpr}, UpperClasses: lit}, Num: &num}, &spec.TableSnapshot{}, t23r8Instance(), "statement.split_value_foldability"},
-		{"partition_clause_owes_partitioned", &spec.SplitRegionDecl{HasPartitionClause: true, Bound: spec.SplitBound{LowerArity: 1, UpperArity: 1, LowerClasses: lit, UpperClasses: lit}, Num: &num}, &spec.TableSnapshot{}, t23r8Instance(), "table.partitioned"},
-		{"view_owes_no_fact", &spec.SplitRegionDecl{Bound: spec.SplitBound{LowerArity: 1, UpperArity: 1, LowerClasses: lit, UpperClasses: lit}, Num: &num}, &spec.TableSnapshot{RelationKind: "view"}, t23r8Instance(), ""},
+		{"offline_owes_handle", betweenDecl(lit, lit), nil, nil, gapReasonMissingInstanceFact, "table.handle_columns"},
+		{"index_owes_members", &spec.SplitRegionDecl{IndexName: "ix", Bound: spec.SplitBound{LowerArity: 1, UpperArity: 1, Lower: lit, Upper: lit}, Num: &num}, &spec.TableSnapshot{IndexesUnknown: true}, nil, gapReasonMissingInstanceFact, "table.index_members"},
+		{"between_owes_limit", betweenDecl(lit, lit), &spec.TableSnapshot{}, nil, gapReasonMissingInstanceFact, "instance.split_region_max_num"},
+		{"expr_owes_foldability", betweenDecl([]spec.SplitBoundValue{{Class: spec.SplitValueExpr}}, lit), &spec.TableSnapshot{}, t23r8Instance(), gapReasonUnprovenStatementFact, "statement.split_value_foldability"},
+		{"index_compare_owes_relation", func() *spec.SplitRegionDecl {
+			d := betweenDecl(intBound(0), intBound(10000))
+			d.IndexName = "ix"
+			return d
+		}(), &spec.TableSnapshot{Indexes: []spec.Index{{Name: "ix", Columns: []string{"a"}}}, Columns: []spec.Column{{Name: "a", Type: "int"}}}, t23r8Instance(), gapReasonUnprovenStatementFact, "statement.split_bound_relation"},
+		{"convert_owes_statement_fact", betweenDecl([]spec.SplitBoundValue{{Class: spec.SplitValueLiteral}}, intBound(10000)), &spec.TableSnapshot{}, t23r8Instance(), gapReasonUnprovenStatementFact, "statement.split_bound_conversion"},
+		{"partition_clause_owes_partitioned", &spec.SplitRegionDecl{HasPartitionClause: true, Bound: spec.SplitBound{LowerArity: 1, UpperArity: 1, Lower: lit, Upper: lit}, Num: &num}, &spec.TableSnapshot{}, t23r8Instance(), gapReasonMissingInstanceFact, "table.partitioned"},
+		{"view_owes_no_fact", betweenDecl(lit, lit), &spec.TableSnapshot{RelationKind: "view"}, t23r8Instance(), gapReasonMissingInstanceFact, ""},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -143,8 +163,8 @@ func TestT23R8SplitGaps(t *testing.T) {
 			if len(gaps) != 1 {
 				t.Fatalf("want one gap, got %+v", gaps)
 			}
-			if gaps[0].ReasonCode != gapReasonMissingInstanceFact {
-				t.Fatalf("reason_code %q", gaps[0].ReasonCode)
+			if gaps[0].ReasonCode != tc.wantReason {
+				t.Fatalf("reason_code %q want %q", gaps[0].ReasonCode, tc.wantReason)
 			}
 			if tc.wantFact == "" {
 				if len(gaps[0].RequiredFacts) != 0 {
@@ -160,7 +180,7 @@ func TestT23R8SplitGaps(t *testing.T) {
 	// A proven refusal owes no gap.
 	snap := &spec.TableSnapshot{Temporary: true}
 	gaps := reporter.EvidenceGaps(t23r8SplitStatement(
-		&spec.SplitRegionDecl{Bound: spec.SplitBound{LowerArity: 1, UpperArity: 1, LowerClasses: lit, UpperClasses: lit}, Num: &num},
+		betweenDecl(intBound(0), intBound(10000)),
 		snap, t23r8Instance()))
 	if len(gaps) != 0 {
 		t.Fatalf("proven refusal must not gap, got %+v", gaps)

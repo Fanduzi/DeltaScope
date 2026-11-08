@@ -1,7 +1,8 @@
-// Package tidbparser verifies the T23-R8 standalone SPLIT and
+// Package tidbparser verifies the T23-R8/R9 standalone SPLIT and
 // ALTER...COMPACT extraction: object identity, index/member targets,
-// clause variants, positional value classes, and the REGIONS count —
-// literal payloads never enter the normalized model (issue #102).
+// clause variants, positional value classes, the typed integer payload
+// for foldable literals, and the REGIONS count — raw literal text never
+// enters the normalized model (issue #102).
 package tidbparser
 
 import (
@@ -31,7 +32,7 @@ func extractT23R8(t *testing.T, dialect spec.Dialect, sql string) spec.Statement
 }
 
 func TestT23R8SplitExtraction(t *testing.T) {
-	lit := spec.SplitValueLiteral
+	lit := spec.SplitBoundValue{Class: spec.SplitValueLiteral}
 	cases := []struct {
 		name           string
 		sql            string
@@ -40,7 +41,7 @@ func TestT23R8SplitExtraction(t *testing.T) {
 		hasClause      bool
 		partitionNames []string
 		arities        []int
-		classes        [][]spec.SplitValueClass
+		classes        [][]spec.SplitBoundValue
 		lower, upper   int
 		num            *int64
 	}{
@@ -62,7 +63,7 @@ func TestT23R8SplitExtraction(t *testing.T) {
 			sql:     "SPLIT TABLE t BY (1),(2),(3);",
 			table:   "t",
 			arities: []int{1, 1, 1},
-			classes: [][]spec.SplitValueClass{{lit}, {lit}, {lit}},
+			classes: [][]spec.SplitBoundValue{{lit}, {lit}, {lit}},
 		},
 		{
 			name:  "partition_clause_variant",
@@ -129,6 +130,13 @@ func TestT23R8SplitExtraction(t *testing.T) {
 					t.Fatalf("arity[%d] %d want %d", i, decl.Bound.Arities[i], arity)
 				}
 			}
+			for i, tuple := range tc.classes {
+				for j, want := range tuple {
+					if decl.Bound.Values[i][j].Class != want.Class {
+						t.Fatalf("tuple[%d][%d] class %v want %v", i, j, decl.Bound.Values[i][j].Class, want.Class)
+					}
+				}
+			}
 			if decl.Bound.LowerArity != tc.lower || decl.Bound.UpperArity != tc.upper {
 				t.Fatalf("bounds (%d,%d) want (%d,%d)", decl.Bound.LowerArity, decl.Bound.UpperArity, tc.lower, tc.upper)
 			}
@@ -158,18 +166,75 @@ func TestT23R8SplitValueClasses(t *testing.T) {
 		spec.SplitValueExpr,    // ABS(1) is a non-literal expression
 		spec.SplitValueLiteral, // float literal
 	}
-	if len(decl.Bound.LowerClasses) != len(wantLower) || len(decl.Bound.UpperClasses) != len(wantUpper) {
-		t.Fatalf("classes (%v,%v)", decl.Bound.LowerClasses, decl.Bound.UpperClasses)
+	if len(decl.Bound.Lower) != len(wantLower) || len(decl.Bound.Upper) != len(wantUpper) {
+		t.Fatalf("classes (%v,%v)", decl.Bound.Lower, decl.Bound.Upper)
 	}
 	for i, want := range wantLower {
-		if decl.Bound.LowerClasses[i] != want {
-			t.Fatalf("lower[%d] %v want %v", i, decl.Bound.LowerClasses[i], want)
+		if decl.Bound.Lower[i].Class != want {
+			t.Fatalf("lower[%d] %v want %v", i, decl.Bound.Lower[i].Class, want)
 		}
 	}
 	for i, want := range wantUpper {
-		if decl.Bound.UpperClasses[i] != want {
-			t.Fatalf("upper[%d] %v want %v", i, decl.Bound.UpperClasses[i], want)
+		if decl.Bound.Upper[i].Class != want {
+			t.Fatalf("upper[%d] %v want %v", i, decl.Bound.Upper[i].Class, want)
 		}
+	}
+}
+
+// TestT23R9SplitBoundPayloads pins the typed integer payload the
+// extractor keeps for the int-handle arm: signed and unsigned literals,
+// unary sign folding, integer strings, and the payload-free arms
+// (floats, non-integer numerics, expressions, NULL) — raw text never
+// enters the model.
+func TestT23R9SplitBoundPayloads(t *testing.T) {
+	cases := []struct {
+		name     string
+		sql      string
+		position string
+		index    int
+		want     spec.SplitBoundValue
+	}{
+		{"signed_literal", "SPLIT TABLE t BETWEEN (-9223372036854775807) AND (100) REGIONS 4;", "lower", 0,
+			spec.SplitBoundValue{Class: spec.SplitValueLiteral, Int: spec.SplitIntSigned, Int64: -9223372036854775807}},
+		{"unsigned_literal", "SPLIT TABLE t BETWEEN (0) AND (18446744073709551615) REGIONS 4;", "upper", 0,
+			spec.SplitBoundValue{Class: spec.SplitValueLiteral, Int: spec.SplitIntUnsigned, Uint64: 18446744073709551615}},
+		{"unary_minus", "SPLIT TABLE t BETWEEN (-100) AND (0) REGIONS 4;", "lower", 0,
+			spec.SplitBoundValue{Class: spec.SplitValueLiteral, Int: spec.SplitIntSigned, Int64: -100}},
+		{"unary_minus_on_max", "SPLIT TABLE t BETWEEN (-18446744073709551615) AND (0) REGIONS 4;", "lower", 0,
+			spec.SplitBoundValue{Class: spec.SplitValueLiteral, Int: spec.SplitIntNone}},
+		{"integer_string", "SPLIT TABLE t BETWEEN ('42') AND (10000) REGIONS 4;", "lower", 0,
+			spec.SplitBoundValue{Class: spec.SplitValueLiteral, Int: spec.SplitIntSigned, Int64: 42}},
+		{"numeric_noninteger_string", "SPLIT TABLE t BETWEEN ('1.5') AND (10000) REGIONS 4;", "lower", 0,
+			spec.SplitBoundValue{Class: spec.SplitValueLiteral, Int: spec.SplitIntNone}},
+		{"float_literal", "SPLIT TABLE t BETWEEN (1.5) AND (10000) REGIONS 4;", "lower", 0,
+			spec.SplitBoundValue{Class: spec.SplitValueLiteral, Int: spec.SplitIntNone}},
+		{"expr_no_payload", "SPLIT TABLE t BETWEEN (abs(0)) AND (10000) REGIONS 4;", "lower", 0,
+			spec.SplitBoundValue{Class: spec.SplitValueExpr, Int: spec.SplitIntNone}},
+		{"null_no_payload", "SPLIT TABLE t BETWEEN (NULL) AND (10000) REGIONS 4;", "lower", 0,
+			spec.SplitBoundValue{Class: spec.SplitValueNull, Int: spec.SplitIntNone}},
+		{"bitwise_unary_expr", "SPLIT TABLE t BETWEEN (~1) AND (10000) REGIONS 4;", "lower", 0,
+			spec.SplitBoundValue{Class: spec.SplitValueExpr, Int: spec.SplitIntNone}},
+		{"unary_on_nonnumeric_string", "SPLIT TABLE t BETWEEN (-'abc') AND (10000) REGIONS 4;", "lower", 0,
+			spec.SplitBoundValue{Class: spec.SplitValueExpr, Int: spec.SplitIntNone}},
+		{"unary_on_numeric_string", "SPLIT TABLE t BETWEEN (-'42') AND (10000) REGIONS 4;", "lower", 0,
+			spec.SplitBoundValue{Class: spec.SplitValueLiteral, Int: spec.SplitIntSigned, Int64: -42}},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			statement := extractT23R8(t, spec.DialectTiDB, tc.sql)
+			decl := statement.DDL.SplitRegion
+			var got spec.SplitBoundValue
+			switch tc.position {
+			case "lower":
+				got = decl.Bound.Lower[tc.index]
+			case "upper":
+				got = decl.Bound.Upper[tc.index]
+			}
+			if got.Class != tc.want.Class || got.Int != tc.want.Int ||
+				got.Int64 != tc.want.Int64 || got.Uint64 != tc.want.Uint64 {
+				t.Fatalf("bound %+v want %+v", got, tc.want)
+			}
+		})
 	}
 }
 
