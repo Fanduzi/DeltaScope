@@ -126,13 +126,60 @@ func t22Queries(gate string, rows [][]driver.Value) map[string]t22Result {
 	}
 }
 
+// The #101 first path through the official provider: capability ON and a
+// zero-row catalog. A privilege-visible zero-row read can never prove
+// absence, so CREATE's outcome is unproven and publishes no created
+// state — both statements stay unverified with the bounded state gap
+// while both lifecycle notices fire with no blockers. The zero-gap
+// complete form is exercised through the resolver-injected proven-absent
+// fixture in the audit package.
+func TestT22GoldenPathThroughOfficialReader(t *testing.T) {
+	db := openT22DB(t, t22Queries("ON", nil))
+	provider := mysqlmeta.NewProvider(db)
+	policy := t06a4Policy(t, map[string]string{
+		t22ValidRule: "", t22BurstableRule: "",
+		"ddl.create_resource_group.notice": "", "ddl.alter_resource_group.notice": "",
+	})
+	result, err := appaudit.AuditSQL(context.Background(), appaudit.Request{
+		SQL:              "CREATE RESOURCE GROUP golden_rg RU_PER_SEC = 100;\nALTER RESOURCE GROUP golden_rg RU_PER_SEC = 200",
+		Dialect:          spec.DialectTiDB,
+		ConfigPath:       policy,
+		MetadataProvider: provider,
+	})
+	if err != nil {
+		t.Fatalf("AuditSQL: %v", err)
+	}
+	create, alter := result.Statements[0], result.Statements[1]
+	if create.Kind != "ddl" || alter.Kind != "ddl" {
+		t.Fatalf("kinds = %s/%s, want ddl/ddl", create.Kind, alter.Kind)
+	}
+	if create.Coverage.Status != "unverified" || alter.Coverage.Status != "unverified" {
+		t.Fatalf("coverage = %s/%s, want unverified/unverified", create.Coverage.Status, alter.Coverage.Status)
+	}
+	// Each statement owes only the bounded state gap — the zero-row
+	// catalog can never prove absence, the unproven CREATE publishes no
+	// created state, and the capability premise is satisfied (ON).
+	for i, stmt := range result.Statements {
+		if len(stmt.EvidenceGaps) != 1 || stmt.EvidenceGaps[0].ReasonCode != t22StateGap {
+			t.Fatalf("statement %d gaps = %+v, want exactly %s", i, stmt.EvidenceGaps, t22StateGap)
+		}
+	}
+	for i, stmt := range result.Statements {
+		for _, finding := range stmt.Findings {
+			if finding.RuleID == t22ValidRule {
+				t.Fatalf("statement %d valid finding = %#v, want none", i, finding)
+			}
+		}
+	}
+}
+
 // The proven catalog BURSTABLE flag travels the official reader into the
 // ordered pre-state: an ALTER declaring no burst member still sees the
 // catalog's enabled mode and warns — only a real definition read can
-// feed that premise.
+// feed that premise. The TiDB 8.5 catalog emits YES/NO only.
 func TestT22OfficialReaderFeedsBurstablePremise(t *testing.T) {
 	db := openT22DB(t, t22Queries("ON", [][]driver.Value{{
-		"rg", "500", "HIGH", "MODERATED", nil,
+		"rg", "500", "HIGH", "YES", nil,
 	}}))
 	provider := mysqlmeta.NewProvider(db)
 	policy := t06a4Policy(t, map[string]string{t22ValidRule: "", t22BurstableRule: ""})

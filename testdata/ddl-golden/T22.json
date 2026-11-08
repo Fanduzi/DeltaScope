@@ -2,7 +2,7 @@
  "task_id": "T22",
  "issue": 101,
  "policy_profile": "t22-resource-group",
- "description": "T22 TiDB 8.5 RU resource-group lifecycle and quota oracles. The manifest pins the frozen T22 contract: CREATE/ALTER/DROP RESOURCE GROUP reach kind=ddl with audited semantics on TiDB; authored RU_PER_SEC numeric and UNLIMITED stay distinct, bare BURSTABLE projects moderated, QUERY_LIMIT keeps typed runaway members; the resource-control capability gate tidb_enable_resource_control is a proven-refusal premise (known-OFF refuses before existence adjudication, unobserved owes unknown_resource_group_capability, never a guessed ON); the builtin default group is Reserved and its DROP is a proven refusal; unproven targets owe unknown_resource_group_state rather than a fabricated blocker or absence; proven refusals and guard no-ops suppress lifecycle notices; MySQL keeps a vendor boundary with boundary=vendor metadata for the TiDB RU forms while its own CPU VCPU family stays a parser error (T24 surface, untouched). BACKGROUND and SET RESOURCE GROUP stay bounded-outside the T22 denominator. metadata_cases encode the native probes whose oracles require the isolated TiDB 8.5 environment — none of them has run and none may be claimed as native PASS. CLI cases are provider-free offline contracts: no instance facts are observed, so each audited statement owes the capability gap plus the state gap. EXPECT FILLED: metadata_case expects completed from TiDB 8.5.0 native evidence plus the repaired contract — unvouched identities gap, never fabricate absence; a known-OFF gate refuses every lifecycle statement.",
+ "description": "T22 TiDB 8.5 RU resource-group lifecycle and quota oracles. The manifest pins the frozen T22 contract: CREATE/ALTER/DROP RESOURCE GROUP reach kind=ddl with audited semantics on TiDB; authored RU_PER_SEC numeric and UNLIMITED stay distinct, bare BURSTABLE projects the 8.5 enabled flag while the post-8.5 keyword forms (MODERATED/UNLIMITED/OFF) stay bounded unsupported members, QUERY_LIMIT keeps typed runaway members; the resource-control capability gate tidb_enable_resource_control is a proven-refusal premise (known-OFF refuses before existence adjudication, unobserved owes unknown_resource_group_capability, never a guessed ON); the builtin default group is Reserved and its DROP is a proven refusal; unproven targets owe unknown_resource_group_state rather than a fabricated blocker or absence; proven refusals and guard no-ops suppress lifecycle notices; MySQL keeps a vendor boundary with boundary=vendor metadata for the TiDB RU forms while its own CPU VCPU family stays a parser error (T24 surface, untouched). BACKGROUND and SET RESOURCE GROUP stay bounded-outside the T22 denominator. metadata_cases encode the native probes whose oracles require the isolated TiDB 8.5 environment \u2014 none of them has run and none may be claimed as native PASS. CLI cases are provider-free offline contracts: no instance facts are observed, so each audited statement owes the capability gap plus the state gap. EXPECT FILLED: metadata_case expects completed from TiDB 8.5.0 native evidence plus the repaired contract \u2014 unvouched identities gap, never fabricate absence; a known-OFF gate refuses every lifecycle statement.",
  "anchors": {
   "mysql57": {
    "service": "mysql57",
@@ -340,8 +340,8 @@
     "findings": 2,
     "diagnostics": 0,
     "unsupported": 0,
-    "coverage": "complete",
-    "evidence_gaps": 0,
+    "coverage": "unverified",
+    "evidence_gaps": 2,
     "finding_entries": [
      {
       "index": 0,
@@ -352,6 +352,29 @@
       "index": 1,
       "rule_id": "ddl.alter_resource_group.notice",
       "level": "notice"
+     }
+    ],
+    "statement_coverage": [
+     "unverified",
+     "unverified"
+    ],
+    "fail_on_triggered": false,
+    "evidence_gap_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.tidb.resource_group.valid",
+      "reason_code": "unknown_resource_group_state",
+      "required_facts": [
+       "resource_group.state"
+      ]
+     },
+     {
+      "index": 1,
+      "rule_id": "ddl.tidb.resource_group.valid",
+      "reason_code": "unknown_resource_group_state",
+      "required_facts": [
+       "resource_group.state"
+      ]
      }
     ]
    }
@@ -448,7 +471,7 @@
    }
   },
   {
-   "id": "tidb85-alter-absent-blocks",
+   "id": "tidb85-alter-absent-unproven",
    "anchor": "tidb85",
    "dialect": "tidb",
    "sql": "ALTER RESOURCE GROUP t22fx_ghost RU_PER_SEC=10;",
@@ -479,20 +502,33 @@
     }
    ],
    "expect": {
-    "exit": 1,
-    "verdict": "reject",
+    "exit": 0,
+    "verdict": "review",
     "statements": 1,
     "findings": 1,
     "diagnostics": 0,
     "unsupported": 0,
-    "coverage": "complete",
-    "evidence_gaps": 0,
-    "fail_on_triggered": true,
+    "coverage": "unverified",
+    "statement_coverage": [
+     "unverified"
+    ],
+    "evidence_gaps": 1,
+    "fail_on_triggered": false,
     "finding_entries": [
      {
       "index": 0,
+      "rule_id": "ddl.alter_resource_group.notice",
+      "level": "notice"
+     }
+    ],
+    "evidence_gap_entries": [
+     {
+      "index": 0,
       "rule_id": "ddl.tidb.resource_group.valid",
-      "level": "blocker"
+      "reason_code": "unknown_resource_group_state",
+      "required_facts": [
+       "resource_group.state"
+      ]
      }
     ]
    }
@@ -515,6 +551,18 @@
    ],
    "pending_native": true,
    "setup": [
+    {
+     "name": "observe-initial-resource-control",
+     "sql": "SHOW GLOBAL VARIABLES LIKE 'tidb_enable_resource_control'",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "gate initially ON \u2014 teardown restores the observed value",
+       "sql": "SHOW GLOBAL VARIABLES LIKE 'tidb_enable_resource_control'",
+       "expect": "ON"
+      }
+     ]
+    },
     {
      "name": "disable-resource-control",
      "sql": "SET GLOBAL tidb_enable_resource_control=OFF",
@@ -572,7 +620,7 @@
   "T22.meta.tidb85-ru-first-path",
   "T22.meta.tidb85-catalog-definition",
   "T22.meta.tidb85-drop-default-refused",
-  "T22.meta.tidb85-alter-absent-blocks",
+  "tidb85-alter-absent-unproven",
   "T22.meta.tidb85-capability-off-refusal"
  ]
 }

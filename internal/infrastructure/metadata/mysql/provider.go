@@ -1815,17 +1815,27 @@ func (p *Provider) loadResourceGroupObject(ctx context.Context, request spec.Obj
 	snapshot.Status = spec.MetadataStatusConfirmed
 	snapshot.Exists = true
 	snapshot.Name = name.String
-	definition := &spec.ResourceGroupDefinition{QueryLimit: nullStringPtr(queryLimit)}
+	definition := &spec.ResourceGroupDefinition{}
+	// TiDB 8.5 emits a complete RU-mode row with non-NULL ru_per_sec /
+	// priority / burstable; a non-RU-mode row form carries all-NULL
+	// members. Only the complete shape lets a NULL query_limit mean
+	// "confirmed unset" — anything else is merely unobserved.
+	rowComplete := ruPerSec.Valid && priority.Valid && burstable.Valid
 	if priority.Valid {
 		definition.Priority = strings.ToUpper(strings.TrimSpace(priority.String))
 	}
 	if burstable.Valid {
-		// The catalog stores the burst mode as MODERATED/UNLIMITED — both
-		// mean burst-capable; any other token or NULL stays unproven.
+		// The catalog stores the burst flag as YES/NO only (BurstLimit<0
+		// → YES). Any other token — including the later-version MODERATED
+		// /UNLIMITED vocabulary that never appears on 8.5 — stays
+		// unproven, never a silently mapped truth.
 		switch strings.ToUpper(strings.TrimSpace(burstable.String)) {
-		case "MODERATED", "UNLIMITED":
+		case "YES":
 			enabled := true
 			definition.Burstable = &enabled
+		case "NO":
+			disabled := false
+			definition.Burstable = &disabled
 		}
 	}
 	if ruPerSec.Valid {
@@ -1839,6 +1849,21 @@ func (p *Provider) loadResourceGroupObject(ctx context.Context, request spec.Obj
 			// An unrecognized token leaves both members nil — unproven,
 			// never a conflated zero.
 		}
+	}
+	switch {
+	case queryLimit.Valid:
+		// Configured runaway rule — the member detail is unmodeled; the
+		// bounded raw text stays evidence.
+		definition.QueryLimitState = spec.ResourceGroupQueryLimitConfigured
+		definition.QueryLimit = nullStringPtr(queryLimit)
+	case rowComplete:
+		// A complete RU-mode row with SQL NULL proves no runaway rule —
+		// setDataFromResourceGroups emits NULL only for the unset form.
+		definition.QueryLimitState = spec.ResourceGroupQueryLimitConfirmedAbsent
+	default:
+		// Incomplete or non-RU-mode row — nothing about the column was
+		// proven.
+		definition.QueryLimitState = spec.ResourceGroupQueryLimitUnread
 	}
 	snapshot.ResourceGroup = definition
 	return snapshot, nil

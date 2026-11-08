@@ -58,8 +58,8 @@ func TestT22FirstPathRUPerSecFidelity(t *testing.T) {
 }
 
 // Every modeled member keeps its authored shape: UNLIMITED stays a token,
-// PRIORITY keeps the name, bare BURSTABLE is moderated, QUERY_LIMIT keeps
-// typed members, guards land on the right field.
+// PRIORITY keeps the name, bare BURSTABLE projects the 8.5 enabled flag,
+// QUERY_LIMIT keeps typed members, guards land on the right field.
 func TestT22DeclarationMemberFidelity(t *testing.T) {
 	stmt := parseExtractT22(t,
 		"CREATE RESOURCE GROUP IF NOT EXISTS rg RU_PER_SEC=UNLIMITED PRIORITY=HIGH BURSTABLE QUERY_LIMIT=(EXEC_ELAPSED='30s' PROCESSED_KEYS=1000 ACTION=KILL);")
@@ -75,8 +75,8 @@ func TestT22DeclarationMemberFidelity(t *testing.T) {
 		t.Fatalf("priority = %q, want HIGH", got)
 	}
 	burstable, ok := decl.DeclaredBurstable()
-	if !ok || burstable != spec.ResourceGroupBurstableModerated {
-		t.Fatalf("burstable = %q (ok=%t), want bare form = moderated", burstable, ok)
+	if !ok || burstable != spec.ResourceGroupBurstableEnabled {
+		t.Fatalf("burstable = %q (ok=%t), want bare form = enabled (TiDB 8.5 BoolValue)", burstable, ok)
 	}
 	limit := decl.DeclaredRunaway()
 	if limit == nil || limit.Reset {
@@ -116,6 +116,41 @@ func TestT22BackgroundStaysBounded(t *testing.T) {
 	}
 	if !found {
 		t.Fatalf("options = %+v, want a bounded background member", decl.Options)
+	}
+}
+
+// The fixed TiDB 8.5 grammar only has bare BURSTABLE and BURSTABLE = bool —
+// both are the burst-enabled/disabled boolean forms. The locked parser's
+// newer keyword forms (MODERATED/UNLIMITED/OFF) are v9 vocabulary the AST
+// accepts but the target does not: they extract as unsupported_form, an
+// unmodeled member the coverage boundary reports instead of silently
+// treating later-version syntax as 8.5 truth.
+func TestT22BurstableExplicitFormsUnsupported(t *testing.T) {
+	for _, sql := range []string{
+		"CREATE RESOURCE GROUP rg RU_PER_SEC=100 BURSTABLE=MODERATED;",
+		"CREATE RESOURCE GROUP rg RU_PER_SEC=100 BURSTABLE=UNLIMITED;",
+		"CREATE RESOURCE GROUP rg RU_PER_SEC=100 BURSTABLE=OFF;",
+	} {
+		decl := parseExtractT22(t, sql).DDL.ResourceGroup
+		burstable, ok := decl.DeclaredBurstable()
+		if !ok || burstable != spec.ResourceGroupBurstableUnsupportedForm {
+			t.Fatalf("burstable = %q (ok=%t) for %q, want unsupported_form", burstable, ok, sql)
+		}
+		found := false
+		for _, kind := range decl.UnmodeledOptionKinds() {
+			if kind == spec.ResourceGroupOptionBurstable {
+				found = true
+			}
+		}
+		if !found {
+			t.Fatalf("unmodeled kinds = %v for %q, want the burstable aspect bounded", decl.UnmodeledOptionKinds(), sql)
+		}
+	}
+	// The v8.5 Boolean arm itself is unparseable through the locked
+	// parser — an honest parse error, never a silently modeled flag.
+	parser := New()
+	if _, err := parser.Parse(context.Background(), "CREATE RESOURCE GROUP rg RU_PER_SEC=100 BURSTABLE=TRUE;"); err == nil {
+		t.Fatal("BURSTABLE=TRUE parsed — the locked parser unexpectedly accepts the 8.5 Boolean arm")
 	}
 }
 

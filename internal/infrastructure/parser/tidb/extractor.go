@@ -3,6 +3,7 @@ package tidbparser
 
 import (
 	"fmt"
+	"regexp"
 	"strconv"
 	"strings"
 	"unicode"
@@ -1753,7 +1754,7 @@ func extractCreateResourceGroup(stmt *ast.CreateResourceGroupStmt) *spec.DDL {
 	declaration := &spec.ResourceGroupDeclaration{
 		Name:        stmt.ResourceGroupName.L,
 		IfNotExists: stmt.IfNotExists,
-		Options:     extractResourceGroupOptions(stmt.ResourceGroupOptionList),
+		Options:     extractResourceGroupOptions(stmt.ResourceGroupOptionList, stmt.Text()),
 	}
 	return &spec.DDL{
 		Operation:     spec.DDLOperationCreateResourceGroup,
@@ -1767,7 +1768,7 @@ func extractAlterResourceGroup(stmt *ast.AlterResourceGroupStmt) *spec.DDL {
 	declaration := &spec.ResourceGroupDeclaration{
 		Name:     stmt.ResourceGroupName.L,
 		IfExists: stmt.IfExists,
-		Options:  extractResourceGroupOptions(stmt.ResourceGroupOptionList),
+		Options:  extractResourceGroupOptions(stmt.ResourceGroupOptionList, stmt.Text()),
 	}
 	return &spec.DDL{
 		Operation:     spec.DDLOperationAlterResourceGroup,
@@ -1792,8 +1793,11 @@ func extractDropResourceGroup(stmt *ast.DropResourceGroupStmt) *spec.DDL {
 // extractResourceGroupOptions preserves every parsed option in order.
 // The grammar's CheckAppend guard rejects duplicate top-level kinds, so
 // each kind appears at most once; a member the model cannot classify
-// keeps the unrecognized marker for the coverage boundary.
-func extractResourceGroupOptions(list []*ast.ResourceGroupOption) []spec.ResourceGroupOption {
+// keeps the unrecognized marker for the coverage boundary. text is the
+// raw statement SQL — the AST cannot distinguish bare BURSTABLE from the
+// explicit MODERATED keyword form, so the authored spelling decides the
+// fixed-version semantics.
+func extractResourceGroupOptions(list []*ast.ResourceGroupOption, text string) []spec.ResourceGroupOption {
 	var options []spec.ResourceGroupOption
 	for _, opt := range list {
 		if opt == nil {
@@ -1815,16 +1819,9 @@ func extractResourceGroupOptions(list []*ast.ResourceGroupOption) []spec.Resourc
 				TextValue: ast.PriorityValueToName(opt.UintValue),
 			})
 		case ast.ResourceBurstable:
-			burstable := spec.ResourceGroupBurstableDisabled
-			switch opt.Burstable {
-			case ast.BurstableModerated:
-				burstable = spec.ResourceGroupBurstableModerated
-			case ast.BurstableUnlimited:
-				burstable = spec.ResourceGroupBurstableUnlimited
-			}
 			options = append(options, spec.ResourceGroupOption{
 				Kind:      spec.ResourceGroupOptionBurstable,
-				Burstable: burstable,
+				Burstable: extractResourceGroupBurstable(opt, text),
 			})
 		case ast.ResourceGroupRunaway:
 			options = append(options, spec.ResourceGroupOption{
@@ -1843,6 +1840,26 @@ func extractResourceGroupOptions(list []*ast.ResourceGroupOption) []spec.Resourc
 		}
 	}
 	return options
+}
+
+// resourceGroupBurstableExplicitRE spots any authored "BURSTABLE = ..."
+// spelling. Under the fixed TiDB 8.5 DirectResourceGroupOption grammar the
+// only forms are bare BURSTABLE and BURSTABLE = bool — the keyword forms
+// MODERATED/UNLIMITED/OFF are post-8.5 vocabulary the locked parser
+// accepts but the target does not.
+var resourceGroupBurstableExplicitRE = regexp.MustCompile(`(?i)\bburstable\b\s*=`)
+
+// extractResourceGroupBurstable maps the authored spelling to the fixed
+// 8.5 boolean semantics: bare BURSTABLE enables the allowance, every
+// explicit keyword form stays bounded unsupported evidence. The locked
+// parser's three-value AST conflates bare with =MODERATED, so the raw
+// statement text is the discriminator — a keyword inside a string
+// literal degrades to unsupported, never a silently claimed flag.
+func extractResourceGroupBurstable(opt *ast.ResourceGroupOption, text string) spec.ResourceGroupBurstable {
+	if opt.Burstable == ast.BurstableModerated && !resourceGroupBurstableExplicitRE.MatchString(text) {
+		return spec.ResourceGroupBurstableEnabled
+	}
+	return spec.ResourceGroupBurstableUnsupportedForm
 }
 
 // extractResourceGroupRunaway models one QUERY_LIMIT clause. A nil or

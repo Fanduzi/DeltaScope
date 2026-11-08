@@ -19,6 +19,8 @@ var testResourceGroupColumns = []string{
 	"NAME", "RU_PER_SEC", "PRIORITY", "BURSTABLE", "QUERY_LIMIT",
 }
 
+func boolPtr(v bool) *bool { return &v }
+
 func t22Resolve(t *testing.T, results map[string]testQueryResult, dialect spec.Dialect, req spec.ObjectLookupRequest) (*spec.ObjectSnapshot, error) {
 	t.Helper()
 	db := openTestDB(t, results)
@@ -33,7 +35,7 @@ func TestT22ResourceGroupLoaderPublishesDefinition(t *testing.T) {
 		testResourceGroupFragment: {
 			columns: testResourceGroupColumns,
 			rows: [][]driver.Value{{
-				"golden_rg", "1000", "HIGH", "MODERATED", "EXEC_ELAPSED='60s' ACTION=KILL",
+				"golden_rg", "1000", "HIGH", "YES", "EXEC_ELAPSED='60s' ACTION=KILL",
 			}},
 		},
 	}, spec.DialectTiDB, spec.ObjectLookupRequest{Type: "resource_group", Name: "golden_rg"})
@@ -47,7 +49,8 @@ func TestT22ResourceGroupLoaderPublishesDefinition(t *testing.T) {
 	if def == nil || def.RUPerSec == nil || *def.RUPerSec != 1000 ||
 		def.RUUnlimited || def.Priority != "HIGH" ||
 		def.Burstable == nil || !*def.Burstable ||
-		def.QueryLimit == nil || *def.QueryLimit != "EXEC_ELAPSED='60s' ACTION=KILL" {
+		def.QueryLimit == nil || *def.QueryLimit != "EXEC_ELAPSED='60s' ACTION=KILL" ||
+		def.QueryLimitState != spec.ResourceGroupQueryLimitConfigured {
 		t.Fatalf("definition = %+v, want every catalog member published", def)
 	}
 }
@@ -84,25 +87,76 @@ func TestT22ResourceGroupLoaderZeroRowsStaysUnknown(t *testing.T) {
 	}
 }
 
-// NULL and unrecognized catalog members map to unproven fields — never a
-// guessed zero, default, or cleared flag.
-func TestT22ResourceGroupLoaderNullMembersStayUnproven(t *testing.T) {
-	snapshot, err := t22Resolve(t, map[string]testQueryResult{
-		testResourceGroupFragment: {
-			columns: testResourceGroupColumns,
-			rows:    [][]driver.Value{{"rg", "bogus", nil, "SURPRISING", nil}},
-		},
-	}, spec.DialectTiDB, spec.ObjectLookupRequest{Type: "resource_group", Name: "rg"})
-	if err != nil {
-		t.Fatalf("ResolveObject: %v", err)
+// The TiDB 8.5 catalog emits the burst flag as YES/NO only — a NO row is a
+// proven-disabled flag, and any other token (the later-version MODERATED /
+// UNLIMITED vocabulary never appears on 8.5) stays unproven rather than a
+// silently mapped truth.
+func TestT22ResourceGroupLoaderBurstableYesNo(t *testing.T) {
+	for _, tc := range []struct {
+		token string
+		want  *bool
+	}{
+		{"YES", boolPtr(true)},
+		{"NO", boolPtr(false)},
+		{"MODERATED", nil},
+		{"UNLIMITED", nil},
+		{"SURPRISING", nil},
+	} {
+		snapshot, err := t22Resolve(t, map[string]testQueryResult{
+			testResourceGroupFragment: {
+				columns: testResourceGroupColumns,
+				rows:    [][]driver.Value{{"rg", "100", "LOW", tc.token, nil}},
+			},
+		}, spec.DialectTiDB, spec.ObjectLookupRequest{Type: "resource_group", Name: "rg"})
+		if err != nil {
+			t.Fatalf("ResolveObject(%q): %v", tc.token, err)
+		}
+		def := snapshot.ResourceGroup
+		switch {
+		case tc.want == nil && def.Burstable != nil:
+			t.Fatalf("burstable = %v for token %q, want unproven", *def.Burstable, tc.token)
+		case tc.want != nil && (def.Burstable == nil || *def.Burstable != *tc.want):
+			t.Fatalf("burstable = %+v for token %q, want %v", def.Burstable, tc.token, *tc.want)
+		}
 	}
-	def := snapshot.ResourceGroup
-	if def == nil {
-		t.Fatal("definition = nil on a confirmed row")
-	}
-	if def.RUPerSec != nil || def.RUUnlimited || def.Priority != "" || def.Burstable != nil || def.QueryLimit != nil {
-		t.Fatalf("definition = %+v, want NULL/unrecognized members unproven", def)
-	}
+}
+
+// QUERY_LIMIT on a complete RU-mode row distinguishes three real catalog
+// states (v8.5 setDataFromResourceGroups emits SQL NULL only when no
+// runaway rule is configured): NULL = confirmed unset, non-NULL text =
+// configured with unmodeled member detail, and an all-NULL non-applicable
+// row proves nothing about the column.
+func TestT22ResourceGroupLoaderQueryLimitStates(t *testing.T) {
+	t.Run("null on a complete row is confirmed absent", func(t *testing.T) {
+		snapshot, err := t22Resolve(t, map[string]testQueryResult{
+			testResourceGroupFragment: {
+				columns: testResourceGroupColumns,
+				rows:    [][]driver.Value{{"rg", "100", "MEDIUM", "NO", nil}},
+			},
+		}, spec.DialectTiDB, spec.ObjectLookupRequest{Type: "resource_group", Name: "rg"})
+		if err != nil {
+			t.Fatalf("ResolveObject: %v", err)
+		}
+		def := snapshot.ResourceGroup
+		if def.QueryLimitState != spec.ResourceGroupQueryLimitConfirmedAbsent || def.QueryLimit != nil {
+			t.Fatalf("query_limit = {%s %v}, want confirmed_absent on a NULL complete-row member", def.QueryLimitState, def.QueryLimit)
+		}
+	})
+	t.Run("incomplete row proves nothing", func(t *testing.T) {
+		snapshot, err := t22Resolve(t, map[string]testQueryResult{
+			testResourceGroupFragment: {
+				columns: testResourceGroupColumns,
+				rows:    [][]driver.Value{{"rg", nil, nil, nil, nil}},
+			},
+		}, spec.DialectTiDB, spec.ObjectLookupRequest{Type: "resource_group", Name: "rg"})
+		if err != nil {
+			t.Fatalf("ResolveObject: %v", err)
+		}
+		def := snapshot.ResourceGroup
+		if def.QueryLimitState != spec.ResourceGroupQueryLimitUnread {
+			t.Fatalf("query_limit state = %s on an all-NULL row, want unread", def.QueryLimitState)
+		}
+	})
 }
 
 // Catalog errors propagate wrapped with identity context — they are never

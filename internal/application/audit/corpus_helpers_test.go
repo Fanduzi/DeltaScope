@@ -141,6 +141,19 @@ func corpusResourceGroupToSnapshot(key string, object corpusResourceGroupObject)
 			Burstable:   object.Definition.Burstable,
 			QueryLimit:  object.Definition.QueryLimit,
 		}
+		// Mirror the provider's catalog contract: QUERY_LIMIT text means a
+		// configured rule; NULL on a complete RU-mode row is confirmed
+		// absent; an incomplete row proves nothing (T22/#101).
+		rowComplete := (snapshot.ResourceGroup.RUPerSec != nil || snapshot.ResourceGroup.RUUnlimited) &&
+			snapshot.ResourceGroup.Priority != "" && snapshot.ResourceGroup.Burstable != nil
+		switch {
+		case object.Definition.QueryLimit != nil:
+			snapshot.ResourceGroup.QueryLimitState = spec.ResourceGroupQueryLimitConfigured
+		case rowComplete:
+			snapshot.ResourceGroup.QueryLimitState = spec.ResourceGroupQueryLimitConfirmedAbsent
+		default:
+			snapshot.ResourceGroup.QueryLimitState = spec.ResourceGroupQueryLimitUnread
+		}
 	}
 	return snapshot
 }

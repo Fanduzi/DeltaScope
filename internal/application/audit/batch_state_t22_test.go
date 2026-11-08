@@ -181,3 +181,209 @@ func TestT22GuardNoOpOnProvenAbsent(t *testing.T) {
 		t.Fatalf("notices = %d, want 0 — no success claim on a proven no-op", got)
 	}
 }
+
+// The #101 first path with every premise observed: capability ON and a
+// proven-absent catalog answer. CREATE publishes the normalized batch
+// definition, ALTER reads it back — complete coverage, lifecycle notices,
+// no gap and no blocker on either statement.
+func TestT22GoldenPathCompletePremises(t *testing.T) {
+	provider := t22ProviderOn(map[string]t22GroupFact{
+		"golden_rg": {status: spec.MetadataStatusNotFound, exists: false},
+	})
+	result := t22MustAudit(t,
+		"CREATE RESOURCE GROUP golden_rg RU_PER_SEC = 100;\nALTER RESOURCE GROUP golden_rg RU_PER_SEC = 200;",
+		spec.DialectTiDB, provider, "")
+	for i, stmt := range result.Statements {
+		if stmt.Kind != "ddl" || stmt.Coverage.Status != "complete" || len(stmt.EvidenceGaps) != 0 {
+			t.Fatalf("statement %d = kind %s coverage %s gaps %v, want ddl/complete/no gaps", i, stmt.Kind, stmt.Coverage.Status, stmt.EvidenceGaps)
+		}
+	}
+	if got := len(t22Findings(result, 0, "ddl.create_resource_group.notice")); got != 1 {
+		t.Fatalf("create notices = %d, want 1 on the proven-absent create", got)
+	}
+	if got := len(t22Findings(result, 1, "ddl.alter_resource_group.notice")); got != 1 {
+		t.Fatalf("alter notices = %d, want 1 on the batch-proven target", got)
+	}
+	for i := range result.Statements {
+		if got := len(t22Findings(result, i, t22ValidRule)); got != 0 {
+			t.Fatalf("statement %d valid findings = %d, want 0 — every premise proven", i, got)
+		}
+	}
+}
+
+// The CREATE post-state is a complete authored specification: fixed
+// TiDB 8.5 NewResourceGroupSettings defaults (RURate=0, PRIORITY=MEDIUM,
+// BurstLimit=0, Runaway=nil) make every undeclared member provable —
+// burst enabled exactly when BURSTABLE or RU_PER_SEC=UNLIMITED declares it.
+func TestT22CreatePublishesNormalizedDefinition(t *testing.T) {
+	u64 := func(v uint64) *uint64 { return &v }
+	decl := func(options ...spec.ResourceGroupOption) *spec.ResourceGroupDeclaration {
+		return &spec.ResourceGroupDeclaration{Name: "rg", Options: options}
+	}
+	t.Run("numeric create publishes fixed defaults", func(t *testing.T) {
+		def := authoredResourceGroupDefinition(decl(spec.ResourceGroupOption{Kind: spec.ResourceGroupOptionRURate, UintValue: u64(100)}))
+		if def.RUPerSec == nil || *def.RUPerSec != 100 || def.RUUnlimited {
+			t.Fatalf("ru = %+v unlimited=%t, want 100", def.RUPerSec, def.RUUnlimited)
+		}
+		if def.Priority != "MEDIUM" {
+			t.Fatalf("priority = %q, want the fixed MEDIUM default", def.Priority)
+		}
+		if def.Burstable == nil || *def.Burstable {
+			t.Fatalf("burstable = %v, want proven disabled (BurstLimit=0→Adjust)", def.Burstable)
+		}
+		if def.QueryLimitState != spec.ResourceGroupQueryLimitConfirmedAbsent || def.QueryLimit != nil {
+			t.Fatalf("query_limit = {%s %v}, want confirmed absent (Runaway=nil)", def.QueryLimitState, def.QueryLimit)
+		}
+	})
+	t.Run("unlimited RU forces burst enabled", func(t *testing.T) {
+		// SetDirectResourceGroupRUSecondOption(unlimited) pins BurstLimit=-1 —
+		// the catalog shows BURSTABLE=YES even without a declared member.
+		def := authoredResourceGroupDefinition(decl(spec.ResourceGroupOption{Kind: spec.ResourceGroupOptionRURate, Unlimited: true}))
+		if !def.RUUnlimited || def.Burstable == nil || !*def.Burstable {
+			t.Fatalf("definition = %+v, want UNLIMITED with proven burst enable", def)
+		}
+	})
+	t.Run("bare burstable publishes enabled", func(t *testing.T) {
+		def := authoredResourceGroupDefinition(decl(spec.ResourceGroupOption{Kind: spec.ResourceGroupOptionBurstable, Burstable: spec.ResourceGroupBurstableEnabled}))
+		if def.Burstable == nil || !*def.Burstable {
+			t.Fatalf("burstable = %v, want enabled", def.Burstable)
+		}
+	})
+	t.Run("declared query limit publishes configured", func(t *testing.T) {
+		def := authoredResourceGroupDefinition(decl(spec.ResourceGroupOption{
+			Kind:    spec.ResourceGroupOptionQueryLimit,
+			Runaway: &spec.ResourceGroupRunawayDeclaration{Members: []spec.ResourceGroupRunawayMember{{Kind: spec.ResourceGroupRunawayAction, TextValue: "kill"}}},
+		}))
+		if def.QueryLimitState != spec.ResourceGroupQueryLimitConfigured {
+			t.Fatalf("query_limit state = %s, want configured", def.QueryLimitState)
+		}
+	})
+	t.Run("bare create publishes the fixed default set", func(t *testing.T) {
+		def := authoredResourceGroupDefinition(decl())
+		if def.RUPerSec == nil || *def.RUPerSec != 0 || def.RUUnlimited ||
+			def.Priority != "MEDIUM" || def.Burstable == nil || *def.Burstable ||
+			def.QueryLimitState != spec.ResourceGroupQueryLimitConfirmedAbsent {
+			t.Fatalf("definition = %+v, want the NewResourceGroupSettings default set", def)
+		}
+	})
+}
+
+// The ordered registry publishes the successor projection the golden
+// path requires: after CREATE the second statement's pre-state carries
+// the authored RU=100, and after ALTER it carries RU=200 — a batch fact
+// no later provider snapshot can resurrect.
+func TestT22SuccessorProjectionPublishesRUChange(t *testing.T) {
+	u64 := func(v uint64) *uint64 { return &v }
+	provider := t22ProviderOn(map[string]t22GroupFact{
+		"golden_rg": {status: spec.MetadataStatusNotFound, exists: false},
+	})
+	state := &batchState{
+		dialect:              spec.DialectTiDB,
+		provider:             provider,
+		resourceGroupEntries: map[string]*batchResourceGroupEntry{},
+	}
+	stmt := func(operation spec.DDLOperation, ru uint64) spec.Statement {
+		return spec.Statement{
+			Dialect: spec.DialectTiDB,
+			Kind:    spec.KindDDL,
+			DDL: &spec.DDL{
+				Operation: operation,
+				ResourceGroup: &spec.ResourceGroupDeclaration{
+					Name:    "golden_rg",
+					Options: []spec.ResourceGroupOption{{Kind: spec.ResourceGroupOptionRURate, UintValue: u64(ru)}},
+				},
+			},
+		}
+	}
+	ctx := context.Background()
+	if err := state.applyResourceGroupStatement(ctx, stmt(spec.DDLOperationCreateResourceGroup, 100)); err != nil {
+		t.Fatalf("apply create: %v", err)
+	}
+	entry, err := state.resolveResourceGroup(ctx, "golden_rg")
+	if err != nil {
+		t.Fatalf("resolve after create: %v", err)
+	}
+	projection := state.projectResourceGroupEntry(entry)
+	if projection.Definition == nil || projection.Definition.RUPerSec == nil || *projection.Definition.RUPerSec != 100 {
+		t.Fatalf("post-create definition = %+v, want the published RU=100", projection.Definition)
+	}
+	if err := state.applyResourceGroupStatement(ctx, stmt(spec.DDLOperationAlterResourceGroup, 200)); err != nil {
+		t.Fatalf("apply alter: %v", err)
+	}
+	entry, err = state.resolveResourceGroup(ctx, "golden_rg")
+	if err != nil {
+		t.Fatalf("resolve after alter: %v", err)
+	}
+	projection = state.projectResourceGroupEntry(entry)
+	if projection.Definition == nil || projection.Definition.RUPerSec == nil || *projection.Definition.RUPerSec != 200 {
+		t.Fatalf("post-alter definition = %+v, want the successor RU=200", projection.Definition)
+	}
+}
+
+// ALTER applies member-wise at the top level — undeclared members keep
+// their proven values — but a declared QUERY_LIMIT rebuilds the whole
+// nested group (v8.5 buildResourceGroup installs a fresh runaway struct);
+// NULL/() clears it. RU_PER_SEC=UNLIMITED still pins burst enabled.
+func TestT22AlterMergeSemantics(t *testing.T) {
+	u64 := func(v uint64) *uint64 { return &v }
+	oldText := "EXEC_ELAPSED='30s' ACTION=KILL"
+	base := func() *spec.ResourceGroupDefinition {
+		return &spec.ResourceGroupDefinition{
+			RUPerSec:        u64(100),
+			Priority:        "LOW",
+			Burstable:       boolPtr(true),
+			QueryLimitState: spec.ResourceGroupQueryLimitConfigured,
+			QueryLimit:      &oldText,
+		}
+	}
+	decl := func(options ...spec.ResourceGroupOption) *spec.ResourceGroupDeclaration {
+		return &spec.ResourceGroupDeclaration{Name: "rg", Options: options}
+	}
+	t.Run("priority-only alter keeps every other member", func(t *testing.T) {
+		out := mergeResourceGroupAlter(base(), decl(spec.ResourceGroupOption{Kind: spec.ResourceGroupOptionPriority, TextValue: "HIGH"}))
+		if out.Priority != "HIGH" || out.RUPerSec == nil || *out.RUPerSec != 100 ||
+			out.Burstable == nil || !*out.Burstable ||
+			out.QueryLimitState != spec.ResourceGroupQueryLimitConfigured || out.QueryLimit == nil || *out.QueryLimit != oldText {
+			t.Fatalf("merged = %+v, want member-wise top-level replace", out)
+		}
+	})
+	t.Run("unlimited RU forces burst enabled over a disabled prior", func(t *testing.T) {
+		prior := base()
+		disabled := false
+		prior.Burstable = &disabled
+		out := mergeResourceGroupAlter(prior, decl(spec.ResourceGroupOption{Kind: spec.ResourceGroupOptionRURate, Unlimited: true}))
+		if !out.RUUnlimited || out.Burstable == nil || !*out.Burstable {
+			t.Fatalf("merged = %+v, want UNLIMITED pinning BurstLimit=-1", out)
+		}
+	})
+	t.Run("numeric RU keeps the prior burst flag", func(t *testing.T) {
+		out := mergeResourceGroupAlter(base(), decl(spec.ResourceGroupOption{Kind: spec.ResourceGroupOptionRURate, UintValue: u64(200)}))
+		if out.Burstable == nil || !*out.Burstable || out.RUPerSec == nil || *out.RUPerSec != 200 {
+			t.Fatalf("merged = %+v, want RU=200 with the prior burst flag kept", out)
+		}
+	})
+	t.Run("query limit reset clears the nested group", func(t *testing.T) {
+		out := mergeResourceGroupAlter(base(), decl(spec.ResourceGroupOption{
+			Kind:    spec.ResourceGroupOptionQueryLimit,
+			Runaway: &spec.ResourceGroupRunawayDeclaration{Reset: true},
+		}))
+		if out.QueryLimitState != spec.ResourceGroupQueryLimitConfirmedAbsent || out.QueryLimit != nil {
+			t.Fatalf("query_limit = {%s %v}, want confirmed absent after NULL reset", out.QueryLimitState, out.QueryLimit)
+		}
+	})
+	t.Run("new query limit replaces the whole nested group", func(t *testing.T) {
+		out := mergeResourceGroupAlter(base(), decl(spec.ResourceGroupOption{
+			Kind:    spec.ResourceGroupOptionQueryLimit,
+			Runaway: &spec.ResourceGroupRunawayDeclaration{Members: []spec.ResourceGroupRunawayMember{{Kind: spec.ResourceGroupRunawayAction, TextValue: "dryrun"}}},
+		}))
+		if out.QueryLimitState != spec.ResourceGroupQueryLimitConfigured || (out.QueryLimit != nil && *out.QueryLimit == oldText) {
+			t.Fatalf("query_limit = {%s %v}, want the authored clause replacing the old group", out.QueryLimitState, out.QueryLimit)
+		}
+	})
+	t.Run("undeclared query limit keeps the prior state", func(t *testing.T) {
+		out := mergeResourceGroupAlter(base(), decl())
+		if out.QueryLimitState != spec.ResourceGroupQueryLimitConfigured || out.QueryLimit == nil || *out.QueryLimit != oldText {
+			t.Fatalf("query_limit = {%s %v}, want the proven prior kept", out.QueryLimitState, out.QueryLimit)
+		}
+	})
+}

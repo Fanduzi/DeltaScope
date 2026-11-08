@@ -40,26 +40,39 @@ Baseline behavior, reproduced by the permanent public red test
 ## Green receipts (post-implementation, offline)
 
 - `go test ./internal/application/audit -run TestT22 -count=1`:
-  15/15 PASS — first path `kind=ddl` + `unknown_resource_group_capability`
-  gap + zero unsupported; MySQL `ErrUnsupportedStatement` with
+  19/19 PASS — first path `kind=ddl` + `unknown_resource_group_capability`
+  gap + zero unsupported; complete-premises golden path reaches
+  `coverage=complete` with no gaps and both notices; the CREATE batch
+  projection publishes the fixed `NewResourceGroupSettings` defaults and
+  `RU_PER_SEC=UNLIMITED` pins burst enabled; ALTER merges member-wise at
+  the top level while a declared `QUERY_LIMIT` rebuilds the nested group
+  and `NULL`/`()` clears it; the successor projection exposes the
+  authored `100`→`200` change; MySQL `ErrUnsupportedStatement` with
   `boundary=vendor` metadata; reserved `default` drop is a proven
   refusal with the notice suppressed; guard no-ops emit no success
   claim; resolver errors propagate uncached; disabled rules emit no
   gaps.
 - `go test ./internal/infrastructure/parser/tidb -run TestT22 -count=1`:
-  6/6 PASS — authored `100`/`200` kept distinct at the extractor seam,
-  `UNLIMITED` stays a token, bare `BURSTABLE` is moderated, BACKGROUND
-  stays a bounded member, MySQL keeps the vendor-boundary marker.
+  7/7 PASS — authored `100`/`200` kept distinct at the extractor seam,
+  `UNLIMITED` stays a token, bare `BURSTABLE` projects the 8.5 enabled
+  flag while the post-8.5 keyword forms (`MODERATED`/`UNLIMITED`/`OFF`)
+  extract as bounded `unsupported_form` members (the 8.5 `BURSTABLE=bool`
+  arm is an honest parse error on the locked parser), BACKGROUND stays a
+  bounded member, MySQL keeps the vendor-boundary marker.
 - `go test ./internal/infrastructure/metadata/mysql -run TestT22 -count=1`:
-  7/7 PASS — official RESOURCE_GROUPS reader publishes definitions,
+  8/8 PASS — official RESOURCE_GROUPS reader publishes definitions,
   `UNLIMITED` distinct from numeric rates, zero rows stay unknown,
-  NULL/unrecognized members unproven, errors propagate uncached, MySQL
-  never emits the TiDB catalog query, `tidb_enable_resource_control`
-  publishes with an explicit known bit.
+  catalog `BURSTABLE` `YES`/`NO` map to enabled/disabled with any other
+  token unproven, `QUERY_LIMIT` distinguishes confirmed-absent (NULL on a
+  complete RU-mode row) from configured text and unread incomplete rows,
+  errors propagate uncached, MySQL never emits the TiDB catalog query,
+  `tidb_enable_resource_control` publishes with an explicit known bit.
 - `go test ./internal/application/auditmeta -run TestT22 -count=1`:
-  4/4 PASS — real provider + stub driver feeds the burstable premise,
+  5/5 PASS — real provider + stub driver feeds the burstable premise,
   the known-OFF gate refuses before existence adjudication, zero rows
-  owe the state gap, catalog errors propagate through the public path.
+  owe the state gap, catalog errors propagate through the public path,
+  and the first path stays `unverified`+state-gap per statement with
+  both lifecycle notices firing.
 - `go test ./...`: all packages PASS.
 - `make build`: `bin/deltascope`, `bin/deltascope-server`,
   `bin/deltascope-mcp` built clean.
@@ -77,8 +90,8 @@ Baseline behavior, reproduced by the permanent public red test
 
 - Real TiDB 8.5 `information_schema.RESOURCE_GROUPS` row shape and the
   `tidb_enable_resource_control=OFF` native refusal error class.
-- Catalog-backed definition reads on a live anchor (MODERATED/UNLIMITED
-  burst text, QUERY_LIMIT column text).
+- Catalog-backed definition reads on a live anchor (`YES`/`NO` burst
+  flag, QUERY_LIMIT column text and its NULL-on-unset form).
 - Golden manifest execution (`make ddl-golden TASK=T22`) — requires the
   T22 native authorization card; the eight historical Docker volumes
   stay protected.

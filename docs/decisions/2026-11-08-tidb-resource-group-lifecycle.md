@@ -36,8 +36,15 @@ with no existence, reserved-group, or capability adjudication.
   (`spec.ResourceGroupOption` in declaration order) that project into a
   nullable catalog `ResourceGroupDefinition` — absent members mean
   unproven, never implicitly zero. `RU_PER_SEC=UNLIMITED` is a distinct
-  token from any numeric rate; bare `BURSTABLE` projects the moderated
-  allowance, not unlimited.
+  token from any numeric rate. `BURSTABLE` follows the fixed 8.5 boolean
+  grammar (bare `BURSTABLE` / `BURSTABLE = TRUE` enable, `BURSTABLE =
+  FALSE` disables): the locked parser's newer keyword forms
+  (`MODERATED`/`UNLIMITED`/`OFF`) are post-8.5 vocabulary it accepts but
+  the target does not, so they extract as `unsupported_form` — a bounded
+  unaudited aspect, never silently treated as 8.5 truth. The catalog
+  emits the flag as `YES`/`NO` only; any other token stays unproven.
+  `RU_PER_SEC=UNLIMITED` pins `BurstLimit=-1` in fixed source, so it
+  projects burst enabled even without a declared `BURSTABLE` member.
 - A dedicated ordered registry (`batch_state_resource_group.go`) binds
   resource-group identities through the shared once-per-request object
   cache. Groups are globally namespaced (never schema-qualified); the
@@ -81,8 +88,19 @@ with no existence, reserved-group, or capability adjudication.
 
 ## Boundaries kept
 
-- `QUERY_LIMIT=NULL`/empty reset projects `Reset`, distinct from an
-  undeclared clause.
+- `QUERY_LIMIT` carries a three-state observation model
+  (`QueryLimitState`): `unread` (no row or an incomplete/non-RU-mode
+  row), `confirmed_absent` (SQL NULL on a complete RU-mode row — the
+  catalog emits NULL only for the unset form — or a CREATE/reset that
+  declares no rule), and `configured` (non-NULL rule text or an authored
+  member clause — member detail unmodeled). `QUERY_LIMIT=NULL`/`()` and
+  a populated clause both rebuild the whole nested runaway group on
+  ALTER (v8.5 `buildResourceGroup` installs a fresh settings struct),
+  while undeclared top-level members keep their proven values.
+- The CREATE post-state is a complete authored specification, so the
+  batch projection publishes the fixed `NewResourceGroupSettings`
+  defaults (RURate=0, PRIORITY=MEDIUM, BurstLimit=0, Runaway=nil) for
+  undeclared members — proven facts, not guessed claims.
 - A failed catalog read propagates through the public audit path as an
   error — never downgraded to unavailable, never cached as absence.
 - Disabled rules emit no gaps; the capability gap stays silent when a
@@ -105,3 +123,48 @@ with no existence, reserved-group, or capability adjudication.
   behavior (including the OFF-refusal error class and RESOURCE_GROUPS
   row shape on a live 8.5 anchor) awaits the T22 native authorization
   card.
+
+## Amendment — fixed v8.5.0 semantics correction
+
+Review caught a version mix-up: the first candidate modeled `BURSTABLE`
+on the post-8.5 three-value enum (`moderated`/`unlimited`) that the
+newer locked parser produces. Fixed v8.5.0 source says otherwise:
+
+- `pkg/parser` (v8.5-era grammar): `DirectResourceGroupOption` accepts
+  only bare `BURSTABLE` (`BoolValue: true`) and `BURSTABLE = Boolean` —
+  the `MODERATED`/`UNLIMITED`/`OFF` keyword forms do not exist.
+- `pkg/executor/infoschema_reader.go`
+  (`setDataFromResourceGroups`): the catalog emits `YES`/`NO` for
+  `BurstLimit < 0`; `QUERY_LIMIT` becomes SQL NULL only when the row has
+  no runaway settings; non-RU-mode rows emit all-NULL members.
+- `pkg/ddl/resource_group.go` (`buildResourceGroup`,
+  `SetDirectResourceGroupSettings`): ALTER copies old settings then
+  applies authored options member-wise at the top level, while a
+  declared `QUERY_LIMIT` installs a fresh `RunawaySettings` (rebuild,
+  not per-key merge) and `NULL`/`()` clears it.
+- `pkg/meta/model` (`NewResourceGroupSettings`, `Adjust`): fresh groups
+  default to `RURate=0`, `PRIORITY=MEDIUM`, `BurstLimit=0`,
+  `Runaway=nil`; `Adjust` pins a non-negative `BurstLimit` to the RU
+  rate, and `SetDirectResourceGroupRUSecondOption` makes
+  `RU_PER_SEC=UNLIMITED` set `BurstLimit=-1` — burst enabled.
+
+Old expectation → new expectation, with the fixed-source basis:
+
+- bare `BURSTABLE` → `moderated` → now `enabled` (8.5 `BoolValue`).
+- explicit `BURSTABLE=MODERATED/UNLIMITED/OFF` → silently modeled → now
+  `unsupported_form`, a bounded unaudited aspect (locked-parser-only
+  vocabulary, never 8.5 truth). The 8.5 `BURSTABLE = bool` arm is
+  unparseable through the locked parser — an honest parse error.
+- catalog `BURSTABLE` text `MODERATED`/`UNLIMITED` → `burst-capable` →
+  now `YES`/`NO` map to true/false, any other token unproven.
+- catalog `QUERY_LIMIT` NULL → "unobserved" → now `confirmed_absent`
+  when the row is a complete RU-mode row (unread otherwise).
+- CREATE published only authored members → now publishes the fixed
+  `NewResourceGroupSettings` defaults for undeclared members.
+
+Two metadata manifest expectations were re-aligned with the same
+contract: `tidb85-ru-first-path` (zero-row catalog ⇒ unverified + the
+bounded state gap on each statement) and the renamed
+`tidb85-alter-absent-unproven` (a zero-row read cannot prove absence —
+the honest outcome is the state gap plus the declarative notice, not a
+blocker).

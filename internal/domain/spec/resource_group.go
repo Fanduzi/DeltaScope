@@ -18,20 +18,25 @@ const (
 	ResourceGroupOptionUnrecognized ResourceGroupOptionKind = "unrecognized"
 )
 
-// ResourceGroupBurstable is the three-state burst allowance. Bare
-// BURSTABLE parses to moderated; OFF is the explicit disable.
+// ResourceGroupBurstable is the authored burst allowance under the fixed
+// TiDB 8.5 grammar: bare BURSTABLE and BURSTABLE = TRUE enable it,
+// BURSTABLE = FALSE disables. The locked parser's newer keyword forms
+// (BURSTABLE = MODERATED/UNLIMITED/OFF) are post-8.5 vocabulary it accepts
+// but the target does not — unsupported_form is bounded evidence, never
+// 8.5 truth. Disabled is unreachable through the locked parser (it
+// rejects the Boolean arm) and is kept for model completeness.
 type ResourceGroupBurstable string
 
 const (
-	ResourceGroupBurstableDisabled  ResourceGroupBurstable = "disabled"
-	ResourceGroupBurstableModerated ResourceGroupBurstable = "moderated"
-	ResourceGroupBurstableUnlimited ResourceGroupBurstable = "unlimited"
+	ResourceGroupBurstableEnabled         ResourceGroupBurstable = "enabled"
+	ResourceGroupBurstableDisabled        ResourceGroupBurstable = "disabled"
+	ResourceGroupBurstableUnsupportedForm ResourceGroupBurstable = "unsupported_form"
 )
 
 // Enabled reports whether the allowance lets the group exceed its
 // RU_PER_SEC budget — never a performance or throughput claim.
 func (b ResourceGroupBurstable) Enabled() bool {
-	return b == ResourceGroupBurstableModerated || b == ResourceGroupBurstableUnlimited
+	return b == ResourceGroupBurstableEnabled
 }
 
 // ResourceGroupRunawayMemberKind names one QUERY_LIMIT member. The
@@ -226,8 +231,10 @@ func (d *ResourceGroupDeclaration) DeclaredRunaway() *ResourceGroupRunawayDeclar
 }
 
 // UnmodeledOptionKinds lists recognized option kinds outside the audited
-// surface (background, unrecognized) in declaration order — coverage turns
-// each into a bounded unaudited aspect instead of silent acceptance.
+// surface (background, unrecognized, and the post-8.5 burstable keyword
+// forms the locked parser accepts but the target does not) in declaration
+// order — coverage turns each into a bounded unaudited aspect instead of
+// silent acceptance.
 func (d *ResourceGroupDeclaration) UnmodeledOptionKinds() []ResourceGroupOptionKind {
 	if d == nil {
 		return nil
@@ -237,10 +244,34 @@ func (d *ResourceGroupDeclaration) UnmodeledOptionKinds() []ResourceGroupOptionK
 		switch option.Kind {
 		case ResourceGroupOptionBackground, ResourceGroupOptionUnrecognized:
 			out = append(out, option.Kind)
+		case ResourceGroupOptionBurstable:
+			if option.Burstable == ResourceGroupBurstableUnsupportedForm {
+				out = append(out, option.Kind)
+			}
 		}
 	}
 	return out
 }
+
+// ResourceGroupQueryLimitState names the observed QUERY_LIMIT column
+// state — or the batch-proven post-state. TiDB 8.5 emits SQL NULL only
+// when a complete RU-mode row has no runaway rule, so NULL on that row
+// shape is a confirmed absence, distinct from a column that was never
+// observed at all.
+type ResourceGroupQueryLimitState string
+
+const (
+	// ResourceGroupQueryLimitUnread means the column was never observed —
+	// no row, or an incomplete/non-RU-mode row form. Never a proven unset.
+	ResourceGroupQueryLimitUnread ResourceGroupQueryLimitState = "unread"
+	// ResourceGroupQueryLimitConfirmedAbsent means a complete RU-mode
+	// catalog row returned SQL NULL (or a CREATE/reset declared no rule).
+	ResourceGroupQueryLimitConfirmedAbsent ResourceGroupQueryLimitState = "confirmed_absent"
+	// ResourceGroupQueryLimitConfigured means the column carried rule
+	// text (or an authored clause declared members) — configured, with
+	// member detail unmodeled; QueryLimit keeps the bounded raw text.
+	ResourceGroupQueryLimitConfigured ResourceGroupQueryLimitState = "configured"
+)
 
 // ResourceGroupDefinition carries catalog-observed configuration for one
 // resource group — the information_schema.resource_groups row shape.
@@ -251,8 +282,12 @@ type ResourceGroupDefinition struct {
 	RUUnlimited bool    `json:"-"`
 	Priority    string  `json:"-"`
 	Burstable   *bool   `json:"-"`
-	// QueryLimit carries the catalog's QUERY_LIMIT column text when the
-	// read returned it; nil means unobserved, never proven-reset.
+	// QueryLimitState distinguishes "never observed" from "observed:
+	// confirmed unset" (SQL NULL on a complete RU-mode row) and
+	// "observed: configured" — the five-way contract QUERY_LIMIT owns.
+	QueryLimitState ResourceGroupQueryLimitState `json:"-"`
+	// QueryLimit carries the catalog's QUERY_LIMIT column text when
+	// configured — bounded evidence; member detail is unmodeled.
 	QueryLimit *string `json:"-"`
 }
 

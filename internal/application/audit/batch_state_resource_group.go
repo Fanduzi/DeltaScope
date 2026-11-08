@@ -161,36 +161,45 @@ func (s *batchState) bindResourceGroups(ctx context.Context, statement spec.Stat
 }
 
 // authoredResourceGroupDefinition derives the batch-proven definition a
-// CREATE publishes — authored options only, unwritten members nil
-// (unproven, never defaulted).
+// CREATE publishes. A create fully specifies the group, so every member
+// is provable: authored members carry their values, and undeclared ones
+// take the fixed TiDB 8.5 NewResourceGroupSettings defaults (RURate=0,
+// PRIORITY=MEDIUM, BurstLimit=0, Runaway=nil). Burst is enabled exactly
+// when BURSTABLE declares it or RU_PER_SEC=UNLIMITED pins BurstLimit=-1.
 func authoredResourceGroupDefinition(declaration *spec.ResourceGroupDeclaration) *spec.ResourceGroupDefinition {
-	definition := &spec.ResourceGroupDefinition{}
+	definition := &spec.ResourceGroupDefinition{
+		Priority:        "MEDIUM",
+		QueryLimitState: spec.ResourceGroupQueryLimitConfirmedAbsent,
+	}
 	if value, ok := declaration.DeclaredRUPerSec(); ok {
 		definition.RUPerSec = value
 		definition.RUUnlimited = value == nil
+	} else {
+		zero := uint64(0)
+		definition.RUPerSec = &zero
 	}
 	if priority := declaration.DeclaredPriority(); priority != "" {
 		definition.Priority = priority
 	}
+	enabled := definition.RUUnlimited
 	if burstable, ok := declaration.DeclaredBurstable(); ok {
-		enabled := burstable.Enabled()
-		definition.Burstable = &enabled
+		enabled = burstable.Enabled()
 	}
-	if runaway := declaration.DeclaredRunaway(); runaway != nil {
-		if runaway.Reset {
-			empty := ""
-			definition.QueryLimit = &empty
-		} else {
-			text := "declared"
-			definition.QueryLimit = &text
-		}
+	definition.Burstable = &enabled
+	if runaway := declaration.DeclaredRunaway(); runaway != nil && !runaway.Reset {
+		definition.QueryLimitState = spec.ResourceGroupQueryLimitConfigured
 	}
 	return definition
 }
 
 // mergeResourceGroupAlter applies authored ALTER members onto a proven
-// definition clone — each member replaces independently; undeclared
-// members keep the proven value; QUERY_LIMIT = NULL resets the rule.
+// definition clone — each top-level member replaces independently and
+// undeclared members keep the proven value (v8.5 buildResourceGroup
+// copies old settings then applies authored options). QUERY_LIMIT is
+// different: a declared clause rebuilds the whole nested group from an
+// empty settings struct — never a member-wise merge of the old rule —
+// and NULL/() clears it. RU_PER_SEC=UNLIMITED still pins BurstLimit=-1;
+// a numeric rate leaves the burst flag untouched.
 func mergeResourceGroupAlter(base *spec.ResourceGroupDefinition, declaration *spec.ResourceGroupDeclaration) *spec.ResourceGroupDefinition {
 	out := base.Clone()
 	if out == nil {
@@ -199,21 +208,25 @@ func mergeResourceGroupAlter(base *spec.ResourceGroupDefinition, declaration *sp
 	if value, ok := declaration.DeclaredRUPerSec(); ok {
 		out.RUPerSec = value
 		out.RUUnlimited = value == nil
+		if out.RUUnlimited {
+			enabled := true
+			out.Burstable = &enabled
+		}
 	}
 	if priority := declaration.DeclaredPriority(); priority != "" {
 		out.Priority = priority
 	}
-	if burstable, ok := declaration.DeclaredBurstable(); ok {
+	if burstable, ok := declaration.DeclaredBurstable(); ok && burstable != spec.ResourceGroupBurstableUnsupportedForm {
 		enabled := burstable.Enabled()
 		out.Burstable = &enabled
 	}
 	if runaway := declaration.DeclaredRunaway(); runaway != nil {
 		if runaway.Reset {
-			empty := ""
-			out.QueryLimit = &empty
+			out.QueryLimitState = spec.ResourceGroupQueryLimitConfirmedAbsent
+			out.QueryLimit = nil
 		} else {
-			text := "declared"
-			out.QueryLimit = &text
+			out.QueryLimitState = spec.ResourceGroupQueryLimitConfigured
+			out.QueryLimit = nil
 		}
 	}
 	return out
