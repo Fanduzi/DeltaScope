@@ -1112,6 +1112,11 @@ rules:
     level: blocker
     params:
 
+  ddl.tidb.table.options.valid:
+    enabled: true
+    level: blocker
+    params:
+
   ddl.tidb.local_temporary.alter:
     enabled: true
     level: blocker
@@ -2359,6 +2364,9 @@ rules:
     level: blocker
     params:
       required: true
+      # TiDB AUTO_RANDOM is the native auto-allocating surrogate key; set
+      # false to require a literal AUTO_INCREMENT attribute even under TiDB.
+      accept_tidb_auto_random: true
 
   ddl.table.primary_key.bigint.require:
     enabled: true

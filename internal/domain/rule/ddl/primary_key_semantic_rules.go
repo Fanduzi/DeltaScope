@@ -35,6 +35,16 @@ func newSinglePrimaryKeyColumnRule(ruleID string, fallbackLevel rule.Level, mess
 			return basePredicate(column) || isPrimaryKeyBigintLike(column)
 		}
 	}
+	// A team may declare that TiDB's native AUTO_RANDOM allocator satisfies
+	// the auto-allocation intent. Unset keeps the strict literal policy —
+	// AUTO_INCREMENT itself must be written.
+	acceptsAutoRandom := false
+	if ruleID == ruleIDPrimaryKeyAutoIncrementRequire {
+		acceptsAutoRandom, err = boolParam(ruleID, cfg, "accept_tidb_auto_random", false)
+		if err != nil {
+			return nil, err
+		}
+	}
 	return singlePrimaryKeyColumnRule{
 		ruleID:    ruleID,
 		level:     configuredLevel(cfg, fallbackLevel),
@@ -43,8 +53,9 @@ func newSinglePrimaryKeyColumnRule(ruleID string, fallbackLevel rule.Level, mess
 		message:   message,
 		suggest:   suggest,
 		// AUTO_INCREMENT's intent is an auto-allocated surrogate key;
-		// TiDB AUTO_RANDOM is that allocator's native form.
-		acceptsTiDBAutoRandom: ruleID == ruleIDPrimaryKeyAutoIncrementRequire,
+		// TiDB AUTO_RANDOM is that allocator's native form when the policy
+		// explicitly allows it.
+		acceptsTiDBAutoRandom: acceptsAutoRandom,
 	}, nil
 }
 

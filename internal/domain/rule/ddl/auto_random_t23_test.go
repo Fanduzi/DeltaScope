@@ -136,6 +136,22 @@ func TestT23AutoRandomUnknownModeGap(t *testing.T) {
 	if len(gaps) != 1 || gaps[0].ReasonCode != gapReasonMissingInstanceFact {
 		t.Fatalf("expected one missing_instance_fact gap, got %+v", gaps)
 	}
+	if len(gaps[0].RequiredFacts) != 1 || gaps[0].RequiredFacts[0] != autoRandomFactClusteredMode {
+		t.Fatalf("unobserved mode must owe only the clustered-mode fact, got %+v", gaps[0].RequiredFacts)
+	}
+
+	// An observed int_only mode narrows the pending premise to the
+	// unobserved alter-primary-key fact alone.
+	intOnly := t23AutoRandomStatement(
+		spec.Column{Name: "id", Type: "bigint", NotNull: true, AutoRandom: true},
+		&spec.Index{Name: "primary", Kind: spec.IndexKindPrimary, Columns: []string{"id"}},
+		"int_only", false, false)
+	gaps = r.(interface {
+		EvidenceGaps(spec.Statement) []rule.EvidenceGap
+	}).EvidenceGaps(intOnly)
+	if len(gaps) != 1 || len(gaps[0].RequiredFacts) != 1 || gaps[0].RequiredFacts[0] != autoRandomFactAlterPrimaryKey {
+		t.Fatalf("int_only must owe only the alter-primary-key fact, got %+v", gaps)
+	}
 }
 
 // TestT23AutoRandomModeOnSingleIntPK proves an unmarked single-int PK under
@@ -197,26 +213,45 @@ func TestT23AutoRandomMySQLSilent(t *testing.T) {
 }
 
 // TestT23AutoIncrementRequireAcceptsAutoRandom proves the auto-allocation
-// policy intent accepts TiDB's native AUTO_RANDOM allocator under TiDB.
+// policy intent accepts TiDB's native AUTO_RANDOM allocator only when the
+// policy explicitly allows it — unset params keep the strict literal
+// AUTO_INCREMENT requirement.
 func TestT23AutoIncrementRequireAcceptsAutoRandom(t *testing.T) {
 	t.Parallel()
-	statementRule, err := newSinglePrimaryKeyColumnRule(ruleIDPrimaryKeyAutoIncrementRequire, rule.LevelBlocker, "must use auto_increment", "add AUTO_INCREMENT to the primary key column", func(column spec.Column) bool {
+	statement := primaryKeyStatement(spec.Column{Name: "id", Type: "bigint", NotNull: true, Unsigned: true, AutoRandom: true})
+	statement.Dialect = spec.DialectTiDB
+	allow, err := newSinglePrimaryKeyColumnRule(ruleIDPrimaryKeyAutoIncrementRequire, rule.LevelBlocker, "must use auto_increment", "add AUTO_INCREMENT to the primary key column", func(column spec.Column) bool {
+		return column.AutoIncrement
+	}, policy.RulePolicy{Enabled: true, Level: rule.LevelBlocker, Params: map[string]any{"required": true, "accept_tidb_auto_random": true}})
+	if err != nil {
+		t.Fatalf("new allow rule: %v", err)
+	}
+	findings, err := allow.Evaluate(context.Background(), statement)
+	if err != nil {
+		t.Fatalf("evaluate allow: %v", err)
+	}
+	if len(findings) != 0 {
+		t.Fatalf("allowed AUTO_RANDOM must satisfy auto_increment.require, got %+v", findings)
+	}
+	strict, err := newSinglePrimaryKeyColumnRule(ruleIDPrimaryKeyAutoIncrementRequire, rule.LevelBlocker, "must use auto_increment", "add AUTO_INCREMENT to the primary key column", func(column spec.Column) bool {
 		return column.AutoIncrement
 	}, policy.RulePolicy{Enabled: true, Level: rule.LevelBlocker, Params: map[string]any{"required": true}})
 	if err != nil {
-		t.Fatalf("new rule: %v", err)
+		t.Fatalf("new strict rule: %v", err)
 	}
-	statement := primaryKeyStatement(spec.Column{Name: "id", Type: "bigint", NotNull: true, Unsigned: true, AutoRandom: true})
-	statement.Dialect = spec.DialectTiDB
-	findings, err := statementRule.Evaluate(context.Background(), statement)
+	findings, err = strict.Evaluate(context.Background(), statement)
 	if err != nil {
-		t.Fatalf("evaluate: %v", err)
+		t.Fatalf("evaluate strict: %v", err)
 	}
-	if len(findings) != 0 {
-		t.Fatalf("TiDB AUTO_RANDOM must satisfy auto_increment.require, got %+v", findings)
+	if len(findings) != 1 {
+		t.Fatalf("strict policy must flag the missing literal AUTO_INCREMENT, got %+v", findings)
+	}
+	findings, err = allow.Evaluate(context.Background(), statement)
+	if err != nil {
+		t.Fatalf("evaluate allow mysql: %v", err)
 	}
 	statement.Dialect = spec.DialectMySQL
-	findings, err = statementRule.Evaluate(context.Background(), statement)
+	findings, err = allow.Evaluate(context.Background(), statement)
 	if err != nil {
 		t.Fatalf("evaluate mysql: %v", err)
 	}

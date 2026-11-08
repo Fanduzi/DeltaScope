@@ -75,6 +75,11 @@ func ddlCoreRules() map[string]RulePolicy {
 			Level:   rule.LevelBlocker,
 			Params: map[string]any{
 				"required": true,
+				// TiDB AUTO_RANDOM is the native auto-allocating
+				// surrogate key; the shipped default satisfies the
+				// allocation intent while a strict literal policy can
+				// set this param false.
+				"accept_tidb_auto_random": true,
 			},
 		},
 		"ddl.table.primary_key.not_null.require": {
@@ -747,6 +752,7 @@ func ddlCoreRules() map[string]RulePolicy {
 		"ddl.tidb.resource_group.burstable.warn": {Enabled: true, Level: rule.LevelWarning, Params: map[string]any{}},
 		"ddl.tidb.resource_group.runaway.warn":   {Enabled: true, Level: rule.LevelWarning, Params: map[string]any{}},
 		"ddl.tidb.table.auto_random.valid":       {Enabled: true, Level: rule.LevelBlocker, Params: map[string]any{}},
+		"ddl.tidb.table.options.valid":           {Enabled: true, Level: rule.LevelBlocker, Params: map[string]any{}},
 		"ddl.create_placement_policy.notice":     {Enabled: true, Level: rule.LevelNotice, Params: map[string]any{}},
 		"ddl.alter_placement_policy.notice":      {Enabled: true, Level: rule.LevelNotice, Params: map[string]any{}},
 		"ddl.drop_placement_policy.notice":       {Enabled: true, Level: rule.LevelNotice, Params: map[string]any{}},

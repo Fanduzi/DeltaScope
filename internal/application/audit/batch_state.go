@@ -819,6 +819,42 @@ func (s *batchState) applyCreateTable(ctx context.Context, statement spec.Statem
 		finish(spec.PlacementRefused)
 		return nil
 	}
+	// TiDB AUTO_RANDOM declarations share the statement's atomic fate:
+	// a statically-proven invalid clause refuses before the create lands
+	// (upstream setTableAutoRandomBits precedes the DDL job), so the
+	// destination keeps its pre-state; an undecidable clustered premise
+	// means the statement may never have landed — the bound fact
+	// invalidates rather than publishing a shape.
+	if s.dialect == spec.DialectTiDB {
+		undecidableCreate := func() {
+			if tempDest {
+				s.invalidateTempKey(key)
+			} else {
+				s.invalidateKey(key)
+			}
+			finish(spec.PlacementUnproven)
+		}
+		switch autoRandomCreateOutcome(ddl, s.tidbClusteredMode(), s.tidbAlterPrimaryKey()) {
+		case autoRandomCreateRefused:
+			finish(spec.PlacementRefused)
+			return nil
+		case autoRandomCreateUndecidable:
+			undecidableCreate()
+			return nil
+		}
+		// Create-time table options share the same atomic fate — the
+		// declared option verdicts (handleTableOptions) run before the
+		// create lands, so a proven refusal keeps the pre-state and an
+		// unprovable clustered premise invalidates rather than guessing.
+		switch verdict, _ := spec.CreateTableOptionOutcome(s.dialect, ddl, s.tidbClusteredMode(), s.tidbAlterPrimaryKey()); verdict {
+		case spec.AutoRandomRefused:
+			finish(spec.PlacementRefused)
+			return nil
+		case spec.AutoRandomUndecidable:
+			undecidableCreate()
+			return nil
+		}
+	}
 	if s.schemaStateForTarget(key.schema) == schemaUnknown {
 		s.invalidateBoundKey(key, destNamespace(tempDest))
 		finish(spec.PlacementUnproven, "schema.existence")
@@ -1335,6 +1371,36 @@ func (s *batchState) derivedCreateShape(displaySchema, displayTable string, ddl 
 		s.publishForeignKeySupportingIndex(shape, *member, authored)
 	}
 	return shape
+}
+
+// autoRandomCreateOutcome is the statement-level aggregation of the
+// shared AUTO_RANDOM verdict: any refused column refuses the whole
+// CREATE (upstream validates before the job), any undecidable premise
+// leaves the landing unproven, and only a fully applicable declaration
+// keeps the normal publish path.
+type autoRandomCreateOutcomeT int
+
+const (
+	autoRandomCreateOK autoRandomCreateOutcomeT = iota
+	autoRandomCreateRefused
+	autoRandomCreateUndecidable
+)
+
+func autoRandomCreateOutcome(ddl *spec.DDL, tidbClusteredMode *string, tidbAlterPK *bool) autoRandomCreateOutcomeT {
+	outcome := autoRandomCreateOK
+	for _, column := range ddl.Columns {
+		if !column.AutoRandom {
+			continue
+		}
+		verdict, _ := spec.AutoRandomColumnVerdict(column, ddl.PrimaryKey, ddl.Columns, tidbClusteredMode, tidbAlterPK)
+		switch verdict {
+		case spec.AutoRandomRefused:
+			return autoRandomCreateRefused
+		case spec.AutoRandomUndecidable:
+			outcome = autoRandomCreateUndecidable
+		}
+	}
+	return outcome
 }
 
 func derivedCreateShape(dialect spec.Dialect, schema, table string, ddl *spec.DDL, tidbClusteredDefault *string, tidbAlterPK *bool) *spec.TableSnapshot {

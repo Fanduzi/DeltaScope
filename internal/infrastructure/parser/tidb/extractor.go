@@ -2436,6 +2436,14 @@ func extractTableOptions(options []*ast.TableOption, clause string) (map[string]
 			extracted["secondary_engine"] = "null"
 		case ast.TableOptionUnion:
 			extracted["union"] = unionTableNames(option)
+		case ast.TableOptionAutoIdCache:
+			extracted["auto_id_cache"] = tableOptionUintText(option)
+		case ast.TableOptionAutoRandomBase:
+			extracted["auto_random_base"] = tableOptionUintText(option)
+		case ast.TableOptionShardRowID:
+			extracted["shard_row_id_bits"] = tableOptionUintText(option)
+		case ast.TableOptionPreSplitRegion:
+			extracted["pre_split_regions"] = tableOptionUintText(option)
 		case ast.TableOptionTTL:
 			member := "ttl"
 			declaration := spec.TTLDeclaration{Member: member, Source: ttlClauseSource(clause, member)}

@@ -348,6 +348,17 @@ var tidbAlterConsumedOptions = map[string]struct{}{
 	"convert_to_collate": {},
 }
 
+// mysqlAlterVendorOptions are extracted names the shared parser accepts
+// but official MySQL never ships — TiDB grammar (AUTO_RANDOM base,
+// ID-cache, sharding, pre-split). An ALTER carrying one is a vendor
+// boundary under MySQL, not merely an unaudited declaration.
+var mysqlAlterVendorOptions = map[string]struct{}{
+	"auto_random_base":  {},
+	"auto_id_cache":     {},
+	"shard_row_id_bits": {},
+	"pre_split_regions": {},
+}
+
 // tidbAlterRefusedOptions is the probed TiDB ALTER refusal set — every
 // name refused 8200 (8233 insert_method, 8232 union) on the v8.5.0 anchor.
 var tidbAlterRefusedOptions = map[string]struct{}{
@@ -390,6 +401,9 @@ func AlterTableOptionOutcome(dialect Dialect, name string) TableOptionOutcome {
 	case DialectMySQL:
 		if _, ok := mysqlAlterConsumedOptions[name]; ok {
 			return TableOptionConsumed
+		}
+		if _, vendor := mysqlAlterVendorOptions[name]; vendor {
+			return TableOptionVendorRefused
 		}
 		return TableOptionUnaudited
 	default:

@@ -367,7 +367,9 @@ func TestAuditSQLT03RecognizedUnauditedAspectsIncomplete(t *testing.T) {
 
 		{name: "mysql create table tidb-only options", sql: "CREATE TABLE t (id INT) SHARD_ROW_ID_BITS=4 PRE_SPLIT_REGIONS=2;", dialect: spec.DialectMySQL, wantFeature: "create_table.option.shard_row_id_bits", wantReason: spec.UnsupportedVendorBoundaryReason, wantKind: "ddl"},
 		{name: "mysql create table auto_random_base", sql: "CREATE TABLE t (id INT) AUTO_RANDOM_BASE=10;", dialect: spec.DialectMySQL, wantFeature: "create_table.option.auto_random_base", wantReason: spec.UnsupportedVendorBoundaryReason, wantKind: "ddl"},
-		{name: "tidb create table auto_random_base", sql: "CREATE TABLE t (id INT) AUTO_RANDOM_BASE=10;", dialect: spec.DialectTiDB, wantFeature: "create_table.option.auto_random_base", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
+		// tidb create AUTO_RANDOM_BASE/AUTO_ID_CACHE/SHARD_ROW_ID_BITS/
+		// PRE_SPLIT_REGIONS graduated in T23-R2: declared value + shared
+		// refusal verdict + post-state are modeled on CREATE TABLE.
 		{name: "mysql create table unique global", sql: "CREATE TABLE t (id INT UNIQUE GLOBAL);", dialect: spec.DialectMySQL, wantFeature: "create_table.column.unique_global", wantReason: spec.UnsupportedVendorBoundaryReason, wantKind: "ddl"},
 		{name: "tidb create table unique global", sql: "CREATE TABLE t (id INT UNIQUE GLOBAL);", dialect: spec.DialectTiDB, wantFeature: "create_table.column.unique_global", wantReason: spec.UnsupportedUnauditedReason, wantKind: "ddl"},
 		{name: "mysql create table primary key global", sql: "CREATE TABLE t (id INT PRIMARY KEY GLOBAL);", dialect: spec.DialectMySQL, wantFeature: "create_table.column.primary_key_global", wantReason: spec.UnsupportedVendorBoundaryReason, wantKind: "ddl"},

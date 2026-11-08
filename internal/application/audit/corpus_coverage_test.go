@@ -169,9 +169,11 @@ func isTiDBOnlyRule(ruleID string) bool {
 		"ddl.tidb.resource_group.valid",
 		"ddl.tidb.resource_group.burstable.warn",
 		"ddl.tidb.resource_group.runaway.warn",
-		// T23: AUTO_RANDOM declaration validity is TiDB-only — under MySQL
-		// the attribute is a vendor boundary.
-		"ddl.tidb.table.auto_random.valid":
+		// T23: AUTO_RANDOM declaration validity and the TiDB create-time
+		// table options are TiDB-only — under MySQL each is a vendor
+		// boundary.
+		"ddl.tidb.table.auto_random.valid",
+		"ddl.tidb.table.options.valid":
 		return true
 	default:
 		return false

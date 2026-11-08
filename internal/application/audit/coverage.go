@@ -229,6 +229,15 @@ func extractedOptionGap(dialect spec.Dialect, op spec.DDLOperation, name string)
 		// (inventory owner T27). Under TiDB the statement itself is already a
 		// vendor boundary, so this aspect only ever fires under MySQL.
 		return op == spec.DDLOperationCreateProcedure, false
+	case "auto_random_base", "auto_id_cache", "shard_row_id_bits", "pre_split_regions":
+		// T23: TiDB CREATE models the declared value, the shared
+		// refusal/undecidable verdict, and post-state publication.
+		// MySQL never ships these options — vendor boundary there —
+		// and ALTER-side handling stays bounded pending T23-R2.6.
+		if dialect == spec.DialectMySQL {
+			return true, true
+		}
+		return op != spec.DDLOperationCreateTable, false
 	}
 	if t15ExtractedTableOption(name) {
 		// T15 extracts the shared MySQL/TiDB table-option vocabulary on

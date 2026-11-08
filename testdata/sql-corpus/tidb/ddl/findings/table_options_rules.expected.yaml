@@ -1,0 +1,12 @@
+name: table_options_rules
+dialect: tidb
+category: ddl
+metadata:
+  instance:
+    tidb_enable_clustered_index: 'on'
+    alter_primary_key: 'false'
+expect:
+  parse_ok: true
+  findings:
+    include:
+      - ddl.tidb.table.options.valid
