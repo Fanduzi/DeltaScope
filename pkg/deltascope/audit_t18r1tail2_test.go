@@ -14,7 +14,7 @@ func (t18R1Tail2Provider) LoadInstanceFacts(context.Context, Dialect, string) (*
 
 func (p t18R1Tail2Provider) LoadTableSnapshot(_ context.Context, _ Dialect, schema, table string) (*TableSnapshot, error) {
 	if updatable, ok := p.views[table]; ok {
-		return &TableSnapshot{Schema: schema, Table: &Table{Schema: schema, Name: table}, Exists: true,
+		return &TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Schema: schema, Table: &Table{Schema: schema, Name: table}, Exists: true,
 			RelationKind: "view", Columns: []Column{{Name: "id", Type: "int"}},
 			View: &ViewSnapshot{Updatable: updatable, Definition: &ViewDefinition{
 				SQL: "SELECT id FROM g.t_base", Sources: []Table{{Schema: schema, Name: "t_base"}},
@@ -24,13 +24,13 @@ func (p t18R1Tail2Provider) LoadTableSnapshot(_ context.Context, _ Dialect, sche
 	}
 	switch table {
 	case "t_amount":
-		return &TableSnapshot{Schema: schema, Table: &Table{Schema: schema, Name: table}, Exists: true,
+		return &TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Schema: schema, Table: &Table{Schema: schema, Name: table}, Exists: true,
 			RelationKind: "table", Columns: []Column{{Name: "x", Type: "int"}}}, nil
 	case "t_base":
-		return &TableSnapshot{Schema: schema, Table: &Table{Schema: schema, Name: table}, Exists: true,
+		return &TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Schema: schema, Table: &Table{Schema: schema, Name: table}, Exists: true,
 			RelationKind: "table", Columns: []Column{{Name: "id", Type: "int"}}}, nil
 	default:
-		return &TableSnapshot{Schema: schema, Table: &Table{Schema: schema, Name: table}, Exists: false}, nil
+		return &TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Schema: schema, Table: &Table{Schema: schema, Name: table}, Exists: false}, nil
 	}
 }
 

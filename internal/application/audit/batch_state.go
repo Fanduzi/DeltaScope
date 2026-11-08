@@ -1510,8 +1510,17 @@ func derivedCreateShape(dialect spec.Dialect, schema, table string, ddl *spec.DD
 		}
 	}
 	snapshot.TTLKnown = true
-	if dialect == spec.DialectTiDB && createTTLStatementOutcome(dialect, ddl) == ttlCreateApplied {
-		snapshot.TTL = authoredTTLConfig(ddl)
+	if dialect == spec.DialectTiDB {
+		// A batch-created table starts at the upstream
+		// TableCacheStatusDisable default — the post-state proves it
+		// until a CACHE action says otherwise (issue #102 R7).
+		if snapshot.Options == nil {
+			snapshot.Options = map[string]string{}
+		}
+		snapshot.Options["cache_status"] = "disable"
+		if createTTLStatementOutcome(dialect, ddl) == ttlCreateApplied {
+			snapshot.TTL = authoredTTLConfig(ddl)
+		}
 	}
 	return snapshot
 }
@@ -1603,6 +1612,19 @@ func (s *batchState) applyAlterTable(ctx context.Context, statement spec.Stateme
 			s.entries, s.tempEntries = s.tempEntries, s.entries
 			defer func() { s.entries, s.tempEntries = s.tempEntries, s.entries }()
 		}
+	}
+	// The TiDB cached-table guard refuses every ALTER spec on a proven
+	// cache-enabled table except a single CACHE/NOCACHE — upstream checks
+	// before any spec executes, so the gate precedes every shortcut
+	// below; the refusal preserves the exact pre-state, never a
+	// tombstone (issue #102 R6). An unobserved status on a premise the
+	// gate needs unvouches the shape to present-incomplete rather than
+	// presuming the gate passed (issue #102 R7).
+	if s.dialect == spec.DialectTiDB && s.cachedTableGuardBlocks(ddl.Alter, targets) {
+		return nil
+	}
+	if s.dialect == spec.DialectTiDB && s.cachedTableGuardWithholds(ddl.Alter, targets) {
+		return nil
 	}
 	// Any TTL clause sharing a multi-spec ALTER is an atomic TiDB refusal
 	// (8200, probed): the statement executes nothing, so every bound fact —
@@ -1724,12 +1746,6 @@ func (s *batchState) applyAlterTable(ctx context.Context, statement spec.Stateme
 	if len(ddl.Alter) == 1 && len(targets) > 0 && isPartitionAlterAction(ddl.Alter[0].Action) &&
 		partitionStateAdmissible(s.dialect, statement) {
 		s.applyPartitionOperation(targets, &ddl.Alter[0], statement)
-		return nil
-	}
-	// The TiDB cached-table guard refuses every ALTER spec on a proven
-	// cache-enabled table except a single CACHE/NOCACHE — the refusal
-	// preserves the exact pre-state, never a tombstone (issue #102 R6).
-	if s.dialect == spec.DialectTiDB && s.cachedTableGuardBlocks(ddl.Alter, targets) {
 		return nil
 	}
 	if !fullyAuditedStatement(s.dialect, statement) || len(ddl.Alter) != 1 || len(targets) == 0 {
@@ -2244,6 +2260,34 @@ func (s *batchState) applyRenameTable(ctx context.Context, statement spec.Statem
 		}
 		pairs = append(pairs, boundPair{source: source, destination: destination, srcNS: srcNS, dstNS: dstNS, srcEntry: srcEntry, dstEntry: dstEntry, srcKey: srcKey, dstKey: dstKey})
 	}
+	// The upstream `!= Disable` cache gate guards RENAME TABLE on every
+	// source: a proven non-Disable status refuses the whole statement
+	// (the atomic rollback keeps every endpoint), while an unobserved
+	// status unvouches only what the withheld transition could have
+	// moved — every source name, plus each destination that was not
+	// proven live (a rename onto a live name refuses natively, so a
+	// proven-present destination keeps its identity either way)
+	// (issue #102 R7).
+	if s.dialect == spec.DialectTiDB {
+		withheld := false
+		for _, pair := range pairs {
+			switch s.cacheGuardOutcome(pair.srcEntry) {
+			case spec.AutoRandomRefused:
+				return nil
+			case spec.AutoRandomUndecidable:
+				withheld = true
+			}
+		}
+		if withheld {
+			for _, pair := range pairs {
+				s.invalidateAll([]spec.Table{pair.source})
+				if pair.dstEntry == nil || pair.dstEntry.state != tablePresent {
+					s.invalidateAll([]spec.Table{pair.destination})
+				}
+			}
+			return nil
+		}
+	}
 	// The shared work-set adjudication answers each endpoint's class at
 	// its own pair position — produced and consumed dispositions are
 	// last-write-wins, so a name produced then consumed is absent at
@@ -2493,6 +2537,25 @@ func (s *batchState) applyRenamePair(ctx context.Context, statement spec.Stateme
 	dstNS, dstEntry, dstKey, err := s.bindRenameEndpoint(ctx, statement, destination, false, srcNS)
 	if err != nil {
 		return fmt.Errorf("load table snapshot for %s: %w", destination.Name, err)
+	}
+	// The upstream `!= Disable` cache gate guards ALTER RENAME on the
+	// source table: a proven non-Disable status refuses the pair (the
+	// exact pre-state stands) and an unobserved status unvouches only
+	// what the withheld transition could have moved — the source name
+	// always, and a destination that was not proven live (a rename onto
+	// a live name refuses natively, so a proven-present destination
+	// keeps its identity either way) (issue #102 R7).
+	if s.dialect == spec.DialectTiDB {
+		switch s.cacheGuardOutcome(srcEntry) {
+		case spec.AutoRandomRefused:
+			return nil
+		case spec.AutoRandomUndecidable:
+			s.invalidateAll([]spec.Table{source})
+			if dstEntry == nil || dstEntry.state != tablePresent {
+				s.invalidateAll([]spec.Table{destination})
+			}
+			return nil
+		}
 	}
 	originals := make(map[batchTableKey]map[boundNamespace]*batchTableEntry)
 	fate, err := s.renamePairTransition(ctx, srcNS, srcEntry, srcKey, dstNS, dstEntry, dstKey, source, destination, originals)
@@ -2805,6 +2868,20 @@ func (s *batchState) applyDropTable(ctx context.Context, statement spec.Statemen
 			continue
 		}
 		fate := dropTargetFate(multiDropAtomic, multi, ifExists, anyMissing, anyUnvouched, ref.ns, ref.entry, s.dialect, s.resolvedVersion)
+		// The upstream `!= Disable` cache gate guards DROP TABLE per
+		// target: a proven non-Disable status refuses that target (its
+		// exact pre-state stands), an unobserved status demotes a proven
+		// drop to unproven rather than presuming the gate passed — while
+		// an independently refused fate already stands on its own
+		// premise (issue #102 R7).
+		switch s.cacheGuardOutcome(ref.entry) {
+		case spec.AutoRandomRefused:
+			continue
+		case spec.AutoRandomUndecidable:
+			if fate == dropFateDropped {
+				fate = dropFateUnproven
+			}
+		}
 		switch fate {
 		case dropFateDropped:
 			switch ref.ns {
@@ -3025,6 +3102,17 @@ func (s *batchState) applyCreateIndex(statement spec.Statement) {
 	if entry.shape == nil || entry.shape.Columns == nil {
 		return
 	}
+	// The upstream `!= Disable` cache gate guards CREATE INDEX too: a
+	// proven non-Disable status refuses (pre-state stands), an
+	// unobserved status unvouches the shape rather than presuming the
+	// gate passed (issue #102 R7).
+	switch s.cacheGuardOutcome(entry) {
+	case spec.AutoRandomRefused:
+		return
+	case spec.AutoRandomUndecidable:
+		s.entries[key] = presentIncompleteEntry(s.effectiveSchema(s.schema, targets[0]), targets[0].Name)
+		return
+	}
 	// An unvouched member set can never vouch for the merged collection —
 	// keep the entry rather than merge into a shape that cannot be read.
 	// An unproven name space is different: the CREATE INDEX member itself
@@ -3137,6 +3225,16 @@ func (s *batchState) applyTruncateTable(ctx context.Context, statement spec.Stat
 			return nil
 		}
 		if entry.shape == nil {
+			return nil
+		}
+		// The upstream `!= Disable` cache gate guards TRUNCATE — a proven
+		// non-Disable status refuses and an unobserved one unvouches the
+		// shape rather than presuming the gate passed (issue #102 R7).
+		switch s.cacheGuardOutcome(entry) {
+		case spec.AutoRandomRefused:
+			return nil
+		case spec.AutoRandomUndecidable:
+			s.entries[key] = presentIncompleteEntry(s.effectiveSchema(s.schema, targets[0]), targets[0].Name)
 			return nil
 		}
 		// A proven inbound foreign-key edge refuses TRUNCATE natively

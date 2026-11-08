@@ -186,8 +186,7 @@ func TestAuditCommandPostgreSQLMetadataMapsDropConstraintToPrimaryKeyRule(t *tes
 	previous := newMetadataClient
 	client := &fakeMetadataClient{
 		detectDialect: spec.DialectPostgreSQL,
-		snapshot: &spec.TableSnapshot{
-			Exists:      true,
+		snapshot: &spec.TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Exists: true,
 			Schema:      "public",
 			Table:       &spec.Table{Name: "users"},
 			PrimaryKey:  &spec.Index{Name: "users_primary_idx", Kind: spec.IndexKindPrimary, Columns: []string{"id"}},
@@ -225,8 +224,7 @@ func TestAuditCommandPostgreSQLMetadataRequiresExistingColumnForRenameColumn(t *
 	previous := newMetadataClient
 	client := &fakeMetadataClient{
 		detectDialect: spec.DialectPostgreSQL,
-		snapshot: &spec.TableSnapshot{
-			Exists: true,
+		snapshot: &spec.TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Exists: true,
 			Schema: "public",
 			Table:  &spec.Table{Name: "users"},
 			Columns: []spec.Column{
@@ -265,8 +263,7 @@ func TestAuditCommandPostgreSQLMetadataRequiresExistingColumnForDropColumn(t *te
 	previous := newMetadataClient
 	client := &fakeMetadataClient{
 		detectDialect: spec.DialectPostgreSQL,
-		snapshot: &spec.TableSnapshot{
-			Exists: true,
+		snapshot: &spec.TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Exists: true,
 			Schema: "public",
 			Table:  &spec.Table{Name: "users"},
 			Columns: []spec.Column{
@@ -305,8 +302,7 @@ func TestAuditCommandPostgreSQLMetadataRequiresExistingTableForRenameTable(t *te
 	previous := newMetadataClient
 	client := &fakeMetadataClient{
 		detectDialect: spec.DialectPostgreSQL,
-		snapshot: &spec.TableSnapshot{
-			Exists: false,
+		snapshot: &spec.TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Exists: false,
 			Schema: "public",
 			Table:  &spec.Table{Name: "users"},
 		},

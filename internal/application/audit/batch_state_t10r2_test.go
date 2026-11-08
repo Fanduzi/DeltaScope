@@ -31,8 +31,7 @@ func t10r2CompatPolicy(t *testing.T, features ...string) string {
 // indexes — the member-legality matrix needs typed columns t09Table's
 // int-only set cannot express.
 func t10r2Table(name string, columns []spec.Column, indexes ...spec.Index) *spec.TableSnapshot {
-	return &spec.TableSnapshot{
-		Exists:      true,
+	return &spec.TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Exists: true,
 		Table:       &spec.Table{Name: name},
 		Columns:     columns,
 		Indexes:     indexes,

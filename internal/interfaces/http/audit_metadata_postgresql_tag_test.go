@@ -192,8 +192,7 @@ func TestExecuteAuditRequestPostgreSQLMetadataMapsDropConstraintToPrimaryKeyRule
 	previous := prepareHTTPMetadataAudit
 	client := &plannerMetadataAuditTestClient{metadataAuditTestClient: metadataAuditTestClient{
 		detectDialect: spec.DialectPostgreSQL,
-		snapshot: &spec.TableSnapshot{
-			Exists:      true,
+		snapshot: &spec.TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Exists: true,
 			Table:       &spec.Table{Name: "users"},
 			PrimaryKey:  &spec.Index{Name: "users_primary_idx", Kind: spec.IndexKindPrimary, Columns: []string{"id"}},
 			Constraints: []spec.Constraint{{Type: "primary_key", Name: "users_pkey", Columns: []string{"id"}}},
@@ -247,9 +246,8 @@ func TestExecuteAuditRequestPostgreSQLMetadataRequiresExistingColumnForRenameCol
 	previous := prepareHTTPMetadataAudit
 	client := &plannerMetadataAuditTestClient{metadataAuditTestClient: metadataAuditTestClient{
 		detectDialect: spec.DialectPostgreSQL,
-		snapshot: &spec.TableSnapshot{
-			Exists: true,
-			Table:  &spec.Table{Name: "users"},
+		snapshot: &spec.TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Exists: true,
+			Table: &spec.Table{Name: "users"},
 			Columns: []spec.Column{
 				{Name: "email"},
 			},
@@ -303,9 +301,8 @@ func TestExecuteAuditRequestPostgreSQLMetadataRequiresExistingColumnForDropColum
 	previous := prepareHTTPMetadataAudit
 	client := &plannerMetadataAuditTestClient{metadataAuditTestClient: metadataAuditTestClient{
 		detectDialect: spec.DialectPostgreSQL,
-		snapshot: &spec.TableSnapshot{
-			Exists: true,
-			Table:  &spec.Table{Name: "users"},
+		snapshot: &spec.TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Exists: true,
+			Table: &spec.Table{Name: "users"},
 			Columns: []spec.Column{
 				{Name: "email"},
 			},
@@ -359,9 +356,8 @@ func TestExecuteAuditRequestPostgreSQLMetadataRequiresExistingTableForRenameTabl
 	previous := prepareHTTPMetadataAudit
 	client := &plannerMetadataAuditTestClient{metadataAuditTestClient: metadataAuditTestClient{
 		detectDialect: spec.DialectPostgreSQL,
-		snapshot: &spec.TableSnapshot{
-			Exists: false,
-			Table:  &spec.Table{Name: "users"},
+		snapshot: &spec.TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Exists: false,
+			Table: &spec.Table{Name: "users"},
 		},
 	}}
 	prepareHTTPMetadataAudit = func(_ context.Context, request auditmeta.Request) (*auditmeta.PreparedAudit, error) {
@@ -670,8 +666,7 @@ func TestExecuteAuditRequestPostgreSQLMetadataResolvesOwningTableForRenameIndex(
 	client := &plannerMetadataAuditTestClient{metadataAuditTestClient: metadataAuditTestClient{
 		detectDialect: spec.DialectPostgreSQL,
 		indexTable:    "users",
-		snapshot: &spec.TableSnapshot{
-			Exists:  true,
+		snapshot: &spec.TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Exists: true,
 			Table:   &spec.Table{Name: "users"},
 			Indexes: []spec.Index{{Name: "idx_users_email", Kind: spec.IndexKindSecondary}},
 		},
@@ -737,8 +732,7 @@ func TestExecuteAuditRequestPostgreSQLMetadataResolvesOwningTableForDropIndex(t 
 	client := &plannerMetadataAuditTestClient{metadataAuditTestClient: metadataAuditTestClient{
 		detectDialect: spec.DialectPostgreSQL,
 		indexTable:    "users",
-		snapshot: &spec.TableSnapshot{
-			Exists:  true,
+		snapshot: &spec.TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Exists: true,
 			Table:   &spec.Table{Name: "users"},
 			Indexes: []spec.Index{{Name: "idx_users_email", Kind: spec.IndexKindSecondary}},
 		},

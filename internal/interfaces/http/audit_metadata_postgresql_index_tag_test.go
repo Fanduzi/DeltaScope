@@ -23,8 +23,7 @@ func TestExecuteAuditRequestPostgreSQLMetadataResolvesQualifiedRenameIndexWithou
 	client := &plannerMetadataAuditTestClient{metadataAuditTestClient: metadataAuditTestClient{
 		detectDialect: spec.DialectPostgreSQL,
 		indexTable:    "users",
-		snapshot: &spec.TableSnapshot{
-			Exists:  true,
+		snapshot: &spec.TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Exists: true,
 			Table:   &spec.Table{Name: "users"},
 			Indexes: []spec.Index{{Name: "idx_users_email", Kind: spec.IndexKindSecondary}},
 		},

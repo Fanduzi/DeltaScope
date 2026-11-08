@@ -118,7 +118,7 @@ func TestLifecycleMetadataRules(t *testing.T) {
 		Kind: spec.KindDDL,
 		DDL:  &spec.DDL{Operation: spec.DDLOperationDropTable, Table: &spec.Table{Name: "users"}},
 		Metadata: &spec.Metadata{
-			TargetTable: &spec.TableSnapshot{Exists: false, Table: &spec.Table{Name: "users"}},
+			TargetTable: &spec.TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Exists: false, Table: &spec.Table{Name: "users"}},
 		},
 	}
 	findings, err := dropExistsRule.Evaluate(context.Background(), dropStmt)
@@ -134,7 +134,7 @@ func TestLifecycleMetadataRules(t *testing.T) {
 		DDL:  &spec.DDL{Operation: spec.DDLOperationTruncateTable, Table: &spec.Table{Name: "users"}},
 		Metadata: &spec.Metadata{
 			Instance:    &spec.InstanceFacts{InnoDBAdaptiveHashEnabled: true},
-			TargetTable: &spec.TableSnapshot{Exists: true, Table: &spec.Table{Name: "users"}},
+			TargetTable: &spec.TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Exists: true, Table: &spec.Table{Name: "users"}},
 		},
 	}
 	findings, err = adaptiveHashRule.Evaluate(context.Background(), truncateStmt)
@@ -163,7 +163,7 @@ func TestLifecycleRowCountRules(t *testing.T) {
 			TargetTable: &spec.TableSnapshot{
 				Exists:  true,
 				Table:   &spec.Table{Name: "users"},
-				Options: map[string]string{"table_rows": "250"},
+				Options: map[string]string{"cache_status": "disable", "table_rows": "250"},
 			},
 		},
 	})
@@ -204,10 +204,10 @@ func TestDropTableExistenceRuleEvidenceGaps(t *testing.T) {
 			t.Fatalf("unknown %s drop must report the frozen existence gap, got %+v", dialect, gaps)
 		}
 	}
-	if gaps := reporter.EvidenceGaps(dropStatement(spec.DialectMySQL, &spec.TableSnapshot{Exists: true, Table: &spec.Table{Name: "t"}})); len(gaps) != 0 {
+	if gaps := reporter.EvidenceGaps(dropStatement(spec.DialectMySQL, &spec.TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Exists: true, Table: &spec.Table{Name: "t"}})); len(gaps) != 0 {
 		t.Fatalf("present drop target must not gap, got %+v", gaps)
 	}
-	if gaps := reporter.EvidenceGaps(dropStatement(spec.DialectMySQL, &spec.TableSnapshot{Exists: false, Table: &spec.Table{Name: "t"}})); len(gaps) != 0 {
+	if gaps := reporter.EvidenceGaps(dropStatement(spec.DialectMySQL, &spec.TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Exists: false, Table: &spec.Table{Name: "t"}})); len(gaps) != 0 {
 		t.Fatalf("known-absent drop target keeps its blocker instead of a gap, got %+v", gaps)
 	}
 	if gaps := reporter.EvidenceGaps(dropStatement(spec.DialectPostgreSQL, nil)); len(gaps) != 0 {

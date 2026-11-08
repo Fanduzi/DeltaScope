@@ -30,7 +30,7 @@ func (r *fakeObjectResolver) LoadInstanceFacts(_ context.Context, _ spec.Dialect
 }
 
 func (r *fakeObjectResolver) LoadTableSnapshot(_ context.Context, _ spec.Dialect, schema string, table string) (*spec.TableSnapshot, error) {
-	return &spec.TableSnapshot{Exists: true, Table: &spec.Table{Name: table, Schema: schema}}, nil
+	return &spec.TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Exists: true, Table: &spec.Table{Name: table, Schema: schema}}, nil
 }
 
 func (r *fakeObjectResolver) ResolveTableForIndex(_ context.Context, _ spec.Dialect, _ string, _ string) (string, error) {
@@ -354,8 +354,7 @@ func TestObjectEnrichmentPreservesExistingTableMetadata(t *testing.T) {
 	}
 	provider := &fakeMetadataProvider{
 		instance: &spec.InstanceFacts{Version: "PostgreSQL 16.0"},
-		snapshot: &spec.TableSnapshot{
-			Exists:      true,
+		snapshot: &spec.TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Exists: true,
 			Table:       &spec.Table{Name: "users"},
 			Constraints: []spec.Constraint{{Type: "primary_key", Name: "users_pkey"}},
 		},
@@ -383,9 +382,8 @@ func TestCensusUnavailabilityNowFromObjectFallback(t *testing.T) {
 	// rather than simply lacking metadata.
 	provider := &fakeMetadataProvider{
 		instance: &spec.InstanceFacts{Version: "PostgreSQL 16.0"},
-		snapshot: &spec.TableSnapshot{
-			Exists: true,
-			Table:  &spec.Table{Name: "users"},
+		snapshot: &spec.TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Exists: true,
+			Table: &spec.Table{Name: "users"},
 		},
 		indexTable: "users",
 	}

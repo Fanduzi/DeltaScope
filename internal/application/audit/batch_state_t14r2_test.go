@@ -30,8 +30,7 @@ func t14r2ShellShape(name string) *spec.TableSnapshot {
 	partitioned := true
 	method := "range"
 	shell := func() *spec.PartitionBound { return &spec.PartitionBound{Kind: "less_than"} }
-	return &spec.TableSnapshot{
-		Exists:         true,
+	return &spec.TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Exists: true,
 		Table:          &spec.Table{Name: name},
 		Columns:        []spec.Column{t10r2Col("id", "int", true, 0)},
 		Constraints:    []spec.Constraint{},

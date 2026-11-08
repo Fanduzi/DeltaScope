@@ -38,7 +38,7 @@ func TestBatchStateA5PostgreSQLIdentityKeepsLegacyContract(t *testing.T) {
 	t.Run("provider snapshot stays on the legacy request cache", func(t *testing.T) {
 		t.Parallel()
 		const sql = "ALTER TABLE t ALTER COLUMN c TYPE VARCHAR(20); ALTER TABLE t ALTER COLUMN c TYPE VARCHAR(15);"
-		snapshot := &spec.TableSnapshot{Exists: true, Table: &spec.Table{Schema: "public", Name: "t"}, Columns: []spec.Column{{Name: "c", Type: "varchar", Length: 10}}}
+		snapshot := &spec.TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Exists: true, Table: &spec.Table{Schema: "public", Name: "t"}, Columns: []spec.Column{{Name: "c", Type: "varchar", Length: 10}}}
 		provider := &dmlTableMetadataProvider{snapshots: map[string]*spec.TableSnapshot{"public.t": snapshot}}
 		result, err := AuditSQL(context.Background(), Request{
 			SQL:              sql,

@@ -280,7 +280,7 @@ func TestT17R1KnownPersistentTableSurvivesUnknownSchema(t *testing.T) {
 	}
 	state := newBatchState(spec.DialectMySQL, "req", &t17ObjectResolver{})
 	key := state.keyFor("req", spec.Table{Schema: "g", Name: "t"})
-	shape := &spec.TableSnapshot{Schema: "g", Exists: true, Table: &spec.Table{Schema: "g", Name: "t", Comment: "original"}, Columns: []spec.Column{{Name: "id", Type: "int(11)"}}}
+	shape := &spec.TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Schema: "g", Exists: true, Table: &spec.Table{Schema: "g", Name: "t", Comment: "original"}, Columns: []spec.Column{{Name: "id", Type: "int(11)"}}}
 	state.schemaEntries["g"] = &batchSchemaEntry{state: schemaUnknown}
 	state.entries[key] = &batchTableEntry{state: tablePresent, shape: cloneTableSnapshot(shape), displaySchema: "g", displayTable: "t"}
 	if err := state.apply(ctx, statements[0]); err != nil {

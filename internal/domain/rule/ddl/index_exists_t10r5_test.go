@@ -17,8 +17,7 @@ import (
 // t10r5RenamedPK models the provider-reloaded post-rename catalog: the PK
 // object carries its real stored name pk2 beside an ordinary member s.
 func t10r5RenamedPK() *spec.TableSnapshot {
-	return &spec.TableSnapshot{
-		Exists: true,
+	return &spec.TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Exists: true,
 		PrimaryKey: &spec.Index{
 			Name: "pk2", Kind: spec.IndexKindPrimary, Columns: []string{"id"},
 		},
@@ -210,7 +209,7 @@ func TestT10R5DropPrimaryKeyMemberFirstBinding(t *testing.T) {
 	}
 	t.Run("member primary exists answers the target", func(t *testing.T) {
 		t.Parallel()
-		snapshot := &spec.TableSnapshot{Exists: true, Indexes: []spec.Index{
+		snapshot := &spec.TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Exists: true, Indexes: []spec.Index{
 			{Name: "primary", Kind: spec.IndexKindSecondary, Columns: []string{"c"}},
 		}}
 		findings, err := ruleUnderTest.Evaluate(context.Background(), stmtFor(snapshot))
@@ -223,7 +222,7 @@ func TestT10R5DropPrimaryKeyMemberFirstBinding(t *testing.T) {
 	})
 	t.Run("unvouched member space suppresses and gaps", func(t *testing.T) {
 		t.Parallel()
-		snapshot := &spec.TableSnapshot{Exists: true, IndexesUnknown: true}
+		snapshot := &spec.TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Exists: true, IndexesUnknown: true}
 		stmt := stmtFor(snapshot)
 		findings, err := ruleUnderTest.Evaluate(context.Background(), stmt)
 		if err != nil {

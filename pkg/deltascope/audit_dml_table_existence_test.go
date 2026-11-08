@@ -25,7 +25,7 @@ func TestAuditPublicDMLTableExistenceContract(t *testing.T) {
 				SQL:              tc.sql,
 				Dialect:          tc.dialect,
 				Schema:           "app",
-				MetadataProvider: &fakeMetadataProvider{snapshot: &TableSnapshot{Schema: "app"}},
+				MetadataProvider: &fakeMetadataProvider{snapshot: &TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Schema: "app"}},
 			})
 			if err != nil {
 				t.Fatalf("audit: %v", err)
@@ -49,7 +49,7 @@ func TestAuditPublicDMLTableExistenceSkipsExistingAndOffline(t *testing.T) {
 		name     string
 		provider MetadataProvider
 	}{
-		{name: "existing", provider: &fakeMetadataProvider{snapshot: &TableSnapshot{Exists: true}}},
+		{name: "existing", provider: &fakeMetadataProvider{snapshot: &TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Exists: true}}},
 		{name: "offline", provider: nil},
 	} {
 		t.Run(tc.name, func(t *testing.T) {

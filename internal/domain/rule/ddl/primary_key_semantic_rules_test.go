@@ -186,8 +186,7 @@ func TestPostgreSQLAlterTableAddPrimaryKeyBigintRuleCoverage(t *testing.T) {
 		}
 	}
 
-	statement := newStatement(&spec.Metadata{TargetTable: &spec.TableSnapshot{
-		Exists:  true,
+	statement := newStatement(&spec.Metadata{TargetTable: &spec.TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Exists: true,
 		Columns: []spec.Column{{Name: "id", Type: "int"}},
 	}})
 

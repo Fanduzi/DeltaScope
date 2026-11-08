@@ -35,9 +35,8 @@ func TestAlterColumnCompatibilityRuleFindsBreakingTransitions(t *testing.T) {
 			},
 		},
 		Metadata: &spec.Metadata{
-			TargetTable: &spec.TableSnapshot{
-				Exists: true,
-				Table:  &spec.Table{Name: "users"},
+			TargetTable: &spec.TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Exists: true,
+				Table: &spec.Table{Name: "users"},
 				Columns: []spec.Column{
 					{Name: "email", Type: "varchar", Length: 255, Unsigned: true, NotNull: false, AutoIncrement: true},
 				},
@@ -80,9 +79,8 @@ func TestAlterColumnCompatibilityRuleFindsFamilyChanges(t *testing.T) {
 			},
 		},
 		Metadata: &spec.Metadata{
-			TargetTable: &spec.TableSnapshot{
-				Exists: true,
-				Table:  &spec.Table{Name: "users"},
+			TargetTable: &spec.TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Exists: true,
+				Table: &spec.Table{Name: "users"},
 				Columns: []spec.Column{
 					{Name: "score", Type: "int", Length: 11},
 				},
@@ -146,8 +144,7 @@ func TestAlterTableOptionCompatibilityRuleFlagsMetadataBackedChanges(t *testing.
 		TargetTable: &spec.TableSnapshot{
 			Exists: true,
 			Table:  &spec.Table{Name: "users"},
-			Options: map[string]string{
-				"engine":         "InnoDB",
+			Options: map[string]string{"cache_status": "disable", "engine": "InnoDB",
 				"charset":        "utf8mb4",
 				"collation":      "utf8mb4_general_ci",
 				"row_format":     "DYNAMIC",
@@ -247,8 +244,7 @@ func TestAlterColumnCompatibilityEvidenceGapsCoexistWithFindings(t *testing.T) {
 			},
 		},
 		Metadata: &spec.Metadata{
-			TargetTable: &spec.TableSnapshot{
-				Exists:  true,
+			TargetTable: &spec.TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Exists: true,
 				Table:   &spec.Table{Name: "users"},
 				Columns: []spec.Column{{Name: "email", Type: "varchar", Length: 200}},
 			},
@@ -299,8 +295,7 @@ func TestAlterChangeColumnEvidenceGapsUsesOldName(t *testing.T) {
 			},
 		},
 		Metadata: &spec.Metadata{
-			TargetTable: &spec.TableSnapshot{
-				Exists:  true,
+			TargetTable: &spec.TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Exists: true,
 				Table:   &spec.Table{Name: "users"},
 				Columns: []spec.Column{{Name: "score", Type: "int", Length: 11}},
 			},
@@ -351,8 +346,7 @@ func TestAlterColumnCompatibilityDefaultTransitions(t *testing.T) {
 				}},
 			},
 			Metadata: &spec.Metadata{
-				TargetTable: &spec.TableSnapshot{
-					Exists:  true,
+				TargetTable: &spec.TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Exists: true,
 					Table:   &spec.Table{Name: "users"},
 					Columns: []spec.Column{source},
 				},

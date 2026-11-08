@@ -21,8 +21,7 @@ const (
 // t05A5R1PartialTable is a present table whose column set is withheld.
 // Nil index and constraint slices with Unknown=false are loaded empty sets.
 func t05A5R1PartialTable(nilCollections bool) *spec.TableSnapshot {
-	shape := &spec.TableSnapshot{
-		Exists: true,
+	shape := &spec.TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Exists: true,
 		Schema: "golden",
 		Table:  &spec.Table{Schema: "golden", Name: "t"},
 	}
@@ -214,8 +213,7 @@ func TestAuditSQLT05A5R1KnownEmptyMembersStayAbsent(t *testing.T) {
 
 	t.Run("affected member is cleared and unrelated member stays", func(t *testing.T) {
 		t.Parallel()
-		shape := &spec.TableSnapshot{
-			Exists: true, Schema: "golden", Table: &spec.Table{Schema: "golden", Name: "t"},
+		shape := &spec.TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Exists: true, Schema: "golden", Table: &spec.Table{Schema: "golden", Name: "t"},
 			Indexes: []spec.Index{
 				{Name: "idx_c", Kind: spec.IndexKindSecondary, Columns: []string{"c"}},
 				{Name: "idx_k", Kind: spec.IndexKindSecondary, Columns: []string{"k"}, PrefixParts: 1},

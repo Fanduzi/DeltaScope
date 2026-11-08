@@ -15,14 +15,12 @@ func TestT13R1PublicProviderClonePreservesPartitionFacts(t *testing.T) {
 	t.Parallel()
 	partitioned := true
 	partitionType := "range"
-	source := &spec.TableSnapshot{
-		Table:          &spec.Table{Schema: "golden", Name: "tp"},
+	source := &spec.TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Table: &spec.Table{Schema: "golden", Name: "tp"},
 		Partitioned:    &partitioned,
 		PartitionType:  &partitionType,
 		PartitionNames: []string{"p0", "p1"},
 	}
-	sourceEmpty := &spec.TableSnapshot{
-		Table:          &spec.Table{Schema: "golden", Name: "plain"},
+	sourceEmpty := &spec.TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Table: &spec.Table{Schema: "golden", Name: "plain"},
 		PartitionNames: []string{},
 	}
 

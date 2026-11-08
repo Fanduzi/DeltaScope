@@ -51,7 +51,7 @@ func (p *t21Provider) LoadTableSnapshot(_ context.Context, _ spec.Dialect, schem
 	if snapshot, ok := p.tables[strings.ToLower(schema)+"."+strings.ToLower(table)]; ok {
 		return snapshot, nil
 	}
-	return &spec.TableSnapshot{Exists: false, Table: &spec.Table{Schema: schema, Name: table}}, nil
+	return &spec.TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Exists: false, Table: &spec.Table{Schema: schema, Name: table}}, nil
 }
 
 func (p *t21Provider) ResolveObject(_ context.Context, _ spec.Dialect, req spec.ObjectLookupRequest) (*spec.ObjectSnapshot, error) {

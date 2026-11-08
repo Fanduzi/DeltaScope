@@ -242,8 +242,7 @@ func TestBatchStateA5MembersAndPartialKnowledge(t *testing.T) {
 	})
 	t.Run("withheld columns scrub old references", func(t *testing.T) {
 		t.Parallel()
-		shape := &spec.TableSnapshot{
-			Exists: true, Schema: "golden", Table: &spec.Table{Schema: "golden", Name: "t"},
+		shape := &spec.TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Exists: true, Schema: "golden", Table: &spec.Table{Schema: "golden", Name: "t"},
 			Indexes: []spec.Index{
 				{Name: "idx_c", Kind: spec.IndexKindSecondary, Columns: []string{"c"}},
 				{Name: "idx_k", Kind: spec.IndexKindSecondary, Columns: []string{"k"}, PrefixParts: 1},

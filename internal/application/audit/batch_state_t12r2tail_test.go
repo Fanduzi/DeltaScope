@@ -122,8 +122,7 @@ func TestT12R2TailDashDashRealCommentStillComment(t *testing.T) {
 func TestT12R2TailGenericDropUnvouchesPK(t *testing.T) {
 	t.Parallel()
 	fixture := func() *spec.TableSnapshot {
-		return &spec.TableSnapshot{
-			Exists: true, Table: &spec.Table{Schema: "golden", Name: "t"},
+		return &spec.TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Exists: true, Table: &spec.Table{Schema: "golden", Name: "t"},
 			Columns:            []spec.Column{{Name: "id", Type: "int"}},
 			PrimaryKey:         &spec.Index{Name: "PRIMARY", Kind: spec.IndexKindPrimary, Columns: []string{"id"}},
 			ConstraintsUnknown: true,

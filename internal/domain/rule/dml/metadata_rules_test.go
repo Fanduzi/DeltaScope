@@ -28,7 +28,7 @@ func TestTableExistenceRuleUsesOnlyDefinitiveMySQLTiDBSnapshots(t *testing.T) {
 		{name: "missing insert", dialect: spec.DialectMySQL, operation: spec.DMLOperationInsert, metadata: missingTableMetadata(), want: true},
 		{name: "missing update", dialect: spec.DialectTiDB, operation: spec.DMLOperationUpdate, metadata: missingTableMetadata(), want: true},
 		{name: "missing delete", dialect: spec.DialectMySQL, operation: spec.DMLOperationDelete, metadata: missingTableMetadata(), want: true},
-		{name: "existing table", dialect: spec.DialectMySQL, operation: spec.DMLOperationUpdate, metadata: &spec.Metadata{TargetTable: &spec.TableSnapshot{Exists: true}}, want: false},
+		{name: "existing table", dialect: spec.DialectMySQL, operation: spec.DMLOperationUpdate, metadata: &spec.Metadata{TargetTable: &spec.TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Exists: true}}, want: false},
 		{name: "no snapshot", dialect: spec.DialectMySQL, operation: spec.DMLOperationUpdate, want: false},
 		{name: "postgresql", dialect: spec.DialectPostgreSQL, operation: spec.DMLOperationUpdate, metadata: missingTableMetadata(), want: false},
 		{name: "unknown operation", dialect: spec.DialectMySQL, operation: spec.DMLOperationUnknown, metadata: missingTableMetadata(), want: false},
@@ -89,5 +89,5 @@ func TestTableExistenceRuleUsesOnlyDefinitiveMySQLTiDBSnapshots(t *testing.T) {
 }
 
 func missingTableMetadata() *spec.Metadata {
-	return &spec.Metadata{TargetTable: &spec.TableSnapshot{Schema: "app", Exists: false}}
+	return &spec.Metadata{TargetTable: &spec.TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Schema: "app", Exists: false}}
 }

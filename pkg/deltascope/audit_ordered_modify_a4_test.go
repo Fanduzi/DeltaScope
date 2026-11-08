@@ -59,7 +59,7 @@ func t05A4WideSQL() string {
 }
 
 func t05A4AbsentProvider() *fakeMetadataProvider {
-	return &fakeMetadataProvider{snapshot: &TableSnapshot{Exists: false, Schema: "golden"}}
+	return &fakeMetadataProvider{snapshot: &TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Exists: false, Schema: "golden"}}
 }
 
 func TestAuditT05A4ModifyNarrowReject(t *testing.T) {

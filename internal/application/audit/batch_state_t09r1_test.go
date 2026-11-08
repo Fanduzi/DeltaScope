@@ -629,8 +629,7 @@ func t09r1NullableTable(name string, columns ...string) *spec.TableSnapshot {
 	for _, c := range columns {
 		cols = append(cols, spec.Column{Name: c, Type: "int"})
 	}
-	return &spec.TableSnapshot{
-		Exists:  true,
+	return &spec.TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Exists: true,
 		Table:   &spec.Table{Name: name},
 		Columns: cols,
 		Indexes: []spec.Index{},
@@ -803,8 +802,7 @@ func t09r1DefaultTable(name, memberName, memberType string, hasDefault bool, def
 	for _, extra := range extraColumns {
 		cols = append(cols, spec.Column{Name: extra, Type: "int"})
 	}
-	return &spec.TableSnapshot{
-		Exists:  true,
+	return &spec.TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Exists: true,
 		Table:   &spec.Table{Name: name},
 		Columns: cols,
 		Indexes: []spec.Index{},

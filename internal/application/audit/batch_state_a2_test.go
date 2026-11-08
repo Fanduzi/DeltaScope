@@ -47,8 +47,7 @@ func (p *t05PresentProvider) LoadTableSnapshot(_ context.Context, _ spec.Dialect
 }
 
 func presentTable(schema, table string, columns ...string) *spec.TableSnapshot {
-	snapshot := &spec.TableSnapshot{
-		Exists:      true,
+	snapshot := &spec.TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Exists: true,
 		Schema:      schema,
 		Table:       &spec.Table{Schema: schema, Name: table},
 		Columns:     make([]spec.Column, 0, len(columns)),
@@ -62,8 +61,7 @@ func presentTable(schema, table string, columns ...string) *spec.TableSnapshot {
 }
 
 func absentTable(schema, table string) *spec.TableSnapshot {
-	return &spec.TableSnapshot{
-		Exists:      false,
+	return &spec.TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Exists: false,
 		Schema:      schema,
 		Table:       &spec.Table{Schema: schema, Name: table},
 		Columns:     []spec.Column{},
@@ -327,8 +325,7 @@ func TestBatchStateA2ExistenceGrid(t *testing.T) {
 	t.Parallel()
 
 	present := presentTable("src", "t", "id")
-	incomplete := &spec.TableSnapshot{
-		Exists:             true,
+	incomplete := &spec.TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Exists: true,
 		Schema:             "src",
 		Table:              &spec.Table{Schema: "src", Name: "t"},
 		PrimaryKeyUnknown:  true,
@@ -1095,7 +1092,7 @@ func TestBatchStateA2R1PrimaryKeyPayloadMigrates(t *testing.T) {
 					Indexes:        nil,
 					IndexesUnknown: true,
 					Constraints:    []spec.Constraint{{Type: "primary_key", Name: "PRIMARY", Columns: []string{"id"}}},
-					Options:        map[string]string{"table_rows": "42"},
+					Options:        map[string]string{"cache_status": "disable", "table_rows": "42"},
 				}
 				provider := &t05PresentProvider{snapshots: map[string]*spec.TableSnapshot{
 					"src.t":  src,

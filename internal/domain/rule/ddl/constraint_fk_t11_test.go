@@ -236,8 +236,7 @@ func TestT11DropForeignKeyExistsRule(t *testing.T) {
 			},
 		}
 		if !snapshotNil {
-			stmt.Metadata = &spec.Metadata{TargetTable: &spec.TableSnapshot{
-				Exists:             true,
+			stmt.Metadata = &spec.Metadata{TargetTable: &spec.TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Exists: true,
 				Table:              &spec.Table{Name: "child"},
 				Constraints:        constraints,
 				ConstraintsUnknown: unknown,

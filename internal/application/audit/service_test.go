@@ -134,8 +134,7 @@ func TestAuditModifyColumnNullabilityUsesCurrentMetadata(t *testing.T) {
 				SQL:     tc.requestedSQL,
 				Dialect: tc.dialect,
 				Schema:  "app",
-				MetadataProvider: &fakeMetadataProvider{snapshot: &spec.TableSnapshot{
-					Exists:  true,
+				MetadataProvider: &fakeMetadataProvider{snapshot: &spec.TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Exists: true,
 					Table:   &spec.Table{Name: "users"},
 					Columns: []spec.Column{{Name: "email", Type: "varchar", Length: 255, NotNull: tc.currentNotNull}},
 				}},
@@ -209,7 +208,7 @@ func TestAuditModifyColumnNullabilityMissingColumnMetadataStaysUnknown(t *testin
 		name     string
 		snapshot *spec.TableSnapshot
 	}{
-		{name: "missing column", snapshot: &spec.TableSnapshot{Exists: true, Table: &spec.Table{Name: "users"}}},
+		{name: "missing column", snapshot: &spec.TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Exists: true, Table: &spec.Table{Name: "users"}}},
 		{name: "missing snapshot", snapshot: nil},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
@@ -251,8 +250,7 @@ func TestAuditModifyColumnNullabilityDoesNotSuppressCompatibilityFinding(t *test
 		SQL:     "ALTER TABLE users MODIFY COLUMN email VARCHAR(128) NOT NULL",
 		Dialect: spec.DialectMySQL,
 		Schema:  "app",
-		MetadataProvider: &fakeMetadataProvider{snapshot: &spec.TableSnapshot{
-			Exists:  true,
+		MetadataProvider: &fakeMetadataProvider{snapshot: &spec.TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Exists: true,
 			Table:   &spec.Table{Name: "users"},
 			Columns: []spec.Column{{Name: "email", Type: "varchar", Length: 255, NotNull: false}},
 		}},
@@ -1463,9 +1461,8 @@ func TestAuditSQLMergesTopLevelSchemaWithLegacyMetadataProvider(t *testing.T) {
 			DefaultCharset:         "utf8mb4",
 			InnoDBDefaultRowFormat: "dynamic",
 		},
-		snapshot: &spec.TableSnapshot{
-			Exists: true,
-			Table:  &spec.Table{Name: "users"},
+		snapshot: &spec.TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Exists: true,
+			Table: &spec.Table{Name: "users"},
 		},
 	}
 
@@ -1500,9 +1497,8 @@ func TestAuditSQLUsesTopLevelMetadataRequestFields(t *testing.T) {
 			DefaultCharset:         "utf8mb4",
 			InnoDBDefaultRowFormat: "dynamic",
 		},
-		snapshot: &spec.TableSnapshot{
-			Exists: true,
-			Table:  &spec.Table{Name: "users"},
+		snapshot: &spec.TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Exists: true,
+			Table: &spec.Table{Name: "users"},
 		},
 	}
 
@@ -1538,9 +1534,7 @@ func TestAuditSQLMetadataRefinesStatementImpact(t *testing.T) {
 				Kind:    spec.IndexKindPrimary,
 				Columns: []string{"id"},
 			},
-			Options: map[string]string{
-				"table_rows": "100",
-			},
+			Options: map[string]string{"cache_status": "disable", "table_rows": "100"},
 		},
 	}
 
@@ -1584,9 +1578,7 @@ func TestAuditSQLMetadataRequestProviderAppliesPlannerEstimate(t *testing.T) {
 				Kind:    spec.IndexKindPrimary,
 				Columns: []string{"id"},
 			},
-			Options: map[string]string{
-				"table_rows": "100",
-			},
+			Options: map[string]string{"cache_status": "disable", "table_rows": "100"},
 		},
 		planner: &spec.ImpactEstimate{
 			EstimatedRows: ptrInt64(7),
@@ -1634,9 +1626,8 @@ func TestEnrichStatementsWithMetadataAddsInstanceAndTargetTableFacts(t *testing.
 			DefaultCharset:         "utf8mb4",
 			InnoDBDefaultRowFormat: "dynamic",
 		},
-		snapshot: &spec.TableSnapshot{
-			Exists: true,
-			Table:  &spec.Table{Name: "users"},
+		snapshot: &spec.TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Exists: true,
+			Table: &spec.Table{Name: "users"},
 			Columns: []spec.Column{
 				{Name: "id", Type: "bigint"},
 			},
@@ -1684,7 +1675,7 @@ func TestEnrichStatementsWithMetadataResolvesStandaloneIndexOwnerWhenAvailable(t
 	provider := &fakeMetadataProvider{
 		instance:   &spec.InstanceFacts{Version: "16.2"},
 		indexTable: "users",
-		snapshot:   &spec.TableSnapshot{Exists: true, Table: &spec.Table{Name: "users"}},
+		snapshot:   &spec.TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Exists: true, Table: &spec.Table{Name: "users"}},
 	}
 
 	statements := []spec.Statement{{

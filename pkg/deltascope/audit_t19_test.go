@@ -24,8 +24,7 @@ func (p t19SnapshotProvider) LoadTableSnapshot(context.Context, Dialect, string,
 func TestT19PublicProviderSnapshotCloneCopiesTTLEnabled(t *testing.T) {
 	t.Parallel()
 	enabled := false
-	source := &TableSnapshot{
-		Exists:   true,
+	source := &TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Exists: true,
 		Table:    &Table{Name: "t"},
 		TTLKnown: true,
 		TTL: &spec.TTLConfig{

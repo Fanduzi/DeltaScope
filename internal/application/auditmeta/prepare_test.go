@@ -37,7 +37,7 @@ func (f *fakeClient) LoadTableSnapshot(_ context.Context, _ spec.Dialect, schema
 		Schema string
 		Table  string
 	}{Schema: schema, Table: table})
-	return &spec.TableSnapshot{Schema: schema, Exists: true}, nil
+	return &spec.TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Schema: schema, Exists: true}, nil
 }
 
 func (f *fakeClient) DetectDialect(context.Context) (spec.Dialect, error) {

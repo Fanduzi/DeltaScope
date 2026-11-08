@@ -1025,8 +1025,7 @@ func TestRegisterPGExplicitNullabilityChangeDoesNotBreakExistingMySQLRules(t *te
 			},
 		},
 		Metadata: &spec.Metadata{
-			TargetTable: &spec.TableSnapshot{
-				Exists:  true,
+			TargetTable: &spec.TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Exists: true,
 				Table:   &spec.Table{Name: "users"},
 				Columns: []spec.Column{{Name: "email", NotNull: true}},
 			},

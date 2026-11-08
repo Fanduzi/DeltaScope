@@ -37,7 +37,7 @@ func (c *fakeMetadataClient) LoadInstanceFacts(ctx context.Context, dialect spec
 	return &deltascope.InstanceFacts{}, nil
 }
 func (c *fakeMetadataClient) LoadTableSnapshot(ctx context.Context, dialect spec.Dialect, schema string, table string) (*deltascope.TableSnapshot, error) {
-	return &deltascope.TableSnapshot{}, nil
+	return &deltascope.TableSnapshot{Options: map[string]string{"cache_status": "disable"}}, nil
 }
 func (c *fakeMetadataClient) DetectDialect(ctx context.Context) (spec.Dialect, error) {
 	return spec.DialectMySQL, nil

@@ -334,9 +334,8 @@ func TestMetadataObjectsFieldRoundTrip(t *testing.T) {
 	meta := &Metadata{
 		Schema:   "public",
 		Instance: &InstanceFacts{Version: "PostgreSQL 16.0"},
-		TargetTable: &TableSnapshot{
-			Exists: true,
-			Table:  &Table{Name: "users"},
+		TargetTable: &TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Exists: true,
+			Table: &Table{Name: "users"},
 		},
 		Objects: []ObjectSnapshot{
 			{

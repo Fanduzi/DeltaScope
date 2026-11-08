@@ -33,8 +33,7 @@ func t10r1CompatVisibilityPolicy(t *testing.T) string {
 // t10r1Table builds a snapshot with explicit columns (nullability controlled)
 // plus optional primary key and index members.
 func t10r1Table(name string, columns []spec.Column, pk *spec.Index, indexes ...spec.Index) *spec.TableSnapshot {
-	return &spec.TableSnapshot{
-		Exists:     true,
+	return &spec.TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Exists: true,
 		Table:      &spec.Table{Name: name},
 		Columns:    columns,
 		PrimaryKey: pk,

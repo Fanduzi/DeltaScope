@@ -46,7 +46,7 @@ func (p *t06a15Provider) LoadInstanceFacts(_ context.Context, dialect spec.Diale
 
 func (p *t06a15Provider) LoadTableSnapshot(_ context.Context, _ spec.Dialect, schema, table string) (*spec.TableSnapshot, error) {
 	p.calls = append(p.calls, "snapshot:"+schema+"."+table)
-	return &spec.TableSnapshot{Exists: false, Table: &spec.Table{Schema: schema, Name: table}}, nil
+	return &spec.TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Exists: false, Table: &spec.Table{Schema: schema, Name: table}}, nil
 }
 
 func t06a15Policy(t *testing.T, required bool) string {

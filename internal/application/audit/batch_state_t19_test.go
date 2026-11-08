@@ -24,8 +24,7 @@ func t19TTLShape(name string) *spec.TableSnapshot {
 		Constraints:  []spec.Constraint{},
 		ReferencedBy: []spec.Table{},
 		TTLKnown:     true,
-		Options: map[string]string{
-			"engine":    "InnoDB",
+		Options: map[string]string{"cache_status": "disable", "engine": "InnoDB",
 			"charset":   "utf8mb4",
 			"collation": "utf8mb4_bin",
 		},

@@ -37,6 +37,7 @@ func alterLayoutR6Action(action string) bool {
 // by spec.CachedTableGuardRefused, the statement preserves every target
 // — no tombstone, no successor.
 func (s *batchState) cachedTableGuardBlocks(alters []spec.Alter, targets []spec.Table) bool {
+	specCount := spec.CacheGuardSpecCount(alters)
 	for _, target := range targets {
 		entry := s.entries[s.keyFor(s.schema, target)]
 		if entry == nil || entry.state != tablePresent || entry.shape == nil {
@@ -44,12 +45,76 @@ func (s *batchState) cachedTableGuardBlocks(alters []spec.Alter, targets []spec.
 		}
 		facts := spec.AlterLayoutR6FactsForSnapshot(entry.shape)
 		for i := range alters {
-			if spec.CachedTableGuardRefused(alters[i].Action, len(alters), facts) {
+			if spec.CachedTableGuardRefused(alters[i].Action, specCount, facts) {
 				return true
 			}
 		}
 	}
 	return false
+}
+
+// cachedTableGuardWithholds applies the same upstream gate to ALTER
+// targets whose cache status is unobserved: the statement may have run
+// (Disable) or been refused (non-Disable), so the shape unvouches to
+// present-incomplete — presence itself is unaffected either way.
+// Returns true when at least one target withheld the transition.
+func (s *batchState) cachedTableGuardWithholds(alters []spec.Alter, targets []spec.Table) bool {
+	specCount := spec.CacheGuardSpecCount(alters)
+	needed := false
+	for i := range alters {
+		if spec.CacheGuardPremiseNeeded(alters[i].Action, specCount) {
+			needed = true
+			break
+		}
+	}
+	if !needed {
+		return false
+	}
+	// An ALTER RENAME unvouches the source name — the withheld source may
+	// have moved away — plus a destination that was not proven live: a
+	// rename onto a live name refuses natively, so a proven-present
+	// destination keeps its identity either way, while a proven-absent
+	// or unproven destination may now hold the moved shape and its
+	// proof lapses.
+	renameForm := len(targets) == 2 && specCount == 1 &&
+		len(alters) > 0 && alters[0].Action == "rename_table"
+	withheld := false
+	for ti, target := range targets {
+		key := s.keyFor(s.schema, target)
+		entry := s.entries[key]
+		if renameForm {
+			if ti == 0 && entry != nil {
+				s.invalidateKey(key)
+				withheld = true
+				continue
+			}
+			if entry != nil && entry.state != tablePresent {
+				s.invalidateKey(key)
+			}
+			continue
+		}
+		if entry == nil || entry.state != tablePresent || entry.shape == nil {
+			continue
+		}
+		facts := spec.AlterLayoutR6FactsForSnapshot(entry.shape)
+		if facts.CacheStatusKnown {
+			continue
+		}
+		s.entries[key] = presentIncompleteEntry(s.effectiveSchema(s.schema, target), target.Name)
+		withheld = true
+	}
+	return withheld
+}
+
+// cacheGuardOutcome resolves the upstream `!= Disable` gate for one
+// already-bound non-ALTER target — DROP/TRUNCATE/RENAME and the
+// standalone index statements share it with the ALTER guard.
+func (s *batchState) cacheGuardOutcome(entry *batchTableEntry) spec.AutoRandomVerdict {
+	if s.dialect != spec.DialectTiDB || entry == nil || entry.state != tablePresent || entry.shape == nil {
+		return spec.AutoRandomOK
+	}
+	verdict, _ := spec.CacheGuardOutcome(spec.AlterLayoutR6FactsForSnapshot(entry.shape))
+	return verdict
 }
 
 // applyLayoutR6Alter adjudicates one R6 action per shared verdict and

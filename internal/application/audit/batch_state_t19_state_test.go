@@ -32,6 +32,7 @@ func TestT19RemoveTTLPublishesNoTTLOnPartialShape(t *testing.T) {
 				IndexesUnknown:      true,
 				ConstraintsUnknown:  true,
 				ReferencedByUnknown: true,
+				Options:             map[string]string{"cache_status": "disable"},
 			},
 		},
 	}

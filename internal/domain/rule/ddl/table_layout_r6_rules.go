@@ -68,9 +68,34 @@ func newTableCacheValidRule(cfg policy.RulePolicy) (rule.StatementRule, error) {
 
 func (r tableCacheValidRule) ID() string { return ruleIDTiDBTableCacheValid }
 
+// cacheGuardCoveredStatement reports whether the statement runs the
+// upstream `TableCacheStatusType != Disable` gate: every ALTER spec
+// except a single CACHE/NOCACHE reaches it inside ALTER, and the
+// standalone DROP/TRUNCATE/RENAME/index operations evaluate the same
+// guard unconditionally (issue #102 R7).
+func cacheGuardCoveredStatement(statement spec.Statement) bool {
+	if statement.DDL == nil {
+		return false
+	}
+	switch statement.DDL.Operation {
+	case spec.DDLOperationDropTable, spec.DDLOperationTruncateTable,
+		spec.DDLOperationRenameTable, spec.DDLOperationCreateIndex,
+		spec.DDLOperationDropIndex:
+		return true
+	}
+	return false
+}
+
 // AppliesTo covers every alter spec — the cached-table guard refuses
-// non-cache actions on a proven cache-enabled table too.
+// non-cache actions on a proven cache-enabled table too — plus the
+// standalone mutation operations that share the same upstream gate.
 func (r tableCacheValidRule) AppliesTo(statement spec.Statement) bool {
+	if statement.Dialect != spec.DialectTiDB || statement.Kind != spec.KindDDL {
+		return false
+	}
+	if cacheGuardCoveredStatement(statement) {
+		return true
+	}
 	return layoutR6Applies(statement, "any") && len(layoutR6Targets(statement)) > 0
 }
 
@@ -101,6 +126,28 @@ func (r tableCacheValidRule) Evaluate(ctx context.Context, statement spec.Statem
 	facts := layoutR6Facts(statement)
 	targets := layoutR6Targets(statement)
 	findings := make([]rule.Finding, 0)
+	// Standalone covered operations evaluate the `!= Disable` gate
+	// unconditionally — a proven non-Disable status is a native refusal.
+	if cacheGuardCoveredStatement(statement) {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
+		if verdict, reason := spec.CacheGuardOutcome(facts); verdict == spec.AutoRandomRefused {
+			message, suggestion := cacheRefusalText(reason)
+			findings = append(findings, rule.Finding{
+				Level:      r.level,
+				Message:    fmt.Sprintf("%s on table %q %s", statement.DDL.Operation, statement.DDL.Table.Name, message),
+				Suggestion: suggestion,
+				Metadata: map[string]any{
+					"table":  statement.DDL.Table.Name,
+					"action": string(statement.DDL.Operation),
+					"reason": reason,
+				},
+			})
+		}
+		return findings, nil
+	}
+	specCount := spec.CacheGuardSpecCount(statement.DDL.Alter)
 	for _, alter := range targets {
 		if err := ctx.Err(); err != nil {
 			return nil, err
@@ -111,7 +158,7 @@ func (r tableCacheValidRule) Evaluate(ctx context.Context, statement spec.Statem
 		case "cache", "nocache":
 			verdict, reason = spec.AlterTableCacheOutcome(alter.Action, facts)
 		default:
-			if spec.CachedTableGuardRefused(alter.Action, len(targets), facts) {
+			if spec.CachedTableGuardRefused(alter.Action, specCount, facts) {
 				verdict, reason = spec.AutoRandomRefused, spec.LayoutReasonCachedTableGuard
 			}
 		}
@@ -139,21 +186,40 @@ func (r tableCacheValidRule) EvidenceGaps(statement spec.Statement) []rule.Evide
 	}
 	facts := layoutR6Facts(statement)
 	required := map[string]bool{}
-	for _, alter := range layoutR6Targets(statement) {
-		if alter.Action != "cache" && alter.Action != "nocache" {
-			continue
-		}
-		verdict, reason := spec.AlterTableCacheOutcome(alter.Action, facts)
-		if verdict != spec.AutoRandomUndecidable {
-			continue
-		}
-		switch reason {
-		case spec.LayoutReasonCacheSizeUnproven:
-			required[layoutR6FactTableSize] = true
-		case spec.LayoutReasonCacheStatusUnproven:
+	// Covered operations need the status premise unconditionally; an
+	// unobserved status is the precise missing fact (issue #102 R7).
+	if cacheGuardCoveredStatement(statement) {
+		if !facts.CacheStatusKnown {
 			required[layoutR6FactCacheStatus] = true
-		case spec.LayoutReasonPartitionedUnproven:
-			required[layoutR6FactPartitioned] = true
+		}
+	} else {
+		specCount := spec.CacheGuardSpecCount(statement.DDL.Alter)
+		guardPremise := false
+		for i := range statement.DDL.Alter {
+			if spec.CacheGuardPremiseNeeded(statement.DDL.Alter[i].Action, specCount) {
+				guardPremise = true
+				break
+			}
+		}
+		if guardPremise && !facts.CacheStatusKnown {
+			required[layoutR6FactCacheStatus] = true
+		}
+		for _, alter := range layoutR6Targets(statement) {
+			if alter.Action != "cache" && alter.Action != "nocache" {
+				continue
+			}
+			verdict, reason := spec.AlterTableCacheOutcome(alter.Action, facts)
+			if verdict != spec.AutoRandomUndecidable {
+				continue
+			}
+			switch reason {
+			case spec.LayoutReasonCacheSizeUnproven:
+				required[layoutR6FactTableSize] = true
+			case spec.LayoutReasonCacheStatusUnproven:
+				required[layoutR6FactCacheStatus] = true
+			case spec.LayoutReasonPartitionedUnproven:
+				required[layoutR6FactPartitioned] = true
+			}
 		}
 	}
 	if len(required) == 0 {

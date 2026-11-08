@@ -343,6 +343,16 @@ func (s *batchState) applyAddIndex(_ spec.Statement, alter *spec.Alter, targets 
 		s.invalidateKey(key)
 		return
 	}
+	// The upstream `!= Disable` cache gate guards ADD INDEX — a proven
+	// non-Disable status refuses and an unobserved one unvouches the
+	// shape rather than presuming the gate passed (issue #102 R7).
+	switch s.cacheGuardOutcome(entry) {
+	case spec.AutoRandomRefused:
+		return
+	case spec.AutoRandomUndecidable:
+		s.entries[key] = presentIncompleteEntry(s.effectiveSchema(s.schema, targets[0]), targets[0].Name)
+		return
+	}
 	// Member-adding transitions need only the member premise: the declared
 	// index is authored, so it merges once every member name is proven —
 	// a hidden 1061 collision unvouches the member set below, and the
@@ -537,6 +547,16 @@ func (s *batchState) applyDropIndex(statement spec.Statement, alter *spec.Alter,
 		return
 	case entry.state == tableAbsent:
 		s.invalidateKey(key)
+		return
+	}
+	// The upstream `!= Disable` cache gate guards DROP INDEX — a proven
+	// non-Disable status refuses and an unobserved one unvouches the
+	// shape rather than presuming the gate passed (issue #102 R7).
+	switch s.cacheGuardOutcome(entry) {
+	case spec.AutoRandomRefused:
+		return
+	case spec.AutoRandomUndecidable:
+		s.entries[key] = presentIncompleteEntry(s.effectiveSchema(s.schema, targets[0]), targets[0].Name)
 		return
 	}
 	if strings.EqualFold(name, "primary") {
@@ -838,6 +858,16 @@ func (s *batchState) applyRenameIndex(_ spec.Statement, alter *spec.Alter, targe
 		return
 	case entry.state == tableAbsent:
 		s.invalidateKey(key)
+		return
+	}
+	// The upstream `!= Disable` cache gate guards RENAME INDEX — a
+	// proven non-Disable status refuses and an unobserved one unvouches
+	// the shape rather than presuming the gate passed (issue #102 R7).
+	switch s.cacheGuardOutcome(entry) {
+	case spec.AutoRandomRefused:
+		return
+	case spec.AutoRandomUndecidable:
+		s.entries[key] = presentIncompleteEntry(s.effectiveSchema(s.schema, targets[0]), targets[0].Name)
 		return
 	}
 	if strings.EqualFold(oldName, "primary") {

@@ -38,7 +38,7 @@ func (p *t18HTTPViewProvider) LoadTableSnapshot(_ context.Context, _ deltascope.
 	identity := &spec.Table{Schema: schema, Name: table}
 	switch table {
 	case "fresh":
-		return &spec.TableSnapshot{Schema: schema, Table: identity}, nil
+		return &spec.TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Schema: schema, Table: identity}, nil
 	case "visible_v":
 		if p.mode == "error" {
 			return nil, errors.New("t18_private_provider_error")
@@ -54,13 +54,11 @@ func (p *t18HTTPViewProvider) LoadTableSnapshot(_ context.Context, _ deltascope.
 				Bindings: []spec.ViewColumnBinding{{Column: "id", Output: "id"}},
 			}
 		}
-		return &spec.TableSnapshot{
-			Schema: schema, Table: identity, Exists: true, RelationKind: "view", View: view,
+		return &spec.TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Schema: schema, Table: identity, Exists: true, RelationKind: "view", View: view,
 			Columns: []spec.Column{{Name: "id", Type: "int"}},
 		}, nil
 	case "t18_private_hidden_leaf":
-		return &spec.TableSnapshot{
-			Schema: schema, Table: identity, Exists: true, RelationKind: "table",
+		return &spec.TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Schema: schema, Table: identity, Exists: true, RelationKind: "table",
 			Columns: []spec.Column{{Name: "id", Type: "int"}},
 		}, nil
 	default:

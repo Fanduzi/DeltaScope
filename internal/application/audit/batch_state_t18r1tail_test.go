@@ -10,12 +10,11 @@ import (
 func t18R1TailBool(v bool) *bool { return &v }
 
 func t18R1TailAbsent(name string) *spec.TableSnapshot {
-	return &spec.TableSnapshot{Schema: "g", Table: &spec.Table{Schema: "g", Name: name}, Exists: false}
+	return &spec.TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Schema: "g", Table: &spec.Table{Schema: "g", Name: name}, Exists: false}
 }
 
 func t18R1TailSourceView(name string, updatable *bool) *spec.TableSnapshot {
-	return &spec.TableSnapshot{
-		Schema: "g", Table: &spec.Table{Schema: "g", Name: name}, Exists: true,
+	return &spec.TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Schema: "g", Table: &spec.Table{Schema: "g", Name: name}, Exists: true,
 		RelationKind: "view", Columns: []spec.Column{{Name: "id", Type: "int"}},
 		View: &spec.ViewSnapshot{
 			Security:  "definer",
@@ -185,7 +184,7 @@ func TestT18R1TailUnresolvedAlterMergesAlgorithmBranches(t *testing.T) {
 			case "unknown":
 				provider.tables["g.u"] = nil
 			case "missing":
-				provider.tables["g.u"] = &spec.TableSnapshot{Schema: "g", Exists: false}
+				provider.tables["g.u"] = &spec.TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Schema: "g", Exists: false}
 			}
 			before := cloneTableSnapshot(prior)
 			_, statements := t18FirstEnrich(t, provider, tc.sql+"\nCREATE VIEW next_v AS SELECT id FROM v;")

@@ -29,7 +29,7 @@ func (t06A3HTTPAbsentProvider) LoadInstanceFacts(context.Context, deltascope.Dia
 }
 
 func (t06A3HTTPAbsentProvider) LoadTableSnapshot(_ context.Context, _ deltascope.Dialect, schema, table string) (*deltascope.TableSnapshot, error) {
-	return &spec.TableSnapshot{Exists: false, Table: &spec.Table{Schema: schema, Name: table}}, nil
+	return &spec.TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Exists: false, Table: &spec.Table{Schema: schema, Name: table}}, nil
 }
 
 func t06A3HTTPPolicy(t *testing.T, enabled map[string]bool) string {

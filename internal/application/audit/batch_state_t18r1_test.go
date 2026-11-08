@@ -9,7 +9,7 @@ import (
 
 func t18R1SchemaFixture() *t18FirstProvider {
 	provider := t18FirstFixture()
-	provider.tables["src.t"] = &spec.TableSnapshot{Schema: "src",
+	provider.tables["src.t"] = &spec.TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Schema: "src",
 		Table: &spec.Table{Schema: "src", Name: "t"}, Exists: true, RelationKind: "table",
 		Columns: []spec.Column{{Name: "id", Type: "int"}}}
 	return provider
@@ -42,7 +42,7 @@ func TestT18R1CreateViewConsumesDroppedSchema(t *testing.T) {
 
 func TestT18R1CreateViewLeavesNeverTouchedSchemaUnknown(t *testing.T) {
 	provider := t18R1SchemaFixture()
-	provider.tables["g.v"] = &spec.TableSnapshot{Schema: "g", Exists: false}
+	provider.tables["g.v"] = &spec.TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Schema: "g", Exists: false}
 	_, statements := t18FirstEnrich(t, provider, "CREATE VIEW v AS SELECT id FROM src.t;")
 	assessment := spec.AssessViewLifecycle(statements[0])
 	if assessment.TargetInvalid || statements[0].Metadata.View.TargetSchemaAbsent {
@@ -74,7 +74,7 @@ func TestT18R1InheritedAlgorithmFallback(t *testing.T) {
 	for _, clause := range []string{"", "ALGORITHM=UNDEFINED "} {
 		t.Run("alter_"+clause, func(t *testing.T) {
 			provider := t18FirstFixture()
-			provider.tables["g.mv"] = &spec.TableSnapshot{Schema: "g", Exists: false}
+			provider.tables["g.mv"] = &spec.TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Schema: "g", Exists: false}
 			_, statements := t18FirstEnrich(t, provider,
 				"CREATE ALGORITHM=MERGE VIEW mv AS SELECT id FROM t;\n"+
 					"ALTER "+clause+"VIEW mv AS SELECT COUNT(*) AS n FROM t;\n"+
@@ -94,9 +94,9 @@ func TestT18R1InheritedAlgorithmFallback(t *testing.T) {
 
 func TestT18R1CorrelatedSubqueryNearestScope(t *testing.T) {
 	provider := t18FirstFixture()
-	provider.tables["g.a"] = &spec.TableSnapshot{Schema: "g", Table: &spec.Table{Schema: "g", Name: "a"},
+	provider.tables["g.a"] = &spec.TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Schema: "g", Table: &spec.Table{Schema: "g", Name: "a"},
 		Exists: true, RelationKind: "table", Columns: []spec.Column{{Name: "id", Type: "int"}}}
-	provider.tables["g.b"] = &spec.TableSnapshot{Schema: "g", Table: &spec.Table{Schema: "g", Name: "b"},
+	provider.tables["g.b"] = &spec.TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Schema: "g", Table: &spec.Table{Schema: "g", Name: "b"},
 		Exists: true, RelationKind: "table", Columns: []spec.Column{{Name: "id", Type: "int"}}}
 	_, statements := t18FirstEnrich(t, provider,
 		"CREATE VIEW cv AS SELECT a.id FROM a WHERE EXISTS (\n"+
@@ -113,9 +113,9 @@ func TestT18R1CorrelatedSubqueryNearestScope(t *testing.T) {
 func TestT18R1CorrelatedSubqueryScopeControls(t *testing.T) {
 	newProvider := func() *t18FirstProvider {
 		provider := t18FirstFixture()
-		provider.tables["g.a"] = &spec.TableSnapshot{Schema: "g", Table: &spec.Table{Schema: "g", Name: "a"},
+		provider.tables["g.a"] = &spec.TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Schema: "g", Table: &spec.Table{Schema: "g", Name: "a"},
 			Exists: true, RelationKind: "table", Columns: []spec.Column{{Name: "id", Type: "int"}}}
-		provider.tables["g.b"] = &spec.TableSnapshot{Schema: "g", Table: &spec.Table{Schema: "g", Name: "b"},
+		provider.tables["g.b"] = &spec.TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Schema: "g", Table: &spec.Table{Schema: "g", Name: "b"},
 			Exists: true, RelationKind: "table", Columns: []spec.Column{{Name: "bid", Type: "int"}}}
 		return provider
 	}

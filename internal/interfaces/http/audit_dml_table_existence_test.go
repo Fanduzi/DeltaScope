@@ -27,7 +27,7 @@ func TestExecuteAuditRequestExposesDMLTableExistenceFinding(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(string(tc.dialect)+"/"+tc.sql[:6], func(t *testing.T) {
 			previous := prepareHTTPMetadataAudit
-			client := &metadataAuditTestClient{snapshot: &spec.TableSnapshot{Schema: "app", Exists: false}}
+			client := &metadataAuditTestClient{snapshot: &spec.TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Schema: "app", Exists: false}}
 			prepareHTTPMetadataAudit = func(_ context.Context, _ auditmeta.Request) (*auditmeta.PreparedAudit, error) {
 				return &auditmeta.PreparedAudit{
 					Client:        client,

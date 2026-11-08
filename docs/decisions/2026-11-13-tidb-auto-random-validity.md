@@ -311,10 +311,55 @@ preserve the exact pre-state.
   premise and never claims replica readiness. Hypothetical
   (`HYPOTHETICAL`) declarations mutate session state upstream and never
   touch ordered catalog facts.
-- **COMPACT and SPLIT stay bounded.** `ALTER ... COMPACT` parses as a
-  separate request-only statement with no catalog fact — it is audited
-  without a state transition. Every tested SPLIT form is a v8.5.0 parser
-  error, so SPLIT remains a parser boundary rather than an invented
-  action. Real TiFlash store success/recovery fixtures stay
-  `pending_native` in `T23.json` (`B-cache-attributes`,
-  `C-tiflash-replica`) until separately authorized.
+- **COMPACT and SPLIT stay bounded.** `COMPACT TABLE` parses as its
+  own `compact_table` statement, and the independent SPLIT forms
+  (`SPLIT TABLE t BETWEEN ... REGIONS n`, `SPLIT TABLE t BY (...)`)
+  parse as `*ast.SplitRegionStmt` (`split_region`) — the v8.5.0 parser
+  accepts all of them (R7 correction: an earlier draft wrongly claimed
+  SPLIT was a parser boundary; only ALTER-embedded split spec forms
+  fail to parse). Neither statement is modeled for semantic audit:
+  the extractor keeps them as `kind:"unknown"` + `coverage:
+  incomplete` bounded statements — no findings, no state transition —
+  and that limitation is product modeling, not vendor parser support.
+  Real TiFlash store success/recovery fixtures stay `pending_native`
+  in `T23.json` (`B-cache-attributes`, `C-tiflash-replica`) until
+  separately authorized.
+
+### R7 amendment — cache status and ATTRIBUTES corrections (issue #102)
+
+- **Cache status is a real catalog fact, not a marker guess.** A bare
+  `/* CACHED ON */` comment in SHOW CREATE proves Enable; its absence
+  proves nothing (Switching emits no marker). The formal source is
+  `mysql.table_cache_meta` joined through
+  `information_schema.tables.tidb_table_id`: the row is only ever
+  inserted/updated, never deleted, so an absent row proves never-cached
+  Disable, a present row without the marker proves Switching, and a
+  failed read stays unobserved. The reader no longer fabricates
+  `disable` for a missing marker.
+- **NOCACHE converges without observing the old state.** Upstream's
+  Disable→Switching→Enable machine makes every legal old status
+  converge to Disable, so `ALTER ... NOCACHE` publishes `disable`
+  unconditionally — a no-op reason only when the old status is a
+  proven Disable. Batch-created tables start at the proven Disable
+  default; temporary/sys-DB/partitioned/non-base-table objects are
+  proven Disable by class because CACHE refuses them outright.
+- **The `!= Disable` mutation gate covers every supported write.** The
+  shared `spec.CacheGuardOutcome`/`CacheGuardPremiseNeeded` criterion
+  guards ALTER (all specs except a lone CACHE/NOCACHE, counting only
+  effective specs), DROP/TRUNCATE/RENAME TABLE, CREATE/DROP/RENAME
+  INDEX: proven non-Disable refuses and preserves the exact pre-state,
+  proven Disable keeps existing behavior, and an unobserved status
+  unvouches only what the withheld transition could have moved —
+  present-incomplete for shape-preserving operations, existence
+  tombstones for DROP/RENAME source names. The `ddl.tidb.table.cache.valid`
+  rule reports the refusal finding and the `table.cache_status`
+  evidence gap on the same criterion.
+- **ATTRIBUTES parses through the upstream-equivalent YAML engine.**
+  `ParseAttributesSpecValue` wraps the spec text as a YAML flow
+  sequence and applies NewLabel/Add semantics — exactly one `=` per
+  item, non-empty trimmed key and value, same-key same-value
+  deduplication, same-key conflicting-value refusal — matching how
+  TiDB's own parser evaluates the list (including its quoting and
+  unclosed-quote recovery). `ATTRIBUTES=DEFAULT` and successfully
+  parsed empty lists clear attributes. Authored attribute text stays
+  out of findings, gaps, and published facts.

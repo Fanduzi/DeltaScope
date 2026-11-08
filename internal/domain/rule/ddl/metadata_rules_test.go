@@ -31,7 +31,7 @@ func TestTableExistenceRules(t *testing.T) {
 		Kind: spec.KindDDL,
 		DDL:  &spec.DDL{Table: &spec.Table{Name: "users"}},
 		Metadata: &spec.Metadata{
-			TargetTable: &spec.TableSnapshot{Exists: true, Table: &spec.Table{Name: "users"}},
+			TargetTable: &spec.TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Exists: true, Table: &spec.Table{Name: "users"}},
 		},
 	}
 	findings, err := createRule.Evaluate(context.Background(), createStmt)
@@ -49,7 +49,7 @@ func TestTableExistenceRules(t *testing.T) {
 			Alter: []spec.Alter{{Action: "drop_column", Name: "email"}},
 		},
 		Metadata: &spec.Metadata{
-			TargetTable: &spec.TableSnapshot{Exists: false, Table: &spec.Table{Name: "users"}},
+			TargetTable: &spec.TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Exists: false, Table: &spec.Table{Name: "users"}},
 		},
 	}
 	findings, err = alterRule.Evaluate(context.Background(), alterStmt)
@@ -88,9 +88,8 @@ func TestAlterColumnExistenceRules(t *testing.T) {
 			},
 		},
 		Metadata: &spec.Metadata{
-			TargetTable: &spec.TableSnapshot{
-				Exists: true,
-				Table:  &spec.Table{Name: "users"},
+			TargetTable: &spec.TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Exists: true,
+				Table: &spec.Table{Name: "users"},
 				Columns: []spec.Column{
 					{Name: "email"},
 				},
@@ -142,8 +141,7 @@ func TestAlterIndexAndPrimaryKeyExistenceRules(t *testing.T) {
 			},
 		},
 		Metadata: &spec.Metadata{
-			TargetTable: &spec.TableSnapshot{
-				Exists:      true,
+			TargetTable: &spec.TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Exists: true,
 				Table:       &spec.Table{Name: "users"},
 				Columns:     []spec.Column{{Name: "id", Type: "int"}},
 				PrimaryKey:  &spec.Index{Name: "users_primary_idx", Kind: spec.IndexKindPrimary},
@@ -175,8 +173,7 @@ func TestAlterIndexAndPrimaryKeyExistenceRules(t *testing.T) {
 		Alter: []spec.Alter{{Action: "drop_primary_key", Name: "users_pkey"}},
 	}
 	explicitDropPrimaryKey.Metadata = &spec.Metadata{
-		TargetTable: &spec.TableSnapshot{
-			Exists:  true,
+		TargetTable: &spec.TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Exists: true,
 			Table:   &spec.Table{Name: "users"},
 			Columns: []spec.Column{{Name: "id", Type: "int"}},
 			Indexes: []spec.Index{{Name: "idx_email", Kind: spec.IndexKindSecondary}},
@@ -208,8 +205,7 @@ func TestAlterIndexExistenceRuleSupportsStandaloneIndexDDL(t *testing.T) {
 			Alter:     []spec.Alter{{Action: "rename_index", Name: "missing_idx", Options: map[string]string{"new_name": "idx_new"}}},
 		},
 		Metadata: &spec.Metadata{
-			TargetTable: &spec.TableSnapshot{
-				Exists:  true,
+			TargetTable: &spec.TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Exists: true,
 				Table:   &spec.Table{Name: "users"},
 				Columns: []spec.Column{{Name: "id", Type: "int"}},
 				Indexes: []spec.Index{{Name: "idx_email", Kind: spec.IndexKindSecondary}},
@@ -249,9 +245,8 @@ func TestAlterPrimaryKeyExistenceRuleConstraintOnlySnapshot(t *testing.T) {
 			Alter: []spec.Alter{{Action: "drop_constraint", Name: "users_pkey"}},
 		},
 		Metadata: &spec.Metadata{
-			TargetTable: &spec.TableSnapshot{
-				Exists: true,
-				Table:  &spec.Table{Name: "users"},
+			TargetTable: &spec.TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Exists: true,
+				Table: &spec.Table{Name: "users"},
 				Constraints: []spec.Constraint{
 					{Type: "primary_key", Name: "users_pkey", Columns: []string{"id"}},
 				},
@@ -286,8 +281,7 @@ func TestAlterPrimaryKeyExistenceRuleFallsBackToPrimaryKeyIndexName(t *testing.T
 			Alter: []spec.Alter{{Action: "drop_constraint", Name: "users_pkey"}},
 		},
 		Metadata: &spec.Metadata{
-			TargetTable: &spec.TableSnapshot{
-				Exists:     true,
+			TargetTable: &spec.TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Exists: true,
 				Table:      &spec.Table{Name: "users"},
 				PrimaryKey: &spec.Index{Name: "users_pkey", Kind: spec.IndexKindPrimary},
 			},
@@ -328,7 +322,7 @@ func TestMetadataExistenceRulesIgnoreLegacyRequiredParamAndSkipWithoutMetadata(t
 		Kind: spec.KindDDL,
 		DDL:  &spec.DDL{Table: &spec.Table{Name: "users"}},
 		Metadata: &spec.Metadata{
-			TargetTable: &spec.TableSnapshot{Exists: true, Table: &spec.Table{Name: "users"}},
+			TargetTable: &spec.TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Exists: true, Table: &spec.Table{Name: "users"}},
 		},
 	})
 	if err != nil {

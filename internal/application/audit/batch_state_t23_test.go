@@ -139,8 +139,7 @@ func TestT23ApplicableAutoRandomCreatePublishesShape(t *testing.T) {
 // published pre-existing shape survives the rejected redefinition.
 func TestT23RefusedCreateKeepsPreexistingShape(t *testing.T) {
 	t.Parallel()
-	existing := &spec.TableSnapshot{
-		Exists:  true,
+	existing := &spec.TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Exists: true,
 		Schema:  "req",
 		Columns: []spec.Column{{Name: "id", Type: "bigint(20)", NotNull: true, Unsigned: true}},
 	}

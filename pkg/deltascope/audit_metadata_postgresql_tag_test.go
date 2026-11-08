@@ -9,8 +9,7 @@ import (
 
 func TestAuditPostgreSQLMetadataMapsDropConstraintToPrimaryKeyRule(t *testing.T) {
 	provider := &fakeMetadataProvider{
-		snapshot: &TableSnapshot{
-			Exists:      true,
+		snapshot: &TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Exists: true,
 			Table:       &Table{Name: "users"},
 			PrimaryKey:  &Index{Name: "users_primary_idx", Kind: "primary", Columns: []string{"id"}},
 			Constraints: []Constraint{{Type: "primary_key", Name: "users_pkey", Columns: []string{"id"}}},
@@ -47,9 +46,8 @@ func TestAuditPostgreSQLMetadataMapsDropConstraintToPrimaryKeyRule(t *testing.T)
 
 func TestAuditPostgreSQLMetadataRequiresExistingColumnForRenameColumn(t *testing.T) {
 	provider := &fakeMetadataProvider{
-		snapshot: &TableSnapshot{
-			Exists: true,
-			Table:  &Table{Name: "users"},
+		snapshot: &TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Exists: true,
+			Table: &Table{Name: "users"},
 			Columns: []Column{
 				{Name: "email"},
 			},
@@ -86,9 +84,8 @@ func TestAuditPostgreSQLMetadataRequiresExistingColumnForRenameColumn(t *testing
 
 func TestAuditPostgreSQLMetadataRequiresExistingColumnForDropColumn(t *testing.T) {
 	provider := &fakeMetadataProvider{
-		snapshot: &TableSnapshot{
-			Exists: true,
-			Table:  &Table{Name: "users"},
+		snapshot: &TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Exists: true,
+			Table: &Table{Name: "users"},
 			Columns: []Column{
 				{Name: "email"},
 			},
@@ -125,9 +122,8 @@ func TestAuditPostgreSQLMetadataRequiresExistingColumnForDropColumn(t *testing.T
 
 func TestAuditPostgreSQLMetadataRequiresExistingTableForRenameTable(t *testing.T) {
 	provider := &fakeMetadataProvider{
-		snapshot: &TableSnapshot{
-			Exists: false,
-			Table:  &Table{Name: "users"},
+		snapshot: &TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Exists: false,
+			Table: &Table{Name: "users"},
 		},
 	}
 
@@ -162,8 +158,7 @@ func TestAuditPostgreSQLMetadataRequiresExistingTableForRenameTable(t *testing.T
 func TestAuditPostgreSQLMetadataResolvesOwningTableForRenameIndex(t *testing.T) {
 	provider := &fakeMetadataProvider{
 		indexTable: "users",
-		snapshot: &TableSnapshot{
-			Exists:  true,
+		snapshot: &TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Exists: true,
 			Table:   &Table{Name: "users"},
 			Indexes: []Index{{Name: "idx_users_email", Kind: "secondary"}},
 		},
@@ -208,8 +203,7 @@ func TestAuditPostgreSQLMetadataResolvesOwningTableForRenameIndex(t *testing.T) 
 func TestAuditPostgreSQLMetadataResolvesQualifiedRenameIndexWithoutRequestSchema(t *testing.T) {
 	provider := &fakeMetadataProvider{
 		indexTable: "users",
-		snapshot: &TableSnapshot{
-			Exists:  true,
+		snapshot: &TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Exists: true,
 			Table:   &Table{Name: "users"},
 			Indexes: []Index{{Name: "idx_users_email", Kind: "secondary"}},
 		},
@@ -240,8 +234,7 @@ func TestAuditPostgreSQLMetadataResolvesQualifiedRenameIndexWithoutRequestSchema
 func TestAuditPostgreSQLMetadataResolvesOwningTableForDropIndex(t *testing.T) {
 	provider := &fakeMetadataProvider{
 		indexTable: "users",
-		snapshot: &TableSnapshot{
-			Exists:  true,
+		snapshot: &TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Exists: true,
 			Table:   &Table{Name: "users"},
 			Indexes: []Index{{Name: "idx_users_email", Kind: "secondary"}},
 		},

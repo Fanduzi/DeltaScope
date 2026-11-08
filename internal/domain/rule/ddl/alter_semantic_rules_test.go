@@ -269,9 +269,8 @@ func TestAlterAddedRedundantIndexRulesReuseLifecycleSnapshot(t *testing.T) {
 		},
 	)
 	statement.Metadata = &spec.Metadata{
-		TargetTable: &spec.TableSnapshot{
-			Exists: true,
-			Table:  &spec.Table{Name: "users"},
+		TargetTable: &spec.TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Exists: true,
+			Table: &spec.Table{Name: "users"},
 			Indexes: []spec.Index{
 				{Name: "idx_email_created", Kind: spec.IndexKindSecondary, Columns: []string{"email", "created_at"}},
 				{Name: "uniq_status", Kind: spec.IndexKindUnique, Columns: []string{"status"}},
@@ -852,9 +851,8 @@ func TestAlterRegisterAddsEnabledSemanticRulesInDeterministicOrder(t *testing.T)
 		},
 	)
 	statement.Metadata = &spec.Metadata{
-		TargetTable: &spec.TableSnapshot{
-			Exists: true,
-			Table:  &spec.Table{Name: "users"},
+		TargetTable: &spec.TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Exists: true,
+			Table: &spec.Table{Name: "users"},
 			Columns: []spec.Column{
 				{Name: "payload", Type: "json", NotNull: true},
 				{Name: "body", Type: "json"},

@@ -24,8 +24,7 @@ func t13r1BoolP(v bool) *bool    { return &v }
 func t13r1StrP(v string) *string { return &v }
 
 func t13r1RangeShape(name string) *spec.TableSnapshot {
-	return &spec.TableSnapshot{
-		Exists:         true,
+	return &spec.TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Exists: true,
 		Table:          &spec.Table{Name: name},
 		Columns:        []spec.Column{{Name: "id", Type: "int"}, {Name: "c", Type: "int"}},
 		PrimaryKey:     &spec.Index{Name: "primary", Kind: spec.IndexKindPrimary, Columns: []string{"id"}},

@@ -44,9 +44,8 @@ func TestAuditSQLPostgreSQLOfflineIDEqualityImpact(t *testing.T) {
 func TestAuditSQLPostgreSQLPlannerImpactOverridesShapeEstimate(t *testing.T) {
 	t.Parallel()
 	provider := &fakeMetadataProvider{
-		snapshot: &spec.TableSnapshot{
-			Exists: true,
-			Table:  &spec.Table{Name: "users"},
+		snapshot: &spec.TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Exists: true,
+			Table: &spec.Table{Name: "users"},
 		},
 		planner: &spec.ImpactEstimate{
 			EstimatedRows: ptrInt64(7),

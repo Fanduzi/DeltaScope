@@ -31,7 +31,7 @@ func t13r1Snapshot(name string) *spec.TableSnapshot {
 		Partitioned:    t13r1Bool(true),
 		PartitionType:  t13r1Str("range"),
 		PartitionNames: []string{"p0", "p1"},
-		Options:        map[string]string{"engine": "innodb"},
+		Options:        map[string]string{"cache_status": "disable", "engine": "innodb"},
 	}
 }
 
@@ -336,7 +336,7 @@ func TestT13R1CounterpartAbsentBlocked(t *testing.T) {
 	stmt := t13r1StatementExchange(spec.Alter{
 		Action: "exchange_partition", Partitions: []string{"p0"},
 		ExchangeTable: &spec.Table{Name: "t2"},
-	}, t13r1Snapshot("t"), &spec.TableSnapshot{Exists: false, Table: &spec.Table{Name: "t2"}})
+	}, t13r1Snapshot("t"), &spec.TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Exists: false, Table: &spec.Table{Name: "t2"}})
 	findings, err := r.Evaluate(context.Background(), stmt)
 	if err != nil {
 		t.Fatalf("evaluate: %v", err)
@@ -373,8 +373,7 @@ func TestT13R1CounterpartShapeChecks(t *testing.T) {
 	})
 	t.Run("column mismatch", func(t *testing.T) {
 		t.Parallel()
-		counterpart := &spec.TableSnapshot{
-			Exists:      true,
+		counterpart := &spec.TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Exists: true,
 			Table:       &spec.Table{Name: "t2"},
 			Columns:     []spec.Column{{Name: "id", Type: "int"}, {Name: "extra", Type: "int"}},
 			PrimaryKey:  &spec.Index{Name: "primary", Kind: spec.IndexKindPrimary, Columns: []string{"id"}},
@@ -395,8 +394,7 @@ func TestT13R1CounterpartShapeChecks(t *testing.T) {
 	})
 	t.Run("primary key mismatch", func(t *testing.T) {
 		t.Parallel()
-		counterpart := &spec.TableSnapshot{
-			Exists:      true,
+		counterpart := &spec.TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Exists: true,
 			Table:       &spec.Table{Name: "t2"},
 			Columns:     []spec.Column{{Name: "id", Type: "int"}, {Name: "c", Type: "int"}},
 			PrimaryKey:  nil,
@@ -423,7 +421,7 @@ func TestT13R1CounterpartShapeChecks(t *testing.T) {
 			Columns:     []spec.Column{{Name: "id", Type: "int"}, {Name: "c", Type: "int"}},
 			PrimaryKey:  &spec.Index{Name: "primary", Kind: spec.IndexKindPrimary, Columns: []string{"id"}},
 			Partitioned: t13r1Bool(false),
-			Options:     map[string]string{"engine": "innodb"},
+			Options:     map[string]string{"cache_status": "disable", "engine": "innodb"},
 		}
 		stmt := t13r1StatementExchange(spec.Alter{
 			Action: "exchange_partition", Partitions: []string{"p0"},
@@ -457,12 +455,12 @@ func TestT13R1CounterpartFactGaps(t *testing.T) {
 	}{
 		{name: "no counterpart projection", counterpart: nil, wantFact: "exchange_table.existence"},
 		{name: "partitioned unobserved", counterpart: func() *spec.TableSnapshot {
-			return &spec.TableSnapshot{Exists: true, Table: &spec.Table{Name: "t2"},
+			return &spec.TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Exists: true, Table: &spec.Table{Name: "t2"},
 				Columns:    []spec.Column{{Name: "id", Type: "int"}, {Name: "c", Type: "int"}},
 				PrimaryKey: &spec.Index{Name: "primary", Kind: spec.IndexKindPrimary, Columns: []string{"id"}}}
 		}(), wantFact: "exchange_table.partitioned"},
 		{name: "columns unobserved", counterpart: func() *spec.TableSnapshot {
-			return &spec.TableSnapshot{Exists: true, Table: &spec.Table{Name: "t2"},
+			return &spec.TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Exists: true, Table: &spec.Table{Name: "t2"},
 				Partitioned: t13r1Bool(false),
 				PrimaryKey:  &spec.Index{Name: "primary", Kind: spec.IndexKindPrimary, Columns: []string{"id"}}}
 		}(), wantFact: "exchange_table.columns"},

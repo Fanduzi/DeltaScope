@@ -101,7 +101,7 @@ func (p *t10Provider) LoadTableSnapshot(_ context.Context, _ spec.Dialect, schem
 	if snap, ok := p.tables[strings.ToLower(table)]; ok {
 		return snap, nil
 	}
-	return &spec.TableSnapshot{Exists: false, Table: &spec.Table{Schema: schema, Name: table}}, nil
+	return &spec.TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Exists: false, Table: &spec.Table{Schema: schema, Name: table}}, nil
 }
 
 // LoadPlacementPolicies serves the T20 policy catalog: nil placement is the

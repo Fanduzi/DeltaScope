@@ -3,6 +3,7 @@ package mysqlmeta
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"strings"
 	"unicode"
@@ -30,10 +31,43 @@ func (p *Provider) loadTiDBTTL(ctx context.Context, snapshot *spec.TableSnapshot
 	config, _ := parseCatalogTTLConfig(createSQL)
 	snapshot.TTLKnown = true
 	snapshot.TTL = config
-	for name, value := range parseCatalogLayoutOptions(createSQL) {
+	options := parseCatalogLayoutOptions(createSQL)
+	if status, ok := p.loadTiDBCacheStatus(ctx, snapshot, options["cache_status"] == "enable"); ok {
+		options["cache_status"] = status
+	}
+	for name, value := range options {
 		snapshot.Options[name] = value
 	}
 	return nil
+}
+
+// loadTiDBCacheStatus resolves the table's cache status from
+// mysql.table_cache_meta — the formal fact source upstream maintains.
+// The row is inserted on the first cache transition and only ever
+// updated afterwards (state_remote.go), never deleted, so an absent row
+// proves the table was never cached — Disable. A present row is cached:
+// Enable only when SHOW CREATE also emits the bare /* CACHED ON */
+// marker, Switching otherwise. A failed read leaves the fact unobserved
+// rather than degrading into either arm (issue #102 T23-R7 B1).
+func (p *Provider) loadTiDBCacheStatus(ctx context.Context, snapshot *spec.TableSnapshot, cachedOn bool) (string, bool) {
+	var tid int64
+	err := p.db.QueryRowContext(ctx,
+		"select c.tid from mysql.table_cache_meta c join information_schema.tables t on c.tid = t.tidb_table_id where t.table_schema = ? and t.table_name = ?",
+		snapshot.Schema, snapshot.Table.Name).Scan(&tid)
+	switch {
+	case err == sql.ErrNoRows:
+		if cachedOn {
+			return "enable", true
+		}
+		return "disable", true
+	case err != nil:
+		return "", false
+	default:
+		if cachedOn {
+			return "enable", true
+		}
+		return "switching", true
+	}
 }
 
 // parseCatalogLayoutOptions projects the SHOW CREATE feature comments for
@@ -41,7 +75,7 @@ func (p *Provider) loadTiDBTTL(ctx context.Context, snapshot *spec.TableSnapshot
 // upstream-proven zero — TiDB only emits it for a stored non-zero
 // AutoIDCache — so a clean read publishes the proven catalog value.
 func parseCatalogLayoutOptions(createSQL string) map[string]string {
-	out := map[string]string{"auto_id_cache": "0", "cache_status": "disable"}
+	out := map[string]string{"auto_id_cache": "0"}
 	for _, comment := range featureComments(createSQL, "/*t![auto_id_cache]") {
 		member, body, ok := catalogMember(comment)
 		if !ok || member != "auto_id_cache" {
@@ -53,8 +87,11 @@ func parseCatalogLayoutOptions(createSQL string) map[string]string {
 	}
 	// Upstream emits a bare `/* CACHED ON */` comment — deliberately not a
 	// feature comment — exactly when TableCacheStatusType is Enable. Its
-	// absence is the proven disable. The scan is the same quote-aware
-	// pass: a user-authored COMMENT echoing the token never matches.
+	// absence cannot prove Disable: the status space is three-valued
+	// (Disable/Enable/Switching) and Switching carries no comment, so a
+	// missing token leaves cache_status unobserved rather than fabricated
+	// (issue #102 T23-R7 B1). The scan is the same quote-aware pass: a
+	// user-authored COMMENT echoing the token never matches.
 	if plainCommentToken(createSQL, "cached on") {
 		out["cache_status"] = "enable"
 	}

@@ -267,7 +267,7 @@ func TestEvaluateStatementsAddsMetadataAvailableNoteForMetadataAwareRuleWithMeta
 		NormalizedSQL: "create table users (id bigint)",
 		Metadata: &spec.Metadata{
 			Schema:      "app",
-			TargetTable: &spec.TableSnapshot{Exists: true},
+			TargetTable: &spec.TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Exists: true},
 		},
 	}})
 	if err != nil {
@@ -336,7 +336,7 @@ func TestEvaluateStatementsTreatsTargetTableAsInsufficientForInstanceAwareRules(
 		RawSQL:        "drop table users",
 		NormalizedSQL: "drop table users",
 		Metadata: &spec.Metadata{
-			TargetTable: &spec.TableSnapshot{Exists: true},
+			TargetTable: &spec.TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Exists: true},
 		},
 	}})
 	if err != nil {

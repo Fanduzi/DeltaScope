@@ -26,7 +26,7 @@ func (t06A3AbsentProvider) LoadInstanceFacts(context.Context, Dialect, string) (
 }
 
 func (t06A3AbsentProvider) LoadTableSnapshot(_ context.Context, _ Dialect, schema, table string) (*TableSnapshot, error) {
-	return &spec.TableSnapshot{Exists: false, Table: &spec.Table{Schema: schema, Name: table}}, nil
+	return &spec.TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Exists: false, Table: &spec.Table{Schema: schema, Name: table}}, nil
 }
 
 func t06A3SDKPolicy(t *testing.T, enabled map[string]bool) string {

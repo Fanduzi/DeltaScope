@@ -93,8 +93,7 @@ func withTargetSnapshot(st spec.Statement, snap *spec.TableSnapshot) spec.Statem
 }
 
 func snapshotWithIndexes(indexes ...spec.Index) *spec.TableSnapshot {
-	return &spec.TableSnapshot{
-		Exists:  true,
+	return &spec.TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Exists: true,
 		Table:   &spec.Table{Name: "users"},
 		Columns: []spec.Column{{Name: "a"}, {Name: "b"}, {Name: "c"}},
 		Indexes: indexes,

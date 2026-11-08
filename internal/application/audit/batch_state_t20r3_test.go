@@ -29,7 +29,7 @@ import (
 //     and an applied CREATE OR REPLACE on a proven-existing policy is
 //     topology-relevant the same way ALTER POLICY is (cell J).
 func TestT20R3TopologyGapAndMissingRefusal(t *testing.T) {
-	existsTable := &spec.TableSnapshot{Exists: true, Table: &spec.Table{Schema: "golden", Name: "t"}}
+	existsTable := &spec.TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Exists: true, Table: &spec.Table{Schema: "golden", Name: "t"}}
 	boundProvider := func() *t10Provider {
 		return &t10Provider{
 			version: "8.0.11-TiDB-v8.5.0",

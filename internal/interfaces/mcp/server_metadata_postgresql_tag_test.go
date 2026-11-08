@@ -206,8 +206,7 @@ func TestAuditSQLToolPostgreSQLMetadataMapsDropConstraintToPrimaryKeyRule(t *tes
 	previous := prepareMetadataAudit
 	client := &mcpMetadataAuditTestClient{
 		detectDialect: spec.DialectPostgreSQL,
-		snapshot: &spec.TableSnapshot{
-			Exists:      true,
+		snapshot: &spec.TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Exists: true,
 			Table:       &spec.Table{Name: "users"},
 			PrimaryKey:  &spec.Index{Name: "users_primary_idx", Kind: spec.IndexKindPrimary, Columns: []string{"id"}},
 			Constraints: []spec.Constraint{{Type: "primary_key", Name: "users_pkey", Columns: []string{"id"}}},
@@ -282,9 +281,8 @@ func TestAuditSQLToolPostgreSQLMetadataRequiresExistingColumnForRenameColumn(t *
 	previous := prepareMetadataAudit
 	client := &mcpMetadataAuditTestClient{
 		detectDialect: spec.DialectPostgreSQL,
-		snapshot: &spec.TableSnapshot{
-			Exists: true,
-			Table:  &spec.Table{Name: "users"},
+		snapshot: &spec.TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Exists: true,
+			Table: &spec.Table{Name: "users"},
 			Columns: []spec.Column{
 				{Name: "email"},
 			},
@@ -359,9 +357,8 @@ func TestAuditSQLToolPostgreSQLMetadataRequiresExistingColumnForDropColumn(t *te
 	previous := prepareMetadataAudit
 	client := &mcpMetadataAuditTestClient{
 		detectDialect: spec.DialectPostgreSQL,
-		snapshot: &spec.TableSnapshot{
-			Exists: true,
-			Table:  &spec.Table{Name: "users"},
+		snapshot: &spec.TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Exists: true,
+			Table: &spec.Table{Name: "users"},
 			Columns: []spec.Column{
 				{Name: "email"},
 			},
@@ -436,9 +433,8 @@ func TestAuditSQLToolPostgreSQLMetadataRequiresExistingTableForRenameTable(t *te
 	previous := prepareMetadataAudit
 	client := &mcpMetadataAuditTestClient{
 		detectDialect: spec.DialectPostgreSQL,
-		snapshot: &spec.TableSnapshot{
-			Exists: false,
-			Table:  &spec.Table{Name: "users"},
+		snapshot: &spec.TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Exists: false,
+			Table: &spec.Table{Name: "users"},
 		},
 	}
 	prepareMetadataAudit = func(_ context.Context, request auditmeta.Request) (*auditmeta.PreparedAudit, error) {

@@ -12,8 +12,7 @@ import "testing"
 // t10r2Snapshot builds an existing-table snapshot whose member facts are all
 // vouched: declared columns plus optional primary key and index members.
 func t10r2Snapshot(columns []Column, pk *Index, indexes ...Index) *TableSnapshot {
-	return &TableSnapshot{
-		Exists:     true,
+	return &TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Exists: true,
 		Table:      &Table{Schema: "golden", Name: "t"},
 		Columns:    columns,
 		PrimaryKey: pk,

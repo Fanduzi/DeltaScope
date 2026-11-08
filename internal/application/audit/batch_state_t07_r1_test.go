@@ -281,8 +281,7 @@ func TestT07R1GeneratedPremiseAlter(t *testing.T) {
 				t.Run(tc.name, func(t *testing.T) {
 					snapshots := map[string]*spec.TableSnapshot{}
 					if tc.columns != nil {
-						snapshots["golden.t"] = &spec.TableSnapshot{
-							Exists:      true,
+						snapshots["golden.t"] = &spec.TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Exists: true,
 							Schema:      "golden",
 							Table:       &spec.Table{Schema: "golden", Name: "t"},
 							Columns:     tc.columns,
@@ -566,8 +565,7 @@ func TestT07R1TiDBFoldedLiteralPostState(t *testing.T) {
 				t.Fatalf("extract: %v", err)
 			}
 			statements[0].Metadata = &spec.Metadata{Version: version}
-			snapshot := &spec.TableSnapshot{
-				Exists:  true,
+			snapshot := &spec.TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Exists: true,
 				Schema:  "golden",
 				Table:   &spec.Table{Schema: "golden", Name: "t"},
 				Columns: []spec.Column{{Name: "v", Type: tc.priorType}, {Name: "x", Type: "int"}},

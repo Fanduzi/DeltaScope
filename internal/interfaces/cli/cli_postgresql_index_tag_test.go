@@ -17,8 +17,7 @@ func TestAuditCommandPostgreSQLMetadataQualifiedRenameIndexUsesStatementSchema(t
 	client := &fakeMetadataClient{
 		detectDialect: spec.DialectPostgreSQL,
 		indexTable:    "users",
-		snapshot: &spec.TableSnapshot{
-			Exists:  true,
+		snapshot: &spec.TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Exists: true,
 			Schema:  "accounting",
 			Table:   &spec.Table{Name: "users"},
 			Indexes: []spec.Index{{Name: "idx_users_email", Kind: spec.IndexKindSecondary}},

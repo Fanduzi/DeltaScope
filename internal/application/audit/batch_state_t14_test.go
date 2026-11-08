@@ -51,8 +51,7 @@ func t14RangeShape(name string) *spec.TableSnapshot {
 		PartitionNames:        names,
 		PartitionDescriptions: descriptions,
 		PartitionDefs:         spec.CatalogPartitionDefs(names, descriptions, method),
-		Options: map[string]string{
-			"table_rows": "9", "data_length": "100", "index_length": "40",
+		Options: map[string]string{"cache_status": "disable", "table_rows": "9", "data_length": "100", "index_length": "40",
 			"avg_row_length": "8", "auto_increment": "4", "comment": "kept",
 		},
 	}
@@ -64,8 +63,7 @@ func t14HashShape(name string) *spec.TableSnapshot {
 	partitioned := true
 	method := "hash"
 	names := []string{"p0", "p1"}
-	return &spec.TableSnapshot{
-		Exists:         true,
+	return &spec.TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Exists: true,
 		Table:          &spec.Table{Name: name},
 		Columns:        []spec.Column{t10r2Col("id", "int", true, 0)},
 		Constraints:    []spec.Constraint{},
@@ -80,8 +78,7 @@ func t14HashShape(name string) *spec.TableSnapshot {
 // on it is the probed 1505/soft-fail class, never a directory mutation.
 func t14PlainShape(name string) *spec.TableSnapshot {
 	partitioned := false
-	return &spec.TableSnapshot{
-		Exists:         true,
+	return &spec.TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Exists: true,
 		Table:          &spec.Table{Name: name},
 		Columns:        []spec.Column{t10r2Col("id", "int", true, 0)},
 		Constraints:    []spec.Constraint{},
@@ -94,8 +91,7 @@ func t14PlainShape(name string) *spec.TableSnapshot {
 // t14UnobservedShape knows the table exists but never answered the
 // partition probe — enabled rules owe evidence gaps rather than verdicts.
 func t14UnobservedShape(name string) *spec.TableSnapshot {
-	return &spec.TableSnapshot{
-		Exists:      true,
+	return &spec.TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Exists: true,
 		Table:       &spec.Table{Name: name},
 		Columns:     []spec.Column{t10r2Col("id", "int", true, 0)},
 		Constraints: []spec.Constraint{},
@@ -360,8 +356,7 @@ func TestT14UnobservedPartitionStateOwesGaps(t *testing.T) {
 	t.Run("method_and_members_unknown", func(t *testing.T) {
 		t.Parallel()
 		partitioned := true
-		shape := &spec.TableSnapshot{
-			Exists:      true,
+		shape := &spec.TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Exists: true,
 			Table:       &spec.Table{Name: "t"},
 			Columns:     []spec.Column{t10r2Col("id", "int", true, 0)},
 			Constraints: []spec.Constraint{},

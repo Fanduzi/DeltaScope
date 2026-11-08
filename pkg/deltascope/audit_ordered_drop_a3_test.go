@@ -58,7 +58,7 @@ func TestAuditT05A3DropRecreateFirstPath(t *testing.T) {
 		dialect := dialect
 		t.Run(string(dialect), func(t *testing.T) {
 			t.Parallel()
-			provider := &fakeMetadataProvider{snapshot: &TableSnapshot{Exists: false, Schema: "golden"}}
+			provider := &fakeMetadataProvider{snapshot: &TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Exists: false, Schema: "golden"}}
 			result, err := Audit(context.Background(), Request{
 				SQL:              t05A3FirstPathSQL,
 				Dialect:          dialect,

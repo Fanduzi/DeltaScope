@@ -49,8 +49,7 @@ func writeT11R1IsolatedPolicy(t *testing.T, ruleID string) string {
 // t11r1FKSnapshot is the provider fixture for the drop-foreign-key family:
 // an existing table whose column and constraint collections are proven.
 func t11r1FKSnapshot(constraints []spec.Constraint, unknown bool) *spec.TableSnapshot {
-	return &spec.TableSnapshot{
-		Schema:             "golden",
+	return &spec.TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Schema: "golden",
 		Exists:             true,
 		Table:              &spec.Table{Schema: "golden", Name: "t"},
 		Columns:            []spec.Column{{Name: "c", Type: "int", NotNull: true}},

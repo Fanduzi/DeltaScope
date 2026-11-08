@@ -121,6 +121,58 @@ func TestT19LoadTableSnapshotTiDBTTLErrorPropagates(t *testing.T) {
 	}
 }
 
+func TestT23R7CacheStatusRead(t *testing.T) {
+	t.Parallel()
+	sentinel := errors.New("cache meta denied")
+	cases := []struct {
+		name      string
+		createSQL string
+		metaRows  [][]driver.Value // nil = the shared empty stub (proven absent row)
+		metaErr   error
+		want      string // "" means the key must stay unobserved
+	}{
+		// A complete successful SHOW CREATE carrying the bare upstream
+		// marker publishes proven Enable.
+		{name: "cached_on marker proves enable", createSQL: "CREATE TABLE `t` (`id` int) /* CACHED ON */", want: "enable"},
+		// A clean empty meta read proves the row absent — never cached —
+		// Disable (upstream only ever inserts/updates the row).
+		{name: "no marker plus absent meta row proves disable", createSQL: "CREATE TABLE `t` (`id` int)", want: "disable"},
+		{name: "quoted fake marker is still proven disable", createSQL: "CREATE TABLE `t` (`id` int) COMMENT='x /* CACHED ON */ y'", want: "disable"},
+		{name: "comment feature marker is not the cache marker", createSQL: "CREATE TABLE `t` (`id` int) /*T![auto_id_cache] AUTO_ID_CACHE=5 */", want: "disable"},
+		// A live meta row without the marker is the Switching middle
+		// state — proven non-Disable, never collapsed to either pole.
+		{name: "meta row without marker proves switching", createSQL: "CREATE TABLE `t` (`id` int)", metaRows: [][]driver.Value{{int64(42)}}, want: "switching"},
+		{name: "meta row plus marker proves enable", createSQL: "CREATE TABLE `t` (`id` int) /* CACHED ON */", metaRows: [][]driver.Value{{int64(42)}}, want: "enable"},
+		// A failed meta read must not degrade into any status claim.
+		{name: "failed meta read stays unobserved", createSQL: "CREATE TABLE `t` (`id` int)", metaErr: sentinel, want: ""},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			results := t19TiDBSnapshotResults(tc.createSQL)
+			if tc.metaRows != nil || tc.metaErr != nil {
+				results[testCacheMetaFragment] = testQueryResult{columns: []string{"tid"}, rows: tc.metaRows, queryErr: tc.metaErr}
+			}
+			db := openTestDB(t, results)
+			defer db.Close()
+			snapshot, err := NewProvider(db).LoadTableSnapshot(context.Background(), spec.DialectTiDB, "app", "t")
+			if err != nil {
+				t.Fatalf("LoadTableSnapshot: %v", err)
+			}
+			got, ok := snapshot.Options["cache_status"]
+			if tc.want == "" {
+				if ok {
+					t.Fatalf("cache_status = %q, want unobserved (read failures never degrade to a status)", got)
+				}
+				return
+			}
+			if !ok || got != tc.want {
+				t.Fatalf("cache_status = %q ok=%v, want %q", got, ok, tc.want)
+			}
+		})
+	}
+}
+
 func TestT19LoadTableSnapshotTiDBReferencedBy(t *testing.T) {
 	t.Parallel()
 	t.Run("clean catalog read proves empty inbound set", func(t *testing.T) {

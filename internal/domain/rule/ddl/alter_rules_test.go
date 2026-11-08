@@ -115,8 +115,7 @@ func TestForbiddenAlterActionRuleMapsPostgreSQLDropConstraintPrimaryKeySemantica
 			Alter: []spec.Alter{{Action: "drop_constraint", Name: "users_pkey"}},
 		},
 		Metadata: &spec.Metadata{
-			TargetTable: &spec.TableSnapshot{
-				Exists:      true,
+			TargetTable: &spec.TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Exists: true,
 				Table:       &spec.Table{Name: "users"},
 				PrimaryKey:  &spec.Index{Name: "users_primary_idx", Kind: spec.IndexKindPrimary},
 				Constraints: []spec.Constraint{{Type: "primary_key", Name: "users_pkey"}},
@@ -158,8 +157,7 @@ func TestForbiddenAlterActionRuleDoesNotMapNonPrimaryConstraintToDropPrimaryKey(
 			Alter: []spec.Alter{{Action: "drop_constraint", Name: "users_pkey"}},
 		},
 		Metadata: &spec.Metadata{
-			TargetTable: &spec.TableSnapshot{
-				Exists:      true,
+			TargetTable: &spec.TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Exists: true,
 				Table:       &spec.Table{Name: "users"},
 				PrimaryKey:  &spec.Index{Name: "users_primary_idx", Kind: spec.IndexKindPrimary},
 				Constraints: []spec.Constraint{{Type: "unique", Name: "users_pkey"}},

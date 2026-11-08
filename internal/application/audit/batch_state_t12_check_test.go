@@ -31,8 +31,7 @@ func t12Table(name string, columns []string, checks ...spec.Constraint) *spec.Ta
 	}
 	constraints := make([]spec.Constraint, 0, len(checks))
 	constraints = append(constraints, checks...)
-	return &spec.TableSnapshot{
-		Exists:  true,
+	return &spec.TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Exists: true,
 		Table:   &spec.Table{Schema: "golden", Name: name},
 		Columns: cols, Constraints: constraints, TTLKnown: true,
 	}

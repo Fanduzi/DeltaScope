@@ -175,9 +175,8 @@ func TestPostgreSQLMetadataObjectValidationCensus(t *testing.T) {
 
 	provider := &fakeMetadataProvider{
 		instance: &spec.InstanceFacts{Version: "PostgreSQL 16.0"},
-		snapshot: &spec.TableSnapshot{
-			Exists: true,
-			Table:  &spec.Table{Name: "users", Schema: "public"},
+		snapshot: &spec.TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Exists: true,
+			Table: &spec.Table{Name: "users", Schema: "public"},
 			Columns: []spec.Column{
 				{Name: "id"},
 				{Name: "email"},

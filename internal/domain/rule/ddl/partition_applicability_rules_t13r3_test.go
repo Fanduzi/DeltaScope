@@ -23,7 +23,7 @@ func t13r3ExchangeStmt(primaryColumns, counterpartColumns []spec.Column,
 		Partitioned:    t13r1Bool(true),
 		PartitionType:  t13r1Str("range"),
 		PartitionNames: []string{"p0", "p1"},
-		Options:        map[string]string{"engine": "innodb"},
+		Options:        map[string]string{"cache_status": "disable", "engine": "innodb"},
 	}
 	counterpart := &spec.TableSnapshot{
 		Exists: true, Table: &spec.Table{Name: "t2"},
@@ -31,7 +31,7 @@ func t13r3ExchangeStmt(primaryColumns, counterpartColumns []spec.Column,
 		PrimaryKey:  counterpartPK,
 		Partitioned: t13r1Bool(false),
 		Constraints: counterpartConstraints,
-		Options:     map[string]string{"engine": "innodb"},
+		Options:     map[string]string{"cache_status": "disable", "engine": "innodb"},
 	}
 	return t13r1StatementExchange(spec.Alter{
 		Action: "exchange_partition", Partitions: []string{"p0"},
@@ -150,7 +150,7 @@ func TestT13R3PKUnknownOutranksResidualPointer(t *testing.T) {
 				Columns:     []spec.Column{{Name: "id", Type: "int"}, {Name: "c", Type: "int"}},
 				Partitioned: t13r1Bool(false),
 				Constraints: []spec.Constraint{}, // proven-absent PK
-				Options:     map[string]string{"engine": "innodb"},
+				Options:     map[string]string{"cache_status": "disable", "engine": "innodb"},
 			}
 			if tc.wantFact == "exchange_table.primary_key" {
 				counterpart.PrimaryKey = &spec.Index{Kind: spec.IndexKindPrimary, NameUnknown: true, Columns: []string{"id"}}
@@ -189,7 +189,7 @@ func TestT13R3PKUnknownOutranksResidualPointer(t *testing.T) {
 		},
 		Partitioned: t13r1Bool(false),
 		Constraints: []spec.Constraint{},
-		Options:     map[string]string{"engine": "innodb"},
+		Options:     map[string]string{"cache_status": "disable", "engine": "innodb"},
 	}
 	stmt := t13r1StatementExchange(spec.Alter{
 		Action: "exchange_partition", Partitions: []string{"p0"},

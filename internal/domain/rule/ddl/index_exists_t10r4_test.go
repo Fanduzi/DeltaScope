@@ -16,8 +16,7 @@ func t10r4Statement(dialect spec.Dialect) spec.Statement {
 }
 
 func t10r4Shape(indexes ...spec.Index) *spec.TableSnapshot {
-	return &spec.TableSnapshot{
-		Exists:  true,
+	return &spec.TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Exists: true,
 		Indexes: indexes,
 	}
 }

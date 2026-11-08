@@ -29,7 +29,7 @@ func TestAuditCommandExposesDMLTableExistenceFinding(t *testing.T) {
 			newMetadataClient = func(auditConnectionOptions) (metadataClient, error) {
 				return &fakeMetadataClient{
 					detectDialect: tc.dialect,
-					snapshot:      &spec.TableSnapshot{Schema: "app", Exists: false},
+					snapshot:      &spec.TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Schema: "app", Exists: false},
 				}, nil
 			}
 			t.Cleanup(func() { newMetadataClient = previous })

@@ -294,13 +294,26 @@ func (p *corpusFixtureMetadataProvider) ResolveObject(_ context.Context, _ spec.
 }
 
 func corpusTableSnapshotToSpec(tableName, defaultSchema string, snapshot corpusTableSnapshot) spec.TableSnapshot {
-	out := spec.TableSnapshot{
-		Schema:      firstNonEmpty(snapshot.Schema, defaultSchema),
+	out := spec.TableSnapshot{Schema: firstNonEmpty(snapshot.Schema, defaultSchema),
 		Exists:      snapshot.Exists,
 		Columns:     make([]spec.Column, 0, len(snapshot.Columns)),
 		Indexes:     make([]spec.Index, 0, len(snapshot.Indexes)),
 		Constraints: make([]spec.Constraint, 0, len(snapshot.Constraints)),
 		Options:     cloneStringMap(snapshot.Options),
+	}
+	// Cache-status fixture convention: pre-R7 fixtures predate the fact —
+	// they all model ordinary never-cached tables, so an absent key is
+	// completed as a proven "disable". A fixture that wants the
+	// unobserved-status premise declares `cache_status: "unobserved"`,
+	// which the converter strips back to absence before any consumer
+	// reads it (issue #102 R7).
+	if out.Options == nil {
+		out.Options = map[string]string{}
+	}
+	if status, ok := out.Options["cache_status"]; ok && status == "unobserved" {
+		delete(out.Options, "cache_status")
+	} else if !ok {
+		out.Options["cache_status"] = "disable"
 	}
 	if snapshot.Table != nil {
 		out.Table = &spec.Table{

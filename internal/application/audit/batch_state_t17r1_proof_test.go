@@ -31,7 +31,7 @@ func (p *t17R1ProofProvider) LoadInstanceFacts(context.Context, spec.Dialect, st
 
 func (p *t17R1ProofProvider) LoadTableSnapshot(_ context.Context, _ spec.Dialect, schema, name string) (*spec.TableSnapshot, error) {
 	p.tableCalls++
-	return &spec.TableSnapshot{Schema: schema, Table: &spec.Table{Schema: schema, Name: name}}, nil
+	return &spec.TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Schema: schema, Table: &spec.Table{Schema: schema, Name: name}}, nil
 }
 
 func (p *t17R1ProofProvider) ResolveObject(_ context.Context, _ spec.Dialect, req spec.ObjectLookupRequest) (*spec.ObjectSnapshot, error) {

@@ -68,7 +68,7 @@ func TestAuditT05A5ChangePass(t *testing.T) {
 		dialect := dialect
 		t.Run(string(dialect), func(t *testing.T) {
 			t.Parallel()
-			provider := &fakeMetadataProvider{snapshot: &TableSnapshot{Exists: false, Schema: "golden"}}
+			provider := &fakeMetadataProvider{snapshot: &TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Exists: false, Schema: "golden"}}
 			result, err := Audit(context.Background(), Request{
 				SQL:              t05A5ChangeSQL,
 				Dialect:          dialect,

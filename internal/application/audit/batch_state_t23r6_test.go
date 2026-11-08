@@ -178,3 +178,75 @@ func TestT23R6TiFlashTransitions(t *testing.T) {
 		t.Fatalf("refused replica must not publish, got %+v", entry.shape.Options)
 	}
 }
+
+func t23R7ShapeStatus(status string) *spec.TableSnapshot {
+	shape := t23R6Shape()
+	if status == "" {
+		delete(shape.Options, "cache_status")
+	} else {
+		shape.Options["cache_status"] = status
+	}
+	return shape
+}
+
+// TestT23R7CacheGuardCoverage exercises the shared upstream
+// `!= Disable` gate across every supported mutation path (issue #102
+// R7): proven non-Disable refuses and preserves, proven Disable keeps
+// existing behavior, and an unobserved status unvouches only what the
+// withheld transition could have moved.
+func TestT23R7CacheGuardCoverage(t *testing.T) {
+	t.Parallel()
+
+	// Proven non-Disable refuses each covered write — exact pre-state.
+	for _, sql := range []string{
+		"DROP TABLE t;", "TRUNCATE TABLE t;", "RENAME TABLE t TO t2;",
+		"CREATE INDEX ix ON t (id);", "ALTER TABLE t ADD COLUMN c INT;",
+		"ALTER TABLE t DROP INDEX ix;", "ALTER TABLE t RENAME TO t2;",
+	} {
+		state, _ := t23State(t, sql, &t23Provider{snapshot: t23R7ShapeStatus("enable")})
+		if entry := state.entries[state.keyFor("req", spec.Table{Schema: "req", Name: "t"})]; entry == nil ||
+			entry.state != tablePresent || entry.shape == nil {
+			t.Fatalf("%s on enable must preserve the pre-state, got %+v", sql, entry)
+		}
+	}
+
+	// Proven Disable keeps the ordinary transition (drop is the clearest).
+	state, _ := t23State(t, "DROP TABLE t;", &t23Provider{snapshot: t23R7ShapeStatus("disable")})
+	if entry := state.entries[state.keyFor("req", spec.Table{Schema: "req", Name: "t"})]; entry == nil || entry.state != tableAbsent {
+		t.Fatalf("drop on disable must publish absent, got %+v", entry)
+	}
+
+	// Unobserved status: ALTER withholds to present-incomplete (presence
+	// proven either way); DROP unvouches existence entirely.
+	state, _ = t23State(t, "ALTER TABLE t ADD COLUMN c INT;", &t23Provider{snapshot: t23R7ShapeStatus("")})
+	entry := state.entries[state.keyFor("req", spec.Table{Schema: "req", Name: "t"})]
+	if entry == nil || entry.state != tablePresent || entry.shape != nil {
+		t.Fatalf("alter on unobserved status must withhold to present-incomplete, got %+v", entry)
+	}
+	state, _ = t23State(t, "DROP TABLE t;", &t23Provider{snapshot: t23R7ShapeStatus("")})
+	if entry := state.entries[state.keyFor("req", spec.Table{Schema: "req", Name: "t"})]; entry == nil || entry.state != tableUnknown {
+		t.Fatalf("drop on unobserved status must unvouch existence, got %+v", entry)
+	}
+	state, _ = t23State(t, "CREATE INDEX ix ON t (id);", &t23Provider{snapshot: t23R7ShapeStatus("")})
+	if entry := state.entries[state.keyFor("req", spec.Table{Schema: "req", Name: "t"})]; entry == nil ||
+		entry.state != tablePresent || entry.shape != nil {
+		t.Fatalf("create index on unobserved status must withhold shape, got %+v", entry)
+	}
+
+	// NOCACHE on an unobserved status still publishes the converged
+	// Disable post-state — every legal old status converges upstream,
+	// without claiming the old state was observed.
+	state, _ = t23State(t, "ALTER TABLE t NOCACHE;", &t23Provider{snapshot: t23R7ShapeStatus("")})
+	entry = state.entries[state.keyFor("req", spec.Table{Schema: "req", Name: "t"})]
+	if entry == nil || entry.shape == nil || entry.shape.Options["cache_status"] != "disable" {
+		t.Fatalf("nocache on unobserved status must converge to disable, got %+v", entry)
+	}
+
+	// A batch-created table carries the proven Disable default — the
+	// guard does not withhold its first mutation.
+	state, _ = t23State(t, "CREATE TABLE t (id INT); ALTER TABLE t ADD COLUMN c INT;", &t23Provider{})
+	entry = state.entries[state.keyFor("req", spec.Table{Schema: "req", Name: "t"})]
+	if entry == nil || entry.shape == nil || entry.shape.FindColumn("c") == nil {
+		t.Fatalf("batch-created table must publish disable and apply the alter, got %+v", entry)
+	}
+}

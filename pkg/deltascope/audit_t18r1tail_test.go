@@ -17,10 +17,10 @@ func (p t18R1TailProvider) LoadInstanceFacts(context.Context, Dialect, string) (
 
 func (p t18R1TailProvider) LoadTableSnapshot(_ context.Context, _ Dialect, schema, table string) (*TableSnapshot, error) {
 	absent := func(name string) *TableSnapshot {
-		return &TableSnapshot{Schema: schema, Table: &Table{Schema: schema, Name: name}, Exists: false}
+		return &TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Schema: schema, Table: &Table{Schema: schema, Name: name}, Exists: false}
 	}
 	base := func(name string) *TableSnapshot {
-		return &TableSnapshot{Schema: schema, Table: &Table{Schema: schema, Name: name}, Exists: true,
+		return &TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Schema: schema, Table: &Table{Schema: schema, Name: name}, Exists: true,
 			RelationKind: "table", Columns: []Column{{Name: "id", Type: "int"}}}
 	}
 	switch table {
@@ -35,7 +35,7 @@ func (p t18R1TailProvider) LoadTableSnapshot(_ context.Context, _ Dialect, schem
 		if !p.existingView {
 			return absent("v"), nil
 		}
-		return &TableSnapshot{Schema: schema, Table: &Table{Schema: schema, Name: "v"}, Exists: true,
+		return &TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Schema: schema, Table: &Table{Schema: schema, Name: "v"}, Exists: true,
 			RelationKind: "view", Columns: []Column{{Name: "id", Type: "int"}},
 			View: &ViewSnapshot{
 				Algorithm: "merge", Security: "definer", DefinerKind: "named", DefinerPrincipal: "t18_private_principal",

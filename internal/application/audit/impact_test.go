@@ -150,9 +150,7 @@ func TestAttachImpactEstimatesMetadataRefinesUniqueEquality(t *testing.T) {
 					Kind:    spec.IndexKindPrimary,
 					Columns: []string{"id"},
 				},
-				Options: map[string]string{
-					"table_rows": "100",
-				},
+				Options: map[string]string{"cache_status": "disable", "table_rows": "100"},
 			},
 		},
 	}}
@@ -185,9 +183,8 @@ func TestAttachImpactEstimatesMetadataRefinesSourceForJoinShape(t *testing.T) {
 		},
 		Metadata: &spec.Metadata{
 			Schema: "app",
-			TargetTable: &spec.TableSnapshot{
-				Exists: true,
-				Table:  &spec.Table{Name: "users"},
+			TargetTable: &spec.TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Exists: true,
+				Table: &spec.Table{Name: "users"},
 			},
 		},
 	}}
@@ -223,9 +220,8 @@ func TestAttachImpactEstimatesMissingTargetTableSnapshotKeepsShapeSource(t *test
 		},
 		Metadata: &spec.Metadata{
 			Schema: "app",
-			TargetTable: &spec.TableSnapshot{
-				Exists: false,
-				Table:  &spec.Table{Name: "users"},
+			TargetTable: &spec.TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Exists: false,
+				Table: &spec.Table{Name: "users"},
 			},
 		},
 	}}
@@ -263,9 +259,7 @@ func TestAttachImpactEstimatesMissingTargetTableKeepsUniqueEqualityShapeSource(t
 					Kind:    spec.IndexKindPrimary,
 					Columns: []string{"id"},
 				},
-				Options: map[string]string{
-					"table_rows": "100",
-				},
+				Options: map[string]string{"cache_status": "disable", "table_rows": "100"},
 			},
 		},
 	}}
@@ -402,9 +396,7 @@ func TestAttachImpactEstimatesPlannerEstimateCanBeRefinedWithMetadata(t *testing
 					Kind:    spec.IndexKindPrimary,
 					Columns: []string{"id"},
 				},
-				Options: map[string]string{
-					"table_rows": "100",
-				},
+				Options: map[string]string{"cache_status": "disable", "table_rows": "100"},
 			},
 		},
 	}}
@@ -503,7 +495,7 @@ func TestAttachImpactEstimatesPlannerRatioIsClampedToOne(t *testing.T) {
 					Kind:    spec.IndexKindPrimary,
 					Columns: []string{"id"},
 				},
-				Options: map[string]string{"table_rows": "100"},
+				Options: map[string]string{"cache_status": "disable", "table_rows": "100"},
 			},
 		},
 	}}

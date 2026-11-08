@@ -301,8 +301,7 @@ func TestAuditSQLReturnsMixedSupportedAndUnsupportedPostgreSQLResults(t *testing
 func TestAuditSQLPostgreSQLMetadataMapsDropConstraintToPrimaryKeyRule(t *testing.T) {
 	t.Parallel()
 	provider := &fakeMetadataProvider{
-		snapshot: &spec.TableSnapshot{
-			Exists:      true,
+		snapshot: &spec.TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Exists: true,
 			Table:       &spec.Table{Name: "users"},
 			PrimaryKey:  &spec.Index{Name: "users_primary_idx", Kind: spec.IndexKindPrimary, Columns: []string{"id"}},
 			Constraints: []spec.Constraint{{Type: "primary_key", Name: "users_pkey", Columns: []string{"id"}}},
@@ -340,9 +339,8 @@ func TestAuditSQLPostgreSQLMetadataMapsDropConstraintToPrimaryKeyRule(t *testing
 func TestAuditSQLPostgreSQLMetadataRequiresExistingColumnForRenameColumn(t *testing.T) {
 	t.Parallel()
 	provider := &fakeMetadataProvider{
-		snapshot: &spec.TableSnapshot{
-			Exists: true,
-			Table:  &spec.Table{Name: "users"},
+		snapshot: &spec.TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Exists: true,
+			Table: &spec.Table{Name: "users"},
 			Columns: []spec.Column{
 				{Name: "email"},
 			},
@@ -380,9 +378,8 @@ func TestAuditSQLPostgreSQLMetadataRequiresExistingColumnForRenameColumn(t *test
 func TestAuditSQLPostgreSQLMetadataRequiresExistingColumnForDropColumn(t *testing.T) {
 	t.Parallel()
 	provider := &fakeMetadataProvider{
-		snapshot: &spec.TableSnapshot{
-			Exists: true,
-			Table:  &spec.Table{Name: "users"},
+		snapshot: &spec.TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Exists: true,
+			Table: &spec.Table{Name: "users"},
 			Columns: []spec.Column{
 				{Name: "email"},
 			},
@@ -420,9 +417,8 @@ func TestAuditSQLPostgreSQLMetadataRequiresExistingColumnForDropColumn(t *testin
 func TestAuditSQLPostgreSQLMetadataRequiresExistingTableForRenameTable(t *testing.T) {
 	t.Parallel()
 	provider := &fakeMetadataProvider{
-		snapshot: &spec.TableSnapshot{
-			Exists: false,
-			Table:  &spec.Table{Name: "users"},
+		snapshot: &spec.TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Exists: false,
+			Table: &spec.Table{Name: "users"},
 		},
 	}
 
@@ -543,8 +539,7 @@ func TestAuditSQLPostgreSQLMetadataResolvesOwningTableForRenameIndex(t *testing.
 	t.Parallel()
 	provider := &fakeMetadataProvider{
 		indexTable: "users",
-		snapshot: &spec.TableSnapshot{
-			Exists:  true,
+		snapshot: &spec.TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Exists: true,
 			Table:   &spec.Table{Name: "users"},
 			Indexes: []spec.Index{{Name: "idx_users_email", Kind: spec.IndexKindSecondary}},
 		},
@@ -571,8 +566,7 @@ func TestAuditSQLPostgreSQLMetadataResolvesOwningTableForDropIndex(t *testing.T)
 	t.Parallel()
 	provider := &fakeMetadataProvider{
 		indexTable: "users",
-		snapshot: &spec.TableSnapshot{
-			Exists:  true,
+		snapshot: &spec.TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Exists: true,
 			Table:   &spec.Table{Name: "users"},
 			Indexes: []spec.Index{{Name: "idx_users_email", Kind: spec.IndexKindSecondary}},
 		},
@@ -611,9 +605,8 @@ func TestAuditSQLPostgreSQLMetadataResolvesOwningTableForDropIndex(t *testing.T)
 func TestAuditSQLPostgreSQLDropNonPrimaryKeyConstraintDoesNotTriggerPrimaryKeyForbid(t *testing.T) {
 	t.Parallel()
 	provider := &fakeMetadataProvider{
-		snapshot: &spec.TableSnapshot{
-			Exists: true,
-			Table:  &spec.Table{Name: "users"},
+		snapshot: &spec.TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Exists: true,
+			Table: &spec.Table{Name: "users"},
 			Constraints: []spec.Constraint{
 				{Type: "check", Name: "chk_amount", Columns: []string{"amount"}},
 			},

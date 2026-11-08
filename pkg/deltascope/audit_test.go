@@ -566,9 +566,8 @@ func TestAuditSupportsTopLevelMetadataRequestFields(t *testing.T) {
 			DefaultCharset:         "utf8mb4",
 			InnoDBDefaultRowFormat: "dynamic",
 		},
-		snapshot: &TableSnapshot{
-			Exists: true,
-			Table:  &Table{Name: "users"},
+		snapshot: &TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Exists: true,
+			Table: &Table{Name: "users"},
 		},
 	}
 
@@ -848,7 +847,7 @@ func TestPublicMetadataProviderClonesProviderResults(t *testing.T) {
 		},
 		Indexes:     []Index{{Name: "idx_email", Columns: []string{"email"}, Cardinality: secondaryCardinality}},
 		Constraints: []Constraint{{Name: "fk_team", Columns: []string{"team_id"}}},
-		Options:     map[string]string{"engine": "InnoDB"},
+		Options:     map[string]string{"cache_status": "disable", "engine": "InnoDB"},
 	}
 	provider := publicMetadataProvider{provider: &fakeMetadataProvider{instance: instance, snapshot: snapshot}}
 

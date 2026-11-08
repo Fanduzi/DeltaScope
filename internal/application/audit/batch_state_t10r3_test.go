@@ -176,9 +176,8 @@ func TestT10R3CreateTableComparisonControls(t *testing.T) {
 // collection vouched, PRIMARY(id) present, but the TiDB handle answer
 // unprovable.
 func t10r3HandleUnknownTable() *spec.TableSnapshot {
-	return &spec.TableSnapshot{
-		Exists: true,
-		Table:  &spec.Table{Name: "t"},
+	return &spec.TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Exists: true,
+		Table: &spec.Table{Name: "t"},
 		Columns: []spec.Column{
 			{Name: "id", Type: "int", NotNull: true},
 		},

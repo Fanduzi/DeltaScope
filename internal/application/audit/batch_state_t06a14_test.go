@@ -251,12 +251,22 @@ func TestT06A14DerivedPreStateCarriesDeclaredOptions(t *testing.T) {
 				if snapshot == nil || !snapshot.Exists {
 					t.Fatalf("follower pre-state = %+v, want an existing t", snapshot)
 				}
-				if len(snapshot.Options) != len(tc.options) {
-					t.Fatalf("pre-state options = %#v, want %#v", snapshot.Options, tc.options)
+				want := make(map[string]string, len(tc.options)+1)
+				for key, value := range tc.options {
+					want[key] = value
 				}
-				for key, want := range tc.options {
-					if got := snapshot.Options[key]; got != want {
-						t.Fatalf("pre-state Options[%q] = %q, want %q", key, got, want)
+				if dialect == spec.DialectTiDB {
+					// A batch-created table starts at the upstream
+					// TableCacheStatusDisable default — the post-state
+					// proves it (issue #102 R7).
+					want["cache_status"] = "disable"
+				}
+				if len(snapshot.Options) != len(want) {
+					t.Fatalf("pre-state options = %#v, want %#v", snapshot.Options, want)
+				}
+				for key, expect := range want {
+					if got := snapshot.Options[key]; got != expect {
+						t.Fatalf("pre-state Options[%q] = %q, want %q", key, got, expect)
 					}
 				}
 				for _, key := range []string{"engine", "charset", "row_format"} {

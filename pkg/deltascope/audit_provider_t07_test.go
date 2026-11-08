@@ -26,8 +26,7 @@ func (p *t07OwnerProvider) LoadTableSnapshot(context.Context, Dialect, string, s
 }
 
 func t07OwnerSnapshot() *spec.TableSnapshot {
-	return &spec.TableSnapshot{
-		Exists: true,
+	return &spec.TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Exists: true,
 		Schema: "golden",
 		Table:  &spec.Table{Schema: "golden", Name: "t"},
 		Columns: []spec.Column{

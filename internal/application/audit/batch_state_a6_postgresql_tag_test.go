@@ -38,9 +38,8 @@ func TestBatchStateA6PostgreSQLDropColumnKeepsLegacyContract(t *testing.T) {
 	t.Run("provider snapshot stays on the legacy request cache", func(t *testing.T) {
 		t.Parallel()
 		const sql = "ALTER TABLE t DROP COLUMN obsolete; ALTER TABLE t DROP COLUMN obsolete;"
-		snapshot := &spec.TableSnapshot{
-			Exists: true,
-			Table:  &spec.Table{Schema: "public", Name: "t"},
+		snapshot := &spec.TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Exists: true,
+			Table: &spec.Table{Schema: "public", Name: "t"},
 			Columns: []spec.Column{
 				{Name: "id"},
 				{Name: "obsolete"},

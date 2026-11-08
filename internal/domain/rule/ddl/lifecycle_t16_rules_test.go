@@ -39,11 +39,11 @@ func t16Statement(dialect spec.Dialect, operation spec.DDLOperation, targets []s
 }
 
 func t16PresentTable(schema, name string) *spec.TableSnapshot {
-	return &spec.TableSnapshot{Exists: true, Schema: schema, Table: &spec.Table{Schema: schema, Name: name}}
+	return &spec.TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Exists: true, Schema: schema, Table: &spec.Table{Schema: schema, Name: name}}
 }
 
 func t16AbsentTable(schema, name string) *spec.TableSnapshot {
-	return &spec.TableSnapshot{Exists: false, Schema: schema, Table: &spec.Table{Schema: schema, Name: name}}
+	return &spec.TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Exists: false, Schema: schema, Table: &spec.Table{Schema: schema, Name: name}}
 }
 
 func t16TempTable(schema, name string) *spec.TableSnapshot {

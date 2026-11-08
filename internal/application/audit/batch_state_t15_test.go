@@ -30,8 +30,7 @@ func t15InnoDBShape(name string) *spec.TableSnapshot {
 			t10r2Col("s", "varchar(20)", false, 0),
 		},
 		Constraints: []spec.Constraint{},
-		Options: map[string]string{
-			"engine":      "InnoDB",
+		Options: map[string]string{"cache_status": "disable", "engine": "InnoDB",
 			"row_format":  "DYNAMIC",
 			"collation":   "utf8mb4_0900_ai_ci",
 			"charset":     "utf8mb4",

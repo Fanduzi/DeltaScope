@@ -35,7 +35,9 @@ func TestT23R6CacheOutcome(t *testing.T) {
 		{"cache_partitioned_unproven", "cache", func(f *AlterLayoutR6Facts) { f.PartitionedKnown = false }, AutoRandomUndecidable, LayoutReasonPartitionedUnproven},
 		{"nocache_on_enable_applied", "nocache", func(f *AlterLayoutR6Facts) { f.CacheStatus = "enable" }, AutoRandomOK, ""},
 		{"nocache_on_disable_noop", "nocache", nil, AutoRandomOK, LayoutReasonNoCacheNotCached},
-		{"nocache_status_unproven", "nocache", func(f *AlterLayoutR6Facts) { f.CacheStatusKnown = false }, AutoRandomUndecidable, LayoutReasonCacheStatusUnproven},
+		// R7: every legal old status converges to disable — unobserved
+		// status still publishes the converged post-state, no status gap.
+		{"nocache_status_unknown_converges", "nocache", func(f *AlterLayoutR6Facts) { f.CacheStatusKnown = false }, AutoRandomOK, ""},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			facts := baseR6Facts()
@@ -113,14 +115,27 @@ func TestT23R6AttributesSpecParser(t *testing.T) {
 	}{
 		{"merge_option=allow", true},
 		{"merge_option=allow,x=1", true},
-		{"merge_option=deny, key='a,b'", true},
-		{`key="v,with,commas"`, true},
+		// R7: real YAML scan — `key='a,b'` splits mid-quote into `key='a`
+		// + `b'`; the unpaired `b'` refuses upstream the same way.
+		{"merge_option=deny, key='a,b'", false},
+		{`key="v,with,commas"`, false},
 		{"nokeyvalue", false},
 		{"=novaluekey", false},
 		{"a=1,,b=2", false},
-		{"a='unclosed", false},
+		// YAML's quote recovery still yields a `a='unclosed` key=value
+		// item — upstream accepts it through the same engine.
+		{"a='unclosed", true},
 		{"[a=1]", false},
 		{"key=val ue", true},
+		// R7 B2 permanent refusals — upstream NewLabel/Add semantics.
+		{"a=", false},      // empty value refused
+		{"a=b=c", false},   // Split("=") must yield exactly 2 parts
+		{"a=1,a=2", false}, // same key conflicting values refused
+		{"a=1,a=1", true},  // same key same value dedups (no-op)
+		{"a=1,", true},     // trailing comma tolerated by YAML flow
+		{"", true},         // empty spec parses to the empty label list
+		{"a={x:1}", false}, // non-string YAML item refused
+		{`"a=1","b=2"`, true},
 	} {
 		if got := ParseAttributesSpecValue(tc.value); got != tc.want {
 			t.Fatalf("ParseAttributesSpecValue(%q)=%v want %v", tc.value, got, tc.want)

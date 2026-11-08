@@ -45,8 +45,7 @@ func t14r1RangeTailShape(name string) *spec.TableSnapshot {
 	method := "range"
 	names := []string{"p0", "p1"}
 	descriptions := []string{"200", "400"}
-	return &spec.TableSnapshot{
-		Exists:                true,
+	return &spec.TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Exists: true,
 		Table:                 &spec.Table{Name: name},
 		Columns:               []spec.Column{t10r2Col("id", "int", true, 0)},
 		Constraints:           []spec.Constraint{},
@@ -65,8 +64,7 @@ func t14r1ListShape(name string) *spec.TableSnapshot {
 	method := "list"
 	names := []string{"p0", "p1"}
 	descriptions := []string{"1", "2"}
-	return &spec.TableSnapshot{
-		Exists:                true,
+	return &spec.TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Exists: true,
 		Table:                 &spec.Table{Name: name},
 		Columns:               []spec.Column{t10r2Col("id", "int", true, 0)},
 		Constraints:           []spec.Constraint{},
@@ -87,8 +85,7 @@ func t14r1RangeColsShape(name string, descriptions ...string) *spec.TableSnapsho
 	for i := range names {
 		names[i] = "p" + string(rune('0'+i))
 	}
-	return &spec.TableSnapshot{
-		Exists:                true,
+	return &spec.TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Exists: true,
 		Table:                 &spec.Table{Name: name},
 		Columns:               []spec.Column{t10r2Col("a", "int", true, 0), t10r2Col("b", "int", true, 0)},
 		Constraints:           []spec.Constraint{},
@@ -886,8 +883,7 @@ func TestT14R1AddTargetOwesDirectoryFacts(t *testing.T) {
 		t.Parallel()
 		partitioned := true
 		method := "hash"
-		shape := &spec.TableSnapshot{
-			Exists: true, Table: &spec.Table{Name: "t"},
+		shape := &spec.TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Exists: true, Table: &spec.Table{Name: "t"},
 			Columns: []spec.Column{t10r2Col("id", "int", true, 0)}, Constraints: []spec.Constraint{},
 			Partitioned: &partitioned, PartitionType: &method,
 		}
@@ -907,8 +903,7 @@ func TestT14R1AddTargetOwesDirectoryFacts(t *testing.T) {
 		t.Parallel()
 		partitioned := true
 		method := "range"
-		shape := &spec.TableSnapshot{
-			Exists: true, Table: &spec.Table{Name: "t"},
+		shape := &spec.TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Exists: true, Table: &spec.Table{Name: "t"},
 			Columns: []spec.Column{t10r2Col("id", "int", true, 0)}, Constraints: []spec.Constraint{},
 			Partitioned: &partitioned, PartitionType: &method,
 			PartitionNames: []string{"p0", "p1"},

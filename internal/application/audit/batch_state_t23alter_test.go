@@ -301,8 +301,7 @@ func TestT23AlterCompositePKRedeclareStaysUndecidable(t *testing.T) {
 		Schema:              "req",
 		PrimaryKey:          &spec.Index{Name: "PRIMARY", Kind: spec.IndexKindPrimary, Columns: []string{"a", "b"}},
 		PrimaryKeyClustered: true,
-		Options: map[string]string{
-			"auto_random_bits":       "5",
+		Options: map[string]string{"cache_status": "disable", "auto_random_bits": "5",
 			"auto_random_range_bits": "64",
 		},
 		Columns: []spec.Column{
@@ -342,8 +341,7 @@ func TestT23AlterAutoRandomBaseReadsTableLevelBits(t *testing.T) {
 		Schema:              "req",
 		PrimaryKey:          &spec.Index{Name: "PRIMARY", Kind: spec.IndexKindPrimary, Columns: []string{"a", "b"}},
 		PrimaryKeyClustered: true,
-		Options: map[string]string{
-			"auto_random_bits":       "5",
+		Options: map[string]string{"cache_status": "disable", "auto_random_bits": "5",
 			"auto_random_range_bits": "64",
 		},
 		Columns: []spec.Column{
@@ -378,8 +376,7 @@ func TestT23AlterTableLevelFactBlocksVacuousFold(t *testing.T) {
 		Schema:                     "req",
 		PrimaryKey:                 &spec.Index{Name: "PRIMARY", Kind: spec.IndexKindPrimary, Columns: []string{"a", "b"}},
 		PrimaryKeyClusteredUnknown: true,
-		Options: map[string]string{
-			"auto_random_bits":       "5",
+		Options: map[string]string{"cache_status": "disable", "auto_random_bits": "5",
 			"auto_random_range_bits": "64",
 		},
 		Columns: []spec.Column{

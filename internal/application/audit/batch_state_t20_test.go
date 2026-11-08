@@ -34,9 +34,7 @@ func t20PlacementShape(name string) *spec.TableSnapshot {
 		Constraints:          []spec.Constraint{},
 		ReferencedBy:         []spec.Table{},
 		PlacementPolicyKnown: true,
-		Options: map[string]string{
-			"engine": "InnoDB",
-		},
+		Options:              map[string]string{"cache_status": "disable", "engine": "InnoDB"},
 	}
 }
 

@@ -34,8 +34,7 @@ func TestT13R2CounterpartComparesEffectiveTypes(t *testing.T) {
 		{Name: "id", Type: "int", Length: -1},
 		{Name: "c", Type: "char", Length: -1},
 	}
-	counterpart := &spec.TableSnapshot{
-		Exists: true, Table: &spec.Table{Name: "t2"},
+	counterpart := &spec.TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Exists: true, Table: &spec.Table{Name: "t2"},
 		Columns: []spec.Column{
 			{Name: "id", Type: "int", Length: 11}, // catalog int(11)
 			{Name: "c", Type: "char", Length: 1},
@@ -60,8 +59,7 @@ func TestT13R2CounterpartComparesEffectiveTypes(t *testing.T) {
 func TestT13R2CounterpartRealTypeMismatchBlocks(t *testing.T) {
 	t.Parallel()
 	r := t13r2CounterpartRule(t)
-	counterpart := &spec.TableSnapshot{
-		Exists: true, Table: &spec.Table{Name: "t2"},
+	counterpart := &spec.TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Exists: true, Table: &spec.Table{Name: "t2"},
 		Columns: []spec.Column{
 			{Name: "id", Type: "int", Length: 11},
 			{Name: "c", Type: "char", Length: 4},
@@ -88,8 +86,7 @@ func TestT13R2CounterpartRealTypeMismatchBlocks(t *testing.T) {
 func TestT13R2CounterpartPKAbsenceHonored(t *testing.T) {
 	t.Parallel()
 	r := t13r2CounterpartRule(t)
-	primary := &spec.TableSnapshot{
-		Exists: true, Table: &spec.Table{Name: "t"},
+	primary := &spec.TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Exists: true, Table: &spec.Table{Name: "t"},
 		Columns:            []spec.Column{{Name: "id", Type: "int"}, {Name: "c", Type: "int"}},
 		PrimaryKey:         nil,
 		PrimaryKeyUnknown:  false,
@@ -98,8 +95,7 @@ func TestT13R2CounterpartPKAbsenceHonored(t *testing.T) {
 		PartitionType:      t13r1Str("range"),
 		PartitionNames:     []string{"p0", "p1"},
 	}
-	counterpart := &spec.TableSnapshot{
-		Exists: true, Table: &spec.Table{Name: "t2"},
+	counterpart := &spec.TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Exists: true, Table: &spec.Table{Name: "t2"},
 		Columns:     []spec.Column{{Name: "id", Type: "int"}, {Name: "c", Type: "int"}},
 		PrimaryKey:  &spec.Index{Name: "primary", Kind: spec.IndexKindPrimary, Columns: []string{"id"}},
 		Partitioned: t13r1Bool(false),
@@ -127,8 +123,7 @@ func TestT13R2CounterpartSharedComparePremise(t *testing.T) {
 		primary := t13r1Snapshot("t")
 		primary.PrimaryKey = nil
 		primary.PrimaryKeyUnknown = true
-		counterpart := &spec.TableSnapshot{
-			Exists: true, Table: &spec.Table{Name: "t2"},
+		counterpart := &spec.TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Exists: true, Table: &spec.Table{Name: "t2"},
 			Columns:     []spec.Column{{Name: "id", Type: "int"}, {Name: "c", Type: "int"}},
 			Partitioned: t13r1Bool(false),
 		}
@@ -159,8 +154,7 @@ func TestT13R2CounterpartSharedComparePremise(t *testing.T) {
 		primary := t13r1Snapshot("t")
 		primary.PrimaryKey = nil
 		primary.PrimaryKeyUnknown = true
-		counterpart := &spec.TableSnapshot{
-			Exists: true, Table: &spec.Table{Name: "t2"},
+		counterpart := &spec.TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Exists: true, Table: &spec.Table{Name: "t2"},
 			Columns: []spec.Column{
 				{Name: "id", Type: "int"}, {Name: "c", Type: "int"}, {Name: "x", Type: "int"},
 			},
@@ -210,10 +204,10 @@ func TestT13R2TargetRuleOwnsItsPremises(t *testing.T) {
 			}{
 				{name: "table unobserved", shape: nil, wantFact: "target_table.partitioned"},
 				{name: "partitioned unobserved", shape: func() *spec.TableSnapshot {
-					return &spec.TableSnapshot{Exists: true, Table: &spec.Table{Name: "t"}}
+					return &spec.TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Exists: true, Table: &spec.Table{Name: "t"}}
 				}(), wantFact: "target_table.partitioned"},
 				{name: "directory unobserved", shape: func() *spec.TableSnapshot {
-					return &spec.TableSnapshot{Exists: true, Table: &spec.Table{Name: "t"},
+					return &spec.TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Exists: true, Table: &spec.Table{Name: "t"},
 						Partitioned: t13r1Bool(true)}
 				}(), wantFact: "target_table.partitions"},
 			} {
@@ -249,8 +243,8 @@ func TestT13R2TargetRuleProvenStatesOweNothing(t *testing.T) {
 		name  string
 		shape *spec.TableSnapshot
 	}{
-		{name: "absent", shape: &spec.TableSnapshot{Exists: false, Table: &spec.Table{Name: "t"}}},
-		{name: "non-partitioned", shape: &spec.TableSnapshot{Exists: true, Table: &spec.Table{Name: "t"},
+		{name: "absent", shape: &spec.TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Exists: false, Table: &spec.Table{Name: "t"}}},
+		{name: "non-partitioned", shape: &spec.TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Exists: true, Table: &spec.Table{Name: "t"},
 			Partitioned: t13r1Bool(false), PartitionNames: []string{}}},
 	} {
 		tc := tc
@@ -298,7 +292,7 @@ func TestT13R2CounterpartEngineApplicability(t *testing.T) {
 			Columns:     []spec.Column{{Name: "id", Type: "int"}, {Name: "c", Type: "int"}},
 			PrimaryKey:  t13r1Snapshot("t").PrimaryKey,
 			Partitioned: t13r1Bool(false),
-			Options:     map[string]string{},
+			Options:     map[string]string{"cache_status": "disable"},
 		}
 		if present {
 			s.Options["engine"] = engine

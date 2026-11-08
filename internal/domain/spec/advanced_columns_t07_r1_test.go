@@ -77,8 +77,7 @@ func TestT07R1PremiseAlterSameStatementBind(t *testing.T) {
 		Dialect: DialectMySQL,
 		Kind:    KindDDL,
 		Metadata: &Metadata{
-			TargetTable: &TableSnapshot{
-				Exists:  true,
+			TargetTable: &TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Exists: true,
 				Schema:  "golden",
 				Table:   &Table{Schema: "golden", Name: "t"},
 				Columns: []Column{{Name: "x", Type: "int"}},

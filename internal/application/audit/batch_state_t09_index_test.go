@@ -27,7 +27,7 @@ func (p *t09Provider) LoadTableSnapshot(_ context.Context, _ spec.Dialect, schem
 	if snap, ok := p.tables[strings.ToLower(table)]; ok {
 		return snap, nil
 	}
-	return &spec.TableSnapshot{Exists: false, Table: &spec.Table{Schema: schema, Name: table}}, nil
+	return &spec.TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Exists: false, Table: &spec.Table{Schema: schema, Name: table}}, nil
 }
 
 func t09Table(name string, indexes ...spec.Index) *spec.TableSnapshot {
@@ -35,8 +35,7 @@ func t09Table(name string, indexes ...spec.Index) *spec.TableSnapshot {
 	for _, col := range []string{"a", "b", "c", "d", "e", "f", "g", "h", "i"} {
 		columns = append(columns, spec.Column{Name: col, Type: "int"})
 	}
-	return &spec.TableSnapshot{
-		Exists:  true,
+	return &spec.TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Exists: true,
 		Table:   &spec.Table{Name: name},
 		Columns: columns,
 		Indexes: indexes,

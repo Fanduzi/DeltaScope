@@ -3,6 +3,8 @@ package spec
 import (
 	"strconv"
 	"strings"
+
+	"go.yaml.in/yaml/v3"
 )
 
 // alter_layout_r6.go implements the T23-R6 outcome adjudication for the
@@ -80,17 +82,18 @@ type AlterLayoutR6Facts struct {
 //	CACHE:    already-cached no-op → sys/mem-DB refusal → temporary
 //	          refusal → partitioned refusal → 64MB data-size premise
 //	          (undecidable offline) → applied.
-//	NOCACHE:  not-cached no-op → applied.
+//	NOCACHE:  upstream submits a no-cache job for every status except a
+//	          proven Disable, and the worker converges Enable/Switching/
+//	          Disable to Disable — every legal old status lands on the
+//	          same post-state, so an unobserved status still publishes
+//	          "disable" instead of an unnecessary status gap.
 //
 // A refused arm returns Refused with the upstream reason; the size arm is
 // the single runtime premise and stays an evidence gap, never a guess.
 func AlterTableCacheOutcome(action string, facts AlterLayoutR6Facts) (AutoRandomVerdict, string) {
 	if action == "nocache" {
-		if facts.CacheStatusKnown && facts.CacheStatus != "enable" {
+		if facts.CacheStatusKnown && facts.CacheStatus == "disable" {
 			return AutoRandomOK, LayoutReasonNoCacheNotCached
-		}
-		if !facts.CacheStatusKnown {
-			return AutoRandomUndecidable, LayoutReasonCacheStatusUnproven
 		}
 		return AutoRandomOK, ""
 	}
@@ -116,95 +119,97 @@ func AlterTableCacheOutcome(action string, facts AlterLayoutR6Facts) (AutoRandom
 	return AutoRandomUndecidable, LayoutReasonCacheSizeUnproven
 }
 
-// CachedTableGuardRefused reports the upstream guard: once a table is
-// cache-enabled, every ALTER spec other than a single CACHE/NOCACHE is
+// CachedTableGuardRefused reports the upstream guard: once a table's
+// cache status is proven non-Disable (Enable, or Switching if it is ever
+// observed), every ALTER spec other than a single CACHE/NOCACHE is
 // refused (ErrOptOnCacheTable), and multi-spec forms are refused too.
-// The guard needs a proven enable status — unknown cache state cannot
-// refuse on this arm.
+// Upstream checks `!= TableCacheStatusDisable`; an unobserved status
+// cannot refuse on this arm and is handled by the premise gap instead.
 func CachedTableGuardRefused(action string, alterCount int, facts AlterLayoutR6Facts) bool {
-	if !facts.CacheStatusKnown || facts.CacheStatus != "enable" {
+	if !facts.CacheStatusKnown || facts.CacheStatus == "disable" {
 		return false
 	}
+	return CacheGuardPremiseNeeded(action, alterCount)
+}
+
+// CacheGuardSpecCount counts the ALTER specs upstream's
+// `checkAlterTableCacheStatus` sees — pure modifier specs
+// (ALGORITHM=/LOCK= carry no action of their own) do not inflate the
+// count that decides the single-CACHE/NOCACHE exemption.
+func CacheGuardSpecCount(alters []Alter) int {
+	count := 0
+	for i := range alters {
+		if alters[i].Action == "algorithm" || alters[i].Action == "lock" {
+			continue
+		}
+		count++
+	}
+	return count
+}
+
+// CacheGuardPremiseNeeded reports whether the upstream
+// `TableCacheStatusType != Disable` gate is evaluated for one action:
+// a single CACHE|NOCACHE spec never reaches it, everything else does —
+// both inside ALTER (any multi-spec alter, or one non-cache spec) and
+// for the standalone DROP/TRUNCATE/RENAME/index statements that run
+// the same guard unconditionally.
+func CacheGuardPremiseNeeded(action string, alterCount int) bool {
 	if alterCount != 1 {
 		return true
 	}
 	return action != "cache" && action != "nocache"
 }
 
-// ParseAttributesSpecValue emulates upstream label.Rule.ApplyAttributesSpec:
-// the spec text is wrapped as a YAML flow sequence (`[value]`) and every
-// item must parse as a `key=value` label. It returns false when the
-// authored text cannot form a valid label list. Quoted items and commas
-// inside quotes are honored so a user value containing SQL-shaped text
-// is never keyword-scanned.
-func ParseAttributesSpecValue(value string) bool {
-	items, ok := splitFlowList(value)
-	if !ok {
-		return false
+// CacheGuardOutcome resolves the shared `!= Disable` mutation gate on
+// one bound target: proven Disable clears it, proven non-Disable
+// (enable or switching) refuses natively and preserves the pre-state,
+// and an unobserved status leaves the premise unproven — the post-state
+// must not presume the gate passed. It is the shared criterion behind
+// CachedTableGuardRefused, the ordered-state publisher, and the rule's
+// evidence-gap surface.
+func CacheGuardOutcome(facts AlterLayoutR6Facts) (AutoRandomVerdict, string) {
+	if !facts.CacheStatusKnown {
+		return AutoRandomUndecidable, LayoutReasonCacheStatusUnproven
 	}
-	for _, item := range items {
-		item = strings.TrimSpace(item)
-		if item == "" {
-			return false
-		}
-		eq := strings.Index(item, "=")
-		if eq <= 0 {
-			return false
-		}
-		if strings.TrimSpace(item[:eq]) == "" {
-			return false
-		}
+	if facts.CacheStatus != "disable" {
+		return AutoRandomRefused, LayoutReasonCachedTableGuard
 	}
-	return true
+	return AutoRandomOK, ""
 }
 
-// splitFlowList splits the authored attribute text the way the upstream
-// YAML unmarshal reads `[text]`: top-level commas outside single and
-// double quotes. It returns ok=false on unbalanced quoting or bracket
-// structure.
-func splitFlowList(value string) ([]string, bool) {
+// ParseAttributesSpecValue emulates upstream label.Rule.ApplyAttributesSpec
+// plus NewLabels/Add: the spec text is wrapped as a YAML flow sequence
+// (`[value]`) and strict-unmarshaled into a string list; every item must be
+// one `key=value` label with a non-empty trimmed key and value, a same-key
+// same-value duplicate is a no-op, and a same-key conflicting value is a
+// refusal (pkg/ddl/label/rule.go + attributes.go). Quoted items and commas
+// inside quotes are honored through the real YAML scan, so a user value
+// containing SQL-shaped text is never keyword-scanned.
+func ParseAttributesSpecValue(value string) bool {
 	var items []string
-	var cur strings.Builder
-	var quote byte
-	for i := 0; i < len(value); i++ {
-		c := value[i]
-		if quote != 0 {
-			cur.WriteByte(c)
-			if c == quote {
-				quote = 0
+	if err := yaml.Unmarshal([]byte("["+value+"]"), &items); err != nil {
+		return false
+	}
+	seen := make(map[string]string, len(items))
+	for _, item := range items {
+		kv := strings.Split(item, "=")
+		if len(kv) != 2 {
+			return false
+		}
+		key := strings.TrimSpace(kv[0])
+		val := strings.TrimSpace(kv[1])
+		if key == "" || val == "" {
+			return false
+		}
+		if prev, ok := seen[key]; ok {
+			if prev != val {
+				return false
 			}
 			continue
 		}
-		switch c {
-		case '\'', '"':
-			quote = c
-			cur.WriteByte(c)
-		case '[':
-			return nil, false
-		case ']':
-			return nil, false
-		case ',':
-			items = append(items, cur.String())
-			cur.Reset()
-		default:
-			cur.WriteByte(c)
-		}
+		seen[key] = val
 	}
-	if quote != 0 {
-		return nil, false
-	}
-	items = append(items, cur.String())
-	// strip optional surrounding quotes per item
-	for i, item := range items {
-		t := strings.TrimSpace(item)
-		if len(t) >= 2 && (t[0] == '\'' && t[len(t)-1] == '\'') ||
-			len(t) >= 2 && (t[0] == '"' && t[len(t)-1] == '"') {
-			items[i] = t[1 : len(t)-1]
-		} else {
-			items[i] = t
-		}
-	}
-	return items, true
+	return true
 }
 
 // AlterAttributesOutcome adjudicates `ALTER TABLE t [PARTITION p]
@@ -353,6 +358,15 @@ func AlterLayoutR6FactsForSnapshot(shape *TableSnapshot) AlterLayoutR6Facts {
 	if status, ok := shape.Options["cache_status"]; ok {
 		facts.CacheStatusKnown = true
 		facts.CacheStatus = status
+	}
+	if !facts.CacheStatusKnown && (facts.Temporary || facts.SysDB || facts.Partitioned || facts.ViewOrSequence) {
+		// Upstream CACHE refuses temporary tables, system/memory
+		// schemas, partitioned tables, and non-base-table relations
+		// outright, so an object in these classes can never reach
+		// Enable/Switching — Disable is proven by object class, not by
+		// an observed marker.
+		facts.CacheStatusKnown = true
+		facts.CacheStatus = "disable"
 	}
 	if _, ok := shape.Options["tiflash_replica_count"]; ok {
 		facts.ReplicaKnown = true

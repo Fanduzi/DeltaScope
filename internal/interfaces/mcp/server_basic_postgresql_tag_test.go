@@ -79,7 +79,7 @@ func (c *mcpMetadataAuditTestClient) LoadTableSnapshot(_ context.Context, _ spec
 	if c.snapshot != nil {
 		return c.snapshot, nil
 	}
-	return &spec.TableSnapshot{Exists: true}, nil
+	return &spec.TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Exists: true}, nil
 }
 
 func (c *mcpMetadataAuditTestClient) DetectDialect(context.Context) (spec.Dialect, error) {

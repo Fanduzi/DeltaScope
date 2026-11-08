@@ -33,7 +33,7 @@ func (p *t11r1SchemaProvider) LoadTableSnapshot(_ context.Context, _ spec.Dialec
 	if snap, ok := p.tables[strings.ToLower(schema)+"."+strings.ToLower(table)]; ok {
 		return snap, nil
 	}
-	return &spec.TableSnapshot{Exists: false, Table: &spec.Table{Schema: schema, Name: table}}, nil
+	return &spec.TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Exists: false, Table: &spec.Table{Schema: schema, Name: table}}, nil
 }
 
 // t11r1Parent returns a parent whose referenced key is a proven primary

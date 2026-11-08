@@ -98,7 +98,7 @@ func (p *t05AbsentProvider) LoadInstanceFacts(context.Context, spec.Dialect, str
 
 func (p *t05AbsentProvider) LoadTableSnapshot(_ context.Context, _ spec.Dialect, schema, table string) (*spec.TableSnapshot, error) {
 	p.calls = append(p.calls, schema+"."+table)
-	return &spec.TableSnapshot{Exists: false, Table: &spec.Table{Schema: schema, Name: table}}, nil
+	return &spec.TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Exists: false, Table: &spec.Table{Schema: schema, Name: table}}, nil
 }
 
 func t05FindingsByRule(result report.Result, statementIndex int, ruleID string) []rule.Finding {
@@ -621,7 +621,7 @@ func TestBatchStateDoesNotMutateProviderSnapshotOrEarlierMetadata(t *testing.T) 
 		Exists:  true,
 		Table:   &spec.Table{Schema: "app", Name: "t"},
 		Columns: []spec.Column{{Name: "id", Type: "int"}},
-		Options: map[string]string{"table_rows": "500"},
+		Options: map[string]string{"cache_status": "disable", "table_rows": "500"},
 	}
 	provider := &dmlTableMetadataProvider{snapshots: map[string]*spec.TableSnapshot{
 		"app.t": shared,
@@ -663,7 +663,7 @@ func TestBatchStateDoesNotMutateProviderSnapshotOrEarlierMetadata(t *testing.T) 
 	if len(shared.Columns) != 1 || shared.Columns[0].Name != "id" {
 		t.Fatalf("provider snapshot mutated: columns=%+v", shared.Columns)
 	}
-	if shared.Options["table_rows"] != "500" || len(shared.Options) != 1 {
+	if shared.Options["table_rows"] != "500" || shared.Options["cache_status"] != "disable" || len(shared.Options) != 2 {
 		t.Fatalf("provider snapshot options mutated: %+v", shared.Options)
 	}
 }

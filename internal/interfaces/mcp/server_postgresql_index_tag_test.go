@@ -17,8 +17,7 @@ func TestAuditSQLToolPostgreSQLMetadataRenameIndexResolvesOwnerAndReportsExisten
 	client := &mcpMetadataAuditTestClient{
 		detectDialect: spec.DialectPostgreSQL,
 		indexTable:    "users",
-		snapshot: &spec.TableSnapshot{
-			Exists:  true,
+		snapshot: &spec.TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Exists: true,
 			Table:   &spec.Table{Name: "users"},
 			Indexes: []spec.Index{{Name: "idx_users_email", Kind: spec.IndexKindSecondary}},
 		},
@@ -102,8 +101,7 @@ func TestAuditSQLToolPostgreSQLMetadataDropIndexResolvesOwnerAndReportsExistence
 	client := &mcpMetadataAuditTestClient{
 		detectDialect: spec.DialectPostgreSQL,
 		indexTable:    "users",
-		snapshot: &spec.TableSnapshot{
-			Exists:  true,
+		snapshot: &spec.TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Exists: true,
 			Table:   &spec.Table{Name: "users"},
 			Indexes: []spec.Index{{Name: "idx_users_email", Kind: spec.IndexKindSecondary}},
 		},
@@ -187,8 +185,7 @@ func TestAuditSQLToolPostgreSQLMetadataQualifiedRenameIndexUsesStatementSchema(t
 	client := &mcpMetadataAuditTestClient{
 		detectDialect: spec.DialectPostgreSQL,
 		indexTable:    "users",
-		snapshot: &spec.TableSnapshot{
-			Exists:  true,
+		snapshot: &spec.TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Exists: true,
 			Table:   &spec.Table{Name: "users"},
 			Indexes: []spec.Index{{Name: "idx_users_email", Kind: spec.IndexKindSecondary}},
 		},

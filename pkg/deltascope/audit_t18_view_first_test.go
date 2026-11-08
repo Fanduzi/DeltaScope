@@ -50,7 +50,7 @@ func (p t18FirstProvider) LoadTableSnapshot(_ context.Context, _ Dialect, schema
 	if table == "t" {
 		switch p.sourceMode {
 		case "missing":
-			return &TableSnapshot{Schema: schema, Exists: false}, nil
+			return &TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Schema: schema, Exists: false}, nil
 		case "unknown":
 			return nil, nil
 		case "error":
@@ -58,10 +58,9 @@ func (p t18FirstProvider) LoadTableSnapshot(_ context.Context, _ Dialect, schema
 		}
 	}
 	if table != "v" && table != "w" && table != "t" && table != "u" && table != p.extraTable && table != p.extraView {
-		return &TableSnapshot{Schema: schema, Exists: false}, nil
+		return &TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Schema: schema, Exists: false}, nil
 	}
-	snapshot := &TableSnapshot{
-		Schema:       schema,
+	snapshot := &TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Schema: schema,
 		Exists:       true,
 		Table:        &Table{Schema: schema, Name: table},
 		Columns:      []Column{{Name: "id", Type: "int"}},

@@ -35,8 +35,7 @@ func t13Shape(name string) *spec.TableSnapshot {
 		Indexes:     []spec.Index{{Name: "idx_c", Kind: spec.IndexKindSecondary, Columns: []string{"c"}, Cardinality: &cardinality}},
 		Constraints: []spec.Constraint{},
 		Partitioned: &partitioned,
-		Options: map[string]string{
-			"table_rows": "9", "data_length": "100", "index_length": "40",
+		Options: map[string]string{"cache_status": "disable", "table_rows": "9", "data_length": "100", "index_length": "40",
 			"avg_row_length": "8", "auto_increment": "4", "comment": "kept",
 		},
 	}

@@ -26,7 +26,7 @@ func (p *t18FirstProvider) LoadTableSnapshot(_ context.Context, _ spec.Dialect, 
 
 func t18FirstFixture() *t18FirstProvider {
 	table := func(name string) *spec.TableSnapshot {
-		return &spec.TableSnapshot{Schema: "g", Table: &spec.Table{Schema: "g", Name: name}, Exists: true,
+		return &spec.TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Schema: "g", Table: &spec.Table{Schema: "g", Name: name}, Exists: true,
 			RelationKind: "table", Columns: []spec.Column{{Name: "id", Type: "int"}}}
 	}
 	return &t18FirstProvider{tables: map[string]*spec.TableSnapshot{
@@ -96,7 +96,7 @@ func TestT18FirstOrderedProjection(t *testing.T) {
 
 func TestT18FirstRefusalPreservesPriorView(t *testing.T) {
 	provider := t18FirstFixture()
-	provider.tables["g.t"] = &spec.TableSnapshot{Schema: "g", Exists: false}
+	provider.tables["g.t"] = &spec.TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Schema: "g", Exists: false}
 	_, statements := t18FirstEnrich(t, provider, "ALTER VIEW v AS SELECT id FROM t;\nCREATE VIEW next_v AS SELECT id FROM v;")
 	if !spec.AssessViewLifecycle(statements[0]).SourceInvalid {
 		t.Fatal("missing source was not a proven refusal")
@@ -149,9 +149,9 @@ func TestT18ReviewIndependentSourceFacts(t *testing.T) {
 		}},
 		Metadata: &spec.Metadata{View: &spec.ViewMetadata{
 			TargetIdentity: spec.Table{Schema: "g", Name: "v"},
-			Target:         &spec.TableSnapshot{Exists: true, RelationKind: "view"},
+			Target:         &spec.TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Exists: true, RelationKind: "view"},
 			Sources: []spec.TargetBinding{
-				{Table: spec.Table{Schema: "g", Name: "missing"}, Snapshot: &spec.TableSnapshot{Exists: false}},
+				{Table: spec.Table{Schema: "g", Name: "missing"}, Snapshot: &spec.TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Exists: false}},
 				{Table: spec.Table{Schema: "g", Name: "unknown"}},
 			},
 		}},
@@ -515,8 +515,7 @@ func TestT18FirstDependencyLimitIsIntrinsic(t *testing.T) {
 		if i < 33 {
 			source = fmt.Sprintf("v%d", i+1)
 		}
-		provider.tables["g."+name] = &spec.TableSnapshot{
-			Schema: "g", Table: &spec.Table{Schema: "g", Name: name}, Exists: true,
+		provider.tables["g."+name] = &spec.TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Schema: "g", Table: &spec.Table{Schema: "g", Name: name}, Exists: true,
 			RelationKind: "view", Columns: []spec.Column{{Name: "id", Type: "int"}},
 			View: &spec.ViewSnapshot{Security: "definer", Definition: &spec.ViewDefinition{
 				SourcesKnown: true, Sources: []spec.Table{{Schema: "g", Name: source}},

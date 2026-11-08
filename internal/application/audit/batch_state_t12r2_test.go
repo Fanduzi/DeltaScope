@@ -21,8 +21,7 @@ import (
 //     member, single- or multi-column.
 
 func t12r2SelfRefTable() *spec.TableSnapshot {
-	return &spec.TableSnapshot{
-		Exists:  true,
+	return &spec.TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Exists: true,
 		Table:   &spec.Table{Schema: "golden", Name: "t"},
 		Columns: []spec.Column{{Name: "id", Type: "int"}, {Name: "parent_id", Type: "int"}},
 		PrimaryKey: &spec.Index{

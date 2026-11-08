@@ -81,8 +81,7 @@ func TestT10R6DropPrimaryKeyBindingControls(t *testing.T) {
 	ruleUnderTest := t10r6DropPKRule(t)
 	t.Run("member primary owns the name", func(t *testing.T) {
 		t.Parallel()
-		snapshot := &spec.TableSnapshot{
-			Exists:              true,
+		snapshot := &spec.TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Exists: true,
 			PrimaryKey:          &spec.Index{Name: "primary", Kind: spec.IndexKindPrimary},
 			PrimaryKeyIsHandle:  true,
 			PrimaryKeyClustered: true,
@@ -98,8 +97,7 @@ func TestT10R6DropPrimaryKeyBindingControls(t *testing.T) {
 	})
 	t.Run("primary-stored PK object owns the name", func(t *testing.T) {
 		t.Parallel()
-		snapshot := &spec.TableSnapshot{
-			Exists:     true,
+		snapshot := &spec.TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Exists: true,
 			PrimaryKey: &spec.Index{Name: "primary", Kind: spec.IndexKindPrimary},
 			Indexes:    []spec.Index{{Name: "s", Kind: spec.IndexKindSecondary, Columns: []string{"c"}}},
 		}
@@ -115,8 +113,7 @@ func TestT10R6DropPrimaryKeyBindingControls(t *testing.T) {
 		t.Parallel()
 		for _, dialect := range []spec.Dialect{spec.DialectMySQL, spec.DialectTiDB} {
 			dialect := dialect
-			snapshot := &spec.TableSnapshot{
-				Exists:  true,
+			snapshot := &spec.TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Exists: true,
 				Indexes: []spec.Index{{Name: "s", Kind: spec.IndexKindSecondary, Columns: []string{"c"}}},
 			}
 			findings, err := ruleUnderTest.Evaluate(context.Background(), t10r6DropPKStatement(dialect, snapshot))

@@ -107,8 +107,7 @@ func TestStatementMetadataSupportsInstanceAndTargetTableFacts(t *testing.T) {
 				InnoDBDefaultRowFormat:    "dynamic",
 				InnoDBAdaptiveHashEnabled: true,
 			},
-			TargetTable: &TableSnapshot{
-				Schema: "app",
+			TargetTable: &TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Schema: "app",
 				Exists: true,
 				Table:  &Table{Name: "users"},
 				Columns: []Column{
@@ -151,9 +150,7 @@ func TestStatementMetadataSupportsInstanceAndTargetTableFacts(t *testing.T) {
 
 func TestTableSnapshotHasPrimaryKeyRecognizesConstraintOnlySnapshot(t *testing.T) {
 	t.Parallel()
-	snapshot := TableSnapshot{
-		Constraints: []Constraint{{Type: "primary_key", Name: "users_pkey", Columns: []string{"id"}}},
-	}
+	snapshot := TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Constraints: []Constraint{{Type: "primary_key", Name: "users_pkey", Columns: []string{"id"}}}}
 
 	if !snapshot.HasPrimaryKey() {
 		t.Fatal("expected constraint-backed primary key to count as existing")
@@ -162,9 +159,7 @@ func TestTableSnapshotHasPrimaryKeyRecognizesConstraintOnlySnapshot(t *testing.T
 
 func TestTableSnapshotHasPrimaryKeyRecognizesIndexOnlySnapshot(t *testing.T) {
 	t.Parallel()
-	snapshot := TableSnapshot{
-		PrimaryKey: &Index{Name: "PRIMARY", Kind: IndexKindPrimary, Columns: []string{"id"}},
-	}
+	snapshot := TableSnapshot{Options: map[string]string{"cache_status": "disable"}, PrimaryKey: &Index{Name: "PRIMARY", Kind: IndexKindPrimary, Columns: []string{"id"}}}
 
 	if !snapshot.HasPrimaryKey() {
 		t.Fatal("expected primary key index to count as existing")
@@ -173,9 +168,8 @@ func TestTableSnapshotHasPrimaryKeyRecognizesIndexOnlySnapshot(t *testing.T) {
 
 func TestTableSnapshotHasPrimaryKeyReturnsFalseWithoutPrimaryKeyFacts(t *testing.T) {
 	t.Parallel()
-	snapshot := TableSnapshot{
-		Constraints: []Constraint{{Type: "check", Name: "users_id_positive", Columns: []string{"id"}}},
-		Indexes:     []Index{{Name: "idx_email", Kind: IndexKindSecondary, Columns: []string{"email"}}},
+	snapshot := TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Constraints: []Constraint{{Type: "check", Name: "users_id_positive", Columns: []string{"id"}}},
+		Indexes: []Index{{Name: "idx_email", Kind: IndexKindSecondary, Columns: []string{"email"}}},
 	}
 
 	if snapshot.HasPrimaryKey() {
@@ -399,9 +393,8 @@ func TestStatementDMLImpactFieldsPreserveZeroValueAndJSONBehavior(t *testing.T) 
 			},
 		},
 		Metadata: &Metadata{
-			TargetTable: &TableSnapshot{
-				Exists: true,
-				Table:  &Table{Name: "users"},
+			TargetTable: &TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Exists: true,
+				Table: &Table{Name: "users"},
 				PrimaryKey: &Index{
 					Name:        "PRIMARY",
 					Kind:        IndexKindPrimary,

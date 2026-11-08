@@ -39,8 +39,7 @@ func (p *t06a4StoredProvider) LoadTableSnapshot(_ context.Context, _ spec.Dialec
 		c.HasDefault = true
 		c.DefaultValue = *p.cText
 	}
-	return &spec.TableSnapshot{
-		Exists: true,
+	return &spec.TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Exists: true,
 		Schema: schema,
 		Table:  &spec.Table{Schema: schema, Name: table},
 		Columns: []spec.Column{

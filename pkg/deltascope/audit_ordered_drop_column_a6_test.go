@@ -62,7 +62,7 @@ func TestAuditT05A6DropColumnPass(t *testing.T) {
 		dialect := dialect
 		t.Run(string(dialect), func(t *testing.T) {
 			t.Parallel()
-			provider := &fakeMetadataProvider{snapshot: &TableSnapshot{Exists: false, Schema: "golden"}}
+			provider := &fakeMetadataProvider{snapshot: &TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Exists: false, Schema: "golden"}}
 			result, err := Audit(context.Background(), Request{
 				SQL:              t05A6DropSQL,
 				Dialect:          dialect,
@@ -91,7 +91,7 @@ func TestAuditT05A6DropColumnPass(t *testing.T) {
 func TestAuditT05A6RemovedIndexReject(t *testing.T) {
 	t.Parallel()
 	sql := strings.Replace(t05A6DropSQL, "CREATE INDEX idx_keep ON t(keep_c);", "CREATE INDEX ix_removed ON t(obsolete);", 1)
-	provider := &fakeMetadataProvider{snapshot: &TableSnapshot{Exists: false, Schema: "golden"}}
+	provider := &fakeMetadataProvider{snapshot: &TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Exists: false, Schema: "golden"}}
 	result, err := Audit(context.Background(), Request{
 		SQL:              sql,
 		Dialect:          DialectMySQL,

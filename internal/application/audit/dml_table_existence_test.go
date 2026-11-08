@@ -32,7 +32,7 @@ func TestAuditMetadataDMLMissingTargetTableBlocksMySQLAndTiDB(t *testing.T) {
 				SQL:              tc.sql,
 				Dialect:          tc.dialect,
 				Schema:           "app",
-				MetadataProvider: &fakeMetadataProvider{snapshot: &spec.TableSnapshot{Schema: "app", Exists: false}},
+				MetadataProvider: &fakeMetadataProvider{snapshot: &spec.TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Schema: "app", Exists: false}},
 			})
 			if err != nil {
 				t.Fatalf("audit: %v", err)

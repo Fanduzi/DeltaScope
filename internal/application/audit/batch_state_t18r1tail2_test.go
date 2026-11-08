@@ -8,21 +8,21 @@ import (
 
 func t18R1Tail2Fixture() *t18FirstProvider {
 	provider := t18FirstFixture()
-	provider.tables["g.t_amount"] = &spec.TableSnapshot{Schema: "g",
+	provider.tables["g.t_amount"] = &spec.TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Schema: "g",
 		Table: &spec.Table{Schema: "g", Name: "t_amount"}, Exists: true,
 		RelationKind: "table", Columns: []spec.Column{{Name: "x", Type: "int"}}}
-	provider.tables["g.t_base"] = &spec.TableSnapshot{Schema: "g",
+	provider.tables["g.t_base"] = &spec.TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Schema: "g",
 		Table: &spec.Table{Schema: "g", Name: "t_base"}, Exists: true,
 		RelationKind: "table", Columns: []spec.Column{{Name: "id", Type: "int"}}}
 	for _, name := range []string{"agg_v", "base_v", "joined_v", "checked_v", "joined_bad_v"} {
-		provider.tables["g."+name] = &spec.TableSnapshot{Schema: "g",
+		provider.tables["g."+name] = &spec.TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Schema: "g",
 			Table: &spec.Table{Schema: "g", Name: name}, Exists: false}
 	}
 	return provider
 }
 
 func t18R1Tail2ViewSource(name, leaf string, updatable *bool) *spec.TableSnapshot {
-	return &spec.TableSnapshot{Schema: "g", Table: &spec.Table{Schema: "g", Name: name},
+	return &spec.TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Schema: "g", Table: &spec.Table{Schema: "g", Name: name},
 		Exists: true, RelationKind: "view", Columns: []spec.Column{{Name: "id", Type: "int"}},
 		View: &spec.ViewSnapshot{Security: "definer", Updatable: updatable,
 			Definition: &spec.ViewDefinition{SQL: "SELECT id FROM g." + leaf, SourcesKnown: true,
@@ -69,7 +69,7 @@ func TestT18R1Tail2MixedJoinKeepsUpdatableComponent(t *testing.T) {
 
 func TestT18R1Tail2SourceCombinationControls(t *testing.T) {
 	viewSource := func(name string, updatable *bool) *spec.TableSnapshot {
-		return &spec.TableSnapshot{Schema: "g", Table: &spec.Table{Schema: "g", Name: name},
+		return &spec.TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Schema: "g", Table: &spec.Table{Schema: "g", Name: name},
 			Exists: true, RelationKind: "view", Columns: []spec.Column{{Name: "id", Type: "int"}},
 			View: &spec.ViewSnapshot{Security: "definer", Updatable: updatable,
 				Definition: &spec.ViewDefinition{SQL: "SELECT id FROM g.t_base", SourcesKnown: true,
@@ -116,7 +116,7 @@ func TestT18R1Tail2CheckSharesUnprovenUpdatable(t *testing.T) {
 	provider := t18R1Tail2Fixture()
 	provider.tables["g.v"] = t18R1TailAbsent("v")
 	source := func(name string, updatable *bool) *spec.TableSnapshot {
-		return &spec.TableSnapshot{Schema: "g", Table: &spec.Table{Schema: "g", Name: name},
+		return &spec.TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Schema: "g", Table: &spec.Table{Schema: "g", Name: name},
 			Exists: true, RelationKind: "view", Columns: []spec.Column{{Name: "id", Type: "int"}},
 			View: &spec.ViewSnapshot{Security: "definer", Updatable: updatable,
 				Definition: &spec.ViewDefinition{SQL: "SELECT id FROM g.t_base", SourcesKnown: true,
@@ -256,7 +256,7 @@ func TestT18R1Tail2QuerySourcesAndGlobalReuseControls(t *testing.T) {
 func TestT18R1Tail2GlobalReuseUnprovenViewStaysUnknown(t *testing.T) {
 	provider := t18R1Tail2Fixture()
 	provider.tables["g.v"] = t18R1TailAbsent("v")
-	provider.tables["g.a"] = &spec.TableSnapshot{Schema: "g",
+	provider.tables["g.a"] = &spec.TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Schema: "g",
 		Table: &spec.Table{Schema: "g", Name: "a"}, Exists: true,
 		RelationKind: "view", Columns: []spec.Column{{Name: "id", Type: "int"}},
 		View: &spec.ViewSnapshot{Security: "definer", Updatable: t18R1TailBool(true)}}

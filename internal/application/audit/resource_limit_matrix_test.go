@@ -244,7 +244,7 @@ func TestT05A7CallStopLedger(t *testing.T) {
 				PrimaryKey:  &spec.Index{Name: "primary", Kind: spec.IndexKindPrimary, Columns: []string{"id"}},
 				Indexes:     []spec.Index{},
 				Constraints: []spec.Constraint{},
-				Options:     map[string]string{"table_rows": "100"},
+				Options:     map[string]string{"cache_status": "disable", "table_rows": "100"},
 			}
 			shapeBefore := cloneTableSnapshot(shape)
 			snapshotCalls := 0
@@ -665,7 +665,7 @@ func TestT05A7BlockedCreateAndStaleConclusions(t *testing.T) {
 			statements := t05A7Extract(t, "CREATE TABLE t (id INT PRIMARY KEY);\nDELETE FROM old_t;", dialect)
 			oldMetadata := &spec.Metadata{
 				Schema:      "stale",
-				TargetTable: &spec.TableSnapshot{Exists: true, Table: &spec.Table{Name: "old_t"}, Options: map[string]string{"table_rows": "99"}},
+				TargetTable: &spec.TableSnapshot{Exists: true, Table: &spec.Table{Name: "old_t"}, Options: map[string]string{"cache_status": "disable", "table_rows": "99"}},
 				Objects:     []spec.ObjectSnapshot{{Name: "old_object", Type: "schema", Status: spec.MetadataStatusConfirmed, Exists: true}},
 			}
 			statements[1].Metadata = oldMetadata

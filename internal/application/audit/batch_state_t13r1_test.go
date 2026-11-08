@@ -40,8 +40,7 @@ func t13r1CounterpartShape(name string) *spec.TableSnapshot {
 		Indexes:     []spec.Index{{Name: "idx_c", Kind: spec.IndexKindSecondary, Columns: []string{"c"}, Cardinality: &cardinality}},
 		Constraints: []spec.Constraint{},
 		Partitioned: &partitioned,
-		Options: map[string]string{
-			"table_rows": "42", "data_length": "2048", "index_length": "1024",
+		Options: map[string]string{"cache_status": "disable", "table_rows": "42", "data_length": "2048", "index_length": "1024",
 			"avg_row_length": "48", "auto_increment": "50", "comment": "kept",
 		},
 	}

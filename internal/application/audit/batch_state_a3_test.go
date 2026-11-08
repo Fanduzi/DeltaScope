@@ -322,8 +322,7 @@ func t05A3Audit(t *testing.T, sql string, dialect spec.Dialect, provider Metadat
 }
 
 func t05A3PartialTable(schema, table string) *spec.TableSnapshot {
-	return &spec.TableSnapshot{
-		Exists:             true,
+	return &spec.TableSnapshot{Options: map[string]string{"cache_status": "disable"}, Exists: true,
 		Schema:             schema,
 		Table:              &spec.Table{Schema: schema, Name: table},
 		PrimaryKeyUnknown:  true,
@@ -472,7 +471,7 @@ func t05A3OldTable() *spec.TableSnapshot {
 			ReferencedTable:   "p",
 			ReferencedColumns: []string{"id"},
 		}},
-		Options: map[string]string{"table_rows": "99", "auto_increment": "55", "comment": "old"},
+		Options: map[string]string{"cache_status": "disable", "table_rows": "99", "auto_increment": "55", "comment": "old"},
 	}
 }
 

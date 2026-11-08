@@ -1494,11 +1494,11 @@ func (metadataOnlyClientWithDialect) LoadInstanceFacts(context.Context, spec.Dia
 }
 
 func (metadataOnlyClient) LoadTableSnapshot(context.Context, spec.Dialect, string, string) (*spec.TableSnapshot, error) {
-	return &spec.TableSnapshot{}, nil
+	return &spec.TableSnapshot{Options: map[string]string{"cache_status": "disable"}}, nil
 }
 
 func (metadataOnlyClientWithDialect) LoadTableSnapshot(context.Context, spec.Dialect, string, string) (*spec.TableSnapshot, error) {
-	return &spec.TableSnapshot{}, nil
+	return &spec.TableSnapshot{Options: map[string]string{"cache_status": "disable"}}, nil
 }
 
 func (metadataOnlyClient) DetectDialect(context.Context) (spec.Dialect, error) {
