@@ -69,8 +69,8 @@ Stable public package surface for library consumers.
 - `Request`
 - `MetadataProvider`
 - `MySQLResourceGroupFactsProvider` (optional T24/#103 premise-bundle loader: read-only variables, effective grants, bound-group occupancy, feature probe)
-- `DeploymentEvidence` (sourced, target-bound bundle for host-VCPU/priority-capability/feature premises no SQL channel observes; binds by Source+Product+Version, fills only unproven slots; R6 `Target` discriminates same-version instances against the observed `@@server_uuid` or the request's `TargetIdentity`)
-- `Request.TargetIdentity` (declared target identity a `Target`-bound evidence bundle matches when the provider did not observe `@@server_uuid`)
+- `DeploymentEvidence` (sourced, target-bound bundle for host-VCPU/priority-capability/feature premises no SQL channel observes; binds by Source+Product+Version, fills only unproven slots; `Target` is required (R9) — online requests bind only against the provider-observed `@@server_uuid`, a cleanly absent uuid refuses without erroring, and the declared `TargetIdentity` binds only for offline requests with no provider attached)
+- `Request.TargetIdentity` (declared target identity a `Target`-bound evidence bundle matches only when no metadata provider is attached — an attached provider's observed `@@server_uuid` always outranks it)
 - `Metadata`
 - `InstanceFacts`
   aliases the shared instance facts, including observed server charset,

@@ -50,14 +50,16 @@ func evidenceGapCodes(decoded map[string]any) []string {
 }
 
 // A bound, sourced bundle fills the host-VCPU premise the offline
-// channel cannot observe — the VCPU endpoint gap disappears.
+// channel cannot observe — the VCPU endpoint gap disappears. The CLI
+// runs with no metadata provider, so Target binds against the declared
+// --target-identity under the caller-provided-facts contract.
 func TestT24CLIDeploymentEvidenceFileFillsPremise(t *testing.T) {
-	path := writeEvidenceFile(t, `{"source":"capacity-report","product":"mysql","version":"8.0.36","host_vcpus":8}`)
+	path := writeEvidenceFile(t, `{"source":"capacity-report","product":"mysql","version":"8.0.36","target":"host-a","host_vcpus":8}`)
 	decoded, code := runEvidenceAudit(t,
 		"audit", "--sql", "CREATE RESOURCE GROUP rg TYPE=USER VCPU=7;",
 		"--dialect", "mysql", "--target-version", "8.0.36",
 		"--format", "json", "--fail-on", "none",
-		"--deployment-evidence-file", path)
+		"--deployment-evidence-file", path, "--target-identity", "host-a")
 	if code != 0 {
 		t.Fatalf("exit = %d, want 0", code)
 	}
@@ -79,8 +81,8 @@ func TestT24CLIDeploymentEvidenceFileGuards(t *testing.T) {
 	}
 
 	// Version mismatch — bundle ignored, host gap stays.
-	mismatched := writeEvidenceFile(t, `{"source":"capacity-report","product":"mysql","version":"8.0.35","host_vcpus":8}`)
-	decoded, _ := runEvidenceAudit(t, append(append([]string{}, sql...), "--deployment-evidence-file", mismatched)...)
+	mismatched := writeEvidenceFile(t, `{"source":"capacity-report","product":"mysql","version":"8.0.35","target":"host-a","host_vcpus":8}`)
+	decoded, _ := runEvidenceAudit(t, append(append([]string{}, sql...), "--deployment-evidence-file", mismatched, "--target-identity", "host-a")...)
 	found := false
 	for _, gap := range evidenceGapCodes(decoded) {
 		if gap == "unknown_host_vcpu_count" {
@@ -118,9 +120,15 @@ func TestT24CLIDeploymentEvidenceFileGuards(t *testing.T) {
 	if _, code := runEvidenceAudit(t, append(append([]string{}, sql...), "--deployment-evidence-file", bad)...); code != 2 {
 		t.Fatalf("malformed JSON: exit = %d, want 2", code)
 	}
-	noAnchor := writeEvidenceFile(t, `{"product":"mysql","version":"8.0.36"}`)
+	noAnchor := writeEvidenceFile(t, `{"product":"mysql","version":"8.0.36","target":"host-a"}`)
 	if _, code := runEvidenceAudit(t, append(append([]string{}, sql...), "--deployment-evidence-file", noAnchor)...); code != 2 {
 		t.Fatalf("missing anchors: exit = %d, want 2", code)
+	}
+	// R9: Target is required — a well-formed bundle missing it is an
+	// input error, never a version-only bind.
+	noTarget := writeEvidenceFile(t, `{"source":"capacity-report","product":"mysql","version":"8.0.36","host_vcpus":8}`)
+	if _, code := runEvidenceAudit(t, append(append([]string{}, sql...), "--deployment-evidence-file", noTarget, "--target-identity", "host-a")...); code != 2 {
+		t.Fatalf("missing target: exit = %d, want 2 — Target is a required field", code)
 	}
 	// Trailing content: a second JSON object, a stray closer, or bare
 	// text all reject; whitespace alone stays legal.
@@ -129,11 +137,11 @@ func TestT24CLIDeploymentEvidenceFileGuards(t *testing.T) {
 		body string
 		want int
 	}{
-		{"second object", `{"source":"s","product":"mysql","version":"8.0.36"} {"source":"x","product":"mysql","version":"8.0.36"}`, 2},
-		{"stray closer", `{"source":"s","product":"mysql","version":"8.0.36"} ]`, 2},
-		{"stray brace", `{"source":"s","product":"mysql","version":"8.0.36"} }`, 2},
-		{"trailing text", `{"source":"s","product":"mysql","version":"8.0.36"} garbage`, 2},
-		{"trailing ws", `{"source":"s","product":"mysql","version":"8.0.36"}   ` + "\n", 0},
+		{"second object", `{"source":"s","product":"mysql","version":"8.0.36","target":"t"} {"source":"x","product":"mysql","version":"8.0.36","target":"t"}`, 2},
+		{"stray closer", `{"source":"s","product":"mysql","version":"8.0.36","target":"t"} ]`, 2},
+		{"stray brace", `{"source":"s","product":"mysql","version":"8.0.36","target":"t"} }`, 2},
+		{"trailing text", `{"source":"s","product":"mysql","version":"8.0.36","target":"t"} garbage`, 2},
+		{"trailing ws", `{"source":"s","product":"mysql","version":"8.0.36","target":"t"}   ` + "\n", 0},
 	} {
 		f := writeEvidenceFile(t, tc.body)
 		if _, code := runEvidenceAudit(t, append(append([]string{}, sql...), "--deployment-evidence-file", f)...); code != tc.want {
@@ -141,7 +149,7 @@ func TestT24CLIDeploymentEvidenceFileGuards(t *testing.T) {
 		}
 	}
 
-	unknown := writeEvidenceFile(t, `{"source":"s","product":"mysql","version":"8.0.36","secret_dsn":"s3cret"}`)
+	unknown := writeEvidenceFile(t, `{"source":"s","product":"mysql","version":"8.0.36","target":"t","secret_dsn":"s3cret"}`)
 	if _, code := runEvidenceAudit(t, append(append([]string{}, sql...), "--deployment-evidence-file", unknown)...); code != 2 {
 		t.Fatalf("unknown field: exit = %d, want 2 — schema stays bounded", code)
 	}

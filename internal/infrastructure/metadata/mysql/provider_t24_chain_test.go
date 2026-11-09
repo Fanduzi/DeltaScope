@@ -327,6 +327,36 @@ func TestT24ChainEvidenceObservedIdentityBinds(t *testing.T) {
 	}
 }
 
+// R9 cell: online with a cleanly absent observed uuid — the stub driver
+// returns ErrNoRows for @@server_uuid, the read itself succeeded — the
+// request is still online, so the bundle is refused wholesale even
+// though the declared identity matches Target. A clean absence is not
+// an error (Audit succeeds) but never falls back to declaration.
+func TestT24ChainEvidenceOnlineAbsentUUIDRefuses(t *testing.T) {
+	vcpus := uint64(8)
+	results := t24ChainFacts()
+	delete(results, t24FactsUUIDFragment)
+	results[t24FactsThreadsFragment] = testQueryResult{columns: []string{"resource_group"}}
+	results[t24FactsLostFragment] = t24FactsLostRow(0)
+	result, err := appaudit.AuditSQL(context.Background(), appaudit.Request{
+		SQL:              "CREATE RESOURCE GROUP rg_new TYPE=USER VCPU=2-4;",
+		Dialect:          spec.DialectMySQL,
+		TargetVersion:    "8.0.36",
+		MetadataProvider: NewProvider(openTestDB(t, results)),
+		DeploymentEvidence: &spec.DeploymentEvidence{
+			Source: "cap:1", Product: "mysql", Version: "8.0.36",
+			Target: "declared-host", HostVCPUs: &vcpus,
+		},
+		TargetIdentity: "declared-host",
+	})
+	if err != nil {
+		t.Fatalf("AuditSQL: %v — a cleanly absent observed identity is not an error", err)
+	}
+	if gaps := t24ChainGapCodes(result.Statements[0]); !slices.Contains(gaps, "unknown_host_vcpu_count") {
+		t.Fatalf("gaps = %v, want the host gap — online never falls back to the declared identity", gaps)
+	}
+}
+
 // Lazy gating: a batch naming no MySQL resource group never pays the
 // premise bundle — evidence and target flags alone trigger zero RG
 // queries (every channel carries a sentinel error).

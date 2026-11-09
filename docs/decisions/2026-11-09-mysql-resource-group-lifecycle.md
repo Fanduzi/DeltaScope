@@ -374,3 +374,36 @@ no-RG-statement lazy gate all run stub driver → real
   untargeted bundles are version-bound, the legacy `Request.Metadata`
   entry runs the identical validator, and a `Target`-bound bundle can
   never bypass the check through the fallback path.
+
+### T24-R9 addendum — Target required, online binds on observed identity only
+
+R9 tightens the evidence contract on the online-missing branch (this
+round's own ruling; earlier rounds' offline contracts are unchanged):
+
+- `DeploymentEvidence.Target` is a **required** field of a valid
+  bundle. A missing or empty target ignores the bundle wholesale on
+  every entry path — it never degrades to a version-only bind, and
+  `Request.TargetIdentity` is never auto-copied into a missing Target.
+  The CLI rejects a targetless file as an input error (exit 2); the
+  SDK ignores the invalid bundle under the existing no-apply
+  convention. Both share the one `applyDeploymentEvidence` validator.
+- **Online** (a metadata provider is attached, whether or not it can
+  observe identity): only the provider-observed `@@server_uuid` binds.
+  A cleanly absent uuid (successful read, `ErrNoRows`/empty) ignores
+  the bundle **without** erroring and **never** falls back to the
+  declared `TargetIdentity` — a failed uuid query still propagates.
+  Cleanly-absent identity is not an error and does not fail the audit:
+  other observed facts stay, gaps accrue normally.
+- **Offline** (no metadata provider at all): the declared
+  `TargetIdentity` may match `Target` under the caller-provided-facts
+  contract — the same trust tier as `Request.Metadata.InstanceFacts`.
+- The legacy `Request.Metadata.DeploymentEvidence` entry runs the
+  identical validator; no path bypasses the target requirement.
+- Permanent matrix: `TestT24DeploymentEvidenceTargetDiscrimination`
+  (online-unobserved refuses despite declared match; observed wins
+  over declared both directions; offline match binds/mismatch refuses),
+  `TestT24DeploymentEvidenceMissingTargetAndLegacyPath` (untargeted
+  refused on both entries; target-bound legacy bundle still binds on
+  the observed uuid), and `TestT24ChainEvidenceOnlineAbsentUUIDRefuses`
+  (stub driver → real provider → public `AuditSQL` — a cleanly absent
+  observed uuid refuses the declared-matching bundle without erroring).

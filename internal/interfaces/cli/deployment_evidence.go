@@ -46,8 +46,8 @@ func loadDeploymentEvidenceFile(path string) (*spec.DeploymentEvidence, error) {
 	if len(bytes.TrimSpace(raw[decoder.InputOffset():])) != 0 {
 		return nil, fmt.Errorf("deployment evidence file carries trailing content")
 	}
-	if evidence.Source == "" || evidence.Product == "" || evidence.Version == "" {
-		return nil, fmt.Errorf("deployment evidence file must carry source, product, and version")
+	if evidence.Source == "" || evidence.Product == "" || evidence.Version == "" || evidence.Target == "" {
+		return nil, fmt.Errorf("deployment evidence file must carry source, product, version, and target")
 	}
 	if evidence.Product != "mysql" {
 		return nil, fmt.Errorf("deployment evidence product must be mysql")

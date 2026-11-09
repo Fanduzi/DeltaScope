@@ -106,16 +106,18 @@ func mergeMySQLResourceGroupFacts(dst, src *spec.InstanceFacts) {
 
 // applyDeploymentEvidence folds a sourced, target-bound fact bundle
 // into the instance facts. The bundle binds strictly: Source must be
-// non-empty, Product must equal "mysql", and Version must equal the
-// resolved target version exactly — anything else is ignored rather
-// than partially trusted. A bundle carrying Target additionally binds
-// to the audited target's resolved identity — the provider-observed
-// @@server_uuid when known, else the request's declared targetIdentity;
-// a mismatched or unverifiable target ignores the whole bundle, so one
-// instance's evidence can never fill another instance's gaps. Evidence
-// fills only unproven slots; it never overwrites an online observation
-// and is consumed per request, never cached.
-func applyDeploymentEvidence(facts *spec.InstanceFacts, evidence *spec.DeploymentEvidence, version *spec.VersionIdentity, declaredTarget string) {
+// non-empty, Product must equal "mysql", Version must equal the
+// resolved target version exactly, and Target is required — a missing
+// or empty target ignores the whole bundle rather than degrading to a
+// version-only bind (T24-R9 contract). The identity the target must
+// match depends on context: online (a metadata provider is attached)
+// only the provider-observed @@server_uuid binds — a cleanly absent
+// identity ignores the bundle without erroring and never falls back to
+// the declared identity; offline (no provider at all) the request's
+// declared TargetIdentity may match under the caller-provided-facts
+// contract. Evidence fills only unproven slots; it never overwrites an
+// online observation and is consumed per request, never cached.
+func applyDeploymentEvidence(facts *spec.InstanceFacts, evidence *spec.DeploymentEvidence, version *spec.VersionIdentity, declaredTarget string, online bool) {
 	if facts == nil || evidence == nil {
 		return
 	}
@@ -127,17 +129,21 @@ func applyDeploymentEvidence(facts *spec.InstanceFacts, evidence *spec.Deploymen
 		strings.TrimSpace(evidence.Version) != version.Version {
 		return
 	}
-	if target := strings.TrimSpace(evidence.Target); target != "" {
-		resolved := ""
-		switch {
-		case facts.MySQLServerUUIDKnown && strings.TrimSpace(facts.MySQLServerUUID) != "":
-			resolved = facts.MySQLServerUUID
-		default:
-			resolved = strings.TrimSpace(declaredTarget)
-		}
-		if resolved == "" || !strings.EqualFold(resolved, target) {
+	target := strings.TrimSpace(evidence.Target)
+	if target == "" {
+		return
+	}
+	var resolved string
+	if online {
+		if !facts.MySQLServerUUIDKnown || strings.TrimSpace(facts.MySQLServerUUID) == "" {
 			return
 		}
+		resolved = facts.MySQLServerUUID
+	} else {
+		resolved = strings.TrimSpace(declaredTarget)
+	}
+	if resolved == "" || !strings.EqualFold(resolved, target) {
+		return
 	}
 	if !facts.MySQLHostVCPUsKnown && evidence.HostVCPUs != nil && *evidence.HostVCPUs > 0 {
 		facts.MySQLHostVCPUs = *evidence.HostVCPUs

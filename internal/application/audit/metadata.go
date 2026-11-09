@@ -253,7 +253,7 @@ func (state *batchState) enrichStatements(ctx context.Context, request *Metadata
 				instanceFacts = &spec.InstanceFacts{}
 				state.instanceFacts = instanceFacts
 			}
-			applyDeploymentEvidence(instanceFacts, request.DeploymentEvidence, resolvedVersion, request.TargetIdentity)
+			applyDeploymentEvidence(instanceFacts, request.DeploymentEvidence, resolvedVersion, request.TargetIdentity, request.Provider != nil)
 		}
 	}
 	// Object lookups resolve at most once per distinct (schema, type, name,

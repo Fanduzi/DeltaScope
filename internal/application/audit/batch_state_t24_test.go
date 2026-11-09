@@ -856,6 +856,8 @@ func TestT24DeploymentEvidenceChannel(t *testing.T) {
 	facts := t24Facts("8.0.36")
 	facts.MySQLHostVCPUsKnown = false
 	facts.MySQLResourceGroupPriorityCapKnown = false
+	facts.MySQLServerUUID = "srv-x"
+	facts.MySQLServerUUIDKnown = true
 	provider := &t24Provider{version: "8.0.36", facts: facts,
 		groups: map[string]t24GroupFact{"rg": {status: spec.MetadataStatusNotFound}},
 	}
@@ -867,7 +869,7 @@ func TestT24DeploymentEvidenceChannel(t *testing.T) {
 	capable := true
 	evidence := &spec.DeploymentEvidence{
 		Source: "capacity-report:2025-11", Product: "mysql", Version: "8.0.36",
-		HostVCPUs: &vcpus, PriorityCapable: &capable,
+		Target: "srv-x", HostVCPUs: &vcpus, PriorityCapable: &capable,
 	}
 	result := t24AuditEvidence(t, sql, provider, evidence)
 	if gaps := t22GapCodes(result.Statements[0]); len(gaps) != 0 {
@@ -878,7 +880,7 @@ func TestT24DeploymentEvidenceChannel(t *testing.T) {
 	// premises stay bounded gaps.
 	result = t24AuditEvidence(t, sql, provider, &spec.DeploymentEvidence{
 		Source: "capacity-report:2025-11", Product: "mysql", Version: "8.0.35",
-		HostVCPUs: &vcpus, PriorityCapable: &capable,
+		Target: "srv-x", HostVCPUs: &vcpus, PriorityCapable: &capable,
 	})
 	gaps := t22GapCodes(result.Statements[0])
 	if !slices.Contains(gaps, t24HostGap) || !slices.Contains(gaps, t24CapGap) {
@@ -888,7 +890,7 @@ func TestT24DeploymentEvidenceChannel(t *testing.T) {
 	// An unsourced bundle is ignored the same way — provenance is
 	// required, never a generic trust flag.
 	result = t24AuditEvidence(t, sql, provider, &spec.DeploymentEvidence{
-		Product: "mysql", Version: "8.0.36",
+		Product: "mysql", Version: "8.0.36", Target: "srv-x",
 		HostVCPUs: &vcpus, PriorityCapable: &capable,
 	})
 	gaps = t22GapCodes(result.Statements[0])
@@ -901,23 +903,27 @@ func TestT24DeploymentEvidenceChannel(t *testing.T) {
 	// cannot rescue a VCPU=5 declaration — the refusal stands.
 	facts4 := t24Facts("8.0.36")
 	facts4.MySQLHostVCPUs = 4
+	facts4.MySQLServerUUID = "srv-x"
+	facts4.MySQLServerUUIDKnown = true
 	provider4 := &t24Provider{version: "8.0.36", facts: facts4,
 		groups: map[string]t24GroupFact{"rg": {status: spec.MetadataStatusNotFound}},
 	}
 	vcpus64 := uint64(64)
 	result = t24AuditEvidence(t, "CREATE RESOURCE GROUP rg TYPE=USER VCPU=5;", provider4, &spec.DeploymentEvidence{
 		Source: "capacity-report:2025-11", Product: "mysql", Version: "8.0.36",
-		HostVCPUs: &vcpus64,
+		Target: "srv-x", HostVCPUs: &vcpus64,
 	})
 	if got := len(t22Findings(result, 0, t24ValidRule)); got != 1 {
 		t.Fatalf("findings = %d, want the host-range refusal — evidence never overwrites proven facts", got)
 	}
 }
 
-// A/B same-version discrimination: a bundle bound to target A must
-// never fill target B's gaps — only the matching declared identity or
-// the provider-observed @@server_uuid admits it; an unverifiable target
-// ignores the bundle wholesale.
+// A/B same-version discrimination under the R9 contract: Target is
+// required and binding depends on context. Online (a provider is
+// attached) only the provider-observed @@server_uuid binds — a cleanly
+// absent observed identity ignores the bundle without falling back to
+// the declared identity. Offline (no provider at all) the declared
+// TargetIdentity may match under the caller-provided-facts contract.
 func TestT24DeploymentEvidenceTargetDiscrimination(t *testing.T) {
 	facts := t24Facts("8.0.36")
 	facts.MySQLHostVCPUsKnown = false
@@ -933,30 +939,16 @@ func TestT24DeploymentEvidenceTargetDiscrimination(t *testing.T) {
 		Target: "host-a-uuid", HostVCPUs: &vcpus, PriorityCapable: &capable,
 	}
 
-	// Same version, different declared target — B's gaps stay bounded.
-	result := t24AuditEvidenceTarget(t, sql, provider, evidenceForA, "host-b-uuid")
+	// Online with no observed uuid: the bundle is ignored even when the
+	// declared identity matches — online never falls back to declared.
+	result := t24AuditEvidenceTarget(t, sql, provider, evidenceForA, "host-a-uuid")
 	if gaps := t22GapCodes(result.Statements[0]); !slices.Contains(gaps, t24HostGap) || !slices.Contains(gaps, t24CapGap) {
-		t.Fatalf("A→B gaps = %v, want host+capability gaps — a foreign target's bundle never binds", gaps)
+		t.Fatalf("online unobserved gaps = %v, want host+capability gaps — no declared fallback online", gaps)
 	}
 
-	// No declared or observed identity — a bound bundle is unverifiable
-	// and ignored the same way.
-	result = t24AuditEvidenceTarget(t, sql, provider, evidenceForA, "")
-	if gaps := t22GapCodes(result.Statements[0]); !slices.Contains(gaps, t24HostGap) || !slices.Contains(gaps, t24CapGap) {
-		t.Fatalf("unverifiable gaps = %v, want host+capability gaps", gaps)
-	}
-
-	// The matching declared identity admits the bundle — the statement
-	// adjudicates completely.
-	result = t24AuditEvidenceTarget(t, sql, provider, evidenceForA, "host-a-uuid")
-	if gaps := t22GapCodes(result.Statements[0]); len(gaps) != 0 {
-		t.Fatalf("A→A gaps = %v, want none — the matching target binds", gaps)
-	}
-
-	// The provider-observed @@server_uuid wins over a declared identity:
-	// a bundle bound to the observed uuid binds even when the declared
-	// identity names something else, and a bundle bound elsewhere is
-	// refused despite the declared match.
+	// The provider-observed @@server_uuid decides online: a bundle bound
+	// to the observed uuid binds despite a foreign declared identity,
+	// and a bundle bound elsewhere is refused despite a declared match.
 	factsB := t24Facts("8.0.36")
 	factsB.MySQLHostVCPUsKnown = false
 	factsB.MySQLResourceGroupPriorityCapKnown = false
@@ -976,47 +968,72 @@ func TestT24DeploymentEvidenceTargetDiscrimination(t *testing.T) {
 	if gaps := t22GapCodes(result.Statements[0]); !slices.Contains(gaps, t24HostGap) {
 		t.Fatalf("observed-vs-declared gaps = %v, want the host gap — observed identity outranks the declared match", gaps)
 	}
+
+	// Offline (no provider at all): the declared identity is the only
+	// identity context — a matching Target binds, a mismatch refuses.
+	offlineMatch, err := AuditSQL(context.Background(), Request{
+		SQL: sql, Dialect: spec.DialectMySQL, TargetVersion: "8.0.36",
+		DeploymentEvidence: evidenceForA, TargetIdentity: "host-a-uuid",
+	})
+	if err != nil {
+		t.Fatalf("AuditSQL offline match: %v", err)
+	}
+	if gaps := t22GapCodes(offlineMatch.Statements[0]); slices.Contains(gaps, t24HostGap) || slices.Contains(gaps, t24CapGap) {
+		t.Fatalf("offline match gaps = %v, want host+capability filled — the caller-provided-facts contract binds offline", gaps)
+	}
+	offlineMismatch, err := AuditSQL(context.Background(), Request{
+		SQL: sql, Dialect: spec.DialectMySQL, TargetVersion: "8.0.36",
+		DeploymentEvidence: evidenceForA, TargetIdentity: "host-b-uuid",
+	})
+	if err != nil {
+		t.Fatalf("AuditSQL offline mismatch: %v", err)
+	}
+	if gaps := t22GapCodes(offlineMismatch.Statements[0]); !slices.Contains(gaps, t24HostGap) || !slices.Contains(gaps, t24CapGap) {
+		t.Fatalf("offline mismatch gaps = %v, want host+capability gaps — a foreign bundle never binds", gaps)
+	}
 }
 
-// Missing Target: an untargeted bundle is version-bound only — it fills
-// the unproven slot whether or not a declared identity rides along. The
-// legacy Request.Metadata entry validates through the same single
-// applyDeploymentEvidence call, so a Target-bound bundle can never
-// bypass the target check by arriving through the fallback path.
+// Missing Target (R9): Target is a required field of a valid bundle —
+// an untargeted bundle is ignored wholesale on every entry path, never
+// degrading to a version-only bind. The legacy Request.Metadata entry
+// validates through the same single applyDeploymentEvidence call, so
+// neither entry can bypass the target requirement.
 func TestT24DeploymentEvidenceMissingTargetAndLegacyPath(t *testing.T) {
 	facts := t24Facts("8.0.36")
 	facts.MySQLHostVCPUsKnown = false
+	facts.MySQLServerUUID = "host-a-uuid"
+	facts.MySQLServerUUIDKnown = true
 	provider := &t24Provider{version: "8.0.36", facts: facts,
 		groups: map[string]t24GroupFact{"rg": {status: spec.MetadataStatusNotFound}},
 	}
 	sql := "CREATE RESOURCE GROUP rg TYPE=USER VCPU=7;"
 	vcpus := uint64(8)
 
-	// Untargeted + declared identity → the version-bound bundle fills
-	// (Target is the discriminator, not an admission ticket).
+	// Untargeted + matching identity → still ignored (R9: Target is
+	// required; a missing target is not a version-only bind).
 	untargeted := &spec.DeploymentEvidence{
 		Source: "cap:1", Product: "mysql", Version: "8.0.36", HostVCPUs: &vcpus,
 	}
-	result := t24AuditEvidenceTarget(t, sql, provider, untargeted, "any-identity")
-	if gaps := t22GapCodes(result.Statements[0]); slices.Contains(gaps, t24HostGap) {
-		t.Fatalf("gaps = %v, want the version-bound fill", gaps)
+	result := t24AuditEvidenceTarget(t, sql, provider, untargeted, "host-a-uuid")
+	if gaps := t22GapCodes(result.Statements[0]); !slices.Contains(gaps, t24HostGap) {
+		t.Fatalf("gaps = %v, want the host gap — an untargeted bundle never fills", gaps)
 	}
 
-	// Same bundle via the legacy Metadata entry → identical outcome.
+	// Same bundle via the legacy Metadata entry → identical refusal.
 	result2, err := AuditSQL(context.Background(), Request{
 		SQL: sql, Dialect: spec.DialectMySQL, TargetVersion: "8.0.36",
 		MetadataProvider: provider,
-		Metadata:         &MetadataRequest{DeploymentEvidence: untargeted, TargetIdentity: "any-identity"},
+		Metadata:         &MetadataRequest{DeploymentEvidence: untargeted, TargetIdentity: "host-a-uuid"},
 	})
 	if err != nil {
 		t.Fatalf("AuditSQL: %v", err)
 	}
-	if gaps := t22GapCodes(result2.Statements[0]); slices.Contains(gaps, t24HostGap) {
-		t.Fatalf("legacy-path gaps = %v, want the same fill — identical validation", gaps)
+	if gaps := t22GapCodes(result2.Statements[0]); !slices.Contains(gaps, t24HostGap) {
+		t.Fatalf("legacy-path gaps = %v, want the same refusal — identical validation", gaps)
 	}
 
-	// A Target-bound bundle via the legacy path still answers the target
-	// check — the fallback entry cannot bypass binding.
+	// A Target-bound bundle via the legacy path answers the same
+	// observed-uuid check — the fallback entry cannot bypass binding.
 	result3, err := AuditSQL(context.Background(), Request{
 		SQL: sql, Dialect: spec.DialectMySQL, TargetVersion: "8.0.36",
 		MetadataProvider: provider,
@@ -1031,8 +1048,8 @@ func TestT24DeploymentEvidenceMissingTargetAndLegacyPath(t *testing.T) {
 	if err != nil {
 		t.Fatalf("AuditSQL: %v", err)
 	}
-	if gaps := t22GapCodes(result3.Statements[0]); !slices.Contains(gaps, t24HostGap) {
-		t.Fatalf("legacy-path gaps = %v, want the host gap — the legacy entry honors the same target check", gaps)
+	if gaps := t22GapCodes(result3.Statements[0]); len(gaps) != 0 {
+		t.Fatalf("legacy-path gaps = %v, want none — observed uuid binds over the declared identity", gaps)
 	}
 }
 
