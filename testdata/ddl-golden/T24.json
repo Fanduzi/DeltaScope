@@ -692,7 +692,9 @@
    "policy": "t24-mysql-resource-group",
    "args": [
     "--fail-on",
-    "blocker"
+    "blocker",
+    "--deployment-evidence-file",
+    "testdata/ddl-golden/evidence/t24-mysql80.json"
    ],
    "pending_native": true,
    "setup": [
@@ -843,7 +845,9 @@
    "policy": "t24-mysql-resource-group",
    "args": [
     "--fail-on",
-    "blocker"
+    "blocker",
+    "--deployment-evidence-file",
+    "testdata/ddl-golden/evidence/t24-mysql84.json"
    ],
    "pending_native": true,
    "setup": [

@@ -1,0 +1,42 @@
+{
+  "task": "T24",
+  "issue": 103,
+  "run_id": "FROZEN-INPUT-PENDING-AUTHORIZATION",
+  "attempt_id": "attempt-1",
+  "baseline": {
+    "head_sha": "RESOLVE-AT-RUN (43cae825 at input freeze)",
+    "parent_chain": ["89057e8e", "68e228c7", "77c2fcd9", "2deab909"]
+  },
+  "fingerprints": {
+    "product_head_sha": "AT-RUN",
+    "runner_sha256": "AT-SEAL",
+    "cli_binary_sha256": "AT-SEAL",
+    "manifest_sha256": "SEE-INDEX",
+    "policy_sha256": "AT-SEAL",
+    "config_sha256": "AT-SEAL"
+  },
+  "anchors": {
+    "mysql57": {"image": "mysql:5.7.44", "platform": "linux/amd64", "publish": "127.0.0.1:23357:3306", "digest": "PINNED-AT-PREFLIGHT"},
+    "mysql80": {"image": "mysql:8.0.46", "platform": "linux/amd64", "publish": "127.0.0.1:23380:3306", "digest": "PINNED-AT-PREFLIGHT"},
+    "mysql84": {"image": "mysql:8.4.10", "platform": "linux/amd64", "publish": "127.0.0.1:23384:3306", "digest": "PINNED-AT-PREFLIGHT"},
+    "tidb85": {"image": "pingcap/tidb:v8.5.0", "platform": "linux/amd64", "publish": "127.0.0.1:24000:4000", "digest": "PINNED-AT-PREFLIGHT"}
+  },
+  "approved_actions": ["P", "I", "C", "O", "G", "X", "T", "R", "S", "R", "V", "L"],
+  "resource_budget": {
+    "cpu_total_max": 4, "ram_total_max": "12GiB",
+    "containers_approx": 5, "probe_concurrency_cap": 6,
+    "generations": 1, "data": "new volumes only — exact names+mounts in authorization-card",
+    "no_services": ["pd", "tikv", "tiflash", "t23s-extras"]
+  },
+  "required_set": {"total": 24, "cli": 10, "meta": 6, "db": 8, "companions": "T24-companion-* named list in case-map.md"},
+  "selected_set": "ALL-24-PLUS-COMPANIONS",
+  "input_generation": {
+    "collector": "scripts/t24_collect_evidence.py",
+    "contract_test": "scripts/test_t24_evidence_contract.py",
+    "evidence_files": ["testdata/ddl-golden/evidence/t24-mysql80.json", "testdata/ddl-golden/evidence/t24-mysql84.json"],
+    "oracle_source": "frozen contract derivation — never reverse-fit from native actual"
+  },
+  "execution_order": ["preflight", "up+create-capture", "version/uuid/process-identity+catalog-observe", "cpu/priority-evidence-gen+validate", "fixture-accounts/roles/objects", "product-cli-audit", "native-ops+independent-verify", "role/readonly/actor-restore", "fixture-exact-reclaim", "stop", "rm", "rmvolumes", "reconcile", "profile-stop"],
+  "restore_model": "per-item compensation + readback — never transactional ROLLBACK, never blanket OFF",
+  "native_executions_so_far": 0
+}

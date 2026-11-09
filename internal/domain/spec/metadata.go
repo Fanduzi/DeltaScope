@@ -274,15 +274,16 @@ type DeploymentEvidence struct {
 	// Version must equal the resolved target version exactly — the
 	// observed banner online or the pinned target version offline.
 	Version string `json:"version"`
-	// Target optionally names the deployment instance the bundle
-	// describes (a non-secret identity such as the server UUID or a
-	// deployment label). When set, the bundle applies only if the
-	// audited target's resolved identity — the provider-observed
-	// @@server_uuid online, else the request's declared TargetIdentity —
-	// matches it exactly; an unverifiable or mismatched target ignores
-	// the whole bundle so one instance's evidence can never fill
-	// another instance's gaps. Empty means unbound — the caller asserts
-	// the bundle describes the audited request.
+	// Target names the deployment instance the bundle describes (a
+	// non-secret identity such as the server UUID). Required since R9:
+	// the bundle applies only if the audited target's resolved identity
+	// matches it exactly — the provider-observed @@server_uuid online
+	// (a cleanly absent or empty observation refuses the bundle without
+	// erroring; never the declared identity), else the request's
+	// declared TargetIdentity when no provider is attached at all. A
+	// missing, empty, mismatched, or unverifiable target ignores the
+	// whole bundle, so one instance's evidence can never fill another
+	// instance's gaps.
 	Target string `json:"target,omitempty"`
 	// HostVCPUs is the deployment's logical CPU count — a positive
 	// value fills the host.vcpu_count premise.

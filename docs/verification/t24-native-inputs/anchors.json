@@ -1,0 +1,41 @@
+{
+  "frozen_at": "R11-input-freeze",
+  "note": "Identity is re-verified at execution preflight; these are the frozen expectations, not live measurements. Local image cache is not probed this round.",
+  "environment_expected": {
+    "profile": "ds-t21-20261107t1158z-e514c8",
+    "daemon_id": "35b66e6e-49f3-4615-b556-6a10062d4737",
+    "endpoint": "unix:///Users/fan/.colima/ds-t21-20261107t1158z-e514c8/docker.sock",
+    "provenance": "historical record — re-verify identity at preflight before any action"
+  },
+  "anchors": {
+    "mysql57": {
+      "service": "mysql57", "image": "mysql:5.7.44", "platform": "linux/amd64",
+      "container": "deltascope-ddl-golden-mysql57", "publish": "127.0.0.1:23357:3306",
+      "purpose": "legacy version/vendor syntax boundary; resource-group feature proven-off",
+      "digest": "PINNED-AT-PREFLIGHT"
+    },
+    "mysql80": {
+      "service": "mysql80", "image": "mysql:8.0.46", "platform": "linux/amd64",
+      "container": "deltascope-ddl-golden-mysql80", "publish": "127.0.0.1:23380:3306",
+      "purpose": "main lifecycle/catalog/privilege/occupancy/capability-branch anchor",
+      "digest": "PINNED-AT-PREFLIGHT"
+    },
+    "mysql84": {
+      "service": "mysql84", "image": "mysql:8.4.10", "platform": "linux/amd64",
+      "container": "deltascope-ddl-golden-mysql84", "publish": "127.0.0.1:23384:3306",
+      "purpose": "applicable-version review; catalog and key-semantics cross-check",
+      "digest": "PINNED-AT-PREFLIGHT"
+    },
+    "tidb85": {
+      "service": "tidb85", "image": "pingcap/tidb:v8.5.0", "platform": "linux/amd64",
+      "container": "deltascope-ddl-golden-tidb85",
+      "client_container": "deltascope-ddl-golden-tidb85-client",
+      "publish": "127.0.0.1:24000:4000", "store": "unistore",
+      "purpose": "MySQL-CPU-form vs TiDB-RU-form vendor isolation — never MySQL evidence",
+      "no_extra": ["pd", "tikv", "tiflash"],
+      "digest": "PINNED-AT-PREFLIGHT"
+    }
+  },
+  "runtime_records_required": ["SELECT VERSION()", "version_comment", "@@server_uuid", "service port", "full container id", "image digest", "actual backend"],
+  "forbidden": ["8.4 substituted for 5.7 while keeping case names", "mysql80/mysql84 sharing a data volume", "TiDB evidence labeled as MySQL", "deleting required cells or reclassifying skip as pass"]
+}

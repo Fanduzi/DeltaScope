@@ -1,0 +1,17 @@
+{
+  "anchor": "mysql80",
+  "product": "mysql",
+  "version": "8.0.46",
+  "server_uuid": "",
+  "container_id": "f000000000000000000000000000000000000000000000000000000000000000",
+  "image_digest": "mysql@sha256:0000000000000000000000000000000000000000000000000000000000000ca9",
+  "mysqld_pid": 1,
+  "process_started": "2026-11-12T04:00:00Z",
+  "observed_at": "2026-11-12T04:05:00Z",
+  "source_method": "proc-status+sched_getaffinity",
+  "source_ref": "raw/t24/mysql80.proc-status.txt",
+  "raw_artifact_sha256": "0000000000000000000000000000000000000000000000000000000000000ca9",
+  "cpus_allowed": [0, 1, 2, 3],
+  "mysqld_euid": 999,
+  "cap_eff": "00000000a00425fb"
+}
