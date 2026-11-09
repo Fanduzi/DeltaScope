@@ -341,3 +341,26 @@ formal entry point.
   exit-2 shape matrix, and output privacy.
 - `ddl_golden.py` `t24_manifest_failures`: required == generated set
   equality both directions.
+
+### R6 post-acceptance-protocol corrections
+
+The R6 acceptance protocol's discriminating matrix surfaced two
+residual contract violations in the first R6 cut, now corrected in the
+same round:
+
+- The lost-records counter previously degraded every read failure into
+  "incomplete", which would launder a permission/driver error into a
+  silently partial census. The counter now propagates real errors;
+  only a clean missing answer keeps completeness unproven.
+- The threads column query previously ran even on a proven pre-8.0.3
+  banner (its missing-column error merely degraded). A proven
+  inapplicable channel is now skipped outright — the doomed query is
+  never issued — while unknown versions still probe-and-degrade and
+  proven supported versions still propagate.
+
+Permanent proof landed at chain level
+(`provider_t24_chain_test.go`): the eight-cell occupancy matrix plus
+observed-identity binding, `capability=false` consumption, and the
+no-RG-statement lazy gate all run stub driver → real
+`mysqlmeta.Provider` → public `AuditSQL` — no hand-seeded
+`BoundComplete`, no app-layer fakes.

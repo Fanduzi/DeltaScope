@@ -284,6 +284,12 @@ func (p *Provider) loadMySQLResourceGroupOccupancy(ctx context.Context, conn *sq
 	columnRequired := false
 	if version != nil {
 		supported, proven := spec.MySQLResourceGroupVersionSupported(version)
+		if proven && !supported {
+			// The column cannot exist on this server — the channel is
+			// inapplicable, so the doomed query is never issued and the
+			// bound set stays unproven.
+			return nil
+		}
 		columnRequired = proven && supported
 	}
 	rows, err := conn.QueryContext(ctx, `
@@ -315,22 +321,31 @@ func (p *Provider) loadMySQLResourceGroupOccupancy(ctx context.Context, conn *sq
 		return fmt.Errorf("iterate bound resource groups: %w", err)
 	}
 	facts.MySQLResourceGroupBound = bound
-	facts.MySQLResourceGroupBoundComplete = mySQLThreadRecordsComplete(ctx, conn)
+	complete, err := mySQLThreadRecordsComplete(ctx, conn)
+	if err != nil {
+		return err
+	}
+	facts.MySQLResourceGroupBoundComplete = complete
 	return nil
 }
 
 // mySQLThreadRecordsComplete reports whether the Performance Schema can
 // be proven to hold a row for every thread instance: the documented
-// lost-records counter reads zero. An unreadable or nonzero counter
-// keeps completeness unproven — never a guessed complete census.
-func mySQLThreadRecordsComplete(ctx context.Context, conn *sql.Conn) bool {
+// lost-records counter reads zero. A clean missing answer keeps
+// completeness unproven — never a guessed complete census — while a
+// query or scan failure propagates like every other read error rather
+// than silently degrading into a partial census.
+func mySQLThreadRecordsComplete(ctx context.Context, conn *sql.Conn) (bool, error) {
 	var lost int64
 	if err := conn.QueryRowContext(ctx, `
 		show global status like 'performance_schema_thread_instances_lost'
 	`).Scan(new(string), &lost); err != nil {
-		return false
+		if err == sql.ErrNoRows {
+			return false, nil
+		}
+		return false, fmt.Errorf("query thread-records completeness counter: %w", err)
 	}
-	return lost == 0
+	return lost == 0, nil
 }
 
 // loadMySQLResourceGroupFeature reads the defensible feature-positive

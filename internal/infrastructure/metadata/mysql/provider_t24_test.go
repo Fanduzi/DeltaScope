@@ -381,9 +381,11 @@ func TestT24FactsLoaderOccupancyPartialVisibility(t *testing.T) {
 	}
 }
 
-// An unreadable dropped-records counter also keeps completeness
-// unproven — the clean read alone cannot exclude lost rows.
-func TestT24FactsLoaderOccupancyLostCounterUnproven(t *testing.T) {
+// An unanswered dropped-records counter also keeps completeness
+// unproven — the clean read alone cannot exclude lost rows — while a
+// real counter failure propagates like every other read error rather
+// than silently degrading into a partial census.
+func TestT24FactsLoaderOccupancyLostCounterContract(t *testing.T) {
 	facts, err := t24LoadFacts(t, map[string]testQueryResult{
 		t24FactsPFSFragment:     {columns: []string{"@@global.performance_schema"}, rows: [][]driver.Value{{"ON"}}},
 		t24FactsVersionFragment: t24FactsVersionRow("8.0.36"),
@@ -396,7 +398,16 @@ func TestT24FactsLoaderOccupancyLostCounterUnproven(t *testing.T) {
 		t.Fatalf("bound = %v, want the proven empty bound set", facts.MySQLResourceGroupBound)
 	}
 	if facts.MySQLResourceGroupBoundComplete {
-		t.Fatal("bound completeness must not be claimed when the lost-records counter is unreadable")
+		t.Fatal("bound completeness must not be claimed when the lost-records counter is unobserved")
+	}
+	want := errors.New("counter read denied")
+	if _, err := t24LoadFacts(t, map[string]testQueryResult{
+		t24FactsPFSFragment:     {columns: []string{"@@global.performance_schema"}, rows: [][]driver.Value{{"ON"}}},
+		t24FactsVersionFragment: t24FactsVersionRow("8.0.36"),
+		t24FactsThreadsFragment: {columns: []string{"resource_group"}},
+		t24FactsLostFragment:    {queryErr: want},
+	}, spec.DialectMySQL); !errors.Is(err, want) {
+		t.Fatalf("err = %v, want errors.Is(%v) — a counter failure is a read error, not a normal missing value", err, want)
 	}
 }
 
@@ -406,16 +417,20 @@ func TestT24FactsLoaderOccupancyLostCounterUnproven(t *testing.T) {
 // banner it stays unproven.
 func TestT24FactsLoaderOccupancyColumnVersionGated(t *testing.T) {
 	missingColumn := &gomysql.MySQLError{Number: 1054, Message: "Unknown column 'resource_group' in 'field list'"}
+	mustNotQuery := errors.New("threads query must not be issued")
 	facts, err := t24LoadFacts(t, map[string]testQueryResult{
 		t24FactsPFSFragment:     {columns: []string{"@@global.performance_schema"}, rows: [][]driver.Value{{"ON"}}},
 		t24FactsVersionFragment: t24FactsVersionRow("5.7.44"),
-		t24FactsThreadsFragment: {queryErr: missingColumn},
+		// A proven pre-8.0.3 server can never hold the column — the
+		// doomed query is skipped, and a sentinel error proves it never
+		// ran. The bound set stays unproven rather than "observed empty".
+		t24FactsThreadsFragment: {queryErr: mustNotQuery},
 	}, spec.DialectMySQL)
 	if err != nil {
-		t.Fatalf("5.7: LoadMySQLResourceGroupFacts: %v, want degraded unproven", err)
+		t.Fatalf("5.7: LoadMySQLResourceGroupFacts: %v, want the occupancy channel skipped", err)
 	}
 	if facts.MySQLResourceGroupBound != nil {
-		t.Fatalf("5.7: bound = %v, want unproven — the column legitimately does not exist", facts.MySQLResourceGroupBound)
+		t.Fatalf("5.7: bound = %v, want unproven — the channel is inapplicable", facts.MySQLResourceGroupBound)
 	}
 	if _, err := t24LoadFacts(t, map[string]testQueryResult{
 		t24FactsPFSFragment:     {columns: []string{"@@global.performance_schema"}, rows: [][]driver.Value{{"ON"}}},
@@ -426,10 +441,16 @@ func TestT24FactsLoaderOccupancyColumnVersionGated(t *testing.T) {
 	}
 }
 
-// A disabled performance_schema leaves every occupancy fact unproven.
+// A disabled performance_schema leaves every occupancy fact unproven —
+// and the version/threads/lost queries are never issued on an
+// inapplicable channel (sentinel errors prove none ran).
 func TestT24FactsLoaderPerformanceSchemaOff(t *testing.T) {
+	mustNotQuery := errors.New("occupancy channel query must not be issued")
 	facts, err := t24LoadFacts(t, map[string]testQueryResult{
-		t24FactsPFSFragment: {columns: []string{"@@global.performance_schema"}, rows: [][]driver.Value{{"OFF"}}},
+		t24FactsPFSFragment:     {columns: []string{"@@global.performance_schema"}, rows: [][]driver.Value{{"OFF"}}},
+		t24FactsVersionFragment: {queryErr: mustNotQuery},
+		t24FactsThreadsFragment: {queryErr: mustNotQuery},
+		t24FactsLostFragment:    {queryErr: mustNotQuery},
 	}, spec.DialectMySQL)
 	if err != nil {
 		t.Fatalf("LoadMySQLResourceGroupFacts: %v", err)
@@ -455,6 +476,9 @@ func TestT24FactsLoaderFeatureProbeZeroRows(t *testing.T) {
 }
 
 // A hard channel failure propagates — never degraded to unknown facts.
+// The observed-identity read follows the same contract: a failed
+// @@server_uuid query fails the bundle, so an online identity lookup
+// error can never be laundered into a declared-target match.
 func TestT24FactsLoaderErrorPropagates(t *testing.T) {
 	want := errors.New("variables read denied")
 	_, err := t24LoadFacts(t, map[string]testQueryResult{
@@ -465,6 +489,12 @@ func TestT24FactsLoaderErrorPropagates(t *testing.T) {
 	}
 	if !errors.Is(err, want) {
 		t.Fatalf("err = %v, want errors.Is(%v)", err, want)
+	}
+	wantUUID := errors.New("uuid read denied")
+	if _, err := t24LoadFacts(t, map[string]testQueryResult{
+		t24FactsUUIDFragment: {queryErr: wantUUID},
+	}, spec.DialectMySQL); !errors.Is(err, wantUUID) {
+		t.Fatalf("err = %v, want errors.Is(%v) — a failed identity observation is an error, not a declared-target fallback", err, wantUUID)
 	}
 }
 
