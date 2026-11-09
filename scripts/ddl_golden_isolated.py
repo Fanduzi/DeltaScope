@@ -880,6 +880,80 @@ class IsoRun:
                 "[iso][FAIL] rmvolumes incomplete — requested objects "
                 f"still unclosed: {unclosed}")
 
+    def probe(self, source, target, image, expect_sha256):
+        """Controlled config-visibility probe: one run-labelled container
+        created through this entry's lock + ledger path — never a manual
+        docker run. The --mount long syntax makes a missing bind source a
+        create-time failure instead of dockerd silently creating a
+        directory, and the object (plus Mounts) is registered BEFORE
+        start so a failed start still leaves the identity consumable by
+        stop/rm/rmvolumes. The image's implicit anonymous volume enters
+        the ledger through the same Mounts capture the anchors use."""
+        self._capture_daemon_identity()
+        if not re.fullmatch(r"[0-9a-fA-F]{64}", expect_sha256 or ""):
+            raise SystemExit(
+                "[iso][FAIL] probe --probe-expect-sha256 must be a "
+                "64-hex digest")
+        for field, value in (("source", source), ("target", target),
+                             ("image", image)):
+            if not value or "," in value:
+                raise SystemExit(
+                    f"[iso][FAIL] probe {field} must be non-empty and "
+                    "free of ',' characters")
+        if not source.startswith("/") or not target.startswith("/"):
+            raise SystemExit(
+                "[iso][FAIL] probe source and target must be absolute")
+        name = f"{self.run_id}-probe"
+        r = self._inspect_container(name)
+        if r["verdict"] == "ok":
+            self.record("probe.name-foreign", 1, name)
+            raise SystemExit(
+                f"[iso][FAIL] probe name {name} already held — "
+                "refusing to adopt")
+        if r["verdict"] == "error":
+            raise SystemExit(
+                f"[iso][FAIL] probe name inspect failed: "
+                f"{r['detail'][:120]}")
+        rc, _, err = self.docker(
+            "create", "--name", name,
+            "--label", f"org.deltascope.run={self.run_id}",
+            "--label", f"org.deltascope.task={self._task or 'none'}",
+            "--label", f"org.deltascope.owner={self.owner}",
+            "--mount",
+            f"type=bind,source={source},target={target},readonly",
+            "--entrypoint", "sha256sum", image, target,
+            timeout=60)
+        self.record("probe.create", rc, (err or "").strip()[:160])
+        if rc != 0:
+            raise SystemExit(
+                f"[iso][FAIL] probe create failed: {(err or '').strip()[:160]}")
+        # Register before start: a failed start still leaves the real
+        # identities consumable. The injected single-anchor manifest
+        # drives the standard Mounts capture, so the probe's implicit
+        # anonymous volume lands in the same ledger shape as anchors'.
+        self._manifest = {"anchors": {"__probe__": {"container": name}}}
+        self._capture_or_fail("probe.create")
+        live = self._inspect_container(name)
+        ro_ok = live["verdict"] == "ok" and any(
+            m.get("Type") == "bind" and m.get("Destination") == target
+            and m.get("RW") is False
+            for m in live.get("mounts", []))
+        if not ro_ok:
+            self.record("probe.bind-not-ro", 1, target)
+            raise SystemExit(
+                f"[iso][FAIL] probe bind at {target} is not read-only")
+        rc, out, err = self.docker("start", "-a", name, timeout=120)
+        digest = (out.strip().split() or [""])[0].lower()
+        self.record("probe.exec", rc, (out or err).strip()[:160])
+        if rc != 0 or digest != expect_sha256.lower():
+            self.record("probe.mismatch", 1, f"rc={rc}")
+            raise SystemExit(
+                f"[iso][FAIL] probe verification failed rc={rc} — "
+                "stopping per card")
+        self.record(
+            "probe.ok", 0,
+            f"{target} sha256 verified; bind read-only")
+
     # -- delegation -----------------------------------------------------
 
     def patched_cleanup(self):
@@ -996,6 +1070,11 @@ def main():
     sub.add_parser("rm")
     sub.add_parser("rmvolumes")
     sub.add_parser("run")
+    probe = sub.add_parser("probe")
+    probe.add_argument("--probe-source", required=True)
+    probe.add_argument("--probe-target", required=True)
+    probe.add_argument("--probe-image", required=True)
+    probe.add_argument("--probe-expect-sha256", required=True)
     args = parser.parse_args()
 
     manifest = dg.load_manifest(args.task)
@@ -1023,6 +1102,11 @@ def _dispatch(args, run, manifest):
         return
     if args.command == "rmvolumes":
         run.rmvolumes()
+        return
+    if args.command == "probe":
+        run._task = args.task
+        run.probe(args.probe_source, args.probe_target,
+                  args.probe_image, args.probe_expect_sha256)
         return
     if args.command == "run":
         # Delegate to the stock runner with only the lifecycle seams replaced:

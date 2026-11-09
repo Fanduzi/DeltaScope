@@ -245,6 +245,55 @@ the mount-visibility probe paragraph gains the anonymous-volume
 responsibility clause (`Mounts` capture, budget accounting, V-phase
 recovery).
 
+## Attempt-1 revision (config delivery + controlled probe)
+
+Attempt-0 stopped at the card's own gate: `mounts: null` +
+`vmType: vz` on `ds-t21-…` means no host-home mount exists in the VM,
+so every `./tidb/*.toml` bind source resolved to a dockerd-created
+directory inside the VM and the synthetic probe reported
+`/probe.conf: Is a directory`. Two corrections are recorded honestly:
+
+- The attempt-0 probe was created and removed manually (`docker
+  create`/`rm`/`volume rm` against the pinned endpoint), NOT through
+  the isolated entry's lock + capture + ledger path the card required.
+  This is an execution-method deviation, recorded as such; it does not
+  change the mount finding and is not retroactively presented as
+  entry-driven. The objects were removed by exact captured identity
+  and the run produced zero residual objects.
+- The frozen compose's relative bind sources cannot work on this
+  profile under any config change — the daemon resolves bind sources
+  inside the VM filesystem.
+
+Revision (single focused input commit, no runner-semantics or oracle
+change):
+
+1. The three config binds in `ddl-golden-compose.yaml` switch to long
+   syntax (`type: bind`, explicit `source`/`target`, `read_only: true`,
+   `bind.create_host_path: false`) with the absolute guest-visible path
+   `/Users/fan/GolangProjects/DeltaScope/docker/tidb/<file>` — the path
+   at which the dedicated read-only profile share is mounted in-VM.
+   A missing source is now a hard create-time failure, never a
+   silently created directory.
+2. `ddl_golden_isolated.py` gains a `probe` subcommand: it creates one
+   run-labelled container through the same entry lock and Mounts
+   capture as `up` (the implicit anonymous volume registers in the
+   generation ledger identically), refuses a held name, verifies the
+   captured bind is `RW:false`, then `start -a`s it and compares the
+   emitted sha256 to `--probe-expect-sha256`. Any failure exits
+   non-zero with the creation records already persisted, consumable by
+   `rm`/`rmvolumes`.
+3. The profile mount is a single explicit entry — the run's
+   `t23s-config` staging directory (three frozen TOML copies + one
+   nonce probe file, mode 0444) mapped read-only to the guest path
+   above. After the run completes or stops, the mount increment is
+   reverted (`mounts:` back to `null`) while the authorized 12 GiB RAM
+   setting is preserved; the reversion is a next-boot configuration
+   state, not a runtime unmount claim.
+
+The 21 required case IDs, oracles, runner validation semantics, and
+the Go product are unchanged; the artifacts of this run bind the
+revision's HEAD, not `a7f5d08d`.
+
 ## Deferred / Out Of Scope
 
 Execution itself, performance claims, HA/fault injection, allocator

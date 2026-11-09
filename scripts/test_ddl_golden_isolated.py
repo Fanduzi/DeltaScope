@@ -78,6 +78,14 @@ class FakeDaemon:
         self.ps_error_volumes = set()
         # docker volume rm <name> fails for these volume names
         self.fail_volume_rm = set()
+        # Probe-path fault hooks:
+        # missing_bind_sources -> `create` fails like a real daemon when a
+        #                         --mount bind source does not exist in-VM
+        # start_result         -> (rc, out, err) for `start -a`
+        # bind_writable        -> created bind mount reports RW=True
+        self.missing_bind_sources = set()
+        self.start_result = (0, "", "")
+        self.bind_writable = False
 
     def bind(self, run):
         run.docker = lambda *a, timeout=180: self.dispatch(
@@ -153,6 +161,27 @@ class FakeDaemon:
                 elif c["label"] == RUN:
                     ids.append(c["id"])
             return 0, "".join(i[:12] + "\n" for i in ids), ""
+        if verb == "create":
+            name = a[a.index("--name") + 1]
+            mnt = a[a.index("--mount") + 1]
+            parts = dict(
+                p.split("=", 1) for p in mnt.split(",") if "=" in p)
+            src, target = parts.get("source", ""), parts.get("target", "")
+            if src in self.missing_bind_sources:
+                return 1, "", ("invalid mount config for type \"bind\": "
+                               "bind source path does not exist")
+            anon = f"probeanon-{name[-6:]}"
+            self.volumes[anon] = {"driver": "local", "label": ""}
+            self.add_container(
+                name, f"id-{name[-6:]}", label=RUN, image=a[-2],
+                mounts=[{"Type": "bind", "Source": src,
+                         "Destination": target,
+                         "RW": self.bind_writable},
+                        {"Type": "volume", "Name": anon,
+                         "Destination": "/var/lib/mysql"}])
+            return 0, f"id-{name[-6:]}", ""
+        if verb == "start":
+            return self.start_result
         if verb in ("stop", "rm"):
             if verb == "rm":
                 ref = a[-1]
@@ -1578,6 +1607,127 @@ class TestLoadFailureLockRelease(unittest.TestCase):
             iso.fcntl.flock(fd3, iso.fcntl.LOCK_UN)
         finally:
             os.close(fd3)
+
+
+class TestControlledProbe(unittest.TestCase):
+    """R26 controlled mount-visibility probe: the single probe container
+    must ride the entry's lock + capture + ledger path — never a manual
+    docker run. Registration happens at create (before start) so a
+    failed start still leaves the real identities consumable, and the
+    image's implicit anonymous volume enters the ledger the same way
+    anchor mounts do."""
+
+    SRC = "/vm/tidb/probe-mount.conf"
+    TGT = "/probe.conf"
+    SHA = "a" * 64
+
+    def _gen_probe(self, run):
+        for gen in run.receipts.get("generations", []):
+            if gen.get("action") == "probe.create":
+                return gen
+        return None
+
+    def _probe(self, run, **kw):
+        args = dict(source=self.SRC, target=self.TGT,
+                    image="mysql:8.4.10", expect_sha256=self.SHA)
+        args.update(kw)
+        return run.probe(**args)
+
+    def test_probe_happy_path(self):
+        tmp = tempfile.mkdtemp()
+        state = FakeDaemon()
+        run = make_run(tmp, state)
+        state.start_result = (0, f"{self.SHA}  {self.TGT}\n", "")
+        self._probe(run)
+        gen = self._gen_probe(run)
+        self.assertIsNotNone(gen)
+        self.assertEqual(len(gen["containers"]), 1)
+        self.assertEqual(gen["containers"][0]["name"], f"{RUN}-probe")
+        anon = [v for v in gen["volumes"] if v.get("kind") == "anonymous"]
+        self.assertEqual(len(anon), 1)
+        self.assertEqual(anon[0]["mounted_by"], f"{RUN}-probe")
+        create = next(c for c in state.calls if c[1:2] == ["create"])
+        self.assertIn("--mount", create)
+        mnt = create[create.index("--mount") + 1]
+        self.assertIn("type=bind", mnt)
+        self.assertIn("readonly", mnt)
+        self.assertIn(f"source={self.SRC}", mnt)
+        actions = [r["action"] for r in run.receipts["actions"]]
+        self.assertIn("probe.ok", actions)
+
+    def test_probe_missing_source_create_fails(self):
+        tmp = tempfile.mkdtemp()
+        state = FakeDaemon()
+        run = make_run(tmp, state)
+        state.missing_bind_sources.add(self.SRC)
+        with self.assertRaises(SystemExit) as cm:
+            self._probe(run)
+        self.assertIn("probe create failed", str(cm.exception))
+        self.assertEqual(dict(state.containers), {})
+        recs = [r["action"] for r in run.receipts["actions"]]
+        self.assertIn("probe.create", recs)
+        self.assertIsNone(self._gen_probe(run))
+
+    def test_probe_start_failure_keeps_registration(self):
+        tmp = tempfile.mkdtemp()
+        state = FakeDaemon()
+        run = make_run(tmp, state)
+        state.start_result = (
+            1, "", "sha256sum: /probe.conf: Is a directory")
+        with self.assertRaises(SystemExit) as cm:
+            self._probe(run)
+        self.assertIn("verification failed", str(cm.exception))
+        gen = self._gen_probe(run)
+        self.assertIsNotNone(gen)
+        self.assertEqual(len(gen["containers"]), 1)
+        anon = [v["name"] for v in gen["volumes"]
+                if v.get("kind") == "anonymous"]
+        self.assertEqual(len(anon), 1)
+        run.receipts["daemon_endpoint"] = DAEMON
+        run.rm()
+        self.assertEqual(dict(state.containers), {})
+        run.receipts["daemon_endpoint"] = DAEMON
+        run.rmvolumes()
+        self.assertNotIn(anon[0], state.volumes)
+
+    def test_probe_hash_mismatch(self):
+        tmp = tempfile.mkdtemp()
+        state = FakeDaemon()
+        run = make_run(tmp, state)
+        state.start_result = (0, f"{'b' * 64}  {self.TGT}\n", "")
+        with self.assertRaises(SystemExit):
+            self._probe(run)
+        recs = [r["action"] for r in run.receipts["actions"]]
+        self.assertIn("probe.mismatch", recs)
+
+    def test_probe_bind_not_readonly(self):
+        tmp = tempfile.mkdtemp()
+        state = FakeDaemon()
+        run = make_run(tmp, state)
+        state.bind_writable = True
+        with self.assertRaises(SystemExit) as cm:
+            self._probe(run)
+        self.assertIn("not read-only", str(cm.exception))
+
+    def test_probe_bad_args(self):
+        tmp = tempfile.mkdtemp()
+        state = FakeDaemon()
+        run = make_run(tmp, state)
+        with self.assertRaises(SystemExit):
+            self._probe(run, source="relative/conf")
+        with self.assertRaises(SystemExit):
+            self._probe(run, expect_sha256="not-hex")
+        with self.assertRaises(SystemExit):
+            self._probe(run, source=self.SRC + ",x")
+
+    def test_probe_name_held_refuses(self):
+        tmp = tempfile.mkdtemp()
+        state = FakeDaemon()
+        run = make_run(tmp, state)
+        state.add_container(f"{RUN}-probe", "id-foreign", label="foreign")
+        with self.assertRaises(SystemExit) as cm:
+            self._probe(run)
+        self.assertIn("already held", str(cm.exception))
 
 
 if __name__ == "__main__":

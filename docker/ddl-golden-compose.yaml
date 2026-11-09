@@ -156,7 +156,17 @@ services:
     ports:
       - "127.0.0.1:24379:2379"
     volumes:
-      - ./tidb/t23s-pd.toml:/pd.toml:ro
+      # attempt-1 config delivery: the source is the dedicated read-only
+      # VM share mounted at this absolute guest path (profile mount
+      # maps a staging dir containing the frozen copies). Long syntax +
+      # create_host_path:false makes a missing source a hard failure
+      # instead of dockerd silently creating a directory.
+      - type: bind
+        source: /Users/fan/GolangProjects/DeltaScope/docker/tidb/t23s-pd.toml
+        target: /pd.toml
+        read_only: true
+        bind:
+          create_host_path: false
     command:
       - --name=t23s-pd
       - --data-dir=/data
@@ -200,7 +210,12 @@ services:
       t23s-tikv:
         condition: service_healthy
     volumes:
-      - ./tidb/t23s-tiflash.toml:/tiflash/tiflash.toml:ro
+      - type: bind
+        source: /Users/fan/GolangProjects/DeltaScope/docker/tidb/t23s-tiflash.toml
+        target: /tiflash/tiflash.toml
+        read_only: true
+        bind:
+          create_host_path: false
     command:
       - --config-file=/tiflash/tiflash.toml
     healthcheck:
@@ -254,7 +269,12 @@ services:
     ports:
       - "127.0.0.1:24003:4000"
     volumes:
-      - ./tidb/t23s-apk.toml:/tidb-apk.toml:ro
+      - type: bind
+        source: /Users/fan/GolangProjects/DeltaScope/docker/tidb/t23s-apk.toml
+        target: /tidb-apk.toml
+        read_only: true
+        bind:
+          create_host_path: false
     command:
       - --store=unistore
       - --path=
