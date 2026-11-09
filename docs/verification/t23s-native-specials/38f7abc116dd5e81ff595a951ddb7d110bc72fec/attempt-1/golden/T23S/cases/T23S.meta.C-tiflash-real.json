@@ -1,0 +1,574 @@
+{
+  "case_id": "T23S.meta.C-tiflash-real",
+  "kind": "cli_metadata",
+  "cli_case": "C-tiflash-real",
+  "anchor": "tidb85tikv",
+  "dialect": "tidb",
+  "input_sql": "ALTER TABLE t23fx.t23fx_tf SET TIFLASH REPLICA 1;",
+  "policy_profile": "t23-layout-id",
+  "policy_path": "/Users/fan/GolangProjects/DeltaScope/docs/verification/t23s-native-specials/38f7abc116dd5e81ff595a951ddb7d110bc72fec/attempt-1/golden/T23S/golden-policy.yaml",
+  "connect": {
+    "host": "127.0.0.1",
+    "port": 24002,
+    "user": "root",
+    "schema": "t23fx"
+  },
+  "expected": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "evidence_gaps": 1,
+    "evidence_gap_entries": [
+      {
+        "index": 0,
+        "rule_id": "ddl.tidb.table.tiflash.valid",
+        "reason_code": "missing_instance_fact",
+        "required_facts": [
+          "table.columns.charset"
+        ]
+      }
+    ],
+    "instance_facts": {
+      "tidb_alter_primary_key": "false",
+      "tidb_enable_clustered_index": "ON"
+    }
+  },
+  "actual": {
+    "database": {
+      "product": "tidb",
+      "image": "pingcap/tidb:v8.5.0",
+      "image_digest": "pingcap/tidb@sha256:490861bd4a2fa643dbe76b77ffecafcad66e6a42774e580b82f4ec2429a80e57",
+      "container": "deltascope-ddl-golden-t23s-tidb",
+      "reachable": true,
+      "version": "8.0.11-TiDB-v8.5.0"
+    },
+    "setup": [
+      {
+        "name": "seed tf",
+        "sql": "CREATE TABLE t23fx.t23fx_tf (id BIGINT PRIMARY KEY, v INT)",
+        "rc": 0,
+        "stdout": "",
+        "stderr": "",
+        "verify": [
+          {
+            "assert": "t23fx_tf 1",
+            "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='t23fx' AND TABLE_NAME='t23fx_tf'",
+            "rc": 0,
+            "output": "1",
+            "stderr": ""
+          }
+        ]
+      },
+      {
+        "name": "seed tf row",
+        "sql": "INSERT INTO t23fx.t23fx_tf VALUES (1,1)",
+        "rc": 0,
+        "stdout": "",
+        "stderr": ""
+      }
+    ],
+    "post_verify": [
+      {
+        "assert": "audit declared no replica",
+        "sql": "SELECT COUNT(*) FROM information_schema.tiflash_replica WHERE TABLE_SCHEMA='t23fx' AND TABLE_NAME='t23fx_tf'",
+        "rc": 0,
+        "output": "0",
+        "stderr": ""
+      },
+      {
+        "assert": "t23fx_tf 1",
+        "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='t23fx' AND TABLE_NAME='t23fx_tf'",
+        "rc": 0,
+        "output": "1",
+        "stderr": ""
+      }
+    ],
+    "execute": [
+      {
+        "name": "over-count replica refused",
+        "sql": "ALTER TABLE t23fx.t23fx_tf SET TIFLASH REPLICA 2",
+        "rc": 1,
+        "stdout": "",
+        "stderr": "ERROR 1105 (HY000) at line 1: the tiflash replica count: 2 should be less than the total tiflash server count: 1",
+        "verify": [
+          {
+            "assert": "no replica row after refuse",
+            "sql": "SELECT COUNT(*) FROM information_schema.tiflash_replica WHERE TABLE_SCHEMA='t23fx' AND TABLE_NAME='t23fx_tf'",
+            "rc": 0,
+            "output": "0",
+            "stderr": ""
+          }
+        ]
+      },
+      {
+        "name": "declare replica 1",
+        "sql": "ALTER TABLE t23fx.t23fx_tf SET TIFLASH REPLICA 1",
+        "rc": 0,
+        "stdout": "",
+        "stderr": "",
+        "verify": [
+          {
+            "assert": "replica row declared",
+            "sql": "SELECT COUNT(*) FROM information_schema.tiflash_replica WHERE TABLE_SCHEMA='t23fx' AND TABLE_NAME='t23fx_tf'",
+            "rc": 0,
+            "output": "1",
+            "stderr": ""
+          },
+          {
+            "assert": "replica becomes available",
+            "sql": "SELECT AVAILABLE FROM information_schema.tiflash_replica WHERE TABLE_SCHEMA='t23fx' AND TABLE_NAME='t23fx_tf'",
+            "rc": 0,
+            "output": "1",
+            "stderr": "",
+            "attempts": 2,
+            "observations": [
+              {
+                "n": 1,
+                "rc": 0,
+                "output": "0",
+                "stderr": ""
+              },
+              {
+                "n": 2,
+                "rc": 0,
+                "output": "1",
+                "stderr": ""
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "forced tiflash read",
+        "sql": "SET SESSION tidb_isolation_read_engines='tiflash'; SELECT COUNT(*) AS tiflash_rows FROM t23fx.t23fx_tf",
+        "rc": 0,
+        "stdout": "tiflash_rows\n1",
+        "stderr": ""
+      },
+      {
+        "name": "explain resolves tiflash task",
+        "sql": "SET SESSION tidb_isolation_read_engines='tiflash'; EXPLAIN SELECT id FROM t23fx.t23fx_tf",
+        "rc": 0,
+        "stdout": "id\testRows\ttask\taccess object\toperator info\nTableReader_10\t10000.00\troot\t\tMppVersion: 2, data:ExchangeSender_9\n└─ExchangeSender_9\t10000.00\tmpp[tiflash]\t\tExchangeType: PassThrough\n  └─TableFullScan_8\t10000.00\tmpp[tiflash]\ttable:t23fx_tf\tkeep order:false, stats:pseudo",
+        "stderr": ""
+      },
+      {
+        "name": "clear replica",
+        "sql": "ALTER TABLE t23fx.t23fx_tf SET TIFLASH REPLICA 0",
+        "rc": 0,
+        "stdout": "",
+        "stderr": "",
+        "verify": [
+          {
+            "assert": "replica row removed",
+            "sql": "SELECT COUNT(*) FROM information_schema.tiflash_replica WHERE TABLE_SCHEMA='t23fx' AND TABLE_NAME='t23fx_tf'",
+            "rc": 0,
+            "output": "0",
+            "stderr": "",
+            "attempts": 1,
+            "observations": [
+              {
+                "n": 1,
+                "rc": 0,
+                "output": "0",
+                "stderr": ""
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "rebuild replica",
+        "sql": "ALTER TABLE t23fx.t23fx_tf SET TIFLASH REPLICA 1",
+        "rc": 0,
+        "stdout": "",
+        "stderr": "",
+        "verify": [
+          {
+            "assert": "rebuilt replica available",
+            "sql": "SELECT AVAILABLE FROM information_schema.tiflash_replica WHERE TABLE_SCHEMA='t23fx' AND TABLE_NAME='t23fx_tf'",
+            "rc": 0,
+            "output": "1",
+            "stderr": "",
+            "attempts": 2,
+            "observations": [
+              {
+                "n": 1,
+                "rc": 0,
+                "output": "0",
+                "stderr": ""
+              },
+              {
+                "n": 2,
+                "rc": 0,
+                "output": "1",
+                "stderr": ""
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "name": "forced tiflash read after rebuild",
+        "sql": "SET SESSION tidb_isolation_read_engines='tiflash'; SELECT COUNT(*) AS tiflash_rows FROM t23fx.t23fx_tf",
+        "rc": 0,
+        "stdout": "tiflash_rows\n1",
+        "stderr": ""
+      },
+      {
+        "name": "compact request on real replica",
+        "sql": "ALTER TABLE t23fx.t23fx_tf COMPACT TIFLASH REPLICA",
+        "rc": 0,
+        "stdout": "",
+        "stderr": ""
+      }
+    ],
+    "structure": [
+      {
+        "assert": "replica row final shape",
+        "sql": "SELECT TABLE_SCHEMA,TABLE_NAME,REPLICA_COUNT,AVAILABLE FROM information_schema.tiflash_replica WHERE TABLE_SCHEMA='t23fx' AND TABLE_NAME='t23fx_tf'",
+        "rc": 0,
+        "output": "t23fx\tt23fx_tf\t1\t1",
+        "stderr": ""
+      }
+    ],
+    "teardown": [
+      {
+        "name": "safety clear replica",
+        "sql": "ALTER TABLE t23fx.t23fx_tf SET TIFLASH REPLICA 0",
+        "rc": 0,
+        "stderr": ""
+      },
+      {
+        "name": "drop tf",
+        "sql": "DROP TABLE IF EXISTS t23fx.t23fx_tf",
+        "rc": 0,
+        "stderr": "",
+        "verify": [
+          {
+            "assert": "t23fx_tf 0",
+            "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='t23fx' AND TABLE_NAME='t23fx_tf'",
+            "rc": 0,
+            "output": "0",
+            "stderr": ""
+          },
+          {
+            "assert": "replica row gone",
+            "sql": "SELECT COUNT(*) FROM information_schema.tiflash_replica WHERE TABLE_SCHEMA='t23fx' AND TABLE_NAME='t23fx_tf'",
+            "rc": 0,
+            "output": "0",
+            "stderr": ""
+          }
+        ]
+      }
+    ],
+    "exit": 0,
+    "stdout": "{\"verdict\":\"review\",\"coverage\":{\"status\":\"unverified\"},\"summary\":{\"statements\":1,\"blockers\":0,\"warnings\":0,\"notices\":0},\"statements\":[{\"index\":0,\"kind\":\"ddl\",\"raw_sql\":\"ALTER TABLE t23fx.t23fx_tf SET TIFLASH REPLICA 1;\",\"normalized_sql\":\"ALTER TABLE t23fx.t23fx_tf SET TIFLASH REPLICA 1\",\"evidence_gaps\":[{\"rule_id\":\"ddl.tidb.table.tiflash.valid\",\"reason_code\":\"missing_instance_fact\",\"required_facts\":[\"table.columns.charset\"]}],\"coverage\":{\"status\":\"unverified\"}}],\"version\":{\"product\":\"tidb\",\"version\":\"8.5.0\",\"major\":8,\"minor\":5,\"patch\":0,\"source\":\"observed\",\"validated_range\":true},\"fail_on_triggered\":false,\"rule_summary\":{\"loaded\":13,\"applicable\":2,\"skipped\":[]},\"context\":{\"mode\":\"metadata-aware\",\"dialect\":\"tidb\",\"dialect_source\":\"detected\",\"schema\":\"t23fx\",\"schema_source\":\"flag\"}}\n",
+    "stderr": "",
+    "parsed": {
+      "verdict": "review",
+      "coverage": {
+        "status": "unverified"
+      },
+      "summary": {
+        "statements": 1,
+        "blockers": 0,
+        "warnings": 0,
+        "notices": 0
+      },
+      "statements": [
+        {
+          "index": 0,
+          "kind": "ddl",
+          "raw_sql": "ALTER TABLE t23fx.t23fx_tf SET TIFLASH REPLICA 1;",
+          "normalized_sql": "ALTER TABLE t23fx.t23fx_tf SET TIFLASH REPLICA 1",
+          "evidence_gaps": [
+            {
+              "rule_id": "ddl.tidb.table.tiflash.valid",
+              "reason_code": "missing_instance_fact",
+              "required_facts": [
+                "table.columns.charset"
+              ]
+            }
+          ],
+          "coverage": {
+            "status": "unverified"
+          }
+        }
+      ],
+      "version": {
+        "product": "tidb",
+        "version": "8.5.0",
+        "major": 8,
+        "minor": 5,
+        "patch": 0,
+        "source": "observed",
+        "validated_range": true
+      },
+      "fail_on_triggered": false,
+      "rule_summary": {
+        "loaded": 13,
+        "applicable": 2,
+        "skipped": []
+      },
+      "context": {
+        "mode": "metadata-aware",
+        "dialect": "tidb",
+        "dialect_source": "detected",
+        "schema": "t23fx",
+        "schema_source": "flag"
+      }
+    },
+    "version_evidence": {
+      "target_raw": null,
+      "target_canonical": null,
+      "observed_raw": "8.0.11-TiDB-v8.5.0",
+      "observed_canonical": {
+        "product": "tidb",
+        "version": "8.5.0"
+      },
+      "resolved": {
+        "product": "tidb",
+        "version": "8.5.0",
+        "major": 8,
+        "minor": 5,
+        "patch": 0,
+        "source": "observed",
+        "validated_range": true
+      }
+    },
+    "instance_facts": {
+      "tidb_alter_primary_key": "false",
+      "tidb_enable_clustered_index": "ON"
+    }
+  },
+  "assertions": [
+    {
+      "name": "database reachable with expected version",
+      "ok": true,
+      "detail": "SELECT VERSION() rc=0 version='8.0.11-TiDB-v8.5.0' expected_contains='v8.5.0'"
+    },
+    {
+      "name": "setup seed tf return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "setup seed tf: t23fx_tf 1",
+      "ok": true,
+      "detail": "rc=0 output='1' expected='1'"
+    },
+    {
+      "name": "setup seed tf row return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "instance fact tidb_alter_primary_key",
+      "ok": true,
+      "detail": "tidb_alter_primary_key='false' expected='false'"
+    },
+    {
+      "name": "instance fact tidb_enable_clustered_index",
+      "ok": true,
+      "detail": "tidb_enable_clustered_index='ON' expected='ON'"
+    },
+    {
+      "name": "exit code",
+      "ok": true,
+      "detail": "rc=0 expected=0"
+    },
+    {
+      "name": "verdict",
+      "ok": true,
+      "detail": "verdict='review'"
+    },
+    {
+      "name": "top-level statements",
+      "ok": true,
+      "detail": "statements=1 expected=1"
+    },
+    {
+      "name": "zero findings",
+      "ok": true,
+      "detail": "findings=0"
+    },
+    {
+      "name": "no diagnostics",
+      "ok": true,
+      "detail": "diagnostics=[]"
+    },
+    {
+      "name": "no unsupported",
+      "ok": true,
+      "detail": "unsupported=[]"
+    },
+    {
+      "name": "aggregate coverage",
+      "ok": true,
+      "detail": "coverage='unverified'"
+    },
+    {
+      "name": "evidence gap count",
+      "ok": true,
+      "detail": "gaps=1"
+    },
+    {
+      "name": "evidence gap entries",
+      "ok": true,
+      "detail": "gaps=[(0, 'ddl.tidb.table.tiflash.valid', 'missing_instance_fact')] expected=[(0, 'ddl.tidb.table.tiflash.valid', 'missing_instance_fact')]"
+    },
+    {
+      "name": "evidence gap required_facts (0, 'ddl.tidb.table.tiflash.valid', 'missing_instance_fact')",
+      "ok": true,
+      "detail": "gaps=[{'rule_id': 'ddl.tidb.table.tiflash.valid', 'reason_code': 'missing_instance_fact', 'required_facts': ['table.columns.charset']}] expected_facts=['table.columns.charset']"
+    },
+    {
+      "name": "no gap encoded as finding",
+      "ok": true,
+      "detail": "findings carrying gap shape=[]"
+    },
+    {
+      "name": "post-verify audit declared no replica",
+      "ok": true,
+      "detail": "rc=0 output='0' expected='0'"
+    },
+    {
+      "name": "post-verify t23fx_tf 1",
+      "ok": true,
+      "detail": "rc=0 output='1' expected='1'"
+    },
+    {
+      "name": "execute over-count replica refused return code",
+      "ok": true,
+      "detail": "rc=1 expected=1 stderr='ERROR 1105 (HY000) at line 1: the tiflash replica count: 2 should be less than the total tiflash server count: 1'"
+    },
+    {
+      "name": "execute over-count replica refused: no replica row after refuse",
+      "ok": true,
+      "detail": "rc=0 output='0' expected='0'"
+    },
+    {
+      "name": "execute declare replica 1 return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "execute declare replica 1: replica row declared",
+      "ok": true,
+      "detail": "rc=0 output='1' expected='1'"
+    },
+    {
+      "name": "execute declare replica 1: replica becomes available",
+      "ok": true,
+      "detail": "rc=0 output='1' expected='1'"
+    },
+    {
+      "name": "execute forced tiflash read return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "execute forced tiflash read stdout exact",
+      "ok": true,
+      "detail": "stdout='tiflash_rows\\n1' expected='tiflash_rows\\n1'"
+    },
+    {
+      "name": "execute explain resolves tiflash task return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "execute explain resolves tiflash task stdout marker",
+      "ok": true,
+      "detail": "tiflash"
+    },
+    {
+      "name": "execute clear replica return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "execute clear replica: replica row removed",
+      "ok": true,
+      "detail": "rc=0 output='0' expected='0'"
+    },
+    {
+      "name": "execute rebuild replica return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "execute rebuild replica: rebuilt replica available",
+      "ok": true,
+      "detail": "rc=0 output='1' expected='1'"
+    },
+    {
+      "name": "execute forced tiflash read after rebuild return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "execute forced tiflash read after rebuild stdout exact",
+      "ok": true,
+      "detail": "stdout='tiflash_rows\\n1' expected='tiflash_rows\\n1'"
+    },
+    {
+      "name": "execute compact request on real replica return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "structure replica row final shape",
+      "ok": true,
+      "detail": "rc=0 output='t23fx\\tt23fx_tf\\t1\\t1' expected='t23fx\\tt23fx_tf\\t1\\t1'"
+    },
+    {
+      "name": "teardown safety clear replica return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "teardown drop tf return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "teardown drop tf: t23fx_tf 0",
+      "ok": true,
+      "detail": "rc=0 output='0' expected='0'"
+    },
+    {
+      "name": "teardown drop tf: replica row gone",
+      "ok": true,
+      "detail": "rc=0 output='0' expected='0'"
+    }
+  ],
+  "status": "pass",
+  "command": [
+    "/Users/fan/GolangProjects/DeltaScope/docs/verification/t23s-native-specials/38f7abc116dd5e81ff595a951ddb7d110bc72fec/attempt-1/golden/T23S/bin/deltascope",
+    "audit",
+    "--dialect",
+    "tidb",
+    "--sql",
+    "ALTER TABLE t23fx.t23fx_tf SET TIFLASH REPLICA 1;",
+    "--config",
+    "/Users/fan/GolangProjects/DeltaScope/docs/verification/t23s-native-specials/38f7abc116dd5e81ff595a951ddb7d110bc72fec/attempt-1/golden/T23S/golden-policy.yaml",
+    "--format",
+    "json",
+    "--host",
+    "127.0.0.1",
+    "--port",
+    "24002",
+    "--user",
+    "root",
+    "--schema",
+    "t23fx",
+    "--fail-on",
+    "blocker"
+  ]
+}

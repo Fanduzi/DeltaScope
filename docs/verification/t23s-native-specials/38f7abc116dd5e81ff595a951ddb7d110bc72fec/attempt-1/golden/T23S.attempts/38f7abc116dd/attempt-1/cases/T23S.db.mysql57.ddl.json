@@ -1,0 +1,88 @@
+{
+  "case_id": "T23S.db.mysql57.ddl",
+  "kind": "db_ddl",
+  "anchor": "mysql57",
+  "input_sql": [
+    "DROP DATABASE IF EXISTS t23fx",
+    "CREATE DATABASE t23fx;CREATE TABLE t23fx.t (id INT PRIMARY KEY)"
+  ],
+  "expected": {
+    "steps": [
+      {
+        "name": "clear-task-fixture",
+        "rc": 0,
+        "verify": []
+      },
+      {
+        "name": "seed-fixture-schema",
+        "rc": 0,
+        "verify": [
+          {
+            "assert": "fixture table exists",
+            "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='t23fx' AND TABLE_NAME='t'",
+            "expect": "1"
+          }
+        ]
+      }
+    ]
+  },
+  "actual": {
+    "steps": [
+      {
+        "name": "clear-task-fixture",
+        "sql": "DROP DATABASE IF EXISTS t23fx",
+        "verify": [],
+        "rc": 0,
+        "stdout": "",
+        "stderr": ""
+      },
+      {
+        "name": "seed-fixture-schema",
+        "sql": "CREATE DATABASE t23fx;CREATE TABLE t23fx.t (id INT PRIMARY KEY)",
+        "verify": [
+          {
+            "assert": "fixture table exists",
+            "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='t23fx' AND TABLE_NAME='t'",
+            "rc": 0,
+            "output": "1",
+            "stderr": ""
+          }
+        ],
+        "rc": 0,
+        "stdout": "",
+        "stderr": ""
+      }
+    ],
+    "database": {
+      "product": "mysql",
+      "image": "mysql:5.7.44",
+      "image_digest": "mysql@sha256:4bc6bc963e6d8443453676cae56536f4b8156d78bae03c0145cbe47c2aad73bb",
+      "container": "deltascope-ddl-golden-mysql57",
+      "reachable": true,
+      "version": "5.7.44"
+    }
+  },
+  "assertions": [
+    {
+      "name": "database reachable with expected version",
+      "ok": true,
+      "detail": "SELECT VERSION() rc=0 version='5.7.44' expected_contains='5.7.44'"
+    },
+    {
+      "name": "clear-task-fixture return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "seed-fixture-schema return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "seed-fixture-schema: fixture table exists",
+      "ok": true,
+      "detail": "rc=0 output='1' expected='1'"
+    }
+  ],
+  "status": "pass"
+}

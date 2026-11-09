@@ -1,0 +1,857 @@
+{
+  "run_id": "ds-t23s-20261109t094540z",
+  "daemon_endpoint": "unix:///Users/fan/.colima/ds-t21-20261107t1158z-e514c8/docker.sock",
+  "owner": "devin",
+  "created_at": "20261109T014551Z",
+  "daemon_identity": {
+    "server_id": "35b66e6e-49f3-4615-b556-6a10062d4737",
+    "name": "colima-ds-t21-20261107t1158z-e514c8",
+    "os": "Ubuntu 24.04.4 LTS",
+    "docker_version": "29.5.2"
+  },
+  "project": "ds-t23s-20261109t094540z",
+  "containers": [
+    {
+      "name": "deltascope-ddl-golden-mysql57",
+      "id": "b26891f7f669e64cbaff1503b0d4e8e6420be4269a37c039063271fd2341c287",
+      "image_ref": "sha256:4bc6bc963e6d8443453676cae56536f4b8156d78bae03c0145cbe47c2aad73bb"
+    },
+    {
+      "name": "deltascope-ddl-golden-mysql80",
+      "id": "befa726d90a4e84c4a1c449bafa0e1e5310ac8477bd0ffead95f407b44b2f3dd",
+      "image_ref": "sha256:7dcddc01f13bab2f15cde676d44d01f61fc9f99fe7785e86196dfc07d358ae2b"
+    },
+    {
+      "name": "deltascope-ddl-golden-mysql84",
+      "id": "198f4873492736d8963a71610295988822579597fd6b7a168ad13bd7d0f2f4db",
+      "image_ref": "sha256:8dbcf531a03aade657e181b9cf2f1d1803ce621a1d55610cb44cb531ab7d7db6"
+    },
+    {
+      "name": "deltascope-ddl-golden-tidb85",
+      "id": "4b4cc1573ff2078cccb04846f2c4e1c08212dc20bb6b379afef2fbd64cbcf214",
+      "image_ref": "sha256:490861bd4a2fa643dbe76b77ffecafcad66e6a42774e580b82f4ec2429a80e57"
+    },
+    {
+      "name": "deltascope-ddl-golden-tidb85-client",
+      "id": "a492ce7156226fc4b16d4300ffa1efecbfb2de0a1ce029ce07c421954bf4a063",
+      "image_ref": "sha256:8dbcf531a03aade657e181b9cf2f1d1803ce621a1d55610cb44cb531ab7d7db6"
+    },
+    {
+      "name": "deltascope-ddl-golden-t23s-pd",
+      "id": "3e25373d1ed0bc0fbbc247a7f07cf5f444db52ec46ac889882c82f06708483f0",
+      "image_ref": "sha256:5cf66a73894ca652dd640e2ae72bc0bff6211ec55efbe95fbf45f98807e26af0"
+    },
+    {
+      "name": "deltascope-ddl-golden-t23s-tikv",
+      "id": "c8223a630f336608baad0992f15b16e384e0ec8954c6df62c04cf7927bd5721f",
+      "image_ref": "sha256:0524a2070bbfe3fef1331589113344f10050e6b821c2c0a4b79108b4b535f824"
+    },
+    {
+      "name": "deltascope-ddl-golden-t23s-tiflash",
+      "id": "cf5464d1736d73a656afc6e09e25175e5b7c9d2298c25be1c3744e508f818ee2",
+      "image_ref": "sha256:bb0b83a84e6276b20dba2466beb02d74d546c04e1ad9b5b5e17c7830ddfa412a"
+    },
+    {
+      "name": "deltascope-ddl-golden-t23s-tidb",
+      "id": "60bb54ca700e38a0adfc0237c59054b11ddfe82d53a1c3898fcd212e81514d36",
+      "image_ref": "sha256:490861bd4a2fa643dbe76b77ffecafcad66e6a42774e580b82f4ec2429a80e57"
+    },
+    {
+      "name": "deltascope-ddl-golden-t23s-tidb-client",
+      "id": "abaac14baad16a4d53015d57822fd7c7a39b253879d7ed01bd11ca0ce5fb4a46",
+      "image_ref": "sha256:8dbcf531a03aade657e181b9cf2f1d1803ce621a1d55610cb44cb531ab7d7db6"
+    },
+    {
+      "name": "deltascope-ddl-golden-tidb85-apk",
+      "id": "786fc109f08daae3e27c377e1a1855da397191447974bf9249e55fdcecb39476",
+      "image_ref": "sha256:490861bd4a2fa643dbe76b77ffecafcad66e6a42774e580b82f4ec2429a80e57"
+    },
+    {
+      "name": "deltascope-ddl-golden-tidb85-apk-client",
+      "id": "95f672b5e93243a42db433f7f3d21ae4a01dfea4f0adda336f8438dbe3c4dfde",
+      "image_ref": "sha256:8dbcf531a03aade657e181b9cf2f1d1803ce621a1d55610cb44cb531ab7d7db6"
+    }
+  ],
+  "networks": [
+    "25bd2fa9bfb5"
+  ],
+  "volumes": [
+    {
+      "name": "ds-t23s-20261109t094540z-mysql57-data",
+      "driver": "local"
+    },
+    {
+      "name": "ds-t23s-20261109t094540z-mysql80-data",
+      "driver": "local"
+    },
+    {
+      "name": "ds-t23s-20261109t094540z-mysql84-data",
+      "driver": "local"
+    },
+    {
+      "name": "ds-t23s-20261109t094540z-t23s-pd-data",
+      "driver": "local"
+    },
+    {
+      "name": "ds-t23s-20261109t094540z-t23s-tikv-data",
+      "driver": "local"
+    },
+    {
+      "name": "ds-t23s-20261109t094540z-t23s-tiflash-logs",
+      "driver": "local"
+    },
+    {
+      "name": "ds-t23s-20261109t094540z-t23s-tiflash-data",
+      "driver": "local"
+    }
+  ],
+  "generations": [
+    {
+      "at": "20261109T014556Z",
+      "action": "probe.create",
+      "containers": [
+        {
+          "name": "ds-t23s-20261109t094540z-probe",
+          "id": "7c5cc1e80ab046a086c111079ea5d549c0300903a04f710ba07b97e952c639b1",
+          "image_ref": "sha256:8dbcf531a03aade657e181b9cf2f1d1803ce621a1d55610cb44cb531ab7d7db6"
+        }
+      ],
+      "networks": [],
+      "volumes": [
+        {
+          "kind": "anonymous",
+          "name": "84d6abb5c7fd5f54867d16cce6a5ea1ae9d9bc0d189fa961e005fd331627ceb9",
+          "mounted_by": "ds-t23s-20261109t094540z-probe",
+          "destination": "/var/lib/mysql"
+        }
+      ]
+    },
+    {
+      "at": "20261109T023937Z",
+      "action": "compose.up",
+      "containers": [
+        {
+          "name": "deltascope-ddl-golden-mysql57",
+          "id": "b26891f7f669e64cbaff1503b0d4e8e6420be4269a37c039063271fd2341c287",
+          "image_ref": "sha256:4bc6bc963e6d8443453676cae56536f4b8156d78bae03c0145cbe47c2aad73bb"
+        },
+        {
+          "name": "deltascope-ddl-golden-mysql80",
+          "id": "befa726d90a4e84c4a1c449bafa0e1e5310ac8477bd0ffead95f407b44b2f3dd",
+          "image_ref": "sha256:7dcddc01f13bab2f15cde676d44d01f61fc9f99fe7785e86196dfc07d358ae2b"
+        },
+        {
+          "name": "deltascope-ddl-golden-mysql84",
+          "id": "198f4873492736d8963a71610295988822579597fd6b7a168ad13bd7d0f2f4db",
+          "image_ref": "sha256:8dbcf531a03aade657e181b9cf2f1d1803ce621a1d55610cb44cb531ab7d7db6"
+        },
+        {
+          "name": "deltascope-ddl-golden-tidb85",
+          "id": "4b4cc1573ff2078cccb04846f2c4e1c08212dc20bb6b379afef2fbd64cbcf214",
+          "image_ref": "sha256:490861bd4a2fa643dbe76b77ffecafcad66e6a42774e580b82f4ec2429a80e57"
+        },
+        {
+          "name": "deltascope-ddl-golden-tidb85-client",
+          "id": "a492ce7156226fc4b16d4300ffa1efecbfb2de0a1ce029ce07c421954bf4a063",
+          "image_ref": "sha256:8dbcf531a03aade657e181b9cf2f1d1803ce621a1d55610cb44cb531ab7d7db6"
+        },
+        {
+          "name": "deltascope-ddl-golden-t23s-pd",
+          "id": "3e25373d1ed0bc0fbbc247a7f07cf5f444db52ec46ac889882c82f06708483f0",
+          "image_ref": "sha256:5cf66a73894ca652dd640e2ae72bc0bff6211ec55efbe95fbf45f98807e26af0"
+        },
+        {
+          "name": "deltascope-ddl-golden-t23s-tikv",
+          "id": "c8223a630f336608baad0992f15b16e384e0ec8954c6df62c04cf7927bd5721f",
+          "image_ref": "sha256:0524a2070bbfe3fef1331589113344f10050e6b821c2c0a4b79108b4b535f824"
+        },
+        {
+          "name": "deltascope-ddl-golden-t23s-tiflash",
+          "id": "cf5464d1736d73a656afc6e09e25175e5b7c9d2298c25be1c3744e508f818ee2",
+          "image_ref": "sha256:bb0b83a84e6276b20dba2466beb02d74d546c04e1ad9b5b5e17c7830ddfa412a"
+        },
+        {
+          "name": "deltascope-ddl-golden-t23s-tidb",
+          "id": "60bb54ca700e38a0adfc0237c59054b11ddfe82d53a1c3898fcd212e81514d36",
+          "image_ref": "sha256:490861bd4a2fa643dbe76b77ffecafcad66e6a42774e580b82f4ec2429a80e57"
+        },
+        {
+          "name": "deltascope-ddl-golden-t23s-tidb-client",
+          "id": "abaac14baad16a4d53015d57822fd7c7a39b253879d7ed01bd11ca0ce5fb4a46",
+          "image_ref": "sha256:8dbcf531a03aade657e181b9cf2f1d1803ce621a1d55610cb44cb531ab7d7db6"
+        },
+        {
+          "name": "deltascope-ddl-golden-tidb85-apk",
+          "id": "786fc109f08daae3e27c377e1a1855da397191447974bf9249e55fdcecb39476",
+          "image_ref": "sha256:490861bd4a2fa643dbe76b77ffecafcad66e6a42774e580b82f4ec2429a80e57"
+        },
+        {
+          "name": "deltascope-ddl-golden-tidb85-apk-client",
+          "id": "95f672b5e93243a42db433f7f3d21ae4a01dfea4f0adda336f8438dbe3c4dfde",
+          "image_ref": "sha256:8dbcf531a03aade657e181b9cf2f1d1803ce621a1d55610cb44cb531ab7d7db6"
+        }
+      ],
+      "networks": [
+        {
+          "id": "25bd2fa9bfb5"
+        }
+      ],
+      "volumes": [
+        {
+          "kind": "named",
+          "declared": "ds-t23s-20261109t094540z-mysql57-data",
+          "name": "ds-t23s-20261109t094540z_ds-t23s-20261109t094540z-mysql57-data"
+        },
+        {
+          "kind": "named",
+          "declared": "ds-t23s-20261109t094540z-mysql80-data",
+          "name": "ds-t23s-20261109t094540z_ds-t23s-20261109t094540z-mysql80-data"
+        },
+        {
+          "kind": "named",
+          "declared": "ds-t23s-20261109t094540z-mysql84-data",
+          "name": "ds-t23s-20261109t094540z_ds-t23s-20261109t094540z-mysql84-data"
+        },
+        {
+          "kind": "anonymous",
+          "name": "742f7c045a334d4da2727215075abf5ede46753d408f69acfacbd65faf667ccf",
+          "mounted_by": "deltascope-ddl-golden-tidb85-client",
+          "destination": "/var/lib/mysql"
+        },
+        {
+          "kind": "named",
+          "declared": "ds-t23s-20261109t094540z-t23s-pd-data",
+          "name": "ds-t23s-20261109t094540z_ds-t23s-20261109t094540z-t23s-pd-data"
+        },
+        {
+          "kind": "named",
+          "declared": "ds-t23s-20261109t094540z-t23s-tikv-data",
+          "name": "ds-t23s-20261109t094540z_ds-t23s-20261109t094540z-t23s-tikv-data"
+        },
+        {
+          "kind": "named",
+          "declared": "ds-t23s-20261109t094540z-t23s-tiflash-logs",
+          "name": "ds-t23s-20261109t094540z_ds-t23s-20261109t094540z-t23s-tiflash-logs"
+        },
+        {
+          "kind": "named",
+          "declared": "ds-t23s-20261109t094540z-t23s-tiflash-data",
+          "name": "ds-t23s-20261109t094540z_ds-t23s-20261109t094540z-t23s-tiflash-data"
+        },
+        {
+          "kind": "anonymous",
+          "name": "bfe6577d08e58260998885c3f1a4d00e6fa9a98abcfa3fb5befb530f749f6a96",
+          "mounted_by": "deltascope-ddl-golden-t23s-tidb-client",
+          "destination": "/var/lib/mysql"
+        },
+        {
+          "kind": "anonymous",
+          "name": "2461b4ca62c6674e997cc8ba413cd8316c612db49b43472f6266e25a77f97f2a",
+          "mounted_by": "deltascope-ddl-golden-tidb85-apk-client",
+          "destination": "/var/lib/mysql"
+        }
+      ]
+    },
+    {
+      "at": "20261109T023955Z",
+      "action": "compose.up.run",
+      "containers": [
+        {
+          "name": "deltascope-ddl-golden-mysql57",
+          "id": "b26891f7f669e64cbaff1503b0d4e8e6420be4269a37c039063271fd2341c287",
+          "image_ref": "sha256:4bc6bc963e6d8443453676cae56536f4b8156d78bae03c0145cbe47c2aad73bb",
+          "reobserved": true
+        },
+        {
+          "name": "deltascope-ddl-golden-mysql80",
+          "id": "befa726d90a4e84c4a1c449bafa0e1e5310ac8477bd0ffead95f407b44b2f3dd",
+          "image_ref": "sha256:7dcddc01f13bab2f15cde676d44d01f61fc9f99fe7785e86196dfc07d358ae2b",
+          "reobserved": true
+        },
+        {
+          "name": "deltascope-ddl-golden-mysql84",
+          "id": "198f4873492736d8963a71610295988822579597fd6b7a168ad13bd7d0f2f4db",
+          "image_ref": "sha256:8dbcf531a03aade657e181b9cf2f1d1803ce621a1d55610cb44cb531ab7d7db6",
+          "reobserved": true
+        },
+        {
+          "name": "deltascope-ddl-golden-tidb85",
+          "id": "4b4cc1573ff2078cccb04846f2c4e1c08212dc20bb6b379afef2fbd64cbcf214",
+          "image_ref": "sha256:490861bd4a2fa643dbe76b77ffecafcad66e6a42774e580b82f4ec2429a80e57",
+          "reobserved": true
+        },
+        {
+          "name": "deltascope-ddl-golden-tidb85-client",
+          "id": "a492ce7156226fc4b16d4300ffa1efecbfb2de0a1ce029ce07c421954bf4a063",
+          "image_ref": "sha256:8dbcf531a03aade657e181b9cf2f1d1803ce621a1d55610cb44cb531ab7d7db6",
+          "reobserved": true
+        },
+        {
+          "name": "deltascope-ddl-golden-t23s-pd",
+          "id": "3e25373d1ed0bc0fbbc247a7f07cf5f444db52ec46ac889882c82f06708483f0",
+          "image_ref": "sha256:5cf66a73894ca652dd640e2ae72bc0bff6211ec55efbe95fbf45f98807e26af0",
+          "reobserved": true
+        },
+        {
+          "name": "deltascope-ddl-golden-t23s-tikv",
+          "id": "c8223a630f336608baad0992f15b16e384e0ec8954c6df62c04cf7927bd5721f",
+          "image_ref": "sha256:0524a2070bbfe3fef1331589113344f10050e6b821c2c0a4b79108b4b535f824",
+          "reobserved": true
+        },
+        {
+          "name": "deltascope-ddl-golden-t23s-tiflash",
+          "id": "cf5464d1736d73a656afc6e09e25175e5b7c9d2298c25be1c3744e508f818ee2",
+          "image_ref": "sha256:bb0b83a84e6276b20dba2466beb02d74d546c04e1ad9b5b5e17c7830ddfa412a",
+          "reobserved": true
+        },
+        {
+          "name": "deltascope-ddl-golden-t23s-tidb",
+          "id": "60bb54ca700e38a0adfc0237c59054b11ddfe82d53a1c3898fcd212e81514d36",
+          "image_ref": "sha256:490861bd4a2fa643dbe76b77ffecafcad66e6a42774e580b82f4ec2429a80e57",
+          "reobserved": true
+        },
+        {
+          "name": "deltascope-ddl-golden-t23s-tidb-client",
+          "id": "abaac14baad16a4d53015d57822fd7c7a39b253879d7ed01bd11ca0ce5fb4a46",
+          "image_ref": "sha256:8dbcf531a03aade657e181b9cf2f1d1803ce621a1d55610cb44cb531ab7d7db6",
+          "reobserved": true
+        },
+        {
+          "name": "deltascope-ddl-golden-tidb85-apk",
+          "id": "786fc109f08daae3e27c377e1a1855da397191447974bf9249e55fdcecb39476",
+          "image_ref": "sha256:490861bd4a2fa643dbe76b77ffecafcad66e6a42774e580b82f4ec2429a80e57",
+          "reobserved": true
+        },
+        {
+          "name": "deltascope-ddl-golden-tidb85-apk-client",
+          "id": "95f672b5e93243a42db433f7f3d21ae4a01dfea4f0adda336f8438dbe3c4dfde",
+          "image_ref": "sha256:8dbcf531a03aade657e181b9cf2f1d1803ce621a1d55610cb44cb531ab7d7db6",
+          "reobserved": true
+        }
+      ],
+      "networks": [
+        {
+          "id": "25bd2fa9bfb5",
+          "reobserved": true
+        }
+      ],
+      "volumes": [
+        {
+          "kind": "named",
+          "declared": "ds-t23s-20261109t094540z-mysql57-data",
+          "name": "ds-t23s-20261109t094540z_ds-t23s-20261109t094540z-mysql57-data",
+          "reobserved": true
+        },
+        {
+          "kind": "named",
+          "declared": "ds-t23s-20261109t094540z-mysql80-data",
+          "name": "ds-t23s-20261109t094540z_ds-t23s-20261109t094540z-mysql80-data",
+          "reobserved": true
+        },
+        {
+          "kind": "named",
+          "declared": "ds-t23s-20261109t094540z-mysql84-data",
+          "name": "ds-t23s-20261109t094540z_ds-t23s-20261109t094540z-mysql84-data",
+          "reobserved": true
+        },
+        {
+          "kind": "anonymous",
+          "name": "742f7c045a334d4da2727215075abf5ede46753d408f69acfacbd65faf667ccf",
+          "mounted_by": "deltascope-ddl-golden-tidb85-client",
+          "destination": "/var/lib/mysql",
+          "reobserved": true
+        },
+        {
+          "kind": "named",
+          "declared": "ds-t23s-20261109t094540z-t23s-pd-data",
+          "name": "ds-t23s-20261109t094540z_ds-t23s-20261109t094540z-t23s-pd-data",
+          "reobserved": true
+        },
+        {
+          "kind": "named",
+          "declared": "ds-t23s-20261109t094540z-t23s-tikv-data",
+          "name": "ds-t23s-20261109t094540z_ds-t23s-20261109t094540z-t23s-tikv-data",
+          "reobserved": true
+        },
+        {
+          "kind": "named",
+          "declared": "ds-t23s-20261109t094540z-t23s-tiflash-logs",
+          "name": "ds-t23s-20261109t094540z_ds-t23s-20261109t094540z-t23s-tiflash-logs",
+          "reobserved": true
+        },
+        {
+          "kind": "named",
+          "declared": "ds-t23s-20261109t094540z-t23s-tiflash-data",
+          "name": "ds-t23s-20261109t094540z_ds-t23s-20261109t094540z-t23s-tiflash-data",
+          "reobserved": true
+        },
+        {
+          "kind": "anonymous",
+          "name": "bfe6577d08e58260998885c3f1a4d00e6fa9a98abcfa3fb5befb530f749f6a96",
+          "mounted_by": "deltascope-ddl-golden-t23s-tidb-client",
+          "destination": "/var/lib/mysql",
+          "reobserved": true
+        },
+        {
+          "kind": "anonymous",
+          "name": "2461b4ca62c6674e997cc8ba413cd8316c612db49b43472f6266e25a77f97f2a",
+          "mounted_by": "deltascope-ddl-golden-tidb85-apk-client",
+          "destination": "/var/lib/mysql",
+          "reobserved": true
+        }
+      ]
+    }
+  ],
+  "actions": [
+    {
+      "action": "preflight.info",
+      "rc": 0,
+      "detail": "{\"server_id\": \"35b66e6e-49f3-4615-b556-6a10062d4737\", \"name\": \"colima-ds-t21-20261107t1158z-e514c8\", \"os\": \"Ubuntu 24.04.4 LTS\", \"docker_version\": \"29.5.2\"}",
+      "at": "20261109T014551Z"
+    },
+    {
+      "action": "probe.create",
+      "rc": 0,
+      "detail": "",
+      "at": "20261109T014556Z"
+    },
+    {
+      "action": "generation.capture",
+      "rc": 0,
+      "detail": "probe.create: 1c/0n/1v",
+      "at": "20261109T014556Z"
+    },
+    {
+      "action": "probe.exec",
+      "rc": 0,
+      "detail": "835cdf2d3cc0a9b0056f78ac67e02f732b5707e5f7e82653903ae997bee4bde2  /probe.conf",
+      "at": "20261109T014556Z"
+    },
+    {
+      "action": "probe.ok",
+      "rc": 0,
+      "detail": "/probe.conf sha256 verified; bind read-only",
+      "at": "20261109T014556Z"
+    },
+    {
+      "action": "rm.7c5cc1e80ab0",
+      "rc": 0,
+      "detail": "",
+      "at": "20261109T014610Z"
+    },
+    {
+      "action": "compose.up",
+      "rc": 125,
+      "detail": "unknown shorthand flag: 'p' in -p\n\nUsage:  docker [OPTIONS] COMMAND [ARG...]\n\nRun 'docker --help' for more information",
+      "at": "20261109T023904Z"
+    },
+    {
+      "action": "compose.up",
+      "rc": 0,
+      "detail": "Volume ds-t23s-20261109t094540z_ds-t23s-20261109t094540z-t23s-pd-data Creating \n Volume ds-t23s-20261109t094540z_ds-t23s-20261109t094540z-t23s-tiflash-data Creating \n Network ds-t23s-20261109t094540z_default Creating \n Volume ds-t23s-20261109t094540z_ds-t23s-20261109t094540z-t23s-tikv-data Creating \n Volume ds-t23s-20261109t094540z_ds-t23s-20261109t094540z-mysql57-data Creating \n Volume ds-t23s-20261109t094540z_ds-t23s-20261109t094540z-mysql84-data Creating \n Network ds-t23s-20261109t094540z_default Creating \n Volume ds-t23s-20261109t094540z_ds-t23s-20261109t094540z-t23s-pd-data Creating \n Volume ds-t23s-20261109t094540z_ds-t23s-20261109t094540z-t23s-tikv-data Creating \n Volume ds-t23s-20261109t094540z_ds-t23s-20261109t094540z-mysql57-data Creating \n Volume ds-t23s-20261109t094540z_ds-t23s-20261109t094540z-t23s-tiflash-data Creating \n Volume ds-t23s-20261109t094540z_ds-t23s-20261109t094540z-mysql84-data Creating \n Volume ds-t23s-20261109t094540z_ds-t23s-20261109t094540z-t23s-tiflash-logs Creating \n Volume ds-t23s-20261109t094540z_ds-t23s-20261109t094540z-t23s-tiflash-logs Creating \n Volume ds-t23s-20261109t094540z_ds-t23s-20261109t094540z-mysql80-data Creating \n Volume ds-t23s-20261109t094540z_ds-t23s-20261109t094540z-mysql80-data Creating \n Volume ds-t23s-20261109t094540z_ds-t23s-20261109t094540z-t23s-pd-data Created \n Volume ds-t23s-20261109t094540z_ds-t23s-20261109t094540z-t23s-pd-data Created \n Volume ds-t23s-20261109t094540z_ds-t23s-20261109t094540z-mysql80-data Created \n Volume ds-t23s-20261109t094540z_ds-t23s-20261109t094540z-mysql80-data Created \n Volume ds-t23s-20261109t094540z_ds-t23s-20261109t094540z-mysql84-data Created \n Volume ds-t23s-20261109t094540z_ds-t23s-20261109t094540z-mysql84-data Created \n Volume ds-t23s-20261109t094540z_ds-t23s-20261109t094540z-mysql57-data Created \n Volume ds-t23s-20261109t094540z_ds-t23s-20261109t094540z-mysql57-data Created \n Volume ds-t23s-20261109t094540z_ds-t23s-20261109t094540z-t23s-tiflash-data Created \n Volume ds-t23",
+      "at": "20261109T023937Z"
+    },
+    {
+      "action": "generation.capture",
+      "rc": 0,
+      "detail": "compose.up: 12c/1n/10v",
+      "at": "20261109T023937Z"
+    },
+    {
+      "action": "generation.capture",
+      "rc": 0,
+      "detail": "compose.up.run: 12c/1n/10v",
+      "at": "20261109T023955Z"
+    },
+    {
+      "action": "identity.gone",
+      "rc": 0,
+      "detail": "ds-t23s-20261109t094540z-probe:7c5cc1e80ab0",
+      "at": "20261109T024007Z"
+    },
+    {
+      "action": "stop.198f48734927",
+      "rc": 0,
+      "detail": "",
+      "at": "20261109T024009Z"
+    },
+    {
+      "action": "stop.3e25373d1ed0",
+      "rc": 0,
+      "detail": "",
+      "at": "20261109T024009Z"
+    },
+    {
+      "action": "stop.4b4cc1573ff2",
+      "rc": 0,
+      "detail": "",
+      "at": "20261109T024009Z"
+    },
+    {
+      "action": "stop.60bb54ca700e",
+      "rc": 0,
+      "detail": "",
+      "at": "20261109T024019Z"
+    },
+    {
+      "action": "stop.786fc109f08d",
+      "rc": 0,
+      "detail": "",
+      "at": "20261109T024019Z"
+    },
+    {
+      "action": "stop.95f672b5e932",
+      "rc": 0,
+      "detail": "",
+      "at": "20261109T024029Z"
+    },
+    {
+      "action": "stop.a492ce715622",
+      "rc": 0,
+      "detail": "",
+      "at": "20261109T024040Z"
+    },
+    {
+      "action": "stop.abaac14baad1",
+      "rc": 0,
+      "detail": "",
+      "at": "20261109T024050Z"
+    },
+    {
+      "action": "stop.b26891f7f669",
+      "rc": 0,
+      "detail": "",
+      "at": "20261109T024051Z"
+    },
+    {
+      "action": "stop.befa726d90a4",
+      "rc": 0,
+      "detail": "",
+      "at": "20261109T024052Z"
+    },
+    {
+      "action": "stop.c8223a630f33",
+      "rc": 0,
+      "detail": "",
+      "at": "20261109T024053Z"
+    },
+    {
+      "action": "stop.cf5464d1736d",
+      "rc": 0,
+      "detail": "",
+      "at": "20261109T024058Z"
+    },
+    {
+      "action": "identity.gone",
+      "rc": 0,
+      "detail": "ds-t23s-20261109t094540z-probe:7c5cc1e80ab0",
+      "at": "20261109T024059Z"
+    },
+    {
+      "action": "rm.198f48734927",
+      "rc": 0,
+      "detail": "",
+      "at": "20261109T024059Z"
+    },
+    {
+      "action": "rm.3e25373d1ed0",
+      "rc": 0,
+      "detail": "",
+      "at": "20261109T024059Z"
+    },
+    {
+      "action": "rm.4b4cc1573ff2",
+      "rc": 0,
+      "detail": "",
+      "at": "20261109T024059Z"
+    },
+    {
+      "action": "rm.60bb54ca700e",
+      "rc": 0,
+      "detail": "",
+      "at": "20261109T024059Z"
+    },
+    {
+      "action": "rm.786fc109f08d",
+      "rc": 0,
+      "detail": "",
+      "at": "20261109T024059Z"
+    },
+    {
+      "action": "rm.95f672b5e932",
+      "rc": 0,
+      "detail": "",
+      "at": "20261109T024059Z"
+    },
+    {
+      "action": "rm.a492ce715622",
+      "rc": 0,
+      "detail": "",
+      "at": "20261109T024059Z"
+    },
+    {
+      "action": "rm.abaac14baad1",
+      "rc": 0,
+      "detail": "",
+      "at": "20261109T024059Z"
+    },
+    {
+      "action": "rm.b26891f7f669",
+      "rc": 0,
+      "detail": "",
+      "at": "20261109T024059Z"
+    },
+    {
+      "action": "rm.befa726d90a4",
+      "rc": 0,
+      "detail": "",
+      "at": "20261109T024059Z"
+    },
+    {
+      "action": "rm.c8223a630f33",
+      "rc": 0,
+      "detail": "",
+      "at": "20261109T024059Z"
+    },
+    {
+      "action": "rm.cf5464d1736d",
+      "rc": 0,
+      "detail": "",
+      "at": "20261109T024059Z"
+    },
+    {
+      "action": "network.rm.25bd2fa9bfb5",
+      "rc": 0,
+      "detail": "",
+      "at": "20261109T024100Z"
+    },
+    {
+      "action": "identity.gone",
+      "rc": 0,
+      "detail": "ds-t23s-20261109t094540z-probe:7c5cc1e80ab0",
+      "at": "20261109T024109Z"
+    },
+    {
+      "action": "identity.gone",
+      "rc": 0,
+      "detail": "deltascope-ddl-golden-mysql57:b26891f7f669",
+      "at": "20261109T024109Z"
+    },
+    {
+      "action": "identity.gone",
+      "rc": 0,
+      "detail": "deltascope-ddl-golden-mysql80:befa726d90a4",
+      "at": "20261109T024109Z"
+    },
+    {
+      "action": "identity.gone",
+      "rc": 0,
+      "detail": "deltascope-ddl-golden-mysql84:198f48734927",
+      "at": "20261109T024109Z"
+    },
+    {
+      "action": "identity.gone",
+      "rc": 0,
+      "detail": "deltascope-ddl-golden-tidb85:4b4cc1573ff2",
+      "at": "20261109T024109Z"
+    },
+    {
+      "action": "identity.gone",
+      "rc": 0,
+      "detail": "deltascope-ddl-golden-tidb85-client:a492ce715622",
+      "at": "20261109T024109Z"
+    },
+    {
+      "action": "identity.gone",
+      "rc": 0,
+      "detail": "deltascope-ddl-golden-t23s-pd:3e25373d1ed0",
+      "at": "20261109T024109Z"
+    },
+    {
+      "action": "identity.gone",
+      "rc": 0,
+      "detail": "deltascope-ddl-golden-t23s-tikv:c8223a630f33",
+      "at": "20261109T024109Z"
+    },
+    {
+      "action": "identity.gone",
+      "rc": 0,
+      "detail": "deltascope-ddl-golden-t23s-tiflash:cf5464d1736d",
+      "at": "20261109T024109Z"
+    },
+    {
+      "action": "identity.gone",
+      "rc": 0,
+      "detail": "deltascope-ddl-golden-t23s-tidb:60bb54ca700e",
+      "at": "20261109T024109Z"
+    },
+    {
+      "action": "identity.gone",
+      "rc": 0,
+      "detail": "deltascope-ddl-golden-t23s-tidb-client:abaac14baad1",
+      "at": "20261109T024109Z"
+    },
+    {
+      "action": "identity.gone",
+      "rc": 0,
+      "detail": "deltascope-ddl-golden-tidb85-apk:786fc109f08d",
+      "at": "20261109T024109Z"
+    },
+    {
+      "action": "identity.gone",
+      "rc": 0,
+      "detail": "deltascope-ddl-golden-tidb85-apk-client:95f672b5e932",
+      "at": "20261109T024109Z"
+    },
+    {
+      "action": "identity.gone",
+      "rc": 0,
+      "detail": "ds-t23s-20261109t094540z-probe:7c5cc1e80ab0",
+      "at": "20261109T024109Z"
+    },
+    {
+      "action": "identity.gone",
+      "rc": 0,
+      "detail": "deltascope-ddl-golden-mysql57:b26891f7f669",
+      "at": "20261109T024109Z"
+    },
+    {
+      "action": "identity.gone",
+      "rc": 0,
+      "detail": "deltascope-ddl-golden-mysql80:befa726d90a4",
+      "at": "20261109T024109Z"
+    },
+    {
+      "action": "identity.gone",
+      "rc": 0,
+      "detail": "deltascope-ddl-golden-mysql84:198f48734927",
+      "at": "20261109T024109Z"
+    },
+    {
+      "action": "identity.gone",
+      "rc": 0,
+      "detail": "deltascope-ddl-golden-tidb85:4b4cc1573ff2",
+      "at": "20261109T024109Z"
+    },
+    {
+      "action": "identity.gone",
+      "rc": 0,
+      "detail": "deltascope-ddl-golden-tidb85-client:a492ce715622",
+      "at": "20261109T024109Z"
+    },
+    {
+      "action": "identity.gone",
+      "rc": 0,
+      "detail": "deltascope-ddl-golden-t23s-pd:3e25373d1ed0",
+      "at": "20261109T024110Z"
+    },
+    {
+      "action": "identity.gone",
+      "rc": 0,
+      "detail": "deltascope-ddl-golden-t23s-tikv:c8223a630f33",
+      "at": "20261109T024110Z"
+    },
+    {
+      "action": "identity.gone",
+      "rc": 0,
+      "detail": "deltascope-ddl-golden-t23s-tiflash:cf5464d1736d",
+      "at": "20261109T024110Z"
+    },
+    {
+      "action": "identity.gone",
+      "rc": 0,
+      "detail": "deltascope-ddl-golden-t23s-tidb:60bb54ca700e",
+      "at": "20261109T024110Z"
+    },
+    {
+      "action": "identity.gone",
+      "rc": 0,
+      "detail": "deltascope-ddl-golden-t23s-tidb-client:abaac14baad1",
+      "at": "20261109T024110Z"
+    },
+    {
+      "action": "identity.gone",
+      "rc": 0,
+      "detail": "deltascope-ddl-golden-tidb85-apk:786fc109f08d",
+      "at": "20261109T024110Z"
+    },
+    {
+      "action": "identity.gone",
+      "rc": 0,
+      "detail": "deltascope-ddl-golden-tidb85-apk-client:95f672b5e932",
+      "at": "20261109T024110Z"
+    },
+    {
+      "action": "identity.gone",
+      "rc": 0,
+      "detail": "net:25bd2fa9bfb5",
+      "at": "20261109T024110Z"
+    },
+    {
+      "action": "volume.rm.ds-t23s-20261109t094540z_ds-t23s-20261109t094540z-mysql57-data",
+      "rc": 0,
+      "detail": "",
+      "at": "20261109T024110Z"
+    },
+    {
+      "action": "volume.rm.ds-t23s-20261109t094540z_ds-t23s-20261109t094540z-mysql80-data",
+      "rc": 0,
+      "detail": "",
+      "at": "20261109T024110Z"
+    },
+    {
+      "action": "volume.rm.ds-t23s-20261109t094540z_ds-t23s-20261109t094540z-mysql84-data",
+      "rc": 0,
+      "detail": "",
+      "at": "20261109T024110Z"
+    },
+    {
+      "action": "volume.rm.ds-t23s-20261109t094540z_ds-t23s-20261109t094540z-t23s-pd-data",
+      "rc": 0,
+      "detail": "",
+      "at": "20261109T024110Z"
+    },
+    {
+      "action": "volume.rm.ds-t23s-20261109t094540z_ds-t23s-20261109t094540z-t23s-tikv-data",
+      "rc": 0,
+      "detail": "",
+      "at": "20261109T024110Z"
+    },
+    {
+      "action": "volume.rm.ds-t23s-20261109t094540z_ds-t23s-20261109t094540z-t23s-tiflash-logs",
+      "rc": 0,
+      "detail": "",
+      "at": "20261109T024110Z"
+    },
+    {
+      "action": "volume.rm.ds-t23s-20261109t094540z_ds-t23s-20261109t094540z-t23s-tiflash-data",
+      "rc": 0,
+      "detail": "",
+      "at": "20261109T024110Z"
+    },
+    {
+      "action": "volume.rm.2461b4ca62c6674e997cc8ba413cd8316c612db49b43472f6266e25a77f97f2a",
+      "rc": 0,
+      "detail": "",
+      "at": "20261109T024110Z"
+    },
+    {
+      "action": "volume.rm.742f7c045a334d4da2727215075abf5ede46753d408f69acfacbd65faf667ccf",
+      "rc": 0,
+      "detail": "",
+      "at": "20261109T024110Z"
+    },
+    {
+      "action": "volume.rm.84d6abb5c7fd5f54867d16cce6a5ea1ae9d9bc0d189fa961e005fd331627ceb9",
+      "rc": 0,
+      "detail": "",
+      "at": "20261109T024110Z"
+    },
+    {
+      "action": "volume.rm.bfe6577d08e58260998885c3f1a4d00e6fa9a98abcfa3fb5befb530f749f6a96",
+      "rc": 0,
+      "detail": "",
+      "at": "20261109T024111Z"
+    }
+  ]
+}

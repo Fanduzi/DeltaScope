@@ -1,0 +1,339 @@
+{
+  "case_id": "T23S.meta.apk-false-control-plain-pk",
+  "kind": "cli_metadata",
+  "cli_case": "apk-false-control-plain-pk",
+  "anchor": "tidb85tikv",
+  "dialect": "tidb",
+  "input_sql": "CREATE TABLE t23fx.t23ctl_p (id BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT, v INT);",
+  "policy_profile": "t23-layout-id",
+  "policy_path": "/Users/fan/GolangProjects/DeltaScope/docs/verification/t23s-native-specials/38f7abc116dd5e81ff595a951ddb7d110bc72fec/attempt-1/golden/T23S/golden-policy.yaml",
+  "connect": {
+    "host": "127.0.0.1",
+    "port": 24002,
+    "user": "root",
+    "schema": "t23fx"
+  },
+  "expected": {
+    "exit": 0,
+    "verdict": "pass",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "evidence_gaps": 0,
+    "instance_facts": {
+      "tidb_enable_clustered_index": "INT_ONLY",
+      "tidb_alter_primary_key": "false"
+    }
+  },
+  "actual": {
+    "database": {
+      "product": "tidb",
+      "image": "pingcap/tidb:v8.5.0",
+      "image_digest": "pingcap/tidb@sha256:490861bd4a2fa643dbe76b77ffecafcad66e6a42774e580b82f4ec2429a80e57",
+      "container": "deltascope-ddl-golden-t23s-tidb",
+      "reachable": true,
+      "version": "8.0.11-TiDB-v8.5.0"
+    },
+    "setup": [
+      {
+        "name": "record clustered baseline",
+        "sql": "SELECT @@global.tidb_enable_clustered_index",
+        "rc": 0,
+        "stdout": "@@global.tidb_enable_clustered_index\nON",
+        "stderr": "",
+        "verify": [
+          {
+            "assert": "baseline is ON",
+            "sql": "SELECT @@global.tidb_enable_clustered_index",
+            "rc": 0,
+            "output": "ON",
+            "stderr": ""
+          }
+        ]
+      },
+      {
+        "name": "set clustered int_only",
+        "sql": "SET GLOBAL tidb_enable_clustered_index='int_only'",
+        "rc": 0,
+        "stdout": "",
+        "stderr": "",
+        "verify": [
+          {
+            "assert": "mode is int_only",
+            "sql": "SELECT @@global.tidb_enable_clustered_index",
+            "rc": 0,
+            "output": "INT_ONLY",
+            "stderr": ""
+          }
+        ]
+      }
+    ],
+    "post_verify": [
+      {
+        "assert": "audit created nothing",
+        "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='t23fx' AND TABLE_NAME='t23ctl_p'",
+        "rc": 0,
+        "output": "0",
+        "stderr": ""
+      }
+    ],
+    "execute": [
+      {
+        "name": "native plain pk create",
+        "sql": "CREATE TABLE t23fx.t23ctl_p (id BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT, v INT)",
+        "rc": 0,
+        "stdout": "",
+        "stderr": "",
+        "verify": [
+          {
+            "assert": "pk is clustered under apk=false",
+            "sql": "SHOW CREATE TABLE t23fx.t23ctl_p",
+            "rc": 0,
+            "output": "t23ctl_p\tCREATE TABLE `t23ctl_p` (\\n  `id` bigint unsigned NOT NULL AUTO_INCREMENT,\\n  `v` int DEFAULT NULL,\\n  PRIMARY KEY (`id`) /*T![clustered_index] CLUSTERED */\\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin",
+            "stderr": ""
+          }
+        ]
+      }
+    ],
+    "structure": [],
+    "teardown": [
+      {
+        "name": "restore clustered baseline ON",
+        "sql": "SET GLOBAL tidb_enable_clustered_index='ON'",
+        "rc": 0,
+        "stderr": "",
+        "verify": [
+          {
+            "assert": "mode restored to ON",
+            "sql": "SELECT @@global.tidb_enable_clustered_index",
+            "rc": 0,
+            "output": "ON",
+            "stderr": ""
+          }
+        ]
+      },
+      {
+        "name": "drop ctl_p",
+        "sql": "DROP TABLE IF EXISTS t23fx.t23ctl_p",
+        "rc": 0,
+        "stderr": "",
+        "verify": [
+          {
+            "assert": "t23ctl_p 0",
+            "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='t23fx' AND TABLE_NAME='t23ctl_p'",
+            "rc": 0,
+            "output": "0",
+            "stderr": ""
+          }
+        ]
+      }
+    ],
+    "exit": 0,
+    "stdout": "{\"verdict\":\"pass\",\"coverage\":{\"status\":\"complete\"},\"summary\":{\"statements\":1,\"blockers\":0,\"warnings\":0,\"notices\":0},\"statements\":[{\"index\":0,\"kind\":\"ddl\",\"raw_sql\":\"CREATE TABLE t23fx.t23ctl_p (id BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT, v INT);\",\"normalized_sql\":\"CREATE TABLE t23fx.t23ctl_p (id BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT, v INT)\",\"coverage\":{\"status\":\"complete\"}}],\"version\":{\"product\":\"tidb\",\"version\":\"8.5.0\",\"major\":8,\"minor\":5,\"patch\":0,\"source\":\"observed\",\"validated_range\":true},\"fail_on_triggered\":false,\"rule_summary\":{\"loaded\":13,\"applicable\":3,\"skipped\":[]},\"context\":{\"mode\":\"metadata-aware\",\"dialect\":\"tidb\",\"dialect_source\":\"detected\",\"schema\":\"t23fx\",\"schema_source\":\"flag\"}}\n",
+    "stderr": "",
+    "parsed": {
+      "verdict": "pass",
+      "coverage": {
+        "status": "complete"
+      },
+      "summary": {
+        "statements": 1,
+        "blockers": 0,
+        "warnings": 0,
+        "notices": 0
+      },
+      "statements": [
+        {
+          "index": 0,
+          "kind": "ddl",
+          "raw_sql": "CREATE TABLE t23fx.t23ctl_p (id BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT, v INT);",
+          "normalized_sql": "CREATE TABLE t23fx.t23ctl_p (id BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT, v INT)",
+          "coverage": {
+            "status": "complete"
+          }
+        }
+      ],
+      "version": {
+        "product": "tidb",
+        "version": "8.5.0",
+        "major": 8,
+        "minor": 5,
+        "patch": 0,
+        "source": "observed",
+        "validated_range": true
+      },
+      "fail_on_triggered": false,
+      "rule_summary": {
+        "loaded": 13,
+        "applicable": 3,
+        "skipped": []
+      },
+      "context": {
+        "mode": "metadata-aware",
+        "dialect": "tidb",
+        "dialect_source": "detected",
+        "schema": "t23fx",
+        "schema_source": "flag"
+      }
+    },
+    "version_evidence": {
+      "target_raw": null,
+      "target_canonical": null,
+      "observed_raw": "8.0.11-TiDB-v8.5.0",
+      "observed_canonical": {
+        "product": "tidb",
+        "version": "8.5.0"
+      },
+      "resolved": {
+        "product": "tidb",
+        "version": "8.5.0",
+        "major": 8,
+        "minor": 5,
+        "patch": 0,
+        "source": "observed",
+        "validated_range": true
+      }
+    },
+    "instance_facts": {
+      "tidb_enable_clustered_index": "INT_ONLY",
+      "tidb_alter_primary_key": "false"
+    }
+  },
+  "assertions": [
+    {
+      "name": "database reachable with expected version",
+      "ok": true,
+      "detail": "SELECT VERSION() rc=0 version='8.0.11-TiDB-v8.5.0' expected_contains='v8.5.0'"
+    },
+    {
+      "name": "setup record clustered baseline return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "setup record clustered baseline: baseline is ON",
+      "ok": true,
+      "detail": "rc=0 output='ON' expected='ON'"
+    },
+    {
+      "name": "setup set clustered int_only return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "setup set clustered int_only: mode is int_only",
+      "ok": true,
+      "detail": "rc=0 output='INT_ONLY' expected='INT_ONLY'"
+    },
+    {
+      "name": "instance fact tidb_enable_clustered_index",
+      "ok": true,
+      "detail": "tidb_enable_clustered_index='INT_ONLY' expected='INT_ONLY'"
+    },
+    {
+      "name": "instance fact tidb_alter_primary_key",
+      "ok": true,
+      "detail": "tidb_alter_primary_key='false' expected='false'"
+    },
+    {
+      "name": "exit code",
+      "ok": true,
+      "detail": "rc=0 expected=0"
+    },
+    {
+      "name": "verdict",
+      "ok": true,
+      "detail": "verdict='pass'"
+    },
+    {
+      "name": "top-level statements",
+      "ok": true,
+      "detail": "statements=1 expected=1"
+    },
+    {
+      "name": "zero findings",
+      "ok": true,
+      "detail": "findings=0"
+    },
+    {
+      "name": "no diagnostics",
+      "ok": true,
+      "detail": "diagnostics=[]"
+    },
+    {
+      "name": "no unsupported",
+      "ok": true,
+      "detail": "unsupported=[]"
+    },
+    {
+      "name": "aggregate coverage",
+      "ok": true,
+      "detail": "coverage='complete'"
+    },
+    {
+      "name": "evidence gap count",
+      "ok": true,
+      "detail": "gaps=0"
+    },
+    {
+      "name": "post-verify audit created nothing",
+      "ok": true,
+      "detail": "rc=0 output='0' expected='0'"
+    },
+    {
+      "name": "execute native plain pk create return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "execute native plain pk create: pk is clustered under apk=false",
+      "ok": true,
+      "detail": "rc=0 output='t23ctl_p\\tCREATE TABLE `t23ctl_p` (\\\\n  `id` bigint unsigned NOT NULL AUTO_INCREMENT,\\\\n  `v` int DEFAULT NULL,\\\\n  PRIMARY KEY (`id`) /*T![clustered_index] CLUSTERED */\\\\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin' expected=contains '[clustered_index] CLUSTERED'"
+    },
+    {
+      "name": "teardown restore clustered baseline ON return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "teardown restore clustered baseline ON: mode restored to ON",
+      "ok": true,
+      "detail": "rc=0 output='ON' expected='ON'"
+    },
+    {
+      "name": "teardown drop ctl_p return code",
+      "ok": true,
+      "detail": "rc=0 expected=0 stderr=''"
+    },
+    {
+      "name": "teardown drop ctl_p: t23ctl_p 0",
+      "ok": true,
+      "detail": "rc=0 output='0' expected='0'"
+    }
+  ],
+  "status": "pass",
+  "command": [
+    "/Users/fan/GolangProjects/DeltaScope/docs/verification/t23s-native-specials/38f7abc116dd5e81ff595a951ddb7d110bc72fec/attempt-1/golden/T23S/bin/deltascope",
+    "audit",
+    "--dialect",
+    "tidb",
+    "--sql",
+    "CREATE TABLE t23fx.t23ctl_p (id BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT, v INT);",
+    "--config",
+    "/Users/fan/GolangProjects/DeltaScope/docs/verification/t23s-native-specials/38f7abc116dd5e81ff595a951ddb7d110bc72fec/attempt-1/golden/T23S/golden-policy.yaml",
+    "--format",
+    "json",
+    "--host",
+    "127.0.0.1",
+    "--port",
+    "24002",
+    "--user",
+    "root",
+    "--schema",
+    "t23fx",
+    "--fail-on",
+    "blocker"
+  ]
+}

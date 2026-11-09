@@ -1,0 +1,103 @@
+services:
+  mysql57:
+    labels:
+      org.deltascope.task: T23S
+      org.deltascope.run: ds-t23s-20261109t094540z
+      org.deltascope.owner: devin
+    volumes:
+      - ds-t23s-20261109t094540z-mysql57-data:/var/lib/mysql
+  mysql80:
+    labels:
+      org.deltascope.task: T23S
+      org.deltascope.run: ds-t23s-20261109t094540z
+      org.deltascope.owner: devin
+    volumes:
+      - ds-t23s-20261109t094540z-mysql80-data:/var/lib/mysql
+  mysql84:
+    labels:
+      org.deltascope.task: T23S
+      org.deltascope.run: ds-t23s-20261109t094540z
+      org.deltascope.owner: devin
+    volumes:
+      - ds-t23s-20261109t094540z-mysql84-data:/var/lib/mysql
+  tidb85:
+    labels:
+      org.deltascope.task: T23S
+      org.deltascope.run: ds-t23s-20261109t094540z
+      org.deltascope.owner: devin
+  tidb85-client:
+    labels:
+      org.deltascope.task: T23S
+      org.deltascope.run: ds-t23s-20261109t094540z
+      org.deltascope.owner: devin
+  t23s-pd:
+    labels:
+      org.deltascope.task: T23S
+      org.deltascope.run: ds-t23s-20261109t094540z
+      org.deltascope.owner: devin
+    volumes:
+      - ds-t23s-20261109t094540z-t23s-pd-data:/data
+  t23s-tikv:
+    labels:
+      org.deltascope.task: T23S
+      org.deltascope.run: ds-t23s-20261109t094540z
+      org.deltascope.owner: devin
+    volumes:
+      - ds-t23s-20261109t094540z-t23s-tikv-data:/data
+  t23s-tiflash:
+    labels:
+      org.deltascope.task: T23S
+      org.deltascope.run: ds-t23s-20261109t094540z
+      org.deltascope.owner: devin
+    volumes:
+      - ds-t23s-20261109t094540z-t23s-tiflash-data:/data
+      - ds-t23s-20261109t094540z-t23s-tiflash-logs:/logs
+  t23s-tidb:
+    labels:
+      org.deltascope.task: T23S
+      org.deltascope.run: ds-t23s-20261109t094540z
+      org.deltascope.owner: devin
+  t23s-tidb-client:
+    labels:
+      org.deltascope.task: T23S
+      org.deltascope.run: ds-t23s-20261109t094540z
+      org.deltascope.owner: devin
+  tidb85-apk:
+    labels:
+      org.deltascope.task: T23S
+      org.deltascope.run: ds-t23s-20261109t094540z
+      org.deltascope.owner: devin
+  tidb85-apk-client:
+    labels:
+      org.deltascope.task: T23S
+      org.deltascope.run: ds-t23s-20261109t094540z
+      org.deltascope.owner: devin
+volumes:
+  ds-t23s-20261109t094540z-mysql57-data:
+    labels:
+      org.deltascope.run: ds-t23s-20261109t094540z
+      org.deltascope.owner: devin
+  ds-t23s-20261109t094540z-mysql80-data:
+    labels:
+      org.deltascope.run: ds-t23s-20261109t094540z
+      org.deltascope.owner: devin
+  ds-t23s-20261109t094540z-mysql84-data:
+    labels:
+      org.deltascope.run: ds-t23s-20261109t094540z
+      org.deltascope.owner: devin
+  ds-t23s-20261109t094540z-t23s-pd-data:
+    labels:
+      org.deltascope.run: ds-t23s-20261109t094540z
+      org.deltascope.owner: devin
+  ds-t23s-20261109t094540z-t23s-tikv-data:
+    labels:
+      org.deltascope.run: ds-t23s-20261109t094540z
+      org.deltascope.owner: devin
+  ds-t23s-20261109t094540z-t23s-tiflash-data:
+    labels:
+      org.deltascope.run: ds-t23s-20261109t094540z
+      org.deltascope.owner: devin
+  ds-t23s-20261109t094540z-t23s-tiflash-logs:
+    labels:
+      org.deltascope.run: ds-t23s-20261109t094540z
+      org.deltascope.owner: devin

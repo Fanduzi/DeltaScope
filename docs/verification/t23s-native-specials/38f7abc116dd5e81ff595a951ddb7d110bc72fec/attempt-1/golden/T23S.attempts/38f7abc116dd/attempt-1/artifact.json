@@ -1,0 +1,4014 @@
+{
+  "task_id": "T23S",
+  "issue": 102,
+  "head_sha": "38f7abc116dd5e81ff595a951ddb7d110bc72fec",
+  "generated_at": "2026-11-09T02:41:00.086652+00:00",
+  "cli": {
+    "path": "/Users/fan/GolangProjects/DeltaScope/docs/verification/t23s-native-specials/38f7abc116dd5e81ff595a951ddb7d110bc72fec/attempt-1/golden/T23S/bin/deltascope",
+    "sha256": "ac5ed4b79f714350b54f23091660f3011a4d593a21825e8ee0cc5830d74ab672",
+    "build": {
+      "command": "CGO_ENABLED=0 go build -o <artifact>/deltascope ./cmd/deltascope",
+      "cgo_enabled": "0",
+      "go_version": "go1.26.1",
+      "built_at": "2026-11-09T02:39:51.745778+00:00",
+      "head_sha": "38f7abc116dd5e81ff595a951ddb7d110bc72fec"
+    }
+  },
+  "policy_profile": {
+    "profile": "t23-layout-id",
+    "path": "/Users/fan/GolangProjects/DeltaScope/docs/verification/t23s-native-specials/38f7abc116dd5e81ff595a951ddb7d110bc72fec/attempt-1/golden/T23S/golden-policy.yaml",
+    "sha256": "dec65b950f99cfb421e09712ed03a445c10a329832a27baa9b0005f8c1e2d942",
+    "catalog_rules": 487,
+    "enabled_rules": {
+      "ddl.tidb.table.auto_random.valid": {
+        "level": "blocker"
+      },
+      "ddl.tidb.table.options.valid": {
+        "level": "blocker"
+      },
+      "ddl.table.primary_key.auto_increment.require": {
+        "level": "blocker",
+        "params": {
+          "required": true,
+          "accept_tidb_auto_random": true
+        }
+      },
+      "ddl.table.primary_key.unsigned.require": {
+        "level": "blocker",
+        "params": {
+          "required": true
+        }
+      },
+      "ddl.tidb.alter.auto_random.valid": {
+        "level": "blocker"
+      },
+      "ddl.tidb.alter.table_options.valid": {
+        "level": "blocker"
+      },
+      "ddl.tidb.table.split_region.valid": {
+        "level": "blocker"
+      },
+      "ddl.tidb.table.compact.valid": {
+        "level": "blocker"
+      },
+      "ddl.table.split_region.exists.require": {
+        "level": "blocker"
+      },
+      "ddl.table.compact.exists.require": {
+        "level": "blocker"
+      },
+      "ddl.tidb.table.cache.valid": {
+        "level": "blocker"
+      },
+      "ddl.tidb.table.attributes.valid": {
+        "level": "blocker"
+      },
+      "ddl.tidb.table.tiflash.valid": {
+        "level": "blocker"
+      }
+    },
+    "disabled_rules": 474
+  },
+  "policies": [
+    {
+      "profile": "all-rules-disabled",
+      "path": "/Users/fan/GolangProjects/DeltaScope/docs/verification/t23s-native-specials/38f7abc116dd5e81ff595a951ddb7d110bc72fec/attempt-1/golden/T23S/golden-policy-all-off.yaml",
+      "sha256": "a43faab279e4aac8624670db920a3d9d479e34e31624cdd91293524e48530fa4",
+      "catalog_rules": 487,
+      "enabled_rules": {},
+      "disabled_rules": 487
+    },
+    {
+      "profile": "t23-layout-id",
+      "path": "/Users/fan/GolangProjects/DeltaScope/docs/verification/t23s-native-specials/38f7abc116dd5e81ff595a951ddb7d110bc72fec/attempt-1/golden/T23S/golden-policy.yaml",
+      "sha256": "dec65b950f99cfb421e09712ed03a445c10a329832a27baa9b0005f8c1e2d942",
+      "catalog_rules": 487,
+      "enabled_rules": {
+        "ddl.tidb.table.auto_random.valid": {
+          "level": "blocker"
+        },
+        "ddl.tidb.table.options.valid": {
+          "level": "blocker"
+        },
+        "ddl.table.primary_key.auto_increment.require": {
+          "level": "blocker",
+          "params": {
+            "required": true,
+            "accept_tidb_auto_random": true
+          }
+        },
+        "ddl.table.primary_key.unsigned.require": {
+          "level": "blocker",
+          "params": {
+            "required": true
+          }
+        },
+        "ddl.tidb.alter.auto_random.valid": {
+          "level": "blocker"
+        },
+        "ddl.tidb.alter.table_options.valid": {
+          "level": "blocker"
+        },
+        "ddl.tidb.table.split_region.valid": {
+          "level": "blocker"
+        },
+        "ddl.tidb.table.compact.valid": {
+          "level": "blocker"
+        },
+        "ddl.table.split_region.exists.require": {
+          "level": "blocker"
+        },
+        "ddl.table.compact.exists.require": {
+          "level": "blocker"
+        },
+        "ddl.tidb.table.cache.valid": {
+          "level": "blocker"
+        },
+        "ddl.tidb.table.attributes.valid": {
+          "level": "blocker"
+        },
+        "ddl.tidb.table.tiflash.valid": {
+          "level": "blocker"
+        }
+      },
+      "disabled_rules": 474
+    },
+    {
+      "profile": "t23-strict-literal",
+      "path": "/Users/fan/GolangProjects/DeltaScope/docs/verification/t23s-native-specials/38f7abc116dd5e81ff595a951ddb7d110bc72fec/attempt-1/golden/T23S/golden-policy-t23-strict-literal.yaml",
+      "sha256": "e9015b218ad28bc1b44f705b58911a4adbf386b170f3ff1ec48900d3455aeb10",
+      "catalog_rules": 487,
+      "enabled_rules": {
+        "ddl.tidb.table.auto_random.valid": {
+          "level": "blocker"
+        },
+        "ddl.tidb.table.options.valid": {
+          "level": "blocker"
+        },
+        "ddl.table.primary_key.auto_increment.require": {
+          "level": "blocker",
+          "params": {
+            "required": true,
+            "accept_tidb_auto_random": false
+          }
+        },
+        "ddl.table.primary_key.unsigned.require": {
+          "level": "blocker",
+          "params": {
+            "required": true
+          }
+        },
+        "ddl.tidb.alter.auto_random.valid": {
+          "level": "blocker"
+        },
+        "ddl.tidb.alter.table_options.valid": {
+          "level": "blocker"
+        }
+      },
+      "disabled_rules": 481
+    }
+  ],
+  "required_case_ids": [
+    "T23S.db.mysql57.ddl",
+    "T23S.db.mysql57.syntax_negative",
+    "T23S.db.mysql80.ddl",
+    "T23S.db.mysql80.syntax_negative",
+    "T23S.db.mysql84.ddl",
+    "T23S.db.mysql84.syntax_negative",
+    "T23S.db.tidb85.ddl",
+    "T23S.db.tidb85.syntax_negative",
+    "T23S.db.tidb85tikv.ddl",
+    "T23S.db.tidb85tikv.syntax_negative",
+    "T23S.db.tidb85apk.ddl",
+    "T23S.db.tidb85apk.syntax_negative",
+    "T23S.cli.tidb-refused-no-ghost",
+    "T23S.cli.mysql-vendor-boundary",
+    "T23S.meta.C-tiflash-real",
+    "T23S.meta.apk-false-control-plain-pk",
+    "T23S.meta.apk-intonly-plain-pk",
+    "T23S.meta.apk-intonly-auto-random",
+    "T23S.meta.apk-explicit-clustered",
+    "T23S.meta.apk-explicit-nonclustered",
+    "T23S.meta.apk-on-auto-random"
+  ],
+  "cases": [
+    {
+      "case_id": "T23S.db.mysql57.ddl",
+      "kind": "db_ddl",
+      "anchor": "mysql57",
+      "input_sql": [
+        "DROP DATABASE IF EXISTS t23fx",
+        "CREATE DATABASE t23fx;CREATE TABLE t23fx.t (id INT PRIMARY KEY)"
+      ],
+      "expected": {
+        "steps": [
+          {
+            "name": "clear-task-fixture",
+            "rc": 0,
+            "verify": []
+          },
+          {
+            "name": "seed-fixture-schema",
+            "rc": 0,
+            "verify": [
+              {
+                "assert": "fixture table exists",
+                "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='t23fx' AND TABLE_NAME='t'",
+                "expect": "1"
+              }
+            ]
+          }
+        ]
+      },
+      "actual": {
+        "steps": [
+          {
+            "name": "clear-task-fixture",
+            "sql": "DROP DATABASE IF EXISTS t23fx",
+            "verify": [],
+            "rc": 0,
+            "stdout": "",
+            "stderr": ""
+          },
+          {
+            "name": "seed-fixture-schema",
+            "sql": "CREATE DATABASE t23fx;CREATE TABLE t23fx.t (id INT PRIMARY KEY)",
+            "verify": [
+              {
+                "assert": "fixture table exists",
+                "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='t23fx' AND TABLE_NAME='t'",
+                "rc": 0,
+                "output": "1",
+                "stderr": ""
+              }
+            ],
+            "rc": 0,
+            "stdout": "",
+            "stderr": ""
+          }
+        ],
+        "database": {
+          "product": "mysql",
+          "image": "mysql:5.7.44",
+          "image_digest": "mysql@sha256:4bc6bc963e6d8443453676cae56536f4b8156d78bae03c0145cbe47c2aad73bb",
+          "container": "deltascope-ddl-golden-mysql57",
+          "reachable": true,
+          "version": "5.7.44"
+        }
+      },
+      "assertions": [
+        {
+          "name": "database reachable with expected version",
+          "ok": true,
+          "detail": "SELECT VERSION() rc=0 version='5.7.44' expected_contains='5.7.44'"
+        },
+        {
+          "name": "clear-task-fixture return code",
+          "ok": true,
+          "detail": "rc=0 expected=0 stderr=''"
+        },
+        {
+          "name": "seed-fixture-schema return code",
+          "ok": true,
+          "detail": "rc=0 expected=0 stderr=''"
+        },
+        {
+          "name": "seed-fixture-schema: fixture table exists",
+          "ok": true,
+          "detail": "rc=0 output='1' expected='1'"
+        }
+      ],
+      "status": "pass"
+    },
+    {
+      "case_id": "T23S.db.mysql57.syntax_negative",
+      "kind": "db_syntax_negative",
+      "anchor": "mysql57",
+      "input_sql": "CREATE TABLE t23fx_bad (id BIGINT PRIMARY KEY AUTO_RANDOM(",
+      "expected": {
+        "error_class": "1064",
+        "forbidden_markers": [
+          "Access denied",
+          "Connection refused",
+          "doesn't exist",
+          "already exists"
+        ]
+      },
+      "actual": {
+        "rc": 1,
+        "stdout": "",
+        "stderr": "ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'AUTO_RANDOM(' at line 1",
+        "error_class": "1064"
+      },
+      "assertions": [
+        {
+          "name": "nonzero syntax failure",
+          "ok": true,
+          "detail": "rc=1"
+        },
+        {
+          "name": "expected error class",
+          "ok": true,
+          "detail": "error_class='1064' expected='1064'"
+        },
+        {
+          "name": "no permission/connection/object-conflict markers",
+          "ok": true,
+          "detail": "forbidden markers found: []"
+        }
+      ],
+      "status": "pass"
+    },
+    {
+      "case_id": "T23S.db.mysql80.ddl",
+      "kind": "db_ddl",
+      "anchor": "mysql80",
+      "input_sql": [
+        "DROP DATABASE IF EXISTS t23fx",
+        "CREATE DATABASE t23fx;CREATE TABLE t23fx.t (id INT PRIMARY KEY)"
+      ],
+      "expected": {
+        "steps": [
+          {
+            "name": "clear-task-fixture",
+            "rc": 0,
+            "verify": []
+          },
+          {
+            "name": "seed-fixture-schema",
+            "rc": 0,
+            "verify": [
+              {
+                "assert": "fixture table exists",
+                "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='t23fx' AND TABLE_NAME='t'",
+                "expect": "1"
+              }
+            ]
+          }
+        ]
+      },
+      "actual": {
+        "steps": [
+          {
+            "name": "clear-task-fixture",
+            "sql": "DROP DATABASE IF EXISTS t23fx",
+            "verify": [],
+            "rc": 0,
+            "stdout": "",
+            "stderr": ""
+          },
+          {
+            "name": "seed-fixture-schema",
+            "sql": "CREATE DATABASE t23fx;CREATE TABLE t23fx.t (id INT PRIMARY KEY)",
+            "verify": [
+              {
+                "assert": "fixture table exists",
+                "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='t23fx' AND TABLE_NAME='t'",
+                "rc": 0,
+                "output": "1",
+                "stderr": ""
+              }
+            ],
+            "rc": 0,
+            "stdout": "",
+            "stderr": ""
+          }
+        ],
+        "database": {
+          "product": "mysql",
+          "image": "mysql:8.0.46",
+          "image_digest": "mysql@sha256:7dcddc01f13bab2f15cde676d44d01f61fc9f99fe7785e86196dfc07d358ae2b",
+          "container": "deltascope-ddl-golden-mysql80",
+          "reachable": true,
+          "version": "8.0.46"
+        }
+      },
+      "assertions": [
+        {
+          "name": "database reachable with expected version",
+          "ok": true,
+          "detail": "SELECT VERSION() rc=0 version='8.0.46' expected_contains='8.0.46'"
+        },
+        {
+          "name": "clear-task-fixture return code",
+          "ok": true,
+          "detail": "rc=0 expected=0 stderr=''"
+        },
+        {
+          "name": "seed-fixture-schema return code",
+          "ok": true,
+          "detail": "rc=0 expected=0 stderr=''"
+        },
+        {
+          "name": "seed-fixture-schema: fixture table exists",
+          "ok": true,
+          "detail": "rc=0 output='1' expected='1'"
+        }
+      ],
+      "status": "pass"
+    },
+    {
+      "case_id": "T23S.db.mysql80.syntax_negative",
+      "kind": "db_syntax_negative",
+      "anchor": "mysql80",
+      "input_sql": "CREATE TABLE t23fx_bad (id BIGINT PRIMARY KEY AUTO_RANDOM(",
+      "expected": {
+        "error_class": "1064",
+        "forbidden_markers": [
+          "Access denied",
+          "Connection refused",
+          "doesn't exist",
+          "already exists"
+        ]
+      },
+      "actual": {
+        "rc": 1,
+        "stdout": "",
+        "stderr": "ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'AUTO_RANDOM(' at line 1",
+        "error_class": "1064"
+      },
+      "assertions": [
+        {
+          "name": "nonzero syntax failure",
+          "ok": true,
+          "detail": "rc=1"
+        },
+        {
+          "name": "expected error class",
+          "ok": true,
+          "detail": "error_class='1064' expected='1064'"
+        },
+        {
+          "name": "no permission/connection/object-conflict markers",
+          "ok": true,
+          "detail": "forbidden markers found: []"
+        }
+      ],
+      "status": "pass"
+    },
+    {
+      "case_id": "T23S.db.mysql84.ddl",
+      "kind": "db_ddl",
+      "anchor": "mysql84",
+      "input_sql": [
+        "DROP DATABASE IF EXISTS t23fx",
+        "CREATE DATABASE t23fx;CREATE TABLE t23fx.t (id INT PRIMARY KEY)"
+      ],
+      "expected": {
+        "steps": [
+          {
+            "name": "clear-task-fixture",
+            "rc": 0,
+            "verify": []
+          },
+          {
+            "name": "seed-fixture-schema",
+            "rc": 0,
+            "verify": [
+              {
+                "assert": "fixture table exists",
+                "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='t23fx' AND TABLE_NAME='t'",
+                "expect": "1"
+              }
+            ]
+          }
+        ]
+      },
+      "actual": {
+        "steps": [
+          {
+            "name": "clear-task-fixture",
+            "sql": "DROP DATABASE IF EXISTS t23fx",
+            "verify": [],
+            "rc": 0,
+            "stdout": "",
+            "stderr": ""
+          },
+          {
+            "name": "seed-fixture-schema",
+            "sql": "CREATE DATABASE t23fx;CREATE TABLE t23fx.t (id INT PRIMARY KEY)",
+            "verify": [
+              {
+                "assert": "fixture table exists",
+                "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='t23fx' AND TABLE_NAME='t'",
+                "rc": 0,
+                "output": "1",
+                "stderr": ""
+              }
+            ],
+            "rc": 0,
+            "stdout": "",
+            "stderr": ""
+          }
+        ],
+        "database": {
+          "product": "mysql",
+          "image": "mysql:8.4.10",
+          "image_digest": "mysql@sha256:8dbcf531a03aade657e181b9cf2f1d1803ce621a1d55610cb44cb531ab7d7db6",
+          "container": "deltascope-ddl-golden-mysql84",
+          "reachable": true,
+          "version": "8.4.10"
+        }
+      },
+      "assertions": [
+        {
+          "name": "database reachable with expected version",
+          "ok": true,
+          "detail": "SELECT VERSION() rc=0 version='8.4.10' expected_contains='8.4.10'"
+        },
+        {
+          "name": "clear-task-fixture return code",
+          "ok": true,
+          "detail": "rc=0 expected=0 stderr=''"
+        },
+        {
+          "name": "seed-fixture-schema return code",
+          "ok": true,
+          "detail": "rc=0 expected=0 stderr=''"
+        },
+        {
+          "name": "seed-fixture-schema: fixture table exists",
+          "ok": true,
+          "detail": "rc=0 output='1' expected='1'"
+        }
+      ],
+      "status": "pass"
+    },
+    {
+      "case_id": "T23S.db.mysql84.syntax_negative",
+      "kind": "db_syntax_negative",
+      "anchor": "mysql84",
+      "input_sql": "CREATE TABLE t23fx_bad (id BIGINT PRIMARY KEY AUTO_RANDOM(",
+      "expected": {
+        "error_class": "1064",
+        "forbidden_markers": [
+          "Access denied",
+          "Connection refused",
+          "doesn't exist",
+          "already exists"
+        ]
+      },
+      "actual": {
+        "rc": 1,
+        "stdout": "",
+        "stderr": "ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'AUTO_RANDOM(' at line 1",
+        "error_class": "1064"
+      },
+      "assertions": [
+        {
+          "name": "nonzero syntax failure",
+          "ok": true,
+          "detail": "rc=1"
+        },
+        {
+          "name": "expected error class",
+          "ok": true,
+          "detail": "error_class='1064' expected='1064'"
+        },
+        {
+          "name": "no permission/connection/object-conflict markers",
+          "ok": true,
+          "detail": "forbidden markers found: []"
+        }
+      ],
+      "status": "pass"
+    },
+    {
+      "case_id": "T23S.db.tidb85.ddl",
+      "kind": "db_ddl",
+      "anchor": "tidb85",
+      "input_sql": [
+        "DROP DATABASE IF EXISTS t23fx",
+        "CREATE DATABASE t23fx;CREATE TABLE t23fx.t (id INT PRIMARY KEY)"
+      ],
+      "expected": {
+        "steps": [
+          {
+            "name": "clear-task-fixture",
+            "rc": 0,
+            "verify": []
+          },
+          {
+            "name": "seed-fixture-schema",
+            "rc": 0,
+            "verify": [
+              {
+                "assert": "fixture table exists",
+                "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='t23fx' AND TABLE_NAME='t'",
+                "expect": "1"
+              }
+            ]
+          }
+        ]
+      },
+      "actual": {
+        "steps": [
+          {
+            "name": "clear-task-fixture",
+            "sql": "DROP DATABASE IF EXISTS t23fx",
+            "verify": [],
+            "rc": 0,
+            "stdout": "",
+            "stderr": ""
+          },
+          {
+            "name": "seed-fixture-schema",
+            "sql": "CREATE DATABASE t23fx;CREATE TABLE t23fx.t (id INT PRIMARY KEY)",
+            "verify": [
+              {
+                "assert": "fixture table exists",
+                "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='t23fx' AND TABLE_NAME='t'",
+                "rc": 0,
+                "output": "1",
+                "stderr": ""
+              }
+            ],
+            "rc": 0,
+            "stdout": "",
+            "stderr": ""
+          }
+        ],
+        "database": {
+          "product": "tidb",
+          "image": "pingcap/tidb:v8.5.0",
+          "image_digest": "pingcap/tidb@sha256:490861bd4a2fa643dbe76b77ffecafcad66e6a42774e580b82f4ec2429a80e57",
+          "container": "deltascope-ddl-golden-tidb85",
+          "reachable": true,
+          "version": "8.0.11-TiDB-v8.5.0"
+        }
+      },
+      "assertions": [
+        {
+          "name": "database reachable with expected version",
+          "ok": true,
+          "detail": "SELECT VERSION() rc=0 version='8.0.11-TiDB-v8.5.0' expected_contains='v8.5.0'"
+        },
+        {
+          "name": "fixture database created",
+          "ok": true,
+          "detail": "CREATE DATABASE rc=0 stderr=''"
+        },
+        {
+          "name": "clear-task-fixture return code",
+          "ok": true,
+          "detail": "rc=0 expected=0 stderr=''"
+        },
+        {
+          "name": "seed-fixture-schema return code",
+          "ok": true,
+          "detail": "rc=0 expected=0 stderr=''"
+        },
+        {
+          "name": "seed-fixture-schema: fixture table exists",
+          "ok": true,
+          "detail": "rc=0 output='1' expected='1'"
+        }
+      ],
+      "status": "pass"
+    },
+    {
+      "case_id": "T23S.db.tidb85.syntax_negative",
+      "kind": "db_syntax_negative",
+      "anchor": "tidb85",
+      "input_sql": "CREATE TABLE t23fx_bad (id BIGINT PRIMARY KEY AUTO_RANDOM(",
+      "expected": {
+        "error_class": "1064",
+        "forbidden_markers": [
+          "Access denied",
+          "Connection refused",
+          "doesn't exist",
+          "already exists"
+        ]
+      },
+      "actual": {
+        "rc": 1,
+        "stdout": "",
+        "stderr": "ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your TiDB version for the right syntax to use line 1 column 58 near \"\"",
+        "error_class": "1064"
+      },
+      "assertions": [
+        {
+          "name": "nonzero syntax failure",
+          "ok": true,
+          "detail": "rc=1"
+        },
+        {
+          "name": "expected error class",
+          "ok": true,
+          "detail": "error_class='1064' expected='1064'"
+        },
+        {
+          "name": "no permission/connection/object-conflict markers",
+          "ok": true,
+          "detail": "forbidden markers found: []"
+        }
+      ],
+      "status": "pass"
+    },
+    {
+      "case_id": "T23S.db.tidb85tikv.ddl",
+      "kind": "db_ddl",
+      "anchor": "tidb85tikv",
+      "input_sql": [
+        "DROP DATABASE IF EXISTS t23fx",
+        "CREATE DATABASE t23fx;CREATE TABLE t23fx.t (id INT PRIMARY KEY)"
+      ],
+      "expected": {
+        "steps": [
+          {
+            "name": "clear-task-fixture",
+            "rc": 0,
+            "verify": []
+          },
+          {
+            "name": "seed-fixture-schema",
+            "rc": 0,
+            "verify": [
+              {
+                "assert": "fixture table exists",
+                "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='t23fx' AND TABLE_NAME='t'",
+                "expect": "1"
+              }
+            ]
+          }
+        ]
+      },
+      "actual": {
+        "steps": [
+          {
+            "name": "clear-task-fixture",
+            "sql": "DROP DATABASE IF EXISTS t23fx",
+            "verify": [],
+            "rc": 0,
+            "stdout": "",
+            "stderr": ""
+          },
+          {
+            "name": "seed-fixture-schema",
+            "sql": "CREATE DATABASE t23fx;CREATE TABLE t23fx.t (id INT PRIMARY KEY)",
+            "verify": [
+              {
+                "assert": "fixture table exists",
+                "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='t23fx' AND TABLE_NAME='t'",
+                "rc": 0,
+                "output": "1",
+                "stderr": ""
+              }
+            ],
+            "rc": 0,
+            "stdout": "",
+            "stderr": ""
+          }
+        ],
+        "database": {
+          "product": "tidb",
+          "image": "pingcap/tidb:v8.5.0",
+          "image_digest": "pingcap/tidb@sha256:490861bd4a2fa643dbe76b77ffecafcad66e6a42774e580b82f4ec2429a80e57",
+          "container": "deltascope-ddl-golden-t23s-tidb",
+          "reachable": true,
+          "version": "8.0.11-TiDB-v8.5.0"
+        }
+      },
+      "assertions": [
+        {
+          "name": "database reachable with expected version",
+          "ok": true,
+          "detail": "SELECT VERSION() rc=0 version='8.0.11-TiDB-v8.5.0' expected_contains='v8.5.0'"
+        },
+        {
+          "name": "fixture database created",
+          "ok": true,
+          "detail": "CREATE DATABASE rc=0 stderr=''"
+        },
+        {
+          "name": "clear-task-fixture return code",
+          "ok": true,
+          "detail": "rc=0 expected=0 stderr=''"
+        },
+        {
+          "name": "seed-fixture-schema return code",
+          "ok": true,
+          "detail": "rc=0 expected=0 stderr=''"
+        },
+        {
+          "name": "seed-fixture-schema: fixture table exists",
+          "ok": true,
+          "detail": "rc=0 output='1' expected='1'"
+        }
+      ],
+      "status": "pass"
+    },
+    {
+      "case_id": "T23S.db.tidb85tikv.syntax_negative",
+      "kind": "db_syntax_negative",
+      "anchor": "tidb85tikv",
+      "input_sql": "CREATE TABLE t23fx_bad (id BIGINT PRIMARY KEY AUTO_RANDOM(",
+      "expected": {
+        "error_class": "1064",
+        "forbidden_markers": [
+          "Access denied",
+          "Connection refused",
+          "doesn't exist",
+          "already exists"
+        ]
+      },
+      "actual": {
+        "rc": 1,
+        "stdout": "",
+        "stderr": "ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your TiDB version for the right syntax to use line 1 column 58 near \"\"",
+        "error_class": "1064"
+      },
+      "assertions": [
+        {
+          "name": "nonzero syntax failure",
+          "ok": true,
+          "detail": "rc=1"
+        },
+        {
+          "name": "expected error class",
+          "ok": true,
+          "detail": "error_class='1064' expected='1064'"
+        },
+        {
+          "name": "no permission/connection/object-conflict markers",
+          "ok": true,
+          "detail": "forbidden markers found: []"
+        }
+      ],
+      "status": "pass"
+    },
+    {
+      "case_id": "T23S.db.tidb85apk.ddl",
+      "kind": "db_ddl",
+      "anchor": "tidb85apk",
+      "input_sql": [
+        "DROP DATABASE IF EXISTS t23fx",
+        "CREATE DATABASE t23fx;CREATE TABLE t23fx.t (id INT PRIMARY KEY)"
+      ],
+      "expected": {
+        "steps": [
+          {
+            "name": "clear-task-fixture",
+            "rc": 0,
+            "verify": []
+          },
+          {
+            "name": "seed-fixture-schema",
+            "rc": 0,
+            "verify": [
+              {
+                "assert": "fixture table exists",
+                "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='t23fx' AND TABLE_NAME='t'",
+                "expect": "1"
+              }
+            ]
+          }
+        ]
+      },
+      "actual": {
+        "steps": [
+          {
+            "name": "clear-task-fixture",
+            "sql": "DROP DATABASE IF EXISTS t23fx",
+            "verify": [],
+            "rc": 0,
+            "stdout": "",
+            "stderr": ""
+          },
+          {
+            "name": "seed-fixture-schema",
+            "sql": "CREATE DATABASE t23fx;CREATE TABLE t23fx.t (id INT PRIMARY KEY)",
+            "verify": [
+              {
+                "assert": "fixture table exists",
+                "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='t23fx' AND TABLE_NAME='t'",
+                "rc": 0,
+                "output": "1",
+                "stderr": ""
+              }
+            ],
+            "rc": 0,
+            "stdout": "",
+            "stderr": ""
+          }
+        ],
+        "database": {
+          "product": "tidb",
+          "image": "pingcap/tidb:v8.5.0",
+          "image_digest": "pingcap/tidb@sha256:490861bd4a2fa643dbe76b77ffecafcad66e6a42774e580b82f4ec2429a80e57",
+          "container": "deltascope-ddl-golden-tidb85-apk",
+          "reachable": true,
+          "version": "8.0.11-TiDB-v8.5.0"
+        }
+      },
+      "assertions": [
+        {
+          "name": "database reachable with expected version",
+          "ok": true,
+          "detail": "SELECT VERSION() rc=0 version='8.0.11-TiDB-v8.5.0' expected_contains='v8.5.0'"
+        },
+        {
+          "name": "fixture database created",
+          "ok": true,
+          "detail": "CREATE DATABASE rc=0 stderr=''"
+        },
+        {
+          "name": "clear-task-fixture return code",
+          "ok": true,
+          "detail": "rc=0 expected=0 stderr=''"
+        },
+        {
+          "name": "seed-fixture-schema return code",
+          "ok": true,
+          "detail": "rc=0 expected=0 stderr=''"
+        },
+        {
+          "name": "seed-fixture-schema: fixture table exists",
+          "ok": true,
+          "detail": "rc=0 output='1' expected='1'"
+        }
+      ],
+      "status": "pass"
+    },
+    {
+      "case_id": "T23S.db.tidb85apk.syntax_negative",
+      "kind": "db_syntax_negative",
+      "anchor": "tidb85apk",
+      "input_sql": "CREATE TABLE t23fx_bad (id BIGINT PRIMARY KEY AUTO_RANDOM(",
+      "expected": {
+        "error_class": "1064",
+        "forbidden_markers": [
+          "Access denied",
+          "Connection refused",
+          "doesn't exist",
+          "already exists"
+        ]
+      },
+      "actual": {
+        "rc": 1,
+        "stdout": "",
+        "stderr": "ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your TiDB version for the right syntax to use line 1 column 58 near \"\"",
+        "error_class": "1064"
+      },
+      "assertions": [
+        {
+          "name": "nonzero syntax failure",
+          "ok": true,
+          "detail": "rc=1"
+        },
+        {
+          "name": "expected error class",
+          "ok": true,
+          "detail": "error_class='1064' expected='1064'"
+        },
+        {
+          "name": "no permission/connection/object-conflict markers",
+          "ok": true,
+          "detail": "forbidden markers found: []"
+        }
+      ],
+      "status": "pass"
+    },
+    {
+      "case_id": "T23S.cli.tidb-refused-no-ghost",
+      "kind": "cli_audit",
+      "cli_case": "tidb-refused-no-ghost",
+      "dialect": "tidb",
+      "input_sql": "CREATE TABLE t (id INT PRIMARY KEY AUTO_RANDOM);",
+      "policy_profile": "t23-layout-id",
+      "policy_path": "/Users/fan/GolangProjects/DeltaScope/docs/verification/t23s-native-specials/38f7abc116dd5e81ff595a951ddb7d110bc72fec/attempt-1/golden/T23S/golden-policy.yaml",
+      "command": [
+        "/Users/fan/GolangProjects/DeltaScope/docs/verification/t23s-native-specials/38f7abc116dd5e81ff595a951ddb7d110bc72fec/attempt-1/golden/T23S/bin/deltascope",
+        "audit",
+        "--dialect",
+        "tidb",
+        "--sql",
+        "CREATE TABLE t (id INT PRIMARY KEY AUTO_RANDOM);",
+        "--config",
+        "/Users/fan/GolangProjects/DeltaScope/docs/verification/t23s-native-specials/38f7abc116dd5e81ff595a951ddb7d110bc72fec/attempt-1/golden/T23S/golden-policy.yaml",
+        "--format",
+        "json",
+        "--fail-on",
+        "blocker"
+      ],
+      "expected": {
+        "exit": 1,
+        "verdict": "reject",
+        "statements": 1,
+        "findings": 2,
+        "coverage": "complete",
+        "finding_entries": [
+          {
+            "index": 0,
+            "rule_id": "ddl.table.primary_key.unsigned.require",
+            "level": "blocker"
+          },
+          {
+            "index": 0,
+            "rule_id": "ddl.tidb.table.auto_random.valid",
+            "level": "blocker"
+          }
+        ],
+        "diagnostics": 0,
+        "unsupported": 0
+      },
+      "actual": {
+        "exit": 1,
+        "stdout": "{\"verdict\":\"reject\",\"coverage\":{\"status\":\"complete\"},\"summary\":{\"statements\":1,\"blockers\":2,\"warnings\":0,\"notices\":0},\"statements\":[{\"index\":0,\"kind\":\"ddl\",\"raw_sql\":\"CREATE TABLE t (id INT PRIMARY KEY AUTO_RANDOM);\",\"normalized_sql\":\"CREATE TABLE t (id INT PRIMARY KEY AUTO_RANDOM)\",\"findings\":[{\"rule_id\":\"ddl.table.primary_key.unsigned.require\",\"level\":\"blocker\",\"message\":\"primary key column \\\"id\\\" must be unsigned\",\"statement_kind\":\"ddl\",\"location\":{\"line\":1,\"column\":1},\"suggestion\":\"mark the primary key column as UNSIGNED\",\"metadata\":{\"column\":\"id\",\"table\":\"t\",\"type\":\"int(11)\"},\"explanation\":{\"summary\":\"Require DDL table primary key unsigned require\",\"why\":\"The statement is missing a clause, option, or object that the shipped policy requires.\",\"risk\":\"Ignoring this rule can weaken schema-governance guarantees and make changes harder to review safely.\",\"suggestion\":\"mark the primary key column as UNSIGNED\"}},{\"rule_id\":\"ddl.tidb.table.auto_random.valid\",\"level\":\"blocker\",\"message\":\"auto_random column \\\"id\\\" must be BIGINT: TiDB supports AUTO_RANDOM only on BIGINT columns\",\"statement_kind\":\"ddl\",\"location\":{\"line\":1,\"column\":1},\"suggestion\":\"change the column type to BIGINT\",\"metadata\":{\"column\":\"id\",\"table\":\"t\"},\"explanation\":{\"summary\":\"Check DDL tidb table auto random valid\",\"why\":\"The statement matched the shipped governance rule for this pattern.\",\"risk\":\"Ignoring this rule can weaken schema-governance guarantees and make changes harder to review safely.\",\"suggestion\":\"change the column type to BIGINT\"}}],\"coverage\":{\"status\":\"complete\"}}],\"fail_on_triggered\":true,\"rule_summary\":{\"loaded\":13,\"applicable\":3,\"skipped\":[]},\"context\":{\"mode\":\"offline\",\"dialect\":\"tidb\",\"dialect_source\":\"flag\",\"note\":\"existence not checked (no database connection)\",\"unproven\":[\"column_exists\",\"table_exists\"]}}\n",
+        "stderr": "",
+        "parsed": {
+          "verdict": "reject",
+          "coverage": {
+            "status": "complete"
+          },
+          "summary": {
+            "statements": 1,
+            "blockers": 2,
+            "warnings": 0,
+            "notices": 0
+          },
+          "statements": [
+            {
+              "index": 0,
+              "kind": "ddl",
+              "raw_sql": "CREATE TABLE t (id INT PRIMARY KEY AUTO_RANDOM);",
+              "normalized_sql": "CREATE TABLE t (id INT PRIMARY KEY AUTO_RANDOM)",
+              "findings": [
+                {
+                  "rule_id": "ddl.table.primary_key.unsigned.require",
+                  "level": "blocker",
+                  "message": "primary key column \"id\" must be unsigned",
+                  "statement_kind": "ddl",
+                  "location": {
+                    "line": 1,
+                    "column": 1
+                  },
+                  "suggestion": "mark the primary key column as UNSIGNED",
+                  "metadata": {
+                    "column": "id",
+                    "table": "t",
+                    "type": "int(11)"
+                  },
+                  "explanation": {
+                    "summary": "Require DDL table primary key unsigned require",
+                    "why": "The statement is missing a clause, option, or object that the shipped policy requires.",
+                    "risk": "Ignoring this rule can weaken schema-governance guarantees and make changes harder to review safely.",
+                    "suggestion": "mark the primary key column as UNSIGNED"
+                  }
+                },
+                {
+                  "rule_id": "ddl.tidb.table.auto_random.valid",
+                  "level": "blocker",
+                  "message": "auto_random column \"id\" must be BIGINT: TiDB supports AUTO_RANDOM only on BIGINT columns",
+                  "statement_kind": "ddl",
+                  "location": {
+                    "line": 1,
+                    "column": 1
+                  },
+                  "suggestion": "change the column type to BIGINT",
+                  "metadata": {
+                    "column": "id",
+                    "table": "t"
+                  },
+                  "explanation": {
+                    "summary": "Check DDL tidb table auto random valid",
+                    "why": "The statement matched the shipped governance rule for this pattern.",
+                    "risk": "Ignoring this rule can weaken schema-governance guarantees and make changes harder to review safely.",
+                    "suggestion": "change the column type to BIGINT"
+                  }
+                }
+              ],
+              "coverage": {
+                "status": "complete"
+              }
+            }
+          ],
+          "fail_on_triggered": true,
+          "rule_summary": {
+            "loaded": 13,
+            "applicable": 3,
+            "skipped": []
+          },
+          "context": {
+            "mode": "offline",
+            "dialect": "tidb",
+            "dialect_source": "flag",
+            "note": "existence not checked (no database connection)",
+            "unproven": [
+              "column_exists",
+              "table_exists"
+            ]
+          }
+        },
+        "version_evidence": {
+          "target_raw": null,
+          "target_canonical": null,
+          "observed_raw": null,
+          "observed_canonical": null,
+          "resolved": null
+        }
+      },
+      "assertions": [
+        {
+          "name": "exit code",
+          "ok": true,
+          "detail": "rc=1 expected=1"
+        },
+        {
+          "name": "verdict",
+          "ok": true,
+          "detail": "verdict='reject'"
+        },
+        {
+          "name": "top-level statements",
+          "ok": true,
+          "detail": "statements=1 expected=1"
+        },
+        {
+          "name": "zero findings",
+          "ok": true,
+          "detail": "findings=2"
+        },
+        {
+          "name": "no diagnostics",
+          "ok": true,
+          "detail": "diagnostics=[]"
+        },
+        {
+          "name": "no unsupported",
+          "ok": true,
+          "detail": "unsupported=[]"
+        },
+        {
+          "name": "aggregate coverage",
+          "ok": true,
+          "detail": "coverage='complete'"
+        },
+        {
+          "name": "finding entries",
+          "ok": true,
+          "detail": "findings=[(0, 'ddl.table.primary_key.unsigned.require', 'blocker'), (0, 'ddl.tidb.table.auto_random.valid', 'blocker')] expected=[(0, 'ddl.table.primary_key.unsigned.require', 'blocker'), (0, 'ddl.tidb.table.auto_random.valid', 'blocker')]"
+        }
+      ],
+      "status": "pass"
+    },
+    {
+      "case_id": "T23S.cli.mysql-vendor-boundary",
+      "kind": "cli_audit",
+      "cli_case": "mysql-vendor-boundary",
+      "dialect": "mysql",
+      "input_sql": "CREATE TABLE t (id INT) SHARD_ROW_ID_BITS=4;",
+      "policy_profile": "t23-layout-id",
+      "policy_path": "/Users/fan/GolangProjects/DeltaScope/docs/verification/t23s-native-specials/38f7abc116dd5e81ff595a951ddb7d110bc72fec/attempt-1/golden/T23S/golden-policy.yaml",
+      "command": [
+        "/Users/fan/GolangProjects/DeltaScope/docs/verification/t23s-native-specials/38f7abc116dd5e81ff595a951ddb7d110bc72fec/attempt-1/golden/T23S/bin/deltascope",
+        "audit",
+        "--dialect",
+        "mysql",
+        "--sql",
+        "CREATE TABLE t (id INT) SHARD_ROW_ID_BITS=4;",
+        "--config",
+        "/Users/fan/GolangProjects/DeltaScope/docs/verification/t23s-native-specials/38f7abc116dd5e81ff595a951ddb7d110bc72fec/attempt-1/golden/T23S/golden-policy.yaml",
+        "--format",
+        "json",
+        "--fail-on",
+        "blocker"
+      ],
+      "expected": {
+        "exit": 1,
+        "verdict": "review",
+        "statements": 1,
+        "coverage": "incomplete",
+        "unsupported_entries": [
+          {
+            "index": 0,
+            "feature": "create_table.option.shard_row_id_bits",
+            "reason": "parsed by the shared parser but outside the supported statement surface for this dialect"
+          }
+        ],
+        "diagnostics": 1,
+        "unsupported": 1,
+        "findings": 0
+      },
+      "actual": {
+        "exit": 1,
+        "stdout": "{\"verdict\":\"review\",\"coverage\":{\"status\":\"incomplete\"},\"summary\":{\"statements\":1,\"blockers\":0,\"warnings\":0,\"notices\":0},\"statements\":[{\"index\":0,\"kind\":\"ddl\",\"raw_sql\":\"CREATE TABLE t (id INT) SHARD_ROW_ID_BITS=4;\",\"normalized_sql\":\"CREATE TABLE t (id INT) SHARD_ROW_ID_BITS=4\",\"coverage\":{\"status\":\"incomplete\"}}],\"unsupported\":[{\"feature\":\"create_table.option.shard_row_id_bits\",\"sql\":\"CREATE TABLE t (id INT) SHARD_ROW_ID_BITS=4;\",\"reason\":\"parsed by the shared parser but outside the supported statement surface for this dialect\",\"metadata\":{\"aspect\":\"option\"}}],\"diagnostics\":[{\"classification\":\"unsupported_statement\",\"reason\":\"DeltaScope recognized this statement or feature but does not audit it yet\",\"action_hint\":\"treat this statement as not covered by DeltaScope policy checks; review it manually or track support in a future DeltaScope release\",\"audited\":false,\"dialect\":\"mysql\"}],\"fail_on_triggered\":false,\"rule_summary\":{\"loaded\":13,\"applicable\":0,\"skipped\":[]},\"context\":{\"mode\":\"offline\",\"dialect\":\"mysql\",\"dialect_source\":\"flag\",\"note\":\"existence not checked (no database connection)\",\"unproven\":[\"column_exists\",\"table_exists\"]}}\n",
+        "stderr": "",
+        "parsed": {
+          "verdict": "review",
+          "coverage": {
+            "status": "incomplete"
+          },
+          "summary": {
+            "statements": 1,
+            "blockers": 0,
+            "warnings": 0,
+            "notices": 0
+          },
+          "statements": [
+            {
+              "index": 0,
+              "kind": "ddl",
+              "raw_sql": "CREATE TABLE t (id INT) SHARD_ROW_ID_BITS=4;",
+              "normalized_sql": "CREATE TABLE t (id INT) SHARD_ROW_ID_BITS=4",
+              "coverage": {
+                "status": "incomplete"
+              }
+            }
+          ],
+          "unsupported": [
+            {
+              "feature": "create_table.option.shard_row_id_bits",
+              "sql": "CREATE TABLE t (id INT) SHARD_ROW_ID_BITS=4;",
+              "reason": "parsed by the shared parser but outside the supported statement surface for this dialect",
+              "metadata": {
+                "aspect": "option"
+              }
+            }
+          ],
+          "diagnostics": [
+            {
+              "classification": "unsupported_statement",
+              "reason": "DeltaScope recognized this statement or feature but does not audit it yet",
+              "action_hint": "treat this statement as not covered by DeltaScope policy checks; review it manually or track support in a future DeltaScope release",
+              "audited": false,
+              "dialect": "mysql"
+            }
+          ],
+          "fail_on_triggered": false,
+          "rule_summary": {
+            "loaded": 13,
+            "applicable": 0,
+            "skipped": []
+          },
+          "context": {
+            "mode": "offline",
+            "dialect": "mysql",
+            "dialect_source": "flag",
+            "note": "existence not checked (no database connection)",
+            "unproven": [
+              "column_exists",
+              "table_exists"
+            ]
+          }
+        },
+        "version_evidence": {
+          "target_raw": null,
+          "target_canonical": null,
+          "observed_raw": null,
+          "observed_canonical": null,
+          "resolved": null
+        }
+      },
+      "assertions": [
+        {
+          "name": "exit code",
+          "ok": true,
+          "detail": "rc=1 expected=1"
+        },
+        {
+          "name": "verdict",
+          "ok": true,
+          "detail": "verdict='review'"
+        },
+        {
+          "name": "top-level statements",
+          "ok": true,
+          "detail": "statements=1 expected=1"
+        },
+        {
+          "name": "zero findings",
+          "ok": true,
+          "detail": "findings=0"
+        },
+        {
+          "name": "no diagnostics",
+          "ok": true,
+          "detail": "diagnostics=[{'classification': 'unsupported_statement', 'reason': 'DeltaScope recognized this statement or feature but does not audit it yet', 'action_hint': 'treat this statement as not covered by DeltaScope policy checks; review it manually or track support in a future DeltaScope release', 'audited': False, 'dialect': 'mysql'}]"
+        },
+        {
+          "name": "no unsupported",
+          "ok": true,
+          "detail": "unsupported=[{'feature': 'create_table.option.shard_row_id_bits', 'sql': 'CREATE TABLE t (id INT) SHARD_ROW_ID_BITS=4;', 'reason': 'parsed by the shared parser but outside the supported statement surface for this dialect', 'metadata': {'aspect': 'option'}}]"
+        },
+        {
+          "name": "aggregate coverage",
+          "ok": true,
+          "detail": "coverage='incomplete'"
+        },
+        {
+          "name": "unsupported entries",
+          "ok": true,
+          "detail": "entries=[(0, 'create_table.option.shard_row_id_bits', 'parsed by the shared parser but outside the supported statement surface for this dialect')] expected=[(0, 'create_table.option.shard_row_id_bits', 'parsed by the shared parser but outside the supported statement surface for this dialect')]"
+        },
+        {
+          "name": "unsupported sql identity index=0",
+          "ok": true,
+          "detail": "sql='CREATE TABLE t (id INT) SHARD_ROW_ID_BITS=4;' expected='CREATE TABLE t (id INT) SHARD_ROW_ID_BITS=4;'"
+        }
+      ],
+      "status": "pass"
+    },
+    {
+      "case_id": "T23S.meta.C-tiflash-real",
+      "kind": "cli_metadata",
+      "cli_case": "C-tiflash-real",
+      "anchor": "tidb85tikv",
+      "dialect": "tidb",
+      "input_sql": "ALTER TABLE t23fx.t23fx_tf SET TIFLASH REPLICA 1;",
+      "policy_profile": "t23-layout-id",
+      "policy_path": "/Users/fan/GolangProjects/DeltaScope/docs/verification/t23s-native-specials/38f7abc116dd5e81ff595a951ddb7d110bc72fec/attempt-1/golden/T23S/golden-policy.yaml",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 24002,
+        "user": "root",
+        "schema": "t23fx"
+      },
+      "expected": {
+        "exit": 0,
+        "verdict": "review",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "unverified",
+        "evidence_gaps": 1,
+        "evidence_gap_entries": [
+          {
+            "index": 0,
+            "rule_id": "ddl.tidb.table.tiflash.valid",
+            "reason_code": "missing_instance_fact",
+            "required_facts": [
+              "table.columns.charset"
+            ]
+          }
+        ],
+        "instance_facts": {
+          "tidb_alter_primary_key": "false",
+          "tidb_enable_clustered_index": "ON"
+        }
+      },
+      "actual": {
+        "database": {
+          "product": "tidb",
+          "image": "pingcap/tidb:v8.5.0",
+          "image_digest": "pingcap/tidb@sha256:490861bd4a2fa643dbe76b77ffecafcad66e6a42774e580b82f4ec2429a80e57",
+          "container": "deltascope-ddl-golden-t23s-tidb",
+          "reachable": true,
+          "version": "8.0.11-TiDB-v8.5.0"
+        },
+        "setup": [
+          {
+            "name": "seed tf",
+            "sql": "CREATE TABLE t23fx.t23fx_tf (id BIGINT PRIMARY KEY, v INT)",
+            "rc": 0,
+            "stdout": "",
+            "stderr": "",
+            "verify": [
+              {
+                "assert": "t23fx_tf 1",
+                "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='t23fx' AND TABLE_NAME='t23fx_tf'",
+                "rc": 0,
+                "output": "1",
+                "stderr": ""
+              }
+            ]
+          },
+          {
+            "name": "seed tf row",
+            "sql": "INSERT INTO t23fx.t23fx_tf VALUES (1,1)",
+            "rc": 0,
+            "stdout": "",
+            "stderr": ""
+          }
+        ],
+        "post_verify": [
+          {
+            "assert": "audit declared no replica",
+            "sql": "SELECT COUNT(*) FROM information_schema.tiflash_replica WHERE TABLE_SCHEMA='t23fx' AND TABLE_NAME='t23fx_tf'",
+            "rc": 0,
+            "output": "0",
+            "stderr": ""
+          },
+          {
+            "assert": "t23fx_tf 1",
+            "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='t23fx' AND TABLE_NAME='t23fx_tf'",
+            "rc": 0,
+            "output": "1",
+            "stderr": ""
+          }
+        ],
+        "execute": [
+          {
+            "name": "over-count replica refused",
+            "sql": "ALTER TABLE t23fx.t23fx_tf SET TIFLASH REPLICA 2",
+            "rc": 1,
+            "stdout": "",
+            "stderr": "ERROR 1105 (HY000) at line 1: the tiflash replica count: 2 should be less than the total tiflash server count: 1",
+            "verify": [
+              {
+                "assert": "no replica row after refuse",
+                "sql": "SELECT COUNT(*) FROM information_schema.tiflash_replica WHERE TABLE_SCHEMA='t23fx' AND TABLE_NAME='t23fx_tf'",
+                "rc": 0,
+                "output": "0",
+                "stderr": ""
+              }
+            ]
+          },
+          {
+            "name": "declare replica 1",
+            "sql": "ALTER TABLE t23fx.t23fx_tf SET TIFLASH REPLICA 1",
+            "rc": 0,
+            "stdout": "",
+            "stderr": "",
+            "verify": [
+              {
+                "assert": "replica row declared",
+                "sql": "SELECT COUNT(*) FROM information_schema.tiflash_replica WHERE TABLE_SCHEMA='t23fx' AND TABLE_NAME='t23fx_tf'",
+                "rc": 0,
+                "output": "1",
+                "stderr": ""
+              },
+              {
+                "assert": "replica becomes available",
+                "sql": "SELECT AVAILABLE FROM information_schema.tiflash_replica WHERE TABLE_SCHEMA='t23fx' AND TABLE_NAME='t23fx_tf'",
+                "rc": 0,
+                "output": "1",
+                "stderr": "",
+                "attempts": 2,
+                "observations": [
+                  {
+                    "n": 1,
+                    "rc": 0,
+                    "output": "0",
+                    "stderr": ""
+                  },
+                  {
+                    "n": 2,
+                    "rc": 0,
+                    "output": "1",
+                    "stderr": ""
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "name": "forced tiflash read",
+            "sql": "SET SESSION tidb_isolation_read_engines='tiflash'; SELECT COUNT(*) AS tiflash_rows FROM t23fx.t23fx_tf",
+            "rc": 0,
+            "stdout": "tiflash_rows\n1",
+            "stderr": ""
+          },
+          {
+            "name": "explain resolves tiflash task",
+            "sql": "SET SESSION tidb_isolation_read_engines='tiflash'; EXPLAIN SELECT id FROM t23fx.t23fx_tf",
+            "rc": 0,
+            "stdout": "id\testRows\ttask\taccess object\toperator info\nTableReader_10\t10000.00\troot\t\tMppVersion: 2, data:ExchangeSender_9\n└─ExchangeSender_9\t10000.00\tmpp[tiflash]\t\tExchangeType: PassThrough\n  └─TableFullScan_8\t10000.00\tmpp[tiflash]\ttable:t23fx_tf\tkeep order:false, stats:pseudo",
+            "stderr": ""
+          },
+          {
+            "name": "clear replica",
+            "sql": "ALTER TABLE t23fx.t23fx_tf SET TIFLASH REPLICA 0",
+            "rc": 0,
+            "stdout": "",
+            "stderr": "",
+            "verify": [
+              {
+                "assert": "replica row removed",
+                "sql": "SELECT COUNT(*) FROM information_schema.tiflash_replica WHERE TABLE_SCHEMA='t23fx' AND TABLE_NAME='t23fx_tf'",
+                "rc": 0,
+                "output": "0",
+                "stderr": "",
+                "attempts": 1,
+                "observations": [
+                  {
+                    "n": 1,
+                    "rc": 0,
+                    "output": "0",
+                    "stderr": ""
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "name": "rebuild replica",
+            "sql": "ALTER TABLE t23fx.t23fx_tf SET TIFLASH REPLICA 1",
+            "rc": 0,
+            "stdout": "",
+            "stderr": "",
+            "verify": [
+              {
+                "assert": "rebuilt replica available",
+                "sql": "SELECT AVAILABLE FROM information_schema.tiflash_replica WHERE TABLE_SCHEMA='t23fx' AND TABLE_NAME='t23fx_tf'",
+                "rc": 0,
+                "output": "1",
+                "stderr": "",
+                "attempts": 2,
+                "observations": [
+                  {
+                    "n": 1,
+                    "rc": 0,
+                    "output": "0",
+                    "stderr": ""
+                  },
+                  {
+                    "n": 2,
+                    "rc": 0,
+                    "output": "1",
+                    "stderr": ""
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "name": "forced tiflash read after rebuild",
+            "sql": "SET SESSION tidb_isolation_read_engines='tiflash'; SELECT COUNT(*) AS tiflash_rows FROM t23fx.t23fx_tf",
+            "rc": 0,
+            "stdout": "tiflash_rows\n1",
+            "stderr": ""
+          },
+          {
+            "name": "compact request on real replica",
+            "sql": "ALTER TABLE t23fx.t23fx_tf COMPACT TIFLASH REPLICA",
+            "rc": 0,
+            "stdout": "",
+            "stderr": ""
+          }
+        ],
+        "structure": [
+          {
+            "assert": "replica row final shape",
+            "sql": "SELECT TABLE_SCHEMA,TABLE_NAME,REPLICA_COUNT,AVAILABLE FROM information_schema.tiflash_replica WHERE TABLE_SCHEMA='t23fx' AND TABLE_NAME='t23fx_tf'",
+            "rc": 0,
+            "output": "t23fx\tt23fx_tf\t1\t1",
+            "stderr": ""
+          }
+        ],
+        "teardown": [
+          {
+            "name": "safety clear replica",
+            "sql": "ALTER TABLE t23fx.t23fx_tf SET TIFLASH REPLICA 0",
+            "rc": 0,
+            "stderr": ""
+          },
+          {
+            "name": "drop tf",
+            "sql": "DROP TABLE IF EXISTS t23fx.t23fx_tf",
+            "rc": 0,
+            "stderr": "",
+            "verify": [
+              {
+                "assert": "t23fx_tf 0",
+                "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='t23fx' AND TABLE_NAME='t23fx_tf'",
+                "rc": 0,
+                "output": "0",
+                "stderr": ""
+              },
+              {
+                "assert": "replica row gone",
+                "sql": "SELECT COUNT(*) FROM information_schema.tiflash_replica WHERE TABLE_SCHEMA='t23fx' AND TABLE_NAME='t23fx_tf'",
+                "rc": 0,
+                "output": "0",
+                "stderr": ""
+              }
+            ]
+          }
+        ],
+        "exit": 0,
+        "stdout": "{\"verdict\":\"review\",\"coverage\":{\"status\":\"unverified\"},\"summary\":{\"statements\":1,\"blockers\":0,\"warnings\":0,\"notices\":0},\"statements\":[{\"index\":0,\"kind\":\"ddl\",\"raw_sql\":\"ALTER TABLE t23fx.t23fx_tf SET TIFLASH REPLICA 1;\",\"normalized_sql\":\"ALTER TABLE t23fx.t23fx_tf SET TIFLASH REPLICA 1\",\"evidence_gaps\":[{\"rule_id\":\"ddl.tidb.table.tiflash.valid\",\"reason_code\":\"missing_instance_fact\",\"required_facts\":[\"table.columns.charset\"]}],\"coverage\":{\"status\":\"unverified\"}}],\"version\":{\"product\":\"tidb\",\"version\":\"8.5.0\",\"major\":8,\"minor\":5,\"patch\":0,\"source\":\"observed\",\"validated_range\":true},\"fail_on_triggered\":false,\"rule_summary\":{\"loaded\":13,\"applicable\":2,\"skipped\":[]},\"context\":{\"mode\":\"metadata-aware\",\"dialect\":\"tidb\",\"dialect_source\":\"detected\",\"schema\":\"t23fx\",\"schema_source\":\"flag\"}}\n",
+        "stderr": "",
+        "parsed": {
+          "verdict": "review",
+          "coverage": {
+            "status": "unverified"
+          },
+          "summary": {
+            "statements": 1,
+            "blockers": 0,
+            "warnings": 0,
+            "notices": 0
+          },
+          "statements": [
+            {
+              "index": 0,
+              "kind": "ddl",
+              "raw_sql": "ALTER TABLE t23fx.t23fx_tf SET TIFLASH REPLICA 1;",
+              "normalized_sql": "ALTER TABLE t23fx.t23fx_tf SET TIFLASH REPLICA 1",
+              "evidence_gaps": [
+                {
+                  "rule_id": "ddl.tidb.table.tiflash.valid",
+                  "reason_code": "missing_instance_fact",
+                  "required_facts": [
+                    "table.columns.charset"
+                  ]
+                }
+              ],
+              "coverage": {
+                "status": "unverified"
+              }
+            }
+          ],
+          "version": {
+            "product": "tidb",
+            "version": "8.5.0",
+            "major": 8,
+            "minor": 5,
+            "patch": 0,
+            "source": "observed",
+            "validated_range": true
+          },
+          "fail_on_triggered": false,
+          "rule_summary": {
+            "loaded": 13,
+            "applicable": 2,
+            "skipped": []
+          },
+          "context": {
+            "mode": "metadata-aware",
+            "dialect": "tidb",
+            "dialect_source": "detected",
+            "schema": "t23fx",
+            "schema_source": "flag"
+          }
+        },
+        "version_evidence": {
+          "target_raw": null,
+          "target_canonical": null,
+          "observed_raw": "8.0.11-TiDB-v8.5.0",
+          "observed_canonical": {
+            "product": "tidb",
+            "version": "8.5.0"
+          },
+          "resolved": {
+            "product": "tidb",
+            "version": "8.5.0",
+            "major": 8,
+            "minor": 5,
+            "patch": 0,
+            "source": "observed",
+            "validated_range": true
+          }
+        },
+        "instance_facts": {
+          "tidb_alter_primary_key": "false",
+          "tidb_enable_clustered_index": "ON"
+        }
+      },
+      "assertions": [
+        {
+          "name": "database reachable with expected version",
+          "ok": true,
+          "detail": "SELECT VERSION() rc=0 version='8.0.11-TiDB-v8.5.0' expected_contains='v8.5.0'"
+        },
+        {
+          "name": "setup seed tf return code",
+          "ok": true,
+          "detail": "rc=0 expected=0 stderr=''"
+        },
+        {
+          "name": "setup seed tf: t23fx_tf 1",
+          "ok": true,
+          "detail": "rc=0 output='1' expected='1'"
+        },
+        {
+          "name": "setup seed tf row return code",
+          "ok": true,
+          "detail": "rc=0 expected=0 stderr=''"
+        },
+        {
+          "name": "instance fact tidb_alter_primary_key",
+          "ok": true,
+          "detail": "tidb_alter_primary_key='false' expected='false'"
+        },
+        {
+          "name": "instance fact tidb_enable_clustered_index",
+          "ok": true,
+          "detail": "tidb_enable_clustered_index='ON' expected='ON'"
+        },
+        {
+          "name": "exit code",
+          "ok": true,
+          "detail": "rc=0 expected=0"
+        },
+        {
+          "name": "verdict",
+          "ok": true,
+          "detail": "verdict='review'"
+        },
+        {
+          "name": "top-level statements",
+          "ok": true,
+          "detail": "statements=1 expected=1"
+        },
+        {
+          "name": "zero findings",
+          "ok": true,
+          "detail": "findings=0"
+        },
+        {
+          "name": "no diagnostics",
+          "ok": true,
+          "detail": "diagnostics=[]"
+        },
+        {
+          "name": "no unsupported",
+          "ok": true,
+          "detail": "unsupported=[]"
+        },
+        {
+          "name": "aggregate coverage",
+          "ok": true,
+          "detail": "coverage='unverified'"
+        },
+        {
+          "name": "evidence gap count",
+          "ok": true,
+          "detail": "gaps=1"
+        },
+        {
+          "name": "evidence gap entries",
+          "ok": true,
+          "detail": "gaps=[(0, 'ddl.tidb.table.tiflash.valid', 'missing_instance_fact')] expected=[(0, 'ddl.tidb.table.tiflash.valid', 'missing_instance_fact')]"
+        },
+        {
+          "name": "evidence gap required_facts (0, 'ddl.tidb.table.tiflash.valid', 'missing_instance_fact')",
+          "ok": true,
+          "detail": "gaps=[{'rule_id': 'ddl.tidb.table.tiflash.valid', 'reason_code': 'missing_instance_fact', 'required_facts': ['table.columns.charset']}] expected_facts=['table.columns.charset']"
+        },
+        {
+          "name": "no gap encoded as finding",
+          "ok": true,
+          "detail": "findings carrying gap shape=[]"
+        },
+        {
+          "name": "post-verify audit declared no replica",
+          "ok": true,
+          "detail": "rc=0 output='0' expected='0'"
+        },
+        {
+          "name": "post-verify t23fx_tf 1",
+          "ok": true,
+          "detail": "rc=0 output='1' expected='1'"
+        },
+        {
+          "name": "execute over-count replica refused return code",
+          "ok": true,
+          "detail": "rc=1 expected=1 stderr='ERROR 1105 (HY000) at line 1: the tiflash replica count: 2 should be less than the total tiflash server count: 1'"
+        },
+        {
+          "name": "execute over-count replica refused: no replica row after refuse",
+          "ok": true,
+          "detail": "rc=0 output='0' expected='0'"
+        },
+        {
+          "name": "execute declare replica 1 return code",
+          "ok": true,
+          "detail": "rc=0 expected=0 stderr=''"
+        },
+        {
+          "name": "execute declare replica 1: replica row declared",
+          "ok": true,
+          "detail": "rc=0 output='1' expected='1'"
+        },
+        {
+          "name": "execute declare replica 1: replica becomes available",
+          "ok": true,
+          "detail": "rc=0 output='1' expected='1'"
+        },
+        {
+          "name": "execute forced tiflash read return code",
+          "ok": true,
+          "detail": "rc=0 expected=0 stderr=''"
+        },
+        {
+          "name": "execute forced tiflash read stdout exact",
+          "ok": true,
+          "detail": "stdout='tiflash_rows\\n1' expected='tiflash_rows\\n1'"
+        },
+        {
+          "name": "execute explain resolves tiflash task return code",
+          "ok": true,
+          "detail": "rc=0 expected=0 stderr=''"
+        },
+        {
+          "name": "execute explain resolves tiflash task stdout marker",
+          "ok": true,
+          "detail": "tiflash"
+        },
+        {
+          "name": "execute clear replica return code",
+          "ok": true,
+          "detail": "rc=0 expected=0 stderr=''"
+        },
+        {
+          "name": "execute clear replica: replica row removed",
+          "ok": true,
+          "detail": "rc=0 output='0' expected='0'"
+        },
+        {
+          "name": "execute rebuild replica return code",
+          "ok": true,
+          "detail": "rc=0 expected=0 stderr=''"
+        },
+        {
+          "name": "execute rebuild replica: rebuilt replica available",
+          "ok": true,
+          "detail": "rc=0 output='1' expected='1'"
+        },
+        {
+          "name": "execute forced tiflash read after rebuild return code",
+          "ok": true,
+          "detail": "rc=0 expected=0 stderr=''"
+        },
+        {
+          "name": "execute forced tiflash read after rebuild stdout exact",
+          "ok": true,
+          "detail": "stdout='tiflash_rows\\n1' expected='tiflash_rows\\n1'"
+        },
+        {
+          "name": "execute compact request on real replica return code",
+          "ok": true,
+          "detail": "rc=0 expected=0 stderr=''"
+        },
+        {
+          "name": "structure replica row final shape",
+          "ok": true,
+          "detail": "rc=0 output='t23fx\\tt23fx_tf\\t1\\t1' expected='t23fx\\tt23fx_tf\\t1\\t1'"
+        },
+        {
+          "name": "teardown safety clear replica return code",
+          "ok": true,
+          "detail": "rc=0 expected=0 stderr=''"
+        },
+        {
+          "name": "teardown drop tf return code",
+          "ok": true,
+          "detail": "rc=0 expected=0 stderr=''"
+        },
+        {
+          "name": "teardown drop tf: t23fx_tf 0",
+          "ok": true,
+          "detail": "rc=0 output='0' expected='0'"
+        },
+        {
+          "name": "teardown drop tf: replica row gone",
+          "ok": true,
+          "detail": "rc=0 output='0' expected='0'"
+        }
+      ],
+      "status": "pass",
+      "command": [
+        "/Users/fan/GolangProjects/DeltaScope/docs/verification/t23s-native-specials/38f7abc116dd5e81ff595a951ddb7d110bc72fec/attempt-1/golden/T23S/bin/deltascope",
+        "audit",
+        "--dialect",
+        "tidb",
+        "--sql",
+        "ALTER TABLE t23fx.t23fx_tf SET TIFLASH REPLICA 1;",
+        "--config",
+        "/Users/fan/GolangProjects/DeltaScope/docs/verification/t23s-native-specials/38f7abc116dd5e81ff595a951ddb7d110bc72fec/attempt-1/golden/T23S/golden-policy.yaml",
+        "--format",
+        "json",
+        "--host",
+        "127.0.0.1",
+        "--port",
+        "24002",
+        "--user",
+        "root",
+        "--schema",
+        "t23fx",
+        "--fail-on",
+        "blocker"
+      ]
+    },
+    {
+      "case_id": "T23S.meta.apk-false-control-plain-pk",
+      "kind": "cli_metadata",
+      "cli_case": "apk-false-control-plain-pk",
+      "anchor": "tidb85tikv",
+      "dialect": "tidb",
+      "input_sql": "CREATE TABLE t23fx.t23ctl_p (id BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT, v INT);",
+      "policy_profile": "t23-layout-id",
+      "policy_path": "/Users/fan/GolangProjects/DeltaScope/docs/verification/t23s-native-specials/38f7abc116dd5e81ff595a951ddb7d110bc72fec/attempt-1/golden/T23S/golden-policy.yaml",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 24002,
+        "user": "root",
+        "schema": "t23fx"
+      },
+      "expected": {
+        "exit": 0,
+        "verdict": "pass",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "complete",
+        "evidence_gaps": 0,
+        "instance_facts": {
+          "tidb_enable_clustered_index": "INT_ONLY",
+          "tidb_alter_primary_key": "false"
+        }
+      },
+      "actual": {
+        "database": {
+          "product": "tidb",
+          "image": "pingcap/tidb:v8.5.0",
+          "image_digest": "pingcap/tidb@sha256:490861bd4a2fa643dbe76b77ffecafcad66e6a42774e580b82f4ec2429a80e57",
+          "container": "deltascope-ddl-golden-t23s-tidb",
+          "reachable": true,
+          "version": "8.0.11-TiDB-v8.5.0"
+        },
+        "setup": [
+          {
+            "name": "record clustered baseline",
+            "sql": "SELECT @@global.tidb_enable_clustered_index",
+            "rc": 0,
+            "stdout": "@@global.tidb_enable_clustered_index\nON",
+            "stderr": "",
+            "verify": [
+              {
+                "assert": "baseline is ON",
+                "sql": "SELECT @@global.tidb_enable_clustered_index",
+                "rc": 0,
+                "output": "ON",
+                "stderr": ""
+              }
+            ]
+          },
+          {
+            "name": "set clustered int_only",
+            "sql": "SET GLOBAL tidb_enable_clustered_index='int_only'",
+            "rc": 0,
+            "stdout": "",
+            "stderr": "",
+            "verify": [
+              {
+                "assert": "mode is int_only",
+                "sql": "SELECT @@global.tidb_enable_clustered_index",
+                "rc": 0,
+                "output": "INT_ONLY",
+                "stderr": ""
+              }
+            ]
+          }
+        ],
+        "post_verify": [
+          {
+            "assert": "audit created nothing",
+            "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='t23fx' AND TABLE_NAME='t23ctl_p'",
+            "rc": 0,
+            "output": "0",
+            "stderr": ""
+          }
+        ],
+        "execute": [
+          {
+            "name": "native plain pk create",
+            "sql": "CREATE TABLE t23fx.t23ctl_p (id BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT, v INT)",
+            "rc": 0,
+            "stdout": "",
+            "stderr": "",
+            "verify": [
+              {
+                "assert": "pk is clustered under apk=false",
+                "sql": "SHOW CREATE TABLE t23fx.t23ctl_p",
+                "rc": 0,
+                "output": "t23ctl_p\tCREATE TABLE `t23ctl_p` (\\n  `id` bigint unsigned NOT NULL AUTO_INCREMENT,\\n  `v` int DEFAULT NULL,\\n  PRIMARY KEY (`id`) /*T![clustered_index] CLUSTERED */\\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin",
+                "stderr": ""
+              }
+            ]
+          }
+        ],
+        "structure": [],
+        "teardown": [
+          {
+            "name": "restore clustered baseline ON",
+            "sql": "SET GLOBAL tidb_enable_clustered_index='ON'",
+            "rc": 0,
+            "stderr": "",
+            "verify": [
+              {
+                "assert": "mode restored to ON",
+                "sql": "SELECT @@global.tidb_enable_clustered_index",
+                "rc": 0,
+                "output": "ON",
+                "stderr": ""
+              }
+            ]
+          },
+          {
+            "name": "drop ctl_p",
+            "sql": "DROP TABLE IF EXISTS t23fx.t23ctl_p",
+            "rc": 0,
+            "stderr": "",
+            "verify": [
+              {
+                "assert": "t23ctl_p 0",
+                "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='t23fx' AND TABLE_NAME='t23ctl_p'",
+                "rc": 0,
+                "output": "0",
+                "stderr": ""
+              }
+            ]
+          }
+        ],
+        "exit": 0,
+        "stdout": "{\"verdict\":\"pass\",\"coverage\":{\"status\":\"complete\"},\"summary\":{\"statements\":1,\"blockers\":0,\"warnings\":0,\"notices\":0},\"statements\":[{\"index\":0,\"kind\":\"ddl\",\"raw_sql\":\"CREATE TABLE t23fx.t23ctl_p (id BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT, v INT);\",\"normalized_sql\":\"CREATE TABLE t23fx.t23ctl_p (id BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT, v INT)\",\"coverage\":{\"status\":\"complete\"}}],\"version\":{\"product\":\"tidb\",\"version\":\"8.5.0\",\"major\":8,\"minor\":5,\"patch\":0,\"source\":\"observed\",\"validated_range\":true},\"fail_on_triggered\":false,\"rule_summary\":{\"loaded\":13,\"applicable\":3,\"skipped\":[]},\"context\":{\"mode\":\"metadata-aware\",\"dialect\":\"tidb\",\"dialect_source\":\"detected\",\"schema\":\"t23fx\",\"schema_source\":\"flag\"}}\n",
+        "stderr": "",
+        "parsed": {
+          "verdict": "pass",
+          "coverage": {
+            "status": "complete"
+          },
+          "summary": {
+            "statements": 1,
+            "blockers": 0,
+            "warnings": 0,
+            "notices": 0
+          },
+          "statements": [
+            {
+              "index": 0,
+              "kind": "ddl",
+              "raw_sql": "CREATE TABLE t23fx.t23ctl_p (id BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT, v INT);",
+              "normalized_sql": "CREATE TABLE t23fx.t23ctl_p (id BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT, v INT)",
+              "coverage": {
+                "status": "complete"
+              }
+            }
+          ],
+          "version": {
+            "product": "tidb",
+            "version": "8.5.0",
+            "major": 8,
+            "minor": 5,
+            "patch": 0,
+            "source": "observed",
+            "validated_range": true
+          },
+          "fail_on_triggered": false,
+          "rule_summary": {
+            "loaded": 13,
+            "applicable": 3,
+            "skipped": []
+          },
+          "context": {
+            "mode": "metadata-aware",
+            "dialect": "tidb",
+            "dialect_source": "detected",
+            "schema": "t23fx",
+            "schema_source": "flag"
+          }
+        },
+        "version_evidence": {
+          "target_raw": null,
+          "target_canonical": null,
+          "observed_raw": "8.0.11-TiDB-v8.5.0",
+          "observed_canonical": {
+            "product": "tidb",
+            "version": "8.5.0"
+          },
+          "resolved": {
+            "product": "tidb",
+            "version": "8.5.0",
+            "major": 8,
+            "minor": 5,
+            "patch": 0,
+            "source": "observed",
+            "validated_range": true
+          }
+        },
+        "instance_facts": {
+          "tidb_enable_clustered_index": "INT_ONLY",
+          "tidb_alter_primary_key": "false"
+        }
+      },
+      "assertions": [
+        {
+          "name": "database reachable with expected version",
+          "ok": true,
+          "detail": "SELECT VERSION() rc=0 version='8.0.11-TiDB-v8.5.0' expected_contains='v8.5.0'"
+        },
+        {
+          "name": "setup record clustered baseline return code",
+          "ok": true,
+          "detail": "rc=0 expected=0 stderr=''"
+        },
+        {
+          "name": "setup record clustered baseline: baseline is ON",
+          "ok": true,
+          "detail": "rc=0 output='ON' expected='ON'"
+        },
+        {
+          "name": "setup set clustered int_only return code",
+          "ok": true,
+          "detail": "rc=0 expected=0 stderr=''"
+        },
+        {
+          "name": "setup set clustered int_only: mode is int_only",
+          "ok": true,
+          "detail": "rc=0 output='INT_ONLY' expected='INT_ONLY'"
+        },
+        {
+          "name": "instance fact tidb_enable_clustered_index",
+          "ok": true,
+          "detail": "tidb_enable_clustered_index='INT_ONLY' expected='INT_ONLY'"
+        },
+        {
+          "name": "instance fact tidb_alter_primary_key",
+          "ok": true,
+          "detail": "tidb_alter_primary_key='false' expected='false'"
+        },
+        {
+          "name": "exit code",
+          "ok": true,
+          "detail": "rc=0 expected=0"
+        },
+        {
+          "name": "verdict",
+          "ok": true,
+          "detail": "verdict='pass'"
+        },
+        {
+          "name": "top-level statements",
+          "ok": true,
+          "detail": "statements=1 expected=1"
+        },
+        {
+          "name": "zero findings",
+          "ok": true,
+          "detail": "findings=0"
+        },
+        {
+          "name": "no diagnostics",
+          "ok": true,
+          "detail": "diagnostics=[]"
+        },
+        {
+          "name": "no unsupported",
+          "ok": true,
+          "detail": "unsupported=[]"
+        },
+        {
+          "name": "aggregate coverage",
+          "ok": true,
+          "detail": "coverage='complete'"
+        },
+        {
+          "name": "evidence gap count",
+          "ok": true,
+          "detail": "gaps=0"
+        },
+        {
+          "name": "post-verify audit created nothing",
+          "ok": true,
+          "detail": "rc=0 output='0' expected='0'"
+        },
+        {
+          "name": "execute native plain pk create return code",
+          "ok": true,
+          "detail": "rc=0 expected=0 stderr=''"
+        },
+        {
+          "name": "execute native plain pk create: pk is clustered under apk=false",
+          "ok": true,
+          "detail": "rc=0 output='t23ctl_p\\tCREATE TABLE `t23ctl_p` (\\\\n  `id` bigint unsigned NOT NULL AUTO_INCREMENT,\\\\n  `v` int DEFAULT NULL,\\\\n  PRIMARY KEY (`id`) /*T![clustered_index] CLUSTERED */\\\\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin' expected=contains '[clustered_index] CLUSTERED'"
+        },
+        {
+          "name": "teardown restore clustered baseline ON return code",
+          "ok": true,
+          "detail": "rc=0 expected=0 stderr=''"
+        },
+        {
+          "name": "teardown restore clustered baseline ON: mode restored to ON",
+          "ok": true,
+          "detail": "rc=0 output='ON' expected='ON'"
+        },
+        {
+          "name": "teardown drop ctl_p return code",
+          "ok": true,
+          "detail": "rc=0 expected=0 stderr=''"
+        },
+        {
+          "name": "teardown drop ctl_p: t23ctl_p 0",
+          "ok": true,
+          "detail": "rc=0 output='0' expected='0'"
+        }
+      ],
+      "status": "pass",
+      "command": [
+        "/Users/fan/GolangProjects/DeltaScope/docs/verification/t23s-native-specials/38f7abc116dd5e81ff595a951ddb7d110bc72fec/attempt-1/golden/T23S/bin/deltascope",
+        "audit",
+        "--dialect",
+        "tidb",
+        "--sql",
+        "CREATE TABLE t23fx.t23ctl_p (id BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT, v INT);",
+        "--config",
+        "/Users/fan/GolangProjects/DeltaScope/docs/verification/t23s-native-specials/38f7abc116dd5e81ff595a951ddb7d110bc72fec/attempt-1/golden/T23S/golden-policy.yaml",
+        "--format",
+        "json",
+        "--host",
+        "127.0.0.1",
+        "--port",
+        "24002",
+        "--user",
+        "root",
+        "--schema",
+        "t23fx",
+        "--fail-on",
+        "blocker"
+      ]
+    },
+    {
+      "case_id": "T23S.meta.apk-intonly-plain-pk",
+      "kind": "cli_metadata",
+      "cli_case": "apk-intonly-plain-pk",
+      "anchor": "tidb85apk",
+      "dialect": "tidb",
+      "input_sql": "CREATE TABLE t23fx.t23apk_p (id BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT, v INT);",
+      "policy_profile": "t23-layout-id",
+      "policy_path": "/Users/fan/GolangProjects/DeltaScope/docs/verification/t23s-native-specials/38f7abc116dd5e81ff595a951ddb7d110bc72fec/attempt-1/golden/T23S/golden-policy.yaml",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 24003,
+        "user": "root",
+        "schema": "t23fx"
+      },
+      "expected": {
+        "exit": 0,
+        "verdict": "pass",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "complete",
+        "evidence_gaps": 0,
+        "instance_facts": {
+          "tidb_enable_clustered_index": "INT_ONLY",
+          "tidb_alter_primary_key": "true"
+        }
+      },
+      "actual": {
+        "database": {
+          "product": "tidb",
+          "image": "pingcap/tidb:v8.5.0",
+          "image_digest": "pingcap/tidb@sha256:490861bd4a2fa643dbe76b77ffecafcad66e6a42774e580b82f4ec2429a80e57",
+          "container": "deltascope-ddl-golden-tidb85-apk",
+          "reachable": true,
+          "version": "8.0.11-TiDB-v8.5.0"
+        },
+        "setup": [
+          {
+            "name": "record clustered baseline",
+            "sql": "SELECT @@global.tidb_enable_clustered_index",
+            "rc": 0,
+            "stdout": "@@global.tidb_enable_clustered_index\nON",
+            "stderr": "",
+            "verify": [
+              {
+                "assert": "baseline is ON",
+                "sql": "SELECT @@global.tidb_enable_clustered_index",
+                "rc": 0,
+                "output": "ON",
+                "stderr": ""
+              }
+            ]
+          },
+          {
+            "name": "set clustered int_only",
+            "sql": "SET GLOBAL tidb_enable_clustered_index='int_only'",
+            "rc": 0,
+            "stdout": "",
+            "stderr": "",
+            "verify": [
+              {
+                "assert": "mode is int_only",
+                "sql": "SELECT @@global.tidb_enable_clustered_index",
+                "rc": 0,
+                "output": "INT_ONLY",
+                "stderr": ""
+              }
+            ]
+          }
+        ],
+        "post_verify": [
+          {
+            "assert": "audit created nothing",
+            "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='t23fx' AND TABLE_NAME='t23apk_p'",
+            "rc": 0,
+            "output": "0",
+            "stderr": ""
+          }
+        ],
+        "execute": [
+          {
+            "name": "native plain pk create",
+            "sql": "CREATE TABLE t23fx.t23apk_p (id BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT, v INT)",
+            "rc": 0,
+            "stdout": "",
+            "stderr": "",
+            "verify": [
+              {
+                "assert": "pk is NONCLUSTERED under apk=true",
+                "sql": "SHOW CREATE TABLE t23fx.t23apk_p",
+                "rc": 0,
+                "output": "t23apk_p\tCREATE TABLE `t23apk_p` (\\n  `id` bigint unsigned NOT NULL AUTO_INCREMENT,\\n  `v` int DEFAULT NULL,\\n  PRIMARY KEY (`id`) /*T![clustered_index] NONCLUSTERED */\\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin",
+                "stderr": ""
+              }
+            ]
+          }
+        ],
+        "structure": [],
+        "teardown": [
+          {
+            "name": "restore clustered baseline ON",
+            "sql": "SET GLOBAL tidb_enable_clustered_index='ON'",
+            "rc": 0,
+            "stderr": "",
+            "verify": [
+              {
+                "assert": "mode restored to ON",
+                "sql": "SELECT @@global.tidb_enable_clustered_index",
+                "rc": 0,
+                "output": "ON",
+                "stderr": ""
+              }
+            ]
+          },
+          {
+            "name": "drop t23apk_p",
+            "sql": "DROP TABLE IF EXISTS t23fx.t23apk_p",
+            "rc": 0,
+            "stderr": "",
+            "verify": [
+              {
+                "assert": "t23apk_p 0",
+                "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='t23fx' AND TABLE_NAME='t23apk_p'",
+                "rc": 0,
+                "output": "0",
+                "stderr": ""
+              }
+            ]
+          }
+        ],
+        "exit": 0,
+        "stdout": "{\"verdict\":\"pass\",\"coverage\":{\"status\":\"complete\"},\"summary\":{\"statements\":1,\"blockers\":0,\"warnings\":0,\"notices\":0},\"statements\":[{\"index\":0,\"kind\":\"ddl\",\"raw_sql\":\"CREATE TABLE t23fx.t23apk_p (id BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT, v INT);\",\"normalized_sql\":\"CREATE TABLE t23fx.t23apk_p (id BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT, v INT)\",\"coverage\":{\"status\":\"complete\"}}],\"version\":{\"product\":\"tidb\",\"version\":\"8.5.0\",\"major\":8,\"minor\":5,\"patch\":0,\"source\":\"observed\",\"validated_range\":true},\"fail_on_triggered\":false,\"rule_summary\":{\"loaded\":13,\"applicable\":3,\"skipped\":[]},\"context\":{\"mode\":\"metadata-aware\",\"dialect\":\"tidb\",\"dialect_source\":\"detected\",\"schema\":\"t23fx\",\"schema_source\":\"flag\"}}\n",
+        "stderr": "",
+        "parsed": {
+          "verdict": "pass",
+          "coverage": {
+            "status": "complete"
+          },
+          "summary": {
+            "statements": 1,
+            "blockers": 0,
+            "warnings": 0,
+            "notices": 0
+          },
+          "statements": [
+            {
+              "index": 0,
+              "kind": "ddl",
+              "raw_sql": "CREATE TABLE t23fx.t23apk_p (id BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT, v INT);",
+              "normalized_sql": "CREATE TABLE t23fx.t23apk_p (id BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT, v INT)",
+              "coverage": {
+                "status": "complete"
+              }
+            }
+          ],
+          "version": {
+            "product": "tidb",
+            "version": "8.5.0",
+            "major": 8,
+            "minor": 5,
+            "patch": 0,
+            "source": "observed",
+            "validated_range": true
+          },
+          "fail_on_triggered": false,
+          "rule_summary": {
+            "loaded": 13,
+            "applicable": 3,
+            "skipped": []
+          },
+          "context": {
+            "mode": "metadata-aware",
+            "dialect": "tidb",
+            "dialect_source": "detected",
+            "schema": "t23fx",
+            "schema_source": "flag"
+          }
+        },
+        "version_evidence": {
+          "target_raw": null,
+          "target_canonical": null,
+          "observed_raw": "8.0.11-TiDB-v8.5.0",
+          "observed_canonical": {
+            "product": "tidb",
+            "version": "8.5.0"
+          },
+          "resolved": {
+            "product": "tidb",
+            "version": "8.5.0",
+            "major": 8,
+            "minor": 5,
+            "patch": 0,
+            "source": "observed",
+            "validated_range": true
+          }
+        },
+        "instance_facts": {
+          "tidb_enable_clustered_index": "INT_ONLY",
+          "tidb_alter_primary_key": "true"
+        }
+      },
+      "assertions": [
+        {
+          "name": "database reachable with expected version",
+          "ok": true,
+          "detail": "SELECT VERSION() rc=0 version='8.0.11-TiDB-v8.5.0' expected_contains='v8.5.0'"
+        },
+        {
+          "name": "setup record clustered baseline return code",
+          "ok": true,
+          "detail": "rc=0 expected=0 stderr=''"
+        },
+        {
+          "name": "setup record clustered baseline: baseline is ON",
+          "ok": true,
+          "detail": "rc=0 output='ON' expected='ON'"
+        },
+        {
+          "name": "setup set clustered int_only return code",
+          "ok": true,
+          "detail": "rc=0 expected=0 stderr=''"
+        },
+        {
+          "name": "setup set clustered int_only: mode is int_only",
+          "ok": true,
+          "detail": "rc=0 output='INT_ONLY' expected='INT_ONLY'"
+        },
+        {
+          "name": "instance fact tidb_enable_clustered_index",
+          "ok": true,
+          "detail": "tidb_enable_clustered_index='INT_ONLY' expected='INT_ONLY'"
+        },
+        {
+          "name": "instance fact tidb_alter_primary_key",
+          "ok": true,
+          "detail": "tidb_alter_primary_key='true' expected='true'"
+        },
+        {
+          "name": "exit code",
+          "ok": true,
+          "detail": "rc=0 expected=0"
+        },
+        {
+          "name": "verdict",
+          "ok": true,
+          "detail": "verdict='pass'"
+        },
+        {
+          "name": "top-level statements",
+          "ok": true,
+          "detail": "statements=1 expected=1"
+        },
+        {
+          "name": "zero findings",
+          "ok": true,
+          "detail": "findings=0"
+        },
+        {
+          "name": "no diagnostics",
+          "ok": true,
+          "detail": "diagnostics=[]"
+        },
+        {
+          "name": "no unsupported",
+          "ok": true,
+          "detail": "unsupported=[]"
+        },
+        {
+          "name": "aggregate coverage",
+          "ok": true,
+          "detail": "coverage='complete'"
+        },
+        {
+          "name": "evidence gap count",
+          "ok": true,
+          "detail": "gaps=0"
+        },
+        {
+          "name": "post-verify audit created nothing",
+          "ok": true,
+          "detail": "rc=0 output='0' expected='0'"
+        },
+        {
+          "name": "execute native plain pk create return code",
+          "ok": true,
+          "detail": "rc=0 expected=0 stderr=''"
+        },
+        {
+          "name": "execute native plain pk create: pk is NONCLUSTERED under apk=true",
+          "ok": true,
+          "detail": "rc=0 output='t23apk_p\\tCREATE TABLE `t23apk_p` (\\\\n  `id` bigint unsigned NOT NULL AUTO_INCREMENT,\\\\n  `v` int DEFAULT NULL,\\\\n  PRIMARY KEY (`id`) /*T![clustered_index] NONCLUSTERED */\\\\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin' expected=contains 'NONCLUSTERED'"
+        },
+        {
+          "name": "teardown restore clustered baseline ON return code",
+          "ok": true,
+          "detail": "rc=0 expected=0 stderr=''"
+        },
+        {
+          "name": "teardown restore clustered baseline ON: mode restored to ON",
+          "ok": true,
+          "detail": "rc=0 output='ON' expected='ON'"
+        },
+        {
+          "name": "teardown drop t23apk_p return code",
+          "ok": true,
+          "detail": "rc=0 expected=0 stderr=''"
+        },
+        {
+          "name": "teardown drop t23apk_p: t23apk_p 0",
+          "ok": true,
+          "detail": "rc=0 output='0' expected='0'"
+        }
+      ],
+      "status": "pass",
+      "command": [
+        "/Users/fan/GolangProjects/DeltaScope/docs/verification/t23s-native-specials/38f7abc116dd5e81ff595a951ddb7d110bc72fec/attempt-1/golden/T23S/bin/deltascope",
+        "audit",
+        "--dialect",
+        "tidb",
+        "--sql",
+        "CREATE TABLE t23fx.t23apk_p (id BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT, v INT);",
+        "--config",
+        "/Users/fan/GolangProjects/DeltaScope/docs/verification/t23s-native-specials/38f7abc116dd5e81ff595a951ddb7d110bc72fec/attempt-1/golden/T23S/golden-policy.yaml",
+        "--format",
+        "json",
+        "--host",
+        "127.0.0.1",
+        "--port",
+        "24003",
+        "--user",
+        "root",
+        "--schema",
+        "t23fx",
+        "--fail-on",
+        "blocker"
+      ]
+    },
+    {
+      "case_id": "T23S.meta.apk-intonly-auto-random",
+      "kind": "cli_metadata",
+      "cli_case": "apk-intonly-auto-random",
+      "anchor": "tidb85apk",
+      "dialect": "tidb",
+      "input_sql": "CREATE TABLE t23fx.t23apk_ar (id BIGINT UNSIGNED PRIMARY KEY AUTO_RANDOM(5,64));",
+      "policy_profile": "t23-layout-id",
+      "policy_path": "/Users/fan/GolangProjects/DeltaScope/docs/verification/t23s-native-specials/38f7abc116dd5e81ff595a951ddb7d110bc72fec/attempt-1/golden/T23S/golden-policy.yaml",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 24003,
+        "user": "root",
+        "schema": "t23fx"
+      },
+      "expected": {
+        "exit": 1,
+        "verdict": "reject",
+        "statements": 1,
+        "findings": 1,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "complete",
+        "evidence_gaps": 0,
+        "finding_entries": [
+          {
+            "index": 0,
+            "rule_id": "ddl.tidb.table.auto_random.valid",
+            "level": "blocker"
+          }
+        ],
+        "instance_facts": {
+          "tidb_enable_clustered_index": "INT_ONLY",
+          "tidb_alter_primary_key": "true"
+        }
+      },
+      "actual": {
+        "database": {
+          "product": "tidb",
+          "image": "pingcap/tidb:v8.5.0",
+          "image_digest": "pingcap/tidb@sha256:490861bd4a2fa643dbe76b77ffecafcad66e6a42774e580b82f4ec2429a80e57",
+          "container": "deltascope-ddl-golden-tidb85-apk",
+          "reachable": true,
+          "version": "8.0.11-TiDB-v8.5.0"
+        },
+        "setup": [
+          {
+            "name": "record clustered baseline",
+            "sql": "SELECT @@global.tidb_enable_clustered_index",
+            "rc": 0,
+            "stdout": "@@global.tidb_enable_clustered_index\nON",
+            "stderr": "",
+            "verify": [
+              {
+                "assert": "baseline is ON",
+                "sql": "SELECT @@global.tidb_enable_clustered_index",
+                "rc": 0,
+                "output": "ON",
+                "stderr": ""
+              }
+            ]
+          },
+          {
+            "name": "set clustered int_only",
+            "sql": "SET GLOBAL tidb_enable_clustered_index='int_only'",
+            "rc": 0,
+            "stdout": "",
+            "stderr": "",
+            "verify": [
+              {
+                "assert": "mode is int_only",
+                "sql": "SELECT @@global.tidb_enable_clustered_index",
+                "rc": 0,
+                "output": "INT_ONLY",
+                "stderr": ""
+              }
+            ]
+          }
+        ],
+        "post_verify": [
+          {
+            "assert": "audit created nothing",
+            "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='t23fx' AND TABLE_NAME='t23apk_ar'",
+            "rc": 0,
+            "output": "0",
+            "stderr": ""
+          }
+        ],
+        "execute": [
+          {
+            "name": "native auto_random refused",
+            "sql": "CREATE TABLE t23fx.t23apk_ar (id BIGINT UNSIGNED PRIMARY KEY AUTO_RANDOM(5,64))",
+            "rc": 1,
+            "stdout": "",
+            "stderr": "ERROR 8216 (HY000) at line 1: Invalid auto random: auto_random is only supported on the tables with clustered primary key",
+            "verify": [
+              {
+                "assert": "t23apk_ar 0",
+                "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='t23fx' AND TABLE_NAME='t23apk_ar'",
+                "rc": 0,
+                "output": "0",
+                "stderr": ""
+              }
+            ]
+          }
+        ],
+        "structure": [],
+        "teardown": [
+          {
+            "name": "restore clustered baseline ON",
+            "sql": "SET GLOBAL tidb_enable_clustered_index='ON'",
+            "rc": 0,
+            "stderr": "",
+            "verify": [
+              {
+                "assert": "mode restored to ON",
+                "sql": "SELECT @@global.tidb_enable_clustered_index",
+                "rc": 0,
+                "output": "ON",
+                "stderr": ""
+              }
+            ]
+          },
+          {
+            "name": "drop t23apk_ar",
+            "sql": "DROP TABLE IF EXISTS t23fx.t23apk_ar",
+            "rc": 0,
+            "stderr": "",
+            "verify": [
+              {
+                "assert": "t23apk_ar 0",
+                "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='t23fx' AND TABLE_NAME='t23apk_ar'",
+                "rc": 0,
+                "output": "0",
+                "stderr": ""
+              }
+            ]
+          }
+        ],
+        "exit": 1,
+        "stdout": "{\"verdict\":\"reject\",\"coverage\":{\"status\":\"complete\"},\"summary\":{\"statements\":1,\"blockers\":1,\"warnings\":0,\"notices\":0},\"statements\":[{\"index\":0,\"kind\":\"ddl\",\"raw_sql\":\"CREATE TABLE t23fx.t23apk_ar (id BIGINT UNSIGNED PRIMARY KEY AUTO_RANDOM(5,64));\",\"normalized_sql\":\"CREATE TABLE t23fx.t23apk_ar (id BIGINT UNSIGNED PRIMARY KEY AUTO_RANDOM(5,64))\",\"findings\":[{\"rule_id\":\"ddl.tidb.table.auto_random.valid\",\"level\":\"blocker\",\"message\":\"auto_random column \\\"id\\\" requires a clustered primary key, but this primary key is not clustered\",\"statement_kind\":\"ddl\",\"location\":{\"line\":1,\"column\":1},\"suggestion\":\"use a clustered primary key or remove AUTO_RANDOM\",\"metadata\":{\"column\":\"id\",\"table\":\"t23apk_ar\"},\"explanation\":{\"summary\":\"Check DDL tidb table auto random valid\",\"why\":\"The statement matched the shipped governance rule for this pattern.\",\"risk\":\"Ignoring this rule can weaken schema-governance guarantees and make changes harder to review safely.\",\"suggestion\":\"use a clustered primary key or remove AUTO_RANDOM\"}}],\"coverage\":{\"status\":\"complete\"}}],\"version\":{\"product\":\"tidb\",\"version\":\"8.5.0\",\"major\":8,\"minor\":5,\"patch\":0,\"source\":\"observed\",\"validated_range\":true},\"fail_on_triggered\":true,\"rule_summary\":{\"loaded\":13,\"applicable\":3,\"skipped\":[]},\"context\":{\"mode\":\"metadata-aware\",\"dialect\":\"tidb\",\"dialect_source\":\"detected\",\"schema\":\"t23fx\",\"schema_source\":\"flag\"}}\n",
+        "stderr": "",
+        "parsed": {
+          "verdict": "reject",
+          "coverage": {
+            "status": "complete"
+          },
+          "summary": {
+            "statements": 1,
+            "blockers": 1,
+            "warnings": 0,
+            "notices": 0
+          },
+          "statements": [
+            {
+              "index": 0,
+              "kind": "ddl",
+              "raw_sql": "CREATE TABLE t23fx.t23apk_ar (id BIGINT UNSIGNED PRIMARY KEY AUTO_RANDOM(5,64));",
+              "normalized_sql": "CREATE TABLE t23fx.t23apk_ar (id BIGINT UNSIGNED PRIMARY KEY AUTO_RANDOM(5,64))",
+              "findings": [
+                {
+                  "rule_id": "ddl.tidb.table.auto_random.valid",
+                  "level": "blocker",
+                  "message": "auto_random column \"id\" requires a clustered primary key, but this primary key is not clustered",
+                  "statement_kind": "ddl",
+                  "location": {
+                    "line": 1,
+                    "column": 1
+                  },
+                  "suggestion": "use a clustered primary key or remove AUTO_RANDOM",
+                  "metadata": {
+                    "column": "id",
+                    "table": "t23apk_ar"
+                  },
+                  "explanation": {
+                    "summary": "Check DDL tidb table auto random valid",
+                    "why": "The statement matched the shipped governance rule for this pattern.",
+                    "risk": "Ignoring this rule can weaken schema-governance guarantees and make changes harder to review safely.",
+                    "suggestion": "use a clustered primary key or remove AUTO_RANDOM"
+                  }
+                }
+              ],
+              "coverage": {
+                "status": "complete"
+              }
+            }
+          ],
+          "version": {
+            "product": "tidb",
+            "version": "8.5.0",
+            "major": 8,
+            "minor": 5,
+            "patch": 0,
+            "source": "observed",
+            "validated_range": true
+          },
+          "fail_on_triggered": true,
+          "rule_summary": {
+            "loaded": 13,
+            "applicable": 3,
+            "skipped": []
+          },
+          "context": {
+            "mode": "metadata-aware",
+            "dialect": "tidb",
+            "dialect_source": "detected",
+            "schema": "t23fx",
+            "schema_source": "flag"
+          }
+        },
+        "version_evidence": {
+          "target_raw": null,
+          "target_canonical": null,
+          "observed_raw": "8.0.11-TiDB-v8.5.0",
+          "observed_canonical": {
+            "product": "tidb",
+            "version": "8.5.0"
+          },
+          "resolved": {
+            "product": "tidb",
+            "version": "8.5.0",
+            "major": 8,
+            "minor": 5,
+            "patch": 0,
+            "source": "observed",
+            "validated_range": true
+          }
+        },
+        "instance_facts": {
+          "tidb_enable_clustered_index": "INT_ONLY",
+          "tidb_alter_primary_key": "true"
+        }
+      },
+      "assertions": [
+        {
+          "name": "database reachable with expected version",
+          "ok": true,
+          "detail": "SELECT VERSION() rc=0 version='8.0.11-TiDB-v8.5.0' expected_contains='v8.5.0'"
+        },
+        {
+          "name": "setup record clustered baseline return code",
+          "ok": true,
+          "detail": "rc=0 expected=0 stderr=''"
+        },
+        {
+          "name": "setup record clustered baseline: baseline is ON",
+          "ok": true,
+          "detail": "rc=0 output='ON' expected='ON'"
+        },
+        {
+          "name": "setup set clustered int_only return code",
+          "ok": true,
+          "detail": "rc=0 expected=0 stderr=''"
+        },
+        {
+          "name": "setup set clustered int_only: mode is int_only",
+          "ok": true,
+          "detail": "rc=0 output='INT_ONLY' expected='INT_ONLY'"
+        },
+        {
+          "name": "instance fact tidb_enable_clustered_index",
+          "ok": true,
+          "detail": "tidb_enable_clustered_index='INT_ONLY' expected='INT_ONLY'"
+        },
+        {
+          "name": "instance fact tidb_alter_primary_key",
+          "ok": true,
+          "detail": "tidb_alter_primary_key='true' expected='true'"
+        },
+        {
+          "name": "exit code",
+          "ok": true,
+          "detail": "rc=1 expected=1"
+        },
+        {
+          "name": "verdict",
+          "ok": true,
+          "detail": "verdict='reject'"
+        },
+        {
+          "name": "top-level statements",
+          "ok": true,
+          "detail": "statements=1 expected=1"
+        },
+        {
+          "name": "zero findings",
+          "ok": true,
+          "detail": "findings=1"
+        },
+        {
+          "name": "no diagnostics",
+          "ok": true,
+          "detail": "diagnostics=[]"
+        },
+        {
+          "name": "no unsupported",
+          "ok": true,
+          "detail": "unsupported=[]"
+        },
+        {
+          "name": "aggregate coverage",
+          "ok": true,
+          "detail": "coverage='complete'"
+        },
+        {
+          "name": "evidence gap count",
+          "ok": true,
+          "detail": "gaps=0"
+        },
+        {
+          "name": "finding entries",
+          "ok": true,
+          "detail": "findings=[(0, 'ddl.tidb.table.auto_random.valid', 'blocker')] expected=[(0, 'ddl.tidb.table.auto_random.valid', 'blocker')]"
+        },
+        {
+          "name": "post-verify audit created nothing",
+          "ok": true,
+          "detail": "rc=0 output='0' expected='0'"
+        },
+        {
+          "name": "execute native auto_random refused return code",
+          "ok": true,
+          "detail": "rc=1 expected=1 stderr='ERROR 8216 (HY000) at line 1: Invalid auto random: auto_random is only supported on the tables with clustered primary key'"
+        },
+        {
+          "name": "execute native auto_random refused: t23apk_ar 0",
+          "ok": true,
+          "detail": "rc=0 output='0' expected='0'"
+        },
+        {
+          "name": "teardown restore clustered baseline ON return code",
+          "ok": true,
+          "detail": "rc=0 expected=0 stderr=''"
+        },
+        {
+          "name": "teardown restore clustered baseline ON: mode restored to ON",
+          "ok": true,
+          "detail": "rc=0 output='ON' expected='ON'"
+        },
+        {
+          "name": "teardown drop t23apk_ar return code",
+          "ok": true,
+          "detail": "rc=0 expected=0 stderr=''"
+        },
+        {
+          "name": "teardown drop t23apk_ar: t23apk_ar 0",
+          "ok": true,
+          "detail": "rc=0 output='0' expected='0'"
+        }
+      ],
+      "status": "pass",
+      "command": [
+        "/Users/fan/GolangProjects/DeltaScope/docs/verification/t23s-native-specials/38f7abc116dd5e81ff595a951ddb7d110bc72fec/attempt-1/golden/T23S/bin/deltascope",
+        "audit",
+        "--dialect",
+        "tidb",
+        "--sql",
+        "CREATE TABLE t23fx.t23apk_ar (id BIGINT UNSIGNED PRIMARY KEY AUTO_RANDOM(5,64));",
+        "--config",
+        "/Users/fan/GolangProjects/DeltaScope/docs/verification/t23s-native-specials/38f7abc116dd5e81ff595a951ddb7d110bc72fec/attempt-1/golden/T23S/golden-policy.yaml",
+        "--format",
+        "json",
+        "--host",
+        "127.0.0.1",
+        "--port",
+        "24003",
+        "--user",
+        "root",
+        "--schema",
+        "t23fx",
+        "--fail-on",
+        "blocker"
+      ]
+    },
+    {
+      "case_id": "T23S.meta.apk-explicit-clustered",
+      "kind": "cli_metadata",
+      "cli_case": "apk-explicit-clustered",
+      "anchor": "tidb85apk",
+      "dialect": "tidb",
+      "input_sql": "CREATE TABLE t23fx.t23apk_ec (id BIGINT UNSIGNED PRIMARY KEY CLUSTERED AUTO_RANDOM(5,64));",
+      "policy_profile": "t23-layout-id",
+      "policy_path": "/Users/fan/GolangProjects/DeltaScope/docs/verification/t23s-native-specials/38f7abc116dd5e81ff595a951ddb7d110bc72fec/attempt-1/golden/T23S/golden-policy.yaml",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 24003,
+        "user": "root",
+        "schema": "t23fx"
+      },
+      "expected": {
+        "exit": 0,
+        "verdict": "pass",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "complete",
+        "evidence_gaps": 0,
+        "instance_facts": {
+          "tidb_enable_clustered_index": "INT_ONLY",
+          "tidb_alter_primary_key": "true"
+        }
+      },
+      "actual": {
+        "database": {
+          "product": "tidb",
+          "image": "pingcap/tidb:v8.5.0",
+          "image_digest": "pingcap/tidb@sha256:490861bd4a2fa643dbe76b77ffecafcad66e6a42774e580b82f4ec2429a80e57",
+          "container": "deltascope-ddl-golden-tidb85-apk",
+          "reachable": true,
+          "version": "8.0.11-TiDB-v8.5.0"
+        },
+        "setup": [
+          {
+            "name": "record clustered baseline",
+            "sql": "SELECT @@global.tidb_enable_clustered_index",
+            "rc": 0,
+            "stdout": "@@global.tidb_enable_clustered_index\nON",
+            "stderr": "",
+            "verify": [
+              {
+                "assert": "baseline is ON",
+                "sql": "SELECT @@global.tidb_enable_clustered_index",
+                "rc": 0,
+                "output": "ON",
+                "stderr": ""
+              }
+            ]
+          },
+          {
+            "name": "set clustered int_only",
+            "sql": "SET GLOBAL tidb_enable_clustered_index='int_only'",
+            "rc": 0,
+            "stdout": "",
+            "stderr": "",
+            "verify": [
+              {
+                "assert": "mode is int_only",
+                "sql": "SELECT @@global.tidb_enable_clustered_index",
+                "rc": 0,
+                "output": "INT_ONLY",
+                "stderr": ""
+              }
+            ]
+          }
+        ],
+        "post_verify": [
+          {
+            "assert": "audit created nothing",
+            "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='t23fx' AND TABLE_NAME='t23apk_ec'",
+            "rc": 0,
+            "output": "0",
+            "stderr": ""
+          }
+        ],
+        "execute": [
+          {
+            "name": "native explicit clustered accepts",
+            "sql": "CREATE TABLE t23fx.t23apk_ec (id BIGINT UNSIGNED PRIMARY KEY CLUSTERED AUTO_RANDOM(5,64))",
+            "rc": 0,
+            "stdout": "",
+            "stderr": "",
+            "verify": [
+              {
+                "assert": "explicit keyword yields CLUSTERED",
+                "sql": "SHOW CREATE TABLE t23fx.t23apk_ec",
+                "rc": 0,
+                "output": "t23apk_ec\tCREATE TABLE `t23apk_ec` (\\n  `id` bigint unsigned NOT NULL /*T![auto_rand] AUTO_RANDOM(5) */,\\n  PRIMARY KEY (`id`) /*T![clustered_index] CLUSTERED */\\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin",
+                "stderr": ""
+              }
+            ]
+          }
+        ],
+        "structure": [],
+        "teardown": [
+          {
+            "name": "restore clustered baseline ON",
+            "sql": "SET GLOBAL tidb_enable_clustered_index='ON'",
+            "rc": 0,
+            "stderr": "",
+            "verify": [
+              {
+                "assert": "mode restored to ON",
+                "sql": "SELECT @@global.tidb_enable_clustered_index",
+                "rc": 0,
+                "output": "ON",
+                "stderr": ""
+              }
+            ]
+          },
+          {
+            "name": "drop t23apk_ec",
+            "sql": "DROP TABLE IF EXISTS t23fx.t23apk_ec",
+            "rc": 0,
+            "stderr": "",
+            "verify": [
+              {
+                "assert": "t23apk_ec 0",
+                "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='t23fx' AND TABLE_NAME='t23apk_ec'",
+                "rc": 0,
+                "output": "0",
+                "stderr": ""
+              }
+            ]
+          }
+        ],
+        "exit": 0,
+        "stdout": "{\"verdict\":\"pass\",\"coverage\":{\"status\":\"complete\"},\"summary\":{\"statements\":1,\"blockers\":0,\"warnings\":0,\"notices\":0},\"statements\":[{\"index\":0,\"kind\":\"ddl\",\"raw_sql\":\"CREATE TABLE t23fx.t23apk_ec (id BIGINT UNSIGNED PRIMARY KEY CLUSTERED AUTO_RANDOM(5,64));\",\"normalized_sql\":\"CREATE TABLE t23fx.t23apk_ec (id BIGINT UNSIGNED PRIMARY KEY CLUSTERED AUTO_RANDOM(5,64))\",\"coverage\":{\"status\":\"complete\"}}],\"version\":{\"product\":\"tidb\",\"version\":\"8.5.0\",\"major\":8,\"minor\":5,\"patch\":0,\"source\":\"observed\",\"validated_range\":true},\"fail_on_triggered\":false,\"rule_summary\":{\"loaded\":13,\"applicable\":3,\"skipped\":[]},\"context\":{\"mode\":\"metadata-aware\",\"dialect\":\"tidb\",\"dialect_source\":\"detected\",\"schema\":\"t23fx\",\"schema_source\":\"flag\"}}\n",
+        "stderr": "",
+        "parsed": {
+          "verdict": "pass",
+          "coverage": {
+            "status": "complete"
+          },
+          "summary": {
+            "statements": 1,
+            "blockers": 0,
+            "warnings": 0,
+            "notices": 0
+          },
+          "statements": [
+            {
+              "index": 0,
+              "kind": "ddl",
+              "raw_sql": "CREATE TABLE t23fx.t23apk_ec (id BIGINT UNSIGNED PRIMARY KEY CLUSTERED AUTO_RANDOM(5,64));",
+              "normalized_sql": "CREATE TABLE t23fx.t23apk_ec (id BIGINT UNSIGNED PRIMARY KEY CLUSTERED AUTO_RANDOM(5,64))",
+              "coverage": {
+                "status": "complete"
+              }
+            }
+          ],
+          "version": {
+            "product": "tidb",
+            "version": "8.5.0",
+            "major": 8,
+            "minor": 5,
+            "patch": 0,
+            "source": "observed",
+            "validated_range": true
+          },
+          "fail_on_triggered": false,
+          "rule_summary": {
+            "loaded": 13,
+            "applicable": 3,
+            "skipped": []
+          },
+          "context": {
+            "mode": "metadata-aware",
+            "dialect": "tidb",
+            "dialect_source": "detected",
+            "schema": "t23fx",
+            "schema_source": "flag"
+          }
+        },
+        "version_evidence": {
+          "target_raw": null,
+          "target_canonical": null,
+          "observed_raw": "8.0.11-TiDB-v8.5.0",
+          "observed_canonical": {
+            "product": "tidb",
+            "version": "8.5.0"
+          },
+          "resolved": {
+            "product": "tidb",
+            "version": "8.5.0",
+            "major": 8,
+            "minor": 5,
+            "patch": 0,
+            "source": "observed",
+            "validated_range": true
+          }
+        },
+        "instance_facts": {
+          "tidb_enable_clustered_index": "INT_ONLY",
+          "tidb_alter_primary_key": "true"
+        }
+      },
+      "assertions": [
+        {
+          "name": "database reachable with expected version",
+          "ok": true,
+          "detail": "SELECT VERSION() rc=0 version='8.0.11-TiDB-v8.5.0' expected_contains='v8.5.0'"
+        },
+        {
+          "name": "setup record clustered baseline return code",
+          "ok": true,
+          "detail": "rc=0 expected=0 stderr=''"
+        },
+        {
+          "name": "setup record clustered baseline: baseline is ON",
+          "ok": true,
+          "detail": "rc=0 output='ON' expected='ON'"
+        },
+        {
+          "name": "setup set clustered int_only return code",
+          "ok": true,
+          "detail": "rc=0 expected=0 stderr=''"
+        },
+        {
+          "name": "setup set clustered int_only: mode is int_only",
+          "ok": true,
+          "detail": "rc=0 output='INT_ONLY' expected='INT_ONLY'"
+        },
+        {
+          "name": "instance fact tidb_enable_clustered_index",
+          "ok": true,
+          "detail": "tidb_enable_clustered_index='INT_ONLY' expected='INT_ONLY'"
+        },
+        {
+          "name": "instance fact tidb_alter_primary_key",
+          "ok": true,
+          "detail": "tidb_alter_primary_key='true' expected='true'"
+        },
+        {
+          "name": "exit code",
+          "ok": true,
+          "detail": "rc=0 expected=0"
+        },
+        {
+          "name": "verdict",
+          "ok": true,
+          "detail": "verdict='pass'"
+        },
+        {
+          "name": "top-level statements",
+          "ok": true,
+          "detail": "statements=1 expected=1"
+        },
+        {
+          "name": "zero findings",
+          "ok": true,
+          "detail": "findings=0"
+        },
+        {
+          "name": "no diagnostics",
+          "ok": true,
+          "detail": "diagnostics=[]"
+        },
+        {
+          "name": "no unsupported",
+          "ok": true,
+          "detail": "unsupported=[]"
+        },
+        {
+          "name": "aggregate coverage",
+          "ok": true,
+          "detail": "coverage='complete'"
+        },
+        {
+          "name": "evidence gap count",
+          "ok": true,
+          "detail": "gaps=0"
+        },
+        {
+          "name": "post-verify audit created nothing",
+          "ok": true,
+          "detail": "rc=0 output='0' expected='0'"
+        },
+        {
+          "name": "execute native explicit clustered accepts return code",
+          "ok": true,
+          "detail": "rc=0 expected=0 stderr=''"
+        },
+        {
+          "name": "execute native explicit clustered accepts: explicit keyword yields CLUSTERED",
+          "ok": true,
+          "detail": "rc=0 output='t23apk_ec\\tCREATE TABLE `t23apk_ec` (\\\\n  `id` bigint unsigned NOT NULL /*T![auto_rand] AUTO_RANDOM(5) */,\\\\n  PRIMARY KEY (`id`) /*T![clustered_index] CLUSTERED */\\\\n) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin' expected=contains '[clustered_index] CLUSTERED'"
+        },
+        {
+          "name": "teardown restore clustered baseline ON return code",
+          "ok": true,
+          "detail": "rc=0 expected=0 stderr=''"
+        },
+        {
+          "name": "teardown restore clustered baseline ON: mode restored to ON",
+          "ok": true,
+          "detail": "rc=0 output='ON' expected='ON'"
+        },
+        {
+          "name": "teardown drop t23apk_ec return code",
+          "ok": true,
+          "detail": "rc=0 expected=0 stderr=''"
+        },
+        {
+          "name": "teardown drop t23apk_ec: t23apk_ec 0",
+          "ok": true,
+          "detail": "rc=0 output='0' expected='0'"
+        }
+      ],
+      "status": "pass",
+      "command": [
+        "/Users/fan/GolangProjects/DeltaScope/docs/verification/t23s-native-specials/38f7abc116dd5e81ff595a951ddb7d110bc72fec/attempt-1/golden/T23S/bin/deltascope",
+        "audit",
+        "--dialect",
+        "tidb",
+        "--sql",
+        "CREATE TABLE t23fx.t23apk_ec (id BIGINT UNSIGNED PRIMARY KEY CLUSTERED AUTO_RANDOM(5,64));",
+        "--config",
+        "/Users/fan/GolangProjects/DeltaScope/docs/verification/t23s-native-specials/38f7abc116dd5e81ff595a951ddb7d110bc72fec/attempt-1/golden/T23S/golden-policy.yaml",
+        "--format",
+        "json",
+        "--host",
+        "127.0.0.1",
+        "--port",
+        "24003",
+        "--user",
+        "root",
+        "--schema",
+        "t23fx",
+        "--fail-on",
+        "blocker"
+      ]
+    },
+    {
+      "case_id": "T23S.meta.apk-explicit-nonclustered",
+      "kind": "cli_metadata",
+      "cli_case": "apk-explicit-nonclustered",
+      "anchor": "tidb85apk",
+      "dialect": "tidb",
+      "input_sql": "CREATE TABLE t23fx.t23apk_en (id BIGINT UNSIGNED PRIMARY KEY NONCLUSTERED AUTO_RANDOM(5,64));",
+      "policy_profile": "t23-layout-id",
+      "policy_path": "/Users/fan/GolangProjects/DeltaScope/docs/verification/t23s-native-specials/38f7abc116dd5e81ff595a951ddb7d110bc72fec/attempt-1/golden/T23S/golden-policy.yaml",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 24003,
+        "user": "root",
+        "schema": "t23fx"
+      },
+      "expected": {
+        "exit": 1,
+        "verdict": "reject",
+        "statements": 1,
+        "findings": 1,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "complete",
+        "evidence_gaps": 0,
+        "finding_entries": [
+          {
+            "index": 0,
+            "rule_id": "ddl.tidb.table.auto_random.valid",
+            "level": "blocker"
+          }
+        ],
+        "instance_facts": {
+          "tidb_enable_clustered_index": "INT_ONLY",
+          "tidb_alter_primary_key": "true"
+        }
+      },
+      "actual": {
+        "database": {
+          "product": "tidb",
+          "image": "pingcap/tidb:v8.5.0",
+          "image_digest": "pingcap/tidb@sha256:490861bd4a2fa643dbe76b77ffecafcad66e6a42774e580b82f4ec2429a80e57",
+          "container": "deltascope-ddl-golden-tidb85-apk",
+          "reachable": true,
+          "version": "8.0.11-TiDB-v8.5.0"
+        },
+        "setup": [
+          {
+            "name": "record clustered baseline",
+            "sql": "SELECT @@global.tidb_enable_clustered_index",
+            "rc": 0,
+            "stdout": "@@global.tidb_enable_clustered_index\nON",
+            "stderr": "",
+            "verify": [
+              {
+                "assert": "baseline is ON",
+                "sql": "SELECT @@global.tidb_enable_clustered_index",
+                "rc": 0,
+                "output": "ON",
+                "stderr": ""
+              }
+            ]
+          },
+          {
+            "name": "set clustered int_only",
+            "sql": "SET GLOBAL tidb_enable_clustered_index='int_only'",
+            "rc": 0,
+            "stdout": "",
+            "stderr": "",
+            "verify": [
+              {
+                "assert": "mode is int_only",
+                "sql": "SELECT @@global.tidb_enable_clustered_index",
+                "rc": 0,
+                "output": "INT_ONLY",
+                "stderr": ""
+              }
+            ]
+          }
+        ],
+        "post_verify": [
+          {
+            "assert": "audit created nothing",
+            "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='t23fx' AND TABLE_NAME='t23apk_en'",
+            "rc": 0,
+            "output": "0",
+            "stderr": ""
+          }
+        ],
+        "execute": [
+          {
+            "name": "native explicit nonclustered refuses",
+            "sql": "CREATE TABLE t23fx.t23apk_en (id BIGINT UNSIGNED PRIMARY KEY NONCLUSTERED AUTO_RANDOM(5,64))",
+            "rc": 1,
+            "stdout": "",
+            "stderr": "ERROR 8216 (HY000) at line 1: Invalid auto random: auto_random is only supported on the tables with clustered primary key",
+            "verify": [
+              {
+                "assert": "t23apk_en 0",
+                "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='t23fx' AND TABLE_NAME='t23apk_en'",
+                "rc": 0,
+                "output": "0",
+                "stderr": ""
+              }
+            ]
+          }
+        ],
+        "structure": [],
+        "teardown": [
+          {
+            "name": "restore clustered baseline ON",
+            "sql": "SET GLOBAL tidb_enable_clustered_index='ON'",
+            "rc": 0,
+            "stderr": "",
+            "verify": [
+              {
+                "assert": "mode restored to ON",
+                "sql": "SELECT @@global.tidb_enable_clustered_index",
+                "rc": 0,
+                "output": "ON",
+                "stderr": ""
+              }
+            ]
+          },
+          {
+            "name": "drop t23apk_en",
+            "sql": "DROP TABLE IF EXISTS t23fx.t23apk_en",
+            "rc": 0,
+            "stderr": "",
+            "verify": [
+              {
+                "assert": "t23apk_en 0",
+                "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='t23fx' AND TABLE_NAME='t23apk_en'",
+                "rc": 0,
+                "output": "0",
+                "stderr": ""
+              }
+            ]
+          }
+        ],
+        "exit": 1,
+        "stdout": "{\"verdict\":\"reject\",\"coverage\":{\"status\":\"complete\"},\"summary\":{\"statements\":1,\"blockers\":1,\"warnings\":0,\"notices\":0},\"statements\":[{\"index\":0,\"kind\":\"ddl\",\"raw_sql\":\"CREATE TABLE t23fx.t23apk_en (id BIGINT UNSIGNED PRIMARY KEY NONCLUSTERED AUTO_RANDOM(5,64));\",\"normalized_sql\":\"CREATE TABLE t23fx.t23apk_en (id BIGINT UNSIGNED PRIMARY KEY NONCLUSTERED AUTO_RANDOM(5,64))\",\"findings\":[{\"rule_id\":\"ddl.tidb.table.auto_random.valid\",\"level\":\"blocker\",\"message\":\"auto_random column \\\"id\\\" requires a clustered primary key, but this primary key is not clustered\",\"statement_kind\":\"ddl\",\"location\":{\"line\":1,\"column\":1},\"suggestion\":\"use a clustered primary key or remove AUTO_RANDOM\",\"metadata\":{\"column\":\"id\",\"table\":\"t23apk_en\"},\"explanation\":{\"summary\":\"Check DDL tidb table auto random valid\",\"why\":\"The statement matched the shipped governance rule for this pattern.\",\"risk\":\"Ignoring this rule can weaken schema-governance guarantees and make changes harder to review safely.\",\"suggestion\":\"use a clustered primary key or remove AUTO_RANDOM\"}}],\"coverage\":{\"status\":\"complete\"}}],\"version\":{\"product\":\"tidb\",\"version\":\"8.5.0\",\"major\":8,\"minor\":5,\"patch\":0,\"source\":\"observed\",\"validated_range\":true},\"fail_on_triggered\":true,\"rule_summary\":{\"loaded\":13,\"applicable\":3,\"skipped\":[]},\"context\":{\"mode\":\"metadata-aware\",\"dialect\":\"tidb\",\"dialect_source\":\"detected\",\"schema\":\"t23fx\",\"schema_source\":\"flag\"}}\n",
+        "stderr": "",
+        "parsed": {
+          "verdict": "reject",
+          "coverage": {
+            "status": "complete"
+          },
+          "summary": {
+            "statements": 1,
+            "blockers": 1,
+            "warnings": 0,
+            "notices": 0
+          },
+          "statements": [
+            {
+              "index": 0,
+              "kind": "ddl",
+              "raw_sql": "CREATE TABLE t23fx.t23apk_en (id BIGINT UNSIGNED PRIMARY KEY NONCLUSTERED AUTO_RANDOM(5,64));",
+              "normalized_sql": "CREATE TABLE t23fx.t23apk_en (id BIGINT UNSIGNED PRIMARY KEY NONCLUSTERED AUTO_RANDOM(5,64))",
+              "findings": [
+                {
+                  "rule_id": "ddl.tidb.table.auto_random.valid",
+                  "level": "blocker",
+                  "message": "auto_random column \"id\" requires a clustered primary key, but this primary key is not clustered",
+                  "statement_kind": "ddl",
+                  "location": {
+                    "line": 1,
+                    "column": 1
+                  },
+                  "suggestion": "use a clustered primary key or remove AUTO_RANDOM",
+                  "metadata": {
+                    "column": "id",
+                    "table": "t23apk_en"
+                  },
+                  "explanation": {
+                    "summary": "Check DDL tidb table auto random valid",
+                    "why": "The statement matched the shipped governance rule for this pattern.",
+                    "risk": "Ignoring this rule can weaken schema-governance guarantees and make changes harder to review safely.",
+                    "suggestion": "use a clustered primary key or remove AUTO_RANDOM"
+                  }
+                }
+              ],
+              "coverage": {
+                "status": "complete"
+              }
+            }
+          ],
+          "version": {
+            "product": "tidb",
+            "version": "8.5.0",
+            "major": 8,
+            "minor": 5,
+            "patch": 0,
+            "source": "observed",
+            "validated_range": true
+          },
+          "fail_on_triggered": true,
+          "rule_summary": {
+            "loaded": 13,
+            "applicable": 3,
+            "skipped": []
+          },
+          "context": {
+            "mode": "metadata-aware",
+            "dialect": "tidb",
+            "dialect_source": "detected",
+            "schema": "t23fx",
+            "schema_source": "flag"
+          }
+        },
+        "version_evidence": {
+          "target_raw": null,
+          "target_canonical": null,
+          "observed_raw": "8.0.11-TiDB-v8.5.0",
+          "observed_canonical": {
+            "product": "tidb",
+            "version": "8.5.0"
+          },
+          "resolved": {
+            "product": "tidb",
+            "version": "8.5.0",
+            "major": 8,
+            "minor": 5,
+            "patch": 0,
+            "source": "observed",
+            "validated_range": true
+          }
+        },
+        "instance_facts": {
+          "tidb_enable_clustered_index": "INT_ONLY",
+          "tidb_alter_primary_key": "true"
+        }
+      },
+      "assertions": [
+        {
+          "name": "database reachable with expected version",
+          "ok": true,
+          "detail": "SELECT VERSION() rc=0 version='8.0.11-TiDB-v8.5.0' expected_contains='v8.5.0'"
+        },
+        {
+          "name": "setup record clustered baseline return code",
+          "ok": true,
+          "detail": "rc=0 expected=0 stderr=''"
+        },
+        {
+          "name": "setup record clustered baseline: baseline is ON",
+          "ok": true,
+          "detail": "rc=0 output='ON' expected='ON'"
+        },
+        {
+          "name": "setup set clustered int_only return code",
+          "ok": true,
+          "detail": "rc=0 expected=0 stderr=''"
+        },
+        {
+          "name": "setup set clustered int_only: mode is int_only",
+          "ok": true,
+          "detail": "rc=0 output='INT_ONLY' expected='INT_ONLY'"
+        },
+        {
+          "name": "instance fact tidb_enable_clustered_index",
+          "ok": true,
+          "detail": "tidb_enable_clustered_index='INT_ONLY' expected='INT_ONLY'"
+        },
+        {
+          "name": "instance fact tidb_alter_primary_key",
+          "ok": true,
+          "detail": "tidb_alter_primary_key='true' expected='true'"
+        },
+        {
+          "name": "exit code",
+          "ok": true,
+          "detail": "rc=1 expected=1"
+        },
+        {
+          "name": "verdict",
+          "ok": true,
+          "detail": "verdict='reject'"
+        },
+        {
+          "name": "top-level statements",
+          "ok": true,
+          "detail": "statements=1 expected=1"
+        },
+        {
+          "name": "zero findings",
+          "ok": true,
+          "detail": "findings=1"
+        },
+        {
+          "name": "no diagnostics",
+          "ok": true,
+          "detail": "diagnostics=[]"
+        },
+        {
+          "name": "no unsupported",
+          "ok": true,
+          "detail": "unsupported=[]"
+        },
+        {
+          "name": "aggregate coverage",
+          "ok": true,
+          "detail": "coverage='complete'"
+        },
+        {
+          "name": "evidence gap count",
+          "ok": true,
+          "detail": "gaps=0"
+        },
+        {
+          "name": "finding entries",
+          "ok": true,
+          "detail": "findings=[(0, 'ddl.tidb.table.auto_random.valid', 'blocker')] expected=[(0, 'ddl.tidb.table.auto_random.valid', 'blocker')]"
+        },
+        {
+          "name": "post-verify audit created nothing",
+          "ok": true,
+          "detail": "rc=0 output='0' expected='0'"
+        },
+        {
+          "name": "execute native explicit nonclustered refuses return code",
+          "ok": true,
+          "detail": "rc=1 expected=1 stderr='ERROR 8216 (HY000) at line 1: Invalid auto random: auto_random is only supported on the tables with clustered primary key'"
+        },
+        {
+          "name": "execute native explicit nonclustered refuses: t23apk_en 0",
+          "ok": true,
+          "detail": "rc=0 output='0' expected='0'"
+        },
+        {
+          "name": "teardown restore clustered baseline ON return code",
+          "ok": true,
+          "detail": "rc=0 expected=0 stderr=''"
+        },
+        {
+          "name": "teardown restore clustered baseline ON: mode restored to ON",
+          "ok": true,
+          "detail": "rc=0 output='ON' expected='ON'"
+        },
+        {
+          "name": "teardown drop t23apk_en return code",
+          "ok": true,
+          "detail": "rc=0 expected=0 stderr=''"
+        },
+        {
+          "name": "teardown drop t23apk_en: t23apk_en 0",
+          "ok": true,
+          "detail": "rc=0 output='0' expected='0'"
+        }
+      ],
+      "status": "pass",
+      "command": [
+        "/Users/fan/GolangProjects/DeltaScope/docs/verification/t23s-native-specials/38f7abc116dd5e81ff595a951ddb7d110bc72fec/attempt-1/golden/T23S/bin/deltascope",
+        "audit",
+        "--dialect",
+        "tidb",
+        "--sql",
+        "CREATE TABLE t23fx.t23apk_en (id BIGINT UNSIGNED PRIMARY KEY NONCLUSTERED AUTO_RANDOM(5,64));",
+        "--config",
+        "/Users/fan/GolangProjects/DeltaScope/docs/verification/t23s-native-specials/38f7abc116dd5e81ff595a951ddb7d110bc72fec/attempt-1/golden/T23S/golden-policy.yaml",
+        "--format",
+        "json",
+        "--host",
+        "127.0.0.1",
+        "--port",
+        "24003",
+        "--user",
+        "root",
+        "--schema",
+        "t23fx",
+        "--fail-on",
+        "blocker"
+      ]
+    },
+    {
+      "case_id": "T23S.meta.apk-on-auto-random",
+      "kind": "cli_metadata",
+      "cli_case": "apk-on-auto-random",
+      "anchor": "tidb85apk",
+      "dialect": "tidb",
+      "input_sql": "CREATE TABLE t23fx.t23apk_on (id BIGINT UNSIGNED PRIMARY KEY AUTO_RANDOM(5,64));",
+      "policy_profile": "t23-layout-id",
+      "policy_path": "/Users/fan/GolangProjects/DeltaScope/docs/verification/t23s-native-specials/38f7abc116dd5e81ff595a951ddb7d110bc72fec/attempt-1/golden/T23S/golden-policy.yaml",
+      "connect": {
+        "host": "127.0.0.1",
+        "port": 24003,
+        "user": "root",
+        "schema": "t23fx"
+      },
+      "expected": {
+        "exit": 0,
+        "verdict": "pass",
+        "statements": 1,
+        "findings": 0,
+        "diagnostics": 0,
+        "unsupported": 0,
+        "coverage": "complete",
+        "evidence_gaps": 0,
+        "instance_facts": {
+          "tidb_enable_clustered_index": "ON",
+          "tidb_alter_primary_key": "true"
+        }
+      },
+      "actual": {
+        "database": {
+          "product": "tidb",
+          "image": "pingcap/tidb:v8.5.0",
+          "image_digest": "pingcap/tidb@sha256:490861bd4a2fa643dbe76b77ffecafcad66e6a42774e580b82f4ec2429a80e57",
+          "container": "deltascope-ddl-golden-tidb85-apk",
+          "reachable": true,
+          "version": "8.0.11-TiDB-v8.5.0"
+        },
+        "setup": [
+          {
+            "name": "record clustered baseline",
+            "sql": "SELECT @@global.tidb_enable_clustered_index",
+            "rc": 0,
+            "stdout": "@@global.tidb_enable_clustered_index\nON",
+            "stderr": "",
+            "verify": [
+              {
+                "assert": "baseline is ON",
+                "sql": "SELECT @@global.tidb_enable_clustered_index",
+                "rc": 0,
+                "output": "ON",
+                "stderr": ""
+              }
+            ]
+          }
+        ],
+        "post_verify": [
+          {
+            "assert": "audit created nothing",
+            "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='t23fx' AND TABLE_NAME='t23apk_on'",
+            "rc": 0,
+            "output": "0",
+            "stderr": ""
+          }
+        ],
+        "execute": [
+          {
+            "name": "native on-mode accepts",
+            "sql": "CREATE TABLE t23fx.t23apk_on (id BIGINT UNSIGNED PRIMARY KEY AUTO_RANDOM(5,64))",
+            "rc": 0,
+            "stdout": "",
+            "stderr": "",
+            "verify": [
+              {
+                "assert": "table exists",
+                "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='t23fx' AND TABLE_NAME='t23apk_on'",
+                "rc": 0,
+                "output": "1",
+                "stderr": ""
+              }
+            ]
+          }
+        ],
+        "structure": [],
+        "teardown": [
+          {
+            "name": "restore clustered baseline ON",
+            "sql": "SET GLOBAL tidb_enable_clustered_index='ON'",
+            "rc": 0,
+            "stderr": "",
+            "verify": [
+              {
+                "assert": "mode restored to ON",
+                "sql": "SELECT @@global.tidb_enable_clustered_index",
+                "rc": 0,
+                "output": "ON",
+                "stderr": ""
+              }
+            ]
+          },
+          {
+            "name": "drop t23apk_on",
+            "sql": "DROP TABLE IF EXISTS t23fx.t23apk_on",
+            "rc": 0,
+            "stderr": "",
+            "verify": [
+              {
+                "assert": "t23apk_on 0",
+                "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='t23fx' AND TABLE_NAME='t23apk_on'",
+                "rc": 0,
+                "output": "0",
+                "stderr": ""
+              }
+            ]
+          }
+        ],
+        "exit": 0,
+        "stdout": "{\"verdict\":\"pass\",\"coverage\":{\"status\":\"complete\"},\"summary\":{\"statements\":1,\"blockers\":0,\"warnings\":0,\"notices\":0},\"statements\":[{\"index\":0,\"kind\":\"ddl\",\"raw_sql\":\"CREATE TABLE t23fx.t23apk_on (id BIGINT UNSIGNED PRIMARY KEY AUTO_RANDOM(5,64));\",\"normalized_sql\":\"CREATE TABLE t23fx.t23apk_on (id BIGINT UNSIGNED PRIMARY KEY AUTO_RANDOM(5,64))\",\"coverage\":{\"status\":\"complete\"}}],\"version\":{\"product\":\"tidb\",\"version\":\"8.5.0\",\"major\":8,\"minor\":5,\"patch\":0,\"source\":\"observed\",\"validated_range\":true},\"fail_on_triggered\":false,\"rule_summary\":{\"loaded\":13,\"applicable\":3,\"skipped\":[]},\"context\":{\"mode\":\"metadata-aware\",\"dialect\":\"tidb\",\"dialect_source\":\"detected\",\"schema\":\"t23fx\",\"schema_source\":\"flag\"}}\n",
+        "stderr": "",
+        "parsed": {
+          "verdict": "pass",
+          "coverage": {
+            "status": "complete"
+          },
+          "summary": {
+            "statements": 1,
+            "blockers": 0,
+            "warnings": 0,
+            "notices": 0
+          },
+          "statements": [
+            {
+              "index": 0,
+              "kind": "ddl",
+              "raw_sql": "CREATE TABLE t23fx.t23apk_on (id BIGINT UNSIGNED PRIMARY KEY AUTO_RANDOM(5,64));",
+              "normalized_sql": "CREATE TABLE t23fx.t23apk_on (id BIGINT UNSIGNED PRIMARY KEY AUTO_RANDOM(5,64))",
+              "coverage": {
+                "status": "complete"
+              }
+            }
+          ],
+          "version": {
+            "product": "tidb",
+            "version": "8.5.0",
+            "major": 8,
+            "minor": 5,
+            "patch": 0,
+            "source": "observed",
+            "validated_range": true
+          },
+          "fail_on_triggered": false,
+          "rule_summary": {
+            "loaded": 13,
+            "applicable": 3,
+            "skipped": []
+          },
+          "context": {
+            "mode": "metadata-aware",
+            "dialect": "tidb",
+            "dialect_source": "detected",
+            "schema": "t23fx",
+            "schema_source": "flag"
+          }
+        },
+        "version_evidence": {
+          "target_raw": null,
+          "target_canonical": null,
+          "observed_raw": "8.0.11-TiDB-v8.5.0",
+          "observed_canonical": {
+            "product": "tidb",
+            "version": "8.5.0"
+          },
+          "resolved": {
+            "product": "tidb",
+            "version": "8.5.0",
+            "major": 8,
+            "minor": 5,
+            "patch": 0,
+            "source": "observed",
+            "validated_range": true
+          }
+        },
+        "instance_facts": {
+          "tidb_enable_clustered_index": "ON",
+          "tidb_alter_primary_key": "true"
+        }
+      },
+      "assertions": [
+        {
+          "name": "database reachable with expected version",
+          "ok": true,
+          "detail": "SELECT VERSION() rc=0 version='8.0.11-TiDB-v8.5.0' expected_contains='v8.5.0'"
+        },
+        {
+          "name": "setup record clustered baseline return code",
+          "ok": true,
+          "detail": "rc=0 expected=0 stderr=''"
+        },
+        {
+          "name": "setup record clustered baseline: baseline is ON",
+          "ok": true,
+          "detail": "rc=0 output='ON' expected='ON'"
+        },
+        {
+          "name": "instance fact tidb_enable_clustered_index",
+          "ok": true,
+          "detail": "tidb_enable_clustered_index='ON' expected='ON'"
+        },
+        {
+          "name": "instance fact tidb_alter_primary_key",
+          "ok": true,
+          "detail": "tidb_alter_primary_key='true' expected='true'"
+        },
+        {
+          "name": "exit code",
+          "ok": true,
+          "detail": "rc=0 expected=0"
+        },
+        {
+          "name": "verdict",
+          "ok": true,
+          "detail": "verdict='pass'"
+        },
+        {
+          "name": "top-level statements",
+          "ok": true,
+          "detail": "statements=1 expected=1"
+        },
+        {
+          "name": "zero findings",
+          "ok": true,
+          "detail": "findings=0"
+        },
+        {
+          "name": "no diagnostics",
+          "ok": true,
+          "detail": "diagnostics=[]"
+        },
+        {
+          "name": "no unsupported",
+          "ok": true,
+          "detail": "unsupported=[]"
+        },
+        {
+          "name": "aggregate coverage",
+          "ok": true,
+          "detail": "coverage='complete'"
+        },
+        {
+          "name": "evidence gap count",
+          "ok": true,
+          "detail": "gaps=0"
+        },
+        {
+          "name": "post-verify audit created nothing",
+          "ok": true,
+          "detail": "rc=0 output='0' expected='0'"
+        },
+        {
+          "name": "execute native on-mode accepts return code",
+          "ok": true,
+          "detail": "rc=0 expected=0 stderr=''"
+        },
+        {
+          "name": "execute native on-mode accepts: table exists",
+          "ok": true,
+          "detail": "rc=0 output='1' expected='1'"
+        },
+        {
+          "name": "teardown restore clustered baseline ON return code",
+          "ok": true,
+          "detail": "rc=0 expected=0 stderr=''"
+        },
+        {
+          "name": "teardown restore clustered baseline ON: mode restored to ON",
+          "ok": true,
+          "detail": "rc=0 output='ON' expected='ON'"
+        },
+        {
+          "name": "teardown drop t23apk_on return code",
+          "ok": true,
+          "detail": "rc=0 expected=0 stderr=''"
+        },
+        {
+          "name": "teardown drop t23apk_on: t23apk_on 0",
+          "ok": true,
+          "detail": "rc=0 output='0' expected='0'"
+        }
+      ],
+      "status": "pass",
+      "command": [
+        "/Users/fan/GolangProjects/DeltaScope/docs/verification/t23s-native-specials/38f7abc116dd5e81ff595a951ddb7d110bc72fec/attempt-1/golden/T23S/bin/deltascope",
+        "audit",
+        "--dialect",
+        "tidb",
+        "--sql",
+        "CREATE TABLE t23fx.t23apk_on (id BIGINT UNSIGNED PRIMARY KEY AUTO_RANDOM(5,64));",
+        "--config",
+        "/Users/fan/GolangProjects/DeltaScope/docs/verification/t23s-native-specials/38f7abc116dd5e81ff595a951ddb7d110bc72fec/attempt-1/golden/T23S/golden-policy.yaml",
+        "--format",
+        "json",
+        "--host",
+        "127.0.0.1",
+        "--port",
+        "24003",
+        "--user",
+        "root",
+        "--schema",
+        "t23fx",
+        "--fail-on",
+        "blocker"
+      ]
+    }
+  ],
+  "executed_count": 21,
+  "cleanup": {
+    "isolated": true,
+    "stopped": [
+      "198f48734927",
+      "3e25373d1ed0",
+      "4b4cc1573ff2",
+      "60bb54ca700e",
+      "786fc109f08d",
+      "95f672b5e932",
+      "a492ce715622",
+      "abaac14baad1",
+      "b26891f7f669",
+      "befa726d90a4",
+      "c8223a630f33",
+      "cf5464d1736d"
+    ],
+    "removed": [
+      "198f48734927",
+      "3e25373d1ed0",
+      "4b4cc1573ff2",
+      "60bb54ca700e",
+      "786fc109f08d",
+      "95f672b5e932",
+      "a492ce715622",
+      "abaac14baad1",
+      "b26891f7f669",
+      "befa726d90a4",
+      "c8223a630f33",
+      "cf5464d1736d"
+    ],
+    "compose_down_rc": 0,
+    "rc_note": "compose_down_rc carries the receipt-scoped stop+rm outcome, not a compose-down run",
+    "residual_containers": []
+  },
+  "container_health": {
+    "deltascope-ddl-golden-mysql57": "healthy",
+    "deltascope-ddl-golden-mysql80": "healthy",
+    "deltascope-ddl-golden-mysql84": "healthy",
+    "deltascope-ddl-golden-tidb85": "healthy",
+    "deltascope-ddl-golden-tidb85-client": "healthy",
+    "deltascope-ddl-golden-t23s-pd": "healthy",
+    "deltascope-ddl-golden-t23s-tikv": "healthy",
+    "deltascope-ddl-golden-t23s-tiflash": "healthy",
+    "deltascope-ddl-golden-t23s-tidb": "healthy",
+    "deltascope-ddl-golden-t23s-tidb-client": "healthy",
+    "deltascope-ddl-golden-tidb85-apk": "healthy",
+    "deltascope-ddl-golden-tidb85-apk-client": "healthy"
+  }
+}
