@@ -352,8 +352,60 @@ func TestT24ChainEvidenceOnlineAbsentUUIDRefuses(t *testing.T) {
 	if err != nil {
 		t.Fatalf("AuditSQL: %v — a cleanly absent observed identity is not an error", err)
 	}
-	if gaps := t24ChainGapCodes(result.Statements[0]); !slices.Contains(gaps, "unknown_host_vcpu_count") {
+	gaps := t24ChainGapCodes(result.Statements[0])
+	if !slices.Contains(gaps, "unknown_host_vcpu_count") {
 		t.Fatalf("gaps = %v, want the host gap — online never falls back to the declared identity", gaps)
+	}
+	// The refused bundle never cleared the other provider-observed
+	// premises: read-only, grants, and occupancy reads still landed, so
+	// only the host/capability slots the evidence owned stay gapped.
+	if len(gaps) > 2 {
+		t.Fatalf("gaps = %v, want only the evidence-owned host/capability slots — observed facts are retained", gaps)
+	}
+
+	// D arm: an observed EMPTY uuid row is the same unproven boundary —
+	// the empty string never accidentally matches a declared identity.
+	results[t24FactsUUIDFragment] = testQueryResult{columns: []string{"@@server_uuid"}, rows: [][]driver.Value{{""}}}
+	result2, err := appaudit.AuditSQL(context.Background(), appaudit.Request{
+		SQL:              "CREATE RESOURCE GROUP rg_new TYPE=USER VCPU=2-4;",
+		Dialect:          spec.DialectMySQL,
+		TargetVersion:    "8.0.36",
+		MetadataProvider: NewProvider(openTestDB(t, results)),
+		DeploymentEvidence: &spec.DeploymentEvidence{
+			Source: "cap:1", Product: "mysql", Version: "8.0.36",
+			Target: "declared-host", HostVCPUs: &vcpus,
+		},
+		TargetIdentity: "declared-host",
+	})
+	if err != nil {
+		t.Fatalf("AuditSQL empty uuid: %v", err)
+	}
+	if gaps := t24ChainGapCodes(result2.Statements[0]); !slices.Contains(gaps, "unknown_host_vcpu_count") {
+		t.Fatalf("gaps = %v, want the host gap — an empty observed uuid never matches a declared identity", gaps)
+	}
+}
+
+// E arm: a real @@server_uuid query failure propagates through the
+// public AuditSQL path — never degraded to a clean absence that would
+// fall back to the declared identity.
+func TestT24ChainEvidenceUUIDErrorPropagates(t *testing.T) {
+	wantUUID := errors.New("uuid read denied")
+	results := t24ChainFacts()
+	results[t24FactsUUIDFragment] = testQueryResult{queryErr: wantUUID}
+	vcpus := uint64(8)
+	_, err := appaudit.AuditSQL(context.Background(), appaudit.Request{
+		SQL:              "CREATE RESOURCE GROUP rg_new TYPE=USER VCPU=2-4;",
+		Dialect:          spec.DialectMySQL,
+		TargetVersion:    "8.0.36",
+		MetadataProvider: NewProvider(openTestDB(t, results)),
+		DeploymentEvidence: &spec.DeploymentEvidence{
+			Source: "cap:1", Product: "mysql", Version: "8.0.36",
+			Target: "declared-host", HostVCPUs: &vcpus,
+		},
+		TargetIdentity: "declared-host",
+	})
+	if !errors.Is(err, wantUUID) {
+		t.Fatalf("err = %v, want errors.Is(%v) — a failed identity read is an error, not a declared fallback", err, wantUUID)
 	}
 }
 
