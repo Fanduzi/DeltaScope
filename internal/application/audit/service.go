@@ -49,6 +49,11 @@ type Request struct {
 	// defaulted. Online it acts only as a constraint checked against the
 	// observed identity; offline it is the version fact itself.
 	TargetVersion string
+	// DeploymentEvidence is the caller-sourced, target-bound fact bundle
+	// for premises no SQL channel observes (T24/#103: host VCPU count,
+	// priority capability, feature support). See
+	// spec.DeploymentEvidence for the binding contract.
+	DeploymentEvidence *spec.DeploymentEvidence
 }
 
 const defaultOrderedStatementLimit = 1024
@@ -267,6 +272,7 @@ func metadataRequestFor(request Request, targetVersion *spec.VersionIdentity) *M
 	legacy := request.Metadata
 	schema := strings.TrimSpace(request.Schema)
 	provider := request.MetadataProvider
+	evidence := request.DeploymentEvidence
 
 	if legacy != nil {
 		if schema == "" {
@@ -275,14 +281,18 @@ func metadataRequestFor(request Request, targetVersion *spec.VersionIdentity) *M
 		if provider == nil {
 			provider = legacy.Provider
 		}
+		if evidence == nil {
+			evidence = legacy.DeploymentEvidence
+		}
 	}
-	if schema == "" && provider == nil && targetVersion == nil {
+	if schema == "" && provider == nil && targetVersion == nil && evidence == nil {
 		return nil
 	}
 	return &MetadataRequest{
-		Schema:        schema,
-		Provider:      provider,
-		TargetVersion: targetVersion,
+		Schema:             schema,
+		Provider:           provider,
+		TargetVersion:      targetVersion,
+		DeploymentEvidence: evidence,
 	}
 }
 

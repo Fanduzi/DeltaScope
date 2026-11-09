@@ -68,6 +68,8 @@ Stable public package surface for library consumers.
 - `Audit(ctx, request)`
 - `Request`
 - `MetadataProvider`
+- `MySQLResourceGroupFactsProvider` (optional T24/#103 premise-bundle loader: read-only variables, effective grants, bound-group occupancy, feature probe)
+- `DeploymentEvidence` (sourced, target-bound bundle for host-VCPU/priority-capability/feature premises no SQL channel observes; binds by Source+Product+Version, fills only unproven slots)
 - `Metadata`
 - `InstanceFacts`
   aliases the shared instance facts, including observed server charset,

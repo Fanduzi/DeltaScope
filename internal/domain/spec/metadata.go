@@ -219,6 +219,63 @@ type InstanceFacts struct {
 	// ER_RESOURCE_GROUP_BUSY. A missing key is unproven binding state,
 	// never a proven "unoccupied". MySQL only.
 	MySQLResourceGroupBound map[string]bool `json:"mysql_resource_group_bound,omitempty"`
+
+	// MySQLResourceGroupBoundComplete marks the Bound map as a proven
+	// complete observation of the bound set — a complete successful read
+	// of performance_schema.threads where the observing account's SELECT
+	// privilege shows every row. With it set, a missing key is a proven
+	// "unoccupied" answer; without it the map is partial evidence and a
+	// missing key stays unproven. MySQL only.
+	MySQLResourceGroupBoundComplete bool `json:"mysql_resource_group_bound_complete,omitempty"`
+
+	// MySQLReadOnly and MySQLSuperReadOnly are the observed global
+	// variables feeding upstream's opt_readonly/opt_super_readonly —
+	// check_readonly() refuses every lifecycle command at execute for an
+	// ordinary client when the gate closes. They are raw variable
+	// answers, never a precomputed refusal. MySQL only (T24-R4).
+	MySQLReadOnly           bool `json:"mysql_read_only,omitempty"`
+	MySQLReadOnlyKnown      bool `json:"mysql_read_only_known,omitempty"`
+	MySQLSuperReadOnly      bool `json:"mysql_super_read_only,omitempty"`
+	MySQLSuperReadOnlyKnown bool `json:"mysql_super_read_only_known,omitempty"`
+
+	// MySQLReadOnlyExempt is the observed answer for the executing
+	// subject's read-only exemption — SUPER_ACL or a CONNECTION_ADMIN
+	// grant in upstream's check_readonly. It is distinct from
+	// RESOURCE_GROUP_ADMIN, which carries no read-only exemption.
+	// MySQL only (T24-R4).
+	MySQLReadOnlyExempt      bool `json:"mysql_read_only_exempt,omitempty"`
+	MySQLReadOnlyExemptKnown bool `json:"mysql_read_only_exempt_known,omitempty"`
+}
+
+// DeploymentEvidence is a caller-sourced fact bundle for the premises
+// no SQL channel can observe — host CPU count, priority capability, and
+// feature support. The bundle binds to the audited target: Source must
+// identify its provenance, Product must equal the dialect's product,
+// and Version must equal the target's resolved version exactly; a
+// bundle that fails any binding is ignored, never applied. Evidence
+// only fills still-unproven slots — it never overwrites an online
+// observation, carries no generic trust flag, is consumed per request
+// rather than cached, and is never reused across instances. It carries
+// only the facts T24 adjudication requires; public diagnostics never
+// echo the bundle back.
+type DeploymentEvidence struct {
+	// Source identifies where the bundle came from (for example a
+	// capacity report or provisioning record) — required, free-form.
+	Source string `json:"source"`
+	// Product must equal the audited dialect's product ("mysql").
+	Product string `json:"product"`
+	// Version must equal the resolved target version exactly — the
+	// observed banner online or the pinned target version offline.
+	Version string `json:"version"`
+	// HostVCPUs is the deployment's logical CPU count — a positive
+	// value fills the host.vcpu_count premise.
+	HostVCPUs *uint64 `json:"host_vcpus,omitempty"`
+	// PriorityCapable answers whether the deployment platform schedules
+	// thread priorities — fills the priority-capability premise.
+	PriorityCapable *bool `json:"priority_capable,omitempty"`
+	// FeatureSupported answers whether the deployment build carries the
+	// resource-group feature — fills the feature premise.
+	FeatureSupported *bool `json:"feature_supported,omitempty"`
 }
 
 // TTLConfig is the proven TTL configuration recorded by the catalog or a

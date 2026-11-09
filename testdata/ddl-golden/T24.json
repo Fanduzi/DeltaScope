@@ -150,7 +150,7 @@
      "unverified",
      "unverified"
     ],
-    "evidence_gaps": 15,
+    "evidence_gaps": 24,
     "fail_on_triggered": false,
     "finding_entries": [
      {
@@ -179,6 +179,30 @@
       "reason_code": "unknown_resource_group_feature",
       "required_facts": [
        "resource_group.feature_supported"
+      ]
+     },
+     {
+      "index": 0,
+      "rule_id": "ddl.mysql.resource_group.valid",
+      "reason_code": "unknown_instance_read_only",
+      "required_facts": [
+       "instance.read_only"
+      ]
+     },
+     {
+      "index": 0,
+      "rule_id": "ddl.mysql.resource_group.valid",
+      "reason_code": "unknown_instance_super_read_only",
+      "required_facts": [
+       "instance.super_read_only"
+      ]
+     },
+     {
+      "index": 0,
+      "rule_id": "ddl.mysql.resource_group.valid",
+      "reason_code": "unknown_resource_group_readonly_exemption",
+      "required_facts": [
+       "privilege.super_or_connection_admin"
       ]
      },
      {
@@ -232,6 +256,30 @@
      {
       "index": 1,
       "rule_id": "ddl.mysql.resource_group.valid",
+      "reason_code": "unknown_instance_read_only",
+      "required_facts": [
+       "instance.read_only"
+      ]
+     },
+     {
+      "index": 1,
+      "rule_id": "ddl.mysql.resource_group.valid",
+      "reason_code": "unknown_instance_super_read_only",
+      "required_facts": [
+       "instance.super_read_only"
+      ]
+     },
+     {
+      "index": 1,
+      "rule_id": "ddl.mysql.resource_group.valid",
+      "reason_code": "unknown_resource_group_readonly_exemption",
+      "required_facts": [
+       "privilege.super_or_connection_admin"
+      ]
+     },
+     {
+      "index": 1,
+      "rule_id": "ddl.mysql.resource_group.valid",
       "reason_code": "unknown_resource_group_privilege",
       "required_facts": [
        "privilege.resource_group_admin"
@@ -264,6 +312,30 @@
      {
       "index": 2,
       "rule_id": "ddl.mysql.resource_group.valid",
+      "reason_code": "unknown_instance_read_only",
+      "required_facts": [
+       "instance.read_only"
+      ]
+     },
+     {
+      "index": 2,
+      "rule_id": "ddl.mysql.resource_group.valid",
+      "reason_code": "unknown_instance_super_read_only",
+      "required_facts": [
+       "instance.super_read_only"
+      ]
+     },
+     {
+      "index": 2,
+      "rule_id": "ddl.mysql.resource_group.valid",
+      "reason_code": "unknown_resource_group_readonly_exemption",
+      "required_facts": [
+       "privilege.super_or_connection_admin"
+      ]
+     },
+     {
+      "index": 2,
+      "rule_id": "ddl.mysql.resource_group.valid",
       "reason_code": "unknown_resource_group_privilege",
       "required_facts": [
        "privilege.resource_group_admin"
@@ -287,7 +359,7 @@
      }
     ]
    },
-   "description": "no-metadata undecidable contract: every lifecycle statement owes its bounded premise gaps, the declared-effect warnings still fire (refusal-only suppression), and the lifecycle success notices suppress because a refusing branch exists"
+   "description": "offline: every premise is unproven — version, feature, the ordinary-client read-only gate (read_only/super_read_only/exemption), privilege, and ordered state all stay bounded gaps; declarations still emit the affinity and FORCE-pairing warnings. T24-R4 oracle: 24 gaps (R2 oracle was 15, before the read-only gate joined the truth table)."
   },
   {
    "id": "mysql-dup-kind-refused",
@@ -338,7 +410,7 @@
     "statement_coverage": [
      "unverified"
     ],
-    "evidence_gaps": 5,
+    "evidence_gaps": 8,
     "fail_on_triggered": false,
     "finding_entries": [],
     "evidence_gap_entries": [
@@ -356,6 +428,30 @@
       "reason_code": "unknown_resource_group_feature",
       "required_facts": [
        "resource_group.feature_supported"
+      ]
+     },
+     {
+      "index": 0,
+      "rule_id": "ddl.mysql.resource_group.valid",
+      "reason_code": "unknown_instance_read_only",
+      "required_facts": [
+       "instance.read_only"
+      ]
+     },
+     {
+      "index": 0,
+      "rule_id": "ddl.mysql.resource_group.valid",
+      "reason_code": "unknown_instance_super_read_only",
+      "required_facts": [
+       "instance.super_read_only"
+      ]
+     },
+     {
+      "index": 0,
+      "rule_id": "ddl.mysql.resource_group.valid",
+      "reason_code": "unknown_resource_group_readonly_exemption",
+      "required_facts": [
+       "privilege.super_or_connection_admin"
       ]
      },
      {
@@ -384,7 +480,7 @@
      }
     ]
    },
-   "description": "the type bound is capability-gated: SYSTEM+5 refuses under a proven-on thread_priority_available() but a proven-off capability ignores it — offline the capability is unproven so the outcome stays undecidable with bounded gaps, never a fabricated refusal (T24-R2)"
+   "description": "offline: a nonzero declared priority withholds under an unknown capability — the statement stays undecidable with eight bounded gaps including the ordinary-client read-only gate premises. T24-R4 oracle: 8 (R2 oracle was 5)."
   },
   {
    "id": "mysql-ru-vendor-boundary",
@@ -521,6 +617,64 @@
     ]
    },
    "description": "FORCE authored on ALTER without the DISABLE pairing — upstream's ER_INVALID_USE_OF_FORCE_OPTION, declaration-provable and refused on every consistent world"
+  },
+  {
+   "id": "mysql-num-domain-vcpu-parse",
+   "dialect": "mysql",
+   "sql": "CREATE RESOURCE GROUP rg TYPE=USER VCPU=4294967296;",
+   "policy": "t24-mysql-resource-group",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 2,
+    "verdict": "",
+    "statements": 0,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 0,
+    "coverage": "incomplete",
+    "statement_coverage": [],
+    "statement_sql": [],
+    "statement_indices": [],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "finding_entries": [],
+    "finding_metadata": [],
+    "unsupported_entries": [],
+    "fail_on_triggered": false
+   },
+   "description": "offline: a VCPU literal above NUM's int32 boundary never reaches the grammar production — upstream emits a syntax error, so DeltaScope emits the base parser diagnostic and audits nothing (T24-R4 reachability correction; the earlier u64-domain recognition was withdrawn)."
+  },
+  {
+   "id": "mysql-num-domain-priority-parse",
+   "dialect": "mysql",
+   "sql": "CREATE RESOURCE GROUP rg TYPE=USER THREAD_PRIORITY=2147483648;",
+   "policy": "t24-mysql-resource-group",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 2,
+    "verdict": "",
+    "statements": 0,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 0,
+    "coverage": "incomplete",
+    "statement_coverage": [],
+    "statement_sql": [],
+    "statement_indices": [],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "finding_entries": [],
+    "finding_metadata": [],
+    "unsupported_entries": [],
+    "fail_on_triggered": false
+   },
+   "description": "offline: a THREAD_PRIORITY magnitude above the NUM boundary never reaches signed_num — parser diagnostic, not a semantic claim (T24-R4)."
   }
  ],
  "metadata_cases": [
@@ -562,7 +716,7 @@
      "unverified",
      "unverified"
     ],
-    "evidence_gaps": 12,
+    "evidence_gaps": 5,
     "fail_on_triggered": false,
     "finding_entries": [
      {
@@ -572,7 +726,7 @@
      }
     ]
    },
-   "description": "pending native: a real 8.0 connection proves the version and the catalog state but cannot read the feature/privilege/host/capability/occupancy premises — every statement stays undecidable with bounded gaps, the affinity warning fires on the declared VCPU, and all lifecycle notices suppress (T24-R2)"
+   "description": "pending native: the wired provider now proves version, the usr_default feature probe, the writable read-only gate, effective grants, and a complete-empty occupancy set — the remaining gaps are the zero-row catalog state plus host.vcpu_count and priority capability, which only the deployment-evidence seam answers. CREATE owes state+host+cap, ALTER and DROP owe state; notices stay suppressed and the affinity warning fires. T24-R4 oracle: 5 gaps (R2 oracle was 12, before premise wiring)."
   },
   {
    "id": "mysql80-alter-absent-refused",
@@ -616,11 +770,11 @@
     "statement_coverage": [
      "unverified"
     ],
-    "evidence_gaps": 3,
+    "evidence_gaps": 1,
     "fail_on_triggered": false,
     "finding_entries": []
    },
-   "description": "pending native: a zero-row information_schema.RESOURCE_GROUPS read stays unavailable — MySQL documents no unfiltered emit-every-group guarantee, so absence is never proven through this read and ALTER on the ghost group stays undecidable with bounded gaps rather than a fabricated refusal (T24-R2)"
+   "description": "pending native: every wired premise is proven on a real root connection — the only remaining gap is the zero-row catalog state, which stays unavailable because MySQL documents no unfiltered emit-every-group guarantee; ALTER stays undecidable on one bounded gap. T24-R4 oracle: 1 (R2 oracle was 3)."
   },
   {
    "id": "mysql80-drop-reserved-refused",
@@ -711,7 +865,7 @@
     "statement_coverage": [
      "unverified"
     ],
-    "evidence_gaps": 5,
+    "evidence_gaps": 3,
     "fail_on_triggered": false,
     "finding_entries": [
      {
@@ -721,7 +875,7 @@
      }
     ]
    },
-   "description": "pending native: version and catalog state are proven but the deployment premises are not — the create stays undecidable with five bounded gaps while the declared VCPU affinity warning still fires (T24-R2)"
+   "description": "pending native: the wired premises are proven — the create owes only the zero-row catalog state, host.vcpu_count, and priority capability, so it stays undecidable with three bounded gaps while the declared VCPU affinity warning still fires. T24-R4 oracle: 3 (R2 oracle was 5)."
   },
   {
    "id": "mysql57-version-refused",

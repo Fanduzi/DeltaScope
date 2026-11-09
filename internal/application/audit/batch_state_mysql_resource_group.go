@@ -30,6 +30,109 @@ type batchMySQLResourceGroupEntry struct {
 	resolved   bool
 }
 
+// statementsNeedMySQLResourceGroupFacts reports whether any statement
+// names the MySQL CPU resource-group family — the only workload the
+// T24 premise bundle (read-only gate, grants, occupancy, feature) pays
+// for.
+func statementsNeedMySQLResourceGroupFacts(statements []spec.Statement) bool {
+	for _, statement := range statements {
+		if statement.DDL != nil && statement.DDL.MySQLResourceGroup != nil {
+			return true
+		}
+	}
+	return false
+}
+
+// mergeMySQLResourceGroupFacts folds a provider-read premise bundle
+// into the request instance facts, filling only still-unproven slots —
+// a loaded fact never overwrites an already-proven answer. For the
+// bound set the proven-complete observation is authoritative: it
+// supersedes a partial map, while a partial source never merges into a
+// proven-complete one (its keys can only contradict).
+func mergeMySQLResourceGroupFacts(dst, src *spec.InstanceFacts) {
+	if dst == nil || src == nil {
+		return
+	}
+	if !dst.MySQLResourceGroupFeatureKnown && src.MySQLResourceGroupFeatureKnown {
+		dst.MySQLResourceGroupFeatureSupported = src.MySQLResourceGroupFeatureSupported
+		dst.MySQLResourceGroupFeatureKnown = true
+	}
+	if !dst.MySQLResourceGroupPriorityCapKnown && src.MySQLResourceGroupPriorityCapKnown {
+		dst.MySQLResourceGroupPriorityCapable = src.MySQLResourceGroupPriorityCapable
+		dst.MySQLResourceGroupPriorityCapKnown = true
+	}
+	if !dst.MySQLHostVCPUsKnown && src.MySQLHostVCPUsKnown {
+		dst.MySQLHostVCPUs = src.MySQLHostVCPUs
+		dst.MySQLHostVCPUsKnown = true
+	}
+	if !dst.MySQLResourceGroupAdminKnown && src.MySQLResourceGroupAdminKnown {
+		dst.MySQLResourceGroupAdmin = src.MySQLResourceGroupAdmin
+		dst.MySQLResourceGroupAdminKnown = true
+	}
+	if !dst.MySQLReadOnlyKnown && src.MySQLReadOnlyKnown {
+		dst.MySQLReadOnly = src.MySQLReadOnly
+		dst.MySQLReadOnlyKnown = true
+	}
+	if !dst.MySQLSuperReadOnlyKnown && src.MySQLSuperReadOnlyKnown {
+		dst.MySQLSuperReadOnly = src.MySQLSuperReadOnly
+		dst.MySQLSuperReadOnlyKnown = true
+	}
+	if !dst.MySQLReadOnlyExemptKnown && src.MySQLReadOnlyExemptKnown {
+		dst.MySQLReadOnlyExempt = src.MySQLReadOnlyExempt
+		dst.MySQLReadOnlyExemptKnown = true
+	}
+	switch {
+	case dst.MySQLResourceGroupBoundComplete:
+		// The occupied set is already fully proven — a partial source
+		// can only contradict it, so nothing merges.
+	case src.MySQLResourceGroupBoundComplete:
+		dst.MySQLResourceGroupBound = src.MySQLResourceGroupBound
+		dst.MySQLResourceGroupBoundComplete = true
+	default:
+		for key, bound := range src.MySQLResourceGroupBound {
+			if dst.MySQLResourceGroupBound == nil {
+				dst.MySQLResourceGroupBound = map[string]bool{}
+			}
+			if _, proven := dst.MySQLResourceGroupBound[key]; !proven {
+				dst.MySQLResourceGroupBound[key] = bound
+			}
+		}
+	}
+}
+
+// applyDeploymentEvidence folds a sourced, target-bound fact bundle
+// into the instance facts. The bundle binds strictly: Source must be
+// non-empty, Product must equal "mysql", and Version must equal the
+// resolved target version exactly — anything else is ignored rather
+// than partially trusted. Evidence fills only unproven slots; it never
+// overwrites an online observation and is consumed per request, never
+// cached.
+func applyDeploymentEvidence(facts *spec.InstanceFacts, evidence *spec.DeploymentEvidence, version *spec.VersionIdentity) {
+	if facts == nil || evidence == nil {
+		return
+	}
+	if strings.TrimSpace(evidence.Source) == "" ||
+		!strings.EqualFold(strings.TrimSpace(evidence.Product), "mysql") {
+		return
+	}
+	if version == nil || version.Version == "" ||
+		strings.TrimSpace(evidence.Version) != version.Version {
+		return
+	}
+	if !facts.MySQLHostVCPUsKnown && evidence.HostVCPUs != nil && *evidence.HostVCPUs > 0 {
+		facts.MySQLHostVCPUs = *evidence.HostVCPUs
+		facts.MySQLHostVCPUsKnown = true
+	}
+	if !facts.MySQLResourceGroupPriorityCapKnown && evidence.PriorityCapable != nil {
+		facts.MySQLResourceGroupPriorityCapable = *evidence.PriorityCapable
+		facts.MySQLResourceGroupPriorityCapKnown = true
+	}
+	if !facts.MySQLResourceGroupFeatureKnown && evidence.FeatureSupported != nil {
+		facts.MySQLResourceGroupFeatureSupported = *evidence.FeatureSupported
+		facts.MySQLResourceGroupFeatureKnown = true
+	}
+}
+
 // resolveMySQLResourceGroup returns the owned entry for a name,
 // consulting the once-per-request object resolver at most once — and
 // only while the capability premises do not already decide the outcome.
@@ -38,7 +141,8 @@ type batchMySQLResourceGroupEntry struct {
 // stays unknown and the refusal verdict comes from the premises
 // instead. Reserved membership is claimed only under a proven 8.0.3+
 // version. Binding state (is_bound_to_threads) seeds from the instance
-// fact map — a missing key stays unproven, never a guessed "unoccupied".
+// fact map — a missing key is a proven "unoccupied" only under a
+// proven-complete bound observation; otherwise it stays unproven.
 // Resolver errors propagate — never cached, never degraded.
 func (s *batchState) resolveMySQLResourceGroup(ctx context.Context, name string) (*batchMySQLResourceGroupEntry, error) {
 	key := resourceGroupKey(name)
@@ -50,9 +154,12 @@ func (s *batchState) resolveMySQLResourceGroup(ctx context.Context, name string)
 		entry = &batchMySQLResourceGroupEntry{state: resourceGroupUnknown, name: strings.TrimSpace(name)}
 		s.mysqlResourceGroupEntries[key] = entry
 	}
-	if s.instanceFacts != nil && s.instanceFacts.MySQLResourceGroupBound != nil {
+	if s.instanceFacts != nil {
 		if bound, ok := s.instanceFacts.MySQLResourceGroupBound[key]; ok {
 			occupied := bound
+			entry.occupied = &occupied
+		} else if s.instanceFacts.MySQLResourceGroupBoundComplete {
+			occupied := false
 			entry.occupied = &occupied
 		}
 	}

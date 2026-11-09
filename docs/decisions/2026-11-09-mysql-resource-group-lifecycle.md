@@ -210,3 +210,80 @@ from one verdict or they do not publish.
 
 - Decision record dependency: `docs/decisions/2026-11-08-tidb-resource-group-lifecycle.md`
 - Commits: this change
+
+## T24-R4 Addendum — Reachability, Read-Only Gate, and Formal Fact Channels
+
+The R3 review's static verification produced a correction round. The
+decision stays the same — one shared truth table, unknown stays
+unknown — but three contracts are now pinned precisely.
+
+### Frozen diagnostic contract
+
+Upstream's lexer classifies integer literals before grammar: NUM is
+`int32`-bounded (`<=2147483647`), wider magnitudes become LONG_NUM /
+ULONGLONG_NUM / DECIMAL_NUM, and the resource-group productions accept
+only NUM — `vcpu_num_or_range: NUM | NUM '-' NUM` and
+`signed_num: NUM | '-' NUM`. Values outside the NUM domain can never
+reach the semantic actions; upstream answers a syntax error. R1-R3
+recognized the wider u64/i64 domain and adjudicated values upstream
+cannot express — withdrawn. The recognizer now claims only NUM-domain
+literals; everything wider falls through to the base parser diagnostic.
+The `cpu_id_t` narrowing helpers stay in the spec as defensive
+projection, unreachable from ordinary SQL.
+
+### Ordinary-client read-only gate
+
+`check_readonly()` opens every lifecycle `execute()` for the audited
+subject: an ordinary client refuses iff
+`(read_only || super_read_only) && (super_read_only || !exempt)` where
+the exemption is SUPER_ACL or CONNECTION_ADMIN — never
+RESOURCE_GROUP_ADMIN and never inferred from the account name. The gate
+sits between the feature premise and the privilege premise in the
+shared evaluator and enumerates all eight consistent worlds: all-refuse
+refuses, all-pass owes nothing, and a mixed verdict owes a bounded gap
+per fact that flips the outcome — a writable instance never owes the
+exemption, an exempt subject never owes read_only, and `RESOURCE_GROUP_USER`
+never inflates into `RESOURCE_GROUP_ADMIN`.
+
+### Formal fact sources and the deployment-evidence boundary
+
+`LoadMySQLResourceGroupFacts` is the optional lazy loader — invoked at
+most once per request and only while a batch names the family — reading
+on one session's own identity: `@@global.read_only` /
+`@@global.super_read_only`, `SHOW GRANTS FOR CURRENT_USER()` plus every
+active role (`CURRENT_ROLE()` + `USING`), `@@global.performance_schema`
+and `performance_schema.threads.RESOURCE_GROUP`, and the `usr_default`
+feature probe (the row the component registers at post_init — observed
+is supported, zero rows stays unproven). Completeness is explicit:
+privileges are proven negative only when the full effective set was
+read, and `MySQLResourceGroupBoundComplete` is claimed only under
+PROCESS visibility — partial reads yield positive-only facts so a
+hidden grant or hidden thread never fabricates a denial.
+
+`spec.DeploymentEvidence` is the public seam for premises no SQL
+channel observes — host VCPU count, priority capability, feature
+support. The bundle binds to the target: `Source` is required,
+`Product` must equal the dialect product, `Version` must equal the
+resolved target exactly; anything else is ignored. It fills only
+unproven slots, never overwrites an online observation, is consumed
+per request rather than cached, and is never echoed in diagnostics.
+This supersedes the earlier deferred bullet — premise reads are wired;
+only host/capability stay evidence-seamed.
+
+### Verification additions (R4)
+
+- `TestT24NUMTokenDomain`: the out-of-NUM matrix (2147483648,
+  4294967296, >u64, ±priority magnitudes) all land as parser
+  diagnostics on CREATE and ALTER.
+- `TestT24ReadOnlyGateMatrix`: the six reachable arms plus the
+  gap-precision and admin≠exempt controls.
+- `TestT24BoundCompleteSeedsUnoccupied`, `TestT24LazyLoaderMergesIntoPremises`,
+  `TestT24DeploymentEvidenceChannel`: merge/override/binding contracts.
+- `provider_t24_test.go` R4 block: complete wire, role-augmented grants,
+  unreadable-role positive-only, `RESOURCE_GROUP_USER ≠ ADMIN`, partial
+  occupancy visibility, pfs OFF, zero-row feature probe, error
+  propagation, dialect gating.
+- Manifest: `cli_cases` 8→10 (two NUM-domain parser-diagnostic cells),
+  oracles rewritten to the R4 gap sets with the R2 counts recorded in
+  the descriptions; `metadata_cases` oracles re-derived for the wired
+  premises.

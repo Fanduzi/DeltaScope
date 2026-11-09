@@ -180,3 +180,227 @@ func TestT24ResourceGroupLoaderDialectGated(t *testing.T) {
 		t.Fatalf("snapshot = %#v, want unavailable — the RU query is TiDB-only", snapshot)
 	}
 }
+
+// ── T24-R4: LoadMySQLResourceGroupFacts — the ordinary-client premise
+// bundle on one session. Fragments are longest-match keys against the
+// stub driver's literal queries.
+
+const (
+	t24FactsVarsFragment    = "show global variables"
+	t24FactsRolesFragment   = "select current_role()"
+	t24FactsGrantFragment   = "show grants for current_user()"
+	t24FactsUsingFragment   = "show grants for current_user() using"
+	t24FactsPFSFragment     = "@@global.performance_schema"
+	t24FactsThreadsFragment = "performance_schema.threads"
+	// The feature probe must out-score the object loader's
+	// information_schema.resource_groups fragment (39 chars) — this
+	// predicate appears only in the probe query.
+	t24FactsFeatureFragment = "resource_group_name = 'usr_default'"
+)
+
+func t24LoadFacts(t *testing.T, results map[string]testQueryResult, dialect spec.Dialect) (*spec.InstanceFacts, error) {
+	t.Helper()
+	db := openTestDB(t, results)
+	provider := NewProvider(db)
+	return provider.LoadMySQLResourceGroupFacts(context.Background(), dialect)
+}
+
+// The complete wire: variables, grants (no active roles), a
+// PROCESS-bearing grant set, an enabled performance_schema, and the
+// builtin feature row — every premise answered.
+func TestT24FactsLoaderCompleteWire(t *testing.T) {
+	facts, err := t24LoadFacts(t, map[string]testQueryResult{
+		t24FactsVarsFragment: {
+			columns: []string{"Variable_name", "Value"},
+			rows: [][]driver.Value{
+				{"read_only", "OFF"},
+				{"super_read_only", "OFF"},
+			},
+		},
+		t24FactsRolesFragment: {columns: []string{"current_role()"}, rows: [][]driver.Value{{"NONE"}}},
+		t24FactsGrantFragment: {
+			columns: []string{"Grants for u@%"},
+			rows: [][]driver.Value{
+				{"GRANT USAGE ON *.* TO 'u'@'%'"},
+				{"GRANT PROCESS, RESOURCE_GROUP_ADMIN, CONNECTION_ADMIN ON *.* TO 'u'@'%'"},
+			},
+		},
+		t24FactsPFSFragment:     {columns: []string{"@@global.performance_schema"}, rows: [][]driver.Value{{"ON"}}},
+		t24FactsThreadsFragment: {columns: []string{"resource_group"}, rows: [][]driver.Value{{"rg1"}, {"Other_RG"}}},
+		t24FactsFeatureFragment: {columns: []string{"resource_group_name"}, rows: [][]driver.Value{{"usr_default"}}},
+	}, spec.DialectMySQL)
+	if err != nil {
+		t.Fatalf("LoadMySQLResourceGroupFacts: %v", err)
+	}
+	if !facts.MySQLReadOnlyKnown || facts.MySQLReadOnly {
+		t.Fatalf("read_only = known:%v value:%v, want known OFF", facts.MySQLReadOnlyKnown, facts.MySQLReadOnly)
+	}
+	if !facts.MySQLSuperReadOnlyKnown || facts.MySQLSuperReadOnly {
+		t.Fatalf("super_read_only = known:%v value:%v, want known OFF", facts.MySQLSuperReadOnlyKnown, facts.MySQLSuperReadOnly)
+	}
+	if !facts.MySQLResourceGroupAdminKnown || !facts.MySQLResourceGroupAdmin {
+		t.Fatalf("admin = known:%v value:%v, want known granted", facts.MySQLResourceGroupAdminKnown, facts.MySQLResourceGroupAdmin)
+	}
+	if !facts.MySQLReadOnlyExemptKnown || !facts.MySQLReadOnlyExempt {
+		t.Fatalf("exempt = known:%v value:%v, want known via CONNECTION_ADMIN", facts.MySQLReadOnlyExemptKnown, facts.MySQLReadOnlyExempt)
+	}
+	if !facts.MySQLResourceGroupFeatureKnown || !facts.MySQLResourceGroupFeatureSupported {
+		t.Fatalf("feature = known:%v value:%v, want proven supported by the builtin row", facts.MySQLResourceGroupFeatureKnown, facts.MySQLResourceGroupFeatureSupported)
+	}
+	if !facts.MySQLResourceGroupBound["rg1"] || !facts.MySQLResourceGroupBound["other_rg"] {
+		t.Fatalf("bound = %v, want both observed groups proven occupied (names normalized lowercase)", facts.MySQLResourceGroupBound)
+	}
+	if !facts.MySQLResourceGroupBoundComplete {
+		t.Fatal("bound set must be proven complete — PROCESS grants full thread visibility")
+	}
+	// Host CPU count and priority capability are never SQL-observable —
+	// the provider must not fabricate them.
+	if facts.MySQLHostVCPUsKnown || facts.MySQLResourceGroupPriorityCapKnown {
+		t.Fatal("host vcpus/priority capability must stay unproven — no SQL channel observes them")
+	}
+}
+
+// Active roles augment the effective set: the base grant shows USAGE
+// while the role carries RESOURCE_GROUP_ADMIN — admin is proven, and
+// the still-negative exemption answer is proven too because the read
+// was complete.
+func TestT24FactsLoaderRoleAugmented(t *testing.T) {
+	facts, err := t24LoadFacts(t, map[string]testQueryResult{
+		t24FactsVarsFragment: {
+			columns: []string{"Variable_name", "Value"},
+			rows:    [][]driver.Value{{"read_only", "ON"}},
+		},
+		t24FactsRolesFragment: {columns: []string{"current_role()"}, rows: [][]driver.Value{{"'rg_admin'@'%'"}}},
+		t24FactsGrantFragment: {
+			columns: []string{"Grants for u@%"},
+			rows:    [][]driver.Value{{"GRANT USAGE ON *.* TO 'u'@'%'"}},
+		},
+		t24FactsUsingFragment: {
+			columns: []string{"Grants for u@%"},
+			rows:    [][]driver.Value{{"GRANT RESOURCE_GROUP_ADMIN, PROCESS ON *.* TO 'u'@'%'"}},
+		},
+	}, spec.DialectMySQL)
+	if err != nil {
+		t.Fatalf("LoadMySQLResourceGroupFacts: %v", err)
+	}
+	if !facts.MySQLResourceGroupAdminKnown || !facts.MySQLResourceGroupAdmin {
+		t.Fatalf("admin = known:%v value:%v, want proven via the active role", facts.MySQLResourceGroupAdminKnown, facts.MySQLResourceGroupAdmin)
+	}
+	if !facts.MySQLReadOnlyExemptKnown || facts.MySQLReadOnlyExempt {
+		t.Fatalf("exempt = known:%v value:%v, want proven-negative under a complete read", facts.MySQLReadOnlyExemptKnown, facts.MySQLReadOnlyExempt)
+	}
+}
+
+// An unanswerable CURRENT_ROLE() (stubbed as no rows, the pre-8.0
+// surface) degrades completeness: a base-grant positive still proves,
+// but no negative answer is ever claimed — an unreadable role could
+// carry the privilege.
+func TestT24FactsLoaderRolesUnreadablePositiveOnly(t *testing.T) {
+	facts, err := t24LoadFacts(t, map[string]testQueryResult{
+		t24FactsGrantFragment: {
+			columns: []string{"Grants for u@%"},
+			rows:    [][]driver.Value{{"GRANT USAGE ON *.* TO 'u'@'%'"}},
+		},
+	}, spec.DialectMySQL)
+	if err != nil {
+		t.Fatalf("LoadMySQLResourceGroupFacts: %v", err)
+	}
+	if facts.MySQLResourceGroupAdminKnown || facts.MySQLResourceGroupAdmin {
+		t.Fatalf("admin = known:%v value:%v, want unproven — active roles were never readable", facts.MySQLResourceGroupAdminKnown, facts.MySQLResourceGroupAdmin)
+	}
+	if facts.MySQLReadOnlyExemptKnown {
+		t.Fatalf("exempt = known:%v value:%v, want unproven under partial visibility", facts.MySQLReadOnlyExemptKnown, facts.MySQLReadOnlyExempt)
+	}
+}
+
+// RESOURCE_GROUP_USER is not RESOURCE_GROUP_ADMIN — bounded exact-token
+// parsing never inflates the user privilege into the admin one.
+func TestT24FactsLoaderResourceGroupUserIsNotAdmin(t *testing.T) {
+	facts, err := t24LoadFacts(t, map[string]testQueryResult{
+		t24FactsRolesFragment: {columns: []string{"current_role()"}, rows: [][]driver.Value{{"NONE"}}},
+		t24FactsGrantFragment: {
+			columns: []string{"Grants for u@%"},
+			rows:    [][]driver.Value{{"GRANT USAGE, RESOURCE_GROUP_USER ON *.* TO 'u'@'%'"}},
+		},
+	}, spec.DialectMySQL)
+	if err != nil {
+		t.Fatalf("LoadMySQLResourceGroupFacts: %v", err)
+	}
+	if !facts.MySQLResourceGroupAdminKnown || facts.MySQLResourceGroupAdmin {
+		t.Fatalf("admin = known:%v value:%v, want proven-negative — RESOURCE_GROUP_USER is not ADMIN", facts.MySQLResourceGroupAdminKnown, facts.MySQLResourceGroupAdmin)
+	}
+}
+
+// Partial thread visibility — a bound row still proves its group's
+// occupancy, but without PROCESS the missing keys stay unproven.
+func TestT24FactsLoaderOccupancyPartialVisibility(t *testing.T) {
+	facts, err := t24LoadFacts(t, map[string]testQueryResult{
+		t24FactsRolesFragment:   {columns: []string{"current_role()"}, rows: [][]driver.Value{{"NONE"}}},
+		t24FactsGrantFragment:   {columns: []string{"Grants for u@%"}, rows: [][]driver.Value{{"GRANT USAGE ON *.* TO 'u'@'%'"}}},
+		t24FactsPFSFragment:     {columns: []string{"@@global.performance_schema"}, rows: [][]driver.Value{{"ON"}}},
+		t24FactsThreadsFragment: {columns: []string{"resource_group"}, rows: [][]driver.Value{{"rg1"}}},
+	}, spec.DialectMySQL)
+	if err != nil {
+		t.Fatalf("LoadMySQLResourceGroupFacts: %v", err)
+	}
+	if !facts.MySQLResourceGroupBound["rg1"] {
+		t.Fatalf("bound = %v, want rg1 proven occupied", facts.MySQLResourceGroupBound)
+	}
+	if facts.MySQLResourceGroupBoundComplete {
+		t.Fatal("bound completeness must not be claimed without PROCESS — hidden threads could be bound")
+	}
+}
+
+// A disabled performance_schema leaves every occupancy fact unproven.
+func TestT24FactsLoaderPerformanceSchemaOff(t *testing.T) {
+	facts, err := t24LoadFacts(t, map[string]testQueryResult{
+		t24FactsPFSFragment: {columns: []string{"@@global.performance_schema"}, rows: [][]driver.Value{{"OFF"}}},
+	}, spec.DialectMySQL)
+	if err != nil {
+		t.Fatalf("LoadMySQLResourceGroupFacts: %v", err)
+	}
+	if facts.MySQLResourceGroupBound != nil || facts.MySQLResourceGroupBoundComplete {
+		t.Fatalf("bound = %v complete:%v, want unproven under pfs OFF", facts.MySQLResourceGroupBound, facts.MySQLResourceGroupBoundComplete)
+	}
+}
+
+// A zero-row feature probe stays unproven — catalog visibility is not
+// documented as unfiltered, so emptiness never claims the feature
+// absent.
+func TestT24FactsLoaderFeatureProbeZeroRows(t *testing.T) {
+	facts, err := t24LoadFacts(t, map[string]testQueryResult{
+		t24FactsFeatureFragment: {columns: []string{"resource_group_name"}},
+	}, spec.DialectMySQL)
+	if err != nil {
+		t.Fatalf("LoadMySQLResourceGroupFacts: %v", err)
+	}
+	if facts.MySQLResourceGroupFeatureKnown {
+		t.Fatalf("feature = known:%v value:%v, want unproven on a zero-row probe", facts.MySQLResourceGroupFeatureKnown, facts.MySQLResourceGroupFeatureSupported)
+	}
+}
+
+// A hard channel failure propagates — never degraded to unknown facts.
+func TestT24FactsLoaderErrorPropagates(t *testing.T) {
+	want := errors.New("variables read denied")
+	_, err := t24LoadFacts(t, map[string]testQueryResult{
+		t24FactsVarsFragment: {columns: []string{"Variable_name", "Value"}, queryErr: want},
+	}, spec.DialectMySQL)
+	if err == nil {
+		t.Fatal("want propagated error")
+	}
+	if !errors.Is(err, want) {
+		t.Fatalf("err = %v, want errors.Is(%v)", err, want)
+	}
+}
+
+// The bundle is MySQL-scoped — TiDB never pays for or receives the
+// MySQL premise reads.
+func TestT24FactsLoaderDialectGated(t *testing.T) {
+	facts, err := t24LoadFacts(t, map[string]testQueryResult{}, spec.DialectTiDB)
+	if err != nil {
+		t.Fatalf("LoadMySQLResourceGroupFacts: %v", err)
+	}
+	if facts != nil {
+		t.Fatalf("facts = %#v, want nil — the MySQL bundle never cross-loads", facts)
+	}
+}

@@ -95,6 +95,13 @@ func newCorpusMetadataProvider(metadata *corpusMetadata) *corpusFixtureMetadataP
 			MySQLResourceGroupAdmin:            metadata.Instance.MySQLResourceGroupAdmin,
 			MySQLResourceGroupAdminKnown:       metadata.Instance.MySQLResourceGroupAdminKnown,
 			MySQLResourceGroupBound:            metadata.Instance.MySQLResourceGroupBound,
+			MySQLResourceGroupBoundComplete:    metadata.Instance.MySQLResourceGroupBoundComplete,
+			MySQLReadOnly:                      metadata.Instance.MySQLReadOnly,
+			MySQLReadOnlyKnown:                 metadata.Instance.MySQLReadOnlyKnown,
+			MySQLSuperReadOnly:                 metadata.Instance.MySQLSuperReadOnly,
+			MySQLSuperReadOnlyKnown:            metadata.Instance.MySQLSuperReadOnlyKnown,
+			MySQLReadOnlyExempt:                metadata.Instance.MySQLReadOnlyExempt,
+			MySQLReadOnlyExemptKnown:           metadata.Instance.MySQLReadOnlyExemptKnown,
 		}
 	}
 	for tableName, snapshot := range metadata.Tables {

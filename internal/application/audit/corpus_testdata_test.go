@@ -236,6 +236,16 @@ type corpusInstanceFacts struct {
 	MySQLResourceGroupAdmin            bool            `yaml:"mysql_resource_group_admin,omitempty"`
 	MySQLResourceGroupAdminKnown       bool            `yaml:"mysql_resource_group_admin_known,omitempty"`
 	MySQLResourceGroupBound            map[string]bool `yaml:"mysql_resource_group_bound,omitempty"`
+	MySQLResourceGroupBoundComplete    bool            `yaml:"mysql_resource_group_bound_complete,omitempty"`
+	// The ordinary-client read-only gate premises (T24-R4): the global
+	// variables and the subject's SUPER/CONNECTION_ADMIN exemption —
+	// RESOURCE_GROUP_ADMIN alone never answers it.
+	MySQLReadOnly            bool `yaml:"mysql_read_only,omitempty"`
+	MySQLReadOnlyKnown       bool `yaml:"mysql_read_only_known,omitempty"`
+	MySQLSuperReadOnly       bool `yaml:"mysql_super_read_only,omitempty"`
+	MySQLSuperReadOnlyKnown  bool `yaml:"mysql_super_read_only_known,omitempty"`
+	MySQLReadOnlyExempt      bool `yaml:"mysql_read_only_exempt,omitempty"`
+	MySQLReadOnlyExemptKnown bool `yaml:"mysql_read_only_exempt_known,omitempty"`
 }
 
 type corpusTableSnapshot struct {

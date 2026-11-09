@@ -34,6 +34,11 @@ type t24Provider struct {
 	version string
 	facts   *spec.InstanceFacts
 	groups  map[string]t24GroupFact
+	// loadedFacts/loadErr model the optional T24 premise-bundle loader
+	// channel — nil means "loader answers nothing" and the merge is a
+	// no-op, so existing fixtures keep their behavior.
+	loadedFacts *spec.InstanceFacts
+	loadErr     error
 }
 
 func (p *t24Provider) LoadInstanceFacts(context.Context, spec.Dialect, string) (*spec.InstanceFacts, error) {
@@ -46,6 +51,16 @@ func (p *t24Provider) LoadInstanceFacts(context.Context, spec.Dialect, string) (
 
 func (p *t24Provider) LoadTableSnapshot(context.Context, spec.Dialect, string, string) (*spec.TableSnapshot, error) {
 	return nil, nil
+}
+
+// LoadMySQLResourceGroupFacts implements the optional T24 premise-bundle
+// loader — the channel the real provider wires for read-only variables,
+// grants, occupancy, and the feature probe.
+func (p *t24Provider) LoadMySQLResourceGroupFacts(context.Context, spec.Dialect) (*spec.InstanceFacts, error) {
+	if p.loadErr != nil {
+		return nil, p.loadErr
+	}
+	return p.loadedFacts, nil
 }
 
 func (p *t24Provider) ResolveObject(_ context.Context, _ spec.Dialect, req spec.ObjectLookupRequest) (*spec.ObjectSnapshot, error) {
@@ -82,6 +97,9 @@ const (
 	t24CapGap     = "unknown_resource_group_priority_capability"
 	t24TypeGap    = "unknown_resource_group_type"
 	t24OccGap     = "unknown_resource_group_occupancy"
+	t24ROGap      = "unknown_instance_read_only"
+	t24SROGap     = "unknown_instance_super_read_only"
+	t24ROExGap    = "unknown_resource_group_readonly_exemption"
 	t24CreateNote = "ddl.create_resource_group.notice"
 	t24DropNote   = "ddl.drop_resource_group.notice"
 )
@@ -89,7 +107,9 @@ const (
 // t24Facts returns the complete-premise fact bundle — every deployment
 // premise the shared outcome consults, proven and permissive:
 // feature supported, priority capability available, 8 host CPUs,
-// RESOURCE_GROUP_ADMIN granted, no bound threads observed.
+// RESOURCE_GROUP_ADMIN granted, no bound threads observed, and a
+// writable instance (read_only=OFF answers the gate for every world,
+// so super_read_only and the exemption need no facts).
 func t24Facts(version string) *spec.InstanceFacts {
 	return &spec.InstanceFacts{
 		Version:                            version,
@@ -102,6 +122,10 @@ func t24Facts(version string) *spec.InstanceFacts {
 		MySQLResourceGroupAdminKnown:       true,
 		MySQLResourceGroupAdmin:            true,
 		MySQLResourceGroupBound:            map[string]bool{},
+		MySQLReadOnlyKnown:                 true,
+		MySQLReadOnly:                      false,
+		MySQLSuperReadOnlyKnown:            true,
+		MySQLSuperReadOnly:                 false,
 	}
 }
 
@@ -129,6 +153,27 @@ func t24AuditRaw(t *testing.T, sql string, provider *t24Provider) (report.Result
 func t24MustAudit(t *testing.T, sql string, provider *t24Provider) report.Result {
 	t.Helper()
 	result, err := t24AuditRaw(t, sql, provider)
+	if err != nil {
+		t.Fatalf("AuditSQL(%q): %v", sql, err)
+	}
+	return result
+}
+
+// t24AuditEvidence runs the public Audit path with a DeploymentEvidence
+// bundle — the formal seam for premises no SQL channel observes.
+func t24AuditEvidence(t *testing.T, sql string, provider *t24Provider, evidence *spec.DeploymentEvidence) report.Result {
+	t.Helper()
+	target := ""
+	if provider != nil {
+		target = provider.version
+	}
+	result, err := AuditSQL(context.Background(), Request{
+		SQL:                sql,
+		Dialect:            spec.DialectMySQL,
+		TargetVersion:      target,
+		MetadataProvider:   provider,
+		DeploymentEvidence: evidence,
+	})
 	if err != nil {
 		t.Fatalf("AuditSQL(%q): %v", sql, err)
 	}
@@ -617,13 +662,272 @@ func TestT24MalformedOperands(t *testing.T) {
 	}
 }
 
-// Out-of-band NUM literals narrow to cpu_id_t exactly as upstream's
-// static_cast — VCPU=4294967296 declares endpoint 0, provably fitting
-// any running host.
-func TestT24VCPUNarrowing(t *testing.T) {
-	result := t24MustAudit(t, "CREATE RESOURCE GROUP rg TYPE=USER VCPU=4294967296;", t24Groups(map[string]t24GroupFact{}))
+// Upstream's resource-group productions accept only the NUM token —
+// int_token classifies a zero-stripped decimal literal at or below
+// 2147483647 (int32 max) as NUM; larger magnitudes lex as LONG_NUM,
+// ULONGLONG_NUM, or DECIMAL_NUM, none of which vcpu_num_or_range or
+// signed_num accepts. Out-of-NUM literals are grammar refusals — the
+// adapter must never claim them, never saturate or truncate them into
+// a declaration. (Corrected oracle: an earlier cell claimed
+// VCPU=4294967296 → effective endpoint 0 by cpu_id_t truncation; that
+// helper arithmetic was real but the SQL never reaches it — the lexer
+// emits LONG_NUM first.)
+func TestT24NUMTokenDomain(t *testing.T) {
+	// Reachable NUM domain — both boundaries claim.
+	for _, sql := range []string{
+		"CREATE RESOURCE GROUP rg TYPE=USER VCPU=2147483647;",
+		"CREATE RESOURCE GROUP rg TYPE=USER VCPU=0-2147483647;",
+		"CREATE RESOURCE GROUP rg TYPE=USER VCPU=0000000000000000000000005;",
+		"CREATE RESOURCE GROUP rg TYPE=USER THREAD_PRIORITY=2147483647;",
+		"CREATE RESOURCE GROUP rg TYPE=USER THREAD_PRIORITY=-2147483647;",
+	} {
+		result := t24MustAudit(t, sql, t24Groups(map[string]t24GroupFact{}))
+		if result.Statements[0].Kind != string(spec.KindDDL) {
+			t.Fatalf("%q: kind = %q, want ddl — NUM-domain literals claim", sql, result.Statements[0].Kind)
+		}
+	}
+	// Beyond NUM — LONG_NUM/ULONGLONG_NUM/DECIMAL_NUM all refuse at the
+	// grammar, matching upstream's syntax-error shape: no declaration,
+	// no notice, no post-state.
+	for _, sql := range []string{
+		"CREATE RESOURCE GROUP rg TYPE=USER VCPU=2147483648;",
+		"CREATE RESOURCE GROUP rg TYPE=USER VCPU=4294967296;",
+		"CREATE RESOURCE GROUP rg TYPE=USER VCPU=4294967296-4294967297;",
+		"CREATE RESOURCE GROUP rg TYPE=USER VCPU=4294967296-1;",
+		"CREATE RESOURCE GROUP rg TYPE=USER VCPU=18446744073709551615;",
+		"CREATE RESOURCE GROUP rg TYPE=USER VCPU=18446744073709551616;",
+		"CREATE RESOURCE GROUP rg TYPE=USER THREAD_PRIORITY=2147483648;",
+		"CREATE RESOURCE GROUP rg TYPE=USER THREAD_PRIORITY=-2147483648;",
+		"CREATE RESOURCE GROUP rg TYPE=USER THREAD_PRIORITY=9223372036854775807;",
+		"CREATE RESOURCE GROUP rg TYPE=USER THREAD_PRIORITY=-9223372036854775808;",
+		"ALTER RESOURCE GROUP rg VCPU=2147483648;",
+	} {
+		res, err := t24AuditRaw(t, sql, t24Groups(map[string]t24GroupFact{}))
+		if err == nil {
+			t.Fatalf("%q audited = %+v, want parse diagnostic — the literal lexes out of NUM", sql, res.Statements)
+		}
+		if len(res.Diagnostics) == 0 || res.Diagnostics[0].Classification != spec.DiagnosticParserError {
+			t.Fatalf("%q diagnostics = %+v, want parser_error", sql, res.Diagnostics)
+		}
+	}
+}
+
+// ── B3.5: ordinary-client read-only gate (T24-R4) ──
+//
+// Upstream check_readonly() opens every lifecycle execute: an ordinary
+// client refuses iff (read_only || super_read_only) && (super_read_only
+// || !exempt), where the exemption is SUPER_ACL/CONNECTION_ADMIN —
+// never RESOURCE_GROUP_ADMIN. The matrix pins each reachable arm plus
+// the gap-precision controls: a fact only owed when it flips a world's
+// outcome.
+func TestT24ReadOnlyGateMatrix(t *testing.T) {
+	base := func(apply func(*spec.InstanceFacts)) *t24Provider {
+		facts := t24Facts("8.0.36")
+		facts.MySQLReadOnlyKnown = false
+		facts.MySQLSuperReadOnlyKnown = false
+		facts.MySQLReadOnlyExemptKnown = false
+		apply(facts)
+		return &t24Provider{version: "8.0.36", facts: facts, groups: map[string]t24GroupFact{
+			"rg": {status: spec.MetadataStatusNotFound},
+		}}
+	}
+	// 1. Writable instance — ro/sro both OFF answers the gate; the
+	// exemption is never owed.
+	result := t24MustAudit(t, "CREATE RESOURCE GROUP rg TYPE=USER;", base(func(f *spec.InstanceFacts) {
+		f.MySQLReadOnlyKnown, f.MySQLReadOnly = true, false
+		f.MySQLSuperReadOnlyKnown, f.MySQLSuperReadOnly = true, false
+	}))
 	if got := len(t22Findings(result, 0, t24ValidRule)); got != 0 {
-		t.Fatalf("findings = %d, want none — the narrowed endpoint is provably valid", got)
+		t.Fatalf("writable create findings = %d, want none", got)
+	}
+	if gaps := t22GapCodes(result.Statements[0]); slices.Contains(gaps, t24ROExGap) {
+		t.Fatalf("writable create gaps = %v, want no exemption gap", gaps)
+	}
+	// 2. read_only ON + proven no exemption → refused.
+	result = t24MustAudit(t, "CREATE RESOURCE GROUP rg TYPE=USER;", base(func(f *spec.InstanceFacts) {
+		f.MySQLReadOnlyKnown, f.MySQLReadOnly = true, true
+		f.MySQLSuperReadOnlyKnown, f.MySQLSuperReadOnly = true, false
+		f.MySQLReadOnlyExemptKnown, f.MySQLReadOnlyExempt = true, false
+	}))
+	if got := len(t22Findings(result, 0, t24ValidRule)); got != 1 {
+		t.Fatalf("ro+no-exempt findings = %d, want refusal", got)
+	}
+	// 3. read_only ON + exemption proven, super OFF → proceeds.
+	result = t24MustAudit(t, "CREATE RESOURCE GROUP rg TYPE=USER;", base(func(f *spec.InstanceFacts) {
+		f.MySQLReadOnlyKnown, f.MySQLReadOnly = true, true
+		f.MySQLSuperReadOnlyKnown, f.MySQLSuperReadOnly = true, false
+		f.MySQLReadOnlyExemptKnown, f.MySQLReadOnlyExempt = true, true
+	}))
+	if got := len(t22Findings(result, 0, t24ValidRule)); got != 0 {
+		t.Fatalf("ro+exempt findings = %d, want none", got)
+	}
+	// 4. read_only ON + exemption unknown → undecidable, exemption gap.
+	result = t24MustAudit(t, "CREATE RESOURCE GROUP rg TYPE=USER;", base(func(f *spec.InstanceFacts) {
+		f.MySQLReadOnlyKnown, f.MySQLReadOnly = true, true
+		f.MySQLSuperReadOnlyKnown, f.MySQLSuperReadOnly = true, false
+	}))
+	if gaps := t22GapCodes(result.Statements[0]); !slices.Contains(gaps, t24ROExGap) {
+		t.Fatalf("ro+unknown-exempt gaps = %v, want %s", gaps, t24ROExGap)
+	}
+	if got := len(t22Findings(result, 0, t24ValidRule)); got != 0 {
+		t.Fatalf("ro+unknown-exempt findings = %d, want none — undecidable never fabricates", got)
+	}
+	// 5. super_read_only ON refuses an ordinary client even with the
+	// exemption proven.
+	result = t24MustAudit(t, "CREATE RESOURCE GROUP rg TYPE=USER;", base(func(f *spec.InstanceFacts) {
+		f.MySQLSuperReadOnlyKnown, f.MySQLSuperReadOnly = true, true
+		f.MySQLReadOnlyExemptKnown, f.MySQLReadOnlyExempt = true, true
+	}))
+	if got := len(t22Findings(result, 0, t24ValidRule)); got != 1 {
+		t.Fatalf("sro+exempt findings = %d, want refusal — super_read_only has no ordinary-client exemption", got)
+	}
+	// 6. read_only OFF proven + exemption proven → super_read_only still
+	// flips the outcome (an sro=ON world refuses), so the sro gap is
+	// owed — while the read_only gap is not.
+	result = t24MustAudit(t, "CREATE RESOURCE GROUP rg TYPE=USER;", base(func(f *spec.InstanceFacts) {
+		f.MySQLReadOnlyKnown, f.MySQLReadOnly = true, false
+		f.MySQLReadOnlyExemptKnown, f.MySQLReadOnlyExempt = true, true
+	}))
+	gaps := t22GapCodes(result.Statements[0])
+	if !slices.Contains(gaps, t24SROGap) {
+		t.Fatalf("ro-off+exempt gaps = %v, want %s — sro=ON still refuses", gaps, t24SROGap)
+	}
+	if slices.Contains(gaps, t24ROGap) {
+		t.Fatalf("ro-off+exempt gaps = %v, want no read_only gap — it is already proven", gaps)
+	}
+	// RESOURCE_GROUP_ADMIN is not a read-only exemption: admin proven,
+	// exemption unknown under read_only still owes the gap.
+	result = t24MustAudit(t, "CREATE RESOURCE GROUP rg TYPE=USER;", base(func(f *spec.InstanceFacts) {
+		f.MySQLReadOnlyKnown, f.MySQLReadOnly = true, true
+		f.MySQLSuperReadOnlyKnown, f.MySQLSuperReadOnly = true, false
+		f.MySQLResourceGroupAdminKnown, f.MySQLResourceGroupAdmin = true, true
+	}))
+	if gaps := t22GapCodes(result.Statements[0]); !slices.Contains(gaps, t24ROExGap) {
+		t.Fatalf("admin≠exempt gaps = %v, want %s", gaps, t24ROExGap)
+	}
+}
+
+// ── B3.6: T24-R4 fact channels — the lazy provider bundle and the
+// sourced deployment-evidence seam (B3.6).
+
+// The lazy premise-bundle loader merges into the request facts before
+// the batch adjudicates: the provider's own InstanceFacts never
+// carried the read-only answers, the loader supplies them, and the
+// gate closes with no gaps.
+func TestT24LazyLoaderMergesIntoPremises(t *testing.T) {
+	facts := t24Facts("8.0.36")
+	facts.MySQLReadOnlyKnown = false
+	facts.MySQLSuperReadOnlyKnown = false
+	provider := &t24Provider{version: "8.0.36", facts: facts,
+		loadedFacts: &spec.InstanceFacts{
+			MySQLReadOnlyKnown:      true,
+			MySQLReadOnly:           false,
+			MySQLSuperReadOnlyKnown: true,
+			MySQLSuperReadOnly:      false,
+		},
+		groups: map[string]t24GroupFact{"rg": {status: spec.MetadataStatusNotFound}},
+	}
+	result := t24MustAudit(t, "CREATE RESOURCE GROUP rg TYPE=USER;", provider)
+	if gaps := t22GapCodes(result.Statements[0]); len(gaps) != 0 {
+		t.Fatalf("gaps = %v, want none — the loader answered the read-only premises", gaps)
+	}
+	if got := len(t22Findings(result, 0, t24ValidRule)); got != 0 {
+		t.Fatalf("findings = %d, want none under merged facts", got)
+	}
+	// A loader failure propagates — never degraded to unknown facts.
+	provider.loadErr = errors.New("facts channel denied")
+	if _, err := t24AuditRaw(t, "CREATE RESOURCE GROUP rg TYPE=USER;", provider); err == nil {
+		t.Fatal("want propagated loader error — a failed read is not an unknown fact")
+	}
+}
+
+// Deployment evidence fills only the premises no SQL channel observes,
+// binds strictly to product+version, and never overwrites a proven
+// online answer.
+func TestT24DeploymentEvidenceChannel(t *testing.T) {
+	facts := t24Facts("8.0.36")
+	facts.MySQLHostVCPUsKnown = false
+	facts.MySQLResourceGroupPriorityCapKnown = false
+	provider := &t24Provider{version: "8.0.36", facts: facts,
+		groups: map[string]t24GroupFact{"rg": {status: spec.MetadataStatusNotFound}},
+	}
+	sql := "CREATE RESOURCE GROUP rg TYPE=USER VCPU=7 THREAD_PRIORITY=5;"
+
+	// A bound, sourced bundle fills the unproven slots — the statement
+	// adjudicates completely.
+	vcpus := uint64(8)
+	capable := true
+	evidence := &spec.DeploymentEvidence{
+		Source: "capacity-report:2025-11", Product: "mysql", Version: "8.0.36",
+		HostVCPUs: &vcpus, PriorityCapable: &capable,
+	}
+	result := t24AuditEvidence(t, sql, provider, evidence)
+	if gaps := t22GapCodes(result.Statements[0]); len(gaps) != 0 {
+		t.Fatalf("gaps = %v, want none — bound evidence answered host/priority premises", gaps)
+	}
+
+	// A version-mismatched bundle is ignored wholesale — the missing
+	// premises stay bounded gaps.
+	result = t24AuditEvidence(t, sql, provider, &spec.DeploymentEvidence{
+		Source: "capacity-report:2025-11", Product: "mysql", Version: "8.0.35",
+		HostVCPUs: &vcpus, PriorityCapable: &capable,
+	})
+	gaps := t22GapCodes(result.Statements[0])
+	if !slices.Contains(gaps, t24HostGap) || !slices.Contains(gaps, t24CapGap) {
+		t.Fatalf("gaps = %v, want host+capability gaps — mismatched evidence never binds", gaps)
+	}
+
+	// An unsourced bundle is ignored the same way — provenance is
+	// required, never a generic trust flag.
+	result = t24AuditEvidence(t, sql, provider, &spec.DeploymentEvidence{
+		Product: "mysql", Version: "8.0.36",
+		HostVCPUs: &vcpus, PriorityCapable: &capable,
+	})
+	gaps = t22GapCodes(result.Statements[0])
+	if !slices.Contains(gaps, t24HostGap) || !slices.Contains(gaps, t24CapGap) {
+		t.Fatalf("gaps = %v, want host+capability gaps — unsourced evidence never binds", gaps)
+	}
+
+	// Evidence never overwrites a proven online observation: the
+	// provider already proved a 4-CPU host, so evidence claiming 64
+	// cannot rescue a VCPU=5 declaration — the refusal stands.
+	facts4 := t24Facts("8.0.36")
+	facts4.MySQLHostVCPUs = 4
+	provider4 := &t24Provider{version: "8.0.36", facts: facts4,
+		groups: map[string]t24GroupFact{"rg": {status: spec.MetadataStatusNotFound}},
+	}
+	vcpus64 := uint64(64)
+	result = t24AuditEvidence(t, "CREATE RESOURCE GROUP rg TYPE=USER VCPU=5;", provider4, &spec.DeploymentEvidence{
+		Source: "capacity-report:2025-11", Product: "mysql", Version: "8.0.36",
+		HostVCPUs: &vcpus64,
+	})
+	if got := len(t22Findings(result, 0, t24ValidRule)); got != 1 {
+		t.Fatalf("findings = %d, want the host-range refusal — evidence never overwrites proven facts", got)
+	}
+}
+
+// A proven-complete bound observation answers occupancy for every
+// group — a missing key is a proven "unoccupied", not an unproven one.
+func TestT24BoundCompleteSeedsUnoccupied(t *testing.T) {
+	facts := t24Facts("8.0.36")
+	facts.MySQLResourceGroupBound = map[string]bool{"other": true}
+	facts.MySQLResourceGroupBoundComplete = true
+	provider := &t24Provider{version: "8.0.36", facts: facts, groups: map[string]t24GroupFact{
+		"rg": {status: spec.MetadataStatusConfirmed, exists: true,
+			definition: &spec.MySQLResourceGroupDefinition{GroupType: spec.MySQLResourceGroupTypeUser}},
+	}}
+	result := t24MustAudit(t, "DROP RESOURCE GROUP rg;", provider)
+	if gaps := t22GapCodes(result.Statements[0]); slices.Contains(gaps, t24OccGap) {
+		t.Fatalf("gaps = %v, want no occupancy gap under a proven-complete bound set", gaps)
+	}
+	if got := len(t22Findings(result, 0, t24ValidRule)); got != 0 {
+		t.Fatalf("drop findings = %d, want none — the group is proven unoccupied", got)
+	}
+	// An incomplete map still leaves a missing key unproven.
+	facts.MySQLResourceGroupBoundComplete = false
+	result = t24MustAudit(t, "DROP RESOURCE GROUP rg;", provider)
+	if gaps := t22GapCodes(result.Statements[0]); !slices.Contains(gaps, t24OccGap) {
+		t.Fatalf("gaps = %v, want %s under a partial bound map", gaps, t24OccGap)
 	}
 }
 

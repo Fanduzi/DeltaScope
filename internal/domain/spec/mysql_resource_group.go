@@ -38,11 +38,14 @@ const (
 
 // MySQLResourceGroupVCPUSpec is one authored VCPU member — a single CPU
 // id (Lo == Hi) or an inclusive range Lo-Hi. Endpoints keep the authored
-// u64 NUM values: upstream truncates each through cpu_id_t (uint32) when
-// it builds the range vector, so the effective endpoints ride
-// MySQLResourceGroupEffectiveVCPU. An inverted effective range is a
-// declaration-provable semantic refusal (ER_INVALID_VCPU_RANGE), never a
-// parse failure — the declaration keeps the member verbatim.
+// NUM values: upstream's lexer admits only literals at or below int32
+// max into this production (larger magnitudes lex as LONG_NUM/
+// ULONGLONG_NUM/DECIMAL_NUM and refuse at the grammar), and the
+// grammar action narrows each through cpu_id_t (uint32) — a defensive
+// truncation no reachable NUM value can trigger, kept here as the
+// effective projection. An inverted effective range is a
+// declaration-provable semantic refusal (ER_INVALID_VCPU_RANGE), never
+// a parse failure — the declaration keeps the member verbatim.
 type MySQLResourceGroupVCPUSpec struct {
 	Lo uint64 `json:"lo"`
 	Hi uint64 `json:"hi"`
@@ -50,14 +53,16 @@ type MySQLResourceGroupVCPUSpec struct {
 
 // MySQLResourceGroupEffectiveVCPU projects an authored endpoint onto
 // upstream's cpu_id_t domain — mysqld stores each NUM through uint32
-// when it builds the vcpu_range_vector, so the semantic checks below
-// run on the truncated value exactly as the server computes it.
+// when it builds the vcpu_range_vector. NUM-domain values already fit
+// uint32, so this is defensive projection; the semantic checks below
+// still read the effective value exactly as the server computes it.
 func MySQLResourceGroupEffectiveVCPU(v uint64) uint32 { return uint32(v) }
 
 // MySQLResourceGroupEffectivePriority projects an authored
 // THREAD_PRIORITY onto the stored domain — the parse tree keeps a
-// signed int, so out-of-band literals narrow to int32 before the
-// capability/type adjudication reads them.
+// signed int. The reachable NUM domain already fits int32, so the
+// narrowing is defensive projection, never a public-SQL reachability
+// claim: the capability/type adjudication reads the effective value.
 func MySQLResourceGroupEffectivePriority(v int64) int64 { return int64(int32(v)) }
 
 // MySQLResourceGroupOption is one authored MySQL resource-group option
@@ -366,6 +371,9 @@ const (
 	MySQLResourceGroupGapUnknownPriorityCap = "unknown_resource_group_priority_capability"
 	MySQLResourceGroupGapUnknownType        = "unknown_resource_group_type"
 	MySQLResourceGroupGapUnknownOccupancy   = "unknown_resource_group_occupancy"
+	MySQLResourceGroupGapUnknownReadOnly    = "unknown_instance_read_only"
+	MySQLResourceGroupGapUnknownSuperRO     = "unknown_instance_super_read_only"
+	MySQLResourceGroupGapUnknownROExempt    = "unknown_resource_group_readonly_exemption"
 )
 
 // Required-fact names the gaps name.
@@ -378,6 +386,9 @@ const (
 	MySQLResourceGroupFactPriorityCap = "resource_group.thread_priority_capable"
 	MySQLResourceGroupFactType        = "resource_group.type"
 	MySQLResourceGroupFactOccupancy   = "resource_group.bound_threads"
+	MySQLResourceGroupFactReadOnly    = "instance.read_only"
+	MySQLResourceGroupFactSuperRO     = "instance.super_read_only"
+	MySQLResourceGroupFactROExempt    = "privilege.super_or_connection_admin"
 )
 
 // MySQLResourceGroupGap is one missing premise — the rule renders it as
@@ -552,12 +563,24 @@ func MySQLResourceGroupStatementOutcome(operation DDLOperation, declaration *MyS
 		dep(MySQLResourceGroupGapUnknownFeature, MySQLResourceGroupFactFeature)
 	}
 
-	// 3. Name bound — ER_TOO_LONG_IDENT is declaration-provable.
+	// 3. Ordinary-client read-only gate — upstream check_readonly()
+	// opens every lifecycle execute: read_only=OFF passes outright; an
+	// SUPER_ACL/CONNECTION_ADMIN exemption passes only while
+	// super_read_only stays OFF; super_read_only refuses an ordinary
+	// client regardless of exemption (and forces opt_readonly on).
+	// Reject iff (read_only || super_read_only) && (super_read_only ||
+	// !exempt), adjudicated over every consistent world: a fact that
+	// only decides the verdict under one branch stays a bounded gap —
+	// e.g. an exempt subject never owes the read_only fact, and a
+	// writable instance never owes the exemption.
+	mysqlResourceGroupReadOnlyGate(facts, refuse, dep)
+
+	// 4. Name bound — ER_TOO_LONG_IDENT is declaration-provable.
 	if declaration.DeclaredNameTooLong() {
 		refuse("the group name exceeds the 64-byte identifier bound")
 	}
 
-	// 4. Privilege premise — RESOURCE_GROUP_ADMIN gates every lifecycle
+	// 5. Privilege premise — RESOURCE_GROUP_ADMIN gates every lifecycle
 	// command at execute.
 	if facts != nil && facts.MySQLResourceGroupAdminKnown && !facts.MySQLResourceGroupAdmin {
 		refuse("the statement requires the RESOURCE_GROUP_ADMIN privilege")
@@ -565,7 +588,7 @@ func MySQLResourceGroupStatementOutcome(operation DDLOperation, declaration *MyS
 		dep(MySQLResourceGroupGapUnknownPrivilege, MySQLResourceGroupFactPrivilege)
 	}
 
-	// 5. Reserved builtin pair — an all-branch refusal by name alone:
+	// 6. Reserved builtin pair — an all-branch refusal by name alone:
 	// feature-off refuses the statement, feature-on finds the group
 	// present and refuses the reserved target.
 	if IsMySQLResourceGroupReservedName(declaration.Name) {
@@ -579,7 +602,7 @@ func MySQLResourceGroupStatementOutcome(operation DDLOperation, declaration *MyS
 		}
 	}
 
-	// 6. Ordered pre-state existence adjudication. A proven-occupied
+	// 7. Ordered pre-state existence adjudication. A proven-occupied
 	// fact answers existence by itself — a group with bound threads
 	// exists by definition — while the definition members stay
 	// unproven.
@@ -605,18 +628,18 @@ func MySQLResourceGroupStatementOutcome(operation DDLOperation, declaration *MyS
 		}
 	}
 
-	// 7. ALTER FORCE pairing — ER_INVALID_USE_OF_FORCE_OPTION.
+	// 8. ALTER FORCE pairing — ER_INVALID_USE_OF_FORCE_OPTION.
 	if operation == DDLOperationAlterResourceGroup && declaration.DeclaredForceMisuse() {
 		refuse("FORCE is valid only paired with DISABLE")
 	}
 
-	// 8. Declared VCPU range — ER_INVALID_VCPU_RANGE is
+	// 9. Declared VCPU range — ER_INVALID_VCPU_RANGE is
 	// declaration-provable on the effective (cpu_id_t) endpoints.
 	if declaration.DeclaredVCPUInverted() {
 		refuse("a declared VCPU range is inverted")
 	}
 
-	// 9. Host-capacity premise — ER_INVALID_VCPU_ID needs the target
+	// 10. Host-capacity premise — ER_INVALID_VCPU_ID needs the target
 	// host's CPU count; a zero endpoint provably fits any running host.
 	if declaration.DeclaredVCPUNeedsHostFact() {
 		if facts != nil && facts.MySQLHostVCPUsKnown {
@@ -628,7 +651,7 @@ func MySQLResourceGroupStatementOutcome(operation DDLOperation, declaration *MyS
 		}
 	}
 
-	// 10. Declared priority — capability- and type-bound. CREATE uses
+	// 11. Declared priority — capability- and type-bound. CREATE uses
 	// the authored TYPE; ALTER uses the existing group's proven type.
 	var prio mysqlResourceGroupPriorityOutcome
 	prioDeclared := false
@@ -666,7 +689,7 @@ func MySQLResourceGroupStatementOutcome(operation DDLOperation, declaration *MyS
 		}
 	}
 
-	// 11. DROP occupancy — ER_RESOURCE_GROUP_BUSY without FORCE.
+	// 12. DROP occupancy — ER_RESOURCE_GROUP_BUSY without FORCE.
 	// Occupancy is an independent fact (never derived from the state
 	// answer): a proven-occupied target refuses regardless — absent
 	// refuses anyway, present refuses busy — while FORCE proceeds and
@@ -691,6 +714,96 @@ func MySQLResourceGroupStatementOutcome(operation DDLOperation, declaration *MyS
 	}
 	out.Post = mysqlResourceGroupPostState(operation, declaration, pre, prioDeclared, prio, occupiedKnown, occupied)
 	return out
+}
+
+// mysqlResourceGroupReadOnlyGate replays upstream's check_readonly()
+// (sql/auth/sql_authorization.cc) for an ordinary client: refuse iff
+// (read_only || super_read_only) && (super_read_only || !exempt) where
+// exempt is the SUPER_ACL/CONNECTION_ADMIN answer. Replication and
+// internal skip-readonly threads are deliberately out of scope — the
+// audited subject is an ordinary client executor. The gate enumerates
+// every consistent world: all-refuse refuses, all-pass owes nothing,
+// and a mixed verdict emits a bounded gap for each unknown fact that
+// actually flips the outcome — never the "read_only || super_read_only"
+// blanket refusal, and never a guessed exemption.
+func mysqlResourceGroupReadOnlyGate(facts *InstanceFacts, refuse func(string), dep func(string, ...string)) {
+	ro, sro, ex := triUnknown, triUnknown, triUnknown
+	if facts != nil {
+		if facts.MySQLReadOnlyKnown {
+			ro = triOf(facts.MySQLReadOnly)
+		}
+		if facts.MySQLSuperReadOnlyKnown {
+			sro = triOf(facts.MySQLSuperReadOnly)
+		}
+		if facts.MySQLReadOnlyExemptKnown {
+			ex = triOf(facts.MySQLReadOnlyExempt)
+		}
+	}
+	inputs := [3]triFact{ro, sro, ex}
+	refuseGate := func(r, s, e bool) bool { return (r || s) && (s || !e) }
+	allRefuse, allPass := true, true
+	var flips [3]bool
+	for _, r := range expandTri(ro) {
+		for _, s := range expandTri(sro) {
+			for _, e := range expandTri(ex) {
+				world := [3]bool{r, s, e}
+				if refuseGate(world[0], world[1], world[2]) {
+					allPass = false
+				} else {
+					allRefuse = false
+				}
+				for i, input := range inputs {
+					if input != triUnknown {
+						continue
+					}
+					flipped := world
+					flipped[i] = !flipped[i]
+					if refuseGate(flipped[0], flipped[1], flipped[2]) != refuseGate(world[0], world[1], world[2]) {
+						flips[i] = true
+					}
+				}
+			}
+		}
+	}
+	switch {
+	case allRefuse:
+		refuse("the instance is read-only for an ordinary client")
+	case !allPass:
+		if flips[0] {
+			dep(MySQLResourceGroupGapUnknownReadOnly, MySQLResourceGroupFactReadOnly)
+		}
+		if flips[1] {
+			dep(MySQLResourceGroupGapUnknownSuperRO, MySQLResourceGroupFactSuperRO)
+		}
+		if flips[2] {
+			dep(MySQLResourceGroupGapUnknownROExempt, MySQLResourceGroupFactROExempt)
+		}
+	}
+}
+
+// triFact is a three-valued premise answer.
+type triFact uint8
+
+const (
+	triFalse triFact = iota
+	triTrue
+	triUnknown
+)
+
+func triOf(v bool) triFact {
+	if v {
+		return triTrue
+	}
+	return triFalse
+}
+
+// expandTri returns the consistent boolean completions of one
+// three-valued fact — both values when unproven.
+func expandTri(v triFact) []bool {
+	if v == triUnknown {
+		return []bool{false, true}
+	}
+	return []bool{v == triTrue}
 }
 
 // mysqlResourceGroupPriorityTypes returns the group-type candidates the

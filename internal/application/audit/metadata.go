@@ -40,10 +40,27 @@ type PlacementPolicyLoader interface {
 	LoadPlacementPolicies(ctx context.Context, dialect spec.Dialect) (map[string]*spec.PlacementPolicyFact, error)
 }
 
+// MySQLResourceGroupFactsLoader optionally loads the T24/#103
+// ordinary-client premise bundle — the global read-only variables, the
+// executing subject's effective grants (base + active roles), the
+// proven bound-group occupancy set, and the feature-positive probe. It
+// is invoked at most once per request and only while a batch names a
+// MySQL resource group; the returned facts fill only still-unproven
+// slots. Errors propagate — a failed read is never degraded into an
+// absence claim.
+type MySQLResourceGroupFactsLoader interface {
+	LoadMySQLResourceGroupFacts(ctx context.Context, dialect spec.Dialect) (*spec.InstanceFacts, error)
+}
+
 // MetadataRequest describes one optional metadata-aware audit invocation.
 type MetadataRequest struct {
 	Schema   string
 	Provider MetadataProvider
+	// DeploymentEvidence is the caller-sourced, target-bound fact bundle
+	// for premises no SQL channel observes (host VCPU count, priority
+	// capability, feature support). See spec.DeploymentEvidence for the
+	// binding contract — a mismatched or unsourced bundle is ignored.
+	DeploymentEvidence *spec.DeploymentEvidence
 	// TargetVersion is the caller-supplied version constraint (already
 	// strict-parsed and product-stamped by the audit service). Offline it is
 	// the statement's version fact; online it only bounds the observed
@@ -205,6 +222,33 @@ func (state *batchState) enrichStatements(ctx context.Context, request *Metadata
 				return nil, fmt.Errorf("load placement policies: %w", err)
 			}
 			state.placementCatalog = catalog
+		}
+	}
+	// The MySQL resource-group premise bundle loads at most once per
+	// request and only while a statement names the family — the provider
+	// read runs on the audited session's own identity, then any sourced
+	// deployment evidence fills the slots still unproven. Neither channel
+	// overwrites a proven answer (T24/#103).
+	if dialect == spec.DialectMySQL && statementsNeedMySQLResourceGroupFacts(statements) {
+		if state.provider != nil {
+			if loader, ok := state.provider.(MySQLResourceGroupFactsLoader); ok {
+				loaded, err := loader.LoadMySQLResourceGroupFacts(ctx, dialect)
+				if err != nil {
+					return nil, fmt.Errorf("load mysql resource-group facts: %w", err)
+				}
+				if instanceFacts == nil && loaded != nil {
+					instanceFacts = &spec.InstanceFacts{}
+					state.instanceFacts = instanceFacts
+				}
+				mergeMySQLResourceGroupFacts(instanceFacts, loaded)
+			}
+		}
+		if request != nil && request.DeploymentEvidence != nil {
+			if instanceFacts == nil {
+				instanceFacts = &spec.InstanceFacts{}
+				state.instanceFacts = instanceFacts
+			}
+			applyDeploymentEvidence(instanceFacts, request.DeploymentEvidence, resolvedVersion)
 		}
 	}
 	// Object lookups resolve at most once per distinct (schema, type, name,

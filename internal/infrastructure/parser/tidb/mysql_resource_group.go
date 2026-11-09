@@ -310,9 +310,34 @@ func mysqlRGVCPUList(sqlText string, toks []sqlTok, i int) ([]spec.MySQLResource
 	}
 }
 
+// mysqlRGNumMax is upstream's NUM token boundary. int_token classifies
+// a zero-stripped decimal literal at or below long_str "2147483647"
+// (int32 max) as NUM; larger magnitudes lex as LONG_NUM (≤ int64 max),
+// ULONGLONG_NUM (≤ uint64 max), or DECIMAL_NUM — none of which the
+// resource-group productions vcpu_num_or_range or signed_num accept,
+// so they surface as syntax errors upstream, never reach the
+// static_cast<cpu_id_t> actions, and must stay unclaimed here.
+const mysqlRGNumMax = 2147483647
+
+// mysqlRGNum parses one NUM operand — a digit literal whose value is
+// at or below int32 max (leading zeros are stripped before the
+// magnitude comparison upstream, so zero-padded NUMs still claim).
+// Beyond NUM stays unclaimed for the base grammar's diagnostics.
+func mysqlRGNum(raw string) (uint64, bool) {
+	if !isUnsignedDigits(raw) {
+		return 0, false
+	}
+	value, err := strconv.ParseUint(raw, 10, 64)
+	if err != nil || value > mysqlRGNumMax {
+		return 0, false
+	}
+	return value, true
+}
+
 // mysqlRGSignedInt consumes `[=] [-]N` — THREAD_PRIORITY's signed
-// operand. The grammar's signed_num production takes an optional minus
-// only, so a `+` operand stays unclaimed.
+// operand. The grammar's signed_num production is `NUM | '-' NUM`: an
+// optional minus only (a `+` operand stays unclaimed) and the
+// magnitude is a NUM, so -2147483648 is out of domain upstream.
 func mysqlRGSignedInt(sqlText string, toks []sqlTok, i int) (int64, int, bool) {
 	if i < len(toks) && toks[i].kind == tokPunct && toks[i].text(sqlText) == "=" {
 		i++
@@ -326,33 +351,23 @@ func mysqlRGSignedInt(sqlText string, toks []sqlTok, i int) (int64, int, bool) {
 		return 0, i, false
 	}
 	raw := sqlText[toks[i].start:toks[i].end]
-	if !isUnsignedDigits(raw) {
+	value, ok := mysqlRGNum(raw)
+	if !ok {
 		return 0, i, false
 	}
-	value, err := strconv.ParseInt(raw, 10, 64)
-	if err != nil {
-		return 0, i, false
-	}
+	signed := int64(value)
 	if neg {
-		value = -value
+		signed = -signed
 	}
-	return value, i + 1, true
+	return signed, i + 1, true
 }
 
 // mysqlRGUnsigned parses one NUM member — the grammar's unsigned
-// operand is a u64 literal; anything beyond it stays unclaimed for the
-// base diagnostics. The cpu_id_t narrowing happens on the semantic
-// side (spec.MySQLResourceGroupEffectiveVCPU), not here.
+// operand is a NUM literal (≤ int32 max), not an arbitrary-width
+// integer; larger magnitudes lex as LONG_NUM/ULONGLONG_NUM/
+// DECIMAL_NUM upstream and stay unclaimed here.
 func mysqlRGUnsigned(sqlText string, tok sqlTok) (uint64, bool) {
-	raw := sqlText[tok.start:tok.end]
-	if !isUnsignedDigits(raw) {
-		return 0, false
-	}
-	value, err := strconv.ParseUint(raw, 10, 64)
-	if err != nil {
-		return 0, false
-	}
-	return value, true
+	return mysqlRGNum(sqlText[tok.start:tok.end])
 }
 
 func isUnsignedDigits(raw string) bool {

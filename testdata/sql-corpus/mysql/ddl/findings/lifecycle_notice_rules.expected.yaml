@@ -12,6 +12,8 @@ metadata:
     mysql_host_vcpus: 8
     mysql_resource_group_admin_known: true
     mysql_resource_group_admin: true
+    mysql_read_only_known: true
+    mysql_super_read_only_known: true
     mysql_resource_group_bound:
       rg1: false
   mysql_resource_groups:

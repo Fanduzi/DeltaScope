@@ -109,7 +109,17 @@ type Request struct {
 	// defaulted. With a MetadataProvider it is only a constraint checked
 	// against the observed identity; a mismatch returns ErrTargetVersionMismatch.
 	TargetVersion string
+	// DeploymentEvidence is the caller-sourced, target-bound fact bundle
+	// for MySQL resource-group premises no SQL channel observes (host
+	// VCPU count, priority capability, feature support — T24/#103). See
+	// DeploymentEvidence for the strict binding contract; a mismatched
+	// or unsourced bundle is ignored, never applied.
+	DeploymentEvidence *DeploymentEvidence
 }
+
+// DeploymentEvidence re-exports the domain contract verbatim so library
+// consumers can author the bundle without importing internal packages.
+type DeploymentEvidence = spec.DeploymentEvidence
 
 // Summary captures high-level public audit counts.
 type Summary struct {
@@ -253,6 +263,7 @@ func Audit(ctx context.Context, request Request) (Result, error) {
 		ConfigPath: request.ConfigPath,
 		Schema:     request.Schema,
 	}
+	appRequest.DeploymentEvidence = request.DeploymentEvidence
 	if request.MetadataProvider != nil {
 		appRequest.MetadataProvider = publicMetadataProvider{provider: request.MetadataProvider}
 	}
@@ -459,6 +470,12 @@ func cloneInstanceFacts(in *spec.InstanceFacts) *spec.InstanceFacts {
 		return nil
 	}
 	out := *in
+	if in.MySQLResourceGroupBound != nil {
+		out.MySQLResourceGroupBound = make(map[string]bool, len(in.MySQLResourceGroupBound))
+		for key, bound := range in.MySQLResourceGroupBound {
+			out.MySQLResourceGroupBound[key] = bound
+		}
+	}
 	return &out
 }
 
@@ -663,6 +680,29 @@ func (p publicMetadataProvider) LoadPlacementPolicies(ctx context.Context, diale
 		return nil, nil
 	}
 	return loader.LoadPlacementPolicies(ctx, Dialect(dialect))
+}
+
+// MySQLResourceGroupFactsProvider optionally supplies the T24/#103
+// ordinary-client premise bundle — read-only variables, effective
+// grants, bound-group occupancy, and the feature-positive probe — for
+// the audited connection's own identity (T24/#103).
+type MySQLResourceGroupFactsProvider interface {
+	LoadMySQLResourceGroupFacts(ctx context.Context, dialect Dialect) (*spec.InstanceFacts, error)
+}
+
+func (p publicMetadataProvider) LoadMySQLResourceGroupFacts(ctx context.Context, dialect spec.Dialect) (*spec.InstanceFacts, error) {
+	if p.provider == nil {
+		return nil, nil
+	}
+	loader, ok := p.provider.(MySQLResourceGroupFactsProvider)
+	if !ok {
+		return nil, nil
+	}
+	loaded, err := loader.LoadMySQLResourceGroupFacts(ctx, Dialect(dialect))
+	if err != nil {
+		return nil, err
+	}
+	return cloneInstanceFacts(loaded), nil
 }
 
 func (p publicMetadataProvider) ResolveObject(ctx context.Context, dialect spec.Dialect, request spec.ObjectLookupRequest) (*spec.ObjectSnapshot, error) {
