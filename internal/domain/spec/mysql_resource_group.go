@@ -563,7 +563,23 @@ func MySQLResourceGroupStatementOutcome(operation DDLOperation, declaration *MyS
 		dep(MySQLResourceGroupGapUnknownFeature, MySQLResourceGroupFactFeature)
 	}
 
-	// 3. Ordinary-client read-only gate — upstream check_readonly()
+	// 3. Host-capacity premise — ER_INVALID_VCPU_ID needs the target
+	// host's CPU count; a zero endpoint provably fits any running host.
+	// Upstream runs the per-range endpoint validation at prepare time
+	// (validate_vcpu_range), ahead of every execute-time check — so the
+	// endpoint refusal precedes the read-only gate, the privilege
+	// premise, and the execute-time inversion check.
+	if declaration.DeclaredVCPUNeedsHostFact() {
+		if facts != nil && facts.MySQLHostVCPUsKnown {
+			if declaration.DeclaredVCPUExceeds(facts.MySQLHostVCPUs) {
+				refuse("a declared VCPU id is at or past the host's CPU count")
+			}
+		} else {
+			dep(MySQLResourceGroupGapUnknownHostVCPU, MySQLResourceGroupFactHostVCPU)
+		}
+	}
+
+	// 4. Ordinary-client read-only gate — upstream check_readonly()
 	// opens every lifecycle execute: read_only=OFF passes outright; an
 	// SUPER_ACL/CONNECTION_ADMIN exemption passes only while
 	// super_read_only stays OFF; super_read_only refuses an ordinary
@@ -575,12 +591,12 @@ func MySQLResourceGroupStatementOutcome(operation DDLOperation, declaration *MyS
 	// writable instance never owes the exemption.
 	mysqlResourceGroupReadOnlyGate(facts, refuse, dep)
 
-	// 4. Name bound — ER_TOO_LONG_IDENT is declaration-provable.
+	// 5. Name bound — ER_TOO_LONG_IDENT is declaration-provable.
 	if declaration.DeclaredNameTooLong() {
 		refuse("the group name exceeds the 64-byte identifier bound")
 	}
 
-	// 5. Privilege premise — RESOURCE_GROUP_ADMIN gates every lifecycle
+	// 6. Privilege premise — RESOURCE_GROUP_ADMIN gates every lifecycle
 	// command at execute.
 	if facts != nil && facts.MySQLResourceGroupAdminKnown && !facts.MySQLResourceGroupAdmin {
 		refuse("the statement requires the RESOURCE_GROUP_ADMIN privilege")
@@ -588,7 +604,7 @@ func MySQLResourceGroupStatementOutcome(operation DDLOperation, declaration *MyS
 		dep(MySQLResourceGroupGapUnknownPrivilege, MySQLResourceGroupFactPrivilege)
 	}
 
-	// 6. Reserved builtin pair — an all-branch refusal by name alone:
+	// 7. Reserved builtin pair — an all-branch refusal by name alone:
 	// feature-off refuses the statement, feature-on finds the group
 	// present and refuses the reserved target.
 	if IsMySQLResourceGroupReservedName(declaration.Name) {
@@ -602,7 +618,7 @@ func MySQLResourceGroupStatementOutcome(operation DDLOperation, declaration *MyS
 		}
 	}
 
-	// 7. Ordered pre-state existence adjudication. A proven-occupied
+	// 8. Ordered pre-state existence adjudication. A proven-occupied
 	// fact answers existence by itself — a group with bound threads
 	// exists by definition — while the definition members stay
 	// unproven.
@@ -628,30 +644,14 @@ func MySQLResourceGroupStatementOutcome(operation DDLOperation, declaration *MyS
 		}
 	}
 
-	// 8. ALTER FORCE pairing — ER_INVALID_USE_OF_FORCE_OPTION.
-	if operation == DDLOperationAlterResourceGroup && declaration.DeclaredForceMisuse() {
-		refuse("FORCE is valid only paired with DISABLE")
-	}
-
 	// 9. Declared VCPU range — ER_INVALID_VCPU_RANGE is
-	// declaration-provable on the effective (cpu_id_t) endpoints.
+	// declaration-provable on the effective (cpu_id_t) endpoints and
+	// adjudicated at execute, after the prepare-time endpoint check.
 	if declaration.DeclaredVCPUInverted() {
 		refuse("a declared VCPU range is inverted")
 	}
 
-	// 10. Host-capacity premise — ER_INVALID_VCPU_ID needs the target
-	// host's CPU count; a zero endpoint provably fits any running host.
-	if declaration.DeclaredVCPUNeedsHostFact() {
-		if facts != nil && facts.MySQLHostVCPUsKnown {
-			if declaration.DeclaredVCPUExceeds(facts.MySQLHostVCPUs) {
-				refuse("a declared VCPU id is at or past the host's CPU count")
-			}
-		} else {
-			dep(MySQLResourceGroupGapUnknownHostVCPU, MySQLResourceGroupFactHostVCPU)
-		}
-	}
-
-	// 11. Declared priority — capability- and type-bound. CREATE uses
+	// 10. Declared priority — capability- and type-bound. CREATE uses
 	// the authored TYPE; ALTER uses the existing group's proven type.
 	var prio mysqlResourceGroupPriorityOutcome
 	prioDeclared := false
@@ -687,6 +687,13 @@ func MySQLResourceGroupStatementOutcome(operation DDLOperation, declaration *MyS
 				}
 			}
 		}
+	}
+
+	// 11. ALTER FORCE pairing — ER_INVALID_USE_OF_FORCE_OPTION is the
+	// last attribute validation upstream performs, after the VCPU and
+	// priority checks.
+	if operation == DDLOperationAlterResourceGroup && declaration.DeclaredForceMisuse() {
+		refuse("FORCE is valid only paired with DISABLE")
 	}
 
 	// 12. DROP occupancy — ER_RESOURCE_GROUP_BUSY without FORCE.

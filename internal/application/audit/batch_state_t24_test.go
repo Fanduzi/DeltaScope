@@ -1335,3 +1335,37 @@ func TestT24DialectBoundaries(t *testing.T) {
 		t.Fatalf("SET FOR on mysql = %+v, want bounded unaudited set_resource_group", setFor.Unsupported)
 	}
 }
+
+// Upstream validates per-range VCPU endpoints at prepare time, ahead of the
+// execute-time inversion check — on a proven small host an endpoint-invalid
+// AND inverted member reports ER_INVALID_VCPU_ID, never the later
+// ER_INVALID_VCPU_RANGE.
+func TestT24EndpointPrecedesInversion(t *testing.T) {
+	facts := t24Facts("8.0.36")
+	facts.MySQLHostVCPUs = 4
+	facts.MySQLHostVCPUsKnown = true
+	result := t24MustAudit(t, "CREATE RESOURCE GROUP rg TYPE=USER VCPU=99-5;", &t24Provider{
+		version: "8.0.36", facts: facts,
+		groups: map[string]t24GroupFact{"rg": {status: spec.MetadataStatusNotFound}},
+	})
+	findings := t22Findings(result, 0, t24ValidRule)
+	if len(findings) != 1 || !strings.Contains(findings[0].Message, "host's CPU count") {
+		t.Fatalf("findings = %+v, want the endpoint refusal first", findings)
+	}
+}
+
+// Upstream runs the ALTER FORCE-pairing check last, after the VCPU and
+// priority validations — an out-of-bound priority reports its own refusal,
+// never the FORCE-pairing one.
+func TestT24PriorityPrecedesForcePairing(t *testing.T) {
+	facts := t24Facts("8.0.36")
+	result := t24MustAudit(t, "ALTER RESOURCE GROUP rg THREAD_PRIORITY=99 FORCE;", &t24Provider{
+		version: "8.0.36", facts: facts,
+		groups: map[string]t24GroupFact{"rg": {status: spec.MetadataStatusConfirmed, exists: true,
+			definition: &spec.MySQLResourceGroupDefinition{GroupType: spec.MySQLResourceGroupTypeUser}}},
+	})
+	findings := t22Findings(result, 0, t24ValidRule)
+	if len(findings) != 1 || !strings.Contains(findings[0].Message, "THREAD_PRIORITY") {
+		t.Fatalf("findings = %+v, want the priority refusal first", findings)
+	}
+}
