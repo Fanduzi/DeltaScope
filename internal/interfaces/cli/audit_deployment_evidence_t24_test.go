@@ -122,6 +122,25 @@ func TestT24CLIDeploymentEvidenceFileGuards(t *testing.T) {
 	if _, code := runEvidenceAudit(t, append(append([]string{}, sql...), "--deployment-evidence-file", noAnchor)...); code != 2 {
 		t.Fatalf("missing anchors: exit = %d, want 2", code)
 	}
+	// Trailing content: a second JSON object, a stray closer, or bare
+	// text all reject; whitespace alone stays legal.
+	for _, tc := range []struct {
+		name string
+		body string
+		want int
+	}{
+		{"second object", `{"source":"s","product":"mysql","version":"8.0.36"} {"source":"x","product":"mysql","version":"8.0.36"}`, 2},
+		{"stray closer", `{"source":"s","product":"mysql","version":"8.0.36"} ]`, 2},
+		{"stray brace", `{"source":"s","product":"mysql","version":"8.0.36"} }`, 2},
+		{"trailing text", `{"source":"s","product":"mysql","version":"8.0.36"} garbage`, 2},
+		{"trailing ws", `{"source":"s","product":"mysql","version":"8.0.36"}   ` + "\n", 0},
+	} {
+		f := writeEvidenceFile(t, tc.body)
+		if _, code := runEvidenceAudit(t, append(append([]string{}, sql...), "--deployment-evidence-file", f)...); code != tc.want {
+			t.Fatalf("%s: exit = %d, want %d", tc.name, code, tc.want)
+		}
+	}
+
 	unknown := writeEvidenceFile(t, `{"source":"s","product":"mysql","version":"8.0.36","secret_dsn":"s3cret"}`)
 	if _, code := runEvidenceAudit(t, append(append([]string{}, sql...), "--deployment-evidence-file", unknown)...); code != 2 {
 		t.Fatalf("unknown field: exit = %d, want 2 — schema stays bounded", code)

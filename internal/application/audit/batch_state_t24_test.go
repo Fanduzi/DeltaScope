@@ -978,6 +978,64 @@ func TestT24DeploymentEvidenceTargetDiscrimination(t *testing.T) {
 	}
 }
 
+// Missing Target: an untargeted bundle is version-bound only — it fills
+// the unproven slot whether or not a declared identity rides along. The
+// legacy Request.Metadata entry validates through the same single
+// applyDeploymentEvidence call, so a Target-bound bundle can never
+// bypass the target check by arriving through the fallback path.
+func TestT24DeploymentEvidenceMissingTargetAndLegacyPath(t *testing.T) {
+	facts := t24Facts("8.0.36")
+	facts.MySQLHostVCPUsKnown = false
+	provider := &t24Provider{version: "8.0.36", facts: facts,
+		groups: map[string]t24GroupFact{"rg": {status: spec.MetadataStatusNotFound}},
+	}
+	sql := "CREATE RESOURCE GROUP rg TYPE=USER VCPU=7;"
+	vcpus := uint64(8)
+
+	// Untargeted + declared identity → the version-bound bundle fills
+	// (Target is the discriminator, not an admission ticket).
+	untargeted := &spec.DeploymentEvidence{
+		Source: "cap:1", Product: "mysql", Version: "8.0.36", HostVCPUs: &vcpus,
+	}
+	result := t24AuditEvidenceTarget(t, sql, provider, untargeted, "any-identity")
+	if gaps := t22GapCodes(result.Statements[0]); slices.Contains(gaps, t24HostGap) {
+		t.Fatalf("gaps = %v, want the version-bound fill", gaps)
+	}
+
+	// Same bundle via the legacy Metadata entry → identical outcome.
+	result2, err := AuditSQL(context.Background(), Request{
+		SQL: sql, Dialect: spec.DialectMySQL, TargetVersion: "8.0.36",
+		MetadataProvider: provider,
+		Metadata:         &MetadataRequest{DeploymentEvidence: untargeted, TargetIdentity: "any-identity"},
+	})
+	if err != nil {
+		t.Fatalf("AuditSQL: %v", err)
+	}
+	if gaps := t22GapCodes(result2.Statements[0]); slices.Contains(gaps, t24HostGap) {
+		t.Fatalf("legacy-path gaps = %v, want the same fill — identical validation", gaps)
+	}
+
+	// A Target-bound bundle via the legacy path still answers the target
+	// check — the fallback entry cannot bypass binding.
+	result3, err := AuditSQL(context.Background(), Request{
+		SQL: sql, Dialect: spec.DialectMySQL, TargetVersion: "8.0.36",
+		MetadataProvider: provider,
+		Metadata: &MetadataRequest{
+			DeploymentEvidence: &spec.DeploymentEvidence{
+				Source: "cap:1", Product: "mysql", Version: "8.0.36",
+				Target: "host-a-uuid", HostVCPUs: &vcpus,
+			},
+			TargetIdentity: "host-b-uuid",
+		},
+	})
+	if err != nil {
+		t.Fatalf("AuditSQL: %v", err)
+	}
+	if gaps := t22GapCodes(result3.Statements[0]); !slices.Contains(gaps, t24HostGap) {
+		t.Fatalf("legacy-path gaps = %v, want the host gap — the legacy entry honors the same target check", gaps)
+	}
+}
+
 // A proven-complete bound observation answers occupancy for every
 // group — a missing key is a proven "unoccupied", not an unproven one.
 func TestT24BoundCompleteSeedsUnoccupied(t *testing.T) {

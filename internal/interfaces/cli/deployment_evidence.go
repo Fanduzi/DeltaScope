@@ -40,7 +40,10 @@ func loadDeploymentEvidenceFile(path string) (*spec.DeploymentEvidence, error) {
 	if err := decoder.Decode(&evidence); err != nil {
 		return nil, fmt.Errorf("deployment evidence file is not valid JSON")
 	}
-	if decoder.More() {
+	// Anything past the first JSON value must be whitespace — a second
+	// object, a stray closer, or trailing text is a shape violation, and
+	// decoder.More alone cannot see stray "]"/"}" tokens.
+	if len(bytes.TrimSpace(raw[decoder.InputOffset():])) != 0 {
 		return nil, fmt.Errorf("deployment evidence file carries trailing content")
 	}
 	if evidence.Source == "" || evidence.Product == "" || evidence.Version == "" {

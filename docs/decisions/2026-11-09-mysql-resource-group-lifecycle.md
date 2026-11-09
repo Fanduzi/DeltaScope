@@ -364,3 +364,13 @@ observed-identity binding, `capability=false` consumption, and the
 no-RG-statement lazy gate all run stub driver → real
 `mysqlmeta.Provider` → public `AuditSQL` — no hand-seeded
 `BoundComplete`, no app-layer fakes.
+
+- The CLI loader additionally trusted `decoder.More()` for trailing
+  content; stray `]`/`}` tokens (which `More` cannot see) were silently
+  accepted. The remainder after the first JSON value must now be pure
+  whitespace — second objects, stray closers, and bare text all exit 2.
+- Permanent discrimination for the missing-Target and legacy-entry
+  paths landed in `TestT24DeploymentEvidenceMissingTargetAndLegacyPath`:
+  untargeted bundles are version-bound, the legacy `Request.Metadata`
+  entry runs the identical validator, and a `Target`-bound bundle can
+  never bypass the check through the fallback path.
