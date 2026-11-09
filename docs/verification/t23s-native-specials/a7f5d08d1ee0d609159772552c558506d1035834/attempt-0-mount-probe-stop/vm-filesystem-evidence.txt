@@ -1,0 +1,35 @@
+VM filesystem evidence captured while profile was Running
+(before normal `colima stop`; verbatim commands + output)
+
+$ limactl shell colima-ds-t21-20261107t1158z-e514c8 -- \
+    ls -la /Users/fan/GolangProjects/DeltaScope/docker/tidb/
+total 12
+drwxr-xr-x 3 root root 4096 Nov  9 09:00 .
+drwxr-xr-x 3 root root 4096 Nov  9 09:00 ..
+drwxr-xr-x 2 root root 4096 Nov  9 09:00 t23s-probe.conf
+
+  -> dockerd created the bind source as a DIRECTORY (root-owned,
+     timestamp 09:00 = probe `docker create` time) because the host
+     path does not exist inside the VM.
+
+$ limactl shell colima-ds-t21-20261107t1158z-e514c8 -- \
+    sh -c 'mount | grep -Ei "user|host|virtiofs|9p"'
+vz-rosetta on /mnt/lima-rosetta type virtiofs (rw,relatime)
+tmpfs on /run/user/501 type tmpfs (rw,nosuid,nodev,relatime,size=1222072k,nr_inodes=305518,mode=700,uid=501,gid=1000,inode64)
+
+  -> NO /Users (or any host-home) mount exists in this VM. Profile
+     config: mounts: null, vmType: vz, mountType: virtiofs. Repo
+     bind sources under $HOME are invisible to dockerd, so every
+     ./tidb/*.toml mount in the frozen compose would resolve to a
+     dockerd-created empty directory.
+
+Profile state after stop:
+$ colima list
+PROFILE                          STATUS   ARCH     CPUS  MEMORY  DISK
+ds-t21-20261107t1158z-e514c8     Stopped  aarch64  4     12GiB   20GiB
+
+VM-internal residue (documented, deliberately left): the
+dockerd-created directories /Users/fan/GolangProjects/DeltaScope/
+docker/tidb/t23s-probe.conf and parents live inside the preserved VM
+disk; removal was not part of the sanctioned probe lifecycle and a
+manual rm against an unresolvable mount root was not warranted.
