@@ -244,6 +244,7 @@ func (state *batchState) enrichStatements(ctx context.Context, request *Metadata
 		}
 		state.sequenceResolver = cachedObjectResolver
 		state.resourceGroupResolver = cachedObjectResolver
+		state.mysqlResourceGroupResolver = cachedObjectResolver
 	}
 
 	consumed := 0
@@ -448,6 +449,22 @@ func (state *batchState) enrichStatements(ctx context.Context, request *Metadata
 			}
 		}
 
+		// The MySQL CPU resource-group family binds its own registry —
+		// version premise and reserved groups are adjudicated inside the
+		// resolver, never guessed (T24/#103).
+		if enriched[i].DDL != nil && enriched[i].DDL.MySQLResourceGroup != nil && dialect == spec.DialectMySQL {
+			groups, gerr := state.bindMySQLResourceGroups(ctx, enriched[i])
+			if gerr != nil {
+				return nil, gerr
+			}
+			if groups != nil {
+				if enriched[i].Metadata == nil {
+					enriched[i].Metadata = &spec.Metadata{Schema: metadataSchema, Instance: instanceFacts, Version: resolvedVersion}
+				}
+				enriched[i].Metadata.MySQLResourceGroups = groups
+			}
+		}
+
 		if err := state.apply(ctx, enriched[i]); err != nil {
 			return nil, err
 		}
@@ -648,6 +665,11 @@ func planObjectLookup(schema string, statement spec.Statement) *spec.ObjectLooku
 		Schema: schema,
 		Type:   objType,
 		Name:   name,
+	}
+	if ddl.MySQLResourceGroup != nil {
+		// The MySQL CPU family resolves its own catalog object type —
+		// never the TiDB RU resource_group lookup (T24/#103).
+		req.Type = "mysql_resource_group"
 	}
 	// A qualified sequence target resolves under its authored schema — the
 	// qualifier wins over the request schema everywhere it is read.

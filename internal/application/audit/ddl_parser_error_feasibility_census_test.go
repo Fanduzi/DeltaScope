@@ -82,7 +82,7 @@ func assertParserErrorFeasibilityCase(t *testing.T, tc ddlParserErrorFeasibility
 	}
 }
 
-// --- MySQL parser-error feasibility cases (14) ---
+// --- MySQL parser-error feasibility cases (12) ---
 
 var mysqlParserErrorFeasibilityCases = []ddlParserErrorFeasibilityCase{
 	{Dialect: spec.DialectMySQL, Family: "routine", Name: "ALTER PROCEDURE",
@@ -133,14 +133,6 @@ var mysqlParserErrorFeasibilityCases = []ddlParserErrorFeasibilityCase{
 		SQL:      "DROP TABLESPACE ts1",
 		Expected: parserUpgradeCandidate,
 		Reason:   "Standard MySQL 8.0 DDL with bounded structure; TiDB parser may add support"},
-	{Dialect: spec.DialectMySQL, Family: "resource_group", Name: "CREATE RESOURCE GROUP",
-		SQL:      "CREATE RESOURCE GROUP rg1 TYPE = USER VCPU = 0-3",
-		Expected: parserUpgradeCandidate,
-		Reason:   "MySQL 8.0 resource group DDL; bounded key=value structure; TiDB parser may add support"},
-	{Dialect: spec.DialectMySQL, Family: "resource_group", Name: "ALTER RESOURCE GROUP",
-		SQL:      "ALTER RESOURCE GROUP rg1 VCPU = 0-7",
-		Expected: parserUpgradeCandidate,
-		Reason:   "MySQL 8.0 resource group DDL; bounded key=value structure; TiDB parser may add support"},
 }
 
 // --- TiDB parser-error feasibility cases (8) ---
@@ -237,8 +229,8 @@ func TestDDLParserErrorFeasibilityCensus(t *testing.T) {
 			tidbCount++
 		}
 	}
-	if mysqlCount != 14 {
-		t.Errorf("expected 14 MySQL parser-error cases, got %d", mysqlCount)
+	if mysqlCount != 12 {
+		t.Errorf("expected 12 MySQL parser-error cases, got %d", mysqlCount)
 	}
 	if tidbCount != 8 {
 		t.Errorf("expected 8 TiDB parser-error cases, got %d", tidbCount)

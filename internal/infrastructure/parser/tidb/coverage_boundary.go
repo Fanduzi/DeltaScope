@@ -30,10 +30,17 @@ func applyCoverageBoundary(dialect spec.Dialect, statement *spec.Statement, node
 	}
 	if statement.Kind == spec.KindUnknown {
 		if feature := unhandledStatementFeature(node); feature != "" {
-			statement.Unsupported = &spec.UnsupportedDetail{
+			detail := &spec.UnsupportedDetail{
 				Feature: feature,
 				Reason:  spec.UnsupportedUnauditedReason,
 			}
+			if rg, ok := node.(*mysqlResourceGroupStatement); ok && rg.setFor && dialect == spec.DialectTiDB {
+				// `SET RESOURCE GROUP ... FOR` is MySQL-only binding
+				// syntax — vendor boundary under TiDB (T24/#103).
+				detail.Reason = spec.UnsupportedVendorBoundaryReason
+				detail.Metadata = map[string]any{"boundary": "vendor"}
+			}
+			statement.Unsupported = detail
 		}
 	}
 }
@@ -56,12 +63,25 @@ func dialectBoundaryFeature(dialect spec.Dialect, ddl *spec.DDL) (feature string
 			spec.DDLOperationCreatePlacementPolicy, spec.DDLOperationAlterPlacementPolicy, spec.DDLOperationDropPlacementPolicy,
 			spec.DDLOperationAlterRangePlacement,
 			spec.DDLOperationCreateResourceGroup, spec.DDLOperationAlterResourceGroup:
+			if ddl.MySQLResourceGroup != nil {
+				// The MySQL CPU resource-group family is audited on its
+				// own dialect — never a vendor boundary (T24/#103).
+				return "", false, false
+			}
 			// TiDB RU resource-group options (RU_PER_SEC / PRIORITY /
 			// BURSTABLE / QUERY_LIMIT) are not MySQL semantics — the
 			// parsed form is unambiguously TiDB syntax, so MySQL keeps a
 			// vendor boundary rather than a silent audited create. MySQL's
 			// own CPU resource-group family is a separate surface (T24);
 			// DROP is shared syntax and stays audited on both dialects.
+			return string(ddl.Operation), true, true
+		}
+		if ddl.Operation == spec.DDLOperationDropResourceGroup && ddl.ResourceGroup != nil &&
+			(ddl.ResourceGroup.IfExists || len(ddl.ResourceGroup.Options) > 0) {
+			// A TiDB-path DROP carrying TiDB-only members (the IF EXISTS
+			// guard MySQL's grammar lacks) is a vendor boundary under
+			// MySQL — the statement is refused, not audited. The bare
+			// shared form stays audited (T24/#103).
 			return string(ddl.Operation), true, true
 		}
 		if ddl.Operation == spec.DDLOperationCreateIndex {
@@ -78,6 +98,11 @@ func dialectBoundaryFeature(dialect spec.Dialect, ddl *spec.DDL) (feature string
 			return string(ddl.Operation), true, true
 		}
 	case spec.DialectTiDB:
+		if ddl.MySQLResourceGroup != nil {
+			// MySQL CPU resource-group syntax is not TiDB semantics —
+			// vendor boundary, never an audited create (T24/#103).
+			return string(ddl.Operation), true, true
+		}
 		switch ddl.Operation {
 		case spec.DDLOperationCreateProcedure, spec.DDLOperationDropProcedure:
 			// TiDB's parser accepts procedure statements for compatibility, but
@@ -169,6 +194,11 @@ func unhandledStatementFeature(node ast.StmtNode) string {
 		return "execute_prepared"
 	case *ast.SetResourceGroupStmt:
 		return "set_resource_group"
+	case *mysqlResourceGroupStatement:
+		if n.setFor {
+			return "set_resource_group"
+		}
+		return ""
 	case *ast.AlterInstanceStmt:
 		return "alter_instance"
 	case *ast.AdminStmt:

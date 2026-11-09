@@ -75,6 +75,11 @@ type Metadata struct {
 	// Values are owned projections — never live registry pointers. The
 	// resource-control capability premise lives in Instance (T22/#101).
 	ResourceGroups map[string]*ResourceGroupState `json:"resource_groups,omitempty"`
+	// MySQLResourceGroups binds each MySQL resource-group identity the
+	// statement touches to its ordered pre-state, keyed by lowercase
+	// group name. The version/privilege/host-cpu premises live in
+	// Instance and evidence gaps — never guessed (T24/#103).
+	MySQLResourceGroups map[string]*MySQLResourceGroupState `json:"mysql_resource_groups,omitempty"`
 }
 
 // MetadataSchemaTarget is the ordered schema binding accessor rules use —
@@ -586,6 +591,10 @@ type ObjectSnapshot struct {
 	// when the resolved object is a TiDB resource group — the bounded
 	// information_schema.resource_groups row shape (T22/#101).
 	ResourceGroup *ResourceGroupDefinition `json:"-"`
+	// MySQLResourceGroup carries the provider-proven MySQL resource-group
+	// definition — the information_schema.RESOURCE_GROUPS row shape with
+	// MySQL columns (T24/#103).
+	MySQLResourceGroup *MySQLResourceGroupDefinition `json:"-"`
 }
 
 // ObjectLookupRequest describes one object to resolve from live metadata.

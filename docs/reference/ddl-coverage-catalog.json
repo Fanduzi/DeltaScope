@@ -13,10 +13,10 @@
   "summary": {
     "mysql": {
       "total": 62,
-      "finding_covered": 48,
+      "finding_covered": 50,
       "normalized_silent": 0,
       "unsupported_boundary": 0,
-      "parser_error": 14,
+      "parser_error": 12,
       "unclassified": 0
     },
     "postgresql": {
@@ -358,21 +358,23 @@
       "dialect": "mysql",
       "family": "resource_group_lifecycle",
       "form": "ALTER RESOURCE GROUP",
-      "classification": "parser_error",
-      "finding_rule_ids": [],
-      "guidance_code": "parser_upgrade_candidate",
-      "evidence_ref": "https://github.com/Fanduzi/DeltaScope/blob/main/docs/reference/cli.md#parser-upgrade-candidate-evidence-v02500",
-      "notes": "parser error"
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.alter_resource_group.notice",
+        "ddl.mysql.resource_group.affinity.warn"
+      ],
+      "notes": ""
     },
     {
       "dialect": "mysql",
       "family": "resource_group_lifecycle",
       "form": "CREATE RESOURCE GROUP",
-      "classification": "parser_error",
-      "finding_rule_ids": [],
-      "guidance_code": "parser_upgrade_candidate",
-      "evidence_ref": "https://github.com/Fanduzi/DeltaScope/blob/main/docs/reference/cli.md#parser-upgrade-candidate-evidence-v02500",
-      "notes": "parser error"
+      "classification": "finding_covered",
+      "finding_rule_ids": [
+        "ddl.create_resource_group.notice",
+        "ddl.mysql.resource_group.affinity.warn"
+      ],
+      "notes": ""
     },
     {
       "dialect": "mysql",

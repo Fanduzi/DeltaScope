@@ -39,8 +39,13 @@ func (p *Parser) Parse(ctx context.Context, sql string) (Result, error) {
 	// base parse so failures keep their original diagnostics.
 	var parsed []ast.StmtNode
 	var warns []error
-	header, viewHeaderOK := parseViewHeader(sql)
-	if viewHeaderOK && (header.operation == spec.DDLOperationAlterView || header.declaration.CheckBare) {
+	// The MySQL CPU resource-group family is claimed before the structural
+	// paths: a whole-input pure MySQL-form statement fabricates its carrier
+	// node; anything ambiguous falls through so the real grammar owns the
+	// diagnostics (T24/#103).
+	if rg, ok := parseMySQLResourceGroup(sql); ok {
+		parsed, warns = []ast.StmtNode{rg}, nil
+	} else if header, viewHeaderOK := parseViewHeader(sql); viewHeaderOK && (header.operation == spec.DDLOperationAlterView || header.declaration.CheckBare) {
 		if view, viewWarns, ok := parseViewAdapter(ctx, sql); ok {
 			parsed, warns = []ast.StmtNode{view}, viewWarns
 		}

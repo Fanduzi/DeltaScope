@@ -1107,6 +1107,21 @@ rules:
     level: warning
     params:
 
+  ddl.mysql.resource_group.valid:
+    enabled: true
+    level: blocker
+    params:
+
+  ddl.mysql.resource_group.force.warn:
+    enabled: true
+    level: warning
+    params:
+
+  ddl.mysql.resource_group.affinity.warn:
+    enabled: true
+    level: warning
+    params:
+
   ddl.tidb.table.auto_random.valid:
     enabled: true
     level: blocker

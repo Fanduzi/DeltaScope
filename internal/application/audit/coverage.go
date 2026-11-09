@@ -456,6 +456,10 @@ func statementCoverageAspects(dialect spec.Dialect, statement spec.Statement) []
 			))
 		}
 	}
+	// The MySQL resource-group family needs no option-aspect pass: its
+	// recognizer claims only fully modeled members — a member it cannot
+	// classify stays unclaimed and keeps the base grammar's diagnostics
+	// (T24/#103).
 	for _, declaration := range ddl.TTL {
 		// MySQL CREATE ignores a whole TTL feature comment. A bare or
 		// unattributable clause is a vendor boundary, while a parsed member

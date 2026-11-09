@@ -38,7 +38,8 @@ func corpusMetadataFields(tc corpusExpected) (string, MetadataProvider) {
 		return "", nil
 	}
 	if tc.Metadata.Instance == nil && len(tc.Metadata.Tables) == 0 && len(tc.Metadata.IndexOwners) == 0 &&
-		len(tc.Metadata.PlacementPolicies) == 0 && len(tc.Metadata.Sequences) == 0 && len(tc.Metadata.ResourceGroups) == 0 {
+		len(tc.Metadata.PlacementPolicies) == 0 && len(tc.Metadata.Sequences) == 0 && len(tc.Metadata.ResourceGroups) == 0 &&
+		len(tc.Metadata.MySQLResourceGroups) == 0 {
 		return strings.TrimSpace(tc.Metadata.Schema), nil
 	}
 	return strings.TrimSpace(tc.Metadata.Schema), newCorpusMetadataProvider(tc.Metadata)
@@ -59,6 +60,10 @@ type corpusFixtureMetadataProvider struct {
 	// entries are keyed `name` and carry the catalog's existence answer
 	// plus — when proven — definition parameters (T22/#101).
 	resourceGroups map[string]*spec.ObjectSnapshot
+	// mysqlResourceGroups is the MySQL CPU resource-group catalog fact set
+	// — keyed `name`, carrying the information_schema.RESOURCE_GROUPS
+	// answer (T24/#103).
+	mysqlResourceGroups map[string]*spec.ObjectSnapshot
 }
 
 func newCorpusMetadataProvider(metadata *corpusMetadata) *corpusFixtureMetadataProvider {
@@ -112,7 +117,35 @@ func newCorpusMetadataProvider(metadata *corpusMetadata) *corpusFixtureMetadataP
 			provider.resourceGroups[strings.ToLower(strings.TrimSpace(key))] = corpusResourceGroupToSnapshot(key, object)
 		}
 	}
+	if metadata.MySQLResourceGroups != nil {
+		provider.mysqlResourceGroups = make(map[string]*spec.ObjectSnapshot, len(metadata.MySQLResourceGroups))
+		for key, object := range metadata.MySQLResourceGroups {
+			provider.mysqlResourceGroups[strings.ToLower(strings.TrimSpace(key))] = corpusMySQLResourceGroupToSnapshot(key, object)
+		}
+	}
 	return provider
+}
+
+// corpusMySQLResourceGroupToSnapshot converts a fixture MySQL
+// resource-group entry into the information_schema.RESOURCE_GROUPS answer
+// the object resolver would return — the status word is the provenance
+// answer; omitted definition members stay unproven.
+func corpusMySQLResourceGroupToSnapshot(key string, object corpusMySQLResourceGroupObject) *spec.ObjectSnapshot {
+	snapshot := &spec.ObjectSnapshot{Type: "mysql_resource_group", Name: key, Status: spec.MetadataStatus(object.Status)}
+	if object.Exists != nil {
+		snapshot.Exists = *object.Exists
+	} else {
+		snapshot.Exists = object.Status == "confirmed"
+	}
+	if object.Definition != nil {
+		snapshot.MySQLResourceGroup = &spec.MySQLResourceGroupDefinition{
+			GroupType:      spec.MySQLResourceGroupType(object.Definition.GroupType),
+			Enabled:        object.Definition.Enabled,
+			VCPUIDs:        object.Definition.VCPUIDs,
+			ThreadPriority: object.Definition.ThreadPriority,
+		}
+	}
+	return snapshot
 }
 
 // corpusResourceGroupToSnapshot converts a fixture resource-group entry
@@ -251,6 +284,27 @@ func (p *corpusFixtureMetadataProvider) LoadPlacementPolicies(context.Context, s
 // `schema.name`. An unkeyed identity or a nil sequence map is unvouched,
 // never a silent absent; non-sequence lookups stay unavailable.
 func (p *corpusFixtureMetadataProvider) ResolveObject(_ context.Context, _ spec.Dialect, request spec.ObjectLookupRequest) (*spec.ObjectSnapshot, error) {
+	if request.Type == "mysql_resource_group" {
+		if p.mysqlResourceGroups == nil {
+			return &spec.ObjectSnapshot{
+				Schema: request.Schema,
+				Type:   request.Type,
+				Name:   request.Name,
+				Status: spec.MetadataStatusUnavailable,
+			}, nil
+		}
+		key := strings.ToLower(strings.TrimSpace(request.Name))
+		snapshot, ok := p.mysqlResourceGroups[key]
+		if !ok {
+			return &spec.ObjectSnapshot{
+				Schema: request.Schema,
+				Type:   request.Type,
+				Name:   request.Name,
+				Status: spec.MetadataStatusUnavailable,
+			}, nil
+		}
+		return snapshot, nil
+	}
 	if request.Type == "resource_group" {
 		if p.resourceGroups == nil {
 			return &spec.ObjectSnapshot{

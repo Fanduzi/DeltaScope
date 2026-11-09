@@ -157,8 +157,8 @@ var mysqlDDLCensusCases = []struct {
 	{Name: "CREATE TABLESPACE", SQL: "CREATE TABLESPACE ts1 ADD DATAFILE 'ts1.ibd'", Expected: ddlCoverageParserError},
 	{Name: "ALTER TABLESPACE", SQL: "ALTER TABLESPACE ts1 ADD DATAFILE 'ts2.ibd'", Expected: ddlCoverageParserError},
 	{Name: "DROP TABLESPACE", SQL: "DROP TABLESPACE ts1", Expected: ddlCoverageParserError},
-	{Name: "CREATE RESOURCE GROUP", SQL: "CREATE RESOURCE GROUP rg1 TYPE = USER VCPU = 0-3", Expected: ddlCoverageParserError},
-	{Name: "ALTER RESOURCE GROUP", SQL: "ALTER RESOURCE GROUP rg1 VCPU = 0-7", Expected: ddlCoverageParserError},
+	{Name: "CREATE RESOURCE GROUP", SQL: "CREATE RESOURCE GROUP rg1 TYPE = USER VCPU = 0-3", Expected: ddlCoverageFindingCovered},
+	{Name: "ALTER RESOURCE GROUP", SQL: "ALTER RESOURCE GROUP rg1 VCPU = 0-7", Expected: ddlCoverageFindingCovered},
 	{Name: "DROP RESOURCE GROUP", SQL: "DROP RESOURCE GROUP rg1", Expected: ddlCoverageFindingCovered},
 }
 

@@ -125,6 +125,11 @@ type corpusMetadata struct {
 	// proven, the definition parameters. Omit the key to leave every
 	// resource-group identity unvouched (T22/#101).
 	ResourceGroups map[string]corpusResourceGroupObject `yaml:"resource_groups,omitempty"`
+	// MySQLResourceGroups is the proven MySQL CPU resource-group object
+	// set keyed `name` — the information_schema.RESOURCE_GROUPS answer.
+	// Omit the key to leave every MySQL resource-group identity unvouched
+	// (T24/#103).
+	MySQLResourceGroups map[string]corpusMySQLResourceGroupObject `yaml:"mysql_resource_groups,omitempty"`
 }
 
 // corpusResourceGroupObject is the catalog fact for one resource-group
@@ -144,6 +149,25 @@ type corpusResourceGroupDefinition struct {
 	Priority    string  `yaml:"priority,omitempty"`
 	Burstable   *bool   `yaml:"burstable,omitempty"`
 	QueryLimit  *string `yaml:"query_limit,omitempty"`
+}
+
+// corpusMySQLResourceGroupObject is the catalog fact for one MySQL
+// resource-group identity — status is the provenance answer
+// (confirmed | not_found | unavailable); definition is only read on a
+// confirmed-existing object.
+type corpusMySQLResourceGroupObject struct {
+	Status     string                              `yaml:"status"`
+	Exists     *bool                               `yaml:"exists,omitempty"`
+	Definition *corpusMySQLResourceGroupDefinition `yaml:"definition,omitempty"`
+}
+
+// corpusMySQLResourceGroupDefinition mirrors the MySQL catalog definition
+// columns — omitted members stay unproven, never defaulted.
+type corpusMySQLResourceGroupDefinition struct {
+	GroupType      string  `yaml:"group_type,omitempty"`
+	Enabled        *bool   `yaml:"enabled,omitempty"`
+	VCPUIDs        *string `yaml:"vcpu_ids,omitempty"`
+	ThreadPriority *int64  `yaml:"thread_priority,omitempty"`
 }
 
 // corpusPlacementPolicy is the catalog fact for one proven policy.

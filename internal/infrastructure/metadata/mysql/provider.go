@@ -1802,6 +1802,13 @@ func (p *Provider) ResolveObject(ctx context.Context, dialect spec.Dialect, requ
 			return snapshot, nil
 		}
 		return p.loadResourceGroupObject(ctx, request, snapshot)
+	case "mysql_resource_group":
+		if dialect != spec.DialectMySQL {
+			// The MySQL CPU catalog shape is its own surface — never emit
+			// it under another dialect (T24/#103).
+			return snapshot, nil
+		}
+		return p.loadMySQLResourceGroupObject(ctx, request, snapshot)
 	}
 	return snapshot, nil
 }
@@ -1931,6 +1938,65 @@ func (p *Provider) loadResourceGroupObject(ctx context.Context, request spec.Obj
 		definition.QueryLimitState = spec.ResourceGroupQueryLimitUnread
 	}
 	snapshot.ResourceGroup = definition
+	return snapshot, nil
+}
+
+// loadMySQLResourceGroupObject resolves one MySQL resource-group
+// identity through information_schema.RESOURCE_GROUPS — the bounded
+// RESOURCE_GROUP_NAME/TYPE/ENABLED/VCPU_IDS/THREAD_PRIORITY read shape
+// (T24/#103). A row proves existence; NULL members map to unproven
+// fields (nil), never to guessed defaults; unrecognized TYPE tokens
+// stay unproven rather than silently mapping. A zero-row answer stays
+// unknown rather than fabricating absence — no documented guarantee
+// that the catalog emits every group unfiltered for MySQL, unlike the
+// scoped TiDB fact the T22 contract owns. Query, scan, and driver
+// errors propagate wrapped with identity context — never absence — and
+// failures are never cached as absence.
+func (p *Provider) loadMySQLResourceGroupObject(ctx context.Context, request spec.ObjectLookupRequest, snapshot *spec.ObjectSnapshot) (*spec.ObjectSnapshot, error) {
+	row := p.db.QueryRowContext(ctx, `
+		select resource_group_name, resource_group_type,
+			resource_group_enabled, vcpu_ids, thread_priority
+		from information_schema.resource_groups
+		where resource_group_name = ?
+	`, request.Name)
+	var name, groupType, enabled, vcpuIDs, threadPriority sql.NullString
+	if err := row.Scan(&name, &groupType, &enabled, &vcpuIDs, &threadPriority); err != nil {
+		if err == sql.ErrNoRows {
+			return snapshot, nil
+		}
+		return nil, fmt.Errorf("query mysql resource group snapshot %s: %w", request.Name, err)
+	}
+	snapshot.Status = spec.MetadataStatusConfirmed
+	snapshot.Exists = true
+	snapshot.Name = name.String
+	definition := &spec.MySQLResourceGroupDefinition{}
+	if groupType.Valid {
+		switch strings.ToLower(strings.TrimSpace(groupType.String)) {
+		case "system":
+			definition.GroupType = spec.MySQLResourceGroupTypeSystem
+		case "user":
+			definition.GroupType = spec.MySQLResourceGroupTypeUser
+		}
+	}
+	if enabled.Valid {
+		switch strings.ToUpper(strings.TrimSpace(enabled.String)) {
+		case "1", "YES", "TRUE":
+			v := true
+			definition.Enabled = &v
+		case "0", "NO", "FALSE":
+			v := false
+			definition.Enabled = &v
+		}
+	}
+	if vcpuIDs.Valid {
+		definition.VCPUIDs = nullStringPtr(vcpuIDs)
+	}
+	if threadPriority.Valid {
+		if parsed, parseErr := strconv.ParseInt(strings.TrimSpace(threadPriority.String), 10, 64); parseErr == nil {
+			definition.ThreadPriority = &parsed
+		}
+	}
+	snapshot.MySQLResourceGroup = definition
 	return snapshot, nil
 }
 

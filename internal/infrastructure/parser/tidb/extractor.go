@@ -76,6 +76,24 @@ func (e tidbExtractor) Extract(dialect spec.Dialect, rawSQL string) (spec.Statem
 	if e.kind == spec.KindUnknown {
 		statement.Warnings = append([]string(nil), e.warnings...)
 	}
+	if node, ok := e.node.(*mysqlResourceGroupStatement); ok {
+		// The MySQL CPU resource-group family: the typed declaration binds
+		// as its own object family — never the TiDB RU declaration. The
+		// bounded SET ... FOR form carries no DDL and falls to the
+		// unhandled-statement boundary below (T24/#103).
+		if node.setFor {
+			applyCoverageBoundary(dialect, &statement, e.node)
+			return statement, nil
+		}
+		statement.DDL = &spec.DDL{
+			Operation:          node.operation,
+			ObjectType:         "resource_group",
+			ObjectName:         node.declaration.Name,
+			MySQLResourceGroup: node.declaration,
+		}
+		applyCoverageBoundary(dialect, &statement, e.node)
+		return statement, nil
+	}
 	if node, ok := e.node.(*viewStatement); ok {
 		if node.declaration.Definition != nil {
 			node.declaration.Definition = spec.SelectViewDefinition(node.declaration.Definition, dialect)
@@ -160,7 +178,23 @@ func (e tidbExtractor) Extract(dialect spec.Dialect, rawSQL string) (spec.Statem
 	case *ast.AlterResourceGroupStmt:
 		statement.DDL = extractAlterResourceGroup(node)
 	case *ast.DropResourceGroupStmt:
-		statement.DDL = extractDropResourceGroup(node)
+		if dialect == spec.DialectMySQL && !node.IfExists {
+			// A bare DROP RESOURCE GROUP <name> is the shared form both
+			// grammars accept — under MySQL it is the CPU family's drop,
+			// so it binds the MySQL registry, never the TiDB RU
+			// declaration. IF EXISTS is TiDB-only and keeps the vendor
+			// boundary (T24/#103).
+			statement.DDL = &spec.DDL{
+				Operation:  spec.DDLOperationDropResourceGroup,
+				ObjectName: node.ResourceGroupName.L,
+				ObjectType: "resource_group",
+				MySQLResourceGroup: &spec.MySQLResourceGroupDeclaration{
+					Name: node.ResourceGroupName.L,
+				},
+			}
+		} else {
+			statement.DDL = extractDropResourceGroup(node)
+		}
 	case *ast.CreatePlacementPolicyStmt:
 		statement.DDL = extractCreatePlacementPolicy(node)
 	case *ast.AlterPlacementPolicyStmt:
@@ -270,7 +304,7 @@ func (e tidbExtractor) applySupplements(statement *spec.Statement) {
 }
 
 func classify(stmt ast.StmtNode) spec.Kind {
-	switch stmt.(type) {
+	switch node := stmt.(type) {
 	case *ast.CreateTableStmt,
 		*ast.CreateViewStmt,
 		*viewStatement,
@@ -302,6 +336,11 @@ func classify(stmt ast.StmtNode) spec.Kind {
 		*ast.CreateSequenceStmt,
 		*ast.AlterSequenceStmt,
 		*ast.DropSequenceStmt:
+		return spec.KindDDL
+	case *mysqlResourceGroupStatement:
+		if node.setFor {
+			return spec.KindUnknown
+		}
 		return spec.KindDDL
 	case *ast.InsertStmt,
 		*ast.UpdateStmt,

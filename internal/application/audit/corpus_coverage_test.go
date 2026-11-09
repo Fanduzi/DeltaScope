@@ -110,6 +110,13 @@ func corpusRuleDialectTargets(ruleID string) []string {
 		"ddl.alter.discard_partition_tablespace.applicability",
 		"ddl.alter.discard_partition_tablespace.target":
 		return []string{"mysql"}
+	// T24: the MySQL CPU resource-group rules only evaluate the MySQL
+	// family declaration — under TiDB the family is a vendor boundary.
+	case
+		"ddl.mysql.resource_group.valid",
+		"ddl.mysql.resource_group.force.warn",
+		"ddl.mysql.resource_group.affinity.warn":
+		return []string{"mysql"}
 	}
 	if strings.HasPrefix(ruleID, "ddl.pg.") || isPostgreSQLOnlyRule(ruleID) {
 		return []string{"postgresql"}
@@ -162,10 +169,7 @@ func isTiDBOnlyRule(ruleID string) bool {
 		"ddl.tidb.sequence.cycle.warn",
 		"ddl.tidb.sequence.references.warn",
 		// T22: TiDB RU resource groups vendor-boundary under MySQL — the
-		// CREATE/ALTER notices and every tidb.* lifecycle rule can only
-		// fire under TiDB.
-		"ddl.create_resource_group.notice",
-		"ddl.alter_resource_group.notice",
+		// tidb.* lifecycle rules can only fire under TiDB.
 		"ddl.tidb.resource_group.valid",
 		"ddl.tidb.resource_group.burstable.warn",
 		"ddl.tidb.resource_group.runaway.warn",
@@ -365,6 +369,10 @@ func isMySQLFamilyOnlyRule(ruleID string) bool {
 		"ddl.drop_role.notice",
 		"ddl.grant.notice",
 		"ddl.revoke.notice",
+		// T24: the resource-group lifecycle notices fire on both families —
+		// the MySQL CPU family under MySQL, the TiDB RU family under TiDB.
+		"ddl.create_resource_group.notice",
+		"ddl.alter_resource_group.notice",
 		"ddl.drop_resource_group.notice",
 		"ddl.alter.add_column.notice",
 		"ddl.alter.add_constraint.notice",

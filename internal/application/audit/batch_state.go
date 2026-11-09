@@ -106,6 +106,14 @@ type batchState struct {
 	// read never asks the provider twice. Nil falls back to the
 	// provider's ObjectResolver.
 	resourceGroupResolver func(ctx context.Context, lookup spec.ObjectLookupRequest) (*spec.ObjectSnapshot, error)
+	// mysqlResourceGroupEntries holds the batch's ordered knowledge of
+	// each MySQL resource-group identity — a parallel of the TiDB
+	// registry under the version capability premise (T24/#103).
+	mysqlResourceGroupEntries map[string]*batchMySQLResourceGroupEntry
+	// mysqlResourceGroupResolver is the same once-per-request
+	// objectCache-backed lookup as resourceGroupResolver for the MySQL
+	// family. Nil falls back to the provider's ObjectResolver.
+	mysqlResourceGroupResolver func(ctx context.Context, lookup spec.ObjectLookupRequest) (*spec.ObjectSnapshot, error)
 	// resolvedVersion is the request's already-parsed version fact. Rules read
 	// the same fact from statement metadata. apply still receives the original
 	// statement, so RENAME COLUMN applicability reads this copy. Nil means the
@@ -141,15 +149,16 @@ type batchState struct {
 
 func newBatchState(dialect spec.Dialect, schema string, provider MetadataProvider) *batchState {
 	return &batchState{
-		provider:             provider,
-		dialect:              dialect,
-		schema:               strings.TrimSpace(schema),
-		entries:              make(map[batchTableKey]*batchTableEntry),
-		tempEntries:          make(map[batchTableKey]*batchTableEntry),
-		invalidatedSchemas:   make(map[string]struct{}),
-		schemaEntries:        make(map[string]*batchSchemaEntry),
-		sequenceEntries:      make(map[sequenceKey]*batchSequenceEntry),
-		resourceGroupEntries: make(map[string]*batchResourceGroupEntry),
+		provider:                  provider,
+		dialect:                   dialect,
+		schema:                    strings.TrimSpace(schema),
+		entries:                   make(map[batchTableKey]*batchTableEntry),
+		tempEntries:               make(map[batchTableKey]*batchTableEntry),
+		invalidatedSchemas:        make(map[string]struct{}),
+		schemaEntries:             make(map[string]*batchSchemaEntry),
+		sequenceEntries:           make(map[sequenceKey]*batchSequenceEntry),
+		resourceGroupEntries:      make(map[string]*batchResourceGroupEntry),
+		mysqlResourceGroupEntries: make(map[string]*batchMySQLResourceGroupEntry),
 	}
 }
 
@@ -486,6 +495,9 @@ func (s *batchState) apply(ctx context.Context, statement spec.Statement) error 
 		return s.applySequenceStatement(ctx, statement)
 	case spec.DDLOperationCreateResourceGroup, spec.DDLOperationAlterResourceGroup,
 		spec.DDLOperationDropResourceGroup:
+		if statement.DDL.MySQLResourceGroup != nil {
+			return s.applyMySQLResourceGroupStatement(ctx, statement)
+		}
 		return s.applyResourceGroupStatement(ctx, statement)
 	case spec.DDLOperationSplitRegion, spec.DDLOperationCompactTable:
 		// Neither statement moves a catalog fact: region scatter and

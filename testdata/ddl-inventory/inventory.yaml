@@ -1174,12 +1174,12 @@ rows:
     subactions: ["CREATE RESOURCE GROUP name TYPE=USER|SYSTEM", "VCPU", "THREAD_PRIORITY", "ENABLED/DISABLED"]
     sql_shape: "CREATE RESOURCE GROUP rg1 TYPE = USER VCPU = 0-3"
     prerequisites: "8.0+; host CPU facts needed for VCPU semantics; 5.7 vendor boundary"
-    status: parser_unsupported
-    status_evidence: "2026-09-22 CLI probe: parser_error on vendor-valid CPU resource group form"
+    status: semantically_checked
+    status_evidence: "2026-11-09 T24 (#103) offline implementation candidate: dedicated MySQLResourceGroupDeclaration — positional grammar honored exactly (TYPE is the required first member with optional `=`, optional members in fixed order VCPU→THREAD_PRIORITY→ENABLE|DISABLE, no repeats), resolved-version premise refuses on proven <8.0 and owes unknown_resource_group_version when unproven, usr_default/sys_default marked Reserved only under a proven 8.0+ version, ddl.mysql.resource_group.valid adjudicates proven contracts (duplicate create, reserved/absent targets, >64-char name, authored-type priority bounds -20..19/SYSTEM -20..0/USER 0..19) while unproven facts owe bounded gaps (unknown_resource_group_state, unknown_host_vcpu_count on declared VCPU, unknown_resource_group_privilege — all silent under any proven refusal); ddl.mysql.resource_group.affinity.warn fires on a declared VCPU, TiDB keeps a vendor boundary. 2026-09-22 CLI probe: parser_error on vendor-valid CPU resource group form"
     targets: "group identity, type, VCPU range, thread priority, enable state"
     acceptance:
       dimensions: "CPU semantics vs TiDB RU distinction, 5.7 boundary, missing-CPU-facts gap"
-      refs: ["missing: owner adds fixtures and host-capability evidence"]
+      refs: ["file:internal/domain/spec/mysql_resource_group.go", "file:internal/infrastructure/parser/tidb/mysql_resource_group.go", "file:internal/application/audit/batch_state_mysql_resource_group.go", "file:internal/application/audit/batch_state_t24_test.go", "file:internal/domain/rule/ddl/mysql_resource_group_rules.go", "file:internal/infrastructure/metadata/mysql/provider_t24_test.go", "file:testdata/ddl-golden/T24.json", "file:testdata/sql-corpus/mysql/ddl/findings/mysql_resource_group_lifecycle_rules.sql"]
     owner: T24
 
   - id: mysql.alter-resource-group
@@ -1190,12 +1190,12 @@ rows:
     subactions: ["ALTER RESOURCE GROUP name VCPU/THREAD_PRIORITY/ENABLE/DISABLE"]
     sql_shape: "ALTER RESOURCE GROUP rg1 VCPU = 0-7"
     prerequisites: "same as create"
-    status: parser_unsupported
-    status_evidence: "2026-09-22 CLI probe: parser_error"
+    status: semantically_checked
+    status_evidence: "2026-11-09 T24 (#103) offline implementation candidate: positional tail (VCPU→THREAD_PRIORITY→ENABLE|DISABLE→FORCE, each a single slot, a bare ALTER is the grammar's own valid no-op), reserved sys_default/usr_default and absent targets refuse before attribute checks, declared members merge onto a proven definition while unbounded aspects tombstone the identity, ddl.mysql.resource_group.force.warn fires on a declared FORCE — never a claim relocation fired. 2026-09-22 CLI probe: parser_error"
     targets: "group identity, attribute transitions"
     acceptance:
       dimensions: "attribute-change classification"
-      refs: ["missing: owner adds fixtures"]
+      refs: ["file:internal/domain/spec/mysql_resource_group.go", "file:internal/infrastructure/parser/tidb/mysql_resource_group.go", "file:internal/application/audit/batch_state_mysql_resource_group.go", "file:internal/application/audit/batch_state_t24_test.go", "file:internal/domain/rule/ddl/mysql_resource_group_rules.go", "file:testdata/ddl-golden/T24.json", "file:testdata/sql-corpus/mysql/ddl/findings/mysql_resource_group_lifecycle_rules.sql"]
     owner: T24
 
   - id: mysql.drop-resource-group
@@ -1206,12 +1206,12 @@ rows:
     subactions: ["DROP RESOURCE GROUP name", "FORCE"]
     sql_shape: "DROP RESOURCE GROUP rg1"
     prerequisites: "none"
-    status: generic_notice
-    status_evidence: "2026-09-22 CLI probe: parses; only ddl.drop_resource_group.notice fires"
+    status: semantically_checked
+    status_evidence: "2026-11-09 T24 (#103) offline implementation candidate: the shared bare DROP binds the MySQL family under the mysql dialect while DROP ... FORCE claims through the adapter (IF EXISTS parses in neither grammar and stays a parse diagnostic), reserved builtins and absent targets refuse with the notice suppressed, ddl.mysql.resource_group.force.warn fires on a declared FORCE. 2026-09-22 CLI probe: parses; only ddl.drop_resource_group.notice fires"
     targets: "group identity, FORCE semantics"
     acceptance:
       dimensions: "drop lifecycle classification, FORCE handling"
-      refs: ["missing: owner adds fixtures"]
+      refs: ["file:internal/domain/spec/mysql_resource_group.go", "file:internal/infrastructure/parser/tidb/mysql_resource_group.go", "file:internal/application/audit/batch_state_mysql_resource_group.go", "file:internal/application/audit/batch_state_t24_test.go", "file:internal/domain/rule/ddl/mysql_resource_group_rules.go", "file:testdata/ddl-golden/T24.json", "file:testdata/sql-corpus/mysql/ddl/findings/mysql_resource_group_lifecycle_rules.sql"]
     owner: T24
 
   # ================= TiDB: database/schema lifecycle =================

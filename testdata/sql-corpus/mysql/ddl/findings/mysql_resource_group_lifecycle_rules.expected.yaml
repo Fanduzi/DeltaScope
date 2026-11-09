@@ -1,0 +1,20 @@
+name: mysql_resource_group_lifecycle_rules
+dialect: mysql
+category: ddl
+metadata:
+  instance:
+    version: "8.0.36"
+  mysql_resource_groups:
+    rg_cpu:
+      status: not_found
+    rg_absent:
+      status: not_found
+expect:
+  parse_ok: true
+  findings:
+    include:
+      - ddl.create_resource_group.notice
+      - ddl.alter_resource_group.notice
+      - ddl.mysql.resource_group.valid
+      - ddl.mysql.resource_group.force.warn
+      - ddl.mysql.resource_group.affinity.warn

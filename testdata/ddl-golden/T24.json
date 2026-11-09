@@ -1,0 +1,659 @@
+{
+ "task_id": "T24",
+ "issue": 103,
+ "policy_profile": "t24-mysql-resource-group",
+ "description": "T24 MySQL CPU resource-group lifecycle (issue #103): CREATE/ALTER/DROP RESOURCE GROUP reach kind=ddl with audited semantics under MySQL — a dedicated MySQLResourceGroupDeclaration (TYPE required on CREATE, VCPU list/range members, THREAD_PRIORITY bounds -20..19 with SYSTEM -20..0 and USER 0..19, ENABLE|DISABLE, FORCE on ALTER/DROP) kept strictly separate from the TiDB RU declaration; the version premise (MySQL 8.0+) is a proven-refusal gate (a proven 5.7 refuses every lifecycle statement, an unproven version owes unknown_resource_group_version); the reserved usr_default/sys_default pair provably exists only under a proven 8.0+ version; duplicate option kinds, >64-char names, and static priority/type violations are static refusals; proven duplicate create / absent alter / absent drop refuse while unproven targets owe unknown_resource_group_state plus bounded unknown_host_vcpu_count (declared VCPU) and unknown_resource_group_privilege premises; proven refusals suppress lifecycle notices; FORCE and VCPU warn only on declared evidence. Bare DROP RESOURCE GROUP <name> — the shared form — binds the MySQL registry under MySQL; DROP ... FORCE claims the MySQL carrier; SET RESOURCE GROUP ... FOR stays a bounded unaudited feature under MySQL and a vendor boundary under TiDB; every MySQL CPU form under TiDB and every TiDB RU form under MySQL stays a vendor boundary. metadata_cases encode native probes — none has run and none may be claimed as native PASS.",
+ "anchors": {
+  "mysql57": {
+   "service": "mysql57",
+   "container": "deltascope-ddl-golden-mysql57",
+   "image": "mysql:5.7.44",
+   "product": "mysql",
+   "version_contains": "5.7.44",
+   "database": "golden",
+   "exec_client": [
+    "mysql",
+    "-uroot",
+    "--default-character-set=utf8mb4"
+   ],
+   "needs_database_create": false,
+   "exec_password_env": "T21_MYSQL_PASSWORD"
+  },
+  "mysql80": {
+   "service": "mysql80",
+   "container": "deltascope-ddl-golden-mysql80",
+   "image": "mysql:8.0.46",
+   "product": "mysql",
+   "version_contains": "8.0.46",
+   "database": "golden",
+   "exec_client": [
+    "mysql",
+    "-uroot",
+    "--default-character-set=utf8mb4"
+   ],
+   "needs_database_create": false,
+   "exec_password_env": "T21_MYSQL_PASSWORD"
+  },
+  "mysql84": {
+   "service": "mysql84",
+   "container": "deltascope-ddl-golden-mysql84",
+   "image": "mysql:8.4.10",
+   "product": "mysql",
+   "version_contains": "8.4.10",
+   "database": "golden",
+   "exec_client": [
+    "mysql",
+    "-uroot",
+    "--default-character-set=utf8mb4"
+   ],
+   "needs_database_create": false,
+   "exec_password_env": "T21_MYSQL_PASSWORD"
+  },
+  "tidb85": {
+   "service": "tidb85",
+   "container": "deltascope-ddl-golden-tidb85",
+   "client_container": "deltascope-ddl-golden-tidb85-client",
+   "client_service": "tidb85-client",
+   "image": "pingcap/tidb:v8.5.0",
+   "product": "tidb",
+   "version_contains": "v8.5.0",
+   "database": "golden",
+   "exec_client": [
+    "mysql",
+    "--protocol=tcp",
+    "-h",
+    "tidb85",
+    "-P",
+    "4000",
+    "-uroot"
+   ],
+   "needs_database_create": true
+  }
+ },
+ "ddl_steps": [
+  {
+   "name": "clear-task-fixture",
+   "sql": "DROP DATABASE IF EXISTS t24fx",
+   "expect_rc": 0,
+   "verify": []
+  },
+  {
+   "name": "seed-fixture-schema",
+   "sql": "CREATE DATABASE t24fx",
+   "expect_rc": 0,
+   "verify": [
+    {
+     "assert": "fixture schema exists",
+     "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='t24fx'",
+     "expect": "1"
+    }
+   ]
+  }
+ ],
+ "syntax_negative": {
+  "sql": "CREATE RESOURCE GROUP t24fx_bad TYPE",
+  "expect": {
+   "error_class": "1064",
+   "forbidden_markers": [
+    "Access denied",
+    "Connection refused",
+    "doesn't exist",
+    "already exists"
+   ]
+  }
+ },
+ "policy": {
+  "enable": {
+   "ddl.mysql.resource_group.valid": {
+    "level": "blocker"
+   },
+   "ddl.mysql.resource_group.force.warn": {
+    "level": "warning"
+   },
+   "ddl.mysql.resource_group.affinity.warn": {
+    "level": "warning"
+   },
+   "ddl.create_resource_group.notice": {
+    "level": "notice"
+   },
+   "ddl.alter_resource_group.notice": {
+    "level": "notice"
+   },
+   "ddl.drop_resource_group.notice": {
+    "level": "notice"
+   }
+  }
+ },
+ "cli_cases": [
+  {
+   "id": "mysql-rg-lifecycle",
+   "dialect": "mysql",
+   "sql": "CREATE RESOURCE GROUP rg_cpu TYPE=USER VCPU=0-3 THREAD_PRIORITY=10 ENABLE;\nALTER RESOURCE GROUP rg_cpu DISABLE FORCE;\nDROP RESOURCE GROUP rg_cpu;",
+   "policy": "t24-mysql-resource-group",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 3,
+    "findings": 5,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": [
+     "unverified",
+     "unverified",
+     "unverified"
+    ],
+    "evidence_gaps": 10,
+    "fail_on_triggered": false,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.create_resource_group.notice",
+      "level": "notice"
+     },
+     {
+      "index": 0,
+      "rule_id": "ddl.mysql.resource_group.affinity.warn",
+      "level": "warning"
+     },
+     {
+      "index": 1,
+      "rule_id": "ddl.alter_resource_group.notice",
+      "level": "notice"
+     },
+     {
+      "index": 1,
+      "rule_id": "ddl.mysql.resource_group.force.warn",
+      "level": "warning"
+     },
+     {
+      "index": 2,
+      "rule_id": "ddl.drop_resource_group.notice",
+      "level": "notice"
+     }
+    ],
+    "evidence_gap_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.mysql.resource_group.valid",
+      "reason_code": "unknown_resource_group_version",
+      "required_facts": [
+       "instance.version"
+      ]
+     },
+     {
+      "index": 0,
+      "rule_id": "ddl.mysql.resource_group.valid",
+      "reason_code": "unknown_host_vcpu_count",
+      "required_facts": [
+       "host.vcpu_count"
+      ]
+     },
+     {
+      "index": 0,
+      "rule_id": "ddl.mysql.resource_group.valid",
+      "reason_code": "unknown_resource_group_privilege",
+      "required_facts": [
+       "privilege.resource_group_admin"
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "id": "mysql-dup-kind-refused",
+   "dialect": "mysql",
+   "sql": "CREATE RESOURCE GROUP rg TYPE=USER TYPE=SYSTEM;",
+   "policy": "t24-mysql-resource-group",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 2,
+    "verdict": "",
+    "statements": 0,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 0,
+    "coverage": "incomplete",
+    "statement_coverage": [],
+    "statement_sql": [],
+    "statement_indices": [],
+    "evidence_gaps": 0,
+    "evidence_gap_entries": [],
+    "finding_entries": [],
+    "finding_metadata": [],
+    "unsupported_entries": [],
+    "fail_on_triggered": false
+   },
+   "description": "duplicate/positional member refused by the grammar itself — parser_error, never a half-claim"
+  },
+  {
+   "id": "mysql-priority-bound-refused",
+   "dialect": "mysql",
+   "sql": "CREATE RESOURCE GROUP rg TYPE=SYSTEM THREAD_PRIORITY=5;",
+   "policy": "t24-mysql-resource-group",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": [
+     "unverified"
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": true,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.mysql.resource_group.valid",
+      "level": "blocker"
+     }
+    ]
+   }
+  },
+  {
+   "id": "mysql-ru-vendor-boundary",
+   "dialect": "mysql",
+   "sql": "CREATE RESOURCE GROUP rg RU_PER_SEC=100;",
+   "policy": "t24-mysql-resource-group",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false
+   }
+  },
+  {
+   "id": "mysql-set-for-unaudited",
+   "dialect": "mysql",
+   "sql": "SET RESOURCE GROUP rg FOR 1,2;",
+   "policy": "t24-mysql-resource-group",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false
+   }
+  },
+  {
+   "id": "tidb-mysql-cpu-vendor-boundary",
+   "dialect": "tidb",
+   "sql": "CREATE RESOURCE GROUP rg TYPE=USER;",
+   "policy": "t24-mysql-resource-group",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false
+   }
+  }
+ ],
+ "metadata_cases": [
+  {
+   "id": "mysql80-rg-lifecycle",
+   "anchor": "mysql80",
+   "dialect": "mysql",
+   "sql": "CREATE RESOURCE GROUP t24fx_rg TYPE=USER VCPU=0-3 THREAD_PRIORITY=10 ENABLE;\nALTER RESOURCE GROUP t24fx_rg DISABLE;\nDROP RESOURCE GROUP t24fx_rg;",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23380,
+    "user": "root",
+    "schema": "t24fx"
+   },
+   "policy": "t24-mysql-resource-group",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "pending_native": true,
+   "setup": [
+    {
+     "name": "clear-fixture-group",
+     "sql": "DROP RESOURCE GROUP t24fx_rg",
+     "expect_rc": 0,
+     "verify": []
+    }
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 3,
+    "findings": 4,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete",
+     "complete",
+     "complete"
+    ],
+    "evidence_gaps": 4,
+    "fail_on_triggered": false,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.create_resource_group.notice",
+      "level": "notice"
+     },
+     {
+      "index": 0,
+      "rule_id": "ddl.mysql.resource_group.affinity.warn",
+      "level": "warning"
+     },
+     {
+      "index": 1,
+      "rule_id": "ddl.alter_resource_group.notice",
+      "level": "notice"
+     },
+     {
+      "index": 2,
+      "rule_id": "ddl.drop_resource_group.notice",
+      "level": "notice"
+     }
+    ]
+   }
+  },
+  {
+   "id": "mysql80-alter-absent-refused",
+   "anchor": "mysql80",
+   "dialect": "mysql",
+   "sql": "ALTER RESOURCE GROUP t24fx_ghost ENABLE;",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23380,
+    "user": "root",
+    "schema": "t24fx"
+   },
+   "policy": "t24-mysql-resource-group",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "pending_native": true,
+   "setup": [
+    {
+     "name": "ensure-ghost-absent",
+     "sql": "DROP RESOURCE GROUP t24fx_ghost",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "ghost group absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.RESOURCE_GROUPS WHERE RESOURCE_GROUP_NAME='t24fx_ghost'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": true,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.mysql.resource_group.valid",
+      "level": "blocker"
+     }
+    ]
+   }
+  },
+  {
+   "id": "mysql80-drop-reserved-refused",
+   "anchor": "mysql80",
+   "dialect": "mysql",
+   "sql": "DROP RESOURCE GROUP usr_default;",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23380,
+    "user": "root",
+    "schema": "t24fx"
+   },
+   "policy": "t24-mysql-resource-group",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "pending_native": true,
+   "setup": [
+    {
+     "name": "builtin-present",
+     "sql": "SELECT COUNT(*) FROM information_schema.RESOURCE_GROUPS WHERE RESOURCE_GROUP_NAME='USR_default'",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "builtin group row readable",
+       "sql": "SELECT COUNT(*) FROM information_schema.RESOURCE_GROUPS WHERE RESOURCE_GROUP_NAME='USR_default'",
+       "expect": "1"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": true,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.mysql.resource_group.valid",
+      "level": "blocker"
+     }
+    ]
+   }
+  },
+  {
+   "id": "mysql84-rg-catalog-definition",
+   "anchor": "mysql84",
+   "dialect": "mysql",
+   "sql": "CREATE RESOURCE GROUP t24fx_def TYPE=USER VCPU=0,2 THREAD_PRIORITY=5 DISABLE;",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23384,
+    "user": "root",
+    "schema": "t24fx"
+   },
+   "policy": "t24-mysql-resource-group",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "pending_native": true,
+   "setup": [
+    {
+     "name": "clear-fixture-group",
+     "sql": "DROP RESOURCE GROUP t24fx_def",
+     "expect_rc": 0,
+     "verify": []
+    }
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 2,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 2,
+    "fail_on_triggered": false,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.create_resource_group.notice",
+      "level": "notice"
+     },
+     {
+      "index": 0,
+      "rule_id": "ddl.mysql.resource_group.affinity.warn",
+      "level": "warning"
+     }
+    ]
+   }
+  },
+  {
+   "id": "mysql57-version-refused",
+   "anchor": "mysql57",
+   "dialect": "mysql",
+   "sql": "CREATE RESOURCE GROUP t24fx_rg TYPE=USER;",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23357,
+    "user": "root",
+    "schema": "t24fx"
+   },
+   "policy": "t24-mysql-resource-group",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "pending_native": true,
+   "setup": [],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": true,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.mysql.resource_group.valid",
+      "level": "blocker"
+     }
+    ]
+   }
+  },
+  {
+   "id": "tidb85-mysql-cpu-vendor-boundary",
+   "anchor": "tidb85",
+   "dialect": "tidb",
+   "sql": "CREATE RESOURCE GROUP t24fx_rg TYPE=USER;",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 24000,
+    "user": "root",
+    "schema": "t24fx"
+   },
+   "policy": "t24-mysql-resource-group",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "pending_native": true,
+   "setup": [],
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false
+   }
+  }
+ ],
+ "required_case_ids": [
+  "T24.db.mysql57.ddl",
+  "T24.db.mysql57.syntax_negative",
+  "T24.db.mysql80.ddl",
+  "T24.db.mysql80.syntax_negative",
+  "T24.db.mysql84.ddl",
+  "T24.db.mysql84.syntax_negative",
+  "T24.db.tidb85.ddl",
+  "T24.db.tidb85.syntax_negative",
+  "T24.cli.mysql-rg-lifecycle",
+  "T24.cli.mysql-dup-kind-refused",
+  "T24.cli.mysql-priority-bound-refused",
+  "T24.cli.mysql-ru-vendor-boundary",
+  "T24.cli.mysql-set-for-unaudited",
+  "T24.cli.tidb-mysql-cpu-vendor-boundary",
+  "T24.meta.mysql80-rg-lifecycle",
+  "T24.meta.mysql80-alter-absent-refused",
+  "T24.meta.mysql80-drop-reserved-refused",
+  "T24.meta.mysql84-rg-catalog-definition",
+  "T24.meta.mysql57-version-refused",
+  "T24.meta.tidb85-mysql-cpu-vendor-boundary"
+ ]
+}

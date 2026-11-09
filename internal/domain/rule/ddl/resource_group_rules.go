@@ -338,12 +338,17 @@ func (r resourceGroupRunawayWarnRule) Evaluate(_ context.Context, statement spec
 
 // resourceGroupNoticeAdjudicator is the shared refusal/no-op truth table
 // the lifecycle notices consume — the same ordered ResourceGroupState
-// the valid rule reads. Under MySQL the statement carries no binding, so
-// the notice falls back to the generic declarative path; under TiDB a
-// proven refusal or guard no-op suppresses it (B1 — never a false
-// success notice).
+// the valid rule reads. Under TiDB a proven refusal or guard no-op
+// suppresses it (B1 — never a false success notice); under MySQL the
+// MySQL CPU family adjudicates against its own ordered state and
+// version premise with the same truth table (T24/#103), while any
+// remaining shape falls back to the generic declarative path.
 func resourceGroupNoticeAdjudicator(operation, message, suggestion string) func(rule.Level, spec.Statement) ([]rule.Finding, bool) {
 	return func(level rule.Level, statement spec.Statement) ([]rule.Finding, bool) {
+		if statement.Dialect == spec.DialectMySQL && statement.DDL != nil &&
+			statement.DDL.MySQLResourceGroup != nil {
+			return mysqlResourceGroupNoticeOutcome(level, operation, message, suggestion, statement)
+		}
 		if statement.Dialect != spec.DialectTiDB {
 			return nil, false
 		}
@@ -390,4 +395,46 @@ func resourceGroupNoticeAdjudicator(operation, message, suggestion string) func(
 			},
 		}}, true
 	}
+}
+
+// mysqlResourceGroupNoticeOutcome is the MySQL arm of the shared notice
+// adjudicator — the same ordered MySQLResourceGroupState the valid rule
+// reads, under the version capability premise. A proven refusal on any
+// ground (version, duplicate kind, priority bound, existence, reserved
+// target) suppresses the success notice; MySQL's grammar has no IF
+// guards, so no rescued no-op path exists.
+func mysqlResourceGroupNoticeOutcome(level rule.Level, operation, message, suggestion string, statement spec.Statement) ([]rule.Finding, bool) {
+	// A proven refusal lands nothing — never a false success notice,
+	// even when the target stays unproven (same B1 contract as the TiDB
+	// arm).
+	if mysqlResourceGroupStatementRefused(statement) {
+		return []rule.Finding{}, true
+	}
+	state := mysqlResourceGroupBinding(statement)
+	if state != nil && state.Proven() {
+		suppress := false
+		switch statement.DDL.Operation {
+		case spec.DDLOperationCreateResourceGroup:
+			suppress = state.Exists
+		case spec.DDLOperationAlterResourceGroup, spec.DDLOperationDropResourceGroup:
+			suppress = state.Reserved || !state.Exists
+		}
+		if suppress {
+			return []rule.Finding{}, true
+		}
+	}
+	name := statement.DDL.MySQLResourceGroup.Name
+	if state != nil && state.Name != "" {
+		name = state.Name
+	}
+	return []rule.Finding{{
+		Level:      level,
+		Message:    fmt.Sprintf(message, name),
+		Suggestion: suggestion,
+		Metadata: map[string]any{
+			"operation":   operation,
+			"object_type": "resource_group",
+			"object_name": name,
+		},
+	}}, true
 }

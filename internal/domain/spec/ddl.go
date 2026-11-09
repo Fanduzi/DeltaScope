@@ -138,6 +138,13 @@ type DDL struct {
 	// elsewhere, and MySQL CPU resource groups are a different object
 	// family (T22/#101, T24).
 	ResourceGroup *ResourceGroupDeclaration `json:"-"`
+	// MySQLResourceGroup carries the authored MySQL CPU resource-group
+	// declaration — TYPE/VCPU/THREAD_PRIORITY/ENABLE|DISABLE/FORCE — on
+	// statements the parser adapter recognized as the MySQL grammar
+	// family. It never shares storage with the TiDB RU declaration;
+	// on the tidb dialect the whole family is a vendor boundary
+	// (T24/#103).
+	MySQLResourceGroup *MySQLResourceGroupDeclaration `json:"-"`
 }
 
 // TemporaryScope identifies the parsed temporary-table scope on CREATE and
