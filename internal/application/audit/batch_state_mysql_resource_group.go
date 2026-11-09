@@ -81,6 +81,10 @@ func mergeMySQLResourceGroupFacts(dst, src *spec.InstanceFacts) {
 		dst.MySQLReadOnlyExempt = src.MySQLReadOnlyExempt
 		dst.MySQLReadOnlyExemptKnown = true
 	}
+	if !dst.MySQLServerUUIDKnown && src.MySQLServerUUIDKnown {
+		dst.MySQLServerUUID = src.MySQLServerUUID
+		dst.MySQLServerUUIDKnown = true
+	}
 	switch {
 	case dst.MySQLResourceGroupBoundComplete:
 		// The occupied set is already fully proven — a partial source
@@ -104,10 +108,14 @@ func mergeMySQLResourceGroupFacts(dst, src *spec.InstanceFacts) {
 // into the instance facts. The bundle binds strictly: Source must be
 // non-empty, Product must equal "mysql", and Version must equal the
 // resolved target version exactly — anything else is ignored rather
-// than partially trusted. Evidence fills only unproven slots; it never
-// overwrites an online observation and is consumed per request, never
-// cached.
-func applyDeploymentEvidence(facts *spec.InstanceFacts, evidence *spec.DeploymentEvidence, version *spec.VersionIdentity) {
+// than partially trusted. A bundle carrying Target additionally binds
+// to the audited target's resolved identity — the provider-observed
+// @@server_uuid when known, else the request's declared targetIdentity;
+// a mismatched or unverifiable target ignores the whole bundle, so one
+// instance's evidence can never fill another instance's gaps. Evidence
+// fills only unproven slots; it never overwrites an online observation
+// and is consumed per request, never cached.
+func applyDeploymentEvidence(facts *spec.InstanceFacts, evidence *spec.DeploymentEvidence, version *spec.VersionIdentity, declaredTarget string) {
 	if facts == nil || evidence == nil {
 		return
 	}
@@ -118,6 +126,18 @@ func applyDeploymentEvidence(facts *spec.InstanceFacts, evidence *spec.Deploymen
 	if version == nil || version.Version == "" ||
 		strings.TrimSpace(evidence.Version) != version.Version {
 		return
+	}
+	if target := strings.TrimSpace(evidence.Target); target != "" {
+		resolved := ""
+		switch {
+		case facts.MySQLServerUUIDKnown && strings.TrimSpace(facts.MySQLServerUUID) != "":
+			resolved = facts.MySQLServerUUID
+		default:
+			resolved = strings.TrimSpace(declaredTarget)
+		}
+		if resolved == "" || !strings.EqualFold(resolved, target) {
+			return
+		}
 	}
 	if !facts.MySQLHostVCPUsKnown && evidence.HostVCPUs != nil && *evidence.HostVCPUs > 0 {
 		facts.MySQLHostVCPUs = *evidence.HostVCPUs

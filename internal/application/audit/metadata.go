@@ -66,6 +66,11 @@ type MetadataRequest struct {
 	// the statement's version fact; online it only bounds the observed
 	// identity and can never override it.
 	TargetVersion *spec.VersionIdentity
+	// TargetIdentity is the caller-declared, non-secret target identity a
+	// Target-bound DeploymentEvidence bundle matches against when no
+	// provider-observed identity exists. It is a declarative guard, not
+	// a verified credential (T24-R6).
+	TargetIdentity string
 }
 
 func enrichStatementsWithMetadata(ctx context.Context, dialect spec.Dialect, request *MetadataRequest, statements []spec.Statement, failures []parseFailure) ([]spec.Statement, error) {
@@ -248,7 +253,7 @@ func (state *batchState) enrichStatements(ctx context.Context, request *Metadata
 				instanceFacts = &spec.InstanceFacts{}
 				state.instanceFacts = instanceFacts
 			}
-			applyDeploymentEvidence(instanceFacts, request.DeploymentEvidence, resolvedVersion)
+			applyDeploymentEvidence(instanceFacts, request.DeploymentEvidence, resolvedVersion, request.TargetIdentity)
 		}
 	}
 	// Object lookups resolve at most once per distinct (schema, type, name,

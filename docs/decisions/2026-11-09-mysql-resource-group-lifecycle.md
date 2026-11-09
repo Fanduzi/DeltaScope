@@ -287,3 +287,57 @@ only host/capability stay evidence-seamed.
   oracles rewritten to the R4 gap sets with the R2 counts recorded in
   the descriptions; `metadata_cases` oracles re-derived for the wired
   premises.
+
+## R6 addendum — occupancy completeness and target-bound evidence
+
+Independent review (R5) surfaced two R4 defects this round corrects:
+
+1. **Occupancy completeness premise.** R4 gated a proven-complete
+   `threads.RESOURCE_GROUP` census on `PROCESS`. MySQL documents a
+   different model: `performance_schema.threads` shows all rows to any
+   account holding table `SELECT`; `PROCESS` governs process-list
+   sources (`SHOW PROCESSLIST`, `information_schema.PROCESSLIST`,
+   `threads` is *not* one). The completeness boundary moves to the
+   thread-record loss channel — the bound set is proven-complete only
+   when the distinct-group read succeeds **and**
+   `Performance_schema_thread_instances_lost` reads zero. A nonzero or
+   unreadable counter yields positive-only facts (named groups proven
+   occupied; unnamed groups unproven — never a guessed complete census).
+   A missing `RESOURCE_GROUP` column now degrades to unproven only when
+   the `select version()` read is unknown or proven pre-8.0.3; on a
+   proven supported version the read failure propagates, since the
+   column exists there.
+2. **Same-version A/B discrimination.** `DeploymentEvidence` gains an
+   optional `Target`; `Request` gains `TargetIdentity`, and the provider
+   bundle now observes `@@server_uuid` (`InstanceFacts.MySQLServerUUID`).
+   A target-bound bundle binds only when identity resolves — observed
+   UUID preferred, declared identity otherwise — and matches the bundle
+   target; absent, mismatched, or unverifiable identity ignores the
+   whole bundle. Observed identity outranks declared. Evidence still
+   fills only unproven slots and never echoes into output.
+3. **Manifest accounting.** R4 added the two NUM-domain cells to
+   `cli_cases` (10) but not to `required_case_ids` — the required set
+   stayed byte-identical to R2's 22. Both ids are now required
+   (required = cli 10 + metadata 6 + database 8 = 24), and
+   `ddl_golden.py` gains a `t24_manifest_failures` contract asserting
+   required-set equality with the generated cell set — a missing case,
+   a missing entry, or an orphan id all fail.
+
+The CLI gains `--deployment-evidence-file` (bounded local JSON:
+size-capped, strict-schema decode, anchor presence, exit 2 on any
+shape violation, contents never echoed) and `--target-identity`.
+HTTP/MCP carry no evidence surface — the SDK request field is the only
+formal entry point.
+
+### Verification additions (R6)
+
+- `TestT24DeploymentEvidenceTargetDiscrimination`: A→B, unverifiable,
+  A→A, observed-over-declared, and foreign-despite-declared arms.
+- `provider_t24_test.go` R6 cells: complete occupancy under
+  lost-records=0 without PROCESS, partial census under nonzero and
+  unreadable counters, version-gated missing-column degrade/propagate,
+  `@@server_uuid` observation.
+- `audit_deployment_evidence_t24_test.go`: CLI fill, ignore, bind,
+  exit-2 shape matrix, and output privacy.
+- `ddl_golden.py` `t24_manifest_failures`: required == generated set
+  equality both directions.

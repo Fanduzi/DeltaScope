@@ -1963,6 +1963,54 @@ def t05_a4_contract():
     return profile, {"enable": enable}, metadata_cases, cli_cases
 
 
+# ---------------------------------------------------------------------------
+# T24 required-set contract (issue #103, R6): the required denominator must
+# equal the generated case set exactly — every cli/meta case and every
+# anchor db cell accounted, no orphans, no uncounted cases. The two NUM-domain
+# parser cells added in R4 are additionally frozen by identity so deleting the
+# case, gutting its oracle, or dropping only its required entry all fail.
+# ---------------------------------------------------------------------------
+
+T24_NUM_DOMAIN_CASES = {
+    "mysql-num-domain-vcpu-parse": "CREATE RESOURCE GROUP rg TYPE=USER VCPU=4294967296;",
+    "mysql-num-domain-priority-parse": "CREATE RESOURCE GROUP rg TYPE=USER THREAD_PRIORITY=2147483648;",
+}
+
+
+def t24_manifest_failures(manifest):
+    if manifest.get("task_id") != "T24":
+        return []
+    failures = []
+    required = manifest.get("required_case_ids") or []
+    if len(required) != len(set(required)):
+        failures.append("T24 required_case_ids contains duplicates")
+    expected = set()
+    for case in manifest.get("cli_cases", []):
+        expected.add(f"T24.cli.{case['id']}")
+    for case in manifest.get("metadata_cases", []):
+        expected.add(f"T24.meta.{case['id']}")
+    for anchor in manifest.get("anchors", {}):
+        expected.add(f"T24.db.{anchor}.ddl")
+        expected.add(f"T24.db.{anchor}.syntax_negative")
+    required_set = set(required)
+    for missing in sorted(expected - required_set):
+        failures.append(f"T24 required case missing: {missing}")
+    for orphan in sorted(required_set - expected):
+        failures.append(f"T24 required id has no case: {orphan}")
+    for case_id, sql in T24_NUM_DOMAIN_CASES.items():
+        matches = [c for c in manifest.get("cli_cases", []) if c.get("id") == case_id]
+        if len(matches) != 1:
+            failures.append(f"T24 NUM-domain case missing or duplicated: {case_id}")
+            continue
+        case = matches[0]
+        if case.get("dialect") != "mysql" or case.get("sql") != sql:
+            failures.append(f"T24 NUM-domain case input changed: {case_id}")
+        expect = case.get("expect") or {}
+        if expect.get("statements") != 0 or expect.get("diagnostics") != 1 or expect.get("findings") != 0:
+            failures.append(f"T24 NUM-domain oracle changed: {case_id} — the cell must stay a parser diagnostic with zero audited statements")
+    return failures
+
+
 def t05_a3_manifest_failures(manifest):
     if manifest.get("task_id") != "T05":
         return []
@@ -7456,6 +7504,7 @@ def validate_artifact(artifact, manifest, baseline=None, verify_binary=True):
     failures.extend(t06_a13_artifact_failures(artifact, manifest))
     failures.extend(t06_a14_artifact_failures(artifact, manifest))
     failures.extend(t06_a15_artifact_failures(artifact, manifest))
+    failures.extend(t24_manifest_failures(manifest))
 
     if artifact.get("external_blocker"):
         failures.append(f"external blocker recorded: {artifact['external_blocker']}")

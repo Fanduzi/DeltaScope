@@ -27,6 +27,8 @@ type cliOptions struct {
 	TLSMode                string
 	TLSCAFile              string
 	TargetVersion          string
+	DeploymentEvidenceFile string
+	TargetIdentity         string
 	ShowVersion            bool
 }
 

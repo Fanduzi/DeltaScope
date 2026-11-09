@@ -973,6 +973,8 @@
   "T24.meta.mysql57-version-refused",
   "T24.meta.tidb85-mysql-cpu-vendor-boundary",
   "T24.cli.mysql-inverted-vcpu-refused",
-  "T24.cli.mysql-force-pairing-refused"
+  "T24.cli.mysql-force-pairing-refused",
+  "T24.cli.mysql-num-domain-vcpu-parse",
+  "T24.cli.mysql-num-domain-priority-parse"
  ]
 }

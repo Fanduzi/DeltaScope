@@ -245,6 +245,13 @@ type InstanceFacts struct {
 	// MySQL only (T24-R4).
 	MySQLReadOnlyExempt      bool `json:"mysql_read_only_exempt,omitempty"`
 	MySQLReadOnlyExemptKnown bool `json:"mysql_read_only_exempt_known,omitempty"`
+
+	// MySQLServerUUID is the observed @@server_uuid of the audited
+	// connection — a non-secret, provider-observed target identity that
+	// DeploymentEvidence.Target binds against online. MySQL only
+	// (T24-R6).
+	MySQLServerUUID      string `json:"mysql_server_uuid,omitempty"`
+	MySQLServerUUIDKnown bool   `json:"mysql_server_uuid_known,omitempty"`
 }
 
 // DeploymentEvidence is a caller-sourced fact bundle for the premises
@@ -267,6 +274,16 @@ type DeploymentEvidence struct {
 	// Version must equal the resolved target version exactly — the
 	// observed banner online or the pinned target version offline.
 	Version string `json:"version"`
+	// Target optionally names the deployment instance the bundle
+	// describes (a non-secret identity such as the server UUID or a
+	// deployment label). When set, the bundle applies only if the
+	// audited target's resolved identity — the provider-observed
+	// @@server_uuid online, else the request's declared TargetIdentity —
+	// matches it exactly; an unverifiable or mismatched target ignores
+	// the whole bundle so one instance's evidence can never fill
+	// another instance's gaps. Empty means unbound — the caller asserts
+	// the bundle describes the audited request.
+	Target string `json:"target,omitempty"`
 	// HostVCPUs is the deployment's logical CPU count — a positive
 	// value fills the host.vcpu_count premise.
 	HostVCPUs *uint64 `json:"host_vcpus,omitempty"`

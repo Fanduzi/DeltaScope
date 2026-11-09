@@ -163,6 +163,13 @@ func t24MustAudit(t *testing.T, sql string, provider *t24Provider) report.Result
 // bundle — the formal seam for premises no SQL channel observes.
 func t24AuditEvidence(t *testing.T, sql string, provider *t24Provider, evidence *spec.DeploymentEvidence) report.Result {
 	t.Helper()
+	return t24AuditEvidenceTarget(t, sql, provider, evidence, "")
+}
+
+// t24AuditEvidenceTarget adds the declared TargetIdentity — the offline
+// target context a Target-bound bundle discriminates against.
+func t24AuditEvidenceTarget(t *testing.T, sql string, provider *t24Provider, evidence *spec.DeploymentEvidence, targetIdentity string) report.Result {
+	t.Helper()
 	target := ""
 	if provider != nil {
 		target = provider.version
@@ -173,6 +180,7 @@ func t24AuditEvidence(t *testing.T, sql string, provider *t24Provider, evidence 
 		TargetVersion:      target,
 		MetadataProvider:   provider,
 		DeploymentEvidence: evidence,
+		TargetIdentity:     targetIdentity,
 	})
 	if err != nil {
 		t.Fatalf("AuditSQL(%q): %v", sql, err)
@@ -903,6 +911,70 @@ func TestT24DeploymentEvidenceChannel(t *testing.T) {
 	})
 	if got := len(t22Findings(result, 0, t24ValidRule)); got != 1 {
 		t.Fatalf("findings = %d, want the host-range refusal — evidence never overwrites proven facts", got)
+	}
+}
+
+// A/B same-version discrimination: a bundle bound to target A must
+// never fill target B's gaps — only the matching declared identity or
+// the provider-observed @@server_uuid admits it; an unverifiable target
+// ignores the bundle wholesale.
+func TestT24DeploymentEvidenceTargetDiscrimination(t *testing.T) {
+	facts := t24Facts("8.0.36")
+	facts.MySQLHostVCPUsKnown = false
+	facts.MySQLResourceGroupPriorityCapKnown = false
+	provider := &t24Provider{version: "8.0.36", facts: facts,
+		groups: map[string]t24GroupFact{"rg": {status: spec.MetadataStatusNotFound}},
+	}
+	sql := "CREATE RESOURCE GROUP rg TYPE=USER VCPU=7 THREAD_PRIORITY=5;"
+	vcpus := uint64(8)
+	capable := true
+	evidenceForA := &spec.DeploymentEvidence{
+		Source: "capacity-report:2025-11", Product: "mysql", Version: "8.0.36",
+		Target: "host-a-uuid", HostVCPUs: &vcpus, PriorityCapable: &capable,
+	}
+
+	// Same version, different declared target — B's gaps stay bounded.
+	result := t24AuditEvidenceTarget(t, sql, provider, evidenceForA, "host-b-uuid")
+	if gaps := t22GapCodes(result.Statements[0]); !slices.Contains(gaps, t24HostGap) || !slices.Contains(gaps, t24CapGap) {
+		t.Fatalf("A→B gaps = %v, want host+capability gaps — a foreign target's bundle never binds", gaps)
+	}
+
+	// No declared or observed identity — a bound bundle is unverifiable
+	// and ignored the same way.
+	result = t24AuditEvidenceTarget(t, sql, provider, evidenceForA, "")
+	if gaps := t22GapCodes(result.Statements[0]); !slices.Contains(gaps, t24HostGap) || !slices.Contains(gaps, t24CapGap) {
+		t.Fatalf("unverifiable gaps = %v, want host+capability gaps", gaps)
+	}
+
+	// The matching declared identity admits the bundle — the statement
+	// adjudicates completely.
+	result = t24AuditEvidenceTarget(t, sql, provider, evidenceForA, "host-a-uuid")
+	if gaps := t22GapCodes(result.Statements[0]); len(gaps) != 0 {
+		t.Fatalf("A→A gaps = %v, want none — the matching target binds", gaps)
+	}
+
+	// The provider-observed @@server_uuid wins over a declared identity:
+	// a bundle bound to the observed uuid binds even when the declared
+	// identity names something else, and a bundle bound elsewhere is
+	// refused despite the declared match.
+	factsB := t24Facts("8.0.36")
+	factsB.MySQLHostVCPUsKnown = false
+	factsB.MySQLResourceGroupPriorityCapKnown = false
+	factsB.MySQLServerUUID = "observed-uuid"
+	factsB.MySQLServerUUIDKnown = true
+	providerB := &t24Provider{version: "8.0.36", facts: factsB,
+		groups: map[string]t24GroupFact{"rg": {status: spec.MetadataStatusNotFound}},
+	}
+	result = t24AuditEvidenceTarget(t, sql, providerB, &spec.DeploymentEvidence{
+		Source: "capacity-report:2025-11", Product: "mysql", Version: "8.0.36",
+		Target: "observed-uuid", HostVCPUs: &vcpus, PriorityCapable: &capable,
+	}, "declared-other")
+	if gaps := t22GapCodes(result.Statements[0]); len(gaps) != 0 {
+		t.Fatalf("observed-uuid gaps = %v, want none — the observed identity binds over the declared one", gaps)
+	}
+	result = t24AuditEvidenceTarget(t, sql, providerB, evidenceForA, "host-a-uuid")
+	if gaps := t22GapCodes(result.Statements[0]); !slices.Contains(gaps, t24HostGap) {
+		t.Fatalf("observed-vs-declared gaps = %v, want the host gap — observed identity outranks the declared match", gaps)
 	}
 }
 

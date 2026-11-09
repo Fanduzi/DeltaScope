@@ -6,6 +6,8 @@ import (
 	"errors"
 	"testing"
 
+	gomysql "github.com/go-sql-driver/mysql"
+
 	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
 )
 
@@ -196,7 +198,24 @@ const (
 	// information_schema.resource_groups fragment (39 chars) — this
 	// predicate appears only in the probe query.
 	t24FactsFeatureFragment = "resource_group_name = 'usr_default'"
+	// R6 additions: the observed server identity, the occupancy channel's
+	// own version read, and the dropped-records counter that bounds
+	// census completeness.
+	t24FactsUUIDFragment    = "@@server_uuid"
+	t24FactsVersionFragment = "select version()"
+	t24FactsLostFragment    = "performance_schema_thread_instances_lost"
 )
+
+// t24FactsVersionRow stubs the occupancy channel's version read with a
+// proven resource-group-capable banner.
+func t24FactsVersionRow(banner string) testQueryResult {
+	return testQueryResult{columns: []string{"version()"}, rows: [][]driver.Value{{banner}}}
+}
+
+// t24FactsLostRow stubs the dropped-thread-records counter.
+func t24FactsLostRow(lost int64) testQueryResult {
+	return testQueryResult{columns: []string{"Variable_name", "Value"}, rows: [][]driver.Value{{"Performance_schema_thread_instances_lost", lost}}}
+}
 
 func t24LoadFacts(t *testing.T, results map[string]testQueryResult, dialect spec.Dialect) (*spec.InstanceFacts, error) {
 	t.Helper()
@@ -205,9 +224,11 @@ func t24LoadFacts(t *testing.T, results map[string]testQueryResult, dialect spec
 	return provider.LoadMySQLResourceGroupFacts(context.Background(), dialect)
 }
 
-// The complete wire: variables, grants (no active roles), a
-// PROCESS-bearing grant set, an enabled performance_schema, and the
-// builtin feature row — every premise answered.
+// The complete wire: variables, grants (no active roles — and NO
+// PROCESS, proving the threads privilege model needs none), an enabled
+// performance_schema, a proven-capable banner, a clean bound-set read
+// with zero dropped records, an observed server uuid, and the builtin
+// feature row — every premise answered.
 func TestT24FactsLoaderCompleteWire(t *testing.T) {
 	facts, err := t24LoadFacts(t, map[string]testQueryResult{
 		t24FactsVarsFragment: {
@@ -222,11 +243,14 @@ func TestT24FactsLoaderCompleteWire(t *testing.T) {
 			columns: []string{"Grants for u@%"},
 			rows: [][]driver.Value{
 				{"GRANT USAGE ON *.* TO 'u'@'%'"},
-				{"GRANT PROCESS, RESOURCE_GROUP_ADMIN, CONNECTION_ADMIN ON *.* TO 'u'@'%'"},
+				{"GRANT RESOURCE_GROUP_ADMIN, CONNECTION_ADMIN ON *.* TO 'u'@'%'"},
 			},
 		},
+		t24FactsUUIDFragment:    {columns: []string{"@@server_uuid"}, rows: [][]driver.Value{{"aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee"}}},
 		t24FactsPFSFragment:     {columns: []string{"@@global.performance_schema"}, rows: [][]driver.Value{{"ON"}}},
+		t24FactsVersionFragment: t24FactsVersionRow("8.0.36"),
 		t24FactsThreadsFragment: {columns: []string{"resource_group"}, rows: [][]driver.Value{{"rg1"}, {"Other_RG"}}},
+		t24FactsLostFragment:    t24FactsLostRow(0),
 		t24FactsFeatureFragment: {columns: []string{"resource_group_name"}, rows: [][]driver.Value{{"usr_default"}}},
 	}, spec.DialectMySQL)
 	if err != nil {
@@ -247,11 +271,14 @@ func TestT24FactsLoaderCompleteWire(t *testing.T) {
 	if !facts.MySQLResourceGroupFeatureKnown || !facts.MySQLResourceGroupFeatureSupported {
 		t.Fatalf("feature = known:%v value:%v, want proven supported by the builtin row", facts.MySQLResourceGroupFeatureKnown, facts.MySQLResourceGroupFeatureSupported)
 	}
+	if facts.MySQLServerUUID != "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee" || !facts.MySQLServerUUIDKnown {
+		t.Fatalf("server uuid = %q known:%v, want the observed identity", facts.MySQLServerUUID, facts.MySQLServerUUIDKnown)
+	}
 	if !facts.MySQLResourceGroupBound["rg1"] || !facts.MySQLResourceGroupBound["other_rg"] {
 		t.Fatalf("bound = %v, want both observed groups proven occupied (names normalized lowercase)", facts.MySQLResourceGroupBound)
 	}
 	if !facts.MySQLResourceGroupBoundComplete {
-		t.Fatal("bound set must be proven complete — PROCESS grants full thread visibility")
+		t.Fatal("bound set must be proven complete — a clean read plus zero dropped records, no PROCESS required")
 	}
 	// Host CPU count and priority capability are never SQL-observable —
 	// the provider must not fabricate them.
@@ -331,14 +358,17 @@ func TestT24FactsLoaderResourceGroupUserIsNotAdmin(t *testing.T) {
 	}
 }
 
-// Partial thread visibility — a bound row still proves its group's
-// occupancy, but without PROCESS the missing keys stay unproven.
+// A nonzero dropped-records counter means thread instances existed
+// without a table row — observed bound names still prove occupancy, but
+// a missing key is never a proven "unoccupied".
 func TestT24FactsLoaderOccupancyPartialVisibility(t *testing.T) {
 	facts, err := t24LoadFacts(t, map[string]testQueryResult{
 		t24FactsRolesFragment:   {columns: []string{"current_role()"}, rows: [][]driver.Value{{"NONE"}}},
 		t24FactsGrantFragment:   {columns: []string{"Grants for u@%"}, rows: [][]driver.Value{{"GRANT USAGE ON *.* TO 'u'@'%'"}}},
 		t24FactsPFSFragment:     {columns: []string{"@@global.performance_schema"}, rows: [][]driver.Value{{"ON"}}},
+		t24FactsVersionFragment: t24FactsVersionRow("8.0.36"),
 		t24FactsThreadsFragment: {columns: []string{"resource_group"}, rows: [][]driver.Value{{"rg1"}}},
+		t24FactsLostFragment:    t24FactsLostRow(3),
 	}, spec.DialectMySQL)
 	if err != nil {
 		t.Fatalf("LoadMySQLResourceGroupFacts: %v", err)
@@ -347,7 +377,52 @@ func TestT24FactsLoaderOccupancyPartialVisibility(t *testing.T) {
 		t.Fatalf("bound = %v, want rg1 proven occupied", facts.MySQLResourceGroupBound)
 	}
 	if facts.MySQLResourceGroupBoundComplete {
-		t.Fatal("bound completeness must not be claimed without PROCESS — hidden threads could be bound")
+		t.Fatal("bound completeness must not be claimed while thread records were dropped — hidden threads could be bound")
+	}
+}
+
+// An unreadable dropped-records counter also keeps completeness
+// unproven — the clean read alone cannot exclude lost rows.
+func TestT24FactsLoaderOccupancyLostCounterUnproven(t *testing.T) {
+	facts, err := t24LoadFacts(t, map[string]testQueryResult{
+		t24FactsPFSFragment:     {columns: []string{"@@global.performance_schema"}, rows: [][]driver.Value{{"ON"}}},
+		t24FactsVersionFragment: t24FactsVersionRow("8.0.36"),
+		t24FactsThreadsFragment: {columns: []string{"resource_group"}},
+	}, spec.DialectMySQL)
+	if err != nil {
+		t.Fatalf("LoadMySQLResourceGroupFacts: %v", err)
+	}
+	if facts.MySQLResourceGroupBound == nil || len(facts.MySQLResourceGroupBound) != 0 {
+		t.Fatalf("bound = %v, want the proven empty bound set", facts.MySQLResourceGroupBound)
+	}
+	if facts.MySQLResourceGroupBoundComplete {
+		t.Fatal("bound completeness must not be claimed when the lost-records counter is unreadable")
+	}
+}
+
+// A missing threads.RESOURCE_GROUP column is a legitimate degradation
+// only while the server could lack the feature — on a proven 8.0.3+
+// banner the column must exist and the error propagates; on a pre-8.0.3
+// banner it stays unproven.
+func TestT24FactsLoaderOccupancyColumnVersionGated(t *testing.T) {
+	missingColumn := &gomysql.MySQLError{Number: 1054, Message: "Unknown column 'resource_group' in 'field list'"}
+	facts, err := t24LoadFacts(t, map[string]testQueryResult{
+		t24FactsPFSFragment:     {columns: []string{"@@global.performance_schema"}, rows: [][]driver.Value{{"ON"}}},
+		t24FactsVersionFragment: t24FactsVersionRow("5.7.44"),
+		t24FactsThreadsFragment: {queryErr: missingColumn},
+	}, spec.DialectMySQL)
+	if err != nil {
+		t.Fatalf("5.7: LoadMySQLResourceGroupFacts: %v, want degraded unproven", err)
+	}
+	if facts.MySQLResourceGroupBound != nil {
+		t.Fatalf("5.7: bound = %v, want unproven — the column legitimately does not exist", facts.MySQLResourceGroupBound)
+	}
+	if _, err := t24LoadFacts(t, map[string]testQueryResult{
+		t24FactsPFSFragment:     {columns: []string{"@@global.performance_schema"}, rows: [][]driver.Value{{"ON"}}},
+		t24FactsVersionFragment: t24FactsVersionRow("8.0.36"),
+		t24FactsThreadsFragment: {queryErr: missingColumn},
+	}, spec.DialectMySQL); err == nil {
+		t.Fatal("8.0.36: a missing RESOURCE_GROUP column must propagate — the feature guarantees it")
 	}
 }
 

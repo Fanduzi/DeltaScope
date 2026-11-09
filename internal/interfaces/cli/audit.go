@@ -109,6 +109,15 @@ func newAuditCmd(options *cliOptions, exitCode *int) *cobra.Command {
 				return err
 			}
 
+			var deploymentEvidence *spec.DeploymentEvidence
+			if options.DeploymentEvidenceFile != "" {
+				deploymentEvidence, err = loadDeploymentEvidenceFile(options.DeploymentEvidenceFile)
+				if err != nil {
+					*exitCode = exitUser
+					return newUserError(err.Error())
+				}
+			}
+
 			dialect := parseDialect(options.Dialect)
 			var metadataProvider appaudit.MetadataProvider
 			var schema string
@@ -134,12 +143,14 @@ func newAuditCmd(options *cliOptions, exitCode *int) *cobra.Command {
 			}
 
 			result, auditErr := appaudit.AuditSQL(cmd.Context(), appaudit.Request{
-				SQL:              sql,
-				Dialect:          dialect,
-				ConfigPath:       options.ConfigPath,
-				Schema:           schema,
-				MetadataProvider: metadataProvider,
-				TargetVersion:    options.TargetVersion,
+				SQL:                sql,
+				Dialect:            dialect,
+				ConfigPath:         options.ConfigPath,
+				Schema:             schema,
+				MetadataProvider:   metadataProvider,
+				TargetVersion:      options.TargetVersion,
+				DeploymentEvidence: deploymentEvidence,
+				TargetIdentity:     options.TargetIdentity,
 			})
 			if auditErr != nil && !errors.Is(auditErr, appaudit.ErrUnsupportedStatement) && !hasRenderableAuditResult(result) {
 				return mapAuditError(exitCode, auditErr)
@@ -187,6 +198,8 @@ func newAuditCmd(options *cliOptions, exitCode *int) *cobra.Command {
 	cmd.Flags().StringVar(&options.Database, "database", "", "database/catalog for metadata-aware audit (MySQL/TiDB alias of --schema; PostgreSQL database)")
 	cmd.Flags().StringVar(&options.MetadataConnectTimeout, "metadata-connect-timeout", "", "metadata connection timeout for metadata-aware audit, for example 5s or 500ms")
 	cmd.Flags().StringVar(&options.TargetVersion, "target-version", "", "expected server version [v]MAJOR.MINOR.PATCH; offline it is the version fact, online it is verified against the observed version")
+	cmd.Flags().StringVar(&options.DeploymentEvidenceFile, "deployment-evidence-file", "", "read-only local JSON deployment evidence file (source/product/version[/target] plus host_vcpus, priority_capable, feature_supported) for MySQL resource-group premises")
+	cmd.Flags().StringVar(&options.TargetIdentity, "target-identity", "", "declared non-secret target identity a target-bound deployment evidence bundle must match when no server UUID is observed")
 	cmd.Flags().StringVar(&options.TLSMode, "tls-mode", "disabled", "TLS mode for database connection: disabled or enabled")
 	cmd.Flags().StringVar(&options.TLSCAFile, "tls-ca-file", "", "path to TLS CA certificate PEM file (requires tls-mode=enabled)")
 	return cmd

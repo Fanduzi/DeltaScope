@@ -54,6 +54,10 @@ type Request struct {
 	// priority capability, feature support). See
 	// spec.DeploymentEvidence for the binding contract.
 	DeploymentEvidence *spec.DeploymentEvidence
+	// TargetIdentity is the caller-declared, non-secret identity a
+	// Target-bound DeploymentEvidence bundle matches against when the
+	// provider observed no @@server_uuid (T24/#103 R6).
+	TargetIdentity string
 }
 
 const defaultOrderedStatementLimit = 1024
@@ -273,6 +277,7 @@ func metadataRequestFor(request Request, targetVersion *spec.VersionIdentity) *M
 	schema := strings.TrimSpace(request.Schema)
 	provider := request.MetadataProvider
 	evidence := request.DeploymentEvidence
+	targetIdentity := strings.TrimSpace(request.TargetIdentity)
 
 	if legacy != nil {
 		if schema == "" {
@@ -284,8 +289,11 @@ func metadataRequestFor(request Request, targetVersion *spec.VersionIdentity) *M
 		if evidence == nil {
 			evidence = legacy.DeploymentEvidence
 		}
+		if targetIdentity == "" {
+			targetIdentity = strings.TrimSpace(legacy.TargetIdentity)
+		}
 	}
-	if schema == "" && provider == nil && targetVersion == nil && evidence == nil {
+	if schema == "" && provider == nil && targetVersion == nil && evidence == nil && targetIdentity == "" {
 		return nil
 	}
 	return &MetadataRequest{
@@ -293,6 +301,7 @@ func metadataRequestFor(request Request, targetVersion *spec.VersionIdentity) *M
 		Provider:           provider,
 		TargetVersion:      targetVersion,
 		DeploymentEvidence: evidence,
+		TargetIdentity:     targetIdentity,
 	}
 }
 

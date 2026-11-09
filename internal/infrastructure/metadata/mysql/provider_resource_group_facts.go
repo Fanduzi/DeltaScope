@@ -72,13 +72,35 @@ func (p *Provider) LoadMySQLResourceGroupFacts(ctx context.Context, dialect spec
 			facts.MySQLReadOnlyExemptKnown = true
 		}
 	}
-	if err := p.loadMySQLResourceGroupOccupancy(ctx, conn, facts, privileges.Has("PROCESS") || privileges.Has("ALL PRIVILEGES")); err != nil {
+	if err := loadMySQLServerIdentity(ctx, conn, facts); err != nil {
+		return nil, err
+	}
+	if err := p.loadMySQLResourceGroupOccupancy(ctx, conn, facts); err != nil {
 		return nil, err
 	}
 	if err := p.loadMySQLResourceGroupFeature(ctx, conn, facts); err != nil {
 		return nil, err
 	}
 	return facts, nil
+}
+
+// loadMySQLServerIdentity reads @@server_uuid — the non-secret,
+// provider-observed target identity a Target-bound DeploymentEvidence
+// bundle matches against online. An absent or empty answer stays
+// unproven; the query itself errors out like every other read.
+func loadMySQLServerIdentity(ctx context.Context, conn *sql.Conn, facts *spec.InstanceFacts) error {
+	var uuid string
+	if err := conn.QueryRowContext(ctx, `select @@server_uuid`).Scan(&uuid); err != nil {
+		if err == sql.ErrNoRows {
+			return nil
+		}
+		return fmt.Errorf("query mysql server uuid: %w", err)
+	}
+	if trimmed := strings.TrimSpace(uuid); trimmed != "" {
+		facts.MySQLServerUUID = trimmed
+		facts.MySQLServerUUIDKnown = true
+	}
+	return nil
 }
 
 // loadMySQLReadOnlyVars reads @@global.read_only and
@@ -231,13 +253,19 @@ func collectMySQLGlobalPrivileges(set mysqlPrivilegeSet, lines []string) {
 
 // loadMySQLResourceGroupOccupancy reads the bound-group set from
 // performance_schema.threads.RESOURCE_GROUP. The observed names prove
-// occupancy. A missing performance_schema table or RESOURCE_GROUP
-// column degrades to unproven; every other failure propagates.
-// BoundComplete is claimed only when the subject provably sees every
-// thread's group (the PROCESS privilege or ALL at global scope) —
-// partial visibility means a missing key is never a proven
-// "unoccupied".
-func (p *Provider) loadMySQLResourceGroupOccupancy(ctx context.Context, conn *sql.Conn, facts *spec.InstanceFacts, processGranted bool) error {
+// occupancy. Per the documented threads privilege model the table shows
+// every row to any account holding SELECT on it — the PROCESS privilege
+// that filters the processlist sources does NOT apply here — so a clean
+// full read already proves row completeness. The residual completeness
+// gap is records the Performance Schema itself dropped:
+// Performance_schema_thread_instances_lost > 0 means thread instances
+// existed without a table row, so a missing group name is not proven
+// "unoccupied". A clean read plus a proven-zero lost counter claims
+// BoundComplete; anything less keeps the map as positive-only evidence.
+// An unknown-version server keeps missing-object errors degraded (the
+// channel may not exist at all); on a proven 8.0.3+ server the column
+// must exist and the error propagates.
+func (p *Provider) loadMySQLResourceGroupOccupancy(ctx context.Context, conn *sql.Conn, facts *spec.InstanceFacts) error {
 	var pfs string
 	if err := conn.QueryRowContext(ctx, `select @@global.performance_schema`).Scan(&pfs); err != nil {
 		if err == sql.ErrNoRows {
@@ -248,13 +276,26 @@ func (p *Provider) loadMySQLResourceGroupOccupancy(ctx context.Context, conn *sq
 	if !normalizeOnOff(pfs) {
 		return nil
 	}
+	var banner string
+	if err := conn.QueryRowContext(ctx, `select version()`).Scan(&banner); err != nil {
+		return fmt.Errorf("query server version for occupancy channel: %w", err)
+	}
+	version := spec.ParseObservedVersion(banner)
+	columnRequired := false
+	if version != nil {
+		supported, proven := spec.MySQLResourceGroupVersionSupported(version)
+		columnRequired = proven && supported
+	}
 	rows, err := conn.QueryContext(ctx, `
 		select distinct resource_group
 		from performance_schema.threads
 		where resource_group is not null
 	`)
 	if err != nil {
-		if err == sql.ErrNoRows || isMySQLMissingObjectError(err) {
+		if err == sql.ErrNoRows {
+			return nil
+		}
+		if isMySQLMissingObjectError(err) && !columnRequired {
 			return nil
 		}
 		return fmt.Errorf("query bound resource groups: %w", err)
@@ -274,8 +315,22 @@ func (p *Provider) loadMySQLResourceGroupOccupancy(ctx context.Context, conn *sq
 		return fmt.Errorf("iterate bound resource groups: %w", err)
 	}
 	facts.MySQLResourceGroupBound = bound
-	facts.MySQLResourceGroupBoundComplete = processGranted
+	facts.MySQLResourceGroupBoundComplete = mySQLThreadRecordsComplete(ctx, conn)
 	return nil
+}
+
+// mySQLThreadRecordsComplete reports whether the Performance Schema can
+// be proven to hold a row for every thread instance: the documented
+// lost-records counter reads zero. An unreadable or nonzero counter
+// keeps completeness unproven — never a guessed complete census.
+func mySQLThreadRecordsComplete(ctx context.Context, conn *sql.Conn) bool {
+	var lost int64
+	if err := conn.QueryRowContext(ctx, `
+		show global status like 'performance_schema_thread_instances_lost'
+	`).Scan(new(string), &lost); err != nil {
+		return false
+	}
+	return lost == 0
 }
 
 // loadMySQLResourceGroupFeature reads the defensible feature-positive

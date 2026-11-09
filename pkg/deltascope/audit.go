@@ -115,6 +115,11 @@ type Request struct {
 	// DeploymentEvidence for the strict binding contract; a mismatched
 	// or unsourced bundle is ignored, never applied.
 	DeploymentEvidence *DeploymentEvidence
+	// TargetIdentity is the caller-declared, non-secret identity a
+	// Target-bound DeploymentEvidence bundle matches against when the
+	// provider observed no @@server_uuid — a declarative guard against
+	// cross-instance misapplication, not a credential (T24/#103 R6).
+	TargetIdentity string
 }
 
 // DeploymentEvidence re-exports the domain contract verbatim so library
@@ -264,6 +269,7 @@ func Audit(ctx context.Context, request Request) (Result, error) {
 		Schema:     request.Schema,
 	}
 	appRequest.DeploymentEvidence = request.DeploymentEvidence
+	appRequest.TargetIdentity = request.TargetIdentity
 	if request.MetadataProvider != nil {
 		appRequest.MetadataProvider = publicMetadataProvider{provider: request.MetadataProvider}
 	}
