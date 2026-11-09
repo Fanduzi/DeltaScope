@@ -864,7 +864,21 @@ func mysqlResourceGroupPostState(operation DDLOperation, declaration *MySQLResou
 		return post
 	case DDLOperationAlterResourceGroup:
 		if pre == nil || !pre.Proven() || !pre.Exists {
-			return &MySQLResourceGroupPost{Exists: true}
+			post := &MySQLResourceGroupPost{Exists: true}
+			// Occupancy is an independent thread-binding observation —
+			// an unproven group identity never dissolves it. A plain
+			// ALTER moves no threads, so the proceeding branch carries
+			// the proven observation; DISABLE FORCE is the one
+			// relocation variant and lands the group provably
+			// unoccupied, exactly like the proven-identity path below.
+			if enabled, ok := declaration.DeclaredEnabled(); ok && enabled != nil && !*enabled && declaration.DeclaredForce() {
+				unoccupied := false
+				post.Occupied = &unoccupied
+			} else if pre != nil && pre.Occupied != nil {
+				occupied := *pre.Occupied
+				post.Occupied = &occupied
+			}
+			return post
 		}
 		definition := pre.Definition.Clone()
 		if definition == nil {

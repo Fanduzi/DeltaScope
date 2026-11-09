@@ -75,10 +75,18 @@ func (p *Provider) LoadMySQLResourceGroupFacts(ctx context.Context, dialect spec
 	if err := loadMySQLServerIdentity(ctx, conn, facts); err != nil {
 		return nil, err
 	}
-	if err := p.loadMySQLResourceGroupOccupancy(ctx, conn, facts); err != nil {
+	// The observed version is read once for the whole bundle — one base
+	// read on this session's target, shared by every version-gated
+	// resource-group channel below (occupancy + feature probe). A failed
+	// observation propagates; it is never laundered into "unknown".
+	rgSupported, rgProven, err := mysqlResourceGroupVersionSupport(ctx, conn)
+	if err != nil {
 		return nil, err
 	}
-	if err := p.loadMySQLResourceGroupFeature(ctx, conn, facts); err != nil {
+	if err := p.loadMySQLResourceGroupOccupancy(ctx, conn, facts, rgSupported, rgProven); err != nil {
+		return nil, err
+	}
+	if err := p.loadMySQLResourceGroupFeature(ctx, conn, facts, rgSupported, rgProven); err != nil {
 		return nil, err
 	}
 	return facts, nil
@@ -251,6 +259,45 @@ func collectMySQLGlobalPrivileges(set mysqlPrivilegeSet, lines []string) {
 	}
 }
 
+// mysqlVersionQuerier is the QueryRowContext surface *sql.Conn and
+// *sql.DB share — the shared version gate accepts either so the same
+// contract binds the dedicated-session bundle and the pooled
+// per-object resolver.
+type mysqlVersionQuerier interface {
+	QueryRowContext(ctx context.Context, query string, args ...any) *sql.Row
+}
+
+// mysqlResourceGroupVersionSupport observes the server version once and
+// adjudicates every dedicated resource-group catalog read against it —
+// the shared 8.0.3-introduction contract:
+//
+//   - proven && !supported: the channel cannot exist on this server —
+//     its dedicated query is never issued and the fact stays unproven.
+//   - proven && supported: the catalog objects must exist — every
+//     query, scan, permission, driver, and cancellation error propagates
+//     (missing-object codes included).
+//   - !proven: the channel may not exist — the narrow missing-object
+//     degrade stays, never publishing absent/feature=false facts.
+//
+// A version read that errors propagates — a failed observation is never
+// laundered into "version unknown"; a zero-row answer simply leaves the
+// version unproven, exactly like every other unobserved fact.
+func mysqlResourceGroupVersionSupport(ctx context.Context, querier mysqlVersionQuerier) (supported bool, proven bool, err error) {
+	var banner string
+	if err := querier.QueryRowContext(ctx, `select version()`).Scan(&banner); err != nil {
+		if err == sql.ErrNoRows {
+			return false, false, nil
+		}
+		return false, false, fmt.Errorf("query server version for resource-group channels: %w", err)
+	}
+	version := spec.ParseObservedVersion(banner)
+	if version == nil {
+		return false, false, nil
+	}
+	supported, proven = spec.MySQLResourceGroupVersionSupported(version)
+	return supported, proven, nil
+}
+
 // loadMySQLResourceGroupOccupancy reads the bound-group set from
 // performance_schema.threads.RESOURCE_GROUP. The observed names prove
 // occupancy. Per the documented threads privilege model the table shows
@@ -265,7 +312,7 @@ func collectMySQLGlobalPrivileges(set mysqlPrivilegeSet, lines []string) {
 // An unknown-version server keeps missing-object errors degraded (the
 // channel may not exist at all); on a proven 8.0.3+ server the column
 // must exist and the error propagates.
-func (p *Provider) loadMySQLResourceGroupOccupancy(ctx context.Context, conn *sql.Conn, facts *spec.InstanceFacts) error {
+func (p *Provider) loadMySQLResourceGroupOccupancy(ctx context.Context, conn *sql.Conn, facts *spec.InstanceFacts, rgSupported, rgProven bool) error {
 	var pfs string
 	if err := conn.QueryRowContext(ctx, `select @@global.performance_schema`).Scan(&pfs); err != nil {
 		if err == sql.ErrNoRows {
@@ -276,22 +323,13 @@ func (p *Provider) loadMySQLResourceGroupOccupancy(ctx context.Context, conn *sq
 	if !normalizeOnOff(pfs) {
 		return nil
 	}
-	var banner string
-	if err := conn.QueryRowContext(ctx, `select version()`).Scan(&banner); err != nil {
-		return fmt.Errorf("query server version for occupancy channel: %w", err)
+	if rgProven && !rgSupported {
+		// The column cannot exist on this server — the channel is
+		// inapplicable, so the doomed query is never issued and the
+		// bound set stays unproven.
+		return nil
 	}
-	version := spec.ParseObservedVersion(banner)
-	columnRequired := false
-	if version != nil {
-		supported, proven := spec.MySQLResourceGroupVersionSupported(version)
-		if proven && !supported {
-			// The column cannot exist on this server — the channel is
-			// inapplicable, so the doomed query is never issued and the
-			// bound set stays unproven.
-			return nil
-		}
-		columnRequired = proven && supported
-	}
+	columnRequired := rgProven && rgSupported
 	rows, err := conn.QueryContext(ctx, `
 		select distinct resource_group
 		from performance_schema.threads
@@ -353,10 +391,17 @@ func mySQLThreadRecordsComplete(ctx context.Context, conn *sql.Conn) (bool, erro
 // registers in information_schema.RESOURCE_GROUPS at post_init. A
 // observed row proves the feature supported; a zero-row answer stays
 // unproven — catalog visibility is not documented as unfiltered, so an
-// empty read never claims the feature absent. A missing table
-// (pre-8.0.3) likewise stays unproven — the version premise adjudicates
-// that boundary.
-func (p *Provider) loadMySQLResourceGroupFeature(ctx context.Context, conn *sql.Conn, facts *spec.InstanceFacts) error {
+// empty read never claims the feature absent. The same version gate
+// binds as the occupancy channel: a proven pre-8.0.3 server makes the
+// catalog inapplicable so the probe is never issued; on a proven 8.0.3+
+// server the table must exist and every error propagates — only an
+// unproven version keeps the narrow missing-object degrade.
+func (p *Provider) loadMySQLResourceGroupFeature(ctx context.Context, conn *sql.Conn, facts *spec.InstanceFacts, rgSupported, rgProven bool) error {
+	if rgProven && !rgSupported {
+		// The catalog cannot exist on this server — the doomed probe is
+		// never issued and the feature stays unproven.
+		return nil
+	}
 	var name string
 	err := conn.QueryRowContext(ctx, `
 		select resource_group_name
@@ -365,7 +410,7 @@ func (p *Provider) loadMySQLResourceGroupFeature(ctx context.Context, conn *sql.
 		limit 1
 	`).Scan(&name)
 	if err != nil {
-		if err == sql.ErrNoRows || isMySQLMissingObjectError(err) {
+		if err == sql.ErrNoRows || (isMySQLMissingObjectError(err) && !rgProven) {
 			return nil
 		}
 		return fmt.Errorf("query mysql resource-group feature probe: %w", err)

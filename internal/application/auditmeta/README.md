@@ -21,6 +21,7 @@ The shared provider handoff preserves observed relation kind and private view pa
 ## Exports
 
 - `Client`
+- `NewMySQLClient` — builds the production `mysqlClient` composition (`mysqlmeta.NewProvider` over the given `*sql.DB`); exported so interface adapters can exercise the real wrapper chain in tests
 - `ConnectionConfig` — includes `ConnectTimeout` for metadata connection timeout
 - `Request`
 - `PreparedAudit`

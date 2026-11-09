@@ -1516,3 +1516,194 @@ func TestT24PriorityPrecedesForcePairing(t *testing.T) {
 		t.Fatalf("findings = %+v, want the priority refusal first", findings)
 	}
 }
+
+// ── T24-R15 D4: occupancy survives an identity-unproven plain ALTER ──
+// Occupancy is an independent thread-binding observation: a proven
+// census answers it whether or not the catalog proves the group's
+// identity. A plain ALTER moves no threads, so its proceeding branch
+// must carry the proven observation — never re-derive "unknown".
+// Reproduces the native attempt-4 defect where CREATE→ALTER→DROP
+// re-emitted unknown_resource_group_occupancy on the drop.
+func t24R15Facts(bound map[string]bool, complete bool) *spec.InstanceFacts {
+	facts := t24Facts("8.0.36")
+	facts.MySQLResourceGroupBound = bound
+	facts.MySQLResourceGroupBoundComplete = complete
+	return facts
+}
+
+func TestT24R15AlterPreservesOccupancy(t *testing.T) {
+	// groups has no "rg" key → the catalog stays unavailable → existence
+	// unproven, matching the native attempt-4 zero-row answer.
+	noGroup := map[string]t24GroupFact{}
+	unoccupied := map[string]bool{}
+
+	// A: single DROP — proven-unoccupied, existence unproven: the state
+	// gap stays, no occupancy gap is invented.
+	result := t24MustAudit(t, "DROP RESOURCE GROUP rg;", &t24Provider{
+		version: "8.0.36", facts: t24R15Facts(unoccupied, true), groups: noGroup})
+	gaps := t22GapCodes(result.Statements[0])
+	if slices.Contains(gaps, t24OccGap) || !slices.Contains(gaps, t24StateGap) {
+		t.Fatalf("A: gaps = %v, want the state gap alone", gaps)
+	}
+
+	// B: the attempt-4 sequence — CREATE;ALTER DISABLE;DROP. The
+	// proven-unoccupied fact must survive the identity-unproven ALTER.
+	lifecycle := "CREATE RESOURCE GROUP rg TYPE=USER VCPU=0-3 THREAD_PRIORITY=10 ENABLE;\n" +
+		"ALTER RESOURCE GROUP rg DISABLE;\nDROP RESOURCE GROUP rg;"
+	result = t24MustAudit(t, lifecycle, &t24Provider{
+		version: "8.0.36", facts: t24R15Facts(unoccupied, true), groups: noGroup})
+	for i, stmt := range result.Statements {
+		gaps := t22GapCodes(stmt)
+		if slices.Contains(gaps, t24OccGap) {
+			t.Fatalf("B: statement %d gaps = %v, want no occupancy gap — a plain ALTER never moves threads", i, gaps)
+		}
+		if !slices.Contains(gaps, t24StateGap) {
+			t.Fatalf("B: statement %d gaps = %v, want the honest state gap", i, gaps)
+		}
+	}
+
+	// B-2: CREATE;DROP already kept the fact; B-3: the ALTER;DROP tail
+	// isolates the loss point — both must end gap-free.
+	for _, sql := range []string{
+		"CREATE RESOURCE GROUP rg TYPE=USER;\nDROP RESOURCE GROUP rg;",
+		"ALTER RESOURCE GROUP rg DISABLE;\nDROP RESOURCE GROUP rg;",
+	} {
+		result = t24MustAudit(t, sql, &t24Provider{
+			version: "8.0.36", facts: t24R15Facts(unoccupied, true), groups: noGroup})
+		if gaps := t22GapCodes(result.Statements[1]); slices.Contains(gaps, t24OccGap) {
+			t.Fatalf("%q: gaps = %v, want no occupancy gap", sql, gaps)
+		}
+	}
+
+	// C: a partial census can never prove "unoccupied" — the gap stays.
+	result = t24MustAudit(t, lifecycle, &t24Provider{
+		version: "8.0.36", facts: t24R15Facts(unoccupied, false), groups: noGroup})
+	if gaps := t22GapCodes(result.Statements[2]); !slices.Contains(gaps, t24OccGap) {
+		t.Fatalf("C: gaps = %v, want %s under a partial census", gaps, t24OccGap)
+	}
+}
+
+// Occupancy preservation is honest in both directions: a proven-occupied
+// group keeps refusing DROP after a plain DISABLE (no fabricated
+// "unoccupied"), and DISABLE FORCE — the one relocation branch — lands
+// the group provably unoccupied while a divergent pre-state still
+// merges to honest unknown rather than flowing the seed back.
+func TestT24R15OccupancyBothDirections(t *testing.T) {
+	occupied := map[string]bool{"rg": true}
+	noGroup := map[string]t24GroupFact{}
+
+	// D/E: ALTER DISABLE keeps occupied=true → the successor DROP still
+	// refuses busy — preservation never fabricates "unoccupied".
+	result := t24MustAudit(t, "ALTER RESOURCE GROUP rg DISABLE;\nDROP RESOURCE GROUP rg;",
+		&t24Provider{version: "8.0.36", facts: t24R15Facts(occupied, false), groups: noGroup})
+	if gaps := t22GapCodes(result.Statements[1]); slices.Contains(gaps, t24OccGap) {
+		t.Fatalf("E: gaps = %v, want none — occupied stays proven through a plain ALTER", gaps)
+	}
+	findings := t22Findings(result, 1, t24ValidRule)
+	if len(findings) != 1 || !strings.Contains(findings[0].Message, "threads are bound") {
+		t.Fatalf("E: findings = %+v, want the busy-drop refusal", findings)
+	}
+
+	// F: DISABLE FORCE relocates bound threads — the one ALTER branch
+	// whose proceeding outcome overrides the observation.
+	// occupied=false through an undecidable FORCE (existence unproven):
+	// the proceeding branch proves unoccupied, the union keeps it.
+	result = t24MustAudit(t, "ALTER RESOURCE GROUP rg DISABLE FORCE;\nDROP RESOURCE GROUP rg;",
+		&t24Provider{version: "8.0.36", facts: t24R15Facts(map[string]bool{}, true), groups: noGroup})
+	if gaps := t22GapCodes(result.Statements[1]); slices.Contains(gaps, t24OccGap) {
+		t.Fatalf("F-unoccupied: gaps = %v, want none — the proceeding FORCE branch proves unoccupied", gaps)
+	}
+	// occupied=true proves existence by itself, so the FORCE alter is
+	// decidable: bound threads relocate and the group lands unoccupied —
+	// the drop proceeds, never reviving the stale occupied seed.
+	result = t24MustAudit(t, "ALTER RESOURCE GROUP rg DISABLE FORCE;\nDROP RESOURCE GROUP rg;",
+		&t24Provider{version: "8.0.36", facts: t24R15Facts(occupied, false), groups: noGroup})
+	if gaps := t22GapCodes(result.Statements[1]); len(gaps) != 0 {
+		t.Fatalf("F-occupied-decidable: gaps = %v, want none — the FORCE relocation lands unoccupied", gaps)
+	}
+	if got := len(t22Findings(result, 1, t24ValidRule)); got != 0 {
+		t.Fatalf("F-occupied-decidable: findings = %d, want none — the seed never flows back", got)
+	}
+	// occupied=true plus an undecidable FORCE (privilege unproven): the
+	// branches diverge honestly — refusal keeps the binding, proceeding
+	// lands unoccupied — so the union withholds occupancy and the drop
+	// owes the gap rather than flowing the seed back into a busy refusal.
+	forceUndecidable := t24R15Facts(occupied, false)
+	forceUndecidable.MySQLResourceGroupAdminKnown = false
+	result = t24MustAudit(t, "ALTER RESOURCE GROUP rg DISABLE FORCE;\nDROP RESOURCE GROUP rg;",
+		&t24Provider{version: "8.0.36", facts: forceUndecidable, groups: noGroup})
+	if gaps := t22GapCodes(result.Statements[1]); !slices.Contains(gaps, t24OccGap) {
+		t.Fatalf("F-occupied-undecidable: gaps = %v, want %s — a divergent FORCE keeps occupancy unknown", gaps, t24OccGap)
+	}
+	if got := len(t22Findings(result, 1, t24ValidRule)); got != 0 {
+		t.Fatalf("F-occupied-undecidable: findings = %d, want none — unknown occupancy never fabricates a busy refusal", got)
+	}
+
+	// The merged post-state carries its own copy — never an alias of
+	// the seeded pre pointer.
+	entry := t24Entry(t, "ALTER RESOURCE GROUP rg DISABLE;", "rg",
+		&t24Provider{version: "8.0.36", facts: t24R15Facts(map[string]bool{}, true), groups: noGroup})
+	if entry == nil || entry.occupied == nil || *entry.occupied {
+		t.Fatalf("entry = %+v, want proven-unoccupied preserved through the unproven ALTER", entry)
+	}
+}
+
+// ── T24-R15 oracle freeze: the attempt-4 expectations on the repaired
+// chain ──
+// The cap-off deployment observed natively (THREAD_PRIORITY ignored,
+// host facts bound by evidence, a clean empty census, and a zero-row
+// catalog answer) produces the frozen oracle shapes below. The lifecycle
+// cell owes only the three honest state gaps once the plain ALTER stops
+// dissolving the proven-unoccupied fact; the catalog-definition cell is
+// independent of occupancy entirely.
+func TestT24R15FrozenOracleShapes(t *testing.T) {
+	capOff := t24R15Facts(map[string]bool{}, true)
+	capOff.MySQLResourceGroupPriorityCapable = false
+	noGroup := map[string]t24GroupFact{}
+	provider := &t24Provider{version: "8.0.36", facts: capOff, groups: noGroup}
+
+	// mysql84-rg-catalog-definition shape: CREATE-only, cap-off —
+	// affinity + ignored-priority warnings, one honest state gap.
+	result := t24MustAudit(t,
+		"CREATE RESOURCE GROUP t24fx_def TYPE=USER VCPU=0,2 THREAD_PRIORITY=5 DISABLE;",
+		provider)
+	stmt := result.Statements[0]
+	if got := len(t22Findings(result, 0, t24AffWarn)); got != 1 {
+		t.Fatalf("catalog-definition: affinity findings = %d, want 1", got)
+	}
+	if got := len(t22Findings(result, 0, t24PrioWarn)); got != 1 {
+		t.Fatalf("catalog-definition: priority findings = %d, want 1 — cap-off ignores the authored value", got)
+	}
+	if gaps := t22GapCodes(stmt); len(gaps) != 1 || gaps[0] != t24StateGap {
+		t.Fatalf("catalog-definition: gaps = %v, want [unknown_resource_group_state]", gaps)
+	}
+	if result.Verdict != "review" || stmt.Coverage.Status != "unverified" {
+		t.Fatalf("catalog-definition: verdict/coverage = %s/%s, want review/unverified",
+			result.Verdict, stmt.Coverage.Status)
+	}
+
+	// mysql80-rg-lifecycle shape, post-D4: same two warnings on CREATE,
+	// the honest state gap on every statement, and nothing else — the
+	// proven-unoccupied fact survives the plain ALTER to the DROP.
+	result = t24MustAudit(t,
+		"CREATE RESOURCE GROUP t24fx_rg TYPE=USER VCPU=0-3 THREAD_PRIORITY=10 ENABLE;\n"+
+			"ALTER RESOURCE GROUP t24fx_rg DISABLE;\nDROP RESOURCE GROUP t24fx_rg;",
+		provider)
+	if got := len(t22Findings(result, 0, t24AffWarn)); got != 1 {
+		t.Fatalf("lifecycle: affinity findings = %d, want 1", got)
+	}
+	if got := len(t22Findings(result, 0, t24PrioWarn)); got != 1 {
+		t.Fatalf("lifecycle: priority findings = %d, want 1", got)
+	}
+	for i, s := range result.Statements {
+		if gaps := t22GapCodes(s); len(gaps) != 1 || gaps[0] != t24StateGap {
+			t.Fatalf("lifecycle: statement %d gaps = %v, want [unknown_resource_group_state]", i, gaps)
+		}
+		if s.Coverage.Status != "unverified" {
+			t.Fatalf("lifecycle: statement %d coverage = %s, want unverified", i, s.Coverage.Status)
+		}
+	}
+	if result.Verdict != "review" {
+		t.Fatalf("lifecycle: verdict = %s, want review", result.Verdict)
+	}
+}

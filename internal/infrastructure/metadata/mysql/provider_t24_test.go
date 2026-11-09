@@ -442,13 +442,15 @@ func TestT24FactsLoaderOccupancyColumnVersionGated(t *testing.T) {
 }
 
 // A disabled performance_schema leaves every occupancy fact unproven —
-// and the version/threads/lost queries are never issued on an
-// inapplicable channel (sentinel errors prove none ran).
+// and the threads/lost queries are never issued on an inapplicable
+// channel (sentinel errors prove none ran). The base version read stays
+// legal: the feature channel needs it to gate its own probe, so it is
+// answered normally rather than sentinel-blocked.
 func TestT24FactsLoaderPerformanceSchemaOff(t *testing.T) {
 	mustNotQuery := errors.New("occupancy channel query must not be issued")
 	facts, err := t24LoadFacts(t, map[string]testQueryResult{
 		t24FactsPFSFragment:     {columns: []string{"@@global.performance_schema"}, rows: [][]driver.Value{{"OFF"}}},
-		t24FactsVersionFragment: {queryErr: mustNotQuery},
+		t24FactsVersionFragment: t24FactsVersionRow("8.0.36"),
 		t24FactsThreadsFragment: {queryErr: mustNotQuery},
 		t24FactsLostFragment:    {queryErr: mustNotQuery},
 	}, spec.DialectMySQL)
@@ -537,5 +539,110 @@ func TestT24ResourceGroupLoaderRealErrorPropagates(t *testing.T) {
 		},
 	}, spec.DialectMySQL, spec.ObjectLookupRequest{Type: "mysql_resource_group", Name: "rg84"}); !errors.Is(err, denied) {
 		t.Fatalf("err = %v, want errors.Is(1142)", err)
+	}
+}
+
+// ── T24-R15 D2: one version contract gates every dedicated read ──
+// Sentinel errors on the dedicated fragments prove the query was never
+// issued; the observed version row is what arms the gate (a base read
+// that is always legal). The same contract binds the bundle's feature
+// probe, the occupancy channel (already gated), and the per-object
+// snapshot reader.
+
+// A proven pre-8.0.3 server must never see the information_schema
+// resource-group reads — not the feature probe, not the threads census,
+// not the per-object snapshot. Each dedicated fragment carries a
+// sentinel so an issued query fails loudly instead of degrading.
+func TestT24R15VersionGateSkipsDedicatedQueries(t *testing.T) {
+	mustNotQuery := errors.New("dedicated resource-group query must not be issued")
+	facts, err := t24LoadFacts(t, map[string]testQueryResult{
+		t24FactsPFSFragment:     {columns: []string{"@@global.performance_schema"}, rows: [][]driver.Value{{"ON"}}},
+		t24FactsVersionFragment: t24FactsVersionRow("5.7.44"),
+		t24FactsThreadsFragment: {queryErr: mustNotQuery},
+		t24FactsLostFragment:    {queryErr: mustNotQuery},
+		t24FactsFeatureFragment: {queryErr: mustNotQuery},
+	}, spec.DialectMySQL)
+	if err != nil {
+		t.Fatalf("5.7: LoadMySQLResourceGroupFacts: %v, want every dedicated query gated out", err)
+	}
+	if facts.MySQLResourceGroupFeatureKnown || facts.MySQLResourceGroupBound != nil {
+		t.Fatalf("5.7: facts = %+v, want feature/bound unproven — never queried, never fabricated", facts)
+	}
+	snapshot, err := t24Resolve(t, map[string]testQueryResult{
+		t24FactsVersionFragment:   t24FactsVersionRow("5.7.44"),
+		testResourceGroupFragment: {columns: testMySQLResourceGroupColumns, queryErr: mustNotQuery},
+	}, spec.DialectMySQL, spec.ObjectLookupRequest{Type: "mysql_resource_group", Name: "rg57"})
+	if err != nil {
+		t.Fatalf("5.7: ResolveObject: %v, want the catalog query gated out", err)
+	}
+	if snapshot.IsConfirmed() {
+		t.Fatalf("5.7: snapshot = %#v, want unproven", snapshot)
+	}
+}
+
+// On a proven supported server the catalog objects must exist — a
+// missing-object answer is a real failure and propagates at both the
+// snapshot and the feature-probe levels, on both supported majors.
+func TestT24R15SupportedVersionMissingObjectPropagates(t *testing.T) {
+	missing := &gomysql.MySQLError{Number: 1109, Message: "Unknown table 'resource_groups'"}
+	for _, banner := range []string{"8.0.46", "8.4.10"} {
+		if _, err := t24Resolve(t, map[string]testQueryResult{
+			t24FactsVersionFragment:   t24FactsVersionRow(banner),
+			testResourceGroupFragment: {columns: testMySQLResourceGroupColumns, queryErr: missing},
+		}, spec.DialectMySQL, spec.ObjectLookupRequest{Type: "mysql_resource_group", Name: "rg"}); !errors.Is(err, missing) {
+			t.Fatalf("%s: err = %v, want errors.Is(1109) — a supported server never degrades a real catalog error", banner, err)
+		}
+	}
+	if _, err := t24LoadFacts(t, map[string]testQueryResult{
+		t24FactsPFSFragment:     {columns: []string{"@@global.performance_schema"}, rows: [][]driver.Value{{"ON"}}},
+		t24FactsVersionFragment: t24FactsVersionRow("8.0.46"),
+		t24FactsFeatureFragment: {queryErr: missing},
+	}, spec.DialectMySQL); !errors.Is(err, missing) {
+		t.Fatalf("8.0.46 feature probe: err = %v, want errors.Is(1109)", err)
+	}
+}
+
+// An unproven version keeps the narrow missing-object degrade (the
+// channel may not exist at all); a failed version observation is itself
+// an error and propagates — it is never laundered into "unknown".
+func TestT24R15VersionGateUnknownAndError(t *testing.T) {
+	// Version unobservable (zero rows) → missing-object answers degrade.
+	snapshot, err := t24Resolve(t, map[string]testQueryResult{
+		testResourceGroupFragment: {columns: testMySQLResourceGroupColumns,
+			queryErr: &gomysql.MySQLError{Number: 1146, Message: "Table 'resource_groups' doesn't exist"}},
+	}, spec.DialectMySQL, spec.ObjectLookupRequest{Type: "mysql_resource_group", Name: "rg"})
+	if err != nil || snapshot == nil || snapshot.IsConfirmed() {
+		t.Fatalf("unknown-version degrade: snapshot=%#v err=%v, want unproven nil error", snapshot, err)
+	}
+	denied := errors.New("version read denied")
+	if _, err := t24Resolve(t, map[string]testQueryResult{
+		t24FactsVersionFragment:   {queryErr: denied},
+		testResourceGroupFragment: {columns: testMySQLResourceGroupColumns},
+	}, spec.DialectMySQL, spec.ObjectLookupRequest{Type: "mysql_resource_group", Name: "rg"}); !errors.Is(err, denied) {
+		t.Fatalf("version-read failure: err = %v, want errors.Is(denied) — never laundered into unknown", err)
+	}
+	if _, err := t24LoadFacts(t, map[string]testQueryResult{
+		t24FactsVersionFragment: {queryErr: denied},
+	}, spec.DialectMySQL); !errors.Is(err, denied) {
+		t.Fatalf("bundle version failure: err = %v, want errors.Is(denied)", err)
+	}
+}
+
+// Driver-level cancellation and permission answers propagate under any
+// version — they are never missing-object answers and never degrade.
+func TestT24R15NonMissingErrorsPropagate(t *testing.T) {
+	if _, err := t24Resolve(t, map[string]testQueryResult{
+		t24FactsVersionFragment:   t24FactsVersionRow("8.0.46"),
+		testResourceGroupFragment: {columns: testMySQLResourceGroupColumns, queryErr: context.Canceled},
+	}, spec.DialectMySQL, spec.ObjectLookupRequest{Type: "mysql_resource_group", Name: "rg"}); !errors.Is(err, context.Canceled) {
+		t.Fatalf("err = %v, want errors.Is(context.Canceled)", err)
+	}
+	denied := &gomysql.MySQLError{Number: 1142, Message: "SELECT command denied"}
+	if _, err := t24LoadFacts(t, map[string]testQueryResult{
+		t24FactsPFSFragment:     {columns: []string{"@@global.performance_schema"}, rows: [][]driver.Value{{"ON"}}},
+		t24FactsVersionFragment: t24FactsVersionRow("8.0.46"),
+		t24FactsFeatureFragment: {queryErr: denied},
+	}, spec.DialectMySQL); !errors.Is(err, denied) {
+		t.Fatalf("feature probe 1142: err = %v, want errors.Is(1142)", err)
 	}
 }

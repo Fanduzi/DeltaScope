@@ -717,7 +717,7 @@
     "exit": 0,
     "verdict": "review",
     "statements": 3,
-    "findings": 1,
+    "findings": 2,
     "diagnostics": 0,
     "unsupported": 0,
     "coverage": "unverified",
@@ -726,17 +726,42 @@
      "unverified",
      "unverified"
     ],
-    "evidence_gaps": 5,
+    "evidence_gaps": 3,
     "fail_on_triggered": false,
     "finding_entries": [
      {
       "index": 0,
       "rule_id": "ddl.mysql.resource_group.affinity.warn",
       "level": "warning"
+     },
+     {
+      "index": 0,
+      "rule_id": "ddl.mysql.resource_group.priority.warn",
+      "level": "warning"
+     }
+    ],
+    "evidence_gap_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.mysql.resource_group.valid",
+      "reason_code": "unknown_resource_group_state",
+      "required_facts": ["resource_group.state"]
+     },
+     {
+      "index": 1,
+      "rule_id": "ddl.mysql.resource_group.valid",
+      "reason_code": "unknown_resource_group_state",
+      "required_facts": ["resource_group.state"]
+     },
+     {
+      "index": 2,
+      "rule_id": "ddl.mysql.resource_group.valid",
+      "reason_code": "unknown_resource_group_state",
+      "required_facts": ["resource_group.state"]
      }
     ]
    },
-   "description": "pending native: the wired provider now proves version, the usr_default feature probe, the writable read-only gate, effective grants, and a complete-empty occupancy set — the remaining gaps are the zero-row catalog state plus host.vcpu_count and priority capability, which only the deployment-evidence seam answers. CREATE owes state+host+cap, ALTER and DROP owe state; notices stay suppressed and the affinity warning fires. T24-R4 oracle: 5 gaps (R2 oracle was 12, before premise wiring)."
+   "description": "pending native (T24-R15 oracle freeze): bound cap-off evidence fills host_vcpu+priority_cap, so CREATE owes only the zero-row state gap; affinity.warn fires on the declared VCPU and priority.warn fires because the deployment cannot apply priorities (ER_ATTRIBUTE_IGNORED semantics, effective 0). ALTER and DROP owe the state gap; the proven-unoccupied census survives the plain DISABLE ALTER so DROP owes no occupancy gap — that expectation requires the D4 repair and must be re-proven on a clean-tree native receipt. Prior oracle was 1 finding + 5 gaps (evidence unbound, pre-D4); the frozen branch is cap-off — a cap-on observation needs its own oracle. Old attempt-4 stays 22/24."
   },
   {
    "id": "mysql80-alter-absent-refused",
@@ -882,24 +907,37 @@
     "exit": 0,
     "verdict": "review",
     "statements": 1,
-    "findings": 1,
+    "findings": 2,
     "diagnostics": 0,
     "unsupported": 0,
     "coverage": "unverified",
     "statement_coverage": [
      "unverified"
     ],
-    "evidence_gaps": 3,
+    "evidence_gaps": 1,
     "fail_on_triggered": false,
     "finding_entries": [
      {
       "index": 0,
       "rule_id": "ddl.mysql.resource_group.affinity.warn",
       "level": "warning"
+     },
+     {
+      "index": 0,
+      "rule_id": "ddl.mysql.resource_group.priority.warn",
+      "level": "warning"
+     }
+    ],
+    "evidence_gap_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.mysql.resource_group.valid",
+      "reason_code": "unknown_resource_group_state",
+      "required_facts": ["resource_group.state"]
      }
     ]
    },
-   "description": "pending native: the wired premises are proven — the create owes only the zero-row catalog state, host.vcpu_count, and priority capability, so it stays undecidable with three bounded gaps while the declared VCPU affinity warning still fires. T24-R4 oracle: 3 (R2 oracle was 5)."
+   "description": "pending native (T24-R15 oracle freeze): bound cap-off evidence fills host_vcpu+priority_cap — the create owes only the zero-row catalog state gap; affinity.warn fires on the declared VCPU and priority.warn fires because the deployment cannot apply priorities (effective 0). CREATE-only, so occupancy never participates. Prior oracle was 1 finding + 3 gaps (evidence unbound); the frozen branch is cap-off — a cap-on observation needs its own oracle. Old attempt-4 stays 22/24."
   },
   {
    "id": "mysql57-version-refused",

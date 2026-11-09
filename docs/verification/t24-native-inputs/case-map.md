@@ -68,3 +68,28 @@ independent oracle; none hidden inside "extra smoke passed":
 First path is recorded as four separate records: product output on
 CREATE; native CREATE execution + catalog readback; subsequent ALTER
 product output + native result + catalog change; DROP + cleanup result.
+
+## R15 addendum — observed branch oracle (cap-off)
+
+Attempt-4 observed **cap-off** on both MySQL anchors (mysqld uid 999,
+CapEff=0, Cpus_allowed 0-3 → `priority_capable=false`, `host_vcpus=4`,
+target = observed `@@server_uuid`). With the bound evidence filling
+host/cap premises and the D4 occupancy repair, the two evidence-bound
+cells freeze on this branch:
+
+| id | findings | gaps (all `ddl.mysql.resource_group.valid`) |
+|---|---|---|
+| mysql80-rg-lifecycle | `affinity.warn` + `priority.warn` @0 | `unknown_resource_group_state` @0/1/2 |
+| mysql84-rg-catalog-definition | `affinity.warn` + `priority.warn` @0 | `unknown_resource_group_state` @0 |
+
+- `priority.warn` is a **branch finding**: it fires only when
+  `priority_capable` is proven false (upstream `ER_ATTRIBUTE_IGNORED`,
+  authored value stores 0). A **cap-on** deployment needs its own
+  oracle (no `priority.warn`; same gap set).
+- The old attempt-4 emission of `unknown_resource_group_occupancy` on
+  the lifecycle DROP was the D4 batch-state defect — retired, not
+  frozen. Historical run stays 24/22/2.
+- Proven on the repaired public chain: `TestT24R15FrozenOracleShapes`
+  (`internal/application/audit/batch_state_t24_test.go`) drives the
+  identical premise shape and asserts the frozen per-statement
+  finding/gap tuples.

@@ -1953,6 +1953,18 @@ func (p *Provider) loadResourceGroupObject(ctx context.Context, request spec.Obj
 // errors propagate wrapped with identity context — never absence — and
 // failures are never cached as absence.
 func (p *Provider) loadMySQLResourceGroupObject(ctx context.Context, request spec.ObjectLookupRequest, snapshot *spec.ObjectSnapshot) (*spec.ObjectSnapshot, error) {
+	// The same 8.0.3-introduction version gate binds as the fact-bundle
+	// channels: a proven pre-8.0.3 server makes the catalog inapplicable
+	// so the dedicated query is never issued; on a proven 8.0.3+ server
+	// the table must exist and every error propagates — only an
+	// unproven version keeps the narrow missing-object degrade.
+	rgSupported, rgProven, err := mysqlResourceGroupVersionSupport(ctx, p.db)
+	if err != nil {
+		return nil, err
+	}
+	if rgProven && !rgSupported {
+		return snapshot, nil
+	}
 	row := p.db.QueryRowContext(ctx, `
 		select resource_group_name, resource_group_type,
 			resource_group_enabled, vcpu_ids, thread_priority
@@ -1961,7 +1973,7 @@ func (p *Provider) loadMySQLResourceGroupObject(ctx context.Context, request spe
 	`, request.Name)
 	var name, groupType, enabled, vcpuIDs, threadPriority sql.NullString
 	if err := row.Scan(&name, &groupType, &enabled, &vcpuIDs, &threadPriority); err != nil {
-		if err == sql.ErrNoRows || isMySQLMissingObjectError(err) {
+		if err == sql.ErrNoRows || (isMySQLMissingObjectError(err) && !rgProven) {
 			return snapshot, nil
 		}
 		return nil, fmt.Errorf("query mysql resource group snapshot %s: %w", request.Name, err)

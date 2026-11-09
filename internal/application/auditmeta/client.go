@@ -19,6 +19,14 @@ func OpenClient(config ConnectionConfig) (Client, error) {
 	return openMySQLClient(config)
 }
 
+// NewMySQLClient wraps an already-open *sql.DB in the production
+// metadata-client composition — the same mysqlClient{db, NewProvider(db)}
+// pairing openMySQLClientContext builds. Adapters and tests that own
+// their pool lifecycle use it to reach the real wrapper chain.
+func NewMySQLClient(db *sql.DB) Client {
+	return mysqlClient{db: db, provider: mysqlmeta.NewProvider(db)}
+}
+
 func (c mysqlClient) LoadInstanceFacts(ctx context.Context, dialect spec.Dialect, schema string) (*spec.InstanceFacts, error) {
 	return c.provider.LoadInstanceFacts(ctx, dialect, schema)
 }

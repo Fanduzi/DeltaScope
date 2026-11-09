@@ -407,3 +407,65 @@ round's own ruling; earlier rounds' offline contracts are unchanged):
   the observed uuid), and `TestT24ChainEvidenceOnlineAbsentUUIDRefuses`
   (stub driver → real provider → public `AuditSQL` — a cleanly absent
   observed uuid refuses the declared-matching bundle without erroring).
+
+### T24-R15 addendum — native-run defect repairs and the cap-off oracle freeze
+
+The R11 native execution (attempts 1–4 under `e8320ce76827`) surfaced two
+product defects the offline suite could not reach — the stub-based suite
+injects facts directly, while the real chain exercises the version gate
+and the ordered-state merge. Both repairs keep the frozen contract; no
+premise, formula, or gap semantics changed.
+
+**D2 — version domain gates every resource-group server query.** Before
+the repair the feature probe and the catalog reader issued
+`information_schema.RESOURCE_GROUPS` queries unconditionally, so a
+proven pre-8.0.3 server (MySQL 5.7.44 observed) paid a doomed query that
+returned Error 1109; symmetrically, on a proven 8.0.3+ server a real
+1109/1054/1146 was degraded to "unproven", hiding genuine catalog
+failures. Both loaders now resolve `mysqlResourceGroupVersionSupport`
+first — the same `select version()` gate the occupancy channel already
+used — and split three ways: proven unsupported skips the query
+entirely; version unknown keeps the narrow missing-object degradation;
+proven supported propagates every error including the missing-object
+class. `ResolveObject` has no version parameter, so the reader inspects
+the version internally rather than growing the interface.
+
+**D4 — a proven occupancy fact survives a plain ALTER.** The shared
+post-merge requires both sides non-nil and equal to keep `Occupied`; an
+ALTER whose pre-state was unproven exited early with `Post{Exists:true}`
+and no occupancy, which silently dissolved the already-proven
+`occupied=false` seeded by a complete census. A plain ALTER never moves
+threads (only `DISABLE FORCE` rebinds them to the default groups), so
+silence must inherit, not refute. The early-return branch now copies
+`pre.Occupied` for non-FORCE alterations and publishes `Occupied=false`
+explicitly on the `DISABLE FORCE` path — a scoped fix, not a global
+"nil means inherit" rule. An undecidable FORCE branch still merges
+without manufacturing occupancy.
+
+**D1 — the real wrapper chain is pinned by a permanent composition
+test.** The native run proved `auditmeta.mysqlClient` and
+`cliMetadataProvider` both failed to forward the optional
+`LoadMySQLResourceGroupFacts` interface, so the CLI surface never loaded
+the lazy premise set. `8765f0b3` added the two forwarders; R15 adds
+`auditmeta.NewMySQLClient` — an exported seam that builds exactly the
+`prepare.go` production composition (`mysqlClient{db, NewProvider(db)}`)
+— so `internal/interfaces/cli` tests drive stub-driver → real provider
+→ auditmeta client → CLI wrapper → public `AuditSQL` without
+re-implementing production wiring.
+
+**Oracle freeze.** The attempt-4 actuals were re-adjudicated offline
+against the repaired chain and the bound cap-off evidence
+(`priority_capable=false`, `host_vcpus=4`, target = observed uuid).
+`mysql84-rg-catalog-definition` now expects two findings
+(`affinity.warn`, `priority.warn` — the deployment cannot apply the
+authored priority, upstream `ER_ATTRIBUTE_IGNORED` semantics) and one
+`unknown_resource_group_state` gap. `mysql80-rg-lifecycle` expects the
+same two findings plus three `unknown_resource_group_state` gaps; the
+fourth gap attempt-4 emitted (`unknown_resource_group_occupancy` on the
+DROP) was the D4 defect, not an honest premise gap, and is not frozen.
+The frozen branch is cap-off — a deployment with
+`thread_priority_available()` needs a separate oracle. The historical
+run stays 24 executed, 22 pass, 2 fail; no artifact was rewritten.
+Permanent coverage: `TestT24R15FrozenOracleShapes` (both shapes on the
+repaired chain), `TestT24R15*` provider matrix (version-domain query
+gating), and the `TestT24R15Occupancy*` ordered-state matrix.
