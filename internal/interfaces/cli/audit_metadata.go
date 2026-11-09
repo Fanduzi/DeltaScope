@@ -145,6 +145,16 @@ func (p cliMetadataProvider) LoadPlacementPolicies(ctx context.Context, dialect 
 	return loader.LoadPlacementPolicies(ctx, dialect)
 }
 
+func (p cliMetadataProvider) LoadMySQLResourceGroupFacts(ctx context.Context, dialect spec.Dialect) (*spec.InstanceFacts, error) {
+	loader, ok := p.client.(interface {
+		LoadMySQLResourceGroupFacts(context.Context, spec.Dialect) (*spec.InstanceFacts, error)
+	})
+	if !ok {
+		return nil, nil
+	}
+	return loader.LoadMySQLResourceGroupFacts(ctx, dialect)
+}
+
 func (p cliMetadataProvider) ResolveObject(ctx context.Context, dialect spec.Dialect, request spec.ObjectLookupRequest) (*spec.ObjectSnapshot, error) {
 	type objectResolver interface {
 		ResolveObject(context.Context, spec.Dialect, spec.ObjectLookupRequest) (*spec.ObjectSnapshot, error)

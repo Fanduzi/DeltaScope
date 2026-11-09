@@ -43,6 +43,10 @@ func (c mysqlClient) LoadPlacementPolicies(ctx context.Context, dialect spec.Dia
 	return c.provider.LoadPlacementPolicies(ctx, dialect)
 }
 
+func (c mysqlClient) LoadMySQLResourceGroupFacts(ctx context.Context, dialect spec.Dialect) (*spec.InstanceFacts, error) {
+	return c.provider.LoadMySQLResourceGroupFacts(ctx, dialect)
+}
+
 func (c mysqlClient) Close() error {
 	return c.db.Close()
 }

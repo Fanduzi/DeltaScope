@@ -687,7 +687,9 @@
     "host": "127.0.0.1",
     "port": 23380,
     "user": "root",
-    "schema": "t24fx"
+    "schema": "t24fx",
+    "password_env": "DS_T24_GOLDEN_PW",
+    "password": "root"
    },
    "policy": "t24-mysql-resource-group",
    "args": [
@@ -700,9 +702,15 @@
    "setup": [
     {
      "name": "clear-fixture-group",
-     "sql": "DROP RESOURCE GROUP t24fx_rg",
-     "expect_rc": 0,
-     "verify": []
+     "sql": "SELECT COUNT(*) FROM information_schema.RESOURCE_GROUPS WHERE resource_group_name='t24fx_rg'",
+     "verify": [
+      {
+       "assert": "t24fx_rg absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.RESOURCE_GROUPS WHERE resource_group_name='t24fx_rg'",
+       "expect": "0"
+      }
+     ],
+     "expect_rc": 0
     }
    ],
    "expect": {
@@ -739,7 +747,9 @@
     "host": "127.0.0.1",
     "port": 23380,
     "user": "root",
-    "schema": "t24fx"
+    "schema": "t24fx",
+    "password_env": "DS_T24_GOLDEN_PW",
+    "password": "root"
    },
    "policy": "t24-mysql-resource-group",
    "args": [
@@ -750,15 +760,15 @@
    "setup": [
     {
      "name": "ensure-ghost-absent",
-     "sql": "DROP RESOURCE GROUP t24fx_ghost",
-     "expect_rc": 0,
+     "sql": "SELECT COUNT(*) FROM information_schema.RESOURCE_GROUPS WHERE resource_group_name='t24fx_ghost'",
      "verify": [
       {
        "assert": "ghost group absent",
        "sql": "SELECT COUNT(*) FROM information_schema.RESOURCE_GROUPS WHERE RESOURCE_GROUP_NAME='t24fx_ghost'",
        "expect": "0"
       }
-     ]
+     ],
+     "expect_rc": 0
     }
    ],
    "expect": {
@@ -787,7 +797,9 @@
     "host": "127.0.0.1",
     "port": 23380,
     "user": "root",
-    "schema": "t24fx"
+    "schema": "t24fx",
+    "password_env": "DS_T24_GOLDEN_PW",
+    "password": "root"
    },
    "policy": "t24-mysql-resource-group",
    "args": [
@@ -840,7 +852,9 @@
     "host": "127.0.0.1",
     "port": 23384,
     "user": "root",
-    "schema": "t24fx"
+    "schema": "t24fx",
+    "password_env": "DS_T24_GOLDEN_PW",
+    "password": "root"
    },
    "policy": "t24-mysql-resource-group",
    "args": [
@@ -853,9 +867,15 @@
    "setup": [
     {
      "name": "clear-fixture-group",
-     "sql": "DROP RESOURCE GROUP t24fx_def",
-     "expect_rc": 0,
-     "verify": []
+     "sql": "SELECT COUNT(*) FROM information_schema.RESOURCE_GROUPS WHERE resource_group_name='t24fx_def'",
+     "verify": [
+      {
+       "assert": "t24fx_def absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.RESOURCE_GROUPS WHERE resource_group_name='t24fx_def'",
+       "expect": "0"
+      }
+     ],
+     "expect_rc": 0
     }
    ],
    "expect": {
@@ -890,7 +910,9 @@
     "host": "127.0.0.1",
     "port": 23357,
     "user": "root",
-    "schema": "t24fx"
+    "schema": "t24fx",
+    "password_env": "DS_T24_GOLDEN_PW",
+    "password": "root"
    },
    "policy": "t24-mysql-resource-group",
    "args": [

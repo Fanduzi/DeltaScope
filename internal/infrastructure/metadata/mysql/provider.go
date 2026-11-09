@@ -1961,7 +1961,7 @@ func (p *Provider) loadMySQLResourceGroupObject(ctx context.Context, request spe
 	`, request.Name)
 	var name, groupType, enabled, vcpuIDs, threadPriority sql.NullString
 	if err := row.Scan(&name, &groupType, &enabled, &vcpuIDs, &threadPriority); err != nil {
-		if err == sql.ErrNoRows {
+		if err == sql.ErrNoRows || isMySQLMissingObjectError(err) {
 			return snapshot, nil
 		}
 		return nil, fmt.Errorf("query mysql resource group snapshot %s: %w", request.Name, err)
