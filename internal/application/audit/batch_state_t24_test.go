@@ -12,12 +12,16 @@ import (
 	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
 )
 
-// batch_state_t24_test.go pins the T24/#103 MySQL resource-group
+// batch_state_t24_test.go pins the T24/#103-R2 MySQL resource-group
 // contract: recognition of the MySQL CPU family (never the TiDB RU
-// declaration), dialect boundaries both directions, the version
-// capability premise, reserved groups, existence adjudication, bounded
-// gaps, and refusal-aware notices — all through the public AuditSQL
-// path with an injected resolver.
+// declaration), the 8.0.3 introduction boundary, the deployment
+// feature/thread-priority-capability/host-VCPU/privilege/occupancy
+// premise facts as explicit known/unknown evidence, reserved groups,
+// existence adjudication, inverted-VCPU declaration refusals, FORCE
+// pairing and occupancy, authored-vs-effective priority, and the
+// complete-premise first path — all through the public AuditSQL path
+// plus the internal ordered-state seam where member-level withholding
+// is observable.
 
 type t24GroupFact struct {
 	status     spec.MetadataStatus
@@ -28,10 +32,15 @@ type t24GroupFact struct {
 
 type t24Provider struct {
 	version string
+	facts   *spec.InstanceFacts
 	groups  map[string]t24GroupFact
 }
 
 func (p *t24Provider) LoadInstanceFacts(context.Context, spec.Dialect, string) (*spec.InstanceFacts, error) {
+	if p.facts != nil {
+		facts := *p.facts
+		return &facts, nil
+	}
 	return &spec.InstanceFacts{Version: p.version}, nil
 }
 
@@ -64,19 +73,43 @@ const (
 	t24ValidRule  = "ddl.mysql.resource_group.valid"
 	t24ForceWarn  = "ddl.mysql.resource_group.force.warn"
 	t24AffWarn    = "ddl.mysql.resource_group.affinity.warn"
+	t24PrioWarn   = "ddl.mysql.resource_group.priority.warn"
 	t24StateGap   = "unknown_resource_group_state"
 	t24VersionGap = "unknown_resource_group_version"
+	t24FeatureGap = "unknown_resource_group_feature"
 	t24HostGap    = "unknown_host_vcpu_count"
 	t24PrivGap    = "unknown_resource_group_privilege"
+	t24CapGap     = "unknown_resource_group_priority_capability"
+	t24TypeGap    = "unknown_resource_group_type"
+	t24OccGap     = "unknown_resource_group_occupancy"
 	t24CreateNote = "ddl.create_resource_group.notice"
 	t24DropNote   = "ddl.drop_resource_group.notice"
 )
 
-func t24Groups(m map[string]t24GroupFact) *t24Provider {
-	return &t24Provider{version: "8.0.36", groups: m}
+// t24Facts returns the complete-premise fact bundle — every deployment
+// premise the shared outcome consults, proven and permissive:
+// feature supported, priority capability available, 8 host CPUs,
+// RESOURCE_GROUP_ADMIN granted, no bound threads observed.
+func t24Facts(version string) *spec.InstanceFacts {
+	return &spec.InstanceFacts{
+		Version:                            version,
+		MySQLResourceGroupFeatureKnown:     true,
+		MySQLResourceGroupFeatureSupported: true,
+		MySQLResourceGroupPriorityCapKnown: true,
+		MySQLResourceGroupPriorityCapable:  true,
+		MySQLHostVCPUsKnown:                true,
+		MySQLHostVCPUs:                     8,
+		MySQLResourceGroupAdminKnown:       true,
+		MySQLResourceGroupAdmin:            true,
+		MySQLResourceGroupBound:            map[string]bool{},
+	}
 }
 
-// t24MustAudit mirrors the t22 helper but reports the provider's own
+func t24Groups(m map[string]t24GroupFact) *t24Provider {
+	return &t24Provider{version: "8.0.36", facts: t24Facts("8.0.36"), groups: m}
+}
+
+// t24AuditRaw mirrors the t22 helper but reports the provider's own
 // version as the audit target — the observed/target consistency check
 // needs a matching pair under MySQL.
 func t24AuditRaw(t *testing.T, sql string, provider *t24Provider) (report.Result, error) {
@@ -102,39 +135,302 @@ func t24MustAudit(t *testing.T, sql string, provider *t24Provider) report.Result
 	return result
 }
 
-// CREATE→ALTER→DROP on a batch-created identity resolves ahead of the
-// provider — the final DROP stays a normal audited statement (no
-// blocker, no state gap).
-func TestT24BatchLifecycleResolvesAheadOfProvider(t *testing.T) {
-	result := t24MustAudit(t, "CREATE RESOURCE GROUP rg TYPE=USER VCPU=0-3 THREAD_PRIORITY=10 ENABLE;\n"+
-		"ALTER RESOURCE GROUP rg VCPU=0-1;\n"+
-		"DROP RESOURCE GROUP rg;",
-		t24Groups(map[string]t24GroupFact{
-			"rg": {status: spec.MetadataStatusNotFound, exists: false},
-		}))
-	if len(result.Unsupported) != 0 {
-		t.Fatalf("unsupported = %+v, want none for the mysql family on mysql", result.Unsupported)
+// t24Entry runs a batch through the internal ordered-state seam and
+// returns the owned registry entry for key — the member-level post
+// state (withheld members, occupancy) observable only inside the
+// registry, never on the public projection.
+func t24Entry(t *testing.T, sql, key string, provider *t24Provider) *batchMySQLResourceGroupEntry {
+	t.Helper()
+	ctx := context.Background()
+	parsed, err := Parse(ctx, sql, spec.DialectMySQL)
+	if err != nil {
+		t.Fatalf("parse: %v", err)
 	}
-	for i, stmt := range result.Statements {
-		if stmt.Kind != string(spec.KindDDL) {
-			t.Fatalf("statement %d kind = %q, want ddl", i, stmt.Kind)
-		}
-		if slices.Contains(t22GapCodes(stmt), t24StateGap) {
-			t.Fatalf("statement %d gaps = %v, want no state gap", i, t22GapCodes(stmt))
-		}
+	statements, err := Extract(ctx, parsed)
+	if err != nil {
+		t.Fatalf("extract: %v", err)
 	}
-	if got := len(t22Findings(result, 2, t24ValidRule)); got != 0 {
-		t.Fatalf("drop findings = %d, want 0 on a batch-proven target", got)
+	facts, err := provider.LoadInstanceFacts(ctx, spec.DialectMySQL, "")
+	if err != nil {
+		t.Fatalf("load instance facts: %v", err)
 	}
-	// The declared affinity/priority warnings fire on authored evidence.
-	if got := len(t22Findings(result, 0, t24AffWarn)); got != 1 {
-		t.Fatalf("create affinity warns = %d, want 1", got)
+	state := newBatchState(spec.DialectMySQL, "", provider)
+	state.resolvedVersion = spec.ParseObservedVersion(facts.Version)
+	state.instanceFacts = facts
+	if _, err := state.enrichStatements(ctx,
+		&MetadataRequest{Schema: "", Provider: provider, TargetVersion: state.resolvedVersion},
+		statements, parsed.failures, facts, auditLimits{orderedStatements: len(statements)}); err != nil {
+		t.Fatalf("enrich: %v", err)
+	}
+	return state.mysqlResourceGroupEntries[resourceGroupKey(key)]
+}
+
+// ── B1: inverted VCPU range — declaration claim + semantic refusal ──
+
+// An inverted authored range is a declaration fact, never a parse
+// diagnostic: upstream's validate_vcpu_range_vector runs
+// ER_INVALID_VCPU_RANGE inside execute, so the adapter claims the
+// statement and the rule refuses it — before any host-capacity fact is
+// consulted, and on every consistent world.
+func TestT24InvertedVCPURangeRefusesSemantically(t *testing.T) {
+	result := t24MustAudit(t, "CREATE RESOURCE GROUP rg TYPE=USER VCPU=5-3;", t24Groups(map[string]t24GroupFact{
+		"rg": {status: spec.MetadataStatusNotFound, exists: false},
+	}))
+	stmt := result.Statements[0]
+	if stmt.Kind != string(spec.KindDDL) {
+		t.Fatalf("kind = %q, want ddl — the inverted range is a claimed declaration", stmt.Kind)
+	}
+	findings := t22Findings(result, 0, t24ValidRule)
+	if len(findings) != 1 || !strings.Contains(findings[0].Message, "inverted") {
+		t.Fatalf("findings = %+v, want one inverted-range refusal", findings)
+	}
+	if len(stmt.EvidenceGaps) != 0 {
+		t.Fatalf("gaps = %v, want none — a declaration refusal needs no facts", stmt.EvidenceGaps)
 	}
 }
 
-// A proven 5.7 version is a static refusal: blocker finding, no
-// resolver reads, no reserved facts, every premise gap silent.
-func TestT24VersionPremiseRefusesPre80(t *testing.T) {
+// The host-CPU fact is independent of the range inversion: an inverted
+// range refuses even under a proven huge host count, and the refusal
+// never degrades to a host-count gap.
+func TestT24InvertedVCPUIgnoresHostFacts(t *testing.T) {
+	facts := t24Facts("8.0.36")
+	facts.MySQLHostVCPUs = 1024
+	result := t24MustAudit(t, "CREATE RESOURCE GROUP rg TYPE=USER VCPU=9-4;", &t24Provider{
+		version: "8.0.36", facts: facts,
+		groups: map[string]t24GroupFact{"rg": {status: spec.MetadataStatusNotFound}},
+	})
+	if got := len(t22Findings(result, 0, t24ValidRule)); got != 1 {
+		t.Fatalf("findings = %d, want the inverted-range refusal under any host count", got)
+	}
+	if gaps := t22GapCodes(result.Statements[0]); len(gaps) != 0 {
+		t.Fatalf("gaps = %v, want none", gaps)
+	}
+}
+
+// Ordered controls: M<N proceeds, M=N is a legal single-CPU range, a
+// mixed list claims every member, and a valid range under an unproven
+// host count owes the host gap instead of a refusal.
+func TestT24VCPUOrderedControls(t *testing.T) {
+	result := t24MustAudit(t, "CREATE RESOURCE GROUP a TYPE=USER VCPU=3-5;\n"+
+		"CREATE RESOURCE GROUP b TYPE=USER VCPU=3-3;\n"+
+		"CREATE RESOURCE GROUP c TYPE=USER VCPU=0-3,5;\n"+
+		"CREATE RESOURCE GROUP d TYPE=USER VCPU=0 1;",
+		t24Groups(map[string]t24GroupFact{}))
+	for i := range result.Statements {
+		if result.Statements[i].Kind != string(spec.KindDDL) {
+			t.Fatalf("statement %d kind = %q, want ddl — valid members claim", i, result.Statements[i].Kind)
+		}
+		if got := len(t22Findings(result, i, t24ValidRule)); got != 0 {
+			t.Fatalf("statement %d findings = %d, want none for valid ranges", i, got)
+		}
+	}
+}
+
+// A valid range under an unproven host count owes the bounded host gap;
+// under a proven count an endpoint at or past it refuses
+// (ER_INVALID_VCPU_ID); a zero endpoint provably fits every running host
+// and never owes the fact.
+func TestT24VCPUEndpointHostFact(t *testing.T) {
+	noFacts := &t24Provider{version: "8.0.36", groups: map[string]t24GroupFact{}}
+	result := t24MustAudit(t, "CREATE RESOURCE GROUP rg TYPE=USER VCPU=0-9;", noFacts)
+	gaps := t22GapCodes(result.Statements[0])
+	if !slices.Contains(gaps, t24HostGap) {
+		t.Fatalf("gaps = %v, want %s for an unproven host count", gaps, t24HostGap)
+	}
+	if got := len(t22Findings(result, 0, t24ValidRule)); got != 0 {
+		t.Fatalf("findings = %d, want none — unproven facts never refuse", got)
+	}
+
+	result = t24MustAudit(t, "CREATE RESOURCE GROUP rg TYPE=USER VCPU=0-8;", t24Groups(map[string]t24GroupFact{}))
+	findings := t22Findings(result, 0, t24ValidRule)
+	if len(findings) != 1 || !strings.Contains(findings[0].Message, "CPU count") {
+		t.Fatalf("findings = %+v, want the endpoint refusal", findings)
+	}
+
+	// VCPU=0 is a zero endpoint — provably inside any running host's
+	// range, so it never owes the host fact even unproven.
+	result = t24MustAudit(t, "CREATE RESOURCE GROUP rg TYPE=USER VCPU=0;", noFacts)
+	if gaps := t22GapCodes(result.Statements[0]); slices.Contains(gaps, t24HostGap) {
+		t.Fatalf("gaps = %v, want no host gap for a zero endpoint", gaps)
+	}
+}
+
+// ── B2: priority capability — authored vs effective, per-type bounds ──
+
+// The thread-priority capability is a deployment fact distinct from
+// resource-group support: on → type-bound validation; off → authored
+// nonzero ignored with the effective value stored as zero; unknown →
+// the divergence owes the capability gap and the member stays withheld.
+func TestT24PriorityCapabilityMatrix(t *testing.T) {
+	absent := map[string]t24GroupFact{"rg": {status: spec.MetadataStatusNotFound}}
+
+	// Capability available: bounds adjudicate per authored TYPE.
+	facts := t24Facts("8.0.36")
+	result := t24MustAudit(t, "CREATE RESOURCE GROUP rg TYPE=USER THREAD_PRIORITY=20;", &t24Provider{
+		version: "8.0.36", facts: facts, groups: absent})
+	if got := len(t22Findings(result, 0, t24ValidRule)); got != 1 {
+		t.Fatalf("user+20 under cap-on: findings = %d, want refusal", got)
+	}
+	result = t24MustAudit(t, "CREATE RESOURCE GROUP rg TYPE=USER THREAD_PRIORITY=19;", &t24Provider{
+		version: "8.0.36", facts: facts, groups: absent})
+	if got := len(t22Findings(result, 0, t24ValidRule)); got != 0 {
+		t.Fatalf("user+19 under cap-on: findings = %d, want none", got)
+	}
+	result = t24MustAudit(t, "CREATE RESOURCE GROUP rg TYPE=SYSTEM THREAD_PRIORITY=-20;", &t24Provider{
+		version: "8.0.36", facts: facts, groups: absent})
+	if got := len(t22Findings(result, 0, t24ValidRule)); got != 0 {
+		t.Fatalf("system-20 under cap-on: findings = %d, want none", got)
+	}
+	result = t24MustAudit(t, "CREATE RESOURCE GROUP rg TYPE=SYSTEM THREAD_PRIORITY=-21;", &t24Provider{
+		version: "8.0.36", facts: facts, groups: absent})
+	if got := len(t22Findings(result, 0, t24ValidRule)); got != 1 {
+		t.Fatalf("system-21 under cap-on: findings = %d, want refusal", got)
+	}
+	result = t24MustAudit(t, "CREATE RESOURCE GROUP rg TYPE=SYSTEM THREAD_PRIORITY=1;", &t24Provider{
+		version: "8.0.36", facts: facts, groups: absent})
+	if got := len(t22Findings(result, 0, t24ValidRule)); got != 1 {
+		t.Fatalf("system+1 under cap-on: findings = %d, want refusal", got)
+	}
+}
+
+// Capability off: an authored nonzero priority is ignored — the
+// statement proceeds, the ignored-attribute warning fires, and the
+// stored effective priority is zero (upstream ER_ATTRIBUTE_IGNORED).
+func TestT24PriorityCapabilityOffIgnoresAuthored(t *testing.T) {
+	facts := t24Facts("8.0.36")
+	facts.MySQLResourceGroupPriorityCapable = false
+	provider := &t24Provider{version: "8.0.36", facts: facts,
+		groups: map[string]t24GroupFact{"rg": {status: spec.MetadataStatusNotFound}}}
+	result := t24MustAudit(t, "CREATE RESOURCE GROUP rg TYPE=USER THREAD_PRIORITY=-5;", provider)
+	if got := len(t22Findings(result, 0, t24ValidRule)); got != 0 {
+		t.Fatalf("findings = %d, want none — cap-off never range-refuses", got)
+	}
+	if got := len(t22Findings(result, 0, t24PrioWarn)); got != 1 {
+		t.Fatalf("priority-ignored warns = %d, want 1", got)
+	}
+	entry := t24Entry(t, "CREATE RESOURCE GROUP rg TYPE=USER THREAD_PRIORITY=-5;", "rg", provider)
+	if entry == nil || entry.state != resourceGroupPresent || entry.definition == nil ||
+		entry.definition.ThreadPriority == nil || *entry.definition.ThreadPriority != 0 {
+		t.Fatalf("entry = %+v, want present with effective priority 0", entry)
+	}
+}
+
+// Capability unknown: branches diverge (cap-on may refuse, cap-off
+// zeroes) — the outcome stays undecidable, the capability gap is
+// published, and the post-state member is withheld rather than guessed.
+func TestT24PriorityCapabilityUnknownOwesGap(t *testing.T) {
+	facts := t24Facts("8.0.36")
+	facts.MySQLResourceGroupPriorityCapKnown = false
+	provider := &t24Provider{version: "8.0.36", facts: facts,
+		groups: map[string]t24GroupFact{"rg": {status: spec.MetadataStatusNotFound}}}
+	result := t24MustAudit(t, "CREATE RESOURCE GROUP rg TYPE=USER THREAD_PRIORITY=5;", provider)
+	gaps := t22GapCodes(result.Statements[0])
+	if !slices.Contains(gaps, t24CapGap) {
+		t.Fatalf("gaps = %v, want %s", gaps, t24CapGap)
+	}
+	if got := len(t22Findings(result, 0, t24ValidRule)); got != 0 {
+		t.Fatalf("findings = %d, want none — undecidable never fabricates a refusal", got)
+	}
+	entry := t24Entry(t, "CREATE RESOURCE GROUP rg TYPE=USER THREAD_PRIORITY=5;", "rg", provider)
+	// Every capability branch lands the group — only the effective
+	// priority diverges (authored 5 vs ignored 0), so existence is
+	// proven while the member stays withheld.
+	if entry == nil || entry.state != resourceGroupPresent || entry.definition == nil ||
+		entry.definition.ThreadPriority != nil {
+		t.Fatalf("entry = %+v, want present with withheld ThreadPriority member", entry)
+	}
+}
+
+// A zero authored priority needs no capability fact: every branch
+// stores zero and no branch refuses.
+func TestT24PriorityZeroNeedsNoCapability(t *testing.T) {
+	facts := t24Facts("8.0.36")
+	facts.MySQLResourceGroupPriorityCapKnown = false
+	provider := &t24Provider{version: "8.0.36", facts: facts,
+		groups: map[string]t24GroupFact{"rg": {status: spec.MetadataStatusNotFound}}}
+	result := t24MustAudit(t, "CREATE RESOURCE GROUP rg TYPE=USER THREAD_PRIORITY=0;", provider)
+	if gaps := t22GapCodes(result.Statements[0]); slices.Contains(gaps, t24CapGap) {
+		t.Fatalf("gaps = %v, want no capability gap for an authored zero", gaps)
+	}
+}
+
+// ALTER validates the declared priority against the EXISTING group's
+// proven type — never the authored or a fabricated type.
+func TestT24AlterPriorityUsesCatalogType(t *testing.T) {
+	facts := t24Facts("8.0.36")
+	systemDef := &spec.MySQLResourceGroupDefinition{GroupType: spec.MySQLResourceGroupTypeSystem}
+	provider := &t24Provider{version: "8.0.36", facts: facts, groups: map[string]t24GroupFact{
+		"sysg": {status: spec.MetadataStatusConfirmed, exists: true, definition: systemDef},
+	}}
+	result := t24MustAudit(t, "ALTER RESOURCE GROUP sysg THREAD_PRIORITY=5;", provider)
+	if got := len(t22Findings(result, 0, t24ValidRule)); got != 1 {
+		t.Fatalf("alter+5 on a SYSTEM group: findings = %d, want refusal — catalog type adjudicates", got)
+	}
+	result = t24MustAudit(t, "ALTER RESOURCE GROUP sysg THREAD_PRIORITY=-5;", provider)
+	if got := len(t22Findings(result, 0, t24ValidRule)); got != 0 {
+		t.Fatalf("alter-5 on a SYSTEM group: findings = %d, want none", got)
+	}
+}
+
+// An ALTER on a present group whose catalog type is unproven owes the
+// type gap when a declared nonzero priority diverges between candidate
+// types — never a guessed type.
+func TestT24AlterPriorityUnknownCatalogType(t *testing.T) {
+	facts := t24Facts("8.0.36")
+	provider := &t24Provider{version: "8.0.36", facts: facts, groups: map[string]t24GroupFact{
+		"rg": {status: spec.MetadataStatusConfirmed, exists: true,
+			definition: &spec.MySQLResourceGroupDefinition{}},
+	}}
+	result := t24MustAudit(t, "ALTER RESOURCE GROUP rg THREAD_PRIORITY=-5;", provider)
+	gaps := t22GapCodes(result.Statements[0])
+	if !slices.Contains(gaps, t24TypeGap) {
+		t.Fatalf("gaps = %v, want %s for an unproven catalog type", gaps, t24TypeGap)
+	}
+}
+
+// ALTER's undeclared priority resets the stored value to zero exactly
+// as upstream's parse-tree default does — never preserves the prior
+// priority.
+func TestT24BareAlterResetsPriority(t *testing.T) {
+	provider := t24Groups(map[string]t24GroupFact{
+		"rg": {status: spec.MetadataStatusNotFound},
+	})
+	entry := t24Entry(t, "CREATE RESOURCE GROUP rg TYPE=USER THREAD_PRIORITY=10;\nALTER RESOURCE GROUP rg ENABLE;", "rg", provider)
+	if entry == nil || entry.definition == nil || entry.definition.ThreadPriority == nil ||
+		*entry.definition.ThreadPriority != 0 {
+		t.Fatalf("entry = %+v, want effective priority reset to 0 by the bare alter", entry)
+	}
+}
+
+// ── B3: 8.0.3 boundary, dialect forms, name grammar ──
+
+// 8.0.3 is the precise introduction boundary — 8.0.2 and 5.7 refuse,
+// 8.0.3 proceeds.
+func TestT24VersionBoundary803(t *testing.T) {
+	for _, tc := range []struct {
+		version string
+		refused bool
+	}{
+		{"5.7.44", true}, {"8.0.0", true}, {"8.0.2", true},
+		{"8.0.3", false}, {"8.0.46", false}, {"8.4.10", false},
+	} {
+		facts := t24Facts(tc.version)
+		provider := &t24Provider{version: tc.version, facts: facts,
+			groups: map[string]t24GroupFact{"rg": {status: spec.MetadataStatusNotFound}}}
+		result := t24MustAudit(t, "CREATE RESOURCE GROUP rg TYPE=USER;", provider)
+		got := len(t22Findings(result, 0, t24ValidRule))
+		if tc.refused && got != 1 {
+			t.Fatalf("version %s: findings = %d, want one refusal", tc.version, got)
+		}
+		if !tc.refused && got != 0 {
+			t.Fatalf("version %s: findings = %d, want none", tc.version, got)
+		}
+	}
+}
+
+// A proven pre-8.0.3 version refuses before the catalog — no resolver
+// reads, no premise gaps.
+func TestT24VersionPremiseRefusesPre803(t *testing.T) {
 	provider := &t24Provider{version: "5.7.44", groups: map[string]t24GroupFact{
 		"usr_default": {status: spec.MetadataStatusConfirmed, exists: true},
 	}}
@@ -142,7 +438,7 @@ func TestT24VersionPremiseRefusesPre80(t *testing.T) {
 		provider)
 	for i := range result.Statements {
 		findings := t22Findings(result, i, t24ValidRule)
-		if len(findings) != 1 || !strings.Contains(findings[0].Message, "8.0") {
+		if len(findings) != 1 || !strings.Contains(findings[0].Message, "8.0.3") {
 			t.Fatalf("statement %d findings = %+v, want one version refusal", i, findings)
 		}
 		if len(result.Statements[i].EvidenceGaps) != 0 {
@@ -151,30 +447,63 @@ func TestT24VersionPremiseRefusesPre80(t *testing.T) {
 	}
 }
 
+// A proven-off deployment feature refuses on its own layer — separate
+// from version support — while an unproven one owes the feature gap.
+func TestT24FeaturePremise(t *testing.T) {
+	facts := t24Facts("8.0.36")
+	facts.MySQLResourceGroupFeatureSupported = false
+	result := t24MustAudit(t, "CREATE RESOURCE GROUP rg TYPE=USER;", &t24Provider{
+		version: "8.0.36", facts: facts, groups: map[string]t24GroupFact{}})
+	findings := t22Findings(result, 0, t24ValidRule)
+	if len(findings) != 1 || !strings.Contains(findings[0].Message, "does not support resource groups") {
+		t.Fatalf("findings = %+v, want the deployment-feature refusal", findings)
+	}
+
+	facts = t24Facts("8.0.36")
+	facts.MySQLResourceGroupFeatureKnown = false
+	result = t24MustAudit(t, "CREATE RESOURCE GROUP rg TYPE=USER;", &t24Provider{
+		version: "8.0.36", facts: facts, groups: map[string]t24GroupFact{}})
+	if gaps := t22GapCodes(result.Statements[0]); !slices.Contains(gaps, t24FeatureGap) {
+		t.Fatalf("gaps = %v, want %s", gaps, t24FeatureGap)
+	}
+}
+
 // An unproven version owes the bounded version gap — never a guessed
 // feature presence, never a fabricated refusal.
 func TestT24UnprovenVersionOwesGap(t *testing.T) {
+	facts := t24Facts("")
 	result := t24MustAudit(t, "CREATE RESOURCE GROUP rg TYPE=USER;",
-		&t24Provider{version: "", groups: map[string]t24GroupFact{}})
+		&t24Provider{version: "", facts: facts, groups: map[string]t24GroupFact{}})
 	gaps := t22GapCodes(result.Statements[0])
 	if !slices.Contains(gaps, t24VersionGap) {
 		t.Fatalf("gaps = %v, want %s", gaps, t24VersionGap)
 	}
-	if !slices.Contains(gaps, t24PrivGap) {
-		t.Fatalf("gaps = %v, want %s", gaps, t24PrivGap)
-	}
 }
 
-// The reserved builtin pair is provably present under a proven 8.0+
-// version — ALTER and DROP refuse before existence adjudication.
+// The reserved builtin pair refuses ALTER and DROP by name alone — an
+// all-branch refusal that holds even with no other premise proven:
+// feature-off refuses the statement, feature-on finds the group
+// present and refuses reserved-ness.
 func TestT24ReservedGroupsRefuse(t *testing.T) {
 	result := t24MustAudit(t, "ALTER RESOURCE GROUP usr_default THREAD_PRIORITY=5;\nDROP RESOURCE GROUP sys_default;",
-		t24Groups(map[string]t24GroupFact{}))
+		&t24Provider{version: "8.0.36", facts: t24Facts("8.0.36"), groups: map[string]t24GroupFact{}})
 	for i := range result.Statements {
 		findings := t22Findings(result, i, t24ValidRule)
 		if len(findings) != 1 || !strings.Contains(strings.ToLower(findings[0].Message), "reserved") {
 			t.Fatalf("statement %d findings = %+v, want one reserved refusal", i, findings)
 		}
+	}
+	// Case-insensitive exactly as upstream's my_strcasecmp check.
+	result = t24MustAudit(t, "DROP RESOURCE GROUP USR_DEFAULT;",
+		&t24Provider{version: "8.0.36", facts: t24Facts("8.0.36"), groups: map[string]t24GroupFact{}})
+	if got := len(t22Findings(result, 0, t24ValidRule)); got != 1 {
+		t.Fatalf("case-varied reserved drop: findings = %d, want 1", got)
+	}
+	// Even with every premise unproven, every consistent world refuses.
+	result = t24MustAudit(t, "DROP RESOURCE GROUP sys_default;",
+		&t24Provider{version: "", groups: map[string]t24GroupFact{}})
+	if got := len(t22Findings(result, 0, t24ValidRule)); got != 1 {
+		t.Fatalf("unproven-everything reserved drop: findings = %d, want 1", got)
 	}
 }
 
@@ -200,32 +529,372 @@ func TestT24ExistenceAdjudication(t *testing.T) {
 	}
 }
 
-// A declared VCPU owes the host-capacity gap; the privilege premise
-// rides every lifecycle statement.
-func TestT24HostCPUAndPrivilegeGaps(t *testing.T) {
-	result := t24MustAudit(t, "CREATE RESOURCE GROUP rg TYPE=USER VCPU=0-7;",
-		t24Groups(map[string]t24GroupFact{
-			"rg": {status: spec.MetadataStatusNotFound, exists: false},
-		}))
-	gaps := t22GapCodes(result.Statements[0])
-	if !slices.Contains(gaps, t24HostGap) || !slices.Contains(gaps, t24PrivGap) {
-		t.Fatalf("gaps = %v, want %s and %s", gaps, t24HostGap, t24PrivGap)
+// Keyword-like names follow the fixed MySQL grammar: ident_keyword
+// members (user, resource, type, vcpu, thread_priority, enable,
+// disable) are legal unquoted names; reserved words (group, system,
+// force, for, select, if, exists, not) need backticks; quoted idents
+// keep doubled-backtick escapes.
+func TestT24KeywordLikeNames(t *testing.T) {
+	for _, name := range []string{"user", "resource", "type", "vcpu", "enable", "disable", "action", "view"} {
+		result := t24MustAudit(t, "CREATE RESOURCE GROUP "+name+" TYPE=USER;", t24Groups(map[string]t24GroupFact{}))
+		if result.Statements[0].Kind != string(spec.KindDDL) {
+			t.Fatalf("unquoted %q: kind = %q, want ddl — ident_keyword names claim", name, result.Statements[0].Kind)
+		}
 	}
-}
-
-// Static refusals: priority outside the authored type's range and
-// over-long names — all blockers, all with the success notices
-// suppressed.
-func TestT24StaticRefusals(t *testing.T) {
-	result := t24MustAudit(t, "CREATE RESOURCE GROUP rg TYPE=SYSTEM THREAD_PRIORITY=5;\n"+
-		"CREATE RESOURCE GROUP "+strings.Repeat("x", 65)+" TYPE=USER;",
-		t24Groups(map[string]t24GroupFact{}))
-	for i := range result.Statements {
-		if got := len(t22Findings(result, i, t24ValidRule)); got == 0 {
-			t.Fatalf("statement %d has no valid-rule blocker", i)
+	for _, name := range []string{"group", "system", "force", "for", "select", "if", "exists", "not", "table"} {
+		res, err := t24AuditRaw(t, "CREATE RESOURCE GROUP "+name+" TYPE=USER;", t24Groups(map[string]t24GroupFact{}))
+		if err == nil {
+			t.Fatalf("unquoted reserved %q audited, want parse diagnostic", name)
+		}
+		if len(res.Diagnostics) == 0 || res.Diagnostics[0].Classification != spec.DiagnosticParserError {
+			t.Fatalf("unquoted reserved %q: diagnostics = %+v, want parser_error", name, res.Diagnostics)
+		}
+	}
+	for _, sql := range []string{
+		"CREATE RESOURCE GROUP `group` TYPE=USER;",
+		"CREATE RESOURCE GROUP `select` TYPE=USER;",
+		"CREATE RESOURCE GROUP `a``b` TYPE=USER;",
+		"CREATE RESOURCE GROUP `system` TYPE=USER;",
+	} {
+		result := t24MustAudit(t, sql, t24Groups(map[string]t24GroupFact{}))
+		if result.Statements[0].Kind != string(spec.KindDDL) {
+			t.Fatalf("%q: kind = %q, want ddl — quoted reserved names claim", sql, result.Statements[0].Kind)
 		}
 	}
 }
+
+// The name bound counts utf8 BYTES (upstream name.length), not
+// characters: 64 ASCII bytes pass, 65 refuse; a 21-char CJK name is 63
+// bytes and passes, 22 chars is 66 bytes and refuses.
+func TestT24NameByteBoundaries(t *testing.T) {
+	cases := []struct {
+		name    string
+		refused bool
+	}{
+		{strings.Repeat("x", 64), false},
+		{strings.Repeat("x", 65), true},
+		{strings.Repeat("名", 21), false},       // 63 utf8 bytes
+		{strings.Repeat("名", 22), true},        // 66 utf8 bytes
+		{strings.Repeat("名", 21) + "ab", true}, // 65 utf8 bytes
+	}
+	for _, tc := range cases {
+		result := t24MustAudit(t, "CREATE RESOURCE GROUP `"+tc.name+"` TYPE=USER;", t24Groups(map[string]t24GroupFact{}))
+		got := len(t22Findings(result, 0, t24ValidRule))
+		if tc.refused && got == 0 {
+			t.Fatalf("name %q (%d bytes): want refusal", tc.name, len(tc.name))
+		}
+		if !tc.refused && got != 0 {
+			t.Fatalf("name %q (%d bytes): findings = %d, want none", tc.name, len(tc.name), got)
+		}
+	}
+}
+
+// Malformed tails and out-of-domain literals keep the base grammar's
+// diagnostics — the adapter never makes invalid SQL valid by trimming
+// tails or loosening numbers.
+func TestT24MalformedOperands(t *testing.T) {
+	for _, sql := range []string{
+		"CREATE RESOURCE GROUP rg TYPE=USER VCPU=0,",
+		"CREATE RESOURCE GROUP rg TYPE=USER VCPU=,1",
+		"CREATE RESOURCE GROUP rg TYPE=USER VCPU=-1",
+		"CREATE RESOURCE GROUP rg TYPE=USER VCPU=1-",
+		"CREATE RESOURCE GROUP rg TYPE=USER VCPU=0-",
+		"CREATE RESOURCE GROUP rg TYPE=USER VCPU=x",
+		"CREATE RESOURCE GROUP rg TYPE=USER THREAD_PRIORITY=+5",
+		"CREATE RESOURCE GROUP rg TYPE=USER THREAD_PRIORITY=5.5",
+		"CREATE RESOURCE GROUP rg TYPE=USER THREAD_PRIORITY=x",
+		"CREATE RESOURCE GROUP rg TYPE=USER VCPU=18446744073709551616",
+		"CREATE RESOURCE GROUP rg TYPE=USER VCPU=0-18446744073709551616",
+		"SET RESOURCE GROUP rg FOR 1,",
+	} {
+		res, err := t24AuditRaw(t, sql, t24Groups(map[string]t24GroupFact{}))
+		if err == nil {
+			t.Fatalf("%q audited = %+v, want parse diagnostic", sql, res.Statements)
+		}
+		if len(res.Diagnostics) == 0 || res.Diagnostics[0].Classification != spec.DiagnosticParserError {
+			t.Fatalf("%q diagnostics = %+v, want parser_error", sql, res.Diagnostics)
+		}
+	}
+}
+
+// Out-of-band NUM literals narrow to cpu_id_t exactly as upstream's
+// static_cast — VCPU=4294967296 declares endpoint 0, provably fitting
+// any running host.
+func TestT24VCPUNarrowing(t *testing.T) {
+	result := t24MustAudit(t, "CREATE RESOURCE GROUP rg TYPE=USER VCPU=4294967296;", t24Groups(map[string]t24GroupFact{}))
+	if got := len(t22Findings(result, 0, t24ValidRule)); got != 0 {
+		t.Fatalf("findings = %d, want none — the narrowed endpoint is provably valid", got)
+	}
+}
+
+// ── B4: FORCE pairing and occupancy ──
+
+// FORCE on ALTER is legal only paired with DISABLE — every other
+// pairing refuses (ER_INVALID_USE_OF_FORCE_OPTION); DISABLE alone stays
+// legal and occupancy never gates an ALTER.
+func TestT24ForcePairing(t *testing.T) {
+	facts := t24Facts("8.0.36")
+	facts.MySQLResourceGroupBound = map[string]bool{"rg": true}
+	provider := &t24Provider{version: "8.0.36", facts: facts, groups: map[string]t24GroupFact{
+		"rg": {status: spec.MetadataStatusConfirmed, exists: true,
+			definition: &spec.MySQLResourceGroupDefinition{GroupType: spec.MySQLResourceGroupTypeUser}},
+	}}
+	for _, tc := range []struct {
+		sql     string
+		refused bool
+	}{
+		{"ALTER RESOURCE GROUP rg FORCE;", true},
+		{"ALTER RESOURCE GROUP rg ENABLE FORCE;", true},
+		{"ALTER RESOURCE GROUP rg DISABLE FORCE;", false},
+		{"ALTER RESOURCE GROUP rg DISABLE;", false},
+		{"ALTER RESOURCE GROUP rg;", false},
+		{"ALTER RESOURCE GROUP rg VCPU=0-1;", false},
+	} {
+		result := t24MustAudit(t, tc.sql, provider)
+		got := len(t22Findings(result, 0, t24ValidRule))
+		if tc.refused && got != 1 {
+			t.Fatalf("%q: findings = %d, want the FORCE-pairing refusal", tc.sql, got)
+		}
+		if !tc.refused && got != 0 {
+			t.Fatalf("%q: findings = %d, want none — occupancy never refuses an ALTER", tc.sql, got)
+		}
+	}
+}
+
+// DROP occupancy: proven-occupied without FORCE refuses
+// (ER_RESOURCE_GROUP_BUSY); unproven owes the occupancy gap; proven
+// unoccupied proceeds; FORCE relocates to the default groups regardless.
+func TestT24DropOccupancy(t *testing.T) {
+	def := &spec.MySQLResourceGroupDefinition{GroupType: spec.MySQLResourceGroupTypeUser}
+	mkProvider := func(bound map[string]bool) *t24Provider {
+		facts := t24Facts("8.0.36")
+		facts.MySQLResourceGroupBound = bound
+		return &t24Provider{version: "8.0.36", facts: facts, groups: map[string]t24GroupFact{
+			"rg": {status: spec.MetadataStatusConfirmed, exists: true, definition: def},
+		}}
+	}
+	// Occupied, no FORCE → refused.
+	result := t24MustAudit(t, "DROP RESOURCE GROUP rg;", mkProvider(map[string]bool{"rg": true}))
+	findings := t22Findings(result, 0, t24ValidRule)
+	if len(findings) != 1 || !strings.Contains(findings[0].Message, "threads are bound") {
+		t.Fatalf("occupied drop findings = %+v, want the busy refusal", findings)
+	}
+	// Occupied, FORCE → proceeds, relocates.
+	result = t24MustAudit(t, "DROP RESOURCE GROUP rg FORCE;", mkProvider(map[string]bool{"rg": true}))
+	if got := len(t22Findings(result, 0, t24ValidRule)); got != 0 {
+		t.Fatalf("force-drop findings = %d, want none", got)
+	}
+	if got := len(t22Findings(result, 0, t24ForceWarn)); got != 1 {
+		t.Fatalf("force warns = %d, want the declared-relocation warning", got)
+	}
+	// Unknown occupancy → gap, undecidable post.
+	result = t24MustAudit(t, "DROP RESOURCE GROUP rg;", mkProvider(map[string]bool{}))
+	if gaps := t22GapCodes(result.Statements[0]); !slices.Contains(gaps, t24OccGap) {
+		t.Fatalf("gaps = %v, want %s for unproven occupancy", gaps, t24OccGap)
+	}
+	// Proven unoccupied → proceeds.
+	result = t24MustAudit(t, "DROP RESOURCE GROUP rg;", mkProvider(map[string]bool{"rg": false}))
+	if got := len(t22Findings(result, 0, t24ValidRule)); got != 0 {
+		t.Fatalf("unoccupied drop findings = %d, want none", got)
+	}
+	// DISABLE FORCE relocates bound threads — the group provably lands
+	// unoccupied; a following DROP needs no occupancy fact.
+	entry := t24Entry(t, "ALTER RESOURCE GROUP rg DISABLE FORCE;", "rg", mkProvider(map[string]bool{"rg": true}))
+	if entry == nil || entry.occupied == nil || *entry.occupied {
+		t.Fatalf("entry = %+v, want proven-unoccupied after DISABLE FORCE", entry)
+	}
+	// ALTER without FORCE preserves binding state — occupancy never
+	// changes through it.
+	entry = t24Entry(t, "ALTER RESOURCE GROUP rg DISABLE;", "rg", mkProvider(map[string]bool{"rg": true}))
+	if entry == nil || entry.occupied == nil || !*entry.occupied {
+		t.Fatalf("entry = %+v, want preserved occupied after bare DISABLE", entry)
+	}
+	// CREATE lands proven-unoccupied — a later DROP needs no fact.
+	entry = t24Entry(t, "CREATE RESOURCE GROUP rg TYPE=USER;", "rg",
+		t24Groups(map[string]t24GroupFact{"rg": {status: spec.MetadataStatusNotFound}}))
+	if entry == nil || entry.occupied == nil || *entry.occupied {
+		t.Fatalf("entry = %+v, want proven-unoccupied after CREATE", entry)
+	}
+}
+
+// A DROP left undecidable by unproven occupancy tombstones the exists
+// answer — a following statement cannot lean on either outcome.
+func TestT24UndecidableDropTombstones(t *testing.T) {
+	def := &spec.MySQLResourceGroupDefinition{GroupType: spec.MySQLResourceGroupTypeUser}
+	facts := t24Facts("8.0.36")
+	provider := &t24Provider{version: "8.0.36", facts: facts, groups: map[string]t24GroupFact{
+		"rg": {status: spec.MetadataStatusConfirmed, exists: true, definition: def},
+	}}
+	entry := t24Entry(t, "DROP RESOURCE GROUP rg;", "rg", provider)
+	if entry == nil || entry.state != resourceGroupUnknown {
+		t.Fatalf("entry = %+v, want unknown exists after an undecidable drop", entry)
+	}
+}
+
+// ── E: the complete-premise first path ──
+
+// Every premise proven: CREATE→ALTER→DROP reaches the public Audit API
+// with deterministic findings/state — zero blockers, zero premise gaps.
+func TestT24CompletePremiseFirstPath(t *testing.T) {
+	result := t24MustAudit(t, "CREATE RESOURCE GROUP rg TYPE=USER VCPU=0-3 THREAD_PRIORITY=10 ENABLE;\n"+
+		"ALTER RESOURCE GROUP rg VCPU=0-1;\nDROP RESOURCE GROUP rg;",
+		t24Groups(map[string]t24GroupFact{
+			"rg": {status: spec.MetadataStatusNotFound, exists: false},
+		}))
+	for i, stmt := range result.Statements {
+		if got := len(t22Findings(result, i, t24ValidRule)); got != 0 {
+			t.Fatalf("statement %d findings = %d, want none under complete premises", i, got)
+		}
+		if gaps := t22GapCodes(stmt); len(gaps) != 0 {
+			t.Fatalf("statement %d gaps = %v, want none under complete premises", i, gaps)
+		}
+	}
+}
+
+// Each premise removed one at a time keeps its bounded gap — a missing
+// fact never silently downgrades to an assumed default.
+func TestT24MissingPremiseControls(t *testing.T) {
+	sql := "CREATE RESOURCE GROUP rg TYPE=USER VCPU=0-3 THREAD_PRIORITY=5;\nDROP RESOURCE GROUP rg;"
+	mutate := map[string]struct {
+		gap   string
+		stmts []int
+		apply func(*spec.InstanceFacts)
+	}{
+		"version":    {t24VersionGap, []int{0, 1}, func(f *spec.InstanceFacts) { f.Version = "" }},
+		"feature":    {t24FeatureGap, []int{0, 1}, func(f *spec.InstanceFacts) { f.MySQLResourceGroupFeatureKnown = false }},
+		"host":       {t24HostGap, []int{0}, func(f *spec.InstanceFacts) { f.MySQLHostVCPUsKnown = false }},
+		"privilege":  {t24PrivGap, []int{0, 1}, func(f *spec.InstanceFacts) { f.MySQLResourceGroupAdminKnown = false }},
+		"capability": {t24CapGap, []int{0}, func(f *spec.InstanceFacts) { f.MySQLResourceGroupPriorityCapKnown = false }},
+		"state":      {t24StateGap, []int{0, 1}, func(f *spec.InstanceFacts) {}}, // state removed via provider below
+	}
+	for name, tc := range mutate {
+		facts := t24Facts("8.0.36")
+		tc.apply(facts)
+		provider := &t24Provider{version: facts.Version, facts: facts, groups: map[string]t24GroupFact{
+			"rg": {status: spec.MetadataStatusNotFound},
+		}}
+		if name == "state" {
+			provider.groups = map[string]t24GroupFact{} // group unresolvable → state unproven
+		}
+		result := t24MustAudit(t, sql, provider)
+		for _, i := range tc.stmts {
+			if gaps := t22GapCodes(result.Statements[i]); !slices.Contains(gaps, tc.gap) {
+				t.Fatalf("missing %s: statement %d gaps = %v, want %s", name, i, gaps, tc.gap)
+			}
+		}
+	}
+	// Occupancy is a separate control: a batch-created group lands
+	// proven-unoccupied, so the gap needs a catalog-proven group
+	// dropped without FORCE under a nil binding map.
+	facts := t24Facts("8.0.36")
+	facts.MySQLResourceGroupBound = nil
+	result := t24MustAudit(t, "DROP RESOURCE GROUP rg;", &t24Provider{
+		version: "8.0.36", facts: facts,
+		groups: map[string]t24GroupFact{
+			"rg": {status: spec.MetadataStatusConfirmed, exists: true,
+				definition: &spec.MySQLResourceGroupDefinition{GroupType: spec.MySQLResourceGroupTypeUser}},
+		}})
+	if gaps := t22GapCodes(result.Statements[0]); !slices.Contains(gaps, t24OccGap) {
+		t.Fatalf("missing occupancy: gaps = %v, want %s", gaps, t24OccGap)
+	}
+}
+
+// ── F: provider-read behavior through public Audit ──
+
+// A resolver error propagates to the audit — never cached or degraded
+// into an absent answer.
+func TestT24ResolverErrorPropagates(t *testing.T) {
+	want := errors.New("catalog read refused")
+	_, err := t24AuditRaw(t, "ALTER RESOURCE GROUP rg ENABLE;", &t24Provider{
+		version: "8.0.36", facts: t24Facts("8.0.36"),
+		groups: map[string]t24GroupFact{"rg": {err: want}},
+	})
+	if err == nil || !strings.Contains(err.Error(), want.Error()) {
+		t.Fatalf("err = %v, want propagated resolver error", err)
+	}
+}
+
+// An unavailable catalog answer keeps the state unproven — never a
+// fabricated absence.
+func TestT24UnavailableCatalogStaysUnknown(t *testing.T) {
+	result := t24MustAudit(t, "ALTER RESOURCE GROUP rg ENABLE;", t24Groups(map[string]t24GroupFact{}))
+	if gaps := t22GapCodes(result.Statements[0]); !slices.Contains(gaps, t24StateGap) {
+		t.Fatalf("gaps = %v, want %s for an unresolvable group", gaps, t24StateGap)
+	}
+	if got := len(t22Findings(result, 0, t24ValidRule)); got != 0 {
+		t.Fatalf("findings = %d, want none — unproven state never fabricates a refusal", got)
+	}
+}
+
+// ── G: identity isolation ──
+
+// Resource groups are globally namespaced, never schema-bound: an
+// unrelated DROP DATABASE cannot invalidate a proven group identity.
+func TestT24IdentitySurvivesDropDatabase(t *testing.T) {
+	result := t24MustAudit(t, "CREATE RESOURCE GROUP rg TYPE=USER;\nDROP DATABASE app;\nALTER RESOURCE GROUP rg VCPU=0;",
+		t24Groups(map[string]t24GroupFact{"rg": {status: spec.MetadataStatusNotFound}}))
+	alter := result.Statements[2]
+	if gaps := t22GapCodes(alter); slices.Contains(gaps, t24StateGap) {
+		t.Fatalf("alter gaps = %v, want none — the batch-proven group survives an unrelated schema drop", gaps)
+	}
+}
+
+// A same-named TiDB RU group never shares the MySQL slot — the families
+// are product-isolated, and TiDB's `DROP RESOURCE GROUP IF EXISTS`
+// stays on the TiDB path as a vendor boundary under MySQL and an
+// audited drop under TiDB.
+func TestT24FamilyIsolation(t *testing.T) {
+	// MySQL bare DROP binds the MySQL registry: a batch create→drop
+	// resolves ahead of the provider with no state gap.
+	result := t24MustAudit(t, "CREATE RESOURCE GROUP rg TYPE=USER;\nDROP RESOURCE GROUP rg;",
+		t24Groups(map[string]t24GroupFact{"rg": {status: spec.MetadataStatusNotFound}}))
+	if gaps := t22GapCodes(result.Statements[1]); slices.Contains(gaps, t24StateGap) {
+		t.Fatalf("drop gaps = %v, want none — the batch-created identity resolves", gaps)
+	}
+	// TiDB's guard order is `DROP RESOURCE GROUP IF EXISTS <name>` —
+	// audited under TiDB, a vendor boundary under MySQL.
+	tidb, err := t22Audit(t, "DROP RESOURCE GROUP IF EXISTS rg;", spec.DialectTiDB, nil, "")
+	if err != nil {
+		t.Fatalf("tidb drop-if-exists err = %v, want audited statement", err)
+	}
+	if len(tidb.Statements) != 1 || tidb.Statements[0].Kind != string(spec.KindDDL) {
+		t.Fatalf("tidb drop-if-exists = %+v, want an audited ddl drop", tidb.Statements)
+	}
+	mysql, err := t24AuditRaw(t, "DROP RESOURCE GROUP IF EXISTS rg;", t24Groups(map[string]t24GroupFact{}))
+	if !errors.Is(err, ErrUnsupportedStatement) {
+		t.Fatalf("mysql drop-if-exists err = %v, want vendor boundary", err)
+	}
+	u := t24Unsupported(mysql, "drop_resource_group")
+	if u == nil || u.Metadata["boundary"] != "vendor" {
+		t.Fatalf("mysql drop-if-exists = %+v, want vendor boundary", mysql.Unsupported)
+	}
+	// `DROP rg IF EXISTS` — neither grammar's word order — stays a
+	// parse diagnostic on both dialects.
+	for _, d := range []spec.Dialect{spec.DialectMySQL, spec.DialectTiDB} {
+		res, err := AuditSQL(context.Background(), Request{SQL: "DROP RESOURCE GROUP rg IF EXISTS;", Dialect: d})
+		if err == nil || len(res.Diagnostics) == 0 || res.Diagnostics[0].Classification != spec.DiagnosticParserError {
+			t.Fatalf("dialect %s: wrong-order guard = %+v, want parser_error", d, res.Diagnostics)
+		}
+	}
+}
+
+// An unaudited statement mid-batch contaminates the registry — a
+// following group statement can never lean on stale knowledge.
+func TestT24UnauditedContaminates(t *testing.T) {
+	result, err := t24AuditRaw(t, "CREATE RESOURCE GROUP rg TYPE=USER;\n"+
+		"SET RESOURCE GROUP rg FOR 1;\n"+
+		"ALTER RESOURCE GROUP rg VCPU=0;",
+		t24Groups(map[string]t24GroupFact{"rg": {status: spec.MetadataStatusNotFound}}))
+	if !errors.Is(err, ErrUnsupportedStatement) {
+		t.Fatalf("err = %v, want the bounded set-for boundary alongside the audited statements", err)
+	}
+	alter := result.Statements[2]
+	if gaps := t22GapCodes(alter); !slices.Contains(gaps, t24StateGap) {
+		t.Fatalf("alter gaps = %v, want %s — the unaudited binding wipes prior knowledge", gaps, t24StateGap)
+	}
+}
+
+// ── Retained cells ──
 
 // Positional grammar: TYPE is the required first CREATE member (the
 // `=` is optional, so `TYPE USER` claims), the optional members sit in
@@ -303,8 +972,8 @@ func TestT24WarningGatingIndependentOfValidRule(t *testing.T) {
 	}
 }
 
-// FORCE on ALTER emits the declared-relocation warning; a refused
-// FORCE statement stays silent.
+// FORCE on ALTER DISABLE emits the declared-relocation warning; a
+// refused FORCE statement stays silent.
 func TestT24ForceWarns(t *testing.T) {
 	def := &spec.MySQLResourceGroupDefinition{GroupType: spec.MySQLResourceGroupTypeUser}
 	result := t24MustAudit(t, "ALTER RESOURCE GROUP rg DISABLE FORCE;\nALTER RESOURCE GROUP absent FORCE;",
@@ -360,15 +1029,5 @@ func TestT24DialectBoundaries(t *testing.T) {
 	u = t24Unsupported(setFor, "set_resource_group")
 	if u == nil || u.Metadata["boundary"] == "vendor" {
 		t.Fatalf("SET FOR on mysql = %+v, want bounded unaudited set_resource_group", setFor.Unsupported)
-	}
-	// DROP ... IF EXISTS belongs to neither grammar — MySQL's resource-group
-	// drop has no guard and TiDB's does not either — so the honest outcome
-	// is a parse diagnostic, never a claimed boundary or audited drop.
-	dropGuard, err := t24AuditRaw(t, "DROP RESOURCE GROUP rg IF EXISTS;", t24Groups(map[string]t24GroupFact{}))
-	if err == nil {
-		t.Fatalf("DROP IF EXISTS on mysql audited = %+v, want parse diagnostic", dropGuard.Statements)
-	}
-	if len(dropGuard.Diagnostics) == 0 || dropGuard.Diagnostics[0].Classification != spec.DiagnosticParserError {
-		t.Fatalf("diagnostics = %+v, want parser_error", dropGuard.Diagnostics)
 	}
 }

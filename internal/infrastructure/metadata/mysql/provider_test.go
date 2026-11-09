@@ -8,6 +8,7 @@ import (
 	"database/sql/driver"
 	"errors"
 	"io"
+	"reflect"
 	"strings"
 	"sync"
 	"testing"
@@ -563,7 +564,7 @@ func TestLoadInstanceFactsSchemaDefaults(t *testing.T) {
 			})
 			defer db.Close()
 			facts, err := NewProvider(db).LoadInstanceFacts(context.Background(), spec.DialectMySQL, "app")
-			if err != nil || facts == nil || *facts != tc.want {
+			if err != nil || facts == nil || !reflect.DeepEqual(*facts, tc.want) {
 				t.Fatalf("facts=%#v err=%v, want %#v", facts, err, tc.want)
 			}
 		})

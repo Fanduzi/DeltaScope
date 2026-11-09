@@ -22,7 +22,7 @@ func TestHandlerAuditMySQLDDLLifecycleFindings(t *testing.T) {
 		// IDENTIFIED BY is a parsed-but-unaudited account clause: the finding
 		// still fires, but the response is an incomplete-coverage 400 envelope.
 		{name: "create_user", sql: "CREATE USER 'admin'@'%' IDENTIFIED BY 's3cret'", wantRuleID: "ddl.create_user.notice", wantStatus: http.StatusBadRequest},
-		{name: "drop_resource_group", sql: "DROP RESOURCE GROUP rg1", wantRuleID: "ddl.drop_resource_group.notice"},
+		{name: "drop_resource_group", sql: "DROP RESOURCE GROUP usr_default", wantRuleID: "ddl.mysql.resource_group.valid"},
 	}
 
 	for _, tt := range tests {

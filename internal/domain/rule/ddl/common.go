@@ -495,6 +495,7 @@ const (
 	ruleIDMySQLResourceGroupValid        = "ddl.mysql.resource_group.valid"
 	ruleIDMySQLResourceGroupForceWarn    = "ddl.mysql.resource_group.force.warn"
 	ruleIDMySQLResourceGroupAffinityWarn = "ddl.mysql.resource_group.affinity.warn"
+	ruleIDMySQLResourceGroupPriorityWarn = "ddl.mysql.resource_group.priority.warn"
 	ruleIDTiDBTableAutoRandomValid       = "ddl.tidb.table.auto_random.valid"
 	ruleIDTiDBTableOptionsValid          = "ddl.tidb.table.options.valid"
 	ruleIDTiDBAlterAutoRandomValid       = "ddl.tidb.alter.auto_random.valid"

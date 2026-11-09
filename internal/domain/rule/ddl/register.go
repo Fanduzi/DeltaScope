@@ -866,6 +866,7 @@ func Register(registry *rule.Registry, cfg policy.Policy) error {
 		{ruleID: ruleIDMySQLResourceGroupValid, construct: newMySQLResourceGroupValidRule},
 		{ruleID: ruleIDMySQLResourceGroupForceWarn, construct: newMySQLResourceGroupForceWarnRule},
 		{ruleID: ruleIDMySQLResourceGroupAffinityWarn, construct: newMySQLResourceGroupAffinityWarnRule},
+		{ruleID: ruleIDMySQLResourceGroupPriorityWarn, construct: newMySQLResourceGroupPriorityWarnRule},
 		{ruleID: ruleIDTiDBTableAutoRandomValid, construct: newAutoRandomValidRule},
 		{ruleID: ruleIDTiDBTableOptionsValid, construct: newAutoRandomOptionValidRule},
 		{ruleID: ruleIDTiDBAlterAutoRandomValid, construct: newAlterAutoRandomValidRule},

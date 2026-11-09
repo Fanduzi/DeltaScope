@@ -1,0 +1,20 @@
+name: mysql_resource_group_priority_ignored
+dialect: mysql
+category: ddl
+metadata:
+  instance:
+    version: "8.0.36"
+    mysql_resource_group_feature_known: true
+    mysql_resource_group_feature_supported: true
+    mysql_resource_group_priority_cap_known: true
+    mysql_resource_group_priority_capable: false
+    mysql_resource_group_admin_known: true
+    mysql_resource_group_admin: true
+  mysql_resource_groups:
+    rg_off:
+      status: not_found
+expect:
+  parse_ok: true
+  findings:
+    include:
+      - ddl.mysql.resource_group.priority.warn

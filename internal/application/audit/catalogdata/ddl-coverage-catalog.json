@@ -360,7 +360,6 @@
       "form": "ALTER RESOURCE GROUP",
       "classification": "finding_covered",
       "finding_rule_ids": [
-        "ddl.alter_resource_group.notice",
         "ddl.mysql.resource_group.affinity.warn"
       ],
       "notes": ""
@@ -371,7 +370,6 @@
       "form": "CREATE RESOURCE GROUP",
       "classification": "finding_covered",
       "finding_rule_ids": [
-        "ddl.create_resource_group.notice",
         "ddl.mysql.resource_group.affinity.warn"
       ],
       "notes": ""
@@ -382,7 +380,7 @@
       "form": "DROP RESOURCE GROUP",
       "classification": "finding_covered",
       "finding_rule_ids": [
-        "ddl.drop_resource_group.notice"
+        "ddl.mysql.resource_group.valid"
       ],
       "notes": ""
     },

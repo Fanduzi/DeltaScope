@@ -2,7 +2,6 @@ package audit
 
 import (
 	"context"
-	"strconv"
 	"strings"
 
 	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
@@ -10,53 +9,37 @@ import (
 
 // batch_state_mysql_resource_group.go holds the T24/#103 ordered
 // MySQL resource-group registry — a parallel of the T22 TiDB registry
-// with three deliberate differences: the capability premise is the
-// resolved MySQL version (resource groups exist only on MySQL 8.0+, so
-// a proven older version is a static refusal rather than a catalog
-// question), the reserved set is the builtin pair usr_default /
-// sys_default, and the statement surface never carries IF guards — a
+// with four deliberate differences: the capability premise is the
+// resolved MySQL version (resource groups exist only on MySQL 8.0.3+,
+// so a proven older version is a static refusal rather than a catalog
+// question) plus the deployment feature fact (upstream's
+// check_resource_group_support() — a supported version can still lack
+// the feature), the reserved set is the builtin pair usr_default /
+// sys_default, the statement surface never carries IF guards — a
 // duplicate CREATE or an absent-target ALTER/DROP is always a refusal,
-// never a rescued no-op.
-
-// mysqlResourceGroupReservedNames are the builtin groups MySQL 8.0+
-// always carries — provable facts only while the feature itself is
-// proven present (a version ≥ 8.0 answer). On a proven older version
-// the feature does not exist and neither do the reserved groups.
-var mysqlResourceGroupReservedNames = map[string]bool{
-	"usr_default": true,
-	"sys_default": true,
-}
+// never a rescued no-op — and every verdict rides the shared
+// spec.MySQLResourceGroupStatementOutcome truth table so the rules and
+// this transition can never disagree.
 
 type batchMySQLResourceGroupEntry struct {
 	state      resourceGroupEntryState
 	name       string
 	reserved   bool
 	definition *spec.MySQLResourceGroupDefinition
+	occupied   *bool
 	resolved   bool
-}
-
-// mysqlResourceGroupVersionSupportsFeature reports whether the resolved
-// version fact proves the resource-group feature: MySQL 8.0+ only. A nil
-// or unvalidated version is unproven — never a claimed refusal, never a
-// claimed feature.
-func mysqlResourceGroupVersionSupportsFeature(version *spec.VersionIdentity) (supported bool, proven bool) {
-	if version == nil || !version.ValidatedRange || version.Product != spec.VersionProductMySQL {
-		return false, false
-	}
-	if version.Major >= 8 {
-		return true, true
-	}
-	return false, true
 }
 
 // resolveMySQLResourceGroup returns the owned entry for a name,
 // consulting the once-per-request object resolver at most once — and
-// only while the feature premise does not already decide the outcome.
-// A proven pre-8.0 version never reaches the catalog: the feature does
-// not exist, so every identity stays unknown and the refusal verdict
-// comes from the version fact instead. Reserved membership is claimed
-// only under a proven 8.0+ version. Resolver errors propagate — never
-// cached, never degraded.
+// only while the capability premises do not already decide the outcome.
+// A proven pre-8.0.3 version or a proven feature-off deployment never
+// reaches the catalog: the feature does not exist, so every identity
+// stays unknown and the refusal verdict comes from the premises
+// instead. Reserved membership is claimed only under a proven 8.0.3+
+// version. Binding state (is_bound_to_threads) seeds from the instance
+// fact map — a missing key stays unproven, never a guessed "unoccupied".
+// Resolver errors propagate — never cached, never degraded.
 func (s *batchState) resolveMySQLResourceGroup(ctx context.Context, name string) (*batchMySQLResourceGroupEntry, error) {
 	key := resourceGroupKey(name)
 	if entry, ok := s.mysqlResourceGroupEntries[key]; ok && entry.resolved {
@@ -67,14 +50,27 @@ func (s *batchState) resolveMySQLResourceGroup(ctx context.Context, name string)
 		entry = &batchMySQLResourceGroupEntry{state: resourceGroupUnknown, name: strings.TrimSpace(name)}
 		s.mysqlResourceGroupEntries[key] = entry
 	}
-	supported, proven := mysqlResourceGroupVersionSupportsFeature(s.resolvedVersion)
+	if s.instanceFacts != nil && s.instanceFacts.MySQLResourceGroupBound != nil {
+		if bound, ok := s.instanceFacts.MySQLResourceGroupBound[key]; ok {
+			occupied := bound
+			entry.occupied = &occupied
+		}
+	}
+	supported, proven := spec.MySQLResourceGroupVersionSupported(s.resolvedVersion)
 	if proven && !supported {
-		// Proven refusal premise — the feature does not exist, no catalog
-		// can answer, and reserved facts do not apply.
+		// Proven version refusal premise — the feature does not exist,
+		// no catalog can answer, and reserved facts do not apply.
 		entry.resolved = true
 		return entry, nil
 	}
-	if proven && supported && mysqlResourceGroupReservedNames[key] {
+	if s.instanceFacts != nil && s.instanceFacts.MySQLResourceGroupFeatureKnown &&
+		!s.instanceFacts.MySQLResourceGroupFeatureSupported {
+		// Proven deployment refusal — the feature is unsupported here,
+		// so the catalog premise never applies.
+		entry.resolved = true
+		return entry, nil
+	}
+	if proven && supported && spec.IsMySQLResourceGroupReservedName(key) {
 		// Builtin groups provably exist under a proven feature version —
 		// a fixed-version fact that needs no catalog read.
 		entry.reserved = true
@@ -127,6 +123,10 @@ func (s *batchState) resolveMySQLResourceGroup(ctx context.Context, name string)
 // states carry only the unvouched identity.
 func (s *batchState) projectMySQLResourceGroupEntry(entry *batchMySQLResourceGroupEntry) *spec.MySQLResourceGroupState {
 	state := &spec.MySQLResourceGroupState{Name: entry.name, Reserved: entry.reserved}
+	if entry.occupied != nil {
+		occupied := *entry.occupied
+		state.Occupied = &occupied
+	}
 	switch entry.state {
 	case resourceGroupPresent:
 		state.Status = spec.MetadataStatusConfirmed
@@ -153,88 +153,27 @@ func (s *batchState) bindMySQLResourceGroups(ctx context.Context, statement spec
 	if err != nil {
 		return nil, err
 	}
+	if s.contaminated {
+		// The projection contract mirrors preState: after contamination
+		// the bound answer is always unknown, regardless of any earlier
+		// cached or resolved fact — a following statement can never lean
+		// on stale knowledge.
+		return map[string]*spec.MySQLResourceGroupState{
+			resourceGroupKey(name): {Name: strings.TrimSpace(name), Status: spec.MetadataStatusUnavailable},
+		}, nil
+	}
 	return map[string]*spec.MySQLResourceGroupState{
 		resourceGroupKey(name): s.projectMySQLResourceGroupEntry(entry),
 	}, nil
 }
 
-// authoredMySQLResourceGroupDefinition derives the batch-proven
-// definition a CREATE publishes. A create fully specifies the group, so
-// every member is provable: authored members carry their values, an
-// undeclared THREAD_PRIORITY takes the fixed default 0, an undeclared
-// enable state is ENABLED, and an undeclared VCPU is proven
-// "no affinity" — VCPUIDs stays nil (the bounded catalog text column),
-// never a fabricated CPU list.
-func authoredMySQLResourceGroupDefinition(declaration *spec.MySQLResourceGroupDeclaration) *spec.MySQLResourceGroupDefinition {
-	groupType, _ := declaration.DeclaredType()
-	definition := &spec.MySQLResourceGroupDefinition{GroupType: groupType}
-	definition.VCPUIDs = mysqlResourceGroupVCPUIDsText(declaration)
-	priority := int64(0)
-	if value, ok := declaration.DeclaredThreadPriority(); ok && value != nil {
-		priority = *value
-	}
-	definition.ThreadPriority = &priority
-	enabled := true
-	if value, ok := declaration.DeclaredEnabled(); ok && value != nil {
-		enabled = *value
-	}
-	definition.Enabled = &enabled
-	return definition
-}
-
-// mergeMySQLResourceGroupAlter applies authored ALTER members onto a
-// proven definition clone — each declared member replaces independently
-// and undeclared members keep the proven value. FORCE is an execution
-// modifier with no stored member.
-func mergeMySQLResourceGroupAlter(base *spec.MySQLResourceGroupDefinition, declaration *spec.MySQLResourceGroupDeclaration) *spec.MySQLResourceGroupDefinition {
-	out := base.Clone()
-	if out == nil {
-		out = &spec.MySQLResourceGroupDefinition{}
-	}
-	if ids := mysqlResourceGroupVCPUIDsText(declaration); ids != nil {
-		out.VCPUIDs = ids
-	}
-	if value, ok := declaration.DeclaredThreadPriority(); ok && value != nil {
-		priority := *value
-		out.ThreadPriority = &priority
-	}
-	if value, ok := declaration.DeclaredEnabled(); ok && value != nil {
-		enabled := *value
-		out.Enabled = &enabled
-	}
-	return out
-}
-
-// mysqlResourceGroupVCPUIDsText renders the declared VCPU member in the
-// catalog's bounded `VCPU_IDS` text shape, or nil when undeclared.
-func mysqlResourceGroupVCPUIDsText(declaration *spec.MySQLResourceGroupDeclaration) *string {
-	specs, ok := declaration.DeclaredVCPU()
-	if !ok {
-		return nil
-	}
-	text := mysqlResourceGroupVCPUListText(specs)
-	return &text
-}
-
-// mysqlResourceGroupVCPUListText renders the authored spec list in the
-// catalog's bounded `VCPU_IDS` text shape — ranges as `M-N`, singles as
-// `N`, comma-separated in authored order.
-func mysqlResourceGroupVCPUListText(specs []spec.MySQLResourceGroupVCPUSpec) string {
-	parts := make([]string, 0, len(specs))
-	for _, member := range specs {
-		if member.Lo == member.Hi {
-			parts = append(parts, strconv.FormatUint(uint64(member.Lo), 10))
-			continue
-		}
-		parts = append(parts, strconv.FormatUint(uint64(member.Lo), 10)+"-"+strconv.FormatUint(uint64(member.Hi), 10))
-	}
-	return strings.Join(parts, ",")
-}
-
-// applyMySQLResourceGroupStatement records the conditional post-state of
-// one MySQL resource-group lifecycle statement. A proven version refusal
-// or a proven existence/reserved refusal publishes nothing — the
-// pre-state stands. An unbounded aspect tombstones the touched identity
+// applyMySQLResourceGroupStatement records the conditional post-state
+// of one MySQL resource-group lifecycle statement through the shared
+// outcome truth table: a proven refusal publishes nothing — the
+// pre-state stands; an undecidable outcome unions the pre-state with
+// the proceeding branches' post-state so only facts every consistent
+// world agrees on stay proven; a proceeding statement publishes the
+// post-state. An unbounded aspect tombstones the touched identity
 // rather than fabricating a success shape.
 func (s *batchState) applyMySQLResourceGroupStatement(ctx context.Context, statement spec.Statement) error {
 	if err := ctx.Err(); err != nil {
@@ -245,7 +184,7 @@ func (s *batchState) applyMySQLResourceGroupStatement(ctx context.Context, state
 		return nil
 	}
 	key := resourceGroupKey(declaration.Name)
-	if supported, proven := mysqlResourceGroupVersionSupportsFeature(s.resolvedVersion); proven && !supported {
+	if supported, proven := spec.MySQLResourceGroupVersionSupported(s.resolvedVersion); proven && !supported {
 		// Proven version refusal — the statement lands nothing, so every
 		// identity keeps its pre-state.
 		return nil
@@ -258,50 +197,44 @@ func (s *batchState) applyMySQLResourceGroupStatement(ctx context.Context, state
 	if err != nil {
 		return err
 	}
-	switch statement.DDL.Operation {
-	case spec.DDLOperationCreateResourceGroup:
-		switch entry.state {
-		case resourceGroupPresent:
-			// Proven duplicate — MySQL's grammar has no IF NOT EXISTS,
-			// so a present target is always a refusal; pre-state stands.
-			return nil
-		case resourceGroupAbsent:
+	pre := s.projectMySQLResourceGroupEntry(entry)
+	outcome := spec.MySQLResourceGroupStatementOutcome(statement.DDL.Operation, declaration,
+		s.resolvedVersion, s.instanceFacts, pre)
+	switch {
+	case outcome.Refused:
+		// Every consistent world refuses — the pre-state stands.
+		return nil
+	case outcome.Undecidable:
+		merged := spec.MySQLResourceGroupPostMerge(pre, outcome.Post)
+		entry.name = merged.Name
+		if entry.name == "" {
+			entry.name = declaration.Name
+		}
+		entry.reserved = merged.Reserved
+		entry.definition = merged.Definition
+		entry.occupied = merged.Occupied
+		switch {
+		case merged.Status == spec.MetadataStatusConfirmed && merged.Exists:
 			entry.state = resourceGroupPresent
-			entry.definition = authoredMySQLResourceGroupDefinition(declaration)
-			entry.name = declaration.Name
-		default:
-			entry.state = resourceGroupUnknown
-		}
-	case spec.DDLOperationAlterResourceGroup:
-		if entry.reserved {
-			// Reserved groups cannot be altered — a proven refusal keeps
-			// the exact pre-state.
-			return nil
-		}
-		switch entry.state {
-		case resourceGroupPresent:
-			entry.definition = mergeMySQLResourceGroupAlter(entry.definition, declaration)
-			entry.name = declaration.Name
-		case resourceGroupAbsent:
-			// Proven refusal — nothing was created.
-			return nil
-		default:
-			entry.state = resourceGroupUnknown
-		}
-	case spec.DDLOperationDropResourceGroup:
-		if entry.reserved {
-			return nil
-		}
-		switch entry.state {
-		case resourceGroupPresent:
+		case merged.Status == spec.MetadataStatusNotFound:
 			entry.state = resourceGroupAbsent
-			entry.definition = nil
-			entry.name = declaration.Name
-		case resourceGroupAbsent:
-			return nil
 		default:
 			entry.state = resourceGroupUnknown
 		}
+		return nil
+	default:
+		post := outcome.Post
+		if post == nil {
+			return nil
+		}
+		entry.name = declaration.Name
+		entry.definition = post.Definition
+		entry.occupied = post.Occupied
+		if post.Exists {
+			entry.state = resourceGroupPresent
+		} else {
+			entry.state = resourceGroupAbsent
+		}
+		return nil
 	}
-	return nil
 }

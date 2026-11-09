@@ -239,7 +239,7 @@ func TestT17R1TailCharsetMatrix(t *testing.T) {
 				if entry := state.schemaEntries["g"]; entry == nil || entry.state != schemaPresent || entry.batchCreated != !present || !reflect.DeepEqual(entry.attrs, finalAttrs) {
 					t.Errorf("final entry=%#v", entry)
 				}
-				if !reflect.DeepEqual(answer, original) || *facts != beforeFacts || p.calls != 1 {
+				if !reflect.DeepEqual(answer, original) || !reflect.DeepEqual(*facts, beforeFacts) || p.calls != 1 {
 					t.Errorf("fixture mutation or lookup count: answer=%#v facts=%#v calls=%d", answer, facts, p.calls)
 				}
 			})
@@ -356,7 +356,7 @@ func TestT17R1TailPolicyIndependence(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			if !bytes.Equal(beforeMetadata, afterMetadata) || *facts != beforeFacts ||
+			if !bytes.Equal(beforeMetadata, afterMetadata) || !reflect.DeepEqual(*facts, beforeFacts) ||
 				!reflect.DeepEqual(p.answer, t17TailFixture(false)) || p.calls != 1 {
 				t.Errorf("evaluation mutated metadata or fixture: before=%s after=%s facts=%#v answer=%#v calls=%d", beforeMetadata, afterMetadata, facts, p.answer, p.calls)
 			}

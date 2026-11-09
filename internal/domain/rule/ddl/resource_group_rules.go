@@ -406,8 +406,10 @@ func resourceGroupNoticeAdjudicator(operation, message, suggestion string) func(
 func mysqlResourceGroupNoticeOutcome(level rule.Level, operation, message, suggestion string, statement spec.Statement) ([]rule.Finding, bool) {
 	// A proven refusal lands nothing — never a false success notice,
 	// even when the target stays unproven (same B1 contract as the TiDB
-	// arm).
-	if mysqlResourceGroupStatementRefused(statement) {
+	// arm). An undecidable outcome is equally no claim of success: a
+	// refusing branch exists, so the statement may land nothing.
+	outcome := mysqlResourceGroupOutcome(statement)
+	if outcome.Refused || outcome.Undecidable {
 		return []rule.Finding{}, true
 	}
 	state := mysqlResourceGroupBinding(statement)

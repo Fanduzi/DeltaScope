@@ -16,7 +16,7 @@ func TestAuditCommandMySQLDDLLifecycleFindings(t *testing.T) {
 		{name: "rename_table", sql: "RENAME TABLE users TO users_old", wantRuleID: "ddl.rename_table.notice"},
 		{name: "create_index", sql: "CREATE INDEX idx_email ON users (email)", wantRuleID: "ddl.create_index.notice"},
 		{name: "create_user", sql: "CREATE USER 'admin'@'%' IDENTIFIED BY 's3cret'", wantRuleID: "ddl.create_user.notice"},
-		{name: "drop_resource_group", sql: "DROP RESOURCE GROUP rg1", wantRuleID: "ddl.drop_resource_group.notice"},
+		{name: "drop_resource_group", sql: "DROP RESOURCE GROUP usr_default", wantRuleID: "ddl.mysql.resource_group.valid"},
 	}
 
 	for _, tt := range tests {

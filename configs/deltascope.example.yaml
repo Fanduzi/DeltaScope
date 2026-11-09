@@ -1122,6 +1122,11 @@ rules:
     level: warning
     params:
 
+  ddl.mysql.resource_group.priority.warn:
+    enabled: true
+    level: warning
+    params:
+
   ddl.tidb.table.auto_random.valid:
     enabled: true
     level: blocker

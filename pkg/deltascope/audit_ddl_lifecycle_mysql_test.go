@@ -20,7 +20,7 @@ func TestAuditMySQLDDLLifecycleRuleCoverage(t *testing.T) {
 		{name: "alter_add_index_notice", sql: "ALTER TABLE users ADD INDEX idx_email (email)", wantRuleID: "ddl.create_index.notice"},
 		{name: "create_user_notice", sql: "CREATE USER 'admin'@'%' IDENTIFIED BY 'secret'", wantRuleID: "ddl.create_user.notice", wantUnsupportedFeature: "create_user.option.identified"},
 		{name: "grant_notice", sql: "GRANT SELECT ON app.users TO 'reader'@'%'", wantRuleID: "ddl.grant.notice", wantUnsupportedFeature: "grant.unaudited_targets"},
-		{name: "drop_resource_group_notice", sql: "DROP RESOURCE GROUP rg1", wantRuleID: "ddl.drop_resource_group.notice"},
+		{name: "drop_resource_group_notice", sql: "DROP RESOURCE GROUP usr_default", wantRuleID: "ddl.mysql.resource_group.valid"},
 	}
 
 	for _, tt := range tests {

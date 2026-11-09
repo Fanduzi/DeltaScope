@@ -224,6 +224,18 @@ type corpusInstanceFacts struct {
 	TiDBEnableClusteredIndex       string `yaml:"tidb_enable_clustered_index,omitempty"`
 	TiDBAlterPrimaryKey            bool   `yaml:"tidb_alter_primary_key,omitempty"`
 	TiDBAlterPrimaryKeyKnown       bool   `yaml:"tidb_alter_primary_key_known,omitempty"`
+	// The T24/#103 MySQL resource-group premise facts — every one is a
+	// separate known/answer pair so a fixture can prove a refusal, prove
+	// a proceeding world, or leave the premise unproven to pin the gap.
+	MySQLResourceGroupFeatureSupported bool            `yaml:"mysql_resource_group_feature_supported,omitempty"`
+	MySQLResourceGroupFeatureKnown     bool            `yaml:"mysql_resource_group_feature_known,omitempty"`
+	MySQLResourceGroupPriorityCapable  bool            `yaml:"mysql_resource_group_priority_capable,omitempty"`
+	MySQLResourceGroupPriorityCapKnown bool            `yaml:"mysql_resource_group_priority_cap_known,omitempty"`
+	MySQLHostVCPUs                     uint64          `yaml:"mysql_host_vcpus,omitempty"`
+	MySQLHostVCPUsKnown                bool            `yaml:"mysql_host_vcpus_known,omitempty"`
+	MySQLResourceGroupAdmin            bool            `yaml:"mysql_resource_group_admin,omitempty"`
+	MySQLResourceGroupAdminKnown       bool            `yaml:"mysql_resource_group_admin_known,omitempty"`
+	MySQLResourceGroupBound            map[string]bool `yaml:"mysql_resource_group_bound,omitempty"`
 }
 
 type corpusTableSnapshot struct {

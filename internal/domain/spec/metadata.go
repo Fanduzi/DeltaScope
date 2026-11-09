@@ -182,6 +182,43 @@ type InstanceFacts struct {
 	// only (issue #102 T23-R8).
 	TiDBSplitRegionMaxNum      int  `json:"tidb_split_region_max_num,omitempty"`
 	TiDBSplitRegionMaxNumKnown bool `json:"tidb_split_region_max_num_known,omitempty"`
+
+	// MySQLResourceGroupFeatureSupported is the deployment answer to
+	// upstream's check_resource_group_support() — whether this mysqld
+	// build/platform runs the resource-group feature at all. It is a
+	// separate premise from the version gate: 8.0.3+ is the version the
+	// syntax appeared on, while a deployment may still lack the feature.
+	// MySQL only (issue #103 T24-R2).
+	MySQLResourceGroupFeatureSupported bool `json:"mysql_resource_group_feature_supported,omitempty"`
+	MySQLResourceGroupFeatureKnown     bool `json:"mysql_resource_group_feature_known,omitempty"`
+
+	// MySQLResourceGroupPriorityCapable is the deployment answer to
+	// upstream's thread_priority_available() — whether this platform
+	// applies nonzero THREAD_PRIORITY. When proven off, an authored
+	// nonzero priority is ignored with ER_ATTRIBUTE_IGNORED and the
+	// effective priority stores zero; when unproven the effective value
+	// stays withheld rather than guessed. MySQL only.
+	MySQLResourceGroupPriorityCapable  bool `json:"mysql_resource_group_priority_capable,omitempty"`
+	MySQLResourceGroupPriorityCapKnown bool `json:"mysql_resource_group_priority_cap_known,omitempty"`
+
+	// MySQLHostVCPUs is the CPU count of the mysqld host the authored
+	// VCPU endpoints adjudicate against — upstream's num_vcpus(). It is
+	// never the audit-runner's core count; an unproven read keeps every
+	// endpoint check undecidable. MySQL only.
+	MySQLHostVCPUs      uint64 `json:"mysql_host_vcpus,omitempty"`
+	MySQLHostVCPUsKnown bool   `json:"mysql_host_vcpus_known,omitempty"`
+
+	// MySQLResourceGroupAdmin is the RESOURCE_GROUP_ADMIN grant the
+	// lifecycle commands require — distinct from an ordinary catalog-read
+	// privilege. MySQL only.
+	MySQLResourceGroupAdmin      bool `json:"mysql_resource_group_admin,omitempty"`
+	MySQLResourceGroupAdminKnown bool `json:"mysql_resource_group_admin_known,omitempty"`
+
+	// MySQLResourceGroupBound carries per-group is_bound_to_threads()
+	// answers keyed by the lowercase group name — DROP consults it for
+	// ER_RESOURCE_GROUP_BUSY. A missing key is unproven binding state,
+	// never a proven "unoccupied". MySQL only.
+	MySQLResourceGroupBound map[string]bool `json:"mysql_resource_group_bound,omitempty"`
 }
 
 // TTLConfig is the proven TTL configuration recorded by the catalog or a

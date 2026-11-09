@@ -115,7 +115,8 @@ func corpusRuleDialectTargets(ruleID string) []string {
 	case
 		"ddl.mysql.resource_group.valid",
 		"ddl.mysql.resource_group.force.warn",
-		"ddl.mysql.resource_group.affinity.warn":
+		"ddl.mysql.resource_group.affinity.warn",
+		"ddl.mysql.resource_group.priority.warn":
 		return []string{"mysql"}
 	}
 	if strings.HasPrefix(ruleID, "ddl.pg.") || isPostgreSQLOnlyRule(ruleID) {

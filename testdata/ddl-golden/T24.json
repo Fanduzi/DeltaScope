@@ -2,7 +2,7 @@
  "task_id": "T24",
  "issue": 103,
  "policy_profile": "t24-mysql-resource-group",
- "description": "T24 MySQL CPU resource-group lifecycle (issue #103): CREATE/ALTER/DROP RESOURCE GROUP reach kind=ddl with audited semantics under MySQL — a dedicated MySQLResourceGroupDeclaration (TYPE required on CREATE, VCPU list/range members, THREAD_PRIORITY bounds -20..19 with SYSTEM -20..0 and USER 0..19, ENABLE|DISABLE, FORCE on ALTER/DROP) kept strictly separate from the TiDB RU declaration; the version premise (MySQL 8.0+) is a proven-refusal gate (a proven 5.7 refuses every lifecycle statement, an unproven version owes unknown_resource_group_version); the reserved usr_default/sys_default pair provably exists only under a proven 8.0+ version; duplicate option kinds, >64-char names, and static priority/type violations are static refusals; proven duplicate create / absent alter / absent drop refuse while unproven targets owe unknown_resource_group_state plus bounded unknown_host_vcpu_count (declared VCPU) and unknown_resource_group_privilege premises; proven refusals suppress lifecycle notices; FORCE and VCPU warn only on declared evidence. Bare DROP RESOURCE GROUP <name> — the shared form — binds the MySQL registry under MySQL; DROP ... FORCE claims the MySQL carrier; SET RESOURCE GROUP ... FOR stays a bounded unaudited feature under MySQL and a vendor boundary under TiDB; every MySQL CPU form under TiDB and every TiDB RU form under MySQL stays a vendor boundary. metadata_cases encode native probes — none has run and none may be claimed as native PASS.",
+ "description": "T24 MySQL CPU resource-group lifecycle (issue #103, R2 verdict): CREATE/ALTER/DROP RESOURCE GROUP reach kind=ddl with audited semantics under MySQL — a dedicated MySQLResourceGroupDeclaration (TYPE required first on CREATE, positional VCPU / THREAD_PRIORITY / ENABLE|DISABLE slots, FORCE trailing on ALTER/DROP) kept strictly separate from the TiDB RU declaration. The version premise is the 8.0.3 introduction boundary (a proven pre-8.0.3 version refuses every lifecycle statement before any catalog read; an unproven version owes unknown_resource_group_version) and the deployment feature/capability/privilege/host-vcpu/occupancy facts are independent premise facts — each unproven one owes its bounded evidence gap, never a guessed default. Reserved usr_default/sys_default refuse ALTER/DROP case-insensitively by name alone. An inverted declared VCPU range is a declaration-provable semantic refusal (ER_INVALID_VCPU_RANGE), never a parse failure; ALTER FORCE without DISABLE is equally declaration-provable. THREAD_PRIORITY bounds are capability-gated (capability on: SYSTEM -20..0 / USER 0..19 refuses; off: an authored nonzero is ignored with the effective value storing zero; unknown: bounded gap plus withheld member). DROP without FORCE on a proven-occupied group refuses (ER_RESOURCE_GROUP_BUSY); an unproven occupancy owes unknown_resource_group_occupancy. Every premise fact unproven keeps the outcome undecidable — success notices and post-state publication suppress, post-state members diverging between proceeding branches stay withheld. Bare DROP RESOURCE GROUP <name> binds the MySQL registry under MySQL; the MySQL CPU forms under TiDB and the TiDB RU forms under MySQL stay vendor boundaries; SET RESOURCE GROUP ... FOR is a bounded unaudited feature under MySQL and a vendor boundary under TiDB. metadata_cases encode native probes — none has run and none may be claimed as native PASS.",
  "anchors": {
   "mysql57": {
    "service": "mysql57",
@@ -121,6 +121,9 @@
    },
    "ddl.drop_resource_group.notice": {
     "level": "notice"
+   },
+   "ddl.mysql.resource_group.priority.warn": {
+    "level": "warning"
    }
   }
  },
@@ -138,7 +141,7 @@
     "exit": 0,
     "verdict": "review",
     "statements": 3,
-    "findings": 5,
+    "findings": 2,
     "diagnostics": 0,
     "unsupported": 0,
     "coverage": "unverified",
@@ -147,14 +150,9 @@
      "unverified",
      "unverified"
     ],
-    "evidence_gaps": 10,
+    "evidence_gaps": 15,
     "fail_on_triggered": false,
     "finding_entries": [
-     {
-      "index": 0,
-      "rule_id": "ddl.create_resource_group.notice",
-      "level": "notice"
-     },
      {
       "index": 0,
       "rule_id": "ddl.mysql.resource_group.affinity.warn",
@@ -162,18 +160,8 @@
      },
      {
       "index": 1,
-      "rule_id": "ddl.alter_resource_group.notice",
-      "level": "notice"
-     },
-     {
-      "index": 1,
       "rule_id": "ddl.mysql.resource_group.force.warn",
       "level": "warning"
-     },
-     {
-      "index": 2,
-      "rule_id": "ddl.drop_resource_group.notice",
-      "level": "notice"
      }
     ],
     "evidence_gap_entries": [
@@ -188,9 +176,9 @@
      {
       "index": 0,
       "rule_id": "ddl.mysql.resource_group.valid",
-      "reason_code": "unknown_host_vcpu_count",
+      "reason_code": "unknown_resource_group_feature",
       "required_facts": [
-       "host.vcpu_count"
+       "resource_group.feature_supported"
       ]
      },
      {
@@ -200,9 +188,106 @@
       "required_facts": [
        "privilege.resource_group_admin"
       ]
+     },
+     {
+      "index": 0,
+      "rule_id": "ddl.mysql.resource_group.valid",
+      "reason_code": "unknown_resource_group_state",
+      "required_facts": [
+       "resource_group.state"
+      ]
+     },
+     {
+      "index": 0,
+      "rule_id": "ddl.mysql.resource_group.valid",
+      "reason_code": "unknown_host_vcpu_count",
+      "required_facts": [
+       "host.vcpu_count"
+      ]
+     },
+     {
+      "index": 0,
+      "rule_id": "ddl.mysql.resource_group.valid",
+      "reason_code": "unknown_resource_group_priority_capability",
+      "required_facts": [
+       "resource_group.thread_priority_capable"
+      ]
+     },
+     {
+      "index": 1,
+      "rule_id": "ddl.mysql.resource_group.valid",
+      "reason_code": "unknown_resource_group_version",
+      "required_facts": [
+       "instance.version"
+      ]
+     },
+     {
+      "index": 1,
+      "rule_id": "ddl.mysql.resource_group.valid",
+      "reason_code": "unknown_resource_group_feature",
+      "required_facts": [
+       "resource_group.feature_supported"
+      ]
+     },
+     {
+      "index": 1,
+      "rule_id": "ddl.mysql.resource_group.valid",
+      "reason_code": "unknown_resource_group_privilege",
+      "required_facts": [
+       "privilege.resource_group_admin"
+      ]
+     },
+     {
+      "index": 1,
+      "rule_id": "ddl.mysql.resource_group.valid",
+      "reason_code": "unknown_resource_group_state",
+      "required_facts": [
+       "resource_group.state"
+      ]
+     },
+     {
+      "index": 2,
+      "rule_id": "ddl.mysql.resource_group.valid",
+      "reason_code": "unknown_resource_group_version",
+      "required_facts": [
+       "instance.version"
+      ]
+     },
+     {
+      "index": 2,
+      "rule_id": "ddl.mysql.resource_group.valid",
+      "reason_code": "unknown_resource_group_feature",
+      "required_facts": [
+       "resource_group.feature_supported"
+      ]
+     },
+     {
+      "index": 2,
+      "rule_id": "ddl.mysql.resource_group.valid",
+      "reason_code": "unknown_resource_group_privilege",
+      "required_facts": [
+       "privilege.resource_group_admin"
+      ]
+     },
+     {
+      "index": 2,
+      "rule_id": "ddl.mysql.resource_group.valid",
+      "reason_code": "unknown_resource_group_state",
+      "required_facts": [
+       "resource_group.state"
+      ]
+     },
+     {
+      "index": 2,
+      "rule_id": "ddl.mysql.resource_group.valid",
+      "reason_code": "unknown_resource_group_occupancy",
+      "required_facts": [
+       "resource_group.bound_threads"
+      ]
      }
     ]
-   }
+   },
+   "description": "no-metadata undecidable contract: every lifecycle statement owes its bounded premise gaps, the declared-effect warnings still fire (refusal-only suppression), and the lifecycle success notices suppress because a refusing branch exists"
   },
   {
    "id": "mysql-dup-kind-refused",
@@ -243,26 +328,63 @@
     "blocker"
    ],
    "expect": {
-    "exit": 1,
-    "verdict": "reject",
+    "exit": 0,
+    "verdict": "review",
     "statements": 1,
-    "findings": 1,
+    "findings": 0,
     "diagnostics": 0,
     "unsupported": 0,
     "coverage": "unverified",
     "statement_coverage": [
      "unverified"
     ],
-    "evidence_gaps": 0,
-    "fail_on_triggered": true,
-    "finding_entries": [
+    "evidence_gaps": 5,
+    "fail_on_triggered": false,
+    "finding_entries": [],
+    "evidence_gap_entries": [
      {
       "index": 0,
       "rule_id": "ddl.mysql.resource_group.valid",
-      "level": "blocker"
+      "reason_code": "unknown_resource_group_version",
+      "required_facts": [
+       "instance.version"
+      ]
+     },
+     {
+      "index": 0,
+      "rule_id": "ddl.mysql.resource_group.valid",
+      "reason_code": "unknown_resource_group_feature",
+      "required_facts": [
+       "resource_group.feature_supported"
+      ]
+     },
+     {
+      "index": 0,
+      "rule_id": "ddl.mysql.resource_group.valid",
+      "reason_code": "unknown_resource_group_privilege",
+      "required_facts": [
+       "privilege.resource_group_admin"
+      ]
+     },
+     {
+      "index": 0,
+      "rule_id": "ddl.mysql.resource_group.valid",
+      "reason_code": "unknown_resource_group_state",
+      "required_facts": [
+       "resource_group.state"
+      ]
+     },
+     {
+      "index": 0,
+      "rule_id": "ddl.mysql.resource_group.valid",
+      "reason_code": "unknown_resource_group_priority_capability",
+      "required_facts": [
+       "resource_group.thread_priority_capable"
+      ]
      }
     ]
-   }
+   },
+   "description": "the type bound is capability-gated: SYSTEM+5 refuses under a proven-on thread_priority_available() but a proven-off capability ignores it — offline the capability is unproven so the outcome stays undecidable with bounded gaps, never a fabricated refusal (T24-R2)"
   },
   {
    "id": "mysql-ru-vendor-boundary",
@@ -335,6 +457,70 @@
     "evidence_gaps": 0,
     "fail_on_triggered": false
    }
+  },
+  {
+   "id": "mysql-inverted-vcpu-refused",
+   "dialect": "mysql",
+   "sql": "CREATE RESOURCE GROUP rg TYPE=USER VCPU=5-3;",
+   "policy": "t24-mysql-resource-group",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": true,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.mysql.resource_group.valid",
+      "level": "blocker"
+     }
+    ]
+   },
+   "description": "inverted declared VCPU range — a declaration-provable semantic refusal (upstream ER_INVALID_VCPU_RANGE inside execute): the adapter claims the statement and the rule refuses it before any host-capacity fact, on every consistent world"
+  },
+  {
+   "id": "mysql-force-pairing-refused",
+   "dialect": "mysql",
+   "sql": "ALTER RESOURCE GROUP rg FORCE;",
+   "policy": "t24-mysql-resource-group",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": true,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.mysql.resource_group.valid",
+      "level": "blocker"
+     }
+    ]
+   },
+   "description": "FORCE authored on ALTER without the DISABLE pairing — upstream's ER_INVALID_USE_OF_FORCE_OPTION, declaration-provable and refused on every consistent world"
   }
  ],
  "metadata_cases": [
@@ -367,40 +553,26 @@
     "exit": 0,
     "verdict": "review",
     "statements": 3,
-    "findings": 4,
+    "findings": 1,
     "diagnostics": 0,
     "unsupported": 0,
-    "coverage": "complete",
+    "coverage": "unverified",
     "statement_coverage": [
-     "complete",
-     "complete",
-     "complete"
+     "unverified",
+     "unverified",
+     "unverified"
     ],
-    "evidence_gaps": 4,
+    "evidence_gaps": 12,
     "fail_on_triggered": false,
     "finding_entries": [
      {
       "index": 0,
-      "rule_id": "ddl.create_resource_group.notice",
-      "level": "notice"
-     },
-     {
-      "index": 0,
       "rule_id": "ddl.mysql.resource_group.affinity.warn",
       "level": "warning"
-     },
-     {
-      "index": 1,
-      "rule_id": "ddl.alter_resource_group.notice",
-      "level": "notice"
-     },
-     {
-      "index": 2,
-      "rule_id": "ddl.drop_resource_group.notice",
-      "level": "notice"
      }
     ]
-   }
+   },
+   "description": "pending native: a real 8.0 connection proves the version and the catalog state but cannot read the feature/privilege/host/capability/occupancy premises — every statement stays undecidable with bounded gaps, the affinity warning fires on the declared VCPU, and all lifecycle notices suppress (T24-R2)"
   },
   {
    "id": "mysql80-alter-absent-refused",
@@ -434,26 +606,21 @@
     }
    ],
    "expect": {
-    "exit": 1,
-    "verdict": "reject",
+    "exit": 0,
+    "verdict": "review",
     "statements": 1,
-    "findings": 1,
+    "findings": 0,
     "diagnostics": 0,
     "unsupported": 0,
-    "coverage": "complete",
+    "coverage": "unverified",
     "statement_coverage": [
-     "complete"
+     "unverified"
     ],
-    "evidence_gaps": 0,
-    "fail_on_triggered": true,
-    "finding_entries": [
-     {
-      "index": 0,
-      "rule_id": "ddl.mysql.resource_group.valid",
-      "level": "blocker"
-     }
-    ]
-   }
+    "evidence_gaps": 3,
+    "fail_on_triggered": false,
+    "finding_entries": []
+   },
+   "description": "pending native: a zero-row information_schema.RESOURCE_GROUPS read stays unavailable — MySQL documents no unfiltered emit-every-group guarantee, so absence is never proven through this read and ALTER on the ghost group stays undecidable with bounded gaps rather than a fabricated refusal (T24-R2)"
   },
   {
    "id": "mysql80-drop-reserved-refused",
@@ -537,28 +704,24 @@
     "exit": 0,
     "verdict": "review",
     "statements": 1,
-    "findings": 2,
+    "findings": 1,
     "diagnostics": 0,
     "unsupported": 0,
-    "coverage": "complete",
+    "coverage": "unverified",
     "statement_coverage": [
-     "complete"
+     "unverified"
     ],
-    "evidence_gaps": 2,
+    "evidence_gaps": 5,
     "fail_on_triggered": false,
     "finding_entries": [
-     {
-      "index": 0,
-      "rule_id": "ddl.create_resource_group.notice",
-      "level": "notice"
-     },
      {
       "index": 0,
       "rule_id": "ddl.mysql.resource_group.affinity.warn",
       "level": "warning"
      }
     ]
-   }
+   },
+   "description": "pending native: version and catalog state are proven but the deployment premises are not — the create stays undecidable with five bounded gaps while the declared VCPU affinity warning still fires (T24-R2)"
   },
   {
    "id": "mysql57-version-refused",
@@ -654,6 +817,8 @@
   "T24.meta.mysql80-drop-reserved-refused",
   "T24.meta.mysql84-rg-catalog-definition",
   "T24.meta.mysql57-version-refused",
-  "T24.meta.tidb85-mysql-cpu-vendor-boundary"
+  "T24.meta.tidb85-mysql-cpu-vendor-boundary",
+  "T24.cli.mysql-inverted-vcpu-refused",
+  "T24.cli.mysql-force-pairing-refused"
  ]
 }

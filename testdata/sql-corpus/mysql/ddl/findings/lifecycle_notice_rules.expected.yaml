@@ -1,6 +1,23 @@
 name: lifecycle_notice_rules
 dialect: mysql
 category: ddl
+metadata:
+  instance:
+    version: "8.0.36"
+    mysql_resource_group_feature_known: true
+    mysql_resource_group_feature_supported: true
+    mysql_resource_group_priority_cap_known: true
+    mysql_resource_group_priority_capable: true
+    mysql_host_vcpus_known: true
+    mysql_host_vcpus: 8
+    mysql_resource_group_admin_known: true
+    mysql_resource_group_admin: true
+    mysql_resource_group_bound:
+      rg1: false
+  mysql_resource_groups:
+    rg1:
+      status: confirmed
+      exists: true
 expect:
   parse_ok: true
   unsupported:

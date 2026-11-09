@@ -159,7 +159,10 @@ var mysqlDDLCensusCases = []struct {
 	{Name: "DROP TABLESPACE", SQL: "DROP TABLESPACE ts1", Expected: ddlCoverageParserError},
 	{Name: "CREATE RESOURCE GROUP", SQL: "CREATE RESOURCE GROUP rg1 TYPE = USER VCPU = 0-3", Expected: ddlCoverageFindingCovered},
 	{Name: "ALTER RESOURCE GROUP", SQL: "ALTER RESOURCE GROUP rg1 VCPU = 0-7", Expected: ddlCoverageFindingCovered},
-	{Name: "DROP RESOURCE GROUP", SQL: "DROP RESOURCE GROUP rg1", Expected: ddlCoverageFindingCovered},
+	// A bare drop with no metadata stays undecidable (bounded gaps, no
+	// finding) — the deterministic coverage cell is the reserved-name
+	// refusal, which needs no facts.
+	{Name: "DROP RESOURCE GROUP", SQL: "DROP RESOURCE GROUP usr_default", Expected: ddlCoverageFindingCovered},
 }
 
 var tidbDDLCensusCases = []struct {

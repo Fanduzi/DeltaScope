@@ -138,25 +138,22 @@ func parseMySQLResourceGroup(sqlText string) (ast.StmtNode, bool) {
 }
 
 // mysqlResourceGroupName validates the group identity token — an
-// unquoted word or a backtick-quoted identifier. MySQL requires quoting
-// for reserved words; the option-keyword vocabulary never parses as a
-// name so a keyword token stays unclaimed rather than half-matched.
+// unquoted word or a backtick-quoted identifier. Unquoted, the word
+// must survive upstream's ident rule: every keyword outside the
+// ident_keyword family (mysqlResourceGroupReservedWords, generated
+// from the 8.4.10 grammar) needs backticks, while ident_keyword members
+// — resource, type, vcpu, thread_priority, enable, disable, user and
+// hundreds more — are legal unquoted names. A pure-digit token stays
+// unclaimed either way.
 func mysqlResourceGroupName(sqlText string, tok sqlTok) (string, bool) {
 	switch tok.kind {
 	case tokQIdent:
 		return tok.identText(sqlText), true
 	case tokWord:
-		switch {
-		case tok.wordIs(sqlText, "resource"), tok.wordIs(sqlText, "group"),
-			tok.wordIs(sqlText, "type"), tok.wordIs(sqlText, "vcpu"),
-			tok.wordIs(sqlText, "thread_priority"), tok.wordIs(sqlText, "enable"),
-			tok.wordIs(sqlText, "disable"), tok.wordIs(sqlText, "force"),
-			tok.wordIs(sqlText, "user"), tok.wordIs(sqlText, "system"),
-			tok.wordIs(sqlText, "for"), tok.wordIs(sqlText, "if"),
-			tok.wordIs(sqlText, "exists"), tok.wordIs(sqlText, "not"):
+		raw := sqlText[tok.start:tok.end]
+		if _, reserved := mysqlResourceGroupReservedWords[strings.ToLower(raw)]; reserved {
 			return "", false
 		}
-		raw := sqlText[tok.start:tok.end]
 		if isUnsignedDigits(raw) {
 			return "", false
 		}
@@ -262,9 +259,13 @@ func mysqlRGOptionTail(sqlText string, toks []sqlTok, i int, declaration *spec.M
 	return i, true
 }
 
-// mysqlRGVCPUList consumes `[=] spec[,spec]*` where spec is `N` or
-// `N - N` of unsigned ints. Lo <= Hi is validated here — a malformed
-// range stays unclaimed so the failure keeps base diagnostics.
+// mysqlRGVCPUList consumes `[=] spec` members where spec is `N` or
+// `N - N` of unsigned ints — upstream's vcpu_range_list joins members
+// through opt_comma, so both `0,1` and the comma-free `0 1` are legal.
+// A comma must be followed by a member (`0,` fails); an inverted range
+// stays in the declaration — ER_INVALID_VCPU_RANGE is upstream's
+// semantic check, not a parse verdict, so the recognizer keeps the
+// member verbatim for the rules layer to adjudicate.
 func mysqlRGVCPUList(sqlText string, toks []sqlTok, i int) ([]spec.MySQLResourceGroupVCPUSpec, int, bool) {
 	if i < len(toks) && toks[i].kind == tokPunct && toks[i].text(sqlText) == "=" {
 		i++
@@ -286,15 +287,23 @@ func mysqlRGVCPUList(sqlText string, toks []sqlTok, i int) ([]spec.MySQLResource
 				return nil, i, false
 			}
 			hi, ok := mysqlRGUnsigned(sqlText, toks[i])
-			if !ok || hi < lo {
+			if !ok {
 				return nil, i, false
 			}
 			i++
 			member.Hi = hi
 		}
 		specs = append(specs, member)
+		// opt_comma: an optional `,`, then another member — or the list
+		// ends when neither follows.
 		if i < len(toks) && toks[i].kind == tokPunct && toks[i].text(sqlText) == "," {
 			i++
+			if i >= len(toks) || toks[i].kind != tokWord || !isUnsignedDigits(sqlText[toks[i].start:toks[i].end]) {
+				return nil, i, false
+			}
+			continue
+		}
+		if i < len(toks) && toks[i].kind == tokWord && isUnsignedDigits(sqlText[toks[i].start:toks[i].end]) {
 			continue
 		}
 		return specs, i, true
@@ -330,16 +339,20 @@ func mysqlRGSignedInt(sqlText string, toks []sqlTok, i int) (int64, int, bool) {
 	return value, i + 1, true
 }
 
-func mysqlRGUnsigned(sqlText string, tok sqlTok) (uint32, bool) {
+// mysqlRGUnsigned parses one NUM member — the grammar's unsigned
+// operand is a u64 literal; anything beyond it stays unclaimed for the
+// base diagnostics. The cpu_id_t narrowing happens on the semantic
+// side (spec.MySQLResourceGroupEffectiveVCPU), not here.
+func mysqlRGUnsigned(sqlText string, tok sqlTok) (uint64, bool) {
 	raw := sqlText[tok.start:tok.end]
 	if !isUnsignedDigits(raw) {
 		return 0, false
 	}
-	value, err := strconv.ParseUint(raw, 10, 32)
+	value, err := strconv.ParseUint(raw, 10, 64)
 	if err != nil {
 		return 0, false
 	}
-	return uint32(value), true
+	return value, true
 }
 
 func isUnsignedDigits(raw string) bool {

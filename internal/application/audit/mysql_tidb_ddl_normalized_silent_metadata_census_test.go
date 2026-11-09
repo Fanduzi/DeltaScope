@@ -62,7 +62,10 @@ var mysqlPromotedMetadataCases = []metadataCensusCase{
 		ForbiddenSubstrings: []string{"app.users", "reader"}, ExpectFindings: true, ExpectIncomplete: true},
 	{Name: "REVOKE SELECT", SQL: "REVOKE SELECT ON app.users FROM 'reader'@'%'", Sensitive: true,
 		ForbiddenSubstrings: []string{"app.users", "reader"}, ExpectFindings: true, ExpectIncomplete: true},
-	{Name: "DROP RESOURCE GROUP", SQL: "DROP RESOURCE GROUP rg1", ExpectFindings: true},
+	// A bare drop with no metadata stays undecidable (bounded gaps, no
+	// finding) — the reserved-name refusal is the deterministic covered
+	// cell, an all-branch verdict that needs no facts.
+	{Name: "DROP RESOURCE GROUP", SQL: "DROP RESOURCE GROUP usr_default", ExpectFindings: true},
 }
 
 var tidbPromotedMetadataCases = []metadataCensusCase{
