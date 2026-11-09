@@ -509,3 +509,33 @@ func TestT24FactsLoaderDialectGated(t *testing.T) {
 		t.Fatalf("facts = %#v, want nil — the MySQL bundle never cross-loads", facts)
 	}
 }
+
+// T24-R13 D2 contract: the per-object snapshot degrades a missing-object
+// answer (pre-8.0 catalog absent — the version premise adjudicates) but
+// never swallows a real query error on a supported server.
+func TestT24ResourceGroupLoaderMissingObjectDegrades(t *testing.T) {
+	snapshot, err := t24Resolve(t, map[string]testQueryResult{
+		testResourceGroupFragment: {
+			columns:  testMySQLResourceGroupColumns,
+			queryErr: &gomysql.MySQLError{Number: 1109, Message: "Unknown table 'resource_groups' in information_schema"},
+		},
+	}, spec.DialectMySQL, spec.ObjectLookupRequest{Type: "mysql_resource_group", Name: "rg57"})
+	if err != nil {
+		t.Fatalf("missing table must degrade to unproven, got %v", err)
+	}
+	if snapshot == nil || snapshot.IsConfirmed() {
+		t.Fatalf("snapshot = %#v, want unproven", snapshot)
+	}
+}
+
+func TestT24ResourceGroupLoaderRealErrorPropagates(t *testing.T) {
+	denied := &gomysql.MySQLError{Number: 1142, Message: "SELECT command denied"}
+	if _, err := t24Resolve(t, map[string]testQueryResult{
+		testResourceGroupFragment: {
+			columns:  testMySQLResourceGroupColumns,
+			queryErr: denied,
+		},
+	}, spec.DialectMySQL, spec.ObjectLookupRequest{Type: "mysql_resource_group", Name: "rg84"}); !errors.Is(err, denied) {
+		t.Fatalf("err = %v, want errors.Is(1142)", err)
+	}
+}
