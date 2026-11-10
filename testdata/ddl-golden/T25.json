@@ -2853,8 +2853,8 @@
      ],
      "verify": [
       {
-       "assert": "no tablespace created",
-       "sql": "SELECT COUNT(*) FROM information_schema.INNODB_TABLESPACES WHERE NAME='t25fx_n'",
+       "assert": "no t25fx_n row in engine-agnostic catalog",
+       "sql": "SELECT COUNT(*) FROM information_schema.FILES WHERE TABLESPACE_NAME='t25fx_n'",
        "expect": "0"
       }
      ],
@@ -2922,7 +2922,7 @@
       }
      }
     ],
-    "description": "set_state stays a bounded unaudited member; native refusal on the default undo object recorded"
+    "description": "typed unaudited boundary — zero findings, zero state change; no native mutation is declared or claimed"
    },
    "description": "product-only audit input: the audited SET member names a default undo object, observed read-only — the unaudited boundary is verified by product output shape, never by touching innodb_undo_*",
    "execute": [],
@@ -2992,7 +2992,8 @@
        "assert": "ts:t25fx_u1 absent after cleanup",
        "sql": "SELECT COUNT(*) FROM information_schema.INNODB_TABLESPACES WHERE NAME='t25fx_u1'",
        "expect": "0"
-      }
+      },
+      "depends_on": "cleanup-u1-empty-wait"
      }
     ]
    },

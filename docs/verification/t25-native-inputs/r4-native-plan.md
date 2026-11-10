@@ -70,7 +70,13 @@ must not be cited as positive tablespace coverage.
 every anchor expecting `1064`. Negative coverage only; proves the server
 grammar rejects the non-existent `IF NOT EXISTS` form.
 
-### 1.3 `metadata_cases` — setup SQL is the only native arm today
+### 1.3 `metadata_cases` — audited input vs driver SQL (post-R8)
+
+The `execute[]` arms declared since R6 send each case's audited object
+identities to the server; the audited `spec.sql` itself stays product
+input only. Historical note: an earlier draft of this section
+predated the execute arms and listed "setup SQL as the only native
+arm" — superseded.
 
 | case | audit input (never executed by product) | driver SQL that does reach the DB |
 |---|---|---|
@@ -115,9 +121,10 @@ P4. Occupied-drop refusal oracle — mysql84: `DROP TABLESPACE t25fx_occ`
 P5. `CREATE TABLESPACE t25fx_mbr ENGINE=INNODB` (memberless) — mysql80
     (8.0.46 ≥ 8.0.14); rc=0; verify `General` row exists. Proves the
     8.0.14 memberless form executes; then `DROP TABLESPACE t25fx_mbr`.
-P6. `CREATE TABLESPACE t25fx_e ADD DATAFILE 'e.ibd' ENCRYPTION='Y'
-    ENGINE=INNODB` — mysql80; rc=0; verify `ENCRYPTION='Y'` flag column
-    in `INNODB_TABLESPACES`. Proves the 8.0.13 member.
+P6. (superseded by §2.7, R8-N05) The original positive-landing draft
+    (`ENCRYPTION='Y'` create succeeds, flag column verified) is retired:
+    the arm is now a bounded refusal probe whose positive coverage stays
+    explicitly unproven — see §2.7 for the narrowed keyring contract.
 
 ### 2.2 Refusal arms
 
@@ -198,14 +205,15 @@ Ownership model (keys `_fixture_key(step)`, default `default`):
   `INNODB_TABLESPACES` zero-row is never offered as absence proof for a
   non-InnoDB object (R8-N02/N03).
 - Owned-undo residual recovery (`mysql80-undo-owned-lifecycle`,
-  R8-N04): the cleanup descriptor is a bounded sequence —
-  `ALTER UNDO TABLESPACE t25fx_u1 SET INACTIVE` → bounded poll for
-  `STATE='empty'` (`attempts=10`, `interval_sec=1`) →
-  `DROP UNDO TABLESPACE` → absent verify. An exhausted budget or a
-  refused drop records the residual identity plus last observed state
-  and keeps the case failed; "finally covers interruption" describes
-  only exits that actually reach the `finally` — a killed process is
-  not claimed.
+  R8-N04): the cleanup descriptor is a bounded, locally dependent
+  sequence — `ALTER UNDO TABLESPACE t25fx_u1 SET INACTIVE` → bounded
+  poll for `STATE='empty'` (`attempts=10`, `interval_sec=1`) →
+  `DROP UNDO TABLESPACE` (declared `depends_on` the empty-wait entry) →
+  absent verify. The drop runs only after the empty proof is recorded;
+  an unsatisfied dependency skips the drop, records the residual
+  identity plus last observed state, and keeps the case failed —
+  dependency skips never silence residue, and "finally covers
+  interruption" describes only exits that actually reach the `finally`.
 - Case-sensitivity note: SQL predicates compare the quoted literal
   under the anchor's catalog collation; the Python ledger's exact-key
   match is bookkeeping only and is not itself a proof that catalog
@@ -311,7 +319,7 @@ stays per-case and ownership-gated.
 | `t25fx` schema + `t25fx.*` tables | the run's `ddl_steps` | DROP/CREATE DATABASE resets them per run; per-case bound tables are additionally owned via `fixture_key`s for intra-run teardown |
 | `t25fx_*` tablespaces/undo/logfile objects | per-case ledger only | created iff the case's own `creates_fixture` rc=0; `fixture.cleanup[]` covers still-owned keys only |
 | `innodb_undo_*` default objects | the anchor image | read-only observed; never in any execute/teardown/cleanup arm |
-| foreign `t25fx*` residue from an interrupted earlier run | unowned | `requires_absence` detects and fails with evidence; never adopted or deleted |
+| foreign `t25fx_*` global objects (tablespaces/undo/logfile) left by an interrupted earlier run | unowned | `requires_absence` detects and fails with evidence; never adopted or deleted — this row covers global objects only; schema/tables inside `t25fx` belong to the ddl_steps reset above, not to this "never deleted" contract |
 | containers/volumes/networks | compose stack | removed by stack teardown, outside the case ledger — the ledger never claims to govern the whole run's mutations |
 | `keyring_file` plugin state | the anchor image | observed only |
 

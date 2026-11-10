@@ -1012,12 +1012,18 @@ def execute_metadata_case(manifest, anchor_key, binary, policies, spec):
                     if key not in fixture["created"]:
                         cleanup[entry["name"]] = {"skipped": f"unowned identity {key!r} preserved"}
                         continue
+                    depends_on = entry.get("depends_on")
+                    if depends_on and not (cleanup.get(depends_on) or {}).get("ok"):
+                        cleanup[entry["name"]] = {"skipped": f"dependency {depends_on!r} unsatisfied — residual {key!r} preserved"}
+                        cleanup_ok = False
+                        continue
                     record = {"sql": entry["sql"]}
                     try:
                         rc, out, err = mysql_exec(anchor, entry["sql"], database=anchor["database"])
                         record.update({"rc": rc, "stdout": out, "stderr": err})
                     except Exception as error:
                         record.update({"exception_type": type(error).__name__, "exception_message": str(error)})
+                    entry_ok = False
                     if entry.get("verify"):
                         try:
                             vrec, vok, vtimeout = run_verify_check(anchor, entry["verify"], database=anchor["database"])
@@ -1027,11 +1033,11 @@ def execute_metadata_case(manifest, anchor_key, binary, policies, spec):
                         except Exception as error:
                             record["verify_exception"] = {"type": type(error).__name__, "message": str(error)}
                             vok = False
-                        cleanup_ok = cleanup_ok and vok
+                        entry_ok = vok
                     elif type(record.get("rc")) is int:
-                        cleanup_ok = cleanup_ok and record["rc"] == entry.get("expect_rc", 0)
-                    else:
-                        cleanup_ok = False
+                        entry_ok = record["rc"] == entry.get("expect_rc", 0)
+                    record["ok"] = entry_ok
+                    cleanup_ok = cleanup_ok and entry_ok
                     cleanup[entry["name"]] = record
                 case["actual"]["owned_cleanup"] = cleanup
                 case["assertions"].append({"name": f"{task_id} owned fallback cleanup", "ok": cleanup_ok,

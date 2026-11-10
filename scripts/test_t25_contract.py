@@ -355,6 +355,7 @@ def checks():
                         "expect": "empty", "poll": {"attempts": 10, "interval_sec": 0}}},
             {"name": "cleanup-u1-drop", "fixture_key": "ts:u1",
              "sql": "DROP UNDO TABLESPACE u1", "expect_rc": 0,
+             "depends_on": "cleanup-u1-empty-wait",
              "verify": {"assert": "u1 absent", "sql": tsc("u1"), "expect": "0"}}]},
     )
 
@@ -383,10 +384,12 @@ def checks():
     undo_state.clear()
     record, ledger = run_case(s6, undo_stuck)
     cleanup = record["actual"].get("owned_cleanup") or {}
-    expect("exhausted undo empty-wait records residue",
+    expect("exhausted undo empty-wait skips drop and records residue",
            record["status"] == "fail"
-           and "DROP UNDO TABLESPACE u1" in ledger
-           and cleanup.get("cleanup-u1-empty-wait", {}).get("verify", {}).get("timeout") is True)
+           and "DROP UNDO TABLESPACE u1" not in ledger
+           and cleanup.get("cleanup-u1-empty-wait", {}).get("verify", {}).get("timeout") is True
+           and "residual" in str(cleanup.get("cleanup-u1-drop", {}).get("skipped", ""))
+           and undo_state.get("u1") == "inactive")
 
     # 12. manifest-level: every object identity in each audited spec.sql
     # must appear in that case's own driver SQL — audit target and native
