@@ -35,7 +35,10 @@ type mysqlAlterInstanceStatement struct {
 // subaction in the assigned tracking scope. A false result means the
 // input takes the ordinary grammar path.
 func parseMySQLAlterInstance(sqlText string) (ast.StmtNode, bool) {
-	toks := tokenizeSQL(sqlText)
+	toks, unclosed := tokenizeSQLState(sqlText)
+	if unclosed {
+		return nil, false
+	}
 	if len(toks) == 0 {
 		return nil, false
 	}

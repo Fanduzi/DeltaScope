@@ -60,7 +60,10 @@ var serverOptionValueKind = map[string]string{
 // input is not a pure MySQL-form statement and must take the ordinary
 // grammar path — the recognizer never emits partial claims.
 func parseMySQLServer(sqlText string) (ast.StmtNode, bool) {
-	toks := tokenizeSQL(sqlText)
+	toks, unclosed := tokenizeSQLState(sqlText)
+	if unclosed {
+		return nil, false
+	}
 	if len(toks) == 0 {
 		return nil, false
 	}

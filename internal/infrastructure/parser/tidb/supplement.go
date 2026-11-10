@@ -56,7 +56,17 @@ type sqlTok struct {
 // identifiers are opaque runs, comments are dropped, and every other run is a
 // word or a single punctuation token.
 func tokenizeSQL(sqlText string) []sqlTok {
-	var toks []sqlTok
+	toks, _ := tokenizeSQLState(sqlText)
+	return toks
+}
+
+// tokenizeSQLState is tokenizeSQL plus the lexical tail state whole-input
+// recognizers must consume: unclosedBlockComment reports that a `/*` run
+// never found its `*/` and was swallowed to end of input. Without it a
+// recognizer cannot tell "scan ended cleanly" from "an unterminated comment
+// ate the tail", which would let `DROP SERVER s /* x` claim a complete
+// statement out of a dropped half-comment.
+func tokenizeSQLState(sqlText string) (toks []sqlTok, unclosedBlockComment bool) {
 	for i := 0; i < len(sqlText); {
 		switch sqlText[i] {
 		case '\'', '"', '`':
@@ -78,7 +88,11 @@ func tokenizeSQL(sqlText string) []sqlTok {
 			}
 		case '/':
 			if i+1 < len(sqlText) && sqlText[i+1] == '*' {
-				i = skipBlockComment(sqlText, i)
+				end, closed := scanBlockComment(sqlText, i)
+				if !closed {
+					unclosedBlockComment = true
+				}
+				i = end
 			} else {
 				toks = append(toks, sqlTok{kind: tokPunct, start: i, end: i + 1})
 				i++
@@ -101,7 +115,7 @@ func tokenizeSQL(sqlText string) []sqlTok {
 			i++
 		}
 	}
-	return toks
+	return toks, unclosedBlockComment
 }
 
 func isSQLSpace(b byte) bool {
@@ -1038,13 +1052,21 @@ func skipLineComment(sqlText string, i int) int {
 	return i
 }
 
-func skipBlockComment(sqlText string, i int) int {
+// scanBlockComment consumes a `/*` comment starting at i and reports both
+// where scanning stopped and whether a real `*/` terminator was found —
+// the same (end, closed) shape scanQuoted returns for string literals.
+func scanBlockComment(sqlText string, i int) (end int, closed bool) {
 	i += 2
 	for i+1 < len(sqlText) {
 		if sqlText[i] == '*' && sqlText[i+1] == '/' {
-			return i + 2
+			return i + 2, true
 		}
 		i++
 	}
-	return len(sqlText)
+	return len(sqlText), false
+}
+
+func skipBlockComment(sqlText string, i int) int {
+	end, _ := scanBlockComment(sqlText, i)
+	return end
 }
