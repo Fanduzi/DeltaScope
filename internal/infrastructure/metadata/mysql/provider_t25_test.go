@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql/driver"
 	"errors"
+	"strings"
 	"testing"
 
 	gomysql "github.com/go-sql-driver/mysql"
@@ -190,5 +191,38 @@ func TestT25TablespaceLoaderDialectGated(t *testing.T) {
 	}
 	if snapshot.IsConfirmed() {
 		t.Fatalf("tidb: snapshot = %#v, want unproven", snapshot)
+	}
+}
+
+// Tablespace names are case-sensitive identifiers, so the identity read
+// must pin the authored case through `where binary name = ?` — never a
+// folded match. The SQL-mock asserts the exact predicate text and the
+// exact parameter value, not just the canned answer.
+func TestT25TablespaceLoaderBinaryNamePredicate(t *testing.T) {
+	snapshot, err := t25Resolve(t, map[string]testQueryResult{
+		testTablespaceVersionFragment:  t25VersionRow("8.0.46"),
+		testTablespaceIdentityFragment: {columns: testTablespaceIdentityColumns, rows: [][]driver.Value{{int64(42), "General"}}},
+		testTablespaceBoundFragment:    {columns: []string{"count(*)"}, rows: [][]driver.Value{{int64(0)}}},
+	}, spec.DialectMySQL, spec.ObjectLookupRequest{Type: "mysql_tablespace", Name: "TS1"})
+	if err != nil {
+		t.Fatalf("ResolveObject: %v", err)
+	}
+	if !snapshot.IsConfirmed() || !snapshot.Exists {
+		t.Fatalf("snapshot = %#v, want confirmed present", snapshot)
+	}
+	var identity *testQueryCall
+	for i, call := range testQueryCallsByName(testStubName(t)) {
+		if strings.Contains(call.query, testTablespaceIdentityFragment) {
+			identity = &testQueryCallsByName(testStubName(t))[i]
+		}
+	}
+	if identity == nil {
+		t.Fatalf("no %s query recorded in %+v", testTablespaceIdentityFragment, testQueryCallsByName(testStubName(t)))
+	}
+	if !strings.Contains(identity.query, "binary name = ?") {
+		t.Fatalf("identity predicate %q must force binary comparison — folded names would cross-match TS1/ts1", identity.query)
+	}
+	if len(identity.args) != 1 || identity.args[0].Value != "TS1" {
+		t.Fatalf("identity args = %+v, want exactly the authored name \"TS1\"", identity.args)
 	}
 }

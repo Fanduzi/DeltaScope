@@ -166,7 +166,8 @@ func TestT25TablespaceRenameMovesIdentity(t *testing.T) {
 	t.Parallel()
 	unoccupied := false
 	provider := t25TablespaceProvider(map[string]t25TablespaceFact{
-		"ts1": {status: spec.MetadataStatusConfirmed, exists: true, occupied: &unoccupied},
+		"ts1": {status: spec.MetadataStatusConfirmed, exists: true,
+			kind: spec.TablespaceKindGeneral, occupied: &unoccupied},
 		"ts2": {status: spec.MetadataStatusNotFound},
 	})
 	result := t25Standalone(t,
@@ -209,8 +210,9 @@ type t25TablespaceFact struct {
 
 // t25TablespaceProvider answers a proven mysql_tablespace catalog read.
 type t25TablespaceProviderImpl struct {
-	facts map[string]t25TablespaceFact
-	calls []string
+	facts   map[string]t25TablespaceFact
+	version string
+	calls   []string
 }
 
 func t25TablespaceProvider(facts map[string]t25TablespaceFact) *t25TablespaceProviderImpl {
@@ -222,7 +224,7 @@ func t25TablespaceProviderErr(facts map[string]t25TablespaceFact) *t25Tablespace
 }
 
 func (p *t25TablespaceProviderImpl) LoadInstanceFacts(context.Context, spec.Dialect, string) (*spec.InstanceFacts, error) {
-	return &spec.InstanceFacts{}, nil
+	return &spec.InstanceFacts{Version: p.version}, nil
 }
 
 func (p *t25TablespaceProviderImpl) LoadTableSnapshot(context.Context, spec.Dialect, string, string) (*spec.TableSnapshot, error) {
@@ -396,40 +398,43 @@ func TestT25AlterUndoSetStateBoundary(t *testing.T) {
 	}
 }
 
-// Memberless CREATE TABLESPACE is 8.0 grammar surface with an InnoDB
-// semantic datafile requirement: proven InnoDB refuses on the authored
-// form, a proven 5.7 refuses on version, and an unproven engine owes the
-// engine fact rather than minting a verdict.
+// Memberless general CREATE executes on InnoDB from 8.0.14 (the server
+// generates the datafile) — it is never refused on the authored form.
+// Below-floor versions refuse, and an unproven engine or version owes
+// the fact rather than minting a verdict.
 func TestT25MemberlessCreateSemantics(t *testing.T) {
 	t.Parallel()
 
-	result := t25Standalone(t, "CREATE TABLESPACE ts1 ENGINE=INNODB", t25Provider("innodb", t25Bool(false)))
-	found := false
+	provider := t25TablespaceProvider(map[string]t25TablespaceFact{
+		"ts1": {status: spec.MetadataStatusNotFound},
+	})
+	provider.version = "8.0.45"
+	result := t25Standalone(t, "CREATE TABLESPACE ts1 ENGINE=INNODB; DROP TABLESPACE ts1", provider)
 	for _, f := range result.Statements[0].Findings {
-		if f.RuleID == t25RuleTSApp && f.Metadata["reason_code"] == "tablespace_datafile_required" {
-			found = true
+		if f.RuleID == t25RuleTSApp {
+			t.Fatalf("memberless innodb @8.0.45 emitted applicability finding %+v, want none — supported from 8.0.14", f)
 		}
 	}
-	if !found {
-		t.Fatalf("memberless innodb findings = %+v, want datafile_required refusal", result.Statements[0].Findings)
+	drop := result.Statements[1]
+	if len(drop.EvidenceGaps) != 0 {
+		t.Fatalf("drop after memberless create gaps = %+v, want none — proven absent create publishes general+unoccupied", drop.EvidenceGaps)
 	}
 
-	result, err := AuditSQL(context.Background(), Request{
-		SQL: "CREATE TABLESPACE ts1", Dialect: spec.DialectMySQL,
-		Schema: "golden", ConfigPath: t25StandalonePolicy(t),
-		MetadataProvider: &t10Provider{version: "5.7.44", tables: map[string]*spec.TableSnapshot{}},
-	})
-	if err != nil {
-		t.Fatalf("5.7 memberless create: %v", err)
-	}
-	found = false
-	for _, f := range result.Statements[0].Findings {
-		if f.RuleID == t25RuleTSApp && f.Metadata["reason_code"] == "tablespace_version_inapplicable" {
-			found = true
+	for _, version := range []string{"8.0.13", "5.7.44"} {
+		p := t25TablespaceProvider(map[string]t25TablespaceFact{
+			"ts1": {status: spec.MetadataStatusNotFound},
+		})
+		p.version = version
+		res := t25Standalone(t, "CREATE TABLESPACE ts1 ENGINE=INNODB", p)
+		found := false
+		for _, f := range res.Statements[0].Findings {
+			if f.RuleID == t25RuleTSApp && f.Metadata["reason_code"] == "tablespace_version_inapplicable" {
+				found = true
+			}
 		}
-	}
-	if !found {
-		t.Fatalf("5.7 memberless findings = %+v, want version_inapplicable refusal", result.Statements[0].Findings)
+		if !found {
+			t.Fatalf("memberless @%s findings = %+v, want version_inapplicable refusal (floor 8.0.14)", version, res.Statements[0].Findings)
+		}
 	}
 
 	result = t25Standalone(t, "CREATE TABLESPACE ts1; DROP TABLESPACE ts1",
@@ -443,7 +448,7 @@ func TestT25MemberlessCreateSemantics(t *testing.T) {
 	if !facts["tablespace.engine"] || !facts["target.version"] {
 		t.Fatalf("memberless unproven-engine create gaps = %+v, want engine+version owed", result.Statements[0].EvidenceGaps)
 	}
-	drop := result.Statements[1]
+	drop = result.Statements[1]
 	facts = map[string]bool{}
 	for _, gap := range drop.EvidenceGaps {
 		for _, f := range gap.RequiredFacts {
@@ -491,5 +496,226 @@ func TestT25UndoUnknownVersionHonestState(t *testing.T) {
 	}
 	if !facts["tablespace.existence"] || !facts["tablespace.occupancy"] {
 		t.Fatalf("drop after unproven-version undo create gaps = %+v, want existence+occupancy — the create proved nothing", drop.EvidenceGaps)
+	}
+}
+
+// Known version + unproven engine: the memberless gate owes only the
+// engine fact — the proven 8.0.45 version must not be re-owed.
+func TestT25MemberlessKnownVersionUnknownEngine(t *testing.T) {
+	t.Parallel()
+	provider := t25TablespaceProvider(map[string]t25TablespaceFact{
+		"ts1": {status: spec.MetadataStatusNotFound},
+	})
+	provider.version = "8.0.45"
+	result := t25Standalone(t, "CREATE TABLESPACE ts1", provider)
+	facts := map[string]bool{}
+	for _, gap := range result.Statements[0].EvidenceGaps {
+		for _, f := range gap.RequiredFacts {
+			facts[f] = true
+		}
+	}
+	if !facts["tablespace.engine"] || facts["target.version"] {
+		t.Fatalf("memberless @8.0.45 no-engine gaps = %+v, want only tablespace.engine owed", result.Statements[0].EvidenceGaps)
+	}
+}
+
+// ALTER UNDO TABLESPACE ... SET is an unaudited boundary member that
+// provably never touches the modeled registry facts — a following
+// statement must consume the same proven pre-state (zero contamination).
+func TestT25AlterUndoSetStatePreservesBatch(t *testing.T) {
+	t.Parallel()
+	unoccupied := false
+	provider := t25TablespaceProvider(map[string]t25TablespaceFact{
+		"ts1": {status: spec.MetadataStatusConfirmed, exists: true,
+			kind: spec.TablespaceKindGeneral, occupied: &unoccupied},
+	})
+	provider.version = "8.0.45"
+	result, err := AuditSQL(context.Background(), Request{
+		SQL: "ALTER UNDO TABLESPACE u1 SET INACTIVE; DROP TABLESPACE ts1", Dialect: spec.DialectMySQL,
+		Schema: "golden", ConfigPath: t25StandalonePolicy(t), MetadataProvider: provider,
+	})
+	if err == nil {
+		t.Fatalf("unaudited member must surface ErrUnsupportedStatement")
+	}
+	if len(result.Statements[0].Findings) != 0 || len(result.Statements[0].EvidenceGaps) != 0 {
+		t.Fatalf("alter undo emitted %+v/%+v, want the unaudited boundary silent", result.Statements[0].Findings, result.Statements[0].EvidenceGaps)
+	}
+	drop := result.Statements[1]
+	if len(drop.EvidenceGaps) != 0 {
+		t.Fatalf("drop after unaudited alter-undo gaps = %+v, want none — proven pre-state must survive", drop.EvidenceGaps)
+	}
+}
+
+// An undo DROP on a proven-present, proven-empty-kind undo object still
+// owes the runtime eligibility fact — bound-table count never governs
+// undo eligibility, and the post-state must stay unknown so a following
+// statement keeps owing existence.
+func TestT25UndoDropEligibilityStaysUnknown(t *testing.T) {
+	t.Parallel()
+	unoccupied := false
+	provider := t25TablespaceProvider(map[string]t25TablespaceFact{
+		"u1": {status: spec.MetadataStatusConfirmed, exists: true,
+			kind: spec.TablespaceKindUndo, occupied: &unoccupied},
+	})
+	provider.version = "8.0.45"
+	result := t25Standalone(t,
+		"DROP UNDO TABLESPACE u1; CREATE UNDO TABLESPACE u1 ADD DATAFILE 'u.ibu'", provider)
+	drop := result.Statements[0]
+	facts := map[string]bool{}
+	for _, gap := range drop.EvidenceGaps {
+		for _, f := range gap.RequiredFacts {
+			facts[f] = true
+		}
+	}
+	if !facts["tablespace.drop_eligibility"] || facts["tablespace.occupancy"] {
+		t.Fatalf("undo drop gaps = %+v, want only drop_eligibility owed", drop.EvidenceGaps)
+	}
+	for _, f := range drop.Findings {
+		if f.RuleID == t25RuleTSApp {
+			t.Fatalf("undo drop emitted applicability finding %+v — eligibility is a gap, never a verdict", f)
+		}
+	}
+	create := result.Statements[1]
+	facts = map[string]bool{}
+	for _, gap := range create.EvidenceGaps {
+		for _, f := range gap.RequiredFacts {
+			facts[f] = true
+		}
+	}
+	if !facts["tablespace.existence"] {
+		t.Fatalf("create after undecidable undo drop gaps = %+v, want existence owed — the post-state stayed unknown", create.EvidenceGaps)
+	}
+}
+
+// Kind mismatch is a proven refusal holding the exact pre-state: a
+// general-form DROP on a proven undo object never deletes it, and the
+// undo-form DROP on a proven general object never deletes it either.
+func TestT25DropKindMismatchPreserves(t *testing.T) {
+	t.Parallel()
+	unoccupied := false
+	provider := t25TablespaceProvider(map[string]t25TablespaceFact{
+		"u1": {status: spec.MetadataStatusConfirmed, exists: true,
+			kind: spec.TablespaceKindUndo, occupied: &unoccupied},
+		"ts1": {status: spec.MetadataStatusConfirmed, exists: true,
+			kind: spec.TablespaceKindGeneral, occupied: &unoccupied},
+	})
+	provider.version = "8.0.45"
+	result := t25Standalone(t,
+		"DROP TABLESPACE u1; DROP UNDO TABLESPACE ts1; DROP TABLESPACE ts1", provider)
+	for i, want := range []string{"tablespace_kind_mismatch", "tablespace_kind_mismatch"} {
+		found := false
+		for _, f := range result.Statements[i].Findings {
+			if f.Metadata["reason_code"] == want {
+				found = true
+			}
+		}
+		if !found {
+			t.Fatalf("statement %d findings = %+v, want %s refusal", i, result.Statements[i].Findings, want)
+		}
+	}
+	if len(result.Statements[2].EvidenceGaps) != 0 {
+		t.Fatalf("drop after refused wrong-form drops gaps = %+v, want none — both refusals preserved the pre-state", result.Statements[2].EvidenceGaps)
+	}
+}
+
+// Case-sensitive identity: the provider returns different catalog
+// answers for TS1 and ts1, and the two lookups must stay isolated —
+// cache, state, and rule results never fold.
+func TestT25CaseSensitiveIdentityIsolation(t *testing.T) {
+	t.Parallel()
+	unoccupied := false
+	provider := t25TablespaceProvider(map[string]t25TablespaceFact{
+		"TS1": {status: spec.MetadataStatusConfirmed, exists: true,
+			kind: spec.TablespaceKindGeneral, occupied: &unoccupied},
+		"ts1": {status: spec.MetadataStatusNotFound},
+	})
+	provider.version = "8.0.45"
+	result := t25Standalone(t, "DROP TABLESPACE TS1; DROP TABLESPACE ts1", provider)
+	if len(result.Statements[0].EvidenceGaps) != 0 {
+		t.Fatalf("drop TS1 gaps = %+v, want none — proven empty general object", result.Statements[0].EvidenceGaps)
+	}
+	found := false
+	for _, f := range result.Statements[1].Findings {
+		if f.Metadata["reason_code"] == "tablespace_absent" {
+			found = true
+		}
+	}
+	if !found {
+		t.Fatalf("drop ts1 findings = %+v, want absent refusal — TS1's proven state must not leak", result.Statements[1].Findings)
+	}
+	var ts1Calls, ts1Lower int
+	for _, call := range provider.calls {
+		if call == "mysql_tablespace:TS1" {
+			ts1Calls++
+		}
+		if call == "mysql_tablespace:ts1" {
+			ts1Lower++
+		}
+	}
+	if ts1Calls != 1 || ts1Lower != 1 {
+		t.Fatalf("provider calls = %+v, want exactly one lookup per authored case", provider.calls)
+	}
+}
+
+// NDBCLUSTER is the documented NDB alias — it routes to the same engine
+// boundary, never a generic non-InnoDB/non-NDB refusal.
+func TestT25NDBClusterAliasBoundary(t *testing.T) {
+	t.Parallel()
+	result, err := AuditSQL(context.Background(), Request{
+		SQL: "CREATE TABLESPACE ts1 ADD DATAFILE 'a.ibd' ENGINE=NDBCLUSTER", Dialect: spec.DialectMySQL,
+		Schema: "golden", ConfigPath: t25StandalonePolicy(t),
+		MetadataProvider: t25TablespaceProvider(map[string]t25TablespaceFact{}),
+	})
+	if err == nil {
+		t.Fatalf("engine boundary must surface ErrUnsupportedStatement")
+	}
+	if len(result.Unsupported) != 1 || result.Unsupported[0].Reason != spec.UnsupportedVendorBoundaryReason {
+		t.Fatalf("unsupported = %+v, want the ndbcluster engine boundary", result.Unsupported)
+	}
+	for _, f := range result.Statements[0].Findings {
+		if f.RuleID == t25RuleTSApp {
+			t.Fatalf("ndbcluster emitted applicability finding %+v — the boundary owns it", f)
+		}
+	}
+}
+
+// Proven refusals preserve the exact pre-state: an ENCRYPTION alter
+// refused below its 8.0.13 floor leaves the object untouched, and an
+// authored-engine refusal on DROP leaves the entry live for the next
+// statement.
+func TestT25RefusedGuardsPreservePreState(t *testing.T) {
+	t.Parallel()
+	unoccupied := false
+	provider := t25TablespaceProvider(map[string]t25TablespaceFact{
+		"ts1": {status: spec.MetadataStatusConfirmed, exists: true,
+			kind: spec.TablespaceKindGeneral, occupied: &unoccupied},
+	})
+	provider.version = "8.0.12"
+	result := t25Standalone(t, "ALTER TABLESPACE ts1 ENCRYPTION='Y'; DROP TABLESPACE ts1", provider)
+	found := false
+	for _, f := range result.Statements[0].Findings {
+		if f.Metadata["reason_code"] == "tablespace_version_inapplicable" {
+			found = true
+		}
+	}
+	if !found {
+		t.Fatalf("encryption alter @8.0.12 findings = %+v, want version_inapplicable (floor 8.0.13)", result.Statements[0].Findings)
+	}
+	if len(result.Statements[1].EvidenceGaps) != 0 {
+		t.Fatalf("drop after refused alter gaps = %+v, want none — the refusal must preserve pre-state", result.Statements[1].EvidenceGaps)
+	}
+
+	result = t25Standalone(t, "DROP TABLESPACE ts1 ENGINE=MYISAM; DROP TABLESPACE ts1", provider)
+	found = false
+	for _, f := range result.Statements[0].Findings {
+		if f.Metadata["reason_code"] == "tablespace_engine_inapplicable" {
+			found = true
+		}
+	}
+	if !found {
+		t.Fatalf("drop engine=myisam findings = %+v, want engine_inapplicable refusal", result.Statements[0].Findings)
+	}
+	if len(result.Statements[1].EvidenceGaps) != 0 {
+		t.Fatalf("drop after refused drop gaps = %+v, want none — the refused drop never tombstoned", result.Statements[1].EvidenceGaps)
 	}
 }

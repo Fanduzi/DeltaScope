@@ -393,6 +393,29 @@ func (s *batchState) apply(ctx context.Context, statement spec.Statement) error 
 		if dropColumnStatement(statement) {
 			return s.applyDropColumn(ctx, statement, firstDropColumnAlter(statement.DDL), statement.DDL.TableTargets())
 		}
+		if statement.DDL != nil && statement.DDL.Tablespace != nil {
+			switch statement.Unsupported.Reason {
+			case spec.UnsupportedVendorBoundaryReason:
+				if s.dialect == spec.DialectTiDB {
+					// Under TiDB the whole tablespace family is a proven
+					// vendor refusal — the statement never executes, so
+					// the pre-state stands (the create_table_select
+					// refusal contract above, applied to the family).
+					return nil
+				}
+				// A MySQL engine boundary (NDB/logfile group) may still
+				// execute on its own family — its effect on the InnoDB
+				// registry is unmodeled, so the batch stays fail-closed
+				// through the generic contamination path below.
+			case spec.UnsupportedUnauditedReason:
+				// ALTER UNDO TABLESPACE ... SET ACTIVE|INACTIVE mutates
+				// only the undo runtime state — a member the model never
+				// tracks — so the tracked existence/kind/occupancy facts
+				// provably stand. The tablespace transition owns the
+				// bounded effect instead of contaminating the batch.
+				return s.applyTablespaceStatement(ctx, statement)
+			}
+		}
 		if targets := boundTargets(statement); len(targets) > 0 {
 			if statement.DDL != nil {
 				s.invalidateDropIdentities(statement.DDL)

@@ -2,8 +2,6 @@
 package tidbparser
 
 import (
-	"strings"
-
 	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
 	"github.com/pingcap/tidb/pkg/parser/ast"
 )
@@ -37,8 +35,9 @@ func applyCoverageBoundary(dialect spec.Dialect, statement *spec.Statement, node
 			}
 			// The LOGFILE GROUP family and every NDB-declared member are
 			// NDB-only semantics — an engine boundary under MySQL, never
-			// an audited InnoDB-tablespace verdict (T25/#104).
-			if decl.Kind == spec.TablespaceKindLogfileGroup || strings.EqualFold(decl.Engine, "ndb") {
+			// an audited InnoDB-tablespace verdict (T25/#104). NDBCLUSTER
+			// is the documented NDB alias and routes identically.
+			if decl.Kind == spec.TablespaceKindLogfileGroup || spec.TablespaceEngineNDB(decl.Engine) {
 				metadata := map[string]any{"boundary": "engine"}
 				if decl.Engine != "" {
 					metadata["engine"] = decl.Engine

@@ -23,13 +23,15 @@ infers facts from missing metadata.
 - A strict whole-input recognizer (`mysql_tablespace.go`) claims only complete
   MySQL tablespace forms: no `IF [NOT] EXISTS` guards the grammar lacks,
   `CREATE UNDO TABLESPACE` requires `ADD DATAFILE`, `CREATE LOGFILE GROUP`
-  requires `ADD UNDOFILE`, `DROP UNDO TABLESPACE` keeps the undo kind, and
-  `ALTER UNDO TABLESPACE ... SET ACTIVE|INACTIVE` is claimed as a typed
-  declaration so coverage routes it to the unaudited boundary rather than a
-  parser diagnostic. A memberless general `CREATE TABLESPACE` is
-  grammar-reachable (8.0 surface — the InnoDB datafile requirement is
-  semantic), while malformed input and trailing junk still fall back to the
-  base parser's diagnostics.
+  requires `ADD UNDOFILE`, `DROP UNDO TABLESPACE` keeps the undo kind, and the
+  file clause appears at most once per statement with its documented keyword
+  (DATAFILE for general/undo, UNDOFILE for logfile groups).
+  `ALTER UNDO TABLESPACE ... SET ACTIVE|INACTIVE [ENGINE [=] engine]` is
+  claimed as a typed declaration — optional ENGINE clause included — so
+  coverage routes it to the unaudited boundary rather than a parser
+  diagnostic; every other trailing member stays unclaimed. A memberless
+  general `CREATE TABLESPACE` is grammar-reachable, while malformed input and
+  trailing junk still fall back to the base parser's diagnostics.
 - `spec.TablespaceDeclaration` preserves authored facts (kind, name, engine,
   alter action, rename target, encryption flag, file-clause counts, scalar
   options). File paths are counted for evidence but never stored, echoed, read,
@@ -39,27 +41,36 @@ infers facts from missing metadata.
   and the object-cache key all keep authored case.
 - LOGFILE GROUP gets its own operation constants and routes to the vendor/NDB
   boundary; NDB-engine and logfile declarations never enter the InnoDB
-  lifecycle adjudication or ordered state.
+  lifecycle adjudication or ordered state. `NDBCLUSTER` is the documented NDB
+  alias (`spec.TablespaceEngineNDB`) and routes identically.
 - Rules: standalone lifecycle `ddl.mysql.tablespace.{create.warn, alter.warn,
   drop.forbid, applicability}` and whole-table
   `ddl.alter.{discard_tablespace.forbid, import_tablespace.warn}` plus paired
   `.applicability` rules. Applicability adjudicates only proven native gates —
-  explicit non-InnoDB/non-NDB engine, pre-8.0 UNDO/ENCRYPTION/memberless-create
-  surface (`spec.TablespaceVersionGated`), proven-InnoDB memberless CREATE
-  (`tablespace_datafile_required`), InnoDB `ADD/DROP DATAFILE` (NDB-only
-  member), proven-absent ALTER/DROP target, proven-present CREATE target,
-  proven-occupied DROP — while every unproven premise emits a bounded evidence
-  gap instead of an inferred verdict. `spec.TablespaceMemberlessCreate` shares
-  the memberless cell between rule and transition.
+  explicit non-InnoDB/non-NDB engine, exact `MAJOR.MINOR.PATCH` capability
+  floors via `spec.TablespaceVersionOutcomeFor`
+  (memberless general CREATE = 8.0.14, UNDO SQL management = 8.0.14,
+  ENCRYPTION = 8.0.13 — a memberless InnoDB CREATE is supported, never
+  refused, from 8.0.14), InnoDB `ADD/DROP DATAFILE` (NDB-only member),
+  proven-absent ALTER/DROP target, proven-present CREATE target,
+  proven-occupied DROP, and proven kind mismatch (a general form never acts
+  on an undo object or vice versa) — while every unproven premise emits a
+  bounded evidence gap instead of an inferred verdict. An undo DROP always
+  owes `tablespace.drop_eligibility` (runtime `STATE=empty` and the
+  not-a-default-object fact are unmodeled) — the bound-table count never
+  governs undo eligibility. `spec.TablespaceMemberlessCreate` shares the
+  memberless cell between rule and transition.
 - Ordered state: a globally namespaced case-sensitive-keyed registry resolves
   provider `mysql_tablespace` snapshots once per request through the existing
   object-cache seam (`ObjectSnapshot.Tablespace`). CREATE publishes
-  `occupied=false` only from proven absence; an unproven version gate or
+  `occupied=false` only from proven absence; an unproven capability floor or
   unproven memberless engine leaves the whole entry unknown; DROP under
-  unknown occupancy stays undecidable rather than claiming absence; RENAME
-  migrates identity only on proven execution with destination-collision
-  refusal; refused operations never mutate state; contaminated batches keep
-  projections unavailable.
+  unknown occupancy or on an undo object stays undecidable rather than
+  claiming absence; proven refusals and kind mismatches hold the exact
+  pre-state; RENAME migrates identity only on proven execution with
+  destination-collision refusal; refused operations never mutate state; the
+  unaudited `set_state` form provably preserves tracked facts and never
+  contaminates the batch; contaminated batches keep projections unavailable.
 - Provider: `ResolveObject("mysql_tablespace")` reads
   `information_schema.INNODB_TABLESPACES` via `WHERE BINARY name = ?` (binary
   comparison — collation-based folding would alias distinct identities) plus
@@ -106,6 +117,10 @@ paths.
 - `ALTER UNDO TABLESPACE ... SET ACTIVE|INACTIVE` is recognized but its
   runtime state transition is unaudited — the statement carries a bounded
   `alter_undo_tablespace` boundary marker and mutates nothing.
+- Undo-drop runtime eligibility (`INNODB_TABLESPACES.STATE = empty`, the
+  protected default undo objects `innodb_undo_001`/`innodb_undo_002`) is not
+  modeled — the fact stays owed as `tablespace.drop_eligibility` and the
+  ordered post-state never publishes a determined tombstone for an undo drop.
 - Partition-level DISCARD/IMPORT rules predate T25 and are unchanged.
 - Native verification of the live-provider occupancy read against real anchors
   is deferred to the T25 native-validation round; the seam is covered by

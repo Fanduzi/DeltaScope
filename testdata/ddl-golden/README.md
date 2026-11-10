@@ -14,12 +14,16 @@ than half-claims), the eight InnoDB rules
 (`ddl.mysql.tablespace.{create.warn,alter.warn,drop.forbid,applicability}`
 and `ddl.alter.{import,discard}_tablespace.{warn/forbid,applicability}`),
 and the honest-premise contract — an authored non-InnoDB/non-NDB engine,
-a proven pre-8.0 version on undo/encryption members, an InnoDB datafile
-move, a proven-absent ALTER/DROP target, a proven-present CREATE target,
-and a proven-occupied DROP all refuse on evidence while unproven
-existence/occupancy/engine/partition/version premises owe bounded gaps
-(`unknown_tablespace_state`, `unknown_table_state`, `target.version`)
-instead of inferred verdicts. File paths are counted but never retained.
+a proven below-floor version (memberless general CREATE and UNDO SQL =
+8.0.14, ENCRYPTION = 8.0.13 — a memberless InnoDB CREATE executes, never
+refuses, from 8.0.14), an InnoDB datafile move, a proven-absent
+ALTER/DROP target, a proven-present CREATE target, a proven-occupied
+DROP, and a proven kind mismatch all refuse on evidence while unproven
+existence/occupancy/kind/engine/partition/version premises owe bounded
+gaps (`unknown_tablespace_state`, `unknown_table_state`,
+`target.version`, `tablespace.drop_eligibility` for undo drops whose
+runtime eligibility stays unmodeled) instead of inferred verdicts. File
+paths are counted but never retained.
 The NDB/logfile-group family and every TiDB form stay vendor boundaries
 with zero MySQL semantic findings. Metadata cases are `pending_native`
 authorization candidates — provider-backed existence/kind/occupancy

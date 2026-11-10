@@ -4,14 +4,19 @@
 // on the MySQL dialect: the DROP forbids at blocker level on the authored
 // action — it destroys a server-side storage object — while CREATE/ALTER
 // warn on the storage mutation. One applicability rule binds the native
-// gates: an authored non-InnoDB/non-NDB engine refuses outright, undo
-// tablespaces and ENCRYPTION refuse before MySQL 8.0, InnoDB refuses
-// datafile moves (an NDB-only member), a proven-absent object refuses
-// ALTER/DROP, a proven-present object refuses CREATE, and a proven-occupied
-// tablespace refuses DROP — every unproven premise owes its fact through
-// EvidenceGaps rather than a fabricated verdict. The NDB/logfile-group
-// family and every TiDB-dialect form are engine/vendor boundaries marked
-// by coverage before these rules ever run.
+// gates: an authored non-InnoDB/non-NDB engine refuses outright, and the
+// documented capability floors refuse on a proven-below version — the
+// UNDO SQL surface and the memberless InnoDB create arrive in 8.0.14,
+// tablespace ENCRYPTION in 8.0.13, the 8.0 general-alter members (RENAME
+// TO, AUTOEXTEND_SIZE) have no 5.7 counterpart, InnoDB refuses datafile
+// moves (an NDB-only member), a proven-absent object refuses ALTER/DROP,
+// a proven-present object refuses CREATE, a proven kind mismatch refuses
+// the cross-family form, a proven-occupied general tablespace refuses
+// DROP, and an undo DROP keeps its runtime-eligibility premise owed —
+// every unproven premise owes its fact through EvidenceGaps rather than
+// a fabricated verdict. The NDB/logfile-group family and every
+// TiDB-dialect form are engine/vendor boundaries marked by coverage
+// before these rules ever run.
 package ddl
 
 import (
@@ -28,10 +33,10 @@ const (
 	tablespaceStandaloneReasonEngine       = "tablespace_engine_inapplicable"
 	tablespaceStandaloneReasonVersion      = "tablespace_version_inapplicable"
 	tablespaceStandaloneReasonEngineAction = "tablespace_engine_action_inapplicable"
-	tablespaceStandaloneReasonDatafile     = "tablespace_datafile_required"
 	tablespaceStandaloneReasonAbsent       = "tablespace_absent"
 	tablespaceStandaloneReasonPresent      = "tablespace_present"
 	tablespaceStandaloneReasonOccupied     = "tablespace_occupied"
+	tablespaceStandaloneReasonKindMismatch = "tablespace_kind_mismatch"
 )
 
 func appliesToMySQLTablespace(statement spec.Statement, operation spec.DDLOperation) bool {
@@ -157,22 +162,41 @@ func (r tablespaceApplicabilityRule) AppliesTo(statement spec.Statement) bool {
 // projection never answered.
 func (r tablespaceApplicabilityRule) missingTablespaceFacts(statement spec.Statement) []string {
 	decl := statement.DDL.Tablespace
-	missing := make([]string, 0, 4)
+	missing := make([]string, 0, 5)
 	if decl.Engine == "" && (decl.AlterAction == "add_datafile" || decl.AlterAction == "drop_datafile" ||
 		spec.TablespaceMemberlessCreate(statement.DDL.Operation, decl)) {
 		missing = append(missing, "tablespace.engine")
 	}
-	if spec.TablespaceVersionGated(statement.DDL.Operation, decl) &&
-		statementVersionMajor(statement) == nil {
+	if spec.TablespaceVersionOutcomeFor(statement.DDL.Operation, decl, tablespaceStatementVersion(statement)) ==
+		spec.TablespaceVersionUnproven {
 		missing = append(missing, "target.version")
 	}
 	state := tablespaceStateFor(statement, decl.Name)
 	if !state.Proven() {
 		missing = append(missing, "tablespace.existence")
 	}
-	if statement.DDL.Operation == spec.DDLOperationDropTablespace &&
-		(!state.Proven() || !state.Exists || state.Occupied == nil) {
-		missing = append(missing, "tablespace.occupancy")
+	if (statement.DDL.Operation == spec.DDLOperationAlterTablespace ||
+		statement.DDL.Operation == spec.DDLOperationDropTablespace) &&
+		state.Proven() && state.Exists && state.Kind == "" {
+		// The catalog answered existence but not the object family — the
+		// undo/general distinction decides the outcome and stays owed.
+		missing = append(missing, "tablespace.kind")
+	}
+	if statement.DDL.Operation == spec.DDLOperationDropTablespace {
+		switch decl.Kind {
+		case spec.TablespaceKindUndo:
+			// Dropping an undo tablespace needs the runtime STATE=empty
+			// fact plus the not-a-default-object fact — neither is
+			// modeled, so eligibility stays owed whenever the object is
+			// not already proven absent.
+			if !state.Proven() || state.Exists {
+				missing = append(missing, "tablespace.drop_eligibility")
+			}
+		default:
+			if !state.Proven() || !state.Exists || state.Occupied == nil {
+				missing = append(missing, "tablespace.occupancy")
+			}
+		}
 	}
 	return missing
 }
@@ -206,39 +230,25 @@ func (r tablespaceApplicabilityRule) Evaluate(ctx context.Context, statement spe
 			Level: r.level, Message: message, Suggestion: suggestion, Metadata: metadata(reason),
 		}}
 	}
-	// Authored engine boundary: only InnoDB and NDB are legal engines —
-	// anything else is refused when the engine name resolves.
-	if decl.Engine != "" && !strings.EqualFold(decl.Engine, "innodb") && !strings.EqualFold(decl.Engine, "ndb") {
+	// Authored engine boundary: only InnoDB and the NDB family (NDB and
+	// its NDBCLUSTER alias) are legal engines — anything else refuses.
+	if decl.Engine != "" && !strings.EqualFold(decl.Engine, "innodb") && !spec.TablespaceEngineNDB(decl.Engine) {
 		return refuse(tablespaceStandaloneReasonEngine,
 			fmt.Sprintf("%s tablespace %q is not supported on the %s storage engine", statement.DDL.Operation, decl.Name, decl.Engine),
 			"the tablespace family supports only InnoDB and NDB — verify the declared engine"), ctx.Err()
 	}
-	version := statementVersionMajor(statement)
-	if version != nil && *version < 8 && spec.TablespaceVersionGated(statement.DDL.Operation, decl) {
-		// MySQL 5.7 has no undo/encryption/memberless-create surface —
-		// all three are 8.0-only forms.
-		switch {
-		case decl.Kind == spec.TablespaceKindUndo:
-			return refuse(tablespaceStandaloneReasonVersion,
-				fmt.Sprintf("%s undo tablespace %q requires MySQL 8.0 or later", statement.DDL.Operation, decl.Name),
-				"undo tablespaces do not exist before MySQL 8.0 — review the target version"), ctx.Err()
-		case decl.Encryption != nil:
-			return refuse(tablespaceStandaloneReasonVersion,
-				fmt.Sprintf("%s tablespace %q encryption requires MySQL 8.0 or later", statement.DDL.Operation, decl.Name),
-				"the ENCRYPTION member does not exist before MySQL 8.0 — review the target version"), ctx.Err()
-		default:
-			return refuse(tablespaceStandaloneReasonVersion,
-				fmt.Sprintf("create tablespace %q without a datafile is not in the pre-8.0 grammar", decl.Name),
-				"a memberless CREATE TABLESPACE needs MySQL 8.0 or later — review the target version"), ctx.Err()
-		}
-	}
-	// InnoDB requires at least one datafile on CREATE TABLESPACE — a
-	// memberless declaration on a proven InnoDB engine is refused.
-	if spec.TablespaceMemberlessCreate(statement.DDL.Operation, decl) &&
-		strings.EqualFold(decl.Engine, "innodb") {
-		return refuse(tablespaceStandaloneReasonDatafile,
-			fmt.Sprintf("create tablespace %q declares no datafile — InnoDB requires ADD DATAFILE", decl.Name),
-			"declare at least one ADD DATAFILE member or use an engine that permits memberless creates"), ctx.Err()
+	// Capability floors are exact-release: the UNDO SQL surface and the
+	// memberless InnoDB create arrive in 8.0.14, tablespace ENCRYPTION in
+	// 8.0.13, and the 8.0 general-tablespace members (RENAME TO,
+	// AUTOEXTEND_SIZE, ENGINE_ATTRIBUTE) have no 5.7 counterpart. A
+	// proven-below-floor version refuses; an unproven version owes
+	// target.version through EvidenceGaps, never a refusal.
+	floor, feature, gated := spec.TablespaceCapabilityFloor(statement.DDL.Operation, decl)
+	if gated && spec.TablespaceVersionOutcomeFor(statement.DDL.Operation, decl, tablespaceStatementVersion(statement)) ==
+		spec.TablespaceVersionRefused {
+		return refuse(tablespaceStandaloneReasonVersion,
+			fmt.Sprintf("%s tablespace %q requires MySQL %s or later — the %s surface does not exist", statement.DDL.Operation, decl.Name, floor, feature),
+			"the declared member postdates the proven target version — review the target version"), ctx.Err()
 	}
 	// InnoDB refuses datafile moves on ALTER TABLESPACE — ADD/DROP
 	// DATAFILE is an NDB member; InnoDB accepts only ENCRYPTION,
@@ -249,7 +259,7 @@ func (r tablespaceApplicabilityRule) Evaluate(ctx context.Context, statement spe
 			fmt.Sprintf("alter tablespace %q %s is not supported on InnoDB", decl.Name, strings.ReplaceAll(decl.AlterAction, "_", " ")),
 			"datafile moves are an NDB member — InnoDB alters only encryption, rename, and autoextend"), ctx.Err()
 	}
-	// Ordered-state premises: existence and occupancy.
+	// Ordered-state premises: existence, kind, and occupancy.
 	state := tablespaceStateFor(statement, decl.Name)
 	if state.Proven() {
 		switch statement.DDL.Operation {
@@ -265,8 +275,18 @@ func (r tablespaceApplicabilityRule) Evaluate(ctx context.Context, statement spe
 					fmt.Sprintf("%s tablespace %q refuses — the object does not exist", statement.DDL.Operation, decl.Name),
 					"verify the object identity and the catalog state before shipping"), ctx.Err()
 			}
+			// The declared form addresses one object family — a proven
+			// different catalog kind refuses (DROP TABLESPACE never
+			// deletes an undo object; ALTER TABLESPACE never alters one,
+			// and DROP UNDO TABLESPACE never deletes a general one).
+			if state.Kind != "" && state.Kind != decl.Kind {
+				return refuse(tablespaceStandaloneReasonKindMismatch,
+					fmt.Sprintf("%s tablespace %q refuses — the object is a %s tablespace", statement.DDL.Operation, decl.Name, state.Kind),
+					"verify the object family matches the statement form before shipping"), ctx.Err()
+			}
 		}
 		if statement.DDL.Operation == spec.DDLOperationDropTablespace &&
+			decl.Kind != spec.TablespaceKindUndo &&
 			state.Exists && state.Occupied != nil && *state.Occupied {
 			return refuse(tablespaceStandaloneReasonOccupied,
 				fmt.Sprintf("drop tablespace %q refuses — tables are still bound to it", decl.Name),
@@ -286,13 +306,13 @@ func tablespaceStateFor(statement spec.Statement, name string) *spec.TablespaceS
 	return statement.Metadata.Tablespaces[strings.TrimSpace(name)]
 }
 
-// statementVersionMajor reports the proven major version, or nil when the
-// version fact never answered.
-func statementVersionMajor(statement spec.Statement) *int {
+// statementVersionIdentity reports the proven version identity, or nil
+// when the fact never answered — capability floors need the full
+// MAJOR.MINOR.PATCH precision, not just the series.
+func tablespaceStatementVersion(statement spec.Statement) *spec.VersionIdentity {
 	if statement.Metadata == nil || statement.Metadata.Version == nil ||
 		!statement.Metadata.Version.ValidatedRange {
 		return nil
 	}
-	v := statement.Metadata.Version.Major
-	return &v
+	return statement.Metadata.Version
 }

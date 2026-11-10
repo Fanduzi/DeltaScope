@@ -10,6 +10,8 @@ package spec
 // data/undo file clauses the statement authored, never their paths. The
 // audit must not read, stat, copy, delete, or echo SQL-supplied file
 // paths — presence and count are the only facts it vouches.
+import "strings"
+
 type TablespaceDeclaration struct {
 	// Kind is the object family: "general" (InnoDB/NDB data files),
 	// "undo" (MySQL 8.0 UNDO TABLESPACE, InnoDB-only), or "logfile_group"
@@ -48,22 +50,152 @@ const (
 	TablespaceKindLogfileGroup = "logfile_group"
 )
 
-// TablespaceVersionGated reports whether the declaration touches surface
-// MySQL added in 8.0 — an undo object, an ENCRYPTION member, or a
-// memberless general CREATE (absent from the 5.7 grammar). Rules and the
-// ordered-state transition share this predicate so a proven pre-8.0
-// version refuses identically and an unproven version proves nothing.
-func TablespaceVersionGated(operation DDLOperation, decl *TablespaceDeclaration) bool {
+// TablespaceEngineNDB reports whether the authored engine names the NDB
+// family — NDB and its documented NDBCLUSTER alias are the same engine
+// upstream, so both spellings route to the engine boundary instead of an
+// InnoDB applicability refusal.
+func TablespaceEngineNDB(engine string) bool {
+	return strings.EqualFold(engine, "ndb") || strings.EqualFold(engine, "ndbcluster")
+}
+
+// Documented MySQL release floors for the gated tablespace capabilities —
+// full MAJOR.MINOR.PATCH precision, never a series-level guess. The
+// capability table comes from the 8.0 CREATE/ALTER TABLESPACE
+// documentation and the 8.0.13/8.0.14 release notes (issue #104 T25-R3).
+const (
+	// TablespaceFloorUndoSQL is the floor for the UNDO TABLESPACE SQL
+	// management surface — the UNDO keyword and CREATE/ALTER/DROP UNDO
+	// were introduced in MySQL 8.0.14.
+	TablespaceFloorUndoSQL = "8.0.14"
+	// TablespaceFloorMemberless is the floor for a general CREATE
+	// TABLESPACE without a file clause — InnoDB implicitly generates the
+	// datafile name only from MySQL 8.0.14 (NDB always requires its
+	// ADD DATAFILE member).
+	TablespaceFloorMemberless = "8.0.14"
+	// TablespaceFloorEncryption is the floor for the ENCRYPTION member on
+	// general tablespaces, introduced in MySQL 8.0.13.
+	TablespaceFloorEncryption = "8.0.13"
+	// TablespaceFloorGeneralSurface is the floor for the InnoDB
+	// general-tablespace members that did not exist on the 5.7 surface —
+	// RENAME TO and AUTOEXTEND_SIZE belong to the 8.0 general-tablespace
+	// family, and ENGINE_ATTRIBUTE is an 8.0 reserved member.
+	TablespaceFloorGeneralSurface = "8.0.0"
+)
+
+// TablespaceVersionOutcome is the three-way answer of a declaration's
+// capability floor against the resolved version.
+type TablespaceVersionOutcome int
+
+const (
+	// TablespaceVersionSupported means the proven version reaches every
+	// floor the declaration requires (or nothing is gated).
+	TablespaceVersionSupported TablespaceVersionOutcome = iota
+	// TablespaceVersionRefused means the proven version sits below a
+	// required floor — a determined native refusal.
+	TablespaceVersionRefused
+	// TablespaceVersionUnproven means the version fact never answered —
+	// missing or outside the validated series — so the gate cannot
+	// decide either way.
+	TablespaceVersionUnproven
+)
+
+// TablespaceCapabilityFloor resolves the strictest documented MySQL floor
+// the declaration requires, plus the surface label diagnostics cite. The
+// file-carrying general create and the NDB file members (ADD/DROP
+// DATAFILE/UNDOFILE) need no floor — they exist on the pre-8.0 grammar.
+// gated=false means the declaration needs no capability floor.
+func TablespaceCapabilityFloor(operation DDLOperation, decl *TablespaceDeclaration) (floor, feature string, gated bool) {
 	if decl == nil {
-		return false
+		return "", "", false
 	}
-	return decl.Kind == TablespaceKindUndo || decl.Encryption != nil ||
-		(operation == DDLOperationCreateTablespace && decl.FileCount == 0)
+	floor = "0.0.0"
+	raise := func(candidate, label string) {
+		if tablespaceVersionFloorAbove(candidate, floor) {
+			floor, feature = candidate, label
+		}
+		gated = true
+	}
+	if decl.Kind == TablespaceKindUndo {
+		raise(TablespaceFloorUndoSQL, "undo tablespace")
+	}
+	if decl.Encryption != nil {
+		raise(TablespaceFloorEncryption, "tablespace encryption")
+	}
+	if TablespaceMemberlessCreate(operation, decl) {
+		raise(TablespaceFloorMemberless, "memberless create tablespace")
+	}
+	if operation == DDLOperationAlterTablespace && decl.AlterAction == "rename" {
+		raise(TablespaceFloorGeneralSurface, "tablespace rename")
+	}
+	if _, ok := decl.Options["autoextend_size"]; ok {
+		raise(TablespaceFloorGeneralSurface, "autoextend_size")
+	}
+	if _, ok := decl.Options["engine_attribute"]; ok {
+		raise(TablespaceFloorGeneralSurface, "engine_attribute")
+	}
+	return floor, feature, gated
+}
+
+// TablespaceVersionOutcome adjudicates the declaration's capability floor
+// against the resolved version — shared by the applicability rule and the
+// ordered-state transition so a proven refusal, a proven pass, and an
+// unproven version answer identically on both sides. A version outside
+// the validated series answers Unproven, never a fabricated support.
+func TablespaceVersionOutcomeFor(operation DDLOperation, decl *TablespaceDeclaration, version *VersionIdentity) TablespaceVersionOutcome {
+	floor, _, gated := TablespaceCapabilityFloor(operation, decl)
+	if !gated {
+		return TablespaceVersionSupported
+	}
+	if version == nil || !version.ValidatedRange || version.Major == 0 {
+		return TablespaceVersionUnproven
+	}
+	major, minor, patch := tablespaceFloorTriple(floor)
+	switch {
+	case version.Major != major:
+		if version.Major > major {
+			return TablespaceVersionSupported
+		}
+		return TablespaceVersionRefused
+	case version.Minor != minor:
+		if version.Minor > minor {
+			return TablespaceVersionSupported
+		}
+		return TablespaceVersionRefused
+	case version.Patch >= patch:
+		return TablespaceVersionSupported
+	}
+	return TablespaceVersionRefused
+}
+
+// tablespaceFloorTriple parses a pinned MAJOR.MINOR.PATCH floor constant.
+func tablespaceFloorTriple(floor string) (major, minor, patch int) {
+	parts := strings.SplitN(floor, ".", 3)
+	if len(parts) != 3 {
+		return 0, 0, 0
+	}
+	return atoiOrZero(parts[0]), atoiOrZero(parts[1]), atoiOrZero(parts[2])
+}
+
+// tablespaceVersionFloorAbove reports whether candidate sorts strictly
+// above base as a MAJOR.MINOR.PATCH triple — both sides are pinned
+// constants from the floor table.
+func tablespaceVersionFloorAbove(candidate, base string) bool {
+	ca, cb, cc := tablespaceFloorTriple(candidate)
+	ba, bb, bc := tablespaceFloorTriple(base)
+	if ca != ba {
+		return ca > ba
+	}
+	if cb != bb {
+		return cb > bb
+	}
+	return cc > bc
 }
 
 // TablespaceMemberlessCreate reports a general CREATE TABLESPACE with no
-// file clause — grammar-valid since 8.0 but refused semantically by
-// InnoDB, whose tablespaces require at least one datafile.
+// file clause — InnoDB permits the omission only from MySQL 8.0.14 (the
+// server generates the datafile name), and NDB always requires its
+// ADD DATAFILE member. The capability floor decides the version arm; the
+// authored-engine arm stays an evidence question.
 func TablespaceMemberlessCreate(operation DDLOperation, decl *TablespaceDeclaration) bool {
 	if decl == nil {
 		return false

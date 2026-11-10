@@ -56,12 +56,12 @@ func TestT25TablespaceRecognizedForms(t *testing.T) {
 	}{
 		{"CREATE TABLESPACE ts1 ADD DATAFILE 'a.ibd' ENGINE=INNODB",
 			spec.DDLOperationCreateTablespace, spec.TablespaceKindGeneral, "ts1", "", "innodb", 1, "", false},
-		// Memberless general CREATE is grammar-valid since MySQL 8.0 —
-		// the InnoDB datafile requirement is semantic, not syntactic.
+		// Memberless general CREATE is grammar-valid and executes on
+		// InnoDB from 8.0.14 — the server generates the datafile itself.
 		{"CREATE TABLESPACE ts1",
 			spec.DDLOperationCreateTablespace, spec.TablespaceKindGeneral, "ts1", "", "", 0, "", false},
-		{"CREATE TABLESPACE ts1 ADD DATAFILE 'a.ibd' ADD DATAFILE 'b.ibd' ENGINE INNODB",
-			spec.DDLOperationCreateTablespace, spec.TablespaceKindGeneral, "ts1", "", "innodb", 2, "", false},
+		{"CREATE TABLESPACE ts1 ADD DATAFILE 'a.ibd' ENGINE INNODB",
+			spec.DDLOperationCreateTablespace, spec.TablespaceKindGeneral, "ts1", "", "innodb", 1, "", false},
 		{"CREATE UNDO TABLESPACE u1 ADD DATAFILE 'u.ibu'",
 			spec.DDLOperationCreateTablespace, spec.TablespaceKindUndo, "u1", "", "", 1, "", false},
 		{"CREATE LOGFILE GROUP lg1 ADD UNDOFILE 'u.und' INITIAL_SIZE 8M ENGINE=NDB",
@@ -107,17 +107,25 @@ func TestT25TablespaceRecognizedForms(t *testing.T) {
 // than a parser diagnostic.
 func TestT25AlterUndoSetStateRecognized(t *testing.T) {
 	t.Parallel()
-	for _, sql := range []string{
-		"ALTER UNDO TABLESPACE u1 SET ACTIVE",
-		"ALTER UNDO TABLESPACE u1 SET INACTIVE",
-	} {
-		statement := parseExtractT25(t, sql, spec.DialectMySQL)
+	cases := []struct {
+		sql      string
+		setState string
+		engine   string
+	}{
+		{"ALTER UNDO TABLESPACE u1 SET ACTIVE", "active", ""},
+		{"ALTER UNDO TABLESPACE u1 SET INACTIVE", "inactive", ""},
+		{"ALTER UNDO TABLESPACE u1 SET ACTIVE ENGINE=INNODB", "active", "innodb"},
+		{"ALTER UNDO TABLESPACE u1 SET INACTIVE ENGINE INNODB", "inactive", "innodb"},
+	}
+	for _, tc := range cases {
+		statement := parseExtractT25(t, tc.sql, spec.DialectMySQL)
 		decl := statement.DDL.Tablespace
 		if decl == nil {
-			t.Fatalf("%q: expected tablespace declaration", sql)
+			t.Fatalf("%q: expected tablespace declaration", tc.sql)
 		}
-		if decl.Kind != spec.TablespaceKindUndo || decl.AlterAction != "set_state" {
-			t.Fatalf("%q: decl=%+v, want undo set_state", sql, decl)
+		if decl.Kind != spec.TablespaceKindUndo || decl.AlterAction != "set_state" ||
+			decl.Engine != tc.engine || decl.Options["set_state"] != tc.setState {
+			t.Fatalf("%q: decl=%+v, want undo set_state=%q engine=%q", tc.sql, decl, tc.setState, tc.engine)
 		}
 	}
 }
@@ -143,6 +151,22 @@ func TestT25TablespaceRejectedShapes(t *testing.T) {
 		// Trailing junk after a complete statement.
 		"CREATE TABLESPACE ts1 ADD DATAFILE 'a.ibd' WAT",
 		"DROP TABLESPACE ts1 EXTRA JUNK",
+		// The grammar carries at most one file clause.
+		"CREATE TABLESPACE ts1 ADD DATAFILE 'a.ibd' ADD DATAFILE 'b.ibd'",
+		"CREATE UNDO TABLESPACE u1 ADD DATAFILE 'a.ibu' ADD DATAFILE 'b.ibu'",
+		// Each kind takes its documented file keyword: LOGFILE GROUP
+		// takes UNDOFILE, general and undo take DATAFILE.
+		"CREATE TABLESPACE ts1 ADD UNDOFILE 'a.ibd'",
+		"CREATE UNDO TABLESPACE u1 ADD UNDOFILE 'a.ibu'",
+		"CREATE LOGFILE GROUP lg1 ADD DATAFILE 'a.dat'",
+		"ALTER TABLESPACE ts1 ADD UNDOFILE 'a.ibd'",
+		// ALTER UNDO TABLESPACE ... SET carries no trailing member beyond
+		// the optional ENGINE clause — everything else is real garbage.
+		"ALTER UNDO TABLESPACE u1 SET ACTIVE EXTRA",
+		"ALTER UNDO TABLESPACE u1 SET ACTIVE ENGINE",
+		"ALTER UNDO TABLESPACE u1 SET ACTIVE RENAME TO u2",
+		"ALTER UNDO TABLESPACE u1 SET",
+		"ALTER UNDO TABLESPACE u1 ADD DATAFILE 'a.ibu'",
 	}
 	for _, sql := range rejected {
 		parser := New()

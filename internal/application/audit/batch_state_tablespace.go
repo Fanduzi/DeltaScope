@@ -1,12 +1,16 @@
 // Package audit: T25 ordered state for the MySQL tablespace family.
 // CREATE publishes a proven-present entry (a proven-absent create yields a
 // fresh object carrying no bound tables — occupancy provably false; an
-// unknown pre-state proves existence only, and an unproven version-gate
-// premise proves nothing), DROP tombstones it, ALTER keeps the pre-state,
-// and RENAME moves the proven entry to the new identity. The table-level
-// DISCARD/IMPORT tablespace actions invalidate row-bearing statistics
-// through applyTablespaceAlter in batch_state.go — this file models only
-// the standalone CREATE/ALTER/DROP TABLESPACE and UNDO TABLESPACE objects.
+// unknown pre-state proves existence only, and an unproven capability
+// floor proves nothing), DROP tombstones a proven-eligible object (a
+// general tablespace needs proven-empty occupancy; an undo object also
+// needs its runtime STATE=empty and non-default eligibility, which the
+// model never vouches — the post-state stays unknown), ALTER keeps the
+// pre-state, and RENAME moves the proven entry to the new identity. The
+// table-level DISCARD/IMPORT tablespace actions invalidate row-bearing
+// statistics through applyTablespaceAlter in batch_state.go — this file
+// models only the standalone CREATE/ALTER/DROP TABLESPACE and UNDO
+// TABLESPACE objects.
 package audit
 
 import (
@@ -143,8 +147,15 @@ func (s *batchState) applyTablespaceStatement(ctx context.Context, statement spe
 		return err
 	}
 	decl := statement.DDL.Tablespace
-	if decl.Kind == spec.TablespaceKindLogfileGroup || strings.EqualFold(decl.Engine, "ndb") {
+	if decl.Kind == spec.TablespaceKindLogfileGroup || spec.TablespaceEngineNDB(decl.Engine) {
 		// Boundary-owned declarations never enter the InnoDB registry.
+		return nil
+	}
+	if decl.AlterAction == "set_state" {
+		// ALTER UNDO TABLESPACE ... SET ACTIVE|INACTIVE mutates only the
+		// undo runtime state — a member the model never tracks. The
+		// tracked facts (existence/kind/occupancy) provably stand and the
+		// statement is boundary-marked upstream, so nothing moves here.
 		return nil
 	}
 	entry, err := s.resolveTablespace(ctx, decl.Name)
@@ -157,16 +168,15 @@ func (s *batchState) applyTablespaceStatement(ctx context.Context, statement spe
 		if entry.state == tablePresent {
 			return nil
 		}
-		// Version- and engine-proven refusals keep the pre-state: undo
-		// tablespaces and ENCRYPTION members do not exist before 8.0,
-		// a memberless create is absent from the 5.7 grammar, and a
-		// non-InnoDB/non-NDB authored engine never executes.
+		// Engine- and capability-floor refusals keep the pre-state — a
+		// non-InnoDB/non-NDB authored engine never executes, and a
+		// proven-below-floor version refuses the gated member.
 		if refusedTablespaceCreate(statement, decl) {
 			return nil
 		}
-		if spec.TablespaceVersionGated(statement.DDL.Operation, decl) &&
-			statementVersionMajorShared(statement) == nil {
-			// The version premise never answered: a sub-8.0 world
+		if spec.TablespaceVersionOutcomeFor(statement.DDL.Operation, decl, statementVersionIdentityShared(statement)) ==
+			spec.TablespaceVersionUnproven {
+			// The version premise never answered: a below-floor world
 			// refuses while a supported world executes — the
 			// consistent union cannot prove existence.
 			entry.state = tableUnknown
@@ -176,8 +186,9 @@ func (s *batchState) applyTablespaceStatement(ctx context.Context, statement spe
 			return nil
 		}
 		if spec.TablespaceMemberlessCreate(statement.DDL.Operation, decl) && decl.Engine == "" {
-			// Memberless creates are legal only on NDB — an unproven
-			// engine leaves an InnoDB-refusal world alive.
+			// On a floor-proven version a memberless create executes
+			// only in InnoDB worlds — NDB always requires its datafile
+			// — so an unproven engine keeps a refusal world alive.
 			entry.state = tableUnknown
 			entry.occupied = nil
 			entry.kind = ""
@@ -205,6 +216,11 @@ func (s *batchState) applyTablespaceStatement(ctx context.Context, statement spe
 		if refusedTablespaceAlter(statement, decl) {
 			return nil
 		}
+		// A proven different-family object refuses the declared form —
+		// ALTER TABLESPACE never alters an undo object.
+		if entry.state == tablePresent && entry.kind != "" && entry.kind != decl.Kind {
+			return nil
+		}
 		// ALTER keeps the object's state; an unproven entry stays
 		// unresolved rather than inventing existence. RENAME moves the
 		// proven identity — the authored target inherits the entry and
@@ -229,13 +245,42 @@ func (s *batchState) applyTablespaceStatement(ctx context.Context, statement spe
 		entry.occupied = nil
 	case spec.DDLOperationDropTablespace:
 		// Proven refusals keep the exact pre-state — an authored
-		// non-InnoDB/non-NDB engine or an undo drop under a proven
-		// pre-8.0 version never executes.
+		// non-InnoDB/non-NDB engine or a gated member under a
+		// proven-below-floor version never executes.
 		if refusedTablespaceDrop(statement, decl) {
 			return nil
 		}
 		switch entry.state {
 		case tablePresent:
+			// A proven different-family object refuses the declared
+			// form — DROP TABLESPACE never deletes an undo object, and
+			// DROP UNDO TABLESPACE never deletes a general one.
+			if entry.kind != "" && entry.kind != decl.Kind {
+				return nil
+			}
+			if decl.Kind == spec.TablespaceKindUndo {
+				// An undo DROP needs the runtime STATE=empty fact and
+				// the not-a-default-object fact — the model never
+				// vouches either, so eligibility stays unproven and the
+				// post-state is never a determined tombstone. The
+				// bound-table count does not govern undo eligibility.
+				entry.state = tableUnknown
+				entry.occupied = nil
+				entry.kind = ""
+				return nil
+			}
+			if entry.kind == "" {
+				// Kind unproven: the undo-kind world refuses this
+				// general form while a general world adjudicates by
+				// occupancy — a proven-occupied entry refuses in every
+				// consistent world, anything else stays undecidable.
+				if entry.occupied != nil && *entry.occupied {
+					return nil
+				}
+				entry.state = tableUnknown
+				entry.occupied = nil
+				return nil
+			}
 			// A proven-occupied tablespace refuses — the binding premise
 			// holds the exact pre-state.
 			if entry.occupied != nil && *entry.occupied {
@@ -267,57 +312,48 @@ func (s *batchState) applyTablespaceStatement(ctx context.Context, statement spe
 // the applicability rule — kept in one place so rule and transition can
 // never disagree.
 func refusedTablespaceCreate(statement spec.Statement, decl *spec.TablespaceDeclaration) bool {
-	if decl.Engine != "" && !strings.EqualFold(decl.Engine, "innodb") && !strings.EqualFold(decl.Engine, "ndb") {
+	if decl.Engine != "" && !strings.EqualFold(decl.Engine, "innodb") && !spec.TablespaceEngineNDB(decl.Engine) {
 		return true
 	}
-	if version := statementVersionMajorShared(statement); version != nil && *version < 8 &&
-		spec.TablespaceVersionGated(spec.DDLOperationCreateTablespace, decl) {
-		return true
-	}
-	if spec.TablespaceMemberlessCreate(spec.DDLOperationCreateTablespace, decl) &&
-		strings.EqualFold(decl.Engine, "innodb") {
-		return true
-	}
-	return false
+	return spec.TablespaceVersionOutcomeFor(spec.DDLOperationCreateTablespace, decl,
+		statementVersionIdentityShared(statement)) == spec.TablespaceVersionRefused
 }
 
 // refusedTablespaceDrop reports the authored-form refusals shared with
-// the applicability rule on DROP — the engine boundary plus the undo
-// version gate — so a refused drop never tombstones a live entry.
+// the applicability rule on DROP — the engine boundary plus the
+// capability floor — so a refused drop never tombstones a live entry.
 func refusedTablespaceDrop(statement spec.Statement, decl *spec.TablespaceDeclaration) bool {
-	if decl.Engine != "" && !strings.EqualFold(decl.Engine, "innodb") && !strings.EqualFold(decl.Engine, "ndb") {
+	if decl.Engine != "" && !strings.EqualFold(decl.Engine, "innodb") && !spec.TablespaceEngineNDB(decl.Engine) {
 		return true
 	}
-	if version := statementVersionMajorShared(statement); version != nil && *version < 8 &&
-		spec.TablespaceVersionGated(spec.DDLOperationDropTablespace, decl) {
-		return true
-	}
-	return false
+	return spec.TablespaceVersionOutcomeFor(spec.DDLOperationDropTablespace, decl,
+		statementVersionIdentityShared(statement)) == spec.TablespaceVersionRefused
 }
 
-// refusedTablespaceAlter reports the InnoDB datafile-move refusal —
-// ADD/DROP DATAFILE is an NDB member under MySQL.
+// refusedTablespaceAlter reports the authored-form refusals shared with
+// the applicability rule on ALTER — the engine boundary, the InnoDB
+// datafile-move refusal (ADD/DROP DATAFILE is an NDB member), and the
+// capability floor.
 func refusedTablespaceAlter(statement spec.Statement, decl *spec.TablespaceDeclaration) bool {
-	if decl.Engine != "" && !strings.EqualFold(decl.Engine, "innodb") && !strings.EqualFold(decl.Engine, "ndb") {
+	if decl.Engine != "" && !strings.EqualFold(decl.Engine, "innodb") && !spec.TablespaceEngineNDB(decl.Engine) {
 		return true
 	}
 	if (decl.AlterAction == "add_datafile" || decl.AlterAction == "drop_datafile") &&
 		strings.EqualFold(decl.Engine, "innodb") {
 		return true
 	}
-	if version := statementVersionMajorShared(statement); version != nil && *version < 8 && decl.Encryption != nil {
-		return true
-	}
-	return false
+	return spec.TablespaceVersionOutcomeFor(spec.DDLOperationAlterTablespace, decl,
+		statementVersionIdentityShared(statement)) == spec.TablespaceVersionRefused
 }
 
-// statementVersionMajorShared mirrors the rule-side version read — the
-// proven major version, or nil when the fact never answered.
-func statementVersionMajorShared(statement spec.Statement) *int {
+// statementVersionIdentityShared mirrors the rule-side version read —
+// the proven version identity, or nil when the fact never answered.
+// Capability floors need full MAJOR.MINOR.PATCH precision, not just the
+// series.
+func statementVersionIdentityShared(statement spec.Statement) *spec.VersionIdentity {
 	if statement.Metadata == nil || statement.Metadata.Version == nil ||
 		!statement.Metadata.Version.ValidatedRange {
 		return nil
 	}
-	v := statement.Metadata.Version.Major
-	return &v
+	return statement.Metadata.Version
 }

@@ -123,8 +123,18 @@ func mysqlTablespaceCreate(sqlText, kind string, nameTok sqlTok, rest []sqlTok) 
 		switch {
 		case rest[i].wordIs(sqlText, "add"):
 			// ADD DATAFILE 'f' | ADD UNDOFILE 'f' — the path stays opaque.
+			// The grammar carries at most one file clause, and each kind
+			// takes its documented keyword: LOGFILE GROUP takes UNDOFILE,
+			// general and undo take DATAFILE.
+			if decl.FileCount > 0 {
+				return nil, false
+			}
+			fileKeyword := "datafile"
+			if kind == spec.TablespaceKindLogfileGroup {
+				fileKeyword = "undofile"
+			}
 			if i+2 >= len(rest) || rest[i+2].kind != tokStr ||
-				!(rest[i+1].wordIs(sqlText, "datafile") || rest[i+1].wordIs(sqlText, "undofile")) {
+				!rest[i+1].wordIs(sqlText, fileKeyword) {
 				return nil, false
 			}
 			decl.FileCount++
@@ -191,12 +201,18 @@ func mysqlTablespaceAlter(sqlText, kind string, nameTok sqlTok, rest []sqlTok) (
 	switch {
 	case rest[i].wordIs(sqlText, "add") || rest[i].wordIs(sqlText, "drop"):
 		member := strings.ToLower(rest[i].text(sqlText))
+		// Each kind takes its documented file keyword: LOGFILE GROUP
+		// carries UNDOFILE members, general tablespaces carry DATAFILE.
+		fileKeyword := "datafile"
+		if kind == spec.TablespaceKindLogfileGroup {
+			fileKeyword = "undofile"
+		}
 		if i+2 >= len(rest) || rest[i+2].kind != tokStr ||
-			!(rest[i+1].wordIs(sqlText, "datafile") || rest[i+1].wordIs(sqlText, "undofile")) {
+			!rest[i+1].wordIs(sqlText, fileKeyword) {
 			return nil, false
 		}
 		file := "datafile"
-		if rest[i+1].wordIs(sqlText, "undofile") {
+		if fileKeyword == "undofile" {
 			file = "undo_file"
 		}
 		decl.AlterAction = member + "_" + file
@@ -260,12 +276,13 @@ func mysqlTablespaceAlter(sqlText, kind string, nameTok sqlTok, rest []sqlTok) (
 }
 
 // mysqlTablespaceAlterUndo consumes the whole `ALTER UNDO TABLESPACE
-// name SET {ACTIVE|INACTIVE}` form — the only member the grammar carries.
-// The statement is recognized so it surfaces as a bounded unaudited
+// name SET {ACTIVE|INACTIVE} [ENGINE [=] engine]` form — the only member
+// the grammar carries, plus the documented optional ENGINE clause. The
+// statement is recognized so it surfaces as a bounded unaudited
 // feature rather than a parser diagnostic (deferred scope, T25-R1).
 func mysqlTablespaceAlterUndo(sqlText string, nameTok sqlTok, rest []sqlTok) (ast.StmtNode, bool) {
 	name, ok := mysqlTablespaceName(sqlText, nameTok)
-	if !ok || len(rest) != 2 {
+	if !ok || len(rest) < 2 {
 		return nil, false
 	}
 	if !rest[0].wordIs(sqlText, "set") ||
@@ -277,6 +294,19 @@ func mysqlTablespaceAlterUndo(sqlText string, nameTok sqlTok, rest []sqlTok) (as
 		Name:        name,
 		AlterAction: "set_state",
 		Options:     map[string]string{"set_state": strings.ToLower(rest[1].text(sqlText))},
+	}
+	if len(rest) > 2 {
+		// The only legal trailing member is the ENGINE [=] engine_name
+		// clause — anything else is real trailing garbage and stays
+		// unclaimed so the base parser keeps its own diagnostic.
+		if !rest[2].wordIs(sqlText, "engine") {
+			return nil, false
+		}
+		value, next, ok := mysqlTablespaceOptionValue(sqlText, rest, 3)
+		if !ok || next != len(rest) {
+			return nil, false
+		}
+		decl.Engine = value
 	}
 	node := &ast.AlterResourceGroupStmt{ResourceGroupName: ast.NewCIStr(name)}
 	node.SetText(charset.FindEncoding(""), strings.TrimSpace(sqlText))

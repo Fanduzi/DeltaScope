@@ -943,6 +943,7 @@ type testDriver struct {
 }
 
 type testConn struct {
+	name    string
 	results map[string]testQueryResult
 }
 
@@ -973,7 +974,10 @@ func openTestDB(t *testing.T, results map[string]testQueryResult) *sql.DB {
 	if err != nil {
 		t.Fatalf("open test db: %v", err)
 	}
-	t.Cleanup(func() { unregisterTestDriverResults(name) })
+	t.Cleanup(func() {
+		unregisterTestDriverResults(name)
+		testDriverCalls.Delete(name)
+	})
 	return db
 }
 
@@ -1075,7 +1079,38 @@ func unregisterTestDriverResults(name string) {
 func (d testDriver) Open(name string) (driver.Conn, error) {
 	value, _ := testDriverResults.Load(name)
 	results, _ := value.(map[string]testQueryResult)
-	return testConn{results: results}, nil
+	return testConn{name: name, results: results}, nil
+}
+
+// testDriverCalls records (query, args) pairs per registered DB name so
+// tests can assert the exact predicate text and parameter values a loader
+// issued — the SQL-mock must verify query conditions, not just answers.
+var testDriverCalls sync.Map
+
+type testQueryCall struct {
+	query string
+	args  []driver.NamedValue
+}
+
+func recordTestQueryCall(name, query string, args []driver.NamedValue) {
+	copied := append([]driver.NamedValue(nil), args...)
+	value, _ := testDriverCalls.LoadOrStore(name, &[]testQueryCall{})
+	calls := value.(*[]testQueryCall)
+	*calls = append(*calls, testQueryCall{query: query, args: copied})
+}
+
+// testStubName mirrors openTestDB's registered DSN for this test so the
+// recorded calls for exactly this test's connection can be retrieved.
+func testStubName(t *testing.T) string {
+	return "mysqlmeta-test-" + strings.ReplaceAll(t.Name(), "/", "_")
+}
+
+func testQueryCallsByName(name string) []testQueryCall {
+	value, _ := testDriverCalls.Load(name)
+	if value == nil {
+		return nil
+	}
+	return *value.(*[]testQueryCall)
 }
 
 func (c testConn) Prepare(string) (driver.Stmt, error) { return nil, driver.ErrSkip }
@@ -1117,7 +1152,8 @@ const testShardingInfoFragment = "select tidb_row_id_sharding_info"
 // longest-match routing keeps the anchor-table join deterministic.
 const testCacheMetaFragment = "left join mysql.table_cache_meta"
 
-func (c testConn) QueryContext(_ context.Context, query string, _ []driver.NamedValue) (driver.Rows, error) {
+func (c testConn) QueryContext(_ context.Context, query string, args []driver.NamedValue) (driver.Rows, error) {
+	recordTestQueryCall(c.name, query, args)
 	// Longest matching fragment wins: loaders sharing a catalog table (the
 	// foreign-key join and the TiDB primary-column probe both read
 	// key_column_usage) resolve deterministically instead of depending on
