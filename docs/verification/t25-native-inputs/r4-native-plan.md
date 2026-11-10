@@ -193,18 +193,32 @@ them, so cleanup must be explicit and ordered:
   `mysql80-ts-lifecycle`/`mysql80-absent-alter-refused` expectations
   were revised to conservative unknown rather than "proven absent".
 
-## 4. Case mapping — what changes when this plan executes
+## 4. Case mapping — folded into the manifest (R6)
 
-| change | manifest delta |
-|---|---|
-| `ddl_steps` gains §2.4 pre-cleanup step | 4 `db.*.ddl` cases each +1 step |
-| mysql80-ts-lifecycle `execute[]` arm (P1–P3) | audited DDL now natively proven |
-| mysql84-occupied-drop-refused `execute[]` arm (P4) + teardown | audited drop refusal proven + cleanup added |
-| mysql80-absent-alter-refused `execute[]` arm (R2) | absent-source refusal proven natively |
-| mysql57-undo-refused `execute[]` arm (R1) | version-floor refusal proven natively |
-| new meta cases: memberless (P5), encryption (P6), collision (R3), undo-default (R4), NDB (B1), set_state (B3) | +6 `meta.*` cases |
-| tidb85-vendor-boundary gains `execute[]` arm (B2) | TiDB native behavior recorded |
+The arms below are now declared in `testdata/ddl-golden/T25.json`
+(pinned under `pending_native` — the runner ignores that flag, so they
+execute on the first authorized run). Nothing has been executed.
 
-Expected meta-case count after folding: 14 (8 current + 6 new);
-cli_cases stay 28; required_case_ids grows by 6. All counts pending —
-nothing above has run.
+| change | manifest delta | status |
+|---|---|---|
+| per-case `setup[0]` guarded preclean | each creating meta case drops its own `t25fx_*` leftovers first (guarded PREPARE drop — `DROP TABLESPACE` has no `IF EXISTS` form) | declared |
+| mysql80-ts-lifecycle `execute[]` arm (P1–P3) + `teardown[]` | audited create→rename→drop now natively proven, both identities cleaned after | declared |
+| mysql84-occupied-drop-refused `execute[]` arm (P4) + ordered `teardown[]` (table → tablespace) | native occupied-refusal proven; the previously leaked `t25fx_occ`/`t_occ` now has explicit cleanup | declared |
+| mysql80-absent-alter-refused `execute[]` arm (R2) | native absent-source refusal proven | declared |
+| mysql57-undo-refused `execute[]` arm (R1) | 5.7 syntax refusal proven natively | declared |
+| mysql80-discard-forbid `execute[]` + restore `teardown[]` (DROP+CREATE) | DISCARD executes natively (policy forbid ≠ native rejection); fixture table restored | declared |
+| mysql80-import-warn `execute[]` arm | IMPORT on a never-discarded table refuses natively | declared |
+| mysql80-myisam-discard-refused `execute[]` arm | MyISAM DISCARD refuses natively | declared |
+| new meta cases ×6: `mysql80-memberless-innodb` (P5), `mysql80-encryption-native` (P6), `mysql80-rename-collision-refused` (R3), `mysql80-undo-default-drop-refused` (R4), `mysql80-ndb-vendor-boundary` (B1), `mysql80-alter-undo-unaudited` (B3) | meta 8 → 14; `required_case_ids` 44 → 50 | declared |
+| tidb85-vendor-boundary `execute[]` arm (B2) | TiDB native rejection recorded | declared |
+
+Counts now in the manifest: 28 cli_cases, 14 metadata_cases,
+50 required_case_ids. Meta expectations are authored from the audit
+model under the provider contract (zero-row lookups stay unresolved;
+banner version is proven) — they have not been validated against a live
+anchor, which is exactly what the authorized run verifies.
+
+`ddl_steps` keeps its two schema-reset steps: `DROP DATABASE` has no
+tablespace `IF EXISTS` equivalent and the same steps must run on every
+anchor including tidb85 (no `INNODB_TABLESPACES`), so global-object
+cleanup lives in each meta case's own `setup[0]`/`teardown[]` instead.

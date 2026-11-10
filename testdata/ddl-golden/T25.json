@@ -1384,16 +1384,40 @@
    "pending_native": true,
    "setup": [
     {
+     "name": "preclean-ts1",
+     "sql": "SET @ds=(SELECT IF(COUNT(*)=1,'DROP TABLESPACE t25fx_ts','SELECT 1') FROM information_schema.INNODB_TABLESPACES WHERE NAME='t25fx_ts'); PREPARE s FROM @ds; EXECUTE s; DEALLOCATE PREPARE s;",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "tablespace t25fx_ts absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.INNODB_TABLESPACES WHERE NAME='t25fx_ts'",
+       "expect": "0"
+      }
+     ]
+    },
+    {
+     "name": "preclean-ts2",
+     "sql": "SET @ds=(SELECT IF(COUNT(*)=1,'DROP TABLESPACE t25fx_ts2','SELECT 1') FROM information_schema.INNODB_TABLESPACES WHERE NAME='t25fx_ts2'); PREPARE s FROM @ds; EXECUTE s; DEALLOCATE PREPARE s;",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "tablespace t25fx_ts2 absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.INNODB_TABLESPACES WHERE NAME='t25fx_ts2'",
+       "expect": "0"
+      }
+     ]
+    },
+    {
      "name": "prove-ts-absent",
      "sql": "SELECT COUNT(*) FROM information_schema.INNODB_TABLESPACES WHERE NAME IN ('t25fx_ts','t25fx_ts2')",
+     "expect_rc": 0,
      "verify": [
       {
        "assert": "fixture tablespaces absent",
        "sql": "SELECT COUNT(*) FROM information_schema.INNODB_TABLESPACES WHERE NAME IN ('t25fx_ts','t25fx_ts2')",
        "expect": "0"
       }
-     ],
-     "expect_rc": 0
+     ]
     }
    ],
    "expect": {
@@ -1457,7 +1481,76 @@
      }
     ],
     "description": "zero-row INNODB_TABLESPACES lookups never prove absence — the provider contract leaves them unresolved, so the create owes existence, the rename stays undecidable on the unproven source kind and target state, and the drop owes existence and occupancy"
-   }
+   },
+   "execute": [
+    {
+     "name": "create-tablespace",
+     "sql": "CREATE TABLESPACE t25fx_ts ADD DATAFILE 't25fx_a.ibd' ENGINE=INNODB",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "general tablespace present",
+       "sql": "SELECT COUNT(*) FROM information_schema.INNODB_TABLESPACES WHERE NAME='t25fx_ts' AND SPACE_TYPE='General'",
+       "expect": "1"
+      }
+     ]
+    },
+    {
+     "name": "rename-tablespace",
+     "sql": "ALTER TABLESPACE t25fx_ts RENAME TO t25fx_ts2",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "renamed identity present",
+       "sql": "SELECT COUNT(*) FROM information_schema.INNODB_TABLESPACES WHERE NAME='t25fx_ts2'",
+       "expect": "1"
+      },
+      {
+       "assert": "old identity gone",
+       "sql": "SELECT COUNT(*) FROM information_schema.INNODB_TABLESPACES WHERE NAME='t25fx_ts'",
+       "expect": "0"
+      }
+     ]
+    },
+    {
+     "name": "drop-tablespace",
+     "sql": "DROP TABLESPACE t25fx_ts2",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "both identities absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.INNODB_TABLESPACES WHERE NAME IN ('t25fx_ts','t25fx_ts2')",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "teardown": [
+    {
+     "name": "teardown-ts1",
+     "sql": "SET @ds=(SELECT IF(COUNT(*)=1,'DROP TABLESPACE t25fx_ts','SELECT 1') FROM information_schema.INNODB_TABLESPACES WHERE NAME='t25fx_ts'); PREPARE s FROM @ds; EXECUTE s; DEALLOCATE PREPARE s;",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "tablespace t25fx_ts absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.INNODB_TABLESPACES WHERE NAME='t25fx_ts'",
+       "expect": "0"
+      }
+     ]
+    },
+    {
+     "name": "teardown-ts2",
+     "sql": "SET @ds=(SELECT IF(COUNT(*)=1,'DROP TABLESPACE t25fx_ts2','SELECT 1') FROM information_schema.INNODB_TABLESPACES WHERE NAME='t25fx_ts2'); PREPARE s FROM @ds; EXECUTE s; DEALLOCATE PREPARE s;",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "tablespace t25fx_ts2 absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.INNODB_TABLESPACES WHERE NAME='t25fx_ts2'",
+       "expect": "0"
+      }
+     ]
+    }
+   ]
   },
   {
    "id": "mysql84-occupied-drop-refused",
@@ -1479,6 +1572,23 @@
    ],
    "pending_native": true,
    "setup": [
+    {
+     "name": "preclean-occ",
+     "sql": "DROP TABLE IF EXISTS t25fx.t_occ",
+     "expect_rc": 0
+    },
+    {
+     "name": "preclean-ts",
+     "sql": "SET @ds=(SELECT IF(COUNT(*)=1,'DROP TABLESPACE t25fx_occ','SELECT 1') FROM information_schema.INNODB_TABLESPACES WHERE NAME='t25fx_occ'); PREPARE s FROM @ds; EXECUTE s; DEALLOCATE PREPARE s;",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "tablespace t25fx_occ absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.INNODB_TABLESPACES WHERE NAME='t25fx_occ'",
+       "expect": "0"
+      }
+     ]
+    },
     {
      "name": "seed-occupied-tablespace",
      "sql": "CREATE TABLESPACE t25fx_occ ADD DATAFILE 't25fx_occ.ibd' ENGINE=INNODB",
@@ -1531,7 +1641,40 @@
     ],
     "evidence_gap_entries": [],
     "description": "a proven-occupied tablespace refuses the drop and preserves the pre-state"
-   }
+   },
+   "execute": [
+    {
+     "name": "drop-occupied-refused",
+     "sql": "DROP TABLESPACE t25fx_occ",
+     "expect_rc": 1,
+     "verify": [
+      {
+       "assert": "occupied tablespace survives",
+       "sql": "SELECT COUNT(*) FROM information_schema.INNODB_TABLESPACES WHERE NAME='t25fx_occ'",
+       "expect": "1"
+      }
+     ]
+    }
+   ],
+   "teardown": [
+    {
+     "name": "drop-occupant",
+     "sql": "DROP TABLE IF EXISTS t25fx.t_occ",
+     "expect_rc": 0
+    },
+    {
+     "name": "teardown-ts",
+     "sql": "SET @ds=(SELECT IF(COUNT(*)=1,'DROP TABLESPACE t25fx_occ','SELECT 1') FROM information_schema.INNODB_TABLESPACES WHERE NAME='t25fx_occ'); PREPARE s FROM @ds; EXECUTE s; DEALLOCATE PREPARE s;",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "tablespace t25fx_occ absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.INNODB_TABLESPACES WHERE NAME='t25fx_occ'",
+       "expect": "0"
+      }
+     ]
+    }
+   ]
   },
   {
    "id": "mysql80-absent-alter-refused",
@@ -1553,6 +1696,18 @@
    ],
    "pending_native": true,
    "setup": [
+    {
+     "name": "preclean-ghost",
+     "sql": "SET @ds=(SELECT IF(COUNT(*)=1,'DROP TABLESPACE t25fx_ghost','SELECT 1') FROM information_schema.INNODB_TABLESPACES WHERE NAME='t25fx_ghost'); PREPARE s FROM @ds; EXECUTE s; DEALLOCATE PREPARE s;",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "tablespace t25fx_ghost absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.INNODB_TABLESPACES WHERE NAME='t25fx_ghost'",
+       "expect": "0"
+      }
+     ]
+    },
     {
      "name": "prove-ghost-absent",
      "sql": "SELECT COUNT(*) FROM information_schema.INNODB_TABLESPACES WHERE NAME='t25fx_ghost'",
@@ -1599,7 +1754,21 @@
     ],
     "description": "conservative unknown: the ghost lookup returns zero rows, which the provider contract never promotes to absence — the rename adjudicates undecidable and owes both the source-existence and rename-target facts"
    },
-   "description": "conservative unknown: the ghost lookup returns zero rows, which the provider contract never promotes to absence — the rename adjudicates undecidable and owes both the source-existence and rename-target facts"
+   "description": "conservative unknown: the ghost lookup returns zero rows, which the provider contract never promotes to absence — the rename adjudicates undecidable and owes both the source-existence and rename-target facts",
+   "execute": [
+    {
+     "name": "rename-ghost-refused",
+     "sql": "ALTER TABLESPACE t25fx_ghost RENAME TO t25fx_ghost2",
+     "expect_rc": 1,
+     "verify": [
+      {
+       "assert": "ghost still absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.INNODB_TABLESPACES WHERE NAME IN ('t25fx_ghost','t25fx_ghost2')",
+       "expect": "0"
+      }
+     ]
+    }
+   ]
   },
   {
    "id": "mysql57-undo-refused",
@@ -1657,7 +1826,14 @@
      }
     ],
     "description": "observed 5.7 banner refuses the undo surface natively"
-   }
+   },
+   "execute": [
+    {
+     "name": "undo-57-refused",
+     "sql": "CREATE UNDO TABLESPACE t25fx_u ADD DATAFILE 't25fx_u.ibu' ENGINE=INNODB",
+     "expect_rc": 1
+    }
+   ]
   },
   {
    "id": "mysql80-discard-forbid",
@@ -1713,7 +1889,33 @@
      }
     ],
     "evidence_gap_entries": []
-   }
+   },
+   "execute": [
+    {
+     "name": "discard-executes",
+     "sql": "ALTER TABLE t25fx.t_disc DISCARD TABLESPACE",
+     "expect_rc": 0
+    }
+   ],
+   "teardown": [
+    {
+     "name": "restore-table",
+     "sql": "DROP TABLE IF EXISTS t25fx.t_disc",
+     "expect_rc": 0
+    },
+    {
+     "name": "recreate-table",
+     "sql": "CREATE TABLE t25fx.t_disc (a int) ENGINE=INNODB",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "fixture table restored",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='t25fx' AND TABLE_NAME='t_disc'",
+       "expect": "1"
+      }
+     ]
+    }
+   ]
   },
   {
    "id": "mysql80-import-warn",
@@ -1769,7 +1971,14 @@
      }
     ],
     "evidence_gap_entries": []
-   }
+   },
+   "execute": [
+    {
+     "name": "import-refused",
+     "sql": "ALTER TABLE t25fx.t_imp IMPORT TABLESPACE",
+     "expect_rc": 1
+    }
+   ]
   },
   {
    "id": "mysql80-myisam-discard-refused",
@@ -1831,7 +2040,14 @@
     ],
     "evidence_gap_entries": [],
     "description": "proven MyISAM engine refuses the InnoDB-only action (native 1031)"
-   }
+   },
+   "execute": [
+    {
+     "name": "myisam-discard-refused",
+     "sql": "ALTER TABLE t25fx.t_my DISCARD TABLESPACE",
+     "expect_rc": 1
+    }
+   ]
   },
   {
    "id": "tidb85-vendor-boundary",
@@ -1865,7 +2081,542 @@
     "evidence_gaps": 0,
     "fail_on_triggered": false,
     "description": "TiDB refuses the whole family at the vendor boundary"
-   }
+   },
+   "execute": [
+    {
+     "name": "tidb-tablespace-rejected",
+     "sql": "CREATE TABLESPACE ts1 ADD DATAFILE 'f.ibd' ENGINE=InnoDB",
+     "expect_rc": 1
+    }
+   ]
+  },
+  {
+   "id": "mysql80-memberless-innodb",
+   "anchor": "mysql80",
+   "dialect": "mysql",
+   "sql": "CREATE TABLESPACE t25fx_mbr ENGINE=INNODB;",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23380,
+    "user": "root",
+    "schema": "t25fx",
+    "password_env": "DS_T25_GOLDEN_PW",
+    "password": "root"
+   },
+   "policy": "t25-mysql-tablespace",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "pending_native": true,
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": [
+     "unverified"
+    ],
+    "evidence_gaps": 1,
+    "fail_on_triggered": false,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.mysql.tablespace.create.warn",
+      "level": "warning"
+     }
+    ],
+    "evidence_gap_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.mysql.tablespace.applicability",
+      "reason_code": "unknown_tablespace_state",
+      "required_facts": [
+       "tablespace.existence"
+      ]
+     }
+    ],
+    "description": "8.0.14+ memberless InnoDB create executes natively and the audit only owes unproven existence"
+   },
+   "description": "memberless InnoDB create — native execute arm proves the 8.0.14 implicit datafile",
+   "setup": [
+    {
+     "name": "preclean-mbr",
+     "sql": "SET @ds=(SELECT IF(COUNT(*)=1,'DROP TABLESPACE t25fx_mbr','SELECT 1') FROM information_schema.INNODB_TABLESPACES WHERE NAME='t25fx_mbr'); PREPARE s FROM @ds; EXECUTE s; DEALLOCATE PREPARE s;",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "tablespace t25fx_mbr absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.INNODB_TABLESPACES WHERE NAME='t25fx_mbr'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "execute": [
+    {
+     "name": "memberless-create",
+     "sql": "CREATE TABLESPACE t25fx_mbr ENGINE=INNODB",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "implicit datafile materialized",
+       "sql": "SELECT COUNT(*) FROM information_schema.INNODB_TABLESPACES WHERE NAME='t25fx_mbr' AND SPACE_TYPE='General'",
+       "expect": "1"
+      }
+     ]
+    }
+   ],
+   "teardown": [
+    {
+     "name": "teardown-mbr",
+     "sql": "SET @ds=(SELECT IF(COUNT(*)=1,'DROP TABLESPACE t25fx_mbr','SELECT 1') FROM information_schema.INNODB_TABLESPACES WHERE NAME='t25fx_mbr'); PREPARE s FROM @ds; EXECUTE s; DEALLOCATE PREPARE s;",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "tablespace t25fx_mbr absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.INNODB_TABLESPACES WHERE NAME='t25fx_mbr'",
+       "expect": "0"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "mysql80-encryption-native",
+   "anchor": "mysql80",
+   "dialect": "mysql",
+   "sql": "CREATE TABLESPACE t25fx_e ADD DATAFILE 't25fx_e.ibd' ENCRYPTION='Y' ENGINE=INNODB;",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23380,
+    "user": "root",
+    "schema": "t25fx",
+    "password_env": "DS_T25_GOLDEN_PW",
+    "password": "root"
+   },
+   "policy": "t25-mysql-tablespace",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "pending_native": true,
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": [
+     "unverified"
+    ],
+    "evidence_gaps": 1,
+    "fail_on_triggered": false,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.mysql.tablespace.create.warn",
+      "level": "warning"
+     }
+    ],
+    "evidence_gap_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.mysql.tablespace.applicability",
+      "reason_code": "unknown_tablespace_state",
+      "required_facts": [
+       "tablespace.existence"
+      ]
+     }
+    ],
+    "description": "8.0.13 encryption member executes natively; audit owes only unproven existence"
+   },
+   "description": "encryption member — native arm proves ENCRYPTION='Y' lands on the created tablespace",
+   "setup": [
+    {
+     "name": "preclean-e",
+     "sql": "SET @ds=(SELECT IF(COUNT(*)=1,'DROP TABLESPACE t25fx_e','SELECT 1') FROM information_schema.INNODB_TABLESPACES WHERE NAME='t25fx_e'); PREPARE s FROM @ds; EXECUTE s; DEALLOCATE PREPARE s;",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "tablespace t25fx_e absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.INNODB_TABLESPACES WHERE NAME='t25fx_e'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "execute": [
+    {
+     "name": "encryption-create",
+     "sql": "CREATE TABLESPACE t25fx_e ADD DATAFILE 't25fx_e.ibd' ENCRYPTION='Y' ENGINE=INNODB",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "encryption flag landed",
+       "sql": "SELECT COUNT(*) FROM information_schema.INNODB_TABLESPACES WHERE NAME='t25fx_e' AND ENCRYPTION='Y'",
+       "expect": "1"
+      }
+     ]
+    }
+   ],
+   "teardown": [
+    {
+     "name": "teardown-e",
+     "sql": "SET @ds=(SELECT IF(COUNT(*)=1,'DROP TABLESPACE t25fx_e','SELECT 1') FROM information_schema.INNODB_TABLESPACES WHERE NAME='t25fx_e'); PREPARE s FROM @ds; EXECUTE s; DEALLOCATE PREPARE s;",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "tablespace t25fx_e absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.INNODB_TABLESPACES WHERE NAME='t25fx_e'",
+       "expect": "0"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "mysql80-rename-collision-refused",
+   "anchor": "mysql80",
+   "dialect": "mysql",
+   "sql": "ALTER TABLESPACE t25fx_c1 RENAME TO t25fx_c2;",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23380,
+    "user": "root",
+    "schema": "t25fx",
+    "password_env": "DS_T25_GOLDEN_PW",
+    "password": "root"
+   },
+   "policy": "t25-mysql-tablespace",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "pending_native": true,
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 2,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": true,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.mysql.tablespace.alter.warn",
+      "level": "warning"
+     },
+     {
+      "index": 0,
+      "rule_id": "ddl.mysql.tablespace.applicability",
+      "level": "blocker"
+     }
+    ],
+    "evidence_gap_entries": [],
+    "description": "both identities proven present — the shared collision arm refuses on the provider's own read"
+   },
+   "description": "proven collision — provider-confirmed target triggers rename_target_present end to end",
+   "setup": [
+    {
+     "name": "preclean-c1",
+     "sql": "SET @ds=(SELECT IF(COUNT(*)=1,'DROP TABLESPACE t25fx_c1','SELECT 1') FROM information_schema.INNODB_TABLESPACES WHERE NAME='t25fx_c1'); PREPARE s FROM @ds; EXECUTE s; DEALLOCATE PREPARE s;",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "tablespace t25fx_c1 absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.INNODB_TABLESPACES WHERE NAME='t25fx_c1'",
+       "expect": "0"
+      }
+     ]
+    },
+    {
+     "name": "preclean-c2",
+     "sql": "SET @ds=(SELECT IF(COUNT(*)=1,'DROP TABLESPACE t25fx_c2','SELECT 1') FROM information_schema.INNODB_TABLESPACES WHERE NAME='t25fx_c2'); PREPARE s FROM @ds; EXECUTE s; DEALLOCATE PREPARE s;",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "tablespace t25fx_c2 absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.INNODB_TABLESPACES WHERE NAME='t25fx_c2'",
+       "expect": "0"
+      }
+     ]
+    },
+    {
+     "name": "seed-c1",
+     "sql": "CREATE TABLESPACE t25fx_c1 ADD DATAFILE 't25fx_c1.ibd' ENGINE=INNODB",
+     "expect_rc": 0
+    },
+    {
+     "name": "seed-c2",
+     "sql": "CREATE TABLESPACE t25fx_c2 ADD DATAFILE 't25fx_c2.ibd' ENGINE=INNODB",
+     "expect_rc": 0
+    }
+   ],
+   "execute": [
+    {
+     "name": "rename-collides",
+     "sql": "ALTER TABLESPACE t25fx_c1 RENAME TO t25fx_c2",
+     "expect_rc": 1,
+     "verify": [
+      {
+       "assert": "both identities survive",
+       "sql": "SELECT COUNT(*) FROM information_schema.INNODB_TABLESPACES WHERE NAME IN ('t25fx_c1','t25fx_c2')",
+       "expect": "2"
+      }
+     ]
+    }
+   ],
+   "teardown": [
+    {
+     "name": "teardown-c1",
+     "sql": "SET @ds=(SELECT IF(COUNT(*)=1,'DROP TABLESPACE t25fx_c1','SELECT 1') FROM information_schema.INNODB_TABLESPACES WHERE NAME='t25fx_c1'); PREPARE s FROM @ds; EXECUTE s; DEALLOCATE PREPARE s;",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "tablespace t25fx_c1 absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.INNODB_TABLESPACES WHERE NAME='t25fx_c1'",
+       "expect": "0"
+      }
+     ]
+    },
+    {
+     "name": "teardown-c2",
+     "sql": "SET @ds=(SELECT IF(COUNT(*)=1,'DROP TABLESPACE t25fx_c2','SELECT 1') FROM information_schema.INNODB_TABLESPACES WHERE NAME='t25fx_c2'); PREPARE s FROM @ds; EXECUTE s; DEALLOCATE PREPARE s;",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "tablespace t25fx_c2 absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.INNODB_TABLESPACES WHERE NAME='t25fx_c2'",
+       "expect": "0"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "mysql80-undo-default-drop-refused",
+   "anchor": "mysql80",
+   "dialect": "mysql",
+   "sql": "DROP UNDO TABLESPACE innodb_undo_001;",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23380,
+    "user": "root",
+    "schema": "t25fx",
+    "password_env": "DS_T25_GOLDEN_PW",
+    "password": "root"
+   },
+   "policy": "t25-mysql-tablespace",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "pending_native": true,
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": [
+     "unverified"
+    ],
+    "evidence_gaps": 1,
+    "fail_on_triggered": true,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.mysql.tablespace.drop.forbid",
+      "level": "blocker"
+     }
+    ],
+    "evidence_gap_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.mysql.tablespace.applicability",
+      "reason_code": "unknown_tablespace_state",
+      "required_facts": [
+       "tablespace.drop_eligibility"
+      ]
+     }
+    ],
+    "description": "default undo object: provider proves exists+kind=undo so only the runtime eligibility fact stays owed — the governance forbid fires without a native refusal claim"
+   },
+   "description": "default undo object — native refusal + bounded eligibility gap (no runtime STATE model)",
+   "execute": [
+    {
+     "name": "drop-default-undo-refused",
+     "sql": "DROP UNDO TABLESPACE innodb_undo_001",
+     "expect_rc": 1,
+     "verify": [
+      {
+       "assert": "default undo survives",
+       "sql": "SELECT COUNT(*) FROM information_schema.INNODB_TABLESPACES WHERE NAME='innodb_undo_001'",
+       "expect": "1"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "mysql80-ndb-vendor-boundary",
+   "anchor": "mysql80",
+   "dialect": "mysql",
+   "sql": "CREATE TABLESPACE t25fx_n ADD DATAFILE 't25fx_n.ibd' ENGINE=NDB;",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23380,
+    "user": "root",
+    "schema": "t25fx",
+    "password_env": "DS_T25_GOLDEN_PW",
+    "password": "root"
+   },
+   "policy": "t25-mysql-tablespace",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "pending_native": true,
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false,
+    "finding_entries": [],
+    "evidence_gap_entries": [],
+    "unsupported_entries": [
+     {
+      "index": 0,
+      "feature": "create_tablespace",
+      "reason": "parsed by the shared parser but outside the supported statement surface for this dialect",
+      "metadata": {
+       "boundary": "engine",
+       "engine": "ndb"
+      }
+     }
+    ],
+    "description": "NDB engine member is a vendor boundary — native fixture has no NDB engine"
+   },
+   "description": "NDB engine boundary — product boundary + native engine rejection both recorded",
+   "setup": [
+    {
+     "name": "preclean-n",
+     "sql": "SET @ds=(SELECT IF(COUNT(*)=1,'DROP TABLESPACE t25fx_n','SELECT 1') FROM information_schema.INNODB_TABLESPACES WHERE NAME='t25fx_n'); PREPARE s FROM @ds; EXECUTE s; DEALLOCATE PREPARE s;",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "tablespace t25fx_n absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.INNODB_TABLESPACES WHERE NAME='t25fx_n'",
+       "expect": "0"
+      }
+     ]
+    }
+   ],
+   "execute": [
+    {
+     "name": "ndb-create-refused",
+     "sql": "CREATE TABLESPACE t25fx_n ADD DATAFILE 't25fx_n.ibd' ENGINE=NDB",
+     "expect_rc": 1
+    }
+   ],
+   "teardown": [
+    {
+     "name": "teardown-n",
+     "sql": "SET @ds=(SELECT IF(COUNT(*)=1,'DROP TABLESPACE t25fx_n','SELECT 1') FROM information_schema.INNODB_TABLESPACES WHERE NAME='t25fx_n'); PREPARE s FROM @ds; EXECUTE s; DEALLOCATE PREPARE s;",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "tablespace t25fx_n absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.INNODB_TABLESPACES WHERE NAME='t25fx_n'",
+       "expect": "0"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "mysql80-alter-undo-unaudited",
+   "anchor": "mysql80",
+   "dialect": "mysql",
+   "sql": "ALTER UNDO TABLESPACE innodb_undo_001 SET INACTIVE;",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23380,
+    "user": "root",
+    "schema": "t25fx",
+    "password_env": "DS_T25_GOLDEN_PW",
+    "password": "root"
+   },
+   "policy": "t25-mysql-tablespace",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "pending_native": true,
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false,
+    "finding_entries": [],
+    "evidence_gap_entries": [],
+    "unsupported_entries": [
+     {
+      "index": 0,
+      "feature": "alter_tablespace",
+      "reason": "parsed by the shared parser but not covered by audited semantics",
+      "metadata": {
+       "form": "alter_undo_tablespace"
+      }
+     }
+    ],
+    "description": "set_state stays a bounded unaudited member; native refusal on the default undo object recorded"
+   },
+   "description": "ALTER UNDO SET — unaudited boundary + native default-object refusal",
+   "execute": [
+    {
+     "name": "deactivate-default-undo-refused",
+     "sql": "ALTER UNDO TABLESPACE innodb_undo_001 SET INACTIVE",
+     "expect_rc": 1,
+     "verify": [
+      {
+       "assert": "default undo stays present",
+       "sql": "SELECT COUNT(*) FROM information_schema.INNODB_TABLESPACES WHERE NAME='innodb_undo_001'",
+       "expect": "1"
+      }
+     ]
+    }
+   ]
   }
  ],
  "required_case_ids": [
@@ -1912,6 +2663,12 @@
   "T25.cli.mysql-rename-802-refused",
   "T25.cli.mysql-rename-803-floor",
   "T25.cli.mysql-alter-autoextend-8022-refused",
-  "T25.cli.mysql-alter-autoextend-8023-floor"
+  "T25.cli.mysql-alter-autoextend-8023-floor",
+  "T25.meta.mysql80-memberless-innodb",
+  "T25.meta.mysql80-encryption-native",
+  "T25.meta.mysql80-rename-collision-refused",
+  "T25.meta.mysql80-undo-default-drop-refused",
+  "T25.meta.mysql80-ndb-vendor-boundary",
+  "T25.meta.mysql80-alter-undo-unaudited"
  ]
 }
