@@ -2,9 +2,9 @@
 
 > **R4 addendum (issued under T26-R4 — supersedes the R3 addendum's
 > completion wording).** The table remains a *target* design, not an
-> approved oracle: **no row below is approved semantics yet** — all 32
-> rows are unapproved design cells until the SRS implementation round
-> adjudicates them against oracle evidence. The R3 sentence "`complete`
+> approved oracle: **no row below is approved semantics yet** — all 33
+> numbered rows are unapproved design cells until the SRS implementation
+> round adjudicates them against oracle evidence. The R3 sentence "`complete`
 > means the checked set was checked" is **replaced** by this contract:
 > 1. `complete` is claimable only when every check the adjudication
 >    actually requires — and that the supported surface promises — has
@@ -30,9 +30,12 @@
 > in R3. R3 ships recognition + named boundaries + output redaction only.
 > Status vocabulary for every row below: `S`=static parse fact,
 > `V`=version fact, `M`=metadata fact. An `M` premise resolves to exactly
-> one of **proven-present / proven-absent / unknown / provider-not-loaded /
-> provider-query-failure / partial-coverage** — provider failure is an
+> one of the premise states **proven-present / proven-absent / unknown /
+> provider-not-loaded / provider-query-failure** — provider failure is an
 > error path, never a gap; `unknown` and `absent` never collapse.
+> `partial-coverage` is a coverage *verdict*, not a premise state — an
+> unproven premise yields the applicable bounded gap plus that coverage
+> outcome, it never resolves as the premise itself.
 > Rows marked **PENDING ORACLE** (INE precedence, OR REPLACE absent-arm)
 > produce no deterministic post-state until source evidence lands
 > ~~every `complete` cell means "the checked set was checked"~~

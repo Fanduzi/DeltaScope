@@ -45,15 +45,27 @@ Two properties made a naive implementation unacceptable:
   only authored facts the promised semantics need (kind, name/SRID
   identity, wrapper, option keys + value kinds + counts, attribute
   presence/identities, guards, duplicate flags). Credentials, option
-  values, and WKT payloads are never stored. R4 corrections: OPTIONS
-  requires ≥1 member with no trailing/doubled comma or missing value;
+  values, and WKT payloads never enter the derived declaration or
+  serialized outputs — the statement's internal RawSQL still holds the
+  authored text, so the claim scopes to derived facts and outputs.
+  R4 corrections: OPTIONS
+  requires ≥1 member with no trailing/doubled comma or missing value
+  (consecutive commas ride the regression set — both versions rejected
+  them structurally, they are not a proven old-version failure);
   `ORGANIZATION` owns a mandatory complete `IDENTIFIED BY <u32>` pair;
   unquoted server names obey the upstream ident rule (no reserved words,
-  no pure digits); quoted tokens must be genuinely closed (odd trailing
-  quote run — `''` doubled escapes cannot fake a close); `NameOverLimit`
-  counts runes, not bytes; definition/description lengths are named in
-  bytes (`DefinitionByteLen`/`DescriptionByteLen`); Name/OrgName are
+  no pure digits); definition/description lengths are named in bytes
+  (`DefinitionByteLen`/`DescriptionByteLen`); Name/OrgName are
   documented as unquoted spellings — not complete string decodes.
+  R5 corrections: token closure is decided by `scanQuoted` — the same
+  scan the tokenizer runs — so backslash escapes, consecutive
+  backslashes, doubled quotes, and doubled backticks all follow the
+  lexical contract (`'x\'` unclosed, `'x\''` closed; inside backticks a
+  backslash is literal); every string consumption entry (SERVER
+  name/wrapper/OPTIONS char values; SRS NAME/DEFINITION/ORGANIZATION/
+  DESCRIPTION) now consumes that closure result;
+  `NameSpellingRuneCount` replaces the name-over-limit bool — a lexical
+  spelling measurement only, never a decoded-length verdict.
 - `spec.Statement` gains the serialized-output privacy seam:
   `SensitiveSQL()` marks families whose payloads must never surface;
   `PublicSQL()`/`PublicNormalizedSQL()` return the declaration's

@@ -48,11 +48,12 @@ var serverOptionValueKind = map[string]string{
 	"port":     "numeric",
 }
 
-// mysqlServerNameLimit is the documented 64-character server-name bound
-// (mysql.servers.server_name is CHAR(64)). The fact is recorded, not
-// enforced, and counts characters — runes of the unquoted token text —
-// never UTF-8 bytes.
-const mysqlServerNameLimit = 64
+// The documented 64-character server-name bound (mysql.servers
+// .server_name is CHAR(64)) is a decoded-length check — outside the
+// recognizer's scope. The declaration records only the unquoted
+// spelling's rune count (spec.ServerDeclaration.NameSpellingRuneCount);
+// comparing decoded length against the bound stays a future semantic
+// step that first owes the full string decode.
 
 // parseMySQLServer recognizes a whole-input MySQL SERVER-family
 // statement and fabricates its carrier node. A false result means the
@@ -151,10 +152,10 @@ func mysqlServerCreate(sqlText string, nameTok sqlTok, rest []sqlTok) (ast.StmtN
 		return nil, false
 	}
 	decl := &spec.ServerDeclaration{
-		Kind:          spec.ServerKindCreate,
-		Name:          name,
-		Wrapper:       wrapper,
-		NameOverLimit: utf8.RuneCountInString(name) > mysqlServerNameLimit,
+		Kind:                  spec.ServerKindCreate,
+		Name:                  name,
+		Wrapper:               wrapper,
+		NameSpellingRuneCount: utf8.RuneCountInString(name),
 	}
 	if !mysqlServerOptions(sqlText, rest[4:], decl) {
 		return nil, false
@@ -171,9 +172,9 @@ func mysqlServerAlter(sqlText string, nameTok sqlTok, rest []sqlTok) (ast.StmtNo
 		return nil, false
 	}
 	decl := &spec.ServerDeclaration{
-		Kind:          spec.ServerKindAlter,
-		Name:          name,
-		NameOverLimit: utf8.RuneCountInString(name) > mysqlServerNameLimit,
+		Kind:                  spec.ServerKindAlter,
+		Name:                  name,
+		NameSpellingRuneCount: utf8.RuneCountInString(name),
 	}
 	if !mysqlServerOptions(sqlText, rest, decl) {
 		return nil, false
@@ -191,10 +192,10 @@ func mysqlServerDrop(sqlText string, nameTok sqlTok, rest []sqlTok, ifExists boo
 		return nil, false
 	}
 	decl := &spec.ServerDeclaration{
-		Kind:          spec.ServerKindDrop,
-		Name:          name,
-		IfExists:      ifExists,
-		NameOverLimit: utf8.RuneCountInString(name) > mysqlServerNameLimit,
+		Kind:                  spec.ServerKindDrop,
+		Name:                  name,
+		IfExists:              ifExists,
+		NameSpellingRuneCount: utf8.RuneCountInString(name),
 	}
 	node := &ast.DropResourceGroupStmt{ResourceGroupName: ast.NewCIStr(name)}
 	node.SetText(charset.FindEncoding(""), strings.TrimSpace(sqlText))
@@ -245,7 +246,7 @@ func mysqlServerOptions(sqlText string, rest []sqlTok, decl *spec.ServerDeclarat
 		value := inner[i]
 		switch wantKind {
 		case "char":
-			if value.kind != tokStr {
+			if value.kind != tokStr || !quotedTokenClosed(value.text(sqlText)) {
 				return false
 			}
 		case "numeric":

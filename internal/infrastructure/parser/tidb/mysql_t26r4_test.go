@@ -132,8 +132,8 @@ func TestT26R4UnclosedTokens(t *testing.T) {
 	}
 }
 
-// R4-03c: the documented 64-character name bound counts characters,
-// not bytes — a 65-rune multibyte name trips it, a 64-rune one does not.
+// R4-03c/R5-02: the name fact is the unquoted spelling's rune count —
+// characters, never bytes, and never a decoded-length verdict.
 func TestT26R4ServerNameCharLimit(t *testing.T) {
 	t.Parallel()
 	ascii64 := strings.Repeat("a", 64)
@@ -141,19 +141,19 @@ func TestT26R4ServerNameCharLimit(t *testing.T) {
 	multi64 := strings.Repeat("é", 64) // 64 chars, 128 bytes
 	for _, c := range []struct {
 		name string
-		want bool
+		want int
 	}{
-		{ascii64, false},
-		{ascii65, true},
-		{multi64, false},
-		{strings.Repeat("é", 65), true},
+		{ascii64, 64},
+		{ascii65, 65},
+		{multi64, 64},
+		{strings.Repeat("é", 65), 65},
 	} {
 		stmt := parseExtractT26(t, "DROP SERVER `"+c.name+"`", spec.DialectMySQL)
 		if stmt.DDL == nil || stmt.DDL.Server == nil {
 			t.Fatalf("name len %d: not recognized", len(c.name))
 		}
-		if got := stmt.DDL.Server.NameOverLimit; got != c.want {
-			t.Fatalf("name chars %d (bytes %d): NameOverLimit=%v want %v — byte/char confusion",
+		if got := stmt.DDL.Server.NameSpellingRuneCount; got != c.want {
+			t.Fatalf("name chars %d (bytes %d): NameSpellingRuneCount=%v want %v — byte/char confusion",
 				len([]rune(c.name)), len(c.name), got, c.want)
 		}
 	}

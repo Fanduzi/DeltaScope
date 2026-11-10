@@ -30,11 +30,14 @@ type ServerDeclaration struct {
 	// DuplicateKeys names option keys authored more than once — a
 	// declaration fact for later adjudication, not a verdict.
 	DuplicateKeys []string
-	// NameOverLimit marks an authored name exceeding the documented
-	// 64-character server-name bound, counted in characters (runes of
-	// the unquoted text) — never bytes. MySQL truncates/refuses at the
-	// engine layer; the fact stays declarative here.
-	NameOverLimit bool
+	// NameSpellingRuneCount is the rune count of the unquoted authored
+	// spelling — a lexical measurement only. It is not a verdict on the
+	// documented 64-character server-name bound: the decoded length
+	// needs a full MySQL string decode (backslash escapes, charset
+	// introducers) that stays a registered future step, so `'...\4'`
+	// spells 65 runes while its decoded name is 64. Consumers must not
+	// read the spelling count as a proven name-length violation.
+	NameSpellingRuneCount int
 }
 
 // ServerOption records one OPTIONS member — key and value kind only.

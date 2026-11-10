@@ -12,12 +12,13 @@ import (
 // family (T26/#105). It is internal evidence and is never serialized.
 //
 // DEFINITION payload privacy: the WKT/WKT2 source text is a free-form
-// string literal. The declaration records presence, length, and the
-// newline legality bit only — never the payload text. NAME and
-// ORGANIZATION identities are kept verbatim because the promised
-// semantic checks (name conflict, organization consistency) consume
-// them; the raw input still holds every payload for a later definition
-// legality check. PublicSQL renders the fixed-shape redacted form.
+// string literal. The declaration records presence, byte length, and
+// literal CR/LF presence only — never the payload text; legality is a
+// semantic check this stage does not claim. NAME and ORGANIZATION
+// identities are kept verbatim because the promised semantic checks
+// (name conflict, organization consistency) consume them; the raw
+// input still holds every payload for a later definition check.
+// PublicSQL renders the fixed-shape redacted form.
 type SpatialReferenceDeclaration struct {
 	// Kind is the statement family: "create", "create_or_replace", or
 	// "drop".
@@ -48,9 +49,11 @@ type SRSAttributes struct {
 	Name    string
 	// HasDefinition marks an authored DEFINITION clause;
 	// DefinitionByteLen is the byte length of the unquoted text and
-	// DefHasNewline the literal CR/LF presence in that text — the
-	// documented legality bit (MySQL requires the definition to contain
-	// no newlines). The WKT payload itself is never stored.
+	// DefHasNewline records literal CR/LF presence in that text — a
+	// lexical fact only, not the definition-legality verdict (the
+	// documented no-newline rule is one member of that check, and the
+	// decode step owed before semantic consumers is registered with
+	// the contract). The WKT payload itself is never stored.
 	HasDefinition     bool
 	DefinitionByteLen int
 	DefHasNewline     bool

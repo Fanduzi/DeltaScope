@@ -4,7 +4,11 @@
 > is the *target* contract — none of it is implemented in R3. R3 ships
 > `spec.ServerDeclaration` carrying only: kind, verbatim name, wrapper
 > identity, option keys + value kinds + counts, duplicate keys, and the
-> name-length fact — **option values are never stored or emitted**. The
+> name-spelling rune count — **option literal values never enter the
+> derived declaration and are never emitted** (the statement's internal
+> RawSQL still holds the authored text — the never-stored claim scopes
+> to declaration fields and serialized outputs, not the raw parse
+> record). The
 > emitted outcome is uniformly `coverage=incomplete` + named unaudited
 > boundary (`boundary=unaudited`, `object=server`) on MySQL and vendor
 > boundary on TiDB. No findings, no lifecycle post-state, no metadata

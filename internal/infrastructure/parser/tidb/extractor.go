@@ -134,9 +134,9 @@ func (e tidbExtractor) Extract(dialect spec.Dialect, rawSQL string) (spec.Statem
 		return statement, nil
 	}
 	if _, ok := e.node.(*mysqlAlterInstanceStatement); ok {
-		// The MySQL-only ALTER INSTANCE subaction carries no DDL — it
-		// falls to the unhandled-statement boundary with its precise
-		// feature name (T26/#105 DDL-ALTER-INSTANCE-EXT).
+		// The MySQL-only ALTER INSTANCE ROTATE subaction carries no DDL
+		// — it falls to the unhandled-statement boundary with its
+		// precise feature name (T26/#105 inventory scope).
 		applyCoverageBoundary(dialect, &statement, e.node)
 		return statement, nil
 	}

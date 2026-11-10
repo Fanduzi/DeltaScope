@@ -975,10 +975,13 @@ func isSQLWordByte(b byte) bool {
 	return b >= 'a' && b <= 'z' || b >= 'A' && b <= 'Z' || b >= '0' && b <= '9' || b == '_' || b == '$'
 }
 
-// skipQuoted returns the index after a quoted literal starting at i. Quote
-// doubling and backslash escapes are honored; unterminated quotes consume the
-// rest of the input.
-func skipQuoted(sqlText string, i int) int {
+// scanQuoted runs the shared quoted-literal scan starting at i and
+// reports the index after the literal plus whether it ended on a real
+// closing quote rather than running unterminated to the end of input.
+// Quote doubling and backslash escapes are honored; inside backticks a
+// backslash is literal — only doubling escapes — matching the
+// tokenizer's convention for quoted identifiers versus strings.
+func scanQuoted(sqlText string, i int) (end int, closed bool) {
 	quote := sqlText[i]
 	i++
 	for i < len(sqlText) {
@@ -991,33 +994,41 @@ func skipQuoted(sqlText string, i int) int {
 				i += 2
 				continue
 			}
-			return i + 1
+			return i + 1, true
 		}
 		i++
 	}
-	return len(sqlText)
+	return len(sqlText), false
+}
+
+// skipQuoted returns the index after a quoted literal starting at i —
+// the same shared scan; unterminated quotes consume the rest of the
+// input.
+func skipQuoted(sqlText string, i int) int {
+	end, _ := scanQuoted(sqlText, i)
+	return end
 }
 
 // quotedTokenClosed reports whether a lexed quoted token ends on a real
-// closing quote rather than running to the end of input unterminated.
-// The doubled-quote escape makes the naive last-byte check ambiguous —
-// `'x”` ends with a quote byte but its final pair is an escape, while
-// `'x”'` closes. Scanning the interior, each maximal run of k quote
-// bytes consumes k/2 escapes; a token is closed iff the run ending at
-// the last byte has odd length (counting positions after the opener).
+// closing quote rather than running unterminated. The answer comes from
+// the same scan the tokenizer runs — backslash escapes (a backslash
+// escapes the next byte, so consecutive backslashes pair off), doubled
+// quotes inside strings, and doubled backticks inside identifiers all
+// behave identically here and at tokenize time. `'x\'` is unclosed
+// (escaped final quote) while `'x\”` closes (escape then real close).
+// `end == len(raw)` also rejects a token whose scan stops early — a
+// raw run a real lexer would have split mid-token is never trusted.
 func quotedTokenClosed(raw string) bool {
 	if len(raw) < 2 {
 		return false
 	}
-	q := raw[0]
-	if q != '\'' && q != '"' && q != '`' {
+	switch raw[0] {
+	case '\'', '"', '`':
+	default:
 		return false
 	}
-	run := 0
-	for i := len(raw) - 1; i >= 1 && raw[i] == q; i-- {
-		run++
-	}
-	return run%2 == 1
+	end, closed := scanQuoted(raw, 0)
+	return closed && end == len(raw)
 }
 
 func skipLineComment(sqlText string, i int) int {

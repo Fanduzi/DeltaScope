@@ -292,13 +292,16 @@ func unhandledStatementFeature(node ast.StmtNode) string {
 		return ""
 	case *mysqlAlterInstanceStatement:
 		// The recognizer assigns the precise feature name at claim time
-		// (T26/#105 DDL-ALTER-INSTANCE-EXT).
+		// (T26/#105 inventory scope — ROTATE is T26-owned; the EXT
+		// tracking label holds only the surplus subactions).
 		return n.feature
 	case *ast.AlterInstanceStmt:
-		// The inventory-owned RELOAD TLS subaction gets its precise
-		// name; NO ROLLBACK ON ERROR stays the same subaction with the
-		// member recorded in boundary metadata. Other native subactions
-		// keep the generic name (T26/#105).
+		// This case only sees subactions the native grammar already
+		// produced an AST for; syntax failures keep the parser-error
+		// path. The inventory-owned RELOAD TLS subaction gets its
+		// precise name; NO ROLLBACK ON ERROR stays the same subaction
+		// with the member recorded in boundary metadata. Other
+		// successfully-parsed subactions keep the generic name (T26).
 		if n.ReloadTLS {
 			return "alter_instance.reload_tls"
 		}
