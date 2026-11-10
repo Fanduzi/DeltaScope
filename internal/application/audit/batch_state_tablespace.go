@@ -130,12 +130,27 @@ func (s *batchState) bindTablespaces(ctx context.Context, statement spec.Stateme
 	if err != nil {
 		return nil, err
 	}
-	if s.contaminated {
-		return map[string]*spec.TablespaceState{
-			key: {Name: strings.TrimSpace(decl.Name), Status: spec.MetadataStatusUnavailable},
-		}, nil
+	out := map[string]*spec.TablespaceState{key: s.projectTablespaceEntry(entry)}
+	if decl.AlterAction == "rename" && decl.NewName != "" {
+		// RENAME consumes the target identity too — the shared outcome
+		// adjudicates the collision arm and owes the target fact, so the
+		// bound projection must carry it (same authored-case key).
+		target, err := s.resolveTablespace(ctx, decl.NewName)
+		if err != nil {
+			return nil, err
+		}
+		out[strings.TrimSpace(decl.NewName)] = s.projectTablespaceEntry(target)
 	}
-	return map[string]*spec.TablespaceState{key: s.projectTablespaceEntry(entry)}, nil
+	if s.contaminated {
+		for k, v := range out {
+			v.Status = spec.MetadataStatusUnavailable
+			v.Exists = false
+			v.Kind = ""
+			v.Occupied = nil
+			out[k] = v
+		}
+	}
+	return out, nil
 }
 
 // applyTablespaceStatement publishes the conditional post-state of one
@@ -222,18 +237,36 @@ func (s *batchState) applyTablespaceStatement(ctx context.Context, statement spe
 			return nil
 		}
 		// ALTER keeps the object's state; an unproven entry stays
-		// unresolved rather than inventing existence. RENAME moves the
-		// proven identity — the authored target inherits the entry and
-		// the source tombstones absent.
-		if entry.state != tablePresent || decl.AlterAction != "rename" || decl.NewName == "" {
+		// unresolved rather than inventing existence.
+		if decl.AlterAction != "rename" || decl.NewName == "" {
 			return nil
 		}
 		target, err := s.resolveTablespace(ctx, decl.NewName)
 		if err != nil {
 			return err
 		}
-		if target.state == tablePresent {
-			// A proven-present rename target refuses — the pre-state stands.
+		verdict, _, _ := spec.TablespaceRenameOutcome(
+			s.projectTablespaceEntry(entry), s.projectTablespaceEntry(target),
+			statementVersionIdentityShared(statement))
+		switch verdict {
+		case spec.TablespaceRenameRefused:
+			// Proven refusal — the exact pre-state stands on both sides.
+			return nil
+		case spec.TablespaceRenameUndecidable:
+			// Possible worlds disagree: the migrated world tombstones
+			// the source and lands the object under the target; refused
+			// worlds hold both. The union can assert neither — both
+			// entries stay unknown rather than inventing a tombstone or
+			// copying kind/occupancy onto an unproven target.
+			entry.state = tableUnknown
+			entry.occupied = nil
+			entry.kind = ""
+			entry.resolved = true
+			target.state = tableUnknown
+			target.occupied = nil
+			target.kind = ""
+			target.name = strings.TrimSpace(decl.NewName)
+			target.resolved = true
 			return nil
 		}
 		target.state = entry.state

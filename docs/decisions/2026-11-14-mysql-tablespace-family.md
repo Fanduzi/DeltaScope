@@ -50,8 +50,10 @@ infers facts from missing metadata.
   explicit non-InnoDB/non-NDB engine, exact `MAJOR.MINOR.PATCH` capability
   floors via `spec.TablespaceVersionOutcomeFor`
   (memberless general CREATE = 8.0.14, UNDO SQL management = 8.0.14,
-  ENCRYPTION = 8.0.13 — a memberless InnoDB CREATE is supported, never
-  refused, from 8.0.14), InnoDB `ADD/DROP DATAFILE` (NDB-only member),
+  ENCRYPTION = 8.0.13, RENAME = 8.0.3, `ENGINE_ATTRIBUTE` = 8.0.21, ALTER
+  `AUTOEXTEND_SIZE` = 8.0.23 — CREATE-side `AUTOEXTEND_SIZE` carries no
+  floor because MySQL 5.7 through the pre-8.0.23 line accepts and ignores
+  the option), InnoDB `ADD/DROP DATAFILE` (NDB-only member),
   proven-absent ALTER/DROP target, proven-present CREATE target,
   proven-occupied DROP, and proven kind mismatch (a general form never acts
   on an undo object or vice versa) — while every unproven premise emits a
@@ -67,8 +69,13 @@ infers facts from missing metadata.
   unproven memberless engine leaves the whole entry unknown; DROP under
   unknown occupancy or on an undo object stays undecidable rather than
   claiming absence; proven refusals and kind mismatches hold the exact
-  pre-state; RENAME migrates identity only on proven execution with
-  destination-collision refusal; refused operations never mutate state; the
+  pre-state; RENAME adjudicates through the shared
+  `spec.TablespaceRenameOutcome` — proven migration requires a supported
+  8.0.3+ version, a proven general source, and a proven-absent target, a
+  proven refusal (version, absent source, non-general kind, present target)
+  holds the exact pre-state, and any unproven premise leaves both entries
+  undecidable-unknown instead of tombstoning the source or fabricating the
+  target; refused operations never mutate state; the
   unaudited `set_state` form provably preserves tracked facts and never
   contaminates the batch; contaminated batches keep projections unavailable.
 - Provider: `ResolveObject("mysql_tablespace")` reads

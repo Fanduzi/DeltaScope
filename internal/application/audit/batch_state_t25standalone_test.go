@@ -170,6 +170,7 @@ func TestT25TablespaceRenameMovesIdentity(t *testing.T) {
 			kind: spec.TablespaceKindGeneral, occupied: &unoccupied},
 		"ts2": {status: spec.MetadataStatusNotFound},
 	})
+	provider.version = "8.0.45"
 	result := t25Standalone(t,
 		"ALTER TABLESPACE ts1 RENAME TO ts2; DROP TABLESPACE ts2",
 		provider)
@@ -717,5 +718,169 @@ func TestT25RefusedGuardsPreservePreState(t *testing.T) {
 	}
 	if len(result.Statements[1].EvidenceGaps) != 0 {
 		t.Fatalf("drop after refused drop gaps = %+v, want none — the refused drop never tombstoned", result.Statements[1].EvidenceGaps)
+	}
+}
+
+// R4-N01: the shared rename outcome adjudicates every premise — target
+// existence, source kind, and the 8.0.3 version floor — so unproven
+// worlds can never be promoted to a determined migration.
+func TestT25RenameJointAdjudication(t *testing.T) {
+	t.Parallel()
+	unoccupied := false
+	base := func() *t25TablespaceProviderImpl {
+		p := t25TablespaceProvider(map[string]t25TablespaceFact{
+			"a": {status: spec.MetadataStatusConfirmed, exists: true,
+				kind: spec.TablespaceKindGeneral, occupied: &unoccupied},
+		})
+		p.version = "8.0.45"
+		return p
+	}
+	gapFacts := func(result report.Result, idx int) map[string]bool {
+		facts := map[string]bool{}
+		for _, gap := range result.Statements[idx].EvidenceGaps {
+			for _, f := range gap.RequiredFacts {
+				facts[f] = true
+			}
+		}
+		return facts
+	}
+
+	// A: source proven general + version proven, target unknown → the
+	// rename owes the target fact and must not publish a fabricated
+	// source-absent for the dependent drop.
+	t.Run("A target unknown stays undecidable", func(t *testing.T) {
+		result := t25Standalone(t,
+			"ALTER TABLESPACE a RENAME TO b; DROP TABLESPACE a", base())
+		if !gapFacts(result, 0)["tablespace.rename_target"] {
+			t.Fatalf("rename gaps = %+v, want tablespace.rename_target owed", result.Statements[0].EvidenceGaps)
+		}
+		drop := gapFacts(result, 1)
+		if !drop["tablespace.existence"] {
+			t.Fatalf("drop-after-undecidable-rename gaps = %+v, want existence owed — the source tombstone was never proven", result.Statements[1].EvidenceGaps)
+		}
+	})
+
+	// B: both states proven, version unproven → no determined migration.
+	t.Run("B unproven version stays undecidable", func(t *testing.T) {
+		p := base()
+		p.version = ""
+		p.facts["b"] = t25TablespaceFact{status: spec.MetadataStatusNotFound}
+		result := t25Standalone(t,
+			"ALTER TABLESPACE a RENAME TO b; DROP TABLESPACE a", p)
+		if !gapFacts(result, 0)["target.version"] {
+			t.Fatalf("rename gaps = %+v, want target.version owed", result.Statements[0].EvidenceGaps)
+		}
+		if !gapFacts(result, 1)["tablespace.existence"] {
+			t.Fatalf("drop gaps = %+v, want existence owed — migration was never proven", result.Statements[1].EvidenceGaps)
+		}
+	})
+
+	// C: source present with unknown kind, target proven absent,
+	// version proven → the undo-kind world keeps kind owed.
+	t.Run("C unknown kind stays owed", func(t *testing.T) {
+		p := base()
+		p.facts["a"] = t25TablespaceFact{status: spec.MetadataStatusConfirmed, exists: true, occupied: &unoccupied}
+		p.facts["b"] = t25TablespaceFact{status: spec.MetadataStatusNotFound}
+		result := t25Standalone(t, "ALTER TABLESPACE a RENAME TO b; DROP TABLESPACE a", p)
+		if !gapFacts(result, 0)["tablespace.kind"] {
+			t.Fatalf("rename gaps = %+v, want tablespace.kind owed", result.Statements[0].EvidenceGaps)
+		}
+		if !gapFacts(result, 1)["tablespace.existence"] {
+			t.Fatalf("drop gaps = %+v, want existence owed — kind-undecidable migration never published", result.Statements[1].EvidenceGaps)
+		}
+	})
+
+	// D: proven-present target → collision refusal preserving pre-state;
+	// the source survives for the dependent drop with zero gaps.
+	t.Run("D collision refuses and preserves", func(t *testing.T) {
+		p := base()
+		p.facts["b"] = t25TablespaceFact{status: spec.MetadataStatusConfirmed, exists: true,
+			kind: spec.TablespaceKindGeneral, occupied: &unoccupied}
+		result := t25Standalone(t, "ALTER TABLESPACE a RENAME TO b; DROP TABLESPACE a", p)
+		found := false
+		for _, f := range result.Statements[0].Findings {
+			if f.Metadata["reason_code"] == "tablespace_rename_target_present" {
+				found = true
+			}
+		}
+		if !found {
+			t.Fatalf("collision findings = %+v, want rename_target_present refusal", result.Statements[0].Findings)
+		}
+		if len(result.Statements[1].EvidenceGaps) != 0 {
+			t.Fatalf("drop-after-refused-rename gaps = %+v, want none — the source pre-state held", result.Statements[1].EvidenceGaps)
+		}
+	})
+
+	// E: fully proven premises still migrate (positive arm preserved —
+	// covered by TestT25TablespaceRenameMovesIdentity).
+}
+
+// R4-N02: capability floors are exact — the 5.7 accepted-and-ignored
+// CREATE AUTOEXTEND_SIZE is never a version refusal, ENGINE_ATTRIBUTE
+// bounds at 8.0.21, ALTER AUTOEXTEND_SIZE at 8.0.23.
+func TestT25CapabilityFloorCalibration(t *testing.T) {
+	t.Parallel()
+	providerFor := func(version string) *t25TablespaceProviderImpl {
+		p := t25TablespaceProvider(map[string]t25TablespaceFact{
+			"ts1": {status: spec.MetadataStatusNotFound},
+		})
+		p.version = version
+		return p
+	}
+	applicability := func(result report.Result) string {
+		for _, f := range result.Statements[0].Findings {
+			if f.RuleID == t25RuleTSApp {
+				if rc, _ := f.Metadata["reason_code"].(string); rc != "" {
+					return rc
+				}
+			}
+		}
+		return ""
+	}
+
+	// 5.7 CREATE with AUTOEXTEND_SIZE: accepted and ignored — the only
+	// adjudication left is the unproven object state (no version refusal).
+	result := t25Standalone(t,
+		"CREATE TABLESPACE ts1 ADD DATAFILE 'f.ibd' AUTOEXTEND_SIZE=4194304 ENGINE=InnoDB",
+		providerFor("5.7.44"))
+	if rc := applicability(result); rc == "tablespace_version_inapplicable" {
+		t.Fatalf("create autoextend @5.7 emitted %s — 5.7 accepts and ignores the option", rc)
+	}
+
+	// ENGINE_ATTRIBUTE floor boundary: 8.0.20 refuses, 8.0.21 supports.
+	for _, tc := range []struct {
+		version string
+		want    string
+	}{
+		{"8.0.20", "tablespace_version_inapplicable"},
+		{"8.0.21", ""},
+	} {
+		res := t25Standalone(t,
+			"CREATE TABLESPACE ts1 ADD DATAFILE 'f.ibd' ENGINE_ATTRIBUTE='{\"k\":1}' ENGINE=InnoDB",
+			providerFor(tc.version))
+		if rc := applicability(res); (rc == "tablespace_version_inapplicable") != (tc.want != "") {
+			t.Fatalf("engine_attribute @%s reason=%q, want %q", tc.version, rc, tc.want)
+		}
+	}
+
+	// ALTER AUTOEXTEND_SIZE bounds at 8.0.23 (8.0.22 refuses).
+	res := t25Standalone(t,
+		"ALTER TABLESPACE ts1 ENCRYPTION='Y' AUTOEXTEND_SIZE=8M",
+		providerFor("8.0.22"))
+	if rc := applicability(res); rc != "tablespace_version_inapplicable" {
+		t.Fatalf("alter autoextend @8.0.22 reason=%q, want version_inapplicable (floor 8.0.23)", rc)
+	}
+	res = t25Standalone(t,
+		"ALTER TABLESPACE ts1 ENCRYPTION='Y' AUTOEXTEND_SIZE=8M",
+		providerFor("8.0.23"))
+	if rc := applicability(res); rc == "tablespace_version_inapplicable" {
+		t.Fatalf("alter autoextend @8.0.23 emitted %s — the alter capability arrives at 8.0.23", rc)
+	}
+
+	// RENAME's real floor is 8.0.3: a proven 8.0.2 refuses, 8.0.3 passes
+	// the version arm (remaining premises adjudicate on their own).
+	res = t25Standalone(t, "ALTER TABLESPACE ts1 RENAME TO ts2", providerFor("8.0.2"))
+	if rc := applicability(res); rc != "tablespace_version_inapplicable" {
+		t.Fatalf("rename @8.0.2 reason=%q, want version_inapplicable (floor 8.0.3)", rc)
 	}
 }

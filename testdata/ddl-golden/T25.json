@@ -156,10 +156,10 @@
     "coverage": "unverified",
     "statement_coverage": [
      "unverified",
-     "complete",
+     "unverified",
      "unverified"
     ],
-    "evidence_gaps": 2,
+    "evidence_gaps": 3,
     "fail_on_triggered": true,
     "finding_entries": [
      {
@@ -188,15 +188,26 @@
       ]
      },
      {
+      "index": 1,
+      "rule_id": "ddl.mysql.tablespace.applicability",
+      "reason_code": "unknown_tablespace_state",
+      "required_facts": [
+       "target.version",
+       "tablespace.kind",
+       "tablespace.rename_target"
+      ]
+     },
+     {
       "index": 2,
       "rule_id": "ddl.mysql.tablespace.applicability",
       "reason_code": "unknown_tablespace_state",
       "required_facts": [
+       "tablespace.existence",
        "tablespace.occupancy"
       ]
      }
     ],
-    "description": "offline chain — the batch-proven rename object still owes occupancy to the drop"
+    "description": "offline chain — the shared rename outcome is undecidable offline (version, source kind, and target state never answered), so neither a source tombstone nor a target migration is published and the trailing drop owes existence and occupancy"
    }
   },
   {
@@ -1025,6 +1036,330 @@
     "unsupported_entries": [],
     "description": "at the exact 8.0.13 floor the encryption member is supported — only existence stays owed"
    }
+  },
+  {
+   "id": "mysql-create-autoextend-57-ignored",
+   "dialect": "mysql",
+   "sql": "CREATE TABLESPACE ts1 ADD DATAFILE 'f.ibd' AUTOEXTEND_SIZE=4194304 ENGINE=InnoDB;",
+   "policy": "t25-mysql-tablespace",
+   "args": [
+    "--fail-on",
+    "blocker",
+    "--target-version",
+    "v5.7.44"
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": [
+     "unverified"
+    ],
+    "evidence_gaps": 1,
+    "fail_on_triggered": false,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.mysql.tablespace.create.warn",
+      "level": "warning"
+     }
+    ],
+    "evidence_gap_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.mysql.tablespace.applicability",
+      "reason_code": "unknown_tablespace_state",
+      "required_facts": [
+       "tablespace.existence"
+      ]
+     }
+    ],
+    "description": "MySQL 5.7 accepts and ignores CREATE AUTOEXTEND_SIZE — the option is never a version refusal"
+   }
+  },
+  {
+   "id": "mysql-engineattr-8020-refused",
+   "dialect": "mysql",
+   "sql": "CREATE TABLESPACE ts1 ADD DATAFILE 'f.ibd' ENGINE_ATTRIBUTE='{\"k\":1}' ENGINE=InnoDB;",
+   "policy": "t25-mysql-tablespace",
+   "args": [
+    "--fail-on",
+    "blocker",
+    "--target-version",
+    "v8.0.20"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 2,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": [
+     "unverified"
+    ],
+    "evidence_gaps": 1,
+    "fail_on_triggered": true,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.mysql.tablespace.create.warn",
+      "level": "warning"
+     },
+     {
+      "index": 0,
+      "rule_id": "ddl.mysql.tablespace.applicability",
+      "level": "blocker"
+     }
+    ],
+    "evidence_gap_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.mysql.tablespace.applicability",
+      "reason_code": "unknown_tablespace_state",
+      "required_facts": [
+       "tablespace.existence"
+      ]
+     }
+    ],
+    "description": "engine_attribute arrives at 8.0.21 — proven 8.0.20 refuses the member"
+   }
+  },
+  {
+   "id": "mysql-engineattr-8021-floor",
+   "dialect": "mysql",
+   "sql": "CREATE TABLESPACE ts1 ADD DATAFILE 'f.ibd' ENGINE_ATTRIBUTE='{\"k\":1}' ENGINE=InnoDB;",
+   "policy": "t25-mysql-tablespace",
+   "args": [
+    "--fail-on",
+    "blocker",
+    "--target-version",
+    "v8.0.21"
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": [
+     "unverified"
+    ],
+    "evidence_gaps": 1,
+    "fail_on_triggered": false,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.mysql.tablespace.create.warn",
+      "level": "warning"
+     }
+    ],
+    "evidence_gap_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.mysql.tablespace.applicability",
+      "reason_code": "unknown_tablespace_state",
+      "required_facts": [
+       "tablespace.existence"
+      ]
+     }
+    ],
+    "description": "engine_attribute floor boundary — proven 8.0.21 supports the member"
+   }
+  },
+  {
+   "id": "mysql-rename-802-refused",
+   "dialect": "mysql",
+   "sql": "ALTER TABLESPACE ts1 RENAME TO ts2;",
+   "policy": "t25-mysql-tablespace",
+   "args": [
+    "--fail-on",
+    "blocker",
+    "--target-version",
+    "v8.0.2"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 2,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": [
+     "unverified"
+    ],
+    "evidence_gaps": 1,
+    "fail_on_triggered": true,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.mysql.tablespace.alter.warn",
+      "level": "warning"
+     },
+     {
+      "index": 0,
+      "rule_id": "ddl.mysql.tablespace.applicability",
+      "level": "blocker"
+     }
+    ],
+    "evidence_gap_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.mysql.tablespace.applicability",
+      "reason_code": "unknown_tablespace_state",
+      "required_facts": [
+       "tablespace.existence"
+      ]
+     }
+    ],
+    "description": "rename arrives at 8.0.3 — proven 8.0.2 refuses the member"
+   }
+  },
+  {
+   "id": "mysql-rename-803-floor",
+   "dialect": "mysql",
+   "sql": "ALTER TABLESPACE ts1 RENAME TO ts2;",
+   "policy": "t25-mysql-tablespace",
+   "args": [
+    "--fail-on",
+    "blocker",
+    "--target-version",
+    "v8.0.3"
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": [
+     "unverified"
+    ],
+    "evidence_gaps": 1,
+    "fail_on_triggered": false,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.mysql.tablespace.alter.warn",
+      "level": "warning"
+     }
+    ],
+    "evidence_gap_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.mysql.tablespace.applicability",
+      "reason_code": "unknown_tablespace_state",
+      "required_facts": [
+       "tablespace.existence",
+       "tablespace.rename_target"
+      ]
+     }
+    ],
+    "description": "rename floor boundary — proven 8.0.3 passes the version arm; unknown source and target stay owed"
+   }
+  },
+  {
+   "id": "mysql-alter-autoextend-8022-refused",
+   "dialect": "mysql",
+   "sql": "ALTER TABLESPACE ts1 ENCRYPTION='Y' AUTOEXTEND_SIZE=8M ENGINE=InnoDB;",
+   "policy": "t25-mysql-tablespace",
+   "args": [
+    "--fail-on",
+    "blocker",
+    "--target-version",
+    "v8.0.22"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 2,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": [
+     "unverified"
+    ],
+    "evidence_gaps": 1,
+    "fail_on_triggered": true,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.mysql.tablespace.alter.warn",
+      "level": "warning"
+     },
+     {
+      "index": 0,
+      "rule_id": "ddl.mysql.tablespace.applicability",
+      "level": "blocker"
+     }
+    ],
+    "evidence_gap_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.mysql.tablespace.applicability",
+      "reason_code": "unknown_tablespace_state",
+      "required_facts": [
+       "tablespace.existence"
+      ]
+     }
+    ],
+    "description": "alter autoextend_size arrives at 8.0.23 — proven 8.0.22 refuses the member (paired with a supported encryption member so the strictest arm is the autoextend floor)"
+   }
+  },
+  {
+   "id": "mysql-alter-autoextend-8023-floor",
+   "dialect": "mysql",
+   "sql": "ALTER TABLESPACE ts1 ENCRYPTION='Y' AUTOEXTEND_SIZE=8M ENGINE=InnoDB;",
+   "policy": "t25-mysql-tablespace",
+   "args": [
+    "--fail-on",
+    "blocker",
+    "--target-version",
+    "v8.0.23"
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": [
+     "unverified"
+    ],
+    "evidence_gaps": 1,
+    "fail_on_triggered": false,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.mysql.tablespace.alter.warn",
+      "level": "warning"
+     }
+    ],
+    "evidence_gap_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.mysql.tablespace.applicability",
+      "reason_code": "unknown_tablespace_state",
+      "required_facts": [
+       "tablespace.existence"
+      ]
+     }
+    ],
+    "description": "alter autoextend_size floor boundary — proven 8.0.23 supports the member (paired with a supported encryption member so the strictest arm is the autoextend floor)"
+   }
   }
  ],
  "metadata_cases": [
@@ -1068,13 +1403,13 @@
     "findings": 3,
     "diagnostics": 0,
     "unsupported": 0,
-    "coverage": "complete",
+    "coverage": "unverified",
     "statement_coverage": [
-     "complete",
-     "complete",
-     "complete"
+     "unverified",
+     "unverified",
+     "unverified"
     ],
-    "evidence_gaps": 0,
+    "evidence_gaps": 3,
     "fail_on_triggered": true,
     "finding_entries": [
      {
@@ -1093,8 +1428,35 @@
       "level": "blocker"
      }
     ],
-    "evidence_gap_entries": [],
-    "description": "provider proves absent → create publishes unoccupied → occupancy-aware drop executes"
+    "evidence_gap_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.mysql.tablespace.applicability",
+      "reason_code": "unknown_tablespace_state",
+      "required_facts": [
+       "tablespace.existence"
+      ]
+     },
+     {
+      "index": 1,
+      "rule_id": "ddl.mysql.tablespace.applicability",
+      "reason_code": "unknown_tablespace_state",
+      "required_facts": [
+       "tablespace.kind",
+       "tablespace.rename_target"
+      ]
+     },
+     {
+      "index": 2,
+      "rule_id": "ddl.mysql.tablespace.applicability",
+      "reason_code": "unknown_tablespace_state",
+      "required_facts": [
+       "tablespace.existence",
+       "tablespace.occupancy"
+      ]
+     }
+    ],
+    "description": "zero-row INNODB_TABLESPACES lookups never prove absence — the provider contract leaves them unresolved, so the create owes existence, the rename stays undecidable on the unproven source kind and target state, and the drop owes existence and occupancy"
    }
   },
   {
@@ -1205,32 +1567,39 @@
     }
    ],
    "expect": {
-    "exit": 1,
-    "verdict": "reject",
+    "exit": 0,
+    "verdict": "review",
     "statements": 1,
-    "findings": 2,
+    "findings": 1,
     "diagnostics": 0,
     "unsupported": 0,
-    "coverage": "complete",
+    "coverage": "unverified",
     "statement_coverage": [
-     "complete"
+     "unverified"
     ],
-    "evidence_gaps": 0,
-    "fail_on_triggered": true,
+    "evidence_gaps": 1,
+    "fail_on_triggered": false,
     "finding_entries": [
      {
       "index": 0,
       "rule_id": "ddl.mysql.tablespace.alter.warn",
       "level": "warning"
-     },
+     }
+    ],
+    "evidence_gap_entries": [
      {
       "index": 0,
       "rule_id": "ddl.mysql.tablespace.applicability",
-      "level": "blocker"
+      "reason_code": "unknown_tablespace_state",
+      "required_facts": [
+       "tablespace.existence",
+       "tablespace.rename_target"
+      ]
      }
     ],
-    "evidence_gap_entries": []
-   }
+    "description": "conservative unknown: the ghost lookup returns zero rows, which the provider contract never promotes to absence — the rename adjudicates undecidable and owes both the source-existence and rename-target facts"
+   },
+   "description": "conservative unknown: the ghost lookup returns zero rows, which the provider contract never promotes to absence — the rename adjudicates undecidable and owes both the source-existence and rename-target facts"
   },
   {
    "id": "mysql57-undo-refused",
@@ -1536,6 +1905,13 @@
   "T25.cli.mysql-ndbcluster-vendor-boundary",
   "T25.cli.mysql-alter-undo-engine-unaudited",
   "T25.cli.mysql-encryption-8012-refused",
-  "T25.cli.mysql-encryption-8013-floor"
+  "T25.cli.mysql-encryption-8013-floor",
+  "T25.cli.mysql-create-autoextend-57-ignored",
+  "T25.cli.mysql-engineattr-8020-refused",
+  "T25.cli.mysql-engineattr-8021-floor",
+  "T25.cli.mysql-rename-802-refused",
+  "T25.cli.mysql-rename-803-floor",
+  "T25.cli.mysql-alter-autoextend-8022-refused",
+  "T25.cli.mysql-alter-autoextend-8023-floor"
  ]
 }

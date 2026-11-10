@@ -75,11 +75,20 @@ const (
 	// TablespaceFloorEncryption is the floor for the ENCRYPTION member on
 	// general tablespaces, introduced in MySQL 8.0.13.
 	TablespaceFloorEncryption = "8.0.13"
-	// TablespaceFloorGeneralSurface is the floor for the InnoDB
-	// general-tablespace members that did not exist on the 5.7 surface —
-	// RENAME TO and AUTOEXTEND_SIZE belong to the 8.0 general-tablespace
-	// family, and ENGINE_ATTRIBUTE is an 8.0 reserved member.
-	TablespaceFloorGeneralSurface = "8.0.0"
+	// TablespaceFloorRename is the floor for ALTER TABLESPACE ...
+	// RENAME TO — the rename member arrives in MySQL 8.0.3.
+	TablespaceFloorRename = "8.0.3"
+	// TablespaceFloorEngineAttribute is the floor for the
+	// ENGINE_ATTRIBUTE option — the syntax member arrives in MySQL
+	// 8.0.21 on CREATE and ALTER.
+	TablespaceFloorEngineAttribute = "8.0.21"
+	// TablespaceFloorAlterAutoextend is the floor for ALTER TABLESPACE
+	// ... AUTOEXTEND_SIZE — the alter capability arrives in MySQL
+	// 8.0.23. CREATE TABLESPACE ... AUTOEXTEND_SIZE carries NO floor:
+	// MySQL 5.7 already accepts the option and ignores its effect (and
+	// pre-8.0.23 keeps ignoring it) — the accepted-and-ignored arm must
+	// never become a version refusal.
+	TablespaceFloorAlterAutoextend = "8.0.23"
 )
 
 // TablespaceVersionOutcome is the three-way answer of a declaration's
@@ -125,16 +134,86 @@ func TablespaceCapabilityFloor(operation DDLOperation, decl *TablespaceDeclarati
 		raise(TablespaceFloorMemberless, "memberless create tablespace")
 	}
 	if operation == DDLOperationAlterTablespace && decl.AlterAction == "rename" {
-		raise(TablespaceFloorGeneralSurface, "tablespace rename")
+		raise(TablespaceFloorRename, "tablespace rename")
 	}
-	if _, ok := decl.Options["autoextend_size"]; ok {
-		raise(TablespaceFloorGeneralSurface, "autoextend_size")
+	// CREATE-side AUTOEXTEND_SIZE is accepted and ignored from MySQL 5.7
+	// through the pre-8.0.23 line — it deliberately carries no floor and
+	// must not collapse into a version refusal.
+	if operation == DDLOperationAlterTablespace {
+		if _, ok := decl.Options["autoextend_size"]; ok {
+			raise(TablespaceFloorAlterAutoextend, "alter autoextend_size")
+		}
 	}
 	if _, ok := decl.Options["engine_attribute"]; ok {
-		raise(TablespaceFloorGeneralSurface, "engine_attribute")
+		raise(TablespaceFloorEngineAttribute, "engine_attribute")
 	}
 	return floor, feature, gated
 }
+
+// TablespaceRenameVerdict is the shared three-way adjudication of an
+// ALTER TABLESPACE ... RENAME TO — the applicability rule and the
+// ordered-state transition consume the same answer so a refusal, a
+// migration, and an undecidable premise can never disagree.
+type TablespaceRenameVerdict int
+
+const (
+	// TablespaceRenameMigratable means every premise proved out: the
+	// source is a proven general object, the target is proven absent,
+	// and the version proves the 8.0.3 rename member.
+	TablespaceRenameMigratable TablespaceRenameVerdict = iota
+	// TablespaceRenameRefused means a proven refusal holds the exact
+	// pre-state — the reason names the refused arm.
+	TablespaceRenameRefused
+	// TablespaceRenameUndecidable means at least one premise never
+	// answered — the possible worlds disagree, so neither the source
+	// tombstone nor the target inheritance may be asserted.
+	TablespaceRenameUndecidable
+)
+
+// TablespaceRenameOutcome adjudicates ALTER TABLESPACE name RENAME TO
+// new_name against the two ordered states and the resolved version.
+// source/target are the bound states (nil or unproven = never answered).
+// Returns the verdict, the refusal reason for diagnostics ("" unless
+// refused), and the premise facts still owed when undecidable.
+func TablespaceRenameOutcome(source, target *TablespaceState, version *VersionIdentity) (verdict TablespaceRenameVerdict, reason string, owed []string) {
+	switch tablespaceVersionOutcomeAtFloor(version, TablespaceFloorRename) {
+	case TablespaceVersionRefused:
+		// A proven pre-8.0.3 version refuses the rename member.
+		return TablespaceRenameRefused, tablespaceRenameReasonVersion, nil
+	case TablespaceVersionUnproven:
+		owed = append(owed, "target.version")
+	}
+	if source == nil || !source.Proven() {
+		owed = append(owed, "tablespace.existence")
+	} else if !source.Exists {
+		return TablespaceRenameRefused, tablespaceRenameReasonAbsent, nil
+	} else if source.Kind == "" {
+		// The undo-kind world refuses the general rename form — a
+		// proven-exists object with an unproven family keeps the kind
+		// fact owed rather than skipping that world.
+		owed = append(owed, "tablespace.kind")
+	} else if source.Kind != TablespaceKindGeneral {
+		return TablespaceRenameRefused, tablespaceRenameReasonKind, nil
+	}
+	if target == nil || !target.Proven() {
+		// Target existence decides between migration and the
+		// collision-refusal world — unproven stays owed.
+		owed = append(owed, "tablespace.rename_target")
+	} else if target.Exists {
+		return TablespaceRenameRefused, tablespaceRenameReasonCollision, nil
+	}
+	if len(owed) > 0 {
+		return TablespaceRenameUndecidable, "", owed
+	}
+	return TablespaceRenameMigratable, "", nil
+}
+
+const (
+	tablespaceRenameReasonVersion   = "version"
+	tablespaceRenameReasonAbsent    = "absent"
+	tablespaceRenameReasonKind      = "kind_mismatch"
+	tablespaceRenameReasonCollision = "rename_target_present"
+)
 
 // TablespaceVersionOutcome adjudicates the declaration's capability floor
 // against the resolved version — shared by the applicability rule and the
@@ -146,6 +225,14 @@ func TablespaceVersionOutcomeFor(operation DDLOperation, decl *TablespaceDeclara
 	if !gated {
 		return TablespaceVersionSupported
 	}
+	return tablespaceVersionOutcomeAtFloor(version, floor)
+}
+
+// tablespaceVersionOutcomeAtFloor is the single comparator every
+// capability check shares: nil/unvalidated/zero version → Unproven,
+// proven-below-floor → Refused, at-or-above → Supported. Missing
+// components are never defaulted to a decidable value.
+func tablespaceVersionOutcomeAtFloor(version *VersionIdentity, floor string) TablespaceVersionOutcome {
 	if version == nil || !version.ValidatedRange || version.Major == 0 {
 		return TablespaceVersionUnproven
 	}

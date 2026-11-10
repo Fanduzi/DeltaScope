@@ -37,6 +37,7 @@ const (
 	tablespaceStandaloneReasonPresent      = "tablespace_present"
 	tablespaceStandaloneReasonOccupied     = "tablespace_occupied"
 	tablespaceStandaloneReasonKindMismatch = "tablespace_kind_mismatch"
+	tablespaceStandaloneReasonRenameTarget = "tablespace_rename_target_present"
 )
 
 func appliesToMySQLTablespace(statement spec.Statement, operation spec.DDLOperation) bool {
@@ -163,24 +164,41 @@ func (r tablespaceApplicabilityRule) AppliesTo(statement spec.Statement) bool {
 func (r tablespaceApplicabilityRule) missingTablespaceFacts(statement spec.Statement) []string {
 	decl := statement.DDL.Tablespace
 	missing := make([]string, 0, 5)
+	seen := map[string]bool{}
+	owe := func(facts ...string) {
+		for _, f := range facts {
+			if !seen[f] {
+				seen[f] = true
+				missing = append(missing, f)
+			}
+		}
+	}
 	if decl.Engine == "" && (decl.AlterAction == "add_datafile" || decl.AlterAction == "drop_datafile" ||
 		spec.TablespaceMemberlessCreate(statement.DDL.Operation, decl)) {
-		missing = append(missing, "tablespace.engine")
+		owe("tablespace.engine")
 	}
 	if spec.TablespaceVersionOutcomeFor(statement.DDL.Operation, decl, tablespaceStatementVersion(statement)) ==
 		spec.TablespaceVersionUnproven {
-		missing = append(missing, "target.version")
+		owe("target.version")
 	}
 	state := tablespaceStateFor(statement, decl.Name)
 	if !state.Proven() {
-		missing = append(missing, "tablespace.existence")
+		owe("tablespace.existence")
+	}
+	if statement.DDL.Operation == spec.DDLOperationAlterTablespace && decl.AlterAction == "rename" {
+		// RENAME consumes the target identity too — the shared outcome
+		// names every premise still owed (the collision-refusal world is
+		// a gap, never an assumed absent).
+		_, _, owed := spec.TablespaceRenameOutcome(state,
+			tablespaceStateFor(statement, decl.NewName), tablespaceStatementVersion(statement))
+		owe(owed...)
 	}
 	if (statement.DDL.Operation == spec.DDLOperationAlterTablespace ||
 		statement.DDL.Operation == spec.DDLOperationDropTablespace) &&
 		state.Proven() && state.Exists && state.Kind == "" {
 		// The catalog answered existence but not the object family — the
 		// undo/general distinction decides the outcome and stays owed.
-		missing = append(missing, "tablespace.kind")
+		owe("tablespace.kind")
 	}
 	if statement.DDL.Operation == spec.DDLOperationDropTablespace {
 		switch decl.Kind {
@@ -190,11 +208,11 @@ func (r tablespaceApplicabilityRule) missingTablespaceFacts(statement spec.State
 			// modeled, so eligibility stays owed whenever the object is
 			// not already proven absent.
 			if !state.Proven() || state.Exists {
-				missing = append(missing, "tablespace.drop_eligibility")
+				owe("tablespace.drop_eligibility")
 			}
 		default:
 			if !state.Proven() || !state.Exists || state.Occupied == nil {
-				missing = append(missing, "tablespace.occupancy")
+				owe("tablespace.occupancy")
 			}
 		}
 	}
@@ -283,6 +301,18 @@ func (r tablespaceApplicabilityRule) Evaluate(ctx context.Context, statement spe
 				return refuse(tablespaceStandaloneReasonKindMismatch,
 					fmt.Sprintf("%s tablespace %q refuses — the object is a %s tablespace", statement.DDL.Operation, decl.Name, state.Kind),
 					"verify the object family matches the statement form before shipping"), ctx.Err()
+			}
+		}
+		if statement.DDL.Operation == spec.DDLOperationAlterTablespace && decl.AlterAction == "rename" {
+			// The shared rename outcome already consumed version, source
+			// existence, and source kind above — the only remaining
+			// refusal arm is the proven-present rename target.
+			verdict, reason, _ := spec.TablespaceRenameOutcome(state,
+				tablespaceStateFor(statement, decl.NewName), tablespaceStatementVersion(statement))
+			if verdict == spec.TablespaceRenameRefused && reason == "rename_target_present" {
+				return refuse(tablespaceStandaloneReasonRenameTarget,
+					fmt.Sprintf("alter tablespace %q rename to %q refuses — the target already exists", decl.Name, decl.NewName),
+					"verify the rename target identity before shipping"), ctx.Err()
 			}
 		}
 		if statement.DDL.Operation == spec.DDLOperationDropTablespace &&

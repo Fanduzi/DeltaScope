@@ -254,7 +254,8 @@ func mysqlTablespaceAlter(sqlText, kind string, nameTok sqlTok, rest []sqlTok) (
 		case rest[i].wordIs(sqlText, "wait"):
 			decl.Options["wait"] = ""
 			i++
-		case rest[i].wordIs(sqlText, "autoextend_size") || rest[i].wordIs(sqlText, "initial_size"):
+		case rest[i].wordIs(sqlText, "autoextend_size") || rest[i].wordIs(sqlText, "initial_size") ||
+			rest[i].wordIs(sqlText, "engine_attribute"):
 			key := strings.ToLower(rest[i].text(sqlText))
 			value, next, ok := mysqlTablespaceOptionValue(sqlText, rest, i+1)
 			if !ok {
