@@ -234,7 +234,7 @@ func (p *t25TablespaceProviderImpl) ResolveObject(_ context.Context, _ spec.Dial
 	if req.Type != "mysql_tablespace" {
 		return &spec.ObjectSnapshot{Type: req.Type, Name: req.Name, Status: spec.MetadataStatusUnavailable}, nil
 	}
-	fact, ok := p.facts[strings.ToLower(strings.TrimSpace(req.Name))]
+	fact, ok := p.facts[strings.TrimSpace(req.Name)]
 	if !ok {
 		return &spec.ObjectSnapshot{Type: req.Type, Name: req.Name, Status: spec.MetadataStatusUnavailable}, nil
 	}
@@ -351,6 +351,107 @@ func TestT25UndoTablespaceVersionGate(t *testing.T) {
 		if f.RuleID == t25RuleTSApp {
 			t.Fatalf("8.0 undo must not refuse, got %+v", f)
 		}
+	}
+}
+
+// Tablespace names are case-sensitive identifiers upstream — `TS1` and
+// `ts1` are distinct objects. A drop of the differently-cased name must
+// not consume the created entry's proof and still owes both state facts.
+func TestT25TablespaceNameCaseSensitive(t *testing.T) {
+	t.Parallel()
+	provider := t25TablespaceProvider(map[string]t25TablespaceFact{})
+	result := t25Standalone(t,
+		"CREATE TABLESPACE TS1 ADD DATAFILE 'x.ibd' ENGINE=INNODB; DROP TABLESPACE ts1",
+		provider)
+	drop := result.Statements[1]
+	facts := map[string]bool{}
+	for _, gap := range drop.EvidenceGaps {
+		for _, f := range gap.RequiredFacts {
+			facts[f] = true
+		}
+	}
+	if !facts["tablespace.existence"] || !facts["tablespace.occupancy"] {
+		t.Fatalf("drop of differently-cased name gaps = %+v, want existence+occupancy — TS1 and ts1 are distinct", drop.EvidenceGaps)
+	}
+}
+
+// ALTER UNDO TABLESPACE ... SET ACTIVE|INACTIVE is a recognized form but
+// outside the audited surface: it surfaces as a bounded unaudited entry,
+// emits no findings, and mutates nothing.
+func TestT25AlterUndoSetStateBoundary(t *testing.T) {
+	t.Parallel()
+	result, err := AuditSQL(context.Background(), Request{
+		SQL: "ALTER UNDO TABLESPACE u1 SET INACTIVE", Dialect: spec.DialectMySQL,
+		Schema: "golden", ConfigPath: t25StandalonePolicy(t),
+		MetadataProvider: t25Provider("innodb", t25Bool(false)),
+	})
+	if err == nil {
+		t.Fatalf("alter undo set must surface ErrUnsupportedStatement")
+	}
+	if len(result.Statements) != 1 || len(result.Statements[0].Findings) != 0 {
+		t.Fatalf("alter undo findings = %+v, want none", result.Statements)
+	}
+	if len(result.Unsupported) != 1 || result.Unsupported[0].Reason != spec.UnsupportedUnauditedReason {
+		t.Fatalf("unsupported = %+v, want unaudited boundary", result.Unsupported)
+	}
+}
+
+// Memberless CREATE TABLESPACE is 8.0 grammar surface with an InnoDB
+// semantic datafile requirement: proven InnoDB refuses on the authored
+// form, a proven 5.7 refuses on version, and an unproven engine owes the
+// engine fact rather than minting a verdict.
+func TestT25MemberlessCreateSemantics(t *testing.T) {
+	t.Parallel()
+
+	result := t25Standalone(t, "CREATE TABLESPACE ts1 ENGINE=INNODB", t25Provider("innodb", t25Bool(false)))
+	found := false
+	for _, f := range result.Statements[0].Findings {
+		if f.RuleID == t25RuleTSApp && f.Metadata["reason_code"] == "tablespace_datafile_required" {
+			found = true
+		}
+	}
+	if !found {
+		t.Fatalf("memberless innodb findings = %+v, want datafile_required refusal", result.Statements[0].Findings)
+	}
+
+	result, err := AuditSQL(context.Background(), Request{
+		SQL: "CREATE TABLESPACE ts1", Dialect: spec.DialectMySQL,
+		Schema: "golden", ConfigPath: t25StandalonePolicy(t),
+		MetadataProvider: &t10Provider{version: "5.7.44", tables: map[string]*spec.TableSnapshot{}},
+	})
+	if err != nil {
+		t.Fatalf("5.7 memberless create: %v", err)
+	}
+	found = false
+	for _, f := range result.Statements[0].Findings {
+		if f.RuleID == t25RuleTSApp && f.Metadata["reason_code"] == "tablespace_version_inapplicable" {
+			found = true
+		}
+	}
+	if !found {
+		t.Fatalf("5.7 memberless findings = %+v, want version_inapplicable refusal", result.Statements[0].Findings)
+	}
+
+	result = t25Standalone(t, "CREATE TABLESPACE ts1; DROP TABLESPACE ts1",
+		t25TablespaceProvider(map[string]t25TablespaceFact{}))
+	facts := map[string]bool{}
+	for _, gap := range result.Statements[0].EvidenceGaps {
+		for _, f := range gap.RequiredFacts {
+			facts[f] = true
+		}
+	}
+	if !facts["tablespace.engine"] || !facts["target.version"] {
+		t.Fatalf("memberless unproven-engine create gaps = %+v, want engine+version owed", result.Statements[0].EvidenceGaps)
+	}
+	drop := result.Statements[1]
+	facts = map[string]bool{}
+	for _, gap := range drop.EvidenceGaps {
+		for _, f := range gap.RequiredFacts {
+			facts[f] = true
+		}
+	}
+	if !facts["tablespace.existence"] || !facts["tablespace.occupancy"] {
+		t.Fatalf("drop after unproven memberless create gaps = %+v, want existence+occupancy — the create proved nothing", drop.EvidenceGaps)
 	}
 }
 

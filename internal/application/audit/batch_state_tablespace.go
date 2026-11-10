@@ -32,7 +32,9 @@ type batchTablespaceEntry struct {
 // contamination, a missing provider, or an unvouched snapshot stays
 // unknown — never a guessed existence.
 func (s *batchState) resolveTablespace(ctx context.Context, name string) (*batchTablespaceEntry, error) {
-	key := strings.ToLower(strings.TrimSpace(name))
+	// Tablespace names are case-sensitive identifiers — folding would
+	// invent a binding between distinct objects.
+	key := strings.TrimSpace(name)
 	if entry, ok := s.tablespaceEntries[key]; ok && entry.resolved {
 		return entry, nil
 	}
@@ -119,7 +121,7 @@ func (s *batchState) bindTablespaces(ctx context.Context, statement spec.Stateme
 		return nil, nil
 	}
 	decl := statement.DDL.Tablespace
-	key := strings.ToLower(strings.TrimSpace(decl.Name))
+	key := strings.TrimSpace(decl.Name)
 	entry, err := s.resolveTablespace(ctx, decl.Name)
 	if err != nil {
 		return nil, err
@@ -141,6 +143,10 @@ func (s *batchState) applyTablespaceStatement(ctx context.Context, statement spe
 		return err
 	}
 	decl := statement.DDL.Tablespace
+	if decl.Kind == spec.TablespaceKindLogfileGroup || strings.EqualFold(decl.Engine, "ndb") {
+		// Boundary-owned declarations never enter the InnoDB registry.
+		return nil
+	}
 	entry, err := s.resolveTablespace(ctx, decl.Name)
 	if err != nil {
 		return err
@@ -153,14 +159,25 @@ func (s *batchState) applyTablespaceStatement(ctx context.Context, statement spe
 		}
 		// Version- and engine-proven refusals keep the pre-state: undo
 		// tablespaces and ENCRYPTION members do not exist before 8.0,
-		// and a non-InnoDB/non-NDB authored engine never executes.
+		// a memberless create is absent from the 5.7 grammar, and a
+		// non-InnoDB/non-NDB authored engine never executes.
 		if refusedTablespaceCreate(statement, decl) {
 			return nil
 		}
-		if versionGatedTablespaceDecl(decl) && statementVersionMajorShared(statement) == nil {
+		if spec.TablespaceVersionGated(statement.DDL.Operation, decl) &&
+			statementVersionMajorShared(statement) == nil {
 			// The version premise never answered: a sub-8.0 world
 			// refuses while a supported world executes — the
 			// consistent union cannot prove existence.
+			entry.state = tableUnknown
+			entry.occupied = nil
+			entry.kind = ""
+			entry.resolved = true
+			return nil
+		}
+		if spec.TablespaceMemberlessCreate(statement.DDL.Operation, decl) && decl.Engine == "" {
+			// Memberless creates are legal only on NDB — an unproven
+			// engine leaves an InnoDB-refusal world alive.
 			entry.state = tableUnknown
 			entry.occupied = nil
 			entry.kind = ""
@@ -211,6 +228,12 @@ func (s *batchState) applyTablespaceStatement(ctx context.Context, statement spe
 		entry.state = tableAbsent
 		entry.occupied = nil
 	case spec.DDLOperationDropTablespace:
+		// Proven refusals keep the exact pre-state — an authored
+		// non-InnoDB/non-NDB engine or an undo drop under a proven
+		// pre-8.0 version never executes.
+		if refusedTablespaceDrop(statement, decl) {
+			return nil
+		}
 		switch entry.state {
 		case tablePresent:
 			// A proven-occupied tablespace refuses — the binding premise
@@ -247,10 +270,27 @@ func refusedTablespaceCreate(statement spec.Statement, decl *spec.TablespaceDecl
 	if decl.Engine != "" && !strings.EqualFold(decl.Engine, "innodb") && !strings.EqualFold(decl.Engine, "ndb") {
 		return true
 	}
-	if version := statementVersionMajorShared(statement); version != nil && *version < 8 {
-		if decl.Kind == spec.TablespaceKindUndo || decl.Encryption != nil {
-			return true
-		}
+	if version := statementVersionMajorShared(statement); version != nil && *version < 8 &&
+		spec.TablespaceVersionGated(spec.DDLOperationCreateTablespace, decl) {
+		return true
+	}
+	if spec.TablespaceMemberlessCreate(spec.DDLOperationCreateTablespace, decl) &&
+		strings.EqualFold(decl.Engine, "innodb") {
+		return true
+	}
+	return false
+}
+
+// refusedTablespaceDrop reports the authored-form refusals shared with
+// the applicability rule on DROP — the engine boundary plus the undo
+// version gate — so a refused drop never tombstones a live entry.
+func refusedTablespaceDrop(statement spec.Statement, decl *spec.TablespaceDeclaration) bool {
+	if decl.Engine != "" && !strings.EqualFold(decl.Engine, "innodb") && !strings.EqualFold(decl.Engine, "ndb") {
+		return true
+	}
+	if version := statementVersionMajorShared(statement); version != nil && *version < 8 &&
+		spec.TablespaceVersionGated(spec.DDLOperationDropTablespace, decl) {
+		return true
 	}
 	return false
 }
@@ -269,12 +309,6 @@ func refusedTablespaceAlter(statement spec.Statement, decl *spec.TablespaceDecla
 		return true
 	}
 	return false
-}
-
-// versionGatedTablespaceDecl reports whether the declaration carries an
-// 8.0-only member — an undo tablespace or an ENCRYPTION member.
-func versionGatedTablespaceDecl(decl *spec.TablespaceDeclaration) bool {
-	return decl.Kind == spec.TablespaceKindUndo || decl.Encryption != nil
 }
 
 // statementVersionMajorShared mirrors the rule-side version read — the

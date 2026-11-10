@@ -813,6 +813,11 @@ func newObjectLookupKey(lookup *spec.ObjectLookupRequest) objectLookupKey {
 		objectType: strings.ToLower(strings.TrimSpace(lookup.Type)),
 		name:       strings.ToLower(strings.TrimSpace(lookup.Name)),
 	}
+	if key.objectType == "mysql_tablespace" {
+		// Tablespace names are case-sensitive identifiers — folding the
+		// cache key would alias TS1 and ts1 into one catalog answer.
+		key.name = strings.TrimSpace(lookup.Name)
+	}
 	if len(lookup.Qualifiers) > 0 {
 		names := make([]string, 0, len(lookup.Qualifiers))
 		for name := range lookup.Qualifiers {

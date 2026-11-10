@@ -56,6 +56,10 @@ func TestT25TablespaceRecognizedForms(t *testing.T) {
 	}{
 		{"CREATE TABLESPACE ts1 ADD DATAFILE 'a.ibd' ENGINE=INNODB",
 			spec.DDLOperationCreateTablespace, spec.TablespaceKindGeneral, "ts1", "", "innodb", 1, "", false},
+		// Memberless general CREATE is grammar-valid since MySQL 8.0 —
+		// the InnoDB datafile requirement is semantic, not syntactic.
+		{"CREATE TABLESPACE ts1",
+			spec.DDLOperationCreateTablespace, spec.TablespaceKindGeneral, "ts1", "", "", 0, "", false},
 		{"CREATE TABLESPACE ts1 ADD DATAFILE 'a.ibd' ADD DATAFILE 'b.ibd' ENGINE INNODB",
 			spec.DDLOperationCreateTablespace, spec.TablespaceKindGeneral, "ts1", "", "innodb", 2, "", false},
 		{"CREATE UNDO TABLESPACE u1 ADD DATAFILE 'u.ibu'",
@@ -72,6 +76,8 @@ func TestT25TablespaceRecognizedForms(t *testing.T) {
 			spec.DDLOperationAlterTablespace, spec.TablespaceKindGeneral, "ts1", "encryption", "", 0, "", false},
 		{"DROP TABLESPACE ts1 ENGINE=INNODB",
 			spec.DDLOperationDropTablespace, spec.TablespaceKindGeneral, "ts1", "", "innodb", 0, "", false},
+		{"DROP UNDO TABLESPACE u1",
+			spec.DDLOperationDropTablespace, spec.TablespaceKindUndo, "u1", "", "", 0, "", false},
 		{"DROP LOGFILE GROUP lg1 ENGINE=NDB",
 			spec.DDLOperationDropLogfileGroup, spec.TablespaceKindLogfileGroup, "lg1", "", "ndb", 0, "", false},
 	}
@@ -96,6 +102,26 @@ func TestT25TablespaceRecognizedForms(t *testing.T) {
 	}
 }
 
+// ALTER UNDO TABLESPACE ... SET ACTIVE|INACTIVE is recognized as a typed
+// declaration so coverage routes it to the unaudited boundary rather
+// than a parser diagnostic.
+func TestT25AlterUndoSetStateRecognized(t *testing.T) {
+	t.Parallel()
+	for _, sql := range []string{
+		"ALTER UNDO TABLESPACE u1 SET ACTIVE",
+		"ALTER UNDO TABLESPACE u1 SET INACTIVE",
+	} {
+		statement := parseExtractT25(t, sql, spec.DialectMySQL)
+		decl := statement.DDL.Tablespace
+		if decl == nil {
+			t.Fatalf("%q: expected tablespace declaration", sql)
+		}
+		if decl.Kind != spec.TablespaceKindUndo || decl.AlterAction != "set_state" {
+			t.Fatalf("%q: decl=%+v, want undo set_state", sql, decl)
+		}
+	}
+}
+
 // Strict-grammar rejections: shapes MySQL itself refuses must not be
 // claimed by the recognizer. Some fall back to the base parser (which may
 // reject them too) — what matters is they never produce a declaration.
@@ -110,7 +136,6 @@ func TestT25TablespaceRejectedShapes(t *testing.T) {
 		// LOGFILE GROUP requires ADD UNDOFILE.
 		"CREATE LOGFILE GROUP lg1",
 		// No members at all.
-		"CREATE TABLESPACE ts1",
 		"ALTER TABLESPACE ts1",
 		"DROP TABLESPACE",
 		// DROP TABLESPACE has no IF EXISTS member in the MySQL grammar.

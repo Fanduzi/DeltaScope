@@ -146,7 +146,8 @@ func newCorpusMetadataProvider(metadata *corpusMetadata) *corpusFixtureMetadataP
 	if metadata.Tablespaces != nil {
 		provider.tablespaces = make(map[string]*spec.ObjectSnapshot, len(metadata.Tablespaces))
 		for key, object := range metadata.Tablespaces {
-			provider.tablespaces[strings.ToLower(strings.TrimSpace(key))] = corpusTablespaceToSnapshot(key, object)
+			// Tablespace names are case-sensitive — fixture keys stay verbatim.
+			provider.tablespaces[strings.TrimSpace(key)] = corpusTablespaceToSnapshot(key, object)
 		}
 	}
 	return provider
@@ -331,7 +332,9 @@ func (p *corpusFixtureMetadataProvider) ResolveObject(_ context.Context, _ spec.
 		if p.tablespaces == nil {
 			return &spec.ObjectSnapshot{Schema: request.Schema, Type: request.Type, Name: request.Name, Status: spec.MetadataStatusUnavailable}, nil
 		}
-		snapshot, ok := p.tablespaces[strings.ToLower(strings.TrimSpace(request.Name))]
+		// Tablespace names are case-sensitive — the fixture key must
+		// not fold authored identity.
+		snapshot, ok := p.tablespaces[strings.TrimSpace(request.Name)]
 		if !ok {
 			return &spec.ObjectSnapshot{Schema: request.Schema, Type: request.Type, Name: request.Name, Status: spec.MetadataStatusUnavailable}, nil
 		}

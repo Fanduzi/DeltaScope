@@ -73,11 +73,17 @@ func parseMySQLTablespace(sqlText string) (ast.StmtNode, bool) {
 	case toks[0].wordIs(sqlText, "create") && toks[1].wordIs(sqlText, "logfile") &&
 		len(toks) >= 4 && toks[2].wordIs(sqlText, "group"):
 		return mysqlTablespaceCreate(sqlText, spec.TablespaceKindLogfileGroup, toks[3], toks[4:])
+	case toks[0].wordIs(sqlText, "alter") && toks[1].wordIs(sqlText, "undo") &&
+		len(toks) >= 4 && toks[2].wordIs(sqlText, "tablespace"):
+		return mysqlTablespaceAlterUndo(sqlText, toks[3], toks[4:])
 	case toks[0].wordIs(sqlText, "alter") && toks[1].wordIs(sqlText, "tablespace"):
 		return mysqlTablespaceAlter(sqlText, spec.TablespaceKindGeneral, toks[2], toks[3:])
 	case toks[0].wordIs(sqlText, "alter") && toks[1].wordIs(sqlText, "logfile") &&
 		len(toks) >= 4 && toks[2].wordIs(sqlText, "group"):
 		return mysqlTablespaceAlter(sqlText, spec.TablespaceKindLogfileGroup, toks[3], toks[4:])
+	case toks[0].wordIs(sqlText, "drop") && toks[1].wordIs(sqlText, "undo") &&
+		len(toks) >= 4 && toks[2].wordIs(sqlText, "tablespace"):
+		return mysqlTablespaceDrop(sqlText, spec.TablespaceKindUndo, spec.DDLOperationDropTablespace, toks[3], toks[4:])
 	case toks[0].wordIs(sqlText, "drop") && toks[1].wordIs(sqlText, "tablespace"):
 		return mysqlTablespaceDrop(sqlText, spec.TablespaceKindGeneral, spec.DDLOperationDropTablespace, toks[2], toks[3:])
 	case toks[0].wordIs(sqlText, "drop") && toks[1].wordIs(sqlText, "logfile") &&
@@ -87,11 +93,18 @@ func parseMySQLTablespace(sqlText string) (ast.StmtNode, bool) {
 	return nil, false
 }
 
+// mysqlTablespaceName keeps the authored case: tablespace names are
+// case-sensitive identifiers upstream, so folding to lowercase here would
+// bind TS1 and ts1 into one identity — the same bug the shared identText
+// helper commits by design for ordinary identifiers.
 func mysqlTablespaceName(sqlText string, tok sqlTok) (string, bool) {
 	if tok.kind != tokWord && tok.kind != tokQIdent {
 		return "", false
 	}
-	name := tok.identText(sqlText)
+	name := tok.text(sqlText)
+	if tok.kind == tokQIdent {
+		name = strings.ReplaceAll(name[1:len(name)-1], "``", "`")
+	}
 	return name, name != ""
 }
 
@@ -147,11 +160,13 @@ func mysqlTablespaceCreate(sqlText, kind string, nameTok sqlTok, rest []sqlTok) 
 			i = next
 		}
 	}
-	if decl.FileCount == 0 {
-		// Every CREATE member of the family requires its file clause —
-		// ADD DATAFILE for tablespace and undo forms, ADD UNDOFILE for
-		// logfile groups. A memberless create falls through to the base
-		// grammar's own diagnostic rather than being claimed here.
+	if decl.FileCount == 0 && kind != spec.TablespaceKindGeneral {
+		// The undo and logfile-group forms require their file clause at
+		// the grammar level — ADD DATAFILE / ADD UNDOFILE. A memberless
+		// general CREATE TABLESPACE is grammar-valid since 8.0 (NDB
+		// accepts it outright; InnoDB refuses it semantically and 5.7's
+		// grammar never had it), so only those forms fall through to
+		// the base grammar's own diagnostic rather than being claimed.
 		return nil, false
 	}
 	node := &ast.CreateResourceGroupStmt{ResourceGroupName: ast.NewCIStr(name)}
@@ -242,6 +257,30 @@ func mysqlTablespaceAlter(sqlText, kind string, nameTok sqlTok, rest []sqlTok) (
 		operation = spec.DDLOperationAlterLogfileGroup
 	}
 	return &mysqlTablespaceStatement{StmtNode: node, operation: operation, declaration: decl}, true
+}
+
+// mysqlTablespaceAlterUndo consumes the whole `ALTER UNDO TABLESPACE
+// name SET {ACTIVE|INACTIVE}` form — the only member the grammar carries.
+// The statement is recognized so it surfaces as a bounded unaudited
+// feature rather than a parser diagnostic (deferred scope, T25-R1).
+func mysqlTablespaceAlterUndo(sqlText string, nameTok sqlTok, rest []sqlTok) (ast.StmtNode, bool) {
+	name, ok := mysqlTablespaceName(sqlText, nameTok)
+	if !ok || len(rest) != 2 {
+		return nil, false
+	}
+	if !rest[0].wordIs(sqlText, "set") ||
+		!(rest[1].wordIs(sqlText, "active") || rest[1].wordIs(sqlText, "inactive")) {
+		return nil, false
+	}
+	decl := &spec.TablespaceDeclaration{
+		Kind:        spec.TablespaceKindUndo,
+		Name:        name,
+		AlterAction: "set_state",
+		Options:     map[string]string{"set_state": strings.ToLower(rest[1].text(sqlText))},
+	}
+	node := &ast.AlterResourceGroupStmt{ResourceGroupName: ast.NewCIStr(name)}
+	node.SetText(charset.FindEncoding(""), strings.TrimSpace(sqlText))
+	return &mysqlTablespaceStatement{StmtNode: node, operation: spec.DDLOperationAlterTablespace, declaration: decl}, true
 }
 
 // mysqlTablespaceDrop consumes `DROP <kind> <name> [ENGINE [=] e]`.

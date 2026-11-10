@@ -91,7 +91,7 @@
   }
  ],
  "syntax_negative": {
-  "sql": "CREATE TABLESPACE t25fx_bad",
+  "sql": "CREATE TABLESPACE IF NOT EXISTS t25fx_bad ADD DATAFILE 'f.ibd'",
   "expect": {
    "error_class": "1064",
    "forbidden_markers": [
@@ -484,21 +484,40 @@
     "blocker"
    ],
    "expect": {
-    "exit": 2,
-    "verdict": "",
-    "statements": 0,
-    "findings": 0,
-    "diagnostics": 1,
+    "exit": 0,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
     "unsupported": 0,
-    "coverage": "incomplete",
-    "statement_coverage": [],
-    "evidence_gaps": 0,
+    "coverage": "unverified",
+    "statement_coverage": [
+     "unverified"
+    ],
+    "evidence_gaps": 1,
     "fail_on_triggered": false,
-    "finding_entries": [],
-    "evidence_gap_entries": [],
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.mysql.tablespace.create.warn",
+      "level": "warning"
+     }
+    ],
+    "evidence_gap_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.mysql.tablespace.applicability",
+      "reason_code": "unknown_tablespace_state",
+      "required_facts": [
+       "tablespace.engine",
+       "target.version",
+       "tablespace.existence"
+      ]
+     }
+    ],
     "finding_metadata": [],
     "unsupported_entries": [],
-    "description": "memberless create is a parser diagnostic \u2014 the recognizer never half-claims"
+    "description": "memberless general create is 8.0 grammar surface \u2014 unproven engine and version stay owed, no fabricated verdict"
    }
   },
   {
@@ -638,6 +657,196 @@
     "evidence_gaps": 0,
     "fail_on_triggered": false,
     "description": "the whole family is a TiDB vendor boundary \u2014 zero MySQL semantics leak"
+   }
+  },
+  {
+   "id": "mysql-memberless-innodb-refused",
+   "dialect": "mysql",
+   "sql": "CREATE TABLESPACE ts1 ENGINE=InnoDB;",
+   "policy": "t25-mysql-tablespace",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 2,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": [
+     "unverified"
+    ],
+    "evidence_gaps": 1,
+    "fail_on_triggered": true,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.mysql.tablespace.create.warn",
+      "level": "warning"
+     },
+     {
+      "index": 0,
+      "rule_id": "ddl.mysql.tablespace.applicability",
+      "level": "blocker"
+     }
+    ],
+    "evidence_gap_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.mysql.tablespace.applicability",
+      "reason_code": "unknown_tablespace_state",
+      "required_facts": [
+       "target.version",
+       "tablespace.existence"
+      ]
+     }
+    ],
+    "finding_metadata": [],
+    "unsupported_entries": [],
+    "description": "proven InnoDB refuses a memberless create \u2014 the datafile requirement is semantic, not syntactic"
+   }
+  },
+  {
+   "id": "mysql-alter-undo-unaudited",
+   "dialect": "mysql",
+   "sql": "ALTER UNDO TABLESPACE u1 SET INACTIVE;",
+   "policy": "t25-mysql-tablespace",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false,
+    "unsupported_entries": [
+     {
+      "index": 0,
+      "feature": "alter_tablespace",
+      "reason": "parsed by the shared parser but not covered by audited semantics",
+      "metadata": {
+       "form": "alter_undo_tablespace"
+      }
+     }
+    ],
+    "description": "ALTER UNDO ... SET is recognized but outside the audited surface \u2014 a bounded unaudited entry, never a parser diagnostic"
+   }
+  },
+  {
+   "id": "mysql-drop-undo-forbid",
+   "dialect": "mysql",
+   "sql": "DROP UNDO TABLESPACE u1;",
+   "policy": "t25-mysql-tablespace",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": [
+     "unverified"
+    ],
+    "evidence_gaps": 1,
+    "fail_on_triggered": true,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.mysql.tablespace.drop.forbid",
+      "level": "blocker"
+     }
+    ],
+    "evidence_gap_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.mysql.tablespace.applicability",
+      "reason_code": "unknown_tablespace_state",
+      "required_facts": [
+       "target.version",
+       "tablespace.existence",
+       "tablespace.occupancy"
+      ]
+     }
+    ],
+    "finding_metadata": [],
+    "unsupported_entries": [],
+    "description": "undo kind survives the drop form \u2014 the version gate stays owed beside the forbid"
+   }
+  },
+  {
+   "id": "mysql-case-identity",
+   "dialect": "mysql",
+   "sql": "CREATE TABLESPACE TS1 ADD DATAFILE 'f.ibd' ENGINE=InnoDB;\nDROP TABLESPACE ts1;",
+   "policy": "t25-mysql-tablespace",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 2,
+    "findings": 2,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": [
+     "unverified",
+     "unverified"
+    ],
+    "evidence_gaps": 2,
+    "fail_on_triggered": true,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.mysql.tablespace.create.warn",
+      "level": "warning"
+     },
+     {
+      "index": 1,
+      "rule_id": "ddl.mysql.tablespace.drop.forbid",
+      "level": "blocker"
+     }
+    ],
+    "evidence_gap_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.mysql.tablespace.applicability",
+      "reason_code": "unknown_tablespace_state",
+      "required_facts": [
+       "tablespace.existence"
+      ]
+     },
+     {
+      "index": 1,
+      "rule_id": "ddl.mysql.tablespace.applicability",
+      "reason_code": "unknown_tablespace_state",
+      "required_facts": [
+       "tablespace.existence",
+       "tablespace.occupancy"
+      ]
+     }
+    ],
+    "finding_metadata": [],
+    "unsupported_entries": [],
+    "description": "tablespace names are case-sensitive \u2014 TS1 and ts1 are distinct identities, the drop owes both state facts"
    }
   }
  ],
@@ -1142,6 +1351,10 @@
   "T25.meta.mysql80-discard-forbid",
   "T25.meta.mysql80-import-warn",
   "T25.meta.mysql80-myisam-discard-refused",
-  "T25.meta.tidb85-vendor-boundary"
+  "T25.meta.tidb85-vendor-boundary",
+  "T25.cli.mysql-memberless-innodb-refused",
+  "T25.cli.mysql-alter-undo-unaudited",
+  "T25.cli.mysql-drop-undo-forbid",
+  "T25.cli.mysql-case-identity"
  ]
 }

@@ -22,10 +22,22 @@ func applyCoverageBoundary(dialect spec.Dialect, statement *spec.Statement, node
 	}
 	if statement.DDL != nil {
 		if statement.DDL.Tablespace != nil && dialect == spec.DialectMySQL {
+			decl := statement.DDL.Tablespace
+			if decl.Kind == spec.TablespaceKindUndo && statement.DDL.Operation == spec.DDLOperationAlterTablespace {
+				// `ALTER UNDO TABLESPACE ... SET` is recognized MySQL
+				// surface but stays unaudited — a bounded boundary
+				// marker, never a parser diagnostic nor an InnoDB
+				// verdict (T25/#104 deferred scope).
+				statement.Unsupported = &spec.UnsupportedDetail{
+					Feature:  string(statement.DDL.Operation),
+					Reason:   spec.UnsupportedUnauditedReason,
+					Metadata: map[string]any{"form": "alter_undo_tablespace"},
+				}
+				return
+			}
 			// The LOGFILE GROUP family and every NDB-declared member are
 			// NDB-only semantics — an engine boundary under MySQL, never
 			// an audited InnoDB-tablespace verdict (T25/#104).
-			decl := statement.DDL.Tablespace
 			if decl.Kind == spec.TablespaceKindLogfileGroup || strings.EqualFold(decl.Engine, "ndb") {
 				metadata := map[string]any{"boundary": "engine"}
 				if decl.Engine != "" {

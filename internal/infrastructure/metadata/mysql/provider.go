@@ -2067,10 +2067,13 @@ func (p *Provider) loadMySQLTablespaceObject(ctx context.Context, request spec.O
 	if proven && !supported {
 		return snapshot, nil
 	}
+	// Tablespace names are case-sensitive identifiers — the catalog's
+	// case-insensitive collation would otherwise fold distinct objects
+	// (`ts1` matching `TS1`), so the lookup forces a binary comparison.
 	row := p.db.QueryRowContext(ctx, `
 		select space, space_type
 		from information_schema.innodb_tablespaces
-		where name = ?
+		where binary name = ?
 	`, request.Name)
 	var spaceID sql.NullInt64
 	var spaceType sql.NullString

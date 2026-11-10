@@ -28,6 +28,7 @@ const (
 	tablespaceStandaloneReasonEngine       = "tablespace_engine_inapplicable"
 	tablespaceStandaloneReasonVersion      = "tablespace_version_inapplicable"
 	tablespaceStandaloneReasonEngineAction = "tablespace_engine_action_inapplicable"
+	tablespaceStandaloneReasonDatafile     = "tablespace_datafile_required"
 	tablespaceStandaloneReasonAbsent       = "tablespace_absent"
 	tablespaceStandaloneReasonPresent      = "tablespace_present"
 	tablespaceStandaloneReasonOccupied     = "tablespace_occupied"
@@ -157,10 +158,11 @@ func (r tablespaceApplicabilityRule) AppliesTo(statement spec.Statement) bool {
 func (r tablespaceApplicabilityRule) missingTablespaceFacts(statement spec.Statement) []string {
 	decl := statement.DDL.Tablespace
 	missing := make([]string, 0, 4)
-	if decl.Engine == "" && (decl.AlterAction == "add_datafile" || decl.AlterAction == "drop_datafile") {
+	if decl.Engine == "" && (decl.AlterAction == "add_datafile" || decl.AlterAction == "drop_datafile" ||
+		spec.TablespaceMemberlessCreate(statement.DDL.Operation, decl)) {
 		missing = append(missing, "tablespace.engine")
 	}
-	if (decl.Kind == spec.TablespaceKindUndo || decl.Encryption != nil) &&
+	if spec.TablespaceVersionGated(statement.DDL.Operation, decl) &&
 		statementVersionMajor(statement) == nil {
 		missing = append(missing, "target.version")
 	}
@@ -212,19 +214,31 @@ func (r tablespaceApplicabilityRule) Evaluate(ctx context.Context, statement spe
 			"the tablespace family supports only InnoDB and NDB — verify the declared engine"), ctx.Err()
 	}
 	version := statementVersionMajor(statement)
-	if version != nil && *version < 8 {
-		// MySQL 5.7 has no UNDO TABLESPACE form and no tablespace
-		// ENCRYPTION member — both are 8.0 surface.
-		if decl.Kind == spec.TablespaceKindUndo {
+	if version != nil && *version < 8 && spec.TablespaceVersionGated(statement.DDL.Operation, decl) {
+		// MySQL 5.7 has no undo/encryption/memberless-create surface —
+		// all three are 8.0-only forms.
+		switch {
+		case decl.Kind == spec.TablespaceKindUndo:
 			return refuse(tablespaceStandaloneReasonVersion,
-				fmt.Sprintf("create undo tablespace %q requires MySQL 8.0 or later", decl.Name),
+				fmt.Sprintf("%s undo tablespace %q requires MySQL 8.0 or later", statement.DDL.Operation, decl.Name),
 				"undo tablespaces do not exist before MySQL 8.0 — review the target version"), ctx.Err()
-		}
-		if decl.Encryption != nil {
+		case decl.Encryption != nil:
 			return refuse(tablespaceStandaloneReasonVersion,
 				fmt.Sprintf("%s tablespace %q encryption requires MySQL 8.0 or later", statement.DDL.Operation, decl.Name),
 				"the ENCRYPTION member does not exist before MySQL 8.0 — review the target version"), ctx.Err()
+		default:
+			return refuse(tablespaceStandaloneReasonVersion,
+				fmt.Sprintf("create tablespace %q without a datafile is not in the pre-8.0 grammar", decl.Name),
+				"a memberless CREATE TABLESPACE needs MySQL 8.0 or later — review the target version"), ctx.Err()
 		}
+	}
+	// InnoDB requires at least one datafile on CREATE TABLESPACE — a
+	// memberless declaration on a proven InnoDB engine is refused.
+	if spec.TablespaceMemberlessCreate(statement.DDL.Operation, decl) &&
+		strings.EqualFold(decl.Engine, "innodb") {
+		return refuse(tablespaceStandaloneReasonDatafile,
+			fmt.Sprintf("create tablespace %q declares no datafile — InnoDB requires ADD DATAFILE", decl.Name),
+			"declare at least one ADD DATAFILE member or use an engine that permits memberless creates"), ctx.Err()
 	}
 	// InnoDB refuses datafile moves on ALTER TABLESPACE — ADD/DROP
 	// DATAFILE is an NDB member; InnoDB accepts only ENCRYPTION,
@@ -263,12 +277,13 @@ func (r tablespaceApplicabilityRule) Evaluate(ctx context.Context, statement spe
 }
 
 // tablespaceStateFor reads the bound ordered state from statement
-// metadata; an unbound name reports unproven.
+// metadata; an unbound name reports unproven. The key keeps authored
+// case — tablespace names are case-sensitive identifiers.
 func tablespaceStateFor(statement spec.Statement, name string) *spec.TablespaceState {
 	if statement.Metadata == nil || statement.Metadata.Tablespaces == nil {
 		return nil
 	}
-	return statement.Metadata.Tablespaces[strings.ToLower(name)]
+	return statement.Metadata.Tablespaces[strings.TrimSpace(name)]
 }
 
 // statementVersionMajor reports the proven major version, or nil when the

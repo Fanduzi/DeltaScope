@@ -23,33 +23,49 @@ infers facts from missing metadata.
 - A strict whole-input recognizer (`mysql_tablespace.go`) claims only complete
   MySQL tablespace forms: no `IF [NOT] EXISTS` guards the grammar lacks,
   `CREATE UNDO TABLESPACE` requires `ADD DATAFILE`, `CREATE LOGFILE GROUP`
-  requires `ADD UNDOFILE`, memberless creates and trailing junk fall back to the
+  requires `ADD UNDOFILE`, `DROP UNDO TABLESPACE` keeps the undo kind, and
+  `ALTER UNDO TABLESPACE ... SET ACTIVE|INACTIVE` is claimed as a typed
+  declaration so coverage routes it to the unaudited boundary rather than a
+  parser diagnostic. A memberless general `CREATE TABLESPACE` is
+  grammar-reachable (8.0 surface — the InnoDB datafile requirement is
+  semantic), while malformed input and trailing junk still fall back to the
   base parser's diagnostics.
 - `spec.TablespaceDeclaration` preserves authored facts (kind, name, engine,
   alter action, rename target, encryption flag, file-clause counts, scalar
   options). File paths are counted for evidence but never stored, echoed, read,
-  stat'ed, or interpreted — the recognizer never retains path bytes.
+  stat'ed, or interpreted — the recognizer never retains path bytes. Names are
+  case-sensitive identifiers (upstream: `tablespace_name` is case-sensitive),
+  so recognizer, ordered-state keys, `Metadata.Tablespaces`, fixture lookups,
+  and the object-cache key all keep authored case.
 - LOGFILE GROUP gets its own operation constants and routes to the vendor/NDB
-  boundary; it never enters the InnoDB lifecycle adjudication or state.
+  boundary; NDB-engine and logfile declarations never enter the InnoDB
+  lifecycle adjudication or ordered state.
 - Rules: standalone lifecycle `ddl.mysql.tablespace.{create.warn, alter.warn,
   drop.forbid, applicability}` and whole-table
   `ddl.alter.{discard_tablespace.forbid, import_tablespace.warn}` plus paired
   `.applicability` rules. Applicability adjudicates only proven native gates —
-  explicit non-InnoDB/non-NDB engine, pre-8.0 UNDO/ENCRYPTION, InnoDB
-  `ADD/DROP DATAFILE` (NDB-only member), proven-absent ALTER/DROP target,
-  proven-present CREATE target, proven-occupied DROP — while every unproven
-  premise emits a bounded evidence gap instead of an inferred verdict.
-- Ordered state: a globally namespaced lowercase-keyed registry resolves
+  explicit non-InnoDB/non-NDB engine, pre-8.0 UNDO/ENCRYPTION/memberless-create
+  surface (`spec.TablespaceVersionGated`), proven-InnoDB memberless CREATE
+  (`tablespace_datafile_required`), InnoDB `ADD/DROP DATAFILE` (NDB-only
+  member), proven-absent ALTER/DROP target, proven-present CREATE target,
+  proven-occupied DROP — while every unproven premise emits a bounded evidence
+  gap instead of an inferred verdict. `spec.TablespaceMemberlessCreate` shares
+  the memberless cell between rule and transition.
+- Ordered state: a globally namespaced case-sensitive-keyed registry resolves
   provider `mysql_tablespace` snapshots once per request through the existing
   object-cache seam (`ObjectSnapshot.Tablespace`). CREATE publishes
-  `occupied=false` only from proven absence; DROP under unknown occupancy stays
-  undecidable rather than claiming absence; RENAME migrates identity only on
-  proven execution with destination-collision refusal; refused operations never
-  mutate state; contaminated batches keep projections unavailable.
+  `occupied=false` only from proven absence; an unproven version gate or
+  unproven memberless engine leaves the whole entry unknown; DROP under
+  unknown occupancy stays undecidable rather than claiming absence; RENAME
+  migrates identity only on proven execution with destination-collision
+  refusal; refused operations never mutate state; contaminated batches keep
+  projections unavailable.
 - Provider: `ResolveObject("mysql_tablespace")` reads
-  `information_schema.INNODB_TABLESPACES` plus an `INNODB_TABLES` association
-  count; a readable zero proves unoccupied, an unreadable association keeps
-  occupancy unproven, zero-row reads stay unknown rather than proven-absent.
+  `information_schema.INNODB_TABLESPACES` via `WHERE BINARY name = ?` (binary
+  comparison — collation-based folding would alias distinct identities) plus
+  an `INNODB_TABLES` association count; a readable zero proves unoccupied, an
+  unreadable association keeps occupancy unproven, zero-row reads stay unknown
+  rather than proven-absent.
 - The `tidbVendorGatedRule` wrapper was fixed to propagate `EvidenceGaps` from
   the embedded rule so applicability gaps survive TiDB gating.
 
@@ -66,8 +82,10 @@ paths.
 
 ## Public Contract
 
-- The seven standalone statements parse under the MySQL dialect; malformed or
-  incomplete input still yields parser diagnostics (no silent claiming).
+- The standalone family parses under the MySQL dialect — including memberless
+  general creates and `DROP/ALTER UNDO` forms; malformed or incomplete input
+  still yields parser diagnostics (no silent claiming). `ALTER UNDO ... SET`
+  surfaces as a bounded unaudited entry, not a diagnostic and not a finding.
 - TiDB dialect receives vendor-boundary unsupported output for the whole family
   with no MySQL semantic findings.
 - Eight new rule IDs ship enabled at the levels listed in
@@ -83,8 +101,11 @@ paths.
 
 - `ALTER TABLESPACE ... RENAME` semantics beyond ordered identity migration
   (e.g. system-tablespace specials) are not modeled.
-- NDB LOGFILE GROUP internals, `ALTER UNDO TABLESPACE ... SET` state, and
-  per-file/tablespace encryption verification are unaudited boundaries.
+- NDB LOGFILE GROUP internals and per-file/tablespace encryption verification
+  (`INNODB_TABLESPACES_ENCRYPTION`) are unaudited boundaries.
+- `ALTER UNDO TABLESPACE ... SET ACTIVE|INACTIVE` is recognized but its
+  runtime state transition is unaudited — the statement carries a bounded
+  `alter_undo_tablespace` boundary marker and mutates nothing.
 - Partition-level DISCARD/IMPORT rules predate T25 and are unchanged.
 - Native verification of the live-provider occupancy read against real anchors
   is deferred to the T25 native-validation round; the seam is covered by

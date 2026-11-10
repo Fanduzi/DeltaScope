@@ -48,6 +48,30 @@ const (
 	TablespaceKindLogfileGroup = "logfile_group"
 )
 
+// TablespaceVersionGated reports whether the declaration touches surface
+// MySQL added in 8.0 — an undo object, an ENCRYPTION member, or a
+// memberless general CREATE (absent from the 5.7 grammar). Rules and the
+// ordered-state transition share this predicate so a proven pre-8.0
+// version refuses identically and an unproven version proves nothing.
+func TablespaceVersionGated(operation DDLOperation, decl *TablespaceDeclaration) bool {
+	if decl == nil {
+		return false
+	}
+	return decl.Kind == TablespaceKindUndo || decl.Encryption != nil ||
+		(operation == DDLOperationCreateTablespace && decl.FileCount == 0)
+}
+
+// TablespaceMemberlessCreate reports a general CREATE TABLESPACE with no
+// file clause — grammar-valid since 8.0 but refused semantically by
+// InnoDB, whose tablespaces require at least one datafile.
+func TablespaceMemberlessCreate(operation DDLOperation, decl *TablespaceDeclaration) bool {
+	if decl == nil {
+		return false
+	}
+	return operation == DDLOperationCreateTablespace &&
+		decl.Kind == TablespaceKindGeneral && decl.FileCount == 0
+}
+
 // TablespaceState is the ordered-state projection of one MySQL tablespace
 // as a statement adjudicates it: existence plus the occupancy premise
 // DROP TABLESPACE consults — MySQL refuses to drop a tablespace that
