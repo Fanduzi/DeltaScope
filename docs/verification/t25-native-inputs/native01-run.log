@@ -1,0 +1,19 @@
+[ddl-golden][FAIL] case T25.meta.mysql80-absent-alter-refused: status='fail'
+[ddl-golden][FAIL] case T25.meta.mysql80-absent-alter-refused: failed assertion 'execute alter-absent-refused stderr marker': 'does not exist'
+[ddl-golden][FAIL] case T25.meta.mysql80-absent-alter-refused: execute alter-absent-refused missing stderr marker 'does not exist'
+[ddl-golden][FAIL] case T25.meta.tidb85-vendor-boundary: status='fail'
+[ddl-golden][FAIL] case T25.meta.tidb85-vendor-boundary: failed assertion 'exit code': 'rc=2 expected=1'
+[ddl-golden][FAIL] case T25.meta.tidb85-vendor-boundary: failed assertion 'verdict': 'verdict=None'
+[ddl-golden][FAIL] case T25.meta.tidb85-vendor-boundary: failed assertion 'top-level statements': 'statements=0 expected=1'
+[ddl-golden][FAIL] case T25.meta.tidb85-vendor-boundary: failed assertion 'zero findings': 'findings=0'
+[ddl-golden][FAIL] case T25.meta.tidb85-vendor-boundary: failed assertion 'no diagnostics': 'diagnostics=[]'
+[ddl-golden][FAIL] case T25.meta.tidb85-vendor-boundary: failed assertion 'no unsupported': 'unsupported=[]'
+[ddl-golden][FAIL] case T25.meta.tidb85-vendor-boundary: failed assertion 'aggregate coverage': 'coverage=None'
+[ddl-golden][FAIL] case T25.meta.tidb85-vendor-boundary: failed assertion 'per-statement coverage': 'statement_coverage=[]'
+[ddl-golden][FAIL] case T25.meta.tidb85-vendor-boundary: failed assertion 'fail_on_triggered': 'fail_on_triggered=None'
+[ddl-golden][FAIL] case T25.meta.tidb85-vendor-boundary: CLI stdout is not JSON
+[ddl-golden][FAIL] case T25.meta.mysql80-rename-collision-refused: status='fail'
+[ddl-golden][FAIL] case T25.meta.mysql80-rename-collision-refused: failed assertion 'execute rename-collision-refused stderr marker': 'already exists'
+[ddl-golden][FAIL] case T25.meta.mysql80-rename-collision-refused: execute rename-collision-refused missing stderr marker 'already exists'
+[ddl-golden] task=T25 head=cdcd62b944ea cases=51 passed=48 assertions=745
+[ddl-golden] artifact=/Users/fan/GolangProjects/DeltaScope/artifacts/T25-R8-native-cdcd62b9-20261110-162346-04e71083/T25/artifact.json

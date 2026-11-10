@@ -1,5 +1,10 @@
 # T25 native execution plan (R4 — plan only, nothing executed)
 
+> **Superseded**: this plan was later executed under reviewer work orders
+> T25-R8-NATIVE-01 (FAIL 48/51) and T25-R8-NATIVE-02 (PASS 51/51, accepted).
+> Results, tested identities, anchor digests, and proof boundaries are
+> archived in [r8-native-acceptance.md](r8-native-acceptance.md).
+
 Scope: `testdata/ddl-golden/T25.json` under `scripts/ddl_golden.py`.
 This document is the expanded plan required by T25-R4-N04. **No Docker,
 database, or native SQL was invoked to produce it** — every environment
