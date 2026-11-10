@@ -937,6 +937,11 @@ INSTANCE_FACT_QUERIES = {
     "tidb_enable_clustered_index": "show variables like 'tidb_enable_clustered_index'",
     "tidb_alter_primary_key": "show config where Type = 'tidb' and Name = 'alter-primary-key'",
     "tidb_split_region_max_num": "show config where Type = 'tidb' and Name = 'split-region-max-num'",
+    # InnoDB tablespace-encryption prerequisite (issue #79 T25): the
+    # ENCRYPTION member executes only when a keyring plugin is loaded —
+    # a missing row stays unobserved so the bounded-refusal arm's
+    # attribution is evidence, not a guessed default.
+    "keyring_file_plugin_status": "select plugin_status from information_schema.plugins where plugin_name='keyring_file'",
 }
 
 
@@ -969,10 +974,19 @@ def metadata_case_spec_for(manifest, case):
     return None
 
 
+def _fixture_key(step):
+    """Ownership key a step binds to — multi-object cases name each
+    object explicitly; the original single-table T07 steps share the
+    default key unchanged."""
+    return step.get("fixture_key") or "default"
+
+
 def execute_metadata_case(manifest, anchor_key, binary, policies, spec):
-    if manifest.get("task_id") != "T07":
+    fixture_spec = spec.get("fixture") or {}
+    if manifest.get("task_id") != "T07" and not fixture_spec:
         return _execute_metadata_case(manifest, anchor_key, binary, policies, spec)
-    fixture = {"created": False, "absence_proved": False, "case": None}
+    task_id = manifest.get("task_id") or "?"
+    fixture = {"created": set(), "absent": set(), "case": None}
     try:
         return _execute_metadata_case(manifest, anchor_key, binary, policies, spec, fixture=fixture)
     except Exception as error:
@@ -980,25 +994,59 @@ def execute_metadata_case(manifest, anchor_key, binary, policies, spec):
         if case is None:
             raise
         case["actual"]["fixture_error"] = {"type": type(error).__name__, "message": str(error)}
-        case["assertions"].append({"name": "T07 fixture primary error", "ok": False, "detail": type(error).__name__})
+        case["assertions"].append({"name": f"{task_id} fixture primary error", "ok": False, "detail": type(error).__name__})
         case["status"] = "fail"
         return case
     finally:
         if fixture["created"]:
             case = fixture["case"]
             anchor = manifest["anchors"][anchor_key]
-            cleanup = {}
-            for name, sql in (("drop", "DROP TABLE t;"), ("count", "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t'")):
-                try:
-                    rc, out, err = mysql_exec(anchor, sql, database=anchor["database"])
-                    cleanup[name] = {"sql": sql, "rc": rc, "stdout": out, "stderr": err}
-                except Exception as error:
-                    cleanup[name] = {"sql": sql, "exception_type": type(error).__name__, "exception_message": str(error)}
-            case["actual"]["owned_cleanup"] = cleanup
-            ok = type(cleanup["drop"].get("rc")) is int and cleanup["drop"]["rc"] == 0 and type(cleanup["count"].get("rc")) is int and cleanup["count"]["rc"] == 0 and cleanup["count"].get("stdout", "").strip() == "0"
-            case["assertions"].append({"name": "T07 owned fallback cleanup", "ok": ok, "detail": "owned table DROP and final COUNT"})
-            if not ok:
-                case["status"] = "fail"
+            if fixture_spec:
+                # Descriptor cleanup: run each entry only for an
+                # identity this run still provably owns; the entry's own
+                # verify proves the post-state rather than the drop rc.
+                cleanup = {}
+                cleanup_ok = True
+                for entry in fixture_spec.get("cleanup") or []:
+                    key = entry.get("fixture_key") or "default"
+                    if key not in fixture["created"]:
+                        cleanup[entry["name"]] = {"skipped": f"unowned identity {key!r} preserved"}
+                        continue
+                    record = {"sql": entry["sql"]}
+                    try:
+                        rc, out, err = mysql_exec(anchor, entry["sql"], database=anchor["database"])
+                        record.update({"rc": rc, "stdout": out, "stderr": err})
+                    except Exception as error:
+                        record.update({"exception_type": type(error).__name__, "exception_message": str(error)})
+                    if entry.get("verify"):
+                        vrec, vok, vtimeout = run_verify_check(anchor, entry["verify"], database=anchor["database"])
+                        record["verify"] = vrec
+                        if vtimeout:
+                            record["timeout"] = True
+                        cleanup_ok = cleanup_ok and vok
+                    elif type(record.get("rc")) is int:
+                        cleanup_ok = cleanup_ok and record["rc"] == entry.get("expect_rc", 0)
+                    else:
+                        cleanup_ok = False
+                    cleanup[entry["name"]] = record
+                case["actual"]["owned_cleanup"] = cleanup
+                case["assertions"].append({"name": f"{task_id} owned fallback cleanup", "ok": cleanup_ok,
+                                           "detail": "fixture cleanup verifies owned identities removed"})
+                if not cleanup_ok:
+                    case["status"] = "fail"
+            else:
+                cleanup = {}
+                for name, sql in (("drop", "DROP TABLE t;"), ("count", "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='golden' AND table_name='t'")):
+                    try:
+                        rc, out, err = mysql_exec(anchor, sql, database=anchor["database"])
+                        cleanup[name] = {"sql": sql, "rc": rc, "stdout": out, "stderr": err}
+                    except Exception as error:
+                        cleanup[name] = {"sql": sql, "exception_type": type(error).__name__, "exception_message": str(error)}
+                case["actual"]["owned_cleanup"] = cleanup
+                ok = type(cleanup["drop"].get("rc")) is int and cleanup["drop"]["rc"] == 0 and type(cleanup["count"].get("rc")) is int and cleanup["count"]["rc"] == 0 and cleanup["count"].get("stdout", "").strip() == "0"
+                case["assertions"].append({"name": "T07 owned fallback cleanup", "ok": ok, "detail": "owned table DROP and final COUNT"})
+                if not ok:
+                    case["status"] = "fail"
 
 
 def _execute_metadata_case(manifest, anchor_key, binary, policies, spec, fixture=None):
@@ -1006,6 +1054,7 @@ def _execute_metadata_case(manifest, anchor_key, binary, policies, spec, fixture
     setup and teardown stay test-driven, the audit only reads metadata, and
     post_verify steps prove the audited object was not mutated."""
     anchor = manifest["anchors"][anchor_key]
+    task_id = manifest.get("task_id") or "?"
     case_id = f"{manifest['task_id']}.meta.{spec['id']}"
     profile_name, policy = policy_for_case(manifest, policies, spec)
     conn = spec["connect"]
@@ -1049,13 +1098,13 @@ def _execute_metadata_case(manifest, anchor_key, binary, policies, spec, fixture
         return case
 
     for step in spec.get("setup") or []:
-        if fixture is not None and step.get("creates_fixture") and not fixture["absence_proved"]:
-            case["assertions"].append({"name": "T07 prior fixture absence required", "ok": False, "detail": "no successful absence proof"})
+        if fixture is not None and step.get("creates_fixture") and _fixture_key(step) not in fixture["absent"]:
+            case["assertions"].append({"name": f"{task_id} prior fixture absence required", "ok": False, "detail": f"no successful absence proof for {_fixture_key(step)!r}"})
             case["status"] = "fail"
             return case
         src, sout, serr = mysql_exec(anchor, step["sql"], database=anchor["database"], silent=False)
         if fixture is not None and step.get("creates_fixture") and type(src) is int and src == 0:
-            fixture["created"] = True
+            fixture["created"].add(_fixture_key(step))
         step_ok = type(src) is int and src == step.get("expect_rc", 0)
         record = {"name": step["name"], "sql": step["sql"], "rc": src, "stdout": sout.strip(), "stderr": serr.strip()}
         case["actual"]["setup"].append(record)
@@ -1079,8 +1128,8 @@ def _execute_metadata_case(manifest, anchor_key, binary, policies, spec, fixture
             case["assertions"].append(assertion)
             step_ok = step_ok and vok
         if fixture is not None:
-            if step.get("requires_absence"):
-                fixture["absence_proved"] = step_ok
+            if step.get("requires_absence") and step_ok:
+                fixture["absent"].add(_fixture_key(step))
             if not step_ok:
                 case["status"] = "fail"
                 return case
@@ -1149,13 +1198,30 @@ def _execute_metadata_case(manifest, anchor_key, binary, policies, spec, fixture
     # statement — the product only ever reads; the fixture must prove the
     # audited SQL actually works on this anchor (issue #84 T05 oracle).
     for step in spec.get("execute") or []:
-        if fixture is not None and step.get("creates_fixture") and not fixture["absence_proved"]:
-            case["assertions"].append({"name": "T07 driver prior absence required", "ok": False, "detail": "no successful absence proof"})
+        move = step.get("moves_fixture") or {}
+        if fixture is not None and move and move.get("from") not in fixture["created"]:
+            case["assertions"].append({"name": f"{task_id} rename requires current fixture ownership", "ok": False,
+                                       "detail": f"unowned identity {move.get('from')!r} preserved"})
+            case["status"] = "fail"
+            return case
+        if fixture is not None and step.get("creates_fixture") and _fixture_key(step) not in fixture["absent"]:
+            case["assertions"].append({"name": f"{task_id} driver prior absence required", "ok": False, "detail": f"no successful absence proof for {_fixture_key(step)!r}"})
+            case["status"] = "fail"
+            return case
+        if fixture is not None and step.get("drops_fixture") and _fixture_key(step) not in fixture["created"]:
+            case["assertions"].append({"name": f"{task_id} drop requires current fixture ownership", "ok": False, "detail": f"unowned identity {_fixture_key(step)!r} preserved"})
             case["status"] = "fail"
             return case
         erc, eout, eerr = mysql_exec(anchor, step["sql"], database=anchor["database"], silent=False)
         if fixture is not None and step.get("creates_fixture") and type(erc) is int and erc == 0:
-            fixture["created"] = True
+            fixture["created"].add(_fixture_key(step))
+        if fixture is not None and step.get("drops_fixture") and type(erc) is int and erc == 0:
+            fixture["created"].discard(_fixture_key(step))
+        if fixture is not None and step.get("moves_fixture") and type(erc) is int and erc == 0:
+            move = step["moves_fixture"]
+            if move.get("from") in fixture["created"]:
+                fixture["created"].discard(move["from"])
+                fixture["created"].add(move["to"])
         step_ok = type(erc) is int and erc == step.get("expect_rc", 0)
         record = {"name": step["name"], "sql": step["sql"], "rc": erc, "stdout": eout.strip(), "stderr": eerr.strip()}
         case["actual"]["execute"].append(record)
@@ -1212,13 +1278,13 @@ def _execute_metadata_case(manifest, anchor_key, binary, policies, spec, fixture
         case["assertions"].append(assertion)
 
     for step in spec.get("teardown") or []:
-        if fixture is not None and step.get("drops_fixture") and not fixture["created"]:
-            case["assertions"].append({"name": "T07 drop requires current fixture ownership", "ok": False, "detail": "unowned table preserved"})
+        if fixture is not None and step.get("drops_fixture") and _fixture_key(step) not in fixture["created"]:
+            case["assertions"].append({"name": f"{task_id} drop requires current fixture ownership", "ok": False, "detail": f"unowned identity {_fixture_key(step)!r} preserved"})
             case["status"] = "fail"
             return case
         trc, tout, terr = mysql_exec(anchor, step["sql"], database=anchor["database"], silent=False)
         if fixture is not None and step.get("drops_fixture") and type(trc) is int and trc == 0:
-            fixture["created"] = False
+            fixture["created"].discard(_fixture_key(step))
         record = {"name": step["name"], "sql": step["sql"], "rc": trc, "stderr": terr.strip()}
         case["actual"]["teardown"].append(record)
         case["assertions"].append({

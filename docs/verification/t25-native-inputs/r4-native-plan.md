@@ -125,43 +125,69 @@ R2. `ALTER TABLESPACE t25fx_ghost RENAME TO t25fx_ghost2` on mysql80 —
 R3. `ALTER TABLESPACE <occupied> RENAME TO <present>` collision on
     mysql80 — seed `t25fx_c1` and `t25fx_c2`, rename c1→c2, expect rc≠0.
     Proves the `rename_target_present` arm.
-R4. `DROP UNDO TABLESPACE innodb_undo_001` on mysql80 — expect rc≠0
-    (default undo object cannot be dropped). Proves the
-    `tablespace.drop_eligibility` gate is a real refusal, not just a
-    conservative gap.
+R4. (superseded by R7) `DROP UNDO TABLESPACE innodb_undo_001` is no
+    longer an execute arm: the default undo object is never mutated by
+    driver SQL. `mysql80-undo-default-drop-refused` keeps the audited
+    SQL as product input and observes `innodb_undo_001`/`002` read-only;
+    the refusal claim stays documentation-level, not a native result.
+R4'. Owned-undo lifecycle (R7-N05) — `mysql80-undo-owned-lifecycle` on
+    mysql80: `CREATE UNDO TABLESPACE t25fx_u1 ADD DATAFILE
+    't25fx_u1.ibu'`, `ALTER UNDO TABLESPACE t25fx_u1 SET INACTIVE`,
+    bounded poll of `INNODB_TABLESPACES.STATE` until `empty` (10
+    attempts × 1s), then `DROP UNDO TABLESPACE t25fx_u1`. A setup
+    prerequisite verifies both default undo tablespaces are `active` so
+    the SET member only ever touches the run-owned object.
 
 ### 2.3 Vendor/boundary arms
 
 B1. `CREATE TABLESPACE ts1 ADD DATAFILE 'f.ibd' ENGINE=NDB` on mysql80 —
-    expect rc≠0 (no NDB engine in the fixture). Proves the NDB member is
-    a real engine boundary.
+    expect rc≠0 (`ERROR 1286 Unknown storage engine`, strict marker).
+    Proves the NDB member is a real engine boundary.
 B2. `CREATE TABLESPACE ts1 ADD DATAFILE 'f.ibd' ENGINE=InnoDB` on
-    tidb85 — expect TiDB rejection or boundary-consistent behavior
-    recorded verbatim (TiDB has no general-tablespace grammar). Proves
-    the vendor boundary is honest.
-B3. `ALTER UNDO TABLESPACE innodb_undo_001 SET INACTIVE` on mysql80 —
-    expect rc≠0 (cannot deactivate a default undo tablespace). Proves
-    the unaudited set_state arm behaves as a real server operation we
-    deliberately do not audit.
+    tidb85 — expect rc≠0 (`ERROR 1064` syntax marker). Proves the vendor
+    boundary is honest.
+B3. (superseded by R7) `ALTER UNDO TABLESPACE innodb_undo_001 SET
+    INACTIVE` is no longer an execute arm — see R4 above. The owned-undo
+    case R4' carries the SET-member observation on a run-owned object.
 
-### 2.4 Cleanup (explicit order — DROP DATABASE never cleans tablespaces)
+### 2.4 Cleanup — driver-layer ownership, never SQL PREPARE (R7-N04)
 
-Tablespaces are global objects; `DROP DATABASE t25fx` does **not** drop
-them, so cleanup must be explicit and ordered:
+The earlier guarded `PREPARE ... DROP TABLESPACE` construction is
+removed: MySQL's prepared-statement allowlist does not include DROP
+TABLESPACE, so conditional cleanup now lives in the runner, not in SQL.
 
-1. Drop bound tables first: `DROP TABLE IF EXISTS t25fx.t_occ,
-   t25fx.t_disc, t25fx.t_imp, t25fx.t_my` — tables must leave a
-   tablespace before the tablespace can drop.
-2. Drop every created general tablespace by name:
-   `DROP TABLESPACE t25fx_ts`, `t25fx_ts2`, `t25fx_occ`, `t25fx_mbr`,
-   `t25fx_e`, `t25fx_c1`, `t25fx_c2` (each `IF`-less — record rc
-   individually, tolerate "does not exist" on already-cleaned runs only
-   when the pre-check COUNT proved absence).
-3. `DROP DATABASE IF EXISTS t25fx` last — after bound tables are gone
-   the schema drop cannot strand tablespace contents.
-4. Post-cleanup verification:
-   `SELECT COUNT(*) FROM information_schema.INNODB_TABLESPACES WHERE
-   NAME LIKE 't25fx%'` must return 0 on mysql80 and mysql84.
+Ownership model (keys `_fixture_key(step)`, default `default`):
+
+- `requires_absence` setup step: its verify proves the named object
+  absent; on success the key is marked absent, on failure the case
+  fails fast — an unowned residue is preserved, never deleted.
+- `creates_fixture` execute/setup step: gated on the key being proven
+  absent first; rc=0 records the key as run-created (owned).
+- `moves_fixture` execute step (RENAME): gated on the source key being
+  owned; rc=0 moves ownership from the source key to the target key.
+- `drops_fixture` teardown/execute step: gated on the key being owned;
+  rc=0 releases it. A drop on an unowned identity never executes.
+- `fixture.cleanup[]` descriptor (per case): the `finally` fallback —
+  each entry runs only while its `fixture_key` is still owned, using
+  plain SQL `DROP TABLESPACE`/`DROP TABLE`; the entry's own `verify`
+  (catalog COUNT=0) proves the post-state rather than the drop rc.
+
+Per-case declared order: bound tables drop before their tablespace
+(teardown list order = execution order), matching §2.4's original
+constraint that `DROP DATABASE` never cleans tablespaces.
+
+Run-level vs case-level cleanup:
+
+- `ddl_steps` keep the two schema-reset statements (`DROP DATABASE IF
+  EXISTS t25fx`; `CREATE DATABASE t25fx`): bound tables inside `t25fx`
+  die with the schema on every full run; tablespaces, being global
+  objects, are deliberately *not* reset here — a pre-existing one is
+  unowned residue that must fail the case with evidence, not be
+  silently dropped.
+- Single-case retry (same run, no ddl_steps): `requires_absence`
+  re-verifies both the bound table and the tablespace; residue from an
+  interrupted attempt is detected and the case fails rather than
+  adopting or deleting a foreign object.
 
 ### 2.5 Interrupted-run identification
 
@@ -171,15 +197,29 @@ them, so cleanup must be explicit and ordered:
   information_schema.INNODB_TABLESPACES WHERE NAME LIKE 't25fx%'` plus
   `SELECT TABLE_SCHEMA, TABLE_NAME FROM information_schema.TABLES WHERE
   TABLE_SCHEMA='t25fx'`.
-- Cleanup triggers: always at case end (the manifest's `teardown[]`
-  arm), and unconditionally at run start via a new `ddl_steps`
-  pre-step that runs the §2.4 sequence so an interrupted previous run
-  can never pollute the fixture.
+- On detection the case fails with the recorded absence-verify
+  evidence — cleanup of foreign objects is a human decision, not a
+  driver action.
 - `compose` teardown already removes containers/volumes for the run's
-  own stack; only in-anchor objects created by driver SQL need the SQL
-  cleanup above — a run aborted between anchor-up and teardown leaves
-  them, which is exactly what the §2.5 pre-check + §2.4 ordering
-  absorbs.
+  own stack; only in-anchor objects created by driver SQL need SQL
+  cleanup, and the `fixture.cleanup[]` fallback covers exactly the
+  owned identities the run still holds when a case exits early.
+
+### 2.6 Runner execution order (recorded, not JSON field order)
+
+From `execute_metadata_case` (`scripts/ddl_golden.py`):
+
+`setup[] → audit CLI → post_verify[] → execute[] → structure[] →
+teardown[] → finally(fixture.cleanup[] for still-owned keys)`
+
+Consequence: the audit call happens **before** `execute[]`, so an
+audit-side expectation can never claim the provider observed a
+post-execute catalog state. Where a post-change provider read-back is
+required, it must be a separate audit invocation — none is currently
+declared, so every meta `expect` describes the pre-execute world plus
+the anchor's proven banner version. The driver catalog queries
+(`verify[]`, `instance_facts`) are recorded separately from product
+provider observations.
 
 ## 3. Open items this plan deliberately does not claim
 
@@ -193,32 +233,34 @@ them, so cleanup must be explicit and ordered:
   `mysql80-ts-lifecycle`/`mysql80-absent-alter-refused` expectations
   were revised to conservative unknown rather than "proven absent".
 
-## 4. Case mapping — folded into the manifest (R6)
+## 4. Case mapping — folded into the manifest, reworked under R7
 
-The arms below are now declared in `testdata/ddl-golden/T25.json`
-(pinned under `pending_native` — the runner ignores that flag, so they
-execute on the first authorized run). Nothing has been executed.
+The arms below are declared in `testdata/ddl-golden/T25.json` (pinned
+under `pending_native` — the flag only documents that nothing has run).
+Counts at the time of writing: 28 cli_cases, 15 metadata_cases,
+51 required_case_ids.
 
 | change | manifest delta | status |
 |---|---|---|
-| per-case `setup[0]` guarded preclean | each creating meta case drops its own `t25fx_*` leftovers first (guarded PREPARE drop — `DROP TABLESPACE` has no `IF EXISTS` form) | declared |
-| mysql80-ts-lifecycle `execute[]` arm (P1–P3) + `teardown[]` | audited create→rename→drop now natively proven, both identities cleaned after | declared |
-| mysql84-occupied-drop-refused `execute[]` arm (P4) + ordered `teardown[]` (table → tablespace) | native occupied-refusal proven; the previously leaked `t25fx_occ`/`t_occ` now has explicit cleanup | declared |
-| mysql80-absent-alter-refused `execute[]` arm (R2) | native absent-source refusal proven | declared |
-| mysql57-undo-refused `execute[]` arm (R1) | 5.7 syntax refusal proven natively | declared |
-| mysql80-discard-forbid `execute[]` + restore `teardown[]` (DROP+CREATE) | DISCARD executes natively (policy forbid ≠ native rejection); fixture table restored | declared |
-| mysql80-import-warn `execute[]` arm | IMPORT on a never-discarded table refuses natively | declared |
-| mysql80-myisam-discard-refused `execute[]` arm | MyISAM DISCARD refuses natively | declared |
-| new meta cases ×6: `mysql80-memberless-innodb` (P5), `mysql80-encryption-native` (P6), `mysql80-rename-collision-refused` (R3), `mysql80-undo-default-drop-refused` (R4), `mysql80-ndb-vendor-boundary` (B1), `mysql80-alter-undo-unaudited` (B3) | meta 8 → 14; `required_case_ids` 44 → 50 | declared |
-| tidb85-vendor-boundary `execute[]` arm (B2) | TiDB native rejection recorded | declared |
+| per-case `requires_absence` setup verifies | each owned identity is proven absent before any create; residue fails with evidence instead of being adopted or dropped | declared |
+| `fixture.cleanup[]` descriptors | plain-SQL drops bound to owned `fixture_key`s, run from the runner's `finally` — no SQL PREPARE anywhere | declared |
+| mysql80-ts-lifecycle `execute[]` (P1–P3) | create→rename→drop with `moves_fixture` ownership tracking | declared |
+| mysql84-occupied-drop-refused `execute[]` (P4) + ordered teardown (table → tablespace) + `stderr_contains` `ERROR 3120`/`is not empty` | strict native occupied-refusal | declared |
+| mysql80-absent-alter-refused `execute[]` (R2) | rc=1 + `does not exist` marker + post-state verify | declared |
+| mysql57-undo-refused `execute[]` (R1) | `ERROR 1064` strict syntax marker | declared |
+| mysql80-discard-forbid `execute[]` + owned-table teardown | DISCARD executes natively (policy forbid ≠ native rejection) | declared |
+| mysql80-import-warn `execute[]` arm | rc=1 + table survives; error token deferred — marked exploratory | declared |
+| mysql80-myisam-discard-refused `execute[]` arm | rc=1 + `doesn't have this option` marker | declared |
+| new meta cases: `mysql80-memberless-innodb` (P5), `mysql80-encryption-native` (P6 bounded refusal keyed on `keyring_file_plugin_status` unobserved), `mysql80-rename-collision-refused` (R3: `already exists` marker + both names survive + `reason_code` pinned in expect), `mysql80-ndb-vendor-boundary` (B1 `ERROR 1286`), `mysql80-undo-owned-lifecycle` (R4': owned SET/empty-poll/DROP) | meta 8 → 15 | declared |
+| `mysql80-undo-default-drop-refused`, `mysql80-alter-undo-unaudited` | execute arms removed — default undo objects are read-only observed, never mutated | declared |
+| tidb85-vendor-boundary `execute[]` arm (B2) | `ERROR 1064` strict syntax marker | declared |
 
-Counts now in the manifest: 28 cli_cases, 14 metadata_cases,
-50 required_case_ids. Meta expectations are authored from the audit
-model under the provider contract (zero-row lookups stay unresolved;
-banner version is proven) — they have not been validated against a live
-anchor, which is exactly what the authorized run verifies.
+Meta expectations are authored from the audit model under the provider
+contract (zero-row lookups stay unresolved; banner version is proven) —
+they have not been validated against a live anchor, which is exactly
+what the authorized run verifies.
 
-`ddl_steps` keeps its two schema-reset steps: `DROP DATABASE` has no
-tablespace `IF EXISTS` equivalent and the same steps must run on every
-anchor including tidb85 (no `INNODB_TABLESPACES`), so global-object
-cleanup lives in each meta case's own `setup[0]`/`teardown[]` instead.
+`ddl_steps` keeps its two schema-reset steps: `DROP DATABASE` removes
+bound tables inside `t25fx` but never tablespaces, and the same steps
+must run on tidb85 (no `INNODB_TABLESPACES`), so global-object cleanup
+stays per-case and ownership-gated.
