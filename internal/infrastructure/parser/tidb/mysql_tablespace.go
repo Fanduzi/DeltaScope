@@ -239,11 +239,11 @@ func mysqlTablespaceAlter(sqlText, kind string, nameTok sqlTok, rest []sqlTok) (
 		decl.Encryption = &on
 		i = next
 	default:
-		// Scalar members (WAIT / AUTOEXTEND_SIZE / INITIAL_SIZE /
-		// ENGINE_ATTRIBUTE) may also lead the member list — the
-		// trailing-member loop below consumes them from position 0.
-		if !(rest[i].wordIs(sqlText, "wait") || rest[i].wordIs(sqlText, "autoextend_size") ||
-			rest[i].wordIs(sqlText, "initial_size") || rest[i].wordIs(sqlText, "engine_attribute")) {
+		// The two capability-gated scalar members may also lead the
+		// member list — the trailing-member loop below consumes them
+		// from position 0.
+		if !(rest[i].wordIs(sqlText, "autoextend_size") ||
+			rest[i].wordIs(sqlText, "engine_attribute")) {
 			return nil, false
 		}
 	}
