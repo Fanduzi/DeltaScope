@@ -1,5 +1,16 @@
 # T26-R2 SERVER semantic responsibility → safe-field mapping
 
+> **R3 addendum (T26-R3, implementation stage).** The semantic map below
+> is the *target* contract — none of it is implemented in R3. R3 ships
+> `spec.ServerDeclaration` carrying only: kind, verbatim name, wrapper
+> identity, option keys + value kinds + counts, duplicate keys, and the
+> name-length fact — **option values are never stored or emitted**. The
+> emitted outcome is uniformly `coverage=incomplete` + named unaudited
+> boundary (`boundary=unaudited`, `object=server`) on MySQL and vendor
+> boundary on TiDB. No findings, no lifecycle post-state, no metadata
+> reader — "server exists" stays provider-not-loaded until a later
+> milestone loads it.
+
 Proposal status: **awaiting reviewer ruling**. Answers section 四 of the
 R2 work order — what is promised, which facts each promise needs, how the
 parse stage obtains them, the safe internal representation, and which

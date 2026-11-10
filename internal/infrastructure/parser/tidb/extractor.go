@@ -106,6 +106,40 @@ func (e tidbExtractor) Extract(dialect spec.Dialect, rawSQL string) (spec.Statem
 		applyCoverageBoundary(dialect, &statement, e.node)
 		return statement, nil
 	}
+	if node, ok := e.node.(*mysqlServerStatement); ok {
+		// The MySQL SERVER family: the typed declaration binds as its own
+		// object family — option payloads stay opaque keys/kinds/counts,
+		// and the serialized SQL fields render the declaration's
+		// fixed-shape redacted form (T26/#105).
+		statement.DDL = &spec.DDL{
+			Operation:  node.operation,
+			ObjectType: "server",
+			ObjectName: node.declaration.Name,
+			Server:     node.declaration,
+		}
+		applyCoverageBoundary(dialect, &statement, e.node)
+		return statement, nil
+	}
+	if node, ok := e.node.(*mysqlSRSStatement); ok {
+		// The MySQL spatial reference system family: the typed
+		// declaration binds as its own object family — DEFINITION
+		// payloads stay opaque presence/length facts (T26/#105).
+		statement.DDL = &spec.DDL{
+			Operation:        node.operation,
+			ObjectType:       "spatial_reference_system",
+			ObjectName:       node.declaration.SRIDName(),
+			SpatialReference: node.declaration,
+		}
+		applyCoverageBoundary(dialect, &statement, e.node)
+		return statement, nil
+	}
+	if _, ok := e.node.(*mysqlAlterInstanceStatement); ok {
+		// The MySQL-only ALTER INSTANCE subaction carries no DDL — it
+		// falls to the unhandled-statement boundary with its precise
+		// feature name (T26/#105 DDL-ALTER-INSTANCE-EXT).
+		applyCoverageBoundary(dialect, &statement, e.node)
+		return statement, nil
+	}
 	if node, ok := e.node.(*viewStatement); ok {
 		if node.declaration.Definition != nil {
 			node.declaration.Definition = spec.SelectViewDefinition(node.declaration.Definition, dialect)
@@ -356,6 +390,13 @@ func classify(stmt ast.StmtNode) spec.Kind {
 		return spec.KindDDL
 	case *mysqlTablespaceStatement:
 		return spec.KindDDL
+	case *mysqlServerStatement, *mysqlSRSStatement:
+		return spec.KindDDL
+	case *mysqlAlterInstanceStatement:
+		// A recognized ALTER INSTANCE subaction stays kind=unknown — it
+		// carries no DDL and takes the unhandled-statement boundary with
+		// its precise feature name (T26/#105).
+		return spec.KindUnknown
 	case *ast.InsertStmt,
 		*ast.UpdateStmt,
 		*ast.DeleteStmt:

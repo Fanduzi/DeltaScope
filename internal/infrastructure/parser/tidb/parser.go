@@ -51,6 +51,21 @@ func (p *Parser) Parse(ctx context.Context, sql string) (Result, error) {
 		// the structural paths; anything ambiguous falls through so the
 		// real grammar owns the diagnostics (T25/#104).
 		parsed, warns = []ast.StmtNode{ts}, nil
+	} else if srv, srvOK := parseMySQLServer(sql); srvOK {
+		// The MySQL SERVER family — CREATE/ALTER/DROP SERVER — is
+		// claimed whole-input; option payloads stay opaque and the
+		// serialized output renders the redacted shape (T26/#105).
+		parsed, warns = []ast.StmtNode{srv}, nil
+	} else if srs, srsOK := parseMySQLSpatialReference(sql); srsOK {
+		// The MySQL spatial reference system family — CREATE [OR
+		// REPLACE] [IF NOT EXISTS] and DROP [IF EXISTS] — claimed
+		// whole-input; DEFINITION payloads stay opaque (T26/#105).
+		parsed, warns = []ast.StmtNode{srs}, nil
+	} else if inst, instOK := parseMySQLAlterInstance(sql); instOK {
+		// The MySQL-only ALTER INSTANCE subaction ROTATE INNODB MASTER
+		// KEY is claimed whole-input; RELOAD TLS stays on the native
+		// ast path (T26/#105 DDL-ALTER-INSTANCE-EXT).
+		parsed, warns = []ast.StmtNode{inst}, nil
 	} else if header, viewHeaderOK := parseViewHeader(sql); viewHeaderOK && (header.operation == spec.DDLOperationAlterView || header.declaration.CheckBare) {
 		if view, viewWarns, ok := parseViewAdapter(ctx, sql); ok {
 			parsed, warns = []ast.StmtNode{view}, viewWarns

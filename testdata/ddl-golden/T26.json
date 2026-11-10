@@ -1,0 +1,627 @@
+{
+ "task_id": "T26",
+ "issue": 105,
+ "policy_profile": "all-rules-disabled",
+ "description": "T26 MySQL SERVER + spatial reference system low-frequency DDL (issue #105), R3 stage manifest — scope is recognition, named boundaries, and output redaction ONLY. The four baseline anchors and their db_* required cases are declared so a future separately-authorized native run executes unchanged; no SERVER/SRS lifecycle semantics are claimed. cli_cases pin: four SERVER forms (create/alter/drop/drop-if-exists) as named unaudited boundaries on mysql and vendor boundaries on tidb; six SRS forms (create, create+IF NOT EXISTS, create OR REPLACE, drop, drop+IF EXISTS, plus bare create) as implementation boundaries on mysql and vendor on tidb; strict whole-input rejects (trailing junk, missing FDW clause, negative/overflow SRID, OR REPLACE + IF NOT EXISTS contradiction) as parser errors; ALTER INSTANCE inventory subactions RELOAD TLS (with NO ROLLBACK ON ERROR member recorded) and ROTATE INNODB MASTER KEY as precise named boundaries; and fixed-shape output redaction proving no credential/definition payload reaches raw_sql, normalized_sql, unsupported[].sql, or markdown.",
+ "anchors": {
+  "mysql57": {
+   "service": "mysql57",
+   "container": "deltascope-ddl-golden-mysql57",
+   "image": "mysql:5.7.44",
+   "product": "mysql",
+   "version_contains": "5.7.44",
+   "database": "golden",
+   "exec_client": [
+    "mysql",
+    "-uroot",
+    "--default-character-set=utf8mb4"
+   ],
+   "needs_database_create": false,
+   "exec_password_env": "T21_MYSQL_PASSWORD"
+  },
+  "mysql80": {
+   "service": "mysql80",
+   "container": "deltascope-ddl-golden-mysql80",
+   "image": "mysql:8.0.46",
+   "product": "mysql",
+   "version_contains": "8.0.46",
+   "database": "golden",
+   "exec_client": [
+    "mysql",
+    "-uroot",
+    "--default-character-set=utf8mb4"
+   ],
+   "needs_database_create": false,
+   "exec_password_env": "T21_MYSQL_PASSWORD"
+  },
+  "mysql84": {
+   "service": "mysql84",
+   "container": "deltascope-ddl-golden-mysql84",
+   "image": "mysql:8.4.10",
+   "product": "mysql",
+   "version_contains": "8.4.10",
+   "database": "golden",
+   "exec_client": [
+    "mysql",
+    "-uroot",
+    "--default-character-set=utf8mb4"
+   ],
+   "needs_database_create": false,
+   "exec_password_env": "T21_MYSQL_PASSWORD"
+  },
+  "tidb85": {
+   "service": "tidb85",
+   "container": "deltascope-ddl-golden-tidb85",
+   "client_container": "deltascope-ddl-golden-tidb85-client",
+   "client_service": "tidb85-client",
+   "image": "pingcap/tidb:v8.5.0",
+   "product": "tidb",
+   "version_contains": "v8.5.0",
+   "database": "golden",
+   "exec_client": [
+    "mysql",
+    "--protocol=tcp",
+    "-h",
+    "tidb85",
+    "-P",
+    "4000",
+    "-uroot"
+   ],
+   "needs_database_create": true
+  }
+ },
+ "ddl_steps": [
+  {
+   "name": "clear-task-fixture",
+   "sql": "DROP DATABASE IF EXISTS t26fx",
+   "expect_rc": 0,
+   "verify": []
+  },
+  {
+   "name": "seed-fixture-schema",
+   "sql": "CREATE DATABASE t26fx",
+   "expect_rc": 0,
+   "verify": [
+    {
+     "assert": "fixture schema exists",
+     "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='t26fx'",
+     "expect": "1"
+    }
+   ]
+  }
+ ],
+ "syntax_negative": {
+  "sql": "CREATE SPATIAL REFERENCE SYSTEM",
+  "expect": {
+   "error_class": "1064",
+   "forbidden_markers": [
+    "Access denied",
+    "Connection refused",
+    "doesn't exist",
+    "already exists"
+   ]
+  }
+ },
+ "cli_cases": [
+  {
+   "id": "mysql-create-server-golden",
+   "dialect": "mysql",
+   "sql": "CREATE SERVER golden_srv FOREIGN DATA WRAPPER mysql OPTIONS (HOST '192.0.2.1', DATABASE 'app', USER 'u', PASSWORD 'golden-secret')",
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": ["incomplete"],
+    "unsupported_entries": [
+     {
+      "feature": "create_server",
+      "reason": "parsed by the shared parser but not covered by audited semantics",
+      "metadata": {"boundary": "unaudited", "object": "server"}
+     }
+    ],
+    "statement_sql": ["CREATE SERVER golden_srv FOREIGN DATA WRAPPER mysql OPTIONS (<redacted>)"]
+   }
+  },
+  {
+   "id": "mysql-alter-server",
+   "dialect": "mysql",
+   "sql": "ALTER SERVER golden_srv OPTIONS (HOST '192.0.2.2')",
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": ["incomplete"],
+    "unsupported_entries": [
+     {
+      "feature": "alter_server",
+      "reason": "parsed by the shared parser but not covered by audited semantics",
+      "metadata": {"boundary": "unaudited", "object": "server"}
+     }
+    ],
+    "statement_sql": ["ALTER SERVER golden_srv OPTIONS (<redacted>)"]
+   }
+  },
+  {
+   "id": "mysql-drop-server",
+   "dialect": "mysql",
+   "sql": "DROP SERVER golden_srv",
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": ["incomplete"],
+    "unsupported_entries": [
+     {
+      "feature": "drop_server",
+      "reason": "parsed by the shared parser but not covered by audited semantics",
+      "metadata": {"boundary": "unaudited", "object": "server"}
+     }
+    ],
+    "statement_sql": ["DROP SERVER golden_srv"]
+   }
+  },
+  {
+   "id": "mysql-drop-server-if-exists",
+   "dialect": "mysql",
+   "sql": "DROP SERVER IF EXISTS golden_srv",
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": ["incomplete"],
+    "unsupported_entries": [
+     {
+      "feature": "drop_server",
+      "reason": "parsed by the shared parser but not covered by audited semantics",
+      "metadata": {"boundary": "unaudited", "object": "server"}
+     }
+    ],
+    "statement_sql": ["DROP SERVER IF EXISTS golden_srv"]
+   }
+  },
+  {
+   "id": "tidb-create-server",
+   "dialect": "tidb",
+   "sql": "CREATE SERVER tidb_srv FOREIGN DATA WRAPPER mysql OPTIONS (HOST '192.0.2.3', USER 'u', PASSWORD 's3cret-t26')",
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": ["incomplete"],
+    "unsupported_entries": [
+     {
+      "feature": "create_server",
+      "reason": "parsed by the shared parser but outside the supported statement surface for this dialect",
+      "metadata": {"boundary": "vendor"}
+     }
+    ],
+    "statement_sql": ["CREATE SERVER tidb_srv FOREIGN DATA WRAPPER mysql OPTIONS (<redacted>)"]
+   }
+  },
+  {
+   "id": "mysql-create-server-reject-trailing",
+   "dialect": "mysql",
+   "sql": "CREATE SERVER s FOREIGN DATA WRAPPER mysql OPTIONS (HOST 'h') trailing",
+   "expect": {
+    "exit": 2,
+    "verdict": "",
+    "statements": 0,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 0,
+    "coverage": "incomplete"
+   }
+  },
+  {
+   "id": "mysql-create-server-missing-fdw",
+   "dialect": "mysql",
+   "sql": "CREATE SERVER s OPTIONS (HOST 'h')",
+   "expect": {
+    "exit": 2,
+    "verdict": "",
+    "statements": 0,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 0,
+    "coverage": "incomplete"
+   }
+  },
+  {
+   "id": "mysql-server-mixed-batch",
+   "dialect": "mysql",
+   "sql": "CREATE TABLE t (id INT); CREATE SERVER golden_srv FOREIGN DATA WRAPPER mysql OPTIONS (PASSWORD 'golden-secret', HOST '192.0.2.1'); DROP TABLE t",
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 3,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": ["complete", "incomplete", "complete"],
+    "unsupported_entries": [
+     {
+      "index": 1,
+      "feature": "create_server",
+      "reason": "parsed by the shared parser but not covered by audited semantics",
+      "metadata": {"boundary": "unaudited", "object": "server"}
+     }
+    ],
+    "statement_sql": [
+     "CREATE TABLE t (id INT);",
+     "CREATE SERVER golden_srv FOREIGN DATA WRAPPER mysql OPTIONS (<redacted>)",
+     "DROP TABLE t"
+    ]
+   }
+  },
+  {
+   "id": "mysql-create-srs",
+   "dialect": "mysql",
+   "sql": "CREATE SPATIAL REFERENCE SYSTEM 4120 NAME 'Greek' DEFINITION 'GEOGCS[\"Greek\",DATUM[\"s3cret-t26\"]]'",
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": ["incomplete"],
+    "unsupported_entries": [
+     {
+      "feature": "create_spatial_reference_system",
+      "reason": "parsed by the shared parser but not covered by audited semantics",
+      "metadata": {"boundary": "implementation", "object": "spatial_reference_system"}
+     }
+    ],
+    "statement_sql": ["CREATE SPATIAL REFERENCE SYSTEM 4120 <attributes redacted>"]
+   }
+  },
+  {
+   "id": "mysql-create-srs-ine",
+   "dialect": "mysql",
+   "sql": "CREATE SPATIAL REFERENCE SYSTEM IF NOT EXISTS 4120 NAME 'Greek' DEFINITION 'x'",
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": ["incomplete"],
+    "unsupported_entries": [
+     {
+      "feature": "create_spatial_reference_system",
+      "reason": "parsed by the shared parser but not covered by audited semantics",
+      "metadata": {"boundary": "implementation", "object": "spatial_reference_system"}
+     }
+    ],
+    "statement_sql": ["CREATE SPATIAL REFERENCE SYSTEM IF NOT EXISTS 4120 <attributes redacted>"]
+   }
+  },
+  {
+   "id": "mysql-create-srs-or-replace",
+   "dialect": "mysql",
+   "sql": "CREATE OR REPLACE SPATIAL REFERENCE SYSTEM 40001 NAME 'X' DEFINITION 'x'",
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": ["incomplete"],
+    "unsupported_entries": [
+     {
+      "feature": "create_spatial_reference_system",
+      "reason": "parsed by the shared parser but not covered by audited semantics",
+      "metadata": {"boundary": "implementation", "object": "spatial_reference_system"}
+     }
+    ],
+    "statement_sql": ["CREATE OR REPLACE SPATIAL REFERENCE SYSTEM 40001 <attributes redacted>"]
+   }
+  },
+  {
+   "id": "mysql-create-srs-bare",
+   "dialect": "mysql",
+   "sql": "CREATE SPATIAL REFERENCE SYSTEM 4120",
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": ["incomplete"],
+    "unsupported_entries": [
+     {
+      "feature": "create_spatial_reference_system",
+      "reason": "parsed by the shared parser but not covered by audited semantics",
+      "metadata": {"boundary": "implementation", "object": "spatial_reference_system"}
+     }
+    ],
+    "statement_sql": ["CREATE SPATIAL REFERENCE SYSTEM 4120"]
+   }
+  },
+  {
+   "id": "mysql-drop-srs",
+   "dialect": "mysql",
+   "sql": "DROP SPATIAL REFERENCE SYSTEM 40001",
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": ["incomplete"],
+    "unsupported_entries": [
+     {
+      "feature": "drop_spatial_reference_system",
+      "reason": "parsed by the shared parser but not covered by audited semantics",
+      "metadata": {"boundary": "implementation", "object": "spatial_reference_system"}
+     }
+    ],
+    "statement_sql": ["DROP SPATIAL REFERENCE SYSTEM 40001"]
+   }
+  },
+  {
+   "id": "mysql-drop-srs-if-exists",
+   "dialect": "mysql",
+   "sql": "DROP SPATIAL REFERENCE SYSTEM IF EXISTS 40001",
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": ["incomplete"],
+    "unsupported_entries": [
+     {
+      "feature": "drop_spatial_reference_system",
+      "reason": "parsed by the shared parser but not covered by audited semantics",
+      "metadata": {"boundary": "implementation", "object": "spatial_reference_system"}
+     }
+    ],
+    "statement_sql": ["DROP SPATIAL REFERENCE SYSTEM IF EXISTS 40001"]
+   }
+  },
+  {
+   "id": "tidb-create-srs",
+   "dialect": "tidb",
+   "sql": "CREATE SPATIAL REFERENCE SYSTEM 4120 NAME 'G' DEFINITION 'x'",
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": ["incomplete"],
+    "unsupported_entries": [
+     {
+      "feature": "create_spatial_reference_system",
+      "reason": "parsed by the shared parser but outside the supported statement surface for this dialect",
+      "metadata": {"boundary": "vendor"}
+     }
+    ],
+    "statement_sql": ["CREATE SPATIAL REFERENCE SYSTEM 4120 <attributes redacted>"]
+   }
+  },
+  {
+   "id": "mysql-srs-negative-srid",
+   "dialect": "mysql",
+   "sql": "CREATE SPATIAL REFERENCE SYSTEM -1 NAME 'x' DEFINITION 'x'",
+   "expect": {
+    "exit": 2,
+    "verdict": "",
+    "statements": 0,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 0,
+    "coverage": "incomplete"
+   }
+  },
+  {
+   "id": "mysql-srs-overflow-srid",
+   "dialect": "mysql",
+   "sql": "CREATE SPATIAL REFERENCE SYSTEM 4294967296 NAME 'x' DEFINITION 'x'",
+   "expect": {
+    "exit": 2,
+    "verdict": "",
+    "statements": 0,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 0,
+    "coverage": "incomplete"
+   }
+  },
+  {
+   "id": "mysql-srs-or-replace-ine",
+   "dialect": "mysql",
+   "sql": "CREATE OR REPLACE SPATIAL REFERENCE SYSTEM IF NOT EXISTS 4120 DEFINITION 'x'",
+   "expect": {
+    "exit": 2,
+    "verdict": "",
+    "statements": 0,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 0,
+    "coverage": "incomplete"
+   }
+  },
+  {
+   "id": "mysql-alter-instance-reload-tls",
+   "dialect": "mysql",
+   "sql": "ALTER INSTANCE RELOAD TLS",
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": ["incomplete"],
+    "unsupported_entries": [
+     {
+      "feature": "alter_instance.reload_tls",
+      "reason": "parsed by the shared parser but not covered by audited semantics"
+     }
+    ],
+    "statement_sql": ["ALTER INSTANCE RELOAD TLS"]
+   }
+  },
+  {
+   "id": "mysql-alter-instance-reload-tls-nrb",
+   "dialect": "mysql",
+   "sql": "ALTER INSTANCE RELOAD TLS NO ROLLBACK ON ERROR",
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": ["incomplete"],
+    "unsupported_entries": [
+     {
+      "feature": "alter_instance.reload_tls",
+      "reason": "parsed by the shared parser but not covered by audited semantics",
+      "metadata": {"no_rollback_on_error": true}
+     }
+    ],
+    "statement_sql": ["ALTER INSTANCE RELOAD TLS NO ROLLBACK ON ERROR"]
+   }
+  },
+  {
+   "id": "mysql-alter-instance-rotate",
+   "dialect": "mysql",
+   "sql": "ALTER INSTANCE ROTATE INNODB MASTER KEY",
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": ["incomplete"],
+    "unsupported_entries": [
+     {
+      "feature": "alter_instance.rotate_innodb_master_key",
+      "reason": "parsed by the shared parser but not covered by audited semantics"
+     }
+    ],
+    "statement_sql": ["ALTER INSTANCE ROTATE INNODB MASTER KEY"]
+   }
+  },
+  {
+   "id": "tidb-alter-instance-rotate",
+   "dialect": "tidb",
+   "sql": "ALTER INSTANCE ROTATE INNODB MASTER KEY",
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": ["incomplete"],
+    "unsupported_entries": [
+     {
+      "feature": "alter_instance.rotate_innodb_master_key",
+      "reason": "parsed by the shared parser but outside the supported statement surface for this dialect",
+      "metadata": {"boundary": "vendor"}
+     }
+    ],
+    "statement_sql": ["ALTER INSTANCE ROTATE INNODB MASTER KEY"]
+   }
+  },
+  {
+   "id": "tidb-alter-instance-reload-tls",
+   "dialect": "tidb",
+   "sql": "ALTER INSTANCE RELOAD TLS",
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": ["incomplete"],
+    "unsupported_entries": [
+     {
+      "feature": "alter_instance.reload_tls",
+      "reason": "parsed by the shared parser but not covered by audited semantics"
+     }
+    ],
+    "statement_sql": ["ALTER INSTANCE RELOAD TLS"]
+   }
+  }
+ ],
+ "metadata_cases": [],
+ "required_case_ids": [
+  "T26.db.mysql57.ddl",
+  "T26.db.mysql57.syntax_negative",
+  "T26.db.mysql80.ddl",
+  "T26.db.mysql80.syntax_negative",
+  "T26.db.mysql84.ddl",
+  "T26.db.mysql84.syntax_negative",
+  "T26.db.tidb85.ddl",
+  "T26.db.tidb85.syntax_negative",
+  "T26.cli.mysql-create-server-golden",
+  "T26.cli.mysql-alter-server",
+  "T26.cli.mysql-drop-server",
+  "T26.cli.mysql-drop-server-if-exists",
+  "T26.cli.tidb-create-server",
+  "T26.cli.mysql-create-server-reject-trailing",
+  "T26.cli.mysql-create-server-missing-fdw",
+  "T26.cli.mysql-server-mixed-batch",
+  "T26.cli.mysql-create-srs",
+  "T26.cli.mysql-create-srs-ine",
+  "T26.cli.mysql-create-srs-or-replace",
+  "T26.cli.mysql-create-srs-bare",
+  "T26.cli.mysql-drop-srs",
+  "T26.cli.mysql-drop-srs-if-exists",
+  "T26.cli.tidb-create-srs",
+  "T26.cli.mysql-srs-negative-srid",
+  "T26.cli.mysql-srs-overflow-srid",
+  "T26.cli.mysql-srs-or-replace-ine",
+  "T26.cli.mysql-alter-instance-reload-tls",
+  "T26.cli.mysql-alter-instance-reload-tls-nrb",
+  "T26.cli.mysql-alter-instance-rotate",
+  "T26.cli.tidb-alter-instance-rotate",
+  "T26.cli.tidb-alter-instance-reload-tls"
+ ]
+}

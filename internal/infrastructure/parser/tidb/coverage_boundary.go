@@ -49,6 +49,47 @@ func applyCoverageBoundary(dialect spec.Dialect, statement *spec.Statement, node
 				return
 			}
 		}
+		if statement.DDL.Server != nil {
+			// The MySQL SERVER family (T26/#105): on MySQL a named
+			// unaudited boundary — recognition-level coverage only, no
+			// lifecycle semantics; on TiDB the whole family is not TiDB
+			// semantics — a vendor boundary, never a MySQL verdict.
+			if dialect == spec.DialectTiDB {
+				statement.Unsupported = &spec.UnsupportedDetail{
+					Feature:  string(statement.DDL.Operation),
+					Reason:   spec.UnsupportedVendorBoundaryReason,
+					Metadata: map[string]any{"boundary": "vendor"},
+				}
+			} else {
+				statement.Unsupported = &spec.UnsupportedDetail{
+					Feature:  string(statement.DDL.Operation),
+					Reason:   spec.UnsupportedUnauditedReason,
+					Metadata: map[string]any{"boundary": "unaudited", "object": "server"},
+				}
+			}
+			return
+		}
+		if statement.DDL.SpatialReference != nil {
+			// The MySQL spatial reference system family (T26/#105): on
+			// MySQL a named implementation boundary — the declaration is
+			// recognized but complete SRS semantics stay unimplemented;
+			// on TiDB the whole family is not TiDB semantics — a vendor
+			// boundary, never a MySQL verdict.
+			if dialect == spec.DialectTiDB {
+				statement.Unsupported = &spec.UnsupportedDetail{
+					Feature:  string(statement.DDL.Operation),
+					Reason:   spec.UnsupportedVendorBoundaryReason,
+					Metadata: map[string]any{"boundary": "vendor"},
+				}
+			} else {
+				statement.Unsupported = &spec.UnsupportedDetail{
+					Feature:  string(statement.DDL.Operation),
+					Reason:   spec.UnsupportedUnauditedReason,
+					Metadata: map[string]any{"boundary": "implementation", "object": "spatial_reference_system"},
+				}
+			}
+			return
+		}
 		if feature, vendor, ok := dialectBoundaryFeature(dialect, statement.DDL); ok {
 			detail := &spec.UnsupportedDetail{Feature: feature, Reason: boundaryReason(vendor)}
 			if vendor {
@@ -69,6 +110,20 @@ func applyCoverageBoundary(dialect spec.Dialect, statement *spec.Statement, node
 				// syntax — vendor boundary under TiDB (T24/#103).
 				detail.Reason = spec.UnsupportedVendorBoundaryReason
 				detail.Metadata = map[string]any{"boundary": "vendor"}
+			}
+			if inst, ok := node.(*mysqlAlterInstanceStatement); ok && inst.mysqlOnly && dialect == spec.DialectTiDB {
+				// ROTATE INNODB MASTER KEY is MySQL-only grammar — a
+				// vendor boundary under TiDB (T26/#105).
+				detail.Reason = spec.UnsupportedVendorBoundaryReason
+				detail.Metadata = map[string]any{"boundary": "vendor"}
+			}
+			if inst, ok := node.(*ast.AlterInstanceStmt); ok && inst.NoRollbackOnError {
+				// The NO ROLLBACK ON ERROR member is recorded, not
+				// merged silently into the plain subaction (T26/#105).
+				if detail.Metadata == nil {
+					detail.Metadata = map[string]any{}
+				}
+				detail.Metadata["no_rollback_on_error"] = true
 			}
 			statement.Unsupported = detail
 		}
@@ -235,7 +290,18 @@ func unhandledStatementFeature(node ast.StmtNode) string {
 			return "set_resource_group"
 		}
 		return ""
+	case *mysqlAlterInstanceStatement:
+		// The recognizer assigns the precise feature name at claim time
+		// (T26/#105 DDL-ALTER-INSTANCE-EXT).
+		return n.feature
 	case *ast.AlterInstanceStmt:
+		// The inventory-owned RELOAD TLS subaction gets its precise
+		// name; NO ROLLBACK ON ERROR stays the same subaction with the
+		// member recorded in boundary metadata. Other native subactions
+		// keep the generic name (T26/#105).
+		if n.ReloadTLS {
+			return "alter_instance.reload_tls"
+		}
 		return "alter_instance"
 	case *ast.AdminStmt:
 		return "admin"

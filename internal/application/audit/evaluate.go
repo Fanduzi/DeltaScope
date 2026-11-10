@@ -30,7 +30,12 @@ func EvaluateStatements(ctx context.Context, registry *rule.Registry, statements
 			}
 			for _, item := range gaps {
 				item.Index = idx
-				if item.SQL == "" {
+				if statement.SensitiveSQL() {
+					// A sensitive family's public SQL is always the
+					// fixed-shape rendering — a pre-set item.SQL can
+					// never outrank it (T26/#105).
+					item.SQL = statement.PublicSQL()
+				} else if item.SQL == "" {
 					item.SQL = statement.RawSQL
 				}
 				unsupported = append(unsupported, item)
@@ -38,8 +43,8 @@ func EvaluateStatements(ctx context.Context, registry *rule.Registry, statements
 			statementResults = append(statementResults, report.StatementResult{
 				Index:         idx,
 				Kind:          statement.Kind.String(),
-				RawSQL:        statement.RawSQL,
-				NormalizedSQL: statement.NormalizedSQL,
+				RawSQL:        statement.PublicSQL(),
+				NormalizedSQL: statement.PublicNormalizedSQL(),
 				Coverage:      coverage,
 			})
 			if err := ctx.Err(); err != nil {
@@ -70,7 +75,9 @@ func EvaluateStatements(ctx context.Context, registry *rule.Registry, statements
 
 		for i := range gaps {
 			gaps[i].Index = idx
-			if gaps[i].SQL == "" {
+			if statement.SensitiveSQL() {
+				gaps[i].SQL = statement.PublicSQL()
+			} else if gaps[i].SQL == "" {
 				gaps[i].SQL = statement.RawSQL
 			}
 		}
@@ -95,8 +102,8 @@ func EvaluateStatements(ctx context.Context, registry *rule.Registry, statements
 		statementResults = append(statementResults, report.StatementResult{
 			Index:         idx,
 			Kind:          statement.Kind.String(),
-			RawSQL:        statement.RawSQL,
-			NormalizedSQL: statement.NormalizedSQL,
+			RawSQL:        statement.PublicSQL(),
+			NormalizedSQL: statement.PublicNormalizedSQL(),
 			Findings:      findings,
 			EvidenceGaps:  eval.EvidenceGaps,
 			Impact:        reportImpact(statement),

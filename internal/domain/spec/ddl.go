@@ -151,6 +151,20 @@ type DDL struct {
 	// family. File payloads stay opaque (counts only); catalog and
 	// occupancy facts live elsewhere (T25/#104).
 	Tablespace *TablespaceDeclaration `json:"-"`
+	// Server carries the authored MySQL SERVER-family declaration —
+	// CREATE/ALTER/DROP SERVER — on statements the parser adapter
+	// recognized as the MySQL grammar family. Connection-option values
+	// stay opaque (keys/kinds/counts only); the statement's serialized
+	// SQL fields render the declaration's fixed-shape redacted form
+	// (T26/#105).
+	Server *ServerDeclaration `json:"-"`
+	// SpatialReference carries the authored MySQL spatial reference
+	// system declaration — CREATE [OR REPLACE] [IF NOT EXISTS] and DROP
+	// [IF EXISTS] — on statements the parser adapter recognized as the
+	// MySQL grammar family. DEFINITION/DESCRIPTION payloads stay opaque
+	// (presence/length only); the statement's serialized SQL fields
+	// render the declaration's fixed-shape redacted form (T26/#105).
+	SpatialReference *SpatialReferenceDeclaration `json:"-"`
 }
 
 // TemporaryScope identifies the parsed temporary-table scope on CREATE and
@@ -284,6 +298,16 @@ const (
 	DDLOperationCreateLogfileGroup    DDLOperation = "create_logfile_group"
 	DDLOperationAlterLogfileGroup     DDLOperation = "alter_logfile_group"
 	DDLOperationDropLogfileGroup      DDLOperation = "drop_logfile_group"
+
+	// MySQL SERVER family (T26/#105) — recognition-level operations; no
+	// lifecycle semantics are claimed yet.
+	DDLOperationCreateServer DDLOperation = "create_server"
+	DDLOperationAlterServer  DDLOperation = "alter_server"
+	DDLOperationDropServer   DDLOperation = "drop_server"
+	// MySQL spatial reference system family (T26/#105) — recognition-level
+	// operations; OR REPLACE and the IF-guards ride on the declaration.
+	DDLOperationCreateSpatialReferenceSystem DDLOperation = "create_spatial_reference_system"
+	DDLOperationDropSpatialReferenceSystem   DDLOperation = "drop_spatial_reference_system"
 
 	DDLOperationAlterIndex            DDLOperation = "alter_index"
 	DDLOperationAlterMaterializedView DDLOperation = "alter_materialized_view"

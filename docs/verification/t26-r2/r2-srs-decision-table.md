@@ -1,5 +1,21 @@
 # T26-R2 SRS validation scope, internal representation, decision table
 
+> **R3 addendum (issued under T26-R3, implementation stage).** The table
+> below is the *target* adjudication design — none of it is implemented
+> in R3. R3 ships recognition + named boundaries + output redaction only.
+> Status vocabulary for every row below: `S`=static parse fact,
+> `V`=version fact, `M`=metadata fact. An `M` premise resolves to exactly
+> one of **proven-present / proven-absent / unknown / provider-not-loaded /
+> provider-query-failure / partial-coverage** — provider failure is an
+> error path, never a gap; `unknown` and `absent` never collapse.
+> Rows marked **PENDING ORACLE** (INE precedence, OR REPLACE absent-arm)
+> produce no deterministic post-state until source evidence lands; every
+> `complete` cell means "the checked set was checked" — unexecuted
+> layers keep their bounded unknowns, never a complete claim. In R3 the
+> emitted outcome is uniformly `coverage=incomplete` + named
+> implementation boundary — no findings, no gaps, no post-state.
+
+
 Proposal status: **awaiting reviewer ruling**. Ruling 五 applied: internal
 representation must carry what promised semantics need; product output
 never echoes DEFINITION; length/newline checks alone do NOT suffice;

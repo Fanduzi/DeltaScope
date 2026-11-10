@@ -1,5 +1,16 @@
 # T26-R2 revised native plan (DRAFT — NOT AUTHORIZED, NOT RUN)
 
+> **R3 addendum (T26-R3, implementation stage).** Still zero executions.
+> R3 adds one constraint discovered while staging: `make ddl-golden
+> TASK=T26` cannot run in any offline-only round — the runner
+> unconditionally runs `docker compose up -d` against the shared
+> project (`scripts/ddl_golden.py` cmd_run → `compose("up","-d")`),
+> which would start all 14 services in `docker/ddl-golden-compose.yaml`.
+> The T26 manifest (`testdata/ddl-golden/T26.json`) is complete and
+> baseline-conformant; its db_* cells and container lifecycle await the
+> separately-authorized native round. The 23 cli_* cells were executed
+> through an offline runner-equivalent harness in R3 (all pass).
+
 Supersedes `t26-r1/r1-native-plan.md` per ruling 八. Every unknown
 identity is marked PENDING rather than guessed. Zero executions.
 

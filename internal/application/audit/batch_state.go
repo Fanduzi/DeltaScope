@@ -393,6 +393,20 @@ func (s *batchState) apply(ctx context.Context, statement spec.Statement) error 
 		if dropColumnStatement(statement) {
 			return s.applyDropColumn(ctx, statement, firstDropColumnAlter(statement.DDL), statement.DDL.TableTargets())
 		}
+		if strings.HasPrefix(statement.Unsupported.Feature, "alter_instance") {
+			// ALTER INSTANCE mutates instance runtime state — it can
+			// never touch a tracked schema/table fact, so the batch is
+			// provably unchanged rather than contaminated (T26/#105).
+			return nil
+		}
+		if statement.DDL != nil && (statement.DDL.Server != nil || statement.DDL.SpatialReference != nil) {
+			// SERVER definitions and spatial reference systems are
+			// instance-global objects — they never enter the tracked
+			// schema/table model. Whatever the boundary reason, tracked
+			// facts provably stand, so the statement neither executes on
+			// the tracked surface nor contaminates the batch (T26/#105).
+			return nil
+		}
 		if statement.DDL != nil && statement.DDL.Tablespace != nil {
 			switch statement.Unsupported.Reason {
 			case spec.UnsupportedVendorBoundaryReason:

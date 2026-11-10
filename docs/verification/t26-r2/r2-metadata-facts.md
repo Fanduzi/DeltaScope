@@ -1,5 +1,13 @@
 # T26-R2 metadata fact scheme — zero-row / error / completeness per fact
 
+> **R3 addendum (T26-R3, implementation stage).** No SERVER/SRS metadata
+> reader exists in R3 — by design every metadata premise below stays
+> **provider-not-loaded**, which is a distinct state from unknown,
+> proven-absent, and provider-query-failure. Nothing in R3 converts a
+> not-loaded premise into an absent fact or a gap. The zero-row /
+> error / completeness per-fact table stands unchanged for the future
+> reader milestone.
+
 Ruling applied: **no zero-row→proven-absent promotion for SERVER/SRS this
 round**. Each fact below distinguishes success / error / not-loaded /
 partial coverage, states visibility premises, and whether it changes the

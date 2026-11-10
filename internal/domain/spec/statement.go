@@ -56,6 +56,41 @@ type AuditResourceLimit struct {
 	Consumed int
 }
 
+// SensitiveSQL reports whether the statement's authored SQL text carries
+// a family whose literal payloads must never surface in serialized
+// output — currently the SERVER connection options and the SRS
+// DEFINITION/DESCRIPTION free-text attributes (T26/#105).
+func (s Statement) SensitiveSQL() bool {
+	return s.DDL != nil && (s.DDL.Server != nil || s.DDL.SpatialReference != nil)
+}
+
+// PublicSQL returns the statement text safe for every serialized output
+// field — verbatim for ordinary statements, the declaration's
+// fixed-shape redacted rendering for sensitive families. Internal
+// semantic state (RawSQL, the typed declaration) is untouched; only the
+// public representation changes.
+func (s Statement) PublicSQL() string {
+	if s.DDL != nil {
+		if s.DDL.Server != nil {
+			return s.DDL.Server.PublicSQL()
+		}
+		if s.DDL.SpatialReference != nil {
+			return s.DDL.SpatialReference.PublicSQL()
+		}
+	}
+	return s.RawSQL
+}
+
+// PublicNormalizedSQL is the PublicSQL contract applied to the
+// normalized field: sensitive families render the same fixed shape so
+// neither field can carry a payload the other suppresses.
+func (s Statement) PublicNormalizedSQL() string {
+	if s.SensitiveSQL() {
+		return s.PublicSQL()
+	}
+	return s.NormalizedSQL
+}
+
 const (
 	AuditResourceLimitFeature = "audit.resource_limit"
 	AuditResourceLimitReason  = "ordered-state statement budget exhausted"

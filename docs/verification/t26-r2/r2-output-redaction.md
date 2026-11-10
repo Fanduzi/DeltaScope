@@ -1,5 +1,20 @@
 # T26-R2 output redaction contract (design only — no implementation)
 
+> **R3 addendum (T26-R3, implementation stage).** Implemented as
+> designed, with the concrete shape now frozen: `spec.Statement.PublicSQL()`
+> / `PublicNormalizedSQL()` route every serialized SQL field through the
+> declaration's fixed-shape renderer — `CREATE SERVER <name> FOREIGN DATA
+> WRAPPER <wrapper> OPTIONS (<redacted>)`, `ALTER SERVER <name> OPTIONS
+> (<redacted>)`, `DROP SERVER [IF EXISTS ]<name>`,
+> `CREATE [OR REPLACE ]SPATIAL REFERENCE SYSTEM [IF NOT EXISTS ]<srid>
+> [<attributes redacted>]`, `DROP SPATIAL REFERENCE SYSTEM [IF EXISTS ]
+> <srid>`. `evaluate.go` applies it at all four assembly sites
+> (unsupported-item SQL, gap SQL, and both statement-result fields) —
+> including the non-empty `item.SQL` path, which can never outrank the
+> redaction for sensitive families. Diagnostics never embed SQL;
+> findings carry no raw-SQL field; markdown/SARIF/gitlab renderers read
+> the already-redacted result fields. Internal `RawSQL` stays verbatim.
+
 Reviewer ruling applied: no echo exemption for `raw_sql`,
 `normalized_sql`, or `unsupported[].sql` on T26 sensitive statements.
 Design below separates **internal input** from **external
