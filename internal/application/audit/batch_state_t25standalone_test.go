@@ -13,6 +13,7 @@ import (
 	"testing"
 
 	"github.com/Fanduzi/DeltaScope/internal/domain/report"
+	"github.com/Fanduzi/DeltaScope/internal/domain/rule"
 	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
 )
 
@@ -825,14 +826,17 @@ func TestT25RenameJointAdjudication(t *testing.T) {
 		p.version = "8.0.45"
 		result := t25Standalone(t,
 			"ALTER TABLESPACE a RENAME TO b; DROP TABLESPACE b; DROP TABLESPACE a", p)
-		found := false
-		for _, f := range result.Statements[0].Findings {
+		var collision *rule.Finding
+		for i, f := range result.Statements[0].Findings {
 			if f.RuleID == t25RuleTSApp && f.Metadata["reason_code"] == "tablespace_rename_target_present" {
-				found = true
+				collision = &result.Statements[0].Findings[i]
 			}
 		}
-		if !found {
+		if collision == nil {
 			t.Fatalf("masked-collision findings = %+v, want the shared rename_target_present blocker", result.Statements[0].Findings)
+		}
+		if collision.Level != "blocker" {
+			t.Fatalf("collision level = %q, want blocker", collision.Level)
 		}
 		// The refused rename holds both pre-states: b's proven
 		// unoccupied drop adjudicates complete — no gaps, no migration
@@ -840,10 +844,22 @@ func TestT25RenameJointAdjudication(t *testing.T) {
 		if len(result.Statements[1].EvidenceGaps) != 0 {
 			t.Fatalf("drop-of-b gaps = %+v, want none — b's proven pre-state survived the refusal", result.Statements[1].EvidenceGaps)
 		}
-		// a was never proven: the trailing drop still owes existence —
-		// the undecidable source was neither tombstoned nor promoted.
-		if !gapFacts(result, 2)["tablespace.existence"] {
-			t.Fatalf("drop-of-a gaps = %+v, want existence owed — a stayed unproven", result.Statements[2].EvidenceGaps)
+		for _, f := range result.Statements[1].Findings {
+			if f.RuleID == t25RuleTSApp {
+				t.Fatalf("drop-of-b findings = %+v, want no applicability refusal on the proven unoccupied target", result.Statements[1].Findings)
+			}
+		}
+		// a was never proven: the trailing drop still owes existence
+		// and occupancy — the undecidable source was neither
+		// tombstoned nor promoted, so no absent finding may appear.
+		facts := gapFacts(result, 2)
+		if !facts["tablespace.existence"] || !facts["tablespace.occupancy"] {
+			t.Fatalf("drop-of-a gaps = %+v, want existence and occupancy owed — a stayed unproven", result.Statements[2].EvidenceGaps)
+		}
+		for _, f := range result.Statements[2].Findings {
+			if f.Metadata["reason_code"] == "tablespace_absent" {
+				t.Fatalf("drop-of-a findings = %+v, want no absent finding — a's absence was never proven", result.Statements[2].Findings)
+			}
 		}
 	})
 }
@@ -915,5 +931,24 @@ func TestT25CapabilityFloorCalibration(t *testing.T) {
 	res = t25Standalone(t, "ALTER TABLESPACE ts1 RENAME TO ts2", providerFor("8.0.2"))
 	if rc := applicability(res); rc != "tablespace_version_inapplicable" {
 		t.Fatalf("rename @8.0.2 reason=%q, want version_inapplicable (floor 8.0.3)", rc)
+	}
+
+	// R7-N03: the standalone scalar members lead the member list and
+	// still land on the same capability floors — not just as trailing
+	// options after a recognised leading member.
+	for _, tc := range []struct {
+		version string
+		sql     string
+		refused bool
+	}{
+		{"8.0.20", "ALTER TABLESPACE ts1 ENGINE_ATTRIBUTE='{\"k\":1}'", true},
+		{"8.0.21", "ALTER TABLESPACE ts1 ENGINE_ATTRIBUTE='{\"k\":1}'", false},
+		{"8.0.22", "ALTER TABLESPACE ts1 AUTOEXTEND_SIZE=8M", true},
+		{"8.0.23", "ALTER TABLESPACE ts1 AUTOEXTEND_SIZE=8M", false},
+	} {
+		res = t25Standalone(t, tc.sql, providerFor(tc.version))
+		if rc := applicability(res); (rc == "tablespace_version_inapplicable") != tc.refused {
+			t.Fatalf("standalone alter %q @%s reason=%q, want refused=%t", tc.sql, tc.version, rc, tc.refused)
+		}
 	}
 }

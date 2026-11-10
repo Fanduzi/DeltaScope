@@ -74,6 +74,12 @@ func TestT25TablespaceRecognizedForms(t *testing.T) {
 			spec.DDLOperationAlterTablespace, spec.TablespaceKindGeneral, "ts1", "rename", "", 0, "ts2", false},
 		{"ALTER TABLESPACE ts1 ENCRYPTION='Y'",
 			spec.DDLOperationAlterTablespace, spec.TablespaceKindGeneral, "ts1", "encryption", "", 0, "", false},
+		// Scalar members may lead the member list (R7-N03): they carry
+		// no AlterAction — their value lands in Options.
+		{"ALTER TABLESPACE ts1 AUTOEXTEND_SIZE=8M",
+			spec.DDLOperationAlterTablespace, spec.TablespaceKindGeneral, "ts1", "", "", 0, "", false},
+		{"ALTER TABLESPACE ts1 ENGINE_ATTRIBUTE='{\"k\":1}'",
+			spec.DDLOperationAlterTablespace, spec.TablespaceKindGeneral, "ts1", "", "", 0, "", false},
 		{"DROP TABLESPACE ts1 ENGINE=INNODB",
 			spec.DDLOperationDropTablespace, spec.TablespaceKindGeneral, "ts1", "", "innodb", 0, "", false},
 		{"DROP UNDO TABLESPACE u1",
@@ -98,6 +104,25 @@ func TestT25TablespaceRecognizedForms(t *testing.T) {
 			decl.NewName != tc.newName || decl.IfExists != tc.ifExists {
 			t.Fatalf("%q: decl=%+v, want kind=%q name=%q alter=%q engine=%q files=%d new=%q ifexists=%t",
 				tc.sql, decl, tc.kind, tc.name, tc.alter, tc.engine, tc.fileCount, tc.newName, tc.ifExists)
+		}
+	}
+}
+
+// R7-N03: a scalar member leading the member list still lands in
+// Options — the capability floors key off those entries, so the
+// extraction must place the value, not merely stop refusing.
+func TestT25StandaloneScalarMemberLandsOptions(t *testing.T) {
+	t.Parallel()
+	cases := []struct{ sql, key, want string }{
+		{"ALTER TABLESPACE ts1 AUTOEXTEND_SIZE=8M", "autoextend_size", "8m"},
+		{"ALTER TABLESPACE ts1 AUTOEXTEND_SIZE 8M", "autoextend_size", "8m"},
+		{"ALTER TABLESPACE ts1 ENGINE_ATTRIBUTE='{\"k\":1}'", "engine_attribute", "{\"k\":1}"},
+	}
+	for _, tc := range cases {
+		statement := parseExtractT25(t, tc.sql, spec.DialectMySQL)
+		decl := statement.DDL.Tablespace
+		if decl == nil || decl.Options[tc.key] != tc.want {
+			t.Fatalf("%q: options=%v, want %s=%q", tc.sql, decl.Options, tc.key, tc.want)
 		}
 	}
 }

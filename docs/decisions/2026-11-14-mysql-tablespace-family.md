@@ -29,9 +29,13 @@ infers facts from missing metadata.
   `ALTER UNDO TABLESPACE ... SET ACTIVE|INACTIVE [ENGINE [=] engine]` is
   claimed as a typed declaration — optional ENGINE clause included — so
   coverage routes it to the unaudited boundary rather than a parser
-  diagnostic; every other trailing member stays unclaimed. A memberless
-  general `CREATE TABLESPACE` is grammar-reachable, while malformed input and
-  trailing junk still fall back to the base parser's diagnostics.
+  diagnostic. The documented scalar members (`WAIT`, `AUTOEXTEND_SIZE`,
+  `INITIAL_SIZE`, `ENGINE_ATTRIBUTE`) may also lead a general ALTER's
+  member list — they land in `Options` with no `AlterAction` so the same
+  capability floors apply — while every other trailing member stays
+  unclaimed. A memberless general `CREATE TABLESPACE` is
+  grammar-reachable, while malformed input and trailing junk still fall
+  back to the base parser's diagnostics.
 - `spec.TablespaceDeclaration` preserves authored facts (kind, name, engine,
   alter action, rename target, encryption flag, file-clause counts, scalar
   options). File paths are counted for evidence but never stored, echoed, read,
