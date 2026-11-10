@@ -1,5 +1,30 @@
 # T26-R2 SRS validation scope, internal representation, decision table
 
+> **R4 addendum (issued under T26-R4 — supersedes the R3 addendum's
+> completion wording).** The table remains a *target* design, not an
+> approved oracle: **no row below is approved semantics yet** — all 32
+> rows are unapproved design cells until the SRS implementation round
+> adjudicates them against oracle evidence. The R3 sentence "`complete`
+> means the checked set was checked" is **replaced** by this contract:
+> 1. `complete` is claimable only when every check the adjudication
+>    actually requires — and that the supported surface promises — has
+>    run;
+> 2. a capability the implementation does not cover gets a named
+>    implementation boundary / incomplete, never silent omission;
+> 3. an external fact the adjudication needs but lacks produces the
+>    applicable bounded gap / unverified per the T04 contract;
+> 4. provider-query-failure stays an error path — never a gap;
+> 5. PENDING ORACLE cells produce no deterministic result or post-state
+>    influenced by them;
+> 6. a proven refusal may keep its terminal verdict without demanding
+>    unrelated later premises;
+> 7. an unknown execution outcome is never written as "exact pre-state
+>    preserved" — known public facts are kept, unknown affected facts
+>    propagate unknown.
+> In the current implementation stage every recognized SRS statement
+> still emits `coverage=incomplete` + the named implementation boundary —
+> no row's findings, gaps, or post-state ship.
+
 > **R3 addendum (issued under T26-R3, implementation stage).** The table
 > below is the *target* adjudication design — none of it is implemented
 > in R3. R3 ships recognition + named boundaries + output redaction only.
@@ -9,9 +34,11 @@
 > provider-query-failure / partial-coverage** — provider failure is an
 > error path, never a gap; `unknown` and `absent` never collapse.
 > Rows marked **PENDING ORACLE** (INE precedence, OR REPLACE absent-arm)
-> produce no deterministic post-state until source evidence lands; every
-> `complete` cell means "the checked set was checked" — unexecuted
-> layers keep their bounded unknowns, never a complete claim. In R3 the
+> produce no deterministic post-state until source evidence lands
+> ~~every `complete` cell means "the checked set was checked"~~
+> *(superseded — the R4 addendum above carries the effective
+> `complete` contract)*; unexecuted layers keep their bounded unknowns,
+> never a complete claim. In R3 the
 > emitted outcome is uniformly `coverage=incomplete` + named
 > implementation boundary — no findings, no gaps, no post-state.
 
@@ -34,7 +61,9 @@ unverified parts stay named gaps — not repackaged as EvidenceGaps.
 `coverage=complete` requires L1 fully checked + every metadata premise
 the row consumes being proven. L2 partial verification is stated
 honestly: "well-formedness checked" vs "definition valid" are different
-claims; complete-coverage only claims the checked set.
+claims ~~; complete-coverage only claims the checked set~~
+*(closing clause superseded — the R4 addendum's seven-point `complete`
+contract is the effective definition)*.
 
 ## 2. Internal representation proposal
 

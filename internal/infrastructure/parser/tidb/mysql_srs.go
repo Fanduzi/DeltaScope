@@ -147,48 +147,66 @@ func mysqlSRSAttrs(sqlText string, rest []sqlTok, decl *spec.SpatialReferenceDec
 			if i+1 >= len(rest) || rest[i+1].kind != tokStr {
 				return false
 			}
+			value, ok := mysqlSRSStringValue(sqlText, rest[i+1])
+			if !ok {
+				return false
+			}
 			dup("name")
 			decl.Attrs.HasName = true
-			decl.Attrs.Name = mysqlSRSStringValue(sqlText, rest[i+1])
+			decl.Attrs.Name = value
 			i += 2
 		case rest[i].wordIs(sqlText, "definition"):
 			if i+1 >= len(rest) || rest[i+1].kind != tokStr {
 				return false
 			}
+			raw, ok := mysqlSRSStringValue(sqlText, rest[i+1])
+			if !ok {
+				return false
+			}
 			dup("definition")
-			raw := mysqlSRSStringValue(sqlText, rest[i+1])
 			decl.Attrs.HasDefinition = true
-			decl.Attrs.DefinitionLen = len(raw)
+			decl.Attrs.DefinitionByteLen = len(raw)
 			decl.Attrs.DefHasNewline = strings.ContainsAny(raw, "\r\n")
 			i += 2
 		case rest[i].wordIs(sqlText, "organization"):
+			// ORGANIZATION owns a complete pair: the org name plus
+			// mandatory `IDENTIFIED BY <u32>`. A missing or malformed
+			// pair leaves the whole statement unclaimed — the grammar
+			// has no bare-ORGANIZATION arm.
 			if i+1 >= len(rest) || rest[i+1].kind != tokStr {
+				return false
+			}
+			orgName, ok := mysqlSRSStringValue(sqlText, rest[i+1])
+			if !ok {
 				return false
 			}
 			dup("organization")
 			decl.Attrs.HasOrganization = true
-			decl.Attrs.OrgName = mysqlSRSStringValue(sqlText, rest[i+1])
+			decl.Attrs.OrgName = orgName
 			i += 2
-			if i < len(rest) && rest[i].wordIs(sqlText, "identified") {
-				if i+2 >= len(rest) || !rest[i+1].wordIs(sqlText, "by") ||
-					rest[i+2].kind != tokWord || !isUnsignedDigits(rest[i+2].text(sqlText)) {
-					return false
-				}
-				v, err := strconv.ParseUint(rest[i+2].text(sqlText), 10, 32)
-				if err != nil {
-					return false
-				}
-				decl.Attrs.HasIdentifiedBy = true
-				decl.Attrs.OrgID = uint32(v)
-				i += 3
+			if i+2 >= len(rest) || !rest[i].wordIs(sqlText, "identified") ||
+				!rest[i+1].wordIs(sqlText, "by") ||
+				rest[i+2].kind != tokWord || !isUnsignedDigits(rest[i+2].text(sqlText)) {
+				return false
 			}
+			v, err := strconv.ParseUint(rest[i+2].text(sqlText), 10, 32)
+			if err != nil {
+				return false
+			}
+			decl.Attrs.HasIdentifiedBy = true
+			decl.Attrs.OrgID = uint32(v)
+			i += 3
 		case rest[i].wordIs(sqlText, "description"):
 			if i+1 >= len(rest) || rest[i+1].kind != tokStr {
 				return false
 			}
+			raw, ok := mysqlSRSStringValue(sqlText, rest[i+1])
+			if !ok {
+				return false
+			}
 			dup("description")
 			decl.Attrs.HasDescription = true
-			decl.Attrs.DescriptionLen = len(mysqlSRSStringValue(sqlText, rest[i+1]))
+			decl.Attrs.DescriptionByteLen = len(raw)
 			i += 2
 		default:
 			return false
@@ -198,19 +216,23 @@ func mysqlSRSAttrs(sqlText string, rest []sqlTok, decl *spec.SpatialReferenceDec
 }
 
 // mysqlSRSStringValue reads a string literal's inner text with the
-// doubled-quote unescape applied. Identity attributes keep the result;
-// DEFINITION/DESCRIPTION consume only derived facts (length, newline
-// presence) and the payload itself is immediately discarded.
-func mysqlSRSStringValue(sqlText string, tok sqlTok) string {
+// doubled-quote unescape applied — an unclosed token fails rather than
+// silently truncating. Identity attributes keep the result;
+// DEFINITION/DESCRIPTION consume only derived facts (byte length,
+// newline presence) and the payload itself is immediately discarded.
+// The result is the unquoted spelling only — backslash escapes and
+// charset introducers stay unresolved, so it is not a complete MySQL
+// string decode.
+func mysqlSRSStringValue(sqlText string, tok sqlTok) (string, bool) {
 	raw := tok.text(sqlText)
-	if len(raw) < 2 {
-		return ""
+	if !quotedTokenClosed(raw) {
+		return "", false
 	}
 	inner := raw[1 : len(raw)-1]
 	if raw[0] == '\'' {
-		return strings.ReplaceAll(inner, "''", "'")
+		return strings.ReplaceAll(inner, "''", "'"), true
 	}
-	return strings.ReplaceAll(inner, `""`, `"`)
+	return strings.ReplaceAll(inner, `""`, `"`), true
 }
 
 // mysqlSRSCreate consumes the CREATE tail — SRID plus the attribute

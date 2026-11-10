@@ -45,15 +45,24 @@ Two properties made a naive implementation unacceptable:
   only authored facts the promised semantics need (kind, name/SRID
   identity, wrapper, option keys + value kinds + counts, attribute
   presence/identities, guards, duplicate flags). Credentials, option
-  values, and WKT payloads are never stored.
+  values, and WKT payloads are never stored. R4 corrections: OPTIONS
+  requires ≥1 member with no trailing/doubled comma or missing value;
+  `ORGANIZATION` owns a mandatory complete `IDENTIFIED BY <u32>` pair;
+  unquoted server names obey the upstream ident rule (no reserved words,
+  no pure digits); quoted tokens must be genuinely closed (odd trailing
+  quote run — `''` doubled escapes cannot fake a close); `NameOverLimit`
+  counts runes, not bytes; definition/description lengths are named in
+  bytes (`DefinitionByteLen`/`DescriptionByteLen`); Name/OrgName are
+  documented as unquoted spellings — not complete string decodes.
 - `spec.Statement` gains the serialized-output privacy seam:
   `SensitiveSQL()` marks families whose payloads must never surface;
   `PublicSQL()`/`PublicNormalizedSQL()` return the declaration's
-  fixed-shape redacted rendering (e.g. `OPTIONS (<redacted>)`,
-  `<attributes redacted>`). `evaluate.go` routes all four SQL assembly
-  sites through it; the non-empty `item.SQL` path can never outrank
-  redaction. Ordinary statements stay verbatim; statement ordering and
-  indices are unchanged.
+  fixed-shape redacted rendering — SERVER emits the pure skeleton
+  (`CREATE/ALTER/DROP SERVER [IF EXISTS] <redacted>`, no name/wrapper),
+  SRS emits verb + guards + numeric SRID + `<attributes redacted>`.
+  `evaluate.go` routes all four SQL assembly sites through it; the
+  non-empty `item.SQL` path can never outrank redaction. Ordinary
+  statements stay verbatim; statement ordering and indices unchanged.
 - Boundaries: MySQL SERVER/SRS/ROTATE forms emit named
   `boundary=unaudited` entries (`create_server`, `alter_server`,
   `drop_server`, `create_spatial_reference_system`,

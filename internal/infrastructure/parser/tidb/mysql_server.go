@@ -17,6 +17,7 @@ package tidbparser
 import (
 	"strconv"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
 	"github.com/pingcap/tidb/pkg/parser/ast"
@@ -48,7 +49,9 @@ var serverOptionValueKind = map[string]string{
 }
 
 // mysqlServerNameLimit is the documented 64-character server-name bound
-// (mysql.servers.name is CHAR(64)). The fact is recorded, not enforced.
+// (mysql.servers.server_name is CHAR(64)). The fact is recorded, not
+// enforced, and counts characters — runes of the unquoted token text —
+// never UTF-8 bytes.
 const mysqlServerNameLimit = 64
 
 // parseMySQLServer recognizes a whole-input MySQL SERVER-family
@@ -85,18 +88,37 @@ func parseMySQLServer(sqlText string) (ast.StmtNode, bool) {
 
 // mysqlServerName reads the authored server identity — an identifier or
 // a string literal (MySQL documents both spellings). Case is preserved:
-// server names are object identities stored verbatim.
+// server names are object identities stored verbatim. An unquoted word
+// must survive upstream's ident rule — reserved keywords and pure-digit
+// tokens stay unclaimed. Quoted tokens must be closed: an unterminated
+// literal is never silently truncated into a name. String/quoted-identity
+// values come back unquoted with doubled-quote escapes resolved — that
+// is not a complete MySQL string decode (backslash escapes and charset
+// introducers stay unresolved, so the fact is the unquoted spelling).
 func mysqlServerName(sqlText string, tok sqlTok) (string, bool) {
 	switch tok.kind {
 	case tokWord:
 		name := tok.text(sqlText)
-		return name, name != ""
+		if name == "" {
+			return "", false
+		}
+		if _, reserved := mysqlResourceGroupReservedWords[strings.ToLower(name)]; reserved {
+			return "", false
+		}
+		if isUnsignedDigits(name) {
+			return "", false
+		}
+		return name, true
 	case tokQIdent:
-		name := strings.ReplaceAll(tok.text(sqlText)[1:len(tok.text(sqlText))-1], "``", "`")
+		raw := tok.text(sqlText)
+		if !quotedTokenClosed(raw) {
+			return "", false
+		}
+		name := strings.ReplaceAll(raw[1:len(raw)-1], "``", "`")
 		return name, name != ""
 	case tokStr:
 		raw := tok.text(sqlText)
-		if len(raw) < 2 {
+		if !quotedTokenClosed(raw) {
 			return "", false
 		}
 		quote := raw[0]
@@ -132,7 +154,7 @@ func mysqlServerCreate(sqlText string, nameTok sqlTok, rest []sqlTok) (ast.StmtN
 		Kind:          spec.ServerKindCreate,
 		Name:          name,
 		Wrapper:       wrapper,
-		NameOverLimit: len(name) > mysqlServerNameLimit,
+		NameOverLimit: utf8.RuneCountInString(name) > mysqlServerNameLimit,
 	}
 	if !mysqlServerOptions(sqlText, rest[4:], decl) {
 		return nil, false
@@ -151,7 +173,7 @@ func mysqlServerAlter(sqlText string, nameTok sqlTok, rest []sqlTok) (ast.StmtNo
 	decl := &spec.ServerDeclaration{
 		Kind:          spec.ServerKindAlter,
 		Name:          name,
-		NameOverLimit: len(name) > mysqlServerNameLimit,
+		NameOverLimit: utf8.RuneCountInString(name) > mysqlServerNameLimit,
 	}
 	if !mysqlServerOptions(sqlText, rest, decl) {
 		return nil, false
@@ -172,18 +194,21 @@ func mysqlServerDrop(sqlText string, nameTok sqlTok, rest []sqlTok, ifExists boo
 		Kind:          spec.ServerKindDrop,
 		Name:          name,
 		IfExists:      ifExists,
-		NameOverLimit: len(name) > mysqlServerNameLimit,
+		NameOverLimit: utf8.RuneCountInString(name) > mysqlServerNameLimit,
 	}
 	node := &ast.DropResourceGroupStmt{ResourceGroupName: ast.NewCIStr(name)}
 	node.SetText(charset.FindEncoding(""), strings.TrimSpace(sqlText))
 	return &mysqlServerStatement{StmtNode: node, operation: spec.DDLOperationDropServer, declaration: decl}, true
 }
 
-// mysqlServerOptions consumes `OPTIONS ([member [, member] ...])` where
+// mysqlServerOptions consumes `OPTIONS (member [, member] ...)` where
 // each member is `KEY literal` from the documented seven-key vocabulary.
-// Values are consumed as opaque tokens — only key and value kind are
-// recorded. Duplicate keys are recorded, not rejected: the grammar
-// admits the list and upstream adjudicates the repetition.
+// The grammar requires at least one member — an empty list, a trailing
+// or doubled comma, or a missing value leaves the whole statement
+// unclaimed so the base parser owns the diagnostic. Values are consumed
+// as opaque tokens — only key and value kind are recorded. Duplicate
+// keys are recorded, not rejected: the grammar admits the list and
+// upstream adjudicates the repetition.
 func mysqlServerOptions(sqlText string, rest []sqlTok, decl *spec.ServerDeclaration) bool {
 	if len(rest) < 2 || !rest[0].wordIs(sqlText, "options") {
 		return false
@@ -196,7 +221,7 @@ func mysqlServerOptions(sqlText string, rest []sqlTok, decl *spec.ServerDeclarat
 	}
 	inner := rest[2 : len(rest)-1]
 	if len(inner) == 0 {
-		return true
+		return false
 	}
 	seen := map[string]bool{}
 	for i := 0; i < len(inner); {
@@ -238,6 +263,9 @@ func mysqlServerOptions(sqlText string, rest []sqlTok, decl *spec.ServerDeclarat
 				return false
 			}
 			i++
+			if i >= len(inner) {
+				return false
+			}
 		}
 	}
 	return true

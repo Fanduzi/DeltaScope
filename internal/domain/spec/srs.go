@@ -37,29 +37,35 @@ type SpatialReferenceDeclaration struct {
 	DuplicateAttrs []string
 }
 
-// SRSAttributes records the authored srs_attribute members.
+// SRSAttributes records the authored srs_attribute members. Name and
+// OrgName are the unquoted authored spellings — doubled-quote escapes
+// resolved, nothing more; backslash escapes and charset introducers stay
+// unresolved, so they are not complete MySQL string decodes.
 type SRSAttributes struct {
-	// HasName / Name carry the authored NAME identity verbatim.
+	// HasName / Name carry the authored NAME identity (unquoted
+	// spelling, doubled quotes resolved).
 	HasName bool
 	Name    string
-	// HasDefinition marks an authored DEFINITION clause; DefinitionLen
-	// is its byte length and DefHasNewline the documented legality bit
-	// (MySQL requires the definition to contain no newlines). The WKT
-	// payload itself is never stored.
-	HasDefinition bool
-	DefinitionLen int
-	DefHasNewline bool
+	// HasDefinition marks an authored DEFINITION clause;
+	// DefinitionByteLen is the byte length of the unquoted text and
+	// DefHasNewline the literal CR/LF presence in that text — the
+	// documented legality bit (MySQL requires the definition to contain
+	// no newlines). The WKT payload itself is never stored.
+	HasDefinition     bool
+	DefinitionByteLen int
+	DefHasNewline     bool
 	// HasOrganization / OrgName carry the authored ORGANIZATION
-	// identity; HasIdentifiedBy / OrgID carry the IDENTIFIED BY number
-	// when the pair is complete.
+	// identity; HasIdentifiedBy / OrgID carry the IDENTIFIED BY number —
+	// recognition requires the complete pair.
 	HasOrganization bool
 	OrgName         string
 	HasIdentifiedBy bool
 	OrgID           uint32
-	// HasDescription marks an authored DESCRIPTION clause; DescriptionLen
-	// is its byte length. The description text is never stored.
-	HasDescription bool
-	DescriptionLen int
+	// HasDescription marks an authored DESCRIPTION clause;
+	// DescriptionByteLen is the byte length of the unquoted text. The
+	// description text is never stored.
+	HasDescription     bool
+	DescriptionByteLen int
 }
 
 // SpatialReferenceDeclaration kind vocabulary.

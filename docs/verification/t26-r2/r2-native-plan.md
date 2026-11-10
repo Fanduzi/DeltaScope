@@ -1,5 +1,17 @@
 # T26-R2 revised native plan (DRAFT — NOT AUTHORIZED, NOT RUN)
 
+> **R4 addendum (issued under T26-R4).** Nothing in this plan is an
+> executable step yet: every `execute`/`teardown`/cleanup cell in the
+> matrices below — including every retained SRID create/drop entry — is
+> design-stage only and MUST NOT be run under any current authorization.
+> Still-open items carried forward unchanged: the exact Golden Path
+> input; the MySQL 8.4 and TiDB SERVER/SRS coverage gaps; the four-way
+> distinction among audit pre-state / native post-state / unknown
+> outcomes / provider query failure; every unfrozen case, binary,
+> image, script, and expected value; and ownership-checked cleanup for
+> every failure arm. The earlier `make ddl-golden` compose-up blocker
+> stands — this plan creates no execution grant.
+
 > **R3 addendum (T26-R3, implementation stage).** Still zero executions.
 > R3 adds one constraint discovered while staging: `make ddl-golden
 > TASK=T26` cannot run in any offline-only round — the runner

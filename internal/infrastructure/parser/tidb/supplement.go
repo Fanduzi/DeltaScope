@@ -998,6 +998,28 @@ func skipQuoted(sqlText string, i int) int {
 	return len(sqlText)
 }
 
+// quotedTokenClosed reports whether a lexed quoted token ends on a real
+// closing quote rather than running to the end of input unterminated.
+// The doubled-quote escape makes the naive last-byte check ambiguous —
+// `'x”` ends with a quote byte but its final pair is an escape, while
+// `'x”'` closes. Scanning the interior, each maximal run of k quote
+// bytes consumes k/2 escapes; a token is closed iff the run ending at
+// the last byte has odd length (counting positions after the opener).
+func quotedTokenClosed(raw string) bool {
+	if len(raw) < 2 {
+		return false
+	}
+	q := raw[0]
+	if q != '\'' && q != '"' && q != '`' {
+		return false
+	}
+	run := 0
+	for i := len(raw) - 1; i >= 1 && raw[i] == q; i-- {
+		run++
+	}
+	return run%2 == 1
+}
+
 func skipLineComment(sqlText string, i int) int {
 	for i < len(sqlText) && sqlText[i] != '\n' {
 		i++

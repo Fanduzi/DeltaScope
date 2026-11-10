@@ -115,15 +115,22 @@
     "diagnostics": 1,
     "unsupported": 1,
     "coverage": "incomplete",
-    "statement_coverage": ["incomplete"],
+    "statement_coverage": [
+     "incomplete"
+    ],
     "unsupported_entries": [
      {
       "feature": "create_server",
       "reason": "parsed by the shared parser but not covered by audited semantics",
-      "metadata": {"boundary": "unaudited", "object": "server"}
+      "metadata": {
+       "boundary": "unaudited",
+       "object": "server"
+      }
      }
     ],
-    "statement_sql": ["CREATE SERVER golden_srv FOREIGN DATA WRAPPER mysql OPTIONS (<redacted>)"]
+    "statement_sql": [
+     "CREATE SERVER <redacted>"
+    ]
    }
   },
   {
@@ -138,15 +145,22 @@
     "diagnostics": 1,
     "unsupported": 1,
     "coverage": "incomplete",
-    "statement_coverage": ["incomplete"],
+    "statement_coverage": [
+     "incomplete"
+    ],
     "unsupported_entries": [
      {
       "feature": "alter_server",
       "reason": "parsed by the shared parser but not covered by audited semantics",
-      "metadata": {"boundary": "unaudited", "object": "server"}
+      "metadata": {
+       "boundary": "unaudited",
+       "object": "server"
+      }
      }
     ],
-    "statement_sql": ["ALTER SERVER golden_srv OPTIONS (<redacted>)"]
+    "statement_sql": [
+     "ALTER SERVER <redacted>"
+    ]
    }
   },
   {
@@ -161,15 +175,22 @@
     "diagnostics": 1,
     "unsupported": 1,
     "coverage": "incomplete",
-    "statement_coverage": ["incomplete"],
+    "statement_coverage": [
+     "incomplete"
+    ],
     "unsupported_entries": [
      {
       "feature": "drop_server",
       "reason": "parsed by the shared parser but not covered by audited semantics",
-      "metadata": {"boundary": "unaudited", "object": "server"}
+      "metadata": {
+       "boundary": "unaudited",
+       "object": "server"
+      }
      }
     ],
-    "statement_sql": ["DROP SERVER golden_srv"]
+    "statement_sql": [
+     "DROP SERVER <redacted>"
+    ]
    }
   },
   {
@@ -184,15 +205,22 @@
     "diagnostics": 1,
     "unsupported": 1,
     "coverage": "incomplete",
-    "statement_coverage": ["incomplete"],
+    "statement_coverage": [
+     "incomplete"
+    ],
     "unsupported_entries": [
      {
       "feature": "drop_server",
       "reason": "parsed by the shared parser but not covered by audited semantics",
-      "metadata": {"boundary": "unaudited", "object": "server"}
+      "metadata": {
+       "boundary": "unaudited",
+       "object": "server"
+      }
      }
     ],
-    "statement_sql": ["DROP SERVER IF EXISTS golden_srv"]
+    "statement_sql": [
+     "DROP SERVER IF EXISTS <redacted>"
+    ]
    }
   },
   {
@@ -207,15 +235,21 @@
     "diagnostics": 1,
     "unsupported": 1,
     "coverage": "incomplete",
-    "statement_coverage": ["incomplete"],
+    "statement_coverage": [
+     "incomplete"
+    ],
     "unsupported_entries": [
      {
       "feature": "create_server",
       "reason": "parsed by the shared parser but outside the supported statement surface for this dialect",
-      "metadata": {"boundary": "vendor"}
+      "metadata": {
+       "boundary": "vendor"
+      }
      }
     ],
-    "statement_sql": ["CREATE SERVER tidb_srv FOREIGN DATA WRAPPER mysql OPTIONS (<redacted>)"]
+    "statement_sql": [
+     "CREATE SERVER <redacted>"
+    ]
    }
   },
   {
@@ -258,18 +292,25 @@
     "diagnostics": 1,
     "unsupported": 1,
     "coverage": "incomplete",
-    "statement_coverage": ["complete", "incomplete", "complete"],
+    "statement_coverage": [
+     "complete",
+     "incomplete",
+     "complete"
+    ],
     "unsupported_entries": [
      {
       "index": 1,
       "feature": "create_server",
       "reason": "parsed by the shared parser but not covered by audited semantics",
-      "metadata": {"boundary": "unaudited", "object": "server"}
+      "metadata": {
+       "boundary": "unaudited",
+       "object": "server"
+      }
      }
     ],
     "statement_sql": [
      "CREATE TABLE t (id INT);",
-     "CREATE SERVER golden_srv FOREIGN DATA WRAPPER mysql OPTIONS (<redacted>)",
+     "CREATE SERVER <redacted>",
      "DROP TABLE t"
     ]
    }
@@ -286,15 +327,22 @@
     "diagnostics": 1,
     "unsupported": 1,
     "coverage": "incomplete",
-    "statement_coverage": ["incomplete"],
+    "statement_coverage": [
+     "incomplete"
+    ],
     "unsupported_entries": [
      {
       "feature": "create_spatial_reference_system",
       "reason": "parsed by the shared parser but not covered by audited semantics",
-      "metadata": {"boundary": "implementation", "object": "spatial_reference_system"}
+      "metadata": {
+       "boundary": "implementation",
+       "object": "spatial_reference_system"
+      }
      }
     ],
-    "statement_sql": ["CREATE SPATIAL REFERENCE SYSTEM 4120 <attributes redacted>"]
+    "statement_sql": [
+     "CREATE SPATIAL REFERENCE SYSTEM 4120 <attributes redacted>"
+    ]
    }
   },
   {
@@ -309,15 +357,22 @@
     "diagnostics": 1,
     "unsupported": 1,
     "coverage": "incomplete",
-    "statement_coverage": ["incomplete"],
+    "statement_coverage": [
+     "incomplete"
+    ],
     "unsupported_entries": [
      {
       "feature": "create_spatial_reference_system",
       "reason": "parsed by the shared parser but not covered by audited semantics",
-      "metadata": {"boundary": "implementation", "object": "spatial_reference_system"}
+      "metadata": {
+       "boundary": "implementation",
+       "object": "spatial_reference_system"
+      }
      }
     ],
-    "statement_sql": ["CREATE SPATIAL REFERENCE SYSTEM IF NOT EXISTS 4120 <attributes redacted>"]
+    "statement_sql": [
+     "CREATE SPATIAL REFERENCE SYSTEM IF NOT EXISTS 4120 <attributes redacted>"
+    ]
    }
   },
   {
@@ -332,15 +387,22 @@
     "diagnostics": 1,
     "unsupported": 1,
     "coverage": "incomplete",
-    "statement_coverage": ["incomplete"],
+    "statement_coverage": [
+     "incomplete"
+    ],
     "unsupported_entries": [
      {
       "feature": "create_spatial_reference_system",
       "reason": "parsed by the shared parser but not covered by audited semantics",
-      "metadata": {"boundary": "implementation", "object": "spatial_reference_system"}
+      "metadata": {
+       "boundary": "implementation",
+       "object": "spatial_reference_system"
+      }
      }
     ],
-    "statement_sql": ["CREATE OR REPLACE SPATIAL REFERENCE SYSTEM 40001 <attributes redacted>"]
+    "statement_sql": [
+     "CREATE OR REPLACE SPATIAL REFERENCE SYSTEM 40001 <attributes redacted>"
+    ]
    }
   },
   {
@@ -355,15 +417,22 @@
     "diagnostics": 1,
     "unsupported": 1,
     "coverage": "incomplete",
-    "statement_coverage": ["incomplete"],
+    "statement_coverage": [
+     "incomplete"
+    ],
     "unsupported_entries": [
      {
       "feature": "create_spatial_reference_system",
       "reason": "parsed by the shared parser but not covered by audited semantics",
-      "metadata": {"boundary": "implementation", "object": "spatial_reference_system"}
+      "metadata": {
+       "boundary": "implementation",
+       "object": "spatial_reference_system"
+      }
      }
     ],
-    "statement_sql": ["CREATE SPATIAL REFERENCE SYSTEM 4120"]
+    "statement_sql": [
+     "CREATE SPATIAL REFERENCE SYSTEM 4120"
+    ]
    }
   },
   {
@@ -378,15 +447,22 @@
     "diagnostics": 1,
     "unsupported": 1,
     "coverage": "incomplete",
-    "statement_coverage": ["incomplete"],
+    "statement_coverage": [
+     "incomplete"
+    ],
     "unsupported_entries": [
      {
       "feature": "drop_spatial_reference_system",
       "reason": "parsed by the shared parser but not covered by audited semantics",
-      "metadata": {"boundary": "implementation", "object": "spatial_reference_system"}
+      "metadata": {
+       "boundary": "implementation",
+       "object": "spatial_reference_system"
+      }
      }
     ],
-    "statement_sql": ["DROP SPATIAL REFERENCE SYSTEM 40001"]
+    "statement_sql": [
+     "DROP SPATIAL REFERENCE SYSTEM 40001"
+    ]
    }
   },
   {
@@ -401,15 +477,22 @@
     "diagnostics": 1,
     "unsupported": 1,
     "coverage": "incomplete",
-    "statement_coverage": ["incomplete"],
+    "statement_coverage": [
+     "incomplete"
+    ],
     "unsupported_entries": [
      {
       "feature": "drop_spatial_reference_system",
       "reason": "parsed by the shared parser but not covered by audited semantics",
-      "metadata": {"boundary": "implementation", "object": "spatial_reference_system"}
+      "metadata": {
+       "boundary": "implementation",
+       "object": "spatial_reference_system"
+      }
      }
     ],
-    "statement_sql": ["DROP SPATIAL REFERENCE SYSTEM IF EXISTS 40001"]
+    "statement_sql": [
+     "DROP SPATIAL REFERENCE SYSTEM IF EXISTS 40001"
+    ]
    }
   },
   {
@@ -424,15 +507,21 @@
     "diagnostics": 1,
     "unsupported": 1,
     "coverage": "incomplete",
-    "statement_coverage": ["incomplete"],
+    "statement_coverage": [
+     "incomplete"
+    ],
     "unsupported_entries": [
      {
       "feature": "create_spatial_reference_system",
       "reason": "parsed by the shared parser but outside the supported statement surface for this dialect",
-      "metadata": {"boundary": "vendor"}
+      "metadata": {
+       "boundary": "vendor"
+      }
      }
     ],
-    "statement_sql": ["CREATE SPATIAL REFERENCE SYSTEM 4120 <attributes redacted>"]
+    "statement_sql": [
+     "CREATE SPATIAL REFERENCE SYSTEM 4120 <attributes redacted>"
+    ]
    }
   },
   {
@@ -489,14 +578,18 @@
     "diagnostics": 1,
     "unsupported": 1,
     "coverage": "incomplete",
-    "statement_coverage": ["incomplete"],
+    "statement_coverage": [
+     "incomplete"
+    ],
     "unsupported_entries": [
      {
       "feature": "alter_instance.reload_tls",
       "reason": "parsed by the shared parser but not covered by audited semantics"
      }
     ],
-    "statement_sql": ["ALTER INSTANCE RELOAD TLS"]
+    "statement_sql": [
+     "ALTER INSTANCE RELOAD TLS"
+    ]
    }
   },
   {
@@ -511,15 +604,21 @@
     "diagnostics": 1,
     "unsupported": 1,
     "coverage": "incomplete",
-    "statement_coverage": ["incomplete"],
+    "statement_coverage": [
+     "incomplete"
+    ],
     "unsupported_entries": [
      {
       "feature": "alter_instance.reload_tls",
       "reason": "parsed by the shared parser but not covered by audited semantics",
-      "metadata": {"no_rollback_on_error": true}
+      "metadata": {
+       "no_rollback_on_error": true
+      }
      }
     ],
-    "statement_sql": ["ALTER INSTANCE RELOAD TLS NO ROLLBACK ON ERROR"]
+    "statement_sql": [
+     "ALTER INSTANCE RELOAD TLS NO ROLLBACK ON ERROR"
+    ]
    }
   },
   {
@@ -534,14 +633,18 @@
     "diagnostics": 1,
     "unsupported": 1,
     "coverage": "incomplete",
-    "statement_coverage": ["incomplete"],
+    "statement_coverage": [
+     "incomplete"
+    ],
     "unsupported_entries": [
      {
       "feature": "alter_instance.rotate_innodb_master_key",
       "reason": "parsed by the shared parser but not covered by audited semantics"
      }
     ],
-    "statement_sql": ["ALTER INSTANCE ROTATE INNODB MASTER KEY"]
+    "statement_sql": [
+     "ALTER INSTANCE ROTATE INNODB MASTER KEY"
+    ]
    }
   },
   {
@@ -556,15 +659,21 @@
     "diagnostics": 1,
     "unsupported": 1,
     "coverage": "incomplete",
-    "statement_coverage": ["incomplete"],
+    "statement_coverage": [
+     "incomplete"
+    ],
     "unsupported_entries": [
      {
       "feature": "alter_instance.rotate_innodb_master_key",
       "reason": "parsed by the shared parser but outside the supported statement surface for this dialect",
-      "metadata": {"boundary": "vendor"}
+      "metadata": {
+       "boundary": "vendor"
+      }
      }
     ],
-    "statement_sql": ["ALTER INSTANCE ROTATE INNODB MASTER KEY"]
+    "statement_sql": [
+     "ALTER INSTANCE ROTATE INNODB MASTER KEY"
+    ]
    }
   },
   {
@@ -579,14 +688,18 @@
     "diagnostics": 1,
     "unsupported": 1,
     "coverage": "incomplete",
-    "statement_coverage": ["incomplete"],
+    "statement_coverage": [
+     "incomplete"
+    ],
     "unsupported_entries": [
      {
       "feature": "alter_instance.reload_tls",
       "reason": "parsed by the shared parser but not covered by audited semantics"
      }
     ],
-    "statement_sql": ["ALTER INSTANCE RELOAD TLS"]
+    "statement_sql": [
+     "ALTER INSTANCE RELOAD TLS"
+    ]
    }
   }
  ],

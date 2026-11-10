@@ -1,7 +1,5 @@
 package spec
 
-import "strings"
-
 // ServerDeclaration carries the authored MySQL SERVER-family statement —
 // CREATE SERVER, ALTER SERVER, and DROP SERVER — on statements the parser
 // adapter recognized as the MySQL grammar family (T26/#105). It is
@@ -15,12 +13,16 @@ import "strings"
 type ServerDeclaration struct {
 	// Kind is the statement family: "create", "alter", or "drop".
 	Kind string
-	// Name is the authored server identity, verbatim. Server names are
-	// object identities (like table names), not credentials.
+	// Name is the authored server identity — the unquoted spelling with
+	// doubled-quote escapes resolved (not a complete MySQL string
+	// decode: backslash escapes and charset introducers stay
+	// unresolved). Server names are object identities, not credentials;
+	// they stay internal and never appear in PublicSQL.
 	Name string
 	// IfExists carries the authored guard on DROP SERVER.
 	IfExists bool
-	// Wrapper is the authored FOREIGN DATA WRAPPER identity, verbatim.
+	// Wrapper is the authored FOREIGN DATA WRAPPER identity (unquoted
+	// spelling, doubled quotes resolved) — internal only.
 	Wrapper string
 	// Options records each authored OPTIONS member in source order —
 	// key plus value kind only. Literal values never enter the model.
@@ -29,8 +31,9 @@ type ServerDeclaration struct {
 	// declaration fact for later adjudication, not a verdict.
 	DuplicateKeys []string
 	// NameOverLimit marks an authored name exceeding the documented
-	// 64-character server-name bound (MySQL truncates/refuses at the
-	// engine layer; the fact stays declarative here).
+	// 64-character server-name bound, counted in characters (runes of
+	// the unquoted text) — never bytes. MySQL truncates/refuses at the
+	// engine layer; the fact stays declarative here.
 	NameOverLimit bool
 }
 
@@ -51,34 +54,24 @@ const (
 	ServerKindDrop   = "drop"
 )
 
-// PublicSQL renders the fixed-shape redacted form for serialized output:
-// the keyword skeleton, the object identity, and an opaque options
-// marker. Connection coordinates, credentials, and the raw input text
-// never appear. The shape is stable so downstream consumers can
-// recognize it without re-deriving which family produced it.
+// PublicSQL renders the fixed-shape redacted skeleton for serialized
+// output — verb plus IF EXISTS guard only. The server name, wrapper,
+// option keys/values, and every other authored fragment stay internal:
+// serialized output carries no identity or connection text at all. The
+// shape is stable so downstream consumers can recognize the family
+// without re-deriving which statement produced it.
 func (d *ServerDeclaration) PublicSQL() string {
-	var b strings.Builder
 	switch d.Kind {
 	case ServerKindCreate:
-		b.WriteString("CREATE SERVER ")
-		b.WriteString(d.Name)
-		if d.Wrapper != "" {
-			b.WriteString(" FOREIGN DATA WRAPPER ")
-			b.WriteString(d.Wrapper)
-		}
-		b.WriteString(" OPTIONS (<redacted>)")
+		return "CREATE SERVER <redacted>"
 	case ServerKindAlter:
-		b.WriteString("ALTER SERVER ")
-		b.WriteString(d.Name)
-		b.WriteString(" OPTIONS (<redacted>)")
+		return "ALTER SERVER <redacted>"
 	case ServerKindDrop:
-		b.WriteString("DROP SERVER ")
 		if d.IfExists {
-			b.WriteString("IF EXISTS ")
+			return "DROP SERVER IF EXISTS <redacted>"
 		}
-		b.WriteString(d.Name)
+		return "DROP SERVER <redacted>"
 	default:
 		return "<redacted server statement>"
 	}
-	return b.String()
 }

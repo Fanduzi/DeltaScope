@@ -91,7 +91,12 @@ func TestT26R3_ServerStrictRejects(t *testing.T) {
 	}
 }
 
-func TestT26R3_SRSSevenForms(t *testing.T) {
+func TestT26R3_SRSRecognizedForms(t *testing.T) {
+	// The five base statement forms — CREATE (bare and with attributes),
+	// CREATE IF NOT EXISTS, CREATE OR REPLACE, DROP, DROP IF EXISTS —
+	// land on both dialects with the create/drop feature names. The
+	// contradictory OR REPLACE + IF NOT EXISTS combination stays
+	// unclaimed (negative coverage lives in the strict tests).
 	for _, f := range []struct{ sql, feature string }{
 		{"CREATE SPATIAL REFERENCE SYSTEM 4120 NAME 'Greek' DEFINITION 'GEOGCS[\"Greek\"]'", "create_spatial_reference_system"},
 		{"CREATE SPATIAL REFERENCE SYSTEM IF NOT EXISTS 4120 NAME 'Greek' DEFINITION 'x'", "create_spatial_reference_system"},
@@ -126,12 +131,15 @@ func TestT26R3_SRSBoundariesDistinct(t *testing.T) {
 func TestT26R3_SRSStrictNumeric(t *testing.T) {
 	// Negative and overflowing SRIDs are grammar-invalid — the recognizer
 	// must refuse the claim and let the base parser own the diagnostic;
-	// a silent uint conversion must never produce a named boundary.
+	// a silent uint conversion must never produce a named boundary. The
+	// contradictory OR REPLACE + IF NOT EXISTS combination is likewise
+	// unclaimed: upstream refuses it, so the base parser owns the error.
 	for _, sql := range []string{
 		"CREATE SPATIAL REFERENCE SYSTEM -1 NAME 'x' DEFINITION 'x'",
 		"CREATE SPATIAL REFERENCE SYSTEM 4294967296 NAME 'x' DEFINITION 'x'",
 		"DROP SPATIAL REFERENCE SYSTEM -1",
 		"DROP SPATIAL REFERENCE SYSTEM 99999999999",
+		"CREATE OR REPLACE SPATIAL REFERENCE SYSTEM IF NOT EXISTS 1 NAME 'x' DEFINITION 'x'",
 	} {
 		result, err := t26Audit(t, spec.DialectMySQL, sql)
 		if err == nil {
@@ -183,14 +191,24 @@ func TestT26R3_OutputRedaction(t *testing.T) {
 		}
 	}
 	stmt := result.Statements[0]
-	if stmt.RawSQL == t26GoldenServer || stmt.RawSQL == "" {
-		t.Fatalf("raw_sql=%q — verbatim leak or lost identity", stmt.RawSQL)
+	// The named boundary, statement identity, and coverage verdict come
+	// first — the leak assertion must prove redaction on the real
+	// recognized path, not on some parser early-exit.
+	if u := result.Unsupported[0]; u.Feature != "create_server" {
+		t.Fatalf("feature=%q — expected the named create_server boundary", u.Feature)
 	}
-	if !strings.Contains(stmt.RawSQL, "REDACTED") && !strings.Contains(stmt.RawSQL, "redacted") {
-		t.Fatalf("raw_sql=%q lacks the fixed-shape redacted rendering", stmt.RawSQL)
+	if stmt.Coverage.Status != report.CoverageIncomplete {
+		t.Fatalf("coverage=%q want incomplete named boundary", stmt.Coverage.Status)
 	}
-	if u := result.Unsupported[0]; u.SQL == t26GoldenServer || u.SQL == "" {
-		t.Fatalf("unsupported[].sql=%q — verbatim leak or lost identity", u.SQL)
+	// Fixed skeleton — name, wrapper, and option content never appear.
+	if stmt.RawSQL != "CREATE SERVER <redacted>" {
+		t.Fatalf("raw_sql=%q want fixed skeleton CREATE SERVER <redacted>", stmt.RawSQL)
+	}
+	if stmt.NormalizedSQL != "CREATE SERVER <redacted>" {
+		t.Fatalf("normalized_sql=%q want fixed skeleton", stmt.NormalizedSQL)
+	}
+	if u := result.Unsupported[0]; u.SQL != "CREATE SERVER <redacted>" {
+		t.Fatalf("unsupported[].sql=%q want fixed skeleton", u.SQL)
 	}
 }
 
