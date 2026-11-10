@@ -39,11 +39,17 @@ until a separately authorized native round.
   verdict, statement count, findings count, diagnostics, unsupported,
   `coverage`, `statement_coverage`, `evidence_gaps`,
   `evidence_gap_entries` (index/rule_id/reason_code + one-to-one
-  `required_facts` pins), `finding_entries`, `statement_sql`,
-  `statement_indices`, `unsupported_entries`, `rule_summary_*`,
-  `fail_on_triggered`. Meta cases additionally compare setup/execute/
-  verify/structure/teardown return codes and outputs, database
-  reachability + `version_contains`, and `instance_facts` pins.
+  `required_facts` pins), `finding_entries`, `finding_metadata`
+  (per-finding `metadata` subset pin — the collision case's
+  `reason_code` check is a live comparator, not a decorative field),
+  `statement_sql`, `statement_indices`, `unsupported_entries`,
+  `rule_summary_*`, `fail_on_triggered`. Meta cases additionally
+  compare setup/execute/verify/structure/teardown return codes and
+  outputs, database reachability + `version_contains`, and
+  `instance_facts` pins. `verify.poll` (`attempts`/`interval_sec`) is
+  consumed by `run_verify_check`: each attempt is preserved in
+  `observations`, exhaustion is recorded as `timeout` evidence, never a
+  fabricated match.
 
 ## 1. What the current manifest would actually execute natively
 
@@ -71,16 +77,17 @@ grammar rejects the non-existent `IF NOT EXISTS` form.
 | mysql80-ts-lifecycle | create→rename→drop lifecycle | `prove-ts-absent` COUNT select (read-only) |
 | mysql84-occupied-drop-refused | `DROP TABLESPACE t25fx_occ` | `CREATE TABLESPACE t25fx_occ ADD DATAFILE 't25fx_occ.ibd' ENGINE=INNODB` + `CREATE TABLE t25fx.t_occ (a int) ENGINE=INNODB TABLESPACE=t25fx_occ` |
 | mysql80-absent-alter-refused | `ALTER TABLESPACE t25fx_ghost RENAME TO t25fx_ghost2` | `prove-ghost-absent` COUNT select (read-only) |
-| mysql57-undo-refused | `CREATE UNDO TABLESPACE t25fx_u ADD DATAFILE 't25fx_u.ibu' ENGINE=INNODB` | none declared — no undo object is created |
+| mysql57-undo-refused | `CREATE UNDO TABLESPACE t25fx_u ADD DATAFILE 't25fx_u.ibu' ENGINE=INNODB` | the execute arm sends the identical bytes; expected `ERROR 1064` refusal — nothing is created either way |
 | mysql80-discard-forbid | `ALTER TABLE t25fx.t_disc DISCARD TABLESPACE` | `CREATE TABLE t25fx.t_disc` (InnoDB) |
 | mysql80-import-warn | `ALTER TABLE t25fx.t_imp IMPORT TABLESPACE` | `CREATE TABLE t25fx.t_imp` (InnoDB) |
-| mysql80-myisam-discard-refused | `ALTER TABLE t25fx.t_my DISCARD TABLESPACE` | `CREATE TABLE t25fx.t_my` (MyISAM) |
-| tidb85-vendor-boundary | `CREATE TABLESPACE ts1 ADD DATAFILE 'f.ibd' ENGINE=InnoDB` | none — TiDB never executes the MySQL form |
+| mysql80-myisam-discard-refused | `ALTER TABLE t25fx.t_mys DISCARD TABLESPACE` | `CREATE TABLE t25fx.t_mys` (MyISAM) — audited object and seeded object are the same identity (R8-N02) |
+| tidb85-vendor-boundary | `CREATE TABLESPACE t25fx_ti ADD DATAFILE 'a.ibd' ENGINE=INNODB` | the execute arm sends the identical bytes; expected `ERROR 1064` (R8-N02) |
 
-`spec.sql` in every meta case is audit-CLI input only. The `execute[]`
-block — the T05-oracle arm that would apply the audited statements to
-the database — is **declared in no T25 case**, so under the current
-manifest the audited tablespace DDL itself is never natively executed.
+`spec.sql` in every meta case is audit-CLI input only — the product
+never executes it. Since R6 the `execute[]` arms (the T05 oracle) are
+declared per case, and since R8-N02 each execute arm sends the same
+object identities the audited `spec.sql` names, so a native arm can be
+registered as the oracle for the actual audited statement.
 
 ## 2. Gap → expanded plan (to be folded into the manifest when authorized)
 
@@ -171,6 +178,38 @@ Ownership model (keys `_fixture_key(step)`, default `default`):
   each entry runs only while its `fixture_key` is still owned, using
   plain SQL `DROP TABLESPACE`/`DROP TABLE`; the entry's own `verify`
   (catalog COUNT=0) proves the post-state rather than the drop rc.
+  Each entry's verify call is individually caught and recorded, so one
+  entry's exception cannot abort the remaining owned entries (R8-N04).
+- Expected-refusal creates carry `creates_fixture` too (R8-N03):
+  ownership registers on actual `rc=0`, not on the step's declared
+  expectation — an unexpected CREATE success therefore still enters the
+  owned ledger, fails the case on the rc mismatch, and reaches owned
+  cleanup. The expected refusal can never stand in for resource
+  bookkeeping.
+- Setup prerequisite failure is a universal gate (R8-N03): any failed
+  `expect_rc` or `verify` inside `setup[]` fails the case before the
+  audit call and before any `execute[]` mutation — the gate no longer
+  requires a `fixture` block, so a present-source surprise can never be
+  renamed or dropped by a later arm.
+- Catalog discipline: `INNODB_TABLESPACES` presence/absence reads are
+  used only for InnoDB-kind objects. The NDB boundary case proves
+  absence and residue through `information_schema.FILES`
+  (`TABLESPACE_NAME=`), the engine-agnostic catalog — an
+  `INNODB_TABLESPACES` zero-row is never offered as absence proof for a
+  non-InnoDB object (R8-N02/N03).
+- Owned-undo residual recovery (`mysql80-undo-owned-lifecycle`,
+  R8-N04): the cleanup descriptor is a bounded sequence —
+  `ALTER UNDO TABLESPACE t25fx_u1 SET INACTIVE` → bounded poll for
+  `STATE='empty'` (`attempts=10`, `interval_sec=1`) →
+  `DROP UNDO TABLESPACE` → absent verify. An exhausted budget or a
+  refused drop records the residual identity plus last observed state
+  and keeps the case failed; "finally covers interruption" describes
+  only exits that actually reach the `finally` — a killed process is
+  not claimed.
+- Case-sensitivity note: SQL predicates compare the quoted literal
+  under the anchor's catalog collation; the Python ledger's exact-key
+  match is bookkeeping only and is not itself a proof that catalog
+  comparison is case-sensitive (R8-N05).
 
 Per-case declared order: bound tables drop before their tablespace
 (teardown list order = execution order), matching §2.4's original
@@ -251,7 +290,7 @@ Counts at the time of writing: 28 cli_cases, 15 metadata_cases,
 | mysql80-discard-forbid `execute[]` + owned-table teardown | DISCARD executes natively (policy forbid ≠ native rejection) | declared |
 | mysql80-import-warn `execute[]` arm | rc=1 + table survives; error token deferred — marked exploratory | declared |
 | mysql80-myisam-discard-refused `execute[]` arm | rc=1 + `doesn't have this option` marker | declared |
-| new meta cases: `mysql80-memberless-innodb` (P5), `mysql80-encryption-native` (P6 bounded refusal keyed on `keyring_file_plugin_status` unobserved), `mysql80-rename-collision-refused` (R3: `already exists` marker + both names survive + `reason_code` pinned in expect), `mysql80-ndb-vendor-boundary` (B1 `ERROR 1286`), `mysql80-undo-owned-lifecycle` (R4': owned SET/empty-poll/DROP) | meta 8 → 15 | declared |
+| new meta cases: `mysql80-memberless-innodb` (P5), `mysql80-encryption-native` (P6 bounded refusal probe — see §2.7 for the narrowed keyring contract), `mysql80-rename-collision-refused` (R3: `already exists` marker + both names survive + `reason_code` pinned via consumed `expect.finding_metadata`), `mysql80-ndb-vendor-boundary` (B1 `ERROR 1286`, FILES-catalog absence/residue), `mysql80-undo-owned-lifecycle` (R4': owned SET/empty-poll/DROP + bounded residual recovery) | meta 8 → 15 | declared |
 | `mysql80-undo-default-drop-refused`, `mysql80-alter-undo-unaudited` | execute arms removed — default undo objects are read-only observed, never mutated | declared |
 | tidb85-vendor-boundary `execute[]` arm (B2) | `ERROR 1064` strict syntax marker | declared |
 
@@ -264,3 +303,26 @@ what the authorized run verifies.
 bound tables inside `t25fx` but never tablespaces, and the same steps
 must run on tidb85 (no `INNODB_TABLESPACES`), so global-object cleanup
 stays per-case and ownership-gated.
+
+### 2.7 Resource ownership map + narrowed keyring contract (R8-N05)
+
+| resource | owner | lifecycle contract |
+|---|---|---|
+| `t25fx` schema + `t25fx.*` tables | the run's `ddl_steps` | DROP/CREATE DATABASE resets them per run; per-case bound tables are additionally owned via `fixture_key`s for intra-run teardown |
+| `t25fx_*` tablespaces/undo/logfile objects | per-case ledger only | created iff the case's own `creates_fixture` rc=0; `fixture.cleanup[]` covers still-owned keys only |
+| `innodb_undo_*` default objects | the anchor image | read-only observed; never in any execute/teardown/cleanup arm |
+| foreign `t25fx*` residue from an interrupted earlier run | unowned | `requires_absence` detects and fails with evidence; never adopted or deleted |
+| containers/volumes/networks | compose stack | removed by stack teardown, outside the case ledger — the ledger never claims to govern the whole run's mutations |
+| `keyring_file` plugin state | the anchor image | observed only |
+
+`keyring_file_plugin_status` reads exactly one
+`information_schema.plugins` row — `PLUGIN_NAME='keyring_file'`. A null
+result means *that plugin row was unobserved*; it does not prove the
+absence of every keyring implementation (e.g. `component_keyring_file`
+or another keyring plugin). P6 therefore stays a *bounded refusal
+probe*: `ENCRYPTION='Y'` refusal is expected but is proven only by the
+recorded error text plus the post-state verify, while an unexpected
+`rc=0` registers ownership under R8-N03, fails the case, and reaches
+owned cleanup. Positive `ENCRYPTION='Y'` coverage is explicitly
+**unproven** this round — no keyring is installed and no expectation is
+relaxed to obtain one.

@@ -1019,10 +1019,14 @@ def execute_metadata_case(manifest, anchor_key, binary, policies, spec):
                     except Exception as error:
                         record.update({"exception_type": type(error).__name__, "exception_message": str(error)})
                     if entry.get("verify"):
-                        vrec, vok, vtimeout = run_verify_check(anchor, entry["verify"], database=anchor["database"])
-                        record["verify"] = vrec
-                        if vtimeout:
-                            record["timeout"] = True
+                        try:
+                            vrec, vok, vtimeout = run_verify_check(anchor, entry["verify"], database=anchor["database"])
+                            record["verify"] = vrec
+                            if vtimeout:
+                                record["timeout"] = True
+                        except Exception as error:
+                            record["verify_exception"] = {"type": type(error).__name__, "message": str(error)}
+                            vok = False
                         cleanup_ok = cleanup_ok and vok
                     elif type(record.get("rc")) is int:
                         cleanup_ok = cleanup_ok and record["rc"] == entry.get("expect_rc", 0)
@@ -1127,12 +1131,11 @@ def _execute_metadata_case(manifest, anchor_key, binary, policies, spec, fixture
                 assertion["error"] = True
             case["assertions"].append(assertion)
             step_ok = step_ok and vok
-        if fixture is not None:
-            if step.get("requires_absence") and step_ok:
-                fixture["absent"].add(_fixture_key(step))
-            if not step_ok:
-                case["status"] = "fail"
-                return case
+        if fixture is not None and step.get("requires_absence") and step_ok:
+            fixture["absent"].add(_fixture_key(step))
+        if not step_ok:
+            case["status"] = "fail"
+            return case
 
     args = [
         binary, "audit",

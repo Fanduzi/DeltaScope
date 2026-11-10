@@ -1887,7 +1887,7 @@
    "execute": [
     {
      "name": "undo-on-57-refused",
-     "sql": "CREATE UNDO TABLESPACE t25fx_u ADD DATAFILE 'u.ibu'",
+     "sql": "CREATE UNDO TABLESPACE t25fx_u ADD DATAFILE 't25fx_u.ibu' ENGINE=INNODB",
      "expect_rc": 1,
      "stderr_contains": [
       "ERROR 1064"
@@ -2134,7 +2134,7 @@
    "id": "mysql80-myisam-discard-refused",
    "anchor": "mysql80",
    "dialect": "mysql",
-   "sql": "ALTER TABLE t25fx.t_my DISCARD TABLESPACE;",
+   "sql": "ALTER TABLE t25fx.t_mys DISCARD TABLESPACE;",
    "connect": {
     "host": "127.0.0.1",
     "port": 23380,
@@ -2260,7 +2260,7 @@
    "id": "tidb85-vendor-boundary",
    "anchor": "tidb85",
    "dialect": "mysql",
-   "sql": "CREATE TABLESPACE ts1 ADD DATAFILE 'f.ibd' ENGINE=InnoDB;",
+   "sql": "CREATE TABLESPACE t25fx_ti ADD DATAFILE 'a.ibd' ENGINE=INNODB;",
    "connect": {
     "host": "127.0.0.1",
     "port": 24000,
@@ -2305,7 +2305,7 @@
    "id": "mysql80-memberless-innodb",
    "anchor": "mysql80",
    "dialect": "mysql",
-   "sql": "CREATE TABLESPACE t25fx_mbr ENGINE=INNODB;",
+   "sql": "CREATE TABLESPACE t25fx_ml ENGINE=INNODB;",
    "connect": {
     "host": "127.0.0.1",
     "port": 23380,
@@ -2465,12 +2465,12 @@
       ]
      }
     ],
-    "description": "8.0.13 encryption member executes natively; audit owes only unproven existence",
+    "description": "8.0.13 encryption member audited offline; native arm is a pending refusal probe — audit owes only unproven existence",
     "instance_facts": {
      "keyring_file_plugin_status": null
     }
    },
-   "description": "bounded refusal target: stock anchor ships no keyring plugin (instance_facts expects the row unobserved), so ENCRYPTION='Y' must fail with a keyring error — no component is ever installed; if an anchor ever reports ACTIVE this case fails honestly instead of silently succeeding",
+   "description": "bounded refusal probe: the stock anchor is expected to show no keyring_file PLUGIN row (keyring_file_plugin_status=null observes that one plugin row only — it does not prove the absence of other keyring plugins or components such as component_keyring_file); if ENCRYPTION=Y is refused, the error text is the recorded evidence; an unexpected CREATE success registers ownership, fails the case and enters owned cleanup; ENCRYPTION=Y positive success coverage stays unproven this round",
    "setup": [
     {
      "name": "prove-absent-ts:t25fx_e",
@@ -2501,7 +2501,9 @@
        "sql": "SELECT COUNT(*) FROM information_schema.INNODB_TABLESPACES WHERE NAME='t25fx_e'",
        "expect": "0"
       }
-     ]
+     ],
+     "creates_fixture": true,
+     "fixture_key": "ts:t25fx_e"
     }
    ],
    "teardown": [],
@@ -2823,18 +2825,18 @@
     ],
     "description": "NDB engine member is a vendor boundary — native fixture has no NDB engine"
    },
-   "description": "native expected verification: anchor has no NDB engine — strict ER_UNKNOWN_STORAGE_ENGINE match separates engine-missing from generic failure",
+   "description": "NDB engine boundary on an InnoDB anchor — audited bytes are executed verbatim; absence/residue proven through information_schema.FILES (engine-agnostic), never INNODB_TABLESPACES; if an unexpected CREATE success leaves an object the owned cleanup attempts a plain DROP and a failed cleanup records residual identity instead of claiming removal",
    "setup": [
     {
      "name": "prove-absent-ts:t25fx_n",
-     "sql": "SELECT COUNT(*) FROM information_schema.INNODB_TABLESPACES WHERE NAME='t25fx_n'",
+     "sql": "SELECT COUNT(*) FROM information_schema.FILES WHERE TABLESPACE_NAME='t25fx_n'",
      "expect_rc": 0,
      "requires_absence": true,
      "fixture_key": "ts:t25fx_n",
      "verify": [
       {
        "assert": "tablespace t25fx_n absent",
-       "sql": "SELECT COUNT(*) FROM information_schema.INNODB_TABLESPACES WHERE NAME='t25fx_n'",
+       "sql": "SELECT COUNT(*) FROM information_schema.FILES WHERE TABLESPACE_NAME='t25fx_n'",
        "expect": "0"
       }
      ]
@@ -2843,7 +2845,7 @@
    "execute": [
     {
      "name": "ndb-create-refused",
-     "sql": "CREATE TABLESPACE t25fx_n ADD DATAFILE 't25fx_n.dat' ENGINE=NDB",
+     "sql": "CREATE TABLESPACE t25fx_n ADD DATAFILE 't25fx_n.ibd' ENGINE=NDB",
      "expect_rc": 1,
      "stderr_contains": [
       "ERROR 1286",
@@ -2855,7 +2857,9 @@
        "sql": "SELECT COUNT(*) FROM information_schema.INNODB_TABLESPACES WHERE NAME='t25fx_n'",
        "expect": "0"
       }
-     ]
+     ],
+     "creates_fixture": true,
+     "fixture_key": "ts:t25fx_n"
     }
    ],
    "teardown": [],
@@ -2866,8 +2870,8 @@
       "fixture_key": "ts:t25fx_n",
       "sql": "DROP TABLESPACE t25fx_n",
       "verify": {
-       "assert": "ts:t25fx_n absent after cleanup",
-       "sql": "SELECT COUNT(*) FROM information_schema.INNODB_TABLESPACES WHERE NAME='t25fx_n'",
+       "assert": "ts:t25fx_n absent in engine-agnostic catalog after cleanup",
+       "sql": "SELECT COUNT(*) FROM information_schema.FILES WHERE TABLESPACE_NAME='t25fx_n'",
        "expect": "0"
       }
      }
@@ -2960,9 +2964,30 @@
    "fixture": {
     "cleanup": [
      {
-      "name": "cleanup-u1",
+      "name": "cleanup-u1-deactivate",
+      "fixture_key": "ts:t25fx_u1",
+      "sql": "ALTER UNDO TABLESPACE t25fx_u1 SET INACTIVE",
+      "expect_rc": 0
+     },
+     {
+      "name": "cleanup-u1-empty-wait",
+      "fixture_key": "ts:t25fx_u1",
+      "sql": "SELECT STATE FROM information_schema.INNODB_TABLESPACES WHERE NAME='t25fx_u1'",
+      "verify": {
+       "assert": "owned undo drains to empty",
+       "sql": "SELECT STATE FROM information_schema.INNODB_TABLESPACES WHERE NAME='t25fx_u1'",
+       "expect": "empty",
+       "poll": {
+        "attempts": 10,
+        "interval_sec": 1
+       }
+      }
+     },
+     {
+      "name": "cleanup-u1-drop",
       "fixture_key": "ts:t25fx_u1",
       "sql": "DROP UNDO TABLESPACE t25fx_u1",
+      "expect_rc": 0,
       "verify": {
        "assert": "ts:t25fx_u1 absent after cleanup",
        "sql": "SELECT COUNT(*) FROM information_schema.INNODB_TABLESPACES WHERE NAME='t25fx_u1'",
@@ -3078,7 +3103,7 @@
     }
    ],
    "teardown": [],
-   "description": "owned undo lifecycle: create, SET INACTIVE with bounded empty-state polling, DROP UNDO — the only undo object touched is the one this run created; default undo objects are observed, never mutated"
+   "description": "owned undo lifecycle: create, SET INACTIVE with bounded empty-state polling, DROP UNDO — the only undo object touched is the one this run created; default undo objects are observed, never mutated; the owned-residual path re-runs SET INACTIVE, polls for empty within a bounded budget, then drops — an exhausted budget records residual identity and last observed state and keeps the case failed"
   }
  ],
  "required_case_ids": [
