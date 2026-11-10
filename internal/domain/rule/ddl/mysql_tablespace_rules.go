@@ -303,18 +303,24 @@ func (r tablespaceApplicabilityRule) Evaluate(ctx context.Context, statement spe
 					"verify the object family matches the statement form before shipping"), ctx.Err()
 			}
 		}
-		if statement.DDL.Operation == spec.DDLOperationAlterTablespace && decl.AlterAction == "rename" {
-			// The shared rename outcome already consumed version, source
-			// existence, and source kind above — the only remaining
-			// refusal arm is the proven-present rename target.
-			verdict, reason, _ := spec.TablespaceRenameOutcome(state,
-				tablespaceStateFor(statement, decl.NewName), tablespaceStatementVersion(statement))
-			if verdict == spec.TablespaceRenameRefused && reason == "rename_target_present" {
-				return refuse(tablespaceStandaloneReasonRenameTarget,
-					fmt.Sprintf("alter tablespace %q rename to %q refuses — the target already exists", decl.Name, decl.NewName),
-					"verify the rename target identity before shipping"), ctx.Err()
-			}
+	}
+	if statement.DDL.Operation == spec.DDLOperationAlterTablespace && decl.AlterAction == "rename" {
+		// The collision arm turns on the TARGET's state alone, so it is
+		// consumed outside the source-proven gate — an unanswered source
+		// read must not mask a proven-present rename target. The earlier
+		// version/absent/kind arms already hold their priority: a proven
+		// refusal inside the source gate returns before this point, and
+		// the shared outcome's other refused arms can only repeat what
+		// those checks already proved.
+		verdict, reason, _ := spec.TablespaceRenameOutcome(state,
+			tablespaceStateFor(statement, decl.NewName), tablespaceStatementVersion(statement))
+		if verdict == spec.TablespaceRenameRefused && reason == "rename_target_present" {
+			return refuse(tablespaceStandaloneReasonRenameTarget,
+				fmt.Sprintf("alter tablespace %q rename to %q refuses — the target already exists", decl.Name, decl.NewName),
+				"verify the rename target identity before shipping"), ctx.Err()
 		}
+	}
+	if state.Proven() {
 		if statement.DDL.Operation == spec.DDLOperationDropTablespace &&
 			decl.Kind != spec.TablespaceKindUndo &&
 			state.Exists && state.Occupied != nil && *state.Occupied {

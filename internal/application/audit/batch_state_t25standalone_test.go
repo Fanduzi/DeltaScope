@@ -813,6 +813,39 @@ func TestT25RenameJointAdjudication(t *testing.T) {
 
 	// E: fully proven premises still migrate (positive arm preserved —
 	// covered by TestT25TablespaceRenameMovesIdentity).
+
+	// R6-N06: source existence unproven must not mask a proven-present
+	// target — the shared refusal surfaces as the applicability blocker
+	// and both pre-states survive for the dependent drops.
+	t.Run("F unproven source still emits collision refusal", func(t *testing.T) {
+		p := t25TablespaceProvider(map[string]t25TablespaceFact{
+			"b": {status: spec.MetadataStatusConfirmed, exists: true,
+				kind: spec.TablespaceKindGeneral, occupied: &unoccupied},
+		})
+		p.version = "8.0.45"
+		result := t25Standalone(t,
+			"ALTER TABLESPACE a RENAME TO b; DROP TABLESPACE b; DROP TABLESPACE a", p)
+		found := false
+		for _, f := range result.Statements[0].Findings {
+			if f.RuleID == t25RuleTSApp && f.Metadata["reason_code"] == "tablespace_rename_target_present" {
+				found = true
+			}
+		}
+		if !found {
+			t.Fatalf("masked-collision findings = %+v, want the shared rename_target_present blocker", result.Statements[0].Findings)
+		}
+		// The refused rename holds both pre-states: b's proven
+		// unoccupied drop adjudicates complete — no gaps, no migration
+		// or contamination of its identity.
+		if len(result.Statements[1].EvidenceGaps) != 0 {
+			t.Fatalf("drop-of-b gaps = %+v, want none — b's proven pre-state survived the refusal", result.Statements[1].EvidenceGaps)
+		}
+		// a was never proven: the trailing drop still owes existence —
+		// the undecidable source was neither tombstoned nor promoted.
+		if !gapFacts(result, 2)["tablespace.existence"] {
+			t.Fatalf("drop-of-a gaps = %+v, want existence owed — a stayed unproven", result.Statements[2].EvidenceGaps)
+		}
+	})
 }
 
 // R4-N02: capability floors are exact — the 5.7 accepted-and-ignored

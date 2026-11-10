@@ -71,11 +71,14 @@ infers facts from missing metadata.
   claiming absence; proven refusals and kind mismatches hold the exact
   pre-state; RENAME adjudicates through the shared
   `spec.TablespaceRenameOutcome` — proven migration requires a supported
-  8.0.3+ version, a proven general source, and a proven-absent target, a
-  proven refusal (version, absent source, non-general kind, present target)
-  holds the exact pre-state, and any unproven premise leaves both entries
-  undecidable-unknown instead of tombstoning the source or fabricating the
-  target; refused operations never mutate state; the
+  8.0.3+ version, a proven general source, and a proven-absent target; a
+  proven refusal (version, absent source, non-general kind, present
+  target) takes precedence and holds the exact pre-state — including
+  when the source read itself is unanswered, since the collision arm
+  turns on the target alone; only with no proven refusal do the still-
+  unanswered premises leave both entries undecidable-unknown instead of
+  tombstoning the source or fabricating the target; refused operations
+  never mutate state; the
   unaudited `set_state` form provably preserves tracked facts and never
   contaminates the batch; contaminated batches keep projections unavailable.
 - Provider: `ResolveObject("mysql_tablespace")` reads
