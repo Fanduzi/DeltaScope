@@ -154,9 +154,9 @@ var mysqlDDLCensusCases = []struct {
 	{Name: "REVOKE SELECT", SQL: "REVOKE SELECT ON app.users FROM 'reader'@'%'", Expected: ddlCoverageFindingCovered},
 
 	// --- 10. Tablespace/Resource lifecycle ---
-	{Name: "CREATE TABLESPACE", SQL: "CREATE TABLESPACE ts1 ADD DATAFILE 'ts1.ibd'", Expected: ddlCoverageParserError},
-	{Name: "ALTER TABLESPACE", SQL: "ALTER TABLESPACE ts1 ADD DATAFILE 'ts2.ibd'", Expected: ddlCoverageParserError},
-	{Name: "DROP TABLESPACE", SQL: "DROP TABLESPACE ts1", Expected: ddlCoverageParserError},
+	{Name: "CREATE TABLESPACE", SQL: "CREATE TABLESPACE ts1 ADD DATAFILE 'ts1.ibd'", Expected: ddlCoverageFindingCovered},
+	{Name: "ALTER TABLESPACE", SQL: "ALTER TABLESPACE ts1 ADD DATAFILE 'ts2.ibd'", Expected: ddlCoverageFindingCovered},
+	{Name: "DROP TABLESPACE", SQL: "DROP TABLESPACE ts1", Expected: ddlCoverageFindingCovered},
 	{Name: "CREATE RESOURCE GROUP", SQL: "CREATE RESOURCE GROUP rg1 TYPE = USER VCPU = 0-3", Expected: ddlCoverageFindingCovered},
 	{Name: "ALTER RESOURCE GROUP", SQL: "ALTER RESOURCE GROUP rg1 VCPU = 0-7", Expected: ddlCoverageFindingCovered},
 	// A bare drop with no metadata stays undecidable (bounded gaps, no

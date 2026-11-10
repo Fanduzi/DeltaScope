@@ -203,6 +203,29 @@ func ddlAlterRules() map[string]RulePolicy {
 			Enabled: true,
 			Level:   rule.LevelBlocker,
 		},
+		// T25: whole-table InnoDB tablespace actions — the authored discard
+		// destroys the table's data file outright (policy forbid), while the
+		// import attaches an external file the audit cannot vouch (warning).
+		// The InnoDB-only applicability gate emits proven native refusals.
+		"ddl.alter.import_tablespace.warn": {
+			Enabled: true,
+			Level:   rule.LevelWarning,
+		},
+		"ddl.alter.discard_tablespace.forbid": {
+			Enabled: true,
+			Level:   rule.LevelBlocker,
+			Params: map[string]any{
+				"forbid": true,
+			},
+		},
+		"ddl.alter.import_tablespace.applicability": {
+			Enabled: true,
+			Level:   rule.LevelBlocker,
+		},
+		"ddl.alter.discard_tablespace.applicability": {
+			Enabled: true,
+			Level:   rule.LevelBlocker,
+		},
 		"ddl.alter.rename_table.forbid": {
 			Enabled: true,
 			Level:   rule.LevelBlocker,

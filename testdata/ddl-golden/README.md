@@ -3,6 +3,30 @@
 Per-task manifests for the milestone DDL golden-path runner
 (`make ddl-golden TASK=<id> ARTIFACT_DIR=<dir>`, `scripts/ddl_golden.py`).
 
+## T25 MySQL tablespace family contract
+
+[T25.json](T25.json) pins the issue-#104 tablespace surface end to end:
+the strict recognizer for the standalone MySQL family the locked TiDB
+grammar cannot parse (`CREATE/ALTER/DROP TABLESPACE`, `CREATE UNDO
+TABLESPACE`, `CREATE/ALTER/DROP LOGFILE GROUP` — memberless creates,
+unsupported `IF` guards, and trailing junk stay parser diagnostics rather
+than half-claims), the eight InnoDB rules
+(`ddl.mysql.tablespace.{create.warn,alter.warn,drop.forbid,applicability}`
+and `ddl.alter.{import,discard}_tablespace.{warn/forbid,applicability}`),
+and the honest-premise contract — an authored non-InnoDB/non-NDB engine,
+a proven pre-8.0 version on undo/encryption members, an InnoDB datafile
+move, a proven-absent ALTER/DROP target, a proven-present CREATE target,
+and a proven-occupied DROP all refuse on evidence while unproven
+existence/occupancy/engine/partition/version premises owe bounded gaps
+(`unknown_tablespace_state`, `unknown_table_state`, `target.version`)
+instead of inferred verdicts. File paths are counted but never retained.
+The NDB/logfile-group family and every TiDB form stay vendor boundaries
+with zero MySQL semantic findings. Metadata cases are `pending_native`
+authorization candidates — provider-backed existence/kind/occupancy
+through the `mysql_tablespace` object seam (INNODB_TABLESPACES +
+INNODB_TABLES association count), including the occupied-drop refusal and
+the proven-absent ALTER refusal.
+
 ## T19 TiDB TTL contract
 
 [T19.json](T19.json) pins the TiDB 8.5 TTL surface end to end: the

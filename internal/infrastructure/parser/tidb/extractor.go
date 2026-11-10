@@ -94,6 +94,18 @@ func (e tidbExtractor) Extract(dialect spec.Dialect, rawSQL string) (spec.Statem
 		applyCoverageBoundary(dialect, &statement, e.node)
 		return statement, nil
 	}
+	if node, ok := e.node.(*mysqlTablespaceStatement); ok {
+		// The MySQL tablespace family: the typed declaration binds as its
+		// own object family — file payloads stay opaque counts (T25/#104).
+		statement.DDL = &spec.DDL{
+			Operation:  node.operation,
+			ObjectType: "tablespace",
+			ObjectName: node.declaration.Name,
+			Tablespace: node.declaration,
+		}
+		applyCoverageBoundary(dialect, &statement, e.node)
+		return statement, nil
+	}
 	if node, ok := e.node.(*viewStatement); ok {
 		if node.declaration.Definition != nil {
 			node.declaration.Definition = spec.SelectViewDefinition(node.declaration.Definition, dialect)
@@ -341,6 +353,8 @@ func classify(stmt ast.StmtNode) spec.Kind {
 		if node.setFor {
 			return spec.KindUnknown
 		}
+		return spec.KindDDL
+	case *mysqlTablespaceStatement:
 		return spec.KindDDL
 	case *ast.InsertStmt,
 		*ast.UpdateStmt,

@@ -1809,6 +1809,13 @@ func (p *Provider) ResolveObject(ctx context.Context, dialect spec.Dialect, requ
 			return snapshot, nil
 		}
 		return p.loadMySQLResourceGroupObject(ctx, request, snapshot)
+	case "mysql_tablespace":
+		if dialect != spec.DialectMySQL {
+			// The InnoDB tablespace catalog is a MySQL surface — never
+			// emit it under another dialect (T25/#104).
+			return snapshot, nil
+		}
+		return p.loadMySQLTablespaceObject(ctx, request, snapshot)
 	}
 	return snapshot, nil
 }
@@ -2009,6 +2016,94 @@ func (p *Provider) loadMySQLResourceGroupObject(ctx context.Context, request spe
 		}
 	}
 	snapshot.MySQLResourceGroup = definition
+	return snapshot, nil
+}
+
+// mysqlTablespaceCatalogSupport observes the server version once and
+// adjudicates the InnoDB tablespace catalog read against it — the
+// information_schema.INNODB_TABLESPACES / INNODB_TABLES pair is an 8.0
+// surface (5.7 carried differently-named INNODB_SYS_* catalogs):
+//
+//   - proven && !supported: the 8.0 catalog cannot exist on this
+//     server — the dedicated query is never issued and the fact stays
+//     unproven.
+//   - proven && supported: the catalog objects must exist — every
+//     query, scan, permission, driver, and cancellation error
+//     propagates (missing-object codes included).
+//   - !proven: the catalog may not exist — the narrow missing-object
+//     degrade stays, never publishing absent facts.
+func mysqlTablespaceCatalogSupport(ctx context.Context, querier mysqlVersionQuerier) (supported bool, proven bool, err error) {
+	var banner string
+	if err := querier.QueryRowContext(ctx, `select version()`).Scan(&banner); err != nil {
+		if err == sql.ErrNoRows {
+			return false, false, nil
+		}
+		return false, false, fmt.Errorf("query server version for tablespace channels: %w", err)
+	}
+	version := spec.ParseObservedVersion(banner)
+	if version == nil || !version.ValidatedRange || version.Product != spec.VersionProductMySQL {
+		return false, false, nil
+	}
+	return version.Major >= 8, true, nil
+}
+
+// loadMySQLTablespaceObject resolves one MySQL tablespace identity
+// through information_schema.INNODB_TABLESPACES plus the bounded
+// bound-table count through INNODB_TABLES (T25/#104). A row proves
+// existence; the SPACE_TYPE member maps the proven kind (general/undo —
+// an authored name never collides with a file-per-table `db/table`
+// identity); the bound-table count proves occupancy in both directions
+// — the InnoDB table catalog gates on the PROCESS privilege at query
+// level rather than row filtering, so a clean read is the complete
+// bound set and a failed read propagates rather than degrading into an
+// unoccupied claim. A zero-row answer on the identity row stays unknown
+// rather than fabricating absence. Query, scan, and driver errors
+// propagate wrapped with identity context and are never cached.
+func (p *Provider) loadMySQLTablespaceObject(ctx context.Context, request spec.ObjectLookupRequest, snapshot *spec.ObjectSnapshot) (*spec.ObjectSnapshot, error) {
+	supported, proven, err := mysqlTablespaceCatalogSupport(ctx, p.db)
+	if err != nil {
+		return nil, err
+	}
+	if proven && !supported {
+		return snapshot, nil
+	}
+	row := p.db.QueryRowContext(ctx, `
+		select space, space_type
+		from information_schema.innodb_tablespaces
+		where name = ?
+	`, request.Name)
+	var spaceID sql.NullInt64
+	var spaceType sql.NullString
+	if err := row.Scan(&spaceID, &spaceType); err != nil {
+		if err == sql.ErrNoRows || (isMySQLMissingObjectError(err) && !proven) {
+			return snapshot, nil
+		}
+		return nil, fmt.Errorf("query mysql tablespace snapshot %s: %w", request.Name, err)
+	}
+	snapshot.Status = spec.MetadataStatusConfirmed
+	snapshot.Exists = true
+	state := &spec.TablespaceState{}
+	if spaceType.Valid {
+		switch strings.ToLower(strings.TrimSpace(spaceType.String)) {
+		case "general":
+			state.Kind = spec.TablespaceKindGeneral
+		case "undo":
+			state.Kind = spec.TablespaceKindUndo
+		}
+	}
+	if spaceID.Valid {
+		var bound int64
+		if err := p.db.QueryRowContext(ctx, `
+			select count(*)
+			from information_schema.innodb_tables
+			where space = ?
+		`, spaceID.Int64).Scan(&bound); err != nil {
+			return nil, fmt.Errorf("query bound tables for tablespace %s: %w", request.Name, err)
+		}
+		occupied := bound > 0
+		state.Occupied = &occupied
+	}
+	snapshot.Tablespace = state
 	return snapshot, nil
 }
 

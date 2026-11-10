@@ -43,9 +43,11 @@ const (
 )
 
 // tidbRefusedPartitionActions is the probed TiDB v8.5 8200 refusal set —
-// every named maintenance op. The warn rules suppress under the TiDB
-// dialect and the applicability/target rules never apply there; the
-// vendor aspect in coverage carries the boundary evidence.
+// every named maintenance op plus the whole-table tablespace forms, which
+// TiDB refuses at the same vendor boundary (the InnoDB transportable
+// tablespace contract does not exist there). The warn rules suppress under
+// the TiDB dialect and the applicability/target rules never apply there;
+// the vendor aspect in coverage carries the boundary evidence.
 var tidbRefusedPartitionActions = map[string]bool{
 	"rebuild_partition":            true,
 	"check_partitions":             true,
@@ -53,6 +55,8 @@ var tidbRefusedPartitionActions = map[string]bool{
 	"repair_partition":             true,
 	"import_partition_tablespace":  true,
 	"discard_partition_tablespace": true,
+	"import_tablespace":            true,
+	"discard_tablespace":           true,
 }
 
 // partitionRangeFamily / partitionListFamily / partitionHashKeyFamily are
@@ -280,6 +284,20 @@ func (r tidbVendorGatedRule) Evaluate(ctx context.Context, statement spec.Statem
 		return nil, nil
 	}
 	return r.StatementRule.Evaluate(ctx, statement)
+}
+
+// EvidenceGaps forwards the wrapped rule's evidence reporting when it
+// implements EvidenceReporter — the embedded interface's method set would
+// otherwise drop it, and an unobserved premise must still surface under
+// the same vendor gate as the findings.
+func (r tidbVendorGatedRule) EvidenceGaps(statement spec.Statement) []rule.EvidenceGap {
+	if !r.AppliesTo(statement) {
+		return nil
+	}
+	if reporter, ok := r.StatementRule.(rule.EvidenceReporter); ok {
+		return reporter.EvidenceGaps(statement)
+	}
+	return nil
 }
 
 // partitionTopologyApplicabilityRule binds one T14 action to the proven

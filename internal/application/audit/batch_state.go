@@ -110,10 +110,18 @@ type batchState struct {
 	// each MySQL resource-group identity — a parallel of the TiDB
 	// registry under the version capability premise (T24/#103).
 	mysqlResourceGroupEntries map[string]*batchMySQLResourceGroupEntry
+	// tablespaceEntries holds the batch's ordered knowledge of MySQL
+	// tablespace identities — globally namespaced objects keyed by
+	// lowercase name (T25/#104).
+	tablespaceEntries map[string]*batchTablespaceEntry
 	// mysqlResourceGroupResolver is the same once-per-request
 	// objectCache-backed lookup as resourceGroupResolver for the MySQL
 	// family. Nil falls back to the provider's ObjectResolver.
 	mysqlResourceGroupResolver func(ctx context.Context, lookup spec.ObjectLookupRequest) (*spec.ObjectSnapshot, error)
+	// tablespaceResolver is the same once-per-request objectCache-backed
+	// lookup for the MySQL tablespace family (T25/#104). Nil falls back
+	// to the provider's ObjectResolver.
+	tablespaceResolver func(ctx context.Context, lookup spec.ObjectLookupRequest) (*spec.ObjectSnapshot, error)
 	// resolvedVersion is the request's already-parsed version fact. Rules read
 	// the same fact from statement metadata. apply still receives the original
 	// statement, so RENAME COLUMN applicability reads this copy. Nil means the
@@ -159,6 +167,7 @@ func newBatchState(dialect spec.Dialect, schema string, provider MetadataProvide
 		sequenceEntries:           make(map[sequenceKey]*batchSequenceEntry),
 		resourceGroupEntries:      make(map[string]*batchResourceGroupEntry),
 		mysqlResourceGroupEntries: make(map[string]*batchMySQLResourceGroupEntry),
+		tablespaceEntries:         make(map[string]*batchTablespaceEntry),
 	}
 }
 
@@ -499,6 +508,9 @@ func (s *batchState) apply(ctx context.Context, statement spec.Statement) error 
 			return s.applyMySQLResourceGroupStatement(ctx, statement)
 		}
 		return s.applyResourceGroupStatement(ctx, statement)
+	case spec.DDLOperationCreateTablespace, spec.DDLOperationAlterTablespace,
+		spec.DDLOperationDropTablespace:
+		return s.applyTablespaceStatement(ctx, statement)
 	case spec.DDLOperationSplitRegion, spec.DDLOperationCompactTable:
 		// Neither statement moves a catalog fact: region scatter and
 		// replica compaction leave identity, columns, indexes, and every
@@ -1855,6 +1867,9 @@ func (s *batchState) applyAlterTable(ctx context.Context, statement spec.Stateme
 	case "order_by_columns", "force", "enable_keys", "disable_keys":
 		s.applyMaintenanceAlter(alter, targets)
 		return nil
+	case "discard_tablespace", "import_tablespace":
+		s.applyTablespaceAlter(alter, targets)
+		return nil
 	}
 	if isPartitionAlterAction(alter.Action) {
 		s.applyPartitionOperation(targets, alter, statement)
@@ -1980,6 +1995,38 @@ func (s *batchState) applyMaintenanceAlter(alter *spec.Alter, targets []spec.Tab
 	}
 	key := s.keyFor(s.schema, targets[0])
 	s.publishExecutedAlter(key, s.entries[key], targets)
+}
+
+// applyTablespaceAlter models the whole-table InnoDB tablespace moves
+// (T25): a proven native refusal — a partitioned target or a non-InnoDB
+// engine — keeps the exact pre-state, and every other premise detaches or
+// attaches the data file, so the row-bearing statistics the move touches
+// can no longer vouch while the structural shape stays. TiDB refuses the
+// actions at the vendor boundary, so nothing transitions there.
+func (s *batchState) applyTablespaceAlter(alter *spec.Alter, targets []spec.Table) {
+	if s.dialect == spec.DialectTiDB || len(targets) == 0 {
+		return
+	}
+	key := s.keyFor(s.schema, targets[0])
+	entry := s.entries[key]
+	if entry == nil || entry.state != tablePresent || entry.shape == nil {
+		return
+	}
+	shape := entry.shape
+	if shape.Partitioned != nil && *shape.Partitioned {
+		// The whole-table form refuses on a partitioned target — the
+		// members keep their exact pre-state.
+		return
+	}
+	if shape.Options != nil {
+		if engine, ok := shape.Options["engine"]; ok && engine != "" && !strings.EqualFold(engine, "innodb") {
+			return
+		}
+	}
+	next := cloneTableSnapshot(shape)
+	clearMutationStats(next)
+	clearModifyAffectedStats(next)
+	s.entries[key] = &batchTableEntry{state: tablePresent, shape: next, displaySchema: entry.displaySchema, displayTable: entry.displayTable}
 }
 
 // publishExecutedAlter publishes the existence-only successor every

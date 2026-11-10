@@ -45,6 +45,12 @@ func (p *Parser) Parse(ctx context.Context, sql string) (Result, error) {
 	// diagnostics (T24/#103).
 	if rg, ok := parseMySQLResourceGroup(sql); ok {
 		parsed, warns = []ast.StmtNode{rg}, nil
+	} else if ts, tsOK := parseMySQLTablespace(sql); tsOK {
+		// The MySQL tablespace family — CREATE/ALTER/DROP TABLESPACE,
+		// UNDO TABLESPACE, LOGFILE GROUP — is claimed whole-input before
+		// the structural paths; anything ambiguous falls through so the
+		// real grammar owns the diagnostics (T25/#104).
+		parsed, warns = []ast.StmtNode{ts}, nil
 	} else if header, viewHeaderOK := parseViewHeader(sql); viewHeaderOK && (header.operation == spec.DDLOperationAlterView || header.declaration.CheckBare) {
 		if view, viewWarns, ok := parseViewAdapter(ctx, sql); ok {
 			parsed, warns = []ast.StmtNode{view}, viewWarns

@@ -520,6 +520,17 @@ rules:
     params:
       forbid: true
 
+  ddl.alter.discard_tablespace.applicability:
+    enabled: true
+    level: blocker
+    params:
+
+  ddl.alter.discard_tablespace.forbid:
+    enabled: true
+    level: blocker
+    params:
+      forbid: true
+
   ddl.alter.import_partition_tablespace.applicability:
     enabled: true
     level: blocker
@@ -531,6 +542,16 @@ rules:
     params:
 
   ddl.alter.import_partition_tablespace.warn:
+    enabled: true
+    level: warning
+    params:
+
+  ddl.alter.import_tablespace.applicability:
+    enabled: true
+    level: blocker
+    params:
+
+  ddl.alter.import_tablespace.warn:
     enabled: true
     level: warning
     params:
@@ -1126,6 +1147,27 @@ rules:
     enabled: true
     level: warning
     params:
+
+  ddl.mysql.tablespace.alter.warn:
+    enabled: true
+    level: warning
+    params:
+
+  ddl.mysql.tablespace.applicability:
+    enabled: true
+    level: blocker
+    params:
+
+  ddl.mysql.tablespace.create.warn:
+    enabled: true
+    level: warning
+    params:
+
+  ddl.mysql.tablespace.drop.forbid:
+    enabled: true
+    level: blocker
+    params:
+      forbid: true
 
   ddl.tidb.table.auto_random.valid:
     enabled: true

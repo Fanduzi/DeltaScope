@@ -2,6 +2,8 @@
 package tidbparser
 
 import (
+	"strings"
+
 	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
 	"github.com/pingcap/tidb/pkg/parser/ast"
 )
@@ -19,6 +21,23 @@ func applyCoverageBoundary(dialect spec.Dialect, statement *spec.Statement, node
 		return
 	}
 	if statement.DDL != nil {
+		if statement.DDL.Tablespace != nil && dialect == spec.DialectMySQL {
+			// The LOGFILE GROUP family and every NDB-declared member are
+			// NDB-only semantics — an engine boundary under MySQL, never
+			// an audited InnoDB-tablespace verdict (T25/#104).
+			decl := statement.DDL.Tablespace
+			if decl.Kind == spec.TablespaceKindLogfileGroup || strings.EqualFold(decl.Engine, "ndb") {
+				metadata := map[string]any{"boundary": "engine"}
+				if decl.Engine != "" {
+					metadata["engine"] = decl.Engine
+				}
+				statement.Unsupported = &spec.UnsupportedDetail{
+					Feature: string(statement.DDL.Operation), Reason: spec.UnsupportedVendorBoundaryReason,
+					Metadata: metadata,
+				}
+				return
+			}
+		}
 		if feature, vendor, ok := dialectBoundaryFeature(dialect, statement.DDL); ok {
 			detail := &spec.UnsupportedDetail{Feature: feature, Reason: boundaryReason(vendor)}
 			if vendor {
@@ -101,6 +120,12 @@ func dialectBoundaryFeature(dialect spec.Dialect, ddl *spec.DDL) (feature string
 		if ddl.MySQLResourceGroup != nil {
 			// MySQL CPU resource-group syntax is not TiDB semantics —
 			// vendor boundary, never an audited create (T24/#103).
+			return string(ddl.Operation), true, true
+		}
+		if ddl.Tablespace != nil {
+			// The whole MySQL tablespace family — data files, undo
+			// tablespaces, LOGFILE GROUP — is not TiDB semantics:
+			// vendor boundary, never an audited verdict (T25/#104).
 			return string(ddl.Operation), true, true
 		}
 		switch ddl.Operation {

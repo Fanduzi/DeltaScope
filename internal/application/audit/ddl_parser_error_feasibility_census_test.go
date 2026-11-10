@@ -82,7 +82,7 @@ func assertParserErrorFeasibilityCase(t *testing.T, tc ddlParserErrorFeasibility
 	}
 }
 
-// --- MySQL parser-error feasibility cases (12) ---
+// --- MySQL parser-error feasibility cases (9) ---
 
 var mysqlParserErrorFeasibilityCases = []ddlParserErrorFeasibilityCase{
 	{Dialect: spec.DialectMySQL, Family: "routine", Name: "ALTER PROCEDURE",
@@ -121,18 +121,6 @@ var mysqlParserErrorFeasibilityCases = []ddlParserErrorFeasibilityCase{
 		SQL:      "DROP EVENT e_cleanup",
 		Expected: unsafeFallbackDefer,
 		Reason:   "Consistent with event lifecycle; parser upgrade path preferred"},
-	{Dialect: spec.DialectMySQL, Family: "tablespace", Name: "CREATE TABLESPACE",
-		SQL:      "CREATE TABLESPACE ts1 ADD DATAFILE 'ts1.ibd'",
-		Expected: parserUpgradeCandidate,
-		Reason:   "Standard MySQL 8.0 DDL with bounded structure; TiDB parser may add support in future version"},
-	{Dialect: spec.DialectMySQL, Family: "tablespace", Name: "ALTER TABLESPACE",
-		SQL:      "ALTER TABLESPACE ts1 ADD DATAFILE 'ts2.ibd'",
-		Expected: parserUpgradeCandidate,
-		Reason:   "Standard MySQL 8.0 DDL with bounded structure; TiDB parser may add support"},
-	{Dialect: spec.DialectMySQL, Family: "tablespace", Name: "DROP TABLESPACE",
-		SQL:      "DROP TABLESPACE ts1",
-		Expected: parserUpgradeCandidate,
-		Reason:   "Standard MySQL 8.0 DDL with bounded structure; TiDB parser may add support"},
 }
 
 // --- TiDB parser-error feasibility cases (8) ---
@@ -229,8 +217,8 @@ func TestDDLParserErrorFeasibilityCensus(t *testing.T) {
 			tidbCount++
 		}
 	}
-	if mysqlCount != 12 {
-		t.Errorf("expected 12 MySQL parser-error cases, got %d", mysqlCount)
+	if mysqlCount != 9 {
+		t.Errorf("expected 9 MySQL parser-error cases, got %d", mysqlCount)
 	}
 	if tidbCount != 8 {
 		t.Errorf("expected 8 TiDB parser-error cases, got %d", tidbCount)

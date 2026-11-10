@@ -118,6 +118,19 @@ func corpusRuleDialectTargets(ruleID string) []string {
 		"ddl.mysql.resource_group.affinity.warn",
 		"ddl.mysql.resource_group.priority.warn":
 		return []string{"mysql"}
+	// T25: the MySQL tablespace family and the whole-table
+	// DISCARD/IMPORT TABLESPACE actions only evaluate under MySQL —
+	// under TiDB every form is a vendor boundary.
+	case
+		"ddl.mysql.tablespace.create.warn",
+		"ddl.mysql.tablespace.alter.warn",
+		"ddl.mysql.tablespace.drop.forbid",
+		"ddl.mysql.tablespace.applicability",
+		"ddl.alter.import_tablespace.warn",
+		"ddl.alter.discard_tablespace.forbid",
+		"ddl.alter.import_tablespace.applicability",
+		"ddl.alter.discard_tablespace.applicability":
+		return []string{"mysql"}
 	}
 	if strings.HasPrefix(ruleID, "ddl.pg.") || isPostgreSQLOnlyRule(ruleID) {
 		return []string{"postgresql"}

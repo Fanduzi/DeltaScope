@@ -145,6 +145,12 @@ type DDL struct {
 	// on the tidb dialect the whole family is a vendor boundary
 	// (T24/#103).
 	MySQLResourceGroup *MySQLResourceGroupDeclaration `json:"-"`
+	// Tablespace carries the authored MySQL tablespace-family declaration
+	// — CREATE/ALTER/DROP TABLESPACE, UNDO TABLESPACE, LOGFILE GROUP — on
+	// statements the parser adapter recognized as the MySQL grammar
+	// family. File payloads stay opaque (counts only); catalog and
+	// occupancy facts live elsewhere (T25/#104).
+	Tablespace *TablespaceDeclaration `json:"-"`
 }
 
 // TemporaryScope identifies the parsed temporary-table scope on CREATE and
@@ -272,6 +278,12 @@ const (
 	DDLOperationCreateResourceGroup   DDLOperation = "create_resource_group"
 	DDLOperationAlterResourceGroup    DDLOperation = "alter_resource_group"
 	DDLOperationDropResourceGroup     DDLOperation = "drop_resource_group"
+	DDLOperationCreateTablespace      DDLOperation = "create_tablespace"
+	DDLOperationAlterTablespace       DDLOperation = "alter_tablespace"
+	DDLOperationDropTablespace        DDLOperation = "drop_tablespace"
+	DDLOperationCreateLogfileGroup    DDLOperation = "create_logfile_group"
+	DDLOperationAlterLogfileGroup     DDLOperation = "alter_logfile_group"
+	DDLOperationDropLogfileGroup      DDLOperation = "drop_logfile_group"
 
 	DDLOperationAlterIndex            DDLOperation = "alter_index"
 	DDLOperationAlterMaterializedView DDLOperation = "alter_materialized_view"

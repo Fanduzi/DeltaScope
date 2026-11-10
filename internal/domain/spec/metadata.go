@@ -80,6 +80,11 @@ type Metadata struct {
 	// group name. The version/privilege/host-cpu premises live in
 	// Instance and evidence gaps — never guessed (T24/#103).
 	MySQLResourceGroups map[string]*MySQLResourceGroupState `json:"mysql_resource_groups,omitempty"`
+	// Tablespaces binds each MySQL tablespace identity the statement
+	// touches to its ordered pre-state, keyed by lowercase name — the
+	// occupancy (table association) premise rides beside existence and
+	// stays unknown unless proven (T25/#104).
+	Tablespaces map[string]*TablespaceState `json:"tablespaces,omitempty"`
 }
 
 // MetadataSchemaTarget is the ordered schema binding accessor rules use —
@@ -707,6 +712,11 @@ type ObjectSnapshot struct {
 	// definition — the information_schema.RESOURCE_GROUPS row shape with
 	// MySQL columns (T24/#103).
 	MySQLResourceGroup *MySQLResourceGroupDefinition `json:"-"`
+	// Tablespace carries the provider-proven MySQL tablespace state —
+	// the InnoDB catalog row's kind plus the bounded bound-table
+	// occupancy answer (T25/#104). A nil Occupied member means the
+	// association read never happened — never a proven-empty set.
+	Tablespace *TablespaceState `json:"-"`
 }
 
 // ObjectLookupRequest describes one object to resolve from live metadata.

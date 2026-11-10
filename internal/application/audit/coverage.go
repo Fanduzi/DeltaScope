@@ -74,12 +74,18 @@ var auditedAlterActionsMySQL = map[string]struct{}{
 	"force":            {},
 	"enable_keys":      {},
 	"disable_keys":     {},
+	// T25: whole-table InnoDB tablespace actions — the discard forbid,
+	// import warn, and shared InnoDB-only applicability rules adjudicate
+	// them on MySQL; TiDB refuses them at the vendor boundary below.
+	"import_tablespace":  {},
+	"discard_tablespace": {},
 }
 
 // tidbVendorRefusedAlterActions is the probed TiDB 8200 refusal set:
 // every named maintenance action is a vendor boundary on TiDB v8.5 —
-// the six maintenance partition ops plus FORCE — so the actions are not
-// audited there and emit vendor aspects instead.
+// the six maintenance partition ops, FORCE, and the whole-table
+// InnoDB tablespace forms — so the actions are not audited there
+// and emit vendor aspects instead.
 var tidbVendorRefusedAlterActions = map[string]struct{}{
 	"rebuild_partition":            {},
 	"check_partitions":             {},
@@ -88,6 +94,10 @@ var tidbVendorRefusedAlterActions = map[string]struct{}{
 	"import_partition_tablespace":  {},
 	"discard_partition_tablespace": {},
 	"force":                        {},
+	// T25: TiDB v8.5 refuses the whole-table InnoDB transportable
+	// tablespace forms at the same vendor boundary.
+	"import_tablespace":  {},
+	"discard_tablespace": {},
 }
 
 // auditedAlterActionsTiDB extends the shared audited set with the TiDB

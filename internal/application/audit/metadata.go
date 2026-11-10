@@ -294,6 +294,7 @@ func (state *batchState) enrichStatements(ctx context.Context, request *Metadata
 		state.sequenceResolver = cachedObjectResolver
 		state.resourceGroupResolver = cachedObjectResolver
 		state.mysqlResourceGroupResolver = cachedObjectResolver
+		state.tablespaceResolver = cachedObjectResolver
 	}
 
 	consumed := 0
@@ -511,6 +512,22 @@ func (state *batchState) enrichStatements(ctx context.Context, request *Metadata
 					enriched[i].Metadata = &spec.Metadata{Schema: metadataSchema, Instance: instanceFacts, Version: resolvedVersion}
 				}
 				enriched[i].Metadata.MySQLResourceGroups = groups
+			}
+		}
+
+		// The MySQL tablespace family binds its own ordered registry —
+		// existence and occupancy premises come from the batch's proven
+		// entries only, never guessed (T25/#104).
+		if enriched[i].DDL != nil && enriched[i].DDL.Tablespace != nil && dialect == spec.DialectMySQL {
+			states, tsErr := state.bindTablespaces(ctx, enriched[i])
+			if tsErr != nil {
+				return nil, tsErr
+			}
+			if states != nil {
+				if enriched[i].Metadata == nil {
+					enriched[i].Metadata = &spec.Metadata{Schema: metadataSchema, Instance: instanceFacts, Version: resolvedVersion}
+				}
+				enriched[i].Metadata.Tablespaces = states
 			}
 		}
 

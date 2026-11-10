@@ -317,6 +317,30 @@ func Register(registry *rule.Registry, cfg policy.Policy) error {
 		{ruleID: ruleIDAlterDiscardPartitionTablespaceTarget, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
 			return newDiscardPartitionTablespaceTargetRule(cfg)
 		}},
+		{ruleID: ruleIDAlterImportTablespaceWarn, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newImportTablespaceWarnRule(cfg)
+		}},
+		{ruleID: ruleIDAlterDiscardTablespaceForbid, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newDiscardTablespaceForbidRule(cfg)
+		}},
+		{ruleID: ruleIDAlterImportTablespaceApplicability, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newImportTablespaceApplicabilityRule(cfg)
+		}},
+		{ruleID: ruleIDAlterDiscardTablespaceApplicability, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newDiscardTablespaceApplicabilityRule(cfg)
+		}},
+		{ruleID: ruleIDMySQLTablespaceCreateWarn, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newTablespaceCreateWarnRule(cfg)
+		}},
+		{ruleID: ruleIDMySQLTablespaceAlterWarn, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newTablespaceAlterWarnRule(cfg)
+		}},
+		{ruleID: ruleIDMySQLTablespaceDropForbid, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newTablespaceDropForbidRule(cfg)
+		}},
+		{ruleID: ruleIDMySQLTablespaceApplicability, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newTablespaceApplicabilityRule(cfg)
+		}},
 		{ruleID: ruleIDAlterAddIndexColumnsMaxCount, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
 			return newAlterAddedIndexColumnsMaxCountRule(8, rule.LevelWarning, cfg)
 		}},

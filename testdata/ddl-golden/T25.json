@@ -1,0 +1,1147 @@
+{
+ "task_id": "T25",
+ "issue": 104,
+ "policy_profile": "t25-mysql-tablespace",
+ "description": "T25 MySQL tablespace family (issue #104): standalone CREATE/ALTER/DROP TABLESPACE + CREATE UNDO TABLESPACE + LOGFILE GROUP reachability via the strict recognizer, the eight InnoDB lifecycle/applicability rules, the whole-table DISCARD/IMPORT contract, provider-backed existence/kind/occupancy through the mysql_tablespace object seam, and honest unknown post-state \u2014 NDB/logfile-group members and every TiDB form stay vendor boundaries. The manifest declares expectations only \u2014 it is not a passing-result claim.",
+ "anchors": {
+  "mysql57": {
+   "service": "mysql57",
+   "container": "deltascope-ddl-golden-mysql57",
+   "image": "mysql:5.7.44",
+   "product": "mysql",
+   "version_contains": "5.7.44",
+   "database": "golden",
+   "exec_client": [
+    "mysql",
+    "-uroot",
+    "--default-character-set=utf8mb4"
+   ],
+   "needs_database_create": false,
+   "exec_password_env": "T21_MYSQL_PASSWORD"
+  },
+  "mysql80": {
+   "service": "mysql80",
+   "container": "deltascope-ddl-golden-mysql80",
+   "image": "mysql:8.0.46",
+   "product": "mysql",
+   "version_contains": "8.0.46",
+   "database": "golden",
+   "exec_client": [
+    "mysql",
+    "-uroot",
+    "--default-character-set=utf8mb4"
+   ],
+   "needs_database_create": false,
+   "exec_password_env": "T21_MYSQL_PASSWORD"
+  },
+  "mysql84": {
+   "service": "mysql84",
+   "container": "deltascope-ddl-golden-mysql84",
+   "image": "mysql:8.4.10",
+   "product": "mysql",
+   "version_contains": "8.4.10",
+   "database": "golden",
+   "exec_client": [
+    "mysql",
+    "-uroot",
+    "--default-character-set=utf8mb4"
+   ],
+   "needs_database_create": false,
+   "exec_password_env": "T21_MYSQL_PASSWORD"
+  },
+  "tidb85": {
+   "service": "tidb85",
+   "container": "deltascope-ddl-golden-tidb85",
+   "client_container": "deltascope-ddl-golden-tidb85-client",
+   "client_service": "tidb85-client",
+   "image": "pingcap/tidb:v8.5.0",
+   "product": "tidb",
+   "version_contains": "v8.5.0",
+   "database": "golden",
+   "exec_client": [
+    "mysql",
+    "--protocol=tcp",
+    "-h",
+    "tidb85",
+    "-P",
+    "4000",
+    "-uroot"
+   ],
+   "needs_database_create": true
+  }
+ },
+ "ddl_steps": [
+  {
+   "name": "clear-task-fixture",
+   "sql": "DROP DATABASE IF EXISTS t25fx",
+   "expect_rc": 0,
+   "verify": []
+  },
+  {
+   "name": "seed-fixture-schema",
+   "sql": "CREATE DATABASE t25fx",
+   "expect_rc": 0,
+   "verify": [
+    {
+     "assert": "fixture schema exists",
+     "sql": "SELECT COUNT(*) FROM information_schema.SCHEMATA WHERE SCHEMA_NAME='t25fx'",
+     "expect": "1"
+    }
+   ]
+  }
+ ],
+ "syntax_negative": {
+  "sql": "CREATE TABLESPACE t25fx_bad",
+  "expect": {
+   "error_class": "1064",
+   "forbidden_markers": [
+    "Access denied",
+    "Connection refused",
+    "doesn't exist",
+    "already exists"
+   ]
+  }
+ },
+ "policy": {
+  "enable": {
+   "ddl.mysql.tablespace.create.warn": {
+    "level": "warning"
+   },
+   "ddl.mysql.tablespace.alter.warn": {
+    "level": "warning"
+   },
+   "ddl.mysql.tablespace.drop.forbid": {
+    "level": "blocker",
+    "params": {
+     "forbid": true
+    }
+   },
+   "ddl.mysql.tablespace.applicability": {
+    "level": "blocker"
+   },
+   "ddl.alter.import_tablespace.warn": {
+    "level": "warning"
+   },
+   "ddl.alter.discard_tablespace.forbid": {
+    "level": "blocker",
+    "params": {
+     "forbid": true
+    }
+   },
+   "ddl.alter.import_tablespace.applicability": {
+    "level": "blocker"
+   },
+   "ddl.alter.discard_tablespace.applicability": {
+    "level": "blocker"
+   }
+  }
+ },
+ "cli_cases": [
+  {
+   "id": "mysql-ts-lifecycle",
+   "dialect": "mysql",
+   "sql": "CREATE TABLESPACE ts1 ADD DATAFILE 'f1.ibd' ENGINE=InnoDB;\nALTER TABLESPACE ts1 RENAME TO ts2;\nDROP TABLESPACE ts2 ENGINE=InnoDB;",
+   "policy": "t25-mysql-tablespace",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 3,
+    "findings": 3,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": [
+     "unverified",
+     "complete",
+     "unverified"
+    ],
+    "evidence_gaps": 2,
+    "fail_on_triggered": true,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.mysql.tablespace.create.warn",
+      "level": "warning"
+     },
+     {
+      "index": 1,
+      "rule_id": "ddl.mysql.tablespace.alter.warn",
+      "level": "warning"
+     },
+     {
+      "index": 2,
+      "rule_id": "ddl.mysql.tablespace.drop.forbid",
+      "level": "blocker"
+     }
+    ],
+    "evidence_gap_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.mysql.tablespace.applicability",
+      "reason_code": "unknown_tablespace_state",
+      "required_facts": [
+       "tablespace.existence"
+      ]
+     },
+     {
+      "index": 2,
+      "rule_id": "ddl.mysql.tablespace.applicability",
+      "reason_code": "unknown_tablespace_state",
+      "required_facts": [
+       "tablespace.occupancy"
+      ]
+     }
+    ],
+    "description": "offline chain \u2014 the batch-proven rename object still owes occupancy to the drop"
+   }
+  },
+  {
+   "id": "mysql-drop-forbid",
+   "dialect": "mysql",
+   "sql": "DROP TABLESPACE ts9 ENGINE=InnoDB;",
+   "policy": "t25-mysql-tablespace",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": [
+     "unverified"
+    ],
+    "evidence_gaps": 1,
+    "fail_on_triggered": true,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.mysql.tablespace.drop.forbid",
+      "level": "blocker"
+     }
+    ],
+    "evidence_gap_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.mysql.tablespace.applicability",
+      "reason_code": "unknown_tablespace_state",
+      "required_facts": [
+       "tablespace.existence",
+       "tablespace.occupancy"
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "id": "mysql-engine-refused",
+   "dialect": "mysql",
+   "sql": "CREATE TABLESPACE ts1 ADD DATAFILE 'f.ibd' ENGINE=MyISAM;",
+   "policy": "t25-mysql-tablespace",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 2,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": [
+     "unverified"
+    ],
+    "evidence_gaps": 1,
+    "fail_on_triggered": true,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.mysql.tablespace.create.warn",
+      "level": "warning"
+     },
+     {
+      "index": 0,
+      "rule_id": "ddl.mysql.tablespace.applicability",
+      "level": "blocker"
+     }
+    ],
+    "evidence_gap_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.mysql.tablespace.applicability",
+      "reason_code": "unknown_tablespace_state",
+      "required_facts": [
+       "tablespace.existence"
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "id": "mysql-undo-57-refused",
+   "dialect": "mysql",
+   "sql": "CREATE UNDO TABLESPACE u1 ADD DATAFILE 'u.ibu' ENGINE=InnoDB;",
+   "policy": "t25-mysql-tablespace",
+   "args": [
+    "--fail-on",
+    "blocker",
+    "--target-version",
+    "v5.7.44"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 2,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": [
+     "unverified"
+    ],
+    "evidence_gaps": 1,
+    "fail_on_triggered": true,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.mysql.tablespace.create.warn",
+      "level": "warning"
+     },
+     {
+      "index": 0,
+      "rule_id": "ddl.mysql.tablespace.applicability",
+      "level": "blocker"
+     }
+    ],
+    "evidence_gap_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.mysql.tablespace.applicability",
+      "reason_code": "unknown_tablespace_state",
+      "required_facts": [
+       "tablespace.existence"
+      ]
+     }
+    ],
+    "description": "proven pre-8.0 version refuses the undo surface"
+   }
+  },
+  {
+   "id": "mysql-undo-version-unproven",
+   "dialect": "mysql",
+   "sql": "CREATE UNDO TABLESPACE u1 ADD DATAFILE 'u.ibu' ENGINE=InnoDB;",
+   "policy": "t25-mysql-tablespace",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": [
+     "unverified"
+    ],
+    "evidence_gaps": 1,
+    "fail_on_triggered": false,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.mysql.tablespace.create.warn",
+      "level": "warning"
+     }
+    ],
+    "evidence_gap_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.mysql.tablespace.applicability",
+      "reason_code": "unknown_tablespace_state",
+      "required_facts": [
+       "target.version",
+       "tablespace.existence"
+      ]
+     }
+    ],
+    "description": "unproven version gate owes target.version \u2014 never an inferred verdict"
+   }
+  },
+  {
+   "id": "mysql-encryption-57-refused",
+   "dialect": "mysql",
+   "sql": "CREATE TABLESPACE ts1 ADD DATAFILE 'f.ibd' ENGINE=InnoDB ENCRYPTION='Y';",
+   "policy": "t25-mysql-tablespace",
+   "args": [
+    "--fail-on",
+    "blocker",
+    "--target-version",
+    "v5.7.44"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 2,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": [
+     "unverified"
+    ],
+    "evidence_gaps": 1,
+    "fail_on_triggered": true,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.mysql.tablespace.create.warn",
+      "level": "warning"
+     },
+     {
+      "index": 0,
+      "rule_id": "ddl.mysql.tablespace.applicability",
+      "level": "blocker"
+     }
+    ],
+    "evidence_gap_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.mysql.tablespace.applicability",
+      "reason_code": "unknown_tablespace_state",
+      "required_facts": [
+       "tablespace.existence"
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "id": "mysql-innodb-datafile-refused",
+   "dialect": "mysql",
+   "sql": "ALTER TABLESPACE ts1 ADD DATAFILE 'f2.ibd' ENGINE=InnoDB;",
+   "policy": "t25-mysql-tablespace",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 2,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": [
+     "unverified"
+    ],
+    "evidence_gaps": 1,
+    "fail_on_triggered": true,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.mysql.tablespace.alter.warn",
+      "level": "warning"
+     },
+     {
+      "index": 0,
+      "rule_id": "ddl.mysql.tablespace.applicability",
+      "level": "blocker"
+     }
+    ],
+    "evidence_gap_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.mysql.tablespace.applicability",
+      "reason_code": "unknown_tablespace_state",
+      "required_facts": [
+       "tablespace.existence"
+      ]
+     }
+    ],
+    "description": "ADD/DROP DATAFILE is an NDB-only member \u2014 InnoDB refuses"
+   }
+  },
+  {
+   "id": "mysql-memberless-refused",
+   "dialect": "mysql",
+   "sql": "CREATE TABLESPACE ts1;",
+   "policy": "t25-mysql-tablespace",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 2,
+    "verdict": "",
+    "statements": 0,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 0,
+    "coverage": "incomplete",
+    "statement_coverage": [],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false,
+    "finding_entries": [],
+    "evidence_gap_entries": [],
+    "finding_metadata": [],
+    "unsupported_entries": [],
+    "description": "memberless create is a parser diagnostic \u2014 the recognizer never half-claims"
+   }
+  },
+  {
+   "id": "mysql-logfile-vendor-boundary",
+   "dialect": "mysql",
+   "sql": "CREATE LOGFILE GROUP lg1 ADD UNDOFILE 'u.dat' ENGINE=NDB;",
+   "policy": "t25-mysql-tablespace",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false,
+    "description": "logfile group is an NDB family boundary, not an InnoDB audit"
+   }
+  },
+  {
+   "id": "mysql-ndb-vendor-boundary",
+   "dialect": "mysql",
+   "sql": "CREATE TABLESPACE ts1 ADD DATAFILE 'f.ibd' ENGINE=NDB;",
+   "policy": "t25-mysql-tablespace",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false,
+    "description": "NDB-declared tablespace stays a vendor boundary \u2014 no InnoDB findings"
+   }
+  },
+  {
+   "id": "mysql-discard-forbid",
+   "dialect": "mysql",
+   "sql": "ALTER TABLE t DISCARD TABLESPACE;",
+   "policy": "t25-mysql-tablespace",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": true,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.alter.discard_tablespace.forbid",
+      "level": "blocker"
+     }
+    ],
+    "evidence_gap_entries": []
+   }
+  },
+  {
+   "id": "mysql-import-warn",
+   "dialect": "mysql",
+   "sql": "ALTER TABLE t IMPORT TABLESPACE;",
+   "policy": "t25-mysql-tablespace",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.alter.import_tablespace.warn",
+      "level": "warning"
+     }
+    ],
+    "evidence_gap_entries": []
+   }
+  },
+  {
+   "id": "tidb-tablespace-vendor-boundary",
+   "dialect": "tidb",
+   "sql": "CREATE TABLESPACE ts1 ADD DATAFILE 'f.ibd' ENGINE=InnoDB;",
+   "policy": "t25-mysql-tablespace",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false,
+    "description": "the whole family is a TiDB vendor boundary \u2014 zero MySQL semantics leak"
+   }
+  }
+ ],
+ "metadata_cases": [
+  {
+   "id": "mysql80-ts-lifecycle",
+   "anchor": "mysql80",
+   "dialect": "mysql",
+   "sql": "CREATE TABLESPACE t25fx_ts ADD DATAFILE 't25fx_a.ibd' ENGINE=INNODB;\nALTER TABLESPACE t25fx_ts RENAME TO t25fx_ts2;\nDROP TABLESPACE t25fx_ts2;",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23380,
+    "user": "root",
+    "schema": "t25fx",
+    "password_env": "DS_T25_GOLDEN_PW",
+    "password": "root"
+   },
+   "policy": "t25-mysql-tablespace",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "pending_native": true,
+   "setup": [
+    {
+     "name": "prove-ts-absent",
+     "sql": "SELECT COUNT(*) FROM information_schema.INNODB_TABLESPACES WHERE NAME IN ('t25fx_ts','t25fx_ts2')",
+     "verify": [
+      {
+       "assert": "fixture tablespaces absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.INNODB_TABLESPACES WHERE NAME IN ('t25fx_ts','t25fx_ts2')",
+       "expect": "0"
+      }
+     ],
+     "expect_rc": 0
+    }
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 3,
+    "findings": 3,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete",
+     "complete",
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": true,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.mysql.tablespace.create.warn",
+      "level": "warning"
+     },
+     {
+      "index": 1,
+      "rule_id": "ddl.mysql.tablespace.alter.warn",
+      "level": "warning"
+     },
+     {
+      "index": 2,
+      "rule_id": "ddl.mysql.tablespace.drop.forbid",
+      "level": "blocker"
+     }
+    ],
+    "evidence_gap_entries": [],
+    "description": "provider proves absent \u2192 create publishes unoccupied \u2192 occupancy-aware drop executes"
+   }
+  },
+  {
+   "id": "mysql84-occupied-drop-refused",
+   "anchor": "mysql84",
+   "dialect": "mysql",
+   "sql": "DROP TABLESPACE t25fx_occ;",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23384,
+    "user": "root",
+    "schema": "t25fx",
+    "password_env": "DS_T25_GOLDEN_PW",
+    "password": "root"
+   },
+   "policy": "t25-mysql-tablespace",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "pending_native": true,
+   "setup": [
+    {
+     "name": "seed-occupied-tablespace",
+     "sql": "CREATE TABLESPACE t25fx_occ ADD DATAFILE 't25fx_occ.ibd' ENGINE=INNODB",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "tablespace present",
+       "sql": "SELECT COUNT(*) FROM information_schema.INNODB_TABLESPACES WHERE NAME='t25fx_occ'",
+       "expect": "1"
+      }
+     ]
+    },
+    {
+     "name": "bind-occupant-table",
+     "sql": "CREATE TABLE t25fx.t_occ (a int) ENGINE=INNODB TABLESPACE=t25fx_occ",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "one bound table",
+       "sql": "SELECT COUNT(*) FROM information_schema.INNODB_TABLES WHERE SPACE = (SELECT SPACE FROM information_schema.INNODB_TABLESPACES WHERE NAME='t25fx_occ')",
+       "expect": "1"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 2,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": true,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.mysql.tablespace.applicability",
+      "level": "blocker"
+     },
+     {
+      "index": 0,
+      "rule_id": "ddl.mysql.tablespace.drop.forbid",
+      "level": "blocker"
+     }
+    ],
+    "evidence_gap_entries": [],
+    "description": "a proven-occupied tablespace refuses the drop and preserves the pre-state"
+   }
+  },
+  {
+   "id": "mysql80-absent-alter-refused",
+   "anchor": "mysql80",
+   "dialect": "mysql",
+   "sql": "ALTER TABLESPACE t25fx_ghost RENAME TO t25fx_ghost2;",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23380,
+    "user": "root",
+    "schema": "t25fx",
+    "password_env": "DS_T25_GOLDEN_PW",
+    "password": "root"
+   },
+   "policy": "t25-mysql-tablespace",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "pending_native": true,
+   "setup": [
+    {
+     "name": "prove-ghost-absent",
+     "sql": "SELECT COUNT(*) FROM information_schema.INNODB_TABLESPACES WHERE NAME='t25fx_ghost'",
+     "verify": [
+      {
+       "assert": "ghost absent",
+       "sql": "SELECT COUNT(*) FROM information_schema.INNODB_TABLESPACES WHERE NAME='t25fx_ghost'",
+       "expect": "0"
+      }
+     ],
+     "expect_rc": 0
+    }
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 2,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": true,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.mysql.tablespace.alter.warn",
+      "level": "warning"
+     },
+     {
+      "index": 0,
+      "rule_id": "ddl.mysql.tablespace.applicability",
+      "level": "blocker"
+     }
+    ],
+    "evidence_gap_entries": []
+   }
+  },
+  {
+   "id": "mysql57-undo-refused",
+   "anchor": "mysql57",
+   "dialect": "mysql",
+   "sql": "CREATE UNDO TABLESPACE t25fx_u ADD DATAFILE 't25fx_u.ibu' ENGINE=INNODB;",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23357,
+    "user": "root",
+    "schema": "t25fx",
+    "password_env": "DS_T25_GOLDEN_PW",
+    "password": "root"
+   },
+   "policy": "t25-mysql-tablespace",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "pending_native": true,
+   "setup": [],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 2,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
+    "statement_coverage": [
+     "unverified"
+    ],
+    "evidence_gaps": 1,
+    "fail_on_triggered": true,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.mysql.tablespace.create.warn",
+      "level": "warning"
+     },
+     {
+      "index": 0,
+      "rule_id": "ddl.mysql.tablespace.applicability",
+      "level": "blocker"
+     }
+    ],
+    "evidence_gap_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.mysql.tablespace.applicability",
+      "reason_code": "unknown_tablespace_state",
+      "required_facts": [
+       "tablespace.existence"
+      ]
+     }
+    ],
+    "description": "observed 5.7 banner refuses the undo surface natively"
+   }
+  },
+  {
+   "id": "mysql80-discard-forbid",
+   "anchor": "mysql80",
+   "dialect": "mysql",
+   "sql": "ALTER TABLE t25fx.t_disc DISCARD TABLESPACE;",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23380,
+    "user": "root",
+    "schema": "t25fx",
+    "password_env": "DS_T25_GOLDEN_PW",
+    "password": "root"
+   },
+   "policy": "t25-mysql-tablespace",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "pending_native": true,
+   "setup": [
+    {
+     "name": "seed-innodb-table",
+     "sql": "CREATE TABLE t25fx.t_disc (a int) ENGINE=INNODB",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "table exists",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='t25fx' AND TABLE_NAME='t_disc'",
+       "expect": "1"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": true,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.alter.discard_tablespace.forbid",
+      "level": "blocker"
+     }
+    ],
+    "evidence_gap_entries": []
+   }
+  },
+  {
+   "id": "mysql80-import-warn",
+   "anchor": "mysql80",
+   "dialect": "mysql",
+   "sql": "ALTER TABLE t25fx.t_imp IMPORT TABLESPACE;",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23380,
+    "user": "root",
+    "schema": "t25fx",
+    "password_env": "DS_T25_GOLDEN_PW",
+    "password": "root"
+   },
+   "policy": "t25-mysql-tablespace",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "pending_native": true,
+   "setup": [
+    {
+     "name": "seed-import-table",
+     "sql": "CREATE TABLE t25fx.t_imp (a int) ENGINE=INNODB",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "table exists",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='t25fx' AND TABLE_NAME='t_imp'",
+       "expect": "1"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 0,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.alter.import_tablespace.warn",
+      "level": "warning"
+     }
+    ],
+    "evidence_gap_entries": []
+   }
+  },
+  {
+   "id": "mysql80-myisam-discard-refused",
+   "anchor": "mysql80",
+   "dialect": "mysql",
+   "sql": "ALTER TABLE t25fx.t_my DISCARD TABLESPACE;",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 23380,
+    "user": "root",
+    "schema": "t25fx",
+    "password_env": "DS_T25_GOLDEN_PW",
+    "password": "root"
+   },
+   "policy": "t25-mysql-tablespace",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "pending_native": true,
+   "setup": [
+    {
+     "name": "seed-myisam-table",
+     "sql": "CREATE TABLE t25fx.t_my (a int) ENGINE=MyISAM",
+     "expect_rc": 0,
+     "verify": [
+      {
+       "assert": "myisam table exists",
+       "sql": "SELECT COUNT(*) FROM information_schema.TABLES WHERE TABLE_SCHEMA='t25fx' AND TABLE_NAME='t_my' AND ENGINE='MyISAM'",
+       "expect": "1"
+      }
+     ]
+    }
+   ],
+   "expect": {
+    "exit": 1,
+    "verdict": "reject",
+    "statements": 1,
+    "findings": 2,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "complete",
+    "statement_coverage": [
+     "complete"
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": true,
+    "finding_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.alter.discard_tablespace.applicability",
+      "level": "blocker"
+     },
+     {
+      "index": 0,
+      "rule_id": "ddl.alter.discard_tablespace.forbid",
+      "level": "blocker"
+     }
+    ],
+    "evidence_gap_entries": [],
+    "description": "proven MyISAM engine refuses the InnoDB-only action (native 1031)"
+   }
+  },
+  {
+   "id": "tidb85-vendor-boundary",
+   "anchor": "tidb85",
+   "dialect": "mysql",
+   "sql": "CREATE TABLESPACE ts1 ADD DATAFILE 'f.ibd' ENGINE=InnoDB;",
+   "connect": {
+    "host": "127.0.0.1",
+    "port": 24000,
+    "user": "root",
+    "schema": "t25fx"
+   },
+   "policy": "t25-mysql-tablespace",
+   "args": [
+    "--fail-on",
+    "blocker"
+   ],
+   "pending_native": true,
+   "setup": [],
+   "expect": {
+    "exit": 1,
+    "verdict": "review",
+    "statements": 1,
+    "findings": 0,
+    "diagnostics": 1,
+    "unsupported": 1,
+    "coverage": "incomplete",
+    "statement_coverage": [
+     "incomplete"
+    ],
+    "evidence_gaps": 0,
+    "fail_on_triggered": false,
+    "description": "TiDB refuses the whole family at the vendor boundary"
+   }
+  }
+ ],
+ "required_case_ids": [
+  "T25.db.mysql57.ddl",
+  "T25.db.mysql57.syntax_negative",
+  "T25.db.mysql80.ddl",
+  "T25.db.mysql80.syntax_negative",
+  "T25.db.mysql84.ddl",
+  "T25.db.mysql84.syntax_negative",
+  "T25.db.tidb85.ddl",
+  "T25.db.tidb85.syntax_negative",
+  "T25.cli.mysql-ts-lifecycle",
+  "T25.cli.mysql-drop-forbid",
+  "T25.cli.mysql-engine-refused",
+  "T25.cli.mysql-undo-57-refused",
+  "T25.cli.mysql-undo-version-unproven",
+  "T25.cli.mysql-encryption-57-refused",
+  "T25.cli.mysql-innodb-datafile-refused",
+  "T25.cli.mysql-memberless-refused",
+  "T25.cli.mysql-logfile-vendor-boundary",
+  "T25.cli.mysql-ndb-vendor-boundary",
+  "T25.cli.mysql-discard-forbid",
+  "T25.cli.mysql-import-warn",
+  "T25.cli.tidb-tablespace-vendor-boundary",
+  "T25.meta.mysql80-ts-lifecycle",
+  "T25.meta.mysql84-occupied-drop-refused",
+  "T25.meta.mysql80-absent-alter-refused",
+  "T25.meta.mysql57-undo-refused",
+  "T25.meta.mysql80-discard-forbid",
+  "T25.meta.mysql80-import-warn",
+  "T25.meta.mysql80-myisam-discard-refused",
+  "T25.meta.tidb85-vendor-boundary"
+ ]
+}

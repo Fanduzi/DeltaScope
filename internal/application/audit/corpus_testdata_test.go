@@ -130,6 +130,21 @@ type corpusMetadata struct {
 	// Omit the key to leave every MySQL resource-group identity unvouched
 	// (T24/#103).
 	MySQLResourceGroups map[string]corpusMySQLResourceGroupObject `yaml:"mysql_resource_groups,omitempty"`
+	// Tablespaces is the proven MySQL tablespace object set keyed `name` —
+	// the information_schema.INNODB_TABLESPACES existence answer plus the
+	// bounded bound-table occupancy read (T25/#104). Omit the key to
+	// leave every tablespace identity unvouched.
+	Tablespaces map[string]corpusTablespaceObject `yaml:"tablespaces,omitempty"`
+}
+
+// corpusTablespaceObject is the catalog fact for one MySQL tablespace —
+// status is the provenance answer; kind and occupied read only on a
+// confirmed-existing object (omitted members stay unproven).
+type corpusTablespaceObject struct {
+	Status   string `yaml:"status"`
+	Exists   *bool  `yaml:"exists,omitempty"`
+	Kind     string `yaml:"kind,omitempty"`
+	Occupied *bool  `yaml:"occupied,omitempty"`
 }
 
 // corpusResourceGroupObject is the catalog fact for one resource-group
