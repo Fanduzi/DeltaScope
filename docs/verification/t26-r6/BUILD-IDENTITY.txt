@@ -1,0 +1,8 @@
+build cmd: CGO_ENABLED=1 go build -tags postgresql -o bin/deltascope ./cmd/deltascope
+go version: go version go1.26.1 darwin/arm64
+platform: Darwin/arm64
+commit: 16eba8a08fa797549bc8dae428bf75536b0fa385
+tree: a537f033270ed0437380c3ebcc1648ccd2cc50f9
+parent: 716501edf852836bdfb59fae48f9f441a13c24d3
+worktree tracked changes: 0 (untracked dirs pre-existing, listed separately)
+307ffeb0d0ff14b1c4b20a8635506618fddd7c96eaea90742d53ee529923a18b  bin/deltascope

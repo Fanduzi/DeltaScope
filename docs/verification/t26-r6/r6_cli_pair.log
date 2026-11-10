@@ -1,0 +1,13 @@
+argv: deltascope audit --dialect mysql --sql 'DROP SERVER s /* t26-comment-marker' --config /tmp/t26stage/policy.yaml --format json
+exit=2
+stdout:
+{"verdict":"","coverage":{"status":"incomplete"},"summary":{"statements":0,"blockers":0,"warnings":0,"notices":0},"diagnostics":[{"classification":"parser_error","reason":"statement was not audited because the selected dialect parser could not parse it; no audit findings were inferred","action_hint":"verify the selected dialect and syntax, split multi-statement input if needed, or upgrade DeltaScope when parser support becomes available","audited":false,"dialect":"mysql","line":1,"column":1}],"fail_on_triggered":false,"context":{"mode":"offline","dialect":"mysql","dialect_source":"flag","note":"existence not checked (no database connection)","unproven":["column_exists","table_exists"]}}
+stderr:
+statement was not audited because the selected dialect parser could not parse it; no audit findings were inferred
+marker_in_stdout=0 marker_in_stderr=0
+
+argv: deltascope audit --dialect mysql --sql 'DROP SERVER s /* ok */' --config /tmp/t26stage/policy.yaml --format json
+exit=1
+stdout:
+{"verdict":"review","coverage":{"status":"incomplete"},"summary":{"statements":1,"blockers":0,"warnings":0,"notices":0},"statements":[{"index":0,"kind":"ddl","raw_sql":"DROP SERVER \u003credacted\u003e","normalized_sql":"DROP SERVER \u003credacted\u003e","coverage":{"status":"incomplete"}}],"unsupported":[{"feature":"drop_server","sql":"DROP SERVER \u003credacted\u003e","reason":"parsed by the shared parser but not covered by audited semantics","metadata":{"boundary":"unaudited","object":"server"}}],"diagnostics":[{"classification":"unsupported_statement","reason":"DeltaScope recognized this statement or feature but does not audit it yet","action_hint":"treat this statement as not covered by DeltaScope policy checks; review it manually or track support in a future DeltaScope release","audited":false,"dialect":"mysql"}],"fail_on_triggered":false,"context":{"mode":"offline","dialect":"mysql","dialect_source":"flag","note":"existence not checked (no database connection)","unproven":["column_exists","table_exists"]}}
+stderr:

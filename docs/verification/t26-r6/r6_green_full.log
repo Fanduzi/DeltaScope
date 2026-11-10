@@ -1,0 +1,43 @@
+# green run cmd: go test ./internal/infrastructure/parser/tidb/ -run 'TestT26R6' -count=1 -v (on 16eba8a0)
+=== RUN   TestT26R6BlockCommentClosure
+=== PAUSE TestT26R6BlockCommentClosure
+=== CONT  TestT26R6BlockCommentClosure
+=== RUN   TestT26R6BlockCommentClosure/server_drop_unclosed
+=== RUN   TestT26R6BlockCommentClosure/server_alter_unclosed
+=== RUN   TestT26R6BlockCommentClosure/server_create_unclosed
+=== RUN   TestT26R6BlockCommentClosure/server_mid_unclosed
+=== RUN   TestT26R6BlockCommentClosure/srs_create_unclosed
+=== RUN   TestT26R6BlockCommentClosure/srs_drop_unclosed
+=== RUN   TestT26R6BlockCommentClosure/rotate_unclosed
+=== RUN   TestT26R6BlockCommentClosure/server_drop_closed
+=== RUN   TestT26R6BlockCommentClosure/server_alter_closed
+=== RUN   TestT26R6BlockCommentClosure/server_create_closed
+=== RUN   TestT26R6BlockCommentClosure/srs_create_closed
+=== RUN   TestT26R6BlockCommentClosure/srs_drop_closed
+=== RUN   TestT26R6BlockCommentClosure/rotate_closed
+=== RUN   TestT26R6BlockCommentClosure/server_options_string_holds_marker_pair
+=== RUN   TestT26R6BlockCommentClosure/srs_attr_string_holds_marker_pair
+--- PASS: TestT26R6BlockCommentClosure (0.00s)
+    --- PASS: TestT26R6BlockCommentClosure/server_drop_unclosed (0.00s)
+    --- PASS: TestT26R6BlockCommentClosure/server_alter_unclosed (0.00s)
+    --- PASS: TestT26R6BlockCommentClosure/server_create_unclosed (0.00s)
+    --- PASS: TestT26R6BlockCommentClosure/server_mid_unclosed (0.00s)
+    --- PASS: TestT26R6BlockCommentClosure/srs_create_unclosed (0.00s)
+    --- PASS: TestT26R6BlockCommentClosure/srs_drop_unclosed (0.00s)
+    --- PASS: TestT26R6BlockCommentClosure/rotate_unclosed (0.00s)
+    --- PASS: TestT26R6BlockCommentClosure/server_drop_closed (0.00s)
+    --- PASS: TestT26R6BlockCommentClosure/server_alter_closed (0.00s)
+    --- PASS: TestT26R6BlockCommentClosure/server_create_closed (0.00s)
+    --- PASS: TestT26R6BlockCommentClosure/srs_create_closed (0.00s)
+    --- PASS: TestT26R6BlockCommentClosure/srs_drop_closed (0.00s)
+    --- PASS: TestT26R6BlockCommentClosure/rotate_closed (0.00s)
+    --- PASS: TestT26R6BlockCommentClosure/server_options_string_holds_marker_pair (0.00s)
+    --- PASS: TestT26R6BlockCommentClosure/srs_attr_string_holds_marker_pair (0.00s)
+PASS
+ok  	github.com/Fanduzi/DeltaScope/internal/infrastructure/parser/tidb	0.764s
+go_test_exit=0
+=== RUN   TestT26R6_UnclosedBlockCommentDiagnosticPath
+--- PASS: TestT26R6_UnclosedBlockCommentDiagnosticPath (0.00s)
+PASS
+ok  	github.com/Fanduzi/DeltaScope/internal/application/audit	2.377s
+go_test_exit=0

@@ -1,0 +1,24 @@
+PASS T26.cli.mysql-create-server-golden 
+PASS T26.cli.mysql-alter-server 
+PASS T26.cli.mysql-drop-server 
+PASS T26.cli.mysql-drop-server-if-exists 
+PASS T26.cli.tidb-create-server 
+PASS T26.cli.mysql-create-server-reject-trailing 
+PASS T26.cli.mysql-create-server-missing-fdw 
+PASS T26.cli.mysql-server-mixed-batch 
+PASS T26.cli.mysql-create-srs 
+PASS T26.cli.mysql-create-srs-ine 
+PASS T26.cli.mysql-create-srs-or-replace 
+PASS T26.cli.mysql-create-srs-bare 
+PASS T26.cli.mysql-drop-srs 
+PASS T26.cli.mysql-drop-srs-if-exists 
+PASS T26.cli.tidb-create-srs 
+PASS T26.cli.mysql-srs-negative-srid 
+PASS T26.cli.mysql-srs-overflow-srid 
+PASS T26.cli.mysql-srs-or-replace-ine 
+PASS T26.cli.mysql-alter-instance-reload-tls 
+PASS T26.cli.mysql-alter-instance-reload-tls-nrb 
+PASS T26.cli.mysql-alter-instance-rotate 
+PASS T26.cli.tidb-alter-instance-rotate 
+PASS T26.cli.tidb-alter-instance-reload-tls 
+23/23 cli cases passed

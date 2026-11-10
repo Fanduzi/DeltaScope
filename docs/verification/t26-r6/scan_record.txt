@@ -1,0 +1,32 @@
+# R6 product scan record (run 16eba8a0 / binary 307ffeb0)
+cmd per file: grep -q -F -e golden-secret -e 192.0.2.1 -e s3cret-t26 -e WKT-SHOULD-NOT-LEAK <file>
+classification: exit=0 -> HIT (marker found = leak); exit=1 -> clean (no match); exit>=2 or launch failure -> ERROR (counted as failure)
+scope: 23 case JSONs + sample_markdown.out + sample_markdown.err
+excluded: controls/ (positive controls), INPUTS (T26.json/policy.yaml/harness), receipts
+
+## per-file results
+clean: cases/T26.cli.mysql-alter-instance-reload-tls-nrb.json (exit=1)
+clean: cases/T26.cli.mysql-alter-instance-reload-tls.json (exit=1)
+clean: cases/T26.cli.mysql-alter-instance-rotate.json (exit=1)
+clean: cases/T26.cli.mysql-alter-server.json (exit=1)
+clean: cases/T26.cli.mysql-create-server-golden.json (exit=1)
+clean: cases/T26.cli.mysql-create-server-missing-fdw.json (exit=1)
+clean: cases/T26.cli.mysql-create-server-reject-trailing.json (exit=1)
+clean: cases/T26.cli.mysql-create-srs-bare.json (exit=1)
+clean: cases/T26.cli.mysql-create-srs-ine.json (exit=1)
+clean: cases/T26.cli.mysql-create-srs-or-replace.json (exit=1)
+clean: cases/T26.cli.mysql-create-srs.json (exit=1)
+clean: cases/T26.cli.mysql-drop-server-if-exists.json (exit=1)
+clean: cases/T26.cli.mysql-drop-server.json (exit=1)
+clean: cases/T26.cli.mysql-drop-srs-if-exists.json (exit=1)
+clean: cases/T26.cli.mysql-drop-srs.json (exit=1)
+clean: cases/T26.cli.mysql-server-mixed-batch.json (exit=1)
+clean: cases/T26.cli.mysql-srs-negative-srid.json (exit=1)
+clean: cases/T26.cli.mysql-srs-or-replace-ine.json (exit=1)
+clean: cases/T26.cli.mysql-srs-overflow-srid.json (exit=1)
+clean: cases/T26.cli.tidb-alter-instance-reload-tls.json (exit=1)
+clean: cases/T26.cli.tidb-alter-instance-rotate.json (exit=1)
+clean: cases/T26.cli.tidb-create-server.json (exit=1)
+clean: cases/T26.cli.tidb-create-srs.json (exit=1)
+clean: sample_markdown.out (exit=1)
+clean: sample_markdown.err (exit=1)

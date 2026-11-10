@@ -1,0 +1,54 @@
+# R6 red RECAPTURE run (post-hoc, labeled); cmd: go test ./internal/infrastructure/parser/tidb/ -run 'TestT26R6' -count=1 -v
+# src=716501ed worktree + r6 test files copied in; NOT the original run
+=== RUN   TestT26R6BlockCommentClosure
+=== PAUSE TestT26R6BlockCommentClosure
+=== CONT  TestT26R6BlockCommentClosure
+=== RUN   TestT26R6BlockCommentClosure/server_drop_unclosed
+    mysql_t26r6_test.go:28: unclosed block comment claimed as complete DROP SERVER
+=== RUN   TestT26R6BlockCommentClosure/server_alter_unclosed
+    mysql_t26r6_test.go:33: unclosed block comment claimed as complete ALTER SERVER
+=== RUN   TestT26R6BlockCommentClosure/server_create_unclosed
+    mysql_t26r6_test.go:38: unclosed block comment claimed as complete CREATE SERVER
+=== RUN   TestT26R6BlockCommentClosure/server_mid_unclosed
+=== RUN   TestT26R6BlockCommentClosure/srs_create_unclosed
+    mysql_t26r6_test.go:48: unclosed block comment claimed as complete CREATE SRS
+=== RUN   TestT26R6BlockCommentClosure/srs_drop_unclosed
+    mysql_t26r6_test.go:53: unclosed block comment claimed as complete DROP SRS
+=== RUN   TestT26R6BlockCommentClosure/rotate_unclosed
+    mysql_t26r6_test.go:58: unclosed block comment claimed as complete ROTATE
+=== RUN   TestT26R6BlockCommentClosure/server_drop_closed
+=== RUN   TestT26R6BlockCommentClosure/server_alter_closed
+=== RUN   TestT26R6BlockCommentClosure/server_create_closed
+=== RUN   TestT26R6BlockCommentClosure/srs_create_closed
+=== RUN   TestT26R6BlockCommentClosure/srs_drop_closed
+=== RUN   TestT26R6BlockCommentClosure/rotate_closed
+=== RUN   TestT26R6BlockCommentClosure/server_options_string_holds_marker_pair
+=== RUN   TestT26R6BlockCommentClosure/srs_attr_string_holds_marker_pair
+--- FAIL: TestT26R6BlockCommentClosure (0.00s)
+    --- FAIL: TestT26R6BlockCommentClosure/server_drop_unclosed (0.00s)
+    --- FAIL: TestT26R6BlockCommentClosure/server_alter_unclosed (0.00s)
+    --- FAIL: TestT26R6BlockCommentClosure/server_create_unclosed (0.00s)
+    --- PASS: TestT26R6BlockCommentClosure/server_mid_unclosed (0.00s)
+    --- FAIL: TestT26R6BlockCommentClosure/srs_create_unclosed (0.00s)
+    --- FAIL: TestT26R6BlockCommentClosure/srs_drop_unclosed (0.00s)
+    --- FAIL: TestT26R6BlockCommentClosure/rotate_unclosed (0.00s)
+    --- PASS: TestT26R6BlockCommentClosure/server_drop_closed (0.00s)
+    --- PASS: TestT26R6BlockCommentClosure/server_alter_closed (0.00s)
+    --- PASS: TestT26R6BlockCommentClosure/server_create_closed (0.00s)
+    --- PASS: TestT26R6BlockCommentClosure/srs_create_closed (0.00s)
+    --- PASS: TestT26R6BlockCommentClosure/srs_drop_closed (0.00s)
+    --- PASS: TestT26R6BlockCommentClosure/rotate_closed (0.00s)
+    --- PASS: TestT26R6BlockCommentClosure/server_options_string_holds_marker_pair (0.00s)
+    --- PASS: TestT26R6BlockCommentClosure/srs_attr_string_holds_marker_pair (0.00s)
+FAIL
+FAIL	github.com/Fanduzi/DeltaScope/internal/infrastructure/parser/tidb	1.072s
+FAIL
+go_test_exit=1
+# audit layer:
+=== RUN   TestT26R6_UnclosedBlockCommentDiagnosticPath
+    t26r6_block_comment_test.go:23: diagnostics = [{Classification:unsupported_statement Reason:DeltaScope recognized this statement or feature but does not audit it yet ActionHint:treat this statement as not covered by DeltaScope policy checks; review it manually or track support in a future DeltaScope release Audited:false Dialect:mysql GuidanceCode: EvidenceRef: Line:0 Column:0}], want parser_error on the fixed diagnostic path
+--- FAIL: TestT26R6_UnclosedBlockCommentDiagnosticPath (0.00s)
+FAIL
+FAIL	github.com/Fanduzi/DeltaScope/internal/application/audit	0.587s
+FAIL
+go_test_exit=1
