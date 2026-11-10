@@ -1814,7 +1814,8 @@
      "sql": "ALTER TABLESPACE t25fx_ghost RENAME TO t25fx_ghost2",
      "expect_rc": 1,
      "stderr_contains": [
-      "does not exist"
+      "ERROR 3510 (HY000)",
+      "Tablespace t25fx_ghost doesn't exist."
      ],
      "verify": [
       {
@@ -2259,7 +2260,7 @@
   {
    "id": "tidb85-vendor-boundary",
    "anchor": "tidb85",
-   "dialect": "mysql",
+   "dialect": "tidb",
    "sql": "CREATE TABLESPACE t25fx_ti ADD DATAFILE 'a.ibd' ENGINE=INNODB;",
    "connect": {
     "host": "127.0.0.1",
@@ -2643,7 +2644,8 @@
      "sql": "ALTER TABLESPACE t25fx_ca RENAME TO t25fx_cb",
      "expect_rc": 1,
      "stderr_contains": [
-      "already exists"
+      "ERROR 1813 (HY000)",
+      "Tablespace 't25fx_cb' exists."
      ],
      "verify": [
       {
