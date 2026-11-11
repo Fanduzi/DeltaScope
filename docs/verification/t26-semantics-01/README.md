@@ -28,8 +28,12 @@ and contract record awaiting reviewer adjudication.
   the R4 minimal conservative relation contract — byte-identical or
   registered-ASCII-CI-subset fold-equal ⇒ provably-same, everything
   else unproven, provably-distinct domain empty until a scoped proof
-- current document commit: registered in the delivery receipt for this
-  round — the hash cannot pre-exist inside the commit that creates it
+- R4 revision: `b8a67e7b5f7e62a825adace06113a233240d28df`
+  (tree `787092acc65b51268ff08ab75902545ebcfb7ef4`) — **APPROVED**;
+  acceptance registered in `acceptance.md`
+- `acceptance.md` — the approval record: accepted object identities,
+  what the contract establishes, explicitly-not-accepted items, and
+  the R1–R4 round ledger
 - changed files: this directory only
 - tracked worktree status at commit: clean for tracked paths
   (pre-existing untracked files are unrelated and unstaged)
