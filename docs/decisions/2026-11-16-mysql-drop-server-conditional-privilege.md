@@ -74,11 +74,12 @@ can never diverge.
   or widens identity. The `outcome` vocabulary and the
   `conditional_audit` marker on a statement's own conditional arm
   shipped in `8b52fd55`; the R1 revisions (`d2fb5dba`) added the
-  inherited conditional-source projection — `publishedArm` recorded at
-  publish time, `ServerState.OrderedAbsentConditional`, and
-  `ServerDropAdjudication.ConditionalSource` — so a refusal or guard
-  consuming a conditionally-published absent keeps the marker even
-  when its own premise is suppressed or unproven.
+  inherited conditional-source projection —
+  `ServerState.OrderedAbsentConditional` and
+  `ServerDropAdjudication.ConditionalSource`, propagated from the
+  existing `publishedArm` recorded at publish time — so a refusal or
+  guard consuming a conditionally-published absent keeps the marker
+  even when its own premise is suppressed or unproven.
 - `ServerState.OrderedAbsent` (`json:"-"`, never serialized): set only
   by publish arms (proven drop or convergent `IF EXISTS` absent),
   always implies `Exists=false`, is consumed ahead of any provider or
@@ -120,12 +121,14 @@ state on a single truth — the same shape T24/T25 already use.
   the pre-existing contract on the T26 golden manifest. Relative to
   `3a02f73f` this change set adds the whole conditional-premise surface
   (mode, provider seam, adjudication, `OrderedAbsent`); relative to
-  `8b52fd55`, the R1 revisions (`d2fb5dba`) added the inherited
-  conditional-source marking (`ConditionalSource`,
-  `OrderedAbsentConditional`, `publishedArm`) plus the narrowed
-  guarded/refusal explanations, and findings now carry the `outcome`
-  token and conditional-scope metadata. The R2 corrections are test
-  and documentation only — no product-source change.
+  `8b52fd55`, the R1 revisions (`d2fb5dba`) added
+  `OrderedAbsentConditional` and `ConditionalSource` to propagate the
+  conditional source of an ordered absence, using the existing
+  `publishedArm` recorded at publish time, and narrowed the
+  guarded/refusal explanations. The `outcome` vocabulary and
+  `conditional_audit` marker on a statement's own conditional arm were
+  already present in `8b52fd55`. The R2 corrections are test and
+  documentation only — no product-source change.
 
 ## Deferred / Out Of Scope
 

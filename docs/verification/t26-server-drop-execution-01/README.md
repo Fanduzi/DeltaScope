@@ -18,8 +18,10 @@ semantics, or any later milestone.
 R1 (`d2fb5dba`) carried the product-source revisions: `set_default_role`
 scope terminator, effective-mode merge-then-validate, provider read
 distinctions (query error / zero rows / scan / iteration), bounded
-public wording, and the inherited conditional-source projection
-(`publishedArm`, `OrderedAbsentConditional`, `ConditionalSource`).
+public wording, and the inherited conditional-source projection —
+`OrderedAbsentConditional` and `ConditionalSource`, propagated from the
+existing `publishedArm` recorded at publish time (`publishedArm` itself
+predates R1).
 R2 (`9dad37b8`) is test-and-documentation only — consumer assertions,
 comments, README/ADR corrections; no product-source change.
 
