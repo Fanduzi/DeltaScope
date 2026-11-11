@@ -513,14 +513,104 @@ func TestT26AlterTableChannelIsolation(t *testing.T) {
 	}
 }
 
+// fidelityCloneValue is the test-only lossless deep copy used by the
+// table/schema snapshots (R5 closeout). The product's
+// cloneTableSnapshot is NOT usable here: it normalizes post-state
+// (VisibilityExplicit forced false, append([]string(nil), …)
+// collapsing nil vs non-nil-empty) — correct for its own transition
+// purpose, lossy as a witness. This walk instead:
+//   - visits EVERY field — an unreadable non-zero unexported field or
+//     an unsupported kind (func/chan/unsafe pointer) fails the test
+//    loudly instead of dropping the field silently;
+//   - preserves nil vs non-nil-empty on every slice/map;
+//   - allocates fresh pointers, slices and maps recursively, so the
+//    copy shares no mutable descendant with the source;
+//   - unwraps interface values and clones their concrete payloads —
+//    IdentityOptions' mutable any-values are independently copied,
+//    not just the outer map.
+func fidelityCloneValue(t *testing.T, path string, v reflect.Value) reflect.Value {
+	t.Helper()
+	switch v.Kind() {
+	case reflect.Pointer:
+		if v.IsNil() {
+			return reflect.Zero(v.Type())
+		}
+		out := reflect.New(v.Type().Elem())
+		out.Elem().Set(fidelityCloneValue(t, path+"->"+v.Type().Elem().Name(), v.Elem()))
+		return out
+	case reflect.Interface:
+		if v.IsNil() {
+			return reflect.Zero(v.Type())
+		}
+		inner := fidelityCloneValue(t, path+"{interface}", v.Elem())
+		out := reflect.New(v.Elem().Type()).Elem()
+		out.Set(inner)
+		return out
+	case reflect.Struct:
+		out := reflect.New(v.Type()).Elem()
+		for i := 0; i < v.NumField(); i++ {
+			field := v.Type().Field(i)
+			fv := v.Field(i)
+			if !fv.CanInterface() {
+				if fv.IsZero() {
+					continue
+				}
+				t.Fatalf("fidelity clone: unexported non-zero field at %s.%s cannot be covered", path, field.Name)
+			}
+			out.Field(i).Set(fidelityCloneValue(t, path+"."+field.Name, fv))
+		}
+		return out
+	case reflect.Slice:
+		if v.IsNil() {
+			return reflect.Zero(v.Type())
+		}
+		out := reflect.MakeSlice(v.Type(), v.Len(), v.Len())
+		for i := 0; i < v.Len(); i++ {
+			out.Index(i).Set(fidelityCloneValue(t, path+"[]", v.Index(i)))
+		}
+		return out
+	case reflect.Array:
+		out := reflect.New(v.Type()).Elem()
+		for i := 0; i < v.Len(); i++ {
+			out.Index(i).Set(fidelityCloneValue(t, path+"[]", v.Index(i)))
+		}
+		return out
+	case reflect.Map:
+		if v.IsNil() {
+			return reflect.Zero(v.Type())
+		}
+		out := reflect.MakeMapWithSize(v.Type(), v.Len())
+		for _, key := range v.MapKeys() {
+			out.SetMapIndex(fidelityCloneValue(t, path+"{key}", key),
+				fidelityCloneValue(t, path+"["+key.String()+"]", v.MapIndex(key)))
+		}
+		return out
+	case reflect.Func, reflect.Chan, reflect.UnsafePointer:
+		t.Fatalf("fidelity clone: unsupported kind %s at %s — refusing silent field loss", v.Kind(), path)
+		return reflect.Zero(v.Type())
+	default:
+		// Scalars (bool, ints, floats, string, complex) copy by value.
+		return v
+	}
+}
+
+// fidelityTableSnapshot clones one *spec.TableSnapshot losslessly;
+// nil stays nil.
+func fidelityTableSnapshot(t *testing.T, in *spec.TableSnapshot) *spec.TableSnapshot {
+	t.Helper()
+	if in == nil {
+		return nil
+	}
+	out := fidelityCloneValue(t, "TableSnapshot", reflect.ValueOf(*in)).Interface().(spec.TableSnapshot)
+	return &out
+}
+
 // tableEntrySnapshot is an independent field-value copy of one
 // table-registry entry. The nested *spec.TableSnapshot — the only
-// mutable pointer member — is cloned through the product's own
-// cloneTableSnapshot, which deep-copies every nested pointer, slice,
-// and map (Table, View, Columns, PrimaryKey, Indexes, Constraints,
-// Options, TTL, PartitionPlacements, …), so an in-place rewrite
-// anywhere in the shape graph is detected. shape's nil-ness is
-// preserved as a real absent-vs-empty distinction.
+// mutable pointer member — is cloned through the lossless
+// fidelityTableSnapshot walk above, so an in-place rewrite anywhere
+// in the shape graph is detected. shape's nil-ness is preserved as a
+// real absent-vs-empty distinction.
 type tableEntrySnapshot struct {
 	state         tableKnowledge
 	displaySchema string
@@ -562,14 +652,14 @@ func snapshotTableSchemaState(t *testing.T, s *batchState) tableSchemaSnapshot {
 		snap.entries = make(map[batchTableKey]tableEntrySnapshot, len(s.entries))
 		for k, e := range s.entries {
 			snap.entries[k] = tableEntrySnapshot{state: e.state, displaySchema: e.displaySchema,
-				displayTable: e.displayTable, notView: e.notView, shape: cloneTableSnapshot(e.shape)}
+				displayTable: e.displayTable, notView: e.notView, shape: fidelityTableSnapshot(t, e.shape)}
 		}
 	}
 	if s.tempEntries != nil {
 		snap.tempEntries = make(map[batchTableKey]tableEntrySnapshot, len(s.tempEntries))
 		for k, e := range s.tempEntries {
 			snap.tempEntries[k] = tableEntrySnapshot{state: e.state, displaySchema: e.displaySchema,
-				displayTable: e.displayTable, notView: e.notView, shape: cloneTableSnapshot(e.shape)}
+				displayTable: e.displayTable, notView: e.notView, shape: fidelityTableSnapshot(t, e.shape)}
 		}
 	}
 	if s.schemaEntries != nil {
@@ -834,5 +924,84 @@ func TestT26AlterAM94InternalResolverTermination(t *testing.T) {
 	}
 	if provider.privilegeCalls != 1 || len(provider.calls) != 1 {
 		t.Fatalf("L=%d R=%d, want 1/1 — loader fired at entry, the single resolve is where it died", provider.privilegeCalls, len(provider.calls))
+	}
+}
+
+// R5 distinguishing verification for the fidelity snapshot walk —
+// A: an authored VisibilityExplicit true/false difference is visible;
+// B: nil vs non-nil-empty collections stay distinct; C: the stored
+// snapshot shares no mutable descendant — mutating the source after
+// sampling leaves the snapshot's values untouched, and re-sampling
+// observes the change. Covers the IdentityOptions any-map explicitly.
+func TestT26AlterSnapshotFidelity(t *testing.T) {
+	mk := func() *spec.TableSnapshot {
+		return &spec.TableSnapshot{
+			Schema: "golden", Exists: true,
+			Table:    &spec.Table{Schema: "golden", Name: "t1"},
+			Columns:  []spec.Column{{Name: "id", Type: "int", IdentityOptions: map[string]any{"start": 1, "tags": map[string]any{"a": "b"}}}},
+			Indexes:  []spec.Index{{Name: "ix1", VisibilityExplicit: false}},
+			Options:  map[string]string{"engine": "innodb"},
+			TTL:      &spec.TTLConfig{},
+			PrimaryKey: &spec.Index{Name: "PRIMARY"},
+		}
+	}
+	src := mk()
+	snap := fidelityTableSnapshot(t, src)
+	if !reflect.DeepEqual(src, snap) {
+		t.Fatalf("fidelity clone must equal the source value: %+v vs %+v", src, snap)
+	}
+
+	// A: VisibilityExplicit false→true is a REAL authored difference —
+	// the product clone forced false and would erase it.
+	mut := mk()
+	mut.Indexes[0].VisibilityExplicit = true
+	if reflect.DeepEqual(fidelityTableSnapshot(t, src), fidelityTableSnapshot(t, mut)) {
+		t.Fatalf("VisibilityExplicit true/false difference invisible in snapshot")
+	}
+	if snap.Indexes[0].VisibilityExplicit {
+		t.Fatalf("snapshot must keep the authored false — it was normalized to %v", snap.Indexes[0].VisibilityExplicit)
+	}
+
+	// B: nil slice vs non-nil-empty slice are distinct observed states.
+	nilCols := mk()
+	emptyCols := mk()
+	emptyCols.Columns = []spec.Column{}
+	if reflect.DeepEqual(fidelityTableSnapshot(t, nilCols), fidelityTableSnapshot(t, emptyCols)) {
+		t.Fatalf("nil Columns vs non-nil-empty Columns erased — nilness must survive")
+	}
+	if snap2 := fidelityTableSnapshot(t, emptyCols); snap2.Columns == nil {
+		t.Fatalf("non-nil-empty Columns collapsed to nil")
+	}
+	nilOpts, emptyOpts := mk(), mk()
+	emptyOpts.Options = map[string]string{}
+	if reflect.DeepEqual(fidelityTableSnapshot(t, nilOpts), fidelityTableSnapshot(t, emptyOpts)) {
+		t.Fatalf("nil Options vs non-nil-empty Options erased")
+	}
+
+	// C: independence — every mutable descendant cloned, including the
+	// IdentityOptions any-map's nested mutable payload.
+	src.Indexes[0].VisibilityExplicit = true
+	src.Columns[0].IdentityOptions["start"] = 99
+	src.Columns[0].IdentityOptions["tags"].(map[string]any)["a"] = "MUTATED"
+	src.Options["engine"] = "myisam"
+	src.Columns = append(src.Columns, spec.Column{Name: "added"})
+	src.TTL = nil
+	if snap.Indexes[0].VisibilityExplicit {
+		t.Fatalf("stored snapshot rewrote with source: VisibilityExplicit = true")
+	}
+	if snap.Columns[0].IdentityOptions["start"] != 1 {
+		t.Fatalf("stored snapshot IdentityOptions scalar rewrote: %v", snap.Columns[0].IdentityOptions["start"])
+	}
+	if snap.Columns[0].IdentityOptions["tags"].(map[string]any)["a"] != "b" {
+		t.Fatalf("stored snapshot IdentityOptions nested map rewrote: %v", snap.Columns[0].IdentityOptions["tags"])
+	}
+	if snap.Options["engine"] != "innodb" || len(snap.Columns) != 1 || snap.TTL == nil {
+		t.Fatalf("stored snapshot shares mutable descendants with source")
+	}
+	resample := fidelityTableSnapshot(t, src)
+	if !resample.Indexes[0].VisibilityExplicit || resample.Columns[0].IdentityOptions["start"] != 99 ||
+		resample.Columns[0].IdentityOptions["tags"].(map[string]any)["a"] != "MUTATED" ||
+		resample.Options["engine"] != "myisam" || len(resample.Columns) != 2 || resample.TTL != nil {
+		t.Fatalf("re-sample must observe the source's mutated values: %+v", resample)
 	}
 }
