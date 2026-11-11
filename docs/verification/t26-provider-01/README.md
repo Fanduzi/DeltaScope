@@ -12,7 +12,7 @@ post-state acceptance. Tested candidate: `7c2c1f23`.
 | `red_r2_recapture.log` | labeled five-cell red recapture — new bounded/cache assertions on `471d3d66` product code (not the original 81051e45 run) |
 | `green_provider_t26.log` | raw `-count=1` provider T26 suite output on `7c2c1f23` — 18/18 PASS |
 | `green_packages.log` | raw `-count=1` affected-package output on `7c2c1f23` — mysql metadata + audit packages PASS |
-| `mcp_exit.go` | source-derivation excerpt: real MCP audit error path (`auditSQLWithMetadata` → `toolError(mapAuditToolError(err), err.Error())` → `default: bad_request` → verbatim bounded message in TextContent + StructuredContent) |
+| `mcp_exit.go.txt` | source-derivation excerpt: real MCP audit error path (`auditSQLWithMetadata` → `toolError(mapAuditToolError(err), err.Error())` → `default: bad_request` → verbatim bounded message in TextContent + StructuredContent) |
 
 No historical record was rewritten by this directory; attribution per
 `acceptance.md` §5/§7.

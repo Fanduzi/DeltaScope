@@ -58,7 +58,7 @@ qualifiers, so these stay unused by the current statement path.
 | 4 | `bindMySQLServer` fallback + `loadMySQLServerObject` trimmed the decoded name | `f1ddab3d` / `7c2c1f23` | `decl.Name` / `request.Name` verbatim in unvouched and zero-row states |
 | 5 | Provider/driver/authored payload could reach public error text | `f1ddab3d` | `metadataObjectReadError`: fixed public text `"metadata object read failed"`, `Unwrap()` preserves cause; both seams wrapped (`resolveObjectSnapshot`, `objectResolverFor` fallback) |
 | 6 | application/SDK/HTTP boundary regressions | `f1ddab3d` | sentinel isolation tests at all three surfaces; `errors.Is` chain kept |
-| 7 | CLI/MCP exit source chain | — (source evidence only) | `mcp_exit.go` in this archive |
+| 7 | CLI/MCP exit source chain | — (source evidence only) | `mcp_exit.go.txt` in this archive |
 
 ## 4. This round's provider zero-row RED/GREEN
 
@@ -83,7 +83,7 @@ qualifiers, so these stay unused by the current statement path.
 | R2 five-cell red | `471d3d66` product + new assertions | audit/pkg/http `-run T26` | verbatim recapture, `red_r2_recapture.log` — labeled, not the original run |
 | Provider zero-row red | `f1ddab3d` product + new assertion | single test | verbatim transcript, `red_zero_row.log` |
 | Provider T26 + affected packages green | `7c2c1f23` | provider pkg + audit pkg | raw `-count=1` logs, this archive |
-| MCP/CLI exit chain | `7c2c1f23` source | adapters | source derivation, `mcp_exit.go` |
+| MCP/CLI exit chain | `7c2c1f23` source | adapters | source derivation, `mcp_exit.go.txt` |
 
 The original first RED run on `81051e45` was not saved to disk — that
 absence registration stands; `red_r2_recapture.log` keeps its recapture
