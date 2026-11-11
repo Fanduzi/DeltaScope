@@ -1,10 +1,11 @@
 # T26-SERVER-CREATE-CONTRACT-01 — CREATE SERVER first-slice semantic contract
 
-Status: PROPOSED / Reviewer pending — R2 revision after CHANGES
-REQUIRED on candidate `3ec5f2c3`. Type: docs-only contract
-convergence. This-round baseline: `3ec5f2c3` (tree `9b8ba8ec`),
-branch `milestone/mysql-tidb-ddl-completion`. Parent: T26 / issue
-#105 under issue #79.
+Status: PROPOSED / Reviewer pending — R3 targeted-closure revision
+after CHANGES REQUIRED on candidates `3ec5f2c3` (R1) and `e59f2452`
+(R2). Type: docs-only contract convergence. This-round baseline:
+`e59f2452` (tree `3537f2c9`), branch
+`milestone/mysql-tidb-ddl-completion`. Parent: T26 / issue #105 under
+issue #79.
 
 This contract defines ONE recommended first-implementation domain for
 audited MySQL `CREATE SERVER`: the activation predicate, the exact
@@ -54,11 +55,34 @@ following hold, each with a named exit:
 | G5 | wrapper token is identifier-form AND its spelling ASCII-fold-equals `mysql` | parser declaration + NEW internal fact `WrapperIdent` (registered in G-facts below) | string-literal wrapper spelling or any non-`mysql` spelling → `unaudited` boundary — a coverage decision, never a parse rejection |
 | G6 | statement reached the recognizer whole | existing parser boundary | unknown OPTIONS key, empty option list, malformed member, trailing tokens → base-parser diagnostic (exit 2), unchanged |
 
-G2 details: version is the resolved target/version value the accepted
-premise contract already uses; unknown (no version evidence),
-conflicting (multiple disagreeing sources), and out-of-domain (e.g.
-5.7, 9.x) all fail the gate deterministically — they are *outside the
-supported statement surface*, not unproven-in-domain statements.
+G2 details and **qualification timing** — the version gate sits in
+the second of two phases, because the parser-level boundary has no
+version input:
+
+- Phase 1, parse time (`applyCoverageBoundary`, dialect + parsed node
+  only): shape gates G1, G3, G4, G5, G6 evaluate; failures mark
+  `unaudited` immediately.
+- Phase 2, enrich entry (before the loader gate, before per-statement
+  binding): `resolvedVersion` is already fixed on `batchState` — set
+  at `enrichOrderedStatements` entry from the observed banner when a
+  provider exists, else from the caller's `TargetVersion` pin.
+  Three version conflicts are typed early errors that never reach
+  this gate: `ErrInvalidTargetVersion` (malformed pin),
+  `ErrDialectProductMismatch` (observed product ≠ dialect),
+  `ErrTargetVersionMismatch` (pin ≠ observed banner). An unparseable
+  banner stays missing (`resolvedVersion` nil) — it reaches G2 and
+  fails it. Phase 2 marks every shape-passing but version-failing
+  CREATE `unaudited` with `gate:"version"`, **before** the family
+  loader gate evaluates — so a version-failed statement can never
+  trigger the loader, and the gate's `Unsupported == nil` test keeps
+  its existing meaning: final qualification complete. There is no
+  "skipped as unaudited, qualified later" path: qualification is
+  complete before the loader decision consumes it.
+- G2 therefore fails deterministically on: `resolvedVersion` nil or
+  outside the registered 8.0.x domain — *outside the supported
+  statement surface*, not unproven-in-domain. Conflicting inputs
+  exited earlier as typed errors, so no input can be both "in-domain"
+  and "version-conflicted".
 
 Entering the domain is unconditional: **once the predicate holds, the
 statement is audited.** Privilege mode and provider presence decide
@@ -139,7 +163,15 @@ CREATE consumes the same accepted six-step order (bind position,
    resolver access, no unread reason);
 2. channel taint or relation-scan barrier → bound
    `UnreadReason = server.batch_effects`, early return — steps 1 and
-   2 are the two distinct existing exits, reused verbatim;
+   2 are the two distinct existing exits, reused verbatim.
+   The create adjudication distinguishes them on two separate
+   internal inputs, not on the bound `ServerState` alone: the
+   whole-batch flag reaches the arm table directly as
+   `batchState.contaminated` (the adjudication runs on `batchState`,
+   the same access the ordered apply already has — it is NOT
+   projected through `UnreadReason`, which contamination never sets);
+   the step-2 exits reach it through the bound
+   `UnreadReason = server.batch_effects` field;
 3. ordered channel answers on a provably-same identity — today only
    `OrderedAbsent`; the slice adds `OrderedPresent` as the third
    consumed answer (proposed merged ordered-state scan, entry point
@@ -235,8 +267,14 @@ NEW proposed vocabulary: `ServerCreateArm`, `ServerCreateAdjudication`
   `entry.present=false` — undischarged unknown effect; on a
   provably-same `OrderedAbsent`/`OrderedPresent` identity the ordered
   state is invalidated (the create may have succeeded).
-- Barrier → `entry.barrier=true`, ordered state cleared — the
-  channel already carried the unknown effect.
+- Barrier, **contaminated-batch source** → no entry change at all:
+  `applyServerStatement` already returns before touching entries on
+  `s.contaminated`, and the whole-batch guard keeps blocking every
+  later consumption — clearing entries here would falsely claim a
+  settled effect where none was adjudicated.
+- Barrier, non-contaminated source (taint or relation scan) →
+  `entry.barrier=true`, `entry.absent=false`, `entry.present=false`
+  — the channel's undischarged unknown effect on that identity.
 
 **Invalidation scopes, spelled out:** (a) per-identity — an Unproven
 or unaudited-boundary create on a provably-same identity clears that
@@ -285,6 +323,27 @@ Both → one marker. Neither → no marker. A barrier-shadowed ordered
 source is never consumed, so it never projects a marker. The marker
 never discharges the statement's own owed premise and never claims
 the database executed anything.
+
+**Coverage and verdict projection** (rule enabled, documented default
+levels — the public projection the worked rows imply):
+
+| arm | statement coverage | verdict contribution |
+|---|---|---|
+| ProvenCreate | complete | adds no blocker and no evidence-gap floor |
+| TerminalRefusal | complete | one blocker → batch reject under default level |
+| Unproven | unverified | evidence-gap floor → review |
+| Barrier | unverified | evidence-gap floor → review |
+
+Statement coverage is complete on zero-gap arms and `unverified`
+under any owed fact. Aggregate coverage and the whole-batch verdict
+use the **existing aggregation rules unchanged** — aggregate = min
+over statements; verdict = reject on any blocker, review while gaps
+stand, pass only when every statement is clean. A single CREATE's
+projection never substitutes for the batch result: a contamination
+fixture, for instance, may carry other parse failures or uncovered
+statements whose own coverage/verdict contributions aggregate in —
+the batch outcome derives from the actual fixture, not from this
+row alone.
 
 ## E. Identity relations and cross-statement composition
 
@@ -440,28 +499,39 @@ Grouped per the R2 order; query-count layers asserted separately
 only levels with direct assertions register as covered:
 
 A. **Gate/version rows**: in-domain + provider + no-mode → row 11
-   shape ({existence, create_privilege}, resolver fires);
-   in-domain + no-provider → row 15 shape (0 reads); version
-   unknown / conflict / out-of-domain → `unaudited` + `gate:"version"`;
-   non-MySQL → vendor boundary.
+   shape — fixed premises: clean channel, no ordered answer,
+   successful zero-row catalog, OPTIONS clean → owed exactly
+   {existence, create_privilege}, resolver fires once; a provider
+   returning a proven row instead lands refusal (row 9).
+   in-domain + no-provider → row 15 shape (0 reads). Version rows:
+   unknown (`resolvedVersion` nil) / out-of-domain → `unaudited` +
+   `gate:"version"`; conflict inputs are typed early errors
+   (`ErrInvalidTargetVersion` / `ErrDialectProductMismatch` /
+   `ErrTargetVersionMismatch`) and never reach the gate; non-MySQL →
+   vendor boundary.
 B. **Wrapper forms**: identifier `mysql`/`'mysql'`-literal/other →
    audited / unaudited / unaudited respectively.
 C. **OPTIONS**: PORT 0/3306/9999 in-range → clean; 10000 →
-   out-of-range → `{create_options}`; overflow-length digit run →
-   parser boundary (unchanged); duplicate documented key →
-   `{create_options}`; missing USER/HOST/DATABASE → completeness
+   out-of-range → owed `{create_options}` — fixed premises for the
+   single-fact outcome: same-identity valid `OrderedAbsent` +
+   consumable premise (otherwise the formula owes more);
+   overflow-length digit run → parser boundary (unchanged);
+   duplicate documented key → `{create_options}` under the same
+   fixed premises; missing USER/HOST/DATABASE → completeness
    notice, arm unaffected.
 D. **Dirty-vs-refusal precedence**: proven-present + dirty →
    refusal (owed ∅, blocker); unknown + unproven + dirty → all three
    facts owed.
 E. **Premise edges**: OrderedAbsent + suppressed →
-   `{create_privilege}` only; unread + consumable → `{existence}`
-   only.
+   `{create_privilege}` only — OPTIONS clean fixed; unread +
+   consumable → `{existence}` only — OPTIONS clean fixed.
 F. **Refusal post-state**: OrderedPresent-sourced refusal →
    `OrderedPresent` stands; later CREATE/DROP consume it
-   (refusal/proven-present) with inherited marker; catalog-sourced
-   refusal → no publish; a later statement re-derives via its own
-   read — assert resolver count.
+   (refusal/proven-present) with inherited marker. Catalog-sourced
+   refusal → no publish and no cached present: a later statement
+   re-derives via its own resolver read — fixed premise: no ordered
+   state exists for that identity, so the resolver count shows the
+   fresh read.
 G. **Inherited-marker edges**: conditional `OrderedPresent` consumed
    by a suppressed/unproven-premise CREATE (refusal, marker solely
    inherited) and by a DROP (Unproven `{server.drop_privilege}`,
@@ -469,20 +539,23 @@ G. **Inherited-marker edges**: conditional `OrderedPresent` consumed
 H. **Channel mechanics**: DROP→CREATE→DROP chain; unknown audited
    create invalidating prior `OrderedAbsent`; relation-unproven
    barrier; literal-create channel taint; explicit contaminated-batch
-   path → Barrier arm, `UnreadReason`/unvouched per the step-1/2
-   exits.
-I. **Loader behavior**: CREATE-only request → loader fires once;
-   DROP+CREATE batch → still one observation; loader error → bounded
-   error exit.
+   path → Barrier arm via `batchState.contaminated` (bound unvouched,
+   no `UnreadReason`), entry untouched, aggregate derives from the
+   actual fixture's other statements.
+I. **Loader behavior**: CREATE-only request → loader fires once —
+   fixed premises: mode enabled, provider hook available, version +
+   shape qualification passed; DROP+CREATE batch → still one
+   observation; loader error → bounded error exit.
 J. **Default-path registration**: in-domain create with no
    mode/provider asserts `unverified` + exact owed set (NOT the old
    `unaudited`) — the registered public change.
 
-## Actual checks run this round (R2)
+## Actual checks run this round (R3)
 
 - `git status --short` on tracked files: clean at each commit.
-- `git diff --check`: clean on the R1 candidate (`3ec5f2c3`) —
-  executed and recorded; re-run clean on the R2 candidate at commit.
+- `git diff --check`: executed clean on R1 (`3ec5f2c3`) and R2
+  (`e59f2452`) candidates; re-run clean on the R3 candidate at
+  commit.
 - Source-consistency: every code reference above re-verified against
   the baseline tree (including `bindMySQLServer`'s two distinct early
   exits — contamination → bound unvouched, taint/barrier →

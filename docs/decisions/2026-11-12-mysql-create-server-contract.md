@@ -1,14 +1,15 @@
 # Decision: MySQL CREATE SERVER first-slice contract — shared adjudication + OrderedPresent (T26-SERVER-CREATE-CONTRACT-01)
 
 Date: 2026-11-12
-Status: **PROPOSED / Reviewer pending** — R2 revision after CHANGES
-REQUIRED on candidate `3ec5f2c3`. This record is the contract document
-for a docs-only convergence order; it recommends ONE
-first-implementation domain and records no accepted product behavior.
-Nothing in `internal/`, `pkg/`, or `testdata/` changed under it.
+Status: **PROPOSED / Reviewer pending** — R3 targeted-closure
+revision after CHANGES REQUIRED on candidates `3ec5f2c3` (R1) and
+`e59f2452` (R2). This record is the contract document for a
+docs-only convergence order; it recommends ONE first-implementation
+domain and records no accepted product behavior. Nothing in
+`internal/`, `pkg/`, or `testdata/` changed under it.
 Related milestone/version: issue #105 T26 under parent issue #79
-Related commits: docs-only R1 candidate `3ec5f2c3` (baseline
-`9e21ace9`); R2 revision (this change set)
+Related commits: docs-only candidates `3ec5f2c3` (R1, baseline
+`9e21ace9`), `e59f2452` (R2); R3 revision (this change set)
 Related docs: `docs/verification/t26-server-create-contract-01/`
 (authoritative contract), `docs/decisions/2026-11-16-mysql-drop-server-conditional-privilege.md`
 (accepted DROP sibling)
@@ -41,11 +42,21 @@ unprovable); wrapper is **identifier-form** AND ASCII-fold-equals
 `mysql` (string-literal wrapper spellings and non-`mysql` wrappers
 stay `unaudited` — a coverage decision, never a parse rejection); the
 whole-form recognizer already claimed the statement (unknown options
-keys / trailing tokens stay parser-diagnostic exits). Entering the
-domain is unconditional: mode and provider presence decide only which
-evidence is available — an in-domain CREATE with no mode/provider is
-audited `unverified`, NOT `unaudited`. That is a registered public
-output change of the future candidate.
+keys / trailing tokens stay parser-diagnostic exits). Qualification
+is two-phase: parse-time shape gates (`applyCoverageBoundary`,
+dialect + node only) run first; the version gate runs at enrich
+entry on `batchState.resolvedVersion` — fixed before the loader gate
+and before per-statement binding — so a version-failed statement is
+marked `unaudited`/`gate:"version"` before it could ever trigger the
+loader; malformed pin / product / pin-vs-observed conflicts exit
+earlier as typed errors (`ErrInvalidTargetVersion`,
+`ErrDialectProductMismatch`, `ErrTargetVersionMismatch`) and never
+reach the gate; an unparseable banner reaches G2 as "unknown" and
+fails it. Entering the domain is unconditional: mode and provider
+presence decide only which evidence is available — an in-domain
+CREATE with no mode/provider is audited `unverified`, NOT
+`unaudited`. That is a registered public output change of the future
+candidate.
 
 **Privilege premise.** Same `SUPER` requirement as DROP → reuse the
 approved request-level observation (`observed_account_new_session`,
@@ -87,13 +98,19 @@ entry, clearing its `absent`. Ordered-sourced TerminalRefusal leaves
 the consumed `OrderedPresent` standing — no publish, no barrier.
 Catalog-sourced TerminalRefusal publishes nothing — the only
 OrderedPresent publisher is ProvenCreate, so a catalog-present
-refusal never mints an ordered present. Unproven and Barrier clear
-the entry's ordered state to the barrier shape — an unproven CREATE
+refusal never mints an ordered present. Unproven and
+non-contaminated Barrier sources (taint / relation scan) clear the
+entry's ordered state to the barrier shape — an unproven CREATE
 therefore invalidates a prior `OrderedAbsent` on its provably-same
-identity. Invalidation scopes: per-identity (same-relation writes),
-relation-unproven (barrier before consumption), channel taint
-(literal-name unaudited create clears every entry). A positive
-privilege witness never clears a barrier.
+identity. The contaminated-batch Barrier source touches no entry at
+all (`applyServerStatement` exits before any entry write; the
+whole-batch guard blocks all consumption); the arm reads
+`batchState.contaminated` directly — never projected through
+`UnreadReason`, which contamination doesn't set. Invalidation
+scopes: per-identity (same-relation writes), relation-unproven
+(barrier before consumption), channel taint (literal-name unaudited
+create clears every entry). A positive privilege witness never
+clears a barrier.
 
 **`OrderedPresent` / `OrderedPresentConditional`** (proposed
 first-slice fields — not implemented; `json:"-"`, never serialized):
@@ -113,6 +130,13 @@ consumable premise fed the conclusion OR the arm consumed an ordered
 state carrying conditional source; never projected by a
 barrier-shadowed (unconsumed) source; never discharges the
 statement's own owed premise.
+
+**Coverage/verdict projection** (rule enabled, default levels):
+ProvenCreate/TerminalRefusal → statement coverage `complete`
+(refusal's blocker drives batch `reject`); Unproven/Barrier →
+`unverified` (evidence-gap floor → `review`). Aggregate coverage and
+batch verdict use the existing aggregation rules unchanged — a
+single CREATE's projection never substitutes for the batch result.
 
 **OPTIONS/wrapper internal evidence (proposed, not implemented).**
 `RangeState` per numeric option (`in-range|out-of-range|unproven`)
