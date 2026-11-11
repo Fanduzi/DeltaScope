@@ -92,11 +92,17 @@ func TestT26DropServerPriorBindingImmutable(t *testing.T) {
 	}
 }
 
-// The SERVER channel never reaches the table/schema model — a tracked
-// table binding resolves normally on both sides of the drop.
+// The SERVER channel never reaches the table/schema model — a provable
+// table pre-state (batch-created and provider-vouched alike) stays
+// consumable on the table statement following the SERVER statement.
 func TestT26DropServerTableSiblingsUnaffected(t *testing.T) {
-	provider := &t26Provider{servers: map[string]bool{"s1": true}}
-	enriched := enrichT26(t, "CREATE TABLE t (id int); DROP SERVER s1; DROP TABLE t", spec.DialectMySQL, provider)
+	provider := &t26Provider{
+		servers: map[string]bool{"s1": true},
+		tables:  map[string]*spec.TableSnapshot{"golden.u": presentTable("golden", "u", "k")},
+	}
+	enriched := enrichT26(t,
+		"CREATE TABLE t (id int); DROP SERVER s1; DROP TABLE t; DROP TABLE u",
+		spec.DialectMySQL, provider)
 	if len(provider.calls) != 1 || provider.calls[0].typ != "mysql_server" {
 		t.Fatalf("resolver calls = %+v, want only the server lookup", provider.calls)
 	}
@@ -104,6 +110,18 @@ func TestT26DropServerTableSiblingsUnaffected(t *testing.T) {
 		if stmt.Metadata != nil && stmt.Metadata.Server != nil && i != 1 {
 			t.Fatalf("table statements must not bind server facts: %+v", stmt.Metadata)
 		}
+	}
+	// The batch-created table binds its ordered present shape after the
+	// SERVER statement — contamination would degrade this binding.
+	dropT := enriched[2].Metadata.TargetTables[0]
+	if dropT.Snapshot == nil || !dropT.Snapshot.Exists || dropT.Snapshot.FindColumn("id") == nil {
+		t.Fatalf("post-SERVER drop must still consume the batch-derived present table: %+v", dropT)
+	}
+	// The provider-vouched table keeps its catalog snapshot — a tainted
+	// or poisoned batch would shadow it into unvouched.
+	dropU := enriched[3].Metadata.TargetTables[0]
+	if dropU.Snapshot == nil || !dropU.Snapshot.Exists || dropU.Snapshot.FindColumn("k") == nil {
+		t.Fatalf("post-SERVER drop must still consume the provider-present table: %+v", dropU)
 	}
 }
 
@@ -209,6 +227,55 @@ func TestT26DropServerPublicShapeUnproven(t *testing.T) {
 		if strings.Contains(strings.ToLower(f.Message), "absent") || strings.Contains(f.Message, "ghost") {
 			t.Fatalf("absent verdict or authored name leaked: %q", f.Message)
 		}
+	}
+}
+
+// A two-statement batch exercises the barrier's public shape end to
+// end: the case alias binds batch_effects, the rule emits the notice
+// with if_exists, the gap set substitutes batch_effects for existence,
+// and coverage stays unverified — the binding, registration, gap
+// aggregation, and coverage merge hold together.
+func TestT26DropServerBarrierPublicShape(t *testing.T) {
+	provider := &t26Provider{servers: map[string]bool{"s1": true}}
+	result, err := AuditSQL(context.Background(), Request{
+		SQL:     "DROP SERVER s1; DROP SERVER IF EXISTS `S1`",
+		Dialect: spec.DialectMySQL, Schema: "golden", MetadataProvider: provider,
+	})
+	if err != nil {
+		t.Fatalf("audit: %v", err)
+	}
+	if len(result.Statements) != 2 || len(result.Unsupported) != 0 {
+		t.Fatalf("both audited drops expected, unsupported=%+v statements=%d", result.Unsupported, len(result.Statements))
+	}
+	second := result.Statements[1]
+	var found bool
+	for _, f := range second.Findings {
+		if f.RuleID == "ddl.mysql.server.drop.notice" {
+			found = true
+			if f.Metadata["if_exists"] != true {
+				t.Fatalf("if_exists flag missing on the barrier notice: %+v", f.Metadata)
+			}
+			if strings.Contains(f.Message, "S1") || strings.Contains(strings.ToLower(f.Message), "dropped") ||
+				strings.Contains(strings.ToLower(f.Message), "removed") {
+				t.Fatalf("notice claims an executed result or leaks the authored name: %q", f.Message)
+			}
+		}
+	}
+	if !found {
+		t.Fatalf("notice missing on the barrier statement: %+v", second.Findings)
+	}
+	var facts []string
+	for _, g := range second.EvidenceGaps {
+		facts = append(facts, g.RequiredFacts...)
+	}
+	if !containsString(facts, "server.batch_effects") || !containsString(facts, "server.drop_privilege") {
+		t.Fatalf("barrier must owe batch_effects+privilege: %+v", second.EvidenceGaps)
+	}
+	if containsString(facts, "server.existence") {
+		t.Fatalf("batch_effects replaces existence — dedup contract: %+v", second.EvidenceGaps)
+	}
+	if second.Coverage.Status != report.CoverageUnverified {
+		t.Fatalf("coverage = %v, want unverified", second.Coverage.Status)
 	}
 }
 

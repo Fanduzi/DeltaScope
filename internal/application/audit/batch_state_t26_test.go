@@ -24,8 +24,9 @@ type t26Call struct {
 }
 
 type t26Provider struct {
-	servers map[string]bool // proven-present server identities
-	srs     map[uint32]bool // proven-present SRIDs
+	servers map[string]bool                // proven-present server identities
+	srs     map[uint32]bool                // proven-present SRIDs
+	tables  map[string]*spec.TableSnapshot // catalog-present table identities
 	calls   []t26Call
 	err     error
 }
@@ -34,8 +35,11 @@ func (p *t26Provider) LoadInstanceFacts(context.Context, spec.Dialect, string) (
 	return &spec.InstanceFacts{}, nil
 }
 
-func (p *t26Provider) LoadTableSnapshot(context.Context, spec.Dialect, string, string) (*spec.TableSnapshot, error) {
-	return nil, nil
+func (p *t26Provider) LoadTableSnapshot(_ context.Context, _ spec.Dialect, schema, table string) (*spec.TableSnapshot, error) {
+	if p.tables == nil {
+		return nil, nil
+	}
+	return p.tables[schema+"."+table], nil
 }
 
 // ResolveObject mirrors the live provider's read contract: server

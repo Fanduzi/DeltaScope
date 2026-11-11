@@ -61,7 +61,8 @@ func hasFact(facts []string, want string) bool {
 }
 
 // Proven-present existence keeps the notice and owes only the drop
-// privilege — the catalog answered, the execution premise did not.
+// privilege — the catalog answered, the execution premise did not. The
+// message names the proven pre-state without claiming the drop landed.
 func TestMySQLDropServerProvenPresent(t *testing.T) {
 	r := mysqlDropServerRuleUnderTest(t)
 	stmt := mysqlDropServerStatement(t, &spec.ServerState{Name: "s1", Read: true, Exists: true, Status: spec.MetadataStatusConfirmed}, false)
@@ -74,6 +75,15 @@ func TestMySQLDropServerProvenPresent(t *testing.T) {
 	}
 	if findings[0].Level != rule.LevelNotice {
 		t.Fatalf("level = %v, want notice", findings[0].Level)
+	}
+	msg := strings.ToLower(findings[0].Message)
+	if !strings.Contains(msg, "proven present") || !strings.Contains(msg, "unverified") {
+		t.Fatalf("present arm must name the proven pre-state and unverified execution: %q", findings[0].Message)
+	}
+	for _, banned := range []string{"dropped", "removed", "connection target"} {
+		if strings.Contains(msg, banned) {
+			t.Fatalf("message claims an executed result or an unchecked premise: %q contains %q", findings[0].Message, banned)
+		}
 	}
 	facts := gapFacts(r.EvidenceGaps(stmt))
 	if hasFact(facts, "server.existence") || hasFact(facts, "server.batch_effects") {
@@ -95,8 +105,14 @@ func TestMySQLDropServerZeroRowUnknown(t *testing.T) {
 	}
 	findings, _ := r.Evaluate(context.Background(), stmt)
 	for _, f := range findings {
-		if strings.Contains(f.Message, "s1") || strings.Contains(strings.ToLower(f.Message), "absent") {
-			t.Fatalf("finding must carry neither the authored name nor an absent verdict: %q", f.Message)
+		msg := strings.ToLower(f.Message)
+		if strings.Contains(f.Message, "s1") || strings.Contains(msg, "absent") ||
+			strings.Contains(msg, "dropped") || strings.Contains(msg, "removed") ||
+			strings.Contains(msg, "connection target") {
+			t.Fatalf("finding claims an executed result, an absent verdict, or an unchecked premise: %q", f.Message)
+		}
+		if !strings.Contains(msg, "unverified") {
+			t.Fatalf("unproven arm must state existence and execution unverified: %q", f.Message)
 		}
 	}
 }
@@ -163,6 +179,22 @@ func TestMySQLDropServerAppliesToNarrow(t *testing.T) {
 	tidb.Dialect = spec.DialectTiDB
 	if r.AppliesTo(tidb) {
 		t.Fatalf("tidb is a vendor boundary — must not apply")
+	}
+}
+
+// The Explanation's risk text stays inside the documented semantics —
+// no unconditional dependent-failure claim; the FEDERATED survival
+// fact and the conditional "if the removal lands" framing hold.
+func TestMySQLDropServerExplanationBounded(t *testing.T) {
+	r := mysqlDropServerRuleUnderTest(t)
+	stmt := mysqlDropServerStatement(t, &spec.ServerState{Name: "s1", Read: true, Exists: true, Status: spec.MetadataStatusConfirmed}, false)
+	findings, _ := r.Evaluate(context.Background(), stmt)
+	risk := findings[0].Explanation.Risk
+	if strings.Contains(risk, "fail after removal") || strings.Contains(risk, "will fail") {
+		t.Fatalf("risk must not claim unconditional dependent failure: %q", risk)
+	}
+	if !strings.Contains(risk, "unproven") || !strings.Contains(risk, "if the removal lands") {
+		t.Fatalf("risk must state the unproven execution and conditional effect: %q", risk)
 	}
 }
 

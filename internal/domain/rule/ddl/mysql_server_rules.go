@@ -95,9 +95,9 @@ func (r mysqlDropServerRule) Evaluate(ctx context.Context, statement spec.Statem
 		return nil, nil
 	}
 	state := serverStateFor(statement)
-	message := "MySQL server definition dropped — connection target unverified"
+	message := "DROP SERVER targets a server definition whose existence and execution remain unverified"
 	if state != nil && state.Read && state.Exists {
-		message = "MySQL server definition dropped — proven-present catalog entry removed"
+		message = "DROP SERVER targets a catalog entry proven present at bind time; execution remains unverified"
 	}
 	metadata := map[string]any{
 		"operation": string(statement.DDL.Operation),
@@ -110,9 +110,9 @@ func (r mysqlDropServerRule) Evaluate(ctx context.Context, statement spec.Statem
 		Level:   r.level,
 		Message: message,
 		Explanation: &rule.FindingExplanation{
-			Why:        "DROP SERVER removes the catalog row defining a foreign data wrapper connection.",
-			Risk:       "Dependent views or code paths resolving data through this server fail after removal. Whether the statement actually executed is unproven — the privilege premise is not wired, and batch writes may already shadow the catalog answer.",
-			Suggestion: "Confirm the server is no longer referenced and that the executing account holds SUPER before relying on the drop.",
+			Why:        "DROP SERVER removes the mysql.servers row defining a foreign data wrapper connection and requires SUPER.",
+			Risk:       "Whether the statement actually executed is unproven — the privilege premise is not wired, and batch writes may already shadow the catalog answer. FEDERATED tables created with the connection information are not removed with it, but definitions or code resolving through this server entry could be affected if the removal lands.",
+			Suggestion: "Confirm the server entry is no longer needed and that the executing account holds SUPER before relying on the drop.",
 		},
 		Metadata: metadata,
 	}}, nil
