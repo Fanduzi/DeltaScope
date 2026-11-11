@@ -466,9 +466,9 @@ func TestT26SRSScanErrorPropagates(t *testing.T) {
 }
 
 // The SRS catalog pair is an 8.0 surface — a proven 5.7 server never
-// issues the dedicated queries; an unproven version keeps the narrow
-// missing-object degrade; a proven 8.0+ propagates even missing-object
-// codes.
+// issues the dedicated queries; an unproven version still issues them
+// and propagates every issued-query failure, including missing-object
+// codes; a proven 8.0+ propagates the same way.
 func TestT26SRSVersionGate(t *testing.T) {
 	mustNotQuery := errors.New("srs catalog query must not be issued")
 	snapshot, err := t26Resolve(t, map[string]testQueryResult{
@@ -543,8 +543,11 @@ func TestT26SRSDialectGated(t *testing.T) {
 	}
 }
 
-// Object families stay isolated: a mysql_server request emits only the
-// server read, and a non-T26 type emits none of the family queries.
+// Object families stay isolated at the provider level: a mysql_server
+// request emits only the server read — never an SRS existence,
+// dependency, or version query. Laziness for statements that name no
+// T26 family is an application-layer contract, exercised by the audit
+// package's T26 tests rather than here.
 func TestT26FamilyIsolation(t *testing.T) {
 	if _, err := t26Resolve(t, map[string]testQueryResult{
 		testServerIdentityFragment: {columns: []string{"SERVER_NAME"}, rows: [][]driver.Value{{"s"}}},
