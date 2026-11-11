@@ -32,11 +32,13 @@ func statementsNeedMySQLServerDropPrivilege(statements []spec.Statement) bool {
 // serverPrivilegeScopeTerminator reports whether the statement ends
 // the privilege observation's applicable range — an authored
 // GRANT/REVOKE operation or the registered boundary features
-// (set_role, grant_role, revoke_role, grant_proxy). The range ends for
-// every LATER statement: the relied-upon direct grant may have been
-// revoked or the session's role set changed after the observation.
-// The contract's conservative list is exactly these — set_default_role
-// and rename_user stay out of scope this round.
+// (set_role, set_default_role, grant_role, revoke_role, grant_proxy).
+// The range ends for every LATER statement: the relied-upon direct
+// grant may have been revoked or the session's role set changed after
+// the observation. The contract's conservative list is exactly these —
+// rename_user stays out of scope this round. A terminator is a
+// conservative scope policy, not a claim that the statement
+// necessarily revoked a direct SUPER grant.
 func serverPrivilegeScopeTerminator(statement spec.Statement) bool {
 	if statement.DDL != nil {
 		switch statement.DDL.Operation {
@@ -46,7 +48,7 @@ func serverPrivilegeScopeTerminator(statement spec.Statement) bool {
 	}
 	if statement.Unsupported != nil {
 		switch statement.Unsupported.Feature {
-		case "set_role", "grant_role", "revoke_role", "grant_proxy":
+		case "set_role", "set_default_role", "grant_role", "revoke_role", "grant_proxy":
 			return true
 		}
 	}

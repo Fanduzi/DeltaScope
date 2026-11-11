@@ -123,12 +123,12 @@ func serverDropMessage(statement spec.Statement, adjudication *spec.ServerDropAd
 	case spec.ServerDropArmConvergent:
 		return "DROP SERVER IF EXISTS is conditionally proven to leave the server entry absent under the observed_account_new_session conditional audit"
 	case spec.ServerDropArmTerminalRefusal:
-		return "DROP SERVER is provably refused — the server entry is already absent in this batch"
+		return "DROP SERVER is refused by the ordered state in force — the audited entry's absent state stands proven in this batch"
 	case spec.ServerDropArmGuardedAbsent:
 		if consumable {
-			return "DROP SERVER IF EXISTS is a proven guard no-op under the observed_account_new_session conditional audit — the server entry is already absent in this batch"
+			return "DROP SERVER IF EXISTS keeps the audited entry's proven absent state under the observed_account_new_session conditional audit"
 		}
-		return "DROP SERVER IF EXISTS is a proven guard no-op — the server entry is already absent in this batch; the execution premise remains unverified"
+		return "DROP SERVER IF EXISTS keeps the audited entry's proven absent state in this batch; this statement's execution premise remains unverified"
 	case spec.ServerDropArmBarrier:
 		if consumable {
 			return "DROP SERVER leaves existence shadowed by earlier batch effects under the observed_account_new_session conditional audit"
@@ -185,18 +185,20 @@ func (r mysqlDropServerRule) Evaluate(ctx context.Context, statement spec.Statem
 		switch adjudication.Arm {
 		case spec.ServerDropArmTerminalRefusal:
 			// A proven refusal is the same finding class the sibling
-			// families emit — a native-error-class blocker, not an
-			// advisory notice.
+			// families emit — a refusal blocker, not an advisory
+			// notice. The absent proof is the batch's ordered state;
+			// no specific native response is claimed beyond the
+			// refusal itself.
 			level = rule.LevelBlocker
 			explanation = &rule.FindingExplanation{
-				Why:        "DROP SERVER requires the named mysql.servers entry to exist; the audited entry is already absent in this batch, so the statement provably refuses.",
-				Risk:       "The statement cannot land — it would fail with a native server-not-found error at execution. The absent proof is the batch's own ordered state, never a catalog guess.",
+				Why:        "DROP SERVER requires the named mysql.servers entry to exist; the audited entry's absent state stands proven in this batch's ordered model, so the statement is refused.",
+				Risk:       "The statement cannot land under the ordered state in force — the absent proof is the batch's own ordered state, never a catalog guess; the specific native response is not asserted beyond the refusal.",
 				Suggestion: "Remove the duplicate drop or guard it with IF EXISTS if absence is acceptable.",
 			}
 		case spec.ServerDropArmGuardedAbsent:
 			explanation = &rule.FindingExplanation{
-				Why:        "DROP SERVER IF EXISTS skips the native error when the entry is absent; the audited entry is already absent in this batch.",
-				Risk:       "The guard is a proven no-op — the entry is already gone. " + conditionalRiskTail(consumable),
+				Why:        "DROP SERVER IF EXISTS guards the native not-found error; the audited entry's absent state stands proven in this batch's ordered model and is preserved.",
+				Risk:       "The absent state is a proven model projection, not an observed deletion. " + conditionalRiskTail(consumable),
 				Suggestion: "Confirm the absence is the expected state; the guard hides the not-found error by design.",
 			}
 		case spec.ServerDropArmProven, spec.ServerDropArmConvergent:
@@ -224,7 +226,11 @@ func (r mysqlDropServerRule) Evaluate(ctx context.Context, statement spec.Statem
 	if statement.DDL.Server.IfExists {
 		metadata["if_exists"] = true
 	}
-	if consumable {
+	if consumable || (adjudication != nil && adjudication.ConditionalSource) {
+		// The conditional scope follows either this statement's own
+		// consumable premise or an OrderedAbsent a prior statement
+		// published under that scope — a refusal/guard resting on a
+		// conditional absent stays conditional (R1-D).
 		metadata["conditional_audit"] = string(spec.PrivilegeAuditModeObservedAccountNewSession)
 	}
 	return []rule.Finding{{

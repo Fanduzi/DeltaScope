@@ -77,7 +77,11 @@ func (s *batchState) bindMySQLServer(ctx context.Context, statement spec.Stateme
 		// (T26-SERVER-DROP-EXECUTION-01).
 		for _, entry := range s.serverEntries {
 			if entry.absent && serverRel(decl.Name, entry.name) == serverRelSame {
-				return &spec.ServerState{Name: decl.Name, OrderedAbsent: true}, nil
+				return &spec.ServerState{
+					Name:                     decl.Name,
+					OrderedAbsent:            true,
+					OrderedAbsentConditional: entry.publishedArm == spec.ServerDropArmProven || entry.publishedArm == spec.ServerDropArmConvergent,
+				}, nil
 			}
 		}
 	}

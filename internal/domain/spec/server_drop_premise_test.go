@@ -160,3 +160,28 @@ func TestAdjudicateServerDropTruthTable(t *testing.T) {
 		}
 	}
 }
+
+// ConditionalSource follows the OrderedAbsent's publishing arm — a
+// refusal or guarded arm resting on an absent a conditional arm
+// published stays marked conditional, while an absent published
+// unconditionally (no conditional premise ever applied) carries no
+// marker. Both consumption forms check the projection.
+func TestAdjudicateServerDropConditionalSource(t *testing.T) {
+	conditionalAbsent := &ServerState{Name: "s1", OrderedAbsent: true, OrderedAbsentConditional: true}
+	plainAbsent := &ServerState{Name: "s1", OrderedAbsent: true}
+
+	refusal := AdjudicateServerDrop(conditionalAbsent, ServerDropPrivilegeSuppressed, false)
+	if refusal.Arm != ServerDropArmTerminalRefusal || !refusal.ConditionalSource {
+		t.Fatalf("refusal on conditional absent = %+v, want refusal + conditional source", refusal)
+	}
+	guard := AdjudicateServerDrop(conditionalAbsent, ServerDropPrivilegeUnproven, true)
+	if guard.Arm != ServerDropArmGuardedAbsent || !guard.ConditionalSource {
+		t.Fatalf("guard on conditional absent = %+v, want guarded + conditional source", guard)
+	}
+	if got := AdjudicateServerDrop(plainAbsent, ServerDropPrivilegeSuppressed, false); got.ConditionalSource {
+		t.Fatalf("unconditionally published absent must not mark the consumer conditional: %+v", got)
+	}
+	if got := AdjudicateServerDrop(plainAbsent, ServerDropPrivilegeUnproven, true); got.ConditionalSource {
+		t.Fatalf("guard on unconditional absent must not mark conditional: %+v", got)
+	}
+}

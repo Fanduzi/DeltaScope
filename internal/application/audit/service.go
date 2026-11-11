@@ -105,7 +105,18 @@ func auditWithLimits(ctx context.Context, request Request, limits auditLimits) (
 	if request.Dialect != spec.DialectMySQL && request.Dialect != spec.DialectTiDB && request.Dialect != spec.DialectPostgreSQL {
 		return report.Result{}, ErrUnknownDialect
 	}
-	switch request.PrivilegeAuditMode {
+	// The effective privilege mode follows the same precedence as the
+	// metadata request: the top-level field wins, and the legacy
+	// Metadata bag supplies the value only when the top level is
+	// empty. Validate the EFFECTIVE value so an invalid legacy fallback
+	// cannot slip past the closed vocabulary into enrichments — the
+	// check stays ahead of policy loading, parsing, and any provider
+	// read (issue #105 T26-SERVER-DROP-EXECUTION-01 R1-B).
+	privilegeMode := request.PrivilegeAuditMode
+	if privilegeMode == "" && request.Metadata != nil {
+		privilegeMode = request.Metadata.PrivilegeAuditMode
+	}
+	switch privilegeMode {
 	case "", spec.PrivilegeAuditModeObservedAccountNewSession:
 	default:
 		return report.Result{}, ErrInvalidPrivilegeMode

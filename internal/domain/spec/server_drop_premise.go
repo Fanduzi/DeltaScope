@@ -129,6 +129,13 @@ type ServerDropAdjudication struct {
 	// or convergent arms, and always with the publishing statement's
 	// own arm recorded.
 	PublishAbsent bool
+	// ConditionalSource marks that this adjudication consumed an
+	// OrderedAbsent a prior statement published under the conditional
+	// privilege scope — distinct from this statement's own consumable
+	// Privilege. The finding surface keeps the conditional-audit
+	// marker on refusal/guard arms that rest on such an absent
+	// (T26-SERVER-DROP-EXECUTION-01 R1-D).
+	ConditionalSource bool
 }
 
 // AdjudicateServerDrop computes the shared adjudication for one
@@ -142,6 +149,7 @@ func AdjudicateServerDrop(state *ServerState, privilege ServerDropPrivilege, ifE
 	consumable := privilege == ServerDropPrivilegeConsumable
 	switch {
 	case state != nil && state.OrderedAbsent:
+		adjudication.ConditionalSource = state.OrderedAbsentConditional
 		if ifExists {
 			// The guard no-op preserves absent; the privilege premise
 			// follows the guarded arm's own requirements.

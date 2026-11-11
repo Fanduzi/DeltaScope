@@ -81,9 +81,18 @@ func TestT26PrivilegeModePublicSurface(t *testing.T) {
 	if len(result.Statements) != 1 || len(result.Statements[0].EvidenceGaps) != 0 {
 		t.Fatalf("proven arm owes no gaps: %+v", result.Statements)
 	}
-	// The caller-owned observation never aliases into request evidence
-	// — mutating the original slice after the call must not matter.
+	// The caller-owned observation never aliases into request
+	// evidence — read the copied result through the provider seam,
+	// mutate the original, and assert the copy is unchanged.
+	wrapped := publicMetadataProvider{provider: provider}
+	copied, err := wrapped.LoadMySQLServerDropPrivilege(context.Background(), spec.DialectMySQL)
+	if err != nil || copied == nil {
+		t.Fatalf("seam read: %v", err)
+	}
 	observation.GrantLines[0] = "GRANT USAGE ON *.* TO 'edge'@'%'"
+	if copied.GrantLines[0] != "GRANT SUPER ON *.* TO 'edge'@'%'" {
+		t.Fatalf("cloned observation aliased the caller slice: %q", copied.GrantLines[0])
+	}
 
 	// Mode unset keeps the premise owed and the loader unfired.
 	provider = &t26PremiseProvider{version: "8.0.36", servers: map[string]bool{"s1": true}, observation: observation}

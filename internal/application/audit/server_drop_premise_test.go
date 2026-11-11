@@ -12,6 +12,7 @@ import (
 	"strings"
 	"testing"
 
+	apppolicy "github.com/Fanduzi/DeltaScope/internal/application/policy"
 	"github.com/Fanduzi/DeltaScope/internal/domain/report"
 	"github.com/Fanduzi/DeltaScope/internal/domain/rule"
 	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
@@ -44,6 +45,12 @@ func (p *t26PlainProvider) ResolveObject(_ context.Context, dialect spec.Dialect
 	snapshot.Server = state
 	return snapshot, nil
 }
+
+// t26LoaderError is the typed cause for the errors.As assertion — the
+// bounded public boundary must let it through the chain.
+type t26LoaderError struct{ msg string }
+
+func (e *t26LoaderError) Error() string { return e.msg }
 
 // superObservation is the stubbed positive witness — bound account,
 // exact-token SUPER on a direct global grant line.
@@ -303,6 +310,7 @@ func TestT26PrivilegeScopeTerminator(t *testing.T) {
 		{"revoke", "REVOKE SELECT ON *.* FROM 'u'@'%'; DROP SERVER s1"},
 		{"grant", "GRANT SELECT ON *.* TO 'u'@'%'; DROP SERVER s1"},
 		{"set role boundary", "SET ROLE ALL; DROP SERVER s1"},
+		{"set default role boundary", "SET DEFAULT ROLE r1 TO 'u'@'%'; DROP SERVER s1"},
 		{"grant role boundary", "GRANT 'r'@'%' TO 'u'@'%'; DROP SERVER s1"},
 	}
 	for _, tc := range cases {
@@ -320,10 +328,25 @@ func TestT26PrivilegeScopeTerminator(t *testing.T) {
 			t.Fatalf("%s: suppressed premise must owe drop_privilege: %v", tc.name, last.Owed)
 		}
 	}
+	// SET DEFAULT ROLE is a real boundary classification — assert the
+	// feature identity alongside the projection effect, and that an
+	// EARLIER drop keeps its consumable premise (scope is positional,
+	// never retroactive).
+	provider := &t26Provider{servers: map[string]bool{"s1": true}, version: "8.0.36", privilege: superObservation()}
+	enriched := enrichT26Premise(t, "DROP SERVER s1; SET DEFAULT ROLE r1 TO 'u'@'%'; DROP SERVER s2", provider, spec.PrivilegeAuditModeObservedAccountNewSession)
+	if enriched[1].Unsupported == nil || enriched[1].Unsupported.Feature != "set_default_role" {
+		t.Fatalf("SET DEFAULT ROLE classification = %+v", enriched[1].Unsupported)
+	}
+	if adj := enriched[0].Metadata.ServerDrop; adj == nil || adj.Privilege != spec.ServerDropPrivilegeConsumable {
+		t.Fatalf("earlier drop keeps the consumable premise: %+v", adj)
+	}
+	if adj := enriched[2].Metadata.ServerDrop; adj == nil || adj.Privilege != spec.ServerDropPrivilegeSuppressed {
+		t.Fatalf("later drop premise = %+v, want suppressed", adj)
+	}
 	// A terminator AFTER the drop never suppresses it retroactively —
 	// ordered scope is positional.
-	provider := &t26Provider{servers: map[string]bool{"s1": true}, version: "8.0.36", privilege: superObservation()}
-	enriched := enrichT26Premise(t, "DROP SERVER s1; REVOKE SELECT ON *.* FROM 'u'@'%'", provider, spec.PrivilegeAuditModeObservedAccountNewSession)
+	provider = &t26Provider{servers: map[string]bool{"s1": true}, version: "8.0.36", privilege: superObservation()}
+	enriched = enrichT26Premise(t, "DROP SERVER s1; REVOKE SELECT ON *.* FROM 'u'@'%'", provider, spec.PrivilegeAuditModeObservedAccountNewSession)
 	if adj := enriched[0].Metadata.ServerDrop; adj == nil || adj.Privilege != spec.ServerDropPrivilegeConsumable {
 		t.Fatalf("earlier drop keeps the consumable premise: %+v", adj)
 	}
@@ -416,6 +439,107 @@ func TestT26PrivilegeRefusalPublicShape(t *testing.T) {
 	}
 }
 
+// R1-D: a refusal or guard resting on an absent a CONDITIONAL arm
+// published must keep the conditional-audit marker even when the
+// consuming statement's own premise is suppressed by a scope
+// terminator — the conclusion stays conditional. Real batch
+// reachability: proven drop publishes, REVOKE suppresses later
+// consumability, the re-drop still binds OrderedAbsent first. The
+// finding surface is evaluated through the real registry seam —
+// service-level unsupported gating on the terminator statement is
+// orthogonal to the DROP finding contract.
+func TestT26ConditionalAbsentPublicShape(t *testing.T) {
+	evaluate := func(t *testing.T, sql string, provider *t26Provider) report.Result {
+		t.Helper()
+		parsed, parseErr := parseSQL(context.Background(), sql, spec.DialectMySQL)
+		if parseErr != nil {
+			t.Fatalf("parse %q: %v", sql, parseErr)
+		}
+		statements, err := Extract(context.Background(), parsed)
+		if err != nil {
+			t.Fatalf("extract %q: %v", sql, err)
+		}
+		enriched, err := enrichStatementsWithMetadata(context.Background(), spec.DialectMySQL,
+			&MetadataRequest{Schema: "golden", Provider: provider, PrivilegeAuditMode: spec.PrivilegeAuditModeObservedAccountNewSession}, statements, parsed.failures)
+		if err != nil {
+			t.Fatalf("enrich %q: %v", sql, err)
+		}
+		cfg, err := apppolicy.Load("")
+		if err != nil {
+			t.Fatalf("policy: %v", err)
+		}
+		registry, err := buildRegistry(cfg)
+		if err != nil {
+			t.Fatalf("registry: %v", err)
+		}
+		result, err := EvaluateStatements(context.Background(), registry, enriched)
+		if err != nil {
+			t.Fatalf("evaluate %q: %v", sql, err)
+		}
+		return result
+	}
+
+	// Plain re-drop after a terminator: refusal blocker, no gaps,
+	// conditional marker from the publishing arm — and the bounded
+	// refusal text never claims a specific native response.
+	result := evaluate(t, "DROP SERVER s1; REVOKE SELECT ON *.* FROM 'u'@'%'; DROP SERVER s1",
+		&t26Provider{servers: map[string]bool{"s1": true}, version: "8.0.36", privilege: superObservation()})
+	refusal := result.Statements[2].Findings[0]
+	if refusal.Level != rule.LevelBlocker || refusal.Metadata["outcome"] != "refused_absent" {
+		t.Fatalf("refusal finding = %+v", refusal)
+	}
+	if refusal.Metadata["conditional_audit"] != string(spec.PrivilegeAuditModeObservedAccountNewSession) {
+		t.Fatalf("refusal on a conditional absent must keep the marker: %+v", refusal.Metadata)
+	}
+	if len(result.Statements[2].EvidenceGaps) != 0 {
+		t.Fatalf("refusal owes nothing: %+v", result.Statements[2].EvidenceGaps)
+	}
+	blob := refusal.Message + refusal.Explanation.Why + refusal.Explanation.Risk
+	for _, overclaimed := range []string{"already gone", "not-found error at execution", "server-not-found"} {
+		if strings.Contains(blob, overclaimed) {
+			t.Fatalf("refusal text overclaims a native response %q: %q", overclaimed, blob)
+		}
+	}
+
+	// IF EXISTS re-drop after a terminator: guarded absent, owes
+	// drop_privilege only, conditional marker present, and the public
+	// text is the model-projection shape — never "proven guard no-op"
+	// or "entry already gone".
+	result = evaluate(t, "DROP SERVER s1; REVOKE SELECT ON *.* FROM 'u'@'%'; DROP SERVER IF EXISTS s1",
+		&t26Provider{servers: map[string]bool{"s1": true}, version: "8.0.36", privilege: superObservation()})
+	guarded := result.Statements[2]
+	if len(guarded.EvidenceGaps) != 1 {
+		t.Fatalf("guarded + suppressed owes exactly the privilege gap: %+v", guarded.EvidenceGaps)
+	}
+	facts := guarded.EvidenceGaps[0].RequiredFacts
+	if len(facts) != 1 || facts[0] != spec.ServerFactDropPrivilege {
+		t.Fatalf("guarded + suppressed owed = %v, want drop_privilege only", facts)
+	}
+	finding := guarded.Findings[0]
+	if finding.Metadata["outcome"] != "guarded_absent" {
+		t.Fatalf("guarded finding outcome = %+v", finding.Metadata)
+	}
+	if finding.Metadata["conditional_audit"] != string(spec.PrivilegeAuditModeObservedAccountNewSession) {
+		t.Fatalf("guarded on a conditional absent must keep the marker: %+v", finding.Metadata)
+	}
+	blob = finding.Message + finding.Explanation.Why + finding.Explanation.Risk + finding.Explanation.Suggestion
+	for _, overclaimed := range []string{"proven guard no-op", "proven no-op", "already gone"} {
+		if strings.Contains(blob, overclaimed) {
+			t.Fatalf("guarded text overclaims %q: %q", overclaimed, blob)
+		}
+	}
+	for _, required := range []string{"premise remains unverified", "model projection"} {
+		if !strings.Contains(blob, required) {
+			t.Fatalf("guarded text must state %q: %q", required, blob)
+		}
+	}
+	for _, protected := range []string{"audited@%", "GRANT SELECT", "s1", "'u'@'%'"} {
+		if strings.Contains(blob, protected) {
+			t.Fatalf("protected detail %q leaked: %q", protected, blob)
+		}
+	}
+}
+
 // A failed privilege observation propagates as a bounded public error —
 // fixed text outside, the original cause reachable through errors.Is,
 // and never laundered into an unproven grant or an evidence gap.
@@ -437,6 +561,21 @@ func TestT26PrivilegeReadErrorBoundary(t *testing.T) {
 			t.Fatalf("public error text echoes protected content %q: %v", protected, err)
 		}
 	}
+	// errors.As reaches the typed cause through the same bounded
+	// boundary — a distinct guarantee from errors.Is.
+	typed := &t26LoaderError{msg: "typed-priv-marker-7x2"}
+	provider = &t26Provider{servers: map[string]bool{"s1": true}, version: "8.0.36", privilegeErr: typed}
+	_, err = AuditSQL(context.Background(), Request{
+		SQL: "DROP SERVER s1", Dialect: spec.DialectMySQL, Schema: "golden",
+		MetadataProvider: provider, PrivilegeAuditMode: spec.PrivilegeAuditModeObservedAccountNewSession,
+	})
+	var reached *t26LoaderError
+	if !errors.As(err, &reached) || reached != typed {
+		t.Fatalf("errors.As must reach the typed loader cause: %v", err)
+	}
+	if strings.Contains(err.Error(), typed.msg) {
+		t.Fatalf("public error text echoes the typed cause: %v", err)
+	}
 }
 
 // The mode token is a closed vocabulary — an unregistered value is an
@@ -447,5 +586,49 @@ func TestT26PrivilegeModeValidation(t *testing.T) {
 	})
 	if err == nil || !errors.Is(err, ErrInvalidPrivilegeMode) {
 		t.Fatalf("unregistered mode must fail closed: %v", err)
+	}
+	// R1-B: the effective mode merges top-level + legacy before
+	// validation — an invalid legacy fallback must error before any
+	// provider read rather than silently degrade to mode-unselected.
+	provider := &t26Provider{servers: map[string]bool{"s1": true}, version: "8.0.36", privilege: superObservation()}
+	_, err = AuditSQL(context.Background(), Request{
+		SQL: "DROP SERVER s1", Dialect: spec.DialectMySQL,
+		Metadata: &MetadataRequest{Provider: provider, PrivilegeAuditMode: "bogus_mode"},
+	})
+	if err == nil || !errors.Is(err, ErrInvalidPrivilegeMode) {
+		t.Fatalf("invalid legacy fallback must fail closed: %v", err)
+	}
+	if provider.privilegeCalls != 0 {
+		t.Fatalf("invalid effective mode triggered %d loader calls", provider.privilegeCalls)
+	}
+	// Top empty + legacy valid: the merged effective value enters the
+	// normal gate — the loader runs once.
+	provider = &t26Provider{servers: map[string]bool{"s1": true}, version: "8.0.36", privilege: superObservation()}
+	result, err := AuditSQL(context.Background(), Request{
+		SQL: "DROP SERVER s1", Dialect: spec.DialectMySQL, TargetVersion: "8.0.36",
+		Metadata: &MetadataRequest{Provider: provider, PrivilegeAuditMode: spec.PrivilegeAuditModeObservedAccountNewSession},
+	})
+	if err != nil {
+		t.Fatalf("valid legacy fallback must reach the normal path: %v", err)
+	}
+	if provider.privilegeCalls != 1 {
+		t.Fatalf("valid legacy mode must run the loader once: %d", provider.privilegeCalls)
+	}
+	if result.Verdict != report.VerdictPass {
+		t.Fatalf("legacy-selected mode result = %+v", result.Verdict)
+	}
+	// Top-level non-empty wins over a differing legacy value — the
+	// unadopted legacy bogus value never reaches validation.
+	provider = &t26Provider{servers: map[string]bool{"s1": true}, version: "8.0.36", privilege: superObservation()}
+	result, err = AuditSQL(context.Background(), Request{
+		SQL: "DROP SERVER s1", Dialect: spec.DialectMySQL, TargetVersion: "8.0.36",
+		PrivilegeAuditMode: spec.PrivilegeAuditModeObservedAccountNewSession,
+		Metadata:           &MetadataRequest{Provider: provider, PrivilegeAuditMode: "bogus_mode"},
+	})
+	if err != nil {
+		t.Fatalf("top-level precedence must ignore the unadopted legacy value: %v", err)
+	}
+	if provider.privilegeCalls != 1 || result.Verdict != report.VerdictPass {
+		t.Fatalf("top-level precedence: calls=%d verdict=%v", provider.privilegeCalls, result.Verdict)
 	}
 }

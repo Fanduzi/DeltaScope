@@ -53,27 +53,63 @@ func TestLoadMySQLServerDropPrivilegeBindsVerbatim(t *testing.T) {
 	}
 }
 
-// A failed read propagates — the observation is never degraded into an
-// unproven grant or a partial answer.
+// The compact failure table (R1-C): every read stage — CURRENT_USER
+// query/scan/rowset-iteration and the grant query/scan/iteration —
+// propagates as an error with the cause preserved, never degrading
+// into an unbound or partial observation.
 func TestLoadMySQLServerDropPrivilegePropagatesErrors(t *testing.T) {
-	marker := errors.New("grant-channel-down-4f2")
+	accountRow := testQueryResult{
+		columns: []string{"current_user()"},
+		rows:    [][]driver.Value{{"audited@%"}},
+	}
+	grantRows := testQueryResult{
+		columns: []string{"Grants"},
+		rows:    [][]driver.Value{{"GRANT USAGE ON *.* TO 'audited'@'%'"}},
+	}
+	cases := []struct {
+		name    string
+		account testQueryResult
+		grants  testQueryResult
+	}{
+		{"current_user query failure", testQueryResult{columns: []string{"current_user()"}, queryErr: errors.New("cu-query-down")}, grantRows},
+		{"current_user scan failure", testQueryResult{columns: []string{"current_user()", "extra"}, rows: [][]driver.Value{{"audited@%", "x"}}}, grantRows},
+		{"current_user rowset failure", testQueryResult{columns: []string{"current_user()"}, rows: [][]driver.Value{{"audited@%"}}, rowErrAt: 1, rowErr: errors.New("cu-rows-lost")}, grantRows},
+		{"grants query failure", accountRow, testQueryResult{columns: []string{"Grants"}, queryErr: errors.New("grants-down")}},
+		{"grants scan failure", accountRow, testQueryResult{columns: []string{"Grants", "extra"}, rows: [][]driver.Value{{"GRANT USAGE ON *.* TO 'audited'@'%'", "x"}}}},
+		{"grants iteration failure", accountRow, testQueryResult{columns: []string{"Grants"}, rows: [][]driver.Value{{"GRANT USAGE ON *.* TO 'audited'@'%'"}}, rowErrAt: 1, rowErr: errors.New("grants-rows-lost")}},
+	}
+	for _, tc := range cases {
+		db := openTestDB(t, map[string]testQueryResult{
+			"select current_user()":          tc.account,
+			"show grants for current_user()": tc.grants,
+		})
+		provider := NewProvider(db)
+		observation, err := provider.LoadMySQLServerDropPrivilege(context.Background(), spec.DialectMySQL)
+		if err == nil || observation != nil {
+			t.Fatalf("%s: must propagate, got obs=%+v err=%v", tc.name, observation, err)
+		}
+	}
+	// A returned CURRENT_USER query failure — including the
+	// ErrNoRows sentinel a QueryRow-only caller would misread as a
+	// successful empty answer — is an error, never an unbound success
+	// (R1-C).
 	db := openTestDB(t, map[string]testQueryResult{
 		"select current_user()": {
-			columns: []string{"current_user()"},
-			rows:    [][]driver.Value{{"audited@%"}},
+			columns:  []string{"current_user()"},
+			queryErr: sql.ErrNoRows,
 		},
 		"show grants for current_user()": {
-			columns:  []string{"Grants"},
-			queryErr: marker,
+			columns: []string{"Grants"},
+			rows:    [][]driver.Value{{"GRANT USAGE ON *.* TO 'x'@'%'"}},
 		},
 	})
 	provider := NewProvider(db)
 	observation, err := provider.LoadMySQLServerDropPrivilege(context.Background(), spec.DialectMySQL)
 	if err == nil || observation != nil {
-		t.Fatalf("failed grant read must propagate: obs=%+v err=%v", observation, err)
+		t.Fatalf("deferred query failure must propagate, got obs=%+v err=%v", observation, err)
 	}
-	if !errors.Is(err, marker) {
-		t.Fatalf("error chain lost the loader cause: %v", err)
+	if !errors.Is(err, sql.ErrNoRows) {
+		t.Fatalf("the deferred cause stays reachable: %v", err)
 	}
 }
 
@@ -96,14 +132,15 @@ func TestLoadMySQLServerDropPrivilegeDialectGate(t *testing.T) {
 	}
 }
 
-// A zero-row CURRENT_USER() binds an empty account but the grant read
-// still runs — the unbound principal marks the observation unprovable,
-// never a read failure.
+// A genuinely successful-but-empty CURRENT_USER() rowset — zero rows,
+// no error — binds an empty account while the grant read still runs.
+// The unbound principal stays unprovable, never a read failure; the
+// distinction from a deferred query error is the R1-C fix.
 func TestLoadMySQLServerDropPrivilegeUnboundAccount(t *testing.T) {
 	db := openTestDB(t, map[string]testQueryResult{
 		"select current_user()": {
-			columns:  []string{"current_user()"},
-			queryErr: sql.ErrNoRows,
+			columns: []string{"current_user()"},
+			rows:    [][]driver.Value{},
 		},
 		"show grants for current_user()": {
 			columns: []string{"Grants"},

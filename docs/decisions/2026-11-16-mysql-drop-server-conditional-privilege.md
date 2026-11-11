@@ -1,9 +1,13 @@
 # Decision: MySQL DROP SERVER conditional privilege premise + shared adjudication + OrderedAbsent (T26-SERVER-DROP-EXECUTION-01)
 
 Date: 2026-11-16
-Status: Accepted (implementation candidate; reviewer ruling pending)
+Status: Implementation candidate — reviewer ruling pending. The
+APPROVED design contracts this record implements are listed under
+Related docs; this ADR itself records the candidate design, not an
+accepted contract.
 Related milestone/version: issue #105 T26 under parent issue #79
-Related commits: T26-SERVER-DROP-EXECUTION-01 implementation commit (this change set)
+Related commits: T26-SERVER-DROP-EXECUTION-01 implementation candidate
+commit `8b52fd55` (this change set)
 Related tests: `internal/domain/spec/server_drop_premise_test.go`, `internal/application/audit/server_drop_premise_test.go`, `internal/infrastructure/metadata/mysql/provider_server_drop_privilege_test.go`, `pkg/deltascope/audit_t26_premise_test.go`, `testdata/ddl-golden/T26.json` (offline cells unchanged)
 Related docs: `docs/verification/t26-server-drop-premise-01/` (accepted premise contract, parent `cfd34782`), `docs/verification/t26-semantics-01/` (accepted `b8a67e7b`)
 
@@ -17,7 +21,7 @@ The approved premise contract
 (`docs/verification/t26-server-drop-premise-01`, R2 PASS at parent
 `cfd34782`) fixed what evidence may count: a conditional,
 positive-only observation — `CURRENT_USER()` plus `SHOW GRANTS FOR
-CURRENT_USER()` bound on one dedicated new session — gated behind an
+CURRENT_USER()` read on one database session — gated behind an
 explicit caller opt-in mode, scoped per statement, and consumed by one
 shared adjudication so findings, evidence gaps, and ordered post-state
 can never diverge.
@@ -30,11 +34,15 @@ can never diverge.
   `server.drop_privilege` stays owed.
 - Provider seam `LoadMySQLServerDropPrivilege(ctx, dialect)`: MySQL
   only, runs `CURRENT_USER()` then `SHOW GRANTS FOR CURRENT_USER()` in
-  that order on one dedicated `*sql.Conn`, preserves account and grant
-  rows verbatim internally, and propagates query/scan/iteration
-  errors bounded (`server drop privilege observation failed` with
-  `Unwrap` preserved) — a failed read never degrades to
-  unknown-but-successful evidence.
+  that order on one `*sql.Conn` obtained via `DB.Conn` — one database
+  session guaranteed by `database/sql`, which MAY return a pooled
+  connection; it is not a dedicated new physical session. The
+  observation binds the observed account's grants at read time on the
+  observed connection only. Query, scan, rowset, and close failures
+  propagate wrapped (cause preserved via `Unwrap`); the application
+  layer owns the fixed public error boundary
+  (`server drop privilege observation failed`) — a failed read never
+  degrades to unknown-but-successful evidence.
 - Shared exact-token collector `spec.CollectMySQLGlobalPrivileges`:
   the T24 resource-group bundle and this loader parse `GRANT ... ON
   *.* ...` through one mechanism — whole tokens only, so substring
@@ -42,12 +50,16 @@ can never diverge.
 - The `ServerDropPrivilegeWitness` requires all three domains:
   account bound, version in the supported domain, and exact global
   `SUPER` or `ALL PRIVILEGES`. `ALL PRIVILEGES` counts only under the
-  MySQL 8.0.x series (5.7's `ALL` does not imply `SUPER`).
+  registered MySQL 8.0.x proof domain; versions outside that domain —
+  including 5.7 — are unproven inputs, not negative proofs.
 - Sentence-level scope projection: the request-level observation is
   immutable; an authored `GRANT`/`REVOKE` or the `set_role`/
-  `grant_role`/`revoke_role`/`grant_proxy` boundary features end the
-  applicable range, so later statements keep the privilege gap even
-  under a positive request witness.
+  `set_default_role`/`grant_role`/`revoke_role`/`grant_proxy`
+  boundary features end the applicable range (positional, never
+  retroactive), so later statements keep the privilege gap even under
+  a positive request witness. The terminator only suppresses later
+  consumability — it never claims the statement revoked a direct
+  grant.
 - One `spec.ServerDropAdjudication` per audited statement drives the
   evidence-gap set, finding level/message/explanation, `outcome`
   metadata (`conditional_drop`, `conditional_absent`,
@@ -69,9 +81,12 @@ can never diverge.
 Reviewer rulings required the conditional premise to be honest about
 what it proves: `observed_account_new_session` vouches only that the
 observed account held `SUPER`/`ALL PRIVILEGES` at observation time on
-a dedicated session — it never claims the future executor, a pooled
-session's effective privileges, or that a new execution session
-exists. Deriving every consumer from one adjudication table is the
+the observed connection. Three distinct things stay separate: the
+observed connection (the session `DB.Conn` returned, possibly pooled),
+the declared future new execution session (the conditional scope's
+declared model), and any actual future execution (never claimed —
+offline audit never executes). Deriving every consumer from one
+adjudication table is the
 accepted mechanism for keeping findings, gaps, coverage, and ordered
 state on a single truth — the same shape T24/T25 already use.
 
@@ -85,10 +100,14 @@ state on a single truth — the same shape T24/T25 already use.
   account, or grant text; conditional findings mark
   `conditional_audit=observed_account_new_session` and an `outcome`
   token from the fixed vocabulary.
-- Default (no mode) behavior is byte-identical to the pre-existing
-  contract: notice + `unknown_server_state` gap with
-  `server.existence`/`server.drop_privilege` owed — verified against
-  the T26 golden manifest.
+- Default (no mode) compatibility is verified field-by-field, not
+  byte-identical: verdict, evidence-gap set (`unknown_server_state`
+  with `server.existence`/`server.drop_privilege` owed), statement
+  and aggregate coverage, and boundary-statement behavior all match
+  the pre-existing contract on the T26 golden manifest. New surface
+  versus the old candidate: findings now carry the `outcome` token
+  and conditional-scope metadata, and guarded/refusal explanations
+  were narrowed in R1-D.
 
 ## Deferred / Out Of Scope
 
@@ -118,8 +137,10 @@ state on a single truth — the same shape T24/T25 already use.
 ## Consequences
 
 - Future SERVER lifecycle work (CREATE/ALTER audit, SRS semantics)
-  must consume the same adjudication/arm vocabulary rather than
-  recomputing premises.
+  re-derives its own premises and vocabulary — nothing here obligates
+  those slices to this DROP-specific adjudication shape. The shared
+  mechanism worth reusing is the single-truth-table pattern, not the
+  DROP arm vocabulary.
 - Any new privilege-affecting statement family must register as a
   scope terminator or the observed-account premise silently widens.
 - `OrderedAbsent` is channel-internal; serializing it externally is a

@@ -19,7 +19,6 @@ package mysqlmeta
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 
 	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
@@ -39,13 +38,29 @@ func (p *Provider) LoadMySQLServerDropPrivilege(ctx context.Context, dialect spe
 	defer conn.Close()
 
 	observation := &spec.MySQLServerDropPrivilegeObservation{}
-	var account string
-	if err := conn.QueryRowContext(ctx, `select current_user()`).Scan(&account); err != nil {
-		if err != sql.ErrNoRows {
-			return nil, fmt.Errorf("query current_user: %w", err)
+	// A rowset read, not QueryRow: the driver surfaces a deferred query
+	// failure at QueryContext/Next/Err while a successful-but-empty
+	// answer simply never calls Scan — the two outcomes stay distinct
+	// instead of collapsing onto the sql.ErrNoRows sentinel
+	// (T26-SERVER-DROP-EXECUTION-01 R1-C).
+	rows, err := conn.QueryContext(ctx, `select current_user()`)
+	if err != nil {
+		return nil, fmt.Errorf("query current_user: %w", err)
+	}
+	for rows.Next() {
+		var account string
+		if err := rows.Scan(&account); err != nil {
+			rows.Close()
+			return nil, fmt.Errorf("scan current_user: %w", err)
 		}
-	} else {
 		observation.Account = account
+	}
+	if err := rows.Err(); err != nil {
+		rows.Close()
+		return nil, fmt.Errorf("read current_user rows: %w", err)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, fmt.Errorf("close current_user rows: %w", err)
 	}
 	lines, err := loadMySQLGrantLines(ctx, conn, "show grants for current_user()")
 	if err != nil {

@@ -89,6 +89,14 @@ type ServerState struct {
 	// by the ordered channel (T26-SERVER-DROP-EXECUTION-01; contract:
 	// docs/verification/t26-semantics-01 D.4).
 	OrderedAbsent bool `json:"-"`
+	// OrderedAbsentConditional records that the OrderedAbsent a later
+	// statement consumes was published by a conditional arm (proven
+	// drop or convergent absent under the observed_account_new_session
+	// scope). A refusal or guarded arm binding such an absent keeps
+	// the conditional-audit scope honest instead of laundering the
+	// prior statement's conditional premise into an unconditional one
+	// (T26-SERVER-DROP-EXECUTION-01 R1-D).
+	OrderedAbsentConditional bool `json:"-"`
 }
 
 // ServerOption records one OPTIONS member — key and value kind only.
