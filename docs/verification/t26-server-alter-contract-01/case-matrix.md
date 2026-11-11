@@ -191,6 +191,20 @@ accurately-labelled `suppressed` premises instead.
 | AM-9.3b | `ALTER SERVER s OPTIONS (USER 'u')`, dialect `tidb`, no pin, providerless, mode off | providerless | vendor boundary — `unaudited`, product not supported on this dialect (TiDB grammar lacks the family); never reaches the MySQL resolver, no version observation consumed | L=0 R=0 S=0 |
 | AM-9.3c | `ALTER SERVER s1 OPTIONS (USER 'u')`, no pin, provider observed in-domain version `8.0.36` | provider present, observed consumable | `resolvedVersion` = observed → G2 passes → **audited**: lands A3 → R9; the pin is not the gate | L=1 R=1 S=1 |
 | AM-9.3d | `ALTER SERVER s OPTIONS (USER 'u')`, `--dialect mysql` + observed product `postgres` | provider observed | typed `ErrDialectProductMismatch`, early error before any arm | audit-layer L=0 R=0 S=0 — the version observation itself is not billed into L/R/S |
+| AM-9.3d *(R4 erratum — authorized)* | same intent, fixture corrected: MySQL dialect + recognized **TiDB** observed banner (e.g. `8.0.11-TiDB-v8.5.0`) | provider observed | typed `ErrDialectProductMismatch`, early error before any arm — same row purpose | audit-layer L=0 R=0 S=0 |
+| AM-9.3d-supplement | `ALTER SERVER s OPTIONS (USER 'u')`, `--dialect mysql` + observed banner `"PostgreSQL 16.1"` | provider observed | the banner parses to no recognized product — version fact unestablished → `unaudited` + `gate:"version"` boundary (NOT `ErrDialectProductMismatch`) | L=0 |
+
+> **AM-9.3d erratum record.** The original row's fixture literal
+> `observed product postgres` is unexpressible:
+> `spec.ParseObservedVersion` derives the product from the banner text
+> itself and constructs only `VersionProductTiDB` (TiDB marker) or
+> `VersionProductMySQL` (numeric prefix) — no input yields
+> `product=postgres`, so `ErrDialectProductMismatch` is reachable only
+> through a recognized cross-product banner. Correction authorized by
+> the reviewer in the R4 work order: the TiDB-observed banner carries
+> the typed-mismatch witness; the concrete PostgreSQL-banner outcome is
+> registered separately as `AM-9.3d-supplement`. Product support and
+> mismatch semantics are unchanged.
 | AM-9.3e | `ALTER SERVER s OPTIONS (USER 'u')`, `--target-version 8.0.36` + observed version `8.4.0` | provider observed | typed `ErrTargetVersionMismatch`, early error | audit-layer L=0 R=0 S=0 |
 | AM-9.4 | catalog `error` on audited `ALTER SERVER s1 OPTIONS (USER 'u')` | `s1` fixture; mode observed consumable; sentinel injected at the **`ResolveObject` forward seam** (the request is issued, the resolver raises before issuing SQL) | resolver request counted, no SQL issued: R=1, S=0; bounded error propagates and `errors.Is` reaches the sentinel; the audit exits at that statement's bind — no arm, no gap substitution; public-layer output fields N/A at this layer (the provider-SQL-seam variant, if exercised separately, would be R=1/S=1) | L=1 R=1 S=0 |
 | AM-9.5 | loader error with ALTER-only request `ALTER SERVER s1 OPTIONS (USER 'u')` | `s1` fixture; observed mode; in-domain version; loader raises the sentinel at enrich entry | loader attempted once (L=1) at enrich entry before the statement loop → bounded privilege-read error (`serverPrivilegeReadError` class) terminates enrich; no statement reaches bind → R=0 S=0; public output fields N/A at this layer; error is **not** degraded to an evidence gap | L=1 R=0 S=0 |

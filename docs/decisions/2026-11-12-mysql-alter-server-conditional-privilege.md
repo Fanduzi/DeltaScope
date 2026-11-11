@@ -4,7 +4,9 @@ Date: 2026-11-12
 Status: implemented on this branch; independent reviewer verdict pending
 Related milestone/version: issue #105 T26 under parent issue #79
 Related commits: contract acceptance `93945c01` (R5 ACCEPTED, tree
-`8df83639`), CREATE product `08266403` lineage, DROP product `9dad37b8`
+`8df83639`), CREATE product `2afe8ecb` + docs-only child `28152dfd`
+(`08266403` survives only as pre-amend history), DROP product
+`9dad37b8`
 Related docs: `docs/verification/t26-server-alter-contract-01/`
 (authoritative contract), `docs/verification/t26-server-alter-execution-01/`
 (execution evidence), `docs/decisions/2026-11-16-mysql-create-server-conditional-privilege.md`,
@@ -32,8 +34,11 @@ republished so a later same-identity statement still consumes it.
 - G2 version gate extends to ALTER before the family loader. An
   unknown or out-of-domain resolved version marks the shape-passing
   alter unaudited with `gate:"version"` — the keep-boundary-bind order
-  still issues its one catalog read under a clean channel, while the
-  privilege loader never runs. `statementsNeedMySQLServerPrivilege`
+  still issues its one catalog read only under the full premises:
+  clean channel (no taint/contamination), no ordered answer on the
+  identity, resolver cache miss, identifier-form name, and a provider
+  that actually executes — while the privilege loader never runs.
+  `statementsNeedMySQLServerPrivilege`
   widens to the alter kind, still under the same mode + dialect gate.
 - Independent premise, same witness. `serverAlterPrivilegePremise()`
   projects the request-level observation per statement
@@ -83,7 +88,8 @@ republished so a later same-identity statement still consumes it.
   identity-relation widening, stored-options reads, remote
   connectivity, FEDERATED viability, new public API/CLI flags, opaque
   revision markers, native error classes, duplicate/range oracles.
-- Accepted sibling semantics stay frozen: CREATE R4 / DROP behavior,
+- Accepted sibling semantics stay frozen: the accepted CREATE chain
+  (product `2afe8ecb` + docs-only child `28152dfd`) and DROP behavior,
   including the DROP arm's own barrier-entry minting, is untouched.
 - The shared request witness, observation seam, and mode vocabulary
   serve all three operations; no new request field exists.

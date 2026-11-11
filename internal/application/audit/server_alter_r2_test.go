@@ -9,8 +9,12 @@ package audit
 
 import (
 	"context"
+	"database/sql"
+	"database/sql/driver"
+	"io"
 	"reflect"
 	"strings"
+	"sync"
 	"testing"
 
 	apppolicy "github.com/Fanduzi/DeltaScope/internal/application/policy"
@@ -53,7 +57,7 @@ func snapshotServerChannel(s *batchState) serverChannelSnapshot {
 
 // enrichT26AlterEnrichSlice runs the real enrich loop on one batchState
 // for a statement slice — the call boundary is the apply seam.
-func enrichSlice(t *testing.T, state *batchState, provider *t26Provider, mode spec.PrivilegeAuditMode, stmts []spec.Statement, failures []parseFailure) []spec.Statement {
+func enrichSlice(t *testing.T, state *batchState, provider MetadataProvider, mode spec.PrivilegeAuditMode, stmts []spec.Statement, failures []parseFailure) []spec.Statement {
 	t.Helper()
 	enriched, err := state.enrichStatements(context.Background(),
 		&MetadataRequest{Schema: "golden", Provider: provider, PrivilegeAuditMode: mode},
@@ -85,7 +89,7 @@ func evaluateEnriched(t *testing.T, stmts []spec.Statement) report.Result {
 	return result
 }
 
-func newAlterState(provider *t26Provider) *batchState {
+func newAlterState(provider MetadataProvider) *batchState {
 	state := newBatchState(spec.DialectMySQL, "golden", provider)
 	state.resolvedVersion = &spec.VersionIdentity{Product: spec.VersionProductMySQL, Version: "8.0.36", Major: 8, Minor: 0, Patch: 36, ValidatedRange: true}
 	state.instanceFacts = &spec.InstanceFacts{Version: "8.0.36"}
@@ -382,6 +386,20 @@ func TestT26AlterAM82LoaderBeforeFailure(t *testing.T) {
 	if len(statements) != 1 || statements[0].DDL == nil || statements[0].DDL.Server == nil ||
 		statements[0].DDL.Server.Kind != spec.ServerKindAlter {
 		t.Fatalf("statements = %+v, want exactly stmt#2 — the authored-second ALTER", statements)
+	}
+	// R4-C: the authored record ORDER lives in the parse-layer
+	// positions — the failure record's chunk position must strictly
+	// precede the extracted ALTER's authored position on the same
+	// authored line (failure record #1: line 1 col 1 "GARBAGE(;";
+	// statement #2: line 1 col 11). A numbering mix-up that listed
+	// the ALTER first would break this ordering.
+	failRec := parsed.failures[0]
+	if failRec.Line != statements[0].Line || failRec.Column >= statements[0].Column {
+		t.Fatalf("authored order broken: failure at line=%d col=%d, ALTER at line=%d col=%d — record #1 must precede stmt #2",
+			failRec.Line, failRec.Column, statements[0].Line, statements[0].Column)
+	}
+	if failRec.RawSQL != "GARBAGE(;" {
+		t.Fatalf("failure record #1 raw = %q, want the authored-first chunk", failRec.RawSQL)
 	}
 	state := newAlterState(provider)
 	enriched := enrichSlice(t, state, provider, spec.PrivilegeAuditModeObservedAccountNewSession, statements, parsed.failures)
@@ -1179,10 +1197,11 @@ func TestT26AlterAM75LiteralClearsStalePresence(t *testing.T) {
 // AM-3.1–3.5 (R2): authored OPTIONS → OptionsClean → arm chain.
 // Duplicate keys and out-of-range numerics make the options premise
 // dirty — the arm falls to A4 owing {server.alter_options} on the
-// exact dirty path. In-range PORT values, the unknown FOO key, and a
-// quoted PORT stay clean — the consumable arm is A3. Empty OPTIONS
-// and malformed lists remain the parser's own boundary (covered in
-// the tidb package's strict tests), never reaching adjudication.
+// exact dirty path. In-range parsed PORT values stay clean — the
+// consumable arm is A3. The unknown FOO key and a quoted PORT are
+// parser-boundary forms the tidb package's strict tests reject — they
+// never reach adjudication here. Empty OPTIONS and malformed lists
+// are likewise the parser's own boundary.
 func TestT26AlterAM3OptionsChain(t *testing.T) {
 	for _, tc := range []struct {
 		sql   string
@@ -1267,5 +1286,193 @@ func TestT26AlterAM104LiteralModeOff(t *testing.T) {
 	// further resolver call.
 	if len(provider.calls) != 1 || provider.calls[0].name != "lit9" {
 		t.Fatalf("resolver = %+v, want exactly the literal's forward", provider.calls)
+	}
+}
+
+// --- AM-8.1 R4-B: a REAL database/sql seam under the two-enrich-call
+// fixture. mysqlmeta cannot be imported here (it asserts the
+// audit.MetadataProvider interface — an import cycle), so the provider
+// below the seam is an in-test SQL-issuing provider; the S counter
+// still sits at the genuine database/sql→driver boundary and counts
+// every mysql.servers statement that actually reaches the driver.
+
+type t26SQLFixture struct {
+	servers map[string]bool
+	queries []string // every issued SQL — the S seam
+}
+
+var (
+	t26SQLDriverOnce sync.Once
+	t26SQLDatasets   sync.Map
+)
+
+func openT26SQLDB(t *testing.T, fixture *t26SQLFixture) *sql.DB {
+	t.Helper()
+	t26SQLDriverOnce.Do(func() { sql.Register("t26sql-servers", t26SQLDriver{}) })
+	name := "t26sql-" + strings.NewReplacer("/", "_", " ", "_").Replace(t.Name())
+	t26SQLDatasets.Store(name, fixture)
+	db, err := sql.Open("t26sql-servers", name)
+	if err != nil {
+		t.Fatalf("open sql db: %v", err)
+	}
+	t.Cleanup(func() {
+		db.Close()
+		t26SQLDatasets.Delete(name)
+	})
+	return db
+}
+
+type t26SQLDriver struct{}
+type t26SQLConn struct{ fixture *t26SQLFixture }
+type t26SQLRows struct {
+	rows  [][]driver.Value
+	index int
+}
+
+func (t26SQLDriver) Open(name string) (driver.Conn, error) {
+	fixture, _ := t26SQLDatasets.Load(name)
+	conn, _ := fixture.(*t26SQLFixture)
+	return &t26SQLConn{fixture: conn}, nil
+}
+
+func (c *t26SQLConn) Prepare(string) (driver.Stmt, error) { return nil, driver.ErrSkip }
+func (c *t26SQLConn) Close() error                        { return nil }
+func (c *t26SQLConn) Begin() (driver.Tx, error)           { return nil, driver.ErrSkip }
+
+func (c *t26SQLConn) QueryContext(_ context.Context, query string, args []driver.NamedValue) (driver.Rows, error) {
+	c.fixture.queries = append(c.fixture.queries, query)
+	if strings.Contains(query, "mysql.servers") {
+		name, _ := args[0].Value.(string)
+		if c.fixture.servers[name] {
+			return &t26SQLRows{rows: [][]driver.Value{{name}}}, nil
+		}
+		return &t26SQLRows{}, nil
+	}
+	return &t26SQLRows{}, nil
+}
+
+func (r *t26SQLRows) Columns() []string { return []string{"Server_name"} }
+func (r *t26SQLRows) Close() error      { return nil }
+func (r *t26SQLRows) Next(dest []driver.Value) error {
+	if r.index >= len(r.rows) {
+		return io.EOF
+	}
+	copy(dest, r.rows[r.index])
+	r.index++
+	return nil
+}
+
+func t26ServerQueries(fixture *t26SQLFixture) int {
+	n := 0
+	for _, q := range fixture.queries {
+		if strings.Contains(q, "mysql.servers") {
+			n++
+		}
+	}
+	return n
+}
+
+// t26SQLProvider issues the real mysql.servers read through the
+// database/sql seam on every resolver forward — L at the privilege
+// loader counter, R at the forward seam, S at the driver boundary.
+type t26SQLProvider struct {
+	db             *sql.DB
+	version        string
+	privilege      *spec.MySQLServerDropPrivilegeObservation
+	privilegeErr   error
+	privilegeCalls int
+	calls          []t26Call
+}
+
+func (p *t26SQLProvider) LoadInstanceFacts(context.Context, spec.Dialect, string) (*spec.InstanceFacts, error) {
+	return &spec.InstanceFacts{Version: p.version}, nil
+}
+
+func (p *t26SQLProvider) LoadMySQLServerDropPrivilege(_ context.Context, dialect spec.Dialect) (*spec.MySQLServerDropPrivilegeObservation, error) {
+	p.privilegeCalls++
+	if dialect != spec.DialectMySQL {
+		return nil, nil
+	}
+	if p.privilegeErr != nil {
+		return nil, p.privilegeErr
+	}
+	return p.privilege, nil
+}
+
+func (p *t26SQLProvider) LoadTableSnapshot(context.Context, spec.Dialect, string, string) (*spec.TableSnapshot, error) {
+	return nil, nil
+}
+
+func (p *t26SQLProvider) ResolveObject(ctx context.Context, dialect spec.Dialect, req spec.ObjectLookupRequest) (*spec.ObjectSnapshot, error) {
+	p.calls = append(p.calls, t26Call{typ: req.Type, name: req.Name, qualifiers: req.Qualifiers})
+	snapshot := &spec.ObjectSnapshot{Type: req.Type, Name: req.Name, Status: spec.MetadataStatusUnavailable}
+	if req.Type != "mysql_server" || dialect != spec.DialectMySQL {
+		return snapshot, nil
+	}
+	state := &spec.ServerState{Name: req.Name}
+	snapshot.Server = state
+	if req.Qualifiers[spec.ObjectLookupQualifierNameForm] != spec.ObjectLookupNameFormIdentifier {
+		state.UnreadReason = spec.MetadataUnreadIdentityUnproven
+		return snapshot, nil
+	}
+	var exists string
+	err := p.db.QueryRowContext(ctx,
+		"SELECT Server_name FROM mysql.servers WHERE Server_name = ?", req.Name).Scan(&exists)
+	if err != nil && err != sql.ErrNoRows {
+		return nil, err
+	}
+	state.Read = true
+	if err == nil {
+		state.Exists, state.Status = true, spec.MetadataStatusConfirmed
+		snapshot.Status, snapshot.Exists = spec.MetadataStatusConfirmed, true
+	}
+	return snapshot, nil
+}
+
+// AM-8.1 R4-B: the REAL two-enrich-call fixture on one shared
+// batchState — call1 (observed) ALTER s1 + trailing failure record
+// contaminates; call2 (mode off) ALTER s1 on the same state. Each
+// call's L/R/S deltas measured at its own seam: ΔL=0 traces to the
+// mode-off loader skip, ΔR=0 to contamination, ΔS=0 to the driver
+// boundary — never inferred from another layer.
+func TestT26AlterAM81TwoCallLayerCounts(t *testing.T) {
+	fixture := &t26SQLFixture{servers: map[string]bool{"s1": true}}
+	db := openT26SQLDB(t, fixture)
+	provider := &t26SQLProvider{db: db, version: "8.0.36", privilege: superObservation()}
+
+	parsed, _ := parseSQL(context.Background(),
+		"ALTER SERVER s1 OPTIONS (USER 'u'); GARBAGE(", spec.DialectMySQL)
+	if len(parsed.failures) != 1 {
+		t.Fatalf("call1 parse: failures=%d, want 1", len(parsed.failures))
+	}
+	call1Stmts, err := Extract(context.Background(), parsed)
+	if err != nil || len(call1Stmts) != 1 {
+		t.Fatalf("call1 extract: stmts=%d err=%v", len(call1Stmts), err)
+	}
+
+	state := newAlterState(provider)
+	enrichSlice(t, state, provider, spec.PrivilegeAuditModeObservedAccountNewSession, call1Stmts, parsed.failures)
+	if !state.contaminated {
+		t.Fatalf("same batchState must return contaminated=true after call1's trailing failure")
+	}
+	l1, r1, s1 := provider.privilegeCalls, len(provider.calls), t26ServerQueries(fixture)
+	if l1 != 1 || r1 != 1 || s1 != 1 {
+		t.Fatalf("call1 L/R/S = %d/%d/%d, want 1/1/1", l1, r1, s1)
+	}
+
+	parsed2, _ := parseSQL(context.Background(), "ALTER SERVER s1 OPTIONS (USER 'u')", spec.DialectMySQL)
+	call2Stmts, err := Extract(context.Background(), parsed2)
+	if err != nil || len(call2Stmts) != 1 {
+		t.Fatalf("call2 extract: stmts=%d err=%v", len(call2Stmts), err)
+	}
+	enrichSlice(t, state, provider, "", call2Stmts, nil) // mode off = empty mode
+	dl := provider.privilegeCalls - l1
+	dr := len(provider.calls) - r1
+	ds := t26ServerQueries(fixture) - s1
+	if dl != 0 || dr != 0 || ds != 0 {
+		t.Fatalf("call2 deltas ΔL=%d ΔR=%d ΔS=%d, want 0/0/0 — ΔL=0 from mode off, ΔR=0 from contamination, ΔS=0 at the driver seam", dl, dr, ds)
+	}
+	if provider.privilegeCalls != 1 || len(provider.calls) != 1 || t26ServerQueries(fixture) != 1 {
+		t.Fatalf("totals L/R/S = %d/%d/%d, want 1/1/1", provider.privilegeCalls, len(provider.calls), t26ServerQueries(fixture))
 	}
 }

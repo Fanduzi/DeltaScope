@@ -344,25 +344,29 @@ func TestT26AlterR3DMeasuredLayerCounts(t *testing.T) {
 		servers map[string]bool
 		l, r, s int
 	}{
-		// ALTER→DROP alias: zero catalog, each verbatim spelling reads.
-		{"AM-7.2", "ALTER SERVER s9 OPTIONS (USER 'u'); DROP SERVER S9", observed, map[string]bool{}, 1, 2, 2},
+		// ALTER→DROP alias: zero catalog, mode off, each verbatim
+		// spelling reads — frozen row is L/R/S = 0/2/2 (R4-B).
+		{"AM-7.2", "ALTER SERVER s9 OPTIONS (USER 'u'); DROP SERVER S9", "", map[string]bool{}, 0, 2, 2},
 		// sé present + se blocked by the relation scan — the DROP never
 		// reaches a read: one catalog read total.
 		{"AM-7.3a", "ALTER SERVER `sé` OPTIONS (USER 'u'); DROP SERVER se", observed, map[string]bool{"sé": true}, 1, 1, 1},
 		// Both zero: the DROP's own fresh verbatim read — two catalog reads.
 		{"AM-7.3b", "ALTER SERVER `sé` OPTIONS (USER 'u'); DROP SERVER se", observed, map[string]bool{}, 1, 2, 2},
-		// 65-rune overlong identifier boundary forwards AND executes —
-		// measured against the real provider: R=1/S=1.
-		{"AM-7.4", "ALTER SERVER " + strings.Repeat("x", 65) + " OPTIONS (USER 'u'); DROP SERVER s9", observed, map[string]bool{}, 1, 1, 1},
+		// 65-rune overlong identifier boundary forwards AND executes,
+		// zero catalog + mode off — frozen row is L/R/S = 0/1/1 (R4-B).
+		{"AM-7.4", "ALTER SERVER " + strings.Repeat("x", 65) + " OPTIONS (USER 'u'); DROP SERVER s9", "", map[string]bool{}, 0, 1, 1},
 		// Mixed identifier/literal chain: s1's catalog read + the
 		// literal's declined forward; the tainted DROP reads nothing.
 		{"AM-7.5", "ALTER SERVER s1 OPTIONS (USER 'u'); ALTER SERVER 'lit' OPTIONS (USER 'u'); DROP SERVER S1", observed, map[string]bool{"s1": true}, 1, 2, 1},
 		// sé→se→DROP sé final-consumer chain: L=1/R=1/S=1.
 		{"AM-7.6", "ALTER SERVER `sé` OPTIONS (USER 'u'); ALTER SERVER se OPTIONS (USER 'v'); DROP SERVER `sé`", observed, map[string]bool{"sé": true}, 1, 1, 1},
-		// Single-request form of the two-call contamination fixture:
-		// the prefix ALTER reads once; the tail binds contaminated —
-		// total S=1 proves the second ALTER issued no SQL.
-		{"AM-8.1", "ALTER SERVER s1 OPTIONS (USER 'u'); GARBAGE(; ALTER SERVER s1 OPTIONS (HOST 'h')", observed, map[string]bool{"s1": true}, 1, 1, 1},
+		// Supplementary single-request form of the contamination chain:
+		// the prefix ALTER reads once; the in-loop failure contaminates
+		// the tail. This row does NOT measure a call-2 SQL delta — the
+		// real two-enrich-call witness lives at the application layer
+		// (TestT26AlterAM81TwoCallLayerCounts); keep it supplementary
+		// only (R4-B).
+		{"AM-8.1-single-request", "ALTER SERVER s1 OPTIONS (USER 'u'); GARBAGE(; ALTER SERVER s1 OPTIONS (HOST 'h')", observed, map[string]bool{"s1": true}, 1, 1, 1},
 		// Literal write → tainted DROP, mode off: R=1/S=0.
 		{"AM-10.4", "ALTER SERVER 'lit9' OPTIONS (USER 'u'); DROP SERVER s9", "", map[string]bool{}, 0, 1, 0},
 	} {

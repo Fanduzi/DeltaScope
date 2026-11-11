@@ -748,24 +748,48 @@ func TestT26AlterAM95InternalLoaderBoundary(t *testing.T) {
 // text). RawSQL/NormalizedSQL must equal the fixed skeleton exactly.
 func TestT26AlterAM101ArmSerializedScans(t *testing.T) {
 	for _, tc := range []struct {
-		name string
-		sql  string
-		mode spec.PrivilegeAuditMode
-		idx  int // statement index carrying the shape
+		name    string
+		sql     string
+		mode    spec.PrivilegeAuditMode
+		idx     int // statement index carrying the shape
+		servers map[string]bool
+		want    string // required outcome marker / boundary kind
 	}{
 		// A1: literal write taints the channel; the audited ALTER binds
 		// the barrier — both statements scanned.
-		{"A1", "ALTER SERVER 'lit-pwsentinel455' OPTIONS (USER 'u'); ALTER SERVER shost77 OPTIONS (USER 'u', PASSWORD 's3cr3t99')", spec.PrivilegeAuditModeObservedAccountNewSession, 1},
-		// A2: DROP publishes OrderedAbsent; ALTER on it refuses.
-		{"A2", "DROP SERVER spw455; ALTER SERVER spw455 OPTIONS (USER 'u', HOST 'hsentinel77')", spec.PrivilegeAuditModeObservedAccountNewSession, 1},
-		// A4: catalog zero + observed mode → unproven owed pair.
-		{"A4", "ALTER SERVER spw455 OPTIONS (USER 'usentinel77', PASSWORD 'pwsentinel99', HOST 'hsentinel77')", spec.PrivilegeAuditModeObservedAccountNewSession, 0},
+		{"A1", "ALTER SERVER 'lit-pwsentinel455' OPTIONS (USER 'u'); ALTER SERVER shost77 OPTIONS (USER 'u', PASSWORD 's3cr3t99')", spec.PrivilegeAuditModeObservedAccountNewSession, 1, map[string]bool{}, "blocked_batch_effects"},
+		// A2: catalog-PRESENT spw455 lets the plain DROP prove its own
+		// execution and publish OrderedAbsent; the trailing ALTER then
+		// really reaches refused_absent (R4-A: a zero-row DROP would
+		// mint a barrier and land A1 instead).
+		{"A2", "DROP SERVER spw455; ALTER SERVER spw455 OPTIONS (USER 'u', HOST 'hsentinel77')", spec.PrivilegeAuditModeObservedAccountNewSession, 1, map[string]bool{"spw455": true}, "refused_absent"},
+		// A4: catalog zero + consumable privilege + clean options →
+		// unproven on existence alone; owed exactly {server.existence}.
+		{"A4", "ALTER SERVER spw455 OPTIONS (USER 'usentinel77', PASSWORD 'pwsentinel99', HOST 'hsentinel77')", spec.PrivilegeAuditModeObservedAccountNewSession, 0, map[string]bool{}, "unverified"},
 		// Boundary: the literal-name form carries only the skeleton.
-		{"boundary", "ALTER SERVER 'lit-pwsentinel455' OPTIONS (USER 'u', HOST 'hsentinel77')", spec.PrivilegeAuditModeObservedAccountNewSession, 0},
+		{"boundary", "ALTER SERVER 'lit-pwsentinel455' OPTIONS (USER 'u', HOST 'hsentinel77')", spec.PrivilegeAuditModeObservedAccountNewSession, 0, map[string]bool{}, "boundary"},
 	} {
-		provider := &t26Provider{servers: map[string]bool{}, version: "8.0.36", privilege: superObservation()}
+		provider := &t26Provider{servers: tc.servers, version: "8.0.36", privilege: superObservation()}
 		result, _ := evaluateT26Statements(t, tc.sql, provider, tc.mode)
 		stmt := result.Statements[tc.idx]
+		// Pin the REAL arm/boundary before any scan: an outcome must be
+		// observed where expected, and a boundary row must carry no
+		// finding (R4-A — a row that silently lands on the wrong arm
+		// can still pass a pure negative scan).
+		switch tc.want {
+		case "boundary":
+			if len(result.Unsupported) == 0 || len(stmt.Findings) != 0 {
+				t.Fatalf("%s: expected an unaudited boundary row (result.unsupported + zero findings), got unsupported=%+v findings=%+v", tc.name, result.Unsupported, stmt.Findings)
+			}
+		default:
+			if len(stmt.Findings) == 0 || stmt.Findings[0].Metadata["outcome"] != tc.want {
+				var got string
+				if len(stmt.Findings) > 0 {
+					got, _ = stmt.Findings[0].Metadata["outcome"].(string)
+				}
+				t.Fatalf("%s: outcome = %q, want %q — the scan row must pin its real arm", tc.name, got, tc.want)
+			}
+		}
 		if stmt.RawSQL != "ALTER SERVER <redacted>" || stmt.NormalizedSQL != "ALTER SERVER <redacted>" {
 			t.Fatalf("%s: sql fields must equal the fixed skeleton exactly: raw=%q normalized=%q", tc.name, stmt.RawSQL, stmt.NormalizedSQL)
 		}
@@ -779,5 +803,36 @@ func TestT26AlterAM101ArmSerializedScans(t *testing.T) {
 				t.Fatalf("%s: protected detail %q leaked into the serialized public object", tc.name, protected)
 			}
 		}
+	}
+}
+
+// AM-9.4 internal layer (R4-C): the ResolveObject sentinel terminates
+// the statement's own bind inside enrich — no ServerAlter adjudication
+// is attached, no apply runs, and the failure never degrades into a
+// normal evidence-gap result. errors.Is keeps the injected sentinel
+// reachable while the bounded public text stays payload-free.
+func TestT26AlterAM94InternalResolverTermination(t *testing.T) {
+	sentinel := &t26LoaderError{msg: "pw-sentinel-455"}
+	provider := &t26Provider{servers: map[string]bool{"s1": true}, version: "8.0.36",
+		privilege: superObservation(), err: sentinel}
+	statements, failures := parseT26(t, t26AlterSQL)
+	state := newAlterState(provider)
+	enriched, err := state.enrichStatements(context.Background(),
+		&MetadataRequest{Schema: "golden", Provider: provider, PrivilegeAuditMode: spec.PrivilegeAuditModeObservedAccountNewSession},
+		statements, failures, state.instanceFacts, auditLimits{orderedStatements: defaultOrderedStatementLimit})
+	if err == nil {
+		t.Fatalf("resolver sentinel must terminate enrich")
+	}
+	if !errors.Is(err, sentinel) {
+		t.Fatalf("sentinel unreachable: %v", err)
+	}
+	if strings.Contains(err.Error(), "pw-sentinel-455") {
+		t.Fatalf("bounded public error echoed the injected payload: %v", err)
+	}
+	if enriched != nil {
+		t.Fatalf("enrich returned %d statements — no statement may reach adjudication/apply", len(enriched))
+	}
+	if provider.privilegeCalls != 1 || len(provider.calls) != 1 {
+		t.Fatalf("L=%d R=%d, want 1/1 — loader fired at entry, the single resolve is where it died", provider.privilegeCalls, len(provider.calls))
 	}
 }
