@@ -1,9 +1,14 @@
 # T26-SERVER-ALTER-CONTRACT-01 — ALTER SERVER first-slice candidate contract
 
-Status: **ISSUED — candidate contract, docs-only**. Every adjudication
-below is a *proposed* contract awaiting Reviewer acceptance; nothing
-here is implemented, verified, or approved. This document implements
-no code, runs no test, and changes no accepted DROP/CREATE behavior.
+Status: **ISSUED — candidate contract, docs-only (R2 revision)**.
+Every adjudication below is a *proposed* contract awaiting Reviewer
+acceptance; nothing here is implemented, verified, or approved.
+This document implements no code, runs no test, and changes no
+accepted DROP/CREATE behavior. R2 closes the R1 rulings: the A1 arm
+is now a uniform ordered-channel no-op; a canonical
+PublishPresent/ConditionalSource/ConditionalAudit assignment table
+is frozen; P1–P7 are adjudicated (§G); boundary bind behavior is
+kept unchanged; version/CLI outputs carry their exact preconditions.
 Parent: T26 / issue #105 under issue #79. Baseline: `28152dfd`
 (tree `8b17cf3c`, parent `2afe8ecb`) on
 `milestone/mysql-tidb-ddl-completion` — the accepted
@@ -170,12 +175,14 @@ not replace**. Consequences, per work order:
 - **Connection advisory**: CREATE's `ConnectionMembersComplete`
   notice does **not** transfer — for ALTER the authored list is
   intentionally partial and the stored set is unread, so "omitted
-  members store blank defaults" is false here. Candidate scoped
-  advisory (A3/A4 arms only): `notice: connection_members` —
-  "ALTER SERVER updates only the authored options; the resulting
-  connection member set is unverified." No option keys, values, or
-  stored-member claims in the text. Registered as a candidate
-  policy decision with the omit-entirely fallback (§G P2).
+  members store blank defaults" is false here. **Decided** scoped
+  advisory (§G P2, A3/A4 arms only, fixed text): "ALTER SERVER
+  specifies a partial options update; stored and resulting
+  connection member sets are unverified." Emitted under
+  `ddl.mysql.server.alter.notice` at its configured level,
+  discriminated by the arm in `Metadata.ServerAlter`; no owed
+  fact, no option keys/values, no stored-member claims, no
+  implication that an A4 update executed; A1/A2 never emit it.
 - **No expansion**: credentials, coordinates, and raw OPTIONS
   payloads stay out of both internal storage and public output —
   the parser already records keys and value kinds only.
@@ -199,14 +206,46 @@ PublishPresent, ConditionalSource, ConditionalAudit},
 `server.batch_effects`; outcome tokens `conditional_alter` (new) /
 `refused_absent`, `blocked_batch_effects`, `unverified` (reused).
 
+**Canonical assignment table** — every adjudication field's value
+per arm, the single truth rule evaluation and ordered apply both
+read (`Metadata.ServerAlter`); nothing downstream recomputes a
+different premise or provenance:
+
+| arm | Owed | PublishPresent | ConditionalSource | ConditionalAudit | published `OrderedPresentConditional` |
+|---|---|---|---|---|---|
+| A1 Barrier | exactly `{server.batch_effects}` | `false` | `false` | `false` | — |
+| A2 TerminalRefusal | `∅` | `false` | = consumed `OrderedAbsentConditional` | = `ConditionalSource` | — |
+| A3 ProvenAlter | `∅` | `true` | = consumed `OrderedPresentConditional`; `false` when the source is the catalog row | `true` | = `ConditionalSource` |
+| A4 Unproven | exact formula below | `true` iff a proven-present source exists | = consumed `OrderedPresentConditional`; `false` for catalog/no ordered source | `ConditionalSource \|\| own privilege consumable` | = `ConditionalSource` |
+
+When `PublishPresent=true`, the published
+`OrderedPresentConditional` equals `ConditionalSource` — never
+`ConditionalAudit`: a statement's own conditional premise marks the
+*audit conclusion* conditional, it does not make the *presence fact*
+conditional. Catalog-sourced presence publishes `flag=false` even
+when `ConditionalAudit=true` (A4 with own consumable premise — the
+case that proves the two conditionality axes stay separate).
+
 **Branch order — first match wins:**
 
-- **ALT-A1 Barrier** — whole-batch contamination (`batchState.
-  contaminated` reaching the arm table directly, never via
-  UnreadReason) or bound `UnreadReason = server.batch_effects`
-  (channel taint / relation-scan barrier). Owed = exactly
-  `{server.batch_effects}`. Marker: none — the shadowed premises
-  never reached evaluation.
+- **ALT-A1 Barrier** — one of three distinct bound sources:
+  whole-batch contamination (`batchState.contaminated` reaching the
+  arm table directly, never via UnreadReason), channel taint, or a
+  relation-scan barrier (the latter two bound as
+  `UnreadReason = server.batch_effects`). All three are the same
+  uniform **ordered-channel no-op**: Owed = exactly
+  `{server.batch_effects}`; `PublishPresent=false`,
+  `ConditionalSource=false`, `ConditionalAudit=false`. The arm
+  **reports** existing uncertainty — it creates or modifies no
+  entry, clears no prior `OrderedPresent`/`OrderedAbsent`, records
+  no `serverWrite`, taint, or barrier, and rewrites no existing
+  publication or provenance. Pre-existing channel state stands
+  untouched. The bound snapshot/adjudication may record this
+  statement's refused-read reason (`UnreadReason`), nothing more.
+  A relation-scan barrier needs no provably-same entry to exist —
+  an *unproven*-relation entry or write triggers it; the A1 arm
+  must not assume a same-name barrier entry already stands, and
+  must not mint one.
 - **ALT-A2 TerminalRefusal** — `OrderedAbsent` on the provably-same
   identity. Owed = `∅`; blocker; `refused_absent`. The impossibility
   is proven by the ordered absent alone — privilege and options
@@ -233,14 +272,26 @@ PublishPresent, ConditionalSource, ConditionalAudit},
   `ConditionalSource || consumable`.
 
 **Presence-preservation theorem** (the divergence the order asks to
-prove, not borrow):
+prove, not borrow — derived inside the declared presence-only model,
+not a native-execution proof):
 
-`ALTER SERVER` cannot create a row — the grammar has no insert path;
-"alters the server information" presupposes the named row. And it
-cannot delete a row — the grammar has no delete path. Every
-adjudicable outcome — executed, refused, or left unknown — therefore
-preserves the pre-state existence value: post-state existence ≡
-pre-state existence on every arm. Corollaries:
+The official semantics scope the statement's effect to option
+fields: "alters the server information for *server_name*, adjusting
+any of the options … the corresponding fields in the `mysql.servers`
+table are updated accordingly." The documented write set is the
+named row's option columns — field values only. Within this engine's
+presence-only ordered model, a write that updates option fields
+changes **no tracked fact**: it cannot turn a present row absent
+(the update targets the row, it does not remove it) and it cannot
+turn an absent row present (updating fields of the named row does
+not mint the row — the verb's own definition presupposes it). The
+claim is therefore model-level: every adjudicable outcome —
+executed, refused, or left unknown — preserves the pre-state
+existence value. It does not rest on "the grammar shows no
+INSERT/DELETE keywords" as a claim about the engine's internal
+implementation paths; it rests on the documented field-update
+semantics combined with the model tracking presence only.
+Corollaries:
 
 1. **Merge proof**: proven presence is republishable on every arm
    whose source proves it — catalog `Read && Exists` or consumed
@@ -249,17 +300,19 @@ pre-state existence on every arm. Corollaries:
    ALTER on proven present still publishes `OrderedPresent`
    unconditionally (catalog source) or with the consumed flag
    (ordered source).
-2. **No barrier is ever owed by an audited ALTER**: a barrier
-   records an undischarged unknown *effect on tracked state*. The
-   channel tracks presence only; ALTER provably cannot change
-   presence. An unproven ALTER on unknown existence leaves unknown
-   unknown — nothing was made *more* unknown, no catalog answer
-   goes stale (zero-row stays valid — ALTER never inserts). So A4
-   on unknown pre-state publishes nothing, barriers nothing, and
-   creates no entry. This is the deliberate divergence from
+2. **An audited ALTER introduces no new presence barrier**: a
+   barrier records an undischarged unknown *effect on tracked
+   state*. The channel tracks presence only; ALTER provably cannot
+   change presence. An unproven ALTER on unknown existence leaves
+   unknown unknown — nothing was made *more* unknown, no catalog
+   answer goes stale (zero-row stays valid — ALTER never inserts).
+   So A4 on unknown pre-state publishes nothing, barriers nothing,
+   and creates no entry. This is the deliberate divergence from
    CREATE/DROP's unproven→barrier rule: there the write may have
    *deleted or created*, shadowing the read; here it provably
-   cannot.
+   cannot. (A1 still *owes* `server.batch_effects` when
+   pre-existing state shadows the premises — "owes a gap" and
+   "introduces a barrier" are different facts.)
 3. **Consumed ordered answers stay valid**: `OrderedAbsent` consumed
    (A2) stands; `OrderedPresent` consumed (A3/A4) stands — the
    refusal/publish leaves the entry's ordered state untouched or
@@ -276,7 +329,7 @@ and miss-cache first touch; loader ≤1/request):
 | row | channel | ordered answer | catalog | P | O | arm | owed | outcome | level | post-state | resolver |
 |---|---|---|---|---|---|---|---|---|---|---|---|
 | 1 | contaminated | — | — | — | — | Barrier | {batch_effects} | blocked_batch_effects | notice | no mutation | 0 |
-| 2 | taint/rel-barrier | — | no read | any | any | Barrier | {batch_effects} | blocked_batch_effects | notice | provably-same entry barrier (stands) | 0 |
+| 2 | taint/rel-barrier | — | no read | any | any | Barrier | {batch_effects} | blocked_batch_effects | notice | **no-op** — pre-existing shadowing state stands; nothing created/modified | 0 |
 | 3 | clean | OrderedAbsent-same | — | any | any | TerminalRefusal | ∅ | refused_absent | blocker | absent stands (entry untouched) | 0 |
 | 4 | clean | OrderedPresent-same | — | consumable | clean | ProvenAlter | ∅ | conditional_alter | notice | OrderedPresent re-published; flag inherited | 0 |
 | 5 | clean | OrderedPresent-same | — | unproven | clean | Unproven | {alter_privilege} | unverified | notice | OrderedPresent re-published; flag inherited | 0 |
@@ -294,12 +347,18 @@ and miss-cache first touch; loader ≤1/request):
 | 17 | clean | none | resolver/loader error | — | — | error exit | — | — | — | bounded error propagates; no arm | — |
 
 Rows 10–11 register the candidate's sharpest divergence: an unproven
-ALTER on proven presence *still re-publishes* `OrderedPresent`
-unconditionally — the presence fact never depended on the premise,
-and the preservation theorem proves the write cannot remove it.
-Conservative fallback (§G P1): leave the entry untouched and let
-later statements re-derive presence from the per-request object
-cache; the difference is fold-alias reach, never correctness.
+ALTER on proven presence *still re-publishes* `OrderedPresent` —
+the presence fact never depended on the premise, and the
+preservation theorem proves the write cannot remove it. Republish
+is **decided** (§G P1), and its cost is registered honestly: a
+re-published catalog presence is consumed by same-name *and*
+ASCII-fold-alias statements, and — under the unchanged relation
+scan — a new `present` entry can additionally throw
+`server.batch_effects` at later *unproven-relation* names (AM-7.3
+demonstrates). Republish vs. leave-the-entry therefore differ in
+later gaps, coverage, and read counts — not only in fold-alias
+reach — and the contract accepts that as the priced consequence of
+keeping presence provable.
 
 **Premise discharge on known-refusal branches** (work order D):
 on A2 the impossibility is proven by ordered absent alone — nothing
@@ -320,12 +379,12 @@ widen the relation domain.
 
 | arm | pre-state on provably-same identity | modeled transition |
 |---|---|---|
-| Barrier (contaminated) | any | no mutation — the whole-batch guard blocks consumption |
-| Barrier (taint/relation) | entry exists | `barrier=true` stands (idempotent); ordered answers already cleared by the shadowing write |
+| Barrier (all three sources) | any | **uniform no-op** — no entry created or modified, no ordered answer cleared, no write record, taint, or barrier minted; the shadowing state that produced the bound `UnreadReason`/contamination already stands |
 | TerminalRefusal | `absent` entry | untouched — absent stands; `publishedArm` preserved |
-| ProvenAlter | ordered-source entry | `present=true`, `presentConditional` inherited, `absent/barrier=false` |
+| ProvenAlter | ordered-source entry | `present=true`, `presentConditional` = consumed `OrderedPresentConditional`, `absent/barrier=false` |
 | ProvenAlter | catalog source, no entry | create entry: `present=true`, `presentConditional=false` |
-| Unproven (proven-present source) | as ProvenAlter | same publish — presence unconditional |
+| Unproven (ordered present source) | ordered-source entry | re-publish: `present=true`, `presentConditional` = consumed flag (inherited, never laundered) |
+| Unproven (catalog present source) | catalog source, no entry | create entry: `present=true`, `presentConditional=false` — unconditional presence |
 | Unproven (unknown source) | any | **no publish, no barrier, no entry** — preservation theorem |
 | boundary ALTER (all forms) | any | **unchanged accepted behavior**: ident name → `serverWrite` + barrier on non-distinct entries; literal name → whole-channel taint |
 
@@ -350,7 +409,11 @@ against the accepted baseline):
   the re-published `OrderedPresent` → the drop reads proven presence
   without a second catalog read (objectCache already held the row
   anyway; the publish additionally answers the alias at channel
-  level).
+  level). Same entry, other side: `ALTER sé` (catalog present) →
+  `ALTER se` — `se` hits the relation-scan barrier (`serverRel`
+  unproven) and owes `server.batch_effects`; without the publish `se`
+  would have taken its own zero-row read and owed `existence`. Both
+  directions are the priced P1 consequence.
 - `ALTER s` unknown → `ALTER s` again → both A4-on-unknown; no
   entries created; each may fire its own first-touch catalog read
   (objectCache deduplicates same verbatim name).
@@ -366,11 +429,50 @@ reject on any blocker, review while gaps stand, pass when clean):
 | ProvenAlter | conditional_alter | notice | ∅ | always + inherited flag | complete | none | ≤1 | 0 or 1 (source) | 0 or 1 |
 | Unproven | unverified | notice | exact formula | conditional iff source-flag or consumable | unverified | gap floor → review | ≤1 | 0 or 1 | 0 or 1 |
 
-CLI exits (future execution probes — same three-probe shape as the
-accepted CREATE evidence): pinned in-domain ALTER → rc 0 with the
-arm's projection; no pin → `unaudited` + `gate:"version"`, rc 1;
-malformed pin → typed preflight error, rc 2, zero audit reads.
-No new CLI flags; no gap rewrites the accepted preflight semantics.
+CLI exits (future execution probes — registered plan, none run
+here). Version resolution is request-level and precedes every arm;
+the cases that must stay distinct:
+
+| input | resolution | class | audit-layer L/R/S |
+|---|---|---|---|
+| pin `8.0.36` (providerless) | in-domain | arms apply; single clean ALTER under the declared policy → A4 unverified (no loader, no provider) | 0/0/0 — no provider to read |
+| no pin, no provider, no other version source | unknown | `unaudited` + `gate:"version"` boundary | 0/0/0 — providerless has nothing to read |
+| no pin, provider observed in-domain | resolved from banner | arms apply — the pin is not what gates | per arm |
+| pin out-of-domain (e.g. `5.7.44`) | resolved, outside 8.0.x | `unaudited` + `gate:"version"` boundary | bind may still issue reads — registered below |
+| TiDB dialect | vendor boundary | `unaudited`, product not supported | bind does not reach the MySQL resolver |
+| malformed pin `8.0.x` | — | typed `ErrInvalidTargetVersion` preflight, rc 2 | 0/0/0 — preflight precedes enrich |
+| MySQL request + observed non-MySQL product | — | typed `ErrDialectProductMismatch` | 0/0/0 |
+| pin + observed version disagree | — | typed `ErrTargetVersionMismatch` | 0/0/0 |
+
+The last two mismatches terminate before any arm; audit-layer
+loader/resolver/SQL counts are zero and the version observation
+itself is not billed into L/R/S. For the **version boundary
+keep-vs-short-circuit** question this contract chooses: **keep the
+existing boundary bind behavior** — `bindMySQLServer` has no
+`Unsupported` predicate today, so a version-gated audited-shape
+ALTER still walks the six-step order and issues its catalog read
+(provider present ⇒ R=1/S=1; the read's result is never used for
+the boundary statement). Introducing an earlier exit would change
+read counts and possibly error propagation and needs its own
+contract ruling. `rc` follows the existing verdict→exit mapping
+per request and policy — the accepted CREATE CLI evidence recorded
+review ⇒ rc 0 under its declared notice-level policy and typed
+preflight ⇒ rc 2; this contract asserts no generalized
+"pin ⇒ rc 0 / no pin ⇒ rc 1" rule: A2's blocker, multi-statement
+aggregates, and other policies map by the existing rules,
+unchanged.
+
+Three-probe plan (future execution order, providerless
+`--no-metadata` shape as in the accepted CREATE evidence;
+privilege mode off; single clean `ALTER SERVER s OPTIONS
+(USER 'u')`; policy enables `ddl.mysql.server.alter.notice` at
+notice): pin `8.0.36` ⇒ A4, owed
+`{server.existence, server.alter_privilege}`, no marker,
+coverage/outcome `unverified`, verdict review, rc per that
+policy's existing mapping; no pin ⇒ version boundary above;
+malformed `8.0.x` ⇒ `ErrInvalidTargetVersion`, rc 2, zero audit
+reads. No new CLI flags; no gap rewrites the accepted preflight
+semantics.
 
 ## F. Registration — proposed seams (execution order implements)
 
@@ -393,6 +495,17 @@ implemented — `.go` changed = 0 in this doc round):
   `serverAlterPrivilegePremise()` projection.
 - `internal/application/audit/batch_state_server.go` —
   `ServerKindAlter` apply block implementing §E transitions.
+- `internal/application/audit/batch_state_server_srs.go` —
+  **no change required** (R2-C static-seam verdict): the bound
+  baseline excerpt (`r2-bind-excerpt.txt`, recorded as non-repo
+  evidence) shows `bindMySQLServer` is kind-agnostic — it reads
+  `decl.Name`/`decl.NameIdent` only and walks the same six-step
+  order (contamination → taint → relation barrier → ordered
+  absent/present consumption → resolver fallback) for every
+  `DDL.Server != nil`. An audited ALTER inherits exactly the
+  ordered-consumption behavior the contract relies on. The kind
+  predicates that do need extension live elsewhere (the four
+  entries above plus the loader gate below).
 - `internal/domain/rule/ddl/mysql_server_rules.go` —
   `mysqlAlterServerRule` (`ddl.mysql.server.alter.notice`),
   outcome tokens, ALTER-scoped advisory decision (§C).
@@ -404,17 +517,35 @@ implemented — `.go` changed = 0 in this doc round):
 No new public API; no new CLI flags; no new provider method — the
 loader, resolver, cache, and ordered channel are all reused.
 
-## G. Open questions — narrowed to specific branches
+**Bind invariant** (R2-C): before consuming objectCache/provider
+presence, an audited ALTER has already passed the same ordered
+guards the channel defines — whole-batch contamination exit,
+channel taint, and the write/entry relation scan on
+`decl.NameIdent`. It never bypasses a prior `OrderedAbsent`,
+`OrderedPresent`, or unresolved shadowing effect to reach the
+catalog. Evidence: `r2-bind-excerpt.txt` (baseline `28152dfd`,
+line-numbered verbatim excerpts of `bindMySQLServer`, the
+`metadata.go` call sites, `mysqlServerAuditedForm`,
+`applyServerStatement`, the loader gate, and the provider-side
+name-form decline; SHA-256 in the R2 receipt).
 
-| # | question | affected branch | recommended | conservative fallback | minimal further evidence |
-|---|---|---|---|---|---|
-| P1 | Republish `OrderedPresent` on unproven-premise arms (rows 10–11)? | A4 proven-present | yes — presence is unconditional under the preservation theorem | leave entry; verbatim names still answered via objectCache; fold-aliases re-read | none — design decision; both are presence-correct |
-| P2 | ALTER-scoped `connection_members` advisory? | finding emission on A3/A4 | scoped advisory, ALTER wording | omit entirely (C16 stays unapproved) | none — model-policy decision |
-| P3 | `OrderedPresentConditional` on ordered-source re-publish | A3/A4 ordered source | inherit consumed flag (never launder) | — | none |
-| P4 | Audited-ALTER write record | apply | none — preservation theorem | record a "presence-preserving" marker write — rejected: no consumer, barriers would over-fire | none |
-| P5 | Native absent-case error class for `ALTER` on a missing row | A2 message wording only | claim nothing — refusal rests on the ordered proof | — | optional oracle row in the future execution order; NOT a contract blocker |
-| P6 | `server.alter_options` on duplicate-key semantics | A4 owed formula | owed-fact only (no refusal claim — manual is silent) | — | optional oracle; same treatment as create_options |
-| P7 | Literal `wrapper` evidence for ALTER | none — decided (§A) | no own wrapper premise | — | none |
+## G. Decisions — P1–P7 adjudicated (R2)
+
+All seven items are now **decided**, not open; this table is the
+decision record. Deferred-evidence notes are marked where they
+apply — none is a contract blocker.
+
+| # | decision | ruling |
+|---|---|---|
+| P1 | Republish `OrderedPresent` on proven-presence arms | **adopted** — presence survives the write under the preservation theorem. Priced consequences registered in §D/§E: same-name and fold-alias reuse, plus relation-scan `batch_effects` thrown at unproven-related names; gaps, coverage, and read counts can differ — not only fold-alias reach |
+| P2 | ALTER-scoped `connection_members` advisory | **adopted, A3/A4 only** — fixed text: "ALTER SERVER specifies a partial options update; stored and resulting connection member sets are unverified." Emitted by `ddl.mysql.server.alter.notice` at its configured level, discriminated by the arm in `Metadata.ServerAlter`; no new owed fact, no option keys/values, no claim the A4 update executed; A1/A2 never emit it |
+| P3 | `OrderedPresentConditional` on ordered-source re-publish | **inherit the consumed flag verbatim** — never launder to unconditional |
+| P4 | Audited-ALTER write record | **none** — audited ALTER records no `serverWrite` on any arm, A1 included; boundary ALTER keeps the accepted write-record/taint behavior |
+| P5 | Native absent-case error class for `ALTER` on a missing row | **not claimed** — the A2 refusal rests on the ordered-absent proof only; native error class remains optional oracle evidence **deferred** to a future execution order |
+| P6 | `server.alter_options` on duplicate-key / PORT-range dirt | **owed-fact only** — the manual is silent on ALTER-side outcomes; no refusal or native-error claim; native observation **deferred**, same treatment as `server.create_options` |
+| P7 | Own `wrapper` premise for ALTER | **none** — no authored wrapper clause exists on this verb; public wording stays wrapper-agnostic |
+
+Nothing under §G remains PEND for this contract slice.
 
 ## H. Non-goals
 
