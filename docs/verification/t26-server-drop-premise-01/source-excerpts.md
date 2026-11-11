@@ -353,9 +353,13 @@ while a batch names a MySQL resource group
 neither channel. This is the gate shape the SERVER loader mirrors
 **[proposed]**: a `statementsNeed…`-style family gate plus the
 explicit mode selection. `fmt.Errorf("…: %w", err)` here preserves
-the causal chain for `errors.Is/As`, but it is not by itself a public-
-text bound — the loader-side typed wrapper (C.4) is what bounds what
-reaches public output.
+the causal chain for `errors.Is/As`, but it is not by itself a
+public-text bound — for the optional privilege loader the public
+guarantee must live at this *application call site*: a non-nil
+loader error is uniformly wrapped with fixed public text (never
+re-splicing the raw cause) and `Unwrap()` cause reachability before
+entering the enrich error chain, so the bound does not depend on
+each loader implementation wrapping its own errors (C.4).
 
 ### B.7 Same file — loader interface (lines 43–52)
 
@@ -451,8 +455,13 @@ func (s *batchState) bindMySQLServer(ctx context.Context, statement spec.Stateme
 ```
 
 **[verbatim]**. **[derived]** the existence binding stays the accepted
-slice; a privilege premise binds on `Metadata.Instance`, parallel to
-this — not inside `ServerState`.
+slice. **[proposed]** the shared, immutable request carrier (C.1's
+`Metadata.Instance`) may hold the raw grant observation, but whether
+*this* statement may consume it is decided by the independent
+per-statement projection — `missingServerFacts`/the shared
+adjudication must read the projection's validity verdict and may
+never clear `server.drop_privilege` on the strength of a positive
+witness sitting on the shared instance alone.
 
 ### C.3 `internal/domain/rule/ddl/mysql_server_rules.go` — `missingServerFacts` (lines 58–78)
 
@@ -508,21 +517,23 @@ func (metadataObjectReadError) Error() string   { return "metadata object read f
 func (e metadataObjectReadError) Unwrap() error { return e.cause }
 ```
 
-**[verbatim]**. **[derived]** this is the error-boundary shape the
-SERVER loader copies **[proposed]** — fixed bounded `Error()` text
-with `Unwrap()` cause reachability — but as its *own* type at the
-loader's return edge, because `metadataObjectReadError` wraps
-`ObjectResolver` calls only: it does not cover reads issued by a
-premise loader on `MetadataProvider`, which surface through the
-`enrich` failure path instead. The new loader therefore names its own
-bounded error (e.g. `mysqlPrivilegeReadError`, same shape) and lets
-it propagate out of the family gate the way B.6's
-`fmt.Errorf("load mysql resource-group facts: %w", err)` does —
-inner text bounded at the loader, outer wrapping at the gate.
-Query, scan, `rows.Err`, permission, and cancellation failures all
-reach the boundary as causes; successful-empty and unrecognised
-representations never reach it at all — they are unproven results,
-not failures.
+**[verbatim]**. **[derived]** this is the error-boundary *shape*,
+but the complete public guarantee sits one layer out
+**[proposed]**: `metadataObjectReadError` wraps `ObjectResolver`
+calls only and does not cover reads a premise loader issues on
+`MetadataProvider` — those surface through the `enrich` failure
+path. The contract therefore fixes the boundary at the
+*application's* consumption point: wherever the optional privilege
+loader returns a non-nil error, the application wraps it in a fixed
+public text that never re-splices the raw cause, keeps `Unwrap()`
+cause reachability, then enters the enrich error-return chain.
+The built-in MySQL loader may additionally keep its own internal
+wrapper of the same shape, but that stays inside the boundary —
+public bounding never depends on each provider/SDK/custom loader
+implementation wrapping its own errors. Query, scan, `rows.Err`,
+permission, and cancellation failures all reach the boundary as
+causes; successful-empty and unrecognised representations never
+reach it at all — they are unproven results, not failures.
 
 ### C.5 Ordered-scope classification seam — actual parser shapes
 
@@ -598,13 +609,26 @@ no inference from approximate syntax.
   includes `SUPER` — registered as a version-checked constant, never
   a substring heuristic.
 - `https://dev.mysql.com/doc/refman/8.0/en/privilege-changes.html` —
-  **[doc-derived]** when `mysqld` starts it reads grant tables into
-  memory; grants taken effect by in-memory tables persist until the
-  server reloads them; direct `GRANT`/`REVOKE`/`SET ROLE` update the
-  in-memory tables immediately **for the accounts they name**, but a
-  grant change to a static global privilege does not change an
-  *already-connected* session's effective privileges — hence the
-  contract's post-observation-new-session framing.
+  **[doc-derived]** registered as three separate facts:
+  1. when account-management statements such as `GRANT`/`REVOKE`
+     modify grants, the server updates its in-memory grant
+     information;
+  2. a change to a static *global* privilege does not immediately
+     change an already-connected session's effective privileges —
+     the boundary is per the official description, which is why the
+     contract frames the expected execution context as a
+     post-observation new session;
+  3. this fact says nothing about role activation — it is kept
+     distinct from `SET ROLE` below.
+- `https://dev.mysql.com/doc/refman/8.0/en/set-role.html` —
+  **[doc-derived]** `SET ROLE` modifies the *current session's*
+  active roles; privileges granted directly to an account are always
+  in effect and do not change with active-role switching.
+- **[proposed]**, not a doc claim: this model treats the authored
+  `SET ROLE`/`GRANT`/`REVOKE` forms above as conservative
+  evidence-scope termination events — a scope policy only, with no
+  assertion that each hit immediately revokes the current session's
+  `SUPER`.
 - `https://dev.mysql.com/doc/refman/8.0/en/partial-revokes.html` —
   **[doc-derived]** partial revokes apply to *schema-level*
   restrictions on global grants and do not apply to `SUPER`'s

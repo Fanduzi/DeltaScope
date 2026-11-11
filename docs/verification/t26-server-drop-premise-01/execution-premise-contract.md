@@ -101,8 +101,11 @@ A `server.drop_privilege` proof is consumable only when ALL of:
    provider's own connection; `CURRENT_USER()` and `SHOW GRANTS` come
    from the *same* actual connection. No caller/policy boolean is ever
    a proof — no bare `privilege=true` trust switch.
-2. **Target binding** — the connection's own audited target, by
-   construction of the read.
+2. **Target binding** — the evidence comes from the provider bound
+   to *this* request's audit target; it never migrates across
+   requests, providers, or targets, and when that source binding
+   cannot be established the premise stays unproven. No separate
+   instance-ID comparison is claimed.
 3. **Principal & context binding** — the `observed_account_new_session`
    mode selected by the request, binding the observed account as the
    expected principal for a post-observation new execution session on
