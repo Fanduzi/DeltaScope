@@ -1,0 +1,4 @@
+=== RUN   TestT26DropServerBarrierPublicShape
+--- PASS: TestT26DropServerBarrierPublicShape (0.00s)
+PASS
+ok  	github.com/Fanduzi/DeltaScope/internal/application/audit	0.684s

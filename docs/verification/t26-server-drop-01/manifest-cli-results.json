@@ -1,0 +1,638 @@
+[
+  {
+    "case_id": "T26.cli.mysql-drop-server",
+    "kind": "cli_audit",
+    "cli_case": "mysql-drop-server",
+    "dialect": "mysql",
+    "input_sql": "DROP SERVER golden_srv",
+    "policy_profile": "server-drop",
+    "policy_path": "/tmp/t26-r1/golden-policy-server-drop.yaml",
+    "command": [
+      "/tmp/t26-r1/deltascope",
+      "audit",
+      "--dialect",
+      "mysql",
+      "--sql",
+      "DROP SERVER golden_srv",
+      "--config",
+      "/tmp/t26-r1/golden-policy-server-drop.yaml",
+      "--format",
+      "json"
+    ],
+    "expected": {
+      "exit": 0,
+      "verdict": "review",
+      "statements": 1,
+      "findings": 1,
+      "diagnostics": 0,
+      "unsupported": 0,
+      "coverage": "unverified",
+      "statement_coverage": [
+        "unverified"
+      ],
+      "finding_entries": [
+        {
+          "index": 0,
+          "rule_id": "ddl.mysql.server.drop.notice",
+          "level": "notice"
+        }
+      ],
+      "evidence_gaps": 1,
+      "evidence_gap_entries": [
+        {
+          "index": 0,
+          "rule_id": "ddl.mysql.server.drop.notice",
+          "reason_code": "unknown_server_state",
+          "required_facts": [
+            "server.existence",
+            "server.drop_privilege"
+          ]
+        }
+      ],
+      "statement_sql": [
+        "DROP SERVER <redacted>"
+      ]
+    },
+    "actual": {
+      "exit": 0,
+      "stdout": "{\"verdict\":\"review\",\"coverage\":{\"status\":\"unverified\"},\"summary\":{\"statements\":1,\"blockers\":0,\"warnings\":0,\"notices\":1},\"statements\":[{\"index\":0,\"kind\":\"ddl\",\"raw_sql\":\"DROP SERVER \\u003credacted\\u003e\",\"normalized_sql\":\"DROP SERVER \\u003credacted\\u003e\",\"findings\":[{\"rule_id\":\"ddl.mysql.server.drop.notice\",\"level\":\"notice\",\"message\":\"DROP SERVER targets a server definition whose existence and execution remain unverified\",\"statement_kind\":\"ddl\",\"location\":{\"line\":1,\"column\":1},\"metadata\":{\"object\":\"server\",\"operation\":\"drop_server\"},\"explanation\":{\"summary\":\"Check DDL mysql server drop notice\",\"why\":\"DROP SERVER removes the mysql.servers row defining a foreign data wrapper connection and requires SUPER.\",\"risk\":\"Whether the statement actually executed is unproven \u2014 the privilege premise is not wired, and batch writes may already shadow the catalog answer. FEDERATED tables created with the connection information are not removed with it, but definitions or code resolving through this server entry could be affected if the removal lands.\",\"suggestion\":\"Confirm the server entry is no longer needed and that the executing account holds SUPER before relying on the drop.\"}}],\"evidence_gaps\":[{\"rule_id\":\"ddl.mysql.server.drop.notice\",\"reason_code\":\"unknown_server_state\",\"required_facts\":[\"server.existence\",\"server.drop_privilege\"]}],\"coverage\":{\"status\":\"unverified\"}}],\"fail_on_triggered\":false,\"rule_summary\":{\"loaded\":1,\"applicable\":1,\"skipped\":[]},\"context\":{\"mode\":\"offline\",\"dialect\":\"mysql\",\"dialect_source\":\"flag\",\"note\":\"existence not checked (no database connection)\",\"unproven\":[\"column_exists\",\"table_exists\"]}}\n",
+      "stderr": "",
+      "parsed": {
+        "verdict": "review",
+        "coverage": {
+          "status": "unverified"
+        },
+        "summary": {
+          "statements": 1,
+          "blockers": 0,
+          "warnings": 0,
+          "notices": 1
+        },
+        "statements": [
+          {
+            "index": 0,
+            "kind": "ddl",
+            "raw_sql": "DROP SERVER <redacted>",
+            "normalized_sql": "DROP SERVER <redacted>",
+            "findings": [
+              {
+                "rule_id": "ddl.mysql.server.drop.notice",
+                "level": "notice",
+                "message": "DROP SERVER targets a server definition whose existence and execution remain unverified",
+                "statement_kind": "ddl",
+                "location": {
+                  "line": 1,
+                  "column": 1
+                },
+                "metadata": {
+                  "object": "server",
+                  "operation": "drop_server"
+                },
+                "explanation": {
+                  "summary": "Check DDL mysql server drop notice",
+                  "why": "DROP SERVER removes the mysql.servers row defining a foreign data wrapper connection and requires SUPER.",
+                  "risk": "Whether the statement actually executed is unproven \u2014 the privilege premise is not wired, and batch writes may already shadow the catalog answer. FEDERATED tables created with the connection information are not removed with it, but definitions or code resolving through this server entry could be affected if the removal lands.",
+                  "suggestion": "Confirm the server entry is no longer needed and that the executing account holds SUPER before relying on the drop."
+                }
+              }
+            ],
+            "evidence_gaps": [
+              {
+                "rule_id": "ddl.mysql.server.drop.notice",
+                "reason_code": "unknown_server_state",
+                "required_facts": [
+                  "server.existence",
+                  "server.drop_privilege"
+                ]
+              }
+            ],
+            "coverage": {
+              "status": "unverified"
+            }
+          }
+        ],
+        "fail_on_triggered": false,
+        "rule_summary": {
+          "loaded": 1,
+          "applicable": 1,
+          "skipped": []
+        },
+        "context": {
+          "mode": "offline",
+          "dialect": "mysql",
+          "dialect_source": "flag",
+          "note": "existence not checked (no database connection)",
+          "unproven": [
+            "column_exists",
+            "table_exists"
+          ]
+        }
+      },
+      "version_evidence": {
+        "target_raw": null,
+        "target_canonical": null,
+        "observed_raw": null,
+        "observed_canonical": null,
+        "resolved": null
+      }
+    },
+    "assertions": [
+      {
+        "name": "exit code",
+        "ok": true,
+        "detail": "rc=0 expected=0"
+      },
+      {
+        "name": "verdict",
+        "ok": true,
+        "detail": "verdict='review'"
+      },
+      {
+        "name": "top-level statements",
+        "ok": true,
+        "detail": "statements=1 expected=1"
+      },
+      {
+        "name": "zero findings",
+        "ok": true,
+        "detail": "findings=1"
+      },
+      {
+        "name": "no diagnostics",
+        "ok": true,
+        "detail": "diagnostics=[]"
+      },
+      {
+        "name": "no unsupported",
+        "ok": true,
+        "detail": "unsupported=[]"
+      },
+      {
+        "name": "aggregate coverage",
+        "ok": true,
+        "detail": "coverage='unverified'"
+      },
+      {
+        "name": "per-statement coverage",
+        "ok": true,
+        "detail": "statement_coverage=['unverified']"
+      },
+      {
+        "name": "statement raw SQL identity",
+        "ok": true,
+        "detail": "raw_sql=['DROP SERVER <redacted>'] expected=['DROP SERVER <redacted>']"
+      },
+      {
+        "name": "evidence gap count",
+        "ok": true,
+        "detail": "gaps=1"
+      },
+      {
+        "name": "evidence gap entries",
+        "ok": true,
+        "detail": "gaps=[(0, 'ddl.mysql.server.drop.notice', 'unknown_server_state')] expected=[(0, 'ddl.mysql.server.drop.notice', 'unknown_server_state')]"
+      },
+      {
+        "name": "evidence gap required_facts (0, 'ddl.mysql.server.drop.notice', 'unknown_server_state')",
+        "ok": true,
+        "detail": "gaps=[{'rule_id': 'ddl.mysql.server.drop.notice', 'reason_code': 'unknown_server_state', 'required_facts': ['server.existence', 'server.drop_privilege']}] expected_facts=['server.existence', 'server.drop_privilege']"
+      },
+      {
+        "name": "no gap encoded as finding",
+        "ok": true,
+        "detail": "findings carrying gap shape=[]"
+      },
+      {
+        "name": "finding entries",
+        "ok": true,
+        "detail": "findings=[(0, 'ddl.mysql.server.drop.notice', 'notice')] expected=[(0, 'ddl.mysql.server.drop.notice', 'notice')]"
+      }
+    ],
+    "status": "pass"
+  },
+  {
+    "case_id": "T26.cli.mysql-drop-server-if-exists",
+    "kind": "cli_audit",
+    "cli_case": "mysql-drop-server-if-exists",
+    "dialect": "mysql",
+    "input_sql": "DROP SERVER IF EXISTS golden_srv",
+    "policy_profile": "server-drop",
+    "policy_path": "/tmp/t26-r1/golden-policy-server-drop.yaml",
+    "command": [
+      "/tmp/t26-r1/deltascope",
+      "audit",
+      "--dialect",
+      "mysql",
+      "--sql",
+      "DROP SERVER IF EXISTS golden_srv",
+      "--config",
+      "/tmp/t26-r1/golden-policy-server-drop.yaml",
+      "--format",
+      "json"
+    ],
+    "expected": {
+      "exit": 0,
+      "verdict": "review",
+      "statements": 1,
+      "findings": 1,
+      "diagnostics": 0,
+      "unsupported": 0,
+      "coverage": "unverified",
+      "statement_coverage": [
+        "unverified"
+      ],
+      "finding_entries": [
+        {
+          "index": 0,
+          "rule_id": "ddl.mysql.server.drop.notice",
+          "level": "notice"
+        }
+      ],
+      "evidence_gaps": 1,
+      "evidence_gap_entries": [
+        {
+          "index": 0,
+          "rule_id": "ddl.mysql.server.drop.notice",
+          "reason_code": "unknown_server_state",
+          "required_facts": [
+            "server.existence",
+            "server.drop_privilege"
+          ]
+        }
+      ],
+      "statement_sql": [
+        "DROP SERVER IF EXISTS <redacted>"
+      ],
+      "finding_metadata": [
+        {
+          "index": 0,
+          "rule_id": "ddl.mysql.server.drop.notice",
+          "metadata": {
+            "if_exists": true
+          }
+        }
+      ]
+    },
+    "actual": {
+      "exit": 0,
+      "stdout": "{\"verdict\":\"review\",\"coverage\":{\"status\":\"unverified\"},\"summary\":{\"statements\":1,\"blockers\":0,\"warnings\":0,\"notices\":1},\"statements\":[{\"index\":0,\"kind\":\"ddl\",\"raw_sql\":\"DROP SERVER IF EXISTS \\u003credacted\\u003e\",\"normalized_sql\":\"DROP SERVER IF EXISTS \\u003credacted\\u003e\",\"findings\":[{\"rule_id\":\"ddl.mysql.server.drop.notice\",\"level\":\"notice\",\"message\":\"DROP SERVER targets a server definition whose existence and execution remain unverified\",\"statement_kind\":\"ddl\",\"location\":{\"line\":1,\"column\":1},\"metadata\":{\"if_exists\":true,\"object\":\"server\",\"operation\":\"drop_server\"},\"explanation\":{\"summary\":\"Check DDL mysql server drop notice\",\"why\":\"DROP SERVER removes the mysql.servers row defining a foreign data wrapper connection and requires SUPER.\",\"risk\":\"Whether the statement actually executed is unproven \u2014 the privilege premise is not wired, and batch writes may already shadow the catalog answer. FEDERATED tables created with the connection information are not removed with it, but definitions or code resolving through this server entry could be affected if the removal lands.\",\"suggestion\":\"Confirm the server entry is no longer needed and that the executing account holds SUPER before relying on the drop.\"}}],\"evidence_gaps\":[{\"rule_id\":\"ddl.mysql.server.drop.notice\",\"reason_code\":\"unknown_server_state\",\"required_facts\":[\"server.existence\",\"server.drop_privilege\"]}],\"coverage\":{\"status\":\"unverified\"}}],\"fail_on_triggered\":false,\"rule_summary\":{\"loaded\":1,\"applicable\":1,\"skipped\":[]},\"context\":{\"mode\":\"offline\",\"dialect\":\"mysql\",\"dialect_source\":\"flag\",\"note\":\"existence not checked (no database connection)\",\"unproven\":[\"column_exists\",\"table_exists\"]}}\n",
+      "stderr": "",
+      "parsed": {
+        "verdict": "review",
+        "coverage": {
+          "status": "unverified"
+        },
+        "summary": {
+          "statements": 1,
+          "blockers": 0,
+          "warnings": 0,
+          "notices": 1
+        },
+        "statements": [
+          {
+            "index": 0,
+            "kind": "ddl",
+            "raw_sql": "DROP SERVER IF EXISTS <redacted>",
+            "normalized_sql": "DROP SERVER IF EXISTS <redacted>",
+            "findings": [
+              {
+                "rule_id": "ddl.mysql.server.drop.notice",
+                "level": "notice",
+                "message": "DROP SERVER targets a server definition whose existence and execution remain unverified",
+                "statement_kind": "ddl",
+                "location": {
+                  "line": 1,
+                  "column": 1
+                },
+                "metadata": {
+                  "if_exists": true,
+                  "object": "server",
+                  "operation": "drop_server"
+                },
+                "explanation": {
+                  "summary": "Check DDL mysql server drop notice",
+                  "why": "DROP SERVER removes the mysql.servers row defining a foreign data wrapper connection and requires SUPER.",
+                  "risk": "Whether the statement actually executed is unproven \u2014 the privilege premise is not wired, and batch writes may already shadow the catalog answer. FEDERATED tables created with the connection information are not removed with it, but definitions or code resolving through this server entry could be affected if the removal lands.",
+                  "suggestion": "Confirm the server entry is no longer needed and that the executing account holds SUPER before relying on the drop."
+                }
+              }
+            ],
+            "evidence_gaps": [
+              {
+                "rule_id": "ddl.mysql.server.drop.notice",
+                "reason_code": "unknown_server_state",
+                "required_facts": [
+                  "server.existence",
+                  "server.drop_privilege"
+                ]
+              }
+            ],
+            "coverage": {
+              "status": "unverified"
+            }
+          }
+        ],
+        "fail_on_triggered": false,
+        "rule_summary": {
+          "loaded": 1,
+          "applicable": 1,
+          "skipped": []
+        },
+        "context": {
+          "mode": "offline",
+          "dialect": "mysql",
+          "dialect_source": "flag",
+          "note": "existence not checked (no database connection)",
+          "unproven": [
+            "column_exists",
+            "table_exists"
+          ]
+        }
+      },
+      "version_evidence": {
+        "target_raw": null,
+        "target_canonical": null,
+        "observed_raw": null,
+        "observed_canonical": null,
+        "resolved": null
+      }
+    },
+    "assertions": [
+      {
+        "name": "exit code",
+        "ok": true,
+        "detail": "rc=0 expected=0"
+      },
+      {
+        "name": "verdict",
+        "ok": true,
+        "detail": "verdict='review'"
+      },
+      {
+        "name": "top-level statements",
+        "ok": true,
+        "detail": "statements=1 expected=1"
+      },
+      {
+        "name": "zero findings",
+        "ok": true,
+        "detail": "findings=1"
+      },
+      {
+        "name": "no diagnostics",
+        "ok": true,
+        "detail": "diagnostics=[]"
+      },
+      {
+        "name": "no unsupported",
+        "ok": true,
+        "detail": "unsupported=[]"
+      },
+      {
+        "name": "aggregate coverage",
+        "ok": true,
+        "detail": "coverage='unverified'"
+      },
+      {
+        "name": "per-statement coverage",
+        "ok": true,
+        "detail": "statement_coverage=['unverified']"
+      },
+      {
+        "name": "statement raw SQL identity",
+        "ok": true,
+        "detail": "raw_sql=['DROP SERVER IF EXISTS <redacted>'] expected=['DROP SERVER IF EXISTS <redacted>']"
+      },
+      {
+        "name": "evidence gap count",
+        "ok": true,
+        "detail": "gaps=1"
+      },
+      {
+        "name": "evidence gap entries",
+        "ok": true,
+        "detail": "gaps=[(0, 'ddl.mysql.server.drop.notice', 'unknown_server_state')] expected=[(0, 'ddl.mysql.server.drop.notice', 'unknown_server_state')]"
+      },
+      {
+        "name": "evidence gap required_facts (0, 'ddl.mysql.server.drop.notice', 'unknown_server_state')",
+        "ok": true,
+        "detail": "gaps=[{'rule_id': 'ddl.mysql.server.drop.notice', 'reason_code': 'unknown_server_state', 'required_facts': ['server.existence', 'server.drop_privilege']}] expected_facts=['server.existence', 'server.drop_privilege']"
+      },
+      {
+        "name": "no gap encoded as finding",
+        "ok": true,
+        "detail": "findings carrying gap shape=[]"
+      },
+      {
+        "name": "finding entries",
+        "ok": true,
+        "detail": "findings=[(0, 'ddl.mysql.server.drop.notice', 'notice')] expected=[(0, 'ddl.mysql.server.drop.notice', 'notice')]"
+      },
+      {
+        "name": "finding metadata (0, 'ddl.mysql.server.drop.notice')",
+        "ok": true,
+        "detail": "findings=[{'if_exists': True, 'object': 'server', 'operation': 'drop_server'}] expected_subset={'if_exists': True}"
+      }
+    ],
+    "status": "pass"
+  },
+  {
+    "case_id": "T26.cli.mysql-server-mixed-batch",
+    "kind": "cli_audit",
+    "cli_case": "mysql-server-mixed-batch",
+    "dialect": "mysql",
+    "input_sql": "CREATE TABLE t (id INT); CREATE SERVER golden_srv FOREIGN DATA WRAPPER mysql OPTIONS (PASSWORD 'golden-secret', HOST '192.0.2.1'); DROP TABLE t",
+    "policy_profile": "all-rules-disabled",
+    "policy_path": "/tmp/t26-r1/golden-policy-all-off.yaml",
+    "command": [
+      "/tmp/t26-r1/deltascope",
+      "audit",
+      "--dialect",
+      "mysql",
+      "--sql",
+      "CREATE TABLE t (id INT); CREATE SERVER golden_srv FOREIGN DATA WRAPPER mysql OPTIONS (PASSWORD 'golden-secret', HOST '192.0.2.1'); DROP TABLE t",
+      "--config",
+      "/tmp/t26-r1/golden-policy-all-off.yaml",
+      "--format",
+      "json"
+    ],
+    "expected": {
+      "exit": 1,
+      "verdict": "review",
+      "statements": 3,
+      "findings": 0,
+      "diagnostics": 1,
+      "unsupported": 1,
+      "coverage": "incomplete",
+      "statement_coverage": [
+        "complete",
+        "incomplete",
+        "complete"
+      ],
+      "unsupported_entries": [
+        {
+          "index": 1,
+          "feature": "create_server",
+          "reason": "parsed by the shared parser but not covered by audited semantics",
+          "metadata": {
+            "boundary": "unaudited",
+            "object": "server"
+          }
+        }
+      ],
+      "statement_sql": [
+        "CREATE TABLE t (id INT);",
+        "CREATE SERVER <redacted>",
+        "DROP TABLE t"
+      ]
+    },
+    "actual": {
+      "exit": 1,
+      "stdout": "{\"verdict\":\"review\",\"coverage\":{\"status\":\"incomplete\"},\"summary\":{\"statements\":3,\"blockers\":0,\"warnings\":0,\"notices\":0},\"statements\":[{\"index\":0,\"kind\":\"ddl\",\"raw_sql\":\"CREATE TABLE t (id INT);\",\"normalized_sql\":\"CREATE TABLE t (id INT)\",\"coverage\":{\"status\":\"complete\"}},{\"index\":1,\"kind\":\"ddl\",\"raw_sql\":\"CREATE SERVER \\u003credacted\\u003e\",\"normalized_sql\":\"CREATE SERVER \\u003credacted\\u003e\",\"coverage\":{\"status\":\"incomplete\"}},{\"index\":2,\"kind\":\"ddl\",\"raw_sql\":\"DROP TABLE t\",\"normalized_sql\":\"DROP TABLE t\",\"coverage\":{\"status\":\"complete\"}}],\"unsupported\":[{\"index\":1,\"feature\":\"create_server\",\"sql\":\"CREATE SERVER \\u003credacted\\u003e\",\"reason\":\"parsed by the shared parser but not covered by audited semantics\",\"metadata\":{\"boundary\":\"unaudited\",\"object\":\"server\"}}],\"diagnostics\":[{\"classification\":\"unsupported_statement\",\"reason\":\"DeltaScope recognized this statement or feature but does not audit it yet\",\"action_hint\":\"treat this statement as not covered by DeltaScope policy checks; review it manually or track support in a future DeltaScope release\",\"audited\":false,\"dialect\":\"mysql\"}],\"fail_on_triggered\":false,\"context\":{\"mode\":\"offline\",\"dialect\":\"mysql\",\"dialect_source\":\"flag\",\"note\":\"existence not checked (no database connection)\",\"unproven\":[\"column_exists\",\"table_exists\"]}}\n",
+      "stderr": "",
+      "parsed": {
+        "verdict": "review",
+        "coverage": {
+          "status": "incomplete"
+        },
+        "summary": {
+          "statements": 3,
+          "blockers": 0,
+          "warnings": 0,
+          "notices": 0
+        },
+        "statements": [
+          {
+            "index": 0,
+            "kind": "ddl",
+            "raw_sql": "CREATE TABLE t (id INT);",
+            "normalized_sql": "CREATE TABLE t (id INT)",
+            "coverage": {
+              "status": "complete"
+            }
+          },
+          {
+            "index": 1,
+            "kind": "ddl",
+            "raw_sql": "CREATE SERVER <redacted>",
+            "normalized_sql": "CREATE SERVER <redacted>",
+            "coverage": {
+              "status": "incomplete"
+            }
+          },
+          {
+            "index": 2,
+            "kind": "ddl",
+            "raw_sql": "DROP TABLE t",
+            "normalized_sql": "DROP TABLE t",
+            "coverage": {
+              "status": "complete"
+            }
+          }
+        ],
+        "unsupported": [
+          {
+            "index": 1,
+            "feature": "create_server",
+            "sql": "CREATE SERVER <redacted>",
+            "reason": "parsed by the shared parser but not covered by audited semantics",
+            "metadata": {
+              "boundary": "unaudited",
+              "object": "server"
+            }
+          }
+        ],
+        "diagnostics": [
+          {
+            "classification": "unsupported_statement",
+            "reason": "DeltaScope recognized this statement or feature but does not audit it yet",
+            "action_hint": "treat this statement as not covered by DeltaScope policy checks; review it manually or track support in a future DeltaScope release",
+            "audited": false,
+            "dialect": "mysql"
+          }
+        ],
+        "fail_on_triggered": false,
+        "context": {
+          "mode": "offline",
+          "dialect": "mysql",
+          "dialect_source": "flag",
+          "note": "existence not checked (no database connection)",
+          "unproven": [
+            "column_exists",
+            "table_exists"
+          ]
+        }
+      },
+      "version_evidence": {
+        "target_raw": null,
+        "target_canonical": null,
+        "observed_raw": null,
+        "observed_canonical": null,
+        "resolved": null
+      }
+    },
+    "assertions": [
+      {
+        "name": "exit code",
+        "ok": true,
+        "detail": "rc=1 expected=1"
+      },
+      {
+        "name": "verdict",
+        "ok": true,
+        "detail": "verdict='review'"
+      },
+      {
+        "name": "top-level statements",
+        "ok": true,
+        "detail": "statements=3 expected=3"
+      },
+      {
+        "name": "zero findings",
+        "ok": true,
+        "detail": "findings=0"
+      },
+      {
+        "name": "no diagnostics",
+        "ok": true,
+        "detail": "diagnostics=[{'classification': 'unsupported_statement', 'reason': 'DeltaScope recognized this statement or feature but does not audit it yet', 'action_hint': 'treat this statement as not covered by DeltaScope policy checks; review it manually or track support in a future DeltaScope release', 'audited': False, 'dialect': 'mysql'}]"
+      },
+      {
+        "name": "no unsupported",
+        "ok": true,
+        "detail": "unsupported=[{'index': 1, 'feature': 'create_server', 'sql': 'CREATE SERVER <redacted>', 'reason': 'parsed by the shared parser but not covered by audited semantics', 'metadata': {'boundary': 'unaudited', 'object': 'server'}}]"
+      },
+      {
+        "name": "aggregate coverage",
+        "ok": true,
+        "detail": "coverage='incomplete'"
+      },
+      {
+        "name": "per-statement coverage",
+        "ok": true,
+        "detail": "statement_coverage=['complete', 'incomplete', 'complete']"
+      },
+      {
+        "name": "unsupported entries",
+        "ok": true,
+        "detail": "entries=[(1, 'create_server', 'parsed by the shared parser but not covered by audited semantics')] expected=[(1, 'create_server', 'parsed by the shared parser but not covered by audited semantics')]"
+      },
+      {
+        "name": "unsupported metadata (1, 'create_server', 'parsed by the shared parser but not covered by audited semantics')",
+        "ok": true,
+        "detail": "entries=[{'index': 1, 'feature': 'create_server', 'sql': 'CREATE SERVER <redacted>', 'reason': 'parsed by the shared parser but not covered by audited semantics', 'metadata': {'boundary': 'unaudited', 'object': 'server'}}] expected_metadata={'boundary': 'unaudited', 'object': 'server'}"
+      },
+      {
+        "name": "statement raw SQL identity",
+        "ok": true,
+        "detail": "raw_sql=['CREATE TABLE t (id INT);', 'CREATE SERVER <redacted>', 'DROP TABLE t'] expected=['CREATE TABLE t (id INT);', 'CREATE SERVER <redacted>', 'DROP TABLE t']"
+      },
+      {
+        "name": "unsupported sql identity index=1",
+        "ok": true,
+        "detail": "sql='CREATE SERVER <redacted>' expected='CREATE SERVER <redacted>'"
+      }
+    ],
+    "status": "pass"
+  }
+]

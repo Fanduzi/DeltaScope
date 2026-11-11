@@ -1,0 +1,14 @@
+diff --git a/internal/application/audit/batch_state_server_drop_test.go b/internal/application/audit/batch_state_server_drop_test.go
+index f97bea85..eeaf6ef9 100644
+--- a/internal/application/audit/batch_state_server_drop_test.go
++++ b/internal/application/audit/batch_state_server_drop_test.go
+@@ -247,6 +247,9 @@ func TestT26DropServerBarrierPublicShape(t *testing.T) {
+ 	if len(result.Statements) != 2 || len(result.Unsupported) != 0 {
+ 		t.Fatalf("both audited drops expected, unsupported=%+v statements=%d", result.Unsupported, len(result.Statements))
+ 	}
++	if result.Verdict != report.VerdictReview {
++		t.Fatalf("top-level verdict = %v, want review", result.Verdict)
++	}
+ 	second := result.Statements[1]
+ 	var found bool
+ 	for _, f := range second.Findings {

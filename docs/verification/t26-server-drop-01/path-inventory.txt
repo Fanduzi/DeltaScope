@@ -1,0 +1,44 @@
+Actual path inventory (verified via git diff --name-only)
+
+Segment c0d09649..e9d1b5ae — original product candidate (24 paths):
+configs/deltascope.example.yaml
+internal/application/audit/README.md
+internal/application/audit/batch_state.go
+internal/application/audit/batch_state_server.go
+internal/application/audit/batch_state_server_drop_test.go
+internal/application/audit/batch_state_server_srs.go
+internal/application/audit/batch_state_t26_test.go
+internal/application/audit/corpus_coverage_test.go
+internal/application/audit/t26r3_recognition_test.go
+internal/domain/policy/README.md
+internal/domain/policy/defaults_ddl.go
+internal/domain/rule/ddl/README.md
+internal/domain/rule/ddl/common.go
+internal/domain/rule/ddl/mysql_server_rules.go
+internal/domain/rule/ddl/mysql_server_rules_test.go
+internal/domain/rule/ddl/register.go
+internal/domain/spec/README.md
+internal/domain/spec/metadata.go
+internal/infrastructure/parser/tidb/README.md
+internal/infrastructure/parser/tidb/coverage_boundary.go
+internal/infrastructure/parser/tidb/mysql_t26drop_boundary_test.go
+testdata/ddl-golden/T26.json
+testdata/sql-corpus/mysql/ddl/findings/mysql_server_drop_rules.expected.yaml
+testdata/sql-corpus/mysql/ddl/findings/mysql_server_drop_rules.sql
+
+Segment 23fa186f..c0d09649 — independent archive repair (3 paths):
+docs/verification/t26-provider-01/README.md
+docs/verification/t26-provider-01/acceptance.md
+docs/verification/t26-provider-01/mcp_exit.go.txt
+
+Union of the two segments: 27 paths.
+
+Segment e9d1b5ae..2ee906d5 — R1 fix + R2 test increment (7 distinct paths,
+all inside the product segment's 24):
+internal/application/audit/README.md                    (R1)
+internal/application/audit/batch_state_server_drop_test.go (R1 + R2)
+internal/application/audit/batch_state_t26_test.go      (R1)
+internal/domain/rule/ddl/README.md                      (R1)
+internal/domain/rule/ddl/mysql_server_rules.go          (R1)
+internal/domain/rule/ddl/mysql_server_rules_test.go     (R1)
+testdata/ddl-golden/T26.json                            (R1)

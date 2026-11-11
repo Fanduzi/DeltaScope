@@ -1,0 +1,269 @@
+diff --git a/internal/application/audit/README.md b/internal/application/audit/README.md
+index ef5c9703..154b1351 100644
+--- a/internal/application/audit/README.md
++++ b/internal/application/audit/README.md
+@@ -27,7 +27,7 @@ Application orchestration for parsing and, later, evaluating SQL audit requests.
+ | batch_state_server_srs.go | Binds the T26 provider-round MySQL SERVER and SRS fact projections onto statement metadata: `bindMySQLServer`/`bindMySQLSRS` resolve the one authored identity per family through the shared once-per-request object cache (identifier names carry the `name_form=identifier` proof, string-literal spellings arrive unqualified so the read stays unissued; SRIDs are always provable while authored NAME/ORGANIZATION spellings carry no conflict qualifiers; decoded identifier names bind verbatim — no fold or trim merges unproven spellings), project the provider's `ServerState`/`SpatialReferenceSystemState` — never fabricating existence, conflict, or dependency facts — and bind unvouched states under a contaminated batch, a missing resolver, or a non-MySQL dialect; resolver failures propagate through the bounded `metadataObjectReadError` boundary. T26-SERVER-DROP-01 layers the SERVER ordered channel over `bindMySQLServer`: channel taint and the relation-scan barrier complete before any resolver call, binding the `batch_effects` unissued reason instead (issue #105 T26-SERVER-DROP-01) |
+ | batch_state_server.go | Implements the SERVER family's ordered channel (issue #105 T26-SERVER-DROP-01): the accepted minimal conservative relation `R(A,B)` (byte-identical or registered ASCII-subset fold-equal → provably-same, everything else → unproven, provably-distinct's domain empty), `serverEntries` barrier projections keyed by the ASCII-fold bucket with the verbatim name kept for relation checks, `serverWrites` recording unaudited write identities, and `serverChannelTainted` for unprovable-name writes; `resolveServerBarrier` completes the whole-batch contamination, channel taint, and all-entry/all-write relation scan before any provider access — a provably-same hit never short-circuits the scan — and `applyServerStatement` leaves the unproven barrier for an audited drop, a write record for an unaudited identifier form, or whole-channel taint for a literal form, while proven refusals and the tracked schema/table model stay untouched |
+ | batch_state_server_drop_test.go | Verifies the T26-SERVER-DROP-01 ordered channel through the real parse→extract→enrich seam and `AuditSQL`: ASCII case aliases consume the same barrier, unaudited CREATE SERVER writes and literal-name channel taint suppress later lookups before the resolver, non-ASCII and leading-space relations stay unproven, prior proven-present bindings stay immutable, table/schema siblings and the TiDB vendor boundary stay untouched, zero-row answers bind read-unknown (never absent), provider-less binds stay unvouched, and the public shape carries the notice plus the bounded gap vocabulary under unverified coverage (issue #105 T26-SERVER-DROP-01) |
+-| batch_state_t26_test.go | Verifies the T26 provider-round enrich wiring through the real parse→extract→enrich seam with a call-recording provider: identifier-named servers reach the seam with the name_form proof while string literals bind `identity_unproven`, SRID statements bind existence+dependency facts with no conflict qualifiers, the object cache dedups an identical identity while distinct identities resolve independently (decoded-identifier names bind verbatim so ` s1`/`s1` stay distinct, and qualifier sets are length-prefixed so `=`/`;`-bearing values never collide), non-target statements and TiDB dialects issue zero family lookups, and resolver errors reach the public boundary as bounded `metadataObjectReadError` — fixed text outside, original cause reachable through the chain (issue #105 T26 provider round) |
++| batch_state_t26_test.go | Verifies the T26 provider-round enrich wiring through the real parse→extract→enrich seam with a call-recording provider: identifier-named servers reach the seam with the name_form proof while string literals bind `identity_unproven`, SRID statements bind existence+dependency facts with no conflict qualifiers, the object cache dedups an identical identity while decoded-identifier names bind verbatim (T26-SERVER-DROP-01: the first audited drop's barrier now shadows later lookups through the ordered channel — ` s1`/`s1` stay unproven-relation so the second binds `batch_effects`, and qualifier sets are length-prefixed so `=`/`;`-bearing values never collide), non-target statements and TiDB dialects issue zero family lookups, and resolver errors reach the public boundary as bounded `metadataObjectReadError` — fixed text outside, original cause reachable through the chain (issue #105 T26 provider round) |
+ | batch_state_t25standalone_test.go | Verifies T25 standalone tablespace lifecycle transitions: provider-backed existence/occupancy resolution, honest unknown post-state, rename success/collision/unknown-destination, version gates, and LOGFILE GROUP vendor-boundary non-entry into the InnoDB transition (issue #104 T25) |
+ | batch_state_t24_test.go | Verifies the T24/#103 R2 MySQL resource-group contract over the shared outcome evaluator: batch CREATE→ALTER→DROP provenance wins over the provider; a proven pre-8.0.3 version or proven feature-off refuses every lifecycle statement with every premise gap silent; each unproven premise owes its bounded gap (version, feature, privilege, state, host-VCPU on declared ranges, priority-capability on declared priorities, occupancy on DROP); the reserved builtin pair refuses ALTER/DROP case-insensitively; inverted VCPU ranges and ALTER FORCE-without-DISABLE refuse on the declaration alone; the capability matrix holds (proven-on enforces the type bound, proven-off ignores an authored priority with `priority.warn` and stores 0, unknown withholds the divergent member while landing the group); a bare ALTER resets effective priority to 0; proven-occupied DROP without FORCE refuses while FORCE lands proven-unoccupied; undecidable outcomes `PostMerge` only agreed members; an unaudited `SET ... FOR` contaminates the registry projection; and the dialect boundary holds both directions (issue #103 T24 R2); R4/R6 add the six-case read-only gate matrix, the lazy premise-bundle merge incl. error propagation, the deployment-evidence binding contract (sourced/product/version-bound, fill-only-unproven, never overwrites proven facts), the A/B same-version target discrimination (observed `@@server_uuid` outranks the declared `TargetIdentity`; unverifiable targets ignore the bundle), and `BoundComplete` proven-unoccupied seeding (issue #103 T24-R4/R6) |
+ | batch_state_placement.go | Applies the TiDB placement-policy ordered state (issue #99 T20, reworked T20-R4): seeds the policy registry; ref sets follow positive-subset semantics — each recorded identity is individually proven and a nonempty incomplete set still refuses DROP while `refsKnown=false` never authorizes proven-empty from the provider catalog (nil catalog = unvouched; a nil `BoundTargets` read keeps the bound set unvouched — never laundered into proven-empty), maintains inbound `BoundTargets` on bind/unbind/drop/rename with exact identity matching, refuses proven bound-policy drops and missing-policy binds, keeps unproven premises withheld rather than partially applied, and preserves exact pre-state on MySQL vendor refusals |
+diff --git a/internal/application/audit/batch_state_server_drop_test.go b/internal/application/audit/batch_state_server_drop_test.go
+index 21c523ce..f97bea85 100644
+--- a/internal/application/audit/batch_state_server_drop_test.go
++++ b/internal/application/audit/batch_state_server_drop_test.go
+@@ -92,11 +92,17 @@ func TestT26DropServerPriorBindingImmutable(t *testing.T) {
+ 	}
+ }
+ 
+-// The SERVER channel never reaches the table/schema model — a tracked
+-// table binding resolves normally on both sides of the drop.
++// The SERVER channel never reaches the table/schema model — a provable
++// table pre-state (batch-created and provider-vouched alike) stays
++// consumable on the table statement following the SERVER statement.
+ func TestT26DropServerTableSiblingsUnaffected(t *testing.T) {
+-	provider := &t26Provider{servers: map[string]bool{"s1": true}}
+-	enriched := enrichT26(t, "CREATE TABLE t (id int); DROP SERVER s1; DROP TABLE t", spec.DialectMySQL, provider)
++	provider := &t26Provider{
++		servers: map[string]bool{"s1": true},
++		tables:  map[string]*spec.TableSnapshot{"golden.u": presentTable("golden", "u", "k")},
++	}
++	enriched := enrichT26(t,
++		"CREATE TABLE t (id int); DROP SERVER s1; DROP TABLE t; DROP TABLE u",
++		spec.DialectMySQL, provider)
+ 	if len(provider.calls) != 1 || provider.calls[0].typ != "mysql_server" {
+ 		t.Fatalf("resolver calls = %+v, want only the server lookup", provider.calls)
+ 	}
+@@ -105,6 +111,18 @@ func TestT26DropServerTableSiblingsUnaffected(t *testing.T) {
+ 			t.Fatalf("table statements must not bind server facts: %+v", stmt.Metadata)
+ 		}
+ 	}
++	// The batch-created table binds its ordered present shape after the
++	// SERVER statement — contamination would degrade this binding.
++	dropT := enriched[2].Metadata.TargetTables[0]
++	if dropT.Snapshot == nil || !dropT.Snapshot.Exists || dropT.Snapshot.FindColumn("id") == nil {
++		t.Fatalf("post-SERVER drop must still consume the batch-derived present table: %+v", dropT)
++	}
++	// The provider-vouched table keeps its catalog snapshot — a tainted
++	// or poisoned batch would shadow it into unvouched.
++	dropU := enriched[3].Metadata.TargetTables[0]
++	if dropU.Snapshot == nil || !dropU.Snapshot.Exists || dropU.Snapshot.FindColumn("k") == nil {
++		t.Fatalf("post-SERVER drop must still consume the provider-present table: %+v", dropU)
++	}
+ }
+ 
+ // A zero-row catalog answer binds read-unknown — never absent, never
+@@ -212,6 +230,55 @@ func TestT26DropServerPublicShapeUnproven(t *testing.T) {
+ 	}
+ }
+ 
++// A two-statement batch exercises the barrier's public shape end to
++// end: the case alias binds batch_effects, the rule emits the notice
++// with if_exists, the gap set substitutes batch_effects for existence,
++// and coverage stays unverified — the binding, registration, gap
++// aggregation, and coverage merge hold together.
++func TestT26DropServerBarrierPublicShape(t *testing.T) {
++	provider := &t26Provider{servers: map[string]bool{"s1": true}}
++	result, err := AuditSQL(context.Background(), Request{
++		SQL:     "DROP SERVER s1; DROP SERVER IF EXISTS `S1`",
++		Dialect: spec.DialectMySQL, Schema: "golden", MetadataProvider: provider,
++	})
++	if err != nil {
++		t.Fatalf("audit: %v", err)
++	}
++	if len(result.Statements) != 2 || len(result.Unsupported) != 0 {
++		t.Fatalf("both audited drops expected, unsupported=%+v statements=%d", result.Unsupported, len(result.Statements))
++	}
++	second := result.Statements[1]
++	var found bool
++	for _, f := range second.Findings {
++		if f.RuleID == "ddl.mysql.server.drop.notice" {
++			found = true
++			if f.Metadata["if_exists"] != true {
++				t.Fatalf("if_exists flag missing on the barrier notice: %+v", f.Metadata)
++			}
++			if strings.Contains(f.Message, "S1") || strings.Contains(strings.ToLower(f.Message), "dropped") ||
++				strings.Contains(strings.ToLower(f.Message), "removed") {
++				t.Fatalf("notice claims an executed result or leaks the authored name: %q", f.Message)
++			}
++		}
++	}
++	if !found {
++		t.Fatalf("notice missing on the barrier statement: %+v", second.Findings)
++	}
++	var facts []string
++	for _, g := range second.EvidenceGaps {
++		facts = append(facts, g.RequiredFacts...)
++	}
++	if !containsString(facts, "server.batch_effects") || !containsString(facts, "server.drop_privilege") {
++		t.Fatalf("barrier must owe batch_effects+privilege: %+v", second.EvidenceGaps)
++	}
++	if containsString(facts, "server.existence") {
++		t.Fatalf("batch_effects replaces existence — dedup contract: %+v", second.EvidenceGaps)
++	}
++	if second.Coverage.Status != report.CoverageUnverified {
++		t.Fatalf("coverage = %v, want unverified", second.Coverage.Status)
++	}
++}
++
+ func containsString(list []string, want string) bool {
+ 	for _, s := range list {
+ 		if s == want {
+diff --git a/internal/application/audit/batch_state_t26_test.go b/internal/application/audit/batch_state_t26_test.go
+index b5fcf965..5f253497 100644
+--- a/internal/application/audit/batch_state_t26_test.go
++++ b/internal/application/audit/batch_state_t26_test.go
+@@ -24,8 +24,9 @@ type t26Call struct {
+ }
+ 
+ type t26Provider struct {
+-	servers map[string]bool // proven-present server identities
+-	srs     map[uint32]bool // proven-present SRIDs
++	servers map[string]bool                // proven-present server identities
++	srs     map[uint32]bool                // proven-present SRIDs
++	tables  map[string]*spec.TableSnapshot // catalog-present table identities
+ 	calls   []t26Call
+ 	err     error
+ }
+@@ -34,8 +35,11 @@ func (p *t26Provider) LoadInstanceFacts(context.Context, spec.Dialect, string) (
+ 	return &spec.InstanceFacts{}, nil
+ }
+ 
+-func (p *t26Provider) LoadTableSnapshot(context.Context, spec.Dialect, string, string) (*spec.TableSnapshot, error) {
+-	return nil, nil
++func (p *t26Provider) LoadTableSnapshot(_ context.Context, _ spec.Dialect, schema, table string) (*spec.TableSnapshot, error) {
++	if p.tables == nil {
++		return nil, nil
++	}
++	return p.tables[schema+"."+table], nil
+ }
+ 
+ // ResolveObject mirrors the live provider's read contract: server
+diff --git a/internal/domain/rule/ddl/README.md b/internal/domain/rule/ddl/README.md
+index bd8c5b9f..0538de38 100644
+--- a/internal/domain/rule/ddl/README.md
++++ b/internal/domain/rule/ddl/README.md
+@@ -42,7 +42,7 @@ Expanded DDL rule catalog for create-table governance, table options/object shap
+ | mysql_tablespace_rules.go | Implements the T25 MySQL tablespace lifecycle rules (issue #104): `ddl.mysql.tablespace.create.warn`/`alter.warn` (warning — authored standalone CREATE/ALTER TABLESPACE), `ddl.mysql.tablespace.drop.forbid` (blocker — the drop discards the container's storage declaration), and `ddl.mysql.tablespace.applicability` (blocker — proven native gates: explicit non-InnoDB/non-NDB engine refusal, `CREATE/DROP/ALTER UNDO` surface and memberless general CREATE carry an exact 8.0.14 floor, `ENCRYPTION` an 8.0.13 floor, `RENAME` an 8.0.3 floor, `ENGINE_ATTRIBUTE` an 8.0.21 floor, and ALTER `AUTOEXTEND_SIZE` an 8.0.23 floor (CREATE-side `AUTOEXTEND_SIZE` carries no floor — pre-8.0.23 servers accept and ignore it) — `spec.TablespaceVersionOutcomeFor` adjudicates supported/refused/unproven, never a coarse major check — a memberless InnoDB CREATE is supported from 8.0.14 (the server generates the datafile), InnoDB `ADD/DROP DATAFILE` refused as an NDB-only member, proven-absent ALTER/DROP target, proven-present CREATE target, proven-occupied DROP, and proven kind mismatch refused (a general form never acts on an undo object or vice versa)); unproven existence/occupancy/kind/version/engine premises owe `unknown_tablespace_state`/`target.version`/`tablespace.engine`/`tablespace.kind` gaps, and an undo DROP always owes `tablespace.drop_eligibility` (runtime STATE=empty and default-object protection are unmodeled — the bound-table count never governs undo eligibility), never an inferred verdict. NDB + its documented ndbcluster alias and logfile_group declarations and `ALTER UNDO ... SET` route to engine/unaudited boundaries, never the InnoDB lifecycle (issue #104 T25) |
+ | tablespace_rules.go | Implements the T25 whole-table InnoDB tablespace rules (issue #104): `ddl.alter.discard_tablespace.forbid` (blocker — the authored discard destroys the table's .ibd outright) and `ddl.alter.import_tablespace.warn` (warning — attaching an external file the audit cannot vouch), each paired with `.applicability` (blocker) refusing proven non-InnoDB or partitioned targets while unproven engine/partition premises owe `unknown_table_state` gaps; the shared verdict also backs the ordered-state transition so findings and post-state never diverge, and TiDB stays a vendor-refused boundary with no MySQL semantic findings (issue #104 T25) |
+ | tablespace_rules_test.go | Verifies the T25 whole-table and standalone tablespace rules: governance levels, proven refusal cells (engine/version/occupancy/existence/RENAME collision), vendor-boundary silence, and the evidence-gap contract for every unproven premise (issue #104 T25) |
+-| mysql_server_rules.go | Implements the T26-SERVER-DROP-01 audited MySQL identifier-form `DROP SERVER` slice (issue #105): `ddl.mysql.server.drop.notice` emits one notice per audited statement — proven-present existence names the removed catalog entry, every other adjudicated shape the unverified-connection message — and owes the bounded `unknown_server_state` gap set: `server.existence` for an unproven catalog answer (a `batch_effects` bound state reports `server.batch_effects` instead — the ordered channel's undischarged unknown effect shadowed the catalog), plus `server.drop_privilege` always owed because SUPER/grant evidence is not wired; `IF EXISTS` surfaces as finding metadata and never publishes absent, and no authored server name reaches any emitted shape (docs/verification/t26-semantics-01) |
++| mysql_server_rules.go | Implements the T26-SERVER-DROP-01 audited MySQL identifier-form `DROP SERVER` slice (issue #105): `ddl.mysql.server.drop.notice` emits one notice per audited statement — proven-present existence names the bind-time-proven entry with execution unverified, every other adjudicated shape the existence-and-execution-unverified message — and owes the bounded `unknown_server_state` gap set: `server.existence` for an unproven catalog answer (a `batch_effects` bound state reports `server.batch_effects` instead — the ordered channel's undischarged unknown effect shadowed the catalog), plus `server.drop_privilege` always owed because SUPER/grant evidence is not wired; `IF EXISTS` surfaces as finding metadata and never publishes absent, and no authored server name reaches any emitted shape (docs/verification/t26-semantics-01) |
+ | mysql_server_rules_test.go | Verifies the T26-SERVER-DROP-01 rule contract directly: the proven-present arm owes only the privilege gap, zero-row/unbound arms owe existence+privilege, the batch-effects barrier substitutes `server.batch_effects` for `server.existence`, `IF EXISTS` never publishes absent, the narrow `AppliesTo` rejects literal/CREATE/ALTER/TiDB forms, and findings and gap facts stay free of the authored name (issue #105 T26-SERVER-DROP-01) |
+ | postgresql_object_lifecycle_rules.go | Implements PostgreSQL-only object lifecycle rules: create-schema notice, drop-schema advisory/cascade, create-sequence cycle, alter-sequence restart/cycle, drop-sequence advisory/cascade, drop-materialized-view advisory/cascade |
+ | postgresql_materialized_view_refresh_rules.go | Implements PostgreSQL-only materialized view refresh rules: non-concurrent refresh warning, WITH NO DATA notice |
+diff --git a/internal/domain/rule/ddl/mysql_server_rules.go b/internal/domain/rule/ddl/mysql_server_rules.go
+index 2fe86bc7..95ae7cc0 100644
+--- a/internal/domain/rule/ddl/mysql_server_rules.go
++++ b/internal/domain/rule/ddl/mysql_server_rules.go
+@@ -95,9 +95,9 @@ func (r mysqlDropServerRule) Evaluate(ctx context.Context, statement spec.Statem
+ 		return nil, nil
+ 	}
+ 	state := serverStateFor(statement)
+-	message := "MySQL server definition dropped — connection target unverified"
++	message := "DROP SERVER targets a server definition whose existence and execution remain unverified"
+ 	if state != nil && state.Read && state.Exists {
+-		message = "MySQL server definition dropped — proven-present catalog entry removed"
++		message = "DROP SERVER targets a catalog entry proven present at bind time; execution remains unverified"
+ 	}
+ 	metadata := map[string]any{
+ 		"operation": string(statement.DDL.Operation),
+@@ -110,9 +110,9 @@ func (r mysqlDropServerRule) Evaluate(ctx context.Context, statement spec.Statem
+ 		Level:   r.level,
+ 		Message: message,
+ 		Explanation: &rule.FindingExplanation{
+-			Why:        "DROP SERVER removes the catalog row defining a foreign data wrapper connection.",
+-			Risk:       "Dependent views or code paths resolving data through this server fail after removal. Whether the statement actually executed is unproven — the privilege premise is not wired, and batch writes may already shadow the catalog answer.",
+-			Suggestion: "Confirm the server is no longer referenced and that the executing account holds SUPER before relying on the drop.",
++			Why:        "DROP SERVER removes the mysql.servers row defining a foreign data wrapper connection and requires SUPER.",
++			Risk:       "Whether the statement actually executed is unproven — the privilege premise is not wired, and batch writes may already shadow the catalog answer. FEDERATED tables created with the connection information are not removed with it, but definitions or code resolving through this server entry could be affected if the removal lands.",
++			Suggestion: "Confirm the server entry is no longer needed and that the executing account holds SUPER before relying on the drop.",
+ 		},
+ 		Metadata: metadata,
+ 	}}, nil
+diff --git a/internal/domain/rule/ddl/mysql_server_rules_test.go b/internal/domain/rule/ddl/mysql_server_rules_test.go
+index ca255e2e..45387483 100644
+--- a/internal/domain/rule/ddl/mysql_server_rules_test.go
++++ b/internal/domain/rule/ddl/mysql_server_rules_test.go
+@@ -61,7 +61,8 @@ func hasFact(facts []string, want string) bool {
+ }
+ 
+ // Proven-present existence keeps the notice and owes only the drop
+-// privilege — the catalog answered, the execution premise did not.
++// privilege — the catalog answered, the execution premise did not. The
++// message names the proven pre-state without claiming the drop landed.
+ func TestMySQLDropServerProvenPresent(t *testing.T) {
+ 	r := mysqlDropServerRuleUnderTest(t)
+ 	stmt := mysqlDropServerStatement(t, &spec.ServerState{Name: "s1", Read: true, Exists: true, Status: spec.MetadataStatusConfirmed}, false)
+@@ -75,6 +76,15 @@ func TestMySQLDropServerProvenPresent(t *testing.T) {
+ 	if findings[0].Level != rule.LevelNotice {
+ 		t.Fatalf("level = %v, want notice", findings[0].Level)
+ 	}
++	msg := strings.ToLower(findings[0].Message)
++	if !strings.Contains(msg, "proven present") || !strings.Contains(msg, "unverified") {
++		t.Fatalf("present arm must name the proven pre-state and unverified execution: %q", findings[0].Message)
++	}
++	for _, banned := range []string{"dropped", "removed", "connection target"} {
++		if strings.Contains(msg, banned) {
++			t.Fatalf("message claims an executed result or an unchecked premise: %q contains %q", findings[0].Message, banned)
++		}
++	}
+ 	facts := gapFacts(r.EvidenceGaps(stmt))
+ 	if hasFact(facts, "server.existence") || hasFact(facts, "server.batch_effects") {
+ 		t.Fatalf("proven present must not owe existence gaps: %v", facts)
+@@ -95,8 +105,14 @@ func TestMySQLDropServerZeroRowUnknown(t *testing.T) {
+ 	}
+ 	findings, _ := r.Evaluate(context.Background(), stmt)
+ 	for _, f := range findings {
+-		if strings.Contains(f.Message, "s1") || strings.Contains(strings.ToLower(f.Message), "absent") {
+-			t.Fatalf("finding must carry neither the authored name nor an absent verdict: %q", f.Message)
++		msg := strings.ToLower(f.Message)
++		if strings.Contains(f.Message, "s1") || strings.Contains(msg, "absent") ||
++			strings.Contains(msg, "dropped") || strings.Contains(msg, "removed") ||
++			strings.Contains(msg, "connection target") {
++			t.Fatalf("finding claims an executed result, an absent verdict, or an unchecked premise: %q", f.Message)
++		}
++		if !strings.Contains(msg, "unverified") {
++			t.Fatalf("unproven arm must state existence and execution unverified: %q", f.Message)
+ 		}
+ 	}
+ }
+@@ -166,6 +182,22 @@ func TestMySQLDropServerAppliesToNarrow(t *testing.T) {
+ 	}
+ }
+ 
++// The Explanation's risk text stays inside the documented semantics —
++// no unconditional dependent-failure claim; the FEDERATED survival
++// fact and the conditional "if the removal lands" framing hold.
++func TestMySQLDropServerExplanationBounded(t *testing.T) {
++	r := mysqlDropServerRuleUnderTest(t)
++	stmt := mysqlDropServerStatement(t, &spec.ServerState{Name: "s1", Read: true, Exists: true, Status: spec.MetadataStatusConfirmed}, false)
++	findings, _ := r.Evaluate(context.Background(), stmt)
++	risk := findings[0].Explanation.Risk
++	if strings.Contains(risk, "fail after removal") || strings.Contains(risk, "will fail") {
++		t.Fatalf("risk must not claim unconditional dependent failure: %q", risk)
++	}
++	if !strings.Contains(risk, "unproven") || !strings.Contains(risk, "if the removal lands") {
++		t.Fatalf("risk must state the unproven execution and conditional effect: %q", risk)
++	}
++}
++
+ // No authored name reaches any emitted shape — finding metadata, gap
+ // facts, and messages stay free of the server identity.
+ func TestMySQLDropServerNoAuthoredNameLeak(t *testing.T) {
+diff --git a/testdata/ddl-golden/T26.json b/testdata/ddl-golden/T26.json
+index b85d9087..7a982722 100644
+--- a/testdata/ddl-golden/T26.json
++++ b/testdata/ddl-golden/T26.json
+@@ -2,7 +2,7 @@
+  "task_id": "T26",
+  "issue": 105,
+  "policy_profile": "all-rules-disabled",
+- "description": "T26 MySQL SERVER + spatial reference system low-frequency DDL (issue #105), R3 stage manifest \u2014 scope is recognition, named boundaries, and output redaction ONLY. The four baseline anchors and their db_* required cases are declared so a future separately-authorized native run executes unchanged; no SERVER/SRS lifecycle semantics are claimed. cli_cases pin: four SERVER forms (create/alter/drop/drop-if-exists) as named unaudited boundaries on mysql and vendor boundaries on tidb; six SRS forms (create, create+IF NOT EXISTS, create OR REPLACE, drop, drop+IF EXISTS, plus bare create) as implementation boundaries on mysql and vendor on tidb; strict whole-input rejects (trailing junk, missing FDW clause, negative/overflow SRID, OR REPLACE + IF NOT EXISTS contradiction) as parser errors; ALTER INSTANCE inventory subactions RELOAD TLS (with NO ROLLBACK ON ERROR member recorded) and ROTATE INNODB MASTER KEY as precise named boundaries; and fixed-shape output redaction proving no credential/definition payload reaches raw_sql, normalized_sql, unsupported[].sql, or markdown.",
++ "description": "T26 MySQL SERVER + spatial reference system low-frequency DDL (issue #105) \u2014 recognition, named boundaries, output redaction, plus the T26-SERVER-DROP-01 audited slice. The four baseline anchors and their db_* required cases are declared so a future separately-authorized native run executes unchanged. cli_cases pin: the two MySQL identifier-form DROP SERVER units (drop/drop-if-exists) audited under the isolated server-drop profile \u2014 review verdict, unverified coverage, one notice, and the bounded existence+drop_privilege gap set; CREATE/ALTER SERVER as named unaudited boundaries on mysql and vendor boundaries on tidb; six SRS forms (create, create+IF NOT EXISTS, create OR REPLACE, drop, drop+IF EXISTS, plus bare create) as implementation boundaries on mysql and vendor on tidb; strict whole-input rejects (trailing junk, missing FDW clause, negative/overflow SRID, OR REPLACE + IF NOT EXISTS contradiction) as parser errors; ALTER INSTANCE inventory subactions RELOAD TLS (with NO ROLLBACK ON ERROR member recorded) and ROTATE INNODB MASTER KEY as precise named boundaries; and fixed-shape output redaction proving no credential/definition payload reaches raw_sql, normalized_sql, unsupported[].sql, or markdown.",
+  "anchors": {
+   "mysql57": {
+    "service": "mysql57",
