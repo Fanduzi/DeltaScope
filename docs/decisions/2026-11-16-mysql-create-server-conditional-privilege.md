@@ -120,8 +120,12 @@ them.
   without a target pin (`version_evidence` null) — they are
   boundary-regression evidence, not in-domain CREATE proof; the two
   create cases among them pin `gate: "version"` under that request.
-  Three distinct binaries are registered in the evidence appendix —
+  Six distinct binaries are registered in the evidence appendix —
   precommit workspace build, the golden artifact's own recorded build
-  (source state unestablished), and the clean candidate build — with
-  no identity inferred across them.
+  (source state unestablished), the clean R1 candidate build, the R2
+  workspace build used for the historical CLI run (source relationship
+  unestablished), the clean R2 candidate build, and the R3 candidate
+  build that is byte-identical to the R2 build because the R2→R3
+  diff contains no product `.go` file — with no identity inferred
+  across the unestablished entries.
 - Full unit suite green: 35 packages, zero failures.

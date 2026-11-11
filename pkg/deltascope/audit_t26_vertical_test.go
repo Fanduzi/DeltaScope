@@ -23,7 +23,10 @@ import (
 // public MetadataProvider surface — the same adapter shape the SDK
 // itself applies at the boundary; the loader, the resolver, and the
 // driver underneath are the production implementations.
-type t26vProvider struct{ inner *mysqlmeta.Provider }
+type t26vProvider struct {
+	inner         *mysqlmeta.Provider
+	resolverCalls int
+}
 
 func (p *t26vProvider) LoadInstanceFacts(ctx context.Context, dialect Dialect, schema string) (*InstanceFacts, error) {
 	return p.inner.LoadInstanceFacts(ctx, spec.Dialect(dialect), schema)
@@ -35,8 +38,12 @@ func (p *t26vProvider) LoadTableSnapshot(ctx context.Context, dialect Dialect, s
 
 // ResolveObject carries the internal spec.Dialect signature — the
 // public wrapper discovers the object resolver seam by asserting the
-// internal signature, not the public Dialect surface.
+// internal signature, not the public Dialect surface. resolverCalls
+// counts every call that crossed this provider-facing boundary — the
+// independent layer-2 count Plan F requires (the SQL layer below it
+// is recorded separately on the driver).
 func (p *t26vProvider) ResolveObject(ctx context.Context, dialect spec.Dialect, req spec.ObjectLookupRequest) (*spec.ObjectSnapshot, error) {
+	p.resolverCalls++
 	return p.inner.ResolveObject(ctx, dialect, req)
 }
 
@@ -483,12 +490,16 @@ func TestT26VerticalCreatePlanF(t *testing.T) {
 	if result.Verdict != VerdictReject {
 		t.Fatalf("two proven refusals must reject: %+v", result.Verdict)
 	}
-	// Three-layer read counts: no privilege mode means the loader
-	// never ran; the second statement hit the shared objectCache so
-	// the provider-facing resolver fired once; that one resolver read
-	// is the single mysql.servers SQL with the authored name bound.
+	// Three-layer read counts, each from its own recorder: no
+	// privilege mode means the loader never ran; the provider-facing
+	// resolver boundary fired once (the second statement hit the
+	// shared objectCache); that one resolver read is the single
+	// mysql.servers SQL with the authored name bound.
 	if grantsQueries(fixture) != 0 {
 		t.Fatalf("loader queries = %d, want 0 — privilege mode disabled", grantsQueries(fixture))
+	}
+	if provider.resolverCalls != 1 {
+		t.Fatalf("provider-facing resolver calls = %d, want exactly 1 — recorded at the ResolveObject forwarding boundary, not inferred from SQL", provider.resolverCalls)
 	}
 	reads := serverQueryIndexes(fixture)
 	if len(reads) != 1 {

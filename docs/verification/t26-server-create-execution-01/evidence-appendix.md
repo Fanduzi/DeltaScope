@@ -1,9 +1,11 @@
-# T26-SERVER-CREATE-EXECUTION-01 — Evidence Appendix (R1)
+# T26-SERVER-CREATE-EXECUTION-01 — Evidence Appendix (R1–R3)
 
 All commands ran on branch `milestone/mysql-tidb-ddl-completion`,
 baseline `e54e1e6eeee57ee14ea19799d6fccbca46ca02ef`, inside the
 product workspace carrying the candidate diff (pre-commit state; the
-candidate commit records the identical tree).
+candidate commit records the identical tree). R3 added test-assertion
+proofs only — no product `.go` file changed after R2 — plus the R3
+binary-F CLI re-run registered in §4.
 
 ## 1. Test runs
 
@@ -40,11 +42,11 @@ New CREATE-layer tests inside that run:
 | application | `TestT26CreateOrderedPresentRefusal` | re-create over OrderedPresent → refusal owing nothing + conditional source; standing present survives; resolver=1 |
 | application | `TestT26CreateConnectionMembersNotice` | missing members → second advisory `notice: connection_members`; complete → single finding; no OPTIONS content leaked |
 | application | `TestT26CreateChannelTaintBarrier` | literal-name drop taints the channel (distinct from `batchState.contaminated`) → create adjudicates barrier owing exactly `batch_effects` |
-| application | `TestT26CreateRealContamination` | real parse-failure contamination: entries published pre-failure (OrderedPresent AND OrderedAbsent) survive apply untouched; A1 owes only `batch_effects`; no marker; bound shape unbound; resolver untouched (R2-D.1) |
+| application | `TestT26CreateRealContamination` | real parse-failure contamination, asserted end to end: `state.contaminated` observed false before and true after the real failure record feeds the tail call's own loop (never test-set); complete independent deep-copied `serverEntries` snapshots before and after the contaminated CREATE compare equal across every field and map key — no add/clear/rewrite, OrderedPresent/OrderedAbsent values unchanged (R3-B); A1 owes only `batch_effects`; no marker; bound shape unbound; resolver delta 0 and loader delta 0 recorded independently (R2-D.1) |
 | application | `TestT26CreateInheritedMarkerChains` | conditional ordered source → scope terminator → CREATE/DROP: inherited-only marker; own suppressed premise still owes `create_privilege`/`drop_privilege`; marker never substitutes for the own premise (R2-D.2) |
-| application | `TestT26CreateOrderedLifecyclePublic` | DROP→CREATE→DROP, DROP→CREATE→CREATE→DROP, unknown CREATE→CREATE barrier, absent→dirty CREATE→DROP to public findings/gaps/marker/coverage/verdict; OrderedPresent sides of literal taint + relation unproven (R2-D.3) |
+| application | `TestT26CreateOrderedLifecyclePublic` | full public projection on every chain (R3-D): DROP→CREATE→DROP and DROP→CREATE→CREATE→DROP assert per-statement outcome, exact gaps, `conditional_audit` marker presence, statement coverage, aggregate coverage, and verdict; unknown CREATE→CREATE pins first-statement `{existence}`-only gap + own marker vs second-statement `{batch_effects}`-only barrier with no marker; absent→dirty CREATE→DROP asserts conditional_drop / unverified-owing-exactly-`{server.create_options}`-with-marker-and-options-only-wording / blocked_batch_effects-owing-`{server.batch_effects}`, the connection_members advisory as a separate notice finding adding no gap, unverified aggregate, review verdict; OrderedPresent sides of literal taint + relation unproven (R2-D.3) |
 | application | `TestT26CreateDefaultEntryAndVersionGate` | no provider + valid 8.0.x pin + no mode → audited, owed exactly `{existence, create_privilege}`; no version → `gate:"version"` + `ErrUnsupportedStatement`; malformed pin → `ErrInvalidTargetVersion`, pin/observed mismatch → `ErrTargetVersionMismatch`, both loader=0 (R2-E) |
-| application | `TestT26CreateReadErrorBoundaries` | CREATE-only loader failure and catalog read failure propagate bounded; `errors.Is` reaches the cause; no authored name/grant text in public error (R2-E) |
+| application | `TestT26CreateReadErrorBoundaries` | CREATE-only loader failure and an isolated CREATE-only catalog read failure both propagate bounded (R3-C): the catalog branch is a single qualified CREATE whose own resolver entry is directly asserted (exactly one `mysql_server` lookup for the authored identity) after the family loader succeeded once; `errors.Is` reaches the cause; no authored name/grant text in public error; the error propagates rather than degrading into an unproven gap (R2-E) |
 | application | `TestT26CreateLiteralTaint` | literal-name create stays boundary; tainted channel blocks later drop consumption → barrier |
 | application | `TestT26CreateObjectCacheShare` | create refused on proven presence + same-identity drop → exactly 1 resolver call (objectCache) |
 | application | `TestT26CreateNoModeOwesAll` | no mode → existence + create_privilege + options all owed; loader never fires |
@@ -52,7 +54,7 @@ New CREATE-layer tests inside that run:
 | ddl rule | `TestMySQLCreateServerConditionalMarkerProvenance` | `conditional_audit` projects the adjudication fact only: barrier+consumable → absent; catalog refusal+consumable → absent; inherited conditional source alone → present; dirty-options A4 owes options-only wording, never claims existence unproven (R2-A) |
 | ddl rule | `TestMySQLCreateServerCompletenessNotice` | notice text is fixed and generic — no option-key enumeration in message/why/risk/suggestion/metadata (R2-B) |
 | pkg | `TestT26CreatePrivilegeHookPublicSurface` | qualified create invokes the public hook once; version-gated create never reaches it, surfaces via `ErrUnsupportedStatement` |
-| pkg | `TestT26VerticalCreatePlanF` | two byte-identical CREATEs, same lookup key, no mode, catalog present → both A2 refusal owed-empty, no marker, no OrderedPresent publish, coverage complete ×2 + aggregate, verdict reject; three-layer reads: loader 0 / resolver 1 / `mysql.servers` SQL 1 with verbatim args (R2-C) |
+| pkg | `TestT26VerticalCreatePlanF` | two byte-identical CREATEs, same lookup key, no mode, catalog present → both A2 refusal owed-empty, no marker, no OrderedPresent publish, coverage complete ×2 + aggregate, verdict reject; three-layer reads each asserted independently (R3-A): zero privilege-loader SQL calls, exactly one provider-facing resolver call counted at the `ResolveObject` forwarding seam (never inferred from SQL count), and exactly one `mysql.servers` SQL read with verbatim `where server_name = ?` + single bound arg `"s1"` (R2-C) |
 | spec | `TestAdjudicateServerCreate*` (extended) | `ConditionalAudit` per truth-table row; barrier-shadowed conditional source never reaches source or marker (R2-A) |
 
 ### 1.2 Full unit suite
@@ -112,36 +114,56 @@ above are the runner's own counters):
 | literal-name create taint → later drop | — | tainted channel blocks | global guard |
 | Plan F: two byte-identical creates, catalog present, no mode | 0 | 1 | `mysql.servers` SQL = 1, `where server_name = ?` bound to the authored name — recorded on the real driver by `TestT26VerticalCreatePlanF` |
 
-The Plan F row is the SQL-layer count the contract requires: the stub
-`database/sql` driver records every issued query and its bound args
-behind the real `mysqlmeta.Provider`, so the SERVER directory read
-count is asserted on actual SQL — never on a fake-resolver count. The
-second byte-identical create shares the per-request objectCache entry,
-which is why the provider-facing resolver and the SQL layer both read
-exactly once.
+The Plan F row is the three-layer proof the contract requires: the
+stub `database/sql` driver records every issued query and its bound
+args behind the real `mysqlmeta.Provider` (the SQL-layer count), and
+the provider-facing resolver count is asserted by an independent
+counter at the `ResolveObject` forwarding seam — never inferred from
+the SQL count, never a fake resolver, and `Metadata.Objects`/cache
+accesses are not counted (R3-A). The second byte-identical create
+shares the per-request objectCache entry, which is why the
+provider-facing resolver and the SQL layer both read exactly once.
 
-## 3. Binary identities (three distinct builds)
+## 3. Binary identities (six distinct builds)
 
 | id | sha256 | source/workspace state | produced for |
 |---|---|---|---|
 | A | `192f20f707b04a742f6beeb0eeb1c3da2dc5dfd977d38e2961ff559349cf0814` | pre-commit workspace carrying the R1 candidate diff | R1 evidence build (`/tmp/t26create-evidence/deltascope`) |
-| B | `e78fe53820b573e14d310f7b8f8334ca0dfb50d85dff7f803f2cdbc2a44dfc6e` | unknown — recorded inside the golden artifact (`cli.sha256`); artifact `head_sha`/`cli.build.head_sha` = `e54e1e6e` baseline, consistent with "baseline HEAD + uncommitted diff" but never proven | golden runner's dedicated build |
+| B | `e78fe53820b573e14d310f7b8f8334ca0dfb50d85dff7f803f2cdbc2a44dfc6e` | unestablished — recorded inside the golden artifact (`cli.sha256`); artifact `head_sha`/`cli.build.head_sha` = `e54e1e6e` baseline, consistent with "baseline HEAD + uncommitted diff" but never proven | golden runner's dedicated build |
 | C | `c320d6e4d0d17904024c78ddff6a3b8897c552b3b5b0b04cfed994b483d957fb` | clean `f39609de` candidate tree | R1 receipt's candidate clean build |
-| D | `9b608801d0d4f46e4a127215056aeb0e8150b550fce8baf6c6bea8e0f282fa94` | R2 workspace carrying the uncommitted R2 diff (post-R1 tree `232c226b` + R2 edits; predates the candidate by a gofmt-only normalization) | R2 in-domain CLI evidence build (`/tmp/t26create-evidence/r2/deltascope`) |
-| E | `1f7722054a342d8e44882b1748745d7e0c024513e2f39a13601a8ea06cf43d35` | clean R2 candidate tree — built with `-buildvcs=false`, so the hash depends only on source content and is stable for any commit carrying these Go sources | R2 candidate clean build (`/tmp/t26create-evidence/r2/deltascope-candidate`) |
+| D | `9b608801d0d4f46e4a127215056aeb0e8150b550fce8baf6c6bea8e0f282fa94` | unestablished — R2 workspace carrying the uncommitted R2 diff; the asserted "differs from the candidate only by a gofmt normalization" was never backed by a recorded diff, so the source relationship to the R2 candidate stays unestablished | R2 in-domain CLI evidence build (`/tmp/t26create-evidence/r2/deltascope`) |
+| E | `1f7722054a342d8e44882b1748745d7e0c024513e2f39a13601a8ea06cf43d35` | clean R2 candidate tree `54b52f12` (`37c2aa3f`) — `CGO_ENABLED=0 go build -buildvcs=false -o ... ./cmd/deltascope` under go1.26.1 darwin/arm64 with the committed `go.mod`/`go.sum`; identical hash observed on a same-tree rebuild | R2 candidate clean build (`/tmp/t26create-evidence/r2/deltascope-candidate`) |
+| F | `1f7722054a342d8e44882b1748745d7e0c024513e2f39a13601a8ea06cf43d35` | R3 candidate tree (`08266403`, tree `5677e70d`) — same toolchain/flags/deps/target/build-directory as E. F is byte-identical to E because the R2→R3 diff contains no product `.go` file (test and doc changes only); that equality is verifiable from the committed diff, unlike B/D. Rebuilt from the committed tree in the same directory: same hash | R3 CLI re-run build (`/tmp/t26create-evidence/r3/deltascope`) |
 
 No later clean build retroactively proves which binary produced an
-earlier artifact: B's source state is recorded as unestablished, and
-the golden output is attributed to B only — never to A, C, D, or E.
-The §4 CLI evidence ran on D, whose source state differs from the
-candidate only by a gofmt normalization (functionally identical;
-recorded, not inferred).
+earlier artifact: B's and D's source states are recorded as
+unestablished; the golden output is attributed to B only, and the
+historical §4 R2 CLI run is attributed to D only — never to A, C, E,
+or F. The `-buildvcs=false` claim is deliberately narrow: under the
+recorded toolchain (go1.26.1 darwin/arm64), the recorded dependencies
+(committed `go.mod`/`go.sum`), the recorded target and flags
+(`CGO_ENABLED=0 go build -buildvcs=false -o ... ./cmd/deltascope`),
+AND the recorded build directory (`/Users/fan/GolangProjects/DeltaScope`
+— the binary embeds build paths, so the same committed tree built in
+`/tmp/t26-r3-verify` produced a different hash
+`118630575abc14f3ddb1407cee59be22e9bc58802b3ba13436531f9b603b9b89`),
+the observed result is that identical Go sources produce the
+identical hash. It is not a promise that every commit carrying
+similar sources reproduces the hash — E and F agree only because the
+committed R2→R3 diff contains no product `.go` file.
 
-## 4. R2 in-domain CLI evidence (binary D)
+## 4. In-domain CLI evidence — historical R2 run (binary D, source unestablished) and R3 re-run (binary F)
 
 Policy: `/tmp/t26create-evidence/r2/policy-create.yaml` (enables
 `ddl.mysql.server.create.notice` only), sha256
 `555f326c85847305a2910ec45f38ba4e6a550e885bd6beb9ee0387df9073e814`.
+
+The R2 run below executed on binary D. D's source relationship to the
+R2 candidate is **unestablished** (no recorded diff exists between
+D's build tree and the committed candidate), so these artifacts stand
+as D's own record — the R3 re-run on binary F is registered
+separately at the end of this section and neither replaces nor
+retroactively validates the D artifacts.
 
 ```
 $ ./deltascope audit --dialect mysql --target-version 8.0.36 \
@@ -178,10 +200,52 @@ artifact: create-badpin.err
 sha256: 38fc941277aa13121b9bb44302fc14f62e0896074f483cda7d6e4aa751bfda05
 ```
 
+R3 re-run (binary F, sha256
+`1f7722054a342d8e44882b1748745d7e0c024513e2f39a13601a8ea06cf43d35`,
+built from the R3 candidate tree; the same policy bytes copied to
+`/tmp/t26create-evidence/r3/policy-create.yaml`, sha256 unchanged
+`555f326c…`):
+
+```
+$ ./deltascope audit --dialect mysql --target-version 8.0.36 \
+    --config policy-create.yaml --format json --sql \
+    "CREATE SERVER r2srv FOREIGN DATA WRAPPER mysql OPTIONS (HOST '192.0.2.9', DATABASE 'appdb', USER 'svc', PASSWORD 'r2-secret')"
+rc=0  verdict=review  coverage=unverified  outcome=unverified
+gaps: {server.existence, server.create_privilege}
+artifact: /tmp/t26create-evidence/r3/create-indomain.json
+sha256: b3a280bc9b27033d7cf214015dc0328f885ee813c8ffc411534d65d9a87ddcaa
+
+$ ./deltascope audit --dialect mysql --config policy-create.yaml \
+    --format json --sql \
+    "CREATE SERVER r2srv FOREIGN DATA WRAPPER mysql OPTIONS (HOST '192.0.2.9', DATABASE 'appdb', USER 'svc', PASSWORD 'r2-secret')"
+rc=1 — G2 gate: unsupported entry, metadata gate:"version",
+  zero findings/gaps, statement coverage incomplete
+artifact: /tmp/t26create-evidence/r3/nopin.out
+sha256: 9f600ccb42cac82dd32546aaa2098e7d4ff6afa65c8a8a1c8d51b26ab21ef770
+
+$ ./deltascope audit --dialect mysql --target-version "8.0.x" \
+    --config policy-create.yaml --format json --sql \
+    "CREATE SERVER r2srv FOREIGN DATA WRAPPER mysql OPTIONS (HOST '192.0.2.9', DATABASE 'appdb', USER 'svc', PASSWORD 'r2-secret')"
+rc=2 — malformed pin fails closed at the transport preflight:
+  stderr `target_version must match [v]MAJOR.MINOR.PATCH: "8.0.x"`,
+  no audit ran, no provider read possible
+artifact: /tmp/t26create-evidence/r3/create-badpin.err
+sha256: 38fc941277aa13121b9bb44302fc14f62e0896074f483cda7d6e4aa751bfda05
+```
+
+The three F outputs are byte-identical to the corresponding D
+artifacts (same sha256 values). That is observed behavioral
+equivalence under the recorded toolchain — it is NOT evidence of D's
+source identity, which stays unestablished, and it cannot be: the
+same output says nothing about the bytes that produced it.
+
 ## 5. Static gates
 
 ```
-$ gofmt -l internal/ pkg/        → 0 files
+$ gofmt -l <changed files>       → 0 files (every file in the diff)
+$ gofmt -l internal/ pkg/        → 1 file — internal/infrastructure/parser/tidb/mysql_t26r5_test.go,
+                                   a pre-existing whole-tree baseline formatting issue unrelated
+                                   to this diff; intentionally not modified by this round
 $ go vet ./internal/... ./pkg/... → clean
 $ git diff --check                → clean
 ```

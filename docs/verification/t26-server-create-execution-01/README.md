@@ -56,19 +56,29 @@ per-statement bind/adjudication → findings/coverage → ordered apply`
   stay unverified. The 23 CLI cases all run provider-less without a
   target pin (`version_evidence` null) — boundary-regression evidence,
   not in-domain CREATE proof.
-- `go vet` clean; `git diff --check` clean; `gofmt` clean.
-- Four distinct binaries are registered (appendix §3): A = precommit
+- `go vet` clean; `git diff --check` clean; `gofmt` clean on every
+  file in the diff (the whole-tree run reports one pre-existing
+  baseline issue in `internal/infrastructure/parser/tidb/mysql_t26r5_test.go`,
+  unrelated and intentionally untouched).
+- Six distinct binaries are registered (appendix §3): A = precommit
   workspace build `192f20f7…`, B = the golden artifact's own recorded
-  build `e78fe538…` (source state unestablished — `head_sha` baseline
-  `e54e1e6e` + uncommitted diff), C = clean candidate build
-  `c320d6e4…` on tree `232c226b`, D = R2 workspace build `9b608801…`
-  used for the in-domain CLI run. No identity is inferred across them.
-- R2 in-domain CLI evidence (appendix §4): real binary-D run with an
-  8.0.36 target pin and the create rule enabled — rc=0, audited
-  `unverified` finding, gaps `{server.existence, server.create_privilege}`,
-  coverage unverified; contrast rows show the no-pin G2 gate (rc=1,
-  `gate: "version"` unsupported entry) and a malformed pin failing
-  closed at preflight (rc=2, typed error, zero reads).
+  build `e78fe538…` (source state unestablished), C = clean candidate
+  build `c320d6e4…` on tree `232c226b`, D = R2 workspace build
+  `9b608801…` used for the historical in-domain CLI run (source
+  relationship to the R2 candidate unestablished), E = clean R2
+  candidate build `1f772205…` on tree `54b52f12`, F = R3 candidate
+  build `1f772205…` — byte-identical to E because the R2→R3 diff
+  contains no product `.go` file. No identity is inferred across
+  A–D; the E=F equality is verifiable from the committed diff.
+- In-domain CLI evidence (appendix §4): the historical R2 run on
+  binary D — rc=0 audited `unverified` finding, gaps
+  `{server.existence, server.create_privilege}`, coverage unverified;
+  no-pin G2 gate rc=1 `gate: "version"`; malformed pin rc=2 typed
+  preflight error — stands as D's own record under an unestablished
+  source relationship. The R3 re-run on binary F (same policy bytes,
+  same SQL, same flags) produced byte-identical outputs, recorded
+  separately as observed behavioral equivalence — not as proof of
+  D's source.
 
 ## Boundaries held
 

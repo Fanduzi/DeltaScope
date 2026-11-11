@@ -8,6 +8,7 @@ package audit
 import (
 	"context"
 	"errors"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -300,17 +301,44 @@ func TestT26CreateChannelTaintBarrier(t *testing.T) {
 	}
 }
 
+// serverEntrySnapshot is an independent deep copy of one server
+// ordered-channel entry — every field, never a shared pointer, so an
+// in-place rewrite is detected rather than masked by map aliasing.
+type serverEntrySnapshot struct {
+	name               string
+	barrier            bool
+	absent             bool
+	publishedArm       spec.ServerDropArm
+	present            bool
+	presentConditional bool
+}
+
+func snapshotServerEntries(s *batchState) map[string]serverEntrySnapshot {
+	out := make(map[string]serverEntrySnapshot, len(s.serverEntries))
+	for key, e := range s.serverEntries {
+		out[key] = serverEntrySnapshot{
+			name: e.name, barrier: e.barrier, absent: e.absent,
+			publishedArm: e.publishedArm, present: e.present,
+			presentConditional: e.presentConditional,
+		}
+	}
+	return out
+}
+
 // Real whole-batch contamination: a parse failure earlier in the batch
-// sets batchState.contaminated — never a forged UnreadReason. The
-// bound state carries no ordered answer and no catalog read; the
-// adjudication is A1 owing only server.batch_effects; nothing
-// publishes; and the entries the earlier statements wrote survive
-// apply untouched — no create, no clear, no rewrite. The request-level
-// privilege loader contract is unchanged (one read for the request);
-// only the object resolver is never entered for the contaminated
-// statements (R2-D.1).
+// sets batchState.contaminated — never a forged UnreadReason and never
+// a test-set flag. The batch is processed through the real
+// enrichStatements entry point twice on one state: the prefix publishes
+// the ordered entries, then the tail slice carries the real parse
+// failure record so the second call's own loop sets the flag — the
+// call boundary is the snapshot seam around the contaminated CREATE's
+// bind+apply. The tail call runs with the privilege mode off so the
+// request-level loader count for that slice is independently zero;
+// the object-resolver delta is zero too. The complete before/after
+// map must match: no new entry, no clear, no rewrite, every field
+// byte-identical (R2-D.1, R3-B).
 func TestT26CreateRealContamination(t *testing.T) {
-	enrich := func(t *testing.T, sql string) (*batchState, []spec.Statement, *t26Provider) {
+	enrich := func(t *testing.T, sql string, tail int) (*batchState, []spec.Statement, *t26Provider) {
 		t.Helper()
 		provider := &t26Provider{servers: map[string]bool{"s1": true}, version: "8.0.36", privilege: superObservation()}
 		parsed, parseErr := parseSQL(context.Background(), sql, spec.DialectMySQL)
@@ -321,14 +349,48 @@ func TestT26CreateRealContamination(t *testing.T) {
 		if err != nil {
 			t.Fatalf("extract: %v", err)
 		}
+		if tail <= 0 || tail >= len(statements) {
+			t.Fatalf("tail index %d out of range for %d statements", tail, len(statements))
+		}
 		state := newBatchState(spec.DialectMySQL, "golden", provider)
 		state.resolvedVersion = &spec.VersionIdentity{Product: spec.VersionProductMySQL, Version: "8.0.36", Major: 8, Minor: 0, Patch: 36, ValidatedRange: true}
 		state.instanceFacts = &spec.InstanceFacts{Version: "8.0.36"}
+		// Prefix call: no failures among these statements — the ordered
+		// entries publish normally.
 		enriched, err := state.enrichStatements(context.Background(),
 			&MetadataRequest{Schema: "golden", Provider: provider, PrivilegeAuditMode: spec.PrivilegeAuditModeObservedAccountNewSession},
-			statements, parsed.failures, state.instanceFacts, auditLimits{orderedStatements: defaultOrderedStatementLimit})
+			statements[:tail], nil, state.instanceFacts, auditLimits{orderedStatements: defaultOrderedStatementLimit})
 		if err != nil {
-			t.Fatalf("enrich: %v", err)
+			t.Fatalf("prefix enrich: %v", err)
+		}
+		if state.contaminated {
+			t.Fatalf("flag set before the failure was processed — contamination must come from the real parse record, not a preset")
+		}
+		before := snapshotServerEntries(state)
+		resolverBefore, loaderBefore := len(provider.calls), provider.privilegeCalls
+		// Tail call: the real parse failure record precedes the tail
+		// statement, so this call's own loop sets contaminated — the
+		// flag asserted below is the product's, not the test's. The
+		// mode-off request keeps this call's loader gate from firing,
+		// so both read layers report their own independent zero.
+		enriched, err = state.enrichStatements(context.Background(),
+			&MetadataRequest{Schema: "golden", Provider: provider},
+			statements[tail:], parsed.failures, state.instanceFacts, auditLimits{orderedStatements: defaultOrderedStatementLimit})
+		if err != nil {
+			t.Fatalf("tail enrich: %v", err)
+		}
+		if !state.contaminated {
+			t.Fatalf("state.contaminated = false after the real parse failure — want the actual flag set")
+		}
+		after := snapshotServerEntries(state)
+		if !reflect.DeepEqual(before, after) {
+			t.Fatalf("serverEntries rewritten across the contaminated CREATE\nbefore=%+v\nafter=%+v", before, after)
+		}
+		if d := len(provider.calls) - resolverBefore; d != 0 {
+			t.Fatalf("resolver delta across the contaminated CREATE = %d, want 0 — contaminated bind never enters the resolver", d)
+		}
+		if d := provider.privilegeCalls - loaderBefore; d != 0 {
+			t.Fatalf("loader delta across the contaminated CREATE call = %d, want 0 — request-level loader recorded independently of resolver-0", d)
 		}
 		return state, enriched, provider
 	}
@@ -357,29 +419,30 @@ func TestT26CreateRealContamination(t *testing.T) {
 
 	// OrderedPresent written before the failure: DROP+CREATE publish
 	// the conditional present, GARBAGE contaminates the batch, and the
-	// trailing create reads the barrier — the entry survives apply
-	// untouched: no create, no clear, no rewrite.
+	// trailing create reads the barrier — the entry survives the
+	// contaminated bind+apply byte-identical (proved by the complete
+	// snapshot comparison inside enrich).
 	state, enriched, provider := enrich(t,
-		"DROP SERVER s1; "+t26CreateSQL+"; GARBAGE TOKENS HERE; "+t26CreateSQL)
-	assertBarrier(enriched, 2)
+		"DROP SERVER s1; "+t26CreateSQL+"; GARBAGE TOKENS HERE; "+t26CreateSQL, 2)
+	assertBarrier(enriched, 0)
 	entry := state.serverEntries[serverFold("s1")]
 	if entry == nil || !entry.present || !entry.presentConditional || entry.absent || entry.barrier {
 		t.Fatalf("entry = %+v, want the conditional OrderedPresent standing — never cleared or rewritten", entry)
 	}
 	if len(provider.calls) != 1 || provider.privilegeCalls != 1 {
-		t.Fatalf("reads = resolver:%+v loader:%d, want 1 catalog read + 1 loader call", provider.calls, provider.privilegeCalls)
+		t.Fatalf("reads = resolver:%+v loader:%d, want 1 catalog read + 1 loader call from the prefix", provider.calls, provider.privilegeCalls)
 	}
 
 	// OrderedAbsent written before the failure survives the same way.
 	state, enriched, provider = enrich(t,
-		"DROP SERVER s1; GARBAGE TOKENS HERE; "+t26CreateSQL)
-	assertBarrier(enriched, 1)
+		"DROP SERVER s1; GARBAGE TOKENS HERE; "+t26CreateSQL, 1)
+	assertBarrier(enriched, 0)
 	entry = state.serverEntries[serverFold("s1")]
 	if entry == nil || !entry.absent || entry.present || entry.barrier || entry.publishedArm != spec.ServerDropArmProven {
 		t.Fatalf("entry = %+v, want the OrderedAbsent the proven drop published — never cleared or rewritten", entry)
 	}
 	if len(provider.calls) != 1 || provider.privilegeCalls != 1 {
-		t.Fatalf("reads = resolver:%+v loader:%d, want 1 catalog read + 1 loader call", provider.calls, provider.privilegeCalls)
+		t.Fatalf("reads = resolver:%+v loader:%d, want 1 catalog read + 1 loader call from the prefix", provider.calls, provider.privilegeCalls)
 	}
 }
 
@@ -611,12 +674,18 @@ func TestT26CreateOrderedLifecyclePublic(t *testing.T) {
 		if stmt.Findings[0].Metadata["outcome"] != want {
 			t.Fatalf("chain B statement %d outcome = %v, want %s", i, stmt.Findings[0].Metadata["outcome"], want)
 		}
+		if _, ok := stmt.Findings[0].Metadata["conditional_audit"]; !ok {
+			t.Fatalf("chain B statement %d marker missing: %+v — every arm consumed a conditional premise or a conditional ordered state", i, stmt.Findings[0].Metadata)
+		}
 		if len(stmt.EvidenceGaps) != 0 || stmt.Coverage.Status != report.CoverageComplete {
 			t.Fatalf("chain B statement %d coverage = %v gaps = %+v, want complete/none", i, stmt.Coverage.Status, stmt.EvidenceGaps)
 		}
 	}
 	if result.Statements[2].Findings[0].Level != rule.LevelBlocker || result.Verdict != report.VerdictReject {
 		t.Fatalf("chain B verdict = %v, want reject on the refusal blocker", result.Verdict)
+	}
+	if result.Coverage.Status != report.CoverageComplete {
+		t.Fatalf("chain B aggregate coverage = %v, want complete", result.Coverage.Status)
 	}
 
 	// unknown CREATE→CREATE: the first create's own consumable premise
@@ -657,17 +726,74 @@ func TestT26CreateOrderedLifecyclePublic(t *testing.T) {
 	result, enriched := evaluateT26Statements(t,
 		"DROP SERVER s1; CREATE SERVER s1 FOREIGN DATA WRAPPER mysql OPTIONS (HOST 'h', PORT 10000); DROP SERVER s1",
 		provider(), spec.PrivilegeAuditModeObservedAccountNewSession)
+	// First drop: the full public projection — conditional outcome, no
+	// owed facts, the conditional marker, complete coverage.
+	firstDrop := result.Statements[0]
+	if firstDrop.Findings[0].Metadata["outcome"] != "conditional_drop" {
+		t.Fatalf("dirty chain drop outcome = %v, want conditional_drop", firstDrop.Findings[0].Metadata["outcome"])
+	}
+	if len(firstDrop.EvidenceGaps) != 0 {
+		t.Fatalf("dirty chain drop gaps = %+v, want none — existence and premise both discharged", firstDrop.EvidenceGaps)
+	}
+	if _, ok := firstDrop.Findings[0].Metadata["conditional_audit"]; !ok {
+		t.Fatalf("dirty chain drop marker missing: %+v", firstDrop.Findings[0].Metadata)
+	}
+	if firstDrop.Coverage.Status != report.CoverageComplete {
+		t.Fatalf("dirty chain drop coverage = %v, want complete", firstDrop.Coverage.Status)
+	}
+	// Dirty create: A4 unproven on the ordered absent — owes exactly
+	// {server.create_options}, nothing else; the consumable premise
+	// marks it; the options-only owed-set wording is the fixed bounded
+	// phrase; the connection-members advisory is a separate notice
+	// finding that adds no gap.
 	createAdj := enriched[1].Metadata.ServerCreate
 	if createAdj.Arm != spec.ServerCreateArmUnproven || len(createAdj.Owed) != 1 || createAdj.Owed[0] != spec.ServerFactCreateOptions {
 		t.Fatalf("dirty create = %+v, want unproven owing exactly options", createAdj)
 	}
+	dirtyCreate := result.Statements[1]
+	if dirtyCreate.Findings[0].Metadata["outcome"] != "unverified" {
+		t.Fatalf("dirty create outcome = %v, want unverified", dirtyCreate.Findings[0].Metadata["outcome"])
+	}
+	if len(dirtyCreate.EvidenceGaps) != 1 {
+		t.Fatalf("dirty create gaps = %+v, want the single owed-fact gap", dirtyCreate.EvidenceGaps)
+	}
+	if facts := dirtyCreate.EvidenceGaps[0].RequiredFacts; len(facts) != 1 || facts[0] != spec.ServerFactCreateOptions {
+		t.Fatalf("dirty create owed = %v, want exactly {server.create_options} — no existence, no create_privilege", facts)
+	}
+	if _, ok := dirtyCreate.Findings[0].Metadata["conditional_audit"]; !ok {
+		t.Fatalf("dirty create marker missing: %+v — the consumable premise fed the conclusion", dirtyCreate.Findings[0].Metadata)
+	}
+	if dirtyCreate.Findings[0].Message != "CREATE SERVER targets a server definition whose options remains unverified under the observed_account_new_session conditional audit" {
+		t.Fatalf("dirty create message = %q, want the options-only owed-set wording", dirtyCreate.Findings[0].Message)
+	}
+	if dirtyCreate.Coverage.Status != report.CoverageUnverified {
+		t.Fatalf("dirty create coverage = %v, want unverified", dirtyCreate.Coverage.Status)
+	}
+	if len(dirtyCreate.Findings) != 2 || dirtyCreate.Findings[1].Metadata["notice"] != "connection_members" || dirtyCreate.Findings[1].Level != rule.LevelNotice {
+		t.Fatalf("dirty create findings = %+v, want primary + a separate connection_members advisory notice", dirtyCreate.Findings)
+	}
+	// Tail drop: the invalidated absent leaves the barrier arm — its
+	// consumable premise still marks it under the accepted DROP
+	// contract; only the CREATE projection was corrected (R2-A).
 	redrop := result.Statements[2]
 	if redrop.Findings[0].Metadata["outcome"] != "blocked_batch_effects" {
 		t.Fatalf("re-drop after unknown create = %v, want barrier — the absent was invalidated", redrop.Findings[0].Metadata["outcome"])
 	}
-	// The DROP rule's own marker semantics are the accepted DROP
-	// contract — a consumable premise legitimately marks its barrier;
-	// only the CREATE projection was corrected (R2-A).
+	if len(redrop.EvidenceGaps) != 1 {
+		t.Fatalf("re-drop gaps = %+v, want the single barrier gap", redrop.EvidenceGaps)
+	}
+	if facts := redrop.EvidenceGaps[0].RequiredFacts; len(facts) != 1 || facts[0] != spec.ServerFactBatchEffects {
+		t.Fatalf("re-drop owed = %v, want exactly {server.batch_effects}", facts)
+	}
+	if _, ok := redrop.Findings[0].Metadata["conditional_audit"]; !ok {
+		t.Fatalf("re-drop marker missing: %+v — the accepted DROP contract marks a barrier whose premise was consumable", redrop.Findings[0].Metadata)
+	}
+	if redrop.Coverage.Status != report.CoverageUnverified {
+		t.Fatalf("re-drop coverage = %v, want unverified", redrop.Coverage.Status)
+	}
+	if result.Coverage.Status != report.CoverageUnverified || result.Verdict != report.VerdictReview {
+		t.Fatalf("dirty chain aggregate = %v verdict %v, want unverified/review", result.Coverage.Status, result.Verdict)
+	}
 
 	// OrderedPresent side of the literal taint: the provable create
 	// publishes present; the literal-name create taints the channel —
@@ -795,15 +921,24 @@ func TestT26CreateReadErrorBoundaries(t *testing.T) {
 			t.Fatalf("public error text echoes protected content %q: %v", protected, err)
 		}
 	}
-	// A failed catalog read propagates the same bounded boundary.
+	// A failed catalog read propagates the same bounded boundary —
+	// isolated to CREATE's own resolver (R3-C): a single qualified
+	// CREATE request, the family loader succeeds once, the error is
+	// injected at the object resolver the create itself reaches.
 	readMarker := errors.New("t26-create-read-marker-7w2")
 	provider = &t26Provider{servers: map[string]bool{}, version: "8.0.36", privilege: superObservation(), err: readMarker}
 	_, err = AuditSQL(context.Background(), Request{
-		SQL: "DROP SERVER s1; " + t26CreateSQL, Dialect: spec.DialectMySQL, Schema: "golden",
+		SQL: t26CreateSQL, Dialect: spec.DialectMySQL, Schema: "golden",
 		MetadataProvider: provider, PrivilegeAuditMode: spec.PrivilegeAuditModeObservedAccountNewSession,
 	})
 	if err == nil || !errors.Is(err, readMarker) {
 		t.Fatalf("create catalog read failure = %v, want errors.Is(readMarker)", err)
+	}
+	if provider.privilegeCalls != 1 {
+		t.Fatalf("loader calls = %d, want 1 — the family observation succeeded before the resolver was reached", provider.privilegeCalls)
+	}
+	if len(provider.calls) != 1 || provider.calls[0].typ != "mysql_server" || provider.calls[0].name != "s1" {
+		t.Fatalf("resolver calls = %+v, want exactly one mysql_server lookup for the authored identity — proving the create's own read failed", provider.calls)
 	}
 	for _, protected := range []string{readMarker.Error(), "s1"} {
 		if strings.Contains(err.Error(), protected) {
