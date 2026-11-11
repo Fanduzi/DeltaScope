@@ -86,4 +86,11 @@ republished so a later same-identity statement still consumes it.
 - Accepted sibling semantics stay frozen: CREATE R4 / DROP behavior,
   including the DROP arm's own barrier-entry minting, is untouched.
 - The shared request witness, observation seam, and mode vocabulary
-  serve all three operations; no new hook or request field exists.
+  serve all three operations; no new request field exists.
+- R3 added two nil-defaulted internal fields on `batchState`
+  (`afterBindObserve`, `afterApplyObserve`) fired between bind and
+  own-apply inside `enrichStatements` — a test-observation seam so the
+  AM-6.6/10.2 three-timepoint metadata witnesses read real internal
+  state instead of approximating from outside. They are nil in
+  production and change no behavior; the contract's public surface is
+  unchanged.

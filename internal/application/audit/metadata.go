@@ -686,8 +686,14 @@ func (state *batchState) enrichStatements(ctx context.Context, request *Metadata
 			}
 		}
 
+		if state.afterBindObserve != nil {
+			state.afterBindObserve(i, &enriched[i])
+		}
 		if err := state.apply(ctx, enriched[i]); err != nil {
 			return nil, err
+		}
+		if state.afterApplyObserve != nil {
+			state.afterApplyObserve(i, &enriched[i])
 		}
 	}
 

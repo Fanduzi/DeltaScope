@@ -9,23 +9,46 @@ package audit
 
 import (
 	"context"
-	"fmt"
+	"reflect"
 	"strings"
 	"testing"
+
+	apppolicy "github.com/Fanduzi/DeltaScope/internal/application/policy"
 
 	"github.com/Fanduzi/DeltaScope/internal/domain/report"
 	"github.com/Fanduzi/DeltaScope/internal/domain/rule"
 	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
 )
 
-// snapshotServerChannel renders the COMPLETE ordered server channel —
-// entries, writes, and the taint flag — into an immutable string
-// captured before the transition under test. Any mutation anywhere in
-// the channel state is detected; a missing entry is distinct from an
-// empty one.
-func snapshotServerChannel(s *batchState) string {
-	return fmt.Sprintf("entries=%#v|writes=%#v|taint=%v|contaminated=%v",
-		s.serverEntries, s.serverWrites, s.serverChannelTainted, s.contaminated)
+// serverChannelSnapshot is an independent deep copy of the COMPLETE
+// ordered SERVER channel — every entry's own field values (reusing
+// the accepted serverEntrySnapshot field copy), the write history,
+// and the channel-level flags — captured before the transition under
+// test. Missing entries stay distinct from existing empty entries:
+// the map's nil-ness and each entry's absence are preserved exactly.
+// A mutation anywhere — a rewritten field, a minted or cleared
+// entry, an appended write, a flipped flag — is detected by
+// reflect.DeepEqual against the stored copy, never by comparing
+// keys, lengths, or pointer addresses.
+type serverChannelSnapshot struct {
+	entriesNil   bool
+	entries      map[string]serverEntrySnapshot
+	writes       []serverWrite
+	taint        bool
+	contaminated bool
+}
+
+func snapshotServerChannel(s *batchState) serverChannelSnapshot {
+	snap := serverChannelSnapshot{
+		entriesNil:   s.serverEntries == nil,
+		writes:       append([]serverWrite(nil), s.serverWrites...),
+		taint:        s.serverChannelTainted,
+		contaminated: s.contaminated,
+	}
+	if s.serverEntries != nil {
+		snap.entries = snapshotServerEntries(s)
+	}
+	return snap
 }
 
 // enrichT26AlterEnrichSlice runs the real enrich loop on one batchState
@@ -39,6 +62,27 @@ func enrichSlice(t *testing.T, state *batchState, provider *t26Provider, mode sp
 		t.Fatalf("enrich slice: %v", err)
 	}
 	return enriched
+}
+
+// evaluateEnriched runs the real rule registry over already-enriched
+// statements — the same public projection evaluateT26Statements
+// produces, usable on an arbitrary enriched slice (e.g. one enrich
+// call's output from a two-call contamination fixture).
+func evaluateEnriched(t *testing.T, stmts []spec.Statement) report.Result {
+	t.Helper()
+	cfg, err := apppolicy.Load("")
+	if err != nil {
+		t.Fatalf("policy: %v", err)
+	}
+	registry, err := buildRegistry(cfg)
+	if err != nil {
+		t.Fatalf("registry: %v", err)
+	}
+	result, err := EvaluateStatements(context.Background(), registry, stmts)
+	if err != nil {
+		t.Fatalf("evaluate: %v", err)
+	}
+	return result
 }
 
 func newAlterState(provider *t26Provider) *batchState {
@@ -206,7 +250,7 @@ func TestT26AlterAM73ApplyOwnership(t *testing.T) {
 			if se := state.serverEntries[serverFold("sé")]; se == nil || !se.present {
 				t.Fatalf("%s: sé presence must stand after the drop's own barrier", tc.name)
 			}
-		} else if before := afterAlter; strings.Contains(before, "name:se ") {
+		} else if _, had := afterAlter.entries[serverFold("se")]; had {
 			t.Fatalf("%s: unexpected se entry existed before the drop", tc.name)
 		}
 	}
@@ -253,6 +297,20 @@ func TestT26AlterAM81TwoCallContamination(t *testing.T) {
 	if bound1 == nil || !bound1.Read || !bound1.Exists {
 		t.Fatalf("call1 bound = %+v, want catalog read present", bound1)
 	}
+	// call1's public projection: A3 → conditional_alter notice with
+	// the own-consumable conditional marker.
+	public1 := evaluateEnriched(t, call1)
+	f1 := public1.Statements[0].Findings[0]
+	if f1.Metadata["outcome"] != "conditional_alter" {
+		t.Fatalf("call1 public = %+v, want conditional_alter", f1.Metadata)
+	}
+	if _, ok := f1.Metadata["conditional_audit"]; !ok {
+		t.Fatalf("call1 marker = %+v, want conditional_audit from the own consumable premise", f1.Metadata)
+	}
+	// R3-C AM-8.1(a): independent copies of call1's two metadata
+	// objects, compared across call2's own bind+apply.
+	adj1Snap := snapshotAlterAdj(adj1)
+	bound1Snap := *bound1
 	snap := snapshotServerChannel(state)
 	resolver0, loader0 := len(provider.calls), provider.privilegeCalls
 	// call2: mode off — the per-request loader gate never fired for
@@ -269,8 +327,28 @@ func TestT26AlterAM81TwoCallContamination(t *testing.T) {
 	if bound2 := call2[0].Metadata.Server; bound2 == nil || bound2.Read || bound2.OrderedPresent {
 		t.Fatalf("call2 bound = %+v, want unvouched — no answer consumed", bound2)
 	}
-	if after := snapshotServerChannel(state); after != snap {
-		t.Fatalf("A1 apply mutated the channel\nbefore=%s\nafter=%s", snap, after)
+	if after := snapshotServerChannel(state); !reflect.DeepEqual(after, snap) {
+		t.Fatalf("A1 apply mutated the channel\nbefore=%+v\nafter=%+v", snap, after)
+	}
+	// call2 never rewrote call1's bound/adjudicated metadata.
+	if !sameAlterAdj(adj1Snap, call1[0].Metadata.ServerAlter) {
+		t.Fatalf("call1 adjudication rewritten across call2")
+	}
+	if got := *call1[0].Metadata.Server; got != bound1Snap {
+		t.Fatalf("call1 bound metadata rewritten across call2\nbefore=%+v\nafter=%+v", bound1Snap, got)
+	}
+	// call2's public projection: A1 → blocked_batch_effects, owed
+	// exactly {server.batch_effects}, no conditional marker.
+	public2 := evaluateEnriched(t, call2)
+	f2 := public2.Statements[0].Findings[0]
+	if f2.Metadata["outcome"] != "blocked_batch_effects" {
+		t.Fatalf("call2 public = %+v, want blocked_batch_effects", f2.Metadata)
+	}
+	if _, ok := f2.Metadata["conditional_audit"]; ok {
+		t.Fatalf("call2 marker = %+v, want absent — A1 carries no conditional audit", f2.Metadata)
+	}
+	if facts := public2.Statements[0].EvidenceGaps[0].RequiredFacts; len(facts) != 1 || facts[0] != spec.ServerFactBatchEffects {
+		t.Fatalf("call2 owed = %v, want exactly {server.batch_effects}", facts)
 	}
 	if d := len(provider.calls) - resolver0; d != 0 {
 		t.Fatalf("call2 resolver delta = %d, want 0 — contaminated bind never enters the resolver", d)
@@ -283,20 +361,27 @@ func TestT26AlterAM81TwoCallContamination(t *testing.T) {
 	}
 }
 
-// AM-8.2 (R2): the failure record precedes the only ALTER — under mode
-// observed the loader fires once at enrich entry (L=1), the record
-// marks the batch before the statement binds, and the ALTER lands A1:
-// exact {server.batch_effects}, no marker, unvouched bind, R=0/S=0.
+// AM-8.2 (R3-C): authored order — failure record #1 ("GARBAGE(")
+// precedes ALTER statement #2. The failure is a record, never a
+// statement slot: statements has exactly 1 entry, the authored-second
+// ALTER. Under mode observed the loader fires once at enrich entry
+// (L=1) before the loop's own failure handling marks the batch, so
+// the ALTER lands A1: exact {server.batch_effects}, no marker,
+// unvouched bind, R=0/S=0.
 func TestT26AlterAM82LoaderBeforeFailure(t *testing.T) {
 	provider := &t26Provider{servers: map[string]bool{"s1": true}, version: "8.0.36", privilege: superObservation()}
 	parsed, _ := parseSQL(context.Background(),
 		"GARBAGE(; ALTER SERVER s1 OPTIONS (USER 'u')", spec.DialectMySQL)
 	if len(parsed.failures) != 1 {
-		t.Fatalf("parse: failures=%d, want exactly 1", len(parsed.failures))
+		t.Fatalf("parse: failures=%d, want exactly 1 (record #1)", len(parsed.failures))
 	}
 	statements, err := Extract(context.Background(), parsed)
 	if err != nil {
 		t.Fatalf("extract: %v", err)
+	}
+	if len(statements) != 1 || statements[0].DDL == nil || statements[0].DDL.Server == nil ||
+		statements[0].DDL.Server.Kind != spec.ServerKindAlter {
+		t.Fatalf("statements = %+v, want exactly stmt#2 — the authored-second ALTER", statements)
 	}
 	state := newAlterState(provider)
 	enriched := enrichSlice(t, state, provider, spec.PrivilegeAuditModeObservedAccountNewSession, statements, parsed.failures)
@@ -345,57 +430,93 @@ func sameAlterAdj(a *alterAdjSnapshot, b *spec.ServerAlterAdjudication) bool {
 	if a == nil || b == nil {
 		return a == nil && b == nil
 	}
-	if a.arm != b.Arm || a.privilege != b.Privilege || a.publishPresent != b.PublishPresent ||
-		a.conditionalSrc != b.ConditionalSource || a.conditionalAudit != b.ConditionalAudit {
+	return equalAlterAdj(a, snapshotAlterAdj(b))
+}
+
+func equalAlterAdj(a, b *alterAdjSnapshot) bool {
+	if a == nil || b == nil {
+		return a == nil && b == nil
+	}
+	if a.arm != b.arm || a.privilege != b.privilege || a.publishPresent != b.publishPresent ||
+		a.conditionalSrc != b.conditionalSrc || a.conditionalAudit != b.conditionalAudit {
 		return false
 	}
-	if len(a.owed) != len(b.Owed) {
+	if len(a.owed) != len(b.owed) {
 		return false
 	}
 	for i := range a.owed {
-		if a.owed[i] != b.Owed[i] {
+		if a.owed[i] != b.owed[i] {
 			return false
 		}
 	}
 	return true
 }
 
-// AM-6.6 + AM-10.2 (R2): metadata lifecycle snapshots at three real
-// timepoints — post-bind/pre-apply, post-own-apply, post-later-apply —
-// over independent deep copies of Metadata.Server and
-// Metadata.ServerAlter. The dirty-options catalog-present ALTER owes
-// exactly {server.alter_options}, republishes flag=false presence
-// while its own consumable premise marks the audit; the later CREATE
-// refuses on the standing unconditional present; the ALTER's two
-// metadata objects are never rewritten.
+// AM-6.6 + AM-10.2 (R3-B): metadata lifecycle at the three REAL
+// internal timepoints — the afterBindObserve hook fires between the
+// statement's bind/adjudication attachment and its apply (point a),
+// afterApplyObserve fires immediately after that statement's own
+// apply (point b), and the later statement's afterApplyObserve marks
+// point c. Copies are taken inside the loop at the real seams on one
+// enrich call — never a post-hoc re-read of shared pointers, and the
+// single-call fixture keeps the loader at the request's own L=1.
+// The dirty-options catalog-present ALTER owes exactly
+// {server.alter_options}, republishes flag=false presence while its
+// own consumable premise marks the audit; the later CREATE refuses
+// on the standing unconditional present; the ALTER's two metadata
+// objects are never rewritten across either transition.
 func TestT26AlterAM66MetadataLifecycle(t *testing.T) {
 	provider := &t26Provider{servers: map[string]bool{"s1": true}, version: "8.0.36", privilege: superObservation()}
-	parsed, _ := parseSQL(context.Background(),
-		"ALTER SERVER s1 OPTIONS (USER 'u', USER 'v'); CREATE SERVER s1 FOREIGN DATA WRAPPER mysql OPTIONS (HOST 'h', DATABASE 'd', USER 'u')", spec.DialectMySQL)
-	statements, err := Extract(context.Background(), parsed)
-	if err != nil {
-		t.Fatalf("extract: %v", err)
-	}
+	statements, failures := parseT26(t,
+		"ALTER SERVER s1 OPTIONS (USER 'u', USER 'v'); CREATE SERVER s1 FOREIGN DATA WRAPPER mysql OPTIONS (HOST 'h', DATABASE 'd', USER 'u')")
 	state := newAlterState(provider)
-	mode := spec.PrivilegeAuditModeObservedAccountNewSession
-	// call boundary = own-apply seam: stmt1 alone.
-	enriched := enrichSlice(t, state, provider, mode, statements[:1], nil)
+	var tpA, tpB *alterAdjSnapshot
+	var srvA, srvB *spec.ServerState
+	laterApplied := false
+	state.afterBindObserve = func(i int, stmt *spec.Statement) {
+		if i == 0 && stmt.Metadata != nil {
+			if stmt.Metadata.Server != nil {
+				v := *stmt.Metadata.Server
+				srvA = &v
+			}
+			tpA = snapshotAlterAdj(stmt.Metadata.ServerAlter)
+		}
+	}
+	state.afterApplyObserve = func(i int, stmt *spec.Statement) {
+		if i == 0 && stmt.Metadata != nil {
+			if stmt.Metadata.Server != nil {
+				v := *stmt.Metadata.Server
+				srvB = &v
+			}
+			tpB = snapshotAlterAdj(stmt.Metadata.ServerAlter)
+		}
+		if i == 1 {
+			laterApplied = true
+		}
+	}
+	enriched := enrichSlice(t, state, provider, spec.PrivilegeAuditModeObservedAccountNewSession, statements, failures)
 	first := enriched[0]
-	adjSnap := snapshotAlterAdj(first.Metadata.ServerAlter)
-	serverSnap := *first.Metadata.Server // bound state: value copy
-	enriched = enrichSlice(t, state, provider, mode, statements[1:], nil)
-	// The later statement's apply never rewrote stmt1's metadata.
-	if !sameAlterAdj(adjSnap, first.Metadata.ServerAlter) {
-		t.Fatalf("Metadata.ServerAlter rewritten across later apply\nbefore=%+v\nafter=%+v", adjSnap, first.Metadata.ServerAlter)
+	if !laterApplied || tpA == nil || tpB == nil || srvA == nil || srvB == nil {
+		t.Fatalf("hooks did not fire at the real seams: tpA=%v tpB=%v later=%v", tpA != nil, tpB != nil, laterApplied)
 	}
-	if got := *first.Metadata.Server; got != serverSnap {
-		t.Fatalf("Metadata.Server rewritten across later apply\nbefore=%+v\nafter=%+v", serverSnap, got)
+	// Point a == point b == point c: the adjudication and the bound
+	// server state survive own-apply and the later CREATE's apply.
+	if !sameAlterAdj(tpA, first.Metadata.ServerAlter) || !sameAlterAdj(tpB, first.Metadata.ServerAlter) {
+		t.Fatalf("Metadata.ServerAlter changed across the lifecycle\n@bind=%+v\n@apply=%+v\n@later=%+v", tpA, tpB, first.Metadata.ServerAlter)
 	}
-	if adjSnap.arm != spec.ServerAlterArmUnproven || len(adjSnap.owed) != 1 || adjSnap.owed[0] != spec.ServerFactAlterOptions {
-		t.Fatalf("alter adj = %+v, want A4 owed exactly {server.alter_options}", adjSnap)
+	if *first.Metadata.Server != *srvA || *first.Metadata.Server != *srvB {
+		t.Fatalf("Metadata.Server changed across the lifecycle\n@bind=%+v\n@apply=%+v\n@later=%+v", srvA, srvB, first.Metadata.Server)
 	}
-	if !adjSnap.publishPresent || adjSnap.conditionalSrc || !adjSnap.conditionalAudit {
-		t.Fatalf("alter adj = %+v, want publish + flag=false + own-premise marker", adjSnap)
+	// The adjudication is immutable at bind time — the apply seam
+	// never rewrote it between point a and point b either.
+	if !equalAlterAdj(tpA, tpB) || tpA == nil {
+		t.Fatalf("bind→own-apply rewrote the adjudication: %+v vs %+v", tpA, tpB)
+	}
+	if tpA.arm != spec.ServerAlterArmUnproven || len(tpA.owed) != 1 || tpA.owed[0] != spec.ServerFactAlterOptions {
+		t.Fatalf("alter adj = %+v, want A4 owed exactly {server.alter_options}", tpA)
+	}
+	if !tpA.publishPresent || tpA.conditionalSrc || !tpA.conditionalAudit {
+		t.Fatalf("alter adj = %+v, want publish + flag=false + own-premise marker", tpA)
 	}
 	entry := state.serverEntries[serverFold("s1")]
 	if entry == nil || !entry.present || entry.presentConditional {
@@ -403,51 +524,87 @@ func TestT26AlterAM66MetadataLifecycle(t *testing.T) {
 	}
 	// The standing present refuses the CREATE — refused_present, no
 	// inherited marker.
-	createAdj := enriched[0].Metadata.ServerCreate
+	createAdj := enriched[1].Metadata.ServerCreate
 	if createAdj == nil || createAdj.Arm != spec.ServerCreateArmTerminalRefusal || createAdj.ConditionalAudit {
 		t.Fatalf("create = %+v, want refused_present without marker", createAdj)
 	}
-	// L counts loader-seam invocations: one per enrich call, two calls
-	// on one batchState — under a single audit request the same batch
-	// is one call (L=1). R=1: the refused create asked the channel.
-	if len(provider.calls) != 1 || provider.privilegeCalls != 2 {
-		t.Fatalf("reads = R:%d L:%d, want 1/2 (one loader call per enrich call)", len(provider.calls), provider.privilegeCalls)
+	// Single-request counts: one enrich call, one loader invocation —
+	// the frozen L=1 shape. R=1: the refused create asked the channel.
+	if len(provider.calls) != 1 || provider.privilegeCalls != 1 {
+		t.Fatalf("reads = R:%d L:%d, want 1/1 single-request", len(provider.calls), provider.privilegeCalls)
 	}
+	// Aggregate public shape on the same authored fixture: refused
+	// create blocker → verdict reject, unverified coverage.
+	result, pub := evaluateT26Statements(t,
+		"ALTER SERVER s1 OPTIONS (USER 'u', USER 'v'); CREATE SERVER s1 FOREIGN DATA WRAPPER mysql OPTIONS (HOST 'h', DATABASE 'd', USER 'u')",
+		provider, spec.PrivilegeAuditModeObservedAccountNewSession)
+	if result.Verdict != report.VerdictReject || result.Coverage.Status != report.CoverageUnverified ||
+		result.Statements[0].Coverage.Status != report.CoverageUnverified {
+		t.Fatalf("public = verdict %v coverage %v/%v, want reject + unverified",
+			result.Verdict, result.Coverage.Status, result.Statements[0].Coverage.Status)
+	}
+	_ = pub
 }
 
-// AM-10.2 (R2): ALTER → DROP — the drop consumes the republished
+// AM-10.2 (R3-B): ALTER → DROP — the drop consumes the republished
 // presence through the proven path, and the ALTER's two metadata
 // objects (Metadata.Server + Metadata.ServerAlter) are not rewritten
-// by the later apply — asserted on independent deep copies taken at
-// the own-apply seam.
+// by the later apply — asserted on independent copies taken at the
+// three REAL lifecycle seams (post-bind/pre-apply, post-own-apply,
+// post-later-apply) via the observe hooks on one enrich call.
 func TestT26AlterAM102DropConsumesMetadataStable(t *testing.T) {
 	provider := &t26Provider{servers: map[string]bool{"s1": true}, version: "8.0.36", privilege: superObservation()}
-	statements, _ := parseT26(t, t26AlterSQL+"; DROP SERVER s1")
+	statements, failures := parseT26(t, t26AlterSQL+"; DROP SERVER s1")
 	state := newAlterState(provider)
-	mode := spec.PrivilegeAuditModeObservedAccountNewSession
-	enriched := enrichSlice(t, state, provider, mode, statements[:1], nil)
+	var tpA, tpB *alterAdjSnapshot
+	var srvA, srvB *spec.ServerState
+	laterApplied := false
+	state.afterBindObserve = func(i int, stmt *spec.Statement) {
+		if i == 0 && stmt.Metadata != nil {
+			if stmt.Metadata.Server != nil {
+				v := *stmt.Metadata.Server
+				srvA = &v
+			}
+			tpA = snapshotAlterAdj(stmt.Metadata.ServerAlter)
+		}
+	}
+	state.afterApplyObserve = func(i int, stmt *spec.Statement) {
+		if i == 0 && stmt.Metadata != nil {
+			if stmt.Metadata.Server != nil {
+				v := *stmt.Metadata.Server
+				srvB = &v
+			}
+			tpB = snapshotAlterAdj(stmt.Metadata.ServerAlter)
+		}
+		if i == 1 {
+			laterApplied = true
+		}
+	}
+	enriched := enrichSlice(t, state, provider, spec.PrivilegeAuditModeObservedAccountNewSession, statements, failures)
 	first := enriched[0]
-	adjSnap := snapshotAlterAdj(first.Metadata.ServerAlter)
-	serverSnap := *first.Metadata.Server
-	enriched = enrichSlice(t, state, provider, mode, statements[1:], nil)
-	if !sameAlterAdj(adjSnap, first.Metadata.ServerAlter) {
-		t.Fatalf("Metadata.ServerAlter rewritten across the drop's apply")
+	if !laterApplied || tpA == nil || tpB == nil || srvA == nil || srvB == nil {
+		t.Fatalf("hooks did not fire at the real seams")
 	}
-	if got := *first.Metadata.Server; got != serverSnap {
-		t.Fatalf("Metadata.Server rewritten across the drop's apply\nbefore=%+v\nafter=%+v", serverSnap, got)
+	if !sameAlterAdj(tpA, first.Metadata.ServerAlter) || !sameAlterAdj(tpB, first.Metadata.ServerAlter) {
+		t.Fatalf("Metadata.ServerAlter rewritten across the lifecycle")
 	}
-	dropAdj := enriched[0].Metadata.ServerDrop
+	if *first.Metadata.Server != *srvA || *first.Metadata.Server != *srvB {
+		t.Fatalf("Metadata.Server rewritten across the lifecycle\n@bind=%+v\n@apply=%+v\n@later=%+v", srvA, srvB, first.Metadata.Server)
+	}
+	if !equalAlterAdj(tpA, tpB) {
+		t.Fatalf("bind→own-apply rewrote the adjudication")
+	}
+	dropAdj := enriched[1].Metadata.ServerDrop
 	if dropAdj == nil || dropAdj.Arm != spec.ServerDropArmProven {
 		t.Fatalf("drop = %+v, want proven on the alter's republished presence", dropAdj)
 	}
 	if entry := state.serverEntries[serverFold("s1")]; entry == nil || !entry.absent {
 		t.Fatalf("entry = %+v, want the drop's own absent publish", entry)
 	}
-	// L counts loader-seam invocations: one per enrich call, two calls
-	// on one batchState — under a single audit request the same batch
-	// is one call (L=1). R=1: the ordered answer fed the drop.
-	if len(provider.calls) != 1 || provider.privilegeCalls != 2 {
-		t.Fatalf("reads = R:%d L:%d, want 1/2 (one loader call per enrich call)", len(provider.calls), provider.privilegeCalls)
+	// Single-request counts: one call → L=1, R=1 (the ALTER's own
+	// read; the DROP consumed the ordered answer without a new read).
+	if len(provider.calls) != 1 || provider.privilegeCalls != 1 {
+		t.Fatalf("reads = R:%d L:%d, want 1/1 single-request", len(provider.calls), provider.privilegeCalls)
 	}
 }
 
@@ -501,6 +658,26 @@ func TestT26AlterAM24iAM25iSuppressedChains(t *testing.T) {
 	}
 	if len(provider.calls) != 1 || provider.privilegeCalls != 1 {
 		t.Fatalf("reads = R:%d L:%d, want 1/1", len(provider.calls), provider.privilegeCalls)
+	}
+	// R3-B.4: the A4 republish's actual stored flag is observed at the
+	// ALTER's own post-apply seam on the same authored fixture — the
+	// stored entry reads present + presentConditional=true.
+	provider3 := &t26Provider{servers: map[string]bool{"s1": true}, version: "8.0.36", privilege: superObservation()}
+	statements, _ := parseT26(t,
+		"DROP SERVER s1; CREATE SERVER s1 FOREIGN DATA WRAPPER mysql OPTIONS (HOST 'h', DATABASE 'd', USER 'u'); REVOKE SELECT ON *.* FROM 'r1'@'%'; "+t26AlterSQL)
+	state := newAlterState(provider3)
+	var storedAfterAlter *batchServerEntry
+	state.afterApplyObserve = func(i int, _ *spec.Statement) {
+		if i == 3 {
+			if e := state.serverEntries[serverFold("s1")]; e != nil {
+				v := *e
+				storedAfterAlter = &v
+			}
+		}
+	}
+	enrichSlice(t, state, provider3, spec.PrivilegeAuditModeObservedAccountNewSession, statements, nil)
+	if storedAfterAlter == nil || !storedAfterAlter.present || !storedAfterAlter.presentConditional {
+		t.Fatalf("stored entry after A4 republish = %+v, want present + presentConditional=true", storedAfterAlter)
 	}
 }
 
@@ -699,6 +876,32 @@ func TestT26AlterAM51FullChain(t *testing.T) {
 	if len(provider.calls) != 1 || provider.privilegeCalls != 1 {
 		t.Fatalf("reads = R:%d L:%d, want 1/1", len(provider.calls), provider.privilegeCalls)
 	}
+	// R3-B.4: the actual flag=true publication is observed at the
+	// ALTER's own post-apply seam — afterApplyObserve on index 2
+	// reads the stored entry while the ALTER's republish just
+	// landed; the final DROP's ConditionalSource=true proves the
+	// conditional flag was really consumed, not merely marked.
+	provider2 := &t26Provider{servers: map[string]bool{"s1": true}, version: "8.0.36", privilege: superObservation()}
+	statements, _ := parseT26(t,
+		"DROP SERVER s1; CREATE SERVER s1 FOREIGN DATA WRAPPER mysql OPTIONS (HOST 'h', DATABASE 'd', USER 'u'); "+t26AlterSQL+"; DROP SERVER s1")
+	state := newAlterState(provider2)
+	var storedAfterAlter *batchServerEntry
+	state.afterApplyObserve = func(i int, _ *spec.Statement) {
+		if i == 2 {
+			if e := state.serverEntries[serverFold("s1")]; e != nil {
+				v := *e
+				storedAfterAlter = &v
+			}
+		}
+	}
+	enriched2 := enrichSlice(t, state, provider2, spec.PrivilegeAuditModeObservedAccountNewSession, statements, nil)
+	if storedAfterAlter == nil || !storedAfterAlter.present || !storedAfterAlter.presentConditional {
+		t.Fatalf("stored entry after ALTER apply = %+v, want present + presentConditional=true", storedAfterAlter)
+	}
+	lastDrop := enriched2[3].Metadata.ServerDrop
+	if lastDrop == nil || lastDrop.Arm != spec.ServerDropArmProven || !lastDrop.ConditionalSource {
+		t.Fatalf("final drop = %+v, want proven consuming ConditionalSource=true", lastDrop)
+	}
 }
 
 // AM-6.1 (R2): catalog-present ALTER → ALTER — the first republishes
@@ -749,13 +952,62 @@ func TestT26AlterAM62ZeroPair(t *testing.T) {
 // AM-6.4/6.5 (R2): zero-row ALTER (mode off) does not shadow siblings —
 // the trailing CREATE/DROP gets its own fresh read and its own exact
 // owed set; the verbatim cache shares the identity read.
+// AM-6.3 (R3-C): the CLEAN catalog-present ALTER runs first — its
+// A3 republishes unconditional presence (catalog source, flag=false);
+// the later CREATE consumes that ordered publication and refuses
+// refused_present with NO inherited marker (the source was never
+// conditional). Distinct from AM-6.6's dirty-options row and from
+// any CREATE→ALTER order.
+func TestT26AlterAM63CleanAlterThenCreateRefused(t *testing.T) {
+	provider := &t26Provider{servers: map[string]bool{"s1": true}, version: "8.0.36", privilege: superObservation()}
+	result, enriched := evaluateT26Statements(t,
+		t26AlterSQL+"; CREATE SERVER s1 FOREIGN DATA WRAPPER mysql OPTIONS (HOST 'h', DATABASE 'd', USER 'u')",
+		provider, spec.PrivilegeAuditModeObservedAccountNewSession)
+	alter := enriched[0].Metadata.ServerAlter
+	if alter == nil || alter.Arm != spec.ServerAlterArmProvenAlter || !alter.PublishPresent ||
+		alter.ConditionalSource || !alter.ConditionalAudit {
+		t.Fatalf("clean alter = %+v, want A3 publish flag=false own-marker", alter)
+	}
+	entry := enriched[0].Metadata.Server
+	if entry == nil || !entry.Read || !entry.Exists {
+		t.Fatalf("alter bound = %+v, want catalog read present", entry)
+	}
+	create := enriched[1].Metadata.ServerCreate
+	if create == nil || create.Arm != spec.ServerCreateArmTerminalRefusal {
+		t.Fatalf("create = %+v, want refused_present on the ordered publication", create)
+	}
+	if create.ConditionalSource || create.ConditionalAudit {
+		t.Fatalf("create marker = %+v, want none — catalog source is never conditional", create)
+	}
+	createPublic := result.Statements[1]
+	if createPublic.Findings[0].Metadata["outcome"] != "refused_present" ||
+		createPublic.Findings[0].Level != rule.LevelBlocker {
+		t.Fatalf("create public = %+v, want refused_present blocker", createPublic.Findings[0])
+	}
+	if _, ok := createPublic.Findings[0].Metadata["conditional_audit"]; ok {
+		t.Fatalf("create public marker = %+v, want absent", createPublic.Findings[0].Metadata)
+	}
+	// One catalog read total: the ALTER's own read fed both
+	// adjudications through the ordered publication.
+	if len(provider.calls) != 1 || provider.privilegeCalls != 1 {
+		t.Fatalf("reads = R:%d L:%d, want 1/1", len(provider.calls), provider.privilegeCalls)
+	}
+}
+
+// AM-6.4/6.5 (R3-C): the frozen sibling fixtures — ALTER s1 runs
+// first on a zero catalog, then a clean-options CREATE (HOST +
+// DATABASE + USER) or a bare DROP on the same zero identity. Neither
+// sibling shadows or inherits the ALTER's owed set: each owes its own
+// EXACT pair — {server.existence, server.create_privilege} or
+// {server.existence, server.drop_privilege} — never a superset, never
+// the ALTER's alter_privilege.
 func TestT26AlterAM64AM65NoShadow(t *testing.T) {
 	for _, tc := range []struct {
 		sql     string
 		sibling string
 		fact    string
 	}{
-		{"CREATE SERVER s1 FOREIGN DATA WRAPPER mysql OPTIONS (HOST 'h')", "create", spec.ServerFactCreatePrivilege},
+		{"CREATE SERVER s1 FOREIGN DATA WRAPPER mysql OPTIONS (HOST 'h', DATABASE 'd', USER 'u')", "create", spec.ServerFactCreatePrivilege},
 		{"DROP SERVER s1", "drop", spec.ServerFactDropPrivilege},
 	} {
 		provider := &t26Provider{servers: map[string]bool{}, version: "8.0.36"}
@@ -774,12 +1026,8 @@ func TestT26AlterAM64AM65NoShadow(t *testing.T) {
 			}
 			owed = a.Owed
 		}
-		set := map[string]bool{}
-		for _, f := range owed {
-			set[f] = true
-		}
-		if !set[spec.ServerFactExistence] || !set[tc.fact] {
-			t.Fatalf("%s: sibling owed = %v, want existence + own privilege", tc.sibling, owed)
+		if len(owed) != 2 || owed[0] != spec.ServerFactExistence || owed[1] != tc.fact {
+			t.Fatalf("%s: sibling owed = %v, want exactly {server.existence, %s}", tc.sibling, owed, tc.fact)
 		}
 		if len(provider.calls) != 1 {
 			t.Fatalf("%s: resolver = %+v, want one shared verbatim read", tc.sibling, provider.calls)
@@ -787,24 +1035,63 @@ func TestT26AlterAM64AM65NoShadow(t *testing.T) {
 	}
 }
 
-// AM-7.1/7.2 (R2): case-alias — a present s1 publishes presence that
-// S1 consumes through the ASCII-fold provably-same relation (R=1);
-// an unknown/off s9's alias S9 takes its own verbatim read (R=2/S=2).
+// AM-7.1/7.2 (R3-C): the frozen ALTER→DROP ASCII alias chain. The
+// present branch: ALTER s1 reads the catalog once and republishes
+// flag=false, and DROP S1 consumes that ordered answer through the
+// ASCII-fold provably-same relation with NO second resolver call —
+// R=1. The zero and mode-off branches never produce an ordered
+// answer, so s9 and its fold cousin S9 each take their own verbatim
+// read — R=2. The ALTER→ALTER variants stay as supplementary rows.
 func TestT26AlterAM71AM72CaseAlias(t *testing.T) {
+	// AM-7.1 present branch: ALTER s1 → DROP S1 consumes the ordered
+	// answer — one resolver call total.
 	provider := &t26Provider{servers: map[string]bool{"s1": true}, version: "8.0.36", privilege: superObservation()}
-	enriched := enrichT26Premise(t, t26AlterSQL+"; ALTER SERVER S1 OPTIONS (HOST 'h')", provider, spec.PrivilegeAuditModeObservedAccountNewSession)
+	enriched := enrichT26Premise(t, t26AlterSQL+"; DROP SERVER S1", provider, spec.PrivilegeAuditModeObservedAccountNewSession)
+	alter := enriched[0].Metadata.ServerAlter
+	if alter == nil || alter.Arm != spec.ServerAlterArmProvenAlter || !alter.PublishPresent {
+		t.Fatalf("s1 alter = %+v, want A3 publishing flag=false", alter)
+	}
+	drop := enriched[1].Metadata.ServerDrop
+	if drop == nil || drop.Arm != spec.ServerDropArmProven {
+		t.Fatalf("S1 drop = %+v, want proven on the ordered alias answer", drop)
+	}
+	if bound := enriched[1].Metadata.Server; bound == nil || !bound.OrderedPresent {
+		t.Fatalf("drop bound = %+v, want the ordered answer consumed, not a fresh read", bound)
+	}
+	if len(provider.calls) != 1 || provider.calls[0].name != "s1" {
+		t.Fatalf("resolver = %+v, want exactly the ALTER's verbatim read", provider.calls)
+	}
+	// AM-7.2 zero branch: s9 zero → unknown, never an ordered answer;
+	// DROP S9 takes its own verbatim read — R=2.
+	provider = &t26Provider{servers: map[string]bool{}, version: "8.0.36"}
+	enriched = enrichT26Premise(t, "ALTER SERVER s9 OPTIONS (USER 'u'); DROP SERVER S9", provider, "")
+	if enriched[0].Metadata.ServerAlter == nil || enriched[1].Metadata.ServerDrop == nil {
+		t.Fatalf("adjudications missing on the zero chain")
+	}
+	if bound := enriched[1].Metadata.Server; bound != nil && bound.OrderedPresent {
+		t.Fatalf("zero chain bound = %+v, no ordered answer may exist", bound)
+	}
+	if len(provider.calls) != 2 || provider.calls[0].name != "s9" || provider.calls[1].name != "S9" {
+		t.Fatalf("resolver = %+v, want two verbatim reads: s9 then S9", provider.calls)
+	}
+	// AM-7.2 mode-off branch: same verbatim reads under mode off —
+	// the loader never fires but the resolver still reads each
+	// authored spelling.
+	provider = &t26Provider{servers: map[string]bool{}, version: "8.0.36"}
+	enrichT26Premise(t, "ALTER SERVER s9 OPTIONS (USER 'u'); DROP SERVER S9", provider, "")
+	if len(provider.calls) != 2 || provider.privilegeCalls != 0 {
+		t.Fatalf("mode-off reads = R:%d L:%d, want 2/0", len(provider.calls), provider.privilegeCalls)
+	}
+	// Supplementary: the ALTER→ALTER alias consume stays registered —
+	// it is not the AM-7.2 DROP-chain evidence.
+	provider = &t26Provider{servers: map[string]bool{"s1": true}, version: "8.0.36", privilege: superObservation()}
+	enriched = enrichT26Premise(t, t26AlterSQL+"; ALTER SERVER S1 OPTIONS (HOST 'h')", provider, spec.PrivilegeAuditModeObservedAccountNewSession)
 	adj := enriched[1].Metadata.ServerAlter
 	if adj == nil || adj.Arm != spec.ServerAlterArmProvenAlter || !adj.PublishPresent {
-		t.Fatalf("S1 alter = %+v, want A3 consuming the ordered alias answer", adj)
+		t.Fatalf("S1 alter = %+v, want A3 consuming the ordered alias", adj)
 	}
 	if len(provider.calls) != 1 {
-		t.Fatalf("resolver = %+v, want 1 — S1 consumed the ordered alias", provider.calls)
-	}
-	// Unknown/off: s9 zero → unknown; S9 takes its own verbatim read.
-	provider = &t26Provider{servers: map[string]bool{}, version: "8.0.36"}
-	enrichT26Premise(t, "ALTER SERVER s9 OPTIONS (USER 'u'); ALTER SERVER S9 OPTIONS (HOST 'h')", provider, "")
-	if len(provider.calls) != 2 {
-		t.Fatalf("resolver = %+v, want 2 — verbatim cache never merges unknown fold cousins", provider.calls)
+		t.Fatalf("alter→alter resolver = %+v, want 1", provider.calls)
 	}
 }
 
@@ -841,25 +1128,51 @@ func TestT26AlterAM74LiteralVsOverlong(t *testing.T) {
 	}
 }
 
-// AM-7.5 (R2): proven-present ALTER → literal boundary ALTER → DROP
-// S1 — the literal's apply clears the stale presence (tainted
-// channel), so the alias drop binds the barrier, never the stale
-// answer. L=1/R=2/S=1 (literal forward counts R, declines S).
+// AM-7.5 (R3-A.4): proven-present ALTER → literal boundary ALTER →
+// DROP S1. The literal's OWN apply is observed directly on the
+// slice-seam: it taints the channel AND clears the standing
+// OrderedPresent — the s1 entry's present flag reads false
+// immediately after stmt2's apply, before any later statement runs.
+// The trailing DROP's barrier is corroboration only: a tainted bind
+// exits before any consumption, so the DROP alone could never prove
+// the presence was cleared. L=1/R=2/S=1 (literal forward counts R,
+// declines S).
 func TestT26AlterAM75LiteralClearsStalePresence(t *testing.T) {
 	provider := &t26Provider{servers: map[string]bool{"s1": true}, version: "8.0.36", privilege: superObservation()}
-	enriched := enrichT26Premise(t, t26AlterSQL+"; ALTER SERVER 'lit' OPTIONS (USER 'u'); DROP SERVER S1", provider, spec.PrivilegeAuditModeObservedAccountNewSession)
+	statements, failures := parseT26(t, t26AlterSQL+"; ALTER SERVER 'lit' OPTIONS (USER 'u'); DROP SERVER S1")
+	state := newAlterState(provider)
+	enriched := enrichSlice(t, state, provider, spec.PrivilegeAuditModeObservedAccountNewSession, statements[:1], failures)
 	if adj := enriched[0].Metadata.ServerAlter; adj == nil || adj.Arm != spec.ServerAlterArmProvenAlter {
 		t.Fatalf("first alter = %+v, want A3", adj)
 	}
-	if enriched[1].Unsupported == nil {
+	s1key := serverFold("s1")
+	if entry := state.serverEntries[s1key]; entry == nil || !entry.present {
+		t.Fatalf("s1 entry before literal = %+v, want published OrderedPresent", entry)
+	}
+	literal := enrichSlice(t, state, provider, spec.PrivilegeAuditModeObservedAccountNewSession, statements[1:2], nil)
+	if literal[0].Unsupported == nil {
 		t.Fatalf("literal alter must stay boundary")
 	}
-	dropAdj := enriched[2].Metadata.ServerDrop
+	if !state.serverChannelTainted {
+		t.Fatalf("literal apply must taint the channel")
+	}
+	entry := state.serverEntries[s1key]
+	if entry == nil || entry.present || entry.presentConditional || entry.absent || entry.publishedArm != 0 {
+		t.Fatalf("s1 entry after literal apply = %+v, want OrderedPresent directly cleared", entry)
+	}
+	enriched2 := enrichSlice(t, state, provider, spec.PrivilegeAuditModeObservedAccountNewSession, statements[2:], nil)
+	dropAdj := enriched2[0].Metadata.ServerDrop
 	if dropAdj == nil || dropAdj.Arm != spec.ServerDropArmBarrier {
 		t.Fatalf("S1 drop = %+v, want barrier — literal write invalidated the stale presence", dropAdj)
 	}
-	if len(provider.calls) != 2 || provider.privilegeCalls != 1 {
-		t.Fatalf("reads = R:%d L:%d, want 2/1 (literal forward counted, declined)", len(provider.calls), provider.privilegeCalls)
+	// Segmented-fixture counts: three enrich calls mean the loader
+	// fired for the two privilege-needing slices (stmt1 ALTER, stmt3
+	// DROP — the literal slice needs none), L=2 honestly — distinct
+	// from the frozen single-request chain's L=1 (the whole-batch
+	// fixtures assert that shape; R3-B.5). R=2: the ALTER's catalog
+	// read + the literal's declined forward.
+	if len(provider.calls) != 2 || provider.privilegeCalls != 2 {
+		t.Fatalf("reads = R:%d L:%d, want 2/2 segmented (literal forward counted, declined)", len(provider.calls), provider.privilegeCalls)
 	}
 }
 
@@ -931,7 +1244,10 @@ func TestT26AlterAM3OptionsChain(t *testing.T) {
 // keeps the fixed skeleton and no audited finding; its apply taints
 // the channel so the trailing drop binds the barrier with zero reads.
 func TestT26AlterAM104LiteralModeOff(t *testing.T) {
-	provider := &t26Provider{servers: map[string]bool{"s9": true}, version: "8.0.36"}
+	// Frozen fixture (R3-C): provider s9 zero-row, mode off, clean
+	// channel — the literal write alone produces the write record and
+	// channel taint the trailing DROP binds.
+	provider := &t26Provider{servers: map[string]bool{}, version: "8.0.36"}
 	result, _ := evaluateT26Statements(t, "ALTER SERVER 'lit9' OPTIONS (USER 'u'); DROP SERVER s9", provider, "")
 	lit := result.Statements[0]
 	if lit.RawSQL != "ALTER SERVER <redacted>" {

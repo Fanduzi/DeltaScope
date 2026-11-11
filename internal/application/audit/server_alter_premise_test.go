@@ -10,7 +10,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -329,8 +329,8 @@ func TestT26AlterRelationBarrierNoOp(t *testing.T) {
 	if adj2.PublishPresent || adj2.ConditionalAudit {
 		t.Fatalf("A1 must not publish or mark: %+v", adj2)
 	}
-	if after := snapshotServerChannel(state); after != before {
-		t.Fatalf("A1 apply mutated the ordered channel\nbefore=%s\nafter=%s", before, after)
+	if after := snapshotServerChannel(state); !reflect.DeepEqual(after, before) {
+		t.Fatalf("A1 apply mutated the ordered channel\nbefore=%+v\nafter=%+v", before, after)
 	}
 	// stmt3's own DROP apply mints the se barrier entry — the
 	// snapshot boundary stays around stmt2 so the later statement's
@@ -374,8 +374,8 @@ func TestT26AlterChannelTaintBarrier(t *testing.T) {
 	if adj == nil || adj.Arm != spec.ServerAlterArmBarrier || len(adj.Owed) != 1 || adj.Owed[0] != spec.ServerFactBatchEffects {
 		t.Fatalf("tainted-channel alter = %+v, want barrier owing batch_effects", adj)
 	}
-	if after := snapshotServerChannel(state); after != before {
-		t.Fatalf("A1 apply mutated the tainted channel\nbefore=%s\nafter=%s", before, after)
+	if after := snapshotServerChannel(state); !reflect.DeepEqual(after, before) {
+		t.Fatalf("A1 apply mutated the tainted channel\nbefore=%+v\nafter=%+v", before, after)
 	}
 	// The trailing DROP hits the same barrier — consistent with the
 	// accepted literal-write taint.
@@ -444,8 +444,11 @@ func TestT26AlterRealContamination(t *testing.T) {
 // pre-existing entry is caught. A prior CREATE TABLE mints a real
 // populated entry first so the compare actually exercises rewrite
 // detection; the trailing CREATE TABLE keeps its own model effect.
+// Both directions hold (R3-A.5): the complete server channel is
+// snapshot-compared across the CREATE TABLE's own apply as well.
 // Read counts report the server channel only — table-channel reads
-// are recorded separately, never mixed in.
+// are recorded separately, never mixed in. The three-slice fixture
+// loads the server privilege only for the ALTER slice (L=1 total).
 func TestT26AlterTableChannelIsolation(t *testing.T) {
 	provider := &t26Provider{servers: map[string]bool{"s1": true}, version: "8.0.36", privilege: superObservation()}
 	parsed, _ := parseSQL(context.Background(),
@@ -467,28 +470,34 @@ func TestT26AlterTableChannelIsolation(t *testing.T) {
 	if len(state.entries) == 0 {
 		t.Fatalf("pre-create minted no table entry — fixture broken")
 	}
-	before := snapshotTableSchemaState(state)
+	before := snapshotTableSchemaState(t, state)
 	serverReadsBefore := len(provider.calls)
 	// stmt1: the audited ALTER's own bind+apply.
 	if _, err = state.enrichStatements(context.Background(), req,
 		statements[1:2], nil, state.instanceFacts, auditLimits{orderedStatements: defaultOrderedStatementLimit}); err != nil {
 		t.Fatalf("enrich stmt1: %v", err)
 	}
-	after := snapshotTableSchemaState(state)
-	if before != after {
-		t.Fatalf("table/schema state changed across the ALTER's own apply\nbefore=%s\nafter=%s", before, after)
+	after := snapshotTableSchemaState(t, state)
+	if !reflect.DeepEqual(after, before) {
+		t.Fatalf("table/schema state changed across the ALTER's own apply\nbefore=%+v\nafter=%+v", before, after)
 	}
 	if entry := state.serverEntries[serverFold("s1")]; entry == nil || !entry.present {
 		t.Fatalf("server channel = %+v, want republished present on s1", entry)
 	}
-	// stmt2: CREATE TABLE t's own model effect — mints t@golden while
-	// the server channel still holds exactly the s1 record.
+	// stmt2: CREATE TABLE t's own model effect — mints t@golden. The
+	// reverse direction holds too (R3-A.5): the COMPLETE ordered
+	// server channel — s1's republished presence, writes, taint — is
+	// byte-for-byte value-identical across the CREATE's own apply.
+	serverBefore := snapshotServerChannel(state)
 	if _, err = state.enrichStatements(context.Background(), req,
 		statements[2:], nil, state.instanceFacts, auditLimits{orderedStatements: defaultOrderedStatementLimit}); err != nil {
 		t.Fatalf("enrich stmt2: %v", err)
 	}
 	if state.entries[batchTableKey{dialect: spec.DialectMySQL, schema: "golden", table: "t"}] == nil {
 		t.Fatalf("CREATE TABLE t must mint its own entry")
+	}
+	if serverAfter := snapshotServerChannel(state); !reflect.DeepEqual(serverAfter, serverBefore) {
+		t.Fatalf("server channel changed across the CREATE's own apply\nbefore=%+v\nafter=%+v", serverBefore, serverAfter)
 	}
 	serverReads := 0
 	for _, c := range provider.calls {
@@ -504,12 +513,79 @@ func TestT26AlterTableChannelIsolation(t *testing.T) {
 	}
 }
 
-// snapshotTableSchemaState renders the complete table, temp-table,
-// and schema registry values into an immutable string — an
-// independent copy of every field, not a key-presence projection, so
-// any in-place mutation anywhere in the entry graphs is detected.
-func snapshotTableSchemaState(s *batchState) string {
-	return fmt.Sprintf("entries=%#v|temp=%#v|schemas=%#v", s.entries, s.tempEntries, s.schemaEntries)
+// tableEntrySnapshot is an independent field-value copy of one
+// table-registry entry. The nested *spec.TableSnapshot — the only
+// mutable pointer member — is cloned through the product's own
+// cloneTableSnapshot, which deep-copies every nested pointer, slice,
+// and map (Table, View, Columns, PrimaryKey, Indexes, Constraints,
+// Options, TTL, PartitionPlacements, …), so an in-place rewrite
+// anywhere in the shape graph is detected. shape's nil-ness is
+// preserved as a real absent-vs-empty distinction.
+type tableEntrySnapshot struct {
+	state         tableKnowledge
+	displaySchema string
+	displayTable  string
+	notView       bool
+	shape         *spec.TableSnapshot
+}
+
+// schemaEntrySnapshot is an independent field-value copy of one
+// schema-registry entry, including a value copy of the attrs map.
+type schemaEntrySnapshot struct {
+	state        schemaKnowledge
+	attrs        map[string]string
+	batchCreated bool
+}
+
+// tableSchemaSnapshot is an independent deep copy of the COMPLETE
+// table/temp-table/schema registry: every entry's own field values,
+// never a key-presence projection. Each map's nil-ness and each
+// entry's absence are preserved exactly; any minted, cleared, or
+// in-place-rewritten entry is caught by reflect.DeepEqual.
+type tableSchemaSnapshot struct {
+	entriesNil     bool
+	tempEntriesNil bool
+	schemasNil     bool
+	entries        map[batchTableKey]tableEntrySnapshot
+	tempEntries    map[batchTableKey]tableEntrySnapshot
+	schemas        map[string]schemaEntrySnapshot
+}
+
+func snapshotTableSchemaState(t *testing.T, s *batchState) tableSchemaSnapshot {
+	t.Helper()
+	snap := tableSchemaSnapshot{
+		entriesNil:     s.entries == nil,
+		tempEntriesNil: s.tempEntries == nil,
+		schemasNil:     s.schemaEntries == nil,
+	}
+	if s.entries != nil {
+		snap.entries = make(map[batchTableKey]tableEntrySnapshot, len(s.entries))
+		for k, e := range s.entries {
+			snap.entries[k] = tableEntrySnapshot{state: e.state, displaySchema: e.displaySchema,
+				displayTable: e.displayTable, notView: e.notView, shape: cloneTableSnapshot(e.shape)}
+		}
+	}
+	if s.tempEntries != nil {
+		snap.tempEntries = make(map[batchTableKey]tableEntrySnapshot, len(s.tempEntries))
+		for k, e := range s.tempEntries {
+			snap.tempEntries[k] = tableEntrySnapshot{state: e.state, displaySchema: e.displaySchema,
+				displayTable: e.displayTable, notView: e.notView, shape: cloneTableSnapshot(e.shape)}
+		}
+	}
+	if s.schemaEntries != nil {
+		snap.schemas = make(map[string]schemaEntrySnapshot, len(s.schemaEntries))
+		for k, e := range s.schemaEntries {
+			var attrs map[string]string
+			if e.attrs != nil {
+				attrs = make(map[string]string, len(e.attrs))
+				for ak, av := range e.attrs {
+					attrs[ak] = av
+				}
+			}
+			snap.schemas[k] = schemaEntrySnapshot{state: e.state, attrs: attrs, batchCreated: e.batchCreated}
+		}
+	}
+	return snap
 }
 
 // AM-1.6: enrich-layer fixture with the in-domain resolved version
@@ -624,5 +700,84 @@ func TestT26AlterLoaderErrorBoundary(t *testing.T) {
 	}
 	if strings.Contains(err.Error(), "s1") || strings.Contains(err.Error(), "ALTER SERVER") {
 		t.Fatalf("public error text echoes authored payload: %v", err)
+	}
+}
+
+// AM-9.5 internal layer (R3-E.2): the loader sentinel is observed at
+// the enrich-entry seam — errors.As reaches serverPrivilegeReadError,
+// the public text is the fixed bounded message, errors.Is preserves
+// the injected sentinel, and enrich terminates before ANY statement
+// binds/adjudicates (nil enriched). L=1/R=0 on the stub's own seams.
+func TestT26AlterAM95InternalLoaderBoundary(t *testing.T) {
+	sentinel := &t26LoaderError{msg: "pw-sentinel-455"}
+	provider := &t26Provider{servers: map[string]bool{"s1": true}, version: "8.0.36", privilegeErr: sentinel}
+	statements, failures := parseT26(t, t26AlterSQL)
+	state := newAlterState(provider)
+	enriched, err := state.enrichStatements(context.Background(),
+		&MetadataRequest{Schema: "golden", Provider: provider, PrivilegeAuditMode: spec.PrivilegeAuditModeObservedAccountNewSession},
+		statements, failures, state.instanceFacts, auditLimits{orderedStatements: defaultOrderedStatementLimit})
+	if err == nil {
+		t.Fatalf("loader failure must terminate enrich")
+	}
+	var pre serverPrivilegeReadError
+	if !errors.As(err, &pre) {
+		t.Fatalf("error class = %T, want serverPrivilegeReadError", err)
+	}
+	if pre.Error() != "server drop privilege observation failed" {
+		t.Fatalf("bounded message = %q", pre.Error())
+	}
+	if !errors.Is(err, sentinel) {
+		t.Fatalf("sentinel unreachable through Unwrap: %v", err)
+	}
+	if strings.Contains(err.Error(), "pw-sentinel-455") {
+		t.Fatalf("bounded message echoed the injected payload: %v", err)
+	}
+	if enriched != nil {
+		t.Fatalf("enrich returned %d statements — no bind/adjudication may follow the failed observation", len(enriched))
+	}
+	if provider.privilegeCalls != 1 || len(provider.calls) != 0 {
+		t.Fatalf("L=%d R=%d, want 1/0 — enrich-entry termination before any resolver call", provider.privilegeCalls, len(provider.calls))
+	}
+}
+
+// AM-10.1 (R3-E.3): the complete-serialization redaction scan on the
+// remaining arm shapes — A1 barrier, A2 refused_absent, A4 unproven,
+// and the boundary literal — each marshaled whole and scanned for
+// every distinguishable sentinel actually injected into that fixture
+// (authored names, option values, password, host, account, grant
+// text). RawSQL/NormalizedSQL must equal the fixed skeleton exactly.
+func TestT26AlterAM101ArmSerializedScans(t *testing.T) {
+	for _, tc := range []struct {
+		name string
+		sql  string
+		mode spec.PrivilegeAuditMode
+		idx  int // statement index carrying the shape
+	}{
+		// A1: literal write taints the channel; the audited ALTER binds
+		// the barrier — both statements scanned.
+		{"A1", "ALTER SERVER 'lit-pwsentinel455' OPTIONS (USER 'u'); ALTER SERVER shost77 OPTIONS (USER 'u', PASSWORD 's3cr3t99')", spec.PrivilegeAuditModeObservedAccountNewSession, 1},
+		// A2: DROP publishes OrderedAbsent; ALTER on it refuses.
+		{"A2", "DROP SERVER spw455; ALTER SERVER spw455 OPTIONS (USER 'u', HOST 'hsentinel77')", spec.PrivilegeAuditModeObservedAccountNewSession, 1},
+		// A4: catalog zero + observed mode → unproven owed pair.
+		{"A4", "ALTER SERVER spw455 OPTIONS (USER 'usentinel77', PASSWORD 'pwsentinel99', HOST 'hsentinel77')", spec.PrivilegeAuditModeObservedAccountNewSession, 0},
+		// Boundary: the literal-name form carries only the skeleton.
+		{"boundary", "ALTER SERVER 'lit-pwsentinel455' OPTIONS (USER 'u', HOST 'hsentinel77')", spec.PrivilegeAuditModeObservedAccountNewSession, 0},
+	} {
+		provider := &t26Provider{servers: map[string]bool{}, version: "8.0.36", privilege: superObservation()}
+		result, _ := evaluateT26Statements(t, tc.sql, provider, tc.mode)
+		stmt := result.Statements[tc.idx]
+		if stmt.RawSQL != "ALTER SERVER <redacted>" || stmt.NormalizedSQL != "ALTER SERVER <redacted>" {
+			t.Fatalf("%s: sql fields must equal the fixed skeleton exactly: raw=%q normalized=%q", tc.name, stmt.RawSQL, stmt.NormalizedSQL)
+		}
+		serialized, err := json.Marshal(result)
+		if err != nil {
+			t.Fatalf("%s: marshal: %v", tc.name, err)
+		}
+		blob := string(serialized)
+		for _, protected := range []string{"pwsentinel455", "pwsentinel99", "s3cr3t99", "hsentinel77", "usentinel77", "spw455", "shost77", "lit-pw", "audited@%", "GRANT SELECT"} {
+			if strings.Contains(blob, protected) {
+				t.Fatalf("%s: protected detail %q leaked into the serialized public object", tc.name, protected)
+			}
+		}
 	}
 }

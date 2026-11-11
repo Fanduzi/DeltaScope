@@ -88,6 +88,16 @@ type batchState struct {
 	// ordered binding never ask the provider twice. Nil falls back to the
 	// provider's ObjectResolver directly.
 	schemaResolver func(ctx context.Context, name string) (*spec.ObjectSnapshot, error)
+	// afterBindObserve and afterApplyObserve, when set, fire per
+	// statement at the two real internal lifecycle seams — after the
+	// statement's bind/adjudication attachment completes and before its
+	// apply, then immediately after that statement's own apply — so a
+	// test witness can copy metadata at the true post-bind/pre-apply
+	// and post-own-apply timepoints rather than approximating them from
+	// outside the loop. Both are nil in production and never affect
+	// behavior (T26-SERVER-ALTER-EXECUTION-01 R3-B).
+	afterBindObserve  func(i int, stmt *spec.Statement)
+	afterApplyObserve func(i int, stmt *spec.Statement)
 	// sequenceEntries holds the batch's ordered knowledge of each sequence
 	// identity a sequence-lifecycle statement named — present/absent/unknown
 	// plus the proven definition parameter set. Schema gates and invalidation
