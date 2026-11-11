@@ -295,6 +295,8 @@ func (state *batchState) enrichStatements(ctx context.Context, request *Metadata
 		state.resourceGroupResolver = cachedObjectResolver
 		state.mysqlResourceGroupResolver = cachedObjectResolver
 		state.tablespaceResolver = cachedObjectResolver
+		state.mysqlServerResolver = cachedObjectResolver
+		state.mysqlSRSResolver = cachedObjectResolver
 	}
 
 	consumed := 0
@@ -528,6 +530,42 @@ func (state *batchState) enrichStatements(ctx context.Context, request *Metadata
 					enriched[i].Metadata = &spec.Metadata{Schema: metadataSchema, Instance: instanceFacts, Version: resolvedVersion}
 				}
 				enriched[i].Metadata.Tablespaces = states
+			}
+		}
+
+		// The MySQL SERVER family binds its existence fact — the object
+		// resolver reads the catalog only when the authored name is a
+		// provable identifier; a string-literal spelling stays an
+		// unissued read, never a guessed identity (T26/#105 provider
+		// round).
+		if enriched[i].DDL != nil && enriched[i].DDL.Server != nil && dialect == spec.DialectMySQL {
+			server, serr := state.bindMySQLServer(ctx, enriched[i])
+			if serr != nil {
+				return nil, serr
+			}
+			if server != nil {
+				if enriched[i].Metadata == nil {
+					enriched[i].Metadata = &spec.Metadata{Schema: metadataSchema, Instance: instanceFacts, Version: resolvedVersion}
+				}
+				enriched[i].Metadata.Server = server
+			}
+		}
+
+		// The MySQL spatial reference system family binds its fact set —
+		// existence and column dependencies read on the provable SRID;
+		// NAME/ORGANIZATION conflict reads stay unissued while their
+		// identities remain authored spellings (T26/#105 provider
+		// round).
+		if enriched[i].DDL != nil && enriched[i].DDL.SpatialReference != nil && dialect == spec.DialectMySQL {
+			srs, serr := state.bindMySQLSRS(ctx, enriched[i])
+			if serr != nil {
+				return nil, serr
+			}
+			if srs != nil {
+				if enriched[i].Metadata == nil {
+					enriched[i].Metadata = &spec.Metadata{Schema: metadataSchema, Instance: instanceFacts, Version: resolvedVersion}
+				}
+				enriched[i].Metadata.SpatialReference = srs
 			}
 		}
 

@@ -99,31 +99,37 @@ func parseMySQLServer(sqlText string) (ast.StmtNode, bool) {
 // values come back unquoted with doubled-quote escapes resolved — that
 // is not a complete MySQL string decode (backslash escapes and charset
 // introducers stay unresolved, so the fact is the unquoted spelling).
-func mysqlServerName(sqlText string, tok sqlTok) (string, bool) {
+//
+// The second result marks whether the name is a complete decoded
+// catalog identity: identifier token forms (word, backquoted) decode
+// fully — doubled-backtick unescape is the entire identifier decode —
+// while a string-literal spelling stays unprovable under SQL-mode and
+// charset-introducer variance (T26/#105 provider round).
+func mysqlServerName(sqlText string, tok sqlTok) (name string, ident bool, ok bool) {
 	switch tok.kind {
 	case tokWord:
-		name := tok.text(sqlText)
+		name = tok.text(sqlText)
 		if name == "" {
-			return "", false
+			return "", false, false
 		}
 		if _, reserved := mysqlResourceGroupReservedWords[strings.ToLower(name)]; reserved {
-			return "", false
+			return "", false, false
 		}
 		if isUnsignedDigits(name) {
-			return "", false
+			return "", false, false
 		}
-		return name, true
+		return name, true, true
 	case tokQIdent:
 		raw := tok.text(sqlText)
 		if !quotedTokenClosed(raw) {
-			return "", false
+			return "", false, false
 		}
-		name := strings.ReplaceAll(raw[1:len(raw)-1], "``", "`")
-		return name, name != ""
+		name = strings.ReplaceAll(raw[1:len(raw)-1], "``", "`")
+		return name, true, name != ""
 	case tokStr:
 		raw := tok.text(sqlText)
 		if !quotedTokenClosed(raw) {
-			return "", false
+			return "", false, false
 		}
 		quote := raw[0]
 		inner := raw[1 : len(raw)-1]
@@ -132,9 +138,9 @@ func mysqlServerName(sqlText string, tok sqlTok) (string, bool) {
 		} else {
 			inner = strings.ReplaceAll(inner, `""`, `"`)
 		}
-		return inner, inner != ""
+		return inner, false, inner != ""
 	}
-	return "", false
+	return "", false, false
 }
 
 // mysqlServerCreate consumes
@@ -142,7 +148,7 @@ func mysqlServerName(sqlText string, tok sqlTok) (string, bool) {
 // The name may be an identifier or a string literal; the wrapper is an
 // identifier. The whole member list must parse or nothing is claimed.
 func mysqlServerCreate(sqlText string, nameTok sqlTok, rest []sqlTok) (ast.StmtNode, bool) {
-	name, ok := mysqlServerName(sqlText, nameTok)
+	name, nameIdent, ok := mysqlServerName(sqlText, nameTok)
 	if !ok || len(rest) < 4 {
 		return nil, false
 	}
@@ -150,13 +156,14 @@ func mysqlServerCreate(sqlText string, nameTok sqlTok, rest []sqlTok) (ast.StmtN
 		!rest[2].wordIs(sqlText, "wrapper") {
 		return nil, false
 	}
-	wrapper, ok := mysqlServerName(sqlText, rest[3])
+	wrapper, _, ok := mysqlServerName(sqlText, rest[3])
 	if !ok {
 		return nil, false
 	}
 	decl := &spec.ServerDeclaration{
 		Kind:                  spec.ServerKindCreate,
 		Name:                  name,
+		NameIdent:             nameIdent,
 		Wrapper:               wrapper,
 		NameSpellingRuneCount: utf8.RuneCountInString(name),
 	}
@@ -170,13 +177,14 @@ func mysqlServerCreate(sqlText string, nameTok sqlTok, rest []sqlTok) (ast.StmtN
 
 // mysqlServerAlter consumes `ALTER SERVER name OPTIONS (members)`.
 func mysqlServerAlter(sqlText string, nameTok sqlTok, rest []sqlTok) (ast.StmtNode, bool) {
-	name, ok := mysqlServerName(sqlText, nameTok)
+	name, nameIdent, ok := mysqlServerName(sqlText, nameTok)
 	if !ok {
 		return nil, false
 	}
 	decl := &spec.ServerDeclaration{
 		Kind:                  spec.ServerKindAlter,
 		Name:                  name,
+		NameIdent:             nameIdent,
 		NameSpellingRuneCount: utf8.RuneCountInString(name),
 	}
 	if !mysqlServerOptions(sqlText, rest, decl) {
@@ -190,13 +198,14 @@ func mysqlServerAlter(sqlText string, nameTok sqlTok, rest []sqlTok) (ast.StmtNo
 // mysqlServerDrop consumes `DROP SERVER [IF EXISTS] name` — the whole
 // input after the name must be empty or the claim fails.
 func mysqlServerDrop(sqlText string, nameTok sqlTok, rest []sqlTok, ifExists bool) (ast.StmtNode, bool) {
-	name, ok := mysqlServerName(sqlText, nameTok)
+	name, nameIdent, ok := mysqlServerName(sqlText, nameTok)
 	if !ok || len(rest) != 0 {
 		return nil, false
 	}
 	decl := &spec.ServerDeclaration{
 		Kind:                  spec.ServerKindDrop,
 		Name:                  name,
+		NameIdent:             nameIdent,
 		IfExists:              ifExists,
 		NameSpellingRuneCount: utf8.RuneCountInString(name),
 	}

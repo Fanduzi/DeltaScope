@@ -1816,6 +1816,20 @@ func (p *Provider) ResolveObject(ctx context.Context, dialect spec.Dialect, requ
 			return snapshot, nil
 		}
 		return p.loadMySQLTablespaceObject(ctx, request, snapshot)
+	case "mysql_server":
+		if dialect != spec.DialectMySQL {
+			// The mysql.servers catalog is a MySQL surface — never emit
+			// it under another dialect (T26/#105).
+			return snapshot, nil
+		}
+		return p.loadMySQLServerObject(ctx, request, snapshot)
+	case "mysql_spatial_reference_system":
+		if dialect != spec.DialectMySQL {
+			// The SRS catalog pair is a MySQL surface — never emit it
+			// under another dialect (T26/#105).
+			return snapshot, nil
+		}
+		return p.loadMySQLSRSObject(ctx, request, snapshot)
 	}
 	return snapshot, nil
 }

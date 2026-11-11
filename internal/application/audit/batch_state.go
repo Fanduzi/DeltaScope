@@ -122,6 +122,14 @@ type batchState struct {
 	// lookup for the MySQL tablespace family (T25/#104). Nil falls back
 	// to the provider's ObjectResolver.
 	tablespaceResolver func(ctx context.Context, lookup spec.ObjectLookupRequest) (*spec.ObjectSnapshot, error)
+	// mysqlServerResolver is the same once-per-request objectCache-backed
+	// lookup for the MySQL SERVER family (T26/#105 provider round). Nil
+	// falls back to the provider's ObjectResolver.
+	mysqlServerResolver func(ctx context.Context, lookup spec.ObjectLookupRequest) (*spec.ObjectSnapshot, error)
+	// mysqlSRSResolver is the same once-per-request objectCache-backed
+	// lookup for the MySQL spatial reference system family (T26/#105
+	// provider round). Nil falls back to the provider's ObjectResolver.
+	mysqlSRSResolver func(ctx context.Context, lookup spec.ObjectLookupRequest) (*spec.ObjectSnapshot, error)
 	// resolvedVersion is the request's already-parsed version fact. Rules read
 	// the same fact from statement metadata. apply still receives the original
 	// statement, so RENAME COLUMN applicability reads this copy. Nil means the

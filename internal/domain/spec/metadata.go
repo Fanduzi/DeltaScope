@@ -85,6 +85,17 @@ type Metadata struct {
 	// occupancy (table association) premise rides beside existence and
 	// stays unknown unless proven (T25/#104).
 	Tablespaces map[string]*TablespaceState `json:"tablespaces,omitempty"`
+	// Server carries the bound MySQL SERVER existence fact for the one
+	// server identity a SERVER-family statement names — the provider
+	// object read projected into per-fact knownness (T26/#105 provider
+	// round). Internal evidence only: the family names stay inside the
+	// audit run, never serialized.
+	Server *ServerState `json:"-"`
+	// SpatialReference carries the bound MySQL SRS facts for the one
+	// SRID identity a spatial reference system statement names —
+	// existence plus the optional conflict and dependency witness
+	// reads (T26/#105 provider round). Internal evidence only.
+	SpatialReference *SpatialReferenceSystemState `json:"-"`
 }
 
 // MetadataSchemaTarget is the ordered schema binding accessor rules use —
@@ -685,6 +696,25 @@ const (
 	MetadataStatusAmbiguous   MetadataStatus = "ambiguous"
 )
 
+// MetadataUnread* are the stable read-not-issued reason tokens shared by
+// provider fact projections: a fact whose read never fired names why,
+// keeping "not loaded" distinct from "loaded, answer unknown" (T26/#105).
+const (
+	// MetadataUnreadIdentityUnproven marks a fact read skipped because
+	// the identity it is keyed on is not provable — an undecoded
+	// spelling is never a normalized catalog identity.
+	MetadataUnreadIdentityUnproven = "identity_unproven"
+	// MetadataUnreadVersionInapplicable marks a fact read skipped
+	// because a proven server version makes the catalog inapplicable —
+	// never issued on a surface that cannot hold the object.
+	MetadataUnreadVersionInapplicable = "version_inapplicable"
+	// MetadataUnreadCatalogUnproven marks a fact read issued but
+	// degraded because the catalog object itself is unproven on a
+	// version-unproven surface — the missing-object answer carries no
+	// fact either way.
+	MetadataUnreadCatalogUnproven = "catalog_unproven"
+)
+
 // ObjectSnapshot carries the metadata-validated state of one non-table database object.
 type ObjectSnapshot struct {
 	Schema              string            `json:"schema,omitempty"`
@@ -717,6 +747,19 @@ type ObjectSnapshot struct {
 	// occupancy answer (T25/#104). A nil Occupied member means the
 	// association read never happened — never a proven-empty set.
 	Tablespace *TablespaceState `json:"-"`
+	// Server carries the provider-read MySQL SERVER existence fact —
+	// the bounded mysql.servers identity read (T26/#105 provider
+	// round). Nil means the family was never bound (dialect-inapplicable
+	// or never requested); Read=false means the read stayed unissued
+	// (UnreadReason names why).
+	Server *ServerState `json:"-"`
+	// SpatialReference carries the provider-read MySQL SRS facts —
+	// the ST_SPATIAL_REFERENCE_SYSTEMS identity read, the optional
+	// NAME/ORGANIZATION conflict witness reads, and the
+	// ST_GEOMETRY_COLUMNS dependency witnesses (T26/#105 provider
+	// round). Nil sub-members mean their reads never happened — never
+	// proven-empty sets.
+	SpatialReference *SpatialReferenceSystemState `json:"-"`
 }
 
 // ObjectLookupRequest describes one object to resolve from live metadata.
@@ -726,6 +769,34 @@ type ObjectLookupRequest struct {
 	Name       string
 	Qualifiers map[string]string
 }
+
+// Object-lookup qualifier keys for the T26/#105 SERVER/SRS fact reads.
+// Every qualifier carries a provable identity only — the provider never
+// interprets an undecoded authored spelling as one of these values.
+const (
+	// ObjectLookupQualifierNameForm marks how a mysql_server request
+	// Name was produced; only the ObjectLookupNameFormIdentifier value
+	// proves a complete decoded identifier — anything else (including
+	// an absent qualifier) is an unprovable spelling.
+	ObjectLookupQualifierNameForm = "name_form"
+	// ObjectLookupNameFormIdentifier is the qualifier value proving
+	// the request Name is a decoded identifier — the complete catalog
+	// identity, not a string-literal spelling.
+	ObjectLookupNameFormIdentifier = "identifier"
+	// ObjectLookupQualifierSRSName carries a provable SRS NAME catalog
+	// identity; when present the provider issues the NAME-conflict
+	// witness read. Authored NAME spellings never populate it.
+	ObjectLookupQualifierSRSName = "srs_name"
+	// ObjectLookupQualifierSRSOrg carries the provable ORGANIZATION
+	// member of the combined conflict identity; it fires only together
+	// with ObjectLookupQualifierSRSOrgID — a partially-known pair never
+	// issues a query.
+	ObjectLookupQualifierSRSOrg = "srs_org"
+	// ObjectLookupQualifierSRSOrgID carries the provable
+	// ORGANIZATION_COORDSYS_ID member of the combined conflict
+	// identity — decimal text the provider parses strictly.
+	ObjectLookupQualifierSRSOrgID = "srs_org_id"
+)
 
 // IsConfirmed reports whether the object was found in live metadata.
 func (o ObjectSnapshot) IsConfirmed() bool {
