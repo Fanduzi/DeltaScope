@@ -2,8 +2,10 @@ package mysqlmeta
 
 // T26-SERVER-DROP-EXECUTION-01: the builtin DROP SERVER privilege
 // observation — CURRENT_USER() and SHOW GRANTS FOR CURRENT_USER() read
-// verbatim on one dedicated connection, every failure propagating
-// under the same contract as the other catalog loaders.
+// verbatim through the provider's single acquired *sql.Conn (the
+// same-connection property is a source-level guarantee; the stub
+// driver below directly observes query order only), every failure
+// propagating under the same contract as the other catalog loaders.
 
 import (
 	"context"
@@ -135,7 +137,10 @@ func TestLoadMySQLServerDropPrivilegeDialectGate(t *testing.T) {
 // A genuinely successful-but-empty CURRENT_USER() rowset — zero rows,
 // no error — binds an empty account while the grant read still runs.
 // The unbound principal stays unprovable, never a read failure; the
-// distinction from a deferred query error is the R1-C fix.
+// distinction from a deferred query error is the R1-C fix. This file
+// does not cover the separate successful-but-empty grants rowset; the
+// near-token grant cases in the SDK-level vertical file observe empty
+// positive evidence ending in an owed premise at the consumer.
 func TestLoadMySQLServerDropPrivilegeUnboundAccount(t *testing.T) {
 	db := openTestDB(t, map[string]testQueryResult{
 		"select current_user()": {

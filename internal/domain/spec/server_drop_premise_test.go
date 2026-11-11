@@ -163,9 +163,11 @@ func TestAdjudicateServerDropTruthTable(t *testing.T) {
 
 // ConditionalSource follows the OrderedAbsent's publishing arm — a
 // refusal or guarded arm resting on an absent a conditional arm
-// published stays marked conditional, while an absent published
-// unconditionally (no conditional premise ever applied) carries no
-// marker. Both consumption forms check the projection.
+// published stays marked conditional. The plainAbsent fixture below is
+// hand-built with the marker field left unset to check the projection
+// alone; it is not evidence that any production path publishes an
+// unconditional absent (today's only publishers are the conditional
+// arms). Both consumption forms check the projection.
 func TestAdjudicateServerDropConditionalSource(t *testing.T) {
 	conditionalAbsent := &ServerState{Name: "s1", OrderedAbsent: true, OrderedAbsentConditional: true}
 	plainAbsent := &ServerState{Name: "s1", OrderedAbsent: true}

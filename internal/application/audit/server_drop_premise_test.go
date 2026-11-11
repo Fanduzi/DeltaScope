@@ -406,10 +406,17 @@ func TestT26PrivilegeAuditSQLPublicShape(t *testing.T) {
 	if result.Verdict != report.VerdictReview {
 		t.Fatalf("unwired premise keeps the review floor: %+v", result.Verdict)
 	}
+	// The no-mode proven-present path owes EXACTLY the privilege
+	// premise — existence is already proven by the resolver read.
 	facts := result.Statements[0].EvidenceGaps[0].RequiredFacts
-	joined := strings.Join(facts, ",")
-	if !strings.Contains(joined, spec.ServerFactDropPrivilege) {
-		t.Fatalf("default path must still owe drop_privilege: %v", facts)
+	if len(facts) != 1 || facts[0] != spec.ServerFactDropPrivilege {
+		t.Fatalf("default path owed = %v, want exactly {server.drop_privilege}", facts)
+	}
+	if result.Statements[0].Coverage.Status != report.CoverageUnverified {
+		t.Fatalf("statement coverage = %v, want unverified under the owed premise", result.Statements[0].Coverage.Status)
+	}
+	if result.Coverage.Status != report.CoverageUnverified {
+		t.Fatalf("aggregate coverage = %v, want unverified", result.Coverage.Status)
 	}
 }
 

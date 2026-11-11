@@ -6,8 +6,9 @@ APPROVED design contracts this record implements are listed under
 Related docs; this ADR itself records the candidate design, not an
 accepted contract.
 Related milestone/version: issue #105 T26 under parent issue #79
-Related commits: T26-SERVER-DROP-EXECUTION-01 implementation candidate
-commit `8b52fd55` (this change set)
+Related commits: T26-SERVER-DROP-EXECUTION-01 implementation
+candidate `8b52fd55`, R1 revisions `d2fb5dba`, R2 consumer-verification
+and documentation corrections (this change set)
 Related tests: `internal/domain/spec/server_drop_premise_test.go`, `internal/application/audit/server_drop_premise_test.go`, `internal/infrastructure/metadata/mysql/provider_server_drop_privilege_test.go`, `pkg/deltascope/audit_t26_premise_test.go`, `testdata/ddl-golden/T26.json` (offline cells unchanged)
 Related docs: `docs/verification/t26-server-drop-premise-01/` (accepted premise contract, parent `cfd34782`), `docs/verification/t26-semantics-01/` (accepted `b8a67e7b`)
 
@@ -79,9 +80,11 @@ can never diverge.
 ## Rationale
 
 Reviewer rulings required the conditional premise to be honest about
-what it proves: `observed_account_new_session` vouches only that the
-observed account held `SUPER`/`ALL PRIVILEGES` at observation time on
-the observed connection. Three distinct things stay separate: the
+what it proves: `observed_account_new_session` vouches only for a
+positive witness of the observed account's direct global grants —
+`SUPER`/`ALL PRIVILEGES` appearing verbatim in the `SHOW GRANTS` output
+read at observation time. It does not prove the effective privileges of
+any pooled or future session. Three distinct things stay separate: the
 observed connection (the session `DB.Conn` returned, possibly pooled),
 the declared future new execution session (the conditional scope's
 declared model), and any actual future execution (never claimed —
@@ -104,10 +107,15 @@ state on a single truth — the same shape T24/T25 already use.
   byte-identical: verdict, evidence-gap set (`unknown_server_state`
   with `server.existence`/`server.drop_privilege` owed), statement
   and aggregate coverage, and boundary-statement behavior all match
-  the pre-existing contract on the T26 golden manifest. New surface
-  versus the old candidate: findings now carry the `outcome` token
-  and conditional-scope metadata, and guarded/refusal explanations
-  were narrowed in R1-D.
+  the pre-existing contract on the T26 golden manifest. Relative to
+  `3a02f73f` this change set adds the whole conditional-premise surface
+  (mode, provider seam, adjudication, `OrderedAbsent`); relative to
+  `8b52fd55`, the R1 revisions (`d2fb5dba`) added the inherited
+  conditional-source marking (`ConditionalSource`,
+  `OrderedAbsentConditional`, `publishedArm`) plus the narrowed
+  guarded/refusal explanations, and findings now carry the `outcome`
+  token and conditional-scope metadata. The R2 corrections are test
+  and documentation only — no product-source change.
 
 ## Deferred / Out Of Scope
 
@@ -130,9 +138,10 @@ state on a single truth — the same shape T24/T25 already use.
   over `testdata/ddl-golden/T26.json`: `mysql-drop-server`,
   `mysql-drop-server-if-exists`, `mysql-server-mixed-batch` — all
   `status: pass` with every assertion `ok`.
-- Stub-driver provider tests cover verbatim preservation, same-conn
-  query order, dialect gate, unbound account, empty grants, and
-  query/scan/iteration error propagation.
+- Stub-driver provider tests cover verbatim preservation, query
+  order (same-connection is a source-level guarantee, not a driver
+  observation), dialect gate, unbound account, empty `CURRENT_USER()`
+  rowset, and query/scan/iteration error propagation.
 
 ## Consequences
 

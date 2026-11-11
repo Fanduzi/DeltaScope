@@ -157,7 +157,8 @@ func grantsQueries(fixture *t26vFixture) int {
 // Vertical chain A: consumable witness end-to-end. Statement 1 is the
 // conditional proven drop; statement 2 is the refusal the published
 // OrderedAbsent answers without any new resolver read; statement 3 is
-// the convergent guard on the same absent. Layered counts: request
+// the guarded_absent arm consuming that same published absent (not a
+// convergent publish). Layered counts: request
 // total = 1 servers query, first statement issued it, the two
 // consumers issued zero new ones; the loader ran exactly once.
 func TestT26VerticalConsumableChain(t *testing.T) {
@@ -201,6 +202,17 @@ func TestT26VerticalConsumableChain(t *testing.T) {
 	if result.Statements[1].Findings[0].Level != LevelBlocker {
 		t.Fatalf("refusal level = %+v, want blocker", result.Statements[1].Findings[0].Level)
 	}
+	// Two-level coverage: every audited statement gap-free means each
+	// statement and the aggregate stay complete; the blocker alone
+	// drives the top-level reject.
+	for i, stmt := range result.Statements {
+		if stmt.Coverage.Status != CoverageComplete {
+			t.Fatalf("statement %d coverage = %v, want complete", i, stmt.Coverage.Status)
+		}
+	}
+	if result.Coverage.Status != CoverageComplete {
+		t.Fatalf("aggregate coverage = %v, want complete", result.Coverage.Status)
+	}
 	// Layered counts: one loader pass for the whole request; one
 	// resolver read by statement 1; statements 2-3 added none.
 	if grantsQueries(fixture) != 1 || serversQueries(fixture) != 1 {
@@ -226,9 +238,10 @@ func TestT26VerticalConsumableChain(t *testing.T) {
 // but the ordered scan still precedes the resolver — s2's access is
 // shadowed by the unproven relation to a recorded write, so the
 // catalog is never queried for it (the conservative batch_effects
-// barrier, no barrier bit required on the entry). s1's own absent
-// survives untouched: the third drop consumes it as the refusal with
-// zero new resolver reads.
+// barrier, no barrier bit required on the entry). The third drop on
+// s1 is shadowed the same way — s2's unadjudicated write taints the
+// whole channel — and reads blocked_batch_effects with zero new
+// resolver reads.
 func TestT26VerticalRelationBoundary(t *testing.T) {
 	fixture := &t26vFixture{
 		servers:    map[string]bool{"s1": true, "s2": true},
@@ -273,6 +286,24 @@ func TestT26VerticalRelationBoundary(t *testing.T) {
 	if facts := shadowed.EvidenceGaps[0].RequiredFacts; len(facts) != 1 || facts[0] != "server.batch_effects" {
 		t.Fatalf("s1 re-drop owed = %v, want server.batch_effects only", facts)
 	}
+	// Two-level coverage: the gap-free first statement stays complete;
+	// both shadowed statements carry the batch_effects gap and read
+	// unverified; the aggregate follows them; no blocker means the
+	// verdict floor is review.
+	if result.Statements[0].Coverage.Status != CoverageComplete {
+		t.Fatalf("s1 drop coverage = %v, want complete", result.Statements[0].Coverage.Status)
+	}
+	for i := 1; i <= 2; i++ {
+		if result.Statements[i].Coverage.Status != CoverageUnverified {
+			t.Fatalf("statement %d coverage = %v, want unverified under the shadowed channel", i, result.Statements[i].Coverage.Status)
+		}
+	}
+	if result.Coverage.Status != CoverageUnverified {
+		t.Fatalf("aggregate coverage = %v, want unverified", result.Coverage.Status)
+	}
+	if result.Verdict != VerdictReview {
+		t.Fatalf("verdict = %+v, want review under the evidence-gap floor", result.Verdict)
+	}
 	if serversQueries(fixture) != 1 {
 		t.Fatalf("resolver reads = %d, want exactly 1 — the relation scan answered s2 before the resolver and the shadowed channel answered the re-drop", serversQueries(fixture))
 	}
@@ -314,8 +345,67 @@ func TestT26VerticalNearTokenNegatives(t *testing.T) {
 		if stmt.Findings[0].Metadata["outcome"] != "unverified" {
 			t.Fatalf("%s: outcome = %v, want unverified", grant, stmt.Findings[0].Metadata["outcome"])
 		}
+		if stmt.Coverage.Status != CoverageUnverified || result.Coverage.Status != CoverageUnverified {
+			t.Fatalf("%s: coverage = stmt:%v agg:%v, want unverified at both levels", grant, stmt.Coverage.Status, result.Coverage.Status)
+		}
 		if grantsQueries(fixture) != 1 {
 			t.Fatalf("%s: the loader still ran once — unproven, never a denial", grant)
 		}
+	}
+}
+
+// Vertical chain D — the real convergent arm through the public result:
+// a clean zero-row catalog answer (never proven absent), unproven
+// pre-state + consumable privilege + IF EXISTS publishes the
+// conditional absent the second guarded statement consumes. Distinct
+// from chain A's third statement, which consumes an OrderedAbsent a
+// proven drop already published — this first statement IS the
+// conditional_absent publish.
+func TestT26VerticalConvergentPublish(t *testing.T) {
+	fixture := &t26vFixture{
+		servers:    map[string]bool{},
+		account:    "audited@%",
+		grantLines: []string{"GRANT SUPER ON *.* TO 'audited'@'%'"},
+	}
+	db := openT26VDB(t, fixture)
+	provider := &t26vProvider{inner: mysqlmeta.NewProvider(db)}
+	result, err := Audit(context.Background(), Request{
+		SQL:     "DROP SERVER IF EXISTS s1; DROP SERVER IF EXISTS s1",
+		Dialect: DialectMySQL, Schema: "golden",
+		MetadataProvider: provider, PrivilegeAuditMode: PrivilegeAuditModeObservedAccountNewSession,
+	})
+	if err != nil {
+		t.Fatalf("audit: %v", err)
+	}
+	if len(result.Statements) != 2 {
+		t.Fatalf("statements = %d", len(result.Statements))
+	}
+	for i, want := range []string{"conditional_absent", "guarded_absent"} {
+		stmt := result.Statements[i]
+		if len(stmt.EvidenceGaps) != 0 {
+			t.Fatalf("statement %d gaps = %+v, want none", i, stmt.EvidenceGaps)
+		}
+		finding := stmt.Findings[0]
+		if finding.Metadata["outcome"] != want {
+			t.Fatalf("statement %d outcome = %v, want %s", i, finding.Metadata["outcome"], want)
+		}
+		if finding.Metadata["conditional_audit"] != string(PrivilegeAuditModeObservedAccountNewSession) {
+			t.Fatalf("statement %d marker missing: %+v", i, finding.Metadata)
+		}
+		if stmt.Coverage.Status != CoverageComplete {
+			t.Fatalf("statement %d coverage = %v, want complete", i, stmt.Coverage.Status)
+		}
+	}
+	if result.Coverage.Status != CoverageComplete {
+		t.Fatalf("aggregate coverage = %v, want complete", result.Coverage.Status)
+	}
+	if result.Verdict != VerdictPass {
+		t.Fatalf("convergent publish + guard must pass: %+v", result.Verdict)
+	}
+	// The zero-row read answered existence unknown — never absent —
+	// and the second statement consumed the convergent publish with
+	// no new resolver read. Total servers queries stay one.
+	if serversQueries(fixture) != 1 {
+		t.Fatalf("resolver reads = %d, want exactly 1 — the second guard consumed the first's publish", serversQueries(fixture))
 	}
 }
