@@ -1,15 +1,16 @@
 # T26-SERVER-ALTER-CONTRACT-01 — ALTER SERVER first-slice candidate contract
 
-Status: **ISSUED — candidate contract, docs-only (R4 revision)**.
+Status: **ISSUED — candidate contract, docs-only (R5 revision)**.
 Every adjudication below is a *proposed* contract awaiting Reviewer
 acceptance; nothing here is implemented, verified, or approved.
 This document implements no code, runs no test, and changes no
 accepted DROP/CREATE behavior. Frozen from earlier rounds: A1
 uniform no-op; the canonical flag-assignment table; P1–P7
-adjudicated (§G); keep-boundary-bind. R3/R4 close the matrix
-rulings: witnesses are seeded units or correctly-labelled
-suppressed chains; fixtures and observation layers are pinned;
-public projections and the CLI probe recipe carry fixed values.
+adjudicated (§G); keep-boundary-bind; seeded/suppressed witnesses;
+fixed public projections; the CLI probe recipe. R5 closes the last
+matrix rulings: per-statement public-output scope is declared, the
+five observation layers are named per row, and Group 9 rows carry
+their exact layer and rc applicability.
 Parent: T26 / issue #105 under issue #79. Baseline: `28152dfd`
 (tree `8b17cf3c`, parent `2afe8ecb`) on
 `milestone/mysql-tidb-ddl-completion` — the accepted

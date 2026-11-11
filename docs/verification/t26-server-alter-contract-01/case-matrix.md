@@ -67,15 +67,33 @@ silently changes arm under these defaults.
   skeleton. A multi-statement batch's total findings are the sum
   over statements.
 
-**Observation layers** — exactly four; a row asserts fields only at
-the layers it exercises and marks the rest N/A:
+**Per-statement public-output scope** — batches are enriched and
+applied in full fixture order; REVOKE and failure records still
+drive suppression/contamination/state transitions as registered.
+Unless a row declares otherwise, its public assertions cover only
+the **SERVER records it lists** — findings, level, metadata, exact
+owed/gaps, conditional marker, statement coverage, and any
+applicable SQL redaction / `unaudited` boundary skeleton. Public
+output of non-SERVER statements and failure records is **out of
+scope** for the row (they still produce output; it is just not
+asserted). Whole-request finding totals, aggregate coverage, and
+verdict are asserted only on rows that declare them; elsewhere
+they are N/A — N/A means *not observed here*, never "zero output".
+The "batch findings are the sum of per-statement findings" note
+applies only to rows that exercise full-request public
+projection.
+
+**Observation layers** — five named layers; a row asserts fields
+only at the layer(s) it exercises and marks the rest N/A:
 
 | layer | rows |
 |---|---|
-| adjudication-unit (seeded inputs; L/R/S N/A; public fields N/A) | AM-1.3, AM-2.4, AM-2.5 |
-| enrich-apply + public-projection (rc N/A) | every other row not listed above or below |
-| request/CLI surface (version gates, preflight, probe plan) | AM-9.1a, AM-9.1b, AM-9.2, AM-9.3a–e, CLI probe plan |
-| enrich-apply only (bounded error at the named seam; public fields N/A) | AM-9.4, AM-9.5 |
+| adjudication-unit (seeded inputs; L/R/S, public projection, aggregate, rc all N/A) | AM-1.3, AM-2.4, AM-2.5 |
+| parser/extraction (unclaimed input; everything downstream N/A — enrich/apply, projection, aggregate, rc) | AM-3.5 |
+| enrich-apply + per-statement public scope (CLI rc N/A) | all rows not listed elsewhere |
+| request/API surface (version gates, typed errors; rc N/A — no CLI command asserted) | AM-9.1b, AM-9.3a–e |
+| CLI (exact rc asserted) | AM-9.1a, AM-9.2, CLI probe plan |
+| enrich-apply only (bounded error at the named seam; public/aggregate/rc N/A) | AM-9.4, AM-9.5, AM-10.3 |
 
 ## Group 1 — single ALTER: present / ordered-absent / catalog-unknown
 
@@ -86,7 +104,7 @@ the layers it exercises and marks the rest N/A:
 | AM-1.3 | seeded unit input: `ServerState{OrderedAbsent:true, OrderedAbsentConditional:true}`, decl `s` ident-form, premise unproven, options clean | n/a — no provider call | OrderedAbsent on s, flag true | seeded unproven | A2 → R3 | owed ∅; outcome `refused_absent`; blocker; `ConditionalAudit=true` **solely inherited** (ConditionalSource=consumed flag); coverage complete; verdict reject; absent stands | L/R/S n/a (unit layer) |
 | AM-1.4 | `ALTER SERVER s9 OPTIONS (USER 'u')` | catalog zero | none | observed, consumable | A4 → R12 | owed exactly `{server.existence}`; `unverified`; marker set (own consumable); coverage unverified; **no publish, no barrier, no entry** | L=1 R=1 S=1 |
 | AM-1.5 | same SQL | catalog zero | none | off | A4 → R13 | owed `{server.existence, server.alter_privilege}`; `unverified`; no marker; no publish/barrier/entry | L=0 R=1 S=1 |
-| AM-1.6 | same SQL | none (no provider) | none | observed requested, loader absent | A4 → R16 | owed `{existence, alter_privilege}`; `unverified`; no marker; none published | L=0 R=0 S=0 |
+| AM-1.6 | same SQL | none (no provider) — **enrich-layer fixture**: `resolvedVersion=8.0.36` supplied directly (this row does not exercise version resolution) | none | observed requested, loader absent | A4 → R16 | owed `{existence, alter_privilege}`; `unverified`; no marker; none published | L=0 R=0 S=0 |
 
 ## Group 2 — own ALTER privilege: consumable / unproven / suppressed / inherited-marker-only
 
@@ -94,11 +112,11 @@ the layers it exercises and marks the rest N/A:
 |---|---|---|---|---|---|---|
 | AM-2.1 | `ALTER SERVER s1 OPTIONS (USER 'u')` | present | consumable | A3 → R9 | owed ∅; `conditional_alter`; marker via own premise | L=1 R=1 S=1 |
 | AM-2.2 | same | present | unproven (mode off) | A4 → R10 | owed `{alter_privilege}` only; no marker; `unverified` | L=0 R=1 S=1 |
-| AM-2.3 | `REVOKE SELECT ON *.* FROM 'r1'@'%'; ALTER SERVER s1 OPTIONS (USER 'u')` | present; observed; positive SUPER witness in scope before the terminator | suppressed | A4 → R10 | owed `{alter_privilege}` only — suppression is owed, never a denial; terminator emits no grant-revoked claim | L=1 (loader loads once at enrich entry, before the statement loop — the terminator suppresses only the projection) R=1 S=1 |
+| AM-2.3 | `REVOKE SELECT ON *.* FROM 'r1'@'%'; ALTER SERVER s1 OPTIONS (USER 'u')` | present; observed; positive SUPER witness in scope before the terminator | suppressed | A4 → R10 | owed `{alter_privilege}` only — suppression is owed, never a denial; terminator emits no grant-revoked claim. **Frozen per-statement projection on the ALTER record**: A4 → 2 notice findings (main `unverified` + `connection_members` advisory); owed exactly `{server.alter_privilege}`; no conditional marker; statement coverage `unverified`. REVOKE's own public output is out of scope | L=1 (loader loads once at enrich entry, before the statement loop — the terminator suppresses only the projection) R=1 S=1 |
 | AM-2.4 | **seeded adjudication-unit input**: `ServerState{OrderedAbsent:true, OrderedAbsentConditional:true}` on `s`, decl `ALTER SERVER s OPTIONS (USER 'u')` ident-form, own premise `unproven`, options clean | unit layer — no SQL, no provider | seeded unproven | A2 → R3 | owed ∅; `PublishPresent=false`; `ConditionalSource=true` (consumed flag); `ConditionalAudit=true` — marker **solely inherited**, proves inheritance without an own consumable premise; `refused_absent`; absent stands | L/R/S: N/A (unit layer) |
 | AM-2.5 | **seeded adjudication-unit input**: `ServerState{OrderedPresent:true, OrderedPresentConditional:true}` on `s`, decl `ALTER SERVER s OPTIONS (USER 'u')` ident-form, own premise `unproven`, options clean | unit layer — no SQL, no provider | seeded unproven | A4 → R5 | owed exactly `{server.alter_privilege}`; `PublishPresent=true`; `ConditionalSource=true` (consumed flag); `ConditionalAudit=true`; re-published flag = consumed flag (`true`, never laundered unconditional) | L/R/S: N/A (unit layer) |
-| AM-2.4i | integration chain (premise **suppressed**, not unproven): `DROP SERVER s; REVOKE SELECT ON *.* FROM 'r1'@'%'; ALTER SERVER s OPTIONS (USER 'u')` | `s` present; observed, consumable; terminator precedes stmt3 | stmt3 suppressed | stmt3 A2 → R3 | stmt1 proven drop → `OrderedAbsent` flag=true; stmt2 scope terminator; stmt3 `refused_absent`, owed ∅, marker = inherited conditional absent (suppressed premise feeds no own marker) | stmt1 R=1 S=1; stmt3 R=0 (ordered answered); total L=1 R=1 S=1 |
-| AM-2.5i | integration chain (premise **suppressed**): `DROP SERVER s; CREATE SERVER s FOREIGN DATA WRAPPER mysql OPTIONS (HOST 'h', DATABASE 'd', USER 'u'); REVOKE SELECT ON *.* FROM 'r1'@'%'; ALTER SERVER s OPTIONS (USER 'u')` | `s` present; observed, consumable | stmt4 suppressed | stmt4 A4 → R5 | stmt1 proven drop → conditional absent; stmt2 consumes absent → ProvenCreate publishes `OrderedPresent` flag=true; stmt3 terminator; stmt4 owed `{alter_privilege}`, marker = inherited flag, re-published flag = consumed `true` | stmt1 R=1 S=1; stmt2/4 R=0 (ordered answered); total L=1 R=1 S=1 |
+| AM-2.4i | integration chain (premise **suppressed**, not unproven): `DROP SERVER s; REVOKE SELECT ON *.* FROM 'r1'@'%'; ALTER SERVER s OPTIONS (USER 'u')` | `s` present; observed, consumable; terminator precedes stmt3 | stmt3 suppressed | stmt3 A2 → R3 | stmt1 proven drop → `OrderedAbsent` flag=true; stmt2 scope terminator; stmt3 `refused_absent`, owed ∅, marker = inherited conditional absent (suppressed premise feeds no own marker). **Frozen per-statement projection on stmt3**: A2 → 1 blocker finding `refused_absent`; owed ∅; `conditional_audit` = inherited conditional absent; statement coverage `complete`; no advisory | stmt1 R=1 S=1; stmt3 R=0 (ordered answered); total L=1 R=1 S=1 |
+| AM-2.5i | integration chain (premise **suppressed**): `DROP SERVER s; CREATE SERVER s FOREIGN DATA WRAPPER mysql OPTIONS (HOST 'h', DATABASE 'd', USER 'u'); REVOKE SELECT ON *.* FROM 'r1'@'%'; ALTER SERVER s OPTIONS (USER 'u')` | `s` present; observed, consumable | stmt4 suppressed | stmt4 A4 → R5 | stmt1 proven drop → conditional absent; stmt2 consumes absent → ProvenCreate publishes `OrderedPresent` flag=true; stmt3 terminator; stmt4 owed `{alter_privilege}`, marker = inherited flag, re-published flag = consumed `true`. **Frozen per-statement projection on stmt4**: A4 → 2 notice findings (main `unverified` + advisory); owed exactly `{server.alter_privilege}`; `conditional_audit` = inherited conditional present; statement coverage `unverified` | stmt1 R=1 S=1; stmt2/4 R=0 (ordered answered); total L=1 R=1 S=1 |
 
 Note on the dropped cross-call claim: the earlier draft asserted a
 mode-off *tail* enrich call on a shared `batchState` makes the own
@@ -159,7 +177,7 @@ accurately-labelled `suppressed` premises instead.
 
 | id | SQL / calls | fixture | expected | observation |
 |---|---|---|---|---|
-| AM-8.1 | call1 (mode observed): `ALTER SERVER s1 OPTIONS (USER 'u'); GARBAGE(` → records [stmt1 ALTER, failure record]; call2 (mode **off**, same `batchState`): `ALTER SERVER s1 OPTIONS (HOST 'h')` | `s1` present; shared batchState; snapshot `state.contaminated` false→true across the call boundary | call1: stmt1 A3 → R9 (`conditional_alter`, publishes `OrderedPresent` flag=false); failure record sets `contaminated=true`; call2: stmt enters contaminated → A1 → R1 bound unvouched, owed `{batch_effects}`, no marker, **no publish/no-op on the channel** (stmt1's OrderedPresent stands — contamination blocks consumption, it does not clear) | call1 L=1 R=1 S=1; call2 **loader delta 0 attributed to mode-off tail** (the loader gate evaluates mode at enrich entry — contamination is not the cause), resolver delta 0 attributed to contamination; total L=1 R=1 S=1; assert `Metadata.Server`/`Metadata.ServerAlter` snapshots pre/post both calls |
+| AM-8.1 | call1 (mode observed): `ALTER SERVER s1 OPTIONS (USER 'u'); GARBAGE(` → records [stmt1 ALTER, failure record]; call2 (mode **off**, same `batchState`): `ALTER SERVER s1 OPTIONS (HOST 'h')` | `s1` present; shared batchState; snapshot `state.contaminated` false→true across the call boundary | call1: stmt1 A3 → R9 (`conditional_alter`, publishes `OrderedPresent` flag=false); failure record sets `contaminated=true`; call2: stmt enters contaminated → A1 → R1 bound unvouched, owed `{batch_effects}`, no marker, **no publish/no-op on the channel** (stmt1's OrderedPresent stands — contamination blocks consumption, it does not clear) | call1 L=1 R=1 S=1; call2 **loader delta 0 attributed to mode-off tail** (the loader gate evaluates mode at enrich entry — contamination is not the cause), resolver delta 0 attributed to contamination; total L=1 R=1 S=1; assert `Metadata.Server`/`Metadata.ServerAlter` snapshots pre/post both calls; public assertions cover the two ALTER records only — the failure record's own diagnostic output and any cross-call aggregate are N/A |
 | AM-8.2 | single batch (mode observed): `GARBAGE(; ALTER SERVER s1 OPTIONS (USER 'u')` → records [failure record#1, stmt#2 ALTER] | `s1` present | loader gate runs at enrich entry **before** the failure record is processed → L=1 (the audited-shape ALTER still triggers the gate); record#1 sets `contaminated`; stmt#2 A1 → R1, owed `{batch_effects}`, zero reads | total L=1 R=0 S=0; statement numbering: failure=record#1, ALTER=stmt#2 |
 
 ## Group 9 — version / preflight / provider-error termination positions
@@ -240,7 +258,7 @@ above, never generalised into a pin⇒rc rule:
 |---|---|---|---|
 | AM-10.1 | any audited ALTER | — | `raw_sql`/`normalized_sql` = `ALTER SERVER <redacted>`; finding carries no name, option keys/values, account, grant text; unsupported boundary entries carry the fixed skeleton |
 | AM-10.2 | `ALTER SERVER s1 OPTIONS (USER 'u'); DROP SERVER s1` | `s1` present, consumable | snapshot plan: `Metadata.Server` **and** `Metadata.ServerAlter` checked for stmt1 — `Owed`, `PublishPresent`, `ConditionalSource`, `ConditionalAudit` — before apply, after own apply, and after stmt2's apply; bound state never mutates retroactively; stmt2 consumes stmt1's published `OrderedPresent` |
-| AM-10.3 | `ALTER SERVER s1 OPTIONS (USER 'u'); CREATE TABLE t(a int)` | `s1` present; mode observed consumable → stmt1 A3 → R9; table `t` per its own catalog answer (zero) | enrich-apply layer; public fields N/A. stmt1: snapshot table/schema state **immediately before vs after stmt1's own apply** → unchanged (audited ALTER touches only the server channel; `OrderedPresent` on `s1` published). stmt2 `CREATE TABLE` has its own model effect (table `t` entry per the accepted table contract — its own resolver/catalog fixture, counted separately and out of this row's L/R/S which are server-channel counts only). After stmt2: server channel still holds exactly the `s1` entry — server state never spreads to table/schema state | L=1 R=1 S=1 (stmt1 only; stmt2 contributes no server-channel reads) |
+| AM-10.3 | `ALTER SERVER s1 OPTIONS (USER 'u'); CREATE TABLE t(a int)` | `s1` present; mode observed consumable → stmt1 A3 → R9; table `t` per its own catalog answer (zero) | enrich-apply layer; public fields N/A. stmt1: snapshot table/schema state **immediately before vs after stmt1's own apply** → unchanged (audited ALTER touches only the server channel; `OrderedPresent` on `s1` published). stmt2 `CREATE TABLE` has its own model effect (table `t` entry per the accepted table contract — its own resolver/catalog fixture, counted separately and out of this row's L/R/S which are server-channel counts only). After stmt2: server channel still holds exactly the `s1` entry — server state never spreads to table/schema state. L=1 R=1 S=1 (stmt1 only; stmt2 contributes no server-channel reads) |
 | AM-10.4 | `ALTER SERVER 'lit9' OPTIONS (USER 'u'); DROP SERVER s9` | provider present; `s9` zero; ordered channel clean at entry; mode off | literal name → `unaudited` boundary + whole-channel taint at apply; no `alter_server` audited finding; resolver request issued for `lit9` but provider declines without SQL (`identity_unproven`) → R=1 S=0; stmt2 `blocked_batch_effects` R=0 — consistent with AM-7.5's literal branch |
 
 ## Cross-cutting expected invariants
