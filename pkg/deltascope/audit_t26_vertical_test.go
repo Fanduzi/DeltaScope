@@ -51,6 +51,10 @@ type t26vFixture struct {
 	account    string
 	grantLines []string
 	queries    []string
+	// args records each issued query's bound parameters in issue
+	// order — Plan F asserts the catalog read's verbatim arguments,
+	// not just the query count.
+	args [][]driver.NamedValue
 }
 
 var (
@@ -94,6 +98,7 @@ func (c *t26vConn) Begin() (driver.Tx, error)           { return nil, driver.Err
 
 func (c *t26vConn) QueryContext(_ context.Context, query string, args []driver.NamedValue) (driver.Rows, error) {
 	c.fixture.queries = append(c.fixture.queries, query)
+	c.fixture.args = append(c.fixture.args, append([]driver.NamedValue(nil), args...))
 	switch {
 	case strings.Contains(query, "show variables"):
 		return &t26vRows{cols: []string{"Variable_name", "Value"}, rows: [][]driver.Value{{"version", "8.0.36"}}}, nil
@@ -152,6 +157,19 @@ func grantsQueries(fixture *t26vFixture) int {
 		}
 	}
 	return count
+}
+
+// serverQueryIndexes returns the fixture positions of every issued
+// mysql.servers read — the SQL layer's own record, so tests assert
+// query text and bound arguments rather than a fake resolver count.
+func serverQueryIndexes(fixture *t26vFixture) []int {
+	var indexes []int
+	for i, q := range fixture.queries {
+		if strings.Contains(q, "mysql.servers") {
+			indexes = append(indexes, i)
+		}
+	}
+	return indexes
 }
 
 // Vertical chain A: consumable witness end-to-end. Statement 1 is the
@@ -407,5 +425,80 @@ func TestT26VerticalConvergentPublish(t *testing.T) {
 	// no new resolver read. Total servers queries stay one.
 	if serversQueries(fixture) != 1 {
 		t.Fatalf("resolver reads = %d, want exactly 1 — the second guard consumed the first's publish", serversQueries(fixture))
+	}
+}
+
+// Plan F (R2-C): two CREATE statements on byte-for-byte identical
+// names — same Name/Type/Schema/Qualifiers lookup key — under the
+// MySQL 8.0.x audit domain with the CREATE rule enabled and NO
+// privilege mode. The catalog proves the entry present, so both
+// statements refuse at A2: empty owed sets, no conditional marker on
+// either, no OrderedPresent published, no new write barrier. The
+// three-layer read counts are recorded on the real driver: request
+// privilege loader 0, provider-facing resolver reads 1 (the second
+// statement shares the per-request objectCache), mysql.servers SQL
+// exactly one parameterized read on the authored name.
+func TestT26VerticalCreatePlanF(t *testing.T) {
+	fixture := &t26vFixture{servers: map[string]bool{"s1": true}}
+	db := openT26VDB(t, fixture)
+	provider := &t26vProvider{inner: mysqlmeta.NewProvider(db)}
+	create := "CREATE SERVER s1 FOREIGN DATA WRAPPER mysql OPTIONS (HOST 'h', DATABASE 'd', USER 'u')"
+	result, err := Audit(context.Background(), Request{
+		SQL: create + "; " + create, Dialect: DialectMySQL, Schema: "golden",
+		MetadataProvider: provider,
+	})
+	if err != nil {
+		t.Fatalf("audit: %v", err)
+	}
+	if len(result.Statements) != 2 {
+		t.Fatalf("statements = %d, want 2", len(result.Statements))
+	}
+	for i, stmt := range result.Statements {
+		if len(stmt.EvidenceGaps) != 0 {
+			t.Fatalf("statement %d owed = %+v, want empty", i, stmt.EvidenceGaps)
+		}
+		if len(stmt.Findings) == 0 {
+			t.Fatalf("statement %d has no finding", i)
+		}
+		finding := stmt.Findings[0]
+		if finding.Level != LevelBlocker || finding.Metadata["outcome"] != "refused_present" {
+			t.Fatalf("statement %d finding = %+v, want blocker refused_present", i, finding)
+		}
+		if _, marked := finding.Metadata["conditional_audit"]; marked {
+			t.Fatalf("statement %d carries conditional_audit with the mode off and no conditional source: %+v", i, finding.Metadata)
+		}
+		// The refusal binds through the catalog read, never an
+		// OrderedPresent the first statement might have published —
+		// a catalog refusal publishes nothing.
+		if !strings.Contains(finding.Message, "catalog read proved") {
+			t.Fatalf("statement %d message = %q, want the catalog-read refusal variant", i, finding.Message)
+		}
+		if stmt.Coverage.Status != CoverageComplete {
+			t.Fatalf("statement %d coverage = %v, want complete", i, stmt.Coverage.Status)
+		}
+	}
+	if result.Coverage.Status != CoverageComplete {
+		t.Fatalf("aggregate coverage = %v, want complete", result.Coverage.Status)
+	}
+	if result.Verdict != VerdictReject {
+		t.Fatalf("two proven refusals must reject: %+v", result.Verdict)
+	}
+	// Three-layer read counts: no privilege mode means the loader
+	// never ran; the second statement hit the shared objectCache so
+	// the provider-facing resolver fired once; that one resolver read
+	// is the single mysql.servers SQL with the authored name bound.
+	if grantsQueries(fixture) != 0 {
+		t.Fatalf("loader queries = %d, want 0 — privilege mode disabled", grantsQueries(fixture))
+	}
+	reads := serverQueryIndexes(fixture)
+	if len(reads) != 1 {
+		t.Fatalf("mysql.servers SQL reads = %d, want exactly 1 — byte-identical lookups share the objectCache entry", len(reads))
+	}
+	read := reads[0]
+	if !strings.Contains(fixture.queries[read], "where server_name = ?") {
+		t.Fatalf("catalog query %q must be the parameterized identity read", fixture.queries[read])
+	}
+	if args := fixture.args[read]; len(args) != 1 || args[0].Value != "s1" {
+		t.Fatalf("catalog args = %+v, want exactly the authored name", args)
 	}
 }

@@ -153,14 +153,108 @@ func TestMySQLCreateServerCompletenessNotice(t *testing.T) {
 	if notice.Level != rule.LevelNotice || notice.Metadata["notice"] != "connection_members" {
 		t.Fatalf("completeness notice = %+v", notice)
 	}
-	if strings.Contains(notice.Message, "s1") {
-		t.Fatalf("authored name leaked into the notice: %q", notice.Message)
+	// The public text names no option keys — the notice vocabulary is
+	// fixed and generic (R2-B).
+	if notice.Message != "CREATE SERVER omits one or more documented connection members; connection completeness is advisory only." {
+		t.Fatalf("notice message = %q", notice.Message)
+	}
+	blob := notice.Message
+	if notice.Explanation != nil {
+		blob += notice.Explanation.Why + notice.Explanation.Risk + notice.Explanation.Suggestion
+	}
+	for k, v := range notice.Metadata {
+		if s, ok := v.(string); ok {
+			blob += k + s
+		}
+	}
+	for _, protected := range []string{"USER", "HOST", "DATABASE", "PASSWORD", "SOCKET", "OWNER", "PORT", "s1"} {
+		if strings.Contains(blob, protected) {
+			t.Fatalf("notice leaked option-key or authored detail %q: %q", protected, blob)
+		}
 	}
 	// Complete members emit no second finding.
 	complete := mysqlCreateServerStatement(t, nil, &adj, fullCreateOptions())
 	findings, _ = r.Evaluate(context.Background(), complete)
 	if len(findings) != 1 {
 		t.Fatalf("complete members = 1 finding, got %+v", findings)
+	}
+}
+
+// R2-A: conditional_audit is the adjudication's provenance fact — the
+// rule projects it verbatim and never re-derives conditionality from
+// whether a privilege witness merely exists.
+func TestMySQLCreateServerConditionalMarkerProvenance(t *testing.T) {
+	r := mysqlCreateServerRuleUnderTest(t)
+	hasMarker := func(stmt spec.Statement) bool {
+		findings, err := r.Evaluate(context.Background(), stmt)
+		if err != nil || len(findings) == 0 {
+			t.Fatalf("evaluate = %v err=%v", findings, err)
+		}
+		_, ok := findings[0].Metadata["conditional_audit"]
+		return ok
+	}
+	message := func(stmt spec.Statement) string {
+		findings, _ := r.Evaluate(context.Background(), stmt)
+		return findings[0].Message
+	}
+
+	// Consumable premise on the barrier arm stays invisible — the
+	// shadowed premise never fed the conclusion.
+	barrierState := &spec.ServerState{Name: "s1", UnreadReason: spec.MetadataUnreadBatchEffects}
+	barrierAdj := spec.AdjudicateServerCreate(barrierState, spec.ServerCreatePrivilegeConsumable, true, false)
+	barrier := mysqlCreateServerStatement(t, barrierState, &barrierAdj, fullCreateOptions())
+	if hasMarker(barrier) {
+		t.Fatalf("barrier + consumable must not carry conditional_audit")
+	}
+	if msg := message(barrier); strings.Contains(msg, "conditional") {
+		t.Fatalf("barrier message must not invoke the conditional scope: %q", msg)
+	}
+
+	// Catalog refusal with a consumable premise still carries no
+	// marker — own privilege is never read on the refusal arm.
+	catalogState := &spec.ServerState{Name: "s1", Read: true, Exists: true, Status: spec.MetadataStatusConfirmed}
+	catalogAdj := spec.AdjudicateServerCreate(catalogState, spec.ServerCreatePrivilegeConsumable, true, false)
+	if hasMarker(mysqlCreateServerStatement(t, catalogState, &catalogAdj, fullCreateOptions())) {
+		t.Fatalf("catalog refusal + consumable must not carry conditional_audit")
+	}
+
+	// Inherited-only: the conditional OrderedPresent alone marks the
+	// consumer — the statement's own suppressed premise stays unproven
+	// and the text must not claim it was discharged.
+	condPresent := &spec.ServerState{Name: "s1", OrderedPresent: true, OrderedPresentConditional: true}
+	inherited := spec.AdjudicateServerCreate(condPresent, spec.ServerCreatePrivilegeSuppressed, true, false)
+	inheritedStmt := mysqlCreateServerStatement(t, &spec.ServerState{Name: "s1", OrderedPresent: true}, &inherited, fullCreateOptions())
+	if !hasMarker(inheritedStmt) {
+		t.Fatalf("consumed conditional OrderedPresent must mark the finding")
+	}
+	msg := message(inheritedStmt)
+	if !strings.Contains(msg, "ordered state") || strings.Contains(msg, "privilege premise") {
+		t.Fatalf("inherited-only refusal text = %q, want ordered-source attribution only", msg)
+	}
+
+	// Dirty options on a proven-absent slot with a consumable premise
+	// owes options only — existence was proven, the text must not
+	// claim it unproven (R2-A wording fix).
+	dirty := spec.AdjudicateServerCreate(&spec.ServerState{Name: "s1", OrderedAbsent: true}, spec.ServerCreatePrivilegeConsumable, false, false)
+	dirtyMsg := message(mysqlCreateServerStatement(t, &spec.ServerState{OrderedAbsent: true}, &dirty, nil))
+	if strings.Contains(dirtyMsg, "existence") {
+		t.Fatalf("proven-absent dirty-options message must not claim existence unverified: %q", dirtyMsg)
+	}
+	if !strings.Contains(dirtyMsg, "options") || !strings.Contains(dirtyMsg, "observed_account_new_session") {
+		t.Fatalf("dirty-options message = %q, want options-only unverified under the conditional scope", dirtyMsg)
+	}
+
+	// A suppressed premise on a conditional OrderedAbsent keeps the
+	// inherited marker and owes only the privilege — the plain
+	// non-conditional text carries no own-premise claim.
+	condAbsent := &spec.ServerState{Name: "s1", OrderedAbsent: true, OrderedAbsentConditional: true}
+	absAdj := spec.AdjudicateServerCreate(condAbsent, spec.ServerCreatePrivilegeSuppressed, true, false)
+	absStmt := mysqlCreateServerStatement(t, &spec.ServerState{OrderedAbsent: true}, &absAdj, nil)
+	if !hasMarker(absStmt) {
+		t.Fatalf("consumed conditional OrderedAbsent must mark the finding")
+	}
+	if msg := message(absStmt); strings.Contains(msg, "conditional") {
+		t.Fatalf("inherited-only unproven message must not claim the conditional scope for the own premise: %q", msg)
 	}
 }
 

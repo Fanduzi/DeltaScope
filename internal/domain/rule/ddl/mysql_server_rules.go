@@ -18,6 +18,7 @@ package ddl
 
 import (
 	"context"
+	"strings"
 
 	"github.com/Fanduzi/DeltaScope/internal/domain/policy"
 	"github.com/Fanduzi/DeltaScope/internal/domain/rule"
@@ -346,15 +347,53 @@ func serverCreateMessage(statement spec.Statement, adjudication *spec.ServerCrea
 		}
 		return "CREATE SERVER is refused — the catalog read proved the server entry present at bind time"
 	case spec.ServerCreateArmBarrier:
-		if consumable {
-			return "CREATE SERVER leaves its premises shadowed by earlier batch effects under the observed_account_new_session conditional audit"
-		}
 		return "CREATE SERVER leaves its premises shadowed by earlier batch effects; this statement's execution premise remains unverified"
 	default:
-		if consumable {
-			return "CREATE SERVER targets a server definition whose existence or options remain unverified under the observed_account_new_session conditional audit"
+		items := serverCreateOwedItems(adjudication)
+		if len(items) == 0 {
+			return "CREATE SERVER targets a server definition whose existence remains unverified"
 		}
-		return "CREATE SERVER targets a server definition whose existence, execution premise, or options remain unverified"
+		verb := "remain"
+		if len(items) == 1 {
+			verb = "remains"
+		}
+		phrase := serverCreateOwedPhrase(items)
+		if consumable {
+			return "CREATE SERVER targets a server definition whose " + phrase + " " + verb + " unverified under the observed_account_new_session conditional audit"
+		}
+		return "CREATE SERVER targets a server definition whose " + phrase + " " + verb + " unverified"
+	}
+}
+
+// serverCreateOwedItems projects the adjudication's owed-fact set into
+// the fixed public vocabulary — the arm's own bounded tokens, never an
+// object name or option content. The order follows the owed set's
+// canonical existence → privilege → options order.
+func serverCreateOwedItems(adjudication *spec.ServerCreateAdjudication) []string {
+	var items []string
+	for _, fact := range adjudication.Owed {
+		switch fact {
+		case spec.ServerFactExistence:
+			items = append(items, "existence")
+		case spec.ServerFactCreatePrivilege:
+			items = append(items, "execution premise")
+		case spec.ServerFactCreateOptions:
+			items = append(items, "options")
+		}
+	}
+	return items
+}
+
+// serverCreateOwedPhrase joins owed items into one bounded noun phrase
+// — two items join with "or", three with ", ... or".
+func serverCreateOwedPhrase(items []string) string {
+	switch len(items) {
+	case 1:
+		return items[0]
+	case 2:
+		return items[0] + " or " + items[1]
+	default:
+		return strings.Join(items[:len(items)-1], ", ") + ", or " + items[len(items)-1]
 	}
 }
 
@@ -412,14 +451,15 @@ func (r mysqlCreateServerRule) Evaluate(ctx context.Context, statement spec.Stat
 		case spec.ServerCreateArmBarrier:
 			explanation = &rule.FindingExplanation{
 				Why:        "CREATE SERVER writes a row into mysql.servers and requires SUPER; an earlier statement's undischarged effect on the server channel shadows this statement's premises.",
-				Risk:       "The batch's own effects left this statement's existence premise undecidable — " + conditionalRiskTail(consumable),
+				Risk:       "The batch's own effects left this statement's premises undecidable; the shadowed premises never reached evaluation, so whether the create could land cannot be proven in this batch.",
 				Suggestion: "Order the CREATE before unknown-effect writes, or split the batch so each statement's premises can be proven.",
 			}
 		default:
 			if consumable {
+				phrase := serverCreateOwedPhrase(serverCreateOwedItems(adjudication))
 				explanation = &rule.FindingExplanation{
-					Why:        "CREATE SERVER writes a row into mysql.servers and requires SUPER; the conditional audit discharged the privilege premise but existence or options stayed unproven.",
-					Risk:       conditionalRiskTail(true) + " The entry's pre-state is still unverified, so whether the create lands is unproven.",
+					Why:        "CREATE SERVER writes a row into mysql.servers and requires SUPER; the conditional audit discharged the privilege premise but " + phrase + " stayed unproven.",
+					Risk:       conditionalRiskTail(true) + " Whether the create lands is unproven — the stated premises stayed unverified.",
 					Suggestion: "Confirm the server entry does not already exist and that the options are complete before relying on the create.",
 				}
 			}
@@ -431,12 +471,15 @@ func (r mysqlCreateServerRule) Evaluate(ctx context.Context, statement spec.Stat
 		"object":    "server",
 		"outcome":   serverCreateOutcome(adjudication),
 	}
-	if consumable || (adjudication != nil && adjudication.ConditionalSource) {
-		// The conditional scope follows either this statement's own
-		// consumable premise or an ordered state a prior statement
-		// published under that scope — a refusal or unproven arm
-		// resting on a conditional source stays conditional. The
-		// marker never discharges this statement's own owed premise.
+	if adjudication != nil && adjudication.ConditionalAudit {
+		// The marker is the adjudication's own provenance fact — the
+		// conditional scope actually fed the conclusion, either through
+		// this statement's consumable premise on an arm that read it
+		// or through an ordered source a prior statement published
+		// under that scope. A barrier never carries it, and a refusal
+		// carries it only when the consumed ordered state was
+		// conditional — the rule never re-derives it from witness
+		// availability.
 		metadata["conditional_audit"] = string(spec.PrivilegeAuditModeObservedAccountNewSession)
 	}
 	findings := []rule.Finding{{
@@ -446,15 +489,15 @@ func (r mysqlCreateServerRule) Evaluate(ctx context.Context, statement spec.Stat
 		Metadata:    metadata,
 	}}
 
-	// Audit-model completeness notice: missing USER/HOST/DATABASE is an
-	// advisory of this audit slice — MySQL stores blank/zero defaults,
-	// so it is never a refusal, never an owed fact, and never a claim
-	// the engine emitted a warning. The text is fixed and names the
-	// documented member vocabulary only.
+	// Audit-model completeness notice: omitted documented connection
+	// members are an advisory of this audit slice — MySQL stores
+	// blank/zero defaults, so it is never a refusal, never an owed
+	// fact, and never a claim the engine emitted a warning. The fixed
+	// text names no option keys and no authored content.
 	if statement.DDL.Server != nil && !statement.DDL.Server.ConnectionMembersComplete() {
 		findings = append(findings, rule.Finding{
 			Level:   rule.LevelNotice,
-			Message: "CREATE SERVER omits one or more documented connection members (USER/HOST/DATABASE); the audit treats connection completeness as advisory only",
+			Message: "CREATE SERVER omits one or more documented connection members; connection completeness is advisory only.",
 			Explanation: &rule.FindingExplanation{
 				Why:        "The statement stores blank or zero defaults for omitted members, which is valid but leaves the defined connection incomplete for actual use.",
 				Risk:       "This notice is an audit-model completeness observation only — it does not refuse the statement and does not assert a native MySQL warning.",

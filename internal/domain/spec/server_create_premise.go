@@ -97,6 +97,16 @@ type ServerCreateAdjudication struct {
 	// Privilege. A barrier-shadowed ordered source is never consumed
 	// and never sets this field.
 	ConditionalSource bool
+	// ConditionalAudit marks that the conditional scope actually fed
+	// this adjudication's conclusion — either this statement's own
+	// consumable premise reached an arm that read it (proven or
+	// unproven), or an ordered state published under that scope was
+	// consumed. It is the one fact finding metadata must project as
+	// conditional_audit: a barrier arm never carries it (its premises
+	// were shadowed, never evaluated), and a refusal carries it only
+	// through a conditional ordered source — a statement's own
+	// consumable premise is never read on the refusal arm.
+	ConditionalAudit bool
 }
 
 // AdjudicateServerCreate computes the shared adjudication for one
@@ -127,6 +137,8 @@ func AdjudicateServerCreate(state *ServerState, privilege ServerCreatePrivilege,
 		// or existence having been proven.
 		adjudication.Arm = ServerCreateArmBarrier
 		adjudication.Owed = append(adjudication.Owed, ServerFactBatchEffects)
+		// ConditionalAudit stays unset: the shadowed premises never
+		// participated in the conclusion.
 		return adjudication
 	case state != nil && (state.OrderedPresent || (state.Read && state.Exists)):
 		// Proven presence refuses outright — privilege and options
@@ -135,6 +147,7 @@ func AdjudicateServerCreate(state *ServerState, privilege ServerCreatePrivilege,
 		// answer carries none.
 		adjudication.Arm = ServerCreateArmTerminalRefusal
 		adjudication.ConditionalSource = state.OrderedPresentConditional
+		adjudication.ConditionalAudit = state.OrderedPresentConditional
 		return adjudication
 	case state != nil && state.OrderedAbsent && consumable && optionsClean:
 		// Proven create: the slot is proven free, the premise
@@ -144,6 +157,7 @@ func AdjudicateServerCreate(state *ServerState, privilege ServerCreatePrivilege,
 		adjudication.PublishPresent = true
 		adjudication.ConditionalSource = state.OrderedAbsentConditional
 		adjudication.PublishPresentConditional = true
+		adjudication.ConditionalAudit = true
 		return adjudication
 	default:
 		adjudication.Arm = ServerCreateArmUnproven
@@ -162,6 +176,10 @@ func AdjudicateServerCreate(state *ServerState, privilege ServerCreatePrivilege,
 		if state != nil && state.OrderedAbsent {
 			adjudication.ConditionalSource = state.OrderedAbsentConditional
 		}
+		// The conditional marker follows actual use: this statement's
+		// own consumable premise shaped the owed set, or a conditional
+		// ordered source was consumed.
+		adjudication.ConditionalAudit = adjudication.ConditionalSource || consumable
 		return adjudication
 	}
 }

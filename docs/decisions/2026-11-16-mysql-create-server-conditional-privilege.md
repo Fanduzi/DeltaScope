@@ -69,13 +69,23 @@ contract and which boundaries it kept.
 - Rule surface. `ddl.mysql.server.create.notice` (default: enabled,
   notice) projects the adjudication: `conditional_create`,
   `refused_present` (escalated to blocker), `blocked_batch_effects`,
-  `unverified`; `conditional_audit` marks consumable-premise arms and
-  arms resting on conditionally-published ordered state. Missing
-  documented USER/HOST/DATABASE members emit a second advisory-only
-  finding (`notice: connection_members`) — never a refusal, never an
-  owed fact, and it asserts no native warning. No authored name,
-  wrapper, OPTIONS content, account, or grant text reaches any
-  finding, gap, or diagnostic.
+  `unverified`. The `conditional_audit` marker projects the
+  adjudication's exported `ConditionalAudit` fact verbatim — present
+  only when the conditional scope actually fed the conclusion (the
+  statement's own consumable premise in a proven/unproven arm, or a
+  consumed conditionally-published ordered source). It is never
+  inferred from privilege availability alone: a barrier owes only
+  `server.batch_effects` and carries no marker however consumable the
+  privilege was, and a catalog-present refusal carries no marker even
+  with a consumable premise, because the conditional scope fed
+  neither conclusion. A conditional `OrderedPresent` consumed as the
+  presence answer does mark the refusal it fed. Missing documented
+  USER/HOST/DATABASE members emit a second advisory-only finding
+  (`notice: connection_members`) with fixed generic text — never a
+  refusal, never an owed fact, asserting no native warning, and
+  enumerating no option keys. No authored name, wrapper, OPTIONS
+  content, account, or grant text reaches any finding, gap, or
+  diagnostic.
 - Contamination semantics. Whole-batch contamination reaches the arm
   table as a direct input (never projected through `UnreadReason`):
   contaminated statements adjudicate barrier, ordered entries are
@@ -101,8 +111,17 @@ them.
   public shape, OrderedPresent produce/consume/invalidate, DROP
   consuming present, contamination, objectCache sharing),
   rule-level arm projections and leak checks, pkg-level hook firing.
-- T26 DDL golden: all 25 CLI cases pass including the two create cases
-  whose unsupported metadata now pins `gate: "version"`; the six DB
-  anchor cases are unexecuted — no native MySQL containers were
-  provisioned (native execution stays outside this slice's scope).
+- T26 DDL golden (raw artifact counts): 31 cases — 23 `cli_audit`
+  PASS + 2 TiDB DB fixture cells PASS + 6 MySQL DB cells FAIL = 25
+  PASS / 6 FAIL; 273 assertions = 267 true / 6 false. The six fails
+  are fixture-environment boundaries (no reachable MySQL): recorded
+  FAIL, never relabeled product failures; native CREATE SERVER
+  semantics stay unverified. All 23 CLI cases run provider-less
+  without a target pin (`version_evidence` null) — they are
+  boundary-regression evidence, not in-domain CREATE proof; the two
+  create cases among them pin `gate: "version"` under that request.
+  Three distinct binaries are registered in the evidence appendix —
+  precommit workspace build, the golden artifact's own recorded build
+  (source state unestablished), and the clean candidate build — with
+  no identity inferred across them.
 - Full unit suite green: 35 packages, zero failures.

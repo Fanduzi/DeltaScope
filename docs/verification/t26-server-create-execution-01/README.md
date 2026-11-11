@@ -48,14 +48,27 @@ per-statement bind/adjudication → findings/coverage → ordered apply`
 
 - `go test` all touched packages: parser, spec, application, ddl rule,
   policy, pkg — all PASS; full repo suite 35 packages, zero failures.
-- T26 DDL golden: 25/25 CLI cases PASS; 6 DB-anchor cases unexecuted
-  (no native MySQL containers — outside this slice's scope).
+- T26 DDL golden (raw artifact counts): 31 cases — 23 `cli_audit`
+  PASS + 2 TiDB DB cells PASS + 6 MySQL DB cells FAIL = 25 PASS / 6
+  FAIL; 273 assertions = 267 true / 6 false. The six fails are
+  fixture-environment boundaries (no reachable MySQL): recorded FAIL,
+  never relabeled product failures; native CREATE SERVER semantics
+  stay unverified. The 23 CLI cases all run provider-less without a
+  target pin (`version_evidence` null) — boundary-regression evidence,
+  not in-domain CREATE proof.
 - `go vet` clean; `git diff --check` clean; `gofmt` clean.
-- CLI binary rebuilt for evidence: `CGO_ENABLED=0 go build -o
-  deltascope ./cmd/deltascope`, SHA-256
-  `192f20f707b04a742f6beeb0eeb1c3da2dc5dfd977d38e2961ff559349cf0814`
-  (pre-candidate workspace build — rebuilt post-commit for the final
-  receipt).
+- Four distinct binaries are registered (appendix §3): A = precommit
+  workspace build `192f20f7…`, B = the golden artifact's own recorded
+  build `e78fe538…` (source state unestablished — `head_sha` baseline
+  `e54e1e6e` + uncommitted diff), C = clean candidate build
+  `c320d6e4…` on tree `232c226b`, D = R2 workspace build `9b608801…`
+  used for the in-domain CLI run. No identity is inferred across them.
+- R2 in-domain CLI evidence (appendix §4): real binary-D run with an
+  8.0.36 target pin and the create rule enabled — rc=0, audited
+  `unverified` finding, gaps `{server.existence, server.create_privilege}`,
+  coverage unverified; contrast rows show the no-pin G2 gate (rc=1,
+  `gate: "version"` unsupported entry) and a malformed pin failing
+  closed at preflight (rc=2, typed error, zero reads).
 
 ## Boundaries held
 

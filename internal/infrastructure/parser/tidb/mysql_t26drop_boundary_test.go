@@ -7,6 +7,7 @@
 package tidbparser
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
@@ -49,6 +50,9 @@ func TestT26CreateServerIdentLeavesBoundary(t *testing.T) {
 		"CREATE SERVER `s1` FOREIGN DATA WRAPPER `mysql` OPTIONS (HOST 'h')",
 		"CREATE SERVER s1 FOREIGN DATA WRAPPER MYSQL OPTIONS (PORT 100000)",
 		"CREATE SERVER s1 FOREIGN DATA WRAPPER mysql OPTIONS (USER 'u', USER 'u2')",
+		// The 64-rune bound is inclusive — a name spelled at exactly
+		// the documented mysql.servers bound still qualifies (R2-E).
+		"CREATE SERVER " + strings.Repeat("n", 64) + " FOREIGN DATA WRAPPER mysql OPTIONS (HOST 'h')",
 	} {
 		statement := parseExtractT26(t, sql, spec.DialectMySQL)
 		if statement.Unsupported != nil {
@@ -69,6 +73,9 @@ func TestT26ServerNonDropStaysUnaudited(t *testing.T) {
 		"CREATE SERVER s1 FOREIGN DATA WRAPPER 'mysql' OPTIONS (HOST 'h')",
 		"CREATE SERVER s1 FOREIGN DATA WRAPPER pgsql OPTIONS (HOST 'h')",
 		"ALTER SERVER s1 OPTIONS (HOST 'h2')",
+		// One rune over the documented bound keeps the unaudited
+		// boundary — qualification is lexical, never decoded (R2-E).
+		"CREATE SERVER " + strings.Repeat("n", 65) + " FOREIGN DATA WRAPPER mysql OPTIONS (HOST 'h')",
 	} {
 		statement := parseExtractT26(t, sql, spec.DialectMySQL)
 		if statement.Unsupported == nil || statement.Unsupported.Reason != spec.UnsupportedUnauditedReason {

@@ -7,9 +7,11 @@ package audit
 
 import (
 	"context"
+	"errors"
 	"strings"
 	"testing"
 
+	apppolicy "github.com/Fanduzi/DeltaScope/internal/application/policy"
 	"github.com/Fanduzi/DeltaScope/internal/domain/report"
 	"github.com/Fanduzi/DeltaScope/internal/domain/rule"
 	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
@@ -284,17 +286,100 @@ func TestT26CreateConnectionMembersNotice(t *testing.T) {
 	}
 }
 
-// Whole-batch contamination reaches the arm table directly: the
-// create adjudicates barrier and owes exactly batch_effects, while
-// channel entries are never rewritten on the contaminated path.
-func TestT26CreateContaminationBarrier(t *testing.T) {
-	// A literal-name drop taints the whole channel before the create
-	// binds — A1 wins over every other input.
+// SERVER-channel taint — a literal-name drop records an unprovable
+// write on the channel: the later create adjudicates the same A1
+// barrier and owes exactly batch_effects. This exercises the channel
+// taint, NOT batchState.contaminated — whole-batch contamination is
+// covered by TestT26CreateRealContamination below (R2-D).
+func TestT26CreateChannelTaintBarrier(t *testing.T) {
 	provider := &t26Provider{servers: map[string]bool{"s1": true}, version: "8.0.36", privilege: superObservation()}
 	enriched := enrichT26Premise(t, "DROP SERVER 'x'; "+t26CreateSQL, provider, spec.PrivilegeAuditModeObservedAccountNewSession)
 	adj := enriched[1].Metadata.ServerCreate
 	if adj == nil || adj.Arm != spec.ServerCreateArmBarrier || len(adj.Owed) != 1 || adj.Owed[0] != spec.ServerFactBatchEffects {
-		t.Fatalf("contaminated create = %+v, want barrier owing batch_effects", adj)
+		t.Fatalf("tainted-channel create = %+v, want barrier owing batch_effects", adj)
+	}
+}
+
+// Real whole-batch contamination: a parse failure earlier in the batch
+// sets batchState.contaminated — never a forged UnreadReason. The
+// bound state carries no ordered answer and no catalog read; the
+// adjudication is A1 owing only server.batch_effects; nothing
+// publishes; and the entries the earlier statements wrote survive
+// apply untouched — no create, no clear, no rewrite. The request-level
+// privilege loader contract is unchanged (one read for the request);
+// only the object resolver is never entered for the contaminated
+// statements (R2-D.1).
+func TestT26CreateRealContamination(t *testing.T) {
+	enrich := func(t *testing.T, sql string) (*batchState, []spec.Statement, *t26Provider) {
+		t.Helper()
+		provider := &t26Provider{servers: map[string]bool{"s1": true}, version: "8.0.36", privilege: superObservation()}
+		parsed, parseErr := parseSQL(context.Background(), sql, spec.DialectMySQL)
+		if len(parsed.failures) != 1 {
+			t.Fatalf("parse: failures=%d err=%v, want exactly 1", len(parsed.failures), parseErr)
+		}
+		statements, err := Extract(context.Background(), parsed)
+		if err != nil {
+			t.Fatalf("extract: %v", err)
+		}
+		state := newBatchState(spec.DialectMySQL, "golden", provider)
+		state.resolvedVersion = &spec.VersionIdentity{Product: spec.VersionProductMySQL, Version: "8.0.36", Major: 8, Minor: 0, Patch: 36, ValidatedRange: true}
+		state.instanceFacts = &spec.InstanceFacts{Version: "8.0.36"}
+		enriched, err := state.enrichStatements(context.Background(),
+			&MetadataRequest{Schema: "golden", Provider: provider, PrivilegeAuditMode: spec.PrivilegeAuditModeObservedAccountNewSession},
+			statements, parsed.failures, state.instanceFacts, auditLimits{orderedStatements: defaultOrderedStatementLimit})
+		if err != nil {
+			t.Fatalf("enrich: %v", err)
+		}
+		return state, enriched, provider
+	}
+	assertBarrier := func(enriched []spec.Statement, i int) {
+		t.Helper()
+		adj := enriched[i].Metadata.ServerCreate
+		if adj == nil || adj.Arm != spec.ServerCreateArmBarrier {
+			t.Fatalf("statement %d arm = %+v, want A1 barrier under whole-batch contamination", i, adj)
+		}
+		if len(adj.Owed) != 1 || adj.Owed[0] != spec.ServerFactBatchEffects {
+			t.Fatalf("statement %d owed = %v, want exactly {server.batch_effects}", i, adj.Owed)
+		}
+		if adj.PublishPresent {
+			t.Fatalf("statement %d must not publish under contamination", i)
+		}
+		// No conditional marker: the consumable premise and every
+		// ordered source were shadowed, never consumed.
+		if adj.ConditionalAudit || adj.ConditionalSource {
+			t.Fatalf("statement %d conditional provenance = %+v, want none — shadowed premises never feed the marker", i, adj)
+		}
+		bound := enriched[i].Metadata.Server
+		if bound == nil || bound.OrderedAbsent || bound.OrderedPresent || bound.Read {
+			t.Fatalf("statement %d bound = %+v, want the unbound shape — no ordered answer consumed, no resolver entered", i, bound)
+		}
+	}
+
+	// OrderedPresent written before the failure: DROP+CREATE publish
+	// the conditional present, GARBAGE contaminates the batch, and the
+	// trailing create reads the barrier — the entry survives apply
+	// untouched: no create, no clear, no rewrite.
+	state, enriched, provider := enrich(t,
+		"DROP SERVER s1; "+t26CreateSQL+"; GARBAGE TOKENS HERE; "+t26CreateSQL)
+	assertBarrier(enriched, 2)
+	entry := state.serverEntries[serverFold("s1")]
+	if entry == nil || !entry.present || !entry.presentConditional || entry.absent || entry.barrier {
+		t.Fatalf("entry = %+v, want the conditional OrderedPresent standing — never cleared or rewritten", entry)
+	}
+	if len(provider.calls) != 1 || provider.privilegeCalls != 1 {
+		t.Fatalf("reads = resolver:%+v loader:%d, want 1 catalog read + 1 loader call", provider.calls, provider.privilegeCalls)
+	}
+
+	// OrderedAbsent written before the failure survives the same way.
+	state, enriched, provider = enrich(t,
+		"DROP SERVER s1; GARBAGE TOKENS HERE; "+t26CreateSQL)
+	assertBarrier(enriched, 1)
+	entry = state.serverEntries[serverFold("s1")]
+	if entry == nil || !entry.absent || entry.present || entry.barrier || entry.publishedArm != spec.ServerDropArmProven {
+		t.Fatalf("entry = %+v, want the OrderedAbsent the proven drop published — never cleared or rewritten", entry)
+	}
+	if len(provider.calls) != 1 || provider.privilegeCalls != 1 {
+		t.Fatalf("reads = resolver:%+v loader:%d, want 1 catalog read + 1 loader call", provider.calls, provider.privilegeCalls)
 	}
 }
 
@@ -353,5 +438,376 @@ func TestT26CreateNoModeOwesAll(t *testing.T) {
 	}
 	if provider.privilegeCalls != 0 {
 		t.Fatalf("no-mode must never run the loader: %d", provider.privilegeCalls)
+	}
+}
+
+// evaluateT26Statements runs the real enrich → registry → evaluate
+// seam: parse failures feed the batch's own contamination path, and
+// the finding/coverage/verdict projection comes from the real rule
+// registry — service-level unsupported gating is orthogonal to the
+// finding contract under test.
+func evaluateT26Statements(t *testing.T, sql string, provider MetadataProvider, mode spec.PrivilegeAuditMode) (report.Result, []spec.Statement) {
+	t.Helper()
+	parsed, parseErr := parseSQL(context.Background(), sql, spec.DialectMySQL)
+	if parseErr != nil && len(parsed.failures) == 0 {
+		t.Fatalf("parse %q: %v", sql, parseErr)
+	}
+	statements, err := Extract(context.Background(), parsed)
+	if err != nil {
+		t.Fatalf("extract %q: %v", sql, err)
+	}
+	enriched, err := enrichStatementsWithMetadata(context.Background(), spec.DialectMySQL,
+		&MetadataRequest{Schema: "golden", Provider: provider, PrivilegeAuditMode: mode}, statements, parsed.failures)
+	if err != nil {
+		t.Fatalf("enrich %q: %v", sql, err)
+	}
+	cfg, err := apppolicy.Load("")
+	if err != nil {
+		t.Fatalf("policy: %v", err)
+	}
+	registry, err := buildRegistry(cfg)
+	if err != nil {
+		t.Fatalf("registry: %v", err)
+	}
+	result, err := EvaluateStatements(context.Background(), registry, enriched)
+	if err != nil {
+		t.Fatalf("evaluate %q: %v", sql, err)
+	}
+	return result, enriched
+}
+
+// Inherited-only marker (R2-D.2): after a privilege-scope terminator
+// suppresses the statement's own premise, the conditional marker that
+// survives comes only from the consumed ordered source — it never
+// substitutes for the statement's own privilege and never claims it
+// was proven.
+func TestT26CreateInheritedMarkerChains(t *testing.T) {
+	provider := func() *t26Provider {
+		return &t26Provider{servers: map[string]bool{"s1": true}, version: "8.0.36", privilege: superObservation()}
+	}
+	marked := func(stmt report.StatementResult) bool {
+		for _, f := range stmt.Findings {
+			if _, ok := f.Metadata["conditional_audit"]; ok {
+				return true
+			}
+		}
+		return false
+	}
+
+	// present → terminator → CREATE: A2 on the consumed conditional
+	// OrderedPresent, owed empty, complete; the refusal leaves the
+	// ordered present standing — the trailing drop still consumes it.
+	result, enriched := evaluateT26Statements(t,
+		"DROP SERVER s1; "+t26CreateSQL+"; REVOKE SELECT ON *.* FROM 'u'@'%'; "+
+			t26CreateSQL+"; DROP SERVER s1",
+		provider(), spec.PrivilegeAuditModeObservedAccountNewSession)
+	adj := enriched[3].Metadata.ServerCreate
+	if adj == nil || adj.Privilege != spec.ServerCreatePrivilegeSuppressed {
+		t.Fatalf("post-terminator create premise = %+v, want suppressed", adj)
+	}
+	if adj.Arm != spec.ServerCreateArmTerminalRefusal || len(adj.Owed) != 0 || !adj.ConditionalSource || !adj.ConditionalAudit {
+		t.Fatalf("present->create = %+v, want A2 with inherited-only marker", adj)
+	}
+	finding := result.Statements[3].Findings[0]
+	if finding.Metadata["outcome"] != "refused_present" || !marked(result.Statements[3]) {
+		t.Fatalf("public shape = %+v, want refused_present + marker", finding)
+	}
+	if strings.Contains(finding.Message, "privilege") {
+		t.Fatalf("inherited-only refusal text must not claim the own premise: %q", finding.Message)
+	}
+	if len(result.Statements[3].EvidenceGaps) != 0 || result.Statements[3].Coverage.Status != report.CoverageComplete {
+		t.Fatalf("refusal coverage = %+v gaps %+v, want complete/none", result.Statements[3].Coverage, result.Statements[3].EvidenceGaps)
+	}
+	// The refusal published nothing — the consumed OrderedPresent
+	// stands for the trailing drop.
+	last := enriched[4].Metadata.ServerDrop
+	if last == nil || last.Arm != spec.ServerDropArmUnproven {
+		t.Fatalf("drop after refused re-create = %+v, want unproven on the standing present (suppressed own premise)", last)
+	}
+
+	// present → terminator → DROP: the suppressed premise keeps the
+	// arm unproven owing only server.drop_privilege with the inherited
+	// marker; no OrderedAbsent publishes — the unknown effect
+	// invalidates the present into a barrier for the next statement.
+	result, enriched = evaluateT26Statements(t,
+		"DROP SERVER s1; "+t26CreateSQL+"; REVOKE SELECT ON *.* FROM 'u'@'%'; DROP SERVER s1; DROP SERVER s1",
+		provider(), spec.PrivilegeAuditModeObservedAccountNewSession)
+	dropAdj := enriched[3].Metadata.ServerDrop
+	if dropAdj == nil || dropAdj.Arm != spec.ServerDropArmUnproven || dropAdj.Privilege != spec.ServerDropPrivilegeSuppressed {
+		t.Fatalf("present->drop = %+v, want unproven suppressed", dropAdj)
+	}
+	owed := map[string]bool{}
+	for _, f := range dropAdj.Owed {
+		owed[f] = true
+	}
+	if len(owed) != 1 || !owed[spec.ServerFactDropPrivilege] {
+		t.Fatalf("present->drop owed = %v, want exactly {server.drop_privilege}", dropAdj.Owed)
+	}
+	if !dropAdj.ConditionalSource || !marked(result.Statements[3]) {
+		t.Fatalf("present->drop must keep the inherited marker: adj=%+v", dropAdj)
+	}
+	if barrier := enriched[4].Metadata.ServerDrop; barrier == nil || barrier.Arm != spec.ServerDropArmBarrier {
+		t.Fatalf("the unknown drop must invalidate the present into a barrier: %+v", barrier)
+	}
+
+	// absent → terminator → CREATE: the inherited marker never
+	// substitutes for the own premise — clean options still owe
+	// exactly server.create_privilege and nothing publishes.
+	result, enriched = evaluateT26Statements(t,
+		"DROP SERVER s1; REVOKE SELECT ON *.* FROM 'u'@'%'; CREATE SERVER s1 FOREIGN DATA WRAPPER mysql OPTIONS (HOST 'h', DATABASE 'd', USER 'u')",
+		provider(), spec.PrivilegeAuditModeObservedAccountNewSession)
+	adj = enriched[2].Metadata.ServerCreate
+	if adj == nil || adj.Privilege != spec.ServerCreatePrivilegeSuppressed || adj.Arm != spec.ServerCreateArmUnproven {
+		t.Fatalf("absent->create = %+v, want unproven suppressed", adj)
+	}
+	if len(adj.Owed) != 1 || adj.Owed[0] != spec.ServerFactCreatePrivilege || adj.PublishPresent {
+		t.Fatalf("absent->create owed = %v publish=%v, want exactly {server.create_privilege}, no publish", adj.Owed, adj.PublishPresent)
+	}
+	if !adj.ConditionalSource || !adj.ConditionalAudit || !marked(result.Statements[2]) {
+		t.Fatalf("absent->create must keep the inherited marker: %+v", adj)
+	}
+	finding = result.Statements[2].Findings[0]
+	if !strings.Contains(finding.Message, "execution premise") || strings.Contains(finding.Message, "existence") {
+		t.Fatalf("owed-accurate message = %q, want only the execution premise claimed unverified", finding.Message)
+	}
+}
+
+// Ordered lifecycle to the public projection (R2-D.3): findings,
+// gaps, markers, two-level coverage, and the verdict across the
+// publish → consume → invalidate chains.
+func TestT26CreateOrderedLifecyclePublic(t *testing.T) {
+	provider := func() *t26Provider {
+		return &t26Provider{servers: map[string]bool{"s1": true}, version: "8.0.36", privilege: superObservation()}
+	}
+
+	// DROP→CREATE→DROP: conditional publish, conditional consume.
+	result, _ := evaluateT26Statements(t,
+		"DROP SERVER s1; "+t26CreateSQL+"; DROP SERVER s1",
+		provider(), spec.PrivilegeAuditModeObservedAccountNewSession)
+	for i, want := range []string{"conditional_drop", "conditional_create", "conditional_drop"} {
+		stmt := result.Statements[i]
+		if stmt.Findings[0].Metadata["outcome"] != want {
+			t.Fatalf("chain A statement %d outcome = %v, want %s", i, stmt.Findings[0].Metadata["outcome"], want)
+		}
+		if _, ok := stmt.Findings[0].Metadata["conditional_audit"]; !ok {
+			t.Fatalf("chain A statement %d marker missing: %+v", i, stmt.Findings[0].Metadata)
+		}
+		if len(stmt.EvidenceGaps) != 0 || stmt.Coverage.Status != report.CoverageComplete {
+			t.Fatalf("chain A statement %d coverage = %v gaps = %+v, want complete/none", i, stmt.Coverage.Status, stmt.EvidenceGaps)
+		}
+	}
+	if result.Coverage.Status != report.CoverageComplete || result.Verdict != report.VerdictPass {
+		t.Fatalf("chain A aggregate = %v verdict %v, want complete/pass", result.Coverage.Status, result.Verdict)
+	}
+
+	// DROP→CREATE→CREATE→DROP: the re-create refuses on the standing
+	// OrderedPresent — blocker verdict, nothing owed, refusal leaves
+	// the present for the trailing drop.
+	result, _ = evaluateT26Statements(t,
+		"DROP SERVER s1; "+t26CreateSQL+"; "+t26CreateSQL+"; DROP SERVER s1",
+		provider(), spec.PrivilegeAuditModeObservedAccountNewSession)
+	for i, want := range []string{"conditional_drop", "conditional_create", "refused_present", "conditional_drop"} {
+		stmt := result.Statements[i]
+		if stmt.Findings[0].Metadata["outcome"] != want {
+			t.Fatalf("chain B statement %d outcome = %v, want %s", i, stmt.Findings[0].Metadata["outcome"], want)
+		}
+		if len(stmt.EvidenceGaps) != 0 || stmt.Coverage.Status != report.CoverageComplete {
+			t.Fatalf("chain B statement %d coverage = %v gaps = %+v, want complete/none", i, stmt.Coverage.Status, stmt.EvidenceGaps)
+		}
+	}
+	if result.Statements[2].Findings[0].Level != rule.LevelBlocker || result.Verdict != report.VerdictReject {
+		t.Fatalf("chain B verdict = %v, want reject on the refusal blocker", result.Verdict)
+	}
+
+	// unknown CREATE→CREATE: the first create's own consumable premise
+	// marks it while existence stays owed; the second reads the
+	// barrier the first's unknown effect left — no marker on A1. The
+	// catalog holds no s9, so the zero-row read stays unknown.
+	result, _ = evaluateT26Statements(t,
+		"CREATE SERVER s9 FOREIGN DATA WRAPPER mysql OPTIONS (HOST 'h', DATABASE 'd', USER 'u'); "+
+			"CREATE SERVER s9 FOREIGN DATA WRAPPER mysql OPTIONS (HOST 'h', DATABASE 'd', USER 'u')",
+		provider(), spec.PrivilegeAuditModeObservedAccountNewSession)
+	first := result.Statements[0]
+	if _, ok := first.Findings[0].Metadata["conditional_audit"]; !ok {
+		t.Fatalf("chain C first create must carry the own-premise marker: %+v", first.Findings[0].Metadata)
+	}
+	if facts := first.EvidenceGaps[0].RequiredFacts; len(facts) != 1 || facts[0] != spec.ServerFactExistence {
+		t.Fatalf("chain C first owed = %v, want {server.existence} (zero-row catalog stays unknown)", facts)
+	}
+	second := result.Statements[1]
+	if second.Findings[0].Metadata["outcome"] != "blocked_batch_effects" {
+		t.Fatalf("chain C second outcome = %v, want blocked_batch_effects", second.Findings[0].Metadata["outcome"])
+	}
+	if _, ok := second.Findings[0].Metadata["conditional_audit"]; ok {
+		t.Fatalf("chain C barrier must not carry conditional_audit: %+v", second.Findings[0].Metadata)
+	}
+	if facts := second.EvidenceGaps[0].RequiredFacts; len(facts) != 1 || facts[0] != spec.ServerFactBatchEffects {
+		t.Fatalf("chain C barrier owed = %v, want {server.batch_effects} only", facts)
+	}
+	if first.Coverage.Status != report.CoverageUnverified || second.Coverage.Status != report.CoverageUnverified || result.Coverage.Status != report.CoverageUnverified {
+		t.Fatalf("chain C coverage = %v/%v/%v, want unverified throughout", first.Coverage.Status, second.Coverage.Status, result.Coverage.Status)
+	}
+	if result.Verdict != report.VerdictReview {
+		t.Fatalf("chain C verdict = %v, want review", result.Verdict)
+	}
+
+	// absent → dirty CREATE → DROP: the create owes only options
+	// (existence proven, premise consumable); its unknown effect
+	// invalidates the absent into the barrier the re-drop reads.
+	result, enriched := evaluateT26Statements(t,
+		"DROP SERVER s1; CREATE SERVER s1 FOREIGN DATA WRAPPER mysql OPTIONS (HOST 'h', PORT 10000); DROP SERVER s1",
+		provider(), spec.PrivilegeAuditModeObservedAccountNewSession)
+	createAdj := enriched[1].Metadata.ServerCreate
+	if createAdj.Arm != spec.ServerCreateArmUnproven || len(createAdj.Owed) != 1 || createAdj.Owed[0] != spec.ServerFactCreateOptions {
+		t.Fatalf("dirty create = %+v, want unproven owing exactly options", createAdj)
+	}
+	redrop := result.Statements[2]
+	if redrop.Findings[0].Metadata["outcome"] != "blocked_batch_effects" {
+		t.Fatalf("re-drop after unknown create = %v, want barrier — the absent was invalidated", redrop.Findings[0].Metadata["outcome"])
+	}
+	// The DROP rule's own marker semantics are the accepted DROP
+	// contract — a consumable premise legitimately marks its barrier;
+	// only the CREATE projection was corrected (R2-A).
+
+	// OrderedPresent side of the literal taint: the provable create
+	// publishes present; the literal-name create taints the channel —
+	// the trailing drop reads the barrier, never a stale present.
+	_, enriched = evaluateT26Statements(t,
+		"DROP SERVER s1; "+t26CreateSQL+"; CREATE SERVER 's 9' FOREIGN DATA WRAPPER mysql OPTIONS (HOST 'h'); DROP SERVER s1",
+		provider(), spec.PrivilegeAuditModeObservedAccountNewSession)
+	if adj := enriched[3].Metadata.ServerDrop; adj == nil || adj.Arm != spec.ServerDropArmBarrier {
+		t.Fatalf("drop after literal taint on ordered present = %+v, want barrier", adj)
+	}
+
+	// OrderedPresent side of the relation scan: an unproven-relation
+	// write invalidates the published present — the trailing
+	// same-identity drop reads the barrier.
+	_, enriched = evaluateT26Statements(t,
+		"DROP SERVER s1; "+t26CreateSQL+"; DROP SERVER s1x; DROP SERVER s1",
+		provider(), spec.PrivilegeAuditModeObservedAccountNewSession)
+	if adj := enriched[2].Metadata.ServerDrop; adj == nil || adj.Arm != spec.ServerDropArmBarrier {
+		t.Fatalf("s1x drop = %+v, want barrier — unproven relation shadows before the resolver", adj)
+	}
+	if adj := enriched[3].Metadata.ServerDrop; adj == nil || adj.Arm != spec.ServerDropArmBarrier {
+		t.Fatalf("drop after relation write on ordered present = %+v, want barrier — the present was invalidated", adj)
+	}
+}
+
+// Default entry without a provider (R2-E): a valid 8.0.x target pin
+// admits the create to the audited slice — the unbound catalog fact
+// and the unobserved premise are the only two gaps, and the loader
+// never runs under no-mode. Without a version the same statement
+// keeps the gate:"version" boundary, and the typed version errors
+// (malformed pin, pin/observed mismatch) exit before the family
+// loader with the error type preserved.
+func TestT26CreateDefaultEntryAndVersionGate(t *testing.T) {
+	// Provider nil + valid 8.0.x pin + no mode + clean options.
+	result, err := AuditSQL(context.Background(), Request{
+		SQL: t26CreateSQL, Dialect: spec.DialectMySQL, Schema: "golden", TargetVersion: "8.0.36",
+	})
+	if err != nil {
+		t.Fatalf("pinned create audit: %v", err)
+	}
+	stmt := result.Statements[0]
+	if len(stmt.EvidenceGaps) != 1 {
+		t.Fatalf("gaps = %+v, want the single owed-fact gap", stmt.EvidenceGaps)
+	}
+	facts := map[string]bool{}
+	for _, f := range stmt.EvidenceGaps[0].RequiredFacts {
+		facts[f] = true
+	}
+	if len(facts) != 2 || !facts[spec.ServerFactExistence] || !facts[spec.ServerFactCreatePrivilege] {
+		t.Fatalf("owed = %v, want exactly {server.existence, server.create_privilege}", stmt.EvidenceGaps[0].RequiredFacts)
+	}
+	if stmt.Coverage.Status != report.CoverageUnverified || result.Coverage.Status != report.CoverageUnverified {
+		t.Fatalf("coverage = %v/%v, want unverified at both levels", stmt.Coverage.Status, result.Coverage.Status)
+	}
+	if result.Verdict != report.VerdictReview {
+		t.Fatalf("verdict = %v, want review under owed premises", result.Verdict)
+	}
+
+	// No provider and no version: the G2 gate keeps the boundary —
+	// the statement is unaudited with gate:"version" (the service
+	// surfaces it as the unsupported-statement error) and carries no
+	// adjudication.
+	_, err = AuditSQL(context.Background(), Request{
+		SQL: t26CreateSQL, Dialect: spec.DialectMySQL, Schema: "golden",
+	})
+	if err == nil || !errors.Is(err, ErrUnsupportedStatement) {
+		t.Fatalf("unpinned create = %v, want ErrUnsupportedStatement", err)
+	}
+	enriched := enrichT26Premise(t, t26CreateSQL, &t26Provider{servers: map[string]bool{}, version: ""}, "")
+	stmt0 := enriched[0]
+	if stmt0.Unsupported == nil || stmt0.Unsupported.Metadata["gate"] != "version" {
+		t.Fatalf("unsupported = %+v, want gate:version boundary", stmt0.Unsupported)
+	}
+	if stmt0.Metadata != nil && stmt0.Metadata.ServerCreate != nil {
+		t.Fatalf("gated create must carry no adjudication: %+v", stmt0.Metadata.ServerCreate)
+	}
+
+	// Malformed pin exits as the typed version error before the
+	// family loader — provider untouched.
+	provider := &t26Provider{servers: map[string]bool{"s1": true}, version: "8.0.36", privilege: superObservation()}
+	_, err = AuditSQL(context.Background(), Request{
+		SQL: t26CreateSQL, Dialect: spec.DialectMySQL, Schema: "golden",
+		MetadataProvider: provider, PrivilegeAuditMode: spec.PrivilegeAuditModeObservedAccountNewSession,
+		TargetVersion: "eight-dot-zero",
+	})
+	if err == nil || !errors.Is(err, ErrInvalidTargetVersion) {
+		t.Fatalf("malformed pin = %v, want ErrInvalidTargetVersion", err)
+	}
+	if provider.privilegeCalls != 0 {
+		t.Fatalf("typed version error triggered %d loader calls", provider.privilegeCalls)
+	}
+	// A pin that conflicts with the observed product exits typed —
+	// again before the family loader.
+	provider = &t26Provider{servers: map[string]bool{"s1": true}, version: "8.4.10", privilege: superObservation()}
+	_, err = AuditSQL(context.Background(), Request{
+		SQL: t26CreateSQL, Dialect: spec.DialectMySQL, Schema: "golden",
+		MetadataProvider: provider, PrivilegeAuditMode: spec.PrivilegeAuditModeObservedAccountNewSession,
+		TargetVersion: "8.0.36",
+	})
+	if err == nil || !errors.Is(err, ErrTargetVersionMismatch) {
+		t.Fatalf("pin/observed mismatch = %v, want ErrTargetVersionMismatch", err)
+	}
+	if provider.privilegeCalls != 0 {
+		t.Fatalf("version mismatch triggered %d loader calls", provider.privilegeCalls)
+	}
+}
+
+// CREATE-only read boundaries (R2-E): a failed family observation and
+// a failed catalog read both propagate as bounded public errors —
+// errors.Is/errors.As reach the typed cause, no authored name or
+// grant text rides the public message, and nothing is laundered into
+// an unproven grant or an evidence gap.
+func TestT26CreateReadErrorBoundaries(t *testing.T) {
+	marker := errors.New("t26-create-priv-marker-3k9")
+	provider := &t26Provider{servers: map[string]bool{}, version: "8.0.36", privilegeErr: marker}
+	_, err := AuditSQL(context.Background(), Request{
+		SQL: t26CreateSQL, Dialect: spec.DialectMySQL, Schema: "golden",
+		MetadataProvider: provider, PrivilegeAuditMode: spec.PrivilegeAuditModeObservedAccountNewSession,
+	})
+	if err == nil || !errors.Is(err, marker) {
+		t.Fatalf("create loader failure = %v, want errors.Is(marker)", err)
+	}
+	for _, protected := range []string{marker.Error(), "s1", "audited", "SHOW GRANTS"} {
+		if strings.Contains(err.Error(), protected) {
+			t.Fatalf("public error text echoes protected content %q: %v", protected, err)
+		}
+	}
+	// A failed catalog read propagates the same bounded boundary.
+	readMarker := errors.New("t26-create-read-marker-7w2")
+	provider = &t26Provider{servers: map[string]bool{}, version: "8.0.36", privilege: superObservation(), err: readMarker}
+	_, err = AuditSQL(context.Background(), Request{
+		SQL: "DROP SERVER s1; " + t26CreateSQL, Dialect: spec.DialectMySQL, Schema: "golden",
+		MetadataProvider: provider, PrivilegeAuditMode: spec.PrivilegeAuditModeObservedAccountNewSession,
+	})
+	if err == nil || !errors.Is(err, readMarker) {
+		t.Fatalf("create catalog read failure = %v, want errors.Is(readMarker)", err)
+	}
+	for _, protected := range []string{readMarker.Error(), "s1"} {
+		if strings.Contains(err.Error(), protected) {
+			t.Fatalf("public error text echoes protected content %q: %v", protected, err)
+		}
 	}
 }
