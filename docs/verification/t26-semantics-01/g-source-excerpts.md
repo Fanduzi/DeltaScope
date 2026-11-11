@@ -139,44 +139,107 @@ non-reusable — `mysql.servers` has no completeness contract.
 
 ## G-src.6 Current-code invalidation precedent (source, not history)
 
-Path: `internal/application/audit/batch_state.go` (candidate
-`7c2c1f23`). Not a ruling — the existing implementation contract the
-SERVER channel mirrors. Verbatim:
+Path: `internal/application/audit/batch_state.go` and
+`batch_state_schema.go` (candidate `7c2c1f23`). Not a ruling — the
+existing implementation contract the SERVER channel mirrors. Labels per
+R2-D.3: **[verbatim]** exact quoted text, **[comment]** verbatim source
+comment, **[derived]** behavior summary by reading the code, not a
+quote.
 
-> line 395: "A recognized-but-unsupported statement has no bounded
-> effect. Bound table targets invalidate; a bound schema scope
-> invalidates the scope; an unresolvable scope contaminates the batch —
-> it must not pass through as a no-op and let stale facts satisfy
-> later checks."
+[comment — `batch_state.go` line ~395, `apply()` unsupported branch]
 
-> line 243: "The schema namespace gates every table identity: a
-> batch-dropped or provider-confirmed-absent schema proves its tables
-> absent without a stale catalog read … and an unvouched schema
+> "A recognized-but-unsupported statement has no bounded effect. Bound
+> table targets invalidate; a bound schema scope invalidates the scope;
+> an unresolvable scope contaminates the batch — it must not pass
+> through as a no-op and let stale facts satisfy later checks."
+
+[comment — `batch_state.go` line ~243, `resolve()`]
+
+> "The schema namespace gates every table identity: a batch-dropped or
+> provider-confirmed-absent schema proves its tables absent without a
+> stale catalog read, a batch-created schema proves untouched tables
+> absent (the batch is the only writer), and an unvouched schema
 > tombstones every identity under it — never trusted silently."
 
-> line 261 (`resolve`): `if _, dropped := s.invalidatedSchemas[…]; … ||
-> dropped { … return entry }` — invalidation suppresses the provider
-> read entirely; the entry stays unknown rather than resurrecting the
-> stale catalog value.
+[verbatim — `batch_state.go` line ~261, `resolve()`, editorial elision
+marked with `…`]
 
-> line 356 (`apply`): `if s.contaminated { return nil }` — a
-> contaminated batch derives nothing.
+```go
+if _, dropped := s.invalidatedSchemas[key.schema]; s.contaminated ||
+    s.provider == nil || dropped {
+    s.entries[key] = entry
+    return entry, nil
+}
+```
 
-> `applyDropSchema` header (~line 443): "refusal on proven-absent
-> without IF EXISTS (1008), no-op on IF EXISTS over absent, withheld
-> outcome over unvouched existence, otherwise proven drop — the schema
-> tombstones to absent and every tracked table identity under it
-> becomes proven-absent with it."
+[derived — same function] the `dropped` arm returns the entry in its
+`tableUnknown` state without issuing `LoadTableSnapshot` — an
+invalidated schema scope suppresses the provider read; the stale
+catalog value is never resurrected for that scope.
 
-> `applyCreateSchema` default arm (~line 363): on unvouched existence
-> with `if_not_exists` and provably-applied attrs, the entry publishes
-> `present` — the convergent-arm precedent: when every arm of a
-> guarded statement yields the same post-state, that post-state is
-> publishable without proving which arm ran.
+[verbatim — `batch_state.go` line ~356, `apply()`]
 
-This-round reading: the SERVER channel copies these shapes
-one-for-one — per-key invalidation (`invalidatedServers`),
-channel-scope contamination for unprovable identity scope
-(`serverChannelTainted`), convergent-arm post-state for `DROP IF
-EXISTS` on unknown existence, and the refusal-on-proven-absent /
-no-op-on-guarded-absent pair.
+```go
+if s.contaminated {
+    return nil
+}
+```
+
+[comment — `batch_state_schema.go` ~line 443, `applyDropSchema` header]
+
+> "refusal on proven-absent without IF EXISTS (1008), no-op on IF
+> EXISTS over absent, withheld outcome over unvouched existence,
+> otherwise proven drop — the schema tombstones to absent and every
+> tracked table identity under it becomes proven-absent with it."
+
+[derived — `batch_state_schema.go` `applyCreateSchema`, ~lines 363–371]
+in the `default:` (unvouched-existence) arm, `if_not_exists` plus a
+provably-applied attribute outcome publishes `state=present` — the
+guarded statement's convergent post-state is publishable without
+proving which arm ran. This-round reading scopes it: convergence is
+computed over the *modeled* arms only — when an arm can keep the
+pre-state (unproven execution premise, C.4 arm 2), no converged value
+exists.
+
+This-round reading: the SERVER channel reuses these shapes — per-key
+invalidation shadowing catalog reads, channel-scope contamination for
+unprovable identity scope, convergent-arm post-state bounded by its
+premise list, and the proven-absent reject / guarded no-op pair.
+
+## G-src.7 Minimal recognizer fragment — SRS empty / absent attribute path
+
+Path: `internal/infrastructure/parser/tidb/mysql_srs.go` (candidate
+`7c2c1f23`). Shows that an *absent* attribute is a preserved
+declaration fact, not a recognizer rejection (R2-D.4).
+
+[verbatim — `mysqlSRSAttrs`, lines 139–147]
+
+```go
+func mysqlSRSAttrs(sqlText string, rest []sqlTok, decl *spec.SpatialReferenceDeclaration) bool {
+	seen := map[string]bool{}
+	dup := func(name string) {
+		if seen[name] {
+			decl.DuplicateAttrs = append(decl.DuplicateAttrs, name)
+		}
+		seen[name] = true
+	}
+	for i := 0; i < len(rest); {
+```
+
+[verbatim — `mysqlSRSCreate`, lines 252–255]
+
+```go
+	decl := &spec.SpatialReferenceDeclaration{Kind: kind, SRID: srid, IfNotExists: ine}
+	if !mysqlSRSAttrs(sqlText, rest, decl) {
+		return nil, false
+	}
+```
+
+[derived] with `rest` empty the `for` body never runs and
+`mysqlSRSAttrs` returns `true` — `CREATE SPATIAL REFERENCE SYSTEM 4326`
+(no attributes) is recognized with every `Has*` flag false. A missing
+attribute *value* (`NAME` followed by a non-string) hits a case's
+`return false`, unwinding the whole claim into the base grammar's
+diagnostic. So absent attributes stay declaration facts for the
+semantic row (C.2 row 3), while malformed attributes own the grammar
+gate (row 8 is unreachable the same way).

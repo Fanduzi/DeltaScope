@@ -10,8 +10,8 @@ recorded; the R6 pass record stays bound to `16eba8a0`):
 
 | case id | manifest SQL | R6 expectation | post-slice expectation (offline, no provider) |
 |---|---|---|---|
-| `T26.cli.mysql-drop-server` | `DROP SERVER golden_srv` | `unsupported`+`unaudited`, coverage incomplete, exit 1/review | audited path: existence unbound (provider-not-loaded) → notice + gap `server.existence` → review / unverified; `unsupported` drops to 0 |
-| `T26.cli.mysql-drop-server-if-exists` | `DROP SERVER IF EXISTS golden_srv` | same | notice + gap → review / unverified; modeled post conditional-absent |
+| `T26.cli.mysql-drop-server` | `DROP SERVER golden_srv` | `unsupported`+`unaudited`, coverage incomplete, exit 1/review | audited path: existence unbound + privilege unproven → notice + gaps `server.existence`,`server.drop_privilege` → review / unverified; `unsupported` drops to 0; ordered entry = unproven-barrier (no absent published — R2-A) |
+| `T26.cli.mysql-drop-server-if-exists` | `DROP SERVER IF EXISTS golden_srv` | same | notice + gaps → review / unverified; post-state = unproven-barrier (convergent absent blocked by unproven privilege — C.4 arm 2) |
 
 **`mysql-server-mixed-batch` cell — unchanged (verified against the
 actual manifest entry).** Its manifest row is:
