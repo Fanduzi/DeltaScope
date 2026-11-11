@@ -69,18 +69,31 @@ func (s *batchState) bindMySQLServer(ctx context.Context, statement spec.Stateme
 		return bound, nil
 	}
 	if decl.NameIdent {
-		// Step 5 of the accepted order: a proven OrderedAbsent answers
-		// before any provider or cache access — only on the
-		// provably-same identity, and only while the channel carried no
-		// barrier or taint (decided above). A shadowed or stale absent
-		// never reaches this point — the barrier path already exited
-		// (T26-SERVER-DROP-EXECUTION-01).
+		// Step 5 of the accepted order: the ordered channel's proven
+		// answers — OrderedAbsent and OrderedPresent — answer before
+		// any provider or cache access, only on the provably-same
+		// identity, and only while the channel carried no barrier or
+		// taint (decided above). A shadowed or stale answer never
+		// reaches this point — the barrier path already exited
+		// (T26-SERVER-DROP-EXECUTION-01, T26-SERVER-CREATE-EXECUTION-01).
+		// Consumers read the ordered fields directly; nothing here
+		// fakes catalog Exists/Read/Status.
 		for _, entry := range s.serverEntries {
-			if entry.absent && serverRel(decl.Name, entry.name) == serverRelSame {
+			if serverRel(decl.Name, entry.name) != serverRelSame {
+				continue
+			}
+			if entry.absent {
 				return &spec.ServerState{
 					Name:                     decl.Name,
 					OrderedAbsent:            true,
 					OrderedAbsentConditional: entry.publishedArm == spec.ServerDropArmProven || entry.publishedArm == spec.ServerDropArmConvergent,
+				}, nil
+			}
+			if entry.present {
+				return &spec.ServerState{
+					Name:                      decl.Name,
+					OrderedPresent:            true,
+					OrderedPresentConditional: entry.presentConditional,
 				}, nil
 			}
 		}

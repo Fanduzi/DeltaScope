@@ -88,17 +88,23 @@ func serverRel(a, b string) serverRelation {
 // adjudication's publish decision on a provably-same identity (a
 // proven drop or the approved convergent arm), never by the catalog
 // and never while a barrier stands — the publishing statement's own
-// arm rides along in publishedArm. A later unknown effect clears the
-// absent back to the barrier shape rather than letting a stale absent
-// survive a shadowing write. The verbatim authored name is kept for
-// relation checks; the map key is the ASCII fold bucket, which two
+// arm rides along in publishedArm. present is the proven
+// OrderedPresent: set only by a proven create on the provably-same
+// identity, mutually exclusive with absent; presentConditional records
+// that the publishing arm rested on the conditional privilege scope
+// (T26-SERVER-CREATE-EXECUTION-01). A later unknown effect clears the
+// ordered state back to the barrier shape rather than letting a stale
+// answer survive a shadowing write. The verbatim authored name is kept
+// for relation checks; the map key is the ASCII fold bucket, which two
 // different authored names may share — the entry stores the first
 // name bound and relation is evaluated against the stored name.
 type batchServerEntry struct {
-	name         string
-	barrier      bool
-	absent       bool
-	publishedArm spec.ServerDropArm
+	name               string
+	barrier            bool
+	absent             bool
+	publishedArm       spec.ServerDropArm
+	present            bool
+	presentConditional bool
 }
 
 // serverWrite records an unaudited SERVER write's authored identity —
@@ -187,10 +193,13 @@ func (s *batchState) applyServerStatement(ctx context.Context, statement spec.St
 		if !decl.NameIdent {
 			s.serverChannelTainted = true
 			for _, entry := range s.serverEntries {
-				// A literal-name write may have recreated any server —
-				// every proven absent on the channel goes stale.
+				// A literal-name write may have recreated or removed
+				// any server — every ordered answer on the channel
+				// goes stale.
 				entry.absent = false
 				entry.publishedArm = 0
+				entry.present = false
+				entry.presentConditional = false
 			}
 			return nil
 		}
@@ -198,10 +207,13 @@ func (s *batchState) applyServerStatement(ctx context.Context, statement spec.St
 		for _, entry := range s.serverEntries {
 			if serverRel(decl.Name, entry.name) != serverRelDistinct {
 				// An unproven-or-same write is an unknown effect on
-				// this identity — a proven absent never survives it.
+				// this identity — a proven ordered answer never
+				// survives it.
 				entry.barrier = true
 				entry.absent = false
 				entry.publishedArm = 0
+				entry.present = false
+				entry.presentConditional = false
 			}
 		}
 		return nil
@@ -212,19 +224,57 @@ func (s *batchState) applyServerStatement(ctx context.Context, statement spec.St
 		switch {
 		case adjudication != nil && adjudication.PublishAbsent:
 			// The shared adjudication proved the post-state absent —
-			// record it with the publishing statement's own arm.
+			// record it with the publishing statement's own arm,
+			// replacing any ordered present (T26-SERVER-CREATE-01).
 			entry.absent = true
 			entry.barrier = false
 			entry.publishedArm = adjudication.Arm
+			entry.present = false
+			entry.presentConditional = false
 		case adjudication != nil && (adjudication.Arm == spec.ServerDropArmTerminalRefusal ||
 			adjudication.Arm == spec.ServerDropArmGuardedAbsent):
 			// The refusal and guarded arms never recreate the object —
 			// the proven absent stands untouched.
 		default:
 			// Every other arm is an undischarged unknown effect — a
-			// stale absent never survives it.
+			// stale ordered answer never survives it.
 			entry.absent = false
 			entry.publishedArm = 0
+			entry.present = false
+			entry.presentConditional = false
+			entry.barrier = true
+		}
+	}
+	if decl.Kind == spec.ServerKindCreate && decl.NameIdent {
+		adjudication := serverCreateAdjudicationOf(statement)
+		switch {
+		case adjudication != nil && adjudication.PublishPresent:
+			// The shared adjudication proved the post-state present —
+			// publish OrderedPresent on the provably-same entry,
+			// replacing any ordered absent (T26-SERVER-CREATE-01).
+			entry := s.serverEntryFor(decl.Name)
+			entry.present = true
+			entry.presentConditional = adjudication.PublishPresentConditional
+			entry.absent = false
+			entry.publishedArm = 0
+			entry.barrier = false
+		case adjudication != nil && adjudication.Arm == spec.ServerCreateArmTerminalRefusal:
+			// The refusal never mutates the channel: an ordered-source
+			// refusal leaves the consumed OrderedPresent standing; a
+			// catalog-source refusal publishes nothing and records no
+			// unknown effect — the objectCache already carries the
+			// proven row for any later statement's own bind.
+		default:
+			// Every other arm — Unproven or a non-contaminated
+			// Barrier — is an undischarged unknown effect on this
+			// identity: a stale ordered answer never survives it.
+			// (Contaminated batches already returned above, so entries
+			// are never mutated on that path.)
+			entry := s.serverEntryFor(decl.Name)
+			entry.absent = false
+			entry.publishedArm = 0
+			entry.present = false
+			entry.presentConditional = false
 			entry.barrier = true
 		}
 	}

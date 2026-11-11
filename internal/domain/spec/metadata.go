@@ -97,6 +97,11 @@ type Metadata struct {
 	// both read (T26-SERVER-DROP-EXECUTION-01). Nil outside that
 	// slice: legacy consumers keep the existence fact alone.
 	ServerDrop *ServerDropAdjudication `json:"-"`
+	// ServerCreate carries the shared per-statement adjudication for
+	// the audited identifier-form CREATE SERVER slice — the same
+	// one-truth contract as ServerDrop
+	// (T26-SERVER-CREATE-EXECUTION-01). Nil outside that slice.
+	ServerCreate *ServerCreateAdjudication `json:"-"`
 	// SpatialReference carries the bound MySQL SRS facts for the one
 	// SRID identity a spatial reference system statement names —
 	// existence plus the optional conflict and dependency witness

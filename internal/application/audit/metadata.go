@@ -235,6 +235,33 @@ func (state *batchState) enrichStatements(ctx context.Context, request *Metadata
 	if request != nil {
 		requestSchema = request.Schema
 	}
+	// Phase-2 qualification for the audited CREATE SERVER slice
+	// (T26-SERVER-CREATE-EXECUTION-01): every shape-passing CREATE
+	// whose resolved version is unknown or outside the registered
+	// MySQL 8.0.x proof domain takes the unaudited boundary with
+	// gate:"version" — before the family loader gate evaluates below,
+	// so a version-failed statement can never trigger the observation.
+	// Conflicting version inputs (malformed pin, observed product
+	// mismatch, pin/observed mismatch) exited earlier as typed errors
+	// and never reach this gate.
+	if dialect == spec.DialectMySQL {
+		for i := range statements {
+			if statements[i].DDL != nil && statements[i].DDL.Server != nil &&
+				statements[i].DDL.Server.Kind == spec.ServerKindCreate &&
+				statements[i].Unsupported == nil &&
+				!spec.MySQLServerDropPrivilegeDomain(resolvedVersion) {
+				statements[i].Unsupported = &spec.UnsupportedDetail{
+					Feature: string(statements[i].DDL.Operation),
+					Reason:  spec.UnsupportedUnauditedReason,
+					Metadata: map[string]any{
+						"boundary": "unaudited",
+						"object":   "server",
+						"gate":     "version",
+					},
+				}
+			}
+		}
+	}
 	enriched := make([]spec.Statement, len(statements))
 	// The TiDB placement-policy catalog loads at most once per request and
 	// only when a statement carries a placement fact — the proven existence
@@ -276,10 +303,11 @@ func (state *batchState) enrichStatements(ctx context.Context, request *Metadata
 			applyDeploymentEvidence(instanceFacts, request.DeploymentEvidence, resolvedVersion, request.TargetIdentity, request.Provider != nil)
 		}
 	}
-	// The DROP SERVER privilege observation loads at most once per
+	// The SERVER family privilege observation loads at most once per
 	// request — under the request-selected conditional mode and only
-	// while the batch names an audited identifier-form DROP SERVER
-	// (T26-SERVER-DROP-EXECUTION-01). The raw account and grant lines
+	// while the batch names an audited identifier-form DROP SERVER or
+	// a fully qualified CREATE SERVER (T26-SERVER-DROP-EXECUTION-01,
+	// T26-SERVER-CREATE-EXECUTION-01). The raw account and grant lines
 	// stay request-level immutable evidence; the positive-witness
 	// verdict binds principal, domain version, and the token proof
 	// once, and every statement only projects consumable/suppressed
@@ -287,7 +315,7 @@ func (state *batchState) enrichStatements(ctx context.Context, request *Metadata
 	// bounded error contract as the object seam.
 	if dialect == spec.DialectMySQL && request != nil &&
 		request.PrivilegeAuditMode == spec.PrivilegeAuditModeObservedAccountNewSession &&
-		statementsNeedMySQLServerDropPrivilege(statements) {
+		statementsNeedMySQLServerPrivilege(statements) {
 		if loader, ok := state.provider.(MySQLServerDropPrivilegeLoader); state.provider != nil && ok {
 			observation, err := loader.LoadMySQLServerDropPrivilege(ctx, dialect)
 			if err != nil {
@@ -609,6 +637,19 @@ func (state *batchState) enrichStatements(ctx context.Context, request *Metadata
 				}
 				adjudication := spec.AdjudicateServerDrop(enriched[i].Metadata.Server, state.serverDropPrivilegePremise(), decl.IfExists)
 				enriched[i].Metadata.ServerDrop = &adjudication
+			}
+			// The audited identifier-form create carries its own
+			// shared adjudication — an independent premise projection
+			// and owed set, never a borrowed drop premise
+			// (T26-SERVER-CREATE-EXECUTION-01). The whole-batch
+			// contamination flag reaches the arm table directly; it is
+			// not projected through UnreadReason.
+			if decl := enriched[i].DDL.Server; decl.Kind == spec.ServerKindCreate && decl.NameIdent && enriched[i].Unsupported == nil {
+				if enriched[i].Metadata == nil {
+					enriched[i].Metadata = &spec.Metadata{Schema: metadataSchema, Instance: instanceFacts, Version: resolvedVersion}
+				}
+				adjudication := spec.AdjudicateServerCreate(enriched[i].Metadata.Server, state.serverCreatePrivilegePremise(), decl.OptionsClean(), state.contaminated)
+				enriched[i].Metadata.ServerCreate = &adjudication
 			}
 		}
 

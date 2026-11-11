@@ -102,7 +102,9 @@ func TestT26PrivilegeSupplyGate(t *testing.T) {
 		{"mode not selected keeps premise owed", "DROP SERVER s1", spec.DialectMySQL, "", 0},
 		{"non-target family never reads", "CREATE TABLE t (id int); DROP TABLE t", spec.DialectMySQL, spec.PrivilegeAuditModeObservedAccountNewSession, 0},
 		{"literal-name drop stays boundary — no read", "DROP SERVER 's 1'", spec.DialectMySQL, spec.PrivilegeAuditModeObservedAccountNewSession, 0},
-		{"create server never reads", "CREATE SERVER s1 FOREIGN DATA WRAPPER mysql OPTIONS (HOST 'h')", spec.DialectMySQL, spec.PrivilegeAuditModeObservedAccountNewSession, 0},
+		{"qualified create server reads once", "CREATE SERVER s1 FOREIGN DATA WRAPPER mysql OPTIONS (HOST 'h')", spec.DialectMySQL, spec.PrivilegeAuditModeObservedAccountNewSession, 1},
+		{"literal-name create stays boundary — no read", "CREATE SERVER 's 1' FOREIGN DATA WRAPPER mysql OPTIONS (HOST 'h')", spec.DialectMySQL, spec.PrivilegeAuditModeObservedAccountNewSession, 0},
+		{"non-mysql wrapper create stays boundary — no read", "CREATE SERVER s1 FOREIGN DATA WRAPPER pgsql OPTIONS (HOST 'h')", spec.DialectMySQL, spec.PrivilegeAuditModeObservedAccountNewSession, 0},
 		{"tidb vendor boundary never reads", "DROP SERVER s1", spec.DialectTiDB, spec.PrivilegeAuditModeObservedAccountNewSession, 0},
 	}
 	for _, tc := range cases {

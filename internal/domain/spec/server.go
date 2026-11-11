@@ -48,6 +48,73 @@ type ServerDeclaration struct {
 	// not a provable catalog identity — provider reads keyed on the
 	// name must not fire for it.
 	NameIdent bool
+	// WrapperIdent marks whether the FOREIGN DATA WRAPPER token is an
+	// identifier-form spelling (a bare word or a backquoted identifier —
+	// recorded at parse time while the token category is still visible).
+	// A string-literal wrapper spelling keeps the authored value in
+	// Wrapper but is not a provable wrapper identity: identifier
+	// quoting and string-literal quoting are distinct categories, and
+	// expanding into string decoding stays a registered future step
+	// (T26-SERVER-CREATE-EXECUTION-01).
+	WrapperIdent bool
+}
+
+// ServerOptionRangeState is the per-option numeric range verdict the
+// recognizer computes while the literal is still visible — never the
+// literal value itself. Only numeric options carry a state; character
+// options leave it empty.
+type ServerOptionRangeState string
+
+const (
+	// ServerOptionRangeInRange means the numeric literal parsed and
+	// falls inside the documented 0–9999 bound.
+	ServerOptionRangeInRange ServerOptionRangeState = "in-range"
+	// ServerOptionRangeOutOfRange means the numeric literal parsed but
+	// exceeds the documented bound.
+	ServerOptionRangeOutOfRange ServerOptionRangeState = "out-of-range"
+	// ServerOptionRangeUnproven means the numeric literal cannot be
+	// proven within range. The recognizer never produces it today —
+	// an overflowing digit run stays a parser rejection — but a
+	// missing or conservative state must never classify clean.
+	ServerOptionRangeUnproven ServerOptionRangeState = "unproven"
+)
+
+// OptionsClean reports the bounded OPTIONS verdict the CREATE SERVER
+// adjudication consumes: every authored key is documented (the grammar
+// already guarantees this), every numeric member's RangeState is
+// in-range, and no key is duplicated — and nothing more. Remote
+// connectivity, FEDERATED availability, and character-option semantics
+// are not asserted by "clean" (T26-SERVER-CREATE-EXECUTION-01).
+func (d *ServerDeclaration) OptionsClean() bool {
+	if len(d.DuplicateKeys) > 0 {
+		return false
+	}
+	for _, option := range d.Options {
+		if option.ValueKind == "numeric" && option.RangeState != ServerOptionRangeInRange {
+			return false
+		}
+	}
+	return true
+}
+
+// ConnectionMembersComplete reports whether the authored OPTIONS list
+// carries all three documented connection members (host, database,
+// user). This is an audit-model completeness fact only — MySQL stores
+// blank/zero defaults for omitted members, so the gap feeds an
+// advisory notice, never a refusal or an owed fact.
+func (d *ServerDeclaration) ConnectionMembersComplete() bool {
+	var host, database, user bool
+	for _, option := range d.Options {
+		switch option.Key {
+		case "host":
+			host = true
+		case "database":
+			database = true
+		case "user":
+			user = true
+		}
+	}
+	return host && database && user
 }
 
 // ServerState is the projection of the MySQL SERVER existence fact —
@@ -97,9 +164,23 @@ type ServerState struct {
 	// prior statement's conditional premise into an unconditional one
 	// (T26-SERVER-DROP-EXECUTION-01 R1-D).
 	OrderedAbsentConditional bool `json:"-"`
+	// OrderedPresent is the same-adjudication ordered channel's proven
+	// present answer: set only by a proven create inside this batch —
+	// never by the catalog (a row read is bound through Read/Exists,
+	// not the ordered channel) and never when the entry carries a
+	// barrier or taint. Consumers read it directly as the
+	// proven-presence answer; it never fakes catalog Exists/Read/Status
+	// (T26-SERVER-CREATE-EXECUTION-01).
+	OrderedPresent bool `json:"-"`
+	// OrderedPresentConditional records that the OrderedPresent a
+	// later statement consumes was published under the conditional
+	// privilege scope — the same honesty contract as
+	// OrderedAbsentConditional.
+	OrderedPresentConditional bool `json:"-"`
 }
 
-// ServerOption records one OPTIONS member — key and value kind only.
+// ServerOption records one OPTIONS member — key, value kind, and the
+// numeric range verdict only.
 type ServerOption struct {
 	// Key is the lowercased option keyword: host, database, user,
 	// password, socket, owner, or port.
@@ -107,6 +188,11 @@ type ServerOption struct {
 	// ValueKind is "char" for a string literal or "numeric" for an
 	// unsigned literal — never the literal itself.
 	ValueKind string
+	// RangeState is the numeric member's in-range verdict against the
+	// documented 0–9999 bound — meaningful only when ValueKind is
+	// "numeric"; anything but in-range (out-of-range, unproven, or
+	// absent) keeps OPTIONS non-clean.
+	RangeState ServerOptionRangeState
 }
 
 // ServerDeclaration kind vocabulary.

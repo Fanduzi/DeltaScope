@@ -13,17 +13,22 @@ import (
 	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
 )
 
-// statementsNeedMySQLServerDropPrivilege reports whether the batch
-// names at least one audited identifier-form DROP SERVER — the narrow
-// slice the privilege observation exists for. Boundary forms (literal
-// names, CREATE/ALTER SERVER, any other family) never trigger the
-// read.
-func statementsNeedMySQLServerDropPrivilege(statements []spec.Statement) bool {
+// statementsNeedMySQLServerPrivilege reports whether the batch names
+// at least one audited identifier-form DROP SERVER or a fully
+// qualified CREATE SERVER — the SERVER family slice the privilege
+// observation exists for. Boundary forms (literal names, ALTER
+// SERVER, shape- or version-failed CREATE, any other family) never
+// trigger the read: statement.Unsupported already encodes both the
+// phase-1 shape gates and the phase-2 version gate, so the check
+// stays final-qualification-only (T26-SERVER-CREATE-EXECUTION-01).
+func statementsNeedMySQLServerPrivilege(statements []spec.Statement) bool {
 	for _, statement := range statements {
 		if statement.DDL != nil && statement.DDL.Server != nil &&
-			statement.DDL.Server.Kind == spec.ServerKindDrop &&
 			statement.DDL.Server.NameIdent && statement.Unsupported == nil {
-			return true
+			switch statement.DDL.Server.Kind {
+			case spec.ServerKindDrop, spec.ServerKindCreate:
+				return true
+			}
 		}
 	}
 	return false
@@ -77,6 +82,32 @@ func serverDropAdjudicationOf(statement spec.Statement) *spec.ServerDropAdjudica
 		return nil
 	}
 	return statement.Metadata.ServerDrop
+}
+
+// serverCreatePrivilegePremise projects the request-level witness onto
+// this statement's CREATE premise — the same raw observation and the
+// same ordered scope as the DROP sibling, but an independent
+// projection: a satisfied drop premise is never borrowed and a prior
+// drop's conditional marker never discharges the create's own premise
+// (T26-SERVER-CREATE-EXECUTION-01).
+func (s *batchState) serverCreatePrivilegePremise() spec.ServerCreatePrivilege {
+	if !s.serverDropPrivilegeWitness {
+		return spec.ServerCreatePrivilegeUnproven
+	}
+	if s.serverPrivilegeScopeEnded {
+		return spec.ServerCreatePrivilegeSuppressed
+	}
+	return spec.ServerCreatePrivilegeConsumable
+}
+
+// serverCreateAdjudicationOf returns the shared adjudication attached
+// to one audited CREATE SERVER — nil outside the audited slice or
+// before enrichment ran.
+func serverCreateAdjudicationOf(statement spec.Statement) *spec.ServerCreateAdjudication {
+	if statement.Metadata == nil {
+		return nil
+	}
+	return statement.Metadata.ServerCreate
 }
 
 // serverPrivilegeReadError bounds the public text of a failed

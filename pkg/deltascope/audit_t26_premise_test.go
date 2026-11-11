@@ -118,6 +118,46 @@ func TestT26PrivilegeModePublicSurface(t *testing.T) {
 	}
 }
 
+// T26-SERVER-CREATE-EXECUTION-01: the same public hook serves the
+// audited CREATE slice — a fully qualified CREATE SERVER under the
+// opted-in mode invokes it exactly once, while a version-gated create
+// never reaches it.
+func TestT26CreatePrivilegeHookPublicSurface(t *testing.T) {
+	observation := &MySQLServerDropPrivilegeObservation{
+		Account:    "edge@%",
+		GrantLines: []string{"GRANT SUPER ON *.* TO 'edge'@'%'"},
+	}
+	provider := &t26PremiseProvider{version: "8.0.36", servers: map[string]bool{}, observation: observation}
+	_, err := Audit(context.Background(), Request{
+		SQL:     "CREATE SERVER s1 FOREIGN DATA WRAPPER mysql OPTIONS (HOST 'h')",
+		Dialect: DialectMySQL, Schema: "golden",
+		MetadataProvider: provider, PrivilegeAuditMode: PrivilegeAuditModeObservedAccountNewSession,
+	})
+	if err != nil {
+		t.Fatalf("audit: %v", err)
+	}
+	if provider.privilegeCalls != 1 {
+		t.Fatalf("loader calls = %d, want exactly one for the qualified create", provider.privilegeCalls)
+	}
+
+	// A create outside the proven 8.0.x domain takes the version gate
+	// before the family loader — the hook never runs, and the
+	// statement surfaces through the unsupported boundary like every
+	// bounded unaudited form.
+	provider = &t26PremiseProvider{version: "", servers: map[string]bool{}, observation: observation}
+	_, err = Audit(context.Background(), Request{
+		SQL:     "CREATE SERVER s1 FOREIGN DATA WRAPPER mysql OPTIONS (HOST 'h')",
+		Dialect: DialectMySQL, Schema: "golden",
+		MetadataProvider: provider, PrivilegeAuditMode: PrivilegeAuditModeObservedAccountNewSession,
+	})
+	if err == nil || !errors.Is(err, ErrUnsupportedStatement) {
+		t.Fatalf("version-gated create must surface through the unsupported boundary: %v", err)
+	}
+	if provider.privilegeCalls != 0 {
+		t.Fatalf("version-gated create must never invoke the loader: %d", provider.privilegeCalls)
+	}
+}
+
 // A provider failure crosses the public boundary bounded: fixed text
 // outside, the original cause reachable through errors.Is — and the
 // raw account and grant text never reach the public error.

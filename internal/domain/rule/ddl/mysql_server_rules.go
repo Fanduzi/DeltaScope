@@ -250,3 +250,222 @@ func conditionalRiskTail(consumable bool) string {
 	}
 	return "The audit is conditional — it describes a new execution session on the observed target established after the grant observation, while the relied-upon direct global grant still applies; it does not verify the future executor or that any current session holds SUPER."
 }
+
+// The audited identifier-form CREATE SERVER first slice
+// (T26-SERVER-CREATE-EXECUTION-01; accepted contract
+// docs/verification/t26-server-create-contract-01, R4 PASS 112beb08).
+// The rule reads the same one truth as the DROP sibling —
+// spec.AdjudicateServerCreate's arm plus its derived owed-fact set:
+// server.existence, server.batch_effects, server.create_privilege, and
+// server.create_options are owed exactly per arm. The terminal refusal
+// owes nothing (proven presence carries the whole verdict), the
+// publish arm owes nothing, and the barrier arm owes exactly
+// {server.batch_effects}. Findings and gaps carry no authored server
+// name, no wrapper, no OPTIONS content, no account, and no grant text.
+
+type mysqlCreateServerRule struct {
+	id    string
+	level rule.Level
+}
+
+func newMySQLCreateServerRule(cfg policy.RulePolicy) (rule.StatementRule, error) {
+	return mysqlCreateServerRule{
+		id:    ruleIDMySQLCreateServerNotice,
+		level: configuredLevel(cfg, rule.LevelNotice),
+	}, nil
+}
+
+func (r mysqlCreateServerRule) ID() string { return r.id }
+
+func (r mysqlCreateServerRule) AppliesTo(statement spec.Statement) bool {
+	return statement.Dialect == spec.DialectMySQL &&
+		statement.Kind == spec.KindDDL &&
+		statement.DDL != nil &&
+		statement.DDL.Server != nil &&
+		statement.DDL.Operation == spec.DDLOperationCreateServer &&
+		statement.Unsupported == nil
+}
+
+// serverCreateAdjudicationFor returns the shared adjudication the
+// enrichment attached — nil outside the audited slice (a legacy
+// statement shape or a bypassed enrichment), where the defensive
+// fallback keeps the pre-execution contract: every premise owed.
+func serverCreateAdjudicationFor(statement spec.Statement) *spec.ServerCreateAdjudication {
+	if statement.Metadata == nil {
+		return nil
+	}
+	return statement.Metadata.ServerCreate
+}
+
+func (r mysqlCreateServerRule) missingServerFacts(statement spec.Statement) []string {
+	if adjudication := serverCreateAdjudicationFor(statement); adjudication != nil {
+		// The shared adjudication derives the owed set per arm — the
+		// rule never recomputes premises on its own.
+		return adjudication.Owed
+	}
+	missing := []string{}
+	state := serverStateFor(statement)
+	if state != nil && state.UnreadReason == spec.MetadataUnreadBatchEffects {
+		missing = append(missing, spec.ServerFactBatchEffects)
+	} else {
+		missing = append(missing, spec.ServerFactExistence)
+	}
+	missing = append(missing, spec.ServerFactCreatePrivilege, spec.ServerFactCreateOptions)
+	return missing
+}
+
+func (r mysqlCreateServerRule) EvidenceGaps(statement spec.Statement) []rule.EvidenceGap {
+	if !r.AppliesTo(statement) {
+		return nil
+	}
+	missing := r.missingServerFacts(statement)
+	if len(missing) == 0 {
+		return nil
+	}
+	return []rule.EvidenceGap{{
+		ReasonCode:    "unknown_server_state",
+		RequiredFacts: missing,
+	}}
+}
+
+// serverCreateMessage renders the arm's bounded public message — the
+// conditional-audit scope is the fixed token, never an account, grant
+// detail, server name, wrapper, or OPTIONS content.
+func serverCreateMessage(statement spec.Statement, adjudication *spec.ServerCreateAdjudication) string {
+	state := serverStateFor(statement)
+	if adjudication == nil {
+		return "CREATE SERVER targets a server definition whose existence, execution premise, and options remain unverified"
+	}
+	consumable := adjudication.Privilege == spec.ServerCreatePrivilegeConsumable
+	switch adjudication.Arm {
+	case spec.ServerCreateArmProven:
+		return "CREATE SERVER is conditionally proven to create its catalog entry under the observed_account_new_session conditional audit"
+	case spec.ServerCreateArmTerminalRefusal:
+		if state != nil && state.OrderedPresent {
+			return "CREATE SERVER is refused by the ordered state in force — the audited entry's present state stands proven in this batch"
+		}
+		return "CREATE SERVER is refused — the catalog read proved the server entry present at bind time"
+	case spec.ServerCreateArmBarrier:
+		if consumable {
+			return "CREATE SERVER leaves its premises shadowed by earlier batch effects under the observed_account_new_session conditional audit"
+		}
+		return "CREATE SERVER leaves its premises shadowed by earlier batch effects; this statement's execution premise remains unverified"
+	default:
+		if consumable {
+			return "CREATE SERVER targets a server definition whose existence or options remain unverified under the observed_account_new_session conditional audit"
+		}
+		return "CREATE SERVER targets a server definition whose existence, execution premise, or options remain unverified"
+	}
+}
+
+// serverCreateOutcome is the bounded outcome token published in
+// finding metadata — one fixed vocabulary per arm so public consumers
+// read the arm without parsing prose.
+func serverCreateOutcome(adjudication *spec.ServerCreateAdjudication) string {
+	if adjudication == nil {
+		return "unverified"
+	}
+	switch adjudication.Arm {
+	case spec.ServerCreateArmProven:
+		return "conditional_create"
+	case spec.ServerCreateArmTerminalRefusal:
+		return "refused_present"
+	case spec.ServerCreateArmBarrier:
+		return "blocked_batch_effects"
+	default:
+		return "unverified"
+	}
+}
+
+func (r mysqlCreateServerRule) Evaluate(ctx context.Context, statement spec.Statement) ([]rule.Finding, error) {
+	if !r.AppliesTo(statement) {
+		return nil, nil
+	}
+	adjudication := serverCreateAdjudicationFor(statement)
+	consumable := adjudication != nil && adjudication.Privilege == spec.ServerCreatePrivilegeConsumable
+
+	level := r.level
+	explanation := &rule.FindingExplanation{
+		Why:        "CREATE SERVER writes a row into mysql.servers defining a foreign data wrapper connection and requires SUPER.",
+		Risk:       "Whether the statement actually executed is unproven — the privilege premise is not discharged, and batch writes may already shadow the catalog answer. Remote connectivity, FEDERATED availability, and the stored connection members are not verified by this audit.",
+		Suggestion: "Confirm the server entry is needed, the options are complete, and the executing account holds SUPER before relying on the create.",
+	}
+	if adjudication != nil {
+		switch adjudication.Arm {
+		case spec.ServerCreateArmTerminalRefusal:
+			// A proven refusal is the same finding class the sibling
+			// families emit — a refusal blocker, not an advisory
+			// notice. Occupancy alone carries the verdict; no specific
+			// native response is claimed beyond the refusal itself.
+			level = rule.LevelBlocker
+			explanation = &rule.FindingExplanation{
+				Why:        "CREATE SERVER requires the named mysql.servers entry to be absent; the entry's present state stands proven, so the statement is refused.",
+				Risk:       "The statement cannot land — the presence proof is the audit's own bound evidence (an ordered channel answer or the catalog read), never a guess; the specific native response is not asserted beyond the refusal.",
+				Suggestion: "Remove the duplicate create or choose a different server name if the existing entry should be kept.",
+			}
+		case spec.ServerCreateArmProven:
+			explanation = &rule.FindingExplanation{
+				Why:        "CREATE SERVER writes a row into mysql.servers and requires SUPER; the conditional audit bound the observed account's direct global grant as the expected executor's premise, and the ordered state proved the slot free.",
+				Risk:       conditionalRiskTail(true) + " Remote connectivity and FEDERATED availability are not verified by this audit.",
+				Suggestion: "Confirm the server entry is needed; the conditional audit only covers a new session on the observed target while the relied-upon grant still applies.",
+			}
+		case spec.ServerCreateArmBarrier:
+			explanation = &rule.FindingExplanation{
+				Why:        "CREATE SERVER writes a row into mysql.servers and requires SUPER; an earlier statement's undischarged effect on the server channel shadows this statement's premises.",
+				Risk:       "The batch's own effects left this statement's existence premise undecidable — " + conditionalRiskTail(consumable),
+				Suggestion: "Order the CREATE before unknown-effect writes, or split the batch so each statement's premises can be proven.",
+			}
+		default:
+			if consumable {
+				explanation = &rule.FindingExplanation{
+					Why:        "CREATE SERVER writes a row into mysql.servers and requires SUPER; the conditional audit discharged the privilege premise but existence or options stayed unproven.",
+					Risk:       conditionalRiskTail(true) + " The entry's pre-state is still unverified, so whether the create lands is unproven.",
+					Suggestion: "Confirm the server entry does not already exist and that the options are complete before relying on the create.",
+				}
+			}
+		}
+	}
+
+	metadata := map[string]any{
+		"operation": string(statement.DDL.Operation),
+		"object":    "server",
+		"outcome":   serverCreateOutcome(adjudication),
+	}
+	if consumable || (adjudication != nil && adjudication.ConditionalSource) {
+		// The conditional scope follows either this statement's own
+		// consumable premise or an ordered state a prior statement
+		// published under that scope — a refusal or unproven arm
+		// resting on a conditional source stays conditional. The
+		// marker never discharges this statement's own owed premise.
+		metadata["conditional_audit"] = string(spec.PrivilegeAuditModeObservedAccountNewSession)
+	}
+	findings := []rule.Finding{{
+		Level:       level,
+		Message:     serverCreateMessage(statement, adjudication),
+		Explanation: explanation,
+		Metadata:    metadata,
+	}}
+
+	// Audit-model completeness notice: missing USER/HOST/DATABASE is an
+	// advisory of this audit slice — MySQL stores blank/zero defaults,
+	// so it is never a refusal, never an owed fact, and never a claim
+	// the engine emitted a warning. The text is fixed and names the
+	// documented member vocabulary only.
+	if statement.DDL.Server != nil && !statement.DDL.Server.ConnectionMembersComplete() {
+		findings = append(findings, rule.Finding{
+			Level:   rule.LevelNotice,
+			Message: "CREATE SERVER omits one or more documented connection members (USER/HOST/DATABASE); the audit treats connection completeness as advisory only",
+			Explanation: &rule.FindingExplanation{
+				Why:        "The statement stores blank or zero defaults for omitted members, which is valid but leaves the defined connection incomplete for actual use.",
+				Risk:       "This notice is an audit-model completeness observation only — it does not refuse the statement and does not assert a native MySQL warning.",
+				Suggestion: "Review whether the omitted connection members are intentional for this server entry.",
+			},
+			Metadata: map[string]any{
+				"operation": string(statement.DDL.Operation),
+				"object":    "server",
+				"notice":    "connection_members",
+			},
+		})
+	}
+	return findings, nil
+}

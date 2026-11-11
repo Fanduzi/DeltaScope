@@ -156,7 +156,7 @@ func mysqlServerCreate(sqlText string, nameTok sqlTok, rest []sqlTok) (ast.StmtN
 		!rest[2].wordIs(sqlText, "wrapper") {
 		return nil, false
 	}
-	wrapper, _, ok := mysqlServerName(sqlText, rest[3])
+	wrapper, wrapperIdent, ok := mysqlServerName(sqlText, rest[3])
 	if !ok {
 		return nil, false
 	}
@@ -165,6 +165,7 @@ func mysqlServerCreate(sqlText string, nameTok sqlTok, rest []sqlTok) (ast.StmtN
 		Name:                  name,
 		NameIdent:             nameIdent,
 		Wrapper:               wrapper,
+		WrapperIdent:          wrapperIdent,
 		NameSpellingRuneCount: utf8.RuneCountInString(name),
 	}
 	if !mysqlServerOptions(sqlText, rest[4:], decl) {
@@ -256,6 +257,7 @@ func mysqlServerOptions(sqlText string, rest []sqlTok, decl *spec.ServerDeclarat
 			return false
 		}
 		value := inner[i]
+		option := spec.ServerOption{Key: key, ValueKind: wantKind}
 		switch wantKind {
 		case "char":
 			if value.kind != tokStr || !quotedTokenClosed(value.text(sqlText)) {
@@ -265,11 +267,21 @@ func mysqlServerOptions(sqlText string, rest []sqlTok, decl *spec.ServerDeclarat
 			if value.kind != tokWord || !isUnsignedDigits(value.text(sqlText)) {
 				return false
 			}
-			if _, err := strconv.ParseUint(value.text(sqlText), 10, 64); err != nil {
+			number, err := strconv.ParseUint(value.text(sqlText), 10, 64)
+			if err != nil {
+				// An overflowing digit run stays a parser rejection —
+				// the recognizer never widens its claim to produce a
+				// RangeState.unproven member (T26-SERVER-CREATE-01).
 				return false
 			}
+			option.RangeState = spec.ServerOptionRangeInRange
+			if number > 9999 {
+				// Parsed but outside the documented 0–9999 bound —
+				// audited, and the OPTIONS premise stays owed.
+				option.RangeState = spec.ServerOptionRangeOutOfRange
+			}
 		}
-		decl.Options = append(decl.Options, spec.ServerOption{Key: key, ValueKind: wantKind})
+		decl.Options = append(decl.Options, option)
 		i++
 		if i < len(inner) {
 			if inner[i].kind != tokPunct || inner[i].text(sqlText) != "," {

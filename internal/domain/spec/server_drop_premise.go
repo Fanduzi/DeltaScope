@@ -174,7 +174,15 @@ func AdjudicateServerDrop(state *ServerState, privilege ServerDropPrivilege, ifE
 			adjudication.Owed = append(adjudication.Owed, ServerFactDropPrivilege)
 		}
 		return adjudication
-	case state != nil && state.Read && state.Exists:
+	case state != nil && (state.OrderedPresent || (state.Read && state.Exists)):
+		// Proven presence answers the existence premise — a catalog row
+		// or an OrderedPresent a proven create published on the
+		// provably-same identity. The ordered source keeps its
+		// conditional provenance on the marker; a catalog answer
+		// carries none (T26-SERVER-CREATE-EXECUTION-01: the DROP
+		// consumer reads the ordered field directly and never fakes
+		// catalog Exists/Read/Status).
+		adjudication.ConditionalSource = state.OrderedPresentConditional
 		if consumable {
 			// Proven drop — present → drop → absent publishes.
 			adjudication.Arm = ServerDropArmProven

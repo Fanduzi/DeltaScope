@@ -344,6 +344,9 @@ func Register(registry *rule.Registry, cfg policy.Policy) error {
 		{ruleID: ruleIDMySQLDropServerNotice, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
 			return newMySQLDropServerRule(cfg)
 		}},
+		{ruleID: ruleIDMySQLCreateServerNotice, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newMySQLCreateServerRule(cfg)
+		}},
 		{ruleID: ruleIDAlterAddIndexColumnsMaxCount, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
 			return newAlterAddedIndexColumnsMaxCountRule(8, rule.LevelWarning, cfg)
 		}},

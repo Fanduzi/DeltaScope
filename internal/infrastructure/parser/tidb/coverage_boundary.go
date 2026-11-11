@@ -53,17 +53,23 @@ func applyCoverageBoundary(dialect spec.Dialect, statement *spec.Statement, node
 			// The MySQL SERVER family (T26/#105): on TiDB the whole
 			// family is not TiDB semantics — a vendor boundary, never a
 			// MySQL verdict. On MySQL a provable-identifier DROP SERVER
-			// enters the audited path (T26-SERVER-DROP-01); every other
-			// form — CREATE/ALTER and string-literal names — keeps the
-			// named unaudited boundary.
+			// enters the audited path (T26-SERVER-DROP-01) and a
+			// CREATE SERVER passing the registered phase-1 shape gates
+			// enters the audited first slice (T26-SERVER-CREATE-01):
+			// identifier-form name whose spelling fits the documented
+			// 64-character bound, plus an identifier-form wrapper whose
+			// spelling ASCII-fold-equals mysql. Every other form —
+			// ALTER, string-literal names, overlong spellings,
+			// literal/non-mysql wrappers — keeps the named unaudited
+			// boundary. The version gate (G2) is an enrich-time check
+			// this parser-level boundary never performs.
 			if dialect == spec.DialectTiDB {
 				statement.Unsupported = &spec.UnsupportedDetail{
 					Feature:  string(statement.DDL.Operation),
 					Reason:   spec.UnsupportedVendorBoundaryReason,
 					Metadata: map[string]any{"boundary": "vendor"},
 				}
-			} else if !(statement.DDL.Server.Kind == spec.ServerKindDrop &&
-				statement.DDL.Server.NameIdent) {
+			} else if !mysqlServerAuditedForm(statement.DDL.Server) {
 				statement.Unsupported = &spec.UnsupportedDetail{
 					Feature:  string(statement.DDL.Operation),
 					Reason:   spec.UnsupportedUnauditedReason,
@@ -450,4 +456,52 @@ func setOprListHasSelectInto(list *ast.SetOprSelectList) bool {
 		}
 	}
 	return false
+}
+
+// mysqlServerAuditedForm reports the SERVER family's phase-1 shape
+// qualification — the audited identifier forms this parser-level
+// boundary recognizes (T26-SERVER-DROP-01, T26-SERVER-CREATE-01):
+//
+//   - DROP SERVER: identifier-form name.
+//   - CREATE SERVER: identifier-form name whose unquoted spelling fits
+//     the documented 64-character bound (silent truncation would make
+//     the effective catalog identity unprovable), and an
+//     identifier-form wrapper whose spelling ASCII-fold-equals mysql —
+//     the only registered FEDERATED wrapper spelling. A string-literal
+//     wrapper is a distinct quoting category, not an identifier.
+//
+// The version gate (G2) has no input at this layer and is never
+// evaluated here.
+func mysqlServerAuditedForm(decl *spec.ServerDeclaration) bool {
+	if !decl.NameIdent {
+		return false
+	}
+	switch decl.Kind {
+	case spec.ServerKindDrop:
+		return true
+	case spec.ServerKindCreate:
+		return decl.NameSpellingRuneCount <= 64 &&
+			decl.WrapperIdent && serverWrapperASCIIEqual(decl.Wrapper, "mysql")
+	default:
+		return false
+	}
+}
+
+// serverWrapperASCIIEqual reports whether the wrapper spelling is the
+// ASCII-fold-equal mysql identity — a byte-level fold, never the wider
+// Unicode fold (a non-ASCII spelling is only byte-identical).
+func serverWrapperASCIIEqual(spelling, want string) bool {
+	if len(spelling) != len(want) {
+		return false
+	}
+	for i := 0; i < len(spelling); i++ {
+		c := spelling[i]
+		if c >= 'A' && c <= 'Z' {
+			c |= 0x20
+		}
+		if c != want[i] {
+			return false
+		}
+	}
+	return true
 }
