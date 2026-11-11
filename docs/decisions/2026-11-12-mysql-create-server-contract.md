@@ -1,15 +1,16 @@
 # Decision: MySQL CREATE SERVER first-slice contract — shared adjudication + OrderedPresent (T26-SERVER-CREATE-CONTRACT-01)
 
 Date: 2026-11-12
-Status: **PROPOSED / Reviewer pending** — R3 targeted-closure
-revision after CHANGES REQUIRED on candidates `3ec5f2c3` (R1) and
-`e59f2452` (R2). This record is the contract document for a
+Status: **PROPOSED / Reviewer pending** — R4 targeted revision after
+CHANGES REQUIRED on candidates `3ec5f2c3` (R1), `e59f2452` (R2),
+`3702ae03` (R3). This record is the contract document for a
 docs-only convergence order; it recommends ONE first-implementation
 domain and records no accepted product behavior. Nothing in
 `internal/`, `pkg/`, or `testdata/` changed under it.
 Related milestone/version: issue #105 T26 under parent issue #79
 Related commits: docs-only candidates `3ec5f2c3` (R1, baseline
-`9e21ace9`), `e59f2452` (R2); R3 revision (this change set)
+`9e21ace9`), `e59f2452` (R2), `3702ae03` (R3); R4 revision (this
+change set)
 Related docs: `docs/verification/t26-server-create-contract-01/`
 (authoritative contract), `docs/decisions/2026-11-16-mysql-drop-server-conditional-privilege.md`
 (accepted DROP sibling)
@@ -33,26 +34,28 @@ creates and drops.
 ## Decision
 
 **Activation predicate (single gate).** A `CREATE SERVER` enters the
-audited slice iff ALL hold: dialect MySQL; resolved target version in
-the registered 8.0.x proof domain (version unknown/conflict/out-of-
-domain → `unaudited` with `gate:"version"`); `NameIdent` (identifier-
-form name); `NameSpellingRuneCount <= 64` (longer spellings stay
-`unaudited` — silent truncation makes the effective catalog identity
-unprovable); wrapper is **identifier-form** AND ASCII-fold-equals
-`mysql` (string-literal wrapper spellings and non-`mysql` wrappers
-stay `unaudited` — a coverage decision, never a parse rejection); the
-whole-form recognizer already claimed the statement (unknown options
-keys / trailing tokens stay parser-diagnostic exits). Qualification
-is two-phase: parse-time shape gates (`applyCoverageBoundary`,
-dialect + node only) run first; the version gate runs at enrich
-entry on `batchState.resolvedVersion` — fixed before the loader gate
-and before per-statement binding — so a version-failed statement is
+audited slice iff ALL hold: dialect MySQL (non-MySQL → vendor
+boundary); resolved target version in the registered 8.0.x proof
+domain (unknown = `resolvedVersion` nil / out-of-domain →
+`unaudited` with `gate:"version"`; malformed pin / product /
+pin-vs-observed conflicts exit earlier as typed errors
+`ErrInvalidTargetVersion` / `ErrDialectProductMismatch` /
+`ErrTargetVersionMismatch` and never reach the gate); `NameIdent`
+(identifier-form name); `NameSpellingRuneCount <= 64` (longer
+spellings stay `unaudited` — silent truncation makes the effective
+catalog identity unprovable); wrapper is **identifier-form** AND
+ASCII-fold-equals `mysql` (string-literal wrapper spellings and
+non-`mysql` wrappers stay `unaudited` — a coverage decision, never a
+parse rejection); the whole-form recognizer already claimed the
+statement (unknown options keys / trailing tokens stay
+parser-diagnostic exits). Qualification is two-phase: parse-time
+shape gates (`applyCoverageBoundary`, dialect + node only) run
+first — each failure takes its own exit (G1 vendor, G3–G5 unaudited,
+G6 parser diagnostic); the version gate runs at enrich entry on
+`batchState.resolvedVersion` — fixed before the loader gate and
+before per-statement binding — so a version-failed statement is
 marked `unaudited`/`gate:"version"` before it could ever trigger the
-loader; malformed pin / product / pin-vs-observed conflicts exit
-earlier as typed errors (`ErrInvalidTargetVersion`,
-`ErrDialectProductMismatch`, `ErrTargetVersionMismatch`) and never
-reach the gate; an unparseable banner reaches G2 as "unknown" and
-fails it. Entering the domain is unconditional: mode and provider
+loader; an unparseable banner reaches G2 as "unknown" and fails it. Entering the domain is unconditional: mode and provider
 presence decide only which evidence is available — an in-domain
 CREATE with no mode/provider is audited `unverified`, NOT
 `unaudited`. That is a registered public output change of the future
@@ -208,10 +211,13 @@ under PLAN / UNEXECUTED, groups A–J.
 ## Consequences
 
 - If accepted, the future execution order touches:
-  `coverage_boundary.go` (G1–G6 gate replaces the blanket unaudited
-  pin), `mysql_server.go` (`WrapperIdent`/`RangeState` parse-time
-  derivation), `spec/server.go` + new `server_create_premise.go`,
-  `metadata.go` (adjudication attach), `server_drop_premise.go`
+  `coverage_boundary.go` (phase-1 shape qualification only — it has
+  no version input), `mysql_server.go` (`WrapperIdent`/`RangeState`
+  parse-time derivation), `spec/server.go` + new
+  `server_create_premise.go`, `metadata.go` (phase-2 G2 final
+  qualification between `resolvedVersion` assignment and the loader
+  gate + per-statement adjudication attach on the existing enrich
+  loop), `server_drop_premise.go`
   (family-wide loader gate + create premise projection),
   `batch_state_server_srs.go` (merged ordered-state scan),
   `batch_state_server.go` (`present`/`presentConditional` entry
