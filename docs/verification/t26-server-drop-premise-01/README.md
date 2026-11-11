@@ -1,10 +1,11 @@
-# T26-SERVER-DROP-PREMISE-01 — index (R2)
+# T26-SERVER-DROP-PREMISE-01 — index (PASS, docs-only contract acceptance)
 
 Docs-only premise round (issue #105): the execution-principal binding
 and the `server.drop_privilege` supply contract for the already
-accepted MySQL identifier-form `DROP SERVER` slice. No product, test,
-policy, or manifest changes this round; no test runs, CLI probes, or
-native verification — every forward item is marked PLAN / UNEXECUTED.
+accepted MySQL identifier-form `DROP SERVER` slice — **PASS** as a
+documentation contract. No product, test, policy, or manifest changes;
+no test runs, CLI probes, or native verification — every forward item
+is marked PLAN / UNEXECUTED.
 
 ## Identity
 
@@ -17,7 +18,8 @@ native verification — every forward item is marked PLAN / UNEXECUTED.
 | semantics contract | `docs/verification/t26-semantics-01` at `b8a67e7b5f7e62a825adace06113a233240d28df` |
 | R0 candidate | `e42eeafe33edb5b7bc32c2f4412f670f2864d87e` — CHANGES REQUIRED (R1-A..F) |
 | R1 candidate | `be729d61e1b6e52ffb0e68e06c90436d60e1a199` — CHANGES REQUIRED (R2-A/B/C + S1/S2) |
-| this round | R2 docs-only revision of the same four files, new commit with parent `be729d61` |
+| approved contract | `cfd34782b94d12342a021b846d51f41a5682d2e3` (tree `d8e41edc…`, parent `be729d61…`) — **PASS** |
+| this closeout | docs-only: README status + `acceptance.md`; parent `cfd34782` |
 
 Source excerpts cite the baseline commit `244aace5`; the audited source
 content is unchanged since `5de2da5e` for every excerpted file (the
@@ -29,16 +31,22 @@ content is unchanged since `5de2da5e` for every excerpted file (the
 | file | content |
 | --- | --- |
 | README.md | this index — identity, scope, status |
+| acceptance.md | the registered PASS: scope, identity chain, closure basis, role/evidence boundary, and non-activated capabilities |
 | source-excerpts.md | verbatim source closures — excerpts annotated verbatim / derived / doc-derived / proposed; includes the completed token loop, session acquire/release, the ordered-scope classification seam, the corrected SET ROLE/GRANT/REVOKE registration, and the unified application-side error boundary |
 | execution-premise-contract.md | the `observed_account_new_session` conditional mode, the single recommended evidence source, the eight-condition consumability contract (target binding = this request's selected provider), and the A–G adjudication table (positive witness / unproven / bounded error only — no denial) |
 | implementation-plan.md | the single recommended path — request entry, loader, gate, unified application error boundary, deterministic data flow, ordered-scope markers, the consumption-activation gate, the corrected consumer matrix (terminal-refusal priority, IF EXISTS convergent arm, read-error separation), and the (unexecuted) verification plan |
 
 ## Status
 
-R2 revision for reviewer adjudication. Nothing in this directory
-asserts a product capability that does not exist: the executing
-principal is **not** bound at any request entry today, and
-`server.drop_privilege` stays owed on every audited DROP SERVER path
-until an approved implementation wires a positive witness. Document
-approval alone authorises neither consumption activation nor
-OrderedAbsent — those require a separate product work order.
+**T26-SERVER-DROP-PREMISE-01 — PASS (docs-only contract acceptance)**,
+object `cfd34782`; acceptance details in `acceptance.md`.
+
+Document approval is not a product capability: the executing principal
+is **not** bound at any request entry today, and `server.drop_privilege`
+stays owed on every audited DROP SERVER path until an approved
+implementation wires a positive witness. Activation of the privilege
+supply, gap consumption, shared adjudication, and `OrderedAbsent`
+requires a separate, explicit product work order; this closeout HEAD
+does not replace the approved contract identity `cfd34782`, and the
+R0/R1 `CHANGES REQUIRED` history and their candidate identities stay
+preserved.
