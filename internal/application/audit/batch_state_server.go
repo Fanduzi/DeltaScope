@@ -1,13 +1,15 @@
-// Package audit: T26-SERVER-DROP-01 — the MySQL SERVER ordered channel.
-// This slice ships the protective layer only: unaudited-write records,
-// channel taint, relation-checked barriers, and the six-step resolve
-// order whose every barrier decision completes before any provider or
-// cache access. There is no OrderedAbsent representation and no proven
-// absent publish path — those stay the accepted future premise-supply
-// stage contract (docs/verification/t26-semantics-01, accepted
-// b8a67e7b), so an audited DROP SERVER with an unproven execution
-// premise never promotes absent; it leaves an unproven barrier that
-// shadows the audit-time catalog present for later statements.
+// Package audit: the MySQL SERVER ordered channel — T26-SERVER-DROP-01
+// shipped the protective layer (unaudited-write records, channel
+// taint, relation-checked barriers, and the six-step resolve order
+// whose every barrier decision completes before any provider or
+// cache access), and T26-SERVER-DROP-EXECUTION-01 added the shared
+// adjudication's post-state: a publish arm records the proven
+// OrderedAbsent with the statement's own arm, the refusal and guarded
+// arms leave an absent untouched, and every undischarged unknown
+// effect still lands the unproven barrier that shadows the audit-time
+// catalog present for later statements
+// (docs/verification/t26-semantics-01 b8a67e7b,
+// docs/verification/t26-server-drop-premise-01 cfd34782).
 //
 // Identity relation R(A,B) is the accepted minimal conservative
 // contract, evaluated in order and mutually exclusive:
@@ -80,17 +82,23 @@ func serverRel(a, b string) serverRelation {
 	return serverRelUnproven
 }
 
-// batchServerEntry is one ordered identity projection. This slice only
-// ever holds the barrier flag — an undischarged unknown effect on the
-// identity: neither present nor absent is promotable. The verbatim
-// authored name is kept for relation checks; the map key is the ASCII
-// fold bucket, which two different authored names may share — the
-// entry stores the first name bound and relation is evaluated against
-// the stored name, so collisions can only produce the same barrier
-// outcome this slice.
+// batchServerEntry is one ordered identity projection. barrier is the
+// undischarged unknown effect — neither present nor absent promotable.
+// absent is the proven OrderedAbsent: set only by the shared
+// adjudication's publish decision on a provably-same identity (a
+// proven drop or the approved convergent arm), never by the catalog
+// and never while a barrier stands — the publishing statement's own
+// arm rides along in publishedArm. A later unknown effect clears the
+// absent back to the barrier shape rather than letting a stale absent
+// survive a shadowing write. The verbatim authored name is kept for
+// relation checks; the map key is the ASCII fold bucket, which two
+// different authored names may share — the entry stores the first
+// name bound and relation is evaluated against the stored name.
 type batchServerEntry struct {
-	name    string
-	barrier bool
+	name         string
+	barrier      bool
+	absent       bool
+	publishedArm spec.ServerDropArm
 }
 
 // serverWrite records an unaudited SERVER write's authored identity —
@@ -159,11 +167,14 @@ func (s *batchState) resolveServerBarrier(name string) bool {
 //     record: provable-identifier names record their identity and
 //     taint every related entry; an unprovable string-literal name
 //     taints the whole channel — later statements exit at step 2.
-//   - An audited DROP SERVER on a provable identifier leaves the
-//     unproven barrier on its own identity: the execution premise is
-//     unproven, so the statement may have deleted the object or never
-//     run — the audit-time catalog present stays shadowed and no
-//     absent publishes (accepted transition rule).
+//   - An audited DROP SERVER on a provable identifier settles through
+//     the shared adjudication attached at bind time: a publish arm
+//     (proven drop or the approved IF EXISTS convergence) records the
+//     proven OrderedAbsent with the statement's own arm; the terminal
+//     refusal and guarded-absent arms never recreate the entry, so a
+//     proven absent stands untouched; every other arm is an
+//     undischarged unknown effect — it clears any earlier absent back
+//     to the barrier shape (T26-SERVER-DROP-EXECUTION-01).
 func (s *batchState) applyServerStatement(ctx context.Context, statement spec.Statement) error {
 	decl := statement.DDL.Server
 	if s.contaminated {
@@ -175,18 +186,47 @@ func (s *batchState) applyServerStatement(ctx context.Context, statement spec.St
 	if statement.Unsupported != nil {
 		if !decl.NameIdent {
 			s.serverChannelTainted = true
+			for _, entry := range s.serverEntries {
+				// A literal-name write may have recreated any server —
+				// every proven absent on the channel goes stale.
+				entry.absent = false
+				entry.publishedArm = 0
+			}
 			return nil
 		}
 		s.serverWrites = append(s.serverWrites, serverWrite{name: decl.Name})
 		for _, entry := range s.serverEntries {
 			if serverRel(decl.Name, entry.name) != serverRelDistinct {
+				// An unproven-or-same write is an unknown effect on
+				// this identity — a proven absent never survives it.
 				entry.barrier = true
+				entry.absent = false
+				entry.publishedArm = 0
 			}
 		}
 		return nil
 	}
 	if decl.Kind == spec.ServerKindDrop && decl.NameIdent {
-		s.serverEntryFor(decl.Name).barrier = true
+		entry := s.serverEntryFor(decl.Name)
+		adjudication := serverDropAdjudicationOf(statement)
+		switch {
+		case adjudication != nil && adjudication.PublishAbsent:
+			// The shared adjudication proved the post-state absent —
+			// record it with the publishing statement's own arm.
+			entry.absent = true
+			entry.barrier = false
+			entry.publishedArm = adjudication.Arm
+		case adjudication != nil && (adjudication.Arm == spec.ServerDropArmTerminalRefusal ||
+			adjudication.Arm == spec.ServerDropArmGuardedAbsent):
+			// The refusal and guarded arms never recreate the object —
+			// the proven absent stands untouched.
+		default:
+			// Every other arm is an undischarged unknown effect — a
+			// stale absent never survives it.
+			entry.absent = false
+			entry.publishedArm = 0
+			entry.barrier = true
+		}
 	}
 	return ctx.Err()
 }

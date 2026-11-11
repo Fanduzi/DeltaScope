@@ -151,11 +151,6 @@ func loadMySQLReadOnlyVars(ctx context.Context, conn *sql.Conn, facts *spec.Inst
 // CURRENT_ROLE() answer or a GRANT role line.
 var mysqlRolePattern = regexp.MustCompile(`'[^']*'@'[^']*'`)
 
-// mysqlGlobalGrantPattern matches a privilege-scoped SHOW GRANTS line —
-// "GRANT <privileges> ON <scope> TO <grantee> ...". Role-assignment
-// lines (GRANT 'r'@'%' TO ...) carry no ON clause and never match.
-var mysqlGlobalGrantPattern = regexp.MustCompile(`(?i)^GRANT\s+(.+?)\s+ON\s+(\S+)\s+TO\s+`)
-
 // mysqlPrivilegeSet is the union of global-scope privileges observed
 // across a subject's effective grant lines.
 type mysqlPrivilegeSet map[string]bool
@@ -241,22 +236,11 @@ func loadMySQLGrantLines(ctx context.Context, conn *sql.Conn, statement string) 
 }
 
 // collectMySQLGlobalPrivileges folds every global-scope (*.*) grant
-// line into the set. Privileges parse as bounded, exact tokens — never
-// substring matches, so RESOURCE_GROUP_USER never counts as
-// RESOURCE_GROUP_ADMIN.
+// line into the set — the shared spec collector keeps the T24 bundle
+// and the T26 DROP SERVER privilege observation on the same bounded,
+// exact-token mechanism (T26-SERVER-DROP-EXECUTION-01).
 func collectMySQLGlobalPrivileges(set mysqlPrivilegeSet, lines []string) {
-	for _, line := range lines {
-		match := mysqlGlobalGrantPattern.FindStringSubmatch(strings.TrimSpace(line))
-		if match == nil || match[2] != "*.*" {
-			continue
-		}
-		for _, privilege := range strings.Split(match[1], ",") {
-			privilege = strings.ToUpper(strings.TrimSpace(privilege))
-			if privilege != "" {
-				set[privilege] = true
-			}
-		}
-	}
+	spec.CollectMySQLGlobalPrivileges(set, lines)
 }
 
 // mysqlVersionQuerier is the QueryRowContext surface *sql.Conn and

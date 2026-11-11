@@ -29,10 +29,33 @@ type t26Provider struct {
 	tables  map[string]*spec.TableSnapshot // catalog-present table identities
 	calls   []t26Call
 	err     error
+	// version is the observed banner the loader reports — set to a
+	// MySQL 8.0.x string when a test needs the in-domain version fact.
+	version string
+	// privilege carries the stubbed DROP SERVER privilege observation;
+	// privilegeCalls counts how often the loader seam fired so tests
+	// can assert the narrow gate.
+	privilege      *spec.MySQLServerDropPrivilegeObservation
+	privilegeErr   error
+	privilegeCalls int
 }
 
 func (p *t26Provider) LoadInstanceFacts(context.Context, spec.Dialect, string) (*spec.InstanceFacts, error) {
-	return &spec.InstanceFacts{}, nil
+	return &spec.InstanceFacts{Version: p.version}, nil
+}
+
+// LoadMySQLServerDropPrivilege is the optional privilege-observation
+// seam (T26-SERVER-DROP-EXECUTION-01) — the stub answers the verbatim
+// observation or fails, and records every invocation.
+func (p *t26Provider) LoadMySQLServerDropPrivilege(_ context.Context, dialect spec.Dialect) (*spec.MySQLServerDropPrivilegeObservation, error) {
+	p.privilegeCalls++
+	if dialect != spec.DialectMySQL {
+		return nil, nil
+	}
+	if p.privilegeErr != nil {
+		return nil, p.privilegeErr
+	}
+	return p.privilege, nil
 }
 
 func (p *t26Provider) LoadTableSnapshot(_ context.Context, _ spec.Dialect, schema, table string) (*spec.TableSnapshot, error) {

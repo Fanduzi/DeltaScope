@@ -34,6 +34,10 @@ var (
 	// (for example dialect=tidb against a MySQL banner). It is an input error:
 	// the caller-declared product can never override observed identity.
 	ErrDialectProductMismatch = errors.New("audit dialect does not match the observed server product")
+	// ErrInvalidPrivilegeMode rejects an unregistered privilege_audit_mode —
+	// the mode token is a closed vocabulary, never a free-form string
+	// (T26-SERVER-DROP-EXECUTION-01).
+	ErrInvalidPrivilegeMode = errors.New("audit privilege_audit_mode must be observed_account_new_session")
 )
 
 // Request describes one application-level audit invocation.
@@ -58,6 +62,12 @@ type Request struct {
 	// Target-bound DeploymentEvidence bundle matches against when the
 	// provider observed no @@server_uuid (T24/#103 R6).
 	TargetIdentity string
+	// PrivilegeAuditMode selects the conditional privilege-evidence
+	// audit mode for premises no default channel observes
+	// (T26-SERVER-DROP-EXECUTION-01). The only registered value is
+	// spec.PrivilegeAuditModeObservedAccountNewSession; empty keeps
+	// the default path where server.drop_privilege stays owed.
+	PrivilegeAuditMode spec.PrivilegeAuditMode
 }
 
 const defaultOrderedStatementLimit = 1024
@@ -94,6 +104,11 @@ func auditWithLimits(ctx context.Context, request Request, limits auditLimits) (
 	}
 	if request.Dialect != spec.DialectMySQL && request.Dialect != spec.DialectTiDB && request.Dialect != spec.DialectPostgreSQL {
 		return report.Result{}, ErrUnknownDialect
+	}
+	switch request.PrivilegeAuditMode {
+	case "", spec.PrivilegeAuditModeObservedAccountNewSession:
+	default:
+		return report.Result{}, ErrInvalidPrivilegeMode
 	}
 	targetVersion, err := parseAuditTargetVersion(request.Dialect, request.TargetVersion)
 	if err != nil {
@@ -278,6 +293,7 @@ func metadataRequestFor(request Request, targetVersion *spec.VersionIdentity) *M
 	provider := request.MetadataProvider
 	evidence := request.DeploymentEvidence
 	targetIdentity := strings.TrimSpace(request.TargetIdentity)
+	privilegeMode := request.PrivilegeAuditMode
 
 	if legacy != nil {
 		if schema == "" {
@@ -292,8 +308,11 @@ func metadataRequestFor(request Request, targetVersion *spec.VersionIdentity) *M
 		if targetIdentity == "" {
 			targetIdentity = strings.TrimSpace(legacy.TargetIdentity)
 		}
+		if privilegeMode == "" {
+			privilegeMode = legacy.PrivilegeAuditMode
+		}
 	}
-	if schema == "" && provider == nil && targetVersion == nil && evidence == nil && targetIdentity == "" {
+	if schema == "" && provider == nil && targetVersion == nil && evidence == nil && targetIdentity == "" && privilegeMode == "" {
 		return nil
 	}
 	return &MetadataRequest{
@@ -302,6 +321,7 @@ func metadataRequestFor(request Request, targetVersion *spec.VersionIdentity) *M
 		TargetVersion:      targetVersion,
 		DeploymentEvidence: evidence,
 		TargetIdentity:     targetIdentity,
+		PrivilegeAuditMode: privilegeMode,
 	}
 }
 

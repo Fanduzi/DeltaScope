@@ -33,7 +33,33 @@ var (
 	// ErrDialectProductMismatch rejects a request whose dialect contradicts
 	// the product independently derived from the observed server banner.
 	ErrDialectProductMismatch = appaudit.ErrDialectProductMismatch
+	// ErrInvalidPrivilegeMode rejects an unregistered privilege_audit_mode —
+	// the mode token is a closed vocabulary, never a free-form string
+	// (T26-SERVER-DROP-EXECUTION-01).
+	ErrInvalidPrivilegeMode = appaudit.ErrInvalidPrivilegeMode
 )
+
+// PrivilegeAuditMode selects the conditional privilege-evidence audit
+// mode for premises no default channel observes — currently only the
+// approved observed-account conditional scope.
+type PrivilegeAuditMode = spec.PrivilegeAuditMode
+
+// PrivilegeAuditModeObservedAccountNewSession selects the approved
+// conditional mode: this audit takes the provider connection's
+// observed CURRENT_USER() account as the expected execution principal,
+// with the expected execution context being a new session on the same
+// target established after the observation; the result is conditioned
+// on the relied-upon direct global grant still applying when that
+// session loads privileges. It never claims the future executor was
+// verified, that the pooled session holds effective SUPER, or that a
+// new execution session was created (T26-SERVER-DROP-EXECUTION-01).
+const PrivilegeAuditModeObservedAccountNewSession = spec.PrivilegeAuditModeObservedAccountNewSession
+
+// MySQLServerDropPrivilegeObservation is the request-level immutable
+// raw evidence a MySQLServerDropPrivilegeProvider returns — the
+// observed account and the verbatim grant lines, internal evidence
+// only.
+type MySQLServerDropPrivilegeObservation = spec.MySQLServerDropPrivilegeObservation
 
 // VersionIdentity mirrors the shared product/version fact projected on results.
 type VersionIdentity = spec.VersionIdentity
@@ -120,6 +146,13 @@ type Request struct {
 	// provider observed no @@server_uuid — a declarative guard against
 	// cross-instance misapplication, not a credential (T24/#103 R6).
 	TargetIdentity string
+	// PrivilegeAuditMode selects the conditional privilege-evidence
+	// audit mode (T26-SERVER-DROP-EXECUTION-01). The only registered
+	// value is PrivilegeAuditModeObservedAccountNewSession — anything
+	// else returns ErrInvalidPrivilegeMode. Empty keeps the default
+	// path where server.drop_privilege stays owed on every audited
+	// DROP SERVER.
+	PrivilegeAuditMode PrivilegeAuditMode
 }
 
 // DeploymentEvidence re-exports the domain contract verbatim so library
@@ -270,6 +303,7 @@ func Audit(ctx context.Context, request Request) (Result, error) {
 	}
 	appRequest.DeploymentEvidence = request.DeploymentEvidence
 	appRequest.TargetIdentity = request.TargetIdentity
+	appRequest.PrivilegeAuditMode = request.PrivilegeAuditMode
 	if request.MetadataProvider != nil {
 		appRequest.MetadataProvider = publicMetadataProvider{provider: request.MetadataProvider}
 	}
@@ -709,6 +743,45 @@ func (p publicMetadataProvider) LoadMySQLResourceGroupFacts(ctx context.Context,
 		return nil, err
 	}
 	return cloneInstanceFacts(loaded), nil
+}
+
+// MySQLServerDropPrivilegeProvider optionally supplies the DROP SERVER
+// privilege observation — the verbatim CURRENT_USER() account and the
+// SHOW GRANTS FOR CURRENT_USER() lines read on one provider connection
+// (T26-SERVER-DROP-EXECUTION-01). The application invokes it at most
+// once per request, only under PrivilegeAuditModeObservedAccountNewSession
+// and only while the batch names an audited identifier-form DROP
+// SERVER. A nil return means the observation never ran; errors
+// propagate — a failed read is never degraded into an unproven grant.
+type MySQLServerDropPrivilegeProvider interface {
+	LoadMySQLServerDropPrivilege(ctx context.Context, dialect Dialect) (*MySQLServerDropPrivilegeObservation, error)
+}
+
+func (p publicMetadataProvider) LoadMySQLServerDropPrivilege(ctx context.Context, dialect spec.Dialect) (*spec.MySQLServerDropPrivilegeObservation, error) {
+	if p.provider == nil {
+		return nil, nil
+	}
+	loader, ok := p.provider.(MySQLServerDropPrivilegeProvider)
+	if !ok {
+		return nil, nil
+	}
+	observation, err := loader.LoadMySQLServerDropPrivilege(ctx, Dialect(dialect))
+	if err != nil {
+		return nil, err
+	}
+	return cloneServerDropPrivilegeObservation(observation), nil
+}
+
+// cloneServerDropPrivilegeObservation keeps the caller-owned
+// observation from aliasing into request-level evidence — the grant
+// lines are the only mutable member.
+func cloneServerDropPrivilegeObservation(in *spec.MySQLServerDropPrivilegeObservation) *spec.MySQLServerDropPrivilegeObservation {
+	if in == nil {
+		return nil
+	}
+	out := *in
+	out.GrantLines = append([]string(nil), in.GrantLines...)
+	return &out
 }
 
 func (p publicMetadataProvider) ResolveObject(ctx context.Context, dialect spec.Dialect, request spec.ObjectLookupRequest) (*spec.ObjectSnapshot, error) {

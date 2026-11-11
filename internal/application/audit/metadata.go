@@ -52,6 +52,20 @@ type MySQLResourceGroupFactsLoader interface {
 	LoadMySQLResourceGroupFacts(ctx context.Context, dialect spec.Dialect) (*spec.InstanceFacts, error)
 }
 
+// MySQLServerDropPrivilegeLoader optionally supplies the DROP SERVER
+// privilege observation — the verbatim CURRENT_USER() account and the
+// SHOW GRANTS FOR CURRENT_USER() lines read on one provider connection
+// (T26-SERVER-DROP-EXECUTION-01). It is invoked at most once per
+// request, only under spec.PrivilegeAuditModeObservedAccountNewSession,
+// and only while the batch names an audited identifier-form DROP
+// SERVER. A nil return means the observation never ran; a failed read
+// propagates under the same bounded error contract as the object seam
+// — never degraded into an unproven grant, an evidence gap, or a
+// cached answer.
+type MySQLServerDropPrivilegeLoader interface {
+	LoadMySQLServerDropPrivilege(ctx context.Context, dialect spec.Dialect) (*spec.MySQLServerDropPrivilegeObservation, error)
+}
+
 // MetadataRequest describes one optional metadata-aware audit invocation.
 type MetadataRequest struct {
 	Schema   string
@@ -71,6 +85,12 @@ type MetadataRequest struct {
 	// provider-observed identity exists. It is a declarative guard, not
 	// a verified credential (T24-R6).
 	TargetIdentity string
+	// PrivilegeAuditMode is the request's conditional
+	// privilege-evidence mode — the only registered value is
+	// spec.PrivilegeAuditModeObservedAccountNewSession; empty keeps the
+	// default path where the DROP SERVER privilege premise stays owed
+	// (T26-SERVER-DROP-EXECUTION-01).
+	PrivilegeAuditMode spec.PrivilegeAuditMode
 }
 
 func enrichStatementsWithMetadata(ctx context.Context, dialect spec.Dialect, request *MetadataRequest, statements []spec.Statement, failures []parseFailure) ([]spec.Statement, error) {
@@ -256,6 +276,27 @@ func (state *batchState) enrichStatements(ctx context.Context, request *Metadata
 			applyDeploymentEvidence(instanceFacts, request.DeploymentEvidence, resolvedVersion, request.TargetIdentity, request.Provider != nil)
 		}
 	}
+	// The DROP SERVER privilege observation loads at most once per
+	// request — under the request-selected conditional mode and only
+	// while the batch names an audited identifier-form DROP SERVER
+	// (T26-SERVER-DROP-EXECUTION-01). The raw account and grant lines
+	// stay request-level immutable evidence; the positive-witness
+	// verdict binds principal, domain version, and the token proof
+	// once, and every statement only projects consumable/suppressed
+	// over the ordered scope. A failed read propagates under the same
+	// bounded error contract as the object seam.
+	if dialect == spec.DialectMySQL && request != nil &&
+		request.PrivilegeAuditMode == spec.PrivilegeAuditModeObservedAccountNewSession &&
+		statementsNeedMySQLServerDropPrivilege(statements) {
+		if loader, ok := state.provider.(MySQLServerDropPrivilegeLoader); state.provider != nil && ok {
+			observation, err := loader.LoadMySQLServerDropPrivilege(ctx, dialect)
+			if err != nil {
+				return nil, serverPrivilegeReadError{cause: err}
+			}
+			state.serverDropPrivilege = observation
+			state.serverDropPrivilegeWitness = spec.MySQLServerDropPrivilegeWitness(observation, resolvedVersion)
+		}
+	}
 	// Object lookups resolve at most once per distinct (schema, type, name,
 	// qualifiers) identity per request — the same object is never re-asked.
 	objectCache := make(map[objectLookupKey]*spec.ObjectSnapshot)
@@ -329,6 +370,15 @@ func (state *batchState) enrichStatements(ctx context.Context, request *Metadata
 				state.contaminated = true
 				break
 			}
+		}
+
+		// An authored grant/role statement (or the matching boundary
+		// feature) conservatively ends the privilege observation's
+		// applicable range for every LATER statement — the grant the
+		// conditional audit relied on may no longer hold under a new
+		// session (T26-SERVER-DROP-EXECUTION-01).
+		if serverPrivilegeScopeTerminator(statement) {
+			state.serverPrivilegeScopeEnded = true
 		}
 
 		if statement.DDL != nil && statement.DDL.View != nil && statement.DDL.View.Definition != nil &&
@@ -548,6 +598,17 @@ func (state *batchState) enrichStatements(ctx context.Context, request *Metadata
 					enriched[i].Metadata = &spec.Metadata{Schema: metadataSchema, Instance: instanceFacts, Version: resolvedVersion}
 				}
 				enriched[i].Metadata.Server = server
+			}
+			// The audited identifier-form drop carries the shared
+			// adjudication — one truth the rule's gap/message/output
+			// and the ordered channel's post-state both read
+			// (T26-SERVER-DROP-EXECUTION-01).
+			if decl := enriched[i].DDL.Server; decl.Kind == spec.ServerKindDrop && decl.NameIdent && enriched[i].Unsupported == nil {
+				if enriched[i].Metadata == nil {
+					enriched[i].Metadata = &spec.Metadata{Schema: metadataSchema, Instance: instanceFacts, Version: resolvedVersion}
+				}
+				adjudication := spec.AdjudicateServerDrop(enriched[i].Metadata.Server, state.serverDropPrivilegePremise(), decl.IfExists)
+				enriched[i].Metadata.ServerDrop = &adjudication
 			}
 		}
 

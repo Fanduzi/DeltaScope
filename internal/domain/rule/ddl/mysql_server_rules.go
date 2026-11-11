@@ -1,16 +1,18 @@
-// Package ddl: T26-SERVER-DROP-01 — the audited MySQL identifier-form
-// DROP SERVER slice (accepted contract:
-// docs/verification/t26-semantics-01, b8a67e7b).
-// The rule emits one notice finding for every audited DROP SERVER and
-// owes the bounded gap set the adjudication cannot vouch for:
-// server.existence (unproven catalog answer), server.batch_effects
-// (an earlier batch statement's undischarged unknown effect shadowed
-// the catalog), and server.drop_privilege — always owed on the audited
-// path because SUPER/grant evidence is not wired and the execution
-// premise stays unproven. IF EXISTS does not publish absent without
-// that privilege proof: the guard only skips the error, it does not
-// license an absent finding. Findings and gaps carry no authored
-// server name — the name stays internal to the batch channel.
+// Package ddl: the audited MySQL identifier-form DROP SERVER slice —
+// T26-SERVER-DROP-01 recognition and the T26-SERVER-DROP-EXECUTION-01
+// shared adjudication (accepted contracts:
+// docs/verification/t26-semantics-01 b8a67e7b,
+// docs/verification/t26-server-drop-premise-01 cfd34782).
+// The rule reads one truth: spec.AdjudicateServerDrop's arm plus its
+// derived owed-fact set. server.existence, server.batch_effects, and
+// server.drop_privilege are owed exactly per arm — the terminal
+// refusal owes nothing (the proven absent carries the whole verdict),
+// the guarded arm owes the privilege only when it stays unproven, and
+// a consumable positive witness under the fixed
+// observed_account_new_session conditional scope discharges
+// server.drop_privilege without widening identity, clearing barriers,
+// or proving absence. Findings and gaps carry no authored server name,
+// no account, and no grant text — the evidence stays internal.
 
 package ddl
 
@@ -55,7 +57,23 @@ func serverStateFor(statement spec.Statement) *spec.ServerState {
 	return statement.Metadata.Server
 }
 
+// serverDropAdjudicationFor returns the shared adjudication the
+// enrichment attached — nil outside the audited slice (a legacy
+// statement shape or a bypassed enrichment), where the defensive
+// fallback keeps the pre-execution contract: every premise owed.
+func serverDropAdjudicationFor(statement spec.Statement) *spec.ServerDropAdjudication {
+	if statement.Metadata == nil {
+		return nil
+	}
+	return statement.Metadata.ServerDrop
+}
+
 func (r mysqlDropServerRule) missingServerFacts(statement spec.Statement) []string {
+	if adjudication := serverDropAdjudicationFor(statement); adjudication != nil {
+		// The shared adjudication derives the owed set per arm — the
+		// rule never recomputes premises on its own.
+		return adjudication.Owed
+	}
 	missing := []string{}
 	state := serverStateFor(statement)
 	proven := state != nil && state.Read && state.Exists
@@ -64,15 +82,12 @@ func (r mysqlDropServerRule) missingServerFacts(statement spec.Statement) []stri
 			// The ordered channel's undischarged unknown effect shadowed
 			// the catalog — the batch-effects gap replaces the existence
 			// gap (same dedup contract as the tablespace family).
-			missing = append(missing, "server.batch_effects")
+			missing = append(missing, spec.ServerFactBatchEffects)
 		} else {
-			missing = append(missing, "server.existence")
+			missing = append(missing, spec.ServerFactExistence)
 		}
 	}
-	// DROP SERVER needs SUPER — grant evidence is never wired, so the
-	// execution premise stays owed on every audited path, present or
-	// unproven alike.
-	missing = append(missing, "server.drop_privilege")
+	missing = append(missing, spec.ServerFactDropPrivilege)
 	return missing
 }
 
@@ -90,30 +105,142 @@ func (r mysqlDropServerRule) EvidenceGaps(statement spec.Statement) []rule.Evide
 	}}
 }
 
+// serverDropMessage renders the arm's bounded public message — the
+// conditional-audit scope is the fixed token, never an account or
+// grant detail.
+func serverDropMessage(statement spec.Statement, adjudication *spec.ServerDropAdjudication) string {
+	state := serverStateFor(statement)
+	if adjudication == nil {
+		if state != nil && state.Read && state.Exists {
+			return "DROP SERVER targets a catalog entry proven present at bind time; execution remains unverified"
+		}
+		return "DROP SERVER targets a server definition whose existence and execution remain unverified"
+	}
+	consumable := adjudication.Privilege == spec.ServerDropPrivilegeConsumable
+	switch adjudication.Arm {
+	case spec.ServerDropArmProven:
+		return "DROP SERVER is conditionally proven to drop its catalog entry under the observed_account_new_session conditional audit"
+	case spec.ServerDropArmConvergent:
+		return "DROP SERVER IF EXISTS is conditionally proven to leave the server entry absent under the observed_account_new_session conditional audit"
+	case spec.ServerDropArmTerminalRefusal:
+		return "DROP SERVER is provably refused — the server entry is already absent in this batch"
+	case spec.ServerDropArmGuardedAbsent:
+		if consumable {
+			return "DROP SERVER IF EXISTS is a proven guard no-op under the observed_account_new_session conditional audit — the server entry is already absent in this batch"
+		}
+		return "DROP SERVER IF EXISTS is a proven guard no-op — the server entry is already absent in this batch; the execution premise remains unverified"
+	case spec.ServerDropArmBarrier:
+		if consumable {
+			return "DROP SERVER leaves existence shadowed by earlier batch effects under the observed_account_new_session conditional audit"
+		}
+		return "DROP SERVER targets a server definition whose existence and execution remain unverified"
+	default:
+		if consumable {
+			return "DROP SERVER targets a server definition whose existence remains unverified under the observed_account_new_session conditional audit"
+		}
+		if state != nil && state.Read && state.Exists {
+			return "DROP SERVER targets a catalog entry proven present at bind time; execution remains unverified"
+		}
+		return "DROP SERVER targets a server definition whose existence and execution remain unverified"
+	}
+}
+
+// serverDropOutcome is the bounded outcome token published in finding
+// metadata — one fixed vocabulary per arm so public consumers read the
+// arm without parsing prose.
+func serverDropOutcome(adjudication *spec.ServerDropAdjudication) string {
+	if adjudication == nil {
+		return "unverified"
+	}
+	switch adjudication.Arm {
+	case spec.ServerDropArmProven:
+		return "conditional_drop"
+	case spec.ServerDropArmConvergent:
+		return "conditional_absent"
+	case spec.ServerDropArmTerminalRefusal:
+		return "refused_absent"
+	case spec.ServerDropArmGuardedAbsent:
+		return "guarded_absent"
+	case spec.ServerDropArmBarrier:
+		return "blocked_batch_effects"
+	default:
+		return "unverified"
+	}
+}
+
 func (r mysqlDropServerRule) Evaluate(ctx context.Context, statement spec.Statement) ([]rule.Finding, error) {
 	if !r.AppliesTo(statement) {
 		return nil, nil
 	}
-	state := serverStateFor(statement)
-	message := "DROP SERVER targets a server definition whose existence and execution remain unverified"
-	if state != nil && state.Read && state.Exists {
-		message = "DROP SERVER targets a catalog entry proven present at bind time; execution remains unverified"
+	adjudication := serverDropAdjudicationFor(statement)
+	consumable := adjudication != nil && adjudication.Privilege == spec.ServerDropPrivilegeConsumable
+
+	level := r.level
+	explanation := &rule.FindingExplanation{
+		Why:        "DROP SERVER removes the mysql.servers row defining a foreign data wrapper connection and requires SUPER.",
+		Risk:       "Whether the statement actually executed is unproven — the privilege premise is not discharged, and batch writes may already shadow the catalog answer. FEDERATED tables created with the connection information are not removed with it, but definitions or code resolving through this server entry could be affected if the removal lands.",
+		Suggestion: "Confirm the server entry is no longer needed and that the executing account holds SUPER before relying on the drop.",
 	}
+	if adjudication != nil {
+		switch adjudication.Arm {
+		case spec.ServerDropArmTerminalRefusal:
+			// A proven refusal is the same finding class the sibling
+			// families emit — a native-error-class blocker, not an
+			// advisory notice.
+			level = rule.LevelBlocker
+			explanation = &rule.FindingExplanation{
+				Why:        "DROP SERVER requires the named mysql.servers entry to exist; the audited entry is already absent in this batch, so the statement provably refuses.",
+				Risk:       "The statement cannot land — it would fail with a native server-not-found error at execution. The absent proof is the batch's own ordered state, never a catalog guess.",
+				Suggestion: "Remove the duplicate drop or guard it with IF EXISTS if absence is acceptable.",
+			}
+		case spec.ServerDropArmGuardedAbsent:
+			explanation = &rule.FindingExplanation{
+				Why:        "DROP SERVER IF EXISTS skips the native error when the entry is absent; the audited entry is already absent in this batch.",
+				Risk:       "The guard is a proven no-op — the entry is already gone. " + conditionalRiskTail(consumable),
+				Suggestion: "Confirm the absence is the expected state; the guard hides the not-found error by design.",
+			}
+		case spec.ServerDropArmProven, spec.ServerDropArmConvergent:
+			explanation = &rule.FindingExplanation{
+				Why:        "DROP SERVER removes the mysql.servers row defining a foreign data wrapper connection and requires SUPER; the conditional audit bound the observed account's direct global grant as the expected executor's premise.",
+				Risk:       conditionalRiskTail(true) + " FEDERATED tables created with the connection information are not removed with it.",
+				Suggestion: "Confirm the server entry is no longer needed; the conditional audit only covers a new session on the observed target while the relied-upon grant still applies.",
+			}
+		default:
+			if consumable {
+				explanation = &rule.FindingExplanation{
+					Why:        "DROP SERVER removes the mysql.servers row defining a foreign data wrapper connection and requires SUPER; the conditional audit discharged the privilege premise but existence stayed unproven.",
+					Risk:       conditionalRiskTail(true) + " The entry's pre-state is still unverified, so whether anything was dropped is unproven.",
+					Suggestion: "Confirm the server entry exists and is no longer needed before relying on the drop.",
+				}
+			}
+		}
+	}
+
 	metadata := map[string]any{
 		"operation": string(statement.DDL.Operation),
 		"object":    "server",
+		"outcome":   serverDropOutcome(adjudication),
 	}
 	if statement.DDL.Server.IfExists {
 		metadata["if_exists"] = true
 	}
+	if consumable {
+		metadata["conditional_audit"] = string(spec.PrivilegeAuditModeObservedAccountNewSession)
+	}
 	return []rule.Finding{{
-		Level:   r.level,
-		Message: message,
-		Explanation: &rule.FindingExplanation{
-			Why:        "DROP SERVER removes the mysql.servers row defining a foreign data wrapper connection and requires SUPER.",
-			Risk:       "Whether the statement actually executed is unproven — the privilege premise is not wired, and batch writes may already shadow the catalog answer. FEDERATED tables created with the connection information are not removed with it, but definitions or code resolving through this server entry could be affected if the removal lands.",
-			Suggestion: "Confirm the server entry is no longer needed and that the executing account holds SUPER before relying on the drop.",
-		},
-		Metadata: metadata,
+		Level:       level,
+		Message:     serverDropMessage(statement, adjudication),
+		Explanation: explanation,
+		Metadata:    metadata,
 	}}, nil
+}
+
+// conditionalRiskTail is the fixed conditional-audit caveat — the
+// premise holds only under the declared scope, never as a live grant
+// proof.
+func conditionalRiskTail(consumable bool) string {
+	if !consumable {
+		return "The execution premise stays unproven — no consumable grant evidence satisfied the observed_account_new_session scope for this statement."
+	}
+	return "The audit is conditional — it describes a new execution session on the observed target established after the grant observation, while the relied-upon direct global grant still applies; it does not verify the future executor or that any current session holds SUPER."
 }

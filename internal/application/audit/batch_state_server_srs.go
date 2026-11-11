@@ -68,6 +68,19 @@ func (s *batchState) bindMySQLServer(ctx context.Context, statement spec.Stateme
 		bound.UnreadReason = spec.MetadataUnreadBatchEffects
 		return bound, nil
 	}
+	if decl.NameIdent {
+		// Step 5 of the accepted order: a proven OrderedAbsent answers
+		// before any provider or cache access — only on the
+		// provably-same identity, and only while the channel carried no
+		// barrier or taint (decided above). A shadowed or stale absent
+		// never reaches this point — the barrier path already exited
+		// (T26-SERVER-DROP-EXECUTION-01).
+		for _, entry := range s.serverEntries {
+			if entry.absent && serverRel(decl.Name, entry.name) == serverRelSame {
+				return &spec.ServerState{Name: decl.Name, OrderedAbsent: true}, nil
+			}
+		}
+	}
 	resolver := s.objectResolverFor(s.mysqlServerResolver)
 	if resolver == nil {
 		return bound, nil

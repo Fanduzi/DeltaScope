@@ -80,6 +80,15 @@ type ServerState struct {
 	// UnreadReason names why the read stayed unissued when Read is
 	// false — a stable token from the MetadataUnread vocabulary.
 	UnreadReason string `json:"-"`
+	// OrderedAbsent is the same-adjudication ordered channel's proven
+	// absent answer: set only by a proven drop or the approved
+	// convergent arm inside this batch — never by the catalog (a
+	// zero-row catalog answer stays unknown) and never when the entry
+	// carries a barrier or taint. OrderedAbsent=true implies
+	// Exists=false, Status is never not_found, and Read is never set
+	// by the ordered channel (T26-SERVER-DROP-EXECUTION-01; contract:
+	// docs/verification/t26-semantics-01 D.4).
+	OrderedAbsent bool `json:"-"`
 }
 
 // ServerOption records one OPTIONS member — key and value kind only.

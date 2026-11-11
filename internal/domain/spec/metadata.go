@@ -91,6 +91,12 @@ type Metadata struct {
 	// round). Internal evidence only: the family names stay inside the
 	// audit run, never serialized.
 	Server *ServerState `json:"-"`
+	// ServerDrop carries the shared per-statement adjudication for the
+	// audited identifier-form DROP SERVER slice — the one truth the
+	// rule's gap/message/output and the ordered channel's post-state
+	// both read (T26-SERVER-DROP-EXECUTION-01). Nil outside that
+	// slice: legacy consumers keep the existence fact alone.
+	ServerDrop *ServerDropAdjudication `json:"-"`
 	// SpatialReference carries the bound MySQL SRS facts for the one
 	// SRID identity a spatial reference system statement names —
 	// existence plus the optional conflict and dependency witness

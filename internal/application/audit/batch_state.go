@@ -143,6 +143,23 @@ type batchState struct {
 	// (string-literal spelling); every later statement exits at step 2
 	// before the relation scan or any resolver call.
 	serverChannelTainted bool
+	// serverDropPrivilege is the request-level immutable raw privilege
+	// observation — the verbatim account and grant lines read on one
+	// provider connection (T26-SERVER-DROP-EXECUTION-01). Nil means
+	// the conditional mode or the loader never ran.
+	serverDropPrivilege *spec.MySQLServerDropPrivilegeObservation
+	// serverDropPrivilegeWitness is the once-per-request derived
+	// positive-witness verdict — the observation bound its principal,
+	// the in-domain version, and the exact-token SUPER-or-ALL proof at
+	// load time; every statement only projects consumable/suppressed
+	// over the ordered scope. Stored on the state, never on shared
+	// instance facts.
+	serverDropPrivilegeWitness bool
+	// serverPrivilegeScopeEnded marks the observation's applicable
+	// range ended — an earlier authored grant/role statement (or the
+	// matching boundary feature) may have revoked the relied-upon
+	// grant, so every later statement's premise stays owed.
+	serverPrivilegeScopeEnded bool
 	// resolvedVersion is the request's already-parsed version fact. Rules read
 	// the same fact from statement metadata. apply still receives the original
 	// statement, so RENAME COLUMN applicability reads this copy. Nil means the
