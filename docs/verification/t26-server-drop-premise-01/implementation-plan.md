@@ -1,108 +1,161 @@
-# T26-SERVER-DROP-PREMISE-01 — implementation plan (PLAN / UNEXECUTED)
+# T26-SERVER-DROP-PREMISE-01 — implementation plan (R1, all PLAN/UNEXECUTED)
 
-One recommended path. Every item here is a proposal for reviewer
-adjudication — no code, test, policy, or manifest change was made this
-round and no verification below has run.
+Single recommended path only — no alternatives offered, no branches
+deferred to reviewer choice. Nothing in this file is executed product
+work; the R1 work order authorises docs-only.
 
-## 1. Recommended path
+## 1. The one recommended path
 
-Reuse the T24 grant-read mechanics behind a new, narrow, family-scoped
-supply — **not** the whole `LoadMySQLResourceGroupFacts` bundle:
+`observed_account_new_session` conditional supply:
 
-- Provider side: a dedicated loader reading only the effective-grant
-  channels (`SHOW GRANTS FOR CURRENT_USER()` + `CURRENT_ROLE()` +
-  `USING`) and `@@server_uuid`, on one dedicated session — reusing
-  `loadMySQLEffectivePrivileges`, `loadMySQLActiveRoles`,
-  `loadMySQLGrantLines`, `collectMySQLGlobalPrivileges`, and
-  `loadMySQLServerIdentity` from
-  `internal/infrastructure/metadata/mysql/provider_resource_group_facts.go`
-  (extracted or shared, never duplicated).
-- Application side: a new optional loader interface beside
-  `MySQLResourceGroupFactsLoader` in
-  `internal/application/audit/metadata.go`, invoked once per request
-  under a SERVER-family gate (`statementsNeedMySQLServerFacts`,
-  mirroring `statementsNeedMySQLResourceGroupFacts`), filling a new
-  `spec.InstanceFacts` member through the same
-  fill-only-unproven merge discipline.
-- Fact shape (proposal name): `MySQLDropPrivilege` /
-  `MySQLDropPrivilegeKnown` on `spec.InstanceFacts` — `Known=false`
-  for every non-positive outcome except a *complete* read without
-  `SUPER`/`ALL PRIVILEGES`, which binds `Known=true, false`
-  (proven denial).
-- Consumption: `missingServerFacts` in
-  `internal/domain/rule/ddl/mysql_server_rules.go` consults
-  `statement.Metadata.Instance` — `Known=true,true` discharges
-  `server.drop_privilege`; `Known=true,false` feeds a premise-refusal
-  decision under the accepted adjudication contract (its exact finding
-  shape belongs to the implementation slice's review, alongside
-  OrderedAbsent); unproven keeps the gap.
-- Caller evidence (optional second channel, same binding contract):
-  extend `spec.DeploymentEvidence` with a privilege member (proposal)
-  gated by the same Source/Product/Version/Target binding — only if
-  the reviewer wants offline privilege supply; the provider read alone
-  satisfies this slice.
+- **Request entry** (proposal, naming per project style): an explicit
+  mode field on the audit request declaring the semantic mode
+  defined in execution-premise-contract.md §1 — observed
+  `CURRENT_USER()` account as expected principal; expected execution
+  context = a new session on the same target established after the
+  observation; result conditioned on the relied-upon direct global
+  grant still applying at permission-load time in that session.
+  When the field is absent the mode is not selected and
+  `server.drop_privilege` stays owed unconditionally.
+- **Loader** (new, MySQL provider): on one dedicated `*sql.Conn`
+  obtained via `DB.Conn(ctx)` (same acquisition/release discipline as
+  `provider_resource_group_facts.go:36-41` — `conn.Close()` deferred),
+  run `SELECT CURRENT_USER()` then `SHOW GRANTS FOR CURRENT_USER()`
+  on that same actual connection; collect `ON *.*` lines via the
+  existing `loadMySQLGrantLines`/`collectMySQLGlobalPrivileges`
+  mechanism; positive witness iff exact-token `SUPER`, or `ALL
+  PRIVILEGES` under the registered version-checked static-set proof.
+- **Gate**: the loader is invoked only for an audited MySQL
+  identifier-form DROP SERVER *and* the explicit mode selected —
+  never for CREATE/ALTER SERVER, TiDB statements, or other families;
+  no widening of reads for unrelated channels.
+- **Error boundary**: the loader returns a typed error whose
+  `Error()` text is a fixed bounded message carrying no underlying
+  sensitive content, with `Unwrap()` preserving the cause so
+  `errors.Is/As` still reach it. Query/scan/`rows.Err`/permission/
+  cancellation failures on the required channel all propagate as this
+  bounded error. `fmt.Errorf("...: %w", err)` alone does not bound
+  public text — the wrapper lives at the loader's return edge, and
+  the existing `ObjectResolver` wrap is not assumed to cover a
+  session-based privilege loader; the plan must name the concrete
+  seam where enrichment surfaces it (metadata enrich failure path,
+  same class as existing `Metadata.*` read errors).
 
-The alternative rejected: firing the full T24 bundle for SERVER
-statements — it pulls resource-group-only channels (read-only vars,
-occupancy, feature probe) into an unrelated family and answers the
-wrong privilege question (`MySQLReadOnlyExempt` includes
-`CONNECTION_ADMIN`).
+## 2. Data flow (deterministic, per R1-D)
 
-## 2. Seams to touch (implementation slice)
+```
+request-level immutable raw evidence
+    (observed account + ON *.* grant lines + target + source +
+     request scope — never mutated)
+        │
+        ▼
+explicit principal/target/context binding
+    (mode selected? observed account bound? target matches?
+     context covers this batch?)
+        │
+        ▼
+ordered statement scan → applicability range
+    (walk statements in order; the range ends at the first authored
+     statement that could change grants/roles — §3 markers)
+        │
+        ▼
+per-statement consumable projection
+    (each audited DROP SERVER gets its own projection:
+     positive / unproven / suppressed — derived, never shared-
+     mutable; later statements never rewrite earlier bindings)
+        │
+        ▼
+shared DROP adjudication → rule/apply projections
+    (one adjudication drives gap set, Message, Explanation,
+     coverage, verdict, and ordered post-state — §4)
+```
 
-| file | change |
-| --- | --- |
-| `internal/application/audit/metadata.go` | new `MySQLServerPrivilegeFactsLoader`-style optional interface + SERVER-family gate invoking it once per request on MySQL dialect; merge fill-only-unproven |
-| `internal/application/audit/batch_state_mysql_resource_group.go` or new `batch_state_server_privilege.go` | `statementsNeedMySQLServerFacts` helper; a `mergeMySQLServerPrivilegeFacts`-style merge honoring §6 of the contract — including withholding after authored `SET ROLE`/`GRANT`/`REVOKE` (case F) |
-| `internal/domain/spec/metadata.go` | `MySQLDropPrivilege`/`MySQLDropPrivilegeKnown` members on `InstanceFacts`; optionally a `DeploymentEvidence` privilege member (proposal) |
-| `internal/infrastructure/metadata/mysql/provider_privilege_facts.go` (new) | dedicated loader over the reused grant/UUID channels; error propagation per the premise-bundle precedent |
-| `internal/domain/rule/ddl/mysql_server_rules.go` | `missingServerFacts` consults the instance fact; proven denial feeds the refusal shape decided in the implementation review |
-| `pkg/deltascope/audit.go` | public loader-interface forwarding on `publicMetadataProvider`, matching the `LoadMySQLResourceGroupFacts` precedent (lines ~696–707) |
-| `internal/application/audit/batch_state_server_srs.go` | none — the fact binds on `Metadata.Instance`, parallel to `ServerState`, keeping the accepted six-step order untouched |
+## 3. Ordered-scope classification seam (actual parser shapes)
 
-## 3. Minimal verification plan (all PLAN / UNEXECUTED)
+Verified markers available today — no raw-SQL substring matching:
 
-- Unit: grant-adjudication matrix — base-only positive, role-augmented
-  positive, complete-without-SUPER denial, partial-without-SUPER
-  unproven, `CURRENT_ROLE` unavailable degrade, role-line unparseable
-  skip, non-`*.*` scope skip, exact-token `SUPER` vs `SUPERSET`-style
-  near-miss tokens.
-- Unit: consumption — `missingServerFacts` under
-  `Known={true,true}`/`{true,false}`/unproven; gap vocabulary
-  unchanged for all other paths; batch containing authored
-  `SET ROLE`/`GRANT`/`REVOKE` withholds the fact for later statements.
-- Provider-driver (stub): grant lines drive `Known=true,true`;
-  `CURRENT_ROLE`+`USING` augmentation contributes; loader error
-  propagates with `errors.Is/As` reachability; zero resolver calls for
-  privilege (it is a session channel, not an object lookup — resolver
-  request counts stay separate from session query counts).
-- Public shape (`AuditSQL`): proven-privilege batch discharges only
-  `server.drop_privilege` — `server.existence`/`server.batch_effects`
-  and coverage/verdict unchanged by privilege.
-- CLI manifest units (existing T26 cli_cases): re-verify the two DROP
-  units under the isolated profile after wiring; mixed-batch unchanged.
-- Native: **not authorized here** — remains separately gated, as with
-  T24/T25/T26 rounds.
+- `*ast.GrantStmt` → extracted `spec.DDL` with
+  `Operation = spec.DDLOperationGrant` (`extractor.go:218,1971`).
+- `*ast.RevokeStmt` → `Operation = spec.DDLOperationRevoke`
+  (`extractor.go:220,2029`).
+- `*ast.SetRoleStmt` → coverage-boundary feature `"set_role"`
+  (`coverage_boundary.go:374-375`) — an unsupported entry, not a DDL.
+- Related boundary features also terminating the range:
+  `"grant_role"` (coverage_boundary.go:367), `"revoke_role"` (:369),
+  `"grant_proxy"` (:365), `"set_default_role"` (:372).
 
-## 4. OrderedAbsent entry conditions (registration only)
+Policy (registered): any of these authored forms earlier in the batch
+conservatively ends the applicable range for subsequent statements.
+This is the model's scope policy — it does **not** claim each such
+statement immediately changes an existing session's static `SUPER`.
+Whether an extracted `grant`/`revoke` DDL actually names `SUPER` is
+not inspected in this slice; the termination trigger is the operation
+kind alone — a deliberate over-approximation that stays on the
+unproven side.
 
-This slice's proof feeds the already-approved DROP adjudication; it
-does not implement post-state:
+`Metadata.Instance` binding: enrichment attaches `InstanceFacts` per
+statement (`metadata.go:153,172,184`), so each audited statement
+sees the request-level evidence; the projection adds the per-statement
+scope verdict on top — `Known`-style flags on the shared struct are
+never mutated in place to retroactively change earlier bindings.
+Minimal new seam required (proposal only): a per-statement derived
+projection value produced by the ordered scan, consumed by the
+adjudication — not a mutable field on shared `InstanceFacts`.
 
-- The productive path: provider grant read → `MySQLDropPrivilege`
-  bound on `Metadata.Instance` → `server.drop_privilege` discharged →
-  the remaining unknowns (existence, batch effects) resolve under the
-  accepted six-step contract → only then may the approved
-  refusal/guard path consider an OrderedAbsent publication (itself a
-  later slice).
-- Request-scoped proof covers every later statement in the same batch
-  under the same-session condition; an authored role/grant-changing
-  statement withholds coverage for subsequent statements (case F).
-- Privilege proof never substitutes existence proof: the provider's
-  zero-row catalog answer still cannot prove absent, and a proven
-  privilege never clears `server.batch_effects`.
-- Preserved invariants: six-step resolve order; same/unproven relation
-  contract; provably-distinct's empty domain; refusal/guard keep-valid
-  absent contract; rule and `apply` consume one adjudication.
-- Not introduced: `OrderedAbsent` fields, dormant publish branches,
-  any `privilege=true` fabrication, or stub-true-as-production claims.
+## 4. Consumption activation gate and shared adjudication (R1-E)
+
+This round implements none of: privilege supply, gap consumption, or
+OrderedAbsent. Future activation requires a separately authorised
+product work order covering **all of** in one change:
+
+- rule layer: gap set, finding `Message`, `Explanation`;
+- apply layer: the shared adjudication and the ordered post-state;
+- per-statement premise projections and their public-result
+  applicability.
+
+Forbidden shape: changing `missingServerFacts` alone to discharge the
+last gap while `applyServerStatement` still publishes a barrier solely
+on "privilege unwired" — the two must move together under one
+adjudication.
+
+The only activation chain kept:
+
+```
+raw positive witness → binding/scope → per-statement premise
+    → same adjudication → rule/apply projections
+```
+
+Future consumer matrix (all rows derivable from the approved
+b8a67e7b contract — no semantic redesign):
+
+| pre-state | privilege premise | adjudication direction |
+| --- | --- | --- |
+| proven-present + consumable privilege | positive | strongest arm — proven-drop post-state publication becomes reachable only if every other premise of that arm also holds |
+| existence unknown, plain DROP + consumable privilege | positive | existence gap still owed — privilege does not prove existence; outcome stays on the unknown-existence arm |
+| existence unknown, IF EXISTS + consumable privilege | positive | same — IF EXISTS arm unaffected by privilege witness alone |
+| batch-effects barrier + consumable privilege | positive | barrier stays — privilege never clears `batch_effects` |
+| any + privilege unproven / suppressed / error | — | gap stays (or bounded error) — current accepted behaviour |
+| existing valid OrderedAbsent under refusal/guard | any | absent state preserved under refusal/guard — never republished by privilege evidence |
+
+`coverage`/`verdict` are derived from remaining gaps + the shared
+adjudication + existing aggregation rules — never a fixed
+"unchanged by privilege" claim. Two distinct post-state outcomes stay
+separate: publishing absent under a proven-drop/convergent arm with
+sufficient premises, versus preserving an already-published absent
+under refusal/guard.
+
+Approving this supply document does not itself authorise consumption
+activation or OrderedAbsent; no intermediate deliverable that produces
+fields or queries with no consumer will be created.
+
+## 5. Verification plan (PLAN/UNEXECUTED — nothing run this round)
+
+- unit: A–G rows of the contract table, including C (mode unselected /
+  principal unbound / context not covering → gap even with reader
+  `SUPER`), E (successful empty / unrecognised representation →
+  unproven, never `Known=true,false`, never denial), F (ordered-scope
+  suppression with immutable earlier bindings), G (bounded error with
+  `errors.Is/As` reachable);
+- provider-driver tests for read-failure propagation;
+- no denial-finding tests exist — denial adjudication does not exist;
+- manifest/native/live-DB: out of scope this slice.

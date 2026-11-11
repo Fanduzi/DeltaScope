@@ -1,9 +1,10 @@
-# T26-SERVER-DROP-PREMISE-01 — source evidence
+# T26-SERVER-DROP-PREMISE-01 — source evidence (R1)
 
 All excerpts verified against baseline `244aace5` (content identical
 since `5de2da5e` for every file listed). Annotation discipline:
-**[verbatim]** exact source/comment text, **[derived]** behavior
-inferred from the code, **[proposed]** contract this round proposes —
+**[verbatim]** exact source/comment text, **[derived]** behaviour
+inferred from code, **[doc-derived]** official-document semantics
+summarised (not quoted), **[proposed]** contract this round proposes —
 never conflated.
 
 ## A. Request and principal entry points
@@ -67,10 +68,11 @@ A repository-wide search over `internal/domain/spec`,
 `internal/application/audit`, `pkg/deltascope` (excluding tests) for
 `type.*[Pp]rincipal`, `type.*[Ee]xecutor`, `current_user` finds no
 type-level executor/principal binding. `current_user` appears only
-inside the T24 privilege loader (B.2). **[derived]** the "expected
-execution principal" is today represented only as an implicit
-convention — the metadata connection's own account — embedded in the
-T24 bundle comment (B.1), not in any request field or type.
+inside the T24 privilege loader's `SHOW GRANTS FOR CURRENT_USER()`
+statements (B.2) — no `SELECT CURRENT_USER()` identity read exists
+anywhere in the tree. **[derived]** an explicit observed-account read
+is therefore a **[proposed]** new call on the same `*sql.Conn`, not a
+reuse of existing code.
 
 ## B. T24 premise-supply chain
 
@@ -88,13 +90,12 @@ T24 bundle comment (B.1), not in any request field or type.
 // the audited lifecycle statements.
 ```
 
-**[verbatim]** the T24 contract names the executing subject as "the
-connection's own account". **[derived]** this is a declared convention
-of that bundle — the audit asserts the audited statements would run
-under the same session/account the provider reads on; nothing in the
-request or provider API *verifies* that future execution uses that
-account. For DROP SERVER the same convention is the only existing
-principal model.
+**[verbatim]**. **[derived]** this is T24's own read discipline — all
+its channels read on one session so the answers describe one account.
+Scope limit (R1): the comment asserts an intra-*bundle* consistency
+convention only; it does not verify any future executor and must not
+be generalised into a claim that the provider session is the execution
+session.
 
 ### B.2 Same file — `loadMySQLEffectivePrivileges` (lines 166–201)
 
@@ -137,13 +138,19 @@ func loadMySQLEffectivePrivileges(ctx context.Context, conn *sql.Conn) (mysqlPri
 }
 ```
 
-**[verbatim]**. **[derived]** three bounded failure/absence channels
-already exist: `CURRENT_ROLE()` unavailable → rolesKnown=false →
-completeness degrades (positive-only); base SHOW GRANTS erroring with
-`ErrNoRows` → empty set + complete=false; `USING` read failing →
-positive-only + complete=false. Any other error propagates.
+**[verbatim]** — preserved as the historical fact it is (R1-C): the
+`USING` branch converts any augmentation error into a partial result
+(`return set, false, nil`), and `ErrNoRows` on the base channel
+returns an empty set with `complete=false`. **[derived]** these
+degradations are correct for T24's completeness-bit contract, but the
+new SERVER loader's error contract (bounded error on genuine read
+failure, unproven on successful-empty — never a swallowed failure) is
+different, so the orchestration is **not** reused unchanged: only the
+underlying mechanisms `loadMySQLGrantLines` and
+`collectMySQLGlobalPrivileges` carry over. T24's wrapper and its
+accepted conclusions stay untouched.
 
-### B.3 Same file — grant collection and completeness consumption (lines 52–72, 154–176)
+### B.3 Same file — grant collection, completeness consumption, and the full token loop (lines 52–72, 154–165, 176–179, 223–258)
 
 ```go
 	privileges, grantsComplete, err := loadMySQLEffectivePrivileges(ctx, conn)
@@ -179,6 +186,28 @@ var mysqlGlobalGrantPattern = regexp.MustCompile(`(?i)^GRANT\s+(.+?)\s+ON\s+(\S+
 ```
 
 ```go
+func loadMySQLGrantLines(ctx context.Context, conn *sql.Conn, statement string) ([]string, error) {
+	rows, err := conn.QueryContext(ctx, statement)
+	if err != nil {
+		return nil, fmt.Errorf("query mysql grants: %w", err)
+	}
+	defer rows.Close()
+	var lines []string
+	for rows.Next() {
+		var line string
+		if err := rows.Scan(&line); err != nil {
+			return nil, fmt.Errorf("scan mysql grant line: %w", err)
+		}
+		lines = append(lines, line)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterate mysql grant lines: %w", err)
+	}
+	return lines, nil
+}
+```
+
+```go
 // collectMySQLGlobalPrivileges folds every global-scope (*.*) grant
 // line into the set. Privileges parse as bounded, exact tokens — never
 // substring matches, so RESOURCE_GROUP_USER never counts as
@@ -189,17 +218,64 @@ func collectMySQLGlobalPrivileges(set mysqlPrivilegeSet, lines []string) {
 		if match == nil || match[2] != "*.*" {
 			continue
 		}
+		for _, privilege := range strings.Split(match[1], ",") {
+			privilege = strings.ToUpper(strings.TrimSpace(privilege))
+			if privilege != "" {
+				set[privilege] = true
+			}
+		}
+	}
+}
 ```
 
-**[verbatim]**. **[derived]** the set is a positive-witness union over
-`ON *.*` lines only; role-assignment lines never parse; per-schema
-grants never contribute. `MySQLReadOnlyExempt` deliberately answers a
-*different* question (`SUPER || CONNECTION_ADMIN || ALL PRIVILEGES`
-for the read-only gate) — it is **not** consumable for DROP SERVER's
-exact `SUPER` requirement, because `CONNECTION_ADMIN` does not grant
-`SUPER`.
+**[verbatim]** — the token tail is now complete (R1-F.2): split on `,`,
+upper-case, trim, non-empty exact token into the set.
+**[derived]** the set is a positive-witness union over `ON *.*` lines
+only; role-assignment lines never parse; per-schema grants never
+contribute. `loadMySQLGrantLines` propagates query, scan, and
+`rows.Err` failures as wrapped causes — the positive-only collector
+itself never swallows a read failure (the swallows live in B.2's
+orchestration, which the new loader does not reuse). A successful
+empty line list and an unrecognised grant representation are
+observationally distinct from a read failure and register as
+unproven, never as an error.
+`MySQLReadOnlyExempt` deliberately answers a *different* question
+(`SUPER || CONNECTION_ADMIN || ALL PRIVILEGES` for the read-only gate)
+— it is **not** consumable for DROP SERVER's exact `SUPER`
+requirement, because `CONNECTION_ADMIN` does not grant `SUPER`.
 
-### B.4 `internal/application/audit/batch_state_mysql_resource_group.go` — `applyDeploymentEvidence` (lines 107–157)
+### B.4 `internal/infrastructure/metadata/mysql/provider_resource_group_facts.go` — session acquisition and release (lines 38–52)
+
+```go
+// LoadMySQLResourceGroupFacts implements
+// audit.MySQLResourceGroupFactsLoader for the real MySQL provider.
+// Non-MySQL dialects answer nil — the bundle never cross-loads.
+func (p *Provider) LoadMySQLResourceGroupFacts(ctx context.Context, dialect spec.Dialect) (*spec.InstanceFacts, error) {
+	if dialect != spec.DialectMySQL {
+		return nil, nil
+	}
+	conn, err := p.db.Conn(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("acquire mysql resource-group facts session: %w", err)
+	}
+	defer conn.Close()
+```
+
+**[verbatim]**. **[derived]** `DB.Conn` returns a *dedicated*
+`*sql.Conn` — a session pinned for this call's lifetime, then released
+by the deferred `Close`. It does **not** prove a newly established
+physical connection: `database/sql` may return a pooled existing one.
+For the new loader this means `SELECT CURRENT_USER()` and `SHOW
+GRANTS FOR CURRENT_USER()` on that conn describe the same actual
+connection's account — the observed identity — while nothing about
+the conn proves the pool state or the session's effective privileges
+at observation time. Connection acquisition/release for the SERVER
+loader follows this same shape **[proposed]**; whether the pool hands
+back a fresh or reused physical connection is unprovable from here and
+is exactly why the contract frames the expected execution context as
+a *post-observation new session* rather than "this session".
+
+### B.5 `internal/application/audit/batch_state_mysql_resource_group.go` — `applyDeploymentEvidence` (lines 107–157)
 
 ```go
 // applyDeploymentEvidence folds a sourced, target-bound fact bundle
@@ -238,13 +314,13 @@ exact `SUPER` requirement, because `CONNECTION_ADMIN` does not grant
 
 **[verbatim]**. **[derived]** the binding contract: provenance named,
 product/version exact, online binding only to the *observed*
-`@@server_uuid` (absent observation refuses without falling back),
-offline binding to the declared `TargetIdentity`, fill-only-unproven
-merge, per-request consumption, never cached. The bundle fields are
-T24-specific (`HostVCPUs`, `PriorityCapable`, `FeatureSupported`) — no
-privilege member exists.
+`@@server_uuid`, offline binding to the declared `TargetIdentity`,
+fill-only-unproven merge, per-request consumption, never cached. The
+bundle fields are T24-specific (`HostVCPUs`, `PriorityCapable`,
+`FeatureSupported`) — no privilege member exists, and wiring one is
+registered as deferred, not proposed for this slice.
 
-### B.5 `internal/application/audit/metadata.go` — family gate + evidence nesting (lines 236–258)
+### B.6 `internal/application/audit/metadata.go` — family gate + evidence nesting (lines 236–258)
 
 ```go
 	if dialect == spec.DialectMySQL && statementsNeedMySQLResourceGroupFacts(statements) {
@@ -271,14 +347,17 @@ privilege member exists.
 	}
 ```
 
-**[verbatim]**. **[derived]** the whole premise supply — provider
-bundle *and* caller evidence — fires only while a batch names a MySQL
-resource group (`statementsNeedMySQLResourceGroupFacts`). A
-SERVER-only batch loads neither. Loader errors propagate as
-`fmt.Errorf("load mysql resource-group facts: %w", err)` — the causal
-chain preserved, never laundered into a gap.
+**[verbatim]**. **[derived]** the whole premise supply fires only
+while a batch names a MySQL resource group
+(`statementsNeedMySQLResourceGroupFacts`) — a SERVER-only batch loads
+neither channel. This is the gate shape the SERVER loader mirrors
+**[proposed]**: a `statementsNeed…`-style family gate plus the
+explicit mode selection. `fmt.Errorf("…: %w", err)` here preserves
+the causal chain for `errors.Is/As`, but it is not by itself a public-
+text bound — the loader-side typed wrapper (C.4) is what bounds what
+reaches public output.
 
-### B.6 `internal/application/audit/metadata.go` — loader interface (lines 43–52)
+### B.7 Same file — loader interface (lines 43–52)
 
 ```go
 // MySQLResourceGroupFactsLoader optionally loads the T24/#103
@@ -294,12 +373,12 @@ type MySQLResourceGroupFactsLoader interface {
 }
 ```
 
-**[verbatim]**. **[derived]** the interface is family-scoped by
-contract — a SERVER privilege loader needs its own family gate; the
-bundle it returns must not pull the resource-group-only channels
-(read-only vars, occupancy, feature probe) into a SERVER audit.
+**[verbatim]**. **[derived]** family-scoped by contract — the SERVER
+privilege loader needs its own family gate and its own narrow
+interface; the returned facts must not pull resource-group-only
+channels into a SERVER audit.
 
-### B.7 `internal/domain/spec/metadata.go` — `DeploymentEvidence` (lines 273–318)
+### B.8 `internal/domain/spec/metadata.go` — `DeploymentEvidence` (lines 273–318)
 
 ```go
 // DeploymentEvidence is a caller-sourced fact bundle for the premises
@@ -319,9 +398,40 @@ bundle it returns must not pull the resource-group-only channels
 Product / Version / Target + fill-only-unproven + per-request) is a
 reusable *contract shape*; the fields are not.
 
-## C. SERVER consumption seams
+## C. Consumption seams and classification
 
-### C.1 `internal/application/audit/batch_state_server_srs.go` — `bindMySQLServer` head (lines 33–60)
+### C.1 `internal/application/audit/metadata.go` — `Metadata.Instance` binding per statement (lines 150–186)
+
+```go
+	for i, statement := range statements {
+		enriched[i] = statement
+		metadataSchema := metadataTargetSchema(request, statement)
+		metadata := &spec.Metadata{Schema: metadataSchema, Instance: instanceFacts, Version: resolvedVersion}
+```
+
+```go
+		if metadata.Schema != "" || metadata.Instance != nil || metadata.TargetTable != nil || metadata.Version != nil {
+			enriched[i].Metadata = metadata
+		}
+```
+
+```go
+			if objSnapshot != nil {
+				if enriched[i].Metadata == nil {
+					enriched[i].Metadata = &spec.Metadata{Schema: request.Schema, Instance: instanceFacts, Version: resolvedVersion}
+				}
+				enriched[i].Metadata.Objects = append(enriched[i].Metadata.Objects, *objSnapshot)
+			}
+```
+
+**[verbatim]**. **[derived]** every enriched statement receives a
+`Metadata` whose `Instance` points at the *same* request-level
+`instanceFacts` — the raw evidence is shared and immutable; the
+per-statement consumable projection must therefore live outside it
+(an ordered-scan result keyed by statement), never a mutated field on
+the shared struct.
+
+### C.2 `internal/application/audit/batch_state_server_srs.go` — `bindMySQLServer` head (lines 33–60)
 
 ```go
 // bindMySQLServer resolves the one server identity a SERVER-family
@@ -341,10 +451,10 @@ func (s *batchState) bindMySQLServer(ctx context.Context, statement spec.Stateme
 ```
 
 **[verbatim]**. **[derived]** the existence binding stays the accepted
-slice; a privilege fact would bind on `Metadata.Instance`
-(`spec.InstanceFacts`), parallel to this — not inside `ServerState`.
+slice; a privilege premise binds on `Metadata.Instance`, parallel to
+this — not inside `ServerState`.
 
-### C.2 `internal/domain/rule/ddl/mysql_server_rules.go` — `missingServerFacts` (lines 58–78)
+### C.3 `internal/domain/rule/ddl/mysql_server_rules.go` — `missingServerFacts` (lines 58–78)
 
 ```go
 func (r mysqlDropServerRule) missingServerFacts(statement spec.Statement) []string {
@@ -370,11 +480,12 @@ func (r mysqlDropServerRule) missingServerFacts(statement spec.Statement) []stri
 ```
 
 **[verbatim]**. **[derived]** `server.drop_privilege` is appended
-unconditionally today — the consumption point a positive witness must
-gate. `server.batch_effects`/`server.existence` selection stays
-independent of privilege.
+unconditionally today. **[proposed]** when activation is later
+authorised, this discharge must move under the shared adjudication in
+lockstep with `applyServerStatement`'s post-state — see
+implementation-plan.md §4; it may not be unwired alone.
 
-### C.3 `internal/application/audit/metadata.go` — `resolveObjectSnapshot` + `metadataObjectReadError` (lines 892–925)
+### C.4 `internal/application/audit/metadata.go` — `resolveObjectSnapshot` + `metadataObjectReadError` (lines 892–925)
 
 ```go
 // resolveObjectSnapshot calls the ObjectResolver if available, or returns
@@ -397,28 +508,107 @@ func (metadataObjectReadError) Error() string   { return "metadata object read f
 func (e metadataObjectReadError) Unwrap() error { return e.cause }
 ```
 
-**[verbatim]**. **[derived]** two error precedents coexist: object
-reads use the public-text-bounded `metadataObjectReadError`; the T24
-premise bundle propagates `fmt.Errorf` chains. A privilege loader
-sitting in the premise-bundle position should follow its own family's
-precedent while keeping `errors.Is/As` reachability either way.
+**[verbatim]**. **[derived]** this is the error-boundary shape the
+SERVER loader copies **[proposed]** — fixed bounded `Error()` text
+with `Unwrap()` cause reachability — but as its *own* type at the
+loader's return edge, because `metadataObjectReadError` wraps
+`ObjectResolver` calls only: it does not cover reads issued by a
+premise loader on `MetadataProvider`, which surface through the
+`enrich` failure path instead. The new loader therefore names its own
+bounded error (e.g. `mysqlPrivilegeReadError`, same shape) and lets
+it propagate out of the family gate the way B.6's
+`fmt.Errorf("load mysql resource-group facts: %w", err)` does —
+inner text bounded at the loader, outer wrapping at the gate.
+Query, scan, `rows.Err`, permission, and cancellation failures all
+reach the boundary as causes; successful-empty and unrecognised
+representations never reach it at all — they are unproven results,
+not failures.
+
+### C.5 Ordered-scope classification seam — actual parser shapes
+
+`internal/infrastructure/parser/tidb/extractor.go` (lines 218–221):
+
+```go
+	case *ast.GrantStmt:
+		statement.DDL = extractGrant(node)
+	case *ast.RevokeStmt:
+		statement.DDL = extractRevoke(node)
+```
+
+`internal/domain/spec/ddl.go` (lines 286–287):
+
+```go
+	DDLOperationGrant                 DDLOperation = "grant"
+	DDLOperationRevoke                DDLOperation = "revoke"
+```
+
+`internal/infrastructure/parser/tidb/coverage_boundary.go` (lines 363–375):
+
+```go
+	case *ast.GrantProxyStmt:
+		return "grant_proxy"
+	case *ast.GrantRoleStmt:
+		return "grant_role"
+	case *ast.RevokeRoleStmt:
+		return "revoke_role"
+	case *ast.RenameUserStmt:
+		return "rename_user"
+	case *ast.SetDefaultRoleStmt:
+		return "set_default_role"
+	case *ast.SetRoleStmt:
+		return "set_role"
+```
+
+**[verbatim]**. **[derived]** the range-termination markers exist as
+semantic classifications, not text matching: extracted `grant`/`revoke`
+DDL operations on ordinary statements, plus the `set_role`,
+`set_default_role`, `grant_role`, `revoke_role`, `grant_proxy`
+boundary features on unsupported statements. The ordered scan reads
+`statement.DDL.Operation` and the unsupported-feature list it already
+produces — no new parser work, no SQL-substring heuristics.
+**[proposed]** the conservative range-termination policy built on
+these markers is a model scope policy only; it does not claim each
+terminating statement immediately changes an existing session's
+static `SUPER`.
 
 ## D. Official references (read-only, this round)
 
-- `https://dev.mysql.com/doc/refman/8.0/en/drop-server.html`: `DROP
-  SERVER` deletes the row from `mysql.servers`; requires `SUPER`;
-  FEDERATED tables created with the connection information are not
-  removed. **[verbatim semantics, doc-derived]**
-- `https://dev.mysql.com/doc/refman/8.0/en/show-grants.html`: `SHOW
-  GRANTS FOR CURRENT_USER()` shows the current session account's
-  grants; `USING role` adds privileges associated with roles *granted
-  to* that user; "a privilege granted to an account is always in
-  effect, but a role is not" — active roles differ across and within
-  sessions (`activate_all_roles_on_login`, default roles, `SET ROLE`);
-  in definer context `CURRENT_USER` names the definer, not the
-  invoker; `SHOW GRANTS` needs `SELECT` on `mysql` *except* for the
-  current user's own grants. **[verbatim semantics, doc-derived]**
-- 8.0.16+ partial revokes can restrict a global privilege per-schema;
-  the T24 collector reads only `ON *.*` lines, so a partial-revoked
-  `SUPER` would still witness positive — the residual restriction is a
-  named scope limitation, not a parse error. **[derived from doc + B.3]**
+Applicability domain note (R1-F.5): the quoted pages are the MySQL
+8.0 reference. The contract registers the parsed domain as **MySQL
+dialect on resolved versions inside the audited 8.0.x surface, with
+the `GRANT <privs> ON *.* TO …` line format holding**; targets whose
+product, version, or grant-line format falls outside stay unproven —
+no inference from approximate syntax.
+
+- `https://dev.mysql.com/doc/refman/8.0/en/drop-server.html` —
+  **[doc-derived]** `DROP SERVER` deletes the row from
+  `mysql.servers`; requires `SUPER`; FEDERATED tables created with the
+  connection information are not removed.
+- `https://dev.mysql.com/doc/refman/8.0/en/show-grants.html` —
+  **[doc-derived]** `SHOW GRANTS FOR CURRENT_USER()` shows the
+  current session account's own grants without `USING`; `USING role`
+  adds privileges associated with roles granted to that user; a
+  privilege granted to an account is always in effect while a role
+  needs activation; in definer context `CURRENT_USER` names the
+  definer; `SHOW GRANTS` needs no privilege to display the current
+  user's own grants.
+- `https://dev.mysql.com/doc/refman/8.0/en/privileges-provided.html` —
+  **[doc-derived]** `SUPER` is listed among the static global
+  privileges; on MySQL 8.0 the documented `ALL PRIVILEGES` static set
+  includes `SUPER` — registered as a version-checked constant, never
+  a substring heuristic.
+- `https://dev.mysql.com/doc/refman/8.0/en/privilege-changes.html` —
+  **[doc-derived]** when `mysqld` starts it reads grant tables into
+  memory; grants taken effect by in-memory tables persist until the
+  server reloads them; direct `GRANT`/`REVOKE`/`SET ROLE` update the
+  in-memory tables immediately **for the accounts they name**, but a
+  grant change to a static global privilege does not change an
+  *already-connected* session's effective privileges — hence the
+  contract's post-observation-new-session framing.
+- `https://dev.mysql.com/doc/refman/8.0/en/partial-revokes.html` —
+  **[doc-derived]** partial revokes apply to *schema-level*
+  restrictions on global grants and do not apply to `SUPER`'s
+  server-level effects; the R0 note that a "partial-revoked SUPER"
+  could still witness positive is withdrawn — no partial-revoke
+  inference enters the contract and no extra gap is added for it. The
+  supported domain stays the direct global `ON *.*` grant only.

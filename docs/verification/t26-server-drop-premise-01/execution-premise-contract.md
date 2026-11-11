@@ -1,135 +1,167 @@
-# T26-SERVER-DROP-PREMISE-01 — execution-premise contract
+# T26-SERVER-DROP-PREMISE-01 — execution-premise contract (R1)
 
 Contract for the last unwired premise of the accepted DROP SERVER
-slice: `server.drop_privilege`. Answers the six required questions,
-fixes the single recommended evidence source, and defines when a
-privilege fact may discharge the gap — everything else stays unproven.
+slice: `server.drop_privilege`. R1 revision: the recommended supply
+narrows to the single `observed_account_new_session` conditional-audit
+mode with direct global-grant positive witness only — three outcomes
+(positive witness / unproven / bounded error), nothing else.
 
 ## 1. Core answers
 
-**Q1 — is the expected execution principal represented?** No.
-`Request` (internal `service.go:40`, public `pkg/deltascope/audit.go:101`)
-carries no executor/principal/account field; `TargetIdentity` binds
-`DeploymentEvidence` to an *instance*, not an account (source-excerpts
-A.1, A.2). No executor/principal/session type exists (A.3). The only
-existing principal model is the T24 bundle convention: "the
-connection's own account, which is the subject that would execute the
-audited lifecycle statements" (B.1) — a declared audit applicability
-condition, not a verified binding.
+**Q1 — is the expected execution principal represented?** Not by any
+existing request entry. `Request` (internal `service.go:40`, public
+`pkg/deltascope/audit.go:101`) carries no executor/principal/account
+field; `TargetIdentity` binds `DeploymentEvidence` to an *instance*,
+not an account (source-excerpts A.1, A.2). This contract therefore
+proposes one minimal explicit request entry — the semantic mode
+`observed_account_new_session` (Go field/type naming per project
+style, documented here only):
+
+> 本次条件审计以 provider 连接观测到的 `CURRENT_USER()` 账号为预期执行主体；
+> 预期执行环境为同一目标上、在本次观测后建立的新执行会话。
+> 结果以所依赖的直接全局授权在观测后至执行会话加载权限时仍然适用为条件。
+
+Three things stay strictly separated:
+
+1. actually observed: the account, the target, the direct global-grant
+   positive witness — read on one actual connection;
+2. the request's explicitly selected audit applicability condition —
+   the mode above, which states *whose* audit this is and *which*
+   execution context it conditions on;
+3. the unobserved future: this tool does not observe future execution.
+
+What the mode must **not** claim: that the future actual executor was
+verified; that the current pooled/provider session holds effective
+`SUPER`; that the system created a new execution session; or that the
+system guarantees a future session loads privileges per this snapshot.
+When the mode is not selected, `server.drop_privilege` stays owed even
+if the reader's grants carry `SUPER`; likewise when principal/target
+binding is missing, the context does not cover the statement, or the
+evidence mismatches.
+
+Why a *new* session framing, not "same session": `SUPER` is a static
+global privilege — official semantics say changes to static global
+privileges do not take effect on already-connected clients
+(privilege-changes doc). A grant snapshot therefore cannot prove that
+an *existing* connection currently holds it (counter-example: the
+connection was established before `SUPER` was granted elsewhere).
+And a dedicated `*sql.Conn` from `DB.Conn()` may be a pooled existing
+connection — not a fresh physical one — so "the reader session's
+effective privileges" is itself unprovable from this observation. The
+honest condition is: a *new* session established after the observation
+loads the account's then-current grants — the witness stays valid
+while that grant remains applied.
 
 **Q2 — which relationships are code-guaranteed?**
-- `SHOW GRANTS FOR CURRENT_USER()` on the provider session provably
-  answers the *metadata reader's own account* (doc + B.2) — code-guaranteed.
-- reader == declared executor: **no declared executor exists** — nothing
-  to compare.
-- reader == future actual executor: **unproven** — an audit-time read
-  cannot observe future execution. The honest contract phrase is the
-  T24 one: the audit's applicability condition is that the audited
-  statements would execute under the same session/account the provider
-  reads on. Under any caller that connects the provider with one
-  account and executes the audited SQL with another, the privilege
-  fact does not apply — that is a caller-side contract, not an
-  enforceable code binding today.
+- `SHOW GRANTS FOR CURRENT_USER()` on one connection provably answers
+  that connection's own account's base grants (doc + B.2) — guaranteed
+  only for the account *the provider authenticates as*.
+- reader ↔ declared executor: the mode above *is* the declaration; no
+  pre-existing field binds them.
+- reader ↔ future actual executor: unproven — the mode is an audit
+  applicability condition, not an observation.
 
-**Q3 — can the T24 premise-bundle be reused as-is?** No, with a
-narrow gap. Reusable mechanics: `loadMySQLEffectivePrivileges` (B.2 —
-base `CURRENT_USER` grants + `CURRENT_ROLE()`-driven `USING`
-augmentation + positive-only completeness degrade), the
-`collectMySQLGlobalPrivileges` `ON *.*` exact-token filter (B.3), the
-dedicated-session read discipline and propagate-don't-launder error
-contract (B.1, B.5). Not reusable as-is: `LoadMySQLResourceGroupFacts`
-bundles unrelated channels (read-only vars, occupancy, feature probe)
-behind a resource-group family gate (B.5, B.6); `MySQLReadOnlyExempt`
-answers `SUPER||CONNECTION_ADMIN||ALL PRIVILEGES` — a different
-question than DROP SERVER's exact `SUPER` (B.3); `DeploymentEvidence`
-carries only T24 members and fires only inside the resource-group gate
-(B.4, B.5). **Missing capability**: a family-scoped privilege supply —
-same grant channels, narrower surface, its own fact slot.
+**Q3 — can the T24 premise-bundle be reused as-is?** No. Reusable
+mechanics only: `loadMySQLGrantLines` + `collectMySQLGlobalPrivileges`
+(`ON *.*`, exact-token), the dedicated-session read discipline, and
+propagate-don't-launder errors. Not reusable as-is: the whole
+`LoadMySQLEffectivePrivileges` orchestration — its `USING` branch
+swallows `augErr` into a partial result (R1-C finding), and its
+completeness bit reflects role-channel readability, which is out of
+this slice's scope since role augmentation is deferred; the
+`LoadMySQLResourceGroupFacts` bundle (unrelated channels, RG family
+gate); `MySQLReadOnlyExempt` (answers `SUPER||CONNECTION_ADMIN||ALL`,
+a different question — `CONNECTION_ADMIN` does not satisfy DROP
+SERVER's `SUPER`); `DeploymentEvidence` (T24 fields only, nested in
+the RG gate — offline privilege bundle wiring is deferred, not
+proposed for this slice).
 
-**Q4 — minimal evidence source for SUPER?** The recommended source is
-the provider session's effective-grant read (B.2 mechanics):
-`SHOW GRANTS FOR CURRENT_USER()` plus `USING` per `CURRENT_ROLE()`-reported
-active role, filtered to global `*.*` scope, exact-token `SUPER` or
-`ALL PRIVILEGES`. Positive witness only: a present grant proves the
-premise; an absent/unreadable grant never proves denial unless the
-complete set was read. It observes the executing-subject assumption of
-B.1 — the same dedicated session the catalog reads run on.
+**Q4 — minimal evidence source for SUPER?** The base channel alone:
+`SHOW GRANTS FOR CURRENT_USER()` on the provider connection,
+filtered to `ON *.*` lines, exact-token `SUPER` — or `ALL PRIVILEGES`
+only under a registered proof that the global `ALL PRIVILEGES` set on
+the applicable version contains `SUPER` (a static set; see §4 domain).
+No `CURRENT_ROLE()`/`USING`, no denial inference, no offline bundle,
+no general account/role/privilege engine — all deferred, with no
+"reviewer picks later" branch kept.
 
-**Q5 — missing / mismatched / out-of-scope / read-failure:** see §3
-table — gap stays owed for every non-positive outcome; read errors
-propagate through the existing bounded chain, never degrade into gap
-or refusal.
+**Q5 — missing / mismatched / out-of-scope / read-failure:** three
+outcomes only — §3 table.
 
-**Q6 — which seams must change, and under what condition may a proof
-be consumed?** See implementation-plan.md §2–§3; consumption requires
-all of §2's binding conditions simultaneously.
+**Q6 — seams and the consumption condition:** implementation-plan.md;
+consumption requires the explicit mode selected *and* all §2
+conditions *and* the per-statement scope projection covering the
+statement.
 
 ## 2. Consumption contract for privilege evidence
 
 A `server.drop_privilege` proof is consumable only when ALL of:
 
-1. **Source** — the evidence comes from the provider session's own
-   effective-grant channels (base `CURRENT_USER` + active-role `USING`),
-   read once per request on the dedicated connection, or — proposal
-   only — a caller-sourced bundle passing the full
-   `DeploymentEvidence`-style strict binding (B.4). A bare
-   caller/policy boolean is never a proof.
-2. **Target binding** — provider reads land on the connection's own
-   audited target by construction; a caller bundle must additionally
-   bind to the observed `@@server_uuid` online or the declared
-   `TargetIdentity` offline, exactly as B.4 adjudicates. One target's
-   proof never covers another.
-3. **Principal binding** — the proof names the executing subject as
-   the provider session's `CURRENT_USER`. It discharges the gap only
-   under the audit applicability condition "audited statements
-   execute under this same session/account" (B.1 convention). When a
-   future request-level executor declaration exists and does not match
-   the read subject, the proof does not apply — gap stays.
-4. **Product/version applicability** — MySQL dialect only; the grant
-   channels used are stable across the supported 8.x surface
-   (`CURRENT_ROLE`/`USING` degrade to positive-only where unavailable,
-   matching B.2). The contract does not interpret grant formats outside
-   the parsed `ON *.*` token set.
-5. **Scope & timeliness** — request-scoped (batch-level) fact: one
-   read covers the request's statements under the same-session
-   condition. An authored `SET ROLE`, `GRANT`, or `REVOKE` inside the
-   batch would change the premise for later statements — today those
-   are unaudited forms; if a batch contains any of them, the
-   request-scoped privilege fact must be withheld for subsequent
-   statements (barrier-style suppression), never extrapolated.
-6. **Immutability & merge** — fills only still-unproven slots,
-   per-request, never cached across requests, never overwrites a
-   proven answer (same discipline as `mergeMySQLResourceGroupFacts`,
-   B.4-adjacent). Prior statement bindings stay untouched.
-7. **Independence** — the privilege fact discharges only
-   `server.drop_privilege`. It never proves existence, never widens
-   the name-relation proof domain, and never clears
-   `server.batch_effects`, entry barriers, or channel taint.
-8. **External visibility** — public output keeps the fixed
-   fact/reason vocabulary (`server.drop_privilege` present or
-   discharged). Account names, grant text, role names, and binding
-   detail stay internal evidence — never echoed into findings, gaps,
-   errors, or diagnostics.
+1. **Source** — the base `SHOW GRANTS FOR CURRENT_USER()` read on the
+   provider's own connection; `CURRENT_USER()` and `SHOW GRANTS` come
+   from the *same* actual connection. No caller/policy boolean is ever
+   a proof — no bare `privilege=true` trust switch.
+2. **Target binding** — the connection's own audited target, by
+   construction of the read.
+3. **Principal & context binding** — the `observed_account_new_session`
+   mode selected by the request, binding the observed account as the
+   expected principal for a post-observation new execution session on
+   the same target. Missing selection, unbound principal, or a
+   context that does not cover the statement → not consumable even
+   with a positive grant.
+4. **Product/version/format applicability** — MySQL dialect only, and
+   the resolved version must fall inside the registered domain in §4;
+   targets outside stay unproven — no inference from approximate
+   syntax.
+5. **Scope & timeliness** — one read produces request-level immutable
+   raw evidence; an ordered scan computes the applicable range; each
+   statement gets its own consumable projection. An authored
+   `SET ROLE` / `GRANT` / `REVOKE` earlier in the batch conservatively
+   ends the range for later statements — a *scope policy of this
+   model*, not a claim that each such statement immediately changes an
+   existing session's static `SUPER`.
+6. **Immutability & merge** — the raw observation is immutable;
+   per-statement projections are derived, never rewritten by later
+   statements; no in-place mutation of shared `Known` flags; nothing
+   cached across requests.
+7. **Independence** — discharges only `server.drop_privilege`; never
+   proves existence, never widens the name-relation domain, never
+   clears `server.batch_effects`, entry barriers, or channel taint.
+8. **External visibility** — internal evidence keeps
+   principal/target/source/request scope; public output states only
+   the fixed conditional-audit scope — no account names, grant text,
+   role names, or connection details in findings, gaps, errors, or
+   diagnostics.
 
-## 3. Adjudication table (implementation contract, not run results)
+## 3. Adjudication table (implementation contract — not run results)
 
-| case | input fact | consumable? | binding result | gap/error effect | verification seam (PLAN) |
+| case | input | consumable? | result | effect | seam (PLAN) |
 | --- | --- | --- | --- | --- | --- |
-| A. valid positive | complete or partial grant read carrying `SUPER`/`ALL PRIVILEGES` on `*.*`, same session, target matches | yes | `MySQLDropPrivilege=true, Known=true` (proposal name) | `server.drop_privilege` discharged | unit: fact adjudication; provider-driver: stub grant lines |
-| B. no evidence | no provider, provider lacks the loader, offline without a binding bundle | no | slot unproven | gap stays | unit: unvouched path |
-| C. reader/executor mismatch | reader grant proven, but a future declared executor differs from the read subject | no | proof recorded, not applied | gap stays | unit: declared-mismatch case (post-introduction) |
-| D. target/applicability mismatch | caller bundle for another target/version/product | no | bundle ignored whole | gap stays | unit: binding-contract matrix (reuse B.4 shape) |
-| E. no positive witness / unhandled form | complete read, no `SUPER` — proven denial; or partial read, no `SUPER` — stays unproven; role line unparseable — skipped | denial: yes for refusal adjudication; partial: no | `Known=true, false` only on complete read; otherwise unproven | denial → refuses with the existing premise-refusal shape; unproven → gap stays | unit: complete/partial matrices |
-| F. scope not covering | batch contains unaudited `SET ROLE`/`GRANT`/`REVOKE` before this statement | no | request fact withheld for that statement | gap stays | unit: ordered suppression (barrier analogy) |
-| G. read failure | driver/scan/permission error on the grant channels | n/a — error, not evidence | propagates bounded (`fmt.Errorf` chain / adapter-bounded text), `errors.Is/As` reachable | error, never gap, never cached | unit + provider-driver: error injection |
+| A. valid positive | base grant read carries `SUPER` (or proven `ALL PRIVILEGES`) on `*.*`; mode selected; principal+target+context+version bound; statement inside scope | yes | consumable positive witness for the declared conditional audit | `server.drop_privilege` discharged at the shared adjudication | unit + stub lines |
+| B. no evidence | no provider, provider lacks the loader, mode not selected, no read issued | no | unproven | gap stays | unit |
+| C. principal/context unbound | positive grant exists but the mode is undeclared, the principal is unbound, or the context does not cover the statement | no | unproven | gap stays — even with reader `SUPER` | unit — first-implementation must-verify, not deferred |
+| D. applicability mismatch | non-MySQL dialect, version outside the registered domain, grant format outside the parsed domain | no | not applied | gap stays | unit |
+| E. no positive witness | read succeeds, no `SUPER`/proven-`ALL` token on `*.*`; or unrecognized representation | no | unproven — **no** `Known=true,false`, **no** denial adjudication | gap stays | unit |
+| F. out of ordered scope | earlier authored `SET ROLE`/`GRANT`/`REVOKE` (or the unsupported `set_role`/`grant_role`/`revoke_role`/`grant_proxy` boundary features) ends the range | no | suppressed for that statement | gap stays; raw evidence and earlier bindings unchanged | unit — ordered scan |
+| G. read failure | driver/scan/rows.Err/permission/cancellation on the required channel | n/a — error, not evidence | bounded error, `errors.Is/As` reachable | error — never a gap, never a denial, never cached | unit + provider-driver |
 
-Notes:
+Deferred (registered, not implementable branches this slice):
+`CURRENT_ROLE()`/`USING` augmentation; proven-denial; offline
+`DeploymentEvidence` privilege member; generic account/role/privilege
+computation. The `grantsComplete`-style completeness bit is **not**
+carried — a base-only read never claims a complete account privilege
+picture, and the new DROP consumer has no negative-proof condition.
 
-- E's proven-denial arm exists only when the *complete* effective set
-  was read (`grantsComplete` in B.2); a partial read never denies.
-- F is conservative withholding — the premise may still hold, but the
-  batch's own authored statements can change it; per-statement
-  re-proof is out of this slice's scope.
-- G follows the premise-bundle error precedent (B.5): propagate with
-  the causal chain; public adapters keep their existing bounded-text
-  boundary.
+## 4. Version/product applicability domain (registered)
+
+- **In domain**: MySQL dialect where the resolved version is inside
+  the audited surface — MySQL 8.0.x — and the observed `SHOW GRANTS
+  FOR CURRENT_USER()` line format `GRANT <privs> ON *.* TO …` holds
+  per the official statement reference. `ALL PRIVILEGES` counts as a
+  `SUPER` witness only under the registered static-set proof for that
+  version (on MySQL 8.0 the documented static global `ALL` list
+  includes `SUPER`; this must be registered as a version-checked
+  constant, not a substring heuristic).
+- **Out of domain**: TiDB (vendor boundary — unchanged), PostgreSQL,
+  unresolved version, or a grant-line format not matching the parsed
+  domain — all unproven; no inference from approximate syntax.
