@@ -1,14 +1,17 @@
 # T26-SERVER-ALTER-CONTRACT-01 — ALTER SERVER first-slice candidate contract
 
-Status: **ISSUED — candidate contract, docs-only (R2 revision)**.
+Status: **ISSUED — candidate contract, docs-only (R3 revision)**.
 Every adjudication below is a *proposed* contract awaiting Reviewer
 acceptance; nothing here is implemented, verified, or approved.
 This document implements no code, runs no test, and changes no
-accepted DROP/CREATE behavior. R2 closes the R1 rulings: the A1 arm
-is now a uniform ordered-channel no-op; a canonical
+accepted DROP/CREATE behavior. R2 established: the A1 arm is a
+uniform ordered-channel no-op; a canonical
 PublishPresent/ConditionalSource/ConditionalAudit assignment table
 is frozen; P1–P7 are adjudicated (§G); boundary bind behavior is
-kept unchanged; version/CLI outputs carry their exact preconditions.
+kept unchanged. R3 closes the remaining matrix rulings: premise
+witnesses are seeded units or correctly-labelled suppressed
+chains, public projections carry fixed field-level expectations,
+and version/CLI outputs state their exact preconditions.
 Parent: T26 / issue #105 under issue #79. Baseline: `28152dfd`
 (tree `8b17cf3c`, parent `2afe8ecb`) on
 `milestone/mysql-tidb-ddl-completion` — the accepted
@@ -176,13 +179,22 @@ not replace**. Consequences, per work order:
   notice does **not** transfer — for ALTER the authored list is
   intentionally partial and the stored set is unread, so "omitted
   members store blank defaults" is false here. **Decided** scoped
-  advisory (§G P2, A3/A4 arms only, fixed text): "ALTER SERVER
+  advisory (§G P2, A3/A4 arms only). Fixed public projection — two
+  findings, using the existing metadata structure, no new schema:
+  the main finding carries `object=server`,
+  `operation=alter_server`, `outcome=` the arm's token, and
+  `conditional_audit` projected only from
+  `Metadata.ServerAlter.ConditionalAudit` (true ⇒ the existing
+  `observed_account_new_session` token); the independent advisory
+  finding carries `object=server`, `operation=alter_server`,
+  `notice=connection_members` with the fixed text "ALTER SERVER
   specifies a partial options update; stored and resulting
-  connection member sets are unverified." Emitted under
-  `ddl.mysql.server.alter.notice` at its configured level,
-  discriminated by the arm in `Metadata.ServerAlter`; no owed
-  fact, no option keys/values, no stored-member claims, no
-  implication that an A4 update executed; A1/A2 never emit it.
+  connection member sets are unverified." at the rule's configured
+  level — no execution outcome, no `conditional_audit`, no owed
+  fact or gap, no authored option keys/values. Emitted under
+  `ddl.mysql.server.alter.notice`; A1/A2 never emit it; the
+  internal arm is not itself the public discriminator between the
+  two findings.
 - **No expansion**: credentials, coordinates, and raw OPTIONS
   payloads stay out of both internal storage and public output —
   the parser already records keys and value kinds only.
@@ -452,7 +464,12 @@ existing boundary bind behavior** — `bindMySQLServer` has no
 `Unsupported` predicate today, so a version-gated audited-shape
 ALTER still walks the six-step order and issues its catalog read
 (provider present ⇒ R=1/S=1; the read's result is never used for
-the boundary statement). Introducing an earlier exit would change
+the boundary statement). The `R=1/S=1` figure holds under its
+stated preconditions only: clean channel, no ordered answer,
+cache miss, identifier-form name, and a provider that actually
+executes the query — the channel guards and the cache can still
+suppress the read on other inputs; the keep-boundary-bind
+decision stands. Introducing an earlier exit would change
 read counts and possibly error propagation and needs its own
 contract ruling. `rc` follows the existing verdict→exit mapping
 per request and policy — the accepted CREATE CLI evidence recorded
@@ -462,17 +479,24 @@ preflight ⇒ rc 2; this contract asserts no generalized
 aggregates, and other policies map by the existing rules,
 unchanged.
 
-Three-probe plan (future execution order, providerless
-`--no-metadata` shape as in the accepted CREATE evidence;
-privilege mode off; single clean `ALTER SERVER s OPTIONS
-(USER 'u')`; policy enables `ddl.mysql.server.alter.notice` at
-notice): pin `8.0.36` ⇒ A4, owed
-`{server.existence, server.alter_privilege}`, no marker,
-coverage/outcome `unverified`, verdict review, rc per that
-policy's existing mapping; no pin ⇒ version boundary above;
-malformed `8.0.x` ⇒ `ErrInvalidTargetVersion`, rc 2, zero audit
-reads. No new CLI flags; no gap rewrites the accepted preflight
-semantics.
+Three-probe plan (future execution order — registered, none run
+here). **Fixed configuration**: providerless — the request omits
+DSN/provider parameters entirely (no provider-wiring argument;
+this contract does not assert a `--no-metadata` flag exists);
+privilege mode off — no privilege observation configured, no
+privilege flag invented; single clean `ALTER SERVER s OPTIONS
+(USER 'u')`; an explicit policy file enabling
+`ddl.mysql.server.alter.notice` at `notice` plus accepted
+defaults. Exact expectations under that configuration only:
+
+| probe | expected | rc |
+|---|---|---|
+| pin `8.0.36` | A4; owed `{server.existence, server.alter_privilege}`; no marker; `unverified`; verdict review; L/R/S 0/0/0 | 0 |
+| no pin, no other version source | `unaudited` + `gate:"version"`; findings=0, gaps=0; coverage `incomplete`; verdict review; L/R/S 0/0/0 | 1 |
+| malformed pin `8.0.x` | typed `ErrInvalidTargetVersion` preflight; no audit result; L/R/S 0/0/0 | 2 |
+
+No new CLI flags; no gap rewrites the accepted preflight
+semantics; the numbers are not a generalised pin⇒rc rule.
 
 ## F. Registration — proposed seams (execution order implements)
 
@@ -538,7 +562,7 @@ apply — none is a contract blocker.
 | # | decision | ruling |
 |---|---|---|
 | P1 | Republish `OrderedPresent` on proven-presence arms | **adopted** — presence survives the write under the preservation theorem. Priced consequences registered in §D/§E: same-name and fold-alias reuse, plus relation-scan `batch_effects` thrown at unproven-related names; gaps, coverage, and read counts can differ — not only fold-alias reach |
-| P2 | ALTER-scoped `connection_members` advisory | **adopted, A3/A4 only** — fixed text: "ALTER SERVER specifies a partial options update; stored and resulting connection member sets are unverified." Emitted by `ddl.mysql.server.alter.notice` at its configured level, discriminated by the arm in `Metadata.ServerAlter`; no new owed fact, no option keys/values, no claim the A4 update executed; A1/A2 never emit it |
+| P2 | ALTER-scoped `connection_members` advisory | **adopted, A3/A4 only** — fixed public projection (README §C): independent advisory finding `object=server, operation=alter_server, notice=connection_members` with fixed text "ALTER SERVER specifies a partial options update; stored and resulting connection member sets are unverified." at the configured level; no outcome/marker/gap on the advisory; main finding projects `conditional_audit` only from `Metadata.ServerAlter.ConditionalAudit`; A1/A2 never emit it |
 | P3 | `OrderedPresentConditional` on ordered-source re-publish | **inherit the consumed flag verbatim** — never launder to unconditional |
 | P4 | Audited-ALTER write record | **none** — audited ALTER records no `serverWrite` on any arm, A1 included; boundary ALTER keeps the accepted write-record/taint behavior |
 | P5 | Native absent-case error class for `ALTER` on a missing row | **not claimed** — the A2 refusal rests on the ordered-absent proof only; native error class remains optional oracle evidence **deferred** to a future execution order |
