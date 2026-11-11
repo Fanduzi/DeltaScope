@@ -59,23 +59,35 @@ prove this statement refused, so R4 point 6 cannot waive the premise).
 
 ## D.2 Ordered identity — single relation table (R3-A)
 
-Relation `R(A,B)` uses the single mutually-exclusive table in §C —
-identical in C, D, and E, no per-document envelope:
+Relation `R(A,B)` uses the single mutually-exclusive contract in §C —
+identical in C, D, and E, evaluated in order (R4 minimal conservative
+scheme):
 
-| relation | sufficient condition | effect |
-|---|---|---|
-| provably-same | byte-identical; OR ASCII-envelope + ASCII-fold-equal | same object — consume entry / same identity |
-| provably-distinct | ASCII-envelope; fold-different; difference not space-only (non-space char differs at same length, or longer tail contains non-space) | different objects — unaffected |
-| unproven | everything else (non-ASCII, or space-only deltas) | unproven barrier |
+1. `provably-same` — A,B byte-identical;
+2. `provably-same` — both inside the registered SERVER ASCII
+   case-insensitive provable subset AND ASCII-fold-equal;
+3. `unproven` — everything else.
+
+`provably-distinct` stays a registered class with an **empty current
+provable domain** — extendable only by a future scoped proof; nothing
+derives distinct from fold keys, characters, lengths, or tails. The
+sourced basis is limited to the SERVER case-insensitivity rule — no
+general collation theorem; the PAD attribute governs trailing-space
+comparison only, so leading/internal space relations are conservative
+`unproven` by the model's own capability boundary, not PAD-proven.
+`unproven` asserts only that the relation is not proven — never that
+the database proved the names same or different.
 
 - `canonical(name)` = ASCII fold is a **bucket key**, not an identity
-  verdict — different fold keys never prove different objects.
-- `DROP s1; DROP S1;` — provably-same → stmt2 hits stmt1's step-4
-  barrier (or ordered-absent once the premise lands).
-- `DROP \` s1\`; DROP \`s1\`` — leading-space delta → `R` unproven →
-  stmt2 gets the step-4 barrier **before** any resolver call — the
-  verbatim-objectCache regression keeps its own seam and identity;
-  it does not pre-decide this ordered-channel outcome.
+  verdict.
+- `DROP s1; DROP S1;` — provably-same (registered ASCII CI subset) →
+  stmt2 hits stmt1's step-4 barrier (or ordered-absent once the
+  premise lands).
+- `DROP \` s1\`; DROP \`s1\`` — leading-space delta → `R` unproven
+  (capability boundary, not a PAD claim) → stmt2 gets the step-4
+  barrier **before** any resolver call — the verbatim-objectCache
+  regression keeps its own seam and identity; it does not pre-decide
+  this ordered-channel outcome.
 - Reverse-alias shapes share one algorithm: non-ASCII write then ASCII
   lookup, or ASCII entry then non-ASCII write — `R` unproven on the
   write side marks the entry a barrier; on the lookup side it returns
@@ -142,10 +154,10 @@ bound metadata are never mutated.
    `resolveServer` (six-step order, barriers before provider) +
    `applyServerStatement` (barrier/transition/write records/taint) +
    `projectServerEntry` (confirmed / unavailable / barrier — never
-   `not_found`, never mutates the cached snapshot). The
-   `OrderedAbsent` publish branch is left as the documented future
-   stage — the entry type carries the shape but no statement can set
-   it under this slice.
+   `not_found`, never mutates the cached snapshot).
+   ("The entry type carries the shape" above is a forward-design note
+   only: this slice adds no dormant `OrderedAbsent` field and no
+   publish-path code — both arrive with the premise-supply stage.)
 5. `internal/application/audit/batch_state_server_srs.go` —
    `bindMySQLServer` merges the ordered overlay over the provider
    answer; literal-name path keeps its unissued-read contract.

@@ -59,25 +59,35 @@ R3-A):
   letter-case fold of the decoded name — a bucket key, NOT an identity
   verdict: two different fold keys do NOT prove different objects.
 
-**Provable domain and mutually-exclusive relation classes (R3-A.1).**
-The sourced basis: the documented `server_name` rule is
-case-insensitive (R1 A.5 + R2 §1 — G-src.2/3); within a CI collation
-ASCII letter-case variants name the same object, and differing
-non-space characters cannot compare equal under any collation —
-while space-only differences depend on the collation PAD attribute,
-which is exactly the registered PEND. The ASCII envelope is therefore
-the only region where a *distinct* verdict is provable; outside it
-only byte-identity is provable-same. Exactly one class per name pair:
+**Provable domain and mutually-exclusive relation classes (R3-A.1,
+R4 minimal conservative contract).** The sourced basis is limited to
+the *registered SERVER identity rule*: `server_name` is documented
+case-insensitive (R1 A.5 + R2 §1 — G-src.2/3), so within the
+registered ASCII case-insensitive subset, letter-case variants name
+the same object. No general collation theorem is claimed — character
+comparison in MySQL is weight-based and different characters can share
+weights (dev.mysql.com collation-implementation docs); the PAD
+attribute governs **trailing-space** comparison only, so leading and
+internal spaces are *conservatively unproven by the model's own
+capability boundary*, not "PAD-proven uncertain". Exactly one class
+per name pair, evaluated in order:
 
-| relation `R(A,B)` | sufficient condition (all required) | channel effect |
-|---|---|---|
-| provably-same | A,B byte-identical; OR both ASCII-envelope AND ASCII-fold-equal | same object — consume entry / the pair is the same identity |
-| provably-distinct | both ASCII-envelope; fold-different; AND the difference is not space-only — i.e., at same length a differing position pairs two different non-space characters, or at different lengths the longer name's extra tail contains a non-space ASCII character | different objects — unaffected |
-| unproven | everything else: non-ASCII on either side, or the only differences are spaces (trailing/leading/internal) | neither consumed nor ignored — unproven barrier |
+1. `provably-same` — A,B byte-identical.
+2. `provably-same` — both names inside the registered SERVER ASCII
+   case-insensitive provable subset AND ASCII-fold-equal.
+3. `unproven` — everything else.
 
-Examples: `s1`/`S1` provably-same; `s1`/`s2` provably-distinct;
-`s1`/`s1x` provably-distinct; `s1`/`s1 ` unproven (PAD-dependent);
-`sé1`/`se1` unproven; `sé1`/`sé1` provably-same (byte-identical).
+`provably-distinct` is kept as a relation class but its current
+provable domain is **empty** — it may be extended only by a future,
+scoped (target/version/condition) proof with an exact sufficient
+condition and per-example derivation. Nothing derives distinct from
+fold keys, differing characters, lengths, or tails. `unproven` means
+the relation was not proven — it never asserts the database proved
+the names same or different.
+
+Examples: `s1`/`S1` provably-same (registered ASCII CI subset);
+`sé1`/`sé1` provably-same (byte-identical); `s1`/`s1 `, ` s1`/`s1`,
+`s1`/`s2`, `s1`/`s1x`, `u`/`s1`, `sé1`/`se1` all **unproven**.
 C, D, and E use this single table — no per-document envelope.
 
 Existence-state ladder (R1-C.3, real bound shapes — six states):
@@ -157,7 +167,7 @@ alone:**
 | proven-present / unknown | audited drop with unproven privilege | unproven barrier — may have deleted, may not have run |
 | proven absent | plain DROP (refusal) — IF EXISTS (guard arm or privilege-refusal arm) | **absent stands** — every arm preserves absent; none can create the object |
 | proven absent | unaudited CREATE/ALTER write | invalidated per relation contract (C20) — a write may create |
-| any | unrelated provably-distinct write | untouched |
+| any | provably-distinct write | untouched (provable domain currently empty — every write relation resolves to same / unproven / unprovable-identity until a scoped distinct proof lands) |
 
 A still-valid fact is never cleared merely because a later statement
 might not have run — invalidation requires an actual write relation or

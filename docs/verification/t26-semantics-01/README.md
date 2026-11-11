@@ -20,11 +20,14 @@ and contract record awaiting reviewer adjudication.
   **CHANGES REQUIRED** under T26-SEMANTICS-01/R2
 - R2 revision: `ac5433373b8d2e04e5d400a618d8dad669c4a3b9`
   (tree `7c155e90f0d9f7df9a92da96ead0b58509098c8c`) — ruled
-  **CHANGES REQUIRED** under T26-SEMANTICS-01/R3; this directory now
-  carries the R3 revision (mutually-exclusive relation classes,
-  barriers-before-provider resolve order, absent-preserving
-  transitions, SRS capability-vs-fact gap split, real return-path
-  fragments)
+  **CHANGES REQUIRED** under T26-SEMANTICS-01/R3
+- R3 revision: `30e6afb82fce6c24fdd84800b6c273c21ee16bf6`
+  (tree `6769b87cbc2644b5b6cfeeda824ae3e0951d2071`) — ruled
+  **CHANGES REQUIRED** under T26-SEMANTICS-01/R4 (single item:
+  the `R(A,B)` distinctness predicate); this directory now carries
+  the R4 minimal conservative relation contract — byte-identical or
+  registered-ASCII-CI-subset fold-equal ⇒ provably-same, everything
+  else unproven, provably-distinct domain empty until a scoped proof
 - current document commit: registered in the delivery receipt for this
   round — the hash cannot pre-exist inside the commit that creates it
 - changed files: this directory only
@@ -36,9 +39,9 @@ and contract record awaiting reviewer adjudication.
 | file | answers |
 |---|---|
 | `b-prior-materials.md` | §B — prior-materials inventory + approval status (approved / applied-ruling / proposal / revised / missing) |
-| `c-decision-table.md` | §C — consolidated decision table (R3 revision): mutually-exclusive R(A,B) classes with provable domain, barriers-before-provider six-step resolveServer + absent-preserving transition table, privilege gap on all non-terminal-refusal drops, SRS capability-vs-external-fact gap split |
-| `d-first-slice.md` | §D — first slice `DROP SERVER` (R3 revision): smaller reachable scope (OrderedAbsent moved to future stage), single relation table, unified order + transitions, D8 dual gaps |
-| `e-verification-plan.md` | §E — verification plan, 21 cases, plan/unexecuted (R3 revision: ordered-state seam note, E10 write-record barrier, E13 single-request outcome, explicit [dep] preconditions) |
+| `c-decision-table.md` | §C — consolidated decision table (R4 revision): minimal conservative R(A,B) contract (byte-identical / registered-ASCII-CI-subset ⇒ same; all else unproven; distinct domain empty), barriers-before-provider six-step resolveServer + absent-preserving transition table, privilege gap on all non-terminal-refusal drops, SRS capability-vs-external-fact gap split |
+| `d-first-slice.md` | §D — first slice `DROP SERVER` (R4 revision): same minimal relation contract, smaller reachable scope (OrderedAbsent moved to future stage), unified order + transitions, D8 dual gaps |
+| `e-verification-plan.md` | §E — verification plan, 21 cases, plan/unexecuted (R4 revision: E13 unproven leading-space + single request, E20 unproven `u`/`s1`, explicit [dep] preconditions) |
 | `f-matrix-correspondence.md` | §F — cli_*/db_* cell correspondence + G-1..G-8 R1 dispositions (R2-updated drop expectations) |
 | `g-source-excerpts.md` | §G-src — source excerpts with provenance labels (verbatim/comment/derived): R4 complete contract, R1 A.4/A.5, R2 §1/§5, T04 anchors, invalidation precedent, SRS return-path fragments (reject branch + success tail) |
 
