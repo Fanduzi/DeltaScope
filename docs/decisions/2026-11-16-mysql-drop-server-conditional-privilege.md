@@ -1,10 +1,13 @@
 # Decision: MySQL DROP SERVER conditional privilege premise + shared adjudication + OrderedAbsent (T26-SERVER-DROP-EXECUTION-01)
 
 Date: 2026-11-16
-Status: Implementation candidate — reviewer ruling pending. The
+Status: Accepted by independent reviewer ruling (R2 PASS). Reviewed
+identities: product candidate commit `9dad37b8`, tree `eb544128`
+(parent `d2fb5dba`); the R1 product change `d2fb5dba` and its parent
+implementation candidate `8b52fd55` carry their own evidence. The
 APPROVED design contracts this record implements are listed under
-Related docs; this ADR itself records the candidate design, not an
-accepted contract.
+Related docs; this ADR records the accepted design and the R1/R2
+verification deltas, not a pending proposal.
 Related milestone/version: issue #105 T26 under parent issue #79
 Related commits: T26-SERVER-DROP-EXECUTION-01 implementation
 candidate `8b52fd55`, R1 revisions `d2fb5dba`, R2 consumer-verification
@@ -68,7 +71,14 @@ can never diverge.
   `unverified`), and the ordered channel post-state. Terminal refusal
   is a blocker and owes no gap; a consumable witness discharges only
   `server.drop_privilege` — it never clears barriers, proves absence,
-  or widens identity.
+  or widens identity. The `outcome` vocabulary and the
+  `conditional_audit` marker on a statement's own conditional arm
+  shipped in `8b52fd55`; the R1 revisions (`d2fb5dba`) added the
+  inherited conditional-source projection — `publishedArm` recorded at
+  publish time, `ServerState.OrderedAbsentConditional`, and
+  `ServerDropAdjudication.ConditionalSource` — so a refusal or guard
+  consuming a conditionally-published absent keeps the marker even
+  when its own premise is suppressed or unproven.
 - `ServerState.OrderedAbsent` (`json:"-"`, never serialized): set only
   by publish arms (proven drop or convergent `IF EXISTS` absent),
   always implies `Exists=false`, is consumed ahead of any provider or
