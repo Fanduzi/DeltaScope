@@ -20,6 +20,22 @@ log: /tmp/t26create-evidence/six-pkg.log
 sha256: d8f90209e2e3fc113e0d5dafe94d1da28f8f64ea99e0875a260442341ab092f8
 ```
 
+R3 rerun of the same six-package command (test code only — no
+product `.go` changed since R2):
+
+```
+rc=0
+--- PASS lines (incl. subtests, all indent levels): 7742
+lines containing "PASS" (adds the final PASS trailer and other
+occurrences): 7748 — reported as a line count, not a test count
+--- SKIP: 1 (pre-existing TestExtractorT08MultiColumnAddPosition)
+FAIL: 0
+packages ok: 6
+log: /tmp/t26create-evidence/r3/six-pkg.log
+raw sha256: 699a0e4559927cda39941a4f122ba663fa227a77948a8bc7e6c1423480726e55
+gzip sha256: a88637a190ff9fc5e598eab8839a33096b3013e160ffb9775c62296bfc8d68cd
+```
+
 New CREATE-layer tests inside that run:
 
 | layer | test | assertions covered |
@@ -42,7 +58,7 @@ New CREATE-layer tests inside that run:
 | application | `TestT26CreateOrderedPresentRefusal` | re-create over OrderedPresent → refusal owing nothing + conditional source; standing present survives; resolver=1 |
 | application | `TestT26CreateConnectionMembersNotice` | missing members → second advisory `notice: connection_members`; complete → single finding; no OPTIONS content leaked |
 | application | `TestT26CreateChannelTaintBarrier` | literal-name drop taints the channel (distinct from `batchState.contaminated`) → create adjudicates barrier owing exactly `batch_effects` |
-| application | `TestT26CreateRealContamination` | real parse-failure contamination, asserted end to end: `state.contaminated` observed false before and true after the real failure record feeds the tail call's own loop (never test-set); complete independent deep-copied `serverEntries` snapshots before and after the contaminated CREATE compare equal across every field and map key — no add/clear/rewrite, OrderedPresent/OrderedAbsent values unchanged (R3-B); A1 owes only `batch_effects`; no marker; bound shape unbound; resolver delta 0 and loader delta 0 recorded independently (R2-D.1) |
+| application | `TestT26CreateRealContamination` | real parse-failure contamination, asserted end to end: `state.contaminated` observed false before and true after the real failure record feeds the tail call's own loop (never test-set); complete independent deep-copied `serverEntries` snapshots before and after the contaminated CREATE compare equal across every field and map key — no add/clear/rewrite, OrderedPresent/OrderedAbsent values unchanged (R3-B); A1 owes only `batch_effects`; no marker; bound shape unbound; resolver delta 0 measured across the contaminated CREATE and loader delta 0 measured for the tail call — the tail call is deliberately mode-off so its loader gate cannot fire (the zero is a mode-off measurement, never a claim that contamination suppresses the observed-mode loader); prefix call runs observed mode on the same batchState (R2-D.1) |
 | application | `TestT26CreateInheritedMarkerChains` | conditional ordered source → scope terminator → CREATE/DROP: inherited-only marker; own suppressed premise still owes `create_privilege`/`drop_privilege`; marker never substitutes for the own premise (R2-D.2) |
 | application | `TestT26CreateOrderedLifecyclePublic` | full public projection on every chain (R3-D): DROP→CREATE→DROP and DROP→CREATE→CREATE→DROP assert per-statement outcome, exact gaps, `conditional_audit` marker presence, statement coverage, aggregate coverage, and verdict; unknown CREATE→CREATE pins first-statement `{existence}`-only gap + own marker vs second-statement `{batch_effects}`-only barrier with no marker; absent→dirty CREATE→DROP asserts conditional_drop / unverified-owing-exactly-`{server.create_options}`-with-marker-and-options-only-wording / blocked_batch_effects-owing-`{server.batch_effects}`, the connection_members advisory as a separate notice finding adding no gap, unverified aggregate, review verdict; OrderedPresent sides of literal taint + relation unproven (R2-D.3) |
 | application | `TestT26CreateDefaultEntryAndVersionGate` | no provider + valid 8.0.x pin + no mode → audited, owed exactly `{existence, create_privilege}`; no version → `gate:"version"` + `ErrUnsupportedStatement`; malformed pin → `ErrInvalidTargetVersion`, pin/observed mismatch → `ErrTargetVersionMismatch`, both loader=0 (R2-E) |
@@ -124,7 +140,7 @@ accesses are not counted (R3-A). The second byte-identical create
 shares the per-request objectCache entry, which is why the
 provider-facing resolver and the SQL layer both read exactly once.
 
-## 3. Binary identities (six distinct builds)
+## 3. Binary identities (six builds; not six distinct hashes)
 
 | id | sha256 | source/workspace state | produced for |
 |---|---|---|---|
@@ -133,24 +149,24 @@ provider-facing resolver and the SQL layer both read exactly once.
 | C | `c320d6e4d0d17904024c78ddff6a3b8897c552b3b5b0b04cfed994b483d957fb` | clean `f39609de` candidate tree | R1 receipt's candidate clean build |
 | D | `9b608801d0d4f46e4a127215056aeb0e8150b550fce8baf6c6bea8e0f282fa94` | unestablished — R2 workspace carrying the uncommitted R2 diff; the asserted "differs from the candidate only by a gofmt normalization" was never backed by a recorded diff, so the source relationship to the R2 candidate stays unestablished | R2 in-domain CLI evidence build (`/tmp/t26create-evidence/r2/deltascope`) |
 | E | `1f7722054a342d8e44882b1748745d7e0c024513e2f39a13601a8ea06cf43d35` | clean R2 candidate tree `54b52f12` (`37c2aa3f`) — `CGO_ENABLED=0 go build -buildvcs=false -o ... ./cmd/deltascope` under go1.26.1 darwin/arm64 with the committed `go.mod`/`go.sum`; identical hash observed on a same-tree rebuild | R2 candidate clean build (`/tmp/t26create-evidence/r2/deltascope-candidate`) |
-| F | `1f7722054a342d8e44882b1748745d7e0c024513e2f39a13601a8ea06cf43d35` | R3 candidate tree (`08266403`, tree `5677e70d`) — same toolchain/flags/deps/target/build-directory as E. F is byte-identical to E because the R2→R3 diff contains no product `.go` file (test and doc changes only); that equality is verifiable from the committed diff, unlike B/D. Rebuilt from the committed tree in the same directory: same hash | R3 CLI re-run build (`/tmp/t26create-evidence/r3/deltascope`) |
+| F | `1f7722054a342d8e44882b1748745d7e0c024513e2f39a13601a8ea06cf43d35` | workspace carrying the uncommitted R3 diff pre-commit, built in `/Users/fan/GolangProjects/DeltaScope` with the same toolchain/flags/deps/target as E; product `.go` bytes identical to the final R3 candidate (`2afe8ecb`, tree `bb577ed8`) — the workspace→first-commit→docs-amend deltas contain no product `.go` file (recorded correspondence, not inferred). Rebuilt from the committed tree in the same directory: same hash `1f772205` | R3 CLI re-run build (`/tmp/t26create-evidence/r3/deltascope`) |
 
 No later clean build retroactively proves which binary produced an
 earlier artifact: B's and D's source states are recorded as
 unestablished; the golden output is attributed to B only, and the
 historical §4 R2 CLI run is attributed to D only — never to A, C, E,
-or F. The `-buildvcs=false` claim is deliberately narrow: under the
-recorded toolchain (go1.26.1 darwin/arm64), the recorded dependencies
-(committed `go.mod`/`go.sum`), the recorded target and flags
-(`CGO_ENABLED=0 go build -buildvcs=false -o ... ./cmd/deltascope`),
-AND the recorded build directory (`/Users/fan/GolangProjects/DeltaScope`
-— the binary embeds build paths, so the same committed tree built in
+or F. E and F were measured to carry the identical SHA-256 under the
+recorded build conditions (go1.26.1 darwin/arm64; committed
+`go.mod`/`go.sum`; `CGO_ENABLED=0 go build -buildvcs=false -o ...
+./cmd/deltascope`; build directory `/Users/fan/GolangProjects/DeltaScope`).
+The committed R2→R3 diff (test/doc changes only) explains the change
+scope between the two trees — it does not by itself prove binary byte
+equality; the equality claim rests on the measured hashes. The
+`-buildvcs=false` flag is not a hash-stability guarantee across other
+build conditions: the same committed tree built under
 `/tmp/t26-r3-verify` produced a different hash
-`118630575abc14f3ddb1407cee59be22e9bc58802b3ba13436531f9b603b9b89`),
-the observed result is that identical Go sources produce the
-identical hash. It is not a promise that every commit carrying
-similar sources reproduces the hash — E and F agree only because the
-committed R2→R3 diff contains no product `.go` file.
+`118630575abc14f3ddb1407cee59be22e9bc58802b3ba13436531f9b603b9b89`
+(build paths are embedded in the binary).
 
 ## 4. In-domain CLI evidence — historical R2 run (binary D, source unestablished) and R3 re-run (binary F)
 
@@ -201,8 +217,8 @@ sha256: 38fc941277aa13121b9bb44302fc14f62e0896074f483cda7d6e4aa751bfda05
 ```
 
 R3 re-run (binary F, sha256
-`1f7722054a342d8e44882b1748745d7e0c024513e2f39a13601a8ea06cf43d35`,
-built from the R3 candidate tree; the same policy bytes copied to
+`1f7722054a342d8e44882b1748745d7e0c024513e2f39a13601a8ea06cf43d35`
+— source state per §3 row F; the same policy bytes copied to
 `/tmp/t26create-evidence/r3/policy-create.yaml`, sha256 unchanged
 `555f326c…`):
 

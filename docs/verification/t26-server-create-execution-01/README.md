@@ -60,16 +60,17 @@ per-statement bind/adjudication → findings/coverage → ordered apply`
   file in the diff (the whole-tree run reports one pre-existing
   baseline issue in `internal/infrastructure/parser/tidb/mysql_t26r5_test.go`,
   unrelated and intentionally untouched).
-- Six distinct binaries are registered (appendix §3): A = precommit
+- Six builds are registered (appendix §3): A = precommit
   workspace build `192f20f7…`, B = the golden artifact's own recorded
   build `e78fe538…` (source state unestablished), C = clean candidate
   build `c320d6e4…` on tree `232c226b`, D = R2 workspace build
   `9b608801…` used for the historical in-domain CLI run (source
   relationship to the R2 candidate unestablished), E = clean R2
-  candidate build `1f772205…` on tree `54b52f12`, F = R3 candidate
-  build `1f772205…` — byte-identical to E because the R2→R3 diff
-  contains no product `.go` file. No identity is inferred across
-  A–D; the E=F equality is verifiable from the committed diff.
+  candidate build `1f772205…` on tree `54b52f12`, F = R3 build
+  `1f772205…` — measured identical to E under the recorded build
+  conditions (the R2→R3 diff explains the change scope; equality
+  rests on the measured hashes, not on the diff). No identity is
+  inferred across A–D.
 - In-domain CLI evidence (appendix §4): the historical R2 run on
   binary D — rc=0 audited `unverified` finding, gaps
   `{server.existence, server.create_privilege}`, coverage unverified;
