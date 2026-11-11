@@ -247,6 +247,9 @@ func TestT26DropServerBarrierPublicShape(t *testing.T) {
 	if len(result.Statements) != 2 || len(result.Unsupported) != 0 {
 		t.Fatalf("both audited drops expected, unsupported=%+v statements=%d", result.Unsupported, len(result.Statements))
 	}
+	if result.Verdict != report.VerdictReview {
+		t.Fatalf("top-level verdict = %v, want review", result.Verdict)
+	}
 	second := result.Statements[1]
 	var found bool
 	for _, f := range second.Findings {
