@@ -1260,8 +1260,11 @@ func TestT24ResolverErrorPropagates(t *testing.T) {
 		version: "8.0.36", facts: t24Facts("8.0.36"),
 		groups: map[string]t24GroupFact{"rg": {err: want}},
 	})
-	if err == nil || !strings.Contains(err.Error(), want.Error()) {
-		t.Fatalf("err = %v, want propagated resolver error", err)
+	// The bounded public boundary keeps the resolver's cause through
+	// the error chain while the public text carries no provider
+	// payload — the same contract view-state errors already enforce.
+	if err == nil || !errors.Is(err, want) || strings.Contains(err.Error(), want.Error()) {
+		t.Fatalf("err = %v, want bounded propagation: cause chained, text isolated", err)
 	}
 }
 

@@ -16,7 +16,6 @@ package audit
 
 import (
 	"context"
-	"strings"
 
 	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
 )
@@ -33,7 +32,11 @@ func (s *batchState) objectResolverFor(cached func(ctx context.Context, lookup s
 		return nil
 	}
 	return func(ctx context.Context, lookup spec.ObjectLookupRequest) (*spec.ObjectSnapshot, error) {
-		return provider.ResolveObject(ctx, s.dialect, lookup)
+		snapshot, err := provider.ResolveObject(ctx, s.dialect, lookup)
+		if err != nil {
+			return nil, metadataObjectReadError{cause: err}
+		}
+		return snapshot, nil
 	}
 }
 
@@ -46,7 +49,7 @@ func (s *batchState) objectResolverFor(cached func(ctx context.Context, lookup s
 // dialect binds the state unvouched; resolver failures propagate.
 func (s *batchState) bindMySQLServer(ctx context.Context, statement spec.Statement) (*spec.ServerState, error) {
 	decl := statement.DDL.Server
-	bound := &spec.ServerState{Name: strings.TrimSpace(decl.Name)}
+	bound := &spec.ServerState{Name: decl.Name}
 	if s.dialect != spec.DialectMySQL || s.contaminated {
 		return bound, nil
 	}

@@ -183,6 +183,57 @@ func TestT26ServerOncePerKeyCache(t *testing.T) {
 	}
 }
 
+// The decoded identifier is the cache identity verbatim: a backquoted
+// name carrying interior space is a different catalog identity from its
+// trimmed twin, so each resolves through the provider and binds its own
+// answer — the decoded name, the lookup, the key, and the bound state
+// name all agree (T26 counterexample registration).
+func TestT26ServerDecodedNameCacheIdentity(t *testing.T) {
+	provider := &t26Provider{servers: map[string]bool{"s1": true}}
+	enriched := enrichT26(t, "DROP SERVER ` s1`; DROP SERVER `s1`", spec.DialectMySQL, provider)
+	if len(provider.calls) != 2 {
+		t.Fatalf("resolver calls = %+v, want two distinct identities", provider.calls)
+	}
+	first, second := enriched[0].Metadata.Server, enriched[1].Metadata.Server
+	if first == nil || second == nil || first == second {
+		t.Fatalf("server states must bind independently: %+v / %+v", first, second)
+	}
+	if first.Name != " s1" || first.Exists {
+		t.Fatalf("` s1` state = %+v, want own read answering unknown", first)
+	}
+	if second.Name != "s1" || !second.Exists {
+		t.Fatalf("`s1` state = %+v, want own read answering confirmed", second)
+	}
+}
+
+// Qualifier identity is encoded unambiguously: a qualifier value may
+// itself carry '=' or ';', so the key cannot be raw name=value;
+// concatenation. The registered collision pair must never share one
+// cache identity, while the same pair set re-entered resolves to the
+// same key regardless of map iteration order.
+func TestT26ObjectLookupQualifierKeyUnambiguous(t *testing.T) {
+	collideA := &spec.ObjectLookupRequest{Type: "mysql_spatial_reference_system", Name: "1",
+		Qualifiers: map[string]string{"srs_name": "a;srs_org=b", "srs_org_id": "1"}}
+	collideB := &spec.ObjectLookupRequest{Type: "mysql_spatial_reference_system", Name: "1",
+		Qualifiers: map[string]string{"srs_name": "a", "srs_org": "b", "srs_org_id": "1"}}
+	if newObjectLookupKey(collideA) == newObjectLookupKey(collideB) {
+		t.Fatalf("distinct qualifier sets share one cache identity")
+	}
+	same := &spec.ObjectLookupRequest{Type: "mysql_spatial_reference_system", Name: "1",
+		Qualifiers: map[string]string{"srs_name": "a;srs_org=b", "srs_org_id": "1"}}
+	if newObjectLookupKey(collideA) != newObjectLookupKey(same) {
+		t.Fatalf("identical qualifier sets must share one cache identity")
+	}
+	// A lookup carrying the identifier proof and one without stay
+	// distinct even when the name matches.
+	proved := &spec.ObjectLookupRequest{Type: "mysql_server", Name: "s1",
+		Qualifiers: map[string]string{spec.ObjectLookupQualifierNameForm: spec.ObjectLookupNameFormIdentifier}}
+	bare := &spec.ObjectLookupRequest{Type: "mysql_server", Name: "s1"}
+	if newObjectLookupKey(proved) == newObjectLookupKey(bare) {
+		t.Fatalf("identifier-proof qualifier must partition the cache identity")
+	}
+}
+
 // Statements that never name the families issue no lookups — laziness
 // holds across ordinary DDL and even under a provider that would answer.
 func TestT26LazinessNonTargetStatements(t *testing.T) {
@@ -240,21 +291,28 @@ func TestT26ResolverErrorPropagates(t *testing.T) {
 	}
 }
 
-// The public error assembly path carries the provider's own failure
-// text verbatim — through the real AuditSQL entry — while no authored
-// statement payload is synthesized into the diagnostic: the marker the
-// provider returned surfaces, the authored SQL the statement carried
-// does not get echoed by the wrapping layers.
+// The public error boundary keeps the resolver's cause reachable
+// through the error chain while the public text stays bounded —
+// provider text and authored statement payloads never reach
+// err.Error(), and the read still fails. This registers the boundary
+// contract on the application seam: bounded text outside, original
+// cause inside.
 func TestT26PublicErrorPathMarker(t *testing.T) {
-	const marker = "t26-provider-marker-7f3a"
-	provider := &t26Provider{err: errors.New(marker)}
+	markerErr := errors.New("t26-provider-marker-7f3a")
+	provider := &t26Provider{err: markerErr}
 	_, err := AuditSQL(context.Background(), Request{
 		SQL: "DROP SERVER s1", Dialect: spec.DialectMySQL, Schema: "golden", MetadataProvider: provider,
 	})
-	if err == nil || !strings.Contains(err.Error(), marker) {
-		t.Fatalf("public error = %v, want provider failure text propagated", err)
+	if err == nil {
+		t.Fatalf("resolver failure must still fail at the public boundary")
 	}
-	if strings.Contains(err.Error(), "DROP SERVER") || strings.Contains(err.Error(), "'s1'") {
+	if !errors.Is(err, markerErr) {
+		t.Fatalf("public error chain lost the resolver cause: %v", err)
+	}
+	if strings.Contains(err.Error(), markerErr.Error()) {
+		t.Fatalf("public error text echoes provider payload: %v", err)
+	}
+	if strings.Contains(err.Error(), "DROP SERVER") || strings.Contains(err.Error(), "s1") {
 		t.Fatalf("public error echoes authored statement payload: %v", err)
 	}
 }

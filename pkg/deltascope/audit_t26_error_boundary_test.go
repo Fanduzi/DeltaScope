@@ -12,7 +12,7 @@ import (
 // t26BoundaryProvider is the public-contract stub for the T26/#105
 // error-boundary verification: it implements the public
 // MetadataProvider seam plus the optional object-resolver extension,
-// and fails every object read with a synthetic marker. Facts are never
+// and fails every object read with a synthetic error. Facts are never
 // fabricated — a failed read is the only thing this stub produces.
 type t26BoundaryProvider struct {
 	err error
@@ -30,20 +30,20 @@ func (p *t26BoundaryProvider) ResolveObject(context.Context, spec.Dialect, spec.
 	return nil, p.err
 }
 
-// The public error exit is the real SDK contract: a provider failure
-// propagates verbatim through deltascope.Audit while authored statement
-// payloads never enter the returned error text. The authored SQL below
-// carries credential-shaped sentinels — the server identity itself, an
-// OPTIONS USER value, and an OPTIONS PASSWORD value — none of which may
-// appear in the public error. This is a propagation-plus-non-echo check
-// on the shared upstream error the CLI, HTTP, and MCP adapters render:
-// it registers what the error contract actually is (provider text
-// passes through, our layers add nothing authored), not a claim that
-// object identities are globally redacted — real server error text may
-// legitimately echo object names the engine was asked about.
+// The public error boundary on the real SDK exit: when the provider's
+// own failure carries protected content, the public error text isolates
+// it while the cause chain keeps the original error reachable. The
+// provider error below carries a sensitive sentinel; the authored SQL
+// carries more sentinels — the server identity, an OPTIONS USER value,
+// and an OPTIONS PASSWORD value. The public err.Error() must contain
+// none of them, errors.Is must still recognize the original cause, and
+// the call must still return an error — the read fails, it is never
+// laundered into an unknown answer. This registers the actual boundary
+// contract: bounded public text outside, full cause inside — not a
+// claim that object identities are globally redacted.
 func TestT26PublicErrorBoundaryMarker(t *testing.T) {
-	const providerMarker = "t26-provider-sentinel-8f2d"
-	provider := &t26BoundaryProvider{err: errors.New(providerMarker)}
+	sensitiveErr := errors.New("sensitive-sentinel-p4k")
+	provider := &t26BoundaryProvider{err: sensitiveErr}
 	_, err := Audit(context.Background(), Request{
 		SQL: "CREATE SERVER s1_cred_sentinel FOREIGN DATA WRAPPER mysql " +
 			"OPTIONS (USER 'u_sentinel_q7', PASSWORD 'p_sentinel_x9')",
@@ -51,17 +51,21 @@ func TestT26PublicErrorBoundaryMarker(t *testing.T) {
 		Schema:           "golden",
 		MetadataProvider: provider,
 	})
-	if err == nil || !strings.Contains(err.Error(), providerMarker) {
-		t.Fatalf("public error = %v, want provider failure text propagated", err)
+	if err == nil {
+		t.Fatalf("resolver failure must still fail at the public boundary")
 	}
-	for _, authored := range []string{
-		"s1_cred_sentinel", // the provable server identity — our layers never add it to error text
-		"u_sentinel_q7",    // OPTIONS USER payload
-		"p_sentinel_x9",    // OPTIONS PASSWORD payload
-		"CREATE SERVER",    // statement keywords
+	if !errors.Is(err, sensitiveErr) {
+		t.Fatalf("public error chain lost the provider cause: %v", err)
+	}
+	for _, protected := range []string{
+		"sensitive-sentinel-p4k", // provider-carried sensitive content
+		"s1_cred_sentinel",       // the provable server identity
+		"u_sentinel_q7",          // OPTIONS USER payload
+		"p_sentinel_x9",          // OPTIONS PASSWORD payload
+		"CREATE SERVER",          // statement keywords
 	} {
-		if strings.Contains(err.Error(), authored) {
-			t.Fatalf("public error echoes authored payload %q: %v", authored, err)
+		if strings.Contains(err.Error(), protected) {
+			t.Fatalf("public error text echoes protected content %q: %v", protected, err)
 		}
 	}
 }

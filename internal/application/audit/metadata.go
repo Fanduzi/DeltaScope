@@ -856,6 +856,14 @@ func newObjectLookupKey(lookup *spec.ObjectLookupRequest) objectLookupKey {
 		// cache key would alias TS1 and ts1 into one catalog answer.
 		key.name = strings.TrimSpace(lookup.Name)
 	}
+	if key.objectType == "mysql_server" {
+		// Server names are decoded identifiers — the verbatim decoded
+		// spelling is the only provable cache identity: a fold or trim
+		// would alias ` s1` and `s1` into one catalog answer, and the
+		// bound state must echo the statement's own decoded name
+		// (T26/#105).
+		key.name = lookup.Name
+	}
 	if len(lookup.Qualifiers) > 0 {
 		names := make([]string, 0, len(lookup.Qualifiers))
 		for name := range lookup.Qualifiers {
@@ -864,10 +872,10 @@ func newObjectLookupKey(lookup *spec.ObjectLookupRequest) objectLookupKey {
 		sort.Strings(names)
 		var b strings.Builder
 		for _, name := range names {
-			b.WriteString(name)
-			b.WriteByte('=')
-			b.WriteString(lookup.Qualifiers[name])
-			b.WriteByte(';')
+			// Length-prefix each member — a qualifier value may carry
+			// '=' or ';', so raw name=value; concatenation aliases
+			// distinct qualifier sets into one cache identity (T26/#105).
+			fmt.Fprintf(&b, "%d:%s=%d:%s;", len(name), name, len(lookup.Qualifiers[name]), lookup.Qualifiers[name])
 		}
 		key.qualifiers = b.String()
 	}
@@ -896,5 +904,21 @@ func resolveObjectSnapshot(ctx context.Context, request *MetadataRequest, dialec
 			Status: spec.MetadataStatusUnavailable,
 		}, nil
 	}
-	return resolver.ResolveObject(ctx, dialect, *lookup)
+	snapshot, err := resolver.ResolveObject(ctx, dialect, *lookup)
+	if err != nil {
+		return nil, metadataObjectReadError{cause: err}
+	}
+	return snapshot, nil
 }
+
+// metadataObjectReadError bounds the public text of one failed object
+// read: Error() carries a fixed cause-free message — provider text,
+// driver detail, and authored values never cross into the public error
+// — while Unwrap keeps the original cause reachable for errors.Is/As
+// and for the existing cancellation/timeout recognition on every
+// adapter. The read still fails: it is never laundered into an unknown
+// answer, an evidence gap, or a cached absence (T26/#105).
+type metadataObjectReadError struct{ cause error }
+
+func (metadataObjectReadError) Error() string   { return "metadata object read failed" }
+func (e metadataObjectReadError) Unwrap() error { return e.cause }
