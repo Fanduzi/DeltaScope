@@ -1,0 +1,38 @@
+=== RUN   TestT26ServerIdentityRowConfirms
+--- PASS: TestT26ServerIdentityRowConfirms (0.00s)
+=== RUN   TestT26ServerZeroRowsStaysUnknown
+--- PASS: TestT26ServerZeroRowsStaysUnknown (0.00s)
+=== RUN   TestT26ServerUnprovableIdentityNeverQueries
+--- PASS: TestT26ServerUnprovableIdentityNeverQueries (0.00s)
+=== RUN   TestT26ServerQueryErrorPropagates
+--- PASS: TestT26ServerQueryErrorPropagates (0.00s)
+=== RUN   TestT26ServerDialectGated
+--- PASS: TestT26ServerDialectGated (0.00s)
+=== RUN   TestT26SRSIdentityRowConfirms
+--- PASS: TestT26SRSIdentityRowConfirms (0.00s)
+=== RUN   TestT26SRSZeroRowsUnknownButDepsRead
+--- PASS: TestT26SRSZeroRowsUnknownButDepsRead (0.00s)
+=== RUN   TestT26SRSUnprovableIdentityNeverQueries
+--- PASS: TestT26SRSUnprovableIdentityNeverQueries (0.00s)
+=== RUN   TestT26SRSNameConflictWitnesses
+--- PASS: TestT26SRSNameConflictWitnesses (0.00s)
+=== RUN   TestT26SRSNameConflictZeroRowsAndAbsent
+--- PASS: TestT26SRSNameConflictZeroRowsAndAbsent (0.00s)
+=== RUN   TestT26SRSOrgConflictPairContract
+--- PASS: TestT26SRSOrgConflictPairContract (0.00s)
+=== RUN   TestT26SRSOrgConflictPartialNeverQueries
+--- PASS: TestT26SRSOrgConflictPartialNeverQueries (0.00s)
+=== RUN   TestT26SRSErrorPropagation
+--- PASS: TestT26SRSErrorPropagation (0.00s)
+=== RUN   TestT26SRSDependencyIterationErrorPropagates
+--- PASS: TestT26SRSDependencyIterationErrorPropagates (0.00s)
+=== RUN   TestT26SRSScanErrorPropagates
+--- PASS: TestT26SRSScanErrorPropagates (0.00s)
+=== RUN   TestT26SRSVersionGate
+--- PASS: TestT26SRSVersionGate (0.00s)
+=== RUN   TestT26SRSDialectGated
+--- PASS: TestT26SRSDialectGated (0.00s)
+=== RUN   TestT26FamilyIsolation
+--- PASS: TestT26FamilyIsolation (0.00s)
+PASS
+ok  	github.com/Fanduzi/DeltaScope/internal/infrastructure/metadata/mysql	0.334s
