@@ -131,6 +131,7 @@ const (
 	ruleIDMySQLTablespaceAlterWarn                           = "ddl.mysql.tablespace.alter.warn"
 	ruleIDMySQLTablespaceDropForbid                          = "ddl.mysql.tablespace.drop.forbid"
 	ruleIDMySQLTablespaceApplicability                       = "ddl.mysql.tablespace.applicability"
+	ruleIDMySQLDropServerNotice                              = "ddl.mysql.server.drop.notice"
 	ruleIDAlterModifyColumnTargetTypeFamilyAllowlist         = "ddl.alter.modify_column.target_type_family.allowlist"
 	ruleIDAlterChangeColumnTargetTypeFamilyAllowlist         = "ddl.alter.change_column.target_type_family.allowlist"
 	ruleIDAlterModifyColumnExplicitNullabilityChangeForbid   = "ddl.alter.modify_column.explicit_nullability_change.forbid"

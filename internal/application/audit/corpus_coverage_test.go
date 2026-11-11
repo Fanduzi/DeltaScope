@@ -131,6 +131,11 @@ func corpusRuleDialectTargets(ruleID string) []string {
 		"ddl.alter.import_tablespace.applicability",
 		"ddl.alter.discard_tablespace.applicability":
 		return []string{"mysql"}
+	// T26-SERVER-DROP-01: the audited MySQL identifier-form DROP SERVER
+	// slice — under TiDB the whole SERVER family is a vendor boundary,
+	// and PostgreSQL never binds SERVER declarations.
+	case "ddl.mysql.server.drop.notice":
+		return []string{"mysql"}
 	}
 	if strings.HasPrefix(ruleID, "ddl.pg.") || isPostgreSQLOnlyRule(ruleID) {
 		return []string{"postgresql"}

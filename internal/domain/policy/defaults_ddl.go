@@ -773,6 +773,7 @@ func ddlCoreRules() map[string]RulePolicy {
 		"ddl.mysql.tablespace.alter.warn":    {Enabled: true, Level: rule.LevelWarning, Params: map[string]any{}},
 		"ddl.mysql.tablespace.drop.forbid":   {Enabled: true, Level: rule.LevelBlocker, Params: map[string]any{"forbid": true}},
 		"ddl.mysql.tablespace.applicability": {Enabled: true, Level: rule.LevelBlocker, Params: map[string]any{}},
+		"ddl.mysql.server.drop.notice":       {Enabled: true, Level: rule.LevelNotice, Params: map[string]any{}},
 		"ddl.tidb.table.auto_random.valid":   {Enabled: true, Level: rule.LevelBlocker, Params: map[string]any{}},
 		"ddl.tidb.table.options.valid":       {Enabled: true, Level: rule.LevelBlocker, Params: map[string]any{}},
 		"ddl.tidb.alter.auto_random.valid":   {Enabled: true, Level: rule.LevelBlocker, Params: map[string]any{}},

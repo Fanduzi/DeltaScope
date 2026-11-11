@@ -41,16 +41,31 @@ func (s *batchState) objectResolverFor(cached func(ctx context.Context, lookup s
 }
 
 // bindMySQLServer resolves the one server identity a SERVER-family
-// statement names and binds the provider's existence fact. The catalog
-// read fires only when the authored name is a provable identifier
-// (decl.NameIdent) — a string-literal spelling stays an unissued read
-// with the identity-unproven reason, never a normalized-identity query
-// and never a cached absence. A contaminated batch or a non-MySQL
-// dialect binds the state unvouched; resolver failures propagate.
+// statement names and binds the adjudicated existence fact — the
+// ordered channel merged over the provider answer (T26-SERVER-DROP-01,
+// the accepted six-step order in
+// docs/verification/t26-semantics-01): whole-batch contamination and
+// channel taint exit first; the relation scan decides every barrier
+// before any resolver or cache access; only a clean channel reaches
+// the provider seam. The catalog read fires only when the authored
+// name is a provable identifier (decl.NameIdent) — a string-literal
+// spelling stays an unissued read with the identity-unproven reason,
+// never a normalized-identity query and never a cached absence. A
+// contaminated batch or a non-MySQL dialect binds the state
+// unvouched; resolver failures propagate.
 func (s *batchState) bindMySQLServer(ctx context.Context, statement spec.Statement) (*spec.ServerState, error) {
 	decl := statement.DDL.Server
 	bound := &spec.ServerState{Name: decl.Name}
 	if s.dialect != spec.DialectMySQL || s.contaminated {
+		return bound, nil
+	}
+	if s.serverChannelTainted || (decl.NameIdent && s.resolveServerBarrier(decl.Name)) {
+		// The ordered overlay outranks the provider seam: an
+		// undischarged unknown effect (channel taint, unproven-relation
+		// entry or recorded write, an entry already holding a barrier)
+		// shadows the audit-time catalog answer — no resolver call on
+		// this path.
+		bound.UnreadReason = spec.MetadataUnreadBatchEffects
 		return bound, nil
 	}
 	resolver := s.objectResolverFor(s.mysqlServerResolver)

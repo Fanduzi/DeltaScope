@@ -130,6 +130,19 @@ type batchState struct {
 	// lookup for the MySQL spatial reference system family (T26/#105
 	// provider round). Nil falls back to the provider's ObjectResolver.
 	mysqlSRSResolver func(ctx context.Context, lookup spec.ObjectLookupRequest) (*spec.ObjectSnapshot, error)
+	// serverEntries holds the SERVER family's ordered identity
+	// projections — barrier-only this slice, keyed by the ASCII-fold
+	// bucket with the verbatim name kept inside each entry for
+	// relation checks (T26-SERVER-DROP-01).
+	serverEntries map[string]*batchServerEntry
+	// serverWrites records unaudited SERVER writes' authored
+	// identities — unknown effects, never consumable facts.
+	serverWrites []serverWrite
+	// serverChannelTainted marks the whole SERVER ordered channel
+	// unresolvable — set by a write whose name identity is unprovable
+	// (string-literal spelling); every later statement exits at step 2
+	// before the relation scan or any resolver call.
+	serverChannelTainted bool
 	// resolvedVersion is the request's already-parsed version fact. Rules read
 	// the same fact from statement metadata. apply still receives the original
 	// statement, so RENAME COLUMN applicability reads this copy. Nil means the
@@ -360,6 +373,13 @@ func (s *batchState) apply(ctx context.Context, statement spec.Statement) error 
 	if procedureLifecyclePreservesTableState(statement) {
 		return ctx.Err()
 	}
+	if statement.DDL != nil && statement.DDL.Server != nil {
+		// SERVER statements route to their own ordered channel —
+		// audited drops leave the unproven barrier and unaudited forms
+		// leave write records / channel taint (T26-SERVER-DROP-01). The
+		// family never enters the tracked schema/table model.
+		return s.applyServerStatement(ctx, statement)
+	}
 	if statement.DDL != nil && statement.DDL.Operation == spec.DDLOperationDropTable {
 		return s.applyDropTable(ctx, statement)
 	}
@@ -407,12 +427,13 @@ func (s *batchState) apply(ctx context.Context, statement spec.Statement) error 
 			// provably unchanged rather than contaminated (T26/#105).
 			return nil
 		}
-		if statement.DDL != nil && (statement.DDL.Server != nil || statement.DDL.SpatialReference != nil) {
-			// SERVER definitions and spatial reference systems are
-			// instance-global objects — they never enter the tracked
-			// schema/table model. Whatever the boundary reason, tracked
-			// facts provably stand, so the statement neither executes on
-			// the tracked surface nor contaminates the batch (T26/#105).
+		if statement.DDL != nil && statement.DDL.SpatialReference != nil {
+			// Spatial reference systems are instance-global objects —
+			// they never enter the tracked schema/table model. Whatever
+			// the boundary reason, tracked facts provably stand, so the
+			// statement neither executes on the tracked surface nor
+			// contaminates the batch (T26/#105). SERVER statements are
+			// already routed to their own ordered channel above.
 			return nil
 		}
 		if statement.DDL != nil && statement.DDL.Tablespace != nil {

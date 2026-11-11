@@ -2,7 +2,7 @@
  "task_id": "T26",
  "issue": 105,
  "policy_profile": "all-rules-disabled",
- "description": "T26 MySQL SERVER + spatial reference system low-frequency DDL (issue #105), R3 stage manifest — scope is recognition, named boundaries, and output redaction ONLY. The four baseline anchors and their db_* required cases are declared so a future separately-authorized native run executes unchanged; no SERVER/SRS lifecycle semantics are claimed. cli_cases pin: four SERVER forms (create/alter/drop/drop-if-exists) as named unaudited boundaries on mysql and vendor boundaries on tidb; six SRS forms (create, create+IF NOT EXISTS, create OR REPLACE, drop, drop+IF EXISTS, plus bare create) as implementation boundaries on mysql and vendor on tidb; strict whole-input rejects (trailing junk, missing FDW clause, negative/overflow SRID, OR REPLACE + IF NOT EXISTS contradiction) as parser errors; ALTER INSTANCE inventory subactions RELOAD TLS (with NO ROLLBACK ON ERROR member recorded) and ROTATE INNODB MASTER KEY as precise named boundaries; and fixed-shape output redaction proving no credential/definition payload reaches raw_sql, normalized_sql, unsupported[].sql, or markdown.",
+ "description": "T26 MySQL SERVER + spatial reference system low-frequency DDL (issue #105), R3 stage manifest \u2014 scope is recognition, named boundaries, and output redaction ONLY. The four baseline anchors and their db_* required cases are declared so a future separately-authorized native run executes unchanged; no SERVER/SRS lifecycle semantics are claimed. cli_cases pin: four SERVER forms (create/alter/drop/drop-if-exists) as named unaudited boundaries on mysql and vendor boundaries on tidb; six SRS forms (create, create+IF NOT EXISTS, create OR REPLACE, drop, drop+IF EXISTS, plus bare create) as implementation boundaries on mysql and vendor on tidb; strict whole-input rejects (trailing junk, missing FDW clause, negative/overflow SRID, OR REPLACE + IF NOT EXISTS contradiction) as parser errors; ALTER INSTANCE inventory subactions RELOAD TLS (with NO ROLLBACK ON ERROR member recorded) and ROTATE INNODB MASTER KEY as precise named boundaries; and fixed-shape output redaction proving no credential/definition payload reaches raw_sql, normalized_sql, unsupported[].sql, or markdown.",
  "anchors": {
   "mysql57": {
    "service": "mysql57",
@@ -168,60 +168,89 @@
    "dialect": "mysql",
    "sql": "DROP SERVER golden_srv",
    "expect": {
-    "exit": 1,
+    "exit": 0,
     "verdict": "review",
     "statements": 1,
-    "findings": 0,
-    "diagnostics": 1,
-    "unsupported": 1,
-    "coverage": "incomplete",
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
     "statement_coverage": [
-     "incomplete"
+     "unverified"
     ],
-    "unsupported_entries": [
+    "finding_entries": [
      {
-      "feature": "drop_server",
-      "reason": "parsed by the shared parser but not covered by audited semantics",
-      "metadata": {
-       "boundary": "unaudited",
-       "object": "server"
-      }
+      "index": 0,
+      "rule_id": "ddl.mysql.server.drop.notice",
+      "level": "notice"
+     }
+    ],
+    "evidence_gaps": 1,
+    "evidence_gap_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.mysql.server.drop.notice",
+      "reason_code": "unknown_server_state",
+      "required_facts": [
+       "server.existence",
+       "server.drop_privilege"
+      ]
      }
     ],
     "statement_sql": [
      "DROP SERVER <redacted>"
     ]
-   }
+   },
+   "policy": "server-drop"
   },
   {
    "id": "mysql-drop-server-if-exists",
    "dialect": "mysql",
    "sql": "DROP SERVER IF EXISTS golden_srv",
    "expect": {
-    "exit": 1,
+    "exit": 0,
     "verdict": "review",
     "statements": 1,
-    "findings": 0,
-    "diagnostics": 1,
-    "unsupported": 1,
-    "coverage": "incomplete",
+    "findings": 1,
+    "diagnostics": 0,
+    "unsupported": 0,
+    "coverage": "unverified",
     "statement_coverage": [
-     "incomplete"
+     "unverified"
     ],
-    "unsupported_entries": [
+    "finding_entries": [
      {
-      "feature": "drop_server",
-      "reason": "parsed by the shared parser but not covered by audited semantics",
-      "metadata": {
-       "boundary": "unaudited",
-       "object": "server"
-      }
+      "index": 0,
+      "rule_id": "ddl.mysql.server.drop.notice",
+      "level": "notice"
+     }
+    ],
+    "evidence_gaps": 1,
+    "evidence_gap_entries": [
+     {
+      "index": 0,
+      "rule_id": "ddl.mysql.server.drop.notice",
+      "reason_code": "unknown_server_state",
+      "required_facts": [
+       "server.existence",
+       "server.drop_privilege"
+      ]
      }
     ],
     "statement_sql": [
      "DROP SERVER IF EXISTS <redacted>"
+    ],
+    "finding_metadata": [
+     {
+      "index": 0,
+      "rule_id": "ddl.mysql.server.drop.notice",
+      "metadata": {
+       "if_exists": true
+      }
+     }
     ]
-   }
+   },
+   "policy": "server-drop"
   },
   {
    "id": "tidb-create-server",
@@ -736,5 +765,17 @@
   "T26.cli.mysql-alter-instance-rotate",
   "T26.cli.tidb-alter-instance-rotate",
   "T26.cli.tidb-alter-instance-reload-tls"
- ]
+ ],
+ "policy": {
+  "profiles": {
+   "server-drop": {
+    "enable": {
+     "ddl.mysql.server.drop.notice": {
+      "enabled": true,
+      "level": "notice"
+     }
+    }
+   }
+  }
+ }
 }

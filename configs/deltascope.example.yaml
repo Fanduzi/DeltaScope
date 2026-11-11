@@ -1169,6 +1169,11 @@ rules:
     params:
       forbid: true
 
+  ddl.mysql.server.drop.notice:
+    enabled: true
+    level: notice
+    params:
+
   ddl.tidb.table.auto_random.valid:
     enabled: true
     level: blocker

@@ -50,17 +50,20 @@ func applyCoverageBoundary(dialect spec.Dialect, statement *spec.Statement, node
 			}
 		}
 		if statement.DDL.Server != nil {
-			// The MySQL SERVER family (T26/#105): on MySQL a named
-			// unaudited boundary — recognition-level coverage only, no
-			// lifecycle semantics; on TiDB the whole family is not TiDB
-			// semantics — a vendor boundary, never a MySQL verdict.
+			// The MySQL SERVER family (T26/#105): on TiDB the whole
+			// family is not TiDB semantics — a vendor boundary, never a
+			// MySQL verdict. On MySQL a provable-identifier DROP SERVER
+			// enters the audited path (T26-SERVER-DROP-01); every other
+			// form — CREATE/ALTER and string-literal names — keeps the
+			// named unaudited boundary.
 			if dialect == spec.DialectTiDB {
 				statement.Unsupported = &spec.UnsupportedDetail{
 					Feature:  string(statement.DDL.Operation),
 					Reason:   spec.UnsupportedVendorBoundaryReason,
 					Metadata: map[string]any{"boundary": "vendor"},
 				}
-			} else {
+			} else if !(statement.DDL.Server.Kind == spec.ServerKindDrop &&
+				statement.DDL.Server.NameIdent) {
 				statement.Unsupported = &spec.UnsupportedDetail{
 					Feature:  string(statement.DDL.Operation),
 					Reason:   spec.UnsupportedUnauditedReason,

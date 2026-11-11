@@ -61,12 +61,26 @@ func TestT26R3_ServerRecognitionBoundary(t *testing.T) {
 func TestT26R3_ServerForms(t *testing.T) {
 	for _, f := range []struct{ sql, feature string }{
 		{"ALTER SERVER golden_srv OPTIONS (HOST 'db2.example.com')", "alter_server"},
-		{"DROP SERVER golden_srv", "drop_server"},
-		{"DROP SERVER IF EXISTS golden_srv", "drop_server"},
+		{"DROP SERVER 'golden_srv'", "drop_server"},
 	} {
 		u := t26OneBoundary(t, spec.DialectMySQL, f.sql)
 		if u.Feature != f.feature {
 			t.Fatalf("%s: feature=%q want %s", f.sql, u.Feature, f.feature)
+		}
+	}
+	// T26-SERVER-DROP-01: identifier-form DROP SERVER leaves the named
+	// boundary and enters the audited slice — no unsupported detail, no
+	// ErrUnsupportedStatement.
+	for _, sql := range []string{
+		"DROP SERVER golden_srv",
+		"DROP SERVER IF EXISTS golden_srv",
+	} {
+		result, err := t26Audit(t, spec.DialectMySQL, sql)
+		if errors.Is(err, ErrUnsupportedStatement) {
+			t.Fatalf("%s: audited drop must not surface the boundary: %v", sql, err)
+		}
+		if len(result.Unsupported) != 0 {
+			t.Fatalf("%s: audited drop must carry no unsupported entries: %+v", sql, result.Unsupported)
 		}
 	}
 }

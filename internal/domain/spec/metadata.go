@@ -708,6 +708,11 @@ const (
 	// because a proven server version makes the catalog inapplicable —
 	// never issued on a surface that cannot hold the object.
 	MetadataUnreadVersionInapplicable = "version_inapplicable"
+	// MetadataUnreadBatchEffects marks a fact read suppressed because an
+	// earlier batch statement left an undischarged unknown effect on the
+	// identity — the ordered channel's unproven barrier — so the catalog
+	// answer may be stale and is never promoted (T26-SERVER-DROP-01).
+	MetadataUnreadBatchEffects = "batch_effects"
 )
 
 // ObjectSnapshot carries the metadata-validated state of one non-table database object.
