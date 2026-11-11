@@ -521,13 +521,13 @@ func TestT26AlterTableChannelIsolation(t *testing.T) {
 // purpose, lossy as a witness. This walk instead:
 //   - visits EVERY field — an unreadable non-zero unexported field or
 //     an unsupported kind (func/chan/unsafe pointer) fails the test
-//    loudly instead of dropping the field silently;
+//     loudly instead of dropping the field silently;
 //   - preserves nil vs non-nil-empty on every slice/map;
 //   - allocates fresh pointers, slices and maps recursively, so the
-//    copy shares no mutable descendant with the source;
+//     copy shares no mutable descendant with the source;
 //   - unwraps interface values and clones their concrete payloads —
-//    IdentityOptions' mutable any-values are independently copied,
-//    not just the outer map.
+//     IdentityOptions' mutable any-values are independently copied,
+//     not just the outer map.
 func fidelityCloneValue(t *testing.T, path string, v reflect.Value) reflect.Value {
 	t.Helper()
 	switch v.Kind() {
@@ -937,11 +937,11 @@ func TestT26AlterSnapshotFidelity(t *testing.T) {
 	mk := func() *spec.TableSnapshot {
 		return &spec.TableSnapshot{
 			Schema: "golden", Exists: true,
-			Table:    &spec.Table{Schema: "golden", Name: "t1"},
-			Columns:  []spec.Column{{Name: "id", Type: "int", IdentityOptions: map[string]any{"start": 1, "tags": map[string]any{"a": "b"}}}},
-			Indexes:  []spec.Index{{Name: "ix1", VisibilityExplicit: false}},
-			Options:  map[string]string{"engine": "innodb"},
-			TTL:      &spec.TTLConfig{},
+			Table:      &spec.Table{Schema: "golden", Name: "t1"},
+			Columns:    []spec.Column{{Name: "id", Type: "int", IdentityOptions: map[string]any{"start": 1, "tags": map[string]any{"a": "b"}}}},
+			Indexes:    []spec.Index{{Name: "ix1", VisibilityExplicit: false}},
+			Options:    map[string]string{"engine": "innodb"},
+			TTL:        &spec.TTLConfig{},
 			PrimaryKey: &spec.Index{Name: "PRIMARY"},
 		}
 	}
@@ -962,8 +962,11 @@ func TestT26AlterSnapshotFidelity(t *testing.T) {
 		t.Fatalf("snapshot must keep the authored false — it was normalized to %v", snap.Indexes[0].VisibilityExplicit)
 	}
 
-	// B: nil slice vs non-nil-empty slice are distinct observed states.
+	// B: nil slice vs non-nil-empty slice are distinct observed states —
+	// BOTH inputs must be set explicitly (R6: the earlier mk() left one
+	// side populated, comparing content-vs-empty instead of nil-vs-empty).
 	nilCols := mk()
+	nilCols.Columns = nil
 	emptyCols := mk()
 	emptyCols.Columns = []spec.Column{}
 	if reflect.DeepEqual(fidelityTableSnapshot(t, nilCols), fidelityTableSnapshot(t, emptyCols)) {
@@ -973,6 +976,7 @@ func TestT26AlterSnapshotFidelity(t *testing.T) {
 		t.Fatalf("non-nil-empty Columns collapsed to nil")
 	}
 	nilOpts, emptyOpts := mk(), mk()
+	nilOpts.Options = nil
 	emptyOpts.Options = map[string]string{}
 	if reflect.DeepEqual(fidelityTableSnapshot(t, nilOpts), fidelityTableSnapshot(t, emptyOpts)) {
 		t.Fatalf("nil Options vs non-nil-empty Options erased")
