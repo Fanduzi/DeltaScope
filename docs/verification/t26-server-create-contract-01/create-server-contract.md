@@ -1,11 +1,13 @@
 # T26-SERVER-CREATE-CONTRACT-01 — CREATE SERVER first-slice semantic contract
 
-Status: PROPOSED / Reviewer pending — R4 targeted revision after
-CHANGES REQUIRED on candidates `3ec5f2c3` (R1), `e59f2452` (R2),
-`3702ae03` (R3). Type: docs-only contract convergence. This-round
-baseline: `3702ae03` (tree `275c4956`), branch
-`milestone/mysql-tidb-ddl-completion`. Parent: T26 / issue #105 under
-issue #79.
+Status: **PASS — docs-only contract acceptance (R4)**. Reviewer
+accepted candidate `112beb08` (tree `b176656c`, parent `3702ae03`)
+on branch `milestone/mysql-tidb-ddl-completion`. Round history:
+R1 `3ec5f2c3` CHANGES REQUIRED, R2 `e59f2452` CHANGES REQUIRED,
+R3 `3702ae03` CHANGES REQUIRED, R4 `112beb08` docs-only contract
+PASS. Product implementation and product validation have NOT been
+executed — a future independently-issued execution order activates
+them. Parent: T26 / issue #105 under issue #79.
 
 This contract defines ONE recommended first-implementation domain for
 audited MySQL `CREATE SERVER`: the activation predicate, the exact
@@ -546,26 +548,31 @@ E. **Premise edges**: OrderedAbsent + suppressed →
    injected directly), not the public no-provider path — public
    no-provider keeps: no loader, premise unproven, A4 formula owed
    set.
-F. **Refusal post-state** — controlled fixture: two same-identity
-   CREATEs in one batch (MySQL 8.0.x qualified; clean channel, no
-   ordered answer; OPTIONS clean; object resolver available and
-   catalog evidence = proven present; no privilege mode; server rule
-   enabled at documented default levels). Expected per statement,
-   consistent with the worked rows: both TerminalRefusal, owed ∅, no
-   `conditional_audit` (no own premise, no inherited source), no
-   OrderedPresent published, statement coverage `complete`,
-   controlled-batch aggregate `complete`, default blocker →
-   `reject`. The three count layers are registered separately and
-   derive from the actual baseline read path — `bindMySQLServer`
-   resolves through `objectResolverFor` → the once-per-request
-   `objectCache` (`metadata.go`): the second statement hits the cache
-   entry keyed `(schema, mysql_server, name, name_form=identifier)`
-   and issues no new provider call and no new catalog SQL.
-   Counts: privilege loader 0; provider-facing object-resolver calls
-   1 (first statement only); catalog SQL 1 — asserted at whichever
-   layer measures it; if the chosen layer only counts a fake
-   resolver's `ResolveObject` calls, catalog SQL is **not asserted at
-   that layer** — registered explicitly, never substituted.
+F. **Refusal post-state** — controlled fixture: two CREATEs in one
+   batch using a **byte-identical** identifier name and identical
+   `Name`/`Type`/`Schema`/`Qualifiers` lookup fields, constructing
+   the same `objectLookupKey` (this fixes the fixture only — it does
+   not extend `serverRelSame` and does not require different
+   ASCII-fold-equal spellings to share a cache). Premises: MySQL
+   8.0.x qualified; clean channel, no ordered answer; OPTIONS clean;
+   object resolver available and catalog evidence = proven present;
+   no privilege mode; server rule enabled at documented default
+   levels. Expected per statement, consistent with the worked rows:
+   both TerminalRefusal, owed ∅, no `conditional_audit` (no own
+   premise, no inherited source), no OrderedPresent published,
+   statement coverage `complete`, controlled-batch aggregate
+   `complete`, default blocker → `reject`. The count layers are
+   registered separately and derive from the actual baseline read
+   path — `bindMySQLServer` resolves through `objectResolverFor` →
+   the once-per-request `objectCache` (`metadata.go`): the first
+   statement misses into `resolveObjectSnapshot`, the second hits
+   the same cache entry and never re-enters it. Counts: privilege
+   loader 0; provider-facing object-resolver calls 1 (first
+   statement only); catalog SQL total 1 — retained as a
+   **PLAN / UNEXECUTED** expectation, asserted at whichever layer
+   measures it; if the chosen layer only counts a fake resolver's
+   `ResolveObject` calls, catalog SQL is **not asserted at that
+   layer** — registered explicitly, never substituted.
 G. **Inherited-marker edges**: conditional `OrderedPresent` consumed
    by a suppressed/unproven-premise CREATE (refusal, marker solely
    inherited) and by a DROP (Unproven `{server.drop_privilege}`,
@@ -584,12 +591,35 @@ J. **Default-path registration**: in-domain create with no
    mode/provider asserts `unverified` + exact owed set (NOT the old
    `unaudited`) — the registered public change.
 
-## Actual checks run this round (R4)
+## Acceptance record (R4 PASS)
+
+Reviewer closure mapping: R4-1 the OrderedPresent invalidation clause
+carries the contaminated-batch exception (entries untouched; the
+whole-batch guard blocks consumption); R4-2 G2/phase exits unified —
+unknown/out-of-domain → `unaudited`/`gate:"version"`, conflicts exit
+earlier as typed errors, phase-1 gates keep their own exits;
+R4-3 plan F re-founded on the real request-local `objectCache` path
+with per-layer counts; R4-4 row 14 relabeled adjudication-unit input
+(no public no-provider claim). R3's coverage/verdict projection and
+all R2 closures stand.
+
+Evidence scope registered at acceptance: (a) the delivered source
+excerpts support the request-local `objectCache`, its same-key
+hit/miss branches, `mysqlServerResolver` wiring, and the bind
+resolver call site; (b) the version path supports the online
+product-mismatch and pin/observed-version-mismatch early returns and
+the `resolvedVersion`-before-loader ordering; (c) CREATE G2
+qualification and the CREATE adjudication remain proposed future
+insertion points — not implemented; (d) the catalog-SQL total-1 count
+is a PLAN / UNEXECUTED expectation, not a measured result; version
+branches not shown in excerpts are not claimed source-verified.
+
+## Actual checks run this round
 
 - `git status --short` on tracked files: clean at each commit.
 - `git diff --check`: executed clean on R1 (`3ec5f2c3`), R2
-  (`e59f2452`), and R3 (`3702ae03`) candidates; re-run clean on the
-  R4 candidate at commit.
+  (`e59f2452`), R3 (`3702ae03`), and R4 (`112beb08`) candidates;
+  re-run clean on the archive commit.
 - Source-consistency: every code reference above re-verified against
   the baseline tree (including `bindMySQLServer`'s two distinct early
   exits — contamination → bound unvouched, taint/barrier →

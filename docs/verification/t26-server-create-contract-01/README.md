@@ -4,20 +4,21 @@ Docs-only contract convergence for the MySQL `CREATE SERVER` slice —
 T26 continuation, issue #105, parent #79. No product, test, or manifest
 change exists in this directory's commit.
 
-Status: **PROPOSED / Reviewer pending** — R4 targeted revision after
-CHANGES REQUIRED on candidates `3ec5f2c3` (R1), `e59f2452` (R2),
-`3702ae03` (R3); a recommended implementation contract for a future
-independently-issued execution order.
+Status: **PASS — docs-only contract acceptance (R4)**. The proposed
+first-slice contract is accepted; product implementation and product
+validation remain unexecuted pending a future independently-issued
+execution order.
 
 ## Identity
 
 | object | value |
 |---|---|
-| work order | T26-SERVER-CREATE-CONTRACT-01 (R4 docs-only revision) |
-| R1 candidate | `3ec5f2c3` (tree `9b8ba8ec`, parent `9e21ace9`) — preserved |
-| R2 candidate | `e59f2452` (tree `3537f2c9`, parent `3ec5f2c3`) — preserved |
-| R3 candidate | `3702ae03` (tree `275c4956`, parent `e59f2452`) — preserved |
-| this-round baseline | `3702ae03` |
+| work order | T26-SERVER-CREATE-CONTRACT-01 (R4 docs-only acceptance) |
+| R1 candidate | `3ec5f2c3` — CHANGES REQUIRED, preserved |
+| R2 candidate | `e59f2452` — CHANGES REQUIRED, preserved |
+| R3 candidate | `3702ae03` — CHANGES REQUIRED, preserved |
+| R4 accepted | `112beb08` (tree `b176656c`, parent `3702ae03`) — docs-only contract PASS |
+| archive baseline | `112beb08` |
 | branch | `milestone/mysql-tidb-ddl-completion` |
 | accepted predecessor | product `9dad37b8` (tree `eb544128`, R2 PASS) |
 | contract doc | [create-server-contract.md](create-server-contract.md) |

@@ -1,16 +1,19 @@
 # Decision: MySQL CREATE SERVER first-slice contract — shared adjudication + OrderedPresent (T26-SERVER-CREATE-CONTRACT-01)
 
 Date: 2026-11-12
-Status: **PROPOSED / Reviewer pending** — R4 targeted revision after
-CHANGES REQUIRED on candidates `3ec5f2c3` (R1), `e59f2452` (R2),
-`3702ae03` (R3). This record is the contract document for a
-docs-only convergence order; it recommends ONE first-implementation
-domain and records no accepted product behavior. Nothing in
-`internal/`, `pkg/`, or `testdata/` changed under it.
+Status: **PASS — docs-only contract acceptance (R4)**. Reviewer
+accepted candidate `112beb08` (tree `b176656c`, parent `3702ae03`)
+as the proposed CREATE SERVER first-slice semantic contract.
+Round history: R1 `3ec5f2c3` CHANGES REQUIRED, R2 `e59f2452`
+CHANGES REQUIRED, R3 `3702ae03` CHANGES REQUIRED, R4 `112beb08`
+docs-only contract PASS. Product implementation and product
+validation have NOT been executed — a future independently-issued
+execution order activates them. Nothing in `internal/`, `pkg/`, or
+`testdata/` changed under this contract.
 Related milestone/version: issue #105 T26 under parent issue #79
 Related commits: docs-only candidates `3ec5f2c3` (R1, baseline
-`9e21ace9`), `e59f2452` (R2), `3702ae03` (R3); R4 revision (this
-change set)
+`9e21ace9`), `e59f2452` (R2), `3702ae03` (R3), `112beb08` (R4
+accepted); acceptance archive (this change set)
 Related docs: `docs/verification/t26-server-create-contract-01/`
 (authoritative contract), `docs/decisions/2026-11-16-mysql-drop-server-conditional-privilege.md`
 (accepted DROP sibling)
@@ -193,8 +196,8 @@ widen relations.
 ## Verification Evidence
 
 Docs-only round. Actual checks: `git status --short` clean on tracked
-files at each commit; `git diff --check` executed clean on the R1
-candidate (`3ec5f2c3`) and re-run clean on the R2 candidate;
+files at each commit; `git diff --check` executed clean on every
+candidate (R1 `3ec5f2c3` through the archive commit);
 source-consistency review of every cited file against the baseline
 tree (including `bindMySQLServer`'s two distinct early exits —
 contamination → bound unvouched, taint/barrier →
