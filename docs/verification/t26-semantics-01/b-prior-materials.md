@@ -27,6 +27,7 @@ used as semantic basis — the archived originals are cited.
 | B13 | T26 stage manifest | `testdata/ddl-golden/T26.json` | SHA-256 `67e7044d…` (R6 record) | approved (23/23 `cli_*` verified on `16eba8a0`); 8 `db_*` cells unexecuted | db cells reserved for separately-authorized native round |
 | B14 | T26-R6 acceptance | `docs/verification/t26-r6/` | archive `1e130f1d`, tested `16eba8a0` | approved | scoped offline phase acceptance; deferred-scope list binding |
 | B15 | T26-PROVIDER-01 acceptance | `docs/verification/t26-provider-01/` | archive `dfa7852e`, tested `7c2c1f23` | approved | five provider capabilities; three statement-path wirings; two provider-only conflict capabilities; bounded public-error contract |
+| B16 | SEMANTICS-01 doc candidate R0 | this directory @ `8fc06657` | commit `8fc066571ab7946a8b42f79137fd832d065fc960`, tree `bee5ffb7f4e6f310bddd18407bccae7a566c1871` | **applied-ruling** — CHANGES REQUIRED (R1) | R1 dispositions on G-1..G-8 carried into this revision; open items: `server.execution_premises` disposition, `OrderedAbsent` field design, G-4/G-6 contracts |
 
 Related rulings inherited verbatim: T04/#83 incomplete-coverage
 contract (gap vs failing-provider, bounded `required_facts`, no payload
