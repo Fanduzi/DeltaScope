@@ -490,16 +490,17 @@ func TestT26SRSVersionGate(t *testing.T) {
 		t.Fatalf("5.7 issued %d dep queries", len(calls))
 	}
 
-	// Unproven version + missing-object code → narrow degrade, unproven.
-	snapshot, err = t26Resolve(t, map[string]testQueryResult{
-		testSRSIdentityFragment: {columns: []string{"SRS_ID", "SRS_NAME"},
-			queryErr: &gomysql.MySQLError{Number: 1146, Message: "Table 'st_spatial_reference_systems' doesn't exist"}},
-	}, spec.DialectMySQL, spec.ObjectLookupRequest{Type: "mysql_spatial_reference_system", Name: "4326"})
-	if err != nil || snapshot.SpatialReference == nil || snapshot.SpatialReference.Read {
-		t.Fatalf("unknown-version degrade: snapshot=%#v err=%v, want unproven nil error", snapshot, err)
-	}
-	if snapshot.SpatialReference.UnreadReason != spec.MetadataUnreadCatalogUnproven {
-		t.Fatalf("degraded reason = %q, want catalog_unproven", snapshot.SpatialReference.UnreadReason)
+	// Unproven version + a real catalog error → propagates like every
+	// issued-query failure. An unknown version never converts a query
+	// that already failed into "not loaded" — missing-object codes are
+	// not degraded anywhere on this surface.
+	for _, number := range []uint16{1054, 1109, 1146} {
+		missing := &gomysql.MySQLError{Number: number, Message: "catalog object missing"}
+		if _, err := t26Resolve(t, map[string]testQueryResult{
+			testSRSIdentityFragment: {queryErr: missing},
+		}, spec.DialectMySQL, spec.ObjectLookupRequest{Type: "mysql_spatial_reference_system", Name: "4326"}); !errors.Is(err, missing) {
+			t.Fatalf("unproven version errno %d: err = %v, want errors.Is propagation", number, err)
+		}
 	}
 
 	// Proven 8.0 + missing-object code → propagates like every error.
@@ -511,20 +512,16 @@ func TestT26SRSVersionGate(t *testing.T) {
 		t.Fatalf("proven 8.0 missing-object: err = %v, want errors.Is(1146)", err)
 	}
 
-	// Unproven version + existence answered + dep missing-object → the
-	// dependency fact binds degraded (Read=false + catalog_unproven),
-	// distinct from "never issued" and from "read, zero rows".
-	snapshot, err = t26Resolve(t, map[string]testQueryResult{
+	// Unproven version + existence answered + dep error → propagates.
+	// A successful existence read never launders a following dependency
+	// failure into a partial normal return.
+	depMissing := &gomysql.MySQLError{Number: 1146, Message: "Table 'st_geometry_columns' doesn't exist"}
+	if _, err = t26Resolve(t, map[string]testQueryResult{
 		testSRSIdentityFragment: {columns: []string{"SRS_ID", "SRS_NAME"},
 			rows: [][]driver.Value{{int64(4326), "WGS 84"}}},
-		testSRSDepFragment: {queryErr: &gomysql.MySQLError{Number: 1146, Message: "Table 'st_geometry_columns' doesn't exist"}},
-	}, spec.DialectMySQL, spec.ObjectLookupRequest{Type: "mysql_spatial_reference_system", Name: "4326"})
-	if err != nil || snapshot.SpatialReference == nil || !snapshot.SpatialReference.Exists {
-		t.Fatalf("dep degrade: snapshot=%#v err=%v, want existence confirmed", snapshot, err)
-	}
-	deps := snapshot.SpatialReference.Dependencies
-	if deps == nil || deps.Read || deps.UnreadReason != spec.MetadataUnreadCatalogUnproven || len(deps.Columns) != 0 {
-		t.Fatalf("dep degrade = %+v, want non-nil degraded fact (Read=false + catalog_unproven)", deps)
+		testSRSDepFragment: {queryErr: depMissing},
+	}, spec.DialectMySQL, spec.ObjectLookupRequest{Type: "mysql_spatial_reference_system", Name: "4326"}); !errors.Is(err, depMissing) {
+		t.Fatalf("unproven dep error: err = %v, want errors.Is propagation", err)
 	}
 }
 

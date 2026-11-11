@@ -708,11 +708,6 @@ const (
 	// because a proven server version makes the catalog inapplicable —
 	// never issued on a surface that cannot hold the object.
 	MetadataUnreadVersionInapplicable = "version_inapplicable"
-	// MetadataUnreadCatalogUnproven marks a fact read issued but
-	// degraded because the catalog object itself is unproven on a
-	// version-unproven surface — the missing-object answer carries no
-	// fact either way.
-	MetadataUnreadCatalogUnproven = "catalog_unproven"
 )
 
 // ObjectSnapshot carries the metadata-validated state of one non-table database object.

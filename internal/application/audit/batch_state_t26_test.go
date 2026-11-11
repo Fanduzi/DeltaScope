@@ -11,6 +11,7 @@ import (
 	"context"
 	"errors"
 	"strconv"
+	"strings"
 	"testing"
 
 	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
@@ -79,7 +80,7 @@ func (p *t26Provider) ResolveObject(_ context.Context, dialect spec.Dialect, req
 			state.Exists, state.Status = true, spec.MetadataStatusConfirmed
 			snapshot.Status, snapshot.Exists = spec.MetadataStatusConfirmed, true
 		}
-		state.Dependencies = &spec.SRSDependencyFact{Read: true}
+		state.Dependencies = &spec.SRSDependencyFact{}
 	}
 	return snapshot, nil
 }
@@ -236,5 +237,24 @@ func TestT26ResolverErrorPropagates(t *testing.T) {
 		&MetadataRequest{Schema: "golden", Provider: provider}, statements, parsed.failures)
 	if err == nil {
 		t.Fatalf("resolver failure must propagate — never a silent unvouched binding")
+	}
+}
+
+// The public error assembly path carries the provider's own failure
+// text verbatim — through the real AuditSQL entry — while no authored
+// statement payload is synthesized into the diagnostic: the marker the
+// provider returned surfaces, the authored SQL the statement carried
+// does not get echoed by the wrapping layers.
+func TestT26PublicErrorPathMarker(t *testing.T) {
+	const marker = "t26-provider-marker-7f3a"
+	provider := &t26Provider{err: errors.New(marker)}
+	_, err := AuditSQL(context.Background(), Request{
+		SQL: "DROP SERVER s1", Dialect: spec.DialectMySQL, Schema: "golden", MetadataProvider: provider,
+	})
+	if err == nil || !strings.Contains(err.Error(), marker) {
+		t.Fatalf("public error = %v, want provider failure text propagated", err)
+	}
+	if strings.Contains(err.Error(), "DROP SERVER") || strings.Contains(err.Error(), "'s1'") {
+		t.Fatalf("public error echoes authored statement payload: %v", err)
 	}
 }

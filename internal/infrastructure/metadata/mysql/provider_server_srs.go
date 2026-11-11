@@ -11,7 +11,9 @@
 // ST_SPATIAL_REFERENCE_SYSTEMS / ST_GEOMETRY_COLUMNS catalogs are
 // privilege-scoped surfaces with no approved completeness contract, so a
 // successful empty answer stays unknown. Query, scan, iteration, and
-// driver errors propagate wrapped and are never cached as absence.
+// driver errors propagate wrapped on every version surface — a query
+// that already issued and failed is never laundered into "not loaded",
+// and failures are never cached as absence.
 //
 // Identity contract: the SERVER name read fires only when the request
 // marks the name a complete decoded identifier (name_form=identifier) —
@@ -86,8 +88,9 @@ func (p *Provider) loadMySQLServerObject(ctx context.Context, request spec.Objec
 //   - proven && supported: the catalog objects must exist — every
 //     query, scan, permission, driver, and cancellation error
 //     propagates (missing-object codes included).
-//   - !proven: the catalog may not exist — the narrow missing-object
-//     degrade stays, never publishing absent facts.
+//   - !proven: the catalog may not exist — the reads are still issued
+//     and every returned error propagates; an unproven version never
+//     converts a query that already failed into "not loaded".
 func mysqlSRSCatalogSupport(ctx context.Context, querier mysqlVersionQuerier) (supported bool, proven bool, err error) {
 	var banner string
 	if err := querier.QueryRowContext(ctx, `select version()`).Scan(&banner); err != nil {
@@ -151,11 +154,6 @@ func (p *Provider) loadMySQLSRSObject(ctx context.Context, request spec.ObjectLo
 		if err == sql.ErrNoRows {
 			// A clean zero-row answer — unknown, never proven-absent.
 			state.Read = true
-		} else if isMySQLMissingObjectError(err) && !proven {
-			// The catalog may not exist on this unproven surface — no
-			// fact commits, and the dependent reads stay unissued.
-			state.UnreadReason = spec.MetadataUnreadCatalogUnproven
-			return snapshot, nil
 		} else {
 			return nil, fmt.Errorf("query mysql srs snapshot: %w", err)
 		}
@@ -172,7 +170,7 @@ func (p *Provider) loadMySQLSRSObject(ctx context.Context, request spec.ObjectLo
 	// The conflict reads fire only on provable request identities —
 	// an authored spelling never reaches them.
 	if name := request.Qualifiers[spec.ObjectLookupQualifierSRSName]; strings.TrimSpace(name) != "" {
-		fact, err := p.loadMySQLSRSNameConflict(ctx, name, proven)
+		fact, err := p.loadMySQLSRSNameConflict(ctx, name)
 		if err != nil {
 			return nil, err
 		}
@@ -181,7 +179,7 @@ func (p *Provider) loadMySQLSRSObject(ctx context.Context, request spec.ObjectLo
 	if org := request.Qualifiers[spec.ObjectLookupQualifierSRSOrg]; strings.TrimSpace(org) != "" {
 		if idText := request.Qualifiers[spec.ObjectLookupQualifierSRSOrgID]; strings.TrimSpace(idText) != "" {
 			if orgID, parseErr := strconv.ParseUint(idText, 10, 32); parseErr == nil {
-				fact, err := p.loadMySQLSRSOrgConflict(ctx, org, orgID, proven)
+				fact, err := p.loadMySQLSRSOrgConflict(ctx, org, orgID)
 				if err != nil {
 					return nil, err
 				}
@@ -192,7 +190,7 @@ func (p *Provider) loadMySQLSRSObject(ctx context.Context, request spec.ObjectLo
 	// The dependency read keys on the same provable SRID — it runs
 	// whenever the version gate passed, independent of the existence
 	// answer.
-	deps, err := p.loadMySQLSRSDependencies(ctx, srid, proven)
+	deps, err := p.loadMySQLSRSDependencies(ctx, srid)
 	if err != nil {
 		return nil, err
 	}
@@ -204,42 +202,39 @@ func (p *Provider) loadMySQLSRSObject(ctx context.Context, request spec.ObjectLo
 // name — the NAME uniqueness witness set. The statement's own SRID and
 // other SRIDs both appear as raw witnesses; distinguishing them is the
 // consumer's premise. Errors propagate wrapped.
-func (p *Provider) loadMySQLSRSNameConflict(ctx context.Context, name string, proven bool) (*spec.SRSConflictFact, error) {
+func (p *Provider) loadMySQLSRSNameConflict(ctx context.Context, name string) (*spec.SRSConflictFact, error) {
 	return p.loadMySQLSRSConflict(ctx, `
 		select srs_id
 		from information_schema.st_spatial_reference_systems
 		where srs_name = ?
-	`, proven, name)
+	`, name)
 }
 
 // loadMySQLSRSOrgConflict reads the SRIDs matching one provable
 // ORGANIZATION + ORGANIZATION_COORDSYS_ID pair — the combined identity,
 // never a member alone. Errors propagate wrapped.
-func (p *Provider) loadMySQLSRSOrgConflict(ctx context.Context, org string, orgID uint64, proven bool) (*spec.SRSConflictFact, error) {
+func (p *Provider) loadMySQLSRSOrgConflict(ctx context.Context, org string, orgID uint64) (*spec.SRSConflictFact, error) {
 	return p.loadMySQLSRSConflict(ctx, `
 		select srs_id
 		from information_schema.st_spatial_reference_systems
 		where organization = ? and organization_coordsys_id = ?
-	`, proven, org, int64(orgID))
+	`, org, int64(orgID))
 }
 
 // loadMySQLSRSConflict runs one SRID-witness select for a conflict
 // predicate — the shared scan/iteration/error contract for the NAME and
-// ORGANIZATION reads. A degraded read on an unproven catalog surface
-// returns a non-nil fact with Read=false and the catalog-unproven
-// reason — distinct from "never issued" (nil member); a read fact with
-// empty MatchedSRIDs is "read, zero rows, unknown" — never a proven
-// "no conflict".
-func (p *Provider) loadMySQLSRSConflict(ctx context.Context, query string, proven bool, args ...any) (*spec.SRSConflictFact, error) {
+// ORGANIZATION reads. Every query, scan, iteration, permission, driver,
+// and cancellation error propagates wrapped — an issued read that
+// failed is never laundered into a non-error return; a fact with empty
+// MatchedSRIDs is "read, zero rows, unknown" — never a proven "no
+// conflict".
+func (p *Provider) loadMySQLSRSConflict(ctx context.Context, query string, args ...any) (*spec.SRSConflictFact, error) {
 	rows, err := p.db.QueryContext(ctx, query, args...)
 	if err != nil {
-		if isMySQLMissingObjectError(err) && !proven {
-			return &spec.SRSConflictFact{UnreadReason: spec.MetadataUnreadCatalogUnproven}, nil
-		}
 		return nil, fmt.Errorf("query mysql srs conflict read: %w", err)
 	}
 	defer rows.Close()
-	fact := &spec.SRSConflictFact{Read: true}
+	fact := &spec.SRSConflictFact{}
 	for rows.Next() {
 		var id sql.NullInt64
 		if err := rows.Scan(&id); err != nil {
@@ -261,20 +256,17 @@ func (p *Provider) loadMySQLSRSConflict(ctx context.Context, query string, prove
 // Complete is never claimed: positive rows prove presence while an
 // empty set stays unproven — never instance-wide absence. Errors
 // propagate wrapped.
-func (p *Provider) loadMySQLSRSDependencies(ctx context.Context, srid uint64, proven bool) (*spec.SRSDependencyFact, error) {
+func (p *Provider) loadMySQLSRSDependencies(ctx context.Context, srid uint64) (*spec.SRSDependencyFact, error) {
 	rows, err := p.db.QueryContext(ctx, `
 		select table_schema, table_name, column_name
 		from information_schema.st_geometry_columns
 		where srs_id = ?
 	`, int64(srid))
 	if err != nil {
-		if isMySQLMissingObjectError(err) && !proven {
-			return &spec.SRSDependencyFact{UnreadReason: spec.MetadataUnreadCatalogUnproven}, nil
-		}
 		return nil, fmt.Errorf("query mysql srs column dependencies: %w", err)
 	}
 	defer rows.Close()
-	fact := &spec.SRSDependencyFact{Read: true}
+	fact := &spec.SRSDependencyFact{}
 	for rows.Next() {
 		var schemaName, tableName, columnName sql.NullString
 		if err := rows.Scan(&schemaName, &tableName, &columnName); err != nil {

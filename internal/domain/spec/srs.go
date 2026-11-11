@@ -114,19 +114,17 @@ type SpatialReferenceSystemState struct {
 	CatalogName string `json:"-"`
 	// NameConflict carries the SRS_NAME match read — nil means the
 	// read never happened (the name identity was not provable or never
-	// requested); a non-nil fact is the returned SRID witness set, or
-	// a degraded read when Read stays false (UnreadReason names why).
+	// requested); a non-nil fact is the returned SRID witness set.
 	NameConflict *SRSConflictFact `json:"-"`
 	// OrgConflict carries the ORGANIZATION + ORGANIZATION_COORDSYS_ID
 	// pair read — nil means the read never happened (the pair was not
 	// provable, only partially authored, or never requested); a
-	// non-nil fact is the returned SRID witness set, or a degraded
-	// read when Read stays false.
+	// non-nil fact is the returned SRID witness set.
 	OrgConflict *SRSConflictFact `json:"-"`
 	// Dependencies carries the ST_GEOMETRY_COLUMNS witness set for this
 	// SRID — nil means the read never happened; a non-nil fact's
 	// Columns are the visible cross-schema witnesses, never a
-	// proven-complete set, or a degraded read when Read stays false.
+	// proven-complete set.
 	Dependencies *SRSDependencyFact `json:"-"`
 }
 
@@ -138,14 +136,6 @@ type SpatialReferenceSystemState struct {
 // exists for the catalog's visibility — a non-nil empty set is "read,
 // zero rows, unknown", never a proven "no conflict".
 type SRSConflictFact struct {
-	// Read reports whether the conflict query actually ran to
-	// completion — false marks a degraded read on an unproven catalog
-	// surface (UnreadReason names why), distinct from "never issued".
-	Read bool `json:"-"`
-	// UnreadReason names why a non-nil fact carries no answer when
-	// Read is false — a stable token from the MetadataUnread
-	// vocabulary.
-	UnreadReason string `json:"-"`
 	// MatchedSRIDs lists every catalog SRID the conflict predicate
 	// returned — witness evidence, sorted in read order.
 	MatchedSRIDs []uint32 `json:"-"`
@@ -172,14 +162,6 @@ type SRSDependentColumn struct {
 // presence; an empty Columns with Complete=false is "read, zero rows,
 // unproven" — never an instance-wide "no dependencies" claim.
 type SRSDependencyFact struct {
-	// Read reports whether the dependency query actually ran to
-	// completion — false marks a degraded read on an unproven catalog
-	// surface (UnreadReason names why), distinct from "never issued".
-	Read bool `json:"-"`
-	// UnreadReason names why a non-nil fact carries no answer when
-	// Read is false — a stable token from the MetadataUnread
-	// vocabulary.
-	UnreadReason string `json:"-"`
 	// Columns lists the visible dependency witnesses.
 	Columns []SRSDependentColumn `json:"-"`
 	// Complete marks an approved complete-visibility read. Always false
