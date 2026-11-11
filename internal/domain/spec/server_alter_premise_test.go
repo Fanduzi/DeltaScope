@@ -48,6 +48,7 @@ func TestAdjudicateServerAlterTruthTable(t *testing.T) {
 		{"ordered absent -> refusal owes nothing", orderedAbsent, ServerAlterPrivilegeUnproven, false, false, ServerAlterArmTerminalRefusal, nil, false, false, false},
 		{"ordered absent + consumable still refusal", orderedAbsent, ServerAlterPrivilegeConsumable, true, false, ServerAlterArmTerminalRefusal, nil, false, false, false},
 		{"conditional ordered absent -> refusal inherits marker", &ServerState{Name: "s1", OrderedAbsent: true, OrderedAbsentConditional: true}, ServerAlterPrivilegeSuppressed, false, false, ServerAlterArmTerminalRefusal, nil, false, true, true},
+		{"AM-1.3 seeded: conditional ordered absent + unproven + clean -> A2", &ServerState{Name: "s1", OrderedAbsent: true, OrderedAbsentConditional: true}, ServerAlterPrivilegeUnproven, true, false, ServerAlterArmTerminalRefusal, nil, false, true, true},
 		// ALT-A3 — proven presence + consumable + clean republishes.
 		{"ordered present + consumable + clean -> republish", orderedPresent, ServerAlterPrivilegeConsumable, true, false, ServerAlterArmProvenAlter, nil, true, false, true},
 		{"conditional ordered present + consumable + clean -> inherited flag", &ServerState{Name: "s1", OrderedPresent: true, OrderedPresentConditional: true}, ServerAlterPrivilegeConsumable, true, false, ServerAlterArmProvenAlter, nil, true, true, true},
@@ -59,6 +60,7 @@ func TestAdjudicateServerAlterTruthTable(t *testing.T) {
 		{"ordered present + consumable + dirty -> options owed, republish", orderedPresent, ServerAlterPrivilegeConsumable, false, false, ServerAlterArmUnproven, []string{ServerFactAlterOptions}, true, false, true},
 		{"ordered present + unproven + dirty -> both owed", orderedPresent, ServerAlterPrivilegeUnproven, false, false, ServerAlterArmUnproven, []string{ServerFactAlterPrivilege, ServerFactAlterOptions}, true, false, false},
 		{"conditional ordered present + unproven -> inherited flag republish", &ServerState{Name: "s1", OrderedPresent: true, OrderedPresentConditional: true}, ServerAlterPrivilegeSuppressed, true, false, ServerAlterArmUnproven, []string{ServerFactAlterPrivilege}, true, true, true},
+		{"AM-2.4 seeded: conditional ordered present + unproven + clean -> A4", &ServerState{Name: "s1", OrderedPresent: true, OrderedPresentConditional: true}, ServerAlterPrivilegeUnproven, true, false, ServerAlterArmUnproven, []string{ServerFactAlterPrivilege}, true, true, true},
 		{"catalog present + unproven -> privilege owed, unconditional republish", proven, ServerAlterPrivilegeUnproven, true, false, ServerAlterArmUnproven, []string{ServerFactAlterPrivilege}, true, false, false},
 		{"catalog present + consumable + dirty -> options owed, marker own-premise", proven, ServerAlterPrivilegeConsumable, false, false, ServerAlterArmUnproven, []string{ServerFactAlterOptions}, true, false, true},
 		{"catalog present + suppressed + dirty -> privilege+options", proven, ServerAlterPrivilegeSuppressed, false, false, ServerAlterArmUnproven, []string{ServerFactAlterPrivilege, ServerFactAlterOptions}, true, false, false},

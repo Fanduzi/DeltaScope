@@ -8,8 +8,9 @@ package audit
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
-	"reflect"
+	"fmt"
 	"strings"
 	"testing"
 
@@ -312,40 +313,32 @@ func TestT26AlterRelationBarrierNoOp(t *testing.T) {
 	state := newBatchState(spec.DialectMySQL, "golden", provider)
 	state.resolvedVersion = &spec.VersionIdentity{Product: spec.VersionProductMySQL, Version: "8.0.36", Major: 8, Minor: 0, Patch: 36, ValidatedRange: true}
 	state.instanceFacts = &spec.InstanceFacts{Version: "8.0.36"}
-	// The call boundary is the apply seam: enrich stmt1+stmt2 first so
-	// the no-entry check runs before stmt3's own DROP apply mints its
-	// accepted barrier entry.
-	enriched, err := state.enrichStatements(context.Background(),
-		&MetadataRequest{Schema: "golden", Provider: provider, PrivilegeAuditMode: spec.PrivilegeAuditModeObservedAccountNewSession},
-		statements[:2], nil, state.instanceFacts, auditLimits{orderedStatements: defaultOrderedStatementLimit})
-	if err != nil {
-		t.Fatalf("enrich prefix: %v", err)
-	}
-	// stmt1 ALTER sé: proven presence → republished OrderedPresent.
+	// The call boundary is the apply seam: stmt1 alone, snapshot the
+	// COMPLETE ordered channel, then stmt2 — its own apply must leave
+	// entries, writes and taint byte-identical (R2 §2.3 uniform A1).
+	enriched := enrichSlice(t, state, provider, spec.PrivilegeAuditModeObservedAccountNewSession, statements[:1], nil)
 	if adj := enriched[0].Metadata.ServerAlter; adj == nil || !adj.PublishPresent {
 		t.Fatalf("sé alter = %+v, want publish on proven presence", adj)
 	}
-	// stmt2 ALTER se: relation barrier → A1 no-op, owed exactly
-	// {batch_effects}; no se entry may exist yet.
-	adj2 := enriched[1].Metadata.ServerAlter
+	before := snapshotServerChannel(state)
+	enriched = enrichSlice(t, state, provider, spec.PrivilegeAuditModeObservedAccountNewSession, statements[1:2], nil)
+	adj2 := enriched[0].Metadata.ServerAlter
 	if adj2 == nil || adj2.Arm != spec.ServerAlterArmBarrier || len(adj2.Owed) != 1 || adj2.Owed[0] != spec.ServerFactBatchEffects {
 		t.Fatalf("se alter = %+v, want barrier owing exactly {server.batch_effects}", adj2)
 	}
 	if adj2.PublishPresent || adj2.ConditionalAudit {
 		t.Fatalf("A1 must not publish or mark: %+v", adj2)
 	}
-	if entry := state.serverEntries[serverFold("se")]; entry != nil {
-		t.Fatalf("A1 minted an se entry: %+v — uniform no-op requires none", entry)
+	if after := snapshotServerChannel(state); after != before {
+		t.Fatalf("A1 apply mutated the ordered channel\nbefore=%s\nafter=%s", before, after)
 	}
+	// stmt3's own DROP apply mints the se barrier entry — the
+	// snapshot boundary stays around stmt2 so the later statement's
+	// legitimate effect is never blamed on the ALTER.
+	enriched = enrichSlice(t, state, provider, spec.PrivilegeAuditModeObservedAccountNewSession, statements[2:], nil)
 	// stmt3 DROP se: the relation barrier still binds; DROP's own
 	// consumable premise marks it and it mints the se barrier entry
 	// (accepted DROP behavior, unchanged).
-	enriched, err = state.enrichStatements(context.Background(),
-		&MetadataRequest{Schema: "golden", Provider: provider, PrivilegeAuditMode: spec.PrivilegeAuditModeObservedAccountNewSession},
-		statements[2:], nil, state.instanceFacts, auditLimits{orderedStatements: defaultOrderedStatementLimit})
-	if err != nil {
-		t.Fatalf("enrich tail: %v", err)
-	}
 	dropAdj := enriched[0].Metadata.ServerDrop
 	if dropAdj == nil || dropAdj.Arm != spec.ServerDropArmBarrier || len(dropAdj.Owed) != 1 || dropAdj.Owed[0] != spec.ServerFactBatchEffects {
 		t.Fatalf("drop se = %+v, want barrier owing exactly {server.batch_effects}", dropAdj)
@@ -366,17 +359,28 @@ func TestT26AlterRelationBarrierNoOp(t *testing.T) {
 // no-op, never a stale answer (AM-7.5/AM-10.4 shape).
 func TestT26AlterChannelTaintBarrier(t *testing.T) {
 	provider := &t26Provider{servers: map[string]bool{"s1": true}, version: "8.0.36", privilege: superObservation()}
-	enriched := enrichT26Premise(t, "ALTER SERVER 'lit9' OPTIONS (USER 'u'); "+t26AlterSQL+"; DROP SERVER s9", provider, spec.PrivilegeAuditModeObservedAccountNewSession)
+	statements, _ := parseT26(t, "ALTER SERVER 'lit9' OPTIONS (USER 'u'); "+t26AlterSQL+"; DROP SERVER s9")
+	state := newAlterState(provider)
+	enriched := enrichSlice(t, state, provider, spec.PrivilegeAuditModeObservedAccountNewSession, statements[:1], nil)
 	if enriched[0].Unsupported == nil || enriched[0].Unsupported.Reason != spec.UnsupportedUnauditedReason {
 		t.Fatalf("literal alter must keep the unaudited boundary: %+v", enriched[0].Unsupported)
 	}
-	adj := enriched[1].Metadata.ServerAlter
+	// The literal's own apply recorded its write + channel taint; the
+	// audited ALTER's own apply must leave the complete channel
+	// byte-identical (R2 §2.3 uniform A1).
+	before := snapshotServerChannel(state)
+	enriched = enrichSlice(t, state, provider, spec.PrivilegeAuditModeObservedAccountNewSession, statements[1:2], nil)
+	adj := enriched[0].Metadata.ServerAlter
 	if adj == nil || adj.Arm != spec.ServerAlterArmBarrier || len(adj.Owed) != 1 || adj.Owed[0] != spec.ServerFactBatchEffects {
 		t.Fatalf("tainted-channel alter = %+v, want barrier owing batch_effects", adj)
 	}
+	if after := snapshotServerChannel(state); after != before {
+		t.Fatalf("A1 apply mutated the tainted channel\nbefore=%s\nafter=%s", before, after)
+	}
 	// The trailing DROP hits the same barrier — consistent with the
 	// accepted literal-write taint.
-	dropAdj := enriched[2].Metadata.ServerDrop
+	enriched = enrichSlice(t, state, provider, spec.PrivilegeAuditModeObservedAccountNewSession, statements[2:], nil)
+	dropAdj := enriched[0].Metadata.ServerDrop
 	if dropAdj == nil || dropAdj.Arm != spec.ServerDropArmBarrier {
 		t.Fatalf("drop after literal alter = %+v, want barrier", dropAdj)
 	}
@@ -434,12 +438,18 @@ func TestT26AlterRealContamination(t *testing.T) {
 }
 
 // Server-channel isolation (AM-10.3): an audited ALTER touches only
-// server state — table/schema state is byte-identical across its own
-// apply; a later CREATE TABLE has its own model effect and adds no
-// server-channel reads.
+// server state — the COMPLETE table/schema registry state is compared
+// across the ALTER's own apply via deep-rendered snapshots, never a
+// key-presence projection, so an in-place field rewrite on a
+// pre-existing entry is caught. A prior CREATE TABLE mints a real
+// populated entry first so the compare actually exercises rewrite
+// detection; the trailing CREATE TABLE keeps its own model effect.
+// Read counts report the server channel only — table-channel reads
+// are recorded separately, never mixed in.
 func TestT26AlterTableChannelIsolation(t *testing.T) {
 	provider := &t26Provider{servers: map[string]bool{"s1": true}, version: "8.0.36", privilege: superObservation()}
-	parsed, _ := parseSQL(context.Background(), t26AlterSQL+"; CREATE TABLE t (a int)", spec.DialectMySQL)
+	parsed, _ := parseSQL(context.Background(),
+		"CREATE TABLE pre (a int); "+t26AlterSQL+"; CREATE TABLE t (a int)", spec.DialectMySQL)
 	statements, err := Extract(context.Background(), parsed)
 	if err != nil {
 		t.Fatalf("extract: %v", err)
@@ -447,30 +457,38 @@ func TestT26AlterTableChannelIsolation(t *testing.T) {
 	state := newBatchState(spec.DialectMySQL, "golden", provider)
 	state.resolvedVersion = &spec.VersionIdentity{Product: spec.VersionProductMySQL, Version: "8.0.36", Major: 8, Minor: 0, Patch: 36, ValidatedRange: true}
 	state.instanceFacts = &spec.InstanceFacts{Version: "8.0.36"}
-	tablesBefore := snapshotTables(state)
-	_, err = state.enrichStatements(context.Background(),
-		&MetadataRequest{Schema: "golden", Provider: provider, PrivilegeAuditMode: spec.PrivilegeAuditModeObservedAccountNewSession},
-		statements[:1], nil, state.instanceFacts, auditLimits{orderedStatements: defaultOrderedStatementLimit})
-	if err != nil {
+	req := &MetadataRequest{Schema: "golden", Provider: provider, PrivilegeAuditMode: spec.PrivilegeAuditModeObservedAccountNewSession}
+	// stmt0: CREATE TABLE pre mints a real table entry — a populated
+	// registry the ALTER must leave untouched.
+	if _, err = state.enrichStatements(context.Background(), req,
+		statements[:1], nil, state.instanceFacts, auditLimits{orderedStatements: defaultOrderedStatementLimit}); err != nil {
+		t.Fatalf("enrich stmt0: %v", err)
+	}
+	if len(state.entries) == 0 {
+		t.Fatalf("pre-create minted no table entry — fixture broken")
+	}
+	before := snapshotTableSchemaState(state)
+	serverReadsBefore := len(provider.calls)
+	// stmt1: the audited ALTER's own bind+apply.
+	if _, err = state.enrichStatements(context.Background(), req,
+		statements[1:2], nil, state.instanceFacts, auditLimits{orderedStatements: defaultOrderedStatementLimit}); err != nil {
 		t.Fatalf("enrich stmt1: %v", err)
 	}
-	tablesAfterAlter := snapshotTables(state)
-	if !reflect.DeepEqual(tablesBefore, tablesAfterAlter) {
-		t.Fatalf("table channel mutated across the ALTER's own apply\nbefore=%+v\nafter=%+v", tablesBefore, tablesAfterAlter)
+	after := snapshotTableSchemaState(state)
+	if before != after {
+		t.Fatalf("table/schema state changed across the ALTER's own apply\nbefore=%s\nafter=%s", before, after)
 	}
 	if entry := state.serverEntries[serverFold("s1")]; entry == nil || !entry.present {
 		t.Fatalf("server channel = %+v, want republished present on s1", entry)
 	}
-	// stmt2 CREATE TABLE mints its own t@golden entry — its own model
-	// effect, never the ALTER's; and it adds no mysql_server reads.
-	_, err = state.enrichStatements(context.Background(),
-		&MetadataRequest{Schema: "golden", Provider: provider, PrivilegeAuditMode: spec.PrivilegeAuditModeObservedAccountNewSession},
-		statements[1:], nil, state.instanceFacts, auditLimits{orderedStatements: defaultOrderedStatementLimit})
-	if err != nil {
+	// stmt2: CREATE TABLE t's own model effect — mints t@golden while
+	// the server channel still holds exactly the s1 record.
+	if _, err = state.enrichStatements(context.Background(), req,
+		statements[2:], nil, state.instanceFacts, auditLimits{orderedStatements: defaultOrderedStatementLimit}); err != nil {
 		t.Fatalf("enrich stmt2: %v", err)
 	}
-	if got := snapshotTables(state); got["t@golden"] != 1 {
-		t.Fatalf("CREATE TABLE must keep its own model effect: %+v", got)
+	if state.entries[batchTableKey{dialect: spec.DialectMySQL, schema: "golden", table: "t"}] == nil {
+		t.Fatalf("CREATE TABLE t must mint its own entry")
 	}
 	serverReads := 0
 	for _, c := range provider.calls {
@@ -479,60 +497,65 @@ func TestT26AlterTableChannelIsolation(t *testing.T) {
 		}
 	}
 	if serverReads != 1 {
-		t.Fatalf("mysql_server reads = %d, want exactly one — CREATE TABLE never touches the channel", serverReads)
+		t.Fatalf("server-channel reads = %d, want exactly one (the ALTER's catalog read)", serverReads)
+	}
+	if other := len(provider.calls) - serverReads - serverReadsBefore; other < 0 {
+		t.Fatalf("read accounting broken: total=%d server=%d", len(provider.calls), serverReads)
 	}
 }
 
-// snapshotTables projects the table/schema registries for the
-// isolation compare — the assertion is "no entry created or mutated"
-// on the non-server channels.
-func snapshotTables(s *batchState) map[string]int {
-	out := map[string]int{}
-	for k := range s.entries {
-		out[k.table+"@"+k.schema] = 1
-	}
-	for k := range s.schemaEntries {
-		out["schema:"+k] = 1
-	}
-	return out
+// snapshotTableSchemaState renders the complete table, temp-table,
+// and schema registry values into an immutable string — an
+// independent copy of every field, not a key-presence projection, so
+// any in-place mutation anywhere in the entry graphs is detected.
+func snapshotTableSchemaState(s *batchState) string {
+	return fmt.Sprintf("entries=%#v|temp=%#v|schemas=%#v", s.entries, s.tempEntries, s.schemaEntries)
 }
 
-// Mode-off tail call never retriggers the loader and the statement
-// keeps every premise owed — the enrich-layer fixture carries the
-// resolved version directly (AM-1.6 shape).
+// AM-1.6: enrich-layer fixture with the in-domain resolved version
+// supplied directly (resolvedVersion=8.0.36), the observed mode
+// requested, and no provider/loader wired at all. The premise stays
+// unproven so the alter adjudicates A4 owing exactly
+// {server.existence, server.alter_privilege} — no marker, no publish.
+// With no provider or loader wired there is nothing to count: L/R/S=0
+// by construction, never a count asserted on an unwired object.
 func TestT26AlterResolvedVersionFixture(t *testing.T) {
-	provider := &t26Provider{servers: map[string]bool{}, version: "8.0.36"}
 	parsed, _ := parseSQL(context.Background(), t26AlterSQL, spec.DialectMySQL)
 	statements, err := Extract(context.Background(), parsed)
 	if err != nil {
 		t.Fatalf("extract: %v", err)
 	}
-	// Enrich-layer fixture: resolvedVersion supplied directly, no
-	// provider loader call — the in-domain fixture exercises the arms.
 	enriched, err := enrichStatementsWithMetadata(context.Background(), spec.DialectMySQL,
-		&MetadataRequest{Schema: "golden", TargetVersion: &spec.VersionIdentity{Product: spec.VersionProductMySQL, Version: "8.0.36", Major: 8, Minor: 0, Patch: 36, ValidatedRange: true}},
+		&MetadataRequest{
+			Schema:             "golden",
+			PrivilegeAuditMode: spec.PrivilegeAuditModeObservedAccountNewSession,
+			TargetVersion:      &spec.VersionIdentity{Product: spec.VersionProductMySQL, Version: "8.0.36", Major: 8, Minor: 0, Patch: 36, ValidatedRange: true},
+		},
 		statements, nil)
 	if err != nil {
 		t.Fatalf("enrich: %v", err)
 	}
 	adj := enriched[0].Metadata.ServerAlter
 	if adj == nil || adj.Arm != spec.ServerAlterArmUnproven {
-		t.Fatalf("providerless in-domain alter = %+v, want unproven", adj)
+		t.Fatalf("providerless observed alter = %+v, want unproven", adj)
 	}
-	set := map[string]bool{}
-	for _, f := range adj.Owed {
-		set[f] = true
+	if adj.Privilege != spec.ServerAlterPrivilegeUnproven {
+		t.Fatalf("premise = %+v, want unproven — the loader never ran", adj.Privilege)
 	}
-	if !set[spec.ServerFactExistence] || !set[spec.ServerFactAlterPrivilege] {
-		t.Fatalf("owed = %v, want {existence, alter_privilege}", adj.Owed)
+	if len(adj.Owed) != 2 || adj.Owed[0] != spec.ServerFactExistence || adj.Owed[1] != spec.ServerFactAlterPrivilege {
+		t.Fatalf("owed = %v, want exactly {server.existence, server.alter_privilege}", adj.Owed)
 	}
-	if provider.privilegeCalls != 0 {
-		t.Fatalf("no provider must never run the loader: %d", provider.privilegeCalls)
+	if adj.PublishPresent || adj.ConditionalSource || adj.ConditionalAudit {
+		t.Fatalf("A4 must not publish or carry provenance: %+v", adj)
 	}
 }
 
-// Public redaction holds on every arm (AM-10.1): no authored name,
-// option keys/values, account, or grant text reaches findings or gaps.
+// Public redaction holds on every arm (AM-10.1, §6.3): distinguishable
+// name, host, and password sentinels never reach ANY serialized public
+// field — the COMPLETE public result object is marshalled and the
+// whole byte stream is scanned, never a hand-built concatenation of a
+// few known fields. RawSQL and NormalizedSQL both equal the fixed
+// skeleton exactly.
 func TestT26AlterPublicRedaction(t *testing.T) {
 	provider := &t26Provider{servers: map[string]bool{"pw-sentinel-455": true}, version: "8.0.36", privilege: superObservation()}
 	result, err := AuditSQL(context.Background(), Request{
@@ -544,31 +567,17 @@ func TestT26AlterPublicRedaction(t *testing.T) {
 		t.Fatalf("audit: %v", err)
 	}
 	stmt := result.Statements[0]
-	if !strings.Contains(stmt.RawSQL, "ALTER SERVER <redacted>") {
-		t.Fatalf("raw_sql must be the fixed redacted skeleton: %q", stmt.RawSQL)
+	if stmt.RawSQL != "ALTER SERVER <redacted>" || stmt.NormalizedSQL != "ALTER SERVER <redacted>" {
+		t.Fatalf("sql fields must equal the fixed redacted skeleton exactly: raw=%q normalized=%q", stmt.RawSQL, stmt.NormalizedSQL)
 	}
-	blob := stmt.RawSQL + stmt.NormalizedSQL
-	for _, f := range stmt.Findings {
-		blob += f.Message
-		if f.Explanation != nil {
-			blob += f.Explanation.Why + f.Explanation.Risk + f.Explanation.Suggestion
-		}
-		for k, v := range f.Metadata {
-			blob += k
-			if s, ok := v.(string); ok {
-				blob += s
-			}
-		}
+	serialized, err := json.Marshal(result)
+	if err != nil {
+		t.Fatalf("marshal result: %v", err)
 	}
-	for _, g := range stmt.EvidenceGaps {
-		blob += g.ReasonCode
-		for _, f := range g.RequiredFacts {
-			blob += f
-		}
-	}
+	blob := string(serialized)
 	for _, protected := range []string{"pw-sentinel-455", "host-sentinel-77", "s3cr3t", "audited@%", "GRANT", "'u'"} {
 		if strings.Contains(blob, protected) {
-			t.Fatalf("protected detail %q leaked into public output: %q", protected, blob)
+			t.Fatalf("protected detail %q leaked into the serialized public object", protected)
 		}
 	}
 }

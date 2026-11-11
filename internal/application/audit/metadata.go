@@ -691,6 +691,15 @@ func (state *batchState) enrichStatements(ctx context.Context, request *Metadata
 		}
 	}
 
+	// A trailing parse failure after the last statement is still a real
+	// batch failure record: it leaves no later statement to trip the
+	// per-statement check, yet the batch's whole-effect stays
+	// unknowable — consume it so a next call's bind reads the honest
+	// contaminated flag (T26-SERVER-ALTER-EXECUTION-01 R2-C, AM-8.1).
+	if len(failures) > 0 {
+		state.contaminated = true
+	}
+
 	if err := ctx.Err(); err != nil {
 		return nil, err
 	}

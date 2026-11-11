@@ -97,6 +97,11 @@ func TestT26AlterServerIdentLeavesBoundary(t *testing.T) {
 		"ALTER SERVER `s1` OPTIONS (USER 'u')",
 		"ALTER SERVER s1 OPTIONS (PORT 100000)",
 		"ALTER SERVER s1 OPTIONS (USER 'u', USER 'u2')",
+		// AM-3.x option-shape coverage: the in-range 9999 boundary and
+		// one rung over it both stay inside the audited shape —
+		// cleanliness is the adjudication premise, never the gate.
+		"ALTER SERVER s1 OPTIONS (PORT 9999)",
+		"ALTER SERVER s1 OPTIONS (PORT 10000)",
 		// The 64-rune bound is inclusive — a name spelled at exactly
 		// the documented mysql.servers bound still qualifies (R2-E).
 		"ALTER SERVER " + strings.Repeat("n", 64) + " OPTIONS (HOST 'h')",

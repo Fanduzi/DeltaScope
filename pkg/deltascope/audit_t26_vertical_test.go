@@ -26,6 +26,15 @@ import (
 type t26vProvider struct {
 	inner         *mysqlmeta.Provider
 	resolverCalls int
+	// resolverErr fails the provider-facing forward seam before any
+	// SQL issues — the R=1/S=0 error-boundary fixture.
+	resolverErr error
+	// loaderCalls counts every invocation of the provider-facing
+	// privilege-loader seam — the independent layer-1 count; the SQL
+	// the real loader issued underneath is recorded separately on the
+	// driver. loaderErr fails at the seam before SQL (L=1/S=0).
+	loaderCalls int
+	loaderErr   error
 }
 
 func (p *t26vProvider) LoadInstanceFacts(ctx context.Context, dialect Dialect, schema string) (*InstanceFacts, error) {
@@ -44,10 +53,17 @@ func (p *t26vProvider) LoadTableSnapshot(ctx context.Context, dialect Dialect, s
 // is recorded separately on the driver).
 func (p *t26vProvider) ResolveObject(ctx context.Context, dialect spec.Dialect, req spec.ObjectLookupRequest) (*spec.ObjectSnapshot, error) {
 	p.resolverCalls++
+	if p.resolverErr != nil {
+		return nil, p.resolverErr
+	}
 	return p.inner.ResolveObject(ctx, dialect, req)
 }
 
 func (p *t26vProvider) LoadMySQLServerDropPrivilege(ctx context.Context, dialect Dialect) (*MySQLServerDropPrivilegeObservation, error) {
+	p.loaderCalls++
+	if p.loaderErr != nil {
+		return nil, p.loaderErr
+	}
 	return p.inner.LoadMySQLServerDropPrivilege(ctx, spec.Dialect(dialect))
 }
 
@@ -57,7 +73,10 @@ type t26vFixture struct {
 	servers    map[string]bool
 	account    string
 	grantLines []string
-	queries    []string
+	// version overrides the observed banner string — empty keeps the
+	// in-domain 8.0.36 default every earlier fixture relies on.
+	version string
+	queries []string
 	// args records each issued query's bound parameters in issue
 	// order — Plan F asserts the catalog read's verbatim arguments,
 	// not just the query count.
@@ -108,9 +127,17 @@ func (c *t26vConn) QueryContext(_ context.Context, query string, args []driver.N
 	c.fixture.args = append(c.fixture.args, append([]driver.NamedValue(nil), args...))
 	switch {
 	case strings.Contains(query, "show variables"):
-		return &t26vRows{cols: []string{"Variable_name", "Value"}, rows: [][]driver.Value{{"version", "8.0.36"}}}, nil
+		v := c.fixture.version
+		if v == "" {
+			v = "8.0.36"
+		}
+		return &t26vRows{cols: []string{"Variable_name", "Value"}, rows: [][]driver.Value{{"version", v}}}, nil
 	case strings.Contains(query, "select version()"):
-		return &t26vRows{cols: []string{"version()"}, rows: [][]driver.Value{{"8.0.36"}}}, nil
+		v := c.fixture.version
+		if v == "" {
+			v = "8.0.36"
+		}
+		return &t26vRows{cols: []string{"version()"}, rows: [][]driver.Value{{v}}}, nil
 	case strings.Contains(query, "select current_user()"):
 		if c.fixture.account == "" {
 			return &t26vRows{cols: []string{"current_user()"}}, nil
