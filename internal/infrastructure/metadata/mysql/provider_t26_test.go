@@ -94,11 +94,12 @@ func TestT26ServerIdentityRowConfirms(t *testing.T) {
 
 // A clean zero-row answer stays unknown — never proven-absent: the
 // read ran, but no approved completeness contract exists for
-// mysql.servers visibility.
+// mysql.servers visibility. The bound state keeps the verbatim decoded
+// name — zero rows never rewrite the authored identity.
 func TestT26ServerZeroRowsStaysUnknown(t *testing.T) {
 	snapshot, err := t26Resolve(t, map[string]testQueryResult{
 		testServerIdentityFragment: {columns: []string{"SERVER_NAME"}},
-	}, spec.DialectMySQL, t26IdentLookup("ghost"))
+	}, spec.DialectMySQL, t26IdentLookup(" ghost"))
 	if err != nil {
 		t.Fatalf("ResolveObject: %v", err)
 	}
@@ -108,6 +109,9 @@ func TestT26ServerZeroRowsStaysUnknown(t *testing.T) {
 	state := snapshot.Server
 	if state == nil || !state.Read || state.Exists {
 		t.Fatalf("server state = %+v, want issued read + unproven answer", state)
+	}
+	if state.Name != " ghost" {
+		t.Fatalf("server state name = %q, want verbatim decoded %q — zero rows never normalize identity", state.Name, " ghost")
 	}
 }
 

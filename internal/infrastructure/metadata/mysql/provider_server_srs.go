@@ -45,7 +45,7 @@ import (
 // Query and scan errors propagate wrapped — never absence — and
 // failures are never cached.
 func (p *Provider) loadMySQLServerObject(ctx context.Context, request spec.ObjectLookupRequest, snapshot *spec.ObjectSnapshot) (*spec.ObjectSnapshot, error) {
-	state := &spec.ServerState{Name: strings.TrimSpace(request.Name)}
+	state := &spec.ServerState{Name: request.Name}
 	snapshot.Server = state
 	if request.Qualifiers[spec.ObjectLookupQualifierNameForm] != spec.ObjectLookupNameFormIdentifier {
 		state.UnreadReason = spec.MetadataUnreadIdentityUnproven
