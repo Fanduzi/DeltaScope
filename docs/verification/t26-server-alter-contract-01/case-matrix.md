@@ -36,38 +36,46 @@ Fixture vocabulary (shared with the accepted slices):
   seed `ServerState`/`ServerDecl`/`Premise` directly — no SQL, no
   provider; L/R/S are declared N/A at that layer.
 
-**Shared defaults** (every row inherits these unless it declares an
-override — a row's own `fixture`/`mode` fields are its declared
-deviations):
+**Shared defaults** — one concrete fixture; every row inherits it
+unless its own `fixture`/`mode`/layer fields declare an override.
+Rows tagged `unit`, `off`, `providerless`, `suppressed`, `error`,
+or `boundary` explicitly override the corresponding fields; no row
+silently changes arm under these defaults.
 
-- layer: `enrich/application` unless the row says `unit` or `CLI`;
-  public-output fields (finding count/level/metadata, aggregate
-  coverage/verdict, rc) are asserted where the row exercises the
-  public projection and marked N/A where it does not.
-- `dialect = mysql`; `resolvedVersion` in-domain (`8.0.x` —
-  pinned or observed per row; a row stating neither defaults to an
-  in-domain resolution, boundary rows state their own version).
-- provider observation present and healthy; one `mysql.servers`
-  resolver wired through the per-request `objectCache`; the
-  `ddl.mysql.server.alter.notice` rule enabled at notice level,
-  plus the accepted sibling rules under their defaults.
-- ordered channel and object cache clean at batch entry unless the
-  row says otherwise.
-- loader fires at most once per enrich call at entry, gated by the
-  request's privilege mode and the statement family — never more.
-- resolver/request/SQL counts are observed at the `ResolveObject`
-  forward seam and the provider SQL seam respectively; R does not
-  imply S (a declined request is R+1/S+0).
-- **public finding shape** (per the fixed §G P2 projection): an
-  audited ALTER emits the main finding `object=server,
-  operation=alter_server, outcome=<arm token>` on every arm —
-  `conditional_audit` only when
+- `dialect = mysql`; observed product `mysql`; observed version
+  `8.0.36`; **no pin** unless a row declares one; `resolvedVersion`
+  is therefore `8.0.36` (in-domain) unless a row overrides.
+- privilege mode `observed_account_new_session` with a positive,
+  in-scope, direct-global `SUPER` witness ⇒ premise `consumable`
+  unless a row declares `off`/`suppressed`/`unproven`.
+- healthy loader and provider; one `mysql.servers` resolver wired
+  through the per-request `objectCache`; ordered channel and cache
+  clean at batch entry.
+- `ddl.mysql.server.alter.notice` enabled at `notice`; sibling
+  rules under their accepted defaults.
+- loader ≤1 per enrich call at entry; R at the `ResolveObject`
+  forward seam; S at the provider SQL seam; R never implies S.
+- **public finding shape** (per the fixed §G P2 projection, **per
+  audited ALTER statement**, not per batch): every arm emits the
+  main finding `object=server, operation=alter_server,
+  outcome=<arm token>`, `conditional_audit` only when
   `Metadata.ServerAlter.ConditionalAudit` (token
-  `observed_account_new_session`) — plus, on A3/A4 only, the
-  independent `notice=connection_members` advisory finding
-  (no outcome, no marker, no gap). So a public-layer A3/A4 row
-  asserts 2 findings, A1/A2 asserts 1, a boundary row asserts the
-  fixed `unaudited` skeleton.
+  `observed_account_new_session`); A3/A4 additionally emit the
+  independent `notice=connection_members` advisory (no outcome,
+  no marker, no gap). Per audited ALTER: A3/A4 → 2 findings,
+  A1/A2 → 1; a boundary statement → the fixed `unaudited`
+  skeleton. A multi-statement batch's total findings are the sum
+  over statements.
+
+**Observation layers** — exactly four; a row asserts fields only at
+the layers it exercises and marks the rest N/A:
+
+| layer | rows |
+|---|---|
+| adjudication-unit (seeded inputs; L/R/S N/A; public fields N/A) | AM-1.3, AM-2.4, AM-2.5 |
+| enrich-apply + public-projection (rc N/A) | every other row not listed above or below |
+| request/CLI surface (version gates, preflight, probe plan) | AM-9.1a, AM-9.1b, AM-9.2, AM-9.3a–e, CLI probe plan |
+| enrich-apply only (bounded error at the named seam; public fields N/A) | AM-9.4, AM-9.5 |
 
 ## Group 1 — single ALTER: present / ordered-absent / catalog-unknown
 
@@ -142,7 +150,7 @@ accurately-labelled `suppressed` premises instead.
 |---|---|---|---|---|
 | AM-7.1 | `ALTER SERVER s1 OPTIONS (USER 'u'); DROP SERVER S1` (ASCII fold alias) | present, consumable | stmt2 consumes re-published `OrderedPresent` (fold-bucket `s1`) → proven-present existence answer; `conditional_drop` if own premise consumable | total R=1 S=1 |
 | AM-7.2 | `ALTER SERVER s9 OPTIONS (USER 'u'); DROP SERVER S9` | zero, off | no publish → stmt2 fresh bind: cache key `S9` ≠ `s9` → fresh resolver call → zero-row → Unproven | total R=2 S=2 — alias read not deduped (verbatim cache) |
-| AM-7.3 | `ALTER SERVER sé OPTIONS (USER 'u'); DROP SERVER se` | (a) `sé` present, `se` zero; (b) `sé` zero, `se` zero; mode observed consumable; channel clean at entry | non-ASCII names: audited ALTER (ident form, shape-qualified); stmt2 is a plain DROP (no `IF EXISTS`) described in the accepted DROP contract's own vocabulary. (a) `sé` proven present → publishes `OrderedPresent` flag=false on bucket `sé`; `se` relates unprovenly to the `sé` entry → stmt2 = DROP's batch-effects-blocked branch (`blocked_batch_effects`), owed `{server.batch_effects}`, no conditional marker (premise shadowed), post-state unchanged (the `sé` OrderedPresent stands). (b) `sé` zero → **no publish, no write record, no entry** → `se` binds its own catalog answer (zero → DROP unknown branch: owed exactly `{server.existence}` — the consumable premise discharges `drop_privilege`; marker set via own consumable premise; statement coverage `unverified`; post-state per the accepted unproven-DROP rule: entry `se` `barrier=true`) | (a) stmt1 R=1 S=1, stmt2 R=0 (barrier exit) → total L=1 R=1 S=1; (b) total L=1 R=2 S=2 — proves audited ALTER mints no shadowing record |
+| AM-7.3 | `ALTER SERVER sé OPTIONS (USER 'u'); DROP SERVER se` | (a) `sé` present, `se` zero; (b) `sé` zero, `se` zero; mode observed consumable; channel clean at entry | non-ASCII names: audited ALTER (ident form, shape-qualified); stmt2 is a plain DROP (no `IF EXISTS`) described in the accepted DROP contract's own vocabulary. (a) `sé` proven present → publishes `OrderedPresent` flag=false on bucket `sé`; `se` relates unprovenly to the `sé` entry → stmt2 = DROP's batch-effects-blocked branch: `blocked_batch_effects`, owed exactly `{server.batch_effects}`, **`conditional_audit=observed_account_new_session` — marker from the DROP's own still-consumable premise** (the blocked bind does not consume an ordered answer, so nothing is inherited and nothing is suppressed), statement coverage `unverified`; post-state per accepted DROP apply: **new entry `se` `{absent=false, publishedArm=0, present=false, presentConditional=false, barrier=true}`** — the channel is NOT unchanged: the stored `sé` presence remains, but the fresh `se` barrier now shadows later binds (an optional stmt3 `ALTER SERVER sé OPTIONS (USER 'v')` lands A1 `blocked_batch_effects` at the relation scan before ever reaching the `sé` ordered answer — static derivation, same fixture, still R=0/S=0). (b) `sé` zero → **no publish, no write record, no entry** → `se` binds its own catalog answer (zero → DROP unknown branch: owed exactly `{server.existence}` — the consumable premise discharges `drop_privilege`; marker set via own consumable premise; statement coverage `unverified`; post-state per the accepted unproven-DROP rule: entry `se` `barrier=true`) | (a) stmt1 R=1 S=1, stmt2 R=0 S=0 → total L=1 R=1 S=1; (b) total L=1 R=2 S=2 — proves audited ALTER mints no shadowing record |
 | AM-7.4 | `ALTER SERVER 's9' OPTIONS (USER 'u'); DROP SERVER s9` then variant `ALTER SERVER sssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssss OPTIONS (USER 'u'); DROP SERVER s9` | `s9` zero; mode off | unchanged accepted E14: literal name → channel taint → stmt2 `blocked_batch_effects`. Variant: 65-rune ident-form boundary → binds (catalog `zero` for the 65-rune name, no entry minted) then apply records a `serverWrite`; stmt2's relation scan hits that write record (relation unproven) → `blocked_batch_effects` | literal variant: stmt1 R=1 S=0 (provider declines), stmt2 R=0 → total R=1 S=0; 65-rune variant: stmt1 R=1 S=1 (boundary ident-form still binds and reads), stmt2 R=0 → total R=1 S=1 |
 | AM-7.5 | `ALTER SERVER s1 OPTIONS (USER 'u'); ALTER SERVER 'x' OPTIONS (USER 'v'); DROP SERVER S1` | `s1` present; mode observed consumable | stmt1 A3 → R9 publishes `OrderedPresent` flag=false on `s1`; stmt2 literal-name boundary: bind issues the provider-facing resolver request (`{Name:'x'}` no qualifier) — provider declines without SQL (`identity_unproven`); apply taints the whole channel → stmt1's OrderedPresent cleared; stmt3 `blocked_batch_effects`, owed `{batch_effects}` | stmt1 R=1 S=1; stmt2 R=1 S=0; stmt3 R=0 S=0 → **total R=2 S=1**; L=1 |
 | AM-7.6 | `ALTER SERVER sé OPTIONS (USER 'u'); ALTER SERVER se OPTIONS (USER 'v'); DROP SERVER sé` | `sé` present; mode observed consumable; ordered channel clean at entry | stmt1 A3 → R9 publishes `OrderedPresent` flag=false on `sé`; stmt2 relation-scan hits unproven `sé` entry → A1 `blocked_batch_effects`, owed `{batch_effects}` — **channel untouched: no `se` entry, no write record, no barrier minted, `sé` presence stands**; stmt3 still consumes the original `sé` presence → proven drop | stmt1 R=1 S=1; stmt2 R=0 S=0 (barrier exit); stmt3 R=0 (ordered answered); total **L=1 R=1 S=1** — the A1 no-side-effect discriminator |
@@ -158,39 +166,71 @@ accurately-labelled `suppressed` premises instead.
 
 | id | input | fixture | expected | observation |
 |---|---|---|---|---|
-| AM-9.1a | audited-shape ALTER, no `--target-version`, no provider (providerless CLI request) | providerless | `unaudited` + `gate:"version"`, coverage incomplete; loader never fires; **no** catalog read possible (nothing to read with) | L=0 R=0 S=0; verdict per existing mapping (incomplete ⇒ not pass) |
-| AM-9.1b | audited-shape ALTER, no `--target-version`, provider present but observed version out-of-domain (`5.7.44`) | `s1` present | `unaudited` + `gate:"version"`; loader never fires; **catalog read still fires** — decided keep-boundary-bind (README §E): `bindMySQLServer` has no `Unsupported` gate, the gated ALTER walks the six-step order; the answer is never consumed | L=0 R=1 S=1 |
-| AM-9.2 | same, `--target-version 8.0.x` (malformed) | any | typed `ErrInvalidTargetVersion` preflight, rc 2; zero audit reads | preflight precedes enrich — L=0 R=0 S=0 |
-| AM-9.3a | same, `--target-version 5.7.44` + observed version `5.7.44` (matching — no mismatch possible) | provider present, observed `5.7.44` | pin parses, pin matches observed, `resolvedVersion` out-of-domain → `unaudited` + `gate:"version"`; same keep-boundary-bind read behavior as AM-9.1b | L=0 R=1 S=1 |
-| AM-9.3b | same, dialect `tidb` | any | vendor boundary — `unaudited`, product not supported; never reaches the MySQL resolver | L=0 R=0 S=0 |
-| AM-9.3c | no pin, provider observed in-domain version (e.g. banner `8.0.36`) | provider present, observed consumable | `resolvedVersion` = observed → G2 passes → **audited**: `ALTER SERVER s1 OPTIONS (USER 'u')` lands A3 → R9; the pin is not the gate | L=1 R=1 S=1 |
-| AM-9.3d | MySQL request + observed non-MySQL product | provider observed product `postgres` | typed `ErrDialectProductMismatch`, early error before any arm | audit-layer L=0 R=0 S=0 — the version observation itself is not billed into L/R/S |
-| AM-9.3e | `--target-version 8.0.36` + observed version `8.4.0` | provider observed | typed `ErrTargetVersionMismatch`, early error | audit-layer L=0 R=0 S=0 |
+| AM-9.1a | `ALTER SERVER s OPTIONS (USER 'u')`, no `--target-version`, no provider (providerless CLI request) | providerless | `unaudited` + `gate:"version"`; findings=0, gaps=0; statement and aggregate coverage `incomplete`; verdict `review`; rc=1; **identical to the frozen probe-2 expectation below** — same fixed providerless configuration, same exact result | L=0 R=0 S=0 |
+| AM-9.1b | `ALTER SERVER s1 OPTIONS (USER 'u')`, no `--target-version`, provider present but observed version out-of-domain (`5.7.44`) | `s1` present | `unaudited` + `gate:"version"`; loader never fires; **catalog read still fires** — decided keep-boundary-bind (README §E): `bindMySQLServer` has no `Unsupported` gate, the gated ALTER walks the six-step order; the answer is never consumed | L=0 R=1 S=1 |
+| AM-9.2 | `ALTER SERVER s OPTIONS (USER 'u')`, `--target-version 8.0.x` (malformed) | any | typed `ErrInvalidTargetVersion` preflight, rc 2; zero audit reads | preflight precedes enrich — L=0 R=0 S=0 |
+| AM-9.3a | `ALTER SERVER s1 OPTIONS (USER 'u')`, `--target-version 5.7.44` + observed version `5.7.44` (matching — no mismatch possible) | provider present, observed `5.7.44` | pin parses, pin matches observed, `resolvedVersion` out-of-domain → `unaudited` + `gate:"version"`; same keep-boundary-bind read behavior as AM-9.1b | L=0 R=1 S=1 |
+| AM-9.3b | `ALTER SERVER s OPTIONS (USER 'u')`, dialect `tidb`, no pin, providerless, mode off | providerless | vendor boundary — `unaudited`, product not supported on this dialect (TiDB grammar lacks the family); never reaches the MySQL resolver, no version observation consumed | L=0 R=0 S=0 |
+| AM-9.3c | `ALTER SERVER s1 OPTIONS (USER 'u')`, no pin, provider observed in-domain version `8.0.36` | provider present, observed consumable | `resolvedVersion` = observed → G2 passes → **audited**: lands A3 → R9; the pin is not the gate | L=1 R=1 S=1 |
+| AM-9.3d | `ALTER SERVER s OPTIONS (USER 'u')`, `--dialect mysql` + observed product `postgres` | provider observed | typed `ErrDialectProductMismatch`, early error before any arm | audit-layer L=0 R=0 S=0 — the version observation itself is not billed into L/R/S |
+| AM-9.3e | `ALTER SERVER s OPTIONS (USER 'u')`, `--target-version 8.0.36` + observed version `8.4.0` | provider observed | typed `ErrTargetVersionMismatch`, early error | audit-layer L=0 R=0 S=0 |
 | AM-9.4 | catalog `error` on audited `ALTER SERVER s1 OPTIONS (USER 'u')` | `s1` fixture; mode observed consumable; sentinel injected at the **`ResolveObject` forward seam** (the request is issued, the resolver raises before issuing SQL) | resolver request counted, no SQL issued: R=1, S=0; bounded error propagates and `errors.Is` reaches the sentinel; the audit exits at that statement's bind — no arm, no gap substitution; public-layer output fields N/A at this layer (the provider-SQL-seam variant, if exercised separately, would be R=1/S=1) | L=1 R=1 S=0 |
 | AM-9.5 | loader error with ALTER-only request `ALTER SERVER s1 OPTIONS (USER 'u')` | `s1` fixture; observed mode; in-domain version; loader raises the sentinel at enrich entry | loader attempted once (L=1) at enrich entry before the statement loop → bounded privilege-read error (`serverPrivilegeReadError` class) terminates enrich; no statement reaches bind → R=0 S=0; public output fields N/A at this layer; error is **not** degraded to an evidence gap | L=1 R=0 S=0 |
 
-**Registered CLI probe plan** (future execution order — none run in
-this contract round). Fixed configuration — every expectation below
-holds only under exactly these conditions and is not a generalised
-pin⇒rc rule:
+**Registered CLI probe plan** (future execution order — PLAN /
+UNEXECUTED; nothing below has been run this contract round). This
+is the canonical location for the recipe; the README's §E table
+cross-references these exact expectations.
 
-- **providerless**: the request omits DSN/provider parameters
-  entirely (no `--metadata-dsn` or equivalent provider-wiring
-  argument); this contract does not assert a `--no-metadata` flag
-  exists.
-- **privilege mode off**: mode never selected — no privilege
-  observation is configured; no privilege CLI flag is invented.
-- **input**: single clean `ALTER SERVER s OPTIONS (USER 'u')`.
-- **policy**: an explicit file enabling
-  `ddl.mysql.server.alter.notice` at `notice` (plus the accepted
-  defaults for everything else) — the declared configuration to be
-  written out with the probe commands.
+Planned policy file `policy-alter.yaml` (document content only —
+the file is not created or modified by this contract):
 
-Expected results under that fixed configuration:
+```yaml
+rules:
+  ddl.mysql.server.alter.notice:
+    enabled: true
+    level: notice
+    params:
+```
+
+Planned commands (written into the future execution plan; **not run
+this round**):
+
+```bash
+# 1) pinned in-domain
+./deltascope audit --dialect mysql --target-version 8.0.36 \
+  --config policy-alter.yaml --format json \
+  --sql "ALTER SERVER s OPTIONS (USER 'u')" \
+  > alter-indomain.json 2> alter-indomain.err
+alter_indomain_rc=$?
+
+# 2) no pin, no other version source
+./deltascope audit --dialect mysql \
+  --config policy-alter.yaml --format json \
+  --sql "ALTER SERVER s OPTIONS (USER 'u')" \
+  > alter-nopin.out 2> alter-nopin.err
+alter_nopin_rc=$?
+
+# 3) malformed pin
+./deltascope audit --dialect mysql --target-version "8.0.x" \
+  --config policy-alter.yaml --format json \
+  --sql "ALTER SERVER s OPTIONS (USER 'u')" \
+  > alter-badpin.out 2> alter-badpin.err
+alter_badpin_rc=$?
+```
+
+Plan conditions: providerless — all DSN/provider-wiring arguments
+omitted; privilege mode off — no privilege observation configured;
+single clean ALTER statement; the explicit notice policy above;
+stdout/stderr captured separately and each rc captured immediately;
+no unconfirmed `--no-metadata` or privilege CLI flag is assumed.
+
+Frozen expectations — valid only under the fixed configuration
+above, never generalised into a pin⇒rc rule:
 
 | probe | expected (exact) | rc |
 |---|---|---|
-| pin `8.0.36` | A4; owed exactly `{server.existence, server.alter_privilege}`; no conditional marker; outcome `unverified`; statement and aggregate coverage `unverified`; verdict `review`; L/R/S = 0/0/0 | 0 |
+| pin `8.0.36` | A4; owed exactly `{server.existence, server.alter_privilege}`; main finding + `connection_members` advisory = **2 notice findings**; main `outcome=unverified`, no conditional marker; statement and aggregate coverage `unverified`; verdict `review`; L/R/S = 0/0/0 | 0 |
 | no pin, no other version source | `unaudited` + `gate:"version"` boundary; findings=0, gaps=0; statement and aggregate coverage `incomplete`; verdict `review`; L/R/S = 0/0/0 | 1 |
 | malformed pin `8.0.x` | typed `ErrInvalidTargetVersion` preflight error; no audit result produced; audit-layer L/R/S = 0/0/0 | 2 |
 
@@ -200,7 +240,7 @@ Expected results under that fixed configuration:
 |---|---|---|---|
 | AM-10.1 | any audited ALTER | — | `raw_sql`/`normalized_sql` = `ALTER SERVER <redacted>`; finding carries no name, option keys/values, account, grant text; unsupported boundary entries carry the fixed skeleton |
 | AM-10.2 | `ALTER SERVER s1 OPTIONS (USER 'u'); DROP SERVER s1` | `s1` present, consumable | snapshot plan: `Metadata.Server` **and** `Metadata.ServerAlter` checked for stmt1 — `Owed`, `PublishPresent`, `ConditionalSource`, `ConditionalAudit` — before apply, after own apply, and after stmt2's apply; bound state never mutates retroactively; stmt2 consumes stmt1's published `OrderedPresent` |
-| AM-10.3 | `ALTER SERVER s1 OPTIONS (USER 'u'); CREATE TABLE t(a int)` | `s1` present | tracked table model untouched; server channel never spreads to table/schema state |
+| AM-10.3 | `ALTER SERVER s1 OPTIONS (USER 'u'); CREATE TABLE t(a int)` | `s1` present; mode observed consumable → stmt1 A3 → R9; table `t` per its own catalog answer (zero) | enrich-apply layer; public fields N/A. stmt1: snapshot table/schema state **immediately before vs after stmt1's own apply** → unchanged (audited ALTER touches only the server channel; `OrderedPresent` on `s1` published). stmt2 `CREATE TABLE` has its own model effect (table `t` entry per the accepted table contract — its own resolver/catalog fixture, counted separately and out of this row's L/R/S which are server-channel counts only). After stmt2: server channel still holds exactly the `s1` entry — server state never spreads to table/schema state | L=1 R=1 S=1 (stmt1 only; stmt2 contributes no server-channel reads) |
 | AM-10.4 | `ALTER SERVER 'lit9' OPTIONS (USER 'u'); DROP SERVER s9` | provider present; `s9` zero; ordered channel clean at entry; mode off | literal name → `unaudited` boundary + whole-channel taint at apply; no `alter_server` audited finding; resolver request issued for `lit9` but provider declines without SQL (`identity_unproven`) → R=1 S=0; stmt2 `blocked_batch_effects` R=0 — consistent with AM-7.5's literal branch |
 
 ## Cross-cutting expected invariants

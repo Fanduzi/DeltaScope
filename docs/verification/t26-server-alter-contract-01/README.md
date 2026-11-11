@@ -1,17 +1,15 @@
 # T26-SERVER-ALTER-CONTRACT-01 — ALTER SERVER first-slice candidate contract
 
-Status: **ISSUED — candidate contract, docs-only (R3 revision)**.
+Status: **ISSUED — candidate contract, docs-only (R4 revision)**.
 Every adjudication below is a *proposed* contract awaiting Reviewer
 acceptance; nothing here is implemented, verified, or approved.
 This document implements no code, runs no test, and changes no
-accepted DROP/CREATE behavior. R2 established: the A1 arm is a
-uniform ordered-channel no-op; a canonical
-PublishPresent/ConditionalSource/ConditionalAudit assignment table
-is frozen; P1–P7 are adjudicated (§G); boundary bind behavior is
-kept unchanged. R3 closes the remaining matrix rulings: premise
-witnesses are seeded units or correctly-labelled suppressed
-chains, public projections carry fixed field-level expectations,
-and version/CLI outputs state their exact preconditions.
+accepted DROP/CREATE behavior. Frozen from earlier rounds: A1
+uniform no-op; the canonical flag-assignment table; P1–P7
+adjudicated (§G); keep-boundary-bind. R3/R4 close the matrix
+rulings: witnesses are seeded units or correctly-labelled
+suppressed chains; fixtures and observation layers are pinned;
+public projections and the CLI probe recipe carry fixed values.
 Parent: T26 / issue #105 under issue #79. Baseline: `28152dfd`
 (tree `8b17cf3c`, parent `2afe8ecb`) on
 `milestone/mysql-tidb-ddl-completion` — the accepted
@@ -480,18 +478,16 @@ aggregates, and other policies map by the existing rules,
 unchanged.
 
 Three-probe plan (future execution order — registered, none run
-here). **Fixed configuration**: providerless — the request omits
-DSN/provider parameters entirely (no provider-wiring argument;
-this contract does not assert a `--no-metadata` flag exists);
-privilege mode off — no privilege observation configured, no
-privilege flag invented; single clean `ALTER SERVER s OPTIONS
-(USER 'u')`; an explicit policy file enabling
-`ddl.mysql.server.alter.notice` at `notice` plus accepted
-defaults. Exact expectations under that configuration only:
+here). The canonical recipe — `policy-alter.yaml` content, the
+three exact commands with separated stdout/stderr and immediate
+rc capture, and the plan conditions — lives in
+`case-matrix.md` Group 9 ("Registered CLI probe plan", PLAN /
+UNEXECUTED). Its frozen expectations under that fixed
+configuration only:
 
 | probe | expected | rc |
 |---|---|---|
-| pin `8.0.36` | A4; owed `{server.existence, server.alter_privilege}`; no marker; `unverified`; verdict review; L/R/S 0/0/0 | 0 |
+| pin `8.0.36` | A4; owed `{server.existence, server.alter_privilege}`; main + advisory = 2 notice findings; main `unverified`, no marker; verdict review; L/R/S 0/0/0 | 0 |
 | no pin, no other version source | `unaudited` + `gate:"version"`; findings=0, gaps=0; coverage `incomplete`; verdict review; L/R/S 0/0/0 | 1 |
 | malformed pin `8.0.x` | typed `ErrInvalidTargetVersion` preflight; no audit result; L/R/S 0/0/0 | 2 |
 
