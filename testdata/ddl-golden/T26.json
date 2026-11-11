@@ -155,7 +155,8 @@
       "reason": "parsed by the shared parser but not covered by audited semantics",
       "metadata": {
        "boundary": "unaudited",
-       "object": "server"
+       "object": "server",
+       "gate": "version"
       }
      }
     ],

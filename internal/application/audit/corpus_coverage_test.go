@@ -134,7 +134,7 @@ func corpusRuleDialectTargets(ruleID string) []string {
 	// T26-SERVER-DROP-01: the audited MySQL identifier-form DROP SERVER
 	// slice — under TiDB the whole SERVER family is a vendor boundary,
 	// and PostgreSQL never binds SERVER declarations.
-	case "ddl.mysql.server.drop.notice", "ddl.mysql.server.create.notice":
+	case "ddl.mysql.server.drop.notice", "ddl.mysql.server.create.notice", "ddl.mysql.server.alter.notice":
 		return []string{"mysql"}
 	}
 	if strings.HasPrefix(ruleID, "ddl.pg.") || isPostgreSQLOnlyRule(ruleID) {

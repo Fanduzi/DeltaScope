@@ -235,19 +235,21 @@ func (state *batchState) enrichStatements(ctx context.Context, request *Metadata
 	if request != nil {
 		requestSchema = request.Schema
 	}
-	// Phase-2 qualification for the audited CREATE SERVER slice
-	// (T26-SERVER-CREATE-EXECUTION-01): every shape-passing CREATE
-	// whose resolved version is unknown or outside the registered
-	// MySQL 8.0.x proof domain takes the unaudited boundary with
-	// gate:"version" — before the family loader gate evaluates below,
-	// so a version-failed statement can never trigger the observation.
-	// Conflicting version inputs (malformed pin, observed product
-	// mismatch, pin/observed mismatch) exited earlier as typed errors
-	// and never reach this gate.
+	// Phase-2 qualification for the audited CREATE/ALTER SERVER
+	// slices (T26-SERVER-CREATE-EXECUTION-01,
+	// T26-SERVER-ALTER-EXECUTION-01): every shape-passing CREATE or
+	// ALTER whose resolved version is unknown or outside the
+	// registered MySQL 8.0.x proof domain takes the unaudited
+	// boundary with gate:"version" — before the family loader gate
+	// evaluates below, so a version-failed statement can never
+	// trigger the observation. Conflicting version inputs (malformed
+	// pin, observed product mismatch, pin/observed mismatch) exited
+	// earlier as typed errors and never reach this gate.
 	if dialect == spec.DialectMySQL {
 		for i := range statements {
 			if statements[i].DDL != nil && statements[i].DDL.Server != nil &&
-				statements[i].DDL.Server.Kind == spec.ServerKindCreate &&
+				(statements[i].DDL.Server.Kind == spec.ServerKindCreate ||
+					statements[i].DDL.Server.Kind == spec.ServerKindAlter) &&
 				statements[i].Unsupported == nil &&
 				!spec.MySQLServerDropPrivilegeDomain(resolvedVersion) {
 				statements[i].Unsupported = &spec.UnsupportedDetail{
@@ -650,6 +652,19 @@ func (state *batchState) enrichStatements(ctx context.Context, request *Metadata
 				}
 				adjudication := spec.AdjudicateServerCreate(enriched[i].Metadata.Server, state.serverCreatePrivilegePremise(), decl.OptionsClean(), state.contaminated)
 				enriched[i].Metadata.ServerCreate = &adjudication
+			}
+			// The audited identifier-form alter carries its own
+			// shared adjudication — an independent premise projection
+			// and owed set, never a borrowed drop/create premise
+			// (T26-SERVER-ALTER-EXECUTION-01). The whole-batch
+			// contamination flag reaches the arm table directly, same
+			// as the siblings.
+			if decl := enriched[i].DDL.Server; decl.Kind == spec.ServerKindAlter && decl.NameIdent && enriched[i].Unsupported == nil {
+				if enriched[i].Metadata == nil {
+					enriched[i].Metadata = &spec.Metadata{Schema: metadataSchema, Instance: instanceFacts, Version: resolvedVersion}
+				}
+				adjudication := spec.AdjudicateServerAlter(enriched[i].Metadata.Server, state.serverAlterPrivilegePremise(), decl.OptionsClean(), state.contaminated)
+				enriched[i].Metadata.ServerAlter = &adjudication
 			}
 		}
 

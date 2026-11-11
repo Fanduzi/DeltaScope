@@ -1,9 +1,12 @@
 // Package tidbparser verifies the T26 SERVER coverage-boundary
-// narrowing (issue #105): the MySQL identifier-form DROP SERVER and the
-// audited CREATE SERVER first slice (T26-SERVER-CREATE-EXECUTION-01)
-// leave the named unaudited boundary and enter the audited slice, while
-// string-literal forms, non-mysql or literal wrappers, ALTER SERVER,
-// and every TiDB SERVER statement keep their registered boundaries.
+// narrowing (issue #105): the MySQL identifier-form DROP SERVER, the
+// audited CREATE SERVER first slice
+// (T26-SERVER-CREATE-EXECUTION-01), and the audited ALTER SERVER
+// first slice (T26-SERVER-ALTER-EXECUTION-01) leave the named
+// unaudited boundary and enter the audited slice, while
+// string-literal forms, non-mysql or literal wrappers, overlong
+// spellings, and every TiDB SERVER statement keep their registered
+// boundaries.
 package tidbparser
 
 import (
@@ -65,14 +68,12 @@ func TestT26CreateServerIdentLeavesBoundary(t *testing.T) {
 }
 
 // Every CREATE outside the audited shape — literal names, literal or
-// non-mysql wrappers, over-long names — keeps the unaudited boundary,
-// and ALTER SERVER stays outside this slice entirely.
+// non-mysql wrappers, over-long names — keeps the unaudited boundary.
 func TestT26ServerNonDropStaysUnaudited(t *testing.T) {
 	for _, sql := range []string{
 		"CREATE SERVER 's1' FOREIGN DATA WRAPPER mysql OPTIONS (HOST 'h')",
 		"CREATE SERVER s1 FOREIGN DATA WRAPPER 'mysql' OPTIONS (HOST 'h')",
 		"CREATE SERVER s1 FOREIGN DATA WRAPPER pgsql OPTIONS (HOST 'h')",
-		"ALTER SERVER s1 OPTIONS (HOST 'h2')",
 		// One rune over the documented bound keeps the unaudited
 		// boundary — qualification is lexical, never decoded (R2-E).
 		"CREATE SERVER " + strings.Repeat("n", 65) + " FOREIGN DATA WRAPPER mysql OPTIONS (HOST 'h')",
@@ -81,6 +82,53 @@ func TestT26ServerNonDropStaysUnaudited(t *testing.T) {
 		if statement.Unsupported == nil || statement.Unsupported.Reason != spec.UnsupportedUnauditedReason {
 			t.Fatalf("%s: non-audited form must keep the unaudited boundary: %+v", sql, statement.Unsupported)
 		}
+	}
+}
+
+// The audited ALTER slice: an identifier-form name inside the same
+// documented 64-rune bound leaves the boundary — ALTER declares no
+// wrapper, so the only shape gates are the name's identifier form and
+// its lexical length. OPTIONS cleanliness is an adjudication premise,
+// not a shape gate — unclean options still enter the slice
+// (T26-SERVER-ALTER-EXECUTION-01).
+func TestT26AlterServerIdentLeavesBoundary(t *testing.T) {
+	for _, sql := range []string{
+		"ALTER SERVER s1 OPTIONS (HOST 'h2')",
+		"ALTER SERVER `s1` OPTIONS (USER 'u')",
+		"ALTER SERVER s1 OPTIONS (PORT 100000)",
+		"ALTER SERVER s1 OPTIONS (USER 'u', USER 'u2')",
+		// The 64-rune bound is inclusive — a name spelled at exactly
+		// the documented mysql.servers bound still qualifies (R2-E).
+		"ALTER SERVER " + strings.Repeat("n", 64) + " OPTIONS (HOST 'h')",
+	} {
+		statement := parseExtractT26(t, sql, spec.DialectMySQL)
+		if statement.Unsupported != nil {
+			t.Fatalf("%s: qualified alter must enter the audited slice, got %+v", sql, statement.Unsupported)
+		}
+		if statement.DDL == nil || statement.DDL.Server == nil || statement.DDL.Operation != spec.DDLOperationAlterServer {
+			t.Fatalf("%s: declaration lost: %+v", sql, statement.DDL)
+		}
+	}
+}
+
+// Every ALTER outside the audited shape — literal names and
+// over-long spellings — keeps the unaudited boundary; every TiDB
+// SERVER form keeps the vendor boundary.
+func TestT26AlterServerNonAuditedStaysUnaudited(t *testing.T) {
+	for _, sql := range []string{
+		"ALTER SERVER 's1' OPTIONS (HOST 'h')",
+		// One rune over the documented bound keeps the unaudited
+		// boundary — qualification is lexical, never decoded.
+		"ALTER SERVER " + strings.Repeat("n", 65) + " OPTIONS (HOST 'h')",
+	} {
+		statement := parseExtractT26(t, sql, spec.DialectMySQL)
+		if statement.Unsupported == nil || statement.Unsupported.Reason != spec.UnsupportedUnauditedReason {
+			t.Fatalf("%s: non-audited alter must keep the unaudited boundary: %+v", sql, statement.Unsupported)
+		}
+	}
+	statement := parseExtractT26(t, "ALTER SERVER s1 OPTIONS (HOST 'h')", spec.DialectTiDB)
+	if statement.Unsupported == nil || statement.Unsupported.Reason != spec.UnsupportedVendorBoundaryReason {
+		t.Fatalf("tidb alter must keep the vendor boundary: %+v", statement.Unsupported)
 	}
 }
 

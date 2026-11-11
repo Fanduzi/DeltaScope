@@ -245,6 +245,32 @@ func (s *batchState) applyServerStatement(ctx context.Context, statement spec.St
 			entry.barrier = true
 		}
 	}
+	if decl.Kind == spec.ServerKindAlter && decl.NameIdent {
+		// Audited ALTER is presence-preserving: the documented write
+		// set is the named row's option columns, which the
+		// presence-only channel provably cannot change
+		// (T26-SERVER-ALTER-EXECUTION-01, contract §D preservation
+		// theorem). Every arm other than a publish is a no-op — A1
+		// reports pre-existing shadowing state without minting an
+		// entry, A2 leaves the consumed absent standing, and A4 on
+		// unknown publishes nothing: no entry, no barrier, no
+		// serverWrite. A nil adjudication (outside the audited slice
+		// or a bypassed enrichment) takes the same no-op — ALTER can
+		// never change tracked presence.
+		adjudication := serverAlterAdjudicationOf(statement)
+		if adjudication != nil && adjudication.PublishPresent {
+			entry := s.serverEntryFor(decl.Name)
+			entry.present = true
+			// The published OrderedPresentConditional equals
+			// ConditionalSource — never ConditionalAudit: the
+			// statement's own consumable premise marks the audit
+			// conclusion conditional, not the presence fact.
+			entry.presentConditional = adjudication.ConditionalSource
+			entry.absent = false
+			entry.publishedArm = 0
+			entry.barrier = false
+		}
+	}
 	if decl.Kind == spec.ServerKindCreate && decl.NameIdent {
 		adjudication := serverCreateAdjudicationOf(statement)
 		switch {

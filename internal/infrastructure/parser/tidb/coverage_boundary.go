@@ -53,13 +53,15 @@ func applyCoverageBoundary(dialect spec.Dialect, statement *spec.Statement, node
 			// The MySQL SERVER family (T26/#105): on TiDB the whole
 			// family is not TiDB semantics — a vendor boundary, never a
 			// MySQL verdict. On MySQL a provable-identifier DROP SERVER
-			// enters the audited path (T26-SERVER-DROP-01) and a
+			// enters the audited path (T26-SERVER-DROP-01), a
 			// CREATE SERVER passing the registered phase-1 shape gates
 			// enters the audited first slice (T26-SERVER-CREATE-01):
 			// identifier-form name whose spelling fits the documented
 			// 64-character bound, plus an identifier-form wrapper whose
-			// spelling ASCII-fold-equals mysql. Every other form —
-			// ALTER, string-literal names, overlong spellings,
+			// spelling ASCII-fold-equals mysql — and an ALTER SERVER
+			// with an identifier-form name inside the same bound
+			// (T26-SERVER-ALTER-EXECUTION-01). Every other form —
+			// string-literal names, overlong spellings,
 			// literal/non-mysql wrappers — keeps the named unaudited
 			// boundary. The version gate (G2) is an enrich-time check
 			// this parser-level boundary never performs.
@@ -460,7 +462,8 @@ func setOprListHasSelectInto(list *ast.SetOprSelectList) bool {
 
 // mysqlServerAuditedForm reports the SERVER family's phase-1 shape
 // qualification — the audited identifier forms this parser-level
-// boundary recognizes (T26-SERVER-DROP-01, T26-SERVER-CREATE-01):
+// boundary recognizes (T26-SERVER-DROP-01, T26-SERVER-CREATE-01,
+// T26-SERVER-ALTER-EXECUTION-01):
 //
 //   - DROP SERVER: identifier-form name.
 //   - CREATE SERVER: identifier-form name whose unquoted spelling fits
@@ -469,6 +472,9 @@ func setOprListHasSelectInto(list *ast.SetOprSelectList) bool {
 //     identifier-form wrapper whose spelling ASCII-fold-equals mysql —
 //     the only registered FEDERATED wrapper spelling. A string-literal
 //     wrapper is a distinct quoting category, not an identifier.
+//   - ALTER SERVER: identifier-form name whose unquoted spelling fits
+//     the same 64-character bound — ALTER declares no wrapper clause,
+//     so no wrapper gate exists.
 //
 // The version gate (G2) has no input at this layer and is never
 // evaluated here.
@@ -482,6 +488,8 @@ func mysqlServerAuditedForm(decl *spec.ServerDeclaration) bool {
 	case spec.ServerKindCreate:
 		return decl.NameSpellingRuneCount <= 64 &&
 			decl.WrapperIdent && serverWrapperASCIIEqual(decl.Wrapper, "mysql")
+	case spec.ServerKindAlter:
+		return decl.NameSpellingRuneCount <= 64
 	default:
 		return false
 	}

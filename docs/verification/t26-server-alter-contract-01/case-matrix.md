@@ -83,7 +83,7 @@ The "batch findings are the sum of per-statement findings" note
 applies only to rows that exercise full-request public
 projection.
 
-**Observation layers** — five named layers; a row asserts fields
+**Observation layers** — six named layers; a row asserts fields
 only at the layer(s) it exercises and marks the rest N/A:
 
 | layer | rows |

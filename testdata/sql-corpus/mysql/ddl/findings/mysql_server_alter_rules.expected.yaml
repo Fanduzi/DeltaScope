@@ -1,0 +1,11 @@
+name: mysql_server_alter_rules
+dialect: mysql
+category: ddl
+metadata:
+  instance:
+    version: "8.0.46"
+expect:
+  parse_ok: true
+  findings:
+    include:
+      - ddl.mysql.server.alter.notice

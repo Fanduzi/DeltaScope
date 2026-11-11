@@ -14,19 +14,21 @@ import (
 )
 
 // statementsNeedMySQLServerPrivilege reports whether the batch names
-// at least one audited identifier-form DROP SERVER or a fully
-// qualified CREATE SERVER — the SERVER family slice the privilege
-// observation exists for. Boundary forms (literal names, ALTER
-// SERVER, shape- or version-failed CREATE, any other family) never
-// trigger the read: statement.Unsupported already encodes both the
-// phase-1 shape gates and the phase-2 version gate, so the check
-// stays final-qualification-only (T26-SERVER-CREATE-EXECUTION-01).
+// at least one audited identifier-form DROP SERVER, a fully
+// qualified CREATE SERVER, or an audited identifier-form ALTER
+// SERVER — the SERVER family slice the privilege observation exists
+// for. Boundary forms (literal names, shape- or version-failed
+// members, any other family) never trigger the read:
+// statement.Unsupported already encodes both the phase-1 shape gates
+// and the phase-2 version gate, so the check stays
+// final-qualification-only (T26-SERVER-CREATE-EXECUTION-01,
+// T26-SERVER-ALTER-EXECUTION-01).
 func statementsNeedMySQLServerPrivilege(statements []spec.Statement) bool {
 	for _, statement := range statements {
 		if statement.DDL != nil && statement.DDL.Server != nil &&
 			statement.DDL.Server.NameIdent && statement.Unsupported == nil {
 			switch statement.DDL.Server.Kind {
-			case spec.ServerKindDrop, spec.ServerKindCreate:
+			case spec.ServerKindDrop, spec.ServerKindCreate, spec.ServerKindAlter:
 				return true
 			}
 		}
@@ -108,6 +110,32 @@ func serverCreateAdjudicationOf(statement spec.Statement) *spec.ServerCreateAdju
 		return nil
 	}
 	return statement.Metadata.ServerCreate
+}
+
+// serverAlterPrivilegePremise projects the request-level witness onto
+// this statement's ALTER premise — the same raw observation and the
+// same ordered scope as the drop/create siblings, but an independent
+// projection: a satisfied drop or create premise is never borrowed
+// and a sibling's conditional marker never discharges the alter's own
+// premise (T26-SERVER-ALTER-EXECUTION-01).
+func (s *batchState) serverAlterPrivilegePremise() spec.ServerAlterPrivilege {
+	if !s.serverDropPrivilegeWitness {
+		return spec.ServerAlterPrivilegeUnproven
+	}
+	if s.serverPrivilegeScopeEnded {
+		return spec.ServerAlterPrivilegeSuppressed
+	}
+	return spec.ServerAlterPrivilegeConsumable
+}
+
+// serverAlterAdjudicationOf returns the shared adjudication attached
+// to one audited ALTER SERVER — nil outside the audited slice or
+// before enrichment ran.
+func serverAlterAdjudicationOf(statement spec.Statement) *spec.ServerAlterAdjudication {
+	if statement.Metadata == nil {
+		return nil
+	}
+	return statement.Metadata.ServerAlter
 }
 
 // serverPrivilegeReadError bounds the public text of a failed

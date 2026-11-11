@@ -512,3 +512,256 @@ func (r mysqlCreateServerRule) Evaluate(ctx context.Context, statement spec.Stat
 	}
 	return findings, nil
 }
+
+// The audited identifier-form ALTER SERVER first slice
+// (T26-SERVER-ALTER-EXECUTION-01; accepted contract
+// docs/verification/t26-server-alter-contract-01, R5 ACCEPTED
+// 93945c01). The rule reads the same one truth as the siblings —
+// spec.AdjudicateServerAlter's arm plus its derived owed-fact set:
+// server.existence, server.batch_effects, server.alter_privilege,
+// and server.alter_options are owed exactly per arm. The terminal
+// refusal owes nothing (the ordered absent carries the whole
+// verdict), the proven-alter arm owes nothing, and every barrier
+// source owes exactly {server.batch_effects}. A3/A4 arms emit the
+// independent connection_members advisory with the contract's
+// fixed text. Findings and gaps carry no authored server name, no
+// option keys/values, no account, and no grant text.
+
+type mysqlAlterServerRule struct {
+	id    string
+	level rule.Level
+}
+
+func newMySQLAlterServerRule(cfg policy.RulePolicy) (rule.StatementRule, error) {
+	return mysqlAlterServerRule{
+		id:    ruleIDMySQLAlterServerNotice,
+		level: configuredLevel(cfg, rule.LevelNotice),
+	}, nil
+}
+
+func (r mysqlAlterServerRule) ID() string { return r.id }
+
+func (r mysqlAlterServerRule) AppliesTo(statement spec.Statement) bool {
+	return statement.Dialect == spec.DialectMySQL &&
+		statement.Kind == spec.KindDDL &&
+		statement.DDL != nil &&
+		statement.DDL.Server != nil &&
+		statement.DDL.Operation == spec.DDLOperationAlterServer &&
+		statement.Unsupported == nil
+}
+
+// serverAlterAdjudicationFor returns the shared adjudication the
+// enrichment attached — nil outside the audited slice (a legacy
+// statement shape or a bypassed enrichment), where the defensive
+// fallback keeps the pre-execution contract: every premise owed.
+func serverAlterAdjudicationFor(statement spec.Statement) *spec.ServerAlterAdjudication {
+	if statement.Metadata == nil {
+		return nil
+	}
+	return statement.Metadata.ServerAlter
+}
+
+func (r mysqlAlterServerRule) missingServerFacts(statement spec.Statement) []string {
+	if adjudication := serverAlterAdjudicationFor(statement); adjudication != nil {
+		// The shared adjudication derives the owed set per arm — the
+		// rule never recomputes premises on its own.
+		return adjudication.Owed
+	}
+	missing := []string{}
+	state := serverStateFor(statement)
+	if state != nil && state.UnreadReason == spec.MetadataUnreadBatchEffects {
+		missing = append(missing, spec.ServerFactBatchEffects)
+	} else {
+		missing = append(missing, spec.ServerFactExistence)
+	}
+	missing = append(missing, spec.ServerFactAlterPrivilege, spec.ServerFactAlterOptions)
+	return missing
+}
+
+func (r mysqlAlterServerRule) EvidenceGaps(statement spec.Statement) []rule.EvidenceGap {
+	if !r.AppliesTo(statement) {
+		return nil
+	}
+	missing := r.missingServerFacts(statement)
+	if len(missing) == 0 {
+		return nil
+	}
+	return []rule.EvidenceGap{{
+		ReasonCode:    "unknown_server_state",
+		RequiredFacts: missing,
+	}}
+}
+
+// serverAlterMessage renders the arm's bounded public message —
+// wrapper-agnostic by contract: no server name, no option keys or
+// values, no account, no grant text, and no claim about the stored
+// row's wrapper.
+func serverAlterMessage(statement spec.Statement, adjudication *spec.ServerAlterAdjudication) string {
+	state := serverStateFor(statement)
+	if adjudication == nil {
+		return "ALTER SERVER targets a server definition whose existence, execution premise, and options remain unverified"
+	}
+	consumable := adjudication.Privilege == spec.ServerAlterPrivilegeConsumable
+	switch adjudication.Arm {
+	case spec.ServerAlterArmProvenAlter:
+		return "ALTER SERVER is conditionally proven to update its catalog entry's stored options under the observed_account_new_session conditional audit"
+	case spec.ServerAlterArmTerminalRefusal:
+		return "ALTER SERVER is refused by the ordered state in force — the audited entry's absent state stands proven in this batch"
+	case spec.ServerAlterArmBarrier:
+		return "ALTER SERVER leaves its premises shadowed by earlier batch effects; this statement's execution premise remains unverified"
+	default:
+		items := serverAlterOwedItems(adjudication)
+		if len(items) == 0 {
+			if state != nil && (state.Read && state.Exists || state.OrderedPresent) {
+				return "ALTER SERVER targets a catalog entry proven present at bind time; execution remains unverified"
+			}
+			return "ALTER SERVER targets a server definition whose existence remains unverified"
+		}
+		verb := "remain"
+		if len(items) == 1 {
+			verb = "remains"
+		}
+		phrase := serverCreateOwedPhrase(items)
+		if consumable {
+			return "ALTER SERVER targets a server definition whose " + phrase + " " + verb + " unverified under the observed_account_new_session conditional audit"
+		}
+		return "ALTER SERVER targets a server definition whose " + phrase + " " + verb + " unverified"
+	}
+}
+
+// serverAlterOwedItems projects the adjudication's owed-fact set
+// into the fixed public vocabulary — the arm's own bounded tokens,
+// never an object name or option content. The order follows the
+// owed set's canonical existence → privilege → options order.
+func serverAlterOwedItems(adjudication *spec.ServerAlterAdjudication) []string {
+	var items []string
+	for _, fact := range adjudication.Owed {
+		switch fact {
+		case spec.ServerFactExistence:
+			items = append(items, "existence")
+		case spec.ServerFactAlterPrivilege:
+			items = append(items, "execution premise")
+		case spec.ServerFactAlterOptions:
+			items = append(items, "options")
+		}
+	}
+	return items
+}
+
+// serverAlterOutcome is the bounded outcome token published in
+// finding metadata — one fixed vocabulary per arm so public
+// consumers read the arm without parsing prose.
+func serverAlterOutcome(adjudication *spec.ServerAlterAdjudication) string {
+	if adjudication == nil {
+		return "unverified"
+	}
+	switch adjudication.Arm {
+	case spec.ServerAlterArmProvenAlter:
+		return "conditional_alter"
+	case spec.ServerAlterArmTerminalRefusal:
+		return "refused_absent"
+	case spec.ServerAlterArmBarrier:
+		return "blocked_batch_effects"
+	default:
+		return "unverified"
+	}
+}
+
+func (r mysqlAlterServerRule) Evaluate(ctx context.Context, statement spec.Statement) ([]rule.Finding, error) {
+	if !r.AppliesTo(statement) {
+		return nil, nil
+	}
+	adjudication := serverAlterAdjudicationFor(statement)
+	consumable := adjudication != nil && adjudication.Privilege == spec.ServerAlterPrivilegeConsumable
+
+	level := r.level
+	explanation := &rule.FindingExplanation{
+		Why:        "ALTER SERVER updates option fields on the named mysql.servers row and requires SUPER; the stored connection members it leaves untouched are never read by this audit.",
+		Risk:       "Whether the statement actually executed is unproven — the privilege premise is not discharged, and batch writes may already shadow the catalog answer.",
+		Suggestion: "Confirm the server entry exists and the executing account holds SUPER before relying on the alter.",
+	}
+	if adjudication != nil {
+		switch adjudication.Arm {
+		case spec.ServerAlterArmTerminalRefusal:
+			// A proven refusal is the same finding class the sibling
+			// families emit — a refusal blocker, not an advisory
+			// notice. The ordered absent alone carries the verdict;
+			// no specific native response is claimed beyond the
+			// refusal.
+			level = rule.LevelBlocker
+			explanation = &rule.FindingExplanation{
+				Why:        "ALTER SERVER requires the named mysql.servers entry to exist; the audited entry's absent state stands proven in this batch's ordered model, so the statement is refused.",
+				Risk:       "The statement cannot land under the ordered state in force — the absent proof is the batch's own ordered state, never a catalog guess; the specific native response is not asserted beyond the refusal.",
+				Suggestion: "Remove the duplicate alter or create the server entry first if the update is intended.",
+			}
+		case spec.ServerAlterArmProvenAlter:
+			explanation = &rule.FindingExplanation{
+				Why:        "ALTER SERVER updates option fields on the named mysql.servers row and requires SUPER; the conditional audit bound the observed account's direct global grant as the expected executor's premise and presence stands proven.",
+				Risk:       conditionalRiskTail(true) + " The stored members the authored OPTIONS list leaves untouched are never read — the update is modeled as partial.",
+				Suggestion: "Confirm the authored option set is the complete intended change; members not listed keep their stored values.",
+			}
+		case spec.ServerAlterArmBarrier:
+			explanation = &rule.FindingExplanation{
+				Why:        "ALTER SERVER updates option fields on the named mysql.servers row and requires SUPER; an earlier statement's undischarged effect on the server channel shadows this statement's premises.",
+				Risk:       "The batch's own effects left this statement's premises undecidable; the shadowed premises never reached evaluation, so whether the alter could land cannot be proven in this batch.",
+				Suggestion: "Order the ALTER before unknown-effect writes, or split the batch so each statement's premises can be proven.",
+			}
+		default:
+			if consumable {
+				phrase := serverCreateOwedPhrase(serverAlterOwedItems(adjudication))
+				explanation = &rule.FindingExplanation{
+					Why:        "ALTER SERVER updates option fields on the named mysql.servers row and requires SUPER; the conditional audit discharged the privilege premise but " + phrase + " stayed unproven.",
+					Risk:       conditionalRiskTail(true) + " Whether the alter lands is unproven — the stated premises stayed unverified.",
+					Suggestion: "Confirm the server entry exists and the authored options are valid before relying on the alter.",
+				}
+			}
+		}
+	}
+
+	metadata := map[string]any{
+		"operation": string(statement.DDL.Operation),
+		"object":    "server",
+		"outcome":   serverAlterOutcome(adjudication),
+	}
+	if adjudication != nil && adjudication.ConditionalAudit {
+		// The marker is the adjudication's own provenance fact —
+		// projected verbatim from Metadata.ServerAlter.ConditionalAudit:
+		// the conditional scope actually fed the conclusion, either
+		// through this statement's consumable premise on an arm that
+		// read it or through an ordered source a prior statement
+		// published under that scope. A barrier never carries it, and
+		// a refusal carries it only when the consumed ordered absent
+		// was conditional.
+		metadata["conditional_audit"] = string(spec.PrivilegeAuditModeObservedAccountNewSession)
+	}
+	findings := []rule.Finding{{
+		Level:       level,
+		Message:     serverAlterMessage(statement, adjudication),
+		Explanation: explanation,
+		Metadata:    metadata,
+	}}
+
+	// The decided ALTER-scoped advisory (contract §G P2): the authored
+	// OPTIONS list is intentionally partial and the stored set is
+	// never read, so the stored and resulting connection member sets
+	// stay unverified. Emitted on the A3/A4 arms only — a barrier or
+	// refusal arm never emits it — at the rule's configured level,
+	// with no outcome, marker, gap, or authored option payload.
+	if adjudication == nil || adjudication.Arm == spec.ServerAlterArmProvenAlter || adjudication.Arm == spec.ServerAlterArmUnproven {
+		findings = append(findings, rule.Finding{
+			Level:   r.level,
+			Message: "ALTER SERVER specifies a partial options update; stored and resulting connection member sets are unverified.",
+			Explanation: &rule.FindingExplanation{
+				Why:        "The authored OPTIONS list updates only the named members; members it leaves untouched keep their stored values, which this audit never reads.",
+				Risk:       "This notice is an audit-model scope observation only — it does not refuse the statement and does not assert a native MySQL warning.",
+				Suggestion: "Review whether the partial option update is the intended change for this server entry.",
+			},
+			Metadata: map[string]any{
+				"operation": string(statement.DDL.Operation),
+				"object":    "server",
+				"notice":    "connection_members",
+			},
+		})
+	}
+	return findings, nil
+}

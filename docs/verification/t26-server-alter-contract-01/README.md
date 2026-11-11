@@ -9,7 +9,7 @@ uniform no-op; the canonical flag-assignment table; P1–P7
 adjudicated (§G); keep-boundary-bind; seeded/suppressed witnesses;
 fixed public projections; the CLI probe recipe. R5 closes the last
 matrix rulings: per-statement public-output scope is declared, the
-five observation layers are named per row, and Group 9 rows carry
+six observation layers are named per row, and Group 9 rows carry
 their exact layer and rc applicability.
 Parent: T26 / issue #105 under issue #79. Baseline: `28152dfd`
 (tree `8b17cf3c`, parent `2afe8ecb`) on

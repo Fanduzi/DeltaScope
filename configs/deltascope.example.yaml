@@ -1179,6 +1179,11 @@ rules:
     level: notice
     params:
 
+  ddl.mysql.server.alter.notice:
+    enabled: true
+    level: notice
+    params:
+
   ddl.tidb.table.auto_random.valid:
     enabled: true
     level: blocker
