@@ -45,7 +45,8 @@ Consequences for every DROP row below:
 missing (R4 point 6) — no unconditional success exists under the
 current fact set.
 
-SERVER name identity basis (catalog read vs ordered channel — R2-B):
+SERVER name identity basis (catalog read vs ordered channel — R2-B,
+R3-A):
 
 - The **catalog read** issues `WHERE server_name = ?` on the verbatim
   decoded identifier form — the catalog column's own documented
@@ -55,24 +56,40 @@ SERVER name identity basis (catalog read vs ordered channel — R2-B):
 - The **objectCache request key** stays the verbatim decoded name —
   accepted in the provider round, unchanged.
 - The **ordered channel** keys entries by `canonical(name)` = ASCII
-  letter-case fold of the decoded name. Scoped basis (no universal
-  collation claim): the documented rule for `server_name` is
-  case-insensitive (R1 A.5 + R2 §1 — G-src.2/3), and within the
-  documented CI collations for this column ASCII letter-case variants
-  name the same object. Relations outside that sourced envelope —
-  non-ASCII names, or names differing in more than ASCII letter case
-  — are **relation-unproven**, not provably-distinct (C.1b).
+  letter-case fold of the decoded name — a bucket key, NOT an identity
+  verdict: two different fold keys do NOT prove different objects.
 
-Five-state existence ladder (R1-C.3, corrected bound shapes):
+**Provable domain and mutually-exclusive relation classes (R3-A.1).**
+The sourced basis: the documented `server_name` rule is
+case-insensitive (R1 A.5 + R2 §1 — G-src.2/3); within a CI collation
+ASCII letter-case variants name the same object, and differing
+non-space characters cannot compare equal under any collation —
+while space-only differences depend on the collation PAD attribute,
+which is exactly the registered PEND. The ASCII envelope is therefore
+the only region where a *distinct* verdict is provable; outside it
+only byte-identity is provable-same. Exactly one class per name pair:
+
+| relation `R(A,B)` | sufficient condition (all required) | channel effect |
+|---|---|---|
+| provably-same | A,B byte-identical; OR both ASCII-envelope AND ASCII-fold-equal | same object — consume entry / the pair is the same identity |
+| provably-distinct | both ASCII-envelope; fold-different; AND the difference is not space-only — i.e., at same length a differing position pairs two different non-space characters, or at different lengths the longer name's extra tail contains a non-space ASCII character | different objects — unaffected |
+| unproven | everything else: non-ASCII on either side, or the only differences are spaces (trailing/leading/internal) | neither consumed nor ignored — unproven barrier |
+
+Examples: `s1`/`S1` provably-same; `s1`/`s2` provably-distinct;
+`s1`/`s1x` provably-distinct; `s1`/`s1 ` unproven (PAD-dependent);
+`sé1`/`se1` unproven; `sé1`/`sé1` provably-same (byte-identical).
+C, D, and E use this single table — no per-document envelope.
+
+Existence-state ladder (R1-C.3, real bound shapes — six states):
 
 | state | bound shape on `Metadata.Server` | usable as |
 |---|---|---|
-| unbound | `Metadata.Server == nil` — bind never ran | existence unproven |
+| unbound | `Metadata.Server == nil` — bind never ran (non-MySQL dialect) | existence unproven |
 | bound-unvouched | non-nil `{Name, Read:false}` with **empty** `UnreadReason` — contaminated batch / no resolver | unproven |
-| not-read | non-nil `Read=false` + `UnreadReason` (`identity_unproven` / `version_inapplicable`) | unproven |
+| not-read | non-nil `Read=false` + `UnreadReason` (`identity_unproven` — the literal-name path — / `version_inapplicable`) | unproven |
 | read-unknown | `Read=true` + `Exists=false` — query ran, zero rows, answer unknown | unproven — **`Read=true` is not existence-known** |
 | proven-present | `Read=true` + `Exists=true` | `present` premise |
-| ordered-absent | `OrderedAbsent=true` (same-adjudication channel only; currently unreachable — D.4) | `absent` premise |
+| ordered-absent | `OrderedAbsent=true` (same-adjudication channel only; future-stage contract — D.0/D.4) | `absent` premise |
 
 ## C.1 SERVER family — 16 units + ordered-channel contract C17–C22
 
@@ -83,7 +100,7 @@ Five-state existence ladder (R1-C.3, corrected bound shapes):
 | C3 | srv-drop-present | `DROP SERVER n`, ident | decl `drop`/`NameIdent`; existence proven-present; **privilege unproven** | mixed | notice `[p] ddl.mysql.server.drop.notice` + gap `server.drop_privilege` | review / unverified | `servers[canonical]=unproven-barrier` — shadows catalog present; no absent published (premise-dependent, D.4) |
 | C4 | srv-drop-unknown | same, existence unproven | same + existence unproven | unknown+unproven | notice + gaps `server.existence`,`server.drop_privilege` | review / unverified | unproven-barrier |
 | C5 | srv-drop-ie-unknown | `DROP SERVER IF EXISTS n`, existence unproven | `IfExists`+ | unknown+unproven | notice + gaps `server.existence`,`server.drop_privilege` | review / unverified | unproven-barrier — the present-arm may not have executed, so no convergent absent (C.4) |
-| C6 | srv-drop-unbound | drop, string-literal name | decl `NameIdent=false` | unbound | `unaudited` boundary (ruling G-1) | `unsupported`+`unaudited`+incomplete | unchanged + channel taint (unprovable write target, C20) |
+| C6 | srv-drop-unbound | drop, string-literal name | decl `NameIdent=false` | not-read — bound `{Name, Read:false, UnreadReason:identity_unproven}`, zero catalog queries | `unaudited` boundary (ruling G-1) | `unsupported`+`unaudited`+incomplete | unchanged + channel taint (unprovable write target, C20) |
 | C7 | srv-drop-absent | drop on ordered-proven-absent | ordered `OrderedAbsent` | ordered-only (currently unreachable — premise-dependent) | **two arms**: (a) plain DROP → reject `[p] drop.absent` — refusal proven by absent alone, no privilege needed; (b) `IF EXISTS` → guard no-op + gap `server.drop_privilege` | (a) reject / complete; (b) review / unverified | (a) absent stands; (b) absent stands — a no-op/refusal can't recreate |
 | C8 | srv-create-dup | `CREATE SERVER n`, present | decl `create`; present | proven (premise set — slice excludes create) | reject `[p] ddl.mysql.server.create.dup` — design row, not in slice | reject / complete | unchanged |
 | C9 | srv-create-unknown | create, unproven | same | unknown | review + gap | unverified | unchanged |
@@ -95,57 +112,72 @@ Five-state existence ladder (R1-C.3, corrected bound shapes):
 | C15 | srv-name-truncation | decoded >64 | decoded length | no-capability [PEND] | deferred | — | unchanged |
 | C16 | srv-connection-semantics | HOST/USER/PASSWORD payloads | — | no-capability by design | named aspect — **ruled inapplicable to DROP** (removed from DROP premises); stays a CREATE/ALTER-side proposal, unapproved | named aspect record | unchanged |
 
-### C.1b Ordered-channel contract (R2-B unified algorithm)
+### C.1b Ordered-channel contract (R3-A unified algorithm)
 
-`resolveServer(name)` evaluates in one fixed order — "an entry exists"
-never short-circuits the taint checks:
+`resolveServer(name)` evaluates in one fixed order. **Every barrier and
+write-effect decision completes before any valid-proof consumption or
+provider/cache access** (R3-A.2) — there is no post-read recheck step:
 
-1. `s.contaminated` (whole-batch) → bound-unvouched, no reads.
+1. whole-batch `s.contaminated` → bound-unvouched, no reads.
 2. `serverChannelTainted` → bound-unvouched (channel overlay lost).
-3. Entry check by relation (`R(W, L)` — write/tracked identity vs the
-   looked-up name, symmetric): an entry or prior write
-   **provably-same** as the lookup → consume it; **provably-distinct**
-   → ignore; **unproven** → the lookup's overlay is unproven →
-   unproven-barrier outcome (no promotion).
-4. A valid entry (`orderedAbsent` — proven, uninvalidated) wins over
-   the catalog.
-5. Else the provider read fires via the verbatim objectCache seam —
-   once per verbatim name — and the answer binds (present or
-   read-unknown).
-6. A lookup with a prior **unproven-relation write** gets
-   `server.batch_effects` — the stale catalog value may be
-   superseded by an undischarged modeled write, so it is shadowed,
-   not returned as a clean answer.
+   This is the single consistent stop position for taint — C, D, E all
+   cite step 2, never "the relation step".
+3. Relation scan: classify `R(name, item)` against **every** related
+   channel item — each tracked entry AND each recorded unaudited
+   write. A provably-same hit does NOT stop the scan: other
+   unproven-relation writes may still apply.
+4. If the scan found any applicable unknown effect — a recorded write
+   with provably-same relation (an unaudited write is NOT a
+   consumable fact — R3-A.3), an unproven-relation entry or write,
+   or an entry already holding a barrier — return the **unproven
+   barrier**. No resolver call, no catalog read on this path.
+5. Else if a provably-same entry holds a **valid** ordered proof
+   (`OrderedAbsent` — "an entry exists" is NOT "an entry holds a
+   valid proof"; barriers and tainted entries are not proofs) →
+   consume it.
+6. Only if all of the above permit: the provider read fires via the
+   verbatim objectCache seam — once per verbatim name — and the
+   answer binds (present or read-unknown).
 
-Relation classification `R(A,B)` (sourced, conservative):
+Writes leave records regardless of prior entries (R2-B.5, R3-A.3):
+every unaudited SERVER write appends its identity to `serverWrites`;
+a later lookup whose relation to any recorded write is provably-same
+OR unproven gets the step-4 barrier — a write record is an unknown
+effect, never a consumable fact and never a reason to fall back to
+the catalog. `serverChannelTainted` is set by an unprovable-identity
+write (string-literal name): every subsequent statement exits at
+step 2.
 
-| relation | condition | handling |
+**Transition rule (R3-B.2) — barrier publication is decided by the
+adjudication row's possible effects, not by "unproven outcome"
+alone:**
+
+| pre-state on provably-same identity | statement | modeled transition |
 |---|---|---|
-| provably-same | byte-identical, or ASCII-envelope letter-case variants under the documented CI rule | same object — use/invalidate the matching entry |
-| provably-distinct | ASCII-envelope names differing in something other than letter case | different objects — unaffected |
-| unproven | anything else (non-ASCII, non-letter-case differences like trailing space) | neither used nor ignored — produces an unproven barrier |
+| proven-present / unknown | audited drop with unproven privilege | unproven barrier — may have deleted, may not have run |
+| proven absent | plain DROP (refusal) — IF EXISTS (guard arm or privilege-refusal arm) | **absent stands** — every arm preserves absent; none can create the object |
+| proven absent | unaudited CREATE/ALTER write | invalidated per relation contract (C20) — a write may create |
+| any | unrelated provably-distinct write | untouched |
 
-Writes leave records regardless of prior entries (R2-B.5): every
-unaudited SERVER write appends its identity to the channel's write
-list; a later lookup with an unproven relation to ANY recorded write
-gets the barrier — "no prior entry" is not proof of no prior effect.
-`serverChannelTainted` is set by an unprovable-identity write
-(string-literal name): every subsequent SERVER statement fails step 3.
+A still-valid fact is never cleared merely because a later statement
+might not have run — invalidation requires an actual write relation or
+channel taint.
 
 Entry provenance & immutability (R2-B.6): the ordered projection never
-mutates the cached provider snapshot or prior statements' metadata —
-entries are channel-owned views. `OrderedAbsent` marks only a valid,
-proven, uninvalidated ordered derivation; a tainted or barred identity
-carries no `OrderedAbsent`.
+mutates the cached provider snapshot or prior statements' bound
+metadata — entries are channel-owned views. `OrderedAbsent` marks only
+a valid, proven, uninvalidated ordered derivation; a tainted or barred
+identity carries no `OrderedAbsent`.
 
 | # | unit | contract |
 |---|---|---|
-| C17 | srv-ordered-key | `serverEntries` keyed by `canonical(name)` (ASCII case-fold, scoped basis above); objectCache key verbatim; `NameIdent=false` names have no canonical identity |
-| C18 | srv-ordered-algorithm | the six-step `resolveServer` order above |
-| C19 | srv-ordered-publish | a *proven* drop publishes `servers[canonical]=absent`+`OrderedAbsent` — **currently unreachable** (privilege premise unwired); an unproven-outcome drop publishes the unproven barrier instead |
-| C20 | srv-ordered-invalidate | unaudited SERVER write → per-entry relation: same → mark unproven-barrier; unproven → mark unproven-barrier; distinct → untouched; unprovable identity → channel taint; every write also lands in the write list |
+| C17 | srv-ordered-key | `serverEntries` keyed by `canonical(name)` (ASCII fold — bucket key only); objectCache key verbatim; `NameIdent=false` names have no canonical identity |
+| C18 | srv-ordered-algorithm | the six-step `resolveServer` order above — barriers fully decided in steps 3–4, before any provider/cache access |
+| C19 | srv-ordered-publish | a *proven* drop publishes `servers[canonical]=absent`+`OrderedAbsent` — future-stage contract (premise unwired); barrier publishing follows the transition table above, preserving still-valid absent |
+| C20 | srv-ordered-invalidate | unaudited SERVER write → record + per-item relation: provably-same → barrier; unproven → barrier; provably-distinct → untouched; unprovable identity → `serverChannelTainted` |
 | C21 | srv-ordered-contamination | `s.contaminated` suppresses the channel; channel taint never spreads to table/schema state |
-| C22 | srv-ordered-unknown-barrier | an unproven-outcome drop on a provably-same identity converts its entry to the unproven barrier (catalog present may be stale — the statement may have deleted the object) |
+| C22 | srv-ordered-unknown-barrier | the step-4 outcome: an undischarged unknown effect on the identity — never promotes absent, never falls back to catalog, never calls resolver |
+
 
 ## C.2 SRS family — the 33-row table, corrected (R2-C)
 
@@ -168,8 +200,8 @@ carries no `OrderedAbsent`.
 | 1 | srs-parse-invalid | grammar | proven | parser_error | parser_error / — | unchanged |
 | 2 | srs-dup-attr | `DuplicateAttrs` | proven | `[p] srs.attr.duplicate` reject | reject / per-check complete | unchanged |
 | 3 | srs-missing-attr | `HasName`/`HasDefinition`=false | proven | `[p] srs.attr.missing` reject — absent attrs are preserved facts (empty attr list still recognized); only missing attr *values* fall back unclaimed | reject / per-check complete | unchanged |
-| 4 | srs-len-violate | byte len of unquoted spelling | partial | compliance arm: `byte_len ≤ cap` → chars≤bytes≤cap → compliant (per-check); **violation arm → `no-capability`**: escapes shorten the decoded form (e.g., `\\\\`), so even single-byte spelling can't prove the decoded length; registered until a decode measure exists — no decode/SQL-mode/payload expansion this round | per-check: pass / complete, else boundary+gap | unchanged |
-| 5 | srs-newline-def | `DefHasNewline` | positive-witness | `true` → `[p] srs.def.newline` reject; `false` → unproven-clean | reject / complete on true; review+gap `srs.def_newline_unproven` / unverified on false | unchanged |
+| 4 | srs-len-violate | byte len of unquoted spelling | partial | compliance arm: `byte_len ≤ cap` → chars≤bytes≤cap → compliant (per-check); **violation arm → `no-capability`**: escapes shorten the decoded form (e.g., `\\\\`), so even single-byte spelling can't prove the decoded length — an *implementation-capability* miss, not a missing external fact | per-check: pass / complete on the compliance arm; **named implementation boundary / incomplete** on the violation arm — no EvidenceGap of the same origin | unchanged |
+| 5 | srs-newline-def | `DefHasNewline` | positive-witness | `true` → `[p] srs.def.newline` reject (per-check); `false` cannot prove the decoded content is newline-free — that needs the same decode capability → named implementation boundary | reject / complete on true; **named implementation boundary / incomplete** on false — no `srs.def_newline_unproven` external-fact gap | unchanged |
 | 6 | srs-srid0 | `SRID==0` | proven | `[p] srs.srid0` reject | reject / complete | unchanged |
 | 7 | srs-srid-reserved | reserved table | proven | warning `[p] srs.reserved_range.warn` — **single check; cannot alone yield statement complete** | review / per-check | unchanged |
 | 8 | srs-org-pair | bare ORGANIZATION | grammar-unreachable | unclaimed → base grammar diagnostic | parser_error / — | unchanged |

@@ -206,27 +206,37 @@ invalidation shadowing catalog reads, channel-scope contamination for
 unprovable identity scope, convergent-arm post-state bounded by its
 premise list, and the proven-absent reject / guarded no-op pair.
 
-## G-src.7 Minimal recognizer fragment — SRS empty / absent attribute path
+## G-src.7 Minimal recognizer fragments — SRS attr return paths
 
-Path: `internal/infrastructure/parser/tidb/mysql_srs.go` (candidate
-`7c2c1f23`). Shows that an *absent* attribute is a preserved
-declaration fact, not a recognizer rejection (R2-D.4).
+Path: `internal/infrastructure/parser/tidb/mysql_srs.go` (accepted
+product `7c2c1f23`; function unchanged since). Two fragments requested
+by R3-D.1: (a) a missing/non-string attribute *value* reject branch;
+(b) the actual success-return tail after the loop — together they
+prove the empty-`rest` path returns `true` and the missing-value path
+returns `false`. Fragment boundaries are non-contiguous and marked.
 
-[verbatim — `mysqlSRSAttrs`, lines 139–147]
+[verbatim — `mysqlSRSAttrs`, NAME case, missing/non-string value
+reject — lines 149–152]
 
 ```go
-func mysqlSRSAttrs(sqlText string, rest []sqlTok, decl *spec.SpatialReferenceDeclaration) bool {
-	seen := map[string]bool{}
-	dup := func(name string) {
-		if seen[name] {
-			decl.DuplicateAttrs = append(decl.DuplicateAttrs, name)
-		}
-		seen[name] = true
-	}
-	for i := 0; i < len(rest); {
+		case rest[i].wordIs(sqlText, "name"):
+			if i+1 >= len(rest) || rest[i+1].kind != tokStr {
+				return false
+			}
 ```
 
-[verbatim — `mysqlSRSCreate`, lines 252–255]
+[verbatim — same function, loop end + success return — lines 214–219]
+
+```go
+		default:
+			return false
+		}
+	}
+	return true
+}
+```
+
+[verbatim — `mysqlSRSCreate`, caller guard — lines 252–255]
 
 ```go
 	decl := &spec.SpatialReferenceDeclaration{Kind: kind, SRID: srid, IfNotExists: ine}
@@ -235,11 +245,14 @@ func mysqlSRSAttrs(sqlText string, rest []sqlTok, decl *spec.SpatialReferenceDec
 	}
 ```
 
-[derived] with `rest` empty the `for` body never runs and
-`mysqlSRSAttrs` returns `true` — `CREATE SPATIAL REFERENCE SYSTEM 4326`
-(no attributes) is recognized with every `Has*` flag false. A missing
-attribute *value* (`NAME` followed by a non-string) hits a case's
-`return false`, unwinding the whole claim into the base grammar's
-diagnostic. So absent attributes stay declaration facts for the
-semantic row (C.2 row 3), while malformed attributes own the grammar
-gate (row 8 is unreachable the same way).
+[derived] fragment (b) is the complete tail: after the `for` loop the
+only remaining statement is `return true` — no post-loop required-attr
+check exists — so `rest == []` skips the loop and returns `true`
+(every `Has*` flag false → absent attrs are preserved declaration
+facts for C.2 row 3). Fragment (a) shows `NAME` followed by EOF or a
+non-string hits `return false` — the same shape guards `definition`,
+`organization` (twice: org string, then the `IDENTIFIED BY <u32>`
+triple), and `description`; `default: return false` covers unknown
+attrs (the `srs_attribute` keyword list is not part of the
+recognizer). The caller's `nil,false` then falls back to the base
+grammar diagnostic — row 8's unclaimed path.

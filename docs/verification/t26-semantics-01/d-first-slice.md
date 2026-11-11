@@ -1,130 +1,129 @@
-# T26-SEMANTICS-01 §D — recommended first implementation slice (R2 revision)
+# T26-SEMANTICS-01 §D — recommended first implementation slice (R3 revision)
 
 **Slice: `DROP SERVER` audited adjudication on MySQL** (decision-table
-units C3–C7 + ordered-channel contract C17–C22). The R2 ruling cut the
-scope honestly: **no premise this slice needs is missing except the
-privilege proof — and that one is missing**, so the reachable surface is
-existence findings + bounded gaps + the unknown-barrier ordered layer;
-publishing a proven `absent` (and therefore the ordered-absent arms
-D6/D7 consuming it) is premise-dependent future work. CREATE/ALTER
-SERVER and every TiDB form keep their named boundaries.
+units C3–C7 + ordered-channel contract C17–C22). Per R3-B.3 this slice
+adopts the **smaller, currently-reachable** scope: boundary narrowing,
+existence findings, bounded gaps, barriers, write records,
+invalidation, and identity-relation protection. `OrderedAbsent` —
+its representation, the successful publish path, and every arm that
+consumes it — stays a **future premise-supply-stage design contract**,
+not code required by this slice.
 
-## D.0 What is reachable now vs premise-dependent (R2-A.5)
+## D.0 What is reachable now vs premise-dependent
 
 Reachable under the current fact set (`decl.*` + `server.existence` +
-the resolver seam):
+the resolver seam) — **this slice implements exactly these**:
 
 - audited (non-boundary) adjudication of `DROP SERVER` on MySQL
   `NameIdent` forms — the boundary narrows;
 - existence findings (`present` provable, others gap-carrying);
-- the bounded `server.drop_privilege` gap on every non-refusal drop
-  arm → `coverage=unverified`;
+- the bounded `server.drop_privilege` gap on every non-terminal-refusal
+  drop arm → `coverage=unverified`;
 - the ordered layer's full protective semantics: unknown barriers,
-  taint, invalidation, alias relations — these guard *every*
-  subsequent statement, they don't depend on absent publishing.
+  channel taint, write records, relation-checked invalidation — all
+  protecting *every* subsequent statement without needing absent
+  publishing.
 
-Premise-dependent (registered, not implemented this slice):
+Future premise-supply stage (registered design contract only — D.4;
+**not implemented in this slice**):
 
-- publishing `servers[canonical]=absent` + `OrderedAbsent` — needs the
-  minimal premise supply: a wired privilege fact for `DROP SERVER`
-  (e.g., a grants/privilege read on the T24 premise-bundle pattern) or
-  a separately-approved exclusion ruling. No privilege collection is
-  implemented this round;
-- every arm that consumes ordered-absent (C7/D6–D7) stays a designed
-  contract until a proven drop exists.
+- `OrderedAbsent` representation, the successful `absent` publish
+  path, and every arm consuming ordered-absent (C7 arms, D6/D7 rows
+  below marked `[dep]`) — gated on a wired privilege fact for
+  `DROP SERVER` (e.g., a grants read on the T24 premise-bundle
+  pattern) or a separately-approved exclusion ruling. No privilege
+  collection is implemented this round; the publish path is not
+  activated by assumed wording or an unwired boolean.
 
 ## D.1 Included rows (aligned columns)
 
 | row | statement | decl facts | provider/ordered facts | privilege | outcome | coverage | modeled post-state |
 |---|---|---|---|---|---|---|---|
-| D1 | `DROP SERVER \`n\``, present | `drop`,`NameIdent` | proven-present | unproven → gap | notice + gap `server.drop_privilege` | review / unverified | unproven-barrier |
-| D2 | `DROP SERVER \`n\``, unproven | same | unbound/unvouched/not-read/read-unknown | unproven → gap | notice + gaps `server.existence`,`server.drop_privilege` | review / unverified | unproven-barrier |
+| D1 | `DROP SERVER \`n\``, present | `drop`,`NameIdent` | proven-present | unproven → gap | notice + gap `server.drop_privilege` | review / unverified | unproven-barrier (transition table, C.1b) |
+| D2 | `DROP SERVER \`n\``, unproven | same | bound-unvouched / not-read / read-unknown / unbound | unproven → gap | notice + gaps `server.existence`,`server.drop_privilege` | review / unverified | unproven-barrier |
 | D3 | `DROP SERVER IF EXISTS \`n\``, present | `IfExists`+ | proven-present | unproven → gap | notice + gap | review / unverified | unproven-barrier |
 | D4 | `DROP SERVER IF EXISTS \`n\``, unproven | `IfExists`+ | unproven | unproven → gap | notice + gaps | review / unverified | unproven-barrier — C.4 arm-2 keeps present possible |
-| D5 | `DROP SERVER 'n'` (literal) | `NameIdent=false` | resolver invoked → `identity_unproven`, zero catalog queries | n/a (boundary) | `unaudited` boundary | incomplete | unchanged + channel taint (C20) |
-| D6 | `DROP SERVER \`n\`` on ordered-absent | `drop`,`NameIdent` | `OrderedAbsent` (unreachable) | n/a — refusal proven by absent alone | reject `[p] drop.absent` | reject / complete | absent stands |
-| D7 | `DROP SERVER IF EXISTS \`n\`` on ordered-absent | `IfExists`+ | `OrderedAbsent` (unreachable) | unproven → gap | guard no-op + gap `server.drop_privilege` | review / unverified | absent stands |
-| D8 | drop on unproven-barrier / tainted | — | overlay unproven | — | notice + gap `server.batch_effects` | review / unverified | withheld (barrier stands) |
+| D5 | `DROP SERVER 'n'` (literal) | `NameIdent=false` | resolver invoked → bound not-read `identity_unproven`, zero catalog queries | n/a (boundary) | `unaudited` boundary | incomplete | unchanged + `serverChannelTainted` (C20) |
+| D6 `[dep]` | `DROP SERVER \`n\`` on ordered-absent | `drop`,`NameIdent` | `OrderedAbsent` | n/a — refusal proven by absent alone | reject `[p] drop.absent` | reject / complete | absent stands |
+| D7 `[dep]` | `DROP SERVER IF EXISTS \`n\`` on ordered-absent | `IfExists`+ | `OrderedAbsent` | unproven → gap | guard arm + gap `server.drop_privilege` — every arm (guard no-op, privilege refusal) preserves absent; the no-op is NOT a proven runtime success | review / unverified | absent stands |
+| D8 | drop consumed on barrier / tainted channel | — | step-4 barrier or step-2 taint | unproven → gap | notice + gaps `server.batch_effects`,`server.drop_privilege` — batch_effects replaces the duplicate existence reason per the T04 dedup contract; the independent privilege gap is NOT waived (R3-B.1) | review / unverified | barrier stands |
 | D9 | resolver failure | — | error propagates | — | audit error — never a gap, never cached absence | n/a | n/a |
 
 `server.connection_semantics` is ruled inapplicable to DROP (R2-A.1) —
 it appears nowhere above. `server.execution_premises` as an umbrella
-exclusion is rejected (R2-A.2) — the concrete premise gap
-`server.drop_privilege` replaces it.
+exclusion is rejected (R2-A.2) — the concrete gap
+`server.drop_privilege` replaces it and is registered on every
+non-terminal-refusal drop arm, including barrier-consuming ones
+(R3-B.1: a barrier only says the pre-state is unproven; it does not
+prove this statement refused, so R4 point 6 cannot waive the premise).
 
-## D.2 Ordered identity (R2-B.2/4)
+## D.2 Ordered identity — single relation table (R3-A)
 
-- **objectCache request key**: verbatim decoded name — unchanged.
-- **ordered channel key**: `canonical(name)` = ASCII letter-case fold —
-  scoped basis only: the documented `server_name` rule is
-  case-insensitive (R1 A.5 + R2 §1 — G-src.2/3) and within the
-  documented CI collations for this column ASCII letter-case variants
-  name the same object. No claim that fold equals the collation, and no
-  claim that different fold-keys prove different objects.
-- **Relation `R(A,B)`** — symmetric for writes and lookups:
+Relation `R(A,B)` uses the single mutually-exclusive table in §C —
+identical in C, D, and E, no per-document envelope:
 
-  | relation | condition | effect |
-  |---|---|---|
-  | provably-same | byte-identical, or ASCII-envelope letter-case variants | same object — consume / invalidate |
-  | provably-distinct | ASCII-envelope names differing outside letter case | different objects — unaffected |
-  | unproven | anything else (non-ASCII, non-letter-case deltas) | unproven barrier |
+| relation | sufficient condition | effect |
+|---|---|---|
+| provably-same | byte-identical; OR ASCII-envelope + ASCII-fold-equal | same object — consume entry / same identity |
+| provably-distinct | ASCII-envelope; fold-different; difference not space-only (non-space char differs at same length, or longer tail contains non-space) | different objects — unaffected |
+| unproven | everything else (non-ASCII, or space-only deltas) | unproven barrier |
 
-- `DROP s1; DROP S1;` — stmt2 canonical `S1`→`s1`, provably-same → hits
-  stmt1's entry (barrier under current capability; ordered-absent arm
-  when the premise lands). The stale catalog `present` is never
-  re-promoted for the same object.
+- `canonical(name)` = ASCII fold is a **bucket key**, not an identity
+  verdict — different fold keys never prove different objects.
+- `DROP s1; DROP S1;` — provably-same → stmt2 hits stmt1's step-4
+  barrier (or ordered-absent once the premise lands).
+- `DROP \` s1\`; DROP \`s1\`` — leading-space delta → `R` unproven →
+  stmt2 gets the step-4 barrier **before** any resolver call — the
+  verbatim-objectCache regression keeps its own seam and identity;
+  it does not pre-decide this ordered-channel outcome.
 - Reverse-alias shapes share one algorithm: non-ASCII write then ASCII
-  lookup → `R` unproven → barrier; ASCII entry then non-ASCII write →
-  `R` unproven → the *entry* becomes barrier (write side of the
-  symmetric check, not lookup-side only).
+  lookup, or ASCII entry then non-ASCII write — `R` unproven on the
+  write side marks the entry a barrier; on the lookup side it returns
+  the barrier at step 4.
 
-## D.3 Invalidation + unknown barriers (R2-B.1/3/5/6)
+## D.3 Unified resolve order + transition rules (R3-A.2/A.3, R3-B.2)
 
-Unified `resolveServer` order (C.1b): batch contamination → channel
-taint → entry/alias relation check → valid ordered proof →
-provider/cache. "Entry exists" never short-circuits taint.
+Six-step `resolveServer` (identical to C.1b):
 
-1. **Unproven-outcome drop** (every drop under current capability —
-   the privilege premise is missing): on a provably-same identity the
-   entry becomes an **unproven barrier** — the statement may have
-   deleted the object, so the audit-time catalog `present` may be
-   stale and `absent` is unproven. Neither value is promoted.
-2. **Unaudited SERVER write** (boundary CREATE/ALTER, literal-name
-   DROP): never publishes; records a write + taints by relation —
-   provably-same key → that entry becomes barrier; unproven relation
-   → barrier too; provably-distinct → untouched; unprovable identity
-   (literal name) → `serverChannelTainted` (every later statement
-   fails the relation step).
-3. **First-appearance writes are recorded** (R2-B.5): an unaudited
-   CREATE on a name with no prior entry still lands in the channel's
-   write list; a later lookup with an unproven relation to any
-   recorded write gets `server.batch_effects` — "no prior entry" is
-   not proof of no prior effect.
-4. **Priority**: channel taint > entry barrier > valid ordered proof >
-   catalog. A still-valid fact is never cleared merely because a later
-   statement might not have run — invalidation requires an actual
-   write relation (R2-A.3).
-5. **Immutability**: ordered entries are channel-owned views; the
-   cached provider snapshot and prior statements' bound metadata are
-   never modified (R2-B.6).
+1. whole-batch `s.contaminated` → bound-unvouched;
+2. `serverChannelTainted` → bound-unvouched — the single taint stop;
+3. relation scan over **every** related entry AND recorded write —
+   a provably-same hit does not stop the scan;
+4. any applicable unknown effect (provably-same recorded write —
+   not a consumable fact; unproven relation; existing barrier) →
+   return **unproven barrier** — no resolver call on this path;
+5. else a provably-same entry holding a **valid** ordered proof →
+   consume it ("entry exists" ≠ "entry holds a valid proof");
+6. only then provider/cache read (verbatim key) → bind answer.
 
-## D.4 `OrderedAbsent` representation (G-4 contract, premise-gated)
+Transition rule (same table as C.1b): barrier publication follows the
+adjudication row's possible effects — present/unknown pre-state +
+unproven drop → barrier; **proven absent stays absent** under every
+arm (refusal / guard / privilege failure — none create); unaudited
+writes invalidate by relation (same → barrier, unproven → barrier,
+distinct → untouched, unprovable identity → channel taint). Entries
+are channel-owned views; the provider snapshot and prior statements'
+bound metadata are never mutated.
+
+## D.4 Future-stage contract: `OrderedAbsent` (registered, not in slice)
 
 `spec.ServerState` gains `OrderedAbsent bool` (recommended over
 `Status=not_found` — that vocabulary stays catalog-only). Contract:
 
 - `OrderedAbsent=true` ⇒ `Exists=false`, `Status` ≠ `not_found`,
   `Read` never set by the ordered channel, mutually exclusive with
-  `Exists=true`; it marks only a **valid, proven, uninvalidated**
-  ordered derivation;
-- set only by a same-adjudication *proven* drop — **currently
-  unreachable** while `server.drop_privilege` is unwired (D.0);
-- cleared into the unproven barrier by write relation or channel taint;
-- consumers (rule + `apply`) read ONE adjudicated existence:
-  `OrderedAbsent` → absent; else `Read && Exists` → present; else
-  unknown — including `Read=true` zero-rows.
+  `Exists=true`; marks only a valid, proven, uninvalidated ordered
+  derivation;
+- set only by a same-adjudication *proven* drop — requires the
+  privilege-premise supply registered in D.0; **not implemented or
+  activated in this slice**;
+- cleared into the unproven barrier by write relation or channel
+  taint (transition table);
+- consumers read ONE adjudicated existence: `OrderedAbsent` → absent;
+  else `Read && Exists` → present; else unknown — including
+  `Read=true` zero-rows.
 
-## D.5 Seams and expected files
+## D.5 Seams and expected files (this slice only)
 
 1. `internal/infrastructure/parser/tidb/coverage_boundary.go` —
    narrow the `DDL.Server` MySQL branch: `Operation==drop_server &&
@@ -133,39 +132,41 @@ provider/cache. "Entry exists" never short-circuits taint.
 2. `internal/domain/rule/ddl/mysql_server_rules.go` — **new**:
    `AppliesTo`: `Kind==DDL && Dialect==mysql && DDL.Server!=nil &&
    Operation==drop_server && Unsupported==nil`; `Evaluate` reads the
-   adjudicated existence (binder-merged, C.1b) → notice /
-   notice+gaps / reject; `EvidenceGaps`: `server.existence`,
-   `server.drop_privilege`, `server.batch_effects` as applicable.
+   adjudicated existence → notice / notice+gaps / reject;
+   `EvidenceGaps`: `server.existence`, `server.drop_privilege`,
+   `server.batch_effects` as applicable.
 3. `internal/domain/rule/ddl/register.go` — one config-gated entry.
 4. `internal/application/audit/batch_state_server.go` — **new**:
-   `serverEntries map[string]*batchServerEntry` (canonical keys) +
-   `serverWrites []serverWrite` (recorded unaudited writes) +
-   `serverChannelTainted bool` + `resolveServer` (C.1b six-step
-   order → merges over the verbatim-name resolver seam) +
-   `applyServerStatement` (barrier writes + taint + write records) +
+   `serverEntries map[string]*batchServerEntry` (fold-key buckets) +
+   `serverWrites []serverWrite` + `serverChannelTainted bool` +
+   `resolveServer` (six-step order, barriers before provider) +
+   `applyServerStatement` (barrier/transition/write records/taint) +
    `projectServerEntry` (confirmed / unavailable / barrier — never
-   `not_found`, never mutates the cached snapshot).
+   `not_found`, never mutates the cached snapshot). The
+   `OrderedAbsent` publish branch is left as the documented future
+   stage — the entry type carries the shape but no statement can set
+   it under this slice.
 5. `internal/application/audit/batch_state_server_srs.go` —
    `bindMySQLServer` merges the ordered overlay over the provider
-   answer (channels disjoint, G-src.4); literal-name path keeps its
-   unissued-read contract.
+   answer; literal-name path keeps its unissued-read contract.
 6. `internal/application/audit/batch_state.go` — replace the SERVER
    early-return (~line 410): SERVER statements route to
-   `applyServerStatement` (barrier/taint/publish); tracked schema/table
-   model untouched; SRS early-return unchanged.
-7. `internal/domain/spec/server.go` — `OrderedAbsent bool` + contract
-   comment (premise-gated).
-8. Module READMEs; tests in `batch_state_t26_test.go` + rule tests +
+   `applyServerStatement`; tracked schema/table model untouched; SRS
+   early-return unchanged.
+7. Module READMEs; tests in `batch_state_t26_test.go` + rule tests +
    boundary-narrowing parser cases.
+
+The `spec.ServerState.OrderedAbsent` field and publish arm move to the
+premise-supply stage's file list — D.5 contains no publish-path code.
 
 ## D.6 Order of work
 
-1. Entry/barrier/write-list model + `resolveServer` six-step order →
-   2. `applyServerStatement` barrier/taint/write records →
-   3. bind merge → 4. boundary narrowing → 5. rule + registration →
-   6. verification cases (§E). The `OrderedAbsent` publish path is
-   implemented behind the same contract but stays unreachable until
-   the privilege premise lands.
+1. entry/barrier/write-list model + `resolveServer` six-step order →
+2. `applyServerStatement` transitions + write records + taint →
+3. bind merge → 4. boundary narrowing → 5. rule + registration →
+6. verification cases (§E, `[cur]` items only as this round's gate;
+   `[dep]` expectations are future-stage assertions, not executable
+   gates here).
 
 ## D.7 Boundaries that stay
 

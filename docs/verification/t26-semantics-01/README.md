@@ -17,9 +17,14 @@ and contract record awaiting reviewer adjudication.
   **CHANGES REQUIRED** under T26-SEMANTICS-01/R1
 - R1 revision: `5640954ee760d92011677a8b37add64579b81ab5`
   (tree `f9ea2a34367c0ba9b90558b24959e503e6423433`) — ruled
-  **CHANGES REQUIRED** under T26-SEMANTICS-01/R2; this directory now
-  carries the R2 revision (privilege-gap adjudication, unified ordered
-  algorithm, SRS single-check merge contract, evidence-layer tagging)
+  **CHANGES REQUIRED** under T26-SEMANTICS-01/R2
+- R2 revision: `ac5433373b8d2e04e5d400a618d8dad669c4a3b9`
+  (tree `7c155e90f0d9f7df9a92da96ead0b58509098c8c`) — ruled
+  **CHANGES REQUIRED** under T26-SEMANTICS-01/R3; this directory now
+  carries the R3 revision (mutually-exclusive relation classes,
+  barriers-before-provider resolve order, absent-preserving
+  transitions, SRS capability-vs-fact gap split, real return-path
+  fragments)
 - current document commit: registered in the delivery receipt for this
   round — the hash cannot pre-exist inside the commit that creates it
 - changed files: this directory only
@@ -31,11 +36,11 @@ and contract record awaiting reviewer adjudication.
 | file | answers |
 |---|---|
 | `b-prior-materials.md` | §B — prior-materials inventory + approval status (approved / applied-ruling / proposal / revised / missing) |
-| `c-decision-table.md` | §C — consolidated decision table (R2 revision): R2-A privilege-gap adjudication + unknown barriers, six-step ordered algorithm C17–C22 with symmetric relation classes, SRS 33 rows under the single-check merge contract, full C.4 branch derivation |
-| `d-first-slice.md` | §D — first slice `DROP SERVER` (R2 revision): reachable-vs-premise-dependent scope, relation classes, barrier/taint/write-record invalidation, premise-gated `OrderedAbsent` |
-| `e-verification-plan.md` | §E — verification plan, 22 cases, plan/unexecuted (R2 revision: three observation layers, cur/dep split, reverse-alias + first-write cases) |
+| `c-decision-table.md` | §C — consolidated decision table (R3 revision): mutually-exclusive R(A,B) classes with provable domain, barriers-before-provider six-step resolveServer + absent-preserving transition table, privilege gap on all non-terminal-refusal drops, SRS capability-vs-external-fact gap split |
+| `d-first-slice.md` | §D — first slice `DROP SERVER` (R3 revision): smaller reachable scope (OrderedAbsent moved to future stage), single relation table, unified order + transitions, D8 dual gaps |
+| `e-verification-plan.md` | §E — verification plan, 21 cases, plan/unexecuted (R3 revision: ordered-state seam note, E10 write-record barrier, E13 single-request outcome, explicit [dep] preconditions) |
 | `f-matrix-correspondence.md` | §F — cli_*/db_* cell correspondence + G-1..G-8 R1 dispositions (R2-updated drop expectations) |
-| `g-source-excerpts.md` | §G-src — source excerpts with provenance labels (verbatim/comment/derived): R4 complete contract, R1 A.4/A.5, R2 §1/§5, T04 anchors, invalidation precedent, SRS empty-attr recognizer fragment |
+| `g-source-excerpts.md` | §G-src — source excerpts with provenance labels (verbatim/comment/derived): R4 complete contract, R1 A.4/A.5, R2 §1/§5, T04 anchors, invalidation precedent, SRS return-path fragments (reject branch + success tail) |
 
 ## Source anchors reused (not re-copied)
 
