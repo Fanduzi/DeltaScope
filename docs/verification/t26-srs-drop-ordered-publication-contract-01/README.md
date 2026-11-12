@@ -42,16 +42,31 @@ execution work order is required after acceptance.
 Publication happens at own-apply, driven by the shared adjudication —
 the single-truth rule is preserved.
 
-| arm | publishes? | keeps existing entry? | own-P recorded | stale channels |
-|---|---|---|---|---|
-| B (blocked) | no | yes, untouched | n/a (never reached premise) | entry/state unchanged |
-| S0 | no | yes | projection carried, unused | unchanged |
-| S1 (positive dep witness) | no | yes | carried | unchanged |
-| A-plain (absent_refused) | **yes** | entry minted/kept | `unproven`-equivalent provenance, never consumed | unchanged |
-| A-IE✓ (absent_noop) | **yes** | minted/kept | `consumable`, consumed | unchanged |
-| A-IE? (absent_conditional) | **yes** | minted/kept | `unproven`/`suppressed`, owed `[P]` | unchanged |
-| S2 (unproven) | no | yes | as projected | mints `srsExistenceStale[srid]` (existing rule — unchanged); the stale flag then shadows the SRID's entry for every later statement |
-| boundary (any non-audited SRS write) | no | sets `barrier` on the SRID's entry | n/a | mints `srsExistenceStale[srid]` (existing) |
+Unified publication/keep/invalidation table (R3-A2). `ownPrivilege`
+records the producer's **actual** premise projection — never rewritten
+as "unused/unconsumed" (R3-A1):
+
+| situation | action on the SRID's entry | own-P recorded | stale channels |
+|---|---|---|---|
+| A arm + catalog `ValidAbsence` + no existing entry | **mint** `{absent,sourceArm,ownPrivilege,publishedIdx,barrier:false}` | actual premise | unchanged |
+| A arm + catalog `ValidAbsence` + existing active entry | keep the earliest producer's full provenance (earliest wins) | entry unchanged | unchanged |
+| A arm reached via `OrderedAbsentConsumed` (hit) | consume the existing entry — no re-mint, no fabricated catalog `Read`/`Absence`, no new source attribution | entry unchanged | unchanged |
+| B / S0 / S1 | no entry created | actual projected premise (never consumed by these arms) | unchanged |
+| S2 (unproven) | no absence published; an existing same-SRID entry gets `barrier=true` | as projected | mints `srsExistenceStale[srid]` (existing rule) + flips entry barrier |
+| boundary (any non-audited SRS write) | no absence published; an existing same-SRID entry gets `barrier=true` | n/a | mints `srsExistenceStale[srid]` (existing) + flips entry barrier |
+
+Premise projections per arm (exact):
+
+- B/S0/S1 carry their actual projected premise; these arms never
+  consume it.
+- A-plain carries the actual premise (consumable, unproven, or
+  suppressed) — it never consumes it and never gains a
+  `conditional_audit` marker from a positive witness. Under the
+  default SUPER fixture OP-1a therefore records
+  `ownPrivilege=consumable, consumed=false`.
+- A-IE✓: premise consumable → consumed; the marker belongs to that
+  statement.
+- A-IE?: premise unproven/suppressed → owed `[P]`.
 
 Rulings:
 
@@ -69,9 +84,10 @@ Rulings:
 4. Statement outcome never substitutes for post-state proof: an entry
    exists only because an A arm carried a certified fact, never because
    a projection "looked like" a drop.
-5. Re-publication is idempotent: a second A arm on the same SRID keeps
-   the first entry (earliest producer wins — provenance records the
-   first certified statement; a later hit already consumed it).
+5. Re-publication keeps the earliest producer: `publishedIdx` records
+   the statement index **within the producing enrich call** — it is
+   not a cross-enrich global sequence; a later enrich's index restarts
+   and must not re-key provenance (R3-A5).
 
 ## 3. OP-B — carrier, identity, conditioning
 
@@ -94,8 +110,7 @@ srsOrderedEntry {
 and every consumer must read `OrderedAbsent` explicitly. `ValidAbsence`
 is unchanged — it is the *catalog* predicate. The A-slot predicate in
 the arm table becomes `ValidAbsence(state, srid) || OrderedAbsentConsumed(state, srid)`
-where `OrderedAbsentConsumed` = `OrderedAbsent && !barrier && same authored SRID`
-(the SRID equality is structural — entries are keyed by it).
+— the single definition of `OrderedAbsentConsumed` lives in §4.5.
 
 **Identity**: keyed on authored `uint32` SRID only. A resolver state
 whose `Absence` is for a foreign SRID, a contradictory field set
@@ -169,28 +184,44 @@ deps answer turned positive or errored).
 Unique scheme (no implementation-time fallback):
 
 - The hit path dispatches a deps-only request **directly to the
-  provider resolver** — `resolveObjectSnapshot`/provider call — never
-  through `cachedObjectResolver`. objectCache is not consulted and not
-  written for deps-only requests.
+  provider** — never through `cachedObjectResolver`. objectCache is
+  not consulted and not written for deps-only requests.
 - Request form: `ObjectLookupRequest{Type:"mysql_spatial_reference_system",
   Name: <authored SRID decimal>, Qualifiers: {srs_facts:"dependencies"}}`
   — new qualifier constant `ObjectLookupQualifierSRSFields` /
   value `dependencies` (implementation seam).
-- Capability: the MySQL provider implements a deps-only branch
-  (optional interface `MySQLSRSDependencyReader` — implementation
-  seam). If the wired resolver does not honor the qualifier, the
-  ordered entry is **not consumed** for that statement: it takes the
-  existing full path (fresh Qexist+Qdeps+Qo; the entry remains
-  provenance). This is the single determinate fallback — there is no
-  "decide later" branch.
+- **Capability contract (executable determination, R3-B1)**: the
+  object checked is `state.provider` — the wired provider itself,
+  not the request-level resolver adapter. The minimal contract is one
+  optional interface:
+
+  ```
+  type MySQLSRSDependencyReader interface {
+      // Runs the support gate (Qo) + the ST_GEOMETRY_COLUMNS witness
+      // read for srid. Never issues the existence query. Returns the
+      // fresh witness fact; read errors propagate.
+      ResolveMySQLSRSDependencies(ctx, srid uint32) (*spec.SRSDependencyFact, error)
+  }
+  ```
+
+  The enrich wiring hands the bind an uncached forwarder function
+  alongside `mysqlSRSResolver`: `srsDepsReader` — set only when
+  `state.provider` satisfies the interface. The bind checks
+  `s.srsDepsReader != nil`: non-nil → ordered consumption available;
+  nil → §4.4's no-capability row (entry not consumed, existing full
+  path). A plain `ResolveObject` implementation does NOT imply the
+  capability; the wrapper/adapter is never probed — only the provider.
 - Qo is still issued inside the deps call (the provider's support
   gate is per dispatch); an unparseable Qo does not zero the deps
   query — the accepted full-path direction (reads still run, only
   `Absence` supply stops) is preserved.
 
-### 4.4 Result/merge table (R2-A3)
+### 4.4 Result/merge table (R2-A3 + R3-B)
 
-Bound state on an ordered hit is built ONLY from the entry + the
+The ordered branch is committed FIRST (capability + active entry both
+checked), and only then is the marker bound — `OrderedAbsent=true`
+is never written on a path that later falls back (R3-B3). Bound state
+on a committed ordered hit is built ONLY from the entry + the
 deps-only response:
 
 | field | value on hit | source |
@@ -200,21 +231,25 @@ deps-only response:
 | Dependencies | fresh fact or nil | deps-only response |
 | Read / Exists / Absence / Status / UnreadReason / CatalogName / NameConflict / OrgConflict | all zero | never touched — the skipped existence read is not laundered into catalog fields |
 
-- **nil snapshot / nil SpatialReference** → `Dependencies=nil` → no
-  S1 witness available → A arm proceeds (the absence fact is already
-  certified; the witness only supplies S1 precedence).
-- **identity mismatch** (`snapshot.SpatialReference.SRID != authored`)
-  → the deps fact is foreign → discarded → `Dependencies=nil` → A arm
-  proceeds; a foreign answer is never promoted.
-- **positive deps fact** → S1 outranks → refused_dependency (arm
-  table unchanged; `srsDropDependencyWitness` still validates
-  every column's declared SRID).
-- **read error** → propagates through bind; no adjudication, no
-  own-apply for that statement, no new publication; the prefix
-  statement's bound snapshot and the existing entry are unchanged.
-- **no deps capability** → §4.3 fallback: entry unconsumed, full path.
-- A full-lookup return value never overwrites an ordered bound state;
-  the skipped existence query is never recorded as an executed read.
+Response-branch table (the determinate cases; attempts vector is
+`(R,Qexist,Qdeps,Qo)`):
+
+| deps-only outcome | merge result | arm consequence | attempts |
+|---|---|---|---|
+| healthy supported, empty deps fact | `Dependencies = fact (0 cols)` | A arm stands | (1,0,1,1) |
+| healthy supported, positive valid witness + `!srsDepsStale` | `Dependencies = fact` | **S1** refused_dependency (witness unchanged — `srsDropDependencyWitness` still validates per-column SRID) | (1,0,1,1) |
+| positive witness + `srsDepsStale` | `Dependencies = fact` | witness demoted → A arm stands (OP-4b control) | (1,0,1,1) |
+| nil snapshot / nil SpatialReference | `Dependencies=nil` | no S1 witness available → A arm proceeds | (1,0,1,1) |
+| outer `SpatialReference.SRID != authored` | deps fact foreign → discarded → `Dependencies=nil` | A arm proceeds; a foreign answer is never promoted. **Return-contract member (R3-B4)**: the outer-SRID admission check is new — the baseline helper validates per-column SRID only, so this filtering belongs to the deps-only reader's contract. A foreign outer state carrying authored-SRID columns is a custom/non-contract response — the contract registers it as discard-to-nil, never claiming real mysqlmeta produces it | (1,0,1,1) |
+| proven unsupported (Qo parsed, major<8) | support gate short-circuits before the catalog query — deps fact unavailable → `Dependencies=nil`, `OrderedAbsentConsumed` still holds (the certified absence stands), arm proceeds A | (1,0,0,1) |
+| unparseable Qo | accepted direction preserved — the deps read still issues, `Absence` supply is irrelevant on this path | (1,0,1,1) |
+| Qo/query/read error | propagates through bind — no adjudication, no own-apply for that statement, no new publication; the prefix statement's bound snapshot and the existing entry are unchanged | partial, per actual attempts |
+| `srsDepsReader == nil` (no capability) | entry **not consumed** — statement takes the existing full path: same-enrich same full key already cached → `cache-hit` (R=0, all SQL 0, bound state from the full-path answer); cache cold → real full lookup whose answer may change the arm; the entry's keep/barrier is decided by that statement's real adjudication+apply — "fresh" is never claimed | per real path |
+
+- The skipped existence query is never recorded as an executed read;
+  a `skipped-by-ordered` annotation marks it.
+- A full-lookup return value never overwrites an ordered bound state
+  — that rule applies only to the committed ordered branch (R3-B3).
 
 ### 4.5 OrderedAbsentConsumed (cross-layer contract)
 
@@ -274,9 +309,13 @@ no other observable behavior is claimed changed.
   Publication never clears stale flags, never clears `contaminated`,
   never resurrects a barrier'd entry. Invalidation model decided
   uniquely: **keep the entry + flip `barrier`** (SERVER precedent) —
-  never delete; a deleted entry would let the fall-through path re-read
-  the catalog, while a barrier'd entry + stale flag guarantees the
-  blocked arm and preserves provenance.
+  never delete; the reason is provenance preservation, NOT reread
+  avoidance — `srsExistenceStale` already blocks the bind before the
+  ordered lookup independently (R3-A4). In every reachable state the
+  invariant `entry.barrier ⇒ srsExistenceStale[entry.srid]` holds
+  (the same boundary/write event mints both); a barrier-only entry
+  without the stale flag is a defensive shape the contract never
+  produces and is not part of any reachable fixture.
 
 ## 6. OP-E — public projection & policy
 
