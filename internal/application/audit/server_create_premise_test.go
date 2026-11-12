@@ -805,17 +805,19 @@ func TestT26CreateOrderedLifecyclePublic(t *testing.T) {
 		t.Fatalf("drop after literal taint on ordered present = %+v, want barrier", adj)
 	}
 
-	// OrderedPresent side of the relation scan: an unproven-relation
-	// write invalidates the published present — the trailing
-	// same-identity drop reads the barrier.
+	// OrderedPresent side of the relation scan: s1x is
+	// provably-distinct from s1 (S7), so its unproven write neither
+	// shadows s1x's own read nor invalidates s1's published present —
+	// the trailing same-identity drop consumes the ordered present
+	// and lands the proven arm (T26-SERVER-ORDERED-ABSENCE-01 S6).
 	_, enriched = evaluateT26Statements(t,
 		"DROP SERVER s1; "+t26CreateSQL+"; DROP SERVER s1x; DROP SERVER s1",
 		provider(), spec.PrivilegeAuditModeObservedAccountNewSession)
-	if adj := enriched[2].Metadata.ServerDrop; adj == nil || adj.Arm != spec.ServerDropArmBarrier {
-		t.Fatalf("s1x drop = %+v, want barrier — unproven relation shadows before the resolver", adj)
+	if adj := enriched[2].Metadata.ServerDrop; adj == nil || adj.Arm != spec.ServerDropArmUnproven || len(adj.Owed) != 1 || adj.Owed[0] != spec.ServerFactExistence {
+		t.Fatalf("s1x drop = %+v, want unproven owing existence — distinct name reads its own catalog", adj)
 	}
-	if adj := enriched[3].Metadata.ServerDrop; adj == nil || adj.Arm != spec.ServerDropArmBarrier {
-		t.Fatalf("drop after relation write on ordered present = %+v, want barrier — the present was invalidated", adj)
+	if adj := enriched[3].Metadata.ServerDrop; adj == nil || adj.Arm != spec.ServerDropArmProven || !adj.PublishAbsent {
+		t.Fatalf("drop after distinct write on ordered present = %+v, want proven — the present was preserved", adj)
 	}
 }
 

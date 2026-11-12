@@ -164,6 +164,20 @@ type ServerState struct {
 	// prior statement's conditional premise into an unconditional one
 	// (T26-SERVER-DROP-EXECUTION-01 R1-D).
 	OrderedAbsentConditional bool `json:"-"`
+	// OrderedAbsentSourceSet records that OrderedAbsentSourceIndex
+	// carries a real publishing statement — the ordered channel only
+	// publishes absent from inside this batch, so OrderedAbsent=true
+	// always implies the source set; the flag keeps the zero index
+	// honest instead of laundering it into a statement reference
+	// (T26-SERVER-ORDERED-ABSENCE-01 S1).
+	OrderedAbsentSourceSet bool `json:"-"`
+	// OrderedAbsentSourceIndex is the batch statement index of the
+	// statement whose proven arm published this OrderedAbsent — the
+	// consumer-visible provenance the S1 data model freezes, so a
+	// refusal or guarded arm can name exactly which earlier statement
+	// established the absence it consumed. Valid only when
+	// OrderedAbsentSourceSet is true.
+	OrderedAbsentSourceIndex int `json:"-"`
 	// OrderedPresent is the same-adjudication ordered channel's proven
 	// present answer: set only by a proven create inside this batch —
 	// never by the catalog (a row read is bound through Read/Exists,

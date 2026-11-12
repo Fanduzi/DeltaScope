@@ -230,13 +230,16 @@ func TestT26ServerOncePerKeyCache(t *testing.T) {
 		second.UnreadReason != spec.MetadataUnreadBatchEffects {
 		t.Fatalf("second drop must bind the batch-effects barrier: %+v", second)
 	}
-	// A different name is an unproven relation — the barrier still
-	// shadows it before the provider seam (provably-distinct stays
-	// empty), so one lookup total.
+	// A fold-differing space-clean ASCII name is provably-distinct
+	// (T26-SERVER-ORDERED-ABSENCE-01 S7): s1's unproven barrier does
+	// not shadow s2 — the second lookup reaches the provider seam.
 	provider = &t26Provider{servers: map[string]bool{}}
-	enrichT26(t, "DROP SERVER s1; DROP SERVER s2", spec.DialectMySQL, provider)
-	if len(provider.calls) != 1 {
-		t.Fatalf("resolver calls = %+v, want the barrier to suppress the second lookup", provider.calls)
+	enriched = enrichT26(t, "DROP SERVER s1; DROP SERVER s2", spec.DialectMySQL, provider)
+	if len(provider.calls) != 2 || provider.calls[1].name != "s2" {
+		t.Fatalf("resolver calls = %+v, want the distinct name's own lookup", provider.calls)
+	}
+	if second := enriched[1].Metadata.Server; second == nil || !second.Read {
+		t.Fatalf("distinct-name drop must bind its own read: %+v", second)
 	}
 }
 
@@ -244,15 +247,16 @@ func TestT26ServerOncePerKeyCache(t *testing.T) {
 // name carrying interior space resolves through the provider with the
 // untrimmed name — the decoded name, the lookup, and the bound state
 // name all agree (T26 counterexample registration).
-// T26-SERVER-DROP-01: the first drop's unproven barrier then shadows
-// the second statement — R("s1", " s1") is unproven (PAD governs
-// trailing space only), so the second binds batch_effects with the
-// verbatim authored name and never reaches the resolver.
+// T26-SERVER-ORDERED-ABSENCE-01 S7: ` s1` and `s1` fold-differ with
+// only a LEADING space — PAD SPACE governs trailing space only, so
+// the two names are provably-distinct catalog rows. The first drop's
+// unproven barrier does not shadow the second statement: it reaches
+// the resolver with the verbatim name and binds the proven row.
 func TestT26ServerDecodedNameCacheIdentity(t *testing.T) {
 	provider := &t26Provider{servers: map[string]bool{"s1": true}}
 	enriched := enrichT26(t, "DROP SERVER ` s1`; DROP SERVER `s1`", spec.DialectMySQL, provider)
-	if len(provider.calls) != 1 || provider.calls[0].name != " s1" {
-		t.Fatalf("resolver calls = %+v, want one verbatim lookup for ` s1`", provider.calls)
+	if len(provider.calls) != 2 || provider.calls[0].name != " s1" || provider.calls[1].name != "s1" {
+		t.Fatalf("resolver calls = %+v, want verbatim lookups for ` s1` then `s1`", provider.calls)
 	}
 	first, second := enriched[0].Metadata.Server, enriched[1].Metadata.Server
 	if first == nil || second == nil || first == second {
@@ -261,8 +265,8 @@ func TestT26ServerDecodedNameCacheIdentity(t *testing.T) {
 	if first.Name != " s1" || !first.Read || first.Exists {
 		t.Fatalf("` s1` state = %+v, want own read answering unknown", first)
 	}
-	if second.Name != "s1" || second.Read || second.UnreadReason != spec.MetadataUnreadBatchEffects {
-		t.Fatalf("`s1` state = %+v, want batch_effects bound with the verbatim name", second)
+	if second.Name != "s1" || !second.Read || !second.Exists {
+		t.Fatalf("`s1` state = %+v, want the distinct row's own proven read", second)
 	}
 }
 

@@ -353,8 +353,10 @@ func TestT26AlterR3DMeasuredLayerCounts(t *testing.T) {
 		// Both zero: the DROP's own fresh verbatim read — two catalog reads.
 		{"AM-7.3b", "ALTER SERVER `sé` OPTIONS (USER 'u'); DROP SERVER se", observed, map[string]bool{}, 1, 2, 2},
 		// 65-rune overlong identifier boundary forwards AND executes,
-		// zero catalog + mode off — frozen row is L/R/S = 0/1/1 (R4-B).
-		{"AM-7.4", "ALTER SERVER " + strings.Repeat("x", 65) + " OPTIONS (USER 'u'); DROP SERVER s9", "", map[string]bool{}, 0, 1, 1},
+		// zero catalog + mode off — T26-SERVER-ORDERED-ABSENCE-01 S7:
+		// the overlong name is provably-distinct from s9, so the drop
+		// reads its own catalog — L/R/S = 0/2/2.
+		{"AM-7.4", "ALTER SERVER " + strings.Repeat("x", 65) + " OPTIONS (USER 'u'); DROP SERVER s9", "", map[string]bool{}, 0, 2, 2},
 		// Mixed identifier/literal chain: s1's catalog read + the
 		// literal's declined forward; the tainted DROP reads nothing.
 		{"AM-7.5", "ALTER SERVER s1 OPTIONS (USER 'u'); ALTER SERVER 'lit' OPTIONS (USER 'u'); DROP SERVER S1", observed, map[string]bool{"s1": true}, 1, 2, 1},

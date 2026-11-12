@@ -251,8 +251,13 @@ func TestT26AlterAM73ApplyOwnership(t *testing.T) {
 			t.Fatalf("%s: se entry = %+v, want the DROP's own barrier", tc.name, entry)
 		}
 		if tc.servers["sé"] {
-			if se := state.serverEntries[serverFold("sé")]; se == nil || !se.present {
-				t.Fatalf("%s: sé presence must stand after the drop's own barrier", tc.name)
+			// T26-SERVER-ORDERED-ABSENCE-01 S6/S8: the drop's unknown
+			// effect has an unproven relation to sé (the ci collation
+			// may fold them equal), so sé's ordered presence retires
+			// to the barrier — a stale ordered answer never survives
+			// an unprovable-relation write.
+			if se := state.serverEntries[serverFold("sé")]; se == nil || se.present || !se.barrier {
+				t.Fatalf("%s: sé ordered presence must retire to the barrier under the unprovable-relation write: %+v", tc.name, se)
 			}
 		} else if _, had := afterAlter.entries[serverFold("se")]; had {
 			t.Fatalf("%s: unexpected se entry existed before the drop", tc.name)
@@ -1131,18 +1136,20 @@ func TestT26AlterAM74LiteralVsOverlong(t *testing.T) {
 	if adj := enriched[1].Metadata.ServerDrop; adj == nil || adj.Arm != spec.ServerDropArmBarrier {
 		t.Fatalf("drop after literal alter = %+v, want channel barrier", adj)
 	}
-	// 65-rune: boundary + own write → relation blocker on next read.
+	// 65-rune: boundary + own write → provably-distinct from s1, so
+	// the trailing drop's read proceeds unshadowed
+	// (T26-SERVER-ORDERED-ABSENCE-01 S7).
 	long := strings.Repeat("a", 65)
 	provider = &t26Provider{servers: map[string]bool{}, version: "8.0.36"}
 	enriched = enrichT26Premise(t, "ALTER SERVER "+long+" OPTIONS (USER 'u'); DROP SERVER s1", provider, "")
 	if enriched[0].Unsupported == nil {
 		t.Fatalf("65-rune alter must stay boundary")
 	}
-	if len(provider.calls) != 1 {
-		t.Fatalf("resolver = %+v, want the boundary write's own forward", provider.calls)
+	if len(provider.calls) != 2 || provider.calls[1].name != "s1" {
+		t.Fatalf("resolver = %+v, want the boundary write's forward plus the distinct drop's own read", provider.calls)
 	}
-	if adj := enriched[1].Metadata.ServerDrop; adj == nil || adj.Arm != spec.ServerDropArmBarrier {
-		t.Fatalf("drop after 65-rune alter = %+v, want relation barrier", adj)
+	if adj := enriched[1].Metadata.ServerDrop; adj == nil || adj.Arm != spec.ServerDropArmUnproven {
+		t.Fatalf("drop after 65-rune alter = %+v, want unproven — distinct name reads its own catalog", adj)
 	}
 }
 

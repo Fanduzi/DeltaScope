@@ -16,20 +16,27 @@
 //  1. byte-identical -> provably-same;
 //  2. both names inside the registered SERVER ASCII case-insensitive
 //     subset AND ASCII-fold-equal -> provably-same;
-//  3. everything else -> unproven.
+//  3. both names ASCII with fold-differing keys and no trailing space
+//     in either spelling -> provably-distinct: under the observed
+//     utf8mb3_general_ci catalog key the only ASCII equivalences are
+//     letter case and PAD SPACE on the trailing edge, so fold-differing
+//     space-clean ASCII names name different catalog rows
+//     (T26-SERVER-ORDERED-ABSENCE-01 S7/F6 — `CREATE SERVER S7` over
+//     `s7` hit the same key while `s6`/`s7` coexisted as distinct rows
+//     on 5.7/8.0/8.4);
+//  4. everything else -> unproven.
 //
-// provably-distinct stays a registered class with an empty current
-// provable domain — nothing derives distinct from fold keys,
-// differing characters, lengths, or tails. The collation PAD
-// attribute governs trailing-space comparison only, so leading and
-// internal space relations stay unproven by the model's own
-// capability boundary. The canonical fold key is a bucket key, never
-// an identity verdict, and entries keep the verbatim authored name so
-// relation checks never read the folded key as an identity.
+// Trailing-space names stay out of the provable-distinct domain: PAD
+// SPACE makes `s1` equal to `s1 ` at the catalog key, so the fold
+// difference there is not proof of distinctness. The canonical fold
+// key is a bucket key, never an identity verdict, and entries keep
+// the verbatim authored name so relation checks never read the folded
+// key as an identity.
 package audit
 
 import (
 	"context"
+	"strings"
 
 	"github.com/Fanduzi/DeltaScope/internal/domain/spec"
 )
@@ -76,10 +83,18 @@ func serverRel(a, b string) serverRelation {
 	if a == b {
 		return serverRelSame
 	}
-	if serverASCII(a) && serverASCII(b) && serverFold(a) == serverFold(b) {
+	if !serverASCII(a) || !serverASCII(b) {
+		return serverRelUnproven
+	}
+	if serverFold(a) == serverFold(b) {
 		return serverRelSame
 	}
-	return serverRelUnproven
+	if strings.HasSuffix(a, " ") || strings.HasSuffix(b, " ") {
+		// PAD SPACE could still equate the spellings — the fold
+		// difference is not proof of distinctness.
+		return serverRelUnproven
+	}
+	return serverRelDistinct
 }
 
 // batchServerEntry is one ordered identity projection. barrier is the
@@ -88,7 +103,9 @@ func serverRel(a, b string) serverRelation {
 // adjudication's publish decision on a provably-same identity (a
 // proven drop or the approved convergent arm), never by the catalog
 // and never while a barrier stands — the publishing statement's own
-// arm rides along in publishedArm. present is the proven
+// arm and batch index ride along in publishedArm/publishedIndex, the
+// source provenance S1 freezes for consumers
+// (T26-SERVER-ORDERED-ABSENCE-01). present is the proven
 // OrderedPresent: set only by a proven create on the provably-same
 // identity, mutually exclusive with absent; presentConditional records
 // that the publishing arm rested on the conditional privilege scope
@@ -103,6 +120,8 @@ type batchServerEntry struct {
 	barrier            bool
 	absent             bool
 	publishedArm       spec.ServerDropArm
+	publishedIndex     int
+	publishedIndexSet  bool
 	present            bool
 	presentConditional bool
 }
@@ -190,59 +209,50 @@ func (s *batchState) applyServerStatement(ctx context.Context, statement spec.St
 		return nil
 	}
 	if statement.Unsupported != nil {
-		if !decl.NameIdent {
-			s.serverChannelTainted = true
-			for _, entry := range s.serverEntries {
-				// A literal-name write may have recreated or removed
-				// any server — every ordered answer on the channel
-				// goes stale.
-				entry.absent = false
-				entry.publishedArm = 0
-				entry.present = false
-				entry.presentConditional = false
-			}
+		if !decl.NameIdent || !serverASCII(decl.Name) {
+			// A literal name carries no provable identity and a
+			// non-ASCII name carries no provable canonical identity —
+			// either write may have recreated or removed any server,
+			// so the whole channel taints and every ordered answer
+			// goes stale (identity unprovable -> channel taint,
+			// T26-SERVER-ORDERED-ABSENCE-01 D4/S8).
+			s.serverChannelTaint()
 			return nil
 		}
 		s.serverWrites = append(s.serverWrites, serverWrite{name: decl.Name})
-		for _, entry := range s.serverEntries {
-			if serverRel(decl.Name, entry.name) != serverRelDistinct {
-				// An unproven-or-same write is an unknown effect on
-				// this identity — a proven ordered answer never
-				// survives it.
-				entry.barrier = true
-				entry.absent = false
-				entry.publishedArm = 0
-				entry.present = false
-				entry.presentConditional = false
-			}
-		}
+		s.serverInvalidateUnknown(decl.Name)
 		return nil
 	}
 	if decl.Kind == spec.ServerKindDrop && decl.NameIdent {
-		entry := s.serverEntryFor(decl.Name)
 		adjudication := serverDropAdjudicationOf(statement)
 		switch {
 		case adjudication != nil && adjudication.PublishAbsent:
 			// The shared adjudication proved the post-state absent —
-			// record it with the publishing statement's own arm,
-			// replacing any ordered present (T26-SERVER-CREATE-01).
+			// record it with the publishing statement's own arm and
+			// index, replacing any ordered present
+			// (T26-SERVER-CREATE-01, T26-SERVER-ORDERED-ABSENCE-01 S1).
+			// Every other entry the write could not be proved distinct
+			// from takes the unknown effect — an ASCII name's relation
+			// to a non-ASCII entry is still unproven.
+			entry := s.serverEntryFor(decl.Name)
 			entry.absent = true
 			entry.barrier = false
 			entry.publishedArm = adjudication.Arm
+			entry.publishedIndex = s.applyStmtIndex
+			entry.publishedIndexSet = true
 			entry.present = false
 			entry.presentConditional = false
+			s.serverInvalidateOthers(decl.Name, entry)
 		case adjudication != nil && (adjudication.Arm == spec.ServerDropArmTerminalRefusal ||
 			adjudication.Arm == spec.ServerDropArmGuardedAbsent):
 			// The refusal and guarded arms never recreate the object —
 			// the proven absent stands untouched.
 		default:
 			// Every other arm is an undischarged unknown effect — a
-			// stale ordered answer never survives it.
-			entry.absent = false
-			entry.publishedArm = 0
-			entry.present = false
-			entry.presentConditional = false
-			entry.barrier = true
+			// stale ordered answer never survives it. Same-key and
+			// unproven-relation entries invalidate; provably-distinct
+			// entries preserve (T26-SERVER-ORDERED-ABSENCE-01 S6).
+			s.serverInvalidateUnknown(decl.Name)
 		}
 	}
 	if decl.Kind == spec.ServerKindAlter && decl.NameIdent {
@@ -268,7 +278,14 @@ func (s *batchState) applyServerStatement(ctx context.Context, statement spec.St
 			entry.presentConditional = adjudication.ConditionalSource
 			entry.absent = false
 			entry.publishedArm = 0
+			entry.publishedIndex = 0
+			entry.publishedIndexSet = false
 			entry.barrier = false
+			// A proven present on this identity conflicts with any
+			// ordered answer on an identity the write could not be
+			// proved distinct from (unproven relation may be the same
+			// catalog row) — those entries retire.
+			s.serverInvalidateOthers(decl.Name, entry)
 		}
 	}
 	if decl.Kind == spec.ServerKindCreate && decl.NameIdent {
@@ -278,12 +295,18 @@ func (s *batchState) applyServerStatement(ctx context.Context, statement spec.St
 			// The shared adjudication proved the post-state present —
 			// publish OrderedPresent on the provably-same entry,
 			// replacing any ordered absent (T26-SERVER-CREATE-01).
+			// Every other entry the write could not be proved distinct
+			// from takes the unknown effect — a create on an
+			// unprovably-related identity may have recreated that row.
 			entry := s.serverEntryFor(decl.Name)
 			entry.present = true
 			entry.presentConditional = adjudication.PublishPresentConditional
 			entry.absent = false
 			entry.publishedArm = 0
+			entry.publishedIndex = 0
+			entry.publishedIndexSet = false
 			entry.barrier = false
+			s.serverInvalidateOthers(decl.Name, entry)
 		case adjudication != nil && adjudication.Arm == spec.ServerCreateArmTerminalRefusal:
 			// The refusal never mutates the channel: an ordered-source
 			// refusal leaves the consumed OrderedPresent standing; a
@@ -295,14 +318,62 @@ func (s *batchState) applyServerStatement(ctx context.Context, statement spec.St
 			// Barrier — is an undischarged unknown effect on this
 			// identity: a stale ordered answer never survives it.
 			// (Contaminated batches already returned above, so entries
-			// are never mutated on that path.)
-			entry := s.serverEntryFor(decl.Name)
-			entry.absent = false
-			entry.publishedArm = 0
-			entry.present = false
-			entry.presentConditional = false
-			entry.barrier = true
+			// are never mutated on that path.) Same-key and
+			// unproven-relation entries invalidate; provably-distinct
+			// entries preserve (T26-SERVER-ORDERED-ABSENCE-01 S6).
+			s.serverInvalidateUnknown(decl.Name)
 		}
 	}
 	return ctx.Err()
+}
+
+// serverChannelTaint marks the whole ordered channel unreadable and
+// retires every ordered answer — the channel-level shape of an
+// identity-unprovable write (literal or non-ASCII spelling): any
+// server may have been recreated or removed, so no ordered fact may
+// survive (T26-SERVER-ORDERED-ABSENCE-01 D4/S8).
+func (s *batchState) serverChannelTaint() {
+	s.serverChannelTainted = true
+	for _, entry := range s.serverEntries {
+		entry.absent = false
+		entry.publishedArm = 0
+		entry.publishedIndex = 0
+		entry.publishedIndexSet = false
+		entry.present = false
+		entry.presentConditional = false
+	}
+}
+
+// serverInvalidateUnknown applies the S6 invalidation rule for one
+// authored write identity: the name's own canonical bucket always
+// takes the unknown effect (created on demand — the write is an
+// undischarged effect on its own identity), and every ordered entry
+// whose relation to name is not provably-distinct takes the same
+// barrier — ordered answers retired. Provably-distinct entries
+// preserve their ordered state untouched (fold-differing space-clean
+// ASCII names name different catalog rows).
+func (s *batchState) serverInvalidateUnknown(name string) {
+	s.serverEntryFor(name).barrier = true
+	s.serverInvalidateOthers(name, nil)
+}
+
+// serverInvalidateOthers retires every ordered entry (except keep)
+// whose relation to name is not provably-distinct: the write's effect
+// on that identity is unknown, so its ordered answers go stale.
+// Provably-distinct entries preserve their ordered state untouched.
+func (s *batchState) serverInvalidateOthers(name string, keep *batchServerEntry) {
+	for _, entry := range s.serverEntries {
+		if entry == keep {
+			continue
+		}
+		if serverRel(name, entry.name) != serverRelDistinct {
+			entry.barrier = true
+			entry.absent = false
+			entry.publishedArm = 0
+			entry.publishedIndex = 0
+			entry.publishedIndexSet = false
+			entry.present = false
+			entry.presentConditional = false
+		}
+	}
 }

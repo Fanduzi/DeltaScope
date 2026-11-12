@@ -286,14 +286,16 @@ func TestT26VerticalConsumableChain(t *testing.T) {
 }
 
 // Vertical chain B — relation boundary: the published OrderedAbsent on
-// s1 answers nothing for the relation-unproven identity s2 directly,
-// but the ordered scan still precedes the resolver — s2's access is
-// shadowed by the unproven relation to a recorded write, so the
-// catalog is never queried for it (the conservative batch_effects
+// s1 answers nothing for the relation-unproven identity sé directly,
+// but the ordered scan still precedes the resolver — sé's access is
+// shadowed by the unproven relation to a recorded ordered entry, so
+// the catalog is never queried for it (the conservative batch_effects
 // barrier, no barrier bit required on the entry). The third drop on
-// s1 is shadowed the same way — s2's unadjudicated write taints the
-// whole channel — and reads blocked_batch_effects with zero new
-// resolver reads.
+// s1 is shadowed the same way — sé's unadjudicated effect retires
+// s1's ordered answer — and reads blocked_batch_effects with zero new
+// resolver reads. (T26-SERVER-ORDERED-ABSENCE-01 S7: s1 and s2 are now
+// provably-distinct, so the witness pair needs a genuinely unprovable
+// relation — ASCII s1 against non-ASCII sé.)
 func TestT26VerticalRelationBoundary(t *testing.T) {
 	fixture := &t26vFixture{
 		servers:    map[string]bool{"s1": true, "s2": true},
@@ -303,7 +305,7 @@ func TestT26VerticalRelationBoundary(t *testing.T) {
 	db := openT26VDB(t, fixture)
 	provider := &t26vProvider{inner: mysqlmeta.NewProvider(db)}
 	result, err := Audit(context.Background(), Request{
-		SQL:     "DROP SERVER s1; DROP SERVER s2; DROP SERVER s1",
+		SQL:     "DROP SERVER s1; DROP SERVER `sé`; DROP SERVER s1",
 		Dialect: DialectMySQL, Schema: "golden",
 		MetadataProvider: provider, PrivilegeAuditMode: PrivilegeAuditModeObservedAccountNewSession,
 	})
@@ -313,20 +315,20 @@ func TestT26VerticalRelationBoundary(t *testing.T) {
 	if finding := result.Statements[0].Findings[0]; finding.Metadata["outcome"] != "conditional_drop" {
 		t.Fatalf("s1 drop outcome = %v, want conditional_drop", finding.Metadata["outcome"])
 	}
-	// s2: the unproven relation to s1's recorded drop shadows the
-	// catalog answer — blocked_batch_effects, owes the barrier fact
-	// only (consumable premise discharged), and NO resolver read.
+	// sé: the unproven relation to s1's recorded ordered entry shadows
+	// the catalog answer — blocked_batch_effects, owes the barrier
+	// fact only (consumable premise discharged), and NO resolver read.
 	barrier := result.Statements[1]
 	if finding := barrier.Findings[0]; finding.Metadata["outcome"] != "blocked_batch_effects" {
-		t.Fatalf("s2 outcome = %v, want blocked_batch_effects", finding.Metadata["outcome"])
+		t.Fatalf("sé outcome = %v, want blocked_batch_effects", finding.Metadata["outcome"])
 	}
 	if len(barrier.EvidenceGaps) != 1 {
-		t.Fatalf("s2 gaps = %+v, want the batch_effects fact only", barrier.EvidenceGaps)
+		t.Fatalf("sé gaps = %+v, want the batch_effects fact only", barrier.EvidenceGaps)
 	}
 	if facts := barrier.EvidenceGaps[0].RequiredFacts; len(facts) != 1 || facts[0] != "server.batch_effects" {
-		t.Fatalf("s2 owed = %v, want server.batch_effects only", facts)
+		t.Fatalf("sé owed = %v, want server.batch_effects only", facts)
 	}
-	// s1 re-drop: s2's own arm stayed unproven (barrier) — an
+	// s1 re-drop: sé's own arm stayed unproven (barrier) — an
 	// undischarged unknown effect on an unproven-related identity
 	// shadows s1's proven absent too, so the re-drop reads the same
 	// barrier rather than the stale absent. Still zero new resolver
@@ -357,7 +359,7 @@ func TestT26VerticalRelationBoundary(t *testing.T) {
 		t.Fatalf("verdict = %+v, want review under the evidence-gap floor", result.Verdict)
 	}
 	if serversQueries(fixture) != 1 {
-		t.Fatalf("resolver reads = %d, want exactly 1 — the relation scan answered s2 before the resolver and the shadowed channel answered the re-drop", serversQueries(fixture))
+		t.Fatalf("resolver reads = %d, want exactly 1 — the relation scan answered sé before the resolver and the shadowed channel answered the re-drop", serversQueries(fixture))
 	}
 }
 

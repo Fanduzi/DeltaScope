@@ -88,6 +88,8 @@ func (s *batchState) bindMySQLServer(ctx context.Context, statement spec.Stateme
 					Name:                     decl.Name,
 					OrderedAbsent:            true,
 					OrderedAbsentConditional: entry.publishedArm == spec.ServerDropArmProven || entry.publishedArm == spec.ServerDropArmConvergent,
+					OrderedAbsentSourceSet:   entry.publishedIndexSet,
+					OrderedAbsentSourceIndex: entry.publishedIndex,
 				}, nil
 			}
 			if entry.present {

@@ -296,8 +296,9 @@ func TestT26AlterZeroRowNoState(t *testing.T) {
 // A1 relation-scan barrier is a uniform ordered-channel no-op
 // (AM-7.3/AM-7.6): ALTER sé on catalog presence publishes; ALTER se
 // hits the unproven-relation barrier, owes exactly {batch_effects},
-// mints nothing — the se entry is created only by the later DROP,
-// which records its own barrier while sé's presence stands.
+// mints nothing — the se entry is created only by the later DROP;
+// under T26-SERVER-ORDERED-ABSENCE-01 S6/S8 the drop's unknown effect
+// has an unproven relation to sé and retires its ordered presence.
 func TestT26AlterRelationBarrierNoOp(t *testing.T) {
 	provider := &t26Provider{servers: map[string]bool{"sé": true}, version: "8.0.36", privilege: superObservation()}
 	parsed, parseErr := parseSQL(context.Background(),
@@ -347,10 +348,14 @@ func TestT26AlterRelationBarrierNoOp(t *testing.T) {
 	if entry == nil || !entry.barrier || entry.present || entry.absent {
 		t.Fatalf("se entry after drop = %+v, want the drop's own barrier", entry)
 	}
-	// sé's republished presence stands untouched.
+	// T26-SERVER-ORDERED-ABSENCE-01 S6/S8: the se drop's unknown effect
+	// has an unproven relation to sé (the catalog ci collation may fold
+	// them equal), so sé's republished presence is retired to the
+	// barrier — a stale ordered answer never survives an unprovable-
+	// relation write.
 	seEntry := state.serverEntries[serverFold("sé")]
-	if seEntry == nil || !seEntry.present || seEntry.barrier || seEntry.absent {
-		t.Fatalf("sé entry = %+v, want republished presence standing", seEntry)
+	if seEntry == nil || seEntry.present || !seEntry.barrier || seEntry.absent {
+		t.Fatalf("sé entry = %+v, want the drop's unknown effect retiring it to the barrier", seEntry)
 	}
 }
 
