@@ -83,6 +83,12 @@ func (s *batchState) ScopeEnded() bool { return s.serverPrivilegeScopeEnded }
 // Contaminated reads the batch-contamination flag.
 func (s *batchState) Contaminated() bool { return s.contaminated }
 
+// SetAfterBindObserve installs the per-statement post-bind hook — the
+// OP-8a post-bind observation timepoint (R2-E1).
+func (s *batchState) SetAfterBindObserve(fn func(int, *spec.Statement)) {
+	s.afterBindObserve = fn
+}
+
 // SetAfterApplyObserve installs the per-statement post-apply hook —
 // the three-timepoint snapshot seam (R2-B4).
 func (s *batchState) SetAfterApplyObserve(fn func(int, *spec.Statement)) {
@@ -136,4 +142,82 @@ func (s *batchState) SRSOrderedSRIDs() []uint32 {
 		ids = append(ids, id)
 	}
 	return ids
+}
+
+// ChannelControls is a verbatim deep-value capture of every ordered
+// channel's state plus the batch flags — the OP-8c sibling-isolation
+// control. Every collection is copied at capture time so a later apply
+// never mutates an earlier capture; reflect.DeepEqual on two captures
+// is the verbatim compare.
+type ChannelControls struct {
+	Servers       map[string]batchServerEntry
+	Tables        map[batchTableKey]batchTableEntry
+	TempTables    map[batchTableKey]batchTableEntry
+	Schemas       map[string]batchSchemaEntry
+	Sequences     int
+	ResourceGrps  int
+	MySQLRsrcGrps int
+	Tablespaces   int
+	Stale         map[uint32]bool
+	DepsStale     bool
+	Contaminated  bool
+	ScopeEnded    bool
+	Ordered       map[uint32]SRSOrderedEntryView
+}
+
+// ChannelControlsCapture copies the full channel state verbatim —
+// maps cloned, entry structs copied by value, TableSnapshot dereferenced
+// into a value (slices inside keep their headers; the compare additionally
+// counts them so a nil/empty distinction survives).
+func (s *batchState) ChannelControlsCapture() ChannelControls {
+	out := ChannelControls{
+		Servers:       make(map[string]batchServerEntry, len(s.serverEntries)),
+		Tables:        make(map[batchTableKey]batchTableEntry, len(s.entries)),
+		TempTables:    make(map[batchTableKey]batchTableEntry, len(s.tempEntries)),
+		Schemas:       make(map[string]batchSchemaEntry, len(s.schemaEntries)),
+		Sequences:     len(s.sequenceEntries),
+		ResourceGrps:  len(s.resourceGroupEntries),
+		MySQLRsrcGrps: len(s.mysqlResourceGroupEntries),
+		Tablespaces:   len(s.tablespaceEntries),
+		Stale:         staleSet(s),
+		DepsStale:     s.srsDepsStale,
+		Contaminated:  s.contaminated,
+		ScopeEnded:    s.serverPrivilegeScopeEnded,
+		Ordered:       make(map[uint32]SRSOrderedEntryView, len(s.srsOrdered)),
+	}
+	for k, e := range s.serverEntries {
+		out.Servers[k] = *e
+	}
+	for k, e := range s.entries {
+		c := *e
+		if e.shape != nil {
+			shape := *e.shape
+			c.shape = &shape
+		}
+		out.Tables[k] = c
+	}
+	for k, e := range s.tempEntries {
+		c := *e
+		if e.shape != nil {
+			shape := *e.shape
+			c.shape = &shape
+		}
+		out.TempTables[k] = c
+	}
+	for k, e := range s.schemaEntries {
+		c := *e
+		if e.attrs != nil {
+			attrs := make(map[string]string, len(e.attrs))
+			for ak, av := range e.attrs {
+				attrs[ak] = av
+			}
+			c.attrs = attrs
+		}
+		out.Schemas[k] = c
+	}
+	for id := range s.srsOrdered {
+		v, _ := s.SRSOrderedEntry(id)
+		out.Ordered[id] = v
+	}
+	return out
 }

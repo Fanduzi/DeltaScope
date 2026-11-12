@@ -418,7 +418,14 @@ func (state *batchState) enrichStatements(ctx context.Context, request *Metadata
 	// (T26-SRS-DROP-ORDERED-PUBLICATION-EXECUTION-01).
 	state.srsDepsReader = nil
 	if reader, ok := state.provider.(MySQLSRSDependencyReader); ok {
-		state.srsDepsReader = reader.ResolveMySQLSRSDependencies
+		resolve := reader.ResolveMySQLSRSDependencies
+		state.srsDepsReader = func(ctx context.Context, srid uint32) (*spec.SRSDependencyFact, error) {
+			fact, err := resolve(ctx, srid)
+			if err != nil {
+				return nil, metadataObjectReadError{cause: err}
+			}
+			return fact, nil
+		}
 	}
 
 	consumed := 0

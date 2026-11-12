@@ -194,7 +194,8 @@ func (r *r3Rows) Next(dest []driver.Value) error {
 // calls / injects sentinels around it (R3-A.2).
 type r3ProductProvider struct {
 	inner       *mysqlmeta.Provider
-	forwards    []spec.ObjectLookupRequest // R seam, per request type
+	forwards    []spec.ObjectLookupRequest // full-forward R seam, per request type
+	depsForward int                        // direct deps-reader R seam (incl. failures)
 	vd          int                        // LoadInstanceFacts calls
 	privCalls   int                        // L seam
 	resolveErr  error
@@ -227,11 +228,14 @@ func (p *r3ProductProvider) LoadMySQLServerDropPrivilege(ctx context.Context, di
 }
 
 // ResolveMySQLSRSDependencies forwards the ordered channel's deps-only
-// capability to the real product provider — the Qo/Qdeps reads land on
-// the fixture's independent seam counters while NO ResolveObject
-// forward is recorded (the direct method bypasses the objectCache
-// seam, exactly as the contract requires).
+// capability to the real product provider. The forwarding attempt itself
+// is counted on the R seam (including failed attempts): the contract's R
+// is measured full-forwards + direct deps-forwards, while the Qo/Qdeps
+// SQL reads still land on the fixture's independent seam counters and
+// NO ResolveObject forward is recorded (the direct method bypasses the
+// objectCache seam, exactly as the contract requires).
 func (p *r3ProductProvider) ResolveMySQLSRSDependencies(ctx context.Context, srid uint32) (*spec.SRSDependencyFact, error) {
+	p.depsForward++
 	return p.inner.ResolveMySQLSRSDependencies(ctx, srid)
 }
 
@@ -250,7 +254,7 @@ func r3Harness(t *testing.T, fx *r3Fixture) *r3ProductProvider {
 // wantVd < 0 means N/A (providerless row — no discovery surface).
 func r3AssertReads(t *testing.T, p *r3ProductProvider, fx *r3Fixture, wantR, wantExist, wantDeps, wantQo, wantL, wantVd int) {
 	t.Helper()
-	r := 0
+	r := p.depsForward
 	for _, req := range p.forwards {
 		if req.Type == "mysql_spatial_reference_system" {
 			r++

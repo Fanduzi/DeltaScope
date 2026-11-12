@@ -379,6 +379,30 @@ func paSRSConflictEqual(t *testing.T, who string, a, b *spec.SRSConflictFact) {
 	}
 }
 
+// paDepsSame is the pure Dependencies comparator — false on ANY
+// difference: nilness, Complete, Columns nilness/length/elements.
+// Extracted so the distinguishing control can probe it directly
+// (R2-E4): a Complete-only difference must compare different.
+func paDepsSame(a, b *spec.SRSDependencyFact) bool {
+	if (a == nil) != (b == nil) {
+		return false
+	}
+	if a == nil {
+		return true
+	}
+	if a.Complete != b.Complete ||
+		len(a.Columns) != len(b.Columns) ||
+		(a.Columns == nil) != (b.Columns == nil) {
+		return false
+	}
+	for i := range a.Columns {
+		if a.Columns[i] != b.Columns[i] {
+			return false
+		}
+	}
+	return true
+}
+
 // paSnapEqual compares two independent stmt1 captures field-by-field —
 // complete SpatialReference, SRSDrop arm/premise/owed, and the
 // nil/empty distinction on each collection.
@@ -396,19 +420,8 @@ func paSnapEqual(t *testing.T, who string, a, b paStmtSnap) {
 		}
 		paSRSConflictEqual(t, who+" name", x.NameConflict, y.NameConflict)
 		paSRSConflictEqual(t, who+" org", x.OrgConflict, y.OrgConflict)
-		if (x.Dependencies == nil) != (y.Dependencies == nil) {
-			t.Fatalf("%s deps nilness differs: %v vs %v", who, x.Dependencies, y.Dependencies)
-		}
-		if x.Dependencies != nil {
-			if len(x.Dependencies.Columns) != len(y.Dependencies.Columns) ||
-				(x.Dependencies.Columns == nil) != (y.Dependencies.Columns == nil) {
-				t.Fatalf("%s deps differ: %+v vs %+v", who, x.Dependencies, y.Dependencies)
-			}
-			for i := range x.Dependencies.Columns {
-				if x.Dependencies.Columns[i] != y.Dependencies.Columns[i] {
-					t.Fatalf("%s deps[%d] %+v vs %+v", who, i, x.Dependencies.Columns[i], y.Dependencies.Columns[i])
-				}
-			}
+		if !paDepsSame(x.Dependencies, y.Dependencies) {
+			t.Fatalf("%s deps differ: %+v vs %+v", who, x.Dependencies, y.Dependencies)
 		}
 	}
 	if !a.adjN {
@@ -530,6 +543,23 @@ func TestT26SRSAbsentSnapshotFidelity(t *testing.T) {
 	neg := &spec.SRSConflictFact{Complete: true, MatchedSRIDs: []uint32{1, 42}}
 	if paSRSConflictSame(posA, neg) {
 		t.Fatal("comparator must catch a differing element at same shape/nilness/length")
+	}
+
+	// 5. Dependencies comparator controls (R2-E4): a Complete-only
+	// difference must compare different — the comparator now owns that
+	// field, so two identical-columns facts differing only on Complete
+	// can never pass silently.
+	depT := &spec.SRSDependencyFact{Complete: true, Columns: []spec.SRSDependentColumn{{Schema: "s", Table: "t", Column: "g", SRID: 1}}}
+	depF := &spec.SRSDependencyFact{Complete: false, Columns: []spec.SRSDependentColumn{{Schema: "s", Table: "t", Column: "g", SRID: 1}}}
+	if !paDepsSame(depT, depT) {
+		t.Fatal("comparator must return true for an identical Dependencies fact")
+	}
+	if paDepsSame(depT, depF) {
+		t.Fatal("comparator must catch a Complete-only difference")
+	}
+	depOther := &spec.SRSDependencyFact{Complete: true, Columns: []spec.SRSDependentColumn{{Schema: "s", Table: "t", Column: "g", SRID: 2}}}
+	if paDepsSame(depT, depOther) {
+		t.Fatal("comparator must catch a differing Columns element")
 	}
 }
 

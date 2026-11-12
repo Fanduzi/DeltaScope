@@ -318,9 +318,11 @@ func TestT26SRSAbsentSameSRIDCacheHit(t *testing.T) {
 	// Ordered publication (T26-SRS-DROP-ORDERED-PUBLICATION-EXECUTION-
 	// 01): stmt1's catalog-certified absence mints the ordered entry,
 	// so stmt2 is an ordered hit — Qexist stays skipped-by-ordered
-	// while the deps-only reader issues Qo+Qdeps fresh. The measured
-	// vector is R1/Qexist1/Qdeps2/Qo2 — never the all-zero cache-hit.
-	r3AssertReads(t, p, fx, 1, 1, 2, 2, 1, 1)
+	// while the deps-only reader issues Qo+Qdeps fresh. Under the
+	// contract's R definition (full forwards + direct deps forwards)
+	// the measured vector is R2/Qexist1/Qdeps2/Qo2 — never the
+	// all-zero cache-hit.
+	r3AssertReads(t, p, fx, 2, 1, 2, 2, 1, 1)
 }
 
 // PA-6b: a different SRID is an independent cache key — the second
