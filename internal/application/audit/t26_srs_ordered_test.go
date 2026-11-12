@@ -673,11 +673,17 @@ func TestT26SRSOrderedNoCapabilityWarmCache(t *testing.T) {
 	}
 	state := audit.NewTestBatchState(provider)
 
-	// Per-statement counter snapshots at post-apply — stmt2's cache hit
-	// is measured inside its own window, not inferred.
+	// Per-statement counter snapshots AND the complete entry view at
+	// each post-apply — stmt2's cache hit is measured inside its own
+	// window, and the entry is compared as a full struct across the
+	// two timepoints (stmt1's mint must be verbatim preserved by
+	// stmt2's no-capability fallback).
 	var snapAt [][5]int
+	var entryAt []audit.SRSOrderedEntryView
 	state.SetAfterApplyObserve(func(idx int, _ *spec.Statement) {
 		snapAt = append(snapAt, r3SnapReads(inner, fx))
+		e, _ := state.SRSOrderedEntry(100001)
+		entryAt = append(entryAt, e)
 	})
 
 	enriched := audit.EnrichSRSPrivForTest(t, state, provider,
@@ -714,6 +720,15 @@ func TestT26SRSOrderedNoCapabilityWarmCache(t *testing.T) {
 	if entry.Barrier || entry.PublishedIdx != 0 || entry.SourceArm != spec.SRSDropArmAbsentRefused ||
 		!entry.Absent || entry.OwnPrivilege != spec.SRSDropPrivilegeUnproven {
 		t.Fatalf("entry=%+v want the complete unchanged first provenance", entry)
+	}
+	// Two-timepoint complete-entry compare: the view captured at
+	// stmt1's post-apply and the view at stmt2's must be the SAME
+	// complete struct — the no-capability path touches nothing.
+	if len(entryAt) != 2 {
+		t.Fatalf("entry captures=%d want 2 (one per post-apply)", len(entryAt))
+	}
+	if entryAt[0] != entryAt[1] || entryAt[1] != entry {
+		t.Fatalf("entry drifted across stmt2: %+v → %+v (final %+v)", entryAt[0], entryAt[1], entry)
 	}
 	paSameStale(t, audit.BatchStateStaleSet(state), map[uint32]bool{}, "no stale mint")
 	// Batch total preserved as the summary check.

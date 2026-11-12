@@ -334,86 +334,156 @@ func TestT26SRSOrderedContradictoryBoundNoPublication(t *testing.T) {
 	sameStaleSet(t, staleSet(state), map[uint32]bool{100001: true}, "own-apply mints authored stale only")
 }
 
-// --- ChannelControlsCapture fidelity controls (R3-E1) -------------------
+// --- ChannelControlsCapture fidelity controls (R4-B) -------------------
 //
-// The capture is only useful if it is a TRUE deep-value snapshot.
-// These controls pin the discriminations a shallow copy would hide:
-// nil vs non-nil-empty, nested-element mutation, and bidirectional
-// isolation — a live mutation must not reach the capture, and a
-// capture mutation must not reach live state.
+// The capture is only useful if it is a TRUE deep-value snapshot built
+// WITHOUT product normalization helpers. These controls discriminate
+// with real different inputs — a bare batchState whose channel maps
+// are genuinely nil vs one whose maps are non-nil (empty or populated)
+// — plus per-container nilness inside TableSnapshot, non-empty nested
+// values, and bidirectional isolation across multiple member kinds.
 func TestT26SRSChannelControlsFidelity(t *testing.T) {
-	newState := func() *batchState {
-		state := &batchState{
+	key := batchTableKey{dialect: spec.DialectMySQL, schema: "s", table: "t"}
+	key2 := batchTableKey{dialect: spec.DialectMySQL, schema: "s", table: "u"}
+	key3 := batchTableKey{dialect: spec.DialectMySQL, schema: "s", table: "v"}
+
+	t.Run("channel-map-nilness", func(t *testing.T) {
+		// Bare state: every channel map genuinely nil.
+		bare := &batchState{}
+		snap := bare.ChannelControlsCapture()
+		if snap.Servers != nil || snap.Tables != nil || snap.TempTables != nil ||
+			snap.Schemas != nil || snap.Invalidated != nil || snap.Stale != nil || snap.Ordered != nil {
+			t.Fatalf("nil channel maps must stay nil: %+v", snap)
+		}
+		// Non-nil-but-empty maps must NOT collapse into nil.
+		empty := &batchState{
 			entries:            map[batchTableKey]*batchTableEntry{},
 			tempEntries:        map[batchTableKey]*batchTableEntry{},
 			serverEntries:      map[string]*batchServerEntry{},
 			schemaEntries:      map[string]*batchSchemaEntry{},
 			invalidatedSchemas: map[string]struct{}{},
 			srsExistenceStale:  map[uint32]struct{}{},
+			srsOrdered:         map[uint32]*srsOrderedEntry{},
 		}
-		return state
-	}
-	key := batchTableKey{dialect: spec.DialectMySQL, schema: "s", table: "t"}
+		snap2 := empty.ChannelControlsCapture()
+		if snap2.Servers == nil || snap2.Tables == nil || snap2.TempTables == nil ||
+			snap2.Schemas == nil || snap2.Invalidated == nil || snap2.Stale == nil || snap2.Ordered == nil {
+			t.Fatalf("non-nil-empty channel maps must not collapse to nil: %+v", snap2)
+		}
+		if len(snap2.Tables) != 0 || len(snap2.Ordered) != 0 || len(snap2.Stale) != 0 {
+			t.Fatal("empty source maps must produce empty captures")
+		}
+	})
 
-	t.Run("nil-vs-empty", func(t *testing.T) {
-		state := newState()
-		// A nil-shape entry vs a non-nil-shape with nil Columns vs a
-		// non-nil-shape with empty-non-nil Columns — three distinct
-		// shapes the capture must preserve.
+	t.Run("member-container-nilness", func(t *testing.T) {
+		state := &batchState{entries: map[batchTableKey]*batchTableEntry{}}
+		// Three distinct observed shapes the capture must keep apart.
 		state.entries[key] = &batchTableEntry{shape: nil}
-		key2 := batchTableKey{dialect: spec.DialectMySQL, schema: "s", table: "u"}
 		state.entries[key2] = &batchTableEntry{shape: &spec.TableSnapshot{Schema: "s", Exists: true}}
-		key3 := batchTableKey{dialect: spec.DialectMySQL, schema: "s", table: "v"}
 		state.entries[key3] = &batchTableEntry{shape: &spec.TableSnapshot{
-			Schema: "s", Exists: true, Columns: []spec.Column{},
+			Schema: "s", Exists: true,
+			Columns: []spec.Column{},
+			Options: map[string]string{},
 		}}
 		snap := state.ChannelControlsCapture()
 		if snap.Tables[key].shape != nil {
 			t.Fatal("nil shape must stay nil")
 		}
-		if snap.Tables[key2].shape == nil || snap.Tables[key2].shape.Columns != nil {
-			t.Fatal("non-nil shape with nil Columns must keep nil Columns")
+		if snap.Tables[key2].shape == nil || snap.Tables[key2].shape.Columns != nil ||
+			snap.Tables[key2].shape.Options != nil {
+			t.Fatal("non-nil shape with nil members must keep nil members")
 		}
-		if snap.Tables[key3].shape == nil || snap.Tables[key3].shape.Columns == nil ||
-			len(snap.Tables[key3].shape.Columns) != 0 {
-			t.Fatal("empty-non-nil Columns must stay non-nil empty")
+		s3 := snap.Tables[key3].shape
+		if s3 == nil || s3.Columns == nil || len(s3.Columns) != 0 ||
+			s3.Options == nil || len(s3.Options) != 0 {
+			t.Fatal("empty-non-nil members must stay non-nil empty")
 		}
 	})
 
-	t.Run("nested-element-isolation", func(t *testing.T) {
-		state := newState()
+	t.Run("nested-values-and-isolation", func(t *testing.T) {
+		state := &batchState{entries: map[batchTableKey]*batchTableEntry{}}
+		card := int64(42)
+		updatable := true
 		state.entries[key] = &batchTableEntry{shape: &spec.TableSnapshot{
 			Schema: "s", Exists: true,
-			Columns: []spec.Column{{Name: "g", Type: "geometry"}},
-			Options: map[string]string{"engine": "InnoDB"},
+			Columns: []spec.Column{
+				{Name: "g", Type: "geometry", IdentityOptions: map[string]any{"seed": "1"}},
+			},
+			PrimaryKey: &spec.Index{Name: "PRIMARY", Cardinality: &card, Columns: []string{"g"}},
+			Indexes: []spec.Index{
+				{Name: "gi", Columns: []string{"g"}, KeyParts: []spec.IndexKeyPart{{Column: "g"}}},
+			},
+			Constraints:         []spec.Constraint{{Type: "check", Columns: []string{"g"}}},
+			Options:             map[string]string{"engine": "InnoDB"},
+			View:                &spec.ViewSnapshot{Updatable: &updatable},
+			TTL:                 &spec.TTLConfig{TimeColumn: "ts"},
+			PartitionPlacements: map[string]string{"p0": "x"},
 		}}
 		before := state.ChannelControlsCapture()
 
-		// Live mutation must NOT reach the capture — mutate a nested
-		// element (the first column's type) and a map value.
-		state.entries[key].shape.Columns[0].Type = "int"
-		state.entries[key].shape.Options["engine"] = "MyISAM"
-		if before.Tables[key].shape.Columns[0].Type != "geometry" {
-			t.Fatal("live nested mutation leaked into the capture")
-		}
-		if before.Tables[key].shape.Options["engine"] != "InnoDB" {
-			t.Fatal("live map mutation leaked into the capture")
+		// Non-empty nested values complete preserved.
+		sh := before.Tables[key].shape
+		if sh.Columns[0].IdentityOptions["seed"] != "1" ||
+			sh.PrimaryKey.Cardinality == nil || *sh.PrimaryKey.Cardinality != 42 ||
+			sh.Indexes[0].KeyParts[0].Column != "g" ||
+			sh.Constraints[0].Type != "check" ||
+			*sh.View.Updatable != true ||
+			sh.TTL.TimeColumn != "ts" ||
+			sh.PartitionPlacements["p0"] != "x" {
+			t.Fatalf("non-empty nested values not preserved: %+v", sh)
 		}
 
-		// Capture mutation must NOT reach live state — same nested
-		// element, opposite direction.
-		before.Tables[key].shape.Columns[0].Type = "blob"
-		if state.entries[key].shape.Columns[0].Type != "int" {
+		// Live mutation across MULTIPLE member kinds must not reach the
+		// capture: slice element, map value, pointer target, nested map.
+		live := state.entries[key].shape
+		live.Columns[0].Type = "int"
+		live.Columns[0].IdentityOptions["seed"] = "2"
+		live.Options["engine"] = "MyISAM"
+		*live.PrimaryKey.Cardinality = 7
+		live.Indexes[0].KeyParts[0].Column = "h"
+		*live.View.Updatable = false
+		live.PartitionPlacements["p0"] = "y"
+		c := before.Tables[key].shape
+		if c.Columns[0].Type != "geometry" || c.Columns[0].IdentityOptions["seed"] != "1" ||
+			c.Options["engine"] != "InnoDB" || *c.PrimaryKey.Cardinality != 42 ||
+			c.Indexes[0].KeyParts[0].Column != "g" || *c.View.Updatable != true ||
+			c.PartitionPlacements["p0"] != "x" {
+			t.Fatal("live mutation leaked into the capture")
+		}
+
+		// Capture mutation must not reach live state — same members,
+		// opposite direction.
+		c.Columns[0].Type = "blob"
+		c.Options["engine"] = "CSV"
+		*c.PrimaryKey.Cardinality = 9
+		c.PartitionPlacements["p0"] = "z"
+		if live.Columns[0].Type != "int" || live.Options["engine"] != "MyISAM" ||
+			*live.PrimaryKey.Cardinality != 7 || live.PartitionPlacements["p0"] != "y" {
 			t.Fatal("capture mutation leaked into live state")
 		}
 	})
 
-	t.Run("invalidated-schemas-captured", func(t *testing.T) {
-		state := newState()
-		state.invalidatedSchemas["s"] = struct{}{}
+	t.Run("required-channels-populated", func(t *testing.T) {
+		state := &batchState{
+			serverEntries: map[string]*batchServerEntry{
+				"s1": {name: "s1", barrier: true},
+			},
+			schemaEntries: map[string]*batchSchemaEntry{
+				"s": {state: schemaPresent, attrs: map[string]string{"k": "v"}},
+			},
+			invalidatedSchemas: map[string]struct{}{"s": {}},
+			srsExistenceStale:  map[uint32]struct{}{100001: {}},
+			srsOrdered:         map[uint32]*srsOrderedEntry{},
+			srsDepsStale:       true,
+			contaminated:       true,
+		}
 		snap := state.ChannelControlsCapture()
+		if !snap.Servers["s1"].barrier || snap.Schemas["s"].attrs["k"] != "v" ||
+			!snap.Stale[100001] || !snap.DepsStale || !snap.Contaminated {
+			t.Fatal("required channels must carry their real values")
+		}
 		if _, ok := snap.Invalidated["s"]; !ok {
-			t.Fatal("invalidatedSchemas must be captured — it is schema channel state")
+			t.Fatal("invalidatedSchemas must be captured")
 		}
 	})
 }
@@ -495,6 +565,9 @@ func TestT26SRSOrderedGarbageParseWitness(t *testing.T) {
 // the same SQL parsed under both dialects.
 func TestT26SRSOrderedTiDBParseCompanion(t *testing.T) {
 	ctx := context.Background()
+
+	// Parse-shape contrast on the REAL shared parser: both dialects
+	// author the identical row.
 	for _, dialect := range []spec.Dialect{spec.DialectMySQL, spec.DialectTiDB} {
 		parsed, err := parseSQL(ctx, "DROP SPATIAL REFERENCE SYSTEM 100001;", dialect)
 		if err != nil {
@@ -508,6 +581,68 @@ func TestT26SRSOrderedTiDBParseCompanion(t *testing.T) {
 			t.Fatalf("%s: RawSQL=%q — the authored statement is the same input", dialect, parsed.Statements[0].RawSQL)
 		}
 	}
+
+	// The ordered-channel dimension through the REAL Extract +
+	// enrich + own-apply path on a TiDB batchState (a nil provider
+	// discriminates: any attempted catalog read fails loudly). The
+	// extractor itself marks the row Unsupported{boundary:vendor},
+	// so even though orderedStateDialect(tidb) is true the ordered
+	// mechanism is unreachable: no entry mints on either statement,
+	// while the boundary own-apply still mints the authored stale
+	// key — a TiDB batch can never publish or consume an ordered
+	// entry, and it never sees a MySQL minted one either (dialect is
+	// per-state).
+	parsed, err := parseSQL(ctx, "DROP SPATIAL REFERENCE SYSTEM 100001;"+
+		"DROP SPATIAL REFERENCE SYSTEM 100001;", spec.DialectTiDB)
+	if err != nil {
+		t.Fatalf("tidb parse: %v", err)
+	}
+	statements, err := Extract(ctx, parsed)
+	if err != nil {
+		t.Fatalf("tidb extract: %v", err)
+	}
+	if len(statements) != 2 {
+		t.Fatalf("extracted=%d want 2", len(statements))
+	}
+	for i, stmt := range statements {
+		if stmt.Dialect != spec.DialectTiDB {
+			t.Fatalf("stmt%d dialect=%v want tidb", i, stmt.Dialect)
+		}
+		if stmt.Unsupported == nil || stmt.Unsupported.Reason != spec.UnsupportedVendorBoundaryReason ||
+			stmt.Unsupported.Feature != string(spec.DDLOperationDropSpatialReferenceSystem) {
+			t.Fatalf("stmt%d unsupported=%+v want the extractor's vendor boundary", i, stmt.Unsupported)
+		}
+	}
+	state := newBatchState(spec.DialectTiDB, "golden", nil)
+	state.resolvedVersion = spec.ParseObservedVersion("8.0.11-TiDB-v8.5.0")
+	state.instanceFacts = &spec.InstanceFacts{Version: "8.0.11-TiDB-v8.5.0"}
+	enriched, err := state.enrichStatements(ctx,
+		&MetadataRequest{Schema: "golden",
+			PrivilegeAuditMode: spec.PrivilegeAuditModeObservedAccountNewSession},
+		statements, parsed.failures, state.instanceFacts,
+		auditLimits{orderedStatements: defaultOrderedStatementLimit})
+	if err != nil {
+		t.Fatalf("tidb enrich: %v", err)
+	}
+	if len(enriched) != 2 {
+		t.Fatalf("enriched=%d want 2", len(enriched))
+	}
+	for i, stmt := range enriched {
+		if stmt.Metadata != nil && stmt.Metadata.SRSDrop != nil {
+			t.Fatalf("stmt%d adjudication=%+v want none — boundary rows are never adjudicated", i, stmt.Metadata.SRSDrop)
+		}
+		if stmt.Metadata != nil && stmt.Metadata.SpatialReference != nil &&
+			stmt.Metadata.SpatialReference.OrderedAbsent {
+			t.Fatalf("stmt%d carries the ordered marker — a boundary row never commits it", i)
+		}
+	}
+	// Ordered channel empty after BOTH statements; the boundary
+	// own-apply mints exactly the authored stale key — never a
+	// publication.
+	if ids := state.SRSOrderedSRIDs(); len(ids) != 0 {
+		t.Fatalf("tidb ordered keys=%v want empty — vendor boundary never publishes", ids)
+	}
+	sameStaleSet(t, staleSet(state), map[uint32]bool{100001: true}, "boundary minted authored stale only")
 }
 
 // The internal marker and the ordered channel never reach the public
