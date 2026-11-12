@@ -15,11 +15,14 @@ push/merge/tag/release/issue close is implied or authorised.
 | impl | `e0f36f62591da60b5cb3883b5dad57f1ee80e944` | `a7f06ef0ebc57a4473a451e0254d074567d8c6d5` | `2f7231b5` | spec premise tri-state + `AdjudicateSRSDrop` premise arg; `srs_drop_premise.go`; `metadata.go` loader gate + attach; `ddl.mysql.srs.drop.privilege` rule + registration + default policy + example YAML; corpus deferral; regression assertion updates only where the approved increment changes them |
 | impl | `924e3ac873f0051df839d901412d45fb2ddcf130` | `b73fee47d8c5417050ee97c017c8f85e76026052` | `e0f36f62` | P1–P10 matrix: `t26_srs_priv_exec_test.go` (external, real provider chain) + `t26_srs_priv_exec_int_test.go` (internal batchState companions) |
 | impl docs | `8738402f6a30f6df69ac373d48db6bdf74c850d7` | `f3166487cf1497c67f328919f17e15e4a27a1701` | `924e3ac8` | module README sync (spec/rule/audit) + decision record `2026-11-12-mysql-drop-srs-conditional-privilege.md` |
-| receipt | `2d4ee54c8f545d33fa0fd3e134c4cdb31e209d27` | `c671a5fd217e32d88a597b64cc02419e31b33346` | `8738402f` | this receipt (docs-only) |
+| receipt | (this file's commit — chain-final docs closeout) | — | `8738402f` | this receipt; its commit/tree hash cannot self-embed and is registered in the delivery manifest and message |
 
-Final candidate HEAD: **`2d4ee54c8f545d33fa0fd3e134c4cdb31e209d27`**
-on branch `milestone/mysql-tidb-ddl-completion`. Cumulative diff under
-review: `2f7231b59744d6bbafb7150ffe32891002a2f6ab..2d4ee54c`.
+Final candidate HEAD: the receipt commit itself (docs-only child of
+`8738402f`) — its full commit/tree/parent triple is registered verbatim
+in the archive manifest and the delivery message, since a file cannot
+carry its own commit's hash. Branch:
+`milestone/mysql-tidb-ddl-completion`. Cumulative diff under review:
+`2f7231b59744d6bbafb7150ffe32891002a2f6ab..FINAL_HEAD`.
 
 Cumulative diffstat: 19 files, +2034/−63 (incl. this receipt).
 Categories: product
@@ -34,7 +37,7 @@ record). `.go` files changed: 12.
 Every gate below ran at product/test source commit `8738402f` on a
 clean working tree (`git status --porcelain` non-untracked = 0). Build,
 rebuild, and the three CLI probes used the binary built from
-`8738402f`. Between that gate source commit and final HEAD `2d4ee54c`
+`8738402f`. Between that gate source commit and final HEAD
 the only delta is this receipt itself — a docs-only file under
 `docs/verification/` that touches no product, test, build, or config
 input, so the gate results bind unchanged.
@@ -114,7 +117,7 @@ cannot produce them (P1a Vd, P6b Vd).
 - No frozen row was deleted; no fixture was substituted to make a row
   pass.
 
-## Gates (product/test inputs bound to `8738402f`; HEAD `2d4ee54c` adds only this receipt)
+## Gates (product/test inputs bound to `8738402f`; HEAD adds only this receipt)
 
 - Seven-package verbose:
   `go test -count=1 -v ./internal/domain/spec ./internal/application/audit ./internal/domain/rule/ddl ./internal/infrastructure/parser/tidb ./internal/domain/policy ./internal/infrastructure/metadata/mysql ./internal/interfaces/cli`
