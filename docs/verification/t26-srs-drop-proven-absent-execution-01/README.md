@@ -1,118 +1,98 @@
-# T26-SRS-DROP-PROVEN-ABSENT-EXECUTION-01 — R3 test + evidence hardening
+# T26-SRS-DROP-PROVEN-ABSENT-EXECUTION-01 — R4 assertion + record hardening
 
-Round: **R3 — TEST/DOCS/EVIDENCE-CHAIN REVISION** against the accepted
+Round: **R4 — LIMITED ASSERTION + RECORD REVISION** against the accepted
 contract at `0fb1b7ff` + evidence supplement `f206060d`
 (`docs/verification/t26-srs-drop-proven-absent-contract-01`, R4 ACCEPTED;
-issue #105, milestone T26/#105). R2 (`1291b934` impl + `f3d09134` docs)
-returned CHANGES REQUIRED on test depth, source-binding, mapping-table
-accuracy, and ledger form only — no product-path deviation was found.
-This round changed tests, test-only exports, comments, and docs; **no
-executable product behavior was modified**. No push, merge, tag,
-release, or issue closure is claimed or authorized by this receipt.
+issue #105, milestone T26/#105). R3 (`0354540b` impl + `8edf579d` docs)
+returned CHANGES REQUIRED on assertion completeness, conversion-chain
+binding, and record accuracy only — the reviewer confirmed the R3-A
+handshake, R3-B clone semantics, R3-C per-statement measurements, and
+both PA-6 internal companions stand. This round changed tests, comments,
+and docs; **no executable product behavior was modified**. No push,
+merge, tag, release, or issue closure is claimed or authorized by this
+receipt.
 
-Attribution discipline: **implementation and test work happened in C3**
-(`0354540b`, sequential on F2); the C3 commit/tree identity, its
-two-package gates, the diffs, and this README were **recorded in F3**
-(this commit's archive). R1/R2-captured logs are historical — nothing
-was re-run to rewrite them. C2 evidence (seven-package + full-suite
-gates, builds, probes) is **reused per R3-F4** because this round's diff
-is test/doc-only against product code — the reuse ledger names the
-source commit and member identities; dates and sources are not
-re-labelled.
+Attribution discipline: **implementation and test work happened in C4**
+(`4db2c1e4`, sequential on F3); the C4 commit/tree identity, its
+two-package gates, the diffs, and this README were **recorded in F4**
+(this commit's archive). R1/R2/R3-captured logs are historical —
+nothing was re-run to rewrite them; R3-record gaps are registered as
+facts, not reconstructed. C2 evidence (seven-package + full-suite
+gates, builds, probes) is **reused per the member-level ledger** —
+the reuse ledger references the delivered R2 archive members by path,
+byte size, and full SHA-256 under their C2 source-commit labels; dates
+and sources are not re-labelled.
 
 ## Identity
 
-- Implementation candidate (C3): `0354540be4eb4cb2c9b3551e5933cfc11e45c33d`
-- C3 tree: `f1f93d89fedb9cc7bdf50a60286c24409a554f89`
-- C3 parent: `f3d09134` (F2 docs — sequential commits per R3 ruling)
+- Implementation candidate (C4): `4db2c1e409bb814e7e7ab87c0137f88264218491`
+- C4 tree: `e8228d74cab1428724f7553134f6715c1e15d62e`
+- C4 parent: `8edf579d` (F3 docs — sequential commits per R4 ruling)
 - Branch: `milestone/mysql-tidb-ddl-completion`
 - cwd `/Users/fan/GolangProjects/DeltaScope`; toolchain `go1.26.1
   darwin/arm64`
 
-## R3 scope executed (C3; `.go` = tests + test-only export + comments)
+## R4 scope executed (C4; `.go` = tests + comments)
 
-- **R3-A** — `TestT26SRSAbsenceMidIterationCancelPropagates` now syncs
-  the cancel to the rowset's REAL `Next()` entry: `testRows.enteredNext`
-  is closed on the first `Next()` call, the cancel lands *inside*
-  iteration, and the test asserts `(Qo,Qexist,Qdeps)=(1,1,0)`,
-  `errors.Is(err, context.Canceled)`, and a nil snapshot — within a
-  bounded wait, not a sleep.
-- **R3-B** — `paSnapStmt` preserves nil-vs-non-nil-empty on every slice
-  member (`paCloneSRIDs`/`paCloneDepCols`/`paCloneStrings` return a nil
-  result for a nil input); `paSRSConflictSame` is the pure comparator
-  (`t.Fatalf` runs `runtime.Goexit` — it cannot be probed through
-  `recover`), wrapped by `paSRSConflictEqual` for diagnostics;
-  `TestT26SRSAbsentSnapshotFidelity` proves nil-vs-empty distinction,
-  element-change detection, and bidirectional mutation isolation on
-  `MatchedSRIDs`/`Columns`/`Owed`.
-- **R3-C1** — `TestT26SRSAbsentStaleChannelsRealChain` PA-5b/PA-5e rows
-  assert their own read vectors (single full pass + L=1 on the first
-  enrichment of each enrich window).
-- **R3-C2** — `TestT26SRSAbsentRevokeScopingRealChain` captures
-  per-statement read increments at the apply hook: stmt1
-  `[1,1,1,1,1]` (its own pass + the ONE-TIME premise load inside its
-  enrichment window), REVOKE `[0,0,0,0,0]`, stmt3 `[1,1,1,1,0]`; L=1
-  is measured across the whole enrich and attributed to the
-  enrich-level observation — NOT re-described as an independent
-  per-statement catalog read.
-- **R3-C3** — internal companions for PA-6c/PA-6e in
-  `t26_srs_absent_realchain_test.go`:
-  - `TestT26SRSAbsentBoundaryPrefixInternal` — the CREATE OR REPLACE
-    prefix carries the implementation boundary and NO SRSDrop
-    adjudication; its own-apply mints authored stale `{100001}` with
-    no contamination; the tail DROP is audited B short-circuited by
-    the same-SRID stale flag; prefix increment measured at its hook
-    `[1,1,1,1,1]`, tail increment `[0,0,0,0,0]` measured — never
-    inferred from totals.
-  - `TestT26SRSAbsentBoundaryVersionPairInternal` — both statements
-    are version boundaries (`unaudited`/`gate=version`/
-    `object=spatial_reference_system`), NEITHER carries an SRSDrop
-    adjudication; stmt1's boundary apply mints `{100001}`; stmt1's
-    increment `[1,1,1,1,0]` and stmt2's `[0,0,0,0,0]` are measured at
-    their own hooks; **L=0 is attributed to the admittance gate** —
-    L was already 0 at stmt1's hook, before any mint existed — not to
-    the later stale short-circuit. `SeedResolvedVersion` (new test
-    export) pins the resolved out-of-domain identity.
-- **R3-D1/D2** — the archive's
-  `bindings/r3-helper-and-json-bindings.txt` carries candidate-bound
-  (commit `0354540b` + real line numbers) verbatim excerpts for the
-  full minimum set: `r3Fixture`/`r3Classify`/`r3Conn.QueryContext`/
-  `r3ProductProvider`/`r3Harness`/`r3AssertReads`, `r3PrivilegeFixture`/
-  `r3PrivilegeRequest`/`r3Aggregate`/`r3OnlyFinding`, `r3S2Consumed`/
-  `r3RefusedDependency`, `evaluateEnriched`, `assertSRSPrivilegeNotice`,
-  `intExactGap`, `newSRSState`, `enrichSRSPriv`, `paClone*`/
-  `paSnapStmt`/`paSRSConflictSame`/`paSnapEqual`, `paRealState`/
-  `paReadsVector`, the stub `closeErr`/`blockOnCtx`/`enteredNext`
-  members + `Next`/`Close`/`recordTestQueryCall`, the named reused
-  PA-4a/4d/8a/8c/8d bodies, and the pre-existing scan/dependency
-  iteration-error bodies; plus the report→public canonical binding
-  (`report.StatementResult`/`report.Result`/`rule.Finding`/
-  `rule.EvidenceGap`/`deltascope.StatementResult`/`deltascope.Result`
-  JSON tags + `fromDomainResult`'s field-by-field copy — the frozen
-  keys survive conversion; `TestT26SRSAbsentCanonicalJSON` runs at
-  the internal request layer, which this binding now labels).
-- **R3-D3** — the case-matrix mapping below is corrected row-by-row
-  (see errata for each fixed contradiction).
-- **R3-E1** — `internal/infrastructure/metadata/mysql/README.md`
-  narrows `sql.ErrNoRows` to the existence-read path; the Qo
-  `select version()` read keeps its existing ErrNoRows →
-  unknown-support behavior.
-- **R3-E2** — `provider_test.go`'s `closeErr` comment now records the
-  actual propagation (`database/sql` surfaces it through `Rows.Err()`
-  / the EOF auto-close path), matching the corrected explanation.
-- **R3-E3** — PA-4e2's premise message corrected: S2 `owed=[E,D]` —
-  P IS consumed there; the text now says the observation projects
-  onto S2 without blocking the arm.
-- **R3-E4** — all diffstats below are real intervals recomputed from
-  `git diff --shortstat`; no C2 number is re-used as an F3 cumulative.
-- **R3-E5** — test-function accounting re-registered at C3: **47
-  PA-dedicated test functions** — 6 internal (`package audit`), **6
-  real-chain** (`package audit_test`; +`SnapshotFidelity` +2 boundary
-  companions this round), 22 external API, 13 provider — plus reused
-  R2/R3 functions named in the mapping. Functions ≠ `--- PASS` lines
-  ≠ packages.
+- **R4-A** — `TestT26SRSAbsenceMidIterationCancelPropagates` now asserts
+  the FINAL read vector after `ResolveObject` returns:
+  `t26AssertSeams(t, 1, 1, 0)` post-return rules out any Qo or
+  existence attempt issued after the cancel. The pre-cancel handshake
+  counts stay as the landing-point proof only — the reported
+  `(1,1,0)` no longer mixes two observation times.
+- **R4-B** — `TestT26SRSAbsentSnapshotFidelity` now asserts exact
+  captured values (`MatchedSRIDs=[1]`, the full dependency-column
+  tuple `{s,t,g,9}`, `Owed=[a]`); after mutating live the snapshot
+  still equals the ORIGINAL values; after mutating the snapshot live
+  still equals the WRITTEN values; `paSRSConflictSame` gains a
+  positive control (identical non-empty → true) and a negative
+  control (same Complete/nilness/length, differing element → false)
+  — a shape-preserving clone that zeroed values can no longer pass.
+- **R4-C** — `TestT26SRSAbsentBoundaryPrefixBlocks` now asserts
+  `len(result.Unsupported) == 1`, binds that single implementation
+  boundary to `Index == 0` (the prefix) and
+  `Feature == "create_spatial_reference_system"` (the literal the
+  prefix carries — `DDLOperationCreateSpatialReferenceSystem`), and
+  asserts `result.Statements[0].Coverage.Status == CoverageIncomplete`;
+  the frozen reason/boundary/object metadata, prefix zero
+  findings/gaps, tail `[B]` gap, and total-read asserts are kept.
+- **R4-D1** — `bindings/r4-bindings.txt` carries the full bodies of
+  `fromDomainFindings`, `fromDomainEvidenceGaps`, and the decisive
+  `cloneMetadataMap`/`cloneMetadataValue` helpers at C4 — the
+  conversion preserves metadata values verbatim (no key renames,
+  `srid` stays `uint32` → JSON number) and gap owner/reason/facts
+  pass through verbatim. The public `Finding`/`EvidenceGap` JSON tags
+  are reused per member identity from the accepted contract's
+  `baseline-source-additions.txt` (pkg/deltascope/audit.go unchanged
+  in this chain) — not re-copied.
+- **R4-D2** — same file: `r3PrivilegeNotice`'s full body (the helper
+  `r3S2Consumed` calls at `t26_srs_drop_r3_test.go:419`).
+- **R4-E1** — PA-6e timing wording corrected: L=0 is an AFTER-APPLY
+  measured value at each hook; the reason the loader never fired is
+  the enrich-entry qualification gate plus the fixture — the
+  after-apply counts no longer masquerade as a pre-mint observation.
+  Comments corrected in both the internal companion and this README.
+- **R4-E2** — PA-6e public comment corrected: the short-circuit cause
+  is stmt1's COMPLETED boundary own-apply (it minted the authored
+  stale key), not stmt2's own apply; the public row measures the pair
+  TOTAL while per-statement increments belong to the internal
+  companion — the two layers' attributions are registered separately.
+- **R4-E3** — the reuse section below now describes the actual
+  mechanism (`reuse-ledger.txt` pointing at delivered R2-archive
+  members); the R3 README's `historical-c2/*` member paths did not
+  exist in the R3 archive, and the ledger's member count is the
+  actual 69 rows (the 69th is `REUSED probes/probe-policy.yaml`
+  carried over from R1 classification).
+- **R4-E4** — the R3 `gates/gofmt.cmd.txt` recorded a placeholder
+  description (`<21-file filelist>`), not the executed argv. The R3
+  original is kept as-is in the R3 archive; the fact is registered
+  here. R4 gates record the literal expanded argv (see below).
+- **R4-E5** — `identity-f4.txt` carries the command, the REAL
+  `git status --porcelain` output, and its rc (clean → empty output);
+  the R3 archive's bare `0` is registered as insufficient, not
+  reconstructed.
 
-## Gates at the immutable C3 `0354540b` (invocation + immediate rc)
+## Gates at the immutable C4 `4db2c1e4` (literal argv + immediate rc)
 
 - `go test -count=1 -v ./internal/application/audit
   ./internal/infrastructure/metadata/mysql` — rc 0; **5,007 PASS /
@@ -120,39 +100,48 @@ re-labelled.
   Raw: `gates/gate-verbose.*`.
 - `go vet` same two packages — rc 0, 0-byte stdout/stderr.
   `gates/vet.*`.
-- `gofmt -l` over the 21 cumulative changed `.go` files
-  (`gates/gofmt-filelist.txt`) — rc 0, 0-byte output. The pre-existing
-  unformatted `internal/infrastructure/parser/tidb/mysql_t26r5_test.go`
-  is NOT touched by this chain (tracked, unchanged at baseline;
-  registered erratum, out of scope).
-- `git diff --check 0fb1b7ff..HEAD` — rc 0, 0-byte.
+- `gofmt -l` over the 21 cumulative changed `.go` files — rc 0, 0-byte
+  output; `gates/gofmt.cmd.txt` records the LITERAL expanded argv
+  (every file path on the command line) and
+  `gates/gofmt-filelist.txt` the same list one-per-line. The
+  pre-existing unformatted
+  `internal/infrastructure/parser/tidb/mysql_t26r5_test.go` is NOT
+  touched by this chain (tracked, unchanged at baseline; registered
+  erratum, out of scope).
+- `git diff --check 0fb1b7ff..4db2c1e4` — rc 0, 0-byte.
   `gates/diff-check.*`.
+- `git diff --check 4db2c1e4..<F4>` (C4→F4 docs segment) — rc 0.
+  `gates/diff-check-f4.*`.
 
 Every gate file is `*.cmd.txt` + `*.stdout.log` + `*.stderr.log` +
 `*.rc.txt`; each rc was captured by `rc=$?` on the line immediately
 after its own command — no pipeline masking.
 
-## Reused C2 evidence (R3-F4 — source commit + member identity; no re-run)
+## Reused C2 evidence (member-ledger reuse; no re-run, no re-label)
 
 This round changed no product `.go` file; product bytes and all build
 inputs (`go.mod`/`go.sum`/toolchain) are unchanged between C2 `1291b934`
-and C3 `0354540b` (C2→C3 = 8 files, all tests/test-exports/comments/docs:
-`+630/−211`). The following C2 members are therefore reused as evidence
-of the frozen behavior — each is delivered in this archive with its
-source-commit label intact:
+and C4 `4db2c1e4` (C2→C4 diffs are tests/test-exports/comments/docs
+only). The mechanism is a **member-level reuse ledger**: this archive's
+`reuse-ledger.txt` lists the **69 member rows** of the delivered R2
+archive (`/tmp/t26-srs-pa-r2-archive.tar.gz`, SHA-256
+`90432f8f51d6df06db394d3208095fbcc97f6667e0160bbb2e70ce54bbf8102a`,
+21,738,209 B) — each row carries the R2-archive member path, byte size,
+full SHA-256, and its R2 class (NEW / REUSED / HISTORICAL), under the
+C2 `1291b934` source-commit label:
 
-- `historical-c2/gates/*` — C2's seven-package verbose gate (8,378 PASS/
-  1 SKIP/0 FAIL over 7 `ok` packages) and `go test -count=1 ./...`
+- `gates/*` — C2's seven-package verbose gate (8,378 PASS/
+  1 SKIP/0 FAIL over 7 `ok` packages), `go test -count=1 ./...`
   full-suite (39 `ok`, 5 no-test-files, 0 failures), vet, gofmt,
-  diff-check — bound to C2, not re-labelled.
-- `historical-c2/build/deltascope-b1` (+ `build2` cmp rc 0) — C2's
-  deterministic build: SHA-256
+  diff-check.
+- `build/*` — C2's deterministic build pair: SHA-256
   `39aaaefb680597b4f39121da2d6ab0d2812d9a98f2a26e9a3332678a69af7728`,
   52,761,890 B, `CGO_ENABLED=1 -tags postgresql -buildvcs=false`,
   `go.mod` `80dd9105…`, `go.sum` `cc5fa030…`.
-- `historical-c2/probes/*` — C2 binary b1's three providerless CLI
-  probes: rc 0/1/2, stdout 896/1152/0 B, stderr 0/0/56 B, byte-exact
-  frozen shapes (transcript + policy `327a3e53…`).
+- `probes/*` — C2 binary b1's three providerless CLI probes: rc 0/1/2,
+  stdout 896/1152/0 B, stderr 0/0/56 B, byte-exact frozen shapes.
+- `historical-r1/*` — R1 captures preserved verbatim (class
+  HISTORICAL in the R2 archive), never re-run.
 
 ## Providerless CLI probes (reused C2 capture; contract PA-10g reference)
 
@@ -191,9 +180,9 @@ doesn't exist). Vector order: R, Qexist, Qdeps, Qo, L, Vd.
 | 4i | `TestT26SRSAbsenceEOFFterPositiveRow` | P | positive row then EOF | present; Absence=false | success row — vector not asserted |
 | 5a–f | `TestT26SRSAbsentStaleChannels` (I) + `TestT26SRSAbsentStaleChannelsRealChain` (R) | I+R | pre-minted stale + depsStale | both stale channels per A arm; same-SRID B, `GARBAGE` B, S2-union controls | I: no counters exist; R: PA-5b/5e per-row vectors measured at entry |
 | 6a/6b | `TestT26SRSAbsentSameSRIDCacheHit`, `TestT26SRSAbsentDifferentSRIDRereads` | X | 2-statement same/diff SRID | cache hit 1,1,1,1,1,1 / re-read 2,2,2,2,1,1 | measured per seam |
-| 6c | `TestT26SRSAbsentBoundaryPrefixBlocks` (X) + `…PrefixInternal` (R) | X+R | CREATE OR REPLACE prefix | stmt1 implementation boundary + no adjudication; tail audited B; stale `{100001}` no contamination | X total 1,1,1,1,1,1; R increments: prefix `[1,1,1,1,1]`, tail `[0,0,0,0,0]` (Vd N/A at R) |
+| 6c | `TestT26SRSAbsentBoundaryPrefixBlocks` (X) + `…PrefixInternal` (R) | X+R | CREATE OR REPLACE prefix | X: exactly ONE Unsupported entry bound to index 0 + `create_spatial_reference_system` feature + implementation boundary + stmt1 CoverageIncomplete; R: no adjudication; tail audited B; stale `{100001}` no contamination | X total 1,1,1,1,1,1; R increments: prefix `[1,1,1,1,1]`, tail `[0,0,0,0,0]` (Vd N/A at R) |
 | 6d | `TestT26SRSAbsentRecachesPerEnrich` + `…RealChain` | I+R | two enrich passes | per-enrich re-read | per-enrich counts measured |
-| 6e | `TestT26SRSAbsentBoundaryVersionPair` (X) + `…VersionPairInternal` (R) | X+R | Qo 8.0.3, no pin | both version boundaries exact `{unaudited,gate:version,object:spatial_reference_system}`; neither adjudicates; minted `{100001}` | X total 1,1,1,1,0,1 + forwards=1; R increments: stmt1 `[1,1,1,1,0]`, stmt2 `[0,0,0,0,0]`; L=0 attributed to admittance (already 0 before the mint); Vd N/A at R |
+| 6e | `TestT26SRSAbsentBoundaryVersionPair` (X) + `…VersionPairInternal` (R) | X+R | Qo 8.0.3, no pin | both version boundaries exact `{unaudited,gate:version,object:spatial_reference_system}`; neither adjudicates; minted `{100001}` | X total 1,1,1,1,0,1 + forwards=1; R increments measured after-apply: stmt1 `[1,1,1,1,0]`, stmt2 `[0,0,0,0,0]`; L=0 registered as an after-apply measured value — the loader-not-fired reason is the enrich-entry qualification gate + fixture, not a pre-mint observation; Vd N/A at R |
 | 7a | `TestT26SRSAbsentRevokeScoping` (I) + `…RealChain` (R) | I+R | consumable→REVOKE→suppressed | SAME stmt1 at 3 hook points; complete SRS+adj+premise; nil/empty distinct; bidirectional isolation | R: total 2,2,2,2,1 + per-statement Δ `[1,1,1,1,1]`/`[0,0,0,0,0]`/`[1,1,1,1,0]`; **Vd=N/A — no discovery runs inside enrich**; L=1 enrich-level |
 | 7b | `TestT26SRSAbsentRevokeScopingPublic` | X | same batch | stmt1 noop+marker; stmt3 `[P]` gap and nothing else | 2,2,2,2,1,1 measured |
 | 8a | `TestT26SRSR3E10Proven803` (reused) | X | Qo 8.0.3 no pin | single-statement version boundary | R3-frozen body (`bindings/`) |
@@ -201,7 +190,7 @@ doesn't exist). Vector order: R, Qexist, Qdeps, Qo, L, Vd.
 | 8d | `TestT26SRSPrivP9cInternalVendorBoundaryMint` (reused) | I | real TiDB parse | vendor boundary mints `{100001}` | R3-frozen body (`bindings/`) |
 | 9a | `TestT26SRSAbsenceQueryErrorPropagates` | P | generic `queryErr` | `errors.Is`, nil snapshot | (1,1,0) measured |
 | 9b | `TestT26SRSAbsenceIterationErrorPropagates` | P | `rowErrAt:0` | `errors.Is`, nil snapshot | (1,1,0) measured |
-| 9c | `TestT26SRSAbsenceMidIterationCancelPropagates` | P | `blockOnCtx` rowset + `enteredNext` handshake | cancel DURING real `Next()` iteration; `errors.Is(context.Canceled)`; nil snapshot | Qo=1,Qexist=1,Qdeps=0 measured |
+| 9c | `TestT26SRSAbsenceMidIterationCancelPropagates` | P | `blockOnCtx` rowset + `enteredNext` handshake | cancel DURING real `Next()` iteration; `errors.Is(context.Canceled)`; nil snapshot; **post-return final vector** excludes any post-cancel attempt | (1,1,0) measured twice — pre-cancel landing + post-return final |
 | 9c-ctl | `TestT26SRSAbsencePreCancelledRequestPropagates` | P | pre-cancelled ctx | request-control only — NOT the 9c witness | renamed row; vector not asserted |
 | 9c-close | `TestT26SRSAbsenceCloseErrorPropagates` | P | `closeErr` sentinel | error reaches caller via `Rows.Err()`/EOF path | (1,1,0) measured |
 | 9d | `TestT26SRSAbsentNoResolverStaysUnproven` | X | capability minus ObjectResolver | S2 `[E,D]` + notice | R/Qexist/Qdeps/Qo not counted (no seam counters on the custom provider); **L channel EXISTS — `paNoResolverProvider` implements the loader — but is not counted** |
@@ -218,15 +207,19 @@ doesn't exist). Vector order: R, Qexist, Qdeps, Qo, L, Vd.
 | in-domain supply | `TestT26SRSAbsenceSuppliedInDomain` + `…InDomain804` (P) + `…PlainRefused` (X) | P+X | Qo 8.0.36 / 8.0.4 | `Absence=true` supply + consumed | Qo/Qexist/Qdeps=1 measured |
 | D-vs-D-proof | `TestT26SRSAbsenceNotSuppliedSupportedNon80` | P | Qo 8.4.3 | supported yet not proven → zero-row stays unknown | (1,1,1) measured |
 
-Test-function accounting (R3-E5): **47 PA-dedicated test functions** —
+Test-function accounting (R3-E5, unchanged at C4): **47 PA-dedicated test functions** —
 6 internal (`package audit`), **6 real-chain** (`package audit_test`),
 22 external API, 13 provider — plus reused R2/R3 functions named above.
 Functions ≠ `--- PASS` lines (subtests expand) ≠ package counts.
 
-Reused-helper binding (R3-D1): `bindings/r3-helper-and-json-bindings.txt`
-in this archive carries candidate-bound (commit `0354540b` + real line
-numbers) verbatim excerpts of every helper/member the mapping relies
-on — see the R3-D1 bullet above for the member list.
+Reused-helper binding (R3-D1 + R4-D): this archive carries two binding
+files — `bindings/r3-helper-and-json-bindings.txt` (C3 `0354540b`-bound
+verbatim excerpts of every helper/member the mapping relies on; the
+product files it excerpts are unchanged at C4, verified byte-identical
+across C3→C4 where applicable) and `bindings/r4-bindings.txt` (C4
+`4db2c1e4`-bound full bodies of `fromDomainFindings`/
+`fromDomainEvidenceGaps`/`cloneMetadataMap`/`cloneMetadataValue`/
+`r3PrivilegeNotice`).
 
 ## Real-interval diffstats (R3-E4 — recomputed; not carried forward)
 
@@ -240,6 +233,10 @@ on — see the R3-D1 bullet above for the member list.
 | F2 `f3d09134` → C3 `0354540b` | 6 | +376/−50 |
 | C2 `1291b934` → C3 `0354540b` | 8 | +630/−211 |
 | baseline `0fb1b7ff` → C3 `0354540b` | 28 | +3319/−128 |
+| C3 `0354540b` → F3 `8edf579d` | 1 doc | +230/−227 |
+| F3 `8edf579d` → C4 `4db2c1e4` | 3 | +75/−37 |
+| baseline `0fb1b7ff` → C4 `4db2c1e4` | 28 | +3360/−128 |
+| C3 `0354540b` → C4 `4db2c1e4` | 4 | +305/−264 |
 
 ## Documentation
 
@@ -256,15 +253,32 @@ on — see the R3-D1 bullet above for the member list.
 
 ## Errata / notes
 
-- R2 mapping-table contradictions corrected per R3-D3: PA-1a had
-  "notice" (actual: 0 findings); PA-1b/2a had "pass"+`L=0` (actual:
-  reject + `L=1`); PA-1c/8b and PA-4b had `L=0` (actual: `L=1`);
-  PA-2d was described as a three-statement fixture with a measured
-  vector (actual: REVOKE+one DROP, no read assert); PA-2c/PA-4c had
-  measured vectors the bodies never assert (now "unobserved"); PA-7's
-  `*` is now `Vd=N/A` with reason; PA-9d's "loader N/A" is corrected
-  — the channel exists, only the counting was absent; coverage/verdict
-  claims are now stated per row at their asserted scope only.
+- R4-E1 wording correction: the R3 internal companion's comment
+  claimed L=0 was observed "before any mint" — the hook is
+  after-apply and `staleAt[0] == {100001}` was already asserted at
+  that point; L=0 is now registered as an after-apply measured value
+  and the loader-not-fired reason is attributed to the enrich-entry
+  qualification gate + fixture, not to a timing the counts don't
+  observe. No new timing hook was added.
+- R4-E2 wording correction: the public PA-6e comment attributed the
+  short-circuit to stmt2's own apply; the cause is stmt1's COMPLETED
+  boundary own-apply (which minted the authored stale key). The
+  public row asserts the pair total; per-statement increments are
+  the internal companion's.
+- R4-E3 record correction: the R3 README described reuse members as
+  `historical-c2/*` — those paths never existed in the R3 archive.
+  The actual mechanism is `reuse-ledger.txt` referencing delivered
+  R2-archive members; the ledger's true member-row count is **69**
+  (the R3 receipt's "68" undercounted `REUSED
+  probes/probe-policy.yaml`, which keeps its R1-copied class).
+- R4-E4 record correction: the R3 `gates/gofmt.cmd.txt` held a
+  placeholder description rather than the executed argv; the R3
+  original is kept in its archive and the fact is registered here.
+  R4 gate captures record the literal expanded argv.
+- R4-E5 record correction: the R3 `identity-f3.txt` carried a bare
+  `0` for the status check; F4's identity file carries the command,
+  real `git status` output, and rc (empty output stays empty). R3's
+  transcript is not reconstructed.
 - `internal/infrastructure/parser/tidb/mysql_t26r5_test.go` fails
   `gofmt -l` repo-wide at baseline `0fb1b7ff` (tracked, untouched) —
   registered observation only.
@@ -275,7 +289,7 @@ on — see the R3-D1 bullet above for the member list.
   captures recorded outputs and rcs; the R1 MANIFEST self-listed and
   omitted `RECEIPT.md`; the R1 build capture did not record the full
   expanded build command or the go.mod/go.sum hashes — those remain
-  reported-not-captured history, NOT re-derived here (R3-E6).
+  reported-not-captured history, NOT re-derived here.
 - The close-error provider row documents actual `database/sql`
   propagation: the stub's `Close` sentinel surfaces through the
   iteration/`rows.Err()` path (EOF auto-close) — it is NOT claimed as
