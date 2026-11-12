@@ -119,56 +119,146 @@ No conditionalized/revision state is pre-built for the deferred
 
 Frozen first-match arm order stands: **B → S0 → S1 → A → S2**.
 
-Ordered bind path (inside `bindMySQLSRS`, before the resolver seam —
-mirroring the accepted SERVER six-step position):
+### 4.1 Ordered-consumer eligibility (R2-A1)
+
+`bindMySQLSRS` is invoked for every MySQL SRS declaration — audited
+drops AND boundary writes — before the caller checks `Kind`/`
+Unsupported` and attaches adjudication. Being inside `bindMySQLSRS`
+does not mean serving audited drops only, so ordered consumption is
+gated by an explicit, codable predicate evaluated inside the bind:
+
+```
+orderedSRSDropEligible(statement, s):
+    s.dialect == spec.DialectMySQL
+    && decl.Kind == spec.SRSKindDrop
+    && statement.Unsupported == nil
+    && MySQLSRSDropAuditedDomain(s.statementVersion())
+```
+
+A statement failing any conjunct never reaches the ordered lookup — it
+takes the pre-existing resolver path unchanged (boundary binds and
+their own-apply stale mint keep the accepted semantics). No new
+SRID-0 or boundary pre-read short-circuit is introduced: SRID 0 still
+exits at the S0 slot inside adjudication, and boundary statements
+still bind through the full resolver path.
+
+### 4.2 Ordered bind path (determinate)
 
 1. non-MySQL dialect → unvouched `bound` (unchanged);
-2. `s.contaminated` or `srsExistenceStale[srid]` → `MetadataUnreadBatchEffects` (unchanged);
-3. **ordered lookup**: `srsOrdered[srid]` exists, `absent && !barrier`
-   → bind `SpatialReferenceSystemState{SRID, OrderedAbsent: true}` and
-   continue at step 4 with the existence answer consumed; `barrier`
-   entries fall through to step 4 as if no entry existed — the stale
-   flag already handles the block (defense-in-depth, never a
-   resurrecting path);
-4. resolver seam issues **deps-only** lookup (`ObjectLookupRequest`
-   gains a `fields` qualifier — implementation touchpoint) → the
-   dependency witness is still read fresh and errors still propagate;
-5. no ordered hit → full resolver call, unchanged.
+2. `s.contaminated` or `srsExistenceStale[srid]` →
+   `MetadataUnreadBatchEffects` (unchanged);
+3. `orderedSRSDropEligible` false → step 5 (unchanged full path);
+4. **ordered lookup**: `srsOrdered[srid]` exists, `absent && !barrier`
+   → certify the active entry, bind
+   `SpatialReferenceSystemState{SRID: authored, OrderedAbsent: true}`,
+   and issue the **deps-only** read (§4.3); a `barrier` entry is
+   treated as no entry → step 5 (the stale flag already guarantees
+   the blocked arm — defense in depth, never a resurrecting path);
+5. no active entry → full resolver call, unchanged.
 
-**Critical ruling — deps are never skipped on a hit.** `ResolveObject`
-today answers existence + dependencies in one call. An ordered hit that
-skipped the whole call would (a) hide a positive dependency witness
-that appeared mid-batch and (b) swallow a still-reachable provider
-error. So the contract registers one implementation touchpoint: the
-lookup gains a deps-only form (`fields=dependencies` qualifier on
-`ObjectLookupRequest`, honored by the MySQL-SRS provider — Qdeps + Qo
-still fire, Qexist skipped). If that seam is not available at
-implementation time, the ordered entry degrades to provenance-only and
-the hit path issues the full lookup (read savings lost, safety kept) —
-the contract does **not** authorize laundering a skipped read into a
-"executed, zero rows" record (OP-4d).
+### 4.3 Deps-only read — bypasses objectCache (R2-A2, unique scheme)
 
-Read policy on a hit:
+`ResolveObject` today answers existence + dependencies in one call,
+and `objectCache` memoizes per `(schema,type,name,qualifiers)`. The
+contract's requirement is stronger: **every ordered-consuming
+statement must see the dependency witness fresh**, because a positive
+witness appearing mid-batch still outranks the ordered absence (OP-4a
+discriminant: publish → ordered hit → *same SRID* ordered hit whose
+deps answer turned positive or errored).
 
-- R: still issued (deps-only lookup) — Δ1
-- Qexist: skipped-by-ordered — Δ0, registered as `skipped`, not `0`
-- Qdeps: issued fresh — Δ1
-- Qo: issued with the deps call — Δ1
-- vector on a hit row: `Δ = R1, Qexist 0(skip), Qdeps 1, Qo 1` — never
-  rewritten as a successful existence read
-- errors on still-issued reads propagate unchanged (OP-4c)
+Unique scheme (no implementation-time fallback):
+
+- The hit path dispatches a deps-only request **directly to the
+  provider resolver** — `resolveObjectSnapshot`/provider call — never
+  through `cachedObjectResolver`. objectCache is not consulted and not
+  written for deps-only requests.
+- Request form: `ObjectLookupRequest{Type:"mysql_spatial_reference_system",
+  Name: <authored SRID decimal>, Qualifiers: {srs_facts:"dependencies"}}`
+  — new qualifier constant `ObjectLookupQualifierSRSFields` /
+  value `dependencies` (implementation seam).
+- Capability: the MySQL provider implements a deps-only branch
+  (optional interface `MySQLSRSDependencyReader` — implementation
+  seam). If the wired resolver does not honor the qualifier, the
+  ordered entry is **not consumed** for that statement: it takes the
+  existing full path (fresh Qexist+Qdeps+Qo; the entry remains
+  provenance). This is the single determinate fallback — there is no
+  "decide later" branch.
+- Qo is still issued inside the deps call (the provider's support
+  gate is per dispatch); an unparseable Qo does not zero the deps
+  query — the accepted full-path direction (reads still run, only
+  `Absence` supply stops) is preserved.
+
+### 4.4 Result/merge table (R2-A3)
+
+Bound state on an ordered hit is built ONLY from the entry + the
+deps-only response:
+
+| field | value on hit | source |
+|---|---|---|
+| SRID | authored SRID | declaration |
+| OrderedAbsent | true | certified active entry |
+| Dependencies | fresh fact or nil | deps-only response |
+| Read / Exists / Absence / Status / UnreadReason / CatalogName / NameConflict / OrgConflict | all zero | never touched — the skipped existence read is not laundered into catalog fields |
+
+- **nil snapshot / nil SpatialReference** → `Dependencies=nil` → no
+  S1 witness available → A arm proceeds (the absence fact is already
+  certified; the witness only supplies S1 precedence).
+- **identity mismatch** (`snapshot.SpatialReference.SRID != authored`)
+  → the deps fact is foreign → discarded → `Dependencies=nil` → A arm
+  proceeds; a foreign answer is never promoted.
+- **positive deps fact** → S1 outranks → refused_dependency (arm
+  table unchanged; `srsDropDependencyWitness` still validates
+  every column's declared SRID).
+- **read error** → propagates through bind; no adjudication, no
+  own-apply for that statement, no new publication; the prefix
+  statement's bound snapshot and the existing entry are unchanged.
+- **no deps capability** → §4.3 fallback: entry unconsumed, full path.
+- A full-lookup return value never overwrites an ordered bound state;
+  the skipped existence query is never recorded as an executed read.
+
+### 4.5 OrderedAbsentConsumed (cross-layer contract)
+
+`OrderedAbsentConsumed(state, authoredSRID)` =
+`state != nil && state.OrderedAbsent && state.SRID == authoredSRID`.
+
+The marker is set by the bind **only after** certifying
+`entry.absent && !entry.barrier` on the same-SRID entry — barrier is
+decided at bind, so adjudication consumes the marker verbatim with no
+second barrier check. `state.SRID` is always assigned `decl.SRID` at
+bind; the map key does not substitute for this field-level contract.
+A-slot predicate: `ValidAbsence(state, srid) || OrderedAbsentConsumed(state, srid)`.
+
+### 4.6 Read policy
+
+- **R** = resolver dispatches actually forwarded to the provider
+  (either path); a cache return registers a `cache-hit` event — R=0,
+  all SQL deltas 0. Per-statement SQL attempts are counted on
+  Qexist/Qdeps/Qo separately.
+- On an ordered hit: `R Δ1` (deps-only forwarded),
+  `Qexist 0 — skipped-by-ordered` (registered, not executed),
+  `Qdeps Δ1`, `Qo Δ1`. Never rewritten as a successful existence read.
+- Errors on still-issued reads propagate unchanged.
+
+**Observable differences vs baseline (narrowed)**: (i) same-enrich
+read counts change — a hit skips Qexist; (ii) S1 remains reachable on
+every hit via the fresh deps read; (iii) error reachability on the
+deps path is preserved; (iv) cross-enrich retention (OP-2d) is the
+intentional extension. These four deltas ARE the contract's changes —
+no other observable behavior is claimed changed.
 
 ## 5. OP-D — lifecycle, invalidation, cache separation
 
 - **Owner/lifetime**: `batchState`, request-scoped, same batch, same
   target identity + version admittance. New `batchState` inherits
   nothing (OP-2e). Not a cross-request cache; no concurrency claims.
-- **vs objectCache**: `objectCache` is rebuilt per enrich; the ordered
-  channel lives on `batchState` and survives (OP-2d registers this as
-  the intentional extension over PA-6d's re-read-per-enrich baseline —
-  registered as a model decision, not a baseline defect). Two distinct
-  mechanisms with distinct vectors: cache-hit = Δ0 on all reads;
-  ordered-hit = Qexist skipped, deps+Qo still fire.
+- **vs objectCache**: three distinct mechanisms, distinct vectors:
+  (a) `objectCache` — rebuilt per enrich, full-lookup memoization,
+  cache-hit = R0 + `cache-hit` event + all SQL deltas 0; (b) the
+  ordered channel — `batchState`-owned, survives the per-enrich cache
+  rebuild (OP-2d registers this intentional extension over PA-6d's
+  re-read-per-enrich baseline — a model decision, not a baseline
+  defect); (c) the deps-only hit path — bypasses objectCache, always
+  forwards, fresh witness per consuming statement.
 - **Closed invalidation table**:
 
 | event | effect on the SRID's entry |
@@ -192,20 +282,30 @@ Read policy on a hit:
 
 - All RuleIDs, outcomes, messages, levels, gap owners/reasons,
   `required_facts` order, reserved advisory, and `conditional_audit`
-  marker rules stay frozen. A hit row is publicly indistinguishable
-  from a catalog-served A arm (OP-7a asserts byte-shape equality).
+  marker rules stay frozen. A hit row projects the same rule/level/
+  message/metadata shape as a catalog-served row of the same arm —
+  positional fields (statement index, location) differ per statement
+  and are asserted separately; omitempty semantics preserved.
+- **Coverage is determined by the arm, never by the hit**: A-plain and
+  A-IE✓ keep the accepted complete coverage; A-IE? still owes `[P]` →
+  `coverage=unverified`; a statement whose read errored carries the
+  error's layer and no completed arm/projection.
+- `conditional_audit` marker: inside the A family it is present only
+  on A-IE✓; the accepted S2 privilege-notice marker is unaffected —
+  this round does not touch it. Successor statements never inherit a
+  marker from the entry (each A-IE✓ carries its own premise
+  consumption; OP-3a asserts per-statement attribution).
 - Ordered provenance stays internal. No new public field, rule, or
   marker is proposed — none is needed; if a later reviewer judges the
   provenance worth surfacing, it is a separate contract decision.
-- Marker semantics: `conditional_audit` present on A-IE✓ findings only;
-  absent ≠ null/empty-string semantics preserved.
 - Policy disabled/level-rewrite touches projections only — publication
-  and premise truth unaffected (OP-7d/7e).
+  and premise truth unaffected (OP-7d/7e specify concrete config and
+  exact findings/gaps/coverage/verdict).
 - Providerless CLI three-probe stays regression-only — it can never
   produce ordered publication evidence and no new probe is planned.
-- Coverage: per-statement coverage complete on hit rows; aggregate
-  coverage/verdict asserted only on declared whole-request rows
-  (OP-7a).
+- Aggregate coverage/verdict asserted only on declared whole-request
+  rows (OP-7a: two clean A-plain statements → aggregate complete,
+  verdict reject).
 
 ## 7. Source facts vs model deductions vs assumptions
 
@@ -226,22 +326,26 @@ is the minimal safe invalidation; fact/premise/marker are separable
 because the code already carries them in three different slots.
 
 **Unverified assumptions** (must be re-checked at implementation):
-the `fields=dependencies` qualifier is the minimal seam change (the
-degraded full-lookup fallback is registered); `OrderedAbsent` naming
-mirrors `ServerState` conventions; per-hit Qo is required by the
-provider's support gate rather than cacheable (kept issued — safe
-side).
+`srs_facts=dependencies` is the minimal qualifier vocabulary;
+`MySQLSRSDependencyReader` is the right optional-capability surface;
+`OrderedAbsent` naming mirrors `ServerState` conventions; per-hit Qo
+is required by the provider's support gate rather than cacheable
+(kept issued — safe side).
 
 ## 8. Implementation touchpoints (registered, not authorized)
 
 1. `batchState` + `srsOrdered map[uint32]*srsOrderedEntry`; own-apply
    mint on A arms; barrier flip on same-SRID boundary/write.
 2. `SpatialReferenceSystemState.OrderedAbsent` marker field.
-3. `bindMySQLSRS` ordered lookup step 3 + deps-only fall-through.
-4. `ObjectLookupRequest.fields` qualifier + provider deps-only path
-   (or full-lookup fallback).
+3. `bindMySQLSRS` `orderedSRSDropEligible` gate + ordered lookup step
+   + deps-only fall-through.
+4. `ObjectLookupQualifierSRSFields`/`srs_facts=dependencies` qualifier;
+   `MySQLSRSDependencyReader` optional interface; provider deps-only
+   branch (Qo + Qdeps, Qexist skipped); hit path bypasses
+   `cachedObjectResolver` and dispatches to the provider directly.
 5. A-slot predicate `ValidAbsence || OrderedAbsentConsumed`.
-6. Read-ledger annotation for `skipped-by-ordered` (Qexist).
+6. Read-ledger annotations: `skipped-by-ordered` (Qexist) and
+   `cache-hit` events (zero-SQL returns, R=0).
 7. OP-1..OP-8 witness tests across internal/real-chain/public/provider
    layers (all `PLAN` here).
 
