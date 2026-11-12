@@ -95,3 +95,41 @@ consistency witness:
 - Application cells: mid-request O2 drift (`versionScript`)
   propagates the bounded error while stmt1's ordered entry survives;
   own-apply stale/barrier cells unchanged.
+
+## R4 correction (reviewer ER2: pinned channel connection)
+
+`*sql.DB` is a connection pool. Under R3 the O2 witness ran on
+`p.db.QueryRowContext` and the following catalog reads on
+`p.db.QueryContext`, so a proxy or multi-backend topology could land
+the witness on one backend and the reads on another — the consistency
+check would be vacuous. R4 pins each read unit to one `*sql.Conn`
+acquired via `p.db.Conn(ctx)`.
+
+- `loadMySQLSRSObject` keeps the O1 gate ahead of `p.db.Conn`: a nil
+  or off-domain O1 still closes with zero queries and never acquires a
+  connection at all. An in-domain O1 pins one conn, then the O2
+  witness, existence, qualified conflict, and dependency reads all run
+  on it (`loadMySQLSRSObjectOnConn`).
+- `ResolveMySQLSRSDependencies` pins one conn per call for the witness
+  plus dependency read — no generic shared channel, each read unit
+  keeps its own backend proof.
+- Both paths release the conn on success and on failure; a release
+  error on a clean read propagates wrapped
+  (`release mysql srs channel connection`).
+- The `srsChannelQuerier` interface (`QueryRowContext` +
+  `QueryContext`) is the minimal query surface so helpers keep taking
+  the pinned conn, and the stub driver can observe per-connection
+  identity.
+
+### Verification (R4)
+
+- `provider_t26_r4_pinned_test.go`: a connection-counting stub driver
+  that hands out a distinct connection ID per `*sql.Conn` and can
+  answer `select version()` differently per backend proves — match
+  shares one conn ID across witness + catalog reads; mismatch and
+  unparseable O2 fail closed after exactly one witness query with zero
+  catalog reads; missing/off-domain O1 acquires zero connections;
+  `ResolveMySQLSRSDependencies` shares its conn between witness and
+  dependency read; both units release on success and on failure; and
+  the topology-split cell (banner differs per backend connection)
+  shows the witness only vouches for its own pinned backend.

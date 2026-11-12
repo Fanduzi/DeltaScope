@@ -90,6 +90,16 @@ func (p *Provider) loadMySQLServerObject(ctx context.Context, request spec.Objec
 // (T26-SRS-VERSION-APPLICABILITY-01 EXECUTION-01 R3 frozen contract).
 var ErrSRSChannelVersionInconsistent = errors.New("mysql srs channel version inconsistent with the request-observed identity")
 
+// srsChannelQuerier is the query surface one pinned *sql.Conn offers —
+// the O2 witness and every catalog read that follows it ride the SAME
+// connection so a proxy or multi-backend topology cannot move the
+// reads to a backend the witness never observed
+// (T26-SRS-VERSION-APPLICABILITY-01 EXECUTION-01 R4).
+type srsChannelQuerier interface {
+	mysqlVersionQuerier
+	QueryContext(ctx context.Context, query string, args ...any) (*sql.Rows, error)
+}
+
 // mysqlSRSChannelVersionWitness issues the channel's own
 // select version() as a CONSISTENCY WITNESS — never a second
 // adjudicator (frozen V1/R3). The request-level identity (O1) already
@@ -102,7 +112,8 @@ var ErrSRSChannelVersionInconsistent = errors.New("mysql srs channel version inc
 //   - matching banner → nil.
 //
 // O2 never substitutes for O1 and never relaxes the request verdict;
-// when O1 is absent the callers issue no query at all.
+// when O1 is absent the callers issue no query at all. The caller pins
+// the connection — the witness only proves this channel's backend.
 func mysqlSRSChannelVersionWitness(ctx context.Context, querier mysqlVersionQuerier, o1 *spec.VersionIdentity) error {
 	var banner string
 	if err := querier.QueryRowContext(ctx, `select version()`).Scan(&banner); err != nil {
@@ -164,9 +175,35 @@ func (p *Provider) loadMySQLSRSObject(ctx context.Context, request spec.ObjectLo
 		state.UnreadReason = reason
 		return snapshot, nil
 	}
-	if err := mysqlSRSChannelVersionWitness(ctx, p.db, o1); err != nil {
+	// Pinned channel connection (R4): *sql.DB is a pool — without a
+	// pinned *sql.Conn the O2 witness could land on one backend while
+	// the catalog reads land on another, making the consistency check
+	// vacuous under a proxy/topology split. The gate above already
+	// closed, so a nil or off-domain O1 never reaches this line: no
+	// connection is even acquired. The witness and every catalog read
+	// below run on this one connection; the connection is released on
+	// every path and a release failure on a clean read propagates.
+	conn, err := p.db.Conn(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("pin mysql srs channel connection: %w", err)
+	}
+	snapshot, err = p.loadMySQLSRSObjectOnConn(ctx, conn, request, snapshot)
+	if cerr := conn.Close(); err == nil && cerr != nil {
+		return nil, fmt.Errorf("release mysql srs channel connection: %w", cerr)
+	}
+	return snapshot, err
+}
+
+// loadMySQLSRSObjectOnConn runs the pinned-connection read sequence —
+// O2 witness, then existence, then the qualified conflict and
+// dependency reads, all on the same conn.
+func (p *Provider) loadMySQLSRSObjectOnConn(ctx context.Context, conn srsChannelQuerier, request spec.ObjectLookupRequest, snapshot *spec.ObjectSnapshot) (*spec.ObjectSnapshot, error) {
+	state := snapshot.SpatialReference
+	o1 := request.RequestVersion
+	if err := mysqlSRSChannelVersionWitness(ctx, conn, o1); err != nil {
 		return nil, err
 	}
+	srid := uint64(state.SRID)
 	var matchedID sql.NullInt64
 	var matchedName sql.NullString
 	// The existence read runs on an explicit *sql.Rows so the delivered
@@ -180,7 +217,7 @@ func (p *Provider) loadMySQLSRSObject(ctx context.Context, request spec.ObjectLo
 	// (validated MySQL 8.0.4+). Any query/scan/iteration/cancellation/
 	// close error propagates on the bounded path; an error whose value
 	// equals sql.ErrNoRows never supplies absence.
-	rows, err := p.db.QueryContext(ctx, `
+	rows, err := conn.QueryContext(ctx, `
 		select srs_id, srs_name
 		from information_schema.st_spatial_reference_systems
 		where srs_id = ?
@@ -224,7 +261,7 @@ func (p *Provider) loadMySQLSRSObject(ctx context.Context, request spec.ObjectLo
 	// The conflict reads fire only on provable request identities —
 	// an authored spelling never reaches them.
 	if name := request.Qualifiers[spec.ObjectLookupQualifierSRSName]; strings.TrimSpace(name) != "" {
-		fact, err := p.loadMySQLSRSNameConflict(ctx, name)
+		fact, err := p.loadMySQLSRSNameConflict(ctx, conn, name)
 		if err != nil {
 			return nil, err
 		}
@@ -233,7 +270,7 @@ func (p *Provider) loadMySQLSRSObject(ctx context.Context, request spec.ObjectLo
 	if org := request.Qualifiers[spec.ObjectLookupQualifierSRSOrg]; strings.TrimSpace(org) != "" {
 		if idText := request.Qualifiers[spec.ObjectLookupQualifierSRSOrgID]; strings.TrimSpace(idText) != "" {
 			if orgID, parseErr := strconv.ParseUint(idText, 10, 32); parseErr == nil {
-				fact, err := p.loadMySQLSRSOrgConflict(ctx, org, orgID)
+				fact, err := p.loadMySQLSRSOrgConflict(ctx, conn, org, orgID)
 				if err != nil {
 					return nil, err
 				}
@@ -244,7 +281,7 @@ func (p *Provider) loadMySQLSRSObject(ctx context.Context, request spec.ObjectLo
 	// The dependency read keys on the same provable SRID — it runs
 	// whenever the version gate passed, independent of the existence
 	// answer.
-	deps, err := p.loadMySQLSRSDependencies(ctx, srid)
+	deps, err := p.loadMySQLSRSDependencies(ctx, conn, srid)
 	if err != nil {
 		return nil, err
 	}
@@ -256,8 +293,8 @@ func (p *Provider) loadMySQLSRSObject(ctx context.Context, request spec.ObjectLo
 // name — the NAME uniqueness witness set. The statement's own SRID and
 // other SRIDs both appear as raw witnesses; distinguishing them is the
 // consumer's premise. Errors propagate wrapped.
-func (p *Provider) loadMySQLSRSNameConflict(ctx context.Context, name string) (*spec.SRSConflictFact, error) {
-	return p.loadMySQLSRSConflict(ctx, `
+func (p *Provider) loadMySQLSRSNameConflict(ctx context.Context, conn srsChannelQuerier, name string) (*spec.SRSConflictFact, error) {
+	return p.loadMySQLSRSConflict(ctx, conn, `
 		select srs_id
 		from information_schema.st_spatial_reference_systems
 		where srs_name = ?
@@ -267,8 +304,8 @@ func (p *Provider) loadMySQLSRSNameConflict(ctx context.Context, name string) (*
 // loadMySQLSRSOrgConflict reads the SRIDs matching one provable
 // ORGANIZATION + ORGANIZATION_COORDSYS_ID pair — the combined identity,
 // never a member alone. Errors propagate wrapped.
-func (p *Provider) loadMySQLSRSOrgConflict(ctx context.Context, org string, orgID uint64) (*spec.SRSConflictFact, error) {
-	return p.loadMySQLSRSConflict(ctx, `
+func (p *Provider) loadMySQLSRSOrgConflict(ctx context.Context, conn srsChannelQuerier, org string, orgID uint64) (*spec.SRSConflictFact, error) {
+	return p.loadMySQLSRSConflict(ctx, conn, `
 		select srs_id
 		from information_schema.st_spatial_reference_systems
 		where organization = ? and organization_coordsys_id = ?
@@ -282,8 +319,8 @@ func (p *Provider) loadMySQLSRSOrgConflict(ctx context.Context, org string, orgI
 // failed is never laundered into a non-error return; a fact with empty
 // MatchedSRIDs is "read, zero rows, unknown" — never a proven "no
 // conflict".
-func (p *Provider) loadMySQLSRSConflict(ctx context.Context, query string, args ...any) (*spec.SRSConflictFact, error) {
-	rows, err := p.db.QueryContext(ctx, query, args...)
+func (p *Provider) loadMySQLSRSConflict(ctx context.Context, conn srsChannelQuerier, query string, args ...any) (*spec.SRSConflictFact, error) {
+	rows, err := conn.QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, fmt.Errorf("query mysql srs conflict read: %w", err)
 	}
@@ -313,20 +350,36 @@ func (p *Provider) loadMySQLSRSConflict(ctx context.Context, query string, args 
 // request-level observed identity (R3 additive binding): a nil or
 // off-domain version means no authoritative O1 exists — zero catalog
 // reads and no fact rather than an independent provider adjudication.
-// An in-domain O1 still runs the channel witness; a disagreement or
-// observation failure propagates the bounded consistency error. The
-// ST_GEOMETRY_COLUMNS witness read for one authored SRID then runs —
-// the existence query is never issued on this path, and the call is
-// deliberately uncached so every consuming statement sees a fresh
-// witness. Query/iteration/close errors propagate wrapped.
+// An in-domain O1 still runs the channel witness on ONE pinned
+// *sql.Conn (R4) — the witness and the dependency read share the same
+// backend; a disagreement or observation failure propagates the
+// bounded consistency error with zero catalog reads. The
+// ST_GEOMETRY_COLUMNS witness read for one authored SRID then runs on
+// that same connection — the existence query is never issued on this
+// path, and the call is deliberately uncached so every consuming
+// statement sees a fresh witness. Query/iteration/close errors
+// propagate wrapped.
 func (p *Provider) ResolveMySQLSRSDependencies(ctx context.Context, srid uint32, version *spec.VersionIdentity) (*spec.SRSDependencyFact, error) {
 	if version == nil || spec.MySQLSRSVersionGateReason(version, true) != "" {
 		return nil, nil
 	}
-	if err := mysqlSRSChannelVersionWitness(ctx, p.db, version); err != nil {
-		return nil, err
+	// Pinned channel connection (R4): the O2 witness and the dependency
+	// read run on one *sql.Conn — same backend, same read unit; the
+	// connection is released on every path.
+	conn, err := p.db.Conn(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("pin mysql srs channel connection: %w", err)
 	}
-	return p.loadMySQLSRSDependencies(ctx, uint64(srid))
+	fact, err := func() (*spec.SRSDependencyFact, error) {
+		if err := mysqlSRSChannelVersionWitness(ctx, conn, version); err != nil {
+			return nil, err
+		}
+		return p.loadMySQLSRSDependencies(ctx, conn, uint64(srid))
+	}()
+	if cerr := conn.Close(); err == nil && cerr != nil {
+		return nil, fmt.Errorf("release mysql srs channel connection: %w", cerr)
+	}
+	return fact, err
 }
 
 // loadMySQLSRSDependencies reads the ST_GEOMETRY_COLUMNS witness set for
@@ -335,8 +388,8 @@ func (p *Provider) ResolveMySQLSRSDependencies(ctx context.Context, srid uint32,
 // Complete is never claimed: positive rows prove presence while an
 // empty set stays unproven — never instance-wide absence. Errors
 // propagate wrapped.
-func (p *Provider) loadMySQLSRSDependencies(ctx context.Context, srid uint64) (*spec.SRSDependencyFact, error) {
-	rows, err := p.db.QueryContext(ctx, `
+func (p *Provider) loadMySQLSRSDependencies(ctx context.Context, conn srsChannelQuerier, srid uint64) (*spec.SRSDependencyFact, error) {
+	rows, err := conn.QueryContext(ctx, `
 		select table_schema, table_name, column_name
 		from information_schema.st_geometry_columns
 		where srs_id = ?
