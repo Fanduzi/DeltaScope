@@ -135,6 +135,31 @@ type corpusMetadata struct {
 	// bounded bound-table occupancy read (T25/#104). Omit the key to
 	// leave every tablespace identity unvouched.
 	Tablespaces map[string]corpusTablespaceObject `yaml:"tablespaces,omitempty"`
+	// SpatialReferences is the proven MySQL SRS object set keyed by the
+	// decimal SRID — the st_spatial_reference_systems existence answer
+	// plus the bounded st_geometry_columns dependency witness set
+	// (T26-SRS-DROP-EXECUTION-01). Omit the key to leave every SRS
+	// identity unvouched.
+	SpatialReferences map[string]corpusSRSObject `yaml:"spatial_references,omitempty"`
+}
+
+// corpusSRSObject is the catalog fact for one MySQL spatial reference
+// system — status is the provenance answer; dependencies list the
+// visible geometry-column witnesses the catalog returned for the SRID
+// (a non-empty set is the positive witness the dependency refusal
+// consumes). Omit members to keep them unproven.
+type corpusSRSObject struct {
+	Status       string                `yaml:"status"`
+	Exists       *bool                 `yaml:"exists,omitempty"`
+	Dependencies []corpusSRSDependency `yaml:"dependencies,omitempty"`
+}
+
+// corpusSRSDependency is one visible dependent column witness.
+type corpusSRSDependency struct {
+	Schema string `yaml:"schema"`
+	Table  string `yaml:"table"`
+	Column string `yaml:"column"`
+	SRID   uint32 `yaml:"srid"`
 }
 
 // corpusTablespaceObject is the catalog fact for one MySQL tablespace —

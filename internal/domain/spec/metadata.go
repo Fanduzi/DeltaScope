@@ -112,6 +112,10 @@ type Metadata struct {
 	// existence plus the optional conflict and dependency witness
 	// reads (T26/#105 provider round). Internal evidence only.
 	SpatialReference *SpatialReferenceSystemState `json:"-"`
+	// SRSDrop carries the shared per-statement adjudication for the
+	// audited qualified DROP SPATIAL REFERENCE SYSTEM slice
+	// (T26-SRS-DROP-EXECUTION-01). Nil outside that slice.
+	SRSDrop *SRSDropAdjudication `json:"-"`
 }
 
 // MetadataSchemaTarget is the ordered schema binding accessor rules use —

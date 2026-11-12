@@ -350,6 +350,15 @@ func Register(registry *rule.Registry, cfg policy.Policy) error {
 		{ruleID: ruleIDMySQLAlterServerNotice, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
 			return newMySQLAlterServerRule(cfg)
 		}},
+		{ruleID: ruleIDMySQLSRSDropSRID0, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newMySQLSRSDropSRID0Rule(cfg)
+		}},
+		{ruleID: ruleIDMySQLSRSDropDependency, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newMySQLSRSDropDependencyRule(cfg)
+		}},
+		{ruleID: ruleIDMySQLSRSDropReserved, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
+			return newMySQLSRSDropReservedRule(cfg)
+		}},
 		{ruleID: ruleIDAlterAddIndexColumnsMaxCount, construct: func(cfg policy.RulePolicy) (rule.StatementRule, error) {
 			return newAlterAddedIndexColumnsMaxCountRule(8, rule.LevelWarning, cfg)
 		}},

@@ -129,7 +129,23 @@ func (s *batchState) bindMySQLServer(ctx context.Context, statement spec.Stateme
 func (s *batchState) bindMySQLSRS(ctx context.Context, statement spec.Statement) (*spec.SpatialReferenceSystemState, error) {
 	decl := statement.DDL.SpatialReference
 	bound := &spec.SpatialReferenceSystemState{SRID: decl.SRID}
-	if s.dialect != spec.DialectMySQL || s.contaminated {
+	if s.dialect != spec.DialectMySQL {
+		return bound, nil
+	}
+	// Stale-state ordering (T26-SRS-DROP-EXECUTION-01): whole-batch
+	// contamination or the same SRID's existence stale flag blocks
+	// before any resolver/cache consumption — the ordered channel's
+	// unread vocabulary marks the blocked read, and a fresh database
+	// read never clears a minted flag. Dependency staleness is not
+	// checked here: it invalidates witness consumption inside the
+	// adjudication, never a still-valid existence fact, and never
+	// suppresses the reads the contract requires.
+	if s.contaminated {
+		bound.UnreadReason = spec.MetadataUnreadBatchEffects
+		return bound, nil
+	}
+	if _, stale := s.srsExistenceStale[decl.SRID]; stale {
+		bound.UnreadReason = spec.MetadataUnreadBatchEffects
 		return bound, nil
 	}
 	resolver := s.objectResolverFor(s.mysqlSRSResolver)

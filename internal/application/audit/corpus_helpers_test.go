@@ -5,6 +5,7 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -39,7 +40,7 @@ func corpusMetadataFields(tc corpusExpected) (string, MetadataProvider) {
 	}
 	if tc.Metadata.Instance == nil && len(tc.Metadata.Tables) == 0 && len(tc.Metadata.IndexOwners) == 0 &&
 		len(tc.Metadata.PlacementPolicies) == 0 && len(tc.Metadata.Sequences) == 0 && len(tc.Metadata.ResourceGroups) == 0 &&
-		len(tc.Metadata.MySQLResourceGroups) == 0 && len(tc.Metadata.Tablespaces) == 0 {
+		len(tc.Metadata.MySQLResourceGroups) == 0 && len(tc.Metadata.Tablespaces) == 0 && len(tc.Metadata.SpatialReferences) == 0 {
 		return strings.TrimSpace(tc.Metadata.Schema), nil
 	}
 	return strings.TrimSpace(tc.Metadata.Schema), newCorpusMetadataProvider(tc.Metadata)
@@ -68,6 +69,11 @@ type corpusFixtureMetadataProvider struct {
 	// carrying the INNODB_TABLESPACES existence answer plus the bounded
 	// bound-table occupancy read (T25/#104).
 	tablespaces map[string]*spec.ObjectSnapshot
+	// spatialReferences is the MySQL SRS catalog fact set — keyed by the
+	// decimal SRID, carrying the st_spatial_reference_systems existence
+	// answer plus the bounded st_geometry_columns dependency witnesses
+	// (T26-SRS-DROP-EXECUTION-01).
+	spatialReferences map[string]*spec.ObjectSnapshot
 }
 
 func newCorpusMetadataProvider(metadata *corpusMetadata) *corpusFixtureMetadataProvider {
@@ -150,7 +156,44 @@ func newCorpusMetadataProvider(metadata *corpusMetadata) *corpusFixtureMetadataP
 			provider.tablespaces[strings.TrimSpace(key)] = corpusTablespaceToSnapshot(key, object)
 		}
 	}
+	if metadata.SpatialReferences != nil {
+		provider.spatialReferences = make(map[string]*spec.ObjectSnapshot, len(metadata.SpatialReferences))
+		for key, object := range metadata.SpatialReferences {
+			provider.spatialReferences[strings.TrimSpace(key)] = corpusSRSToSnapshot(key, object)
+		}
+	}
 	return provider
+}
+
+// corpusSRSToSnapshot converts a fixture SRS entry into the
+// st_spatial_reference_systems + st_geometry_columns answer the object
+// resolver would return — the status word is the provenance answer;
+// dependency witnesses bind only on a read row (T26-SRS-DROP-EXECUTION-01).
+func corpusSRSToSnapshot(key string, object corpusSRSObject) *spec.ObjectSnapshot {
+	snapshot := &spec.ObjectSnapshot{Type: "mysql_spatial_reference_system", Name: strings.TrimSpace(key), Status: spec.MetadataStatus(object.Status)}
+	if object.Exists != nil {
+		snapshot.Exists = *object.Exists
+	} else {
+		snapshot.Exists = object.Status == "confirmed"
+	}
+	srid, err := strconv.ParseUint(strings.TrimSpace(key), 10, 32)
+	if err != nil {
+		return snapshot
+	}
+	state := &spec.SpatialReferenceSystemState{SRID: uint32(srid), Read: true}
+	state.Exists = snapshot.Exists
+	if snapshot.Exists {
+		state.Status = spec.MetadataStatusConfirmed
+	}
+	fact := &spec.SRSDependencyFact{}
+	for _, dep := range object.Dependencies {
+		fact.Columns = append(fact.Columns, spec.SRSDependentColumn{
+			Schema: dep.Schema, Table: dep.Table, Column: dep.Column, SRID: dep.SRID,
+		})
+	}
+	state.Dependencies = fact
+	snapshot.SpatialReference = state
+	return snapshot
 }
 
 // corpusTablespaceToSnapshot converts a fixture tablespace entry into the
@@ -328,6 +371,16 @@ func (p *corpusFixtureMetadataProvider) LoadPlacementPolicies(context.Context, s
 // `schema.name`. An unkeyed identity or a nil sequence map is unvouched,
 // never a silent absent; non-sequence lookups stay unavailable.
 func (p *corpusFixtureMetadataProvider) ResolveObject(_ context.Context, _ spec.Dialect, request spec.ObjectLookupRequest) (*spec.ObjectSnapshot, error) {
+	if request.Type == "mysql_spatial_reference_system" {
+		if p.spatialReferences == nil {
+			return &spec.ObjectSnapshot{Schema: request.Schema, Type: request.Type, Name: request.Name, Status: spec.MetadataStatusUnavailable}, nil
+		}
+		snapshot, ok := p.spatialReferences[strings.TrimSpace(request.Name)]
+		if !ok {
+			return &spec.ObjectSnapshot{Schema: request.Schema, Type: request.Type, Name: request.Name, Status: spec.MetadataStatusUnavailable}, nil
+		}
+		return snapshot, nil
+	}
 	if request.Type == "mysql_tablespace" {
 		if p.tablespaces == nil {
 			return &spec.ObjectSnapshot{Schema: request.Schema, Type: request.Type, Name: request.Name, Status: spec.MetadataStatusUnavailable}, nil

@@ -262,6 +262,29 @@ func (state *batchState) enrichStatements(ctx context.Context, request *Metadata
 					},
 				}
 			}
+			// The audited SRS drop slice (T26-SRS-DROP-EXECUTION-01)
+			// shares this gate shape: every DROP whose resolved version
+			// is unknown or outside the registered MySQL 8.0.4+ domain
+			// takes the unaudited boundary — the presence or absence of
+			// a caller pin is never the criterion; the resolved
+			// version is. The statement's catalog reads still issue on
+			// the provider's own channel qualification below — the
+			// gate decides audit applicability, never read
+			// applicability.
+			if statements[i].DDL != nil && statements[i].DDL.SpatialReference != nil &&
+				statements[i].DDL.SpatialReference.Kind == spec.SRSKindDrop &&
+				statements[i].Unsupported == nil &&
+				!spec.MySQLSRSDropAuditedDomain(resolvedVersion) {
+				statements[i].Unsupported = &spec.UnsupportedDetail{
+					Feature: string(statements[i].DDL.Operation),
+					Reason:  spec.UnsupportedUnauditedReason,
+					Metadata: map[string]any{
+						"boundary": "unaudited",
+						"object":   "spatial_reference_system",
+						"gate":     "version",
+					},
+				}
+			}
 		}
 	}
 	enriched := make([]spec.Statement, len(statements))
@@ -683,6 +706,18 @@ func (state *batchState) enrichStatements(ctx context.Context, request *Metadata
 					enriched[i].Metadata = &spec.Metadata{Schema: metadataSchema, Instance: instanceFacts, Version: resolvedVersion}
 				}
 				enriched[i].Metadata.SpatialReference = srs
+			}
+			// The audited qualified drop carries the shared
+			// adjudication — one truth the rule's gap/message/output
+			// and the own apply's stale flags both read
+			// (T26-SRS-DROP-EXECUTION-01). IF EXISTS stays a public
+			// rendering fact and never enters the adjudication.
+			if decl := enriched[i].DDL.SpatialReference; decl.Kind == spec.SRSKindDrop && enriched[i].Unsupported == nil {
+				if enriched[i].Metadata == nil {
+					enriched[i].Metadata = &spec.Metadata{Schema: metadataSchema, Instance: instanceFacts, Version: resolvedVersion}
+				}
+				adjudication := spec.AdjudicateSRSDrop(enriched[i].Metadata.SpatialReference, decl.SRID, state.srsDepsStale)
+				enriched[i].Metadata.SRSDrop = &adjudication
 			}
 		}
 

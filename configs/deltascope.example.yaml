@@ -1184,6 +1184,21 @@ rules:
     level: notice
     params:
 
+  ddl.mysql.srs.drop.srid0:
+    enabled: true
+    level: blocker
+    params:
+
+  ddl.mysql.srs.drop.dependency:
+    enabled: true
+    level: blocker
+    params:
+
+  ddl.mysql.srs.drop.reserved:
+    enabled: true
+    level: notice
+    params:
+
   ddl.tidb.table.auto_random.valid:
     enabled: true
     level: blocker

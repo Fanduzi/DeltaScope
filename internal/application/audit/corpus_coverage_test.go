@@ -136,6 +136,11 @@ func corpusRuleDialectTargets(ruleID string) []string {
 	// and PostgreSQL never binds SERVER declarations.
 	case "ddl.mysql.server.drop.notice", "ddl.mysql.server.create.notice", "ddl.mysql.server.alter.notice":
 		return []string{"mysql"}
+	// T26-SRS-DROP-EXECUTION-01: the audited MySQL DROP SPATIAL
+	// REFERENCE SYSTEM rules — under TiDB the whole SRS family is a
+	// vendor boundary and PostgreSQL never binds SRS declarations.
+	case "ddl.mysql.srs.drop.srid0", "ddl.mysql.srs.drop.dependency", "ddl.mysql.srs.drop.reserved":
+		return []string{"mysql"}
 	}
 	if strings.HasPrefix(ruleID, "ddl.pg.") || isPostgreSQLOnlyRule(ruleID) {
 		return []string{"postgresql"}

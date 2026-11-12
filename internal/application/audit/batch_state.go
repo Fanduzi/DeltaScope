@@ -140,6 +140,21 @@ type batchState struct {
 	// lookup for the MySQL spatial reference system family (T26/#105
 	// provider round). Nil falls back to the provider's ObjectResolver.
 	mysqlSRSResolver func(ctx context.Context, lookup spec.ObjectLookupRequest) (*spec.ObjectSnapshot, error)
+	// srsExistenceStale records per-SRID existence invalidation — a
+	// qualified unproven drop or any boundary SRS lifecycle write may
+	// have removed or replaced the catalog row, so a later same-SRID
+	// statement must not consume a cached or fresh pre-state answer.
+	// Monotonic within a batch; it survives multiple enrich calls on
+	// the same state (T26-SRS-DROP-EXECUTION-01).
+	srsExistenceStale map[uint32]struct{}
+	// srsDepsStale marks the batch-wide dependency-fact invalidation —
+	// a spatial-touching table/schema statement may have added,
+	// dropped, or retyped a geometry column, so the dependency witness
+	// from any earlier read stays non-consumable for every SRID. It
+	// never invalidates a still-valid existence answer and never
+	// suppresses the catalog reads the contract still requires
+	// (T26-SRS-DROP-EXECUTION-01).
+	srsDepsStale bool
 	// serverEntries holds the SERVER family's ordered identity
 	// projections — barrier-only this slice, keyed by the ASCII-fold
 	// bucket with the verbatim name kept inside each entry for
@@ -216,6 +231,7 @@ func newBatchState(dialect spec.Dialect, schema string, provider MetadataProvide
 		resourceGroupEntries:      make(map[string]*batchResourceGroupEntry),
 		mysqlResourceGroupEntries: make(map[string]*batchMySQLResourceGroupEntry),
 		tablespaceEntries:         make(map[string]*batchTablespaceEntry),
+		srsExistenceStale:         make(map[uint32]struct{}),
 	}
 }
 
@@ -397,6 +413,14 @@ func (s *batchState) apply(ctx context.Context, statement spec.Statement) error 
 	if s.contaminated {
 		return nil
 	}
+	// Spatial-touching classification (T26-SRS-DROP-EXECUTION-01
+	// D3): a non-SRS statement whose modeled effect may write a
+	// geometry-column or SRID fact mints the batch-wide dependency
+	// staleness — inert shapes mint nothing, and the SRS family is
+	// out of scope here (its own rule governs existence staleness).
+	if s.spatialTouching(statement) {
+		s.srsDepsStale = true
+	}
 	if procedureLifecyclePreservesTableState(statement) {
 		return ctx.Err()
 	}
@@ -460,7 +484,13 @@ func (s *batchState) apply(ctx context.Context, statement spec.Statement) error 
 			// the boundary reason, tracked facts provably stand, so the
 			// statement neither executes on the tracked surface nor
 			// contaminates the batch (T26/#105). SERVER statements are
-			// already routed to their own ordered channel above.
+			// already routed to their own ordered channel above. The
+			// boundary lifecycle write still mints the authored SRID's
+			// existence staleness: a CREATE, CREATE OR REPLACE, or
+			// gated DROP may have written the catalog row, so a later
+			// same-SRID statement cannot consume a stale answer
+			// (T26-SRS-DROP-EXECUTION-01).
+			s.srsExistenceStale[statement.DDL.SpatialReference.SRID] = struct{}{}
 			return nil
 		}
 		if statement.DDL != nil && statement.DDL.Tablespace != nil {
@@ -604,6 +634,8 @@ func (s *batchState) apply(ctx context.Context, statement spec.Statement) error 
 	case spec.DDLOperationCreateTablespace, spec.DDLOperationAlterTablespace,
 		spec.DDLOperationDropTablespace:
 		return s.applyTablespaceStatement(ctx, statement)
+	case spec.DDLOperationDropSpatialReferenceSystem, spec.DDLOperationCreateSpatialReferenceSystem:
+		return s.applySRSStatement(statement)
 	case spec.DDLOperationSplitRegion, spec.DDLOperationCompactTable:
 		// Neither statement moves a catalog fact: region scatter and
 		// replica compaction leave identity, columns, indexes, and every
