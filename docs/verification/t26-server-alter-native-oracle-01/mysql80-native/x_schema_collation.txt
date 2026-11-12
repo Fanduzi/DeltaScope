@@ -1,0 +1,38 @@
+case_id: x_schema_collation
+== server_version ==
+mysql: [Warning] Using a password on the command line interface can be insecure.
+8.0.46
+== show create table mysql.servers ==
+mysql: [Warning] Using a password on the command line interface can be insecure.
+*************************** 1. row ***************************
+       Table: servers
+Create Table: CREATE TABLE `servers` (
+  `Server_name` char(64) NOT NULL DEFAULT '',
+  `Host` char(255) CHARACTER SET ascii COLLATE ascii_general_ci NOT NULL DEFAULT '',
+  `Db` char(64) NOT NULL DEFAULT '',
+  `Username` char(64) NOT NULL DEFAULT '',
+  `Password` char(64) NOT NULL DEFAULT '',
+  `Port` int NOT NULL DEFAULT '0',
+  `Socket` char(64) NOT NULL DEFAULT '',
+  `Wrapper` char(64) NOT NULL DEFAULT '',
+  `Owner` char(64) NOT NULL DEFAULT '',
+  PRIMARY KEY (`Server_name`)
+) /*!50100 TABLESPACE `mysql` */ ENGINE=InnoDB DEFAULT CHARSET=utf8mb3 STATS_PERSISTENT=0 ROW_FORMAT=DYNAMIC COMMENT='MySQL Foreign Servers table'
+== column collations ==
+mysql: [Warning] Using a password on the command line interface can be insecure.
+COLUMN_NAME	COLLATION_NAME	CHARACTER_SET_NAME
+Server_name	utf8mb3_general_ci	utf8mb3
+Host	ascii_general_ci	ascii
+Db	utf8mb3_general_ci	utf8mb3
+Username	utf8mb3_general_ci	utf8mb3
+Password	utf8mb3_general_ci	utf8mb3
+Port	NULL	NULL
+Socket	utf8mb3_general_ci	utf8mb3
+Wrapper	utf8mb3_general_ci	utf8mb3
+Owner	utf8mb3_general_ci	utf8mb3
+== name-matching probe: does where Server_name='mixedcase' hit MixedCase? ==
+mysql: [Warning] Using a password on the command line interface can be insecure.
+Server_name
+MixedCase
+Server_name
+MixedCase

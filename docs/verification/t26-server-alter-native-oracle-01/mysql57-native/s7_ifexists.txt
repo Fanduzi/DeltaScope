@@ -1,0 +1,59 @@
+case_id: s7_ifexists
+executed_at: 2026-11-12T22:59:05Z
+port: 13307
+account_identity: root
+srv_name: nao_ifx
+literal_sql_target: alter server if exists nao_ifx options (USER 'x');
+== root truth: server_version / config ==
+mysql: [Warning] Using a password on the command line interface can be insecure.
+5.7.44	38251ca4168f
+== root truth: pre catalog (target row + total) ==
+mysql: [Warning] Using a password on the command line interface can be insecure.
+servers_total
+10
+== account-view pre read (separate probe; a denied row-abort cannot block the target) ==
+mysql: [Warning] Using a password on the command line interface can be insecure.
+account_view_pre_rc: 0
+== literal_argv (account session) ==
+mysql -h127.0.0.1 -P13307 -uroot -p<redacted> --connect-timeout=5 --force -v -e '<session script>'
+== session script (as executed) ==
+sess-sql> select user() as SESSION_USER, current_user() as AUTH_USER;
+sess-sql> show grants for current_user();
+sess-sql> alter server if exists nao_ifx options (USER 'x');
+sess-sql> show warnings;
+sess-sql> select @@warning_count as warning_count;
+== account session output (stdout, -v verbatim) ==
+--------------
+select user() as SESSION_USER, current_user() as AUTH_USER
+--------------
+
+SESSION_USER	AUTH_USER
+root@172.17.0.12	root@%
+--------------
+show grants for current_user()
+--------------
+
+Grants for root@%
+GRANT ALL PRIVILEGES ON *.* TO 'root'@'%' WITH GRANT OPTION
+--------------
+alter server if exists nao_ifx options (USER 'x')
+--------------
+
+== account session stderr ==
+mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1064 (42000) at line 3: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'if exists nao_ifx options (USER 'x')' at line 1
+batch_exit_code: 1
+== account-view post read (separate probe) ==
+mysql: [Warning] Using a password on the command line interface can be insecure.
+account_view_post_rc: 0
+== standalone rc-probe (identical target, second execution) ==
+argv: mysql -h127.0.0.1 -P13307 -uroot -p<redacted> --connect-timeout=5 -e 'alter server if exists nao_ifx options (USER 'x');'
+rc_probe_stdout:
+rc_probe_stderr:
+mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'if exists nao_ifx options (USER 'x')' at line 1
+exit_code: 1
+== root truth: post catalog (target row + total) ==
+mysql: [Warning] Using a password on the command line interface can be insecure.
+servers_total
+10

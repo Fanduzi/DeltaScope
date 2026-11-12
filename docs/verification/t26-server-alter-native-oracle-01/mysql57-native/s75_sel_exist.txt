@@ -1,0 +1,68 @@
+case_id: s75_sel_exist
+executed_at: 2026-11-12T22:59:04Z
+port: 13307
+account_identity: na_selonly
+srv_name: nao_r2
+literal_sql_target: alter server nao_r2 options (USER 'ord_se');
+== root truth: server_version / config ==
+mysql: [Warning] Using a password on the command line interface can be insecure.
+5.7.44	38251ca4168f
+== root truth: pre catalog (target row + total) ==
+mysql: [Warning] Using a password on the command line interface can be insecure.
+Server_name	Host	Db	Username	Password	Port	Socket	Wrapper	Owner
+nao_r2			seed_u		0		mysql	
+servers_total
+10
+== account-view pre read (separate probe; a denied row-abort cannot block the target) ==
+mysql: [Warning] Using a password on the command line interface can be insecure.
+Server_name
+nao_r2
+account_view_pre_rc: 0
+== literal_argv (account session) ==
+mysql -h127.0.0.1 -P13307 -una_selonly -p<redacted> --connect-timeout=5 --force -v -e '<session script>'
+== session script (as executed) ==
+sess-sql> select user() as SESSION_USER, current_user() as AUTH_USER;
+sess-sql> show grants for current_user();
+sess-sql> alter server nao_r2 options (USER 'ord_se');
+sess-sql> show warnings;
+sess-sql> select @@warning_count as warning_count;
+== account session output (stdout, -v verbatim) ==
+--------------
+select user() as SESSION_USER, current_user() as AUTH_USER
+--------------
+
+SESSION_USER	AUTH_USER
+na_selonly@172.17.0.12	na_selonly@%
+--------------
+show grants for current_user()
+--------------
+
+Grants for na_selonly@%
+GRANT USAGE ON *.* TO 'na_selonly'@'%'
+GRANT SELECT ON `mysql`.`servers` TO 'na_selonly'@'%'
+--------------
+alter server nao_r2 options (USER 'ord_se')
+--------------
+
+== account session stderr ==
+mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1227 (42000) at line 3: Access denied; you need (at least one of) the SUPER privilege(s) for this operation
+batch_exit_code: 1
+== account-view post read (separate probe) ==
+mysql: [Warning] Using a password on the command line interface can be insecure.
+Server_name
+nao_r2
+account_view_post_rc: 0
+== standalone rc-probe (identical target, second execution) ==
+argv: mysql -h127.0.0.1 -P13307 -una_selonly -p<redacted> --connect-timeout=5 -e 'alter server nao_r2 options (USER 'ord_se');'
+rc_probe_stdout:
+rc_probe_stderr:
+mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1227 (42000) at line 1: Access denied; you need (at least one of) the SUPER privilege(s) for this operation
+exit_code: 1
+== root truth: post catalog (target row + total) ==
+mysql: [Warning] Using a password on the command line interface can be insecure.
+Server_name	Host	Db	Username	Password	Port	Socket	Wrapper	Owner
+nao_r2			seed_u		0		mysql	
+servers_total
+10

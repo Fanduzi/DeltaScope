@@ -1,0 +1,76 @@
+case_id: h5_m
+executed_at: 2026-11-12T22:57:47Z
+port: 13308
+account_identity: root
+srv_name: MixedCase
+literal_sql_target: alter server MixedCase options (USER 'mc_exact');
+== root truth: server_version / config ==
+mysql: [Warning] Using a password on the command line interface can be insecure.
+8.4.10	0d0a0f0f2803	0
+== root truth: pre catalog (target row + total) ==
+mysql: [Warning] Using a password on the command line interface can be insecure.
+Server_name	Host	Db	Username	Password	Port	Socket	Wrapper	Owner
+MixedCase			mc_upper		0		mysql	
+servers_total
+23
+== account-view pre read (separate probe; a denied row-abort cannot block the target) ==
+mysql: [Warning] Using a password on the command line interface can be insecure.
+Server_name
+MixedCase
+account_view_pre_rc: 0
+== literal_argv (account session) ==
+mysql -h127.0.0.1 -P13308 -uroot -p<redacted> --connect-timeout=5 --force -v -e '<session script>'
+== session script (as executed) ==
+sess-sql> select user() as SESSION_USER, current_user() as AUTH_USER, current_role() as ACTIVE_ROLE;
+sess-sql> show grants for current_user();
+sess-sql> alter server MixedCase options (USER 'mc_exact');
+sess-sql> show warnings;
+sess-sql> select @@warning_count as warning_count;
+== account session output (stdout, -v verbatim) ==
+--------------
+select user() as SESSION_USER, current_user() as AUTH_USER, current_role() as ACTIVE_ROLE
+--------------
+
+SESSION_USER	AUTH_USER	ACTIVE_ROLE
+root@172.17.0.13	root@%	NONE
+--------------
+show grants for current_user()
+--------------
+
+Grants for root@%
+GRANT SELECT, INSERT, UPDATE, DELETE, CREATE, DROP, RELOAD, SHUTDOWN, PROCESS, FILE, REFERENCES, INDEX, ALTER, SHOW DATABASES, SUPER, CREATE TEMPORARY TABLES, LOCK TABLES, EXECUTE, REPLICATION SLAVE, REPLICATION CLIENT, CREATE VIEW, SHOW VIEW, CREATE ROUTINE, ALTER ROUTINE, CREATE USER, EVENT, TRIGGER, CREATE TABLESPACE, CREATE ROLE, DROP ROLE ON *.* TO `root`@`%` WITH GRANT OPTION
+GRANT ALLOW_NONEXISTENT_DEFINER,APPLICATION_PASSWORD_ADMIN,AUDIT_ABORT_EXEMPT,AUDIT_ADMIN,AUTHENTICATION_POLICY_ADMIN,BACKUP_ADMIN,BINLOG_ADMIN,BINLOG_ENCRYPTION_ADMIN,CLONE_ADMIN,CONNECTION_ADMIN,ENCRYPTION_KEY_ADMIN,FIREWALL_EXEMPT,FLUSH_OPTIMIZER_COSTS,FLUSH_PRIVILEGES,FLUSH_STATUS,FLUSH_TABLES,FLUSH_USER_RESOURCES,GROUP_REPLICATION_ADMIN,GROUP_REPLICATION_STREAM,INNODB_REDO_LOG_ARCHIVE,INNODB_REDO_LOG_ENABLE,OPTIMIZE_LOCAL_TABLE,PASSWORDLESS_USER_ADMIN,PERSIST_RO_VARIABLES_ADMIN,REPLICATION_APPLIER,REPLICATION_SLAVE_ADMIN,RESOURCE_GROUP_ADMIN,RESOURCE_GROUP_USER,ROLE_ADMIN,SENSITIVE_VARIABLES_OBSERVER,SERVICE_CONNECTION_ADMIN,SESSION_VARIABLES_ADMIN,SET_ANY_DEFINER,SHOW_ROUTINE,SYSTEM_USER,SYSTEM_VARIABLES_ADMIN,TABLE_ENCRYPTION_ADMIN,TELEMETRY_LOG_ADMIN,TRANSACTION_GTID_TAG,XA_RECOVER_ADMIN ON *.* TO `root`@`%` WITH GRANT OPTION
+--------------
+alter server MixedCase options (USER 'mc_exact')
+--------------
+
+--------------
+show warnings
+--------------
+
+--------------
+select @@warning_count as warning_count
+--------------
+
+warning_count
+0
+== account session stderr ==
+mysql: [Warning] Using a password on the command line interface can be insecure.
+batch_exit_code: 0
+== account-view post read (separate probe) ==
+mysql: [Warning] Using a password on the command line interface can be insecure.
+Server_name
+MixedCase
+account_view_post_rc: 0
+== standalone rc-probe (identical target, second execution) ==
+argv: mysql -h127.0.0.1 -P13308 -uroot -p<redacted> --connect-timeout=5 -e 'alter server MixedCase options (USER 'mc_exact');'
+rc_probe_stdout:
+rc_probe_stderr:
+mysql: [Warning] Using a password on the command line interface can be insecure.
+exit_code: 0
+== root truth: post catalog (target row + total) ==
+mysql: [Warning] Using a password on the command line interface can be insecure.
+Server_name	Host	Db	Username	Password	Port	Socket	Wrapper	Owner
+MixedCase			mc_exact		0		mysql	
+servers_total
+23

@@ -1,0 +1,39 @@
+case_id: s73_schema_collation
+== version ==
+mysql: [Warning] Using a password on the command line interface can be insecure.
+5.7.44
+== show create table mysql.servers ==
+mysql: [Warning] Using a password on the command line interface can be insecure.
+*************************** 1. row ***************************
+       Table: servers
+Create Table: CREATE TABLE `servers` (
+  `Server_name` char(64) NOT NULL DEFAULT '',
+  `Host` char(64) NOT NULL DEFAULT '',
+  `Db` char(64) NOT NULL DEFAULT '',
+  `Username` char(64) NOT NULL DEFAULT '',
+  `Password` char(64) NOT NULL DEFAULT '',
+  `Port` int(4) NOT NULL DEFAULT '0',
+  `Socket` char(64) NOT NULL DEFAULT '',
+  `Wrapper` char(64) NOT NULL DEFAULT '',
+  `Owner` char(64) NOT NULL DEFAULT '',
+  PRIMARY KEY (`Server_name`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 STATS_PERSISTENT=0 COMMENT='MySQL Foreign Servers table'
+== collations ==
+mysql: [Warning] Using a password on the command line interface can be insecure.
+column_name	collation_name
+Server_name	utf8_general_ci
+Host	utf8_general_ci
+Db	utf8_general_ci
+Username	utf8_general_ci
+Password	utf8_general_ci
+Port	NULL
+Socket	utf8_general_ci
+Wrapper	utf8_general_ci
+Owner	utf8_general_ci
+== create role attempt (5.7 roles?) ==
+mysql: [Warning] Using a password on the command line interface can be insecure.
+ERROR 1064 (42000) at line 1: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 'role na_r57' at line 1
+== ci match ==
+mysql: [Warning] Using a password on the command line interface can be insecure.
+Server_name
+MixedCase
